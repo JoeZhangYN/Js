@@ -1,0 +1,22 @@
+{
+  "type": "script",
+  "enabled": true,
+  "name": "脚本-指定回复",
+  "id": "eb9c4ee6-cda8-4382-97e2-b17efe0af379",
+  "content": "// ============ 指定回复 ============\nconst event_type = getButtonEvent('指定回复');\nconst event_type1 = getButtonEvent('继续');\n\neventOn(event_type, async () => {\n  const defaultContent = '严格参考已有的信息||请更改要输入的情节||严格参照剧情描述经过,合理扩展完善剧情||详细描述具体行为的过程.不限于动作语言神态，多于7000字#指导||剧情||要求||注意';\n\n  const input_text = await SillyTavern.callGenericPopup(\n    `输入格式：内容1||内容2||内容n#标签1||标签2||标签n`,\n    SillyTavern.POPUP_TYPE.INPUT,\n    defaultContent,\n    { wide: true },\n  );\n\n  if (input_text === false) return;\n\n  const processedInput = input_text.trim() || defaultContent;\n  const [contentPart, tagNamesPart] = processedInput.split('#').map(p => p.trim());\n  const contentParts = contentPart ? contentPart.split('||').map(p => p.trim()).filter(Boolean) : [];\n  const tagNames = tagNamesPart ? tagNamesPart.split('||').map(p => p.trim()).filter(Boolean) : [];\n  const finalTags = tagNames.length > 0 ? tagNames : ['指导', '剧情', '要求'];\n\n  const formattedContent = finalTags.map((tag, i) => {\n    let value = contentParts[i];\n    if (value === undefined) {\n      if (tag === '指导') value = '严格参考已有的信息';\n      else if (tag === '要求') value = '合理发展描述剧情';\n      else value = '';\n    }\n    return `<${tag}>${value}</${tag}>`;\n  }).join('');\n\n  triggerSlash(`/send {GLOBAL:${formattedContent}} || /trigger ||`);\n});\n\neventOn(event_type1, () => {\n  triggerSlash(`/send {继续上一场景} || /trigger ||`);\n});",
+  "info": "# 作者：JoeZhangYN\n## 版本日期:2025/10/29\n\n## 作用:\n\n- 初始化输入内容和标签\n- 用于获取分割指定输入并通过标签包裹内容\n- 格式说明:\n    - 使用 || 分隔内容段落\n    - 使用 # 分隔内容和标签（如：内容#标签）\n    - 标签也用 || 分隔（如：指导||剧情||要求）\n\n- 示例:\n内容1||内容2||内容3#标签1||标签2||标签3\n\n如果不输入标签，将使用默认标签：指导、剧情、要求\n如果内容数量与标签数量不匹配，会自动填充默认内容`,\n\n## 更新说明\n- 25/5/11 初始化\n- 25/10/29 适配新的函数",
+  "button": {
+    "enabled": true,
+    "buttons": [
+      {
+        "name": "指定回复",
+        "visible": true
+      },
+      {
+        "name": "继续",
+        "visible": true
+      }
+    ]
+  },
+  "data": {}
+}

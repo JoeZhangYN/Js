@@ -1,6 +1,6 @@
 // ============ 世界书自定义真实排序 ============
-// 初始化脚本变量（不存在时写入默认值 10 秒）
-insertVariables({ joezhangynRefractory: 10 }, { type: "script" });
+// 初始化脚本变量（不存在时写入默认值 0 秒）
+insertVariables({ joezhangynRefractory: 0 }, { type: "script" });
 
 let sortTimer = null;
 let isSorting = false;
@@ -33,7 +33,7 @@ function sortKey(e) {
 }
 
 function getRefractory() {
-  return getVariables({ type: "script" }).joezhangynRefractory ?? 10;
+  return getVariables({ type: "script" }).joezhangynRefractory ?? 0;
 }
 
 async function sortWorldbook(name) {

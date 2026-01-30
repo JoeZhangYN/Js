@@ -1,0 +1,22 @@
+{
+  "type": "script",
+  "enabled": true,
+  "name": "脚本-世界书自定义真实排序",
+  "id": "e803292b-cf20-4f3a-aa6a-7fa9a5f6c027",
+  "content": "// ============ 世界书自定义真实排序 ============\n// 初始化脚本变量（不存在时写入默认值 0 秒）\ninsertVariables({ joezhangynRefractory: 0 }, { type: \"script\" });\n\nlet sortTimer = null;\nlet isSorting = false;\nlet pendingName = null;\n\nconst POS_RANK = {\n  before_character_definition: 1,\n  after_character_definition: 2,\n  before_example_messages: 3,\n  after_example_messages: 4,\n  before_author_note: 5,\n  after_author_note: 6,\n};\nconst ROLE_RANK = { assistant: 1, user: 2, system: 3 };\n\nfunction sortKey(e) {\n  const enabled = e.enabled ? 0 : 1;\n  const p = e.position;\n  if (p.type === \"at_depth\") {\n    return [\n      enabled,\n      1,\n      -(p.depth || 0),\n      ROLE_RANK[p.role] || 99,\n      p.order || 0,\n      e.uid,\n    ];\n  }\n  return [enabled, 0, 0, POS_RANK[p.type] || 999, p.order || 0, e.uid];\n}\n\nfunction getRefractory() {\n  return getVariables({ type: \"script\" }).joezhangynRefractory ?? 0;\n}\n\nasync function sortWorldbook(name) {\n  if (isSorting) return;\n  isSorting = true;\n\n  try {\n    const entries = await getWorldbook(name);\n    const originalUids = entries.map((e) => e.uid);\n\n    const sorted = [...entries].sort((a, b) => {\n      const ka = sortKey(a),\n        kb = sortKey(b);\n      for (let i = 0; i < ka.length; i++) {\n        if (ka[i] !== kb[i]) return ka[i] - kb[i];\n      }\n      return 0;\n    });\n\n    if (sorted.every((e, i) => e.uid === originalUids[i])) return;\n\n    await replaceWorldbook(name, sorted, { render: \"debounced\" });\n    toastr.success(`[排序] \"${name}\" 完成`);\n    console.log(`[排序] \"${name}\" 完成`);\n  } catch (err) {\n    console.error(\"[排序] 出错:\", err);\n  } finally {\n    setTimeout(() => {\n      isSorting = false;\n    }, 200);\n  }\n}\n\neventOn(tavern_events.WORLDINFO_UPDATED, (name) => {\n  if (isSorting) return;\n  pendingName = name;\n  if (sortTimer) clearTimeout(sortTimer);\n  sortTimer = setTimeout(() => {\n    sortTimer = null;\n    pendingName = null;\n    sortWorldbook(name);\n  }, getRefractory() * 1000);\n});\n\neventOn(getButtonEvent(\"立即排序\"), async () => {\n  if (sortTimer) {\n    clearTimeout(sortTimer);\n    sortTimer = null;\n  }\n  const name = pendingName;\n  pendingName = null;\n\n  if (name) {\n    await sortWorldbook(name);\n  } else {\n    toastr.info(\"当前没有待排序的世界书\");\n  }\n});\n\neventOn(getButtonEvent(\"排序设置\"), async () => {\n  const current = getRefractory();\n  const input = await SillyTavern.callGenericPopup(\n    \"设置世界书排序不应期(单位秒支持小数) 0 = 立即排序\",\n    SillyTavern.POPUP_TYPE.INPUT,\n    String(current),\n  );\n  if (input !== false) {\n    const value = Math.max(0, parseFloat(input) || 0);\n    insertOrAssignVariables(\n      { joezhangynRefractory: value },\n      { type: \"script\" },\n    );\n    toastr.success(`不应期: ${value}秒`);\n  }\n});",
+  "info": "# 作者：JoeZhangYN\n## 版本日期：2026/1/31\n\n## 作用\n\n- 依赖酒馆原生的自定义排序字段，对世界书条目进行顺序重排\n- 排序规则：启用状态 → 位置类型（at_depth / 固定位置）→ 深度（倒序）→ 角色 → order → uid\n- 添加不应期功能，避免频繁修改世界书时触发过多无意义的重排序\n  - 设为 0 则立即排序\n  - 设为较大值（如 10 秒），可在调整完毕后通过\"立即排序\"按钮手动触发\n- 排序前后顺序一致时自动跳过，不触发无意义刷新\n\n## 变量说明\n\n| 变量名 | 类型 | 默认值 | 说明 |\n|--------|------|--------|------|\n| `joezhangynRefractory` | number | 0 | 不应期（单位秒，支持小数），0 为立即排序 |\n\n## 按钮说明\n\n| 按钮名 | 功能 |\n|--------|------|\n| 排序设置 | 弹窗输入不应期时长 |\n| 立即排序 | 跳过不应期，立即对待排序的世界书执行排序 |\n\n## 排序优先级\n\n| 优先级 | 字段 | 说明 |\n|--------|------|------|\n| 1 | `enabled` | 启用的条目排在前面 |\n| 2 | 位置类型 | 固定位置排在 at_depth 前面 |\n| 3 | `depth`（倒序） | at_depth 类型按深度从大到小 |\n| 4 | `role` | assistant → user → system |\n| 5 | `order` | 自定义排序序号 |\n| 6 | `uid` | 最终兜底 |\n\n## 事件监听\n\n| 事件 | 触发动作 |\n|------|----------|\n| `WORLDINFO_UPDATED` | 启动不应期计时，到期后自动排序 |\n\n## 更新日志\n\n- 依赖酒馆原生的自定义排序字段实现对世界书的顺序重排\n- 25/5/6 更新修复，适配酒馆助手的调用逻辑，解决一直置顶和重复触发更新世界书问题\n- 26/1/31 使用新 API 重排序世界书，增加不应期功能\n  - 使用 `replaceWorldbook` + `{ render: \"debounced\" }` 替代旧 API\n  - 新增 `joezhangynRefractory` 脚本变量控制不应期时长\n  - 排序前比对 uid 顺序，未变化时跳过写入\n  - 按钮事件迁移至 `eventOn` + `getButtonEvent` 模式",
+  "button": {
+    "enabled": true,
+    "buttons": [
+      {
+        "name": "排序设置",
+        "visible": true
+      },
+      {
+        "name": "立即排序",
+        "visible": true
+      }
+    ]
+  },
+  "data": {}
+}

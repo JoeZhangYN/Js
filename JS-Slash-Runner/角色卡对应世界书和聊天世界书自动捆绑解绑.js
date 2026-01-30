@@ -6,13 +6,13 @@ const SCRIPT_VAR = { type: "script" };
 
 // 初始化脚本变量（已存在则不覆盖）
 insertVariables(
-  { lastBindState: { Char_Worldbooks: [], Chat_Worldbook: null } },
+  { joezhangynLastBindState: { Char_Worldbooks: [], Chat_Worldbook: null } },
   SCRIPT_VAR,
 );
 
 let lastChatChangeTimestamp = 0;
 
-// 检查并删除空世界书（无条目，或仅一条空内容条目）
+// 检查并删除空世界书（无条目，或所有条目内容均为空）
 async function checkAndDeleteEmptyWorldbook(worldbookName) {
   if (!worldbookName) return;
   try {
@@ -21,7 +21,7 @@ async function checkAndDeleteEmptyWorldbook(worldbookName) {
 
     const isEmpty =
       entries.length === 0 ||
-      (entries.length === 1 && !entries[0].content?.trim());
+      entries.every((e) => !e.content?.trim());
 
     if (isEmpty) {
       await deleteWorldbook(worldbookName);
@@ -77,7 +77,7 @@ async function updateGlobalWorldbookSettings(
 
     if (variableData) {
       updatePromises.push(
-        insertOrAssignVariables({ lastBindState: variableData }, SCRIPT_VAR),
+        insertOrAssignVariables({ joezhangynLastBindState: variableData }, SCRIPT_VAR),
       );
     }
 
@@ -106,7 +106,7 @@ async function updateGlobalWorldbookSettings(
 }
 
 /**
- * 检查并自动导入内嵌世界书（使用标准 API）
+ * 检查并自动导入内嵌世界书（仅首次导入，不覆盖已有世界书）
  */
 async function importEmbeddedWorldbookIfNeeded() {
   try {
@@ -123,34 +123,27 @@ async function importEmbeddedWorldbookIfNeeded() {
     console.log(`[世界书管理] 发现内嵌世界书 "${book.name}"，正在导入...`);
 
     try {
-      const created = await createWorldbook(book.name);
-      if (!created) {
-        console.error(`[世界书管理] 创建 "${book.name}" 失败`);
-        return null;
-      }
+      const entries = (book.entries || []).map((e) => ({
+        name: e.comment || "",
+        enabled: e.enabled ?? true,
+        content: e.content || "",
+        strategy: {
+          type: e.constant ? "constant" : "selective",
+          keys: e.keys || [],
+          keys_secondary: {
+            logic: "and_any",
+            keys: e.secondary_keys || [],
+          },
+        },
+        position: {
+          order: e.insertion_order ?? 100,
+        },
+      }));
 
-      if (book.entries?.length > 0) {
-        const entries = book.entries.map((e) => ({
-          name: e.comment || "",
-          enabled: e.enabled ?? true,
-          content: e.content || "",
-          strategy: {
-            type: e.constant ? "constant" : "selective",
-            keys: e.keys || [],
-            keys_secondary: {
-              logic: "and_any",
-              keys: e.secondary_keys || [],
-            },
-          },
-          position: {
-            order: e.insertion_order ?? 100,
-          },
-        }));
-        await replaceWorldbook(book.name, entries);
-      }
+      await createWorldbook(book.name, entries);
 
       console.log(
-        `[世界书管理] "${book.name}" 导入成功，共 ${book.entries?.length || 0} 条`,
+        `[世界书管理] "${book.name}" 导入成功，共 ${entries.length} 条`,
       );
       return book.name;
     } catch (importError) {
@@ -182,7 +175,7 @@ async function executeBindingLogic() {
     const currentGlobalSelection = new Set(global_worldbooks || []);
     const originalSelectionJson = toSortedJson(currentGlobalSelection);
 
-    const lastState = scriptVars?.lastBindState || {};
+    const lastState = scriptVars?.joezhangynLastBindState || {};
     const lastCharBooks = normalizeWorldbookNames(lastState.Char_Worldbooks);
     const lastChatBook = lastState.Chat_Worldbook;
 
@@ -222,7 +215,7 @@ async function executeBindingLogic() {
         lastChatBook !== chat_worldbook
       ) {
         await insertOrAssignVariables(
-          { lastBindState: variableData },
+          { joezhangynLastBindState: variableData },
           SCRIPT_VAR,
         );
       }
@@ -262,7 +255,7 @@ async function UnBindGlobalWorldbookDelete() {
     ]);
 
     const selectedWorldbooksSet = new Set(global_worldbooks || []);
-    const lastState = scriptVars?.lastBindState || {};
+    const lastState = scriptVars?.joezhangynLastBindState || {};
     const lastCharBooks = normalizeWorldbookNames(lastState.Char_Worldbooks);
     const lastChatBook = lastState.Chat_Worldbook;
 
