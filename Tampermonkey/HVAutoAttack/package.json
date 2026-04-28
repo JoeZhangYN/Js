@@ -1,0 +1,30 @@
+{
+  "name": "hv-auto-attack",
+  "private": true,
+  "version": "9.99.9999",
+  "description": "HentaiVerse auto attack userscript (multi-file refactor of [HV]AutoAttack.js)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/verify-sloc.mjs && vite build && node scripts/verify-metadata.mjs && node scripts/postbuild-check.mjs",
+    "build:fast": "vite build",
+    "lint": "eslint src scripts",
+    "lint:fix": "eslint src scripts --fix",
+    "format": "prettier --write \"src/**/*.{js,mjs}\" \"scripts/**/*.mjs\"",
+    "format:check": "prettier --check \"src/**/*.{js,mjs}\"",
+    "check": "npm run lint && npm run format:check && node scripts/verify-sloc.mjs",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10",
+    "vite-plugin-monkey": "^5.0.6",
+    "@types/tampermonkey": "^5.0.3",
+    "eslint": "^9.13.0",
+    "@eslint/js": "^9.13.0",
+    "globals": "^15.11.0",
+    "prettier": "^3.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

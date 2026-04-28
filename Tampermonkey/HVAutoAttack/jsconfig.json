@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "checkJs": true,
+    "allowJs": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": false,
+    "types": ["tampermonkey"],
+    "baseUrl": ".",
+    "paths": {
+      "$/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*", "scripts/**/*", "types/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
