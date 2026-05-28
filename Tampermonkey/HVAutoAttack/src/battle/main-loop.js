@@ -67,24 +67,6 @@ export function main() {
     fixMonsterStatus();
   }
   g("turn", g("turn") + 1);
-  if (gE("#vbh")) {
-    g("hp", (gE("#vbh>div>img").offsetWidth / 500) * 100);
-    g("mp", (gE("#vbm>div>img").offsetWidth / 210) * 100);
-    g("sp", (gE("#vbs>div>img").offsetWidth / 210) * 100);
-    g(
-      "oc",
-      gE("#vcp>div>div")
-        ? (gE("#vcp>div>div", "all").length -
-            gE("#vcp>div>div#vcr", "all").length) *
-            25
-        : 0
-    );
-  } else {
-    g("hp", (gE("#dvbh>div>img").offsetWidth / 414) * 100);
-    g("mp", (gE("#dvbm>div>img").offsetWidth / 414) * 100);
-    g("sp", (gE("#dvbs>div>img").offsetWidth / 414) * 100);
-    g("oc", gE("#dvrc").textContent);
-  }
   battleInfo();
   killBug();
   countMonsterHP();
@@ -93,6 +75,13 @@ export function main() {
   incrementGlobalTurn();
   persistCdState();
   const snap = collectSnapshot();
+  // vitals 镜像到 g()：snapshot 内 readPlayerVitals 已读过 hp/mp/sp/oc 的 DOM，
+  // 此处只搬值，供"不传 snap 的 checkCondition"经 g(str) fallback 消费（消除原 70-87 的二次 DOM 读 = 待办 B-#2）。
+  // 注：oc 统一为 readPlayerVitals 的 parseInt 数值（原 dvbh 布局曾存 textContent 字符串，已归一为数值）。
+  g("hp", snap.hp);
+  g("mp", snap.mp);
+  g("sp", snap.sp);
+  g("oc", snap.oc);
   // R9 调试断言：snapshot 不含 DOM 引用（生产可关，开发期保留）
   if (g("option")?.debugSnapshot) assertNoDomRefs(snap);
 
@@ -119,14 +108,14 @@ export function main() {
     },
     // 宝石
     () => {
-      if (gE("#ikey_p")) useGem();
+      if (gE("#ikey_p")) useGem(snap);
     },
     // 紧急回血回魔
     () => {
-      if (g("option").item && g("option").itemOrderValue) deadSoon();
+      if (g("option").item && g("option").itemOrderValue) deadSoon(snap);
     },
     // PoC stall：1 怪 + 后续轮还有 → 主动喝 MP/SP pot 拉满下轮开局
-    () => stallTopup(),
+    () => stallTopup(snap),
     // 防御（attemptClick 内置 isOn 探活；channeling 时按钮禁用 → 跳过，让后续 channel/attack 接管）
     () => {
       if (!g("option").defend) return;
@@ -152,7 +141,7 @@ export function main() {
         g("option").infusionSwitch &&
         checkCondition(g("option").infusionCondition)
       ) {
-        useInfusions();
+        useInfusions(snap);
       }
     },
     // Channel
@@ -172,7 +161,7 @@ export function main() {
         g("option").buffSkill &&
         checkCondition(g("option").buffSkillCondition)
       ) {
-        useBuffSkill();
+        useBuffSkill(snap);
       }
     },
     // Boss-Imperil（含 AoE 覆盖优化：N=3 时 boss 在 2,4 → click 3 一次覆盖两个 boss）
@@ -211,10 +200,12 @@ export function main() {
         g("option").debuffSkillSwitch &&
         g("option").debuffSkillAllWk &&
         !shouldSkipForBigSkill(g("option"), snap, "We") &&
-        gE('div.btm6 img[src*="weaken"]', "all").length < g("monsterAlive") &&
+        // 待办 A-线索3：用 snap.monsters 计已上 weaken 的怪数（替代 gE 实时重查 DOM）；
+        // 到达此 step 时前序若 click 必已 tagEnd+return，故 snap 等价 live DOM
+        snap.monsters.filter((m) => m.buffs.some((b) => b.includes("weaken"))).length < g("monsterAlive") &&
         checkCondition(g("option").debuffSkillWkCondition)
       ) {
-        castDebuffOnAll("We");
+        castDebuffOnAll("We", snap);
       }
     },
     // 全员 Imperil（Phase 5b-5：OFC/FRD 即将就绪时跳过）
@@ -223,10 +214,11 @@ export function main() {
         g("option").debuffSkillSwitch &&
         g("option").debuffSkillAllIm &&
         !shouldSkipForBigSkill(g("option"), snap, "Im") &&
-        gE('div.btm6 img[src*="imperil"]', "all").length < g("monsterAlive") &&
+        // 待办 A-线索3：用 snap.monsters 计已上 imperil 的怪数（替代 gE 实时重查 DOM）
+        snap.monsters.filter((m) => m.buffs.some((b) => b.includes("imperil"))).length < g("monsterAlive") &&
         checkCondition(g("option").debuffSkillImpCondition)
       ) {
-        castDebuffOnAll("Im");
+        castDebuffOnAll("Im", snap);
       }
     },
     // 单目标 Debuff（stall 模式跳过——独怪上 debuff 浪费 MP + CD）
@@ -237,11 +229,11 @@ export function main() {
         g("option").debuffSkill &&
         checkCondition(g("option").debuffSkillCondition)
       ) {
-        useDeSkill();
+        useDeSkill(snap);
       }
     },
     // 攻击（最后一步）
-    () => attack(),
+    () => attack(snap),
   ]);
 }
 

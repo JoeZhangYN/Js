@@ -3,6 +3,7 @@
 // Phase 5b-2 wave 1 第 1 个 L1 切缝示例。
 import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
 import { checkCondition } from "../../settings/condition-eval.js";
+import { itemSelector } from "../../dom/selectors.js";
 
 const DRAUGHT_PACK = [
   ["HD", { id: 11191, img: "healthpot" }],
@@ -52,7 +53,7 @@ export function decideBuff(opt, snap) {
     if (!checkCondition(opt[`buffSkill${key}Condition`], snap)) continue;
     return {
       kind: "click",
-      selector: `.bti3>div[onmouseover*="${draught.id}"]`,
+      selector: itemSelector(draught.id),
     };
   }
 

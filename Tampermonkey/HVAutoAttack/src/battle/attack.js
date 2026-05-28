@@ -8,7 +8,6 @@ import { checkCondition } from "../settings/condition-eval.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 import { OFFENSIVE_SPELL_LIB } from "../data/spell-lib.js";
 import { recordFire } from "../state/cd-tracker.js";
-import { collectSnapshot } from "./snapshot.js";
 import { selectSpellTier } from "./attack/decide-tier.js";
 import { scorePhysicalSkillCandidates } from "./attack/decide-skill.js";
 import { decideByUtility } from "./utility-engine.js";
@@ -64,7 +63,8 @@ export function countMonsterHP() {
   g("monsterStatus", monsterStatus);
 }
 
-export function attack() {
+/** @param {import("../core/types.js").BattleSnapshot} snap 当前 turn 快照（main() 透传，全程复用） */
+export function attack(snap) {
   const option = g("option");
   const spiritElement = gE("#ckey_spirit");
   const spiritOn = spiritElement && spiritElement.src.includes("spirit_a");
@@ -79,7 +79,7 @@ export function attack() {
 
   // 灵动架势——stall 模式让 stallTopup 全权管，attack 不参与切换避免循环
   // 防抖闸：上次切换 N 回合内不再翻（hysteresis），避免 turnOnSS/turnOffSS 条件同时成立的死循环
-  const _stallNow = isStallMode(collectSnapshot(), option, g("roundNow"), g("roundAll"));
+  const _stallNow = isStallMode(snap, option, g("roundNow"), g("roundAll"));
   const _lastSpiritToggle = g("lastSpiritToggleGlobalTurn") ?? -999;
   const _curGlobalTurn = g("globalTurn") || 0;
   const _spiritCooldown = option.spiritToggleMinInterval ?? 3;
@@ -115,8 +115,7 @@ export function attack() {
   if (!etherTapCondition) {
     const attackStatus = g("attackStatus");
     if (attackStatus !== 0) {
-      // Phase 5b-2 wave 1: PURE 决策决定哪一阶法术
-      const snap = collectSnapshot();
+      // Phase 5b-2 wave 1: PURE 决策决定哪一阶法术（复用 main() 透传的 snap）
       const { tier: selectedTier } = selectSpellTier(option, snap);
 
       if (selectedTier > 0) {
@@ -148,16 +147,8 @@ export function attack() {
 
   // 检查技能情况，并释放技能
   if (option.skillSwitch) {
-    const skillOrder = (option.skillOrderValue || "OFC,FRD,T3,T2,T1").split(
-      ","
-    );
-    const skillLib = new Map([
-      ["OFC", { id: "1111", oc: 205 }], // 200 oc + 5 oc
-      ["FRD", { id: "1101", oc: 105 }], // 100 oc + 5 oc
-      ["T3", { id: `2${option.fightingStyle}03`, oc: 105 }], // 别的架势没用过，这是盾战的OC 100 oc + 5 oc
-      ["T2", { id: `2${option.fightingStyle}02`, oc: 55 }], // 别的架势没用过，这是盾战的OC 50 oc + 5 oc
-      ["T1", { id: `2${option.fightingStyle}01`, oc: 30 }], // 别的架势没用过，这是盾战的OC 25 oc + 5 oc
-    ]);
+    // 物理技能顺序/技能表已下沉至 PURE 决策 decide-skill.js（scorePhysicalSkillCandidates 内部各自维护）；
+    // 此处原 skillOrder / skillLib 两个常量为 first-match 旧实现残留，已随 utility scoring 替换删除。
 
     /** 当为盾战时，当怪物已经被晕眩，则跳过盾击
      * @type {boolean}
@@ -181,7 +172,7 @@ export function attack() {
       if (
         target.hpNow / target.hp < 0.248 &&
         gE(`#mkey_${target.id} img[src*="wpn_bleed"]`) &&
-        g("oc") >= 105
+        snap.oc >= 105
       ) {
         const skillElement = gE(`2${option.fightingStyle}03`);
         if (isOn(skillElement)) {
@@ -193,9 +184,8 @@ export function attack() {
       }
     }
 
-    // A 方案 PoC：utility scoring 决定物理技能（替代 first-match 优先级）
-    const snapPhys = collectSnapshot();
-    const scored = scorePhysicalSkillCandidates(option, snapPhys, { firstMonsterStunned: !!firstMonsterStunned });
+    // A 方案 PoC：utility scoring 决定物理技能（替代 first-match 优先级；复用 main() 透传的 snap）
+    const scored = scorePhysicalSkillCandidates(option, snap, { firstMonsterStunned: !!firstMonsterStunned });
     const candidates = scored.map((c) => ({
       name: c.code,
       score: c.score,

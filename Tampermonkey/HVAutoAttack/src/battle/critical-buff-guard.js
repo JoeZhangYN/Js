@@ -10,6 +10,7 @@ import { gE } from "../dom/query.js";
 import { g, tagEndToTrue } from "../state/store.js";
 import { setValue } from "../state/storage.js";
 import { setAlarm } from "../alarm/alarm.js";
+import { parseEffectName, parseEffectTurns } from "./effect-parse.js";
 
 /**
  * 关键 buff 即将消失 + MP 不足 → 触发暂停。
@@ -35,16 +36,15 @@ export function checkCriticalBuffGuard(snap) {
   if (!allBuffs || !allBuffs.length) return false;
 
   for (const buff of allBuffs) {
-    const onmouseover = buff.getAttribute("onmouseover") || "";
-    const nameMatch = onmouseover.match(/'(.*?)'/);
-    if (!nameMatch || !list.includes(nameMatch[1])) continue;
-    const turnMatch = onmouseover.match(/\(.*,.*, (.*?)\)$/);
-    const remaining = turnMatch ? turnMatch[1] * 1 : NaN;
-    if (isNaN(remaining) || remaining > minTurns) continue;
+    const name = parseEffectName(buff);
+    if (!name || !list.includes(name)) continue;
+    // 永续 buff → parseEffectTurns 返 Infinity → 被 > minTurns 跳过（不算"即将消失"）
+    const remaining = parseEffectTurns(buff);
+    if (remaining > minTurns) continue;
 
     // 触发：pause + alarm（沿用 pauseChange 的副作用模型：setValue disabled + tagEnd）
     console.warn(
-      `[critical-buff-guard] "${nameMatch[1]}" 剩 ${remaining} 回合 + MP ${(snap.mp ?? 0).toFixed(0)}% < ${mpFloor}% → 暂停脚本，请手动接管`
+      `[critical-buff-guard] "${name}" 剩 ${remaining} 回合 + MP ${(snap.mp ?? 0).toFixed(0)}% < ${mpFloor}% → 暂停脚本，请手动接管`
     );
     setAlarm("Error");
     setValue("disabled", true);
@@ -52,7 +52,7 @@ export function checkCriticalBuffGuard(snap) {
     if (pauseBtn) {
       pauseBtn.innerHTML = "<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>";
     }
-    document.title = `hvAA 暂停: ${nameMatch[1]} 即将消失但 MP 不足`;
+    document.title = `hvAA 暂停: ${name} 即将消失但 MP 不足`;
     tagEndToTrue();
     return true;
   }

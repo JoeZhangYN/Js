@@ -1,4 +1,5 @@
 // PURE: 元素灌注决策。attackStatus 决定灌注种类，已存在效果则跳过。
+import { itemSelector } from "../../dom/selectors.js";
 
 const INFUSION_LIB = [
   null,
@@ -24,6 +25,6 @@ export function decideInfusion(opt, snap) {
   if (snap.playerBuffs.includes(lib.img)) return { kind: "noop" };
   return {
     kind: "click",
-    selector: `.bti3>div[onmouseover*="${lib.id}"]`,
+    selector: itemSelector(lib.id),
   };
 }

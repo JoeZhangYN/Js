@@ -2,21 +2,7 @@
 // 与 castDebuffOnAll 区别：仅施给首目标怪，按 debuffSkillOrderValue 优先级遍历。
 import { DEBUFF_SKILL_LIB } from "../../data/debuff-lib.js";
 import { checkCondition } from "../../settings/condition-eval.js";
-
-/**
- * 单怪物的"是否能施 debuff"判断（与 decide-cast-all.js 共享）。
- */
-function canApplyDebuffPure(mEffects, debuffKey, opt, skillIsReady) {
-  const skill = DEBUFF_SKILL_LIB.get(debuffKey);
-  const existing = mEffects.find((e) => e.img === skill.img);
-  if (existing && existing.turns > 1) return "skip";
-  if (!skillIsReady) return "skip";
-  if (mEffects.length < 6 || !opt.debuffSkillTurnAlert) return "cast";
-  const lastTurn = mEffects.length ? mEffects[mEffects.length - 1].turns : 0;
-  const threshold = (opt.debuffSkillTurn && opt.debuffSkillTurn[debuffKey]) || 0;
-  if (lastTurn >= threshold) return "cast";
-  return "blocked";
-}
+import { canApplyDebuffPure } from "./can-apply.js";
 
 /**
  * 决定单目标 debuff 该施哪一种。

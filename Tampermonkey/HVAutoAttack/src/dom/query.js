@@ -1,4 +1,5 @@
-// 纯 DOM 查询 helper（不缓存，每次取最新 DOM）。HV-specific selector 在后续阶段提取到 dom/selectors.js。
+// 纯 DOM 查询 helper（不缓存，每次取最新 DOM）。HV-specific selector 见 dom/selectors.js。
+import { itemSelector } from "./selectors.js";
 
 /**
  * DOM 元素查询。
@@ -37,7 +38,7 @@ export function cE(name) {
  */
 export function isOn(id) {
   if (id * 1 > 10000) {
-    return gE(`.bti3>div[onmouseover*="${id}"]`);
+    return gE(itemSelector(id));
   }
   const element = gE(id);
   return element && element.style.opacity !== "0.5" ? element : false;

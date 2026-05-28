@@ -9,7 +9,7 @@ import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
 import { NAME_TO_BUFF_CODE } from "../data/spell-lib.js";
 import { executeBuffSkill } from "./buff/execute-buff.js";
 import { decideInfusion } from "./buff/decide-infusion.js";
-import { collectSnapshot } from "./snapshot.js";
+import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 
 export function useChannelSkill() {
   const paneEffects = gE("#pane_effects");
@@ -52,14 +52,13 @@ export function useChannelSkill() {
   // → 每回合无脑 re-cast 第一个 buff，浪费 MP。
   // 修法：(a) 按 buffLastTime 升序排（最先消失优先）；(b) 加 needsRecast(remaining<=1) 守卫，避免重复刷
   const buffs = [...paneEffects.querySelectorAll("img")]
-    .map((buff) => {
-      const onmouseover = buff.getAttribute("onmouseover") || "";
-      const nameMatch = onmouseover.match(/'(.*?)'/);
-      const timeMatch = onmouseover.match(/\(.*,.*, (.*?)\)$/);
-      const buffLastTime = timeMatch ? timeMatch[1] * 1 : NaN;
-      return { buff, spellName: nameMatch ? nameMatch[1] : "", buffLastTime };
-    })
-    .filter(({ buff, buffLastTime }) => !isNaN(buffLastTime) && !buff.src.match(/_scroll.png$/))
+    .map((buff) => ({
+      buff,
+      spellName: parseEffectName(buff),
+      buffLastTime: parseEffectTurns(buff),
+    }))
+    // 永续（Infinity）与卷轴 buff 不参与"最先消失"续施排序
+    .filter(({ buff, buffLastTime }) => buffLastTime !== Infinity && !buff.src.match(/_scroll.png$/))
     .sort((a, b) => a.buffLastTime - b.buffLastTime);
 
   for (const { spellName, buffLastTime } of buffs) {
@@ -115,27 +114,23 @@ export function needsRecast(paneEffects, imgSrc) {
   // 精确文件名匹配防 substring 冲突（regen ↔ regeneration / haste ↔ hastened / absorb ↔ absorbing）
   const existing = paneEffects.querySelector(`img[src$="/${imgSrc}.png"]`);
   if (!existing) return true;
-  const onmouseover = existing.getAttribute("onmouseover") || "";
-  const m = onmouseover.match(/\(.*,.*, (.*?)\)$/);
-  if (!m) return false; // 无法解析时不重施（保守，省 MP；buff 真消失时 existing 为 null 会触发）
-  const v = m[1].trim();
-  if (v.startsWith("'") || v.startsWith('"')) return false; // 'autocast' / 'permanent' 永续
-  const remaining = parseInt(v);
-  if (isNaN(remaining)) return false;
-  return remaining <= 1;
+  // 无法解析 / 永续（autocast/permanent）→ parseEffectTurns 返 Infinity → 不重施（保守省 MP）；
+  // buff 真消失时 existing 为 null 已在上方触发重施
+  return parseEffectTurns(existing) <= 1;
 }
 
 /**
  * Buff 施放（Phase 5b-2 wave 1：委托给 PURE decide-buff + SHELL execute-buff）。
- * 入口签名不变，main-loop 透明调用。
+ * @param {import("../core/types.js").BattleSnapshot} snap 当前 turn 快照（main() 透传）
  */
-export function useBuffSkill() {
-  executeBuffSkill();
+export function useBuffSkill(snap) {
+  executeBuffSkill(snap);
 }
 
-export function useInfusions() {
+/** @param {import("../core/types.js").BattleSnapshot} snap 当前 turn 快照（main() 透传） */
+export function useInfusions(snap) {
   // Phase 5b-3 wave 2：委托给 PURE decide-infusion。
-  const result = decideInfusion(g("option"), collectSnapshot());
+  const result = decideInfusion(g("option"), snap);
   if (result.kind === "click") {
     const el = gE(result.selector);
     if (el) {
@@ -143,11 +138,4 @@ export function useInfusions() {
       tagEndToTrue();
     }
   }
-}
-
-export function getLastBuffTurn(imgs) {
-  const lastImg = imgs[imgs.length - 1];
-  return parseInt(
-    lastImg.getAttribute("onmouseover").match(/\(.*,.*, (.*?)\)$/)[1]
-  );
 }

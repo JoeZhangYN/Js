@@ -2,7 +2,6 @@
 import { gE } from "../../dom/query.js";
 import { g, tagEndToTrue } from "../../state/store.js";
 import { _alert } from "../../core/lang.js";
-import { collectSnapshot } from "../snapshot.js";
 import { checkAndActivateSpirit } from "../buff.js";
 import { pauseChange } from "../main-loop.js";
 import { decideCastDebuffOnAll } from "./decide-cast-all.js";
@@ -10,13 +9,10 @@ import { decideCastDebuffOnAll } from "./decide-cast-all.js";
 /**
  * castDebuffOnAll 的 SHELL 适配器。
  * @param {string} debuffKey
- * @param {import("../../core/types.js").BattleSnapshot=} snap 可选
+ * @param {import("../../core/types.js").BattleSnapshot} snap 当前 turn 快照（main() 透传，必传；collectSnapshot 已含 spellAoe）
  */
 export function executeCastDebuffOnAll(debuffKey, snap) {
-  const s = snap || collectSnapshot();
-  // snap 默认无 spellAoe 字段，临时注入（Phase 5b-3 移到 collectSnapshot 内）
-  if (!s.spellAoe) s.spellAoe = g("spellAoe") || {};
-  const result = decideCastDebuffOnAll(g("option"), s, debuffKey);
+  const result = decideCastDebuffOnAll(g("option"), snap, debuffKey);
 
   if (result.kind === "noop") return;
   if (result.kind === "alert-and-pause") {

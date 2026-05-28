@@ -3,19 +3,19 @@
 // Phase 5b-3 wave 2：useGem 已切 PURE decide-gem。
 // PoC 经济学：deadSoon 加 isPotionWasteful 防溢出；新增 stallTopup 主动喝 MP/SP pot。
 import { gE, isOn } from "../dom/query.js";
+import { itemSelector } from "../dom/selectors.js";
 import { g, tagEndToTrue } from "../state/store.js";
 import { checkCondition } from "../settings/condition-eval.js";
-import { collectSnapshot } from "./snapshot.js";
 import { decideGem } from "./item/decide-gem.js";
 import { dynamicHpThreshold } from "./dynamic-threshold.js";
 import { isPotionWasteful, isStallMode, stallTopupCandidates } from "./potion-economy.js";
 import { recordPreDrink, getLearnedRecovery } from "../state/recovery-learner.js";
 
-export function useGem() {
+/** @param {import("../core/types.js").BattleSnapshot} snap 当前 turn 快照（main() 透传） */
+export function useGem(snap) {
   const gemElement = gE("#ikey_p");
   if (!gemElement) return;
   const opt = g("option");
-  const snap = collectSnapshot();
   const optEffective = { ...opt };
   if (opt.dynamicHealThreshold && gemElement.textContent === "Health Gem") {
     const dyn = dynamicHpThreshold(snap, opt);
@@ -35,11 +35,13 @@ export function useGem() {
   }
 }
 
-export function deadSoon() {
+/** @param {import("../core/types.js").BattleSnapshot} snap 当前 turn 快照（main() 透传） */
+export function deadSoon(snap) {
   const opt = g("option");
   const name = opt.itemOrderName.split(",");
   const order = opt.itemOrderValue.split(",");
-  const snap = opt.noWastePotion ? collectSnapshot() : null;
+  // noWastePotion 关时不做防溢出 / 学习观测（保留原 null 门控语义）
+  const wasteSnap = opt.noWastePotion ? snap : null;
   for (let i = 0; i < name.length; i++) {
     if (
       opt.item[name[i]] &&
@@ -47,14 +49,14 @@ export function deadSoon() {
       isOn(order[i])
     ) {
       // PoC: 防溢出 + T1 学到值优先
-      if (snap && isPotionWasteful(order[i], snap, opt.potionWasteTolerance ?? 0.7, getLearnedRecovery)) {
+      if (wasteSnap && isPotionWasteful(order[i], wasteSnap, opt.potionWasteTolerance ?? 0.7, getLearnedRecovery)) {
         if (opt.dynamicHealLog ?? true) {
           console.log(`[no-waste] skip potion ${order[i]}: deficit too small`);
         }
         continue;
       }
       // T1: 喝药前记录 pre-state，下回合 snapshot 结算 delta → 学习
-      if (snap) recordPreDrink(order[i], snap);
+      if (wasteSnap) recordPreDrink(order[i], wasteSnap);
       isOn(order[i]).click();
       tagEndToTrue();
       if (opt.autoTune) {
@@ -83,10 +85,10 @@ function tryFirst(actions) {
  *
  * Phase 5b-4：3 段优先级原本是 `if {...; return} else if ...` 链，重构为显式 `tryFirst([])` fallback chain。
  */
-export function stallTopup() {
+/** @param {import("../core/types.js").BattleSnapshot} snap 当前 turn 快照（main() 透传） */
+export function stallTopup(snap) {
   const opt = g("option");
   if (opt.stallMode === false) return;
-  const snap = collectSnapshot();
   if (!isStallMode(snap, opt, g("roundNow"), g("roundAll"))) return;
 
   tryFirst([
@@ -136,7 +138,7 @@ function tryStallFocus(opt, snap) {
 function tryStallDraught(opt, snap) {
   const candidates = stallTopupCandidates(snap, opt);
   for (const potId of candidates) {
-    const el = gE(`.bti3>div[onmouseover*="${potId}"]`);
+    const el = gE(itemSelector(potId));
     if (!el) continue;
     recordPreDrink(potId, snap);
     el.click();
@@ -202,7 +204,7 @@ export function useScroll() {
   for (const i in scrollLib) {
     if (
       g("option").scroll[i] &&
-      gE(`.bti3>div[onmouseover*="${scrollLib[i].id}"]`) &&
+      gE(itemSelector(scrollLib[i].id)) &&
       checkCondition(g("option")[`scroll${i}Condition`])
     ) {
       for (let j = 1; j <= scrollLib[i].mult; j++) {
@@ -219,7 +221,7 @@ export function useScroll() {
         isUsed = false;
       }
       if (!isUsed) {
-        gE(`.bti3>div[onmouseover*="${scrollLib[i].id}"]`).click();
+        gE(itemSelector(scrollLib[i].id)).click();
         tagEndToTrue();
         return;
       }

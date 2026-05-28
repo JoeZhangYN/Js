@@ -2,28 +2,7 @@
 // 不读 DOM / 不调 g() / 不写 setValue。
 // Phase 5b-2 wave 1 第 2 个 L1 切缝示例。
 import { DEBUFF_SKILL_LIB } from "../../data/debuff-lib.js";
-
-/**
- * 单怪物的"是否能施 debuff"判断（移植自 canApplyDebuff，但用 snap 不读 DOM）。
- * @param {{img:string,turns:number}[]} mEffects 怪物 buff 列表（含剩余回合）
- * @param {string} debuffKey
- * @param {object} opt
- * @param {boolean} skillIsReady opacity 不为 0.5
- * @returns {"cast"|"blocked"|"skip"}
- */
-function canApplyDebuffPure(mEffects, debuffKey, opt, skillIsReady) {
-  const skill = DEBUFF_SKILL_LIB.get(debuffKey);
-  // needsRecast 等价：img 不存在 或 剩余 ≤ 1
-  const existing = mEffects.find((e) => e.img === skill.img);
-  if (existing && existing.turns > 1) return "skip";
-  if (!skillIsReady) return "skip";
-  // 槽位检查
-  if (mEffects.length < 6 || !opt.debuffSkillTurnAlert) return "cast";
-  const lastTurn = mEffects.length ? mEffects[mEffects.length - 1].turns : 0;
-  const threshold = (opt.debuffSkillTurn && opt.debuffSkillTurn[debuffKey]) || 0;
-  if (lastTurn >= threshold) return "cast";
-  return "blocked";
-}
+import { canApplyDebuffPure } from "./can-apply.js";
 
 /**
  * 决定全员 debuff 该施给哪只怪物，返 ActionResult。

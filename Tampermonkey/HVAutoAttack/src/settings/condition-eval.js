@@ -3,6 +3,7 @@
 // 当前还读 g() / DOM——Phase 5 将转纯函数（接收 facts snapshot）。
 import { gE, isOn } from "../dom/query.js";
 import { g } from "../state/store.js";
+import { parseEffectTurns } from "../battle/effect-parse.js";
 
 /**
  * 评估一组条件（OR-of-AND）。
@@ -30,10 +31,9 @@ export function checkCondition(parms, snap) {
       return isOn(id) ? 0 : 1;
     },
     buffTurn(img) {
-      let buff = gE(`#pane_effects>img[src*="${img}"]`);
+      const buff = gE(`#pane_effects>img[src*="${img}"]`);
       if (!buff) return 0;
-      buff = buff.getAttribute("onmouseover").match(/\(.*,.*, (.*?)\)$/)[1] * 1;
-      return isNaN(buff) ? Infinity : buff;
+      return parseEffectTurns(buff);
     },
   };
   const comparators = {

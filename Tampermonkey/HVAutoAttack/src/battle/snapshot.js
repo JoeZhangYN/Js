@@ -12,24 +12,20 @@ import { g } from "../state/store.js";
 import { collectCdMap } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
 import { finalizePending } from "../state/recovery-learner.js";
+import { parseEffectTurns } from "./effect-parse.js";
 
 /**
- * 解析单个 onmouseover 的 set_infopane_effect 第 3 参数。
- * 数字 → 剩余回合；'autocast' / 'permanent' / 其他字符串 → Infinity（视为永续，无需续施）。
- * @param {Element} img
- * @returns {number}
+ * 解析一个 effect 容器（玩家 #pane_effects 或怪物 .btm6）内全部 img 为 {img, turns}[]。
+ * img = effect 图标文件名（/e/<name>.png 的 <name>）；turns = 剩余回合（永续 → Infinity）。
+ * @param {Element|null} container
+ * @returns {Array<{img: string, turns: number}>}
  */
-function parseEffectTurns(img) {
-  const onmouseover = img.getAttribute("onmouseover");
-  // 解析失败统一返 Infinity（保守：buff 已存在时不误判过期，省 MP；
-  //  真过期时 img 元素整个会从 pane_effects 移除，playerEffectTurns[img] 为 undefined → 触发 recast）
-  if (!onmouseover) return Infinity;
-  const m = onmouseover.match(/\(.*,.*, (.*?)\)$/);
-  if (!m) return Infinity;
-  const v = m[1].trim();
-  if (v.startsWith("'") || v.startsWith('"')) return Infinity;
-  const n = parseInt(v);
-  return isNaN(n) ? Infinity : n;
+function readEffects(container) {
+  if (!container) return [];
+  return [...container.querySelectorAll("img")].map((img) => ({
+    img: img.src.match(/\/e\/(.*?)\.png/)?.[1] || "",
+    turns: parseEffectTurns(img),
+  }));
 }
 
 /**
@@ -37,13 +33,7 @@ function parseEffectTurns(img) {
  * @returns {Array<{img: string, turns: number}>}
  */
 function readPlayerEffects() {
-  const pane = gE("#pane_effects");
-  if (!pane) return [];
-  const imgs = pane.querySelectorAll("img");
-  return [...imgs].map((img) => ({
-    img: img.src.match(/\/e\/(.*?)\.png/)?.[1] || "",
-    turns: parseEffectTurns(img),
-  }));
+  return readEffects(gE("#pane_effects"));
 }
 
 /**
@@ -52,13 +42,7 @@ function readPlayerEffects() {
  * @returns {{names: string[], effects: Array<{img: string, turns: number}>}}
  */
 function readMonsterBuffs(mEl) {
-  const btm6 = mEl.querySelector(".btm6");
-  if (!btm6) return { names: [], effects: [] };
-  const imgs = [...btm6.querySelectorAll("img")];
-  const effects = imgs.map((img) => ({
-    img: img.src.match(/\/e\/(.*?)\.png/)?.[1] || "",
-    turns: parseEffectTurns(img),
-  }));
+  const effects = readEffects(mEl.querySelector(".btm6"));
   return { names: effects.map((e) => e.img), effects };
 }
 
@@ -162,6 +146,8 @@ export function collectSnapshot() {
   const playerEffects = readPlayerEffects();
   const vitals = readPlayerVitals();
   const spiritEl = gE("#ckey_spirit");
+  // 战斗日志只解析一遍，两个 DPS 估计复用同一份 events（避免每 turn 重复全量遍历 textlog）
+  const battleLog = parseBattleLog();
   // T1: 上回合若有 pending 喝药观测，此处结算 → 学习 delta
   const snapPartial = { ...vitals };
   finalizePending(snapPartial);
@@ -181,9 +167,9 @@ export function collectSnapshot() {
     spellAoe: g("spellAoe") || {},
     attackStatus: g("attackStatus"),
     fightingStyle: g("option")?.fightingStyle || "2",
-    // PoC L1：战斗日志解析得 DPS 估计
-    playerIncomingDps: estimatePlayerIncomingDps(parseBattleLog(), g("turn")),
-    monsterDpsByName: estimatePerMonsterDps(parseBattleLog(), g("turn")),
+    // PoC L1：战斗日志解析得 DPS 估计（复用上方 battleLog，本 turn 只解析一遍）
+    playerIncomingDps: estimatePlayerIncomingDps(battleLog, g("turn")),
+    monsterDpsByName: estimatePerMonsterDps(battleLog, g("turn")),
   };
 }
 

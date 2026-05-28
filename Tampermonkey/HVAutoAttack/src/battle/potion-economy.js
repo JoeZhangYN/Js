@@ -3,8 +3,8 @@
 
 /**
  * 药品 ID → 估计单次恢复绝对值（HP/MP/SP）。
- * 数值是 mid-tier 玩家保守估计；实际可能因装备 mod 变化（误差 < 30% 可接受）。
- * 后续可加观测自学（喝药前后 deficit delta）。
+ * 数值是 mid-tier 玩家保守估计的 fallback；运行时已由 state/recovery-learner.js
+ * 按"喝药前后 deficit delta"观测自学，getLearnedRecovery 优先返学到值。
  */
 export const POTION_RECOVERY = Object.freeze({
   // Health
