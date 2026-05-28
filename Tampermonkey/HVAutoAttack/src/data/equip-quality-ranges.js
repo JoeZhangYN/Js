@@ -1,4 +1,5 @@
 // 装备品质浮动范围数据
+// file-size-gate: exempt data-table-装备品质数值区间纯数据 SOT
 // offline 模式：QUALITY_CONFIG 每品质 [min, max] + cap（强化上限）
 // live 模式：manualRanges 手动覆盖在线数据库错误的 lmax（reasoningtheory.net）
 

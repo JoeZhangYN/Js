@@ -1,3 +1,4 @@
+// file-size-gate: exempt 移植自 Riddle Master Assistant Reborn 独立脚本-自包含功能
 // P6 ML 远程答题（来源：Tampermonkey/HentaiVerse/Riddle Master Assistant Reborn.user.js v0.5.2）
 // 暴露：
 //   - tryMLAnswer(): Promise<string|null>  返回 ANSWER_MAP key (ts/ra/fs/rd/pp/aj) 或 null

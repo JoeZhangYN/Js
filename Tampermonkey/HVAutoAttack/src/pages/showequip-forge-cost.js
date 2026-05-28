@@ -1,3 +1,4 @@
+// file-size-gate: exempt 移植自 PriceForgedEquipment 独立脚本-自包含功能
 // PriceForgedEquipment 合并版：在 showequip 页给每条强化加 tooltip + 总价 + Lv 预测 input。
 // 算法源自 PriceForgedEquipment-Isekai 1.01 / PriceForgedEquipment-Persistent 1.02 (2022.12.20)。
 // 数据走 src/data/forge-costs.js；isekai 路径选 FORGE_COSTS.isekai，否则 persistent。

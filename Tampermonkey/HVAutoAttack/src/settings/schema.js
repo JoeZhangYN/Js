@@ -1,3 +1,4 @@
+// file-size-gate: exempt schema 声明式 SOT-设计上渐增至 80+ 字段（待办 C 全量迁入）
 // OPTION_SCHEMA 单 SOT（Phase 5 chunk A 引入；现存 ~80 字段渐进迁入，新字段直接进 schema）。
 // 当前阶段只声明 Phase 6 新增的 3 个字段；老字段仍由 settings/render.js 内联模板渲染。
 // 后续 chunk 把全 80 字段迁入 schema、render.js 改为 schema-driven。

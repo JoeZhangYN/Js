@@ -1,3 +1,4 @@
+// file-size-gate: exempt 移植自 Live Percentile Ranges 独立脚本-仅 showequip 页自包含功能（内部可拆属独立重写工作）
 // 联网装备百分位（移植自 Live Percentile Ranges.js, 1.1.0.s3）
 // 改写：ES6 module / 无 jQuery / manualRanges 抽到 data/equip-quality-ranges.js
 // 数据流：本地 localStorage.EquipmentRanges → reasoningtheory.net (POST gethvitems.php) → 合 manualRanges

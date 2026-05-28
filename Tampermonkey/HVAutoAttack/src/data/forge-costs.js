@@ -1,3 +1,4 @@
+// file-size-gate: exempt data-table-锻造价格纯数据 SOT
 // PriceForgedEquipment 价格数据：isekai / persistent 两套（来自上游脚本 1.01 / 1.02, 2022.12.20）。
 // 算法 100% 相同，唯一差异是 costs（材料/绑印单价）+ catalystCost 数值。
 // 字段表见 src/pages/showequip-forge-cost.js 注释；本文件仅做数据 SOT。
