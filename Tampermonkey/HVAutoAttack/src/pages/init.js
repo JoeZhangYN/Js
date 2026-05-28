@@ -18,10 +18,23 @@ import { main, pauseChange } from "../battle/main-loop.js";
 import { reloader } from "../battle/reloader.js";
 import { newRound } from "../battle/new-round.js";
 import { loadCdState } from "../state/cd-tracker.js";
+import { setupPageRefresh } from "../alarm/page-refresh.js";
+import { setupForgeCost } from "./showequip-forge-cost.js";
+import { setupEquipPercentile } from "./equip-percentile-dispatcher.js";
+import { isOptionOn, getOption } from "../state/option.js";
 
 export function init() {
   // Phase 5b-1: 启动时加载 globalTurn / skillLastUsed 持久化数据
   loadCdState();
+  // P1 强化价格 + P3P4 装备百分位：装备页（#eu span 是 showequip 特征）/ Isekai 弹窗（MutationObserver 等待）
+  // 必须早于下方 #navbar 早返回（showequip 页没有 navbar/riddlecounter/textlog）
+  if (isOptionOn("forgeCostShow") && document.querySelector("#eu span")) {
+    setupForgeCost();
+  }
+  const _percentileMode = getOption("equipPercentileMode", "off");
+  if (_percentileMode && _percentileMode !== "off") {
+    setupEquipPercentile();
+  }
   if (window.location.host === "e-hentai.org") {
     let href =
       getValue("url") ||
@@ -83,6 +96,8 @@ export function init() {
     gE(".hvAAButton").click();
     return;
   }
+  // 移动端长时间挂机防卡死：absolute 时钟级 reload，与 reloader.delayReload（action idle 计时）正交
+  setupPageRefresh(g("option"));
   if (
     gE('[class^="c5"],[class^="c4"]') &&
     _alert(

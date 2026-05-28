@@ -120,20 +120,28 @@ export function attack() {
       const { tier: selectedTier } = selectSpellTier(option, snap);
 
       if (selectedTier > 0) {
-        gE(`1${attackStatus}${selectedTier}`).click();
-        // AoE 目标选择
-        const spellKey = `${attackStatus}${selectedTier}`;
-        const spellName = OFFENSIVE_SPELL_LIB.get(spellKey);
-        const aoeCount = spellName ? (g("spellAoe")[spellName] || (option.spellAoe && option.spellAoe[spellKey]) || 1) : 1;
+        const spellId = `1${attackStatus}${selectedTier}`;
+        // 探活：selectSpellTier 是 PURE 决策读不到运行时按钮 opacity；MP 不足 / 静默 / 当前阶 CD 等都会让 spell 按钮 opacity=0.5。
+        // 关键：CD 时不能 return 退出 attack()，否则跳过后续 skill 块 + 默认 mkey click → 全无副作用 → 卡死。
+        // 正确退化：fall through 到 skill 块和最后默认 mkey click（普通武器攻击始终可用，保证主循环不停）。
+        if (isOn(spellId)) {
+          gE(spellId).click();
+          // AoE 目标选择
+          const spellKey = `${attackStatus}${selectedTier}`;
+          const spellName = OFFENSIVE_SPELL_LIB.get(spellKey);
+          const aoeCount = spellName ? (g("spellAoe")[spellName] || (option.spellAoe && option.spellAoe[spellKey]) || 1) : 1;
 
-        if (aoeCount >= 2 && aliveMonsters.length > 1) {
-          monsterStatus.sort((a, b) => a.order - b.order);
-          const aliveByOrder = monsterStatus.filter(m => !m.isDead);
-          gE(`#mkey_${aliveByOrder[0].id}`).click();
-          monsterStatus.sort((a, b) => a.finWeight - b.finWeight);
-          tagEndToTrue();
-          return;
+          if (aoeCount >= 2 && aliveMonsters.length > 1) {
+            monsterStatus.sort((a, b) => a.order - b.order);
+            const aliveByOrder = monsterStatus.filter(m => !m.isDead);
+            gE(`#mkey_${aliveByOrder[0].id}`).click();
+            monsterStatus.sort((a, b) => a.finWeight - b.finWeight);
+            tagEndToTrue();
+            return;
+          }
+          // 单目标 spell click 已发，fall through 到末尾默认 mkey 选目标
         }
+        // spell on CD: 静默 skip，fall through 到 skill 块 / 默认 mkey（保留原始优雅退化语义）
       }
     }
   }
@@ -193,6 +201,9 @@ export function attack() {
       score: c.score,
       explain: c.explain,
       dispatch: () => {
+        // 探活：scorePhysicalSkillCandidates 是 PURE 决策，读不到运行时按钮 opacity；
+        // 必须 isOn 探活避免裸 click 死锁
+        if (!isOn(c.id)) return;
         g("skillOTOS")[c.code] = (g("skillOTOS")[c.code] || 0) + 1;
         gE(c.id).click();
         recordFire(c.code);

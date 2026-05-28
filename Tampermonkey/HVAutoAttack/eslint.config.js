@@ -19,6 +19,8 @@ export default [
         GM_deleteValue: "readonly",
         GM_notification: "readonly",
         GM_info: "readonly",
+        GM_xmlhttpRequest: "readonly", // P4 Live Percentile Send Range / P6 RMA ML
+        GM: "readonly", // RMA 用 GM.xmlHttpRequest 兼容路径
       },
     },
     rules: {

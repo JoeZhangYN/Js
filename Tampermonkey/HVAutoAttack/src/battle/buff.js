@@ -48,35 +48,40 @@ export function useChannelSkill() {
   }
 
   // 第三步：重新施放最先消失的Buff
-  const buffs = paneEffects.querySelectorAll("img");
-  if (buffs.length > 0) {
-    for (const buff of buffs) {
-      const onmouseover = buff.getAttribute("onmouseover");
-      const spellName = onmouseover.match(/'(.*?)'/)[1];
-      const buffLastTime = onmouseover.match(/\(.*,.*, (.*?)\)$/)[1] * 1;
+  // 修复：原代码按 DOM 顺序遍历首个非 scroll buff 就重施，与注释"最先消失"不符且无 needsRecast 守卫
+  // → 每回合无脑 re-cast 第一个 buff，浪费 MP。
+  // 修法：(a) 按 buffLastTime 升序排（最先消失优先）；(b) 加 needsRecast(remaining<=1) 守卫，避免重复刷
+  const buffs = [...paneEffects.querySelectorAll("img")]
+    .map((buff) => {
+      const onmouseover = buff.getAttribute("onmouseover") || "";
+      const nameMatch = onmouseover.match(/'(.*?)'/);
+      const timeMatch = onmouseover.match(/\(.*,.*, (.*?)\)$/);
+      const buffLastTime = timeMatch ? timeMatch[1] * 1 : NaN;
+      return { buff, spellName: nameMatch ? nameMatch[1] : "", buffLastTime };
+    })
+    .filter(({ buff, buffLastTime }) => !isNaN(buffLastTime) && !buff.src.match(/_scroll.png$/))
+    .sort((a, b) => a.buffLastTime - b.buffLastTime);
 
-      if (isNaN(buffLastTime) || buff.src.match(/_scroll.png$/)) {
-        continue;
-      }
+  for (const { spellName, buffLastTime } of buffs) {
+    if (buffLastTime > 1) continue; // needsRecast 守卫：只续即将消失的 buff
 
-      if (
-        spellName === "Cloak of the Fallen" &&
-        !paneEffects.querySelector('img[src*="sparklife"]') &&
-        isOn("422")
-      ) {
-        gE("422").click();
+    if (
+      spellName === "Cloak of the Fallen" &&
+      !paneEffects.querySelector('img[src*="sparklife"]') &&
+      isOn("422")
+    ) {
+      gE("422").click();
+      tagEndToTrue();
+      return;
+    }
+
+    if (NAME_TO_BUFF_CODE.has(spellName)) {
+      const skillCode = NAME_TO_BUFF_CODE.get(spellName);
+      const skillInfo = BUFF_SKILL_LIB.get(skillCode);
+      if (isOn(skillInfo.id)) {
+        gE(skillInfo.id).click();
         tagEndToTrue();
         return;
-      }
-
-      if (NAME_TO_BUFF_CODE.has(spellName)) {
-        const skillCode = NAME_TO_BUFF_CODE.get(spellName);
-        const skillInfo = BUFF_SKILL_LIB.get(skillCode);
-        if (isOn(skillInfo.id)) {
-          gE(skillInfo.id).click();
-          tagEndToTrue();
-          return;
-        }
       }
     }
   }

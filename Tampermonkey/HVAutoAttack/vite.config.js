@@ -34,16 +34,22 @@ export default defineConfig({
           "http://alt.hentaiverse.org/*",
           "https://e-hentai.org/*",
         ],
-        exclude: [
-          "http*://hentaiverse.org/pages/showequip.php?*",
-          "http://alt.hentaiverse.org/pages/showequip.php",
-        ],
+        // P1 (PriceForged) + P3P4 (equip-percentile) 要求放开 showequip.php，
+        // 让 setupForgeCost / setupEquipPercentile 能在装备页运行；
+        // showequip-forge-cost.js 与 equip-percentile-dispatcher.js 内部有 #eu span / #popup_box 兜底，普通页自然 no-op
+        exclude: [],
         grant: [
           "GM_setValue",
           "GM_getValue",
           "GM_deleteValue",
           "GM_notification",
+          "GM_xmlhttpRequest", // P6 RMA ML 远程答题 POST rdma.ooguy.com
           "unsafeWindow",
+        ],
+        connect: [
+          "rdma.ooguy.com",        // P6 RMA ML 答题端点
+          "hvitems.niblseed.com",  // P4 Send Range 喂数据回社区 DB（高玩 / Jenga 维护）
+          "reasoningtheory.net",   // P4 Live Percentile 装备数据库（声明 connect 让 GM_xmlhttpRequest 可用）
         ],
         "run-at": "document-end",
       },

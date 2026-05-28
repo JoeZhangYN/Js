@@ -1,0 +1,221 @@
+// PriceForgedEquipment 价格数据：isekai / persistent 两套（来自上游脚本 1.01 / 1.02, 2022.12.20）。
+// 算法 100% 相同，唯一差异是 costs（材料/绑印单价）+ catalystCost 数值。
+// 字段表见 src/pages/showequip-forge-cost.js 注释；本文件仅做数据 SOT。
+
+/**
+ * @typedef {object} CostsTable 38 个 Binding + 12 个材料/特殊材料单价（credits）。
+ * @typedef {object} CatalystCost 6 档 catalyst 单价。
+ * @typedef {object} ForgeConfig
+ * @property {CostsTable} costs
+ * @property {CatalystCost} catalystCost
+ * @property {Record<string,[number,boolean]>} mapping stat 名 → [bindingCost, isDamage]
+ * @property {object} materialCost 材料类型 → {midGrade, highGrade, special}
+ * @property {object} rangesNonDamage Lv → 用量配方（非伤害）
+ * @property {object} rangesDamage Lv → 用量配方（伤害）
+ */
+
+function buildConfig(costs, catalystCost) {
+  const mapping = {
+    "Physical Damage": [costs.BindingOfSlaughter, true],
+    "Physical Hit Chance": [costs.BindingOfBalance, false],
+    "Physical Crit Chance": [costs.BindingOfIsaac, false],
+    "Magical Damage": [costs.BindingOfDestruction, true],
+    "Magical Hit Chance": [costs.BindingOfFocus, false],
+    "Magical Crit Chance": [costs.BindingOfFriendship, false],
+    "Physical Defense": [costs.BindingOfProtection, false],
+    "Evade Chance": [costs.BindingOfTheFleet, false],
+    "Block Chance": [costs.BindingOfTheBarrier, false],
+    "Parry Chance": [costs.BindingOfTheNimble, false],
+    "Elemental Proficiency": [costs.BindingOfTheElementalist, false],
+    "Divine Proficiency": [costs.BindingOfTheHeavenSent, false],
+    "Forbidden Proficiency": [costs.BindingOfTheDemonFiend, false],
+    "Deprecating Proficiency": [costs.BindingOfTheCurseWeaver, false],
+    "Supportive Proficiency": [costs.BindingOfTheEarthWalker, false],
+    "Fire Spell Damage": [costs.BindingOfSurtr, false],
+    "Cold Spell Damage": [costs.BindingOfNiflheim, false],
+    "Elec Spell Damage": [costs.BindingOfMjolnir, false],
+    "Wind Spell Damage": [costs.BindingOfFreyr, false],
+    "Holy Spell Damage": [costs.BindingOfHeimdall, false],
+    "Dark Spell Damage": [costs.BindingOfFenrir, false],
+    "Crushing Mitigation": [costs.BindingOfDampening, false],
+    "Slashing Mitigation": [costs.BindingOfStoneSkin, false],
+    "Piercing Mitigation": [costs.BindingOfDeflection, false],
+    "Fire Mitigation": [costs.BindingOfTheFireEater, false],
+    "Cold Mitigation": [costs.BindingOfTheFrostBorn, false],
+    "Elec Mitigation": [costs.BindingOfTheThunderChild, false],
+    "Wind Mitigation": [costs.BindingOfTheWindWaker, false],
+    "Holy Mitigation": [costs.BindingOfTheThriceBlessed, false],
+    "Dark Mitigation": [costs.BindingOfTheSpiritWard, false],
+    "Strength Bonus": [costs.BindingOfTheOx, false],
+    "Dexterity Bonus": [costs.BindingOfTheRaccoon, false],
+    "Agility Bonus": [costs.BindingOfTheCheetah, false],
+    "Endurance Bonus": [costs.BindingOfTheTurtle, false],
+    "Intelligence Bonus": [costs.BindingOfTheFox, false],
+    "Wisdom Bonus": [costs.BindingOfTheOwl, false],
+    "Magical Defense": [costs.BindingOfWarding, false],
+    "Resist Chance": [costs.BindingOfNegation, false],
+  };
+  const materialCost = {
+    cloth: { midGrade: costs.MidGradeCloth, highGrade: costs.HighGradeCloth, special: 0 },
+    wood: { midGrade: costs.MidGradeWood, highGrade: costs.HighGradeWood, special: 0 },
+    leather: { midGrade: costs.MidGradeLeather, highGrade: costs.HighGradeLeather, special: 0 },
+    metal: { midGrade: costs.MidGradeMetal, highGrade: costs.HighGradeMetal, special: 0 },
+    phase: { midGrade: costs.MidGradeCloth, highGrade: costs.HighGradeCloth, special: costs.CrystallizedPhazon },
+    shade: { midGrade: costs.MidGradeLeather, highGrade: costs.HighGradeLeather, special: costs.ShadeFragment },
+    power: { midGrade: costs.MidGradeMetal, highGrade: costs.HighGradeMetal, special: costs.RepurposedActuator },
+    force: { midGrade: costs.MidGradeWood, highGrade: costs.HighGradeWood, special: costs.DefenseMatrixModulator },
+    unknown: { midGrade: -1, highGrade: -1, special: -1 },
+  };
+  const rangesNonDamage = {
+    5: { midGradeQty: 6, highGradeQty: 0, catalystCost: catalystCost.Robust },
+    8: { midGradeQty: 5, highGradeQty: 1, catalystCost: catalystCost.Robust },
+    12: { midGradeQty: 4, highGradeQty: 2, catalystCost: catalystCost.Robust },
+    16: { midGradeQty: 3, highGradeQty: 3, catalystCost: catalystCost.Vibrant },
+    20: { midGradeQty: 2, highGradeQty: 4, catalystCost: catalystCost.Vibrant },
+    23: { midGradeQty: 1, highGradeQty: 5, catalystCost: catalystCost.Vibrant },
+    25: { midGradeQty: 0, highGradeQty: 6, catalystCost: catalystCost.Vibrant },
+    50: { midGradeQty: 0, highGradeQty: 6, catalystCost: catalystCost.Coruscating },
+  };
+  const rangesDamage = {
+    5: { midGradeQty: 6, highGradeQty: 0, catalystCost: catalystCost.Robust },
+    12: { midGradeQty: 5, highGradeQty: 1, catalystCost: catalystCost.Robust },
+    20: { midGradeQty: 4, highGradeQty: 2, catalystCost: catalystCost.Robust },
+    25: { midGradeQty: 3, highGradeQty: 3, catalystCost: catalystCost.Robust },
+    27: { midGradeQty: 3, highGradeQty: 3, catalystCost: catalystCost.Vibrant },
+    35: { midGradeQty: 2, highGradeQty: 4, catalystCost: catalystCost.Vibrant },
+    42: { midGradeQty: 1, highGradeQty: 5, catalystCost: catalystCost.Vibrant },
+    50: { midGradeQty: 0, highGradeQty: 6, catalystCost: catalystCost.Vibrant },
+    100: { midGradeQty: 0, highGradeQty: 6, catalystCost: catalystCost.Coruscating },
+  };
+  return { costs, catalystCost, mapping, materialCost, rangesNonDamage, rangesDamage };
+}
+
+const isekaiCosts = {
+  CrystallizedPhazon: 250,
+  ShadeFragment: 150,
+  RepurposedActuator: 500,
+  DefenseMatrixModulator: 150,
+  HighGradeCloth: 1200,
+  MidGradeCloth: 300,
+  HighGradeLeather: 100,
+  MidGradeLeather: 150,
+  HighGradeMetal: 1200,
+  MidGradeMetal: 450,
+  HighGradeWood: 1800,
+  MidGradeWood: 900,
+  BindingOfSlaughter: 0,
+  BindingOfBalance: 0,
+  BindingOfIsaac: 0,
+  BindingOfDestruction: 0,
+  BindingOfFocus: 0,
+  BindingOfFriendship: 0,
+  BindingOfProtection: 0,
+  BindingOfTheFleet: 0,
+  BindingOfTheBarrier: 0,
+  BindingOfTheNimble: 0,
+  BindingOfTheElementalist: 0,
+  BindingOfTheHeavenSent: 0,
+  BindingOfTheDemonFiend: 0,
+  BindingOfTheCurseWeaver: 0,
+  BindingOfTheEarthWalker: 0,
+  BindingOfSurtr: 0,
+  BindingOfNiflheim: 0,
+  BindingOfMjolnir: 0,
+  BindingOfFreyr: 0,
+  BindingOfHeimdall: 0,
+  BindingOfFenrir: 0,
+  BindingOfDampening: 0,
+  BindingOfStoneSkin: 0,
+  BindingOfDeflection: 0,
+  BindingOfTheFireEater: 0,
+  BindingOfTheFrostBorn: 0,
+  BindingOfTheThunderChild: 0,
+  BindingOfTheWindWaker: 0,
+  BindingOfTheThriceBlessed: 0,
+  BindingOfTheSpiritWard: 0,
+  BindingOfTheOx: 0,
+  BindingOfTheRaccoon: 0,
+  BindingOfTheCheetah: 0,
+  BindingOfTheTurtle: 0,
+  BindingOfTheFox: 0,
+  BindingOfTheOwl: 0,
+  BindingOfWarding: 0,
+  BindingOfNegation: 0,
+};
+
+const isekaiCatalyst = {
+  Wispy: 100,
+  Dilluted: 500,
+  Regular: 1000,
+  Robust: 2500,
+  Vibrant: 5000,
+  Coruscating: 10000,
+};
+
+const persistentCosts = {
+  CrystallizedPhazon: 280000,
+  ShadeFragment: 1500,
+  RepurposedActuator: 20000,
+  DefenseMatrixModulator: 900,
+  HighGradeCloth: 6500,
+  MidGradeCloth: 120,
+  HighGradeLeather: 60,
+  MidGradeLeather: 20,
+  HighGradeMetal: 200,
+  MidGradeMetal: 50,
+  HighGradeWood: 1000,
+  MidGradeWood: 50,
+  BindingOfSlaughter: 45000,
+  BindingOfBalance: 800,
+  BindingOfIsaac: 1000,
+  BindingOfDestruction: 40000,
+  BindingOfFocus: 60,
+  BindingOfFriendship: 300,
+  BindingOfProtection: 50000,
+  BindingOfTheFleet: 7250,
+  BindingOfTheBarrier: 600,
+  BindingOfTheNimble: 500,
+  BindingOfTheElementalist: 150,
+  BindingOfTheHeavenSent: 50,
+  BindingOfTheDemonFiend: 50,
+  BindingOfTheCurseWeaver: 50,
+  BindingOfTheEarthWalker: 50,
+  BindingOfSurtr: 50,
+  BindingOfNiflheim: 50,
+  BindingOfMjolnir: 50,
+  BindingOfFreyr: 50,
+  BindingOfHeimdall: 100,
+  BindingOfFenrir: 100,
+  BindingOfDampening: 1000,
+  BindingOfStoneSkin: 200,
+  BindingOfDeflection: 100,
+  BindingOfTheFireEater: 50,
+  BindingOfTheFrostBorn: 50,
+  BindingOfTheThunderChild: 50,
+  BindingOfTheWindWaker: 50,
+  BindingOfTheThriceBlessed: 50,
+  BindingOfTheSpiritWard: 50,
+  BindingOfTheOx: 3300,
+  BindingOfTheRaccoon: 3200,
+  BindingOfTheCheetah: 31000,
+  BindingOfTheTurtle: 800,
+  BindingOfTheFox: 25000,
+  BindingOfTheOwl: 25000,
+  BindingOfWarding: 2500,
+  BindingOfNegation: 300,
+};
+
+const persistentCatalyst = {
+  Wispy: 90,
+  Dilluted: 450,
+  Regular: 900,
+  Robust: 2250,
+  Vibrant: 4500,
+  Coruscating: 9000,
+};
+
+/** @type {{ isekai: ForgeConfig, persistent: ForgeConfig }} */
+export const FORGE_COSTS = {
+  isekai: buildConfig(isekaiCosts, isekaiCatalyst),
+  persistent: buildConfig(persistentCosts, persistentCatalyst),
+};

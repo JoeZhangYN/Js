@@ -3,6 +3,7 @@
 // Phase 5b-2 之后 step 内联代码改成 PURE decide(snap) + dispatch(actionResult)。
 // file-size-gate: exempt phase-5b-mainloop
 import { gE } from "../dom/query.js";
+import { attemptClick, attemptClickWithTarget } from "../dom/attempt-click.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { g, tagEndToTrue } from "../state/store.js";
 import { _alert } from "../core/lang.js";
@@ -18,6 +19,7 @@ import { attack, countMonsterHP } from "./attack.js";
 import { runSteps } from "./step-runner.js";
 import { incrementGlobalTurn, persistCdState } from "../state/cd-tracker.js";
 import { collectSnapshot, assertNoDomRefs } from "./snapshot.js";
+import { checkCriticalBuffGuard } from "./critical-buff-guard.js";
 
 /**
  * Phase 5b-5: OFC/FRD 即将就绪时跳过全员 Weaken/Imperil。
@@ -96,6 +98,11 @@ export function main() {
 
   // 行动决策链。任一 step 触发副作用并设 g("end", true) 即停止后续。
   runSteps([
+    // 关键 buff 即将消失 + MP 不足 → 暂停脚本 + 告警（Monsterbation graceful degradation 借鉴）
+    // 放最前：避免在"buff 没续上裸 buff 攻击"链路上继续浪费
+    () => {
+      checkCriticalBuffGuard(snap);
+    },
     // 逃跑
     () => {
       if (g("option").autoFlee && checkCondition(g("option").fleeCondition)) {
@@ -120,12 +127,11 @@ export function main() {
     },
     // PoC stall：1 怪 + 后续轮还有 → 主动喝 MP/SP pot 拉满下轮开局
     () => stallTopup(),
-    // 防御
+    // 防御（attemptClick 内置 isOn 探活；channeling 时按钮禁用 → 跳过，让后续 channel/attack 接管）
     () => {
-      if (g("option").defend && checkCondition(g("option").defendCondition)) {
-        gE("#ckey_defend").click();
-        tagEndToTrue();
-      }
+      if (!g("option").defend) return;
+      if (!checkCondition(g("option").defendCondition)) return;
+      attemptClick("#ckey_defend");
     },
     // 卷轴
     () => {
@@ -195,9 +201,9 @@ export function main() {
       }
       if (bestIdx < 0 || bestCov <= 0) return;
       if (checkAndActivateSpirit()) return;
-      gE("213").click();
-      gE(`#mkey_${sortedAlive[bestIdx].id}`).click();
-      tagEndToTrue();
+      // 探活：snap.skillReady["213"] 是 turn 入口快照，同回合内前序 step click 后已可能 opacity=0.5；
+      // 必须实时 isOn 探活避免 channeling 同构死锁
+      attemptClickWithTarget("213", `#mkey_${sortedAlive[bestIdx].id}`);
     },
     // 全员 Weaken（Phase 5b-5：OFC/FRD 即将就绪时跳过）
     () => {

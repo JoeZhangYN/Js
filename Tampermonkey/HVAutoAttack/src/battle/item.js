@@ -66,72 +66,87 @@ export function deadSoon() {
 }
 
 /**
+ * 顺序尝试候选 action，第一个返 true 的就生效后续不再尝试（Monsterbation `Strongest` 模式借鉴：
+ * 把"if-else 早返链"显式声明成 fallback chain）。
+ * @param {Array<() => boolean>} actions 每个 action 返 true 表示已 act（含 tagEnd），false 表示跳过
+ */
+function tryFirst(actions) {
+  for (const action of actions) {
+    if (action()) return;
+  }
+}
+
+/**
  * Stall 模式优先级：关 Spirit → Focus（OC→Channeling）→ Draught → 普攻刷 OC。
  * 关 Spirit 是 step 0：stall 不需要伤害加成（要拖），且 Spirit 每回合耗 1 SP + 10% OC，
  * 与 Focus 同时存在会"OC 两头掉"。关 Spirit 后 OC 自然累积更快，Focus 烧的 OC 也能补回来。
+ *
+ * Phase 5b-4：3 段优先级原本是 `if {...; return} else if ...` 链，重构为显式 `tryFirst([])` fallback chain。
  */
 export function stallTopup() {
   const opt = g("option");
   if (opt.stallMode === false) return;
   const snap = collectSnapshot();
-  const stall = isStallMode(snap, opt, g("roundNow"), g("roundAll"));
-  if (!stall) return;
+  if (!isStallMode(snap, opt, g("roundNow"), g("roundAll"))) return;
 
-  // Step 0: 关 Spirit Stance（含防抖：避免和 attack toggle 撞车 / Spirit Stance Disabled 重复触发）
+  tryFirst([
+    () => tryStallSpiritOff(opt, snap),
+    () => tryStallFocus(opt, snap),
+    () => tryStallDraught(opt, snap),
+  ]);
+}
+
+/** stall step 0: 关 Spirit Stance（防抖）。 */
+function tryStallSpiritOff(opt, snap) {
+  if (!snap.spiritOn || opt.stallTurnOffSpirit === false) return false;
   const lastToggle = g("lastSpiritToggleGlobalTurn") ?? -999;
   const cooldown = opt.spiritToggleMinInterval ?? 3;
-  if (
-    snap.spiritOn &&
-    opt.stallTurnOffSpirit !== false &&
-    (g("globalTurn") || 0) - lastToggle >= cooldown
-  ) {
-    const spiritEl = gE("#ckey_spirit");
-    if (spiritEl) {
-      spiritEl.click();
-      g("lastSpiritToggleGlobalTurn", g("globalTurn") || 0);
-      tagEndToTrue();
-      if (opt.dynamicHealLog ?? true) {
-        console.log(`[stall] Spirit OFF (oc=${snap.oc}, 停止双向耗损)`);
-      }
-      return;
-    }
+  if ((g("globalTurn") || 0) - lastToggle < cooldown) return false;
+  const spiritEl = gE("#ckey_spirit");
+  if (!spiritEl) return false;
+  spiritEl.click();
+  g("lastSpiritToggleGlobalTurn", g("globalTurn") || 0);
+  tagEndToTrue();
+  if (opt.dynamicHealLog ?? true) {
+    console.log(`[stall] Spirit OFF (oc=${snap.oc}, 停止双向耗损)`);
   }
+  return true;
+}
 
-  // Step 1: Focus（仅当 Spirit 已关或不存在；OC 高 + MP 未满 + 无 Channeling）
+/** stall step 1: Focus（OC 高 + MP 未满 + 无 Channeling）。 */
+function tryStallFocus(opt, snap) {
   const focusOcMin = opt.stallFocusOcThreshold ?? 60;
   const focusMpMax = opt.stallFocusMpMax ?? 80;
-  const focusOn = opt.stallFocus !== false;
-  if (
-    focusOn &&
-    !snap.spiritOn &&
-    (snap.oc || 0) >= focusOcMin &&
-    (snap.mp ?? 100) < focusMpMax &&
-    !snap.playerBuffs.includes("channeling") &&
-    gE("#ckey_focus")
-  ) {
-    gE("#ckey_focus").click();
-    tagEndToTrue();
-    if (opt.dynamicHealLog ?? true) {
-      console.log(`[stall-focus] Focus (oc=${snap.oc}, mp=${snap.mp.toFixed(0)}% < ${focusMpMax}% → Channeling)`);
-    }
-    return;
+  if (opt.stallFocus === false) return false;
+  if (snap.spiritOn) return false;
+  if ((snap.oc || 0) < focusOcMin) return false;
+  if ((snap.mp ?? 100) >= focusMpMax) return false;
+  if (snap.playerBuffs.includes("channeling")) return false;
+  const focusEl = gE("#ckey_focus");
+  if (!focusEl) return false;
+  focusEl.click();
+  tagEndToTrue();
+  if (opt.dynamicHealLog ?? true) {
+    console.log(`[stall-focus] Focus (oc=${snap.oc}, mp=${snap.mp.toFixed(0)}% < ${focusMpMax}% → Channeling)`);
   }
+  return true;
+}
 
-  // Fallback：MP/SP Draught（百分比控制）
+/** stall step 2: MP/SP Draught 兜底。 */
+function tryStallDraught(opt, snap) {
   const candidates = stallTopupCandidates(snap, opt);
   for (const potId of candidates) {
     const el = gE(`.bti3>div[onmouseover*="${potId}"]`);
-    if (el) {
-      // T1: 喝药前 pre-state
-      recordPreDrink(potId, snap);
-      el.click();
-      tagEndToTrue();
-      if (opt.dynamicHealLog ?? true) {
-        console.log(`[stall-topup] drink ${potId} (mp ${snap.mp.toFixed(0)}% / sp ${snap.sp.toFixed(0)}%)`);
-      }
-      return;
+    if (!el) continue;
+    recordPreDrink(potId, snap);
+    el.click();
+    tagEndToTrue();
+    if (opt.dynamicHealLog ?? true) {
+      console.log(`[stall-topup] drink ${potId} (mp ${snap.mp.toFixed(0)}% / sp ${snap.sp.toFixed(0)}%)`);
     }
+    return true;
   }
+  return false;
 }
 
 export function useScroll() {

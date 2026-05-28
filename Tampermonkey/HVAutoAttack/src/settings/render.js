@@ -11,6 +11,28 @@ import { post } from "../dom/http.js";
 import { time } from "../core/time.js";
 import { objSort, getKeys } from "../core/obj.js";
 import { customizeBox } from "./customize.js";
+import { OPTION_SCHEMA } from "./schema.js";
+
+/**
+ * 从 OPTION_SCHEMA 渲染 "checkbox + number + 单位文本" 这类成对字段。
+ * Phase 5 渐进迁入示例：新加的 pageRefresh / criticalBuff 等用此 helper 直接消费 schema，
+ * 不再手写 template string。老字段仍走 inline template。
+ * @param {string} checkboxKey
+ * @param {string} numberKey
+ * @param {{l0:string,l1:string,l2:string}} unit 单位/补充说明
+ */
+function renderCheckboxPlusNumber(checkboxKey, numberKey, unit) {
+  const cb = OPTION_SCHEMA.find((f) => f.key === checkboxKey);
+  const num = OPTION_SCHEMA.find((f) => f.key === numberKey);
+  if (!cb || !num) return "";
+  const checkedAttr = cb.defaultOn ? " checked data-default-on" : "";
+  return (
+    `<div><input id="${cb.key}" type="checkbox"${checkedAttr}>` +
+    `<label for="${cb.key}"><b><l0>${cb.label.l0}</l0><l1>${cb.label.l1}</l1><l2>${cb.label.l2}</l2></b></label>: ` +
+    `<input class="hvAANumber" name="${num.key}" placeholder="${num.default}" type="text">` +
+    `<l0>${unit.l0}</l0><l1>${unit.l1}</l1><l2>${unit.l2}</l2></div>`
+  );
+}
 
 export function optionBox() {
   // 配置界面
@@ -77,6 +99,23 @@ export function optionBox() {
     "  <div><l2>If the page </l2><b><l0>页面停留</l0><l1>頁面停留</l1><l2>stays idle</l2></b><l2> for </l2>: ",
     '    <input id="delayAlert" type="checkbox"><label for="delayAlert"><input class="hvAANumber" name="delayAlertTime" type="text"><l0>秒，警报</l0><l1>秒，警報</l1><l2>s, alarm</l2></label>; ',
     '    <input id="delayReload" type="checkbox"><label for="delayReload"><input class="hvAANumber" name="delayReloadTime" type="text"><l0>秒，刷新页面</l0><l1>秒，刷新頁面</l1><l2>s, reload page</l2></label></div>',
+    renderCheckboxPlusNumber("pageRefresh", "pageRefreshMinutes", {
+      l0: "分钟（防移动端长时间挂机卡死，无条件绝对时钟）",
+      l1: "分鐘（防移動端長時間掛機卡死，無條件絕對時鐘）",
+      l2: " min (mobile anti-hang absolute clock, unconditional)",
+    }),
+    renderCheckboxPlusNumber("pauseOnCriticalBuffExpire", "criticalBuffMinTurns", {
+      l0: "回合（关键 buff 剩余 ≤N 且 MP 不足时暂停脚本，需先在下方填关键 buff 名）",
+      l1: "回合（關鍵 buff 剩餘 ≤N 且 MP 不足時暫停腳本，需先在下方填關鍵 buff 名）",
+      l2: " turns (pause when critical buff ≤N & MP low; fill buff names below)",
+    }),
+    '  <div><l0>关键 buff 列表</l0><l1>關鍵 buff 列表</l1><l2>Critical buffs</l2>: <input name="criticalBuffsList" placeholder="Hastened,Protection,Spark of Life" type="text" style="width:60%;"> MP&lt; <input class="hvAANumber" name="criticalBuffMpFloor" placeholder="30" type="text">%</div>',
+    // P1 强化价格 / P2 小马辅助 / P3P4 装备百分位 / P6 ML 答题（Monsterbation + 10 个 HentaiVerse 脚本借鉴集成）
+    '  <div><input id="forgeCostShow" type="checkbox" checked data-default-on><label for="forgeCostShow"><b><l0>强化价格</l0><l1>強化價格</l1><l2>Forge Cost</l2></b></label>: <l0>装备页显示材料/总价/Lv 预测（isekai/persistent 自动选）</l0><l1>裝備頁顯示材料/總價/Lv 預測（isekai/persistent 自動選）</l1><l2>Show material/total/Lv predict on equipment page</l2></div>',
+    '  <div><input id="riddleHelperUi" type="checkbox" checked data-default-on><label for="riddleHelperUi"><b><l0>小马图片助手</l0><l1>小馬圖片助手</l1><l2>MLP Helper</l2></b></label>: <l0>答题页旋转/锐化/对比面板 + 6 缩略图</l0><l1>答題頁旋轉/銳化/對比面板 + 6 縮略圖</l1><l2>riddle rotate/sharpen/contrast + 6 thumbnails</l2></div>',
+    '  <div><b><l0>装备浮动百分位</l0><l1>裝備浮動百分位</l1><l2>Equip Percentile</l2></b>: <select name="equipPercentileMode"><option value="off">off (关闭)</option><option value="offline">offline (本地公式)</option><option value="live">live (联网 reasoningtheory.net)</option></select> <input id="equipPercentileLiveSendRange" type="checkbox" checked data-default-on><label for="equipPercentileLiveSendRange"><l0>喂数据回社区 (Shift+S)</l0><l1>餵資料回社區 (Shift+S)</l1><l2>Send Range (Shift+S)</l2></label></div>',
+    '  <div><input id="mlAnswer" type="checkbox" checked data-default-on><label for="mlAnswer"><b><l0>ML 答题</l0><l1>ML 答題</l1><l2>ML Riddle</l2></b></label>: <l0>启用 rdma.ooguy.com 远程识别（失败 fallback 到随机猜）</l0><l1>啟用 rdma.ooguy.com 遠程識別（失敗 fallback 到隨機猜）</l1><l2>Enable rdma.ooguy.com ML solver (fallback to random)</l2>; <input id="mlBackupOnFail" type="checkbox" checked data-default-on><label for="mlBackupOnFail"><l0>失败备份图片</l0><l1>失敗備份圖片</l1><l2>Backup on fail</l2></label></div>',
+    '  <div><l0>ML 端点</l0><l1>ML 端點</l1><l2>ML endpoint</l2>: <input name="mlEndpoint" placeholder="https://rdma.ooguy.com/help2" type="text" style="width:50%;"> <l0>API key</l0><l1>API key</l1><l2>API key</l2>: <input name="mlApiKey" placeholder="(可选)" type="text" style="width:20%;"></div>',
     '  <div><l0>当<b>小马答题</b>时间</l0><l1>當<b>小馬答題</b>時間</l1><l2>If <b>RIDDLE</b> ETR</l2><l0></l0><l1></l1><l2></l2> ≤ <input class="hvAANumber" name="riddleAnswerTime" placeholder="3" type="text"><l0>秒，如果输入框为空则随机生成答案并提交</l0><l1>秒，如果輸入框為空則隨機生成答案並提交</l1><l2>s and no answer has been chosen yet, a random answer will be generated and submitted</l2></div>',
     "  <div><l0>当<b>小马答题</b>时</l0><l1>當<b>小馬答題</b>時</l1><l2>If <b>RIDDLE</b></l2>: ",
     '    <input id="riddlePopup" type="checkbox"><label for="riddlePopup"><l0>弹窗答题</l0><l1>弹窗答题</l1><l2>POPUP a window to answer</l2></label>; <button class="testPopup"><l0>预处理</l0><l1>預處理</l1><l2>Pretreat</l2></button></div>',
