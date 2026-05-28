@@ -20,6 +20,7 @@ import { runSteps } from "./step-runner.js";
 import { incrementGlobalTurn, persistCdState } from "../state/cd-tracker.js";
 import { collectSnapshot, assertNoDomRefs } from "./snapshot.js";
 import { checkCriticalBuffGuard } from "./critical-buff-guard.js";
+import { pauseScript } from "./pause-control.js";
 
 /**
  * Phase 5b-5: OFC/FRD 即将就绪时跳过全员 Weaken/Imperil。
@@ -245,11 +246,7 @@ export function pauseChange() {
     delValue(0);
     main();
   } else {
-    if (gE(".pauseChange"))
-      gE(".pauseChange").innerHTML =
-        "<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>";
-    setValue("disabled", true);
-    tagEndToTrue();
+    pauseScript();
   }
 }
 

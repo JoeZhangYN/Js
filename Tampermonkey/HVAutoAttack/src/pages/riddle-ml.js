@@ -5,7 +5,7 @@
 //   - setupRMAHealth()                     30s 健康巡检（init 时调用一次启动）
 // 不暴露 saveRiddle / send_head：内部使用。
 //
-// 复用 riddle.js 的 ANSWER_MAP（需 lead 把 ANSWER_MAP 改 export）。
+// 复用 data/riddle-answers.js 的 ANSWER_MAP（已下沉叶子层，断开与 riddle.js 的循环依赖 TDZ）。
 // GM 存储 key：is_maintenance / is_down / last_awake_ts / last_date / check_interval / extend_submit_interval
 //   - 直接用 GM_setValue/GM_getValue（带 prefix 会污染 RMA 兼容性；这里用裸 key 与原 RMA 一致）
 // 失败备份 key：saved_<prefix>_<ts>（同 RMA）
@@ -14,7 +14,7 @@
 import { g } from "../state/store.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { gmXhr } from "../dom/gm-xhr.js";
-import { ANSWER_MAP } from "./riddle.js";
+import { ANSWER_MAP } from "../data/riddle-answers.js";
 
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";

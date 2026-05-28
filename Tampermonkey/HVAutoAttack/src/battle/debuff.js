@@ -5,7 +5,7 @@ import { gE } from "../dom/query.js";
 import { g, tagEndToTrue } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { checkAndActivateSpirit } from "./buff.js";
-import { pauseChange } from "./main-loop.js";
+import { pauseScript } from "./pause-control.js";
 import { executeCastDebuffOnAll } from "./debuff/execute-cast-all.js";
 import { decideDeSkill } from "./debuff/decide-de-skill.js";
 
@@ -19,7 +19,7 @@ export function useDeSkill(snap) {
   if (result.kind === "noop") return;
   if (result.kind === "alert-and-pause") {
     _alert(0, result.msg.l0, result.msg.l1, result.msg.l2);
-    pauseChange();
+    pauseScript();
     tagEndToTrue();
     return;
   }

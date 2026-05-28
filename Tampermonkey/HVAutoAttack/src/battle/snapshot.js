@@ -7,7 +7,7 @@
 // C. dispatch 副作用用 selector 字符串重查询 DOM，不用缓存引用
 //
 // file-size-gate: exempt phase-5b-snapshot
-import { gE } from "../dom/query.js";
+import { gE, isSpiritActive } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { collectCdMap } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
@@ -156,7 +156,7 @@ export function collectSnapshot() {
     globalTurn: g("globalTurn") || 0,
     ...vitals,
     channeling: !!gE('#pane_effects>img[src*="channeling"]'),
-    spiritOn: !!(spiritEl && spiritEl.src.includes("spirit_a")),
+    spiritOn: isSpiritActive(spiritEl),
     monsters,
     aliveCount: monsters.filter((m) => !m.isDead).length,
     playerBuffs: playerEffects.map((e) => e.img),

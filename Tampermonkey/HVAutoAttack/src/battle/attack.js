@@ -2,7 +2,7 @@
 // Phase 5b-2 wave 1：法术阶选择 + 物理技能选择 → 拆出 PURE 决策辅助 (decide-tier / decide-skill)。
 // 副作用 (focus/spirit/ether-tap/Merciful 斩杀的 target click) 仍在 attack() 内（单回合 SHELL）。
 // file-size-gate: exempt phase-4-monolith
-import { gE, isOn } from "../dom/query.js";
+import { gE, isOn, isSpiritActive } from "../dom/query.js";
 import { g, tagEndToTrue } from "../state/store.js";
 import { checkCondition } from "../settings/condition-eval.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
@@ -67,7 +67,7 @@ export function countMonsterHP() {
 export function attack(snap) {
   const option = g("option");
   const spiritElement = gE("#ckey_spirit");
-  const spiritOn = spiritElement && spiritElement.src.includes("spirit_a");
+  const spiritOn = isSpiritActive(spiritElement);
   const monsterStatus = g("monsterStatus");
   const aliveMonsters = monsterStatus.filter((monster) => !monster.isDead);
 

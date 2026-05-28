@@ -2,7 +2,7 @@
 // 与 castDebuffOnAll 区别：仅施给首目标怪，按 debuffSkillOrderValue 优先级遍历。
 import { DEBUFF_SKILL_LIB } from "../../data/debuff-lib.js";
 import { checkCondition } from "../../settings/condition-eval.js";
-import { canApplyDebuffPure } from "./can-apply.js";
+import { canApplyDebuffPure, pickAoeTarget } from "./can-apply.js";
 
 /**
  * 决定单目标 debuff 该施哪一种。
@@ -39,8 +39,7 @@ export function decideDeSkill(opt, snap) {
       (snap.spellAoe && snap.spellAoe[skill.name]) ||
       (opt.debuffSkillAoe && opt.debuffSkillAoe[key]) ||
       1;
-    const next = sortedAlive[1];
-    const targetId = aoeCount >= 2 && next && !next.isDead ? next.id : firstMonster.id;
+    const targetId = pickAoeTarget(firstMonster, sortedAlive[1], aoeCount);
     return {
       kind: "click-skill-then-target",
       skillSel: skill.id,

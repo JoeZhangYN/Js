@@ -9,12 +9,11 @@ import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { isOptionOn } from "../state/option.js";
 import { setAlarm } from "../alarm/alarm.js";
+import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { setupRiddleHelper } from "./riddle-helper.js";
 import { tryMLAnswer, setupRMAHealth } from "./riddle-ml.js";
 
-// 答案码 → riddler1 内 6 个候选项 checkbox 的 children 索引（RMA L40 同源）
-// export：riddle-ml.js 复用，避免重复定义
-export const ANSWER_MAP = { ts: 0, ra: 1, fs: 2, rd: 3, pp: 4, aj: 5 };
+// 答案码 SSOT 见 data/riddle-answers.js（提取到叶子层打破与 riddle-ml.js 的循环依赖 TDZ）
 const ANSWER_KEYS = Object.keys(ANSWER_MAP);
 
 /**

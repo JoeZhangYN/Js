@@ -2,7 +2,7 @@
 // 不读 DOM / 不调 g() / 不写 setValue。
 // Phase 5b-2 wave 1 第 2 个 L1 切缝示例。
 import { DEBUFF_SKILL_LIB } from "../../data/debuff-lib.js";
-import { canApplyDebuffPure } from "./can-apply.js";
+import { canApplyDebuffPure, pickAoeTarget } from "./can-apply.js";
 
 /**
  * 决定全员 debuff 该施给哪只怪物，返 ActionResult。
@@ -36,9 +36,8 @@ export function decideCastDebuffOnAll(opt, snap, debuffKey) {
         },
       };
     }
-    // cast：选目标
-    const next = sorted[i + 1];
-    const targetId = aoeCount >= 2 && next && !next.isDead ? next.id : monster.id;
+    // cast：选目标（AoE≥2 打邻居否则打自己）
+    const targetId = pickAoeTarget(monster, sorted[i + 1], aoeCount);
     return {
       kind: "click-skill-then-target",
       skillSel: skill.id,

@@ -2,7 +2,7 @@
 // Phase 5b-2 wave 1：useBuffSkill 已切 PURE decide-buff.js + SHELL execute-buff.js。
 // 其余（useChannelSkill / useInfusions）待 Phase 5b-3 wave 2 处理。
 // file-size-gate: exempt phase-4-monolith
-import { gE, isOn } from "../dom/query.js";
+import { gE, isOn, isSpiritActive } from "../dom/query.js";
 import { g, tagEndToTrue } from "../state/store.js";
 import { checkCondition } from "../settings/condition-eval.js";
 import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
@@ -100,8 +100,7 @@ export function checkAndActivateSpirit() {
     return false;
   }
 
-  const spiritOn = spiritElement.src.includes("spirit_a");
-  if (spiritOn) {
+  if (isSpiritActive(spiritElement)) {
     return false;
   }
 

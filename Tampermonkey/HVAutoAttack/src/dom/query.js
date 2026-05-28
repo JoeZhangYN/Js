@@ -43,3 +43,13 @@ export function isOn(id) {
   const element = gE(id);
   return element && element.style.opacity !== "0.5" ? element : false;
 }
+
+/**
+ * 判断 Spirit Stance 按钮是否处于激活态（#ckey_spirit 的 src 含 spirit_a）。
+ * 收敛 snapshot / buff / attack 三处重复的 "spirit_a" 字面量判断。
+ * @param {Element|null} spiritEl #ckey_spirit 元素
+ * @returns {boolean}
+ */
+export function isSpiritActive(spiritEl) {
+  return !!(spiritEl && spiritEl.src.includes("spirit_a"));
+}
