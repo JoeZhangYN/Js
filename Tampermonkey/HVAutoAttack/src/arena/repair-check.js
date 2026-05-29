@@ -2,6 +2,7 @@
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { post } from "../dom/http.js";
+import { idleArena } from "./idle-arena.js";
 
 export function repairCheck() {
   let json;

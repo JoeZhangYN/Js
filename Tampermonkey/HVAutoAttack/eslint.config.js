@@ -13,7 +13,7 @@ export default [
       sourceType: "module",
       globals: {
         ...globals.browser,
-        unsafeWindow: "readonly",
+        unsafeWindow: "writable", // init.js 跨 GM 实现 fallback 习语会重新赋值（reloader.js 读解析后的值）
         GM_setValue: "readonly",
         GM_getValue: "readonly",
         GM_deleteValue: "readonly",
