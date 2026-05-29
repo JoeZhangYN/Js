@@ -4,7 +4,31 @@
 // (会排除 HVAA 自身),改运行时守卫复现;try-catch 隔离,汉化崩溃不阻断 HVAA 主逻辑。
 try {
   if (!/\/isekai\/equip(\/|$)/.test(window.location.pathname)) {
-// ===== 以下为 HV Utils 统一汉化原文(sssss2),逐字未改 =====
+// ===== HVAA 补充：Panel A($battle 修复/补给栏)物品名英→中映射 =====
+// Panel A(行 ~2475/2555)直接渲染游戏返回的英文物品名,原 sssss2 无映射表。
+// 本表 additive:查不到则 fallback 原英文(不崩)。Panel B 另有自己的局部表,互不影响。
+var HVAA_ITEM_CN = {
+  // 修理材料
+  "Scrap Metal": "金属废料", "Scrap Leather": "皮革废料", "Scrap Wood": "木材废料",
+  "Scrap Cloth": "废布料", "Energy Cell": "能量元",
+  "Mid-Grade Cloth": "中级布料", "High-Grade Cloth": "高级布料",
+  "Mid-Grade Leather": "中级皮革", "High-Grade Leather": "高级皮革",
+  "Mid-Grade Metals": "中级金属", "High-Grade Metals": "高级金属",
+  "Mid-Grade Wood": "中级木材", "High-Grade Wood": "高级木材",
+  // 补给/消耗品
+  "Health Potion": "生命药水", "Health Draught": "生命长效药", "Health Elixir": "生命秘药",
+  "Mana Potion": "法力药水", "Mana Draught": "法力长效药", "Mana Elixir": "法力秘药",
+  "Spirit Potion": "灵力药水", "Spirit Draught": "灵力长效药", "Spirit Elixir": "灵力秘药",
+  "Last Elixir": "终极秘药", "Flower Vase": "花瓶", "Bubble-Gum": "泡泡糖",
+  "Caffeinated Candy": "咖啡因糖果", "Energy Drink": "能量饮料", "Channeling": "导能",
+  "Scroll of Swiftness": "迅捷卷轴", "Scroll of Protection": "守护卷轴",
+  "Scroll of the Avatar": "化身卷轴", "Scroll of Absorption": "吸收卷轴",
+  "Infusion of Flames": "火焰灌注", "Infusion of Frost": "冰霜灌注",
+  "Infusion of Lightning": "闪电灌注", "Infusion of Storms": "风暴灌注",
+  "Infusion of Divinity": "神圣灌注", "Infusion of Darkness": "黑暗灌注",
+};
+function hvaaItemCn(name) { return HVAA_ITEM_CN[name] || name; }
+// ===== 以下为 HV Utils 统一汉化原文(sssss2),除标注的 Panel A 物品名查表 3 处外逐字未改 =====
 // ============================================================================
 // HV Utils 主世界版 (v3.0.0) + Isekai 版 (v4.1.1) 统一脚本
 //
@@ -2472,7 +2496,7 @@ const $battle = {
             return;
           }
           const data = $battle.itemdata[id];
-          const li = $element('li', eq.node.repair, `${count} x ${data.n} (${data.c})`);
+          const li = $element('li', eq.node.repair, `${count} x ${hvaaItemCn(data.n)} (${data.c})`);
           if (data.c < count) {
             li.classList.add('hvut-bt-warn');
           }
@@ -2552,7 +2576,7 @@ const $battle = {
         return;
       }
       const stock = $item.count(name);
-      const textContent = `${name} (${stock})`;
+      const textContent = `${hvaaItemCn(name)} (${stock})`;
       const dataset = { action: 'buy', item: name, count };
       const li = $element('li', $battle.node.items, { textContent, dataset });
       if (stock < count) {
@@ -2575,7 +2599,7 @@ const $battle = {
     }
     equipset.forEach((info) => {
       if (!info.eid) {
-        $element('li', $battle.node.equip, [`/<a>${info.slot} - Empty</a><span></span><span></span>`]);
+        $element('li', $battle.node.equip, [`/<a>${info.slot} - 空</a><span></span><span></span>`]);
         return;
       }
 

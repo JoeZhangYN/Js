@@ -30,6 +30,11 @@ export const QUALITY_CN_MAP = {
   "粗糙": "Crude",
 };
 
+/** 英文品质 key → 中文显示名（由 QUALITY_CN_MAP 反转派生，单源不漂移） */
+export const QUALITY_EN_TO_CN = Object.fromEntries(
+  Object.entries(QUALITY_CN_MAP).map(([cn, en]) => [en, cn])
+);
+
 // 部分 lmax 在 reasoningtheory 服务器上有错，下面覆盖修正
 export const manualRanges = {
   Oak: {

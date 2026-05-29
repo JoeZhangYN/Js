@@ -63,7 +63,7 @@ function upgradeSummary(input, basicMaterialCost, maxLevel) {
 }
 
 function getEquipName(body) {
-  if (typeof body.children[1] === "undefined") return "No such item";
+  if (typeof body.children[1] === "undefined") return "无此物品";
   const showequip = body.children[1];
   const nameDiv = showequip.children.length === 3
     ? showequip.children[0].children[0]
@@ -90,24 +90,24 @@ function appendTitle(elem, titleStr, upgradeLvl, costObj, baseSummary, totalInve
   let title = titleStr + " Lv." + upgradeLvl + "\n";
   if (baseSummary) {
     totalInvested[titleStr] = costObj;
-    title += "Mid-Grade " + credit(costObj.midGrade) + "\n";
-    title += "High-Grade " + credit(costObj.highGrade) + "\n";
-    title += "Binding " + credit(costObj.binding) + "\n";
-    title += "Catalyst " + credit(costObj.catalyst) + "\n";
-    title += "Special " + credit(costObj.special) + "\n";
-    title += "Total " + credit(upgradeTotal(costObj));
+    title += "中级材料 " + credit(costObj.midGrade) + "\n";
+    title += "高级材料 " + credit(costObj.highGrade) + "\n";
+    title += "绑定石 " + credit(costObj.binding) + "\n";
+    title += "催化剂 " + credit(costObj.catalyst) + "\n";
+    title += "特殊材料 " + credit(costObj.special) + "\n";
+    title += "总计 " + credit(upgradeTotal(costObj));
   } else {
     // 预测模式：special 用 summary.special 替换（与上游一致）
     if (totalInvested[titleStr] && totalInvested.summary) {
       totalInvested[titleStr].special = totalInvested.summary.special;
     }
     const inv = totalInvested[titleStr] || makeEmptyCost();
-    title += "Mid-Grade " + credit(costObj.midGrade) + " (" + credit(inv.midGrade) + ")\n";
-    title += "High-Grade " + credit(costObj.highGrade) + " (" + credit(inv.highGrade) + ")\n";
-    title += "Binding " + credit(costObj.binding) + " (" + credit(inv.binding) + ")\n";
-    title += "Catalyst " + credit(costObj.catalyst) + " (" + credit(inv.catalyst) + ")\n";
-    title += "Special " + credit(costObj.special) + " (" + credit(inv.special) + ")\n";
-    title += "Total " + credit(upgradeTotal(costObj)) + " (" + credit(upgradeTotal(inv)) + ")";
+    title += "中级材料 " + credit(costObj.midGrade) + " (" + credit(inv.midGrade) + ")\n";
+    title += "高级材料 " + credit(costObj.highGrade) + " (" + credit(inv.highGrade) + ")\n";
+    title += "绑定石 " + credit(costObj.binding) + " (" + credit(inv.binding) + ")\n";
+    title += "催化剂 " + credit(costObj.catalyst) + " (" + credit(inv.catalyst) + ")\n";
+    title += "特殊材料 " + credit(costObj.special) + " (" + credit(inv.special) + ")\n";
+    title += "总计 " + credit(upgradeTotal(costObj)) + " (" + credit(upgradeTotal(inv)) + ")";
   }
   elem.title = title;
   elem.style = "cursor:help";
@@ -121,19 +121,19 @@ function outputSummary(equipment, output, basicMaterialCost, maxLevel, baseSumma
   html.style = "margin:7px auto 2px; text-align:center";
   const header = cE("div");
   header.style = "font-weight:bold";
-  header.innerHTML = "Cost Summary:";
+  header.innerHTML = "成本汇总:";
   html.appendChild(header);
-  const mg = cE("span"); mg.className = "ep"; mg.innerHTML = "Mid-Grade " + credit(summary.midGrade); html.appendChild(mg);
-  const hg = cE("span"); hg.className = "ep"; hg.innerHTML = " High-Grade " + credit(summary.highGrade); html.appendChild(hg);
-  const bi = cE("span"); bi.className = "ep"; bi.innerHTML = " Binding " + credit(summary.binding); html.appendChild(bi);
-  const ca = cE("span"); ca.className = "ep"; ca.innerHTML = "<br/> Catalyst " + credit(summary.catalyst); html.appendChild(ca);
-  const sp = cE("span"); sp.className = "ep"; sp.innerHTML = " Special " + credit(summary.special); html.appendChild(sp);
+  const mg = cE("span"); mg.className = "ep"; mg.innerHTML = "中级材料 " + credit(summary.midGrade); html.appendChild(mg);
+  const hg = cE("span"); hg.className = "ep"; hg.innerHTML = " 高级材料 " + credit(summary.highGrade); html.appendChild(hg);
+  const bi = cE("span"); bi.className = "ep"; bi.innerHTML = " 绑定石 " + credit(summary.binding); html.appendChild(bi);
+  const ca = cE("span"); ca.className = "ep"; ca.innerHTML = "<br/> 催化剂 " + credit(summary.catalyst); html.appendChild(ca);
+  const sp = cE("span"); sp.className = "ep"; sp.innerHTML = " 特殊材料 " + credit(summary.special); html.appendChild(sp);
   const tot = cE("p"); tot.style = "color:#F00";
   if (baseSummary) {
     totalInvested.summary = summary;
-    tot.innerHTML = "Total " + credit(upgradeTotal(summary));
+    tot.innerHTML = "总计 " + credit(upgradeTotal(summary));
   } else {
-    tot.innerHTML = "Total " + credit(upgradeTotal(summary)) + " (" + credit(upgradeTotal(totalInvested.summary)) + ")";
+    tot.innerHTML = "总计 " + credit(upgradeTotal(summary)) + " (" + credit(upgradeTotal(totalInvested.summary)) + ")";
   }
   html.appendChild(tot);
   equipment.appendChild(html);

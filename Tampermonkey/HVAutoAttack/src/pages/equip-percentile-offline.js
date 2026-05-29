@@ -1,7 +1,7 @@
 // file-size-gate: exempt 移植自 Percentage Ranges 独立脚本-自包含功能
 // 离线装备百分位（移植自 Percentage Ranges.js, 1.1.9, 仅保留 Isekai 装备 popup hook）
 // 改写：ES6 module / 无 jQuery / 无论坛 hover / 无 GM_setValue（state.showPercent 走 localStorage）
-import { QUALITY_CONFIG, QUALITY_CN_MAP } from "../data/equip-quality-ranges.js";
+import { QUALITY_CONFIG, QUALITY_CN_MAP, QUALITY_EN_TO_CN } from "../data/equip-quality-ranges.js";
 
 const STORAGE_KEY_SHOW_PERCENT = "hvAA_equipPercentile_offline_showPercent";
 
@@ -154,7 +154,7 @@ function parseEquip(container) {
         onchange: () => renderEquip(container, select.value),
       },
       Object.keys(QUALITY_CONFIG).map((k) =>
-        elc("option", { value: k, selected: k === quality }, [k])
+        elc("option", { value: k, selected: k === quality }, [QUALITY_EN_TO_CN[k] || k])
       )
     );
     container.appendChild(

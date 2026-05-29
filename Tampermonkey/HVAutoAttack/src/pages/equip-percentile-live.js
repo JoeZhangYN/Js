@@ -4,7 +4,7 @@
 // 数据流：本地 localStorage.EquipmentRanges → reasoningtheory.net (POST gethvitems.php) → 合 manualRanges
 // 仅在 showequip.php / /equip/ 页面运行；setupEquipPercentileLive() 是入口。
 // M1 修复：GM_xmlhttpRequest 兼容封装统一到 src/dom/gm-xhr.js
-import { manualRanges } from "../data/equip-quality-ranges.js";
+import { manualRanges, QUALITY_EN_TO_CN } from "../data/equip-quality-ranges.js";
 import { gmXhr } from "../dom/gm-xhr.js";
 
 const debug = false;
@@ -438,7 +438,7 @@ const PercentileRanges = (() => {
       return;
     }
     if (ready) {
-      statusElm.textContent = "Using local database...";
+      statusElm.textContent = "使用本地数据库...";
       makeResults(done, statusElm);
     } else {
       statusElm.textContent = "从在线数据库获取数据中...";
@@ -479,8 +479,8 @@ const PercentileRanges = (() => {
   function isObject(item) { return item && typeof item === "object" && !Array.isArray(item); }
 
   function makeResults(done, statusElm) {
-    if (equipList.length === 0) statusElm.textContent = "No equips to parse";
-    statusElm.textContent = "Making results...";
+    if (equipList.length === 0) statusElm.textContent = "无装备可解析";
+    statusElm.textContent = "生成结果中...";
     const singlePageResult = usingThisDocument && equipList.length === 1 && equipValid(equipList[0]);
 
     let results = {};
@@ -523,7 +523,7 @@ const PercentileRanges = (() => {
     rangesNeeded.length = 0;
     parsingDone = {};
     delayedDone = null;
-    statusElm.textContent = "Results finished";
+    statusElm.textContent = "结果已生成";
     done(results);
   }
 
@@ -630,7 +630,7 @@ const PercentileRanges = (() => {
     if (!ee || !ee.lastElementChild) return transformations;
     const formatDiv = ee.lastElementChild.appendChild(document.createElement("div"));
     formatDiv.style.cssText = "margin-top:6px";
-    formatDiv.textContent = "Display style: Forged Scaled";
+    formatDiv.textContent = "显示样式: 强化缩放";
     const qualityToShow = equip.equipInfo.quality === "Peerless" ? "Legendary" : equip.equipInfo.quality;
     transformations.showUnforgedPercentiles = function () {
       equip.equipStats.forEach((s) => {
@@ -696,12 +696,12 @@ const PercentileRanges = (() => {
       }
       const rootDomain = window.location.href.match(/^(.+\.org)/)[1];
       get(rootDomain, (response) => {
-        formatDiv.textContent = "Got response from root domain...";
+        formatDiv.textContent = "已从主域名获取响应...";
         let level;
         try {
           level = parseInt(response.querySelector("#level_readout").children[0].children[0].textContent.match(/\d+/)[0]);
         } catch (e) {
-          formatDiv.textContent = "Couldn't parse the response";
+          formatDiv.textContent = "无法解析响应";
           return;
         }
         EquipmentRanges.userLevelObj = { level, timestamp: Date.now() };
@@ -771,7 +771,7 @@ const PercentileRanges = (() => {
         done(r.responseText);
       },
       onerror: () => {
-        statusElm.textContent = "Request Error";
+        statusElm.textContent = "请求错误";
       },
     });
   }
@@ -793,7 +793,7 @@ function sendThisPageToHvitems(responseDiv) {
   const rangeToSend = [{ eid, key }];
   const data = "action=store&equipment=" + encodeURIComponent(JSON.stringify(rangeToSend));
   const onSuccess = (responseText) => {
-    if (responseText === "1") responseDiv.textContent = "Done!";
+    if (responseText === "1") responseDiv.textContent = "完成!";
     else responseDiv.textContent = 'Error, response was: "' + responseText + '"';
   };
   const onFail = (msg) => (responseDiv.textContent = msg);
@@ -839,9 +839,12 @@ function documentInteractor(options) {
   const optionsDiv = document.body.appendChild(document.createElement("div"));
   optionsDiv.id = "optionsDiv";
   const select = optionsDiv.appendChild(document.createElement("select"));
-  ["Legendary", "Magnificent", "Exquisite", "Superior"].forEach((q) =>
-    (select.appendChild(document.createElement("option")).textContent = q)
-  );
+  // 品质 option：value 存英文逻辑值（供切换/比对），textContent 显示中文（解耦，勿用 textContent 做逻辑判断）
+  ["Legendary", "Magnificent", "Exquisite", "Superior"].forEach((q) => {
+    const opt = select.appendChild(document.createElement("option"));
+    opt.value = q;
+    opt.textContent = QUALITY_EN_TO_CN[q] || q;
+  });
   select.onchange = () => tryChangeQuality();
 
   const sendRangeDiv = optionsDiv.appendChild(document.createElement("div"));
@@ -855,12 +858,12 @@ function documentInteractor(options) {
   const wikiLink = linksDiv.appendChild(document.createElement("a"));
   wikiLink.target = "_blank";
   wikiLink.href = "https://ehwiki.org/wiki/Equipment_Ranges";
-  wikiLink.textContent = "Wiki浮动范围链接";
+  wikiLink.textContent = "Wiki 浮动范围";
   const clearButton = linksDiv.appendChild(document.createElement("button"));
-  clearButton.textContent = "Clear Database";
+  clearButton.textContent = "清除数据库缓存";
   clearButton.onclick = () => {
     delete localStorage.EquipmentRanges;
-    clearButton.textContent = "done";
+    clearButton.textContent = "已清除";
   };
 
   let results;
@@ -871,14 +874,14 @@ function documentInteractor(options) {
   addAndRunParser(null);
 
   function addAndRunParser(changeToQuality) {
-    summaryDiv.textContent = "Checking...";
+    summaryDiv.textContent = "检查中...";
     PercentileRanges.addEquipDocument(document, null, changeToQuality);
     PercentileRanges.run(addResultsToDocument, summaryDiv);
   }
 
   function addResultsToDocument(resultsParam) {
     if (!resultsParam.infos) {
-      summaryDiv.textContent = "No data available for this equip type";
+      summaryDiv.textContent = "该装备类型暂无浮动范围数据";
       return;
     }
     results = resultsParam;
@@ -938,7 +941,7 @@ function documentInteractor(options) {
     select.style.display = "inline";
     const qualityToShow = infos.quality === "Peerless" ? "Legendary" : infos.quality;
     select.childNodes.forEach((opt) => {
-      if (opt.textContent === qualityToShow) {
+      if (opt.value === qualityToShow) {
         opt.selected = true;
         opt.style.backgroundColor = "#00ef37";
       } else {
@@ -970,18 +973,18 @@ function documentInteractor(options) {
     compareInput.placeholder = "https://hentaiverse.org/equip/.../...";
     elementsToRemoveOnReset.push(compareDiv);
     const compareButton = compareDiv.appendChild(document.createElement("button"));
-    compareButton.textContent = "Compare!";
+    compareButton.textContent = "对比!";
     compareButton.addEventListener("click", () => {
       compareInput.style.backgroundColor = null;
       const m = window.location.href.match(/^.+\.org/);
       const newLink = compareInput.value.replace(/^.+\.org/, m ? m[0] : "");
       if (!newLink) return;
       if (newLink.includes(" :::") || (!/\/equip\//.test(newLink) && !/showequip\.php/.test(newLink))) {
-        compareButton.textContent = "Invalid link";
+        compareButton.textContent = "无效链接";
         return;
       }
       compareButton.disabled = true;
-      compareButton.textContent = "Getting info...";
+      compareButton.textContent = "获取信息中...";
       PercentileRanges.addEquipLink(newLink);
       PercentileRanges.run(doCompare.bind(null, compareDiv, checkboxContainer), compareButton);
     });
@@ -1005,7 +1008,7 @@ function documentInteractor(options) {
         if (PercentileRanges.getRanges(thisQualityEquipInfo) === false) checkbox.disabled = true;
       }
       checkbox.addEventListener("change", () => buildGraphic(checkboxContainer));
-      checkboxDiv.appendChild(document.createTextNode(quality));
+      checkboxDiv.appendChild(document.createTextNode(QUALITY_EN_TO_CN[quality] || quality));
     });
 
     buildGraphic(checkboxContainer);
@@ -1013,7 +1016,7 @@ function documentInteractor(options) {
   }
 
   function renderSendRangeLink() {
-    sendRangeDiv.textContent = "Send Range (Shift+S)";
+    sendRangeDiv.textContent = "上报浮动范围 (Shift+S)";
     sendRangeDiv.style.marginTop = "10px";
     sendRangeDiv.style.cursor = "pointer";
     sendRangeDiv.style.color = "#5C0D11";
@@ -1023,13 +1026,13 @@ function documentInteractor(options) {
 
   function triggerSendRange() {
     if (!sendRangeDiv.textContent) renderSendRangeLink();
-    sendRangeDiv.textContent = "Sending Range...";
+    sendRangeDiv.textContent = "上报中...";
     sendRangeDiv.onclick = null;
     sendThisPageToHvitems(sendRangeDiv);
   }
 
   function tryChangeQuality() {
-    const changeTo = select.options[select.selectedIndex].textContent;
+    const changeTo = select.options[select.selectedIndex].value;
     if (changeTo !== results.infos.quality) reset(changeTo);
   }
 
@@ -1060,14 +1063,14 @@ function documentInteractor(options) {
     const unpacked = Object.values(compareResultsPacked)[0];
     if (!unpacked || !unpacked.infos) {
       compareButton.textContent = !unpacked
-        ? "Equip parsing failed"
-        : "No data available for this equip type";
+        ? "装备解析失败"
+        : "该装备类型暂无数据";
       compareResults = null;
       buildGraphic(checkboxContainer);
       return;
     }
     compareResults = unpacked;
-    compareButton.textContent = "Compare!";
+    compareButton.textContent = "对比!";
     compareInput.value = compareResults.infos.name + " ::: " + compareInput.value;
     compareInput.style.backgroundColor = "#c9ffd1";
     buildGraphic(checkboxContainer);
@@ -1116,7 +1119,7 @@ function documentInteractor(options) {
       " [" + (infos.prefix || "") + " | " + (infos.suffix || "") + "]";
     addInnerHTML(
       svg, "text",
-      `x="360" y="30" fill="black" font-size="16" font-weight="bolder" text-anchor="middle">Ranges for ${equipTypeStr}</text>`
+      `x="360" y="30" fill="black" font-size="16" font-weight="bolder" text-anchor="middle">浮动范围: ${equipTypeStr}</text>`
     );
 
     const axisStart = 170;
