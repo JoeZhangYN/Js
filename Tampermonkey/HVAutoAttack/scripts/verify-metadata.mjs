@@ -24,10 +24,17 @@ function walk(dir) {
 // GM.xmlHttpRequest（点号变体）是运行时 fallback、非 grant 声明名，故只扫下划线形式。
 const GRANT_RE = /\b(GM_\w+|unsafeWindow)\b/g;
 
+// 免-grant 特例：GM_info（及 GM.info）在所有 GM 实现中无需 @grant 即可访问，
+// 是 GM API 标准特例。reloader.js 用 `typeof GM_info !== "undefined"` 做存在性守卫，
+// 不应据此要求 vite grant 声明 GM_info，否则误报 "grant missing"。
+const NO_GRANT_NEEDED = new Set(["GM_info"]);
+
 const usedInCode = new Set();
 for (const file of walk(SRC_DIR)) {
   const src = readFileSync(file, "utf8");
-  for (const m of src.matchAll(GRANT_RE)) usedInCode.add(m[1]);
+  for (const m of src.matchAll(GRANT_RE)) {
+    if (!NO_GRANT_NEEDED.has(m[1])) usedInCode.add(m[1]);
+  }
 }
 
 const viteSrc = readFileSync(VITE_CONFIG, "utf8");
