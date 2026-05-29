@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         百度网盘提取码自动拼接
 // @namespace    http://tampermonkey.net/
-// @version      2.0.1
-// @description  自动检测页面中的百度网盘链接，智能查找并拼接提取码
+// @version      2.1.1
+// @description  自动检测页面中的百度网盘链接，智能查找并拼接提取码；分享页面接管 Baidu 自身的慢速自动提交，立即点击提交按钮加速跳转
 // @author       JoeZhangYN
 // @match        *://*/*
-// @exclude      https://pan.baidu.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=baidu.com
 // @grant        GM_setClipboard
 // @grant        GM_registerMenuCommand
+// @run-at       document-start
 // ==/UserScript==
 
 (function() {
@@ -17,17 +17,133 @@
     // ==================== 配置项 ====================
     const CONFIG = {
         debug: false,                    // 调试模式
-        maxSearchDepth: 10,              // 向上查找的最大层级
+        maxSearchDepth: 6,               // 向上查找的最大层级（10→6 减少 innerText 读次）
         maxTableRows: 50,                // 表格超过此行数时不全局搜索
         maxSiblingTextLength: 500,       // 相邻元素文本超过此长度时跳过
         visualIndicator: true,           // 是否显示视觉标识
         indicatorStyle: 'underline',     // 标识样式: 'underline' | 'badge' | 'both'
         autoProcess: true,               // 自动处理
-        processDelay: [500, 2000, 5000], // 延迟处理时间点(ms)
+        processDelay: [800, 3000],       // 延迟处理时间点(ms)
+        scanThrottleMs: 250,             // processAllLinks 节流间隔
+        observerDebounceMs: 500,         // MutationObserver 触发后到 scan 的延迟
+        autoSubmitOnSharePage: true,     // 在 pan.baidu.com/s/* 分享页接管自动提交
+        autoSubmitClickDelayMs: 0,       // 填充后到点击的间隔；> 0 可绕开部分反自动化检测
+        autoSubmitMaxWaitMs: 15000,      // 等待密码框/提交按钮出现的最长时间
     };
 
     // ==================== 工具函数 ====================
     const log = (...args) => CONFIG.debug && console.log('[百度网盘]', ...args);
+
+    // ==================== 分支：百度网盘分享页自动提交 ====================
+    // 分享页只跑这段（接管 Baidu 自身的慢速自动提交），不跑下面的链接拼接逻辑。
+    if (CONFIG.autoSubmitOnSharePage
+        && location.hostname === 'pan.baidu.com'
+        && location.pathname.startsWith('/s/')) {
+        runAutoSubmitOnSharePage();
+        return;
+    }
+
+    function runAutoSubmitOnSharePage() {
+        const pwd = new URLSearchParams(location.search).get('pwd');
+        if (!pwd || !/^[0-9a-zA-Z]{4}$/.test(pwd)) return;
+
+        // 多套选择器 + 文本兜底，防 Baidu 改 class
+        const INPUT_SELECTORS = [
+            'input.pickpw',
+            'input[placeholder*="提取码"]',
+            'input[placeholder*="提取"]',
+            '.input-area input[type="text"]',
+            'input[type="text"][maxlength="4"]',
+        ];
+        const BUTTON_SELECTORS = [
+            'a.g-button-right',
+            'a.g-button.g-button-blue',
+            '.submit-btn',
+            '[node-type="verify-form-submit"]',
+            '.share-input-line a.g-button',
+        ];
+        const BUTTON_TEXT_RE = /^(提取(文件)?|确定|提交)$/;
+
+        const isVisible = (el) => !!(el && el.offsetParent !== null);
+        const findInput = () => {
+            for (const sel of INPUT_SELECTORS) {
+                const el = document.querySelector(sel);
+                if (isVisible(el)) return el;
+            }
+            return null;
+        };
+        const findButton = () => {
+            for (const sel of BUTTON_SELECTORS) {
+                const el = document.querySelector(sel);
+                if (isVisible(el)) return el;
+            }
+            // 文本兜底：扫一切按钮形态控件，匹配 "提取文件 / 确定 / 提交"
+            const candidates = document.querySelectorAll(
+                'a.g-button, button, a[class*="button"], a[class*="btn"], div[class*="btn"]'
+            );
+            for (const el of candidates) {
+                const text = (el.innerText || el.textContent || '').trim();
+                if (BUTTON_TEXT_RE.test(text) && isVisible(el)) return el;
+            }
+            return null;
+        };
+
+        let submitted = false;
+        const tryFillAndSubmit = () => {
+            if (submitted) return true;
+            const input = findInput();
+            const button = findButton();
+            if (!input || !button) return false;
+
+            if (input.value !== pwd) {
+                input.focus();
+                input.value = pwd;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const doClick = () => {
+                button.click();
+                submitted = true;
+                log('分享页：已自动点击提交');
+            };
+            if (CONFIG.autoSubmitClickDelayMs > 0) {
+                setTimeout(doClick, CONFIG.autoSubmitClickDelayMs);
+                submitted = true; // 标记已调度，避免 observer 再触发
+            } else {
+                doClick();
+            }
+            return true;
+        };
+
+        // 立即试一次（@run-at document-start 时往往太早，但成本极低）
+        if (document.readyState !== 'loading' && tryFillAndSubmit()) return;
+
+        // MutationObserver 等元素出现 —— 观察 documentElement，body 不存在时也能用
+        const observer = new MutationObserver(() => {
+            if (tryFillAndSubmit()) observer.disconnect();
+        });
+        const startObserve = () => observer.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+        });
+        if (document.documentElement) {
+            startObserve();
+        } else {
+            document.addEventListener('readystatechange', startObserve, { once: true });
+        }
+
+        // DOMContentLoaded 时再尝试一次（兜底 observer 漏触发的极端情况）
+        document.addEventListener('DOMContentLoaded', tryFillAndSubmit, { once: true });
+
+        // 超时停止观察，避免长期空转
+        setTimeout(() => {
+            if (!submitted) {
+                observer.disconnect();
+                log('分享页：自动提交等待超时');
+            }
+        }, CONFIG.autoSubmitMaxWaitMs);
+    }
 
     // 百度网盘链接正则
     const BAIDU_PAN_REGEX = /https?:\/\/pan\.baidu\.com\/s\/([a-zA-Z0-9_-]+)/;
@@ -59,8 +175,27 @@
         /[(（]([0-9a-zA-Z]{4})[)）]/,
     ];
 
+    // 预编译 global 版正则（保留原 flags，仅追加 g）——避免每次调用 new RegExp
+    const CODE_PATTERNS_G = CODE_PATTERNS.map(p =>
+        new RegExp(p.source, p.flags.includes('g') ? p.flags : p.flags + 'g')
+    );
+
     // 已处理的链接集合（防止重复处理）
     const processedLinks = new WeakSet();
+
+    // 单次 scan 内的 textContent 缓存——避免父级走链时重复读取同一节点
+    // processAllLinks 进入时设为 WeakMap，退出时置 null（停留期间 GC 友好）
+    let textCache = null;
+    function getText(el) {
+        if (!el) return '';
+        if (!textCache) return el.textContent || '';
+        let t = textCache.get(el);
+        if (t === undefined) {
+            t = el.textContent || '';
+            textCache.set(el, t);
+        }
+        return t;
+    }
 
     // ==================== 核心函数 ====================
 
@@ -71,18 +206,17 @@
         const codes = [];
         const seen = new Set();
 
-        for (const pattern of CODE_PATTERNS) {
-            const matches = text.matchAll(new RegExp(pattern, 'g'));
-            for (const match of matches) {
-                const code = match[1];
+        for (const pattern of CODE_PATTERNS_G) {
+            pattern.lastIndex = 0;
+            let m;
+            while ((m = pattern.exec(text)) !== null) {
+                const code = m[1];
                 if (!seen.has(code)) {
                     seen.add(code);
-                    codes.push({
-                        code,
-                        index: match.index,
-                        pattern: pattern.source
-                    });
+                    codes.push({ code, index: m.index });
                 }
+                // 防止零宽匹配死循环
+                if (m.index === pattern.lastIndex) pattern.lastIndex++;
             }
         }
 
@@ -119,7 +253,8 @@
 
     // 在容器中查找最近的提取码
     function findCodeInContainer(container, linkElement) {
-        const text = container.innerText || container.textContent;
+        // textContent 不触发 layout reflow（innerText 会）；scan 期内缓存复用
+        const text = getText(container);
         const codes = extractAllCodes(text);
 
         if (codes.length === 0) return null;
@@ -199,10 +334,12 @@
                     return code;
                 }
 
-                // 检查相邻兄弟元素
+                // 检查相邻兄弟元素（textContent 而非 innerText，避免 layout reflow）
                 const siblings = [parent.previousElementSibling, parent.nextElementSibling];
                 for (const sibling of siblings) {
-                    if (sibling && sibling.innerText?.length < CONFIG.maxSiblingTextLength) {
+                    if (!sibling) continue;
+                    const siblingText = getText(sibling);
+                    if (siblingText.length < CONFIG.maxSiblingTextLength) {
                         const siblingCode = findCodeInContainer(sibling, linkElement);
                         if (siblingCode) {
                             log('在相邻元素中找到:', siblingCode);
@@ -311,17 +448,39 @@
         }
     }
 
+    // 节流：相邻调用合并，避免 init+多个 processDelay+observer 重复触发全文档扫描
+    let lastScanAt = 0;
+    let pendingScan = null;
     function processAllLinks() {
-        const links = document.querySelectorAll('a[href*="pan.baidu.com/s/"]');
-        log(`扫描到 ${links.length} 个链接`);
-
-        links.forEach(link => {
-            try {
-                processLink(link);
-            } catch (e) {
-                console.error('[百度网盘] 处理出错:', e);
+        const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+        const elapsed = now - lastScanAt;
+        if (elapsed < CONFIG.scanThrottleMs) {
+            // 已有 pending 就不再排；否则补排一次到节流窗末尾
+            if (!pendingScan) {
+                pendingScan = setTimeout(() => {
+                    pendingScan = null;
+                    processAllLinks();
+                }, CONFIG.scanThrottleMs - elapsed);
             }
-        });
+            return;
+        }
+        lastScanAt = now;
+
+        textCache = new WeakMap();
+        try {
+            const links = document.querySelectorAll('a[href*="pan.baidu.com/s/"]');
+            log(`扫描到 ${links.length} 个链接`);
+
+            for (const link of links) {
+                try {
+                    processLink(link);
+                } catch (e) {
+                    console.error('[百度网盘] 处理出错:', e);
+                }
+            }
+        } finally {
+            textCache = null; // 释放本轮缓存，等待 GC
+        }
     }
 
     // ==================== 复制增强 ====================
@@ -356,37 +515,24 @@
     // ==================== DOM监听 ====================
 
     function observeDOM() {
-        let timeout = null;
+        // 性能要点：原实现对每个 mutation 的每个 addedNode 跑 querySelector
+        // → 在 Twitter/Facebook 这类高频 mutate 站点 CPU 飙高。
+        // 改为：mutation 命中即"约 scan 一次"（节流由 processAllLinks 自身保证），
+        // 把 N 次子树查询合并为 1 次 document 级 querySelectorAll。
+        let scheduled = false;
+        const schedule = () => {
+            if (scheduled) return;
+            scheduled = true;
+            setTimeout(() => {
+                scheduled = false;
+                processAllLinks();
+            }, CONFIG.observerDebounceMs);
+        };
 
-        const observer = new MutationObserver((mutations) => {
-            let hasNewContent = false;
-
-            for (const mutation of mutations) {
-                for (const node of mutation.addedNodes) {
-                    if (node.nodeType !== 1) continue;
-
-                    if (node.tagName === 'A' && node.href?.includes('pan.baidu.com/s/')) {
-                        hasNewContent = true;
-                        break;
-                    }
-                    if (node.querySelector?.('a[href*="pan.baidu.com/s/"]')) {
-                        hasNewContent = true;
-                        break;
-                    }
-                }
-                if (hasNewContent) break;
-            }
-
-            if (hasNewContent) {
-                // 防抖处理
-                clearTimeout(timeout);
-                timeout = setTimeout(processAllLinks, 200);
-            }
-        });
-
+        const observer = new MutationObserver(schedule);
         observer.observe(document.body, {
             childList: true,
-            subtree: true
+            subtree: true,
         });
     }
 
