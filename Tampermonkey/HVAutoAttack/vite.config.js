@@ -47,6 +47,8 @@ export default defineConfig({
           "GM_notification",
           "GM_xmlhttpRequest", // P6 RMA ML 远程答题 POST rdma.ooguy.com
           "GM_addStyle",       // HV Utils 汉化 60+ 处 CSS 注入
+          "GM_listValues",          // P6 导出答题备份遍历 saved_*
+          "GM_registerMenuCommand", // P6 GM 菜单「导出答题备份」
           "unsafeWindow",
         ],
         connect: [

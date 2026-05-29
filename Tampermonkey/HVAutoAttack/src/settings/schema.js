@@ -194,9 +194,9 @@ export const OPTION_SCHEMA = [
     default: true,
     defaultOn: true,
     label: {
-      l0: "ML 失败时备份图片到 GM 存储",
-      l1: "ML 失敗時備份圖片到 GM 存儲",
-      l2: "Backup riddle image to GM storage on ML failure",
+      l0: "备份答题图片+json 到 GM 存储（成功+失败，菜单可导出）",
+      l1: "備份答題圖片+json 到 GM 存儲（成功+失敗，選單可匯出）",
+      l2: "Backup riddle image+json to GM (success + failure)",
     },
   },
   {

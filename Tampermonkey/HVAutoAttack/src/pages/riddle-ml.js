@@ -144,12 +144,14 @@ async function getImageBlob(url) {
 
 // ---------------- 失败备份（GM_setValue 单通道；无浏览器下载） ----------------
 
-function saveRiddleFailed(imgBlob, resultObj) {
+// 保存答题图片+json 到 GM 存储（成功 isFailed=false / 失败 true，对齐原 RMA saveRiddle）。
+// 仅 GM 单通道（挂机多在后台标签页，<a>.click() 自动下载在后台失效）；批量取出用 exportSavedRiddles()。
+function saveRiddle(imgBlob, resultObj, isFailed = true) {
   if (!imgBlob) return;
-  const baseName = `${SAVE_PREFIX}${tsStr()}_failed`;
+  const baseName = `${SAVE_PREFIX}${tsStr()}${isFailed ? "_failed" : ""}`;
   const enhanced = {
     saved_at: new Date().toISOString(),
-    is_failed: true,
+    is_failed: isFailed,
     image_src: document.getElementById("riddleimage")?.childNodes?.[0]?.src || "unknown",
     ...resultObj,
   };
@@ -258,7 +260,7 @@ export async function tryMLAnswer() {
   try {
     const imgBlob = await getImageBlob(imageUrl);
     if (!imgBlob || imgBlob.size === 0) {
-      if (backupOnFail) saveRiddleFailed(imgBlob, { _error: "empty_blob" });
+      if (backupOnFail) saveRiddle(imgBlob, { _error: "empty_blob" });
       setAlarm("Error");
       return null;
     }
@@ -276,7 +278,7 @@ export async function tryMLAnswer() {
         },
         onload: (res) => {
           if (res.status === 429) {
-            if (backupOnFail) saveRiddleFailed(imgBlob, { _status: 429 });
+            if (backupOnFail) saveRiddle(imgBlob, { _status: 429 });
             setAlarm("Error");
             resolve(null);
             return;
@@ -285,7 +287,7 @@ export async function tryMLAnswer() {
           try {
             dict = JSON.parse(res.responseText);
           } catch (e) {
-            if (backupOnFail) saveRiddleFailed(imgBlob, { _parse_error: e.message });
+            if (backupOnFail) saveRiddle(imgBlob, { _parse_error: e.message });
             setAlarm("Error");
             resolve(null);
             return;
@@ -296,7 +298,7 @@ export async function tryMLAnswer() {
             const hit = ANSWER_CODES.find((code) => answers.includes(code));
             if (!hit) {
               if (backupOnFail)
-                saveRiddleFailed(imgBlob, { _reason: "no_answer_code_in_response", raw: dict });
+                saveRiddle(imgBlob, { _reason: "no_answer_code_in_response", raw: dict });
               setAlarm("Error");
               resolve(null);
               return;
@@ -307,34 +309,36 @@ export async function tryMLAnswer() {
             if (remaining < 3) {
               console.warn(`[HVAA][RMA] ratelimit remaining ${remaining}`);
             }
+            // 成功识别也保存（积累正确样本，对齐原 RMA line 427）；受 mlBackupOnFail 统一控制
+            if (backupOnFail) saveRiddle(imgBlob, dict, false);
             resolve(hit);
             return;
           }
           if (dict.return === "finish") {
             console.warn("[HVAA][RMA] no more solves today");
-            if (backupOnFail) saveRiddleFailed(imgBlob, dict);
+            if (backupOnFail) saveRiddle(imgBlob, dict);
             setAlarm("Error");
             resolve(null);
             return;
           }
           if (dict.return === "error" || dict.expire === true) {
             console.warn("[HVAA][RMA] server error / license issue", dict);
-            if (backupOnFail) saveRiddleFailed(imgBlob, dict);
+            if (backupOnFail) saveRiddle(imgBlob, dict);
             setAlarm("Error");
             resolve(null);
             return;
           }
-          if (backupOnFail) saveRiddleFailed(imgBlob, { _reason: "unknown_return", raw: dict });
+          if (backupOnFail) saveRiddle(imgBlob, { _reason: "unknown_return", raw: dict });
           setAlarm("Error");
           resolve(null);
         },
         onerror: () => {
-          if (backupOnFail) saveRiddleFailed(imgBlob, { _onerror: true });
+          if (backupOnFail) saveRiddle(imgBlob, { _onerror: true });
           setAlarm("Error");
           resolve(null);
         },
         ontimeout: () => {
-          if (backupOnFail) saveRiddleFailed(imgBlob, { _timeout: true });
+          if (backupOnFail) saveRiddle(imgBlob, { _timeout: true });
           setAlarm("Error");
           resolve(null);
         },
@@ -355,4 +359,46 @@ export async function tryMLAnswer() {
   } finally {
     inFlight = false;
   }
+}
+
+// ---------------- 导出：批量取出 GM 存储的答题备份 ----------------
+
+/**
+ * 把 GM 存储里所有 saved_* 备份打包成单个 JSON 文件下载。
+ * 手动触发（GM 菜单命令 registerExportMenu），规避挂机后台标签页自动下载失效。
+ */
+export function exportSavedRiddles() {
+  if (typeof GM_listValues === "undefined") {
+    console.warn("[HVAA][RMA] GM_listValues 不可用，无法导出");
+    return;
+  }
+  const keys = GM_listValues().filter((k) => k.startsWith("saved_"));
+  if (!keys.length) {
+    console.info("[HVAA][RMA] 无答题备份可导出");
+    return;
+  }
+  const bundle = {};
+  for (const k of keys) bundle[k] = GM_getValue(k);
+  const blob = new Blob([JSON.stringify(bundle)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.style.display = "none";
+  a.href = url;
+  a.download = `riddle_backups_${tsStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 200);
+  console.info(`[HVAA][RMA] 已导出 ${keys.length} 条答题备份`);
+}
+
+let exportMenuRegistered = false;
+/** 注册 GM 菜单命令「导出答题备份」（脚本启动调一次，全局可用）。 */
+export function registerExportMenu() {
+  if (exportMenuRegistered) return;
+  if (typeof GM_registerMenuCommand === "undefined") return;
+  exportMenuRegistered = true;
+  GM_registerMenuCommand("导出答题备份(图片+json)", exportSavedRiddles);
 }

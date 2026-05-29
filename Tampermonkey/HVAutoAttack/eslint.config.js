@@ -20,6 +20,8 @@ export default [
         GM_notification: "readonly",
         GM_info: "readonly",
         GM_xmlhttpRequest: "readonly", // P4 Live Percentile Send Range / P6 RMA ML
+        GM_listValues: "readonly", // P6 导出答题备份遍历 saved_*
+        GM_registerMenuCommand: "readonly", // P6 GM 菜单「导出答题备份」
         GM: "readonly", // RMA 用 GM.xmlHttpRequest 兼容路径
       },
     },

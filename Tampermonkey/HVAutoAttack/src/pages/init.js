@@ -9,6 +9,7 @@ import { goto, openUrl } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { addStyle } from "../style/inject.js";
 import { riddleAlert } from "./riddle.js";
+import { registerExportMenu } from "./riddle-ml.js";
 import { encounterCheck } from "./encounter.js";
 import { parseAbilityPage } from "./ability-page.js";
 import { quickSite } from "../arena/quick-site.js";
@@ -29,6 +30,8 @@ import { isOptionOn, getOption } from "../state/option.js";
 export function init() {
   // Phase 5b-1: 启动时加载 globalTurn / skillLastUsed 持久化数据
   loadCdState();
+  // P6: 注册 GM 菜单「导出答题备份」（全局可用，规避挂机后台下载失效）
+  registerExportMenu();
   // P1 强化价格 + P3P4 装备百分位：装备页（#eu span 是 showequip 特征）/ Isekai 弹窗（MutationObserver 等待）
   // 必须早于下方 #navbar 早返回（showequip 页没有 navbar/riddlecounter/textlog）
   if (isOptionOn("forgeCostShow") && document.querySelector("#eu span")) {
