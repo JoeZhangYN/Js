@@ -9,8 +9,9 @@
 // @grant        GM_openInTab
 // @grant        GM_addStyle
 // @grant        GM_xmlhttpRequest
+// @connect      *
 // @run-at       document-start
-// @version      3.3
+// @version      3.8
 // @author       JoeZhangYN
 // @license      GPLv3
 // ==/UserScript==
@@ -157,6 +158,9 @@
     const canvasCache = new WeakMap();
     const isTop = window.self === window.top;
 
+    // 扫描代次：每次新扫描 ++，mouseout 时也 ++ 以中断进行中扫描
+    let activeScanToken = 0;
+
     // === 样式 ===
     GM_addStyle(`
         #qr-tooltip {
@@ -300,21 +304,21 @@
         } catch { return null; }
     }
 
+    // 同步直读 canvas，省掉 toDataURL → new Image.onload → decodeFromImageElement 的 30-80ms 序列化往返
     function scanZXing(data) {
-        return new Promise(resolve => {
-            const reader = ZXingManager.getReader();
-            if (!reader) return resolve(null);
+        const reader = ZXingManager.getReader();
+        if (!reader) return null;
 
-            const { canvas, ctx } = ResourcePool.get();
-            canvas.width = data.width;
-            canvas.height = data.height;
-            ctx.putImageData(data, 0, 0);
+        const { canvas, ctx } = ResourcePool.get();
+        canvas.width = data.width;
+        canvas.height = data.height;
+        ctx.putImageData(data, 0, 0);
 
-            const img = new Image();
-            img.onload = () => reader.decodeFromImageElement(img).then(r => resolve(r.text)).catch(() => resolve(null));
-            img.onerror = () => resolve(null);
-            img.src = canvas.toDataURL('image/png');
-        });
+        try {
+            return reader.decodeFromCanvas(canvas)?.text || null;
+        } catch {
+            return null; // ZXing 找不到时抛 NotFoundException，吞掉转 null
+        }
     }
 
     function extractRegion(img, region, targetSize) {
@@ -394,8 +398,12 @@
 
     // === 扫描流程 ===
 
-    // 快速扫描：仅全图
-    async function quickScan(img) {
+    // 把 await 让出微任务，方便 alive() 检查最新 token
+    const yieldNow = () => new Promise(r => setTimeout(r, 0));
+
+    // 快速扫描：仅全图。async + yield 让 ZXing 前先释放主线程，
+    // 否则 jsQR + ZXing 一气呵成会独占 50-150ms，wheel/scroll 排队卡顿。
+    async function quickScan(img, alive) {
         const w = img.naturalWidth || img.width;
         const h = img.naturalHeight || img.height;
         const data = extractRegion(img, { x: 0, y: 0, w, h }, CONFIG.SCAN_SIZE);
@@ -403,19 +411,24 @@
         let r = scanJSQR(data);
         if (r) return { text: r, method: 'JSQR' };
 
-        r = await scanZXing(data);
+        if (alive && !alive()) return null;
+        await yieldNow(); // 让 wheel / mouseout / 其他事件先处理
+        if (alive && !alive()) return null;
+
+        r = scanZXing(data);
         if (r) return { text: r, method: 'ZXing' };
 
         return null;
     }
 
     // 区域扫描：15个区域
-    async function regionScan(img, el) {
+    async function regionScan(img, el, alive) {
         const w = img.naturalWidth || img.width;
         const h = img.naturalHeight || img.height;
         const regions = getRegions(w, h);
 
         for (let i = 0; i < regions.length; i++) {
+            if (!alive()) return null;
             const reg = regions[i];
             if (i > 0) showTooltip(`⌛ 扫描 ${reg.name} (${i + 1}/${regions.length})`, el);
 
@@ -423,16 +436,21 @@
             let r = scanJSQR(data);
             if (r) return { text: r, method: `JSQR ${reg.name}` };
 
-            r = await scanZXing(data);
+            if (!alive()) return null;
+            r = scanZXing(data);
             if (r) return { text: r, method: `ZXing ${reg.name}` };
+
+            // 让出主线程，让 mouseout 等事件能 ++token 中断我们
+            await yieldNow();
         }
         return null;
     }
 
     // 深度扫描：区域 + 变体
-    async function deepScan(img, el) {
-        let r = await regionScan(img, el);
+    async function deepScan(img, el, alive) {
+        let r = await regionScan(img, el, alive);
         if (r) return r;
+        if (!alive()) return null;
 
         const w = img.naturalWidth || img.width;
         const h = img.naturalHeight || img.height;
@@ -442,14 +460,18 @@
         const inv = makeVariant(full, 'invert');
         r = scanJSQR(inv);
         if (r) return { text: r, method: 'JSQR 反色' };
-        r = await scanZXing(inv);
+        if (!alive()) return null;
+        r = scanZXing(inv);
         if (r) return { text: r, method: 'ZXing 反色' };
 
+        await yieldNow();
+        if (!alive()) return null;
         showTooltip('⌛ 尝试二值化...', el);
         const bin = makeVariant(full, 'binary');
         r = scanJSQR(bin);
         if (r) return { text: r, method: 'JSQR 二值化' };
-        r = await scanZXing(bin);
+        if (!alive()) return null;
+        r = scanZXing(bin);
         if (r) return { text: r, method: 'ZXing 二值化' };
 
         return null;
@@ -457,6 +479,12 @@
 
     // === 主入口 ===
     async function scan(target, mode = 'quick', cropRect = null) {
+        const myToken = ++activeScanToken;
+        const alive = () => myToken === activeScanToken;
+        // 框选是用户显式提交的动作，即使鼠标移开也要看到结果
+        const force = !!cropRect;
+        const liveOrForce = () => force || alive();
+
         const isImg = target.tagName === 'IMG';
         const key = isImg ? target.src : target;
 
@@ -467,6 +495,7 @@
         }
 
         let result = null;
+        const type = isImg ? 'IMG' : 'CANVAS';
 
         // 框选
         if (cropRect) {
@@ -476,15 +505,16 @@
             const reg = { x: cropRect.x * sx, y: cropRect.y * sy, w: cropRect.w * sx, h: cropRect.h * sy };
             const data = extractRegion(img, reg, cropRect.noScale ? null : CONFIG.SCAN_SIZE);
 
-            result = scanJSQR(data) || await scanZXing(data);
-            if (result) return success(result, '框选', isImg ? 'IMG' : 'CANVAS', key, target);
+            result = scanJSQR(data) || scanZXing(data);
+            if (result) return success(result, '框选', type, key, target, liveOrForce);
             return fail(target, true);
         }
 
         // 快速扫描
         if (mode === 'quick') {
-            result = await quickScan(img);
-            if (result) return success(result.text, result.method, isImg ? 'IMG' : 'CANVAS', key, target);
+            result = await quickScan(img, alive);
+            if (!alive()) return; // 用户已移开 → 静默放弃，不污染缓存（避免误标 failed）
+            if (result) return success(result.text, result.method, type, key, target, alive);
             setCache(key, { status: 'failed' }, !isImg);
             return; // 静默失败，不显示任何提示
         }
@@ -492,56 +522,109 @@
         // 区域扫描
         if (mode === 'region') {
             showTooltip('⌛ 区域扫描...', target);
-            result = await regionScan(img, target);
-            if (result) return success(result.text, result.method, isImg ? 'IMG' : 'CANVAS', key, target);
+            result = await regionScan(img, target, alive);
+            if (!alive()) return;
+            if (result) return success(result.text, result.method, type, key, target, alive);
             return fail(target, true);
         }
 
         // 深度扫描
         if (mode === 'deep') {
             showTooltip('⌛ 深度扫描...', target);
-            result = await deepScan(img, target);
-            if (result) return success(result.text, result.method, isImg ? 'IMG' : 'CANVAS', key, target);
+            result = await deepScan(img, target, alive);
+            if (!alive()) return;
+            if (result) return success(result.text, result.method, type, key, target, alive);
             return fail(target, true);
         }
     }
 
-    function loadImage(target) {
-        return new Promise(resolve => {
-            if (target.tagName === 'CANVAS') {
-                const img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = () => resolve(null);
-                img.src = target.toDataURL();
-                return;
-            }
+    const isCrossOrigin = url => {
+        try { return new URL(url, location.href).origin !== location.origin; }
+        catch { return false; }
+    };
 
+    // 浏览器 CORS 重取：服务端配 ACAO 头时无需 GM、无 Tampermonkey 跨源弹窗
+    function loadAsCorsImage(src) {
+        return new Promise(resolve => {
             const img = new Image();
-            img.crossOrigin = 'Anonymous';
+            img.crossOrigin = 'anonymous';
+            img.referrerPolicy = 'no-referrer';
             img.onload = () => resolve(img);
-            img.onerror = () => {
-                GM_xmlhttpRequest({
-                    method: 'GET', url: target.src, responseType: 'blob',
-                    onload: r => {
-                        if (r.status !== 200) return resolve(null);
-                        const url = URL.createObjectURL(r.response);
-                        const fb = new Image();
-                        fb.onload = () => { resolve(fb); URL.revokeObjectURL(url); };
-                        fb.onerror = () => { resolve(null); URL.revokeObjectURL(url); };
-                        fb.src = url;
-                    },
-                    onerror: () => resolve(null)
-                });
-            };
-            img.src = target.src;
+            img.onerror = () => resolve(null);
+            img.src = src;
         });
     }
 
-    function success(text, method, type, key, el) {
+    // GM 通道：能读任何域，但首次访问新域会触发 Tampermonkey "跨源访问" 弹窗
+    function loadViaGM(url) {
+        return new Promise(resolve => {
+            if (typeof GM_xmlhttpRequest === 'undefined') return resolve(null);
+            GM_xmlhttpRequest({
+                method: 'GET', url, responseType: 'blob',
+                onload: r => {
+                    if (r.status !== 200 || !r.response) return resolve(null);
+                    const objUrl = URL.createObjectURL(r.response);
+                    const img = new Image();
+                    img.onload = () => { resolve(img); URL.revokeObjectURL(objUrl); };
+                    img.onerror = () => { resolve(null); URL.revokeObjectURL(objUrl); };
+                    img.src = objUrl;
+                },
+                onerror: () => resolve(null),
+                ontimeout: () => resolve(null)
+            });
+        });
+    }
+
+    function loadImage(target) {
+        return new Promise(async resolve => {
+            if (target.tagName === 'CANVAS') {
+                try {
+                    const dataUrl = target.toDataURL();
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = () => resolve(null);
+                    img.src = dataUrl;
+                } catch {
+                    // 跨域污染的 canvas 无法 toDataURL，无法绕过
+                    resolve(null);
+                }
+                return;
+            }
+
+            const src = target.currentSrc || target.src;
+            if (!src) return resolve(null);
+
+            // data:/blob: 直接加载
+            if (/^(data|blob):/i.test(src)) {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => resolve(null);
+                img.src = src;
+                return;
+            }
+
+            // 跨域：先试浏览器 CORS（CDN 给 ACAO 头时直接成功，零 GM 弹窗）；失败再退 GM
+            if (isCrossOrigin(src)) {
+                const corsImg = await loadAsCorsImage(src);
+                if (corsImg) return resolve(corsImg);
+                resolve(await loadViaGM(src));
+                return;
+            }
+
+            // 同源 → 原生加载，失败再退回 GM
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = async () => resolve(await loadViaGM(src));
+            img.src = src;
+        });
+    }
+
+    function success(text, method, type, key, el, alive) {
         setCache(key, { status: 'success', text, method }, type === 'CANVAS');
         el.dataset.hasQr = 'true';
         el.classList.add('qr-detected');
-        showTooltip(text, el, method);
+        // 用户已离开 → 仅更新缓存，不弹陈旧 tooltip 干扰
+        if (!alive || alive()) showTooltip(text, el, method);
     }
 
     function fail(el, showMsg) {
@@ -667,7 +750,10 @@
         if (t.tagName === 'IMG' || t.tagName === 'CANVAS') {
             clearTimeout(hoverTimer);
             hoveredElement = null;
-            if (currentTarget === t && !isCropping) reqHideTooltip();
+            if (!isCropping) {
+                activeScanToken++; // 中断进行中扫描，框选模式自身有 force 不受影响
+                if (currentTarget === t) reqHideTooltip();
+            }
         }
     });
 
