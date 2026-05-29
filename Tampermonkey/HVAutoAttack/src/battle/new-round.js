@@ -7,6 +7,8 @@ import { goto } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { fixMonsterStatus, pauseChange } from "./main-loop.js";
+import { parseMonsterMaxHP, buildMonsterStatus } from "./log-parser.js";
+import { renderResistPanel } from "../monitor/monster-resist-panel.js";
 import { observeBattle } from "../state/auto-tune.js";
 
 export function newRound() {
@@ -92,22 +94,9 @@ export function newRound() {
     }
   }
   if (battleLog[battleLog.length - 1].textContent.match("Initializing")) {
-    const monsterStatus = [];
-    let id = 0;
-    for (
-      let i = battleLog.length - 2;
-      i > battleLog.length - 2 - g("monsterAll");
-      i--
-    ) {
-      let hp = battleLog[i].textContent.match(/HP=(\d+)$/)[1] * 1;
-      if (isNaN(hp)) hp = monsterStatus[monsterStatus.length - 1].hp;
-      monsterStatus[id] = {
-        order: id,
-        id: id === 9 ? 0 : id + 1,
-        hp,
-      };
-      id = id + 1;
-    }
+    // 满血 HP 单一来源：开局日志的 HP=（parseMonsterMaxHP 已含 null 守卫 + 首怪 NaN 安全默认）
+    const { hps } = parseMonsterMaxHP(battleLog, g("monsterAll"));
+    const monsterStatus = buildMonsterStatus(hps);
     setValue("monsterStatus", monsterStatus);
     g("monsterStatus", monsterStatus);
     let roundNow;
@@ -142,4 +131,5 @@ export function newRound() {
     T2: 0,
     T1: 0,
   });
+  renderResistPanel(); // C: 每轮刷新九抗面板（首轮 + reloader 切轮的公共入口）
 }

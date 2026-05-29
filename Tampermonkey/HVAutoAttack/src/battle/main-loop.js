@@ -19,6 +19,7 @@ import { attack, countMonsterHP } from "./attack.js";
 import { runSteps } from "./step-runner.js";
 import { incrementGlobalTurn, persistCdState } from "../state/cd-tracker.js";
 import { collectSnapshot, assertNoDomRefs, aliveMonstersByOrder } from "./snapshot.js";
+import { parseMonsterMaxHP, buildMonsterStatus } from "./log-parser.js";
 import { checkCriticalBuffGuard } from "./critical-buff-guard.js";
 import { pauseScript } from "./pause-control.js";
 
@@ -249,6 +250,22 @@ export function pauseChange() {
 }
 
 export function fixMonsterStatus() {
+  const battleLog = gE("#textlog>tbody>tr>td", "all");
+  const monsterAll = gE("div.btm2", "all").length;
+  const hasInit =
+    battleLog.length &&
+    /Initializing/.test(battleLog[battleLog.length - 1].textContent);
+
+  // 优先真实 HP=（与 new-round 同源，消除硬编码假值主路径）；
+  // 仅当连开局日志都拿不到（异常态）才退化到 DOM 占位。
+  if (hasInit) {
+    const { hps } = parseMonsterMaxHP(battleLog, monsterAll);
+    setValue("monsterStatus", buildMonsterStatus(hps));
+    goto();
+    return;
+  }
+
+  // 最后兜底：无 Initializing 日志，DOM 占位 + boss 区分（1000 普通 / 100000 boss）
   document.title = _alert(
     -1,
     "monsterStatus错误，正在尝试修复",

@@ -101,3 +101,46 @@ export function estimatePerMonsterDps(events, turn) {
   }
   return map;
 }
+
+/**
+ * 从 "Initializing" 开局日志解析每个怪物的真实满血 HP。
+ * HV 每轮开局日志结构：最后一条是 `Initializing ...` 行，往前每怪一行以 ` HP=数字` 结尾。
+ * **PURE**：只读 battleLog 文本，不碰 DOM/全局。解析不到的位置回退为 null（占位策略交调用方）。
+ * 取代旧 new-round.js 内联正则的两个脆弱点：`.match(...)[1]` 无 null 守卫、首怪 NaN 读 `[-1].hp`。
+ * @param {Element[]} battleLog `#textlog>tbody>tr>td` 元素数组
+ * @param {number} monsterAll 怪物总数
+ * @returns {{hps:(number|null)[], allParsed:boolean}} hps 顺序 = order 0..monsterAll-1（与旧 new-round 倒序遍历一致）
+ */
+export function parseMonsterMaxHP(battleLog, monsterAll) {
+  const hps = [];
+  let allParsed = true;
+  let lastValid = null;
+  for (let i = battleLog.length - 2; i > battleLog.length - 2 - monsterAll; i--) {
+    const m = (battleLog[i]?.textContent || "").match(/HP=(\d+)$/);
+    if (m) {
+      lastValid = parseInt(m[1], 10);
+      hps.push(lastValid);
+    } else {
+      // 解析失败：非首怪沿用上一有效值，首怪无前值则 null（lastValid 初始为 null）
+      hps.push(lastValid);
+      allParsed = false;
+    }
+  }
+  return { hps, allParsed };
+}
+
+/**
+ * 把每怪 hp 数组组装为 monsterStatus 记录（order / id / hp）。
+ * 抽出供 new-round 与 fixMonsterStatus 复用（消除 {order,id,hp} 构造重复）。
+ * id 映射保持原约定：id = (order === 9 ? 0 : order + 1)。
+ * @param {(number|null)[]} hps
+ * @param {number} [fallbackHp=100000] hp 缺失(null)时的保守占位 —— 用大值避免斩杀判断 `hpNow/hp` 除零或误触发
+ * @returns {Array<{order:number, id:number, hp:number}>}
+ */
+export function buildMonsterStatus(hps, fallbackHp = 100000) {
+  return hps.map((hp, order) => ({
+    order,
+    id: order === 9 ? 0 : order + 1,
+    hp: hp ?? fallbackHp,
+  }));
+}

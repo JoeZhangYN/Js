@@ -53,6 +53,7 @@ export default defineConfig({
           "rdma.ooguy.com",        // P6 RMA ML 答题端点
           "hvitems.niblseed.com",  // P4 Send Range 喂数据回社区 DB（高玩 / Jenga 维护）
           "reasoningtheory.net",   // P4 Live Percentile 装备数据库（声明 connect 让 GM_xmlhttpRequest 可用）
+          "hv-monsterdb-data.skk.moe", // C 怪物九抗全量库（SukkaW 社区 DB, MIT）
           "hentaiverse.org",       // HV Utils 汉化 $ajax 自请求
           "e-hentai.org",          // HV Utils 汉化 e-hentai 域请求
         ],

@@ -17,6 +17,9 @@ import { idleArena } from "../arena/idle-arena.js";
 import { main, pauseChange } from "../battle/main-loop.js";
 import { reloader } from "../battle/reloader.js";
 import { newRound } from "../battle/new-round.js";
+import { setupScanWatch } from "../battle/monster-db-scan.js";
+import { syncMonsterDb } from "../battle/monster-db-sync.js";
+import { renderResistPanel } from "../monitor/monster-resist-panel.js";
 import { loadCdState } from "../state/cd-tracker.js";
 import { setupPageRefresh } from "../alarm/page-refresh.js";
 import { setupForgeCost } from "./showequip-forge-cost.js";
@@ -159,6 +162,9 @@ export function init() {
     g("timeNow", time(0));
     g("runSpeed", 1);
     newRound();
+    // C: 怪物九抗数据层 + 展示（纯展示，未接攻击决策；后续可加 option 开关）
+    syncMonsterDb(); // 每日下载社区全量库（内部日期 gate，异步不阻塞主循环）
+    setupScanWatch(renderResistPanel); // scan 自采监听 → 入库后刷新面板（newRound 末尾负责首刷/每轮刷新）
     if (g("option").recordEach && !getValue("battleCode"))
       setValue(
         "battleCode",
