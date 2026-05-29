@@ -59,9 +59,8 @@ async function cleanupEmptyChatWorldbooks() {
       (name) => name.startsWith("Chat_Book_") && name !== currentChatBook,
     );
 
-    for (const bookName of chatBooks) {
-      await checkAndDeleteEmptyWorldbook(bookName);
-    }
+    // 并行清理：每本 Chat_Book_* 互不依赖，串行 await 会放大延迟
+    await Promise.allSettled(chatBooks.map(checkAndDeleteEmptyWorldbook));
   } catch (err) {
     console.error("[世界书管理] 批量清理聊天世界书失败:", err);
   }

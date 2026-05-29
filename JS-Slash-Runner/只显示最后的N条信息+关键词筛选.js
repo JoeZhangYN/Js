@@ -28,13 +28,16 @@ async function onlyShowLast() {
   $("#chat").children().remove();
 
   let messagesToRender = [];
+  // 预编译筛选表达式 + 高亮正则：长聊天里避免每条消息重建
+  const matcher = filterKeywords ? compilePattern(filterKeywords) : null;
+  const highlightRegex = filterKeywords ? buildHighlightRegex(filterKeywords) : null;
 
-  if (filterKeywords) {
+  if (matcher) {
     for (let i = 0; i < SillyTavern.chat.length; i++) {
       const message = SillyTavern.chat[i];
       if (!message || !message.mes) continue;
 
-      if (matchesComplexPattern(message.mes, filterKeywords)) {
+      if (matcher(message.mes)) {
         messagesToRender.push({ index: i, message, matched: true });
       }
     }
@@ -54,12 +57,12 @@ async function onlyShowLast() {
     );
   }
 
-  if (filterKeywords) {
+  if (highlightRegex) {
     const highlightDelay = variables.joezhangynHighlightDelay ?? 0.5;
     await delay(highlightDelay * 1000);
     for (const item of messagesToRender) {
       if (item.matched) {
-        highlightKeywordsInMessage(item.index, filterKeywords);
+        highlightKeywordsInMessage(item.index, highlightRegex);
       }
     }
   }
@@ -76,46 +79,31 @@ function extractAllKeywords(pattern) {
     .filter((k) => k.length > 0);
 }
 
-function highlightKeywordsInMessage(messageId, pattern) {
+function buildHighlightRegex(pattern) {
   const keywords = extractAllKeywords(pattern);
-  if (!keywords.length) return;
+  if (!keywords.length) return null;
   keywords.sort((a, b) => b.length - a.length);
+  const escaped = keywords.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  return new RegExp(`(<[^>]+>)|(${escaped.join("|")})`, "gi");
+}
 
+function highlightKeywordsInMessage(messageId, regex) {
   const $mes = retrieveDisplayedMessage(messageId);
   if (!$mes.length) return;
-
-  const escaped = keywords.map((k) =>
-    k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-  );
-  const keywordPattern = escaped.join("|");
-  const regex = new RegExp(`(<[^>]+>)|(${keywordPattern})`, "gi");
-
   $mes.html(
-    $mes.html().replace(regex, (match, tag, kw) => {
-      if (tag) return tag;
-      return `<span class="keyword-hl">${kw}</span>`;
-    }),
+    $mes.html().replace(regex, (match, tag, kw) =>
+      tag ? tag : `<span class="keyword-hl">${kw}</span>`,
+    ),
   );
 }
 
-function matchesComplexPattern(text, pattern) {
-  function evaluateExpression(expr, text) {
-    expr = expr.trim();
-    while (
-      expr.startsWith("(") &&
-      expr.endsWith(")") &&
-      isBalancedParens(expr.slice(1, -1))
-    ) {
-      expr = expr.slice(1, -1).trim();
-    }
-    return evaluateTokens(tokenize(expr), text);
-  }
-
+// 把表达式解析为 AST 一次，返回闭包；后续对每条消息只跑 evaluate
+function compilePattern(pattern) {
   function isBalancedParens(str) {
     let count = 0;
-    for (const char of str) {
-      if (char === "(") count++;
-      if (char === ")") count--;
+    for (const ch of str) {
+      if (ch === "(") count++;
+      else if (ch === ")") count--;
       if (count < 0) return false;
     }
     return count === 0;
@@ -125,64 +113,79 @@ function matchesComplexPattern(text, pattern) {
     const tokens = [];
     let current = "";
     let parenCount = 0;
-
-    for (const char of expr) {
-      if (char === "(") {
-        parenCount++;
-        current += char;
-      } else if (char === ")") {
-        parenCount--;
-        current += char;
-      } else if (parenCount === 0 && (char === "&" || char === "|")) {
+    for (const ch of expr) {
+      if (ch === "(") { parenCount++; current += ch; }
+      else if (ch === ")") { parenCount--; current += ch; }
+      else if (parenCount === 0 && (ch === "&" || ch === "|")) {
         if (current.trim()) tokens.push(current.trim());
-        tokens.push(char);
+        tokens.push(ch);
         current = "";
       } else {
-        current += char;
+        current += ch;
       }
     }
     if (current.trim()) tokens.push(current.trim());
     return tokens;
   }
 
-  function evaluateTokens(tokens, text) {
+  function parseExpr(expr) {
+    expr = expr.trim();
+    while (
+      expr.startsWith("(") &&
+      expr.endsWith(")") &&
+      isBalancedParens(expr.slice(1, -1))
+    ) {
+      expr = expr.slice(1, -1).trim();
+    }
+    return parseTokens(tokenize(expr));
+  }
+
+  function parseTokens(tokens) {
     if (tokens.length === 1) {
       const token = tokens[0];
-      if (token.startsWith("(") && token.endsWith(")")) {
-        return evaluateExpression(token, text);
-      }
-      return new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(
-        text,
-      );
+      if (token.startsWith("(") && token.endsWith(")")) return parseExpr(token);
+      return {
+        type: "leaf",
+        regex: new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
+      };
     }
-
     for (let i = 0; i < tokens.length; i++) {
       if (tokens[i] === "&") {
-        return (
-          evaluateTokens(tokens.slice(0, i), text) &&
-          evaluateTokens(tokens.slice(i + 1), text)
-        );
+        return {
+          type: "and",
+          left: parseTokens(tokens.slice(0, i)),
+          right: parseTokens(tokens.slice(i + 1)),
+        };
       }
     }
     for (let i = 0; i < tokens.length; i++) {
       if (tokens[i] === "|") {
-        return (
-          evaluateTokens(tokens.slice(0, i), text) ||
-          evaluateTokens(tokens.slice(i + 1), text)
-        );
+        return {
+          type: "or",
+          left: parseTokens(tokens.slice(0, i)),
+          right: parseTokens(tokens.slice(i + 1)),
+        };
       }
     }
+    return { type: "leaf", regex: /(?!)/ };
+  }
+
+  function evaluate(node, text) {
+    if (node.type === "leaf") return node.regex.test(text);
+    if (node.type === "and") return evaluate(node.left, text) && evaluate(node.right, text);
+    if (node.type === "or") return evaluate(node.left, text) || evaluate(node.right, text);
     return false;
   }
 
+  let ast;
   try {
-    return evaluateExpression(pattern, text);
+    ast = parseExpr(pattern);
   } catch (e) {
-    console.error("Error parsing pattern:", e);
-    return new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(
-      text,
-    );
+    console.error("[筛选] 解析表达式失败，回退到全文匹配:", e);
+    const fallback = new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    return (text) => fallback.test(text);
   }
+  return (text) => evaluate(ast, text);
 }
 
 // --- 按钮事件（弃用 eventOnButton → eventOn + getButtonEvent）---
