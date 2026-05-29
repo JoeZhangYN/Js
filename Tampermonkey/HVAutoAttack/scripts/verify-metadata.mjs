@@ -18,14 +18,16 @@ function walk(dir) {
   return out;
 }
 
-const ALL_GRANTS = ["GM_setValue", "GM_getValue", "GM_deleteValue", "GM_notification", "unsafeWindow"];
+// 动态提取代码实际使用的 grant 符号（GM_* 下划线 API + unsafeWindow），
+// 不再维护独立硬编码白名单 —— 白名单与 vite grant 数组是双源，易漂移
+// （历史 bug：ALL_GRANTS 漏 GM_xmlhttpRequest → 误报 "declared but unused"）。
+// GM.xmlHttpRequest（点号变体）是运行时 fallback、非 grant 声明名，故只扫下划线形式。
+const GRANT_RE = /\b(GM_\w+|unsafeWindow)\b/g;
 
 const usedInCode = new Set();
 for (const file of walk(SRC_DIR)) {
   const src = readFileSync(file, "utf8");
-  for (const g of ALL_GRANTS) {
-    if (new RegExp(`\\b${g}\\b`).test(src)) usedInCode.add(g);
-  }
+  for (const m of src.matchAll(GRANT_RE)) usedInCode.add(m[1]);
 }
 
 const viteSrc = readFileSync(VITE_CONFIG, "utf8");
