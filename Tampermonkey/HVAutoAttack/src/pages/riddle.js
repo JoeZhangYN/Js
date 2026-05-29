@@ -71,12 +71,22 @@ export function riddleAlert() {
     setupRMAHealth();
   }
 
-  // Sentinel H1 修复：30 ticks × async checkTime 会让倒计时末端每 tick 都 await + submit；
-  // tryMLAnswer 内部 inFlight 哨兵会让第 2 tick 返回 null → fallback 随机猜抢跑 + 重复提交。
-  // 双哨兵：pendingSubmit（已进入 submit 流程，防 ML 等待期间被随机猜抢跑）+ submitted（已 submit 完，防重复提交）。
-  let pendingSubmit = false;
+  // P6 时机修复（对齐原 RMA：题目一出现立即识别，提交延后到倒计时末端）：
+  // ML 识别在此立即异步启动并缓存到 mlAnswer，而非等倒计时剩 riddleAnswerTime 才 await。
+  // 原 bug：识别被放到倒计时末端才开始，ML POST（最长 12s）来不及返回 → 错过倒计时，
+  // 表现为「超时随机正常、ML 没反应」。提前后 ML 有整个倒计时时长可用。
+  let mlAnswer = null;
+  if (isOptionOn("mlAnswer")) {
+    tryMLAnswer()
+      .then((a) => {
+        mlAnswer = a;
+      })
+      .catch(() => {});
+  }
+
+  // 单哨兵 submitted 即可（不再末端 await，无重入竞争）。
   let submitted = false;
-  const checkTime = async function () {
+  const checkTime = function () {
     if (submitted) return;
     let time;
     if (typeof g("time") === "undefined") {
@@ -90,17 +100,11 @@ export function riddleAlert() {
       g("time", time);
     }
     document.title = time;
-    if (time <= g("option").riddleAnswerTime && !pendingSubmit) {
-      pendingSubmit = true; // 锁定：本轮 await ML 期间后续 tick 直接 return（见函数开头 submitted 检查 + 此处）
-      // P6: ML 优先；命中 → 直接 submit；失败 / 关闭 → fallback 随机猜
-      let answer = null;
-      if (isOptionOn("mlAnswer")) {
-        answer = await tryMLAnswer();
-      }
-      if (!answer) {
-        // Bug fix：原 answers 5 项漏 "ra" 改 6 项；用 ANSWER_KEYS.length 防退化
-        answer = ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)];
-      }
+    if (time <= g("option").riddleAnswerTime) {
+      // ML 已就绪 → 用 ML 答案；否则随机猜（同步立即提交，赶上倒计时末端）。
+      // ANSWER_KEYS.length 防退化（原 answers 漏 "ra" 命中率 1/5 的旧 bug）。
+      const answer =
+        mlAnswer || ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)];
       submitted = true;
       riddleSubmit(answer);
     }
