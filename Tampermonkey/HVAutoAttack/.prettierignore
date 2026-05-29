@@ -1,0 +1,5 @@
+dist/
+node_modules/
+.vite/
+# 第三方原样嵌入代码（HV Utils 统一汉化等），不套项目格式化
+src/i18n/

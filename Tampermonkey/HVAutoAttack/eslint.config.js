@@ -3,7 +3,7 @@ import globals from "globals";
 
 export default [
   {
-    ignores: ["dist/**", "node_modules/**", ".vite/**"],
+    ignores: ["dist/**", "node_modules/**", ".vite/**", "src/i18n/**"],
   },
   js.configs.recommended,
   {

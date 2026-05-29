@@ -32,7 +32,9 @@ export default defineConfig({
         match: [
           "http*://hentaiverse.org/*",
           "http://alt.hentaiverse.org/*",
+          "https://alt.hentaiverse.org/*", // HV Utils 汉化覆盖 alt https
           "https://e-hentai.org/*",
+          "http://e-hentai.org/*", // HV Utils 汉化覆盖 e-hentai http
         ],
         // P1 (PriceForged) + P3P4 (equip-percentile) 要求放开 showequip.php，
         // 让 setupForgeCost / setupEquipPercentile 能在装备页运行；
@@ -44,12 +46,15 @@ export default defineConfig({
           "GM_deleteValue",
           "GM_notification",
           "GM_xmlhttpRequest", // P6 RMA ML 远程答题 POST rdma.ooguy.com
+          "GM_addStyle",       // HV Utils 汉化 60+ 处 CSS 注入
           "unsafeWindow",
         ],
         connect: [
           "rdma.ooguy.com",        // P6 RMA ML 答题端点
           "hvitems.niblseed.com",  // P4 Send Range 喂数据回社区 DB（高玩 / Jenga 维护）
           "reasoningtheory.net",   // P4 Live Percentile 装备数据库（声明 connect 让 GM_xmlhttpRequest 可用）
+          "hentaiverse.org",       // HV Utils 汉化 $ajax 自请求
+          "e-hentai.org",          // HV Utils 汉化 e-hentai 域请求
         ],
         "run-at": "document-end",
       },
