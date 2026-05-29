@@ -905,7 +905,7 @@ function documentInteractor(options) {
       [68, transformations.showFullyForgedBase],     // D
       [90, transformations.showScaledMylevel],       // Z
       [88, transformations.showScaledCustomlevel],   // X
-      [67, transformations.showFullyForgedScaled],   // C
+      [71, transformations.showFullyForgedScaled],   // G（原 C，改避与汉化装备热键 C/V/L/K 冲突）
       [70, transformations.showScaledDefault],       // F
     ].map(([keyCode, func]) => ({ keyCode, func }));
 

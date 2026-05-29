@@ -4,6 +4,7 @@
 // 盾战 combo：T1 stun → T2（晕状态打 T2 = 200 分高优先）→ T3 斩杀（hpRatio<25%+bleed = 1000 分决定性）
 import { checkCondition } from "../../settings/condition-eval.js";
 import { aoeScore } from "../utility-engine.js";
+import { aliveMonstersByOrder } from "../snapshot.js";
 
 /**
  * State-aware 打分：传入 snap + 首怪 facts，返该 skill 的当前 score（0 = 不该使用）。
@@ -61,7 +62,7 @@ export function scorePhysicalSkillCandidates(opt, snap, ctx) {
     !!(opt.skillOTOS && opt.skillOTOS[key] && (snap.skillOTOS?.[key] ?? 0) >= 1);
   const ocCur = snap.oc || 0;
 
-  const firstMonster = [...snap.monsters].sort((a, b) => a.order - b.order).find((m) => !m.isDead);
+  const firstMonster = aliveMonstersByOrder(snap)[0];
 
   return skillOrder.flatMap((skill) => {
     const info = skillLib.get(skill);
@@ -86,15 +87,4 @@ export function scorePhysicalSkillCandidates(opt, snap, ctx) {
     if (skill === "T3" && (firstMonster?.hpRatio ?? 1) < 0.25 && firstMonster?.buffs?.includes("wpn_bleed")) explain += " (execute)";
     return [{ code: skill, id: info.id, score, oc: info.oc, explain }];
   });
-}
-
-/**
- * 兼容旧接口：first-match 取首个可用。已被 attack.js 用 utility engine 替代但保留以防其他调用。
- * @returns {{ code: string|null, id: string|null }}
- */
-export function selectPhysicalSkill(opt, snap, ctx) {
-  const candidates = scorePhysicalSkillCandidates(opt, snap, ctx).filter((c) => c.score > 0);
-  if (!candidates.length) return { code: null, id: null };
-  candidates.sort((a, b) => b.score - a.score);
-  return { code: candidates[0].code, id: candidates[0].id };
 }

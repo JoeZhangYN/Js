@@ -18,7 +18,7 @@ import { useDeSkill, castDebuffOnAll } from "./debuff.js";
 import { attack, countMonsterHP } from "./attack.js";
 import { runSteps } from "./step-runner.js";
 import { incrementGlobalTurn, persistCdState } from "../state/cd-tracker.js";
-import { collectSnapshot, assertNoDomRefs } from "./snapshot.js";
+import { collectSnapshot, assertNoDomRefs, aliveMonstersByOrder } from "./snapshot.js";
 import { checkCriticalBuffGuard } from "./critical-buff-guard.js";
 import { pauseScript } from "./pause-control.js";
 
@@ -169,9 +169,7 @@ export function main() {
     () => {
       if (g("option").debuffSkillSwitch === false) return;
       if (!snap.skillReady["213"]) return;
-      const sortedAlive = [...snap.monsters]
-        .sort((a, b) => a.order - b.order)
-        .filter((m) => !m.isDead);
+      const sortedAlive = aliveMonstersByOrder(snap);
       const isBossNoIm = (m) => m.isBoss && !m.buffs.includes("imperil");
       if (!sortedAlive.some(isBossNoIm)) return;
       // HV AoE 模式 = backward（参 legacy castDebuffOnAll：click i+1 覆盖 [i, i+1]）。
