@@ -9,6 +9,11 @@ import { storagePrefix } from "../env.js";
  */
 export function setValue(item, value) {
   const key = storagePrefix + item;
+  // 防退化：完整 option 必带 version（init.js 装填时对齐）。缺 version = 疑似散落 `g("option")||{}`
+  // 残缺写覆盖完整配置（现象①根因）。只 warn 不阻断（advisory），引导改走 state/option.js setOption。
+  if (item === "option" && value && typeof value === "object" && !value.version) {
+    console.warn("[HVAA] setValue('option') 写入缺 version 字段，疑似残缺 option 覆盖；应走 setOption() 统一写入口:", value);
+  }
   if (typeof GM_setValue === "undefined") {
     window.localStorage[key] = typeof value === "string" ? value : JSON.stringify(value);
   } else {

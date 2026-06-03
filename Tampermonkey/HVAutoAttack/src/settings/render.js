@@ -14,6 +14,7 @@ import { objSort, getKeys } from "../core/obj.js";
 import { customizeBox } from "./customize.js";
 import { OPTION_SCHEMA } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
+import { setOption } from "../state/option.js";
 
 /**
  * 从 OPTION_SCHEMA 渲染 "checkbox + number + 单位文本" 这类成对字段。
@@ -326,11 +327,9 @@ export function optionBox() {
     if (/^[01]$/.test(this.value))
       gE(".hvAA-LangStyle").textContent += "l01{display:inline!important;}";
     g("lang", this.value);
-    // 持久化 lang 到 option（重载保留）
-    const opt = g("option") || {};
-    opt.lang = this.value;
-    g("option", opt);
-    setValue("option", opt);
+    // 持久化 lang 到 option：统一 setOption 写入口（内部 getValue fallback 取完整 option），
+    // 避免在 option 未装填的页残缺 {lang} 落盘覆盖完整配置（现象①持久化失效根因）。
+    setOption("lang", this.value);
     // HV 原生汉化(equip/interface) 即时按新 lang 重渲染显示态（0简/1繁/2英），无需重载
     setLang(this.value);
   };
