@@ -3,6 +3,12 @@
 // 嵌入守卫:原脚本靠 @exclude isekai/equip 避让 HVAA 装备百分位;嵌入后无法用 @exclude
 // (会排除 HVAA 自身),改运行时守卫复现;try-catch 隔离,汉化崩溃不阻断 HVAA 主逻辑。
 try {
+  // Stage C: 协调器读出口 resolveEn(读 DOM 文本反查英文逻辑 key, 消 i18n 中文污染)。hv-utils 是非 ESM
+  // sloppy-mode 第三方脚本(加 import 会触发 strict mode 撞 `protected` 等保留字标识符), 故经 window.HVAA_i18n
+  // 全局桥获取(restore-controller.js 挂载); 桥未就绪退化返 undefined(调用方 ?? 原值)。两 IIFE 闭包共用此 var。
+  var resolveEn = function (node, group) {
+    return window.HVAA_i18n && window.HVAA_i18n.resolveEn ? window.HVAA_i18n.resolveEn(node, group) : undefined;
+  };
   if (!/\/isekai\/equip(\/|$)/.test(window.location.pathname)) {
 // ===== HVAA 补充：Panel A($battle 修复/补给栏)物品名英→中映射 =====
 // Panel A(行 ~2475/2555)直接渲染游戏返回的英文物品名,原 sssss2 无映射表。
@@ -3850,7 +3856,9 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     });
     $qsa('#stats_scrollable > table:nth-last-of-type(2) tr').forEach((tr) => {
       const name = tr.cells[1].textContent;
-      tr.cells[1].textContent = `[${base[name]}] ${name}`;
+      const enName = resolveEn(tr.cells[1], 'characterStatus') ?? name; // i18n 翻中文后反查英文 key(base 键为英文)
+      const baseVal = base[enName];
+      tr.cells[1].textContent = baseVal === undefined ? name : `[${baseVal}] ${name}`; // 反查不到不显示 [undefined], 仅留中文
     });
   };
 
@@ -13747,9 +13755,9 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     });
     const stats = ['strength', 'dexterity', 'agility', 'endurance', 'intelligence', 'wisdom', 'elemental', 'divine', 'forbidden', 'deprecating', 'supportive'];
     $qsa('.st2:nth-last-child(-n+3) .fal > div').forEach((d) => {
-      const s = d.textContent.trim();
+      const s = (resolveEn(d, 'characterStatus') ?? d.textContent.trim()).toLowerCase(); // 反查英文再小写(中/英态归一; base/stats 皆小写)
       if (stats.includes(s)) {
-        d.innerHTML = `&nbsp;[${Math.round(base[s])}]${d.textContent}`;
+        d.innerHTML = `&nbsp;[${Math.round(base[s])}]${d.textContent}`; // 显示保留 d.textContent(中文)
       }
     });
   };

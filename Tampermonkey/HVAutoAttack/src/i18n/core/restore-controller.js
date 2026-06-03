@@ -186,3 +186,9 @@ export function isSkipped(node) {
   }
   return false;
 }
+
+// hv-utils.js 是非 ESM sloppy-mode 第三方脚本（加 import 会触发 strict mode 撞 `protected` 等保留字标识符，
+// 无法 import 本模块），经全局桥暴露协调器读出口供其 IIFE 消费（Stage C/D/G 读源归一）。
+if (typeof window !== "undefined") {
+  window.HVAA_i18n = { resolveEn, registerTranslation, isSkipped, SKIP_ATTR };
+}
