@@ -6,7 +6,7 @@
 
 // 切换原文使用的变量
 import { EQUIP_ITEMS, EQUIP_EQUIPS, EQUIP_INFO, EQUIP_EXTRA } from "../data/i18n/equip-dict.js";
-import { registerRestore, ensureRestoreButton, registerRetranslate } from "./core/restore-controller.js";
+import { registerRestore, ensureRestoreButton, registerRetranslate, isTranslated } from "./core/restore-controller.js";
 import { langPostProcess } from "./core/lang-post.js";
 
 var translatedList = new Map(), translated = true;
@@ -279,7 +279,8 @@ function translate(target, dicts) {
         html = html.replace(dict[0], dict[1]);
     }
     if (isElem) {
-        target.innerHTML = langPostProcess(html); // 译文按当前 lang 出简/繁（lang=2 由 RestoreController 还原英文）
+        var out = langPostProcess(html); // 译文按当前 lang 出简/繁（lang=2 由 RestoreController 还原英文）
+        if (out !== target.innerHTML) target.innerHTML = out; // 仅内容变化时写，防持续 observer 下无变化重写引发互触发
         return target;
     }
     else return html;
@@ -297,6 +298,45 @@ function translateEquipsList(){
     }
     translateEquips(".hvut-eq-h5");
     translateEquips(".eqb>div");
+    observeEquipList(); // 持续监听渐进加载/重排，重翻新装备（BUG2/persistentGuarantee）
+}
+
+// HV 装备列表渐进加载（滚动/分批渲染）+ sssss2 排序重排会引入未翻译的新元素，
+// indefined 一次性翻译只命中首批（用户实证：左侧装备只单手武器翻了）。监听列表容器，
+// DOM 变化去抖重翻（复用 translateEquipsList，按当前 lang）；英文态保持原文不翻；
+// 重翻期间 disconnect 防自身写入触发循环。
+var equipListObserver = null;
+function observeEquipList() {
+    if (equipListObserver) return; // 每页只挂一次
+    var containers = [];
+    ['.equiplist', '#equiplist', '#leftpane', '#eqch_left', '#equipselect_left'].forEach(function (sel) {
+        var el = document.querySelector(sel);
+        if (el) containers.push(el);
+    });
+    var firstRow = document.querySelector('tr[onmouseover]');
+    if (firstRow) {
+        var tbl = firstRow.closest('table');
+        if (tbl && containers.indexOf(tbl) === -1) containers.push(tbl);
+    }
+    if (!containers.length) return;
+    var pending = false;
+    var observe = function () { containers.forEach(function (c) { equipListObserver.observe(c, { childList: true, subtree: true }); }); };
+    equipListObserver = new MutationObserver(function () {
+        if (!isTranslated()) return; // 英文态（lang=2 / 手动切英）：新元素本就是英文，不翻
+        if (pending) return; // 去抖：一轮 DOM 变化只重翻一次
+        pending = true;
+        setTimeout(function () {
+            try {
+                equipListObserver.disconnect(); // 重翻期间停观察，防自身写入触发
+                translateEquipsList();
+                translateEquips("#leftpane>div:not([id])"); // 锻造左侧装备名
+            } finally {
+                pending = false;
+                observe();
+            }
+        }, 50);
+    });
+    observe();
 }
 
 //翻译装备名。参数: 待翻译的页面元素css选择器
