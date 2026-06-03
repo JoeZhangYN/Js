@@ -13,6 +13,7 @@ import { time } from "../core/time.js";
 import { objSort, getKeys } from "../core/obj.js";
 import { customizeBox } from "./customize.js";
 import { OPTION_SCHEMA } from "./schema.js";
+import { setLang } from "../i18n/core/restore-controller.js";
 
 /**
  * 从 OPTION_SCHEMA 渲染 "checkbox + number + 单位文本" 这类成对字段。
@@ -325,6 +326,13 @@ export function optionBox() {
     if (/^[01]$/.test(this.value))
       gE(".hvAA-LangStyle").textContent += "l01{display:inline!important;}";
     g("lang", this.value);
+    // 持久化 lang 到 option（重载保留）
+    const opt = g("option") || {};
+    opt.lang = this.value;
+    g("option", opt);
+    setValue("option", opt);
+    // HV 原生汉化(equip/interface) 即时按新 lang 重渲染显示态（0简/1繁/2英），无需重载
+    setLang(this.value);
   };
   gE(".hvAATabmenu", optionBox).onclick = function (e) {
     // 标签页事件

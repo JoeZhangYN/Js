@@ -11,6 +11,8 @@
 
 /** @type {Array<() => void>} 各翻译引擎注册的原文/译文交换回调 */
 const restoreCallbacks = [];
+/** @type {Array<() => void>} 各引擎注册的“按当前 lang 重新翻译自己”回调（lang 切换重翻用） */
+const retranslateCallbacks = [];
 /** 全局显示态：true=显示译文(中/繁)，false=显示原文(英) */
 let translatedState = true;
 /** @type {HTMLElement|null} 唯一 #change-translate 按钮 */
@@ -73,6 +75,39 @@ export function ensureRestoreButton() {
 /** 程序化触发一次全体原文/译文切换（等价点按钮）。供战斗翻译开关调用。 */
 export function toggleRestore() {
   runAll();
+}
+
+/**
+ * 注册“按当前 lang 重新翻译”回调（去重）。各引擎 init 时注册一次。
+ * @param {() => void} fn 清空自己 translatedList 并对当前(已还原英文的)DOM 重新翻译（译文过 langPostProcess）
+ */
+export function registerRetranslate(fn) {
+  if (typeof fn === "function" && !retranslateCallbacks.includes(fn)) {
+    retranslateCallbacks.push(fn);
+  }
+}
+
+/**
+ * lang 显示态执行器：运行时切语言即时生效。render.js 切语言时调用（调用前已 g("lang") 置新值 + 持久化）。
+ * ①确保还原所有引擎到英文原文 ②lang=2 停在英文 ③lang=0/1 调度各引擎重翻（译文经 langPostProcess 出繁/简）。
+ * @param {string|number} newLang 0 简 / 1 繁 / 2 英
+ */
+export function setLang(newLang) {
+  if (translatedState) {
+    for (const fn of restoreCallbacks) {
+      try { fn(); } catch (e) { console.error("[HVAA][i18n] restore 回调出错:", e); }
+    }
+    translatedState = false;
+  }
+  if (String(newLang) === "2") {
+    if (changer) changer.innerHTML = "中"; // 英文态，按钮点击切回中文
+    return;
+  }
+  for (const fn of retranslateCallbacks) {
+    try { fn(); } catch (e) { console.error("[HVAA][i18n] retranslate 回调出错:", e); }
+  }
+  translatedState = true;
+  if (changer) changer.innerHTML = "英";
 }
 
 /** 当前是否处于“已翻译”显示态。供动态 observer / alert hook 读取。 */

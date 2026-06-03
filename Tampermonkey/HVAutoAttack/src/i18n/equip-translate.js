@@ -6,7 +6,8 @@
 
 // 切换原文使用的变量
 import { EQUIP_ITEMS, EQUIP_EQUIPS, EQUIP_INFO, EQUIP_EXTRA } from "../data/i18n/equip-dict.js";
-import { registerRestore, ensureRestoreButton } from "./core/restore-controller.js";
+import { registerRestore, ensureRestoreButton, registerRetranslate } from "./core/restore-controller.js";
+import { langPostProcess } from "./core/lang-post.js";
 
 var translatedList = new Map(), translated = true;
 
@@ -68,8 +69,10 @@ function main(){
 
         case 7: //装备店
             translateEquipsList();
+            if (!document.getElementById('hvut-equhide')) { // 幂等：lang 切换重翻不重复建隐藏锁定按钮
             var equipdiv, i;
             var equhide = document.createElement('span');
+            equhide.id = 'hvut-equhide';
             equhide.style.cssText = "cursor: pointer;z-index: 1000;font-size: 16px;position: fixed;top: 180px;left: 0px;color: red;background: black;user-select: none;";
             try{
                 if(!localStorage.hideflag) localStorage.hideflag = "隐藏锁定装备";
@@ -106,6 +109,7 @@ function main(){
                 }
             }
             document.body.appendChild(equhide);
+            }
             break;
 
         case 8: //论坛
@@ -141,7 +145,7 @@ function main(){
                 html = html.replace(/HTRANSLATE_PLACEHOLDER_(\d+)/g, (match, p1)=>{
                     return links[p1]; // 还原备份的原网页中链接
                 });
-                post.innerHTML = html;
+                post.innerHTML = langPostProcess(html);
             });
             return; //此处直接结束翻译方法，其它case结束后会检查是否有原文需要切换，论坛原文切换已经默认执行
             break;
@@ -193,29 +197,35 @@ function main(){
                 // 翻译拍卖记录
                 translateItems('td:nth-child(6)');
                 translateEquips('td:nth-child(6)');
-                new MutationObserver(function(){
-                    // 拍卖记录自动刷新
-                    translatedList.clear(); // 清空旧翻译记录
-                    if (!translated) translated = -1;
-                    // 重新翻译
-                    translateItems('td:nth-child(6)');
-                    translateEquips('td:nth-child(6)');
-                    if (translated == -1) restore();
-                }).observe(table, {childList:true});
+                if (!table.dataset.hvutObserved) { // 幂等：lang 切换重翻不重复建 observer
+                    table.dataset.hvutObserved = '1';
+                    new MutationObserver(function(){
+                        // 拍卖记录自动刷新
+                        translatedList.clear(); // 清空旧翻译记录
+                        if (!translated) translated = -1;
+                        // 重新翻译
+                        translateItems('td:nth-child(6)');
+                        translateEquips('td:nth-child(6)');
+                        if (translated == -1) restore();
+                    }).observe(table, {childList:true});
+                }
             }
             else if (table = document.getElementById('itemSections')) {
                 // 拍卖列表
                 translateItems('td:nth-child(2)');
                 translateEquips('td:nth-child(2)');
-                new MutationObserver(function(){
-                    // 拍卖列表自动刷新
-                    translatedList.clear(); // 清空旧翻译记录
-                    if (!translated) translated = -1;
-                    // 重新翻译
-                    translateItems('td:nth-child(2)');
-                    translateEquips('td:nth-child(2)');
-                    if (translated == -1) restore();
-                }).observe(table, {childList:true});
+                if (!table.dataset.hvutObserved) { // 幂等：lang 切换重翻不重复建 observer
+                    table.dataset.hvutObserved = '1';
+                    new MutationObserver(function(){
+                        // 拍卖列表自动刷新
+                        translatedList.clear(); // 清空旧翻译记录
+                        if (!translated) translated = -1;
+                        // 重新翻译
+                        translateItems('td:nth-child(2)');
+                        translateEquips('td:nth-child(2)');
+                        if (translated == -1) restore();
+                    }).observe(table, {childList:true});
+                }
             }
             else if (document.getElementById('draw')) {
                 // 拍卖时间
@@ -269,7 +279,7 @@ function translate(target, dicts) {
         html = html.replace(dict[0], dict[1]);
     }
     if (isElem) {
-        target.innerHTML = html;
+        target.innerHTML = langPostProcess(html); // 译文按当前 lang 出简/繁（lang=2 由 RestoreController 还原英文）
         return target;
     }
     else return html;
@@ -279,7 +289,8 @@ function translate(target, dicts) {
 function translateEquipsList(){
     if (document.querySelector('.eqtplabel')){
         translateEquips('tr[onmouseover]>td:first-child');
-        document.head.insertAdjacentHTML('beforeend', `<style>.lc>span{left:unset;position:unset;background:unset;border:unset}.lc>span:nth-child(2){position:absolute;top:0;left:0;height:20px;width:20px;background-color:#EDEADA;border:2px solid #B5A4A4;border-radius:3px}`);
+        if (!document.getElementById('hvut-eqtp-style')) // 幂等：lang 切换重翻不重复注入
+            document.head.insertAdjacentHTML('beforeend', `<style id="hvut-eqtp-style">.lc>span{left:unset;position:unset;background:unset;border:unset}.lc>span:nth-child(2){position:absolute;top:0;left:0;height:20px;width:20px;background-color:#EDEADA;border:2px solid #B5A4A4;border-radius:3px}`);
     }
     else {
         translateEquips(".equiplist div[id^='e'][onmouseover]");
@@ -365,6 +376,13 @@ function loadExtra() {
     }
 }
 
+// 按当前 lang 重新翻译（lang 切换用）。RestoreController.setLang 调用前已把 DOM 还原回英文原文。
+function retranslateEquip() {
+  translatedList.clear();
+  main(); // 重跑翻译；UI 副作用（拍卖 observer / 隐藏锁定按钮 / style）已加幂等守卫
+  translated = true; // 重翻后回到"已翻译"显示态，与 RestoreController 全局态同步（防拍卖 -1 逻辑错乱）
+}
+
 export function initEquipTranslate() {
   try {
     var p = location.pathname || "";
@@ -374,6 +392,7 @@ export function initEquipTranslate() {
     // 原脚本顶层早返回守卫 (L25-26):iw 页无 item_pane / 谜题页 / 战斗日志页不汉化
     if (document.location.href.match(/ss=iw/) && !document.getElementById('item_pane')) return;
     if (document.getElementById('riddlemaster') || document.getElementById('textlog')) return;
+    registerRetranslate(retranslateEquip); // 注册 lang 切换重翻回调（去重）
     main();
   } catch (e) { console.error("[HVAA][equip-i18n] 执行出错:", e); }
 }

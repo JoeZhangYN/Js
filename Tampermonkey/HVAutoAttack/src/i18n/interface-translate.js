@@ -29,7 +29,8 @@
 // ============================================================================
 
 import { INTERFACE_DICTS_MAP, INTERFACE_WORDS } from "../data/i18n/interface-dict.js";
-import { registerRestore, ensureRestoreButton, toggleRestore, isTranslated, isButtonVisible, hideButton } from "./core/restore-controller.js";
+import { registerRestore, ensureRestoreButton, toggleRestore, isTranslated, isButtonVisible, hideButton, registerRetranslate } from "./core/restore-controller.js";
+import { langPostProcess } from "./core/lang-post.js";
 
 //原文切换功能所需变量（changer 按钮归 RestoreController 单例；translated 仍本模块持有供动态 observer / alert hook 读）
 var translatedList = new Map(), translated = true;
@@ -129,7 +130,7 @@ function translateText(elem, dict, dynamic) {
                 if (!translatedList.has(text)) {
                     translatedList.set(text, {data: text.data});
                 }
-                text.data = temp;
+                text.data = langPostProcess(temp); // 按当前 lang 出简/繁
             }
         }
     }
@@ -153,7 +154,7 @@ function translateButton(elem, dict, isDynamic) {
     }
     if(value!=elem.value) {
         if (!translatedList.has(elem)) translatedList.set(elem, {value: elem.value});
-        elem.value = value;
+        elem.value = langPostProcess(value);
     }
 }
 
@@ -166,7 +167,7 @@ function translateElemTitle(target, dict, isDynamic) {
         }
         if (txt!=elem.title) {
             if (!translatedList.has(elem)) translatedList.set(elem, {title: elem.title});
-            elem.title = txt;
+            elem.title = langPostProcess(txt);
         }
     });
 }
@@ -240,6 +241,13 @@ function start() {
     //console.timeEnd('hvtranslate');
 }
 
+// 按当前 lang 重新翻译（lang 切换用）。RestoreController.setLang 调用前已 restoreTranslate 还原英文。
+function retranslateInterface() {
+    translatedList.clear();
+    start(); // 重新遍历翻译（start 内 disconnect 旧 observer + 重建）；译文经 langPostProcess 出对应繁简
+    translated = true; // 重翻后回到"已翻译"显示态，与全局态同步（防动态 observer if(!translated)return 失效）
+}
+
 export function initInterfaceTranslate() {
     try {
         var p = location.pathname || "";
@@ -250,6 +258,8 @@ export function initInterfaceTranslate() {
 
         //战斗中切换翻译，与上面功能类似，但是更改的状态会持久性存储
         window.translateBattle = !!localStorage.translateBattle;
+
+        registerRetranslate(retranslateInterface); // 注册 lang 切换重翻回调（去重）
 
         //挟持浏览器弹窗方法并在弹窗之前先翻译文本，该方法独立运行
         hookAlertTranslate();
