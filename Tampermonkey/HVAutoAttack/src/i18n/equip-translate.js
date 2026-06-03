@@ -6,8 +6,9 @@
 
 // 切换原文使用的变量
 import { EQUIP_ITEMS, EQUIP_EQUIPS, EQUIP_INFO, EQUIP_EXTRA } from "../data/i18n/equip-dict.js";
+import { registerRestore, ensureRestoreButton } from "./core/restore-controller.js";
 
-var translatedList = new Map(), translated = true, changer;
+var translatedList = new Map(), translated = true;
 
 // 物品字典、装备字典、装备属性字典、额外内容字典，提供给translate方法第二参数做翻译字典
 // 可以调用对应translateItems/translateEquips/translateEquipsInfo/translateExtra方法直接翻译页面元素
@@ -108,7 +109,8 @@ function main(){
             break;
 
         case 8: //论坛
-            initRestore(); //原文切换按钮
+            var changer = ensureRestoreButton(); //原文切换按钮（统一单例）
+            registerRestore(restore);
             if (!+localStorage.comfimTranslateAlert) {
                 //切换原文强提示
                 changer.style.width = "1em";
@@ -235,35 +237,19 @@ function main(){
     }
 
     if (translatedList.size) {
-        initRestore();//原文切换按钮
+        ensureRestoreButton();//原文切换按钮（统一单例）
+        registerRestore(restore);
     }
 }
 
-//原文切换
+//原文切换：交换 translatedList 原文↔译文 + 翻转本模块 translated（按钮/Alt+A 归 RestoreController 单例）
+//供 RestoreController 注册（按钮点击调度）与拍卖 observer 自动重翻（直接调，仅切本引擎）共用。
 function restore() {
     for(var elem of translatedList) {
         translatedList.set(elem[0], elem[0].innerHTML);
         elem[0].innerHTML = elem[1];
     }
     translated = !translated;
-    changer.innerHTML = translated?'英':'中';
-}
-function initRestore() {
-    document.addEventListener('keydown',(ev)=>{
-        if(ev.altKey&&(ev.key=='a'||ev.key=='A')) {
-            restore();
-        }
-    });
-    if(changer=document.getElementById('change-translate')) {
-        return changer.addEventListener('click',restore);
-    }
-    changer = document.createElement('span');
-    changer.innerHTML = "英";
-    changer.title = '点击切换翻译';
-    changer.id = 'change-translate';
-    changer.addEventListener('click',restore);
-    changer.style.cssText = "cursor:pointer;z-index:1000;font-size: 16px;position:fixed; top:200px; left:0px; color: white;background : black";
-    document.body.appendChild(changer);
 }
 
 /**

@@ -29,56 +29,37 @@
 // ============================================================================
 
 import { INTERFACE_DICTS_MAP, INTERFACE_WORDS } from "../data/i18n/interface-dict.js";
+import { registerRestore, ensureRestoreButton, toggleRestore, isTranslated, isButtonVisible, hideButton } from "./core/restore-controller.js";
 
-//原文切换功能所需变量
-var translatedList = new Map(), translated = true, changer;
+//原文切换功能所需变量（changer 按钮归 RestoreController 单例；translated 仍本模块持有供动态 observer / alert hook 读）
+var translatedList = new Map(), translated = true;
 // translatedList格式：key:已翻译元素, value: 该元素已被翻译属性和原文键值对（目前没考虑无法直接用key赋值的属性）
-//原文切换功能
-function restoreTranslate() {
+//原文切换：交换 translatedList 各元素的原文↔译文属性 + 翻转本模块 translated（按钮/Alt+A 归 RestoreController 单例）
+//export 供 RestoreController 注册 + Phase 2 lang 切换重跑调用。
+export function restoreTranslate() {
     translatedList.forEach((data, elem) => {
         for (var item in data) {
             [elem[item], data[item]] = [data[item], elem[item]];
         }
     });
     translated = !translated;
-    changer.innerHTML = translated?'英':'中';
-}
-//初始化原文切换按钮
-function initRestoreButton() {
-    if (changer) {
-        return document.body.appendChild(changer);
-    }
-    document.addEventListener('keydown',(ev)=>{
-        if(ev.altKey&&(ev.key=='a'||ev.key=='A')) {
-            restoreTranslate();
-        }
-    });
-    if(changer=document.getElementById('change-translate')) {
-        return changer.addEventListener('click',restoreTranslate);
-    }
-    changer = document.createElement('span');
-    changer.innerHTML = "英";
-    changer.title = '点击切换翻译';
-    changer.id = 'change-translate';
-    changer.addEventListener('click',restoreTranslate);
-    changer.style.cssText = "cursor:pointer;z-index:1000;font-size: 16px;position:fixed; top:200px; left:0px; color: white;background : black";
-    document.body.appendChild(changer);
 }
 
 
-//战斗中切换翻译，与上面功能类似，但是更改的状态会持久性存储
+//战斗中切换翻译，与上面功能类似，但是更改的状态会持久性存储（按钮经统一 RestoreController 调度）
 function changeBattleTranslate() {
-    if (changer && document.body.contains(changer)) {
-        if (translated) changer.click();
-        window.translateBattle = translated;
+    if (isButtonVisible()) {
+        if (isTranslated()) toggleRestore();   // 切回英文（关闭战斗翻译）
+        window.translateBattle = isTranslated();
         delete localStorage.translateBattle;
-        document.body.removeChild(changer);
+        hideButton();
         if (window.battle && window.battle.set_infopane) window.battle.set_infopane('Battle Time');
     }
     else {
-        if (changer && !translated) changer.click();
-        localStorage.translateBattle = translated = window.translateBattle = true;
-        start();
+        if (!isTranslated()) toggleRestore();   // 切回中文（开启战斗翻译）
+        localStorage.translateBattle = window.translateBattle = true;
+        translated = true;
+        start();   // 重新翻译并经 ensureRestoreButton 重新显示按钮
     }
 }
 
@@ -253,7 +234,8 @@ function start() {
                 observer.observe(elem, {childList:true, attribute: true, attributeFilter: ['value', 'title']}); //监听翻译动态内容
             }
         }
-        initRestoreButton();
+        ensureRestoreButton();
+        registerRestore(restoreTranslate);
     }
     //console.timeEnd('hvtranslate');
 }
