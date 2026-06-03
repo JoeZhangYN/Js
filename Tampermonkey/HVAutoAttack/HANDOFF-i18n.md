@@ -36,6 +36,11 @@
 - **Phase5 BUG1（仓库/装备店护甲名没翻）**：阻塞于用户 HV F12 未翻护甲名 outerHTML 样本
   (H1 词典缺词 / H2 正则 / H3 品质色块 span 打断匹配)。
 - **第二批(epic 外)**：dict-store.js(GM 词典覆盖+导入导出) + 设置面板「汉化」tab UI。
+- **下个 epic：后台定时调度抽象（task 11，i18n 收尾后）**：抽象统一后台定时器(setInterval
+  + GM 状态续期,油猴限制无法真跨页面)，注册周期任务(训练续训 / 遭遇战检测 / ...)，任何页面
+  (含战斗页)后台跑，避免每功能各写定时器。发现:自动续训 sssss2 `_bottom.tr` 已实现(训练页
+  Plan Training UI 配置式 + 倒计时 fetch start_train 到目标等级)，但用户要**定时器驱动**(不
+  依赖页面 UI 配置) + **遭遇战**(encounter.js 仅 non-combat 页检测,战斗中盲区) + **统一抽象**。
 
 ## 当前阻塞 / 续接动作
 用户正实站验收 Phase1+2 + persistentGuarantee。
