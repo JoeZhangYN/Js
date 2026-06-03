@@ -6,7 +6,7 @@
 
 // 切换原文使用的变量
 import { EQUIP_ITEMS, EQUIP_EQUIPS, EQUIP_INFO, EQUIP_EXTRA } from "../data/i18n/equip-dict.js";
-import { registerRestore, ensureRestoreButton, registerRetranslate, isTranslated } from "./core/restore-controller.js";
+import { registerRestore, ensureRestoreButton, registerRetranslate, isTranslated, isSkipped } from "./core/restore-controller.js";
 import { langPostProcess } from "./core/lang-post.js";
 
 var translatedList = new Map(), translated = true;
@@ -269,6 +269,7 @@ function restore() {
  */
 function translate(target, dicts) {
     if (!target || !dicts) return;
+    if (target instanceof Element && isSkipped(target)) return; // data-i18n-skip 子树跳过(Stage D offline 注入 / Stage G hv-utils 自渲染)
     let html, isElem = target instanceof Element;
     if (isElem) {
         html = target.innerHTML;

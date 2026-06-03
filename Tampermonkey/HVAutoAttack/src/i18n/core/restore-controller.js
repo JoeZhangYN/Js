@@ -9,6 +9,8 @@
 // （交换各自 translatedList 的原文↔译文 + 翻转其私有 translated）。按钮 click / Alt+A 一次
 // 调度全部回调 → 切换一次同时回退所有引擎。lang 显示态执行器（setLang）见 Phase 2。
 
+import { reverseLookup } from "../../data/i18n/reverse-dict.js";
+
 /** @type {Array<() => void>} 各翻译引擎注册的原文/译文交换回调 */
 const restoreCallbacks = [];
 /** @type {Array<() => void>} 各引擎注册的“按当前 lang 重新翻译自己”回调（lang 切换重翻用） */
@@ -128,4 +130,59 @@ export function hideButton() {
 /** 重新显示按钮。 */
 export function showButton() {
   if (changer) changer.style.display = "";
+}
+
+// ============================================================================
+// 横切 DOM SSOT 协调器（Stage B）：英文逻辑态 ↔ 中文显示态的单一读写出口。
+// 写方（i18n 翻译）登记英文原文 + 跳过 data-i18n-skip 子树；读方（hv-utils/百分位）经 resolveEn 拿回英文。
+// 不变量「逻辑键必须基于英文」从散落注释归位到这两个出口（配合 Stage F node probe 机械锁）。
+// caller 契约：resolveEn 的 caller 必须是"读 DOM 文本当英文逻辑 key"的点；registerTranslation 的
+// caller 必须是翻译写方（写 DOM 显示文本前登记英文原文）。
+// ============================================================================
+
+/** 节点 → 英文原文（写方登记，resolveEn 优先查；WeakMap 随节点销毁自动回收） */
+const enByNode = new WeakMap();
+
+/** 增强读方注入的子树打此属性，翻译写方遇到整段跳过（消"翻译覆盖注入节点 / 双翻自渲染中文"轴 B） */
+export const SKIP_ATTR = "data-i18n-skip";
+
+/**
+ * 登记节点的英文原文（翻译写方改写前调用，去重；原文一旦登记不被后续翻译覆盖）。
+ * @param {Node} node 文本节点或元素
+ * @param {string} enText 英文原文
+ */
+export function registerTranslation(node, enText) {
+  if (node && typeof enText === "string" && !enByNode.has(node)) {
+    enByNode.set(node, enText);
+  }
+}
+
+/**
+ * 读出口：拿回节点的英文逻辑 key。① 节点登记原文（textNode 级精确）→ ② 逆表反查中文文本
+ * （group 缩小歧义）→ ③ 未命中返 undefined（调用方 `?? 原值` 回退）。
+ * 退化安全：英文态/未翻时 textContent 本就是英文，逆表 miss 返 undefined，调用方回退即原英文。
+ * @param {Node|string} nodeOrText 节点（读其 textContent）或直接中文串
+ * @param {string=} group 逆表词典组（'characterStatus'/'trains'/'character'/'quality'）
+ * @returns {string|undefined}
+ */
+export function resolveEn(nodeOrText, group) {
+  if (nodeOrText && typeof nodeOrText === "object" && "nodeType" in nodeOrText) {
+    if (enByNode.has(nodeOrText)) return enByNode.get(nodeOrText);
+    return reverseLookup(nodeOrText.textContent || "", group);
+  }
+  return reverseLookup(String(nodeOrText == null ? "" : nodeOrText), group);
+}
+
+/**
+ * 节点自身或任一祖先是否带 data-i18n-skip（翻译写方据此跳过子树）。
+ * @param {Node} node
+ * @returns {boolean}
+ */
+export function isSkipped(node) {
+  let el = node && node.nodeType === 3 ? node.parentElement : node;
+  while (el && el.hasAttribute) {
+    if (el.hasAttribute(SKIP_ATTR)) return true;
+    el = el.parentElement;
+  }
+  return false;
 }

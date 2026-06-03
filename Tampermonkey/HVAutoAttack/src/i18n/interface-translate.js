@@ -29,7 +29,7 @@
 // ============================================================================
 
 import { INTERFACE_DICTS_MAP, INTERFACE_WORDS } from "../data/i18n/interface-dict.js";
-import { registerRestore, ensureRestoreButton, toggleRestore, isTranslated, isButtonVisible, hideButton, registerRetranslate } from "./core/restore-controller.js";
+import { registerRestore, ensureRestoreButton, toggleRestore, isTranslated, isButtonVisible, hideButton, registerRetranslate, registerTranslation, isSkipped } from "./core/restore-controller.js";
 import { langPostProcess } from "./core/lang-post.js";
 
 //原文切换功能所需变量（changer 按钮归 RestoreController 单例；translated 仍本模块持有供动态 observer / alert hook 读）
@@ -121,7 +121,7 @@ function translateText(elem, dict, dynamic) {
     var texts = pathExpre.evaluate(elem, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
     for (var i = 0, text; text = texts.snapshotItem(i); i += 1) {
         //console.log(text.parentNode.tagName)
-        if (dynamic || isTagOk(text.parentNode.tagName) ) {
+        if ((dynamic || isTagOk(text.parentNode.tagName)) && !isSkipped(text)) {
             var temp = text.data;
             for(var item of dict){
                 temp = temp.replace(item.reg, item.value);
@@ -130,6 +130,7 @@ function translateText(elem, dict, dynamic) {
                 if (!translatedList.has(text)) {
                     translatedList.set(text, {data: text.data});
                 }
+                registerTranslation(text, translatedList.get(text).data); // 登记英文原文供 resolveEn 精确反查(textNode 级)
                 text.data = langPostProcess(temp); // 按当前 lang 出简/繁
             }
         }
