@@ -1,32 +1,51 @@
-# HVAutoAttack 汉化整合 — Handoff (2026-06-03)
+# HVAutoAttack i18n 横切整合 — Handoff（续接点，2026-06-03 更新）
 
-> 新 session 续接点。第一批已 commit + 用户验证核心 OK(中文+词缀分色回来)。
+> i18n 横切整合 epic 续接点。前身「第一批汉化」已并入本 epic。
+> 设计 plan：`~/.claude/plans/agile-sparking-raccoon.md`（已批准）。
 
-## 已完成(第一批, v10.0.1, build 全绿 1.79MB)
-| 功能 | 逻辑模块 | 数据模块 | 状态 |
+## Epic 目标
+统一 3 套散落汉化引擎的横切关注点 → 涉及 DOM 的翻译最终都过一遍 lang 管道，
+始终输出对应语言（0简/1繁/2英），运行时切换即时生效 + 持久化。
+**用户已豁免「可追上游 diff」**（i18n 稳定、重构整合而非完整迁移上游）。
+
+## 已完成（commit）
+| 阶段 | 内容 | commit | 验收 |
 |---|---|---|---|
-| 装备词条+词缀分色 #404119 | `src/i18n/equip-translate.js` | `src/data/i18n/equip-dict.js`(4词典) | ✅ 用户验证 OK |
-| 界面/角色页汉化 #404118(Fighting Style等) | `src/i18n/interface-translate.js` | `src/data/i18n/interface-dict.js`(65选择器+33分区) | ✅ 用户验证 OK |
-| 繁简转换(自建) | `src/i18n/zh-convert.js` | `src/data/i18n/zh-table.js`(T2S 1189字对) | 🔧 已建**未接线** |
-| jpx 语言包 | `src/i18n/jpx-lang.js` / `jpx-dict.js` | — | ❌ 弃用(死路:仅发 window.jpxI18N、需不在仓主脚本、key 是标识符非页面文本) |
+| Phase1 | 统一 RestoreController（修 #change-translate 双挂 bug） | `003d2f9` | ⏳ 待 HV 实站 |
+| Phase2 | lang 三态即时切换 + 持久化 + zh-convert 接线 | `c3b2516` | ⏳ 待 HV 实站 |
+| persistentGuarantee | 装备列表渐进加载持续翻译（observer） | `6c6fe6c` | ⏳ 待 HV 实站 |
+| Phase3 | 词典去重 | — | ❌ 实证跳过（870 共同 key/125 异译多为语境分立同名异义） |
 
-其它已改:
-- `src/i18n/hv-utils.js`: sssss2 `equipColor` 品质整件染色已禁(`if(false)`,改用 #404119 词缀分色) + 汉化错误诊断弹窗(临时, catch 内 textarea)
-- `src/main.js`: 接线 `initEquipTranslate → initInterfaceTranslate → hv-utils(副作用) → init`
-- `src/pages/init.js`: 版本更新弹窗已禁(改静默对齐 option.version)
-- `package.json`: 9.99.9999 → **10.0.1**; `scripts/postbuild-check.mjs`: 体积上限 1.5MB → 2.5MB
-- `HentaiVerse/SOURCES.md`: 新增「功能嵌入矩阵」+「如何追上游更新」; 上游全存档 `HentaiVerse/`
+## 架构（已落地）
+- `src/i18n/core/restore-controller.js`：单例，统一按钮+Alt+A+全局态 + `registerRestore`
+  + `registerRetranslate` + `setLang`(lang 显示态执行器) + `isTranslated`/`hideButton` 等。
+- `src/i18n/core/lang-post.js`：`langPostProcess(s)=convertByLang(s,g('lang'))`，繁简末端。
+- equip/interface-translate.js：删各自按钮/Alt+A 旧路径(拆桥)→注册回调；译文出口接
+  `langPostProcess`；各注册 retranslate(lang 切换重翻)；equip `main()` 加幂等守卫
+  (equhide id / 拍卖 observer dataset / eqtp style id) + `observeEquipList`(渐进加载持续翻译)。
+- render.js onchange：`setValue(option.lang)` 持久化 + `setLang` 即时切换。
+- main.js：首次按持久化 lang 修正显示态(`setLang` 1 转繁 / 2 还原英文)。
+- translate 主体双策略(equip innerHTML / interface XPath textNode)保留(falseSiblings,禁合并)。
 
-## 遗留 BUG(用户验证发现, 待修)
-1. **仓库/装备店护甲名没翻**(人物装备页护甲已翻 ✅): 同一装备列表武器翻了护甲没翻 → #404119 的 `EQUIP_EQUIPS`(equip-dict.js)护甲**类型/材质/部位词收得不全**(indefined 上游词典武器全、护甲缺)。修: 补 equip-dict 护甲词条(需 HV 护甲词表: Power/Shade/Leather/Plate 等 type × 材质 × 部位 × 中文)。
-2. **锁定装备「前置」后翻译失效**: #404119 是页面加载时**一次性翻**, 而 sssss2 的排序/锁定前置**重排装备列表 DOM** → 翻好的被打乱/重渲染失效。修: 给 #404119 装备列表加 `MutationObserver` 重翻(或在 sssss2 排序后重触发 `translateEquipsList`)。
+## 待办
+- **Phase4（最大块，待用户验收 Phase1+2 后启动）**：hv-utils(20551 行)补 lang。
+  `HVUT_CN.t` 加 lang 分支(覆盖 14 查表) + 三态化 ~293 焊死字面量(topMenuLinks L62 /
+  config.data label L9809+ / stamina L10713+ / HVAA_ITEM_CN L10-29)。英文取自存档基线
+  `HentaiVerse/HVUT_4.0.0_English.user.js` + `HVUT_isekai_4.2.0_English.user.js`(不造词)。
+  双版本 IIFE(ISEKAI L46-9560 / 主世界 L9561+)同步。逻辑值/键/POST 保留英文。切 lang 优先重载生效。
+- **Phase5 BUG1（仓库/装备店护甲名没翻）**：阻塞于用户 HV F12 未翻护甲名 outerHTML 样本
+  (H1 词典缺词 / H2 正则 / H3 品质色块 span 打断匹配)。
+- **第二批(epic 外)**：dict-store.js(GM 词典覆盖+导入导出) + 设置面板「汉化」tab UI。
 
-## 第二批待办(未开始, 用户已确认要)
-- **dict-store.js**(GM 存储覆盖默认词典 + 运行时导入/导出): 复用 `render.js` L739 `hvAAExport`/`hvAAImport` + `.hvAAConfig` textarea 模式; 加 `getDict(name)`(GM 有则用否则默认)/`exportDict`/`importDict`/`resetDict`; 改 equip/interface/zh-convert 逻辑从 `getDict` 取词典。
-- **繁简一键切换**: 接 HVAA `lang` 设置(0简/1繁/2英, `g("lang")`/render.js); equip/interface 输出经 `convertByLang(_, lang)`(zh-convert)归一。注: 两汉化本简体, lang=1 时才 简→繁(一对多有歧义, 以简为主)。
-- **设置面板「汉化」tab**: `render.js` 新增 `hvAATab-I18n` + tabmenu 项(装备/界面汉化开关 + 繁简切换 + 词典导入导出 UI); `schema.js` 加字段。tab 切换逻辑见 render.js L458。
+## 当前阻塞 / 续接动作
+用户正实站验收 Phase1+2 + persistentGuarantee。
+- 验收 OK → 启动 Phase4(hv-utils 补 lang，ultracode 多 agent，英文取存档基线)。
+- 发现问题 → 前进修正(observeEquipList 容器覆盖 / lang 切换重翻幂等)。
 
-## 杂项
-- 根目录 `Tampermonkey/[HV]AutoAttack.js` 是旧单文件(==`legacy/[HV]AutoAttack.legacy.js`)冗余/误导源——用户最初误装它致"退化"错觉。**建议删**(本次未删, 未 commit)。
-- 用户安装产物: `HVAutoAttack/dist/HVAutoAttack.user.js`(同 @name/@namespace, 手动重装覆盖; 同版本号不自动更新)。
-- 执行顺序注意: 当前 main.js 中 hv-utils(sssss2)在 import 阶段先于 indefined 调用; #404119 @notice 称"需先于其它汉化", 若发现 sssss2 与 indefined 抢翻同区域, 把 hv-utils 改 export 函数后置调用。
+## 不变信息
+- jpx-lang(window.jpxI18N 繁体数据桥)**排除**出管道，lang=2 时 init 守卫 return。
+- HVAA 自身 UI 三语(CSS `<l0>/<l1>/<l2>` 显隐, inject.js)独立机制，不动。
+- 用户安装：`HVAutoAttack/dist/HVAutoAttack.user.js`(npm run build 产物, gitignored, 手动重装覆盖)。
+- build：`cd Tampermonkey/HVAutoAttack && npm run build`(verify-sloc+check-circular+vite+postbuild)。
+- observeEquipList 监听容器：`.equiplist/#equiplist/#leftpane/#eqch_left/#equipselect_left` +
+  `tr[onmouseover]` 所在 table。若某装备页容器不在此列表 → 该页渐进加载仍不翻，需补选择器。
