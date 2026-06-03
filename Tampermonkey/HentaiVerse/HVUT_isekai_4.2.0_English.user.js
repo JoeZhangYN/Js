@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name           HV Utils Isekai 汉化
+// @name           HV Utils Isekai
 // @namespace      HVUT
 // @description    A comprehensive out-of-battle script for Hentaiverse
 // @homepageURL    https://forums.e-hentai.org/index.php?showtopic=211883
 // @supportURL     https://forums.e-hentai.org/index.php?showtopic=211883
-// @version        4.1.1
-// @icon           https://hentaiverse.org/y/favicon.png
+// @version        4.2.0
+// @date           2026-05-02
 // @author         sssss2
 // @match          *://*.hentaiverse.org/isekai/*
 // @match          *://e-hentai.org/*
@@ -35,7 +35,7 @@ const settings = {
   */
 
   topMenuIntegration: true,
-  topMenuLinks: ['Character', 'Equipment', 'Item Inventory', 'Item Shop', 'The Shrine', 'The Market', 'Monster Lab', 'MoogleMail', 'Organize', 'Purchase', 'Sell', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'],
+  topMenuLinks: ['Character', 'Equipment', 'Item Inventory', 'Item Shop', 'The Shrine', 'The Market', 'Monster Lab', 'MoogleMail', 'Organize', 'Modify', 'Purchase', 'Sell', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'],
   confirmStaminaRestorative: true,
   disableStaminaRestorative: 79,
   warnLowStamina: 10,
@@ -48,17 +48,17 @@ const settings = {
   lotteryFilters: [
     'Rapier && Slaughter',
     'Ethereal && (Rapier || Wakizashi) && (Balance || Nimble)',
-    'Wakizashi && Battlecaster',
+    '(Wakizashi || Dagger) && (Battlecaster || Focus)',
     'Ethereal && (Axe || Club || Shortsword || Estoc || Katana || Longsword || Mace) && Slaughter',
-    'Force Shield || Buckler && (Barrier || Battlecaster)',
-    'Fiery && (Willow || Redwood) && (Destruction || Elementalist || Surtr)',
-    'Arctic && (Willow || Redwood) && (Destruction || Elementalist || Niflheim)',
+    'Force Shield || (Tower Shield || Kite Shield || Buckler) && (Barrier || Battlecaster)',
+    'Fiery && (Oak || Redwood || Willow) && (Destruction || Elementalist || Surtr)',
+    'Arctic && (Oak || Redwood || Willow) && (Destruction || Elementalist || Niflheim)',
     'Shocking && (Willow || Redwood) && (Destruction || Elementalist || Mjolnir)',
     'Tempestuous && (Willow || Redwood) && (Destruction || Elementalist || Freyr)',
     'Hallowed && (Oak || Katalox) && (Destruction || Heaven-sent || Heimdall)',
     'Demonic && (Willow || Katalox) && (Destruction || Demon-fiend || Fenrir)',
-    '(Radiant || Charged) && Phase',
-    'Charged && (Elementalist || Heaven-sent || Demon-fiend)',
+    '(Radiant || Charged) && (Surtr || Nilfheim || Mjolnir || Freyr || Heimdall || Fenrir)',
+    '(Radiant || Charged) && (Elementalist || Heaven-sent || Demon-fiend)',
     '(Savage || Agile) && Shadowdancer',
     'Power && Slaughter',
     'Power && Savage && Balance',
@@ -70,9 +70,15 @@ const settings = {
   equipColor: true,
   equipShowLevel: true,
   equipShowPAB: true,
+  equipShowCharms: true,
+  equipHideDropInfo: true,
   equipHoverFunctions: true,
   equipTouchFunctions: false,
-  equipCode: '[{$_eid}] [url={$url}]{$namecode}[/url] ({$level?Lv.$level}{$soulbound?Soulbound}{$unassigned?Unassigned}, {$pab}{$note?, $note}){$price? @ $price}',
+  equipCode: {
+    CATEGORY: '[size=3][b][{$category}][/b][/size]',
+    TYPE: '[size=2][b][{$type}][/b][/size]',
+    EQUIP: '[{$_eid}] [url={$url}]{$namecode}[/url] ({$level?Lv.$level}{$soulbound?Soulbound}{$unassigned?Unassigned}, {$pab}{$note?, $note}){$price? @ $price}',
+  },
   equipNameCode: [
     'Peerless : quality=rainbow, name=bold',
     'Legendary : quality=#f90, quality=bold',
@@ -102,14 +108,14 @@ const settings = {
 
   // [Equipment Shop]
   equipmentShopConfirm: 1, // 0: default, 1: auto checkbox, 2: do not confirm
-  equipmentShopAutoProtect: true,
+  equipmentShopAutoProtect: false,
   equipmentShopPriceDeductFee: false,
 
   equipmentShopProtectFilters: [
     'Peerless',
     'Legendary',
     'Magnificent && (Rapier || Shortsword) && Slaughter',
-    'Magnificent && (Tower || Buckler) && Barrier',
+    'Magnificent && (Tower || Kite Shield || Buckler) && Barrier',
     'Magnificent && Fiery && (Oak || Redwood) && (Destruction || Elementalist || Surtr)',
     'Magnificent && Arctic && (Oak || Redwood) && (Destruction || Elementalist || Niflheim)',
     'Magnificent && Shocking && (Willow || Redwood) && (Destruction || Elementalist || Mjolnir)',
@@ -188,10 +194,10 @@ function $qs(q,d) {return (d||document).querySelector(q);}
 function $qsa(q,d) {return Array.from((d||document).querySelectorAll(q));}
 function $doc(h) {const d=document.implementation.createHTMLDocument('');d.documentElement.innerHTML=h;return d;}
 function $element(t,p,a,f) {let e;if(t){e=document.createElement(t);}else if(t===''){e=document.createTextNode(a);a=null;}else{return document.createDocumentFragment();}if(a!==null&&a!==undefined){function ao(e,a){Object.entries(a).forEach(([an,av])=>{if(typeof av==='object'){let a;if(an in e){a=e[an];}else{e[an]={};a=e[an];}Object.entries(av).forEach(([an,av])=>{a[an]=av;});}else{if(an==='style'){e.style.cssText=av;}else if(an in e){e[an]=av;}else{e.setAttribute(an,av);}}});}function as(e,a){const an={'#':'id','.':'className','!':'style','/':'innerHTML'}[a[0]];if(an){e[an]=a.slice(1);}else if(a!==''){e.textContent=a;}}if(typeof a==='string'||typeof a==='number'){e.textContent=a;}else if(Array.isArray(a)){a.forEach((a)=>{if(typeof a==='string'||typeof a==='number'){as(e,a);}else if(typeof a==='object'){ao(e,a);}});}else if(typeof a==='object'){ao(e,a);}}if(f){if(typeof f==='function'){e.addEventListener('click',f);}else if(typeof f==='object'){Object.entries(f).forEach(([ft,fl])=>{e.addEventListener(ft,fl);});}}if(p){if(p.nodeType===1||p.nodeType===11){p.appendChild(e);}else if(Array.isArray(p)){if(['beforebegin','afterbegin','beforeend','afterend'].includes(p[1])){p[0].insertAdjacentElement(p[1],e);}else if(!isNaN(p[1])){p[0].insertBefore(e,p[0].childNodes[p[1]]);}else{p[0].insertBefore(e,p[1]);}}}return e;}
-function $input(o,p,a,f) {if(typeof o==='string'){o=[o];}const [t,v,n,s]=o;if(!a){a={};}if(t==='select'){const i=$element('select',p,a,f);if(v){v.forEach((v)=>{v=split2(v,':');if(!v[1]){v[1]=v[0];}$element('option',i,{value:v[0],text:v[1]});});}return i;}a.type=t;if(v===undefined||v===null){const i=$element('input',p,a,f);return i;}else if(t==='button'||t==='submit'){a.value=v;const i=$element('input',p,a,f);return i;}else{const l=$element('label',p);const i=$element('input',l,a,f);if(s&&(t==='checkbox'||t==='radio')){$element('span',l);l.classList.add('hvut-label');}if(v){if(n==='before'){l.prepend(v,' ');}else{l.append(' ',v);}}return i;}}
+function $input(o,p,a,f) {if(typeof o==='string'){o=[o];}const [t,v,l,n,s]=o;let ao;if(!a){a={};ao=a;}else if(Array.isArray(a)){ao={};a.push(ao);}else if(typeof a==='object'){ao=a;}if(t==='select'){const i=$element('select',p,a,f);if(v){v.forEach((v)=>{v=split2(v,':');if(!v[1]){v[1]=v[0];}$element('option',i,{value:v[0],text:v[1]});});}return i;}ao.type=t;if(v||typeof v==='number'){ao.value=v;}if(l){const b=$element('label',p);const i=$element('input',b,a,f);if(n==='before'){b.prepend(l,' ');}else{b.append(' ',l);}if(s){$element('span',b);b.classList.add('hvut-label');}return i;}else{const i=$element('input',p,a,f);return i;}}
 function time_format(t,o) {t=Math.floor(t/1000);const h=Math.floor(t/3600).toString().padStart(2,'0');const m=Math.floor(t%3600/60).toString().padStart(2,'0');const s=(t%60).toString().padStart(2,'0');return !o?`${h}:${m}:${s}`:o===1?`${h}:${m}`:o===2?`${m}:${s}`:'';}
 function split2(s,d,t=true) {let a;const p=s.indexOf(d);if(p===-1){a=[s];}else{const k=s.slice(0,p);const v=s.slice(p+1);a=[k,v];}if(t){a=a.map((e)=>e.trim());}return a;}
-function scrollIntoView(e,p=e.parentNode) {p.scrollTop+=e.getBoundingClientRect().top-p.getBoundingClientRect().top;}
+function scrollIntoView(e,p=e.parentNode) {if(!e){return;}p.scrollTop+=e.getBoundingClientRect().top-p.getBoundingClientRect().top;}
 function confirm_event(n,e,m,c,f) {if(!n){return;}const a=n.getAttribute('on'+e);n.removeAttribute('on'+e);n.addEventListener(e,(e)=>{if(!c||c()){if(confirm(m)){if(f){f();}}else{e.preventDefault();e.stopImmediatePropagation();}}},true);n.setAttribute('on'+e,a);}
 function toggle_button(b,s,h,e,n,d,f) {const c=(l)=>{l.forEach((m)=>{if(m.type==='attributes'&&m.attributeName==='class'){t();}});};const t=()=>{b.value=e.classList.contains(n)?s:h;};(new MutationObserver(c)).observe(e,{attributes:true,attributeFilter:['class']});if(d==='on'){e.classList.add(n);}else if(d==='off'){e.classList.remove(n);}t();if(!f){f=()=>{e.classList.toggle(n);};}b.addEventListener('click',f);}
 function play_beep(volume=0.2,frequency=500,duration=0.5) {const delay=1;if(!volume){return;}const c=new window.AudioContext();const o=c.createOscillator();const g=c.createGain();o.type='sine';o.frequency.value=frequency;g.gain.value=volume;o.connect(g);g.connect(c.destination);o.start(delay);o.stop(delay+duration);}
@@ -201,7 +207,7 @@ function get_message(d,s) {if(typeof d==='string'){d=$doc(d);}const m=$qsa('#mes
 /* eslint-enable */
 
 const _window = (typeof unsafeWindow === 'undefined') ? window : unsafeWindow;
-const _query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
+const _query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [decodeURIComponent(k.replace(/\+/g, ' ')), decodeURIComponent(v.replace(/\+/g, ' '))]; }));
 const _servername = location.pathname.includes('/isekai/') ? 'isekai' : 'persistent';
 const _server = {
   name: _servername,
@@ -211,8 +217,7 @@ const _server = {
 
 // CONFIGURATION
 const $config = {
-
-  version: 4.1,
+  version: 4.2,
   ls_savelist: ['ch_style', 'persona', 'prices', 'equipset'],
   data: [
     /*
@@ -224,89 +229,88 @@ const $config = {
     { key: 'reBeep', type: 'array', input: 'text', value_type: 'number', value_sep: ',', text: 'Play a beep sound when Random Encounter is ready.\nThe order of values is [volume], [frequency], [duration].\nSet it to 0 to disable.', style: 'width: 150px;', oncreate: (o) => { $input(['button', 'BEEP TEST'], [o.node.input, 'afterend'], null, () => { const validation = $config.validate(o); if (!validation.error) { play_beep(...validation.value); } }); } },
     */
 
-    { tag: 'h1', text: '顶部导航栏设置' },
-    { key: 'topMenuIntegration', type: 'boolean', label: '将顶部菜单集成到左上角的按钮中.' },
-    { key: 'topMenuLinks', type: 'array', input: 'textarea', text: '在顶部设置快速链接\n如果上面的[顶部导航栏]无法正常工作，请将列表中的项目数量设置为8个或更少.' },
-    { key: 'confirmStaminaRestorative', type: 'boolean', label: '使用能量饮料前需确认.', server: 'persistent' },
-    { key: 'disableStaminaRestorative', type: 'number', label: '当体力超过设定值时，禁用使用能量饮料按钮.', server: 'persistent' },
-    { key: 'warnLowStamina', type: 'number', label: '当体力低于指定值时发出警告.' },
+    { tag: 'h1', text: 'Top Navigation Bar' },
+    { key: 'topMenuIntegration', type: 'boolean', label: 'Integrate top menus into one button.' },
+    { key: 'topMenuLinks', type: 'array', input: 'textarea', text: 'Set quick links in the top.\nEach value can be an item in the default menu, or can be defined manually.\nA format is "TITLE | LABEL | URL (| SERVER)?"\nSERVER is optional; It must be either \'persistent\' or \'isekai\' and the link will only be created on that server.\nIf [topMenuIntegration] above is disabled, set the number of items in the list to 8 or less.' },
+    { key: 'confirmStaminaRestorative', type: 'boolean', label: 'Confirm whether to use a stamina restorative item.', server: 'persistent' },
+    { key: 'disableStaminaRestorative', type: 'number', label: 'Disable the stamina restorative button when stamina is above the specified value.', server: 'persistent' },
+    { key: 'warnLowStamina', type: 'number', label: 'Warn when the stamina is below the specified value.' },
 
+    { tag: 'h1', text: 'Bottom Bar' },
+    { key: 'showCredits', type: 'number', input: 'select', options: ['0:disable', '2:always'], label: 'Show the credits balance.' },
+    { key: 'showEquipCapacity', type: 'number', input: 'select', options: ['0:disable', '1:on battle pages only', '2:always'], label: 'Show the free space in the Equipment Inventory.' },
+    { key: 'warnEquipCapacity', type: 'number', label: 'Warn when the free space in the Equipment Inventory is below the specified value.' },
+    { key: 'trainingNotification', type: 'boolean', label: 'Shows the training in progress and automatically start the next training up to the set level.' },
+    { key: 'lotteryNotification', type: 'boolean', label: 'Show the weapon and the armor which are currently in the lottery.' },
+    { key: 'lotteryFilters', type: 'array', input: 'textarea', text: 'Notify if the new equipment in the lottery qualifies.\n* $pab is not available.', desc: 'equipFilters', validator: 'equipFilters' },
 
-    { tag: 'h1', text: '底部导航栏设置' },
-    { key: 'showCredits', type: 'number', input: 'select', options: ['0:disable', '2:always'], label: '显示Credit余额' },
-    { key: 'showEquipCapacity', type: 'number', input: 'select', options: ['0:disable', '1:on battle pages only', '2:always'], label: '显示装备仓库剩余空间' },
-    { key: 'warnEquipCapacity', type: 'number', label: '当装备仓库的剩余容量不足指定数量时发出警告' },
-    { key: 'trainingNotification', type: 'boolean', label: '显示正在进行的训练，并自动开始下一个训练，直到达到预设的训练目标等级' },
-    { key: 'lotteryNotification', type: 'boolean', label: '显示目前的武器彩票和防具彩票' },
-    { key: 'lotteryFilters', type: 'array', input: 'textarea', text: '高亮显示词条正确的彩票抽奖装备\n* $装备主属性(PAB)筛选暂不可用', desc: 'equipFilters', validator: 'equipFilters' },
+    { tag: 'h1', text: 'Equipment' },
+    { key: 'equipmentIntegration', type: 'boolean', label: 'Integrate all types of equipment into a list.' },
+    { key: 'equipSort', type: 'boolean', label: 'Sort and categorize the equipment list.' },
+    { key: 'equipColor', type: 'boolean', label: 'Set the color of equipment by quality.' },
+    { key: 'equipShowLevel', type: 'boolean', label: 'Show equipment\'s level.' },
+    { key: 'equipShowPAB', type: 'boolean', label: 'Show equipment\'s pab.' },
+    { key: 'equipShowCharms', type: 'boolean', label: 'Show equipment\'s charms in the pop-up' },
+    { key: 'equipHideDropInfo', type: 'boolean', label: 'Hide equipment\'s drop info in the pop-up' },
+    { key: 'equipHoverFunctions', type: 'boolean', label: 'Support keyboard and mouse actions when the mouse cursor is over the equipment.' },
+    { key: 'equipTouchFunctions', type: 'boolean', label: 'Support touch actions on mobile' },
+    { key: 'equipCode', type: 'object', input: 'textarea', text: 'Set the format of the code for the forum.', style: 'height: 80px; white-space: normal;' },
+    { key: 'equipNameCode', type: 'array', input: 'textarea', text: 'Set the rules for codes that decorate the names of equipment.' },
 
-    { tag: 'h1', text: '装备设置' },
-    { key: 'equipmentIntegration', type: 'boolean', label: '将所有类型的装备整合到装备列表' },
-    { key: 'equipSort', type: 'boolean', label: '整理和分类装备列表' },
-    { key: 'equipColor', type: 'boolean', label: '不同等级的装备以不同的颜色显示' },
-    { key: 'equipShowLevel', type: 'boolean', label: '显示装备的等级' },
-    { key: 'equipShowPAB', type: 'boolean', label: '显示装备的属性' },
-    { key: 'equipHoverFunctions', type: 'boolean', label: '当鼠标光标悬停在装备上时，启用键盘和鼠标操作' },
-    { key: 'equipTouchFunctions', type: 'boolean', label: '启用移动设备上的触屏操作' },
-    { key: 'equipCode', type: 'string', input: 'textarea', text: '设置论坛代码的格式', style: 'height: 80px; white-space: normal;' },
-    { key: 'equipNameCode', type: 'array', input: 'textarea', text: '设置美化装备名称的代码规则' },
-
-    { tag: 'h1', text: '装备商店设置' },
-    { key: 'equipmentShopConfirm', type: 'number', input: 'select', options: ['0:默认', '1:自动点击确认', '2:无需确认'], label: '在出售或分解装备时进行二次确认' },
-    { key: 'equipmentShopAutoProtect', type: 'boolean', label: '自动保护符合规则的装备' },
-    { key: 'equipmentShopPriceDeductFee', type: 'boolean', label: '显示实际价格——由于市场会收取1%的手续费，因此材料的实际价值为价格的99%' },
-    { key: 'equipmentShopProtectFilters', type: 'array', input: 'textarea', text: '在列表顶部集中显示高价值的装备，并阻止它们被“全选”按钮选中', desc: 'equipFilters', validator: 'equipFilters' },
-    { key: 'equipmentShopBazaarFilters', type: 'array', input: 'textarea', text: '在商店中仅显示优质词条的装备，隐藏所有其他低效词条的装备', desc: 'equipFilters', validator: 'equipFilters' },
+    { tag: 'h1', text: 'Equipment Shop' },
+    { key: 'equipmentShopConfirm', type: 'number', input: 'select', options: ['0:default', '1:click checkbox automatically', '2:do not confirm'], label: 'Confirm when selling or salvaging equipment.' },
+    { key: 'equipmentShopAutoProtect', type: 'boolean', label: 'Automatically protect filtered equipment.' },
+    { key: 'equipmentShopPriceDeductFee', type: 'boolean', label: 'Since the Market has a 1% fee, calculate the value of the material as 99% of the price.' },
+    { key: 'equipmentShopProtectFilters', type: 'array', input: 'textarea', text: 'Show valuable equipment together at the top of the list, and prevent them from being selected by the "Select All" button.', desc: 'equipFilters', validator: 'equipFilters' },
+    { key: 'equipmentShopBazaarFilters', type: 'array', input: 'textarea', text: 'Keep valuable equipment in BAZAAR, then hide all other trash.', desc: 'equipFilters', validator: 'equipFilters' },
 
     { tag: 'h1', text: 'Monster Lab' },
-    { key: 'monsterLab', type: 'boolean', label: '高级怪物实验室设置', server: 'persistent' },
+    { key: 'monsterLab', type: 'boolean', label: 'Advanced MonsterLab features', server: 'persistent' },
     { key: 'monsterLabDefaultSort', type: 'string', input: 'select', options: ['index', 'name', 'class', 'pl:power level', 'wins', 'kills', 'gains:new gifts', 'gifts:total gifts', 'morale', 'hunger'], label: 'Set the default value for sorting the list.', server: 'persistent' },
-    { key: 'monsterLabCloseDefaultPopup', type: 'boolean', label: '关闭默认弹窗.', server: 'persistent' },
+    { key: 'monsterLabCloseDefaultPopup', type: 'boolean', label: 'Close pop-ups by default.', server: 'persistent' },
 
     { tag: 'h1', text: 'The Shrine' },
-    { key: 'shrineHideItems', type: 'array', input: 'textarea', text: '隐藏特定奖杯，避免误操作献祭' },
-    { key: 'shrineFilters', type: 'array', input: 'textarea', text: '只显示高价值的奖励装备\n* $装备主属性(PAB)筛选暂不可用', desc: 'equipFilters', validator: 'equipFilters' },
+    { key: 'shrineHideItems', type: 'array', input: 'textarea', text: 'Hide items to prevent them from being accidentally offered to the Shrine.' },
+    { key: 'shrineFilters', type: 'array', input: 'textarea', text: 'Show the names of rewarded equipment of higher quality only.\n* $pab is not available.', desc: 'equipFilters', validator: 'equipFilters' },
 
-    { tag: 'h1', text: '邮件设置' },
-    { key: 'moogleMail', type: 'boolean', label: '高级邮件功能' },
+    { tag: 'h1', text: 'MoogleMail' },
+    { key: 'moogleMail', type: 'boolean', label: 'Advanced MoogleMail features' },
 
-    { tag: 'h1', text: '战斗设置' },
-    { key: 'equipPanelPosition', type: 'string', input: 'select', options: ['左侧', '右侧'], label: '设置药水的位置' },
-    { key: 'equipPanelRepairThreshold', type: 'number', label: '装备耐久度不足设置的数值时，发出警告' },
-    { key: 'equipPanelItemInventory', type: 'object', input: 'textarea', value_type: 'number', text: '显示道具的剩余数量，如果数量不足，则发出警告\n你可以通过单击列表中的道具名称，快捷地从物品商店购买指定数量' },
+    { tag: 'h1', text: 'Battle' },
+    { key: 'equipPanelPosition', type: 'string', input: 'select', options: ['left', 'right'], label: 'Set the position of the pane.' },
+    { key: 'equipPanelRepairThreshold', type: 'number', label: 'Warn if the durability of each equipment is low.' },
+    { key: 'equipPanelItemInventory', type: 'object', input: 'textarea', value_type: 'number', text: 'Show the amount of items in the inventory, and warn if each number is less than the specified value.\nYou can purchase that quantity from the Item Shop by clicking on the item name in the list.\nIf the item name starts with # (#1 : 0, #2 : 0, ...), a space is inserted into the list.' },
   ],
   text: {
-    装备光标悬停功能设置: `
-      [C] 在弹出窗口中打开装备链接
-      [V] 在新选项卡中打开装备链接
-      [L] 显示装备链接代码
-      [K] 以BBcode格式显示链接代码
-      [DOUBLE CLICK] 打开装备连接
+    equipHoverFunctions: `
+      [C] Open equipment link in a pop-up
+      [V] Open equipment link in a new tab
+      [L] Show link code
+      [K] Show link code in bbcode format
+      [DOUBLE CLICK] Open equipment link
     `,
-    移动端装备功能设置: `
-      [双击屏幕] 打开装备连接
-      [长按屏幕] 打开装备连接
+    equipTouchFunctions: `
+      [DOUBLE TAP] Open equipment link
+      [LONG PRESS] Open equipment link
     `,
   },
   desc: {
     topMenuLinks: `List
-    Character
-    Equipment
-    Abilities
-    Training
-    Item Inventory
-    Equip Inventory
-    Settings
-
-    Equipment Shop
-    Item Shop
-    The Shrine
-    The Market
-    Monster Lab
-    MoogleMail
-    Weapon Lottery
-    Armor Lottery
-
+      Character
+      Equipment
+      Abilities
+      Training
+      Item Inventory
+      Settings
+      
+      Item Shop
+      The Shrine
+      The Market
+      Monster Lab
+      MoogleMail
+      Weapon Lottery
+      Armor Lottery
+      
       Organize
       Modify
       Repair
@@ -314,7 +318,7 @@ const $config = {
       Purchase
       Sell
       Salvage
-
+      
       The Arena
       The Tower
       Ring of Blood
@@ -354,16 +358,16 @@ const $config = {
       - e.g., Peerless : quality=rainbow, name=bold
     `,
     equipFilters: `Syntax
-      ()   : 组
-      &&   : 和
-      ||   : 或
-      !    : 非
-      $QUALITY+   : 大于指定稀有度
-      $pab=xyz    : 装备提供的主属性类型
-      $prefix     : 装备是否有指定词缀
-      $level      : 数字形式, 装备的等级
-      示例., Magnificent && Power && !Warding 代表同时满足稀有度为史诗，非守护词缀的动力甲
-      示例., $Exquisite+ && (Rapier || Shortsword) && Slaughter && $prefix && $pab=sd && $level<250 代表同时满足低于250级，稀有度高于精良，杀戮词缀，提供力量和敏捷属性，的西洋剑或短剑
+      ()   : GROUPING
+      &&   : AND
+      ||   : OR
+      !    : NOT
+      $QUALITY+   : Whether the quality of the equipment is equal to or higher than the given QUALITY
+      $pab=xyz    : Whether the equipment has pab x, y and z
+      $prefix     : Whether the equipment has a prefix
+      $level      : Number, the level of the equipment
+      e.g., Magnificent && Power && !Warding
+      e.g., $Exquisite+ && (Rapier || Shortsword) && Slaughter && $prefix && $pab=sd && $level<250
     `,
   },
   validator: {
@@ -475,11 +479,21 @@ const $config = {
       }
     }
 
+    if ($config.settings.version < 4.2) {
+      delete $config.settings.equipmentShopAutoProtect;
+    }
+
     const ss_log = $config.get('ss_log', {});
     Object.values(ss_log).forEach((list) => {
       delete list['1x'];
     });
     $config.set('ss_log', ss_log);
+
+    const equipcode = $config.settings.equipCode;
+    if (typeof equipcode === 'string') {
+      $config.settings.equipCode = JSON.parse(JSON.stringify($config.default.equipCode));
+      $config.settings.equipCode.EQUIP = equipcode;
+    }
 
     Object.keys($config.settings).forEach((key) => {
       if (!(key in $config.default)) {
@@ -522,19 +536,18 @@ const $config = {
   },
   create: function () {
     GM_addStyle(/*css*/`
-      .hvut-cfg-div { position: absolute; top: 27px; left: 0; width: 60%; height: calc(100% - 27px); padding: 0 20%; overflow: auto; font-size: 10pt; text-align: left; background-color: #EDEBDF; z-index: 9; }
-      .hvut-cfg-div header { margin-bottom: 20px; padding: 10px; font-size: 15pt; font-weight: bold; border-bottom: 2px solid; }
-      .hvut-cfg-div h1 { margin: 20px 0 10px; padding: 10px; font-size: 11pt; font-weight: bold; background-color: #fff9; }
+      .hvut-cfg-div { position: absolute; top: 0; left: 0; width: 60%; height: 100%; padding: 0 20%; overflow: auto; font-size: 10pt; text-align: left; background-color: var(--color-bg-default); z-index: 10; }
+      .hvut-cfg-div header { margin-bottom: 20px; padding: 10px; font-size: 15pt; font-weight: bold; border-bottom: 2px solid var(--color-border-default); }
+      .hvut-cfg-div h1 { margin: 20px 0 10px; padding: 10px; font-size: 11pt; font-weight: bold; background-color: var(--color-bg-alpha); }
       .hvut-cfg-div h2 { margin: 0; font-size: 10pt; font-weight: bold; }
       .hvut-cfg-div h3 { margin: 0; font-size: 10pt; font-weight: bold; text-decoration: underline; }
       .hvut-cfg-div div { margin-left: 10px; padding: 10px; line-height: 24px; }
-      .hvut-cfg-div div:hover { background-color: #fff9; }
+      .hvut-cfg-div div:hover { background-color: var(--color-bg-alpha); }
       .hvut-cfg-div p { margin: 0; }
-      .hvut-cfg-disabled { color: #999; }
-      .hvut-cfg-error { box-shadow: 0 0 0 2px #c00 inset; }
-      .hvut-cfg-error p:last-child { padding: 10px; background-color: #fff9; color: #c00; }
-      .hvut-cfg-div footer { position: sticky; bottom: 0; margin-top: 20px; padding: 10px; border-top: 2px solid; text-align: center; background-color: inherit; }
-      .hvut-cfg-div input { vertical-align: middle; }
+      .hvut-cfg-disabled { color: var(--color-font-invalid); }
+      .hvut-cfg-error { box-shadow: 0 0 0 2px var(--color-font-warn) inset; }
+      .hvut-cfg-error p:last-child { padding: 10px; background-color: var(--color-bg-alpha); color: var(--color-font-warn); }
+      .hvut-cfg-div footer { position: sticky; bottom: 0; margin-top: 20px; padding: 10px; border-top: 2px solid var(--color-border-default); text-align: center; background-color: inherit; }
       .hvut-cfg-div input[type='text'] { width: 95%; }
       .hvut-cfg-div input[type='number'] { width: 50px; text-align: right; }
       .hvut-cfg-div textarea { width: 95%; min-height: 200px; white-space: nowrap; }
@@ -543,7 +556,7 @@ const $config = {
     $config.node = {};
     $config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: $config.validate_panel });
     //$config.node.ul = $element('ul', $config.node.div);
-    $element('header', $config.node.div, 'HV Utils 设置');
+    $element('header', $config.node.div, 'HV Utils Settings');
 
     $config.data.forEach((o) => {
       if (o.tag) {
@@ -563,7 +576,7 @@ const $config = {
           $element('span', o.node.div, o.label);
         }
       } else if (o.type === 'boolean') {
-        o.node.input = $input(['checkbox', o.label], o.node.div);
+        o.node.input = $input(['checkbox', null, o.label], o.node.div);
       } else if (o.type === 'number') {
         o.node.input = $input(['number'], o.node.div);
         if (o.label) {
@@ -608,10 +621,10 @@ const $config = {
     });
 
     const bottom = $element('footer', $config.node.div);
-    $input(['button', '保存设置'], bottom, null, () => { $config.save(true); });
-    $input(['button', '关闭窗口'], bottom, null, () => { $config.close(); });
-    $input(['button', '还原设置'], bottom, null, () => { $config.load($config.settings); });
-    $input(['button', '恢复默认'], bottom, null, () => { $config.load($config.default); });
+    $input(['button', 'Save'], bottom, null, () => { $config.save(true); });
+    $input(['button', 'Close'], bottom, null, () => { $config.close(); });
+    $input(['button', 'Revert'], bottom, null, () => { $config.load($config.settings); });
+    $input(['button', 'Default'], bottom, null, () => { $config.load($config.default); });
   },
   open: function (key) {
     if (!$config.node) {
@@ -637,25 +650,25 @@ const $config = {
     });
   },
   set_input: function (o, value) {
-      const input = o.node.input;
-      if (input.disabled) {
-        return;
-      }
-      if (value === undefined) {
+    const input = o.node.input;
+    if (input.disabled) {
+      return;
+    }
+    if (value === undefined) {
       //return;
       value = $config.default[o.key];
-      }
-      if (o.type === 'boolean') {
-        input.checked = value;
-      } else if (o.type === 'number') {
-        input.value = value;
-      } else if (o.type === 'string') {
-        input.value = value;
-      } else if (o.type === 'array') {
-        input.value = $config.array2text(value, o.value_sep);
-      } else if (o.type === 'object') {
-        input.value = $config.obj2text(value, o.value_sep);
-      }
+    }
+    if (o.type === 'boolean') {
+      input.checked = value;
+    } else if (o.type === 'number') {
+      input.value = value;
+    } else if (o.type === 'string') {
+      input.value = value;
+    } else if (o.type === 'array') {
+      input.value = $config.array2text(value, o.value_sep);
+    } else if (o.type === 'object') {
+      input.value = $config.obj2text(value, o.value_sep);
+    }
   },
   get_panel: function () {
     const obj = {};
@@ -793,7 +806,6 @@ const $config = {
     const text = array.join(sep);
     return text;
   },
-
 };
 
 $config.init();
@@ -801,7 +813,6 @@ $config.init();
 
 // AJAX
 const $ajax = {
-
   interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
   max: 4,
   tid: null,
@@ -891,7 +902,7 @@ const $ajax = {
       r.context.onerror?.();
     } else if (text === 'state lock limiter in effect') {
       if ($ajax.error !== text) {
-        popup(`<p style="color: #f00; font-weight: bold;">${text}</p><p>You have reached the maximum connection limit.<br>Try again later.</p>`);
+        popup(`<p style="color: #e00; font-weight: bold;">${text}</p><p>You have reached the maximum connection limit.<br>Try again later.</p>`);
       }
       $ajax.error = text;
       r.context.onerror?.();
@@ -906,14 +917,12 @@ const $ajax = {
     r.context.onerror?.();
     $ajax.next();
   },
-
 };
 
 window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error || e); });
 
 // RANDOM ENCOUNTER
 const $re = {
-
   init: function () {
     if ($re.inited) {
       return;
@@ -1095,9 +1104,9 @@ const $re = {
   start: function () {
     $re.stop();
     if (!$re.json.clear) {
-      $re.button.style.color = '#e00';
+      $re.button.classList.add('hvut-warn');
     } else {
-      $re.button.style.color = '';
+      $re.button.classList.remove('hvut-warn');
     }
     $re.tid = setInterval($re.refresh, 1000);
     $re.refresh();
@@ -1108,7 +1117,6 @@ const $re = {
       $re.tid = 0;
     }
   },
-
 };
 
 /* NO-NAVBAR */
@@ -1141,13 +1149,13 @@ if (!level_exec) {
     alert('To use HVUT, You have to set a [Custom Font] first.');
     scrollIntoView($id('settings_cfont').parentNode, $id('settings_outer'));
     const form = $qs('#settings_outer form');
-    form.fontlocal.checked = true;
-    form.fontlocal.required = true;
-    form.fontface.required = true;
-    form.fontsize.required = true;
-    form.fontface.placeholder = 'Tahoma, Arial';
-    form.fontsize.placeholder = '10';
-    form.fontoff.placeholder = '0';
+    form.elements.fontlocal.checked = true;
+    form.elements.fontlocal.required = true;
+    form.elements.fontface.required = true;
+    form.elements.fontsize.required = true;
+    form.elements.fontface.placeholder = 'Tahoma, Arial';
+    form.elements.fontsize.placeholder = '10';
+    form.elements.fontoff.placeholder = '0';
   } else {
     location.href = '?s=Character&ss=se';
   }
@@ -1171,10 +1179,10 @@ var _ch = {},
     _eq = {},
     _ab = {},
     _tr = {},
-    //_it = {},
+    _it = {},
     _se = {},
 
-    //_is = {},
+    _is = {},
     _ml = {},
     _ss = {},
     _mk = {},
@@ -1193,14 +1201,15 @@ var _ch = {},
 
 // EQUIP PARSER
 const $equip = {
-
   dynjs_equip: _window.dynjs_equip || {},
   dynjs_eqstore: _window.dynjs_eqstore || {},
 
   icon: {
+    damaged: '\u{26A0}\u{FE0F}',
+    unusable: '\u{274C}',
     equipped: '\u{1F5E1}\u{FE0F}',
-    pinned: '\u{1F4CC}',
     stored: '\u{1F4E6}',
+    pinned: '\u{1F4CC}',
     protected: '\u{1F6E1}\u{FE0F}',
     locked: '\u{1F512}',
     highlevel: '\u{1F53A}',
@@ -1209,13 +1218,13 @@ const $equip = {
   index: {
     category: { 'One-handed Weapon': 1, 'Two-handed Weapon': 2, 'Staff': 3, 'Shield': 4, 'Cloth Armor': 5, 'Light Armor': 6, 'Heavy Armor': 7, 'Unknown': 99 },
     type: {
-      'Rapier': 1, 'Shortsword': 2, 'Dagger': 3, 'Wakizashi': 4, 'Axe': 5, 'Club': 6,
-      'Katana': 1, 'Longsword': 2, 'Estoc': 3, 'Scythe': 4, 'Great Mace': 5, 'Swordchucks': 6,
+      'Rapier': 1, 'Club': 2, 'Axe': 3, 'Shortsword': 4, 'Wakizashi': 5, 'Dagger': 6,
+      'Estoc': 1, 'Great Mace': 2, 'Scythe': 3, 'Longsword': 4, 'Katana': 5, 'Swordchucks': 6,
       'Oak Staff': 1, 'Willow Staff': 2, 'Katalox Staff': 3, 'Redwood Staff': 4, 'Ebony Staff': 5,
-      'Force Shield': 1, 'Tower Shield': 2, 'Buckler': 3, 'Kite Shield': 4,
-      'Phase': 1, 'Cotton': 2, 'Gossamer': 3, 'Ironsilk': 4,
-      'Shade': 1, 'Leather': 2, 'Kevlar': 3, 'Drakehide': 4,
-      'Power': 1, 'Reactive': 2, 'Plate': 3, 'Chain': 4,
+      'Force Shield': 1, 'Tower Shield': 2, 'Kite Shield': 3, 'Buckler': 4,
+      'Phase': 1, 'Gossamer': 2, 'Ironsilk': 3, 'Cotton': 4,
+      'Shade': 1, 'Drakehide': 2, 'Kevlar': 3, 'Leather': 4,
+      'Power': 1, 'Reactive': 2, 'Chain': 3, 'Plate': 4,
     },
     quality: { 'Peerless': 1, 'Legendary': 2, 'Magnificent': 3, 'Exquisite': 4, 'Superior': 5, 'Average': 6, 'Fair': 7, 'Crude': 8 },
     prefix: {
@@ -1239,22 +1248,24 @@ const $equip = {
       'the Ox': 61, 'the Raccoon': 62, 'the Cheetah': 63, 'the Turtle': 64, 'the Fox': 65, 'the Owl': 66,
     },
   },
+
   reg: {
     name: (() => {
       const quality = 'Crude|Fair|Average|Superior|Exquisite|Magnificent|Legendary|Peerless';
       const prefix = 'Ethereal|Fiery|Arctic|Shocking|Tempestuous|Hallowed|Demonic|Ruby|Cobalt|Amber|Jade|Zircon|Onyx|Charged|Frugal|Radiant|Mystic|Agile|Reinforced|Savage|Shielding|Mithril';
       const slot = 'Cap|Robe|Gloves|Pants|Shoes|Helmet|Breastplate|Gauntlets|Leggings|Boots|Cuirass|Armor|Greaves|Sabatons';
-      const onehanded = 'Shortsword|Dagger|Axe|Wakizashi|Rapier|Club';
-      const twohanded = 'Longsword|Katana|Scythe|Estoc|Great Mace|Swordchucks';
-      const staff = 'Ebony Staff|Redwood Staff|Oak Staff|Katalox Staff|Willow Staff';
-      const shield = 'Buckler|Kite Shield|Tower Shield|Force Shield';
+      const onehanded = 'Axe|Club|Dagger|Rapier|Shortsword|Wakizashi';
+      const twohanded = 'Estoc|Great Mace|Katana|Longsword|Scythe|Swordchucks';
+      const staff = 'Ebony Staff|Katalox Staff|Oak Staff|Redwood Staff|Willow Staff';
+      const shield = 'Buckler|Force Shield|Kite Shield|Tower Shield';
       const acloth = 'Cotton|Gossamer|Ironsilk|Phase';
-      const alight = 'Leather|Drakehide|Kevlar|Shade';
-      const aheavy = 'Chain|Plate|Reactive|Power';
+      const alight = 'Drakehide|Kevlar|Leather|Shade';
+      const aheavy = 'Chain|Plate|Power|Reactive';
       const pattern = `^(${quality})(?: (?:(${prefix})|(.+?)))? (?:(${onehanded})|(${twohanded})|(${staff})|(${shield})|(?:(?:(${acloth})|(${alight})|(${aheavy})) (${slot})))(?: of (.+))?$`;
       return new RegExp(pattern, 'i');
     })(),
-    html: />([\w -]+(?<! ))(?: |&nbsp;)*(?:Level (?:(\d+)|(Unassigned))|Tier (\d+) \/ (\d+) \/ (\d+)).*(Tradeable|Untradeable|Soulbound).*(?:Condition: (\d+(?:\.\d+)?)%.*Energy: (?:(\d+(?:\.\d+)?)%|(N\/A))|(Salvaged) - Repair Required)/,magic: /Fire|Cold|Elec|Wind|Holy|Dark/i,
+    html: />([\w -]+(?<! ))(?: |&nbsp;)*(?:Level (?:(\d+)|(Unassigned))|Tier (\d+) \/ (\d+) \/ (\d+)).*(Tradeable|Untradeable|Soulbound).*(?:Condition: (\d+(?:\.\d+)?)%.*Energy: (?:(\d+(?:\.\d+)?)%|(N\/A))|(Salvaged) - Repair Required)/,
+    magic: /Fire|Cold|Elec|Wind|Holy|Dark/i,
     pab: /Strength|Dexterity|Agility|Endurance|Intelligence|Wisdom/g,
   },
 
@@ -1282,7 +1293,7 @@ const $equip = {
     html: function (html) {
       const exec = $equip.reg.html.exec(html);
       if (!exec) {
-        return null;
+        return {};
       }
       const info = {
         category: exec[1],
@@ -1290,7 +1301,7 @@ const $equip = {
         unassigned: exec[3] === 'Unassigned',
         upgrade: parseInt(exec[4]),
         iw: parseInt(exec[5]),
-        upgrade_max: parseInt(exec[6]),
+        upgrade_cap: parseInt(exec[6]),
         tradeable: exec[7] === 'Tradeable',
         soulbound: exec[7] === 'Soulbound',
         condition: parseFloat(exec[8]),
@@ -1300,23 +1311,24 @@ const $equip = {
       };
       return info;
     },
-    dynjs: function (eid) {
-      const dynjs = $equip.dynjs_equip[eid] || $equip.dynjs_eqstore[eid];
-      if (!dynjs) {
-        return { error: 'no data' };
-      }
+    dynjs: function (eid, elem) {
+      const dynjs = $equip.dynjs_equip[eid] || $equip.dynjs_eqstore[eid] || {};
       const info = $equip.parse.html(dynjs.d);
-      if (!info) {
-        return { error: 'parse error' };
+      let error;
+      if (!dynjs.d) {
+        error = 'no dynjs data';
+      } else if (!info.category) {
+        error = 'parse error';
       }
-      let name;
-      let customname;
+      let name = '';
+      let customname = '';
       if (dynjs.n) {
         name = dynjs.n;
         customname = dynjs.t;
-      } else {
+      } else if (dynjs.t) {
         name = dynjs.t;
-        customname = null;
+      } else if (elem) {
+        name = $qs(':scope > td:first-child, :scope > div:last-child ', elem)?.textContent.replace(/^\W+/, '');
       }
       const eq = {
         info: {
@@ -1328,6 +1340,7 @@ const $equip = {
         },
         data: {
           html: dynjs.d,
+          error,
         },
         node: {},
       };
@@ -1339,14 +1352,16 @@ const $equip = {
       if (!eid) {
         return { error: 'invalid element' };
       }
-      const eq = $equip.parse.dynjs(eid);
-      if (eq.error) {
-        return eq;
+      const eq = $equip.parse.dynjs(eid, elem);
+      if (eq.data.error) {
+        //return eq;
       }
       const text = elem.textContent;
+      eq.info.damaged = text.includes($equip.icon.damaged);
+      eq.info.unusable = text.includes($equip.icon.unusable);
       eq.info.equipped = text.includes($equip.icon.equipped);
-      eq.info.pinned = text.includes($equip.icon.pinned);
       eq.info.stored = text.includes($equip.icon.stored);
+      eq.info.pinned = text.includes($equip.icon.pinned);
       eq.info.protected = text.includes($equip.icon.protected);
       eq.info.locked = text.includes($equip.icon.locked);
       eq.info.highlevel = text.includes($equip.icon.highlevel);
@@ -1370,7 +1385,7 @@ const $equip = {
           tr.classList.add('hvut-eqp-customname');
           tr.dataset.eqname = eq.info.name;
         }
-        tr.classList.add('hvut-eqp-' + eq.info.quality);
+        tr.classList.add(`hvut-equip-${eq.info.quality}`);
         return eq;
       });
 
@@ -1398,7 +1413,7 @@ const $equip = {
           div.classList.add('hvut-eqp-customname');
           div.dataset.eqname = eq.info.name;
         }
-        div.classList.add('hvut-eqp-' + eq.info.quality);
+        div.classList.add(`hvut-equip-${eq.info.quality}`);
         return eq;
       });
       if ($config.settings.equipSort && sort) {
@@ -1407,12 +1422,14 @@ const $equip = {
       return equiplist;
     },
     sort: function (equiplist, parent) {
-      function create_category(text, className) {
+      function create_label(type, text, scroll = text) {
+        const textContent = text;
+        const className = `hvut-eqp-${type}`;
         if (is_table) {
-          const tr = $element('tr', frag, [className]);
-          $element('td', tr, { textContent: text, colSpan: 10 });
+          const tr = $element('tr', frag, { className, dataset: { scroll } });
+          $element('td', tr, { textContent, colSpan: 10 });
         } else {
-          $element('p', frag, [text, className]);
+          $element('p', frag, { textContent, className, dataset: { scroll } });
         }
       }
       const is_table = parent.nodeName === 'TABLE';
@@ -1422,34 +1439,28 @@ const $equip = {
       equiplist.forEach((eq, i, a) => {
         const p = a[i - 1] || { info: {} };
         if (eq.info.category !== p.info.category) {
-          create_category(eq.info.category, '.hvut-eqp-category');
+          create_label('category', eq.info.category);
         }
         switch (eq.info.category) {
           case 'One-handed Weapon':
           case 'Two-handed Weapon':
+          case 'Shield':
             if (eq.info.type !== p.info.type) {
-              create_category(eq.info.type || 'Unknown', '.hvut-eqp-type');
+              create_label('type', eq.info.type || 'Unknown');
             } else if (eq.info.suffix !== p.info.suffix) {
               eq.node.wrapper.classList.add('hvut-eqp-border');
             }
             break;
           case 'Staff':
             if (eq.info.type !== p.info.type) {
-              create_category(eq.info.type || 'Unknown', '.hvut-eqp-type');
+              create_label('type', eq.info.type || 'Unknown');
             } else if (eq.info.prefix !== p.info.prefix) {
-              eq.node.wrapper.classList.add('hvut-eqp-border');
-            }
-            break;
-          case 'Shield':
-            if (eq.info.type !== p.info.type) {
-              create_category(eq.info.type || 'Unknown', '.hvut-eqp-type');
-            } else if (eq.info.suffix !== p.info.suffix) {
               eq.node.wrapper.classList.add('hvut-eqp-border');
             }
             break;
           case 'Cloth Armor':
             if (eq.info.suffix !== p.info.suffix) {
-              create_category((eq.info.type ? (eq.info.suffix || 'suffixless') : 'Unknown'), '.hvut-eqp-type');
+              create_label('type', (eq.info.type ? (eq.info.suffix || 'suffixless') : 'Unknown'));
             } else if (eq.info.slot !== p.info.slot) {
               eq.node.wrapper.classList.add('hvut-eqp-border');
             }
@@ -1457,7 +1468,7 @@ const $equip = {
           case 'Light Armor':
           case 'Heavy Armor':
             if (eq.info.type !== p.info.type || eq.info.slot !== p.info.slot) {
-              create_category((eq.info.type ? `${eq.info.type} ${eq.info.slot}` : 'Unknown'), '.hvut-eqp-type');
+              create_label('type', (eq.info.type ? `${eq.info.type} ${eq.info.slot}` : 'Unknown'), eq.info.type);
             } else if (eq.info.suffix !== p.info.suffix && (eq.info.type === 'Shade' || eq.info.type === 'Power')) {
               eq.node.wrapper.classList.add('hvut-eqp-border');
             }
@@ -1712,12 +1723,10 @@ const $equip = {
     const result = { value: namecode, error, rules };
     return result;
   },
-
 };
 
 // ITEM INVENTORY
 const $item = {
-
   list: null,
   reg: {
     itemc: /show_itemc_box\(-?\d+,-?\d+,'\w+',this,'\w+',(\d+)\)/,
@@ -1725,6 +1734,7 @@ const $item = {
     shrine: /set_shrine_item\((\w+),(\d+),(\d+),'(.+?)'\)/,
     mooglemail: /set_mooglemail_item\((\d+),this\)/,
   },
+
   get_type: function (text) {
     if ($item.reg.itemr.test(text)) {
       return RegExp.$1.replace(/\W/g, '');
@@ -1823,7 +1833,7 @@ const $item = {
     await $item.load_shop();
     const cost = $item.cost(items);
     if (cost > $item.networth) {
-      alert('你没有足够的Credits！');
+      alert('You do not have enough credits.');
       return;
     }
     const nostock = items.find((item) => item.count > ($item.shop[item.name]?.shop_stock || 0));
@@ -1857,7 +1867,6 @@ const $item = {
 
 // ITEM PRICE
 const $price = {
-
   json: null,
   market: null,
   filters: { co: null, ma: null, tr: null, ar: null, fi: null, mo: null },
@@ -1915,7 +1924,7 @@ const $price = {
     $config.set('prices', $price.json);
     //$price.set(json, true);
   },
-  get_items: function (i) {
+  items: function (i) {
     let items;
     if (!i) {
       items = Object.keys($price.json);
@@ -1939,7 +1948,7 @@ const $price = {
   get: function (i) {
     $price.init();
     const prices = {};
-    const items = $price.get_items(i);
+    const items = $price.items(i);
     items.forEach((n) => { prices[n] = $price.json[n] || 0; });
     return prices;
   },
@@ -1954,15 +1963,15 @@ const $price = {
   },
   edit: function (i, filter, callback) {
     $price.init();
-    const items = $price.get_items(i);
+    const items = $price.items(i);
     const prices = $price.get(items);
     const all = !filter;
 
     popup_text($config.obj2text(prices, ['\n', '@']), 300, 500, [
-      { text: '保存', click: save },
-      { text: '售价', click: (p) => { market(p, 'bid'); } },
-      { text: '要价', click: (p) => { market(p, 'ask'); } },
-      { text: '编辑所有材料', click: edit_all },
+      { text: 'Save', click: save },
+      { text: 'Bid', click: (p) => { market(p, 'bid'); } },
+      { text: 'Ask', click: (p) => { market(p, 'ask'); } },
+      { text: 'Edit All Items', click: edit_all },
     ]);
 
     function save(p) {
@@ -1997,15 +2006,23 @@ const $price = {
       $price.edit('', '', callback);
     }
   },
+  value: function (items) {
+    const prices = $price.get();
+    let value = 0;
+    Object.entries(items).forEach(([name, count]) => {
+      const price = prices[name];
+      if (price) {
+        value += price * count;
+      }
+    });
+    return value;
+  },
   parse_market: function (filter, doc = document) {
     if (!$price.market) {
       $price.market = {};
     }
     $price.filters[filter] = [];
-    Array.from($qs('#market_itemlist table', doc).rows).forEach((tr, i) => {
-      if (i === 0) {
-        return;
-      }
+    Array.from($qs('#market_itemlist table', doc).rows).slice(1).forEach((tr) => {
       const name = tr.cells[0].textContent;
       const itemid = /itemid=(\d+)/.exec(tr.getAttribute('onclick'))[1];
       const stock = parseInt(tr.cells[1].textContent);
@@ -2029,7 +2046,7 @@ const $price = {
     } else if (!all && !$price.market) {
       await update(filter);
     }
-    const items = $price.get_items(filter);
+    const items = $price.items(filter);
     const prices = $price.get(items);
     const market_prices = $price.get_market(items, key);
     const new_prices = { ...prices, ...market_prices };
@@ -2044,11 +2061,19 @@ const $price = {
       $price.parse_market(filter, doc);
     }
   },
-  get_market: function (items, key) {
+  get_market: function (items, key, alt = true) {
     const prices = {};
     items.forEach((name) => {
-      if (name in $price.market) {
-        prices[name] = $price.market[name][key];
+      if (!(name in $price.market)) {
+        return;
+      }
+      let price = $price.market[name][key];
+      if (!price && alt) {
+        const alt_key = (key === 'bid') ? 'ask' : (key === 'ask') ? 'bid' : '';
+        price = $price.market[name][alt_key];
+      }
+      if (price) {
+        prices[name] = price;
       }
     });
     return prices;
@@ -2057,12 +2082,10 @@ const $price = {
     const prices = $price.get_market(items, key);
     $price.set(prices);
   },
-
 };
 
 // MoogleMail
 const $mail = {
-
   queue: [],
   current: 0,
   ready: true,
@@ -2301,17 +2324,96 @@ const $mail = {
     p.textarea.value += text + '\n';
     p.textarea.scrollTop = p.textarea.scrollHeight;
   },
-
 };
 
 // Battle Panel
 const $battle = {
-
   node: {},
   equips: [],
   eqitems: {},
   itemdata: {},
 
+  init: function (outer) {
+    GM_addStyle(/*css*/`
+      #mainpane { padding-right: 8px; }
+      .hvut-bt-outer { width: 1220px !important; }
+      .hvut-bt-outer > p { width: 520px; margin-left: auto; margin-right: auto; }
+      .hvut-bt-on.hvut-bt-outer { width: 620px !important; }
+      .hvut-bt-on.hvut-bt-left { margin-left: 600px !important; }
+      .hvut-bt-on.hvut-bt-right { margin-right: 600px !important; }
+      .hvut-bt-on #hvut-bt-div { visibility: visible; }
+      .hvut-bt-left #hvut-bt-div { left: 8px; }
+      .hvut-bt-right #hvut-bt-div { right: 8px; }
+
+      #hvut-bt-div { visibility: hidden; position: absolute !important; bottom: 8px; width: 598px !important; margin: 0 !important; font-size: 9pt; line-height: 20px; font-weight: normal; white-space: nowrap; }
+      #hvut-bt-div > ul { position: absolute; margin: 0; padding: 21px 0 0; border: 1px solid var(--color-border-default); list-style: none; display: flex; }
+      #hvut-bt-div > ul::before { content: attr(data-header); position: absolute; top: 0; width: 100%; border-bottom: 1px solid var(--color-border-default); background-color: var(--color-bg-h1); font-size: 10pt; font-weight: bold; }
+
+      .hvut-bt-equip { bottom: 0; left: 0; width: 392px; height: 293px; flex-flow: column; }
+      .hvut-bt-equip li { display: flex; flex-wrap: wrap; align-items: flex-start; height: 41px; border-bottom: 1px solid var(--color-border-default); }
+      .hvut-bt-equip li:last-child { border-bottom: 0; }
+      .hvut-bt-equip li > a { width: 100%; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px dotted var(--color-border-default); font-size: 10pt; font-weight: bold; text-decoration: none; }
+      .hvut-bt-equip li:hover > a { background-color: var(--color-bg-alpha); }
+      .hvut-bt-equip li > span:nth-child(2) { width: 100px; order: 1; border-left: 1px dotted var(--color-border-default); cursor: pointer; }
+      .hvut-bt-equip li > span:nth-child(2):hover { color: var(--color-font-light); background-color: var(--color-bg-alpha); }
+      .hvut-bt-equip li > span:nth-child(3) { flex: 1 100px; overflow: hidden; text-overflow: ellipsis; }
+
+      .hvut-bt-items { bottom: 320px; left: 0; width: 596px; min-height: 62px; flex-flow: row wrap; justify-content: start; }
+      .hvut-bt-items li { flex: 1 30%; border-width: 0 1px 1px 0; border-style: dotted; border-color: var(--color-border-default); overflow: hidden; text-overflow:ellipsis; }
+      .hvut-bt-items li:nth-child(3n) { border-right: 0; }
+      .hvut-bt-items li:nth-last-child(-n+3) { border-bottom: 0; }
+      .hvut-bt-items li[data-action] { cursor: pointer; }
+      .hvut-bt-items li:hover { color: var(--color-font-light); background-color: var(--color-bg-alpha); }
+
+      .hvut-bt-repair { bottom: 0; left: 398px; width: 198px; height: 293px; flex-flow: column; justify-content: center; gap: 1px; cursor: pointer; }
+      .hvut-bt-repair li { overflow: hidden; text-overflow:ellipsis; }
+      .hvut-bt-repair:hover { background-color: var(--color-bg-alpha); }
+    `);
+
+    $battle.node.outer = outer || $id('mainpane');
+    $battle.node.div = $element('div', $battle.node.outer, ['#hvut-bt-div'], (e) => { $battle.click(e); });
+    $battle.node.equip = $element('ul', $battle.node.div, ['.hvut-bt-equip', { dataset: { header: 'EQUIPMENT' } }], { mouseover: (e) => { $battle.hover(e); }, mouseleave: () => { $battle.hover_repair(); } });
+    $battle.node.items = $element('ul', $battle.node.div, ['.hvut-bt-items', { dataset: { header: 'ITEM INVENTORY' } }]);
+    $battle.node.repairall = $element('ul', $battle.node.div, ['.hvut-bt-repair', { dataset: { header: 'REPAIR ALL', action: 'repairall' } }]);
+
+    $battle.node.outer.classList.add('hvut-bt-outer', 'hvut-bt-on');
+    if ($config.settings.equipPanelPosition === 'right') {
+      $battle.node.outer.classList.add('hvut-bt-right');
+    } else {
+      $battle.node.outer.classList.add('hvut-bt-left');
+    }
+
+    $battle.create();
+  },
+  create: function () {
+    const items_rows = Math.max(Math.ceil(Object.keys($config.settings.equipPanelItemInventory).length / 3), 3);
+    $battle.node.items.style.height = (items_rows * 21 - 1) + 'px';
+    $battle.load_items();
+    $battle.equips.length = 0;
+    $battle.node.equip.innerHTML = '';
+    const equipset = $config.get('equipset');
+    if (!equipset) {
+      $persona.change_p();
+      return;
+    }
+    equipset.forEach((info) => {
+      if (!info.eid) {
+        $element('li', $battle.node.equip, [`/<a>${info.slot} - Empty</a><span></span><span></span>`]);
+        return;
+      }
+
+      const eq = { info, data: {}, node: {} };
+      eq.node.li = $element('li', $battle.node.equip, { dataset: { action: 'hover', eid: eq.info.eid } });
+      eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || eq.info.name, href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank' });
+      eq.node.condition = $element('span', eq.node.li, { dataset: { action: 'repair', eid: eq.info.eid } });
+      eq.node.link = $element('span', eq.node.li);
+      eq.node.repair = $element('ul', null, ['.hvut-bt-repair', { dataset: { header: 'REPAIR' } }]);
+
+      $battle.equips.push(eq);
+    });
+
+    $battle.load_repair();
+  },
   click: function (e) {
     const target = e.target.closest('[data-action]');
     if (!target) {
@@ -2340,7 +2442,7 @@ const $battle = {
   },
   load_dynjs: async function (doc) {
     const src = $qs('script[src*="/dynjs/"]', doc).src;
-    const html = await $ajax.fetch(src + '?t=' + Date.now());
+    const html = await $ajax.fetch(`${src}?t=${Date.now()}`);
     Object.assign($equip.dynjs_equip, JSON.parse(/dynjs_equip\s?=\s?(\{.*?\});/.exec(html)?.[1] || null));
     $battle.equips.some((eq) => {
       const dynjs = $equip.dynjs_equip[eq.info.eid];
@@ -2358,11 +2460,12 @@ const $battle = {
     $battle.equips.forEach((eq) => {
       eq.node.condition.innerHTML = '';
       const thld = $config.settings.equipPanelRepairThreshold;
-      $element('span', eq.node.condition, [`${eq.info.condition}%`, (eq.info.condition <= thld ? '.hvut-bt-warn' : '')]);
+      $element('span', eq.node.condition, [`${eq.info.condition}%`, (eq.info.condition <= thld ? '.hvut-warn' : '')]);
       if (eq.info.energy !== null) {
         $element('', eq.node.condition, ' / ');
-        $element('span', eq.node.condition, [`${eq.info.energy}%`, (eq.info.energy <= thld ? '.hvut-bt-warn' : '')]);
+        $element('span', eq.node.condition, [`${eq.info.energy}%`, (eq.info.energy <= thld ? '.hvut-warn' : '')]);
       }
+      $battle.update_link(eq);
     });
   },
   repair: async function (eid) {
@@ -2390,14 +2493,14 @@ const $battle = {
       }
     });
     if (buy_items.length) {
-      if (!confirm('材料不足\n是否从物品商店购买材料来修理你的装备?')) {
+      if (!confirm('Not enough materials for repairs.\nWould you like to purchase materials from the Item Shop to repair your equipment?')) {
         return;
       }
       $battle.node.repairall.innerHTML = '<li>...</li>';
       equips.forEach((eq) => {
         eq.node.repair.innerHTML = '<li>...</li>';
         eq.node.condition.innerHTML = '<span>...</span>';
-        eq.node.ex.innerHTML = '';
+        eq.node.link.innerHTML = '';
       });
       await $item.buy(buy_items);
     }
@@ -2429,7 +2532,7 @@ const $battle = {
     (equips || $battle.equips).forEach((eq) => {
       eq.node.repair.innerHTML = '<li>...</li>';
       eq.node.condition.innerHTML = '<span>...</span>';
-      eq.node.ex.innerHTML = '';
+      eq.node.link.innerHTML = '';
     });
 
     let data;
@@ -2453,24 +2556,22 @@ const $battle = {
 
     $battle.equips.forEach((eq) => {
       eq.node.repair.innerHTML = '';
+      eq.data.charms_damaged = false;
       const requires = $battle.eqitems[eq.info.eid]?.m;
       if (requires) {
-        let replace_charms = false;
         Object.entries(requires).forEach(([id, count]) => {
           if (id > 61900 && id < 64999) {
-            replace_charms = true;
+            eq.data.charms_damaged = true;
             return;
           }
           const data = $battle.itemdata[id];
           const li = $element('li', eq.node.repair, `${count} x ${data.n} (${data.c})`);
           if (data.c < count) {
-            li.classList.add('hvut-bt-warn');
+            li.classList.add('hvut-warn');
           }
         });
-        if (replace_charms) {
-          $element('a', eq.node.ex, { textContent: '替换护符或护符袋', className: 'hvut-bt-charms', href: `?s=Bazaar&ss=am&screen=modify&eqids=${eq.info.eid}` });
-        }
       }
+      $battle.update_link(eq);
     });
 
     $battle.node.repairall.innerHTML = '';
@@ -2483,14 +2584,27 @@ const $battle = {
         const data = $battle.itemdata[id];
         const li = $element('li', $battle.node.repairall, `${count} x ${data.n} (${data.c})`);
         if (data.c < count) {
-          li.classList.add('hvut-bt-warn');
+          li.classList.add('hvut-warn');
         }
       });
     } else {
-      $element('li', $battle.node.repairall, '你的装备无需修理');
+      $element('li', $battle.node.repairall, 'Everything is fully repaired.');
     }
 
     $persona.check_warning(doc);
+  },
+  update_link: function (eq) {
+    eq.node.name.classList.remove('hvut-warn');
+    eq.node.link.innerHTML = '';
+    if (eq.info.condition === 0 || eq.info.energy === 0) {
+      eq.node.name.classList.add('hvut-warn');
+      $element('span', eq.node.link, 'Unusable until repaired');
+    } else if (eq.data.charms_damaged) {
+      eq.node.name.classList.add('hvut-warn');
+      $element('a', eq.node.link, { textContent: 'Replace Charms & Pouches', href: `?s=Bazaar&ss=am&screen=modify&eqids=${eq.info.eid}` });
+    } else if (eq.info.condition < 100 || (eq.info.energy ?? 100) < 100) {
+      //$element('span', eq.node.link, 'Needs repair');
+    }
   },
   hover_repair: function (eid) {
     const prev = $battle.current;
@@ -2511,7 +2625,7 @@ const $battle = {
     }
   },
   buy_items: async function (name, count) {
-    if (!confirm(`是否购买 ${count} 个 ${name}?`)) {
+    if (!confirm(`Would you like to buy ${count} x ${name}?`)) {
       return;
     }
     const items = [{ name, count }];
@@ -2546,123 +2660,86 @@ const $battle = {
       const dataset = { action: 'buy', item: name, count };
       const li = $element('li', $battle.node.items, { textContent, dataset });
       if (stock < count) {
-        li.classList.add('hvut-bt-warn');
+        li.classList.add('hvut-warn');
       }
     });
 
     $config.set('items', $item.count());
   },
-  create: function () {
-    const items_rows = Math.max(Math.ceil(Object.keys($config.settings.equipPanelItemInventory).length / 3), 3);
-    $battle.node.items.style.height = (items_rows * 21 - 1) + 'px';
-    $battle.load_items();
-    $battle.equips.length = 0;
-    $battle.node.equip.innerHTML = '';
-    const equipset = $config.get('equipset');
-    if (!equipset) {
-      $persona.change_p();
-      return;
-    }
-    equipset.forEach((info) => {
-      if (!info.eid) {
-        $element('li', $battle.node.equip, [`/<a>${info.slot} - Empty</a><span></span><span></span>`]);
-        return;
-      }
-
-      const eq = { info, data: {}, node: {} };
-      eq.info.cat = (eq.info.category === 'One-handed Weapon' || eq.info.category === 'Two-handed Weapon' || eq.info.category === 'Staff') ? 'weapon' : 'armor';
-      eq.node.li = $element('li', $battle.node.equip, { dataset: { action: 'hover', eid: eq.info.eid } });
-      eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || eq.info.name, href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank' });
-      eq.node.condition = $element('span', eq.node.li, { dataset: { action: 'repair', eid: eq.info.eid } });
-      eq.node.ex = $element('span', eq.node.li);
-      eq.node.repair = $element('ul', null, ['.hvut-bt-repair', { dataset: { header: '修理' } }]);
-
-      $battle.equips.push(eq);
-    });
-
-    $battle.load_repair();
-  },
-  init: function (outer) {
-    GM_addStyle(/*css*/`
-      #mainpane { padding-right: 8px; }
-      .hvut-bt-outer { width: 1220px !important; }
-      .hvut-bt-outer > p { width: 520px; margin-left: auto; margin-right: auto; }
-      .hvut-bt-on.hvut-bt-outer { width: 620px !important; }
-      .hvut-bt-on.hvut-bt-left { margin-left: 600px !important; }
-      .hvut-bt-on.hvut-bt-right { margin-right: 600px !important; }
-      .hvut-bt-on #hvut-bt-div { visibility: visible; }
-      .hvut-bt-left #hvut-bt-div { left: 8px; }
-      .hvut-bt-right #hvut-bt-div { right: 8px; }
-
-      #hvut-bt-div { visibility: hidden; position: absolute !important; bottom: 8px; width: 598px !important; margin: 0 !important; color: #333; font-size: 9pt; line-height: 20px; font-weight: normal; white-space: nowrap; }
-      #hvut-bt-div > ul { position: absolute; margin: 0; padding: 21px 0 0; border: 1px solid; list-style: none; display: flex; }
-      #hvut-bt-div > ul::before { content: attr(data-header); position: absolute; top: 0; width: 100%; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; font-weight: bold; }
-
-      .hvut-bt-equip { bottom: 0; left: 0; width: 400px; height: 293px; flex-flow: column; }
-      .hvut-bt-equip li { display: flex; flex-wrap: wrap; align-items: flex-start; height: 41px; border-bottom: 1px solid; }
-      .hvut-bt-equip li:last-child { border-bottom: 0; }
-      .hvut-bt-equip li > a { width: 100%; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px dotted #333; font-size: 10pt; font-weight: bold; text-decoration: none; }
-      .hvut-bt-equip li:hover > a { background-color: #fff; }
-      .hvut-bt-equip li > span:nth-child(2) { width: 100px; order: 1; border-left: 1px dotted #333; cursor: pointer; }
-      .hvut-bt-equip li > span:nth-child(2):hover { color: #930; background-color: #fff; }
-      .hvut-bt-equip li > span:nth-child(3) { flex: 1 100px; }
-      .hvut-bt-charms { color: #e00 !important; }
-
-      .hvut-bt-items { bottom: 320px; left: 0; width: 596px; min-height: 62px; flex-flow: row wrap; justify-content: start; }
-      .hvut-bt-items li { flex: 1 30%; border-width: 0 1px 1px 0; border-style: dotted; border-color: #333; overflow: hidden; text-overflow:ellipsis; }
-      .hvut-bt-items li:nth-child(3n) { border-right: 0; }
-      .hvut-bt-items li:nth-last-child(-n+3) { border-bottom: 0; }
-      .hvut-bt-items li[data-action] { cursor: pointer; }
-      .hvut-bt-items li:hover { color: #930; background-color: #fff; }
-      .hvut-bt-warn { color: #e00 !important; }
-
-      .hvut-bt-repair { bottom: 0; left: 398px; width: 198px; height: 293px; flex-flow: column; justify-content: center; gap: 1px; cursor: pointer; }
-      .hvut-bt-repair li { overflow: hidden; text-overflow:ellipsis; }
-      .hvut-bt-repair:hover { background-color: #fff; }
-
-      .hvut-bt-repairall{bottom:0;left:407px;width:190px;height:293px;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;}
-      .hvut-bt-repairall:hover { background-color: #fff; }
-    `);
-
-    $battle.node.outer = outer || $id('mainpane');
-    $battle.node.div = $element('div', $battle.node.outer, ['#hvut-bt-div'], (e) => { $battle.click(e); });
-    $battle.node.equip = $element('ul', $battle.node.div, ['.hvut-bt-equip', { dataset: { header: '装备一览' } }], { mouseover: (e) => { $battle.hover(e); }, mouseleave: () => { $battle.hover_repair(); } });
-    $battle.node.repairall = $element('ul', $battle.node.div, ['.hvut-bt-repairall', { dataset: { header: '修理全部', action: 'repairall' } }]);
-    $battle.node.items = $element('ul', $battle.node.div, ['.hvut-bt-items', { dataset: { header: '快捷购买' } }]);
-
-    $battle.node.outer.classList.add('hvut-bt-outer');
-    $battle.node.outer.classList.add('hvut-bt-on');
-
-    if ($config.settings.equipPanelPosition === 'right') {
-      $battle.node.outer.classList.add('hvut-bt-right');
-    } else {
-      $battle.node.outer.classList.add('hvut-bt-left');
-    }
-
-    $battle.create();
-  },
-
 };
 
 // BASIC CSS
+$id('csp').dataset.ss = _query.ss || 'ch';
+
 GM_addStyle(/*css*/`
+  :root {
+    --color-font-default: #5C0D11;
+    --color-font-light: #9B4E03;
+    --color-font-invalid: #666;
+    --color-font-invert: #fff;
+    --color-font-highlight: #c00;
+    --color-font-warn: #e00;
+    --color-font-bonus: #03c;
+    --color-border-default: #5C0D11;
+    --color-border-light: #9B4E03;
+    --color-border-alpha: #5C0D1136;
+    --color-bg-default: #EDEBDF;
+    --color-bg-back: #E3E0D1;
+    --color-bg-light: #fff;
+    --color-bg-alpha: #fff9;
+    --color-bg-invalid: #ccc6;
+    --color-bg-invert: #5C0D11;
+    --color-bg-h1: #edb;
+    --color-bg-h2: #E3E0D1;
+
+    --color-equip-Peerless: #fbb;
+    --color-equip-Legendary: #fd8;
+    --color-equip-Magnificent: #bdf;
+    --color-equip-Exquisite: #ce9;
+    --color-equip-Superior: #ccc;
+
+    --color-item-Consumable: #00B000;
+    --color-item-Artifact: #0000FF;
+    --color-item-Trophy: #461B7E;
+    --color-item-Token: #254117;
+    --color-item-Crystal: #BA05B4;
+    --color-item-MonsterFood: #489EFF;
+    --color-item-Material: #FF0000;
+    --color-item-Collectable: #0000FF;
+
+    --color-warn-bg: #fd9;
+    --color-warn-alpha: #fd9c;
+    --color-warn-unread: #fcc;
+    --color-exp-bar: #9cf;
+    --color-ab-max: #333;
+    --color-ab-cap: #03c;
+    --color-ab-up: #c00;
+    --color-ab-font: #fff;
+    --color-ab-slot: #333;
+    --color-mm-equip: #c00;
+    --color-mm-item: #090;
+    --color-mm-credits: #03c;
+    --color-mm-hath: #c0c;
+  }
+
   input[type='text'], input[type='number'] { margin: 0 5px; padding: 2px 4px; border-width: 1px; line-height: 16px; }
-  input[type='text'][readonly], input[type='number'][readonly] { color: #666; }
+  input[type='text'][readonly], input[type='number'][readonly] { color: var(--color-font-invalid); }
   input[type='number'] { -moz-appearance: textfield; }
   input[type='number']::-webkit-outer-spin-button, input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; }
   input[type='button'] { font-weight: bold; margin: 0 5px; padding: 1px 3px; border-width: 2px; border-radius: 5px; line-height: 16px; }
-  input[type='checkbox'] { width: 16px; height: 16px; margin: 0 2px; position: relative; top: 0; vertical-align: top; }
+  input[type='checkbox'] { width: 16px; height: 16px; margin: 0 2px; position: relative; top: 0; vertical-align: middle; }
   textarea { margin: 5px; padding: 4px; border-width: 1px; line-height: 20px; }
   select { margin: 0 5px; padding: 2px; border-width: 1px; height: calc(4em/3 + 6px); }
   select[size] { height: auto; }
   select[size] option:checked { background-color: revert; color: revert; }
+
   .hvut-label input { display: none; }
-  .hvut-label input + span { position: relative; display: inline-block; width: 14px; height: 14px; border: 1px solid #966; background-color: #fff; vertical-align: top; }
-  .hvut-label:hover input + span { border-color: #5C0D11; background-color: #fff; }
+  .hvut-label input + span { position: relative; display: inline-block; width: 14px; height: 14px; border: 1px solid var(--color-border-light); background-color: unset; vertical-align: middle; }
+  .hvut-label:hover input + span { border-color: var(--color-border-default); background-color: var(--color-bg-alpha); }
   .hvut-label input[type='checkbox'] + span { border-radius: 3px; }
   .hvut-label input[type='radio'] + span { border-radius: 50%; }
-  .hvut-label input[type='checkbox']:checked + span::before { content: ''; position: absolute; top: 1px; left: 4px; width: 3px; height: 7px; border: solid #5C0D11; border-width: 0 3px 3px 0; transform: rotate(45deg); }
-  .hvut-label input[type='radio']:checked + span::before { content: ''; position: absolute; top: 3px; left: 3px; width: 8px; height: 8px; background-color: #5C0D11; border-radius: 50%; }
+  .hvut-label input[type='checkbox']:checked + span::before { content: ''; position: absolute; top: 1px; left: 4px; width: 3px; height: 7px; border-width: 0 3px 3px 0; border-style: solid; border-color: var(--color-border-default); transform: rotate(45deg); }
+  .hvut-label input[type='radio']:checked + span::before { content: ''; position: absolute; top: 3px; left: 3px; width: 8px; height: 8px; background-color: var(--color-bg-invert); border-radius: 50%; }
   .hvut-scrollbar-none { padding: 0; scrollbar-width: none; }
   .hvut-scrollbar-none::-webkit-scrollbar { display: none; }
   .hvut-scrollbar-none option { margin: 0; border: 0; padding: 3px; }
@@ -2673,61 +2750,74 @@ GM_addStyle(/*css*/`
   .cspp { overflow-y: auto; }
   .fc2, .fc4 { display: inline; }
 
+  .hvut-warn { color: var(--color-font-warn) !important; }
+  .hvut-warn2 { background-color: var(--color-bg-invert) !important; color: var(--color-font-invert) !important; }
+  .hvut-bonus { color: var(--color-font-bonus) !important; }
   .hvut-none { display: none !important; }
   .hvut-none-cont .hvut-none-item { display: none; }
   .hvut-cphu, .hvut-cphu-sub > * { cursor: pointer; }
   .hvut-cphu:hover, .hvut-cphu-sub > *:hover { text-decoration: underline; }
   .hvut-spaceholder { flex-grow: 1; }
   .hvut-side { position: absolute; width: 100px; display: flex; flex-direction: column; }
-  .hvut-side > input { margin: 3px 0; padding: 1px; white-space: normal; }
-  .hvut-side-margin { margin-bottom: 10px !important; }
+  .hvut-side input { margin: 3px 0; padding: 1px; white-space: normal; }
+  .hvut-side input:hover { z-index: 1; }
+  .hvut-side .hvut-side-margin { margin-bottom: 10px; }
+  .hvut-side .hvut-side-top { border-bottom-right-radius: 0; border-bottom-left-radius: 0; margin-bottom: 0; }
+  .hvut-side .hvut-side-mid { border-radius: 0; margin-top: -2px; margin-bottom: 0; }
+  .hvut-side .hvut-side-bottom { border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -2px; }
 
   /* old style equiplist */
   .equiplist { font-weight: normal; }
   .eqp { margin: 5px; width: auto; }
-  .eqp:hover { background-color: #ddd; }
+  .eqp:hover { background-color: var(--color-bg-alpha); }
   .eqp > div:last-child { position: relative; padding: 1px 5px; line-height: 20px; white-space: nowrap; }
+  .eqp > div:last-child:not([onclick]) { color: var(--color-font-light); }
+  .eqp > div:last-child[style*='color'] { box-shadow: 0 0 0 2px inset; }
   div.hvut-eqp-customname::after { visibility: hidden; content: attr(data-eqname); position: absolute; bottom: 0; left: 0; min-width: 100%; padding: inherit; background-color: inherit; }
   div.hvut-eqp-customname:hover::after { visibility: visible; }
-  p.hvut-eqp-category { margin: 10px 0 5px; padding: 2px 5px; border: 1px solid; font-size: 10pt; font-weight: bold; background-color: #edb; }
-  p.hvut-eqp-type { margin: 10px 5px 5px; padding: 2px 5px; border: 1px solid; font-size: 10pt; font-weight: bold; }
+  p.hvut-eqp-category { margin: 10px 0 5px; padding: 2px 5px; border: 1px solid var(--color-border-default); font-size: 10pt; font-weight: bold; background-color: var(--color-bg-h1); }
+  p.hvut-eqp-type { margin: 10px 5px 5px; padding: 2px 5px; border: 1px solid var(--color-border-default); font-size: 10pt; font-weight: bold; }
   div + div.hvut-eqp-border { margin-top: 11px; }
-  div + div.hvut-eqp-border::before { content: ''; position: absolute; margin-top: -6px; width: 100%; border-top: 1px solid #5C0D11; }
+  div + div.hvut-eqp-border::before { content: ''; position: absolute; margin-top: -6px; width: 100%; border-top: 1px solid var(--color-border-default); }
   .hvut-none-cont div.hvut-eqp-border { margin-top: 0; }
   .hvut-none-cont div.hvut-eqp-border::before { content: none; }
   /* */
 
-  #equiplist td { padding: 3px 2px; font-weight: normal; }
+  #equiplist { position: relative; }
+  #equiplist td { padding: 3px; font-weight: normal; border-color: var(--color-border-alpha); }
   #equiplist td:nth-child(n+2) { text-align: center; white-space: nowrap; }
-  #equiplist .hvut-eqp-category > td { padding: 10px; border-top-width: 3px; font-size: 10pt; font-weight: bold; background-color: #edb; }
-  #equiplist .hvut-eqp-type > td { padding: 10px; border-top-width: 2px; font-size: 10pt; font-weight: bold; background-color: #E3E0D1; }
+  #equiplist .hvut-eqp-category > td { padding: 10px; border-top-width: 3px; font-size: 10pt; font-weight: bold; background-color: var(--color-bg-h1); }
+  #equiplist .hvut-eqp-type > td { padding: 10px; border-top-width: 2px; font-size: 10pt; font-weight: bold; background-color: var(--color-bg-h2); }
   #equiplist .hvut-eqp-border > td { border-top-width: 3px; border-top-style: double; }
   #equiplist .lc { height: auto; min-height: 24px; }
   .hvut-eqp-filter-on .hvut-eqp-hidden { display: none; }
-  .hvut-eqp-profit { background-color: #fff6; color: #c00; }
+  .hvut-eqp-profit { background-color: var(--color-bg-alpha); color: var(--color-font-highlight); }
+  .hvut-eqp-level ~ .hvut-eqp-upgrade { display: none; }
+  .hvut-eqp-level.hvut-eqp-upgrade { background-color: var(--color-bg-alpha); }
+  .hvut-eqp-note { width: 90px; }
+  .hvut-eqp-note input { width: 80px; margin: 0; font-size: 9pt; }
+  .hvut-eqp-scroll { margin-bottom: 5px; }
+  .hvut-eqp-scroll input { margin: 5px; padding: 2px 5px; border-width: 1px; border-radius: 0; }
 
   .itemlist { user-select: auto !important; }
-  .itemlist td > div { padding: 3px 5px 3px 18px; line-height: 16px; }
-  .itemlist td > div[style*='color'] { box-shadow: 0 0 0 2px inset; }
   .it, .it ~ td { padding-top: 7px; }
-  .hvut-it-Consumable { color: #00B000; }
-  .hvut-it-Artifact { color: #0000FF; }
-  .hvut-it-Trophy { color: #461B7E; }
-  .hvut-it-Token { color: #254117; }
-  .hvut-it-Crystal { color: #BA05B4; }
-  .hvut-it-MonsterFood { color: #489EFF; }
-  .hvut-it-Material { color: #FF0000; }
-  .hvut-it-Collectable { color: #0000FF; }
+  .hvut-item-Consumable { color: var(--color-item-Consumable); }
+  .hvut-item-Artifact { color: var(--color-item-Artifact); }
+  .hvut-item-Trophy { color: var(--color-item-Trophy); }
+  .hvut-item-Token { color: var(--color-item-Token); }
+  .hvut-item-Crystal { color: var(--color-item-Crystal); }
+  .hvut-item-MonsterFood { color: var(--color-item-MonsterFood); }
+  .hvut-item-Material { color: var(--color-item-Material); }
+  .hvut-item-Collectable { color: var(--color-item-Collectable); }
 `);
 
 if ($config.settings.equipColor) {
   GM_addStyle(/*css*/`
-    .eqp > div:last-child:not([onclick]) { color: #966; }
-    .eqp > div:last-child[style*='color'] { box-shadow: 0 0 0 2px inset; }
-    .hvut-eqp-Peerless { background-color: #fbb !important; }
-    .hvut-eqp-Legendary { background-color: #fd8 !important; }
-    .hvut-eqp-Magnificent { background-color: #bdf !important; }
-    .hvut-eqp-Exquisite { background-color: #ce9 !important; }
+    .hvut-equip-Peerless { background-color: var(--color-equip-Peerless) !important; }
+    .hvut-equip-Legendary { background-color: var(--color-equip-Legendary) !important; }
+    .hvut-equip-Magnificent { background-color: var(--color-equip-Magnificent) !important; }
+    .hvut-equip-Exquisite { background-color: var(--color-equip-Exquisite) !important; }
+    .hvut-equip-Superior { background-color: var(--color-equip-Superior) !important; }
   `);
 }
 
@@ -2735,7 +2825,7 @@ if ($id('stats_scrollable')) {
   GM_addStyle(/*css*/`
     #stats_scrollable .spc { width: auto; font-weight: bold; }
     #stats_scrollable table { font-size: 9pt; }
-    #stats_scrollable td:first-child { min-width: 45px; padding-left: 3px; color: #c00; }
+    #stats_scrollable td:first-child { min-width: 45px; padding-left: 3px; color: var(--color-font-highlight); }
     #stats_scrollable td:last-child { white-space: nowrap; }
     .hvut-ch-expand #eqch_left { width: 660px; }
     .hvut-ch-expand #eqch_stats { width: 560px; }
@@ -2757,7 +2847,7 @@ if ($config.settings.equipHoverFunctions) {
     if (e.target.nodeName === 'INPUT' || e.target.nodeName === 'TEXTAREA') {
       return;
     }
-    const div = $qs('*[data-eid]:hover');
+    const div = $qs('[data-eid]:hover');
     if (div) {
       const eq = $equip.parse.elem(div);
       if (e.key === 'C') {
@@ -2778,7 +2868,7 @@ if ($config.settings.equipHoverFunctions) {
 
   // EQUIPMENT MOUSE FUNCTIONS
   document.addEventListener('dblclick', () => {
-    const div = $qs('*[data-eid]:hover');
+    const div = $qs('[data-eid]:hover');
     if (div) {
       window.open(`equip/${div.dataset.eid}/${div.dataset.key}`, '_blank');
     }
@@ -2788,7 +2878,7 @@ if ($config.settings.equipHoverFunctions) {
 if ($config.settings.equipTouchFunctions) {
   // EQUIPMENT TOUCH FUNCTIONS
   function handleAction(target) {
-    const div = target?.closest('*[data-eid]');
+    const div = target?.closest('[data-eid]');
     if (!div) {
       return;
     }
@@ -2823,80 +2913,39 @@ if ($config.settings.equipTouchFunctions) {
   });
 }
 
+
 // TOP MENU
-GM_addStyle(/*css*/`
-  #navbar { display: none; }
-
-  #hvut-top { display: flex; position: relative; height: 22px; padding: 2px 0; border-bottom: 1px solid; font-size: 9pt; line-height: 22px; font-weight: bold; z-index: 10; white-space: nowrap; cursor: default; }
-  #hvut-top > div { position: relative; height: 22px; margin: 0 5px; }
-  #hvut-top a { display: block; text-decoration: none; }
-
-  .hvut-top-warn { background-color: #fd9; }
-  .hvut-top-message { position: absolute !important; top: 100%; left: -1px; width: 100%; margin: 0 !important; padding: 2px 0; border: 1px solid #5C0D11; background-color: #fd9c; color: #e00; z-index: -1; pointer-events: none; }
-
-  .hvut-top-sub { visibility: hidden; position: absolute; top: 22px; left: -6px; padding: 5px; border-style: solid; border-width: 0 1px 1px; background-color: #EDEBDF; opacity: 0.95; }
-  div:hover > .hvut-top-sub { visibility: visible; }
-  .hvut-top-sub select { display: block; margin: 0; }
-  .hvut-top-stamina > p { width: 220px; border-top: 1px solid #5C0D11; white-space: normal; }
-  .hvut-top-stamina > p:first-child { border-top: 0; }
-  .hvut-top-exp { position: relative; width: 299px; height: 8px; margin: 0 auto; border: 1px solid; background: linear-gradient(to right, #930 1px, transparent 1px) repeat -1px 0 / 30px; }
-  .hvut-top-exp::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff; z-index: -1; }
-  .hvut-top-exp > div { position: absolute; top: 0; left: 0; height: 100%; background-color: #9cf; z-index: -1; }
-  .hvut-top-placeholder { flex-grow: 1; }
-  .hvut-top-server { left: auto; right: -6px; }
-  .hvut-top-config { left: auto; right: -6px; }
-  .hvut-top-config > div { margin: 5px; text-align: left; cursor: pointer; }
-
-  .hvut-top-menu { display: flex; }
-  .hvut-top-menu > div { position: relative; margin: 0 5px; }
-  .hvut-top-menu span { font-size: 11pt; color: #930; }
-  .hvut-top-menu .hvut-top-sub { width: max-content; }
-  .hvut-top-menu ul { float: left; margin: 0 0 0 5px; padding: 0; list-style: none; text-align: left; line-height: 20px; }
-  .hvut-top-menu ul:first-child { margin-left: 0; }
-  .hvut-top-menu a { margin: 3px 0; padding: 0 5px; }
-  .hvut-top-menu a:hover { background-color: #fff; }
-  .hvut-top-menu-s { padding: 0 5px; background-color: #5C0D11; color: #fff; }
-
-  .hvut-top-links { display: flex; }
-  .hvut-top-links > a { position: relative; margin: 0 1px; padding: 0 1px; min-width: 28px; font-size: 11pt; border-radius: 2px; }
-  .hvut-top-links > a:hover { background-color: #fff; }
-  .hvut-top-links > a > span { display: none; position: absolute; top: 100%; left: 0; margin-top: 2px; margin-left: 0; padding: 1px 4px; background-color: #fff; color: #930; border: 1px solid; font-size: 10pt; line-height: 20px; font-weight: normal; pointer-events: none; }
-  .hvut-top-links > a:hover > span { display: block; }
-  .hvut-top-ygm { color: transparent !important; background: url('/y/mmail/ygm.png') no-repeat center center; animation: ygm 0.5s ease-in-out 10 alternate; filter: brightness(200%); }
-  .hvut-top-ygm:hover { color: #e00 !important; background-image: none; animation: none; filter: none; }
-  @keyframes ygm { from { opacity: 1; } to { opacity: 0.3; } }
-`);
-
+_top.node = {};
 _top.menu = {
-  'Character': { s: 'Character', ss: 'ch', label: '角色', default: 'CH', title: 'Character' },
-  'Equipment': { s: 'Character', ss: 'eq', label: '装备', default: 'EQ', title: 'Equipment' },
-  'Abilities': { s: 'Character', ss: 'ab', label: '能力', default: 'AB', title: 'Abilities' },
-  'Training': { s: 'Character', ss: 'tr', label: '训练', default: 'TR', title: 'Training', server: 'persistent' },
-  'Item Inventory': { s: 'Character', ss: 'it', label: '物品', default: 'IT', title: 'Item Inventory' },
-  'Settings': { s: 'Character', ss: 'se', label: '设置', default: 'SE', title: 'Settings' },
+  'Character': { s: 'Character', ss: 'ch', label: 'CH', default: 'CH', title: 'Character' },
+  'Equipment': { s: 'Character', ss: 'eq', label: 'EQ', default: 'EQ', title: 'Equipment' },
+  'Abilities': { s: 'Character', ss: 'ab', label: 'AB', default: 'AB', title: 'Abilities' },
+  'Training': { s: 'Character', ss: 'tr', label: 'TR', default: 'TR', title: 'Training', server: 'persistent' },
+  'Item Inventory': { s: 'Character', ss: 'it', label: 'IT', default: 'IT', title: 'Item Inventory' },
+  'Settings': { s: 'Character', ss: 'se', label: 'SE', default: 'SE', title: 'Settings' },
 
-  'Item Shop': { s: 'Bazaar', ss: 'is', label: '道具店', default: 'IS', title: 'Item Shop' },
-  'The Shrine': { s: 'Bazaar', ss: 'ss', label: '祭坛', default: 'SS', title: 'The Shrine' },
-  'The Market': { s: 'Bazaar', ss: 'mk', label: '市场', default: 'MK', title: 'The Market' },
-  'Monster Lab': { s: 'Bazaar', ss: 'ml', label: '实验室', default: 'ML', title: 'Monster Lab', server: 'persistent' },
-  'MoogleMail': { s: 'Bazaar', ss: 'mm', label: '邮箱', default: 'MM', title: 'MoogleMail' },
-  'Weapon Lottery': { s: 'Bazaar', ss: 'lt', label: '武器彩票', default: 'LT', title: 'Weapon Lottery', server: 'persistent' },
-  'Armor Lottery': { s: 'Bazaar', ss: 'la', label: '防具彩票', default: 'LA', title: 'Armor Lottery', server: 'persistent' },
+  'Item Shop': { s: 'Bazaar', ss: 'is', label: 'IS', default: 'IS', title: 'Item Shop' },
+  'The Shrine': { s: 'Bazaar', ss: 'ss', label: 'SS', default: 'SS', title: 'The Shrine' },
+  'The Market': { s: 'Bazaar', ss: 'mk', label: 'MK', default: 'MK', title: 'The Market' },
+  'Monster Lab': { s: 'Bazaar', ss: 'ml', label: 'ML', default: 'ML', title: 'Monster Lab', server: 'persistent' },
+  'MoogleMail': { s: 'Bazaar', ss: 'mm', label: 'MM', default: 'MM', title: 'MoogleMail' },
+  'Weapon Lottery': { s: 'Bazaar', ss: 'lt', label: 'LT', default: 'LT', title: 'Weapon Lottery', server: 'persistent' },
+  'Armor Lottery': { s: 'Bazaar', ss: 'la', label: 'LA', default: 'LA', title: 'Armor Lottery', server: 'persistent' },
 
   //'The Armory': { s: 'Bazaar', ss: 'am', label: 'AM', default: 'AM', title: 'The Armory' },
-  'Organize': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'organize', label: '管理', default: 'OR', title: 'Organize' },
-  'Modify': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'modify', label: '改装', default: 'MO', title: 'Modify' },
-  'Repair': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'repair', label: '修理', default: 'RE', title: 'Repair' },
-  'Soulbind': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'soulbind', label: '魂绑', default: 'SB', title: 'Soulbind' },
-  'Purchase': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'purchase', label: '购买', default: 'PU', title: 'Purchase' },
-  'Sell': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'sell', label: '出售', default: 'SL', title: 'Sell' },
-  'Salvage': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'salvage', label: '分解', default: 'SA', title: 'Salvage' },
+  'Organize': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'organize', label: 'OR', default: 'OR', title: 'Organize' },
+  'Modify': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'modify', label: 'MO', default: 'MO', title: 'Modify' },
+  'Repair': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'repair', label: 'RE', default: 'RE', title: 'Repair' },
+  'Soulbind': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'soulbind', label: 'SB', default: 'SB', title: 'Soulbind' },
+  'Purchase': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'purchase', label: 'PU', default: 'PU', title: 'Purchase' },
+  'Sell': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'sell', label: 'SL', default: 'SL', title: 'Sell' },
+  'Salvage': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'salvage', label: 'SA', default: 'SA', title: 'Salvage' },
 
-  'The Arena': { s: 'Battle', ss: 'ar', label: '竞技', default: 'AR', title: 'The Arena' },
-  'The Tower': { s: 'Battle', ss: 'tw', label: '塔楼', default: 'TW', title: 'The Tower', server: 'isekai' },
-  'Ring of Blood': { s: 'Battle', ss: 'rb', label: '擂台', default: 'RB', title: 'Ring of Blood' },
-  'GrindFest': { s: 'Battle', ss: 'gr', label: '压榨', default: 'GR', title: 'GrindFest' },
-  'Item World': { s: 'Battle', ss: 'iw', label: '道具界', default: 'IW', title: 'Item World' },
+  'The Arena': { s: 'Battle', ss: 'ar', label: 'AR', default: 'AR', title: 'The Arena' },
+  'The Tower': { s: 'Battle', ss: 'tw', label: 'TW', default: 'TW', title: 'The Tower', server: 'isekai' },
+  'Ring of Blood': { s: 'Battle', ss: 'rb', label: 'RB', default: 'RB', title: 'Ring of Blood' },
+  'GrindFest': { s: 'Battle', ss: 'gr', label: 'GR', default: 'GR', title: 'GrindFest' },
+  'Item World': { s: 'Battle', ss: 'iw', label: 'IW', default: 'IW', title: 'Item World' },
 };
 Object.values(_top.menu).forEach((m) => {
   if (!m.href) {
@@ -2904,115 +2953,13 @@ Object.values(_top.menu).forEach((m) => {
   }
 });
 
-_top.create = function () {
-  if (_top.inited) {
-    return;
-  }
-  _top.inited = true;
-
-  const ul = {};
-  Object.values(_top.menu).forEach((m) => {
-    if (m.server && m.server !== _server.name) {
-      return;
-    }
-    const g = m.g || m.s;
-    if (!ul[g]) {
-      if ($config.settings.topMenuIntegration) {
-        if (!_top.node.menu['SUB']) {
-          _top.node.menu['SUB'] = $element('div', _top.node.menu['MENU'], ['.hvut-top-sub']);
-        }
-        ul[g] = $element('ul', _top.node.menu['SUB']);
-        $element('li', ul[g], [g, '.hvut-top-menu-s']);
-      } else {
-        const menu_sub = $element('div', _top.node.menu[g], ['.hvut-top-sub']);
-        ul[g] = $element('ul', menu_sub);
-      }
-    }
-    const li = $element('li', ul[g]);
-    $element('a', li, { textContent: m.title, href: m.href });
-  });
-
-  const stamina_sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
-  if (_server.persistent) {
-    _top.node.stamina_form = $element('form', stamina_sub, { method: 'POST' }, { submit: (e) => { _top.stamina_submit(e); } });
-    $input('hidden', _top.node.stamina_form, { name: 'recover', value: 'stamina' });
-    $input('submit', _top.node.stamina_form, { value: 'USE RESTORATIVE', disabled: _player.stamina >= $config.settings.disableStaminaRestorative, style: 'width: 200px;' });
-    _top.node.stamina.addEventListener('mouseenter', _top.stamina_create);
-  }
-  $element('p', stamina_sub, _player.condition);
-  if (_player.accuracy) {
-    $element('p', stamina_sub, [_player.accuracy, '!color: #e00;']);
-  }
-
-  if (_player.level !== 500) {
-    const exec = /([0-9,]+) \/ ([0-9,]+)\s*Next: ([0-9,]+)/.exec($id('level_details').textContent);
-    const exp = parseInt(exec[1].replace(/,/g, ''));
-    const up = parseInt(exec[2].replace(/,/g, ''));
-    const next = parseInt(exec[3].replace(/,/g, ''));
-    const level_start = Math.round(Math.pow(_player.level + 3, Math.pow(2.850263212287058, 1 + _player.level / 1000)));
-    const level_exp = exp - level_start;
-    const level_up = up - level_start;
-    const pct = ((level_exp / level_up) * 100).toFixed(2);
-    const level_sub = $element('div', _top.node.level, ['.hvut-top-sub']);
-    $element('p', level_sub, `累计经验: ${exp.toLocaleString()} / ${up.toLocaleString()}`);
-    $element('p', level_sub, `升级还需: ${next.toLocaleString()}`);
-    $element('p', level_sub, `当前等级: ${level_exp.toLocaleString()} / ${level_up.toLocaleString()} (${pct}%)`);
-    $element('div', level_sub, ['.hvut-top-exp', `/<div style="width: ${pct}%;"></div>`]);
-  }
-
-  const server_sub = $element('div', _top.node.server, ['.hvut-top-sub hvut-top-server']);
-  if (_server.persistent) {
-    const server_on = 'Persistent';
-    const server_to = 'Isekai';
-    $element('a', server_sub, { href: '/isekai/', innerHTML: `<p>Currently playing in ${server_on}</p><p>Click to switch to ${server_to}</p>` });
-  } else {
-    const server_on = 'Isekai';
-    const server_to = 'Persistent';
-    $element('a', server_sub, { href: '/', innerHTML: `<p>Currently playing in ${server_on}</p><p>${_server.season}</p><p>Click to switch to ${server_to}</p>` });
-  }
-
-  const config_sub = $element('div', _top.node.config, ['.hvut-top-sub hvut-top-config']);
-  $element('div', config_sub, 'HV Utils 设置', () => { $config.open(); });
-  if ($id('mbsettings')) { // monsterbation
-    config_sub.appendChild($id('mbsettings'));
-    $id('mbsettings').firstElementChild.className = '';
-    GM_addStyle(/*css*/`
-      #mbsettings { position: relative; }
-      #mbprofile { top: 100%; left: 0; min-width: 100%; box-sizing: border-box; font-weight: normal; }
-    `);
-  }
-};
-
-_top.stamina_create = async function () {
-  if (_top.stamina_create.inited) {
-    return;
-  }
-  _top.stamina_create.inited = true;
-  const p = $element('p', _top.node.stamina_form, 'Loading...');
-  await $item.once();
-  const items = ['Caffeinated Candy', 'Energy Drink'].filter((e) => $item.count(e));
-  if (items.length) {
-    items.forEach((e) => { $element('p', _top.node.stamina_form, `${e} (${$item.count(e)})`); });
-    p.remove();
-  } else {
-    p.textContent = 'No restorative available';
-  }
-};
-
-_top.stamina_submit = function (e) {
-  if ($config.settings.confirmStaminaRestorative && !confirm('你确定要使用能量饮料吗?')) {
-    e.preventDefault();
-  }
-};
-
 _top.init = function () {
-  _top.node = {};
   _top.node.div = $element('div', null, ['#hvut-top'], { mouseenter: () => { _top.create(); } });
 
   const menu_div = $element('div', _top.node.div, ['.hvut-top-menu']);
   _top.node.menu = {};
   if ($config.settings.topMenuIntegration) {
-    _top.node.menu['MENU'] = $element('div', menu_div, ['/<span>菜单</span>']);
+    _top.node.menu['MENU'] = $element('div', menu_div, ['/<span>MENU</span>']);
   } else {
     Object.values(_top.menu).forEach((m) => {
       const g = m.g || m.s;
@@ -3053,10 +3000,10 @@ _top.init = function () {
     $element('span', a, m.title);
   });
 
-  _top.node.stamina = $element('div', _top.node.div, ['!width: 90px;', `/<span>体力: ${_player.stamina}</span>`]);
-  _top.node.level = $element('div', _top.node.div, ['!width: 60px;', `/<span>等级: ${_player.level}</span>`]);
-  _top.node.difficulty = $element('div', _top.node.div, ['!width: 80px;', `/<span>难度: ${_player.difficulty}</span>`]);
-  _top.node.persona = $element('div', _top.node.div, ['!width: 150px;', '/<span>Persona</span>']);
+  _top.node.stamina = $element('div', _top.node.div, ['!width: 90px;', `/<span>Stamina: ${_player.stamina}</span>`]);
+  _top.node.level = $element('div', _top.node.div, ['!width: 60px;', `/<span>Lv.${_player.level}</span>`]);
+  _top.node.difficulty = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_player.difficulty}</span>`]);
+  _top.node.persona = $element('div', _top.node.div, ['!width: 110px;', '/<span>Persona</span>']);
   if ($config.settings.reNotification) {
     $re.hv();
   }
@@ -3064,19 +3011,165 @@ _top.init = function () {
   _top.node.server = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_server.name.toUpperCase()}</span>`]);
 
   _top.node.config = $element('div', _top.node.div, ['!width: 30px;']);
-  $element('span', _top.node.config, ['!cursor: pointer;', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#630"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { $config.open(); });
+  $element('span', _top.node.config, ['#hvut-top-config-icon', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#5C0D11"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { $config.open(); });
 
   $id('navbar').after(_top.node.div);
 };
+
+_top.create = function () {
+  if (_top.inited) {
+    return;
+  }
+  _top.inited = true;
+
+  const ul = {};
+  Object.values(_top.menu).forEach((m) => {
+    if (m.server && m.server !== _server.name) {
+      return;
+    }
+    const g = m.g || m.s;
+    if (!ul[g]) {
+      if ($config.settings.topMenuIntegration) {
+        if (!_top.node.menu['SUB']) {
+          _top.node.menu['SUB'] = $element('div', _top.node.menu['MENU'], ['.hvut-top-sub']);
+        }
+        ul[g] = $element('ul', _top.node.menu['SUB']);
+        $element('li', ul[g], [g, '.hvut-top-menu-s']);
+      } else {
+        const menu_sub = $element('div', _top.node.menu[g], ['.hvut-top-sub']);
+        ul[g] = $element('ul', menu_sub);
+      }
+    }
+    const li = $element('li', ul[g]);
+    $element('a', li, { textContent: m.title, href: m.href });
+  });
+
+  const stamina_sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
+  if (_server.persistent) {
+    _top.node.stamina_form = $element('form', stamina_sub, { method: 'POST' }, { submit: (e) => { _top.stamina_submit(e); } });
+    $input('hidden', _top.node.stamina_form, { name: 'recover', value: 'stamina' });
+    $input('submit', _top.node.stamina_form, { value: 'USE RESTORATIVE', disabled: _player.stamina >= $config.settings.disableStaminaRestorative, style: 'width: 200px;' });
+    _top.node.stamina.addEventListener('mouseenter', _top.stamina_create);
+  }
+  $element('p', stamina_sub, _player.condition);
+  if (_player.accuracy) {
+    $element('p', stamina_sub, [_player.accuracy, '.hvut-warn']);
+  }
+
+  if (_player.level !== 500) {
+    const exec = /([0-9,]+) \/ ([0-9,]+)\s*Next: ([0-9,]+)/.exec($id('level_details').textContent);
+    const exp = parseInt(exec[1].replace(/,/g, ''));
+    const up = parseInt(exec[2].replace(/,/g, ''));
+    const next = parseInt(exec[3].replace(/,/g, ''));
+    const level_start = Math.round(Math.pow(_player.level + 3, Math.pow(2.850263212287058, 1 + _player.level / 1000)));
+    const level_exp = exp - level_start;
+    const level_up = up - level_start;
+    const pct = ((level_exp / level_up) * 100).toFixed(2);
+    const level_sub = $element('div', _top.node.level, ['.hvut-top-sub']);
+    $element('p', level_sub, `Total: ${exp.toLocaleString()} / ${up.toLocaleString()}`);
+    $element('p', level_sub, `Next: ${next.toLocaleString()}`);
+    $element('p', level_sub, `Level: ${level_exp.toLocaleString()} / ${level_up.toLocaleString()} (${pct}%)`);
+    $element('div', level_sub, ['.hvut-top-exp', `/<div style="width: ${pct}%;"></div>`]);
+  }
+
+  const server_sub = $element('div', _top.node.server, ['.hvut-top-sub hvut-top-server']);
+  if (_server.persistent) {
+    const server_on = 'Persistent';
+    const server_to = 'Isekai';
+    $element('a', server_sub, { href: '/isekai/', innerHTML: `<p>Currently playing in ${server_on}</p><p>Click to switch to ${server_to}</p>` });
+  } else {
+    const server_on = 'Isekai';
+    const server_to = 'Persistent';
+    $element('a', server_sub, { href: '/', innerHTML: `<p>Currently playing in ${server_on}</p><p>${_server.season}</p><p>Click to switch to ${server_to}</p>` });
+  }
+
+  const config_sub = $element('div', _top.node.config, ['.hvut-top-sub hvut-top-config']);
+  $element('div', config_sub, 'HV Utils Settings', () => { $config.open(); });
+  if ($id('mbsettings')) { // monsterbation
+    config_sub.appendChild($id('mbsettings'));
+    $id('mbsettings').firstElementChild.className = '';
+    GM_addStyle(/*css*/`
+      #mbsettings { position: relative; }
+      #mbprofile { top: 100%; left: 0; min-width: 100%; box-sizing: border-box; font-weight: normal; }
+    `);
+  }
+};
+
+_top.stamina_create = async function () {
+  if (_top.stamina_create.inited) {
+    return;
+  }
+  _top.stamina_create.inited = true;
+  const p = $element('p', _top.node.stamina_form, 'Loading...');
+  await $item.once();
+  const items = ['Caffeinated Candy', 'Energy Drink'].filter((e) => $item.count(e));
+  if (items.length) {
+    items.forEach((e) => { $element('p', _top.node.stamina_form, `${e} (${$item.count(e)})`); });
+    p.remove();
+  } else {
+    p.textContent = 'No restorative available';
+  }
+};
+
+_top.stamina_submit = function (e) {
+  if ($config.settings.confirmStaminaRestorative && !confirm('Are you sure that you wish to use a stamina restorative?')) {
+    e.preventDefault();
+  }
+};
+
+GM_addStyle(/*css*/`
+  #navbar { display: none; }
+
+  #hvut-top { display: flex; position: relative; height: 22px; padding: 2px 0; border-bottom: 1px solid var(--color-border-default); font-size: 9pt; line-height: 22px; font-weight: bold; z-index: 10; white-space: nowrap; cursor: default; }
+  #hvut-top > div { position: relative; height: 22px; margin: 0 5px; }
+  #hvut-top a { display: block; text-decoration: none; }
+
+  .hvut-top-warn { background-color: var(--color-warn-bg); }
+  .hvut-top-message { position: absolute !important; top: 100%; left: -1px; width: 100%; margin: 0 !important; padding: 2px 0; border: 1px solid var(--color-border-default); background-color: var(--color-warn-alpha); color: var(--color-font-warn); z-index: -1; pointer-events: none; }
+
+  .hvut-top-sub { visibility: hidden; position: absolute; top: 22px; left: -6px; padding: 5px; border-width: 0 1px 1px; border-style: solid; border-color: var(--color-border-default); background-color: var(--color-bg-default); }
+  div:hover > .hvut-top-sub { visibility: visible; }
+  .hvut-top-sub select { display: block; margin: 0; }
+  .hvut-top-stamina > p { width: 220px; border-top: 1px solid var(--color-border-default); white-space: normal; }
+  .hvut-top-stamina > p:first-child { border-top: 0; }
+  .hvut-top-exp { position: relative; width: 299px; height: 8px; margin: 0 auto; border: 1px solid var(--color-border-default); background-color: var(--color-bg-alpha); }
+  .hvut-top-exp::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to right, var(--color-border-default) 1px, transparent 1px) repeat -1px 0 / 30px; }
+  .hvut-top-exp > div { position: absolute; top: 0; left: 0; height: 100%; background-color: var(--color-exp-bar); }
+  .hvut-top-placeholder { flex-grow: 1; }
+  .hvut-top-server { left: auto; right: -6px; }
+  .hvut-top-config { left: auto; right: -6px; }
+  .hvut-top-config > div { margin: 5px; text-align: left; cursor: pointer; }
+  #hvut-top-config-icon > svg { fill: var(--color-font-default); cursor: pointer; }
+
+  .hvut-top-menu { display: flex; }
+  .hvut-top-menu > div { position: relative; margin: 0 5px; }
+  .hvut-top-menu span { font-size: 11pt; color: var(--color-font-light); }
+  .hvut-top-menu .hvut-top-sub { width: max-content; }
+  .hvut-top-menu ul { float: left; margin: 0 0 0 5px; padding: 0; list-style: none; text-align: left; line-height: 20px; }
+  .hvut-top-menu ul:first-child { margin-left: 0; }
+  .hvut-top-menu a { margin: 3px 0; padding: 0 5px; }
+  .hvut-top-menu a:hover { background-color: var(--color-bg-light); }
+  .hvut-top-menu-s { padding: 0 5px; background-color: var(--color-bg-invert); color: var(--color-font-invert); }
+
+  .hvut-top-links { display: flex; }
+  .hvut-top-links > a { position: relative; margin: 0 1px; padding: 0 1px; min-width: 28px; font-size: 11pt; border-radius: 2px; }
+  .hvut-top-links > a:hover { background-color: var(--color-bg-light); }
+  .hvut-top-links > a > span { display: none; position: absolute; top: 100%; left: 0; margin-top: 2px; margin-left: 0; padding: 1px 4px; background-color: var(--color-bg-light); color: var(--color-font-light); border: 1px solid var(--color-border-light); font-size: 10pt; line-height: 20px; font-weight: normal; pointer-events: none; }
+  .hvut-top-links > a:hover > span { display: block; }
+  .hvut-top-ygm { color: transparent !important; background: url('/y/mmail/ygm.png') no-repeat center center; animation: ygm 0.5s ease-in-out 10 alternate; filter: brightness(200%); }
+  .hvut-top-ygm:hover { color: var(--color-font-highlight) !important; background-image: none; animation: none; filter: none; }
+  @keyframes ygm { from { opacity: 1; } to { opacity: 0.3; } }
+`);
 
 _top.init();
 
 // DIFFICULTY CHANGER
 const $dfct = {
-
-  div: _top.node.difficulty,
-  button: _top.node.difficulty.firstElementChild,
-  list: ['普通×1', '困难×2', '噩梦×3', '地狱×5', '任天堂×10', 'I Wanna×15', '彩虹小马×20'],
+  node: {
+    div: _top.node.difficulty,
+    button: _top.node.difficulty.firstElementChild,
+  },
+  list: ['Normal', 'Hard', 'Nightmare', 'Hell', 'Nintendo', 'IWBTH', 'PFUDOR'],
 
   init: function () {
     const ch_style = $config.get('ch_style', {});
@@ -3084,12 +3177,13 @@ const $dfct = {
       ch_style.difficulty = _player.difficulty;
       $config.set('ch_style', ch_style);
     }
+    $dfct.node.div.addEventListener('mouseenter', $dfct.create);
   },
   create: function () {
     if ($dfct.sub) {
       return;
     }
-    $dfct.sub = $element('div', $dfct.div, ['.hvut-top-sub']);
+    $dfct.sub = $element('div', $dfct.node.div, ['.hvut-top-sub']);
     const options = $dfct.list.map((d, i) => `${i + 1}:${d}`).reverse();
     $dfct.selector = $input(['select', options], $dfct.sub, { size: $dfct.list.length, className: 'hvut-scrollbar-none', style: 'width: 80px;' }, { change: () => {
       $dfct.selector.disabled = true;
@@ -3098,10 +3192,10 @@ const $dfct = {
     $dfct.selector.value = $dfct.list.indexOf(_player.difficulty) + 1;
   },
   change: async function (value) {
-    $dfct.button.textContent = '(D1...)';
+    $dfct.node.button.textContent = '(D1...)';
     let html = await $ajax.fetch('?s=Character&ss=se');
     let doc = $doc(html);
-    $dfct.button.textContent = '(D2...)';
+    $dfct.node.button.textContent = '(D2...)';
     const data = new FormData($qs('#settings_outer form', doc));
     data.set('difflevel', value);
     data.set('submit', 'Apply Changes');
@@ -3112,11 +3206,11 @@ const $dfct = {
   set_button: function (doc) {
     const value = /^(.+) Lv\.(\d+)/.exec($id('level_readout', doc).textContent.trim())[1];
     if (!value) {
-      $dfct.button.textContent = '(D: ERROR)';
+      $dfct.node.button.textContent = '(D: ERROR)';
       return;
     }
     _player.difficulty = value;
-    $dfct.button.textContent = value;
+    $dfct.node.button.textContent = value;
     if ($dfct.selector) {
       $dfct.selector.value = $dfct.list.indexOf(value) + 1;
       $dfct.selector.disabled = false;
@@ -3125,19 +3219,33 @@ const $dfct = {
     ch_style.difficulty = value;
     $config.set('ch_style', ch_style);
   },
-
 };
 
-$dfct.div.addEventListener('mouseenter', $dfct.create);
 $dfct.init();
 
 // PERSONA & EQUIPMENT SET CHANGER
 const $persona = {
-
+  node: {
+    div: _top.node.persona,
+    button: _top.node.persona.firstElementChild,
+  },
   json: $config.get('persona', {}),
-  div: _top.node.persona,
-  button: _top.node.persona.firstElementChild,
 
+  init: function () {
+    if ($id('persona_form')) {
+      if (!$persona.check_p()) {
+        $persona.change_e();
+      } else {
+        $persona.set_button();
+      }
+    } else if (!$persona.json.pset || !$persona.json.eset) {
+      $persona.change_p();
+    } else {
+      $persona.set_button();
+    }
+    $persona.check_warning();
+    $persona.node.div.addEventListener('mouseenter', $persona.create);
+  },
   create: function () {
     const json = $persona.json;
     if (!json.pset || !json.eset) {
@@ -3146,7 +3254,7 @@ const $persona = {
     if ($persona.sub) {
       return;
     }
-    $persona.sub = $element('div', $persona.div, ['.hvut-top-sub']);
+    $persona.sub = $element('div', $persona.node.div, ['.hvut-top-sub']);
 
     $persona.selector_p = $input('select', $persona.sub, { size: json.plen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
       $persona.selector_p.disabled = true;
@@ -3205,8 +3313,8 @@ const $persona = {
     $persona.set_value();
   },
   change_p: async function (pset) {
-    $persona.button.textContent = '(P...)';
-    $dfct.button.textContent = '(D...)';
+    $persona.node.button.textContent = '(P...)';
+    $dfct.node.button.textContent = '(D...)';
     const html = await $ajax.fetch('?s=Character&ss=ch', pset ? `persona_set=${pset}` : null);
     const doc = $doc(html);
     $persona.check_p(doc);
@@ -3218,7 +3326,7 @@ const $persona = {
     $dfct.set_button(doc);
   },
   change_e: async function (eset) {
-    $persona.button.textContent = '(E...)';
+    $persona.node.button.textContent = '(E...)';
     const html = await $ajax.fetch('?s=Character&ss=eq', eset ? `equip_set=${eset}` : null);
     const doc = $doc(html);
     $persona.check_e(doc);
@@ -3226,7 +3334,7 @@ const $persona = {
     if ($persona.selector_e) {
       for (let i = 1; i <= json.elen; i++) {
         const ename = json[json.pset][i].name;
-        $persona.selector_e.options[i - 1].text = ename || 'Set ' + i;
+        $persona.selector_e.options[i - 1].text = ename || `Set ${i}`;
       }
       $persona.selector_e.value = json.eset;
       $persona.selector_e.disabled = false;
@@ -3236,11 +3344,11 @@ const $persona = {
     $persona.check_warning(doc);
   },
   set_button: function () {
-    $persona.button.textContent = $persona.json.ename || `${$persona.json.pname.slice(0, 10)} [${$persona.json.eset}]`;
+    $persona.node.button.textContent = $persona.json.ename || `${$persona.json.pname.slice(0, 10)} [${$persona.json.eset}]`;
   },
   load_dynjs: async function (doc) {
     const src = $qs('script[src*="/dynjs/"]', doc).src;
-    const html = await $ajax.fetch(src + '?t=' + Date.now());
+    const html = await $ajax.fetch(`${src}?t=${Date.now()}`);
     Object.assign($equip.dynjs_equip, JSON.parse(/dynjs_equip\s?=\s?(\{.*?\});/.exec(html)?.[1] || null));
     $persona.save_equipset(doc);
     $persona.parse_stats_pane(doc);
@@ -3281,23 +3389,23 @@ const $persona = {
   check_warning: function (doc) {
     _top.node.message?.remove();
     _top.node.div.classList.remove('hvut-top-warn');
-    _top.node.persona.firstElementChild.style.color = '';
-    _player.warn = $qsa('#stamina_restore .fcr', doc).map((d) => d.textContent.trim()); // Repair weapon, Repair armor, Check equipment, Check attributes
+    _top.node.persona.firstElementChild.classList.remove('hvut-warn');
+    _top.node.stamina.firstElementChild.classList.remove('hvut-warn', 'hvut-bonus');
+    _player.warn = $qsa('#stamina_restore > div > div', doc).map((d) => d.textContent.trim()); // Repair weapon, Repair armor, Check equipment, Check attributes
     if (_player.warn.length) {
       if (_query.s === 'Battle') {
         _top.node.message = _top.node.message || $element('div', null, ['.hvut-top-message']);
-        _top.node.message.textContent = '[警告] ' + _player.warn.join(', ');
+        _top.node.message.textContent = '[WARNING] ' + _player.warn.join(', ');
         _top.node.div.appendChild(_top.node.message);
       }
       _top.node.div.classList.add('hvut-top-warn');
-      _top.node.persona.firstElementChild.style.color = '#e00';
+      _top.node.persona.firstElementChild.classList.add('hvut-warn');
     }
-    _top.node.stamina.firstElementChild.style.color = '';
     if (_player.condition.includes('Stamina: Exhausted') || _player.accuracy || _player.stamina <= $config.settings.warnLowStamina) {
       _top.node.div.classList.add('hvut-top-warn');
-      _top.node.stamina.firstElementChild.style.color = '#e00';
+      _top.node.stamina.firstElementChild.classList.add('hvut-warn');
     } else if (_player.condition.includes('Stamina: Great')) {
-      _top.node.stamina.firstElementChild.style.color = '#03c';
+      _top.node.stamina.firstElementChild.classList.add('hvut-bonus');
     }
   },
   parse_stats_pane: function (doc) {
@@ -3345,8 +3453,8 @@ const $persona = {
         fighting_style = 'Unarmed';
       }
     }
-    const spell_type = ['Fire', 'Cold', 'Elec', 'Wind', 'Holy', 'Dark'].sort((a, b) => stats_pane[b + ' EDB'] - stats_pane[a + ' EDB'])[0];
-    const spell_damage = stats_pane[spell_type + ' EDB'];
+    const spell_type = ['Fire', 'Cold', 'Elec', 'Wind', 'Holy', 'Dark'].sort((a, b) => stats_pane[`${b} EDB`] - stats_pane[`${a} EDB`])[0];
+    const spell_damage = stats_pane[`${spell_type} EDB`];
     const prof_factor = Math.max(0, Math.min(1, stats_pane[{ 'Holy': 'Divine', 'Dark': 'Forbidden' }[spell_type] || 'Elemental'] / _player.level - 1));
     const ch_style = { level: _player.level, difficulty: _player.difficulty };
     stats_pane['Fighting Style'] = fighting_style;
@@ -3362,196 +3470,173 @@ const $persona = {
     $config.set('ch_style', ch_style);
     return stats_pane;
   },
-  init: function () {
-    if ($id('persona_form')) {
-      if (!$persona.check_p()) {
-        $persona.change_e();
-      } else {
-        $persona.set_button();
-      }
-    } else if (!$persona.json.pset || !$persona.json.eset) {
-      $persona.change_p();
-    } else {
-      $persona.set_button();
-    }
-    $persona.check_warning();
-  },
-
 };
 
-$persona.div.addEventListener('mouseenter', $persona.create);
 $persona.init();
 
-// BOTTOM MENU
-GM_addStyle(/*css*/`
-  #hvut-bottom { position: absolute; display: flex; top: 100%; left: -1px; width: 105%; border: 1px solid; font-size: 10pt; line-height: 20px; }
-  #hvut-bottom:empty { display: none; }
-  #hvut-bottom > div { margin: -1px 0 -1px -1px; border: 1px solid #5C0D11; padding: 0 10px; }
-  #hvut-bottom > .hvut-spaceholder ~ div { margin: -1px -1px -1px 0; }
-  #hvut-bottom > .hvut-spaceholder { margin: 0; border: 0; padding: 0; }
-  #hvut-bottom a { color: inherit; }
-  .hvut-bottom-warn { background-color: #5C0D11; color: #fff; }
 
-  .hvut-lt-div > a { margin-right: 5px; }
-  .hvut-lt-div > span { display: inline-block; width: 40px; }
-  .hvut-lt-check { background-color: #fd9; }
-`);
-
+// BOTTOM
 _bottom.node = {};
-_bottom.node.div = $element('div', $id('csp'), ['#hvut-bottom']);
 
-// CREDITS COUNTER
-if ($config.settings.showCredits === 2) {
-  _bottom.show_credits = async function () {
-    _bottom.node.credits = $element('div', _bottom.node.div, 'Loading...');
-    if ($id('networth')) {
-      _bottom.node.credits.textContent = $id('networth').textContent;
-      $id('networth').remove();
+_bottom.init = function () {
+  _bottom.node.div = $element('div', $id('csp'), ['#hvut-bottom']);
+
+  if ($config.settings.showCredits === 2) {
+    _bottom.show_credits();
+  }
+  if ($config.settings.showEquipCapacity === 2 || $config.settings.showEquipCapacity === 1 && _query.s === 'Battle') {
+    _bottom.show_equip();
+  }
+  if ($config.settings.trainingNotification) {
+    _bottom.tr.init();
+  }
+  if ($config.settings.lotteryNotification) {
+    _bottom.lt.init();
+  }
+};
+
+_bottom.show_credits = async function () {
+  _bottom.node.credits = $element('div', _bottom.node.div, 'Loading...');
+  if ($id('networth')) {
+    _bottom.node.credits.textContent = $id('networth').textContent;
+    $id('networth').remove();
+  } else {
+    const html = await $ajax.fetch('?s=Bazaar&ss=is');
+    const doc = $doc(html);
+    _bottom.node.credits.textContent = $id('networth', doc).textContent;
+  }
+};
+
+_bottom.show_equip = async function () {
+  _bottom.node.equip = $element('div', _bottom.node.div, 'Loading...');
+  const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
+  const exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html);
+  const usage = parseInt(exec[1]) + parseInt(exec[2] || 0);
+  const capacity = parseInt(exec[3]);
+  const free = capacity - usage;
+  _bottom.node.equip.textContent = `Inventory Capacity: ${usage} / ${capacity}`;
+  if (free < $config.settings.warnEquipCapacity) {
+    popup('<p style="color: #e00; font-weight: bold;">Your inventory is almost full.<br>\nPlease manage your equipment to increase available capacity.</p>');
+    _bottom.node.equip.classList.add('hvut-warn2');
+  } else if (free < capacity / 2) {
+    _bottom.node.equip.classList.add('hvut-warn');
+  }
+};
+
+_bottom.tr = {
+  node: {},
+  json: $config.get('tr_notif', {}, 'hvut_'),
+
+  init: function () {
+    const json = _bottom.tr.json;
+    if (!json.current_name && !json.next_name && !json.error) {
+      return;
+    }
+    _bottom.tr.node.div = $element('div', _bottom.node.div);
+    _bottom.tr.node.link = $element('a', _bottom.tr.node.div, { href: '/?s=Character&ss=tr', textContent: 'Initializing...', style: 'margin-right: 5px;' });
+    _bottom.tr.node.clock = $element('span', _bottom.tr.node.div, ['!display: inline-block; width: 60px;']);
+    if (json.error) {
+      _bottom.tr.node.link.textContent = json.error;
+    } else if (json.current_name) {
+      _bottom.tr.node.link.textContent = `${json.current_name} [${json.current_level + 1}]`;
+    }
+    _bottom.tr.clock();
+  },
+  clock: function () {
+    const json = _bottom.tr.json;
+    const remain = json.current_end - Date.now();
+    if (remain > 0) {
+      _bottom.tr.node.clock.textContent = time_format(remain);
+      setTimeout(_bottom.tr.clock, 1000);
     } else {
-      const html = await $ajax.fetch('?s=Bazaar&ss=is');
-      const doc = $doc(html);
-      _bottom.node.credits.textContent = $id('networth', doc).textContent;
+      _bottom.tr.node.link.textContent = 'Loading...';
+      _bottom.tr.node.clock.textContent = '';
+      _bottom.tr.load();
     }
-  };
-
-  _bottom.show_credits();
-}
-
-// EQUIPMENT COUNTER
-if ($config.settings.showEquipCapacity === 2 || $config.settings.showEquipCapacity === 1 && _query.s === 'Battle') {
-  _bottom.show_equip = async function () {
-    _bottom.node.equip = $element('div', _bottom.node.div, 'Loading...');
-    const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
-    const exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html);
-    const usage = parseInt(exec[1]) + parseInt(exec[2] || 0);
-    const capacity = parseInt(exec[3]);
-    const free = capacity - usage;
-    _bottom.node.equip.textContent = `装备库存: ${usage} / ${capacity}`;
-    if (free < $config.settings.warnEquipCapacity) {
-      popup('<p style="color: #f00; font-weight: bold;">你的装备仓库快要满了.<br>\n该去整理一下了.</p>');
-      _bottom.node.equip.classList.add('hvut-bottom-warn');
-    } else if (free < capacity / 2) {
-      _bottom.node.equip.style.color = '#c00';
+  },
+  load: async function (post) {
+    const html = await $ajax.fetch('/?s=Character&ss=tr', post);
+    const doc = $doc(html);
+    if (!$id('train_outer', doc)) {
+      _bottom.tr.node.link.textContent = 'Waiting...';
+      setTimeout(_bottom.tr.clock, 60000);
+      return;
     }
-  };
-
-  _bottom.show_equip();
-}
-
-// TRAINING TIMER
-if ($config.settings.trainingNotification) {
-  _bottom.tr = {
-    json: $config.get('tr_notif', {}, 'hvut_'),
-    node: {},
-
-    init: function () {
-      const json = _bottom.tr.json;
-      if (!json.current_name && !json.next_name && !json.error) {
-        return;
-      }
-      _bottom.tr.node.div = $element('div', _bottom.node.div);
-      _bottom.tr.node.link = $element('a', _bottom.tr.node.div, { href: '/?s=Character&ss=tr', textContent: 'Initializing...', style: 'margin-right: 5px;' });
-      _bottom.tr.node.clock = $element('span', _bottom.tr.node.div, ['!display: inline-block; width: 60px;']);
-      if (json.error) {
-        _bottom.tr.node.link.textContent = json.error;
-      } else if (json.current_name) {
-        _bottom.tr.node.link.textContent = `${json.current_name} [${json.current_level + 1}]`;
-      }
+    const json = _bottom.tr.json;
+    const level = {};
+    Array.from($id('train_table', doc).rows).slice(1).forEach((tr) => {
+      level[tr.cells[0].textContent] = parseInt(tr.cells[4].textContent);
+    });
+    json.error = '';
+    if ($id('train_progress', doc)) {
+      json.current_name = $id('train_progcnt', doc).previousElementSibling.textContent;
+      json.current_level = level[json.current_name];
+      json.current_end = /var end_time = (\d+);/.exec(html)[1] * 1000;
+      _bottom.tr.node.link.textContent = `${json.current_name} [${json.current_level + 1}]`;
       _bottom.tr.clock();
-    },
-    clock: function () {
-      const json = _bottom.tr.json;
-      const remain = json.current_end - Date.now();
-      if (remain > 0) {
-        _bottom.tr.node.clock.textContent = time_format(remain);
-        setTimeout(_bottom.tr.clock, 1000);
-      } else {
-        _bottom.tr.node.link.textContent = 'Loading...';
-        _bottom.tr.node.clock.textContent = '';
-        _bottom.tr.load();
-      }
-    },
-    load: async function (post) {
-      const html = await $ajax.fetch('/?s=Character&ss=tr', post);
-      const doc = $doc(html);
-      if (!$id('train_outer', doc)) {
-        _bottom.tr.node.link.textContent = 'Waiting...';
+    } else if (json.next_name) {
+      const error = get_message(doc);
+      if (error) {
+        json.error = error;
+        _bottom.tr.node.link.textContent = json.error;
         setTimeout(_bottom.tr.clock, 60000);
-        return;
-      }
-      const json = _bottom.tr.json;
-      const level = {};
-      Array.from($id('train_table', doc).rows).slice(1).forEach((tr) => {
-        level[tr.cells[0].textContent] = parseInt(tr.cells[4].textContent);
-      });
-      json.error = '';
-      if ($id('train_progress', doc)) {
-        json.current_name = $id('train_progcnt', doc).previousElementSibling.textContent;
-        json.current_level = level[json.current_name];
-        json.current_end = /var end_time = (\d+);/.exec(html)[1] * 1000;
-        _bottom.tr.node.link.textContent = `${json.current_name} [${json.current_level + 1}]`;
-        _bottom.tr.clock();
-      } else if (json.next_name) {
-        const error = get_message(doc);
-        if (error) {
-          json.error = error;
+      } else if (level[json.next_name] < json.next_level) {
+        if ($qs(`img[onclick*="training.start_training(${json.next_id})"]`, doc)) {
+          _bottom.tr.load(`start_train=${json.next_id}`);
+        } else {
+          json.error = "Can't start Training";
           _bottom.tr.node.link.textContent = json.error;
           setTimeout(_bottom.tr.clock, 60000);
-        } else if (level[json.next_name] < json.next_level) {
-          if ($qs(`img[onclick*="training.start_training(${json.next_id})"]`, doc)) {
-            _bottom.tr.load('start_train=' + json.next_id);
-          } else {
-            json.error = "Can't start Training";
-            _bottom.tr.node.link.textContent = json.error;
-            setTimeout(_bottom.tr.clock, 60000);
-          }
-        } else {
-          _bottom.tr.node.link.textContent = 'Training completed!';
         }
       } else {
         _bottom.tr.node.link.textContent = 'Training completed!';
       }
-      $config.set('tr_notif', json, 'hvut_');
-    },
-  };
+    } else {
+      _bottom.tr.node.link.textContent = 'Training completed!';
+    }
+    $config.set('tr_notif', json, 'hvut_');
+  },
+};
 
-  _bottom.tr.init();
-}
+_bottom.lt = {
+  node: { lt: {}, la: {} },
 
-// LOTTERY
-if ($config.settings.lotteryNotification) {
-  _bottom.show_lottery = function (ss) {
+  init: function () {
+    $element('div', _bottom.node.div, ['.hvut-spaceholder']);
+    _bottom.lt.show('lt');
+    _bottom.lt.show('la');
+  },
+  show: function (ss) {
     const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
     const lottery = json[ss];
     const now = Date.now();
     if (lottery.date > now && lottery.hide) {
       return;
     }
-    _bottom.node[ss] = {};
-    _bottom.node[ss].div = $element('div', _bottom.node.div, ['.hvut-lt-div']);
-    _bottom.node[ss].equip = $element('a', _bottom.node[ss].div, { textContent: 'Loading...', href: `/?s=Bazaar&ss=${ss}`, target: (_server.persistent ? '_self' : '_blank') });
-    _bottom.node[ss].time = $element('span', _bottom.node[ss].div, '--:--');
+    const ss_node = _bottom.lt.node[ss];
+    ss_node.div = $element('div', _bottom.node.div, ['.hvut-lt-div']);
+    ss_node.equip = $element('a', ss_node.div, { textContent: 'Loading...', href: `/?s=Bazaar&ss=${ss}`, target: (_server.persistent ? '_self' : '_blank') });
+    ss_node.time = $element('span', ss_node.div, '--:--');
 
     if (lottery.date > now) {
       if (lottery.date - now < 3600000) {
-        _bottom.node[ss].div.classList.add('hvut-bottom-warn');
+        ss_node.div.classList.add('hvut-warn2');
       } else if (lottery.check) {
-        _bottom.node[ss].div.classList.add('hvut-lt-check');
+        ss_node.div.classList.add('hvut-lt-check');
       }
-      _bottom.node[ss].equip.textContent = lottery.equip;
-      _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
-      return;
+      ss_node.equip.textContent = lottery.equip;
+      ss_node.time.textContent = time_format(lottery.date - now, 1);
+    } else {
+      ss_node.div.classList.add('hvut-warn2');
+      _bottom.lt.load(ss);
     }
-    _bottom.node[ss].div.classList.add('hvut-bottom-warn');
-    _bottom.load_lottery(ss);
-  };
-
-  _bottom.load_lottery = async function (ss) {
-    const html = await $ajax.fetch('/?s=Bazaar&ss=' + ss);
+  },
+  load: async function (ss) {
+    const html = await $ajax.fetch(`/?s=Bazaar&ss=${ss}`);
     const doc = $doc(html);
     const eqname = $id('lottery_eqname', doc);
     if (!eqname) {
-      _bottom.node[ss].equip.textContent = 'Failed to load';
+      _bottom.lt.node[ss].equip.textContent = 'Failed to load';
       return;
     }
     const text = $id('rightpane', doc).lastElementChild.textContent;
@@ -3580,63 +3665,46 @@ if ($config.settings.lotteryNotification) {
     $config.set('lt_notif', json, 'hvut_');
     if (lottery.check) {
       const date_text = eqname.previousElementSibling.textContent;
-      popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${lottery.equip}</p>`);
+      popup(`<p>${date_text}</p><p style="color: #e00; font-weight: bold;">${lottery.equip}</p>`);
     }
+    const ss_node = _bottom.lt.node[ss];
+    ss_node.equip.textContent = lottery.equip;
+    ss_node.time.textContent = time_format(lottery.date - now, 1);
+  },
+};
 
-    _bottom.node[ss].equip.textContent = lottery.equip;
-    _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
-  };
+GM_addStyle(/*css*/`
+  #hvut-bottom { position: absolute; display: flex; top: 100%; left: -1px; width: 100%; border: 1px solid var(--color-border-default); font-size: 10pt; line-height: 20px; }
+  #hvut-bottom:empty { display: none; }
+  #hvut-bottom > div { margin: -1px 0 -1px -1px; border: 1px solid var(--color-border-default); padding: 0 10px; }
+  #hvut-bottom > .hvut-spaceholder ~ div { margin: -1px -1px -1px 0; }
+  #hvut-bottom > .hvut-spaceholder { margin: 0; border: 0; padding: 0; }
+  #hvut-bottom a { color: inherit; }
 
-  $element('div', _bottom.node.div, ['.hvut-spaceholder']);
+  .hvut-lt-div > a { margin-right: 5px; }
+  .hvut-lt-div > span { display: inline-block; width: 40px; }
+  .hvut-lt-check { background-color: var(--color-warn-bg); }
+`);
 
-  _bottom.show_lottery('lt');
-  _bottom.show_lottery('la');
-}
+_bottom.init();
 
 
 //* [1] Character - Character
 if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
   _ch.persona = $id('persona_form').elements.persona_set.value;
-  _ch.exp_table = [null, { total: 0 }];
-
-  _ch.get_exp = function (level) {
-    const num = parseInt(level);
-    const dec = level % 1;
-    if (!_ch.exp_table[num]) {
-      _ch.exp_table[num] = { total: Math.round(Math.pow(num + 3, Math.pow(2.850263212287058, 1 + num / 1000))) };
-    }
-    let exp = _ch.exp_table[num].total;
-    if (dec) {
-      if (!_ch.exp_table[num].next) {
-        _ch.exp_table[num].next = _ch.get_exp(num + 1) - exp;
-      }
-      exp += Math.round(_ch.exp_table[num].next * dec);
-    }
-    return exp;
-  };
-
-  _ch.get_level = function (exp, level) {
-    level = parseInt(level) || 1;
-    while (exp >= _ch.exp_table[level].total) {
-      level++;
-      if (!_ch.exp_table[level]) {
-        _ch.exp_table[level] = { total: _ch.get_exp(level) };
-      }
-    }
-    level--;
-    if (!_ch.exp_table[level].next) {
-      _ch.exp_table[level].next = _ch.exp_table[level + 1].total - _ch.exp_table[level].total;
-    }
-    return level + (exp - _ch.exp_table[level].total) / _ch.exp_table[level].next;
-  };
 
   _ch.exp = {
-
+    node: {},
     total: _window.total_exp,
+    table: [null, { total: 0 }],
     prof: {},
 
     init: function () {
-      _ch.node.div.innerHTML = '';
+      _ch.exp.node.div = $element('div', $id('attr_outer'), ['.hvut-ch-div'], { input: () => { _ch.exp.calc(); } });
+      $input(['button', 'EXP Simulator'], _ch.exp.node.div, null, () => { _ch.exp.open(); });
+    },
+    open: function () {
+      _ch.exp.node.div.innerHTML = '';
       $qs('img[onclick*="do_attr_post"]').style.visibility = 'hidden';
       $id('prof_outer').classList.add('hvut-ch-prof');
 
@@ -3645,37 +3713,64 @@ if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
         const name = tr.cells[0].textContent;
         _ch.exp.prof[name] = p;
         p.current = parseFloat(tr.cells[1].textContent);
-        p.exp = _ch.get_exp(p.current);
+        p.exp = _ch.exp.get_exp(p.current);
         tr.cells[1].textContent = p.current;
         $element('td', tr);
         $element('td', tr);
       });
-      _ch.node.level = $input(['number', '角色等级', 'before'], _ch.node.div, { value: _player.level, min: 1, max: 600, style: 'width: 50px;' });
+      _ch.exp.node.level = $input(['number', null, 'Level', 'before'], _ch.exp.node.div, { value: _player.level, min: 1, max: 600, style: 'width: 50px;' });
       const ass = $config.get('tr_level', {})['Assimilator'] || 0;
-      _ch.node.ass = $input(['number', '训练: 同化者等级', 'before'], _ch.node.div, { value: ass, min: 0, max: 25, style: 'width: 30px;' });
+      _ch.exp.node.ass = $input(['number', null, 'Training: Assimilator', 'before'], _ch.exp.node.div, { value: ass, min: 0, max: 25, style: 'width: 30px;' });
       _ch.exp.calc();
     },
-
+    get_exp: function (level) {
+      const num = parseInt(level);
+      const dec = level % 1;
+      if (!_ch.exp.table[num]) {
+        _ch.exp.table[num] = { total: Math.round(Math.pow(num + 3, Math.pow(2.850263212287058, 1 + num / 1000))) };
+      }
+      let exp = _ch.exp.table[num].total;
+      if (dec) {
+        if (!_ch.exp.table[num].next) {
+          _ch.exp.table[num].next = _ch.exp.get_exp(num + 1) - exp;
+        }
+        exp += Math.round(_ch.exp.table[num].next * dec);
+      }
+      return exp;
+    },
+    get_level: function (exp, level) {
+      level = parseInt(level) || 1;
+      while (exp >= _ch.exp.table[level].total) {
+        level++;
+        if (!_ch.exp.table[level]) {
+          _ch.exp.table[level] = { total: _ch.exp.get_exp(level) };
+        }
+      }
+      level--;
+      if (!_ch.exp.table[level].next) {
+        _ch.exp.table[level].next = _ch.exp.table[level + 1].total - _ch.exp.table[level].total;
+      }
+      return level + (exp - _ch.exp.table[level].total) / _ch.exp.table[level].next;
+    },
     calc: function () {
-      const level = parseFloat(_ch.node.level.value);
-      const ass = parseInt(_ch.node.ass.value);
+      const level = parseFloat(_ch.exp.node.level.value);
+      const ass = parseInt(_ch.exp.node.ass.value);
       if (isNaN(level) || level < 1 || level > 600 || isNaN(ass) || ass < 0 || ass > 25) {
         return;
       }
 
-      _window.total_exp = _ch.get_exp(level);
+      _window.total_exp = _ch.exp.get_exp(level);
       _window.update_usable_exp();
       _window.update_display('str');
 
       const exp_gain = _window.total_exp - _ch.exp.total;
       const prof_gain = Math.max(0, exp_gain * 4 * (1 + ass * 0.1));
       Object.values(_ch.exp.prof).forEach((p) => {
-        p.level = _ch.get_level(p.exp + prof_gain, p.current);
+        p.level = _ch.exp.get_level(p.exp + prof_gain, p.current);
         p.tr.cells[2].textContent = '+' + (p.level - p.current).toFixed(3);
         p.tr.cells[3].textContent = p.level.toFixed(3);
       });
     },
-
   };
 
   GM_addStyle(/*css*/`
@@ -3687,14 +3782,11 @@ if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
     .hvut-ch-prof > div { width: 310px !important; margin: 0 5px; }
     .hvut-ch-prof td:nth-child(1) { width: 105px !important; }
     .hvut-ch-prof td:nth-child(2) { width: 60px !important; }
-    .hvut-ch-prof td:nth-child(3) { width: 65px; color: #c00; }
+    .hvut-ch-prof td:nth-child(3) { width: 65px; color: var(--color-font-highlight); }
     .hvut-ch-prof td:nth-child(4) { width: 60px; font-weight: bold; }
   `);
 
-  _ch.node = {};
-  _ch.node.div = $element('div', $id('attr_outer'), ['.hvut-ch-div'], { input: () => { _ch.exp.calc(); } });
-  $input(['button', 'EXP Simulator'], _ch.node.div, null, () => { _ch.exp.init(); });
-
+  _ch.exp.init();
   $persona.parse_stats_pane();
 } else
 // [END 1] Character - Character */
@@ -3702,106 +3794,13 @@ if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
 
 //* [2] Character - Equipment
 if (_query.s === 'Character' && _query.ss === 'eq') {
-  _eq.click_stats = function (e) {
-    const target = e.target.closest('[data-action]');
-    if (!target) {
-      return;
-    }
-    const { action, name, value } = target.dataset;
-    if (action === 'set') {
-      if (value === 'this') {
-        $persona.set_value(name, target.checked);
-      }
-    }
-  };
-
-        _eq.show_base = async function () {
-            const html = await $ajax.fetch('?s=Character&ss=ch');
-            const doc = $doc(html);
-            const base = {};
-
-            // 属性映射表
-            const attrAlias = {
-                "Strength": "力量",
-                "Dexterity": "敏捷",
-                "Agility": "灵巧",
-                "Endurance": "体质",
-                "Intelligence": "智力",
-                "Wisdom": "智慧",
-            };
-            const toEnglish = {};
-            for (const en in attrAlias) toEnglish[attrAlias[en]] = en;
-
-            // 解析 attr_table
-            $qsa('#attr_table tr:nth-last-child(n+2)', doc).forEach((tr) => {
-                base[tr.children[0].textContent] = tr.children[1].textContent;
-            });
-
-            // 给 stats 表添加基础值
-            $qsa('#stats_scrollable > table:nth-last-of-type(2) tr').forEach((tr) => {
-                let name = tr.cells[1].textContent.trim();
-
-                // 若是中文，转换成英文再查 base
-                const eng = toEnglish[name] || name;
-
-                if (base[eng] !== undefined) {
-                    tr.cells[1].textContent = `[${base[eng]}] ${name}`;
-                }
-            });
-
-    GM_addStyle(/*css*/`
-      #stats_scrollable > table:nth-last-of-type(2) td:first-child { min-width: 35px; }
-    `);
-  };
-
-
-  _eq.equip_code = function () {
-    const code = _eq.equiplist.map((eq) => `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
-    popup_text(code, 900, 150);
-  };
-
-  _eq.equip_popups = function () {
-    if (_eq.node.popups) {
-      _eq.node.popups.classList.toggle('hvut-none');
-      return;
-    }
-    _eq.node.popups = $element('div', document.body, ['.hvut-eq-popups', (_eq.equiplist.length > 6 ? '!width: 1690px;' : '')]);
-    _eq.equiplist.forEach((eq) => { $element('iframe', _eq.node.popups, { src: `equip/${eq.info.eid}/${eq.info.key}`, scrolling: 'no' }); });
-  };
-
   _eq.node = {};
 
-  if (_query.equip_slot) {
-    $equip.list.table($qs('#equiplist > table'));
-  } else {
-    GM_addStyle(/*css*/`
-      #popup_box.hvut-eq-popupbox { margin-top: 12px; margin-left: -96px; }
-      #eqsh { display: none; }
-      #eqsl { margin-top: 15px; }
-      #eqsb .eqb { padding: 0; height: auto; font-size: 10pt; line-height: 20px; text-align: center; overflow: hidden; }
-      #eqsb .eqb > div:last-child { padding: 1px 0; }
-
-      .hvut-eq-buttons { display: flex; width: 650px; margin: 5px auto; text-align: left; }
-      .hvut-eq-info { position: absolute; top: 0; right: 0; font-size: 9pt; font-weight: normal; }
-      .hvut-eq-info > span { display: inline-block; width: 80px; line-height: 16px; border-left: 1px solid #5C0D11; }
-      .hvut-eq-untradeable { color: #c00; }
-
-      .hvut-eq-popups { position: relative; width: 1270px; padding: 10px 0; line-height: 0; text-align: left; background-color: inherit; }
-      .hvut-eq-popups iframe { width: 420px; height: 445px; border: 1px solid; margin: 0 -1px -1px 0; overflow: hidden; }
-    `);
-
-    $id('popup_box').classList.add('hvut-eq-popupbox');
-
-    $persona.check_e();
-    $persona.set_button();
-    $persona.save_equipset();
-
-    _eq.stats_pane = $persona.parse_stats_pane();
-    _eq.show_base();
+  _eq.init = function () {
     _eq.equiplist = $equip.list.div($id('eqsb'), false);
     _eq.equiplist.forEach((eq) => {
       const div = $element('div', eq.node.wrapper.firstElementChild, ['.hvut-eq-info']);
-      if (eq.info.upgrade_max) {
+      if (eq.info.upgrade_cap) {
         $element('span', div, [`${eq.info.upgrade} / ${eq.info.iw}`]);
       } else {
         $element('span', div, [`Lv. ${eq.info.level}`, (!eq.info.tradeable ? '.hvut-eq-untradeable' : '')]);
@@ -3811,13 +3810,137 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
 
     _eq.node.buttons = $element('div', [$id('eqch_left'), 'afterbegin'], ['.hvut-eq-buttons']);
     $input(['button', 'Equip Code'], _eq.node.buttons, null, () => { _eq.equip_code(); });
-    $input(['button', 'Equip Pop-ups'], _eq.node.buttons, null, () => { _eq.equip_popups(); });
-    _eq.node.equipset_name = $input('text', _eq.node.buttons, { value: $persona.json.ename || 'Set ' + $persona.json.eset, style: 'width: 100px; margin-left: auto; text-align: center;' });
+    $input(['button', 'Equip Pop-ups'], _eq.node.buttons, null, () => { _eq.popup_init(); });
+    _eq.node.equipset_name = $input('text', _eq.node.buttons, { value: $persona.json.ename || `Set ${$persona.json.eset}`, style: 'width: 100px; margin-left: auto; text-align: center;' });
     $input(['button', 'Save'], _eq.node.buttons, null, () => { $persona.set_value('name', _eq.node.equipset_name.value); });
 
-    if (_eq.stats_pane['Spell Type']) {
-      //_eq.mage_stats();
+    _eq.show_base();
+  };
+
+  _eq.show_base = async function () {
+    const html = await $ajax.fetch('?s=Character&ss=ch');
+    const doc = $doc(html);
+    const base = {};
+    $qsa('#attr_table tr:nth-last-child(n+2)', doc).forEach((tr) => {
+      base[tr.children[0].textContent] = tr.children[1].textContent;
+    });
+    $qsa('#stats_scrollable > table:nth-last-of-type(2) tr').forEach((tr) => {
+      const name = tr.cells[1].textContent;
+      tr.cells[1].textContent = `[${base[name]}] ${name}`;
+    });
+  };
+
+  _eq.equip_code = function () {
+    const code = _eq.equiplist.map((eq) => `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
+    popup_text(code, 900, 150);
+  };
+
+  _eq.popup_init = function () {
+    if (_eq.node.popups) {
+      _eq.node.popups.classList.toggle('hvut-none');
+      return;
     }
+    _eq.node.popups = $element('div', document.body, ['.hvut-eq-popups', (_eq.equiplist.length > 6 ? '!width: 1690px;' : '')]);
+    _eq.equiplist.forEach((eq) => {
+      const div = $element('div', _eq.node.popups);
+      eq.node.popup = $element('iframe', div, { src: `equip/${eq.info.eid}/${eq.info.key}`, scrolling: 'no' }, { load: () => { _eq.popup_load(eq); } });
+      if ($config.settings.equipShowCharms && eq.info.upgrade_cap) {
+        _eq.charm_load(eq);
+      }
+    });
+  };
+
+  _eq.popup_load = function (eq) {
+    eq.node.popup.dataset.loaded = '1';
+    if ($config.settings.equipHideDropInfo) {
+      const doc = eq.node.popup.contentDocument;
+      const div = doc.querySelector('.showequip').children[2];
+      div.innerHTML = '';
+    }
+    if ($config.settings.equipShowCharms && eq.info.upgrade_cap) {
+      _eq.charm_append(eq);
+    }
+  };
+
+  _eq.charm_load = async function (eq) {
+    const html = await $ajax.fetch(`?s=Bazaar&ss=am&screen=modify&eqids=${eq.info.eid}`);
+    const doc = $doc(html);
+    eq.data.charms = $qsa('.eqcharm th', doc).map((th) => th.textContent);
+    _eq.charm_append(eq);
+  };
+
+  _eq.charm_append = function (eq) {
+    if (eq.node.charms) {
+      return;
+    }
+    if (!eq.data.charms || eq.node.popup.dataset.loaded !== '1') {
+      return;
+    }
+    const doc = eq.node.popup.contentDocument;
+    const style = doc.createElement('style');
+    style.innerHTML = /*css*/`
+      .chm > div:nth-child(n+2) { line-height: 18px; color: #03c; }
+    `;
+    doc.head.appendChild(style);
+    const div = doc.createElement('div');
+    eq.node.charms = div;
+    div.classList.add('ep', 'chm');
+    switch (eq.data.charms.length) {
+      case 0:
+        return;
+      case 1:
+        div.classList.add('ep1');
+      case 2:
+      case 4:
+        div.classList.add('ep2');
+        break;
+      default:
+        div.classList.add('ep3');
+        break;
+    }
+    div.insertAdjacentHTML('beforeend', '<div>Charms</div>');
+    const reg_charm = /(.+) \((Greater|Lesser)\)/;
+    eq.data.charms.forEach((charm) => {
+      const [, type, tier] = reg_charm.exec(charm);
+      div.insertAdjacentHTML('beforeend', `<div>${type} (${tier[0]})</div>`);
+    });
+    doc.querySelector('.eq').appendChild(div);
+  };
+
+  if (_query.equip_slot) {
+    $equip.list.table($qs('#equiplist > table'));
+  } else {
+    GM_addStyle(/*css*/`
+      #csp[data-ss='eq'] #popup_box { margin-top: 12px; margin-left: -96px; }
+      #csp[data-ss='eq'] #stats_scrollable > table:nth-last-of-type(2) td:first-child { min-width: 35px; }
+
+      #eqsh { display: none; }
+      #eqsl { margin-top: 15px; }
+      #eqsb .eqb { padding: 0; height: auto; font-size: 10pt; line-height: 20px; text-align: center; overflow: hidden; }
+      #eqsb .eqb > div:last-child { padding: 1px 0; }
+
+      .hvut-eq-buttons { display: flex; width: 650px; margin: 5px auto; text-align: left; }
+      .hvut-eq-info { position: absolute; top: 0; right: 0; font-size: 9pt; font-weight: normal; }
+      .hvut-eq-info > span { display: inline-block; width: 60px; line-height: 16px; border-left: 1px solid var(--color-border-default); }
+      .hvut-eq-untradeable { color: var(--color-font-highlight); }
+
+      .hvut-eq-popups { display: flex; flex-wrap: wrap; position: relative; width: 1270px; padding: 5px 0; background-color: inherit; }
+      .hvut-eq-popups div { width: 420px; height: 445px; border: 1px solid var(--color-border-default); margin: 5px -1px 0 0; }
+      .hvut-eq-popups iframe { width: 100%; height: 100%; border: 0; }
+    `);
+
+    $persona.check_e();
+    $persona.set_button();
+    $persona.save_equipset();
+
+    _eq.init();
+
+    /*
+    _eq.stats_pane = $persona.parse_stats_pane();
+    if (_eq.stats_pane['Spell Type']) {
+      _eq.mage_stats();
+    }
+    //*/
   }
 } else
 // [END 2] Character - Equipment */
@@ -3825,7 +3948,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
 
 //* [3] Character - Abilities
 if (_query.s === 'Character' && _query.ss === 'ab') {
-  _ab.ability = {
+  _ab.abilities = {
     'HP Tank': { category: 'General', img: '3.png', pos: 0, unlock: [0, 25, 50, 75, 100, 120, 150, 200, 250, 300], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
     'MP Tank': { category: 'General', img: '3.png', pos: -34, unlock: [0, 30, 60, 90, 120, 160, 210, 260, 310, 350], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
     'SP Tank': { category: 'General', img: '3.png', pos: -68, unlock: [0, 40, 80, 120, 170, 220, 270, 330, 390, 450], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
@@ -3917,6 +4040,92 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
   _ab.point = parseInt(/Ability Points: (\d+)/.exec($id('ability_top').children[3].textContent)[1]);
   _ab.level = {};
 
+  _ab.init = function () {
+    _ab.parse_slotbar();
+    $config.set('ab_level', _ab.level);
+
+    _ab.parse_treepane();
+    $id('ability_treepane').addEventListener('click', _ab.click, true);
+
+    $input(['button', 'Ability Simulator'], $id('ability_outer'), ['!position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;'], () => { _ab.calc.toggle(); });
+  };
+
+  _ab.parse_slotbar = function () {
+    $qsa('#ability_top div[onmouseover*="overability"]').forEach((div) => {
+      const exec = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(div.getAttribute('onmouseover'));
+      const name = exec[1];
+      const ab = _ab.abilities[name];
+
+      ab.slotted = true;
+      ab.level = exec[2] ? 0 : 1 + ab.unlock.indexOf(parseInt(exec[3]));
+      ab.max = ab.unlock.length;
+      ab.cap = ab.unlock.findIndex((e) => e > _player.level);
+      if (ab.cap === -1) {
+        ab.cap = ab.max;
+      }
+
+      _ab.preset['Current Set'].push(name);
+      if (ab.level) {
+        _ab.level[name] = ab.level;
+      }
+
+      const span = $element('span', div, ['.hvut-ab-slot']);
+      if (ab.level === ab.max) {
+        span.textContent = 'max';
+        span.classList.add('hvut-ab-max');
+      } else if (ab.level === ab.cap) {
+        span.textContent = `${ab.level}/${ab.max}`;
+        span.classList.add('hvut-ab-cap');
+      } else {
+        span.textContent = `${ab.level}/${ab.max}`;
+        span.classList.add('hvut-ab-up');
+        const categories = ['General', 'One-handed', 'Two-handed', 'Dual-wielding', '', 'Staff', 'Cloth Armor', 'Light Armor', 'Heavy Armor', 'Deprecating 1', 'Deprecating 2', 'Supportive 1', 'Supportive 2', 'Elemental', 'Forbidden', 'Divine'];
+        const index = categories.indexOf(ab.category);
+        $qsa('#ability_treelist > div')[index].classList.add('hvut-ab-tree');
+      }
+    });
+  };
+
+  _ab.parse_treepane = function () {
+    $qsa('#ability_treepane > div').forEach((div) => {
+      const name = div.firstElementChild.textContent;
+      const ab = _ab.abilities[name];
+      let point = _ab.point;
+
+      ab.div = div;
+      ab.id = /do_unlock_ability\((\d+)\)/.exec(div.children[2].getAttribute('onclick'))?.[1] || '';
+      ab.level = 0;
+
+      Array.from(div.children[2].children).forEach((button, i) => {
+        const type = /(.)\.png/.exec(button.style.backgroundImage)[1];
+        button.classList.add('hvut-ab-bar');
+
+        if (type === 'f') {
+          ab.level++;
+        } else if (type === 'u') {
+          point -= ab.point[i];
+          if (point < 0) {
+            $element('span', button, [ab.point[i], '.hvut-ab-bux']);
+          } else {
+            $element('span', button, [ab.point[i], '.hvut-ab-bu', { dataset: { action: 'unlock', name: name, to: i + 1 } }]);
+          }
+        } else if (type === 'x') {
+          $element('span', button, [`${ab.point[i]} (${ab.unlock[i]})`, '.hvut-ab-bx']);
+        }
+      });
+
+      if (ab.level) {
+        if (!ab.slotted) {
+          div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
+          div.firstElementChild.firstElementChild.dataset.warn = 'unslotted';
+        } else if (ab.level !== ab.cap) {
+          div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
+          div.firstElementChild.firstElementChild.dataset.warn = 'unleveled';
+        }
+      }
+    });
+  };
+
   _ab.click = function (e) {
     const target = e.target.closest('[data-action]');
     if (!target) {
@@ -3930,11 +4139,11 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
   };
 
   _ab.unlock = async function (name, to) {
-    const ab = _ab.ability[name];
+    const ab = _ab.abilities[name];
     const count = to - ab.level;
 
     async function unlock(ab) {
-      const html = await $ajax.fetch(location.href, 'unlock_ability=' + ab.id);
+      const html = await $ajax.fetch(location.href, `unlock_ability=${ab.id}`);
       const doc = $doc(html);
       const error = get_message(doc);
       if (error) {
@@ -3952,7 +4161,6 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
   };
 
   _ab.calc = {
-
     node: { ability: {} },
     level: [],
     selected: [],
@@ -3963,7 +4171,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       }
       _ab.calc.inited = true;
 
-      Object.entries(_ab.ability).forEach(([n, ab]) => {
+      Object.entries(_ab.abilities).forEach(([n, ab]) => {
         ab.unlock.forEach((u, i) => {
           if (!_ab.calc.level[u]) {
             _ab.calc.level[u] = [];
@@ -3978,12 +4186,12 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       node.ul = $element('ul', $element('div', node.div), ['.hvut-ab-ul']);
       node.table = $element('table', $element('div', node.div), ['.hvut-ab-table']);
 
-      $input(['button', '关闭窗口'], node.side, { dataset: { action: 'toggle' }, className: 'hvut-side-margin' });
+      $input(['button', 'Close'], node.side, { dataset: { action: 'toggle' }, className: 'hvut-side-margin' });
       Object.keys(_ab.preset).forEach((n) => { $input(['button', n], node.side, { dataset: { action: 'preset', name: n } }); });
 
       let category;
       let li;
-      Object.entries(_ab.ability).forEach(([n, ab]) => {
+      Object.entries(_ab.abilities).forEach(([n, ab]) => {
         if (category !== ab.category) {
           category = ab.category;
           li = $element('li', node.ul);
@@ -3996,14 +4204,12 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
 
       _ab.calc.preset('Current Set');
     },
-
     preset: function (name) {
       _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.add('hvut-ab-off'); });
       _ab.calc.selected = _ab.preset[name].slice();
       _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.remove('hvut-ab-off'); });
       _ab.calc.table();
     },
-
     ability: function (name) {
       const selected = _ab.calc.selected;
       if (selected.includes(name)) {
@@ -4015,7 +4221,6 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       }
       _ab.calc.table();
     },
-
     table: function () {
       const tbody = [];
       let sum = 0;
@@ -4032,7 +4237,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
         $element('td', tr, [`/<span>${aboost}</span>`, (aboost < 0 ? '.hvut-ab-noab' : '')]);
         const td = $element('td', tr);
         selected.forEach(({ name, level, point }) => {
-          const ab = _ab.ability[name];
+          const ab = _ab.abilities[name];
           const icon = $element('div', td, ['.hvut-ab-icon', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
           $element('span', icon, [point, '.hvut-ab-point']);
           $element('span', icon, [`${name} Lv.${level}`, '.hvut-ab-tooltip']);
@@ -4044,12 +4249,10 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       _ab.calc.node.table.tBodies[0].append(...tbody);
       $qsa('.hvut-ab-table tr:not(.hvut-ab-nolevel)').at(-1).scrollIntoView({ block: 'center' });
     },
-
     toggle: function () {
       _ab.calc.node.div?.classList.toggle('hvut-none');
       _ab.calc.init();
     },
-
     click: function (e) {
       const target = e.target.closest('[data-action]');
       if (!target) {
@@ -4064,133 +4267,61 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
         _ab.calc.toggle();
       }
     },
-
   };
 
   GM_addStyle(/*css*/`
-    .hvut-ab-slot { position: absolute; bottom: -5px; left: 2px; width: 30px; font-size: 9pt; color: #fff; }
-    .hvut-ab-max { background-color: #333; }
-    .hvut-ab-limit { background-color: #03c; }
-    .hvut-ab-up { background-color: #c00; }
+    .hvut-ab-slot { position: absolute; bottom: -5px; left: 2px; width: 30px; font-size: 9pt; color: var(--color-ab-font); }
+    .hvut-ab-max { background-color: var(--color-ab-max); }
+    .hvut-ab-cap { background-color: var(--color-ab-cap); }
+    .hvut-ab-up { background-color: var(--color-ab-up); }
     .hvut-ab-tree > img[src*='/td'] { filter: brightness(250%); }
     .hvut-ab-bar { font-size: 9pt; line-height: 30px; white-space: nowrap; }
-    .hvut-ab-bu { color: #333; display: block; }
-    .hvut-ab-bux { color: #999; display: block; cursor: not-allowed; }
-    .hvut-ab-bx { color: #999; }
+    .hvut-ab-bu { color: var(--color-ab-slot); display: block; }
+    .hvut-ab-bux { color: var(--color-font-invalid); display: block; cursor: not-allowed; }
+    .hvut-ab-bx { color: var(--color-font-invalid); }
 
     #ability_treepane > div > div:first-child { padding-top: 13px; }
     .hvut-ab-warn { display: block; margin-top: -6px; }
-    .hvut-ab-warn::before { content: attr(data-warn); display: inline-block; margin-bottom: 2px; padding: 1px 3px; border-radius: 2px; background-color: #c00; color: #fff; font-size: 9pt; }
+    .hvut-ab-warn::before { content: attr(data-warn); display: inline-block; margin-bottom: 2px; padding: 1px 3px; border-radius: 2px; background-color: var(--color-font-highlight); color: var(--color-font-invert); font-size: 9pt; }
 
-    .hvut-ab-calc { display: flex; position: absolute; top: 27px; left: 0; width: 100%; height: 675px; justify-content: center; align-items: center; background-color: #EDEBDF; z-index: 9; font-size: 10pt; text-align: left; }
+    .hvut-ab-calc { display: flex; position: absolute; top: 27px; left: 0; width: 100%; height: 675px; justify-content: center; align-items: center; background-color: var(--color-bg-default); z-index: 9; font-size: 10pt; text-align: left; }
     .hvut-ab-calc > div { margin: 0 10px; height: 616px; }
     .hvut-ab-calc > div:nth-child(3) { overflow: hidden scroll; }
     .hvut-ab-icon { display: inline-block; position: relative; width: 30px; margin: 2px; height: 32px; vertical-align: middle; background-position-y: -2px; cursor: default; }
-    .hvut-ab-off { filter: grayscale(100%); box-shadow: 0 0 0 20px #fff9 inset; }
+    .hvut-ab-off { filter: grayscale(100%); box-shadow: 0 0 0 20px var(--color-bg-alpha) inset; }
     .hvut-ab-off:hover { filter: none; }
-    .hvut-ab-point { position: absolute; top: 0; right: 0; width: 14px; padding: 1px; text-align: center; background-color: #333; color: #fff; font-size: 9pt; }
-    .hvut-ab-tooltip { visibility: hidden; position: absolute; bottom: 32px; left: 0; padding: 0 3px; border: 1px solid; background-color: #fff; font-size: 9pt; line-height: 16px; white-space: nowrap; z-index: 1; pointer-events: none; }
+    .hvut-ab-point { position: absolute; top: 0; right: 0; width: 14px; padding: 1px; text-align: center; background-color: var(--color-ab-max); color: var(--color-ab-font); font-size: 9pt; }
+    .hvut-ab-tooltip { visibility: hidden; position: absolute; bottom: 32px; left: 0; padding: 0 3px; border: 1px solid var(--color-border-default); background-color: var(--color-bg-light); font-size: 9pt; line-height: 16px; white-space: nowrap; z-index: 1; pointer-events: none; }
     .hvut-ab-icon:hover > .hvut-ab-tooltip { visibility: visible; }
 
     .hvut-ab-side { position: static; }
-    .hvut-ab-ul { width: 450px; margin: 0; padding: 0; border: 1px solid; list-style: none; }
-    .hvut-ab-ul > li { padding: 2px; border-bottom: 1px solid; }
+    .hvut-ab-ul { width: 450px; margin: 0; padding: 0; border: 1px solid var(--color-border-default); list-style: none; }
+    .hvut-ab-ul > li { padding: 2px; border-bottom: 1px solid var(--color-border-default); }
     .hvut-ab-ul > li:last-child { border-bottom: 0; }
     .hvut-ab-category { display: inline-block; width: 130px; margin-left: 10px; font-weight: bold; vertical-align: middle; }
     .hvut-ab-ul .hvut-ab-icon { cursor: pointer; }
     .hvut-ab-table { table-layout: fixed; border-collapse: separate; border-spacing: 0; position: relative; width: 400px; text-align: right; }
-    .hvut-ab-table thead td { position: sticky; top: 0; height: 36px; border-top-width: 1px; font-weight: bold; text-align: center; background-color: #edb; z-index: 1; }
-    .hvut-ab-table td { border-style: solid; border-width: 0 1px 1px 0; padding: 2px 5px; }
+    .hvut-ab-table thead td { position: sticky; top: 0; height: 36px; border-top-width: 1px; font-weight: bold; text-align: center; background-color: var(--color-bg-h1); z-index: 1; }
+    .hvut-ab-table td { border-width: 0 1px 1px 0; border-style: solid; border-color: var(--color-border-default); padding: 2px 5px; }
     .hvut-ab-table td:nth-child(1) { border-left-width: 1px; }
     .hvut-ab-table td:nth-child(2) { width: 50px; }
     .hvut-ab-table td:nth-child(3) { width: 50px; }
     .hvut-ab-table td:nth-child(4) { width: 204px; text-align: left; }
     .hvut-ab-table .hvut-ab-icon:nth-child(n+7) { margin-top: 7px; }
-    .hvut-ab-nolevel { background-color: #edb; }
-    .hvut-ab-noab > span { color: #999; }
+    .hvut-ab-nolevel { background-color: var(--color-bg-h1); }
+    .hvut-ab-noab > span { color: var(--color-font-invalid); }
   `);
 
-  $qsa('#ability_top div[onmouseover*="overability"]').forEach((div) => {
-    const exec = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(div.getAttribute('onmouseover'));
-    const name = exec[1];
-    const ab = _ab.ability[name];
-
-    ab.slotted = true;
-    ab.level = exec[2] ? 0 : 1 + ab.unlock.indexOf(parseInt(exec[3]));
-    ab.max = ab.unlock.length;
-    ab.limit = ab.unlock.findIndex((e) => e > _player.level);
-    if (ab.limit === -1) {
-      ab.limit = ab.max;
-    }
-
-    _ab.preset['Current Set'].push(name);
-    if (ab.level) {
-      _ab.level[name] = ab.level;
-    }
-
-    const span = $element('span', div, ['.hvut-ab-slot']);
-    if (ab.level === ab.max) {
-      span.textContent = 'max';
-      span.classList.add('hvut-ab-max');
-    } else if (ab.level === ab.limit) {
-      span.textContent = `${ab.level}/${ab.max}`;
-      span.classList.add('hvut-ab-limit');
-    } else {
-      span.textContent = `${ab.level}/${ab.max}`;
-      span.classList.add('hvut-ab-up');
-      const categories = ['General', 'One-handed', 'Two-handed', 'Dual-wielding', '', 'Staff', 'Cloth Armor', 'Light Armor', 'Heavy Armor', 'Deprecating 1', 'Deprecating 2', 'Supportive 1', 'Supportive 2', 'Elemental', 'Forbidden', 'Divine'];
-      const index = categories.indexOf(ab.category);
-      $qsa('#ability_treelist > div')[index].classList.add('hvut-ab-tree');
-    }
-  });
-  $config.set('ab_level', _ab.level);
-
-  $id('ability_treepane').addEventListener('click', _ab.click, true);
-  $qsa('#ability_treepane > div').forEach((div) => {
-    const name = div.firstElementChild.textContent;
-    const ab = _ab.ability[name];
-    let point = _ab.point;
-
-    ab.div = div;
-    ab.id = /do_unlock_ability\((\d+)\)/.exec(div.children[2].getAttribute('onclick'))?.[1] || '';
-    ab.level = 0;
-
-    Array.from(div.children[2].children).forEach((button, i) => {
-      const type = /(.)\.png/.exec(button.style.backgroundImage)[1];
-      button.classList.add('hvut-ab-bar');
-
-      if (type === 'f') {
-        ab.level++;
-      } else if (type === 'u') {
-        point -= ab.point[i];
-        if (point < 0) {
-          $element('span', button, [ab.point[i], '.hvut-ab-bux']);
-        } else {
-          $element('span', button, [ab.point[i], '.hvut-ab-bu', { dataset: { action: 'unlock', name: name, to: i + 1 } }]);
-        }
-      } else if (type === 'x') {
-        $element('span', button, [`${ab.point[i]} (${ab.unlock[i]})`, '.hvut-ab-bx']);
-      }
-    });
-
-    if (ab.level) {
-      if (!ab.slotted) {
-        div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
-        div.firstElementChild.firstElementChild.dataset.warn = '未配置';
-      } else if (ab.level !== ab.limit) {
-        div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
-        div.firstElementChild.firstElementChild.dataset.warn = '可升级';
-      }
-    }
-  });
-
-  $input(['button', 'Ability Simulator'], $id('ability_outer'), { style: 'position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;' }, () => { _ab.calc.toggle(); });
+  _ab.init();
 } else
 // [END 3] Character - Abilities */
 
 
 //* [4] Character - Training
 if (_query.s === 'Character' && _query.ss === 'tr') {
+  _tr.node = {};
+  _tr.json = $config.get('tr_notif', {}, 'hvut_');
+  _tr.level = {};
   _tr.data = {
     'Adept Learner': { id: 50, b: 100, l: 50, e: 0.000417446 },
     'Assimilator': { id: 51, b: 50000, l: 50000, e: 0.0057969565 },
@@ -4207,6 +4338,86 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
     'Pack Rat': { id: 98, b: 10000, l: 10000, e: 0 },
     'Dissociation': { id: 88, b: 1000000, l: 1000000, e: 0 },
     'Set Collector': { id: 96, b: 12500, l: 12500, e: 0 },
+  };
+
+  _tr.init = function () {
+    _tr.node.div = $element('div', [$id('train_outer'), 'afterbegin'], ['!margin: 5px;' + ($config.settings.trainingNotification ? '' : ' display: none;')]);
+    _tr.node.select = $input(['select', [':Plan Training...']], _tr.node.div, null, { change: () => { _tr.change(_tr.node.select.value); } });
+    _tr.node.level = $input('number', _tr.node.div, { disabled: true, style: 'width: 30px; text-align: right;' }, { input: () => { _tr.calc(); } });
+    $input(['button', 'Set'], _tr.node.div, null, () => { _tr.set(true); });
+    _tr.node.cost = $input('text', _tr.node.div, { readOnly: true, style: 'width: 90px; text-align: right;' });
+    $input(['button', 'Cancel Planning'], _tr.node.div, null, () => { _tr.cancel(true); });
+
+    if ($id('train_progress')) {
+      confirm_event($qs('img[src$="/canceltrain.png"]'), 'click', 'Are you sure that you wish to cancel the current training?', null, _tr.cancel);
+    }
+
+    $id('train_table').addEventListener('click', _tr.click);
+
+    _tr.parse_table();
+    _tr.parse_progress();
+  };
+
+  _tr.parse_table = function () {
+    let total_spent = 0;
+    Array.from($id('train_table').rows).forEach((tr, i) => {
+      if (i === 0) {
+        $element('th', tr);
+        $element('th', tr, ['/<div class="fc2 fac fcb"><div>Spent Credits</div></div>']);
+        return;
+      }
+      const name = tr.cells[0].textContent.trim();
+      const time = parseFloat(tr.cells[3].textContent);
+      const level = parseInt(tr.cells[4].textContent);
+      const max = parseInt(tr.cells[6].textContent);
+      _tr.level[name] = level;
+
+      const training = _tr.data[name];
+      if (!training) {
+        return;
+      }
+      training.time = time;
+      training.level = level;
+      training.max = max;
+      if (training.time) {
+        tr.classList.add('hvut-cphu');
+        tr.dataset.action = 'change';
+        tr.dataset.name = name;
+        $element('option', _tr.node.select, { text: name, value: name });
+      }
+
+      let spent = 0;
+      for (let i = 0; i < level; i++) {
+        spent += Math.round(Math.pow(training.b + training.l * i, 1 + training.e * i));
+      }
+      total_spent += spent;
+      $element('td', tr, [`/<div class="fc4 far fcb"><div>${spent.toLocaleString()}</div></div>`]);
+    });
+    $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>Total ${total_spent.toLocaleString()}</div></div></td>`]);
+    $config.set('tr_level', _tr.level);
+  };
+
+  _tr.parse_progress = function () {
+    _tr.current = $qs('#train_progress > div:nth-child(2) > :first-child')?.textContent;
+    if (_tr.current && _tr.data[_tr.current]) {
+      _tr.json.current_name = _tr.current;
+      _tr.json.current_level = _tr.data[_tr.current].level;
+      _tr.json.current_end = _window.end_time * 1000;
+    } else {
+      _tr.json.current_name = '';
+      _tr.json.current_level = 0;
+      _tr.json.current_end = 0;
+    }
+    if (_tr.json.next_name) {
+      if (_tr.data[_tr.json.next_name].level < _tr.json.next_level) {
+        _tr.change(_tr.json.next_name, _tr.json.next_level);
+      } else {
+        _tr.json.next_name = '';
+        _tr.json.next_level = 0;
+        _tr.json.next_id = 0;
+      }
+    }
+    $config.set('tr_notif', _tr.json, 'hvut_');
   };
 
   _tr.click = function (e) {
@@ -4287,93 +4498,20 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
     #train_table tr:last-child > td { font-weight: bold; }
   `);
 
-  _tr.node = {};
-  _tr.node.div = $element('div', [$id('train_outer'), 'afterbegin'], ['!margin: 5px;' + ($config.settings.trainingNotification ? '' : ' display: none;')]);
-  _tr.node.select = $input(['select', [':Plan Training...']], _tr.node.div, null, { change: () => { _tr.change(_tr.node.select.value); } });
-  _tr.node.level = $input('number', _tr.node.div, { disabled: true, style: 'width: 30px; text-align: right;' }, { input: () => { _tr.calc(); } });
-  $input(['button', 'Set'], _tr.node.div, null, () => { _tr.set(true); });
-  _tr.node.cost = $input('text', _tr.node.div, { readOnly: true, style: 'width: 90px; text-align: right;' });
-  $input(['button', 'Cancel Planning'], _tr.node.div, null, () => { _tr.cancel(true); });
-
-  _tr.json = $config.get('tr_notif', {}, 'hvut_');
-  _tr.current = $qs('#train_progress > div:nth-child(2) > :first-child')?.textContent;
-  _tr.level = {};
-  _tr.spent = 0;
-
-  if ($id('train_progress')) {
-    confirm_event($qs('img[src$="/canceltrain.png"]'), 'click', '你确定要取消当前的训练计划吗?', null, _tr.cancel);
-  }
-
-  $id('train_table').addEventListener('click', _tr.click);
-  Array.from($id('train_table').rows).forEach((tr, i) => {
-    if (!i) {
-      $element('th', tr);
-      $element('th', tr, ['/<div class="fc2 fac fcb"><div>Spent Credits</div></div>']);
-      return;
-    }
-    const name = tr.cells[0].textContent.trim();
-    const time = parseFloat(tr.cells[3].textContent);
-    const level = parseInt(tr.cells[4].textContent);
-    const max = parseInt(tr.cells[6].textContent);
-
-    _tr.level[name] = level;
-
-    const training = _tr.data[name];
-    if (!training) {
-      return;
-    }
-    training.time = time;
-    training.level = level;
-    training.max = max;
-    if (training.time) {
-      tr.classList.add('hvut-cphu');
-      tr.dataset.action = 'change';
-      tr.dataset.name = name;
-      $element('option', _tr.node.select, { text: name, value: name });
-    }
-
-    let spent = 0;
-    for (let i = 0; i < level; i++) {
-      spent += Math.round(Math.pow(training.b + training.l * i, 1 + training.e * i));
-    }
-    _tr.spent += spent;
-    $element('td', tr, [`/<div class="fc4 far fcb"><div>${spent.toLocaleString()}</div></div>`]);
-  });
-  $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>Total ${_tr.spent.toLocaleString()}</div></div></td>`]);
-
-  $config.set('tr_level', _tr.level);
-
-  if (_tr.current && _tr.data[_tr.current]) {
-    _tr.json.current_name = _tr.current;
-    _tr.json.current_level = _tr.data[_tr.current].level;
-    _tr.json.current_end = _window.end_time * 1000;
-  } else {
-    _tr.json.current_name = '';
-    _tr.json.current_level = 0;
-    _tr.json.current_end = 0;
-  }
-  if (_tr.json.next_name) {
-    if (_tr.data[_tr.json.next_name].level < _tr.json.next_level) {
-      _tr.change(_tr.json.next_name, _tr.json.next_level);
-    } else {
-      _tr.json.next_name = '';
-      _tr.json.next_level = 0;
-      _tr.json.next_id = 0;
-    }
-  }
-  _tr.json.error = '';
-  $config.set('tr_notif', _tr.json, 'hvut_');
+  _tr.init();
 } else
 // [END 4] Character - Training */
 
 
 //* [5] Character - Item Inventory
 if (_query.s === 'Character' && _query.ss === 'it') {
-  $qsa('.itemlist tr').forEach((tr) => {
-    const div = tr.cells[0].firstElementChild;
-    const type = $item.get_type(div.getAttribute('onmouseover'));
-    tr.classList.add('hvut-it-' + type);
-  });
+  _it.init = function () {
+    $qsa('.itemlist tr').forEach((tr) => {
+      const div = tr.cells[0].firstElementChild;
+      const type = $item.get_type(div.getAttribute('onmouseover'));
+      tr.classList.add(`hvut-item-${type}`);
+    });
+  };
 
   GM_addStyle(/*css*/`
     #item_left { width: 400px; }
@@ -4387,16 +4525,45 @@ if (_query.s === 'Character' && _query.ss === 'it') {
     .sa > div { height: 20px !important; padding: 5px 10px !important; }
     .sa > div:last-child > div { padding: 0; }
   `);
+
+  _it.init();
 } else
 // [END 5] Character - Item Inventory */
 
 
 //* [6] Character - Settings
 if (_query.s === 'Character' && _query.ss === 'se') {
+  _se.node = { buttons: {} };
   _se.form = $qs('#settings_outer form');
-  _se.elements = Array.from(_se.form.elements);
   _se.json = $config.get('se_settings', {});
-  _se.node = {};
+
+  _se.init = function () {
+    _se.node.div = $element('div', _se.form, ['.hvut-se-div'], (e) => { _se.click(e); });
+    $input(['button', 'Save Current Settings'], _se.node.div, { dataset: { action: 'save' }, style: 'margin-bottom: 15px;' });
+    $element('br', _se.node.div);
+    Object.keys(_se.json).forEach((p) => { _se.add(p); });
+
+    _se.form.elements.fontlocal.required = true;
+    _se.form.elements.fontface.required = true;
+    _se.form.elements.fontsize.required = true;
+    _se.form.elements.fontface.placeholder = 'Tahoma, Arial';
+    _se.form.elements.fontsize.placeholder = '10';
+    _se.form.elements.fontoff.placeholder = '0';
+
+    _se.sort();
+  };
+
+  _se.sort = function () {
+    Array.from(_se.form.elements).forEach((e) => {
+      if (e.nodeName === 'SELECT') {
+        const value = e.value;
+        const options = Array.from(e.options);
+        options.sort((a, b) => { let av = a.value; let bv = b.value; if (av && !isNaN(av) && bv && !isNaN(bv)) { av = Number(av); bv = Number(bv); } return (av > bv ? 1 : -1); });
+        e.append(...options);
+        e.value = value;
+      }
+    });
+  };
 
   _se.click = function (e) {
     const target = e.target.closest('[data-action]');
@@ -4412,10 +4579,19 @@ if (_query.s === 'Character' && _query.ss === 'se') {
       _se.save();
     }
   };
+
   _se.add = function (name) {
-    _se.node[name] = $input(['button', name], _se.div, { dataset: { action: 'load', key: name }, className: 'hvut-se-button' });
-    $input(['button', 'x'], _se.div, { dataset: { action: 'remove', key: name }, className: 'hvut-se-remove' });
+    _se.node.buttons[name] = $input(['button', name], _se.node.div, { dataset: { action: 'load', key: name }, className: 'hvut-se-button' });
+    $input(['button', 'x'], _se.node.div, { dataset: { action: 'remove', key: name }, className: 'hvut-se-remove' });
   };
+
+  _se.remove = function (name) {
+    delete _se.json[name];
+    $config.set('se_settings', _se.json);
+    _se.node.buttons[name].nextElementSibling.remove();
+    _se.node.buttons[name].remove();
+  };
+
   _se.save = function () {
     const name = prompt('Enter the name of the settings')?.trim();
     if (!name) {
@@ -4429,9 +4605,10 @@ if (_query.s === 'Character' && _query.ss === 'se') {
     _se.json[name] = json;
     $config.set('se_settings', _se.json);
   };
+
   _se.load = function (name) {
     const json = _se.json[name];
-    _se.elements.forEach((e) => {
+    Array.from(_se.form.elements).forEach((e) => {
       if (e.type === 'button' || e.type === 'reset' || e.type === 'image' || e.type === 'submit') {
         return;
       }
@@ -4444,64 +4621,41 @@ if (_query.s === 'Character' && _query.ss === 'se') {
       }
     });
   };
-  _se.remove = function (name) {
-    delete _se.json[name];
-    $config.set('se_settings', _se.json);
-    _se.node[name].nextElementSibling.remove();
-    _se.node[name].remove();
-  };
 
   GM_addStyle(/*css*/`
-    .hvut-se-div { margin-top: 20px; padding: 20px 0; border-top: 3px double; text-align: left; }
+    .hvut-se-div { margin-top: 20px; padding: 20px 0; border-top: 3px double var(--color-border-default); text-align: left; }
     .hvut-se-div .hvut-se-button { min-width: 50px; margin: 0 30px 10px 10px; }
     .hvut-se-div .hvut-se-remove { visibility: hidden; width: 22px; margin-left: -30px; }
     .hvut-se-button:hover + .hvut-se-remove, .hvut-se-remove:hover { visibility: visible; }
   `);
 
-  _se.div = $element('div', _se.form, ['.hvut-se-div'], (e) => { _se.click(e); });
-  $input(['button', 'Save Current Settings'], _se.div, { dataset: { action: 'save' }, style: 'margin-bottom: 15px;' });
-  $element('br', _se.div);
-
-  Object.keys(_se.json).forEach((p) => { _se.add(p); });
-
-  _se.elements.forEach((e) => {
-    if (e.nodeName === 'SELECT') {
-      const value = e.value;
-      const options = Array.from(e.options);
-      options.sort((a, b) => { let av = a.value; let bv = b.value; if (av && !isNaN(av) && bv && !isNaN(bv)) { av = Number(av); bv = Number(bv); } return (av > bv ? 1 : -1); });
-      e.append(...options);
-      e.value = value;
-    }
-  });
-
-  _se.form.fontlocal.required = true;
-  _se.form.fontface.required = true;
-  _se.form.fontsize.required = true;
-  _se.form.fontface.placeholder = 'Tahoma, Arial';
-  _se.form.fontsize.placeholder = '10';
-  _se.form.fontoff.placeholder = '0';
+  _se.init();
 } else
 // [END 6] Character - Settings */
 
 
 //* [7] Bazaar - Item Shop
 if (_query.s === 'Bazaar' && _query.ss === 'is') {
-  $qsa('#item_pane .itemlist tr').forEach((tr) => {
-    const div = tr.cells[0].firstElementChild;
-    const type = $item.get_type(div.getAttribute('onmouseover'));
-    tr.classList.add('hvut-it-' + type);
-  });
-  $qsa('#shop_pane .itemlist tr').forEach((tr) => {
-    const div = tr.cells[0].firstElementChild;
-    const type = $item.get_type(div.getAttribute('onmouseover'));
-    tr.classList.add('hvut-it-' + type);
-  });
+  _is.init = function () {
+    $qsa('#item_pane .itemlist tr').forEach((tr) => {
+      const div = tr.cells[0].firstElementChild;
+      const type = $item.get_type(div.getAttribute('onmouseover'));
+      tr.classList.add(`hvut-item-${type}`);
+    });
+    $qsa('#shop_pane .itemlist tr').forEach((tr) => {
+      const div = tr.cells[0].firstElementChild;
+      const type = $item.get_type(div.getAttribute('onmouseover'));
+      tr.classList.add(`hvut-item-${type}`);
+    });
+  };
 
   GM_addStyle(/*css*/`
     .itshop_pane .cspp { margin-top: 15px; overflow-y: scroll; }
     #itshop_outer .itemlist td:nth-child(1) { width: 285px !important; }
     #itshop_outer .itemlist td:nth-child(2) { width: 75px !important; }
   `);
+
+  _is.init();
 } else
 // [END 7] Bazaar - Item Shop */
 
@@ -4539,16 +4693,36 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       { name: '5000x Crystals', match: /5000x Crystal of/ }, { name: '3000x Crystals', match: /3000x Crystal of/ }, { name: '1000x Crystals', match: /1000x Crystal of/ },
       { name: 'Primary Attributes Bonuses', match: /was increased by 1|has increased by one/ },
       'Peerless', 'Legendary', 'Magnificent', 'Exquisite', 'Superior', 'Average', 'Fair', 'Crude',
-      { name: 'Pouches', match: /Pouch/ }, { name: 'Greater Charms', match: /Greater .* Charm/ }, { name: 'Lesser Charms', match: /Lesser .* Charm/ },
+      { name: 'Pouches', match: /Charm Pouch$/ }, { name: 'Charms', match: /Charm$/ },
       { name: '3x High-Grade Materials', match: /3x High-Grade/ }, { name: '2x High-Grade Materials', match: /2x High-Grade/ }, { name: '1x High-Grade Materials', match: /1x High-Grade/ },
       { name: 'Bindings', match: /Binding of/ },
     ],
     groups: [
-      'Vigor', 'Finesse', 'Swiftness', 'Fortitude', 'Cunning', 'Knowledge', 'Flames', 'Frost', 'Lightning', 'Tempest', 'Devotion', 'Corruption',
-      'Strength', 'Dexterity', 'Agility', 'Endurance', 'Intelligence', 'Wisdom',
-      'Cloth', 'Leather', 'Metal', 'Wood',
-      'Mithril', 'Kevlar', 'Silk',
+      /Mithril Charm Pouch/, /Kevlar Charm Pouch/, /Silk Charm Pouch/,
+      /Greater .* Charm/, /Lesser .* Charm/,
+      /High-Grade Cloth/, /High-Grade Leather/, /High-Grade Metal/, /High-Grade Wood/,
+      /Strength/, /Dexterity/, /Agility/, /Endurance/, /Intelligence/, /Wisdom/,
+      /Vigor/, /Finesse/, /Swiftness/, /Fortitude/, /Cunning/, /Knowledge/, /Flames/, /Frost/, /Lightning/, /Tempest/, /Devotion/, /Corruption/,
     ],
+  };
+
+  _ss.init = function () {
+    $id('inv_item').addEventListener('click', _ss.click);
+    $id('accept_equip').addEventListener('click', _ss.click);
+
+    _ss.node.side = $element('div', $id('shrine_outer'), ['.hvut-side hvut-ss-side']);
+    toggle_button($input('button', _ss.node.side), 'Filter: On', 'Filter: Off', $id('inv_item'), 'hvut-none-cont', 'on');
+    $input(['button', 'Offering Results'], _ss.node.side, null, () => { _ss.offer.toggle(); });
+    $input(['button', 'The Shrine Log'], _ss.node.side, null, () => { _ss.log.toggle(); });
+    $input(['button', 'Reset Log'], _ss.node.side, null, () => { _ss.log.reset(); });
+    $input(['button', 'Edit Filters'], _ss.node.side, null, () => { $config.open('shrineHideItems'); });
+
+    _ss.node.log = $element('div', $id('shrine_outer'), ['.hvut-ss-log hvut-none']);
+    _ss.node.results = $element('div', $id('shrine_outer'), ['.hvut-ss-results hvut-none']);
+    _ss.node.results_buttons = $element('div', _ss.node.results, ['!margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--color-border-default); text-align: center;']);
+    _ss.node.results_equip = $input(['button', 'Inventory Capacity'], _ss.node.results_buttons, ['!width: 450px;']);
+
+    _ss.node.trophies = $input('button', $id('shrine_trophy'), ['!margin: 5px;'], () => { _ss.show_trophies(); });
   };
 
   _ss.click = function (e) {
@@ -4566,9 +4740,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
   };
 
   _ss.select = {
+    node: {},
     reward_type: '',
     reward_slot: '',
-    node: {},
 
     init: function () {
       $qsa('#accept_equip input[type="submit"]').forEach((s) => {
@@ -4619,7 +4793,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       }
       const group = list[index].name;
       const glist = _ss.data.groups;
-      let gindex = glist.findIndex((e) => name.includes(e)) + 1;
+      let gindex = glist.findIndex((e) => e.test(name)) + 1;
       if (gindex === 0) {
         gindex = 99;
       }
@@ -4685,6 +4859,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
   _ss.offer = {
     items: {},
+
     init: function () {
       $qsa('.itemlist tr').forEach((tr) => {
         const div = tr.cells[0].firstElementChild;
@@ -4695,7 +4870,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
         const item = { logname: name, name, type, iid, stock, bulk, max, requests: 0, total: 0, rewards: {}, node: {} };
         _ss.offer.items[iid] = item;
 
-        div.classList.add('hvut-it-' + type);
+        div.classList.add(`hvut-item-${type}`);
         item.node.stock = tr.cells[1];
         item.node.bulk = $element('td', tr);
         item.node.max = $element('td', tr);
@@ -4716,10 +4891,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
               }
               item.value *= (t === item.tier) ? 1 : (t === 3) ? 1.1 : (t === 4) ? 1.2 : (t === 5) ? 1.3 : 1;
               item.upgrade = t;
-              item.logname = 'Trophy Tier ' + t;
+              item.logname = `Trophy Tier ${t}`;
             }
           }
-          item.node.bulk.textContent = ' / ' + item.bulk;
+          item.node.bulk.textContent = ` / ${item.bulk}`;
           item.node.max.textContent = item.max;
           $input(['button', 'All'], td, { dataset: { action: 'offer', iid: iid, count: 'max' } });
         }
@@ -4816,7 +4991,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
         Dexterity was increased by 1
         Hit Space Bar to offer another item like this.
       */
-      const reg_text = /Snowflake has blessed you with an item|Snowflake has blessed you with some of her power|Hit Space Bar to offer another item like this/;
+      const reg_text = /Snowflake has blessed you|Hit Space Bar to offer/;
       const reg_voucher = /Peerless Voucher/;
       const reg_equip = /^(Crude|Fair|Average|Superior|Exquisite|Magnificent|Legendary|Peerless)/;
       const reg_received = /^Received (.*?)!?$/;
@@ -4829,7 +5004,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
         if (!msg || reg_text.test(msg)) {
           return;
         } else if (reg_voucher.test(msg)) {
-          popup(`<p style="color: #f00; font-weight: bold;">${msg}</p>`);
+          popup(`<p style="color: #e00; font-weight: bold;">${msg}</p>`);
         } else if (reg_equip.test(msg)) {
           list.push(RegExp.$1);
           equips.push(msg);
@@ -4861,7 +5036,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
       if (item.type === 'Trophy') {
         _ss.equip.total = _ss.equip.usage + _ss.equip.received - _ss.equip.sold - _ss.equip.salvaged;
-        _ss.node.results_equip.value = `仓库容量: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, 自动出售: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, 自动分解: ${_ss.equip.salvaged}` : '');
+        _ss.node.results_equip.value = `Inventory Capacity: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, Sold: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, Salvaged: ${_ss.equip.salvaged}` : '');
         if (_ss.equip.total >= _ss.equip.capacity) {
           if (!_ss.error) {
             _ss.error = 'Your equipment inventory is full';
@@ -4967,7 +5142,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
         }
       }
     });
-    _ss.node.trophies.value = `你库存中的奖杯总价值为 ${_ss.trophies_value.toLocaleString()} credits.`;
+    _ss.node.trophies.value = `You have ${_ss.trophies_value.toLocaleString()} credits worth of trophies in the inventory.`;
   };
 
   _ss.show_trophies = function () {
@@ -4992,7 +5167,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
     #shrine_left .itemlist td:nth-child(1) { width: 230px !important; }
     #shrine_left .itemlist td:nth-child(2) { width: 60px; }
-    #shrine_left .itemlist td:nth-child(3) { width: 30px; padding-left: 5px; text-align: left; font-size: 8pt; color: #930; }
+    #shrine_left .itemlist td:nth-child(3) { width: 30px; padding-left: 5px; text-align: left; font-size: 8pt; color: var(--color-font-light); }
     #shrine_left .itemlist td:nth-child(4) { width: 50px; }
     #shrine_left .itemlist td:nth-child(5) { width: 148px; padding-left: 5px; text-align: left; }
     #shrine_left .itemlist input { margin: 0 1px; }
@@ -5001,40 +5176,23 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     #shrine_left .itemlist input:nth-child(3) { width: 40px; }
 
     .hvut-ss-side { top: 33px; left: -110px; }
-    .hvut-ss-log { position: absolute; top: 33px; left: 0; width: 540px; height: 550px; margin: 0; padding: 10px; border: 1px solid; text-align: left; overflow-y: scroll; background-color: #EDEBDF; }
-    .hvut-ss-results { position: absolute; top: 33px; left: 572px; width: 472px; height: 550px; margin: 0; padding: 10px; border: 1px solid; text-align: left; overflow-y: scroll; background-color: #EDEBDF; }
+    .hvut-ss-log { position: absolute; top: 33px; left: 0; width: 540px; height: 550px; margin: 0; padding: 10px; border: 1px solid var(--color-border-default); text-align: left; overflow-y: scroll; background-color: var(--color-bg-default); }
+    .hvut-ss-results { position: absolute; top: 33px; left: 572px; width: 472px; height: 550px; margin: 0; padding: 10px; border: 1px solid var(--color-border-default); text-align: left; overflow-y: scroll; background-color: var(--color-bg-default); }
 
-    .hvut-ss-table { width: stretch; margin: 20px 10px; font-size: 10pt; }
-    .hvut-ss-table th { padding: 5px; font-weight: bold; background-color: #E3E0D1; }
+    .hvut-ss-table { width: stretch; margin: 20px 10px; border: 1px solid var(--color-border-default); font-size: 10pt; }
+    .hvut-ss-table th { padding: 5px 10px; font-weight: bold; background-color: var(--color-bg-h2); }
     .hvut-ss-table td { padding: 2px 10px; }
-    .hvut-ss-table td:nth-child(1) { width: 60px; text-align: right; color: #930; }
+    .hvut-ss-table td:nth-child(1) { width: 60px; text-align: right; color: var(--color-font-light); }
     .hvut-ss-table td:nth-child(2) { width: 50px; text-align: right; }
-    .hvut-ss-table tr { border: 0 solid #5C0D11; }
-    .hvut-ss-table tr:first-child, .hvut-ss-table tr:last-child { border-bottom-width: 1px; }
-    .hvut-ss-table tr.hvut-ss-group { border-top-width: 1px; }
-    .hvut-ss-groupitem { color: #666; }
-    .hvut-ss-equip { color: #930; }
+    .hvut-ss-table tr:first-child { border-bottom: 1px solid var(--color-border-default); }
+    .hvut-ss-table tr.hvut-ss-group { border-top: 1px solid var(--color-border-default); }
+    .hvut-ss-groupitem { color: var(--color-font-invalid); }
+    .hvut-ss-equip { color: var(--color-font-light); }
 
-    .hvut-ss-selected:not([disabled]) { color: #c00 !important; border-color: #c00 !important; outline: 1px solid; }
+    .hvut-ss-selected:not([disabled]) { color: var(--color-font-highlight) !important; border-color: var(--color-font-highlight) !important; outline: 1px solid; }
   `);
 
-  $id('inv_item').addEventListener('click', _ss.click);
-  $id('accept_equip').addEventListener('click', _ss.click);
-
-  _ss.node.side = $element('div', $id('shrine_outer'), ['.hvut-side hvut-ss-side']);
-  toggle_button($input('button', _ss.node.side), '过滤: 开', '过滤: 关', $id('inv_item'), 'hvut-none-cont', 'on');
-  $input(['button', '献祭结果'], _ss.node.side, null, () => { _ss.offer.toggle(); });
-  $input(['button', '献祭记录'], _ss.node.side, null, () => { _ss.log.toggle(); });
-  $input(['button', '重置记录'], _ss.node.side, null, () => { _ss.log.reset(); });
-  $input(['button', '过滤规则'], _ss.node.side, null, () => { $config.open('shrineHideItems'); });
-
-  _ss.node.log = $element('div', $id('shrine_outer'), ['.hvut-ss-log hvut-none']);
-  _ss.node.results = $element('div', $id('shrine_outer'), ['.hvut-ss-results hvut-none']);
-  _ss.node.results_buttons = $element('div', _ss.node.results, ['!margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid; text-align: center;']);
-  _ss.node.results_equip = $input(['button', 'Inventory Capacity'], _ss.node.results_buttons, { style: 'width: 450px;' });
-
-  _ss.node.trophies = $input('button', $id('shrine_trophy'), { style: 'margin: 5px;' }, () => { _ss.show_trophies(); });
-
+  _ss.init();
   _ss.offer.init();
   _ss.select.init();
   _ss.calc_trophies();
@@ -5052,12 +5210,24 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
     _query.filter = 'co';
   }
 
-  _mk.init_list = function () {
+  _mk.items = $qsa('#market_itemlist td:first-child').map((td) => td.textContent);
+
+  _mk.init = function () {
+    _mk.table_init();
+
+    const side = $element('div', $id('market_left').lastElementChild, ['.hvut-side hvut-mk-side']);
+    $input(['button', 'Set as Bid'], side, null, () => { _mk.price_save('bid'); });
+    $input(['button', 'Set as Ask'], side, null, () => { _mk.price_save('ask'); });
+    $input(['button', 'Edit Prices'], side, null, () => { _mk.price_edit(); });
+
+    $id('account_amount').autocomplete = 'off';
+  };
+
+  _mk.table_init = function () {
     if (!$qs('#market_itemlist table')) {
       return;
     }
     $price.parse_market(_query.filter);
-    _mk.items = Object.keys($price.market);
     Array.from($qs('#market_itemlist table').rows).forEach((tr, i) => {
       if (i === 0) {
         $element('th', tr, 'HVUT Price');
@@ -5067,45 +5237,39 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
       const td = $element('td', tr);
       $price.market[name].td = td;
     });
-    _mk.modify();
-
-    if (!$id('market_itemfilter')) {
-      $element('div', $id('market_right'), ['#market_itemfilter']);
-    }
-    const side = $element('div', $id('market_left').lastElementChild, ['.hvut-side hvut-mk-side']);
-    $input(['button', 'Set as Bid'], side, null, () => { _mk.save('bid'); });
-    $input(['button', 'Set as Ask'], side, null, () => { _mk.save('ask'); });
-    $input(['button', 'Edit Prices'], side, null, () => { _mk.edit(); });
+    _mk.price_update();
+    _mk.order_check();
+    _mk.click_linkify();
+    _mk.add_crystalpack();
   };
 
-  _mk.edit = function () {
-    $price.edit(_mk.items, _query.filter, _mk.modify);
-  };
-
-  _mk.save = function (key) {
-    $price.set_market(_mk.items, key);
-    _mk.modify();
-  };
-
-  _mk.modify = function () {
+  _mk.price_update = function () {
     const prices = $price.get();
     _mk.items.forEach((name) => {
       $price.market[name].td.textContent = prices[name] || '';
     });
   };
 
-  _mk.get_crystals = function () {
-    if (!$qs('#market_itemlist table')) {
+  _mk.order_check = function () {
+    let td_index;
+    if (_query.screen === 'buyorders') {
+      td_index = 4;
+    } else if (_query.screen === 'sellorders') {
+      td_index = 5;
+    } else {
       return;
     }
-    const [bid, ask] = ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'].reduce((s, e) => [s[0] + $price.market[e].bid * 1000, s[1] + $price.market[e].ask * 1000], [0, 0]);
-    $element('tr', [$qs('#market_itemlist table').rows[0], 'afterend'], [`/<td>Crystal Pack</td><td></td><td>${bid} C</td><td>${ask} C</td><td></td>`]);
+    Array.from($qs('#market_itemlist table').rows).slice(1).forEach((tr) => {
+      const mybid = tr.cells[3].textContent;
+      const marketbid = tr.cells[td_index].textContent;
+      if (mybid !== marketbid) {
+        tr.cells[3].classList.add('hvut-warn');
+        tr.cells[td_index].classList.add('hvut-warn');
+      }
+    });
   };
 
-  _mk.click2link = function () {
-    if (!$qs('#market_itemlist table')) {
-      return;
-    }
+  _mk.click_linkify = function () {
     Array.from($qs('#market_itemlist table').rows).forEach((tr) => {
       const onclick = tr.getAttribute('onclick');
       if (!onclick) {
@@ -5117,6 +5281,25 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
     });
   };
 
+  _mk.add_crystalpack = function () {
+    if (_query.screen !== 'browseitems' || _query.filter !== 'mo') {
+      return;
+    }
+    const crystals = ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'];
+    const bid = crystals.reduce((s, e) => s + $price.market[e].bid * 1000, 0);
+    const ask = crystals.reduce((s, e) => s + $price.market[e].ask * 1000, 0);
+    $element('tr', [$qs('#market_itemlist table').rows[0], 'afterend'], [`/<td>Crystal Pack</td><td></td><td>${bid} C</td><td>${ask} C</td><td></td><td></td>`]);
+  };
+
+  _mk.price_edit = function () {
+    $price.edit(_mk.items, _query.filter, _mk.price_update);
+  };
+
+  _mk.price_save = function (key) {
+    $price.set_market(_mk.items, key);
+    _mk.price_update();
+  };
+
   GM_addStyle(/*css*/`
     #market_itemlist th { z-index: 1; }
     #market_itemlist tr { position: relative; }
@@ -5125,12 +5308,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
     .hvut-mk-side { bottom: 20px; left: 32px; }
   `);
 
-  _mk.init_list();
-  _mk.click2link();
-  if (_query.screen === 'browseitems' && _query.filter === 'mo') {
-    _mk.get_crystals();
-  }
-  $id('account_amount').autocomplete = 'off';
+  _mk.init();
 } else
 // [END 9] Bazaar - The Market */
 
@@ -5152,7 +5330,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
       .hvut-ml-side { top: 38px; left: -110px; }
       .hvut-ml-sort { position: absolute; display: flex; top: 10px; left: 22px; font-size: 10pt; line-height: 16px; }
-      .hvut-ml-sort > span { display: inline-block; margin: 0 5px; padding: 2px 0; border: 1px solid; box-sizing: border-box; }
+      .hvut-ml-sort > span { display: inline-block; margin: 0 5px; padding: 2px 0; border: 1px solid var(--color-border-default); box-sizing: border-box; }
       .hvut-ml-sort > .hvut-ml-sort-current { font-weight: bold; outline: 1px solid; }
 
       #monster_list { width: auto; }
@@ -5171,35 +5349,35 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       #slot_pane > div > div:nth-child(6) { order: 8; width: 200px; }
       #slot_pane > div > div:nth-child(5) { order: 9; width: 200px; }
 
-      .hvut-ml-new { background-color: #edb; }
-      .hvut-ml-wins::after { content: 'Last Update: ' attr(data-update); position: absolute; top: 2px; right: 615px; border: 1px solid; padding: 2px 4px; line-height: 16px; background-color: #edb; visibility: hidden; }
+      .hvut-ml-new { background-color: var(--color-bg-h1); }
+      .hvut-ml-wins::after { content: 'Last Update: ' attr(data-update); position: absolute; top: 2px; right: 615px; border: 1px solid var(--color-border-default); padding: 2px 4px; line-height: 16px; background-color: var(--color-bg-h1); visibility: hidden; }
       .hvut-ml-wins:hover::after { visibility: visible; }
-      .hvut-ml-outdated { color: #c00; }
-      .hvut-ml-gains > span { display: inline-block; width: 25px; line-height: 22px; border-radius: 2px; background-color: #5C0D11; color: #fff; }
-      .hvut-ml-gains > ul { visibility: hidden; position: absolute; top: 2px; right: 515px; margin: 0; padding: 5px 10px; border: 1px solid; list-style: none; font-size: 9pt; line-height: 20px; white-space: nowrap; background-color: #EDEBDF; z-index: 3; }
+      .hvut-ml-outdated { color: var(--color-font-highlight); }
+      .hvut-ml-gains > span { display: inline-block; width: 25px; line-height: 22px; border-radius: 2px; background-color: var(--color-bg-invert); color: var(--color-font-invert); }
+      .hvut-ml-gains > ul { visibility: hidden; position: absolute; top: 2px; right: 515px; margin: 0; padding: 5px 10px; border: 1px solid var(--color-border-default); list-style: none; font-size: 9pt; line-height: 20px; white-space: nowrap; background-color: var(--color-bg-default); z-index: 3; }
       .hvut-ml-gains:hover > ul { visibility: visible; }
       #slot_pane > div:nth-of-type(n+15):nth-last-of-type(-n+5) > .hvut-ml-gains > ul { top: auto; bottom: 2px; }
       .msn { height: auto; }
       .hvut-ml-feed { position: absolute; top: 5px; left: 62px; width: 124px; height: 12px; font-size: 8pt; line-height: 12px; }
-      div:hover > .hvut-ml-feed { background-color: #fff9; }
+      div:hover > .hvut-ml-feed { background-color: var(--color-bg-alpha); }
 
-      .hvut-ml-summary { position: absolute; top: 38px; left: 10px; max-height: 500px; min-width: 400px; margin: 0; padding: 10px; overflow: auto; border: 1px solid; list-style: none; background-color: #EDEBDF; font-size: 9pt; line-height: 20px; text-align: left; white-space: nowrap; z-index: 1; }
+      .hvut-ml-summary { position: absolute; top: 38px; left: 10px; max-height: 500px; min-width: 400px; margin: 0; padding: 10px; overflow: auto; border: 1px solid var(--color-border-default); list-style: none; background-color: var(--color-bg-default); font-size: 9pt; line-height: 20px; text-align: left; white-space: nowrap; z-index: 1; }
       .hvut-ml-summary > li:first-child { margin-bottom: 5px; font-weight: bold; }
       .hvut-ml-summary > li { margin: 0 5px; }
-      .hvut-ml-log { position: absolute; top: 38px; left: 610px; margin: 0; padding: 10px; width: 460px; height: 560px; column-count: 2; column-gap: 10px; border: 1px solid; list-style: none; background-color: #EDEBDF; font-size: 9pt; line-height: 16px; text-align: left; white-space: nowrap; z-index: 2; }
+      .hvut-ml-log { position: absolute; top: 38px; left: 610px; margin: 0; padding: 10px; width: 460px; height: 560px; column-count: 2; column-gap: 10px; border: 1px solid var(--color-border-default); list-style: none; background-color: var(--color-bg-default); font-size: 9pt; line-height: 16px; text-align: left; white-space: nowrap; z-index: 2; }
       .hvut-ml-log > li { overflow: hidden; text-overflow: ellipsis; }
       .hvut-ml-log > li:nth-child(-n+3) { column-span: all; font-weight: bold; }
       .hvut-ml-log > li:nth-child(3) { margin-bottom: 16px; }
       .hvut-ml-margin { margin-top: 16px !important; }
       .hvut-ml-break { break-after: column; }
 
-      .hvut-ml-up { position: absolute; top: 27px; left: 0; width: 100%; height: 675px; z-index: 9; background-color: #EDEBDF; font-size: 10pt; text-align: left; }
+      .hvut-ml-up { position: absolute; top: 27px; left: 0; width: 100%; height: 675px; z-index: 9; background-color: var(--color-bg-default); font-size: 10pt; text-align: left; }
       .hvut-ml-up-list { height: 493px; margin: 20px 10px 10px; overflow-y: scroll; }
       .hvut-ml-up-table { table-layout: fixed; border-collapse: separate; border-spacing: 0 3px; margin: -3px auto; width: 1180px; line-height: 24px; text-align: center; white-space: nowrap; user-select: none; }
-      .hvut-ml-up-table tr:first-child td { position: sticky; top: 0; font-size: 8pt; background-color: #edb; }
-      .hvut-ml-up-table tr:hover td { background-color: #edb; }
-      .hvut-ml-up-table td { width: 24px; padding: 0; border-width: 1px 0; border-style: solid; border-color: #5C0D11; }
-      .hvut-ml-up-table td:hover { background-color: #fff !important; }
+      .hvut-ml-up-table td { width: 24px; padding: 0; border-width: 1px 0; border-style: solid; border-color: var(--color-border-default); }
+      .hvut-ml-up-table tr:first-child td { position: sticky; top: 0; font-size: 8pt; background-color: var(--color-bg-h1); }
+      .hvut-ml-up-table tr:hover td { background-color: var(--color-bg-h1); }
+      .hvut-ml-up-table tr td:hover { background-color: var(--color-bg-light); }
       .hvut-ml-up-table td:nth-child(1) { width: 30px; }
       .hvut-ml-up-table td:nth-child(2) { width: auto; text-align: left; padding-left: 5px; }
       .hvut-ml-up-table td:nth-child(3) { width: 90px; text-align: left; padding-left: 5px; }
@@ -5211,16 +5389,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       .hvut-ml-up-table td:nth-child(14),
       .hvut-ml-up-table td:nth-child(22),
       .hvut-ml-up-table td:nth-child(35) { border-right-width: 1px; }
-      .hvut-ml-up-change { color: #c00; }
-      .hvut-ml-up-table td[data-desc]::after { content: attr(data-desc); visibility: hidden; position: absolute; top: 24px; left: -1px; white-space: nowrap; padding: 2px 10px; background-color: #fff; border: 1px solid; z-index: 1; }
+      .hvut-ml-up-change { color: var(--color-font-highlight); }
+      .hvut-ml-up-table td[data-desc]::after { content: attr(data-desc); visibility: hidden; position: absolute; top: 24px; left: -1px; white-space: nowrap; padding: 2px 10px; background-color: var(--color-bg-light); border: 1px solid var(--color-border-default); z-index: 1; }
       .hvut-ml-up-table td[data-desc]:nth-last-child(-n+13)::after { left: auto; right: -1px; }
       .hvut-ml-up-table td[data-desc]:hover::after { visibility: visible; }
 
       .hvut-ml-up-bottom { margin: 10px; }
-      .hvut-ml-up-bottom > ul { float: left; margin: 0 5px; padding: 5px; list-style: none; border: 1px solid; }
+      .hvut-ml-up-bottom > ul { float: left; margin: 0 5px; padding: 5px; list-style: none; border: 1px solid var(--color-border-default); }
       .hvut-ml-up-bottom li { margin: 5px; }
       .hvut-ml-up-bottom li::after { content: ''; display: block; clear: both; }
-      .hvut-ml-up-bottom li.hvut-ml-up-nostock { color: #c00; }
+      .hvut-ml-up-bottom li.hvut-ml-up-nostock { color: var(--color-font-highlight); }
       .hvut-ml-up-bottom li > span { float: left; text-align: right; }
       .hvut-ml-up-crystal span:nth-child(1) { width: 70px; }
       .hvut-ml-up-crystal span:nth-child(2) { width: 90px; }
@@ -5231,7 +5409,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       .hvut-ml-up-buttons { float: right; width: 100px; display: flex; flex-direction: column; }
       .hvut-ml-up-buttons input { margin: 3px 0; }
 
-      .hvut-ml-plc { display: flex; position: absolute; top: 27px; left: 0; width: 100%; height: 675px; justify-content: center; align-items: center; z-index: 9; background-color: #EDEBDF; font-size: 10pt; text-align: left; white-space: nowrap; }
+      .hvut-ml-plc { display: flex; position: absolute; top: 27px; left: 0; width: 100%; height: 675px; justify-content: center; align-items: center; z-index: 9; background-color: var(--color-bg-default); font-size: 10pt; text-align: left; white-space: nowrap; }
       .hvut-ml-plc-right { height: 635px; margin-left: 20px; }
       .hvut-ml-plc-buttons { display: flex; flex-wrap: wrap; justify-content: space-between; width: 250px; }
       .hvut-ml-plc-buttons input { margin: 0 0 4px; }
@@ -5240,25 +5418,24 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       .hvut-ml-plc-buttons input:nth-child(n+5) { width: 24%; }
       .hvut-ml-plc-table { table-layout: fixed; border-collapse: collapse; margin-top: 20px; width: 480px; }
       .hvut-ml-plc-table tr:first-child { font-weight: bold; }
-      .hvut-ml-plc-table td { border: 1px solid; padding: 2px 5px; }
+      .hvut-ml-plc-table td { border: 1px solid var(--color-border-default); padding: 2px 5px; }
       .hvut-ml-plc-table td:first-child { width: 40px; text-align: right; }
       .hvut-ml-plc-left { width: 600px; height: 530px; margin-top: 105px; overflow: auto; line-height: 26px; }
-      .hvut-ml-plc-left > div { display: flex; width: 572px; margin: 5px 0; padding: 5px 0; border: 1px solid; }
+      .hvut-ml-plc-left > div { display: flex; width: 572px; margin: 5px 0; padding: 5px 0; border: 1px solid var(--color-border-default); }
       .hvut-ml-plc-left > div:first-child { position: absolute; margin-top: -105px; outline: 1px solid; }
-      .hvut-ml-plc-left > div > div { width: 240px; padding: 5px; border-left: 1px solid; }
+      .hvut-ml-plc-left > div > div { width: 240px; padding: 5px; border-left: 1px solid var(--color-border-default); }
       .hvut-ml-plc-left > div > div:first-child { width: 60px; border-left: 0; }
       .hvut-ml-plc-left input[type='number'] { width: 30px; text-align: right; }
       .hvut-ml-plc-del { width: 22px; margin: 0 10px 0 0 !important; }
       .hvut-ml-plc-btn { display: inline-block; width: 140px; text-align: center; }
-      .hvut-ml-plc-btn > span { display: inline-block; width: 18px; line-height: 18px; border: 1px solid; margin: 0 1px; text-align: center; background-color: #fff; border-radius: 3px; cursor: default; }
+      .hvut-ml-plc-btn > span { display: inline-block; width: 18px; line-height: 18px; border: 1px solid var(--color-border-default); margin: 0 1px; text-align: center; background-color: var(--color-bg-light); border-radius: 3px; cursor: default; }
       .hvut-ml-plc-btn > input { width: 25px; padding: 2px 0; border-width: 1px; border-radius: 0; }
-      .hvut-ml-plc-btn > .hvut-ml-plc-up { background-color: #edb; }
+      .hvut-ml-plc-btn > .hvut-ml-plc-up { background-color: var(--color-bg-h1); }
       .hvut-ml-plc-crystal { display: inline-block; width: 95px; text-align: right; }
     `);
 
     _ml.materials = ['Low-Grade Cloth', 'Mid-Grade Cloth', 'High-Grade Cloth', 'Low-Grade Leather', 'Mid-Grade Leather', 'High-Grade Leather', 'Low-Grade Metals', 'Mid-Grade Metals', 'High-Grade Metals', 'Low-Grade Wood', 'Mid-Grade Wood', 'High-Grade Wood', 'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator', 'Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl'];
     _ml.mobs = [];
-    _ml.now = Date.now();
     _ml.log = $config.get('ml_log', [{ version: 1 }]);
 
     _ml.parse = function (mob, doc) {
@@ -5308,10 +5485,49 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
     // Monster List
     _ml.main = {
-
       node: {},
       gains: {},
 
+      init: function () {
+        $id('monster_list').addEventListener('click', _ml.main.click, true);
+        $id('monster_list').addEventListener('mouseover', _ml.main.mouseover);
+        $id('monster_list').addEventListener('mouseout', _ml.main.mouseout);
+
+        const sort_div = $element('div', [$id('slot_pane'), 'beforebegin'], ['.hvut-ml-sort hvut-cphu-sub']);
+        _ml.main.node.sort = {
+          index: $element('span', sort_div, [{ textContent: '#' }, '!width: 30px;', { dataset: { action: 'sort', key: 'index' } }]),
+          name: $element('span', sort_div, ['Name', '!width: 210px;', { dataset: { action: 'sort', key: 'name' } }]),
+          class: $element('span', sort_div, ['Class', '!width: 70px;', { dataset: { action: 'sort', key: 'class' } }]),
+          pl: $element('span', sort_div, ['PL', '!width: 40px;', { dataset: { action: 'sort', key: 'pl' } }]),
+          wins: $element('span', sort_div, ['Wins', '!width: 40px;', { dataset: { action: 'sort', key: 'wins' } }]),
+          kills: $element('span', sort_div, ['Kills', '!width: 40px;', { dataset: { action: 'sort', key: 'kills' } }]),
+          gains: $element('span', sort_div, ['+', '!width: 25px;', { dataset: { action: 'sort', key: 'gains' } }]),
+          gifts: $element('span', sort_div, ['Gifts', '!width: 50px;', { dataset: { action: 'sort', key: 'gifts' } }]),
+          morale: $element('span', sort_div, ['Morale', '!width: 200px;', { dataset: { action: 'sort', key: 'morale' } }]),
+          hunger: $element('span', sort_div, ['Hunger', '!width: 200px;', { dataset: { action: 'sort', key: 'hunger' } }]),
+        };
+
+        if ($config.settings.monsterLabDefaultSort === 'index') {
+          _ml.main.sort.key = 'index';
+          _ml.main.sort.order = 1;
+          _ml.main.node.sort.index.classList.add('hvut-ml-sort-current');
+        } else {
+          _ml.main.sort($config.settings.monsterLabDefaultSort);
+        }
+
+        const side_div = $element('div', $id('monster_outer'), ['.hvut-side hvut-ml-side']);
+        $input(['button', 'Gift Summary'], side_div, null, () => { _ml.main.toggle_summary(); });
+        $input(['button', 'Monster Lab Log'], side_div, null, () => { _ml.main.toggle_log(-1); });
+        $input(['button', 'Reset Log'], side_div, null, () => { _ml.main.reset_log(); });
+        $input(['button', 'Item Prices'], side_div, ['.hvut-side-margin'], () => { $price.edit('Materials', 'ma', _ml.main.edit_price); });
+        $input(['button', 'Update Wins/Kills'], side_div, null, () => { _ml.main.feedall(); });
+        $input(['button', 'Monster Upgrader'], side_div, { id: 'hvut-ml-up-button' }, () => { _ml.upgrade.toggle(); });
+        $input(['button', 'Power Level Calculator'], side_div, null, () => { _ml.plc.toggle(); });
+
+        if ($config.settings.monsterLabCloseDefaultPopup) {
+          $id('messagebox_outer')?.classList.add('hvut-none');
+        }
+      },
       click: function (e) {
         const target = e.target.closest('[data-action]');
         if (!target) {
@@ -5350,6 +5566,104 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         if (action === 'log') {
           _ml.main.hide_log(index);
         }
+      },
+      parse: function () {
+        const now = Date.now();
+        _ml.mobs[-1] = { log: { date: now, gifts: (new Array(54)).fill(0) }, node: {} };
+
+        $qsa('#slot_pane > div').forEach((div, i) => {
+          const index = i + 1;
+          if (div.getAttribute('onclick').includes('&create=new')) {
+            _ml.log[index] = null;
+            return;
+          }
+
+          let log = _ml.log[index];
+          if (!log) {
+            log = { date: now, update: 0, pl: null, wins: 0, kills: 0, pa: [], er: [], ct: [], gifts: [] };
+            _ml.log[index] = log;
+            for (let i = 0; i < 6; i++) {
+              log.pa[i] = [0, 0];
+              log.er[i] = [0, 0];
+            }
+            for (let i = 0; i < 12; i++) {
+              log.ct[i] = [0, 0, 0];
+            }
+            for (let i = 0; i < 54; i++) {
+              log.gifts[i] = 0;
+            }
+          }
+          if (_ml.mobs[-1].log.date > log.date) {
+            _ml.mobs[-1].log.date = log.date;
+          }
+
+          const mob = { index, log, status: -1, pa: [], er: [], ct: [], node: { div: div } };
+          _ml.mobs[mob.index] = mob;
+
+          mob.name = div.children[1].textContent;
+          mob.class = div.children[3].textContent;
+          mob.pl = parseInt(div.children[2].textContent.slice(4));
+          div.children[2].textContent = mob.pl;
+          if (mob.pl !== mob.log.pl) {
+            mob.update_needed = true;
+          }
+          mob.wins = mob.log.wins;
+          mob.kills = mob.log.kills;
+          for (let i = 0; i < 6; i++) {
+            mob.pa[i] = { value: log.pa[i][0], to: 0 };
+            mob.er[i] = { value: log.er[i][0], to: 0 };
+          }
+          for (let i = 0; i < 12; i++) {
+            mob.ct[i] = { value: log.ct[i][0], to: 0, max: log.ct[i][2] };
+          }
+
+          const hungerdiv = div.children[4];
+          const moralediv = div.children[5];
+          hungerdiv.dataset.action = 'hunger';
+          hungerdiv.dataset.index = index;
+          moralediv.dataset.action = 'morale';
+          moralediv.dataset.index = index;
+
+          mob.node.hungerbar = hungerdiv.firstElementChild.firstElementChild;
+          mob.node.moralebar = moralediv.firstElementChild.firstElementChild;
+          mob.hunger = parseInt(mob.node.hungerbar.style.width) * 200;
+          mob.morale = parseInt(mob.node.moralebar.style.width) * 200;
+          mob.node.hunger = $element('div', hungerdiv.firstElementChild, [mob.hunger, '.hvut-ml-feed']);
+          mob.node.morale = $element('div', moralediv.firstElementChild, [mob.morale, '.hvut-ml-feed']);
+          mob.node.wins = $element('div', div, ['.hvut-ml-wins', { dataset: { action: 'update', index } }]);
+          mob.node.gains = $element('div', div, ['.hvut-ml-gains']);
+          mob.node.gifts = $element('div', div, { dataset: { action: 'log', index } });
+
+          if (mob.log.update) {
+            mob.node.wins.textContent = `${mob.wins} / ${mob.kills}`;
+            mob.node.wins.dataset.update = new Date(mob.log.update).toLocaleDateString();
+            if (mob.log.update < now - (1000 * 60 * 60 * 24 * 7)) {
+              mob.node.wins.classList.add('hvut-ml-outdated');
+            }
+          } else {
+            mob.node.wins.textContent = '-';
+          }
+
+          const gains = _ml.main.gains[mob.name.toLowerCase()];
+          if (gains) {
+            mob.gains = gains.length;
+            div.classList.add('hvut-ml-new');
+            $element('span', mob.node.gains, gains.length);
+            const ul = $element('ul', mob.node.gains);
+            gains.forEach((item) => {
+              $element('li', ul, item);
+              mob.log.gifts[_ml.materials.indexOf(item)]++;
+            });
+          }
+
+          for (let i = 0; i < 54; i++) {
+            _ml.mobs[-1].log.gifts[i] += mob.log.gifts[i];
+          }
+          mob.gifts = mob.log.gifts.reduce((s, e) => (s + e), 0);
+          mob.node.gifts.textContent = mob.gifts;
+        });
+
+        $config.set('ml_log', _ml.log);
       },
       sort: function (key) {
         if (!['index', 'name', 'class', 'pl', 'wins', 'kills', 'gains', 'gifts', 'morale', 'hunger'].includes(key)) {
@@ -5416,6 +5730,26 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           }
         });
       },
+      parse_summary: function () {
+        if (!$id('messagebox_outer')) {
+          return;
+        }
+        let monster;
+        let gift;
+        get_message(null, true).forEach((msg) => {
+          if (!msg) {
+            return;
+          } else if (/^(.+) brought you (?:a gift|some gifts)!$/.test(msg)) {
+            monster = RegExp.$1.toLowerCase();
+            _ml.main.gains[monster] = [];
+          } else if (/^Received (?:a|some) (.+)$/.test(msg)) {
+            gift = RegExp.$1;
+            _ml.main.gains[monster].push(gift);
+          } else {
+            popup(msg);
+          }
+        });
+      },
       toggle_summary: function () {
         _ml.main.node.summary?.classList.toggle('hvut-none');
       },
@@ -5426,23 +5760,21 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         }
         const summary = {};
         const gains = mobs.flat();
-        const prices = $price.get('Materials');
-        let income = 0;
-        gains.forEach((g) => {
-          if (!summary[g]) {
-            summary[g] = 0;
+        gains.forEach((item) => {
+          if (!summary[item]) {
+            summary[item] = 0;
           }
-          summary[g]++;
-          income += (prices[g] || 0);
+          summary[item]++;
         });
+        const income = $price.value(summary);
         if (!_ml.main.node.summary) {
           _ml.main.node.summary = $element('ul', $id('monster_outer'), ['.hvut-ml-summary']);
         }
         _ml.main.node.summary.innerHTML = '';
         $element('li', _ml.main.node.summary, `${mobs.length} monster(s) brought you ${gains.length} gift(s), ${_ml.price2str(income)} credits`);
-        _ml.materials.forEach((g) => {
-          if (summary[g]) {
-            $element('li', _ml.main.node.summary, `${summary[g]} x ${g}`);
+        _ml.materials.forEach((item) => {
+          if (summary[item]) {
+            $element('li', _ml.main.node.summary, `${summary[item]} x ${item}`);
           }
         });
       },
@@ -5472,26 +5804,25 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         }
         mob.node.log.innerHTML = '';
         const date = mob.log.date;
-        const days = (_ml.now - date) / (1000 * 60 * 60 * 24);
-        const prices = $price.get('Materials');
-        let count = 0;
-        let income = 0;
-        _ml.materials.forEach((mat, i) => {
-          const li = $element('li', mob.node.log, mob.log.gifts[i] + ' x ' + mat);
+        const days = (Date.now() - date) / (1000 * 60 * 60 * 24);
+        const count = mob.log.gifts.reduce((s, e) => (s + e), 0);
+        const summary = {};
+        _ml.materials.forEach((item, i) => {
+          const li = $element('li', mob.node.log, `${mob.log.gifts[i]} x ${item}`);
           if (i === 12 || i === 16 || i === 22 || i === 28 || i === 33 || i === 39 || i === 42 || i === 48) {
             li.classList.add('hvut-ml-margin');
           }
           if (i === 27) {
             li.classList.add('hvut-ml-break');
           }
-          count += mob.log.gifts[i];
-          income += mob.log.gifts[i] * (prices[mat] || 0);
+          summary[item] = mob.log.gifts[i];
         });
+        const income = $price.value(summary);
 
         mob.node.log.prepend(
           $element('li', null, `For ${Math.round(days * 10) / 10} days / Since ${(new Date(date)).toLocaleString()}`),
-          $element('li', null, `- Total: ${count} gifts, ${_ml.price2str(income)} credits`),
-          $element('li', null, `- Daily: ${Math.round(count / days * 10) / 10} gifts, ${_ml.price2str(income / days)} credits`)
+          $element('li', null, `- Total: ${count} gift(s), ${_ml.price2str(income)} credits`),
+          $element('li', null, `- Daily: ${Math.round(count / days * 10) / 10} gift(s), ${_ml.price2str(income / days)} credits`)
         );
       },
       reset_log: function () {
@@ -5502,164 +5833,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       },
     };
 
-    // Initializing List
-    if ($id('messagebox_outer')) {
-      let monster;
-      let gift;
-      get_message(null, true).forEach((msg) => {
-        if (!msg) {
-          return;
-        } else if (/^(.+) brought you (?:a gift|some gifts)!$/.test(msg)) {
-          monster = RegExp.$1.toLowerCase();
-          _ml.main.gains[monster] = [];
-        } else if (/^Received (?:a|some) (.+)$/.test(msg)) {
-          gift = RegExp.$1;
-          _ml.main.gains[monster].push(gift);
-        } else {
-          popup(msg);
-        }
-      });
-      if ($config.settings.monsterLabCloseDefaultPopup) {
-        $id('messagebox_outer').classList.add('hvut-none');
-      }
-    }
-
-    _ml.mobs[-1] = { log: { date: _ml.now, gifts: (new Array(54)).fill(0) }, node: {} };
-
-    $qsa('#slot_pane > div').forEach((div, i) => {
-      const index = i + 1;
-      if (div.getAttribute('onclick').includes('&create=new')) {
-        _ml.log[index] = null;
-        return;
-      }
-
-      let log = _ml.log[index];
-      if (!log) {
-        log = { date: _ml.now, update: 0, pl: null, wins: 0, kills: 0, pa: [], er: [], ct: [], gifts: [] };
-        _ml.log[index] = log;
-        for (let i = 0; i < 6; i++) {
-          log.pa[i] = [0, 0];
-          log.er[i] = [0, 0];
-        }
-        for (let i = 0; i < 12; i++) {
-          log.ct[i] = [0, 0, 0];
-        }
-        for (let i = 0; i < 54; i++) {
-          log.gifts[i] = 0;
-        }
-      }
-      if (_ml.mobs[-1].log.date > log.date) {
-        _ml.mobs[-1].log.date = log.date;
-      }
-
-      const mob = { index, log, status: -1, pa: [], er: [], ct: [], node: { div: div } };
-      _ml.mobs[mob.index] = mob;
-
-      mob.name = div.children[1].textContent;
-      mob.class = div.children[3].textContent;
-      mob.pl = parseInt(div.children[2].textContent.slice(4));
-      div.children[2].textContent = mob.pl;
-      if (mob.pl !== mob.log.pl) {
-        mob.update_needed = true;
-      }
-      mob.wins = mob.log.wins;
-      mob.kills = mob.log.kills;
-      for (let i = 0; i < 6; i++) {
-        mob.pa[i] = { value: log.pa[i][0], to: 0 };
-        mob.er[i] = { value: log.er[i][0], to: 0 };
-      }
-      for (let i = 0; i < 12; i++) {
-        mob.ct[i] = { value: log.ct[i][0], to: 0, max: log.ct[i][2] };
-      }
-
-      const hungerdiv = div.children[4];
-      const moralediv = div.children[5];
-      hungerdiv.dataset.action = 'hunger';
-      hungerdiv.dataset.index = index;
-      moralediv.dataset.action = 'morale';
-      moralediv.dataset.index = index;
-
-      mob.node.hungerbar = hungerdiv.firstElementChild.firstElementChild;
-      mob.node.moralebar = moralediv.firstElementChild.firstElementChild;
-      mob.hunger = parseInt(mob.node.hungerbar.style.width) * 200;
-      mob.morale = parseInt(mob.node.moralebar.style.width) * 200;
-      mob.node.hunger = $element('div', hungerdiv.firstElementChild, [mob.hunger, '.hvut-ml-feed']);
-      mob.node.morale = $element('div', moralediv.firstElementChild, [mob.morale, '.hvut-ml-feed']);
-      mob.node.wins = $element('div', div, ['.hvut-ml-wins', { dataset: { action: 'update', index } }]);
-      mob.node.gains = $element('div', div, ['.hvut-ml-gains']);
-      mob.node.gifts = $element('div', div, { dataset: { action: 'log', index } });
-
-      if (mob.log.update) {
-        mob.node.wins.textContent = `${mob.wins} / ${mob.kills}`;
-        mob.node.wins.dataset.update = new Date(mob.log.update).toLocaleDateString();
-        if (mob.log.update < Date.now() - 7 * 24 * 60 * 60 * 1000) {
-          mob.node.wins.classList.add('hvut-ml-outdated');
-        }
-      } else {
-        mob.node.wins.textContent = '-';
-      }
-
-      const gains = _ml.main.gains[mob.name.toLowerCase()];
-      if (gains) {
-        mob.gains = gains.length;
-        div.classList.add('hvut-ml-new');
-        $element('span', mob.node.gains, gains.length);
-        const ul = $element('ul', mob.node.gains);
-        gains.forEach((g) => {
-          $element('li', ul, g);
-          mob.log.gifts[_ml.materials.indexOf(g)]++;
-        });
-      }
-
-      for (let i = 0; i < 54; i++) {
-        _ml.mobs[-1].log.gifts[i] += mob.log.gifts[i];
-      }
-      mob.gifts = mob.log.gifts.reduce((s, e) => (s + e), 0);
-      mob.node.gifts.textContent = mob.gifts;
-    });
-
-    $config.set('ml_log', _ml.log);
-
-    $id('monster_list').addEventListener('click', _ml.main.click, true);
-    $id('monster_list').addEventListener('mouseover', _ml.main.mouseover);
-    $id('monster_list').addEventListener('mouseout', _ml.main.mouseout);
-
-    const sort_div = $element('div', [$id('slot_pane'), 'beforebegin'], ['.hvut-ml-sort hvut-cphu-sub']);
-    _ml.main.node.sort = {
-      index: $element('span', sort_div, [{ textContent: '#' }, '!width: 30px;', { dataset: { action: 'sort', key: 'index' } }]),
-      name: $element('span', sort_div, ['Name', '!width: 210px;', { dataset: { action: 'sort', key: 'name' } }]),
-      class: $element('span', sort_div, ['Class', '!width: 70px;', { dataset: { action: 'sort', key: 'class' } }]),
-      pl: $element('span', sort_div, ['PL', '!width: 40px;', { dataset: { action: 'sort', key: 'pl' } }]),
-      wins: $element('span', sort_div, ['Wins', '!width: 40px;', { dataset: { action: 'sort', key: 'wins' } }]),
-      kills: $element('span', sort_div, ['Kills', '!width: 40px;', { dataset: { action: 'sort', key: 'kills' } }]),
-      gains: $element('span', sort_div, ['+', '!width: 25px;', { dataset: { action: 'sort', key: 'gains' } }]),
-      gifts: $element('span', sort_div, ['Gifts', '!width: 50px;', { dataset: { action: 'sort', key: 'gifts' } }]),
-      morale: $element('span', sort_div, ['Morale', '!width: 200px;', { dataset: { action: 'sort', key: 'morale' } }]),
-      hunger: $element('span', sort_div, ['Hunger', '!width: 200px;', { dataset: { action: 'sort', key: 'hunger' } }]),
-    };
-
-    if ($config.settings.monsterLabDefaultSort === 'index') {
-      _ml.main.sort.key = 'index';
-      _ml.main.sort.order = 1;
-      _ml.main.node.sort.index.classList.add('hvut-ml-sort-current');
-    } else {
-      _ml.main.sort($config.settings.monsterLabDefaultSort);
-    }
-
-    const side_div = $element('div', $id('monster_outer'), ['.hvut-side hvut-ml-side']);
-    $input(['button', '礼物统计'], side_div, null, () => { _ml.main.toggle_summary(); });
-    $input(['button', '怪物日志'], side_div, null, () => { _ml.main.toggle_log(-1); });
-    $input(['button', '重置日志'], side_div, null, () => { _ml.main.reset_log(); });
-    $input(['button', '材料价格'], side_div, { className: 'hvut-side-margin' }, () => { $price.edit('Materials', 'ma', _ml.main.edit_price); });
-    $input(['button', '更新战绩'], side_div, null, () => { _ml.main.feedall(); });
-    $input(['button', '批量升级'], side_div, { id: 'hvut-ml-up-button' }, () => { _ml.upgrade.toggle(); });
-    $input(['button', '战力模拟'], side_div, null, () => { _ml.plc.toggle(); });
-
+    _ml.main.init();
+    _ml.main.parse();
     _ml.main.make_summary();
 
     // Monster Upgrader
     _ml.upgrade = {
-
+      node: {},
       pa: [
         { query: 'pa_str', text: 'STR', crystal: 'Crystal of Vigor' },
         { query: 'pa_dex', text: 'DEX', crystal: 'Crystal of Finesse' },
@@ -5690,7 +5870,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         { query: 'magmit', text: 'Warding', desc: 'Increases monster magical mitigation by 1%' },
         { query: 'atkspd', text: 'Swiftness', desc: 'Increases monster attack speed by 2.5%' },
       ],
-
       pa_pl: [0],
       er_pl: [0],
       pa_crystal: [0],
@@ -5698,35 +5877,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       pa_morale: [0],
       er_morale: [0],
 
-      node: {
-        button: $id('hvut-ml-up-button'),
-      },
-
-      mousedown: function (e) {
-        const target = e.target.closest('[data-action]');
-        if (!target) {
-          return;
-        }
-        const { action, index, type, item, key } = target.dataset;
-        if (action === 'sort') {
-          _ml.upgrade.sort(key);
-        } else if (action === 'reset') {
-          _ml.upgrade.reset(index);
-        } else if (action === 'upgrade') {
-          const inc = (e.button === 0) ? 1 : (e.button === 2) ? -1 : 0;
-          _ml.upgrade.exec(index, type, item, inc);
-        }
-      },
-      contextmenu: function (e) {
-        e.preventDefault();
-      },
-
       init: async function () {
         if (_ml.upgrade.inited) {
           return;
         }
         _ml.upgrade.inited = true;
 
+        _ml.upgrade.node.button = $id('hvut-ml-up-button');
         _ml.upgrade.node.button.disabled = true;
         await $item.once();
         _ml.upgrade.pa.forEach((e) => {
@@ -5777,11 +5934,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.upgrade.ct.ul = $element('ul', bottom, ['.hvut-ml-up-token']);
 
         const buttons = $element('div', bottom, ['.hvut-ml-up-buttons']);
-        $input(['button', '保存'], buttons, null, () => { _ml.upgrade.save(); });
-        $input(['button', '还原'], buttons, null, () => { _ml.upgrade.load(); });
-        _ml.upgrade.node.update = $input(['button', '更新'], buttons, null, () => { _ml.upgrade.force_update(); });
+        $input(['button', 'Save'], buttons, null, () => { _ml.upgrade.save(); });
+        $input(['button', 'Revert'], buttons, null, () => { _ml.upgrade.load(); });
+        _ml.upgrade.node.update = $input(['button', 'Update'], buttons, null, () => { _ml.upgrade.force_update(); });
         _ml.upgrade.node.run = $input(['button', 'Run'], buttons, null, () => { _ml.upgrade.run(); });
-        $input(['button', '关闭'], buttons, null, () => { _ml.upgrade.toggle(); });
+        $input(['button', 'Close'], buttons, null, () => { _ml.upgrade.toggle(); });
 
         for (let i = 0; i < 25; i++) {
           _ml.upgrade.pa_pl[i + 1] = _ml.upgrade.pa_pl[i] + (3 + i * 0.5);
@@ -5863,7 +6020,24 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.upgrade.sum();
         _ml.upgrade.load();
       },
-
+      mousedown: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, index, type, item, key } = target.dataset;
+        if (action === 'sort') {
+          _ml.upgrade.sort(key);
+        } else if (action === 'reset') {
+          _ml.upgrade.reset(index);
+        } else if (action === 'upgrade') {
+          const inc = (e.button === 0) ? 1 : (e.button === 2) ? -1 : 0;
+          _ml.upgrade.exec(index, type, item, inc);
+        }
+      },
+      contextmenu: function (e) {
+        e.preventDefault();
+      },
       update: async function () {
         const mobs = _ml.mobs.filter((mob) => mob.update_needed);
         const total = mobs.length;
@@ -5901,7 +6075,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           _ml.upgrade.node.run.value = 'Completed';
         }
       },
-
       force_update: function () {
         _ml.mobs.forEach((mob) => {
           mob.log.pl = -1;
@@ -5909,7 +6082,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         $config.set('ml_log', _ml.log);
         location.href = location.href;
       },
-
       sort: function (key) {
         if (!['index', 'name', 'class', 'pl', 'wins', 'kills', 'gains', 'gifts', 'morale', 'hunger'].includes(key)) {
           return;
@@ -5927,7 +6099,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.upgrade.sort.list.sort((a, b) => ((a[key] == b[key]) ? 0 : (a[key] == undefined) ? 1 : (b[key] == undefined) ? -1 : (a[key] > b[key] ? 1 : -1) * order));
         _ml.upgrade.node.table.append(..._ml.upgrade.sort.list.map((mob) => mob.node.tr));
       },
-
       exec: function (index, type, item, inc) {
         let mobs;
         if (index === 'all') {
@@ -5982,7 +6153,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
         _ml.upgrade.sum(true);
       },
-
       reset: function (index) {
         let mobs;
         if (index === 'all') {
@@ -6007,7 +6177,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         });
         //_ml.upgrade.sum(true);
       },
-
       calc: function (mob) {
         mob.pa.forEach((e) => {
           e.require = _ml.upgrade.pa_crystal[e.to] - _ml.upgrade.pa_crystal[e.value];
@@ -6028,7 +6197,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           + mob.er.reduce((s, e) => (s + (_ml.upgrade.er_morale[e.to] - _ml.upgrade.er_morale[e.value])), 0)
         );
       },
-
       sum: function (calc) {
         if (calc) {
           _ml.upgrade.pa.forEach((e) => {
@@ -6092,13 +6260,12 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.upgrade.stock = !$qs('.hvut-ml-up-nostock');
         _ml.upgrade.node.run.disabled = !_ml.upgrade.stock;
       },
-
       run: async function () {
         if (!_ml.upgrade.stock) {
           alert('Not enough Crystals or Chaos Tokens');
           return;
         }
-        if (!confirm('您确定要升级所选的怪物吗?')) {
+        if (!confirm('Are you sure that you wish to upgrade the selected monsters?')) {
           return;
         }
 
@@ -6166,7 +6333,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         await Promise.all(requests);
         _ml.upgrade.update();
       },
-
       save: function () {
         _ml.mobs.forEach((mob) => {
           mob.log.pa.forEach((e, i) => {
@@ -6204,12 +6370,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.upgrade.node.div?.classList.toggle('hvut-none');
         _ml.upgrade.init();
       },
-
     };
 
     // PL-Crystal Calculator
     _ml.plc = {
-
+      node: {},
       preset: {
         '250': { count: 1, pa_lv: 5, pa_up: 4, er_lv: 14, er_up: 0 },
         '500': { count: 1, pa_lv: 9, pa_up: 3, er_lv: 21, er_up: 4 },
@@ -6227,32 +6392,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         er_pl: [0],
       },
       list: [],
-      node: {},
 
-      click: function (e) {
-        const target = e.target.closest('[data-action]');
-        if (!target) {
-          return;
-        }
-        const { action, index, type, value } = target.dataset;
-        if (action === 'add') {
-          _ml.plc.add(_ml.plc.preset[value]);
-        } else if (action === 'remove') {
-          _ml.plc.remove(index);
-        } else if (action === 'change') {
-          _ml.plc.change(index, type, value);
-        }
-      },
-      input: function (e) {
-        const target = e.target.closest('[data-action]');
-        if (!target) {
-          return;
-        }
-        const { action, index, type } = target.dataset;
-        if (action === 'change') {
-          _ml.plc.change(index, type);
-        }
-      },
       init: function () {
         if (_ml.plc.inited) {
           return;
@@ -6296,10 +6436,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         node.right = $element('div', node.div, ['.hvut-ml-plc-right']);
 
         const buttons = $element('div', node.right, ['.hvut-ml-plc-buttons']);
-        $input(['button', '保存'], buttons, null, () => { _ml.plc.save(); });
-        $input(['button', '还原'], buttons, null, () => { _ml.plc.load(); });
-        $input(['button', '关闭'], buttons, null, () => { _ml.plc.toggle(); });
-        $input(['button', '制造怪物'], buttons, { dataset: { action: 'add' } });
+        $input(['button', 'Save'], buttons, null, () => { _ml.plc.save(); });
+        $input(['button', 'Revert'], buttons, null, () => { _ml.plc.load(); });
+        $input(['button', 'Close'], buttons, null, () => { _ml.plc.toggle(); });
+        $input(['button', 'Add Monster'], buttons, { dataset: { action: 'add' } });
         Object.keys(_ml.plc.preset).forEach((pl) => { $input(['button', pl], buttons, { dataset: { action: 'add', value: pl } }); });
 
         $element('table', node.right, ['.hvut-ml-plc-table',
@@ -6324,6 +6464,30 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
         _ml.plc.load();
       },
+      click: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, index, type, value } = target.dataset;
+        if (action === 'add') {
+          _ml.plc.add(_ml.plc.preset[value]);
+        } else if (action === 'remove') {
+          _ml.plc.remove(index);
+        } else if (action === 'change') {
+          _ml.plc.change(index, type, value);
+        }
+      },
+      input: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, index, type } = target.dataset;
+        if (action === 'change') {
+          _ml.plc.change(index, type);
+        }
+      },
       save: function () {
         $config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json));
         _ml.plc.load();
@@ -6337,7 +6501,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.plc.node.div?.classList.toggle('hvut-none');
         _ml.plc.init();
       },
-
       add: function (j) {
         const m = { json: { count: 1, pa_lv: 0, pa_up: 0, er_lv: 0, er_up: 0 }, node: {} };
         const index = _ml.plc.list.length;
@@ -6409,8 +6572,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         } else if (type === 'count') {
           m.json[type] = (value === undefined ? parseInt(m.node[type].value) : parseInt(value)) || 0;
         } else {
-          let lv = m.json[type + '_lv'];
-          let up = m.json[type + '_up'];
+          let lv = m.json[`${type}_lv`];
+          let up = m.json[`${type}_up`];
           const max = (type === 'pa') ? 25 : (type === 'er') ? 50 : 0;
           if (value === '+') {
             lv++;
@@ -6437,8 +6600,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
             lv = max;
             up = 0;
           }
-          m.json[type + '_lv'] = lv;
-          m.json[type + '_up'] = up;
+          m.json[`${type}_lv`] = lv;
+          m.json[`${type}_up`] = up;
         }
 
         if (m.node.count.validity.valid) {
@@ -6500,7 +6663,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.plc.node.er_total.textContent = Math.round(er).toLocaleString();
         _ml.plc.node.er_total_diff.textContent = (diff < 0) ? `(+${Math.round(-diff).toLocaleString()})` : '';
       },
-
     };
   }
 } else
@@ -6509,8 +6671,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
 //* [12] Bazaar - MoogleMail
 if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) {
-  _mm.node = {};
-
   _mm.attach_text = function (item) {
     if (!item.data.count) {
       return '';
@@ -6549,6 +6709,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
     }
   };
 
+  _mm.dts = function (date, year = 2) { // date_to_string
+    const d = new Date(date * 1000);
+    const yy = d.getFullYear().toString().slice(-year);
+    const MM = (d.getMonth() + 1).toString().padStart(2, '0');
+    const dd = d.getDate().toString().padStart(2, '0');
+    const HH = d.getHours().toString().padStart(2, '0');
+    const mm = d.getMinutes().toString().padStart(2, '0');
+    return `${yy}-${MM}-${dd} ${HH}:${mm}`;
+  };
+
   // MM WRITE
   if (_query.filter === 'new' && _query.hvut !== 'disabled') {
     if ($id('mmail_attachremove')) {
@@ -6557,103 +6727,143 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       return;
     }
 
-    _mm.mmtoken = $id('mailform').elements.mmtoken.value;
+    _mm.write = {
+      node: {},
 
-    _mm.write_calc = function () {
-      const queue = [].concat(_mm.credits_list, _mm.equip_list, _mm.item_list).filter((e) => e.node.check.checked && e.data.count);
-      let atext = '';
-      let cod_total = 0;
-      queue.forEach((e) => {
-        atext += `${e.data.atext}\n`;
-        cod_total += e.data.cod;
-      });
-      if (cod_total) {
-        if (queue.length > 1) {
-          atext += `\nTotal: ${cod_total.toLocaleString()} Credits`;
+      init: function () {
+        _mm.mmtoken = $id('mailform').elements.mmtoken.value;
+
+        _mm.write.node.field = $element('fieldset', $id('mmail_outer'), ['.hvut-mm-field']);
+        _mm.write.node.left = $element('div', _mm.write.node.field, ['.hvut-mm-left']);
+
+        $input(['button', 'SEND'], _mm.write.node.left, { tabIndex: 4, style: 'width: 60px; height: 52px; margin-top: 4px;' }, () => { _mm.write.pack(); });
+        $element('span', _mm.write.node.left, ['To:', '!width: 60px;']);
+        _mm.write.node.to_name = $input('text', _mm.write.node.left, { value: $id('mailform').elements.message_to_name.value || '', tabIndex: 1, style: 'width: 360px; font-weight: bold;' });
+        $input(['button', 'Edit List'], _mm.write.node.left, { style: 'width: 80px;' }, () => { _mm.userlist.popup(); });
+        $element('span', _mm.write.node.left, ['Subject:', '!width: 60px;']);
+        _mm.write.node.subject = $input('text', _mm.write.node.left, { value: $id('mailform').elements.message_subject.value || '', tabIndex: 2, style: 'width: 450px; font-weight: bold;' });
+
+        _mm.write.node.to_name.setAttribute('list', 'hvut-mm-userlist');
+        _mm.write.node.to_name.focus();
+        _mm.write.node.userlist = $element('datalist', _mm.write.node.left, ['#hvut-mm-userlist']);
+        _mm.userlist.create();
+
+        $element('span', _mm.write.node.left, ['Options:', '!width: 60px;']);
+        _mm.write.node.cod_deduction = $input(['text', null, 'CoD Deduction'], _mm.write.node.left, { pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'width: 60px; text-align: right;' }, { input: (e) => { _mm.write.calc(e); } });
+        if (_server.isekai) {
+          _mm.write.node.cod_persistent = $input(['checkbox', null, 'Persistent CoD'], _mm.write.node.left, { checked: true });
         }
-        const cod_deduction = _mm.parse_price(_mm.node.write_cod_deduction.value);
-        if (cod_deduction) {
-          const cod = cod_total - cod_deduction;
-          atext += `\nDeduction: -${cod_deduction.toLocaleString()} Credits`;
-          atext += `\nCoD: ${cod.toLocaleString()} Credits`;
-          if (cod < 10) {
-            atext += '\n=> CoD: 0 Credits';
+
+        _mm.write.node.body = $element('textarea', _mm.write.node.left, { value: $id('mailform').elements.message_body.value || '', tabIndex: 3, spellcheck: false, style: 'width: 580px; height: 250px; margin-top: 10px;' });
+        _mm.write.node.log = $element('textarea', _mm.write.node.left, { readOnly: true, spellcheck: false, style: 'width: 480px; height: 200px; color: unset;' });
+        $mail.log = _mm.write.log;
+
+        const attach_div = $element('div', _mm.write.node.left, ['.hvut-mm-attachtext']);
+        $input(['button', 'ATTACH from TEXT'], attach_div);
+        $input(['button', 'Available Formats'], attach_div, null, () => { popup_text('100 x Health Potion @ 10\n(200) Mana Potion @ 90\nSpirit Potion @ 90 x 300\nLast Elixir @ 1.5k (100)', 300, 100); });
+        $input(['button', 'CALC'], attach_div, null, () => { _mm.item.text(); });
+        $input(['button', 'ATTACH'], attach_div, null, () => { _mm.item.text(true); });
+        $input(['button', 'RESET'], attach_div, null, () => { _mm.item.search('', true); });
+
+        _mm.write.node.right = $element('div', _mm.write.node.field, ['.hvut-mm-right']);
+        _mm.write.node.tabs = $element('div', _mm.write.node.right, ['.hvut-mm-tabs']);
+        $input(['button', 'Use Default MoogleMail'], _mm.write.node.tabs, null, () => { location.href = location.href + '&hvut=disabled'; });
+      },
+      calc: function () {
+        const queue = [].concat(_mm.credits.list, _mm.equip.list, _mm.item.list).filter((e) => e.node.check.checked && e.data.count);
+        let atext = '';
+        let cod_total = 0;
+        queue.forEach((e) => {
+          atext += `${e.data.atext}\n`;
+          cod_total += e.data.cod;
+        });
+        if (cod_total) {
+          if (queue.length > 1) {
+            atext += `\nTotal: ${cod_total.toLocaleString()} Credits`;
+          }
+          const cod_deduction = _mm.parse_price(_mm.write.node.cod_deduction.value);
+          if (cod_deduction) {
+            const cod = cod_total - cod_deduction;
+            atext += `\nDeduction: -${cod_deduction.toLocaleString()} Credits`;
+            atext += `\nCoD: ${cod.toLocaleString()} Credits`;
+            if (cod < 10) {
+              atext += '\n=> CoD: 0 Credits';
+            }
           }
         }
-      }
-      _mm.write_log(atext, true);
-    };
-
-    _mm.write_pack = function (e) {
-      if (_mm.write_pack.current) {
-        popup('Processing other requests...');
-        return;
-      }
-
-      let selected;
-      if (!e) {
-        selected = [].concat(_mm.credits_list, _mm.equip_list, _mm.item_list).filter((e) => e.node.check.checked && e.data.count);
-      } else if (Array.isArray(e)) {
-        selected = e;
-      } else if (e.data) {
-        selected = [e];
-        e.data.atext = _mm.attach_text(e);
-      } else {
-        return;
-      }
-      if (selected.some((e) => e.data.pane === 'equip' && e.info.protected)) {
-        if (!confirm('您确定要添加受保护的装备吗?')) {
+        _mm.write.log(atext, true);
+      },
+      pack: function (e) {
+        if (_mm.write.pack.current) {
+          popup('Processing other requests...');
           return;
         }
-      }
-      if (selected.some((e) => e.data.count > e.data.stock)) {
-        alert('Insufficient number of items');
-        return;
-      }
-      if (!_mm.node.write_to_name.value) {
-        alert('No recipient');
-        return;
-      }
-      _mm.write_pack.current = true;
-      _mm.node.write_field.disabled = true;
-      _mm.userlist.add(_mm.node.write_to_name.value);
 
-      const attach = selected.map((e) => e.data);
-      const mail = {
-        to_name: _mm.node.write_to_name.value,
-        subject: _mm.node.write_subject.value,
-        body: _mm.node.write_body.value,
-        attach,
-        cod_deduction: _mm.parse_price(_mm.node.write_cod_deduction.value),
-        cod_persistent: _server.isekai && _mm.node.write_cod_persistent.checked,
-      };
-      $mail.request(mail);
-    };
+        let selected;
+        if (!e) {
+          selected = [].concat(_mm.credits.list, _mm.equip.list, _mm.item.list).filter((e) => e.node.check.checked && e.data.count);
+        } else if (Array.isArray(e)) {
+          selected = e;
+        } else if (e.data) {
+          selected = [e];
+          e.data.atext = _mm.attach_text(e);
+        } else {
+          return;
+        }
+        if (selected.some((e) => e.data.pane === 'equip' && e.info.protected)) {
+          if (!confirm('Are you sure that you wish to attach the protected equipment?')) {
+            return;
+          }
+        }
+        if (selected.some((e) => e.data.count > e.data.stock)) {
+          alert('Insufficient number of items');
+          return;
+        }
+        if (!_mm.write.node.to_name.value) {
+          alert('No recipient');
+          return;
+        }
+        _mm.write.pack.current = true;
+        _mm.write.node.field.disabled = true;
+        _mm.userlist.add(_mm.write.node.to_name.value);
 
-    _mm.write_log = function (text, clear) {
-      if (clear) {
-        _mm.node.write_log.value = '';
-      }
-      _mm.node.write_log.value += text + '\n';
-      _mm.node.write_log.scrollTop = _mm.node.write_log.scrollHeight;
-    };
-
-    _mm.write_toggle = function (div) {
-      if (div === _mm.write_toggle.current) {
-        return;
-      }
-      if (_mm.write_toggle.current) {
-        _mm.node[_mm.write_toggle.current].classList.add('hvut-none');
-      }
-      _mm.write_toggle.current = div;
-      _mm.node[_mm.write_toggle.current].classList.remove('hvut-none');
+        const attach = selected.map((e) => e.data);
+        const mail = {
+          to_name: _mm.write.node.to_name.value,
+          subject: _mm.write.node.subject.value,
+          body: _mm.write.node.body.value,
+          attach,
+          cod_deduction: _mm.parse_price(_mm.write.node.cod_deduction.value),
+          cod_persistent: _server.isekai && _mm.write.node.cod_persistent.checked,
+        };
+        $mail.request(mail);
+      },
+      log: function (text, clear) {
+        if (clear) {
+          _mm.write.node.log.value = '';
+        }
+        _mm.write.node.log.value += text + '\n';
+        _mm.write.node.log.scrollTop = _mm.write.node.log.scrollHeight;
+      },
+      toggle: function (panel) {
+        const prev = _mm.write.toggle.current;
+        if (panel === prev) {
+          return;
+        }
+        if (prev) {
+          _mm[prev].node.div.classList.add('hvut-none');
+        }
+        _mm.write.toggle.current = panel;
+        _mm[panel].node.div.classList.remove('hvut-none');
+      },
     };
 
     _mm.userlist = {
       list: $config.get('mm_userlist', []),
+
       create: function () {
-        _mm.node.write_userlist.innerHTML = '';
-        _mm.userlist.list.forEach((u) => { $element('option', _mm.node.write_userlist, { value: u }); });
+        _mm.write.node.userlist.innerHTML = '';
+        _mm.userlist.list.forEach((u) => { $element('option', _mm.write.node.userlist, { value: u }); });
       },
       add: function (user) {
         if (!user) {
@@ -6665,7 +6875,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       save: function () {
         _mm.userlist.list = _mm.userlist.list.filter((e, i, a) => e && a.indexOf(e) === i);
         $config.set('mm_userlist', _mm.userlist.list);
-        if (_mm.node.write_userlist) {
+        if (_mm.write.node.userlist) {
           _mm.userlist.create();
         }
       },
@@ -6686,7 +6896,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       .hvut-mm-field { margin: 0; padding: 0; border: 0; }
       .hvut-mm-left { float: left; margin-left: 20px; padding-top: 10px; width: 600px; height: 600px; font-size: 10pt; text-align: left; line-height: 30px; }
       .hvut-mm-right { float: right; margin-right: 20px; width: 550px; height: 620px; font-size: 10pt; text-align: left; }
-      #mmail_outer input[type='checkbox'] { vertical-align: middle; }
 
       .hvut-mm-left > span, .hvut-mm-left > label { display: inline-block; line-height: 22px; }
       .hvut-mm-left > span { text-align: right; }
@@ -6695,10 +6904,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       .hvut-mm-attachtext { float: right; width: 90px; margin: 2px 5px; display: flex; flex-direction: column; }
       .hvut-mm-attachtext input { margin: 3px 0; white-space: normal; }
 
-      .hvut-mm-tabs { padding: 10px 0; border-bottom: 3px double; display: flex; line-height: 16px; font-weight: bold; }
-      .hvut-mm-tabs span { display: inline-block; margin: 0 10px; padding: 2px 5px; border: 1px solid; }
-      .hvut-mm-tabs span:first-child { order: 1; margin-left: auto; }
-      .hvut-mm-attach-menu { margin-bottom: 10px; padding: 5px 0; border-bottom: 3px double; line-height: 30px; }
+      .hvut-mm-tabs { padding: 10px; border-bottom: 3px double var(--color-border-default); display: flex; line-height: 16px; font-weight: bold; }
+      .hvut-mm-tabs input { padding: 2px 5px; border-width: 1px; border-radius: 0; }
+      .hvut-mm-tabs input:first-child { order: 1; margin-left: auto; }
+      .hvut-mm-attach-menu { margin-bottom: 10px; padding: 5px 0; border-bottom: 3px double var(--color-border-default); line-height: 30px; }
       .hvut-mm-disabled { padding: 10px; font-weight: bold; }
 
       .hvut-mm-attach { height: 475px; overflow-y: scroll; }
@@ -6708,525 +6917,527 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       .hvut-mm-attach .itemlist-credits td:nth-child(1) { width: 100px !important; }
       .hvut-mm-attach .itemlist-credits td:nth-child(2) { width: 145px }
       .hvut-mm-attach input { margin: 0 1px; }
-      .hvut-mm-attach input:invalid, .hvut-mm-invalid { color: #e00 !important; }
+      .hvut-mm-attach input:invalid, .hvut-mm-invalid { color: var(--color-font-warn) !important; }
       .hvut-mm-count { width: 50px; text-align: right; }
       .hvut-mm-price { width: 50px; text-align: right; }
       .hvut-mm-cod { width: 70px; text-align: right; }
       .hvut-mm-send { width: 40px; }
       .hvut-mm-sub { position: absolute; right: 0; z-index: 1; }
-      .hvut-mm-eid { visibility: hidden; position: absolute; right: 125px; padding: 0 3px !important; border: 1px solid; line-height: 20px; background-color: #fff; }
+      .hvut-mm-eid { visibility: hidden; position: absolute; right: 125px; padding: 0 3px !important; border: 1px solid var(--color-border-default); line-height: 20px; background-color: var(--color-bg-light); }
       .eqp:hover .hvut-mm-eid { visibility: visible; }
     `);
 
-    _mm.node.write_field = $element('fieldset', $id('mmail_outer'), ['.hvut-mm-field']);
-    _mm.node.write_left = $element('div', _mm.node.write_field, ['.hvut-mm-left']);
-
-    $input(['button', 'SEND'], _mm.node.write_left, { tabIndex: 4, style: 'width: 60px; height: 52px; margin-top: 4px;' }, () => { _mm.write_pack(); });
-    $element('span', _mm.node.write_left, ['To:', '!width: 60px;']);
-    _mm.node.write_to_name = $input('text', _mm.node.write_left, { value: $id('mailform').elements.message_to_name.value || '', tabIndex: 1, style: 'width: 360px; font-weight: bold;' });
-    $input(['button', '编辑列表'], _mm.node.write_left, { style: 'width: 80px;' }, () => { _mm.userlist.popup(); });
-    $element('span', _mm.node.write_left, ['Subject:', '!width: 60px;']);
-    _mm.node.write_subject = $input('text', _mm.node.write_left, { value: $id('mailform').elements.message_subject.value || '', tabIndex: 2, style: 'width: 450px; font-weight: bold;' });
-
-    _mm.node.write_to_name.setAttribute('list', 'hvut-mm-userlist');
-    _mm.node.write_userlist = $element('datalist', _mm.node.write_left, ['#hvut-mm-userlist']);
-    _mm.userlist.create();
-
-    $element('span', _mm.node.write_left, ['选项:', '!width: 60px;']);
-    _mm.node.write_cod_deduction = $input(['text', '货到付款金额'], _mm.node.write_left, { pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'width: 60px; text-align: right;' }, { input: (e) => { _mm.write_calc(e); } });
-    if (_server.isekai) {
-      _mm.node.write_cod_persistent = $input(['checkbox', '主世界货到付款'], _mm.node.write_left, { checked: true });
-    }
-
-    _mm.node.write_body = $element('textarea', _mm.node.write_left, { value: $id('mailform').elements.message_body.value || '', tabIndex: 3, spellcheck: false, style: 'width: 580px; height: 250px; margin-top: 10px;' });
-    _mm.node.write_log = $element('textarea', _mm.node.write_left, { readOnly: true, spellcheck: false, style: 'width: 480px; height: 200px; color: unset;' });
-    $mail.log = _mm.write_log;
-
-    const attach_div = $element('div', _mm.node.write_left, ['.hvut-mm-attachtext']);
-    $input(['button', '通过文本添加'], attach_div);
-    $input(['button', '可用的格式'], attach_div, null, () => { popup_text('100 x Health Potion @ 10\n(200) Mana Potion @ 90\nSpirit Potion @ 90 x 300\nLast Elixir @ 1.5k (100)', 300, 100); });
-    $input(['button', '计算金额'], attach_div, null, () => { _mm.item_text(); });
-    $input(['button', '添加附件'], attach_div, null, () => { _mm.item_text(true); });
-    $input(['button', '重置'], attach_div, null, () => { _mm.item_search('', true); });
-
-    _mm.node.write_right = $element('div', _mm.node.write_field, ['.hvut-mm-right']);
-    _mm.node.write_tabs = $element('div', _mm.node.write_right, ['.hvut-mm-tabs hvut-cphu-sub']);
-    $element('span', _mm.node.write_tabs, '使用原始邮件界面', () => { location.href = location.href + '&hvut=disabled'; });
+    _mm.write.init();
 
     // MM item
-    _mm.item_change = function (e) {
-      const target = e.target.closest('[data-action]');
-      if (!target) {
-        return;
-      }
-      const { action, iid } = target.dataset;
-      const it = iid && _mm.item_list.find((it) => it.info.iid == iid);
-      if (action === 'calc') {
-        it.data.count = _mm.parse_count(it.node.count.value);
-        if (it.data.count > it.data.stock) {
-          it.node.count.classList.add('hvut-mm-invalid');
-        } else {
-          it.node.count.classList.remove('hvut-mm-invalid');
+    _mm.item = {
+      node: {},
+      list: [],
+
+      init: function () {
+        _mm.item.node.div = $element('div', null, ['.hvut-none']);
+        _mm.item.node.menu = $element('div', _mm.item.node.div, ['.hvut-mm-attach-menu']);
+        $input(['button', 'All'], _mm.item.node.menu, null, () => { _mm.item.search(''); });
+        $price.init();
+        Object.keys($price.groups).forEach((g) => {
+          $input(['button', g], _mm.item.node.menu, null, () => { _mm.item.search($price.groups[g]); });
+        });
+        $element('br', _mm.item.node.menu);
+        _mm.item.node.search = $input('text', _mm.item.node.menu, { placeholder: 'heal dra, man pot, elix', style: 'width: 170px;' }, { input: (e) => { _mm.item.search(e.target.value); }, keyup: (e) => { if (e.key === 'Escape') { _mm.item.search('', true); } } });
+        $input(['button', 'Clear'], _mm.item.node.menu, null, () => { _mm.item.search('', true); });
+        $input('checkbox', _mm.item.node.menu, { style: 'margin-left: 20px;' }, (e) => { _mm.item.all(e.target.checked); });
+        $input('text', _mm.item.node.menu, { placeholder: 'count', style: 'width: 50px; text-align: right;' }, { input: (e) => { _mm.item.count(e.target.value); } });
+        $input(['button', 'All'], _mm.item.node.menu, null, () => { _mm.item.count(Infinity); });
+        $input(['button', '0'], _mm.item.node.menu, null, () => { _mm.item.count(0); });
+
+        _mm.item.node.attach = $element('div', _mm.item.node.div, ['#item', '.hvut-mm-attach'], { input: (e) => { _mm.item.change(e); }, click: (e) => { _mm.item.click(e); } });
+        _mm.item.node.list = $qs('.itemlist') || $element('table');
+        _mm.item.node.attach.appendChild(_mm.item.node.list);
+
+        _mm.item.list = Array.from(_mm.item.node.list.rows).map((tr) => {
+          const div = tr.cells[0].firstElementChild;
+          const name = div.textContent;
+          const type = $item.get_type(div.getAttribute('onmouseover'));
+          const { iid } = $item.get_data(div.getAttribute('onclick'));
+          const lowercase = name.toLowerCase();
+          const stock = parseInt(tr.cells[1].textContent);
+          return { info: { name, lowercase, iid, type }, data: { pane: 'item', id: iid, name, stock, count: 0, price: 0, cod: 0 }, node: { tr } };
+        });
+        _mm.item.list.forEach((it) => {
+          it.visible = true;
+          it.node.tr.classList.add(`hvut-item-${it.info.type}`);
+          it.node.td = $element('td', it.node.tr);
+          it.node.check = $input('checkbox', it.node.td, { dataset: { action: 'calc', iid: it.info.iid } });
+          it.node.count = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-count', placeholder: 'count', pattern: '\\d+|\\d{1,3}(,\\d{3})*', max: it.data.stock });
+          it.node.price = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+          it.node.cod = $input('text', it.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true });
+          it.node.send = $input(['button', 'send'], it.node.td, { dataset: { action: 'send', iid: it.info.iid }, className: 'hvut-mm-send' });
+        });
+
+        if ($id('mmail_attachitem')) {
+          $id('item').id += '_';
+          $input(['button', 'Item'], _mm.write.node.tabs, null, () => { _mm.write.toggle('item'); });
+          _mm.write.node.right.appendChild(_mm.item.node.div);
         }
-        it.data.price = _mm.parse_price(it.node.price.value, true);
+      },
+      change: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, iid } = target.dataset;
+        const it = iid && _mm.item.list.find((it) => it.info.iid == iid);
+        if (action === 'calc') {
+          it.data.count = _mm.parse_count(it.node.count.value);
+          if (it.data.count > it.data.stock) {
+            it.node.count.classList.add('hvut-mm-invalid');
+          } else {
+            it.node.count.classList.remove('hvut-mm-invalid');
+          }
+          it.data.price = _mm.parse_price(it.node.price.value, true);
+          it.data.cod = Math.ceil(it.data.count * it.data.price);
+          it.node.cod.value = it.data.cod ? it.data.cod.toLocaleString() : '';
+          it.data.atext = _mm.attach_text(it);
+          _mm.write.calc();
+        }
+      },
+      click: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, iid } = target.dataset;
+        const it = iid && _mm.item.list.find((it) => it.info.iid == iid);
+        if (action === 'send') {
+          _mm.write.pack(it);
+        }
+      },
+      set: function (it, count, price) {
+        count = parseInt(count);
+        if (!isNaN(count)) {
+          it.data.count = Math.min(it.data.stock, Math.max(0, count));
+          it.node.count.value = it.data.count || '';
+          if (it.data.count > it.data.stock) {
+            it.node.count.classList.add('hvut-mm-invalid');
+          } else {
+            it.node.count.classList.remove('hvut-mm-invalid');
+          }
+        }
+        price = parseFloat(price);
+        if (!isNaN(price)) {
+          it.data.price = Math.max(0, price);
+          it.node.price.value = it.data.price || '';
+        }
         it.data.cod = Math.ceil(it.data.count * it.data.price);
         it.node.cod.value = it.data.cod ? it.data.cod.toLocaleString() : '';
         it.data.atext = _mm.attach_text(it);
-        _mm.write_calc();
-      }
-    };
-    _mm.item_click = function (e) {
-      const target = e.target.closest('[data-action]');
-      if (!target) {
-        return;
-      }
-      const { action, iid } = target.dataset;
-      const it = iid && _mm.item_list.find((it) => it.info.iid == iid);
-      if (action === 'send') {
-        _mm.write_pack(it);
-      }
-    };
-    _mm.item_set = function (it, count, price) {
-      count = parseInt(count);
-      if (!isNaN(count)) {
-        it.data.count = Math.min(it.data.stock, Math.max(0, count));
-        it.node.count.value = it.data.count || '';
-        if (it.data.count > it.data.stock) {
-          it.node.count.classList.add('hvut-mm-invalid');
-        } else {
-          it.node.count.classList.remove('hvut-mm-invalid');
-        }
-      }
-      price = parseFloat(price);
-      if (!isNaN(price)) {
-        it.data.price = Math.max(0, price);
-        it.node.price.value = it.data.price || '';
-      }
-      it.data.cod = Math.ceil(it.data.count * it.data.price);
-      it.node.cod.value = it.data.cod ? it.data.cod.toLocaleString() : '';
-      it.data.atext = _mm.attach_text(it);
-    };
-    _mm.item_count = function (num) {
-      if (num !== Infinity) {
-        num = parseInt(num);
-        if (!Number.isInteger(num)) {
-          return;
-        }
-      }
-      _mm.item_list.forEach((it) => {
-        if (it.node.check.checked) {
-          _mm.item_set(it, (num === Infinity) ? it.data.stock : num);
-        }
-      });
-      _mm.write_calc();
-    };
-    _mm.item_all = function (checked) {
-      _mm.item_list.forEach((it) => {
-        if (it.visible) {
-          it.node.check.checked = checked;
-          it.data.atext = _mm.attach_text(it);
-        }
-      });
-      _mm.write_calc();
-    };
-    _mm.item_search = function (value, set) {
-      if (typeof value === 'string') {
-        if (set) {
-          _mm.node.item_search.value = value;
-        } else {
-          value = value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',');
-          if (value === _mm.item_search.value) {
+      },
+      count: function (num) {
+        if (num !== Infinity) {
+          num = parseInt(num);
+          if (!Number.isInteger(num)) {
             return;
           }
         }
-      }
-
-      let results;
-      if (!value) {
-        results = _mm.item_list;
-      } else if (typeof value === 'string') {
-        value = value.split(',').map((v) => v.split(' '));
-        results = _mm.item_list.filter((e) => {
-          const lowercase = e.info.lowercase;
-          return e.node.check.checked || value.some((v) => v.every((s) => s && lowercase.includes(s)));
+        _mm.item.list.forEach((it) => {
+          if (it.node.check.checked) {
+            _mm.item.set(it, (num === Infinity) ? it.data.stock : num);
+          }
         });
-      } else { // array
-        results = _mm.item_list.filter((e) => {
-          if (value.includes(e.info.name)) {
-            return true;
-          } else if (e.node.check.checked) {
-            return true;
+        _mm.write.calc();
+      },
+      all: function (checked) {
+        _mm.item.list.forEach((it) => {
+          if (it.visible) {
+            it.node.check.checked = checked;
+            it.data.atext = _mm.attach_text(it);
+          }
+        });
+        _mm.write.calc();
+      },
+      search: function (value, set) {
+        if (typeof value === 'string') {
+          if (set) {
+            _mm.item.node.search.value = value;
           } else {
-            return false;
+            value = value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',');
+            if (value === _mm.item.search.value) {
+              return;
+            }
+          }
+        }
+
+        let results;
+        if (!value) {
+          results = _mm.item.list;
+        } else if (typeof value === 'string') {
+          value = value.split(',').map((v) => v.split(' '));
+          results = _mm.item.list.filter((e) => {
+            const lowercase = e.info.lowercase;
+            return e.node.check.checked || value.some((v) => v.every((s) => s && lowercase.includes(s)));
+          });
+        } else { // array
+          results = _mm.item.list.filter((e) => {
+            if (value.includes(e.info.name)) {
+              return true;
+            } else if (e.node.check.checked) {
+              return true;
+            } else {
+              return false;
+            }
+          });
+        }
+        _mm.item.list.forEach((e) => { e.visible = false; });
+        results.forEach((e) => { e.visible = true; });
+        _mm.item.list.forEach((e) => {
+          if (e.visible) {
+            e.node.tr.classList.remove('hvut-none');
+          } else {
+            e.node.tr.classList.add('hvut-none');
           }
         });
-      }
-      _mm.item_list.forEach((e) => { e.visible = false; });
-      results.forEach((e) => { e.visible = true; });
-      _mm.item_list.forEach((e) => {
-        if (e.visible) {
-          e.node.tr.classList.remove('hvut-none');
+      },
+      text: function (attach) {
+        const text = _mm.write.node.body.value.split('\n');
+        const textdata = {};
+        text.forEach((t) => {
+          if (t.includes('> Removed attachment:')) {
+            return;
+          }
+
+          let exec;
+          let name;
+          let count;
+          let price;
+          if ((exec = /([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?(?:\s+[x*\uff0a]?\s*[[(]?([0-9,]+)[\])]?)/i.exec(t))) {
+            name = exec[1];
+            count = exec[3];
+            price = exec[2];
+          } else if ((exec = /(?:[[(]?([0-9,]+)[\])]?\s*[x*\uff0a]?\s*)([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?/i.exec(t))) {
+            name = exec[2];
+            count = exec[1];
+            price = exec[3];
+          } else {
+            return;
+          }
+          name = name.trim();
+          count = _mm.parse_count(count);
+          price = _mm.parse_price(price, true);
+          const lowercase = name.toLowerCase();
+          textdata[lowercase] = { name, count, price };
+        });
+
+        if (attach) {
+          _mm.item.list.forEach((it) => {
+            const lowercase = it.info.lowercase;
+            const textitem = textdata[lowercase];
+            if (textitem) {
+              _mm.item.set(it, textitem.count, textitem.price);
+              it.visible = true;
+              it.node.check.checked = true;
+              it.node.tr.classList.remove('hvut-none');
+            } else if (it.visible && !it.node.check.checked) {
+              it.visible = false;
+              it.node.tr.classList.add('hvut-none');
+            }
+          });
+          _mm.write.calc();
         } else {
-          e.node.tr.classList.add('hvut-none');
-        }
-      });
-    };
-    _mm.item_text = function (attach) {
-      const text = _mm.node.write_body.value.split('\n');
-      const textdata = {};
-      text.forEach((t) => {
-        if (t.includes('> Removed attachment:')) {
-          return;
-        }
-
-        let exec;
-        let name;
-        let count;
-        let price;
-        if ((exec = /([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?(?:\s+[x*\uff0a]?\s*[[(]?([0-9,]+)[\])]?)/i.exec(t))) {
-          name = exec[1];
-          count = exec[3];
-          price = exec[2];
-        } else if ((exec = /(?:[[(]?([0-9,]+)[\])]?\s*[x*\uff0a]?\s*)([A-Za-z][-A-Za-z0-9' ]*)(?:\s*@\s*([0-9,.]+[ckm]?))?/i.exec(t))) {
-          name = exec[2];
-          count = exec[1];
-          price = exec[3];
-        } else {
-          return;
-        }
-        name = name.trim();
-        count = _mm.parse_count(count);
-        price = _mm.parse_price(price, true);
-        const lowercase = name.toLowerCase();
-        textdata[lowercase] = { name, count, price };
-      });
-
-      if (attach) {
-        _mm.item_list.forEach((it) => {
-          const lowercase = it.info.lowercase;
-          const textitem = textdata[lowercase];
-          if (textitem) {
-            _mm.item_set(it, textitem.count, textitem.price);
-            it.visible = true;
-            it.node.check.checked = true;
-            it.node.tr.classList.remove('hvut-none');
-          } else if (it.visible && !it.node.check.checked) {
-            it.visible = false;
-            it.node.tr.classList.add('hvut-none');
+          let cod = 0;
+          let atext = '';
+          Object.values(textdata).forEach((textitem) => {
+            textitem.cod = Math.ceil(textitem.count * textitem.price);
+            cod += textitem.cod;
+            atext += `${textitem.count.toLocaleString()} x ${textitem.name}`;
+            if (textitem.cod) {
+              atext += ` @ ${textitem.price.toLocaleString()}c = ${textitem.cod.toLocaleString()}c`;
+            }
+            atext += '\n';
+          });
+          if (cod) {
+            atext += `\nTotal: ${cod.toLocaleString()} Credits`;
           }
-        });
-        _mm.write_calc();
-      } else {
-        let cod = 0;
-        let atext = '';
-        Object.values(textdata).forEach((textitem) => {
-          textitem.cod = Math.ceil(textitem.count * textitem.price);
-          cod += textitem.cod;
-          atext += `${textitem.count.toLocaleString()} x ${textitem.name}`;
-          if (textitem.cod) {
-            atext += ` @ ${textitem.price.toLocaleString()}c = ${textitem.cod.toLocaleString()}c`;
-          }
-          atext += '\n';
-        });
-        if (cod) {
-          atext += `\nTotal: ${cod.toLocaleString()} Credits`;
+          _mm.write.log(atext, true);
         }
-        _mm.write_log(atext, true);
-      }
+      },
     };
 
-    _mm.node.item_div = $element('div', null, ['.hvut-none']);
-    _mm.node.item_menu = $element('div', _mm.node.item_div, ['.hvut-mm-attach-menu']);
-    $input(['button', '所有物品'], _mm.node.item_menu, null, () => { _mm.item_search(''); });
-    $price.init();
-    Object.keys($price.groups).forEach((g) => {
-      $input(['button', g], _mm.node.item_menu, null, () => { _mm.item_search($price.groups[g]); });
-    });
-    $element('br', _mm.node.item_menu);
-    _mm.node.item_search = $input('text', _mm.node.item_menu, { placeholder: '道具名，如Heal dra, Man pot', style: 'width: 170px;' }, { input: (e) => { _mm.item_search(e.target.value); }, keyup: (e) => { if (e.key === 'Escape') { _mm.item_search('', true); } } });
-    $input(['button', '清除'], _mm.node.item_menu, null, () => { _mm.item_search('', true); });
-    $input('checkbox', _mm.node.item_menu, { style: 'margin-left: 20px;' }, (e) => { _mm.item_all(e.target.checked); });
-    $input('text', _mm.node.item_menu, { placeholder: '数量', style: 'width: 50px; text-align: right;' }, { input: (e) => { _mm.item_count(e.target.value); } });
-    $input(['button', 'All'], _mm.node.item_menu, null, () => { _mm.item_count(Infinity); });
-    $input(['button', '0'], _mm.node.item_menu, null, () => { _mm.item_count(0); });
-
-    _mm.node.item_attach = $element('div', _mm.node.item_div, ['#item', '.hvut-mm-attach'], { input: (e) => { _mm.item_change(e); }, click: (e) => { _mm.item_click(e); } });
-    _mm.node.item_list = $qs('.itemlist') || $element('table');
-    _mm.node.item_attach.appendChild(_mm.node.item_list);
-
-    _mm.item_list = Array.from(_mm.node.item_list.rows).map((tr) => {
-      const div = tr.cells[0].firstElementChild;
-      const name = div.textContent;
-      const type = $item.get_type(div.getAttribute('onmouseover'));
-      const { iid } = $item.get_data(div.getAttribute('onclick'));
-      const lowercase = name.toLowerCase();
-      const stock = parseInt(tr.cells[1].textContent);
-      return { info: { name, lowercase, iid, type }, data: { pane: 'item', id: iid, name, stock, count: 0, price: 0, cod: 0 }, node: { tr } };
-    });
-    _mm.item_list.forEach((it) => {
-      it.visible = true;
-      it.node.tr.classList.add('hvut-it-' + it.info.type);
-      it.node.td = $element('td', it.node.tr);
-      it.node.check = $input('checkbox', it.node.td, { dataset: { action: 'calc', iid: it.info.iid } });
-      it.node.count = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-count', placeholder: '数量', pattern: '\\d+|\\d{1,3}(,\\d{3})*', max: it.data.stock });
-      it.node.price = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-price', placeholder: '价格', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
-      it.node.cod = $input('text', it.node.td, { className: 'hvut-mm-cod', placeholder: '总金额', readOnly: true });
-      it.node.send = $input(['button', '发送'], it.node.td, { dataset: { action: 'send', iid: it.info.iid }, className: 'hvut-mm-send' });
-    });
-
-    if ($id('mmail_attachitem')) {
-      $id('item').id += '_';
-      $element('span', _mm.node.write_tabs, '添加道具', () => { _mm.write_toggle('item_div'); });
-      _mm.node.write_right.appendChild(_mm.node.item_div);
-    }
+    _mm.item.init();
 
     // MM equip
-    _mm.equip_change = function (e) {
-      const target = e.target.closest('[data-action]');
-      if (!target) {
-        return;
-      }
-      const { action, eid } = target.dataset;
-      const eq = eid && _mm.equip_list.find((eq) => eq.info.eid == eid);
-      if (action === 'calc') {
-        eq.data.cod = _mm.parse_price(eq.node.price.value);
-        eq.data.atext = _mm.attach_text(eq);
-        _mm.write_calc();
-      }
-    };
-    _mm.equip_click = function (e) {
-      const target = e.target.closest('[data-action]');
-      if (!target) {
-        return;
-      }
-      const { action, eid } = target.dataset;
-      const eq = eid && _mm.equip_list.find((eq) => eq.info.eid == eid);
-      if (action === 'send') {
-        _mm.write_pack(eq);
-      }
-    };
-    _mm.equip_all = function (checked) {
-      _mm.equip_list.forEach((eq) => {
-        if (eq.visible) {
-          eq.node.check.checked = checked;
-          eq.data.atext = _mm.attach_text(eq);
-        }
-      });
-      _mm.write_calc();
-    };
-    _mm.equip_search = function (value, set) {
-      if (set) {
-        _mm.node.equip_search.value = value;
-      }
-      value = value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',');
-      if (value === _mm.equip_search.value) {
-        return;
-      }
-      _mm.equip_search.value = value;
+    _mm.equip = {
+      node: {},
+      list: [],
 
-      let results;
-      if (!value) {
-        results = _mm.equip_list;
-      } else {
-        value = value.split(',').map((v) => v.split(' '));
-        results = _mm.equip_list.filter((e) => {
-          const lowercase = e.info.lowercase;
-          const eid = e.info.eid ? e.info.eid.toString() : '';
-          return e.node.check.checked || value.some((v) => v.every((s) => s && (lowercase.includes(s) || eid.includes(s))));
+      init: function () {
+        _mm.equip.node.div = $element('div', null, ['.hvut-none']);
+        _mm.equip.node.menu = $element('div', _mm.equip.node.div, ['.hvut-mm-attach-menu']);
+        _mm.equip.node.search = $input('text', _mm.equip.node.menu, { placeholder: 'Equipment name or eid', style: 'width: 310px;' }, { input: (e) => { _mm.equip.search(e.target.value); }, keyup: (e) => { if (e.key === 'Escape') { _mm.equip.search('', true); } } });
+        $input(['button', 'Clear}'], _mm.equip.node.menu, null, () => { _mm.equip.search('', true); });
+        $input('checkbox', _mm.equip.node.menu, { style: 'margin-left: 20px;' }, (e) => { _mm.equip.all(e.target.checked); });
+
+        _mm.equip.node.attach = $element('div', _mm.equip.node.div, ['#mm_equip', '.hvut-mm-attach'], { input: (e) => { _mm.equip.change(e); }, click: (e) => { _mm.equip.click(e); } });
+        _mm.equip.node.list = $qs('.equiplist') || $element('div', null, ['.equiplist nosel']);
+        _mm.equip.node.attach.appendChild(_mm.equip.node.list);
+
+        _mm.equip.data = $config.get('equipdata', {});
+        _mm.equip.list = $equip.list.div(_mm.equip.node.list);
+        _mm.equip.list.forEach((eq) => {
+          eq.visible = true;
+          eq.info.lowercase = eq.info.name.toLowerCase();
+          eq.data.pane = 'equip';
+          eq.data.id = eq.info.eid;
+          eq.data.name = eq.info.name;
+          eq.data.count = 1;
+          eq.node.elem.removeAttribute('onclick');
+          eq.node.sub = $element('div', [eq.node.elem, 'beforebegin'], ['.hvut-mm-sub']);
+          eq.node.eid = $element('span', eq.node.sub, [eq.info.eid, '.hvut-mm-eid']);
+          eq.node.check = $input('checkbox', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid } });
+          eq.node.price = $input('text', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+          eq.node.send = $input(['button', 'send'], eq.node.sub, { dataset: { action: 'send', eid: eq.info.eid }, className: 'hvut-mm-send' });
+
+          const json = _mm.equip.data[eq.info.eid];
+          if (json?.price) {
+            eq.node.price.value = json.price;
+            eq.data.cod = _mm.parse_price(json.price);
+          }
         });
-      }
-      _mm.equip_list.forEach((e) => { e.visible = false; });
-      results.forEach((e) => { e.visible = true; });
-      $equip.list.sort(results, _mm.node.equip_list);
+
+        if ($id('mmail_attachequip')) {
+          $id('mm_equip').id += '_';
+          $input(['button', 'Equipment'], _mm.write.node.tabs, null, () => { _mm.write.toggle('equip'); });
+          _mm.write.node.right.appendChild(_mm.equip.node.div);
+        }
+      },
+      change: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, eid } = target.dataset;
+        const eq = eid && _mm.equip.list.find((eq) => eq.info.eid == eid);
+        if (action === 'calc') {
+          eq.data.cod = _mm.parse_price(eq.node.price.value);
+          eq.data.atext = _mm.attach_text(eq);
+          _mm.write.calc();
+        }
+      },
+      click: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, eid } = target.dataset;
+        const eq = eid && _mm.equip.list.find((eq) => eq.info.eid == eid);
+        if (action === 'send') {
+          _mm.write.pack(eq);
+        }
+      },
+      all: function (checked) {
+        _mm.equip.list.forEach((eq) => {
+          if (eq.visible) {
+            eq.node.check.checked = checked;
+            eq.data.atext = _mm.attach_text(eq);
+          }
+        });
+        _mm.write.calc();
+      },
+      search: function (value, set) {
+        if (set) {
+          _mm.equip.node.search.value = value;
+        }
+        value = value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',');
+        if (value === _mm.equip.search.value) {
+          return;
+        }
+        _mm.equip.search.value = value;
+
+        let results;
+        if (!value) {
+          results = _mm.equip.list;
+        } else {
+          value = value.split(',').map((v) => v.split(' '));
+          results = _mm.equip.list.filter((e) => {
+            const lowercase = e.info.lowercase;
+            const eid = e.info.eid ? e.info.eid.toString() : '';
+            return e.node.check.checked || value.some((v) => v.every((s) => s && (lowercase.includes(s) || eid.includes(s))));
+          });
+        }
+        _mm.equip.list.forEach((e) => { e.visible = false; });
+        results.forEach((e) => { e.visible = true; });
+        $equip.list.sort(results, _mm.equip.node.list);
+      },
     };
 
-    _mm.node.equip_div = $element('div', null, ['.hvut-none']);
-    _mm.node.equip_menu = $element('div', _mm.node.equip_div, ['.hvut-mm-attach-menu']);
-    _mm.node.equip_search = $input('text', _mm.node.equip_menu, { placeholder: 'Equipment name or eid', style: 'width: 310px;' }, { input: (e) => { _mm.equip_search(e.target.value); }, keyup: (e) => { if (e.key === 'Escape') { _mm.equip_search('', true); } } });
-    $input(['button', 'Clear}'], _mm.node.equip_menu, null, () => { _mm.equip_search('', true); });
-    $input('checkbox', _mm.node.equip_menu, { style: 'margin-left: 20px;' }, (e) => { _mm.equip_all(e.target.checked); });
-
-    _mm.node.equip_attach = $element('div', _mm.node.equip_div, ['#mm_equip', '.hvut-mm-attach'], { input: (e) => { _mm.equip_change(e); }, click: (e) => { _mm.equip_click(e); } });
-    _mm.node.equip_list = $qs('.equiplist') || $element('div', null, ['.equiplist nosel']);
-    _mm.node.equip_attach.appendChild(_mm.node.equip_list);
-
-    _mm.equip_data = $config.get('equipdata', {});
-    _mm.equip_list = $equip.list.div(_mm.node.equip_list);
-    _mm.equip_list.forEach((eq) => {
-      eq.visible = true;
-      eq.info.lowercase = eq.info.name.toLowerCase();
-      eq.data.pane = 'equip';
-      eq.data.id = eq.info.eid;
-      eq.data.name = eq.info.name;
-      eq.data.count = 1;
-      eq.node.elem.removeAttribute('onclick');
-      eq.node.sub = $element('div', [eq.node.elem, 'beforebegin'], ['.hvut-mm-sub']);
-      eq.node.eid = $element('span', eq.node.sub, [eq.info.eid, '.hvut-mm-eid']);
-      eq.node.check = $input('checkbox', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid } });
-      eq.node.price = $input('text', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
-      eq.node.send = $input(['button', '发送'], eq.node.sub, { dataset: { action: 'send', eid: eq.info.eid }, className: 'hvut-mm-send' });
-
-      const json = _mm.equip_data[eq.info.eid];
-      if (json?.price) {
-        eq.node.price.value = json.price;
-        eq.data.cod = _mm.parse_price(json.price);
-      }
-    });
-
-    if ($id('mmail_attachequip')) {
-      $id('mm_equip').id += '_';
-      $element('span', _mm.node.write_tabs, '添加装备', () => { _mm.write_toggle('equip_div'); });
-      _mm.node.write_right.appendChild(_mm.node.equip_div);
-    }
+    _mm.equip.init();
 
     // MM credits
-    _mm.credits_change = function (e) {
-      const target = e.target.closest('[data-action]');
-      if (!target) {
-        return;
-      }
-      const { action, name } = target.dataset;
-      const it = name && _mm.credits_list.find((it) => it.info.name === name);
-      if (action === 'calc') {
-        if (name === 'Credits') {
-          it.data.count = _mm.parse_price(it.node.count.value);
-        } else {
-          it.data.count = _mm.parse_count(it.node.count.value);
+    _mm.credits = {
+      node: {},
+      list: [],
+
+      init: function () {
+        const credits = { info: { name: 'Credits' }, data: { pane: 'credits', id: 0, name: 'Credits', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
+        const hath = { info: { name: 'Hath' }, data: { pane: 'hath', id: 0, name: 'Hath', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
+        if ($id('mmail_attachcredits')) {
+          credits.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Credits/.exec($id('mmail_attachcredits').textContent)[1]);
         }
-        if (it.data.count > it.data.stock) {
-          it.node.count.classList.add('hvut-mm-invalid');
-        } else {
-          it.node.count.classList.remove('hvut-mm-invalid');
+        if ($id('mmail_attachhath')) {
+          hath.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Hath/.exec($id('mmail_attachhath').textContent)[1]);
         }
-        it.data.price = _mm.parse_price(it.node.price.value, true);
-        it.data.cod = Math.ceil(it.data.count * it.data.price);
-        it.node.cod.value = it.data.cod ? it.data.cod.toLocaleString() : '';
-        it.data.atext = _mm.attach_text(it);
-        _mm.write_calc();
-      }
+
+        _mm.credits.node.div = $element('div', null, ['.hvut-none']);
+        _mm.credits.node.attach = $element('div', _mm.credits.node.div, ['.hvut-mm-attach'], { input: (e) => { _mm.credits.change(e); } });
+        _mm.credits.node.list = $element('table', _mm.credits.node.attach, ['.itemlist itemlist-credits', '/<tbody></tbody>']);
+
+        credits.node.tr = $element('tr', _mm.credits.node.list.tBodies[0]);
+        $element('td', credits.node.tr, credits.info.name);
+        $element('td', credits.node.tr, credits.data.stock.toLocaleString());
+        credits.node.td = $element('td', credits.node.tr);
+        credits.node.check = $input('checkbox', credits.node.td, { dataset: { action: 'calc', name: 'Credits' } });
+        credits.node.count = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-count', placeholder: 'count', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+        credits.node.price = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'visibility: hidden;' });
+        credits.node.cod = $input('text', credits.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true, style: 'visibility: hidden;' });
+
+        hath.node.tr = $element('tr', _mm.credits.node.list.tBodies[0]);
+        $element('td', hath.node.tr, hath.info.name);
+        $element('td', hath.node.tr, hath.data.stock.toLocaleString());
+        hath.node.td = $element('td', hath.node.tr);
+        hath.node.check = $input('checkbox', hath.node.td, { dataset: { action: 'calc', name: 'Hath' } });
+        hath.node.count = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-count', placeholder: 'count', pattern: '\\d+|\\d{1,3}(,\\d{3})*' });
+        hath.node.price = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+        hath.node.cod = $input('text', hath.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true });
+
+        if ($id('mmail_attachcredits')) {
+          _mm.credits.list.push(credits, hath);
+          $input(['button', 'Credits / Hath'], _mm.write.node.tabs, null, () => { _mm.write.toggle('credits'); });
+          _mm.write.node.right.appendChild(_mm.credits.node.div);
+        }
+
+        const multi_div = $element('div', _mm.credits.node.attach, ['!margin-top: 50px;']);
+        $input(['button', 'Multi-Send'], multi_div, { style: 'width: 150px; margin: 10px;' }, () => { _mm.credits.multi(); });
+        $element('br', multi_div);
+        _mm.credits.node.multi = $element('textarea', multi_div, { placeholder: 'user; credits; subject; text (| = new line)\nex)\nsssss2; 10m\nsssss3; 500k; WTB; hi|I want to buy...\nTenboro; 500c\nMoogleMail; 1000h; Thanks', style: 'width: 500px; height: 300px;', spellcheck: false });
+      },
+      change: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, name } = target.dataset;
+        const it = name && _mm.credits.list.find((it) => it.info.name === name);
+        if (action === 'calc') {
+          if (name === 'Credits') {
+            it.data.count = _mm.parse_price(it.node.count.value);
+          } else {
+            it.data.count = _mm.parse_count(it.node.count.value);
+          }
+          if (it.data.count > it.data.stock) {
+            it.node.count.classList.add('hvut-mm-invalid');
+          } else {
+            it.node.count.classList.remove('hvut-mm-invalid');
+          }
+          it.data.price = _mm.parse_price(it.node.price.value, true);
+          it.data.cod = Math.ceil(it.data.count * it.data.price);
+          it.node.cod.value = it.data.cod ? it.data.cod.toLocaleString() : '';
+          it.data.atext = _mm.attach_text(it);
+          _mm.write.calc();
+        }
+      },
+      multi: function () {
+        if (_mm.credits.multi.current) {
+          popup('Processing other requests...');
+          return;
+        }
+        _mm.credits.multi.current = true;
+        _mm.write.node.field.disabled = true;
+
+        const queue = [];
+        const errors = [];
+        let credits_funds = credits.data.stock;
+        let hath_funds = hath.data.stock;
+        _mm.credits.node.multi.value.split('\n').forEach((t) => {
+          if (!t) {
+            return;
+          }
+          const [to_name, ctext, subject, ...body] = t.split(';');
+          if (!to_name) {
+            errors.push('No recipient: ' + t);
+            return;
+          }
+
+          const attach = [];
+          if (!ctext) {
+          } else if (/^\s*([0-9,.]+[ckm]?)\s*$/i.test(ctext)) {
+            const it = { pane: 'credits', name: 'Credits', id: 0, count: _mm.parse_price(RegExp.$1) };
+            attach.push(it);
+            credits_funds -= it.count;
+          } else if (/^\s*([0-9,]+)h\s*$/i.test(ctext)) {
+            const it = { pane: 'hath', name: 'Hath', id: 0, count: _mm.parse_count(RegExp.$1) };
+            attach.push(it);
+            hath_funds -= it.count;
+          } else {
+            errors.push('Invalid attachment: ' + t);
+            return;
+          }
+
+          const mail = {
+            to_name,
+            subject: subject.trim() || _mm.write.node.subject.value,
+            body: body.length ? body.join(';').replace(/\|/g, '\n') : _mm.write.node.body.value,
+            attach,
+          };
+          queue.push(mail);
+        });
+        if (errors.length) {
+          alert(errors.join('\n'));
+          return;
+        }
+        if (credits_funds < 0) {
+          alert('Insufficient Credits');
+          return;
+        }
+        if (hath_funds < 0) {
+          alert('Insufficient Hath');
+          return;
+        }
+
+        queue.map((mail) => $mail.request(mail));
+      },
     };
 
-    _mm.credits_list = [];
-    const credits = { info: { name: 'Credits' }, data: { pane: 'credits', id: 0, name: 'Credits', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
-    const hath = { info: { name: 'Hath' }, data: { pane: 'hath', id: 0, name: 'Hath', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
-    if ($id('mmail_attachcredits')) {
-      credits.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Credits/.exec($id('mmail_attachcredits').textContent)[1]);
-    }
-    if ($id('mmail_attachhath')) {
-      hath.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Hath/.exec($id('mmail_attachhath').textContent)[1]);
-    }
+    _mm.credits.init();
 
-    _mm.node.credits_div = $element('div', null, ['.hvut-none']);
-    _mm.node.credits_attach = $element('div', _mm.node.credits_div, ['.hvut-mm-attach'], { input: (e) => { _mm.credits_change(e); } });
-    _mm.node.credits_list = $element('table', _mm.node.credits_attach, ['.itemlist itemlist-credits', '/<tbody></tbody>']);
-
-    credits.node.tr = $element('tr', _mm.node.credits_list.tBodies[0]);
-    $element('td', credits.node.tr, credits.info.name);
-    $element('td', credits.node.tr, credits.data.stock.toLocaleString());
-    credits.node.td = $element('td', credits.node.tr);
-    credits.node.check = $input('checkbox', credits.node.td, { dataset: { action: 'calc', name: 'Credits' } });
-    credits.node.count = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-count', placeholder: 'count', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
-    credits.node.price = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'visibility: hidden;' });
-    credits.node.cod = $input('text', credits.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true, style: 'visibility: hidden;' });
-
-    hath.node.tr = $element('tr', _mm.node.credits_list.tBodies[0]);
-    $element('td', hath.node.tr, hath.info.name);
-    $element('td', hath.node.tr, hath.data.stock.toLocaleString());
-    hath.node.td = $element('td', hath.node.tr);
-    hath.node.check = $input('checkbox', hath.node.td, { dataset: { action: 'calc', name: 'Hath' } });
-    hath.node.count = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-count', placeholder: 'count', pattern: '\\d+|\\d{1,3}(,\\d{3})*' });
-    hath.node.price = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
-    hath.node.cod = $input('text', hath.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true });
-
-    if ($id('mmail_attachcredits')) {
-      _mm.credits_list.push(credits, hath);
-      $element('span', _mm.node.write_tabs, 'Credits / Hath', () => { _mm.write_toggle('credits_div'); });
-      _mm.node.write_right.appendChild(_mm.node.credits_div);
-    }
-
-    _mm.credits_multi = function () {
-      if (_mm.credits_multi.current) {
-        popup('Processing other requests...');
-        return;
-      }
-      _mm.credits_multi.current = true;
-      _mm.node.write_field.disabled = true;
-
-      const queue = [];
-      const errors = [];
-      let credits_funds = credits.data.stock;
-      let hath_funds = hath.data.stock;
-      _mm.node.credits_multi.value.split('\n').forEach((t) => {
-        if (!t) {
-          return;
-        }
-        const [to_name, ctext, subject, ...body] = t.split(';');
-        if (!to_name) {
-          errors.push('No recipient: ' + t);
-          return;
-        }
-
-        const attach = [];
-        if (!ctext) {
-        } else if (/^\s*([0-9,.]+[ckm]?)\s*$/i.test(ctext)) {
-          const it = { pane: 'credits', name: 'Credits', id: 0, count: _mm.parse_price(RegExp.$1) };
-          attach.push(it);
-          credits_funds -= it.count;
-        } else if (/^\s*([0-9,]+)h\s*$/i.test(ctext)) {
-          const it = { pane: 'hath', name: 'Hath', id: 0, count: _mm.parse_count(RegExp.$1) };
-          attach.push(it);
-          hath_funds -= it.count;
-        } else {
-          errors.push('Invalid attachment: ' + t);
-          return;
-        }
-
-        const mail = {
-          to_name,
-          subject: subject.trim() || _mm.node.write_subject.value,
-          body: body.length ? body.join(';').replace(/\|/g, '\n') : _mm.node.write_body.value,
-          attach,
-        };
-        queue.push(mail);
-      });
-      if (errors.length) {
-        alert(errors.join('\n'));
-        return;
-      }
-      if (credits_funds < 0) {
-        alert('Insufficient Credits');
-        return;
-      }
-      if (hath_funds < 0) {
-        alert('Insufficient Hath');
-        return;
-      }
-
-      queue.map((mail) => $mail.request(mail));
-    };
-
-    const multi_div = $element('div', _mm.node.credits_attach, ['!margin-top: 50px;']);
-    $input(['button', 'Multi-Send'], multi_div, { style: 'width: 150px; margin: 10px;' }, () => { _mm.credits_multi(); });
-    $element('br', multi_div);
-    _mm.node.credits_multi = $element('textarea', multi_div, { placeholder: 'user; credits; subject; text (| = new line)\nex)\nsssss2; 10m\nsssss3; 500k; WTB; hi|I want to buy...\nTenboro; 500c\nMoogleMail; 1000h; Thanks', style: 'width: 500px; height: 300px;', spellcheck: false });
-
-    if (!['item_div', 'equip_div', 'credits_div'].some((d) => { if (_mm.node[d].parentNode) { _mm.write_toggle(d); return true; } })) {
-      $element('div', _mm.node.write_right, ['/' + $id('mmail_right').innerHTML, '.hvut-mm-disabled']);
-      _mm.node.write_cod_deduction.disabled = true;
+    if (!['item', 'equip', 'credits'].some((panel) => { if (_mm[panel].node.div.parentNode) { _mm.write.toggle(panel); return true; } })) {
+      $element('div', _mm.write.node.right, ['/' + $id('mmail_right').innerHTML, '.hvut-mm-disabled']);
+      _mm.write.node.cod_deduction.disabled = true;
       if (_server.isekai) {
-        _mm.node.write_cod_persistent.disabled = true;
-        _mm.node.write_cod_persistent.checked = false;
+        _mm.write.node.cod_persistent.disabled = true;
+        _mm.write.node.cod_persistent.checked = false;
       }
     }
-    _mm.node.write_to_name.focus();
 
     // MM LIST
   } else if ($id('mmail_list')) {
     _mm.db = {
-
       version: 1,
       season: 'mm',
+      node: {},
 
+      init: function () {
+        if (_server.isekai) {
+          _mm.db.season = _server.season;
+          const exec = /(\d+) Season (\d+)/.exec(_server.season);
+          if (exec) {
+            const year = exec[1];
+            const season = exec[2];
+            const version = parseInt(year.slice(2)) * 100 + parseInt(season);
+            _mm.db.version = version;
+          } else {
+            _mm.db.version = 1;
+          }
+        }
+      },
       open: function (callback) {
         if (_mm.db.database) {
           callback?.();
@@ -7253,8 +7464,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const os = tx.objectStore(store);
         return { db, tx, os };
       },
-      search: function (query) {
-        const { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max } = query;
+      search: function (param) {
+        const { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max } = param;
         const results = [];
         return new Promise((resolve) => {
           const conn = _mm.db.conn('readonly', season);
@@ -7262,7 +7473,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             const cursor = e.target.result;
             if (cursor) {
               const db = cursor.value;
-              const mail = _mm.mail_get(db.mid, season);
+              const mail = _mm.mail.get(db.mid, season);
               mail.db = db;
 
               const exclude = filter && filter !== db.filter
@@ -7282,7 +7493,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         });
       },
       export: function () {
-        _mm.node.db_export.disabled = true;
+        if (_mm.db.node.export) {
+          _mm.db.node.export.disabled = true;
+        }
         const json = [];
         const database = _mm.db.database.name;
         const stores = Array.from(_mm.db.database.objectStoreNames);
@@ -7305,7 +7518,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
                 window.URL.revokeObjectURL(link.href);
                 link.href = window.URL.createObjectURL(new Blob([JSON.stringify(json)], { type: 'application/json' }));
                 link.click();
-                _mm.node.db_export.value = 'Completed';
+                if (_mm.db.node.export) {
+                  _mm.db.node.export.value = 'Completed';
+                }
                 popup(`<p>The file has been saved.</p><p style="font-weight: bold;">${download}</p>`);
               }
             }
@@ -7313,7 +7528,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         });
       },
       import: function () {
-        _mm.node.db_import.disabled = true;
+        if (_mm.db.node.import) {
+          _mm.db.node.import.disabled = true;
+        }
         const input = $input('file', null, { accept: '.json' }, { change: () => {
           const file = input.files[0];
           if (!file) {
@@ -7340,7 +7557,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             function complete() {
               completed--;
               if (completed === 0) {
-                _mm.node.db_import.value = 'Completed';
+                if (_mm.db.node.import) {
+                  _mm.db.node.import.value = 'Completed';
+                }
               }
             }
 
@@ -7371,474 +7590,168 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         }
       },
       clear: function () {
-        if (confirm('此浏览器中的当前赛季的邮件记录将被删除.\nAre you sure?')) {
-          const season = _mm.node.search_season?.value || _mm.db.season;
+        if (confirm('The MoogleMail records for the selected season in this browser will be deleted.\nAre you sure?')) {
+          const season = _mm.search.node.season?.value || _mm.db.season;
           const conn = _mm.db.conn('readwrite', season);
           conn.os.clear();
         }
       },
       toggle: function () {
-        if (_mm.node.db_div) {
-          _mm.node.db_div.classList.toggle('hvut-none');
+        if (_mm.db.node.div) {
+          _mm.db.node.div.classList.toggle('hvut-none');
           return;
         }
-        _mm.node.db_div = $element('div', _mm.node.bottom);
-        $input(['button', '关闭'], _mm.node.db_div, null, () => { _mm.db.toggle(); });
-        $input(['button', '重置数据库'], _mm.node.db_div, null, () => { _mm.db.clear(); });
-        _mm.node.db_export = $input(['button', 'Export to JSON'], _mm.node.db_div, null, () => { _mm.db.export(); });
-        _mm.node.db_import = $input(['button', 'Import from JSON'], _mm.node.db_div, null, () => { _mm.db.import(); });
+        _mm.db.node.div = $element('div', _mm.page.node.bottom);
+        $input(['button', 'Close'], _mm.db.node.div, null, () => { _mm.db.toggle(); });
+        $input(['button', 'Reset Database'], _mm.db.node.div, null, () => { _mm.db.clear(); });
+        _mm.db.node.export = $input(['button', 'Export to JSON'], _mm.db.node.div, null, () => { _mm.db.export(); });
+        _mm.db.node.import = $input(['button', 'Import from JSON'], _mm.db.node.div, null, () => { _mm.db.import(); });
       },
+    };
+
+    _mm.page = {
+      node: { table: [] },
+      filter: _query.filter || 'inbox',
+      current: parseInt(_query.page) || 0,
+
       init: function () {
-        if (_server.isekai) {
-          _mm.db.season = _server.season;
-          const exec = /(\d+) Season (\d+)/.exec(_server.season);
-          if (exec) {
-            const year = exec[1];
-            const season = exec[2];
-            const version = parseInt(year.slice(2)) * 100 + parseInt(season);
-            _mm.db.version = version;
-          } else {
-            _mm.db.version = 1;
-          }
+        _mm.page.node.table[_mm.page.current] = $element('table', $id('mmail_outerlist'), ['.hvut-mm-list']);
+
+        _mm.page.node.bottom = $element('div', $id('mmail_outer'), ['.hvut-mm-bottom']);
+        $input(['button', 'Manage Database'], _mm.page.node.bottom, null, () => { _mm.db.toggle(); });
+        $input(['button', 'Search Mail'], _mm.page.node.bottom, null, () => { _mm.search.toggle(); });
+
+        _mm.page.node.go = $input('text', _mm.page.node.bottom, { value: _mm.page.current, style: 'width: 30px; margin-left: auto; text-align: center;' });
+        $input(['button', 'GO'], _mm.page.node.bottom, null, () => { _mm.page.go(_mm.page.node.go.value); });
+        _mm.page.node.prev = $input(['button', 'Prev'], _mm.page.node.bottom, { disabled: true }, () => { _mm.page.load('prev'); });
+        _mm.page.node.next = $input(['button', 'Next'], _mm.page.node.bottom, { disabled: true }, () => { _mm.page.load('next'); });
+
+        _mm.search.node.div = $element('div', $id('mmail_outer'), ['.hvut-mm-search hvut-none'], (e) => { _mm.page.click(e); });
+        _mm.mail.node.view = $element('div', $id('mmail_outer'), ['.hvut-mm-view hvut-none'], (e) => { _mm.mail.click(e); });
+        _mm.mail.node.log = $element('div', $id('mmail_outer'), ['.hvut-mm-log hvut-none']).appendChild($element('textarea', null, { readOnly: true, spellcheck: false, style: 'width: 300px; height: 300px;' }));
+        $mail.log = _mm.mail.log;
+
+        $id('mmail_outerlist').addEventListener('click', _mm.page.click);
+      },
+      conn: function () {
+        _mm.page.create($id('mmail_list'), _mm.page.current);
+        $id('mmail_list').remove();
+        _mm.page.prev = _mm.page.current;
+        _mm.page.next = _mm.page.current;
+        _mm.page.pager($id('mmail_pager'), _mm.page.current);
+      },
+      click: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, mid, season } = target.dataset;
+        if (action === 'read') {
+          e.preventDefault();
+          _mm.mail.read(mid, null, season);
         }
       },
-
-    };
-
-    _mm.page_filter = _query.filter || 'inbox';
-    _mm.page_current = parseInt(_query.page) || 0;
-
-    _mm.page_init = function () {
-      _mm.node.page_table[_mm.page_current] = $element('table', $id('mmail_outerlist'), ['.hvut-mm-list']);
-      _mm.page_create($id('mmail_list'), _mm.page_current);
-      $id('mmail_list').remove();
-      _mm.page_prev = _mm.page_current;
-      _mm.page_next = _mm.page_current;
-      _mm.page_pager($id('mmail_pager'), _mm.page_current);
-    };
-
-    _mm.page_click = function (e) {
-      const target = e.target.closest('[data-action]');
-      if (!target) {
-        return;
-      }
-      const { action, mid, season } = target.dataset;
-      if (action === 'read') {
-        e.preventDefault();
-        _mm.mail_read(mid, null, season);
-      }
-    };
-
-    _mm.page_load = async function (p) {
-      if (p === 'prev') {
-        if (_mm.page_prev === null) {
+      load: async function (p) {
+        if (p === 'prev') {
+          if (_mm.page.prev === null) {
+            return;
+          }
+          p = _mm.page.prev;
+        } else if (p === 'next') {
+          if (_mm.page.next === null) {
+            return;
+          }
+          p = _mm.page.next;
+        }
+        if (_mm.page.node.table[p]) {
           return;
         }
-        p = _mm.page_prev;
-      } else if (p === 'next') {
-        if (_mm.page_next === null) {
-          return;
+        _mm.page.node.table[p] = $element('table', [$id('mmail_outerlist'), _mm.page.node.table[p + 1]], ['.hvut-mm-list']);
+        const table = _mm.page.node.table[p];
+        $element('tr', table, [`/<td>${p} Page: Loading...</td>`]);
+        scrollIntoView(table);
+        _mm.page.node.prev.disabled = true;
+        _mm.page.node.next.disabled = true;
+
+        const html = await $ajax.fetch(`?s=Bazaar&ss=mm&filter=${_mm.page.filter}&page=${p}`);
+        const doc = $doc(html);
+        const list = $qs('#mmail_list', doc);
+        _mm.page.create(list, p);
+        scrollIntoView(table);
+        _mm.page.pager($id('mmail_pager', doc), p);
+        return doc;
+      },
+      pager: function (pager, p) {
+        const prev = parseInt(pager.children[0].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
+        const next = parseInt(pager.children[1].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
+        if (_mm.page.prev !== null && p <= _mm.page.prev) {
+          _mm.page.prev = prev;
         }
-        p = _mm.page_next;
-      }
-      if (_mm.node.page_table[p]) {
-        return;
-      }
-      _mm.node.page_table[p] = $element('table', [$id('mmail_outerlist'), _mm.node.page_table[p + 1]], ['.hvut-mm-list']);
-      const table = _mm.node.page_table[p];
-      $element('tr', table, [`/<td>${p} Page: Loading...</td>`]);
-      scrollIntoView(table);
-      _mm.node.page_prev.disabled = true;
-      _mm.node.page_next.disabled = true;
-
-      const html = await $ajax.fetch(`?s=Bazaar&ss=mm&filter=${_mm.page_filter}&page=${p}`);
-      const doc = $doc(html);
-      const list = $qs('#mmail_list', doc);
-      _mm.kill_asshole(list);
-      _mm.page_create(list, p);
-      scrollIntoView(table);
-      _mm.page_pager($id('mmail_pager', doc), p);
-      return doc;
-    };
-
-    _mm.page_pager = function (pager, p) {
-      const prev = parseInt(pager.children[0].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
-      const next = parseInt(pager.children[1].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
-      if (_mm.page_prev !== null && p <= _mm.page_prev) {
-        _mm.page_prev = prev;
-      }
-      if (_mm.page_next !== null && p >= _mm.page_next) {
-        _mm.page_next = next;
-      }
-      _mm.node.page_prev.disabled = _mm.page_prev === null;
-      _mm.node.page_next.disabled = _mm.page_next === null;
-    };
-
-    _mm.page_create = function (list, p) {
-      const table = _mm.node.page_table[p];
-      const tbody = $element('tbody');
-      const type = { 'inbox': 'Inbox', 'read': 'From', 'sent': 'To' }[_mm.page_filter];
-      $element('tr', tbody, [`/<td>${type}</td><td>${p} Page</td><td>Attachment</td><td>CoD</td><td>Sent</td><td>Read</td>`]);
-
-      const conn = _mm.db.conn();
-      let count = list.rows.length - 1;
-      Array.from(list.rows).slice(1).forEach((tr) => {
-        if (tr.cells[0].id === 'mmail_nnm') {
-          $element('tr', tbody, ['/<td colspan="6">No New Mail</td>']);
-          return;
+        if (_mm.page.next !== null && p >= _mm.page.next) {
+          _mm.page.next = next;
         }
-        const mid = parseInt(/mid=(\d+)/.exec(tr.getAttribute('onclick'))[1]);
-        const user = tr.cells[0].textContent;
-        const returned = user === 'MoogleMail';
-        const subject = tr.cells[1].textContent;
-        let sent = tr.cells[2].textContent;
-        sent = Date.parse(sent + ':00.000Z') / 1000;
-        let read = tr.cells[3].textContent;
-        read = (read === 'Never') ? null : Date.parse(read + ':00.000Z') / 1000;
+        _mm.page.node.prev.disabled = _mm.page.prev === null;
+        _mm.page.node.next.disabled = _mm.page.next === null;
+      },
+      create: function (list, p) {
+        const table = _mm.page.node.table[p];
+        const tbody = $element('tbody');
+        const type = { 'inbox': 'Inbox', 'read': 'From', 'sent': 'To' }[_mm.page.filter];
+        $element('tr', tbody, [`/<td>${type}</td><td>${p} Page</td><td>Attachment</td><td>CoD</td><td>Sent</td><td>Read</td>`]);
 
-        const mail = _mm.mail_get(mid);
-        if (mail.page) {
-          return;
-        }
-        mail.page = { filter: _mm.page_filter, user, returned, subject, sent, read };
+        const conn = _mm.db.conn();
+        let count = list.rows.length - 1;
+        Array.from(list.rows).slice(1).forEach((tr) => {
+          if (tr.cells[0].id === 'mmail_nnm') {
+            $element('tr', tbody, ['/<td colspan="6">No New Mail</td>']);
+            return;
+          }
+          const mid = parseInt(/mid=(\d+)/.exec(tr.getAttribute('onclick'))[1]);
+          const user = tr.cells[0].textContent;
+          const returned = user === 'MoogleMail';
+          const subject = tr.cells[1].textContent;
+          let sent = tr.cells[2].textContent;
+          sent = Date.parse(sent + ':00.000Z') / 1000;
+          let read = tr.cells[3].textContent;
+          read = (read === 'Never') ? null : Date.parse(read + ':00.000Z') / 1000;
+
+          const mail = _mm.mail.get(mid);
+          if (mail.page) {
+            return;
+          }
+          mail.page = { filter: _mm.page.filter, user, returned, subject, sent, read };
+          const page = mail.page;
+          mail.node.page = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
+          $element('a', mail.node.page.cells[1], { dataset: { action: 'read', mid: mid }, href: `?s=Bazaar&ss=mm&filter=${page.filter}&mid=${mid}&page=${p}` });
+
+          conn.os.get(mid).onsuccess = function (e) {
+            mail.db = e.target.result || null;
+            const db = mail.db;
+            if (!db || db.filter !== page.filter || !page.returned && !db.user.startsWith(page.user) || db.sent !== page.sent || db.read !== page.read) {
+              if (page.filter !== 'inbox') {
+                _mm.mail.load(mid);
+              }
+            }
+            _mm.page.modify(mail);
+            if (!--count) {
+              scrollIntoView(table);
+            }
+          };
+        });
+        table.innerHTML = '';
+        table.appendChild(tbody);
+      },
+      modify: function (mail) {
         const page = mail.page;
-        mail.node.page = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
-        $element('a', mail.node.page.cells[1], { dataset: { action: 'read', mid: mid }, href: `?s=Bazaar&ss=mm&filter=${page.filter}&mid=${mid}&page=${p}` });
-
-        conn.os.get(mid).onsuccess = function (e) {
-          mail.db = e.target.result || null;
-          const db = mail.db;
-          if (!db || db.filter !== page.filter || !page.returned && !db.user.startsWith(page.user) || db.sent !== page.sent || db.read !== page.read) {
-            if (page.filter !== 'inbox') {
-              _mm.mail_load(mid);
-            }
-          }
-          _mm.page_modify(mail);
-          if (!--count) {
-            scrollIntoView(table);
-          }
-        };
-      });
-      table.innerHTML = '';
-      table.appendChild(tbody);
-    };
-
-    _mm.page_modify = function (mail) {
-      const page = mail.page;
-      const db = mail.db;
-      const tr = mail.node.page;
-      tr.cells[0].textContent = (db || page).user;
-      tr.cells[1].firstElementChild.textContent = (db || page).subject;
-      tr.cells[2].innerHTML = '';
-      tr.cells[3].innerHTML = '';
-
-      db?.attach?.forEach((e) => {
-        const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
-        if (e.t === 'e') {
-          if (e.e && e.k) {
-            $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
-          } else {
-            span.textContent = e.n;
-          }
-        } else {
-          span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
-        }
-      });
-      if (db?.cod) {
-        tr.cells[3].innerHTML = `<span>${db.cod.toLocaleString()}</span>`;
-      }
-      tr.cells[4].textContent = _mm.dts(page.sent);
-      tr.cells[5].textContent = page.read ? _mm.dts(page.read) : '';
-
-      tr.classList[page.read ? 'remove' : 'add']('hvut-mm-unread');
-      tr.classList[(db || page).returned ? 'add' : 'remove']('hvut-mm-returned');
-      tr.classList[(db || page).filter !== page.filter ? 'add' : 'remove']('hvut-mm-removed');
-      tr.classList[db ? 'remove' : 'add']('hvut-mm-nodb');
-    };
-
-    _mm.page_go = function (p) {
-      p = parseInt(p);
-      if (isNaN(p) || p < 0) {
-        return;
-      }
-      location.href = location.href.replace(/&page=\d+/, '') + '&page=' + p;
-    };
-
-    _mm.mail_data = {};
-
-    _mm.mail_get = function (mid, season = _mm.db.season) {
-      if (!_mm.mail_data[season]) {
-        _mm.mail_data[season] = {};
-      }
-      if (!_mm.mail_data[season][mid]) {
-        _mm.mail_data[season][mid] = { mid, node: {} };
-      }
-      return _mm.mail_data[season][mid];
-    };
-
-    _mm.mail_read = async function (mid, post, season = _mm.db.season) {
-      const mail = _mm.mail_get(mid, season);
-      if (_mm.mail_current === mail && !post) {
-        _mm.mail_close();
-        return;
-      }
-      _mm.mail_close();
-      _mm.mail_current = mail;
-      _mm.node.mail_view.classList.remove('hvut-none');
-      $element('p', _mm.node.mail_view, ['Loading...', '.hvut-mm-loading']);
-
-      mail.node.page?.classList.add('hvut-mm-current');
-      mail.node.search?.classList.add('hvut-mm-current');
-
-      if (season === _mm.db.season) {
-        await _mm.mail_load(mid, post);
-      }
-      _mm.mail_view(mail);
-    };
-
-    _mm.mail_load = async function (mid, post) {
-      const mail = _mm.mail_get(mid);
-      const html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);
-      mail.view = _mm.mail_parse(html);
-      _mm.mail_update(mail);
-      return true;
-    };
-
-    _mm.mail_parse = function (arg) {
-      let html;
-      let doc;
-      if (typeof arg === 'string') {
-        html = arg;
-        doc = $doc(html);
-      } else {
-        doc = arg;
-        html = doc.documentElement.innerHTML;
-      }
-
-      const view = {};
-      const form = $id('mailform', doc);
-      if (form) {
-        _mm.mmtoken = form.elements.mmtoken.value;
-        view.to = form.elements[3].value;
-        view.from = form.elements[4].value;
-        view.subject = form.elements[5].value;
-        view.text = form.elements[6].value;
-        view.attach = [];
-        view.return = $qs('#mmail_showbuttons > img[src*="returnmail.png"]', doc) ? true : false;
-        view.recall = $qs('#mmail_showbuttons > img[src*="recallmail.png"]', doc) ? true : false;
-        view.reply = $qs('#mmail_showbuttons > img[src*="reply.png"]', doc) ? true : false;
-        view.take = $qs('#mmail_attachremove > img[src*="attach_takeall.png"]', doc) ? true : false;
-
-        if (view.from === 'MoogleMail') {
-          view.from = /This message was returned from (.+), kupo!|This mail was sent to (.+), but was returned, kupo!/.test(view.text.split('\n').reverse().join('\n')) && (RegExp.$1 || RegExp.$2);
-          view.returned = true;
-        }
-        if (view.take) {
-          view.filter = 'inbox';
-          view.user = view.from;
-        } else if (view.reply) {
-          view.filter = 'read';
-          view.user = view.from;
-        } else if (view.returned) {
-          view.filter = 'read';
-          view.user = view.from;
-        } else {
-          view.filter = 'sent';
-          view.user = view.to;
-        }
-        view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;
-
-        if ($id('mmail_attachlist', doc)) {
-          Object.assign($equip.dynjs_eqstore, JSON.parse(/dynjs_eqstore\s?=\s?(\{.*?\});/.exec(html)?.[1] || null));
-          Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
-            let exec;
-            const onmouseover = div.firstElementChild.firstElementChild?.getAttribute('onmouseover');
-            if (onmouseover && (exec = /equips\.set\((\d+)/.exec(onmouseover))) {
-              const eid = parseInt(exec[1]);
-              const key = $equip.dynjs_eqstore[eid].k;
-              const name = $equip.dynjs_eqstore[eid].t;
-              const type = 'e';
-              view.attach.push({ t: type, n: name, e: eid, k: key });
-            } else if ((exec = /^([0-9,]+)x? (.+)$/.exec(div.textContent))) {
-              const count = _mm.parse_count(exec[1]);
-              const name = exec[2];
-              const type = (name === 'Hath') ? 'h' : (name === 'Credits') ? 'c' : 'i';
-              view.attach.push({ t: type, n: name, c: count });
-            } else {
-              console.log(div.textContent.trim());
-            }
-          });
-          if ($id('mmail_currentcod', doc)) {
-            view.cod = _mm.parse_count(/Requested Payment on Delivery: ([0-9,]+) credits/.exec($id('mmail_currentcod', doc).textContent)[1]);
-          }
-        } else {
-          const split = view.text.split('\n\n').reverse();
-          const attach = split[0].split('\n').every((e) => {
-            const exec = /^Removed attachment: (?:([0-9,]+)x? (.+)|(.+))$/.exec(e);
-            if (!exec) {
-              return false;
-            }
-            if (exec[3]) {
-              const name = exec[3];
-              const type = 'e';
-              view.attach.unshift({ t: type, n: name });
-            } else {
-              const name = exec[2];
-              const type = (name === 'Hath') ? 'h' : (name === 'Credits') ? 'c' : 'i';
-              const count = _mm.parse_count(exec[1]);
-              view.attach.unshift({ t: type, n: name, c: count });
-            }
-            return true;
-          });
-          if (attach) {
-            view.cod = _mm.parse_count(/^CoD Paid: ([0-9,]+) Credits$/.exec(split[1])?.[1]);
-          }
-
-          // pre 0.85
-          const exec = /^Attached item removed: (?:([0-9,]+)x? (.+)|(.+)) \(type=([chie]) id=(\d+), CoD was ([0-9]+)C\)$/.exec(split[0]);
-          if (exec) {
-            const type = exec[4];
-            if (type === 'e') {
-              const name = exec[3];
-              const eid = exec[5];
-              view.attach.push({ t: type, n: name, e: eid });
-            } else {
-              const name = exec[2];
-              const count = _mm.parse_count(exec[1]);
-              view.attach.push({ t: type, n: name, c: count });
-            }
-            view.cod = _mm.parse_count(exec[6]);
-          }
-        }
-      } else {
-        view.error = get_message(doc) || 'UNKNOWN ERROR';
-      }
-
-      return view;
-    };
-
-    _mm.mail_update = function (mail) {
-      const mid = mail.mid;
-      const page = mail.page;
-      const view = mail.view;
-
-      if (view.error) {
-      } else if (mail.db) {
         const db = mail.db;
-        const sent = page?.sent || db.sent;
-        let read = page?.read || db.read;
-        if (read === null && view.read) {
-          read = -1;
-        }
-        if (db.filter !== view.filter || db.user !== view.user || db.subject !== view.subject || db.text !== view.text || db.sent !== sent || db.read !== read) {
-          db.filter = view.filter;
-          db.user = view.user;
-          db.subject = view.subject;
-          db.text = view.text;
-          db.sent = sent;
-          db.read = read;
-          if (view.returned) {
-            db.returned = 1;
-            delete db.cod;
-          }
-          const conn = _mm.db.conn('readwrite');
-          conn.os.put(db);
-        }
-      } else if (page) {
-        mail.db = { mid: mid, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: page.sent, read: page.read };
-        const db = mail.db;
-        if (view.returned) {
-          db.returned = 1;
-        }
-        if (view.attach.length) {
-          db.attach = view.attach;
-        }
-        if (view.cod) {
-          db.cod = view.cod;
-        }
-        const conn = _mm.db.conn('readwrite');
-        conn.os.add(db);
-      }
+        const tr = mail.node.page;
+        tr.cells[0].textContent = (db || page).user;
+        tr.cells[1].firstElementChild.textContent = (db || page).subject;
+        tr.cells[2].innerHTML = '';
+        tr.cells[3].innerHTML = '';
 
-      _mm.mail_modify(mail);
-    };
-
-    _mm.mail_modify = function (mail) {
-      if (mail.node.page) {
-        _mm.page_modify(mail);
-      }
-      if (mail.node.search) {
-        _mm.search_modify(mail);
-      }
-    };
-
-    _mm.mail_view = function (mail) {
-      if (_mm.mail_current !== mail) {
-        return;
-      }
-      const mid = mail.mid;
-      const view = mail.view || {};
-      const db = mail.db;
-      const div = _mm.node.mail_view;
-      div.innerHTML = '';
-      if (!db) {
-        $element('p', div, [`ERROR: ${view.error}`, '.hvut-mm-loading']);
-        return;
-      }
-      div.classList[db.returned ? 'add' : 'remove']('hvut-mm-rts');
-
-      const type = (db.filter === 'sent') ? 'To' : 'From';
-      const read = (db.read === null) ? '-' : (db.read === -1) ? '????-??-??' : _mm.dts(db.read, 4);
-      $element('dl', div, [`/<dt>${type}</dt><dd>${db.user}</dd><dt>Sent</dt><dd>${_mm.dts(db.sent, 4)}</dd><dt>Subject</dt><dd>${db.subject}</dd><dt>Read</dt><dd>${read}</dd>`]);
-
-      _mm.node.mail_body = $element('textarea', div, { value: db.text, spellcheck: false, readOnly: true });
-      const buttons = $element('div', div);
-      $input(['button', '关闭'], buttons, { dataset: { action: 'close', mid } });
-      if (view.reply) {
-        $input(['button', '回复'], buttons, { dataset: { action: 'reply', mid } });
-      }
-      if (view.take) {
-        $input(['button', '全部领取'], buttons, { dataset: { action: 'take', mid, value: view.cod || '' } });
-      }
-      if (view.return) {
-        $input(['button', '退回邮件'], buttons, { dataset: { action: 'return', mid } });
-      }
-      if (view.recall) {
-        $input(['button', '撤回邮件'], buttons, { dataset: { action: 'recall', mid } });
-      }
-      if (view.error) {
-        $input(['button', view.error], buttons);
-        div.classList.add('hvut-mm-failed');
-      } else {
-        div.classList.remove('hvut-mm-failed');
-      }
-      if (db.returned) {
-        $input(['button', `此邮件被 ${db.user}退回`], buttons);
-      }
-
-      mail.attach = [];
-      if (db.attach) {
-        const ul = $element('ul', div, null, { input: (e) => { _mm.mail_cod(e); } });
-        const li = $element('li', ul);
-        const wtx = (db.filter === 'sent') ? 'WTS' : 'WTB';
-
-        let cod_text;
-        if (db.cod) {
-          if (db.read) {
-            cod_text = `已支付: ${db.cod.toLocaleString()}`;
-          } else {
-            cod_text = `需要支付: ${db.cod.toLocaleString()}`;
-          }
-        } else {
-          cod_text = '无货到付款';
-        }
-        $element('span', li, cod_text);
-        mail.node.price = $input('text', li, { className: 'hvut-mm-price', readOnly: true, value: wtx });
-        mail.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
-        mail.attach = JSON.parse(JSON.stringify(db.attach));
-        mail.attach.forEach((e) => {
-          const li = $element('li', ul);
-          const span = $element('span', li, [`.hvut-mm-attach-${e.t}`]);
+        db?.attach?.forEach((e) => {
+          const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
           if (e.t === 'e') {
             if (e.e && e.k) {
               $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
@@ -7848,241 +7761,506 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           } else {
             span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
           }
-          e.node = {};
+        });
+        if (db?.cod) {
+          tr.cells[3].innerHTML = `<span>${db.cod.toLocaleString()}</span>`;
+        }
+        tr.cells[4].textContent = _mm.dts(page.sent);
+        tr.cells[5].textContent = page.read ? _mm.dts(page.read) : '';
+
+        tr.classList[page.read ? 'remove' : 'add']('hvut-mm-unread');
+        tr.classList[(db || page).returned ? 'add' : 'remove']('hvut-mm-returned');
+        tr.classList[(db || page).filter !== page.filter ? 'add' : 'remove']('hvut-mm-removed');
+        tr.classList[db ? 'remove' : 'add']('hvut-mm-nodb');
+      },
+      go: function (p) {
+        p = parseInt(p);
+        if (isNaN(p) || p < 0) {
+          return;
+        }
+        location.href = location.href.replace(/&page=\d+/, '') + `&page=${p}`;
+      },
+    };
+
+    _mm.mail = {
+      node: {},
+      data: {},
+
+      click: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, mid, value } = target.dataset;
+        if (action === 'close') {
+          _mm.mail.close();
+        } else if (action === 'reply') {
+          location.href = `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;
+        } else if (action === 'take') {
+          if (value && !confirm(`Accepting the attachments will deduct ${parseInt(value).toLocaleString()} Credits from your account.\nAre you sure?`)) {
+            return;
+          }
+          _mm.mail.read(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
+        } else if (action === 'return') {
+          if (!confirm('This will return the message to the sender.\nAre you sure?')) {
+            return;
+          }
+          _mm.mail.read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
+        } else if (action === 'recall') {
+          if (!confirm('This will return the message to the sender.\nAre you sure?')) {
+            return;
+          }
+          _mm.mail.read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
+        }
+      },
+      get: function (mid, season = _mm.db.season) {
+        if (!_mm.mail.data[season]) {
+          _mm.mail.data[season] = {};
+        }
+        if (!_mm.mail.data[season][mid]) {
+          _mm.mail.data[season][mid] = { mid, node: {} };
+        }
+        return _mm.mail.data[season][mid];
+      },
+      read: async function (mid, post, season = _mm.db.season) {
+        const mail = _mm.mail.get(mid, season);
+        if (_mm.mail.current === mail && !post) {
+          _mm.mail.close();
+          return;
+        }
+        _mm.mail.close();
+        _mm.mail.current = mail;
+        _mm.mail.node.view.classList.remove('hvut-none');
+        $element('p', _mm.mail.node.view, ['Loading...', '.hvut-mm-loading']);
+
+        mail.node.page?.classList.add('hvut-mm-current');
+        mail.node.search?.classList.add('hvut-mm-current');
+
+        if (season === _mm.db.season) {
+          await _mm.mail.load(mid, post);
+        }
+        _mm.mail.view(mail);
+      },
+      load: async function (mid, post) {
+        const mail = _mm.mail.get(mid);
+        const html = await $ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post);
+        mail.view = _mm.mail.parse(html);
+        _mm.mail.update(mail);
+        return true;
+      },
+      parse: function (html) {
+        const doc = $doc(html);
+        const view = {};
+        const form = $id('mailform', doc);
+        if (form) {
+          _mm.mmtoken = form.elements.mmtoken.value;
+          view.to = form.elements[3].value;
+          view.from = form.elements[4].value;
+          view.subject = form.elements[5].value;
+          view.text = form.elements[6].value;
+          view.attach = [];
+          view.return = $qs('#mmail_showbuttons > img[src*="returnmail.png"]', doc) ? true : false;
+          view.recall = $qs('#mmail_showbuttons > img[src*="recallmail.png"]', doc) ? true : false;
+          view.reply = $qs('#mmail_showbuttons > img[src*="reply.png"]', doc) ? true : false;
+          view.take = $qs('#mmail_attachremove > img[src*="attach_takeall.png"]', doc) ? true : false;
+
+          if (view.from === 'MoogleMail') {
+            view.from = /This message was returned from (.+), kupo!|This mail was sent to (.+), but was returned, kupo!/.test(view.text.split('\n').reverse().join('\n')) && (RegExp.$1 || RegExp.$2);
+            view.returned = true;
+          }
+          if (view.take) {
+            view.filter = 'inbox';
+            view.user = view.from;
+          } else if (view.reply) {
+            view.filter = 'read';
+            view.user = view.from;
+          } else if (view.returned) {
+            view.filter = 'read';
+            view.user = view.from;
+          } else {
+            view.filter = 'sent';
+            view.user = view.to;
+          }
+          view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;
+
+          if ($id('mmail_attachlist', doc)) {
+            Object.assign($equip.dynjs_eqstore, JSON.parse(/dynjs_eqstore\s?=\s?(\{.*?\});/.exec(html)?.[1] || null));
+            Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
+              let exec;
+              const onmouseover = div.firstElementChild.firstElementChild?.getAttribute('onmouseover');
+              if (onmouseover && (exec = /equips\.set\((\d+)/.exec(onmouseover))) {
+                const eid = parseInt(exec[1]);
+                const key = $equip.dynjs_eqstore[eid].k;
+                const name = $equip.dynjs_eqstore[eid].t;
+                const type = 'e';
+                view.attach.push({ t: type, n: name, e: eid, k: key });
+              } else if ((exec = /^([0-9,]+)x? (.+)$/.exec(div.textContent))) {
+                const count = _mm.parse_count(exec[1]);
+                const name = exec[2];
+                const type = (name === 'Hath') ? 'h' : (name === 'Credits') ? 'c' : 'i';
+                view.attach.push({ t: type, n: name, c: count });
+              } else {
+                console.log(div.textContent.trim());
+              }
+            });
+            if ($id('mmail_currentcod', doc)) {
+              view.cod = _mm.parse_count(/Requested Payment on Delivery: ([0-9,]+) credits/.exec($id('mmail_currentcod', doc).textContent)[1]);
+            }
+          } else {
+            const split = view.text.split('\n\n').reverse();
+            const attach = split[0].split('\n').every((e) => {
+              const exec = /^Removed attachment: (?:([0-9,]+)x? (.+)|(.+))$/.exec(e);
+              if (!exec) {
+                return false;
+              }
+              if (exec[3]) {
+                const name = exec[3];
+                const type = 'e';
+                view.attach.unshift({ t: type, n: name });
+              } else {
+                const name = exec[2];
+                const type = (name === 'Hath') ? 'h' : (name === 'Credits') ? 'c' : 'i';
+                const count = _mm.parse_count(exec[1]);
+                view.attach.unshift({ t: type, n: name, c: count });
+              }
+              return true;
+            });
+            if (attach) {
+              view.cod = _mm.parse_count(/^CoD Paid: ([0-9,]+) Credits$/.exec(split[1])?.[1]);
+            }
+
+            // pre 0.85
+            const exec = /^Attached item removed: (?:([0-9,]+)x? (.+)|(.+)) \(type=([chie]) id=(\d+), CoD was ([0-9]+)C\)$/.exec(split[0]);
+            if (exec) {
+              const type = exec[4];
+              if (type === 'e') {
+                const name = exec[3];
+                const eid = exec[5];
+                view.attach.push({ t: type, n: name, e: eid });
+              } else {
+                const name = exec[2];
+                const count = _mm.parse_count(exec[1]);
+                view.attach.push({ t: type, n: name, c: count });
+              }
+              view.cod = _mm.parse_count(exec[6]);
+            }
+          }
+        } else {
+          view.error = get_message(doc) || 'UNKNOWN ERROR';
+        }
+
+        return view;
+      },
+      update: function (mail) {
+        const mid = mail.mid;
+        const page = mail.page;
+        const view = mail.view;
+
+        if (view.error) {
+        } else if (mail.db) {
+          const db = mail.db;
+          const sent = page?.sent || db.sent;
+          let read = page?.read || db.read;
+          if (read === null && view.read) {
+            read = -1;
+          }
+          if (db.filter !== view.filter || db.user !== view.user || db.subject !== view.subject || db.text !== view.text || db.sent !== sent || db.read !== read) {
+            db.filter = view.filter;
+            db.user = view.user;
+            db.subject = view.subject;
+            db.text = view.text;
+            db.sent = sent;
+            db.read = read;
+            if (view.returned) {
+              db.returned = 1;
+              delete db.cod;
+            }
+            const conn = _mm.db.conn('readwrite');
+            conn.os.put(db);
+          }
+        } else if (page) {
+          mail.db = { mid: mid, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: page.sent, read: page.read };
+          const db = mail.db;
+          if (view.returned) {
+            db.returned = 1;
+          }
+          if (view.attach.length) {
+            db.attach = view.attach;
+          }
+          if (view.cod) {
+            db.cod = view.cod;
+          }
+          const conn = _mm.db.conn('readwrite');
+          conn.os.add(db);
+        }
+
+        _mm.mail.modify(mail);
+      },
+      modify: function (mail) {
+        if (mail.node.page) {
+          _mm.page.modify(mail);
+        }
+        if (mail.node.search) {
+          _mm.search.modify(mail);
+        }
+      },
+      view: function (mail) {
+        if (_mm.mail.current !== mail) {
+          return;
+        }
+        const mid = mail.mid;
+        const view = mail.view || {};
+        const db = mail.db;
+        const div = _mm.mail.node.view;
+        div.innerHTML = '';
+        if (!db) {
+          $element('p', div, [`ERROR: ${view.error}`, '.hvut-mm-loading']);
+          return;
+        }
+        div.classList[db.returned ? 'add' : 'remove']('hvut-mm-rts');
+
+        const type = (db.filter === 'sent') ? 'To' : 'From';
+        const read = (db.read === null) ? '-' : (db.read === -1) ? '????-??-??' : _mm.dts(db.read, 4);
+        $element('dl', div, [`/<dt>${type}</dt><dd>${db.user}</dd><dt>Sent</dt><dd>${_mm.dts(db.sent, 4)}</dd><dt>Subject</dt><dd>${db.subject}</dd><dt>Read</dt><dd>${read}</dd>`]);
+
+        _mm.mail.node.body = $element('textarea', div, { value: db.text, spellcheck: false, readOnly: true });
+        const buttons = $element('div', div);
+        $input(['button', 'Close'], buttons, { dataset: { action: 'close', mid } });
+        if (view.reply) {
+          $input(['button', 'Reply'], buttons, { dataset: { action: 'reply', mid } });
+        }
+        if (view.take) {
+          $input(['button', 'Take all'], buttons, { dataset: { action: 'take', mid, value: view.cod || '' } });
+        }
+        if (view.return) {
+          $input(['button', 'Return'], buttons, { dataset: { action: 'return', mid } });
+        }
+        if (view.recall) {
+          $input(['button', 'Recall'], buttons, { dataset: { action: 'recall', mid } });
+        }
+        if (view.error) {
+          $input(['button', view.error], buttons);
+          div.classList.add('hvut-mm-failed');
+        } else {
+          div.classList.remove('hvut-mm-failed');
+        }
+        if (db.returned) {
+          $input(['button', `This message was returned from ${db.user}`], buttons);
+        }
+
+        mail.attach = [];
+        if (db.attach) {
+          const ul = $element('ul', div, null, { input: (e) => { _mm.mail.cod(e); } });
+          const li = $element('li', ul);
+          const wtx = (db.filter === 'sent') ? 'WTS' : 'WTB';
+
+          let cod_text;
+          if (db.cod) {
+            if (db.read) {
+              cod_text = `CoD Paid: ${db.cod.toLocaleString()}`;
+            } else {
+              cod_text = `CoD: ${db.cod.toLocaleString()}`;
+            }
+          } else {
+            cod_text = 'No CoD';
+          }
+          $element('span', li, cod_text);
+          mail.node.price = $input('text', li, { className: 'hvut-mm-price', readOnly: true, value: wtx });
+          mail.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
+          mail.attach = JSON.parse(JSON.stringify(db.attach));
+          mail.attach.forEach((e) => {
+            const li = $element('li', ul);
+            const span = $element('span', li, [`.hvut-mm-attach-${e.t}`]);
+            if (e.t === 'e') {
+              if (e.e && e.k) {
+                $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+              } else {
+                span.textContent = e.n;
+              }
+            } else {
+              span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
+            }
+            e.node = {};
+            if (e.n === 'Credits') {
+              return;
+            }
+            e.node.price = $input('text', li, { className: 'hvut-mm-price' });
+            e.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
+          });
+        }
+      },
+      close: function () {
+        if (_mm.mail.current) {
+          const mail = _mm.mail.current;
+          mail.node.page?.classList.remove('hvut-mm-current');
+          mail.node.search?.classList.remove('hvut-mm-current');
+        }
+        _mm.mail.current = null;
+        _mm.mail.node.view.classList.add('hvut-none');
+        _mm.mail.node.view.innerHTML = '';
+        _mm.mail.log('', true);
+        _mm.mail.node.log.parentNode.classList.add('hvut-none');
+      },
+      cod: function () {
+        const mail = _mm.mail.current;
+        if (!mail) {
+          return;
+        }
+        const db = mail.db;
+        const wtx = (db.filter === 'sent') ? 'WTS' : 'WTB';
+        const attach = mail.attach;
+        let sum = 0;
+
+        attach.forEach((e) => {
           if (e.n === 'Credits') {
             return;
           }
-          e.node.price = $input('text', li, { className: 'hvut-mm-price' });
-          e.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
+          const p = _mm.parse_price(e.node.price.value, true);
+          const cod = p * (e.c || 1);
+          e.node.cod.value = cod ? cod.toLocaleString() : '';
+          sum += cod;
         });
-      }
-    };
-
-    _mm.mail_click = function (e) {
-      const target = e.target.closest('[data-action]');
-      if (!target) {
-        return;
-      }
-      const { action, mid, value } = target.dataset;
-      if (action === 'close') {
-        _mm.mail_close();
-      } else if (action === 'reply') {
-        location.href = `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;
-      } else if (action === 'take') {
-        if (value && !confirm(`取出附件将收取你 ${parseInt(value).toLocaleString()} 的Credits.\nAre you sure?`)) {
-          return;
+        mail.node.cod.value = sum ? sum.toLocaleString() : '';
+        if (db?.cod) {
+          mail.node.price.value = !sum ? wtx : (db.cod === sum) ? 'CoD =' : (db.cod > sum) ? 'CoD >' : 'CoD <';
+          mail.node.price.dataset.codMatch = (db.cod === sum) ? '1' : '0';
+          mail.node.cod.dataset.codMatch = (db.cod === sum) ? '1' : '0';
         }
-        _mm.mail_read(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
-      } else if (action === 'return') {
-        if (!confirm('这将把邮件退回给寄信人.\nAre you sure?')) {
-          return;
+      },
+      log: function (text, clear) {
+        _mm.mail.node.log.parentNode.classList.remove('hvut-none');
+        if (clear) {
+          _mm.mail.node.log.value = '';
         }
-        _mm.mail_read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
-      } else if (action === 'recall') {
-        if (!confirm('这将把邮件退回给寄信人.\nAre you sure?')) {
-          return;
+        _mm.mail.node.log.value += text + '\n';
+        _mm.mail.node.log.scrollTop = _mm.mail.node.log.scrollHeight;
+      },
+    };
+
+    _mm.search = {
+      node: {},
+
+      keydown: function (e) {
+        if (e.key === 'Enter') {
+          _mm.search.submit();
         }
-        _mm.mail_read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
-      }
-    };
-
-    _mm.mail_close = function () {
-      if (_mm.mail_current) {
-        const mail = _mm.mail_current;
-        mail.node.page?.classList.remove('hvut-mm-current');
-        mail.node.search?.classList.remove('hvut-mm-current');
-      }
-      _mm.mail_current = null;
-      _mm.node.mail_view.classList.add('hvut-none');
-      _mm.node.mail_view.innerHTML = '';
-      _mm.mail_log('', true);
-      _mm.node.mail_log.parentNode.classList.add('hvut-none');
-    };
-
-    _mm.mail_cod = function () {
-      const mail = _mm.mail_current;
-      if (!mail) {
-        return;
-      }
-      const db = mail.db;
-      const wtx = (db.filter === 'sent') ? 'WTS' : 'WTB';
-      const attach = mail.attach;
-      let sum = 0;
-
-      attach.forEach((e) => {
-        if (e.n === 'Credits') {
-          return;
-        }
-        const p = _mm.parse_price(e.node.price.value, true);
-        const cod = p * (e.c || 1);
-        e.node.cod.value = cod ? cod.toLocaleString() : '';
-        sum += cod;
-      });
-      mail.node.cod.value = sum ? sum.toLocaleString() : '';
-      if (db?.cod) {
-        mail.node.price.value = !sum ? wtx : (db.cod === sum) ? 'CoD =' : (db.cod > sum) ? 'CoD >' : 'CoD <';
-        mail.node.price.dataset.codMatch = (db.cod === sum) ? '1' : '0';
-        mail.node.cod.dataset.codMatch = (db.cod === sum) ? '1' : '0';
-      }
-    };
-
-    _mm.mail_log = function (text, clear) {
-      _mm.node.mail_log.parentNode.classList.remove('hvut-none');
-      if (clear) {
-        _mm.node.mail_log.value = '';
-      }
-      _mm.node.mail_log.value += text + '\n';
-      _mm.node.mail_log.scrollTop = _mm.node.mail_log.scrollHeight;
-    };
-
-    _mm.search_submit = function () {
-      const season = _mm.node.search_season?.value || _mm.db.season;
-      const filter = _mm.node.search_filter.value;
-      const name = _mm.node.search_name.value.trim().toLowerCase();
-      const subject = _mm.node.search_subject.value.trim().toLowerCase();
-      const text = _mm.node.search_text.value.trim().toLowerCase();
-      let attach = _mm.node.search_attach.value.trim();
-      let eid = null;
-      let cod = _mm.node.search_cod.value.replace(/\s/g, '').toLowerCase();
-      let cod_min = 0;
-      let cod_max = 0;
-      if (attach) {
-        if (isNaN(attach)) {
-          attach = attach.toLowerCase().replace(/\s+/g, ' ').split(' ');
-        } else {
-          eid = parseInt(attach);
-        }
-      }
-      if (/^([0-9.]+[ckm]?)$/i.test(cod)) {
-        cod = _mm.parse_price(RegExp.$1);
-      } else if (/^([0-9.]+[ckm]?)?[-~]([0-9.]+[ckm]?)?$/i.test(cod)) {
-        cod = false;
-        cod_min = _mm.parse_price(RegExp.$1);
-        cod_max = _mm.parse_price(RegExp.$2);
-      } else {
-        cod = false;
-      }
-      const query = { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max };
-      _mm.search(query);
-    };
-
-    _mm.search = function (query) {
-      _mm.mail_close();
-      _mm.node.search_div.innerHTML = '';
-      _mm.node.search_div.classList.remove('hvut-none');
-      $element('div', _mm.node.search_div, ['Searching...', '.hvut-mm-searching']);
-
-      _mm.db.search(query).then((results) => {
-        const table = $element('table', null, ['.hvut-mm-list']);
-        const tbody = $element('tbody', table);
-        $element('tr', tbody, [`/<td>Search</td><td>${results.length} mail(s)</td><td>Attachment</td><td>CoD</td><td>Sent</td><td>Read</td>`]);
-
-        results.sort((a, b) => b.db.mid - a.db.mid);
-        results.forEach((mail) => {
-          const db = mail.db;
-          if (!mail.node.search) {
-            mail.node.search = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
-            if (query.season === _mm.db.season) {
-              $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid }, href: `?s=Bazaar&ss=mm&filter=${db.filter}&mid=${db.mid}` });
-            } else {
-              $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid, season: query.season } });
-            }
-          }
-          tbody.appendChild(mail.node.search);
-          _mm.search_modify(mail);
-        });
-
-        _mm.node.search_div.innerHTML = '';
-        _mm.node.search_div.appendChild(table);
-      });
-    };
-
-    _mm.search_modify = function (mail) {
-      const db = mail.db;
-      const tr = mail.node.search;
-      const type = { 'inbox': 'Inbox', 'read': 'From', 'sent': 'To' }[db.filter];
-      tr.cells[0].innerHTML = `<span>${type}</span> ${db.user}`;
-      tr.cells[1].firstElementChild.textContent = db.subject;
-      tr.cells[2].innerHTML = '';
-      tr.cells[3].innerHTML = '';
-
-      db.attach?.forEach((e) => {
-        const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
-        if (e.t === 'e') {
-          if (e.e && e.k) {
-            $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+      },
+      submit: function () {
+        const season = _mm.search.node.season?.value || _mm.db.season;
+        const filter = _mm.search.node.filter.value;
+        const name = _mm.search.node.name.value.trim().toLowerCase();
+        const subject = _mm.search.node.subject.value.trim().toLowerCase();
+        const text = _mm.search.node.text.value.trim().toLowerCase();
+        let attach = _mm.search.node.attach.value.trim();
+        let eid = null;
+        let cod = _mm.search.node.cod.value.replace(/\s/g, '').toLowerCase();
+        let cod_min = 0;
+        let cod_max = 0;
+        if (attach) {
+          if (isNaN(attach)) {
+            attach = attach.toLowerCase().replace(/\s+/g, ' ').split(' ');
           } else {
-            span.textContent = e.n;
+            eid = parseInt(attach);
           }
+        }
+        if (/^([0-9.]+[ckm]?)$/i.test(cod)) {
+          cod = _mm.parse_price(RegExp.$1);
+        } else if (/^([0-9.]+[ckm]?)?[-~]([0-9.]+[ckm]?)?$/i.test(cod)) {
+          cod = false;
+          cod_min = _mm.parse_price(RegExp.$1);
+          cod_max = _mm.parse_price(RegExp.$2);
         } else {
-          span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
+          cod = false;
         }
-      });
-      if (db.cod) {
-        tr.cells[3].innerHTML = `<span>${db.cod.toLocaleString()}</span>`;
-      }
-      tr.cells[4].textContent = _mm.dts(db.sent);
-      tr.cells[5].textContent = db.read ? _mm.dts(db.read) : '';
+        const param = { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max };
+        _mm.search.query(param);
+      },
+      query: function (param) {
+        _mm.mail.close();
+        _mm.search.node.div.innerHTML = '';
+        _mm.search.node.div.classList.remove('hvut-none');
+        $element('div', _mm.search.node.div, ['Searching...', '.hvut-mm-searching']);
 
-      tr.classList[db.read ? 'remove' : 'add']('hvut-mm-unread');
-      tr.classList[db.returned ? 'add' : 'remove']('hvut-mm-returned');
-    };
+        _mm.db.search(param).then((results) => {
+          const table = $element('table', null, ['.hvut-mm-list']);
+          const tbody = $element('tbody', table);
+          $element('tr', tbody, [`/<td>Search</td><td>${results.length} mail(s)</td><td>Attachment</td><td>CoD</td><td>Sent</td><td>Read</td>`]);
 
-    _mm.search_close = function () {
-      _mm.node.search_div.classList.add('hvut-none');
-      _mm.node.search_div.innerHTML = '';
-    };
+          results.sort((a, b) => b.db.mid - a.db.mid);
+          results.forEach((mail) => {
+            const db = mail.db;
+            if (!mail.node.search) {
+              mail.node.search = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
+              if (param.season === _mm.db.season) {
+                $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid }, href: `?s=Bazaar&ss=mm&filter=${db.filter}&mid=${db.mid}` });
+              } else {
+                $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid, season: param.season } });
+              }
+            }
+            tbody.appendChild(mail.node.search);
+            _mm.search.modify(mail);
+          });
 
-    _mm.search_keydown = function (e) {
-      if (e.key === 'Enter') {
-        _mm.search_submit();
-      }
-    };
+          _mm.search.node.div.innerHTML = '';
+          _mm.search.node.div.appendChild(table);
+        });
+      },
+      modify: function (mail) {
+        const db = mail.db;
+        const tr = mail.node.search;
+        const type = { 'inbox': 'Inbox', 'read': 'From', 'sent': 'To' }[db.filter];
+        tr.cells[0].innerHTML = `<span>${type}</span> ${db.user}`;
+        tr.cells[1].firstElementChild.textContent = db.subject;
+        tr.cells[2].innerHTML = '';
+        tr.cells[3].innerHTML = '';
 
-    _mm.search_toggle = function () {
-      if (_mm.node.search_form) {
-        _mm.node.search_form.classList.toggle('hvut-none');
-        return;
-      }
-      _mm.node.search_form = $element('div', _mm.node.bottom, null, { keydown: (e) => { _mm.search_keydown(e); } });
-      $input(['button', '关闭'], _mm.node.search_form, null, () => { _mm.search_toggle(); });
-
-      if (_server.isekai) {
-        const seasons = Array.from(_mm.db.database.objectStoreNames);
-        _mm.node.search_season = $input(['select', seasons], _mm.node.search_form);
-        _mm.node.search_season.value = _server.season;
-      }
-      _mm.node.search_filter = $input(['select', [':all', 'inbox', 'read', 'sent']], _mm.node.search_form);
-      _mm.node.search_name = $input('text', _mm.node.search_form, { placeholder: 'User', style: 'width: 120px;' });
-      _mm.node.search_subject = $input('text', _mm.node.search_form, { placeholder: 'Subject', style: 'width: 120px;' });
-      _mm.node.search_text = $input('text', _mm.node.search_form, { placeholder: 'Text', style: 'width: 120px;' });
-      _mm.node.search_attach = $input('text', _mm.node.search_form, { placeholder: 'Attachment', style: 'width: 120px;' });
-      _mm.node.search_cod = $input('text', _mm.node.search_form, { placeholder: 'CoD (min-max)', style: 'width: 100px;' });
-      $input(['button', 'Search'], _mm.node.search_form, null, () => { _mm.search_submit(); });
-      $input(['button', 'Close List'], _mm.node.search_form, null, () => { _mm.search_close(); });
-    };
-
-    _mm.dts = function (date, year = 2) { // date_to_string
-      const d = new Date(date * 1000);
-      const yy = d.getFullYear().toString().slice(-year);
-      const MM = (d.getMonth() + 1).toString().padStart(2, '0');
-      const dd = d.getDate().toString().padStart(2, '0');
-      const HH = d.getHours().toString().padStart(2, '0');
-      const mm = d.getMinutes().toString().padStart(2, '0');
-      return `${yy}-${MM}-${dd} ${HH}:${mm}`;
-    };
-
-    _mm.kill_asshole = function (obj) { // email-decode.min.js: usernames with '@' are encoded in html, then decoded
-      function h(e, t, r, a) {
-        for (r = '', a = '0x' + e.slice(t, t + 2) | 0, t += 2; t < e.length; t += 2) {
-          r += String.fromCharCode('0x' + e.slice(t, t + 2) ^ a);
+        db.attach?.forEach((e) => {
+          const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
+          if (e.t === 'e') {
+            if (e.e && e.k) {
+              $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+            } else {
+              span.textContent = e.n;
+            }
+          } else {
+            span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
+          }
+        });
+        if (db.cod) {
+          tr.cells[3].innerHTML = `<span>${db.cod.toLocaleString()}</span>`;
         }
-        return r;
-      }
-      $qsa('.__cf_email__', obj).forEach((a) => {
-        a.parentNode.replaceChild(document.createTextNode(h(a.dataset.cfemail, 0)), a);
-      });
-      return obj;
+        tr.cells[4].textContent = _mm.dts(db.sent);
+        tr.cells[5].textContent = db.read ? _mm.dts(db.read) : '';
+
+        tr.classList[db.read ? 'remove' : 'add']('hvut-mm-unread');
+        tr.classList[db.returned ? 'add' : 'remove']('hvut-mm-returned');
+      },
+      close: function () {
+        _mm.search.node.div.classList.add('hvut-none');
+        _mm.search.node.div.innerHTML = '';
+      },
+      toggle: function () {
+        if (_mm.search.node.form) {
+          _mm.search.node.form.classList.toggle('hvut-none');
+          return;
+        }
+        _mm.search.node.form = $element('div', _mm.page.node.bottom, null, { keydown: (e) => { _mm.search.keydown(e); } });
+        $input(['button', 'Close'], _mm.search.node.form, null, () => { _mm.search.toggle(); });
+
+        if (_server.isekai) {
+          const seasons = Array.from(_mm.db.database.objectStoreNames);
+          _mm.search.node.season = $input(['select', seasons], _mm.search.node.form);
+          _mm.search.node.season.value = _server.season;
+        }
+        _mm.search.node.filter = $input(['select', [':all', 'inbox', 'read', 'sent']], _mm.search.node.form);
+        _mm.search.node.name = $input('text', _mm.search.node.form, { placeholder: 'User', style: 'width: 120px;' });
+        _mm.search.node.subject = $input('text', _mm.search.node.form, { placeholder: 'Subject', style: 'width: 120px;' });
+        _mm.search.node.text = $input('text', _mm.search.node.form, { placeholder: 'Text', style: 'width: 120px;' });
+        _mm.search.node.attach = $input('text', _mm.search.node.form, { placeholder: 'Attachment', style: 'width: 120px;' });
+        _mm.search.node.cod = $input('text', _mm.search.node.form, { placeholder: 'CoD (min-max)', style: 'width: 100px;' });
+        $input(['button', 'Search'], _mm.search.node.form, null, () => { _mm.search.submit(); });
+        $input(['button', 'Close List'], _mm.search.node.form, null, () => { _mm.search.close(); });
+      },
     };
 
     GM_addStyle(/*css*/`
@@ -8091,85 +8269,69 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       #mmail_pager { display: none; }
 
       .hvut-mm-list { table-layout: fixed; border-collapse: collapse; margin: 0 auto 10px 0; width: 1180px; font-size: 10pt; line-height: 22px; text-align: left; white-space: nowrap; }
-      .hvut-mm-list tr:hover { background-color: #ddd; }
-      .hvut-mm-list tr > td:hover { background-color: #fff; }
-      .hvut-mm-list tr:first-child > td { border-top: 1px solid; background-color: #edb; font-weight: bold; text-align: center; }
-      .hvut-mm-list td { padding: 1px 5px; border-bottom: 1px solid; overflow: hidden; text-overflow: ellipsis; }
+      .hvut-mm-list tr:hover { background-color: var(--color-bg-alpha); }
+      .hvut-mm-list tr > td:hover { background-color: var(--color-bg-alpha); }
+      .hvut-mm-list tr:first-child > td { border-top: 1px solid var(--color-border-default); background-color: var(--color-bg-h1); font-weight: bold; text-align: center; }
+      .hvut-mm-list td { padding: 1px 3px; border-bottom: 1px solid var(--color-border-default); overflow: hidden; text-overflow: ellipsis; }
       .hvut-mm-list td:nth-child(1) { width: 140px; }
-      .hvut-mm-list td:nth-child(1) > span { padding: 1px 3px; border: 1px solid; font-weight: bold; }
+      .hvut-mm-list td:nth-child(1) > span { padding: 1px 3px; border: 1px solid var(--color-border-default); font-weight: bold; }
       .hvut-mm-list td:nth-child(3) { width: 300px; }
-      .hvut-mm-list td:nth-child(4) { width: 80px; text-align: right; }
-      .hvut-mm-list td:nth-child(4) > span { color: #03c; }
-      .hvut-mm-list td:nth-child(5) { width: 100px; text-align: center; }
-      .hvut-mm-list td:nth-child(6) { width: 100px; text-align: center; }
+      .hvut-mm-list td:nth-child(4) { width: 100px; text-align: right; }
+      .hvut-mm-list td:nth-child(4) > span { color: var(--color-mm-credits); }
+      .hvut-mm-list td:nth-child(5) { width: 120px; text-align: center; }
+      .hvut-mm-list td:nth-child(6) { width: 120px; text-align: center; }
 
       .hvut-mm-list td:nth-child(2) > a { display: block; text-decoration: none; cursor: pointer; }
       .hvut-mm-list tr:hover > td:nth-child(2) > a { text-decoration: underline; }
       .hvut-mm-list td:nth-child(3) > span { display: block; }
-      .hvut-mm-attach-e { color: #c00; }
+      .hvut-mm-attach-e { color: var(--color-mm-equip); }
       .hvut-mm-attach-e > a { color: inherit; }
-      .hvut-mm-attach-c { color: #03f; }
-      .hvut-mm-attach-h { color: #c0c; }
-      .hvut-mm-attach-i { color: #090; }
+      .hvut-mm-attach-i { color: var(--color-mm-item); }
+      .hvut-mm-attach-c { color: var(--color-mm-credits); }
+      .hvut-mm-attach-h { color: var(--color-mm-hath); }
 
-      .hvut-mm-current { background-color: #edb !important; }
-      .hvut-mm-loading { margin: 20px; font-weight: bold; color: #c00; }
-      .hvut-mm-returned { background-color: #eee; }
-      .hvut-mm-returned * { color: #666 !important; }
-      .hvut-mm-unread { background-color: #fcc; }
-      .hvut-mm-nodb { background-color: #fcc; }
-      .hvut-mm-removed { background-color: #eee; text-decoration: line-through; }
+      .hvut-mm-current { background-color: var(--color-bg-h1) !important; }
+      .hvut-mm-loading { margin: 20px; font-weight: bold; color: var(--color-font-highlight); }
+      .hvut-mm-returned { background-color: var(--color-bg-invalid); }
+      .hvut-mm-returned * { color: var(--color-font-invalid) !important; }
+      .hvut-mm-unread { background-color: var(--color-warn-unread); }
+      .hvut-mm-nodb { background-color: var(--color-warn-unread); }
+      .hvut-mm-removed { background-color: var(--color-bg-invalid); text-decoration: line-through; }
 
       .hvut-mm-bottom { position: absolute; left: 0; bottom: 8px; width: 100%; display: flex; text-align: left; }
-      .hvut-mm-bottom div { position: absolute; left: 0; bottom: 0; width: 100%; background-color: #EDEBDF; }
+      .hvut-mm-bottom div { position: absolute; left: 0; bottom: 0; width: 100%; background-color: var(--color-bg-default); }
       .hvut-mm-bottom div > *:first-child { margin-right: 80px; }
 
-      .hvut-mm-search { position: absolute; top: 79px; left: 20px; width: 1200px; height: 580px; border: 2px solid; background-color: #EDEBDF; overflow-y: scroll; z-index: 1; }
-      .hvut-mm-searching { position: absolute; top: 50%; transform: translateY(-50%); width: 100%; font-size: 10pt; font-weight: bold; color: #c00; }
+      .hvut-mm-search { position: absolute; top: 79px; left: 20px; width: 1200px; height: 580px; border: 2px solid var(--color-border-default); background-color: var(--color-bg-default); overflow-y: scroll; z-index: 1; }
+      .hvut-mm-searching { position: absolute; top: 50%; transform: translateY(-50%); width: 100%; font-size: 10pt; font-weight: bold; color: var(--color-font-highlight); }
 
-      .hvut-mm-view { position: absolute; top: 81px; right: 14px; display: flex; flex-direction: column; width: 626px; height: 566px; padding: 5px; border: 2px solid; background-color: #EDEBDF; font-size: 10pt; line-height: 20px; text-align: left; z-index: 2; }
-      .hvut-mm-failed { background-color: #eee; }
+      .hvut-mm-view { position: absolute; top: 81px; right: 14px; display: flex; flex-direction: column; width: 626px; height: 566px; padding: 5px; border: 2px solid var(--color-border-default); background-color: var(--color-bg-default); font-size: 10pt; line-height: 20px; text-align: left; z-index: 2; }
+      .hvut-mm-failed { background-color: var(--color-bg-invalid); }
       .hvut-mm-view > dl { display: grid; grid-template-columns: 80px auto 80px 120px; gap: 5px; margin: 5px; text-align: center; align-items: center; }
-      .hvut-mm-view dt { margin: 0; border: 1px solid; }
-      .hvut-mm-view dd { margin: 0; border-bottom: 1px solid; }
+      .hvut-mm-view dt { margin: 0; border: 1px solid var(--color-border-default); }
+      .hvut-mm-view dd { margin: 0; border-bottom: 1px solid var(--color-border-default); }
       .hvut-mm-view dd:nth-of-type(2n+1) { padding: 0 5px; text-align: left; }
-      .hvut-mm-rts dd:nth-of-type(1)::before { content: '[MoogleMail] '; color: #666; }
+      .hvut-mm-rts dd:nth-of-type(1)::before { content: '[MoogleMail] '; color: var(--color-font-invalid); }
       .hvut-mm-view > textarea { flex-basis: 191px; }
       .hvut-mm-view > div { display: flex; margin: 5px 0; }
-      .hvut-mm-view > ul { margin: 5px; padding: 5px; border: 1px solid; list-style: none; max-height: 242px; overflow: auto; flex-shrink: 0; }
-      .hvut-mm-view li:first-child { margin-top: 0; padding: 0 0 0 5px; border: 1px solid; font-weight: bold; }
+      .hvut-mm-view > ul { margin: 5px; padding: 5px; border: 1px solid var(--color-border-default); list-style: none; max-height: 242px; overflow: auto; flex-shrink: 0; }
+      .hvut-mm-view li:first-child { margin-top: 0; padding: 0 0 0 5px; border: 1px solid var(--color-border-default); font-weight: bold; }
       .hvut-mm-view li:first-child > .hvut-mm-price { text-align: center; }
       .hvut-mm-view li { display: flex; margin-top: 2px; padding: 0 1px 0 6px; }
       .hvut-mm-view li span:first-child { margin-right: auto; }
       .hvut-mm-view li input { margin: 0; padding: 1px 4px; text-align: right; }
       .hvut-mm-price { width: 60px; }
       .hvut-mm-cod { width: 90px; }
-      .hvut-mm-view input[data-cod-match='1'] { color: #03c; }
-      .hvut-mm-view input[data-cod-match='0'] { color: #c00; }
+      .hvut-mm-view input[data-cod-match='1'] { color: var(--color-font-bonus); }
+      .hvut-mm-view input[data-cod-match='0'] { color: var(--color-font-warn); }
       .hvut-mm-rts > ul input { display: none; }
 
-      .hvut-mm-log { position: absolute; top: 81px; right: 652px; border: 2px solid; background-color: #EDEBDF; z-index: 2; }
+      .hvut-mm-log { position: absolute; top: 81px; right: 652px; border: 2px solid var(--color-border-default); background-color: var(--color-bg-default); z-index: 2; }
     `);
 
-    $id('mmail_outerlist').addEventListener('click', _mm.page_click);
-    _mm.node.page_table = [];
-
-    _mm.node.bottom = $element('div', $id('mmail_outer'), ['.hvut-mm-bottom']);
-    $input(['button', '管理数据库'], _mm.node.bottom, null, () => { _mm.db.toggle(); });
-    $input(['button', '搜索邮件'], _mm.node.bottom, null, () => { _mm.search_toggle(); });
-
-    _mm.node.page_go = $input('text', _mm.node.bottom, { value: _mm.page_current, style: 'width: 30px; margin-left: auto; text-align: center;' });
-    $input(['button', '前往'], _mm.node.bottom, null, () => { _mm.page_go(_mm.node.page_go.value); });
-    _mm.node.page_prev = $input(['button', '上一页'], _mm.node.bottom, { disabled: true }, () => { _mm.page_load('prev'); });
-    _mm.node.page_next = $input(['button', '下一页'], _mm.node.bottom, { disabled: true }, () => { _mm.page_load('next'); });
-
-    _mm.node.search_div = $element('div', $id('mmail_outer'), ['.hvut-mm-search hvut-none'], (e) => { _mm.page_click(e); });
-    _mm.node.mail_view = $element('div', $id('mmail_outer'), ['.hvut-mm-view hvut-none'], (e) => { _mm.mail_click(e); });
-    _mm.node.mail_log = $element('div', $id('mmail_outer'), ['.hvut-mm-log hvut-none']).appendChild($element('textarea', null, { readOnly: true, spellcheck: false, style: 'width: 300px; height: 300px;' }));
-    $mail.log = _mm.mail_log;
-
+    _mm.page.init();
     _mm.db.init();
-    _mm.db.open(_mm.page_init);
+    _mm.db.open(_mm.page.conn);
   }
 } else
 // [END 12] Bazaar - MoogleMail */
@@ -8184,11 +8346,11 @@ if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
     };
     _lt.json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
 
-    const div = $element('div', $id('rightpane'), ['!margin-top: 10px; color: #c00;']);
-    $input(['checkbox', 'Show this lottery in the bottom bar'], div, { checked: !_lt.json[_query.ss].hide }, { change: (e) => { _lt.toggle(e.target.checked); } });
+    const div = $element('div', $id('rightpane'), ['.hvut-warn', '!margin-top: 10px;']);
+    $input(['checkbox', null, 'Show this lottery in the bottom bar'], div, { checked: !_lt.json[_query.ss].hide }, { change: (e) => { _lt.toggle(e.target.checked); } });
   }
 
-  confirm_event($qs('img[src$="/lottery_golden_a.png"]'), 'click', '你确定要使用一张黄金奖券吗?');
+  confirm_event($qs('img[src$="/lottery_golden_a.png"]'), 'click', 'Are you sure that you wish to spend a Golden Lottery Ticket?');
 } else
 // [END 13] Bazaar - Lottery */
 
@@ -8222,10 +8384,11 @@ if (_query.s === 'Battle') {
     #equipselect_right { width: 600px; }
     .hvut-bt-left #equipselect_right { order: -1; }
 
-    #equipinfo { visibility: hidden; background-color: #EDEBDFCC; order: 1; z-index: 1; display: flex; flex-flow: column; justify-content: center; align-items: center; backdrop-filter: blur(1px); }
-    #equipinfo > div { width: 420px; border: 1px solid; background-color: #E3E0D1; }
-    #equipselect_left:hover + #equipselect_right #equipinfo { visibility: visible; }
-    #itemlist { min-height: 40px; padding: 20px; overflow: auto; }
+    #equipinfo { visibility: hidden; background-color: var(--color-bg-default); order: 1; display: flex; flex-flow: column; justify-content: center; align-items: center; }
+    #equipinfo > div { width: 420px; border: 1px solid var(--color-border-default); background-color: var(--color-bg-back); }
+    #equipselect_left:hover ~ #equipselect_right #equipinfo { visibility: visible; }
+    #equipselect_left:hover ~ #hvut-bt-div { visibility: hidden; }
+    #csp[data-ss='iw'] #itemlist { min-height: 40px; padding: 20px; overflow: auto; }
   `);
 
   _ar.split_colspan = function (table) {
@@ -8240,7 +8403,7 @@ if (_query.s === 'Battle') {
     _ar.split_colspan($id('arena_list'));
     $element('div', [$id('mainpane'), 'afterbegin'], ['#arena_outer']).append($id('arena_list'));
     $battle.init($qs('#arena_outer'));
-    toggle_button($input('button', $id('arena_list').rows[0].cells[7]), '详细信息', '折叠', $battle.node.outer, 'hvut-bt-on');
+    toggle_button($input('button', $id('arena_list').rows[0].cells[7]), 'Details', 'Collapse', $battle.node.outer, 'hvut-bt-on');
   } else
   // [END 14] Battle - Arena */
 
@@ -8250,7 +8413,7 @@ if (_query.s === 'Battle') {
     _ar.split_colspan($id('arena_list'));
     $element('div', [$id('mainpane'), 'afterbegin'], ['#rob_outer']).append($id('arena_list'), $id('arena_tokens'));
     $battle.init($qs('#rob_outer'));
-    toggle_button($input('button', $id('arena_list').rows[0].cells[7]), '详细信息', '折叠', $battle.node.outer, 'hvut-bt-on');
+    toggle_button($input('button', $id('arena_list').rows[0].cells[7]), 'Details', 'Collapse', $battle.node.outer, 'hvut-bt-on');
   } else
   // [END 15] Battle - Ring of Blood */
 
@@ -8284,25 +8447,41 @@ if (_query.s === 'Battle') {
 // Battle
 
 
-//* [10] Armory
+//* [10] Armory - Equiplist
 if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
   const $armory = {
-
     filters: ['weapon_1handed', 'weapon_2handed', 'weapon_staff', 'shield', 'armor_cloth', 'armor_light', 'armor_heavy'],
-    quality: { 'Crude': 1, 'Fair': 2, 'Average': 3, 'Superior': 4, 'Exquisite': 5, 'Magnificent': 6, 'Legendary': 7, 'Peerless': 8 },
+    category_shorthand: { 'One-handed Weapon': 'One-Handed', 'Two-handed Weapon': 'Two-Handed', 'Staff': 'Staffs', 'Shield': 'Shield', 'Cloth Armor': 'Cloth', 'Light Armor': 'Light', 'Heavy Armor': 'Heavy' },
+    type_labels: {
+      'armor_cloth': ['Surtr', 'Niflheim', 'Mjolnir', 'Freyr', 'Heimdall', 'Fenrir', 'the Elementalist', 'the Heaven-sent', 'the Demon-fiend'],
+    },
+    quality_grade: { 'Crude': 1, 'Fair': 2, 'Average': 3, 'Superior': 4, 'Exquisite': 5, 'Magnificent': 6, 'Legendary': 7, 'Peerless': 8 },
     material_type: { 'One-handed Weapon': 'Metal', 'Two-handed Weapon': 'Metal', 'Staff': 'Wood', 'Shield': 'Wood', 'Force Shield': 'Metal', 'Cloth Armor': 'Cloth', 'Light Armor': 'Leather', 'Heavy Armor': 'Metal' },
     core_type: { 'One-handed Weapon': 'Weapon', 'Two-handed Weapon': 'Weapon', 'Staff': 'Staff', 'Shield': 'Armor', 'Cloth Armor': 'Armor', 'Light Armor': 'Armor', 'Heavy Armor': 'Armor' },
-    rarity: ['Force Shield', 'Phase', 'Shade', 'Power', 'Reactive'],
+    rares: ['Force Shield', 'Phase', 'Shade', 'Power', 'Reactive'],
     equiplist: [],
     equipdata: $config.get('equipdata', { version: 1 }),
     eqitems: {},
     itemdata: {},
     prices: $price.get('Materials'),
-    node: {
-      table: $qs('#equiplist > table'),
-      submit: {},
-    },
+    node: { submit: {} },
 
+    init: function () {
+      $armory.node.table = $qs('#equiplist > table');
+      $armory.node.table.addEventListener('click', $armory.click, true);
+      $armory.page.init(null, _query.screen);
+      $armory.side.init();
+      $armory.equiplist = $equip.list.table($armory.node.table);
+      $armory.submit.button();
+      $armory.scroll.init();
+      $armory.hover.init();
+      //search
+    },
+    get_token: async function () {
+      const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
+      const doc = $doc(html);
+      $armory.postoken = $id('equipform', doc).elements.postoken?.value;
+    },
     click: function (e) {
       const target = e.target.closest('[data-action]');
       if (!target) {
@@ -8313,6 +8492,89 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
         e.stopPropagation();
       }
     },
+    hover: {
+      init: function () {
+        $armory.node.table.addEventListener('mouseover', $armory.hover.mouseover);
+        $armory.node.table.addEventListener('mouseout', $armory.hover.mouseout);
+      },
+      mouseover: function (e) {
+        const table = $armory.node.table;
+        const target = e.target;
+        let to = target.closest('tr[data-eid]'); // #equiplist > table tr[data-eid]
+        if (!table.contains(to)) {
+          to = null;
+        }
+        const relatedTarget = e.relatedTarget;
+        let from = relatedTarget?.closest('tr[data-eid]');
+        if (!table.contains(from)) {
+          from = null;
+        }
+        if (from === to || to === null) {
+          return;
+        }
+        const options = {
+          detail: { target, relatedTarget, from, to },
+        };
+        const event = new CustomEvent('hoverover', options);
+        $armory.node.table.dispatchEvent(event);
+      },
+      mouseout: function (e) {
+        const table = $armory.node.table;
+        const target = e.target;
+        let from = target.closest('tr[data-eid]'); // #equiplist > table tr[data-eid]
+        if (!table.contains(from)) {
+          from = null;
+        }
+        const relatedTarget = e.relatedTarget;
+        let to = relatedTarget?.closest('tr[data-eid]');
+        if (!table.contains(to)) {
+          to = null;
+        }
+        if (from === to || from === null) {
+          return;
+        }
+        const options = {
+          detail: { target, relatedTarget, from, to },
+        };
+        const event = new CustomEvent('hoverout', options);
+        $armory.node.table.dispatchEvent(event);
+      },
+    },
+    scroll: {
+      init: function () {
+        let labels = $armory.type_labels[_query.filter];
+        if (labels) {
+          labels = labels.filter((type) => !!$qs(`.hvut-eqp-type[data-scroll="${type}"]`, $armory.node.table));
+        } else if ($armory.filters.includes(_query.filter)) {
+          labels = $qsa('.hvut-eqp-type', $armory.node.table).map((e) => e.dataset.scroll);
+          labels = [...new Set(labels)];
+        } else if (_query.filter === 'all') {
+          labels = Object.keys($armory.category_shorthand);
+        } else {
+          return;
+        }
+        const div = $element('div', [$id('equiplist'), 'beforebegin'], ['.hvut-eqp-scroll'], $armory.scroll.click);
+        labels.forEach((value) => {
+          const text = $armory.category_shorthand[value] || value;
+          $input(['button', text], div, { dataset: { action: 'scroll', scroll: value } });
+        });
+      },
+      click: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, scroll } = target.dataset;
+        if (action === 'scroll') {
+          $armory.scroll.move(scroll);
+        }
+      },
+      move: function (value) {
+        const parent = $id('equiplist');
+        const to = $qs(`[data-scroll="${value}"]`, $armory.node.table);
+        scrollIntoView(to, parent);
+      },
+    },
 
     page: {
       init: function (doc, screen, assign) {
@@ -8321,11 +8583,63 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
         $armory.script.parse(doc, screen, assign);
       },
       load: async function (screen, filter, assign) {
-        const html = await $ajax.fetch(`?s=Bazaar&ss=am&screen=${screen}&filter=${filter}`);
+        const html = await $ajax.fetch(`?s=Bazaar&ss=am&screen=${screen}&filter=${filter || ''}`);
         const doc = $doc(html);
         $armory.page.init(doc, screen, assign);
         const table = $qs('#equiplist > table', doc);
         return table;
+      },
+    },
+
+    side: {
+      data: {
+        'select_all': { text: 'Select All', click: () => { $armory.select.all(); } },
+        'select_tradeables': { text: 'Tradeables', click: () => { $armory.select.call('tradeables'); } },
+        'select_invert': { text: 'Invert', click: () => { $armory.select.call('invert'); } },
+        'code_popup': { text: 'Equip Code', click: () => { $armory.equipcode.list(); } },
+        'code_edit': { text: 'Edit Format', click: () => { $config.open('equipCode'); } },
+        'code_save': { text: 'Save', click: () => { $armory.equipcode.save(); } },
+        'code_revert': { text: 'Revert', click: () => { $armory.equipcode.load(); } },
+
+        'select_purchase': {},
+        'submit_purchase': { text: 'Purchase', click: () => { $armory.submit.confirm('purchase'); } },
+        'select_purchase_salvage': { text: 'Select:', click: () => { $armory.select.call('purchase_salvage'); } },
+        'submit_purchase_salvage': { text: 'Purchase & Salvage', click: () => { $armory.submit.confirm('purchase_salvage'); } },
+        'select_sell': { text: 'Select:', click: () => { $armory.select.call('sell'); } },
+        'submit_sell': { text: 'Sell', click: () => { $armory.submit.confirm('sell'); } },
+        'select_salvage': { text: 'Select:', click: () => { $armory.select.call('salvage'); } },
+        'submit_salvage': { text: 'Salvage', click: () => { $armory.submit.confirm('salvage'); } },
+
+        'filter_toggle': {},
+        'filter_bazaar': { text: 'Edit Bazaar Filters', click: () => { $config.open('equipmentShopBazaarFilters'); } },
+        'filter_protect': { text: 'Edit Protect Filters', click: () => { $config.open('equipmentShopProtectFilters'); } },
+        'price_edit': { text: 'Item Prices', click: () => { $price.edit('Materials', 'ma', $armory.calc.edit); } },
+
+      },
+      init: function () {
+        $armory.node.side = $element('div', $id('armory_left').lastElementChild, ['.hvut-side hvut-am-side']);
+      },
+      list: function (...items) {
+        items.forEach((item) => {
+          if (typeof item === 'string') {
+            $armory.side.add(item);
+          } else if (Array.isArray(item)) {
+            if (item.length === 1) {
+              $armory.side.add(item[0], ['.hvut-side-margin']);
+            } else {
+              $armory.side.add(item[0], ['.hvut-side-top']);
+              item.slice(1, -1).forEach((item) => $armory.side.add(item, ['.hvut-side-mid']));
+              $armory.side.add(item.at(-1), ['.hvut-side-bottom']);
+            }
+          }
+        });
+      },
+      add: function (item, attr) {
+        const data = $armory.side.data[item];
+        const button = $input(['button', data.text], $armory.node.side, attr, data.click);
+        if (item === 'filter_toggle') {
+          toggle_button(button, 'Filter: On', 'Filter: Off', $armory.node.table, 'hvut-eqp-filter-on', '', () => { $armory.filter.toggle(); });
+        }
       },
     },
 
@@ -8380,10 +8694,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
     calc: {
       materials: function (eq) {
         const materials = {};
-        const q = $armory.quality[eq.info.quality];
+        const q = $armory.quality_grade[eq.info.quality];
         const t = $armory.material_type[eq.info.type] || $armory.material_type[eq.info.category];
-        const c = $armory.core_type[eq.data.category];
-        const r = $armory.rarity.includes(eq.info.type);
+        const c = $armory.core_type[eq.info.category];
+        const r = $armory.rares.includes(eq.info.type);
         const p = eq.data.sell_price || eq.data.purchase_price / 5;
 
         if (!q) { // obsolete or unknown
@@ -8391,8 +8705,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
           const scrap = 'Scrap ' + t;
           materials[scrap] = Math.min(10, Math.ceil(p / 100));
         } else {
-          const mat = ((q === 4) ? 'Low-Grade ' : (q === 5) ? 'Mid-Grade ' : 'High-Grade ') + (t === 'Metal' ? 'Metals' : t);
-          materials[mat] = _server.persistent ? 1 : (q === 4) ? 3 : (q === 5) ? 2 : 1;
+          const item = ((q === 4) ? 'Low-Grade ' : (q === 5) ? 'Mid-Grade ' : 'High-Grade ') + (t === 'Metal' ? 'Metals' : t);
+          materials[item] = _server.persistent ? 1 : (q === 4) ? 3 : (q === 5) ? 2 : 1;
         }
         if (q >= 7) {
           const core = ((q === 7) ? 'Legendary ' : 'Peerless ') + c + ' Core';
@@ -8520,9 +8834,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
         equiplist.forEach((eq) => {
           eq.node.upgrade = eq.node.elem.lastElementChild;
           eq.node.upgrade.classList.add('hvut-eqp-upgrade');
-          if (eq.info.upgrade_max && eq.node.level) {
-            eq.node.level.textContent = `${eq.info.upgrade} / ${eq.info.iw}`;
+          if (eq.info.upgrade_cap && eq.node.level) {
             eq.node.upgrade.textContent = '';
+            eq.node.level.textContent = `${eq.info.upgrade} / ${eq.info.iw}`;
+            eq.node.level.classList.add('hvut-eqp-upgrade');
           }
         });
       },
@@ -8595,8 +8910,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
         }
       },
       update: function () {
-        // _window.selectable_count
-        selectable_count = $armory.equiplist.filter((eq) => eq.node.check.name === 'eqids[]' && !eq.node.wrapper.dataset.eqprotect).length;
         $armory.select.update();
       },
       protect: function (equiplist, table) {
@@ -8613,7 +8926,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
         $armory.node.table.classList.add('hvut-eqp-filter-on');
         if ($config.settings.equipmentShopAutoProtect) {
           const equips = equiplist.filter((eq) => eq.data.protected && !eq.info.protected);
-          $armory.submit.organize(equips, 'protected');
+          $armory.organize.submit(equips, 'protected');
         }
       },
       bazaar: function (equiplist, table) {
@@ -8704,6 +9017,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
         const dummy = $id('equipcount') ? null : $element('label', $id('equipform'), ['#equipcount', '.hvut-none']);
         // _window.curr_hover_eqid
         curr_hover_eqid = 0; // prevent an error at update_iteminfo() / hveqc.js
+        selectable_count = $armory.equiplist.filter((eq) => eq.node.check.name === 'eqids[]' && !eq.node.wrapper.dataset.eqprotect).length;
         _window.update_selected_count();
         dummy?.remove();
       },
@@ -8756,19 +9070,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
           }
         });
       },
-      organize: async function (equips, set) {
-        const data = $armory.submit.data(equips);
-        if (!data) {
-          return;
-        }
-        const set_pinned = (set === 'pinned') ? 1 : 0;
-        const set_stored = (set === 'stored') ? 1 : 0;
-        const set_locked = (set === 'locked') ? 2 : (set === 'protected') ? 1 : 0;
-        const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize', data + `&set_pinned=${set_pinned}&set_stored=${set_stored}&set_locked=${set_locked}`);
-        const doc = $doc(html);
-        $armory.submit.message(doc);
-        $armory.submit.status(equips, set);
-      },
       purchase: async function (equips) {
         const data = $armory.submit.data(equips);
         if (!data) {
@@ -8814,6 +9115,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
         if (!equips.length) {
           return null;
         }
+        if (!$armory.postoken) {
+          return;
+        }
         const eqids = equips.map((eq) => `eqids[]=${eq.info.eid}`).join('&');
         const data = `postoken=${$armory.postoken}&${eqids}`;
         return data;
@@ -8826,31 +9130,157 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
         outer.addEventListener('click', () => { outer.remove(); });
         $id('mainpane').prepend(outer);
       },
-      status: function (equips, set) {
-        const list = ['equipped', 'stored', 'pinned', 'protected', 'locked', 'highlevel'];
-        equips.forEach((eq) => {
-          eq.info[set] = true;
-          if (set === 'protected') {
-            eq.info.locked = false;
-          } else if (set === 'locked') {
-            eq.info.protected = false;
-          }
-          const text = list.filter((s) => eq.info[s]).map((s) => $equip.icon[s]).join('');
-          if (!eq.node.status) {
-            const label = eq.node.check.parentNode;
-            label.lastChild.remove();
-            eq.node.status = $element('a', label);
-            $element('', label, eq.info.name || eq.info.customname);
-          }
-          eq.node.status.textContent = ` ${text} `;
-        });
-      },
       remove: function (equips) {
         equips.forEach((eq) => {
           eq.node.check.name = '';
           eq.node.wrapper.remove();
         });
         $armory.filter.update();
+        $armory.organize.hide();
+      },
+    },
+
+    organize: {
+      init: function () {
+        if (!$armory.postoken) {
+          $armory.get_token();
+        }
+        $armory.organize.side();
+        $armory.organize.float();
+      },
+      click: function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) {
+          return;
+        }
+        const { action, value } = target.dataset;
+        const { eid } = target.closest('[data-eid]').dataset;
+        $armory.organize.submit(eid, action, value);
+      },
+      side: function () {
+        const div = $element('div', $armory.node.side, ['.hvut-am-organize', { dataset: { eid: 'selected' } }], $armory.organize.click);
+        $input(['button', $equip.icon.stored], div, { dataset: { action: 'stored', value: '1' } });
+        $input(['button', $equip.icon.protected], div, { dataset: { action: 'protected', value: '1' } });
+        $input(['button', $equip.icon.locked], div, { dataset: { action: 'locked', value: '1' } });
+        $input(['button', $equip.icon.stored], div, { dataset: { action: 'stored', value: '' } });
+        $input(['button', $equip.icon.protected + $equip.icon.locked], div, ['.hvut-am-unlock', { dataset: { action: 'locked', value: '' } }]);
+      },
+      float: function () {
+        const table = $armory.node.table;
+        table.addEventListener('hoverover', $armory.organize.hoverover);
+        table.addEventListener('hoverout', $armory.organize.hoverout);
+        const div = $element('div', $id('equiplist'), ['.hvut-am-organize hvut-none', { dataset: { eid: '' } }], $armory.organize.click);
+        const stored = $input(['button', $equip.icon.stored], div, { dataset: { action: 'stored', value: '' } });
+        const protected = $input(['button', $equip.icon.protected], div, { dataset: { action: 'protected', value: '' } });
+        const locked = $input(['button', $equip.icon.locked], div, { dataset: { action: 'locked', value: '' } });
+        $armory.node.organize = { div, stored, protected, locked };
+      },
+      hoverover: function (e) {
+        const tr = e.detail.to;
+        const div = $armory.node.organize.div;
+        if (div.contains(e.detail.relatedTarget) && div.dataset.eid === tr.dataset.eid) {
+          return;
+        }
+        $armory.organize.show(tr);
+      },
+      hoverout: function (e) {
+        if (e.detail.to) {
+          return;
+        }
+        const tr = e.detail.from;
+        const div = $armory.node.organize.div;
+        if (div.contains(e.detail.relatedTarget) && div.dataset.eid === tr.dataset.eid) {
+          return;
+        }
+        $armory.organize.hide();
+      },
+      show: function (tr) {
+        const div = $armory.node.organize.div;
+        const parent = $id('equiplist');
+        const table = $armory.node.table;
+        const td = tr.cells[0];
+        const eid = tr.dataset.eid;
+        div.style.top = (table.offsetTop + table.clientTop + td.offsetTop + td.clientTop + 1) + 'px';
+        div.style.right = (parent.clientWidth - (table.offsetLeft + table.clientLeft + td.offsetLeft + td.clientLeft + td.offsetWidth) + 2) + 'px';
+        div.dataset.eid = eid;
+        div.classList.remove('hvut-none');
+
+        const eq = $armory.equiplist.find((eq) => eq.info.eid == eid);
+        $armory.organize.update(eq);
+      },
+      hide: function () {
+        const div = $armory.node.organize.div;
+        div.dataset.eid = '';
+        div.classList.add('hvut-none');
+      },
+      submit: async function (eid, name, value = true) {
+        value = !!value;
+        let equips;
+        if (eid === 'selected') {
+          equips = $armory.submit.selected();
+        } else if (Array.isArray(eid)) {
+          equips = eid;
+        } else if (eid) {
+          equips = [$armory.equiplist.find((eq) => eq.info.eid == eid)];
+        } else {
+          return;
+        }
+        const data = $armory.submit.data(equips);
+        if (!data) {
+          return;
+        }
+        let param_name = name;
+        if (name === 'protected') {
+          param_name = 'locked';
+        }
+        let param_value = value ? 1 : -1;
+        if (name === 'locked' && value) {
+          param_value = 2;
+        }
+        const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize', data + `&set_${param_name}=${param_value}`);
+        const doc = $doc(html);
+        $armory.submit.message(doc);
+        equips.forEach((eq) => {
+          $armory.organize.status(eq, name, value);
+        });
+      },
+      status: function (eq, name, value) {
+        const status = ['damaged', 'unusable', 'equipped', 'stored', 'pinned', 'protected', 'locked', 'highlevel'];
+        eq.info[name] = value;
+        if (name === 'stored') {
+          eq.info.stored = !eq.info.equipped && value;
+        }
+        if (name === 'protected') {
+          eq.info.locked = false;
+        }
+        if (name === 'locked') {
+          eq.info.protected = false;
+        }
+        const text = status.filter((s) => eq.info[s]).map((s) => $equip.icon[s]).join('');
+        if (!eq.node.status) {
+          const label = eq.node.check.parentNode;
+          label.lastChild.remove();
+          eq.node.status = $element('a', label);
+          $element('', label, eq.info.customname || eq.info.name);
+        }
+        eq.node.status.textContent = ` ${text} `;
+        $armory.organize.update(eq);
+      },
+      update: function (eq) {
+        if ($armory.node.organize) {
+          const { stored, protected, locked } = $armory.node.organize;
+          if (eq.info.equipped) {
+            stored.disabled = true;
+            stored.value = $equip.icon.equipped;
+            stored.dataset.value = '';
+          } else {
+            stored.disabled = false;
+            stored.value = $equip.icon.stored;
+            stored.dataset.value = eq.info.stored ? '' : '1';
+          }
+          protected.dataset.value = eq.info.protected ? '' : '1';
+          locked.dataset.value = eq.info.locked ? '' : '1';
+        }
       },
     },
 
@@ -8895,10 +9325,48 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
         const text = array.join(', ');
         return text;
       },
-      code: function () {
+      equip: function (eq, eid_max) {
+        eq.data._eid = eq.info.eid.toString();
+        const eid_len = eq.data._eid.length;
+        if (eid_max > eid_len) {
+          const _ = '_'.repeat(eid_max - eid_len);
+          eq.data._eid = `[color=transparent]${_}[/color]${eq.data._eid}`;
+        }
+        if (!eq.data.url) {
+          eq.data.url = `${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}`;
+        }
+        //if (!eq.data.namecode) {
+        $equip.namecode(eq);
+        //}
+        const data = $armory.equipcode.parse(eq.node.note.value);
+        Object.assign(eq.data, data);
+
+        const template = $config.settings.equipCode.EQUIP;
+        const code = template.replace(/\{\$(\w+)(\s*\?(.*?)(?::(.*?))?)?\}/g, (s, k, e, t, f) => {
+          const v = (k in eq.data) ? eq.data[k] : (k in eq.info) ? eq.info[k] : '';
+          if (!e) {
+            return v ?? '';
+          } else {
+            const r = v ? t : f || '';
+            return r.replace(/\$(\w+)/g, (s, k) => { const v = (k in eq.data) ? eq.data[k] : (k in eq.info) ? eq.info[k] : ''; return v ?? ''; });
+          }
+        }).trim();
+        return code;
+      },
+      category: function (category) {
+        const template = '\n\n\n' + $config.settings.equipCode.CATEGORY + '\n';
+        const code = template.replace('{$category}', category);
+        return code;
+      },
+      type: function (type) {
+        const template = '\n\n' + $config.settings.equipCode.TYPE + '\n\n';
+        const code = template.replace('{$type}', type);
+        return code;
+      },
+      list: function () {
         const equiplist = $armory.equiplist.filter((e) => e.node.check.checked);
-        const eid_maxlen = Math.max(...equiplist.map((e) => e.info.eid.toString().length));
-        let code = '';
+        const eid_max = Math.max(...equiplist.map((e) => e.info.eid.toString().length));
+        let code_list = '';
         let code_featured = '';
 
         $equip.sort(equiplist);
@@ -8906,7 +9374,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
           const p = a[i - 1] || { info: {} };
           if (eq.info.category !== p.info.category) {
             const category = eq.info.category;
-            code += `\n\n\n[size=3][b][${category}][/b][/size]\n`;
+            code_list += $armory.equipcode.category(category);
           }
 
           switch (eq.info.category) {
@@ -8914,97 +9382,75 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
             case 'Two-handed Weapon':
               if (eq.info.type !== p.info.type) {
                 const type = eq.info.type || 'Unknown';
-                code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
+                code_list += $armory.equipcode.type(type);
               } else if (eq.info.suffix !== p.info.suffix) {
-                code += '\n';
+                code_list += '\n';
               }
               break;
             case 'Staff':
               if (eq.info.type !== p.info.type) {
                 const type = eq.info.type || 'Unknown';
-                code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
+                code_list += $armory.equipcode.type(type);
               } else if (eq.info.prefix !== p.info.prefix) {
-                code += '\n';
+                code_list += '\n';
               }
               break;
             case 'Shield':
               if (eq.info.type !== p.info.type) {
                 const type = eq.info.type || 'Unknown';
-                code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
+                code_list += $armory.equipcode.type(type);
               }
               break;
             case 'Cloth Armor':
               if (eq.info.suffix !== p.info.suffix) {
                 const type = eq.info.type ? (eq.info.suffix || 'suffixless') : 'Unknown';
-                code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
+                code_list += $armory.equipcode.type(type);
               } else if (eq.info.slot !== p.info.slot) {
-              //code += '\n';
+                //code_list += '\n';
               }
               break;
             case 'Light Armor':
             case 'Heavy Armor':
               if (eq.info.type !== p.info.type) {
                 const type = eq.info.type || 'Unknown';
-                code += `\n\n[size=2][b][${type}][/b][/size]\n\n`;
+                code_list += $armory.equipcode.type(type);
               } else if (eq.info.slot !== p.info.slot) {
-                code += '\n';
+                code_list += '\n';
               }
               break;
           }
 
-          eq.data._eid = eq.info.eid.toString();
-          const eid_len = eq.data._eid.length;
-          if (eid_maxlen > eid_len) {
-            eq.data._eid = '[color=transparent]' + '_'.repeat(eid_maxlen - eid_len) + '[/color]' + eq.data._eid;
-          }
-          if (!eq.data.url) {
-            eq.data.url = `${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}`;
-          }
-          //if (!eq.data.namecode) {
-          $equip.namecode(eq);
-          //}
-          const data = $armory.equipcode.parse(eq.node.note.value);
-          Object.assign(eq.data, data);
-
-          const equipcode = $config.settings.equipCode.replace(/\{\$(\w+)(\s*\?(.*?)(?::(.*?))?)?\}/g, (s, k, e, t, f) => {
-            const v = (k in eq.data) ? eq.data[k] : (k in eq.info) ? eq.info[k] : '';
-            if (!e) {
-              return v ?? '';
-            } else {
-              const r = v ? t : f || '';
-              return r.replace(/\$(\w+)/g, (s, k) => { const v = (k in eq.data) ? eq.data[k] : (k in eq.info) ? eq.info[k] : ''; return v ?? ''; });
-            }
-          }).trim();
-
-          code += equipcode + '\n';
+          const equipcode = $armory.equipcode.equip(eq, eid_max);
+          code_list += equipcode + '\n';
           if (eq.data['featured']) {
             code_featured += equipcode + '\n';
           }
         });
 
         if (code_featured) {
-          code = '\n\n\n[size=3][b][Featured][/b][/size]\n\n' + code_featured + code;
+          code_list = $armory.equipcode.category('Featured') + '\n' + code_featured + code_list;
         }
-        popup_text(code.trim() || '未选中装备.', 900, 500);
+        popup_text(code_list.trim() || 'No equipment selected.', 900, 500);
       },
     },
-
   };
 
   GM_addStyle(/*css*/`
     .armory_tab { padding: 12px 5px; }
-    .hvut-am-side { width: 85px; margin-top: -100px; margin-left: 1230px; }
-    .hvut-eqp-level ~ .hvut-eqp-upgrade { display: none; }
-    .hvut-eqp-note { width: 90px; }
-    .hvut-eqp-note input { width: 80px; margin: 0; font-size: 9pt; }
+    .hvut-am-side { width: 85px; margin-top: 20px; margin-left: -5px; padding-top: 10px; border-top: 1px solid var(--color-border-default); }
+    #equiplist > .hvut-am-organize { position: absolute; }
+    .hvut-am-side .hvut-am-organize { margin-bottom: 10px; }
+    .hvut-am-organize input { width: 26px; margin: 1px; border: 1px solid var(--color-border-light); border-radius: 3px; background-color: var(--color-bg-h1); color: var(--color-font-default); font-size: 10pt; line-height: 20px; }
+    #equiplist > .hvut-am-organize input[data-value='1'] { filter: grayscale(100%); }
+    .hvut-am-side > .hvut-am-organize input[data-value=''] { filter: grayscale(100%); }
+    .hvut-am-organize .hvut-am-unlock { width: 54px; }
   `);
 
-  $armory.node.side = $element('div', $id('armory_left').lastElementChild, ['.hvut-side hvut-am-side']);
-  $armory.page.init(null, _query.screen);
-  $armory.equiplist = $equip.list.table($armory.node.table);
-  $armory.node.table.addEventListener('click', $armory.click, true);
-  $armory.submit.button();
-  //search
+  $armory.init();
+
+  if (_query.screen !== 'purchase' && _query.filter !== 'salvaged') {
+    $armory.organize.init();
+  }
 
   if (_query.screen === 'organize') {
     $armory.integrate.tab();
@@ -9013,14 +9459,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
     } else {
       $armory.modify.organize();
     }
-
-    $input(['button', 'Select All'], $armory.node.side, null, () => { $armory.select.all(); });
-    $input(['button', 'Tradeables'], $armory.node.side, null, () => { $armory.select.call('tradeables'); });
-    $input(['button', 'Invert'], $armory.node.side, { className: 'hvut-side-margin' }, () => { $armory.select.call('invert'); });
-    $input(['button', 'Equip Code'], $armory.node.side, null, () => { $armory.equipcode.code(); });
-    $input(['button', 'Edit Format'], $armory.node.side, null, () => { $config.open('equipCode'); });
-    $input(['button', 'Save'], $armory.node.side, null, () => { $armory.equipcode.save(); });
-    $input(['button', 'Revert'], $armory.node.side, null, () => { $armory.equipcode.load(); });
+    $armory.side.list(['select_all'], 'code_popup', 'code_edit', 'code_save', 'code_revert');
   }
 
   if (_query.screen === 'modify') {
@@ -9034,14 +9473,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
     } else {
       $armory.modify.purchase();
     }
-
-    $input(['button', '全选'], $armory.node.side, { className: 'hvut-side-margin' }, () => { $armory.select.all(); });
-    $input(['button', '购买选中'], $armory.node.side, { className: 'hvut-side-margin' }, () => { $armory.submit.confirm('purchase'); });
-    $input(['button', '智能购买'], $armory.node.side, null, () => { $armory.select.call('purchase_salvage'); });
-    $input(['button', '购买后分解'], $armory.node.side, { className: 'hvut-side-margin' }, () => { $armory.submit.confirm('purchase_salvage'); });
-    toggle_button($input('button', $armory.node.side), '过滤器: 开启', '过滤器: 关闭', $armory.node.table, 'hvut-eqp-filter-on', '', () => { $armory.filter.toggle(); });
-    $input(['button', '过滤规则'], $armory.node.side, null, () => { $config.open('equipmentShopBazaarFilters'); });
-    $input(['button', '材料价格'], $armory.node.side, null, () => { $price.edit('Materials', 'ma', $armory.calc.edit); });
+    $armory.side.list(['select_all'], ['submit_purchase'], ['select_purchase_salvage', 'submit_purchase_salvage'], 'filter_toggle', 'filter_bazaar', 'price_edit');
   }
 
   if (_query.screen === 'sell') {
@@ -9051,16 +9483,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
     } else {
       $armory.modify.sell();
     }
-
-    $input(['button', '全选'], $armory.node.side, null, () => { $armory.select.all(); });
-    $input(['button', '锁定'], $armory.node.side, null, () => { $armory.submit.confirm('organize', 'locked'); });
-    $input(['button', '存仓'], $armory.node.side, { className: 'hvut-side-margin' }, () => { $armory.submit.confirm('organize', 'stored'); });
-    $input(['button', '智能出售'], $armory.node.side, null, () => { $armory.select.call('sell'); });
-    $input(['button', '出售'], $armory.node.side, { className: 'hvut-side-margin' }, () => { $armory.submit.confirm('sell'); });
-    $input(['button', '智能分解'], $armory.node.side, null, () => { $armory.select.call('salvage'); });
-    $input(['button', '分解'], $armory.node.side, { className: 'hvut-side-margin' }, () => { $armory.submit.confirm('salvage'); });
-    $input(['button', '编辑过滤器'], $armory.node.side, null, () => { $config.open('equipmentShopProtectFilters'); });
-    $input(['button', '编辑材料价格'], $armory.node.side, null, () => { $price.edit('Materials', 'ma', $armory.calc.edit); });
+    $armory.side.list(['select_all'], ['select_sell', 'submit_sell'], ['select_salvage', 'submit_salvage'], 'filter_protect', 'price_edit');
   }
 
   if (_query.screen === 'salvage') {
@@ -9070,16 +9493,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
     } else {
       $armory.modify.salvage();
     }
-
-    $input(['button', 'Select All'], $armory.node.side, null, () => { $armory.select.all(); });
-    $input(['button', 'Lock'], $armory.node.side, null, () => { $armory.submit.confirm('organize', 'locked'); });
-    $input(['button', 'Store'], $armory.node.side, { className: 'hvut-side-margin' }, () => { $armory.submit.confirm('organize', 'stored'); });
-    $input(['button', 'Select:'], $armory.node.side, null, () => { $armory.select.call('sell'); });
-    $input(['button', 'Sell'], $armory.node.side, { className: 'hvut-side-margin' }, () => { $armory.submit.confirm('sell'); });
-    $input(['button', 'Select:'], $armory.node.side, null, () => { $armory.select.call('salvage'); });
-    $input(['button', 'Salvage'], $armory.node.side, { className: 'hvut-side-margin' }, () => { $armory.submit.confirm('salvage'); });
-    $input(['button', 'Edit Filters'], $armory.node.side, null, () => { $config.open('equipmentShopProtectFilters'); });
-    $input(['button', 'Item Prices'], $armory.node.side, null, () => { $price.edit('Materials', 'ma', $armory.calc.edit); });
+    $armory.side.list(['select_all'], ['select_sell', 'submit_sell'], ['select_salvage', 'submit_salvage'], 'filter_protect', 'price_edit');
   }
 
   const onkeydown = document.onkeydown;
@@ -9088,7 +9502,29 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
   }
   //document.addEventListener('keydown', (e) => { if (e.target.nodeName === 'INPUT' || e.target.nodeName === 'TEXTAREA') { e.stopPropagation(); } }, true);
 } else
-// [END 10] Armory */
+// [END 10] Armory - Equiplist */
+
+
+//* [11] Armory
+if (_query.s === 'Bazaar' && _query.ss === 'am' && _query.screen === 'modify') {
+  if ($id('upgrmats')) {
+    const table = $id('upgrmats');
+    const materials = {};
+    Array.from(table.rows).forEach((tr) => {
+      if (tr.cells[0].colSpan !== 1) {
+        const credits = parseInt(tr.cells[0].textContent.match(/([0-9,]+) Credits/)?.[1].replace(/,/g, '') || 0);
+        materials['Credits'] = credits;
+        return;
+      }
+      const count = parseInt(tr.cells[0].textContent);
+      const name = tr.cells[1].textContent;
+      materials[name] = count;
+    });
+    const cost = $price.value(materials) + materials['Credits'];
+    $element('p', [table, 'afterend'], `Total Cost: ${cost.toLocaleString()}`);
+  }
+} else
+// [END 11] Armory */
 
 // eslint-disable-next-line brace-style
 {} // END OF [else if]; DO NOT REMOVE THIS LINE!

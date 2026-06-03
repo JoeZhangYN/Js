@@ -1,20 +1,25 @@
 // ==UserScript==
-// @name           HV Utils 汉化
+// @name           HV Utils
 // @namespace      HVUT
 // @description    A comprehensive out-of-battle script for Hentaiverse
 // @homepageURL    https://forums.e-hentai.org/index.php?showtopic=211883
 // @supportURL     https://forums.e-hentai.org/index.php?showtopic=211883
-// @version        3.0.0
+// @version        4.0.0
+// @date           2025-11-15
 // @author         sssss2
-// @icon           https://hentaiverse.org/y/favicon.png
 // @match          *://*.hentaiverse.org/*
 // @match          *://e-hentai.org/*
 // @connect        hentaiverse.org
 // @connect        e-hentai.org
-// @exclude        https://hentaiverse.org/isekai/*
-// @exclude        *://*.hentaiverse.org/isekai/*
+// @exclude        *://hentaiverse.org/equip/*
+// @exclude        *://alt.hentaiverse.org/equip/*
+// @exclude        *://hentaiverse.org/isekai/equip/*
+// @exclude        *://alt.hentaiverse.org/isekai/equip/*
+// @exclude        *://hentaiverse.org/isekai/*
+// @exclude        *://alt.hentaiverse.org/isekai/*
 // @grant          GM_getValue
 // @grant          GM_setValue
+// @grant          GM_deleteValue
 // @grant          GM_addStyle
 // @grant          GM_xmlhttpRequest
 // @grant          GM_setClipboard
@@ -22,151 +27,25 @@
 // @run-at         document-end
 // ==/UserScript==
 
-var settings = {
+const settings = {
 
-  // [GLOBAL]
-  randomEncounter: true, // Random Encounter Notification
-  reGallery: true, // use it on the gallery
-  reGalleryAlt: false, // open RE links to alt.hentaiverse.org on the gallery
-  reBeep: { volume: 0, frequency: 500, time: 0.5, delay: 1 }, // beep when a RE is ready; set volume to 0 to disable
-  // you can test the beep by removing slashes in front of the following line
-  // reBeepTest: setTimeout(() => play_beep(settings.reBeep), 100),
-  reBattleCSS: 'top: 10px; left: 600px; position: absolute; cursor: pointer; font-size: 10pt; font-weight: bold;', // modify top and left to locate the timer
+  // [GENERAL]
+  reNotification: true,
+  reGallery: true,
+  reGalleryAlt: false,
+  reBeep: [0.2, 500, 0.5], // [volume, frequency, duration]
 
-  reloadBattleURL: 1, // when entering the battle; 0:do nothing, 1:change the url only (recommended), 2:reload the page
-  ajaxRound: true, // support Monsterbation
+  topMenuIntegration: true,
+  topMenuLinks: ['Character', 'Equipment', 'Item Inventory', 'Equip Inventory', 'Equipment Shop', 'Item Shop', 'The Market', 'Monster Lab', 'The Shrine', 'MoogleMail', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'],
+  confirmStaminaRestorative: true,
+  disableStaminaRestorative: 79,
+  warnLowStamina: 10,
 
-  topMenuAlign: 'left', // '' (blank, default), 'left', 'center', 'right', or 'space-between', 'space-around', space-evenly'
-  topMenuIntegrate: true, // integrate menus into one button
-  topMenuLinks: ['角色面板', '技能', '装备', '莫古利邮局', '训练', '雪花祭坛', '怪物实验室', '物品仓库', '装备仓库', '物品商店', '装备商店', '交易市场', '竞技场', '塔楼', '浴血擂台', '道具界', '装备重铸', '压榨界'],
-  confirmStaminaRestorative: true, // confirm whether to use a stamina restorative item
-  disableStaminaRestorative: 85, // disable a stamina restorative button when your stamina is higher than this
-  warnLowStamina: 2, // warn when your stamina is lower than this
-
-  showCredits: true, // show your credits balance on all pages
-  showEquipSlots: 2, // show Equip Inventory Slots; 0:disable, 1:battle pages only, 2:always
-  showLottery: true, // show weapon and armor that are currently in the lottery
-
-  equipSort: true, // sort equipment list, order by category
-  equipColor: true, // set background colors for equipment; Default colors: peerless red, legendary orange, magnificent blue, exquisite green
-
-  equipmentKeyFunctions: true, // support some keyboard actions when mouse over the equipment
-  // 'V': open equipment links in a new tab, instead of in a popup
-  // 'L': show link code [url=...]...[/url]
-  equipmentMouseFunctions: true, // support some mouse actions when mouse over the equipment
-  // doubleclick : open equipment links
-
-  // [CHARACTER]
-  character: true,
-  characterExpandStatsByDefault: true,
-  equipment: true,
-  equipmentStatsAnalyzer: true, // calculate magic score, proficiency, resist chance of monsters and expected damage
-  abilities: true, // show current and maximum level of every ability, and set ability to the required level in one click
-  training: true, // calculate costs
-  trainingTimer: true, // plan training to a preset level and start training automatically
-  itemInventory: true, // WTS forum code generator
-  equipInventory: true, // WTS forum code generator
-  equipInventoryIntegration: true, // integrate all equip types on the default inventory page
-  equipCode: '[{$_eid}] [url={$url}]{$namecode}[/url] ({$level?Lv.$level}{$soulbound?Soulbound}{$unassigned?Unassigned}, {$pab}{$note?, $note}){$price? @ $price}',
-  equipNameCode: [
-    'Peerless : quality=rainbow, name=bold',
-    'Legendary : quality=#f90, quality=bold',
-    'Magnificent : quality=#69f',
-    'Exquisite : quality=#3c3',
-    '(Rapier || Shortsword) && Slaughter : type=bold, suffix=bold ; Ethereal : prefix=#f00 ; (Hallowed || Demonic) : prefix=#f90',
-    '(Club || Axe) && Slaughter && Ethereal : prefix=#f00, type=bold, suffix=bold',
-    '(Rapier || Wakizashi) && (Balance || Nimble) && Ethereal : prefix=#f00, type=bold, suffix=bold',
-    'Wakizashi && (Nimble || Battlecaster) && (Fiery || Arctic || Shocking || Tempestuous) : prefix=#f00, type=bold, suffix=bold',
-    '(Estoc || Katana || Longsword || Mace) && Slaughter && Ethereal : prefix=#f00, type=bold, suffix=bold',
-    'Oak && Hallowed && Heimdall : prefix=#f00, type=bold, suffix=bold',
-    'Willow && (Shocking || Tempestuous || Demonic) && Destruction : prefix=#f00, type=bold, suffix=bold',
-    'Katalox && Hallowed && (Destruction || Heimdall || Heaven-sent) : prefix=#f90, type=bold',
-    'Katalox && Demonic && (Destruction || Fenrir || Demon-fiend) : prefix=#f90, type=bold',
-    'Redwood && (Fiery || Arctic || Shocking || Tempestuous) && Destruction : prefix=#f00, type=bold, suffix=bold',
-    'Redwood && (Fiery || Arctic || Shocking || Tempestuous) && Elementalist : prefix=$f90, type=bold',
-    'Redwood && (Fiery && Surtr || Arctic && Niflheim || Shocking && Mjolnir || Tempestuous && Freyr) : prefix=#f90, type=bold',
-    'Force Shield : type=bold ; Protection || Dampening || Deflection : suffix=bold',
-    'Buckler && (Barrier || Battlecaster) : type=bold, suffix=bold ; Reinforced : prefix=#f90',
-    'Phase : type=bold ; Radiant || Charged : prefix=#f00 ; Mystic || Frugal : prefix=#f90',
-    'Cotton && (Elementalist || Heaven-sent || Demon-fiend) : suffix=bold ; Charged : prefix=#f00 ; Elementalist && Shoes || (Heaven-sent || Demon-fiend) && Robe : slot=bold',
-    'Shade && Shadowdancer : type=bold, suffix=bold ; Savage : prefix=#f00 ; Agile : prefix=#f90',
-    'Power : type=bold ; Savage : prefix=#f90 ; Slaughter : suffix=bold ; Savage && Slaughter : prefix=#f00',
-    'Plate && Shielding : prefix=#f90',
-  ],
-  settings: true,
-
-  // [BAZAAR]
-  equipmentShop: true, // sell and salvage equipment at once
-  equipmentShopIntegration: true, // integrate all equip types on the default shop page
-  equipmentShopShowLevel: true, // show equipment's level
-  equipmentShopShowPAB: true, // show equipment's pab
-  equipmentShopConfirm: 1, // 0:no, 1:confirm 'unwise' actions (e.g. selling mag cotton or salvaging shade), 2:confirm all actions
-
-  equipmentShopProtectFilter: [ // prevent YOUR valuable equipment from being selected by 'Select All' button
-    'Peerless',
-    'Legendary',
-    'Magnificent && (Rapier || Shortsword) && Slaughter',
-    'Magnificent && (Force Shield || Buckler && Barrier)',
-    'Magnificent && Fiery && Redwood && (Destruction || Elementalist || Surtr)',
-    'Magnificent && Arctic && Redwood && (Destruction || Elementalist || Niflheim)',
-    'Magnificent && Shocking && (Willow || Redwood) && (Destruction || Elementalist || Mjolnir)',
-    'Magnificent && Tempestuous && (Willow || Redwood) && (Destruction || Elementalist || Freyr)',
-    'Magnificent && Hallowed && (Oak || Katalox) && (Destruction || Heaven-sent || Heimdall)',
-    'Magnificent && Demonic && (Willow || Katalox) && (Destruction || Demon-fiend || Fenrir)',
-    'Magnificent && (Radiant || Charged) && Phase',
-    'Magnificent && Charged && (Elementalist || Heaven-sent || Demon-fiend)',
-    'Magnificent && (Savage || Agile) && Shadowdancer',
-    'Magnificent && Power && Slaughter',
-  ],
-  equipmentShopAutoLock: true, // automatically lock protected equipment
-
-  equipmentShopBazaarFilter: [ // check valuable equipment in BAZZAR, then hide all other trash
-    'Peerless',
-    'Legendary',
-    'Magnificent && Rapier && Slaughter',
-    'Magnificent && (Force Shield || Buckler && Barrier)',
-    'Magnificent && Fiery && Redwood && (Destruction || Elementalist || Surtr)',
-    'Magnificent && Arctic && Redwood && (Destruction || Elementalist || Niflheim)',
-    'Magnificent && Shocking && (Willow || Redwood) && (Destruction || Elementalist || Mjolnir)',
-    'Magnificent && Tempestuous && (Willow || Redwood) && (Destruction || Elementalist || Freyr)',
-    'Magnificent && Hallowed && (Oak || Katalox) && (Destruction || Heaven-sent || Heimdall)',
-    'Magnificent && Demonic && (Willow || Katalox) && (Destruction || Demon-fiend || Fenrir)',
-    'Magnificent && (Radiant || Charged) && Phase',
-    'Magnificent && Charged && (Elementalist || Heaven-sent || Demon-fiend)',
-    'Magnificent && (Savage || Agile) && Shadowdancer',
-    'Magnificent && Power && Slaughter',
-    'Magnificent && Power',
-    '(Magnificent || Exquisite) && (Rapier || Shortsword) && Slaughter && (Eth || Fie || Arc || Shoc || Tem || Hal || Dem)',
-    '(Magnificent || Exquisite) && Katana && Slaughter && Ethereal',
-    '(Magnificent || Exquisite) && Wakizashi && (Balance || Nimble) && (Eth || Fie || Arc || Shoc || Tem || Hal || Dem)',
-    '(Magnificent || Exquisite) && (Force Shield || Buckler && Barrier || Kite Shield)',
-    '(Magnificent || Exquisite) && Shade && (Shadowdancer || Fleet)',
-    '(Magnificent || Exquisite) && Power && Slaughter',
-  ],
-  equipmentShopBazaarCheckIW: true, // check IWed equipment in BAZZAR
-
-  itemShop: true,
-  market: true,
-
-  monsterLab: true, // record gifts, and feed crystals or chaos tokens to monsters
-  monsterLabDefaultSort: '#', // #, name, class, pl, wins, kills, +, gifts, morale, hunger
-  monsterLabCloseDefaultPopup: true,
-
-  shrine: true, // record rewards
-  shrineHideItems: ['Figurine', 'Coupon', 'Peerless Voucher'],
-  shrineTrackEquip: ['Peerless', 'Legendary'], // track high quality equipment only
-
-  moogleMail: true, // Advanced MoogleMail-Sender and MoogleMail-Box
-  moogleMailCouponClipper: true, // if the subject of MoogleMail contains 'Coupon Clipper' or 'Item Shop', take credits, buy requested items, then send them back.
-  moogleMailDarkDescent: true, // if the subject of MoogleMail contains 'Dark Descent' or 'reforge', take equipment, reforge, then send it back.
-  moogleMailTemplate: {
-    //'WTS': { 'to': '', 'subject': '', 'body': '' },
-    //'WTB': { 'to': '', 'subject': '', 'body': '' },
-    //'Free': { 'to': '', 'subject': 'Free Potions', 'body': '500 x Health Draught\n500 x Mana Draught\n200 x Spirit Draught\n100 x Health Potion\n100 x Mana Potion\n50 x Spirit Potion', attach: true },
-  },
-
-  lottery: true,
-  lotteryCheck: [
+  showCredits: 0, // 0:disable, 2:always
+  showEquipSlots: 1, // 0:disable, 1:on battle pages only, 2:always
+  trainingNotification: true,
+  lotteryNotification: true,
+  lotteryFilters: [
     'Rapier && Slaughter',
     'Ethereal && (Rapier || Wakizashi) && (Balance || Nimble)',
     'Wakizashi && Battlecaster',
@@ -185,401 +64,111 @@ var settings = {
     'Power && Savage && Balance',
   ],
 
+  // [EQUIPMENT]
+  equipInventoryIntegration: true,
+  equipSort: true,
+  equipColor: true,
+  equipHoverFunctions: true,
+  equipTouchFunctions: false,
+  equipCode: '[{$_eid}] [url={$url}]{$namecode}[/url] ({$level?Lv.$level}{$soulbound?Soulbound}{$unassigned?Unassigned}, {$pab}{$note?, $note}){$price? @ $price}',
+  equipNameCode: [
+    'Peerless : quality=rainbow, name=bold',
+    'Legendary : quality=#f90, quality=bold',
+    'Magnificent : quality=#69f',
+    'Exquisite : quality=#3c3',
+    '(Rapier || Shortsword) && Slaughter : type=bold, suffix=bold ; Ethereal : prefix=#f00 ; (Hallowed || Demonic) : prefix=#f90',
+    '(Club || Axe) && Slaughter && Ethereal : prefix=#f00, type=bold, suffix=bold',
+    '(Rapier || Wakizashi) && (Balance || Nimble) && Ethereal : prefix=#f00, type=bold, suffix=bold',
+    'Wakizashi && (Nimble || Battlecaster) && (Fiery || Arctic || Shocking || Tempestuous) : prefix=#f00, type=bold, suffix=bold',
+    '(Estoc || Katana || Longsword || Mace) && Slaughter && Ethereal : prefix=#f00, type=bold, suffix=bold',
+    'Oak && Hallowed && Heimdall : prefix=#f00, type=bold, suffix=bold',
+    'Willow && (Shocking || Tempestuous || Demonic) && Destruction : prefix=#f00, type=bold, suffix=bold',
+    'Katalox && Hallowed && (Destruction || Heimdall || Heaven-sent) : prefix=#f90, type=bold',
+    'Katalox && Demonic && (Destruction || Fenrir || Demon-fiend) : prefix=#f90, type=bold',
+    'Redwood && (Fiery || Arctic || Shocking || Tempestuous) && Destruction : prefix=#f00, type=bold, suffix=bold',
+    'Redwood && (Fiery || Arctic || Shocking || Tempestuous) && Elementalist : prefix=#f90, type=bold',
+    'Redwood && (Fiery && Surtr || Arctic && Niflheim || Shocking && Mjolnir || Tempestuous && Freyr) : prefix=#f90, type=bold',
+    'Force Shield : type=bold ; Protection || Dampening || Deflection : suffix=bold',
+    'Buckler && (Barrier || Battlecaster) : type=bold, suffix=bold ; Reinforced : prefix=#f90',
+    'Phase : type=bold ; Radiant || Charged : prefix=#f00 ; Mystic || Frugal : prefix=#f90',
+    'Cotton && (Elementalist || Heaven-sent || Demon-fiend) : suffix=bold ; Charged : prefix=#f00 ; Elementalist && Shoes || (Heaven-sent || Demon-fiend) && Robe : slot=bold',
+    'Shade && Shadowdancer : type=bold, suffix=bold ; Savage : prefix=#f00 ; Agile : prefix=#f90',
+    'Power : type=bold ; Savage : prefix=#f90 ; Slaughter : suffix=bold ; Savage && Slaughter : prefix=#f00',
+    'Plate && Shielding : prefix=#f90',
+  ],
+
+  // [Equipment Shop]
+  equipmentShopIntegration: true,
+  equipmentShopShowLevel: true,
+  equipmentShopShowPAB: true,
+  equipmentShopConfirm: 1, // 0:disable, 1:confirm less-profitable actions, 2:always
+
+  equipmentShopProtectFilters: [
+    'Peerless',
+    'Legendary',
+    'Magnificent && (Rapier || Shortsword) && Slaughter',
+    'Magnificent && (Force Shield || Buckler && Barrier)',
+    'Magnificent && Fiery && Redwood && (Destruction || Elementalist || Surtr)',
+    'Magnificent && Arctic && Redwood && (Destruction || Elementalist || Niflheim)',
+    'Magnificent && Shocking && (Willow || Redwood) && (Destruction || Elementalist || Mjolnir)',
+    'Magnificent && Tempestuous && (Willow || Redwood) && (Destruction || Elementalist || Freyr)',
+    'Magnificent && Hallowed && (Oak || Katalox) && (Destruction || Heaven-sent || Heimdall)',
+    'Magnificent && Demonic && (Willow || Katalox) && (Destruction || Demon-fiend || Fenrir)',
+    'Magnificent && (Radiant || Charged) && Phase',
+    'Magnificent && Charged && (Elementalist || Heaven-sent || Demon-fiend)',
+    'Magnificent && (Savage || Agile) && Shadowdancer',
+    'Magnificent && Power && Slaughter',
+  ],
+  equipmentShopAutoLock: true,
+
+  equipmentShopBazaarFilters: [
+    'Peerless',
+    'Legendary',
+    'Magnificent && Rapier && Slaughter',
+    'Magnificent && (Force Shield || Buckler && Barrier)',
+    'Magnificent && Fiery && Redwood && (Destruction || Elementalist || Surtr)',
+    'Magnificent && Arctic && Redwood && (Destruction || Elementalist || Niflheim)',
+    'Magnificent && Shocking && (Willow || Redwood) && (Destruction || Elementalist || Mjolnir)',
+    'Magnificent && Tempestuous && (Willow || Redwood) && (Destruction || Elementalist || Freyr)',
+    'Magnificent && Hallowed && (Oak || Katalox) && (Destruction || Heaven-sent || Heimdall)',
+    'Magnificent && Demonic && (Willow || Katalox) && (Destruction || Demon-fiend || Fenrir)',
+    'Magnificent && (Radiant || Charged) && Phase',
+    'Magnificent && Charged && (Elementalist || Heaven-sent || Demon-fiend)',
+    'Magnificent && (Savage || Agile) && Shadowdancer',
+    'Magnificent && Power && Slaughter',
+    '$Exquisite+ && (Rapier || Shortsword) && Slaughter && $prefix && $pab=sd && $level<250',
+    '$Exquisite+ && Power && !Warding',
+    '$Superior+ && (Force Shield || Buckler && Barrier || Kite Shield)',
+    '$iw',
+  ],
+
+  monsterLab: true,
+  monsterLabDefaultSort: 'index',
+
+  shrineHideItems: ['Figurine', 'Peerless Voucher'],
+  shrineFilters: ['Peerless', 'Legendary'],
+
+  moogleMail: true,
+  moogleMailCouponClipper: false,
+  moogleMailDarkDescent: false,
+
   // [BATTLE]
-  equipEnchant: true, // Equipment Enchant and Repair Pane
-  equipEnchantPosition: 'left', // position of the pane. left or right
-  equipEnchantWeapon: 4, // number of enchantments for your weapon
-  equipEnchantArmor: 3, // number of enchantments for armors
-  equipEnchantRepairThreshold: 55, // if the value is between 0 and 1, it means the condition % of the equipment (e.g., 0.6 => 60%). else if the value is larger than 1, it means a margin to 50% condition (e.g., 55 => 205/300). in this case, the recommended value for grindfest is 55.
-  equipEnchantInventory: { 'Health Draught': 500, 'Mana Draught': 500, 'Spirit Draught': 500, 'Health Potion': 300, 'Mana Potion': 300, 'Spirit Potion': 300, 'Health Elixir': 100, 'Mana Elixir': 100, 'Spirit Elixir': 100 , 'Last Elixir': 10, 'Flower Vase': 1, 'Bubble-Gum': 1},
-  equipEnchantCheckArmors: true,
-
-  arena: true,
-  ringofblood: true,
-  grindfest: true,
-  itemWorld: true, // calculate pxp gain and potency level
-
-  // [FORGE]
-  upgrade: true, // calculate materials and costs
-  salvage: true, // warn before salvaging an equipment
-
-
-  // [Item Code Generator]
-  itemCodeTemplate:
-  `
-// set itemCode = {$zero?[color=transparent]$zero[/color]}{$count} x {$name} @ {$price}
-// set unpricedCode = {$zero?[color=transparent]$zero[/color]}{$count} x {$name}
-// set unpricedCode = 0; DELETE THIS LINE TO ADD UNPRICED ITEMS TO THE CODE
-// set stockoutCode = [color=#999][s]{$zero}{$count} x {$name}{$price? @ $price}[/s][/color]
-// set stockDigits = 0
-// set keepStock = 0
-
-[size=3][color=#00B000][Consumables][/color][/size]
-
-// set stockDigits = block
-{Health Draught}
-{Mana Draught}
-{Spirit Draught}
-
-// set stockDigits = block
-{Health Potion}
-{Mana Potion}
-{Spirit Potion}
-
-// set stockDigits = block
-{Health Elixir}
-{Mana Elixir}
-{Spirit Elixir}
-{Last Elixir}
-
-// set stockDigits = block
-{Flower Vase}
-{Bubble-Gum}
-
-// set stockDigits = 0
-{Energy Drink}
-
-// set stockDigits = block
-{Infusion of Flames}
-{Infusion of Frost}
-{Infusion of Lightning}
-{Infusion of Storms}
-{Infusion of Divinity}
-{Infusion of Darkness}
-
-// set stockDigits = block
-{Scroll of Swiftness}
-{Scroll of Protection}
-{Scroll of the Avatar}
-{Scroll of Absorption}
-{Scroll of Shadows}
-{Scroll of Life}
-{Scroll of the Gods}
-// set stockDigits = 0
-
-
-[size=3][color=#BA05B4][Crystals][/color][/size]
-
-{Crystal Pack}
-
-// set keepStock = min( Crystal of Vigor, Crystal of Finesse, Crystal of Swiftness, Crystal of Fortitude, Crystal of Cunning, Crystal of Knowledge )
-{Crystal of Vigor}
-{Crystal of Finesse}
-{Crystal of Swiftness}
-{Crystal of Fortitude}
-{Crystal of Cunning}
-{Crystal of Knowledge}
-
-// set keepStock = min( Crystal of Flames, Crystal of Frost, Crystal of Lightning, Crystal of Tempest, Crystal of Devotion, Crystal of Corruption )
-{Crystal of Flames}
-{Crystal of Frost}
-{Crystal of Lightning}
-{Crystal of Tempest}
-{Crystal of Devotion}
-{Crystal of Corruption}
-// set keepStock = 0
-
-
-[size=3][color=#489EFF][Monster Foods][/color][/size]
-
-// set stockDigits = block
-{Monster Chow}
-{Monster Edibles}
-{Monster Cuisine}
-// set stockDigits = 0
-{Happy Pills}
-
-
-[size=3][color=#f00][Shards][/color][/size]
-
-// set stockDigits = block
-{Voidseeker Shard}
-{Aether Shard}
-{Featherweight Shard}
-{Amnesia Shard}
-
-
-[size=3][color=#f00][Materials][/color][/size]
-
-// set stockDigits = block
-{Scrap Cloth}
-{Scrap Leather}
-{Scrap Metal}
-{Scrap Wood}
-
-// set stockDigits = block
-{Low-Grade Cloth}
-{Mid-Grade Cloth}
-{High-Grade Cloth}
-
-{Low-Grade Leather}
-{Mid-Grade Leather}
-{High-Grade Leather}
-
-{Low-Grade Metals}
-{Mid-Grade Metals}
-{High-Grade Metals}
-
-{Low-Grade Wood}
-{Mid-Grade Wood}
-{High-Grade Wood}
-
-// set stockDigits = block
-{Crystallized Phazon}
-{Shade Fragment}
-{Repurposed Actuator}
-{Defense Matrix Modulator}
-
-
-[size=3][color=#f00][Bindings][/color][/size]
-
-// set stockDigits = block
-{Binding of Slaughter}
-{Binding of Balance}
-{Binding of Isaac}
-{Binding of Destruction}
-{Binding of Focus}
-{Binding of Friendship}
-
-{Binding of Protection}
-{Binding of Warding}
-{Binding of the Fleet}
-{Binding of the Barrier}
-{Binding of the Nimble}
-{Binding of Negation}
-
-{Binding of the Elementalist}
-{Binding of the Heaven-sent}
-{Binding of the Demon-fiend}
-{Binding of the Curse-weaver}
-{Binding of the Earth-walker}
-
-{Binding of Surtr}
-{Binding of Niflheim}
-{Binding of Mjolnir}
-{Binding of Freyr}
-{Binding of Heimdall}
-{Binding of Fenrir}
-
-{Binding of Dampening}
-{Binding of Stoneskin}
-{Binding of Deflection}
-
-{Binding of the Fire-eater}
-{Binding of the Frost-born}
-{Binding of the Thunder-child}
-{Binding of the Wind-waker}
-{Binding of the Thrice-blessed}
-{Binding of the Spirit-ward}
-
-{Binding of the Ox}
-{Binding of the Raccoon}
-{Binding of the Cheetah}
-{Binding of the Turtle}
-{Binding of the Fox}
-{Binding of the Owl}
-
-
-[size=3][color=#0000FF][Figurines][/color][/size]
-
-// set stockDigits = block
-// set keepStock = 1
-{Twilight Sparkle Figurine}
-{Rainbow Dash Figurine}
-{Applejack Figurine}
-{Fluttershy Figurine}
-{Pinkie Pie Figurine}
-{Rarity Figurine}
-{Trixie Figurine}
-{Princess Celestia Figurine}
-{Princess Luna Figurine}
-{Apple Bloom Figurine}
-{Scootaloo Figurine}
-{Sweetie Belle Figurine}
-{Big Macintosh Figurine}
-{Spitfire Figurine}
-{Derpy Hooves Figurine}
-{Lyra Heartstrings Figurine}
-{Octavia Figurine}
-{Zecora Figurine}
-{Cheerilee Figurine}
-{Vinyl Scratch Figurine}
-{Daring Do Figurine}
-{Doctor Whooves Figurine}
-{Berry Punch Figurine}
-{Bon-Bon Figurine}
-{Fluffle Puff Figurine}
-{Angel Bunny Figurine}
-{Gummy Figurine}
-
-// set stockDigits = 0
-// set keepStock = 0
-  `,
-
-
-  // [ITEM PRICE], are used in Equipment Shop, Item Shop, Moogle Mail, Monster Lab and Upgrade
-  itemPrice: {
-
-    'WTS': { // WTS price
-      'Health Draught': 23,
-      'Mana Draught': 45,
-      'Spirit Draught': 45,
-
-      'Health Potion': 45,
-      'Mana Potion': 90,
-      'Spirit Potion': 90,
-
-      'Health Elixir': 450,
-      'Mana Elixir': 900,
-      'Spirit Elixir': 900,
-    },
-
-    'WTB': { // MoogleMail CoD
-      'Health Potion': 45,
-      'Mana Potion': 90,
-      'Spirit Potion': 90,
-
-      'Scrap Cloth': 90,
-      'Scrap Leather': 90,
-      'Scrap Metal': 90,
-      'Scrap Wood': 90,
-      'Energy Cell': 180,
-
-      'ManBearPig Tail': 1300,
-      'Holy Hand Grenade of Antioch': 1300,
-      "Mithra's Flower": 1300,
-      'Dalek Voicebox': 1300,
-      'Lock of Blue Hair': 1300,
-      'Bunny-Girl Costume': 2600,
-      'Hinamatsuri Doll': 2600,
-      'Broken Glasses': 2600,
-      'Black T-Shirt': 5200,
-      'Sapling': 5200,
-      'Unicorn Horn': 5000,
-      'Noodly Appendage': 5000,
-    },
-
-    'Materials': { // Monster Lab, Upgrade and Salvage
-      'Wispy Catalyst': 90,
-      'Diluted Catalyst': 450,
-      'Regular Catalyst': 900,
-      'Robust Catalyst': 2250,
-      'Vibrant Catalyst': 4500,
-      'Coruscating Catalyst': 9000,
-
-      'Legendary Weapon Core': 5000,
-      'Legendary Staff Core': 50000,
-      'Legendary Armor Core': 5000,
-      'Peerless Weapon Core': 500000,
-      'Peerless Staff Core': 2500000,
-      'Peerless Armor Core': 500000,
-
-      'Scrap Cloth': 90,
-      'Scrap Leather': 90,
-      'Scrap Metal': 90,
-      'Scrap Wood': 90,
-      'Energy Cell': 180,
-
-      'Low-Grade Cloth': 10,
-      'Mid-Grade Cloth': 100,
-      'High-Grade Cloth': 6000,
-
-      'Low-Grade Leather': 10,
-      'Mid-Grade Leather': 10,
-      'High-Grade Leather': 50,
-
-      'Low-Grade Metals': 10,
-      'Mid-Grade Metals': 50,
-      'High-Grade Metals': 150,
-
-      'Low-Grade Wood': 10,
-      'Mid-Grade Wood': 50,
-      'High-Grade Wood': 1000,
-
-      'Crystallized Phazon': 200000,
-      'Shade Fragment': 2000,
-      'Repurposed Actuator': 18000,
-      'Defense Matrix Modulator': 4000,
-
-      'Binding of Slaughter': 50000,
-      'Binding of Balance': 100,
-      'Binding of Isaac': 500,
-      'Binding of Destruction': 28000,
-      'Binding of Focus': 100,
-      'Binding of Friendship': 100,
-
-      'Binding of Protection': 45000,
-      'Binding of Warding': 1000,
-      'Binding of the Fleet': 5000,
-      'Binding of the Barrier': 2500,
-      'Binding of the Nimble': 500,
-      'Binding of Negation': 100,
-
-      'Binding of the Elementalist': 500,
-      'Binding of the Heaven-sent': 10,
-      'Binding of the Demon-fiend': 10,
-      'Binding of the Curse-weaver': 10,
-      'Binding of the Earth-walker': 10,
-
-      'Binding of Surtr': 10,
-      'Binding of Niflheim': 10,
-      'Binding of Mjolnir': 10,
-      'Binding of Freyr': 10,
-      'Binding of Heimdall': 10,
-      'Binding of Fenrir': 10,
-
-      'Binding of Dampening': 500,
-      'Binding of Stoneskin': 100,
-      'Binding of Deflection': 100,
-
-      'Binding of the Fire-eater': 10,
-      'Binding of the Frost-born': 10,
-      'Binding of the Thunder-child': 10,
-      'Binding of the Wind-waker': 10,
-      'Binding of the Thrice-blessed': 10,
-      'Binding of the Spirit-ward': 10,
-
-      'Binding of the Ox': 5000,
-      'Binding of the Raccoon': 2500,
-      'Binding of the Cheetah': 35000,
-      'Binding of the Turtle': 1000,
-      'Binding of the Fox': 20000,
-      'Binding of the Owl': 20000,
-    },
-
-    'Trophies': {
-      'ManBearPig Tail': 1300,
-      'Holy Hand Grenade of Antioch': 1300,
-      "Mithra's Flower": 1300,
-      'Dalek Voicebox': 1300,
-      'Lock of Blue Hair': 1300,
-      'Bunny-Girl Costume': 2600,
-      'Hinamatsuri Doll': 2600,
-      'Broken Glasses': 2600,
-      'Black T-Shirt': 5200,
-      'Sapling': 5200,
-      'Unicorn Horn': 5000,
-      'Noodly Appendage': 5000,
-    },
-
-    'Crystals': { // 12 types of Crystals
-      'Crystal of Vigor': 0,
-      'Crystal of Finesse': 0,
-      'Crystal of Swiftness': 0,
-      'Crystal of Fortitude': 0,
-      'Crystal of Cunning': 0,
-      'Crystal of Knowledge': 0,
-      'Crystal of Flames': 0,
-      'Crystal of Frost': 0,
-      'Crystal of Lightning': 0,
-      'Crystal of Tempest': 0,
-      'Crystal of Devotion': 0,
-      'Crystal of Corruption': 0,
-    },
-
-    // add any list if needed
-
+  equipEnchantPosition: 'left',
+  equipEnchantWeapon: 4,
+  equipEnchantArmor: 3,
+  equipEnchantRepairThreshold: 55,
+  equipEnchantItemInventory: {
+    'Health Draught': 200,
+    'Mana Draught': 200,
+    'Spirit Draught': 200,
+    'Health Potion': 100,
+    'Mana Potion': 100,
+    'Spirit Potion': 100,
+    'Health Elixir': 10,
+    'Mana Elixir': 10,
+    'Spirit Elixir': 10,
   },
+  equipEnchantCheckArmors: false,
 
 };
 
@@ -591,39 +180,591 @@ function $qs(q,d) {return (d||document).querySelector(q);}
 function $qsa(q,d) {return Array.from((d||document).querySelectorAll(q));}
 function $doc(h) {const d=document.implementation.createHTMLDocument('');d.documentElement.innerHTML=h;return d;}
 function $element(t,p,a,f) {let e;if(t){e=document.createElement(t);}else if(t===''){e=document.createTextNode(a);a=null;}else{return document.createDocumentFragment();}if(a!==null&&a!==undefined){function ao(e,a){Object.entries(a).forEach(([an,av])=>{if(typeof av==='object'){let a;if(an in e){a=e[an];}else{e[an]={};a=e[an];}Object.entries(av).forEach(([an,av])=>{a[an]=av;});}else{if(an==='style'){e.style.cssText=av;}else if(an in e){e[an]=av;}else{e.setAttribute(an,av);}}});}function as(e,a){const an={'#':'id','.':'className','!':'style','/':'innerHTML'}[a[0]];if(an){e[an]=a.slice(1);}else if(a!==''){e.textContent=a;}}if(typeof a==='string'||typeof a==='number'){e.textContent=a;}else if(Array.isArray(a)){a.forEach((a)=>{if(typeof a==='string'||typeof a==='number'){as(e,a);}else if(typeof a==='object'){ao(e,a);}});}else if(typeof a==='object'){ao(e,a);}}if(f){if(typeof f==='function'){e.addEventListener('click',f);}else if(typeof f==='object'){Object.entries(f).forEach(([ft,fl])=>{e.addEventListener(ft,fl);});}}if(p){if(p.nodeType===1||p.nodeType===11){p.appendChild(e);}else if(Array.isArray(p)){if(['beforebegin','afterbegin','beforeend','afterend'].includes(p[1])){p[0].insertAdjacentElement(p[1],e);}else if(!isNaN(p[1])){p[0].insertBefore(e,p[0].childNodes[p[1]]);}else{p[0].insertBefore(e,p[1]);}}}return e;}
-function $input(o,p,a,f) {if(typeof o==='string'){o=[o];}const [t,v,n,s]=o;if(!a){a={};}a.type=t;if(v===undefined||v===null){const i=$element('input',p,a,f);return i;}else if(t==='button'||t==='submit'){a.value=v;const i=$element('input',p,a,f);return i;}else{const l=$element('label',p);const i=$element('input',l,a,f);if(s&&(t==='checkbox'||t==='radio')){$element('span',l);l.classList.add('hvut-label');}if(v){if(n==='before'){l.prepend(v,' ');}else{l.append(' ',v);}}return i;}}
+function $input(o,p,a,f) {if(typeof o==='string'){o=[o];}const [t,v,n,s]=o;if(!a){a={};}if(t==='select'){const i=$element('select',p,a,f);if(v){v.forEach((v)=>{v=split2(v,':');if(!v[1]){v[1]=v[0];}$element('option',i,{value:v[0],text:v[1]});});}return i;}a.type=t;if(v===undefined||v===null){const i=$element('input',p,a,f);return i;}else if(t==='button'||t==='submit'){a.value=v;const i=$element('input',p,a,f);return i;}else{const l=$element('label',p);const i=$element('input',l,a,f);if(s&&(t==='checkbox'||t==='radio')){$element('span',l);l.classList.add('hvut-label');}if(v){if(n==='before'){l.prepend(v,' ');}else{l.append(' ',v);}}return i;}}
 function time_format(t,o) {t=Math.floor(t/1000);const h=Math.floor(t/3600).toString().padStart(2,'0');const m=Math.floor(t%3600/60).toString().padStart(2,'0');const s=(t%60).toString().padStart(2,'0');return !o?`${h}:${m}:${s}`:o===1?`${h}:${m}`:o===2?`${m}:${s}`:'';}
 function object_sort(o,x=[]) {const index={};const _x=x.length+1;x.forEach((e,i)=>{index[e]=i+1;});Object.keys(o).sort((a,b)=>{const _a=index[a]||_x;const _b=index[b]||_x;return _a-_b||(a<b?-1:1);}).forEach((e)=>{const v=o[e];delete o[e];o[e]=v;});}
+function split2(s,d,t=true) {let a;const p=s.indexOf(d);if(p===-1){a=[s];}else{const k=s.slice(0,p);const v=s.slice(p+1);a=[k,v];}if(t){a=a.map((e)=>e.trim());}return a;}
 function scrollIntoView(e,p=e.parentNode) {p.scrollTop+=e.getBoundingClientRect().top-p.getBoundingClientRect().top;}
 function confirm_event(n,e,m,c,f) {if(!n){return;}const a=n.getAttribute('on'+e);n.removeAttribute('on'+e);n.addEventListener(e,(e)=>{if(!c||c()){if(confirm(m)){if(f){f();}}else{e.preventDefault();e.stopImmediatePropagation();}}},true);n.setAttribute('on'+e,a);}
 function toggle_button(e,s,h,t,c,d) {function f(){if(t.classList.contains(c)){t.classList.remove(c);e.value=h;}else{t.classList.add(c);e.value=s;}}e.value=h;e.addEventListener('click',f);if(d){f();}}
-function play_beep(s={volume:0.2,frequency:500,time:0.5,delay:1}) {if(!s.volume){return;}const c=new window.AudioContext();const o=c.createOscillator();const g=c.createGain();o.type='sine';o.frequency.value=s.frequency;g.gain.value=s.volume;o.connect(g);g.connect(c.destination);o.start(s.delay);o.stop(s.delay+s.time);}
-function popup(t,s) {function r(e){e.preventDefault();e.stopImmediatePropagation();if(e.which===1||e.which===13||e.which===27||e.which===32){w.remove();document.removeEventListener('keydown',r);}}const w=$element('div',document.body,['!position:fixed;top:0;left:0;width:1236px;height:702px;padding:3px 100% 100% 3px;background-color:#0006;z-index:1001;cursor:pointer;display:flex;justify-content:center;align-items:center;'],r);const d=$element('div',w,['/'+t,'!min-width:400px;min-height:100px;max-width:100%;max-height:100%;padding:10px;background-color:#fff;border:1px solid;display:flex;flex-direction:column;justify-content:center;font-size:10pt;color:#333;'+(s||'')]);document.addEventListener('keydown',r);return d;}
-function popup_text(m,s,b=[]) {let v;let l;if(typeof m==='string'){v=m;l=m.split('\n').length;}else{v=m.join('\n');l=m.length;}const w=$element('div',document.body,['!position:fixed;top:0;left:0;width:1236px;height:702px;padding:3px 100% 100% 3px;background-color:#0006;z-index:1001;display:flex;justify-content:center;align-items:center;']);const d=$element('div',w,['!border:1px solid;padding:5px;background-color:#fff;']);const t=$element('textarea',d,{value:v,spellcheck:false,style:'display:block;margin:0 0 5px;font-size:9pt;line-height:1.5em;height:'+(l*1.5+1)+'em;'+(s||'')});b.forEach((o)=>{$element('input',d,{type:'button',value:o.value},()=>{o.click(w,t);});});$element('input',d,{type:'button',value:'关闭'},()=>{w.remove();});return {w,t};}
-function get_message(d,s) {if(typeof d==='string'){if(/(<div id="messagebox_inner">.*?<\/div>)/.test(d)){const t=document.createElement('template');t.innerHTML=RegExp.$1;d=t.content;}else{return null;}}const m=$qsa('#messagebox_inner>p',d).map((p)=>p.textContent);if(s){return m;}else{return m.join('\n');}}
-
-function getValue(k,d,p=_ns+'_') {const v=localStorage.getItem(p+k);return v===null?d:JSON.parse(v);}
-function setValue(k,v,p=_ns+'_',r) {localStorage.setItem(p+k,JSON.stringify(v,r));}
-function deleteValue(k,p=_ns+'_') {localStorage.removeItem(p+k);}
+function play_beep(volume=0.2,frequency=500,duration=0.5) {const delay=1;if(!volume){return;}const c=new window.AudioContext();const o=c.createOscillator();const g=c.createGain();o.type='sine';o.frequency.value=frequency;g.gain.value=volume;o.connect(g);g.connect(c.destination);o.start(delay);o.stop(delay+duration);}
+function popup(t) {function r(e){e.preventDefault();e.stopImmediatePropagation();if(e.button===0||e.key==='Enter'||e.key===' '||e.key==='Escape'){w.remove();document.removeEventListener('keydown',r);}}const w=$element('div',document.body,['!position:fixed;top:0;left:0;width:1236px;height:702px;padding:3px 100% 100% 3px;background-color:#0006;z-index:1001;cursor:pointer;display:flex;justify-content:center;align-items:center;'],r);const d=$element('div',w,['/'+t,'!min-width:400px;min-height:100px;max-width:100%;max-height:100%;padding:10px;background-color:#fff;border:1px solid;display:flex;flex-direction:column;justify-content:center;font-size:10pt;color:#333;']);document.addEventListener('keydown',r);return d;}
+function popup_text(m,wd,ht,b=[]) {let v;if(typeof m==='string'){v=m;}else{v=m.join('\n');}const w=$element('div',document.body,['!position:fixed;top:0;left:0;width:1236px;height:702px;padding:3px 100% 100% 3px;background-color:#0006;z-index:1001;display:flex;justify-content:center;align-items:center;']);const d=$element('div',w,['!border:1px solid;padding:5px;background-color:#fff;']);const t=$element('textarea',d,{value:v,spellcheck:false,style:`display:block;margin:0 0 5px;font-size:9pt;line-height:1.5em;width:${wd}px;height:${ht}px;white-space:pre;`});function c(){w.remove();}b.forEach((o)=>{$element('input',d,{type:'button',value:o.text},()=>{if(o.click==='default'){t.value=o.value;}else if(o.click==='revert'){t.value=v;}else if(typeof o.click==='function'){o.click(p);}});});$element('input',d,{type:'button',value:'Close'},c);const p={wrapper:w,textarea:t,close:c};return p;}
+function get_message(d,s) {if(typeof d==='string'){d=$doc(d);}const m=$qsa('#messagebox_inner>p',d).map((p)=>p.textContent);if(s){return m;}else{return m.join('\n');}}
 /* eslint-enable */
 
-var _window = typeof unsafeWindow === 'undefined' ? window : unsafeWindow;
-var _query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
-var _ns = 'hvut';
-var _isekai = location.pathname.includes('/isekai/');
-if (_isekai) {
-  _ns = 'hvuti';
-  _isekai = /(\d+ Season \d+)/.exec($id('world_text')?.textContent) ? RegExp.$1 : '1';
-  settings.training = false;
-  settings.trainingTimer = false;
-  settings.monsterLab = false;
-  settings.moogleMailCouponClipper = false;
-  settings.moogleMailDarkDescent = false;
-  settings.lottery = false;
-}
+const _window = typeof unsafeWindow === 'undefined' ? window : unsafeWindow;
+const _query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
+
+// CONFIGURATION
+const $config = {
+
+  version: 1,
+  ls_savelist: ['ch_style'],
+  data: [
+    { tag: 'h1', text: 'Random Encounter' },
+    { key: 'reNotification', type: 'boolean', label: 'Use Random Encounter Notification.' },
+    { key: 'reGallery', type: 'boolean', label: 'Enable Random Encounter Notification while browsing the gallery.' },
+    { key: 'reGalleryAlt', type: 'boolean', label: 'When opening Random Encounter from the gallery, it goes to alt.hentaiverse.org.' },
+    { key: 'reBeep', type: 'array', input: 'text', value_type: 'number', value_sep: ',', text: 'Play a beep sound when Random Encounter is ready.\nThe order of values is [volume], [frequency], [duration].\nSet it to 0 to disable.', style: 'width: 150px;', oncreate: (o) => { $input(['button', 'BEEP TEST'], [o.node.input, 'afterend'], null, () => { const validation = $config.validate(o); if (!validation.error) { play_beep(...validation.value); } }); } },
+
+    { tag: 'h1', text: 'Top Navigation Bar' },
+    { key: 'topMenuIntegration', type: 'boolean', label: 'Integrate top menus into one button.' },
+    { key: 'topMenuLinks', type: 'array', input: 'textarea', text: 'Set quick links in the top.\nIf [topMenuIntegration] above is disabled, set the number of items in the list to 8 or less.' },
+    { key: 'confirmStaminaRestorative', type: 'boolean', label: 'Confirm whether to use a stamina restorative item.', disabled: 'isekai' },
+    { key: 'disableStaminaRestorative', type: 'number', label: 'Disable the stamina restorative button when stamina is above the specified value.', disabled: 'isekai' },
+    { key: 'warnLowStamina', type: 'number', label: 'Warn when stamina is below the specified value.' },
+
+    { tag: 'h1', text: 'Bottom Bar' },
+    { key: 'showCredits', type: 'number', input: 'select', options: ['0:disable', '2:always'], label: 'Show credits balance.' },
+    { key: 'showEquipSlots', type: 'number', input: 'select', options: ['0:disable', '1:on battle pages only', '2:always'], label: 'Show free space in the Equipment Inventory.' },
+    { key: 'trainingNotification', type: 'boolean', label: 'Shows the training in progress and automatically start the next training up to the set level.' },
+    { key: 'lotteryNotification', type: 'boolean', label: 'Show the weapon and the armor which are currently in the lottery.' },
+    { key: 'lotteryFilters', type: 'array', input: 'textarea', text: 'Notify if the new equipment in the lottery qualifies.\n* $pab is not available.', desc: 'equipFilters', validator: 'equipFilters' },
+
+    { tag: 'h1', text: 'Equipment' },
+    { key: 'equipInventoryIntegration', type: 'boolean', label: 'Integrate all types of equipment into a list in the Equipment Inventory.' },
+    { key: 'equipSort', type: 'boolean', label: 'Sort and categorize the equipment list.' },
+    { key: 'equipColor', type: 'boolean', label: 'Set the color of equipment by quality.' },
+    { key: 'equipHoverFunctions', type: 'boolean', label: 'Support keyboard and mouse actions when the mouse cursor is over the equipment.' },
+    { key: 'equipTouchFunctions', type: 'boolean', label: 'Support touch actions on mobile' },
+    { key: 'equipCode', type: 'string', input: 'textarea', text: 'Set the format of the code for the forum.', style: 'height: 80px; white-space: normal;' },
+    { key: 'equipNameCode', type: 'array', input: 'textarea', text: 'Set the rules for codes that decorate the names of equipment.' },
+
+    { tag: 'h1', text: 'Equipment Shop' },
+    { key: 'equipmentShopIntegration', type: 'boolean', label: 'Integrate all types of equipment on the default shop page.' },
+    { key: 'equipmentShopShowLevel', type: 'boolean', label: 'Show equipment\'s level.' },
+    { key: 'equipmentShopShowPAB', type: 'boolean', label: 'Show equipment\'s pab.' },
+    { key: 'equipmentShopConfirm', type: 'number', input: 'select', options: ['0:disable', '1:confirm less-profitable actions', '2:always'], label: 'Confirm when selling or salvaging equipment.' },
+    { key: 'equipmentShopProtectFilters', type: 'array', input: 'textarea', text: 'Show valuable equipment together at the top of the list, and prevent them from being selected by the "Select All" button.', desc: 'equipFilters', validator: 'equipFilters' },
+    { key: 'equipmentShopAutoLock', type: 'boolean', label: 'Automatically lock protected equipment.' },
+    { key: 'equipmentShopBazaarFilters', type: 'array', input: 'textarea', text: 'Keep valuable equipment in BAZAAR, then hide all other trash.', desc: 'equipFilters', validator: 'equipFilters' },
+
+    { tag: 'h1', text: 'Monster Lab' },
+    { key: 'monsterLab', type: 'boolean', label: 'Advanced MonsterLab features', disabled: 'isekai' },
+    { key: 'monsterLabDefaultSort', type: 'string', input: 'select', options: ['index', 'name', 'class', 'pl:power level', 'wins', 'kills', 'gains:new gifts', 'gifts:total gifts', 'morale', 'hunger'], label: 'Set the default value for sorting the list.', disabled: 'isekai' },
+
+    { tag: 'h1', text: 'The Shrine' },
+    { key: 'shrineHideItems', type: 'array', input: 'textarea', text: 'Hide items to prevent them from being accidentally offered to the Shrine.' },
+    { key: 'shrineFilters', type: 'array', input: 'textarea', text: 'Show the names of rewarded equipment of higher quality only.\n* $pab is not available.', desc: 'equipFilters', validator: 'equipFilters' },
+
+    { tag: 'h1', text: 'MoogleMail' },
+    { key: 'moogleMail', type: 'boolean', label: 'Advanced MoogleMail features' },
+    { key: 'moogleMailCouponClipper', type: 'boolean', label: 'For players who have "Coupon Clipper" hath perk.\nIf the subject of MoogleMail contains "Coupon Clipper" or "Item Shop", take credits, buy requested items, then send them back.', disabled: 'isekai' },
+    { key: 'moogleMailDarkDescent', type: 'boolean', label: 'For players who have "Dark Descent" hath perk.\nIf the subject of MoogleMail contains "Dark Descent" or "reforge", take equipment, reforge, then send it back.', disabled: 'isekai' },
+
+    { tag: 'h1', text: 'Battle' },
+    { key: 'equipEnchantPosition', type: 'string', input: 'select', options: ['left', 'right'], label: 'Set the position of the pane.' },
+    { key: 'equipEnchantWeapon', type: 'number', label: 'Set the number of enchantments for weapon: 15 minutes per item' },
+    { key: 'equipEnchantArmor', type: 'number', label: 'Set the number of enchantments for armors: 1 hour per item' },
+    { key: 'equipEnchantRepairThreshold', type: 'number', label: 'Warn if the durability of each equipment is low.' },
+    { key: 'equipEnchantItemInventory', type: 'object', input: 'textarea', value_type: 'number', text: 'Show the amount of items in the inventory, and warn if each number is less than the specified value.\nYou can purchase that quantity from the Item Shop by clicking on the item name in the list.' },
+    { key: 'equipEnchantCheckArmors', type: 'boolean', label: 'Show the enchantment of armors. It takes a little more time for armors to load their status.' },
+  ],
+  text: {
+    equipHoverFunctions: `
+      [C] Open equipment link in a pop-up
+      [V] Open equipment link in a new tab
+      [L] Show link code
+      [K] Show link code in bbcode format
+      [DOUBLE CLICK] Open equipment link
+    `,
+    equipTouchFunctions: `
+      [DOUBLE TAP] Open equipment link
+      [LONG PRESS] Open equipment link
+    `,
+    equipEnchantRepairThreshold: `
+      If the value is between 0 and 1, it means the condition % of the equipment (e.g., 0.6 => 60%).
+      If the value is larger than 1, it means a margin to 50% condition (e.g., 55 => 205 / 300).
+      The recommended value for GrindFest is 55.
+    `,
+  },
+  desc: {
+    topMenuLinks: `List
+      Character
+      Equipment
+      Abilities
+      Training
+      Item Inventory
+      Equip Inventory
+      Settings
+      
+      Equipment Shop
+      Item Shop
+      The Shrine
+      The Market
+      Monster Lab
+      MoogleMail
+      Weapon Lottery
+      Armor Lottery
+      
+      The Arena
+      The Tower
+      Ring of Blood
+      GrindFest
+      Item World
+      
+      Repair
+      Upgrade
+      Enchant
+      Salvage
+      Reforge
+      Soulfuse
+    `,
+    equipCode: `Syntax
+      {$name}       equipment name
+      {$namecode}   equipment name in colors/bold
+      {$url}        equipment url
+      {$eid}        equipment id
+      {$_eid}       $eid with a transparent underline for layout
+      {$level}      equipment level
+      {$pab}        equipment pab
+      {$tier}       potency tier (IW level)
+      {$price}      the value of the 'price' input field
+      {$note}       the value of the 'note' input field
+                  - if it contains '$featured;', the equip code will be added to 'Featured' section
+                  - if it contains '$new;', the equip code will be added to 'Newly Added' section
+      {$condition ? text_if_true}
+                  - if $condition is a valid value, it prints 'text_if_true', otherwise nothing
+                  e.g., {$price? @ $price}
+                  - if the equipment has a 'price' value in the Equipment Inventory, it prints like ' @ 10m'.
+      {$condition ? text_if_true : text_if_false}
+                  - if $condition is a valid value, it prints 'text_if_true', otherwise 'text_if_false'.
+                  e.g., {$level ? Lv.$level : Souldbound}
+                  - if the equipment has a level, it prints like 'Lv.500', otherwise 'Soulbound'.
+    `,
+    equipNameCode: `Syntax
+      BASE MATCH : option=value, option=value, ...
+      BASE MATCH : option=value, option=value, ... ; SUB MATCH : option=value, option=value, ... ; SUB MATCH : option=value, option=value, ...
+      - BASE MATCH uses EQUIP FILTER rule.
+      - each SUB MATCH is separate.
+      - e.g., Willow Staff of Destruction : name=bold ; Demonic : prefix=red ; Tempestuous || Shocking : prefix=orange
+      [Option Keywords]
+      options : name (full name), quality, prefix, type, slot, suffix
+      values : bold, rainbow, or any color such as 'red', '#f00'
+      - e.g., Peerless : quality=rainbow, name=bold
+    `,
+    equipFilters: `Syntax
+      ()   : GROUPING
+      &&   : AND
+      ||   : OR
+      !    : NOT
+      $QUALITY+   : Whether the quality of the equipment is equal to or higher than the given QUALITY
+      $pab=xyz    : Whether the equipment has pab x, y and z
+      $prefix     : Whether the equipment has a prefix
+      $iw         : Whether the equipment has any potency levels
+      $level      : Number, the level of the equipment
+      e.g., Magnificent && Power && !Warding
+      e.g., $Exquisite+ && (Rapier || Shortsword) && Slaughter && $prefix && $pab=sd && $level<250
+    `,
+  },
+  validator: {
+    topMenuLinks: function (value) {
+      const errors = value.filter((v) => !_top.menu.hasOwnProperty(v));
+      const error = errors.join('\n');
+      const result = { value, error };
+      return result;
+    },
+    equipNameCode: function (value) {
+      const result = $equip.namecode_parse(value);
+      return result;
+    },
+    equipFilters: function (value) {
+      const result = $equip.filter_validate(value);
+      return result;
+    },
+  },
+  init: function () {
+    $config.isekai = location.pathname.includes('/isekai/') && ($id('world_text')?.textContent.match(/(\d+ Season \d+)/)[1] || '1');
+    $config.ns = $config.isekai ? 'hvuti' : 'hvut';
+    $config.prefix = $config.ns + '_';
+    $config.default = settings;
+    $config.settings = $config.get('settings', {});
+    if ($config.settings.version !== $config.version) {
+      $config.migration();
+    }
+  },
+  migration: function () {
+    if (!$config.settings.version) {
+      $config.reset();
+      const in_equipdata = $config.ls_get('in_equipdata');
+      const in_json = $config.ls_get('in_json');
+      if (in_equipdata || in_json) {
+        const equipdata = { version: 1 };
+        Object.assign(equipdata, in_equipdata, in_json);
+        $config.set('equipdata', equipdata);
+      }
+      const in_equipcode = $config.ls_get('in_equipcode');
+      if (in_equipcode) {
+        $config.settings.equipCode = in_equipcode.replace(/(\{\$\w+):/g, '$1?').replace(/\$bbcode/g, '$namecode');
+      }
+      const in_namecode = $config.ls_get('in_namecode');
+      if (in_namecode) {
+        $config.settings.equipNameCode = in_namecode;
+      }
+
+      const prices = $config.ls_get('prices');
+      if (prices) {
+        Object.entries(prices).forEach(([key, value]) => {
+          if (typeof value === 'object') {
+            Object.assign(prices, value);
+            delete prices[key];
+          }
+        });
+        setTimeout(() => { // $price is not defined yet
+          $price.json = null;
+          $price.init();
+          $price.reset();
+          $price.set(prices);
+        }, 1000);
+      }
+
+      const es_protect = $config.ls_get('es_protect');
+      if (es_protect) {
+        $config.settings.equipmentShopProtectFilters = es_protect;
+      }
+      const es_bazaar = $config.ls_get('es_bazaar');
+      if (es_bazaar) {
+        $config.settings.equipmentShopBazaarFilters = es_bazaar;
+      }
+
+      const ml_log = $config.ls_get('ml_log');
+      if (ml_log && !ml_log[0]) {
+        ml_log[0] = { version: 1 };
+        ml_log.forEach((log, i) => {
+          if (!log || i === 0) {
+            return;
+          }
+          log.pa = log.pa.map((e) => [e.value, e.to]);
+          log.er = log.er.map((e) => [e.value, e.to]);
+          log.ct = log.ct.map((e) => [e.value, e.to, e.max]);
+          log.gifts = log.gift;
+          log.gifts.push(...log.gifts.splice(28, 6, ...log.gifts.splice(40, 5)));
+          delete log.gift;
+          delete log.selected;
+        });
+        $config.set('ml_log', ml_log);
+        $config.ls_del('ml_log');
+      }
+
+      const ls_list = ['equipnames', 'equipset', 'ch_style', 'se_settings', 'ss_log', 'ml_log'];
+      ls_list.forEach((key) => {
+        const value = $config.ls_get(key);
+        if (value) {
+          $config.set(key, value);
+        }
+      });
+
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key.startsWith($config.prefix)) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+
+    $config.save();
+  },
+  reset: function () {
+    $config.settings = JSON.parse(JSON.stringify($config.default));
+  },
+  get: function (key, dvalue, prefix = $config.prefix) {
+    const value = GM_getValue(prefix + key, dvalue);
+    return value;
+  },
+  set: function (key, value, prefix = $config.prefix) {
+    GM_setValue(prefix + key, value);
+    if ($config.ls_savelist.includes(key)) {
+      $config.ls_set(key, value, prefix);
+    }
+  },
+  del: function (key, prefix = $config.prefix) {
+    GM_deleteValue(prefix + key);
+  },
+  ls_get: function (key, dvalue, prefix = $config.prefix) {
+    const value = localStorage.getItem(prefix + key);
+    return value === null ? dvalue : JSON.parse(value);
+  },
+  ls_set: function (key, value, prefix = $config.prefix) {
+    localStorage.setItem(prefix + key, JSON.stringify(value));
+  },
+  ls_del: function (key, prefix = $config.prefix) {
+    localStorage.removeItem(prefix + key);
+  },
+  create: function () {
+    GM_addStyle(/*css*/`
+      .hvut-cfg-div { position: absolute; top: 27px; left: 0; width: 60%; height: calc(100% - 27px); padding: 0 20%; overflow: auto; font-size: 10pt; text-align: left; background-color:#EDEBDF; z-index: 9; }
+      .hvut-cfg-div header { margin-bottom: 20px; padding: 10px; font-size: 15pt; font-weight: bold; border-bottom: 2px solid; }
+      .hvut-cfg-div h1 { margin: 20px 0 10px; padding: 10px; font-size: 12pt; font-weight: bold; background-color: #fff9; }
+      .hvut-cfg-div h2 { margin: 0; font-size: 10pt; font-weight: bold; }
+      .hvut-cfg-div h3 { margin: 0; font-size: 10pt; font-weight: bold; text-decoration: underline; }
+      .hvut-cfg-div div { margin-left: 10px; padding: 10px; line-height: 24px; }
+      .hvut-cfg-div div:hover { background-color: #fff9; }
+      .hvut-cfg-div p { margin: 0; }
+      .hvut-cfg-disabled { color: #999; }
+      .hvut-cfg-error { box-shadow: 0 0 0 2px #c00 inset; }
+      .hvut-cfg-error p:last-child { padding: 10px; background-color: #fff9; color: #c00; }
+      .hvut-cfg-div footer { position: sticky; bottom: 0; margin-top: 20px; padding: 10px; border-top: 2px solid; text-align: center; background-color: inherit; }
+      .hvut-cfg-div input { vertical-align: middle; }
+      .hvut-cfg-div input[type='text'] { width: 95%; }
+      .hvut-cfg-div input[type='number'] { width: 50px; text-align: right; }
+      .hvut-cfg-div textarea { width: 95%; height: 200px; white-space: nowrap; }
+    `);
+
+    $config.node = {};
+    $config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: $config.validate_panel });
+    //$config.node.ul = $element('ul', $config.node.div);
+    $element('header', $config.node.div, 'HV Utils Settings');
+
+    $config.data.forEach((o) => {
+      if (o.tag) {
+        $element(o.tag, $config.node.div, o.text);
+        //$element('li', $config.node.ul, o.text, () => { scrollIntoView(h); });
+        return;
+      }
+      o.node = {};
+      o.node.div = $element('div', $config.node.div);
+      $element('h2', o.node.div, o.key);
+
+      if (o.input === 'textarea') {
+        //o.node.input = $element('textarea', o.node.div, { spellcheck: false });
+      } else if (o.input === 'select') {
+        o.node.input = $input(['select', o.options], o.node.div);
+        if (o.label) {
+          $element('span', o.node.div, o.label);
+        }
+      } else if (o.type === 'boolean') {
+        o.node.input = $input(['checkbox', o.label], o.node.div);
+      } else if (o.type === 'number') {
+        o.node.input = $input(['number'], o.node.div);
+        if (o.label) {
+          $element('span', o.node.div, o.label);
+        }
+      } else {
+        o.node.input = $input(['text'], o.node.div);
+      }
+
+      let text = $config.text[o.text || o.key] || o.text;
+      if (text) {
+        text = text.trim().replace(/^ +/gm, '').replace(/\n/g, '<br>');
+        o.node.text = $element('p', o.node.div, ['/' + text]);
+      }
+      let desc = $config.desc[o.desc || o.key];
+      if (desc) {
+        desc = desc.trim().replace(/^ +/gm, '').split('\n');
+        const button = desc[0];
+        desc = desc.slice(1).join('<br>');
+        $input(['button', button], o.node.div, null, () => { o.node.desc.classList.toggle('hvut-none'); });
+        //$element('br', o.node.div);
+        o.node.desc = $element('p', o.node.div, ['/' + desc, '.hvut-none']);
+      }
+
+      if (o.input === 'textarea') { // append here
+        o.node.input = $element('textarea', o.node.div, { spellcheck: false });
+      }
+      o.node.input.dataset.key = o.key;
+      if (o.style) {
+        o.node.input.style.cssText = o.style;
+      }
+      if (o.disabled === 'persistent' && !$config.isekai || o.disabled === 'isekai' && $config.isekai) {
+        o.node.div.classList.add('hvut-cfg-disabled');
+        o.node.input.disabled = true;
+      }
+      if (o.oncreate) {
+        o.oncreate(o);
+      }
+    });
+
+    const bottom = $element('footer', $config.node.div);
+    $input(['button', 'Save'], bottom, null, () => { $config.save(true); });
+    $input(['button', 'Close'], bottom, null, () => { $config.close(); });
+    $input(['button', 'Revert'], bottom, null, () => { $config.load($config.settings); });
+    $input(['button', 'Default'], bottom, null, () => { $config.load($config.default); });
+  },
+  open: function (key) {
+    if (!$config.node) {
+      $config.create();
+    }
+    $id('csp').appendChild($config.node.div);
+    $config.load();
+    if (key) {
+      const o = $config.data.find((o) => o.key === key);
+      scrollIntoView(o.node.div);
+    }
+  },
+  close: function () {
+    $config.node.div.remove();
+  },
+  set_panel: function (obj = $config.settings) {
+    $config.data.forEach((o) => {
+      if (!o.key) {
+        return;
+      }
+      const input = o.node.input;
+      if (input.disabled) {
+        return;
+      }
+      const value = obj[o.key];
+      if (value === undefined) {
+        return;
+      }
+      if (o.type === 'boolean') {
+        input.checked = value;
+      } else if (o.type === 'number') {
+        input.value = value;
+      } else if (o.type === 'string') {
+        input.value = value;
+      } else if (o.type === 'array') {
+        input.value = $config.array2text(value, o.value_sep);
+      } else if (o.type === 'object') {
+        input.value = $config.obj2text(value, o.value_sep);
+      }
+    });
+  },
+  get_panel: function () {
+    const obj = {};
+    const errors = [];
+    $config.data.forEach((o) => {
+      if (!o.key) {
+        return;
+      }
+      if (o.disabled === 'persistent' && !$config.isekai || o.disabled === 'isekai' && $config.isekai) {
+        return;
+      }
+      const validation = $config.validate(o);
+      if (validation.error) {
+        errors.push(o);
+        return;
+      }
+      obj[o.key] = validation.value;
+    });
+    if (errors.length) {
+      scrollIntoView(errors[0].node.div);
+      return false;
+    }
+    return obj;
+  },
+  validate_panel: function (e) {
+    const key = e.target.dataset.key;
+    const o = $config.data.find((o) => o.key === key);
+    const validation = $config.validate(o);
+    return validation;
+  },
+  validate: function (o) {
+    let value;
+    let error;
+    if (o.type === 'boolean') {
+      value = o.node.input.checked;
+    } else if (o.type === 'number') {
+      value = Number(o.node.input.value);
+    } else if (o.type === 'string') {
+      value = o.node.input.value;
+    } else if (o.type === 'array') {
+      ({ value, error } = $config.text2array(o.node.input.value, o.value_sep, o.value_type));
+    } else if (o.type === 'object') {
+      ({ value, error } = $config.text2obj(o.node.input.value, o.value_sep, o.value_type));
+    }
+    const validator = $config.validator[o.validator || o.key];
+    if (validator) {
+      const _error = error;
+      ({ value, error } = validator(value));
+      if (!error) {
+        error = _error;
+      }
+    }
+    if (error) {
+      if (!o.node.error) {
+        o.node.error = $element('p', o.node.div);
+      }
+      const html = error.replace(/\n/g, '<br>');
+      o.node.error.innerHTML = '<h3>Validation Error</h3>' + html;
+      o.node.div.appendChild(o.node.error);
+      o.node.div.classList.add('hvut-cfg-error');
+    } else {
+      o.node.error?.remove();
+      o.node.div.classList.remove('hvut-cfg-error');
+    }
+    const result = { value, error };
+    return result;
+  },
+  load: function (obj = $config.settings) {
+    $config.set_panel(obj);
+    $config.get_panel();
+  },
+  save: function (panel) {
+    if (panel) {
+      const obj = $config.get_panel();
+      if (!obj) { // error
+        return;
+      }
+      $config.settings = obj;
+    }
+    $config.settings.version = $config.version;
+    $config.set('settings', $config.settings);
+    if (panel) {
+      location.href = location.href;
+    }
+  },
+  text2obj: function (text, sep = ['\n', ':'], type) {
+    const obj = {};
+    const errors = [];
+    text.split(sep[0]).filter((t) => t.trim()).forEach((t) => {
+      const split = split2(t, sep[1]);
+      const key = split[0];
+      let value = split[1];
+      if (!key || !value) {
+        errors.push(t);
+        return true;
+      }
+      if (type === 'number') {
+        value = Number(value);
+        if (isNaN(value)) {
+          errors.push(t);
+          return true;
+        }
+      }
+      obj[key] = value;
+    });
+    const error = errors.join('\n');
+    const result = { value: obj, error };
+    return result;
+  },
+  obj2text: function (obj, sep = ['\n', ':']) {
+    const text = Object.entries(obj).map(([key, value]) => `${key} ${sep[1]} ${value}`).join(sep[0]);
+    return text;
+  },
+  text2array: function (text, sep = '\n', type) {
+    const errors = [];
+    const array = text.split(sep).filter((t) => t.trim()).map((t) => {
+      let value = t.trim();
+      if (type === 'number') {
+        value = Number(value);
+        if (isNaN(value)) {
+          errors.push(t);
+          return true;
+        }
+      }
+      return value;
+    });
+    const error = errors.join('\n');
+    const result = { value: array, error };
+    return result;
+  },
+  array2text: function (array, sep = '\n') {
+    if (!sep.includes('\n')) {
+      sep += ' ';
+    }
+    const text = array.join(sep);
+    return text;
+  },
+
+};
+
+$config.init();
+//$config.settings = settings;
 
 // AJAX
-var $ajax = {
+const $ajax = {
 
   interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
   max: 4,
@@ -645,6 +786,7 @@ var $ajax = {
     return list;
   },
   add: function (method, url, data, onload, onerror, context = {}, headers = {}) {
+    console.log('ajax call', url);
     if (!data) {
       method = 'GET';
     } else if (!method) {
@@ -655,7 +797,7 @@ var $ajax = {
         headers['Content-Type'] = 'application/x-www-form-urlencoded';
       }
       if (data && typeof data === 'object') {
-        data = Object.entries(data).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+        data = Object.entries(data).map(([key, value]) => encodeURIComponent(key) + '=' + encodeURIComponent(value)).join('&');
       }
     } else if (method === 'JSON') {
       method = 'POST';
@@ -707,7 +849,7 @@ var $ajax = {
       r.context.onerror?.();
     } else if (text === 'state lock limiter in effect') {
       if ($ajax.error !== text) {
-        popup(`<p style="color: #f00; font-weight: bold;">${text}</p><p>Your connection speed is so fast that <br>you have reached the maximum connection limit.</p><p>Try again later.</p>`);
+        popup(`<p style="color: #f00; font-weight: bold;">${text}</p><p>You have reached the maximum connection limit.<br>Try again later.</p>`);
       }
       $ajax.error = text;
       r.context.onerror?.();
@@ -728,34 +870,82 @@ var $ajax = {
 window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error || e); });
 
 // RANDOM ENCOUNTER
-var $re = {
+const $re = {
 
   init: function () {
     if ($re.inited) {
       return;
     }
     $re.inited = true;
-    $re.type = (!location.hostname.includes('hentaiverse.org') || _isekai) ? 0 : $id('navbar') ? 1 : $id('battle_top') ? 2 : false;
+    $re.type = (!location.hostname.includes('hentaiverse.org') || $config.isekai) ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
     $re.get();
   },
-  get: function () {
-    $re.json = getValue('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
-    const gm_json = JSON.parse(GM_getValue('re', null)) || { date: -1 };
-    if ($re.json.date === gm_json.date) {
-      if ($re.json.clear !== gm_json.clear) {
-        $re.json.clear = true;
-        $re.set();
+  clock: function (button) {
+    $re.init();
+    $re.button = button;
+    $re.button.addEventListener('click', (e) => { $re.run(e.ctrlKey || e.shiftKey); });
+    const date = new Date($re.json.date);
+    const now = new Date();
+    if (date.getUTCDate() !== now.getUTCDate() || date.getUTCMonth() !== now.getUTCMonth() || date.getUTCFullYear() !== now.getUTCFullYear()) {
+      $re.reset();
+      $re.load();
+    }
+    $re.start();
+  },
+  hv: function () {
+    $re.init();
+    $re.check();
+    const button = $element('div', _top.node.div, ['!width: 80px; cursor: pointer;']);
+    $re.clock(button);
+  },
+  ba: function () {
+    $re.init();
+    if ($id('textlog').tBodies[0].lastElementChild.textContent === 'Initializing random encounter ...') {
+      $re.check();
+    }
+    const button = $element('div', $id('csp'), ['RE', '!position: absolute; top: 10px; left: 600px; cursor: pointer; font-size: 10pt; font-weight: bold;']);
+    $re.clock(button);
+
+    // support monsterbation that clears all timer id when a round starts
+    const target = document.body;
+    const options = { childList: true };
+    const callback = function () {
+      if (!button.parentNode.parentNode && $id('csp')) {
+        $id('csp').appendChild(button);
       }
-    } else {
-      if ($re.json.date < gm_json.date) {
-        $re.json = gm_json;
+      $re.start();
+    };
+    const observer = new MutationObserver(callback);
+    observer.observe(target, options);
+  },
+  eh: function () {
+    $re.init();
+    const link = $qs('#eventpane a');
+    const onclick = link?.getAttribute('onclick');
+    const key = onclick?.match(/\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/)?.[1];
+    if (key) {
+      $re.set(key);
+      if ($config.settings.reGalleryAlt) {
+        link.setAttribute('onclick', onclick.replace('https://hentaiverse.org/', 'http://alt.hentaiverse.org/'));
       }
-      $re.set();
+    }
+    if ($config.settings.reGallery && $id('nb')) {
+      $id('nb').style.maxWidth = '1080px';
+      const button = $element('a', $element('div', $id('nb')), ['!display: inline-block; width: 70px; text-align: left; cursor: pointer;']);
+      $re.clock(button);
     }
   },
-  set: function () {
-    setValue('re', $re.json, 'hvut_');
-    GM_setValue('re', JSON.stringify($re.json));
+  get: function () {
+    $re.json = $config.get('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
+  },
+  set: function (key) {
+    if (key) {
+      $re.json.key = key;
+      $re.json.date = Date.now();
+      $re.json.count++;
+      $re.json.clear = false;
+    }
+    $config.set('re', $re.json, 'hvut_');
   },
   reset: function () {
     $re.json.date = Date.now();
@@ -765,21 +955,11 @@ var $re = {
     $re.start();
   },
   check: function () {
-    $re.init();
-    if (/\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)(?:&date=(\d+))?/.test(location.search)) {
-      const key = RegExp.$1;
-      const date = parseInt(RegExp.$2);
+    const key = /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(location.search)?.[1];
+    if (key) {
       const now = Date.now();
       if ($re.json.key === key) {
         if (!$re.json.clear) {
-          $re.json.clear = true;
-          $re.set();
-        }
-      } else if (date) {
-        if ($re.json.date < date) {
-          $re.json.date = date;
-          $re.json.key = key;
-          $re.json.count++;
           $re.json.clear = true;
           $re.set();
         }
@@ -792,45 +972,32 @@ var $re = {
       }
     }
   },
-  clock: function (button) {
-    $re.init();
-    $re.button = button;
-    $re.button.addEventListener('click', (e) => { $re.run(e.ctrlKey || e.shiftKey); });
-    const date = new Date($re.json.date);
-    const now = new Date();
-    if (date.getUTCDate() !== now.getUTCDate() || date.getUTCMonth() !== now.getUTCMonth() || date.getUTCFullYear() !== now.getUTCFullYear()) {
-      $re.reset();
-      $re.load();
-    }
-    $re.check();
-    $re.start();
-  },
   refresh: function () {
     const remain = $re.json.date + 1800000 - Date.now();
     if (remain > 0) {
       $re.button.textContent = time_format(remain, 2) + ` [${$re.json.count}]`;
       $re.beep = true;
     } else {
-      $re.button.textContent = (!$re.json.clear ? '已错失' : '遭遇战') + `[${$re.json.count}]`;
+      $re.button.textContent = (!$re.json.clear ? 'Expired' : 'Ready') + ` [${$re.json.count}]`;
       if ($re.beep) {
         $re.beep = false;
-        play_beep(settings.reBeep);
+        play_beep(...$config.settings.reBeep);
       }
       $re.stop();
     }
   },
   run: async function (engage) {
-    if ($re.type === 2) {
+    if ($re.type === 'ba') {
       $re.load();
-    } else if ($re.type === 1) {
+    } else if ($re.type === 'hv') {
       if (!$re.json.clear || engage) {
         $re.engage();
       } else {
         $re.load(true);
       }
-    } else if ($re.type === 0) {
+    } else if ($re.type === 'eh') {
       $re.stop();
-      $re.button.textContent = '检查中...';
+      $re.button.textContent = 'Checking...';
       const html = await $ajax.fetch('https://hentaiverse.org/');
       if (html.includes('<div id="navbar">')) {
         if (!$re.json.clear || engage) {
@@ -846,25 +1013,22 @@ var $re = {
   load: async function (engage) {
     $re.stop();
     $re.get();
-    $re.button.textContent = '加载中...';
+    $re.button.textContent = 'Loading...';
     const html = await $ajax.fetch('https://e-hentai.org/news.php');
     const doc = $doc(html);
-    const eventpane = $id('eventpane', doc);
-    if (eventpane && /\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/.test(eventpane.innerHTML)) {
-      $re.json.date = Date.now();
-      $re.json.key = RegExp.$1;
-      $re.json.count++;
-      $re.json.clear = false;
-      $re.set();
+    const eventpane = $id('eventpane', doc)?.innerHTML;
+    const key = eventpane?.match(/\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/)?.[1];
+    if (key) {
+      $re.set(key);
       if (engage) {
         $re.engage();
         return;
       }
-    } else if (eventpane && /It is the dawn of a new day/.test(eventpane.innerHTML)) {
-      popup(eventpane.innerHTML);
+    } else if (eventpane?.includes('It is the dawn of a new day')) {
+      popup(eventpane);
       $re.reset();
     } else {
-      popup('尚未发现随机遭遇战');
+      popup('Failed to generate a new Random Encounter key');
     }
     $re.start();
   },
@@ -872,13 +1036,13 @@ var $re = {
     if (!$re.json.key) {
       return;
     }
-    const href = `?s=Battle&ss=ba&encounter=${$re.json.key}&date=${$re.json.date}`;
-    if ($re.type === 2) {
+    const href = `?s=Battle&ss=ba&encounter=${$re.json.key}`;
+    if ($re.type === 'ba') {
       return;
-    } else if ($re.type === 1) {
+    } else if ($re.type === 'hv') {
       location.href = href;
-    } else if ($re.type === 0) {
-      window.open((settings.reGalleryAlt ? 'http://alt.hentaiverse.org/' : 'https://hentaiverse.org/') + href, '_blank');
+    } else if ($re.type === 'eh') {
+      window.open(($config.settings.reGalleryAlt ? 'http://alt.hentaiverse.org/' : 'https://hentaiverse.org/') + href, '_blank');
       $re.json.clear = true;
       $re.start();
     }
@@ -906,61 +1070,52 @@ var $re = {
 if (!$id('navbar')) {
   // BATTLE
   if ($id('battle_top')) {
-    if (settings.randomEncounter) {
-      if ($id('textlog').tBodies[0].lastElementChild.textContent === 'Initializing random encounter ...') {
-        $re.check();
-      }
-      const button = $element('div', $id('csp'), ['RE', '!' + (settings.reBattleCSS || 'position: absolute; top: 0px; left: 0px; cursor: pointer;')]);
-      $re.clock(button);
-      if (settings.ajaxRound) {
-        (new MutationObserver(() => { if (!button.parentNode.parentNode && $id('csp')) { $id('csp').appendChild(button); }$re.start(); })).observe(document.body, { childList: true });
-      }
-    }
-
-    setValue('url', location.href);
-    if (settings.reloadBattleURL === 1) {
-      window.history.pushState(null, null, '?s=Battle');
-    } else if (settings.reloadBattleURL === 2) {
-      location.href = '?s=Battle';
+    if ($config.settings.reNotification) {
+      $re.ba();
     }
 
   // RIDDLE MASTER
   } else if ($id('riddleform')) {
-    setValue('url', location.href);
-    if (settings.reloadBattleURL === 1) {
-      window.history.pushState(null, null, '?s=Battle');
-    } else if (settings.reloadBattleURL === 2) {
-      location.href = '?s=Battle';
-    }
 
   // GALLERY
   } else if (location.hostname === 'e-hentai.org') {
-    if (settings.randomEncounter) {
-      $re.init();
-      const link = $qs('#eventpane a');
-      let onclick = link?.getAttribute('onclick');
-      if (onclick && /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.test(onclick)) {
-        $re.json.date = Date.now();
-        $re.json.key = RegExp.$1;
-        $re.json.count++;
-        $re.json.clear = false;
-        $re.set();
-        if (settings.reGalleryAlt) {
-          onclick = onclick.replace('https://hentaiverse.org', 'http://alt.hentaiverse.org');
-        }
-        onclick = onclick.replace("','_hentaiverse'", `&date=${$re.json.date}','_hentaiverse'`);
-        link.setAttribute('onclick', onclick);
-      }
-      if (settings.reGallery && $id('nb')) {
-        $id('nb').style.maxWidth = '1080px';
-        const a = $element('a', $element('div', $id('nb')), ['!display: inline-block; width: 70px; text-align: left; cursor: pointer;']);
-        $re.clock(a);
-      }
+    if ($config.settings.reNotification) {
+      $re.eh();
     }
   }
 
   return;
 }
+
+// CHECK FONT SETTINGS
+const level_exec = /^(.+) Lv\.(\d+)/.exec($id('level_readout').textContent.trim());
+if (!level_exec) {
+  if (_query.ss === 'se') {
+    alert('To use HVUT, You have to set a [Custom Font] first.');
+    scrollIntoView($id('settings_cfont').parentNode, $id('settings_outer'));
+    const form = $qs('#settings_outer form');
+    form.fontlocal.checked = true;
+    form.fontlocal.required = true;
+    form.fontface.required = true;
+    form.fontsize.required = true;
+    form.fontface.placeholder = 'Tahoma, Arial';
+    form.fontsize.placeholder = '10';
+    form.fontoff.placeholder = '0';
+  } else {
+    location.href = '?s=Character&ss=se';
+  }
+  return;
+}
+
+// PLAYER DATA
+const _player = {
+  difficulty: level_exec[1],
+  level: parseInt(level_exec[2]),
+  stamina: parseInt(/Stamina: (\d+)/.exec($id('stamina_readout').textContent)[1]),
+  accuracy: $qs('#stamina_readout > div:nth-child(2)').title,
+  condition: $qs('#stamina_readout img[title^="Stamina"]').title,
+  warn: [],
+};
 
 /* START */
 
@@ -969,7 +1124,7 @@ var _ch = {},
     _eq = {},
     _ab = {},
     _tr = {},
-    _it = {},
+    //_it = {},
     _in = {},
     _se = {},
 
@@ -999,14 +1154,14 @@ var _ch = {},
 /* eslint-enable */
 
 // EQUIP PARSER
-var $equip = {
+const $equip = {
 
   names: (() => {
-    let equipnames = getValue('equipnames', {});
-    if (_isekai && (!equipnames.isekai || equipnames.isekai !== _isekai)) {
-      equipnames = { isekai: _isekai };
-      setValue('equipnames', equipnames);
-      //deleteValue('in_equipdata');
+    let equipnames = $config.get('equipnames', {});
+    if ($config.isekai && ($config.isekai !== equipnames.isekai)) {
+      equipnames = { isekai: $config.isekai };
+      $config.set('equipnames', equipnames);
+      $config.del('equipdata');
     }
     return equipnames;
   })(),
@@ -1232,6 +1387,9 @@ var $equip = {
     'Arcanist': 421, 'Shade': 394, 'Leather': 393,
     'Power': 382, ' Plate': 377,
   },
+  quality: {
+    'flimsy': 1, 'crude': 2, 'fair': 3, 'average': 4, 'fine': 5, 'superior': 6, 'exquisite': 7, 'magnificent': 8, 'legendary': 9, 'peerless': 10,
+  },
 
   parse: {
 
@@ -1256,7 +1414,7 @@ var $equip = {
       return eq;
     },
     div: function (div) {
-      const eid = /equips\.set\((\d+),/.test(div.getAttribute('onmouseover')) && RegExp.$1;
+      const eid = /equips\.set\((\d+),/.exec(div.getAttribute('onmouseover'))?.[1];
       if (!eid) {
         return { error: 'invalid div' };
       }
@@ -1282,7 +1440,7 @@ var $equip = {
           tier: parseInt(exec[6]),
           pxp1: parseInt(exec[7]),
           pxp2: parseInt(exec[8]),
-          pab: (dynjs.d.match($equip.reg.pab) || []).map((p) => p[0]).join(''),
+          pab: dynjs.d.match($equip.reg.pab)?.map((p) => p[0]).join('') || '',
           eid: eid,
           key: dynjs.k,
         },
@@ -1504,7 +1662,7 @@ var $equip = {
     if (eq.info.tier === 0) {
       pxp = eq.info.pxp2;
     } else if (eq.info.tier === 10) {
-      const ppxp = (Object.entries($equip.ppxp).find(([n]) => eq.info.name.includes(n)) || [, 400])[1];
+      const ppxp = Object.entries($equip.ppxp).find(([n]) => eq.info.name.includes(n))?.[1] || 400;
       if (eq.info.quality === 'Peerless') {
         pxp = ppxp;
       } else if (eq.info.quality === 'Legendary') {
@@ -1551,7 +1709,7 @@ var $equip = {
       div.classList.add('hvut-eq-' + eq.info.quality);
       return eq;
     });
-    if (settings.equipSort && sort) {
+    if ($config.settings.equipSort && sort) {
       $equip.sort(equiplist, parent);
     }
     return equiplist;
@@ -1569,13 +1727,15 @@ var $equip = {
       } else if (a.info.type !== b.info.type) {
         return ($equip.index.type[a.info.type] || 99) - ($equip.index.type[b.info.type] || 99);
       }
+
       let r = 0;
       const k = a.info.category === 'One-handed Weapon' || a.info.category === 'Two-handed Weapon' ? ['suffix', 'quality', 'prefix']
-          : a.info.category === 'Staff' ? ['prefix', 'suffix', 'quality']
-          : a.info.type === 'Buckler' ? ['suffix', 'quality', 'prefix']
-          : a.info.category === 'Shield' ? ['quality', 'suffix', 'prefix']
-          : a.info.category === 'Cloth Armor' ? ['suffix', 'slot', 'quality', 'prefix']
-          : ['slot', 'suffix', 'quality', 'prefix'];
+        : a.info.category === 'Staff' ? ['prefix', 'suffix', 'quality']
+        : a.info.type === 'Buckler' ? ['suffix', 'quality', 'prefix']
+        : a.info.category === 'Shield' ? ['quality', 'suffix', 'prefix']
+        : a.info.category === 'Cloth Armor' ? ['suffix', 'slot', 'quality', 'prefix']
+        : ['slot', 'suffix', 'quality', 'prefix'];
+
       k.some((e) => {
         if (e in $equip.index) {
           r = ($equip.index[e][a.info[e]] || 99) - ($equip.index[e][b.info[e]] || 99);
@@ -1584,6 +1744,7 @@ var $equip = {
         }
         return r;
       });
+
       return r || (b.info.eid - a.info.eid);
     });
 
@@ -1641,7 +1802,12 @@ var $equip = {
 
   namecode: function (eq) {
     if (!$equip.namecode.rules) {
-      $equip.namecode_parse();
+      const validation = $equip.namecode_parse();
+      if (validation.error) {
+        alert(`Error: invalid code\n\n${validation.error}`);
+        return;
+      }
+      $equip.namecode.rules = validation.rules;
     }
     function rainbow(t) {
       const c = ['#f00', '#f90', '#fc0', '#0c0', '#09f', '#00c', '#c0f'];
@@ -1676,7 +1842,7 @@ var $equip = {
     };
     $equip.namecode.rules.forEach((rule) => {
       rule.some((r, i) => {
-        if (!$equip.test(eq.info.name, r.name)) {
+        if (!$equip.filter_equip(r.match, eq.info.name, eq)) {
           if (i === 0) {
             return true; // skip the entire rule if the first fails
           } else {
@@ -1700,16 +1866,14 @@ var $equip = {
     }
     color('name');
     bold('name');
+    eq.data.namecode = mod.name.code;
     return mod.name.code;
   },
-  namecode_parse: function (array = getValue('in_namecode', settings.equipNameCode)) {
-    if (typeof array === 'string') {
-      array = array.split('\n');
-    }
+  namecode_parse: function (array = $config.settings.equipNameCode) {
     const rules = [];
-    const error = [];
-    array.forEach((s, i) => {
-      if (!s.trim() || s.startsWith('//')) {
+    const errors = [];
+    array.forEach((s) => {
+      if (!s.trim()) {
         return;
       }
       const rule = [];
@@ -1717,62 +1881,111 @@ var $equip = {
         if (!s.trim()) {
           return;
         }
-        const match = s.match(/^(.+?):\s*((?:(?:name|quality|prefix|type|slot|suffix)\s*=.+?)(?:,\s*(?:(?:name|quality|prefix|type|slot|suffix)\s*=.+?))*)$/);
+        const [match, text] = split2(s, ':');
         if (!match) {
-          error.push(`#${i + 1}: ${s}`);
+          errors.push(s);
           return;
         }
-        const name = match[1].trim();
-        const options = [...match[2].matchAll(/(name|quality|prefix|type|slot|suffix)\s*=(.+?)(?:,|$)/g)].map((o) => ({ key: o[1], value: o[2].trim() }));
-        try {
-          eval(name.replace(/[-A-Za-z ]+/g, (s) => { s = s.trim(); return !s ? '' : 'true'; }));
-        } catch (e) {
-          error.push(`#${i + 1}: ${s}`);
+        const { error } = $equip.filter_validate(match);
+        if (error) {
+          errors.push(s);
           return;
         }
-        if (!options.length) {
-          error.push(`#${i + 1}: ${s}`);
-          return;
-        }
-        const r = { name, options };
+        const options = [];
+        text.split(',').forEach((o) => {
+          o = o.trim();
+          const exec = /^(name|quality|prefix|type|slot|suffix)\s*=\s*([\w#]+)$/.exec(o);
+          if (!exec) {
+            errors.push(s);
+            return;
+          }
+          options.push({ key: exec[1], value: exec[2] });
+        });
+        const r = { match, options };
         rule.push(r);
       });
       rules.push(rule);
     });
-    if (error.length) {
-      alert('无效代码\n' + error.join('\n'));
-      return;
-    }
-    $equip.namecode.rules = rules;
-    const namecode = rules.map((r) => r.map((r) => r.name + ' : ' + r.options.map(({ key, value }) => `${key}=${value}`).join(', ')).join(' ; '));
-    return namecode;
+    const namecode = rules.map((r) => r.map((r) => r.match + ' : ' + r.options.map(({ key, value }) => `${key}=${value}`).join(', ')).join(' ; '));
+    const error = errors.join('\n');
+    const result = { value: namecode, error, rules };
+    return result;
   },
 
-  test: function (name, test) {
-    if (!test) {
+  filter: function (filters, name, equip) {
+    if (!filters) {
       return false;
     }
     const n = name.toLowerCase();
-    const t = test.toLowerCase();
-    try {
-      return eval(t.replace(/[-a-z ]+/g, (s) => { s = s.trim(); return !s ? '' : n.includes(s); }));
-    } catch (e) {
-      alert('无效过滤器: ' + test);
-      return false;
-    }
+    return filters.some((f) => $equip.filter_equip(f, n, equip));
   },
-  filter: function (name, filter) {
+  filter_equip: function (filter, name, equip) {
     if (!filter) {
       return false;
     }
     const n = name.toLowerCase();
-    return filter.some((f) => $equip.test(n, f));
+    const t = filter.toLowerCase();
+    const r = t.replace(/[a-z0-9-$=<>+ ]+/g, (f) => {
+      f = f.trim();
+      if (!f) {
+        return '';
+      } else if (!/[^a-z- ]/.test(f)) {
+        return n.includes(f);
+      } else if (f.includes('$')) {
+        return $equip.filter_details(f, equip);
+      } else {
+        throw new Error('Invalid Filter');
+      }
+    });
+    return eval(r);
+  },
+  filter_details: function (filter, equip) {
+    if (/\$([a-z]+)\+/.test(filter)) { // $Magnificent+
+      const fquality = RegExp.$1;
+      const quality = equip?.info?.quality.toLowerCase() ?? 'crude';
+      if (!$equip.quality.hasOwnProperty(fquality)) {
+        throw new Error('Invalid Filter');
+      }
+      return $equip.quality[quality] >= $equip.quality[fquality];
+    }
+    if (filter.includes('$pab') && /\$pab=([a-z]+)/.test(filter)) {
+      const fpab = RegExp.$1;
+      const pab = equip?.info?.pab?.toLowerCase() ?? '';
+      return fpab.split('').every((p) => pab.includes(p));
+    }
+    if (filter.includes('$level')) {
+      const level = equip?.info?.level ?? 0;
+      return filter.replace(/\$level/, level);
+    }
+    if (filter.includes('$prefix')) {
+      return !!equip?.info?.prefix;
+    }
+    if (filter.includes('$iw')) {
+      return !!equip?.info?.tier;
+    }
+    throw new Error('Invalid Filter');
+  },
+  filter_validate: function (filters) {
+    if (!Array.isArray(filters)) {
+      filters = [filters];
+    }
+    const errors = filters.filter((filter) => {
+      try {
+        $equip.filter_equip(filter, '');
+        return false;
+      } catch (e) {
+        return true;
+      }
+    });
+    const error = errors.join('\n');
+    const result = { value: filters, error };
+    return result;
   },
 
 };
 
 // ITEM INVENTORY
-var $item = {
+const $item = {
 
   list: null,
   reg: {
@@ -1781,135 +1994,347 @@ var $item = {
     shrine: /set_shrine_item\((\w+),(\d+),(\d+),'(.+?)'\)/,
     mooglemail: /set_mooglemail_item\((\d+),this\)/,
   },
-  type: function (text) {
-    return $item.reg.itemr.test(text) ? RegExp.$1.replace(/\W/g, '') : $item.reg.itemc.test(text) ? 'Consumable' : '';
+  get_type: function (text) {
+    if ($item.reg.itemr.test(text)) {
+      return RegExp.$1.replace(/\W/g, '');
+    } else if ($item.reg.itemc.test(text)) {
+      return 'Consumable';
+    } else {
+      return '';
+    }
   },
-  count: function (name) {
-    return $item.list[name.trim()] || 0;
+  get_data: function (text) {
+    let exec;
+    if ((exec = $item.reg.shrine.exec(text))) {
+      const iid = exec[1];
+      const stock = parseInt(exec[2]);
+      const bulk = parseInt(exec[3]);
+      const name = exec[4];
+      return { iid, stock, bulk, name };
+    } else if ((exec = $item.reg.mooglemail.exec(text))) {
+      const iid = exec[1];
+      return { iid };
+    } else {
+      return {};
+    }
   },
   load: async function () {
     const html = await $ajax.fetch('?s=Character&ss=it');
     const doc = $doc(html);
     $item.list = {};
-    Array.from($qs('.itemlist', doc).rows).forEach((tr) => {
-      $item.list[tr.cells[0].textContent] = parseInt(tr.cells[1].textContent);
+    $qsa('.itemlist tr', doc).forEach((tr) => {
+      const name = tr.cells[0].textContent;
+      const id = parseInt(tr.cells[0].firstElementChild.id.slice(5));
+      const stock = parseInt(tr.cells[1].textContent);
+      $item.list[name] = { id, stock };
     });
-    return $item.list;
   },
   once: async function () {
     if ($item.list) {
-      return $item.list;
+      return;
     } else {
-      return $item.load();
+      await $item.load();
     }
   },
+  load_shop: async function () {
+    const html = await $ajax.fetch('?s=Bazaar&ss=is');
+    const doc = $doc(html);
+    $item.storetoken = $id('shopform', doc).elements.storetoken.value;
+    $item.networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
+    $item.shop = {};
 
+    const reg_item = /itemshop\.set_item\('item_pane',(\d+),(\d+),(\d+)/;
+    $qsa('#item_pane .itemlist tr', doc).forEach((tr) => {
+      const exec = reg_item.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
+      const name = tr.cells[0].textContent.trim();
+      const id = parseInt(exec[1]);
+      const stock = parseInt(exec[2]);
+      const sell_price = parseInt(exec[3]);
+      $item.shop[name] = { id, stock, sell_price };
+    });
+
+    const reg_shop = /itemshop\.set_item\('shop_pane',(\d+),(\d+),(\d+)/;
+    $qsa('#shop_pane .itemlist tr', doc).forEach((tr) => {
+      const exec = reg_shop.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
+      const name = tr.cells[0].textContent.trim();
+      const id = parseInt(exec[1]);
+      const shop_stock = parseInt(exec[2]);
+      const shop_price = parseInt(exec[3]);
+      if (!$item.shop[name]) {
+        $item.shop[name] = {};
+      }
+      Object.assign($item.shop[name], { id, shop_stock, shop_price });
+    });
+  },
+  count: function (name) {
+    if (name) {
+      return $item.list[name]?.stock || 0;
+    } else {
+      const obj = {};
+      for (const name in $item.list) {
+        obj[name] = $item.list[name].stock || 0;
+      }
+      return obj;
+    }
+  },
+  cost: function (items) {
+    let cost = 0;
+    items.forEach((item) => {
+      cost += item.count * ($item.shop[item.name]?.shop_price || 0);
+    });
+    return cost;
+  },
+  buy: async function (items) { //items = [{ name, count }];
+    if (!items.length) {
+      alert('The purchase request list is empty.');
+      return;
+    }
+    await $item.load_shop();
+    const cost = $item.cost(items);
+    if (cost > $item.networth) {
+      alert('You do not have enough credits.');
+      return;
+    }
+    const nostock = items.find((item) => item.count > ($item.shop[item.name]?.shop_stock || 0));
+    if (nostock) {
+      alert('Insufficient number of items in the Item Shop.');
+      return;
+    }
+    items.forEach((item) => {
+      item.id = $item.shop[item.name].id;
+    });
+
+    async function buy(id, count) {
+      const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${$item.storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
+      const doc = $doc(html);
+      const error = get_message(doc);
+      if (error) {
+        return false;
+      }
+      return true;
+    }
+
+    const requests = items.map((item) => buy(item.id, item.count));
+    const results = await Promise.all(requests);
+    if (!results.every((r) => r)) {
+      alert('An error has occurred.');
+      return;
+    }
+    return true;
+  },
 };
 
 // ITEM PRICE
-var $price = {
+const $price = {
 
   json: null,
-  desc: {
-    'WTS': '用于编辑各类物品所收取的COD单价，物品名称需使用英文',
-    'WTB': '用于编辑各类物品所付出的COD单价，物品名称需使用英文',
-    'Materials': '材料价格用于计算在怪物实验室中的利润，升级装备的总成本以及在装备商店中计算装备拆解的价值，物品名称需使用英文',
-    'Trophies': '用于设定各类奖杯的价格，物品名称需使用英文',
-    'Crystals': '用于设定各类水晶的价格，物品名称需使用英文',
+  market: null,
+  filters: { co: null, ma: null, tr: null, ar: null, fi: null, mo: null },
+  groups: {
+    'Consumables': [
+      'Health Draught', 'Health Potion', 'Health Elixir', 'Mana Draught', 'Mana Potion', 'Mana Elixir', 'Spirit Draught', 'Spirit Potion', 'Spirit Elixir', 'Last Elixir', 'Energy Drink', 'Caffeinated Candy',
+      'Infusion of Flames', 'Infusion of Frost', 'Infusion of Lightning', 'Infusion of Storms', 'Infusion of Divinity', 'Infusion of Darkness', 'Scroll of Swiftness', 'Scroll of Protection', 'Scroll of the Avatar', 'Scroll of Absorption', 'Scroll of Shadows', 'Scroll of Life', 'Scroll of the Gods',
+      'Flower Vase', 'Bubble-Gum',
+    ],
+    'Materials': [
+      'Low-Grade Cloth', 'Mid-Grade Cloth', 'High-Grade Cloth', 'Low-Grade Leather', 'Mid-Grade Leather', 'High-Grade Leather', 'Low-Grade Metals', 'Mid-Grade Metals', 'High-Grade Metals', 'Low-Grade Wood', 'Mid-Grade Wood', 'High-Grade Wood',
+      'Scrap Cloth', 'Scrap Leather', 'Scrap Metal', 'Scrap Wood', 'Energy Cell',
+      'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator',
+      'Wispy Catalyst', 'Diluted Catalyst', 'Regular Catalyst', 'Robust Catalyst', 'Vibrant Catalyst', 'Coruscating Catalyst',
+      'Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl',
+      'Peerless Weapon Core', 'Legendary Weapon Core', 'Peerless Staff Core', 'Legendary Staff Core', 'Peerless Armor Core', 'Legendary Armor Core',
+      'Voidseeker Shard', 'Aether Shard', 'Featherweight Shard', 'Amnesia Shard',
+    ],
+    'Trophies': ['ManBearPig Tail', 'Holy Hand Grenade of Antioch', "Mithra's Flower", 'Dalek Voicebox', 'Lock of Blue Hair', 'Bunny-Girl Costume', 'Hinamatsuri Doll', 'Broken Glasses', 'Black T-Shirt', 'Sapling', 'Unicorn Horn', 'Noodly Appendage'],
+    'Crystals': ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'],
+    'Figures': ['Twilight Sparkle Figurine', 'Rainbow Dash Figurine', 'Applejack Figurine', 'Fluttershy Figurine', 'Pinkie Pie Figurine', 'Rarity Figurine', 'Trixie Figurine', 'Princess Celestia Figurine', 'Princess Luna Figurine', 'Apple Bloom Figurine', 'Scootaloo Figurine', 'Sweetie Belle Figurine', 'Big Macintosh Figurine', 'Spitfire Figurine', 'Derpy Hooves Figurine', 'Lyra Heartstrings Figurine', 'Octavia Figurine', 'Zecora Figurine', 'Cheerilee Figurine', 'Vinyl Scratch Figurine', 'Daring Do Figurine', 'Doctor Whooves Figurine', 'Berry Punch Figurine', 'Bon-Bon Figurine', 'Fluffle Puff Figurine', 'Angel Bunny Figurine', 'Gummy Figurine'],
+  },
+  default: {
+    'Wispy Catalyst': 100,
+    'Diluted Catalyst': 500,
+    'Regular Catalyst': 1000,
+    'Robust Catalyst': 2500,
+    'Vibrant Catalyst': 5000,
+    'Coruscating Catalyst': 10000,
   },
 
   init: function () {
     if ($price.json) {
       return;
     }
-    $price.keys = Object.keys(settings.itemPrice);
-    $price.json = Object.assign(JSON.parse(JSON.stringify(settings.itemPrice)), getValue('prices'));
-  },
-  get: function (tag) {
-    $price.init();
-    if ($price.keys.includes(tag)) {
-      return $price.json[tag];
-    } else {
-      return {};
+    if ($config.isekai) {
+      $price.groups['Consumables'] = $price.groups['Consumables'].filter((n) => !'Last Elixir|Energy Drink|Caffeinated Candy'.includes(n));
+      $price.groups['Materials'] = $price.groups['Materials'].filter((n) => !n.startsWith('Binding of'));
+      delete $price.groups['Crystals'];
+      delete $price.groups['Figures'];
+      delete $price.filters['ar'];
+      delete $price.filters['fi'];
+      delete $price.filters['mo'];
+    }
+    $price.json = $config.get('prices');
+    if (!$price.json) {
+      $price.reset();
     }
   },
-  set: function (tag, json, replace = true) {
-    $price.init();
-    if (!$price.keys.includes(tag)) {
-      popup(`'${tag}' is invalid`);
-      return;
-    }
-    if (replace) {
-      $price.json[tag] = json;
-    } else {
-      Object.assign($price.json[tag], json);
-    }
-    setValue('prices', $price.json);
-  },
-  edit: function (tag, callback) {
-    $price.init();
-    if (!tag) {
-      return;
-    }
-    const prev = $price.get(tag);
-    popup_text($price.json2str(tag), 'width: 300px; height: 500px;', [
-      { value: '保存', click: (w, t) => {
-        const json = $price.str2json(t.value);
-        const error = json['\nERROR'];
-        if (error) {
-          alert('!!! 错误\n' + error);
-          return;
-        }
-        $price.set(tag, json);
-        w.remove();
-        if (JSON.stringify(prev) !== JSON.stringify(json)) {
-          callback?.();
-        }
-      } },
-      { value: '恢复默认', click: (w, t) => {
-        const desc = $price.desc[tag] || '';
-        t.value = `// [${tag}] ${desc}\n\n`
-            + Object.entries(settings.itemPrice[tag]).map(([n, p]) => `${n} @ ${p}`).join('\n');
-      } },
-    ]);
-  },
-  selector: function (size) {
-    $price.init();
-    const selector = $element('select', null, null, { change: () => { selector.blur(); $price.edit(selector.value); } });
-    if (size) {
-      selector.size = $price.keys.length + 1;
-      selector.classList.add('hvut-scrollbar-none');
-    }
-    $element('option', selector, { text: '编辑价格...', value: '' });
-    $price.keys.forEach((k) => { $element('option', selector, { text: k, value: k }); });
-    return selector;
-  },
-  str2json: function (str) {
+  reset: function () {
     const json = {};
-    str.split('\n').some((s, i) => {
-      s = s.trim();
-      if (!s || s.startsWith('//')) {
+    Object.values($price.groups).forEach((g) => {
+      g.forEach((n) => {
+        json[n] = 0;
+      });
+    });
+    Object.assign(json, $price.default);
+    $price.json = json;
+    $config.set('prices', $price.json);
+    //$price.set(json, true);
+  },
+  get_items: function (i) {
+    let items;
+    if (!i) {
+      items = Object.keys($price.json);
+    } else if (typeof i === 'string') {
+      if (i in $price.groups) {
+        items = $price.groups[i];
+      } else if (i in $price.filters) {
+        items = $price.filters[i];
+      } else {
+        items = [];
+        console.log('Invalid items');
+      }
+    } else if (Array.isArray(i)) {
+      items = i;
+    } else {
+      items = [];
+      console.log('Invalid items');
+    }
+    return items;
+  },
+  get: function (i) {
+    $price.init();
+    const prices = {};
+    const items = $price.get_items(i);
+    items.forEach((n) => { prices[n] = $price.json[n] || 0; });
+    return prices;
+  },
+  set: function (json, replace) {
+    $price.init();
+    if (replace) {
+      $price.json = json;
+    } else {
+      Object.assign($price.json, json);
+    }
+    $config.set('prices', $price.json);
+  },
+  edit: function (i, filter, callback) {
+    $price.init();
+    const items = $price.get_items(i);
+    const prices = $price.get(items);
+    const all = !filter;
+
+    popup_text($config.obj2text(prices, ['\n', '@']), 300, 500, [
+      { text: 'Save', click: save },
+      { text: 'Bid', click: (p) => { market(p, 'bid'); } },
+      { text: 'Ask', click: (p) => { market(p, 'ask'); } },
+      { text: 'Edit All Items', click: edit_all },
+    ]);
+
+    function save(p) {
+      const { value: new_prices, error } = $config.text2obj(p.textarea.value, ['\n', '@'], 'number');
+      if (error) { // error: invalid input
+        alert(`Error: price must be a number\n\n${error}`);
         return;
       }
-      if (/^(.+?)\s*@\s*(\d+)$/.test(s)) {
-        json[RegExp.$1] = parseInt(RegExp.$2);
+      if (all && p.textarea.value.trim() === '') {
+        $price.reset();
       } else {
-        json['\nERROR'] = `#${i + 1}: ${s}`;
-        return true;
+        const replace = all;
+        $price.set(new_prices, replace);
+      }
+      p.close();
+      if (JSON.stringify(prices) !== JSON.stringify(new_prices)) {
+        callback?.();
+      }
+    }
+    async function market(p, key) {
+      p.textarea.disabled = true;
+      const new_prices = await $price.update_market(filter, key);
+      p.textarea.value = $config.obj2text(new_prices, ['\n', '@']);
+      p.textarea.disabled = false;
+      save(p);
+    }
+    function edit_all(p) {
+      if (all) {
+        return;
+      }
+      p.close();
+      $price.edit('', '', callback);
+    }
+  },
+  parse_market: function (filter, doc = document) {
+    if (!$price.market) {
+      $price.market = {};
+    }
+    $price.filters[filter] = [];
+    Array.from($qs('#market_itemlist table', doc).rows).forEach((tr, i) => {
+      if (i === 0) {
+        return;
+      }
+      const name = tr.cells[0].textContent;
+      const itemid = /itemid=(\d+)/.exec(tr.getAttribute('onclick'))[1];
+      const stock = parseInt(tr.cells[1].textContent);
+      const bid = parseFloat(tr.cells[2].textContent.slice(0, -2)) || 0;
+      const ask = parseFloat(tr.cells[3].textContent.slice(0, -2)) || 0;
+      const market_stock = parseInt(tr.cells[4].textContent.slice(0, -2)) || 0;
+      if (!$price.market[name]) {
+        $price.market[name] = {};
+      }
+      Object.assign($price.market[name], { itemid, stock, bid, ask, market_stock });
+      $price.filters[filter].push(name);
+    });
+  },
+  update_market: async function (filter, key, save) {
+    const all = !filter;
+    if (all && !$price.market_all) {
+      const filters = Object.keys($price.filters);
+      const requests = filters.map((filter) => update(filter));
+      await Promise.all(requests);
+      $price.market_all = true;
+    } else if (!all && !$price.market) {
+      await update(filter);
+    }
+    const items = $price.get_items(filter);
+    const prices = $price.get(items);
+    const market_prices = $price.get_market(items, key);
+    const new_prices = { ...prices, ...market_prices };
+    if (save) {
+      $price.set(new_prices);
+    }
+    return new_prices;
+
+    async function update(filter) {
+      const html = await $ajax.fetch(`?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`);
+      const doc = $doc(html);
+      $price.parse_market(filter, doc);
+    }
+  },
+  get_market: function (items, key) {
+    const prices = {};
+    items.forEach((name) => {
+      if (name in $price.market) {
+        prices[name] = $price.market[name][key];
       }
     });
-    return json;
+    return prices;
   },
-  json2str: function (tag) {
-    const desc = $price.desc[tag] || '';
-    return `// [${tag}] ${desc}\n\n`
-        + Object.entries($price.get(tag)).map(([n, p]) => `${n} @ ${p}`).join('\n');
+  set_market: function (items, key) {
+    const prices = $price.get_market(items, key);
+    $price.set(prices);
   },
 
 };
 
 // MoogleMail
-var $mail = {
+const $mail = {
 
   queue: [],
   current: 0,
@@ -2054,6 +2479,7 @@ var $mail = {
     }
     const chunks = [];
     const size = 10;
+
     for (let i = 0, l = mail.attach.length; i < l; i += size) {
       const attach = mail.attach.slice(i, i + size);
       const { to_name, cod_persistent } = mail;
@@ -2123,7 +2549,8 @@ var $mail = {
     return chunks;
   },
   check: function (html) {
-    const error = get_message(html);
+    const doc = $doc(html);
+    const error = get_message(doc);
     if (error) {
       $mail.error = error;
       $mail.log('!!! Error: ' + error);
@@ -2134,85 +2561,425 @@ var $mail = {
     return $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${$mail.token}&action=discard`);
   },
   log: function (text, clear) {
-    if (!$mail.log.node) {
-      $mail.log.node = popup_text('', 'width: 300px; height: 300px; white-space: pre;');
+    if (!$mail.log.popup) {
+      $mail.log.popup = popup_text('', 300, 300);
     }
-    const { w, t } = $mail.log.node;
-    if (!w.parentNode) {
-      document.body.appendChild(w);
+    const p = $mail.log.popup;
+    if (!p.wrapper.parentNode) {
+      document.body.appendChild(p.wrapper);
     }
     if (clear) {
-      t.value = '';
+      p.textarea.value = '';
     }
-    t.value += text + '\n';
-    t.scrollTop = t.scrollHeight;
+    p.textarea.value += text + '\n';
+    p.textarea.scrollTop = p.textarea.scrollHeight;
   },
 
 };
 
+// Battle Panel: Equipment Enchant and Repair
+const $battle = {
 
+  enchant_data: {
+    'Voidseeker Shard': { effect: "Voidseeker's Blessing", weapon: 'vseek' },
+    'Aether Shard': { effect: 'Suffused Aether', weapon: 'ether' },
+    'Featherweight Shard': { effect: 'Featherweight Charm', weapon: 'feath', armor: 'feath' },
+    'Infusion of Flames': { effect: 'Infused Flames', weapon: 'sfire', armor: 'pfire', day: 2 },
+    'Infusion of Frost': { effect: 'Infused Frost', weapon: 'scold', armor: 'pcold', day: 3 },
+    'Infusion of Lightning': { effect: 'Infused Lightning', weapon: 'selec', armor: 'pelec', day: 6 },
+    'Infusion of Storms': { effect: 'Infused Storm', weapon: 'swind', armor: 'pwind', day: 4 },
+    'Infusion of Divinity': { effect: 'Infused Divinity', weapon: 'sholy', armor: 'pholy', day: 0 },
+    'Infusion of Darkness': { effect: 'Infused Darkness', weapon: 'sdark', armor: 'pdark', day: 1 },
+  },
+  node: {},
+  equips: [],
 
-// 获取包含体力信息的元素
-var staminaElement = document.getElementById('stamina_readout');
-var staminaElements = document.getElementById('stamina_readout');
-// 获取所有包含体力信息的子元素
-var staminaChildren = staminaElement.querySelectorAll('div[title]');
-var staminaText = staminaElements.querySelector('img').getAttribute('title');
-// 定义英文和中文的对应关系
-var translationMap = {
-        'Exhausted. You do not receive EXP or drops from monsters, and you cannot gain proficiencies.' : '你已经筋疲力尽，你将无法从怪物处获取任何经验、潜经验、掉落、以及熟练度，直到你的精力恢复到2以上',
-        'You have increased stamina drain due to low riddle accuracy' : '由于你的小马图回答正确率太低，你的精力消耗速率被提高了',
-        'Great. You receive a 100% EXP Bonus but stamina drains 50% faster.' : '你现在精力充沛，额外获得100%经验加成，但精力消耗量增加50%（每场战斗消耗0.03的精力,异世界加倍）',
-        'Normal. You are not receiving any bonuses or penalties.' : '正常，你既不会受到额外的奖励也不会受到惩罚（每场战斗消耗0.02的精力,异世界加倍）',
-    // 其他英文和中文对应关系
-};
-// 遍历所有子元素，替换 title 属性中的英文文本为中文
-for (var key in translationMap) {
-    if (staminaText.includes(key)) {
-        staminaText = staminaText.replace(key, translationMap[key]);
-        break; // 找到匹配项后立即退出循环
+  click: function (e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) {
+      return;
     }
-}
-
-// 将替换后的文本内容设置回元素的 title 属性
-staminaElement.querySelector('img').setAttribute('title', staminaText);
-staminaChildren.forEach(function(child) {
-    var title = child.getAttribute('title');
-    if (title && translationMap[title]) {
-        child.setAttribute('title', translationMap[title]);
+    const { action, eid, item, count } = target.dataset;
+    if (action === 'view') {
+      $battle.view(eid);
+    } else if (action === 'enchant') {
+      $battle.enchant($battle.current, item, count);
+    } else if (action === 'repair') {
+      $battle.repair($battle.current);
+    } else if (action === 'repairall') {
+      $battle.repair('all');
+    } else if (action === 'buy') {
+      $battle.buy(item, count);
     }
-});
+  },
+  get: function (eid) {
+    return $battle.equips.find((eq) => eq.info.eid == eid);
+  },
+  view: function (eid) {
+    $battle.node.repair.innerHTML = '';
+    $battle.node.enchant.innerHTML = '';
 
-// PLAYER DATA
-var _player = {
-  stamina: /Stamina: (\d+)/.test($id('stamina_readout').textContent) && parseInt(RegExp.$1),
-  accuracy: $qs('#stamina_readout > div:nth-child(2)').title,
-  condition: $qs('#stamina_readout img[title^="Stamina"]').title,
-  dfct: /^(.+) Lv\.(\d+)/.test($id('level_readout').textContent.trim()) && RegExp.$1,
-  level: parseInt(RegExp.$2),
-  warn: [],
+    const eq = $battle.get(eid);
+    if (!eq) {
+      return;
+    }
+    $battle.get($battle.current)?.node.li.classList.remove('hvut-bt-active');
+    $battle.current = eq.info.eid;
+    eq.node.li.classList.add('hvut-bt-active');
+
+    if (eq.data.repair) {
+      eq.data.repair.forEach(({ name, count }) => {
+        const stock = $item.count(name);
+        const textContent = `${name} x ${count} (${stock})`;
+        const className = stock < count ? 'hvut-bt-warn' : '';
+        $element('li', $battle.node.repair, { textContent, className });
+      });
+    } else if (eq.data.repair === null) {
+      $element('li', $battle.node.repair, '-');
+    }
+
+    if (!$item.list) {
+      return;
+    }
+    const cat = eq.info.cat;
+    const day = (new Date()).getUTCDay();
+    Object.entries($battle.enchant_data).forEach(([name, item]) => {
+      if (item[cat]) {
+        const li = $element('li', $battle.node.enchant);
+        const count = (cat === 'weapon' && name.includes('Infusion of ') ? $config.settings.equipEnchantWeapon : $config.settings.equipEnchantArmor) || 1;
+        const stock = $item.count(name);
+        if (cat === 'weapon' && item.day === day) {
+          li.classList.add('hvut-bt-day');
+        }
+        if (!stock) {
+          li.classList.add('hvut-bt-nostock');
+        }
+        $element('span', li, [`[+${count}]`, '.hvut-cphu', { dataset: { action: 'enchant', item: name, count } }]);
+        $element('span', li, [`${item.effect}`, '.hvut-cphu', { dataset: { action: 'enchant', item: name, count: 1 } }]);
+        $element('span', li, [`(${stock})`]);
+      }
+    });
+  },
+  load: async function (eid) {
+    const eq = $battle.get(eid);
+    eq.node.enc.textContent = 'Loading...';
+    const html = await $ajax.fetch(`equip/${eq.info.eid}/${eq.info.key}`);
+    const doc = $doc(html);
+    $battle.parse(eq.info.eid, doc);
+  },
+  parse: function (eid, doc) {
+    const div = $id('equip_extended', doc);
+    const exec = /Condition: (\d+) \/ (\d+) \((\d+)%\)/.exec($qs('.eq', div).children[1].textContent);
+    const eq = $battle.get(eid);
+    eq.info.condition = parseInt(exec[1]);
+    eq.info.durability = parseInt(exec[2]);
+    eq.info.cdt = eq.info.condition / eq.info.durability;
+    $battle.display_condition(eq.info.eid);
+
+    eq.node.enc.innerHTML = '';
+    const enchant = $qsa('#ee > span', div);
+    enchant.forEach((e) => { $element('span', eq.node.enc, e.textContent); });
+    if (!enchant.length) {
+      eq.node.enc.textContent = 'No Enchantments';
+    }
+  },
+  enchant: async function (eid, name, count) {
+    if (!$item.list) {
+      return;
+    }
+    const eq = $battle.get(eid);
+    const item = $battle.enchant_data[name];
+    const stock = $item.count(name);
+    if (count > stock) {
+      count = stock;
+    }
+    if (count < 1) {
+      return;
+    }
+    eq.node.enc.textContent = 'Loading...';
+
+    async function enchant(eq) {
+      const html = await $ajax.fetch('?s=Forge&ss=en', `select_item=${eq.info.eid}&enchantment=${item[eq.info.cat]}`);
+      const doc = $doc(html);
+      const error = get_message(doc);
+      if (error) {
+        popup(error);
+      }
+      $battle.parse(eq.info.eid, doc);
+    }
+
+    const requests = $ajax.repeat(count, enchant, eq);
+    await Promise.all(requests);
+    $battle.load_inventory();
+  },
+  repair: async function (eid) {
+    const eq = $battle.get(eid);
+    const eqall = eid === 'all';
+    if (eq?.info?.cdt === 1 || $battle.repair.repairall === null) {
+      return;
+    }
+
+    let requires;
+    if (eqall) {
+      requires = $battle.repair.repairall;
+    } else if (eq) {
+      requires = eq.data.repair;
+    }
+    if (requires) {
+      const items = [];
+      requires.forEach(({ name, count }) => {
+        count -= $item.count(name);
+        if (count > 0) {
+          items.push({ name, count });
+        }
+      });
+      if (items.length) {
+        if (!confirm('Not enough materials for repairs.\nWould you like to purchase materials from the Item Shop to repair your equipment?')) {
+          return;
+        }
+        $battle.node.repairall.innerHTML = '';
+        $battle.node.repair.innerHTML = '';
+        $element('li', $battle.node.repairall, '...');
+        $element('li', $battle.node.repair, '...');
+        await $item.buy(items);
+      }
+    }
+
+    $battle.node.repairall.innerHTML = '';
+    $battle.node.repair.innerHTML = '';
+
+    const html = await $ajax.fetch('?s=Forge&ss=re', eq ? 'select_item=' + eq.info.eid : eqall ? 'repair_all=1' : null);
+    const doc = $doc(html);
+    $battle.load_dynjs(doc);
+
+    const error = get_message(doc);
+    if (error) {
+      popup(error);
+      $battle.load_inventory();
+      return;
+    }
+
+    const repairall = /Requires: (.+)/.exec($id('repairall', doc).nextElementSibling.textContent)[1];
+    if (repairall === 'Everything is fully repaired.') {
+      $battle.repair.repairall = null;
+    } else {
+      $battle.repair.repairall = repairall.split(', ').map((e) => {
+        const exec = /(\d+)x (.+)/.exec(e);
+        const count = parseInt(exec[1]);
+        const name = exec[2];
+        return { name, count };
+      });
+    }
+
+    const equips = {};
+    $qsa('.equiplist div[onclick*="set_forge_cost"]', doc).forEach((div) => {
+      const exec = /set_forge_cost\((\d+),'Requires: (.+?)'/.exec(div.getAttribute('onclick'));
+      const eid = exec[1];
+      const requires = exec[2];
+      equips[eid] = requires.split(', ').map((e) => {
+        const exec = /(\d+)x (.+)/.exec(e);
+        const count = parseInt(exec[1]);
+        const name = exec[2];
+        return { name, count };
+      });
+    });
+
+    $battle.equips.forEach((e) => {
+      const requires = equips[e.info.eid];
+      if (requires) {
+        e.data.repair = requires;
+      } else {
+        e.data.repair = null;
+      }
+      if (eq === e || eqall && $config.settings.equipEnchantCheckArmors) {
+        $battle.load(e.info.eid);
+      }
+    });
+
+    if (eq || eqall) {
+      $battle.load_inventory();
+    } else {
+      $battle.display_inventory();
+    }
+    $persona.check_warning(doc);
+  },
+  buy: async function (name, count) {
+    if (!confirm(`Would you like to buy ${count} x ${name}?`)) {
+      return;
+    }
+    const items = [{ name, count }];
+    await $item.buy(items);
+    $battle.load_inventory();
+  },
+  load_dynjs: async function (doc) {
+    const src = $qs('script[src*="/dynjs/"]', doc).src;
+    const html = await $ajax.fetch(src + '?t=' + Date.now());
+    $equip.dynjs_loaded = JSON.parse(html.slice(16, -1));
+
+    $battle.equips.some((eq) => {
+      const dynjs = $equip.dynjs_loaded[eq.info.eid];
+      if (!dynjs) {
+        $persona.change_p();
+        return true;
+      }
+      const exec = $equip.reg.html.exec(dynjs.d);
+      eq.info.condition = parseInt(exec[4]);
+      eq.info.durability = parseInt(exec[5]);
+      eq.info.cdt = eq.info.condition / eq.info.durability;
+      $battle.display_condition(eq.info.eid);
+    });
+  },
+  display_condition: function (eid) {
+    const eq = $battle.get(eid);
+    let thld = $config.settings.equipEnchantRepairThreshold;
+    if (thld < 1) {
+      thld = eq.info.cdt <= thld;
+    } else { // margin to 50%
+      thld = eq.info.condition <= thld + eq.info.durability * 0.5;
+    }
+    eq.node.cdt.textContent = `${eq.info.condition} / ${eq.info.durability} (${(eq.info.cdt * 100).toFixed(1)}%)`;
+    eq.node.cdt.className = eq.info.cdt <= 0.5 ? 'hvut-bt-cdt2' : eq.info.cdt <= 0.6 || thld ? 'hvut-bt-cdt1' : '';
+  },
+  load_inventory: async function () {
+    $battle.node.inventory.innerHTML = '';
+    $battle.node.repairall.innerHTML = '';
+    await $item.load();
+    $battle.display_inventory();
+    $config.set('items', $item.count());
+  },
+  display_inventory: function () {
+    $battle.node.inventory.innerHTML = '';
+    $battle.node.repairall.innerHTML = '';
+    if (!$item.list) {
+      return;
+    }
+    Object.entries($config.settings.equipEnchantItemInventory).forEach(([name, count]) => {
+      const stock = $item.count(name);
+      const textContent = `${name} (${stock})`;
+      const className = stock < count ? 'hvut-bt-warn' : '';
+      const dataset = { action: 'buy', item: name, count };
+      $element('li', $battle.node.inventory, { textContent, className, dataset });
+    });
+    if ($battle.repair.repairall) {
+      $battle.repair.repairall.forEach(({ name, count }) => {
+        const stock = $item.count(name);
+        const textContent = `${name} x ${count} (${stock})`;
+        const className = stock < count ? 'hvut-bt-warn' : '';
+        $element('li', $battle.node.repairall, { textContent, className });
+      });
+    } else if ($battle.repair.repairall === null) {
+      $element('li', $battle.node.repairall, 'Everything is fully repaired.');
+    }
+    $battle.view($battle.current);
+  },
+  create: function () {
+    $battle.load_inventory();
+    $battle.equips.length = 0;
+    $battle.node.equip.innerHTML = '';
+    const equipset = $config.get('equipset');
+    if (!equipset) {
+      $persona.change_p();
+      return;
+    }
+    equipset.forEach((info) => {
+      if (!info.eid) {
+        $element('li', $battle.node.equip, [`/<a>${info.slot}</a><span>Empty</span><span></span>`]);
+        return false;
+      }
+
+      const eq = { info, data: {}, node: {} };
+      eq.info.cat = (eq.info.category === 'One-handed Weapon' || eq.info.category === 'Two-handed Weapon' || eq.info.category === 'Staff') ? 'weapon' : 'armor';
+      eq.node.li = $element('li', $battle.node.equip);
+      eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || eq.info.name, href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank' });
+      eq.node.enc = $element('span', eq.node.li);
+      eq.node.cdt = $element('span', eq.node.li, { textContent: '...', dataset: { action: 'view', eid: eq.info.eid } });
+
+      $battle.equips.push(eq);
+      if (eq.info.cat === 'weapon' || $config.settings.equipEnchantCheckArmors) {
+        $battle.load(eq.info.eid);
+      }
+    });
+
+    $battle.current = $battle.equips[0]?.info.eid;
+    $battle.repair();
+  },
+  init: function () {
+    GM_addStyle(/*css*/`
+      .hvut-bt-outer { width: 1220px !important; }
+      .hvut-bt-outer > p { width: 520px; margin-left: auto; margin-right: auto; }
+      .hvut-bt-on .hvut-bt-outer { width: 620px !important; }
+      .hvut-bt-on.hvut-bt-left .hvut-bt-outer { margin-left: 600px !important; }
+      .hvut-bt-on.hvut-bt-right .hvut-bt-outer { margin-right: 600px !important; }
+      .hvut-bt-on .hvut-bt-div { visibility: visible; }
+      .hvut-bt-left .hvut-bt-div { left: 8px; }
+      .hvut-bt-right .hvut-bt-div { right: 8px; }
+      #popup_box.hvut-bt-right-popup { left: 624px !important; }
+      #popup_box.hvut-bt-left-popup { left: 244px !important; }
+
+      .hvut-bt-div { visibility: hidden; position: absolute; bottom: 8px; width: 599px; height: 417px; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap; }
+      .hvut-bt-div > ul { margin: 0; padding: 21px 0 0; border: 1px solid; list-style: none; display: flex; flex-direction: column; justify-content: center; }
+      .hvut-bt-div > ul::before { content: attr(data-header); position: absolute; top: 0; width: 100%; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold; }
+
+      .hvut-bt-equip { position: absolute; bottom: 0; left: 0; width: 400px; height: 286px; }
+      .hvut-bt-equip li { position: relative; height: 40px; padding-right: 60px; border-bottom: 1px solid; }
+      .hvut-bt-equip li:last-child { border-bottom: none; }
+      .hvut-bt-equip li:hover { background-color: #fff; z-index: 1; }
+      .hvut-bt-active { background-color: #fff; }
+      .hvut-bt-equip li > a { display: block; overflow: hidden; text-overflow: ellipsis; font-weight: bold; text-decoration: none; }
+      .hvut-bt-equip li > span:nth-child(2) { display: block; font-size: 9pt; overflow: hidden; text-overflow: ellipsis; }
+      .hvut-bt-equip li > span:nth-child(2) > span { display: inline-block; margin: 0 3px; color: #e00; }
+      .hvut-bt-equip li > span:nth-child(2):empty { visibility: hidden; }
+      .hvut-bt-equip li:hover > span:nth-child(2) { white-space: normal; border-bottom: 1px solid; background: inherit; pointer-events: none; }
+      .hvut-bt-equip li:last-child:hover > span:nth-child(2) { position: absolute; bottom: 0; width: 340px; border-top: 1px solid; border-bottom: none; }
+      .hvut-bt-equip li > span:nth-child(3) { position: absolute; top: 0; right: 0; width: 59px; height: 100%; border-left: 1px solid #333; font-size: 9pt; white-space: normal; cursor: pointer; }
+      .hvut-bt-equip li > span:nth-child(3):hover { background-color: #fff; }
+      .hvut-bt-cdt1 { color: #e00; }
+      .hvut-bt-cdt2 { color: #fff; background-color: #e00 !important; }
+
+      .hvut-bt-inventory { position: absolute; bottom: 314px; left: 0; width: 400px; min-height: 80px; max-height: 160px; flex-direction: row !important; justify-content: space-between !important; flex-wrap: wrap; align-content: space-evenly; font-size: 9pt; }
+      .hvut-bt-inventory > li { width: 32%; overflow: hidden; cursor: pointer; }
+      .hvut-bt-inventory > li:last-child:nth-child(3n+2) { margin-right: 34%; }
+      .hvut-bt-warn { color: #e00; }
+
+      .hvut-bt-enchant { position: absolute; bottom: 0; left: 407px; width: 190px; height: 204px; line-height: 18px; }
+      .hvut-bt-enchant > li { display: flex; margin: 2px 0; }
+      .hvut-bt-enchant span { margin: 0 2px; }
+      .hvut-bt-enchant span:nth-child(1) { color: #03c; }
+      .hvut-bt-enchant span:nth-child(2) { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; text-align: left; color: #03c; }
+      .hvut-bt-day { background-color: #fff; }
+      .hvut-bt-day span:nth-child(2) { font-weight: bold; }
+      .hvut-bt-nostock span { color: #999 !important; cursor: default; }
+
+      .hvut-bt-repair { position: absolute; bottom: 232px; left: 407px; width: 190px; height: 54px; cursor: pointer; }
+      .hvut-bt-repair:hover { background-color: #fff; }
+      .hvut-bt-repairall { position: absolute; bottom: 314px; left: 407px; width: 190px; min-height: 80px; cursor: pointer; }
+      .hvut-bt-repairall:hover { background-color: #fff; }
+    `);
+
+    $battle.node.div = $element('div', $id('mainpane'), ['.hvut-bt-div'], (e) => { $battle.click(e); });
+    $battle.node.equip = $element('ul', $battle.node.div, ['.hvut-bt-equip', { dataset: { header: 'EQUIPMENT' } }]);
+    $battle.node.enchant = $element('ul', $battle.node.div, ['.hvut-bt-enchant', { dataset: { header: 'ENCHANT' } }]);
+    $battle.node.repair = $element('ul', $battle.node.div, ['.hvut-bt-repair', { dataset: { header: 'REPAIR', action: 'repair' } }]);
+    $battle.node.repairall = $element('ul', $battle.node.div, ['.hvut-bt-repairall', { dataset: { header: 'REPAIR ALL', action: 'repairall' } }]);
+    $battle.node.inventory = $element('ul', $battle.node.div, ['.hvut-bt-inventory', { dataset: { header: 'ITEM INVENTORY' } }]);
+
+    $id('mainpane').classList.add('hvut-bt-on');
+    $id('mainpane').style.paddingRight = '8px';
+
+    if ($config.settings.equipEnchantPosition === 'right') {
+      $id('mainpane').classList.add('hvut-bt-right');
+      $id('popup_box').classList.add('hvut-bt-right-popup');
+    } else {
+      $id('mainpane').classList.add('hvut-bt-left');
+      $id('popup_box').classList.add('hvut-bt-left-popup');
+    }
+
+    $qs('#arena_outer, #rob_outer, #towerstart, #grindfest, #itemworld_outer')?.classList.add('hvut-bt-outer');
+
+    $battle.create();
+  },
 
 };
-
-
-
-
-if (isNaN(_player.level)) { // check font settings
-  alert('使用脚本前，请设置自定义字体.');
-  if (_query.ss === 'se') {
-    scrollIntoView($id('settings_cfont').parentNode, $id('settings_outer'));
-    _se.form = $qs('#settings_outer form');
-    _se.form.fontlocal.required = true;
-    _se.form.fontface.required = true;
-    _se.form.fontsize.required = true;
-    _se.form.fontface.placeholder = 'Tahoma, Arial';
-    _se.form.fontsize.placeholder = '10';
-    _se.form.fontoff.placeholder = '0';
-  } else {
-    location.href = '?s=Character&ss=se';
-  }
-  return;
-}
 
 // BASIC CSS
 GM_addStyle(/*css*/`
@@ -2243,11 +3010,15 @@ GM_addStyle(/*css*/`
   .csps > img { display: none; }
   .cspp { overflow-y: auto; }
   .fc2, .fc4 { display: inline; }
+
   .hvut-none { display: none !important; }
   .hvut-none-cont .hvut-none-item { display: none; }
   .hvut-cphu, .hvut-cphu-sub > * { cursor: pointer; }
   .hvut-cphu:hover, .hvut-cphu-sub > *:hover { text-decoration: underline; }
   .hvut-spaceholder { flex-grow: 1; }
+  .hvut-side { position: absolute; width: 100px; display: flex; flex-direction: column; }
+  .hvut-side > input { margin: 3px 0; white-space: normal; }
+  .hvut-side-margin { margin-bottom: 10px !important; }
 
   .equiplist { font-weight: normal; }
   .eqp { margin: 5px; width: auto; }
@@ -2277,15 +3048,15 @@ GM_addStyle(/*css*/`
   .hvut-it-Collectable { color: #0000FF; }
 `);
 
-if (settings.equipColor) {
+if ($config.settings.equipColor) {
   GM_addStyle(/*css*/`
     .eqp > div:last-child:not([onclick]) { color: #966; }
     .eqp > div:last-child[style*='color'] { box-shadow: 0 0 0 2px inset; }
-
-    .hvut-eq-Exquisite { background-color: #ce9; }
-    .hvut-eq-Magnificent { background-color: #bdf; }
-    .hvut-eq-Legendary { background-color: #fd8; }
     .hvut-eq-Peerless { background-color: #fbb; }
+    .hvut-eq-Legendary { background-color: #fd8; }
+    .hvut-eq-Magnificent { background-color: #bdf; }
+    .hvut-eq-Exquisite { background-color: #ce9; }
+    .hvut-eq-Superior { background-color: #ccc; }
   `);
 }
 
@@ -2293,8 +3064,7 @@ if ($id('stats_pane')) {
   GM_addStyle(/*css*/`
     #stats_header, #eqch_stats .csps { display: none; }
     #stats_pane { height: 650px !important; white-space: nowrap; }
-    .stats_page .spc { width: auto; padding: 10px 0 0 10px; }
-    .stats_page .spc > .fal > div { font-weight: bold; }
+    .stats_page .spc { width: auto; padding: 10px 0 0 10px; font-weight: bold; }
     .stats_page .far { color: #c00; }
     .stats_page .st2 > div:nth-child(2n) { width: 100px; }
     .hvut-ch-expand #eqch_left { width: 660px; }
@@ -2313,41 +3083,81 @@ if ($id('stats_pane')) {
   `);
 
   $qs('#stats_pane > div:last-of-type').prepend(...$qsa('#stats_pane > div:first-of-type > div:nth-last-of-type(-n+2)'));
-  toggle_button($input('button', $id('stats_pane'), { style: 'position: absolute; top: 12px; right: 20px; width: 70px;' }), '折叠', '展开', $id('eqch_outer'), 'hvut-ch-expand', settings.characterExpandStatsByDefault);
+  toggle_button($input('button', $id('stats_pane'), { style: 'position: absolute; top: 12px; right: 20px; width: 100px;' }), 'Collapse', 'Expand', $id('eqch_outer'), 'hvut-ch-expand', true);
 }
 
 // DISABLE FONT ENGINE
 _window.common.get_dynamic_digit_string = function (n) { return `<div class="fc4 far fcb"><div>${n.toLocaleString()}</div></div>`; };
 
-// EQUIPMENT KEY FUNCTIONS
-if (settings.equipmentKeyFunctions) {
+if ($config.settings.equipHoverFunctions) {
+  // EQUIPMENT KEY FUNCTIONS
   document.addEventListener('keydown', (e) => {
     if (e.target.nodeName === 'INPUT' || e.target.nodeName === 'TEXTAREA') {
       return;
     }
     const div = $qs('div[data-eid]:hover');
     if (div) {
-      if (e.which === 67) { // C
-        if (e.getModifierState('CapsLock')) {
-          div.dispatchEvent(new MouseEvent('mouseover'));
-          document.dispatchEvent(new KeyboardEvent('keypress', { which: 99, keyCode: 99 }));
-        }
-      } else if (e.which === 76) { // L
-        prompt('Forum Link:', `[url=${location.origin}${location.pathname}equip/${div.dataset.eid}/${div.dataset.key}]` + div.textContent.replace(/(^\[\d+\] )|( \[[SDEAIW]+\]$)/g, '') + '[/url]');
-      } else if (e.which === 86) { // V
-        window.open(`equip/${div.dataset.eid}/${div.dataset.key}`, '_blank');
+      const eq = $equip.parse.div(div);
+      if (e.key === 'C') {
+        div.dispatchEvent(new MouseEvent('mouseover'));
+        document.dispatchEvent(new KeyboardEvent('keypress', { which: 99, keyCode: 99 }));
+      }
+      const key = e.key.toUpperCase();
+      if (key === 'V') {
+        window.open(`equip/${eq.info.eid}/${eq.info.key}`, '_blank');
+      } else if (key === 'L') {
+        prompt('Forum Link:', `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
+      } else if (key === 'K') {
+        $equip.namecode(eq);
+        prompt('Forum Link:', `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.data.namecode}[/url]`);
       }
     }
   });
-}
 
-// EQUIPMENT MOUSE FUNCTIONS
-if (settings.equipmentMouseFunctions) {
+  // EQUIPMENT MOUSE FUNCTIONS
   document.addEventListener('dblclick', () => {
     const div = $qs('div[data-eid]:hover');
     if (div) {
       window.open(`equip/${div.dataset.eid}/${div.dataset.key}`, '_blank');
     }
+  });
+}
+
+if ($config.settings.equipTouchFunctions) {
+  // EQUIPMENT TOUCH FUNCTIONS
+  function handleAction(target) {
+    const div = target?.closest('div[data-eid]');
+    if (!div) {
+      return;
+    }
+    window.open(`equip/${div.dataset.eid}/${div.dataset.key}`, '_blank');
+  }
+
+  let lastTap = 0;
+  document.addEventListener('touchend', (event) => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      const target = document.elementFromPoint(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
+      handleAction(target);
+    }
+    lastTap = now;
+  });
+
+  let touchTimer = null;
+  document.addEventListener('touchstart', (event) => {
+    const touch = event.touches[0];
+    touchTimer = setTimeout(() => {
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      handleAction(target);
+    }, 500);
+  });
+
+  document.addEventListener('touchend', () => {
+    clearTimeout(touchTimer);
+  });
+
+  document.addEventListener('touchmove', () => {
+    clearTimeout(touchTimer);
   });
 }
 
@@ -2357,7 +3167,7 @@ GM_addStyle(/*css*/`
 
   #hvut-top { display: flex; position: relative; height: 22px; padding: 2px 0; border-bottom: 1px solid; font-size: 10pt; line-height: 22px; font-weight: bold; z-index: 10; white-space: nowrap; cursor: default; }
   #hvut-top > div { position: relative; height: 22px; margin: 0 5px; }
-  #hvut-top a { text-decoration: none; }
+  #hvut-top a { display: block; text-decoration: none; }
 
   .hvut-top-warn { background-color: #fd9; }
   .hvut-top-message { position: absolute !important; top: 100%; left: -1px; width: 100%; margin: 0 !important; padding: 2px 0; border: 1px solid #5C0D11; background-color: #fd9c; color: #e00; z-index: -1; pointer-events: none; }
@@ -2370,9 +3180,10 @@ GM_addStyle(/*css*/`
   .hvut-top-exp { position: relative; width: 299px; height: 8px; margin: 0 auto; border: 1px solid; background: linear-gradient(to right, #930 1px, transparent 1px) repeat -1px 0 / 30px; }
   .hvut-top-exp::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff; z-index: -1; }
   .hvut-top-exp > div { position: absolute; top: 0; left: 0; height: 100%; background-color: #9cf; z-index: -1; }
-  .hvut-top-server > span { color: #930; }
-  .hvut-top-server > div { left: auto; right: -6px; }
-  .hvut-top-server a { display: block; }
+  .hvut-top-placeholder { flex: 1; }
+  .hvut-top-server { left: auto; right: -6px; }
+  .hvut-top-config { left: auto; right: -6px; }
+  .hvut-top-config > div { margin: 5px; text-align: left; cursor: pointer; }
 
   .hvut-top-menu { display: flex; }
   .hvut-top-menu > div { position: relative; margin: 0 5px; }
@@ -2380,103 +3191,93 @@ GM_addStyle(/*css*/`
   .hvut-top-menu .hvut-top-sub { width: max-content; }
   .hvut-top-menu ul { float: left; margin: 0 0 0 5px; padding: 0; list-style: none; text-align: left; line-height: 20px; }
   .hvut-top-menu ul:first-child { margin-left: 0; }
-  .hvut-top-menu a { display: block; margin: 3px 0; padding: 0 5px; }
+  .hvut-top-menu a { margin: 3px 0; padding: 0 5px; }
   .hvut-top-menu a:hover { background-color: #fff; }
   .hvut-top-menu-s { padding: 0 5px; background-color: #5C0D11; color: #fff; }
 
-  .hvut-top-quick { margin: 0 15px !important; }
-  .hvut-top-quick > a { display: inline-block; position: relative; margin: 0 1px; width: 42px; font-size: 10.5pt; border-radius: 2px; }
-  .hvut-top-quick > a:hover { background-color: #fff; }
-  .hvut-top-quick > a::after { content: attr(data-desc); visibility: hidden; position: absolute; top: 100%; left: 0; margin-top: 2px; margin-left: 0; padding: 1px 4px; background-color: #fff; color: #930; border: 1px solid; font-size: 10pt; line-height: 20px; font-weight: normal; pointer-events: none; }
-  .hvut-top-quick > a:hover::after { visibility: visible; }
+  .hvut-top-links { display: flex; }
+  .hvut-top-links > a { position: relative; margin: 0 1px; padding: 0 1px; min-width: 28px; font-size: 12pt; border-radius: 2px; }
+  .hvut-top-links > a:hover { background-color: #fff; }
+  .hvut-top-links > a > span { display: none; position: absolute; top: 100%; left: 0; margin-top: 2px; margin-left: 0; padding: 1px 4px; background-color: #fff; color: #930; border: 1px solid; font-size: 10pt; line-height: 20px; font-weight: normal; pointer-events: none; }
+  .hvut-top-links > a:hover > span { display: block; }
   .hvut-top-ygm { color: transparent !important; background: url('/y/mmail/ygm.png') no-repeat center center; animation: ygm 0.5s ease-in-out 10 alternate; filter: brightness(200%); }
   .hvut-top-ygm:hover { color: #e00 !important; background-image: none; animation: none; filter: none; }
   @keyframes ygm { from { opacity: 1; } to { opacity: 0.3; } }
 `);
 
 _top.menu = {
-  '角色面板': { s: 'Character', ss: 'ch' , text: '主页'},
-  '装备': { s: 'Character', ss: 'eq' , text: '装备'},
-  '技能': { s: 'Character', ss: 'ab' , text: '技能'},
-  '训练': { s: 'Character', ss: 'tr', isekai: false ,text: '训练'},
-  '物品仓库': { s: 'Character', ss: 'it' ,text: '物品'},
-  '装备仓库': { s: 'Character', ss: 'in' ,text: '装备库' },
-  '设置': { s: 'Character', ss: 'se' ,text: '设置' },
-  '前往异世界': { s: 'Character', href: '/isekai/', isekai: false, text: '异世界' },
-  '前往永久区': { s: 'Character', href: '/', isekai: true, text: '永久区' },
-  '装备商店': { s: 'Bazaar', ss: 'es' ,text: '装备店'},
-  '物品商店': { s: 'Bazaar', ss: 'is' ,text: '物品店'},
-  '雪花祭坛': { s: 'Bazaar', ss: 'ss' ,text: '祭坛'},
-  '交易市场': { s: 'Bazaar', ss: 'mk' ,text: '市场'},
-  '怪物实验室': { s: 'Bazaar', ss: 'ml', isekai: false ,text: '实验室'},
-  '莫古利邮局': { s: 'Bazaar', ss: 'mm' ,text: '邮箱'},
-  '武器彩票': { s: 'Bazaar', ss: 'lt', isekai: false },
-  '防具彩票': { s: 'Bazaar', ss: 'la', isekai: false },
-  '竞技场': { s: 'Battle', ss: 'ar' ,text: '竞技场'},
-  '塔楼': { s: 'Battle', ss: 'tw', isekai: true ,text: '塔楼'},
-  '浴血擂台': { s: 'Battle', ss: 'rb' ,text: '擂台'},
-  '压榨界': { s: 'Battle', ss: 'gr' ,text: '压榨界'},
-  '道具界': { s: 'Battle', ss: 'iw' ,text: '道具界'},
-  '装备修理': { s: 'Forge', ss: 're' ,text: '修理' },
-  '装备强化': { s: 'Forge', ss: 'up' ,text: '强化' },
-  '装备附魔': { s: 'Forge', ss: 'en' ,text: '附魔' },
-  '装备分解': { s: 'Forge', ss: 'sa' ,text: '分解' },
-  '装备重铸': { s: 'Forge', ss: 'fo' ,text: '重铸' },
-  '装备魂绑': { s: 'Forge', ss: 'fu' ,text: '魂绑' },
+  'Character': { s: 'Character', ss: 'ch', button: 'CH', text: 'Character' },
+  'Equipment': { s: 'Character', ss: 'eq', button: 'EQ', text: 'Equipment' },
+  'Abilities': { s: 'Character', ss: 'ab', button: 'AB', text: 'Abilities' },
+  'Training': { s: 'Character', ss: 'tr', button: 'TR', text: 'Training', disabled: 'isekai' },
+  'Item Inventory': { s: 'Character', ss: 'it', button: 'IT', text: 'Item Inventory' },
+  'Equip Inventory': { s: 'Character', ss: 'in', button: 'IN', text: 'Equip Inventory' },
+  'Settings': { s: 'Character', ss: 'se', button: 'SE', text: 'Settings' },
+  'Equipment Shop': { s: 'Bazaar', ss: 'es', button: 'ES', text: 'Equipment Shop' },
+  'Item Shop': { s: 'Bazaar', ss: 'is', button: 'IS', text: 'Item Shop' },
+  'The Shrine': { s: 'Bazaar', ss: 'ss', button: 'SS', text: 'The Shrine' },
+  'The Market': { s: 'Bazaar', ss: 'mk', button: 'MK', text: 'The Market' },
+  'Monster Lab': { s: 'Bazaar', ss: 'ml', button: 'ML', text: 'Monster Lab', disabled: 'isekai' },
+  'MoogleMail': { s: 'Bazaar', ss: 'mm', button: 'MM', text: 'MoogleMail' },
+  'Weapon Lottery': { s: 'Bazaar', ss: 'lt', button: 'LT', text: 'Weapon Lottery', disabled: 'isekai' },
+  'Armor Lottery': { s: 'Bazaar', ss: 'la', button: 'LA', text: 'Armor Lottery', disabled: 'isekai' },
+  'The Arena': { s: 'Battle', ss: 'ar', button: 'AR', text: 'The Arena' },
+  'The Tower': { s: 'Battle', ss: 'tw', button: 'TW', text: 'The Tower', disabled: 'persistent' },
+  'Ring of Blood': { s: 'Battle', ss: 'rb', button: 'RB', text: 'Ring of Blood' },
+  'GrindFest': { s: 'Battle', ss: 'gr', button: 'GR', text: 'GrindFest' },
+  'Item World': { s: 'Battle', ss: 'iw', button: 'IW', text: 'Item World' },
+  'Repair': { s: 'Forge', ss: 're', button: 'RE', text: 'Repair' },
+  'Upgrade': { s: 'Forge', ss: 'up', button: 'UP', text: 'Upgrade' },
+  'Enchant': { s: 'Forge', ss: 'en', button: 'EN', text: 'Enchant' },
+  'Salvage': { s: 'Forge', ss: 'sa', button: 'SA', text: 'Salvage' },
+  'Reforge': { s: 'Forge', ss: 'fo', button: 'FO', text: 'Reforge' },
+  'Soulfuse': { s: 'Forge', ss: 'fu', button: 'FU', text: 'Soulfuse' },
 };
+Object.values(_top.menu).forEach((m) => {
+  if (!m.href) {
+    m.href = `?s=${m.s}&ss=${m.ss}`;
+  }
+});
 
 _top.create = function () {
   if (_top.inited) {
     return;
   }
   _top.inited = true;
-  const ul = {};
-if (settings.topMenuIntegrate) {
-    const sub = $element('div', _top.node.menu['MENU'], ['.hvut-top-sub']);
-    const menuMap = {
-        'Character': '角色',
-        'Bazaar': '商店',
-        'Battle': '战斗',
-        'Forge': '锻造'
-    };
 
-    Object.entries(menuMap).forEach(([enName, cnName]) => {
-        ul[enName] = $element('ul', sub);
-        $element('li', ul[enName], [cnName, '.hvut-top-menu-s']);
+  const ul = {};
+  if ($config.settings.topMenuIntegration) {
+    const menu_sub = $element('div', _top.node.menu['MENU'], ['.hvut-top-sub']);
+    ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((m) => {
+      ul[m] = $element('ul', menu_sub);
+      $element('li', ul[m], [m, '.hvut-top-menu-s']);
     });
   } else {
     ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((m) => {
-      const sub = $element('div', _top.node.menu[m], ['.hvut-top-sub']);
-      ul[m] = $element('ul', sub);
+      const menu_sub = $element('div', _top.node.menu[m], ['.hvut-top-sub']);
+      ul[m] = $element('ul', menu_sub);
     });
   }
-  Object.entries(_top.menu).forEach(([k, m]) => {
-    if (!_isekai && m.isekai === true || _isekai && m.isekai === false) {
+  Object.values(_top.menu).forEach((m) => {
+    if (m.disabled === 'persistent' && !$config.isekai || m.disabled === 'isekai' && $config.isekai) {
       return;
     }
-    ul[m.s].appendChild($element('li')).appendChild($element('a', null, { textContent: k, href: m.href || `?s=${m.s}&ss=${m.ss}` }));
+    const li = $element('li', ul[m.s]);
+    $element('a', li, { textContent: m.text, href: m.href });
   });
-  /* monsterbation */
-  if ($id('mbsettings')) {
-    ul['Character'].appendChild($element('li')).appendChild($element('a')).appendChild($id('mbsettings'));
-    $id('mbsettings').firstElementChild.className = '';
-    GM_addStyle(/*css*/`
-      #mbsettings { position: relative; }
-      #mbprofile { top: 100%; left: 0; min-width: 100%; box-sizing: border-box; font-weight: normal; }
-    `);
-  }
-  /* monsterbation */
-  const sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
-  if (!_isekai) {
-    _top.node.stamina_form = $element('form', sub, { method: 'POST' }, { submit: () => { _top.stamina_submit(); } });
+
+  const stamina_sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
+  if (!$config.isekai) {
+    _top.node.stamina_form = $element('form', stamina_sub, { method: 'POST' }, { submit: (e) => { _top.stamina_submit(e); } });
     $input('hidden', _top.node.stamina_form, { name: 'recover', value: 'stamina' });
-    $input('submit', _top.node.stamina_form, { value: '使用精力恢复剂', disabled: _player.stamina > settings.disableStaminaRestorative, style: 'width: 200px;' });
+    $input('submit', _top.node.stamina_form, { value: 'USE RESTORATIVE', disabled: _player.stamina >= $config.settings.disableStaminaRestorative, style: 'width: 200px;' });
     _top.node.stamina.addEventListener('mouseenter', _top.stamina_create);
   }
-  $element('p', sub, _player.condition);
+  $element('p', stamina_sub, _player.condition);
   if (_player.accuracy) {
-    $element('p', sub, [_player.accuracy, '!color: #e00;']);
+    $element('p', stamina_sub, [_player.accuracy, '!color: #e00;']);
   }
+
   if (_player.level !== 500) {
     const exec = /([0-9,]+) \/ ([0-9,]+)\s*Next: ([0-9,]+)/.exec($id('level_details').textContent);
     const exp = parseInt(exec[1].replace(/,/g, ''));
@@ -2485,20 +3286,34 @@ if (settings.topMenuIntegrate) {
     const level_start = Math.round(Math.pow(_player.level + 3, Math.pow(2.850263212287058, 1 + _player.level / 1000)));
     const level_exp = exp - level_start;
     const level_up = up - level_start;
-    const pct = Math.floor(level_exp / level_up * 100);
-    const sub = $element('div', _top.node.level, ['.hvut-top-sub']);
-    $element('p', sub, `累计经验 ${exp.toLocaleString()} / ${up.toLocaleString()}`);
-    $element('p', sub, `升级还需: ${next.toLocaleString()}`);
-    $element('p', sub, `当前等级: ${level_exp.toLocaleString()} / ${level_up.toLocaleString()} (${pct}%)`);
-    $element('div', sub, ['.hvut-top-exp', `/<div style="width: ${pct}%;"></div>`]);
+    const pct = ((level_exp / level_up) * 100).toFixed(2);
+    const level_sub = $element('div', _top.node.level, ['.hvut-top-sub']);
+    $element('p', level_sub, `Total: ${exp.toLocaleString()} / ${up.toLocaleString()}`);
+    $element('p', level_sub, `Next: ${next.toLocaleString()}`);
+    $element('p', level_sub, `Level: ${level_exp.toLocaleString()} / ${level_up.toLocaleString()} (${pct}%)`);
+    $element('div', level_sub, ['.hvut-top-exp', `/<div style="width: ${pct}%;"></div>`]);
   }
-  if (_top.node.server) {
-    const sub = $element('div', _top.node.server, ['.hvut-top-sub']);
-    if (_isekai) {
-      $element('a', sub, { href: '/', innerHTML: `<p>你现在在异世界</p><p>${_isekai}</p><p>点击切换到永久区</p>` });
-    } else {
-      $element('a', sub, { href: '/isekai/', innerHTML: '<p>你现在在永久区</p><p>点击切换到异世界</p>' });
-    }
+
+  const server_sub = $element('div', _top.node.server, ['.hvut-top-sub hvut-top-server']);
+  if ($config.isekai) {
+    const server_on = 'Isekai';
+    const server_to = 'Persistent';
+    $element('a', server_sub, { href: '/', innerHTML: `<p>Currently playing in ${server_on}</p><p>${$config.isekai}</p><p>Click to switch to ${server_to}</p>` });
+  } else {
+    const server_on = 'Persistent';
+    const server_to = 'Isekai';
+    $element('a', server_sub, { href: '/isekai/', innerHTML: `<p>Currently playing in ${server_on}</p><p>Click to switch to ${server_to}</p>` });
+  }
+
+  const config_sub = $element('div', _top.node.config, ['.hvut-top-sub hvut-top-config']);
+  $element('div', config_sub, 'HV Utils Settings', () => { $config.open(); });
+  if ($id('mbsettings')) { // monsterbation
+    config_sub.appendChild($id('mbsettings'));
+    $id('mbsettings').firstElementChild.className = '';
+    GM_addStyle(/*css*/`
+      #mbsettings { position: relative; }
+      #mbprofile { top: 100%; left: 0; min-width: 100%; box-sizing: border-box; font-weight: normal; }
+    `);
   }
 };
 
@@ -2507,21 +3322,19 @@ _top.stamina_create = async function () {
     return;
   }
   _top.stamina_create.inited = true;
-  const p = $element('p', _top.node.stamina_form, '');
+  const p = $element('p', _top.node.stamina_form, 'Loading...');
   await $item.once();
   const items = ['Caffeinated Candy', 'Energy Drink'].filter((e) => $item.count(e));
   if (items.length) {
-   items.forEach((e) => {
-    let displayName = e === 'Energy Drink' ? '能量饮料' : (e === 'Caffeinated Candy' ? '咖啡因糖果' : e);
-    $element('p', _top.node.stamina_form, `${displayName} (${$item.count(e)})`);
-});
+    items.forEach((e) => { $element('p', _top.node.stamina_form, `${e} (${$item.count(e)})`); });
+    p.remove();
   } else {
-    p.textContent = '没有能量恢复剂';
+    p.textContent = 'No restorative available';
   }
 };
 
 _top.stamina_submit = function (e) {
-  if (settings.confirmStaminaRestorative && !confirm('确定要使用能量恢复剂吗?')) {
+  if ($config.settings.confirmStaminaRestorative && !confirm('Are you sure that you wish to use a stamina restorative?')) {
     e.preventDefault();
   }
 };
@@ -2529,83 +3342,89 @@ _top.stamina_submit = function (e) {
 _top.init = function () {
   _top.node = {};
   _top.node.div = $element('div', null, ['#hvut-top'], { mouseenter: () => { _top.create(); } });
-  _top.node.div.style.justifyContent = settings.topMenuAlign;
 
   const menu_div = $element('div', _top.node.div, ['.hvut-top-menu']);
   _top.node.menu = {};
-  if (settings.topMenuIntegrate) {
-    _top.node.menu['MENU'] = $element('div', menu_div, ['/<span>菜单</span>']);
+  if ($config.settings.topMenuIntegration) {
+    _top.node.menu['MENU'] = $element('div', menu_div, ['/<span>MENU</span>']);
   } else {
     ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((t) => {
       _top.node.menu[t] = $element('div', menu_div, [`/<span>${t.toUpperCase()}</span>`]);
     });
   }
 
-  const quick_div = $element('div', _top.node.div, ['.hvut-top-quick']);
-  const new_mail = $id('nav_mail')?.textContent.trim();
-  if (new_mail && !settings.topMenuLinks.includes('MoogleMail')) {
-    settings.topMenuLinks.push('MoogleMail');
-  }
-  settings.topMenuLinks = settings.topMenuLinks.filter((t) => {
-    const m = _top.menu[t];
-    if (!m || !_isekai && m.isekai === true || _isekai && m.isekai === false) {
+  const links = $config.settings.topMenuLinks.filter((b) => {
+    const m = _top.menu[b];
+    if (!m || m.disabled === 'persistent' && !$config.isekai || m.disabled === 'isekai' && $config.isekai) {
       return false;
     } else {
       return true;
     }
   });
-  settings.topMenuLinks.forEach((t) => {
-    const m = _top.menu[t];
-    let text = m.text || m.ss.toUpperCase();
-    const href = m.href || `?s=${m.s}&ss=${m.ss}`;
+  const links_div = $element('div', _top.node.div, ['.hvut-top-links']);
+  const new_mail = $id('nav_mail')?.textContent.trim();
+  if (new_mail && !links.includes('MoogleMail')) {
+    links.push('MoogleMail');
+  }
+  links.forEach((b) => {
+    const m = _top.menu[b];
+    let button = m.button;
     let cn = '';
-    if (t === '莫古利邮局' && new_mail) {
-      text = `[${new_mail}]`;
+    if (b === 'MoogleMail' && new_mail) {
+      button = `[${new_mail}]`;
       cn = 'hvut-top-ygm';
     }
-    const a = $element('a', quick_div, { textContent: text, href: href, dataset: { desc: t } });
+    const a = $element('a', links_div, { textContent: button, href: m.href });
     if (cn) {
       a.className = cn;
     }
+    $element('span', a, m.text);
   });
 
-  _top.node.stamina = $element('div', _top.node.div, ['!width: 90px;', `/<span>精力: ${_player.stamina}</span>`]);
+  _top.node.stamina = $element('div', _top.node.div, ['!width: 90px;', `/<span>Stamina: ${_player.stamina}</span>`]);
   _top.node.level = $element('div', _top.node.div, ['!width: 60px;', `/<span>Lv.${_player.level}</span>`]);
-  _top.node.dfct = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_player.dfct}</span>`]);
+  _top.node.difficulty = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_player.difficulty}</span>`]);
   _top.node.persona = $element('div', _top.node.div, ['!width: 110px;', '/<span>Persona</span>']);
-  if (settings.randomEncounter) {
-    _top.node.re = $element('div', _top.node.div, ['!width: 80px; cursor: pointer;']);
-    $re.clock(_top.node.re);
+  if ($config.settings.reNotification) {
+    $re.hv();
   }
-  if (!settings.topMenuIntegrate * 9 + settings.topMenuLinks.length <= 19) {
-    const current = _isekai ? '异世界' : '永久区';
-    _top.node.server = $element('div', _top.node.div, ['!width: 80px;', '.hvut-top-server', `/<span>${current}</span>`]);
-    _top.node.server.style.marginLeft = settings.topMenuAlign ? '' : 'auto';
-  }
+  $element('div', _top.node.div, ['.hvut-top-placeholder']);
+  const server = $config.isekai ? 'Isekai' : 'Persistent';
+  _top.node.server = $element('div', _top.node.div, ['!width: 80px;', `/<span>${server}</span>`]);
+
+  _top.node.config = $element('div', _top.node.div, ['!width: 30px;']);
+  $element('span', _top.node.config, ['!cursor: pointer;', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#630"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { $config.open(); });
+
   $id('navbar').after(_top.node.div);
 };
 
 _top.init();
 
 // DIFFICULTY CHANGER
-var $dfct = {
+const $dfct = {
 
-  div: _top.node.dfct,
-  button: _top.node.dfct.firstElementChild,
-  list: ['普通✖1', '困难✖2', '噩梦✖4', '地狱✖7', '任天堂✖10', 'I Wanna✖15', '彩虹小马✖20'],
+  div: _top.node.difficulty,
+  button: _top.node.difficulty.firstElementChild,
+  list: ['Normal', 'Hard', 'Nightmare', 'Hell', 'Nintendo', 'IWBTH', 'PFUDOR'],
 
+  init: function () {
+    const ch_style = $config.get('ch_style', {});
+    if (ch_style.difficulty !== _player.difficulty) {
+      ch_style.difficulty = _player.difficulty;
+      $config.set('ch_style', ch_style);
+    }
+  },
   create: function () {
     if ($dfct.sub) {
       return;
     }
     $dfct.sub = $element('div', $dfct.div, ['.hvut-top-sub']);
-    $dfct.selector = $element('select', $dfct.sub, { size: $dfct.list.length, className: 'hvut-scrollbar-none', style: 'width: 80px;' }, { change: () => {
+    const options = $dfct.list.map((d, i) => `${i + 1}:${d}`).reverse();
+    $dfct.selector = $input(['select', options], $dfct.sub, { size: $dfct.list.length, className: 'hvut-scrollbar-none', style: 'width: 80px;' }, { change: () => {
       $dfct.selector.disabled = true;
       $dfct.change($dfct.selector.value);
     } });
-    const options = $dfct.list.map((d, i) => $element('option', null, { value: i + 1, text: d }));
-    $dfct.selector.append(...options.reverse());
-    $dfct.selector.value = $dfct.list.indexOf(_player.dfct) + 1;
+    $dfct.selector.value = $dfct.list.indexOf(_player.difficulty) + 1;
   },
   change: async function (value) {
     $dfct.button.textContent = '(D1...)';
@@ -2621,36 +3440,37 @@ var $dfct = {
     $dfct.set_button(doc);
   },
   set_button: function (doc) {
-    const value = /^(.+) Lv\.(\d+)/.test($id('level_readout', doc).textContent.trim()) && RegExp.$1;
+    const value = /^(.+) Lv\.(\d+)/.exec($id('level_readout', doc).textContent.trim())[1];
     if (!value) {
       $dfct.button.textContent = '(D: ERROR)';
       return;
     }
-    _player.dfct = value;
+    _player.difficulty = value;
     $dfct.button.textContent = value;
     if ($dfct.selector) {
       $dfct.selector.value = $dfct.list.indexOf(value) + 1;
       $dfct.selector.disabled = false;
     }
-    const ch_style = getValue('ch_style', {});
+    const ch_style = $config.get('ch_style', {});
     ch_style.difficulty = value;
-    setValue('ch_style', ch_style);
+    $config.set('ch_style', ch_style);
   },
 
 };
 
 $dfct.div.addEventListener('mouseenter', $dfct.create);
+$dfct.init();
 
 // PERSONA & EQUIPMENT SET CHANGER
-var $persona = {
+const $persona = {
 
-  json: getValue('persona', {}),
+  json: $config.get('persona', {}),
   div: _top.node.persona,
   button: _top.node.persona.firstElementChild,
 
   create: function () {
     const json = $persona.json;
-    if (!json.pidx || !json.eidx) {
+    if (!json.pset || !json.eset) {
       return;
     }
     if ($persona.sub) {
@@ -2658,87 +3478,87 @@ var $persona = {
     }
     $persona.sub = $element('div', $persona.div, ['.hvut-top-sub']);
 
-    $persona.selector_p = $element('select', $persona.sub, { size: json.plen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
+    $persona.selector_p = $input('select', $persona.sub, { size: json.plen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
       $persona.selector_p.disabled = true;
       $persona.change_p($persona.selector_p.value);
     } });
     for (let i = 1; i <= json.plen; i++) {
       $element('option', $persona.selector_p, { value: i, text: json[i].name });
     }
-    $persona.selector_p.value = json.pidx;
+    $persona.selector_p.value = json.pset;
 
-    $persona.selector_e = $element('select', $persona.sub, { size: json.elen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
+    $persona.selector_e = $input('select', $persona.sub, { size: json.elen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
       $persona.selector_e.disabled = true;
       $persona.change_e($persona.selector_e.value);
     } });
     for (let i = 1; i <= json.elen; i++) {
-      $element('option', $persona.selector_e, { value: i, text: json[json.pidx][i].name || `Set ${i}` });
+      $element('option', $persona.selector_e, { value: i, text: json[json.pset][i].name || `Set ${i}` });
     }
-    $persona.selector_e.value = json.eidx;
+    $persona.selector_e.value = json.eset;
   },
   check_p: function (doc) {
     const json = $persona.json;
-    const pidx = parseInt($id('persona_form', doc).elements.persona_set.value);
+    const pset = parseInt($id('persona_form', doc).elements.persona_set.value);
     const plen = $id('persona_form', doc).elements.persona_set.options.length;
-    const checked = pidx === json.pidx;
+    const checked = pset === json.pset;
 
     Array.from($id('persona_form', doc).elements.persona_set.options).forEach((o) => {
-      const pidx = parseInt(o.value);
+      const pset = parseInt(o.value);
       const pname = o.text;
-      if (!json[pidx]) {
-        json[pidx] = {};
+      if (!json[pset]) {
+        json[pset] = {};
       }
-      json[pidx].name = pname;
+      json[pset].name = pname;
     });
 
-    json.pidx = pidx;
+    json.pset = pset;
     json.plen = plen;
-    json.pname = json[pidx].name;
+    json.pname = json[pset].name;
     $persona.set_value();
     return checked;
   },
   check_e: function (doc) {
     const json = $persona.json;
-    const pidx = json.pidx;
-    const eidx = parseInt($qs('img[src$="_on.png"]', doc).src.slice(-8, -7));
+    const pset = json.pset;
+    const eset = parseInt($qs('img[src$="_on.png"]', doc).src.slice(-8, -7));
     const elen = $id('eqsl', doc).childElementCount;
 
     for (let i = 1; i <= elen; i++) {
-      if (!json[pidx][i]) {
-        json[pidx][i] = { name: '' };
+      if (!json[pset][i]) {
+        json[pset][i] = { name: '' };
       }
     }
 
-    json.eidx = eidx;
+    json.eset = eset;
     json.elen = elen;
-    json.ename = json[pidx][eidx].name;
+    json.ename = json[pset][eset].name;
     $persona.set_value();
   },
-  change_p: async function (pidx) {
+  change_p: async function (pset) {
     $persona.button.textContent = '(P...)';
     $dfct.button.textContent = '(D...)';
-    const html = await $ajax.fetch('?s=Character&ss=ch', pidx ? 'persona_set=' + pidx : null);
+    const html = await $ajax.fetch('?s=Character&ss=ch', pset ? 'persona_set=' + pset : null);
     const doc = $doc(html);
     $persona.check_p(doc);
     if ($persona.selector_p) {
-      $persona.selector_p.value = $persona.json.pidx;
+      $persona.selector_p.value = $persona.json.pset;
       $persona.selector_p.disabled = false;
     }
     $persona.change_e();
     $dfct.set_button(doc);
   },
-  change_e: async function (eidx) {
+  change_e: async function (eset) {
     $persona.button.textContent = '(E...)';
-    const html = await $ajax.fetch('?s=Character&ss=eq', eidx ? 'equip_set=' + eidx : null);
+    const html = await $ajax.fetch('?s=Character&ss=eq', eset ? 'equip_set=' + eset : null);
     const doc = $doc(html);
     $persona.check_e(doc);
     const json = $persona.json;
     if ($persona.selector_e) {
       for (let i = 1; i <= json.elen; i++) {
-        const ename = json[json.pidx][i].name;
+        const ename = json[json.pset][i].name;
         $persona.selector_e.options[i - 1].text = ename || 'Set ' + i;
       }
-      $persona.selector_e.value = json.eidx;
+      $persona.selector_e.value = json.eset;
       $persona.selector_e.disabled = false;
     }
     $persona.set_button();
@@ -2746,8 +3566,8 @@ var $persona = {
     $persona.check_warning(doc);
   },
   set_button: function () {
-    const pname = $persona.json.pname || 'Persona ' + $persona.json.pidx;
-    $persona.button.textContent = `${pname.slice(0, 10)} [${$persona.json.eidx}]`;
+    const pname = $persona.json.pname || 'Persona ' + $persona.json.pset;
+    $persona.button.textContent = `${pname.slice(0, 10)} [${$persona.json.eset}]`;
   },
   load_dynjs: async function (doc) {
     const src = $qs('script[src*="/dynjs/"]', doc).src;
@@ -2764,13 +3584,13 @@ var $persona = {
   set_value: function (name, value) {
     const json = $persona.json;
     if (name) {
-      json[json.pidx][json.eidx][name] = value;
+      json[json.pset][json.eset][name] = value;
     }
-    setValue('persona', json);
+    $config.set('persona', json);
   },
   get_value: function (name) {
     const json = $persona.json;
-    return json[json.pidx][json.eidx][name];
+    return json[json.pset][json.eset][name];
   },
   save_equipset: function (doc) {
     const equipset = $qsa('.eqb', doc).map((d) => {
@@ -2783,7 +3603,7 @@ var $persona = {
         return { slot };
       }
     });
-    setValue('equipset', equipset);
+    $config.set('equipset', equipset);
   },
   check_warning: function (doc) {
     _top.node.message?.remove();
@@ -2793,17 +3613,17 @@ var $persona = {
     if (_player.warn.length) {
       if (_query.s === 'Battle') {
         _top.node.message = _top.node.message || $element('div', null, ['.hvut-top-message']);
-        _top.node.message.textContent = '[警告] ' + _player.warn.join(', ');
+        _top.node.message.textContent = '[WARNING] ' + _player.warn.join(', ');
         _top.node.div.appendChild(_top.node.message);
       }
       _top.node.div.classList.add('hvut-top-warn');
       _top.node.persona.firstElementChild.style.color = '#e00';
     }
     _top.node.stamina.firstElementChild.style.color = '';
-    if (_player.condition.includes('你已经筋疲力尽') || _player.accuracy || _player.stamina < settings.warnLowStamina) {
+    if (_player.condition.includes('Stamina: Exhausted') || _player.accuracy || _player.stamina <= $config.settings.warnLowStamina) {
       _top.node.div.classList.add('hvut-top-warn');
       _top.node.stamina.firstElementChild.style.color = '#e00';
-    } else if (_player.condition.includes('你现在精力充沛')) {
+    } else if (_player.condition.includes('Stamina: Great')) {
       _top.node.stamina.firstElementChild.style.color = '#03c';
     }
   },
@@ -2817,12 +3637,12 @@ var $persona = {
         text = text.slice(2);
       }
       if (text === 'hit chance') {
-        const p = type === 'Physical Attack' ? 'Attack ' : type === 'Magical Attack' ? 'Magic ' : '';
-        text = p + 'hit chance'; // equipment: Attack Accuracy, Magic Accuracy
+        const p = type === 'Physical Attack' ? 'Attack' : type === 'Magical Attack' ? 'Magic' : '';
+        text = `${p} hit chance`; // equipment: Attack Accuracy, Magic Accuracy
       } else if (/crit chance \/ \+([0-9.]+) % damage/.test(text)) {
-        const p = type === 'Physical Attack' ? 'Attack ' : type === 'Magical Attack' ? 'Magic ' : '';
-        text = p + 'crit chance';
-        stats_pane[p + 'Crit Damage'] = parseFloat(RegExp.$1); // equipment: Attack Crit Damage, Spell Crit Damage
+        const p = type === 'Physical Attack' ? 'Attack' : type === 'Magical Attack' ? 'Magic' : '';
+        text = `${p} crit chance`;
+        stats_pane[`${p} Crit Damage`] = parseFloat(RegExp.$1); // equipment: Attack Crit Damage, Spell Crit Damage
       }
       text = text.replace(/\b[a-z]/g, (s) => s.toUpperCase());
       if ($equip.reg.magic.test(text)) {
@@ -2831,11 +3651,11 @@ var $persona = {
       stats_pane[text] = number;
     });
 
-    const fighting_style = /(Unarmed|One-Handed|Two-Handed|Dualwield|Niten Ichiryu|Staff)/.test($qs('.spn', doc).textContent) && RegExp.$1;
+    const fighting_style = /(Unarmed|One-Handed|Two-Handed|Dualwield|Niten Ichiryu|Staff)/.exec($qs('.spn', doc).textContent)[1];
     const spell_type = ['Fire', 'Cold', 'Elec', 'Wind', 'Holy', 'Dark'].sort((a, b) => stats_pane[b + ' EDB'] - stats_pane[a + ' EDB'])[0];
     const spell_damage = stats_pane[spell_type + ' EDB'];
     const prof_factor = Math.max(0, Math.min(1, stats_pane[{ 'Holy': 'Divine', 'Dark': 'Forbidden' }[spell_type] || 'Elemental'] / _player.level - 1));
-    const ch_style = { level: _player.level, difficulty: _player.dfct };
+    const ch_style = { level: _player.level, difficulty: _player.difficulty };
     stats_pane['Fighting Style'] = fighting_style;
     ch_style['Fighting Style'] = fighting_style;
     if (fighting_style === 'Staff' || spell_damage >= 80) {
@@ -2846,7 +3666,7 @@ var $persona = {
     } else {
       ch_style['Attack Base Damage'] = stats_pane['Attack Base Damage'];
     }
-    setValue('ch_style', ch_style);
+    $config.set('ch_style', ch_style);
     return stats_pane;
   },
   init: function () {
@@ -2856,7 +3676,7 @@ var $persona = {
       } else {
         $persona.set_button();
       }
-    } else if (!$persona.json.pidx || !$persona.json.eidx) {
+    } else if (!$persona.json.pset || !$persona.json.eset) {
       $persona.change_p();
     } else {
       $persona.set_button();
@@ -2871,7 +3691,7 @@ $persona.init();
 
 // BOTTOM MENU
 GM_addStyle(/*css*/`
-  #hvut-bottom { position: absolute; display: flex; top: 100%; left: -1px; width: 115%; border: 1px solid; font-size: 10pt; line-height: 20px; }
+  #hvut-bottom { position: absolute; display: flex; top: 100%; left: -1px; width: 100%; border: 1px solid; font-size: 10pt; line-height: 20px; }
   #hvut-bottom:empty { display: none; }
   #hvut-bottom > div { margin: -1px 0 -1px -1px; border: 1px solid #5C0D11; padding: 0 10px; }
   #hvut-bottom > .hvut-spaceholder ~ div { margin: -1px -1px -1px 0; }
@@ -2888,9 +3708,9 @@ _bottom.node = {};
 _bottom.node.div = $element('div', $id('csp'), ['#hvut-bottom']);
 
 // CREDITS COUNTER
-if (settings.showCredits) {
+if ($config.settings.showCredits === 2) {
   _bottom.show_credits = async function () {
-    _bottom.node.credits = $element('div', _bottom.node.div, '加载中...');
+    _bottom.node.credits = $element('div', _bottom.node.div, 'Loading...');
     if ($id('networth')) {
       _bottom.node.credits.textContent = $id('networth').textContent;
       $id('networth').remove();
@@ -2905,16 +3725,16 @@ if (settings.showCredits) {
 }
 
 // EQUIPMENT COUNTER
-if (settings.showEquipSlots === 2 || settings.showEquipSlots === 1 && _query.s === 'Battle') {
+if ($config.settings.showEquipSlots === 2 || $config.settings.showEquipSlots === 1 && _query.s === 'Battle') {
   _bottom.show_equip = async function () {
-    _bottom.node.equip = $element('div', _bottom.node.div, '加载中...');
+    _bottom.node.equip = $element('div', _bottom.node.div, 'Loading...');
     const html = await $ajax.fetch('?s=Character&ss=in');
     const exec = />Equip Slots: (\d+)(?: \+ (\d+))? \/ (\d+)</.exec(html);
     const inventory = parseInt(exec[1]);
     const storage = parseInt(exec[2] || 0);
     const slots = parseInt(exec[3]);
     const free = slots - inventory - storage;
-    _bottom.node.equip.textContent = `装备库存量: ${inventory} + ${storage} / ${slots}`;
+    _bottom.node.equip.textContent = `Equip Slots: ${inventory} + ${storage} / ${slots}`;
     if (free < slots / 10) {
       _bottom.node.equip.classList.add('hvut-bottom-warn');
     } else if (free < slots / 2) {
@@ -2926,9 +3746,9 @@ if (settings.showEquipSlots === 2 || settings.showEquipSlots === 1 && _query.s =
 }
 
 // TRAINING TIMER
-if (settings.trainingTimer) {
+if ($config.settings.trainingNotification) {
   _bottom.tr = {
-    json: getValue('tr_timer', {}),
+    json: $config.get('tr_notif', {}, 'hvut_'),
     node: {},
 
     init: function () {
@@ -2937,7 +3757,7 @@ if (settings.trainingTimer) {
         return;
       }
       _bottom.tr.node.div = $element('div', _bottom.node.div);
-      _bottom.tr.node.link = $element('a', _bottom.tr.node.div, { href: '?s=Character&ss=tr', textContent: '初始化...', style: 'margin-right: 5px;' });
+      _bottom.tr.node.link = $element('a', _bottom.tr.node.div, { href: '/?s=Character&ss=tr', textContent: 'Initializing...', style: 'margin-right: 5px;' });
       _bottom.tr.node.clock = $element('span', _bottom.tr.node.div, ['!display: inline-block; width: 60px;']);
       if (json.error) {
         _bottom.tr.node.link.textContent = json.error;
@@ -2953,16 +3773,16 @@ if (settings.trainingTimer) {
         _bottom.tr.node.clock.textContent = time_format(remain);
         setTimeout(_bottom.tr.clock, 1000);
       } else {
-        _bottom.tr.node.link.textContent = '加载中...';
+        _bottom.tr.node.link.textContent = 'Loading...';
         _bottom.tr.node.clock.textContent = '';
         _bottom.tr.load();
       }
     },
     load: async function (post) {
-      const html = await $ajax.fetch('?s=Character&ss=tr', post);
+      const html = await $ajax.fetch('/?s=Character&ss=tr', post);
       const doc = $doc(html);
       if (!$id('train_outer', doc)) {
-        _bottom.tr.node.link.textContent = '请稍等...';
+        _bottom.tr.node.link.textContent = 'Waiting...';
         setTimeout(_bottom.tr.clock, 60000);
         return;
       }
@@ -2975,7 +3795,7 @@ if (settings.trainingTimer) {
       if ($id('train_progress', doc)) {
         json.current_name = $id('train_progcnt', doc).previousElementSibling.textContent;
         json.current_level = level[json.current_name];
-        json.current_end = /var end_time = (\d+);/.test(html) && parseInt(RegExp.$1) * 1000;
+        json.current_end = /var end_time = (\d+);/.exec(html)[1] * 1000;
         _bottom.tr.node.link.textContent = `${json.current_name} [${json.current_level + 1}]`;
         _bottom.tr.clock();
       } else if (json.next_name) {
@@ -2988,17 +3808,17 @@ if (settings.trainingTimer) {
           if ($qs(`img[onclick*="training.start_training(${json.next_id})"]`, doc)) {
             _bottom.tr.load('start_train=' + json.next_id);
           } else {
-            json.error = "现在无法开始训练";
+            json.error = "Can't start Training";
             _bottom.tr.node.link.textContent = json.error;
             setTimeout(_bottom.tr.clock, 60000);
           }
         } else {
-          _bottom.tr.node.link.textContent = '训练完成!';
+          _bottom.tr.node.link.textContent = 'Training completed!';
         }
       } else {
-        _bottom.tr.node.link.textContent = '训练完成!';
+        _bottom.tr.node.link.textContent = 'Training completed!';
       }
-      setValue('tr_timer', json);
+      $config.set('tr_notif', json, 'hvut_');
     },
   };
 
@@ -3006,26 +3826,27 @@ if (settings.trainingTimer) {
 }
 
 // LOTTERY
-if (settings.showLottery) {
+if ($config.settings.lotteryNotification) {
   _bottom.show_lottery = function (ss) {
-    const json = getValue(ss + '_show', {}, 'hvut_');
+    const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
+    const lottery = json[ss];
     const now = Date.now();
-    if (json.date > now && json.hide) {
+    if (lottery.date > now && lottery.hide) {
       return;
     }
     _bottom.node[ss] = {};
     _bottom.node[ss].div = $element('div', _bottom.node.div, ['.hvut-lt-div']);
-    _bottom.node[ss].equip = $element('a', _bottom.node[ss].div, { textContent: '加载中...', href: '/?s=Bazaar&ss=' + ss, target: !_isekai ? '_self' : '_blank' });
+    _bottom.node[ss].equip = $element('a', _bottom.node[ss].div, { textContent: 'Loading...', href: '/?s=Bazaar&ss=' + ss, target: !$config.isekai ? '_self' : '_blank' });
     _bottom.node[ss].time = $element('span', _bottom.node[ss].div, '--:--');
 
-    if (json.date > now) {
-      if (json.date - now < 3600000) {
+    if (lottery.date > now) {
+      if (lottery.date - now < 3600000) {
         _bottom.node[ss].div.classList.add('hvut-bottom-warn');
-      } else if (json.check) {
+      } else if (lottery.check) {
         _bottom.node[ss].div.classList.add('hvut-lt-check');
       }
-      _bottom.node[ss].equip.textContent = json.equip;
-      _bottom.node[ss].time.textContent = time_format(json.date - now, 1);
+      _bottom.node[ss].equip.textContent = lottery.equip;
+      _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
       return;
     }
     _bottom.node[ss].div.classList.add('hvut-bottom-warn');
@@ -3037,38 +3858,40 @@ if (settings.showLottery) {
     const doc = $doc(html);
     const eqname = $id('lottery_eqname', doc);
     if (!eqname) {
-      _bottom.node[ss].equip.textContent = '加载失败';
+      _bottom.node[ss].equip.textContent = 'Failed to load';
       return;
     }
     const text = $id('rightpane', doc).lastElementChild.textContent;
-    const json = getValue(ss + '_show', {}, 'hvut_');
+    const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
+    const lottery = json[ss];
     const now = Date.now();
     let date = Date.now();
     let margin = 0;
     if (/Today's drawing is in (?:(\d+) hours?)?(?: and )?(?:(\d+) minutes?)?/.test(text)) {
       date += (60 * parseInt(RegExp.$1 || 0) + parseInt(RegExp.$2 || 0)) * 60000;
       margin = 2;
-    } else if (text.includes("今日彩票销售已截止")) {
+    } else if (text.includes("Today's ticket sale is closed")) {
       margin = 10;
     } else {
-      throw new Error('分析错误');
+      throw new Error('Parsing Error');
     }
     const mm = (new Date(date)).getUTCMinutes();
     if (date && (mm < 1 || 60 - mm <= margin)) {
       date = Math.round(date / 3600000) * 3600000;
     }
-    json.id = /lottery=(\d+)/.test($qs('img[src*="lottery_prev_a.png"]', doc).getAttribute('onclick')) && parseInt(RegExp.$1) + 1;
-    json.equip = eqname.textContent;
-    json.date = date;
-    json.check = $equip.filter(json.equip, settings.lotteryCheck);
-    json.hide = !settings.showLottery;
-    setValue(ss + '_show', json, 'hvut_');
-    if (json.check) {
-      popup(`<p>${eqname.previousElementSibling.textContent}</p><p style="color: #f00; font-weight: bold;">${json.equip}</p>`);
+    lottery.id = parseInt(/lottery=(\d+)/.exec($qs('img[src*="lottery_prev_a.png"]', doc)?.getAttribute('onclick'))[1] || 0) + 1;
+    lottery.equip = eqname.textContent;
+    lottery.date = date;
+    lottery.check = $equip.filter($config.settings.lotteryFilters, lottery.equip);
+    lottery.hide = !$config.settings.lotteryNotification;
+    $config.set('lt_notif', json, 'hvut_');
+    if (lottery.check) {
+      const date_text = eqname.previousElementSibling.textContent;
+      popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${lottery.equip}</p>`);
     }
 
-    _bottom.node[ss].equip.textContent = json.equip;
-    _bottom.node[ss].time.textContent = time_format(json.date - now, 1);
+    _bottom.node[ss].equip.textContent = lottery.equip;
+    _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
   };
 
   $element('div', _bottom.node.div, ['.hvut-spaceholder']);
@@ -3078,91 +3901,88 @@ if (settings.showLottery) {
 }
 
 
-//* [1] 角色 - 角色
-if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer'))) {
+//* [1] Character - Character
+if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
   _ch.persona = $id('persona_form').elements.persona_set.value;
-  _ch.total_exp = _window.total_exp;
-  _ch.exp = [null, { total: 0 }];
-  _ch.prof = {};
-  _ch.ass = getValue('tr_level', {})['同化者'] || 0;
-
-  _ch.init_simulate = function () {
-    _ch.node.div.innerHTML = '';
-    $qs('img[onclick*="do_attr_post"]').style.visibility = 'hidden';
-    $id('prof_outer').classList.add('hvut-ch-prof');
-
-    Object.values(_ch.prof).forEach((p) => {
-      p.current = parseFloat(p.tr.cells[1].textContent);
-      p.exp = _ch.get_exp(p.current);
-      p.tr.cells[1].textContent = p.current;
-      $element('td', p.tr);
-      $element('td', p.tr);
-    });
-
-    _ch.node.level = $input(['number', '等级', 'before'], _ch.node.div, { value: _player.level, min: 1, max: 500, style: 'width: 50px;' });
-    _ch.node.level.addEventListener('wheel', () => {
-      _ch.calc_prof();
-    });
-    _ch.node.ass = $input(['number', '同化者等级', 'before'], _ch.node.div, { value: _ch.ass, min: 0, max: 25, style: 'width: 30px;' });
-    _ch.node.ass.addEventListener('wheel', () => {
-      _ch.calc_prof();
-    });
-     // 添加重置按钮
-    $input(['button', '重置'], _ch.node.div, null, () => {
-      location.reload();
-    });
-    _ch.calc_prof();
-  };
-
-  _ch.calc_prof = function () {
-    const level = parseFloat(_ch.node.level.value);
-    const ass = parseInt(_ch.node.ass.value);
-    if (isNaN(level) || level < 1 || level > 600 || isNaN(ass) || ass < 0 || ass > 25) {
-      return;
-    }
-
-    _window.total_exp = _ch.get_exp(level);
-    _window.update_usable_exp();
-    _window.update_display('str');
-
-    const exp_gain = _window.total_exp - _ch.total_exp;
-    const prof_gain = Math.max(0, exp_gain * 4 * (1 + ass * 0.1));
-    Object.values(_ch.prof).forEach((p) => {
-      p.level = _ch.get_level(p.exp + prof_gain, p.current);
-      p.tr.cells[2].textContent = '+' + (p.level - p.current).toFixed(3);
-      p.tr.cells[3].textContent = p.level.toFixed(3);
-    });
-  };
+  _ch.exp_table = [null, { total: 0 }];
 
   _ch.get_exp = function (level) {
     const num = parseInt(level);
     const dec = level % 1;
-    if (!_ch.exp[num]) {
-      _ch.exp[num] = { total: Math.round(Math.pow(num + 3, Math.pow(2.850263212287058, 1 + num / 1000))) };
+    if (!_ch.exp_table[num]) {
+      _ch.exp_table[num] = { total: Math.round(Math.pow(num + 3, Math.pow(2.850263212287058, 1 + num / 1000))) };
     }
-    let exp = _ch.exp[num].total;
+    let exp = _ch.exp_table[num].total;
     if (dec) {
-      if (!_ch.exp[num].next) {
-        _ch.exp[num].next = _ch.get_exp(num + 1) - exp;
+      if (!_ch.exp_table[num].next) {
+        _ch.exp_table[num].next = _ch.get_exp(num + 1) - exp;
       }
-      exp += Math.round(_ch.exp[num].next * dec);
+      exp += Math.round(_ch.exp_table[num].next * dec);
     }
     return exp;
   };
 
   _ch.get_level = function (exp, level) {
     level = parseInt(level) || 1;
-    while (exp >= _ch.exp[level].total) {
+    while (exp >= _ch.exp_table[level].total) {
       level++;
-      if (!_ch.exp[level]) {
-        _ch.exp[level] = { total: _ch.get_exp(level) };
+      if (!_ch.exp_table[level]) {
+        _ch.exp_table[level] = { total: _ch.get_exp(level) };
       }
     }
     level--;
-    if (!_ch.exp[level].next) {
-      _ch.exp[level].next = _ch.exp[level + 1].total - _ch.exp[level].total;
+    if (!_ch.exp_table[level].next) {
+      _ch.exp_table[level].next = _ch.exp_table[level + 1].total - _ch.exp_table[level].total;
     }
-    return level + (exp - _ch.exp[level].total) / _ch.exp[level].next;
+    return level + (exp - _ch.exp_table[level].total) / _ch.exp_table[level].next;
+  };
+
+  _ch.exp = {
+
+    total: _window.total_exp,
+    prof: {},
+
+    init: function () {
+      _ch.node.div.innerHTML = '';
+      $qs('img[onclick*="do_attr_post"]').style.visibility = 'hidden';
+      $id('prof_outer').classList.add('hvut-ch-prof');
+
+      $qsa('#prof_outer tr').forEach((tr) => {
+        const p = { tr: tr };
+        const name = tr.cells[0].textContent;
+        _ch.exp.prof[name] = p;
+        p.current = parseFloat(tr.cells[1].textContent);
+        p.exp = _ch.get_exp(p.current);
+        tr.cells[1].textContent = p.current;
+        $element('td', tr);
+        $element('td', tr);
+      });
+      _ch.node.level = $input(['number', 'Level', 'before'], _ch.node.div, { value: _player.level, min: 1, max: 600, style: 'width: 50px;' });
+      const ass = $config.get('tr_level', {})['Assimilator'] || 0;
+      _ch.node.ass = $input(['number', 'Training: Assimilator', 'before'], _ch.node.div, { value: ass, min: 0, max: 25, style: 'width: 30px;' });
+      _ch.exp.calc();
+    },
+
+    calc: function () {
+      const level = parseFloat(_ch.node.level.value);
+      const ass = parseInt(_ch.node.ass.value);
+      if (isNaN(level) || level < 1 || level > 600 || isNaN(ass) || ass < 0 || ass > 25) {
+        return;
+      }
+
+      _window.total_exp = _ch.get_exp(level);
+      _window.update_usable_exp();
+      _window.update_display('str');
+
+      const exp_gain = _window.total_exp - _ch.exp.total;
+      const prof_gain = Math.max(0, exp_gain * 4 * (1 + ass * 0.1));
+      Object.values(_ch.exp.prof).forEach((p) => {
+        p.level = _ch.get_level(p.exp + prof_gain, p.current);
+        p.tr.cells[2].textContent = '+' + (p.level - p.current).toFixed(3);
+        p.tr.cells[3].textContent = p.level.toFixed(3);
+      });
+    },
+
   };
 
   GM_addStyle(/*css*/`
@@ -3176,173 +3996,19 @@ if (settings.character && (_query.s === 'Character' && _query.ss === 'ch' || $id
     .hvut-ch-prof td:nth-child(2) { width: 60px !important; }
     .hvut-ch-prof td:nth-child(3) { width: 65px; color: #c00; }
     .hvut-ch-prof td:nth-child(4) { width: 60px; font-weight: bold; }
-
-    /* --- 新增 Hath 迷你面板样式 --- */
-    .hath-panel {
-        position: fixed;
-        z-index: 9999;
-        display: flex;       /* 横向布局 */
-        flex-direction: row;
-        align-items: center; /* 垂直居中 */
-        gap: 3px;            /* 元素间距 */
-        padding: 2px 4px;
-        background: rgba(245, 245, 245, 0.95);
-        border: 1px solid #999;
-        border-radius: 3px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        cursor: move;        /* 拖动光标 */
-        font-family: Arial, sans-serif;
-        font-size: 10px;     /* 小字体 */
-        user-select: none;
-        height: 18px;        /* 限制高度 */
-        white-space: nowrap;
-    }
-    /* 迷你按钮样式 */
-    .hath-panel button {
-        cursor: pointer;
-        padding: 0 4px;
-        border: 1px solid #777;
-        background: linear-gradient(to bottom, #fff, #ddd);
-        border-radius: 2px;
-        font-size: 10px;
-        height: 14px;
-        line-height: 12px;
-        color: #333;
-    }
-    .hath-panel button:hover { background: #ccc; border-color: #555; }
-
-    /* 价格文本样式 */
-    .hath-price-box {
-        font-weight: bold;
-        color: #c0392b;
-        font-size: 10px;
-        margin-left: 2px;
-    }
   `);
 
-  // --- 初始化 _ch.node (保持原有逻辑完整性) ---
   _ch.node = {};
-
-  // ============================================================
-  //   Hath 面板逻辑 (拖拽 + 记忆 + 整合)
-  // ============================================================
-  (function() {
-      const STORAGE_KEY = 'hath_panel_pos';
-      const panel = document.createElement('div');
-      panel.className = 'hath-panel';
-      panel.title = "按住拖动，位置自动保存";
-
-      // 1. 读取并应用保存的位置
-      const savedPos = localStorage.getItem(STORAGE_KEY);
-      if (savedPos) {
-          try {
-              const pos = JSON.parse(savedPos);
-              // 简单的边界防跑偏
-              const top = Math.max(0, Math.min(window.innerHeight - 50, parseInt(pos.top)));
-              const left = Math.max(0, Math.min(window.innerWidth - 100, parseInt(pos.left)));
-              panel.style.top = top + 'px';
-              panel.style.left = left + 'px';
-          } catch(e) {
-              panel.style.top = '725px'; panel.style.left = '10px';
-          }
-      } else {
-          // 默认位置
-          panel.style.top = '725px';
-          panel.style.left = '10px';
-      }
-
-      // 2. 创建内部元素
-      // 按钮：购买 Hath
-      const btnBuy = document.createElement('button');
-      btnBuy.textContent = '购买 Hath';
-      btnBuy.onclick = function() { window.open('https://e-hentai.org/exchange.php?t=hath', '_blank'); };
-
-      // 按钮：购买 Perks
-      const btnPerks = document.createElement('button');
-      btnPerks.textContent = '购买 Perks';
-      btnPerks.onclick = function() { window.open('https://e-hentai.org/hathperks.php', '_blank'); };
-
-      // 显示：价格
-      const priceDiv = document.createElement('div');
-      priceDiv.className = 'hath-price-box';
-      priceDiv.textContent = 'Hath: ...';
-
-      // 组装
-      panel.appendChild(btnBuy);
-      panel.appendChild(btnPerks);
-      panel.appendChild(priceDiv);
-      document.body.appendChild(panel);
-
-      // 3. 实现拖动逻辑
-      let isDragging = false;
-      let startX, startY, initialLeft, initialTop;
-
-      panel.addEventListener('mousedown', (e) => {
-          if (e.target.tagName === 'BUTTON') return; // 点击按钮时不触发拖动
-          isDragging = true;
-          startX = e.clientX;
-          startY = e.clientY;
-          const rect = panel.getBoundingClientRect();
-          initialLeft = rect.left;
-          initialTop = rect.top;
-          e.preventDefault();
-      });
-
-      document.addEventListener('mousemove', (e) => {
-          if (!isDragging) return;
-          const dx = e.clientX - startX;
-          const dy = e.clientY - startY;
-          panel.style.left = `${initialLeft + dx}px`;
-          panel.style.top = `${initialTop + dy}px`;
-      });
-
-      document.addEventListener('mouseup', () => {
-          if (isDragging) {
-              isDragging = false;
-              // 拖动结束，保存位置
-              localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                  top: panel.style.top,
-                  left: panel.style.left
-              }));
-          }
-      });
-
-      // 4. AJAX 获取价格 (放入原来的逻辑)
-      if (typeof $ajax !== 'undefined' && $ajax.fetch) {
-          $ajax.fetch('https://e-hentai.org/exchange.php?t=hath')
-            .then(response => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(response, 'text/html');
-                const priceElement = doc.querySelector('td:nth-of-type(5)');
-                if (priceElement) {
-                    const match = priceElement.textContent.trim().match(/[\d,]+/);
-                    if (match) {
-                        priceDiv.textContent = `Hath: ${match[0]}`;
-                    } else {
-                        priceDiv.textContent = 'Hath: Err';
-                    }
-                }
-            })
-            .catch(() => { priceDiv.textContent = 'Hath: Fail'; });
-      }
-  })();
-
-  // [下接] 原有代码...
-  _ch.node.div = $element('div', $id('attr_outer'), ['.hvut-ch-div'], { input: () => { _ch.calc_prof(); } });
-
-  $input(['button', '经验/熟练度模拟器'], _ch.node.div, null, () => { _ch.init_simulate(); });
-
-  $qsa('#prof_outer tr').forEach((tr) => {
-    _ch.prof[tr.cells[0].textContent] = { tr: tr };
-  });
+  _ch.node.div = $element('div', $id('attr_outer'), ['.hvut-ch-div'], { input: () => { _ch.exp.calc(); } });
+  $input(['button', 'EXP Simulator'], _ch.node.div, null, () => { _ch.exp.init(); });
 
   $persona.parse_stats_pane();
 } else
-// [END 1] 角色 - 角色 */
+// [END 1] Character - Character */
 
 
 //* [2] Character - Equipment
-if (settings.equipment && _query.s === 'Character' && _query.ss === 'eq') {
+if (_query.s === 'Character' && _query.ss === 'eq') {
   _eq.mage_stats = function () {
   // to get exact numbers
     const stats_pane = _eq.stats_pane;
@@ -3372,7 +4038,7 @@ if (settings.equipment && _query.s === 'Character' && _query.ss === 'eq') {
     const mit_imperil = !$persona.get_value('imperil') ? 0 : (spell_type === 'Holy' || spell_type === 'Dark') ? 0.25 : 0.4;
     const mit_reduce = Math.pow(prof_factor, 1.5) * 0.5 + mit_imperil;
     const mit_day = $persona.get_value('daybonus') ? 0.1 : 0;
-    const resist_dfct = _player.dfct === 'PFUDOR' ? 0.1 : 0;
+    const resist_dfct = _player.difficulty === 'PFUDOR' ? 0.1 : 0;
     const mitigations = [0, 0.5, 0.62, 0.75];
 
     if (!_eq.node.mage) {
@@ -3382,41 +4048,31 @@ if (settings.equipment && _query.s === 'Character' && _query.ss === 'eq') {
     const div = $element('div', _eq.node.mage, ['.hvut-eq-chart'], (e) => { _eq.click_stats(e); });
 
     const options_div = $element('div', div, ['.hvut-eq-options']);
-    $input(['checkbox', '彩虹小马难度'], options_div, { dataset: { action: 'set' }, checked: resist_dfct });
-    $input(['checkbox', '魔药'], options_div, { dataset: { action: 'set', name: 'infusion', value: 'this' }, checked: edb_infusion });
-    $input(['checkbox', '陷危'], options_div, { dataset: { action: 'set', name: 'imperil', value: 'this' }, checked: mit_imperil });
-    $input(['checkbox', '属性日'], options_div, { dataset: { action: 'set', name: 'daybonus', value: 'this' }, checked: mit_day });
+    $input(['checkbox', 'PFUDOR'], options_div, { dataset: { action: 'set' }, checked: resist_dfct });
+    $input(['checkbox', 'Infusion'], options_div, { dataset: { action: 'set', name: 'infusion', value: 'this' }, checked: edb_infusion });
+    $input(['checkbox', 'Imperil'], options_div, { dataset: { action: 'set', name: 'imperil', value: 'this' }, checked: mit_imperil });
+    $input(['checkbox', 'Day of the Week'], options_div, { dataset: { action: 'set', name: 'daybonus', value: 'this' }, checked: mit_day });
 
-    let ul = $element('ul', div, ['.hvut-eq-stats']);
-    $element('li', ul, '法师属性');
-    // 创建一个映射表来翻译属性
-const spellTypeMap = new Map([
-    ['Fire', '火焰'],
-    ['Cold', '冰冷'],
-    ['Elec', '闪电'],
-    ['Wind', '疾风'],
-    ['Holy', '神圣'],
-    ['Dark', '黑暗'],
-    // 添加更多属性的翻译
-]);
-    $element('li', ul, [`/<span>${Math.round(magic_score).toLocaleString()}</span><span>魔法得分</span>`]);
-    $element('li', ul, [`/<span>${Math.round(arcane_score).toLocaleString()}</span><span>秘法得分(开启"奥术集中"时)</span>`]);
-    $element('li', ul, [`/<span>${(prof_factor).toFixed(3)}</span><span>熟练度因子</span>`]);
-    $element('li', ul, [`/<span>${(mit_reduce * 100).toFixed(2)}%</span><span>降低敌方对应属性减伤</span>`]);
-    $element('li', ul, [`/<span>${(cr_staff).toFixed(2)}%</span><span>法杖基础反抵抗率</span>`]);
-    $element('li', ul, [`/<span>${(cr_spell * 100).toFixed(2)}%</span><span>降低敌方${spellTypeMap.get(spell_type)}减伤</span>`]);
-    $element('li', ul, [`/<span>${(cr_dep * 100).toFixed(2)}%</span><span>减益魔法反抵抗率</span>`]);
-    $element('li', ul, [`/<span>${(cure_bonus * 100).toFixed(2)}%</span><span>治疗效果加成</span>`]);
+    ul = $element('ul', div, ['.hvut-eq-stats']);
+    $element('li', ul, 'Mage Stats');
+    $element('li', ul, [`/<span>${Math.round(magic_score).toLocaleString()}</span><span>Magic Score</span>`]);
+    $element('li', ul, [`/<span>${Math.round(arcane_score).toLocaleString()}</span><span>Arcane Score</span>`]);
+    $element('li', ul, [`/<span>${(prof_factor).toFixed(3)}</span><span>Proficiency Factor</span>`]);
+    $element('li', ul, [`/<span>${(mit_reduce * 100).toFixed(2)}%</span><span>Mitigation Reduction</span>`]);
+    $element('li', ul, [`/<span>${(cr_staff).toFixed(2)}%</span><span>Base Counter-Resist</span>`]);
+    $element('li', ul, [`/<span>${(cr_spell * 100).toFixed(2)}%</span><span>${spell_type} C-R</span>`]);
+    $element('li', ul, [`/<span>${(cr_dep * 100).toFixed(2)}%</span><span>Deprecating C-R</span>`]);
+    $element('li', ul, [`/<span>${(cure_bonus * 100).toFixed(2)}%</span><span>Cure Bonus</span>`]);
 
     ul = $element('ul', div, ['.hvut-eq-monster']);
-    $element('li', ul, '怪物抗性');
-    $element('li', ul, '基础抵抗率');
-    $element('li', ul, '减益魔法抵抗率');
-    $element('li', ul, `${spellTypeMap.get(spell_type)}抗性`);
-    $element('li', ul, '魔法减伤率');
-    mitigations.forEach((mit) => { $element('li', ul, `魔法减伤率 ${mit * 100}%`); });
+    $element('li', ul, 'Monster Resist');
+    $element('li', ul, 'Base Resist');
+    $element('li', ul, 'Deprecating Resist');
+    $element('li', ul, `${spell_type} Resist`);
+    $element('li', ul, 'Damage Reduction');
+    mitigations.forEach((mit) => { $element('li', ul, `Mitigation ${mit * 100}%`); });
 
-    [{ n: '女高中生们', s: 10, t: 0 }, { n: '平均', s: 8.5, t: 5 }, { n: '最大', s: 10, t: 10 }].forEach((r) => {
+    [{ n: 'Schoolgirl', s: 10, t: 0 }, { n: 'Average', s: 8.5, t: 5 }, { n: 'Maximum', s: 10, t: 10 }].forEach((r) => {
       const rb = 1 - (1 - r.s / 100) * (1 - r.t / 100) * (1 - resist_dfct); // base resist
       const rs = rb * (1 - cr_spell); // spell resist
       /* damage resist
@@ -3475,7 +4131,7 @@ const spellTypeMap = new Map([
 
   _eq.equip_code = function () {
     const code = _eq.equiplist.map((eq) => `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
-    popup_text(code, 'width: 900px; height: 150px; white-space: pre;');
+    popup_text(code, 900, 150);
   };
 
   _eq.equip_popups = function () {
@@ -3489,36 +4145,38 @@ const spellTypeMap = new Map([
 
   _eq.prof = {
     node: {},
-    data: {},
-    equipdata: {
-      '橡木法杖': { base: 6.45, pxp: 371 },
-      '柳木法杖': { base: 6.14, pxp: 371 },
-      '红木法杖': { base: 8.29, pxp: 371 },
-      '元素使前缀的红木仗': { base: 16.24, pxp: 371 },
-      '铁木法杖': { base: 8.28, pxp: 368 },
-      '圣/暗前缀的铁木杖': { base: 16.24, pxp: 368 },
-      '法师-帽子': { base: 8.29, pxp: 377 },
-      '法师-身体': { base: 9.89, pxp: 377 },
-      '法师-手套': { base: 7.5, pxp: 377 },
-      '法师-裤子': { base: 9.09, pxp: 377 },
-      '法师-鞋子': { base: 6.7, pxp: 377 },
+    list: [],
+    equips: {
+      'Oak Staff': { base: 6.45, pxp: 371 },
+      'Willow Staff': { base: 6.14, pxp: 371 },
+      'Redwood Staff': { base: 8.29, pxp: 371 },
+      'Redwood Staff of the Elementalist': { base: 16.24, pxp: 371 },
+      'Katalox Staff': { base: 8.28, pxp: 368 },
+      'Katalox Staff of the Heaven-sent/Demon-fiend': { base: 16.24, pxp: 368 },
+      'Cotton Cap': { base: 8.29, pxp: 377 },
+      'Cotton Robe': { base: 9.89, pxp: 377 },
+      'Cotton Gloves': { base: 7.5, pxp: 377 },
+      'Cotton Pants': { base: 9.09, pxp: 377 },
+      'Cotton Shoes': { base: 6.7, pxp: 377 },
     },
     click: function (e) {
       const target = e.target.closest('[data-action]');
       if (!target) {
         return;
       }
-      const { action, name } = target.dataset;
+      const { action, key } = target.dataset;
       if (action === 'close') {
         _eq.prof.toggle();
       } else if (action === 'add') {
         _eq.prof.add();
       } else if (action === 'load') {
-        _eq.prof.load(name);
+        _eq.prof.load(key);
+      } else if (action === 'name') {
+        _eq.prof.name(key);
       } else if (action === 'save') {
-        _eq.prof.save(name);
+        _eq.prof.save(key);
       } else if (action === 'delete') {
-        _eq.prof.delete(name);
+        _eq.prof.delete(key);
       }
       const { equip, value } = target.dataset;
       if (action === 'max') {
@@ -3533,52 +4191,60 @@ const spellTypeMap = new Map([
       }
       _eq.prof.inited = true;
       _eq.prof.current = null;
-      _eq.prof.data = getValue('eq_prof', {});
+      _eq.prof.list = $config.get('eq_prof', []).map((json, i) => {
+        const data = {
+          key: i + 1,
+          json,
+          values: JSON.parse(JSON.stringify(json)),
+          node: {},
+        };
+        return data;
+      });
 
       const node = _eq.prof.node;
       node.div = $element('div', $id('eqch_left'), ['.hvut-eq-prof'], { click: (e) => { _eq.prof.click(e); }, input: (e) => { _eq.prof.change(e); } });
-      node.side = $element('div', node.div, ['.hvut-eq-side']);
-      node.buttons = {};
-      $input(['button', '关闭'], node.side, { dataset: { action: 'close' } });
-      $input(['button', '新建'], node.side, { dataset: { action: 'add' } });
+      node.side = $element('div', node.div, ['.hvut-side hvut-eq-side']);
+      $input(['button', 'Close'], node.side, { dataset: { action: 'close' } });
+      $input(['button', 'New'], node.side, { dataset: { action: 'add' }, className: 'hvut-side-margin' });
 
-      const h4 = $element('h4', node.div);
-      node.name = $element('span', h4);
-      $input(['button', '保存'], h4, { dataset: { action: 'save' } });
-      $input(['button', '删除'], h4, { dataset: { action: 'delete' } });
+      const p = $element('p', node.div);
+      node.name = $element('span', p);
+      $input(['button', 'Change Name'], p, { dataset: { action: 'name' } });
+      $input(['button', 'Save'], p, { dataset: { action: 'save' } });
+      $input(['button', 'Delete'], p, { dataset: { action: 'delete' } });
 
       const summary = $element('ul', node.div, ['.hvut-eq-summary']);
-      node.proficiency = $element('li', summary, ['/<span>总熟练度</span><span></span>']).lastChild;
-      node.prof_factor = $element('li', summary, ['/<span>熟练度系数</span><span></span>']).lastChild;
-      node.mit_reduction = $element('li', summary, ['/<span>属性减伤降低</span><span></span>']).lastChild;
-      node.counter_resist = $element('li', summary, ['/<span>反抵抗率</span><span></span>']).lastChild;
+      node.proficiency = $element('li', summary, ['/<span>Total Proficiency</span><span></span>']).lastChild;
+      node.prof_factor = $element('li', summary, ['/<span>Proficiency Factor</span><span></span>']).lastChild;
+      node.mit_reduction = $element('li', summary, ['/<span>Mitigation Reduction</span><span></span>']).lastChild;
+      node.counter_resist = $element('li', summary, ['/<span>Counter-Resist</span><span></span>']).lastChild;
 
-      $element('h4', node.div, '玩家数据');
-      const player = $element('ul', node.div, ['.hvut-eq-player', { dataset: { action: 'player' } }]);
+      $element('p', node.div, 'Character');
+      const char = $element('ul', node.div, ['.hvut-eq-char', { dataset: { action: 'char' } }]);
       let li;
-      li = $element('li', player, ['/<span>等级</span>']);
+      li = $element('li', char, ['/<span>Level</span>']);
       node.level = $input('number', li, { min: 0, max: 500, step: 1, required: true });
-      li = $element('li', player, ['/<span>基础熟练度</span>']);
+      li = $element('li', char, ['/<span>Base Proficiency</span>']);
       node.base = $input('number', li, { min: 0, step: 0.1 });
       node.base_factor = $element('span', li);
-      $element('span', li, ['[1.0]', { dataset: { action: 'factor', value: '1.0 ' } }]);
-      $element('span', li, ['[1.1]', { dataset: { action: 'factor', value: '1.1 ' } }]);
-      $element('span', li, ['[1.2]', { dataset: { action: 'factor', value: '1.2 ' } }]);
-      li = $element('li', player);
-      node.hathperk = $input(['checkbox', '有Hath Perk？'], $element('span', li));
+      $input(['button', 'x1.0'], li, { dataset: { action: 'factor', value: '1.0 ' } });
+      $input(['button', 'x1.1'], li, { dataset: { action: 'factor', value: '1.1 ' } });
+      $input(['button', 'x1.2'], li, { dataset: { action: 'factor', value: '1.2 ' } });
+      li = $element('li', char);
+      node.hathperk = $input(['checkbox', 'Hath Perk'], $element('span', li));
       node.hath_bonus = $input('number', li, { step: 0.001, readOnly: true });
 
-      $element('h4', node.div, '装备');
+      $element('p', node.div, 'Equipment');
       const equip = $element('table', node.div, ['.hvut-eq-equip']);
-      $element('tr', equip, ['/<td></td><td>装备部位</td><td>魂绑</td><td>装备等级</td><td>pxp</td><td>最大pxp</td><td>基础熟练度</td><td>最大熟练</td><td>强化等级</td><td>最终熟练度</td>']);
+      $element('tr', equip, ['/<td></td><td>type</td><td>soulbound</td><td>level</td><td>pxp</td><td>max</td><td>base</td><td>max</td><td>upgrade</td><td>scaled</td>']);
 
-      node.equips = ['柳木法杖', '法师-帽子', '法师-身体', '法师-手套', '法师-裤子', '法师-鞋子'].map((e, i) => {
+      node.equips = ['Willow Staff', 'Cotton Cap', 'Cotton Robe', 'Cotton Gloves', 'Cotton Pants', 'Cotton Shoes'].map((e, i) => {
         const eqnode = {};
-        const eq = _eq.prof.equipdata[e];
+        const eq = _eq.prof.equips[e];
         const tr = $element('tr', equip, [{ dataset: { action: 'equip', equip: i } }, '/<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>']);
 
         if (i === 0) {
-          eqnode.type = $element('select', tr.children[1], [{ dataset: { action: 'staff' } }, '/' + ['橡木法杖', '柳木法杖', '红木法杖', '元素使前缀的红木仗', '铁木法杖', '圣/暗前缀的铁木杖'].map((e) => `<option>${e}</option>`).join('')]);
+          eqnode.type = $input(['select', ['Oak Staff', 'Willow Staff', 'Redwood Staff', 'Redwood Staff of the Elementalist', 'Katalox Staff', 'Katalox Staff of the Heaven-sent/Demon-fiend']], tr.children[1], { dataset: { action: 'staff' } });
         } else {
           tr.children[1].textContent = e;
         }
@@ -3595,42 +4261,46 @@ const spellTypeMap = new Map([
         return eqnode;
       });
 
-      Object.keys(_eq.prof.data).forEach((name) => {
-        _eq.prof.add_button(name);
+      _eq.prof.list.forEach((data) => {
+        _eq.prof.add_button(data);
       });
       _eq.prof.load();
     },
-    load: function (name) {
-      if (!name) {
-        name = Object.keys(_eq.prof.data)[0];
-      }
-      if (!name) {
+    load: function (key) {
+      if (!_eq.prof.list.length) {
         _eq.prof.add();
         return;
       }
-      if (name === _eq.prof.current) {
+      if (!key) {
+        key = _eq.prof.list[0].key;
+      }
+      if (!Number.isInteger(key)) {
+        key = parseInt(key);
+      }
+      if (key === _eq.prof.current) {
         return;
       }
-      if (_eq.prof.current) {
-        _eq.prof.node.buttons[_eq.prof.current].classList.remove('hvut-eq-current');
+      const prev = _eq.prof.get();
+      if (prev) {
+        prev.node.button.classList.remove('hvut-eq-current');
       }
-      _eq.prof.current = name;
-      _eq.prof.node.buttons[name].classList.add('hvut-eq-current');
+      _eq.prof.current = key;
 
-      const current = _eq.prof.data[name];
+      const data = _eq.prof.get(key);
+      data.node.button.classList.add('hvut-eq-current');
       const node = _eq.prof.node;
-      node.name.textContent = name;
+      node.name.textContent = data.values.name;
 
-      node.level.value = current.level || '';
-      node.base.value = current.base || '';
-      node.hathperk.checked = current.hathperk;
-      _eq.prof.change_player();
+      node.level.value = data.values.level || '';
+      node.base.value = data.values.base || '';
+      node.hathperk.checked = data.values.hathperk;
+      _eq.prof.change_char();
 
-      node.equips[0].type.value = current.equips[0].type;
+      node.equips[0].type.value = data.values.equips[0].type;
       _eq.prof.change_staff();
 
       node.equips.forEach((eqnode, i) => {
-        const eq = current.equips[i];
+        const eq = data.values.equips[i];
         eqnode.check.checked = eq.check;
         eqnode.soulbound.checked = eq.soulbound;
         eqnode.level.value = eq.level || '';
@@ -3641,20 +4311,21 @@ const spellTypeMap = new Map([
       });
       //_eq.prof.calc();
     },
+    get: function (key = _eq.prof.current) {
+      return _eq.prof.list.find((data) => data.key == key);
+    },
     add: function () {
-      let name;
-      let i = 0;
-      do {
-        i++;
-        name = `*未命名${i}`;
-      } while (name in _eq.prof.data);
-      _eq.prof.data[name] = {
-        isnew: true,
+      let key = 1;
+      while (_eq.prof.get(key)) {
+        key++;
+      }
+      const json = {
+        name: `Noname${key}`,
         level: _player.level,
         base: _player.level,
         hathperk: true,
-        equips: ['柳木法杖', '法师-帽子', '法师-身体', '法师-手套', '法师-裤子', '法师-鞋子'].map((e) => {
-          const eq = { ..._eq.prof.equipdata[e] };
+        equips: ['Willow Staff', 'Cotton Cap', 'Cotton Robe', 'Cotton Gloves', 'Cotton Pants', 'Cotton Shoes'].map((e) => {
+          const eq = { ..._eq.prof.equips[e] };
           eq.type = e;
           eq.check = false;
           eq.soulbound = false;
@@ -3665,11 +4336,22 @@ const spellTypeMap = new Map([
           return eq;
         }),
       };
-      _eq.prof.add_button(name);
-      _eq.prof.load(name);
+      const data = {
+        new: true,
+        key,
+        json,
+        values: JSON.parse(JSON.stringify(json)),
+        node: {},
+      };
+      _eq.prof.list.push(data);
+      _eq.prof.add_button(data);
+      _eq.prof.load(data.key);
     },
-    add_button: function (name) {
-      _eq.prof.node.buttons[name] = $input(['button', name], _eq.prof.node.side, { dataset: { action: 'load', name: name } });
+    add_button: function (data) {
+      data.node.button = $input(['button', data.values.name], _eq.prof.node.side, { dataset: { action: 'load', key: data.key } });
+      if (data.new) {
+        data.node.button.classList.add('hvut-eq-new');
+      }
     },
     change: function (e) {
       const target = e.target.closest('[data-action]');
@@ -3677,46 +4359,48 @@ const spellTypeMap = new Map([
         return;
       }
       const { action, equip } = target.dataset;
-      if (action === 'player') {
-        _eq.prof.change_player();
+      if (action === 'char') {
+        _eq.prof.change_char();
       } else if (action === 'equip') {
         _eq.prof.change_equip(equip);
       } else if (action === 'staff') {
         _eq.prof.change_staff();
       }
     },
-    change_player: function () {
-      const current = _eq.prof.data[_eq.prof.current];
+    change_char: function () {
+      const data = _eq.prof.get();
+      const values = data.values;
       const node = _eq.prof.node;
-      const prev_level = current.level;
+      const prev_level = values.level;
       ['level', 'base', 'hathperk'].forEach((e) => {
         if (node[e].type === 'number') {
-          current[e] = parseFloat(node[e].value) || 0;
+          values[e] = parseFloat(node[e].value) || 0;
         } else if (node[e].type === 'checkbox') {
-          current[e] = node[e].checked;
+          values[e] = node[e].checked;
         } else {
-          current[e] = node[e].value;
+          values[e] = node[e].value;
         }
       });
 
-      if (current.level !== prev_level) {
-        node.base.max = current.level * 10 * 1.2 / 10;
+      if (values.level !== prev_level) {
+        node.base.max = values.level * 10 * 1.2 / 10;
         node.equips.forEach((eqnode, i) => {
-          const eq = current.equips[i];
-          eqnode.level.max = current.level;
+          const eq = values.equips[i];
+          eqnode.level.max = values.level;
           if (eq.soulbound) {
             _eq.prof.change_equip(i);
           }
         });
       }
-      node.base_factor.textContent = ' = Level * ' + (current.base / current.level).toFixed(3);
-      node.hath_bonus.value = current.hathperk ? (current.base * 0.1).toFixed(2) : 0;
+      node.base_factor.textContent = ' = Level * ' + (values.base / values.level).toFixed(3);
+      node.hath_bonus.value = values.hathperk ? (values.base * 0.1).toFixed(2) : 0;
 
       _eq.prof.calc();
     },
     change_equip: function (n) {
-      const current = _eq.prof.data[_eq.prof.current];
-      const eq = current.equips[n];
+      const data = _eq.prof.get();
+      const values = data.values;
+      const eq = values.equips[n];
       const eqnode = _eq.prof.node.equips[n];
       ['check', 'soulbound', 'level', 'pxp', 'base', 'upgrade'].forEach((e) => {
         if (eqnode[e].type === 'number') {
@@ -3730,7 +4414,7 @@ const spellTypeMap = new Map([
 
       eqnode.level.disabled = eq.soulbound;
       if (eq.soulbound) {
-        eq.level = current.level;
+        eq.level = values.level;
         eqnode.level.value = eq.level;
       }
       eq.scaled = $equip.forge('Elemental', eq.base, eq.upgrade, eq.pxp, eq.level);
@@ -3740,11 +4424,11 @@ const spellTypeMap = new Map([
     },
     change_staff: function () {
       const eqnode = _eq.prof.node.equips[0];
-      const equipdata = _eq.prof.equipdata[eqnode.type.value];
-      eqnode.pxp.max = equipdata.pxp;
-      eqnode.pxpmax.textContent = equipdata.pxp;
-      eqnode.base.max = equipdata.base;
-      eqnode.pmax.textContent = equipdata.base;
+      const equips = _eq.prof.equips[eqnode.type.value];
+      eqnode.pxp.max = equips.pxp;
+      eqnode.pxpmax.textContent = equips.pxp;
+      eqnode.base.max = equips.base;
+      eqnode.pmax.textContent = equips.base;
     },
     set_max: function (n, stat) {
       const eqnode = _eq.prof.node.equips[n];
@@ -3752,61 +4436,64 @@ const spellTypeMap = new Map([
       _eq.prof.change_equip(n);
     },
     set_factor: function (value) {
-      _eq.prof.node.base.value = _eq.prof.data[_eq.prof.current].level * value;
-      _eq.prof.change_player();
+      const data = _eq.prof.get();
+      const values = data.values;
+      _eq.prof.node.base.value = (values.level * value).toFixed(1);
+      _eq.prof.change_char();
     },
     calc: function () {
-      const current = _eq.prof.data[_eq.prof.current];
+      const data = _eq.prof.get();
+      const values = data.values;
       const node = _eq.prof.node;
 
-      current.proficiency = current.base;
-      if (current.hathperk) {
-        current.proficiency += current.base * 0.1;
+      values.proficiency = values.base;
+      if (values.hathperk) {
+        values.proficiency += values.base * 0.1;
       }
-      current.equips.forEach((eq) => {
+      values.equips.forEach((eq) => {
         if (eq.check) {
-          current.proficiency += eq.scaled;
+          values.proficiency += eq.scaled;
         }
       });
-      current.prof_factor = Math.max(0, Math.min(1, current.proficiency / current.level - 1));
-      current.mit_reduction = Math.pow(current.prof_factor, 1.5) / 2;
-      current.counter_resist = current.prof_factor / 2;
+      values.prof_factor = Math.max(0, Math.min(1, values.proficiency / values.level - 1));
+      values.mit_reduction = Math.pow(values.prof_factor, 1.5) / 2;
+      values.counter_resist = values.prof_factor / 2;
 
-      node.proficiency.textContent = current.proficiency.toFixed(3);
-      node.prof_factor.textContent = current.prof_factor.toFixed(3);
-      node.mit_reduction.textContent = (current.mit_reduction * 100).toFixed(2) + '%';
-      node.counter_resist.textContent = (current.counter_resist * 100).toFixed(2) + '%';
+      node.proficiency.textContent = values.proficiency.toFixed(3);
+      node.prof_factor.textContent = values.prof_factor.toFixed(3);
+      node.mit_reduction.textContent = (values.mit_reduction * 100).toFixed(2) + '%';
+      node.counter_resist.textContent = (values.counter_resist * 100).toFixed(2) + '%';
     },
-    save: function (name = _eq.prof.current) {
-      if (_eq.prof.data[name].isnew) {
-        const newname = prompt('输入方案名称')?.trim();
-        if (!newname) {
-          return;
-        } else if (newname in _eq.prof.data) {
-          if (!prompt(`${newname} already exists.\nOverwrite it?`)) {
-            return;
-          }
-        } else {
-          _eq.prof.add_button(newname);
-        }
-        _eq.prof.node.buttons[name].remove();
-
-        _eq.prof.data[newname] = _eq.prof.data[name];
-        delete _eq.prof.data[newname].isnew;
-        delete _eq.prof.data[name];
-        _eq.prof.load(newname);
-        name = newname;
+    save: function (key = _eq.prof.current) {
+      const data = _eq.prof.get(key);
+      if (data.new) {
+        data.node.button.classList.remove('hvut-eq-new');
+        data.new = false;
       }
-      const json = getValue('eq_prof', {});
-      json[name] = _eq.prof.data[name];
-      setValue('eq_prof', json);
+      data.json = JSON.parse(JSON.stringify(data.values));
+      const json = _eq.prof.list.filter((data) => !data.new).map((data) => data.json);
+      $config.set('eq_prof', json);
     },
-    delete: function (name = _eq.prof.current) {
-      _eq.prof.node.buttons[name].remove();
-      delete _eq.prof.data[name];
-      const json = getValue('eq_prof', {});
-      delete json[name];
-      setValue('eq_prof', json);
+    name: function (key = _eq.prof.current) {
+      const data = _eq.prof.get(key);
+      const name = prompt('Enter the name of the settings', data.values.name)?.trim();
+      if (!name) {
+        return;
+      }
+      data.values.name = name;
+      data.node.button.value = name;
+      _eq.prof.node.name.textContent = name;
+    },
+    delete: function (key = _eq.prof.current) {
+      const data = _eq.prof.get(key);
+      data.node.button.remove();
+      const index = _eq.prof.list.findIndex((data) => data.key === key);
+      _eq.prof.list.splice(index, 1);
+      if (key == _eq.prof.current) {
+        _eq.prof.current = null;
+      }
+      const json = _eq.prof.list.filter((data) => !data.new).map((data) => data.json);
+      $config.set('eq_prof', json);
       _eq.prof.load();
     },
     toggle: function () {
@@ -3860,20 +4547,18 @@ const spellTypeMap = new Map([
       .hvut-eq-prof input[type='checkbox'] { top: 3px; }
       .hvut-eq-prof input:invalid { color: #e00; }
       .hvut-eq-prof span { display: inline-block; }
-      .hvut-eq-prof h4 { margin: 5px 0; }
-      .hvut-eq-prof h4 > span { min-width: 120px; }
+      .hvut-eq-prof p { margin: 5px 0; font-weight: bold; white-space: nowrap; }
+      .hvut-eq-prof p > span { min-width: 150px; }
       .hvut-eq-prof ul { margin: 5px 0 15px; padding: 0; max-width: 530px; list-style: none; }
       .hvut-eq-prof li { margin: 1px 0; height: 22px; line-height: 22px; }
-      .hvut-eq-side { position: absolute; top: 0; left: 0; width: 100px; display: flex; flex-direction: column; }
-      .hvut-eq-side input { margin: 3px 0; white-space: normal; }
-      .hvut-eq-side input:nth-child(2) { margin-bottom: 10px; }
+      .hvut-eq-side { top: 0; left: 0; }
       .hvut-eq-current { color: #03c !important; border-color: #03c !important; }
-      .hvut-eq-summary span:first-child { width: 120px; }
+      .hvut-eq-new { font-style: italic; }
+      .hvut-eq-summary span:first-child { width: 150px; }
       .hvut-eq-summary span:last-child { width: 50px; font-weight: bold; text-align: right; }
-      .hvut-eq-player li > *:nth-child(1) { width: 120px; }
-      .hvut-eq-player li > *:nth-child(2) { width: 60px; }
-      .hvut-eq-player li > *:nth-child(3) { margin-left: 10px; }
-      .hvut-eq-player li > *:nth-child(n+4) { margin-left: 10px; cursor: pointer; }
+      .hvut-eq-char li > *:nth-child(1) { width: 130px; }
+      .hvut-eq-char li > *:nth-child(2) { width: 60px; }
+      .hvut-eq-char li > *:nth-child(3) { margin: 0 10px; }
       .hvut-eq-equip { table-layout: fixed; width: 530px; line-height: 22px; }
       .hvut-eq-equip td { padding: 1px 5px; }
       .hvut-eq-equip input { width: 100%; margin: 0; box-sizing: border-box; }
@@ -3913,16 +4598,14 @@ const spellTypeMap = new Map([
     });
 
     _eq.node.buttons = $element('div', [$id('eqch_left'), 'afterbegin'], ['.hvut-eq-buttons']);
-    $input(['button', '生成装备代码'], _eq.node.buttons, null, () => { _eq.equip_code(); });
-    $input(['button', '生成装备一览'], _eq.node.buttons, null, () => { _eq.equip_popups(); });
-    $input(['button', '熟练度计算器'], _eq.node.buttons, null, () => { _eq.prof.toggle(); });
-    _eq.node.equipset_name = $input('text', _eq.node.buttons, { value: $persona.json.ename || '套装 ' + $persona.json.eidx, style: 'width: 100px; margin-left: auto; text-align: center;' });
-    $input(['button', '保存'], _eq.node.buttons, null, () => { $persona.set_value('name', _eq.node.equipset_name.value); });
+    $input(['button', 'Equip Code'], _eq.node.buttons, null, () => { _eq.equip_code(); });
+    $input(['button', 'Equip Pop-ups'], _eq.node.buttons, null, () => { _eq.equip_popups(); });
+    $input(['button', 'Proficiency Simulator'], _eq.node.buttons, null, () => { _eq.prof.toggle(); });
+    _eq.node.equipset_name = $input('text', _eq.node.buttons, { value: $persona.json.ename || 'Set ' + $persona.json.eset, style: 'width: 100px; margin-left: auto; text-align: center;' });
+    $input(['button', 'Save'], _eq.node.buttons, null, () => { $persona.set_value('name', _eq.node.equipset_name.value); });
 
     if (_eq.stats_pane['Spell Type']) {
-      if (settings.equipmentStatsAnalyzer) {
-        _eq.mage_stats();
-      }
+      _eq.mage_stats();
     }
   }
 } else
@@ -3930,7 +4613,7 @@ const spellTypeMap = new Map([
 
 
 //* [3] Character - Abilities
-if (settings.abilities && _query.s === 'Character' && _query.ss === 'ab') {
+if (_query.s === 'Character' && _query.ss === 'ab') {
   _ab.ability = {
     'HP Tank': { category: 'General', img: '3.png', pos: 0, unlock: [0, 25, 50, 75, 100, 120, 150, 200, 250, 300], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
     'MP Tank': { category: 'General', img: '3.png', pos: -34, unlock: [0, 30, 60, 90, 120, 160, 210, 260, 310, 350], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
@@ -4010,19 +4693,17 @@ if (settings.abilities && _query.s === 'Character' && _query.ss === 'ab') {
   };
 
   _ab.preset = {
-    '目前流派': [],
-    '单手重甲盾战': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '1H Damage', '1H Accuracy', '1H Block', 'Heavy Crush', 'Heavy Prcg', 'Heavy Slsh', 'Heavy HP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
-    '双手轻甲战士': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '2H Damage', '2H Accuracy', '2H Parry', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
-    '双持轻甲战士': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'DW Damage', 'DW Accuracy', 'DW Crit', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
-    '二天轻甲战士': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '2H Damage', '2H Parry', 'DW Accuracy', 'DW Crit', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
-    '元素法师': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Conflagration', 'Sorcery', 'Elementalism', 'Archmage'],
-    '暗法': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Corruption', 'Better Disintegrate', 'Better Ragnarok', 'Ripened Soul', 'Dark Imperil'],
-    '圣法': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Smite', 'Better Banish', 'Better Paradise', 'Soul Fire', 'Holy Imperil'],
-  } ;
+    'Current Set': [],
+    'One-handed': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '1H Damage', '1H Accuracy', '1H Block', 'Heavy Crush', 'Heavy Prcg', 'Heavy Slsh', 'Heavy HP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
+    'Two-handed': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '2H Damage', '2H Accuracy', '2H Parry', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
+    'Dual-wielding': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'DW Damage', 'DW Accuracy', 'DW Crit', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
+    'Niten Ichiryu': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', '2H Damage', '2H Parry', 'DW Accuracy', 'DW Crit', 'Light Acc', 'Light Crit', 'Light Speed', 'Light HP/MP', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Heartseeker', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield'],
+    'Elemental mage': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Conflagration', 'Sorcery', 'Elementalism', 'Archmage'],
+    'Dark mage': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Corruption', 'Better Disintegrate', 'Better Ragnarok', 'Ripened Soul', 'Dark Imperil'],
+    'Holy mage': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Smite', 'Better Banish', 'Better Paradise', 'Soul Fire', 'Holy Imperil'],
+  };
 
-
-
-  _ab.point = /Ability Points: (\d+)/.test($id('ability_top').children[3].textContent) && parseInt(RegExp.$1);
+  _ab.point = parseInt(/Ability Points: (\d+)/.exec($id('ability_top').children[3].textContent)[1]);
   _ab.level = {};
 
   _ab.click = function (e) {
@@ -4064,7 +4745,6 @@ if (settings.abilities && _query.s === 'Character' && _query.ss === 'ab') {
     node: { ability: {} },
     level: [],
     selected: [],
-    order: true,
 
     init: function () {
       if (_ab.calc.inited) {
@@ -4083,138 +4763,36 @@ if (settings.abilities && _query.s === 'Character' && _query.ss === 'ab') {
 
       const node = _ab.calc.node;
       node.div = $element('div', $id('mainpane'), ['.hvut-ab-calc'], (e) => { _ab.calc.click(e); });
-      node.side = $element('div', node.div, ['.hvut-ab-side']);
+      node.side = $element('div', node.div, ['.hvut-side hvut-ab-side']);
       node.ul = $element('ul', $element('div', node.div), ['.hvut-ab-ul']);
       node.table = $element('table', $element('div', node.div), ['.hvut-ab-table']);
 
-      $input(['button', '关闭'], node.side, { dataset: { action: 'toggle' } });
+      $input(['button', 'Close'], node.side, { dataset: { action: 'toggle' }, className: 'hvut-side-margin' });
       Object.keys(_ab.preset).forEach((n) => { $input(['button', n], node.side, { dataset: { action: 'preset', name: n } }); });
-
-
-const categoryMap = {
-        'General' : '通用',
-        'One-handed' : '单手',
-        'Two-handed' : '双手',
-        'Dual-wielding' : '双持',
-        'Light Armor' : '轻甲',
-        'Cloth Armor' : '布甲',
-        'Heavy Armor' : '重甲',
-        'Staff' : '法杖',
-        'Elemental' : '元素魔法',
-        'Divine' : '神圣魔法',
-        'Forbidden' : '黑暗魔法',
-        'Supportive 1' : '增益魔法 1',
-        'Deprecating 1' : '减益魔法 1',
-        'Supportive 2' : '增益魔法 2',
-        'Deprecating 2' : '减益魔法 2',
-  // 添加更多类别的映射
-};
 
       let category;
       let li;
       Object.entries(_ab.ability).forEach(([n, ab]) => {
-        const translatedCategory = categoryMap[ab.category] || ab.category;
         if (category !== ab.category) {
           category = ab.category;
           li = $element('li', node.ul);
-          $element('span', li, [translatedCategory, '.hvut-ab-category']);
+          $element('span', li, [category, '.hvut-ab-category']);
         }
         const icon = $element('div', li, [{ dataset: { action: 'ability', name: n } }, '.hvut-ab-icon hvut-ab-off', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
-        const tooltipTranslations = {
-        'HP Tank' : '生命值增幅',
-        'MP Tank' : '魔力值增幅',
-        'SP Tank' : '灵力值增幅',
-        'Better Health Pots' : '生命药水效果加成',
-        'Better Mana Pots' : '魔力药水效果加成',
-        'Better Spirit Pots' : '灵力药水效果加成',
-        '2H Damage' : '双手流伤害加成',
-        '1H Damage' : '单手流伤害加成',
-        'DW Damage' : '双持流伤害加成',
-        'Light Acc' : '轻甲套命中率加成',
-        'Light Crit' : '轻甲套暴击率加成',
-        'Light Speed' : '轻甲套攻速加成',
-        'Light HP/MP' : '轻甲套生命/魔力值加成',
-        '1H Accuracy' : '单手流命中率加成',
-        '1H Block' : '单手流格挡率加成',
-        '2H Accuracy' : '双手流命中率加成',
-        '2H Parry' : '双手流招架率加成',
-        'DW Accuracy' : '双持流命中率加成',
-        'DW Crit' : '双持流暴击率加成',
-        'Staff Spell Damage' : '法杖流魔法伤害加成',
-        'Staff Accuracy' : '法杖流全域命中率加成',
-        'Staff Damage' : '法杖流法杖攻击伤害加成',
-        'Cloth Spellacc' : '布甲套法术命中率加成',
-        'Cloth Spellcrit' : '布甲套法术暴击加成',
-        'Cloth Castspeed' : '布甲套咏唱速度加成',
-        'Cloth MP' : '布甲套魔力值加成',
-        'Heavy Crush' : '重甲套打击减伤加成',
-        'Heavy Prcg' : '重甲套刺击减伤加成',
-        'Heavy Slsh' : '重甲套斩击减伤加成',
-        'Heavy HP' : '重甲套生命值加成',
-        'Better Weaken' : '强力虚弱',
-        'Faster Weaken' : '快速虚弱',
-        'Better Imperil' : '强力陷危',
-        'Faster Imperil' : '快速陷危',
-        'Better Blind' : '强力致盲',
-        'Faster Blind' : '快速致盲',
-        'Mind Control' : '精神控制',
-        'Better Silence' : '强力沉默',
-        'Better MagNet' : '强力魔磁网',
-        'Better Slow' : '强力缓慢',
-        'Better Drain' : '强力枯竭',
-        'Faster Drain' : '快速枯竭',
-        'Ether Theft' : '魔力窃取',
-        'Spirit Theft' : '灵力窃取',
-        'Better Haste' : '强力急速',
-        'Better Shadow Veil' : '强力影纱',
-        'Better Absorb' : '强力吸收',
-        'Stronger Spirit' : '强力灵能力',
-        'Better Heartseeker' : '强力觅心者',
-        'Better Arcane Focus' : '强力奥数集成',
-        'Better Regen' : '强力细胞活化',
-        'Better Cure' : '强力治疗',
-        'Better Spark' : '强力生命火花',
-        'Better Protection' : '强力守护',
-        'Flame Spike Shield' : '烈焰刺盾',
-        'Frost Spike Shield' : '冰霜刺盾',
-        'Shock Spike Shield' : '闪电刺盾',
-        'Storm Spike Shield' : '风暴刺盾',
-        'Conflagration' : '火灾',
-        'Cryomancy' : '寒灾',
-        'Havoc' : '雷暴',
-        'Tempest' : '风灾',
-        'Sorcery' : '巫术',
-        'Elementalism' : '自然崇拜者',
-        'Archmage' : '大法师',
-        'Better Corruption' : '强力腐败',
-        'Better Disintegrate' : '强力瓦解',
-        'Better Ragnarok' : '强力诸神黄昏',
-        'Ripened Soul' : '成熟的灵魂',
-        'Dark Imperil' : '黑暗陷危',
-        'Better Smite' : '强力惩戒',
-        'Better Banish' : '强力放逐',
-        'Better Paradise' : '强力失乐园',
-        'Soul Fire' : '焚烧的灵魂',
-        'Holy Imperil' : '神圣陷危',
-      // 其他需要翻译的内容
-};
-      // 获取当前图标的能力名称
-     const abilityName = n;
-
-      // 获取对应的翻译文本
-     const translatedTooltip = tooltipTranslations[abilityName];
-        $element('span', icon, [translatedTooltip, '.hvut-ab-tooltip']);
+        $element('span', icon, [n, '.hvut-ab-tooltip']);
         node.ability[n] = icon;
       });
 
-      _ab.calc.preset('目前流派');
+      _ab.calc.preset('Current Set');
     },
+
     preset: function (name) {
       _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.add('hvut-ab-off'); });
       _ab.calc.selected = _ab.preset[name].slice();
       _ab.calc.selected.forEach((e) => { _ab.calc.node.ability[e].classList.remove('hvut-ab-off'); });
       _ab.calc.table();
     },
+
     ability: function (name) {
       const selected = _ab.calc.selected;
       if (selected.includes(name)) {
@@ -4235,7 +4813,7 @@ const categoryMap = {
         if (!selected.length) {
           return;
         }
-        sum += selected.reduce((s, e) => s + e.point, 0);
+        sum += selected.reduce((s, e) => (s + e.point), 0);
         const aboost = sum - unlock;
         const tr = $element('tr', null, [_player.level < unlock ? '.hvut-ab-nolevel' : '']);
         $element('td', tr, unlock);
@@ -4243,104 +4821,17 @@ const categoryMap = {
         $element('td', tr, [`/<span>${aboost}</span>`, aboost < 0 ? '.hvut-ab-noab' : '']);
         const td = $element('td', tr);
         selected.forEach(({ name, level, point }) => {
-         // 创建英文名称和中文翻译的映射表
-        var nameTranslationMap = {
-        'HP Tank' : '生命值增幅',
-        'MP Tank' : '魔力值增幅',
-        'SP Tank' : '灵力值增幅',
-        'Better Health Pots' : '生命药水效果加成',
-        'Better Mana Pots' : '魔力药水效果加成',
-        'Better Spirit Pots' : '灵力药水效果加成',
-        '2H Damage' : '双手流伤害加成',
-        '1H Damage' : '单手流伤害加成',
-        'DW Damage' : '双持流伤害加成',
-        'Light Acc' : '轻甲套命中率加成',
-        'Light Crit' : '轻甲套暴击率加成',
-        'Light Speed' : '轻甲套攻速加成',
-        'Light HP/MP' : '轻甲套生命/魔力值加成',
-        '1H Accuracy' : '单手流命中率加成',
-        '1H Block' : '单手流格挡率加成',
-        '2H Accuracy' : '双手流命中率加成',
-        '2H Parry' : '双手流招架率加成',
-        'DW Accuracy' : '双持流命中率加成',
-        'DW Crit' : '双持流暴击率加成',
-        'Staff Spell Damage' : '法杖流魔法伤害加成',
-        'Staff Accuracy' : '法杖流全域命中率加成',
-        'Staff Damage' : '法杖流法杖攻击伤害加成',
-        'Cloth Spellacc' : '布甲套法术命中率加成',
-        'Cloth Spellcrit' : '布甲套法术暴击加成',
-        'Cloth Castspeed' : '布甲套咏唱速度加成',
-        'Cloth MP' : '布甲套魔力值加成',
-        'Heavy Crush' : '重甲套打击减伤加成',
-        'Heavy Prcg' : '重甲套刺击减伤加成',
-        'Heavy Slsh' : '重甲套斩击减伤加成',
-        'Heavy HP' : '重甲套生命值加成',
-        'Better Weaken' : '强力虚弱',
-        'Faster Weaken' : '快速虚弱',
-        'Better Imperil' : '强力陷危',
-        'Faster Imperil' : '快速陷危',
-        'Better Blind' : '强力致盲',
-        'Faster Blind' : '快速致盲',
-        'Mind Control' : '精神控制',
-        'Better Silence' : '强力沉默',
-        'Better MagNet' : '强力魔磁网',
-        'Better Slow' : '强力缓慢',
-        'Better Drain' : '强力枯竭',
-        'Faster Drain' : '快速枯竭',
-        'Ether Theft' : '魔力窃取',
-        'Spirit Theft' : '灵力窃取',
-        'Better Haste' : '强力急速',
-        'Better Shadow Veil' : '强力影纱',
-        'Better Absorb' : '强力吸收',
-        'Stronger Spirit' : '强力灵能力',
-        'Better Heartseeker' : '强力觅心者',
-        'Better Arcane Focus' : '强力奥数集成',
-        'Better Regen' : '强力细胞活化',
-        'Better Cure' : '强力治疗',
-        'Better Spark' : '强力生命火花',
-        'Better Protection' : '强力守护',
-        'Flame Spike Shield' : '烈焰刺盾',
-        'Frost Spike Shield' : '冰霜刺盾',
-        'Shock Spike Shield' : '闪电刺盾',
-        'Storm Spike Shield' : '风暴刺盾',
-        'Conflagration' : '火灾',
-        'Cryomancy' : '寒灾',
-        'Havoc' : '雷暴',
-        'Tempest' : '风灾',
-        'Sorcery' : '巫术',
-        'Elementalism' : '自然崇拜者',
-        'Archmage' : '大法师',
-        'Better Corruption' : '强力腐败',
-        'Better Disintegrate' : '强力瓦解',
-        'Better Ragnarok' : '强力诸神黄昏',
-        'Ripened Soul' : '成熟的灵魂',
-        'Dark Imperil' : '黑暗陷危',
-        'Better Smite' : '强力惩戒',
-        'Better Banish' : '强力放逐',
-        'Better Paradise' : '强力失乐园',
-        'Soul Fire' : '焚烧的灵魂',
-        'Holy Imperil' : '神圣陷危',
-     };
-          const translatedName = nameTranslationMap[name] || name; // 查找对应的中文翻译，如果没有找到则使用原始英文名称
           const ab = _ab.ability[name];
           const icon = $element('div', td, ['.hvut-ab-icon', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
           $element('span', icon, [point, '.hvut-ab-point']);
-          $element('span', icon, [`${translatedName} 等级${level}`, '.hvut-ab-tooltip']);
+          $element('span', icon, [`${name} Lv.${level}`, '.hvut-ab-tooltip']);
         });
         tbody.push(tr);
       });
-      if (!_ab.calc.order) {
-        tbody.reverse();
-      }
 
-      const arrow = (_ab.calc.order ? '&#x25B2;' : '&#x25BC;');
-      _ab.calc.node.table.innerHTML = `<thead><tr><td data-action="reverse">${arrow} 等级</td><td>所需技能点</td><td>"能力升级"需求级数</td><td>获得能力</td></tr></thead><tbody></tbody>`;
+      _ab.calc.node.table.innerHTML = '<thead><tr><td>Level</td><td>Ability Points</td><td>Ability Boost</td><td>Abilities</td></tr></thead><tbody></tbody>';
       _ab.calc.node.table.tBodies[0].append(...tbody);
-    },
-
-    reverse: function () {
-      _ab.calc.order = !_ab.calc.order;
-      _ab.calc.table();
+      $qsa('.hvut-ab-table tr:not(.hvut-ab-nolevel)').at(-1).scrollIntoView({ block: 'center' });
     },
 
     toggle: function () {
@@ -4358,8 +4849,6 @@ const categoryMap = {
         _ab.calc.preset(name);
       } else if (action === 'ability') {
         _ab.calc.ability(name);
-      } else if (action === 'reverse') {
-        _ab.calc.reverse();
       } else if (action === 'toggle') {
         _ab.calc.toggle();
       }
@@ -4378,7 +4867,7 @@ const categoryMap = {
     .hvut-ab-bux { color: #999; display: block; cursor: not-allowed; }
     .hvut-ab-bx { color: #999; }
 
-    #ability_treepane > div > div:nth-child(1) { padding-top: 13px; }
+    #ability_treepane > div > div:first-child { padding-top: 13px; }
     .hvut-ab-warn { display: block; margin-top: -6px; }
     .hvut-ab-warn::before { content: attr(data-warn); display: inline-block; margin-bottom: 2px; padding: 1px 3px; border-radius: 2px; background-color: #c00; color: #fff; font-size: 9pt; }
 
@@ -4392,9 +4881,7 @@ const categoryMap = {
     .hvut-ab-tooltip { visibility: hidden; position: absolute; bottom: 32px; left: 0; padding: 0 3px; border: 1px solid; background-color: #fff; font-size: 9pt; line-height: 16px; white-space: nowrap; z-index: 1; pointer-events: none; }
     .hvut-ab-icon:hover > .hvut-ab-tooltip { visibility: visible; }
 
-    .hvut-ab-side { width: 100px; display: flex; flex-direction: column; }
-    .hvut-ab-side input { margin: 3px 0; white-space: normal; }
-    .hvut-ab-side input:nth-child(1) { margin-bottom: 10px; }
+    .hvut-ab-side { position: static; }
     .hvut-ab-ul { width: 450px; margin: 0; padding: 0; border: 1px solid; list-style: none; }
     .hvut-ab-ul > li { padding: 2px; border-bottom: 1px solid; }
     .hvut-ab-ul > li:last-child { border-bottom: none; }
@@ -4402,7 +4889,6 @@ const categoryMap = {
     .hvut-ab-ul .hvut-ab-icon { cursor: pointer; }
     .hvut-ab-table { table-layout: fixed; border-collapse: separate; border-spacing: 0; position: relative; width: 400px; text-align: right; }
     .hvut-ab-table thead td { position: sticky; top: 0; height: 36px; border-top-width: 1px; font-weight: bold; text-align: center; background-color: #edb; z-index: 1; }
-    .hvut-ab-table td[data-action='reverse'] { cursor: pointer; }
     .hvut-ab-table td { border-style: solid; border-width: 0 1px 1px 0; padding: 2px 5px; }
     .hvut-ab-table td:nth-child(1) { border-left-width: 1px; }
     .hvut-ab-table td:nth-child(2) { width: 50px; }
@@ -4426,14 +4912,14 @@ const categoryMap = {
       ab.limit = ab.max;
     }
 
-    _ab.preset['目前流派'].push(name);
+    _ab.preset['Current Set'].push(name);
     if (ab.level) {
       _ab.level[name] = ab.level;
     }
 
     const span = $element('span', div, ['.hvut-ab-slot']);
     if (ab.level === ab.max) {
-      span.textContent = '已满';
+      span.textContent = 'max';
       span.classList.add('hvut-ab-max');
     } else if (ab.level === ab.limit) {
       span.textContent = `${ab.level}/${ab.max}`;
@@ -4441,11 +4927,12 @@ const categoryMap = {
     } else {
       span.textContent = `${ab.level}/${ab.max}`;
       span.classList.add('hvut-ab-up');
-      const index = ['General', 'One-handed', 'Two-handed', 'Dual-wielding', '', 'Staff', 'Cloth Armor', 'Light Armor', 'Heavy Armor', 'Deprecating 1', 'Deprecating 2', 'Supportive 1', 'Supportive 2', 'Elemental', 'Forbidden', 'Divine'].indexOf(ab.category);
+      const categories = ['General', 'One-handed', 'Two-handed', 'Dual-wielding', '', 'Staff', 'Cloth Armor', 'Light Armor', 'Heavy Armor', 'Deprecating 1', 'Deprecating 2', 'Supportive 1', 'Supportive 2', 'Elemental', 'Forbidden', 'Divine'];
+      const index = categories.indexOf(ab.category);
       $qsa('#ability_treelist > div')[index].classList.add('hvut-ab-tree');
     }
   });
-  setValue('ab_level', _ab.level);
+  $config.set('ab_level', _ab.level);
 
   $id('ability_treepane').addEventListener('click', _ab.click, true);
   $qsa('#ability_treepane > div').forEach((div) => {
@@ -4454,14 +4941,11 @@ const categoryMap = {
     let point = _ab.point;
 
     ab.div = div;
-    ab.id = /do_unlock_ability\((\d+)\)/.test(div.children[2].getAttribute('onclick') || '') && RegExp.$1;
+    ab.id = /do_unlock_ability\((\d+)\)/.exec(div.children[2].getAttribute('onclick'))?.[1] || '';
     ab.level = 0;
 
     Array.from(div.children[2].children).forEach((button, i) => {
-      const type = /(.)\.png/.test(button.style.backgroundImage) && RegExp.$1;
-      if (!type) {
-        return;
-      }
+      const type = /(.)\.png/.exec(button.style.backgroundImage)[1];
       button.classList.add('hvut-ab-bar');
 
       if (type === 'f') {
@@ -4481,22 +4965,22 @@ const categoryMap = {
     if (ab.level) {
       if (!ab.slotted) {
         div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
-        div.firstElementChild.firstElementChild.dataset.warn = '未激活';
+        div.firstElementChild.firstElementChild.dataset.warn = 'unslotted';
       } else if (ab.level !== ab.limit) {
         div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
-        div.firstElementChild.firstElementChild.dataset.warn = '可升级';
+        div.firstElementChild.firstElementChild.dataset.warn = 'unleveled';
       }
     }
   });
 
-  $input(['button', '能力点计算器'], $id('ability_outer'), { style: 'position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;' }, () => { _ab.calc.toggle(); });
+  $input(['button', 'Ability Simulator'], $id('ability_outer'), { style: 'position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;' }, () => { _ab.calc.toggle(); });
 } else
 // [END 3] Character - Abilities */
 
 
 //* [4] Character - Training
-if (settings.training && _query.s === 'Character' && _query.ss === 'tr') {
-  _tr.training = {
+if (_query.s === 'Character' && _query.ss === 'tr') {
+  _tr.data = {
     'Adept Learner': { id: 50, b: 100, l: 50, e: 0.000417446 },
     'Assimilator': { id: 51, b: 50000, l: 50000, e: 0.0057969565 },
     'Ability Boost': { id: 80, b: 100, l: 100, e: 0.0005548607 },
@@ -4526,7 +5010,7 @@ if (settings.training && _query.s === 'Character' && _query.ss === 'tr') {
   };
 
   _tr.change = function (name, level) {
-    const training = _tr.training[name];
+    const training = _tr.data[name];
     if (!training?.time) {
       _tr.node.select.value = '';
       _tr.node.level.value = '';
@@ -4552,7 +5036,7 @@ if (settings.training && _query.s === 'Character' && _query.ss === 'tr') {
       return;
     }
 
-    const training = _tr.training[name];
+    const training = _tr.data[name];
     let from = training.level;
     let cost = 0;
     if (name === _tr.current) {
@@ -4569,13 +5053,13 @@ if (settings.training && _query.s === 'Character' && _query.ss === 'tr') {
     if (_tr.node.select.value) {
       _tr.json.next_name = _tr.node.select.value;
       _tr.json.next_level = parseInt(_tr.node.level.value);
-      _tr.json.next_id = _tr.training[_tr.node.select.value].id;
+      _tr.json.next_id = _tr.data[_tr.node.select.value].id;
     } else {
       _tr.json.next_name = '';
       _tr.json.next_level = 0;
       _tr.json.next_id = 0;
     }
-    setValue('tr_timer', _tr.json);
+    $config.set('tr_notif', _tr.json, 'hvut_');
 
     if (reload) {
       location.href = location.href;
@@ -4593,61 +5077,27 @@ if (settings.training && _query.s === 'Character' && _query.ss === 'tr') {
   `);
 
   _tr.node = {};
-  _tr.node.div = $element('div', [$id('train_outer'), 'afterbegin'], ['!margin: 5px;' + (settings.trainingTimer ? '' : ' display: none;')]);
-_tr.node.select = $element('select', _tr.node.div, ['/<option value="">选择计划训练项目</option>'], {
-    change: () => {
-        _tr.change(_tr.node.select.value);
-    },
-    wheel: function(event) {
-        event.preventDefault();
-        const delta = Math.sign(event.deltaY); // 获取鼠标滚轮滚动方向，1为向下滚动，-1为向上滚动
-        let currentIndex = this.selectedIndex;
-        currentIndex += delta;
-        if (currentIndex < 0) {
-            currentIndex = 0;
-        } else if (currentIndex >= this.options.length) {
-            currentIndex = this.options.length - 1;
-        }
-        this.selectedIndex = currentIndex;
-        _tr.change(this.value);
-    }
-});
-_tr.node.level = $input('number', _tr.node.div, { disabled: true, style: 'width: 30px; text-align: right;' }, {
-    input: () => {
-        _tr.calc();
-    },
-    wheel: function(event) {
-        event.preventDefault();
-        const delta = Math.sign(event.deltaY); // 获取鼠标滚轮滚动方向，1为向上滚动，-1为向下滚动
-        let currentValue = parseInt(this.value) || 0;
-        currentValue += delta;
-        if (currentValue < parseInt(this.min)) {
-            currentValue = parseInt(this.min);
-        } else if (currentValue > parseInt(this.max)) {
-            currentValue = parseInt(this.max);
-        }
-        this.value = currentValue;
-        _tr.calc();
-    }
-});
-  $input(['button', '训练至目标等级'], _tr.node.div, null, () => { _tr.set(true); });
+  _tr.node.div = $element('div', [$id('train_outer'), 'afterbegin'], ['!margin: 5px;' + ($config.settings.trainingNotification ? '' : ' display: none;')]);
+  _tr.node.select = $input(['select', [':Plan Training...']], _tr.node.div, null, { change: () => { _tr.change(_tr.node.select.value); } });
+  _tr.node.level = $input('number', _tr.node.div, { disabled: true, style: 'width: 30px; text-align: right;' }, { input: () => { _tr.calc(); } });
+  $input(['button', 'Set'], _tr.node.div, null, () => { _tr.set(true); });
   _tr.node.cost = $input('text', _tr.node.div, { readOnly: true, style: 'width: 90px; text-align: right;' });
-  $input(['button', '取消训练计划'], _tr.node.div, null, () => { _tr.cancel(true); });
+  $input(['button', 'Cancel Planning'], _tr.node.div, null, () => { _tr.cancel(true); });
 
-  _tr.json = getValue('tr_timer', {});
+  _tr.json = $config.get('tr_notif', {}, 'hvut_');
   _tr.current = $qs('#train_progress > div:nth-child(2) > :first-child')?.textContent;
   _tr.level = {};
   _tr.spent = 0;
 
   if ($id('train_progress')) {
-    confirm_event($qs('img[src$="/canceltrain.png"]'), 'click', '你确定要取消训练吗?', null, _tr.cancel);
+    confirm_event($qs('img[src$="/canceltrain.png"]'), 'click', 'Are you sure that you wish to cancel the current training?', null, _tr.cancel);
   }
 
   $id('train_table').addEventListener('click', _tr.click);
   Array.from($id('train_table').rows).forEach((tr, i) => {
     if (!i) {
       $element('th', tr);
-      $element('th', tr, ['/<div class="fc2 fac fcb"><div>单项累计花费</div></div>']);
+      $element('th', tr, ['/<div class="fc2 fac fcb"><div>Spent Credits</div></div>']);
       return;
     }
     const name = tr.cells[0].textContent.trim();
@@ -4657,7 +5107,7 @@ _tr.node.level = $input('number', _tr.node.div, { disabled: true, style: 'width:
 
     _tr.level[name] = level;
 
-    const training = _tr.training[name];
+    const training = _tr.data[name];
     if (!training) {
       return;
     }
@@ -4678,13 +5128,13 @@ _tr.node.level = $input('number', _tr.node.div, { disabled: true, style: 'width:
     _tr.spent += spent;
     $element('td', tr, [`/<div class="fc4 far fcb"><div>${spent.toLocaleString()}</div></div>`]);
   });
-  $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>累计花费 ${_tr.spent.toLocaleString()}</div></div></td>`]);
+  $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>Total ${_tr.spent.toLocaleString()}</div></div></td>`]);
 
-  setValue('tr_level', _tr.level);
+  $config.set('tr_level', _tr.level);
 
-  if (_tr.current && _tr.training[_tr.current]) {
+  if (_tr.current && _tr.data[_tr.current]) {
     _tr.json.current_name = _tr.current;
-    _tr.json.current_level = _tr.training[_tr.current].level;
+    _tr.json.current_level = _tr.data[_tr.current].level;
     _tr.json.current_end = _window.end_time * 1000;
   } else {
     _tr.json.current_name = '';
@@ -4692,7 +5142,7 @@ _tr.node.level = $input('number', _tr.node.div, { disabled: true, style: 'width:
     _tr.json.current_end = 0;
   }
   if (_tr.json.next_name) {
-    if (_tr.training[_tr.json.next_name].level < _tr.json.next_level) {
+    if (_tr.data[_tr.json.next_name].level < _tr.json.next_level) {
       _tr.change(_tr.json.next_name, _tr.json.next_level);
     } else {
       _tr.json.next_name = '';
@@ -4701,113 +5151,20 @@ _tr.node.level = $input('number', _tr.node.div, { disabled: true, style: 'width:
     }
   }
   _tr.json.error = '';
-  setValue('tr_timer', _tr.json);
+  $config.set('tr_notif', _tr.json, 'hvut_');
 } else
 // [END 4] Character - Training */
 
 
 //* [5] Character - Item Inventory
-if (settings.itemInventory && _query.s === 'Character' && _query.ss === 'it') {
-  _it.node = {};
-  _it.template = getValue('it_template', settings.itemCodeTemplate.trim());
-
-  _it.edit_template = function () {
-    popup_text(_it.template, 'width: 600px; height: 500px; white-space: pre;', [
-      { value: 'Save Template', click: (w, t) => {
-        _it.template = t.value || settings.itemCodeTemplate.trim();
-        setValue('it_template', _it.template);
-        w.remove();
-        _it.node.wts.w.remove();
-        _it.wts();
-      } },
-      { value: 'Default', click: (w, t) => {
-        t.value = settings.itemCodeTemplate;
-      } },
-    ]);
-  };
-
-  _it.wts = function () {
-    const prices = $price.get('WTS');
-    let code = [];
-    const option = {
-      itemCode: '{$zero?[color=transparent]$zero[/color]}{$count} x {$name}{$price? @ $price}',
-      unpricedCode: '{$zero}{$count} x {$name} (offer)',
-      stockoutCode: '[color=#999][s]{$zero}{$count} x {$name}{$price? @ $price}[/s][/color]',
-    };
-
-    _it.template.split('\n').forEach((s, i, a) => {
-      if (s.startsWith('//')) {
-        if (/^\/\/\s*set (\w+)\s*=\s*([^;]*)/.test(s)) {
-          const o = RegExp.$1;
-          let v = RegExp.$2;
-          if (o === 'keepStock' && /^min\((.+)\)/.test(v)) {
-            v = Math.min(...RegExp.$1.split(',').map((n) => $item.count(n)));
-          } else if (o === 'stockDigits' && v === 'block') {
-            let array = a.slice(i + 1);
-            const next = array.findIndex((s) => /^\/\/\s*set stockDigits/.test(s));
-            if (next !== -1) {
-              array = array.slice(0, next);
-            }
-            v = Math.max(...array.map((s) => (/\{([^{}]+)\}/.test(s) ? $item.count(RegExp.$1) : 0).toString().length));
-          }
-          option[o] = v && !isNaN(v) ? Number(v) : v;
-        }
-        return;
-      }
-
-      if (/\{([^{}]+)\}/.test(s)) {
-        const name = RegExp.$1;
-        let count = $item.count(name);
-
-        if (option.keepStock) {
-          count = Math.max(0, count - option.keepStock);
-        }
-        if (!option.unpricedCode && !(name in prices) || !option.stockoutCode && !count) {
-          code.push('__SKIP__');
-          return;
-        }
-
-        let zero = option.stockDigits - count.toString().length;
-        if (zero > 0) {
-          zero = '0'.repeat(zero);
-        } else {
-          zero = undefined;
-        }
-
-        let price = prices[name];
-        if (price >= 1000000) {
-          price = (price / 1000000) + 'm';
-        } else if (price >= 1000) {
-          price = (price / 1000) + 'k';
-        }
-
-        const itemcode = (!count ? option.stockoutCode : !(name in prices) ? option.unpricedCode : option.itemCode).toString();
-        const text = itemcode.replace(/\{\$(\w+)(\s*\?(.*?)(?::(.*?))?)?\}/g, (s, k, e, t, f) => {
-          const values = { name, count, zero, price };
-          const v = values[k];
-          if (!e) {
-            return v ?? '';
-          } else {
-            const r = v ? t : f || '';
-            return r.replace(/\$(\w+)/g, (s, k) => { const v = values[k]; return v ?? ''; });
-          }
-        }).trim();
-        code.push(s.replace(`{${name}}`, text));
-      } else {
-        code.push(s);
-      }
-    });
-    code = code.join('\n').replace(/(?:__SKIP__|\n)+/g, (s) => s.split('__SKIP__').sort().pop());
-
-    _it.node.wts = popup_text(code, 'width: 600px; height: 500px; white-space: pre;', [
-      { value: 'Edit Template', click: () => {
-        _it.edit_template();
-      } },
-    ]);
-  };
+if (_query.s === 'Character' && _query.ss === 'it') {
+  $qsa('.itemlist tr').forEach((tr) => {
+    const div = tr.cells[0].firstElementChild;
+    const type = $item.get_type(div.getAttribute('onmouseover'));
+    tr.classList.add('hvut-it-' + type);
+  });
 
   GM_addStyle(/*css*/`
-    #item_outer { margin-left: 130px; }
     #item_left { width: 400px; }
     #item_left .cspp { overflow-y: scroll; }
     #item_list .itemlist td:nth-child(1) { width: 285px !important; }
@@ -4816,64 +5173,20 @@ if (settings.itemInventory && _query.s === 'Character' && _query.ss === 'it') {
     #item_slots { height: 572px; margin-top: 19px; }
     #item_slots > div { width: 300px; }
     .sa { height: 30px; margin: 8px auto; line-height: 20px; }
-    .sa > div:first-child { padding: 5px 15px; }
-    .sa > div:last-child { height: 30px; }
-    .sa > div:last-child > div { padding: 5px; }
-
-    .hvut-it-side { position: absolute; top: 53px; left: -110px; width: 100px; display: flex; flex-direction: column; }
-    .hvut-it-side input { margin: 3px 0; white-space: normal; }
-    .hvut-it-side select { margin: 3px 0; }
+    .sa > div { height: 20px !important; padding: 5px 10px !important; }
+    .sa > div:last-child > div { padding: 0; }
   `);
-
-  $item.list = {};
-  Array.from($qs('.itemlist').rows).forEach((tr) => {
-    const div = tr.cells[0].firstElementChild;
-    const name = div.textContent;
-    const type = $item.type(div.getAttribute('onmouseover'));
-    tr.classList.add('hvut-it-' + type);
-    const count = parseInt(tr.cells[1].textContent);
-    $item.list[name] = count;
-  });
-  $item.list['Crystal Pack'] = Math.floor(Math.min(...['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'].map((n) => $item.count(n))) / 1000);
-
-  _it.node.side = $element('div', $id('item_outer'), ['.hvut-it-side']);
-  $input(['button', '生成出售代码'], _it.node.side, null, () => { _it.wts(); });
-  $input(['button', '设定出售标价'], _it.node.side, null, () => { $price.edit('WTS'); });
-  _it.node.side.appendChild($price.selector());
 } else
 // [END 5] Character - Item Inventory */
 
 
 //* [6] Character - Equip Inventory
-if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
+if (_query.s === 'Character' && _query.ss === 'in') {
   _in.filter = _query.filter || '1handed';
   _in.category = { '1handed': {}, '2handed': {}, 'staff': {}, 'shield': {}, 'acloth': {}, 'alight': {}, 'aheavy': {} };
   _in.equiplist = [];
+  _in.equipdata = $config.get('equipdata', { version: 1 });
   _in.node = {};
-  _in.equipdata = getValue('in_equipdata', {});
-  _in.equipcode = getValue('in_equipcode', settings.equipCode);
-  _in.namecode = getValue('in_namecode', settings.equipNameCode);
-  _in.json_migration = function () {
-    if (!_in.equipdata.version) {
-      const json = getValue('in_json');
-      deleteValue('in_json');
-      Object.assign(_in.equipdata, json);
-      _in.equipdata.version = 1;
-      setValue('in_equipdata', _in.equipdata);
-
-      const equipcode = getValue('in_equipcode');
-      if (equipcode) {
-        _in.equipcode = equipcode.replace(/(\{\$\w+):/g, '$1?').replace(/\$bbcode/g, '$namecode');
-        setValue('in_equipcode', _in.equipcode);
-      }
-      const it_template = getValue('it_template');
-      if (it_template) {
-        _it.template = it_template.replace(/(\{\$\w+):/g, '$1?');
-        setValue('it_template', _it.template);
-      }
-    }
-  };
-  _in.json_migration();
 
   _in.click = function (e) {
     const target = e.target.closest('[data-action]');
@@ -4902,7 +5215,7 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
 
     const html = await $ajax.fetch('?s=Character&ss=in&filter=' + filter);
     const doc = $doc(html);
-    Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.test(html) && RegExp.$1));
+    Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.exec(html)?.[1] || null));
     _in.get_list(filter, $id('eqinv_outer', doc));
     _in.category[filter].div.classList.remove('hvut-eq-loading');
     _in.set_rangeselect();
@@ -4931,7 +5244,7 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
     }
     _in.check_name(equiplist);
     _in.category[filter].equiplist = equiplist;
-    _in.equiplist = _in.equiplist.concat(equiplist);
+    _in.equiplist.push(...equiplist);
   };
 
   _in.sort_list = function (key) {
@@ -4973,7 +5286,7 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
       _in.equiplist.forEach((eq) => { eq.node.check.checked = c; });
     } else if (t === 'tradeable') {
       _in.equiplist.forEach((eq) => { if (eq.info.tradeable) { eq.node.check.checked = c; } });
-    } else if (t === 'reverse') {
+    } else if (t === 'invert') {
       _in.equiplist.forEach((eq) => { eq.node.check.checked = !eq.node.check.checked; });
     }
   };
@@ -5063,11 +5376,11 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
 
       let r = 0;
       const k = a.info.category === 'One-handed Weapon' || a.info.category === 'Two-handed Weapon' ? ['suffix', 'quality', 'prefix']
-          : a.info.category === 'Staff' ? ['prefix', 'suffix', 'quality']
-          : a.info.type === 'Buckler' ? ['suffix', 'quality', 'prefix']
-          : a.info.category === 'Shield' ? ['quality', 'suffix', 'prefix']
-          : a.info.category === 'Cloth Armor' ? ['suffix', 'slot', 'quality', 'prefix']
-          : ['slot', 'suffix', 'quality', 'prefix'];
+        : a.info.category === 'Staff' ? ['prefix', 'suffix', 'quality']
+        : a.info.type === 'Buckler' ? ['suffix', 'quality', 'prefix']
+        : a.info.category === 'Shield' ? ['quality', 'suffix', 'prefix']
+        : a.info.category === 'Cloth Armor' ? ['suffix', 'slot', 'quality', 'prefix']
+        : ['slot', 'suffix', 'quality', 'prefix'];
 
       k.some((e) => {
         if (e in $equip.index) {
@@ -5140,7 +5453,7 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
         eq.data.url = `${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}`;
       }
       //if (!eq.data.namecode) {
-      eq.data.namecode = $equip.namecode(eq);
+      $equip.namecode(eq);
       //}
       eq.data.price = eq.node.price.value;
       eq.data.note = eq.node.note.value;
@@ -5158,7 +5471,7 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
         eq.data['new'] = false;
       }
 
-      const equipcode = _in.equipcode.replace(/\{\$(\w+)(\s*\?(.*?)(?::(.*?))?)?\}/g, (s, k, e, t, f) => {
+      const equipcode = $config.settings.equipCode.replace(/\{\$(\w+)(\s*\?(.*?)(?::(.*?))?)?\}/g, (s, k, e, t, f) => {
         const v = (k in eq.data) ? eq.data[k] : (k in eq.info) ? eq.info[k] : '';
         if (!e) {
           return v ?? '';
@@ -5183,73 +5496,7 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
     if (code_new) {
       code = '\n\n\n[size=3][b][Newly Added][/b][/size]\n\n' + code_new + code;
     }
-    _in.node.wts = popup_text(code.trim() || '没有选中装备.', 'width: 900px; height: 500px; white-space: pre;', [
-      { value: '装备代码格式', click: () => {
-        _in.edit_equipcode();
-      } },
-      { value: '命名规则', click: () => {
-        _in.edit_namecode();
-      } },
-    ]);
-  };
-
-  _in.edit_equipcode = function () {
-    const comment = `
-      // {$name}       equipment name
-      // {$namecode}   equipment name in colors/bold
-      // {$url}        equipment url
-      // {$eid}        equipment id
-      // {$_eid}       $eid with a transparent underline for layout
-      // {$level}      equipment level
-      // {$pab}        equipment pab
-      // {$tier}       potency tier (iw level)
-      // {$price}      the value of the 'price' input field
-      // {$note}       the value of the 'note' input field
-      //               if it contains '$featured;', the equip code will be added to 'Featured' section
-      //               if it contains '$new;', the equip code will be added to 'Newly Added' section
-      // {$condition ? text_if_true : text_if_false}
-      //               if $condition is a valid value, it prints 'text_if_true', otherwise 'text_if_false'
-      //               for example {$level ? Lv.$level : Souldbound}
-      //               it prints 'Lv.500' if $level is 500,
-      //               or 'Soulbound' if no $level info
-    `.replace(/^\s+/gm, '').trim();
-    popup_text(comment + '\n\n' + _in.equipcode, 'width: 900px; height: 500px; white-space: pre;', [
-      { value: '保存', click: (w, t) => {
-        _in.equipcode = (t.value || settings.equipCode).split('\n').filter((e) => !e.startsWith('//')).join('\n').trim();
-        setValue('in_equipcode', _in.equipcode);
-        w.remove();
-        _in.node.wts.w.remove();
-        _in.wts();
-      } },
-      { value: '恢复默认', click: (w, t) => {
-        t.value = comment + '\n\n' + settings.equipCode;
-      } },
-    ]);
-  };
-
-  _in.edit_namecode = function () {
-    const comment = `
-      // base match : option=value, option=value, ...
-      // base match : option=value, option=value, ... ; sub match : option=value, option=value, ... ; sub match : option=value, option=value, ...
-      // options : name, quality, prefix, type, slot, suffix
-      // values : bold, rainbow, or any color such as 'red', '#f00'
-    `.replace(/^\s+/gm, '').trim();
-    popup_text(comment + '\n\n' + _in.namecode.join('\n'), 'width: 900px; height: 500px; white-space: pre;', [
-      { value: '保存', click: (w, t) => {
-        const namecode = $equip.namecode_parse(t.value);
-        if (!namecode) {
-          return;
-        }
-        _in.namecode = namecode;
-        setValue('in_namecode', _in.namecode);
-        w.remove();
-        _in.node.wts.w.remove();
-        _in.wts();
-      } },
-      { value: '恢复默认', click: (w, t) => {
-        t.value = comment + '\n\n' + settings.equipNameCode.join('\n');
-      } },
-    ]);
+    popup_text(code.trim() || 'No equipment selected.', 900, 500);
   };
 
   _in.save_json = function () {
@@ -5257,7 +5504,7 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
     _in.equiplist.forEach((eq) => {
       _in.equipdata[eq.info.eid] = { checked: eq.node.check.checked, price: eq.node.price.value, note: eq.node.note.value };
     });
-    setValue('in_equipdata', _in.equipdata);
+    $config.set('equipdata', _in.equipdata);
   };
 
   _in.load_json = function () {
@@ -5280,7 +5527,7 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
         $equip.parse.name(eq.info.name, eq);
       }
       $equip.names[eq.info.eid] = eq.info.name;
-      setValue('equipnames', $equip.names);
+      $config.set('equipnames', $equip.names);
     }
     equiplist.forEach((eq) => {
       if (eq.info.tier === 10 && !$equip.names[eq.info.eid]) {
@@ -5291,14 +5538,11 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
 
   GM_addStyle(/*css*/`
     #eqinv_outer { position: relative; width: 1100px; margin-left: 120px; }
-    .eqinv_pane > div:first-child { display: none; }
     .eqinv_pane > div:last-child { width: 540px; }
     .eqinv_pane .cspp { margin-top: 15px; overflow-y: scroll; }
 
-    .hvut-in-side { position: absolute; top: 44px; left: -110px; width: 100px; display: flex; flex-direction: column; }
-    .hvut-in-side > input { margin: 3px 0; white-space: normal; }
-    .hvut-in-side > input:nth-child(3) { margin-bottom: 10px; }
-    .hvut-in-side label { margin: 2px 0; line-height: 16px; white-space: nowrap; text-align: left; }
+    .hvut-in-side { top: 44px; left: -110px; }
+    .hvut-in-side label { margin: 3px 0; line-height: 16px; white-space: nowrap; text-align: left; }
 
     .hvut-in-header { position: absolute; top: 5px; left: 0; width: 100%; text-align: center; font-size: 10pt; line-height: 16px; font-weight: bold; }
     .hvut-in-header > span { display: inline-block; margin: 0 10px; padding: 2px 5px; border: 1px solid; }
@@ -5317,17 +5561,9 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
     .hvut-in-sub .hvut-in-lpr { display: none; width: 22px; margin: 0 1px; padding: 1px 0; border-radius: 0; border-color: currentColor !important; }
     .hvut-in-sub:hover > .hvut-in-note { width: 46px; }
     .hvut-in-sub:hover > .hvut-in-lpr { display: inline-block; }
-    /* 新增：针对装备名称区域的修正 */
-    .eqp > div[id^="e"] {
-        /* 在右侧预留空间给 hvut-in-sub */
-        margin-right: 167px;
-        /* 确保长单词或连续字符也能换行，防止撑开布局 */
-        word-wrap: break-word;
-        white-space: normal;
-    }
   `);
 
-  if (settings.equipInventoryIntegration) {
+  if ($config.settings.equipInventoryIntegration) {
     const filterbar = $id('filterbar');
     $element('a', [filterbar, 'afterbegin'], { href: '?s=Character&ss=in', innerHTML: '<div>All</div>' });
     if (_query.filter) {
@@ -5339,11 +5575,14 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
     }
   }
 
-  if (_query.filter || !settings.equipInventoryIntegration) {
+  if (_query.filter || !$config.settings.equipInventoryIntegration) {
     $equip.list($qs('#inv_equip .equiplist'));
     $equip.list($qs('#inv_eqstor .equiplist'));
     _in.set_rangeselect();
   } else {
+    GM_addStyle(/*css*/`
+      .eqinv_pane > div:first-child { display: none; }
+    `);
     $id('eqinv_bot').firstElementChild.firstElementChild.firstElementChild.prepend(
       $element('div', null, ['.hvut-in-ii', '/<div class="il"></div>']),
       $element('div', null, ['.hvut-in-ii', '/<div class="iu"></div>'])
@@ -5353,16 +5592,17 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
     );
 
     $id('eqinv_outer').addEventListener('click', _in.click);
-    _in.node.side = $element('div', $id('eqinv_outer'), ['.hvut-in-side']);
-    $input(['button', '排序：类别'], _in.node.side, null, () => { _in.sort_list('category'); });
-    $input(['button', '排序：名称'], _in.node.side, null, () => { _in.sort_list('name'); });
-    $input(['button', '排序：装备id'], _in.node.side, null, () => { _in.sort_list('eid'); });
-    $input(['button', '生成装备代码'], _in.node.side, null, () => { _in.wts(); });
-    $input(['checkbox', '全选'], _in.node.side, null, (e) => { _in.check_list('all', e.target.checked); });
-    $input(['checkbox', '可交易'], _in.node.side, null, (e) => { _in.check_list('tradeable', e.target.checked); });
-    $input(['checkbox', '反向选择'], _in.node.side, null, () => { _in.check_list('reverse'); });
-    $input(['button', '保存'], _in.node.side, null, () => { _in.save_json(); });
-    $input(['button', '恢复'], _in.node.side, null, () => { _in.load_json(); });
+    _in.node.side = $element('div', $id('eqinv_outer'), ['.hvut-side hvut-in-side']);
+    $input(['button', 'sort: category'], _in.node.side, null, () => { _in.sort_list('category'); });
+    $input(['button', 'sort: name'], _in.node.side, null, () => { _in.sort_list('name'); });
+    $input(['button', 'sort: eid'], _in.node.side, { className: 'hvut-side-margin' }, () => { _in.sort_list('eid'); });
+    $input(['button', 'Equip Code'], _in.node.side, null, () => { _in.wts(); });
+    $input(['checkbox', 'Select All'], _in.node.side, null, (e) => { _in.check_list('all', e.target.checked); });
+    $input(['checkbox', 'Tradeables'], _in.node.side, null, (e) => { _in.check_list('tradeable', e.target.checked); });
+    $input(['checkbox', 'Invert'], _in.node.side, null, () => { _in.check_list('invert'); });
+    $input(['button', 'Save'], _in.node.side, null, () => { _in.save_json(); });
+    $input(['button', 'Revert'], _in.node.side, null, () => { _in.load_json(); });
+    $input(['button', 'Edit Code'], _in.node.side, null, () => { $config.open('equipCode'); });
 
     $element('div', [$id('inv_equip'), 'beforebegin'], ['.hvut-in-header hvut-cphu-sub']);
     $element('div', [$id('inv_eqstor'), 'beforebegin'], ['.hvut-in-header hvut-cphu-sub']);
@@ -5376,17 +5616,16 @@ if (settings.equipInventory && _query.s === 'Character' && _query.ss === 'in') {
     Promise.all(requests).then(() => {
     //
     });
-
   }
 } else
 // [END 6] Character - Equip Inventory */
 
 
 //* [7] Character - Settings
-if (settings.settings && _query.s === 'Character' && _query.ss === 'se') {
+if (_query.s === 'Character' && _query.ss === 'se') {
   _se.form = $qs('#settings_outer form');
   _se.elements = Array.from(_se.form.elements);
-  _se.json = getValue('se_settings', {});
+  _se.json = $config.get('se_settings', {});
   _se.node = {};
 
   _se.click = function (e) {
@@ -5408,18 +5647,17 @@ if (settings.settings && _query.s === 'Character' && _query.ss === 'se') {
     $input(['button', 'x'], _se.div, { dataset: { action: 'remove', key: name }, className: 'hvut-se-remove' });
   };
   _se.save = function () {
-    let name = prompt('Enter the title of settings');
-    if (!name || !name.trim()) {
+    const name = prompt('Enter the name of the settings')?.trim();
+    if (!name) {
       return;
     }
-    name = name.trim();
     if (!_se.json[name]) {
       _se.add(name);
     }
     const form = new FormData(_se.form);
     const json = Object.fromEntries(form.entries());
     _se.json[name] = json;
-    setValue('se_settings', _se.json);
+    $config.set('se_settings', _se.json);
   };
   _se.load = function (name) {
     const json = _se.json[name];
@@ -5438,7 +5676,7 @@ if (settings.settings && _query.s === 'Character' && _query.ss === 'se') {
   };
   _se.remove = function (name) {
     delete _se.json[name];
-    setValue('se_settings', _se.json);
+    $config.set('se_settings', _se.json);
     _se.node[name].nextElementSibling.remove();
     _se.node[name].remove();
   };
@@ -5451,7 +5689,7 @@ if (settings.settings && _query.s === 'Character' && _query.ss === 'se') {
   `);
 
   _se.div = $element('div', _se.form, ['.hvut-se-div'], (e) => { _se.click(e); });
-  $input(['button', '存储当前设置'], _se.div, { dataset: { action: 'save' }, style: 'margin-bottom: 15px;' });
+  $input(['button', 'Save Current Settings'], _se.div, { dataset: { action: 'save' }, style: 'margin-bottom: 15px;' });
   $element('br', _se.div);
 
   Object.keys(_se.json).forEach((p) => { _se.add(p); });
@@ -5472,14 +5710,12 @@ if (settings.settings && _query.s === 'Character' && _query.ss === 'se') {
   _se.form.fontface.placeholder = 'Tahoma, Arial';
   _se.form.fontsize.placeholder = '10';
   _se.form.fontoff.placeholder = '0';
-
 } else
-
 // [END 7] Character - Settings */
 
 
 //* [8] Bazaar - Equipment Shop
-if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
+if (_query.s === 'Bazaar' && _query.ss === 'es') {
   _es.filter = _query.filter || '1handed';
   _es.rare_type = { 'Force Shield': true, 'Phase': true, 'Shade': true, 'Power': true };
   _es.mat_type = { '1handed': 'Metals', '2handed': 'Metals', 'staff': 'Wood', 'shield': 'Wood', 'acloth': 'Cloth', 'alight': 'Leather', 'aheavy': 'Metals' };
@@ -5487,8 +5723,9 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
   _es.quality = { 'Flimsy': 1, 'Crude': 2, 'Fair': 3, 'Average': 4, 'Fine': 5, 'Superior': 6, 'Exquisite': 7, 'Magnificent': 8, 'Legendary': 9, 'Peerless': 10 };
   _es.category = { 'valuable': {}, '1handed': {}, '2handed': {}, 'staff': {}, 'shield': {}, 'acloth': {}, 'alight': {}, 'aheavy': {} };
   _es.storetoken = $id('shopform').elements.storetoken.value;
-  _es.item_pane = [];
-  _es.shop_pane = [];
+  _es.prices = $price.get('Materials');
+  _es.item_pane_equips = [];
+  _es.shop_pane_equips = [];
   _es.node = {};
 
   _es.click = function (e) {
@@ -5498,7 +5735,7 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
     }
     const { action, eid, pane } = target.dataset;
     if (pane === 'item') {
-      const eq = eid && _es.item_pane.find((eq) => eq.info.eid == eid);
+      const eq = eid && _es.item_pane_equips.find((eq) => eq.info.eid == eid);
       if (action === 'sell') {
         _es.sell(eq);
       } else if (action === 'salvage') {
@@ -5509,7 +5746,7 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
         _es.showequip(eq, pane);
       }
     } else if (pane === 'shop') {
-      const eq = eid && _es.shop_pane.find((eq) => eq.info.eid == eid);
+      const eq = eid && _es.shop_pane_equips.find((eq) => eq.info.eid == eid);
       if (action === 'buy') {
         _es.shop_buy(eq);
       } else if (action === 'salvage') {
@@ -5525,11 +5762,17 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
       return;
     }
     if (eq.node.div.dataset.locked != '0') {
-      alert('这件道具上锁了.');
+      alert('This equipment is locked.');
       return;
     }
-    if (ask && (settings.equipmentShopConfirm === 2 || settings.equipmentShopConfirm === 1 && eq.data.salvage_recommended || settings.equipmentShopConfirm > 0 && eq.data.valuable) && !confirm(`[${eq.info.name}]\n你确定要出售这件装备并获得 ${eq.data.value.toLocaleString()} credits?` + (eq.data.salvage_recommended ? '\n根据你设定的材料估值,分解这件装备会更值得.' : ''))) {
-      return;
+    if (ask && ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && eq.data.salvage_recommended || $config.settings.equipmentShopConfirm > 0 && eq.data.valuable)) {
+      let msg = `Are you sure that you wish to SELL\n[${eq.info.name}]\nfor ${eq.data.value.toLocaleString()} credits?`;
+      if (eq.data.salvage_recommended) {
+        msg += '\nThe value of SALVAGEd materials is higher.';
+      }
+      if (!confirm(msg)) {
+        return;
+      }
     }
     eq.data.sold = true;
     eq.node.wrapper.classList.add('hvut-es-disabled');
@@ -5544,11 +5787,17 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
       return;
     }
     if (eq.node.div.dataset.locked != '0') {
-      alert('这件道具上锁了.');
+      alert('This equipment is locked.');
       return;
     }
-    if (ask && (settings.equipmentShopConfirm === 2 || settings.equipmentShopConfirm === 1 && !eq.data.salvage_recommended || settings.equipmentShopConfirm > 0 && eq.data.valuable) && !confirm(`[${eq.info.name}]\n你确定要分解这件装备吗?` + (!eq.data.salvage_recommended ? '\n根据售价,出售它会更加划算.' : ''))) {
-      return;
+    if (ask && ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && !eq.data.salvage_recommended || $config.settings.equipmentShopConfirm > 0 && eq.data.valuable)) {
+      let msg = `Are you sure that you wish to SALVAGE\n[${eq.info.name}]\n?`;
+      if (!eq.data.salvage_recommended) {
+        msg += '\nSELLing would give you more credits.';
+      }
+      if (!confirm(msg)) {
+        return;
+      }
     }
     eq.data.sold = true;
     eq.node.wrapper.classList.add('hvut-es-disabled');
@@ -5573,7 +5822,7 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
     if (eq.data.sold) {
       return;
     }
-    if (ask && !confirm(`[${eq.info.name}]\n你确定要购买这件装备并花费 ${eq.data.value.toLocaleString()} credits吗?`)) {
+    if (ask && !confirm(`Are you sure that you wish to buy\n[${eq.info.name}]\nfor ${eq.data.value.toLocaleString()} credits?`)) {
       return;
     }
     eq.data.sold = true;
@@ -5585,15 +5834,15 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
   };
 
   _es.shop_salvage = async function (eq, ask = true) {
-    if (eq.data.sold || ask && !confirm(`[${eq.info.name}]\n你确定要购买并分解这件装备吗?`)) {
+    if (eq.data.sold || ask && !confirm(`Are you sure that you wish to buy\n[${eq.info.name}]\nand then salvage it?`)) {
       return;
     }
     eq.data.sold = true;
     eq.node.wrapper.classList.add('hvut-es-disabled');
 
     const html = await $ajax.fetch('?s=Bazaar&ss=es', `storetoken=${_es.storetoken}&select_group=shop_pane&select_eids=${eq.info.eid}`);
-    const uid = /var uid = (\d+);/.test(html) && RegExp.$1;
-    const simple_token = /var simple_token = "(\w+)";/.test(html) && RegExp.$1;
+    const uid = /var uid = (\d+);/.exec(html)[1];
+    const simple_token = /var simple_token = "(\w+)";/.exec(html)[1];
     _es.update_credits(html);
 
     await $ajax.fetch('json', { type: 'simple', method: 'lockequip', uid: uid, token: simple_token, eid: eq.info.eid, lock: 0 }, 'JSON');
@@ -5612,7 +5861,7 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
   _es.select_all = function (v) {
     const s = v === 'salvage' ? true : v === 'sell' ? false : 'all';
     const ctrlclick = new MouseEvent('click', { ctrlKey: true });
-    _es.item_pane.forEach((eq) => {
+    _es.item_pane_equips.forEach((eq) => {
       if (eq.node.div.dataset.locked != '0') {
         return;
       }
@@ -5634,7 +5883,7 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
     const salvage = [];
     let sum = 0;
 
-    _es.item_pane.forEach((eq) => {
+    _es.item_pane_equips.forEach((eq) => {
       if (eq.data.sold || !_es.is_selected(eq) || eq.node.div.dataset.locked != '0') {
         return;
       }
@@ -5647,8 +5896,20 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
       sum += eq.data.value;
     });
 
-    if (!selected.length || (settings.equipmentShopConfirm === 2 || settings.equipmentShopConfirm === 1 && salvage.length || valuable.length) && !confirm(`你确定要出售这 ${selected.length} 件装备获取 ${sum.toLocaleString()} credits吗?` + (valuable.length ? '\n\n[存在贵重装备]\n' + valuable.join('\n') : '') + (salvage.length ? '\n\n[以下装备分解更划算]\n' + salvage.join('\n') : ''))) {
+    if (!selected.length) {
       return;
+    }
+    if ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && salvage.length || valuable.length) {
+      let msg = `Are you sure that you wish to sell ${selected.length} equipment pieces for ${sum.toLocaleString()} credits?`;
+      if (salvage.length) {
+        msg += `\n${salvage.length} of them would be more profitable to salvage.`;
+      }
+      if (valuable.length) {
+        msg += `\n\n${valuable.length} of them have valuable names. Are you sure?\n${valuable.join('\n')}`;
+      }
+      if (!confirm(msg)) {
+        return;
+      }
     }
     selected.forEach((eq) => {
       eq.data.sold = true;
@@ -5666,7 +5927,7 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
     const valuable = [];
     const sell = [];
 
-    _es.item_pane.forEach((eq) => {
+    _es.item_pane_equips.forEach((eq) => {
       if (eq.data.sold || !_es.is_selected(eq) || eq.node.div.dataset.locked != '0') {
         return;
       }
@@ -5678,109 +5939,65 @@ if (settings.equipmentShop && _query.s === 'Bazaar' && _query.ss === 'es') {
       }
     });
 
-    if (!selected.length || (settings.equipmentShopConfirm === 2 || settings.equipmentShopConfirm === 1 && sell.length || valuable.length) && !confirm(`你确定要分解这 ${selected.length} 件装备吗?` + (valuable.length ? '\n\n[存在贵重装备]\n' + valuable.join('\n') : '') + (sell.length ? '\n\n[以下装备出售更划算]\n' + sell.join('\n') : ''))) {
+    if (!selected.length) {
       return;
+    }
+    if ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && sell.length || valuable.length) {
+      let msg = `Are you sure that you wish to salvage ${selected.length} the selected equipment pieces?`;
+      if (sell.length) {
+        msg += `\n${sell.length} of them would be more profitable to sell.`;
+      }
+      if (valuable.length) {
+        msg += `\n\n${valuable.length} of them have valuable names. Are you sure?\n${valuable.join('\n')}`;
+      }
+      if (!confirm(msg)) {
+        return;
+      }
     }
     selected.forEach((eq) => { _es.salvage(eq, false); });
   };
 
-  _es.salvage_calc = function (eq, d) {
+  _es.salvage_mats = function (eq, d) {
+    if (eq.data.salvage_mats) {
+      return;
+    }
+    eq.data.salvage_mats = {};
+    if (!eq.info.tradeable) {
+      //return;
+    }
     const q = _es.quality[eq.info.quality];
     const t = _es.mat_type[eq.data.filter];
-    const s = ['', 0, 0];
-    const g = ['', 0, 0];
-    const e = ['', 0, 0];
-    const c = ['', 0, 0];
     let value = eq.data.value;
-    const prices = $price.get('Materials');
 
     if (d) {
       value = Math.ceil(value / d);
     }
     if (!q) { // obsolete or unknown
     } else if (q < 6) {
-      s[0] = 'Scrap ' + (t === 'Metals' ? 'Metal' : t);
-      s[1] = Math.min(10, Math.ceil(value / 100));
-      s[2] = prices[s[0]] || 0;
+      const scrap = 'Scrap ' + (t === 'Metals' ? 'Metal' : t);
+      eq.data.salvage_mats[scrap] = Math.min(10, Math.ceil(value / 100));
     } else {
-      g[0] = (q === 6 ? 'Low-Grade ' : q === 7 ? 'Mid-Grade ' : 'High-Grade ') + t;
-      g[1] = !_isekai ? 1 : q === 6 ? 3 : q === 7 ? 2 : 1;
-      g[2] = prices[g[0]] || 0;
+      const mat = (q === 6 ? 'Low-Grade ' : q === 7 ? 'Mid-Grade ' : 'High-Grade ') + t;
+      eq.data.salvage_mats[mat] = !$config.isekai ? 1 : q === 6 ? 3 : q === 7 ? 2 : 1;
     }
     if (q >= 9) {
-      c[0] = (q === 9 ? 'Legendary ' : 'Peerless ') + _es.core_type[eq.data.filter] + ' Core';
-      c[1] = _es.rare_type[eq.info.type] ? 5 : 1;
-      c[2] = prices[c[0]] || 0;
+      const core = (q === 9 ? 'Legendary ' : 'Peerless ') + _es.core_type[eq.data.filter] + ' Core';
+      eq.data.salvage_mats[core] = _es.rare_type[eq.info.type] ? 5 : 1;
     }
     if (_es.rare_type[eq.info.type]) {
-      e[0] = 'Energy Cell';
-      e[1] = 1; //Math.max(1, s[1] / 2);
-      e[2] = prices[e[0]] || 0;
+      const cell = 'Energy Cell';
+      eq.data.salvage_mats[cell] = 1; //Math.max(1, s[1] / 2);
     }
-    eq.data.salvage = s[1] * s[2] + g[1] * g[2] + e[1] * e[2] + c[1] * c[2];
   };
 
-_es.update_credits = function (html) {
-    // 1. 解析后台返回的数据，获取最新金币数
+  _es.salvage_calc = function (eq) {
+    eq.data.salvage_value = Object.entries(eq.data.salvage_mats).reduce((s, [k, v]) => (s + (_es.prices[k] || 0) * v), 0);
+  };
+
+  _es.update_credits = function (html) {
     const doc = $doc(html);
-    const sourceEl = $id('networth', doc);
-
-    // 安全检查：如果后台返回的数据里没有networth，直接退出，防止报错
-    if (!sourceEl) return;
-
-    const networth = parseInt(sourceEl.textContent.replace(/\D/g, ''));
-    const newText = 'Credits: ' + networth.toLocaleString();
-
-    // 2. 【核心修复】尝试更新自定义底部栏 (HV-Utils Bottom Bar)
-    // 检查 _bottom 对象及其 credits 节点引用是否存在
-    if (typeof _bottom !== 'undefined' && _bottom.node && _bottom.node.credits) {
-        _bottom.node.credits.textContent = newText;
-    }
-    // 如果引用丢失，但在DOM中存在（兜底方案，根据你提供的HTML结构）
-    else {
-        const customCreditsDiv = document.querySelector('#hvut-bottom > div:first-child');
-        if (customCreditsDiv && customCreditsDiv.textContent.includes('Credits')) {
-             customCreditsDiv.textContent = newText;
-        }
-    }
-
-    // 3. 尝试更新原始网页元素 (兼容性处理)
-    // 如果 showCredits 设置为 false，或者元素未被删除，则更新它
-    const originalEl = $id('networth');
-    if (originalEl) {
-        originalEl.textContent = newText;
-    }
-};
-
-
-  _es.edit_filter = function (n) {
-    const filter = {
-      protect: { key: 'es_protect', default: settings.equipmentShopProtectFilter, comment: '// 防止你的贵重装备被全选，需要修改过滤器请使用英文' },
-      bazaar: { key: 'es_bazaar', default: settings.equipmentShopBazaarFilter, comment: '// 在商店页面隐藏垃圾装备，需要修改过滤器请使用英文' },
-    }[n];
-    filter.current = getValue(filter.key, filter.default);
-    popup_text(filter.comment + '\n\n' + filter.current.join('\n'), 'width: 600px; height: 500px; white-space: pre;', [
-      { value: '保存过滤器', click: (w, t) => {
-        const edited = t.value.split('\n').filter((f) => f && !f.startsWith('//'));
-        const error = [];
-        edited.forEach((f, i) => {
-          try {
-            eval(f.toLowerCase().replace(/[-a-z ]+/g, (s) => { s = s.trim(); return !s ? '' : 'true'; }));
-          } catch (e) {
-            error.push(`#${i + 1}: ${f}`);
-          }
-        });
-        if (error.length) {
-          alert(error.join('\n'));
-          return;
-        }
-        setValue(filter.key, edited);
-        w.remove();
-      } },
-      { value: '恢复默认设置', click: (w, t) => {
-        t.value = filter.comment + '\n\n' + filter.default.join('\n');
-      } },
-    ]);
+    const networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
+    $id('networth').textContent = 'Credits: ' + networth.toLocaleString();
   };
 
   _es.init_list = function (filter) {
@@ -5797,61 +6014,54 @@ _es.update_credits = function (html) {
 
     const html = await $ajax.fetch('?s=Bazaar&ss=es&filter=' + filter);
     const doc = $doc(html);
-    Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.test(html) && RegExp.$1));
-    Object.assign($equip.eqvalue, JSON.parse(/var eqvalue = (\{.*\});/.test(html) && RegExp.$1));
-    _es.get_item_pane(filter, $qs('#item_pane .equiplist', doc));
-    _es.get_shop_pane(filter, $qs('#shop_pane .equiplist', doc));
+    Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.exec(html)?.[1] || null));
+    Object.assign($equip.eqvalue, JSON.parse(/var eqvalue = (\{.*\});/.exec(html)?.[1] || null));
+    _es.item_pane_init(filter, $qs('#item_pane .equiplist', doc));
+    _es.shop_pane_init(filter, $qs('#shop_pane .equiplist', doc));
     _es.category[filter].item_div.classList.remove('hvut-eq-loading');
     _es.category[filter].shop_div.classList.remove('hvut-eq-loading');
     _es.set_rangeselect();
   };
 
-  _es.get_item_pane = function (filter, outer) {
+  _es.item_pane_init = function (filter, outer) {
     const equiplist = $equip.list(outer, false);
-    const protect_filter = getValue('es_protect', settings.equipmentShopProtectFilter);
+    const protect_filter = $config.settings.equipmentShopProtectFilters;
 
     equiplist.forEach((eq) => {
       eq.data.filter = filter;
-      eq.data.valuable = $equip.filter(eq.info.name, protect_filter);
-      _es.salvage_calc(eq);
+      eq.data.valuable = $equip.filter(protect_filter, eq.info.name);
+      _es.salvage_mats(eq);
 
       eq.node.wrapper.classList.add('hvut-es-expand');
-      if (settings.equipmentShopShowLevel && eq.info.level) {
+      if ($config.settings.equipmentShopShowLevel && eq.info.level) {
         $element('span', [eq.node.div, 'afterbegin'], [`[${eq.info.level}] `, '.hvut-es-level']);
       }
-      if (settings.equipmentShopShowPAB && eq.info.pab) {
+      if ($config.settings.equipmentShopShowPAB && eq.info.pab) {
         $element('span', eq.node.div, [` [${eq.info.pab}]`, '.hvut-es-pab']);
       }
       $element('span', eq.node.div, ['.hvut-es-check']);
 
       eq.node.lock = eq.node.wrapper.firstElementChild;
       eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-es-sub hvut-cphu-sub']);
-      eq.node.sell = $element('span', eq.node.sub, ['出售价 ' + eq.data.value, { dataset: { action: 'sell', eid: eq.info.eid, pane: 'item' } }]);
-      eq.node.salvage = $element('span', eq.node.sub, ['分解估值 ' + eq.data.salvage, { dataset: { action: 'salvage', eid: eq.info.eid, pane: 'item' } }]);
+      eq.node.sell = $element('span', eq.node.sub, [`Sell ${eq.data.value}`, { dataset: { action: 'sell', eid: eq.info.eid, pane: 'item' } }]);
+      eq.node.salvage = $element('span', eq.node.sub, [{ dataset: { action: 'salvage', eid: eq.info.eid, pane: 'item' } }]);
       if (eq.info.tier) {
-        eq.data.valuable = true;
-        $element('span', eq.node.sub, ['潜能等级 ' + eq.info.tier, '.hvut-es-bold', { dataset: { action: 'popup', eid: eq.info.eid, pane: 'item' } }]);
+        $element('span', eq.node.sub, [`IW ${eq.info.tier}`, '.hvut-es-bold', { dataset: { action: 'popup', eid: eq.info.eid, pane: 'item' } }]);
       }
-      eq.node.transfer = $element('span', eq.node.sub, ['移动到仓库', { dataset: { action: 'transfer', eid: eq.info.eid, pane: 'item' } }]);
+      eq.node.transfer = $element('span', eq.node.sub, ['Transfer to Storage', { dataset: { action: 'transfer', eid: eq.info.eid, pane: 'item' } }]);
 
       if (eq.data.valuable) {
         eq.node.transfer.classList.add('hvut-es-bold');
       }
-      if (eq.data.salvage > eq.data.value) {
-        eq.data.salvage_recommended = true;
-        eq.node.salvage.classList.add('hvut-es-bold');
-      } else {
-        eq.data.salvage_recommended = false;
-        eq.node.sell.classList.add('hvut-es-bold');
-      }
+      _es.item_pane_calc(eq);
     });
-    _es.item_pane = _es.item_pane.concat(equiplist);
+    _es.item_pane_equips.push(...equiplist);
 
     const valuable = equiplist.filter((eq) => eq.data.valuable);
     if (valuable.length) {
       _es.category['valuable'].item_div.append(...valuable.map((eq) => eq.node.wrapper));
       valuable.forEach((eq) => {
-        if (settings.equipmentShopAutoLock && eq.node.div.dataset.locked == '0') {
+        if ($config.settings.equipmentShopAutoLock && eq.node.div.dataset.locked == '0') {
           eq.node.lock.click();
         }
       });
@@ -5863,47 +6073,86 @@ _es.update_credits = function (html) {
     }
   };
 
-  _es.get_shop_pane = function (filter, outer) {
+  _es.item_pane_calc = function (eq) {
+    _es.salvage_calc(eq);
+    eq.node.salvage.textContent = `Salvage ${eq.data.salvage_value}`;
+
+    if (eq.data.salvage_value > eq.data.value) {
+      eq.data.salvage_recommended = true;
+      eq.node.salvage.classList.add('hvut-es-bold');
+      eq.node.sell.classList.remove('hvut-es-bold');
+    } else {
+      eq.data.salvage_recommended = false;
+      eq.node.salvage.classList.remove('hvut-es-bold');
+      eq.node.sell.classList.add('hvut-es-bold');
+    }
+  };
+
+  _es.shop_pane_init = function (filter, outer) {
     const equiplist = $equip.list(outer, false);
-    const bazaar_filter = getValue('es_bazaar', settings.equipmentShopBazaarFilter);
+    const bazaar_filter = $config.settings.equipmentShopBazaarFilters;
 
     equiplist.forEach((eq) => {
       eq.data.filter = filter;
-      eq.data.visible = $equip.filter(eq.info.name, bazaar_filter);
-      _es.salvage_calc(eq, 5);
+      eq.data.valuable = bazaar_filter.length && $equip.filter(bazaar_filter, eq.info.name, eq);
+      _es.salvage_mats(eq, 5);
 
-      if (settings.equipmentShopShowLevel && eq.info.level) {
+      if ($config.settings.equipmentShopShowLevel && eq.info.level) {
         $element('span', [eq.node.div, 'afterbegin'], [`[${eq.info.level}] `, '.hvut-es-level']);
       }
-      if (settings.equipmentShopShowPAB && eq.info.pab) {
+      if ($config.settings.equipmentShopShowPAB && eq.info.pab) {
         $element('span', eq.node.div, [` [${eq.info.pab}]`, '.hvut-es-pab']);
       }
+      eq.node.check = $element('span', null, ['.hvut-es-check']);
 
       eq.node.sub = $element('div', null, ['.hvut-es-sub hvut-cphu-sub']);
-      $element('span', eq.node.sub, ['购买价 ' + eq.data.value, { dataset: { action: 'buy', eid: eq.info.eid, pane: 'shop' } }]);
-      if (eq.data.salvage > eq.data.value) {
-        eq.data.visible = true;
-        $element('span', eq.node.sub, ['分解估值 ' + eq.data.salvage, '.hvut-es-bold', { dataset: { action: 'salvage', eid: eq.info.eid, pane: 'shop' } }]);
+      eq.node.buy = $element('span', eq.node.sub, [`Buy ${eq.data.value}`, { dataset: { action: 'buy', eid: eq.info.eid, pane: 'shop' } }]);
+      eq.node.salvage = $element('span', eq.node.sub, [{ dataset: { action: 'salvage', eid: eq.info.eid, pane: 'shop' } }]);
+      if (eq.info.tier) {
+        $element('span', eq.node.sub, [`IW ${eq.info.tier}`, '.hvut-es-bold', { dataset: { action: 'popup', eid: eq.info.eid, pane: 'shop' } }]);
       }
-      if (settings.equipmentShopBazaarCheckIW && eq.info.tier) {
-        eq.data.visible = true;
-        $element('span', eq.node.sub, ['潜能等级 ' + eq.info.tier, '.hvut-es-bold', { dataset: { action: 'popup', eid: eq.info.eid, pane: 'shop' } }]);
-      }
-      if (!eq.info.tradeable) {
-        eq.data.visible = false;
-      }
-      if (eq.data.visible) {
-        $element('span', eq.node.div, ['.hvut-es-check']);
-        eq.node.div.insertAdjacentElement('beforebegin', eq.node.sub);
-        eq.node.wrapper.classList.add('hvut-es-expand');
-      } else {
-        eq.node.wrapper.classList.add('hvut-none-item');
-      }
-    });
-    _es.shop_pane = _es.shop_pane.concat(equiplist);
-    $equip.sort(equiplist, _es.category[filter].shop_div);
 
-    $qsa('.hvut-eq-type', _es.category[filter].shop_div).forEach((div) => {
+      _es.shop_pane_calc(eq);
+    });
+    _es.shop_pane_equips.push(...equiplist);
+    $equip.sort(equiplist, _es.category[filter].shop_div);
+    _es.shop_pane_list(_es.category[filter].shop_div);
+  };
+
+  _es.shop_pane_calc = function (eq) {
+    _es.salvage_calc(eq);
+    eq.node.salvage.textContent = `Salvage ${eq.data.salvage_value}`;
+
+    let visible = false;
+    if (eq.data.valuable) {
+      visible = true;
+    }
+    if (eq.data.salvage_value > eq.data.value) {
+      visible = true;
+      eq.node.salvage.classList.add('hvut-es-bold');
+      eq.node.salvage.classList.remove('hvut-none');
+    } else {
+      eq.node.salvage.classList.remove('hvut-es-bold');
+      eq.node.salvage.classList.add('hvut-none');
+    }
+    if (!eq.info.tradeable) {
+      visible = false;
+    }
+    if (visible) {
+      eq.node.div.append(eq.node.check);
+      eq.node.div.before(eq.node.sub);
+      eq.node.wrapper.classList.add('hvut-es-expand');
+      eq.node.wrapper.classList.remove('hvut-none-item');
+    } else {
+      eq.node.check.remove();
+      eq.node.sub.remove();
+      eq.node.wrapper.classList.remove('hvut-es-expand');
+      eq.node.wrapper.classList.add('hvut-none-item');
+    }
+  };
+
+  _es.shop_pane_list = function (div = document) {
+    $qsa('.hvut-eq-type', div).forEach((div) => {
       let next = div;
       let eqp;
       while ((next = next.nextElementSibling)) {
@@ -5915,10 +6164,23 @@ _es.update_credits = function (html) {
           break;
         }
       }
-      if (!eqp) {
+      if (eqp) {
+        div.classList.remove('hvut-none-item');
+      } else {
         div.classList.add('hvut-none-item');
       }
     });
+  };
+
+  _es.edit_price = function () {
+    _es.prices = $price.get('Materials');
+    _es.item_pane_equips.forEach((eq) => {
+      _es.item_pane_calc(eq);
+    });
+    _es.shop_pane_equips.forEach((eq) => {
+      _es.shop_pane_calc(eq);
+    });
+    _es.shop_pane_list();
   };
 
   _es.set_rangeselect = function () {
@@ -5927,21 +6189,19 @@ _es.update_credits = function (html) {
   };
 
   GM_addStyle(/*css*/`
-    #eqshop_outer { position: relative; width: 1100px; margin-left: 70px; }
-    .eqshop_pane .eqp {font-size: 10.5px !important;}
-    .eqshop_pane > div:first-child { display: none;}
-    .eqshop_pane > div:last-child { width: 550px; }
+    #eqshop_outer { position: relative; width: 1100px; margin-left: 120px; }
+    .eqshop_pane > div:first-child { display: none; }
+    .eqshop_pane > div:last-child { width: 540px; }
     .eqshop_pane .cspp { overflow-y: scroll; }
     #eqshop_sellall { display: none; }
 
-    .hvut-es-side { position: absolute; top: 44px; left: -70px; width: 60px; display: flex; flex-direction: column; }
+    .hvut-es-side { top: 44px; left: -110px; }
     .hvut-es-side input { margin: 3px 0; white-space: normal; }
-    .hvut-es-side input:nth-child(1), .hvut-es-side input:nth-child(3), .hvut-es-side input:nth-child(5) { margin-bottom: 10px; }
 
     .hvut-es-valuable { background-color: #fff; }
     .eqp.hvut-es-expand { height: 44px; }
-    .hvut-es-level { display: inline-block; min-width: 28px; margin-right: 0px; }
-    .hvut-es-pab { position: absolute; left: 502px; top: 0px; width: 0px; direction: rtl; pointer-events: none; white-space: nowrap; }
+    .hvut-es-level { display: inline-block; min-width: 35px; margin-right: 5px; }
+    .hvut-es-pab { position: absolute; left: 490px; width: 0; direction: rtl; pointer-events: none; }
     .hvut-es-check { position: absolute; top: 25px; left: 5px; width: 14px; height: 14px; border: 1px solid; color: #930; background-color: #fff; }
     .eqp > div:last-child[style*='color'] > .hvut-es-check::before { content: ''; position: absolute; top: 1px; left: 4px; width: 3px; height: 7px; border-right: 3px solid; border-bottom: 3px solid; transform: rotate(45deg); }
     .hvut-es-sub { position: absolute; top: 24px; left: 20px; font-size: 8pt; line-height: 18px; padding-left: 45px; }
@@ -5950,22 +6210,22 @@ _es.update_credits = function (html) {
     .hvut-es-disabled > div { text-decoration: line-through; }
   `);
 
-  _es.node.side = $element('div', $id('eqshop_outer'), ['.hvut-es-side']);
-  toggle_button($input('button', _es.node.side), '显示所有装备', '使用过滤器', $id('shop_pane'), 'hvut-none-cont', true);
-  $input(['button', '全选'], _es.node.side, null, () => { _es.select_all('sell'); });
-  $input(['button', '出售选定装备'], _es.node.side, null, () => { _es.sell_all(); });
-  $input(['button', '分解选定装备'], _es.node.side, null, () => { _es.salvage_all(); });
-  $input(['button', '材料价格'], _es.node.side, null, () => { $price.edit('Materials', () => { if (confirm('你需要刷新页面.')) { location.href = location.href; } }); });
-  $input(['button', '装备保护器'], _es.node.side, null, () => { _es.edit_filter('protect'); });
-  $input(['button', '商店过滤器'], _es.node.side, null, () => { _es.edit_filter('bazaar'); });
+  _es.node.side = $element('div', $id('eqshop_outer'), ['.hvut-side hvut-es-side']);
+  toggle_button($input('button', _es.node.side, { className: 'hvut-side-margin' }), 'Show All Equipment', 'Show Only Filtered', $id('shop_pane'), 'hvut-none-cont', $config.settings.equipmentShopBazaarFilters.length);
+  $input(['button', 'Select:'], _es.node.side, null, () => { _es.select_all('sell'); });
+  $input(['button', 'Sell'], _es.node.side, { className: 'hvut-side-margin' }, () => { _es.sell_all(); });
+  $input(['button', 'Select:'], _es.node.side, null, () => { _es.select_all('salvage'); });
+  $input(['button', 'Salvage'], _es.node.side, { className: 'hvut-side-margin' }, () => { _es.salvage_all(); });
+  $input(['button', 'Edit Filter'], _es.node.side, null, () => { $config.open('equipmentShopProtectFilters'); });
+  $input(['button', 'Item Prices'], _es.node.side, null, () => { $price.edit('Materials', 'ma', _es.edit_price); });
 
   $id('item_pane').addEventListener('click', _es.click);
   $id('shop_pane').addEventListener('click', _es.click);
 
   _es.category['valuable'].item_div = $element('div', $id('item_pane'), ['.equiplist nosel hvut-es-valuable']);
-  $element('p', _es.category['valuable'].item_div, ['[已加锁装备]', '.hvut-eq-category']);
+  $element('p', _es.category['valuable'].item_div, ['[Protected: Valuable Equipment]', '.hvut-eq-category']);
 
-  if (settings.equipmentShopIntegration) {
+  if ($config.settings.equipmentShopIntegration) {
     const filterbar = $id('filterbar');
     $element('a', [filterbar, 'afterbegin'], { href: '?s=Bazaar&ss=es', innerHTML: '<div>All</div>' });
     if (_query.filter) {
@@ -5977,12 +6237,12 @@ _es.update_credits = function (html) {
     }
   }
 
-  if (_query.filter || !settings.equipmentShopIntegration) {
+  if (_query.filter || !$config.settings.equipmentShopIntegration) {
     _es.init_list(_es.filter);
     const item_equiplist = $qs('#item_pane .equiplist');
     const shop_equiplist = $qs('#shop_pane .equiplist');
-    _es.get_item_pane(_es.filter, $qs('#item_pane .equiplist'));
-    _es.get_shop_pane(_es.filter, $qs('#shop_pane .equiplist'));
+    _es.item_pane_init(_es.filter, $qs('#item_pane .equiplist'));
+    _es.shop_pane_init(_es.filter, $qs('#shop_pane .equiplist'));
     item_equiplist.remove();
     shop_equiplist.remove();
     _es.set_rangeselect();
@@ -5992,8 +6252,8 @@ _es.update_credits = function (html) {
     _es.init_list('1handed');
     const item_equiplist = $qs('#item_pane .equiplist');
     const shop_equiplist = $qs('#shop_pane .equiplist');
-    _es.get_item_pane('1handed', item_equiplist);
-    _es.get_shop_pane('1handed', shop_equiplist);
+    _es.item_pane_init('1handed', item_equiplist);
+    _es.shop_pane_init('1handed', shop_equiplist);
     item_equiplist.remove();
     shop_equiplist.remove();
 
@@ -6007,15 +6267,15 @@ _es.update_credits = function (html) {
 
 
 //* [9] Bazaar - Item Shop
-if (settings.itemShop && _query.s === 'Bazaar' && _query.ss === 'is') {
-  Array.from($qs('#item_pane .itemlist').rows).forEach((tr) => {
+if (_query.s === 'Bazaar' && _query.ss === 'is') {
+  $qsa('#item_pane .itemlist tr').forEach((tr) => {
     const div = tr.cells[0].firstElementChild;
-    const type = $item.type(div.getAttribute('onmouseover'));
+    const type = $item.get_type(div.getAttribute('onmouseover'));
     tr.classList.add('hvut-it-' + type);
   });
-  Array.from($qs('#shop_pane .itemlist').rows).forEach((tr) => {
+  $qsa('#shop_pane .itemlist tr').forEach((tr) => {
     const div = tr.cells[0].firstElementChild;
-    const type = $item.type(div.getAttribute('onmouseover'));
+    const type = $item.get_type(div.getAttribute('onmouseover'));
     tr.classList.add('hvut-it-' + type);
   });
 
@@ -6029,8 +6289,8 @@ if (settings.itemShop && _query.s === 'Bazaar' && _query.ss === 'is') {
 
 
 //* [10] Bazaar - The Shrine
-if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
-  _ss.log = getValue('ss_log', {});
+if (_query.s === 'Bazaar' && _query.ss === 'ss') {
+  _ss.log = $config.get('ss_log', {});
   _ss.node = {};
   _ss.equip = { capacity: 0, current: 0, requests: 0, received: 0, sold: 0, salvaged: 0, total: 0 };
   _ss.items = {};
@@ -6056,7 +6316,7 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
     'Platinum Coupon', 'Golden Coupon', 'Silver Coupon', 'Bronze Coupon',
   ];
   _ss.item_group = {
-    'Artifact': ['Energy Drink', '2 Hath', '1 Hath', 'Flower Vase', 'Bubble-Gum', 'Chaos Token', 'Last Elixir', '3x Last Elixir', { group: '1000x 水晶', items: ['1000x Crystal of Vigor', '1000x Crystal of Finesse', '1000x Crystal of Swiftness', '1000x Crystal of Fortitude', '1000x Crystal of Cunning', '1000x Crystal of Knowledge', '1000x Crystal of Flames', '1000x Crystal of Frost', '1000x Crystal of Lightning', '1000x Crystal of Tempest', '1000x Crystal of Devotion', '1000x Crystal of Corruption'] }, { group: '3000x 水晶', items: ['3000x Crystal of Vigor', '3000x Crystal of Finesse', '3000x Crystal of Swiftness', '3000x Crystal of Fortitude', '3000x Crystal of Cunning', '3000x Crystal of Knowledge', '3000x Crystal of Flames', '3000x Crystal of Frost', '3000x Crystal of Lightning', '3000x Crystal of Tempest', '3000x Crystal of Devotion', '3000x Crystal of Corruption'] }, { group: '5000x 水晶', items: ['5000x Crystal of Vigor', '5000x Crystal of Finesse', '5000x Crystal of Swiftness', '5000x Crystal of Fortitude', '5000x Crystal of Cunning', '5000x Crystal of Knowledge', '5000x Crystal of Flames', '5000x Crystal of Frost', '5000x Crystal of Lightning', '5000x Crystal of Tempest', '5000x Crystal of Devotion', '5000x Crystal of Corruption'] }, { group: '主属性加成', items: ['Your strength has increased by one', 'Your dexterity has increased by one', 'Your agility has increased by one', 'Your endurance has increased by one', 'Your intelligence has increased by one', 'Your wisdom has increased by one', 'Strength was increased by 1', 'Dexterity was increased by 1', 'Agility was increased by 1', 'Endurance was increased by 1', 'Intelligence was increased by 1', 'Wisdom was increased by 1'] }],
+    'Artifact': ['Energy Drink', '2 Hath', '1 Hath', 'Flower Vase', 'Bubble-Gum', 'Chaos Token', 'Last Elixir', '3x Last Elixir', { group: '1000x Crystal', items: ['1000x Crystal of Vigor', '1000x Crystal of Finesse', '1000x Crystal of Swiftness', '1000x Crystal of Fortitude', '1000x Crystal of Cunning', '1000x Crystal of Knowledge', '1000x Crystal of Flames', '1000x Crystal of Frost', '1000x Crystal of Lightning', '1000x Crystal of Tempest', '1000x Crystal of Devotion', '1000x Crystal of Corruption'] }, { group: '3000x Crystal', items: ['3000x Crystal of Vigor', '3000x Crystal of Finesse', '3000x Crystal of Swiftness', '3000x Crystal of Fortitude', '3000x Crystal of Cunning', '3000x Crystal of Knowledge', '3000x Crystal of Flames', '3000x Crystal of Frost', '3000x Crystal of Lightning', '3000x Crystal of Tempest', '3000x Crystal of Devotion', '3000x Crystal of Corruption'] }, { group: '5000x Crystal', items: ['5000x Crystal of Vigor', '5000x Crystal of Finesse', '5000x Crystal of Swiftness', '5000x Crystal of Fortitude', '5000x Crystal of Cunning', '5000x Crystal of Knowledge', '5000x Crystal of Flames', '5000x Crystal of Frost', '5000x Crystal of Lightning', '5000x Crystal of Tempest', '5000x Crystal of Devotion', '5000x Crystal of Corruption'] }, { group: 'Primary Attributes Bonus', items: ['Your strength has increased by one', 'Your dexterity has increased by one', 'Your agility has increased by one', 'Your endurance has increased by one', 'Your intelligence has increased by one', 'Your wisdom has increased by one', 'Strength was increased by 1', 'Dexterity was increased by 1', 'Agility was increased by 1', 'Endurance was increased by 1', 'Intelligence was increased by 1', 'Wisdom was increased by 1'] }],
     'Trophy': ['Peerless', 'Legendary', 'Magnificent', 'Exquisite', 'Superior', 'Average'],
     'Collectable': [{ group: '3x High-Grade Material', items: ['3x High-Grade Cloth', '3x High-Grade Leather', '3x High-Grade Metals', '3x High-Grade Wood'] }, { group: '2x High-Grade Material', items: ['2x High-Grade Cloth', '2x High-Grade Leather', '2x High-Grade Metals', '2x High-Grade Wood'] }, { group: '1x High-Grade Material', items: ['1x High-Grade Cloth', '1x High-Grade Leather', '1x High-Grade Metals', '1x High-Grade Wood'] }, { group: 'Binding', items: ['Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl'] }],
   };
@@ -6114,7 +6374,7 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
         select_reward_type = _ss.node.selected.dataset.type;
         select_reward_slot = _ss.node.selected.dataset.slot;
       } else {
-        alert('选择要获得的装备类型.');
+        alert('Select the major class of the equipment.');
         return;
       }
       _ss.equip.requests += count;
@@ -6202,15 +6462,15 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
       });
 
       if (item.type === 'Trophy') {
-        if ($equip.filter(n, settings.shrineTrackEquip)) {
+        if ($equip.filter($config.settings.shrineFilters, n)) {
           $element('li', [results[r].li, 'afterend'], [n, '.hvut-ss-equip']);
         }
         _ss.equip.received++;
         _ss.equip.total = _ss.equip.current + _ss.equip.received - _ss.equip.sold - _ss.equip.salvaged;
-        _ss.node.results_equip.value = `装备库存量: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, 已出售: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, 已分解: ${_ss.equip.salvaged}` : '');
+        _ss.node.results_equip.value = `Equip Slots: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, Sold: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, Salvaged: ${_ss.equip.salvaged}` : '');
         if (_ss.equip.total >= _ss.equip.capacity) {
           if (!_ss.error) {
-            _ss.error = '你的装备库存已满';
+            _ss.error = 'Your equipment inventory is full';
             popup(_ss.error);
           }
         }
@@ -6218,7 +6478,7 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
     });
 
     if (item.recieved % 10 === 0 || item.recieved === item.requests || _ss.error) {
-      setValue('ss_log', _ss.log);
+      $config.set('ss_log', _ss.log);
     }
   };
 
@@ -6239,7 +6499,7 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
       const keys = Object.keys(log);
       const type = keys.some((k) => reg_artifact.test(k)) ? 'Artifact' : keys.some((k) => reg_trophy.test(k)) ? 'Trophy' : keys.some((k) => reg_collectable.test(k)) ? 'Collectable' : null;
       const list = _ss.create_list(type);
-      let total = Object.values(log).reduce((s, e) => s + e, 0);
+      let total = Object.values(log).reduce((s, e) => (s + e), 0);
       if (type === 'Collectable') {
         total /= 2;
       }
@@ -6266,17 +6526,6 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
         ul.appendChild(list[r].li);
       });
     });
-
-    const buttons = $element('div', div, ['!margin-top: 20px; padding-top: 10px; border-top: 1px solid; text-align: center;']);
-    $input(['button', '重置日志'], buttons, null, () => { _ss.reset_log(); });
-    $input(['button', '关闭'], buttons, null, () => { _ss.toggle_log(); });
-  };
-
-  _ss.reset_log = function () {
-    if (confirm('祭坛日志将被重置.\n继续吗?')) {
-      deleteValue('ss_log');
-      location.href = location.href;
-    }
   };
 
   _ss.toggle_log = function () {
@@ -6320,7 +6569,7 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
   };
 
   _ss.show_trophies = function () {
-    popup_text(_ss.trophies_text, 'width: 600px; height: 250px; white-space: pre;');
+    popup_text(_ss.trophies_text, 600, 250);
   };
 
   GM_addStyle(/*css*/`
@@ -6338,8 +6587,7 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
     #shrine_left .itemlist input:nth-child(2) { width: 50px; }
     #shrine_left .itemlist input:nth-child(3) { width: 40px; }
 
-    .hvut-ss-side { position: absolute; top: 33px; left: -110px; width: 100px; display: flex; flex-direction: column; }
-    .hvut-ss-side input { margin: 3px 0; white-space: normal; }
+    .hvut-ss-side { top: 33px; left: -110px; }
     .hvut-ss-log { position: absolute; top: 33px; left: 0; width: 540px; height: 550px; margin: 0; padding: 10px; border: 1px solid; text-align: left; overflow-y: scroll; background-color: #EDEBDF; }
     .hvut-ss-results { position: absolute; top: 33px; left: 572px; width: 472px; height: 550px; margin: 0; padding: 10px; border: 1px solid; text-align: left; overflow-y: scroll; background-color: #EDEBDF; }
     .hvut-ss-p { margin: 5px; font-size: 10pt; font-weight: bold; }
@@ -6356,35 +6604,32 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
   $id('inv_item').addEventListener('click', _ss.click);
   $id('accept_equip').addEventListener('click', _ss.click);
 
-  _ss.node.side = $element('div', $id('shrine_outer'), ['.hvut-ss-side']);
-  toggle_button($input('button', _ss.node.side), '显示所有奖杯', '使用过滤器', $id('inv_item'), 'hvut-none-cont', true);
-  $input(['button', '祭坛收获'], _ss.node.side, null, () => { _ss.toggle_results(); });
-  $input(['button', '祭坛日志'], _ss.node.side, null, () => { _ss.toggle_log(); });
+  _ss.node.side = $element('div', $id('shrine_outer'), ['.hvut-side hvut-ss-side']);
+  toggle_button($input('button', _ss.node.side), 'Show All Items', 'Show Only Filtered', $id('inv_item'), 'hvut-none-cont', true);
+  $input(['button', 'Offering Results'], _ss.node.side, null, () => { _ss.toggle_results(); });
+  $input(['button', 'The Shrine Log'], _ss.node.side, null, () => { _ss.toggle_log(); });
+  $input(['button', 'Edit Filter'], _ss.node.side, null, () => { $config.open('shrineHideItems'); });
 
   _ss.node.log = $element('div', $id('shrine_outer'), ['.hvut-ss-log hvut-none']);
   _ss.node.results = $element('div', $id('shrine_outer'), ['.hvut-ss-results hvut-none']);
   _ss.node.results_buttons = $element('div', _ss.node.results, ['!margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid; text-align: center;']);
-  _ss.node.results_equip = $input(['button', '装备库存量'], _ss.node.results_buttons, { style: 'width: 380px;' });
-  $input(['button', '关闭'], _ss.node.results_buttons, null, () => { _ss.toggle_results(); });
+  _ss.node.results_equip = $input(['button', 'Equip Slots'], _ss.node.results_buttons, { style: 'width: 450px;' });
 
   $ajax.fetch('?s=Character&ss=in').then((html) => {
     const exec = />Equip Slots: (\d+)(?: \+ (\d+))? \/ (\d+)</.exec(html);
     _ss.equip.current = parseInt(exec[1]) + parseInt(exec[2] || 0);
     _ss.equip.capacity = parseInt(exec[3]);
-    _ss.node.results_equip.value = `装备库存量: ${_ss.equip.current} / ${_ss.equip.capacity}`;
+    _ss.node.results_equip.value = `Equip Slots: ${_ss.equip.current} / ${_ss.equip.capacity}`;
   });
 
   _ss.trophies_value = 0;
   _ss.trophies_text = [];
 
-  Array.from($qs('.itemlist').rows).forEach((tr) => {
+  $qsa('.itemlist tr').forEach((tr) => {
     const div = tr.cells[0].firstElementChild;
     const name = div.textContent;
-    const type = $item.type(div.getAttribute('onmouseover'));
-    const exec = $item.reg.shrine.exec(div.getAttribute('onclick'));
-    const iid = exec[1];
-    const stock = parseInt(exec[2]);
-    const bulk = parseInt(exec[3]);
+    const type = $item.get_type(div.getAttribute('onmouseover'));
+    const { iid, stock, bulk } = $item.get_data(div.getAttribute('onclick'));
     const max = Math.floor(stock / bulk);
     const item = { log: name, name, type, iid, stock, bulk, max, requests: 0, recieved: 0, node: {} };
     _ss.items[iid] = item;
@@ -6395,7 +6640,7 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
     item.node.max = $element('td', tr);
     const td = $element('td', tr);
     item.node.count = $input('text', td);
-    item.node.button = $input(['button', '献祭'], td, { dataset: { action: 'offer', iid: iid, count: 'input' } });
+    item.node.button = $input(['button', 'Offer'], td, { dataset: { action: 'offer', iid: iid, count: 'input' } });
 
     if (item.type === 'Trophy') {
       if (_ss.trophy[name]) {
@@ -6422,22 +6667,25 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
       }
       item.node.bulk.textContent = '/ ' + item.bulk;
       item.node.max.textContent = item.max;
-      $input(['button', '所有'], td, { dataset: { action: 'offer', iid: iid, count: 'max' } });
+      $input(['button', 'All'], td, { dataset: { action: 'offer', iid: iid, count: 'max' } });
     }
-    if (settings.shrineHideItems.some((h) => name.includes(h))) {
+    if ($config.settings.shrineHideItems.some((h) => name.includes(h))) {
       tr.classList.add('hvut-none-item');
     }
   });
 
-  $input(['button', `你库存中的奖杯总价值为 ${_ss.trophies_value.toLocaleString()} credits.`], $id('shrine_trophy'), { style: 'margin: 5px;' }, () => { _ss.show_trophies(); });
+  $input(['button', `You have ${_ss.trophies_value.toLocaleString()} credits worth of trophies in the inventory.`], $id('shrine_trophy'), { style: 'margin: 5px;' }, () => { _ss.show_trophies(); });
 
   _ss.node.select = {};
   $qsa('#accept_equip input[type="submit"]').forEach((s) => {
     s.dataset.action = 'select';
-    const [, type, slot] = /submit_shrine_reward\('(.*?)','(.*?)'\)/.exec(s.getAttribute('onclick'));
+    const exec = /submit_shrine_reward\('(.*?)','(.*?)'\)/.exec(s.getAttribute('onclick'));
+    const type = exec[1];
+    const slot = exec[2];
+    const select = slot ? `${type} ${slot}` : type;
     s.dataset.type = type;
     s.dataset.slot = slot;
-    _ss.node.select[type + (slot ? ' ' + slot : '')] = s;
+    _ss.node.select[select] = s;
     s.removeAttribute('onclick');
   });
 } else
@@ -6445,171 +6693,99 @@ if (settings.shrine && _query.s === 'Bazaar' && _query.ss === 'ss') {
 
 
 //* [11] Bazaar - The Market
-if (settings.market && _query.s === 'Bazaar' && _query.ss === 'mk') {
-  _mk.prices = getValue('mk_prices', {});
-  _mk.items = {};
+if (_query.s === 'Bazaar' && _query.ss === 'mk') {
+  if (!_query.screen) {
+    _query.screen = 'browseitems';
+  }
+  if (!_query.filter) {
+    _query.filter = 'co';
+  }
 
-  _mk.click = function (e) {
-    const target = e.target.closest('[data-action]');
-    if (!target) {
-      return;
-    }
-    const { action } = target.dataset;
-    if (action === 'stop') {
-      e.stopPropagation();
-    }
-  };
-
-  _mk.get_list = function () {
+  _mk.init_list = function () {
     if (!$qs('#market_itemlist table')) {
       return;
     }
+    $price.parse_market(_query.filter);
+    _mk.items = Object.keys($price.market);
     Array.from($qs('#market_itemlist table').rows).forEach((tr, i) => {
       if (i === 0) {
+        $element('th', tr, 'HVUT Price');
         return;
       }
       const name = tr.cells[0].textContent;
-      const itemid = tr.getAttribute('onclick').match(/itemid=(\d+)/) && RegExp.$1;
-      const yourstock = parseInt(tr.cells[1].textContent);
-      const bid = parseFloat(tr.cells[2].textContent.slice(0, -2));
-      const ask = parseFloat(tr.cells[3].textContent.slice(0, -2));
-      const stock = parseInt(tr.cells[4].textContent.slice(0, -2));
-      _mk.items[name] = { itemid, yourstock, bid, ask, stock };
+      const td = $element('td', tr);
+      $price.market[name].td = td;
     });
-  };
+    _mk.modify();
 
-  _mk.init = function (p) {
-    if (!$qs('#market_itemlist table')) {
-      return;
-    }
-    _mk.tag = p;
-    Array.from($qs('#market_itemlist table').rows).forEach((tr, i) => {
-      if (i === 0) {
-        $element('th', tr, '插件参考价');
-        return;
-      }
-      const name = tr.cells[0].textContent;
-      const td = $element('td', tr, { dataset: { action: 'stop' } });
-      _mk.items[name].input = $input('text', td, { pattern: '\\d+(\\.\\d+)?' });
-    });
-    _mk.load_prices();
     if (!$id('market_itemfilter')) {
       $element('div', $id('market_right'), ['#market_itemfilter']);
     }
-    const div = $element('div', $id('market_itemfilter'));
-    _mk.select = $element('select', div, ['/<option value="">设置价格...</option><option value="bid">设定市场出价为参考价格</option><option value="ask">设定市场要价为参考价格</option><option value="day">设定日平均价格为参考价格</option><option value="week">设定周平均价格为参考价格</option><option value="update">更新交易数据库-暂不可用 [最后更新时间: ' + new Date(_mk.prices.lastupdate).toLocaleString() + ']</option>', '!width: 135px;'], { change: () => { _mk.set_prices(_mk.select.value); } });
-    $input(['button', '保存'], div, null, () => { _mk.save_prices(); });
-    $input(['button', '加载'], div, null, () => { _mk.load_prices(); });
-    $input(['button', '编辑'], div, null, () => { $price.edit(_mk.tag, _mk.load_prices); });
+    const side = $element('div', $id('market_left').lastElementChild, ['.hvut-side hvut-mk-side']);
+    $input(['button', 'Set as Bid'], side, null, () => { _mk.save('bid'); });
+    $input(['button', 'Set as Ask'], side, null, () => { _mk.save('ask'); });
+    $input(['button', 'Edit Prices'], side, null, () => { _mk.edit(); });
   };
 
-  _mk.set_prices = async function (type) {
-    switch (type) {
-      case 'day':
-      case 'week':
-      case 'month':
-      case 'year':
-        if (!_mk.prices.lastupdate) {
-          await _mk.get_prices();
-        }
-      case 'bid':
-      case 'ask':
-        Object.entries(_mk.items).forEach(([n, v]) => {
-          v.input.value = v[type] || _mk.prices[n][type] || '';
-        });
-        break;
-      case 'update':
-        _mk.get_prices();
-        break;
-    }
+  _mk.edit = function () {
+    $price.edit(_mk.items, _query.filter, _mk.modify);
   };
 
-  _mk.get_prices = async function () {
-    if (_query.screen !== 'browseitems') {
-      alert('请在 [Browse Items]中尝试');
-      return;
-    }
-    const select = _mk.select;
-    const value = select.value;
-    select.disabled = true;
-    select.value = 'update';
-    select.selectedOptions[0].text = 'Updating...';
-    Object.values(_mk.items).forEach((v) => {
-      v.input.disabled = true;
-    });
-    await _mk.update_prices();
-    Object.values(_mk.items).forEach((v) => {
-      v.input.disabled = false;
-    });
-    select.selectedOptions[0].text = 'Update Transaction Data [Last Update: ' + new Date(_mk.prices.lastupdate).toLocaleString() + ']';
-    select.value = value;
-    select.disabled = false;
+  _mk.save = function (key) {
+    $price.set_market(_mk.items, key);
+    _mk.modify();
   };
 
-  _mk.update_prices = async function () {
-    const lastupdate = Date.now();
-    async function update(itemid) {
-      const html = await $ajax.fetch(`?s=Bazaar&ss=mk&itemid=${itemid}`);
-      const doc = $doc(html);
-      const name = $id('market_itemheader', doc).children[1].textContent;
-      const unit = Number($qs('.market_placeorder', doc).rows[0].cells[2].textContent.slice(1)) || 1;
-      const history = $id('market_price', doc).rows;
-      const day = history[1].cells[3].textContent.replace(/\D/g, '') / unit;
-      const week = history[2].cells[3].textContent.replace(/\D/g, '') / unit;
-      const month = history[3].cells[3].textContent.replace(/\D/g, '') / unit;
-      const year = history[4].cells[3].textContent.replace(/\D/g, '') / unit;
-      _mk.prices[name] = { itemid, day, week, month, year };
-    }
-    const requests = Object.values(_mk.items).map((c) => update(c.itemid));
-    await Promise.all(requests);
-    _mk.prices.lastupdate = lastupdate;
-    setValue('mk_prices', _mk.prices);
-  };
-
-  _mk.save_prices = function () {
-    const prices = {};
-    Object.entries(_mk.items).forEach(([n, v]) => {
-      prices[n] = parseFloat(v.input.value) || 0;
-    });
-    $price.set(_mk.tag, prices, false);
-  };
-
-  _mk.load_prices = function () {
-    const prices = $price.get(_mk.tag);
-    Object.entries(_mk.items).forEach(([n, v]) => {
-      v.input.value = prices[n] || '';
+  _mk.modify = function () {
+    const prices = $price.get();
+    _mk.items.forEach((name) => {
+      $price.market[name].td.textContent = prices[name] || '';
     });
   };
 
-  _mk.get_cp = function () {
+  _mk.get_crystals = function () {
     if (!$qs('#market_itemlist table')) {
       return;
     }
-    const [bid, ask] = ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'].reduce((s, e) => [s[0] + _mk.items[e].bid * 1000, s[1] + _mk.items[e].ask * 1000], [0, 0]);
-    $element('tr', [$qs('#market_itemlist table').rows[0], 'afterend'], [`/<td>水晶包参考价(各类水晶1000个)</td><td></td><td>${bid} C</td><td>${ask} C</td><td></td>`]);
+    const [bid, ask] = ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'].reduce((s, e) => [s[0] + $price.market[e].bid * 1000, s[1] + $price.market[e].ask * 1000], [0, 0]);
+    $element('tr', [$qs('#market_itemlist table').rows[0], 'afterend'], [`/<td>Crystal Pack</td><td></td><td>${bid} C</td><td>${ask} C</td><td></td>`]);
+  };
+
+  _mk.click2link = function () {
+    if (!$qs('#market_itemlist table')) {
+      return;
+    }
+    Array.from($qs('#market_itemlist table').rows).forEach((tr) => {
+      const onclick = tr.getAttribute('onclick');
+      if (!onclick) {
+        return;
+      }
+      const href = /document\.location='([^']+)'/.exec(onclick)[1];
+      $element('a', tr.cells[0], { href });
+      tr.removeAttribute('onclick');
+    });
   };
 
   GM_addStyle(/*css*/`
-    #market_itemlist td[data-action='stop'] { cursor: default; }
-    #market_itemlist td[data-action='stop'] input { width: 60px; text-align: right; }
-    #market_itemlist td[data-action='stop'] input:invalid { color: #e00; }
+    #market_itemlist th { z-index: 1; }
+    #market_itemlist tr { position: relative; }
+    #market_itemlist td a { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+    .hvut-mk-side { bottom: 20px; left: 32px; }
   `);
 
-  _mk.get_list();
-
-  if (_query.filter === 'ma') {
-    $id('market_itemlist')?.addEventListener('click', _mk.click, true);
-    _mk.init('Materials');
+  _mk.init_list();
+  _mk.click2link();
+  if (_query.screen === 'browseitems' && _query.filter === 'mo') {
+    _mk.get_crystals();
   }
-  if (_query.filter === 'mo' && _query.screen === 'browseitems') {
-    _mk.get_cp();
-  }
+  $id('account_amount').autocomplete = 'off';
 } else
 // [END 11] Bazaar - The Market */
 
 
 //* [12] Bazaar - Monster Lab
-if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
+if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) {
   if (_query.create) {
   } else if (_query.slot) {
     if (_query.pane === 'skills') {
@@ -6623,9 +6799,7 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
       #monster_outer { margin-left: 130px; font-weight: normal; }
       #monster_list .cspp { margin-top: 15px; overflow-y: scroll; }
 
-      .hvut-ml-side { position: absolute; top: 38px; left: -110px; width: 100px; display: flex; flex-direction: column; }
-      .hvut-ml-side input { margin: 3px 0; white-space: normal; }
-      .hvut-ml-side input:nth-child(3) { margin-bottom: 10px; }
+      .hvut-ml-side { top: 38px; left: -110px; }
       .hvut-ml-sort { position: absolute; display: flex; top: 10px; left: 22px; font-size: 10pt; line-height: 16px; }
       .hvut-ml-sort > span { display: inline-block; margin: 0 5px; padding: 2px 0; border: 1px solid; box-sizing: border-box; }
       .hvut-ml-sort > .hvut-ml-sort-current { font-weight: bold; outline: 1px solid; }
@@ -6647,7 +6821,7 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
       #slot_pane > div > div:nth-child(5) { order: 9; width: 200px; }
 
       .hvut-ml-new { background-color: #edb; }
-      .hvut-ml-wins::after { content: '最后更新日期: ' attr(data-update); position: absolute; top: 2px; right: 615px; border: 1px solid; padding: 2px 4px; line-height: 16px; background-color: #edb; visibility: hidden; }
+      .hvut-ml-wins::after { content: 'Last Update: ' attr(data-update); position: absolute; top: 2px; right: 615px; border: 1px solid; padding: 2px 4px; line-height: 16px; background-color: #edb; visibility: hidden; }
       .hvut-ml-wins:hover::after { visibility: visible; }
       .hvut-ml-outdated { color: #c00; }
       .hvut-ml-gains > span { display: inline-block; width: 25px; line-height: 22px; border-radius: 2px; background-color: #5C0D11; color: #fff; }
@@ -6667,7 +6841,6 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
       .hvut-ml-log > li:nth-child(3) { margin-bottom: 16px; }
       .hvut-ml-margin { margin-top: 16px !important; }
       .hvut-ml-break { break-after: column; }
-      .hvut-ml-reset { position: absolute; left: -1px; bottom: -44px; width: 100%; height: 22px; border: 1px solid; padding: 10px 0; line-height: 30px; text-align: center; background-color: inherit; }
 
       .hvut-ml-up { position: absolute; top: 27px; left: 0; width: 100%; height: 675px; z-index: 9; background-color: #EDEBDF; font-size: 10pt; text-align: left; }
       .hvut-ml-up-list { height: 493px; margin: 20px 10px 10px; overflow-y: scroll; }
@@ -6681,12 +6854,12 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
       .hvut-ml-up-table td:nth-child(3) { width: 90px; text-align: left; padding-left: 5px; }
       .hvut-ml-up-table td:nth-child(4) { width: 40px; }
       .hvut-ml-up-table td:nth-child(5) { width: 40px; }
-      .hvut-ml-up-table td:nth-child(1),
+      .hvut-ml-up-table td:nth-child(1) { border-left-width: 1px; }
+      .hvut-ml-up-table td:nth-child(5),
       .hvut-ml-up-table td:nth-child(6),
-      .hvut-ml-up-table td:nth-child(7),
       .hvut-ml-up-table td:nth-child(15),
-      .hvut-ml-up-table td:nth-child(23) { border-left-width: 1px; }
-      .hvut-ml-up-table td:last-child { border-right-width: 1px; }
+      .hvut-ml-up-table td:nth-child(22),
+      .hvut-ml-up-table td:nth-child(35) { border-right-width: 1px; }
       .hvut-ml-up-change { color: #c00; }
       .hvut-ml-up-table td[data-desc]::after { content: attr(data-desc); visibility: hidden; position: absolute; top: 24px; right: -1px; white-space: nowrap; padding: 2px 10px; background-color: #fff; border: 1px solid; z-index: 1; }
       .hvut-ml-up-table td[data-desc]:hover::after { visibility: visible; }
@@ -6701,7 +6874,7 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
       .hvut-ml-up-crystal span:nth-child(2) { width: 90px; }
       .hvut-ml-up-crystal span:nth-child(3) { width: 100px; }
       .hvut-ml-up-crystal span:nth-child(4) { width: 90px; }
-      .hvut-ml-up-token span:nth-child(1) { width: 110px; }
+      .hvut-ml-up-token span:nth-child(1) { width: 130px; }
       .hvut-ml-up-token span:nth-child(2) { width: 70px; }
       .hvut-ml-up-buttons { float: right; width: 100px; display: flex; flex-direction: column; }
       .hvut-ml-up-buttons input { margin: 3px 0; }
@@ -6734,26 +6907,7 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
     _ml.materials = ['Low-Grade Cloth', 'Mid-Grade Cloth', 'High-Grade Cloth', 'Low-Grade Leather', 'Mid-Grade Leather', 'High-Grade Leather', 'Low-Grade Metals', 'Mid-Grade Metals', 'High-Grade Metals', 'Low-Grade Wood', 'Mid-Grade Wood', 'High-Grade Wood', 'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator', 'Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl'];
     _ml.mobs = [];
     _ml.now = Date.now();
-    _ml.log = getValue('ml_log', [{ version: 1 }]);
-    _ml.json_migration = function () {
-      if (!_ml.log[0]) { // check json format version
-        _ml.log[0] = { version: 1 };
-        _ml.log.forEach((log, i) => {
-          if (!log || i === 0) {
-            return;
-          }
-          log.pa = log.pa.map((e) => [e.value, e.to]);
-          log.er = log.er.map((e) => [e.value, e.to]);
-          log.ct = log.ct.map((e) => [e.value, e.to, e.max]);
-          log.gifts = log.gift;
-          log.gifts.push(...log.gifts.splice(28, 6, ...log.gifts.splice(40, 5)));
-          delete log.gift;
-          delete log.selected;
-        });
-        setValue('ml_log', _ml.log);
-      }
-    };
-    _ml.json_migration();
+    _ml.log = $config.get('ml_log', [{ version: 1 }]);
 
     _ml.parse = function (mob, doc) {
       mob.pl = parseInt($qs('.msl > div:nth-child(3)', doc).textContent.slice(4));
@@ -6785,18 +6939,19 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
         mob.log.ct[i][2] = mob.ct[i].max;
       });
 
-      setValue('ml_log', _ml.log);
+      $config.set('ml_log', _ml.log);
     };
 
     _ml.price2str = function (price) {
+      let str;
       if (price > 1000000) {
-        price = (Math.round(price / 10000) / 100) + 'm';
+        str = (Math.round(price / 10000) / 100) + 'm';
       } else if (price > 1000) {
-        price = (Math.round(price / 10) / 100) + 'k';
+        str = (Math.round(price / 10) / 100) + 'k';
       } else {
-        price = Math.round(price);
+        str = Math.round(price) + '';
       }
-      return price;
+      return str;
     };
 
     // Monster List
@@ -6845,14 +7000,8 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
         }
       },
       sort: function (key) {
-        if (!['#', 'index', 'name', 'class', 'pl', 'wins', 'kills', '+', 'gains', 'gifts', 'morale', 'hunger'].includes(key)) {
+        if (!['index', 'name', 'class', 'pl', 'wins', 'kills', 'gains', 'gifts', 'morale', 'hunger'].includes(key)) {
           return;
-        }
-        if (key === '#') {
-          key = 'index';
-        }
-        if (key === '+') {
-          key = 'gains';
         }
         let order = ['pl', 'wins', 'kills', 'gains', 'gifts'].includes(key) ? -1 : 1;
         if (key === _ml.main.sort.key) {
@@ -6902,9 +7051,9 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
         const mob = _ml.mobs[index];
         mob.status = -1;
         mob.node.wins.classList.add('hvut-ml-outdated');
-        mob.node.wins.textContent = '失败';
+        mob.node.wins.textContent = 'failed';
       },
-      change_price: function () {
+      edit_price: function () {
         _ml.main.make_summary();
         if (_ml.mobs[-1].node.log) {
           _ml.main.make_log(-1);
@@ -6926,19 +7075,19 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
         const summary = {};
         const gains = mobs.flat();
         const prices = $price.get('Materials');
-        let profit = 0;
+        let income = 0;
         gains.forEach((g) => {
           if (!summary[g]) {
             summary[g] = 0;
           }
           summary[g]++;
-          profit += (prices[g] || 0);
+          income += (prices[g] || 0);
         });
         if (!_ml.main.node.summary) {
           _ml.main.node.summary = $element('ul', $id('monster_outer'), ['.hvut-ml-summary']);
         }
         _ml.main.node.summary.innerHTML = '';
-        $element('li', _ml.main.node.summary, `${mobs.length} 个怪物给予了你 ${gains.length} 件礼物,价值 ${_ml.price2str(profit)} credits`);
+        $element('li', _ml.main.node.summary, `${mobs.length} monster(s) brought you ${gains.length} gift(s), ${_ml.price2str(income)} credits`);
         _ml.materials.forEach((g) => {
           if (summary[g]) {
             $element('li', _ml.main.node.summary, `${summary[g]} x ${g}`);
@@ -6964,7 +7113,6 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
         const mob = _ml.mobs[index];
         mob.node.log?.remove();
       },
-
       make_log: function (index) {
         const mob = _ml.mobs[index];
         if (!mob.node.log) {
@@ -6972,101 +7120,30 @@ if (settings.monsterLab && _query.s === 'Bazaar' && _query.ss === 'ml') {
         }
         mob.node.log.innerHTML = '';
         const date = mob.log.date;
-        const hours = (_ml.now - date) / (1000 * 60 * 60);
-        const daily = Math.max(24, hours);
-        const round = Math.round(hours);
+        const days = (_ml.now - date) / (1000 * 60 * 60 * 24);
         const prices = $price.get('Materials');
         let count = 0;
-        let sum = 0;
-        // 映射表
-const materialMap = {
-        'Low-Grade Cloth': '低级布料',
-        'Mid-Grade Cloth': '中级布料',
-        'High-Grade Cloth': '高级布料',
-        'Low-Grade Leather': '低级皮革',
-        'Mid-Grade Leather': '中级皮革',
-        'High-Grade Leather': '高级皮革',
-        'Low-Grade Metals': '低级金属',
-        'Mid-Grade Metals': '中级金属',
-        'High-Grade Metals': '高级金属',
-        'Low-Grade Wood': '低级木材',
-        'Mid-Grade Wood': '中级木材',
-        'High-Grade Wood': '高级木材',
-        'Binding of Slaughter':  '粘合剂 基础攻击伤害',
-        'Binding of Balance':  '粘合剂 物理命中率',
-        'Binding of Isaac':  '粘合剂 物理暴击率',
-        'Binding of Destruction':  '粘合剂 基础魔法伤害',
-        'Binding of Focus':  '粘合剂 魔法命中率',
-        'Binding of Friendship':  '粘合剂 魔法暴击率',
-        'Binding of Protection':  '粘合剂 物理减伤',
-        'Binding of Warding':  '粘合剂 魔法减伤',
-        'Binding of the Fleet':  '粘合剂 回避率',
-        'Binding of the Barrier':  '粘合剂 格挡率',
-        'Binding of the Nimble':  '粘合剂 招架率',
-        'Binding of Negation':  '粘合剂 抵抗率',
-        'Binding of the Ox':  '粘合剂 力量',
-        'Binding of the Raccoon':  '粘合剂 灵巧',
-        'Binding of the Cheetah':  '粘合剂 敏捷',
-        'Binding of the Turtle':  '粘合剂 体质',
-        'Binding of the Fox':  '粘合剂 智力',
-        'Binding of the Owl':  '粘合剂 智慧',
-        'Binding of the Elementalist':  '粘合剂 元素魔法熟练度',
-        'Binding of the Heaven-sent':  '粘合剂 神圣魔法熟练度',
-        'Binding of the Demon-fiend':  '粘合剂 黑暗魔法熟练度',
-        'Binding of the Curse-weaver':  '粘合剂 减益魔法熟练度',
-        'Binding of the Earth-walker':  '粘合剂 增益魔法熟练度',
-        'Binding of Surtr':  '粘合剂 火焰魔法伤害',
-        'Binding of Niflheim':  '粘合剂 冰冷魔法伤害',
-        'Binding of Mjolnir':  '粘合剂 闪电魔法伤害',
-        'Binding of Freyr':  '粘合剂 疾风魔法伤害',
-        'Binding of Heimdall':  '粘合剂 神圣魔法伤害',
-        'Binding of Fenrir':  '粘合剂 黑暗魔法伤害',
-        'Binding of Dampening':  '粘合剂 打击减伤',
-        'Binding of Stoneskin':  '粘合剂 斩击减伤',
-        'Binding of Deflection':  '粘合剂 刺击减伤',
-        'Binding of the Fire-eater':  '粘合剂 火焰减伤',
-        'Binding of the Frost-born':  '粘合剂 冰冷减伤',
-        'Binding of the Thunder-child':  '粘合剂 闪电减伤',
-        'Binding of the Wind-waker':  '粘合剂 疾风减伤',
-        'Binding of the Thrice-blessed':  '粘合剂 神圣减伤',
-        'Binding of the Spirit-ward':  '粘合剂 黑暗减伤',
-        'Defense Matrix Modulator' : '力场碎片(盾)',
-        'Repurposed Actuator' : '动力碎片(重)',
-        'Shade Fragment' : '暗影碎片(轻)',
-        'Crystallized Phazon' : '相位碎片(布)',
-  // 添加其余材料的映射
-};
-_ml.materials.forEach((mat, i) => {
-  const chineseName = materialMap[mat] || mat; // 如果在映射表中找不到对应的中文名称，则使用原始英文名称
-  const li = $element('li', mob.node.log, mob.log.gifts[i] + ' x ' + chineseName);
-  if (i === 12 || i === 16 || i === 22 || i === 28 || i === 33 || i === 39 || i === 42 || i === 48) {
-    li.classList.add('hvut-ml-margin');
-  }
-  if (i === 27) {
-    li.classList.add('hvut-ml-break');
-  }
-  count += mob.log.gifts[i];
-  sum += mob.log.gifts[i] * (prices[mat] || 0);
-});
+        let income = 0;
+        _ml.materials.forEach((mat, i) => {
+          const li = $element('li', mob.node.log, mob.log.gifts[i] + ' x ' + mat);
+          if (i === 12 || i === 16 || i === 22 || i === 28 || i === 33 || i === 39 || i === 42 || i === 48) {
+            li.classList.add('hvut-ml-margin');
+          }
+          if (i === 27) {
+            li.classList.add('hvut-ml-break');
+          }
+          count += mob.log.gifts[i];
+          income += mob.log.gifts[i] * (prices[mat] || 0);
+        });
+
         mob.node.log.prepend(
-          $element('li', null, '已经过 ' + Math.floor(round / 24) + ' 天 ' + (round % 24) + ' 小时 / 自 ' + (new Date(date)).toLocaleString()),
-          $element('li', null, '- 总计: ' + count + ' 份礼物,估价 ' + _ml.price2str(sum) + ' Credits'),
-          $element('li', null, '- 日平均: ' + (Math.round(count / daily * 24 * 10) / 10) + ' 份礼物,估价 ' + _ml.price2str(sum / daily * 24) + ' Credits')
+          $element('li', null, `For ${Math.round(days * 10) / 10} days / Since ${(new Date(date)).toLocaleString()}`),
+          $element('li', null, `- Total: ${count} gifts, ${_ml.price2str(income)} credits`),
+          $element('li', null, `- Daily: ${Math.round(count / days * 10) / 10} gifts, ${_ml.price2str(income / days)} credits`)
         );
-        if (index == -1) { // 摘要
-          $element('li', mob.node.log, ['.hvut-ml-reset']).appendChild(
-            $input(['button', '重置日志'], null, null, () => { _ml.main.reset_log(); })
-          );
-        }
-      },
-      reset_log: function () {
-        if (confirm('怪物礼物日志将被重置。\n继续吗？')) {
-          deleteValue('ml_log');
-          location.href = location.href;
-        }
       },
 
-};
+    };
 
     // Initializing List
     if ($id('messagebox_outer')) {
@@ -7085,9 +7162,7 @@ _ml.materials.forEach((mat, i) => {
           popup(msg);
         }
       });
-      if (settings.monsterLabCloseDefaultPopup) {
-        $id('messagebox_outer').remove();
-      }
+      $id('messagebox_outer').classList.add('hvut-none');
     }
 
     _ml.mobs[-1] = { log: { date: _ml.now, gifts: (new Array(54)).fill(0) }, node: {} };
@@ -7180,45 +7255,45 @@ _ml.materials.forEach((mat, i) => {
       for (let i = 0; i < 54; i++) {
         _ml.mobs[-1].log.gifts[i] += mob.log.gifts[i];
       }
-      mob.gifts = mob.log.gifts.reduce((s, e) => s + e, 0);
+      mob.gifts = mob.log.gifts.reduce((s, e) => (s + e), 0);
       mob.node.gifts.textContent = mob.gifts;
     });
 
-    setValue('ml_log', _ml.log);
+    $config.set('ml_log', _ml.log);
 
     $id('monster_list').addEventListener('click', _ml.main.click, true);
     $id('monster_list').addEventListener('mouseover', _ml.main.mouseover);
     $id('monster_list').addEventListener('mouseout', _ml.main.mouseout);
 
     const sort_div = $element('div', [$id('slot_pane'), 'beforebegin'], ['.hvut-ml-sort hvut-cphu-sub']);
-	_ml.main.node.sort = {
-      index: $element('span', sort_div, [{ textContent: '编号' }, '!width: 30px; max-height: 20px;', { dataset: { action: 'sort', key: 'index' } }]),
-      name: $element('span', sort_div, ['名称', '!width: 200px; max-height: 20px;', { dataset: { action: 'sort', key: 'name' } }]),
-      class: $element('span', sort_div, ['类型', '!width: 90px; max-height: 20px;', { dataset: { action: 'sort', key: 'class' } }]),
-      pl: $element('span', sort_div, ['战力', '!width: 40px; max-height: 20px;', { dataset: { action: 'sort', key: 'pl' } }]),
-      wins: $element('span', sort_div, ['胜场', '!width: 30px; max-height: 20px;', { dataset: { action: 'sort', key: 'wins' } }]),
-      kills: $element('span', sort_div, ['击杀', '!width: 30px; max-height: 20px;', { dataset: { action: 'sort', key: 'kills' } }]),
-      gains: $element('span', sort_div, ['礼物', '!width: 30px; max-height: 40px;', { dataset: { action: 'sort', key: 'gains' } }]),
-      gifts: $element('span', sort_div, ['合计礼物', '!width: 60px; max-height: 20px;', { dataset: { action: 'sort', key: 'gifts' } }]),
-      morale: $element('span', sort_div, ['士气', '!width: 200px; max-height: 20px; ', { dataset: { action: 'sort', key: 'morale' } }]),
-      hunger: $element('span', sort_div, ['饥饿度', '!width: 200px; max-height: 20px; ', { dataset: { action: 'sort', key: 'hunger' } }]),
+    _ml.main.node.sort = {
+      index: $element('span', sort_div, [{ textContent: '#' }, '!width: 30px;', { dataset: { action: 'sort', key: 'index' } }]),
+      name: $element('span', sort_div, ['Name', '!width: 210px;', { dataset: { action: 'sort', key: 'name' } }]),
+      class: $element('span', sort_div, ['Class', '!width: 70px;', { dataset: { action: 'sort', key: 'class' } }]),
+      pl: $element('span', sort_div, ['PL', '!width: 40px;', { dataset: { action: 'sort', key: 'pl' } }]),
+      wins: $element('span', sort_div, ['Wins', '!width: 40px;', { dataset: { action: 'sort', key: 'wins' } }]),
+      kills: $element('span', sort_div, ['Kills', '!width: 40px;', { dataset: { action: 'sort', key: 'kills' } }]),
+      gains: $element('span', sort_div, ['+', '!width: 25px;', { dataset: { action: 'sort', key: 'gains' } }]),
+      gifts: $element('span', sort_div, ['Gifts', '!width: 50px;', { dataset: { action: 'sort', key: 'gifts' } }]),
+      morale: $element('span', sort_div, ['Morale', '!width: 200px;', { dataset: { action: 'sort', key: 'morale' } }]),
+      hunger: $element('span', sort_div, ['Hunger', '!width: 200px;', { dataset: { action: 'sort', key: 'hunger' } }]),
     };
 
-    if (settings.monsterLabDefaultSort === '#') {
+    if ($config.settings.monsterLabDefaultSort === 'index') {
       _ml.main.sort.key = 'index';
       _ml.main.sort.order = 1;
       _ml.main.node.sort.index.classList.add('hvut-ml-sort-current');
     } else {
-      _ml.main.sort(settings.monsterLabDefaultSort);
+      _ml.main.sort($config.settings.monsterLabDefaultSort);
     }
 
-    const side_div = $element('div', $id('monster_outer'), ['.hvut-ml-side']);
-    $input(['button', '礼物清单'], side_div, null, () => { _ml.main.toggle_summary(); });
-    $input(['button', '日志'], side_div, null, () => { _ml.main.toggle_log(-1); });
-    $input(['button', '材料价格'], side_div, null, () => { $price.edit('Materials', _ml.main.change_price); });
-    $input(['button', '更新击杀与胜场'], side_div, null, () => { _ml.main.feedall(); });
-    $input(['button', '怪物升级器'], side_div, { id: 'hvut-ml-up-button' }, () => { _ml.upgrade.toggle(); });
-    $input(['button', '战力计算器'], side_div, null, () => { _ml.plc.toggle(); });
+    const side_div = $element('div', $id('monster_outer'), ['.hvut-side hvut-ml-side']);
+    $input(['button', 'Gift Summary'], side_div, null, () => { _ml.main.toggle_summary(); });
+    $input(['button', 'Monster Lab Log'], side_div, null, () => { _ml.main.toggle_log(-1); });
+    $input(['button', 'Item Prices'], side_div, { className: 'hvut-side-margin' }, () => { $price.edit('Materials', 'ma', _ml.main.edit_price); });
+    $input(['button', 'Update Wins/Kills'], side_div, null, () => { _ml.main.feedall(); });
+    $input(['button', 'Monster Upgrader'], side_div, { id: 'hvut-ml-up-button' }, () => { _ml.upgrade.toggle(); });
+    $input(['button', 'Power Level Calculator'], side_div, null, () => { _ml.plc.toggle(); });
 
     _ml.main.make_summary();
 
@@ -7226,34 +7301,34 @@ _ml.materials.forEach((mat, i) => {
     _ml.upgrade = {
 
       pa: [
-        { query: 'pa_str', text: '力量', crystal: 'Crystal of Vigor' },
-        { query: 'pa_dex', text: '灵巧', crystal: 'Crystal of Finesse' },
-        { query: 'pa_agi', text: '敏捷', crystal: 'Crystal of Swiftness' },
-        { query: 'pa_end', text: '体质', crystal: 'Crystal of Fortitude' },
-        { query: 'pa_int', text: '智力', crystal: 'Crystal of Cunning' },
-        { query: 'pa_wis', text: '智慧', crystal: 'Crystal of Knowledge' },
+        { query: 'pa_str', text: 'STR', crystal: 'Crystal of Vigor' },
+        { query: 'pa_dex', text: 'DEX', crystal: 'Crystal of Finesse' },
+        { query: 'pa_agi', text: 'AGI', crystal: 'Crystal of Swiftness' },
+        { query: 'pa_end', text: 'END', crystal: 'Crystal of Fortitude' },
+        { query: 'pa_int', text: 'INT', crystal: 'Crystal of Cunning' },
+        { query: 'pa_wis', text: 'WIS', crystal: 'Crystal of Knowledge' },
       ],
       er: [
-        { query: 'er_fire', text: '火焰', crystal: 'Crystal of Flames' },
-        { query: 'er_cold', text: '冰冷', crystal: 'Crystal of Frost' },
-        { query: 'er_elec', text: '闪电', crystal: 'Crystal of Lightning' },
-        { query: 'er_wind', text: '疾风', crystal: 'Crystal of Tempest' },
-        { query: 'er_holy', text: '神圣', crystal: 'Crystal of Devotion' },
-        { query: 'er_dark', text: '黑暗', crystal: 'Crystal of Corruption' },
+        { query: 'er_fire', text: 'FIRE', crystal: 'Crystal of Flames' },
+        { query: 'er_cold', text: 'COLD', crystal: 'Crystal of Frost' },
+        { query: 'er_elec', text: 'ELEC', crystal: 'Crystal of Lightning' },
+        { query: 'er_wind', text: 'WIND', crystal: 'Crystal of Tempest' },
+        { query: 'er_holy', text: 'HOLY', crystal: 'Crystal of Devotion' },
+        { query: 'er_dark', text: 'DARK', crystal: 'Crystal of Corruption' },
       ],
       ct: [
-        { query: 'affect', text: '寻宝', desc: '增加送礼概率倍率 2.5%' },
-        { query: 'health', text: '刚毅', desc: '增加怪物生命值 5%' },
-        { query: 'damage', text: '蛮横', desc: '增加怪物伤害力 2.5%' },
-        { query: 'accur', text: '命中', desc: '增加怪物命中率 5%' },
-        { query: 'cevbl', text: '精密', desc: '减少目标有效闪避/格挡率 1%' },
-        { query: 'cpare', text: '压制', desc: '减少目标有效招架/抵抗率 1%' },
-        { query: 'parry', text: '拦截', desc: '增加怪物拦截率 0.5%' },
-        { query: 'resist', text: '弥散', desc: '增加怪物抵抗率 0.5%' },
-        { query: 'evade', text: '闪避', desc: '增加怪物闪避率 0.5%' },
-        { query: 'phymit', text: '防御', desc: '增加怪物物理减伤 1%' },
-        { query: 'magmit', text: '魔防', desc: '增加怪物魔法减伤 1%' },
-        { query: 'atkspd', text: '迅捷', desc: '增加怪物攻击速度 2.5%' },
+        { query: 'affect', text: 'Scavenging', desc: 'Increases the gift factor by 2.5%' },
+        { query: 'health', text: 'Fortitude', desc: 'Increases monster health by 5%' },
+        { query: 'damage', text: 'Brutality', desc: 'Increases monster damage by 2.5%' },
+        { query: 'accur', text: 'Accuracy', desc: 'Increases monster accuracy by 5%' },
+        { query: 'cevbl', text: 'Precision', desc: 'Decreases effective target evade/block by 1%' },
+        { query: 'cpare', text: 'Overpower', desc: 'Decreases effective target parry/resist by 1%' },
+        { query: 'parry', text: 'Interception', desc: 'Increases monster parry by 0.5%' },
+        { query: 'resist', text: 'Dissipation', desc: 'Increases monster resist by 0.5%' },
+        { query: 'evade', text: 'Evasion', desc: 'Increases monster evade by 0.5%' },
+        { query: 'phymit', text: 'Defense', desc: 'Increases monster physical mitigation by 1%' },
+        { query: 'magmit', text: 'Warding', desc: 'Increases monster magical mitigation by 1%' },
+        { query: 'atkspd', text: 'Swiftness', desc: 'Increases monster attack speed by 2.5%' },
       ],
 
       pa_pl: [0],
@@ -7278,8 +7353,8 @@ _ml.materials.forEach((mat, i) => {
         } else if (action === 'reset') {
           _ml.upgrade.reset(index);
         } else if (action === 'upgrade') {
-          const which = e.which === 1 ? 1 : e.which === 3 ? -1 : 0;
-          _ml.upgrade.exec(index, type, item, which);
+          const inc = e.button === 0 ? 1 : e.button === 2 ? -1 : 0;
+          _ml.upgrade.exec(index, type, item, inc);
         }
       },
       contextmenu: function (e) {
@@ -7292,18 +7367,16 @@ _ml.materials.forEach((mat, i) => {
         }
         _ml.upgrade.inited = true;
 
-        if (!$item.list) {
-          _ml.upgrade.node.button.disabled = true;
-          await $item.once();
-          _ml.upgrade.pa.forEach((e) => {
-            e.stock = $item.count(e.crystal);
-          });
-          _ml.upgrade.er.forEach((e) => {
-            e.stock = $item.count(e.crystal);
-          });
-          _ml.upgrade.ct.stock = $item.count('Chaos Token');
-          _ml.upgrade.node.button.disabled = false;
-        }
+        _ml.upgrade.node.button.disabled = true;
+        await $item.once();
+        _ml.upgrade.pa.forEach((e) => {
+          e.stock = $item.count(e.crystal);
+        });
+        _ml.upgrade.er.forEach((e) => {
+          e.stock = $item.count(e.crystal);
+        });
+        _ml.upgrade.ct.stock = $item.count('Chaos Token');
+        _ml.upgrade.node.button.disabled = false;
         await _ml.upgrade.update();
 
         _ml.upgrade.node.div = $element('div', $id('mainpane'), ['.hvut-ml-up']);
@@ -7315,22 +7388,22 @@ _ml.materials.forEach((mat, i) => {
 
         _ml.upgrade.node.table = $element('table', list, ['.hvut-ml-up-table']);
         const thead = $element('tr', _ml.upgrade.node.table);
-        $element('td', thead, { textContent: '编号', dataset: { action: 'sort', key: 'index' } });
-        $element('td', thead, ['姓名', { dataset: { action: 'sort', key: 'name' } }]);
-        $element('td', thead, ['类型', { dataset: { action: 'sort', key: 'class' } }]);
-        $element('td', thead, ['战力', { dataset: { action: 'sort', key: 'pl' } }]);
-        $element('td', thead, ['士气', { dataset: { action: 'sort', key: 'morale' } }]);
-        $element('td', thead, ['*', { dataset: { action: 'reset', index: 'all', desc: '全部重置' } }]);
+        $element('td', thead, { textContent: '#', dataset: { action: 'sort', key: 'index' } });
+        $element('td', thead, ['name', { dataset: { action: 'sort', key: 'name' } }]);
+        $element('td', thead, ['class', { dataset: { action: 'sort', key: 'class' } }]);
+        $element('td', thead, ['pl', { dataset: { action: 'sort', key: 'pl' } }]);
+        $element('td', thead, ['morale', { dataset: { action: 'sort', key: 'morale' } }]);
+        $element('td', thead, ['*', { dataset: { action: 'reset', index: 'all', desc: 'Reset' } }]);
 
-        $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'pa', item: 'all', desc: '所有主属性强化提升1级，右键降低' } }]);
-        $element('td', thead, ['=', { dataset: { action: 'upgrade', index: 'all', type: 'pa', item: 'equal', desc: '均衡提升强化等级' } }]);
+        $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'pa', item: 'all', desc: 'Increase / Decrease Primary Attributes' } }]);
+        $element('td', thead, ['=', { dataset: { action: 'upgrade', index: 'all', type: 'pa', item: 'equal', desc: 'Equalize Primary Attributes' } }]);
         _ml.upgrade.pa.forEach((pa, i) => { $element('td', thead, [pa.text.toLowerCase(), { dataset: { action: 'upgrade', index: 'all', type: 'pa', item: i, desc: pa.crystal } }]); });
 
-        $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'er', item: 'all', desc: '所有元素减伤强化提升1级，右键降低' } }]);
-        $element('td', thead, ['=', { dataset: { action: 'upgrade', index: 'all', type: 'er', item: 'equal', desc: '均衡提升强化等级' } }]);
+        $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'er', item: 'all', desc: 'Increase / Decrease Elemental Mitigations' } }]);
+        $element('td', thead, ['=', { dataset: { action: 'upgrade', index: 'all', type: 'er', item: 'equal', desc: 'Equalize Elemental Mitigations' } }]);
         _ml.upgrade.er.forEach((er, i) => { $element('td', thead, [er.text.toLowerCase(), { dataset: { action: 'upgrade', index: 'all', type: 'er', item: i, desc: er.crystal } }]); });
 
-        $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'ct', item: 'all', desc: '所有混沌强化提升1级，右键降低' } }]);
+        $element('td', thead, ['+', { dataset: { action: 'upgrade', index: 'all', type: 'ct', item: 'all', desc: 'Increase / Decrease Token Stats' } }]);
         _ml.upgrade.ct.forEach((ct, i) => { $element('td', thead, [ct.text.slice(0, 3).toLowerCase(), { dataset: { action: 'upgrade', index: 'all', type: 'ct', item: i, desc: `${ct.text} : ${ct.desc}` } }]); });
 
         const pa_ul = $element('ul', bottom, ['.hvut-ml-up-crystal']);
@@ -7344,11 +7417,11 @@ _ml.materials.forEach((mat, i) => {
         _ml.upgrade.ct.ul = $element('ul', bottom, ['.hvut-ml-up-token']);
 
         const buttons = $element('div', bottom, ['.hvut-ml-up-buttons']);
-        $input(['button', '保存升级计划'], buttons, null, () => { _ml.upgrade.save(); });
-        $input(['button', '加载升级计划'], buttons, null, () => { _ml.upgrade.load(); });
-        _ml.upgrade.node.update = $input(['button', '更新数据'], buttons, null, () => { _ml.upgrade.force_update(); });
-        _ml.upgrade.node.run = $input(['button', '执行升级'], buttons, null, () => { _ml.upgrade.run(); });
-        $input(['button', '关闭'], buttons, null, () => { _ml.upgrade.toggle(); });
+        $input(['button', 'Save'], buttons, null, () => { _ml.upgrade.save(); });
+        $input(['button', 'Revert'], buttons, null, () => { _ml.upgrade.load(); });
+        _ml.upgrade.node.update = $input(['button', 'Update'], buttons, null, () => { _ml.upgrade.force_update(); });
+        _ml.upgrade.node.run = $input(['button', 'Run'], buttons, null, () => { _ml.upgrade.run(); });
+        $input(['button', 'Close'], buttons, null, () => { _ml.upgrade.toggle(); });
 
         for (let i = 0; i < 25; i++) {
           _ml.upgrade.pa_pl[i + 1] = _ml.upgrade.pa_pl[i] + (3 + i * 0.5);
@@ -7370,7 +7443,7 @@ _ml.materials.forEach((mat, i) => {
         });
 
         let ct_slot = $qsa('#slot_pane > div.msl').length;
-        const ct_next = /Cost: (\d+) Chaos Token/.test($id('monster_actions').textContent) && parseInt(RegExp.$1);
+        const ct_next = parseInt(/Cost: (\d+) Chaos Token/.exec($id('monster_actions').textContent)[1]);
         if (ct_next === Math.ceil(1 + Math.pow(ct_slot, 1.2))) {
         } else if (ct_next === Math.ceil(1 + Math.pow(ct_slot / 2, 1.2))) {
           ct_slot = ct_slot / 2;
@@ -7393,7 +7466,7 @@ _ml.materials.forEach((mat, i) => {
           $element('td', tr, mob.name);
           $element('td', tr, mob.class);
           mob.node.pl = $element('td', tr, mob.pl);
-          mob.node.morale = $element('td', tr, [(mob.morale / 100), (mob.morale < settings.monsterLabMorale ? '.hvut-ml-up-change' : '')]);
+          mob.node.morale = $element('td', tr, mob.morale / 100);
           $element('td', tr, ['*', { dataset: { action: 'reset', index: mob.index } }]);
 
           $element('td', tr, ['+', { dataset: { action: 'upgrade', index: mob.index, type: 'pa', item: 'all' } }]);
@@ -7428,6 +7501,7 @@ _ml.materials.forEach((mat, i) => {
         });
 
         _ml.upgrade.sum();
+        _ml.upgrade.load();
       },
 
       update: async function () {
@@ -7438,10 +7512,10 @@ _ml.materials.forEach((mat, i) => {
         }
 
         _ml.upgrade.node.button.disabled = true;
-        _ml.upgrade.node.button.value = '更新数据中...';
+        _ml.upgrade.node.button.value = 'Updating... ...';
         if (_ml.upgrade.node.run) {
           _ml.upgrade.node.run.disabled = true;
-          _ml.upgrade.node.run.value = '更新数据中...';
+          _ml.upgrade.node.run.value = 'Updating...';
         }
 
         async function update(mob) {
@@ -7450,7 +7524,7 @@ _ml.materials.forEach((mat, i) => {
           done++;
           mob.update_needed = false;
           _ml.parse(mob, doc);
-          _ml.upgrade.node.button.value = `更新中... (${done}/${total})`;
+          _ml.upgrade.node.button.value = `Updating... (${done}/${total})`;
           if (_ml.upgrade.node.run) {
             _ml.upgrade.node.run.value = `${done}/${total}`;
           }
@@ -7460,11 +7534,11 @@ _ml.materials.forEach((mat, i) => {
         const requests = mobs.map((mob) => update(mob));
         await Promise.all(requests);
 
-        setValue('ml_log', _ml.log);
+        $config.set('ml_log', _ml.log);
         _ml.upgrade.node.button.disabled = false;
-        _ml.upgrade.node.button.value = '更新怪物数据';
+        _ml.upgrade.node.button.value = 'Monster Upgrader';
         if (_ml.upgrade.node.run) {
-          _ml.upgrade.node.run.value = '完成';
+          _ml.upgrade.node.run.value = 'Completed';
         }
       },
 
@@ -7472,19 +7546,13 @@ _ml.materials.forEach((mat, i) => {
         _ml.mobs.forEach((mob) => {
           mob.log.pl = -1;
         });
-        setValue('ml_log', _ml.log);
+        $config.set('ml_log', _ml.log);
         location.href = location.href;
       },
 
       sort: function (key) {
-        if (!['#', 'index', 'name', 'class', 'pl', 'wins', 'kills', '+', 'gains', 'gifts', 'morale', 'hunger'].includes(key)) {
+        if (!['index', 'name', 'class', 'pl', 'wins', 'kills', 'gains', 'gifts', 'morale', 'hunger'].includes(key)) {
           return;
-        }
-        if (key === '#') {
-          key = 'index';
-        }
-        if (key === '+') {
-          key = 'gains';
         }
         let order = ['wins', 'kills', 'gains', 'gifts'].includes(key) ? -1 : 1;
         if (key === _ml.upgrade.sort.key) {
@@ -7500,7 +7568,7 @@ _ml.materials.forEach((mat, i) => {
         _ml.upgrade.node.table.append(..._ml.upgrade.sort.list.map((mob) => mob.node.tr));
       },
 
-      exec: function (index, type, item, which) {
+      exec: function (index, type, item, inc) {
         let mobs;
         if (index === 'all') {
           mobs = _ml.mobs;
@@ -7513,7 +7581,7 @@ _ml.materials.forEach((mat, i) => {
             const max = Math.max(...mob[type].map((e) => e.to));
             mob[type].forEach((e) => { e.to = max; });
             items = mob[type];
-            which = 0;
+            inc = 0;
           } else if (item === 'all') {
             items = mob[type];
           } else {
@@ -7521,7 +7589,7 @@ _ml.materials.forEach((mat, i) => {
           }
           items.forEach((e) => {
             const value = e.value;
-            let to = e.to + which;
+            let to = e.to + inc;
             const max = type === 'pa' ? 25 : type === 'er' ? 50 : type === 'ct' ? e.max : 0;
             if (to < value) {
               to = value;
@@ -7545,10 +7613,10 @@ _ml.materials.forEach((mat, i) => {
             mob.node.pl.classList.add('hvut-ml-up-change');
           }
           mob.node.morale.textContent = mob.morale_to / 100;
-          if (mob.morale_to < settings.monsterLabMorale) {
-            mob.node.morale.classList.add('hvut-ml-up-change');
-          } else {
+          if (mob.morale === mob.morale_to) {
             mob.node.morale.classList.remove('hvut-ml-up-change');
+          } else {
+            mob.node.morale.classList.add('hvut-ml-up-change');
           }
         });
 
@@ -7588,16 +7656,16 @@ _ml.materials.forEach((mat, i) => {
           e.require = _ml.upgrade.er_crystal[e.to] - _ml.upgrade.er_crystal[e.value];
         });
 
-        mob.ct.require = mob.ct.reduce((s, e) => s + (e.value + 1 + e.to) * (e.to - e.value) / 2, 0);
+        mob.ct.require = mob.ct.reduce((s, e) => (s + (e.value + 1 + e.to) * (e.to - e.value) / 2), 0);
         mob.pl_to = Math.round(
-          mob.pa.reduce((s, e) => s + _ml.upgrade.pa_pl[e.to], 0)
-          + mob.er.reduce((s, e) => s + _ml.upgrade.er_pl[e.to], 0)
+          mob.pa.reduce((s, e) => (s + _ml.upgrade.pa_pl[e.to]), 0)
+          + mob.er.reduce((s, e) => (s + _ml.upgrade.er_pl[e.to]), 0)
         );
         mob.morale_to = Math.min(
           24000,
           mob.morale
-          + mob.pa.reduce((s, e) => s + (_ml.upgrade.pa_morale[e.to] - _ml.upgrade.pa_morale[e.value]), 0)
-          + mob.er.reduce((s, e) => s + (_ml.upgrade.er_morale[e.to] - _ml.upgrade.er_morale[e.value]), 0)
+          + mob.pa.reduce((s, e) => (s + (_ml.upgrade.pa_morale[e.to] - _ml.upgrade.pa_morale[e.value])), 0)
+          + mob.er.reduce((s, e) => (s + (_ml.upgrade.er_morale[e.to] - _ml.upgrade.er_morale[e.value])), 0)
         );
       },
 
@@ -7651,12 +7719,12 @@ _ml.materials.forEach((mat, i) => {
         });
 
         _ml.upgrade.ct.ul.innerHTML = `
-          <li><span>混沌令牌</span></li>
-          <li><span>用于解锁</span><span>${_ml.upgrade.ct.unlock.toLocaleString()}</span></li>
-          <li><span>用于升级</span><span>${_ml.upgrade.ct.used.toLocaleString()}</span></li>
-          <li><span>总计</span><span>${(_ml.upgrade.ct.unlock + _ml.upgrade.ct.used).toLocaleString()}</span></li>
-          <li><span>需求</span><span>${_ml.upgrade.ct.require.toLocaleString()}</span></li>
-          <li><span>库存</span><span>${_ml.upgrade.ct.stock.toLocaleString()}</span></li>`;
+          <li><span>Chaos Tokens</span></li>
+          <li><span>(Unlock slots)</span><span>${_ml.upgrade.ct.unlock.toLocaleString()}</span></li>
+          <li><span>(Upgrade monsters)</span><span>${_ml.upgrade.ct.used.toLocaleString()}</span></li>
+          <li><span>Total Usage</span><span>${(_ml.upgrade.ct.unlock + _ml.upgrade.ct.used).toLocaleString()}</span></li>
+          <li><span>Requires</span><span>${_ml.upgrade.ct.require.toLocaleString()}</span></li>
+          <li><span>Stock</span><span>${_ml.upgrade.ct.stock.toLocaleString()}</span></li>`;
 
         if (_ml.upgrade.ct.require > _ml.upgrade.ct.stock) {
           _ml.upgrade.ct.ul.lastElementChild.classList.add('hvut-ml-up-nostock');
@@ -7667,10 +7735,10 @@ _ml.materials.forEach((mat, i) => {
 
       run: async function () {
         if (!_ml.upgrade.stock) {
-          alert('水晶或混沌令牌不足');
+          alert('Not enough Crystals or Chaos Tokens');
           return;
         }
-        if (!confirm('确定要这么升级怪物吗?')) {
+        if (!confirm('Are you sure that you wish to upgrade the selected monsters?')) {
           return;
         }
 
@@ -7723,7 +7791,7 @@ _ml.materials.forEach((mat, i) => {
         if (total === 0) {
           return;
         }
-        setValue('ml_log', _ml.log);
+        $config.set('ml_log', _ml.log);
         _ml.upgrade.node.run.disabled = true;
         _ml.upgrade.node.update.disabled = true;
 
@@ -7752,7 +7820,7 @@ _ml.materials.forEach((mat, i) => {
           });
         });
 
-        setValue('ml_log', _ml.log);
+        $config.set('ml_log', _ml.log);
       },
       load: function () {
         _ml.mobs.forEach((mob) => {
@@ -7843,67 +7911,67 @@ _ml.materials.forEach((mat, i) => {
 
         const node = _ml.plc.node;
         node.div = $element('div', $id('mainpane'), ['.hvut-ml-plc'], (e) => { _ml.plc.click(e); });
-        node.left = $element('div', node.div, ['.hvut-ml-plc-left'], { input: () => { _ml.plc.input(); } });
+        node.left = $element('div', node.div, ['.hvut-ml-plc-left'], { input: (e) => { _ml.plc.input(e); } });
 
         const total = $element('div', node.left);
         $element('div', total).append(
-          $element('span', null, '怪物数量'), $element('br'), $element('br'),
+          $element('span', null, 'Monsters'), $element('br'), $element('br'),
           node.count = $input('number', null, { min: 0, max: 200, readOnly: true })
         );
         $element('div', total).append(
-          $element('span', null, '主属性'), $element('br'),
-          $element('span', null, ['所需水晶', '.hvut-ml-plc-btn']),
+          $element('span', null, 'Primary Attributes'), $element('br'),
+          $element('span', null, ['Crystal', '.hvut-ml-plc-btn']),
           node.pa_total = $element('span', null, ['.hvut-ml-plc-crystal']), $element('br'),
-          $element('span', null, ['差额', '.hvut-ml-plc-btn']),
+          $element('span', null, ['Difference', '.hvut-ml-plc-btn']),
           node.pa_total_diff = $element('span', null, ['.hvut-ml-plc-crystal'])
         );
         $element('div', total).append(
-          $element('span', null, '属性减伤'), $element('br'),
-          $element('span', null, ['所需水晶', '.hvut-ml-plc-btn']),
+          $element('span', null, 'Elemental Mitigations'), $element('br'),
+          $element('span', null, ['Crystal', '.hvut-ml-plc-btn']),
           node.er_total = $element('span', null, ['.hvut-ml-plc-crystal']), $element('br'),
-          $element('span', null, ['差额', '.hvut-ml-plc-btn']),
+          $element('span', null, ['Difference', '.hvut-ml-plc-btn']),
           node.er_total_diff = $element('span', null, ['.hvut-ml-plc-crystal'])
         );
 
         node.right = $element('div', node.div, ['.hvut-ml-plc-right']);
 
         const buttons = $element('div', node.right, ['.hvut-ml-plc-buttons']);
-        $input(['button', '保存计划'], buttons, null, () => { _ml.plc.save(); });
-        $input(['button', '加载计划'], buttons, null, () => { _ml.plc.load(); });
-        $input(['button', '关闭'], buttons, null, () => { _ml.plc.toggle(); });
-        $input(['button', '添加怪物'], buttons, { dataset: { action: 'add' } });
+        $input(['button', 'Save'], buttons, null, () => { _ml.plc.save(); });
+        $input(['button', 'Revert'], buttons, null, () => { _ml.plc.load(); });
+        $input(['button', 'Close'], buttons, null, () => { _ml.plc.toggle(); });
+        $input(['button', 'Add Monster'], buttons, { dataset: { action: 'add' } });
         Object.keys(_ml.plc.preset).forEach((pl) => { $input(['button', pl], buttons, { dataset: { action: 'add', value: pl } }); });
 
         $element('table', node.right, ['.hvut-ml-plc-table',
           `/<tbody>
-          <tr><td>战力</td><td>效果</td></tr>
-          <tr><td>25</td><td>解锁命名功能，并开始累计胜场与击杀数</td></tr>
-          <tr><td>200</td><td>解锁第二个技能</td></tr>
-          <tr><td>250</td><td>不再可以被删除<br>士气消耗减少2倍</td></tr>
-          <tr><td>251</td><td>需要怪物食品而不是怪物饲料作为食物</td></tr>
-          <tr><td>400</td><td>解锁灵力攻击</td></tr>
-          <tr><td>499</td><td>礼物现在可能包含高级材料</td></tr>
-          <tr><td>750</td><td>士气消耗减少3倍<br>不再给予低级材料作为礼物</td></tr>
-          <tr><td>751</td><td>需要怪物料理而不是怪物食品作为食物</td></tr>
-          <tr><td>1000</td><td>永远不会被停用</td></tr>
-          <tr><td>1005</td><td>解锁所有混沌升级</td></tr>
-          <tr><td>1250</td><td>士气消耗减少4倍</td></tr>
-          <tr><td>1499</td><td>100%给予高级材料作为礼物</td></tr>
-          <tr><td>1750</td><td>士气消耗减少5倍</td></tr>
-          <tr><td>2250</td><td>战斗力等级上限<br>士气消耗减少6倍</td></tr>
+          <tr><td>Power<br> Level</td><td>Effects</td></tr>
+          <tr><td>25</td><td>Unlocks naming and becomes active in battles once named</td></tr>
+          <tr><td>200</td><td>Unlocks second Skill Attack</td></tr>
+          <tr><td>250</td><td>Can no longer be deleted<br>Morale drain reduced by 2x</td></tr>
+          <tr><td>251</td><td>Requires Monster Edibles instead of Monster Chow as Food</td></tr>
+          <tr><td>400</td><td>Unlocks Spirit Attack</td></tr>
+          <tr><td>499</td><td>Gifts may now include High-Grade materials</td></tr>
+          <tr><td>750</td><td>Morale drain reduced by 3x<br>Low-Grade materials can no longer be gifts</td></tr>
+          <tr><td>751</td><td>Requires Monster Cuisine instead of Monster Edibles as Food</td></tr>
+          <tr><td>1000</td><td>Will never be deactivated</td></tr>
+          <tr><td>1005</td><td>All Chaos Upgrades are available</td></tr>
+          <tr><td>1250</td><td>Morale drain reduced by 4x</td></tr>
+          <tr><td>1499</td><td>Mid-Grade materials can no longer be gifts (100% are High-Grade)</td></tr>
+          <tr><td>1750</td><td>Morale drain reduced by 5x</td></tr>
+          <tr><td>2250</td><td>Power Level cap reached<br>Morale drain reduced by 6x</td></tr>
           </tbody>`,
         ]);
 
         _ml.plc.load();
       },
       save: function () {
-        setValue('ml_lab', _ml.plc.list.filter((m) => m).map((m) => m.json));
+        $config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json));
         _ml.plc.load();
       },
       load: function () {
         _ml.plc.list.forEach((m) => { m?.node.div.remove(); });
         _ml.plc.list.length = 0;
-        getValue('ml_lab', [_ml.plc.preset['250']]).forEach((j) => { _ml.plc.add(j); });
+        $config.get('ml_plc', [_ml.plc.preset['250']]).forEach((j) => { _ml.plc.add(j); });
       },
       toggle: function () {
         _ml.plc.node.div?.classList.toggle('hvut-none');
@@ -7929,7 +7997,7 @@ _ml.materials.forEach((mat, i) => {
         m.node.count = $input('number', sub, { value: m.json.count, min: 0, max: 200, dataset: { action: 'change', index, type: 'count' } });
 
         sub = $element('div', m.node.div);
-        $element('span', sub, '主属性');
+        $element('span', sub, 'Primary Attributes');
         $element('br', sub);
 
         span = $element('span', sub, ['.hvut-ml-plc-btn']);
@@ -7948,7 +8016,7 @@ _ml.materials.forEach((mat, i) => {
         m.node.pa_diff = $element('span', sub, ['.hvut-ml-plc-crystal']);
 
         sub = $element('div', m.node.div);
-        $element('span', sub, '元素减伤');
+        $element('span', sub, 'Elemental Mitigations');
         $element('br', sub);
 
         span = $element('span', sub, ['.hvut-ml-plc-btn']);
@@ -8080,7 +8148,7 @@ _ml.materials.forEach((mat, i) => {
 
 
 //* [13] Bazaar - MoogleMail
-if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
+if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) {
   _mm.node = {};
 
   _mm.attach_text = function (item) {
@@ -8124,7 +8192,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
   // MM WRITE
   if (_query.filter === 'new' && _query.hvut !== 'disabled') {
     if ($id('mmail_attachremove')) {
-      alert('请移除附加的物品。');
+      alert('Remove attached items.');
       location.href = location.href + '&hvut=disabled';
       return;
     }
@@ -8141,15 +8209,15 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       });
       if (cod_total) {
         if (queue.length > 1) {
-          atext += `\n总计：${cod_total.toLocaleString()} Credits`;
+          atext += `\nTotal: ${cod_total.toLocaleString()} Credits`;
         }
         const cod_deduction = _mm.parse_price(_mm.node.write_cod_deduction.value);
         if (cod_deduction) {
           const cod = cod_total - cod_deduction;
-          atext += `\n抵扣额：-${cod_deduction.toLocaleString()} Credits`;
-          atext += `\n货到付款额：${cod.toLocaleString()} Credits`;
+          atext += `\nDeduction: -${cod_deduction.toLocaleString()} Credits`;
+          atext += `\nCoD: ${cod.toLocaleString()} Credits`;
           if (cod < 10) {
-            atext += '\n=> 货到付款：0 Credits';
+            atext += '\n=> CoD: 0 Credits';
           }
         }
       }
@@ -8158,7 +8226,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
 
     _mm.write_pack = function (e) {
       if (_mm.write_pack.current) {
-        popup('正在处理其他请求...');
+        popup('Processing other requests...');
         return;
       }
 
@@ -8174,15 +8242,15 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         return;
       }
       if (selected.some((e) => e.data.pane === 'equip' && e.node.div?.dataset.locked == '1')) {
-        alert('已锁定的装备'); // 装备无法附加
+        alert('Locked equipment'); // Equipment cannot be attached, kupo!
         return;
       }
       if (selected.some((e) => e.data.count > e.data.stock)) {
-        alert('物品不足'); // 物品不足
+        alert('Insufficient number of items'); // Insufficient items, kupo!
         return;
       }
       if (!_mm.node.write_to_name.value) {
-        alert('没有收件人');
+        alert('No recipient');
         return;
       }
       _mm.write_pack.current = true;
@@ -8196,12 +8264,12 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         body: _mm.node.write_body.value,
         attach,
         cod_deduction: _mm.parse_price(_mm.node.write_cod_deduction.value),
-        cod_persistent: _isekai && _mm.node.write_cod_persistent.checked,
+        cod_persistent: $config.isekai && _mm.node.write_cod_persistent.checked,
       };
       $mail.request(mail);
     };
 
-	_mm.write_log = function (text, clear) {
+    _mm.write_log = function (text, clear) {
       if (clear) {
         _mm.node.write_log.value = '';
       }
@@ -8221,7 +8289,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     };
 
     _mm.userlist = {
-      list: getValue('mm_userlist', []),
+      list: $config.get('mm_userlist', []),
       create: function () {
         _mm.node.write_userlist.innerHTML = '';
         _mm.userlist.list.forEach((u) => { $element('option', _mm.node.write_userlist, { value: u }); });
@@ -8235,17 +8303,17 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       },
       save: function () {
         _mm.userlist.list = _mm.userlist.list.filter((e, i, a) => e && a.indexOf(e) === i);
-        setValue('mm_userlist', _mm.userlist.list);
+        $config.set('mm_userlist', _mm.userlist.list);
         if (_mm.node.write_userlist) {
           _mm.userlist.create();
         }
       },
       popup: function () {
-        popup_text(_mm.userlist.list.join('\n'), 'width: 300px; height: 300px;', [
-          { value: '保存列表', click: (w, t) => {
-            _mm.userlist.list = t.value.split('\n');
+        popup_text(_mm.userlist.list.join('\n'), 300, 300, [
+          { text: 'Save', click: (p) => {
+            _mm.userlist.list = p.textarea.value.split('\n');
             _mm.userlist.save();
-            w.remove();
+            p.close();
           } },
         ]);
       },
@@ -8292,41 +8360,37 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     _mm.node.write_field = $element('fieldset', $id('mmail_outer'), ['.hvut-mm-field']);
     _mm.node.write_left = $element('div', _mm.node.write_field, ['.hvut-mm-left']);
 
-    $input(['button', '发送'], _mm.node.write_left, { tabIndex: 4, style: 'width: 60px; height: 52px; margin-top: 4px;' }, () => { _mm.write_pack(); });
-    $element('span', _mm.node.write_left, ['收件人:', '!width: 60px;']);
+    $input(['button', 'SEND'], _mm.node.write_left, { tabIndex: 4, style: 'width: 60px; height: 52px; margin-top: 4px;' }, () => { _mm.write_pack(); });
+    $element('span', _mm.node.write_left, ['To:', '!width: 60px;']);
     _mm.node.write_to_name = $input('text', _mm.node.write_left, { value: $id('mailform').elements.message_to_name.value || '', tabIndex: 1, style: 'width: 360px; font-weight: bold;' });
-    $input(['button', '编辑列表'], _mm.node.write_left, { style: 'width: 80px;' }, () => { _mm.userlist.popup(); });
-    $element('span', _mm.node.write_left, ['主题:', '!width: 60px;']);
+    $input(['button', 'Edit List'], _mm.node.write_left, { style: 'width: 80px;' }, () => { _mm.userlist.popup(); });
+    $element('span', _mm.node.write_left, ['Subject:', '!width: 60px;']);
     _mm.node.write_subject = $input('text', _mm.node.write_left, { value: $id('mailform').elements.message_subject.value || '', tabIndex: 2, style: 'width: 450px; font-weight: bold;' });
 
     _mm.node.write_to_name.setAttribute('list', 'hvut-mm-userlist');
     _mm.node.write_userlist = $element('datalist', _mm.node.write_left, ['#hvut-mm-userlist']);
     _mm.userlist.create();
 
-    $element('span', _mm.node.write_left, ['可选项:', '!width: 60px;']);
-    _mm.node.write_cod_deduction = $input(['text', 'CoD抵扣额'], _mm.node.write_left, { pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'width: 60px; text-align: right;' }, { input: (e) => { _mm.write_calc(e); } });
-    if (_isekai) {
-      _mm.node.write_cod_persistent = $input(['checkbox', '永久区货到付款'], _mm.node.write_left, { checked: true });
+    $element('span', _mm.node.write_left, ['Options:', '!width: 60px;']);
+    _mm.node.write_cod_deduction = $input(['text', 'CoD Deduction'], _mm.node.write_left, { pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'width: 60px; text-align: right;' }, { input: (e) => { _mm.write_calc(e); } });
+    if ($config.isekai) {
+      _mm.node.write_cod_persistent = $input(['checkbox', 'Persistent CoD'], _mm.node.write_left, { checked: true });
     }
 
-    const template_div = $element('div', _mm.node.write_left, ['!margin-left: 60px;']);
-    Object.entries(settings.moogleMailTemplate).forEach(([k, t]) => { $input(['button', k], template_div, null, () => { _mm.item_template(t); }); });
-
-    _mm.node.write_body = $element('textarea', _mm.node.write_left, { value: $id('mailform').elements.message_body.value || '', tabIndex: 3, spellcheck: false, style: 'width: 580px; height: 220px; margin-top: 10px;' });
+    _mm.node.write_body = $element('textarea', _mm.node.write_left, { value: $id('mailform').elements.message_body.value || '', tabIndex: 3, spellcheck: false, style: 'width: 580px; height: 250px; margin-top: 10px;' });
     _mm.node.write_log = $element('textarea', _mm.node.write_left, { readOnly: true, spellcheck: false, style: 'width: 480px; height: 200px; color: unset;' });
     $mail.log = _mm.write_log;
 
     const attach_div = $element('div', _mm.node.write_left, ['.hvut-mm-attachtext']);
-    $input(['button', '从文本添加'], attach_div);
-    $input(['button', '可用格式范例'], attach_div, null, () => { popup_text('100 x Health Potion @ 10\n(200) Mana Potion @ 90\nSpirit Potion @ 90 x 300\nVibrant Catalyst @ 4.5k (100)', 'width: 300px; white-space: pre;'); });
-    $input(['button', '清除文本'], attach_div, null, () => { _mm.item_text(); });
-    $input(['button', '添加附件'], attach_div, null, () => { _mm.item_text(true); });
-    $input(['button', '重置搜索框'], attach_div, null, () => { _mm.item_search('', true); });
-
+    $input(['button', 'ATTACH from TEXT'], attach_div);
+    $input(['button', 'Available Formats'], attach_div, null, () => { popup_text('100 x Health Potion @ 10\n(200) Mana Potion @ 90\nSpirit Potion @ 90 x 300\nLast Elixir @ 1.5k (100)', 300, 100); });
+    $input(['button', 'CALC'], attach_div, null, () => { _mm.item_text(); });
+    $input(['button', 'ATTACH'], attach_div, null, () => { _mm.item_text(true); });
+    $input(['button', 'RESET'], attach_div, null, () => { _mm.item_search('', true); });
 
     _mm.node.write_right = $element('div', _mm.node.write_field, ['.hvut-mm-right']);
     _mm.node.write_tabs = $element('div', _mm.node.write_right, ['.hvut-mm-tabs hvut-cphu-sub']);
-    $element('span', _mm.node.write_tabs, '使用原版邮箱', () => { location.href = location.href + '&hvut=disabled'; });
+    $element('span', _mm.node.write_tabs, 'Use Default MoogleMail', () => { location.href = location.href + '&hvut=disabled'; });
 
     // MM item
     _mm.item_change = function (e) {
@@ -8405,42 +8469,35 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       _mm.write_calc();
     };
     _mm.item_search = function (value, set) {
-      if (set) {
-        _mm.node.item_search.value = value;
-      } else {
-        value = value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',');
-        if (value === _mm.item_search.value) {
-          return;
+      if (typeof value === 'string') {
+        if (set) {
+          _mm.node.item_search.value = value;
+        } else {
+          value = value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',');
+          if (value === _mm.item_search.value) {
+            return;
+          }
         }
       }
-      _mm.item_search.value = value;
 
       let results;
       if (!value) {
         results = _mm.item_list;
-      } else if (/^\[(.*)\]$/.test(value)) {
-        value = RegExp.$1.toLowerCase();
-        value = $price.keys.find((k) => k.toLowerCase() === value);
-        if (!value) {
-          return;
-        }
-        const prices = $price.get(value);
+      } else if (typeof value === 'string') {
+        value = value.split(',').map((v) => v.split(' '));
         results = _mm.item_list.filter((e) => {
-          if (e.info.name in prices) {
-            _mm.item_set(e, e.data.count, prices[e.info.name]);
+          const lowercase = e.info.lowercase;
+          return e.node.check.checked || value.some((v) => v.every((s) => s && lowercase.includes(s)));
+        });
+      } else { // array
+        results = _mm.item_list.filter((e) => {
+          if (value.includes(e.info.name)) {
             return true;
           } else if (e.node.check.checked) {
             return true;
           } else {
             return false;
           }
-        });
-        _mm.write_calc();
-      } else {
-        value = value.split(',').map((v) => v.split(' '));
-        results = _mm.item_list.filter((e) => {
-          const lowercase = e.info.lowercase;
-          return e.node.check.checked || value.some((v) => v.every((s) => s && lowercase.includes(s)));
         });
       }
       _mm.item_list.forEach((e) => { e.visible = false; });
@@ -8502,44 +8559,35 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         let cod = 0;
         let atext = '';
         Object.values(textdata).forEach((textitem) => {
-            textitem.cod = Math.ceil(textitem.count * textitem.price);
-            cod += textitem.cod;
-            atext += `${textitem.count.toLocaleString()} x ${textitem.name}`;
-            if (textitem.cod) {
-                atext += ` @ ${textitem.price.toLocaleString()}c = ${textitem.cod.toLocaleString()}c`;
-            }
-            atext += '\n';
+          textitem.cod = Math.ceil(textitem.count * textitem.price);
+          cod += textitem.cod;
+          atext += `${textitem.count.toLocaleString()} x ${textitem.name}`;
+          if (textitem.cod) {
+            atext += ` @ ${textitem.price.toLocaleString()}c = ${textitem.cod.toLocaleString()}c`;
+          }
+          atext += '\n';
         });
         if (cod) {
-            atext += `\n总计：${cod.toLocaleString()} Credits`;
+          atext += `\nTotal: ${cod.toLocaleString()} Credits`;
         }
         _mm.write_log(atext, true);
       }
     };
-    _mm.item_template = function (t) {
-      _mm.node.write_to_name.value = t.to;
-      _mm.node.write_subject.value = t.subject;
-      _mm.node.write_body.value = t.body;
-      _mm.item_text(t.attach);
-    };
 
-	_mm.node.item_div = $element('div', null, ['.hvut-none']);
+    _mm.node.item_div = $element('div', null, ['.hvut-none']);
     _mm.node.item_menu = $element('div', _mm.node.item_div, ['.hvut-mm-attach-menu']);
+    $input(['button', 'All'], _mm.node.item_menu, null, () => { _mm.item_search(''); });
     $price.init();
-    $price.keys.forEach((k) => {
-        if (['WTB', 'Materials'].includes(k)) {
-            return;
-        }
-        $input(['button', k], _mm.node.item_menu, null, () => { _mm.item_search(`[${k}]`, true); });
+    Object.keys($price.groups).forEach((g) => {
+      $input(['button', g], _mm.node.item_menu, null, () => { _mm.item_search($price.groups[g]); });
     });
     $element('br', _mm.node.item_menu);
-    _mm.node.item_search = $input('text', _mm.node.item_menu, { placeholder: '搜索框', style: 'width: 170px;' }, { input: (e) => { _mm.item_search(e.target.value); }, keyup: (e) => { if (e.which === 27) { _mm.item_search('', true); } } });
-    $input(['button', '清除'], _mm.node.item_menu, null, () => { _mm.item_search('', true); });
+    _mm.node.item_search = $input('text', _mm.node.item_menu, { placeholder: 'heal dra, man pot, elix', style: 'width: 170px;' }, { input: (e) => { _mm.item_search(e.target.value); }, keyup: (e) => { if (e.key === 'Escape') { _mm.item_search('', true); } } });
+    $input(['button', 'Clear'], _mm.node.item_menu, null, () => { _mm.item_search('', true); });
     $input('checkbox', _mm.node.item_menu, { style: 'margin-left: 20px;' }, (e) => { _mm.item_all(e.target.checked); });
-    $input('text', _mm.node.item_menu, { placeholder: '数量', style: 'width: 50px; text-align: right;' }, { input: (e) => { _mm.item_count(e.target.value); } });
-    $input(['button', '全部'], _mm.node.item_menu, null, () => { _mm.item_count(Infinity); });
+    $input('text', _mm.node.item_menu, { placeholder: 'count', style: 'width: 50px; text-align: right;' }, { input: (e) => { _mm.item_count(e.target.value); } });
+    $input(['button', 'All'], _mm.node.item_menu, null, () => { _mm.item_count(Infinity); });
     $input(['button', '0'], _mm.node.item_menu, null, () => { _mm.item_count(0); });
-    _mm.node.item_menu.appendChild($price.selector());
 
     _mm.node.item_attach = $element('div', _mm.node.item_div, ['#item', '.hvut-mm-attach'], { input: (e) => { _mm.item_change(e); }, click: (e) => { _mm.item_click(e); } });
     _mm.node.item_list = $qs('.itemlist') || $element('table');
@@ -8548,8 +8596,8 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     _mm.item_list = Array.from(_mm.node.item_list.rows).map((tr) => {
       const div = tr.cells[0].firstElementChild;
       const name = div.textContent;
-      const type = $item.type(div.getAttribute('onmouseover'));
-      const iid = $item.reg.mooglemail.test(div.getAttribute('onclick')) && RegExp.$1;
+      const type = $item.get_type(div.getAttribute('onmouseover'));
+      const { iid } = $item.get_data(div.getAttribute('onclick'));
       const lowercase = name.toLowerCase();
       const stock = parseInt(tr.cells[1].textContent);
       return { info: { name, lowercase, iid, type }, data: { pane: 'item', id: iid, name, stock, count: 0, price: 0, cod: 0 }, node: { tr } };
@@ -8559,15 +8607,15 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       it.node.tr.classList.add('hvut-it-' + it.info.type);
       it.node.td = $element('td', it.node.tr);
       it.node.check = $input('checkbox', it.node.td, { dataset: { action: 'calc', iid: it.info.iid } });
-      it.node.count = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-count', placeholder: '数量', pattern: '\\d+|\\d{1,3}(,\\d{3})*', max: it.data.stock });
-      it.node.price = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-price', placeholder: '价格', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
-      it.node.cod = $input('text', it.node.td, { className: 'hvut-mm-cod', placeholder: '货到付款额', readOnly: true });
-      it.node.send = $input(['button', '发送'], it.node.td, { dataset: { action: 'send', iid: it.info.iid }, className: 'hvut-mm-send' });
+      it.node.count = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-count', placeholder: 'count', pattern: '\\d+|\\d{1,3}(,\\d{3})*', max: it.data.stock });
+      it.node.price = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+      it.node.cod = $input('text', it.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true });
+      it.node.send = $input(['button', 'send'], it.node.td, { dataset: { action: 'send', iid: it.info.iid }, className: 'hvut-mm-send' });
     });
 
     if ($id('mmail_attachitem')) {
       $id('item').id += '_';
-      $element('span', _mm.node.write_tabs, '物品', () => { _mm.write_toggle('item_div'); });
+      $element('span', _mm.node.write_tabs, 'Item', () => { _mm.write_toggle('item_div'); });
       _mm.node.write_right.appendChild(_mm.node.item_div);
     }
 
@@ -8633,15 +8681,15 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
 
     _mm.node.equip_div = $element('div', null, ['.hvut-none']);
     _mm.node.equip_menu = $element('div', _mm.node.equip_div, ['.hvut-mm-attach-menu']);
-    _mm.node.equip_search = $input('text', _mm.node.equip_menu, { placeholder: '装备名称或eid', style: 'width: 310px;' }, { input: (e) => { _mm.equip_search(e.target.value); }, keyup: (e) => { if (e.which === 27) { _mm.equip_search('', true); } } });
-    $input(['button', '清除'], _mm.node.equip_menu, null, () => { _mm.equip_search('', true); });
+    _mm.node.equip_search = $input('text', _mm.node.equip_menu, { placeholder: 'Equipment name or eid', style: 'width: 310px;' }, { input: (e) => { _mm.equip_search(e.target.value); }, keyup: (e) => { if (e.key === 'Escape') { _mm.equip_search('', true); } } });
+    $input(['button', 'Clear}'], _mm.node.equip_menu, null, () => { _mm.equip_search('', true); });
     $input('checkbox', _mm.node.equip_menu, { style: 'margin-left: 20px;' }, (e) => { _mm.equip_all(e.target.checked); });
 
     _mm.node.equip_attach = $element('div', _mm.node.equip_div, ['#equip', '.hvut-mm-attach'], { input: (e) => { _mm.equip_change(e); }, click: (e) => { _mm.equip_click(e); } });
     _mm.node.equip_list = $qs('.equiplist') || $element('div', null, ['.equiplist nosel']);
     _mm.node.equip_attach.appendChild(_mm.node.equip_list);
 
-    _mm.equip_json = getValue('in_equipdata', {});
+    _mm.equip_data = $config.get('equipdata', {});
     _mm.equip_list = $equip.list(_mm.node.equip_list);
     _mm.equip_list.forEach((eq) => {
       eq.visible = true;
@@ -8655,10 +8703,10 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-mm-sub']);
       eq.node.eid = $element('span', eq.node.sub, [eq.info.eid, '.hvut-mm-eid']);
       eq.node.check = $input('checkbox', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid } });
-      eq.node.price = $input('text', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid }, className: 'hvut-mm-price', placeholder: '价格', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
-      eq.node.send = $input(['button', '发送'], eq.node.sub, { dataset: { action: 'send', eid: eq.info.eid }, className: 'hvut-mm-send' });
+      eq.node.price = $input('text', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+      eq.node.send = $input(['button', 'send'], eq.node.sub, { dataset: { action: 'send', eid: eq.info.eid }, className: 'hvut-mm-send' });
 
-      const json = _mm.equip_json[eq.info.eid];
+      const json = _mm.equip_data[eq.info.eid];
       if (json?.price) {
         eq.node.price.value = json.price;
         eq.data.cod = _mm.parse_price(json.price);
@@ -8667,7 +8715,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
 
     if ($id('mmail_attachequip')) {
       $id('equip').id += '_';
-      $element('span', _mm.node.write_tabs, '装备', () => { _mm.write_toggle('equip_div'); });
+      $element('span', _mm.node.write_tabs, 'Equipment', () => { _mm.write_toggle('equip_div'); });
       _mm.node.write_right.appendChild(_mm.node.equip_div);
     }
 
@@ -8702,10 +8750,10 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     const credits = { info: { name: 'Credits' }, data: { pane: 'credits', id: 0, name: 'Credits', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
     const hath = { info: { name: 'Hath' }, data: { pane: 'hath', id: 0, name: 'Hath', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
     if ($id('mmail_attachcredits')) {
-      credits.data.stock = /Current Funds: ([0-9,]+) Credits/.test($id('mmail_attachcredits').textContent) && _mm.parse_count(RegExp.$1);
+      credits.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Credits/.exec($id('mmail_attachcredits').textContent)[1]);
     }
     if ($id('mmail_attachhath')) {
-      hath.data.stock = /Current Funds: ([0-9,]+) Hath/.test($id('mmail_attachhath').textContent) && _mm.parse_count(RegExp.$1);
+      hath.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Hath/.exec($id('mmail_attachhath').textContent)[1]);
     }
 
     _mm.node.credits_div = $element('div', null, ['.hvut-none']);
@@ -8717,8 +8765,8 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     $element('td', credits.node.tr, credits.data.stock.toLocaleString());
     credits.node.td = $element('td', credits.node.tr);
     credits.node.check = $input('checkbox', credits.node.td, { dataset: { action: 'calc', name: 'Credits' } });
-    credits.node.count = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-count', placeholder: '数量', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
-    credits.node.price = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-price', placeholder: '价格', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'visibility: hidden;' });
+    credits.node.count = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-count', placeholder: 'count', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+    credits.node.price = $input('text', credits.node.td, { dataset: { action: 'calc', name: 'Credits' }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'visibility: hidden;' });
     credits.node.cod = $input('text', credits.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true, style: 'visibility: hidden;' });
 
     hath.node.tr = $element('tr', _mm.node.credits_list.tBodies[0]);
@@ -8726,8 +8774,8 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     $element('td', hath.node.tr, hath.data.stock.toLocaleString());
     hath.node.td = $element('td', hath.node.tr);
     hath.node.check = $input('checkbox', hath.node.td, { dataset: { action: 'calc', name: 'Hath' } });
-    hath.node.count = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-count', placeholder: '数量', pattern: '\\d+|\\d{1,3}(,\\d{3})*' });
-    hath.node.price = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-price', placeholder: '价格', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
+    hath.node.count = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-count', placeholder: 'count', pattern: '\\d+|\\d{1,3}(,\\d{3})*' });
+    hath.node.price = $input('text', hath.node.td, { dataset: { action: 'calc', name: 'Hath' }, className: 'hvut-mm-price', placeholder: 'price', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
     hath.node.cod = $input('text', hath.node.td, { className: 'hvut-mm-cod', placeholder: 'cod', readOnly: true });
 
     if ($id('mmail_attachcredits')) {
@@ -8738,14 +8786,14 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
 
     _mm.credits_multi = function () {
       if (_mm.credits_multi.current) {
-        popup('正在处理其他请求...');
+        popup('Processing other requests...');
         return;
       }
       _mm.credits_multi.current = true;
       _mm.node.write_field.disabled = true;
 
       const queue = [];
-      const error = [];
+      const errors = [];
       let credits_funds = credits.data.stock;
       let hath_funds = hath.data.stock;
       _mm.node.credits_multi.value.split('\n').forEach((t) => {
@@ -8754,7 +8802,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         }
         const [to_name, ctext, subject, ...body] = t.split(';');
         if (!to_name) {
-          error.push('无收件人: ' + t);
+          errors.push('No recipient: ' + t);
           return;
         }
 
@@ -8769,7 +8817,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
           attach.push(it);
           hath_funds -= it.count;
         } else {
-          error.push('无效的附件: ' + t);
+          errors.push('Invalid attachment: ' + t);
           return;
         }
 
@@ -8781,16 +8829,16 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         };
         queue.push(mail);
       });
-      if (error.length) {
-        alert(error.join('\n'));
+      if (errors.length) {
+        alert(errors.join('\n'));
         return;
       }
       if (credits_funds < 0) {
-        alert('Credits不足');
+        alert('Insufficient Credits');
         return;
       }
       if (hath_funds < 0) {
-        alert('Hath不足');
+        alert('Insufficient Hath');
         return;
       }
 
@@ -8798,14 +8846,14 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     };
 
     const multi_div = $element('div', _mm.node.credits_attach, ['!margin-top: 50px;']);
-    $input(['button', '群发'], multi_div, { style: 'width: 150px; margin: 10px;' }, () => { _mm.credits_multi(); });
+    $input(['button', 'Multi-Send'], multi_div, { style: 'width: 150px; margin: 10px;' }, () => { _mm.credits_multi(); });
     $element('br', multi_div);
     _mm.node.credits_multi = $element('textarea', multi_div, { placeholder: 'user; credits; subject; text (| = new line)\nex)\nsssss2; 10m\nsssss3; 500k; WTB; hi|I want to buy...\nTenboro; 500c\nMoogleMail; 1000h; Thanks', style: 'width: 500px; height: 300px;', spellcheck: false });
 
     if (!['item_div', 'equip_div', 'credits_div'].some((d) => { if (_mm.node[d].parentNode) { _mm.write_toggle(d); return true; } })) {
       $element('div', _mm.node.write_right, ['/' + $id('mmail_right').innerHTML, '.hvut-mm-disabled']);
       _mm.node.write_cod_deduction.disabled = true;
-      if (_isekai) {
+      if ($config.isekai) {
         _mm.node.write_cod_persistent.disabled = true;
         _mm.node.write_cod_persistent.checked = false;
       }
@@ -8824,7 +8872,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
           callback?.();
           return;
         }
-        const request = indexedDB.open(_ns, _mm.db.version);
+        const request = indexedDB.open($config.ns, _mm.db.version);
         request.onsuccess = function (e) {
           _mm.db.database = e.target.result;
           callback?.();
@@ -8892,12 +8940,13 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
               completed--;
               if (completed === 0) {
                 const date = new Date();
-                const download = _ns.toUpperCase() + '_MoogleMail_' + (date.getFullYear() + ('0' + (date.getMonth() + 1)).slice(-2) + ('0' + date.getDate()).slice(-2)) + '.json';
+                const download = $config.ns.toUpperCase() + '_MoogleMail_' + (date.getFullYear() + ('0' + (date.getMonth() + 1)).slice(-2) + ('0' + date.getDate()).slice(-2)) + '.json';
                 const link = $element('a', document.body, { download, style: 'display: none;' });
                 window.URL.revokeObjectURL(link.href);
                 link.href = window.URL.createObjectURL(new Blob([JSON.stringify(json)], { type: 'application/json' }));
                 link.click();
                 _mm.node.db_export.value = 'Completed';
+                popup(`<p>The file has been saved.</p><p style="font-weight: bold;">${download}</p>`);
               }
             }
           };
@@ -8905,64 +8954,64 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       },
       import: function () {
         _mm.node.db_import.disabled = true;
-        const input = $input('file', _mm.node.db_div, { accept: '.json' });
-        const run = $input(['button', '选择'], _mm.node.db_div, null, () => {
+        const input = $input('file', null, { accept: '.json' }, { change: () => {
           const file = input.files[0];
           if (!file) {
-            alert('首先选择一个文件');
             return;
           }
-          run.disabled = true;
-
           const reader = new FileReader();
           reader.onload = function (e) {
-            try {
-              const dbname = _mm.db.database.name;
-              const stores = Array.from(_mm.db.database.objectStoreNames);
-              const json = JSON.parse(e.target.result);
-              let completed = json.length;
-
-              function complete() {
-                completed--;
-                if (completed === 0) {
-                  _mm.node.db_import.value = 'Completed';
-                }
-              }
-
-              json.forEach((obj) => {
-                const { database, store, values } = obj;
-                if (database !== dbname) {
-                  console.log('无效的数据库');
-                  complete();
-                  return;
-                }
-                if (!stores.includes(store)) {
-                  complete();
-                  console.log('无效的对象存储');
-                  return;
-                }
-                const conn = _mm.db.conn('readwrite', store);
-                conn.tx.oncomplete = function () {
-                  complete();
-                };
-                values.forEach((data) => {
-                  conn.os.put(data);
-                });
-              });
-            } catch (e) {
-              alert('解析文件失败\n请选择一个有效的MoogleMail数据库json文件');
-              run.disabled = false;
-              return;
-            }
+            db_import(e.target.result);
           };
           reader.onerror = function () {
-            alert('读取文件失败');
+            alert('Failed to read the file');
           };
           reader.readAsText(file);
-        });
+        } });
+        input.click();
+
+        function db_import(text) {
+          try {
+            const dbname = _mm.db.database.name;
+            const stores = Array.from(_mm.db.database.objectStoreNames);
+            const json = JSON.parse(text);
+            let completed = json.length;
+
+            function complete() {
+              completed--;
+              if (completed === 0) {
+                _mm.node.db_import.value = 'Completed';
+              }
+            }
+
+            json.forEach((obj) => {
+              const { database, store, values } = obj;
+              if (database !== dbname) {
+                console.log('Invalid Database');
+                complete();
+                return;
+              }
+              if (!stores.includes(store)) {
+                complete();
+                console.log('Invalid objectStore');
+                return;
+              }
+              const conn = _mm.db.conn('readwrite', store);
+              conn.tx.oncomplete = function () {
+                complete();
+              };
+              values.forEach((data) => {
+                conn.os.put(data);
+              });
+            });
+          } catch (e) {
+            alert('Failed to parse the file\nSelect a valid MoogleMail Database json file');
+            return;
+          }
+        }
       },
       clear: function () {
-        if (confirm('在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？')) {
+        if (confirm('The MoogleMail records for the selected season in this browser will be deleted.\nAre you sure?')) {
           const season = _mm.node.search_season?.value || _mm.db.season;
           const conn = _mm.db.conn('readwrite', season);
           conn.os.clear();
@@ -8974,16 +9023,23 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
           return;
         }
         _mm.node.db_div = $element('div', _mm.node.bottom);
-        $input(['button', '关闭'], _mm.node.db_div, null, () => { _mm.db.toggle(); });
-        $input(['button', '重置数据库'], _mm.node.db_div, null, () => { _mm.db.clear(); });
-        _mm.node.db_export = $input(['button', '导出为JSON'], _mm.node.db_div, null, () => { _mm.db.export(); });
-        _mm.node.db_import = $input(['button', '从JSON导入'], _mm.node.db_div, null, () => { _mm.db.import(); });
+        $input(['button', 'Close'], _mm.node.db_div, null, () => { _mm.db.toggle(); });
+        $input(['button', 'Reset Database'], _mm.node.db_div, null, () => { _mm.db.clear(); });
+        _mm.node.db_export = $input(['button', 'Export to JSON'], _mm.node.db_div, null, () => { _mm.db.export(); });
+        _mm.node.db_import = $input(['button', 'Import from JSON'], _mm.node.db_div, null, () => { _mm.db.import(); });
       },
       init: function () {
-        if (_isekai) {
-          const version = /(\d+) Season (\d+)/.exec(_isekai) ? parseInt(RegExp.$1.slice(2) + RegExp.$2.padStart(2, '0').slice(-2)) : 1;
-          _mm.db.version = version;
-          _mm.db.season = _isekai;
+        if ($config.isekai) {
+          _mm.db.season = $config.isekai;
+          const exec = /(\d+) Season (\d+)/.exec($config.isekai);
+          if (exec) {
+            const year = exec[1];
+            const season = exec[2];
+            const version = parseInt(year.slice(2)) * 100 + parseInt(season);
+            _mm.db.version = version;
+          } else {
+            _mm.db.version = 1;
+          }
         }
       },
 
@@ -9030,7 +9086,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       }
       _mm.node.page_table[p] = $element('table', [$id('mmail_outerlist'), _mm.node.page_table[p + 1]], ['.hvut-mm-list']);
       const table = _mm.node.page_table[p];
-      $element('tr', table, [`/<td>${p} 页面：加载中...</td>`]);
+      $element('tr', table, [`/<td>${p} Page: Loading...</td>`]);
       scrollIntoView(table);
       _mm.node.page_prev.disabled = true;
       _mm.node.page_next.disabled = true;
@@ -9046,8 +9102,8 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     };
 
     _mm.page_pager = function (pager, p) {
-      const prev = /&page=(\d+)/.test(pager.children[0].firstElementChild.href) ? parseInt(RegExp.$1) : null;
-      const next = /&page=(\d+)/.test(pager.children[1].firstElementChild.href) ? parseInt(RegExp.$1) : null;
+      const prev = parseInt(pager.children[0].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
+      const next = parseInt(pager.children[1].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
       if (_mm.page_prev !== null && p <= _mm.page_prev) {
         _mm.page_prev = prev;
       }
@@ -9061,17 +9117,17 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     _mm.page_create = function (list, p) {
       const table = _mm.node.page_table[p];
       const tbody = $element('tbody');
-      const type = { 'inbox': '收件箱', 'read': '来自', 'sent': '发给' }[_mm.page_filter];
-      $element('tr', tbody, [`/<td>${type}</td><td>第 ${p} 页</td><td>附件</td><td>货到付款额</td><td>发送时间</td><td>阅读时间</td>`]);
+      const type = { 'inbox': 'Inbox', 'read': 'From', 'sent': 'To' }[_mm.page_filter];
+      $element('tr', tbody, [`/<td>${type}</td><td>${p} Page</td><td>Attachment</td><td>CoD</td><td>Sent</td><td>Read</td>`]);
 
       const conn = _mm.db.conn();
       let count = list.rows.length - 1;
       Array.from(list.rows).slice(1).forEach((row) => {
         if (row.cells[0].id === 'mmail_nnm') {
-          $element('tr', tbody, ['/<td colspan="6">没有新邮件</td>']);
+          $element('tr', tbody, ['/<td colspan="6">No New Mail</td>']);
           return;
         }
-        const mid = /mid=(\d+)/.test(row.getAttribute('onclick')) && parseInt(RegExp.$1);
+        const mid = parseInt(/mid=(\d+)/.exec(row.getAttribute('onclick'))[1]);
         const user = row.cells[0].textContent;
         const returned = user === 'MoogleMail';
         const subject = row.cells[1].textContent;
@@ -9169,7 +9225,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       _mm.mail_close();
       _mm.mail_current = mail;
       _mm.node.mail_view.classList.remove('hvut-none');
-      $element('p', _mm.node.mail_view, ['加载中...', '.hvut-mm-loading']);
+      $element('p', _mm.node.mail_view, ['Loading...', '.hvut-mm-loading']);
 
       mail.node.page?.classList.add('hvut-mm-current');
       mail.node.search?.classList.add('hvut-mm-current');
@@ -9233,7 +9289,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;
 
         if ($id('mmail_attachlist', doc)) {
-          Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.test(html) && RegExp.$1));
+          Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.exec(html)?.[1] || null));
           Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
             let exec;
             const onmouseover = div.firstElementChild.firstElementChild?.getAttribute('onmouseover');
@@ -9253,7 +9309,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
             }
           });
           if ($id('mmail_currentcod', doc)) {
-            view.cod = /Requested Payment on Delivery: ([0-9,]+) credits/.test($id('mmail_currentcod', doc).textContent) && _mm.parse_count(RegExp.$1);
+            view.cod = _mm.parse_count(/Requested Payment on Delivery: ([0-9,]+) credits/.exec($id('mmail_currentcod', doc).textContent)[1]);
           }
         } else {
           const split = view.text.split('\n\n').reverse();
@@ -9275,7 +9331,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
             return true;
           });
           if (attach) {
-            view.cod = /^CoD Paid: ([0-9,]+) Credits$/.test(split[1]) && _mm.parse_count(RegExp.$1);
+            view.cod = _mm.parse_count(/^CoD Paid: ([0-9,]+) Credits$/.exec(split[1])?.[1]);
           }
 
           // pre 0.85
@@ -9295,7 +9351,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
           }
         }
       } else {
-        view.error = get_message(doc) || '未知错误';
+        view.error = get_message(doc) || 'UNKNOWN ERROR';
       }
 
       return view;
@@ -9366,29 +9422,29 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       const div = _mm.node.mail_view;
       div.innerHTML = '';
       if (!db) {
-        $element('p', div, [`错误：${view.error}`, '.hvut-mm-loading']);
+        $element('p', div, [`ERROR: ${view.error}`, '.hvut-mm-loading']);
         return;
       }
       div.classList[db.returned ? 'add' : 'remove']('hvut-mm-rts');
 
-      const type = db.filter === 'sent' ? '发给' : '来自';
+      const type = db.filter === 'sent' ? 'To' : 'From';
       const read = db.read === null ? '-' : db.read === -1 ? '????-??-??' : _mm.dts(db.read, 4);
-      $element('dl', div, [`/<dt>${type}</dt><dd>${db.user}</dd><dt>发送</dt><dd>${_mm.dts(db.sent, 4)}</dd><dt>主题</dt><dd>${db.subject}</dd><dt>已读</dt><dd>${read}</dd>`]);
+      $element('dl', div, [`/<dt>${type}</dt><dd>${db.user}</dd><dt>Sent</dt><dd>${_mm.dts(db.sent, 4)}</dd><dt>Subject</dt><dd>${db.subject}</dd><dt>Read</dt><dd>${read}</dd>`]);
 
       _mm.node.mail_body = $element('textarea', div, { value: db.text, spellcheck: false, readOnly: true });
       const buttons = $element('div', div);
-      $input(['button', '关闭'], buttons, { dataset: { action: 'close', mid } });
+      $input(['button', 'Close'], buttons, { dataset: { action: 'close', mid } });
       if (view.reply) {
-        $input(['button', '回复'], buttons, { dataset: { action: 'reply', mid } });
+        $input(['button', 'Reply'], buttons, { dataset: { action: 'reply', mid } });
       }
       if (view.take) {
-        $input(['button', '全部获取'], buttons, { dataset: { action: 'take', mid, value: view.cod || '' } });
+        $input(['button', 'Take all'], buttons, { dataset: { action: 'take', mid, value: view.cod || '' } });
       }
       if (view.return) {
-        $input(['button', '退回'], buttons, { dataset: { action: 'return', mid } });
+        $input(['button', 'Return'], buttons, { dataset: { action: 'return', mid } });
       }
       if (view.recall) {
-        $input(['button', '撤回'], buttons, { dataset: { action: 'recall', mid } });
+        $input(['button', 'Recall'], buttons, { dataset: { action: 'recall', mid } });
       }
       if (view.error) {
         $input(['button', view.error], buttons);
@@ -9397,17 +9453,16 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         div.classList.remove('hvut-mm-failed');
       }
       if (db.returned) {
-        $input(['button', `这条消息已从${db.user}处退回`], buttons);
+        $input(['button', `This message was returned from ${db.user}`], buttons);
       }
 
-      if (view.take && !view.returned && settings.moogleMailCouponClipper && /Coupon Clipper|Item Shop/i.test(db.subject + '\n' + db.text)) {
-        _mm.itemshop_parse();
-        $input(['button', '系统店代购'], buttons, { dataset: { action: 'itemshop', mid } });
+      if (view.take && !view.returned && $config.settings.moogleMailCouponClipper && /Coupon Clipper|Item Shop/i.test(db.subject + '\n' + db.text)) {
+        $input(['button', 'Coupon Clipper'], buttons, { dataset: { action: 'itemshop', mid } });
       }
-      if (view.take && !view.returned && settings.moogleMailDarkDescent && /Dark Descent|reforge/i.test(db.subject + '\n' + db.text)) {
+      if (view.take && !view.returned && $config.settings.moogleMailDarkDescent && /Dark Descent|reforge/i.test(db.subject + '\n' + db.text)) {
         const [, cost] = _mm.reforge_parse(db.attach);
         if (cost) {
-          $input(['button', `代重铸服务 [${cost}]`], buttons, { dataset: { action: 'reforge', mid } });
+          $input(['button', `Dark Descent [${cost}]`], buttons, { dataset: { action: 'reforge', mid } });
         }
       }
 
@@ -9417,8 +9472,17 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         const li = $element('li', ul);
         const wtx = db.filter === 'sent' ? 'WTS' : 'WTB';
 
-        $input(['button', `编辑${wtx}价格`], buttons, { className: 'hvut-mm-edit', dataset: { action: 'edit_price', value: wtx } });
-        $element('span', li, 'CoD: ' + (db.cod ? db.cod.toLocaleString() + (db.read ? ' [已支付]' : '') : '未设置'));
+        let cod_text;
+        if (db.cod) {
+          if (db.read) {
+            cod_text = `CoD Paid: ${db.cod.toLocaleString()}`;
+          } else {
+            cod_text = `CoD: ${db.cod.toLocaleString()}`;
+          }
+        } else {
+          cod_text = 'No CoD';
+        }
+        $element('span', li, cod_text);
         mail.node.price = $input('text', li, { className: 'hvut-mm-price', readOnly: true, value: wtx });
         mail.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
         mail.attach = JSON.parse(JSON.stringify(db.attach));
@@ -9438,10 +9502,9 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
           if (e.n === 'Credits') {
             return;
           }
-          e.node.price = $input('text', li, { className: 'hvut-mm-price', value: '' });
+          e.node.price = $input('text', li, { className: 'hvut-mm-price' });
           e.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
         });
-        _mm.mail_price();
       }
     };
 
@@ -9456,17 +9519,17 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       } else if (action === 'reply') {
         location.href = `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;
       } else if (action === 'take') {
-        if (value && !confirm(`拿取附件将从你的账户中扣除${parseInt(value).toLocaleString()}Credits，确定吗？`)) {
+        if (value && !confirm(`Accepting the attachments will deduct ${parseInt(value).toLocaleString()} Credits from your account.\nAre you sure?`)) {
           return;
         }
         _mm.mail_read(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
       } else if (action === 'return') {
-        if (!confirm('这将把消息退回给发送者，确定吗？')) {
+        if (!confirm('This will return the message to the sender.\nAre you sure?')) {
           return;
         }
         _mm.mail_read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
       } else if (action === 'recall') {
-        if (!confirm('这将把消息撤回，确定吗？')) {
+        if (!confirm('This will return the message to the sender.\nAre you sure?')) {
           return;
         }
         _mm.mail_read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
@@ -9474,8 +9537,6 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         _mm.itemshop_confirm(mid);
       } else if (action === 'reforge') {
         _mm.reforge_confirm(mid);
-      } if (action === 'edit_price') {
-        $price.edit(value, _mm.mail_price);
       }
     };
 
@@ -9490,27 +9551,6 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       _mm.node.mail_view.innerHTML = '';
       _mm.mail_log('', true);
       _mm.node.mail_log.parentNode.classList.add('hvut-none');
-    };
-
-    _mm.mail_price = function () {
-      const mail = _mm.mail_current;
-      if (!mail) {
-        return;
-      }
-      const db = mail.db;
-      const wtx = db.filter === 'sent' ? 'WTS' : 'WTB';
-      const attach = mail.attach;
-      const prices = $price.get(wtx);
-
-      attach.forEach((e) => {
-        if (e.n === 'Credits') {
-          return;
-        }
-        if (e.n in prices) {
-          e.node.price.value = prices[e.n] || '';
-        }
-      });
-      _mm.mail_cod();
     };
 
     _mm.mail_cod = function () {
@@ -9584,12 +9624,12 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       _mm.mail_close();
       _mm.node.search_div.innerHTML = '';
       _mm.node.search_div.classList.remove('hvut-none');
-      $element('div', _mm.node.search_div, ['正在搜索...', '.hvut-mm-searching']);
+      $element('div', _mm.node.search_div, ['Searching...', '.hvut-mm-searching']);
 
       _mm.db.search(query).then((results) => {
         const table = $element('table', null, ['.hvut-mm-list']);
         const tbody = $element('tbody', table);
-        $element('tr', tbody, [`/<td>搜索</td><td>${results.length} 封邮件</td><td>附件</td><td>货到付款</td><td>发送时间</td><td>阅读时间</td>`]);
+        $element('tr', tbody, [`/<td>Search</td><td>${results.length} mail(s)</td><td>Attachment</td><td>CoD</td><td>Sent</td><td>Read</td>`]);
 
         results.sort((a, b) => b.db.mid - a.db.mid);
         results.forEach((mail) => {
@@ -9614,7 +9654,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     _mm.search_modify = function (mail) {
       const db = mail.db;
       const tr = mail.node.search;
-      const type = { 'inbox': '收件箱', 'read': '来自', 'sent': '发送至' }[db.filter];
+      const type = { 'inbox': 'Inbox', 'read': 'From', 'sent': 'To' }[db.filter];
       tr.cells[0].innerHTML = `<span>${type}</span> ${db.user}`;
       tr.cells[1].firstElementChild.textContent = db.subject;
       tr.cells[2].innerHTML = '';
@@ -9648,7 +9688,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     };
 
     _mm.search_keypress = function (e) {
-      if (e.which === 13) {
+      if (e.key === 'Enter') {
         _mm.search_submit();
       }
     };
@@ -9659,21 +9699,21 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         return;
       }
       _mm.node.search_form = $element('div', _mm.node.bottom, null, { keypress: (e) => { _mm.search_keypress(e); } });
-      $input(['button', '关闭'], _mm.node.search_form, null, () => { _mm.search_toggle(); });
+      $input(['button', 'Close'], _mm.node.search_form, null, () => { _mm.search_toggle(); });
 
-      if (_isekai) {
-        _mm.node.search_season = $element('select', _mm.node.search_form);
-        Array.from(_mm.db.database.objectStoreNames).forEach((s) => { $element('option', _mm.node.search_season, { value: s, text: s }); });
-        _mm.node.search_season.value = _isekai;
+      if ($config.isekai) {
+        const seasons = Array.from(_mm.db.database.objectStoreNames);
+        _mm.node.search_season = $input(['select', seasons], _mm.node.search_form);
+        _mm.node.search_season.value = $config.isekai;
       }
-      _mm.node.search_filter = $element('select', _mm.node.search_form, ['/<option value="">全部</option><option value="inbox">收件箱</option><option value="read">已读</option><option value="sent">已发送</option>']);
-      _mm.node.search_name = $input('text', _mm.node.search_form, { placeholder: '用户', style: 'width: 120px;' });
-      _mm.node.search_subject = $input('text', _mm.node.search_form, { placeholder: '主题', style: 'width: 120px;' });
-      _mm.node.search_text = $input('text', _mm.node.search_form, { placeholder: '文本', style: 'width: 120px;' });
-      _mm.node.search_attach = $input('text', _mm.node.search_form, { placeholder: '附件', style: 'width: 120px;' });
-      _mm.node.search_cod = $input('text', _mm.node.search_form, { placeholder: 'COD金额(小-大)', style: 'width: 100px;' });
-      $input(['button', '搜索'], _mm.node.search_form, null, () => { _mm.search_submit(); });
-      $input(['button', '清除'], _mm.node.search_form, null, () => { _mm.search_close(); });
+      _mm.node.search_filter = $input(['select', [':all', 'inbox', 'read', 'sent']], _mm.node.search_form);
+      _mm.node.search_name = $input('text', _mm.node.search_form, { placeholder: 'User', style: 'width: 120px;' });
+      _mm.node.search_subject = $input('text', _mm.node.search_form, { placeholder: 'Subject', style: 'width: 120px;' });
+      _mm.node.search_text = $input('text', _mm.node.search_form, { placeholder: 'Text', style: 'width: 120px;' });
+      _mm.node.search_attach = $input('text', _mm.node.search_form, { placeholder: 'Attachment', style: 'width: 120px;' });
+      _mm.node.search_cod = $input('text', _mm.node.search_form, { placeholder: 'CoD (min-max)', style: 'width: 100px;' });
+      $input(['button', 'Search'], _mm.node.search_form, null, () => { _mm.search_submit(); });
+      $input(['button', 'Close List'], _mm.node.search_form, null, () => { _mm.search_close(); });
     };
 
     _mm.dts = function (date, year = 2) { // date_to_string
@@ -9699,68 +9739,58 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
       return obj;
     };
 
-    _mm.itemshop_data = {
-      'health draught': { id: 11191, price: 23 },
-      'health potion': { id: 11195, price: 45 },
-      'health elixir': { id: 11199, price: 450 },
-      'mana draught': { id: 11291, price: 45 },
-      'mana potion': { id: 11295, price: 90 },
-      'mana elixir': { id: 11299, price: 900 },
-      'spirit draught': { id: 11391, price: 45 },
-      'spirit potion': { id: 11395, price: 90 },
-      'spirit elixir': { id: 11399, price: 900 },
-      //'soul fragment': { id: 48001, price: 900 },
-      'crystal of vigor': { id: 50001, price: 9 },
-      'crystal of finesse': { id: 50002, price: 9 },
-      'crystal of swiftness': { id: 50003, price: 9 },
-      'crystal of fortitude': { id: 50004, price: 9 },
-      'crystal of cunning': { id: 50005, price: 9 },
-      'crystal of knowledge': { id: 50006, price: 9 },
-      'crystal of flames': { id: 50011, price: 9 },
-      'crystal of frost': { id: 50012, price: 9 },
-      'crystal of lightning': { id: 50013, price: 9 },
-      'crystal of tempest': { id: 50014, price: 9 },
-      'crystal of devotion': { id: 50015, price: 9 },
-      'crystal of corruption': { id: 50016, price: 9 },
-      'monster chow': { id: 51001, price: 14 },
-      'monster edibles': { id: 51002, price: 27 },
-      'monster cuisine': { id: 51003, price: 45 },
-      'happy pills': { id: 51011, price: 1800 },
-      'scrap cloth': { id: 60051, price: 90 },
-      'scrap leather': { id: 60052, price: 90 },
-      'scrap metal': { id: 60053, price: 90 },
-      'scrap wood': { id: 60054, price: 90 },
-      'energy cell': { id: 60071, price: 180 },
-      //'wispy catalyst': { id: 60301, price: 90 },
-      //'diluted catalyst': { id: 60302, price: 450 },
-      //'regular catalyst': { id: 60303, price: 900 },
-      //'robust catalyst': { id: 60304, price: 2250 },
-      //'vibrant catalyst': { id: 60305, price: 4500 },
-      //'coruscating catalyst': { id: 60306, price: 9000 },
-    };
-
-    _mm.itemshop_confirm = function (mid) {
+    _mm.itemshop_confirm = async function (mid) {
       const mail = _mm.mail_get(mid);
-      const [items, cost] = _mm.itemshop_parse();
+      const items = _mm.itemshop_parse();
       if (!items.length) {
-        alert('无效的请求');
+        alert('Invalid Request');
         return;
       }
-      const credits = mail.db.attach.filter((e) => e.n === 'Credits').reduce((s, e) => s + e.c, 0);
-      let msg;
+      await $item.load_shop();
+      const cost = $item.cost(items);
+      const credits = mail.db.attach.filter((e) => e.n === 'Credits').reduce((s, e) => (s + e.c), 0);
       if (cost !== credits) {
-        msg = '请求的材料总价为 ' + cost.toLocaleString() + ' credits，但是附加的credits数量为 ' + credits.toLocaleString() + '。\n继续吗？';
-      }
-      if (msg && !confirm(msg)) {
-        return;
+        if (!confirm(`The total price of the requested materials is ${cost.toLocaleString()} credits, but the amount of attached credits is ${credits.toLocaleString()}.\nAre you sure?`)) {
+          return;
+        }
       }
       _mm.itemshop(mid, items);
     };
 
     _mm.itemshop_parse = function (text = _mm.node.mail_body.value) {
+      const itemshop_list = [
+        'Health Draught',
+        'Health Potion',
+        'Health Elixir',
+        'Mana Draught',
+        'Mana Potion',
+        'Mana Elixir',
+        'Spirit Draught',
+        'Spirit Potion',
+        'Spirit Elixir',
+        'Crystal of Vigor',
+        'Crystal of Finesse',
+        'Crystal of Swiftness',
+        'Crystal of Fortitude',
+        'Crystal of Cunning',
+        'Crystal of Knowledge',
+        'Crystal of Flames',
+        'Crystal of Frost',
+        'Crystal of Lightning',
+        'Crystal of Tempest',
+        'Crystal of Devotion',
+        'Crystal of Corruption',
+        'Monster Chow',
+        'Monster Edibles',
+        'Monster Cuisine',
+        'Happy Pills',
+        'Scrap Cloth',
+        'Scrap Leather',
+        'Scrap Metal',
+        'Scrap Wood',
+        'Energy Cell',
+      ];
       const items = [];
-      let cost = 0;
-      _mm.mail_log('[系统店代购]', true);
       text.split('\n').forEach((t) => {
         let exec;
         let name;
@@ -9778,63 +9808,42 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         }
         name = name.trim();
         count = _mm.parse_count(count);
-        const lowercase = name.toLowerCase();
-        if ((lowercase in _mm.itemshop_data) && count) {
-          const id = _mm.itemshop_data[lowercase].id;
-          const price = _mm.itemshop_data[lowercase].price;
-          const it = { pane: 'item', id, name, count };
-          items.push(it);
-          cost += count * price;
-          _mm.mail_log(`- ${count.toLocaleString()} x ${name} @ ${price.toLocaleString()}`);
+        if (itemshop_list.includes(name) && count) {
+          const item = { name, count };
+          items.push(item);
         }
       });
-      _mm.mail_log(`# 总价: ${cost.toLocaleString()}c`);
-      return [items, cost];
+      return items;
     };
 
     _mm.itemshop = async function (mid, items) {
       if (_mm.itemshop.current) {
-        popup('正在处理其他请求...');
+        popup('Processing other requests...');
         return;
       }
       _mm.itemshop.current = mid;
 
-      _mm.mail_log('[系统店代购]', true);
-      _mm.mail_log('接收');
+      _mm.mail_log('[Item Shop Request]', true);
+      _mm.mail_log('Receiving');
       await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
+      _mm.mail_log('Buying');
 
-      _mm.mail_log('购买');
-      const html = await $ajax.fetch('?s=Bazaar&ss=is');
-      const doc = $doc(html);
-      const storetoken = $id('shopform', doc).elements.storetoken.value;
-      _mm.mail_log('...');
-
-      async function buy(id, count) {
-        const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
-        const doc = $doc(html);
-        const error = get_message(doc);
-        if (error) {
-          _mm.mail_log(error);
-          return false;
-        }
-        done++;
-        _mm.mail_log(`已购买 (${done}/${total})`);
-        return true;
-      }
-
-      const total = items.length;
-      let done = 0;
-      const requests = items.map((it) => buy(it.id, it.count));
-      const results = await Promise.all(requests);
-      if (!results.every((r) => r)) {
+      const result = await $item.buy(items);
+      if (!result) {
         return;
       }
+      _mm.mail_log('...');
 
-      const attach = items;
+      const attach = items.map((item) => {
+        const name = item.name;
+        const id = $item.shop[name].id;
+        const count = item.count;
+        return { pane: 'item', id, name, count };
+      });
       const mail = {
         to_name: _mm.mail_get(mid).view.from,
-        subject: '[系统店代购]',
-        body: '[系统店代购]',
+        subject: '[Item Shop Service]',
+        body: '[Item Shop Service]',
         attach,
       };
       $mail.request(mail);
@@ -9842,26 +9851,26 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
 
     _mm.reforge_confirm = function (mid) {
       const mail = _mm.mail_get(mid);
-      const [equips, cost] = _mm.reforge_parse(mail.db.attach);
+      const equips = _mm.reforge_parse(mail.db.attach);
+      const cost = equips.reduce((s, eq) => (s + Math.ceil(eq.info.tier / 2)), 0);
       if (!cost) {
-        alert('没有潜能的装备');
+        alert('No equipment with potencies');
         return;
       }
-      const amnesia = mail.db.attach.filter((e) => e.n === 'Amnesia Shard').reduce((s, e) => s + e.c, 0);
-      let msg;
+      const amnesia = mail.db.attach.filter((e) => e.n === 'Amnesia Shard').reduce((s, e) => (s + e.c), 0);
       if (!amnesia) {
-        msg = `这需要 ${cost} 重铸碎片，但没有附加任何物品。\n继续吗？`;
+        if (!confirm(`This costs ${cost} Amnesia Shard(s), but nothing attached.\nAre you sure?`)) {
+          return;
+        }
       } else if (amnesia !== cost) {
-        msg = `这需要 ${cost} 重铸碎片，但附加物品的数量是 ${amnesia}。\n继续吗？`;
-      }
-      if (msg && !confirm(msg)) {
-        return;
+        if (!confirm(`This costs ${cost} Amnesia Shard(s), but the number of attached items is ${amnesia}.\nAre you sure?`)) {
+          return;
+        }
       }
       _mm.reforge(mid, equips);
     };
 
     _mm.reforge_parse = function (attach) {
-      let cost = 0;
       const equips = attach.filter((e) => e.t === 'e').map((dbeq) => {
         const eid = dbeq.e;
         const dynjs = $equip.dynjs_eqstore[eid];
@@ -9869,49 +9878,50 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         const name = dynjs.t;
         const html = dynjs.d;
         const exec = $equip.reg.html.exec(html);
+        const category = exec[1];
+        const tier = parseInt(exec[6]);
         const eq = {
-          info: { eid, key, name, category: exec[1], tier: parseInt(exec[6]) },
-          data: { pane: 'equip', id: eid, name, count: 1 },
+          info: { eid, key, name, category, tier },
+          data: {},
           node: {},
         };
         //$equip.parse.name(eq.info.name, eq);
-        cost += Math.ceil(eq.info.tier / 2);
         return eq;
       });
-      return [equips, cost];
+      return equips;
     };
 
     _mm.reforge = async function (mid, equips) {
       if (_mm.reforge.current) {
-        popup('正在处理其他请求...');
+        popup('Processing other requests...');
         return;
       }
       _mm.reforge.current = mid;
 
-      _mm.mail_log('[代重铸服务]', true);
-      _mm.mail_log('接收');
+      _mm.mail_log('[Reforge Request]', true);
+      _mm.mail_log('Receiving');
       await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
 
-      _mm.mail_log('重铸');
+      _mm.mail_log('Reforging');
       const html = await $ajax.fetch('?s=Character&ss=in');
-      const uid = /var uid = (\d+);/.test(html) && RegExp.$1;
-      const token = /var simple_token = "(\w+)";/.test(html) && RegExp.$1;
+      const uid = /var uid = (\d+);/.exec(html)[1];
+      const token = /var simple_token = "(\w+)";/.exec(html)[1];
       _mm.mail_log('...');
 
       async function reforge(eq) {
         let html = await $ajax.fetch('json', { type: 'simple', method: 'lockequip', uid, token, eid: eq.info.eid, lock: 0 }, 'JSON');
         const json = JSON.parse(html);
         if (!json || json.eid != eq.info.eid || json.locked != 0) {
-          const error = '解锁失败';
+          const error = 'Failed to unlock';
           _mm.mail_log(error);
           return false;
         }
         unlocked++;
-        _mm.mail_log(`已解锁 (${unlocked}/${total})`);
+        _mm.mail_log(`Unlocked (${unlocked}/${total})`);
 
         if (!eq.info.tier) {
           reforged++;
-          _mm.mail_log(`已重铸 (${reforged}/${total}): 潜能等级 0`);
+          _mm.mail_log(`Reforged (${reforged}/${total}): potency level 0`);
           return true;
         }
 
@@ -9923,7 +9933,7 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
           return false;
         }
         reforged++;
-        _mm.mail_log(`已重铸 (${reforged}/${total})`);
+        _mm.mail_log(`Reforged (${reforged}/${total})`);
         return true;
       }
 
@@ -9936,11 +9946,15 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
         return;
       }
 
-      const attach = equips.map((eq) => eq.data);
+      const attach = equips.map((eq) => {
+        const id = eq.info.eid;
+        const name = eq.info.name;
+        return { pane: 'equip', id, name, count: 1 };
+      });
       const mail = {
         to_name: _mm.mail_get(mid).view.from,
-        subject: '[代重铸服务]',
-        body: '[代重铸服务]',
+        subject: '[Reforge Service]',
+        body: '[Reforge Service]',
         attach,
       };
       $mail.request(mail);
@@ -9990,17 +10004,13 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
 
       .hvut-mm-view { position: absolute; top: 81px; right: 14px; display: flex; flex-direction: column; width: 626px; height: 566px; padding: 5px; border: 2px solid; background-color: #EDEBDF; font-size: 10pt; line-height: 20px; text-align: left; z-index: 2; }
       .hvut-mm-failed { background-color: #eee; }
-      .hvut-mm-view > dl { list-style: none; margin: 5px 5px 0; padding: 0; }
-      .hvut-mm-view > dl::after { content: ''; display: block; clear: both; }
-      .hvut-mm-view dt { float: left; margin: 0; padding: 0; width: 50px; border: 1px solid; text-align: center; }
-      .hvut-mm-view dt:nth-of-type(2n+1) { width: 60px; clear: left; }
-      .hvut-mm-view dd { float: left; margin: 1px 0 5px 5px; padding: 0 5px; width: 110px; border-bottom: 1px solid; }
-      .hvut-mm-view dd:nth-of-type(2n+1) { width: 350px; margin-right: 5px; }
-      .hvut-mm-view dd:nth-of-type(2n) { white-space: nowrap; }
+      .hvut-mm-view > dl { display: grid; grid-template-columns: 80px auto 80px 120px; gap: 5px; margin: 5px; text-align: center; align-items: center; }
+      .hvut-mm-view dt { margin: 0; border: 1px solid; }
+      .hvut-mm-view dd { margin: 0; border-bottom: 1px solid; }
+      .hvut-mm-view dd:nth-of-type(2n+1) { padding: 0 5px; text-align: left; }
       .hvut-mm-rts dd:nth-of-type(1)::before { content: '[MoogleMail] '; color: #666; }
       .hvut-mm-view > textarea { flex-basis: 191px; }
       .hvut-mm-view > div { display: flex; margin: 5px 0; }
-      .hvut-mm-view > div .hvut-mm-edit { margin-left: auto; }
       .hvut-mm-view > ul { margin: 5px; padding: 5px; border: 1px solid; list-style: none; max-height: 242px; overflow: auto; flex-shrink: 0; }
       .hvut-mm-view li:first-child { margin-top: 0; padding: 0 0 0 5px; border: 1px solid; font-weight: bold; }
       .hvut-mm-view li:first-child > .hvut-mm-price { text-align: center; }
@@ -10020,13 +10030,13 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     _mm.node.page_table = [];
 
     _mm.node.bottom = $element('div', $id('mmail_outer'), ['.hvut-mm-bottom']);
-    $input(['button', '管理数据库'], _mm.node.bottom, null, () => { _mm.db.toggle(); });
-    $input(['button', '搜索邮件'], _mm.node.bottom, null, () => { _mm.search_toggle(); });
+    $input(['button', 'Manage Database'], _mm.node.bottom, null, () => { _mm.db.toggle(); });
+    $input(['button', 'Search Mail'], _mm.node.bottom, null, () => { _mm.search_toggle(); });
 
     _mm.node.page_go = $input('text', _mm.node.bottom, { value: _mm.page_current, style: 'width: 30px; margin-left: auto; text-align: center;' });
-    $input(['button', '前往'], _mm.node.bottom, null, () => { _mm.page_go(_mm.node.page_go.value); });
-    _mm.node.page_prev = $input(['button', '上一页'], _mm.node.bottom, { disabled: true }, () => { _mm.page_load('prev'); });
-    _mm.node.page_next = $input(['button', '下一页'], _mm.node.bottom, { disabled: true }, () => { _mm.page_load('next'); });
+    $input(['button', 'GO'], _mm.node.bottom, null, () => { _mm.page_go(_mm.node.page_go.value); });
+    _mm.node.page_prev = $input(['button', 'Prev'], _mm.node.bottom, { disabled: true }, () => { _mm.page_load('prev'); });
+    _mm.node.page_next = $input(['button', 'Next'], _mm.node.bottom, { disabled: true }, () => { _mm.page_load('next'); });
 
     _mm.node.search_div = $element('div', $id('mmail_outer'), ['.hvut-mm-search hvut-none'], (e) => { _mm.page_click(e); });
     _mm.node.mail_view = $element('div', $id('mmail_outer'), ['.hvut-mm-view hvut-none'], (e) => { _mm.mail_click(e); });
@@ -10037,335 +10047,24 @@ if (settings.moogleMail && _query.s === 'Bazaar' && _query.ss === 'mm') {
     _mm.db.open(_mm.page_init);
   }
 } else
-//* [13] Bazaar - MoogleMail */
+// [END 13] Bazaar - MoogleMail */
 
 
 //* [14] Bazaar - Lottery
-if (settings.lottery && _query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
-
-  // --- 保持原有的彩票展示开关逻辑 ---
-  if (settings.showLottery && $qs('img[src$="lottery_next_d.png"]')) {
+if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
+  if ($config.settings.lotteryNotification && $qs('img[src$="lottery_next_d.png"]')) {
     _lt.toggle = function (show) {
-      _lt.json.hide = !show;
-      setValue(_query.ss + '_show', _lt.json);
+      _lt.json[_query.ss].hide = !show;
+      $config.set('lt_notif', _lt.json, 'hvut_');
     };
-    _lt.json = getValue(_query.ss + '_show', {});
-    $input(['checkbox', '在每个页面上均展示本次头奖装备'], $element('div', $id('rightpane'), ['!margin-top: 10px; color: #c00;']), { checked: !_lt.json.hide }, { change: (e) => { _lt.toggle(e.target.checked); } });
-  }
-  confirm_event($qs('img[src$="/lottery_golden_a.png"]'), 'click', '你确定要使用黄金彩票券吗?');
+    _lt.json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
 
-  // ============================================================
-  //   新版布局代码 (含快捷按钮与滚轮支持)
-  // ============================================================
-
-  GM_addStyle(/*css*/`
-    /* 主容器 */
-    #lottery-panel-container {
-      position: absolute;
-      top: 138px;
-      left: 680px;
-      width: 280px;
-      height: 68px;
-
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-
-      background-color: #f0f0f0;
-      border: 1px solid #888;
-      border-radius: 3px;
-      padding: 3px 5px;
-      box-sizing: border-box;
-      font-size: 12px;
-      z-index: 999;
-      font-family: Arial, sans-serif;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    }
-
-    .lot-row {
-      display: flex;
-      align-items: center;
-      width: 100%;
-      height: 16px;
-      line-height: 16px;
-    }
-
-    /* 第一行：输入框与快捷按钮 */
-    .lot-row.row-1 span { font-weight: bold; margin-right: 4px; color: #333; font-size: 11px; }
-
-    /* 强制重置输入框样式 */
-    .lot-row.row-1 input#ticket_temp {
-      width: 60px !important; /* 稍微缩小给按钮腾地 */
-      height: 14px !important;
-      font-size: 12px !important;
-      padding: 0 2px !important;
-      border: 1px solid #777 !important;
-      margin: 0 4px 0 0 !important; /* 右边留点空隙 */
-      text-align: right !important;
-      background: #fff;
-    }
-
-    /* 快捷增加按钮样式 */
-    .quick-add-btn {
-      border: 1px solid #999;
-      background: #fff;
-      color: #333;
-      font-size: 12px;
-      height: 14px;
-      line-height: 12px;
-      padding: 0 3px;
-      margin-right: 2px;
-      cursor: pointer;
-      border-radius: 2px;
-      min-width: 24px;
-      text-align: center;
-    }
-    .quick-add-btn:hover { background: #e0e0e0; border-color: #666; }
-    .quick-add-btn:active { background: #ccc; }
-
-    /* 第二行 */
-    .lot-row.row-2 { font-size: 10px; color: #333; }
-    .lot-row.row-2 > span { margin-right: 8px; }
-    .gp-warning { color: #d00 !important; font-weight: bold; }
-
-    .mini-buy-btn {
-      border: 1px solid #999;
-      background: #e9e9e9;
-      color: #000;
-      padding: 0 6px;
-      font-size: 12px;
-      cursor: pointer;
-      height: 14px;
-      line-height: 12px;
-      border-radius: 2px;
-      margin-left: auto;
-    }
-    .mini-buy-btn:hover { background: #d0d0d0; }
-
-    /* 第三行：提交按钮 */
-    .lot-row.row-3 { margin-top: 1px; }
-    .lot-row.row-3 button {
-      width: 100%;
-      height: 16px;
-      font-size: 11px;
-      line-height: 12px;
-      padding: 0;
-      cursor: pointer;
-      background: linear-gradient(to bottom, #ddd, #bbb);
-      border: 1px solid #666;
-      border-radius: 2px;
-      font-weight: bold;
-      color: #333;
-    }
-    .lot-row.row-3 button:hover { background: #ccc; }
-  `);
-
-  // --- 1. 创建并挂载容器 ---
-  const container = document.createElement('div');
-  container.id = 'lottery-panel-container';
-  document.body.appendChild(container);
-
-  // --- 2. 处理第一行：输入框 + 快捷按钮 ---
-  const row1 = document.createElement('div');
-  row1.className = 'lot-row row-1';
-  row1.innerHTML = '<span>购买数量:</span>'; // 缩短标签文字
-
-  const ticketInput = document.getElementById('ticket_temp');
-  if (ticketInput) {
-    row1.appendChild(ticketInput);
-
-    // --- 新增：创建快捷按钮 ---
-    const addValues = [10, 100, 1000];
-    addValues.forEach(val => {
-        const btn = document.createElement('button');
-        btn.className = 'quick-add-btn';
-        btn.textContent = `+${val >= 1000 ? (val/1000)+'k' : val}`; // 1000显示为1k
-        btn.title = `增加 ${val} 张`;
-        // 绑定点击事件：增加对应数值
-        btn.addEventListener('click', (e) => {
-            e.preventDefault(); // 防止触发表单提交
-            changeValue(val);
-        });
-        row1.appendChild(btn);
-    });
-
-  } else {
-    row1.innerHTML += '<span style="color:red">No Input</span>';
-  }
-  container.appendChild(row1);
-
-  // --- 3. 处理第二行 ---
-  const row2 = document.createElement('div');
-  row2.className = 'lot-row row-2';
-
-  const remainSpan = document.createElement('span');
-  remainSpan.textContent = '...';
-  row2.appendChild(remainSpan);
-
-  const priceSpan = document.createElement('span');
-  priceSpan.textContent = '...';
-  row2.appendChild(priceSpan);
-
-  const buyBtn = document.createElement('button');
-  buyBtn.className = 'mini-buy-btn';
-  buyBtn.textContent = '购买GP';
-  buyBtn.onclick = function(e) {
-      e.stopPropagation();
-      window.open('https://e-hentai.org/exchange.php?t=gp', '_blank');
-  };
-  row2.appendChild(buyBtn);
-
-  container.appendChild(row2);
-
-  // --- 4. 处理第三行：提交按钮（带二次确认） ---
-  const row3 = document.createElement('div');
-  row3.className = 'lot-row row-3';
-
-  // 查找原页面的提交函数入口
-  const originalImgBtn = document.querySelector('img[onclick*="submit_buy"]');
-
-  const newSubmitBtn = document.createElement('button');
-  newSubmitBtn.textContent = '确认购买';
-
-  // 移除直接的 onclick 属性，改为手动控制逻辑
-  newSubmitBtn.addEventListener('click', function(e) {
-      // 获取当前输入的数量
-      let val = 0;
-      if (ticketInput) {
-          val = parseInt(ticketInput.value.replace(/,/g, ''), 10);
-      }
-
-      // 简单校验
-      if (isNaN(val) || val <= 0) {
-          alert('请输入有效的购买数量');
-          return;
-      }
-
-      // 计算花费
-      const cost = val * 1000;
-
-      // 弹出二次确认框
-      const isConfirmed = confirm(
-          `⚠️【购买确认】\n\n` +
-          `即将购买: ${val} 张彩票\n` +
-          `消耗GP: ${cost.toLocaleString()} GP\n\n` +
-          `确定要继续吗？`
-      );
-
-      if (isConfirmed) {
-          // 执行原网页的购买函数
-          // 为了兼容不同的脚本环境，尝试多种调用方式
-          if (typeof submit_buy === 'function') {
-              submit_buy();
-          } else if (typeof unsafeWindow !== 'undefined' && typeof unsafeWindow.submit_buy === 'function') {
-              unsafeWindow.submit_buy();
-          } else {
-              // 最后的兜底方案：模拟 href 调用
-              window.location.href = 'javascript:submit_buy();';
-          }
-      }
-  });
-
-  row3.appendChild(newSubmitBtn);
-  container.appendChild(row3);
-
-  // 隐藏原图片
-  if (originalImgBtn) {
-      originalImgBtn.style.display = 'none';
-      if (originalImgBtn.parentNode && originalImgBtn.parentNode.style.position === 'absolute') {
-          originalImgBtn.parentNode.style.display = 'none';
-      }
+    const div = $element('div', $id('rightpane'), ['!margin-top: 10px; color: #c00;']);
+    $input(['checkbox', 'Show this lottery in the bottom bar'], div, { checked: !_lt.json[_query.ss].hide }, { change: (e) => { _lt.toggle(e.target.checked); } });
   }
 
-  // ============================================================
-  //   逻辑功能：值修改、滚轮、键盘支持
-  // ============================================================
-
-  // 通用修改数值函数
-  function changeValue(delta) {
-      if (!ticketInput) return;
-      let current = parseInt(ticketInput.value.replace(/,/g, ''), 10);
-      if (isNaN(current)) current = 0;
-
-      let next = current + delta;
-      if (next < 0) next = 0; // 不能小于0
-
-      ticketInput.value = next;
-      updateState(); // 触发GP计算更新
-  }
-
-  // 1. 绑定滚轮事件
-  if (ticketInput) {
-      ticketInput.addEventListener('wheel', function(e) {
-          e.preventDefault(); // 阻止页面滚动
-          // 滚轮向下是正数，向上是负数，所以要反过来
-          // 按住 Shift 键时步长为 10，否则为 1
-          const step = e.shiftKey ? 10 : 1;
-          const delta = e.deltaY < 0 ? step : -step;
-          changeValue(delta);
-      }, { passive: false });
-
-      // 2. 绑定键盘事件 (上下箭头)
-      ticketInput.addEventListener('keydown', function(e) {
-          if (e.key === 'ArrowUp') {
-              e.preventDefault();
-              changeValue(1);
-          } else if (e.key === 'ArrowDown') {
-              e.preventDefault();
-              changeValue(-1);
-          }
-      });
-  }
-
-  // ============================================================
-  //   原有逻辑：GP计算与价格
-  // ============================================================
-
-  let currentGP = 0;
-  const bodyText = document.body.textContent;
-  let gpMatch = bodyText.match(/You currently have ([\d,]+) GP/);
-  if (!gpMatch) gpMatch = bodyText.match(/你目前拥有 ([\d,]+) GP/);
-
-  if (gpMatch) {
-    currentGP = parseInt(gpMatch[1].replace(/,/g, ''), 10);
-  }
-
-  function updateState() {
-    if (!ticketInput) return;
-    let val = parseInt(ticketInput.value.replace(/,/g, ''), 10);
-    if (isNaN(val)) val = 0;
-
-    const cost = val * 1000;
-    const diff = currentGP - cost;
-
-    remainSpan.textContent = `剩余GP: ${diff.toLocaleString()}`;
-    if (diff < 0) remainSpan.classList.add('gp-warning');
-    else remainSpan.classList.remove('gp-warning');
-  }
-
-  if (ticketInput) {
-    ticketInput.addEventListener('input', updateState);
-    ticketInput.addEventListener('keyup', updateState);
-    updateState();
-  }
-
-  // 获取价格
-  if (typeof $ajax !== 'undefined') {
-    $ajax.fetch('https://e-hentai.org/exchange.php?t=gp')
-      .then(html => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const priceElement = doc.querySelector('td:nth-of-type(5)');
-        if (priceElement) {
-           const nums = priceElement.textContent.trim().match(/[\d,]+/);
-           if (nums) priceSpan.textContent = `1kGP=${nums[0]}C`;
-        }
-      })
-      .catch(() => { priceSpan.textContent = 'Err'; });
-  }
-}
-
-
+  confirm_event($qs('img[src$="/lottery_golden_a.png"]'), 'click', 'Are you sure that you wish to spend a Golden Lottery Ticket?');
+} else
 // [END 14] Bazaar - Lottery */
 
 
@@ -10381,7 +10080,7 @@ if (_query.s === 'Battle' && $id('initform')) {
     #arena_list tbody > tr > th:nth-child(6) { width: 90px; }
     #arena_list tbody > tr > th:nth-child(7) { width: 120px; }
     #arena_list tbody > tr > th:nth-child(8) { width: 90px; }
-    #arena_list tbody > tr > th:nth-child(8) > input { width: 70px; }
+    #arena_list tbody > tr > th:nth-child(8) > input { width: 80px; }
     #arena_list tbody > tr > td > div { width: 100% !important; left: 0; }
 
     .hvut-bt-on #arena_list tr > th:nth-child(1) { width: 302px; }
@@ -10404,33 +10103,33 @@ if (_query.s === 'Battle' && $id('initform')) {
 
 
   //* [16] Battle - Arena
-  if (settings.arena && _query.ss === 'ar') {
+  if (_query.ss === 'ar') {
     _ar.split_colspan($id('arena_list'));
-    toggle_button($input('button', $id('arena_list').rows[0].cells[7]), '展开细节', '收起', $id('mainpane'), 'hvut-bt-on', true);
+    toggle_button($input('button', $id('arena_list').rows[0].cells[7]), 'Details', 'Collapse', $id('mainpane'), 'hvut-bt-on', true);
     $element('div', [$id('mainpane'), 'afterbegin'], ['#arena_outer']).append($id('arena_list'));
   } else
   // [END 16] Battle - Arena */
 
 
   //* [17] Battle - Ring of Blood
-  if (settings.ringofblood && _query.ss === 'rb') {
+  if (_query.ss === 'rb') {
     _ar.split_colspan($id('arena_list'));
-    toggle_button($input('button', $id('arena_list').rows[0].cells[7]), '展开细节', '收起', $id('mainpane'), 'hvut-bt-on', true);
+    toggle_button($input('button', $id('arena_list').rows[0].cells[7]), 'Details', 'Collapse', $id('mainpane'), 'hvut-bt-on', true);
     $element('div', [$id('mainpane'), 'afterbegin'], ['#rob_outer']).append($id('arena_list'), $id('arena_tokens'));
   } else
   // [END 17] Battle - Ring of Blood */
 
 
   //* [18] Battle - GrindFest
-  if (settings.grindfest && _query.ss === 'gr') {
+  if (_query.ss === 'gr') {
 
   } else
   // [END 18] Battle - GrindFest */
 
 
   //* [19] Battle - Item World
-  if (settings.itemWorld && _query.ss === 'iw') {
-    _iw.pxp_mod = !_isekai ? { 'Normal': 2, 'Hard': 2, 'Nightmare': 4, 'Hell': 7, 'Nintendo': 10, 'IWBTH': 15, 'PFUDOR': 20 } : { 'Normal': 12, 'Hard': 12, 'Nightmare': 12, 'Hell': 21, 'Nintendo': 30, 'IWBTH': 45, 'PFUDOR': 60 };
+  if (_query.ss === 'iw') {
+    _iw.pxp_mod = !$config.isekai ? { 'Normal': 2, 'Hard': 2, 'Nightmare': 4, 'Hell': 7, 'Nintendo': 10, 'IWBTH': 15, 'PFUDOR': 20 } : { 'Normal': 12, 'Hard': 12, 'Nightmare': 12, 'Hell': 21, 'Nintendo': 30, 'IWBTH': 45, 'PFUDOR': 60 };
 
     _iw.click = function (e) {
       const target = e.target.closest('[data-action]');
@@ -10466,7 +10165,7 @@ if (_query.s === 'Battle' && $id('initform')) {
     };
 
     _iw.calc = function (eq) {
-      let round = parseInt(prompt('输入道具界回合数', eq.info.round));
+      let round = parseInt(prompt('Enter the number of rounds', eq.info.round));
       if (!round) {
         return;
       }
@@ -10480,7 +10179,7 @@ if (_query.s === 'Battle' && $id('initform')) {
     };
 
     _iw.update = function (eq) {
-      let gear_exp = eq.info.round_ * _iw.pxp_mod[_player.dfct];
+      let gear_exp = eq.info.round_ * _iw.pxp_mod[_player.difficulty];
       if (eq.info.soulbound) {
         gear_exp *= 2;
       }
@@ -10495,19 +10194,17 @@ if (_query.s === 'Battle' && $id('initform')) {
       const pxp_text = tier < 10 ? `(${pxp1} / ${pxp2})` : '(MAX)';
 
       eq.node.sub.innerHTML = '';
-      $element('span', eq.node.sub, [`潜能等级 ${eq.info.tier}`, (eq.info.tier ? '.hvut-iw-tier' : '')]);
+      $element('span', eq.node.sub, [`IW ${eq.info.tier}`, (eq.info.tier ? '.hvut-iw-tier' : '')]);
       $element('span', eq.node.sub, `(${eq.info.pxp1} / ${eq.info.pxp2})`);
       $element('span', eq.node.sub, [`+${gear_exp} (${eq.info.round_})`, '.hvut-iw-up hvut-cphu', { dataset: { action: 'calc', eid: eq.info.eid } }]);
       $element('span', eq.node.sub, '=>');
-      $element('span', eq.node.sub, [`潜能等级 ${tier}`, (tier ? '.hvut-iw-tier' : '')]);
+      $element('span', eq.node.sub, [`IW ${tier}`, (tier ? '.hvut-iw-tier' : '')]);
       $element('span', eq.node.sub, pxp_text);
-
-
 
       if (!eq.data.potencies?.length) {
         return;
       }
-      $element('span', eq.node.sub, ['重铸', '.hvut-iw-reforge hvut-cphu', { dataset: { action: 'reforge', eid: eq.info.eid } }]);
+      $element('span', eq.node.sub, ['Reforge', '.hvut-iw-reforge hvut-cphu', { dataset: { action: 'reforge', eid: eq.info.eid } }]);
       eq.data.potencies.forEach((p) => {
         $element('span', eq.node.sub, p);
       });
@@ -10526,10 +10223,10 @@ if (_query.s === 'Battle' && $id('initform')) {
 
     _iw.reforge = async function (eq) {
       if (!eq.node.lock.classList.contains('iu')) {
-        alert('重铸装备前请先解锁.');
+        alert('Unlock before reforge.');
         return;
       }
-      if (!confirm(`[${eq.info.name}]\n你确定要重铸这件装备吗?\n这会移除它所有的潜能并将其潜能等级归0.`)) {
+      if (!confirm(`Are you sure that you wish to reforge this item?\n[${eq.info.name}]\nThis will remove all potencies and reset its level to zero.`)) {
         return;
       }
       const html = await $ajax.fetch(`?s=Forge&ss=fo&filter=${_iw.filter}`, `select_item=${eq.info.eid}`);
@@ -10543,7 +10240,7 @@ if (_query.s === 'Battle' && $id('initform')) {
 
     _iw.set_latest = function (eq) {
       _iw.json[_iw.filter] = eq.info.eid;
-      setValue('iw_latest', _iw.json);
+      $config.set('iw_latest', _iw.json);
     };
 
     GM_addStyle(/*css*/`
@@ -10552,41 +10249,10 @@ if (_query.s === 'Battle' && $id('initform')) {
       #itemworld_left .cspp { overflow-y: scroll; }
       div[onclick*='start_itemworld'] { width: 200px; margin: 30px auto 10px; }
 
-      #itemworld_left .eqp { height: 60px; }
+      #itemworld_left .eqp { height: 44px; }
       .hvut-iw-latest { border: 1px solid; background-color: #fff !important; }
-    .hvut-iw-sub {
-        /* 1. 允许自动换行 */
-        white-space: normal;
-
-        /* 2. 限制右侧边界，触发换行 */
-        /* 这里的 right: 10px 意味着内容延伸到距离右边10px时就会折行 */
-        /* 你也可以设置 max-width: 500px; 视具体容器宽度而定 */
-        right: 10px;
-
-        /* 3. 使用 Flex 布局优化多行排列 */
-        display: flex;
-        flex-wrap: wrap;
-
-        /* 保持原有的定位 */
-        position: absolute;
-        top: 24px;
-        left: 20px;
-        font-size: 8pt;
-        line-height: 18px;
-
-        /* 确保高度能随内容自动伸展 */
-        height: auto;
-
-        /* (可选) 防止被下层元素遮挡 */
-        z-index: 5;
-    }
-
-    /* 调整子元素间距 */
-    .hvut-iw-sub > * {
-        margin-right: 5px;
-        /* 换行后，增加一点垂直间距，防止上下行粘在一起 */
-        margin-bottom: 2px;
-    }
+      .hvut-iw-sub { position: absolute; top: 24px; left: 20px; font-size: 8pt; line-height: 18px; white-space: nowrap; }
+      .hvut-iw-sub > * { margin-right: 5px; }
       .hvut-iw-tier { font-weight: bold; }
       .hvut-iw-up { color: #c00; }
       .hvut-iw-reforge { color: #c00; font-weight: bold; margin-left: 5px; }
@@ -10601,11 +10267,11 @@ if (_query.s === 'Battle' && $id('initform')) {
       eq.node.div.dataset.action = 'select';
       eq.node.lock = eq.node.wrapper.firstElementChild;
       eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-iw-sub']);
-      $element('span', eq.node.sub, [`潜能等级 ${eq.info.tier}`, (eq.info.tier ? '.hvut-iw-tier' : '')]);
+      $element('span', eq.node.sub, [`IW ${eq.info.tier}`, (eq.info.tier ? '.hvut-iw-tier' : '')]);
       $element('span', eq.node.sub, `(${eq.info.pxp1} / ${eq.info.pxp2})`);
     });
 
-    _iw.json = getValue('iw_latest', {});
+    _iw.json = $config.get('iw_latest', {});
     _iw.filter = _query.filter || '1handed';
     _iw.latest = $id('e' + _iw.json[_iw.filter]);
     if (_iw.latest) {
@@ -10619,432 +10285,13 @@ if (_query.s === 'Battle' && $id('initform')) {
   // eslint-disable-next-line brace-style
   {} // END OF [else if]; DO NOT REMOVE THIS LINE!
 
-
-  //* [0] Battle - Equipment Enchant and Repair
-  if (settings.equipEnchant) {
-    var $battle = {
-      enchant_data: {
-        'Voidseeker Shard': { effect: "虚空探索者的祝福", weapon: 'vseek' },
-        'Aether Shard': { effect: '弥漫的以太', weapon: 'ether' },
-        'Featherweight Shard': { effect: '轻如鸿毛', weapon: 'feath', armor: 'feath' },
-        'Infusion of Flames': { effect: '火焰附魔', weapon: 'sfire', armor: 'pfire', day: 2 },
-        'Infusion of Frost': { effect: '冰霜附魔', weapon: 'scold', armor: 'pcold', day: 3 },
-        'Infusion of Lightning': { effect: '雷电附魔', weapon: 'selec', armor: 'pelec', day: 6 },
-        'Infusion of Storms': { effect: '风暴附魔', weapon: 'swind', armor: 'pwind', day: 4 },
-        'Infusion of Divinity': { effect: '神圣附魔', weapon: 'sholy', armor: 'pholy', day: 0 },
-        'Infusion of Darkness': { effect: '黑暗附魔', weapon: 'sdark', armor: 'pdark', day: 1 },
-      },
-      node: {},
-      equips: [],
-
-      click: function (e) {
-        const target = e.target.closest('[data-action]');
-        if (!target) {
-          return;
-        }
-        const { action, eid, item, count } = target.dataset;
-        if (action === 'view') {
-          $battle.view(eid);
-        } else if (action === 'enchant') {
-          $battle.enchant($battle.current, item, count);
-        } else if (action === 'repair') {
-          $battle.repair($battle.current);
-        } else if (action === 'repairall') {
-          $battle.repair('all');
-        }
-      },
-      get: function (eid) {
-        return $battle.equips.find((eq) => eq.info.eid == eid);
-      },
-      view: function (eid) {
-        $battle.node.repair.innerHTML = '';
-        $battle.node.enchant.innerHTML = '';
-
-        const eq = $battle.get(eid);
-        if (!eq) {
-          return;
-        }
-        $battle.get($battle.current)?.node.li.classList.remove('hvut-bt-active');
-        $battle.current = eq.info.eid;
-        eq.node.li.classList.add('hvut-bt-active');
-
-        if (eq.data.repair) {
-          Object.entries(eq.data.repair).forEach(([n, c]) => { $element('li', $battle.node.repair, `${n} x ${c}`); });
-        } else {
-          $element('li', $battle.node.repair, '-');
-        }
-
-        if (!$item.list) {
-          return;
-        }
-        const cat = eq.info.cat;
-        const day = (new Date()).getUTCDay();
-
-        Object.entries($battle.enchant_data).forEach(([n, item]) => {
-          if (item[cat]) {
-            const li = $element('li', $battle.node.enchant);
-            const c = (cat === 'weapon' && n.includes('Infusion of ') ? settings.equipEnchantWeapon : settings.equipEnchantArmor) || 1;
-            const s = $item.count(n);
-            if (cat === 'weapon' && item.day === day) {
-              li.classList.add('hvut-bt-day');
-            }
-            if (!s) {
-              li.classList.add('hvut-bt-nostock');
-            }
-            $element('span', li, [`[+${c}]`, '.hvut-cphu', { dataset: { action: 'enchant', item: n, count: c } }]);
-            $element('span', li, [`${item.effect}`, '.hvut-cphu', { dataset: { action: 'enchant', item: n, count: 1 } }]);
-            $element('span', li, [`(${s})`]);
-          }
-        });
-      },
-      load: async function (eid) {
-        const eq = $battle.get(eid);
-        eq.node.enc.textContent = '获取附魔状态中...';
-        const html = await $ajax.fetch(`equip/${eq.info.eid}/${eq.info.key}`);
-        const doc = $doc(html);
-        $battle.parse(eq.info.eid, doc);
-      },
-      parse: function (eid, doc) {
-        const div = $id('equip_extended', doc);
-        const exec = /Condition: (\d+) \/ (\d+) \((\d+)%\)/.exec($qs('.eq', div).children[1].textContent);
-        const eq = $battle.get(eid);
-        eq.info.condition = exec[1];
-        eq.info.durability = exec[2];
-        eq.info.cdt = eq.info.condition / eq.info.durability;
-        $battle.display_condition(eq.info.eid);
-
-        eq.node.enc.innerHTML = '';
-        const enchant = $qsa('#ee > span', div);
-        enchant.forEach((e) => { $element('span', eq.node.enc, e.textContent); });
-        if (!enchant.length) {
-          eq.node.enc.textContent = '无附魔';
-        }
-      },
-      enchant: async function (eid, name, count) {
-        if (!$item.list) {
-          return;
-        }
-        const eq = $battle.get(eid);
-        const item = $battle.enchant_data[name];
-        const stock = $item.count(name);
-        if (count > stock) {
-          count = stock;
-        }
-        if (count < 1) {
-          return;
-        }
-        eq.node.enc.textContent = '加载中...';
-
-        async function enchant(eq) {
-          const html = await $ajax.fetch('?s=Forge&ss=en', `select_item=${eq.info.eid}&enchantment=${item[eq.info.cat]}`);
-          const doc = $doc(html);
-          const error = get_message(doc);
-          if (error) {
-            popup(error);
-          }
-          $battle.parse(eq.info.eid, doc);
-        }
-
-        const requests = $ajax.repeat(count, enchant, eq);
-        await Promise.all(requests);
-        $battle.load_inventory();
-      },
-      repair: async function (eid) {
-        const eq = $battle.get(eid);
-        if (eq?.info?.cdt === 1) {
-          return;
-        }
-        $battle.node.repairall.innerHTML = '';
-        $battle.node.repair.innerHTML = '';
-
-        const html = await $ajax.fetch('?s=Forge&ss=re', eq ? 'select_item=' + eq.info.eid : eid === 'all' ? 'repair_all=1' : null);
-        const doc = $doc(html);
-        $battle.load_dynjs(doc);
-
-        const error = get_message(doc);
-        if (error) {
-          popup(error);
-          $battle.load_inventory();
-          return;
-        }
-
-        const repairall = /Requires: (.+)/.test($id('repairall', doc).nextElementSibling.textContent) && RegExp.$1;
-        if (repairall === 'Everything is fully repaired.') {
-          $battle.repair.repairall = 0;
-        } else {
-          $battle.repair.repairall = {};
-          repairall.split(', ').forEach((e) => {
-            const exec = /(\d+)x (.+)/.exec(e);
-            $battle.repair.repairall[exec[2]] = parseInt(exec[1]);
-          });
-        }
-
-        const repair_equip = {};
-        $qsa('.equiplist div[onclick*="set_forge_cost"]', doc).forEach((div) => {
-          const [, eid, repair] = /set_forge_cost\((\d+),'Requires: (.+?)'/.exec(div.getAttribute('onclick'));
-          repair_equip[eid] = {};
-          repair.split(', ').forEach((e) => {
-            const exec = /(\d+)x (.+)/.exec(e);
-            // 添加修理材料的英文到中文映射
-const materialMapping = {
-  'Scrap Metal': '金属废料',
-  'Scrap Leather': '皮革废料',
-  'Scrap Wood': '木材废料',
-  'Scrap Cloth': '废布料',
-  'Energy Cell': '能量元',
-};
-
-// 遍历修理材料，进行映射
-repair.split(', ').forEach((e) => {
-  const exec = /(\d+)x (.+)/.exec(e);
-  const materialName = exec[2];
-  const materialCount = parseInt(exec[1]);
-
-  // 将英文名称映射为中文名称
-  const chineseMaterialName = materialMapping[materialName] || materialName;
-
-  // 存储修理材料的中文名称及其数量
-  repair_equip[eid][chineseMaterialName] = materialCount;
-});
-          });
-        });
-
-        $battle.equips.forEach((e) => {
-          const repair = repair_equip[e.info.eid];
-          if (repair) {
-            e.data.repair = repair;
-          } else {
-            e.data.repair = false;
-          }
-          if (eq === e || eid === 'all' && settings.equipEnchantCheckArmors) {
-            $battle.load(e.info.eid);
-          }
-        });
-
-        if (eq || eid === 'all') {
-          $battle.load_inventory();
-        } else {
-          $battle.display_inventory();
-        }
-        $persona.check_warning(doc);
-      },
-      load_dynjs: async function (doc) {
-        const src = $qs('script[src*="/dynjs/"]', doc).src;
-        const html = await $ajax.fetch(src + '?t=' + Date.now());
-        $equip.dynjs_loaded = JSON.parse(html.slice(16, -1));
-
-        $battle.equips.some((eq) => {
-          const dynjs = $equip.dynjs_loaded[eq.info.eid];
-          if (!dynjs) {
-            $persona.change_p();
-            return true;
-          }
-          const exec = $equip.reg.html.exec(dynjs.d);
-          eq.info.condition = parseInt(exec[4]);
-          eq.info.durability = parseInt(exec[5]);
-          eq.info.cdt = eq.info.condition / eq.info.durability;
-          $battle.display_condition(eq.info.eid);
-        });
-      },
-      display_condition: function (eid) {
-        const eq = $battle.get(eid);
-        let thld = settings.equipEnchantRepairThreshold;
-        if (thld < 1) {
-          thld = eq.info.cdt <= thld;
-        } else { // margin to 50%
-          thld = eq.info.condition <= thld + eq.info.durability * 0.5;
-        }
-        eq.node.cdt.textContent = `${eq.info.condition} / ${eq.info.durability} (${(eq.info.cdt * 100).toFixed(1)}%)`;
-        eq.node.cdt.className = eq.info.cdt <= 0.5 ? 'hvut-bt-cdt2' : eq.info.cdt <= 0.6 || thld ? 'hvut-bt-cdt1' : '';
-      },
-      load_inventory: async function () {
-        $battle.node.inventory.innerHTML = '';
-        $battle.node.repairall.innerHTML = '';
-        await $item.load();
-        $battle.display_inventory();
-        setValue('items', $item.list);
-      },
-      display_inventory: function () {
-        $battle.node.inventory.innerHTML = '';
-        $battle.node.repairall.innerHTML = '';
-        if (!$item.list) {
-          return;
-        }
-
-        // --- 修复点 1: 定义映射表 ---
-        const repairItemsMapping = {
-          'Scrap Metal': '金属废料',
-          'Scrap Leather': '皮革废料',
-          'Scrap Wood': '木材废料',
-          'Scrap Cloth': '废布料',
-          'Energy Cell': '能量元',
-        };
-
-        // --- 修复点 2: 安全获取 repairall 数据 ---
-        // 如果 $battle.repair 不存在，或 repairall 不存在，就用空对象 {} 代替，防止报错
-        const repairData = ($battle.repair && $battle.repair.repairall) ? $battle.repair.repairall : {};
-
-        Object.entries(repairData).forEach(([n, c]) => {
-          const cnName = repairItemsMapping[n] || n;
-          const s = $item.count(n);
-          $element('li', $battle.node.repairall, [`${cnName} x ${c} (${s})`, s < c ? '.hvut-bt-warn' : '']);
-        });
-
-        // --- 修复点 3: 补给品映射表 ---
-        const recoveryItemsMapping = {
-          'Health Potion': '生命药水',
-          'Health Draught': '生命长效药',
-          'Health Elixir': '生命秘药',
-          'Mana Potion': '法力药水',
-          'Mana Draught': '法力长效药',
-          'Mana Elixir': '法力秘药',
-          'Spirit Potion': '灵力药水',
-          'Spirit Draught': '灵力长效药',
-          'Spirit Elixir': '灵力秘药',
-          'Last Elixir': '终极秘药',
-          'Flower Vase': '花瓶',
-          'Bubble-Gum': '泡泡糖',
-        };
-
-        // --- 修复点 4: 安全获取设置数据 ---
-        // 防止 settings.equipEnchantInventory 为空导致报错
-        const inventorySettings = settings.equipEnchantInventory || {};
-
-        Object.entries(inventorySettings).forEach(([enName, m]) => {
-          const cnName = recoveryItemsMapping[enName] || enName;
-          const c = $item.count(enName);
-          $element('li', $battle.node.inventory, [`${cnName} (${c})`, c < m ? '.hvut-bt-warn' : '']);
-        });
-
-        // --- 修复点 5: 逻辑判断兼容 ---
-        // 检查是否为空对象或显式的 0
-        const isRepairEmpty = !repairData || (typeof repairData === 'object' && Object.keys(repairData).length === 0);
-
-        if (isRepairEmpty || $battle.repair?.repairall === 0) {
-          $element('li', $battle.node.repairall, '所有装备无需修理.');
-        }
-
-        $battle.view($battle.current);
-      },
-
-      create: function () {
-        $battle.load_inventory();
-        $battle.equips.length = 0;
-        $battle.node.equip.innerHTML = '';
-        const equipset = getValue('equipset');
-        if (!equipset) {
-          $persona.change_p();
-          return;
-        }
-        equipset.forEach((info) => {
-          if (!info.eid) {
-            $element('li', $battle.node.equip, [`/<a>${info.slot}</a><span>空</span><span></span>`]);
-            return false;
-          }
-
-          const eq = { info, data: {}, node: {} };
-          eq.info.cat = (eq.info.category === 'One-handed Weapon' || eq.info.category === 'Two-handed Weapon' || eq.info.category === 'Staff') ? 'weapon' : 'armor';
-          eq.node.li = $element('li', $battle.node.equip);
-          eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || eq.info.name, href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank' });
-          eq.node.enc = $element('span', eq.node.li);
-          eq.node.cdt = $element('span', eq.node.li, { textContent: '...', dataset: { action: 'view', eid: eq.info.eid } });
-
-          $battle.equips.push(eq);
-          if (eq.info.cat === 'weapon' || settings.equipEnchantCheckArmors) {
-            $battle.load(eq.info.eid);
-          }
-        });
-
-        $battle.current = $battle.equips[0]?.info.eid;
-        $battle.repair();
-      },
-      init: function () {
-        GM_addStyle(/*css*/`
-          .hvut-bt-outer { width: 1220px !important; }
-          .hvut-bt-outer > p { width: 520px; margin-left: auto; margin-right: auto; }
-          .hvut-bt-on .hvut-bt-outer { width: 620px !important; }
-          .hvut-bt-on.hvut-bt-left .hvut-bt-outer { margin-left: 600px !important; }
-          .hvut-bt-on.hvut-bt-right .hvut-bt-outer { margin-right: 600px !important; }
-          .hvut-bt-on .hvut-bt-div { visibility: visible; }
-          .hvut-bt-left .hvut-bt-div { left: 8px; }
-          .hvut-bt-right .hvut-bt-div { right: 8px; }
-          #popup_box.hvut-bt-right-popup { left: 624px !important; }
-          #popup_box.hvut-bt-left-popup { left: 244px !important; }
-
-          .hvut-bt-div { visibility: hidden; position: absolute; bottom: 8px; width: 599px; height: 417px; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap; }
-          .hvut-bt-div > ul { margin: 0; padding: 21px 0 0; border: 1px solid; list-style: none; display: flex; flex-direction: column; justify-content: center; }
-          .hvut-bt-div > ul::before { content: attr(data-header); position: absolute; top: 0; width: 100%; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold; }
-
-          .hvut-bt-equip { position: absolute; bottom: 0; left: 0; width: 405px; height: 286px; }
-          .hvut-bt-equip li { position: relative; height: 40px; padding-right: 60px; border-bottom: 1px solid; }
-          .hvut-bt-equip li:last-child { border-bottom: none; }
-          .hvut-bt-equip li:hover { background-color: #fff; z-index: 1; }
-          .hvut-bt-active { background-color: #fff; }
-          .hvut-bt-equip li > a { display: block; overflow: hidden; text-overflow: ellipsis; font-weight: bold; text-decoration: none; }
-          .hvut-bt-equip li > span:nth-child(2) { display: block; font-size: 9pt; overflow: hidden; text-overflow: ellipsis; }
-          .hvut-bt-equip li > span:nth-child(2) > span { display: inline-block; margin: 0 3px; color: #e00; }
-          .hvut-bt-equip li > span:nth-child(2):empty { visibility: hidden; }
-          .hvut-bt-equip li:hover > span:nth-child(2) { white-space: normal; border-bottom: 1px solid; background: inherit; pointer-events: none; }
-          .hvut-bt-equip li:last-child:hover > span:nth-child(2) { position: absolute; bottom: 0; width: 340px; border-top: 1px solid; border-bottom: none; }
-          .hvut-bt-equip li > span:nth-child(3) { position: absolute; top: 0; right: 0; width: 59px; height: 100%; border-left: 1px solid #333; font-size: 9pt; white-space: normal; cursor: pointer; }
-          .hvut-bt-equip li > span:nth-child(3):hover { background-color: #fff; }
-          .hvut-bt-cdt1 { color: #e00; }
-          .hvut-bt-cdt2 { color: #fff; background-color: #e00 !important; }
-
-          .hvut-bt-inventory { position: absolute; bottom: 314px; left: 0; width: 400px; min-height: 80px; max-height: 160px; flex-direction: row !important; justify-content: space-between !important; flex-wrap: wrap; align-content: space-evenly; font-size: 9pt; }
-          .hvut-bt-inventory > li { width: 32%; overflow: hidden; }
-          .hvut-bt-inventory > li:last-child:nth-child(3n+2) { margin-right: 34%; }
-          .hvut-bt-warn { color: #e00; }
-
-          .hvut-bt-enchant { position: absolute; bottom: 0; left: 407px; width: 190px; height: 204px; line-height: 18px; }
-          .hvut-bt-enchant > li { display: flex; margin: 2px 0; }
-          .hvut-bt-enchant span { margin: 0 2px; }
-          .hvut-bt-enchant span:nth-child(1) { color: #03c; }
-          .hvut-bt-enchant span:nth-child(2) { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; text-align: left; color: #03c; }
-          .hvut-bt-day { background-color: #fff; }
-          .hvut-bt-day span:nth-child(2) { font-weight: bold; }
-          .hvut-bt-nostock span { color: #999 !important; cursor: default; }
-
-          .hvut-bt-repair { position: absolute; bottom: 232px; left: 407px; width: 190px; height: 54px; cursor: pointer; }
-          .hvut-bt-repair:hover { background-color: #fff; }
-          .hvut-bt-repairall { position: absolute; bottom: 314px; left: 407px; width: 190px; min-height: 80px; cursor: pointer; }
-          .hvut-bt-repairall:hover { background-color: #fff; }
-        `);
-
-        $battle.node.div = $element('div', $id('mainpane'), ['.hvut-bt-div'], (e) => { $battle.click(e); });
-        $battle.node.equip = $element('ul', $battle.node.div, ['.hvut-bt-equip', { dataset: { header: '装备' } }]);
-        $battle.node.enchant = $element('ul', $battle.node.div, ['.hvut-bt-enchant', { dataset: { header: '装备附魔' } }]);
-        $battle.node.repair = $element('ul', $battle.node.div, ['.hvut-bt-repair', { dataset: { header: '修理装备', action: 'repair' } }]);
-        $battle.node.repairall = $element('ul', $battle.node.div, ['.hvut-bt-repairall', { dataset: { header: '修理全部', action: 'repairall' } }]);
-        $battle.node.inventory = $element('ul', $battle.node.div, ['.hvut-bt-inventory', { dataset: { header: '补给品库存' } }]);
-
-        $id('mainpane').classList.add('hvut-bt-on');
-        $id('mainpane').style.paddingRight = '8px';
-
-        if (settings.equipEnchantPosition === 'right') {
-          $id('mainpane').classList.add('hvut-bt-right');
-          $id('popup_box').classList.add('hvut-bt-right-popup');
-        } else {
-          $id('mainpane').classList.add('hvut-bt-left');
-          $id('popup_box').classList.add('hvut-bt-left-popup');
-        }
-
-        $qs('#arena_outer, #rob_outer, #towerstart, #grindfest, #itemworld_outer')?.classList.add('hvut-bt-outer');
-
-        $battle.create();
-      },
-
-    };
-
-    $battle.init();
-  }
-// [END 0] Battle - Equipment Enchant and Repair */
+  $battle.init();
 } else
 // Battle
 
 
 //* [21] Forge - Upgrade
-if (settings.upgrade && _query.s === 'Forge' && _query.ss === 'up') {
+if (_query.s === 'Forge' && _query.ss === 'up') {
   _up.exp = { 'Low-Grade': 1, 'Mid-Grade': 5, 'High-Grade': 20, 'Wispy Catalyst': 3, 'Diluted Catalyst': 13, 'Regular Catalyst': 25, 'Robust Catalyst': 63, 'Vibrant Catalyst': 125, 'Coruscating Catalyst': 250 };
   _up.catalysts = ['Wispy Catalyst', 'Diluted Catalyst', 'Regular Catalyst', 'Robust Catalyst', 'Vibrant Catalyst', 'Coruscating Catalyst'];
 
@@ -11085,7 +10332,7 @@ if (settings.upgrade && _query.s === 'Forge' && _query.ss === 'up') {
       if (e[0]) { _100.materials['Low-Grade ' + eq.upgrade.type] = e[0]; }
       if (e[1]) { _100.materials['Mid-Grade ' + eq.upgrade.type] = e[1]; }
       if (e[2]) { _100.materials['High-Grade ' + eq.upgrade.type] = e[2]; }
-      if (i > 4 && !_isekai) {
+      if (i > 4 && !$config.isekai) {
         _100.binding = true;
       }
       _100.forge_exp = _up.exp['Low-Grade'] * e[0] + _up.exp['Mid-Grade'] * e[1] + _up.exp['High-Grade'] * e[2];
@@ -11181,7 +10428,7 @@ if (settings.upgrade && _query.s === 'Forge' && _query.ss === 'up') {
     _up.sort(materials);
 
     const prices = $price.get('Materials');
-    const credits = Object.keys(materials).reduce((s, e) => s + materials[e] * (prices[e] || 0), 0);
+    const credits = Object.keys(materials).reduce((s, e) => (s + materials[e] * (prices[e] || 0)), 0);
 
     return { materials, credits, forge_exp, gear_exp };
   };
@@ -11191,10 +10438,10 @@ if (settings.upgrade && _query.s === 'Forge' && _query.ss === 'up') {
     if (!text) {
       return;
     }
-    text = text.replace(/( (?:of|the))\n/g, '$1 ').replace(/\n((?:Of|The) )/g, ' $1');
-    let eq = text.split('\n').reverse().find((t) => $equip.parse.name(t.trim()).info.type);
+    text = split2(text, 'Current Owner:')[0].replace(/( (?:of|the))\n/g, '$1 ').replace(/\n((?:Of|The) )/g, ' $1');
+    let eq = text.split('\n').map((t) => t.trim()).reverse().find((t) => $equip.parse.name(t).info.type);
     if (!eq) {
-      alert("无法找到装备名称.");
+      alert('Couldn\'t find the name of the equipment.');
       return;
     }
     eq = $equip.parse.name(eq);
@@ -11258,91 +10505,22 @@ if (settings.upgrade && _query.s === 'Forge' && _query.ss === 'up') {
     });
 
     const pxp_text = pxp ? `${quality} (${pxp})`
-        : pxp === 0 ? `${quality} (Selected)`
-        : `${quality} ?? (无法计算这件装备的潜经验,可能是潜能等级已满)`;
+      : pxp === 0 ? `${quality} (Selected)`
+      : `${quality} ?? (Unable to calculate the base PXP of this equipment)`;
 
     _up.node.salvage_summary.innerHTML = `
       <li>${eq.info.name}</li>
-      <li>PXP 质量: ${pxp_text}</li>
-      <li>升级开销: ${credits.toLocaleString()}</li>
-      <li>分解返还: ${return_credits.toLocaleString()}</li>`;
+      <li>PXP Quality: ${pxp_text}</li>
+      <li>Upgrade Cost: ${credits.toLocaleString()}</li>
+      <li>Returns Value: ${return_credits.toLocaleString()}</li>`;
 
-const materialMapping = {
-        'Binding of Slaughter':  '粘合剂 基础攻击伤害',
-        'Binding of Balance':  '粘合剂 物理命中率',
-        'Binding of Isaac':  '粘合剂 物理暴击率',
-        'Binding of Destruction':  '粘合剂 基础魔法伤害',
-        'Binding of Focus':  '粘合剂 魔法命中率',
-        'Binding of Friendship':  '粘合剂 魔法暴击率',
-        'Binding of Protection':  '粘合剂 物理减伤',
-        'Binding of Warding':  '粘合剂 魔法减伤',
-        'Binding of the Fleet':  '粘合剂 回避率',
-        'Binding of the Barrier':  '粘合剂 格挡率',
-        'Binding of the Nimble':  '粘合剂 招架率',
-        'Binding of Negation':  '粘合剂 抵抗率',
-        'Binding of the Ox':  '粘合剂 力量',
-        'Binding of the Raccoon':  '粘合剂 灵巧',
-        'Binding of the Cheetah':  '粘合剂 敏捷',
-        'Binding of the Turtle':  '粘合剂 体质',
-        'Binding of the Fox':  '粘合剂 智力',
-        'Binding of the Owl':  '粘合剂 智慧',
-        'Binding of the Elementalist':  '粘合剂 元素魔法熟练度',
-        'Binding of the Heaven-sent':  '粘合剂 神圣魔法熟练度',
-        'Binding of the Demon-fiend':  '粘合剂 黑暗魔法熟练度',
-        'Binding of the Curse-weaver':  '粘合剂 减益魔法熟练度',
-        'Binding of the Earth-walker':  '粘合剂 增益魔法熟练度',
-        'Binding of Surtr':  '粘合剂 火属性咒语伤害',
-        'Binding of Niflheim':  '粘合剂 冰属性咒语伤害',
-        'Binding of Mjolnir':  '粘合剂 雷属性咒语伤害',
-        'Binding of Freyr':  '粘合剂 风属性咒语伤害',
-        'Binding of Heimdall':  '粘合剂 圣属性咒语伤害',
-        'Binding of Fenrir':  '粘合剂 暗属性咒语伤害',
-        'Binding of Dampening':  '粘合剂 打击减伤',
-        'Binding of Stoneskin':  '粘合剂 斩击减伤',
-        'Binding of Deflection':  '粘合剂 刺击减伤',
-        'Binding of the Fire-eater':  '粘合剂 火属性减伤',
-        'Binding of the Frost-born':  '粘合剂 冰属性减伤',
-        'Binding of the Thunder-child':  '粘合剂 雷属性减伤',
-        'Binding of the Wind-waker':  '粘合剂 风属性减伤',
-        'Binding of the Thrice-blessed':  '粘合剂 圣属性减伤',
-        'Binding of the Spirit-ward':  '粘合剂 暗属性减伤',
-        'Wispy Catalyst' : '纤细 催化剂',
-        'Diluted Catalyst' : '稀释 催化剂',
-        'Regular Catalyst' : '平凡 催化剂',
-        'Robust Catalyst' : '稳健 催化剂',
-        'Vibrant Catalyst' : '活力 催化剂',
-        'Coruscating Catalyst' : '闪耀 催化剂',
-        'Low-Grade Cloth': '低级布料',
-        'Mid-Grade Cloth': '中级布料',
-        'High-Grade Cloth': '高级布料',
-        'Low-Grade Leather': '低级皮革',
-        'Mid-Grade Leather': '中级皮革',
-        'High-Grade Leather': '高级皮革',
-        'Low-Grade Metals': '低级金属',
-        'Mid-Grade Metals': '中级金属',
-        'High-Grade Metals': '高级金属',
-        'Low-Grade Wood': '低级木材',
-        'Mid-Grade Wood': '中级木材',
-        'High-Grade Wood': '高级木材',
-        'Scrap Metal' : '金属废料',
-        'Scrap Leather' : '皮革废料',
-        'Scrap Wood' : '木材废料',
-        'Scrap Cloth' : '废布料',
-        'Energy Cell' : '能量元',
-        'Defense Matrix Modulator' : '力场碎片(盾)',
-        'Repurposed Actuator' : '动力碎片(重)',
-        'Shade Fragment' : '暗影碎片(轻)',
-        'Crystallized Phazon' : '相位碎片(布)',
-};
-
-    _up.node.salvage_returns.innerHTML = '<tr><td>已花费升级材料名称</td><td>数量</td><td>返还数量</td><td>单价</td></tr>';
+    _up.node.salvage_returns.innerHTML = '<tr><td>Materials</td><td>Upgrade</td><td>Returns</td><td>Unit Price</td></tr>';
     Object.keys(materials).forEach((n) => {
-      const translatedName = materialMapping[n] || n;
       const u = materials[n] || '';
       const r = return_materials[n] || '';
       const p = prices[n] || '';
       if (u) {
-        $element('tr', _up.node.salvage_returns, [`/<td>${translatedName}</td><td>${u}</td><td>${r}</td><td>${p}</td>`]);
+        $element('tr', _up.node.salvage_returns, [`/<td>${n}</td><td>${u}</td><td>${r}</td><td>${p}</td>`]);
       }
     });
   };
@@ -11360,18 +10538,11 @@ const materialMapping = {
       $input(['button', _up.equip.info.name], left, { style: 'min-width: 350px; margin-bottom: 20px;' }, () => { _up.node.salvage_equip.value = $id('leftpane').textContent; _up.salvage_calc(_up.equip.upgrade.quality); });
       $element('br', left);
     }
-    _up.node.salvage_quality = $element('select', left);
-    _up.node.salvage_quality.append(
-      $element('option', null, { text: 'PXP Quality', value: '' }),
-      $element('option', null, { text: 'Leg (348~)', value: 'Leg' }),
-      $element('option', null, { text: 'Mag (335~348)', value: 'Mag' }),
-      $element('option', null, { text: 'Exq (313~335)', value: 'Exq' }),
-      $element('option', null, { text: 'Sup (~313)', value: 'Sup' })
-    );
-    $input(['button', '计算'], left, null, () => { _up.salvage_calc(_up.node.salvage_quality.value); });
-    $input(['button', '材料价格'], left, null, () => { $price.edit('Materials', _up.salvage_calc); });
-    $input(['button', '关闭'], left, null, () => { _up.salvage_toggle(); });
-    _up.node.salvage_equip = $element('textarea', left, { placeholder: '使用原文切换功能将装备的英文数据复制至此,包括装备名称' });
+    _up.node.salvage_quality = $input(['select', [':PXP Quality', 'Leg:Leg (348~)', 'Mag:Mag (335~348)', 'Exq:Exq (313~335)', 'Sup:Sup (~313)']], left);
+    $input(['button', 'Calculate'], left, null, () => { _up.salvage_calc(_up.node.salvage_quality.value); });
+    $input(['button', 'Item Prices'], left, null, () => { $price.edit('Materials', 'ma', _up.salvage_calc); });
+    $input(['button', 'Close'], left, null, () => { _up.salvage_toggle(); });
+    _up.node.salvage_equip = $element('textarea', left, { placeholder: 'Copy the full text of the equipment pop-up and paste it here.' });
     _up.node.salvage_summary = $element('ul', right);
     _up.node.salvage_returns = $element('table', right);
   };
@@ -11426,79 +10597,12 @@ const materialMapping = {
       }
       _up.calc(eq, up, true);
       up.node.table.innerHTML = '';
-
-        const materialMapping = {
-        'Binding of Slaughter':  '粘合剂 基础攻击伤害',
-        'Binding of Balance':  '粘合剂 物理命中率',
-        'Binding of Isaac':  '粘合剂 物理暴击率',
-        'Binding of Destruction':  '粘合剂 基础魔法伤害',
-        'Binding of Focus':  '粘合剂 魔法命中率',
-        'Binding of Friendship':  '粘合剂 魔法暴击率',
-        'Binding of Protection':  '粘合剂 物理减伤',
-        'Binding of Warding':  '粘合剂 魔法减伤',
-        'Binding of the Fleet':  '粘合剂 回避率',
-        'Binding of the Barrier':  '粘合剂 格挡率',
-        'Binding of the Nimble':  '粘合剂 招架率',
-        'Binding of Negation':  '粘合剂 抵抗率',
-        'Binding of the Ox':  '粘合剂 力量',
-        'Binding of the Raccoon':  '粘合剂 灵巧',
-        'Binding of the Cheetah':  '粘合剂 敏捷',
-        'Binding of the Turtle':  '粘合剂 体质',
-        'Binding of the Fox':  '粘合剂 智力',
-        'Binding of the Owl':  '粘合剂 智慧',
-        'Binding of the Elementalist':  '粘合剂 元素魔法熟练度',
-        'Binding of the Heaven-sent':  '粘合剂 神圣魔法熟练度',
-        'Binding of the Demon-fiend':  '粘合剂 黑暗魔法熟练度',
-        'Binding of the Curse-weaver':  '粘合剂 减益魔法熟练度',
-        'Binding of the Earth-walker':  '粘合剂 增益魔法熟练度',
-        'Binding of Surtr':  '粘合剂 火属性咒语伤害',
-        'Binding of Niflheim':  '粘合剂 冰属性咒语伤害',
-        'Binding of Mjolnir':  '粘合剂 雷属性咒语伤害',
-        'Binding of Freyr':  '粘合剂 风属性咒语伤害',
-        'Binding of Heimdall':  '粘合剂 圣属性咒语伤害',
-        'Binding of Fenrir':  '粘合剂 暗属性咒语伤害',
-        'Binding of Dampening':  '粘合剂 打击减伤',
-        'Binding of Stoneskin':  '粘合剂 斩击减伤',
-        'Binding of Deflection':  '粘合剂 刺击减伤',
-        'Binding of the Fire-eater':  '粘合剂 火属性减伤',
-        'Binding of the Frost-born':  '粘合剂 冰属性减伤',
-        'Binding of the Thunder-child':  '粘合剂 雷属性减伤',
-        'Binding of the Wind-waker':  '粘合剂 风属性减伤',
-        'Binding of the Thrice-blessed':  '粘合剂 圣属性减伤',
-        'Binding of the Spirit-ward':  '粘合剂 暗属性减伤',
-        'Wispy Catalyst' : '纤细 催化剂',
-        'Diluted Catalyst' : '稀释 催化剂',
-        'Regular Catalyst' : '平凡 催化剂',
-        'Robust Catalyst' : '稳健 催化剂',
-        'Vibrant Catalyst' : '活力 催化剂',
-        'Coruscating Catalyst' : '闪耀 催化剂',
-        'Low-Grade Cloth': '低级布料',
-        'Mid-Grade Cloth': '中级布料',
-        'High-Grade Cloth': '高级布料',
-        'Low-Grade Leather': '低级皮革',
-        'Mid-Grade Leather': '中级皮革',
-        'High-Grade Leather': '高级皮革',
-        'Low-Grade Metals': '低级金属',
-        'Mid-Grade Metals': '中级金属',
-        'High-Grade Metals': '高级金属',
-        'Low-Grade Wood': '低级木材',
-        'Mid-Grade Wood': '中级木材',
-        'High-Grade Wood': '高级木材',
-        'Scrap Metal' : '金属废料',
-        'Scrap Leather' : '皮革废料',
-        'Scrap Wood' : '木材废料',
-        'Scrap Cloth' : '废布料',
-        'Energy Cell' : '能量元',
-        'Defense Matrix Modulator' : '力场碎片(盾)',
-        'Repurposed Actuator' : '动力碎片(重)',
-        'Shade Fragment' : '暗影碎片(轻)',
-        'Crystallized Phazon' : '相位碎片(布)',
-};
-
-      Object.entries(up.materials).forEach(([n, c]) => {
-        const translatedName = materialMapping[n] || n;
-        const s = $item.count(n);
-        $element('tr', up.node.table, [`/<td>${translatedName}</td><td>${c}</td><td>${s}</td>`, s < c ? '.hvut-up-nostock' : '']);
+      const prices = $price.get('Materials');
+      Object.entries(up.materials).forEach(([name, count]) => {
+        const stock = $item.count(name);
+        const price = prices[name];
+        const className = stock < count ? '.hvut-up-nostock' : '';
+        $element('tr', up.node.table, [`/<td>${name}</td><td>${count}</td><td>${stock}</td><td>${price}</td>`, className]);
       });
     };
 
@@ -11537,110 +10641,43 @@ const materialMapping = {
         pxp1 -= pxp2;
         pxp2 = Math.ceil(eq.info.pxp * Math.pow(1 + eq.info.pxp / 1000, tier));
       }
-      const pxp_text = tier < 10 ? `(${pxp1} / ${pxp2})` : '(已满)';
+      const pxp_text = tier < 10 ? `(${pxp1} / ${pxp2})` : '(MAX)';
 
       _up.node.summary.innerHTML = `
-        <li><span>获得锻造经验</span><span>${forge_exp.toLocaleString()}</span></li>
-        <li><span>获得潜经验</span><span>${gear_exp.toLocaleString()}</span></li>
-        <li><span>潜经验</span><span>${tier} ${pxp_text}</span></li>
-        <li><span>预计强化成本</span><span>${credits.toLocaleString()}</span></li>`;
+        <li><span>Forge EXP</span><span>${forge_exp.toLocaleString()}</span></li>
+        <li><span>Gear EXP</span><span>${gear_exp.toLocaleString()}</span></li>
+        <li><span>Potency Tier</span><span>${tier} ${pxp_text}</span></li>
+        <li><span>Total Cost</span><span>${credits.toLocaleString()}</span></li>`;
 
-const materialMapping = {
-        'Binding of Slaughter':  '粘合剂 基础攻击伤害',
-        'Binding of Balance':  '粘合剂 物理命中率',
-        'Binding of Isaac':  '粘合剂 物理暴击率',
-        'Binding of Destruction':  '粘合剂 基础魔法伤害',
-        'Binding of Focus':  '粘合剂 魔法命中率',
-        'Binding of Friendship':  '粘合剂 魔法暴击率',
-        'Binding of Protection':  '粘合剂 物理减伤',
-        'Binding of Warding':  '粘合剂 魔法减伤',
-        'Binding of the Fleet':  '粘合剂 回避率',
-        'Binding of the Barrier':  '粘合剂 格挡率',
-        'Binding of the Nimble':  '粘合剂 招架率',
-        'Binding of Negation':  '粘合剂 抵抗率',
-        'Binding of the Ox':  '粘合剂 力量',
-        'Binding of the Raccoon':  '粘合剂 灵巧',
-        'Binding of the Cheetah':  '粘合剂 敏捷',
-        'Binding of the Turtle':  '粘合剂 体质',
-        'Binding of the Fox':  '粘合剂 智力',
-        'Binding of the Owl':  '粘合剂 智慧',
-        'Binding of the Elementalist':  '粘合剂 元素魔法熟练度',
-        'Binding of the Heaven-sent':  '粘合剂 神圣魔法熟练度',
-        'Binding of the Demon-fiend':  '粘合剂 黑暗魔法熟练度',
-        'Binding of the Curse-weaver':  '粘合剂 减益魔法熟练度',
-        'Binding of the Earth-walker':  '粘合剂 增益魔法熟练度',
-        'Binding of Surtr':  '粘合剂 火焰魔法伤害',
-        'Binding of Niflheim':  '粘合剂 冰冷魔法伤害',
-        'Binding of Mjolnir':  '粘合剂 闪电魔法伤害',
-        'Binding of Freyr':  '粘合剂 疾风魔法伤害',
-        'Binding of Heimdall':  '粘合剂 神圣魔法伤害',
-        'Binding of Fenrir':  '粘合剂 黑暗魔法伤害',
-        'Binding of Dampening':  '粘合剂 打击减伤',
-        'Binding of Stoneskin':  '粘合剂 斩击减伤',
-        'Binding of Deflection':  '粘合剂 刺击减伤',
-        'Binding of the Fire-eater':  '粘合剂 火焰减伤',
-        'Binding of the Frost-born':  '粘合剂 冰冷减伤',
-        'Binding of the Thunder-child':  '粘合剂 闪电减伤',
-        'Binding of the Wind-waker':  '粘合剂 疾风减伤',
-        'Binding of the Thrice-blessed':  '粘合剂 神圣减伤',
-        'Binding of the Spirit-ward':  '粘合剂 黑暗减伤',
-        'Wispy Catalyst' : '纤细 催化剂',
-        'Diluted Catalyst' : '稀释 催化剂',
-        'Regular Catalyst' : '平凡 催化剂',
-        'Robust Catalyst' : '稳健 催化剂',
-        'Vibrant Catalyst' : '活力 催化剂',
-        'Coruscating Catalyst' : '闪耀 催化剂',
-        'Low-Grade Cloth': '低级布料',
-        'Mid-Grade Cloth': '中级布料',
-        'High-Grade Cloth': '高级布料',
-        'Low-Grade Leather': '低级皮革',
-        'Mid-Grade Leather': '中级皮革',
-        'High-Grade Leather': '高级皮革',
-        'Low-Grade Metals': '低级金属',
-        'Mid-Grade Metals': '中级金属',
-        'High-Grade Metals': '高级金属',
-        'Low-Grade Wood': '低级木材',
-        'Mid-Grade Wood': '中级木材',
-        'High-Grade Wood': '高级木材',
-        'Scrap Metal' : '金属废料',
-        'Scrap Leather' : '皮革废料',
-        'Scrap Wood' : '木材废料',
-        'Scrap Cloth' : '废布料',
-        'Energy Cell' : '能量元',
-        'Defense Matrix Modulator' : '力场碎片(盾)',
-        'Repurposed Actuator' : '动力碎片(重)',
-        'Shade Fragment' : '暗影碎片(轻)',
-        'Crystallized Phazon' : '相位碎片(布)',
-};
-
-
-_up.node.costs.innerHTML = '<tr><td>升级材料</td><td>需求量</td><td>库存</td></tr>';
-Object.entries(materials).forEach(([n, c]) => {
-  const translatedName = materialMapping[n] || n; // 使用映射表翻译材料名称，如果找不到对应的中文名称，则保留原名称
-  const s = $item.count(n);
-  $element('tr', _up.node.costs, [`/<td>${translatedName}</td><td>${c}</td><td>${s}</td>`, s < c ? '.hvut-up-nostock' : '']);
-});
+      _up.node.costs.innerHTML = '<tr><td>Materials</td><td>Req.</td><td>Stock</td><td>Price</td></tr>';
+      const prices = $price.get('Materials');
+      Object.entries(materials).forEach(([name, count]) => {
+        const stock = $item.count(name);
+        const price = prices[name];
+        const className = stock < count ? '.hvut-up-nostock' : '';
+        $element('tr', _up.node.costs, [`/<td>${name}</td><td>${count}</td><td>${stock}</td><td>${price}</td>`, className]);
+      });
 
       let valid = false;
       _up.node.run.disabled = true;
       if (_up.upgrade_run.done) {
         //
       } else if (eq.upgrade.list.some((up) => !up.valid)) {
-        _up.node.run.value = '无效输入';
+        _up.node.run.value = 'Invalid input';
       } else if (eq.upgrade.list.some((up) => up.to > up.level && up.to > up.cap)) {
-        _up.node.run.value = '锻造等级不足';
+        _up.node.run.value = 'Low Forge level';
       } else if ($qs('.hvut-up-nostock', _up.node.costs)) {
-        _up.node.run.value = '材料不足';
+        _up.node.run.value = 'Not enough materials';
       } else {
         valid = true;
         _up.node.run.disabled = false;
-        _up.node.run.value = '强化全部';
+        _up.node.run.value = 'Upgrade ALL';
       }
       return valid;
     };
 
     _up.upgrade_run = async function () {
-      if (_up.upgrade_run.done || !_up.upgrade_sum() || !confirm('确定要开始强化这件装备吗?')) {
+      if (_up.upgrade_run.done || !_up.upgrade_sum() || !confirm('Are you sure that you wish to upgrade this equipment?')) {
         return;
       }
       _up.upgrade_run.done = true;
@@ -11665,72 +10702,46 @@ Object.entries(materials).forEach(([n, c]) => {
         return $ajax.repeat(count, upgrade, _up.equip.info.eid, up.id);
       }).flat();
       await Promise.all(requests);
-      alert('完成!\n请刷新页面.');
+      alert('Completed!\nReload the page.');
     };
 
     _up.buy_catalysts = async function () {
-      const catalysts = {
-        'Wispy Catalyst': { id: 60301 },
-        'Diluted Catalyst': { id: 60302 },
-        'Regular Catalyst': { id: 60303 },
-        'Robust Catalyst': { id: 60304 },
-        'Vibrant Catalyst': { id: 60305 },
-        'Coruscating Catalyst': { id: 60306 },
-      };
       _up.node.catalysts.disabled = true;
 
-      const html = await $ajax.fetch('?s=Bazaar&ss=is');
-      const doc = $doc(html);
-      const reg = /itemshop\.set_item\('shop_pane',(\d+),(\d+),(\d+)/;
-      const storetoken = $id('shopform', doc).elements.storetoken.value;
-      const networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
-      let sum = 0;
-      let total = 0;
-
-      Array.from($qs('#shop_pane .itemlist', doc).rows).forEach((tr) => {
-        const exec = reg.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
-        const item = tr.cells[0].textContent.trim();
-        const price = parseInt(exec[3]);
-
-        if (catalysts[item] && _up.equip.upgrade.materials[item]) {
-          const count = _up.equip.upgrade.materials[item] - $item.count(item);
+      await $item.once();
+      const catalysts = [
+        'Wispy Catalyst',
+        'Diluted Catalyst',
+        'Regular Catalyst',
+        'Robust Catalyst',
+        'Vibrant Catalyst',
+        'Coruscating Catalyst',
+      ];
+      const requires = _up.equip.upgrade.materials;
+      const items = [];
+      catalysts.forEach((name) => {
+        if (requires[name]) {
+          const count = requires[name] - $item.count(name);
           if (count > 0) {
-            catalysts[item].count = count;
-            sum += count * price;
-            total++;
+            items.push({ name, count });
           }
         }
       });
-      if (!total) {
-        alert('你已经有足够的催化剂了.');
+
+      if (!items.length) {
+        alert('You already have enough catalysts.');
         _up.node.catalysts.disabled = false;
         return;
       }
-      if (sum > networth) {
-        alert('你没有足够的credits.');
-        _up.node.catalysts.disabled = false;
-        return;
-      }
-      if (!confirm('你确定要购买缺少的催化剂吗?')) {
+      if (!confirm('Are you sure that you wish to purchase catalysts?')) {
         _up.node.catalysts.disabled = false;
         return;
       }
 
-      async function buy(item, count) {
-        const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${storetoken}&select_mode=shop_pane&select_item=${item}&select_count=${count}`);
-        const doc = $doc(html);
-        const error = get_message(doc);
-        if (error) {
-          popup(error);
-        }
-        done++;
-        _up.node.catalysts.value = `${done}/${total}`;
+      const result = await $item.buy(items);
+      if (!result) {
+        //return;
       }
-
-      let done = 0;
-      const requests = Object.values(catalysts).filter((c) => c.count > 0).map((c) => buy(c.id, c.count));
-      await Promise.all(requests);
-      _up.node.catalysts.value = '购买催化剂';
       _up.load_inventory();
     };
 
@@ -11771,8 +10782,9 @@ Object.entries(materials).forEach(([n, c]) => {
       .hvut-up-costs { table-layout: fixed; border-collapse: collapse; margin: 10px; width: 330px; font-size: 10pt; line-height: 20px; white-space: nowrap; }
       .hvut-up-div .hvut-up-costs tr:first-child { font-weight: bold; }
       .hvut-up-costs td { border: 1px solid #5C0D11; overflow: hidden; text-overflow: ellipsis; }
-      .hvut-up-costs td:nth-child(2) { width: 60px; }
-      .hvut-up-costs td:nth-child(3) { width: 60px; }
+      .hvut-up-costs td:nth-child(2) { width: 50px; }
+      .hvut-up-costs td:nth-child(3) { width: 50px; }
+      .hvut-up-costs td:nth-child(4) { width: 60px; }
       .hvut-up-nostock { color: #c00; }
     `);
 
@@ -11782,18 +10794,18 @@ Object.entries(materials).forEach(([n, c]) => {
     _up.node.div = $element('div', $id('forge_outer'), ['.hvut-up-div hvut-scrollbar-none']);
 
     $element('div', _up.node.div, ['.hvut-up-buttons']).append(
-      _up.node.run = $input(['button', '强化全部'], null, { tabIndex: -1, style: 'width: 160px;' }, () => { _up.upgrade_run(); }),
-      _up.node.catalysts = $input(['button', '购买催化剂'], null, { tabIndex: -1, style: 'width: 100px;' }, () => { _up.buy_catalysts(); }),
-      $input(['button', '参考价格'], null, { tabIndex: -1, style: 'width: 80px;' }, () => { $price.edit('Materials', _up.upgrade_sum); })
+      _up.node.run = $input(['button', 'Upgrade ALL'], null, { tabIndex: -1, style: 'width: 160px;' }, () => { _up.upgrade_run(); }),
+      _up.node.catalysts = $input(['button', 'Buy Catalysts'], null, { tabIndex: -1, style: 'width: 100px;' }, () => { _up.buy_catalysts(); }),
+      $input(['button', 'Item Prices'], null, { tabIndex: -1, style: 'width: 80px;' }, () => { $price.edit('Materials', 'ma', _up.upgrade_sum); })
     );
     _up.node.summary = $element('ul', _up.node.div, ['.hvut-up-summary']);
     _up.node.costs = $element('table', _up.node.div, ['.hvut-up-costs']);
 
     _up.equip = $equip.parse.extended($id('equip_extended'));
     _up.equip.info.eid = $id('forgeform').elements.select_item.value;
-    if (!$equip.names[_up.equip.info.eid]) {
+    if (_up.equip.info.tier === 10 && !$equip.names[_up.equip.info.eid]) {
       $equip.names[_up.equip.info.eid] = _up.equip.info.name;
-      setValue('equipnames', $equip.names);
+      $config.set('equipnames', $equip.names);
     }
 
     _up.equip.upgrade = {
@@ -11810,7 +10822,7 @@ Object.entries(materials).forEach(([n, c]) => {
       const [name, stat] = Object.entries($equip.stats).find(([, s]) => s.forge === forge) || [];
       const max = forge === 'Physical Damage' || forge === 'Magical Damage' ? 100 : 50;
       const up = {
-        id: /'costpane_(\w+)'/.test(tr.getAttribute('onmouseout')) && RegExp.$1,
+        id: /'costpane_(\w+)'/.exec(tr.getAttribute('onmouseout'))[1],
         name: name,
         forge: forge,
         binding: stat.binding,
@@ -11823,39 +10835,8 @@ Object.entries(materials).forEach(([n, c]) => {
         gear_exp: 0,
         node: {},
       };
-
-
-up.node.to = $input('number', $element('td', tr), {
-    className: 'hvut-up-input',
-    dataset: { action: 'calc', forge: forge },
-    value: up.level || '',
-    min: up.level,
-    max: up.max,
-    // 添加滚轮事件监听器
-    onWheel: function(event) {
-        // 阻止默认滚动行为
-        event.preventDefault();
-        // 调整数字
-        const step = 1; // 调整步长
-        const currentValue = parseInt(this.value) || 0;
-        const newValue = currentValue + (event.deltaY > 0 ? step : -step);
-        // 更新输入框的值
-        this.value = newValue;
-        // 在数值变化时调用更新计算结果的函数
-        updateResult();
-    }
-});
-up.node.table = $element('table', $id('costpane_' + up.id), ['.hvut-up-sub hvut-up-costs']);
-function updateResult() {
-    // 获取所有输入框
-    const inputs = document.querySelectorAll('.hvut-up-input');
-    // 初始化变量用于存储总和
-    let total = 0;
-    // 遍历所有输入框，计算总和
-    inputs.forEach(function(input) {
-        total += parseInt(input.value) || 0;
-    });
-}
+      up.node.to = $input('number', $element('td', tr), { className: 'hvut-up-input', dataset: { action: 'calc', forge: forge }, value: up.level || '', min: up.level, max: up.max });
+      up.node.table = $element('table', $id('costpane_' + up.id), ['.hvut-up-sub hvut-up-costs']);
 
       if (eq.upgrade.level < up.level) {
         eq.upgrade.level = up.level;
@@ -11871,20 +10852,20 @@ function updateResult() {
     _up.set(_up.equip);
     _up.load_inventory();
 
-    $input(['button', '分解计算器'], $id('leftpane'), { style: 'margin-top: 40px;' }, () => { _up.salvage_toggle(); });
+    $input(['button', 'Salvage Calculator'], $id('leftpane'), { style: 'margin-top: 40px;' }, () => { _up.salvage_toggle(); });
   } else {
-    $input(['button', '分解计算器'], $id('rightpane'), { style: 'margin-top: 40px;' }, () => { _up.salvage_toggle(); });
+    $input(['button', 'Salvage Calculator'], $id('rightpane'), { style: 'margin-top: 40px;' }, () => { _up.salvage_toggle(); });
   }
 } else
 // [END 21] Forge - Upgrade */
 
 
 //* [23] Forge - Salvage
-if (settings.salvage && _query.s === 'Forge' && _query.ss === 'sa') {
+if (_query.s === 'Forge' && _query.ss === 'sa') {
   $element('div', $id('rightpane'), ['This will permanently destroy the item', '!margin-top: 30px; font-size: 12pt; font-weight: bold; color: #c00;']);
 
   if ($id('salvage_button')) {
-    confirm_event($id('salvage_button').parentNode, 'click', '你确定要分解这件装备吗?', () => $id('salvage_button').src.includes('salvage.png'));
+    confirm_event($id('salvage_button').parentNode, 'click', 'Are you sure that you wish to salvage this item?', () => $id('salvage_button').src.includes('salvage.png'));
   }
 } else
 // [END 23] Forge - Salvage */

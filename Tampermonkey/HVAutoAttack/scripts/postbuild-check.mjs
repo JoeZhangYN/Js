@@ -26,9 +26,10 @@ if (!/@match\s+http:\/\/alt\.hentaiverse\.org\/\*/.test(src))
 
 // 3. 文件大小合理
 const size = statSync(DIST).size;
-// 上限 1.5MB：整合 HV Utils 统一汉化(~893KB)后单脚本必然 >800KB，且预留未来整合空间（minify:false 不压缩）。
-if (size < 50_000 || size > 1_500_000) {
-  errors.push(`size ${size} bytes out of 50KB-1.5MB range`);
+// 上限 2.5MB：整合 HV Utils 统一汉化(~893KB) + indefined 装备汉化 #404119 + 界面汉化 #404118(词典 ~3568 行)
+// 后单脚本实测 ~1.79MB(minify:false 不压缩)；2.5MB 预留繁简表/dict-store 第二批 + 未来空间，仍能拦截误打包 node_modules 级膨胀。
+if (size < 50_000 || size > 2_500_000) {
+  errors.push(`size ${size} bytes out of 50KB-2.5MB range`);
 }
 
 // 4. 不含 dev metadata 残留

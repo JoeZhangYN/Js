@@ -78,11 +78,48 @@ function parseRespHeaders(headerStr) {
 
 // ---------------- 图片获取：canvas → fetch 三级 fallback ----------------
 
+/**
+ * 取 riddle 图片 <img> 元素。
+ * 优先 querySelector("img")（跳过 #riddleimage 内可能的空白文本节点 / HV UI 改版），
+ * fallback childNodes[0]（原 RMA 写法，兼容旧 DOM）。
+ * @returns {HTMLImageElement|null}
+ */
+function getRiddleImgEl() {
+  const holder = document.getElementById("riddleimage");
+  return holder?.querySelector("img") || holder?.childNodes?.[0] || null;
+}
+
+/**
+ * 等 <img> 解码完成（complete && naturalWidth>0），canvas 主路径（最可靠）才能 drawImage。
+ * 超时（默认 4s）/ error 也 resolve —— 让调用侧继续，由 fetch 兜底，绝不卡住。
+ * 修 H-C：入口 @run-at document-end 时图片常未解码（naturalWidth=0），原代码直接退化到 fetch。
+ * @param {HTMLImageElement|null} imgEl
+ * @param {number} timeoutMs
+ * @returns {Promise<void>}
+ */
+function waitImageLoaded(imgEl, timeoutMs = 4000) {
+  return new Promise((resolve) => {
+    if (!imgEl || (imgEl.complete && imgEl.naturalWidth)) {
+      resolve();
+      return;
+    }
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      resolve();
+    };
+    imgEl.addEventListener("load", finish, { once: true });
+    imgEl.addEventListener("error", finish, { once: true });
+    setTimeout(finish, timeoutMs);
+  });
+}
+
 function getImageBlobFromCanvas() {
   return new Promise((resolve, reject) => {
-    const imgEl = document.getElementById("riddleimage")?.childNodes?.[0];
+    const imgEl = getRiddleImgEl();
     if (!imgEl || !imgEl.naturalWidth) {
-      reject(new Error("riddleimage not ready"));
+      reject(new Error("riddleimage not ready (naturalWidth=0)"));
       return;
     }
     const canvas = document.createElement("canvas");
@@ -113,7 +150,7 @@ async function getImageBlobFromFetch(url) {
       mode: "same-origin",
     });
     if (res.status === 200) return await res.blob();
-  } catch (_) {
+  } catch {
     /* miss */
   }
   // 2) force-cache
@@ -125,7 +162,7 @@ async function getImageBlobFromFetch(url) {
       mode: "same-origin",
     });
     if (res.status === 200) return await res.blob();
-  } catch (_) {
+  } catch {
     /* ignore */
   }
   // 3) network
@@ -137,7 +174,7 @@ async function getImageBlobFromFetch(url) {
 async function getImageBlob(url) {
   try {
     return await getImageBlobFromCanvas();
-  } catch (_) {
+  } catch {
     return await getImageBlobFromFetch(url);
   }
 }
@@ -152,7 +189,7 @@ function saveRiddle(imgBlob, resultObj, isFailed = true) {
   const enhanced = {
     saved_at: new Date().toISOString(),
     is_failed: isFailed,
-    image_src: document.getElementById("riddleimage")?.childNodes?.[0]?.src || "unknown",
+    image_src: getRiddleImgEl()?.src || "unknown",
     ...resultObj,
   };
   const reader = new FileReader();
@@ -241,25 +278,42 @@ let inFlight = false;
 export async function tryMLAnswer() {
   if (inFlight) return null; // 防同 tick 重入
   const opt = g("option") || {};
-  if (!opt.mlAnswer) return null;
+  // defaultOn 语义：与调用侧 riddle.js isOptionOn("mlAnswer") 一致（缺字段=开，仅显式 false 才关）。
+  // 修 H-B：原 `!opt.mlAnswer` 把老配置缺字段误判为关 → 调用侧以为开、这里立刻 bail → 必随机。
+  if (opt.mlAnswer === false) {
+    console.warn("[HVAA][RMA] mlAnswer 显式关闭，跳过 ML 识别（走随机）");
+    return null;
+  }
 
-  // 维护中 / 宕机 → 跳过远程调用
+  // 修 H-A（主因）：不再因 is_maintenance/is_down 闸门提前 return。
+  // 对齐原版 RMA v0.5.2——总是尝试 POST，真失败交给下方 onerror/ontimeout + 调用侧随机兜底。
+  // 这两个标志降级为纯遥测：原 bug 是后台标签页健康巡检 HEAD 超时置 is_down=true 后，
+  // 当天每道题都被闸门挡死走随机（且巡检只在 riddle 页跑、极少刷新 → 长期卡死）。
   const isMaintenance = await gmGet("is_maintenance", false);
   const isDown = await gmGet("is_down", false);
-  if (isMaintenance || isDown) return null;
+  if (isMaintenance || isDown) {
+    console.warn("[HVAA][RMA] 健康巡检此前标记服务异常(maintenance/down)，仍尝试本次识别");
+  }
 
   const endpoint = opt.mlEndpoint || ML_ENDPOINT_DEFAULT;
   const apiKey = opt.mlApiKey || "";
   const backupOnFail = opt.mlBackupOnFail !== false;
 
-  const imageHolder = document.getElementById("riddleimage");
-  const imageUrl = imageHolder?.childNodes?.[0]?.src;
-  if (!imageUrl) return null;
+  // 修 H-C 辅助：鲁棒取 <img>（querySelector 跳过文本节点，fallback childNodes[0]）
+  const imgEl = getRiddleImgEl();
+  const imageUrl = imgEl?.src;
+  if (!imageUrl) {
+    console.warn("[HVAA][RMA] 找不到 riddle 图片元素/src，跳过 ML 识别（走随机）");
+    return null;
+  }
 
   inFlight = true;
   try {
+    // 等图片解码完成，canvas 主路径（最可靠）才能用；超时静默退到 fetch 兜底
+    await waitImageLoaded(imgEl);
     const imgBlob = await getImageBlob(imageUrl);
     if (!imgBlob || imgBlob.size === 0) {
+      console.warn("[HVAA][RMA] 图片 blob 为空(canvas 污染/fetch 失败)，本次走随机");
       if (backupOnFail) saveRiddle(imgBlob, { _error: "empty_blob" });
       setAlarm("Error");
       return null;
@@ -278,6 +332,7 @@ export async function tryMLAnswer() {
         },
         onload: (res) => {
           if (res.status === 429) {
+            console.warn("[HVAA][RMA] 429 限流，本次走随机");
             if (backupOnFail) saveRiddle(imgBlob, { _status: 429 });
             setAlarm("Error");
             resolve(null);
@@ -287,6 +342,7 @@ export async function tryMLAnswer() {
           try {
             dict = JSON.parse(res.responseText);
           } catch (e) {
+            console.warn("[HVAA][RMA] 响应非 JSON，本次走随机:", res.status, e.message);
             if (backupOnFail) saveRiddle(imgBlob, { _parse_error: e.message });
             setAlarm("Error");
             resolve(null);
@@ -297,6 +353,7 @@ export async function tryMLAnswer() {
             const answers = (dict.answer || "").toLowerCase();
             const hit = ANSWER_CODES.find((code) => answers.includes(code));
             if (!hit) {
+              console.warn("[HVAA][RMA] 响应无可识别答案码，本次走随机:", dict);
               if (backupOnFail)
                 saveRiddle(imgBlob, { _reason: "no_answer_code_in_response", raw: dict });
               setAlarm("Error");
@@ -328,16 +385,19 @@ export async function tryMLAnswer() {
             resolve(null);
             return;
           }
+          console.warn("[HVAA][RMA] 未知 return 字段，本次走随机:", dict);
           if (backupOnFail) saveRiddle(imgBlob, { _reason: "unknown_return", raw: dict });
           setAlarm("Error");
           resolve(null);
         },
         onerror: () => {
+          console.warn("[HVAA][RMA] POST onerror（网络/CORS/@connect 未授权），本次走随机");
           if (backupOnFail) saveRiddle(imgBlob, { _onerror: true });
           setAlarm("Error");
           resolve(null);
         },
         ontimeout: () => {
+          console.warn("[HVAA][RMA] POST 超时(>12s)，本次走随机");
           if (backupOnFail) saveRiddle(imgBlob, { _timeout: true });
           setAlarm("Error");
           resolve(null);

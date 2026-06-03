@@ -68,21 +68,13 @@ export function init() {
     g("lang", g("option").lang || "0");
     addStyle(g("lang"));
     if (g("option").version !== g("version")) {
-      gE(".hvAAButton").click();
-      if (
-        _alert(
-          1,
-          "hvAutoAttack版本更新，请重新设置\n强烈推荐【重置设置】后再设置。\n是否查看更新说明？",
-          "hvAutoAttack版本更新，請重新設置\n強烈推薦【重置設置】後再設置。\n是否查看更新說明？",
-          "hvAutoAttack version update, please reset\nIt's recommended to reset all configuration.\nDo you want to read the changelog?"
-        )
-      )
-        openUrl(
-          "https://github.com/dodying/UserJs/commits/master/HentaiVerse/hvAutoAttack/hvAutoAttack.user.js",
-          true
-        );
-      gE(".hvAAReset").focus();
-      return;
+      // [v10.0.1] 版本更新弹窗已禁用（用户要求不弹）：静默对齐版本号 + 持久化，
+      // 避免每次刷新重复触发。新版若新增配置项，由各 getOption(key, default) 兜底。
+      console.log(
+        `[HVAA] 版本号 ${g("option").version} → ${g("version")}（已静默对齐，未弹窗）`
+      );
+      g("option").version = g("version");
+      setValue("option", g("option"));
     }
   } else {
     g(
