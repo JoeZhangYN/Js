@@ -1,56 +1,58 @@
-# HVAutoAttack i18n 横切整合 — Handoff（续接点，2026-06-03 更新）
+# HVAutoAttack i18n 横切 DOM 冲突修复 — Handoff（续接点，2026-06-04 更新）
 
-> i18n 横切整合 epic 续接点。前身「第一批汉化」已并入本 epic。
-> 设计 plan：`~/.claude/plans/agile-sparking-raccoon.md`（已批准）。
+> i18n 横切整合 epic 的当前阶段：**统一英中态协调器**（修用户实站验收暴露的 5 现象）。
+> 设计 plan：`~/.claude/plans/spicy-inventing-comet.md`（已批准）。
+> 前身 Phase1/2/persistentGuarantee（旧 commit 003d2f9/c3b2516/6c6fe6c）已并入。
 
-## Epic 目标
-统一 3 套散落汉化引擎的横切关注点 → 涉及 DOM 的翻译最终都过一遍 lang 管道，
-始终输出对应语言（0简/1繁/2英），运行时切换即时生效 + 持久化。
-**用户已豁免「可追上游 diff」**（i18n 稳定、重构整合而非完整迁移上游）。
+## 诊断结论（ultracode workflow 9 agent + 2 Explore 核实）
 
-## 已完成（commit）
-| 阶段 | 内容 | commit | 验收 |
+用户实站报 5 现象 → **4 个收敛到 1 根因 + 1 正交独立**：
+- **根因**：HV 原生英文 DOM 被多功能各自读写、无单一权威。i18n（equip innerHTML / interface textNode）把英文翻成中文后，下游读方（hv-utils show_base/parse_table、offline 百分位）仍用英文 key/正则索引同一被改 DOM → 中文 key 查英文对象失配。
+- 现象①持久化是**正交独立 bug**（render.js `g("option")||{}` 残缺写），非 DOM 冲突。
+
+## Stage 进度
+
+| Stage | 内容 | commit | 验收 |
 |---|---|---|---|
-| Phase1 | 统一 RestoreController（修 #change-translate 双挂 bug） | `003d2f9` | ⏳ 待 HV 实站 |
-| Phase2 | lang 三态即时切换 + 持久化 + zh-convert 接线 | `c3b2516` | ⏳ 待 HV 实站 |
-| persistentGuarantee | 装备列表渐进加载持续翻译（observer） | `6c6fe6c` | ⏳ 待 HV 实站 |
-| Phase3 | 词典去重 | — | ❌ 实证跳过（870 共同 key/125 异译多为语境分立同名异义） |
+| A | lang 持久化（现象①）setOption 统一写入口 | `e4dec05` | ⏳ 待实站 |
+| B | 横切协调器骨架 + 中英逆表 + 写方登记（纯增量） | `bf63089` | 离线验证逆表✓ / ⏳ 实站无回归 |
+| C1 | show_base 读源归一（现象⑤ `[undefined]`）双 IIFE | `9e1bda6` | ⏳ 待角色页实站 |
+| C2 | parse_table 训练表读源归一（tr_level 英文键修复）双 IIFE | `1360d54` | ⏳ 待训练页实站 |
+| D | offline 百分位读源归一（现象④） | — | **阻塞：需用户样本** |
+| E | observer 事件化拆桥（现象③渐进） | — | **阻塞：需用户样本** |
+| F | node probe 防退化锁（build 链） | — | 待 D/E 后 |
+| G | hv-utils 整体补 lang（原 Phase4，必最后） | — | 待 F 后 |
+| H | 设置面板「汉化」配置 tab（新功能） | — | 现象修完后 |
 
-## 架构（已落地）
-- `src/i18n/core/restore-controller.js`：单例，统一按钮+Alt+A+全局态 + `registerRestore`
-  + `registerRetranslate` + `setLang`(lang 显示态执行器) + `isTranslated`/`hideButton` 等。
-- `src/i18n/core/lang-post.js`：`langPostProcess(s)=convertByLang(s,g('lang'))`，繁简末端。
-- equip/interface-translate.js：删各自按钮/Alt+A 旧路径(拆桥)→注册回调；译文出口接
-  `langPostProcess`；各注册 retranslate(lang 切换重翻)；equip `main()` 加幂等守卫
-  (equhide id / 拍卖 observer dataset / eqtp style id) + `observeEquipList`(渐进加载持续翻译)。
-- render.js onchange：`setValue(option.lang)` 持久化 + `setLang` 即时切换。
-- main.js：首次按持久化 lang 修正显示态(`setLang` 1 转繁 / 2 还原英文)。
-- translate 主体双策略(equip innerHTML / interface XPath textNode)保留(falseSiblings,禁合并)。
+## 架构（已落地 A–C）
 
-## 待办
-- **Phase4（最大块，待用户验收 Phase1+2 后启动）**：hv-utils(20551 行)补 lang。
-  `HVUT_CN.t` 加 lang 分支(覆盖 14 查表) + 三态化 ~293 焊死字面量(topMenuLinks L62 /
-  config.data label L9809+ / stamina L10713+ / HVAA_ITEM_CN L10-29)。英文取自存档基线
-  `HentaiVerse/HVUT_4.0.0_English.user.js` + `HVUT_isekai_4.2.0_English.user.js`(不造词)。
-  双版本 IIFE(ISEKAI L46-9560 / 主世界 L9561+)同步。逻辑值/键/POST 保留英文。切 lang 优先重载生效。
-- **Phase5 BUG1（仓库/装备店护甲名没翻）**：阻塞于用户 HV F12 未翻护甲名 outerHTML 样本
-  (H1 词典缺词 / H2 正则 / H3 品质色块 span 打断匹配)。
-- **第二批(epic 外)**：dict-store.js(GM 词典覆盖+导入导出) + 设置面板「汉化」tab UI。
-- **下个 epic：后台定时调度抽象（task 11，i18n 收尾后）**：抽象统一后台定时器(setInterval
-  + GM 状态续期,油猴限制无法真跨页面)，注册周期任务(训练续训 / 遭遇战检测 / ...)，任何页面
-  (含战斗页)后台跑，避免每功能各写定时器。发现:自动续训 sssss2 `_bottom.tr` 已实现(训练页
-  Plan Training UI 配置式 + 倒计时 fetch start_train 到目标等级)，但用户要**定时器驱动**(不
-  依赖页面 UI 配置) + **遭遇战**(encounter.js 仅 non-combat 页检测,战斗中盲区) + **统一抽象**。
+- **横切协调器** = 扩 `src/i18n/core/restore-controller.js`（不新建平行单例）：
+  - `resolveEn(node, group?)` 读出口：节点登记原文（interface textNode 精确）→ 逆表反查 → undefined（调用方 `?? 原值`）。**退化安全**：英文态/miss 返原值，不改英文态行为。
+  - `registerTranslation(node, en)` 写登记；`SKIP_ATTR='data-i18n-skip'` + `isSkipped` 子树跳过。
+- **逆表** `src/data/i18n/reverse-dict.js`：从 INTERFACE_WORDS + 品质前缀（EQUIP_EQUIPS 10 条 strip 装饰符）构造 中→英；正则/通配/多对一不可逆剔除；繁体查询前 `toSimplified` 归一。`reverseLookup(text, group)`。
+- **全局桥** `window.HVAA_i18n`：hv-utils.js 是**非 ESM sloppy 第三方脚本**（加 import 触发 strict mode 撞 `protected` 保留字标识符），故 restore-controller 挂 `window.HVAA_i18n={resolveEn,...}`，hv-utils 双 IIFE 经全局桥读（`var resolveEn=...`）。**Stage D/G 的 hv-utils 读点也走此桥**。
+- **写方接入**：interface translateText 登记 textNode 原文 + skip；equip translate 写前 skip。
+- **持久化（A）**：`src/state/option.js` 抽 `setOption(key,val)`（g||getValue fallback 取完整 option）；render.js onchange + ability-page 走它；storage.js setValue("option") 缺 version warn。
 
 ## 当前阻塞 / 续接动作
-用户正实站验收 Phase1+2 + persistentGuarantee。
-- 验收 OK → 启动 Phase4(hv-utils 补 lang，ultracode 多 agent，英文取存档基线)。
-- 发现问题 → 前进修正(observeEquipList 容器覆盖 / lang 切换重翻幂等)。
 
-## 不变信息
-- jpx-lang(window.jpxI18N 繁体数据桥)**排除**出管道，lang=2 时 init 守卫 return。
-- HVAA 自身 UI 三语(CSS `<l0>/<l1>/<l2>` 显隐, inject.js)独立机制，不动。
-- 用户安装：`HVAutoAttack/dist/HVAutoAttack.user.js`(npm run build 产物, gitignored, 手动重装覆盖)。
-- build：`cd Tampermonkey/HVAutoAttack && npm run build`(verify-sloc+check-circular+vite+postbuild)。
-- observeEquipList 监听容器：`.equiplist/#equiplist/#leftpane/#eqch_left/#equipselect_left` +
-  `tr[onmouseover]` 所在 table。若某装备页容器不在此列表 → 该页渐进加载仍不翻，需补选择器。
+**Stage D/E 阻塞于用户实站样本**（我无 HV 登录态）：
+- **D（百分位）**：`equipPercentileMode='offline'` 装备弹窗 `#popup_box` 内单个 `.showequip` outerHTML（看品质前缀是否已中文 span）；`'live'` 模式 `#showequip` outerHTML + option 实际 `equipPercentileMode` 值。
+- **E（渐进）**：装备仓库(`ss=in`)/装备店(`ss=es`)/锻造(Forge) 3 页滚动后容器层级 outerHTML + console 有无 `[HVAA][equip-i18n]` 报错。
+- **C 验收（可选辅助）**：主世界角色页 `#eqch_stats` outerHTML 确认 show_base 反查命中。
+
+**验收 A/B/C1/C2 后**：D（需样本）→ E（需样本）→ F（probe）→ G（hv-utils 补 lang）→ H（汉化 tab）。
+
+## 现象② = 汉化 tab（Stage H，用户已定范围）
+
+设置面板独立「汉化」配置页（原 epic 第二批）。用户定内容：**①lang 切换集中 ②dict-store 自定义词典覆盖+导入导出 ③装备百分位设置移入**（不做各引擎独立开关）。时机：现象修完后。
+
+## 不变信息（保留）
+
+- jpx-lang(window.jpxI18N 繁体桥)**排除**出管道，lang=2 init 守卫 return。
+- HVAA 自身 UI 三语（CSS `<l0>/<l1>/<l2>` 显隐，inject.js）独立机制，不动。
+- 用户安装：`HVAutoAttack/dist/HVAutoAttack.user.js`（npm run build 产物，gitignored，**手动重装覆盖**；版本号恒 10.0.1 无法自动提示更新 → 验收前务必重装）。
+- build：`cd Tampermonkey/HVAutoAttack && npm run build`（verify-sloc+check-circular+vite+verify-metadata+postbuild）。
+- observeEquipList 监听容器：`.equiplist/#equiplist/#leftpane/#eqch_left/#equipselect_left` + `tr[onmouseover]` 所在 table（Stage E 将补 sssss2 稳定父节点 + 事件化拆桥）。
+- hv-utils.js 20551 行双 IIFE（ISEKAI <9560 / 主世界 >9561），**严禁整文件 Read**，Grep 定位 ±20 行小改，区分两版。
+- **下个 epic**：后台定时调度抽象（setInterval 驱动训练续训 + 遭遇战检测 + 统一抽象），i18n 全收尾后做。
