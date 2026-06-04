@@ -11,6 +11,7 @@
 
 import { reverseLookup } from "../../data/i18n/reverse-dict.js";
 import { EQUIP_ITEMS, EQUIP_INFO, EQUIP_EXTRA } from "../../data/i18n/equip-dict.js";
+import { SPELL_TYPE, EQ_CATEGORY, AB_CATEGORY } from "../../data/i18n/hvut-terms.js";
 import { INTERFACE_WORDS } from "../../data/i18n/interface-dict.js";
 import { langPostProcess } from "./lang-post.js";
 import { g } from "../../state/store.js";
@@ -201,8 +202,9 @@ export function isSkipped(node) {
 const FORWARD_DICTS = {
   item: EQUIP_ITEMS,
   material: EQUIP_ITEMS,
-  eqCategory: EQUIP_INFO,
-  abCategory: EQUIP_EXTRA,
+  eqCategory: EQ_CATEGORY,
+  abCategory: AB_CATEGORY,
+  spell: SPELL_TYPE,
 };
 
 /**

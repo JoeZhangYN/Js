@@ -31,9 +31,14 @@ try {
 // 1. IS_ISEKAI = location.pathname.includes("/isekai/")  ——  运行时分发
 // 2. 两版整体各自包在 IIFE 中  ——  顶层 const/var/let 同名声明互不冲突
 // 3. GM_setValue 命名空间: 两版动态切换 (hvut_ / hvuti_), 老用户配置 100% 保留, 未改
-// 4. 两版 utility 同名异义, 不去重 (假内聚警告 §1(a)), 原样保留各自实现
+// 4. 两版 utility 不去重原样保留 [实质正确 — 2026-06 dedup epic 实证证伪"可机械去重"]:
+//    两版适配两个不同游戏(persistent HV vs Isekai), infra 游戏机制级分叉(pxp系数 2x/12x、
+//    品质 8/10 级、Forge/附魔 主世界独有、持久化键 hvut_/isekai_), 强合破坏两游戏正确性 +
+//    老用户持久化。原"假内聚警告"措辞已更正; 仅翻译层(显示)可归一(见第 6 点)。
 // 5. 迁移基线: 主世界 sleazyfork #533796 英文 4.0.0; Isekai 论坛 211883 英文 4.2.0
-// 6. 汉化策略: 显示层翻译 + 功能字典查表(HVUT_CN); 逻辑值/比较/键/POST参数一律英文
+// 6. 汉化策略: 显示层翻译走 canonical SSOT(src/data/i18n) 经 window.HVAA_i18n 桥
+//    (hvaaT/hvaaTEquip/resolveEn); 逻辑值/比较/键/POST 参数一律英文。i18n SSOT epic G0-G3
+//    已收口 物品/材料/装备名/术语, 删 HVAA_ITEM_CN + HVUT_CN 漂移表(仅 stamina tooltip 暂留)。
 // ============================================================================
 
 var IS_ISEKAI = (typeof location !== 'undefined') && (location.pathname || '').indexOf('/isekai/') !== -1;
@@ -9731,43 +9736,19 @@ function object_sort(o,x=[]) {const index={};const _x=x.length+1;x.forEach((e,i)
 function toggle_button(e,s,h,t,c,d) {function f(){if(t.classList.contains(c)){t.classList.remove(c);e.value=h;}else{t.classList.add(c);e.value=s;}}e.value=h;e.addEventListener('click',f);if(d){f();}}
 /* eslint-enable */
 
-/* ===== HVUT 汉化功能字典（仅用于显示，不参与匹配/排序/查找逻辑） =====
-   接线规则：在显示模板里用 HVUT_CN.xxx(value) 包裹，逻辑处仍用英文原值。
-   各字典键 = 4.0.0 实际值域，值 = 中文译名（参照旧汉化 3.0.0）。 */
+// G3: hv-utils 内嵌术语翻译表（spell/eqCategory/abCategory）已归位 canonical SSOT
+// (src/data/i18n/hvut-terms.js: SPELL_TYPE/EQ_CATEGORY/AB_CATEGORY)，调用点改
+// hvaaT(v,'spell'|'eqCategory'|'abCategory') 经全局桥查；material 已 G1 归位 EQUIP_ITEMS。
+// 仅 stamina_readout tooltip 整句替换保留本地（游戏原生整句, 非术语 exact-SSOT 范畴）。
+// i18n-probe-allow: 整句 tooltip 替换非术语表。Stage G follow-up: 移交外部 interface-translate
+// (其已部分覆盖 interface-dict:448), 届时删本表。
 const HVUT_CN = {
-  // 法师属性：spell_type 值域 ['Fire','Cold','Elec','Wind','Holy','Dark']
-  spell: {
-    'Fire': '火焰', 'Cold': '冰冷', 'Elec': '闪电',
-    'Wind': '疾风', 'Holy': '神圣', 'Dark': '黑暗',
-  },
-  // 装备分类：eq.info.category 值域（见 $equip.name 1404 行枚举，带 " Weapon" 后缀）
-  eqCategory: {
-    'One-handed Weapon': '单手武器', 'Two-handed Weapon': '双手武器',
-    'Staff': '法杖', 'Shield': '盾牌',
-    'Cloth Armor': '布甲', 'Light Armor': '轻甲', 'Heavy Armor': '重甲',
-    'Unknown': '未知',
-  },
-  // 能力点分类：ab.category 值域（见 _ab.ability 4618+ 定义，无 " Weapon" 后缀）
-  abCategory: {
-    'General': '通用',
-    'One-handed': '单手', 'Two-handed': '双手', 'Dual-wielding': '双持',
-    'Staff': '法杖',
-    'Cloth Armor': '布甲', 'Light Armor': '轻甲', 'Heavy Armor': '重甲',
-    'Elemental': '元素魔法', 'Divine': '神圣魔法', 'Forbidden': '黑暗魔法',
-    'Supportive 1': '增益魔法 1', 'Deprecating 1': '减益魔法 1',
-    'Supportive 2': '增益魔法 2', 'Deprecating 2': '减益魔法 2',
-  },
-  // G1 拆桥：material 子dict 已删 —— 材料/粘合剂名归一到 canonical EQUIP_ITEMS，
-  // 调用点改 hvaaT(name,'material') 经全局桥查（canonical 已覆盖全部 Binding/材料，0 缺口）。
-  // 精力 readout tooltip（游戏原生完整句子）
   stamina: {
     'Exhausted. You do not receive EXP or drops from monsters, and you cannot gain proficiencies.': '你已经筋疲力尽，你将无法从怪物处获取任何经验、潜经验、掉落、以及熟练度，直到你的精力恢复到2以上',
     'You have increased stamina drain due to low riddle accuracy': '由于你的小马图回答正确率太低，你的精力消耗速率被提高了',
     'Great. You receive a 100% EXP Bonus but stamina drains 50% faster.': '你现在精力充沛，额外获得100%经验加成，但精力消耗量增加50%（每场战斗消耗0.03的精力,异世界加倍）',
     'Normal. You are not receiving any bonuses or penalties.': '正常，你既不会受到额外的奖励也不会受到惩罚（每场战斗消耗0.02的精力,异世界加倍）',
   },
-  // helper：查表命中则返回中文，否则原样返回（保证未收录值不丢失）
-  t: function (dict, v) { return (dict && dict[v] != null) ? dict[v] : v; },
 };
 
 const _window = typeof unsafeWindow === 'undefined' ? window : unsafeWindow;
@@ -11249,7 +11230,7 @@ const $equip = {
     equiplist.forEach((eq, i, a) => {
       const p = a[i - 1] || { info: {} };
       if (eq.info.category !== p.info.category) {
-        $element('p', frag, [HVUT_CN.t(HVUT_CN.eqCategory, eq.info.category), '.hvut-eq-category']);
+        $element('p', frag, [hvaaT(eq.info.category, 'eqCategory'), '.hvut-eq-category']);
       }
       switch (eq.info.category) {
         case 'One-handed Weapon':
@@ -13179,7 +13160,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     $element('li', ul, [`/<span>${(prof_factor).toFixed(3)}</span><span>熟练度系数</span>`]);
     $element('li', ul, [`/<span>${(mit_reduce * 100).toFixed(2)}%</span><span>属性减伤降低</span>`]);
     $element('li', ul, [`/<span>${(cr_staff).toFixed(2)}%</span><span>基础反抵抗率</span>`]);
-    $element('li', ul, [`/<span>${(cr_spell * 100).toFixed(2)}%</span><span>${HVUT_CN.t(HVUT_CN.spell, spell_type)} 反抵抗率</span>`]);
+    $element('li', ul, [`/<span>${(cr_spell * 100).toFixed(2)}%</span><span>${hvaaT(spell_type, 'spell')} 反抵抗率</span>`]);
     $element('li', ul, [`/<span>${(cr_dep * 100).toFixed(2)}%</span><span>减益魔法反抵抗率</span>`]);
     $element('li', ul, [`/<span>${(cure_bonus * 100).toFixed(2)}%</span><span>治疗效果加成</span>`]);
 
@@ -13187,7 +13168,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     $element('li', ul, '怪物抗性');
     $element('li', ul, '基础抵抗率');
     $element('li', ul, '减益魔法抵抗率');
-    $element('li', ul, `${HVUT_CN.t(HVUT_CN.spell, spell_type)}抗性`);
+    $element('li', ul, `${hvaaT(spell_type, 'spell')}抗性`);
     $element('li', ul, '魔法减伤率');
     mitigations.forEach((mit) => { $element('li', ul, `魔法减伤率 ${mit * 100}%`); });
 
@@ -13895,7 +13876,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
         if (category !== ab.category) {
           category = ab.category;
           li = $element('li', node.ul);
-          $element('span', li, [HVUT_CN.t(HVUT_CN.abCategory, category), '.hvut-ab-category']);
+          $element('span', li, [hvaaT(category, 'abCategory'), '.hvut-ab-category']);
         }
         const icon = $element('div', li, [{ dataset: { action: 'ability', name: n } }, '.hvut-ab-icon hvut-ab-off', `!background-image: url("/y/t/${ab.img}"); background-position-x: ${ab.pos - 2}px;`]);
         $element('span', icon, [n, '.hvut-ab-tooltip']);
@@ -14309,8 +14290,8 @@ if (_query.s === 'Character' && _query.ss === 'in') {
   _in.init_list = function (filter) {
     const parent = ['acloth', 'alight', 'aheavy'].includes(filter) ? $id('inv_eqstor') : $id('inv_equip');
     _in.category[filter].div = $element('div', parent, ['.equiplist nosel']);
-    $element('p', _in.category[filter].div, [HVUT_CN.t(HVUT_CN.eqCategory, $equip.alias[filter]), '.hvut-eq-category']);
-    $element('span', $qs('.hvut-in-header', parent.parentNode), { textContent: HVUT_CN.t(HVUT_CN.eqCategory, $equip.alias[filter]), dataset: { action: 'scroll', filter } });
+    $element('p', _in.category[filter].div, [hvaaT($equip.alias[filter], 'eqCategory'), '.hvut-eq-category']);
+    $element('span', $qs('.hvut-in-header', parent.parentNode), { textContent: hvaaT($equip.alias[filter], 'eqCategory'), dataset: { action: 'scroll', filter } });
   };
 
   _in.load_list = async function (filter) {
@@ -15107,8 +15088,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'es') {
   _es.init_list = function (filter) {
     _es.category[filter].item_div = $element('div', $id('item_pane'), ['.equiplist nosel']);
     _es.category[filter].shop_div = $element('div', $id('shop_pane'), ['.equiplist nosel']);
-    $element('p', _es.category[filter].item_div, [HVUT_CN.t(HVUT_CN.eqCategory, $equip.alias[filter]), '.hvut-eq-category']);
-    $element('p', _es.category[filter].shop_div, [HVUT_CN.t(HVUT_CN.eqCategory, $equip.alias[filter]), '.hvut-eq-category']);
+    $element('p', _es.category[filter].item_div, [hvaaT($equip.alias[filter], 'eqCategory'), '.hvut-eq-category']);
+    $element('p', _es.category[filter].shop_div, [hvaaT($equip.alias[filter], 'eqCategory'), '.hvut-eq-category']);
   };
 
   _es.load_list = async function (filter) {
