@@ -247,7 +247,7 @@ const _servername = location.pathname.includes('/isekai/') ? 'isekai' : 'persist
 const _server = {
   name: _servername,
   season: $id('world_text')?.textContent.match(/\d+ Season \d+/)?.[0] || '1',
-  [_servername]: true, // _server.persistent || _server.isekai
+  [_servername]: true, // 当前服务器标记 key; isekai 判定统一走顶层 IS_ISEKAI（L0 归一）
 };
 
 // CONFIGURATION
@@ -427,7 +427,7 @@ const $config = {
     },
   },
   init: function () {
-    $config.ns = _server.persistent ? 'hvut' : 'hvuti';
+    $config.ns = !IS_ISEKAI ? 'hvut' : 'hvuti';
     $config.prefix = $config.ns + '_';
     $config.default = settings;
     $config.settings = $config.get('settings', {});
@@ -963,7 +963,7 @@ const $re = {
       return;
     }
     $re.inited = true;
-    $re.type = (!location.hostname.includes('hentaiverse.org') || _server.isekai) ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
+    $re.type = (!location.hostname.includes('hentaiverse.org') || IS_ISEKAI) ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
     $re.get();
   },
   clock: function (button) {
@@ -1933,7 +1933,7 @@ const $price = {
     if ($price.json) {
       return;
     }
-    if (_server.isekai) {
+    if (IS_ISEKAI) {
       $price.groups['Consumables'] = $price.groups['Consumables'].filter((n) => !'Last Elixir|Energy Drink|Caffeinated Candy'.includes(n));
       $price.groups['Materials'] = $price.groups['Materials'].filter((n) => !n.startsWith('Binding of'));
       delete $price.groups['Crystals'];
@@ -3080,7 +3080,7 @@ _top.create = function () {
   });
 
   const stamina_sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
-  if (_server.persistent) {
+  if (!IS_ISEKAI) {
     _top.node.stamina_form = $element('form', stamina_sub, { method: 'POST' }, { submit: (e) => { _top.stamina_submit(e); } });
     $input('hidden', _top.node.stamina_form, { name: 'recover', value: 'stamina' });
     $input('submit', _top.node.stamina_form, { value: '使用精力恢复剂', disabled: _player.stamina >= $config.settings.disableStaminaRestorative, style: 'width: 200px;' });
@@ -3108,7 +3108,7 @@ _top.create = function () {
   }
 
   const server_sub = $element('div', _top.node.server, ['.hvut-top-sub hvut-top-server']);
-  if (_server.persistent) {
+  if (!IS_ISEKAI) {
     const server_on = '永久区';
     const server_to = '异世界';
     $element('a', server_sub, { href: '/isekai/', innerHTML: `<p>Currently playing in ${server_on}</p><p>Click to switch to ${server_to}</p>` });
@@ -3650,7 +3650,7 @@ _bottom.lt = {
     }
     const ss_node = _bottom.lt.node[ss];
     ss_node.div = $element('div', _bottom.node.div, ['.hvut-lt-div']);
-    ss_node.equip = $element('a', ss_node.div, { textContent: '加载中...', href: `/?s=Bazaar&ss=${ss}`, target: (_server.persistent ? '_self' : '_blank') });
+    ss_node.equip = $element('a', ss_node.div, { textContent: '加载中...', href: `/?s=Bazaar&ss=${ss}`, target: (!IS_ISEKAI ? '_self' : '_blank') });
     ss_node.time = $element('span', ss_node.div, '--:--');
 
     if (lottery.date > now) {
@@ -6789,7 +6789,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
         $element('span', _mm.write.node.left, ['可选项:', '!width: 60px;']);
         _mm.write.node.cod_deduction = $input(['text', null, 'CoD抵扣额'], _mm.write.node.left, { pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'width: 60px; text-align: right;' }, { input: (e) => { _mm.write.calc(e); } });
-        if (_server.isekai) {
+        if (IS_ISEKAI) {
           _mm.write.node.cod_persistent = $input(['checkbox', null, '永久区货到付款'], _mm.write.node.left, { checked: true });
         }
 
@@ -6873,7 +6873,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           body: _mm.write.node.body.value,
           attach,
           cod_deduction: _mm.parse_price(_mm.write.node.cod_deduction.value),
-          cod_persistent: _server.isekai && _mm.write.node.cod_persistent.checked,
+          cod_persistent: IS_ISEKAI && _mm.write.node.cod_persistent.checked,
         };
         $mail.request(mail);
       },
@@ -7450,7 +7450,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
     if (!['item', 'equip', 'credits'].some((panel) => { if (_mm[panel].node.div.parentNode) { _mm.write.toggle(panel); return true; } })) {
       $element('div', _mm.write.node.right, ['/' + $id('mmail_right').innerHTML, '.hvut-mm-disabled']);
       _mm.write.node.cod_deduction.disabled = true;
-      if (_server.isekai) {
+      if (IS_ISEKAI) {
         _mm.write.node.cod_persistent.disabled = true;
         _mm.write.node.cod_persistent.checked = false;
       }
@@ -7464,7 +7464,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       node: {},
 
       init: function () {
-        if (_server.isekai) {
+        if (IS_ISEKAI) {
           _mm.db.season = _server.season;
           const exec = /(\d+) Season (\d+)/.exec(_server.season);
           if (exec) {
@@ -8286,7 +8286,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         _mm.search.node.form = $element('div', _mm.page.node.bottom, null, { keydown: (e) => { _mm.search.keydown(e); } });
         $input(['button', '关闭'], _mm.search.node.form, null, () => { _mm.search.toggle(); });
 
-        if (_server.isekai) {
+        if (IS_ISEKAI) {
           const seasons = Array.from(_mm.db.database.objectStoreNames);
           _mm.search.node.season = $input(['select', seasons], _mm.search.node.form);
           _mm.search.node.season.value = _server.season;
@@ -8745,7 +8745,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
           materials[scrap] = Math.min(10, Math.ceil(p / 100));
         } else {
           const item = ((q === 4) ? 'Low-Grade ' : (q === 5) ? 'Mid-Grade ' : 'High-Grade ') + (t === 'Metal' ? 'Metals' : t);
-          materials[item] = _server.persistent ? 1 : (q === 4) ? 3 : (q === 5) ? 2 : 1;
+          materials[item] = !IS_ISEKAI ? 1 : (q === 4) ? 3 : (q === 5) ? 2 : 1;
         }
         if (q >= 7) {
           const core = ((q === 7) ? 'Legendary ' : 'Peerless ') + c + ' Core';
@@ -9981,8 +9981,8 @@ const $config = {
     },
   },
   init: function () {
-    $config.isekai = location.pathname.includes('/isekai/') && ($id('world_text')?.textContent.match(/(\d+ Season \d+)/)[1] || '1');
-    $config.ns = $config.isekai ? 'hvuti' : 'hvut';
+    $config.season = location.pathname.includes('/isekai/') && ($id('world_text')?.textContent.match(/(\d+ Season \d+)/)[1] || '1'); // season 载体(主世界 IIFE 恒 falsy 死值); isekai 判定统一走 IS_ISEKAI
+    $config.ns = IS_ISEKAI ? 'hvuti' : 'hvut';
     $config.prefix = $config.ns + '_';
     $config.default = settings;
     $config.settings = $config.get('settings', {});
@@ -10172,7 +10172,7 @@ const $config = {
       if (o.style) {
         o.node.input.style.cssText = o.style;
       }
-      if (o.disabled === 'persistent' && !$config.isekai || o.disabled === 'isekai' && $config.isekai) {
+      if (o.disabled === 'persistent' && !IS_ISEKAI || o.disabled === 'isekai' && IS_ISEKAI) {
         o.node.div.classList.add('hvut-cfg-disabled');
         o.node.input.disabled = true;
       }
@@ -10234,7 +10234,7 @@ const $config = {
       if (!o.key) {
         return;
       }
-      if (o.disabled === 'persistent' && !$config.isekai || o.disabled === 'isekai' && $config.isekai) {
+      if (o.disabled === 'persistent' && !IS_ISEKAI || o.disabled === 'isekai' && IS_ISEKAI) {
         return;
       }
       const validation = $config.validate(o);
@@ -10483,7 +10483,7 @@ const $re = {
       return;
     }
     $re.inited = true;
-    $re.type = (!location.hostname.includes('hentaiverse.org') || $config.isekai) ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
+    $re.type = (!location.hostname.includes('hentaiverse.org') || IS_ISEKAI) ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
     $re.get();
   },
   clock: function (button) {
@@ -10786,8 +10786,8 @@ const $equip = {
 
   names: (() => {
     let equipnames = $config.get('equipnames', {});
-    if ($config.isekai && ($config.isekai !== equipnames.isekai)) {
-      equipnames = { isekai: $config.isekai };
+    if (IS_ISEKAI && (IS_ISEKAI !== equipnames.isekai)) {
+      equipnames = { isekai: IS_ISEKAI };
       $config.set('equipnames', equipnames);
       $config.del('equipdata');
     }
@@ -11790,7 +11790,7 @@ const $price = {
     if ($price.json) {
       return;
     }
-    if ($config.isekai) {
+    if (IS_ISEKAI) {
       $price.groups['Consumables'] = $price.groups['Consumables'].filter((n) => !'Last Elixir|Energy Drink|Caffeinated Candy'.includes(n));
       $price.groups['Materials'] = $price.groups['Materials'].filter((n) => !n.startsWith('Binding of'));
       delete $price.groups['Crystals'];
@@ -12887,7 +12887,7 @@ _top.create = function () {
     });
   }
   Object.values(_top.menu).forEach((m) => {
-    if (m.disabled === 'persistent' && !$config.isekai || m.disabled === 'isekai' && $config.isekai) {
+    if (m.disabled === 'persistent' && !IS_ISEKAI || m.disabled === 'isekai' && IS_ISEKAI) {
       return;
     }
     const li = $element('li', ul[m.s]);
@@ -12895,7 +12895,7 @@ _top.create = function () {
   });
 
   const stamina_sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
-  if (!$config.isekai) {
+  if (!IS_ISEKAI) {
     _top.node.stamina_form = $element('form', stamina_sub, { method: 'POST' }, { submit: (e) => { _top.stamina_submit(e); } });
     $input('hidden', _top.node.stamina_form, { name: 'recover', value: 'stamina' });
     $input('submit', _top.node.stamina_form, { value: '使用精力恢复剂', disabled: _player.stamina >= $config.settings.disableStaminaRestorative, style: 'width: 200px;' });
@@ -12923,10 +12923,10 @@ _top.create = function () {
   }
 
   const server_sub = $element('div', _top.node.server, ['.hvut-top-sub hvut-top-server']);
-  if ($config.isekai) {
+  if (IS_ISEKAI) {
     const server_on = '异世界';
     const server_to = '永久区';
-    $element('a', server_sub, { href: '/', innerHTML: `<p>你现在在${server_on}</p><p>${$config.isekai}</p><p>点击切换到${server_to}</p>` });
+    $element('a', server_sub, { href: '/', innerHTML: `<p>你现在在${server_on}</p><p>${$config.season}</p><p>点击切换到${server_to}</p>` });
   } else {
     const server_on = '永久区';
     const server_to = '异世界';
@@ -12983,7 +12983,7 @@ _top.init = function () {
 
   const links = $config.settings.topMenuLinks.filter((b) => {
     const m = _top.menu[b];
-    if (!m || m.disabled === 'persistent' && !$config.isekai || m.disabled === 'isekai' && $config.isekai) {
+    if (!m || m.disabled === 'persistent' && !IS_ISEKAI || m.disabled === 'isekai' && IS_ISEKAI) {
       return false;
     } else {
       return true;
@@ -13017,7 +13017,7 @@ _top.init = function () {
     $re.hv();
   }
   $element('div', _top.node.div, ['.hvut-top-placeholder']);
-  const server = $config.isekai ? 'Isekai' : '永久区';
+  const server = IS_ISEKAI ? 'Isekai' : '永久区';
   _top.node.server = $element('div', _top.node.div, ['!width: 80px;', `/<span>${server}</span>`]);
 
   _top.node.config = $element('div', _top.node.div, ['!width: 30px;']);
@@ -13464,7 +13464,7 @@ if ($config.settings.lotteryNotification) {
     }
     _bottom.node[ss] = {};
     _bottom.node[ss].div = $element('div', _bottom.node.div, ['.hvut-lt-div']);
-    _bottom.node[ss].equip = $element('a', _bottom.node[ss].div, { textContent: '加载中...', href: '/?s=Bazaar&ss=' + ss, target: !$config.isekai ? '_self' : '_blank' });
+    _bottom.node[ss].equip = $element('a', _bottom.node[ss].div, { textContent: '加载中...', href: '/?s=Bazaar&ss=' + ss, target: !IS_ISEKAI ? '_self' : '_blank' });
     _bottom.node[ss].time = $element('span', _bottom.node[ss].div, '--:--');
 
     if (lottery.date > now) {
@@ -15608,7 +15608,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'es') {
       eq.data.salvage_mats[scrap] = Math.min(10, Math.ceil(value / 100));
     } else {
       const mat = (q === 6 ? 'Low-Grade ' : q === 7 ? 'Mid-Grade ' : 'High-Grade ') + t;
-      eq.data.salvage_mats[mat] = !$config.isekai ? 1 : q === 6 ? 3 : q === 7 ? 2 : 1;
+      eq.data.salvage_mats[mat] = !IS_ISEKAI ? 1 : q === 6 ? 3 : q === 7 ? 2 : 1;
     }
     if (q >= 9) {
       const core = (q === 9 ? 'Legendary ' : 'Peerless ') + _es.core_type[eq.data.filter] + ' Core';
@@ -17894,7 +17894,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         body: _mm.node.write_body.value,
         attach,
         cod_deduction: _mm.parse_price(_mm.node.write_cod_deduction.value),
-        cod_persistent: $config.isekai && _mm.node.write_cod_persistent.checked,
+        cod_persistent: IS_ISEKAI && _mm.node.write_cod_persistent.checked,
       };
       $mail.request(mail);
     };
@@ -18003,7 +18003,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
     $element('span', _mm.node.write_left, ['可选项:', '!width: 60px;']);
     _mm.node.write_cod_deduction = $input(['text', 'CoD抵扣额'], _mm.node.write_left, { pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?', style: 'width: 60px; text-align: right;' }, { input: (e) => { _mm.write_calc(e); } });
-    if ($config.isekai) {
+    if (IS_ISEKAI) {
       _mm.node.write_cod_persistent = $input(['checkbox', '永久区货到付款'], _mm.node.write_left, { checked: true });
     }
 
@@ -18483,7 +18483,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
     if (!['item_div', 'equip_div', 'credits_div'].some((d) => { if (_mm.node[d].parentNode) { _mm.write_toggle(d); return true; } })) {
       $element('div', _mm.node.write_right, ['/' + $id('mmail_right').innerHTML, '.hvut-mm-disabled']);
       _mm.node.write_cod_deduction.disabled = true;
-      if ($config.isekai) {
+      if (IS_ISEKAI) {
         _mm.node.write_cod_persistent.disabled = true;
         _mm.node.write_cod_persistent.checked = false;
       }
@@ -18659,9 +18659,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         _mm.node.db_import = $input(['button', '从JSON导入'], _mm.node.db_div, null, () => { _mm.db.import(); });
       },
       init: function () {
-        if ($config.isekai) {
-          _mm.db.season = $config.isekai;
-          const exec = /(\d+) Season (\d+)/.exec($config.isekai);
+        if (IS_ISEKAI) {
+          _mm.db.season = $config.season;
+          const exec = /(\d+) Season (\d+)/.exec($config.season);
           if (exec) {
             const year = exec[1];
             const season = exec[2];
@@ -19331,10 +19331,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       _mm.node.search_form = $element('div', _mm.node.bottom, null, { keypress: (e) => { _mm.search_keypress(e); } });
       $input(['button', '关闭'], _mm.node.search_form, null, () => { _mm.search_toggle(); });
 
-      if ($config.isekai) {
+      if (IS_ISEKAI) {
         const seasons = Array.from(_mm.db.database.objectStoreNames);
         _mm.node.search_season = $input(['select', seasons], _mm.node.search_form);
-        _mm.node.search_season.value = $config.isekai;
+        _mm.node.search_season.value = $config.season;
       }
       _mm.node.search_filter = $input(['select', [':all', 'inbox', 'read', 'sent']], _mm.node.search_form);
       _mm.node.search_name = $input('text', _mm.node.search_form, { placeholder: '用户', style: 'width: 120px;' });
@@ -19759,7 +19759,7 @@ if (_query.s === 'Battle' && $id('initform')) {
 
   //* [19] Battle - Item World
   if (_query.ss === 'iw') {
-    _iw.pxp_mod = !$config.isekai ? { 'Normal': 2, 'Hard': 2, 'Nightmare': 4, 'Hell': 7, 'Nintendo': 10, 'IWBTH': 15, 'PFUDOR': 20 } : { 'Normal': 12, 'Hard': 12, 'Nightmare': 12, 'Hell': 21, 'Nintendo': 30, 'IWBTH': 45, 'PFUDOR': 60 };
+    _iw.pxp_mod = !IS_ISEKAI ? { 'Normal': 2, 'Hard': 2, 'Nightmare': 4, 'Hell': 7, 'Nintendo': 10, 'IWBTH': 15, 'PFUDOR': 20 } : { 'Normal': 12, 'Hard': 12, 'Nightmare': 12, 'Hell': 21, 'Nintendo': 30, 'IWBTH': 45, 'PFUDOR': 60 };
 
     _iw.click = function (e) {
       const target = e.target.closest('[data-action]');
@@ -19962,7 +19962,7 @@ if (_query.s === 'Forge' && _query.ss === 'up') {
       if (e[0]) { _100.materials['Low-Grade ' + eq.upgrade.type] = e[0]; }
       if (e[1]) { _100.materials['Mid-Grade ' + eq.upgrade.type] = e[1]; }
       if (e[2]) { _100.materials['High-Grade ' + eq.upgrade.type] = e[2]; }
-      if (i > 4 && !$config.isekai) {
+      if (i > 4 && !IS_ISEKAI) {
         _100.binding = true;
       }
       _100.forge_exp = _up.exp['Low-Grade'] * e[0] + _up.exp['Mid-Grade'] * e[1] + _up.exp['High-Grade'] * e[2];
