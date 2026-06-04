@@ -80,5 +80,15 @@
 | G2 | `9832894` | 装备名自渲染收口（equip-translate 加 `export translateEquipName` 注册到桥，复用外部同 dictEquips；9 display 点 + `data-i18n-skip`；逻辑值保英文） |
 | G3 | `b9ed8f3` | 术语 spell/eqCategory/abCategory 收口（新建 canonical `src/data/i18n/hvut-terms.js` exact-lookup；删 HVUT_CN 术语+.t）+ hv-utils 顶部旁注 :45 更正 |
 | G4 | `95c1ade` | 反退化 probe `scripts/verify-no-dup-translation.mjs` + 接 build 链（禁再现独立翻译表，`i18n-probe-allow` 行级豁免） |
+| G5 | `(待提交)` | **③ 重新框定**：原记「topMenuLinks 焊死字面量三态化」实为**逻辑键被误翻成中文的真 bug**（回归 `f62738c`，见下）。修：两 IIFE 默认值中文键→英文逻辑键（hv-utils:595/9596）+ render `push('莫古利邮局')`→`'MoogleMail'`（3038/12469，修新邮件 TypeError）。**显示不变**（ISEKAI 走 m.label / 主世界走 m.button+m.text）。+ **UI 入口整合（只合入口）**：hv-utils 两 IIFE 暴露反向桥 `window.HVUT_openConfig` → HVAA 面板 render.js 加「HV Utils 设置」入口（`.hvAAOpenHVUT`→桥）→ inject.js CSS 隐藏齿轮 `#hvut-top-config-icon`（config_sub 子菜单仍 fallback）。+ **反退化** probe `scripts/verify-topmenu-keys.mjs`（复用抽取的共用词法库 `scripts/lib/i18n-probe-lex.mjs` hasCJK/stripComments；锁 topMenuLinks 默认数组+push 实参不得含 CJK；接 build 链）。 |
 
-**Stage G 剩余**：① 用户 HV 两模式实站验收（装备/物品/材料/术语中文 == 外部游戏 DOM，无双翻）；② **follow-up**：`HVUT_CN.stamina`（stamina_readout tooltip 整句替换，带 `i18n-probe-allow` 暂留）移交外部 `interface-translate`（interface-dict:448 已部分覆盖），届时删本表；③ config.data label / topMenuLinks 焊死字面量三态化（原 Stage G 范围，未做）。
+### ③ 真因（已修，G5）
+
+`f62738c` 把 topMenuLinks **默认值**从英文逻辑键 `['Character','Equipment',...]` 翻成中文 `['角色','装备',...]`。topMenuLinks 存的是 **keys**（运行时索引 `_top.menu[b]`，显示文案来自 `m.label`/`m.text`/`m.button` 中文）：
+- 主世界 render filter（12457）：中文键 `_top.menu['装备']`=undefined → 被 filter **静默丢弃**（Equipment/MoogleMail 链接消失）；
+- ISEKAI render（3039）：中文键 fall through → `m.label`=undefined → 渲染空；
+- 同提交还加了 `validator.topMenuLinks`（918，`_top.menu.hasOwnProperty`）—— **默认值自己都过不了**，铁证键须英文。
+根因 = 违反铁律1「逻辑键必须基于英文，仅翻显示」。**正解 = 键还原英文逻辑值，显示仍由 m.label/m.text/m.button 负责**（≠ 原 handoff 的「三态化」误判）。
+
+**Stage G 剩余**：① 用户 HV 两模式实站验收（装备/物品/材料/术语中文 == 外部游戏 DOM，无双翻；**G5 后追加验**：两模式顶部菜单链接完整[Equipment/MoogleMail 出现]、有新邮件不崩、HVAA 面板「HV Utils 设置」入口可开 hv-utils config、齿轮已隐藏）；② **follow-up**：`HVUT_CN.stamina`（stamina_readout tooltip 整句替换，带 `i18n-probe-allow` 暂留）移交外部 `interface-translate`（interface-dict:448 已部分覆盖），届时删本表。
+**已否决（用户决策，不做）**：config.data 面板 label 三态化 / 顶部菜单显示三态（lang=2 出英文）—— 内部 config 面板中文用户读、价值低，且需从中文反推英文基线（仓库无存档）。

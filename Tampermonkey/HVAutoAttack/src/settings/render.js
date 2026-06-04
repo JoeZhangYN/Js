@@ -47,6 +47,8 @@ export function optionBox() {
     '  <a href="https://github.com/dodying/UserJs/commits/master/HentaiVerse/hvAutoAttack/hvAutoAttack.user.js" target="_blank"><l0>更新历史</l0><l1>更新歷史</l1><l2>ChangeLog</l2></a>',
     '  <l01><a href="https://github.com/dodying/UserJs/blob/master/HentaiVerse/hvAutoAttack/README.md" target="_blank">使用说明</a></l01><l2><a href="https://github.com/dodying/UserJs/blob/master/HentaiVerse/hvAutoAttack/README_en.md" target="_blank">README</a></l2>',
     '  <select name="lang"><option value="0">简体中文</option><option value="1">繁體中文</option><option value="2">English</option></select>',
+    // UI 入口整合（只合入口）：HVAA 面板内开 hv-utils config，经反向桥 window.HVUT_openConfig（hv-utils 暴露）。
+    '  <span class="hvAAOpenHVUT" style="cursor:pointer;text-decoration:underline;margin-left:8px;" title="HV Utils 设置"><l0>HV Utils 设置</l0><l1>HV Utils 設置</l1><l2>HV Utils Settings</l2></span>',
     '  <l2><span style="font-size:small;"><a target="_blank" href="https://greasyfork.org/forum/profile/18194/Koko191" style="color:#E3E0D1;background-color:#E3E0D1;" title="Thanks to Koko191 who give help in the translation">by Koko191</a></span></l2></div>',
     '<div class="hvAATablist">',
     '<div class="hvAATabmenu">',
@@ -333,6 +335,9 @@ export function optionBox() {
     // HV 原生汉化(equip/interface) 即时按新 lang 重渲染显示态（0简/1繁/2英），无需重载
     setLang(this.value);
   };
+  // UI 入口整合：HVAA 面板内入口打开 hv-utils config 面板。?. 兜底：桥未就绪/非 HV 页时静默不崩。
+  const openHVUT = gE(".hvAAOpenHVUT", optionBox);
+  if (openHVUT) openHVUT.onclick = () => window.HVUT_openConfig?.();
   gE(".hvAATabmenu", optionBox).onclick = function (e) {
     // 标签页事件
     if (e.target.tagName === "INPUT") return;

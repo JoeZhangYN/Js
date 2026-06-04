@@ -591,7 +591,8 @@ const settings = {
   */
 
   topMenuIntegration: true,
-  topMenuLinks: ['角色', '装备', '物品仓库', '物品商店', '雪花祭坛', '交易市场', '怪物实验室', '莫古利邮局', 'Organize', 'Modify', 'Purchase', '出售选定装备', '竞技场', '塔楼', '浴血擂台', '磨难战', '物品世界'],
+  // 逻辑键必须英文(索引 _top.menu, 显示走 m.label/m.text 中文); 勿翻译键, 见 verify-topmenu-keys probe
+  topMenuLinks: ['Character', 'Equipment', 'Item Inventory', 'Item Shop', 'The Shrine', 'The Market', 'Monster Lab', 'MoogleMail', 'Organize', 'Modify', 'Purchase', 'Sell', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'],
   confirmStaminaRestorative: true,
   disableStaminaRestorative: 79,
   warnLowStamina: 10,
@@ -3013,6 +3014,9 @@ Object.values(_top.menu).forEach((m) => {
     m.href = `?s=${m.s}&ss=${m.ss}` + (m.screen ? `&screen=${m.screen}` : '');
   }
 });
+// 反向桥：暴露 hv-utils config 打开口给 HVAA 设置面板（UI 入口整合·只合入口）。同 window.HVAA_i18n
+// 机制反方向(hv-utils→HVAA)；仅匹配 IS_ISEKAI 的 IIFE 执行，故 window 上始终只有一个活动 $config.open。
+if (typeof window !== 'undefined') { window.HVUT_openConfig = (key) => $config.open(key); }
 
 _top.init = function () {
   _top.node.div = $element('div', null, ['#hvut-top'], { mouseenter: () => { _top.create(); } });
@@ -3034,7 +3038,7 @@ _top.init = function () {
   const links = $config.settings.topMenuLinks.slice();
   const new_mail = $id('nav_mail')?.textContent.trim();
   if (new_mail && !links.includes('MoogleMail')) {
-    links.push('莫古利邮局');
+    links.push('MoogleMail');
   }
   links.forEach((b) => {
     let m = _top.menu[b];
@@ -9591,7 +9595,8 @@ const settings = {
   reBeep: [0.2, 500, 0.5], // [volume, frequency, duration]
 
   topMenuIntegration: true,
-  topMenuLinks: ['Character', '装备', 'Item Inventory', 'Equip Inventory', 'Equipment Shop', 'Item Shop', 'The Market', 'Monster Lab', 'The Shrine', '莫古利邮局', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'],
+  // 逻辑键必须英文(索引 _top.menu, 显示走 m.text/m.button); 勿翻译键, 见 verify-topmenu-keys probe
+  topMenuLinks: ['Character', 'Equipment', 'Item Inventory', 'Equip Inventory', 'Equipment Shop', 'Item Shop', 'The Market', 'Monster Lab', 'The Shrine', 'MoogleMail', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'],
   confirmStaminaRestorative: true,
   disableStaminaRestorative: 79,
   warnLowStamina: 10,
@@ -12338,6 +12343,9 @@ Object.values(_top.menu).forEach((m) => {
     m.href = `?s=${m.s}&ss=${m.ss}`;
   }
 });
+// 反向桥：暴露 hv-utils config 打开口给 HVAA 设置面板（UI 入口整合·只合入口）。同 window.HVAA_i18n
+// 机制反方向(hv-utils→HVAA)；仅匹配 IS_ISEKAI 的 IIFE 执行，故 window 上始终只有一个活动 $config.open。
+if (typeof window !== 'undefined') { window.HVUT_openConfig = (key) => $config.open(key); }
 
 _top.create = function () {
   if (_top.inited) {
@@ -12464,7 +12472,7 @@ _top.init = function () {
   const links_div = $element('div', _top.node.div, ['.hvut-top-links']);
   const new_mail = $id('nav_mail')?.textContent.trim();
   if (new_mail && !links.includes('MoogleMail')) {
-    links.push('莫古利邮局');
+    links.push('MoogleMail');
   }
   links.forEach((b) => {
     const m = _top.menu[b];
