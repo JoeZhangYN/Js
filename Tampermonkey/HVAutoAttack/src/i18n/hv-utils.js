@@ -176,6 +176,388 @@ const $ajax = {
   },
 };
 
+// ITEM INVENTORY
+const $item = {
+  list: null,
+  reg: {
+    itemc: /show_itemc_box\(-?\d+,-?\d+,'\w+',this,'\w+',(\d+)\)/,
+    itemr: /show_itemr_box\(-?\d+,-?\d+,'\w+',this,'\w+','.+?','.*?','(.+?)'\)/,
+    shrine: /set_shrine_item\((\w+),(\d+),(\d+),'(.+?)'\)/,
+    mooglemail: /set_mooglemail_item\((\d+),this\)/,
+  },
+
+  get_type: function (text) {
+    if ($item.reg.itemr.test(text)) {
+      return RegExp.$1.replace(/\W/g, '');
+    } else if ($item.reg.itemc.test(text)) {
+      return 'Consumable';
+    } else {
+      return '';
+    }
+  },
+  get_data: function (text) {
+    let exec;
+    if ((exec = $item.reg.shrine.exec(text))) {
+      const iid = exec[1];
+      const stock = parseInt(exec[2]);
+      const bulk = parseInt(exec[3]);
+      const name = exec[4];
+      return { iid, stock, bulk, name };
+    } else if ((exec = $item.reg.mooglemail.exec(text))) {
+      const iid = exec[1];
+      return { iid };
+    } else {
+      return {};
+    }
+  },
+  load: async function () {
+    const html = await $ajax.fetch('?s=Character&ss=it');
+    const doc = $doc(html);
+    $item.list = {};
+    $qsa('.itemlist tr', doc).forEach((tr) => {
+      const name = tr.cells[0].textContent;
+      const id = parseInt(tr.cells[0].firstElementChild.id.slice(5));
+      const stock = parseInt(tr.cells[1].textContent);
+      $item.list[name] = { id, stock };
+    });
+  },
+  once: async function () {
+    if ($item.list) {
+      return;
+    } else {
+      await $item.load();
+    }
+  },
+  load_shop: async function () {
+    const html = await $ajax.fetch('?s=Bazaar&ss=is');
+    const doc = $doc(html);
+    $item.storetoken = $id('shopform', doc).elements.storetoken.value;
+    $item.networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
+    $item.shop = {};
+
+    const reg_item = /itemshop\.set_item\('item_pane',(\d+),(\d+),(\d+)/;
+    $qsa('#item_pane .itemlist tr', doc).forEach((tr) => {
+      const exec = reg_item.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
+      const name = tr.cells[0].textContent.trim();
+      const id = parseInt(exec[1]);
+      const stock = parseInt(exec[2]);
+      const sell_price = parseInt(exec[3]);
+      $item.shop[name] = { id, stock, sell_price };
+    });
+
+    const reg_shop = /itemshop\.set_item\('shop_pane',(\d+),(\d+),(\d+)/;
+    $qsa('#shop_pane .itemlist tr', doc).forEach((tr) => {
+      const exec = reg_shop.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
+      const name = tr.cells[0].textContent.trim();
+      const id = parseInt(exec[1]);
+      const shop_stock = parseInt(exec[2]);
+      const shop_price = parseInt(exec[3]);
+      if (!$item.shop[name]) {
+        $item.shop[name] = {};
+      }
+      Object.assign($item.shop[name], { id, shop_stock, shop_price });
+    });
+  },
+  count: function (name) {
+    if (name) {
+      return $item.list[name]?.stock || 0;
+    } else {
+      const obj = {};
+      for (const name in $item.list) {
+        obj[name] = $item.list[name].stock || 0;
+      }
+      return obj;
+    }
+  },
+  cost: function (items) {
+    let cost = 0;
+    items.forEach((item) => {
+      cost += item.count * ($item.shop[item.name]?.shop_price || 0);
+    });
+    return cost;
+  },
+  buy: async function (items) { //items = [{ name, count }];
+    if (!items.length) {
+      alert(IS_ISEKAI ? 'The purchase request list is empty.' : '购买请求列表为空.');
+      return;
+    }
+    await $item.load_shop();
+    const cost = $item.cost(items);
+    if (cost > $item.networth) {
+      alert('你没有足够的credits.');
+      return;
+    }
+    const nostock = items.find((item) => item.count > ($item.shop[item.name]?.shop_stock || 0));
+    if (nostock) {
+      alert(IS_ISEKAI ? 'Insufficient number of items in the Item Shop.' : '系统商店中的物品数量不足.');
+      return;
+    }
+    items.forEach((item) => {
+      item.id = $item.shop[item.name].id;
+    });
+
+    async function buy(id, count) {
+      const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${$item.storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
+      const doc = $doc(html);
+      const error = get_message(doc);
+      if (error) {
+        return false;
+      }
+      return true;
+    }
+
+    const requests = items.map((item) => buy(item.id, item.count));
+    const results = await Promise.all(requests);
+    if (!results.every((r) => r)) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return;
+    }
+    return true;
+  },
+};
+
+// MoogleMail
+const $mail = {
+  queue: [],
+  current: 0,
+  ready: true,
+
+  request: function (mail) {
+    if (mail) {
+      const chunks = $mail.chunk(mail);
+      $mail.queue.push(...chunks);
+    }
+    return $mail.send();
+  },
+  send: async function () {
+    const mail = $mail.queue[$mail.current];
+    if (!mail) {
+      return;
+    }
+    if (!$mail.ready) {
+      return;
+    }
+    $mail.ready = false;
+
+    const { to_name, subject, body, attach, cod, cod_persistent } = mail;
+    const index = $mail.current + 1;
+    let html;
+    let doc;
+
+    $mail.log('\n========== Sending ==========');
+
+    if (!$mail.token) {
+      if (_query.ss === 'mm' && _query.filter === 'new') {
+        doc = document;
+      } else {
+        $mail.log(`#${index}: Checking Mailbox`);
+        html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new');
+        doc = $doc(html);
+      }
+      $mail.token = $id('mailform', doc).elements.mmtoken.value;
+      if ($id('mmail_attachremove', doc)) {
+        $mail.log(`#${index}: Removing attachments`);
+        await $mail.discard();
+      }
+    }
+    const token = $mail.token;
+
+    if (attach?.length) {
+      $mail.log(`#${index}: Attaching`);
+      async function attach_add(e) {
+        const html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_add&select_item=${e.id}&select_count=${e.count}&select_pane=${e.pane}`);
+        if ($mail.check(html)) {
+          return false;
+        }
+        done++;
+        $mail.log(`#${index}: Attached (${done}/${total})`);
+        return true;
+      }
+
+      const total = attach.length;
+      let done = 0;
+      const requests = attach.map((e) => attach_add(e));
+      const results = await Promise.all(requests);
+      if (!results.every((r) => r)) {
+        $mail.discard();
+        return;
+      }
+    }
+
+    if (cod && !cod_persistent) {
+      $mail.log(`#${index}: Setting CoD`);
+      html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_cod&action_value=${cod}`);
+      if ($mail.check(html)) {
+        $mail.discard();
+        return;
+      }
+    }
+
+    if (cod && cod_persistent) {
+      $mail.log(`#${index}: Preparing in Persistent`);
+      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new');
+      doc = $doc(html);
+      if ($mail.check(html)) {
+        $mail.discard();
+        return;
+      }
+      if (!$id('navbar', doc)) {
+        $mail.log('!!! Error: Unable to access to Persistent MoogleMail');
+        return;
+      }
+      if ($id('mmail_attachremove', doc)) {
+        $mail.log('!!! Error: Something is attached to Persistent MoogleMail');
+        return;
+      }
+
+      $mail.log(`#${index}: Attaching in Persistent`);
+      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_add&select_item=0&select_count=1&select_pane=credits`);
+      if ($mail.check(html)) {
+        $mail.discard();
+        return;
+      }
+
+      $mail.log(`#${index}: Setting CoD in Persistent`);
+      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_cod&action_value=${cod}`);
+      if ($mail.check(html)) {
+        $mail.discard();
+        return;
+      }
+
+      $mail.log(`#${index}: Sending in Persistent`);
+      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', { mmtoken: token, action: 'send', message_to_name: to_name, message_subject: subject, message_body: body });
+      if ($mail.check(html)) {
+        $mail.discard();
+        return;
+      }
+    }
+
+    $mail.log(`#${index}: Sending`);
+    html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', { mmtoken: token, action: 'send', message_to_name: to_name, message_subject: subject, message_body: body });
+    if ($mail.check(html)) {
+      $mail.discard();
+      return;
+    }
+
+    $mail.log(`#${index}: Completed`);
+    $mail.ready = true;
+    $mail.current++;
+    if ($mail.queue[$mail.current]) {
+      return $mail.send();
+    } else {
+      location.href = '?s=Bazaar&ss=mm&filter=sent';
+      return true;
+    }
+  },
+  chunk: function (mail) {
+    if (!mail.attach?.length) {
+      if (!mail.subject) {
+        mail.subject = '(no subject)';
+      }
+      if (!mail.body) {
+        mail.body = '';
+      }
+      return [mail];
+    }
+    const chunks = [];
+    const size = 10;
+
+    for (let i = 0, l = mail.attach.length; i < l; i += size) {
+      const attach = mail.attach.slice(i, i + size);
+      const { to_name, cod_persistent } = mail;
+      let { subject, body } = mail;
+      let atext = '';
+      let cod_total = 0;
+      attach.forEach((e) => {
+        if (e.cod) {
+          cod_total += e.cod;
+        }
+        if (e.atext) {
+          atext += e.atext + '\n';
+        }
+      });
+
+      let cod_deduction = 0;
+      if (mail.cod_deduction) {
+        cod_deduction = Math.min(cod_total, mail.cod_deduction);
+        mail.cod_deduction -= cod_deduction;
+      }
+      let cod = cod_total - cod_deduction;
+      if (cod < 10) {
+        cod = 0;
+      }
+
+      if (!subject) {
+        if (attach.length) {
+          if (attach[0].pane === 'equip') {
+            subject = attach[0].name;
+          } else {
+            subject = `${attach[0].count.toLocaleString()} x ${attach[0].name}`;
+          }
+          if (attach.length > 1) {
+            subject += ` and ${attach.length - 1} item(s)`;
+          }
+        } else {
+          subject = '(no subject)';
+        }
+      }
+      if (!body) {
+        body = '';
+      }
+      if (atext) {
+        body += `\n\n========== Attachment ==========\n\n${atext}`;
+        if (cod_total) {
+          if (attach.length > 1) {
+            body += `\nTotal: ${cod_total.toLocaleString()} Credits`;
+          }
+          if (cod_deduction) {
+            body += `\nDeduction: -${cod_deduction.toLocaleString()} Credits`;
+            body += `\nCoD: ${cod.toLocaleString()} Credits`;
+            if (cod) {
+              body += '\n=> 货到付款：0 Credits';
+            }
+          }
+          if (cod && cod_persistent) {
+            body += '\n* A CoD request has been sent to Persistent';
+          }
+        }
+        body += '\n\n================================\n\n';
+      }
+
+      const chunk = { to_name, subject, body, attach, cod, cod_persistent };
+      chunks.push(chunk);
+    }
+
+    return chunks;
+  },
+  check: function (html) {
+    const doc = $doc(html);
+    const error = get_message(doc);
+    if (error) {
+      $mail.error = error;
+      $mail.log('!!! Error: ' + error);
+    }
+    return error;
+  },
+  discard: function () {
+    return $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${$mail.token}&action=discard`);
+  },
+  log: function (text, clear) {
+    if (!$mail.log.popup) {
+      $mail.log.popup = popup_text('', 300, 300);
+    }
+    const p = $mail.log.popup;
+    if (!p.wrapper.parentNode) {
+      document.body.appendChild(p.wrapper);
+    }
+    if (clear) {
+      p.textarea.value = '';
+    }
+    p.textarea.value += text + '\n';
+    p.textarea.scrollTop = p.textarea.scrollHeight;
+  },
+};
+
 if (IS_ISEKAI) {
   // [ISEKAI 分支] 原 "HV Utils Isekai 汉化" → 迁移至英文 4.2.0
   (function () {
@@ -1765,144 +2147,7 @@ const $equip = {
 };
 
 // ITEM INVENTORY
-const $item = {
-  list: null,
-  reg: {
-    itemc: /show_itemc_box\(-?\d+,-?\d+,'\w+',this,'\w+',(\d+)\)/,
-    itemr: /show_itemr_box\(-?\d+,-?\d+,'\w+',this,'\w+','.+?','.*?','(.+?)'\)/,
-    shrine: /set_shrine_item\((\w+),(\d+),(\d+),'(.+?)'\)/,
-    mooglemail: /set_mooglemail_item\((\d+),this\)/,
-  },
-
-  get_type: function (text) {
-    if ($item.reg.itemr.test(text)) {
-      return RegExp.$1.replace(/\W/g, '');
-    } else if ($item.reg.itemc.test(text)) {
-      return 'Consumable';
-    } else {
-      return '';
-    }
-  },
-  get_data: function (text) {
-    let exec;
-    if ((exec = $item.reg.shrine.exec(text))) {
-      const iid = exec[1];
-      const stock = parseInt(exec[2]);
-      const bulk = parseInt(exec[3]);
-      const name = exec[4];
-      return { iid, stock, bulk, name };
-    } else if ((exec = $item.reg.mooglemail.exec(text))) {
-      const iid = exec[1];
-      return { iid };
-    } else {
-      return {};
-    }
-  },
-  load: async function () {
-    const html = await $ajax.fetch('?s=Character&ss=it');
-    const doc = $doc(html);
-    $item.list = {};
-    $qsa('.itemlist tr', doc).forEach((tr) => {
-      const name = tr.cells[0].textContent;
-      const id = parseInt(tr.cells[0].firstElementChild.id.slice(5));
-      const stock = parseInt(tr.cells[1].textContent);
-      $item.list[name] = { id, stock };
-    });
-  },
-  once: async function () {
-    if ($item.list) {
-      return;
-    } else {
-      await $item.load();
-    }
-  },
-  load_shop: async function () {
-    const html = await $ajax.fetch('?s=Bazaar&ss=is');
-    const doc = $doc(html);
-    $item.storetoken = $id('shopform', doc).elements.storetoken.value;
-    $item.networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
-    $item.shop = {};
-
-    const reg_item = /itemshop\.set_item\('item_pane',(\d+),(\d+),(\d+)/;
-    $qsa('#item_pane .itemlist tr', doc).forEach((tr) => {
-      const exec = reg_item.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
-      const name = tr.cells[0].textContent.trim();
-      const id = parseInt(exec[1]);
-      const stock = parseInt(exec[2]);
-      const sell_price = parseInt(exec[3]);
-      $item.shop[name] = { id, stock, sell_price };
-    });
-
-    const reg_shop = /itemshop\.set_item\('shop_pane',(\d+),(\d+),(\d+)/;
-    $qsa('#shop_pane .itemlist tr', doc).forEach((tr) => {
-      const exec = reg_shop.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
-      const name = tr.cells[0].textContent.trim();
-      const id = parseInt(exec[1]);
-      const shop_stock = parseInt(exec[2]);
-      const shop_price = parseInt(exec[3]);
-      if (!$item.shop[name]) {
-        $item.shop[name] = {};
-      }
-      Object.assign($item.shop[name], { id, shop_stock, shop_price });
-    });
-  },
-  count: function (name) {
-    if (name) {
-      return $item.list[name]?.stock || 0;
-    } else {
-      const obj = {};
-      for (const name in $item.list) {
-        obj[name] = $item.list[name].stock || 0;
-      }
-      return obj;
-    }
-  },
-  cost: function (items) {
-    let cost = 0;
-    items.forEach((item) => {
-      cost += item.count * ($item.shop[item.name]?.shop_price || 0);
-    });
-    return cost;
-  },
-  buy: async function (items) { //items = [{ name, count }];
-    if (!items.length) {
-      alert('The purchase request list is empty.');
-      return;
-    }
-    await $item.load_shop();
-    const cost = $item.cost(items);
-    if (cost > $item.networth) {
-      alert('你没有足够的credits.');
-      return;
-    }
-    const nostock = items.find((item) => item.count > ($item.shop[item.name]?.shop_stock || 0));
-    if (nostock) {
-      alert('Insufficient number of items in the Item Shop.');
-      return;
-    }
-    items.forEach((item) => {
-      item.id = $item.shop[item.name].id;
-    });
-
-    async function buy(id, count) {
-      const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${$item.storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
-      const doc = $doc(html);
-      const error = get_message(doc);
-      if (error) {
-        return false;
-      }
-      return true;
-    }
-
-    const requests = items.map((item) => buy(item.id, item.count));
-    const results = await Promise.all(requests);
-    if (!results.every((r) => r)) {
-      alert('An error has occurred.');
-      return;
-    }
-    return true;
-  },
-};
+// $item 已提公共区（L2）
 
 // ITEM PRICE
 const $price = {
@@ -2124,246 +2369,7 @@ const $price = {
 };
 
 // MoogleMail
-const $mail = {
-  queue: [],
-  current: 0,
-  ready: true,
-
-  request: function (mail) {
-    if (mail) {
-      const chunks = $mail.chunk(mail);
-      $mail.queue.push(...chunks);
-    }
-    return $mail.send();
-  },
-  send: async function () {
-    const mail = $mail.queue[$mail.current];
-    if (!mail) {
-      return;
-    }
-    if (!$mail.ready) {
-      return;
-    }
-    $mail.ready = false;
-
-    const { to_name, subject, body, attach, cod, cod_persistent } = mail;
-    const index = $mail.current + 1;
-    let html;
-    let doc;
-
-    $mail.log('\n========== Sending ==========');
-
-    if (!$mail.token) {
-      if (_query.ss === 'mm' && _query.filter === 'new') {
-        doc = document;
-      } else {
-        $mail.log(`#${index}: Checking Mailbox`);
-        html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new');
-        doc = $doc(html);
-      }
-      $mail.token = $id('mailform', doc).elements.mmtoken.value;
-      if ($id('mmail_attachremove', doc)) {
-        $mail.log(`#${index}: Removing attachments`);
-        await $mail.discard();
-      }
-    }
-    const token = $mail.token;
-
-    if (attach?.length) {
-      $mail.log(`#${index}: Attaching`);
-      async function attach_add(e) {
-        const html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_add&select_item=${e.id}&select_count=${e.count}&select_pane=${e.pane}`);
-        if ($mail.check(html)) {
-          return false;
-        }
-        done++;
-        $mail.log(`#${index}: Attached (${done}/${total})`);
-        return true;
-      }
-
-      const total = attach.length;
-      let done = 0;
-      const requests = attach.map((e) => attach_add(e));
-      const results = await Promise.all(requests);
-      if (!results.every((r) => r)) {
-        $mail.discard();
-        return;
-      }
-    }
-
-    if (cod && !cod_persistent) {
-      $mail.log(`#${index}: Setting CoD`);
-      html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_cod&action_value=${cod}`);
-      if ($mail.check(html)) {
-        $mail.discard();
-        return;
-      }
-    }
-
-    if (cod && cod_persistent) {
-      $mail.log(`#${index}: Preparing in Persistent`);
-      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new');
-      doc = $doc(html);
-      if ($mail.check(html)) {
-        $mail.discard();
-        return;
-      }
-      if (!$id('navbar', doc)) {
-        $mail.log('!!! Error: Unable to access to Persistent MoogleMail');
-        return;
-      }
-      if ($id('mmail_attachremove', doc)) {
-        $mail.log('!!! Error: Something is attached to Persistent MoogleMail');
-        return;
-      }
-
-      $mail.log(`#${index}: Attaching in Persistent`);
-      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_add&select_item=0&select_count=1&select_pane=credits`);
-      if ($mail.check(html)) {
-        $mail.discard();
-        return;
-      }
-
-      $mail.log(`#${index}: Setting CoD in Persistent`);
-      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_cod&action_value=${cod}`);
-      if ($mail.check(html)) {
-        $mail.discard();
-        return;
-      }
-
-      $mail.log(`#${index}: Sending in Persistent`);
-      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', { mmtoken: token, action: 'send', message_to_name: to_name, message_subject: subject, message_body: body });
-      if ($mail.check(html)) {
-        $mail.discard();
-        return;
-      }
-    }
-
-    $mail.log(`#${index}: Sending`);
-    html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', { mmtoken: token, action: 'send', message_to_name: to_name, message_subject: subject, message_body: body });
-    if ($mail.check(html)) {
-      $mail.discard();
-      return;
-    }
-
-    $mail.log(`#${index}: Completed`);
-    $mail.ready = true;
-    $mail.current++;
-    if ($mail.queue[$mail.current]) {
-      return $mail.send();
-    } else {
-      location.href = '?s=Bazaar&ss=mm&filter=sent';
-      return true;
-    }
-  },
-  chunk: function (mail) {
-    if (!mail.attach?.length) {
-      if (!mail.subject) {
-        mail.subject = '(no subject)';
-      }
-      if (!mail.body) {
-        mail.body = '';
-      }
-      return [mail];
-    }
-    const chunks = [];
-    const size = 10;
-
-    for (let i = 0, l = mail.attach.length; i < l; i += size) {
-      const attach = mail.attach.slice(i, i + size);
-      const { to_name, cod_persistent } = mail;
-      let { subject, body } = mail;
-      let atext = '';
-      let cod_total = 0;
-      attach.forEach((e) => {
-        if (e.cod) {
-          cod_total += e.cod;
-        }
-        if (e.atext) {
-          atext += e.atext + '\n';
-        }
-      });
-
-      let cod_deduction = 0;
-      if (mail.cod_deduction) {
-        cod_deduction = Math.min(cod_total, mail.cod_deduction);
-        mail.cod_deduction -= cod_deduction;
-      }
-      let cod = cod_total - cod_deduction;
-      if (cod < 10) {
-        cod = 0;
-      }
-
-      if (!subject) {
-        if (attach.length) {
-          if (attach[0].pane === 'equip') {
-            subject = attach[0].name;
-          } else {
-            subject = `${attach[0].count.toLocaleString()} x ${attach[0].name}`;
-          }
-          if (attach.length > 1) {
-            subject += ` and ${attach.length - 1} item(s)`;
-          }
-        } else {
-          subject = '(no subject)';
-        }
-      }
-      if (!body) {
-        body = '';
-      }
-      if (atext) {
-        body += `\n\n========== Attachment ==========\n\n${atext}`;
-        if (cod_total) {
-          if (attach.length > 1) {
-            body += `\nTotal: ${cod_total.toLocaleString()} Credits`;
-          }
-          if (cod_deduction) {
-            body += `\nDeduction: -${cod_deduction.toLocaleString()} Credits`;
-            body += `\nCoD: ${cod.toLocaleString()} Credits`;
-            if (cod) {
-              body += '\n=> 货到付款：0 Credits';
-            }
-          }
-          if (cod && cod_persistent) {
-            body += '\n* A CoD request has been sent to Persistent';
-          }
-        }
-        body += '\n\n================================\n\n';
-      }
-
-      const chunk = { to_name, subject, body, attach, cod, cod_persistent };
-      chunks.push(chunk);
-    }
-
-    return chunks;
-  },
-  check: function (html) {
-    const doc = $doc(html);
-    const error = get_message(doc);
-    if (error) {
-      $mail.error = error;
-      $mail.log('!!! Error: ' + error);
-    }
-    return error;
-  },
-  discard: function () {
-    return $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${$mail.token}&action=discard`);
-  },
-  log: function (text, clear) {
-    if (!$mail.log.popup) {
-      $mail.log.popup = popup_text('', 300, 300);
-    }
-    const p = $mail.log.popup;
-    if (!p.wrapper.parentNode) {
-      document.body.appendChild(p.wrapper);
-    }
-    if (clear) {
-      p.textarea.value = '';
-    }
-    p.textarea.value += text + '\n';
-    p.textarea.scrollTop = p.textarea.scrollHeight;
-  },
-};
+// $mail 已提公共区（L2）
 
 // Battle Panel
 const $battle = {
@@ -11515,144 +11521,7 @@ const $equip = {
 };
 
 // ITEM INVENTORY
-const $item = {
-
-  list: null,
-  reg: {
-    itemc: /show_itemc_box\(-?\d+,-?\d+,'\w+',this,'\w+',(\d+)\)/,
-    itemr: /show_itemr_box\(-?\d+,-?\d+,'\w+',this,'\w+','.+?','.*?','(.+?)'\)/,
-    shrine: /set_shrine_item\((\w+),(\d+),(\d+),'(.+?)'\)/,
-    mooglemail: /set_mooglemail_item\((\d+),this\)/,
-  },
-  get_type: function (text) {
-    if ($item.reg.itemr.test(text)) {
-      return RegExp.$1.replace(/\W/g, '');
-    } else if ($item.reg.itemc.test(text)) {
-      return 'Consumable';
-    } else {
-      return '';
-    }
-  },
-  get_data: function (text) {
-    let exec;
-    if ((exec = $item.reg.shrine.exec(text))) {
-      const iid = exec[1];
-      const stock = parseInt(exec[2]);
-      const bulk = parseInt(exec[3]);
-      const name = exec[4];
-      return { iid, stock, bulk, name };
-    } else if ((exec = $item.reg.mooglemail.exec(text))) {
-      const iid = exec[1];
-      return { iid };
-    } else {
-      return {};
-    }
-  },
-  load: async function () {
-    const html = await $ajax.fetch('?s=Character&ss=it');
-    const doc = $doc(html);
-    $item.list = {};
-    $qsa('.itemlist tr', doc).forEach((tr) => {
-      const name = tr.cells[0].textContent;
-      const id = parseInt(tr.cells[0].firstElementChild.id.slice(5));
-      const stock = parseInt(tr.cells[1].textContent);
-      $item.list[name] = { id, stock };
-    });
-  },
-  once: async function () {
-    if ($item.list) {
-      return;
-    } else {
-      await $item.load();
-    }
-  },
-  load_shop: async function () {
-    const html = await $ajax.fetch('?s=Bazaar&ss=is');
-    const doc = $doc(html);
-    $item.storetoken = $id('shopform', doc).elements.storetoken.value;
-    $item.networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
-    $item.shop = {};
-
-    const reg_item = /itemshop\.set_item\('item_pane',(\d+),(\d+),(\d+)/;
-    $qsa('#item_pane .itemlist tr', doc).forEach((tr) => {
-      const exec = reg_item.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
-      const name = tr.cells[0].textContent.trim();
-      const id = parseInt(exec[1]);
-      const stock = parseInt(exec[2]);
-      const sell_price = parseInt(exec[3]);
-      $item.shop[name] = { id, stock, sell_price };
-    });
-
-    const reg_shop = /itemshop\.set_item\('shop_pane',(\d+),(\d+),(\d+)/;
-    $qsa('#shop_pane .itemlist tr', doc).forEach((tr) => {
-      const exec = reg_shop.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
-      const name = tr.cells[0].textContent.trim();
-      const id = parseInt(exec[1]);
-      const shop_stock = parseInt(exec[2]);
-      const shop_price = parseInt(exec[3]);
-      if (!$item.shop[name]) {
-        $item.shop[name] = {};
-      }
-      Object.assign($item.shop[name], { id, shop_stock, shop_price });
-    });
-  },
-  count: function (name) {
-    if (name) {
-      return $item.list[name]?.stock || 0;
-    } else {
-      const obj = {};
-      for (const name in $item.list) {
-        obj[name] = $item.list[name].stock || 0;
-      }
-      return obj;
-    }
-  },
-  cost: function (items) {
-    let cost = 0;
-    items.forEach((item) => {
-      cost += item.count * ($item.shop[item.name]?.shop_price || 0);
-    });
-    return cost;
-  },
-  buy: async function (items) { //items = [{ name, count }];
-    if (!items.length) {
-      alert('购买请求列表为空.');
-      return;
-    }
-    await $item.load_shop();
-    const cost = $item.cost(items);
-    if (cost > $item.networth) {
-      alert('你没有足够的credits.');
-      return;
-    }
-    const nostock = items.find((item) => item.count > ($item.shop[item.name]?.shop_stock || 0));
-    if (nostock) {
-      alert('系统商店中的物品数量不足.');
-      return;
-    }
-    items.forEach((item) => {
-      item.id = $item.shop[item.name].id;
-    });
-
-    async function buy(id, count) {
-      const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${$item.storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
-      const doc = $doc(html);
-      const error = get_message(doc);
-      if (error) {
-        return false;
-      }
-      return true;
-    }
-
-    const requests = items.map((item) => buy(item.id, item.count));
-    const results = await Promise.all(requests);
-    if (!results.every((r) => r)) {
-      alert('发生了一个错误.');
-      return;
-    }
-    return true;
-  },
-};
+// $item 已提公共区（L2）
 
 // ITEM PRICE
 const $price = {
@@ -11864,248 +11733,7 @@ const $price = {
 };
 
 // MoogleMail
-const $mail = {
-
-  queue: [],
-  current: 0,
-  ready: true,
-
-  request: function (mail) {
-    if (mail) {
-      const chunks = $mail.chunk(mail);
-      $mail.queue.push(...chunks);
-    }
-    return $mail.send();
-  },
-  send: async function () {
-    const mail = $mail.queue[$mail.current];
-    if (!mail) {
-      return;
-    }
-    if (!$mail.ready) {
-      return;
-    }
-    $mail.ready = false;
-
-    const { to_name, subject, body, attach, cod, cod_persistent } = mail;
-    const index = $mail.current + 1;
-    let html;
-    let doc;
-
-    $mail.log('\n========== Sending ==========');
-
-    if (!$mail.token) {
-      if (_query.ss === 'mm' && _query.filter === 'new') {
-        doc = document;
-      } else {
-        $mail.log(`#${index}: Checking Mailbox`);
-        html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new');
-        doc = $doc(html);
-      }
-      $mail.token = $id('mailform', doc).elements.mmtoken.value;
-      if ($id('mmail_attachremove', doc)) {
-        $mail.log(`#${index}: Removing attachments`);
-        await $mail.discard();
-      }
-    }
-    const token = $mail.token;
-
-    if (attach?.length) {
-      $mail.log(`#${index}: Attaching`);
-      async function attach_add(e) {
-        const html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_add&select_item=${e.id}&select_count=${e.count}&select_pane=${e.pane}`);
-        if ($mail.check(html)) {
-          return false;
-        }
-        done++;
-        $mail.log(`#${index}: Attached (${done}/${total})`);
-        return true;
-      }
-
-      const total = attach.length;
-      let done = 0;
-      const requests = attach.map((e) => attach_add(e));
-      const results = await Promise.all(requests);
-      if (!results.every((r) => r)) {
-        $mail.discard();
-        return;
-      }
-    }
-
-    if (cod && !cod_persistent) {
-      $mail.log(`#${index}: Setting CoD`);
-      html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_cod&action_value=${cod}`);
-      if ($mail.check(html)) {
-        $mail.discard();
-        return;
-      }
-    }
-
-    if (cod && cod_persistent) {
-      $mail.log(`#${index}: Preparing in Persistent`);
-      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new');
-      doc = $doc(html);
-      if ($mail.check(html)) {
-        $mail.discard();
-        return;
-      }
-      if (!$id('navbar', doc)) {
-        $mail.log('!!! Error: Unable to access to Persistent MoogleMail');
-        return;
-      }
-      if ($id('mmail_attachremove', doc)) {
-        $mail.log('!!! Error: Something is attached to Persistent MoogleMail');
-        return;
-      }
-
-      $mail.log(`#${index}: Attaching in Persistent`);
-      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_add&select_item=0&select_count=1&select_pane=credits`);
-      if ($mail.check(html)) {
-        $mail.discard();
-        return;
-      }
-
-      $mail.log(`#${index}: Setting CoD in Persistent`);
-      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_cod&action_value=${cod}`);
-      if ($mail.check(html)) {
-        $mail.discard();
-        return;
-      }
-
-      $mail.log(`#${index}: Sending in Persistent`);
-      html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', { mmtoken: token, action: 'send', message_to_name: to_name, message_subject: subject, message_body: body });
-      if ($mail.check(html)) {
-        $mail.discard();
-        return;
-      }
-    }
-
-    $mail.log(`#${index}: Sending`);
-    html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', { mmtoken: token, action: 'send', message_to_name: to_name, message_subject: subject, message_body: body });
-    if ($mail.check(html)) {
-      $mail.discard();
-      return;
-    }
-
-    $mail.log(`#${index}: Completed`);
-    $mail.ready = true;
-    $mail.current++;
-    if ($mail.queue[$mail.current]) {
-      return $mail.send();
-    } else {
-      location.href = '?s=Bazaar&ss=mm&filter=sent';
-      return true;
-    }
-  },
-  chunk: function (mail) {
-    if (!mail.attach?.length) {
-      if (!mail.subject) {
-        mail.subject = '(no subject)';
-      }
-      if (!mail.body) {
-        mail.body = '';
-      }
-      return [mail];
-    }
-    const chunks = [];
-    const size = 10;
-
-    for (let i = 0, l = mail.attach.length; i < l; i += size) {
-      const attach = mail.attach.slice(i, i + size);
-      const { to_name, cod_persistent } = mail;
-      let { subject, body } = mail;
-      let atext = '';
-      let cod_total = 0;
-      attach.forEach((e) => {
-        if (e.cod) {
-          cod_total += e.cod;
-        }
-        if (e.atext) {
-          atext += e.atext + '\n';
-        }
-      });
-
-      let cod_deduction = 0;
-      if (mail.cod_deduction) {
-        cod_deduction = Math.min(cod_total, mail.cod_deduction);
-        mail.cod_deduction -= cod_deduction;
-      }
-      let cod = cod_total - cod_deduction;
-      if (cod < 10) {
-        cod = 0;
-      }
-
-      if (!subject) {
-        if (attach.length) {
-          if (attach[0].pane === 'equip') {
-            subject = attach[0].name;
-          } else {
-            subject = `${attach[0].count.toLocaleString()} x ${attach[0].name}`;
-          }
-          if (attach.length > 1) {
-            subject += ` and ${attach.length - 1} item(s)`;
-          }
-        } else {
-          subject = '(no subject)';
-        }
-      }
-      if (!body) {
-        body = '';
-      }
-      if (atext) {
-        body += `\n\n========== Attachment ==========\n\n${atext}`;
-        if (cod_total) {
-          if (attach.length > 1) {
-            body += `\nTotal: ${cod_total.toLocaleString()} Credits`;
-          }
-          if (cod_deduction) {
-            body += `\nDeduction: -${cod_deduction.toLocaleString()} Credits`;
-            body += `\nCoD: ${cod.toLocaleString()} Credits`;
-            if (cod) {
-              body += '\n=> 货到付款：0 Credits';
-            }
-          }
-          if (cod && cod_persistent) {
-            body += '\n* A CoD request has been sent to Persistent';
-          }
-        }
-        body += '\n\n================================\n\n';
-      }
-
-      const chunk = { to_name, subject, body, attach, cod, cod_persistent };
-      chunks.push(chunk);
-    }
-
-    return chunks;
-  },
-  check: function (html) {
-    const doc = $doc(html);
-    const error = get_message(doc);
-    if (error) {
-      $mail.error = error;
-      $mail.log('!!! Error: ' + error);
-    }
-    return error;
-  },
-  discard: function () {
-    return $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${$mail.token}&action=discard`);
-  },
-  log: function (text, clear) {
-    if (!$mail.log.popup) {
-      $mail.log.popup = popup_text('', 300, 300);
-    }
-    const p = $mail.log.popup;
-    if (!p.wrapper.parentNode) {
-      document.body.appendChild(p.wrapper);
-    }
-    if (clear) {
-      p.textarea.value = '';
-    }
-    p.textarea.value += text + '\n';
-    p.textarea.scrollTop = p.textarea.scrollHeight;
-  },
-
-};
+// $mail 已提公共区（L2）
 
 // Battle Panel: Equipment Enchant and Repair
 const $battle = {
