@@ -9,6 +9,11 @@ try {
   var resolveEn = function (node, group) {
     return window.HVAA_i18n && window.HVAA_i18n.resolveEn ? window.HVAA_i18n.resolveEn(node, group) : undefined;
   };
+  // Stage G: 协调器正向出口 hvaaT(英文值, group)→当前 lang 显示中文（单一 canonical SSOT）。
+  // 替代私有 HVAA_ITEM_CN/HVUT_CN 漂移表；桥未就绪/未命中退化返英文原值（不崩）。两 IIFE 闭包共用。
+  var hvaaT = function (value, group) {
+    return window.HVAA_i18n && window.HVAA_i18n.t ? window.HVAA_i18n.t(value, group) : value;
+  };
   if (!/\/isekai\/equip(\/|$)/.test(window.location.pathname)) {
 // ===== HVAA 补充：Panel A($battle 修复/补给栏)物品名英→中映射 =====
 // Panel A(行 ~2475/2555)直接渲染游戏返回的英文物品名,原 sssss2 无映射表。

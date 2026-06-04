@@ -10,6 +10,10 @@
 // 调度全部回调 → 切换一次同时回退所有引擎。lang 显示态执行器（setLang）见 Phase 2。
 
 import { reverseLookup } from "../../data/i18n/reverse-dict.js";
+import { EQUIP_ITEMS, EQUIP_INFO, EQUIP_EXTRA } from "../../data/i18n/equip-dict.js";
+import { INTERFACE_WORDS } from "../../data/i18n/interface-dict.js";
+import { langPostProcess } from "./lang-post.js";
+import { g } from "../../state/store.js";
 
 /** @type {Array<() => void>} 各翻译引擎注册的原文/译文交换回调 */
 const restoreCallbacks = [];
@@ -187,8 +191,40 @@ export function isSkipped(node) {
   return false;
 }
 
+// ============================================================================
+// 正向翻译出口 t()（Stage G）：英文逻辑值 → 当前 lang 显示中文，单一 canonical SSOT。
+// hv-utils 自渲染（物品/材料/分类/装备名）经全局桥调此出口，替代其私有 HVAA_ITEM_CN/HVUT_CN
+// 漂移表（同一术语两套译名 → 内部 panel 中文 ≠ 外部游戏 DOM 中文的根因）。仅翻显示，逻辑值保英文。
+// ============================================================================
+
+/** group → 正向 canonical 词典（英→简）。其余界面组走 INTERFACE_WORDS[group] 兜底。 */
+const FORWARD_DICTS = {
+  item: EQUIP_ITEMS,
+  material: EQUIP_ITEMS,
+  eqCategory: EQUIP_INFO,
+  abCategory: EQUIP_EXTRA,
+};
+
+/**
+ * 正向翻译：英文逻辑值 → 当前 lang 显示文本。
+ * ① lang=2(英) 返原值（自渲染同步出英文）② group 词典命中 → langPostProcess(简→当前 lang)
+ * ③ 未命中 → 跨 EQUIP_* 兜底 ④ 全 miss 返英文原值（退化安全，不崩、不静默错值）。
+ * @param {string} value 英文逻辑值
+ * @param {string=} group 词典组（'item'|'material'|'eqCategory'|'abCategory'|'spell'|…）
+ * @returns {string}
+ */
+export function t(value, group) {
+  if (typeof value !== "string" || !value) return value;
+  if (String(g("lang")) === "2") return value;
+  let zh;
+  const dict = FORWARD_DICTS[group] || (group ? INTERFACE_WORDS[group] : undefined);
+  if (dict) zh = dict[value];
+  if (zh == null) zh = EQUIP_ITEMS[value] ?? EQUIP_INFO[value] ?? EQUIP_EXTRA[value];
+  return zh != null ? langPostProcess(zh) : value;
+}
+
 // hv-utils.js 是非 ESM sloppy-mode 第三方脚本（加 import 会触发 strict mode 撞 `protected` 等保留字标识符，
 // 无法 import 本模块），经全局桥暴露协调器读出口供其 IIFE 消费（Stage C/D/G 读源归一）。
 if (typeof window !== "undefined") {
-  window.HVAA_i18n = { resolveEn, registerTranslation, isSkipped, SKIP_ATTR };
+  window.HVAA_i18n = { resolveEn, t, registerTranslation, isSkipped, SKIP_ATTR };
 }
