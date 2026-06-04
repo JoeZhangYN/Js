@@ -15,30 +15,9 @@ try {
     return window.HVAA_i18n && window.HVAA_i18n.t ? window.HVAA_i18n.t(value, group) : value;
   };
   if (!/\/isekai\/equip(\/|$)/.test(window.location.pathname)) {
-// ===== HVAA 补充：Panel A($battle 修复/补给栏)物品名英→中映射 =====
-// Panel A(行 ~2475/2555)直接渲染游戏返回的英文物品名,原 sssss2 无映射表。
-// 本表 additive:查不到则 fallback 原英文(不崩)。Panel B 另有自己的局部表,互不影响。
-var HVAA_ITEM_CN = {
-  // 修理材料
-  "Scrap Metal": "金属废料", "Scrap Leather": "皮革废料", "Scrap Wood": "木材废料",
-  "Scrap Cloth": "废布料", "Energy Cell": "能量元",
-  "Mid-Grade Cloth": "中级布料", "High-Grade Cloth": "高级布料",
-  "Mid-Grade Leather": "中级皮革", "High-Grade Leather": "高级皮革",
-  "Mid-Grade Metals": "中级金属", "High-Grade Metals": "高级金属",
-  "Mid-Grade Wood": "中级木材", "High-Grade Wood": "高级木材",
-  // 补给/消耗品
-  "Health Potion": "生命药水", "Health Draught": "生命长效药", "Health Elixir": "生命秘药",
-  "Mana Potion": "法力药水", "Mana Draught": "法力长效药", "Mana Elixir": "法力秘药",
-  "Spirit Potion": "灵力药水", "Spirit Draught": "灵力长效药", "Spirit Elixir": "灵力秘药",
-  "Last Elixir": "终极秘药", "Flower Vase": "花瓶", "Bubble-Gum": "泡泡糖",
-  "Caffeinated Candy": "咖啡因糖果", "Energy Drink": "能量饮料", "Channeling": "导能",
-  "Scroll of Swiftness": "迅捷卷轴", "Scroll of Protection": "守护卷轴",
-  "Scroll of the Avatar": "化身卷轴", "Scroll of Absorption": "吸收卷轴",
-  "Infusion of Flames": "火焰灌注", "Infusion of Frost": "冰霜灌注",
-  "Infusion of Lightning": "闪电灌注", "Infusion of Storms": "风暴灌注",
-  "Infusion of Divinity": "神圣灌注", "Infusion of Darkness": "黑暗灌注",
-};
-function hvaaItemCn(name) { return HVAA_ITEM_CN[name] || name; }
+// G1 拆桥：HVAA_ITEM_CN 表 + hvaaItemCn() 已删 —— 物品/材料名归一到 canonical SSOT
+// (src/data/i18n/equip-dict EQUIP_ITEMS)，调用点改 hvaaT(name,'item'|'material') 经全局桥查。
+// 漂移修复样本：Health Potion 原私表"生命药水" → canonical"体力药水"(与外部游戏 DOM 一致)。
 // ===== 以下为 HV Utils 统一汉化(sssss2 原料, JoeZhangYN 合并/迁移), 显示层汉化 =====
 // ============================================================================
 // HV Utils 主世界版 (v4.0.0) + Isekai 版 (v4.2.0) 统一脚本  [2026-06-02 迁移]
@@ -2637,7 +2616,7 @@ const $battle = {
             return;
           }
           const data = $battle.itemdata[id];
-          const li = $element('li', eq.node.repair, `${count} x ${hvaaItemCn(data.n)} (${data.c})`);
+          const li = $element('li', eq.node.repair, `${count} x ${hvaaT(data.n, 'item')} (${data.c})`);
           if (data.c < count) {
             li.classList.add('hvut-warn');
           }
@@ -2654,7 +2633,7 @@ const $battle = {
           return;
         }
         const data = $battle.itemdata[id];
-        const li = $element('li', $battle.node.repairall, `${count} x ${hvaaItemCn(data.n)} (${data.c})`);
+        const li = $element('li', $battle.node.repairall, `${count} x ${hvaaT(data.n, 'item')} (${data.c})`);
         if (data.c < count) {
           li.classList.add('hvut-warn');
         }
@@ -2728,7 +2707,7 @@ const $battle = {
         return;
       }
       const stock = $item.count(name);
-      const textContent = `${hvaaItemCn(name)} (${stock})`;
+      const textContent = `${hvaaT(name, 'item')} (${stock})`;
       const dataset = { action: 'buy', item: name, count };
       const li = $element('li', $battle.node.items, { textContent, dataset });
       if (stock < count) {
@@ -9773,37 +9752,8 @@ const HVUT_CN = {
     'Supportive 1': '增益魔法 1', 'Deprecating 1': '减益魔法 1',
     'Supportive 2': '增益魔法 2', 'Deprecating 2': '减益魔法 2',
   },
-  // 材料/粘合剂：_ml.materials / repair / upgrade 材料名（用于显示，查价仍用英文键）
-  material: {
-    'Low-Grade Cloth': '低级布料', 'Mid-Grade Cloth': '中级布料', 'High-Grade Cloth': '高级布料',
-    'Low-Grade Leather': '低级皮革', 'Mid-Grade Leather': '中级皮革', 'High-Grade Leather': '高级皮革',
-    'Low-Grade Metals': '低级金属', 'Mid-Grade Metals': '中级金属', 'High-Grade Metals': '高级金属',
-    'Low-Grade Wood': '低级木材', 'Mid-Grade Wood': '中级木材', 'High-Grade Wood': '高级木材',
-    'Defense Matrix Modulator': '力场碎片(盾)', 'Repurposed Actuator': '动力碎片(重)',
-    'Shade Fragment': '暗影碎片(轻)', 'Crystallized Phazon': '相位碎片(布)',
-    'Scrap Metal': '金属废料', 'Scrap Leather': '皮革废料', 'Scrap Wood': '木材废料',
-    'Scrap Cloth': '废布料', 'Energy Cell': '能量元',
-    'Binding of Slaughter': '粘合剂 基础攻击伤害', 'Binding of Balance': '粘合剂 物理命中率',
-    'Binding of Isaac': '粘合剂 物理暴击率', 'Binding of Destruction': '粘合剂 基础魔法伤害',
-    'Binding of Focus': '粘合剂 魔法命中率', 'Binding of Friendship': '粘合剂 魔法暴击率',
-    'Binding of Protection': '粘合剂 物理减伤', 'Binding of Warding': '粘合剂 魔法减伤',
-    'Binding of the Fleet': '粘合剂 回避率', 'Binding of the Barrier': '粘合剂 格挡率',
-    'Binding of the Nimble': '粘合剂 招架率', 'Binding of Negation': '粘合剂 抵抗率',
-    'Binding of the Ox': '粘合剂 力量', 'Binding of the Raccoon': '粘合剂 灵巧',
-    'Binding of the Cheetah': '粘合剂 敏捷', 'Binding of the Turtle': '粘合剂 体质',
-    'Binding of the Fox': '粘合剂 智力', 'Binding of the Owl': '粘合剂 智慧',
-    'Binding of the Elementalist': '粘合剂 元素魔法熟练度', 'Binding of the Heaven-sent': '粘合剂 神圣魔法熟练度',
-    'Binding of the Demon-fiend': '粘合剂 黑暗魔法熟练度', 'Binding of the Curse-weaver': '粘合剂 减益魔法熟练度',
-    'Binding of the Earth-walker': '粘合剂 增益魔法熟练度',
-    'Binding of Surtr': '粘合剂 火焰魔法伤害', 'Binding of Niflheim': '粘合剂 冰冷魔法伤害',
-    'Binding of Mjolnir': '粘合剂 闪电魔法伤害', 'Binding of Freyr': '粘合剂 疾风魔法伤害',
-    'Binding of Heimdall': '粘合剂 神圣魔法伤害', 'Binding of Fenrir': '粘合剂 黑暗魔法伤害',
-    'Binding of Dampening': '粘合剂 打击减伤', 'Binding of Stoneskin': '粘合剂 斩击减伤',
-    'Binding of Deflection': '粘合剂 刺击减伤', 'Binding of the Fire-eater': '粘合剂 火焰减伤',
-    'Binding of the Frost-born': '粘合剂 冰冷减伤', 'Binding of the Thunder-child': '粘合剂 闪电减伤',
-    'Binding of the Wind-waker': '粘合剂 疾风减伤', 'Binding of the Thrice-blessed': '粘合剂 神圣减伤',
-    'Binding of the Spirit-ward': '粘合剂 黑暗减伤',
-  },
+  // G1 拆桥：material 子dict 已删 —— 材料/粘合剂名归一到 canonical EQUIP_ITEMS，
+  // 调用点改 hvaaT(name,'material') 经全局桥查（canonical 已覆盖全部 Binding/材料，0 缺口）。
   // 精力 readout tooltip（游戏原生完整句子）
   stamina: {
     'Exhausted. You do not receive EXP or drops from monsters, and you cannot gain proficiencies.': '你已经筋疲力尽，你将无法从怪物处获取任何经验、潜经验、掉落、以及熟练度，直到你的精力恢复到2以上',
@@ -11794,7 +11744,7 @@ const $battle = {
     if (eq.data.repair) {
       eq.data.repair.forEach(({ name, count }) => {
         const stock = $item.count(name);
-        const textContent = `${HVUT_CN.t(HVUT_CN.material, name)} x ${count} (${stock})`;
+        const textContent = `${hvaaT(name, 'material')} x ${count} (${stock})`;
         const className = stock < count ? 'hvut-bt-warn' : '';
         $element('li', $battle.node.repair, { textContent, className });
       });
@@ -12027,7 +11977,7 @@ const $battle = {
     if ($battle.repair.repairall) {
       $battle.repair.repairall.forEach(({ name, count }) => {
         const stock = $item.count(name);
-        const textContent = `${HVUT_CN.t(HVUT_CN.material, name)} x ${count} (${stock})`;
+        const textContent = `${hvaaT(name, 'material')} x ${count} (${stock})`;
         const className = stock < count ? 'hvut-bt-warn' : '';
         $element('li', $battle.node.repairall, { textContent, className });
       });
@@ -16239,7 +16189,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         $element('li', _ml.main.node.summary, `${mobs.length} 个怪物给予了你 ${gains.length} 件礼物,价值 ${_ml.price2str(income)} credits`);
         _ml.materials.forEach((g) => {
           if (summary[g]) {
-            $element('li', _ml.main.node.summary, `${summary[g]} x ${HVUT_CN.t(HVUT_CN.material, g)}`);
+            $element('li', _ml.main.node.summary, `${summary[g]} x ${hvaaT(g, 'material')}`);
           }
         });
       },
@@ -16274,7 +16224,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         let count = 0;
         let income = 0;
         _ml.materials.forEach((mat, i) => {
-          const li = $element('li', mob.node.log, mob.log.gifts[i] + ' x ' + HVUT_CN.t(HVUT_CN.material, mat));
+          const li = $element('li', mob.node.log, mob.log.gifts[i] + ' x ' + hvaaT(mat, 'material'));
           if (i === 12 || i === 16 || i === 22 || i === 28 || i === 33 || i === 39 || i === 42 || i === 48) {
             li.classList.add('hvut-ml-margin');
           }
@@ -19751,7 +19701,7 @@ if (_query.s === 'Forge' && _query.ss === 'up') {
         const stock = $item.count(name);
         const price = prices[name];
         const className = stock < count ? '.hvut-up-nostock' : '';
-        $element('tr', up.node.table, [`/<td>${HVUT_CN.t(HVUT_CN.material, name)}</td><td>${count}</td><td>${stock}</td><td>${price}</td>`, className]);
+        $element('tr', up.node.table, [`/<td>${hvaaT(name, 'material')}</td><td>${count}</td><td>${stock}</td><td>${price}</td>`, className]);
       });
     };
 
@@ -19804,7 +19754,7 @@ if (_query.s === 'Forge' && _query.ss === 'up') {
         const stock = $item.count(name);
         const price = prices[name];
         const className = stock < count ? '.hvut-up-nostock' : '';
-        $element('tr', _up.node.costs, [`/<td>${HVUT_CN.t(HVUT_CN.material, name)}</td><td>${count}</td><td>${stock}</td><td>${price}</td>`, className]);
+        $element('tr', _up.node.costs, [`/<td>${hvaaT(name, 'material')}</td><td>${count}</td><td>${stock}</td><td>${price}</td>`, className]);
       });
 
       let valid = false;

@@ -17,6 +17,7 @@ export const EQUIP_ITEMS = {
         'Last Elixir' : '终极秘药',
         'Energy Drink' : '能量饮料',
         'Caffeinated Candy' : '咖啡因糖果',
+        'Channeling' : '导能', // G1 补缺：原 hv-utils HVAA_ITEM_CN 独有，canonical 缺
         'Golden Lottery Ticket' : '黄金彩票券',
         'Soul Stone' : '灵魂石',
         'Flower Vase' : '花瓶',
