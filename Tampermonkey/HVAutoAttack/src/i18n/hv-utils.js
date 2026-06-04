@@ -66,6 +66,116 @@ function popup_text(m,wd,ht,b=[]) {let v;if(typeof m==='string'){v=m;}else{v=m.j
 function get_message(d,s) {if(typeof d==='string'){d=$doc(d);}const m=$qsa('#messagebox_inner>p',d).map((p)=>p.textContent);if(s){return m;}else{return m.join('\n');}}
 /* eslint-enable */
 
+// ===== L2 公共依赖闭包基础设施（$ajax 请求队列 + _query URL 参数，两 IIFE 共享）=====
+const _query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [decodeURIComponent(k.replace(/\+/g, ' ')), decodeURIComponent(v.replace(/\+/g, ' '))]; }));
+
+const $ajax = {
+  interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
+  max: 4,
+  tid: null,
+  conn: 0,
+  index: 0,
+  queue: [],
+
+  fetch: function (url, data, method, context = {}, headers = {}) {
+    return new Promise((resolve, reject) => {
+      $ajax.add(method, url, data, resolve, reject, context, headers);
+    });
+  },
+  repeat: function (count, func, ...args) {
+    const list = [];
+    for (let i = 0; i < count; i++) {
+      list.push(func(...args));
+    }
+    return list;
+  },
+  add: function (method, url, data, onload, onerror, context = {}, headers = {}) {
+    console.log('ajax call', url);
+    if (!data) {
+      method = 'GET';
+    } else if (!method) {
+      method = 'POST';
+    }
+    if (method === 'POST') {
+      if (!headers['Content-Type']) {
+        headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      }
+      if (data && typeof data === 'object') {
+        data = Object.entries(data).map(([key, value]) => encodeURIComponent(key) + '=' + encodeURIComponent(value)).join('&');
+      }
+    } else if (method === 'FORM') {
+      method = 'POST';
+      //headers['Content-Type'] = 'multipart/form-data';
+      if (data instanceof FormData === false) {
+        data = new FormData(data);
+      }
+    } else if (method === 'JSON') {
+      method = 'POST';
+      if (!headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+      }
+      if (data && typeof data === 'object') {
+        data = JSON.stringify(data);
+      }
+    }
+    context.onload = onload;
+    context.onerror = onerror;
+    $ajax.queue.push({ method, url, data, headers, context, onload: $ajax.onload, onerror: $ajax.onerror });
+    $ajax.next();
+  },
+  next: function () {
+    if (!$ajax.queue[$ajax.index] || $ajax.error) {
+      return;
+    }
+    if ($ajax.tid) {
+      if (!$ajax.conn) {
+        clearTimeout($ajax.tid);
+        $ajax.timer();
+        $ajax.send();
+      }
+    } else {
+      if ($ajax.conn < $ajax.max) {
+        $ajax.timer();
+        $ajax.send();
+      }
+    }
+  },
+  timer: function () {
+    $ajax.tid = setTimeout(() => {
+      $ajax.tid = null;
+      $ajax.next();
+    }, $ajax.interval);
+  },
+  send: function () {
+    GM_xmlhttpRequest($ajax.queue[$ajax.index]);
+    $ajax.index++;
+    $ajax.conn++;
+  },
+  onload: function (r) {
+    $ajax.conn--;
+    const text = r.responseText;
+    if (r.status !== 200) {
+      $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
+      r.context.onerror?.();
+    } else if (text === 'state lock limiter in effect') {
+      if ($ajax.error !== text) {
+        popup(IS_ISEKAI ? `<p style="color: #e00; font-weight: bold;">${text}</p><p>You have reached the maximum connection limit.<br>Try again later.</p>` : `<p style="color: #f00; font-weight: bold;">${text}</p><p>已达到连接数上限.<br>请稍后再试.</p>`);
+      }
+      $ajax.error = text;
+      r.context.onerror?.();
+    } else {
+      r.context.onload?.(text);
+      $ajax.next();
+    }
+  },
+  onerror: function (r) {
+    $ajax.conn--;
+    $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
+    r.context.onerror?.();
+    $ajax.next();
+  },
+};
+
 if (IS_ISEKAI) {
   // [ISEKAI 分支] 原 "HV Utils Isekai 汉化" → 迁移至英文 4.2.0
   (function () {
@@ -242,7 +352,7 @@ function toggle_button(b,s,h,e,n,d,f) {const c=(l)=>{l.forEach((m)=>{if(m.type==
 /* eslint-enable */
 
 const _window = (typeof unsafeWindow === 'undefined') ? window : unsafeWindow;
-const _query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [decodeURIComponent(k.replace(/\+/g, ' ')), decodeURIComponent(v.replace(/\+/g, ' '))]; }));
+// $ajax/_query 已提公共区（L2）
 const _servername = location.pathname.includes('/isekai/') ? 'isekai' : 'persistent';
 const _server = {
   name: _servername,
@@ -846,113 +956,7 @@ const $config = {
 $config.init();
 //$config.settings = settings;
 
-// AJAX
-const $ajax = {
-  interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
-  max: 4,
-  tid: null,
-  conn: 0,
-  index: 0,
-  queue: [],
-
-  fetch: function (url, data, method, context = {}, headers = {}) {
-    return new Promise((resolve, reject) => {
-      $ajax.add(method, url, data, resolve, reject, context, headers);
-    });
-  },
-  repeat: function (count, func, ...args) {
-    const list = [];
-    for (let i = 0; i < count; i++) {
-      list.push(func(...args));
-    }
-    return list;
-  },
-  add: function (method, url, data, onload, onerror, context = {}, headers = {}) {
-    console.log('ajax call', url);
-    if (!data) {
-      method = 'GET';
-    } else if (!method) {
-      method = 'POST';
-    }
-    if (method === 'POST') {
-      if (!headers['Content-Type']) {
-        headers['Content-Type'] = 'application/x-www-form-urlencoded';
-      }
-      if (data && typeof data === 'object') {
-        data = Object.entries(data).map(([key, value]) => encodeURIComponent(key) + '=' + encodeURIComponent(value)).join('&');
-      }
-    } else if (method === 'FORM') {
-      method = 'POST';
-      //headers['Content-Type'] = 'multipart/form-data';
-      if (data instanceof FormData === false) {
-        data = new FormData(data);
-      }
-    } else if (method === 'JSON') {
-      method = 'POST';
-      if (!headers['Content-Type']) {
-        headers['Content-Type'] = 'application/json';
-      }
-      if (data && typeof data === 'object') {
-        data = JSON.stringify(data);
-      }
-    }
-    context.onload = onload;
-    context.onerror = onerror;
-    $ajax.queue.push({ method, url, data, headers, context, onload: $ajax.onload, onerror: $ajax.onerror });
-    $ajax.next();
-  },
-  next: function () {
-    if (!$ajax.queue[$ajax.index] || $ajax.error) {
-      return;
-    }
-    if ($ajax.tid) {
-      if (!$ajax.conn) {
-        clearTimeout($ajax.tid);
-        $ajax.timer();
-        $ajax.send();
-      }
-    } else {
-      if ($ajax.conn < $ajax.max) {
-        $ajax.timer();
-        $ajax.send();
-      }
-    }
-  },
-  timer: function () {
-    $ajax.tid = setTimeout(() => {
-      $ajax.tid = null;
-      $ajax.next();
-    }, $ajax.interval);
-  },
-  send: function () {
-    GM_xmlhttpRequest($ajax.queue[$ajax.index]);
-    $ajax.index++;
-    $ajax.conn++;
-  },
-  onload: function (r) {
-    $ajax.conn--;
-    const text = r.responseText;
-    if (r.status !== 200) {
-      $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
-      r.context.onerror?.();
-    } else if (text === 'state lock limiter in effect') {
-      if ($ajax.error !== text) {
-        popup(`<p style="color: #e00; font-weight: bold;">${text}</p><p>You have reached the maximum connection limit.<br>Try again later.</p>`);
-      }
-      $ajax.error = text;
-      r.context.onerror?.();
-    } else {
-      r.context.onload?.(text);
-      $ajax.next();
-    }
-  },
-  onerror: function (r) {
-    $ajax.conn--;
-    $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
-    r.context.onerror?.();
-    $ajax.next();
-  },
-};
+// $ajax/_query 已提公共区（L2）
 
 window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error || e); });
 
@@ -9800,7 +9804,7 @@ const HVUT_CN = {
 };
 
 const _window = typeof unsafeWindow === 'undefined' ? window : unsafeWindow;
-const _query = Object.fromEntries(location.search.slice(1).split('&').map((q) => { const [k, v = ''] = q.split('=', 2); return [k, decodeURIComponent(v.replace(/\+/g, ' '))]; }));
+// $ajax/_query 已提公共区（L2）
 
 // CONFIGURATION
 const $config = {
@@ -10369,109 +10373,7 @@ const $config = {
 $config.init();
 //$config.settings = settings;
 
-// AJAX
-const $ajax = {
-
-  interval: 300, // DO NOT DECREASE THIS NUMBER, OR IT MAY TRIGGER THE SERVER'S LIMITER AND YOU WILL GET BANNED
-  max: 4,
-  tid: null,
-  conn: 0,
-  index: 0,
-  queue: [],
-
-  fetch: function (url, data, method, context = {}, headers = {}) {
-    return new Promise((resolve, reject) => {
-      $ajax.add(method, url, data, resolve, reject, context, headers);
-    });
-  },
-  repeat: function (count, func, ...args) {
-    const list = [];
-    for (let i = 0; i < count; i++) {
-      list.push(func(...args));
-    }
-    return list;
-  },
-  add: function (method, url, data, onload, onerror, context = {}, headers = {}) {
-    console.log('ajax call', url);
-    if (!data) {
-      method = 'GET';
-    } else if (!method) {
-      method = 'POST';
-    }
-    if (method === 'POST') {
-      if (!headers['Content-Type']) {
-        headers['Content-Type'] = 'application/x-www-form-urlencoded';
-      }
-      if (data && typeof data === 'object') {
-        data = Object.entries(data).map(([key, value]) => encodeURIComponent(key) + '=' + encodeURIComponent(value)).join('&');
-      }
-    } else if (method === 'JSON') {
-      method = 'POST';
-      if (!headers['Content-Type']) {
-        headers['Content-Type'] = 'application/json';
-      }
-      if (data && typeof data === 'object') {
-        data = JSON.stringify(data);
-      }
-    }
-    context.onload = onload;
-    context.onerror = onerror;
-    $ajax.queue.push({ method, url, data, headers, context, onload: $ajax.onload, onerror: $ajax.onerror });
-    $ajax.next();
-  },
-  next: function () {
-    if (!$ajax.queue[$ajax.index] || $ajax.error) {
-      return;
-    }
-    if ($ajax.tid) {
-      if (!$ajax.conn) {
-        clearTimeout($ajax.tid);
-        $ajax.timer();
-        $ajax.send();
-      }
-    } else {
-      if ($ajax.conn < $ajax.max) {
-        $ajax.timer();
-        $ajax.send();
-      }
-    }
-  },
-  timer: function () {
-    $ajax.tid = setTimeout(() => {
-      $ajax.tid = null;
-      $ajax.next();
-    }, $ajax.interval);
-  },
-  send: function () {
-    GM_xmlhttpRequest($ajax.queue[$ajax.index]);
-    $ajax.index++;
-    $ajax.conn++;
-  },
-  onload: function (r) {
-    $ajax.conn--;
-    const text = r.responseText;
-    if (r.status !== 200) {
-      $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
-      r.context.onerror?.();
-    } else if (text === 'state lock limiter in effect') {
-      if ($ajax.error !== text) {
-        popup(`<p style="color: #f00; font-weight: bold;">${text}</p><p>已达到连接数上限.<br>请稍后再试.</p>`);
-      }
-      $ajax.error = text;
-      r.context.onerror?.();
-    } else {
-      r.context.onload?.(text);
-      $ajax.next();
-    }
-  },
-  onerror: function (r) {
-    $ajax.conn--;
-    $ajax.error = `${r.status} ${r.statusText}: ${r.finalUrl}`;
-    r.context.onerror?.();
-    $ajax.next();
-  },
-
-};
+// $ajax/_query 已提公共区（L2）
 
 window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error || e); });
 
