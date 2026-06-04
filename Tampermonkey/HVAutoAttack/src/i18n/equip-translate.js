@@ -8,6 +8,7 @@
 import { EQUIP_ITEMS, EQUIP_EQUIPS, EQUIP_INFO, EQUIP_EXTRA } from "../data/i18n/equip-dict.js";
 import { registerRestore, ensureRestoreButton, registerRetranslate, isTranslated, isSkipped } from "./core/restore-controller.js";
 import { langPostProcess } from "./core/lang-post.js";
+import { g } from "../state/store.js";
 
 var translatedList = new Map(), translated = true;
 
@@ -440,4 +441,16 @@ export function initEquipTranslate() {
     registerRetranslate(retranslateEquip); // 注册 lang 切换重翻回调（去重）
     main();
   } catch (e) { console.error("[HVAA][equip-i18n] 执行出错:", e); }
+}
+
+// Stage G: 整名装备翻译（字符串路径），经全局桥暴露给 hv-utils 自渲染（lpr/弹窗/inv_eqstor/彩票）。
+// 复用与外部装备列表同一 dictEquips（canonical EQUIP_EQUIPS 正则）→ 内部 panel 装备名中文 == 外部游戏 DOM。
+// lang=2(英) 返原名；命中 langPostProcess 出简/繁；未命中（dictEquips 正则 miss）原样返回（退化安全）。
+export function translateEquipName(name) {
+  if (typeof name !== "string" || !name) return name;
+  if (String(g("lang")) === "2") return name;
+  return langPostProcess(translate(name, loadEquips()));
+}
+if (typeof window !== "undefined" && window.HVAA_i18n) {
+  window.HVAA_i18n.translateEquipName = translateEquipName;
 }

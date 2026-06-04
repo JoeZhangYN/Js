@@ -14,6 +14,11 @@ try {
   var hvaaT = function (value, group) {
     return window.HVAA_i18n && window.HVAA_i18n.t ? window.HVAA_i18n.t(value, group) : value;
   };
+  // Stage G: 整名装备翻译桥读（equip-translate 注册，复用外部同 dictEquips → 内部装备名 == 外部）。
+  // 仅用于显示；逻辑值（dataset.eqname/eid-key URL/forum code/parse 键）一律保留英文 eq.info.name。
+  var hvaaTEquip = function (name) {
+    return window.HVAA_i18n && window.HVAA_i18n.translateEquipName ? window.HVAA_i18n.translateEquipName(name) : name;
+  };
   if (!/\/isekai\/equip(\/|$)/.test(window.location.pathname)) {
 // G1 拆桥：HVAA_ITEM_CN 表 + hvaaItemCn() 已删 —— 物品/材料名归一到 canonical SSOT
 // (src/data/i18n/equip-dict EQUIP_ITEMS)，调用点改 hvaaT(name,'item'|'material') 经全局桥查。
@@ -2455,7 +2460,7 @@ const $battle = {
 
       const eq = { info, data: {}, node: {} };
       eq.node.li = $element('li', $battle.node.equip, { dataset: { action: 'hover', eid: eq.info.eid } });
-      eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || eq.info.name, href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank' });
+      eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || hvaaTEquip(eq.info.name), href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' });
       eq.node.condition = $element('span', eq.node.li, { dataset: { action: 'repair', eid: eq.info.eid } });
       eq.node.link = $element('span', eq.node.li);
       eq.node.repair = $element('ul', null, ['.hvut-bt-repair', { dataset: { header: '修理装备' } }]);
@@ -9295,7 +9300,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
           const label = eq.node.check.parentNode;
           label.lastChild.remove();
           eq.node.status = $element('a', label);
-          $element('', label, eq.info.customname || eq.info.name);
+          $element('', label, eq.info.customname || hvaaTEquip(eq.info.name));
         }
         eq.node.status.textContent = ` ${text} `;
         $armory.organize.update(eq);
@@ -12004,7 +12009,7 @@ const $battle = {
       const eq = { info, data: {}, node: {} };
       eq.info.cat = (eq.info.category === 'One-handed Weapon' || eq.info.category === 'Two-handed Weapon' || eq.info.category === 'Staff') ? 'weapon' : 'armor';
       eq.node.li = $element('li', $battle.node.equip);
-      eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || eq.info.name, href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank' });
+      eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || hvaaTEquip(eq.info.name), href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' });
       eq.node.enc = $element('span', eq.node.li);
       eq.node.cdt = $element('span', eq.node.li, { textContent: '...', dataset: { action: 'view', eid: eq.info.eid } });
 
@@ -14865,7 +14870,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'es') {
       return;
     }
     if (ask && ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && eq.data.salvage_recommended || $config.settings.equipmentShopConfirm > 0 && eq.data.valuable)) {
-      let msg = `Are you sure that you wish to SELL\n[${eq.info.name}]\nfor ${eq.data.value.toLocaleString()} credits?`;
+      let msg = `Are you sure that you wish to SELL\n[${hvaaTEquip(eq.info.name)}]\nfor ${eq.data.value.toLocaleString()} credits?`;
       if (eq.data.salvage_recommended) {
         msg += '\nThe value of SALVAGEd materials is higher.';
       }
@@ -14890,7 +14895,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'es') {
       return;
     }
     if (ask && ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && !eq.data.salvage_recommended || $config.settings.equipmentShopConfirm > 0 && eq.data.valuable)) {
-      let msg = `Are you sure that you wish to SALVAGE\n[${eq.info.name}]\n?`;
+      let msg = `Are you sure that you wish to SALVAGE\n[${hvaaTEquip(eq.info.name)}]\n?`;
       if (!eq.data.salvage_recommended) {
         msg += '\nSELLing would give you more credits.';
       }
@@ -14921,7 +14926,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'es') {
     if (eq.data.sold) {
       return;
     }
-    if (ask && !confirm(`确定要购买\n[${eq.info.name}]\n并花费 ${eq.data.value.toLocaleString()} credits 吗?`)) {
+    if (ask && !confirm(`确定要购买\n[${hvaaTEquip(eq.info.name)}]\n并花费 ${eq.data.value.toLocaleString()} credits 吗?`)) {
       return;
     }
     eq.data.sold = true;
@@ -14933,7 +14938,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'es') {
   };
 
   _es.shop_salvage = async function (eq, ask = true) {
-    if (eq.data.sold || ask && !confirm(`确定要购买\n[${eq.info.name}]\n并随后分解它吗?`)) {
+    if (eq.data.sold || ask && !confirm(`确定要购买\n[${hvaaTEquip(eq.info.name)}]\n并随后分解它吗?`)) {
       return;
     }
     eq.data.sold = true;
@@ -19325,7 +19330,7 @@ if (_query.s === 'Battle' && $id('initform')) {
         alert('重铸装备前请先解锁.');
         return;
       }
-      if (!confirm(`确定要重铸这件装备吗?\n[${eq.info.name}]\n这会移除它所有的潜能并将其潜能等级归0.`)) {
+      if (!confirm(`确定要重铸这件装备吗?\n[${hvaaTEquip(eq.info.name)}]\n这会移除它所有的潜能并将其潜能等级归0.`)) {
         return;
       }
       const html = await $ajax.fetch(`?s=Forge&ss=fo&filter=${_iw.filter}`, `select_item=${eq.info.eid}`);
@@ -19608,7 +19613,7 @@ if (_query.s === 'Forge' && _query.ss === 'up') {
       : `${quality} ?? (Unable to calculate the base PXP of this equipment)`;
 
     _up.node.salvage_summary.innerHTML = `
-      <li>${eq.info.name}</li>
+      <li>${hvaaTEquip(eq.info.name)}</li>
       <li>PXP Quality: ${pxp_text}</li>
       <li>Upgrade Cost: ${credits.toLocaleString()}</li>
       <li>Returns Value: ${return_credits.toLocaleString()}</li>`;
