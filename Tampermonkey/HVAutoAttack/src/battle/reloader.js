@@ -4,7 +4,7 @@
 import { gE, cE } from "../dom/query.js";
 import { delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
-import { goto } from "../core/navigate.js";
+import { goto, scheduleReload } from "../core/navigate.js";
 import { post } from "../dom/http.js";
 import { time } from "../core/time.js";
 import { setAlarm } from "../alarm/alarm.js";
@@ -27,7 +27,7 @@ export function reloader() {
     if (g("option").delayAlert)
       delayAlert = setTimeout(setAlarm, g("option").delayAlertTime * 1000);
     if (g("option").delayReload)
-      delayReload = setTimeout(goto, g("option").delayReloadTime * 1000);
+      delayReload = scheduleReload(g("option").delayReloadTime);
     if (g("option").recordUsage) {
       obj = {
         mode: a.mode,
@@ -114,7 +114,7 @@ export function reloader() {
         // Victory
         setAlarm("Victory");
         delValue(2);
-        setTimeout(goto, 3 * 1000);
+        scheduleReload(3);
       }
     } else {
       main();

@@ -5,6 +5,7 @@ import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { post } from "../dom/http.js";
 import { goto } from "../core/navigate.js";
+import { pollUntil } from "../core/poll.js";
 import { isIsekai } from "../env.js";
 
 export function idleArena() {
@@ -44,15 +45,11 @@ export function idleArena() {
     post("?s=Battle&ss=ar", getToken);
     post("?s=Battle&ss=ar&page=2", getToken);
     post("?s=Battle&ss=rb", getToken);
-    const checkOnload = function () {
-      if (arena.token.length < 4) {
-        setTimeout(checkOnload, 200);
-      } else {
-        setValue("arena", arena);
-        setTimeout(idleArena, 200);
-      }
-    };
-    checkOnload();
+    // 轮询至 4 个 token POST 全部返回 → 存档 + 重入 idleArena
+    pollUntil(() => arena.token.length >= 4).then(() => {
+      setValue("arena", arena);
+      setTimeout(idleArena, 200);
+    });
     return;
   }
   arena.done = arena.done || [];

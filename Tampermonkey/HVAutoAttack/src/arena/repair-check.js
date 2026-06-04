@@ -2,6 +2,7 @@
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { post } from "../dom/http.js";
+import { pollUntil } from "../core/poll.js";
 import { idleArena } from "./idle-arena.js";
 
 export function repairCheck() {
@@ -11,11 +12,11 @@ export function repairCheck() {
   let len = 0;
   let lastID;
   const eqps = [];
+  // 轮询至上一修理结果释放(!json) → 跑修理扫描链(re-entrant: 修理 POST 回调再调 checkOnload)
   checkOnload = function () {
-    if (json) {
-      setTimeout(checkOnload, 200);
-      return;
-    }
+    pollUntil(() => !json).then(scanAndRepair);
+  };
+  function scanAndRepair() {
     post("?s=Forge&ss=re", (data) => {
       post(
         gE("#mainpane>script[src]", data).src,
@@ -48,7 +49,7 @@ export function repairCheck() {
         "text"
       );
     });
-  };
+  }
   checkLength = function () {
     len++;
     if (len >= eqps.length && g("option").idleArena)

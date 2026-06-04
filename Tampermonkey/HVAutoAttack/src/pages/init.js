@@ -5,7 +5,7 @@ import { gE, cE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
-import { goto, openUrl } from "../core/navigate.js";
+import { scheduleReload, openUrl } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { addStyle } from "../style/inject.js";
 import { riddleAlert } from "./riddle.js";
@@ -26,12 +26,15 @@ import { setupPageRefresh } from "../alarm/page-refresh.js";
 import { setupForgeCost } from "./showequip-forge-cost.js";
 import { setupEquipPercentile } from "./equip-percentile-dispatcher.js";
 import { isOptionOn, getOption } from "../state/option.js";
+import { detectPageKind, PageKind } from "./page-kind.js";
 
 export function init() {
   // Phase 5b-1: 启动时加载 globalTurn / skillLastUsed 持久化数据
   loadCdState();
   // P6: 注册 GM 菜单「导出答题备份」（全局可用，规避挂机后台下载失效）
   registerExportMenu();
+  // 页面类型单一判定（page-kind SOT，替代散落 ad-hoc 哨兵检测）。页面进入后 DOM 稳定，算一次复用。
+  const kind = detectPageKind();
   // P1 强化价格 + P3P4 装备百分位：装备页（#eu span 是 showequip 特征）/ Isekai 弹窗（MutationObserver 等待）
   // 必须早于下方 #navbar 早返回（showequip 页没有 navbar/riddlecounter/textlog）
   if (isOptionOn("forgeCostShow") && document.querySelector("#eu span")) {
@@ -41,7 +44,7 @@ export function init() {
   if (_percentileMode && _percentileMode !== "off") {
     setupEquipPercentile();
   }
-  if (window.location.host === "e-hentai.org") {
+  if (kind === PageKind.EHENTAI) {
     let href =
       getValue("url") ||
       (document.referrer.includes("hentaiverse.org")
@@ -58,8 +61,14 @@ export function init() {
     return;
   }
   setValue("url", window.location.origin);
-  if (!gE("#navbar,#riddlecounter,#textlog")) {
-    setTimeout(goto, 5 * 60 * 1000);
+  // 兜底：非 RIDDLE/BATTLE/LOBBY 游戏页（SHOWEQUIP 独立页 / UNKNOWN 未加载）→ 延时重载（等价原
+  // `!gE("#navbar,#riddlecounter,#textlog")`，依赖 showequip 页无 navbar——见 page-kind.js 设计）。
+  if (
+    kind !== PageKind.RIDDLE &&
+    kind !== PageKind.BATTLE &&
+    kind !== PageKind.LOBBY
+  ) {
+    scheduleReload(5 * 60);
     return;
   }
   g("version", GM_info ? GM_info.script.version.slice(0, 4) : "2.89");
@@ -116,7 +125,7 @@ export function init() {
   unsafeWindow = typeof unsafeWindow === "undefined" ? window : unsafeWindow;
   g("spellAoe", getValue("spellAoe", true) || {});
   console.log("[AoE] 启动加载 spellAoe:", JSON.stringify(g("spellAoe")));
-  if (gE("#riddlecounter")) {
+  if (kind === PageKind.RIDDLE) {
     // 需要答题
     if (g("option").riddlePopup && !window.opener) {
       window.open(
@@ -127,7 +136,7 @@ export function init() {
     } else {
       riddleAlert(); // 答题警报
     }
-  } else if (!gE("#navbar")) {
+  } else if (kind === PageKind.BATTLE) {
     // 战斗中
     const box2 = gE("#battle_main").appendChild(cE("div"));
     box2.id = "hvAABox2";

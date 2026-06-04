@@ -7,7 +7,7 @@ import { attemptClick, attemptClickWithTarget } from "../dom/attempt-click.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { g, tagEndToTrue } from "../state/store.js";
 import { _alert } from "../core/lang.js";
-import { goto } from "../core/navigate.js";
+import { goto, scheduleReload } from "../core/navigate.js";
 import { checkCondition } from "../settings/condition-eval.js";
 import { battleInfo } from "../monitor/battle-info.js";
 import { killBug } from "./kill-bug.js";
@@ -98,7 +98,7 @@ export function main() {
     () => {
       if (g("option").autoFlee && checkCondition(g("option").fleeCondition)) {
         gE("1001").click();
-        setTimeout(goto, 3 * 1000);
+        scheduleReload(3);
         tagEndToTrue();
       }
     },
