@@ -12196,14 +12196,14 @@ GM_addStyle(/*css*/`
   .itemlist > tbody > tr > td > div { padding: 3px 5px 3px 18px; line-height: 16px; }
   .itemlist > tbody > tr > td > div[style*='color'] { box-shadow: 0 0 0 2px inset; }
   .it, .it ~ td { padding-top: 7px; }
-  .hvut-it-Consumable { color: #00B000; }
-  .hvut-it-Artifact { color: #0000FF; }
-  .hvut-it-Trophy { color: #461B7E; }
-  .hvut-it-Token { color: #254117; }
-  .hvut-it-Crystal { color: #BA05B4; }
-  .hvut-it-MonsterFood { color: #489EFF; }
-  .hvut-it-Material { color: #f00; }
-  .hvut-it-Collectable { color: #0000FF; }
+  .hvut-item-Consumable { color: #00B000; }
+  .hvut-item-Artifact { color: #0000FF; }
+  .hvut-item-Trophy { color: #461B7E; }
+  .hvut-item-Token { color: #254117; }
+  .hvut-item-Crystal { color: #BA05B4; }
+  .hvut-item-MonsterFood { color: #489EFF; }
+  .hvut-item-Material { color: #f00; }
+  .hvut-item-Collectable { color: #0000FF; }
 `);
 
 if (false /* [v10.0.1] sssss2 品质整件染色已禁用，改用 indefined 词缀分色 (src/i18n/equip-translate.js) */) {
@@ -14321,7 +14321,7 @@ if (_query.s === 'Character' && _query.ss === 'it') {
   $qsa('.itemlist tr').forEach((tr) => {
     const div = tr.cells[0].firstElementChild;
     const type = $item.get_type(div.getAttribute('onmouseover'));
-    tr.classList.add('hvut-it-' + type);
+    tr.classList.add('hvut-item-' + type);
   });
 
   GM_addStyle(/*css*/`
@@ -15431,12 +15431,12 @@ if (_query.s === 'Bazaar' && _query.ss === 'is') {
   $qsa('#item_pane .itemlist tr').forEach((tr) => {
     const div = tr.cells[0].firstElementChild;
     const type = $item.get_type(div.getAttribute('onmouseover'));
-    tr.classList.add('hvut-it-' + type);
+    tr.classList.add('hvut-item-' + type);
   });
   $qsa('#shop_pane .itemlist tr').forEach((tr) => {
     const div = tr.cells[0].firstElementChild;
     const type = $item.get_type(div.getAttribute('onmouseover'));
-    tr.classList.add('hvut-it-' + type);
+    tr.classList.add('hvut-item-' + type);
   });
 
   GM_addStyle(/*css*/`
@@ -15794,7 +15794,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     const item = { log: name, name, type, iid, stock, bulk, max, requests: 0, recieved: 0, node: {} };
     _ss.items[iid] = item;
 
-    div.classList.add('hvut-it-' + type);
+    div.classList.add('hvut-item-' + type);
     item.node.stock = tr.cells[1];
     item.node.bulk = $element('td', tr);
     item.node.max = $element('td', tr);
@@ -17764,7 +17764,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
     });
     _mm.item_list.forEach((it) => {
       it.visible = true;
-      it.node.tr.classList.add('hvut-it-' + it.info.type);
+      it.node.tr.classList.add('hvut-item-' + it.info.type);
       it.node.td = $element('td', it.node.tr);
       it.node.check = $input('checkbox', it.node.td, { dataset: { action: 'calc', iid: it.info.iid } });
       it.node.count = $input('text', it.node.td, { dataset: { action: 'calc', iid: it.info.iid }, className: 'hvut-mm-count', placeholder: '数量', pattern: '\\d+|\\d{1,3}(,\\d{3})*', max: it.data.stock });
