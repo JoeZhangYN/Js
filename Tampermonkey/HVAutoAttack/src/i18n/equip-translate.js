@@ -310,9 +310,13 @@ var equipListObserver = null;
 function observeEquipList() {
     if (equipListObserver) return; // 每页只挂一次
     var containers = [];
-    ['.equiplist', '#equiplist', '#leftpane', '#eqch_left', '#equipselect_left'].forEach(function (sel) {
+    // 稳定 HV 原生父容器优先：hv-utils(sssss2) 异步往这些容器里重渲染装备列表(.equiplist + 装备名 div),
+    // equip-translate 首次 main() 跑时子容器(.equiplist)还不存在 → 必须监听稳定父容器 subtree 才能捕获
+    // 渐进/重渲染后的装备名(实证: 装备仓库 #inv_eqstor 装备名全英文未翻 = 父容器未被监听)。
+    // #inv_eqstor 装备仓库(ss=in) / #inv_equip 更换装备目标栏 / #shop_pane,#item_pane 装备店 / #eqinv_outer。
+    ['#inv_eqstor', '#inv_equip', '#shop_pane', '#item_pane', '#eqinv_outer', '.equiplist', '#equiplist', '#leftpane', '#eqch_left', '#equipselect_left'].forEach(function (sel) {
         var el = document.querySelector(sel);
-        if (el) containers.push(el);
+        if (el && containers.indexOf(el) === -1) containers.push(el);
     });
     var firstRow = document.querySelector('tr[onmouseover]');
     if (firstRow) {
