@@ -68,3 +68,17 @@
 - build：`cd Tampermonkey/HVAutoAttack && npm run build`（verify-sloc+check-circular+vite+verify-metadata+postbuild）。
 - hv-utils.js 20551 行双 IIFE（ISEKAI <9560 / 主世界 >9561，IS_ISEKAI 判定 L44），**严禁整文件 Read**，Grep 定位 ±20 行小改，区分两版。改 hv-utils 加 import 会触发 strict mode（`protected` 保留字）→ 必须经 `window.HVAA_i18n` 全局桥，不能 ESM import。
 - **下个 epic**：后台定时调度抽象（setInterval 驱动训练续训 + 遭遇战检测 + 统一抽象），i18n 全收尾后做。
+
+## Stage G 进展（2026-06-04，**SSOT 归一路线**，承接 dedup epic 证伪后 pivot）
+
+> dedup epic（serene-conjuring-zephyr）执行中证伪：两版适配两个不同游戏（persistent HV vs Isekai），infra 游戏机制级分叉不可机械去重。但「内部装备中文 ≠ 外部」真因是翻译层散落漂移，与游戏机制正交、可归一。故 Stage G 改用 **SSOT 路线**（hv-utils 自渲染翻译收口到 canonical `src/data/i18n` 经 `window.HVAA_i18n` 桥），而非原 handoff 的「HVUT_CN 加 lang 分支 + 双 IIFE 同步」in-place 路线。设计 plan：`~/.claude/plans/abundant-hugging-lerdorf.md`。
+
+| 阶段 | commit | 内容 |
+|---|---|---|
+| G0 | `8ffdd7a` | `window.HVAA_i18n.t(value,group)` 正向桥（读 canonical EQUIP_ITEMS/INFO + hvut-terms + INTERFACE_WORDS）+ hv-utils `hvaaT`/`hvaaTEquip` 桥读 |
+| G1 | `2ae6a5c` | 物品/材料名收口（删 `HVAA_ITEM_CN`+`HVUT_CN.material`；漂移修复 Health Potion 生命药水→体力药水 等） |
+| G2 | `9832894` | 装备名自渲染收口（equip-translate 加 `export translateEquipName` 注册到桥，复用外部同 dictEquips；9 display 点 + `data-i18n-skip`；逻辑值保英文） |
+| G3 | `b9ed8f3` | 术语 spell/eqCategory/abCategory 收口（新建 canonical `src/data/i18n/hvut-terms.js` exact-lookup；删 HVUT_CN 术语+.t）+ hv-utils 顶部旁注 :45 更正 |
+| G4 | `95c1ade` | 反退化 probe `scripts/verify-no-dup-translation.mjs` + 接 build 链（禁再现独立翻译表，`i18n-probe-allow` 行级豁免） |
+
+**Stage G 剩余**：① 用户 HV 两模式实站验收（装备/物品/材料/术语中文 == 外部游戏 DOM，无双翻）；② **follow-up**：`HVUT_CN.stamina`（stamina_readout tooltip 整句替换，带 `i18n-probe-allow` 暂留）移交外部 `interface-translate`（interface-dict:448 已部分覆盖），届时删本表；③ config.data label / topMenuLinks 焊死字面量三态化（原 Stage G 范围，未做）。
