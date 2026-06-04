@@ -558,6 +558,29 @@ const $mail = {
   },
 };
 
+// ===== L3.A1 Character.it (物品仓库) 路由块去重：公共骨架（loop + 布局 CSS 两版 byte-identical）。两 IIFE 经作用域链调 _it.init()。=====
+const _it = {
+  init() {
+    GM_addStyle(/*css*/`
+      #item_left { width: 400px; }
+      #item_left .cspp { overflow-y: scroll; }
+      #item_list .itemlist td:nth-child(1) { width: 285px !important; }
+      #item_list .itemlist td:nth-child(2) { width: 75px !important; }
+      #item_right { width: 605px; }
+      #item_slots { height: 572px; margin-top: 19px; }
+      #item_slots > div { width: 300px; }
+      .sa { height: 30px; margin: 8px auto; line-height: 20px; }
+      .sa > div { height: 20px !important; padding: 5px 10px !important; }
+      .sa > div:last-child > div { padding: 0; }
+    `);
+    $qsa('.itemlist tr').forEach((tr) => {
+      const div = tr.cells[0].firstElementChild;
+      const type = $item.get_type(div.getAttribute('onmouseover'));
+      tr.classList.add(`hvut-item-${type}`);
+    });
+  },
+};
+
 if (IS_ISEKAI) {
   // [ISEKAI 分支] 原 "HV Utils Isekai 汉化" → 迁移至英文 4.2.0
   (function () {
@@ -1600,7 +1623,6 @@ var _ch = {},
     _eq = {},
     _ab = {},
     _tr = {},
-    _it = {},
     _se = {},
 
     _is = {},
@@ -4554,27 +4576,6 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
 
 //* [5] Character - Item Inventory
 if (_query.s === 'Character' && _query.ss === 'it') {
-  _it.init = function () {
-    $qsa('.itemlist tr').forEach((tr) => {
-      const div = tr.cells[0].firstElementChild;
-      const type = $item.get_type(div.getAttribute('onmouseover'));
-      tr.classList.add(`hvut-item-${type}`);
-    });
-  };
-
-  GM_addStyle(/*css*/`
-    #item_left { width: 400px; }
-    #item_left .cspp { overflow-y: scroll; }
-    #item_list .itemlist td:nth-child(1) { width: 285px !important; }
-    #item_list .itemlist td:nth-child(2) { width: 75px !important; }
-    #item_right { width: 605px; }
-    #item_slots { height: 572px; margin-top: 19px; }
-    #item_slots > div { width: 300px; }
-    .sa { height: 30px; margin: 8px auto; line-height: 20px; }
-    .sa > div { height: 20px !important; padding: 5px 10px !important; }
-    .sa > div:last-child > div { padding: 0; }
-  `);
-
   _it.init();
 } else
 // [END 5] Character - Item Inventory */
@@ -14318,24 +14319,7 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
 
 //* [5] Character - Item Inventory
 if (_query.s === 'Character' && _query.ss === 'it') {
-  $qsa('.itemlist tr').forEach((tr) => {
-    const div = tr.cells[0].firstElementChild;
-    const type = $item.get_type(div.getAttribute('onmouseover'));
-    tr.classList.add('hvut-item-' + type);
-  });
-
-  GM_addStyle(/*css*/`
-    #item_left { width: 400px; }
-    #item_left .cspp { overflow-y: scroll; }
-    #item_list .itemlist td:nth-child(1) { width: 285px !important; }
-    #item_list .itemlist td:nth-child(2) { width: 75px !important; }
-    #item_right { width: 605px; }
-    #item_slots { height: 572px; margin-top: 19px; }
-    #item_slots > div { width: 300px; }
-    .sa { height: 30px; margin: 8px auto; line-height: 20px; }
-    .sa > div { height: 20px !important; padding: 5px 10px !important; }
-    .sa > div:last-child > div { padding: 0; }
-  `);
+  _it.init();
 } else
 // [END 5] Character - Item Inventory */
 
