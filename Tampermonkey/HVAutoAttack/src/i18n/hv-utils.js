@@ -4399,12 +4399,13 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
         return;
       }
       const name = tr.cells[0].textContent.trim();
+      const enName = resolveEn(tr.cells[0], 'trains') ?? name; // 英文逻辑 key(i18n 翻中文后); name 仅作显示
       const time = parseFloat(tr.cells[3].textContent);
       const level = parseInt(tr.cells[4].textContent);
       const max = parseInt(tr.cells[6].textContent);
-      _tr.level[name] = level;
+      _tr.level[enName] = level; // tr_level 键英文(消费侧 $config.get('tr_level')['Assimilator'] 用英文读)
 
-      const training = _tr.data[name];
+      const training = _tr.data[enName];
       if (!training) {
         return;
       }
@@ -4414,8 +4415,8 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
       if (training.time) {
         tr.classList.add('hvut-cphu');
         tr.dataset.action = 'change';
-        tr.dataset.name = name;
-        $element('option', _tr.node.select, { text: name, value: name });
+        tr.dataset.name = enName; // 英文(click→change→_tr.data[name] 链全英文)
+        $element('option', _tr.node.select, { text: name, value: enName }); // 显示中文 name, value 英文逻辑键
       }
 
       let spent = 0;
@@ -4430,7 +4431,8 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
   };
 
   _tr.parse_progress = function () {
-    _tr.current = $qs('#train_progress > div:nth-child(2) > :first-child')?.textContent;
+    const _curEl = $qs('#train_progress > div:nth-child(2) > :first-child');
+    _tr.current = _curEl ? (resolveEn(_curEl, 'trains') ?? _curEl.textContent) : undefined; // 英文逻辑 key(与 _tr.data 一致)
     if (_tr.current && _tr.data[_tr.current]) {
       _tr.json.current_name = _tr.current;
       _tr.json.current_level = _tr.data[_tr.current].level;
@@ -14718,7 +14720,8 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
   $input(['button', '取消训练计划'], _tr.node.div, null, () => { _tr.cancel(true); });
 
   _tr.json = $config.get('tr_notif', {}, 'hvut_');
-  _tr.current = $qs('#train_progress > div:nth-child(2) > :first-child')?.textContent;
+  const _curEl = $qs('#train_progress > div:nth-child(2) > :first-child');
+  _tr.current = _curEl ? (resolveEn(_curEl, 'trains') ?? _curEl.textContent) : undefined; // 英文逻辑 key(与 _tr.data 一致)
   _tr.level = {};
   _tr.spent = 0;
 
@@ -14734,13 +14737,14 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
       return;
     }
     const name = tr.cells[0].textContent.trim();
+    const enName = resolveEn(tr.cells[0], 'trains') ?? name; // 英文逻辑 key(i18n 翻中文后); name 仅作显示
     const time = parseFloat(tr.cells[3].textContent);
     const level = parseInt(tr.cells[4].textContent);
     const max = parseInt(tr.cells[6].textContent);
 
-    _tr.level[name] = level;
+    _tr.level[enName] = level; // tr_level 键英文(消费侧 $config.get('tr_level')['Assimilator'] 用英文读)
 
-    const training = _tr.data[name];
+    const training = _tr.data[enName];
     if (!training) {
       return;
     }
@@ -14750,8 +14754,8 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
     if (training.time) {
       tr.classList.add('hvut-cphu');
       tr.dataset.action = 'change';
-      tr.dataset.name = name;
-      $element('option', _tr.node.select, { text: name, value: name });
+      tr.dataset.name = enName; // 英文(click→change→_tr.data[name] 链全英文)
+      $element('option', _tr.node.select, { text: name, value: enName }); // 显示中文 name, value 英文逻辑键
     }
 
     let spent = 0;
