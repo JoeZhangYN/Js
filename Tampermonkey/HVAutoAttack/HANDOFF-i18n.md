@@ -92,3 +92,22 @@
 
 **Stage G 剩余**：① 用户 HV 两模式实站验收（装备/物品/材料/术语中文 == 外部游戏 DOM，无双翻；**G5 后追加验**：两模式顶部菜单链接完整[Equipment/MoogleMail 出现]、有新邮件不崩、HVAA 面板「HV Utils 设置」入口可开 hv-utils config、齿轮已隐藏）；② **follow-up**：`HVUT_CN.stamina`（stamina_readout tooltip 整句替换，带 `i18n-probe-allow` 暂留）移交外部 `interface-translate`（interface-dict:448 已部分覆盖），届时删本表。
 **已否决（用户决策，不做）**：config.data 面板 label 三态化 / 顶部菜单显示三态（lang=2 出英文）—— 内部 config 面板中文用户读、价值低，且需从中文反推英文基线（仓库无存档）。
+> **注（G6 推翻）**：「顶部菜单三态」于 2026-06-05 由用户重启并落地——`topMenu` 组用英文 key→短译，dict key 本就英文逻辑名，绕过「反推基线」否决理由。
+
+## Stage G6（2026-06-05，本会话；commit `6e43bf5`，两模式实站验收通过）
+
+**bug 修复**：
+- 装备译名渲染族 `equip_name_html/equip_name_text/set_equip_name`（hv-utils 公共区）：修译名 `<span>`（EQUIP_EQUIPS 颜色标签）被 `textContent` 转义成字面文字、背景色丢失；5 处 confirm/alert 去标签纯文本；salvage 摘要走 html。探针 `verify-equip-name-sink.mjs`（块外禁直插 textContent，拆桥）。
+- `render_supply_li` 补给品库存内核：两版 `hvaaT('item')` 翻译收口单一真相源（主世界 display_inventory 曾漏译显英文）。**作用域 bug**：初放守卫块 `if(!isekai/equip)` 外，块外引用块内 `const $item`→ReferenceError 炸整个 `$battle` 面板（补给/修复/附魔/装备名连锁挂）；移入块内 `$item` 后修。教训：守卫块内才是两 IIFE 真公共区。
+- 附魔 `Voidseeker's Blessing`→`虚空探索者的祝福`（enchant_data 唯一英文残留）。
+
+**顶部菜单 i18n（接入 + 抽象）**：
+- `interface-dict` 新建 `topMenu` 组（精确英文 key + 异世界短译；含 Soulfuse=魂绑、分组、Stamina/Persona/MENU）。与原 `menu` 组（长译+正则 key 给原生 navbar）双轨，后续收口。
+- 两版 `_top` 14 渲染点走 `hvaaBind`；主世界链接加 disabled 过滤（去塔楼）；create 改 `Object.entries` 拿 key。
+- **`registerI18nRender(node, render)` 声明式绑定抽象**（restore-controller + 桥 + hv-utils `hvaaBind`）：`setLang` 自动重渲染所有绑定→**菜单即时切换**。修半成品抽象——原 `hvaaT` 只下沉「显示翻译」，切换重渲染散落各引擎手写；声明式绑定让自渲染组件接入一次即获显示+切换全套（铁律1d 复杂度下沉）。
+
+**待办（下次）**：
+1. **hvAAButton 整合**：HVAA 浮动配置按钮（`settings/button.js`）并进 HVUT 顶部栏（去独立浮动）——用户问题，未做。
+2. **_tr 试点去重**：dedup epic L3 第一单元，plan `vectorized-booping-volcano.md`，前置验收已过可做。
+3. **hvaaBind 推广**：装备名（`hvaaTEquip`）等其它自渲染组件复用声明式绑定→即时切换。
+4. **清理**：`_top.menu` 的 label/text 死字段（显示已走 hvaaT）；topMenu/menu 双轨收口。
