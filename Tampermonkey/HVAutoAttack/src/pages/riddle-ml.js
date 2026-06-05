@@ -1,7 +1,7 @@
 // file-size-gate: exempt 移植自 Riddle Master Assistant Reborn 独立脚本-自包含功能
 // P6 ML 远程答题（来源：Tampermonkey/HentaiVerse/Riddle Master Assistant Reborn.user.js v0.5.2）
 // 暴露：
-//   - tryMLAnswer(): Promise<string|null>  返回 ANSWER_MAP key (ts/ra/fs/rd/pp/aj) 或 null
+//   - tryMLAnswer(): Promise<string[]|null>  返回命中的 ANSWER_MAP key 数组(多答案题多只) 或 null
 //   - setupRMAHealth()                     30s 健康巡检（init 时调用一次启动）
 // 不暴露 saveRiddle / send_head：内部使用。
 //
@@ -269,10 +269,10 @@ export function setupRMAHealth() {
 
 /**
  * 请求 ML 服务拿答案。
- * 命中 → 返回 ANSWER_MAP key（ts/ra/fs/rd/pp/aj）；失败/超时/服务异常 → null（由 riddle.js fallback 随机猜）。
+ * 命中 → 返回命中的 ANSWER_MAP key 数组（多答案题多只小马同现，故返全部命中）；失败/超时/服务异常 → null（由 riddle.js fallback 随机猜）。
  * 不做提交；提交由 riddle.js 的 riddleSubmit() 完成。
  *
- * @returns {Promise<string|null>}
+ * @returns {Promise<string[]|null>}
  */
 let inFlight = false;
 export async function tryMLAnswer() {
@@ -349,10 +349,11 @@ export async function tryMLAnswer() {
             return;
           }
           if (dict.return === "good") {
-            // RMA 服务可能返回多字符（"ts,ra"）；这里只取首个命中
+            // HV 答题常多只小马同现（多答案不少见）→ 取响应里全部命中的答案码，调用侧勾选多个 checkbox。
+            // filter+includes 兼容服务端 "ts,ra" / "tsra" 等格式（6 个码 ts/ra/fs/rd/pp/aj 互不为子串，无误配）。
             const answers = (dict.answer || "").toLowerCase();
-            const hit = ANSWER_CODES.find((code) => answers.includes(code));
-            if (!hit) {
+            const hits = ANSWER_CODES.filter((code) => answers.includes(code));
+            if (!hits.length) {
               console.warn("[HVAA][RMA] 响应无可识别答案码，本次走随机:", dict);
               if (backupOnFail)
                 saveRiddle(imgBlob, { _reason: "no_answer_code_in_response", raw: dict });
@@ -368,7 +369,7 @@ export async function tryMLAnswer() {
             }
             // 成功识别也保存（积累正确样本，对齐原 RMA line 427）；受 mlBackupOnFail 统一控制
             if (backupOnFail) saveRiddle(imgBlob, dict, false);
-            resolve(hit);
+            resolve(hits);
             return;
           }
           if (dict.return === "finish") {

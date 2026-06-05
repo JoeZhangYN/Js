@@ -44,16 +44,22 @@ function parseRemainingSeconds() {
 }
 
 /**
- * 勾选指定答案的 checkbox 并提交。
- * @param {string} answer ANSWER_MAP key (ts/ra/fs/rd/pp/aj)
+ * 勾选答案 checkbox 并提交。HV 答题常多只小马同现（多答案不少见）→ 收数组、勾选全部命中 box 后单次提交。
+ * @param {string[]} answers ANSWER_MAP key 数组 (ts/ra/fs/rd/pp/aj)
  */
-function riddleSubmit(answer) {
-  const idx = ANSWER_MAP[answer];
-  if (idx === undefined) return;
+function riddleSubmit(answers) {
   const riddler1 = document.getElementById("riddler1");
-  const checkbox = riddler1?.children?.[idx]?.children?.[0]?.children?.[0];
-  if (!checkbox) return;
-  checkbox.checked = true;
+  if (!riddler1) return;
+  let any = false;
+  for (const answer of answers) {
+    const idx = ANSWER_MAP[answer];
+    if (idx === undefined) continue;
+    const checkbox = riddler1.children?.[idx]?.children?.[0]?.children?.[0];
+    if (!checkbox) continue;
+    checkbox.checked = true;
+    any = true;
+  }
+  if (!any) return;
   const submit = document.getElementById("riddlesubmit");
   if (submit) submit.click();
 }
@@ -75,6 +81,7 @@ export function riddleAlert() {
   // ML 识别在此立即异步启动并缓存到 mlAnswer，而非等倒计时剩 riddleAnswerTime 才 await。
   // 原 bug：识别被放到倒计时末端才开始，ML POST（最长 12s）来不及返回 → 错过倒计时，
   // 表现为「超时随机正常、ML 没反应」。提前后 ML 有整个倒计时时长可用。
+  /** @type {string[]|null} ML 命中答案码数组（多答案题多只）；null=未就绪/识别失败 */
   let mlAnswer = null;
   if (isOptionOn("mlAnswer")) {
     tryMLAnswer()
@@ -101,12 +108,14 @@ export function riddleAlert() {
     }
     document.title = time;
     if (time <= g("option").riddleAnswerTime) {
-      // ML 已就绪 → 用 ML 答案；否则随机猜（同步立即提交，赶上倒计时末端）。
+      // ML 已就绪 → 用 ML 答案数组（多答案题为多码）；否则随机猜单只（同步立即提交，赶上倒计时末端）。
       // ANSWER_KEYS.length 防退化（原 answers 漏 "ra" 命中率 1/5 的旧 bug）。
-      const answer =
-        mlAnswer || ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)];
+      const answers =
+        mlAnswer && mlAnswer.length
+          ? mlAnswer
+          : [ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)]];
       submitted = true;
-      riddleSubmit(answer);
+      riddleSubmit(answers);
     }
   };
 
