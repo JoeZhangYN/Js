@@ -94,6 +94,40 @@ export function registerRetranslate(fn) {
   }
 }
 
+// ============================================================================
+// 声明式 i18n 绑定（Stage G·复杂度下沉）：把「lang 切换时重渲染」这一半责任从消费者下沉到框架。
+// 背景（已诊断的半成品抽象）：hvaaT/t() 只下沉了「按当前 lang 返回翻译」，切换重渲染散落成「各引擎
+// 自己 registerRetranslate + 手写重渲染」。自渲染组件(菜单/装备名)接 hvaaT 后切换无效，必须再手动补一遍。
+// 本抽象让消费者「声明一次(节点↔渲染函数)」即获显示 + 即时切换全套：setLang 自动重调所有绑定的 render。
+// ============================================================================
+
+/** @type {Array<{node: Node, render: () => void}>} 声明式绑定：节点 + 其重渲染函数 */
+const i18nRenders = [];
+
+/**
+ * 登记节点的重渲染函数（立即渲染一次 + 注册）。lang 切换时框架自动重调（复杂度下沉，消费者零额外代码）。
+ * @param {Node} node 承载文案的节点（isConnected 检查回收 detached 节点）
+ * @param {() => void} render 重渲染函数（闭包内调 t()/拼接，按当前 lang 重设 node 内容）
+ */
+export function registerI18nRender(node, render) {
+  if (node && typeof render === "function") {
+    render();
+    i18nRenders.push({ node, render });
+  }
+}
+
+/** lang 切换时重调所有声明式绑定的 render；顺带清理已从 DOM 移除的节点（防泄漏）。 */
+function rerenderAllI18n() {
+  for (let i = i18nRenders.length - 1; i >= 0; i -= 1) {
+    const { node, render } = i18nRenders[i];
+    if (node && node.isConnected) {
+      try { render(); } catch (e) { console.error("[HVAA][i18n] i18nRender 出错:", e); }
+    } else {
+      i18nRenders.splice(i, 1);
+    }
+  }
+}
+
 /**
  * lang 显示态执行器：运行时切语言即时生效。render.js 切语言时调用（调用前已 g("lang") 置新值 + 持久化）。
  * ①确保还原所有引擎到英文原文 ②lang=2 停在英文 ③lang=0/1 调度各引擎重翻（译文经 langPostProcess 出繁/简）。
@@ -107,12 +141,14 @@ export function setLang(newLang) {
     translatedState = false;
   }
   if (String(newLang) === "2") {
+    rerenderAllI18n(); // 声明式绑定(菜单等自渲染)即时出英文
     if (changer) changer.innerHTML = "中"; // 英文态，按钮点击切回中文
     return;
   }
   for (const fn of retranslateCallbacks) {
     try { fn(); } catch (e) { console.error("[HVAA][i18n] retranslate 回调出错:", e); }
   }
+  rerenderAllI18n(); // 声明式绑定(菜单等自渲染)即时出简/繁
   translatedState = true;
   if (changer) changer.innerHTML = "英";
 }
@@ -228,5 +264,5 @@ export function t(value, group) {
 // hv-utils.js 是非 ESM sloppy-mode 第三方脚本（加 import 会触发 strict mode 撞 `protected` 等保留字标识符，
 // 无法 import 本模块），经全局桥暴露协调器读出口供其 IIFE 消费（Stage C/D/G 读源归一）。
 if (typeof window !== "undefined") {
-  window.HVAA_i18n = { resolveEn, t, registerTranslation, isSkipped, SKIP_ATTR };
+  window.HVAA_i18n = { resolveEn, t, registerTranslation, isSkipped, SKIP_ATTR, registerI18nRender };
 }

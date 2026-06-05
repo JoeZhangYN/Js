@@ -449,6 +449,52 @@ export const INTERFACE_WORDS = {
         'You Got Mail' : '你有新邮件',
     },
 
+    // _top 自渲染顶部菜单(hvaaT 精确查, key=英文逻辑名; lang=2 出英文可一键中/英切换)。短译统一(异世界基准, 用户定)。
+    // 注: 上方 menu 组(长译 + 正则 key)给 interface-translate 翻 HV 原生 navbar(_top 整合后 hidden);
+    //     topMenu 组给 hv-utils 的 _top 自渲染(精确 key, t() 不支持正则)。二者暂双轨, 后续 Stage G 收口归一。
+    topMenu: {
+        'Character': '角色',
+        'Equipment': '装备',
+        'Abilities': '能力',
+        'Training': '训练',
+        'Item Inventory': '物品',
+        'Equip Inventory': '装备仓库',
+        'Settings': '设置',
+        'Item Shop': '道具店',
+        'Equipment Shop': '装备商店',
+        'The Shrine': '祭坛',
+        'The Market': '市场',
+        'Monster Lab': '实验室',
+        'MoogleMail': '邮箱',
+        'Weapon Lottery': '武器彩票',
+        'Armor Lottery': '防具彩票',
+        'Organize': '管理',
+        'Modify': '改装',
+        'Repair': '修理',
+        'Soulbind': '魂绑',
+        'Purchase': '购买',
+        'Sell': '出售',
+        'Salvage': '分解',
+        'The Arena': '竞技',
+        'The Tower': '塔楼',
+        'Ring of Blood': '擂台',
+        'GrindFest': '压榨',
+        'Item World': '道具界',
+        'Upgrade': '升级',
+        'Enchant': '附魔',
+        'Reforge': '重铸',
+        'Soulfuse': '魂绑',
+        // 分组标题(s/g 字段值)
+        'Bazaar': '集市',
+        'Battle': '战斗',
+        'Forge': '锻造',
+        'Armory': '军械',
+        // 顶部状态
+        'Stamina': '精力',
+        'Persona': '流派',
+        'MENU': '菜单',
+    },
+
     ///////////////////////////////////////////////////////难度名
     // 包括上方主菜单导航栏等多个地方用到，姑且独立出来做一块方便统一管理……吧
     difficulty: {

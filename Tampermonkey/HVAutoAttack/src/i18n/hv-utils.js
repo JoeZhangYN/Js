@@ -19,6 +19,44 @@ try {
   var hvaaTEquip = function (name) {
     return window.HVAA_i18n && window.HVAA_i18n.translateEquipName ? window.HVAA_i18n.translateEquipName(name) : name;
   };
+  // 声明式 i18n 绑定桥读(Stage G·复杂度下沉): 经桥登记 node + render，lang 切换框架自动重渲染→即时切换。
+  // 桥未就绪退化: 只渲染一次不绑定(不崩，刷新后按新 lang)。render 闭包按当前 lang 调 hvaaT/拼接设 node 内容。
+  var hvaaBind = function (node, render) {
+    var bound = function () { render(node); }; // render 收 node 参数(闭包无需外部变量, 避免赋值前引用)
+    if (window.HVAA_i18n && window.HVAA_i18n.registerI18nRender) { window.HVAA_i18n.registerI18nRender(node, bound); }
+    else { bound(); }
+    return node;
+  };
+  // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
+  // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
+  // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
+  // hvaaTEquip —— 按落点形态选下列其一, 把"去标签/解实体/customname 转义"复杂度下沉到此处(铁律1d 复杂度下沉):
+  //   set_equip_name(el, eq): 落到 DOM 元素 → innerHTML 渲染色 span。
+  //   equip_name_html(eq):    要 HTML 串(innerHTML 模板插值) → customname 转义防注入 / 译名原样。
+  //   equip_name_text(eq):    要纯文本(confirm/alert/拼串) → 去标签+解 HTML 实体 / customname 原样。
+  // 曾 bug(2026-06-05 修): 用 textContent 设译名→<span> 转义成字面文字、背景色丢失; confirm 里直插译名→显示字面 <span>。
+  // 反退化: 任何 hvaaTEquip(eq 出现在本块外 → scripts/verify-equip-name-sink.mjs 拆桥失败(铁律1b 造抽象就要拆桥 / 铁律4)。
+  var equip_name_html = function (eq) {
+    if (eq.info.customname) {
+      var d = document.createElement('div');
+      d.textContent = eq.info.customname; // 玩家纯文本→HTML 转义防注入
+      return d.innerHTML;
+    }
+    return hvaaTEquip(eq.info.name); // 译名 HTML(色 span)
+  };
+  var equip_name_text = function (eq) {
+    if (eq.info.customname) {
+      return eq.info.customname;
+    }
+    var d = document.createElement('div');
+    d.innerHTML = hvaaTEquip(eq.info.name);
+    return d.textContent; // 去标签 + 解 HTML 实体 → 纯文本
+  };
+  var set_equip_name = function (el, eq) {
+    el.innerHTML = equip_name_html(eq);
+    return el;
+  };
+  // <<< equip-name-render
   if (!/\/isekai\/equip(\/|$)/.test(window.location.pathname)) {
 // G1 拆桥：HVAA_ITEM_CN 表 + hvaaItemCn() 已删 —— 物品/材料名归一到 canonical SSOT
 // (src/data/i18n/equip-dict EQUIP_ITEMS)，调用点改 hvaaT(name,'item'|'material') 经全局桥查。
@@ -308,6 +346,23 @@ const $item = {
     }
     return true;
   },
+};
+
+// 补给品库存单条 li 渲染(两 IIFE 共用): 名走 canonical 桥(hvaaT item)译中 + 库存数 + buy dataset + 库存 <
+// 阈值标警告。抽此 same-algo 内核消除"两版各写一份致翻译漂移"(主世界版曾漏 hvaaT 显英文)。外层(数据源 settings
+// 键 equipPanel/equipEnchant…ItemInventory / dummy 占位 / repairall 清理 / load-display 分层)是两版
+// bounded-context 真实差异, 留各 IIFE 分支不硬合; 仅 warn class 前缀漂移(hvut-warn/hvut-bt-warn)参数化。
+// ⚠ 必须在 if(!isekai/equip) 守卫块内, 与 $item/$element 同词法作用域 —— 块外定义会 ReferenceError(2026-06-05 修)。
+const render_supply_li = function (parent, name, count, warnClass) {
+  const stock = $item.count(name);
+  const li = $element('li', parent, {
+    textContent: `${hvaaT(name, 'item')} (${stock})`,
+    dataset: { action: 'buy', item: name, count },
+  });
+  if (stock < count) {
+    li.classList.add(warnClass);
+  }
+  return li;
 };
 
 // MoogleMail
@@ -2466,7 +2521,7 @@ const $battle = {
 
       const eq = { info, data: {}, node: {} };
       eq.node.li = $element('li', $battle.node.equip, { dataset: { action: 'hover', eid: eq.info.eid } });
-      eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || hvaaTEquip(eq.info.name), href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' });
+      eq.node.name = set_equip_name($element('a', eq.node.li, { href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' }), eq);
       eq.node.condition = $element('span', eq.node.li, { dataset: { action: 'repair', eid: eq.info.eid } });
       eq.node.link = $element('span', eq.node.li);
       eq.node.repair = $element('ul', null, ['.hvut-bt-repair', { dataset: { header: '修理装备' } }]);
@@ -2717,13 +2772,7 @@ const $battle = {
         $element('li', $battle.node.items);
         return;
       }
-      const stock = $item.count(name);
-      const textContent = `${hvaaT(name, 'item')} (${stock})`;
-      const dataset = { action: 'buy', item: name, count };
-      const li = $element('li', $battle.node.items, { textContent, dataset });
-      if (stock < count) {
-        li.classList.add('hvut-warn');
-      }
+      render_supply_li($battle.node.items, name, count, 'hvut-warn');
     });
 
     $config.set('items', $item.count());
@@ -3024,12 +3073,12 @@ _top.init = function () {
   const menu_div = $element('div', _top.node.div, ['.hvut-top-menu']);
   _top.node.menu = {};
   if ($config.settings.topMenuIntegration) {
-    _top.node.menu['MENU'] = $element('div', menu_div, ['/<span>MENU</span>']);
+    _top.node.menu['MENU'] = hvaaBind($element('div', menu_div), (n) => { n.innerHTML = `<span>${hvaaT('MENU', 'topMenu')}</span>`; });
   } else {
     Object.values(_top.menu).forEach((m) => {
       const g = m.g || m.s;
       if (!_top.node.menu[g]) {
-        _top.node.menu[g] = $element('div', menu_div, [`/<span>${g.toUpperCase()}</span>`]);
+        _top.node.menu[g] = hvaaBind($element('div', menu_div), (n) => { n.innerHTML = `<span>${hvaaT(g, 'topMenu')}</span>`; });
       }
     });
   }
@@ -3049,26 +3098,26 @@ _top.init = function () {
     if (!m || m.server && m.server !== _server.name) {
       return;
     }
-    let label = m.label;
     let cn = '';
     if (b === 'MoogleMail' && new_mail) {
-      label = `[${new_mail}]`;
       cn = 'hvut-top-ygm';
     }
-    if (label.startsWith('{#')) {
-      label = m.default;
-    }
-    const a = $element('a', links_div, { textContent: label, href: m.href });
+    const a = $element('a', links_div, { href: m.href });
     if (cn) {
       a.classList.add(cn);
     }
-    $element('span', a, m.title);
+    hvaaBind(a, (n) => { // 链接声明式绑定(lang 切换即时重渲染)；重渲染保留英文 span 悬停提示
+      let label = (b === 'MoogleMail' && new_mail) ? `[${new_mail}]` : (_top.menu[b] ? hvaaT(b, 'topMenu') : m.label);
+      if (label.startsWith('{#')) { label = m.default; }
+      n.textContent = label;
+      $element('span', n, m.title);
+    });
   });
 
-  _top.node.stamina = $element('div', _top.node.div, ['!width: 90px;', `/<span>Stamina: ${_player.stamina}</span>`]);
+  _top.node.stamina = hvaaBind($element('div', _top.node.div, ['!width: 90px;']), (n) => { n.innerHTML = `<span>${hvaaT('Stamina', 'topMenu')}: ${_player.stamina}</span>`; });
   _top.node.level = $element('div', _top.node.div, ['!width: 60px;', `/<span>Lv.${_player.level}</span>`]);
   _top.node.difficulty = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_player.difficulty}</span>`]);
-  _top.node.persona = $element('div', _top.node.div, ['!width: 110px;', '/<span>Persona</span>']);
+  _top.node.persona = hvaaBind($element('div', _top.node.div, ['!width: 110px;']), (n) => { n.innerHTML = `<span>${hvaaT('Persona', 'topMenu')}</span>`; });
   if ($config.settings.reNotification) {
     $re.hv();
   }
@@ -3099,14 +3148,14 @@ _top.create = function () {
           _top.node.menu['SUB'] = $element('div', _top.node.menu['MENU'], ['.hvut-top-sub']);
         }
         ul[g] = $element('ul', _top.node.menu['SUB']);
-        $element('li', ul[g], [g, '.hvut-top-menu-s']);
+        hvaaBind($element('li', ul[g], ['.hvut-top-menu-s']), (n) => { n.textContent = hvaaT(g, 'topMenu'); });
       } else {
         const menu_sub = $element('div', _top.node.menu[g], ['.hvut-top-sub']);
         ul[g] = $element('ul', menu_sub);
       }
     }
     const li = $element('li', ul[g]);
-    $element('a', li, { textContent: m.title, href: m.href });
+    hvaaBind($element('a', li, { href: m.href }), (n) => { n.textContent = hvaaT(m.title, 'topMenu'); }); // 下拉声明式绑定(即时切换)
   });
 
   const stamina_sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
@@ -9309,7 +9358,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
           const label = eq.node.check.parentNode;
           label.lastChild.remove();
           eq.node.status = $element('a', label);
-          $element('', label, eq.info.customname || hvaaTEquip(eq.info.name));
+          set_equip_name($element('span', label, { 'data-i18n-skip': '' }), eq);
         }
         eq.node.status.textContent = ` ${text} `;
         $armory.organize.update(eq);
@@ -11686,7 +11735,7 @@ const $price = {
 const $battle = {
 
   enchant_data: {
-    'Voidseeker Shard': { effect: "Voidseeker's Blessing", weapon: 'vseek' },
+    'Voidseeker Shard': { effect: '虚空探索者的祝福', weapon: 'vseek' }, // canonical 译名(对齐 interface-dict/equip-dict)
     'Aether Shard': { effect: '弥漫的以太', weapon: 'ether' },
     'Featherweight Shard': { effect: '轻如鸿毛', weapon: 'feath', armor: 'feath' },
     'Infusion of Flames': { effect: '火焰附魔', weapon: 'sfire', armor: 'pfire', day: 2 },
@@ -11959,11 +12008,7 @@ const $battle = {
       return;
     }
     Object.entries($config.settings.equipEnchantItemInventory).forEach(([name, count]) => {
-      const stock = $item.count(name);
-      const textContent = `${name} (${stock})`;
-      const className = stock < count ? 'hvut-bt-warn' : '';
-      const dataset = { action: 'buy', item: name, count };
-      $element('li', $battle.node.inventory, { textContent, className, dataset });
+      render_supply_li($battle.node.inventory, name, count, 'hvut-bt-warn');
     });
     if ($battle.repair.repairall) {
       $battle.repair.repairall.forEach(({ name, count }) => {
@@ -11995,7 +12040,7 @@ const $battle = {
       const eq = { info, data: {}, node: {} };
       eq.info.cat = (eq.info.category === 'One-handed Weapon' || eq.info.category === 'Two-handed Weapon' || eq.info.category === 'Staff') ? 'weapon' : 'armor';
       eq.node.li = $element('li', $battle.node.equip);
-      eq.node.name = $element('a', eq.node.li, { textContent: eq.info.customname || hvaaTEquip(eq.info.name), href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' });
+      eq.node.name = set_equip_name($element('a', eq.node.li, { href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' }), eq);
       eq.node.enc = $element('span', eq.node.li);
       eq.node.cdt = $element('span', eq.node.li, { textContent: '...', dataset: { action: 'view', eid: eq.info.eid } });
 
@@ -12313,24 +12358,24 @@ GM_addStyle(/*css*/`
 _top.menu = {
   'Character': { s: 'Character', ss: 'ch', button: 'CH', text: '角色' },
   'Equipment': { s: 'Character', ss: 'eq', button: 'EQ', text: '装备' },
-  'Abilities': { s: 'Character', ss: 'ab', button: 'AB', text: '技能' },
+  'Abilities': { s: 'Character', ss: 'ab', button: 'AB', text: '能力' },
   'Training': { s: 'Character', ss: 'tr', button: 'TR', text: '训练', disabled: 'isekai' },
-  'Item Inventory': { s: 'Character', ss: 'it', button: 'IT', text: '物品仓库' },
+  'Item Inventory': { s: 'Character', ss: 'it', button: 'IT', text: '物品' },
   'Equip Inventory': { s: 'Character', ss: 'in', button: 'IN', text: '装备仓库' },
   'Settings': { s: 'Character', ss: 'se', button: 'SE', text: '设置' },
   'Equipment Shop': { s: 'Bazaar', ss: 'es', button: 'ES', text: '装备商店' },
-  'Item Shop': { s: 'Bazaar', ss: 'is', button: 'IS', text: '物品商店' },
-  'The Shrine': { s: 'Bazaar', ss: 'ss', button: 'SS', text: '雪花祭坛' },
-  'The Market': { s: 'Bazaar', ss: 'mk', button: 'MK', text: '交易市场' },
-  'Monster Lab': { s: 'Bazaar', ss: 'ml', button: 'ML', text: '怪物实验室', disabled: 'isekai' },
-  'MoogleMail': { s: 'Bazaar', ss: 'mm', button: 'MM', text: '莫古利邮局' },
+  'Item Shop': { s: 'Bazaar', ss: 'is', button: 'IS', text: '道具店' },
+  'The Shrine': { s: 'Bazaar', ss: 'ss', button: 'SS', text: '祭坛' },
+  'The Market': { s: 'Bazaar', ss: 'mk', button: 'MK', text: '市场' },
+  'Monster Lab': { s: 'Bazaar', ss: 'ml', button: 'ML', text: '实验室', disabled: 'isekai' },
+  'MoogleMail': { s: 'Bazaar', ss: 'mm', button: 'MM', text: '邮箱' },
   'Weapon Lottery': { s: 'Bazaar', ss: 'lt', button: 'LT', text: '武器彩票', disabled: 'isekai' },
   'Armor Lottery': { s: 'Bazaar', ss: 'la', button: 'LA', text: '防具彩票', disabled: 'isekai' },
-  'The Arena': { s: 'Battle', ss: 'ar', button: 'AR', text: '竞技场' },
+  'The Arena': { s: 'Battle', ss: 'ar', button: 'AR', text: '竞技' },
   'The Tower': { s: 'Battle', ss: 'tw', button: 'TW', text: '塔楼', disabled: 'persistent' },
-  'Ring of Blood': { s: 'Battle', ss: 'rb', button: 'RB', text: '浴血擂台' },
-  'GrindFest': { s: 'Battle', ss: 'gr', button: 'GR', text: '磨难战' },
-  'Item World': { s: 'Battle', ss: 'iw', button: 'IW', text: '物品世界' },
+  'Ring of Blood': { s: 'Battle', ss: 'rb', button: 'RB', text: '擂台' },
+  'GrindFest': { s: 'Battle', ss: 'gr', button: 'GR', text: '压榨' },
+  'Item World': { s: 'Battle', ss: 'iw', button: 'IW', text: '道具界' },
   'Repair': { s: 'Forge', ss: 're', button: 'RE', text: '修理' },
   'Upgrade': { s: 'Forge', ss: 'up', button: 'UP', text: '升级' },
   'Enchant': { s: 'Forge', ss: 'en', button: 'EN', text: '附魔' },
@@ -12358,7 +12403,7 @@ _top.create = function () {
     const menu_sub = $element('div', _top.node.menu['MENU'], ['.hvut-top-sub']);
     ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((m) => {
       ul[m] = $element('ul', menu_sub);
-      $element('li', ul[m], [m, '.hvut-top-menu-s']);
+      hvaaBind($element('li', ul[m], ['.hvut-top-menu-s']), (n) => { n.textContent = hvaaT(m, 'topMenu'); });
     });
   } else {
     ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((m) => {
@@ -12366,12 +12411,12 @@ _top.create = function () {
       ul[m] = $element('ul', menu_sub);
     });
   }
-  Object.values(_top.menu).forEach((m) => {
+  Object.entries(_top.menu).forEach(([k, m]) => {
     if (m.disabled === 'persistent' && !IS_ISEKAI || m.disabled === 'isekai' && IS_ISEKAI) {
       return;
     }
     const li = $element('li', ul[m.s]);
-    $element('a', li, { textContent: m.text, href: m.href });
+    hvaaBind($element('a', li, { href: m.href }), (n) => { n.textContent = hvaaT(k, 'topMenu'); }); // 下拉声明式绑定(即时切换)
   });
 
   const stamina_sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
@@ -12454,10 +12499,10 @@ _top.init = function () {
   const menu_div = $element('div', _top.node.div, ['.hvut-top-menu']);
   _top.node.menu = {};
   if ($config.settings.topMenuIntegration) {
-    _top.node.menu['MENU'] = $element('div', menu_div, ['/<span>菜单</span>']);
+    _top.node.menu['MENU'] = hvaaBind($element('div', menu_div), (n) => { n.innerHTML = `<span>${hvaaT('MENU', 'topMenu')}</span>`; });
   } else {
     ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((t) => {
-      _top.node.menu[t] = $element('div', menu_div, [`/<span>${t.toUpperCase()}</span>`]);
+      _top.node.menu[t] = hvaaBind($element('div', menu_div), (n) => { n.innerHTML = `<span>${hvaaT(t, 'topMenu')}</span>`; });
     });
   }
 
@@ -12476,23 +12521,28 @@ _top.init = function () {
   }
   links.forEach((b) => {
     const m = _top.menu[b];
-    let button = m.button;
+    // 按实际功能过滤：去掉本服不存在的项(主世界无塔楼 disabled:'persistent')；自定义项不在 menu 则跳过(防 undefined)
+    if (!m || m.disabled === 'persistent' && !IS_ISEKAI || m.disabled === 'isekai' && IS_ISEKAI) {
+      return;
+    }
     let cn = '';
     if (b === 'MoogleMail' && new_mail) {
-      button = `[${new_mail}]`;
       cn = 'hvut-top-ygm';
     }
-    const a = $element('a', links_div, { textContent: button, href: m.href });
+    const a = $element('a', links_div, { href: m.href });
     if (cn) {
       a.className = cn;
     }
-    $element('span', a, m.text);
+    hvaaBind(a, (n) => { // 链接声明式绑定(lang 切换即时重渲染)；重渲染保留英文 span 悬停提示
+      n.textContent = (b === 'MoogleMail' && new_mail) ? `[${new_mail}]` : hvaaT(b, 'topMenu');
+      $element('span', n, b);
+    });
   });
 
-  _top.node.stamina = $element('div', _top.node.div, ['!width: 90px;', `/<span>精力: ${_player.stamina}</span>`]);
+  _top.node.stamina = hvaaBind($element('div', _top.node.div, ['!width: 90px;']), (n) => { n.innerHTML = `<span>${hvaaT('Stamina', 'topMenu')}: ${_player.stamina}</span>`; });
   _top.node.level = $element('div', _top.node.div, ['!width: 60px;', `/<span>Lv.${_player.level}</span>`]);
   _top.node.difficulty = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_player.difficulty}</span>`]);
-  _top.node.persona = $element('div', _top.node.div, ['!width: 110px;', '/<span>流派</span>']);
+  _top.node.persona = hvaaBind($element('div', _top.node.div, ['!width: 110px;']), (n) => { n.innerHTML = `<span>${hvaaT('Persona', 'topMenu')}</span>`; });
   if ($config.settings.reNotification) {
     $re.hv();
   }
@@ -14859,7 +14909,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'es') {
       return;
     }
     if (ask && ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && eq.data.salvage_recommended || $config.settings.equipmentShopConfirm > 0 && eq.data.valuable)) {
-      let msg = `Are you sure that you wish to SELL\n[${hvaaTEquip(eq.info.name)}]\nfor ${eq.data.value.toLocaleString()} credits?`;
+      let msg = `Are you sure that you wish to SELL\n[${equip_name_text(eq)}]\nfor ${eq.data.value.toLocaleString()} credits?`;
       if (eq.data.salvage_recommended) {
         msg += '\nThe value of SALVAGEd materials is higher.';
       }
@@ -14884,7 +14934,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'es') {
       return;
     }
     if (ask && ($config.settings.equipmentShopConfirm === 2 || $config.settings.equipmentShopConfirm === 1 && !eq.data.salvage_recommended || $config.settings.equipmentShopConfirm > 0 && eq.data.valuable)) {
-      let msg = `Are you sure that you wish to SALVAGE\n[${hvaaTEquip(eq.info.name)}]\n?`;
+      let msg = `Are you sure that you wish to SALVAGE\n[${equip_name_text(eq)}]\n?`;
       if (!eq.data.salvage_recommended) {
         msg += '\nSELLing would give you more credits.';
       }
@@ -14915,7 +14965,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'es') {
     if (eq.data.sold) {
       return;
     }
-    if (ask && !confirm(`确定要购买\n[${hvaaTEquip(eq.info.name)}]\n并花费 ${eq.data.value.toLocaleString()} credits 吗?`)) {
+    if (ask && !confirm(`确定要购买\n[${equip_name_text(eq)}]\n并花费 ${eq.data.value.toLocaleString()} credits 吗?`)) {
       return;
     }
     eq.data.sold = true;
@@ -14927,7 +14977,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'es') {
   };
 
   _es.shop_salvage = async function (eq, ask = true) {
-    if (eq.data.sold || ask && !confirm(`确定要购买\n[${hvaaTEquip(eq.info.name)}]\n并随后分解它吗?`)) {
+    if (eq.data.sold || ask && !confirm(`确定要购买\n[${equip_name_text(eq)}]\n并随后分解它吗?`)) {
       return;
     }
     eq.data.sold = true;
@@ -19319,7 +19369,7 @@ if (_query.s === 'Battle' && $id('initform')) {
         alert('重铸装备前请先解锁.');
         return;
       }
-      if (!confirm(`确定要重铸这件装备吗?\n[${hvaaTEquip(eq.info.name)}]\n这会移除它所有的潜能并将其潜能等级归0.`)) {
+      if (!confirm(`确定要重铸这件装备吗?\n[${equip_name_text(eq)}]\n这会移除它所有的潜能并将其潜能等级归0.`)) {
         return;
       }
       const html = await $ajax.fetch(`?s=Forge&ss=fo&filter=${_iw.filter}`, `select_item=${eq.info.eid}`);
@@ -19602,7 +19652,7 @@ if (_query.s === 'Forge' && _query.ss === 'up') {
       : `${quality} ?? (Unable to calculate the base PXP of this equipment)`;
 
     _up.node.salvage_summary.innerHTML = `
-      <li>${hvaaTEquip(eq.info.name)}</li>
+      <li>${equip_name_html(eq)}</li>
       <li>PXP Quality: ${pxp_text}</li>
       <li>Upgrade Cost: ${credits.toLocaleString()}</li>
       <li>Returns Value: ${return_credits.toLocaleString()}</li>`;

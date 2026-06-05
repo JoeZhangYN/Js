@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/verify-sloc.mjs && node scripts/check-circular.mjs && node scripts/verify-no-dup-translation.mjs && node scripts/verify-topmenu-keys.mjs && node scripts/verify-no-raw-reload.mjs && node scripts/verify-no-adhoc-pagekind.mjs && vite build && node scripts/verify-metadata.mjs && node scripts/postbuild-check.mjs",
+    "build": "node scripts/verify-sloc.mjs && node scripts/check-circular.mjs && node scripts/verify-no-dup-translation.mjs && node scripts/verify-equip-name-sink.mjs && node scripts/verify-topmenu-keys.mjs && node scripts/verify-no-raw-reload.mjs && node scripts/verify-no-adhoc-pagekind.mjs && vite build && node scripts/verify-metadata.mjs && node scripts/postbuild-check.mjs",
     "build:fast": "vite build",
     "lint": "eslint src scripts",
     "lint:fix": "eslint src scripts --fix",
