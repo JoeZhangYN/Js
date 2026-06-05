@@ -15,6 +15,7 @@ import { g } from "../state/store.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { gmXhr } from "../dom/gm-xhr.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
+import { recordMLResult } from "../state/riddle-stats.js";
 
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";
@@ -405,6 +406,7 @@ export async function tryMLAnswer() {
         },
       });
     });
+    recordMLResult(result !== null); // 小马验证统计：本次 ML 调用 +1，成功(返可用答案)则 mlOk +1
 
     if (result === null) return null;
 

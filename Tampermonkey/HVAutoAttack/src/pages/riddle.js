@@ -12,6 +12,7 @@ import { setAlarm } from "../alarm/alarm.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { setupRiddleHelper } from "./riddle-helper.js";
 import { tryMLAnswer, setupRMAHealth } from "./riddle-ml.js";
+import { recordRiddleAppear } from "../state/riddle-stats.js";
 
 // 答案码 SSOT 见 data/riddle-answers.js（提取到叶子层打破与 riddle-ml.js 的循环依赖 TDZ）
 const ANSWER_KEYS = Object.keys(ANSWER_MAP);
@@ -66,6 +67,7 @@ function riddleSubmit(answers) {
 
 export function riddleAlert() {
   setAlarm("Riddle");
+  recordRiddleAppear(); // 小马验证统计：谜题页出现一次（与 ML 是否开启/成功无关）
 
   // P2 视觉辅助：async 但不 await（图片预处理不阻塞倒计时；找不到 #riddleimage>img 内部静默 return）
   if (isOptionOn("riddleHelperUi")) {

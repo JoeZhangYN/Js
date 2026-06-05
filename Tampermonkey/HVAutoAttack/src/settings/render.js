@@ -15,6 +15,7 @@ import { customizeBox } from "./customize.js";
 import { OPTION_SCHEMA } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
 import { setOption } from "../state/option.js";
+import { getRiddleStats, resetRiddleStats } from "../state/riddle-stats.js";
 
 /**
  * 从 OPTION_SCHEMA 渲染 "checkbox + number + 单位文本" 这类成对字段。
@@ -87,6 +88,7 @@ export function optionBox() {
     '  <span name="Rule"><l0>攻击规则</l0><l1>攻擊規則</l1><l2>Attack Rule</l2></span>',
     '  <span name="Drop"><input id="dropMonitor" type="checkbox"><l0>掉落监测</l0><l1>掉落監測</l1><l2>Drops Tracking</l2></span>',
     '  <span name="Usage"><input id="recordUsage" type="checkbox"><l0>数据记录</l0><l1>數據記錄</l1><l2>Usage Tracking</l2></span>',
+    '  <span name="Riddle"><l0>小马验证</l0><l1>小馬驗證</l1><l2>Riddle ML</l2></span>',
     '  <span name="About"><l0>关于本脚本</l0><l1>關於本腳本</l1><l2>About This</l2></span>',
     '  <span name="Feedback"><l01>反馈</l01><l2>Feedback</l2></span></div>',
     '<div class="hvAATab" id="hvAATab-Main">',
@@ -320,6 +322,9 @@ export function optionBox() {
     '<div class="hvAATab hvAACenter" id="hvAATab-Usage">',
     '  <span class="hvAATitle"><l0>数据记录</l0><l1>數據記錄</l1><l2>Usage Tracking</l2></span><button class="reRecordUsage"><l01>重置</l01><l2>Reset</l2></button>',
     "  <table></table></div>",
+    '<div class="hvAATab hvAACenter" id="hvAATab-Riddle">',
+    '  <span class="hvAATitle"><l0>小马验证统计</l0><l1>小馬驗證統計</l1><l2>Riddle ML Stats</l2></span><button class="reRiddleStats"><l01>重置</l01><l2>Reset</l2></button>',
+    "  <table></table></div>",
     '<div class="hvAATab hvAACenter" id="hvAATab-About">',
     '  <div><span class="hvAATitle"><l0>当前状况</l0><l1>當前狀況</l1><l2>Current status</l2></span>: ',
     '    <l0>如果脚本长期暂停且网络无问题，请点击</l0><l1>如果腳本長期暫停且網絡無問題，請點擊</l1><l2>If the script does not work and you are sure that it\'s not because of your internet, click</l2><button class="hvAAFix"><l0>尝试修复</l0><l1>嘗試修復</l1><l2>Try to fix</l2></button><br>',
@@ -470,6 +475,18 @@ export function optionBox() {
       }
       _html = `${_html}</tbody>`;
       gE("#hvAATab-Usage>table").innerHTML = _html;
+    } else if (name === "Riddle") {
+      // 小马验证(riddle ML)统计：小马图出现次数 / ML 调用 / ML 成功 / 成功率
+      const rs = getRiddleStats();
+      const rate = rs.mlCall ? ((rs.mlOk / rs.mlCall) * 100).toFixed(1) : "0.0";
+      _html =
+        "<tbody>" +
+        `<tr><td><l0>小马图出现次数</l0><l1>小馬圖出現次數</l1><l2>Riddle appearances</l2></td><td>${rs.appear}</td></tr>` +
+        `<tr><td><l0>ML 调用次数</l0><l1>ML 調用次數</l1><l2>ML calls</l2></td><td>${rs.mlCall}</td></tr>` +
+        `<tr><td><l0>ML 成功次数</l0><l1>ML 成功次數</l1><l2>ML success</l2></td><td>${rs.mlOk}</td></tr>` +
+        `<tr><td><l0>ML 成功率</l0><l1>ML 成功率</l1><l2>ML success rate</l2></td><td>${rate}%</td></tr>` +
+        "</tbody>";
+      gE("#hvAATab-Riddle>table").innerHTML = _html;
     } else if (name === "About") {
       // 关于本脚本
       gE(".hvAADebug", "all", optionBox).forEach((input) => {
@@ -684,6 +701,12 @@ export function optionBox() {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
       delValue("stats");
       delValue("statsOld");
+    }
+  };
+  // 标签页-小马验证
+  gE(".reRiddleStats", optionBox).onclick = function () {
+    if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
+      resetRiddleStats();
     }
   };
   // 标签页-关于本脚本
