@@ -111,3 +111,18 @@
 2. **_tr 试点去重**：dedup epic L3 第一单元，plan `vectorized-booping-volcano.md`，前置验收已过可做。
 3. **hvaaBind 推广**：装备名（`hvaaTEquip`）等其它自渲染组件复用声明式绑定→即时切换。
 4. **清理**：`_top.menu` 的 label/text 死字段（显示已走 hvaaT）；topMenu/menu 双轨收口。
+
+## Stage G7（2026-06-05，本会话；ultracode 4-chunk 批，build 全绿+对抗审查，**⏳ 全部待实站验收**）
+
+> 用户「按推荐全做+ultracode」。测绘 workflow(6 Explore) → 顺序实施(改 hv-utils 串行) → 对抗审查 workflow(4 Explore)。**全程未 commit，待用户**。
+
+| chunk | 内容 | 文件 | 审查 | 实站验收点 |
+|---|---|---|---|---|
+| 1 hvAAButton 整合（待办1·**已按用户定调改正**） | **配置齿轮槽位整槽 = HVAA 面板入口**：两 IIFE 齿轮 icon + config_sub「HVAA 设置」div 的 onclick `$config.open()`→`window.HVAA_openConfig()`(render.js 暴露的新反向桥，对称 HVUT_openConfig)；撤 inject.js 齿轮隐藏 CSS 让齿轮显示；button.js 用 `#hvut-top`(顶部栏 id)检测在场则不建浮动(fallback 仅 hv-utils 缺席)。**hv-utils 配置由 HVAA 面板内「HV Utils 设置」入口(render.js .hvAAOpenHVUT)开**。带参 `$config.open('xxx')` 深链不动 | hv-utils.js / settings/render.js / settings/button.js / style/inject.js | clean(初版)+改正 | 两模式顶部栏齿轮显示且点开 HVAA 面板；面板内「HV Utils 设置」开 hv-utils 配置；浮动按钮消失(hv-utils 在场时) |
+| 2(a) hvaaBind 推广（待办3） | 3 处 `set_equip_name`(2524/12046 列表 + 9364 状态标签)包 `hvaaBind`→lang 切换装备译名即时重渲染 | hv-utils.js | clean(high) | 装备列表/战斗装备名 lang 切换即时变中/英(非待刷新) |
+| 3 _tr 去重（待办2） | 两版 byte-identical `_tr.click/change/calc/set/cancel`(各 72 行)删除→公共区 `bindTr(tr,ctx)` 收口，`$config` 经 `ctx.config` 依赖注入；version-diff(parse_table/data/node/CSS selector/ISEKAI init·parse_progress)留各 IIFE。plan `vectorized-booping-volcano.md` | hv-utils.js | clean(high) | 两模式 `?s=Character&ss=tr` 训练页：下拉/等级/花费实时算/Set/取消/通知全正常无报错 |
+| 4-491 怪物HP反推（perf-abstract） | log-parser `accumulateDamageByMonster` + `normalizeMonsterName`(消日志冠词↔.btm3 净名差异)；attack.js countMonsterHP 死亡检测→反推 maxHP 写 monsterStatus.inferredMaxHP + 补写怪物库(getMonster→merge→setMonster) | battle/log-parser.js / battle/attack.js / data/monster-db.js | bug-found→**已修**(怪名匹配归一) | 实战确认 maxHP 入库且数值合理(overkill 略高估可接受)；日志名↔.btm3 名归一后匹配 |
+
+**待办2/3/(b)(c) 清理已分流**：待办1=chunk1✓ / 待办2=chunk3✓ / 待办3=chunk2(a)✓ / 待办4=DEFER 见下。
+**chunk2(b)(c) DEFER（task #5）**：验证证伪 agent「死字段」判断——ISEKAI `m.label/m.default/m.title` 仍读(3110/3111/3113，custom-item/`{#}` fallback)，主世界已全迁 hvaaT。真收口=统一两版渲染+合并 menu/topMenu 双字典(需核 interface-translate 无 menu live reader)+修过期注释(649/9650)，是重构非快速删字段。
+**perf-abstract 剩余（未做，需用户）**：420 Wave3 主循环=需 HV 实跑(我无法离线)；421 schema.js 80 字段迁移=确认 ~63 字段待迁/~850 行 render 重构/6-9h 高回归→单独 plan-mode；425 utility-engine auto-tune=4 开放设计问题(结果信号/权重作用域/最小观测/UI 优先级)+改战斗评分须实战调，待用户拍板。

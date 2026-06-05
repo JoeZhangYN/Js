@@ -365,6 +365,86 @@ const render_supply_li = function (parent, name, count, warnClass) {
   return li;
 };
 
+// _tr Training 逻辑(两 IIFE byte-identical 5 方法收口一处, 消"两版各写一份致漂移" 铁律1e 应抽尽抽 / 铁律4 抽象即反退化)。
+// $config(version-diff: GM 命名空间 hvut/hvuti、version、migration —— 留各 IIFE)经 ctx 依赖注入: 公共区不能直引用
+// IIFE-private 符号(词法作用域链单向, 直引用会 ReferenceError)。版本特定(parse_table 文案 / _tr.data 训练表 /
+// node 按钮文案 / GM_addStyle selector / ISEKAI 独有的 _tr.init·parse_progress)留各 IIFE。基准 = ISEKAI 4.2.0
+// 逐字搬入(机械替换 _tr.→tr. / $config→ctx.config, 已两版规范化空白逐字 diff 确认 5 方法等价; 无 _tr.notif)。
+const bindTr = function (tr, ctx) {
+  tr.click = function (e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) {
+      return;
+    }
+    const { action, name } = target.dataset;
+    if (action === 'change') {
+      tr.change(name);
+    }
+  };
+
+  tr.change = function (name, level) {
+    const training = tr.data[name];
+    if (!training?.time) {
+      tr.node.select.value = '';
+      tr.node.level.value = '';
+      tr.node.level.disabled = true;
+      tr.node.cost.value = '';
+      return;
+    }
+    if (!level) {
+      level = training.level;
+    }
+    tr.node.select.value = name;
+    tr.node.level.value = level;
+    tr.node.level.min = training.level;
+    tr.node.level.max = training.max;
+    tr.node.level.disabled = false;
+    tr.calc();
+  };
+
+  tr.calc = function () {
+    const name = tr.node.select.value;
+    const to = parseInt(tr.node.level.value);
+    if (!name || !to) {
+      return;
+    }
+
+    const training = tr.data[name];
+    let from = training.level;
+    let cost = 0;
+    if (name === tr.current) {
+      from++;
+    }
+    while (from < to) {
+      cost += Math.round(Math.pow(training.b + training.l * from, 1 + training.e * from));
+      from++;
+    }
+    tr.node.cost.value = cost.toLocaleString();
+  };
+
+  tr.set = function (reload) {
+    if (tr.node.select.value) {
+      tr.json.next_name = tr.node.select.value;
+      tr.json.next_level = parseInt(tr.node.level.value);
+      tr.json.next_id = tr.data[tr.node.select.value].id;
+    } else {
+      tr.json.next_name = '';
+      tr.json.next_level = 0;
+      tr.json.next_id = 0;
+    }
+    ctx.config.set('tr_notif', tr.json, 'hvut_');
+
+    if (reload) {
+      location.href = location.href;
+    }
+  };
+
+  tr.cancel = function (reload) {
+    tr.node.select.value = '';
+    tr.set(reload);
+  };
+};
+
 // MoogleMail
 const $mail = {
   queue: [],
@@ -2521,7 +2601,7 @@ const $battle = {
 
       const eq = { info, data: {}, node: {} };
       eq.node.li = $element('li', $battle.node.equip, { dataset: { action: 'hover', eid: eq.info.eid } });
-      eq.node.name = set_equip_name($element('a', eq.node.li, { href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' }), eq);
+      eq.node.name = hvaaBind($element('a', eq.node.li, { href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' }), function (n) { set_equip_name(n, eq); }); // hvaaBind: lang 切换即时重渲染装备译名(自渲染组件复用声明式绑定, 与菜单同机制)
       eq.node.condition = $element('span', eq.node.li, { dataset: { action: 'repair', eid: eq.info.eid } });
       eq.node.link = $element('span', eq.node.li);
       eq.node.repair = $element('ul', null, ['.hvut-bt-repair', { dataset: { header: '修理装备' } }]);
@@ -3125,7 +3205,7 @@ _top.init = function () {
   _top.node.server = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_server.name.toUpperCase()}</span>`]);
 
   _top.node.config = $element('div', _top.node.div, ['!width: 30px;']);
-  $element('span', _top.node.config, ['#hvut-top-config-icon', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#5C0D11"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { $config.open(); });
+  $element('span', _top.node.config, ['#hvut-top-config-icon', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#5C0D11"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { if (typeof window !== 'undefined' && window.HVAA_openConfig) { window.HVAA_openConfig(); } });
 
   $id('navbar').after(_top.node.div);
 };
@@ -3198,7 +3278,7 @@ _top.create = function () {
   }
 
   const config_sub = $element('div', _top.node.config, ['.hvut-top-sub hvut-top-config']);
-  $element('div', config_sub, 'HV Utils 设置', () => { $config.open(); });
+  $element('div', config_sub, 'HVAA 设置', () => { if (typeof window !== 'undefined' && window.HVAA_openConfig) { window.HVAA_openConfig(); } }); // chunk1: 齿轮槽位整槽对应 HVAA 面板；hv-utils 配置由 HVAA 面板内「HV Utils 设置」入口开
   if ($id('mbsettings')) { // monsterbation
     config_sub.appendChild($id('mbsettings'));
     $id('mbsettings').firstElementChild.className = '';
@@ -4538,84 +4618,12 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
     $config.set('tr_notif', _tr.json, 'hvut_');
   };
 
-  _tr.click = function (e) {
-    const target = e.target.closest('[data-action]');
-    if (!target) {
-      return;
-    }
-    const { action, name } = target.dataset;
-    if (action === 'change') {
-      _tr.change(name);
-    }
-  };
-
-  _tr.change = function (name, level) {
-    const training = _tr.data[name];
-    if (!training?.time) {
-      _tr.node.select.value = '';
-      _tr.node.level.value = '';
-      _tr.node.level.disabled = true;
-      _tr.node.cost.value = '';
-      return;
-    }
-    if (!level) {
-      level = training.level;
-    }
-    _tr.node.select.value = name;
-    _tr.node.level.value = level;
-    _tr.node.level.min = training.level;
-    _tr.node.level.max = training.max;
-    _tr.node.level.disabled = false;
-    _tr.calc();
-  };
-
-  _tr.calc = function () {
-    const name = _tr.node.select.value;
-    const to = parseInt(_tr.node.level.value);
-    if (!name || !to) {
-      return;
-    }
-
-    const training = _tr.data[name];
-    let from = training.level;
-    let cost = 0;
-    if (name === _tr.current) {
-      from++;
-    }
-    while (from < to) {
-      cost += Math.round(Math.pow(training.b + training.l * from, 1 + training.e * from));
-      from++;
-    }
-    _tr.node.cost.value = cost.toLocaleString();
-  };
-
-  _tr.set = function (reload) {
-    if (_tr.node.select.value) {
-      _tr.json.next_name = _tr.node.select.value;
-      _tr.json.next_level = parseInt(_tr.node.level.value);
-      _tr.json.next_id = _tr.data[_tr.node.select.value].id;
-    } else {
-      _tr.json.next_name = '';
-      _tr.json.next_level = 0;
-      _tr.json.next_id = 0;
-    }
-    $config.set('tr_notif', _tr.json, 'hvut_');
-
-    if (reload) {
-      location.href = location.href;
-    }
-  };
-
-  _tr.cancel = function (reload) {
-    _tr.node.select.value = '';
-    _tr.set(reload);
-  };
-
   GM_addStyle(/*css*/`
     #train_table td:last-child { width: 100px; padding-right: 10px; }
     #train_table tr:last-child > td { font-weight: bold; }
   `);
 
+  bindTr(_tr, { config: $config }); // _tr 5 方法收口公共区 bindTr($config 依赖注入); version-diff 留本 IIFE
   _tr.init();
 } else
 // [END 4] Character - Training */
@@ -9358,7 +9366,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
           const label = eq.node.check.parentNode;
           label.lastChild.remove();
           eq.node.status = $element('a', label);
-          set_equip_name($element('span', label, { 'data-i18n-skip': '' }), eq);
+          hvaaBind($element('span', label, { 'data-i18n-skip': '' }), function (n) { set_equip_name(n, eq); }); // hvaaBind: lang 切换即时重渲染装备译名
         }
         eq.node.status.textContent = ` ${text} `;
         $armory.organize.update(eq);
@@ -12040,7 +12048,7 @@ const $battle = {
       const eq = { info, data: {}, node: {} };
       eq.info.cat = (eq.info.category === 'One-handed Weapon' || eq.info.category === 'Two-handed Weapon' || eq.info.category === 'Staff') ? 'weapon' : 'armor';
       eq.node.li = $element('li', $battle.node.equip);
-      eq.node.name = set_equip_name($element('a', eq.node.li, { href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' }), eq);
+      eq.node.name = hvaaBind($element('a', eq.node.li, { href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' }), function (n) { set_equip_name(n, eq); }); // hvaaBind: lang 切换即时重渲染装备译名(自渲染组件复用声明式绑定, 与菜单同机制)
       eq.node.enc = $element('span', eq.node.li);
       eq.node.cdt = $element('span', eq.node.li, { textContent: '...', dataset: { action: 'view', eid: eq.info.eid } });
 
@@ -12459,7 +12467,7 @@ _top.create = function () {
   }
 
   const config_sub = $element('div', _top.node.config, ['.hvut-top-sub hvut-top-config']);
-  $element('div', config_sub, 'HV Utils 设置', () => { $config.open(); });
+  $element('div', config_sub, 'HVAA 设置', () => { if (typeof window !== 'undefined' && window.HVAA_openConfig) { window.HVAA_openConfig(); } }); // chunk1: 齿轮槽位整槽对应 HVAA 面板；hv-utils 配置由 HVAA 面板内「HV Utils 设置」入口开
   if ($id('mbsettings')) { // monsterbation
     config_sub.appendChild($id('mbsettings'));
     $id('mbsettings').firstElementChild.className = '';
@@ -12551,7 +12559,7 @@ _top.init = function () {
   _top.node.server = $element('div', _top.node.div, ['!width: 80px;', `/<span>${server}</span>`]);
 
   _top.node.config = $element('div', _top.node.div, ['!width: 30px;']);
-  $element('span', _top.node.config, ['!cursor: pointer;', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#630"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { $config.open(); });
+  $element('span', _top.node.config, ['!cursor: pointer;', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#630"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { if (typeof window !== 'undefined' && window.HVAA_openConfig) { window.HVAA_openConfig(); } });
 
   $id('navbar').after(_top.node.div);
 };
@@ -14156,78 +14164,7 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
     'Set Collector': { id: 96, b: 12500, l: 12500, e: 0 },
   };
 
-  _tr.click = function (e) {
-    const target = e.target.closest('[data-action]');
-    if (!target) {
-      return;
-    }
-    const { action, name } = target.dataset;
-    if (action === 'change') {
-      _tr.change(name);
-    }
-  };
-
-  _tr.change = function (name, level) {
-    const training = _tr.data[name];
-    if (!training?.time) {
-      _tr.node.select.value = '';
-      _tr.node.level.value = '';
-      _tr.node.level.disabled = true;
-      _tr.node.cost.value = '';
-      return;
-    }
-    if (!level) {
-      level = training.level;
-    }
-    _tr.node.select.value = name;
-    _tr.node.level.value = level;
-    _tr.node.level.min = training.level;
-    _tr.node.level.max = training.max;
-    _tr.node.level.disabled = false;
-    _tr.calc();
-  };
-
-  _tr.calc = function () {
-    const name = _tr.node.select.value;
-    const to = parseInt(_tr.node.level.value);
-    if (!name || !to) {
-      return;
-    }
-
-    const training = _tr.data[name];
-    let from = training.level;
-    let cost = 0;
-    if (name === _tr.current) {
-      from++;
-    }
-    while (from < to) {
-      cost += Math.round(Math.pow(training.b + training.l * from, 1 + training.e * from));
-      from++;
-    }
-    _tr.node.cost.value = cost.toLocaleString();
-  };
-
-  _tr.set = function (reload) {
-    if (_tr.node.select.value) {
-      _tr.json.next_name = _tr.node.select.value;
-      _tr.json.next_level = parseInt(_tr.node.level.value);
-      _tr.json.next_id = _tr.data[_tr.node.select.value].id;
-    } else {
-      _tr.json.next_name = '';
-      _tr.json.next_level = 0;
-      _tr.json.next_id = 0;
-    }
-    $config.set('tr_notif', _tr.json, 'hvut_');
-
-    if (reload) {
-      location.href = location.href;
-    }
-  };
-
-  _tr.cancel = function (reload) {
-    _tr.node.select.value = '';
-    _tr.set(reload);
-  };
+  bindTr(_tr, { config: $config }); // _tr 5 方法收口公共区 bindTr($config 依赖注入); version-diff 留本 IIFE
 
   GM_addStyle(/*css*/`
     #train_table > tbody > tr > td:last-child { width: 100px; padding-right: 10px; }

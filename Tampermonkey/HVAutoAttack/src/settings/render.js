@@ -37,6 +37,28 @@ function renderCheckboxPlusNumber(checkboxKey, numberKey, unit) {
   );
 }
 
+/**
+ * 打开 / 切换显隐 HVAA 配置面板。浮动按钮(button.js)与 hv-utils 顶部栏触发器(window.HVAA_openConfig)
+ * 共用此单一入口（收口原 button.js 内联 onclick 逻辑，去重）。
+ * @param {string=} lang 首次打开(option 未落盘、回填循环跳过)时 lang 兜底；缺省读 g("lang")
+ */
+export function openHVAAConfig(lang) {
+  if (gE("#hvAABox")) {
+    gE("#hvAABox").style.display =
+      gE("#hvAABox").style.display === "none" ? "block" : "none";
+  } else {
+    optionBox();
+    gE("#hvAATab-Main").style.zIndex = 1;
+    // option 已装填时 select[name=lang] 由 optionBox 回填循环统一设值；仅首次(option 未落盘)用 lang/持久化值兜底。
+    if (!g("option"))
+      gE('select[name="lang"]').value = String(lang ?? g("lang") ?? "0");
+  }
+}
+
+// 反向桥(对称于 hv-utils 暴露的 window.HVUT_openConfig)：hv-utils 顶部栏内 HVAA 触发器经此开 HVAA 面板。
+// hv-utils 是 sloppy-mode 第三方脚本不能 ESM import，故经 window 桥(与 window.HVAA_i18n 同模式)。
+if (typeof window !== "undefined") window.HVAA_openConfig = openHVAAConfig;
+
 export function optionBox() {
   // 配置界面
   const optionBox = gE("body").appendChild(cE("div"));
