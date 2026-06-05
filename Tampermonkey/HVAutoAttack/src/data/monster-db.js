@@ -24,6 +24,7 @@
  * @property {number} slashing
  * @property {number} piercing
  * @property {string} lastUpdate YYYY-MM-DD
+ * @property {number} [maxHP] 反推满血 HP（从战斗日志累计伤害在怪物死亡时推算，略高估可接受，todo 491）
  */
 
 // scan 结果 HTML 一次性抽取：怪名 / Class / PL / Trainer / Attack + 九抗（符号+数值）。

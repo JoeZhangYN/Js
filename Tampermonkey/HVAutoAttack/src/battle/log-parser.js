@@ -144,3 +144,37 @@ export function buildMonsterStatus(hps, fallbackHp = 100000) {
     hp: hp ?? fallbackHp,
   }));
 }
+
+/**
+ * 归一怪名：消「战斗日志怪名 ↔ DOM .btm3 怪名」的前导冠词 / 空白差异（todo 491 匹配命门）。
+ * 日志正则取 "You hit <target> for"，target 可能含冠词("the Orc")，而 .btm3 多为净名("Orc")，
+ * 直接 dmgMap.get 会 miss → 反推静默失效。**匹配两端均过此归一**（accumulate 建键 + countMonsterHP 查键）。
+ * 仅用于匹配，不改怪物库存储键（库键须与 monster-db scan 一致，保留原始名）；不 lowercase（避免大小写异名误并）。
+ * @param {string} name
+ * @returns {string}
+ */
+export function normalizeMonsterName(name) {
+  return (name || "").trim().replace(/\s+/g, " ").replace(/^(?:a|an|the) /i, "");
+}
+
+/**
+ * 按怪物名累计 "monster-taking"（玩家对怪的）伤害（todo 491：HP 反推）。
+ * 只聚合 kind === "monster-taking" 的事件；key = normalizeMonsterName(target)（与查表端一致）。
+ * **PURE**：无副作用，供 countMonsterHP 内死亡检测调用。
+ * @param {DamageEvent[]} events
+ * @returns {Map<string, {totalDamage: number, events: DamageEvent[]}>}
+ */
+export function accumulateDamageByMonster(events) {
+  /** @type {Map<string, {totalDamage: number, events: DamageEvent[]}>} */
+  const map = new Map();
+  for (const e of events) {
+    if (e.kind !== "monster-taking") continue;
+    const name = normalizeMonsterName(e.target);
+    if (!name) continue;
+    if (!map.has(name)) map.set(name, { totalDamage: 0, events: [] });
+    const entry = map.get(name);
+    entry.totalDamage += e.dmg;
+    entry.events.push(e);
+  }
+  return map;
+}
