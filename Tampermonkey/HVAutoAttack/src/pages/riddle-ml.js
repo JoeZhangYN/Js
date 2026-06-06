@@ -394,9 +394,11 @@ export async function tryMLAnswer() {
           setAlarm("Error");
           resolve("unknown");
         },
-        onerror: () => {
-          console.warn("[HVAA][RMA] POST onerror（网络/CORS/@connect 未授权），本次走随机");
-          if (backupOnFail) saveRiddle(imgBlob, { _onerror: true });
+        onerror: (err) => {
+          // 排查 onerror 真因：GM_xmlhttpRequest 的 err 对象含 status/statusText/error 细节
+          // （@connect 未授权 / TLS / 拒连 各不同），打印 + 存备份助下次实站定位。
+          console.warn("[HVAA][RMA] POST onerror（网络/CORS/@connect 未授权），本次走随机", err);
+          if (backupOnFail) saveRiddle(imgBlob, { _onerror: true, _err: err && (err.error || err.statusText || err.status) });
           setAlarm("Error");
           resolve("onerror");
         },
