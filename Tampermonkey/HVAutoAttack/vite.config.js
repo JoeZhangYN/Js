@@ -9,6 +9,18 @@ const pkg = JSON.parse(
   readFileSync(new URL("./package.json", import.meta.url), "utf8")
 );
 
+// @version 每次构建自增（pkg.version + 构建时间戳）：让 Tampermonkey「覆盖安装」时识别为新版本 →
+// 刷新 @connect / @grant 授权。背景（2026-06-06 排查结论）：原 @version 恒 10.0.1 → 覆盖安装 TM
+// 因版本未变不刷新 grant → 新加的 @connect rdma.ooguy.com 未生效 → ML POST onerror（网络/CORS）。
+// name/namespace 不动 → GM 存储命名空间不受 version 影响，用户配置不丢（见文件顶部红线）。
+// 代价：每次 rebuild 都是新版本，TM 会提示更新/重确认授权（开发期可接受）。
+const buildStamp = (() => {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+})();
+const version = `${pkg.version}.${buildStamp}`;
+
 export default defineConfig({
   plugins: [
     monkey({
@@ -20,7 +32,7 @@ export default defineConfig({
           "zh-TW": "[HV]AutoAttack",
         },
         namespace: "https://github.com/dodying/",
-        version: pkg.version,
+        version,
         description: {
           "": "HV auto attack script, for the first user, should configure before use it.",
           "zh-CN": "HV自动打怪脚本，初次使用，请先设置好选项，请确认字体设置正常",
