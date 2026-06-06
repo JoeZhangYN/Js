@@ -15,7 +15,7 @@ import { g } from "../state/store.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { gmXhr } from "../dom/gm-xhr.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
-import { recordMLOutcome } from "../state/riddle-stats.js";
+import { recordMLOutcome, recordMLDetail } from "../state/riddle-stats.js";
 
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";
@@ -347,6 +347,7 @@ export async function tryMLAnswer() {
           } catch (e) {
             console.warn("[HVAA][RMA] 响应非 JSON，本次走随机:", res.status, e.message);
             if (backupOnFail) saveRiddle(imgBlob, { _parse_error: e.message });
+            recordMLDetail("non_json status=" + res.status + " " + e.message);
             setAlarm("Error");
             resolve("non_json");
             return;
@@ -360,6 +361,7 @@ export async function tryMLAnswer() {
               console.warn("[HVAA][RMA] 响应无可识别答案码，本次走随机:", dict);
               if (backupOnFail)
                 saveRiddle(imgBlob, { _reason: "no_answer_code_in_response", raw: dict });
+              recordMLDetail("no_answer_code answer=" + JSON.stringify(dict.answer));
               setAlarm("Error");
               resolve("no_answer_code");
               return;
@@ -385,12 +387,14 @@ export async function tryMLAnswer() {
           if (dict.return === "error" || dict.expire === true) {
             console.warn("[HVAA][RMA] server error / license issue", dict);
             if (backupOnFail) saveRiddle(imgBlob, dict);
+            recordMLDetail("server_error " + JSON.stringify(dict).slice(0, 150));
             setAlarm("Error");
             resolve("server_error");
             return;
           }
           console.warn("[HVAA][RMA] 未知 return 字段，本次走随机:", dict);
           if (backupOnFail) saveRiddle(imgBlob, { _reason: "unknown_return", raw: dict });
+          recordMLDetail("unknown " + JSON.stringify(dict).slice(0, 150));
           setAlarm("Error");
           resolve("unknown");
         },
@@ -399,6 +403,7 @@ export async function tryMLAnswer() {
           // （@connect 未授权 / TLS / 拒连 各不同），打印 + 存备份助下次实站定位。
           console.warn("[HVAA][RMA] POST onerror（网络/CORS/@connect 未授权），本次走随机", err);
           if (backupOnFail) saveRiddle(imgBlob, { _onerror: true, _err: err && (err.error || err.statusText || err.status) });
+          recordMLDetail("onerror status=" + (err && err.status) + " " + (err && (err.statusText || err.error || "")));
           setAlarm("Error");
           resolve("onerror");
         },
@@ -419,6 +424,7 @@ export async function tryMLAnswer() {
     return null;
   } catch (err) {
     console.error("[HVAA][RMA] tryMLAnswer error", err);
+    recordMLDetail("exception " + (err && err.message));
     recordMLOutcome("exception");
     setAlarm("Error");
     return null;

@@ -489,6 +489,11 @@ export function optionBox() {
       for (i in ML_OUTCOMES) {
         _html = `${_html}<tr><td>${lab(ML_OUTCOMES[i])}</td><td>${rs.outcomes[i]}</td></tr>`;
       }
+      if (rs.lastError) {
+        // 最近失败详情（err/status/dict 摘要）落库展示——页面提交后重定向, console 看不到, 故进面板。
+        const safe = String(rs.lastError).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        _html = `${_html}<tr class="hvAATh"><td colspan="2"><l0>最近失败详情</l0><l1>最近失敗詳情</l1><l2>Last failure detail</l2></td></tr><tr><td colspan="2" style="word-break:break-all;text-align:left;">${safe}</td></tr>`;
+      }
       _html = `${_html}</tbody>`;
       gE("#hvAATab-Riddle>table").innerHTML = _html;
     } else if (name === "About") {

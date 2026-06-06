@@ -38,7 +38,19 @@ export function getRiddleStats() {
     outcomes[k] = (s.outcomes && s.outcomes[k]) || 0;
   }
   const mlCall = Object.values(outcomes).reduce((a, b) => a + b, 0);
-  return { appear: s.appear || 0, mlCall, ok: outcomes.ok, outcomes };
+  return { appear: s.appear || 0, mlCall, ok: outcomes.ok, outcomes, lastError: s.lastError || "" };
+}
+
+/**
+ * 持久化最近一次 ML 失败详情（err/status/dict 摘要）。**过页面跳转不丢**（GM 存储），面板展示——
+ * riddle 提交后页面重定向, console 日志看不到, 故详情必须落库（用户诉求 2026-06-06）。
+ * @param {string} detail
+ */
+export function recordMLDetail(detail) {
+  if (!detail) return;
+  const s = getValue(KEY, true) || {};
+  s.lastError = String(detail).slice(0, 300);
+  setValue(KEY, s);
 }
 
 /** 小马图出现一次（riddle.js riddleAlert 调用，与 ML 是否开启/成功无关）。 */
