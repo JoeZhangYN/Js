@@ -1,4 +1,7 @@
 // 答题页面自动答题。
+// ★ 原版 SOT（后续核对认准此文件，勿找错）：Tampermonkey/HentaiVerse/Riddle Master Assistant Reborn.user.js v0.5.2
+//   —— 答题时机逻辑对齐其 getRemainingSeconds() / waitUntilNearEnd()；ML 远程答题逻辑见同源的 riddle-ml.js。
+//   注：legacy/[HV]AutoAttack.legacy.js 是 AutoAttack 整体原版（含旧版随机答题），**非本 ML 答题逻辑来源**，勿混。
 // P0 重构（Monsterbation/RMA 借鉴 + bug fix）：
 // - 修复 bug：原 answers 数组漏 "ra"，随机命中率仅 1/5（应 1/6）
 // - 答案分发改 ANSWER_MAP 数据驱动（替代 6 个 if 平铺）
@@ -25,7 +28,13 @@ const ANSWER_KEYS = Object.keys(ANSWER_MAP);
 function parseRemainingSeconds() {
   const counter = gE("#riddlecounter");
   if (counter) {
-    const text = counter.textContent || "";
+    const text = (counter.textContent || "").trim();
+    // M:SS 优先（对齐 RMA 原版 getRemainingSeconds；移植曾漏 → 倒计时 "2:30" 被读成 2s 误判）。
+    const ms = text.match(/(\d+):(\d+)/);
+    if (ms) {
+      const sec = parseInt(ms[1]) * 60 + parseInt(ms[2]);
+      if (sec > 0 && sec < 3600) return sec;
+    }
     const m = text.match(/(\d+)/);
     if (m) {
       const sec = parseInt(m[1]);
@@ -93,35 +102,35 @@ export function riddleAlert() {
       .catch(() => {});
   }
 
-  // 单哨兵 submitted 即可（不再末端 await，无重入竞争）。
+  // 等倒计时接近末端再提交。★ 对齐原版 Riddle Master Assistant Reborn.user.js v0.5.2 的
+  // waitUntilNearEnd()：每秒**重读真实倒计时** #riddlecounter，剩余 ≤ riddleAnswerTime 时提交
+  // （ML 就绪用 ML 答案，否则随机单只）。修移植退化 bug——原写法改成 30 次内部自减(非重读真值)，
+  // 倒计时 > ~33s 时窗口内永减不到阈值 → 不提交（用户实证"没反应"）；现重读真值，任意时长鲁棒。
+  const beforeEnd = parseInt(g("option").riddleAnswerTime) || 3;
   let submitted = false;
-  const checkTime = function () {
+  let unreadable = 0;
+  function submitAtEnd() {
     if (submitted) return;
-    let time;
-    if (typeof g("time") === "undefined") {
-      const parsed = parseRemainingSeconds();
-      if (isNaN(parsed)) return;
-      g("time", parsed);
-      time = parsed;
-    } else {
-      time = g("time");
-      time--;
-      g("time", time);
-    }
-    document.title = time;
-    if (time <= g("option").riddleAnswerTime) {
-      // ML 已就绪 → 用 ML 答案数组（多答案题为多码）；否则随机猜单只（同步立即提交，赶上倒计时末端）。
-      // ANSWER_KEYS.length 防退化（原 answers 漏 "ra" 命中率 1/5 的旧 bug）。
-      const answers =
-        mlAnswer && mlAnswer.length
-          ? mlAnswer
-          : [ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)]];
-      submitted = true;
-      riddleSubmit(answers);
-    }
-  };
-
-  for (let i = 0; i < 30; i++) {
-    setTimeout(checkTime, i * 1000);
+    submitted = true;
+    clearInterval(timer);
+    // ML 就绪 → 多答案数组；否则随机单只（ANSWER_KEYS.length 防退化：原 answers 漏 "ra" 命中率 1/5 旧 bug）。
+    const answers =
+      mlAnswer && mlAnswer.length
+        ? mlAnswer
+        : [ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)]];
+    riddleSubmit(answers);
   }
+  function tick() {
+    if (submitted) return;
+    const remaining = parseRemainingSeconds();
+    if (isNaN(remaining)) {
+      if (++unreadable >= 5) submitAtEnd(); // 连续 5s 读不到倒计时 → 兜底提交（对齐原版 waitUntilNearEnd 的 5s fallback）
+      return;
+    }
+    unreadable = 0;
+    document.title = remaining; // 倒计时显示在标签页标题
+    if (remaining <= beforeEnd) submitAtEnd();
+  }
+  const timer = setInterval(tick, 1000);
+  tick(); // 立即检查一次（倒计时已 ≤ 阈值则立即提交）
 }
