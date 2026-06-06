@@ -15,7 +15,7 @@ import { g } from "../state/store.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { gmXhr } from "../dom/gm-xhr.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
-import { recordMLResult } from "../state/riddle-stats.js";
+import { recordMLOutcome } from "../state/riddle-stats.js";
 
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";
@@ -305,6 +305,7 @@ export async function tryMLAnswer() {
   const imageUrl = imgEl?.src;
   if (!imageUrl) {
     console.warn("[HVAA][RMA] 找不到 riddle 图片元素/src，跳过 ML 识别（走随机）");
+    recordMLOutcome("no_image");
     return null;
   }
 
@@ -316,6 +317,7 @@ export async function tryMLAnswer() {
     if (!imgBlob || imgBlob.size === 0) {
       console.warn("[HVAA][RMA] 图片 blob 为空(canvas 污染/fetch 失败)，本次走随机");
       if (backupOnFail) saveRiddle(imgBlob, { _error: "empty_blob" });
+      recordMLOutcome("empty_blob");
       setAlarm("Error");
       return null;
     }
@@ -336,7 +338,7 @@ export async function tryMLAnswer() {
             console.warn("[HVAA][RMA] 429 限流，本次走随机");
             if (backupOnFail) saveRiddle(imgBlob, { _status: 429 });
             setAlarm("Error");
-            resolve(null);
+            resolve("rate_limited");
             return;
           }
           let dict;
@@ -346,7 +348,7 @@ export async function tryMLAnswer() {
             console.warn("[HVAA][RMA] 响应非 JSON，本次走随机:", res.status, e.message);
             if (backupOnFail) saveRiddle(imgBlob, { _parse_error: e.message });
             setAlarm("Error");
-            resolve(null);
+            resolve("non_json");
             return;
           }
           if (dict.return === "good") {
@@ -359,7 +361,7 @@ export async function tryMLAnswer() {
               if (backupOnFail)
                 saveRiddle(imgBlob, { _reason: "no_answer_code_in_response", raw: dict });
               setAlarm("Error");
-              resolve(null);
+              resolve("no_answer_code");
               return;
             }
             // ratelimit 提示（仅日志，不阻断）
@@ -377,46 +379,45 @@ export async function tryMLAnswer() {
             console.warn("[HVAA][RMA] no more solves today");
             if (backupOnFail) saveRiddle(imgBlob, dict);
             setAlarm("Error");
-            resolve(null);
+            resolve("finish");
             return;
           }
           if (dict.return === "error" || dict.expire === true) {
             console.warn("[HVAA][RMA] server error / license issue", dict);
             if (backupOnFail) saveRiddle(imgBlob, dict);
             setAlarm("Error");
-            resolve(null);
+            resolve("server_error");
             return;
           }
           console.warn("[HVAA][RMA] 未知 return 字段，本次走随机:", dict);
           if (backupOnFail) saveRiddle(imgBlob, { _reason: "unknown_return", raw: dict });
           setAlarm("Error");
-          resolve(null);
+          resolve("unknown");
         },
         onerror: () => {
           console.warn("[HVAA][RMA] POST onerror（网络/CORS/@connect 未授权），本次走随机");
           if (backupOnFail) saveRiddle(imgBlob, { _onerror: true });
           setAlarm("Error");
-          resolve(null);
+          resolve("onerror");
         },
         ontimeout: () => {
           console.warn("[HVAA][RMA] POST 超时(>12s)，本次走随机");
           if (backupOnFail) saveRiddle(imgBlob, { _timeout: true });
           setAlarm("Error");
-          resolve(null);
+          resolve("timeout");
         },
       });
     });
-    recordMLResult(result !== null); // 小马验证统计：本次 ML 调用 +1，成功(返可用答案)则 mlOk +1
-
-    if (result === null) return null;
-
-    // document.hasFocus() 区分前后台延迟（不阻塞 tryMLAnswer 返回）
-    // 调用方 riddle.js 拿到 key 后立刻调 riddleSubmit；
-    // 这里 hasFocus 决定 RMA 风格的「人类抖动延迟」是否生效。
-    // 因为提交动作不在本模块内执行，仅记录 extend_submit_interval 供调用方参考。
-    return result;
+    // 小马验证统计：成功(Array) → 记 ok 并返回答案数组；失败 → result 为结局分类字符串，记入对应失败计数(走随机兜底)。
+    if (Array.isArray(result)) {
+      recordMLOutcome("ok");
+      return result;
+    }
+    recordMLOutcome(typeof result === "string" ? result : "unknown");
+    return null;
   } catch (err) {
     console.error("[HVAA][RMA] tryMLAnswer error", err);
+    recordMLOutcome("exception");
     setAlarm("Error");
     return null;
   } finally {

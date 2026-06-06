@@ -15,7 +15,7 @@ import { customizeBox } from "./customize.js";
 import { OPTION_SCHEMA } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
 import { setOption } from "../state/option.js";
-import { getRiddleStats, resetRiddleStats } from "../state/riddle-stats.js";
+import { getRiddleStats, resetRiddleStats, ML_OUTCOMES } from "../state/riddle-stats.js";
 
 /**
  * 从 OPTION_SCHEMA 渲染 "checkbox + number + 单位文本" 这类成对字段。
@@ -476,16 +476,20 @@ export function optionBox() {
       _html = `${_html}</tbody>`;
       gE("#hvAATab-Usage>table").innerHTML = _html;
     } else if (name === "Riddle") {
-      // 小马验证(riddle ML)统计：小马图出现次数 / ML 调用 / ML 成功 / 成功率
+      // 小马验证(riddle ML)统计：汇总 + 结局明细（把"为什么失败"也量化进面板，见 ML_OUTCOMES）
       const rs = getRiddleStats();
-      const rate = rs.mlCall ? ((rs.mlOk / rs.mlCall) * 100).toFixed(1) : "0.0";
+      const rate = rs.mlCall ? ((rs.ok / rs.mlCall) * 100).toFixed(1) : "0.0";
+      const lab = (o) => `<l0>${o.l0}</l0><l1>${o.l1}</l1><l2>${o.l2}</l2>`;
       _html =
         "<tbody>" +
         `<tr><td><l0>小马图出现次数</l0><l1>小馬圖出現次數</l1><l2>Riddle appearances</l2></td><td>${rs.appear}</td></tr>` +
         `<tr><td><l0>ML 调用次数</l0><l1>ML 調用次數</l1><l2>ML calls</l2></td><td>${rs.mlCall}</td></tr>` +
-        `<tr><td><l0>ML 成功次数</l0><l1>ML 成功次數</l1><l2>ML success</l2></td><td>${rs.mlOk}</td></tr>` +
-        `<tr><td><l0>ML 成功率</l0><l1>ML 成功率</l1><l2>ML success rate</l2></td><td>${rate}%</td></tr>` +
-        "</tbody>";
+        `<tr><td><l0>ML 成功率</l0><l1>ML 成功率</l1><l2>ML success rate</l2></td><td>${rate}% (${rs.ok}/${rs.mlCall})</td></tr>` +
+        `<tr class="hvAATh"><td><l0>结局明细</l0><l1>結局明細</l1><l2>Outcome breakdown</l2></td><td><l0>次数</l0><l1>次數</l1><l2>Count</l2></td></tr>`;
+      for (i in ML_OUTCOMES) {
+        _html = `${_html}<tr><td>${lab(ML_OUTCOMES[i])}</td><td>${rs.outcomes[i]}</td></tr>`;
+      }
+      _html = `${_html}</tbody>`;
       gE("#hvAATab-Riddle>table").innerHTML = _html;
     } else if (name === "About") {
       // 关于本脚本
