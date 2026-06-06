@@ -3,8 +3,9 @@
 // ML 调用次数 = outcomes 各项之和；ML 成功次数 = outcomes.ok；成功率 = ok / 调用次数。
 // 把"为什么失败"也量化进面板（统计的意义）：超时/限流/网络/无答案码… 各自单列。
 // 存储走 state/storage.js（带 prefix），与掉落/数据记录面板同机制；面板在 settings/render.js「小马验证」tab 展示。
-// 叶子模块：只依赖 storage.js（无环，可被 riddle.js / riddle-ml.js 同时 import）。
+// 叶子模块：只依赖 storage.js + riddle-log.js（皆叶子，无环，可被 riddle.js / riddle-ml.js 同时 import）。
 import { getValue, setValue, delValue } from "./storage.js";
+import { pushRiddleLog } from "./riddle-log.js";
 
 const KEY = "riddleStats";
 
@@ -51,6 +52,7 @@ export function recordMLDetail(detail) {
   const s = getValue(KEY, true) || {};
   s.lastError = String(detail).slice(0, 300);
   setValue(KEY, s);
+  pushRiddleLog("detail: " + detail); // 同步进滚动日志（半持久化, 可翻历史）
 }
 
 /** 小马图出现一次（riddle.js riddleAlert 调用，与 ML 是否开启/成功无关）。 */
@@ -58,6 +60,7 @@ export function recordRiddleAppear() {
   const s = getValue(KEY, true) || {};
   s.appear = (s.appear || 0) + 1;
   setValue(KEY, s);
+  pushRiddleLog("riddle appeared"); // 每次小马图出现落一条，作时间线锚点
 }
 
 /**
@@ -70,6 +73,7 @@ export function recordMLOutcome(outcome) {
   if (!s.outcomes) s.outcomes = {};
   s.outcomes[key] = (s.outcomes[key] || 0) + 1;
   setValue(KEY, s);
+  pushRiddleLog("ml outcome=" + key); // 每次 ML 结局落一条
 }
 
 /** 重置全部统计。 */

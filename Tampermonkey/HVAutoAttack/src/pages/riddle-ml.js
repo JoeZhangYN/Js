@@ -3,23 +3,22 @@
 // 暴露：
 //   - tryMLAnswer(): Promise<string[]|null>  返回命中的 ANSWER_MAP key 数组(多答案题多只) 或 null
 //   - setupRMAHealth()                     30s 健康巡检（init 时调用一次启动）
-// 不暴露 saveRiddle / send_head：内部使用。
+// 本模块仅做「ML 识别」：图片获取已抽到 pages/riddle-image.js；训练样本保存/导出已抽到
+//   state/riddle-dataset.js（保存统一在「提交动作」riddle.js #riddlesubmit hook 采样）。本模块不再存图。
 //
 // 复用 data/riddle-answers.js 的 ANSWER_MAP（已下沉叶子层，断开与 riddle.js 的循环依赖 TDZ）。
 // GM 存储 key：is_maintenance / is_down / last_awake_ts / last_date / check_interval / extend_submit_interval
 //   - 直接用 GM_setValue/GM_getValue（带 prefix 会污染 RMA 兼容性；这里用裸 key 与原 RMA 一致）
-// 失败备份 key：saved_<prefix>_<ts>（同 RMA）
-// 三级图片 fallback（参 RMA L79-166）：canvas → fetch(only-if-cached) → fetch(force-cache) → fetch(network)
 // XHR 兜底通过 GM_xmlhttpRequest 完成（@grant 需加 GM_xmlhttpRequest）
 import { g } from "../state/store.js";
 import { setAlarm } from "../alarm/alarm.js";
-import { gmXhr } from "../dom/gm-xhr.js";
+import { gmXhr, hasNonLatin1 } from "../dom/gm-xhr.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { recordMLOutcome, recordMLDetail } from "../state/riddle-stats.js";
+import { getRiddleImgEl, waitImageLoaded, getImageBlob } from "./riddle-image.js";
 
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";
-const SAVE_PREFIX = "riddle_";
 const ANSWER_CODES = Object.keys(ANSWER_MAP); // ["ts","ra","fs","rd","pp","aj"]
 
 /**
@@ -50,19 +49,6 @@ function gmSet(key, val) {
 
 // gmXhr 已抽到 src/dom/gm-xhr.js（M1 应抽未抽修复）
 
-function tsStr() {
-  const d = new Date();
-  return (
-    d.getFullYear() +
-    String(d.getMonth() + 1).padStart(2, "0") +
-    String(d.getDate()).padStart(2, "0") +
-    "_" +
-    String(d.getHours()).padStart(2, "0") +
-    String(d.getMinutes()).padStart(2, "0") +
-    String(d.getSeconds()).padStart(2, "0")
-  );
-}
-
 function parseRespHeaders(headerStr) {
   const headers = {};
   if (!headerStr) return headers;
@@ -77,132 +63,8 @@ function parseRespHeaders(headerStr) {
   return headers;
 }
 
-// ---------------- 图片获取：canvas → fetch 三级 fallback ----------------
-
-/**
- * 取 riddle 图片 <img> 元素。
- * 优先 querySelector("img")（跳过 #riddleimage 内可能的空白文本节点 / HV UI 改版），
- * fallback childNodes[0]（原 RMA 写法，兼容旧 DOM）。
- * @returns {HTMLImageElement|null}
- */
-function getRiddleImgEl() {
-  const holder = document.getElementById("riddleimage");
-  return holder?.querySelector("img") || holder?.childNodes?.[0] || null;
-}
-
-/**
- * 等 <img> 解码完成（complete && naturalWidth>0），canvas 主路径（最可靠）才能 drawImage。
- * 超时（默认 4s）/ error 也 resolve —— 让调用侧继续，由 fetch 兜底，绝不卡住。
- * 修 H-C：入口 @run-at document-end 时图片常未解码（naturalWidth=0），原代码直接退化到 fetch。
- * @param {HTMLImageElement|null} imgEl
- * @param {number} timeoutMs
- * @returns {Promise<void>}
- */
-function waitImageLoaded(imgEl, timeoutMs = 4000) {
-  return new Promise((resolve) => {
-    if (!imgEl || (imgEl.complete && imgEl.naturalWidth)) {
-      resolve();
-      return;
-    }
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      resolve();
-    };
-    imgEl.addEventListener("load", finish, { once: true });
-    imgEl.addEventListener("error", finish, { once: true });
-    setTimeout(finish, timeoutMs);
-  });
-}
-
-function getImageBlobFromCanvas() {
-  return new Promise((resolve, reject) => {
-    const imgEl = getRiddleImgEl();
-    if (!imgEl || !imgEl.naturalWidth) {
-      reject(new Error("riddleimage not ready (naturalWidth=0)"));
-      return;
-    }
-    const canvas = document.createElement("canvas");
-    canvas.width = imgEl.naturalWidth;
-    canvas.height = imgEl.naturalHeight;
-    const ctx = canvas.getContext("2d");
-    try {
-      ctx.drawImage(imgEl, 0, 0);
-    } catch (e) {
-      reject(e);
-      return;
-    }
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("toBlob null"))),
-      "image/jpeg",
-      0.95,
-    );
-  });
-}
-
-async function getImageBlobFromFetch(url) {
-  // 1) only-if-cached（未命中抛 TypeError，捕获后继续）
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      credentials: "same-origin",
-      cache: "only-if-cached",
-      mode: "same-origin",
-    });
-    if (res.status === 200) return await res.blob();
-  } catch {
-    /* miss */
-  }
-  // 2) force-cache
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      credentials: "same-origin",
-      cache: "force-cache",
-      mode: "same-origin",
-    });
-    if (res.status === 200) return await res.blob();
-  } catch {
-    /* ignore */
-  }
-  // 3) network
-  const res = await fetch(url, { method: "GET", credentials: "same-origin" });
-  if (res.status === 200) return await res.blob();
-  throw new Error(`fetch all attempts failed, last status: ${res.status}`);
-}
-
-async function getImageBlob(url) {
-  try {
-    return await getImageBlobFromCanvas();
-  } catch {
-    return await getImageBlobFromFetch(url);
-  }
-}
-
-// ---------------- 失败备份（GM_setValue 单通道；无浏览器下载） ----------------
-
-// 保存答题图片+json 到 GM 存储（成功 isFailed=false / 失败 true，对齐原 RMA saveRiddle）。
-// 仅 GM 单通道（挂机多在后台标签页，<a>.click() 自动下载在后台失效）；批量取出用 exportSavedRiddles()。
-function saveRiddle(imgBlob, resultObj, isFailed = true) {
-  if (!imgBlob) return;
-  const baseName = `${SAVE_PREFIX}${tsStr()}${isFailed ? "_failed" : ""}`;
-  const enhanced = {
-    saved_at: new Date().toISOString(),
-    is_failed: isFailed,
-    image_src: getRiddleImgEl()?.src || "unknown",
-    ...resultObj,
-  };
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    gmSet(`saved_${baseName}`, {
-      json: enhanced,
-      imageBase64: reader.result,
-      timestamp: Date.now(),
-    });
-  };
-  reader.readAsDataURL(imgBlob);
-}
+// 图片获取(getRiddleImgEl/waitImageLoaded/getImageBlob) 已抽到 pages/riddle-image.js。
+// 答题样本保存(saveRiddle) 已抽到 state/riddle-dataset.js 并改为「提交动作」统一采样。
 
 // ---------------- 30s 健康巡检 ----------------
 
@@ -297,8 +159,14 @@ export async function tryMLAnswer() {
   }
 
   const endpoint = opt.mlEndpoint || ML_ENDPOINT_DEFAULT;
-  const apiKey = opt.mlApiKey || "";
-  const backupOnFail = opt.mlBackupOnFail !== false;
+  // 自愈历史脏数据：设置面板旧逻辑 value||placeholder 把占位符"(可选)"误存进 mlApiKey
+  // （含中文 → 非 Latin-1，会让 POST 头部 new Headers() 同步抛异常）。含非 ASCII 一律视为未设(走匿名)，
+  // 老用户无需手动清栏；source 端 render.js 已把该 placeholder 改空防再次误存。
+  let apiKey = opt.mlApiKey || "";
+  if (apiKey && hasNonLatin1(apiKey)) {
+    console.warn('[HVAA][RMA] ML API key 含非 ASCII 字符(疑占位符"(可选)"误存)，已忽略走匿名；如需用 key 请在设置里重输纯 ASCII。');
+    apiKey = "";
+  }
 
   // 修 H-C 辅助：鲁棒取 <img>（querySelector 跳过文本节点，fallback childNodes[0]）
   const imgEl = getRiddleImgEl();
@@ -316,11 +184,16 @@ export async function tryMLAnswer() {
     const imgBlob = await getImageBlob(imageUrl);
     if (!imgBlob || imgBlob.size === 0) {
       console.warn("[HVAA][RMA] 图片 blob 为空(canvas 污染/fetch 失败)，本次走随机");
-      if (backupOnFail) saveRiddle(imgBlob, { _error: "empty_blob" });
+      recordMLDetail("empty_blob (canvas 污染/fetch 失败)");
       recordMLOutcome("empty_blob");
       setAlarm("Error");
       return null;
     }
+
+    // apikey 仅在非空时附带（空串无意义；留空走匿名）。非 Latin-1 脏字符由 gmXhr 中央闸门拦截 →
+    // 转成 error:"non_latin1_header" 的 onerror，下方按真因分类提示（不再误报网络/CORS）。
+    const postHeaders = { "Content-Type": "image/jpeg" };
+    if (apiKey) postHeaders.apikey = apiKey;
 
     const result = await new Promise((resolve) => {
       gmXhr({
@@ -329,87 +202,106 @@ export async function tryMLAnswer() {
         url: endpoint,
         binary: true,
         data: imgBlob,
-        headers: {
-          "Content-Type": "image/jpeg",
-          apikey: apiKey,
-        },
+        headers: postHeaders,
         onload: (res) => {
-          if (res.status === 429) {
-            console.warn("[HVAA][RMA] 429 限流，本次走随机");
-            if (backupOnFail) saveRiddle(imgBlob, { _status: 429 });
-            setAlarm("Error");
-            resolve("rate_limited");
-            return;
-          }
-          let dict;
+          // ① 捕获错误这一步（用户诉求 2026-06-06：现在没有捕获、错误直接飘 console 跳转即丢）：
+          //    onload 回调由 GM 异步调起、不在外层 try/catch 覆盖内 —— 未捕获异常会让 Promise 永挂
+          //    (inFlight 卡死) + 错误只进 console 跳转后丢失。整体 try 兜底 → 落库(recordMLDetail 过跳转可见)
+          //    + resolve("exception")，保证永不挂死、详情可事后翻查。
+          // 注：训练样本(图片+json)的保存已统一到「提交动作」(riddle.js #riddlesubmit hook → state/riddle-dataset.js)，
+          //    本回调不再各分支 saveRiddle；ML 失败原因仍进滚动日志 + 末端随机兜底提交那次会把图存为 low 可信样本。
           try {
-            dict = JSON.parse(res.responseText);
-          } catch (e) {
-            console.warn("[HVAA][RMA] 响应非 JSON，本次走随机:", res.status, e.message);
-            if (backupOnFail) saveRiddle(imgBlob, { _parse_error: e.message });
-            recordMLDetail("non_json status=" + res.status + " " + e.message);
-            setAlarm("Error");
-            resolve("non_json");
-            return;
-          }
-          if (dict.return === "good") {
-            // HV 答题常多只小马同现（多答案不少见）→ 取响应里全部命中的答案码，调用侧勾选多个 checkbox。
-            // filter+includes 兼容服务端 "ts,ra" / "tsra" 等格式（6 个码 ts/ra/fs/rd/pp/aj 互不为子串，无误配）。
-            const answers = (dict.answer || "").toLowerCase();
-            const hits = ANSWER_CODES.filter((code) => answers.includes(code));
-            if (!hits.length) {
-              console.warn("[HVAA][RMA] 响应无可识别答案码，本次走随机:", dict);
-              if (backupOnFail)
-                saveRiddle(imgBlob, { _reason: "no_answer_code_in_response", raw: dict });
-              recordMLDetail("no_answer_code answer=" + JSON.stringify(dict.answer));
+            if (res.status === 429) {
+              console.warn("[HVAA][RMA] 429 限流，本次走随机");
+              recordMLDetail("rate_limited 429");
               setAlarm("Error");
-              resolve("no_answer_code");
+              resolve("rate_limited");
               return;
             }
-            // ratelimit 提示（仅日志，不阻断）
-            const headers = parseRespHeaders(res.responseHeaders);
-            const remaining = parseInt(headers["x-ratelimit-remaining"] || "999", 10);
-            if (remaining < 3) {
-              console.warn(`[HVAA][RMA] ratelimit remaining ${remaining}`);
+            let dict;
+            try {
+              dict = JSON.parse(res.responseText);
+            } catch (e) {
+              console.warn("[HVAA][RMA] 响应非 JSON，本次走随机:", res.status, e.message);
+              recordMLDetail("non_json status=" + res.status + " " + e.message);
+              setAlarm("Error");
+              resolve("non_json");
+              return;
             }
-            // 成功识别也保存（积累正确样本，对齐原 RMA line 427）；受 mlBackupOnFail 统一控制
-            if (backupOnFail) saveRiddle(imgBlob, dict, false);
-            resolve(hits);
-            return;
-          }
-          if (dict.return === "finish") {
-            console.warn("[HVAA][RMA] no more solves today");
-            if (backupOnFail) saveRiddle(imgBlob, dict);
+            if (dict.return === "good") {
+              // HV 答题常多只小马同现（多答案不少见）→ 取响应里全部命中的答案码，调用侧勾选多个 checkbox。
+              // ② 多答案修复：dict.answer 可能是**数组**(如 ["ts","ra"])，原 (dict.answer||"").toLowerCase()
+              //    在数组上 → TypeError(抛进 onload，未捕获→Promise 永挂)。统一 coerce：数组 join、其它 String()。
+              //    filter+includes 兼容 "ts,ra" / "tsra" / ["ts","ra"] 等格式（6 码互不为子串，无误配）。
+              const rawAnswer = dict.answer;
+              const answers = (
+                Array.isArray(rawAnswer) ? rawAnswer.join(",") : String(rawAnswer ?? "")
+              ).toLowerCase();
+              const hits = ANSWER_CODES.filter((code) => answers.includes(code));
+              if (!hits.length) {
+                console.warn("[HVAA][RMA] 响应无可识别答案码，本次走随机:", dict);
+                recordMLDetail("no_answer_code answer=" + JSON.stringify(dict.answer));
+                setAlarm("Error");
+                resolve("no_answer_code");
+                return;
+              }
+              // ratelimit 提示（仅日志，不阻断）
+              const headers = parseRespHeaders(res.responseHeaders);
+              const remaining = parseInt(headers["x-ratelimit-remaining"] || "999", 10);
+              if (remaining < 3) {
+                console.warn(`[HVAA][RMA] ratelimit remaining ${remaining}`);
+              }
+              resolve(hits);
+              return;
+            }
+            if (dict.return === "finish") {
+              console.warn("[HVAA][RMA] no more solves today");
+              recordMLDetail("finish (no more solves today)");
+              setAlarm("Error");
+              resolve("finish");
+              return;
+            }
+            if (dict.return === "error" || dict.expire === true) {
+              console.warn("[HVAA][RMA] server error / license issue", dict);
+              recordMLDetail("server_error " + JSON.stringify(dict).slice(0, 150));
+              setAlarm("Error");
+              resolve("server_error");
+              return;
+            }
+            console.warn("[HVAA][RMA] 未知 return 字段，本次走随机:", dict);
+            recordMLDetail("unknown " + JSON.stringify(dict).slice(0, 150));
             setAlarm("Error");
-            resolve("finish");
-            return;
-          }
-          if (dict.return === "error" || dict.expire === true) {
-            console.warn("[HVAA][RMA] server error / license issue", dict);
-            if (backupOnFail) saveRiddle(imgBlob, dict);
-            recordMLDetail("server_error " + JSON.stringify(dict).slice(0, 150));
+            resolve("unknown");
+          } catch (e) {
+            // 捕获错误兜底：多答案/异形响应等处理异常 → 落库 + resolve，绝不让错误逃逸 console 即丢或 Promise 挂死。
+            console.error("[HVAA][RMA] onload 处理异常(疑多答案/异形响应)，本次走随机:", e);
+            recordMLDetail("onload_exception " + (e && e.message));
             setAlarm("Error");
-            resolve("server_error");
-            return;
+            resolve("exception");
           }
-          console.warn("[HVAA][RMA] 未知 return 字段，本次走随机:", dict);
-          if (backupOnFail) saveRiddle(imgBlob, { _reason: "unknown_return", raw: dict });
-          recordMLDetail("unknown " + JSON.stringify(dict).slice(0, 150));
-          setAlarm("Error");
-          resolve("unknown");
         },
         onerror: (err) => {
-          // 排查 onerror 真因：GM_xmlhttpRequest 的 err 对象含 status/statusText/error 细节
-          // （@connect 未授权 / TLS / 拒连 各不同），打印 + 存备份助下次实站定位。
-          console.warn("[HVAA][RMA] POST onerror（网络/CORS/@connect 未授权），本次走随机", err);
-          if (backupOnFail) saveRiddle(imgBlob, { _onerror: true, _err: err && (err.error || err.statusText || err.status) });
-          recordMLDetail("onerror status=" + (err && err.status) + " " + (err && (err.statusText || err.error || "")));
+          // 按 err 真因分类（旧版恒打"网络/CORS/@connect"，把客户端头部脏字符等误导成网络问题）。
+          // GM_xmlhttpRequest 的 err 含 status/statusText/error；中央闸门 gmXhr 另注入 error 标签。
+          const status = err && err.status;
+          const detail = (err && (err.statusText || err.error)) || "";
+          let cause;
+          if (err && err.error === "non_latin1_header") {
+            // gmXhr 拦下：apikey 等头部含非 ASCII（中文/全角/智能引号/零宽）→ 请求未发出。
+            cause = "ML API key 含非 ASCII 字符，请在设置里清空重输或留空(走匿名)";
+          } else if (status === 0) {
+            cause = "网络层失败(@connect 未授权 / DNS / 拒连 / TLS / CORS)，请求未达服务端";
+          } else {
+            cause = "服务端拒绝(status " + status + ")";
+          }
+          console.warn(`[HVAA][RMA] POST onerror，本次走随机 — ${cause}`, "status=" + status, detail, err);
+          recordMLDetail("onerror status=" + status + " " + cause + (detail ? " | " + detail : ""));
           setAlarm("Error");
           resolve("onerror");
         },
         ontimeout: () => {
           console.warn("[HVAA][RMA] POST 超时(>12s)，本次走随机");
-          if (backupOnFail) saveRiddle(imgBlob, { _timeout: true });
+          recordMLDetail("timeout (>12s)");
           setAlarm("Error");
           resolve("timeout");
         },
@@ -431,46 +323,4 @@ export async function tryMLAnswer() {
   } finally {
     inFlight = false;
   }
-}
-
-// ---------------- 导出：批量取出 GM 存储的答题备份 ----------------
-
-/**
- * 把 GM 存储里所有 saved_* 备份打包成单个 JSON 文件下载。
- * 手动触发（GM 菜单命令 registerExportMenu），规避挂机后台标签页自动下载失效。
- */
-export function exportSavedRiddles() {
-  if (typeof GM_listValues === "undefined") {
-    console.warn("[HVAA][RMA] GM_listValues 不可用，无法导出");
-    return;
-  }
-  const keys = GM_listValues().filter((k) => k.startsWith("saved_"));
-  if (!keys.length) {
-    console.info("[HVAA][RMA] 无答题备份可导出");
-    return;
-  }
-  const bundle = {};
-  for (const k of keys) bundle[k] = GM_getValue(k);
-  const blob = new Blob([JSON.stringify(bundle)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.style.display = "none";
-  a.href = url;
-  a.download = `riddle_backups_${tsStr()}.json`;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 200);
-  console.info(`[HVAA][RMA] 已导出 ${keys.length} 条答题备份`);
-}
-
-let exportMenuRegistered = false;
-/** 注册 GM 菜单命令「导出答题备份」（脚本启动调一次，全局可用）。 */
-export function registerExportMenu() {
-  if (exportMenuRegistered) return;
-  if (typeof GM_registerMenuCommand === "undefined") return;
-  exportMenuRegistered = true;
-  GM_registerMenuCommand("导出答题备份(图片+json)", exportSavedRiddles);
 }

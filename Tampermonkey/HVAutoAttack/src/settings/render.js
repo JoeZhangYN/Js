@@ -16,6 +16,7 @@ import { OPTION_SCHEMA } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
 import { setOption } from "../state/option.js";
 import { getRiddleStats, resetRiddleStats, ML_OUTCOMES } from "../state/riddle-stats.js";
+import { getRiddleLog, clearRiddleLog } from "../state/riddle-log.js";
 
 /**
  * 从 OPTION_SCHEMA 渲染 "checkbox + number + 单位文本" 这类成对字段。
@@ -144,7 +145,7 @@ export function optionBox() {
     '  <div><input id="riddleHelperUi" type="checkbox" checked data-default-on><label for="riddleHelperUi"><b><l0>小马图片助手</l0><l1>小馬圖片助手</l1><l2>MLP Helper</l2></b></label>: <l0>答题页旋转/锐化/对比面板 + 6 缩略图</l0><l1>答題頁旋轉/銳化/對比面板 + 6 縮略圖</l1><l2>riddle rotate/sharpen/contrast + 6 thumbnails</l2></div>',
     '  <div><b><l0>装备浮动百分位</l0><l1>裝備浮動百分位</l1><l2>Equip Percentile</l2></b>: <select name="equipPercentileMode"><option value="off">off (关闭)</option><option value="offline">offline (本地公式)</option><option value="live">live (联网 reasoningtheory.net)</option></select> <input id="equipPercentileLiveSendRange" type="checkbox" checked data-default-on><label for="equipPercentileLiveSendRange"><l0>喂数据回社区 (Shift+S)</l0><l1>餵資料回社區 (Shift+S)</l1><l2>Send Range (Shift+S)</l2></label></div>',
     '  <div><input id="mlAnswer" type="checkbox" checked data-default-on><label for="mlAnswer"><b><l0>ML 答题</l0><l1>ML 答題</l1><l2>ML Riddle</l2></b></label>: <l0>启用 rdma.ooguy.com 远程识别（失败 fallback 到随机猜）</l0><l1>啟用 rdma.ooguy.com 遠程識別（失敗 fallback 到隨機猜）</l1><l2>Enable rdma.ooguy.com ML solver (fallback to random)</l2>; <input id="mlBackupOnFail" type="checkbox" checked data-default-on><label for="mlBackupOnFail"><l0>备份图片+json(成功+失败)</l0><l1>備份圖片+json(成功+失敗)</l1><l2>Backup img+json</l2></label></div>',
-    '  <div><l0>ML 端点</l0><l1>ML 端點</l1><l2>ML endpoint</l2>: <input name="mlEndpoint" placeholder="https://rdma.ooguy.com/help2" type="text" style="width:50%;"> <l0>API key</l0><l1>API key</l1><l2>API key</l2>: <input name="mlApiKey" placeholder="(可选)" type="text" style="width:20%;"></div>',
+    '  <div><l0>ML 端点</l0><l1>ML 端點</l1><l2>ML endpoint</l2>: <input name="mlEndpoint" placeholder="https://rdma.ooguy.com/help2" type="text" style="width:50%;"> <l0>API key(可选,留空匿名)</l0><l1>API key(可選,留空匿名)</l1><l2>API key (optional)</l2>: <input name="mlApiKey" placeholder="" type="text" style="width:20%;"></div>',
     '  <div><l0>当<b>小马答题</b>时间</l0><l1>當<b>小馬答題</b>時間</l1><l2>If <b>RIDDLE</b> ETR</l2><l0></l0><l1></l1><l2></l2> ≤ <input class="hvAANumber" name="riddleAnswerTime" placeholder="3" type="text"><l0>秒，如果输入框为空则随机生成答案并提交</l0><l1>秒，如果輸入框為空則隨機生成答案並提交</l1><l2>s and no answer has been chosen yet, a random answer will be generated and submitted</l2></div>',
     "  <div><l0>当<b>小马答题</b>时</l0><l1>當<b>小馬答題</b>時</l1><l2>If <b>RIDDLE</b></l2>: ",
     '    <input id="riddlePopup" type="checkbox"><label for="riddlePopup"><l0>弹窗答题</l0><l1>弹窗答题</l1><l2>POPUP a window to answer</l2></label>; <button class="testPopup"><l0>预处理</l0><l1>預處理</l1><l2>Pretreat</l2></button></div>',
@@ -494,6 +495,20 @@ export function optionBox() {
         const safe = String(rs.lastError).replace(/</g, "&lt;").replace(/>/g, "&gt;");
         _html = `${_html}<tr class="hvAATh"><td colspan="2"><l0>最近失败详情</l0><l1>最近失敗詳情</l1><l2>Last failure detail</l2></td></tr><tr><td colspan="2" style="word-break:break-all;text-align:left;">${safe}</td></tr>`;
       }
+      const rlog = getRiddleLog();
+      if (rlog.length) {
+        // 运行日志（state/riddle-log.js 半持久化滚动缓冲, 过页面跳转不丢, 新→旧）：每行 时间+文本，
+        // 内嵌滚动容器防撑爆面板。重置按钮 .reRiddleStats 一并 clearRiddleLog。
+        const esc = (s) => String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const rows = rlog
+          .slice()
+          .reverse()
+          .map((e) => `<div>[${esc(e.t)}] ${esc(e.m)}</div>`)
+          .join("");
+        _html =
+          `${_html}<tr class="hvAATh"><td colspan="2"><l0>运行日志(最近${rlog.length})</l0><l1>運行日誌(最近${rlog.length})</l1><l2>Run log (last ${rlog.length})</l2></td></tr>` +
+          `<tr><td colspan="2" style="text-align:left;"><div style="max-height:160px;overflow:auto;font:11px/1.5 monospace;word-break:break-all;">${rows}</div></td></tr>`;
+      }
       _html = `${_html}</tbody>`;
       gE("#hvAATab-Riddle>table").innerHTML = _html;
     } else if (name === "About") {
@@ -716,6 +731,7 @@ export function optionBox() {
   gE(".reRiddleStats", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
       resetRiddleStats();
+      clearRiddleLog(); // 重置统计同时清滚动日志
     }
   };
   // 标签页-关于本脚本

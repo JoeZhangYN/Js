@@ -9,7 +9,7 @@ import { scheduleReload, openUrl } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { addStyle } from "../style/inject.js";
 import { riddleAlert } from "./riddle.js";
-import { registerExportMenu } from "./riddle-ml.js";
+import { registerExportMenu } from "../state/riddle-dataset.js";
 import { encounterCheck } from "./encounter.js";
 import { parseAbilityPage } from "./ability-page.js";
 import { quickSite } from "../arena/quick-site.js";

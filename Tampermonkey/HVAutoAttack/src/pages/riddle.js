@@ -16,6 +16,9 @@ import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { setupRiddleHelper } from "./riddle-helper.js";
 import { tryMLAnswer, setupRMAHealth } from "./riddle-ml.js";
 import { recordRiddleAppear } from "../state/riddle-stats.js";
+import { pushRiddleLog } from "../state/riddle-log.js";
+import { captureRiddleDataUrl, getRiddleImgEl } from "./riddle-image.js";
+import { recordRiddleSample, SAMPLE_SOURCE } from "../state/riddle-dataset.js";
 
 // 答案码 SSOT 见 data/riddle-answers.js（提取到叶子层打破与 riddle-ml.js 的循环依赖 TDZ）
 const ANSWER_KEYS = Object.keys(ANSWER_MAP);
@@ -74,6 +77,22 @@ function riddleSubmit(answers) {
   if (submit) submit.click();
 }
 
+/**
+ * 读 #riddler1 当前勾选的答案码（提交那一刻的真实状态，脚本/手动提交都准）。
+ * @returns {string} 逗号分隔码，如 "ts,ra"；无勾选返 ""
+ */
+function submittedCodes() {
+  const riddler1 = document.getElementById("riddler1");
+  if (!riddler1) return "";
+  const hits = [];
+  for (const code of ANSWER_KEYS) {
+    const idx = ANSWER_MAP[code];
+    const box = riddler1.children?.[idx]?.children?.[0]?.children?.[0];
+    if (box && box.checked) hits.push(code);
+  }
+  return hits.join(",");
+}
+
 export function riddleAlert() {
   setAlarm("Riddle");
   recordRiddleAppear(); // 小马验证统计：谜题页出现一次（与 ML 是否开启/成功无关）
@@ -101,6 +120,8 @@ export function riddleAlert() {
   let submitted = false;
   let unreadable = 0;
   let timer = null;
+  let pendingSource = null; // doSubmit 设置；#riddlesubmit hook 据此判 source（手动点击=null→manual）
+  let sampled = false; // 训练样本每题只采一次
   // ANSWER_KEYS.length 防退化（原 answers 漏 "ra" 命中率 1/5 旧 bug）。
   const randomAnswer = () => [ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)]];
   function doSubmit(answers, via) {
@@ -108,7 +129,28 @@ export function riddleAlert() {
     submitted = true;
     if (timer) clearInterval(timer);
     console.log(`[HVAA][riddle] 自动提交(${via})`, answers); // 可见性：无反应时看 console 确认走哪条路径
+    // 提交即重定向、console 即丢 → 落滚动日志（半持久化）：本次答案 + 路径，事后可翻"答案是什么/走哪条路"
+    pushRiddleLog(`submit via=${via} answers=${Array.isArray(answers) ? answers.join(",") : answers}`);
+    pendingSource = via; // 供提交 hook 判 confidence（须在 riddleSubmit 触发 click 之前设好）
     riddleSubmit(answers);
+  }
+  // 训练样本采集：hook #riddlesubmit 点击（脚本 riddleSubmit 的 .click() 与用户手动点都经此）→ 跳转前
+  // **同步**采样。无论 ML/随机/手动只要提交就存（用户诉求 2026-06-06）；source→confidence 规则内化在 riddle-dataset。
+  function captureSubmission() {
+    if (sampled) return;
+    sampled = true;
+    const source = pendingSource
+      ? pendingSource === "ML"
+        ? SAMPLE_SOURCE.ML
+        : SAMPLE_SOURCE.RANDOM
+      : SAMPLE_SOURCE.MANUAL;
+    const answers = submittedCodes();
+    recordRiddleSample({ imageDataUrl: captureRiddleDataUrl(), answers, source, imageSrc: getRiddleImgEl()?.src });
+    pushRiddleLog(`sample source=${source} answers=${answers}`);
+  }
+  if (isOptionOn("mlBackupOnFail")) {
+    const submitBtn = document.getElementById("riddlesubmit");
+    if (submitBtn) submitBtn.addEventListener("click", captureSubmission, { capture: true });
   }
   if (isOptionOn("mlAnswer")) {
     tryMLAnswer()
