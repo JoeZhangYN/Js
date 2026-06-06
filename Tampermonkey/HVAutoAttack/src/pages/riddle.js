@@ -88,49 +88,49 @@ export function riddleAlert() {
     setupRMAHealth();
   }
 
-  // P6 时机修复（对齐原 RMA：题目一出现立即识别，提交延后到倒计时末端）：
-  // ML 识别在此立即异步启动并缓存到 mlAnswer，而非等倒计时剩 riddleAnswerTime 才 await。
-  // 原 bug：识别被放到倒计时末端才开始，ML POST（最长 12s）来不及返回 → 错过倒计时，
-  // 表现为「超时随机正常、ML 没反应」。提前后 ML 有整个倒计时时长可用。
-  /** @type {string[]|null} ML 命中答案码数组（多答案题多只）；null=未就绪/识别失败 */
+  // 提交策略 ★ 对齐原版 Riddle Master Assistant Reborn.user.js v0.5.2（核对认准此文件）：
+  // ① ML 识别成功 → 短延迟(模拟人类, 原版 extend_submit_interval≈3s)**立即提交，不等末端**
+  //    （原版 setTimeout(btn.click, delay)）。移植退化为"ML 成功也等末端" → ML 识别了却不提交，
+  //    看着像没反应、用户手动答 → 手动提交后页面跳转把在途 ML POST 杀掉 → onload/onerror 都没机会跑
+  //    → 小马验证统计"错误/成功都不+1"（用户实证 2026-06-06）。现恢复原版：成功即提交。
+  // ② ML 失败/未就绪 → 每秒**重读真实倒计时** #riddlecounter（对齐原版 getRemainingSeconds/
+  //    waitUntilNearEnd），剩余 ≤ riddleAnswerTime（或连续读不到 5s）随机单只兜底提交。任意时长鲁棒。
+  const beforeEnd = parseInt(g("option").riddleAnswerTime) || 3;
+  /** @type {string[]|null} ML 命中答案码数组（多答案题多只）；null=未就绪/失败 */
   let mlAnswer = null;
+  let submitted = false;
+  let unreadable = 0;
+  let timer = null;
+  // ANSWER_KEYS.length 防退化（原 answers 漏 "ra" 命中率 1/5 旧 bug）。
+  const randomAnswer = () => [ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)]];
+  function doSubmit(answers, via) {
+    if (submitted) return;
+    submitted = true;
+    if (timer) clearInterval(timer);
+    console.log(`[HVAA][riddle] 自动提交(${via})`, answers); // 可见性：无反应时看 console 确认走哪条路径
+    riddleSubmit(answers);
+  }
   if (isOptionOn("mlAnswer")) {
     tryMLAnswer()
       .then((a) => {
         mlAnswer = a;
+        if (a && a.length) {
+          // ML 命中 → 短延迟提交（前台 ~3s / 后台 3-8s 模拟人类），不等末端。
+          const delay = document.hasFocus() ? 3000 : 3000 + Math.random() * 5000;
+          setTimeout(() => doSubmit(a, "ML"), delay);
+        }
       })
       .catch(() => {});
   }
-
-  // 等倒计时接近末端再提交。★ 对齐原版 Riddle Master Assistant Reborn.user.js v0.5.2 的
-  // waitUntilNearEnd()：每秒**重读真实倒计时** #riddlecounter，剩余 ≤ riddleAnswerTime 时提交
-  // （ML 就绪用 ML 答案，否则随机单只）。修移植退化 bug——原写法改成 30 次内部自减(非重读真值)，
-  // 倒计时 > ~33s 时窗口内永减不到阈值 → 不提交（用户实证"没反应"）；现重读真值，任意时长鲁棒。
-  const beforeEnd = parseInt(g("option").riddleAnswerTime) || 3;
-  let submitted = false;
-  let unreadable = 0;
-  function submitAtEnd() {
-    if (submitted) return;
-    submitted = true;
-    clearInterval(timer);
-    // ML 就绪 → 多答案数组；否则随机单只（ANSWER_KEYS.length 防退化：原 answers 漏 "ra" 命中率 1/5 旧 bug）。
-    const answers =
-      mlAnswer && mlAnswer.length
-        ? mlAnswer
-        : [ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)]];
-    riddleSubmit(answers);
-  }
-  function tick() {
+  timer = setInterval(function () {
     if (submitted) return;
     const remaining = parseRemainingSeconds();
     if (isNaN(remaining)) {
-      if (++unreadable >= 5) submitAtEnd(); // 连续 5s 读不到倒计时 → 兜底提交（对齐原版 waitUntilNearEnd 的 5s fallback）
+      if (++unreadable >= 5) doSubmit(mlAnswer && mlAnswer.length ? mlAnswer : randomAnswer(), "兜底·读不到倒计时");
       return;
     }
     unreadable = 0;
     document.title = remaining; // 倒计时显示在标签页标题
-    if (remaining <= beforeEnd) submitAtEnd();
-  }
-  const timer = setInterval(tick, 1000);
-  tick(); // 立即检查一次（倒计时已 ≤ 阈值则立即提交）
+    if (remaining <= beforeEnd) doSubmit(mlAnswer && mlAnswer.length ? mlAnswer : randomAnswer(), "末端兜底");
+  }, 1000);
 }
