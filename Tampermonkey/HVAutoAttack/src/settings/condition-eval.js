@@ -1,6 +1,7 @@
 // 条件评估器：解析 [["hp,1,50"], ["_buffTurn,protection,1,3"]] 这类 OR-of-AND 表达式。
 // 比较符 1>/2</3>=/4<=/5===/6!==。
-// 当前还读 g() / DOM——Phase 5 将转纯函数（接收 facts snapshot）。
+// 传 snap 时为纯函数：isCd 吃 snap.skillReady、buffTurn 吃 snap.playerEffectTurns、
+// 普通变量吃 snap[str]；无 snap 或字段未被 snapshot 收集时 fallback g()/DOM（向后兼容）。
 import { gE, isOn } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { parseEffectTurns } from "../battle/effect-parse.js";
@@ -27,10 +28,23 @@ export function checkCondition(parms, snap) {
     return str * 1;
   };
   const func = {
+    // CD 判定优先吃 snapshot.skillReady（纯）；id 未被 snapshot 收集或无 snap 时
+    // fallback isOn(DOM)（覆盖缺口兜底）。返 0=可用 / 1=在 CD（语义对齐原 isOn）。
     isCd(id) {
+      if (snap && snap.skillReady && id in snap.skillReady) {
+        return snap.skillReady[id] ? 0 : 1;
+      }
       return isOn(id) ? 0 : 1;
     },
+    // buff 剩余回合优先吃 snapshot.playerEffectTurns（纯，子串匹配 effect 名）；
+    // 无 snap 时 fallback DOM。语义同 parseEffectTurns：缺=0 / 永续=Infinity。
     buffTurn(img) {
+      if (snap && snap.playerEffectTurns) {
+        for (const [name, turns] of Object.entries(snap.playerEffectTurns)) {
+          if (name.includes(img)) return turns;
+        }
+        return 0;
+      }
       const buff = gE(`#pane_effects>img[src*="${img}"]`);
       if (!buff) return 0;
       return parseEffectTurns(buff);
