@@ -2976,13 +2976,15 @@ GM_addStyle(/*css*/`
 
   #equiplist { position: relative; }
   #equiplist td { padding: 3px; font-weight: normal; border-color: var(--color-border-alpha); }
-  #equiplist td:nth-child(n+2) { text-align: center; white-space: nowrap; }
+  #equiplist td:nth-child(n+2) { text-align: right; white-space: nowrap; padding-right: 8px; } /* 等级/pab/V/C 列右对齐 → 行间右边缘对齐(修异世界聚合列表参差) */
   #equiplist .hvut-eqp-category > td { padding: 10px; border-top-width: 3px; font-size: 10pt; font-weight: bold; background-color: var(--color-bg-h1); }
   #equiplist .hvut-eqp-type > td { padding: 10px; border-top-width: 2px; font-size: 10pt; font-weight: bold; background-color: var(--color-bg-h2); }
   #equiplist .hvut-eqp-border > td { border-top-width: 3px; border-top-style: double; }
   #equiplist .lc { height: auto; min-height: 24px; }
   .hvut-eqp-filter-on .hvut-eqp-hidden { display: none; }
   .hvut-eqp-profit { background-color: var(--color-bg-alpha); color: var(--color-font-highlight); }
+  #equiplist .hvut-eqp-level { width: 40px; } /* 等级列定宽: 各行列宽一致, 不被装备名列挤压 */
+  #equiplist .hvut-eqp-pab { width: 64px; } /* pab 列定宽(最长 SDEA 4 字母) */
   .hvut-eqp-level ~ .hvut-eqp-upgrade { display: none; }
   .hvut-eqp-level.hvut-eqp-upgrade { background-color: var(--color-bg-alpha); }
   .hvut-eqp-note { width: 90px; }
@@ -8885,12 +8887,17 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
     },
 
     integrate: {
-      init: function (screen) {
+      init: async function (screen) {
         $armory.node.table.tBodies[0].remove();
         $armory.equiplist = [];
-        $armory.filters.forEach((filter) => {
-          $armory.integrate.load(screen, filter);
-        });
+        // Promise.all 收集并发 load（行为同原 forEach 并发，仅多一个"全部注入完成"汇合点）。
+        await Promise.all($armory.filters.map((filter) => $armory.integrate.load(screen, filter)));
+        // filter=all 聚合: 各分类装备由 fetch 异步 replaceWith 注入 #equiplist, 晚于界面汉化 start(),
+        // #equiplist 是静态字典(observer 不监听 childList) → 装备名/分类标签漏翻成英文。注入全部完成后
+        // 经 window.HVAA_i18n 桥回调界面汉化重翻 #equiplist, 修"切到所有翻译失效"(异世界独有路径)。
+        if (window.HVAA_i18n && window.HVAA_i18n.retranslateEquiplist) {
+          window.HVAA_i18n.retranslateEquiplist();
+        }
       },
       load: async function (screen, filter) {
         const holder = $element('tbody', $armory.node.table, [`/<tr class="hvut-eqp-category"><td colspan="10">Loading... [${filter}]</td></tr>`]);

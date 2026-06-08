@@ -249,6 +249,25 @@ function retranslateInterface() {
     translated = true; // 重翻后回到"已翻译"显示态，与全局态同步（防动态 observer if(!translated)return 失效）
 }
 
+// 重翻 #equiplist（异世界 armory「所有」聚合用）。
+// 根因：HVUT(hv-utils) 在异世界 armory filter=all 时用 $armory.integrate 把各分类装备 AJAX 异步
+// replaceWith 注入 #equiplist，晚于本模块 start()；而 #equiplist 是静态字典（首项非 true，observer 不监听
+// 其 childList），故异步注入的装备名/分类标签永久漏翻成英文（即用户报的"切到所有翻译失效"）。
+// hv-utils integrate 注入完成后经 window.HVAA_i18n.retranslateEquiplist 回调本函数对 #equiplist 幂等重翻
+// （已翻中文的文本英文正则不匹配 → 跳过；仅翻新注入的英文节点）。
+export function retranslateEquiplist() {
+    if (!translated) return; // 英文显示态：保持原文不翻
+    const selector = "#equiplist";
+    const value = INTERFACE_DICTS_MAP[selector];
+    const elem = document.body.querySelector(selector);
+    if (!elem || !value) return;
+    const isDynamic = value[0] === true;
+    const dict = value.map(buildDict).flat();
+    translateText(elem, dict, isDynamic);
+    translateButtons(elem, dict, isDynamic);
+    translateElemTitle(elem, dict, isDynamic);
+}
+
 export function initInterfaceTranslate() {
     try {
         var p = location.pathname || "";
@@ -261,6 +280,12 @@ export function initInterfaceTranslate() {
         window.translateBattle = !!localStorage.translateBattle;
 
         registerRetranslate(retranslateInterface); // 注册 lang 切换重翻回调（去重）
+
+        // 暴露重翻入口给 hv-utils（非 ESM 第三方脚本经 window.HVAA_i18n 桥消费）：异世界 armory「所有」
+        // 聚合用 AJAX 异步注入装备分类，注入完成后回调本入口重翻 #equiplist（修"切到所有翻译失效"）。
+        if (typeof window !== "undefined" && window.HVAA_i18n) {
+            window.HVAA_i18n.retranslateEquiplist = retranslateEquiplist;
+        }
 
         //挟持浏览器弹窗方法并在弹窗之前先翻译文本，该方法独立运行
         hookAlertTranslate();
