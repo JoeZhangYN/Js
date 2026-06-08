@@ -2,15 +2,32 @@
 // 这文件 export {} 让它成为 ES module；类型仅 IDE 提示用。
 
 /**
- * 决策结果。纯决策函数返此类型，shell 翻译为副作用。
+ * 决策结果。纯决策函数返此类型，dispatch（battle/dispatch.js）翻译为副作用。
+ *
+ * - click-skill-then-target: dispatch 实现含 **Spirit Stance 前置**（checkAndActivateSpirit
+ *   命中则本回合让出），收编 debuff 全员/单目标的统一双段语义。
+ * - click-then-reload: flee 专用——click 逃跑按钮后 scheduleReload。
+ * - delegate: **过渡桥**（Phase 5b 编排倒置）。复杂 step（循环/fallback 链）暂以 run() 包现有
+ *   execute，dispatch 调 run 后读 g("end") 作 acted。@deprecated 后续 chunk PURE 化后删。
  *
  * @typedef {{ kind: "noop" }
  *         | { kind: "click", selector: string }
  *         | { kind: "click-skill-then-target", skillSel: string, targetSel: string }
+ *         | { kind: "click-then-reload", selector: string, delaySec: number }
  *         | { kind: "halt", reason: "victory"|"defeat"|"flee"|"pause"|"acted" }
  *         | { kind: "alert-and-pause", msg: { l0: string, l1: string, l2: string } }
  *         | { kind: "navigate", url: string, delayMs?: number }
+ *         | { kind: "delegate", name: string, run: () => void }
  *         } ActionResult
+ */
+
+/**
+ * 主循环决策规则（Phase 5b 编排倒置）。main-loop 只依赖 BattleRule[] + ActionResult 两个抽象，
+ * 不再 import 具体 execute 实现。decide 纯函数返 ActionResult 交 dispatch 执行。
+ * @typedef {object} BattleRule
+ * @property {string} name                                           日志/调试用
+ * @property {(snap: BattleSnapshot, opt: object) => boolean} [when]  可选前置门控；省略=总是 decide
+ * @property {(snap: BattleSnapshot, opt: object) => ActionResult} decide PURE 决策
  */
 
 /** 攻击模式枚举（Phase 6 OFC/FRD CD tracking 会扩展）。 */

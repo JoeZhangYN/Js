@@ -2,14 +2,15 @@
 // Phase 5b-2 wave 1：useBuffSkill 已切 PURE decide-buff.js + SHELL execute-buff.js。
 // 其余（useChannelSkill / useInfusions）待 Phase 5b-3 wave 2 处理。
 // file-size-gate: exempt phase-4-monolith
-import { gE, isOn, isSpiritActive } from "../dom/query.js";
+import { gE, isOn } from "../dom/query.js";
 import { g, tagEndToTrue } from "../state/store.js";
-import { checkCondition } from "../settings/condition-eval.js";
 import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
 import { NAME_TO_BUFF_CODE } from "../data/spell-lib.js";
 import { executeBuffSkill } from "./buff/execute-buff.js";
 import { decideInfusion } from "./buff/decide-infusion.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
+// checkAndActivateSpirit 抽到叶子 activate-spirit.js（破 dispatch 循环依赖），此处 re-export 保持兼容
+export { checkAndActivateSpirit } from "./buff/activate-spirit.js";
 
 export function useChannelSkill() {
   const paneEffects = gE("#pane_effects");
@@ -84,29 +85,6 @@ export function useChannelSkill() {
       }
     }
   }
-}
-
-export function checkAndActivateSpirit() {
-  if (!g("option").preCastSS) {
-    return false;
-  }
-
-  if (!checkCondition(g("option").preCastSSCondition)) {
-    return false;
-  }
-
-  const spiritElement = gE("#ckey_spirit");
-  if (!spiritElement) {
-    return false;
-  }
-
-  if (isSpiritActive(spiritElement)) {
-    return false;
-  }
-
-  spiritElement.click();
-  tagEndToTrue();
-  return true;
 }
 
 export function needsRecast(paneEffects, imgSrc) {
