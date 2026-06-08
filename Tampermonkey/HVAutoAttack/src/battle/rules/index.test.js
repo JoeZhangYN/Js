@@ -62,10 +62,10 @@ describe("delegate rule 的 decide 形状（不调 run）", () => {
     expect(typeof r.run).toBe("function");
   });
 
-  it("attack → delegate", () => {
+  it("attack → attack-plan(深度 B 已 PURE 化,非 delegate)", () => {
     const r = byName("attack").decide({}, {});
-    expect(r.kind).toBe("delegate");
-    expect(typeof r.run).toBe("function");
+    expect(r.kind).toBe("attack-plan");
+    expect(r.plan).toBeTruthy();
   });
 });
 

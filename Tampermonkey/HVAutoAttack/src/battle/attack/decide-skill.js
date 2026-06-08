@@ -38,7 +38,7 @@ function scoreSkillContextual(skill, opt, snap, firstMonster) {
 }
 
 /**
- * 给所有物理技能候选打分。返候选数组（含不可用的 score=0），caller 用 decideByUtility 取最高。
+ * 给所有物理技能候选打分。返候选数组（含不可用的 score=0），caller 用 pickByUtility 取最高。
  * @param {object} opt
  * @param {import("../../core/types.js").BattleSnapshot} snap
  * @param {{firstMonsterStunned:boolean}} ctx

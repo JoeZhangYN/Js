@@ -12,6 +12,7 @@ import { scheduleReload, openUrl } from "../core/navigate.js";
 import { _alert } from "../core/lang.js";
 import { pauseScript } from "./pause-control.js";
 import { checkAndActivateSpirit } from "./buff/activate-spirit.js";
+import { executeAttack } from "./attack/execute-attack.js";
 
 /**
  * 执行一个 ActionResult，返回是否已触发副作用。
@@ -56,6 +57,10 @@ export function dispatch(result) {
 
     case "halt":
       return true;
+
+    case "attack-plan":
+      // attack 的 PURE 决策(decideAttack)产出 AttackPlan，交 executeAttack 翻译为 click + 记账。
+      return executeAttack(result.plan);
 
     case "delegate": {
       // 过渡桥：复杂 step（循环/fallback 链）暂用现有 execute（内部自带 click + tagEnd）。

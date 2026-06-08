@@ -4,7 +4,6 @@ import { setValue, getValue, delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { setAudioAlarm } from "../alarm/alarm.js";
-import { attack } from "../battle/attack.js";
 import { pauseChange } from "../battle/main-loop.js";
 
 export function recordUsage(parm) {

@@ -43,17 +43,6 @@ export function pickByUtility(candidates) {
 }
 
 /**
- * 选最高分候选并执行其 dispatch（= pickByUtility + winner.dispatch()）。
- * @param {ActionCandidate[]} candidates
- * @returns {ActionCandidate|null}
- */
-export function decideByUtility(candidates) {
-  const winner = pickByUtility(candidates);
-  if (winner) winner.dispatch();
-  return winner;
-}
-
-/**
  * 给候选 action 计算"权重 × 多怪 multiplier"——OFC/FRD 这类全体伤害的常见 score 计算。
  * @param {number} baseScore
  * @param {number} aliveCount

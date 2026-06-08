@@ -18,7 +18,7 @@ import { decideInfusion } from "../buff/decide-infusion.js";
 import { decideBuff } from "../buff/decide-buff.js";
 import { decideDeSkill } from "../debuff/decide-de-skill.js";
 import { castDebuffOnAll } from "../debuff.js";
-import { attack } from "../attack.js";
+import { decideAttack } from "../attack/decide-attack.js";
 import { shouldSkipForBigSkill } from "./big-skill.js";
 import { runBossImperil } from "./boss-imperil.js";
 
@@ -142,9 +142,10 @@ export const BATTLE_RULES = [
       checkCondition(opt.debuffSkillCondition, snap),
     decide: (snap, opt) => decideDeSkill(opt, snap),
   },
-  // 16. 攻击（最后一步，法术/物理多分支 → delegate）
+  // 16. 攻击（最后一步）。深度 B：已 PURE 化——decideAttack 返 {kind:"attack-plan"}，
+  // executeAttack 执行;不再 delegate / 不再读 DOM 做判断。
   {
     name: "attack",
-    decide: (snap) => delegate("attack", () => attack(snap)),
+    decide: (snap, opt) => decideAttack(opt, snap, g("monsterStatus")),
   },
 ];

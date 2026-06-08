@@ -18,7 +18,24 @@
  *         | { kind: "alert-and-pause", msg: { l0: string, l1: string, l2: string } }
  *         | { kind: "navigate", url: string, delayMs?: number }
  *         | { kind: "delegate", name: string, run: () => void }
+ *         | { kind: "attack-plan", plan: AttackPlan }
  *         } ActionResult
+ */
+
+/**
+ * attack 决策计划（decideAttack PURE 产出，executeAttack SHELL 执行）。attack 专属，由
+ * ActionResult 的 "attack-plan" kind 承载——避免 attack 的多分支细节污染通用 dispatch/ActionResult。
+ * - spell: 单目标 targetId=首怪(finWeight 最小)；AoE targetId=order 最小存活怪。
+ * - physical: 恒带 defaultTargetId(原 attack 物理技能后必点首怪)；mercifulTargetId = T3 多怪场景
+ *   第一个流血残血怪(可空)。
+ * @typedef {{ type:"noop" }
+ *         | { type:"focus" }
+ *         | { type:"toggle-spirit" }
+ *         | { type:"spell", spellId:string, targetId:number }
+ *         | { type:"merciful-single", skillId:string, targetId:number }
+ *         | { type:"physical", skillId:string, code:string, defaultTargetId:number, mercifulTargetId?:(number|null) }
+ *         | { type:"default", targetId:number }
+ *         } AttackPlan
  */
 
 /**
