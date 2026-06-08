@@ -3605,6 +3605,9 @@ const $persona = {
     }
   },
   parse_stats_pane: function (doc) {
+    // [HVAA 嵌入修复] 与主世界版同源不变量：非属性页(无 #stats_scrollable，如装备库存 ss=in 经 persona_outer 进入)不解析。
+    // isekai 版从 stats_pane 键反推 fighting_style，空面板虽不崩，但会把垃圾 ch_style('Unarmed') 写进配置，同样提前 bail。
+    if (!$qs('#stats_scrollable', doc)) return;
     const stats_pane = {};
     $qsa('#stats_scrollable > table', doc).forEach((table) => {
       const type = table.previousElementSibling.textContent;
@@ -10610,7 +10613,10 @@ const $equip = {
       const pattern = `^(${quality})(?: (?:(${prefix})|(.+?)))? (?:(${onehanded})|(${twohanded})|(${staff})|(${shield})|(?:(?:(${acloth})|(${alight})|(${aheavy})) (${slot})))(?: of (.+))?$`;
       return new RegExp(pattern, 'i');
     })(),
-    html: /<div>(.+?) &nbsp; &nbsp; (?:Level (\d+|Unassigned) )?&nbsp; &nbsp; <span>(Tradeable|Untradeable|Soulbound)<\/span><\/div><div>Condition: (\d+) \/ (\d+) \(\d+%\) &nbsp; &nbsp; Potency Tier: (\d+) \((?:(\d+) \/ (\d+)|MAX)\)/,
+    // [HVAA 移植 chunk1] 主世界装备数据已对齐 isekai 能量模型，改用 isekai reg.html 正则：
+    // 旧 `Condition: X / Y (Z%) … Potency Tier: T (a / b)` → 新 `… Level N|Tier a/b/c … Condition: N% … Energy: N%|N/A`。
+    // 捕获组：1 类目 2 等级 3 Unassigned 4/5/6 升级/iw/上限 7 流通性 8 耐久% 9 能量% 10 N/A 11 Salvaged。
+    html: />([\w -]+(?<! ))(?: |&nbsp;)*(?:Level (?:(\d+)|(Unassigned))|Tier (\d+) \/ (\d+) \/ (\d+)).*(Tradeable|Untradeable|Soulbound).*(?:Condition: (\d+(?:\.\d+)?)%.*Energy: (?:(\d+(?:\.\d+)?)%|(N\/A))|(Salvaged) - Repair Required)/,
     magic: /Fire|Cold|Elec|Wind|Holy|Dark/i,
     pab: /Strength|Dexterity|Agility|Endurance|Intelligence|Wisdom/g,
   },
@@ -10814,24 +10820,29 @@ const $equip = {
       if (!dynjs) {
         return { error: 'no data' };
       }
+      // [HVAA 移植 chunk1] 按新能量模型 reg.html 捕获组解析(见 reg.html 注释)。
+      // 旧潜能字段 tier/pxp1/pxp2/durability 在新格式已不存在 → 不再产出，也不再调 getpxp(否则得 NaN)；
+      // 依赖这些字段的特性(百分位/锻造/物品世界)见 Chunk 2。名称处理(dynjs.t + $equip.names 覆盖)保持原样。
       const exec = $equip.reg.html.exec(dynjs.d);
       if (!exec) {
         return { error: 'parse error' };
       }
+      const condition = parseFloat(exec[8]);
       const eq = {
         info: {
           name: dynjs.t,
           category: exec[1],
           level: parseInt(exec[2]) || 0,
-          unassigned: exec[2] === 'Unassigned',
-          tradeable: exec[3] === 'Tradeable',
-          soulbound: exec[3] === 'Soulbound',
-          cdt: exec[4] / exec[5],
-          condition: parseInt(exec[4]),
-          durability: parseInt(exec[5]),
-          tier: parseInt(exec[6]),
-          pxp1: parseInt(exec[7]),
-          pxp2: parseInt(exec[8]),
+          unassigned: exec[3] === 'Unassigned',
+          upgrade: parseInt(exec[4]),
+          iw: parseInt(exec[5]),
+          upgrade_cap: parseInt(exec[6]),
+          tradeable: exec[7] === 'Tradeable',
+          soulbound: exec[7] === 'Soulbound',
+          condition: condition,
+          cdt: (condition || 0) / 100, // 新模型无 durability，cdt 退化为 condition/100，使 cdt*100=耐久% 供旧显示沿用
+          energy: exec[9] ? parseFloat(exec[9]) : null,
+          salvaged: exec[10] === 'Salvaged',
           pab: dynjs.d.match($equip.reg.pab)?.map((p) => p[0]).join('') || '',
           eid: eid,
           key: dynjs.k,
@@ -10850,7 +10861,6 @@ const $equip = {
         eq.info.name = equipname;
       }
       $equip.parse.name(eq.info.name, eq);
-      eq.info.pxp = $equip.getpxp(eq);
       div.dataset.eid = eq.info.eid;
       div.dataset.key = eq.info.key;
       return eq;
@@ -11093,6 +11103,11 @@ const $equip = {
     }
     const equiplist = Array.from($qsa('div[onmouseover*="equips.set"]', node)).map((div) => {
       const eq = $equip.parse.div(div);
+      // [HVAA 嵌入修复] 主世界装备数据已向 isekai 格式对齐，旧 parse.div 解析失败时返回无 node 的 {error} 对象
+      // （ss=eq / Bazaar ss=am 实测崩 eq.node.wrapper）。跳过解析失败项：功能降级（不显示附魔/排序）而非整页崩溃。
+      if (!eq || eq.error || !eq.node) {
+        return null;
+      }
       eq.node.wrapper = div.parentNode;
       if (eq.info.customname) {
         div.classList.add('hvut-eq-customname');
@@ -11100,7 +11115,7 @@ const $equip = {
       }
       div.classList.add('hvut-eq-' + eq.info.quality);
       return eq;
-    });
+    }).filter(Boolean);
     if ($config.settings.equipSort && sort) {
       $equip.sort(equiplist, parent);
     }
@@ -12108,6 +12123,10 @@ if ($config.settings.equipHoverFunctions) {
     const div = $qs('div[data-eid]:hover');
     if (div) {
       const eq = $equip.parse.div(div);
+      // [HVAA 嵌入修复] 同 list：装备格式向 isekai 对齐后旧 parse.div 可能返回 {error}（无 info），跳过快捷键避免崩溃。
+      if (!eq || eq.error || !eq.info) {
+        return;
+      }
       if (e.key === 'C') {
         div.dispatchEvent(new MouseEvent('mouseover'));
         document.dispatchEvent(new KeyboardEvent('keypress', { which: 99, keyCode: 99 }));
@@ -12646,6 +12665,11 @@ const $persona = {
     }
   },
   parse_stats_pane: function (doc) {
+    // [HVAA 嵌入修复] 非角色属性页(如装备库存 ss=in，经 $id('persona_outer') 进入 [1] Character 块)
+    // 无属性面板：.spn 缺失 → 原 $qs('.spn').textContent 读 null 崩溃；且空 stats_pane 仍会写垃圾 ch_style。
+    // 不变量「仅在属性面板存在时解析」：无 .spn 即非属性页，提前 bail（不解析、不写配置，读写路径一致）。
+    const spn = $qs('.spn', doc);
+    if (!spn) return;
     const stats_pane = {};
     $qsa('#stats_pane .st1 > div:nth-child(2n), #stats_pane .st2 > div:nth-child(2n)', doc).forEach((div) => {
       const type = div.parentNode.previousElementSibling.textContent;
@@ -12669,7 +12693,7 @@ const $persona = {
       stats_pane[text] = number;
     });
 
-    const fighting_style = /(Unarmed|One-Handed|Two-Handed|Dualwield|Niten Ichiryu|Staff)/.exec($qs('.spn', doc).textContent)[1];
+    const fighting_style = /(Unarmed|One-Handed|Two-Handed|Dualwield|Niten Ichiryu|Staff)/.exec(spn.textContent)[1];
     const spell_type = ['Fire', 'Cold', 'Elec', 'Wind', 'Holy', 'Dark'].sort((a, b) => stats_pane[b + ' EDB'] - stats_pane[a + ' EDB'])[0];
     const spell_damage = stats_pane[spell_type + ' EDB'];
     const prof_factor = Math.max(0, Math.min(1, stats_pane[{ 'Holy': 'Divine', 'Dark': 'Forbidden' }[spell_type] || 'Elemental'] / _player.level - 1));
@@ -13616,7 +13640,8 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
       eq.node.div.textContent = eq.node.div.textContent;
       $element('div', eq.node.wrapper.firstElementChild, ['.hvut-eq-info']).append(
         $element('span', null, [(eq.info.soulbound ? 'Soulbound' : 'Lv.' + eq.info.level), (eq.info.soulbound || !eq.info.tradeable ? '.hvut-eq-untradeable' : '')]), ' : ',
-        $element('span', null, '潜能等级 ' + eq.info.tier), ' : ',
+        // [HVAA 移植 chunk1] 新能量模型无潜能等级(tier) → 改显能量(Energy)，避免 "潜能等级 undefined"。
+        $element('span', null, (eq.info.energy == null ? '能量 N/A' : '能量 ' + eq.info.energy + '%')), ' : ',
         $element('span', null, [Math.ceil(eq.info.cdt * 100) + '%', (eq.info.cdt <= 0.5 ? '.hvut-eq-cdt2' : eq.info.cdt <= 0.6 ? '.hvut-eq-cdt1' : '')])
       );
     });

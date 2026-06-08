@@ -191,12 +191,15 @@ export function init() {
         g("option").staminaLow
     )
       return;
-    // 自动修复武器
-    if (g("option").repair) repairCheck();
-    if (g("option").idleArena)
+    // 自动修复武器。repair 开启时 idleArena 调度由 repairCheck 独占（仅装备达标才开下一场，
+    // 修理失败则停机止损）；故此处 else-if 互斥，避免无条件开战与 repair 解耦的破坏性死循环。
+    if (g("option").repair) {
+      repairCheck();
+    } else if (g("option").idleArena) {
       setTimeout(
         idleArena,
         ((g("option").idleArenaTime * (Math.random() * 20 + 90)) / 100) * 1000
       );
+    }
   }
 }
