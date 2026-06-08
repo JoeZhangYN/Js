@@ -81,6 +81,8 @@
  * @property {Record<string,number>} playerEffectTurns  img → 剩余回合（Infinity = 永续）
  * @property {boolean=} etherTapActiveX2         玩家有 "Ether Tap (x2)" 效果（attack ether-tap gate 用）
  * @property {boolean=} etherTapExpiring         wpn_et 效果即将过期（effect_expire id）
+ * @property {Array<{img:string,name:string,turns:number}>=} playerEffects 玩家效果明细（channel/critical 用）
+ * @property {(string|null)=} gemName            宝石按钮文案（#ikey_p textContent，decideGem 用）
  * @property {CdMap} cdMap
  * @property {number} attackStatus
  * @property {string} fightingStyle

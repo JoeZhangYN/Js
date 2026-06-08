@@ -12,7 +12,7 @@ import { g } from "../state/store.js";
 import { collectCdMap } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
 import { finalizePending } from "../state/recovery-learner.js";
-import { parseEffectTurns } from "./effect-parse.js";
+import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 
 /**
  * 解析一个 effect 容器（玩家 #pane_effects 或怪物 .btm6）内全部 img 为 {img, turns}[]。
@@ -24,6 +24,7 @@ function readEffects(container) {
   if (!container) return [];
   return [...container.querySelectorAll("img")].map((img) => ({
     img: img.src.match(/\/e\/(.*?)\.png/)?.[1] || "",
+    name: parseEffectName(img), // 显示名（onmouseover 第一个引号串），供 decide 区别于 img 文件名
     turns: parseEffectTurns(img),
   }));
 }
@@ -165,6 +166,10 @@ export function collectSnapshot() {
     // 与原 attack.js 同选择器，批在本次 #pane_effects 读里 → 维持"DOM 读一次"。
     etherTapActiveX2: !!gE('#pane_effects>img[onmouseover*="Ether Tap (x2)"]'),
     etherTapExpiring: !!gE('#pane_effects>img[src*="wpn_et"][id*="effect_expire"]'),
+    // 深度B：玩家效果明细 [{img,name,turns}]（供 channel/critical 等 decide 用，含显示名+剩余回合）
+    playerEffects,
+    // 深度B：宝石按钮文案（供 decideGem，PURE 不读 DOM）；无宝石按钮 → null
+    gemName: gE("#ikey_p")?.textContent ?? null,
     cdMap: collectCdMap(),
     skillReady: readSkillReady(),
     skillOTOS: g("skillOTOS") || {},
