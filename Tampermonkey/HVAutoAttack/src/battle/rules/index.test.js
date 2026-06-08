@@ -1,6 +1,5 @@
-// Commit 4：BATTLE_RULES 结构 + 关键 rule 的 when/decide 回归锁。
-// 只验证「纯」部分（结构 / 自包含的 flee·defend decide / when 门控）；delegate rule 的 decide
-// 只构造 {kind:"delegate", run} 不调用 run（调 run 才有副作用），故可安全断言其形状。
+// BATTLE_RULES 结构 + 关键 rule 的 when/decide 回归锁。
+// 深度 B 后全部 16 条 decide 均为 PURE（无 delegate）；此处验证结构 / 自包含 decide 形状 / when 门控。
 import { describe, it, expect } from "vitest";
 import { BATTLE_RULES } from "./index.js";
 
@@ -54,18 +53,30 @@ describe("干净 rule 的 decide 返真 ActionResult", () => {
   });
 });
 
-describe("delegate rule 的 decide 形状（不调 run）", () => {
-  it("criticalBuffGuard → delegate", () => {
-    const r = byName("criticalBuffGuard").decide({}, {});
-    expect(r.kind).toBe("delegate");
-    expect(r.name).toBe("criticalBuffGuard");
-    expect(typeof r.run).toBe("function");
+describe("PURE decide 形状（深度 B 后无 delegate）", () => {
+  it("criticalBuffGuard → noop（未开 pauseOnCriticalBuffExpire）", () => {
+    expect(byName("criticalBuffGuard").decide({}, {})).toEqual({ kind: "noop" });
   });
 
-  it("attack → attack-plan(深度 B 已 PURE 化,非 delegate)", () => {
+  it("autoPause → pause", () => {
+    expect(byName("autoPause").decide({}, {})).toEqual({ kind: "pause" });
+  });
+
+  it("attack → attack-plan（PURE，非 delegate）", () => {
     const r = byName("attack").decide({}, {});
     expect(r.kind).toBe("attack-plan");
     expect(r.plan).toBeTruthy();
+  });
+
+  it("没有 rule 返 delegate（过渡桥已删）", () => {
+    const kinds = BATTLE_RULES.map((r) => {
+      try {
+        return r.decide({ monsters: [], skillReady: {}, playerEffects: [] }, {})?.kind;
+      } catch {
+        return null;
+      }
+    });
+    expect(kinds).not.toContain("delegate");
   });
 });
 

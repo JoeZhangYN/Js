@@ -73,15 +73,8 @@ describe("dispatch", () => {
     expect(flee.click).toHaveBeenCalledOnce();
   });
 
-  it("delegate → run() 设 end 后被 dispatch 读取并 reset", () => {
-    const run = vi.fn(() => g("end", true));
-    expect(dispatch({ kind: "delegate", name: "x", run })).toBe(true);
-    expect(run).toHaveBeenCalledOnce();
-    expect(g("end")).toBe(false); // dispatch 读后 reset（局部信号不外泄）
-  });
-
-  it("delegate run 未 act → 返 false", () => {
-    expect(dispatch({ kind: "delegate", name: "y", run: () => {} })).toBe(false);
+  it("pause → pauseScript 暂停，返 true", () => {
+    expect(dispatch({ kind: "pause" })).toBe(true);
   });
 
   it("halt → 返 true", () => {

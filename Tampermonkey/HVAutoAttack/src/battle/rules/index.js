@@ -1,41 +1,30 @@
-// BATTLE_RULES：主循环 16 个决策步骤的声明式注册表（Phase 5b 编排倒置）。
+// BATTLE_RULES：主循环 16 个决策步骤的声明式注册表（Phase 5b 编排倒置 + 深度 B 全 PURE）。
 // main-loop 只依赖 此数组 + runRules + dispatch 三个抽象，不再 import 具体 execute 实现——
-// 本文件即「组合根」(composition root)：把具体实现 wire 进 BattleRule 抽象。
+// 本文件即「组合根」(composition root)：把 PURE decide 实现 wire 进 BattleRule 抽象。
 //
 // 每条 rule：{ name, when?(snap,opt), decide(snap,opt)→ActionResult }。顺序 = 原 runSteps 顺序。
-// decide 两类：
-//   - 干净（5）：返真 ActionResult（flee/defend/useInfusions/useBuffSkill/useDeSkill）。
-//   - delegate（11）：复杂 step（循环 / fallback 链 / 额外副作用如 autoTune 计数 / monsterStatus.sort）
-//     暂包现有 execute（内部自带 click + tagEnd），标过渡桥，后续 chunk 逐个 PURE 化。
+// 深度 B 后**全部 16 条 decide 均为 PURE**（只读 snap + g() runtime，零 DOM 判断）；副作用全在
+// dispatch/execute-*（SHELL）。已无 delegate 过渡桥。
 import { g } from "../../state/store.js";
 import { checkCondition } from "../../settings/condition-eval.js";
-import { checkCriticalBuffGuard } from "../critical-buff-guard.js";
-import { pauseScript } from "../pause-control.js";
-import { useGem, deadSoon, stallTopup, useScroll } from "../item.js";
 import { isStallMode } from "../potion-economy.js";
-import { useChannelSkill } from "../buff.js";
 import { decideInfusion } from "../buff/decide-infusion.js";
 import { decideBuff } from "../buff/decide-buff.js";
+import { decideChannel } from "../buff/decide-channel.js";
 import { decideDeSkill } from "../debuff/decide-de-skill.js";
-import { castDebuffOnAll } from "../debuff.js";
+import { decideCastDebuffOnAll } from "../debuff/decide-cast-all.js";
 import { decideAttack } from "../attack/decide-attack.js";
+import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../item/decide-item.js";
+import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
 import { shouldSkipForBigSkill } from "./big-skill.js";
-import { runBossImperil } from "./boss-imperil.js";
-
-/**
- * delegate 工厂：包一个返 void 的现有 execute（内部自带 click + tagEnd）。
- * @param {string} name
- * @param {() => void} run
- * @returns {import("../../core/types.js").ActionResult}
- */
-const delegate = (name, run) => ({ kind: "delegate", name, run });
+import { decideBossImperil } from "./decide-boss-imperil.js";
 
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
-  // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（自 gate opt.pauseOnCriticalBuffExpire）
+  // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
   {
     name: "criticalBuffGuard",
-    decide: (snap) => delegate("criticalBuffGuard", () => checkCriticalBuffGuard(snap)),
+    decide: (snap, opt) => decideCriticalBuff(opt, snap),
   },
   // 2. 逃跑
   {
@@ -43,27 +32,27 @@ export const BATTLE_RULES = [
     when: (snap, opt) => opt.autoFlee && checkCondition(opt.fleeCondition, snap),
     decide: () => ({ kind: "click-then-reload", selector: "1001", delaySec: 3 }),
   },
-  // 3. 自动暂停（step 内 disabled=false 恒走 pauseScript 分支，不触发 pauseChange 的 main() 递归）
+  // 3. 自动暂停（step 内 disabled=false 恒走 pauseScript 分支）
   {
     name: "autoPause",
     when: (snap, opt) => opt.autoPause && checkCondition(opt.pauseCondition, snap),
-    decide: () => delegate("autoPause", () => pauseScript()),
+    decide: () => ({ kind: "pause" }),
   },
-  // 4. 宝石（useGem 自 gate gemElement；含 dyn-threshold + autoTune 计数副作用 → delegate）
+  // 4. 宝石（decideGemUse 自 gate snap.gemName；dyn-threshold 在 decide，autoTune 计数在 execute）
   {
     name: "useGem",
-    decide: (snap) => delegate("useGem", () => useGem(snap)),
+    decide: (snap, opt) => decideGemUse(opt, snap),
   },
-  // 5. 紧急回血回魔（循环 + recordPreDrink 学习观测 → delegate）
+  // 5. 紧急回血回魔（decide 出候选 id 列表，execute 探活+喝第一个可用）
   {
     name: "deadSoon",
     when: (snap, opt) => opt.item && opt.itemOrderValue,
-    decide: (snap) => delegate("deadSoon", () => deadSoon(snap)),
+    decide: (snap, opt) => decidePotion(opt, snap),
   },
-  // 6. stall 主动 topup（3 段 fallback 链 + 自 gate stallMode → delegate）
+  // 6. stall 主动 topup（decide 自 gate stallMode，出 attempts 链；execute tryFirst）
   {
     name: "stallTopup",
-    decide: (snap) => delegate("stallTopup", () => stallTopup(snap)),
+    decide: (snap, opt) => decideStallTopup(opt, snap),
   },
   // 7. 防御（attemptClick 内置 isOn 探活）
   {
@@ -71,7 +60,7 @@ export const BATTLE_RULES = [
     when: (snap, opt) => opt.defend && checkCondition(opt.defendCondition, snap),
     decide: () => ({ kind: "click", selector: "#ckey_defend" }),
   },
-  // 8. 卷轴（嵌套循环按优先级试 7 种 → delegate）
+  // 8. 卷轴（decide 出候选 item id，execute 探活+点第一个可用）
   {
     name: "useScroll",
     when: (snap, opt) =>
@@ -80,7 +69,7 @@ export const BATTLE_RULES = [
       checkCondition(opt.scrollCondition, snap) &&
       opt.scrollRoundType &&
       opt.scrollRoundType[g("roundType")],
-    decide: () => delegate("useScroll", () => useScroll()),
+    decide: (snap, opt) => decideScroll(opt, snap),
   },
   // 9. 元素灌注（仅法术模式）
   {
@@ -89,11 +78,11 @@ export const BATTLE_RULES = [
       snap.attackStatus !== 0 && opt.infusionSwitch && checkCondition(opt.infusionCondition, snap),
     decide: (snap, opt) => decideInfusion(opt, snap),
   },
-  // 10. Channel（3 段 fallback 链 → delegate）
+  // 10. Channel（decide 三段优先级返单 click，execute 探活+click）
   {
     name: "useChannelSkill",
     when: (snap, opt) => opt.channelSkillSwitch && opt.channelSkill && snap.channeling,
-    decide: () => delegate("useChannelSkill", () => useChannelSkill()),
+    decide: (snap, opt) => decideChannel(opt, snap),
   },
   // 11. BUFF
   {
@@ -102,13 +91,13 @@ export const BATTLE_RULES = [
       opt.buffSkillSwitch && opt.buffSkill && checkCondition(opt.buffSkillCondition, snap),
     decide: (snap, opt) => decideBuff(opt, snap),
   },
-  // 12. Boss-Imperil（AoE 覆盖优化 + 可选 Spirit → delegate）
+  // 12. Boss-Imperil（decide 算 AoE bestIdx 目标 → click-skill-then-target，含 Spirit 前置）
   {
     name: "bossImperil",
     when: (snap, opt) => opt.debuffSkillSwitch !== false && !!snap.skillReady["213"],
-    decide: (snap, opt) => delegate("bossImperil", () => runBossImperil(opt, snap)),
+    decide: (snap, opt) => decideBossImperil(opt, snap),
   },
-  // 13. 全员 Weaken（OFC/FRD 即将就绪时跳过；castDebuffOnAll 末尾有 sort 副作用 → delegate）
+  // 13. 全员 Weaken（OFC/FRD 即将就绪时跳过）
   {
     name: "castWeakenAll",
     when: (snap, opt) =>
@@ -118,7 +107,7 @@ export const BATTLE_RULES = [
       snap.monsters.filter((m) => m.buffs.some((b) => b.includes("weaken"))).length <
         g("monsterAlive") &&
       checkCondition(opt.debuffSkillWkCondition, snap),
-    decide: (snap) => delegate("castWeakenAll", () => castDebuffOnAll("We", snap)),
+    decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "We"),
   },
   // 14. 全员 Imperil
   {
@@ -130,7 +119,7 @@ export const BATTLE_RULES = [
       snap.monsters.filter((m) => m.buffs.some((b) => b.includes("imperil"))).length <
         g("monsterAlive") &&
       checkCondition(opt.debuffSkillImpCondition, snap),
-    decide: (snap) => delegate("castImperilAll", () => castDebuffOnAll("Im", snap)),
+    decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "Im"),
   },
   // 15. 单目标 Debuff（stall 模式跳过——独怪上 debuff 浪费 MP + CD）
   {
@@ -142,8 +131,7 @@ export const BATTLE_RULES = [
       checkCondition(opt.debuffSkillCondition, snap),
     decide: (snap, opt) => decideDeSkill(opt, snap),
   },
-  // 16. 攻击（最后一步）。深度 B：已 PURE 化——decideAttack 返 {kind:"attack-plan"}，
-  // executeAttack 执行;不再 delegate / 不再读 DOM 做判断。
+  // 16. 攻击（最后一步，PURE decideAttack 返 attack-plan）
   {
     name: "attack",
     decide: (snap, opt) => decideAttack(opt, snap, g("monsterStatus")),

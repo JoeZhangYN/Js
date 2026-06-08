@@ -4,11 +4,12 @@
 /**
  * 决策结果。纯决策函数返此类型，dispatch（battle/dispatch.js）翻译为副作用。
  *
- * - click-skill-then-target: dispatch 实现含 **Spirit Stance 前置**（checkAndActivateSpirit
- *   命中则本回合让出），收编 debuff 全员/单目标的统一双段语义。
+ * - click-skill-then-target: dispatch 含 **Spirit Stance 前置**（checkAndActivateSpirit 命中则本回合让出），
+ *   收编 debuff 全员/单目标 + boss-imperil 的统一双段语义。
  * - click-then-reload: flee 专用——click 逃跑按钮后 scheduleReload。
- * - delegate: **过渡桥**（Phase 5b 编排倒置）。复杂 step（循环/fallback 链）暂以 run() 包现有
- *   execute，dispatch 调 run 后读 g("end") 作 acted。@deprecated 后续 chunk PURE 化后删。
+ * - pause / critical-pause: 纯暂停 / 关键 buff 即将消失告警暂停。
+ * - *-plan: attack/item/channel 多分支决策的数据计划，由对应 execute-*（execute-attack/item/channel）
+ *   执行——保持通用 dispatch 不被各 step 细节污染。深度 B 后已无 delegate 过渡桥。
  *
  * @typedef {{ kind: "noop" }
  *         | { kind: "click", selector: string }
@@ -16,10 +17,28 @@
  *         | { kind: "click-then-reload", selector: string, delaySec: number }
  *         | { kind: "halt", reason: "victory"|"defeat"|"flee"|"pause"|"acted" }
  *         | { kind: "alert-and-pause", msg: { l0: string, l1: string, l2: string } }
+ *         | { kind: "pause" }
+ *         | { kind: "critical-pause", name: string, turns: number, mp: number, mpFloor: number }
  *         | { kind: "navigate", url: string, delayMs?: number }
- *         | { kind: "delegate", name: string, run: () => void }
  *         | { kind: "attack-plan", plan: AttackPlan }
+ *         | { kind: "item-plan", plan: ItemPlan }
+ *         | { kind: "channel-plan", plan: ChannelPlan }
  *         } ActionResult
+ */
+
+/**
+ * 物品 step 决策计划（decideGemUse/decidePotion/decideStallTopup/decideScroll → executeItem）。
+ * @typedef {{ type:"noop" }
+ *         | { type:"gem" }
+ *         | { type:"potion", candidates: string[], noWaste: boolean }
+ *         | { type:"stall", attempts: Array<{kind:"spirit-off"}|{kind:"focus"}|{kind:"draught", id:number}> }
+ *         | { type:"scroll", candidates: number[] }
+ *         } ItemPlan
+ */
+
+/**
+ * Channel step 决策计划（decideChannel → executeChannel）。三段优先级返单 click 或 noop。
+ * @typedef {{ type:"click", skillId:string } | { type:"noop" }} ChannelPlan
  */
 
 /**

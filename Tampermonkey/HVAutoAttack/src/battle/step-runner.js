@@ -1,7 +1,7 @@
-// 主循环步骤执行器（Phase 5b 编排倒置）。
+// 主循环步骤执行器（Phase 5b 编排倒置 + 深度 B 全 PURE）。
 // runRules：遍历 BattleRule[]，when 门控 → PURE decide → dispatch(SHELL) → acted 短路。
-// 旧 runSteps（g("end") flag 命令式短路）已随 main-loop 切 runRules 拆除（拆桥）；
-// g("end") 仅剩 dispatch 的 delegate 分支作局部 acted 信号（过渡桥，后续 chunk 消除）。
+// 旧 runSteps（g("end") flag）+ delegate 过渡桥均已拆除（拆桥）；判断全在 PURE decide，
+// dispatch 只翻译数据→副作用并返 acted。g("end") 仅由 tagEnd 写、无人读（遗留，留待统一清理）。
 import { g } from "../state/store.js";
 import { dispatch } from "./dispatch.js";
 
@@ -16,6 +16,6 @@ export function runRules(rules, snap, opt) {
   g("end", false);
   for (const rule of rules) {
     if (rule.when && !rule.when(snap, opt)) continue;
-    if (dispatch(rule.decide(snap, opt))) return;
+    if (dispatch(rule.decide(snap, opt), snap)) return;
   }
 }

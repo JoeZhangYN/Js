@@ -1,0 +1,90 @@
+// SHELL: 把 decide-item 的 ItemPlan 翻译为 DOM 副作用 + 状态记账。
+// 只写不判断（判断全在 decide-item.js）；isOn/gE 探活属写路径安全读（与原 item.js 一致）。
+// 记账：autoTunePotionCount（autoTune 开时本回合用药计数）/ lastSpiritToggleGlobalTurn / recordPreDrink。
+import { gE, isOn } from "../../dom/query.js";
+import { itemSelector } from "../../dom/selectors.js";
+import { g, tagEndToTrue } from "../../state/store.js";
+import { recordPreDrink } from "../../state/recovery-learner.js";
+
+/**
+ * @param {import("../../core/types.js").ItemPlan} plan
+ * @param {import("../../core/types.js").BattleSnapshot} snap
+ * @returns {boolean} acted —— 是否已触发副作用
+ */
+export function executeItem(plan, snap) {
+  switch (plan.type) {
+    case "noop":
+      return false;
+
+    case "gem": {
+      // 原 useGem：decideGem 命中后 click #ikey_p + tagEnd + autoTune 计数
+      gE("#ikey_p")?.click();
+      tagEndToTrue();
+      if (g("option").autoTune) {
+        g("autoTunePotionCount", (g("autoTunePotionCount") || 0) + 1);
+      }
+      return true;
+    }
+
+    case "potion": {
+      // 原 deadSoon：按 candidates 顺序 isOn 探活，第一个可用的喝（noWaste 时先 recordPreDrink）
+      for (const id of plan.candidates) {
+        const el = isOn(id);
+        if (!el) continue;
+        if (plan.noWaste) recordPreDrink(id, snap);
+        el.click();
+        tagEndToTrue();
+        if (g("option").autoTune) {
+          g("autoTunePotionCount", (g("autoTunePotionCount") || 0) + 1);
+        }
+        return true;
+      }
+      return false;
+    }
+
+    case "stall": {
+      // 原 stallTopup tryFirst 链：第一个能落地的 attempt 生效，后续不再尝试
+      for (const attempt of plan.attempts) {
+        if (attempt.kind === "spirit-off") {
+          const el = gE("#ckey_spirit");
+          if (!el) continue;
+          el.click();
+          g("lastSpiritToggleGlobalTurn", g("globalTurn") || 0);
+          tagEndToTrue();
+          return true;
+        }
+        if (attempt.kind === "focus") {
+          const el = gE("#ckey_focus");
+          if (!el) continue;
+          el.click();
+          tagEndToTrue();
+          return true;
+        }
+        if (attempt.kind === "draught") {
+          const el = gE(itemSelector(attempt.id));
+          if (!el) continue;
+          recordPreDrink(attempt.id, snap);
+          el.click();
+          tagEndToTrue();
+          return true;
+        }
+      }
+      return false;
+    }
+
+    case "scroll": {
+      // 原 useScroll：按 candidates 顺序 gE 探活，第一个存在的 click
+      for (const id of plan.candidates) {
+        const el = gE(itemSelector(id));
+        if (!el) continue;
+        el.click();
+        tagEndToTrue();
+        return true;
+      }
+      return false;
+    }
+
+    default:
+      return false;
+  }
+}

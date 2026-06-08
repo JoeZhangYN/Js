@@ -20,11 +20,11 @@ describe("runRules", () => {
     expect(decide).toHaveBeenCalledOnce();
   });
 
-  it("acting rule(delegate 设 end) → 短路后续 rule", () => {
+  it("acting rule(dispatch 返 acted) → 短路后续 rule", () => {
     const after = vi.fn(() => ({ kind: "noop" }));
     runRules(
       [
-        { name: "act", decide: () => ({ kind: "delegate", name: "act", run: () => g("end", true) }) },
+        { name: "act", decide: () => ({ kind: "halt", reason: "acted" }) },
         { name: "after", decide: after },
       ],
       {},

@@ -1,25 +1,26 @@
-// 唯一 SHELL（Phase 5b 编排倒置）：把 PURE decide 的 ActionResult 翻译为 DOM 副作用。
-// 复用 attempt-click / navigate / lang / pause-control / activate-spirit 现有工具，收敛原先
-// 散在 execute-buff / execute-cast-all / useDeSkill 各自内联的 dispatch 重复（应抽尽抽）。
-//
-// 返回 acted(boolean)：runRules 据此短路（取代 g("end") 主循环 flag，commit 5 拆桥）。
-// 现阶段 attemptClick* / pauseScript / delegate.run 内部仍调 tagEndToTrue，与现存 runSteps
-// 的 g("end") 机制并存，直到 main-loop 切 runRules。
+// 唯一 SHELL（Phase 5b 编排倒置 + 深度 B）：把 PURE decide 的 ActionResult 翻译为 DOM 副作用。
+// 复用 attempt-click / navigate / lang / pause-control / activate-spirit + 各 step 的 execute-*。
+// 返回 acted(boolean)：runRules 据此短路。深度 B 后已无 delegate 过渡桥——所有 step 的判断都在
+// PURE decide 完成，dispatch 只翻译数据 → 副作用（含 isOn 写前探活）。
 import { gE } from "../dom/query.js";
 import { attemptClick, attemptClickWithTarget } from "../dom/attempt-click.js";
-import { g, tagEndToTrue } from "../state/store.js";
+import { tagEndToTrue } from "../state/store.js";
 import { scheduleReload, openUrl } from "../core/navigate.js";
 import { _alert } from "../core/lang.js";
 import { pauseScript } from "./pause-control.js";
 import { checkAndActivateSpirit } from "./buff/activate-spirit.js";
 import { executeAttack } from "./attack/execute-attack.js";
+import { executeChannel } from "./buff/execute-channel.js";
+import { executeItem } from "./item/execute-item.js";
+import { executeCriticalPause } from "./critical-buff-guard/decide-critical-buff.js";
 
 /**
  * 执行一个 ActionResult，返回是否已触发副作用。
  * @param {import("../core/types.js").ActionResult} result
+ * @param {import("../core/types.js").BattleSnapshot} snap 当前 turn 快照（execute-* 记账用，如 recordPreDrink）
  * @returns {boolean} acted —— 已触发副作用（主循环据此停止后续 rule）
  */
-export function dispatch(result) {
+export function dispatch(result, snap) {
   switch (result.kind) {
     case "noop":
       return false;
@@ -29,8 +30,7 @@ export function dispatch(result) {
       return attemptClick(result.selector);
 
     case "click-skill-then-target":
-      // debuff 双段：Spirit 前置（命中则本回合让出）再 skill→target 双击。
-      // 收编原 execute-cast-all / useDeSkill 重复的 checkAndActivateSpirit 短路。
+      // debuff/boss 双段：Spirit 前置（命中则本回合让出）再 skill→target 双击。
       if (checkAndActivateSpirit()) return true;
       return attemptClickWithTarget(result.skillSel, result.targetSel);
 
@@ -49,6 +49,16 @@ export function dispatch(result) {
       pauseScript(); // setValue disabled + 按钮文案 + tagEnd
       return true;
 
+    case "pause":
+      // autoPause：纯暂停（无 alert），setValue disabled + 按钮文案 + tagEnd
+      pauseScript();
+      return true;
+
+    case "critical-pause":
+      // criticalBuffGuard 命中：告警 + 暂停（setAlarm/disabled/按钮/title/tagEnd），副作用在 executeCriticalPause
+      executeCriticalPause(result);
+      return true;
+
     case "navigate":
       // 当前无 step 消费者，保留以备 future（reloader 等）。
       openUrl(result.url);
@@ -59,18 +69,16 @@ export function dispatch(result) {
       return true;
 
     case "attack-plan":
-      // attack 的 PURE 决策(decideAttack)产出 AttackPlan，交 executeAttack 翻译为 click + 记账。
+      // attack PURE 决策产出 AttackPlan，executeAttack 翻译为 click + 记账。
       return executeAttack(result.plan);
 
-    case "delegate": {
-      // 过渡桥：复杂 step（循环/fallback 链）暂用现有 execute（内部自带 click + tagEnd）。
-      // 读 g("end") 作 acted 后 reset —— g("end") 退化为 delegate 内部局部信号。
-      // TODO 拆桥: delegate 内部 PURE 化后删此分支 + 内部 tagEnd。
-      result.run();
-      const acted = !!g("end");
-      if (acted) g("end", false);
-      return acted;
-    }
+    case "item-plan":
+      // 宝石/药水/stall/卷轴 PURE 决策产出 ItemPlan，executeItem 探活+click+记账（需 snap 做 recordPreDrink）。
+      return executeItem(result.plan, snap);
+
+    case "channel-plan":
+      // Channel 三段 PURE 决策产出 ChannelPlan，executeChannel 探活+click。
+      return executeChannel(result.plan);
 
     default:
       return false;
