@@ -44,13 +44,13 @@ try {
     }
     return hvaaTEquip(eq.info.name); // 译名 HTML(色 span)
   };
-  var equip_name_text = function (eq) {
-    if (eq.info.customname) {
-      return eq.info.customname;
-    }
+  var equip_name_text_str = function (name) {        // 裸英文装备名 → 纯文本中文(去色 span); 彩票等无 eq 对象的落点复用
     var d = document.createElement('div');
-    d.innerHTML = hvaaTEquip(eq.info.name);
-    return d.textContent; // 去标签 + 解 HTML 实体 → 纯文本
+    d.innerHTML = hvaaTEquip(name);                  // 块内合法(探针豁免区); 译名是含色 span 的 HTML
+    return d.textContent;                            // 去标签 + 解 HTML 实体 → 纯文本
+  };
+  var equip_name_text = function (eq) {
+    return eq.info.customname ? eq.info.customname : equip_name_text_str(eq.info.name); // customname 原样; 否则复用裸串入口
   };
   var set_equip_name = function (el, eq) {
     el.innerHTML = equip_name_html(eq);
@@ -12863,7 +12863,7 @@ if ($config.settings.lotteryNotification) {
       } else if (lottery.check) {
         _bottom.node[ss].div.classList.add('hvut-lt-check');
       }
-      _bottom.node[ss].equip.textContent = lottery.equip;
+      _bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip);
       _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
       return;
     }
@@ -12902,13 +12902,19 @@ if ($config.settings.lotteryNotification) {
     lottery.date = date;
     lottery.check = $equip.filter($config.settings.lotteryFilters, lottery.equip);
     lottery.hide = !$config.settings.lotteryNotification;
+    // 彩票按「开奖日」去重弹窗：同一抽奖周期(featured 装备持续到当天开奖)只弹一次，
+    // 避免「Today's ticket sale is closed」窗口 lottery.date≈now → 每次刷新都重跑 load_lottery 反复弹。
+    // 键取开奖时间(lottery.date)的 UTC 日：周期内恒定、跨周期(下次开奖+1天)必变 → 开奖换装备即重弹一次。
+    const drawDay = new Date(date).toISOString().slice(0, 10);
+    const shouldPopup = lottery.check && lottery.popDay !== drawDay;
+    if (shouldPopup) lottery.popDay = drawDay;
     $config.set('lt_notif', json, 'hvut_');
-    if (lottery.check) {
+    if (shouldPopup) {
       const date_text = eqname.previousElementSibling.textContent;
-      popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${lottery.equip}</p>`);
+      popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${equip_name_text_str(lottery.equip)}</p>`);
     }
 
-    _bottom.node[ss].equip.textContent = lottery.equip;
+    _bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip);
     _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
   };
 
