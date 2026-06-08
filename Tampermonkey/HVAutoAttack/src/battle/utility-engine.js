@@ -18,26 +18,38 @@ import { g } from "../state/store.js";
  */
 
 /**
- * 给候选打分，挑最高分（>0）触发。无可行候选返 null。
- * @param {ActionCandidate[]} candidates
- * @returns {ActionCandidate|null}
+ * PURE 选择：挑最高分（>0）候选并打日志，**不执行**（无 dispatch）。无可行候选返 null。
+ * 供 decideAttack 等纯决策复用（候选可为 {code,...} 或 {name,...}，日志取 name ?? code）。
+ * @param {Array<{score:number, name?:string, code?:string, explain?:string}>} candidates
+ * @returns {object|null} 最高分候选（原对象）
  */
-export function decideByUtility(candidates) {
+export function pickByUtility(candidates) {
   const valid = candidates
     .filter((c) => c && c.score > 0)
     .sort((a, b) => b.score - a.score);
   if (valid.length === 0) return null;
   const winner = valid[0];
   if (g("option")?.dynamicHealLog) {
+    const label = (c) => c.name ?? c.code;
     const runners = valid
       .slice(1, 3)
-      .map((c) => `${c.name}=${c.score.toFixed(0)}`)
+      .map((c) => `${label(c)}=${c.score.toFixed(0)}`)
       .join(", ");
     console.log(
-      `[utility] ${winner.name} score=${winner.score.toFixed(0)}${winner.explain ? " (" + winner.explain + ")" : ""}${runners ? ` vs [${runners}]` : ""}`
+      `[utility] ${label(winner)} score=${winner.score.toFixed(0)}${winner.explain ? " (" + winner.explain + ")" : ""}${runners ? ` vs [${runners}]` : ""}`
     );
   }
-  winner.dispatch();
+  return winner;
+}
+
+/**
+ * 选最高分候选并执行其 dispatch（= pickByUtility + winner.dispatch()）。
+ * @param {ActionCandidate[]} candidates
+ * @returns {ActionCandidate|null}
+ */
+export function decideByUtility(candidates) {
+  const winner = pickByUtility(candidates);
+  if (winner) winner.dispatch();
   return winner;
 }
 

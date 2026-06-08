@@ -62,6 +62,8 @@
  * @property {number} aliveCount
  * @property {string[]} playerBuffs              img name 列表
  * @property {Record<string,number>} playerEffectTurns  img → 剩余回合（Infinity = 永续）
+ * @property {boolean=} etherTapActiveX2         玩家有 "Ether Tap (x2)" 效果（attack ether-tap gate 用）
+ * @property {boolean=} etherTapExpiring         wpn_et 效果即将过期（effect_expire id）
  * @property {CdMap} cdMap
  * @property {number} attackStatus
  * @property {string} fightingStyle

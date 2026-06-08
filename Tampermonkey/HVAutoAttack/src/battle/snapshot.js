@@ -161,6 +161,10 @@ export function collectSnapshot() {
     aliveCount: monsters.filter((m) => !m.isDead).length,
     playerBuffs: playerEffects.map((e) => e.img),
     playerEffectTurns: Object.fromEntries(playerEffects.map((e) => [e.img, e.turns])),
+    // ether-tap 玩家效果事实（attack ether-tap gate 用，避免 decideAttack 再读 DOM）：
+    // 与原 attack.js 同选择器，批在本次 #pane_effects 读里 → 维持"DOM 读一次"。
+    etherTapActiveX2: !!gE('#pane_effects>img[onmouseover*="Ether Tap (x2)"]'),
+    etherTapExpiring: !!gE('#pane_effects>img[src*="wpn_et"][id*="effect_expire"]'),
     cdMap: collectCdMap(),
     skillReady: readSkillReady(),
     skillOTOS: g("skillOTOS") || {},
