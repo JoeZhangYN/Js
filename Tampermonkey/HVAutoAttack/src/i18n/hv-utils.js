@@ -3683,12 +3683,7 @@ _bottom.init = function () {
   if ($config.settings.showEquipCapacity === 2 || $config.settings.showEquipCapacity === 1 && _query.s === 'Battle') {
     _bottom.show_equip();
   }
-  if ($config.settings.trainingNotification) {
-    _bottom.tr.init();
-  }
-  if ($config.settings.lotteryNotification) {
-    _bottom.lt.init();
-  }
+  // 彩票/训练 = persistent realm 专属能力，isekai 版底部栏不渲染（用户决策 2026-06-08）。
 };
 
 _bottom.show_credits = async function () {
@@ -3717,156 +3712,6 @@ _bottom.show_equip = async function () {
   } else if (free < capacity / 2) {
     _bottom.node.equip.classList.add('hvut-warn');
   }
-};
-
-_bottom.tr = {
-  node: {},
-  json: $config.get('tr_notif', {}, 'hvut_'),
-
-  init: function () {
-    const json = _bottom.tr.json;
-    if (!json.current_name && !json.next_name && !json.error) {
-      return;
-    }
-    _bottom.tr.node.div = $element('div', _bottom.node.div);
-    _bottom.tr.node.link = $element('a', _bottom.tr.node.div, { href: '/?s=Character&ss=tr', textContent: '初始化...', style: 'margin-right: 5px;' });
-    _bottom.tr.node.clock = $element('span', _bottom.tr.node.div, ['!display: inline-block; width: 60px;']);
-    if (json.error) {
-      _bottom.tr.node.link.textContent = json.error;
-    } else if (json.current_name) {
-      _bottom.tr.node.link.textContent = `${json.current_name} [${json.current_level + 1}]`;
-    }
-    _bottom.tr.clock();
-  },
-  clock: function () {
-    const json = _bottom.tr.json;
-    const remain = json.current_end - Date.now();
-    if (remain > 0) {
-      _bottom.tr.node.clock.textContent = time_format(remain);
-      setTimeout(_bottom.tr.clock, 1000);
-    } else {
-      _bottom.tr.node.link.textContent = '加载中...';
-      _bottom.tr.node.clock.textContent = '';
-      _bottom.tr.load();
-    }
-  },
-  load: async function (post) {
-    const html = await $ajax.fetch('/?s=Character&ss=tr', post);
-    const doc = $doc(html);
-    if (!$id('train_outer', doc)) {
-      _bottom.tr.node.link.textContent = '请稍等...';
-      setTimeout(_bottom.tr.clock, 60000);
-      return;
-    }
-    const json = _bottom.tr.json;
-    const level = {};
-    Array.from($id('train_table', doc).rows).slice(1).forEach((tr) => {
-      level[tr.cells[0].textContent] = parseInt(tr.cells[4].textContent);
-    });
-    json.error = '';
-    if ($id('train_progress', doc)) {
-      json.current_name = $id('train_progcnt', doc).previousElementSibling.textContent;
-      json.current_level = level[json.current_name];
-      json.current_end = /var end_time = (\d+);/.exec(html)[1] * 1000;
-      _bottom.tr.node.link.textContent = `${json.current_name} [${json.current_level + 1}]`;
-      _bottom.tr.clock();
-    } else if (json.next_name) {
-      const error = get_message(doc);
-      if (error) {
-        json.error = error;
-        _bottom.tr.node.link.textContent = json.error;
-        setTimeout(_bottom.tr.clock, 60000);
-      } else if (level[json.next_name] < json.next_level) {
-        if ($qs(`img[onclick*="training.start_training(${json.next_id})"]`, doc)) {
-          _bottom.tr.load(`start_train=${json.next_id}`);
-        } else {
-          json.error = "现在无法开始训练";
-          _bottom.tr.node.link.textContent = json.error;
-          setTimeout(_bottom.tr.clock, 60000);
-        }
-      } else {
-        _bottom.tr.node.link.textContent = '训练完成!';
-      }
-    } else {
-      _bottom.tr.node.link.textContent = '训练完成!';
-    }
-    $config.set('tr_notif', json, 'hvut_');
-  },
-};
-
-_bottom.lt = {
-  node: { lt: {}, la: {} },
-
-  init: function () {
-    $element('div', _bottom.node.div, ['.hvut-spaceholder']);
-    _bottom.lt.show('lt');
-    _bottom.lt.show('la');
-  },
-  show: function (ss) {
-    const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
-    const lottery = json[ss];
-    const now = Date.now();
-    if (lottery.date > now && lottery.hide) {
-      return;
-    }
-    const ss_node = _bottom.lt.node[ss];
-    ss_node.div = $element('div', _bottom.node.div, ['.hvut-lt-div']);
-    ss_node.equip = $element('a', ss_node.div, { textContent: '加载中...', href: `/?s=Bazaar&ss=${ss}`, target: (!IS_ISEKAI ? '_self' : '_blank') });
-    ss_node.time = $element('span', ss_node.div, '--:--');
-
-    if (lottery.date > now) {
-      if (lottery.date - now < 3600000) {
-        ss_node.div.classList.add('hvut-warn2');
-      } else if (lottery.check) {
-        ss_node.div.classList.add('hvut-lt-check');
-      }
-      ss_node.equip.textContent = lottery.equip;
-      ss_node.time.textContent = time_format(lottery.date - now, 1);
-    } else {
-      ss_node.div.classList.add('hvut-warn2');
-      _bottom.lt.load(ss);
-    }
-  },
-  load: async function (ss) {
-    const html = await $ajax.fetch(`/?s=Bazaar&ss=${ss}`);
-    const doc = $doc(html);
-    const eqname = $id('lottery_eqname', doc);
-    if (!eqname) {
-      _bottom.lt.node[ss].equip.textContent = '加载失败';
-      return;
-    }
-    const text = $id('rightpane', doc).lastElementChild.textContent;
-    const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
-    const lottery = json[ss];
-    const now = Date.now();
-    let date = Date.now();
-    let margin = 0;
-    if (/Today's drawing is in (?:(\d+) hours?)?(?: and )?(?:(\d+) minutes?)?/.test(text)) {
-      date += (60 * parseInt(RegExp.$1 || 0) + parseInt(RegExp.$2 || 0)) * 60000;
-      margin = 2;
-    } else if (text.includes("Today's ticket sale is closed")) {
-      margin = 10;
-    } else {
-      throw new Error('分析错误');
-    }
-    const mm = (new Date(date)).getUTCMinutes();
-    if (date && (mm < 1 || 60 - mm <= margin)) {
-      date = Math.round(date / 3600000) * 3600000;
-    }
-    lottery.id = parseInt(/lottery=(\d+)/.exec($qs('img[src*="lottery_prev_a.png"]', doc)?.getAttribute('onclick'))[1] || 0) + 1;
-    lottery.equip = eqname.textContent;
-    lottery.date = date;
-    lottery.check = $equip.filter.equip($config.settings.lotteryFilters, lottery.equip);
-    lottery.hide = !$config.settings.lotteryNotification;
-    $config.set('lt_notif', json, 'hvut_');
-    if (lottery.check) {
-      const date_text = eqname.previousElementSibling.textContent;
-      popup(`<p>${date_text}</p><p style="color: #e00; font-weight: bold;">${lottery.equip}</p>`);
-    }
-    const ss_node = _bottom.lt.node[ss];
-    ss_node.equip.textContent = lottery.equip;
-    ss_node.time.textContent = time_format(lottery.date - now, 1);
-  },
 };
 
 GM_addStyle(/*css*/`
@@ -12935,7 +12780,7 @@ if ($config.settings.trainingNotification) {
       if (json.error) {
         _bottom.tr.node.link.textContent = json.error;
       } else if (json.current_name) {
-        _bottom.tr.node.link.textContent = `${json.current_name} [${json.current_level + 1}]`;
+        _bottom.tr.node.link.textContent = `${hvaaT(json.current_name, 'trains')} [${json.current_level + 1}]`;
       }
       _bottom.tr.clock();
     },
@@ -12969,7 +12814,7 @@ if ($config.settings.trainingNotification) {
         json.current_name = $id('train_progcnt', doc).previousElementSibling.textContent;
         json.current_level = level[json.current_name];
         json.current_end = /var end_time = (\d+);/.exec(html)[1] * 1000;
-        _bottom.tr.node.link.textContent = `${json.current_name} [${json.current_level + 1}]`;
+        _bottom.tr.node.link.textContent = `${hvaaT(json.current_name, 'trains')} [${json.current_level + 1}]`;
         _bottom.tr.clock();
       } else if (json.next_name) {
         const error = get_message(doc);
