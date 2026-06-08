@@ -74,7 +74,14 @@ function riddleSubmit(answers) {
   }
   if (!any) return;
   const submit = document.getElementById("riddlesubmit");
-  if (submit) submit.click();
+  if (!submit) return;
+  // ★ 必须先解除 disabled 再 click：HV 答题页 #riddlesubmit 初始 disabled="disabled"，
+  //   仅当用户**真实点击** checkbox 触发其 onclick 时 HV 原生脚本才移除 disabled。
+  //   脚本 `checkbox.checked = true` 只改属性、不派发 onclick → 按钮恒灰 → click() 是 no-op（提交无反应）。
+  //   对齐 SOT 原版 Riddle Master Assistant Reborn.user.js v0.5.2（btn.disabled=false 后 btn.click()，
+  //   见其 L302-305 随机兜底 / L446-456 ML 命中两处）。移植曾漏此行 → ML 识别了却提交不出去（本次修复）。
+  submit.disabled = false;
+  submit.click();
 }
 
 /**

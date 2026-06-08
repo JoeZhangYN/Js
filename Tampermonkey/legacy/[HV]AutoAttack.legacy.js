@@ -1736,7 +1736,17 @@
         ).children[0].children[0].children[0].checked = true;
       }
 
-      document.getElementById("riddlesubmit").click();
+      // ★ 必须先解除 disabled 再 click：HV 答题页 #riddlesubmit 初始 disabled="disabled"（反机器人）。
+      //   它仅在用户**真实点击** checkbox 触发 HV 原生 onclick 时才移除 disabled；脚本 `checked = true`
+      //   只改属性、不派发事件 → 按钮恒灰 → 对 disabled 按钮 click() 是 no-op（勾上了却提交不出去）。
+      //   legacy 历来漏此行（当年 HV 尚无此 disabled 故能用，HV 加反机器人后失效）；对齐 SOT
+      //   Riddle Master Assistant Reborn.user.js v0.5.2（btn.disabled=false 后 btn.click()）补回。
+      //   同源修复见 HVAutoAttack/src/pages/riddle.js riddleSubmit()。
+      const riddleSubmitBtn = document.getElementById("riddlesubmit");
+      if (riddleSubmitBtn) {
+        riddleSubmitBtn.disabled = false;
+        riddleSubmitBtn.click();
+      }
     }
   }
 
