@@ -86,6 +86,7 @@ for (let i = isekaiStart; i < lines.length; i++) {
 const BANNED_LITERALS = [
   ["hvut-bt-warn", "warn 类已归一 .hvut-warn"],
   ["dynjs_loaded", "dynjs 已统一 dynjs_equip（L1 parse_script_json），旧整体替换容器已拆桥"],
+  ["?s=Forge&ss=re", "旧 Bazaar Forge 修理页已随能量模型消失，修理统一走 ?s=Bazaar&ss=am&screen=repair（bindBattlePanel 数据层）"],
 ];
 lines.forEach((l, i) => {
   for (const [word, why] of BANNED_LITERALS) {

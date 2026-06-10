@@ -1227,6 +1227,321 @@ const bindBattlePanel = function (battle, ctx) {
   };
 };
 
+// 服务器标识(L1 收口 2026-06-10): 定义只依赖 location/world_text, 与 IIFE 闭包无关。
+const _servername = location.pathname.includes('/isekai/') ? 'isekai' : 'persistent';
+const _server = {
+  name: _servername,
+  season: $id('world_text')?.textContent.match(/\d+ Season \d+/)?.[0] || '1',
+  [_servername]: true, // 当前服务器标记 key; isekai 判定统一走顶层 IS_ISEKAI（L0 归一）
+};
+
+// --color-* 主题 token 单一定义(L1 收口 2026-06-10): HV 两服 UI 配色本就一致, 原 isekai :root 全量 +
+// 主世界 .hvut-bt-div 局部三值(border #333 等)是同概念散落 → 归一为本块(主世界面板边框随之贴 HV 原生 #5C0D11)。
+GM_addStyle(/*css*/`
+  :root {
+    --color-font-default: #5C0D11;
+    --color-font-light: #9B4E03;
+    --color-font-invalid: #666;
+    --color-font-invert: #fff;
+    --color-font-highlight: #c00;
+    --color-font-warn: #e00;
+    --color-font-bonus: #03c;
+    --color-border-default: #5C0D11;
+    --color-border-light: #9B4E03;
+    --color-border-alpha: #5C0D1136;
+    --color-bg-default: #EDEBDF;
+    --color-bg-back: #E3E0D1;
+    --color-bg-light: #fff;
+    --color-bg-alpha: #fff9;
+    --color-bg-invalid: #ccc6;
+    --color-bg-invert: #5C0D11;
+    --color-bg-h1: #edb;
+    --color-bg-h2: #E3E0D1;
+
+    --color-equip-Peerless: #fbb;
+    --color-equip-Legendary: #fd8;
+    --color-equip-Magnificent: #bdf;
+    --color-equip-Exquisite: #ce9;
+    --color-equip-Superior: #ccc;
+
+    --color-item-Consumable: #00B000;
+    --color-item-Artifact: #0000FF;
+    --color-item-Trophy: #461B7E;
+    --color-item-Token: #254117;
+    --color-item-Crystal: #BA05B4;
+    --color-item-MonsterFood: #489EFF;
+    --color-item-Material: #FF0000;
+    --color-item-Collectable: #0000FF;
+
+    --color-warn-bg: #fd9;
+    --color-warn-alpha: #fd9c;
+    --color-warn-unread: #fcc;
+    --color-exp-bar: #9cf;
+    --color-ab-max: #333;
+    --color-ab-cap: #03c;
+    --color-ab-up: #c00;
+    --color-ab-font: #fff;
+    --color-ab-slot: #333;
+    --color-mm-equip: #c00;
+    --color-mm-item: #090;
+    --color-mm-credits: #03c;
+    --color-mm-hath: #c0c;
+  }
+`);
+
+// _top 顶部导航·全量收口(L1 bindTop, 2026-06-10): 能量模型后两服菜单体系同构(Bazaar am 体系:
+// Organize/Modify/Repair/Soulbind/Purchase/Sell/Salvage; 旧 Forge 组/Equip Inventory ss=in/
+// Equipment Shop ss=es 端点全死)——原主世界 4.0.0 旧菜单表随之下线, 「菜单下拉/首行导航两服一致」
+// 由本内核结构性保证(铁律4)。menu 表 server 字段过滤本服不存在项(Training/Monster Lab/彩票 =
+// persistent-only, The Tower = isekai-only)。文案取两版中文较全者。
+// ctx: config(IIFE-private $config) / player·re(容器归属各 IIFE 闭包的 getter)。
+const bindTop = function (top, ctx) {
+  top.node = {};
+  top.menu = {
+    'Character': { s: 'Character', ss: 'ch', label: '角色', default: 'CH', title: 'Character' },
+    'Equipment': { s: 'Character', ss: 'eq', label: '装备', default: 'EQ', title: 'Equipment' },
+    'Abilities': { s: 'Character', ss: 'ab', label: '能力', default: 'AB', title: 'Abilities' },
+    'Training': { s: 'Character', ss: 'tr', label: '训练', default: 'TR', title: 'Training', server: 'persistent' },
+    'Item Inventory': { s: 'Character', ss: 'it', label: '物品', default: 'IT', title: 'Item Inventory' },
+    'Settings': { s: 'Character', ss: 'se', label: '设置', default: 'SE', title: 'Settings' },
+
+    'Item Shop': { s: 'Bazaar', ss: 'is', label: '道具店', default: 'IS', title: 'Item Shop' },
+    'The Shrine': { s: 'Bazaar', ss: 'ss', label: '祭坛', default: 'SS', title: 'The Shrine' },
+    'The Market': { s: 'Bazaar', ss: 'mk', label: '市场', default: 'MK', title: 'The Market' },
+    'Monster Lab': { s: 'Bazaar', ss: 'ml', label: '实验室', default: 'ML', title: 'Monster Lab', server: 'persistent' },
+    'MoogleMail': { s: 'Bazaar', ss: 'mm', label: '邮箱', default: 'MM', title: 'MoogleMail' },
+    'Weapon Lottery': { s: 'Bazaar', ss: 'lt', label: '武器彩票', default: 'LT', title: 'Weapon Lottery', server: 'persistent' },
+    'Armor Lottery': { s: 'Bazaar', ss: 'la', label: '防具彩票', default: 'LA', title: 'Armor Lottery', server: 'persistent' },
+
+    'Organize': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'organize', label: '管理', default: 'OR', title: 'Organize' },
+    'Modify': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'modify', label: '改装', default: 'MO', title: 'Modify' },
+    'Repair': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'repair', label: '修理', default: 'RE', title: 'Repair' },
+    'Soulbind': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'soulbind', label: '魂绑', default: 'SB', title: 'Soulbind' },
+    'Purchase': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'purchase', label: '购买', default: 'PU', title: 'Purchase' },
+    'Sell': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'sell', label: '出售', default: 'SL', title: 'Sell' },
+    'Salvage': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'salvage', label: '分解', default: 'SA', title: 'Salvage' },
+
+    'The Arena': { s: 'Battle', ss: 'ar', label: '竞技', default: 'AR', title: 'The Arena' },
+    'The Tower': { s: 'Battle', ss: 'tw', label: '塔楼', default: 'TW', title: 'The Tower', server: 'isekai' },
+    'Ring of Blood': { s: 'Battle', ss: 'rb', label: '擂台', default: 'RB', title: 'Ring of Blood' },
+    'GrindFest': { s: 'Battle', ss: 'gr', label: '压榨', default: 'GR', title: 'GrindFest' },
+    'Item World': { s: 'Battle', ss: 'iw', label: '道具界', default: 'IW', title: 'Item World' },
+  };
+  Object.values(top.menu).forEach((m) => {
+    if (!m.href) {
+      m.href = `?s=${m.s}&ss=${m.ss}` + (m.screen ? `&screen=${m.screen}` : '');
+    }
+  });
+  // 反向桥：暴露 hv-utils config 打开口给 HVAA 设置面板（UI 入口整合·只合入口）。同 window.HVAA_i18n
+  // 机制反方向(hv-utils→HVAA)；两 IIFE 互斥执行，故 window 上始终只有一个活动 $config.open。
+  if (typeof window !== 'undefined') { window.HVUT_openConfig = (key) => ctx.config.open(key); }
+
+  top.init = function () {
+    top.node.div = $element('div', null, ['#hvut-top'], { mouseenter: () => { top.create(); } });
+
+    const menu_div = $element('div', top.node.div, ['.hvut-top-menu']);
+    top.node.menu = {};
+    if (ctx.config.settings.topMenuIntegration) {
+      top.node.menu['MENU'] = hvaaBind($element('div', menu_div), (n) => { n.innerHTML = `<span>${hvaaT('MENU', 'topMenu')}</span>`; });
+    } else {
+      Object.values(top.menu).forEach((m) => {
+        const g = m.g || m.s;
+        if (!top.node.menu[g]) {
+          top.node.menu[g] = hvaaBind($element('div', menu_div), (n) => { n.innerHTML = `<span>${hvaaT(g, 'topMenu')}</span>`; });
+        }
+      });
+    }
+
+    const links_div = $element('div', top.node.div, ['.hvut-top-links']);
+    const links = ctx.config.settings.topMenuLinks.slice();
+    const new_mail = $id('nav_mail')?.textContent.trim();
+    if (new_mail && !links.includes('MoogleMail')) {
+      links.push('MoogleMail');
+    }
+    links.forEach((b) => {
+      let m = top.menu[b];
+      if (!m) {
+        const [title, label, href, server] = b.split('|').map((e) => e.trim());
+        m = { title, label, href, server };
+      }
+      // !m.href 守卫: 老用户存值里的死菜单项(主世界旧 Equip Inventory/Equipment Shop/Forge 组)安全跳过
+      if (!m || !m.href || m.server && m.server !== _server.name) {
+        return;
+      }
+      let cn = '';
+      if (b === 'MoogleMail' && new_mail) {
+        cn = 'hvut-top-ygm';
+      }
+      const a = $element('a', links_div, { href: m.href });
+      if (cn) {
+        a.classList.add(cn);
+      }
+      hvaaBind(a, (n) => { // 链接声明式绑定(lang 切换即时重渲染)；重渲染保留英文 span 悬停提示
+        let label = (b === 'MoogleMail' && new_mail) ? `[${new_mail}]` : (top.menu[b] ? hvaaT(b, 'topMenu') : m.label);
+        if (label.startsWith('{#')) { label = m.default; }
+        n.textContent = label;
+        $element('span', n, m.title);
+      });
+    });
+
+    top.node.stamina = hvaaBind($element('div', top.node.div, ['!width: 90px;']), (n) => { n.innerHTML = `<span>${hvaaT('Stamina', 'topMenu')}: ${ctx.player().stamina}</span>`; });
+    top.node.level = $element('div', top.node.div, ['!width: 60px;', `/<span>Lv.${ctx.player().level}</span>`]);
+    top.node.difficulty = $element('div', top.node.div, ['!width: 80px;', `/<span>${ctx.player().difficulty}</span>`]);
+    top.node.persona = hvaaBind($element('div', top.node.div, ['!width: 110px;']), (n) => { n.innerHTML = `<span>${hvaaT('Persona', 'topMenu')}</span>`; });
+    if (ctx.config.settings.reNotification) {
+      ctx.re().hv();
+    }
+    $element('div', top.node.div, ['.hvut-top-placeholder']);
+    top.node.server = $element('div', top.node.div, ['!width: 80px;', `/<span>${IS_ISEKAI ? '异世界' : '永久区'}</span>`]);
+
+    top.node.config = $element('div', top.node.div, ['!width: 30px;']);
+    $element('span', top.node.config, ['#hvut-top-config-icon', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#5C0D11"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { if (typeof window !== 'undefined' && window.HVAA_openConfig) { window.HVAA_openConfig(); } });
+
+    $id('navbar').after(top.node.div);
+  };
+
+  top.create = function () {
+    if (top.inited) {
+      return;
+    }
+    top.inited = true;
+
+    const ul = {};
+    Object.values(top.menu).forEach((m) => {
+      if (m.server && m.server !== _server.name) {
+        return;
+      }
+      const g = m.g || m.s;
+      if (!ul[g]) {
+        if (ctx.config.settings.topMenuIntegration) {
+          if (!top.node.menu['SUB']) {
+            top.node.menu['SUB'] = $element('div', top.node.menu['MENU'], ['.hvut-top-sub']);
+          }
+          ul[g] = $element('ul', top.node.menu['SUB']);
+          hvaaBind($element('li', ul[g], ['.hvut-top-menu-s']), (n) => { n.textContent = hvaaT(g, 'topMenu'); });
+        } else {
+          const menu_sub = $element('div', top.node.menu[g], ['.hvut-top-sub']);
+          ul[g] = $element('ul', menu_sub);
+        }
+      }
+      const li = $element('li', ul[g]);
+      hvaaBind($element('a', li, { href: m.href }), (n) => { n.textContent = hvaaT(m.title, 'topMenu'); }); // 下拉声明式绑定(即时切换)
+    });
+
+    const stamina_sub = $element('div', top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
+    if (!IS_ISEKAI) {
+      top.node.stamina_form = $element('form', stamina_sub, { method: 'POST' }, { submit: (e) => { top.stamina_submit(e); } });
+      $element('input', top.node.stamina_form, { type: 'hidden', name: 'recover', value: 'stamina' });
+      $element('input', top.node.stamina_form, { type: 'submit', value: '使用精力恢复剂', disabled: ctx.player().stamina >= ctx.config.settings.disableStaminaRestorative, style: 'width: 200px;' });
+      top.node.stamina.addEventListener('mouseenter', top.stamina_create);
+    }
+    $element('p', stamina_sub, ctx.player().condition);
+    if (ctx.player().accuracy) {
+      $element('p', stamina_sub, [ctx.player().accuracy, '.hvut-warn']);
+    }
+
+    if (ctx.player().level !== 500) {
+      const exec = /([0-9,]+) \/ ([0-9,]+)\s*Next: ([0-9,]+)/.exec($id('level_details').textContent);
+      const exp = parseInt(exec[1].replace(/,/g, ''));
+      const up = parseInt(exec[2].replace(/,/g, ''));
+      const next = parseInt(exec[3].replace(/,/g, ''));
+      const level_start = Math.round(Math.pow(ctx.player().level + 3, Math.pow(2.850263212287058, 1 + ctx.player().level / 1000)));
+      const level_exp = exp - level_start;
+      const level_up = up - level_start;
+      const pct = ((level_exp / level_up) * 100).toFixed(2);
+      const level_sub = $element('div', top.node.level, ['.hvut-top-sub']);
+      $element('p', level_sub, `累计经验: ${exp.toLocaleString()} / ${up.toLocaleString()}`);
+      $element('p', level_sub, `升级还需: ${next.toLocaleString()}`);
+      $element('p', level_sub, `当前等级: ${level_exp.toLocaleString()} / ${level_up.toLocaleString()} (${pct}%)`);
+      $element('div', level_sub, ['.hvut-top-exp', `/<div style="width: ${pct}%;"></div>`]);
+    }
+
+    const server_sub = $element('div', top.node.server, ['.hvut-top-sub hvut-top-server']);
+    if (IS_ISEKAI) {
+      $element('a', server_sub, { href: '/', innerHTML: `<p>你现在在异世界</p><p>${_server.season}</p><p>点击切换到永久区</p>` });
+    } else {
+      $element('a', server_sub, { href: '/isekai/', innerHTML: '<p>你现在在永久区</p><p>点击切换到异世界</p>' });
+    }
+
+    const config_sub = $element('div', top.node.config, ['.hvut-top-sub hvut-top-config']);
+    $element('div', config_sub, 'HVAA 设置', () => { if (typeof window !== 'undefined' && window.HVAA_openConfig) { window.HVAA_openConfig(); } }); // chunk1: 齿轮槽位整槽对应 HVAA 面板；hv-utils 配置由 HVAA 面板内「HV Utils 设置」入口开
+    if ($id('mbsettings')) { // monsterbation
+      config_sub.appendChild($id('mbsettings'));
+      $id('mbsettings').firstElementChild.className = '';
+      GM_addStyle(/*css*/`
+        #mbsettings { position: relative; }
+        #mbprofile { top: 100%; left: 0; min-width: 100%; box-sizing: border-box; font-weight: normal; }
+      `);
+    }
+  };
+
+  top.stamina_create = async function () {
+    if (top.stamina_create.inited) {
+      return;
+    }
+    top.stamina_create.inited = true;
+    const p = $element('p', top.node.stamina_form, '加载中...');
+    await $item.once();
+    const items = ['Caffeinated Candy', 'Energy Drink'].filter((e) => $item.count(e));
+    if (items.length) {
+      items.forEach((e) => { $element('p', top.node.stamina_form, `${e} (${$item.count(e)})`); });
+      p.remove();
+    } else {
+      p.textContent = '没有能量恢复剂';
+    }
+  };
+
+  top.stamina_submit = function (e) {
+    if (ctx.config.settings.confirmStaminaRestorative && !confirm('确定要使用能量恢复剂吗?')) {
+      e.preventDefault();
+    }
+  };
+
+  GM_addStyle(/*css*/`
+    #navbar { display: none; }
+
+    #hvut-top { display: flex; position: relative; height: 22px; padding: 2px 0; border-bottom: 1px solid var(--color-border-default); font-size: 9pt; line-height: 22px; font-weight: bold; z-index: 10; white-space: nowrap; cursor: default; }
+    #hvut-top > div { position: relative; height: 22px; margin: 0 5px; }
+    #hvut-top a { display: block; text-decoration: none; }
+
+    .hvut-top-warn { background-color: var(--color-warn-bg); }
+    .hvut-top-message { position: absolute !important; top: 100%; left: -1px; width: 100%; margin: 0 !important; padding: 2px 0; border: 1px solid var(--color-border-default); background-color: var(--color-warn-alpha); color: var(--color-font-warn); z-index: -1; pointer-events: none; }
+
+    .hvut-top-sub { visibility: hidden; position: absolute; top: 22px; left: -6px; padding: 5px; border-width: 0 1px 1px; border-style: solid; border-color: var(--color-border-default); background-color: var(--color-bg-default); }
+    div:hover > .hvut-top-sub { visibility: visible; }
+    .hvut-top-sub select { display: block; margin: 0; }
+    .hvut-top-stamina > p { width: 220px; border-top: 1px solid var(--color-border-default); white-space: normal; }
+    .hvut-top-stamina > p:first-child { border-top: 0; }
+    .hvut-top-exp { position: relative; width: 299px; height: 8px; margin: 0 auto; border: 1px solid var(--color-border-default); background-color: var(--color-bg-alpha); }
+    .hvut-top-exp::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to right, var(--color-border-default) 1px, transparent 1px) repeat -1px 0 / 30px; }
+    .hvut-top-exp > div { position: absolute; top: 0; left: 0; height: 100%; background-color: var(--color-exp-bar); }
+    .hvut-top-placeholder { flex-grow: 1; }
+    .hvut-top-server { left: auto; right: -6px; }
+    .hvut-top-config { left: auto; right: -6px; }
+    .hvut-top-config > div { margin: 5px; text-align: left; cursor: pointer; }
+    #hvut-top-config-icon > svg { fill: var(--color-font-default); cursor: pointer; }
+
+    .hvut-top-menu { display: flex; }
+    .hvut-top-menu > div { position: relative; margin: 0 5px; }
+    .hvut-top-menu span { font-size: 11pt; color: var(--color-font-light); }
+    .hvut-top-menu .hvut-top-sub { width: max-content; }
+    .hvut-top-menu ul { float: left; margin: 0 0 0 5px; padding: 0; list-style: none; text-align: left; line-height: 20px; }
+    .hvut-top-menu ul:first-child { margin-left: 0; }
+    .hvut-top-menu a { margin: 3px 0; padding: 0 5px; }
+    .hvut-top-menu a:hover { background-color: var(--color-bg-light); }
+    .hvut-top-menu-s { padding: 0 5px; background-color: var(--color-bg-invert); color: var(--color-font-invert); }
+
+    .hvut-top-links { display: flex; }
+    .hvut-top-links > a { position: relative; margin: 0 1px; padding: 0 1px; min-width: 28px; font-size: 11pt; border-radius: 2px; }
+    .hvut-top-links > a:hover { background-color: var(--color-bg-light); }
+    .hvut-top-links > a > span { display: none; position: absolute; top: 100%; left: 0; margin-top: 2px; margin-left: 0; padding: 1px 4px; background-color: var(--color-bg-light); color: var(--color-font-light); border: 1px solid var(--color-border-light); font-size: 10pt; line-height: 20px; font-weight: normal; pointer-events: none; }
+    .hvut-top-links > a:hover > span { display: block; }
+    .hvut-top-ygm { color: transparent !important; background: url('/y/mmail/ygm.png') no-repeat center center; animation: ygm 0.5s ease-in-out 10 alternate; filter: brightness(200%); }
+    .hvut-top-ygm:hover { color: var(--color-font-highlight) !important; background-image: none; animation: none; filter: none; }
+    @keyframes ygm { from { opacity: 1; } to { opacity: 0.3; } }
+  `);
+};
+
 // $dfct 难度切换(两 IIFE 收口一处, 基准 = ISEKAI 4.2.0; 铁律1e 应抽尽抽)。原"被 topmenu node 形态阻塞"
 // 判断已证伪 —— node.div/button vs 平铺 div/button 只是对象自身字面量组织, 两版同取自 _top.node.difficulty。
 // 收口统一: ① node 包一层(isekai 形态); ② change() POST 取 4.2.0 FormData+'FORM'(两服同 HV 引擎, $ajax 共享支持);
@@ -1929,13 +2244,7 @@ function toggle_button(b,s,h,e,n,d,f) {const c=(l)=>{l.forEach((m)=>{if(m.type==
 /* eslint-enable */
 
 const _window = (typeof unsafeWindow === 'undefined') ? window : unsafeWindow;
-// $ajax/_query 已提公共区（L2）
-const _servername = location.pathname.includes('/isekai/') ? 'isekai' : 'persistent';
-const _server = {
-  name: _servername,
-  season: $id('world_text')?.textContent.match(/\d+ Season \d+/)?.[0] || '1',
-  [_servername]: true, // 当前服务器标记 key; isekai 判定统一走顶层 IS_ISEKAI（L0 归一）
-};
+// $ajax/_query/_server 已提公共区（L1/L2）
 
 // CONFIGURATION
 const $config = {
@@ -3199,56 +3508,6 @@ bindBattlePanel($battle, { // 渲染/交互内核 + 数据层(2026-06-10 续收,
 $id('csp').dataset.ss = _query.ss || 'ch';
 
 GM_addStyle(/*css*/`
-  :root {
-    --color-font-default: #5C0D11;
-    --color-font-light: #9B4E03;
-    --color-font-invalid: #666;
-    --color-font-invert: #fff;
-    --color-font-highlight: #c00;
-    --color-font-warn: #e00;
-    --color-font-bonus: #03c;
-    --color-border-default: #5C0D11;
-    --color-border-light: #9B4E03;
-    --color-border-alpha: #5C0D1136;
-    --color-bg-default: #EDEBDF;
-    --color-bg-back: #E3E0D1;
-    --color-bg-light: #fff;
-    --color-bg-alpha: #fff9;
-    --color-bg-invalid: #ccc6;
-    --color-bg-invert: #5C0D11;
-    --color-bg-h1: #edb;
-    --color-bg-h2: #E3E0D1;
-
-    --color-equip-Peerless: #fbb;
-    --color-equip-Legendary: #fd8;
-    --color-equip-Magnificent: #bdf;
-    --color-equip-Exquisite: #ce9;
-    --color-equip-Superior: #ccc;
-
-    --color-item-Consumable: #00B000;
-    --color-item-Artifact: #0000FF;
-    --color-item-Trophy: #461B7E;
-    --color-item-Token: #254117;
-    --color-item-Crystal: #BA05B4;
-    --color-item-MonsterFood: #489EFF;
-    --color-item-Material: #FF0000;
-    --color-item-Collectable: #0000FF;
-
-    --color-warn-bg: #fd9;
-    --color-warn-alpha: #fd9c;
-    --color-warn-unread: #fcc;
-    --color-exp-bar: #9cf;
-    --color-ab-max: #333;
-    --color-ab-cap: #03c;
-    --color-ab-up: #c00;
-    --color-ab-font: #fff;
-    --color-ab-slot: #333;
-    --color-mm-equip: #c00;
-    --color-mm-item: #090;
-    --color-mm-credits: #03c;
-    --color-mm-hath: #c0c;
-  }
-
   input[type='text'], input[type='number'] { margin: 0 5px; padding: 2px 4px; border-width: 1px; line-height: 16px; }
   input[type='text'][readonly], input[type='number'][readonly] { color: var(--color-font-invalid); }
   input[type='number'] { -moz-appearance: textfield; }
@@ -3444,255 +3703,7 @@ if ($config.settings.equipTouchFunctions) {
 
 
 // TOP MENU
-_top.node = {};
-_top.menu = {
-  'Character': { s: 'Character', ss: 'ch', label: '角色', default: 'CH', title: 'Character' },
-  'Equipment': { s: 'Character', ss: 'eq', label: '装备', default: 'EQ', title: 'Equipment' },
-  'Abilities': { s: 'Character', ss: 'ab', label: '能力', default: 'AB', title: 'Abilities' },
-  'Training': { s: 'Character', ss: 'tr', label: '训练', default: 'TR', title: 'Training', server: 'persistent' },
-  'Item Inventory': { s: 'Character', ss: 'it', label: '物品', default: 'IT', title: 'Item Inventory' },
-  'Settings': { s: 'Character', ss: 'se', label: '设置', default: 'SE', title: 'Settings' },
-
-  'Item Shop': { s: 'Bazaar', ss: 'is', label: '道具店', default: 'IS', title: 'Item Shop' },
-  'The Shrine': { s: 'Bazaar', ss: 'ss', label: '祭坛', default: 'SS', title: 'The Shrine' },
-  'The Market': { s: 'Bazaar', ss: 'mk', label: '市场', default: 'MK', title: 'The Market' },
-  'Monster Lab': { s: 'Bazaar', ss: 'ml', label: '实验室', default: 'ML', title: 'Monster Lab', server: 'persistent' },
-  'MoogleMail': { s: 'Bazaar', ss: 'mm', label: '邮箱', default: 'MM', title: 'MoogleMail' },
-  'Weapon Lottery': { s: 'Bazaar', ss: 'lt', label: '武器彩票', default: 'LT', title: 'Weapon Lottery', server: 'persistent' },
-  'Armor Lottery': { s: 'Bazaar', ss: 'la', label: '防具彩票', default: 'LA', title: 'Armor Lottery', server: 'persistent' },
-
-  //'The Armory': { s: 'Bazaar', ss: 'am', label: 'AM', default: 'AM', title: 'The Armory' },
-  'Organize': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'organize', label: '管理', default: 'OR', title: 'Organize' },
-  'Modify': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'modify', label: '改装', default: 'MO', title: 'Modify' },
-  'Repair': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'repair', label: '修理', default: 'RE', title: 'Repair' },
-  'Soulbind': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'soulbind', label: '魂绑', default: 'SB', title: 'Soulbind' },
-  'Purchase': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'purchase', label: '购买', default: 'PU', title: 'Purchase' },
-  'Sell': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'sell', label: '出售', default: 'SL', title: 'Sell' },
-  'Salvage': { g: 'Armory', s: 'Bazaar', ss: 'am', screen: 'salvage', label: '分解', default: 'SA', title: 'Salvage' },
-
-  'The Arena': { s: 'Battle', ss: 'ar', label: '竞技', default: 'AR', title: 'The Arena' },
-  'The Tower': { s: 'Battle', ss: 'tw', label: '塔楼', default: 'TW', title: 'The Tower', server: 'isekai' },
-  'Ring of Blood': { s: 'Battle', ss: 'rb', label: '擂台', default: 'RB', title: 'Ring of Blood' },
-  'GrindFest': { s: 'Battle', ss: 'gr', label: '压榨', default: 'GR', title: 'GrindFest' },
-  'Item World': { s: 'Battle', ss: 'iw', label: '道具界', default: 'IW', title: 'Item World' },
-};
-Object.values(_top.menu).forEach((m) => {
-  if (!m.href) {
-    m.href = `?s=${m.s}&ss=${m.ss}` + (m.screen ? `&screen=${m.screen}` : '');
-  }
-});
-// 反向桥：暴露 hv-utils config 打开口给 HVAA 设置面板（UI 入口整合·只合入口）。同 window.HVAA_i18n
-// 机制反方向(hv-utils→HVAA)；仅匹配 IS_ISEKAI 的 IIFE 执行，故 window 上始终只有一个活动 $config.open。
-if (typeof window !== 'undefined') { window.HVUT_openConfig = (key) => $config.open(key); }
-
-_top.init = function () {
-  _top.node.div = $element('div', null, ['#hvut-top'], { mouseenter: () => { _top.create(); } });
-
-  const menu_div = $element('div', _top.node.div, ['.hvut-top-menu']);
-  _top.node.menu = {};
-  if ($config.settings.topMenuIntegration) {
-    _top.node.menu['MENU'] = hvaaBind($element('div', menu_div), (n) => { n.innerHTML = `<span>${hvaaT('MENU', 'topMenu')}</span>`; });
-  } else {
-    Object.values(_top.menu).forEach((m) => {
-      const g = m.g || m.s;
-      if (!_top.node.menu[g]) {
-        _top.node.menu[g] = hvaaBind($element('div', menu_div), (n) => { n.innerHTML = `<span>${hvaaT(g, 'topMenu')}</span>`; });
-      }
-    });
-  }
-
-  const links_div = $element('div', _top.node.div, ['.hvut-top-links']);
-  const links = $config.settings.topMenuLinks.slice();
-  const new_mail = $id('nav_mail')?.textContent.trim();
-  if (new_mail && !links.includes('MoogleMail')) {
-    links.push('MoogleMail');
-  }
-  links.forEach((b) => {
-    let m = _top.menu[b];
-    if (!m) {
-      const [title, label, href, server] = b.split('|').map((e) => e.trim());
-      m = { title, label, href, server };
-    }
-    if (!m || m.server && m.server !== _server.name) {
-      return;
-    }
-    let cn = '';
-    if (b === 'MoogleMail' && new_mail) {
-      cn = 'hvut-top-ygm';
-    }
-    const a = $element('a', links_div, { href: m.href });
-    if (cn) {
-      a.classList.add(cn);
-    }
-    hvaaBind(a, (n) => { // 链接声明式绑定(lang 切换即时重渲染)；重渲染保留英文 span 悬停提示
-      let label = (b === 'MoogleMail' && new_mail) ? `[${new_mail}]` : (_top.menu[b] ? hvaaT(b, 'topMenu') : m.label);
-      if (label.startsWith('{#')) { label = m.default; }
-      n.textContent = label;
-      $element('span', n, m.title);
-    });
-  });
-
-  _top.node.stamina = hvaaBind($element('div', _top.node.div, ['!width: 90px;']), (n) => { n.innerHTML = `<span>${hvaaT('Stamina', 'topMenu')}: ${_player.stamina}</span>`; });
-  _top.node.level = $element('div', _top.node.div, ['!width: 60px;', `/<span>Lv.${_player.level}</span>`]);
-  _top.node.difficulty = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_player.difficulty}</span>`]);
-  _top.node.persona = hvaaBind($element('div', _top.node.div, ['!width: 110px;']), (n) => { n.innerHTML = `<span>${hvaaT('Persona', 'topMenu')}</span>`; });
-  if ($config.settings.reNotification) {
-    $re.hv();
-  }
-  $element('div', _top.node.div, ['.hvut-top-placeholder']);
-  _top.node.server = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_server.name.toUpperCase()}</span>`]);
-
-  _top.node.config = $element('div', _top.node.div, ['!width: 30px;']);
-  $element('span', _top.node.config, ['#hvut-top-config-icon', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#5C0D11"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { if (typeof window !== 'undefined' && window.HVAA_openConfig) { window.HVAA_openConfig(); } });
-
-  $id('navbar').after(_top.node.div);
-};
-
-_top.create = function () {
-  if (_top.inited) {
-    return;
-  }
-  _top.inited = true;
-
-  const ul = {};
-  Object.values(_top.menu).forEach((m) => {
-    if (m.server && m.server !== _server.name) {
-      return;
-    }
-    const g = m.g || m.s;
-    if (!ul[g]) {
-      if ($config.settings.topMenuIntegration) {
-        if (!_top.node.menu['SUB']) {
-          _top.node.menu['SUB'] = $element('div', _top.node.menu['MENU'], ['.hvut-top-sub']);
-        }
-        ul[g] = $element('ul', _top.node.menu['SUB']);
-        hvaaBind($element('li', ul[g], ['.hvut-top-menu-s']), (n) => { n.textContent = hvaaT(g, 'topMenu'); });
-      } else {
-        const menu_sub = $element('div', _top.node.menu[g], ['.hvut-top-sub']);
-        ul[g] = $element('ul', menu_sub);
-      }
-    }
-    const li = $element('li', ul[g]);
-    hvaaBind($element('a', li, { href: m.href }), (n) => { n.textContent = hvaaT(m.title, 'topMenu'); }); // 下拉声明式绑定(即时切换)
-  });
-
-  const stamina_sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
-  if (!IS_ISEKAI) {
-    _top.node.stamina_form = $element('form', stamina_sub, { method: 'POST' }, { submit: (e) => { _top.stamina_submit(e); } });
-    $input('hidden', _top.node.stamina_form, { name: 'recover', value: 'stamina' });
-    $input('submit', _top.node.stamina_form, { value: '使用精力恢复剂', disabled: _player.stamina >= $config.settings.disableStaminaRestorative, style: 'width: 200px;' });
-    _top.node.stamina.addEventListener('mouseenter', _top.stamina_create);
-  }
-  $element('p', stamina_sub, _player.condition);
-  if (_player.accuracy) {
-    $element('p', stamina_sub, [_player.accuracy, '.hvut-warn']);
-  }
-
-  if (_player.level !== 500) {
-    const exec = /([0-9,]+) \/ ([0-9,]+)\s*Next: ([0-9,]+)/.exec($id('level_details').textContent);
-    const exp = parseInt(exec[1].replace(/,/g, ''));
-    const up = parseInt(exec[2].replace(/,/g, ''));
-    const next = parseInt(exec[3].replace(/,/g, ''));
-    const level_start = Math.round(Math.pow(_player.level + 3, Math.pow(2.850263212287058, 1 + _player.level / 1000)));
-    const level_exp = exp - level_start;
-    const level_up = up - level_start;
-    const pct = ((level_exp / level_up) * 100).toFixed(2);
-    const level_sub = $element('div', _top.node.level, ['.hvut-top-sub']);
-    $element('p', level_sub, `Total: ${exp.toLocaleString()} / ${up.toLocaleString()}`);
-    $element('p', level_sub, `Next: ${next.toLocaleString()}`);
-    $element('p', level_sub, `Level: ${level_exp.toLocaleString()} / ${level_up.toLocaleString()} (${pct}%)`);
-    $element('div', level_sub, ['.hvut-top-exp', `/<div style="width: ${pct}%;"></div>`]);
-  }
-
-  const server_sub = $element('div', _top.node.server, ['.hvut-top-sub hvut-top-server']);
-  if (!IS_ISEKAI) {
-    const server_on = '永久区';
-    const server_to = '异世界';
-    $element('a', server_sub, { href: '/isekai/', innerHTML: `<p>Currently playing in ${server_on}</p><p>Click to switch to ${server_to}</p>` });
-  } else {
-    const server_on = '异世界';
-    const server_to = '永久区';
-    $element('a', server_sub, { href: '/', innerHTML: `<p>Currently playing in ${server_on}</p><p>${_server.season}</p><p>Click to switch to ${server_to}</p>` });
-  }
-
-  const config_sub = $element('div', _top.node.config, ['.hvut-top-sub hvut-top-config']);
-  $element('div', config_sub, 'HVAA 设置', () => { if (typeof window !== 'undefined' && window.HVAA_openConfig) { window.HVAA_openConfig(); } }); // chunk1: 齿轮槽位整槽对应 HVAA 面板；hv-utils 配置由 HVAA 面板内「HV Utils 设置」入口开
-  if ($id('mbsettings')) { // monsterbation
-    config_sub.appendChild($id('mbsettings'));
-    $id('mbsettings').firstElementChild.className = '';
-    GM_addStyle(/*css*/`
-      #mbsettings { position: relative; }
-      #mbprofile { top: 100%; left: 0; min-width: 100%; box-sizing: border-box; font-weight: normal; }
-    `);
-  }
-};
-
-_top.stamina_create = async function () {
-  if (_top.stamina_create.inited) {
-    return;
-  }
-  _top.stamina_create.inited = true;
-  const p = $element('p', _top.node.stamina_form, '加载中...');
-  await $item.once();
-  const items = ['Caffeinated Candy', 'Energy Drink'].filter((e) => $item.count(e));
-  if (items.length) {
-    items.forEach((e) => { $element('p', _top.node.stamina_form, `${e} (${$item.count(e)})`); });
-    p.remove();
-  } else {
-    p.textContent = 'No restorative available';
-  }
-};
-
-_top.stamina_submit = function (e) {
-  if ($config.settings.confirmStaminaRestorative && !confirm('你确定要使用能量饮料吗?')) {
-    e.preventDefault();
-  }
-};
-
-GM_addStyle(/*css*/`
-  #navbar { display: none; }
-
-  #hvut-top { display: flex; position: relative; height: 22px; padding: 2px 0; border-bottom: 1px solid var(--color-border-default); font-size: 9pt; line-height: 22px; font-weight: bold; z-index: 10; white-space: nowrap; cursor: default; }
-  #hvut-top > div { position: relative; height: 22px; margin: 0 5px; }
-  #hvut-top a { display: block; text-decoration: none; }
-
-  .hvut-top-warn { background-color: var(--color-warn-bg); }
-  .hvut-top-message { position: absolute !important; top: 100%; left: -1px; width: 100%; margin: 0 !important; padding: 2px 0; border: 1px solid var(--color-border-default); background-color: var(--color-warn-alpha); color: var(--color-font-warn); z-index: -1; pointer-events: none; }
-
-  .hvut-top-sub { visibility: hidden; position: absolute; top: 22px; left: -6px; padding: 5px; border-width: 0 1px 1px; border-style: solid; border-color: var(--color-border-default); background-color: var(--color-bg-default); }
-  div:hover > .hvut-top-sub { visibility: visible; }
-  .hvut-top-sub select { display: block; margin: 0; }
-  .hvut-top-stamina > p { width: 220px; border-top: 1px solid var(--color-border-default); white-space: normal; }
-  .hvut-top-stamina > p:first-child { border-top: 0; }
-  .hvut-top-exp { position: relative; width: 299px; height: 8px; margin: 0 auto; border: 1px solid var(--color-border-default); background-color: var(--color-bg-alpha); }
-  .hvut-top-exp::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to right, var(--color-border-default) 1px, transparent 1px) repeat -1px 0 / 30px; }
-  .hvut-top-exp > div { position: absolute; top: 0; left: 0; height: 100%; background-color: var(--color-exp-bar); }
-  .hvut-top-placeholder { flex-grow: 1; }
-  .hvut-top-server { left: auto; right: -6px; }
-  .hvut-top-config { left: auto; right: -6px; }
-  .hvut-top-config > div { margin: 5px; text-align: left; cursor: pointer; }
-  #hvut-top-config-icon > svg { fill: var(--color-font-default); cursor: pointer; }
-
-  .hvut-top-menu { display: flex; }
-  .hvut-top-menu > div { position: relative; margin: 0 5px; }
-  .hvut-top-menu span { font-size: 11pt; color: var(--color-font-light); }
-  .hvut-top-menu .hvut-top-sub { width: max-content; }
-  .hvut-top-menu ul { float: left; margin: 0 0 0 5px; padding: 0; list-style: none; text-align: left; line-height: 20px; }
-  .hvut-top-menu ul:first-child { margin-left: 0; }
-  .hvut-top-menu a { margin: 3px 0; padding: 0 5px; }
-  .hvut-top-menu a:hover { background-color: var(--color-bg-light); }
-  .hvut-top-menu-s { padding: 0 5px; background-color: var(--color-bg-invert); color: var(--color-font-invert); }
-
-  .hvut-top-links { display: flex; }
-  .hvut-top-links > a { position: relative; margin: 0 1px; padding: 0 1px; min-width: 28px; font-size: 11pt; border-radius: 2px; }
-  .hvut-top-links > a:hover { background-color: var(--color-bg-light); }
-  .hvut-top-links > a > span { display: none; position: absolute; top: 100%; left: 0; margin-top: 2px; margin-left: 0; padding: 1px 4px; background-color: var(--color-bg-light); color: var(--color-font-light); border: 1px solid var(--color-border-light); font-size: 10pt; line-height: 20px; font-weight: normal; pointer-events: none; }
-  .hvut-top-links > a:hover > span { display: block; }
-  .hvut-top-ygm { color: transparent !important; background: url('/y/mmail/ygm.png') no-repeat center center; animation: ygm 0.5s ease-in-out 10 alternate; filter: brightness(200%); }
-  .hvut-top-ygm:hover { color: var(--color-font-highlight) !important; background-image: none; animation: none; filter: none; }
-  @keyframes ygm { from { opacity: 1; } to { opacity: 0.3; } }
-`);
-
+bindTop(_top, { config: $config, player: () => _player, re: () => $re }); // 全量收口(L1 bindTop, 能量模型 am 体系菜单; menu 表 server 字段过滤本服项)
 _top.init();
 
 // DIFFICULTY CHANGER
@@ -9620,7 +9631,9 @@ const settings = {
 
   topMenuIntegration: true,
   // 逻辑键必须英文(索引 _top.menu, 显示走 m.text/m.button); 勿翻译键, 见 verify-topmenu-keys probe
-  topMenuLinks: ['Character', 'Equipment', 'Item Inventory', 'Equip Inventory', 'Equipment Shop', 'Item Shop', 'The Market', 'Monster Lab', 'The Shrine', 'MoogleMail', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'],
+  // [2026-06-10 bindTop 收口] 默认值对齐 isekai am 体系(旧 Equip Inventory/Equipment Shop 死端点删);
+  // 老用户存值里的死项由 bindTop init 的 !m.href 守卫安全跳过。
+  topMenuLinks: ['Character', 'Equipment', 'Item Inventory', 'Item Shop', 'The Shrine', 'The Market', 'Monster Lab', 'MoogleMail', 'Organize', 'Modify', 'Purchase', 'Sell', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'],
   confirmStaminaRestorative: true,
   disableStaminaRestorative: 79,
   warnLowStamina: 10,
@@ -9869,10 +9882,8 @@ const $config = {
       Abilities
       Training
       Item Inventory
-      Equip Inventory
       Settings
       
-      Equipment Shop
       Item Shop
       The Shrine
       The Market
@@ -9881,18 +9892,19 @@ const $config = {
       Weapon Lottery
       Armor Lottery
       
+      Organize
+      Modify
+      Repair
+      Soulbind
+      Purchase
+      Sell
+      Salvage
+      
       The Arena
       The Tower
       Ring of Blood
       GrindFest
       Item World
-      
-      Repair
-      Upgrade
-      Enchant
-      Salvage
-      Reforge
-      Soulfuse
     `,
     equipCode: `Syntax
       {$name}       equipment name
@@ -9943,7 +9955,12 @@ const $config = {
   },
   validator: {
     topMenuLinks: function (value) {
-      const errors = value.filter((v) => !_top.menu.hasOwnProperty(v));
+      const errors = value.filter((v) => {
+        if (_top.menu.hasOwnProperty(v)) { return false; }
+        v = v.split('|');
+        if (v.length < 3) { return true; }
+        if (v.some((e) => e.trim() === '')) { return true; }
+      });
       const error = errors.join('\n');
       const result = { value, error };
       return result;
@@ -11334,7 +11351,7 @@ const $battle = {
       #popup_box.hvut-bt-right-popup { left: 624px !important; }
       #popup_box.hvut-bt-left-popup { left: 244px !important; }
 
-      .hvut-bt-div { --color-border-default: #333; --color-bg-h1: #edb; --color-bg-alpha: #fff9; --color-font-light: #9B4E03; --color-font-warn: #e00; color: #333; }
+      .hvut-bt-div { color: #333; } /* token 已归一公共 :root(L1), 面板边框等随之贴 HV 原生色 */
     `);
 
     $battle.init_panel($id('mainpane'));
@@ -11553,250 +11570,7 @@ if ($config.settings.equipTouchFunctions) {
 }
 
 // TOP MENU
-GM_addStyle(/*css*/`
-  #navbar { display: none; }
-
-  #hvut-top { display: flex; position: relative; height: 22px; padding: 2px 0; border-bottom: 1px solid; font-size: 10pt; line-height: 22px; font-weight: bold; z-index: 10; white-space: nowrap; cursor: default; }
-  #hvut-top > div { position: relative; height: 22px; margin: 0 5px; }
-  #hvut-top a { display: block; text-decoration: none; }
-
-  .hvut-top-warn { background-color: #fd9; }
-  .hvut-top-message { position: absolute !important; top: 100%; left: -1px; width: 100%; margin: 0 !important; padding: 2px 0; border: 1px solid #5C0D11; background-color: #fd9c; color: #e00; z-index: -1; pointer-events: none; }
-
-  .hvut-top-sub { visibility: hidden; position: absolute; top: 22px; left: -6px; padding: 5px; border-style: solid; border-width: 0 1px 1px; background-color: #EDEBDF; opacity: 0.95; }
-  div:hover > .hvut-top-sub { visibility: visible; }
-  .hvut-top-sub select { display: block; margin: 0; }
-  .hvut-top-stamina > p { width: 220px; border-top: 1px solid #5C0D11; white-space: normal; }
-  .hvut-top-stamina > p:first-child { border-top: none; }
-  .hvut-top-exp { position: relative; width: 299px; height: 8px; margin: 0 auto; border: 1px solid; background: linear-gradient(to right, #930 1px, transparent 1px) repeat -1px 0 / 30px; }
-  .hvut-top-exp::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff; z-index: -1; }
-  .hvut-top-exp > div { position: absolute; top: 0; left: 0; height: 100%; background-color: #9cf; z-index: -1; }
-  .hvut-top-placeholder { flex: 1; }
-  .hvut-top-server { left: auto; right: -6px; }
-  .hvut-top-config { left: auto; right: -6px; }
-  .hvut-top-config > div { margin: 5px; text-align: left; cursor: pointer; }
-
-  .hvut-top-menu { display: flex; }
-  .hvut-top-menu > div { position: relative; margin: 0 5px; }
-  .hvut-top-menu span { font-size: 12pt; color: #930; }
-  .hvut-top-menu .hvut-top-sub { width: max-content; }
-  .hvut-top-menu ul { float: left; margin: 0 0 0 5px; padding: 0; list-style: none; text-align: left; line-height: 20px; }
-  .hvut-top-menu ul:first-child { margin-left: 0; }
-  .hvut-top-menu a { margin: 3px 0; padding: 0 5px; }
-  .hvut-top-menu a:hover { background-color: #fff; }
-  .hvut-top-menu-s { padding: 0 5px; background-color: #5C0D11; color: #fff; }
-
-  .hvut-top-links { display: flex; }
-  .hvut-top-links > a { position: relative; margin: 0 1px; padding: 0 1px; min-width: 28px; font-size: 12pt; border-radius: 2px; }
-  .hvut-top-links > a:hover { background-color: #fff; }
-  .hvut-top-links > a > span { display: none; position: absolute; top: 100%; left: 0; margin-top: 2px; margin-left: 0; padding: 1px 4px; background-color: #fff; color: #930; border: 1px solid; font-size: 10pt; line-height: 20px; font-weight: normal; pointer-events: none; }
-  .hvut-top-links > a:hover > span { display: block; }
-  .hvut-top-ygm { color: transparent !important; background: url('/y/mmail/ygm.png') no-repeat center center; animation: ygm 0.5s ease-in-out 10 alternate; filter: brightness(200%); }
-  .hvut-top-ygm:hover { color: #e00 !important; background-image: none; animation: none; filter: none; }
-  @keyframes ygm { from { opacity: 1; } to { opacity: 0.3; } }
-`);
-
-_top.menu = {
-  'Character': { s: 'Character', ss: 'ch', button: 'CH', text: '角色' },
-  'Equipment': { s: 'Character', ss: 'eq', button: 'EQ', text: '装备' },
-  'Abilities': { s: 'Character', ss: 'ab', button: 'AB', text: '能力' },
-  'Training': { s: 'Character', ss: 'tr', button: 'TR', text: '训练', disabled: 'isekai' },
-  'Item Inventory': { s: 'Character', ss: 'it', button: 'IT', text: '物品' },
-  'Equip Inventory': { s: 'Character', ss: 'in', button: 'IN', text: '装备仓库' },
-  'Settings': { s: 'Character', ss: 'se', button: 'SE', text: '设置' },
-  'Equipment Shop': { s: 'Bazaar', ss: 'es', button: 'ES', text: '装备商店' },
-  'Item Shop': { s: 'Bazaar', ss: 'is', button: 'IS', text: '道具店' },
-  'The Shrine': { s: 'Bazaar', ss: 'ss', button: 'SS', text: '祭坛' },
-  'The Market': { s: 'Bazaar', ss: 'mk', button: 'MK', text: '市场' },
-  'Monster Lab': { s: 'Bazaar', ss: 'ml', button: 'ML', text: '实验室', disabled: 'isekai' },
-  'MoogleMail': { s: 'Bazaar', ss: 'mm', button: 'MM', text: '邮箱' },
-  'Weapon Lottery': { s: 'Bazaar', ss: 'lt', button: 'LT', text: '武器彩票', disabled: 'isekai' },
-  'Armor Lottery': { s: 'Bazaar', ss: 'la', button: 'LA', text: '防具彩票', disabled: 'isekai' },
-  'The Arena': { s: 'Battle', ss: 'ar', button: 'AR', text: '竞技' },
-  'The Tower': { s: 'Battle', ss: 'tw', button: 'TW', text: '塔楼', disabled: 'persistent' },
-  'Ring of Blood': { s: 'Battle', ss: 'rb', button: 'RB', text: '擂台' },
-  'GrindFest': { s: 'Battle', ss: 'gr', button: 'GR', text: '压榨' },
-  'Item World': { s: 'Battle', ss: 'iw', button: 'IW', text: '道具界' },
-  'Repair': { s: 'Forge', ss: 're', button: 'RE', text: '修理' },
-  'Upgrade': { s: 'Forge', ss: 'up', button: 'UP', text: '升级' },
-  'Enchant': { s: 'Forge', ss: 'en', button: 'EN', text: '附魔' },
-  'Salvage': { s: 'Forge', ss: 'sa', button: 'SA', text: '分解' },
-  'Reforge': { s: 'Forge', ss: 'fo', button: 'FO', text: '重铸' },
-  'Soulfuse': { s: 'Forge', ss: 'fu', button: 'FU', text: 'Soulfuse' },
-};
-Object.values(_top.menu).forEach((m) => {
-  if (!m.href) {
-    m.href = `?s=${m.s}&ss=${m.ss}`;
-  }
-});
-// 反向桥：暴露 hv-utils config 打开口给 HVAA 设置面板（UI 入口整合·只合入口）。同 window.HVAA_i18n
-// 机制反方向(hv-utils→HVAA)；仅匹配 IS_ISEKAI 的 IIFE 执行，故 window 上始终只有一个活动 $config.open。
-if (typeof window !== 'undefined') { window.HVUT_openConfig = (key) => $config.open(key); }
-
-_top.create = function () {
-  if (_top.inited) {
-    return;
-  }
-  _top.inited = true;
-
-  const ul = {};
-  if ($config.settings.topMenuIntegration) {
-    const menu_sub = $element('div', _top.node.menu['MENU'], ['.hvut-top-sub']);
-    ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((m) => {
-      ul[m] = $element('ul', menu_sub);
-      hvaaBind($element('li', ul[m], ['.hvut-top-menu-s']), (n) => { n.textContent = hvaaT(m, 'topMenu'); });
-    });
-  } else {
-    ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((m) => {
-      const menu_sub = $element('div', _top.node.menu[m], ['.hvut-top-sub']);
-      ul[m] = $element('ul', menu_sub);
-    });
-  }
-  Object.entries(_top.menu).forEach(([k, m]) => {
-    if (m.disabled === 'persistent' && !IS_ISEKAI || m.disabled === 'isekai' && IS_ISEKAI) {
-      return;
-    }
-    const li = $element('li', ul[m.s]);
-    hvaaBind($element('a', li, { href: m.href }), (n) => { n.textContent = hvaaT(k, 'topMenu'); }); // 下拉声明式绑定(即时切换)
-  });
-
-  const stamina_sub = $element('div', _top.node.stamina, ['.hvut-top-sub hvut-top-stamina']);
-  if (!IS_ISEKAI) {
-    _top.node.stamina_form = $element('form', stamina_sub, { method: 'POST' }, { submit: (e) => { _top.stamina_submit(e); } });
-    $input('hidden', _top.node.stamina_form, { name: 'recover', value: 'stamina' });
-    $input('submit', _top.node.stamina_form, { value: '使用精力恢复剂', disabled: _player.stamina >= $config.settings.disableStaminaRestorative, style: 'width: 200px;' });
-    _top.node.stamina.addEventListener('mouseenter', _top.stamina_create);
-  }
-  $element('p', stamina_sub, _player.condition);
-  if (_player.accuracy) {
-    $element('p', stamina_sub, [_player.accuracy, '!color: #e00;']);
-  }
-
-  if (_player.level !== 500) {
-    const exec = /([0-9,]+) \/ ([0-9,]+)\s*Next: ([0-9,]+)/.exec($id('level_details').textContent);
-    const exp = parseInt(exec[1].replace(/,/g, ''));
-    const up = parseInt(exec[2].replace(/,/g, ''));
-    const next = parseInt(exec[3].replace(/,/g, ''));
-    const level_start = Math.round(Math.pow(_player.level + 3, Math.pow(2.850263212287058, 1 + _player.level / 1000)));
-    const level_exp = exp - level_start;
-    const level_up = up - level_start;
-    const pct = ((level_exp / level_up) * 100).toFixed(2);
-    const level_sub = $element('div', _top.node.level, ['.hvut-top-sub']);
-    $element('p', level_sub, `累计经验 ${exp.toLocaleString()} / ${up.toLocaleString()}`);
-    $element('p', level_sub, `升级还需: ${next.toLocaleString()}`);
-    $element('p', level_sub, `当前等级: ${level_exp.toLocaleString()} / ${level_up.toLocaleString()} (${pct}%)`);
-    $element('div', level_sub, ['.hvut-top-exp', `/<div style="width: ${pct}%;"></div>`]);
-  }
-
-  const server_sub = $element('div', _top.node.server, ['.hvut-top-sub hvut-top-server']);
-  if (IS_ISEKAI) {
-    const server_on = '异世界';
-    const server_to = '永久区';
-    $element('a', server_sub, { href: '/', innerHTML: `<p>你现在在${server_on}</p><p>${$config.season}</p><p>点击切换到${server_to}</p>` });
-  } else {
-    const server_on = '永久区';
-    const server_to = '异世界';
-    $element('a', server_sub, { href: '/isekai/', innerHTML: `<p>你现在在${server_on}</p><p>点击切换到${server_to}</p>` });
-  }
-
-  const config_sub = $element('div', _top.node.config, ['.hvut-top-sub hvut-top-config']);
-  $element('div', config_sub, 'HVAA 设置', () => { if (typeof window !== 'undefined' && window.HVAA_openConfig) { window.HVAA_openConfig(); } }); // chunk1: 齿轮槽位整槽对应 HVAA 面板；hv-utils 配置由 HVAA 面板内「HV Utils 设置」入口开
-  if ($id('mbsettings')) { // monsterbation
-    config_sub.appendChild($id('mbsettings'));
-    $id('mbsettings').firstElementChild.className = '';
-    GM_addStyle(/*css*/`
-      #mbsettings { position: relative; }
-      #mbprofile { top: 100%; left: 0; min-width: 100%; box-sizing: border-box; font-weight: normal; }
-    `);
-  }
-};
-
-_top.stamina_create = async function () {
-  if (_top.stamina_create.inited) {
-    return;
-  }
-  _top.stamina_create.inited = true;
-  const p = $element('p', _top.node.stamina_form, '加载中...');
-  await $item.once();
-  const items = ['Caffeinated Candy', 'Energy Drink'].filter((e) => $item.count(e));
-  if (items.length) {
-    items.forEach((e) => { $element('p', _top.node.stamina_form, `${e} (${$item.count(e)})`); });
-    p.remove();
-  } else {
-    p.textContent = '没有能量恢复剂';
-  }
-};
-
-_top.stamina_submit = function (e) {
-  if ($config.settings.confirmStaminaRestorative && !confirm('确定要使用能量恢复剂吗?')) {
-    e.preventDefault();
-  }
-};
-
-_top.init = function () {
-  _top.node = {};
-  _top.node.div = $element('div', null, ['#hvut-top'], { mouseenter: () => { _top.create(); } });
-
-  const menu_div = $element('div', _top.node.div, ['.hvut-top-menu']);
-  _top.node.menu = {};
-  if ($config.settings.topMenuIntegration) {
-    _top.node.menu['MENU'] = hvaaBind($element('div', menu_div), (n) => { n.innerHTML = `<span>${hvaaT('MENU', 'topMenu')}</span>`; });
-  } else {
-    ['Character', 'Bazaar', 'Battle', 'Forge'].forEach((t) => {
-      _top.node.menu[t] = hvaaBind($element('div', menu_div), (n) => { n.innerHTML = `<span>${hvaaT(t, 'topMenu')}</span>`; });
-    });
-  }
-
-  const links = $config.settings.topMenuLinks.filter((b) => {
-    const m = _top.menu[b];
-    if (!m || m.disabled === 'persistent' && !IS_ISEKAI || m.disabled === 'isekai' && IS_ISEKAI) {
-      return false;
-    } else {
-      return true;
-    }
-  });
-  const links_div = $element('div', _top.node.div, ['.hvut-top-links']);
-  const new_mail = $id('nav_mail')?.textContent.trim();
-  if (new_mail && !links.includes('MoogleMail')) {
-    links.push('MoogleMail');
-  }
-  links.forEach((b) => {
-    const m = _top.menu[b];
-    // 按实际功能过滤：去掉本服不存在的项(主世界无塔楼 disabled:'persistent')；自定义项不在 menu 则跳过(防 undefined)
-    if (!m || m.disabled === 'persistent' && !IS_ISEKAI || m.disabled === 'isekai' && IS_ISEKAI) {
-      return;
-    }
-    let cn = '';
-    if (b === 'MoogleMail' && new_mail) {
-      cn = 'hvut-top-ygm';
-    }
-    const a = $element('a', links_div, { href: m.href });
-    if (cn) {
-      a.className = cn;
-    }
-    hvaaBind(a, (n) => { // 链接声明式绑定(lang 切换即时重渲染)；重渲染保留英文 span 悬停提示
-      n.textContent = (b === 'MoogleMail' && new_mail) ? `[${new_mail}]` : hvaaT(b, 'topMenu');
-      $element('span', n, b);
-    });
-  });
-
-  _top.node.stamina = hvaaBind($element('div', _top.node.div, ['!width: 90px;']), (n) => { n.innerHTML = `<span>${hvaaT('Stamina', 'topMenu')}: ${_player.stamina}</span>`; });
-  _top.node.level = $element('div', _top.node.div, ['!width: 60px;', `/<span>Lv.${_player.level}</span>`]);
-  _top.node.difficulty = $element('div', _top.node.div, ['!width: 80px;', `/<span>${_player.difficulty}</span>`]);
-  _top.node.persona = hvaaBind($element('div', _top.node.div, ['!width: 110px;']), (n) => { n.innerHTML = `<span>${hvaaT('Persona', 'topMenu')}</span>`; });
-  if ($config.settings.reNotification) {
-    $re.hv();
-  }
-  $element('div', _top.node.div, ['.hvut-top-placeholder']);
-  const server = IS_ISEKAI ? 'Isekai' : '永久区';
-  _top.node.server = $element('div', _top.node.div, ['!width: 80px;', `/<span>${server}</span>`]);
-
-  _top.node.config = $element('div', _top.node.div, ['!width: 30px;']);
-  $element('span', _top.node.config, ['!cursor: pointer;', '/<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="30" height="22" viewBox="0 0 50 50" fill="#630"><path d="M47.16,21.221l-5.91-0.966c-0.346-1.186-0.819-2.326-1.411-3.405l3.45-4.917c0.279-0.397,0.231-0.938-0.112-1.282 l-3.889-3.887c-0.347-0.346-0.893-0.391-1.291-0.104l-4.843,3.481c-1.089-0.602-2.239-1.08-3.432-1.427l-1.031-5.886 C28.607,2.35,28.192,2,27.706,2h-5.5c-0.49,0-0.908,0.355-0.987,0.839l-0.956,5.854c-1.2,0.345-2.352,0.818-3.437,1.412l-4.83-3.45 c-0.399-0.285-0.942-0.239-1.289,0.106L6.82,10.648c-0.343,0.343-0.391,0.883-0.112,1.28l3.399,4.863 c-0.605,1.095-1.087,2.254-1.438,3.46l-5.831,0.971c-0.482,0.08-0.836,0.498-0.836,0.986v5.5c0,0.485,0.348,0.9,0.825,0.985 l5.831,1.034c0.349,1.203,0.831,2.362,1.438,3.46l-3.441,4.813c-0.284,0.397-0.239,0.942,0.106,1.289l3.888,3.891 c0.343,0.343,0.884,0.391,1.281,0.112l4.87-3.411c1.093,0.601,2.248,1.078,3.445,1.424l0.976,5.861C21.3,47.647,21.717,48,22.206,48 h5.5c0.485,0,0.9-0.348,0.984-0.825l1.045-5.89c1.199-0.353,2.348-0.833,3.43-1.435l4.905,3.441 c0.398,0.281,0.938,0.232,1.282-0.111l3.888-3.891c0.346-0.347,0.391-0.894,0.104-1.292l-3.498-4.857 c0.593-1.08,1.064-2.222,1.407-3.408l5.918-1.039c0.479-0.084,0.827-0.5,0.827-0.985v-5.5C47.999,21.718,47.644,21.3,47.16,21.221z M25,32c-3.866,0-7-3.134-7-7c0-3.866,3.134-7,7-7s7,3.134,7,7C32,28.866,28.866,32,25,32z"></path></svg>'], () => { if (typeof window !== 'undefined' && window.HVAA_openConfig) { window.HVAA_openConfig(); } });
-
-  $id('navbar').after(_top.node.div);
-};
-
+bindTop(_top, { config: $config, player: () => _player, re: () => $re }); // 全量收口(L1 bindTop): 旧 4.0.0 菜单表(Forge 组/Equip Inventory ss=in/Equipment Shop ss=es 死端点)随能量模型下线, 菜单/首行导航两服一致由内核结构性保证
 _top.init();
 
 // DIFFICULTY CHANGER
