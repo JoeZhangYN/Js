@@ -73,9 +73,10 @@ try {
 //    a) 机制分叉留各 IIFE: pxp系数 2x/12x、品质 8/10 级、Forge/附魔 主世界独有、$config GM 命名空间
 //       hvut_/hvuti_、$equip dynjs 模型(迁移中) —— 强合破坏两游戏正确性 + 老用户持久化。
 //    b) 真重复(byte-identical / 表层漂移)收口共享区, ctx 注入版本差异: bindTr / bindRe / bindPrice /
-//       bindBattlePanel(渲染内核, 数据层留各版) / render_supply_li / equip-name-render / .hvut-warn 归一。
-//       反退化: scripts/verify-no-iife-dup.mjs 锁回潮; 候选召回: scripts/dup-probe.mjs(手动)。
-//       留置候选(审查过, 等阻塞解除): $persona/$dfct(topmenu node 形态 + dynjs 模型), $config 小方法群。
+//       bindDfct / bindPersona(真分叉经 ctx 倒置: warnSelector/parseEquipElem/applyDynjs; parse_stats_pane
+//       留各版) / bindBattlePanel(渲染内核, 数据层留各版) / render_supply_li / equip-name-render /
+//       .hvut-warn·.hvut-bonus 归一。反退化: scripts/verify-no-iife-dup.mjs 锁回潮; 召回: scripts/dup-probe.mjs(手动)。
+//       留置候选(审查过): $config(依赖根, 15 IDENT 小方法可收但 migration/create 大块真分叉需细审), $equip.namecode(品质 8/10 级机制分叉区)。
 // 5. 迁移基线: 主世界 sleazyfork #533796 英文 4.0.0; Isekai 论坛 211883 英文 4.2.0
 // 6. 汉化策略: 显示层翻译走 canonical SSOT(src/data/i18n) 经 window.HVAA_i18n 桥
 //    (hvaaT/hvaaTEquip/resolveEn); 逻辑值/比较/键/POST 参数一律英文。i18n SSOT epic G0-G3
@@ -1027,6 +1028,265 @@ const bindBattlePanel = function (battle, ctx) {
     eq.node.repair = $element('ul', null, ['.hvut-bt-repair', { dataset: { header: '修理装备' } }]); // 此材料面板 hover 才挂载，不加 action（加了反与 repairall 同位置→误触修全部）
     battle.equips.push(eq);
     return eq;
+  };
+};
+
+// $dfct 难度切换(两 IIFE 收口一处, 基准 = ISEKAI 4.2.0; 铁律1e 应抽尽抽)。原"被 topmenu node 形态阻塞"
+// 判断已证伪 —— node.div/button vs 平铺 div/button 只是对象自身字面量组织, 两版同取自 _top.node.difficulty。
+// 收口统一: ① node 包一层(isekai 形态); ② change() POST 取 4.2.0 FormData+'FORM'(两服同 HV 引擎, $ajax 共享支持);
+// ③ 文案取主世界汉化 '(属性日: 错误)'; ④ mouseenter 懒加载统一进 init。
+// ctx: config / top·player 用 getter(规避声明顺序 TDZ)。
+const bindDfct = function (dfct, ctx) {
+  dfct.node = {
+    div: ctx.top.node.difficulty,
+    button: ctx.top.node.difficulty.firstElementChild,
+  };
+  dfct.list = ['普通✖1', '困难✖2', '噩梦✖4', '地狱✖7', '任天堂✖10', 'IWBTH', '彩虹小马✖20'];
+
+  dfct.init = function () {
+    const ch_style = ctx.config.get('ch_style', {});
+    if (ch_style.difficulty !== ctx.player.difficulty) {
+      ch_style.difficulty = ctx.player.difficulty;
+      ctx.config.set('ch_style', ch_style);
+    }
+    dfct.node.div.addEventListener('mouseenter', dfct.create);
+  };
+  dfct.create = function () {
+    if (dfct.sub) {
+      return;
+    }
+    dfct.sub = $element('div', dfct.node.div, ['.hvut-top-sub']);
+    const options = dfct.list.map((d, i) => `${i + 1}:${d}`).reverse();
+    dfct.selector = $input(['select', options], dfct.sub, { size: dfct.list.length, className: 'hvut-scrollbar-none', style: 'width: 80px;' }, { change: () => {
+      dfct.selector.disabled = true;
+      dfct.change(dfct.selector.value);
+    } });
+    dfct.selector.value = dfct.list.indexOf(ctx.player.difficulty) + 1;
+  };
+  dfct.change = async function (value) {
+    dfct.node.button.textContent = '(D1...)';
+    let html = await $ajax.fetch('?s=Character&ss=se');
+    let doc = $doc(html);
+    dfct.node.button.textContent = '(D2...)';
+    const data = new FormData($qs('#settings_outer form', doc));
+    data.set('difflevel', value);
+    data.set('submit', 'Apply Changes');
+    html = await $ajax.fetch('?s=Character&ss=se', data, 'FORM');
+    doc = $doc(html);
+    dfct.set_button(doc);
+  };
+  dfct.set_button = function (doc) {
+    const value = /^(.+) Lv\.(\d+)/.exec($id('level_readout', doc).textContent.trim())[1];
+    if (!value) {
+      dfct.node.button.textContent = '(属性日: 错误)';
+      return;
+    }
+    ctx.player.difficulty = value;
+    dfct.node.button.textContent = value;
+    if (dfct.selector) {
+      dfct.selector.value = dfct.list.indexOf(value) + 1;
+      dfct.selector.disabled = false;
+    }
+    const ch_style = ctx.config.get('ch_style', {});
+    ch_style.difficulty = value;
+    ctx.config.set('ch_style', ch_style);
+  };
+};
+
+// $persona 角色/装备套装切换(两 IIFE 12/13 方法收口一处, 基准 = ISEKAI 4.2.0; 铁律1e 应抽尽抽)。
+// 收口统一: ① node 包一层; ② 4.2.0 ename 装备套装命名功能(set_value('name')→json.ename→按钮优先显示)
+//   并入主世界(老 json 无 ename 字段走 || 回退, 兼容); ③ set_button 保险回退取两版并集
+//   (pname 空时 'Persona '+pset, 主世界 4.0.0 写法); ④ 'Set i'→'套装 i'(取主世界汉化, create/change_e 两处);
+//   ⑤ check_e 取 match 解析(语义同 slice(-8,-7) 简写, 更稳); ⑥ 警示统一 .hvut-warn/.hvut-bonus class
+//   (主世界 BASIC CSS 已补 .hvut-bonus; inline style 形态弃)。
+// 真分叉经 ctx 倒置(各 IIFE 闭包注入): warnSelector(#stamina_restore 两版解析 selector 不同, 未实证同 DOM
+//   不盲合) / parseEquipElem($equip.parse.elem vs .div, dynjs 模型 Chunk 迁移中) / applyDynjs(dynjs_equip
+//   增量合并 vs dynjs_loaded 整体替换)。parse_stats_pane 解析模型大分叉, 整方法留各 IIFE 字面量。
+const bindPersona = function (persona, ctx) {
+  persona.node = {
+    div: ctx.top.node.persona,
+    button: ctx.top.node.persona.firstElementChild,
+  };
+  persona.json = ctx.config.get('persona', {});
+
+  persona.init = function () {
+    if ($id('persona_form')) {
+      if (!persona.check_p()) {
+        persona.change_e();
+      } else {
+        persona.set_button();
+      }
+    } else if (!persona.json.pset || !persona.json.eset) {
+      persona.change_p();
+    } else {
+      persona.set_button();
+    }
+    persona.check_warning();
+    persona.node.div.addEventListener('mouseenter', persona.create);
+  };
+  persona.create = function () {
+    const json = persona.json;
+    if (!json.pset || !json.eset) {
+      return;
+    }
+    if (persona.sub) {
+      return;
+    }
+    persona.sub = $element('div', persona.node.div, ['.hvut-top-sub']);
+
+    persona.selector_p = $input('select', persona.sub, { size: json.plen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
+      persona.selector_p.disabled = true;
+      persona.change_p(persona.selector_p.value);
+    } });
+    for (let i = 1; i <= json.plen; i++) {
+      $element('option', persona.selector_p, { value: i, text: json[i].name });
+    }
+    persona.selector_p.value = json.pset;
+
+    persona.selector_e = $input('select', persona.sub, { size: json.elen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
+      persona.selector_e.disabled = true;
+      persona.change_e(persona.selector_e.value);
+    } });
+    for (let i = 1; i <= json.elen; i++) {
+      $element('option', persona.selector_e, { value: i, text: json[json.pset][i].name || `套装 ${i}` });
+    }
+    persona.selector_e.value = json.eset;
+  };
+  persona.check_p = function (doc) {
+    const json = persona.json;
+    const pset = parseInt($id('persona_form', doc).elements.persona_set.value);
+    const plen = $id('persona_form', doc).elements.persona_set.options.length;
+    const checked = pset === json.pset;
+
+    Array.from($id('persona_form', doc).elements.persona_set.options).forEach((o) => {
+      const pset = parseInt(o.value);
+      const pname = o.text;
+      if (!json[pset]) {
+        json[pset] = {};
+      }
+      json[pset].name = pname;
+    });
+
+    json.pset = pset;
+    json.plen = plen;
+    json.pname = json[pset].name;
+    persona.set_value();
+    return checked;
+  };
+  persona.check_e = function (doc) {
+    const json = persona.json;
+    const pset = json.pset;
+    const eset = parseInt($qs('img[src$="_on.png"]', doc).src.match(/set(\d+)_on/)[1]);
+    const elen = $id('eqsl', doc).childElementCount;
+
+    for (let i = 1; i <= elen; i++) {
+      if (!json[pset][i]) {
+        json[pset][i] = { name: '' };
+      }
+    }
+
+    json.eset = eset;
+    json.elen = elen;
+    json.ename = json[pset][eset].name;
+    persona.set_value();
+  };
+  persona.change_p = async function (pset) {
+    persona.node.button.textContent = '(P...)';
+    ctx.dfct.node.button.textContent = '(D...)';
+    const html = await $ajax.fetch('?s=Character&ss=ch', pset ? `persona_set=${pset}` : null);
+    const doc = $doc(html);
+    persona.check_p(doc);
+    if (persona.selector_p) {
+      persona.selector_p.value = persona.json.pset;
+      persona.selector_p.disabled = false;
+    }
+    persona.change_e();
+    ctx.dfct.set_button(doc);
+  };
+  persona.change_e = async function (eset) {
+    persona.node.button.textContent = '(E...)';
+    const html = await $ajax.fetch('?s=Character&ss=eq', eset ? `equip_set=${eset}` : null);
+    const doc = $doc(html);
+    persona.check_e(doc);
+    const json = persona.json;
+    if (persona.selector_e) {
+      for (let i = 1; i <= json.elen; i++) {
+        const ename = json[json.pset][i].name;
+        persona.selector_e.options[i - 1].text = ename || `套装 ${i}`;
+      }
+      persona.selector_e.value = json.eset;
+      persona.selector_e.disabled = false;
+    }
+    persona.set_button();
+    persona.load_dynjs(doc);
+    persona.check_warning(doc);
+  };
+  persona.set_button = function () {
+    const pname = persona.json.pname || `Persona ${persona.json.pset}`;
+    persona.node.button.textContent = persona.json.ename || `${pname.slice(0, 10)} [${persona.json.eset}]`;
+  };
+  persona.load_dynjs = async function (doc) {
+    const src = $qs('script[src*="/dynjs/"]', doc).src;
+    const html = await $ajax.fetch(`${src}?t=${Date.now()}`);
+    ctx.applyDynjs(html);
+    persona.save_equipset(doc);
+    persona.parse_stats_pane(doc);
+    if (_query.s === 'Battle') {
+      ctx.battle?.create();
+    } else if (['eq', 'ab', 'it', 'se'].includes(_query.ss)) {
+      location.href = location.href;
+    }
+  };
+  persona.set_value = function (name, value) {
+    const json = persona.json;
+    if (name) {
+      json[json.pset][json.eset][name] = value;
+    }
+    if (name === 'name') {
+      json.ename = value;
+      persona.set_button();
+    }
+    ctx.config.set('persona', json);
+  };
+  persona.get_value = function (name) {
+    const json = persona.json;
+    return json[json.pset][json.eset][name];
+  };
+  persona.save_equipset = function (doc) {
+    const equipset = $qsa('.eqb', doc).map((d) => {
+      const eq = ctx.parseEquipElem(d.children[1]);
+      const slot = d.children[0].textContent;
+      if (eq.info) {
+        const { category, name, customname, eid, key } = eq.info;
+        return { slot, category, name, customname, eid, key };
+      } else {
+        return { slot };
+      }
+    });
+    ctx.config.set('equipset', equipset);
+  };
+  persona.check_warning = function (doc) {
+    const top = ctx.top;
+    top.node.message?.remove();
+    top.node.div.classList.remove('hvut-top-warn');
+    top.node.persona.firstElementChild.classList.remove('hvut-warn');
+    top.node.stamina.firstElementChild.classList.remove('hvut-warn', 'hvut-bonus');
+    ctx.player.warn = $qsa(ctx.warnSelector, doc).map((d) => d.textContent.trim()); // Repair weapon, Repair armor, Check equipment, Check attributes
+    if (ctx.player.warn.length) {
+      if (_query.s === 'Battle') {
+        top.node.message = top.node.message || $element('div', null, ['.hvut-top-message']);
+        top.node.message.textContent = '[警告] ' + ctx.player.warn.join(', ');
+        top.node.div.appendChild(top.node.message);
+      }
+      top.node.div.classList.add('hvut-top-warn');
+      top.node.persona.firstElementChild.classList.add('hvut-warn');
+    }
+    if (ctx.player.condition.includes('Stamina: Exhausted') || ctx.player.accuracy || ctx.player.stamina <= ctx.config.settings.warnLowStamina) {
+      top.node.div.classList.add('hvut-top-warn');
+      top.node.stamina.firstElementChild.classList.add('hvut-warn');
+    } else if (ctx.player.condition.includes('Stamina: Great')) {
+      top.node.stamina.firstElementChild.classList.add('hvut-bonus');
+    }
   };
 };
 
@@ -3418,250 +3678,15 @@ GM_addStyle(/*css*/`
 _top.init();
 
 // DIFFICULTY CHANGER
-const $dfct = {
-  node: {
-    div: _top.node.difficulty,
-    button: _top.node.difficulty.firstElementChild,
-  },
-  list: ['普通✖1', '困难✖2', '噩梦✖4', '地狱✖7', '任天堂✖10', 'IWBTH', '彩虹小马✖20'],
-
-  init: function () {
-    const ch_style = $config.get('ch_style', {});
-    if (ch_style.difficulty !== _player.difficulty) {
-      ch_style.difficulty = _player.difficulty;
-      $config.set('ch_style', ch_style);
-    }
-    $dfct.node.div.addEventListener('mouseenter', $dfct.create);
-  },
-  create: function () {
-    if ($dfct.sub) {
-      return;
-    }
-    $dfct.sub = $element('div', $dfct.node.div, ['.hvut-top-sub']);
-    const options = $dfct.list.map((d, i) => `${i + 1}:${d}`).reverse();
-    $dfct.selector = $input(['select', options], $dfct.sub, { size: $dfct.list.length, className: 'hvut-scrollbar-none', style: 'width: 80px;' }, { change: () => {
-      $dfct.selector.disabled = true;
-      $dfct.change($dfct.selector.value);
-    } });
-    $dfct.selector.value = $dfct.list.indexOf(_player.difficulty) + 1;
-  },
-  change: async function (value) {
-    $dfct.node.button.textContent = '(D1...)';
-    let html = await $ajax.fetch('?s=Character&ss=se');
-    let doc = $doc(html);
-    $dfct.node.button.textContent = '(D2...)';
-    const data = new FormData($qs('#settings_outer form', doc));
-    data.set('difflevel', value);
-    data.set('submit', 'Apply Changes');
-    html = await $ajax.fetch('?s=Character&ss=se', data, 'FORM');
-    doc = $doc(html);
-    $dfct.set_button(doc);
-  },
-  set_button: function (doc) {
-    const value = /^(.+) Lv\.(\d+)/.exec($id('level_readout', doc).textContent.trim())[1];
-    if (!value) {
-      $dfct.node.button.textContent = '(D: ERROR)';
-      return;
-    }
-    _player.difficulty = value;
-    $dfct.node.button.textContent = value;
-    if ($dfct.selector) {
-      $dfct.selector.value = $dfct.list.indexOf(value) + 1;
-      $dfct.selector.disabled = false;
-    }
-    const ch_style = $config.get('ch_style', {});
-    ch_style.difficulty = value;
-    $config.set('ch_style', ch_style);
-  },
-};
+const $dfct = {};
+bindDfct($dfct, { config: $config, get top() { return _top; }, get player() { return _player; } }); // 收口共享内核(L1 bindDfct)
 
 $dfct.init();
 
 // PERSONA & EQUIPMENT SET CHANGER
 const $persona = {
-  node: {
-    div: _top.node.persona,
-    button: _top.node.persona.firstElementChild,
-  },
-  json: $config.get('persona', {}),
-
-  init: function () {
-    if ($id('persona_form')) {
-      if (!$persona.check_p()) {
-        $persona.change_e();
-      } else {
-        $persona.set_button();
-      }
-    } else if (!$persona.json.pset || !$persona.json.eset) {
-      $persona.change_p();
-    } else {
-      $persona.set_button();
-    }
-    $persona.check_warning();
-    $persona.node.div.addEventListener('mouseenter', $persona.create);
-  },
-  create: function () {
-    const json = $persona.json;
-    if (!json.pset || !json.eset) {
-      return;
-    }
-    if ($persona.sub) {
-      return;
-    }
-    $persona.sub = $element('div', $persona.node.div, ['.hvut-top-sub']);
-
-    $persona.selector_p = $input('select', $persona.sub, { size: json.plen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
-      $persona.selector_p.disabled = true;
-      $persona.change_p($persona.selector_p.value);
-    } });
-    for (let i = 1; i <= json.plen; i++) {
-      $element('option', $persona.selector_p, { value: i, text: json[i].name });
-    }
-    $persona.selector_p.value = json.pset;
-
-    $persona.selector_e = $input('select', $persona.sub, { size: json.elen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
-      $persona.selector_e.disabled = true;
-      $persona.change_e($persona.selector_e.value);
-    } });
-    for (let i = 1; i <= json.elen; i++) {
-      $element('option', $persona.selector_e, { value: i, text: json[json.pset][i].name || `Set ${i}` });
-    }
-    $persona.selector_e.value = json.eset;
-  },
-  check_p: function (doc) {
-    const json = $persona.json;
-    const pset = parseInt($id('persona_form', doc).elements.persona_set.value);
-    const plen = $id('persona_form', doc).elements.persona_set.options.length;
-    const checked = pset === json.pset;
-
-    Array.from($id('persona_form', doc).elements.persona_set.options).forEach((o) => {
-      const pset = parseInt(o.value);
-      const pname = o.text;
-      if (!json[pset]) {
-        json[pset] = {};
-      }
-      json[pset].name = pname;
-    });
-
-    json.pset = pset;
-    json.plen = plen;
-    json.pname = json[pset].name;
-    $persona.set_value();
-    return checked;
-  },
-  check_e: function (doc) {
-    const json = $persona.json;
-    const pset = json.pset;
-    const eset = parseInt($qs('img[src$="_on.png"]', doc).src.match(/set(\d+)_on/)[1]);
-    const elen = $id('eqsl', doc).childElementCount;
-
-    for (let i = 1; i <= elen; i++) {
-      if (!json[pset][i]) {
-        json[pset][i] = { name: '' };
-      }
-    }
-
-    json.eset = eset;
-    json.elen = elen;
-    json.ename = json[pset][eset].name;
-    $persona.set_value();
-  },
-  change_p: async function (pset) {
-    $persona.node.button.textContent = '(P...)';
-    $dfct.node.button.textContent = '(D...)';
-    const html = await $ajax.fetch('?s=Character&ss=ch', pset ? `persona_set=${pset}` : null);
-    const doc = $doc(html);
-    $persona.check_p(doc);
-    if ($persona.selector_p) {
-      $persona.selector_p.value = $persona.json.pset;
-      $persona.selector_p.disabled = false;
-    }
-    $persona.change_e();
-    $dfct.set_button(doc);
-  },
-  change_e: async function (eset) {
-    $persona.node.button.textContent = '(E...)';
-    const html = await $ajax.fetch('?s=Character&ss=eq', eset ? `equip_set=${eset}` : null);
-    const doc = $doc(html);
-    $persona.check_e(doc);
-    const json = $persona.json;
-    if ($persona.selector_e) {
-      for (let i = 1; i <= json.elen; i++) {
-        const ename = json[json.pset][i].name;
-        $persona.selector_e.options[i - 1].text = ename || `Set ${i}`;
-      }
-      $persona.selector_e.value = json.eset;
-      $persona.selector_e.disabled = false;
-    }
-    $persona.set_button();
-    $persona.load_dynjs(doc);
-    $persona.check_warning(doc);
-  },
-  set_button: function () {
-    $persona.node.button.textContent = $persona.json.ename || `${$persona.json.pname.slice(0, 10)} [${$persona.json.eset}]`;
-  },
-  load_dynjs: async function (doc) {
-    const src = $qs('script[src*="/dynjs/"]', doc).src;
-    const html = await $ajax.fetch(`${src}?t=${Date.now()}`);
-    Object.assign($equip.dynjs_equip, JSON.parse(/dynjs_equip\s?=\s?(\{.*?\});/.exec(html)?.[1] || null));
-    $persona.save_equipset(doc);
-    $persona.parse_stats_pane(doc);
-    if (_query.s === 'Battle') {
-      $battle?.create();
-    } else if (['eq', 'ab', 'it', 'se'].includes(_query.ss)) {
-      location.href = location.href;
-    }
-  },
-  set_value: function (name, value) {
-    const json = $persona.json;
-    if (name) {
-      json[json.pset][json.eset][name] = value;
-    }
-    if (name === 'name') {
-      json.ename = value;
-      $persona.set_button();
-    }
-    $config.set('persona', json);
-  },
-  get_value: function (name) {
-    const json = $persona.json;
-    return json[json.pset][json.eset][name];
-  },
-  save_equipset: function (doc) {
-    const equipset = $qsa('.eqb', doc).map((d) => {
-      const eq = $equip.parse.elem(d.children[1]);
-      const slot = d.children[0].textContent;
-      if (eq.info) {
-        const { category, name, customname, eid, key } = eq.info;
-        return { slot, category, name, customname, eid, key };
-      } else {
-        return { slot };
-      }
-    });
-    $config.set('equipset', equipset);
-  },
-  check_warning: function (doc) {
-    _top.node.message?.remove();
-    _top.node.div.classList.remove('hvut-top-warn');
-    _top.node.persona.firstElementChild.classList.remove('hvut-warn');
-    _top.node.stamina.firstElementChild.classList.remove('hvut-warn', 'hvut-bonus');
-    _player.warn = $qsa('#stamina_restore > div > div', doc).map((d) => d.textContent.trim()); // Repair weapon, Repair armor, Check equipment, Check attributes
-    if (_player.warn.length) {
-      if (_query.s === 'Battle') {
-        _top.node.message = _top.node.message || $element('div', null, ['.hvut-top-message']);
-        _top.node.message.textContent = '[警告] ' + _player.warn.join(', ');
-        _top.node.div.appendChild(_top.node.message);
-      }
-      _top.node.div.classList.add('hvut-top-warn');
-      _top.node.persona.firstElementChild.classList.add('hvut-warn');
-    }
-    if (_player.condition.includes('Stamina: Exhausted') || _player.accuracy || _player.stamina <= $config.settings.warnLowStamina) {
-      _top.node.div.classList.add('hvut-top-warn');
-      _top.node.stamina.firstElementChild.classList.add('hvut-warn');
-    } else if (_player.condition.includes('Stamina: Great')) {
-      _top.node.stamina.firstElementChild.classList.add('hvut-bonus');
-    }
-  },
+  // 12/13 方法已收口 bindPersona(L1); 真分叉经 ctx 倒置(warnSelector/>div>div 解析 + parse.elem + dynjs_equip 增量合并)。
+  // parse_stats_pane 解析模型大分叉(isekai 版从 stats_pane 键反推 fighting_style), 留本字面量。
   parse_stats_pane: function (doc) {
     // [HVAA 嵌入修复] 与主世界版同源不变量：非属性页(无 #stats_scrollable，如装备库存 ss=in 经 persona_outer 进入)不解析。
     // isekai 版从 stats_pane 键反推 fighting_style，空面板虽不崩，但会把垃圾 ch_style('Unarmed') 写进配置，同样提前 bail。
@@ -3728,6 +3753,16 @@ const $persona = {
     return stats_pane;
   },
 };
+bindPersona($persona, { // 收口共享内核(L1 bindPersona)
+  config: $config,
+  get top() { return _top; },
+  get dfct() { return $dfct; },
+  get battle() { return $battle; },
+  get player() { return _player; },
+  warnSelector: '#stamina_restore > div > div',
+  parseEquipElem: (d) => $equip.parse.elem(d),
+  applyDynjs: (html) => { Object.assign($equip.dynjs_equip, JSON.parse(/dynjs_equip\s?=\s?(\{.*?\});/.exec(html)?.[1] || null)); },
+});
 
 $persona.init();
 
@@ -11547,6 +11582,7 @@ GM_addStyle(/*css*/`
   .fc2, .fc4 { display: inline; }
 
   .hvut-warn { color: #e00 !important; }
+  .hvut-bonus { color: #03c !important; }
   .hvut-none { display: none !important; }
   .hvut-none-cont .hvut-none-item { display: none; }
   .hvut-cphu, .hvut-cphu-sub > * { cursor: pointer; }
@@ -11949,232 +11985,15 @@ _top.init = function () {
 _top.init();
 
 // DIFFICULTY CHANGER
-const $dfct = {
+const $dfct = {};
+bindDfct($dfct, { config: $config, get top() { return _top; }, get player() { return _player; } }); // 收口共享内核(L1 bindDfct)
 
-  div: _top.node.difficulty,
-  button: _top.node.difficulty.firstElementChild,
-  list: ['普通✖1', '困难✖2', '噩梦✖4', '地狱✖7', '任天堂✖10', 'IWBTH', '彩虹小马✖20'],
-
-  init: function () {
-    const ch_style = $config.get('ch_style', {});
-    if (ch_style.difficulty !== _player.difficulty) {
-      ch_style.difficulty = _player.difficulty;
-      $config.set('ch_style', ch_style);
-    }
-  },
-  create: function () {
-    if ($dfct.sub) {
-      return;
-    }
-    $dfct.sub = $element('div', $dfct.div, ['.hvut-top-sub']);
-    const options = $dfct.list.map((d, i) => `${i + 1}:${d}`).reverse();
-    $dfct.selector = $input(['select', options], $dfct.sub, { size: $dfct.list.length, className: 'hvut-scrollbar-none', style: 'width: 80px;' }, { change: () => {
-      $dfct.selector.disabled = true;
-      $dfct.change($dfct.selector.value);
-    } });
-    $dfct.selector.value = $dfct.list.indexOf(_player.difficulty) + 1;
-  },
-  change: async function (value) {
-    $dfct.button.textContent = '(D1...)';
-    let html = await $ajax.fetch('?s=Character&ss=se');
-    let doc = $doc(html);
-    $dfct.button.textContent = '(D2...)';
-    const form = new FormData($qs('#settings_outer form', doc));
-    form.set('difflevel', value);
-    form.set('submit', 'Apply Changes');
-    const post = Object.fromEntries(form.entries());
-    html = await $ajax.fetch('?s=Character&ss=se', post);
-    doc = $doc(html);
-    $dfct.set_button(doc);
-  },
-  set_button: function (doc) {
-    const value = /^(.+) Lv\.(\d+)/.exec($id('level_readout', doc).textContent.trim())[1];
-    if (!value) {
-      $dfct.button.textContent = '(属性日: 错误)';
-      return;
-    }
-    _player.difficulty = value;
-    $dfct.button.textContent = value;
-    if ($dfct.selector) {
-      $dfct.selector.value = $dfct.list.indexOf(value) + 1;
-      $dfct.selector.disabled = false;
-    }
-    const ch_style = $config.get('ch_style', {});
-    ch_style.difficulty = value;
-    $config.set('ch_style', ch_style);
-  },
-
-};
-
-$dfct.div.addEventListener('mouseenter', $dfct.create);
 $dfct.init();
 
 // PERSONA & EQUIPMENT SET CHANGER
 const $persona = {
-
-  json: $config.get('persona', {}),
-  div: _top.node.persona,
-  button: _top.node.persona.firstElementChild,
-
-  create: function () {
-    const json = $persona.json;
-    if (!json.pset || !json.eset) {
-      return;
-    }
-    if ($persona.sub) {
-      return;
-    }
-    $persona.sub = $element('div', $persona.div, ['.hvut-top-sub']);
-
-    $persona.selector_p = $input('select', $persona.sub, { size: json.plen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
-      $persona.selector_p.disabled = true;
-      $persona.change_p($persona.selector_p.value);
-    } });
-    for (let i = 1; i <= json.plen; i++) {
-      $element('option', $persona.selector_p, { value: i, text: json[i].name });
-    }
-    $persona.selector_p.value = json.pset;
-
-    $persona.selector_e = $input('select', $persona.sub, { size: json.elen, className: 'hvut-scrollbar-none', style: 'width: 110px;' }, { change: () => {
-      $persona.selector_e.disabled = true;
-      $persona.change_e($persona.selector_e.value);
-    } });
-    for (let i = 1; i <= json.elen; i++) {
-      $element('option', $persona.selector_e, { value: i, text: json[json.pset][i].name || `Set ${i}` });
-    }
-    $persona.selector_e.value = json.eset;
-  },
-  check_p: function (doc) {
-    const json = $persona.json;
-    const pset = parseInt($id('persona_form', doc).elements.persona_set.value);
-    const plen = $id('persona_form', doc).elements.persona_set.options.length;
-    const checked = pset === json.pset;
-
-    Array.from($id('persona_form', doc).elements.persona_set.options).forEach((o) => {
-      const pset = parseInt(o.value);
-      const pname = o.text;
-      if (!json[pset]) {
-        json[pset] = {};
-      }
-      json[pset].name = pname;
-    });
-
-    json.pset = pset;
-    json.plen = plen;
-    json.pname = json[pset].name;
-    $persona.set_value();
-    return checked;
-  },
-  check_e: function (doc) {
-    const json = $persona.json;
-    const pset = json.pset;
-    const eset = parseInt($qs('img[src$="_on.png"]', doc).src.slice(-8, -7));
-    const elen = $id('eqsl', doc).childElementCount;
-
-    for (let i = 1; i <= elen; i++) {
-      if (!json[pset][i]) {
-        json[pset][i] = { name: '' };
-      }
-    }
-
-    json.eset = eset;
-    json.elen = elen;
-    json.ename = json[pset][eset].name;
-    $persona.set_value();
-  },
-  change_p: async function (pset) {
-    $persona.button.textContent = '(P...)';
-    $dfct.button.textContent = '(D...)';
-    const html = await $ajax.fetch('?s=Character&ss=ch', pset ? 'persona_set=' + pset : null);
-    const doc = $doc(html);
-    $persona.check_p(doc);
-    if ($persona.selector_p) {
-      $persona.selector_p.value = $persona.json.pset;
-      $persona.selector_p.disabled = false;
-    }
-    $persona.change_e();
-    $dfct.set_button(doc);
-  },
-  change_e: async function (eset) {
-    $persona.button.textContent = '(E...)';
-    const html = await $ajax.fetch('?s=Character&ss=eq', eset ? 'equip_set=' + eset : null);
-    const doc = $doc(html);
-    $persona.check_e(doc);
-    const json = $persona.json;
-    if ($persona.selector_e) {
-      for (let i = 1; i <= json.elen; i++) {
-        const ename = json[json.pset][i].name;
-        $persona.selector_e.options[i - 1].text = ename || '套装 ' + i;
-      }
-      $persona.selector_e.value = json.eset;
-      $persona.selector_e.disabled = false;
-    }
-    $persona.set_button();
-    $persona.load_dynjs(doc);
-    $persona.check_warning(doc);
-  },
-  set_button: function () {
-    const pname = $persona.json.pname || 'Persona ' + $persona.json.pset;
-    $persona.button.textContent = `${pname.slice(0, 10)} [${$persona.json.eset}]`;
-  },
-  load_dynjs: async function (doc) {
-    const src = $qs('script[src*="/dynjs/"]', doc).src;
-    const html = await $ajax.fetch(src + '?t=' + Date.now());
-    $equip.dynjs_loaded = JSON.parse(html.slice(16, -1));
-    $persona.save_equipset(doc);
-    $persona.parse_stats_pane(doc);
-    if (_query.s === 'Battle') {
-      $battle?.create();
-    } else if (['eq', 'ab', 'it', 'se'].includes(_query.ss)) {
-      location.href = location.href;
-    }
-  },
-  set_value: function (name, value) {
-    const json = $persona.json;
-    if (name) {
-      json[json.pset][json.eset][name] = value;
-    }
-    $config.set('persona', json);
-  },
-  get_value: function (name) {
-    const json = $persona.json;
-    return json[json.pset][json.eset][name];
-  },
-  save_equipset: function (doc) {
-    const equipset = $qsa('.eqb', doc).map((d) => {
-      const eq = $equip.parse.div(d.children[1]);
-      const slot = d.children[0].textContent;
-      if (eq.info) {
-        const { category, name, customname, eid, key } = eq.info;
-        return { slot, category, name, customname, eid, key };
-      } else {
-        return { slot };
-      }
-    });
-    $config.set('equipset', equipset);
-  },
-  check_warning: function (doc) {
-    _top.node.message?.remove();
-    _top.node.div.classList.remove('hvut-top-warn');
-    _top.node.persona.firstElementChild.style.color = '';
-    _player.warn = $qsa('#stamina_restore .fcr', doc).map((d) => d.textContent.trim()); // Repair weapon, Repair armor, Check equipment, Check attributes
-    if (_player.warn.length) {
-      if (_query.s === 'Battle') {
-        _top.node.message = _top.node.message || $element('div', null, ['.hvut-top-message']);
-        _top.node.message.textContent = '[警告] ' + _player.warn.join(', ');
-        _top.node.div.appendChild(_top.node.message);
-      }
-      _top.node.div.classList.add('hvut-top-warn');
-      _top.node.persona.firstElementChild.style.color = '#e00';
-    }
-    _top.node.stamina.firstElementChild.style.color = '';
-    if (_player.condition.includes('Stamina: Exhausted') || _player.accuracy || _player.stamina <= $config.settings.warnLowStamina) {
-      _top.node.div.classList.add('hvut-top-warn');
-      _top.node.stamina.firstElementChild.style.color = '#e00';
-    } else if (_player.condition.includes('Stamina: Great')) {
-      _top.node.stamina.firstElementChild.style.color = '#03c';
-    }
-  },
+  // 12/13 方法已收口 bindPersona(L1); 真分叉经 ctx 倒置(warnSelector/.fcr 解析 + parse.div + dynjs_loaded 整体替换)。
+  // parse_stats_pane 解析模型大分叉(主世界版), 留本字面量。
   parse_stats_pane: function (doc) {
     // [HVAA 嵌入修复] 非角色属性页(如装备库存 ss=in，经 $id('persona_outer') 进入 [1] Character 块)
     // 无属性面板：.spn 缺失 → 原 $qs('.spn').textContent 读 null 崩溃；且空 stats_pane 仍会写垃圾 ch_style。
@@ -12222,24 +12041,18 @@ const $persona = {
     $config.set('ch_style', ch_style);
     return stats_pane;
   },
-  init: function () {
-    if ($id('persona_form')) {
-      if (!$persona.check_p()) {
-        $persona.change_e();
-      } else {
-        $persona.set_button();
-      }
-    } else if (!$persona.json.pset || !$persona.json.eset) {
-      $persona.change_p();
-    } else {
-      $persona.set_button();
-    }
-    $persona.check_warning();
-  },
-
 };
+bindPersona($persona, { // 收口共享内核(L1 bindPersona)
+  config: $config,
+  get top() { return _top; },
+  get dfct() { return $dfct; },
+  get battle() { return $battle; },
+  get player() { return _player; },
+  warnSelector: '#stamina_restore .fcr',
+  parseEquipElem: (d) => $equip.parse.div(d),
+  applyDynjs: (html) => { $equip.dynjs_loaded = JSON.parse(html.slice(16, -1)); },
+});
 
-$persona.div.addEventListener('mouseenter', $persona.create);
 $persona.init();
 
 // BOTTOM MENU
