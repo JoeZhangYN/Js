@@ -1,4 +1,8 @@
 // file-size-gate: exempt 移植自 Live Percentile Ranges 独立脚本-仅 showequip 页自包含功能（内部可拆属独立重写工作）
+// ⚠ DEPRECATED [2026-06-10 能量模型]: 本模块已成孤儿（dispatcher 不再 import, dist 不打包）——
+// 潜能体系消失后页面解析入口即死（#showequip id 已不存在 / `Condition: X / Y (Z%)` / Tier-PXP 全消失），
+// reasoningtheory.net 数据库旧 base 体系亦失效；浮动百分位由 offline（Base 点数 + QUALITY_CONFIG）覆盖。
+// 留置原因: Send Range 喂数据（hvitems.niblseed.com）等社区功能若按新体系重写可参考。
 // 联网装备百分位（移植自 Live Percentile Ranges.js, 1.1.0.s3）
 // 改写：ES6 module / 无 jQuery / manualRanges 抽到 data/equip-quality-ranges.js
 // 数据流：本地 localStorage.EquipmentRanges → reasoningtheory.net (POST gethvitems.php) → 合 manualRanges

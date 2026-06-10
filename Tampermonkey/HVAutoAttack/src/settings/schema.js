@@ -183,7 +183,8 @@ export const OPTION_SCHEMA = [
       l2: "Show MLP riddle helper panel (rotate/sharpen/contrast + 6 thumbnails)",
     },
   },
-  // === P3P4 装备百分位（三态互斥：off / offline 本地公式 / live 联网 reasoningtheory.net） ===
+  // === P3P4 装备百分位（off / offline 本地品质点数公式；live 已随能量模型过时, 存值兼容降级走 offline） ===
+  // [2026-06-10] equipPercentileLiveSendRange 已删（live 专属, 零消费）; enum 保留 'live' 兼容老存值。
   {
     key: "equipPercentileMode",
     kind: "select",
@@ -191,21 +192,9 @@ export const OPTION_SCHEMA = [
     default: "off",
     enum: ["off", "offline", "live"],
     label: {
-      l0: "装备浮动百分位（off / offline 本地公式 / live 联网 — ⚠ 切模式需刷新页面）",
-      l1: "裝備浮動百分位（off / offline 本地公式 / live 聯網 — ⚠ 切模式需刷新頁面）",
-      l2: "Equip Percentile (off / offline local / live remote DB — ⚠ refresh after switching)",
-    },
-  },
-  {
-    key: "equipPercentileLiveSendRange",
-    kind: "checkbox",
-    group: "Main",
-    default: true,
-    defaultOn: true,
-    label: {
-      l0: "联网模式：允许喂数据回社区数据库（hvitems.niblseed.com，Shift+S 触发）",
-      l1: "聯網模式：允許餵資料回社區資料庫（hvitems.niblseed.com，Shift+S 觸發）",
-      l2: "Live mode: send range to community DB (hvitems.niblseed.com, Shift+S)",
+      l0: "装备浮动百分位（off / offline 本地公式；live 已并入 offline — ⚠ 切模式需刷新页面）",
+      l1: "裝備浮動百分位（off / offline 本地公式；live 已併入 offline — ⚠ 切模式需刷新頁面）",
+      l2: "Equip Percentile (off / offline local; live merged into offline — ⚠ refresh after switching)",
     },
   },
   // === P6 RMA ML 远程答题（rdma.ooguy.com） ===

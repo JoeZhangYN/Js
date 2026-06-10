@@ -179,7 +179,7 @@ export function optionBox() {
       l2: " credits/run cap (auto-buy materials to repair; stop if over cap; unchecked = stop on shortage)",
     }),
     '  <div><input id="forgeCostShow" type="checkbox" checked data-default-on><label for="forgeCostShow"><b><l0>强化价格</l0><l1>強化價格</l1><l2>Forge Cost</l2></b></label>: <l0>装备页显示材料/总价/Lv 预测（isekai/persistent 自动选）</l0><l1>裝備頁顯示材料/總價/Lv 預測（isekai/persistent 自動選）</l1><l2>Show material/total/Lv predict on equipment page</l2></div>',
-    '  <div><b><l0>装备浮动百分位</l0><l1>裝備浮動百分位</l1><l2>Equip Percentile</l2></b>: <select name="equipPercentileMode"><option value="off">off (关闭)</option><option value="offline">offline (本地公式)</option><option value="live">live (联网 reasoningtheory.net)</option></select> <input id="equipPercentileLiveSendRange" type="checkbox" checked data-default-on><label for="equipPercentileLiveSendRange"><l0>喂数据回社区 (Shift+S)</l0><l1>餵資料回社區 (Shift+S)</l1><l2>Send Range (Shift+S)</l2></label></div>',
+    '  <div><b><l0>装备浮动百分位</l0><l1>裝備浮動百分位</l1><l2>Equip Percentile</l2></b>: <select name="equipPercentileMode"><option value="off">off (关闭)</option><option value="offline">offline (本地公式)</option><option value="live">live (已并入 offline)</option></select></div>',
     "  </div>",
     // === System 系统/页面 tab（页面停留 alert/reload + 定时刷新 + 记录每场 + 延迟，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-System">',

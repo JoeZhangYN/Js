@@ -63,7 +63,12 @@ function parseEquip(container) {
   if (!title) return;
 
   const entries = Object.entries(QUALITY_CONFIG);
-  const found = entries.find(([key]) => title.startsWith(key));
+  // 标题可能被汉化（✪传奇✪…）：先按英文品质词匹配，失配再按 QUALITY_CN_MAP 中文键兜底（逻辑值仍走英文 key）
+  let found = entries.find(([key]) => title.startsWith(key));
+  if (!found) {
+    const cn = Object.entries(QUALITY_CN_MAP).find(([cnKey]) => title.startsWith(cnKey));
+    if (cn) found = entries.find(([key]) => key === cn[1]);
+  }
   if (!found) return;
   const [quality, { range, cap }] = found;
 
