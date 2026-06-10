@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 import { stripComments } from "./lib/i18n-probe-lex.mjs";
 
 const TARGET = fileURLToPath(new URL("../src/i18n/hv-utils.js", import.meta.url));
-const COLLAPSED_OBJECTS = ["$re", "$price", "$dfct"]; // R1: 整对象收口（bindRe/bindPrice/bindDfct）
+const COLLAPSED_OBJECTS = ["$re", "$price", "$dfct", "$persona"]; // R1: 整对象收口（bindRe/bindPrice/bindDfct/bindPersona——parse_stats_pane 2026-06-10 续收后全坍缩）
 const PARTIAL_OBJECTS = { // R2: 部分收口对象 → 字面量内禁止回潮的方法名
   "$battle": [ // bindBattlePanel 内核 + 数据层(2026-06-10 续收: 能量模型后两版修理机制同构, Forge 流已死)
     "init_panel", "click", "hover", "hover_repair", "get",
@@ -33,10 +33,6 @@ const PARTIAL_OBJECTS = { // R2: 部分收口对象 → 字面量内禁止回潮
     "create", "load_dynjs", "update_condition", "repair", "calc_repair", "load_repair",
     "update_link", "load_items", "load", "parse", "display_condition", "load_inventory",
     "display_inventory", "render_repair",
-  ],
-  "$persona": [ // bindPersona（字面量仅许 parse_stats_pane）
-    "init", "create", "check_p", "check_e", "change_p", "change_e",
-    "set_button", "load_dynjs", "set_value", "get_value", "save_equipset", "check_warning",
   ],
 };
 

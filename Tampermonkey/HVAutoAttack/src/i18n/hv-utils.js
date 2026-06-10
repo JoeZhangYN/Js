@@ -1749,6 +1749,73 @@ const bindPersona = function (persona, ctx) {
       location.href = location.href;
     }
   };
+  // [2026-06-10 续收] 原「parse_stats_pane 解析模型大分叉留各 IIFE」: 主世界旧版解析 .spn + #stats_pane
+  // .st1/.st2(旧页面), 能量模型后主世界属性页已同构 isekai 的 #stats_scrollable > table(实站报错证实:
+  // 装备页无 .spn → bail 返回 undefined → _eq.stats_pane['Spell Type'] 崩断整条 IIFE) → 分叉消失, 收
+  // isekai 实现。bail 返回 {}(而非 undefined): 「无属性面板不解析不写配置」不变量保留, 消费方索引安全。
+  persona.parse_stats_pane = function (doc) {
+    if (!$qs('#stats_scrollable', doc)) return {};
+    const stats_pane = {};
+    $qsa('#stats_scrollable > table', doc).forEach((table) => {
+      const type = table.previousElementSibling.textContent;
+      Array.from(table.rows).forEach((tr) => {
+        const text = tr.cells[0].textContent;
+        let value = parseFloat(text);
+        if (text.endsWith('%')) {
+          value = Math.round(value * 100) / 10000;
+        }
+        let name = tr.cells[1].textContent;
+        if (/(Mainhand|Offhand|Magic) Attack/.test(type)) {
+          const attack_type = RegExp.$1;
+          if (/(Crushing|Piercing|Slashing|Void) Damage/.test(name)) {
+            name = `${attack_type} Damage`;
+          } else if (/Damage Bonus|Accuracy|Crit Multiplier/.test(name)) {
+            name = `${attack_type} ${name}`;
+          }
+        } else if (type === 'Damage Mitigation') {
+          name += ' MIT';
+        } else if (type === 'Spell Damage Bonus') {
+          name += ' EDB';
+        }
+        stats_pane[name] = value;
+      });
+    });
+
+    let fighting_style;
+    if ('Coalesced Mana on spell hit' in stats_pane) {
+      fighting_style = 'Staff';
+    } else if ('Offhand Damage' in stats_pane) {
+      if ('Domino Strike on hit' in stats_pane) {
+        fighting_style = 'Niten Ichiryu'; // 逻辑值一律英文(原 isekai 版误植中文'二天轻甲战士'; 显示走 interface-dict '二天一流')
+      } else {
+        fighting_style = 'Dualwield';
+      }
+    } else {
+      if ('Domino Strike on hit' in stats_pane) {
+        fighting_style = 'Two-Handed';
+      } else if ('Counter-Attack on block/parry' in stats_pane) {
+        fighting_style = 'One-Handed';
+      } else {
+        fighting_style = 'Unarmed';
+      }
+    }
+    const spell_type = ['Fire', 'Cold', 'Elec', 'Wind', 'Holy', 'Dark'].sort((a, b) => stats_pane[`${b} EDB`] - stats_pane[`${a} EDB`])[0];
+    const spell_damage = stats_pane[`${spell_type} EDB`];
+    const prof_factor = Math.max(0, Math.min(1, stats_pane[{ 'Holy': 'Divine', 'Dark': 'Forbidden' }[spell_type] || 'Elemental'] / ctx.player.level - 1));
+    const ch_style = { level: ctx.player.level, difficulty: ctx.player.difficulty };
+    stats_pane['Fighting Style'] = fighting_style;
+    ch_style['Fighting Style'] = fighting_style;
+    if (fighting_style === 'Staff' || spell_damage >= 100) {
+      stats_pane['Spell Type'] = spell_type;
+      stats_pane['Proficiency Factor'] = prof_factor;
+      ch_style['Spell Type'] = spell_type;
+      ch_style['Proficiency Factor'] = Math.round(prof_factor * 1000) / 1000;
+    } else {
+      ch_style['Attack Base Damage'] = stats_pane['Mainhand Damage'];
+    }
+    ctx.config.set('ch_style', ch_style);
+    return stats_pane;
+  };
   persona.set_value = function (name, value) {
     const json = persona.json;
     if (name) {
@@ -3713,75 +3780,9 @@ bindDfct($dfct, { config: $config, get top() { return _top; }, get player() { re
 $dfct.init();
 
 // PERSONA & EQUIPMENT SET CHANGER
-const $persona = {
-  // 12/13 方法已收口 bindPersona(L1); 真分叉经 ctx 倒置(warnSelector/>div>div 解析 + parse.elem + dynjs_equip 增量合并)。
-  // parse_stats_pane 解析模型大分叉(isekai 版从 stats_pane 键反推 fighting_style), 留本字面量。
-  parse_stats_pane: function (doc) {
-    // [HVAA 嵌入修复] 与主世界版同源不变量：非属性页(无 #stats_scrollable，如装备库存 ss=in 经 persona_outer 进入)不解析。
-    // isekai 版从 stats_pane 键反推 fighting_style，空面板虽不崩，但会把垃圾 ch_style('Unarmed') 写进配置，同样提前 bail。
-    if (!$qs('#stats_scrollable', doc)) return;
-    const stats_pane = {};
-    $qsa('#stats_scrollable > table', doc).forEach((table) => {
-      const type = table.previousElementSibling.textContent;
-      Array.from(table.rows).forEach((tr) => {
-        const text = tr.cells[0].textContent;
-        let value = parseFloat(text);
-        if (text.endsWith('%')) {
-          value = Math.round(value * 100) / 10000;
-        }
-        let name = tr.cells[1].textContent;
-        if (/(Mainhand|Offhand|Magic) Attack/.test(type)) {
-          const attack_type = RegExp.$1;
-          if (/(Crushing|Piercing|Slashing|Void) Damage/.test(name)) {
-            name = `${attack_type} Damage`;
-          } else if (/Damage Bonus|Accuracy|Crit Multiplier/.test(name)) {
-            name = `${attack_type} ${name}`;
-          }
-        } else if (type === 'Damage Mitigation') {
-          name += ' MIT';
-        } else if (type === 'Spell Damage Bonus') {
-          name += ' EDB';
-        }
-        stats_pane[name] = value;
-      });
-    });
-
-    let fighting_style;
-    if ('Coalesced Mana on spell hit' in stats_pane) {
-      fighting_style = 'Staff';
-    } else if ('Offhand Damage' in stats_pane) {
-      if ('Domino Strike on hit' in stats_pane) {
-        fighting_style = '二天轻甲战士';
-      } else {
-        fighting_style = 'Dualwield';
-      }
-    } else {
-      if ('Domino Strike on hit' in stats_pane) {
-        fighting_style = 'Two-Handed';
-      } else if ('Counter-Attack on block/parry' in stats_pane) {
-        fighting_style = 'One-Handed';
-      } else {
-        fighting_style = 'Unarmed';
-      }
-    }
-    const spell_type = ['Fire', 'Cold', 'Elec', 'Wind', 'Holy', 'Dark'].sort((a, b) => stats_pane[`${b} EDB`] - stats_pane[`${a} EDB`])[0];
-    const spell_damage = stats_pane[`${spell_type} EDB`];
-    const prof_factor = Math.max(0, Math.min(1, stats_pane[{ 'Holy': 'Divine', 'Dark': 'Forbidden' }[spell_type] || 'Elemental'] / _player.level - 1));
-    const ch_style = { level: _player.level, difficulty: _player.difficulty };
-    stats_pane['Fighting Style'] = fighting_style;
-    ch_style['Fighting Style'] = fighting_style;
-    if (fighting_style === 'Staff' || spell_damage >= 100) {
-      stats_pane['Spell Type'] = spell_type;
-      stats_pane['Proficiency Factor'] = prof_factor;
-      ch_style['Spell Type'] = spell_type;
-      ch_style['Proficiency Factor'] = Math.round(prof_factor * 1000) / 1000;
-    } else {
-      ch_style['Attack Base Damage'] = stats_pane['Mainhand Damage'];
-    }
-    $config.set('ch_style', ch_style);
-    return stats_pane;
-  },
-};
+// 全方法已收口 bindPersona(L1; parse_stats_pane 2026-06-10 续收——主世界属性页已同构 #stats_scrollable, 大分叉消失);
+// 真分叉经 ctx 倒置(warnSelector/>div>div 解析 + parse.elem)。
+const $persona = {};
 bindPersona($persona, { // 收口共享内核(L1 bindPersona)
   config: $config,
   get top() { return _top; },
@@ -4105,7 +4106,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
 
     /*
     _eq.stats_pane = $persona.parse_stats_pane();
-    if (_eq.stats_pane['Spell Type']) {
+    if (_eq.stats_pane?.['Spell Type']) {
       _eq.mage_stats();
     }
     //*/
@@ -11580,57 +11581,9 @@ bindDfct($dfct, { config: $config, get top() { return _top; }, get player() { re
 $dfct.init();
 
 // PERSONA & EQUIPMENT SET CHANGER
-const $persona = {
-  // 12/13 方法已收口 bindPersona(L1); 真分叉经 ctx 倒置(warnSelector/.fcr 解析 + parse.div; applyDynjs 已同构 dynjs_equip)。
-  // parse_stats_pane 解析模型大分叉(主世界版), 留本字面量。
-  parse_stats_pane: function (doc) {
-    // [HVAA 嵌入修复] 非角色属性页(如装备库存 ss=in，经 $id('persona_outer') 进入 [1] Character 块)
-    // 无属性面板：.spn 缺失 → 原 $qs('.spn').textContent 读 null 崩溃；且空 stats_pane 仍会写垃圾 ch_style。
-    // 不变量「仅在属性面板存在时解析」：无 .spn 即非属性页，提前 bail（不解析、不写配置，读写路径一致）。
-    const spn = $qs('.spn', doc);
-    if (!spn) return;
-    const stats_pane = {};
-    $qsa('#stats_pane .st1 > div:nth-child(2n), #stats_pane .st2 > div:nth-child(2n)', doc).forEach((div) => {
-      const type = div.parentNode.previousElementSibling.textContent;
-      const number = parseFloat(div.previousElementSibling.textContent);
-      let text = div.textContent.trim();
-      if (text.startsWith('% ')) {
-        text = text.slice(2);
-      }
-      if (text === 'hit chance') {
-        const p = type === 'Physical Attack' ? 'Attack' : type === 'Magical Attack' ? 'Magic' : '';
-        text = `${p} hit chance`; // equipment: Attack Accuracy, Magic Accuracy
-      } else if (/crit chance \/ \+([0-9.]+) % damage/.test(text)) {
-        const p = type === 'Physical Attack' ? 'Attack' : type === 'Magical Attack' ? 'Magic' : '';
-        text = `${p} crit chance`;
-        stats_pane[`${p} Crit Damage`] = parseFloat(RegExp.$1); // equipment: Attack Crit Damage, Spell Crit Damage
-      }
-      text = text.replace(/\b[a-z]/g, (s) => s.toUpperCase());
-      if ($equip.reg.magic.test(text)) {
-        text += type === 'Specific Mitigation' ? ' MIT' : ' EDB';
-      }
-      stats_pane[text] = number;
-    });
-
-    const fighting_style = /(Unarmed|One-Handed|Two-Handed|Dualwield|Niten Ichiryu|Staff)/.exec(spn.textContent)[1];
-    const spell_type = ['Fire', 'Cold', 'Elec', 'Wind', 'Holy', 'Dark'].sort((a, b) => stats_pane[b + ' EDB'] - stats_pane[a + ' EDB'])[0];
-    const spell_damage = stats_pane[spell_type + ' EDB'];
-    const prof_factor = Math.max(0, Math.min(1, stats_pane[{ 'Holy': 'Divine', 'Dark': 'Forbidden' }[spell_type] || 'Elemental'] / _player.level - 1));
-    const ch_style = { level: _player.level, difficulty: _player.difficulty };
-    stats_pane['Fighting Style'] = fighting_style;
-    ch_style['Fighting Style'] = fighting_style;
-    if (fighting_style === 'Staff' || spell_damage >= 80) {
-      stats_pane['Spell Type'] = spell_type;
-      stats_pane['Proficiency Factor'] = prof_factor;
-      ch_style['Spell Type'] = spell_type;
-      ch_style['Proficiency Factor'] = Math.round(prof_factor * 1000) / 1000;
-    } else {
-      ch_style['Attack Base Damage'] = stats_pane['Attack Base Damage'];
-    }
-    $config.set('ch_style', ch_style);
-    return stats_pane;
-  },
-};
+// 全方法已收口 bindPersona(L1; parse_stats_pane 2026-06-10 续收——旧 .spn/#stats_pane 解析随旧页面死亡);
+// 真分叉经 ctx 倒置(warnSelector/.fcr 解析 + parse.div)。
+const $persona = {};
 bindPersona($persona, { // 收口共享内核(L1 bindPersona)
   config: $config,
   get top() { return _top; },
@@ -12571,7 +12524,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     _eq.node.equipset_name = $input('text', _eq.node.buttons, { value: $persona.json.ename || '套装 ' + $persona.json.eset, style: 'width: 100px; margin-left: auto; text-align: center;' });
     $input(['button', '保存'], _eq.node.buttons, null, () => { $persona.set_value('姓名', _eq.node.equipset_name.value); });
 
-    if (_eq.stats_pane['Spell Type']) {
+    if (_eq.stats_pane?.['Spell Type']) {
       _eq.mage_stats();
     }
   }
