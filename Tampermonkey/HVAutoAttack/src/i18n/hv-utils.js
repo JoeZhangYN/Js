@@ -97,6 +97,9 @@ function time_format(t,o) {t=Math.floor(t/1000);const h=Math.floor(t/3600).toStr
 // `dynjs_equip = {...};`(主世界旧 `dynjs_loaded` slice(16) 整体替换形态已死, 2026-06-10 拆桥, probe R3 锁);
 // `(?:var )?` 兼容 eqstore 带 var 前缀形态。失配返 null(JSON.parse(null)=null, Object.assign(x,null) 无害)。
 function parse_script_json(h,n) {return JSON.parse(new RegExp(`(?:var )?${n}\\s?=\\s?(\\{.*?\\});`).exec(h)?.[1]||null);}
+// 能量模型耐久读数字段(单一判定点, 两版 reg.html 捕获组 identical: 8=耐久% 9=能量% 10=N/A):
+// reg.html exec → { condition, energy, cdt }。消费方: 主世界 $equip.parse.div + bindBattlePanel 数据层 load_dynjs。
+function parse_condition_of(exec) {const condition=parseFloat(exec[8]);return {condition:condition,cdt:(condition||0)/100,energy:exec[9]?parseFloat(exec[9]):null};}
 function split2(s,d,t=true) {let a;const p=s.indexOf(d);if(p===-1){a=[s];}else{const k=s.slice(0,p);const v=s.slice(p+1);a=[k,v];}if(t){a=a.map((e)=>e.trim());}return a;}
 function scrollIntoView(e,p=e.parentNode) {if(!e){return;}p.scrollTop+=e.getBoundingClientRect().top-p.getBoundingClientRect().top;}
 function confirm_event(n,e,m,c,f) {if(!n){return;}const a=n.getAttribute('on'+e);n.removeAttribute('on'+e);n.addEventListener(e,(e)=>{if(!c||c()){if(confirm(m)){if(f){f();}}else{e.preventDefault();e.stopImmediatePropagation();}}},true);n.setAttribute('on'+e,a);}
@@ -880,14 +883,15 @@ const bindPrice = function (price, ctx) {
   };
 };
 
-// $battle 战斗装备面板·渲染/交互内核(两 IIFE 收口一处; 铁律1e 应抽尽抽)。
-// 边界 = 用户原话「仅数据分发处理和数据使用不同, 外观完全一致」(2026-06-10):
-//   收口(本内核): 布局 CSS 模板 / DOM 四节点构建 / hover-click 交互 / 三个渲染原语(库存网格·材料行·装备行)。
-//   留各 IIFE(数据层): isekai Bazaar repair 流(eqitems/itemdata/能量模型) vs 主世界 Forge 流
-//   (load/parse/repair/dynjs/附魔展示), 以及外层接线(outer 宽度规则/位置类/popup 偏移/token 主题值)。
+// $battle 战斗装备面板·渲染/交互内核 + 数据层(两 IIFE 收口一处; 铁律1e 应抽尽抽)。
+// 初版边界(2026-06-10 早) = 用户原话「仅数据分发处理和数据使用不同, 外观完全一致」—— 当时数据层被认定
+// 机制分叉(isekai Bazaar repair 流 vs 主世界 Forge 流)留各 IIFE; 同日实站报错证实能量模型后主世界
+// Forge 流(?s=Forge&ss=re / 详情页 #ee 附魔)已随旧页面整体消失、修理机制与 isekai 同构 → 数据层续收
+// 本内核(create/load_dynjs/update_condition/repair/calc_repair/load_repair/update_link/load_items)。
+//   留各 IIFE: 仅外层接线 init(outer 宽度规则/位置类/popup 偏移/token 主题值)。
 // ctx: config(IIFE-private $config) / dict(材料译名词典域 'item'|'material', 两版历史用域不同, 暂不强行归一防翻译回归)
 //      / divSel(面板根选择器 '#hvut-bt-div'|'.hvut-bt-div', 兼作 $element 简写标记) / inventory(库存 settings 取值)
-//      / reloadItems(购买后刷新编排, isekai load_items vs 主世界 load_inventory 分层差异经回调倒置)。
+//      / threshold(耐久警示阈值 settings key 两版不同) / equip·persona(容器归属各 IIFE 闭包的 getter)。
 // 布局 SSOT: 此模板是「主异世界外观完全一致」约束的唯一载体 —— 改布局只改这里, 两版同时生效(反退化锁, 铁律4)。
 const bindBattlePanel = function (battle, ctx) {
   battle.node = {};
@@ -980,7 +984,7 @@ const bindBattlePanel = function (battle, ctx) {
     }
     const items = [{ name, count }];
     await $item.buy(items);
-    ctx.reloadItems();
+    battle.load_items(); // 数据层已收口本 bind, 原 ctx.reloadItems 注入点撤销
   };
   // 库存网格: 行高自适应 + 三列 dummy 补位(不足 9 格补满, 超出补齐行尾) + render_supply_li 循环
   battle.render_supply_grid = function () {
@@ -1018,7 +1022,6 @@ const bindBattlePanel = function (battle, ctx) {
     return li;
   };
   // 装备行: 名字 a(hvaaBind 即时重渲染译名) + 耐久列(点击修理) + 提示槽 + hover 才挂载的游离材料面板。
-  // 空槽返回 null; 耐久占位/cat 计算/数据加载等数据层差异由调用方 create 编排。
   battle.create_equip_li = function (info) {
     if (!info.eid) {
       $element('li', battle.node.equip, [`/<a>${info.slot} - 空</a><span></span><span></span>`]);
@@ -1032,6 +1035,195 @@ const bindBattlePanel = function (battle, ctx) {
     eq.node.repair = $element('ul', null, ['.hvut-bt-repair', { dataset: { header: '修理装备' } }]); // 此材料面板 hover 才挂载，不加 action（加了反与 repairall 同位置→误触修全部）
     battle.equips.push(eq);
     return eq;
+  };
+
+  // ===== 数据层（2026-06-10 续收）：能量模型后两版机制同构 —— Bazaar `?s=Bazaar&ss=am&screen=repair`
+  // 修理流（postoken + eqitems/itemdata 内联变量）+ dynjs_equip 耐久读数。原「Forge 修理流(?s=Forge&ss=re)
+  // = 主世界机制分叉」随旧 Bazaar Forge 页消失而不复存在（该页已无 dynjs script/#repairall，fetch 即崩，
+  // 2026-06-10 实站报错证实；详情页 #equip_extended/#ee 附魔区同没 → 旧附魔只读展示一并下线）。
+  // 真分叉仅剩 ctx 三注入: equip/persona(容器归属各 IIFE 闭包) + threshold(警示阈值 settings key)。
+  battle.create = function () {
+    battle.load_items();
+    battle.equips.length = 0;
+    battle.node.equip.innerHTML = '';
+    const equipset = ctx.config.get('equipset');
+    if (!equipset) {
+      ctx.persona().change_p();
+      return;
+    }
+    equipset.forEach((info) => {
+      battle.create_equip_li(info);
+    });
+
+    battle.load_repair();
+  };
+  battle.load_dynjs = async function (doc) {
+    const src = $qs('script[src*="/dynjs/"]', doc)?.src;
+    if (!src) {
+      return; // 防御: 页面无 dynjs script 时不崩整条 async 链（旧 Forge 页报错样本的教训）
+    }
+    const html = await $ajax.fetch(`${src}?t=${Date.now()}`);
+    const equip = ctx.equip();
+    Object.assign(equip.dynjs_equip, parse_script_json(html, 'dynjs_equip'));
+    battle.equips.some((eq) => {
+      const dynjs = equip.dynjs_equip[eq.info.eid];
+      if (!dynjs) {
+        ctx.persona().change_p();
+        return true;
+      }
+      const exec = equip.reg.html.exec(dynjs.d);
+      if (exec) {
+        Object.assign(eq.info, parse_condition_of(exec)); // 能量模型耐久读数单一判定点(L1)
+      }
+      return false;
+    });
+    battle.update_condition();
+  };
+  battle.update_condition = function () {
+    const raw = ctx.threshold();
+    const thld = raw < 1 ? raw * 100 : raw; // <1 = 耐久比例(0.6=>60%), >=1 = 百分点(isekai 默认 20 / 主世界默认 55)
+    battle.equips.forEach((eq) => {
+      if (eq.info.condition === undefined) {
+        return; // dynjs 缺失/失配的装备保持占位
+      }
+      eq.node.condition.innerHTML = '';
+      $element('span', eq.node.condition, [`${eq.info.condition}%`, (eq.info.condition <= thld ? '.hvut-warn' : '')]);
+      if (eq.info.energy !== null && eq.info.energy !== undefined) {
+        $element('', eq.node.condition, ' / ');
+        $element('span', eq.node.condition, [`${eq.info.energy}%`, (eq.info.energy <= thld ? '.hvut-warn' : '')]);
+      }
+      battle.update_link(eq);
+    });
+  };
+  battle.repair = async function (eid) {
+    let equips;
+    if (eid === 'all') {
+      equips = battle.equips;
+    } else if (eid) {
+      equips = [battle.get(eid)];
+    } else {
+      return;
+    }
+    equips = equips.filter((eq) => battle.eqitems[eq.info.eid]?.m);
+    if (!equips.length) {
+      return;
+    }
+
+    const cost = battle.calc_repair(equips);
+    const buy_items = [];
+    Object.entries(cost).forEach(([id, count]) => {
+      const data = battle.itemdata[id];
+      if (count > data.c) {
+        buy_items.push({ name: data.n, count: count - data.c });
+      }
+    });
+    if (buy_items.length) {
+      if (!confirm('修理材料不足.\n是否从系统商店购买材料来修理你的装备?')) { // 原 isekai 误植邮件退回文案, 收口取主世界正确文案
+        return;
+      }
+      battle.node.repairall.innerHTML = '<li>...</li>';
+      equips.forEach((eq) => {
+        eq.node.repair.innerHTML = '<li>...</li>';
+        eq.node.condition.innerHTML = '<span>...</span>';
+        eq.node.link.innerHTML = '';
+      });
+      await $item.buy(buy_items);
+    }
+
+    battle.load_repair(equips);
+  };
+  battle.calc_repair = function (equips = battle.equips) {
+    const cost = {};
+    equips.forEach((eq) => {
+      const requires = battle.eqitems[eq.info.eid]?.m;
+      if (!requires) {
+        return;
+      }
+      Object.entries(requires).forEach(([id, count]) => {
+        if (!(id in cost)) {
+          cost[id] = 0;
+        }
+        cost[id] += count;
+      });
+    });
+    return Object.keys(cost).length ? cost : null;
+  };
+  battle.load_repair = async function (equips) {
+    battle.node.repairall.innerHTML = '<li>...</li>';
+    (equips || battle.equips).forEach((eq) => {
+      eq.node.repair.innerHTML = '<li>...</li>';
+      eq.node.condition.innerHTML = '<span>...</span>';
+      eq.node.link.innerHTML = '';
+    });
+
+    let data;
+    if (equips) {
+      const eqids = equips.map((eq) => `eqids[]=${eq.info.eid}`).join('&');
+      data = `postoken=${battle.postoken}&${eqids}`; //&replace_charms=on
+    }
+    const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=repair', data);
+    const doc = $doc(html);
+    const error = get_message(doc);
+    if (error) {
+      popup(error);
+      battle.load_items();
+      return;
+    }
+
+    battle.postoken = $id('equipform', doc).elements.postoken.value;
+    battle.eqitems = parse_script_json(html, 'eqitems') || {};
+    battle.itemdata = parse_script_json(html, 'itemdata') || {};
+    battle.load_dynjs(doc);
+
+    battle.equips.forEach((eq) => {
+      eq.node.repair.innerHTML = '';
+      eq.data.charms_damaged = false;
+      const requires = battle.eqitems[eq.info.eid]?.m;
+      if (requires) {
+        Object.entries(requires).forEach(([id, count]) => {
+          if (id > 61900 && id < 64999) {
+            eq.data.charms_damaged = true;
+            return;
+          }
+          const data = battle.itemdata[id];
+          battle.render_requirement_li(eq.node.repair, data.n, count, data.c);
+        });
+      }
+      battle.update_link(eq);
+    });
+
+    battle.node.repairall.innerHTML = '';
+    const cost = battle.calc_repair();
+    if (cost) {
+      Object.entries(cost).forEach(([id, count]) => {
+        if (id > 61900 && id < 64999) {
+          return;
+        }
+        const data = battle.itemdata[id];
+        battle.render_requirement_li(battle.node.repairall, data.n, count, data.c);
+      });
+    } else {
+      $element('li', battle.node.repairall, '你的装备无需修理');
+    }
+
+    ctx.persona().check_warning(doc);
+  };
+  battle.update_link = function (eq) {
+    eq.node.name.classList.remove('hvut-warn');
+    eq.node.link.innerHTML = '';
+    if (eq.info.condition === 0 || eq.info.energy === 0) {
+      eq.node.name.classList.add('hvut-warn');
+      $element('span', eq.node.link, '修理后方可使用');
+    } else if (eq.data.charms_damaged) {
+      eq.node.name.classList.add('hvut-warn');
+      $element('a', eq.node.link, { textContent: '更换护符与护符袋', href: `?s=Bazaar&ss=am&screen=modify&eqids=${eq.info.eid}` });
+    }
+  };
+  battle.load_items = async function () {
+    battle.node.items.innerHTML = '';
+    await $item.load();
+    battle.render_supply_grid();
+    ctx.config.set('items', $item.count());
   };
 };
 
@@ -2992,194 +3184,15 @@ const $battle = {
 
     $battle.create();
   },
-  create: function () {
-    $battle.load_items();
-    $battle.equips.length = 0;
-    $battle.node.equip.innerHTML = '';
-    const equipset = $config.get('equipset');
-    if (!equipset) {
-      $persona.change_p();
-      return;
-    }
-    equipset.forEach((info) => {
-      $battle.create_equip_li(info);
-    });
-
-    $battle.load_repair();
-  },
-  load_dynjs: async function (doc) {
-    const src = $qs('script[src*="/dynjs/"]', doc).src;
-    const html = await $ajax.fetch(`${src}?t=${Date.now()}`);
-    Object.assign($equip.dynjs_equip, parse_script_json(html, 'dynjs_equip'));
-    $battle.equips.some((eq) => {
-      const dynjs = $equip.dynjs_equip[eq.info.eid];
-      if (!dynjs) {
-        $persona.change_p();
-        return true;
-      }
-      eq.data.html = dynjs.d;
-      const info = $equip.parse.html(eq.data.html);
-      Object.assign(eq.info, info);
-    });
-    $battle.update_condition();
-  },
-  update_condition: function () {
-    $battle.equips.forEach((eq) => {
-      eq.node.condition.innerHTML = '';
-      const thld = $config.settings.equipPanelRepairThreshold;
-      $element('span', eq.node.condition, [`${eq.info.condition}%`, (eq.info.condition <= thld ? '.hvut-warn' : '')]);
-      if (eq.info.energy !== null) {
-        $element('', eq.node.condition, ' / ');
-        $element('span', eq.node.condition, [`${eq.info.energy}%`, (eq.info.energy <= thld ? '.hvut-warn' : '')]);
-      }
-      $battle.update_link(eq);
-    });
-  },
-  repair: async function (eid) {
-    let equips;
-    if (eid === 'all') {
-      equips = $battle.equips;
-    } else if (eid) {
-      const eq = $battle.get(eid);
-      equips = [eq];
-    } else {
-      return;
-    }
-    equips = equips.filter((eq) => $battle.eqitems[eq.info.eid]?.m);
-    if (!equips.length) {
-      return;
-    }
-
-    const cost = $battle.calc_repair(equips);
-    const buy_items = [];
-    Object.entries(cost).forEach(([id, count]) => {
-      const data = $battle.itemdata[id];
-      const name = data.n;
-      if (count > data.c) {
-        buy_items.push({ name, count: count - data.c });
-      }
-    });
-    if (buy_items.length) {
-      if (!confirm('这将把邮件退回给寄信人.\nAre you sure?')) {
-        return;
-      }
-      $battle.node.repairall.innerHTML = '<li>...</li>';
-      equips.forEach((eq) => {
-        eq.node.repair.innerHTML = '<li>...</li>';
-        eq.node.condition.innerHTML = '<span>...</span>';
-        eq.node.link.innerHTML = '';
-      });
-      await $item.buy(buy_items);
-    }
-
-    $battle.load_repair(equips);
-  },
-  calc_repair: function (equips = $battle.equips) {
-    const cost = {};
-    equips.forEach((eq) => {
-      const requires = $battle.eqitems[eq.info.eid]?.m;
-      if (!requires) {
-        return;
-      }
-      Object.entries(requires).forEach(([id, count]) => {
-        if (!(id in cost)) {
-          cost[id] = 0;
-        }
-        cost[id] += count;
-      });
-    });
-    if (!Object.keys(cost).length) {
-      return null;
-    } else {
-      return cost;
-    }
-  },
-  load_repair: async function (equips) {
-    $battle.node.repairall.innerHTML = '<li>...</li>';
-    (equips || $battle.equips).forEach((eq) => {
-      eq.node.repair.innerHTML = '<li>...</li>';
-      eq.node.condition.innerHTML = '<span>...</span>';
-      eq.node.link.innerHTML = '';
-    });
-
-    let data;
-    if (equips) {
-      const eqids = equips.map((eq) => `eqids[]=${eq.info.eid}`).join('&');
-      data = `postoken=${$battle.postoken}&${eqids}`; //&replace_charms=on
-    }
-    const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=repair', data);
-    const doc = $doc(html);
-    const error = get_message(doc);
-    if (error) {
-      popup(error);
-      $battle.load_items();
-      return;
-    }
-
-    $battle.postoken = $id('equipform', doc).elements.postoken.value;
-    $battle.eqitems = JSON.parse(/eqitems\s?=\s?(\{.*?\});/.exec(html)?.[1] || '{}');
-    $battle.itemdata = JSON.parse(/itemdata\s?=\s?(\{.*?\});/.exec(html)?.[1] || '{}');
-    $battle.load_dynjs(doc);
-
-    $battle.equips.forEach((eq) => {
-      eq.node.repair.innerHTML = '';
-      eq.data.charms_damaged = false;
-      const requires = $battle.eqitems[eq.info.eid]?.m;
-      if (requires) {
-        Object.entries(requires).forEach(([id, count]) => {
-          if (id > 61900 && id < 64999) {
-            eq.data.charms_damaged = true;
-            return;
-          }
-          const data = $battle.itemdata[id];
-          $battle.render_requirement_li(eq.node.repair, data.n, count, data.c);
-        });
-      }
-      $battle.update_link(eq);
-    });
-
-    $battle.node.repairall.innerHTML = '';
-    const cost = $battle.calc_repair();
-    if (cost) {
-      Object.entries(cost).forEach(([id, count]) => {
-        if (id > 61900 && id < 64999) {
-          return;
-        }
-        const data = $battle.itemdata[id];
-        $battle.render_requirement_li($battle.node.repairall, data.n, count, data.c);
-      });
-    } else {
-      $element('li', $battle.node.repairall, '你的装备无需修理');
-    }
-
-    $persona.check_warning(doc);
-  },
-  update_link: function (eq) {
-    eq.node.name.classList.remove('hvut-warn');
-    eq.node.link.innerHTML = '';
-    if (eq.info.condition === 0 || eq.info.energy === 0) {
-      eq.node.name.classList.add('hvut-warn');
-      $element('span', eq.node.link, '修理后方可使用');
-    } else if (eq.data.charms_damaged) {
-      eq.node.name.classList.add('hvut-warn');
-      $element('a', eq.node.link, { textContent: '更换护符与护符袋', href: `?s=Bazaar&ss=am&screen=modify&eqids=${eq.info.eid}` });
-    } else if (eq.info.condition < 100 || (eq.info.energy ?? 100) < 100) {
-      //$element('span', eq.node.link, 'Needs repair');
-    }
-  },
-  load_items: async function () {
-    $battle.node.items.innerHTML = '';
-    await $item.load();
-    $battle.render_supply_grid();
-    $config.set('items', $item.count());
-  },
 };
-bindBattlePanel($battle, { // 渲染/交互内核收口(L1); 数据层(Bazaar repair 流/能量模型)留本 IIFE
+bindBattlePanel($battle, { // 渲染/交互内核 + 数据层(2026-06-10 续收, 能量模型后两版机制同构)全量收口(L1)
   config: $config,
   dict: 'item',
   divSel: '#hvut-bt-div',
   inventory: () => $config.settings.equipPanelItemInventory,
-  reloadItems: () => $battle.load_items(),
+  threshold: () => $config.settings.equipPanelRepairThreshold,
+  equip: () => $equip,
+  persona: () => $persona,
 });
 
 // BASIC CSS
@@ -9737,7 +9750,6 @@ const settings = {
     'Mana Elixir': 10,
     'Spirit Elixir': 10,
   },
-  equipEnchantCheckArmors: true, // HVAA: 默认开启——否则主世界装备栏防具不加载状态（耐久/附魔显示"..."），与异世界不一致
 
 };
 
@@ -9830,7 +9842,6 @@ const $config = {
     { key: 'equipEnchantPosition', type: 'string', input: 'select', options: ['left', 'right'], label: '设置面板的位置。' },
     { key: 'equipEnchantRepairThreshold', type: 'number', label: '当某件装备耐久度过低时发出警告。' },
     { key: 'equipEnchantItemInventory', type: 'object', input: 'textarea', value_type: 'number', text: 'Show the amount of items in the inventory, and warn if each number is less than the specified value.\nYou can purchase that quantity from the Item Shop by clicking on the item name in the list.' },
-    { key: 'equipEnchantCheckArmors', type: 'boolean', label: '加载防具的状态（耐久与附魔）。会多花一点时间。' },
   ],
   text: {
     equipHoverFunctions: `
@@ -10714,16 +10725,6 @@ const $equip = {
       }
       return eq;
     },
-    // 能量模型耐久读数字段(单一判定点): reg.html exec → { condition, energy, cdt }。
-    // 消费方: parse.div(完整装备 info) + $battle.load_dynjs(面板耐久列增量刷新)。
-    condition_of: function (exec) {
-      const condition = parseFloat(exec[8]);
-      return {
-        condition: condition,
-        cdt: (condition || 0) / 100, // 新模型无 durability，cdt 退化为 condition/100，使 cdt*100=耐久% 供旧显示沿用
-        energy: exec[9] ? parseFloat(exec[9]) : null,
-      };
-    },
     div: function (div) {
       const eid = /equips\.set\((\d+),/.exec(div.getAttribute('onmouseover'))?.[1];
       if (!eid) {
@@ -10751,7 +10752,7 @@ const $equip = {
           upgrade_cap: parseInt(exec[6]),
           tradeable: exec[7] === 'Tradeable',
           soulbound: exec[7] === 'Soulbound',
-          ...$equip.parse.condition_of(exec), // 能量模型耐久读数单一判定点(与 $battle.load_dynjs 共用)
+          ...parse_condition_of(exec), // 能量模型耐久读数单一判定点(L1, 与 bindBattlePanel 数据层共用)
           salvaged: exec[11] === 'Salvaged', // 组10=Energy N/A, 组11=Salvaged(上游 4.2.0 原版即错位, 当前无消费方, 修正防未来踩坑)
           pab: dynjs.d.match($equip.reg.pab)?.map((p) => p[0]).join('') || '',
           eid: eid,
@@ -11313,218 +11314,13 @@ bindPrice($price, { config: $config }); // 收口共享内核(L1 bindPrice), 物
 
 // Battle Panel: Equipment Enchant and Repair
 const $battle = {
-  // [HVAA 2026-06-10] 渲染/交互内核已收口 bindBattlePanel(L1, 与 isekai 同一实现) —— 「外观完全一致」
-  // 由共享内核结构性保证(铁律4 反退化)。本对象只剩主世界数据层: Forge 修理流 + dynjs condition/energy
-  // (能量模型, durability 已消失) + 装备页附魔只读展示(原附魔操作面板已删)。
-  load: async function (eid) {
-    const eq = $battle.get(eid);
-    const html = await $ajax.fetch(`equip/${eq.info.eid}/${eq.info.key}`);
-    const doc = $doc(html);
-    $battle.parse(eq.info.eid, doc);
-  },
-  parse: function (eid, doc) {
-    const div = $id('equip_extended', doc);
-    const eq = $battle.get(eid);
-    eq.data.enchants = $qsa('#ee > span', div).map((e) => e.textContent); // 主世界独有数据: 当前附魔(只读展示)
-    // [Chunk2 能量模型] 详情页旧文本 `Condition: X / Y (Z%)` 已随潜能系统消失, 本方法不再解析耐久——
-    // 耐久/能量读数统一由 load_dynjs(reg.html 组8/9)供给(同一读数单一判定点, 对齐 isekai 数据流)。
-    if (eq.info.condition !== undefined) {
-      $battle.display_condition(eq.info.eid);
-    } else {
-      $battle.update_link(eq);
-    }
-  },
-  repair: async function (eid) {
-    const eq = $battle.get(eid);
-    const eqall = eid === 'all';
-    if (eq?.info?.cdt === 1 || $battle.repair.repairall === null) {
-      return;
-    }
+  // [HVAA 2026-06-10] 渲染/交互内核 + 数据层均已收口 bindBattlePanel(L1, 与 isekai 同一实现)。
+  // 能量模型后主世界修理机制与 isekai 同构(Bazaar ss=am screen=repair + dynjs_equip), 原 Forge 修理流
+  // (?s=Forge&ss=re)与详情页附魔只读展示(#equip_extended/#ee)随旧页面消失而下线(2026-06-10 实站报错证实)。
+  // 本字面量只剩主世界外层接线 init。
+  eqitems: {},
+  itemdata: {},
 
-    let requires;
-    if (eqall) {
-      requires = $battle.repair.repairall;
-    } else if (eq) {
-      requires = eq.data.repair;
-    }
-    if (requires) {
-      const items = [];
-      requires.forEach(({ name, count }) => {
-        count -= $item.count(name);
-        if (count > 0) {
-          items.push({ name, count });
-        }
-      });
-      if (items.length) {
-        if (!confirm('修理材料不足.\n是否从系统商店购买材料来修理你的装备?')) {
-          return;
-        }
-        await $item.buy(items);
-      }
-    }
-
-    $battle.node.repairall.innerHTML = '<li>...</li>';
-    (eqall ? $battle.equips : eq ? [eq] : []).forEach((e) => {
-      e.node.repair.innerHTML = '<li>...</li>';
-      e.node.condition.textContent = '...';
-      e.node.link.innerHTML = '';
-    });
-
-    const html = await $ajax.fetch('?s=Forge&ss=re', eq ? 'select_item=' + eq.info.eid : eqall ? 'repair_all=1' : null);
-    const doc = $doc(html);
-    $battle.load_dynjs(doc);
-
-    const error = get_message(doc);
-    if (error) {
-      popup(error);
-      $battle.load_inventory();
-      return;
-    }
-
-    const repairall = /Requires: (.+)/.exec($id('repairall', doc).nextElementSibling.textContent)[1];
-    if (repairall === 'Everything is fully repaired.') {
-      $battle.repair.repairall = null;
-    } else {
-      $battle.repair.repairall = repairall.split(', ').map((e) => {
-        const exec = /(\d+)x (.+)/.exec(e);
-        const count = parseInt(exec[1]);
-        const name = exec[2];
-        return { name, count };
-      });
-    }
-
-    const equips = {};
-    $qsa('.equiplist div[onclick*="set_forge_cost"]', doc).forEach((div) => {
-      const exec = /set_forge_cost\((\d+),'Requires: (.+?)'/.exec(div.getAttribute('onclick'));
-      const eid = exec[1];
-      const requires = exec[2];
-      equips[eid] = requires.split(', ').map((e) => {
-        const exec = /(\d+)x (.+)/.exec(e);
-        const count = parseInt(exec[1]);
-        const name = exec[2];
-        return { name, count };
-      });
-    });
-
-    $battle.equips.forEach((e) => {
-      const requires = equips[e.info.eid];
-      if (requires) {
-        e.data.repair = requires;
-      } else {
-        e.data.repair = null;
-      }
-      if (eq === e || eqall && $config.settings.equipEnchantCheckArmors) {
-        $battle.load(e.info.eid);
-      }
-    });
-
-    if (eq || eqall) {
-      $battle.load_inventory();
-    } else {
-      $battle.display_inventory();
-    }
-    $persona.check_warning(doc);
-  },
-  load_dynjs: async function (doc) {
-    const src = $qs('script[src*="/dynjs/"]', doc).src;
-    const html = await $ajax.fetch(src + '?t=' + Date.now());
-    // [Chunk2 能量模型] dynjs 文件已统一 `dynjs_equip = {...};`(与 isekai 同构) —— 旧 `dynjs_loaded`
-    // slice(16,-1) 整体替换形态对新文件 JSON.parse 必抛 → 整条 async 链静默崩、耐久列永挂 '...'(真根因)。
-    Object.assign($equip.dynjs_equip, parse_script_json(html, 'dynjs_equip'));
-
-    $battle.equips.some((eq) => {
-      const dynjs = $equip.dynjs_equip[eq.info.eid];
-      if (!dynjs) {
-        $persona.change_p();
-        return true;
-      }
-      const exec = $equip.reg.html.exec(dynjs.d);
-      if (!exec) {
-        return false;
-      }
-      Object.assign(eq.info, $equip.parse.condition_of(exec)); // 能量模型耐久读数单一判定点(与 parse.div 共用)
-      $battle.display_condition(eq.info.eid);
-    });
-  },
-  display_condition: function (eid) {
-    const eq = $battle.get(eid);
-    const raw = $config.settings.equipEnchantRepairThreshold;
-    // [Chunk2 能量模型] durability 已消失: <1 = 耐久比例(0.6=>60%), >=1 = 耐久百分点(55=>55%,
-    // 原"距 50% 耐久的余量"语义随 durability 一并消失); 60% 硬线警示保留(原 cdt<=0.6)。
-    const thld = raw < 1 ? raw * 100 : raw;
-    eq.node.condition.innerHTML = '';
-    $element('span', eq.node.condition, [`${eq.info.condition}%`, (eq.info.condition <= Math.max(thld, 60) ? '.hvut-warn' : '')]);
-    if (eq.info.energy !== null && eq.info.energy !== undefined) { // 对齐 isekai update_condition: 耐久% / 能量%
-      $element('', eq.node.condition, ' / ');
-      $element('span', eq.node.condition, [`${eq.info.energy}%`, (eq.info.energy <= thld ? '.hvut-warn' : '')]);
-    }
-    $battle.update_link(eq);
-  },
-  update_link: function (eq) {
-    eq.node.name.classList.remove('hvut-warn');
-    eq.node.link.innerHTML = '';
-    if (eq.info.condition === 0) {
-      eq.node.name.classList.add('hvut-warn');
-      $element('span', eq.node.link, '修理后方可使用');
-    } else if (eq.data.enchants?.length) {
-      eq.node.link.textContent = eq.data.enchants.join(' / ');
-      eq.node.link.title = eq.data.enchants.join('\n');
-    }
-  },
-  load_inventory: async function () {
-    $battle.node.items.innerHTML = '';
-    $battle.node.repairall.innerHTML = '';
-    await $item.load();
-    $battle.display_inventory();
-    $config.set('items', $item.count());
-  },
-  display_inventory: function () {
-    $battle.node.repairall.innerHTML = '';
-    $battle.render_supply_grid();
-    if (!$item.list) {
-      return;
-    }
-    if ($battle.repair.repairall) {
-      $battle.repair.repairall.forEach(({ name, count }) => {
-        $battle.render_requirement_li($battle.node.repairall, name, count, $item.count(name));
-      });
-    } else if ($battle.repair.repairall === null) {
-      $element('li', $battle.node.repairall, '你的装备无需修理');
-    }
-    $battle.equips.forEach((eq) => { $battle.render_repair(eq); });
-  },
-  render_repair: function (eq) {
-    eq.node.repair.innerHTML = '';
-    if (eq.data.repair) {
-      eq.data.repair.forEach(({ name, count }) => {
-        $battle.render_requirement_li(eq.node.repair, name, count, $item.count(name));
-      });
-    }
-  },
-  create: function () {
-    $battle.load_inventory();
-    $battle.equips.length = 0;
-    $battle.node.equip.innerHTML = '';
-    const equipset = $config.get('equipset');
-    if (!equipset) {
-      $persona.change_p();
-      return;
-    }
-    equipset.forEach((info) => {
-      const eq = $battle.create_equip_li(info);
-      if (!eq) {
-        return; // 空槽
-      }
-      // 主世界数据层编排: cat 判定 + 异步加载占位 + 按 CheckArmors 拉装备页(耐久/附魔)
-      eq.info.cat = (eq.info.category === 'One-handed Weapon' || eq.info.category === 'Two-handed Weapon' || eq.info.category === 'Staff') ? 'weapon' : 'armor';
-      eq.node.condition.textContent = '...';
-      if (eq.info.cat === 'weapon' || $config.settings.equipEnchantCheckArmors) {
-        $battle.load(eq.info.eid);
-      }
-    });
-
-    $battle.repair();
-  },
   init: function () {
     // 渲染/交互内核已收口 bindBattlePanel(L1, 与 isekai 同一实现) —— 布局改内核模板, 两版同时生效。
     // 此处只留主世界外层接线: mainpane 持 on 类的宽度规则 / popup 偏移 / --color-* token 主题值(主世界米黄;
@@ -11560,12 +11356,14 @@ const $battle = {
   },
 
 };
-bindBattlePanel($battle, { // 渲染/交互内核收口(L1); 数据层(Forge 修理流/附魔只读展示)留本 IIFE
+bindBattlePanel($battle, { // 渲染/交互内核 + 数据层(2026-06-10 续收, 能量模型后两版机制同构)全量收口(L1)
   config: $config,
   dict: 'material',
   divSel: '.hvut-bt-div',
   inventory: () => $config.settings.equipEnchantItemInventory,
-  reloadItems: () => $battle.load_inventory(),
+  threshold: () => $config.settings.equipEnchantRepairThreshold,
+  equip: () => $equip,
+  persona: () => $persona,
 });
 
 // BASIC CSS
@@ -12110,17 +11908,22 @@ if ($config.settings.showCredits === 2) {
 // EQUIPMENT COUNTER
 if ($config.settings.showEquipSlots === 2 || $config.settings.showEquipSlots === 1 && _query.s === 'Battle') {
   _bottom.show_equip = async function () {
+    // [2026-06-10 能量模型] 旧 ?s=Character&ss=in 'Equip Slots' 行已消失(exec null 崩, 实站报错证实);
+    // 对齐 isekai: Bazaar ss=am screen=organize 的 Inventory Capacity 表(样本 modify 端点已证主世界为 am 体系)。
     _bottom.node.equip = $element('div', _bottom.node.div, '加载中...');
-    const html = await $ajax.fetch('?s=Character&ss=in');
-    const exec = />Equip Slots: (\d+)(?: \+ (\d+))? \/ (\d+)</.exec(html);
-    const inventory = parseInt(exec[1]);
-    const storage = parseInt(exec[2] || 0);
-    const slots = parseInt(exec[3]);
-    const free = slots - inventory - storage;
-    _bottom.node.equip.textContent = `装备库存量: ${inventory} + ${storage} / ${slots}`;
-    if (free < slots / 10) {
+    const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
+    const exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html);
+    if (!exec) {
+      _bottom.node.equip.textContent = '装备库存量: ?';
+      return;
+    }
+    const usage = parseInt(exec[1]) + parseInt(exec[2] || 0);
+    const capacity = parseInt(exec[3]);
+    const free = capacity - usage;
+    _bottom.node.equip.textContent = `装备库存量: ${usage} / ${capacity}`;
+    if (free < capacity / 10) {
       _bottom.node.equip.classList.add('hvut-bottom-warn');
-    } else if (free < slots / 2) {
+    } else if (free < capacity / 2) {
       _bottom.node.equip.style.color = '#c00';
     }
   };

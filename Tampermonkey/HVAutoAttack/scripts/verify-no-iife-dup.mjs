@@ -27,9 +27,12 @@ import { stripComments } from "./lib/i18n-probe-lex.mjs";
 const TARGET = fileURLToPath(new URL("../src/i18n/hv-utils.js", import.meta.url));
 const COLLAPSED_OBJECTS = ["$re", "$price", "$dfct"]; // R1: 整对象收口（bindRe/bindPrice/bindDfct）
 const PARTIAL_OBJECTS = { // R2: 部分收口对象 → 字面量内禁止回潮的方法名
-  "$battle": [ // bindBattlePanel 内核
+  "$battle": [ // bindBattlePanel 内核 + 数据层(2026-06-10 续收: 能量模型后两版修理机制同构, Forge 流已死)
     "init_panel", "click", "hover", "hover_repair", "get",
     "buy_items", "buy", "render_supply_grid", "render_requirement_li", "create_equip_li",
+    "create", "load_dynjs", "update_condition", "repair", "calc_repair", "load_repair",
+    "update_link", "load_items", "load", "parse", "display_condition", "load_inventory",
+    "display_inventory", "render_repair",
   ],
   "$persona": [ // bindPersona（字面量仅许 parse_stats_pane）
     "init", "create", "check_p", "check_e", "change_p", "change_e",
