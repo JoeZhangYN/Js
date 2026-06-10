@@ -93,6 +93,10 @@ function $qsa(q,d) {return Array.from((d||document).querySelectorAll(q));}
 function $doc(h) {const d=document.implementation.createHTMLDocument('');d.documentElement.innerHTML=h;return d;}
 function $element(t,p,a,f) {let e;if(t){e=document.createElement(t);}else if(t===''){e=document.createTextNode(a);a=null;}else{return document.createDocumentFragment();}if(a!==null&&a!==undefined){function ao(e,a){Object.entries(a).forEach(([an,av])=>{if(typeof av==='object'){let a;if(an in e){a=e[an];}else{e[an]={};a=e[an];}Object.entries(av).forEach(([an,av])=>{a[an]=av;});}else{if(an==='style'){e.style.cssText=av;}else if(an in e){e[an]=av;}else{e.setAttribute(an,av);}}});}function as(e,a){const an={'#':'id','.':'className','!':'style','/':'innerHTML'}[a[0]];if(an){e[an]=a.slice(1);}else if(a!==''){e.textContent=a;}}if(typeof a==='string'||typeof a==='number'){e.textContent=a;}else if(Array.isArray(a)){a.forEach((a)=>{if(typeof a==='string'||typeof a==='number'){as(e,a);}else if(typeof a==='object'){ao(e,a);}});}else if(typeof a==='object'){ao(e,a);}}if(f){if(typeof f==='function'){e.addEventListener('click',f);}else if(typeof f==='object'){Object.entries(f).forEach(([ft,fl])=>{e.addEventListener(ft,fl);});}}if(p){if(p.nodeType===1||p.nodeType===11){p.appendChild(e);}else if(Array.isArray(p)){if(['beforebegin','afterbegin','beforeend','afterend'].includes(p[1])){p[0].insertAdjacentElement(p[1],e);}else if(!isNaN(p[1])){p[0].insertBefore(e,p[0].childNodes[p[1]]);}else{p[0].insertBefore(e,p[1]);}}}return e;}
 function time_format(t,o) {t=Math.floor(t/1000);const h=Math.floor(t/3600).toString().padStart(2,'0');const m=Math.floor(t%3600/60).toString().padStart(2,'0');const s=(t%60).toString().padStart(2,'0');return !o?`${h}:${m}:${s}`:o===1?`${h}:${m}`:o===2?`${m}:${s}`:'';}
+// 内联 script/dynjs 变量提取单一判定点(业务概念:「页面脚本变量 → JSON」)。能量模型后两版 dynjs 文件同构
+// `dynjs_equip = {...};`(主世界旧 `dynjs_loaded` slice(16) 整体替换形态已死, 2026-06-10 拆桥, probe R3 锁);
+// `(?:var )?` 兼容 eqstore 带 var 前缀形态。失配返 null(JSON.parse(null)=null, Object.assign(x,null) 无害)。
+function parse_script_json(h,n) {return JSON.parse(new RegExp(`(?:var )?${n}\\s?=\\s?(\\{.*?\\});`).exec(h)?.[1]||null);}
 function split2(s,d,t=true) {let a;const p=s.indexOf(d);if(p===-1){a=[s];}else{const k=s.slice(0,p);const v=s.slice(p+1);a=[k,v];}if(t){a=a.map((e)=>e.trim());}return a;}
 function scrollIntoView(e,p=e.parentNode) {if(!e){return;}p.scrollTop+=e.getBoundingClientRect().top-p.getBoundingClientRect().top;}
 function confirm_event(n,e,m,c,f) {if(!n){return;}const a=n.getAttribute('on'+e);n.removeAttribute('on'+e);n.addEventListener(e,(e)=>{if(!c||c()){if(confirm(m)){if(f){f();}}else{e.preventDefault();e.stopImmediatePropagation();}}},true);n.setAttribute('on'+e,a);}
@@ -1100,8 +1104,9 @@ const bindDfct = function (dfct, ctx) {
 //   ⑤ check_e 取 match 解析(语义同 slice(-8,-7) 简写, 更稳); ⑥ 警示统一 .hvut-warn/.hvut-bonus class
 //   (主世界 BASIC CSS 已补 .hvut-bonus; inline style 形态弃)。
 // 真分叉经 ctx 倒置(各 IIFE 闭包注入): warnSelector(#stamina_restore 两版解析 selector 不同, 未实证同 DOM
-//   不盲合) / parseEquipElem($equip.parse.elem vs .div, dynjs 模型 Chunk 迁移中) / applyDynjs(dynjs_equip
-//   增量合并 vs dynjs_loaded 整体替换)。parse_stats_pane 解析模型大分叉, 整方法留各 IIFE 字面量。
+//   不盲合) / parseEquipElem($equip.parse.elem vs .div, dynjs 模型 Chunk 迁移中) / applyDynjs(2026-06-10
+//   已同构: 能量模型后两版 dynjs 文件统一 dynjs_equip, 实现 identical, 留 ctx 仅因 $equip 容器归属各闭包)。
+//   parse_stats_pane 解析模型大分叉, 整方法留各 IIFE 字面量。
 const bindPersona = function (persona, ctx) {
   persona.node = {
     div: ctx.top.node.persona,
@@ -3005,7 +3010,7 @@ const $battle = {
   load_dynjs: async function (doc) {
     const src = $qs('script[src*="/dynjs/"]', doc).src;
     const html = await $ajax.fetch(`${src}?t=${Date.now()}`);
-    Object.assign($equip.dynjs_equip, JSON.parse(/dynjs_equip\s?=\s?(\{.*?\});/.exec(html)?.[1] || null));
+    Object.assign($equip.dynjs_equip, parse_script_json(html, 'dynjs_equip'));
     $battle.equips.some((eq) => {
       const dynjs = $equip.dynjs_equip[eq.info.eid];
       if (!dynjs) {
@@ -3761,7 +3766,7 @@ bindPersona($persona, { // 收口共享内核(L1 bindPersona)
   get player() { return _player; },
   warnSelector: '#stamina_restore > div > div',
   parseEquipElem: (d) => $equip.parse.elem(d),
-  applyDynjs: (html) => { Object.assign($equip.dynjs_equip, JSON.parse(/dynjs_equip\s?=\s?(\{.*?\});/.exec(html)?.[1] || null)); },
+  applyDynjs: (html) => { Object.assign($equip.dynjs_equip, parse_script_json(html, 'dynjs_equip')); },
 });
 
 $persona.init();
@@ -7932,7 +7937,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;
 
           if ($id('mmail_attachlist', doc)) {
-            Object.assign($equip.dynjs_eqstore, JSON.parse(/dynjs_eqstore\s?=\s?(\{.*?\});/.exec(html)?.[1] || null));
+            Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));
             Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
               let exec;
               const onmouseover = div.firstElementChild.firstElementChild?.getAttribute('onmouseover');
@@ -8707,9 +8712,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
           }
           const html = script.innerHTML;
           json = {
-            dynjs_eqstore: JSON.parse(/dynjs_eqstore\s?=\s?(\{.*?\});/.exec(html)?.[1] || null),
-            eqitems: JSON.parse(/eqitems\s?=\s?(\{.*?\});/.exec(html)?.[1] || null),
-            itemdata: JSON.parse(/itemdata\s?=\s?(\{.*?\});/.exec(html)?.[1] || null),
+            dynjs_eqstore: parse_script_json(html, 'dynjs_eqstore'),
+            eqitems: parse_script_json(html, 'eqitems'),
+            itemdata: parse_script_json(html, 'itemdata'),
           };
         }
         if (!$armory.eqitems[screen]) {
@@ -10461,7 +10466,6 @@ const $equip = {
   })(),
   dynjs_equip: _window.dynjs_equip || {},
   dynjs_eqstore: _window.dynjs_eqstore || {},
-  dynjs_loaded: {},
   eqvalue: _window.eqvalue || {},
 
   alias: {
@@ -10710,12 +10714,22 @@ const $equip = {
       }
       return eq;
     },
+    // 能量模型耐久读数字段(单一判定点): reg.html exec → { condition, energy, cdt }。
+    // 消费方: parse.div(完整装备 info) + $battle.load_dynjs(面板耐久列增量刷新)。
+    condition_of: function (exec) {
+      const condition = parseFloat(exec[8]);
+      return {
+        condition: condition,
+        cdt: (condition || 0) / 100, // 新模型无 durability，cdt 退化为 condition/100，使 cdt*100=耐久% 供旧显示沿用
+        energy: exec[9] ? parseFloat(exec[9]) : null,
+      };
+    },
     div: function (div) {
       const eid = /equips\.set\((\d+),/.exec(div.getAttribute('onmouseover'))?.[1];
       if (!eid) {
         return { error: 'invalid div' };
       }
-      const dynjs = $equip.dynjs_equip[eid] || $equip.dynjs_eqstore[eid] || $equip.dynjs_loaded[eid];
+      const dynjs = $equip.dynjs_equip[eid] || $equip.dynjs_eqstore[eid]; // dynjs_loaded 已拆桥(能量模型后 dynjs 文件统一 dynjs_equip)
       if (!dynjs) {
         return { error: 'no data' };
       }
@@ -10726,7 +10740,6 @@ const $equip = {
       if (!exec) {
         return { error: 'parse error' };
       }
-      const condition = parseFloat(exec[8]);
       const eq = {
         info: {
           name: dynjs.t,
@@ -10738,9 +10751,7 @@ const $equip = {
           upgrade_cap: parseInt(exec[6]),
           tradeable: exec[7] === 'Tradeable',
           soulbound: exec[7] === 'Soulbound',
-          condition: condition,
-          cdt: (condition || 0) / 100, // 新模型无 durability，cdt 退化为 condition/100，使 cdt*100=耐久% 供旧显示沿用
-          energy: exec[9] ? parseFloat(exec[9]) : null,
+          ...$equip.parse.condition_of(exec), // 能量模型耐久读数单一判定点(与 $battle.load_dynjs 共用)
           salvaged: exec[11] === 'Salvaged', // 组10=Energy N/A, 组11=Salvaged(上游 4.2.0 原版即错位, 当前无消费方, 修正防未来踩坑)
           pab: dynjs.d.match($equip.reg.pab)?.map((p) => p[0]).join('') || '',
           eid: eid,
@@ -11417,22 +11428,21 @@ const $battle = {
   load_dynjs: async function (doc) {
     const src = $qs('script[src*="/dynjs/"]', doc).src;
     const html = await $ajax.fetch(src + '?t=' + Date.now());
-    $equip.dynjs_loaded = JSON.parse(html.slice(16, -1));
+    // [Chunk2 能量模型] dynjs 文件已统一 `dynjs_equip = {...};`(与 isekai 同构) —— 旧 `dynjs_loaded`
+    // slice(16,-1) 整体替换形态对新文件 JSON.parse 必抛 → 整条 async 链静默崩、耐久列永挂 '...'(真根因)。
+    Object.assign($equip.dynjs_equip, parse_script_json(html, 'dynjs_equip'));
 
     $battle.equips.some((eq) => {
-      const dynjs = $equip.dynjs_loaded[eq.info.eid];
+      const dynjs = $equip.dynjs_equip[eq.info.eid];
       if (!dynjs) {
         $persona.change_p();
         return true;
       }
-      // [Chunk2 能量模型] reg.html 新捕获组: 8=耐久% 9=能量%(N/A→null); durability 已消失, cdt 退化 condition/100
       const exec = $equip.reg.html.exec(dynjs.d);
       if (!exec) {
         return false;
       }
-      eq.info.condition = parseFloat(exec[8]);
-      eq.info.energy = exec[9] ? parseFloat(exec[9]) : null;
-      eq.info.cdt = (eq.info.condition || 0) / 100;
+      Object.assign(eq.info, $equip.parse.condition_of(exec)); // 能量模型耐久读数单一判定点(与 parse.div 共用)
       $battle.display_condition(eq.info.eid);
     });
   },
@@ -11999,7 +12009,7 @@ $dfct.init();
 
 // PERSONA & EQUIPMENT SET CHANGER
 const $persona = {
-  // 12/13 方法已收口 bindPersona(L1); 真分叉经 ctx 倒置(warnSelector/.fcr 解析 + parse.div + dynjs_loaded 整体替换)。
+  // 12/13 方法已收口 bindPersona(L1); 真分叉经 ctx 倒置(warnSelector/.fcr 解析 + parse.div; applyDynjs 已同构 dynjs_equip)。
   // parse_stats_pane 解析模型大分叉(主世界版), 留本字面量。
   parse_stats_pane: function (doc) {
     // [HVAA 嵌入修复] 非角色属性页(如装备库存 ss=in，经 $id('persona_outer') 进入 [1] Character 块)
@@ -12057,7 +12067,7 @@ bindPersona($persona, { // 收口共享内核(L1 bindPersona)
   get player() { return _player; },
   warnSelector: '#stamina_restore .fcr',
   parseEquipElem: (d) => $equip.parse.div(d),
-  applyDynjs: (html) => { $equip.dynjs_loaded = JSON.parse(html.slice(16, -1)); },
+  applyDynjs: (html) => { Object.assign($equip.dynjs_equip, parse_script_json(html, 'dynjs_equip')); }, // 能量模型后与 isekai 同构(增量合并 dynjs_equip); 仍经 ctx 仅因 $equip 容器归属本 IIFE 闭包
 });
 
 $persona.init();
@@ -13509,7 +13519,7 @@ if (_query.s === 'Character' && _query.ss === 'in') {
 
     const html = await $ajax.fetch('?s=Character&ss=in&filter=' + filter);
     const doc = $doc(html);
-    Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.exec(html)?.[1] || null));
+    Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));
     _in.get_list(filter, $id('eqinv_outer', doc));
     _in.category[filter].div.classList.remove('hvut-eq-loading');
     _in.set_rangeselect();
@@ -14308,7 +14318,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'es') {
 
     const html = await $ajax.fetch('?s=Bazaar&ss=es&filter=' + filter);
     const doc = $doc(html);
-    Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.exec(html)?.[1] || null));
+    Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));
     Object.assign($equip.eqvalue, JSON.parse(/var eqvalue = (\{.*\});/.exec(html)?.[1] || null));
     _es.item_pane_init(filter, $qs('#item_pane .equiplist', doc));
     _es.shop_pane_init(filter, $qs('#shop_pane .equiplist', doc));
@@ -17583,7 +17593,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;
 
         if ($id('mmail_attachlist', doc)) {
-          Object.assign($equip.dynjs_eqstore, JSON.parse(/var dynjs_eqstore = (\{.*\});/.exec(html)?.[1] || null));
+          Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));
           Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
             let exec;
             const onmouseover = div.firstElementChild.firstElementChild?.getAttribute('onmouseover');

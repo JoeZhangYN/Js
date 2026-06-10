@@ -14,7 +14,10 @@
 // 本 probe 锁「不再散落」（铁律 1b 造抽象就要拆桥 / 铁律 4 编译期反退化）：
 //   R1 两 IIFE 区内 COLLAPSED_OBJECTS 只许空字面量 `{};`（bind 注入形态），重新长出方法体 = 回潮违规。
 //   R2 两 IIFE 的 PARTIAL_OBJECTS 字面量内不得再定义已收口方法（各对象的 kernel 清单）。
-//   R3 全文件不得再出现 'hvut-bt-warn'（类名已归一 .hvut-warn）。
+//   R3 全文件字面量禁词（BANNED_LITERALS，注释行豁免）：
+//      'hvut-bt-warn' — 类名已归一 .hvut-warn；
+//      'dynjs_loaded' — 能量模型后 dynjs 文件统一 `dynjs_equip = {...};`，旧整体替换容器已拆桥
+//        （2026-06-10，内联 script 变量提取统一走 L1 parse_script_json）。
 //
 // 输出对齐同目录 probe（verify-no-dup-translation 等）：绿 OK exit 0；命中报行号 exit 1。
 import { readFileSync } from "node:fs";
@@ -76,10 +79,16 @@ for (let i = isekaiStart; i < lines.length; i++) {
   }
 }
 
-// R3: warn 类名不得回潮
+// R3: 字面量禁词不得回潮（src 已 stripComments，注释里的拆桥说明天然豁免）
+const BANNED_LITERALS = [
+  ["hvut-bt-warn", "warn 类已归一 .hvut-warn"],
+  ["dynjs_loaded", "dynjs 已统一 dynjs_equip（L1 parse_script_json），旧整体替换容器已拆桥"],
+];
 lines.forEach((l, i) => {
-  if (l.includes("hvut-bt-warn")) {
-    violations.push(`hv-utils.js:${i + 1} 'hvut-bt-warn' 回潮（warn 类已归一 .hvut-warn）`);
+  for (const [word, why] of BANNED_LITERALS) {
+    if (l.includes(word)) {
+      violations.push(`hv-utils.js:${i + 1} '${word}' 回潮（${why}）`);
+    }
   }
 });
 
@@ -88,4 +97,4 @@ if (violations.length) {
   violations.forEach((v) => console.error("  " + v));
   process.exit(1);
 }
-console.log("[verify-no-iife-dup] OK — 收口对象（bindRe/bindPrice/bindDfct/bindPersona/bindBattlePanel 内核/.hvut-warn）无 IIFE 回潮");
+console.log("[verify-no-iife-dup] OK — 收口对象（bindRe/bindPrice/bindDfct/bindPersona/bindBattlePanel 内核/禁词 hvut-bt-warn·dynjs_loaded）无 IIFE 回潮");
