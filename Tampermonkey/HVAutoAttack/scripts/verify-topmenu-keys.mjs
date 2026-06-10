@@ -39,8 +39,8 @@ try {
 const codeLines = stripComments(src).split(/\r?\n/);
 
 const violations = [];
-// 默认值数组：topMenuLinks: [ … ] 单行字面量（确认两处均单行）。
-const ARR_RE = /topMenuLinks:\s*\[([^\]]*)\]/;
+// 单一来源清单：TOP_MENU_DEFAULT_LINKS = [ … ] 单行字面量（topMenuLinks 用户设置 2026-06-10 退化, 清单收敛 L1 常量）。
+const ARR_RE = /TOP_MENU_DEFAULT_LINKS\s*=\s*\[([^\]]*)\]/;
 // 渲染兜底 push：links.push('…') 字符串实参（topMenu 渲染唯一的 links 变量，全文件仅两处）。
 const PUSH_RE = /\blinks\.push\(\s*(['"])([^'"]*)\1\s*\)/g;
 
@@ -51,7 +51,7 @@ for (let i = 0; i < codeLines.length; i += 1) {
   if (arr && hasCJK(arr[1])) {
     violations.push({
       line: i + 1,
-      what: "topMenuLinks 默认值含 CJK 键",
+      what: "TOP_MENU_DEFAULT_LINKS 清单含 CJK 键",
     });
   }
 
@@ -69,7 +69,7 @@ for (let i = 0; i < codeLines.length; i += 1) {
 
 if (violations.length > 0) {
   console.error(
-    `[verify-topmenu-keys] FAIL: topMenuLinks 出现 ${violations.length} 处「逻辑键被翻译成中文」（铁律1：逻辑键须英文，索引 _top.menu）：`
+    `[verify-topmenu-keys] FAIL: 顶部快速链接清单出现 ${violations.length} 处「逻辑键被翻译成中文」（铁律1：逻辑键须英文，索引 _top.menu）：`
   );
   for (const v of violations) {
     console.error(`  hv-utils.js:${v.line} ${v.what}`);
@@ -81,5 +81,5 @@ if (violations.length > 0) {
 }
 
 console.log(
-  "[verify-topmenu-keys] OK — topMenuLinks 逻辑键均为英文（显示走 m.label/m.text/m.button）"
+  "[verify-topmenu-keys] OK — TOP_MENU_DEFAULT_LINKS 逻辑键均为英文（显示走 m.label/m.text/m.button）"
 );

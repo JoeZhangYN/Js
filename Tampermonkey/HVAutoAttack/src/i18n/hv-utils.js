@@ -1357,36 +1357,20 @@ const bindTop = function (top, ctx) {
     }
 
     const links_div = $element('div', top.node.div, ['.hvut-top-links']);
-    let links = ctx.config.settings.topMenuLinks.slice();
-    // 旧世代存值归一化(读取时, 不写回): 缺 am 体系标志项 'Organize' = 旧菜单时代的存值(死项已被
-    // 下方 !m.href 守卫静默跳过, 但会缺新项) → 整体升级为新默认全项。用户日后自定义保存(含 Organize)即不再覆盖。
-    if (!links.includes('Organize')) {
-      links = TOP_MENU_DEFAULT_LINKS.slice();
-    }
+    // [2026-06-10 用户裁定] 快速链接清单不再是用户设置(topMenuLinks 存值/自定义格式整个退化掉,
+    // 含旧存值归一化兜底)——单一来源 TOP_MENU_DEFAULT_LINKS, 仅 server 字段运行时分服, 两服结构性一致。
     const new_mail = $id('nav_mail')?.textContent.trim();
-    if (new_mail && !links.includes('MoogleMail')) {
-      links.push('MoogleMail');
-    }
-    links.forEach((b) => {
-      let m = top.menu[b];
-      if (!m) {
-        const [title, label, href, server] = b.split('|').map((e) => e.trim());
-        m = { title, label, href, server };
-      }
-      // !m.href 守卫: 老用户存值里的死菜单项(主世界旧 Equip Inventory/Equipment Shop/Forge 组)安全跳过
-      if (!m || !m.href || m.server && m.server !== _server.name) {
+    TOP_MENU_DEFAULT_LINKS.forEach((b) => {
+      const m = top.menu[b];
+      if (m.server && m.server !== _server.name) {
         return;
       }
-      let cn = '';
-      if (b === 'MoogleMail' && new_mail) {
-        cn = 'hvut-top-ygm';
-      }
       const a = $element('a', links_div, { href: m.href });
-      if (cn) {
-        a.classList.add(cn);
+      if (b === 'MoogleMail' && new_mail) {
+        a.classList.add('hvut-top-ygm');
       }
       hvaaBind(a, (n) => { // 链接声明式绑定(lang 切换即时重渲染)；重渲染保留英文 span 悬停提示
-        let label = (b === 'MoogleMail' && new_mail) ? `[${new_mail}]` : (top.menu[b] ? hvaaT(b, 'topMenu') : m.label);
+        let label = (b === 'MoogleMail' && new_mail) ? `[${new_mail}]` : hvaaT(b, 'topMenu');
         if (label.startsWith('{#')) { label = m.default; }
         n.textContent = label;
         $element('span', n, m.title);
@@ -2160,7 +2144,6 @@ const settings = {
 
   topMenuIntegration: true,
   // 逻辑键必须英文(索引 _top.menu, 显示走 m.label/m.text 中文); 勿翻译键, 见 verify-topmenu-keys probe
-  topMenuLinks: TOP_MENU_DEFAULT_LINKS.slice(), // 单一来源(L1), 含两彩票; server 字段运行时分服过滤
   confirmStaminaRestorative: true,
   disableStaminaRestorative: 79,
   warnLowStamina: 10,
@@ -2338,7 +2321,6 @@ const $config = {
 
     { tag: 'h1', text: '顶部导航栏' },
     { key: 'topMenuIntegration', type: 'boolean', label: '将顶部菜单整合为一个按钮。' },
-    { key: 'topMenuLinks', type: 'array', input: 'textarea', text: '在顶部设置快速链接\n如果上面的[顶部导航栏]无法正常工作，请将列表中的项目数量设置为8个或更少.' },
     { key: 'confirmStaminaRestorative', type: 'boolean', label: '使用精力恢复道具前进行确认。', server: 'persistent' },
     { key: 'disableStaminaRestorative', type: 'number', label: '当精力高于指定值时，禁用精力恢复按钮。', server: 'persistent' },
     { key: 'warnLowStamina', type: 'number', label: '当体力低于指定值时发出警告.' },
@@ -2402,36 +2384,6 @@ const $config = {
     `,
   },
   desc: {
-    topMenuLinks: `List
-      Character
-      Equipment
-      Abilities
-      Training
-      Item Inventory
-      Settings
-      
-      Item Shop
-      The Shrine
-      The Market
-      Monster Lab
-      MoogleMail
-      Weapon Lottery
-      Armor Lottery
-      
-      Organize
-      Modify
-      Repair
-      Soulbind
-      Purchase
-      Sell
-      Salvage
-      
-      The Arena
-      The Tower
-      Ring of Blood
-      GrindFest
-      Item World
-    `,
     equipCode: `Syntax
       {$name}       equipment name
       {$namecode}   equipment name in colors/bold
@@ -2478,17 +2430,6 @@ const $config = {
     `,
   },
   validator: {
-    topMenuLinks: function (value) {
-      const errors = value.filter((v) => {
-        if (_top.menu.hasOwnProperty(v)) { return false; }
-        v = v.split('|');
-        if (v.length < 3) { return true; }
-        if (v.some((e) => e.trim() === '')) { return true; }
-      });
-      const error = errors.join('\n');
-      const result = { value, error };
-      return result;
-    },
     equipNameCode: function (value) {
       const result = $equip.namecode_parse(value);
       return result;
@@ -9643,7 +9584,6 @@ const settings = {
   // 逻辑键必须英文(索引 _top.menu, 显示走 m.text/m.button); 勿翻译键, 见 verify-topmenu-keys probe
   // [2026-06-10 bindTop 收口] 默认值对齐 isekai am 体系(旧 Equip Inventory/Equipment Shop 死端点删);
   // 老用户存值里的死项由 bindTop init 的 !m.href 守卫安全跳过。
-  topMenuLinks: TOP_MENU_DEFAULT_LINKS.slice(), // 单一来源(L1), 含两彩票; server 字段运行时分服过滤
   confirmStaminaRestorative: true,
   disableStaminaRestorative: 79,
   warnLowStamina: 10,
@@ -9818,7 +9758,6 @@ const $config = {
 
     { tag: 'h1', text: 'Top Navigation Bar' },
     { key: 'topMenuIntegration', type: 'boolean', label: '将顶部菜单整合为一个按钮。' },
-    { key: 'topMenuLinks', type: 'array', input: 'textarea', text: 'Set quick links in the top.\nIf [topMenuIntegration] above is disabled, set the number of items in the list to 8 or less.' },
     { key: 'confirmStaminaRestorative', type: 'boolean', label: '使用精力恢复道具前进行确认。', disabled: 'isekai' },
     { key: 'disableStaminaRestorative', type: 'number', label: '当精力高于指定值时，禁用精力恢复按钮。', disabled: 'isekai' },
     { key: 'warnLowStamina', type: 'number', label: '当精力低于指定值时发出警告。' },
@@ -9886,36 +9825,6 @@ const $config = {
     `,
   },
   desc: {
-    topMenuLinks: `List
-      Character
-      Equipment
-      Abilities
-      Training
-      Item Inventory
-      Settings
-      
-      Item Shop
-      The Shrine
-      The Market
-      Monster Lab
-      MoogleMail
-      Weapon Lottery
-      Armor Lottery
-      
-      Organize
-      Modify
-      Repair
-      Soulbind
-      Purchase
-      Sell
-      Salvage
-      
-      The Arena
-      The Tower
-      Ring of Blood
-      GrindFest
-      Item World
-    `,
     equipCode: `Syntax
       {$name}       equipment name
       {$namecode}   equipment name in colors/bold
@@ -9964,17 +9873,6 @@ const $config = {
     `,
   },
   validator: {
-    topMenuLinks: function (value) {
-      const errors = value.filter((v) => {
-        if (_top.menu.hasOwnProperty(v)) { return false; }
-        v = v.split('|');
-        if (v.length < 3) { return true; }
-        if (v.some((e) => e.trim() === '')) { return true; }
-      });
-      const error = errors.join('\n');
-      const result = { value, error };
-      return result;
-    },
     equipNameCode: function (value) {
       const result = $equip.namecode_parse(value);
       return result;
