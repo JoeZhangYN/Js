@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 import { stripComments } from "./lib/i18n-probe-lex.mjs";
 
 const TARGET = fileURLToPath(new URL("../src/i18n/hv-utils.js", import.meta.url));
-const COLLAPSED_OBJECTS = ["$re", "$price", "$dfct", "$persona"]; // R1: 整对象收口（bindRe/bindPrice/bindDfct/bindPersona——parse_stats_pane 2026-06-10 续收后全坍缩）
+const COLLAPSED_OBJECTS = ["$re", "$price", "$dfct", "$persona", "$equip", "$armory"]; // R1: 整对象收口（bindRe/bindPrice/bindDfct/bindPersona——parse_stats_pane 2026-06-10 续收后全坍缩；bindEquip/bindArmory——同日主世界旧 $equip 体系/旧装备店死段退化后收口, $armory 段内缩进声明）
 const PARTIAL_OBJECTS = { // R2: 部分收口对象 → 字面量内禁止回潮的方法名
   "$battle": [ // bindBattlePanel 内核 + 数据层(2026-06-10 续收: 能量模型后两版修理机制同构, Forge 流已死)
     "init_panel", "click", "hover", "hover_repair", "get",
@@ -48,11 +48,12 @@ if (isekaiStart < 0) {
 
 const violations = [];
 
-// R1: 收口对象在 IIFE 区只许空字面量
+// R1: 收口对象在 IIFE 区只许空字面量（trimStart 兼容路由段内缩进声明, 如 $armory）
 for (let i = isekaiStart; i < lines.length; i++) {
+  const t = lines[i].trimStart();
   for (const obj of COLLAPSED_OBJECTS) {
-    if (lines[i].startsWith(`const ${obj} = {`)) {
-      if (!/^const \S+ = \{\};?\s*$/.test(lines[i])) {
+    if (t.startsWith(`const ${obj} = {`)) {
+      if (!/^const \S+ = \{\};?\s*$/.test(t)) {
         violations.push(`hv-utils.js:${i + 1} ${obj} 在 IIFE 内回潮为非空字面量（应为 \`const ${obj} = {};\` + bind 注入）`);
       }
     }
@@ -82,7 +83,11 @@ for (let i = isekaiStart; i < lines.length; i++) {
 const BANNED_LITERALS = [
   ["hvut-bt-warn", "warn 类已归一 .hvut-warn"],
   ["dynjs_loaded", "dynjs 已统一 dynjs_equip（L1 parse_script_json），旧整体替换容器已拆桥"],
-  ["?s=Forge&ss=re", "旧 Bazaar Forge 修理页已随能量模型消失，修理统一走 ?s=Bazaar&ss=am&screen=repair（bindBattlePanel 数据层）"],
+  ["?s=Forge", "旧 Forge 组端点（re修理/up升级/sa分解/fo重铸）已随能量模型整组消失（bindTop 注释实证），业务走 Bazaar am 体系（修理 screen=repair / 升级分解 modify·salvage）"],
+  ["?s=Character&ss=in", "旧装备库存端点已死（能量模型），容量取数走 ?s=Bazaar&ss=am&screen=organize 的 Inventory Capacity"],
+  ["?s=Bazaar&ss=es", "旧装备店端点已死（能量模型），出售/分解走 bindArmory（Bazaar am 七屏）"],
+  ["$equip.parse.div(", "旧 parse.div 随主世界旧 $equip 体系退化（2026-06-10），统一 isekai 基准 $equip.parse.elem"],
+  ["$equip.parse.extended(", "旧详情页 #equip_extended 解析随旧页面消失（实站报错证实），无新形态继任"],
 ];
 lines.forEach((l, i) => {
   for (const [word, why] of BANNED_LITERALS) {
@@ -97,4 +102,4 @@ if (violations.length) {
   violations.forEach((v) => console.error("  " + v));
   process.exit(1);
 }
-console.log("[verify-no-iife-dup] OK — 收口对象（bindRe/bindPrice/bindDfct/bindPersona/bindBattlePanel 内核/禁词 hvut-bt-warn·dynjs_loaded）无 IIFE 回潮");
+console.log("[verify-no-iife-dup] OK — 收口对象（bindRe/bindPrice/bindDfct/bindPersona/bindEquip/bindArmory/bindBattlePanel 内核/死端点 Forge·ss=in·ss=es）无 IIFE 回潮");
