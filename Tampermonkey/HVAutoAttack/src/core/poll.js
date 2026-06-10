@@ -1,7 +1,7 @@
 // 轮询调度 helper。
 //
 // 收口散落的 `const f=()=>{ if(!cond) setTimeout(f,200); else <act> }; f();` 手写轮询惯用式
-// （idle-arena 等 4 token / repair-check 等 json 释放，语义不同但同为「每 N ms 重试直到条件满足」）。
+// （idle-arena 等 4 token 全部返回等，语义不同但同为「每 N ms 重试直到条件满足」）。
 // 副作用经返回的 Promise 显式化：resolve 于 predicate 首次为真。
 
 /**

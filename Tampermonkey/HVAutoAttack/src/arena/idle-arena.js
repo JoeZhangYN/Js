@@ -7,6 +7,7 @@ import { post } from "../dom/http.js";
 import { goto } from "../core/navigate.js";
 import { pollUntil } from "../core/poll.js";
 import { isIsekai } from "../env.js";
+import { readStaminaValue } from "../state/stamina.js";
 
 export function idleArena() {
   let arena = getValue("arena", true) || {};
@@ -21,7 +22,7 @@ export function idleArena() {
     };
     // iframe打开四个网站，设定四个判断值，同时true才继续
     const getToken = function (data, e) {
-      if (isIsekai) {
+      {  // postoken: both main-world and isekai read it (HV main-world arena uses postoken, verified 2026-06-09)
         const postokenInput = gE('input[name="postoken"]', data);
         if (postokenInput) arena.token.postoken = postokenInput.value;
       }
@@ -59,9 +60,8 @@ export function idleArena() {
   if (arena.array.length === 0) return;
   if (
     g("option").restoreStamina &&
-    gE("#stamina_readout .fc4.far>div").textContent.match(/\d+/)[0] * 1 <=
-      g("option").staminaLow &&
-    gE("#stamina_readout .fc4.far>div").textContent.match(/\d+/)[0] * 1 < 85
+    readStaminaValue() <= g("option").staminaLow &&
+    readStaminaValue() < 85
   ) {
     post(window.location.href, goto, "recover=stamina");
     return;
@@ -109,13 +109,13 @@ export function idleArena() {
     arena.array.splice(0, 1);
   }
   setValue("arena", arena);
-  const token = arena.token[id];
+  // token deprecated: main-world unified to postoken (same as isekai)
   if (id === "gr") id = 1;
   post(
     `?s=Battle&ss=${href}`,
     goto,
     isIsekai
       ? `initid=${String(id)}&postoken=${arena.token.postoken}`
-      : `initid=${String(id)}&inittoken=${token}`
+      : `initid=${String(id)}&postoken=${arena.token.postoken}`
   );
 }

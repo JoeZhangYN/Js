@@ -13,7 +13,7 @@ import { registerExportMenu } from "../state/riddle-dataset.js";
 import { encounterCheck } from "./encounter.js";
 import { parseAbilityPage } from "./ability-page.js";
 import { quickSite } from "../arena/quick-site.js";
-import { repairCheck } from "../arena/repair-check.js";
+import { runRepair } from "../repair/repair-orchestrator.js";
 import { idleArena } from "../arena/idle-arena.js";
 import { main, pauseChange } from "../battle/main-loop.js";
 import { reloader } from "../battle/reloader.js";
@@ -26,6 +26,7 @@ import { setupPageRefresh } from "../alarm/page-refresh.js";
 import { setupForgeCost } from "./showequip-forge-cost.js";
 import { setupEquipPercentile } from "./equip-percentile-dispatcher.js";
 import { isOptionOn, getOption } from "../state/option.js";
+import { readStaminaValue } from "../state/stamina.js";
 import { detectPageKind, PageKind } from "./page-kind.js";
 
 export function init() {
@@ -187,14 +188,13 @@ export function init() {
     if (g("option").encounter) encounterCheck();
     if (
       !g("option").restoreStamina &&
-      gE("#stamina_readout .fc4.far>div").textContent.match(/\d+/)[0] * 1 <=
-        g("option").staminaLow
+      readStaminaValue() <= g("option").staminaLow
     )
       return;
-    // 自动修复武器。repair 开启时 idleArena 调度由 repairCheck 独占（仅装备达标才开下一场，
-    // 修理失败则停机止损）；故此处 else-if 互斥，避免无条件开战与 repair 解耦的破坏性死循环。
+    // 自动修复装备。repair 开启时 idleArena 调度由维修能力 runRepair 独占（仅装备达标才开下一场，
+    // 缺料联动商店买齐、修理失败则停机止损）；故此处 else-if 互斥，避免无条件开战与 repair 解耦的破坏性死循环。
     if (g("option").repair) {
-      repairCheck();
+      runRepair();
     } else if (g("option").idleArena) {
       setTimeout(
         idleArena,

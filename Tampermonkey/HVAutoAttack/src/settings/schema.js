@@ -123,6 +123,40 @@ export const OPTION_SCHEMA = [
       l2: "MP threshold (<N% means insufficient to recast)",
     },
   },
+  // === 自动维修：耐久阈值 + 缺料联动物品商店买齐（两世界统一，repair/ 业务能力消费） ===
+  {
+    key: "repairValue",
+    kind: "number",
+    group: "Main",
+    default: 60,
+    label: {
+      l0: "修复装备耐久阈值（耐久 ≤ N% 才修；留空用默认 60）",
+      l1: "修復裝備耐久閾值（耐久 ≤ N% 才修；留空用默認 60）",
+      l2: "Repair durability threshold (repair when ≤ N%; blank = 60)",
+    },
+  },
+  {
+    key: "repairBuyMaterials",
+    kind: "checkbox",
+    group: "Main",
+    default: false,
+    label: {
+      l0: "维修缺料时自动从物品商店买齐再修",
+      l1: "維修缺料時自動從物品商店買齊再修",
+      l2: "Auto-buy materials from Item Shop to repair",
+    },
+  },
+  {
+    key: "repairCreditCap",
+    kind: "number",
+    group: "Main",
+    default: 50000,
+    label: {
+      l0: "买料单轮花费上限（信用点，超限停机告警）",
+      l1: "買料單輪花費上限（信用點，超限停機告警）",
+      l2: "Material spend cap per run (credits)",
+    },
+  },
   // === P1 PriceForged 强化价格（装备页注入 tooltip + 总价 + Lv 预测） ===
   {
     key: "forgeCostShow",

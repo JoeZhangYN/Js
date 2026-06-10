@@ -6,6 +6,7 @@ import { _alert } from "../core/lang.js";
 import { post } from "../dom/http.js";
 import { goto, openUrl } from "../core/navigate.js";
 import { time } from "../core/time.js";
+import { readStaminaValue } from "../state/stamina.js";
 
 export function encounterCheck() {
   const timeNow = time(0);
@@ -23,8 +24,7 @@ export function encounterCheck() {
   ) {
     if (
       g("option").restoreStamina &&
-      gE("#stamina_readout .fc4.far>div").textContent.match(/\d+/)[0] * 1 <=
-        g("option").staminaLow
+      readStaminaValue() <= g("option").staminaLow
     ) {
       post(window.location.href, goto, "recover=stamina");
       return;
