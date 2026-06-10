@@ -1289,6 +1289,10 @@ GM_addStyle(/*css*/`
   }
 `);
 
+// 顶部快速链接默认清单(单一来源: bindTop 旧存值归一化 + 两 IIFE settings 默认共用)。全项精选含两彩票
+// (2026-06-10 用户验收: 主世界除塔楼外全有+实验室+武器/防具彩票); server 字段运行时自动分服过滤。
+const TOP_MENU_DEFAULT_LINKS = ['Character', 'Equipment', 'Item Inventory', 'Item Shop', 'The Shrine', 'The Market', 'Monster Lab', 'MoogleMail', 'Weapon Lottery', 'Armor Lottery', 'Organize', 'Modify', 'Purchase', 'Sell', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'];
+
 // _top 顶部导航·全量收口(L1 bindTop, 2026-06-10): 能量模型后两服菜单体系同构(Bazaar am 体系:
 // Organize/Modify/Repair/Soulbind/Purchase/Sell/Salvage; 旧 Forge 组/Equip Inventory ss=in/
 // Equipment Shop ss=es 端点全死)——原主世界 4.0.0 旧菜单表随之下线, 「菜单下拉/首行导航两服一致」
@@ -1353,7 +1357,12 @@ const bindTop = function (top, ctx) {
     }
 
     const links_div = $element('div', top.node.div, ['.hvut-top-links']);
-    const links = ctx.config.settings.topMenuLinks.slice();
+    let links = ctx.config.settings.topMenuLinks.slice();
+    // 旧世代存值归一化(读取时, 不写回): 缺 am 体系标志项 'Organize' = 旧菜单时代的存值(死项已被
+    // 下方 !m.href 守卫静默跳过, 但会缺新项) → 整体升级为新默认全项。用户日后自定义保存(含 Organize)即不再覆盖。
+    if (!links.includes('Organize')) {
+      links = TOP_MENU_DEFAULT_LINKS.slice();
+    }
     const new_mail = $id('nav_mail')?.textContent.trim();
     if (new_mail && !links.includes('MoogleMail')) {
       links.push('MoogleMail');
@@ -2151,7 +2160,7 @@ const settings = {
 
   topMenuIntegration: true,
   // 逻辑键必须英文(索引 _top.menu, 显示走 m.label/m.text 中文); 勿翻译键, 见 verify-topmenu-keys probe
-  topMenuLinks: ['Character', 'Equipment', 'Item Inventory', 'Item Shop', 'The Shrine', 'The Market', 'Monster Lab', 'MoogleMail', 'Organize', 'Modify', 'Purchase', 'Sell', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'],
+  topMenuLinks: TOP_MENU_DEFAULT_LINKS.slice(), // 单一来源(L1), 含两彩票; server 字段运行时分服过滤
   confirmStaminaRestorative: true,
   disableStaminaRestorative: 79,
   warnLowStamina: 10,
@@ -9634,7 +9643,7 @@ const settings = {
   // 逻辑键必须英文(索引 _top.menu, 显示走 m.text/m.button); 勿翻译键, 见 verify-topmenu-keys probe
   // [2026-06-10 bindTop 收口] 默认值对齐 isekai am 体系(旧 Equip Inventory/Equipment Shop 死端点删);
   // 老用户存值里的死项由 bindTop init 的 !m.href 守卫安全跳过。
-  topMenuLinks: ['Character', 'Equipment', 'Item Inventory', 'Item Shop', 'The Shrine', 'The Market', 'Monster Lab', 'MoogleMail', 'Organize', 'Modify', 'Purchase', 'Sell', 'The Arena', 'The Tower', 'Ring of Blood', 'GrindFest', 'Item World'],
+  topMenuLinks: TOP_MENU_DEFAULT_LINKS.slice(), // 单一来源(L1), 含两彩票; server 字段运行时分服过滤
   confirmStaminaRestorative: true,
   disableStaminaRestorative: 79,
   warnLowStamina: 10,
