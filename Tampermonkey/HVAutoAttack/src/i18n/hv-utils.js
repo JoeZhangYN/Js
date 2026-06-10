@@ -9655,7 +9655,6 @@ const settings = {
   ],
 
   // [EQUIPMENT]
-  equipInventoryIntegration: true,
   equipSort: true,
   equipShowLevel: true,
   equipShowPAB: true,
@@ -9663,7 +9662,11 @@ const settings = {
   equipColor: true,
   equipHoverFunctions: true,
   equipTouchFunctions: false,
-  equipCode: '[{$_eid}] [url={$url}]{$namecode}[/url] ({$level?Lv.$level}{$soulbound?Soulbound}{$unassigned?Unassigned}, {$pab}{$note?, $note}){$price? @ $price}',
+  equipCode: { // 旧 string 单模板 → isekai object 形态(bindArmory equipcode 按 EQUIP/CATEGORY/TYPE 键读); 旧存值经 migration v2 升级
+    CATEGORY: '[size=3][b][{$category}][/b][/size]',
+    TYPE: '[size=2][b][{$type}][/b][/size]',
+    EQUIP: '[{$_eid}] [url={$url}]{$namecode}[/url] ({$level?Lv.$level}{$soulbound?Soulbound}{$unassigned?Unassigned}, {$pab}{$note?, $note}){$price? @ $price}',
+  },
   equipNameCode: [
     'Peerless : quality=rainbow, name=bold',
     'Legendary : quality=#f90, quality=bold',
@@ -9690,10 +9693,7 @@ const settings = {
     'Plate && Shielding : prefix=#f90',
   ],
 
-  // [Equipment Shop]
-  equipmentShopIntegration: true,
-  equipmentShopShowLevel: true,
-  equipmentShopShowPAB: true,
+  // [Equipment Shop → Bazaar Armory(能量模型)]
   equipmentShopConfirm: 1, // 0:disable, 1:confirm less-profitable actions, 2:always
   equipmentShopAutoProtect: false,
   equipmentShopPriceDeductFee: false,
@@ -9714,7 +9714,6 @@ const settings = {
     'Magnificent && (Savage || Agile) && Shadowdancer',
     'Magnificent && Power && Slaughter',
   ],
-  equipmentShopAutoLock: true,
 
   equipmentShopBazaarFilters: [
     'Peerless',
@@ -9792,7 +9791,7 @@ const HVUT_CN = {
 // CONFIGURATION
 const $config = {
 
-  version: 1,
+  version: 2, // v2 = 能量模型旧装备体系退化接新(2026-06-10): equipCode object 化 + 死键清理 + armory 新键, 经 migration 幂等迁移
   ls_savelist: ['ch_style'],
   data: [
     { tag: 'h1', text: 'Random Encounter' },
@@ -9816,21 +9815,21 @@ const $config = {
     { key: 'lotteryFilters', type: 'array', input: 'textarea', text: 'Notify if the new equipment in the lottery qualifies.\n* $pab is not available.', desc: 'equipFilters', validator: 'equipFilters' },
 
     { tag: 'h1', text: '装备' },
-    { key: 'equipInventoryIntegration', type: 'boolean', label: '在装备仓库中将所有类型的装备整合到一个列表。' },
+    { key: 'equipmentIntegration', type: 'boolean', label: '将所有类型的装备整合到装备列表' },
     { key: 'equipSort', type: 'boolean', label: '对装备列表进行排序和分类。' },
     { key: 'equipColor', type: 'boolean', label: '按品质为装备设置颜色。' },
+    { key: 'equipShowLevel', type: 'boolean', label: '显示装备的等级。' },
+    { key: 'equipShowPAB', type: 'boolean', label: '显示装备的潜能加成(PAB)。' },
     { key: 'equipHoverFunctions', type: 'boolean', label: '当鼠标悬停在装备上时，支持键盘和鼠标操作。' },
     { key: 'equipTouchFunctions', type: 'boolean', label: '在移动端支持触摸操作' },
-    { key: 'equipCode', type: 'string', input: 'textarea', text: 'Set the format of the code for the forum.', style: 'height: 80px; white-space: normal;' },
+    { key: 'equipCode', type: 'object', input: 'textarea', text: '设置论坛代码的格式', style: 'height: 80px; white-space: normal;' },
     { key: 'equipNameCode', type: 'array', input: 'textarea', text: 'Set the rules for codes that decorate the names of equipment.' },
 
     { tag: 'h1', text: '装备商店' },
-    { key: 'equipmentShopIntegration', type: 'boolean', label: '在默认商店页面整合所有类型的装备。' },
-    { key: 'equipmentShopShowLevel', type: 'boolean', label: '显示装备的等级。' },
-    { key: 'equipmentShopShowPAB', type: 'boolean', label: '显示装备的潜能加成(PAB)。' },
-    { key: 'equipmentShopConfirm', type: 'number', input: 'select', options: ['0:disable', '1:confirm less-profitable actions', '2:always'], label: '出售或分解装备时进行确认。' },
+    { key: 'equipmentShopConfirm', type: 'number', input: 'select', options: ['0:默认', '1:自动点击确认', '2:无需确认'], label: '出售或分解装备时进行确认。' },
     { key: 'equipmentShopProtectFilters', type: 'array', input: 'textarea', text: 'Show valuable equipment together at the top of the list, and prevent them from being selected by the "Select All" button.', desc: 'equipFilters', validator: 'equipFilters' },
-    { key: 'equipmentShopAutoLock', type: 'boolean', label: '自动锁定受保护的装备。' },
+    { key: 'equipmentShopAutoProtect', type: 'boolean', label: '自动保护符合规则的装备' },
+    { key: 'equipmentShopPriceDeductFee', type: 'boolean', label: '显示实际价格——由于市场会收取1%的手续费，因此材料的实际价值为价格的99%' },
     { key: 'equipmentShopBazaarFilters', type: 'array', input: 'textarea', text: 'Keep valuable equipment in BAZAAR, then hide all other trash.', desc: 'equipFilters', validator: 'equipFilters' },
 
     { tag: 'h1', text: '怪物实验室' },
@@ -10015,6 +10014,24 @@ const $config = {
         }
       }
     }
+
+    // [v2 能量模型迁移 2026-06-10] equipCode 旧 string 单模板 → object(EQUIP/CATEGORY/TYPE; bindArmory equipcode 按键读取, isekai 4.2.0 基准)
+    const equipcode = $config.settings.equipCode;
+    if (typeof equipcode === 'string') {
+      $config.settings.equipCode = JSON.parse(JSON.stringify($config.default.equipCode));
+      $config.settings.equipCode.EQUIP = equipcode;
+    }
+    // 双向键合并(isekai migration 同款, 幂等): 删孤儿键(死段设置 equipInventoryIntegration/equipmentShop{Integration,ShowLevel,ShowPAB,AutoLock}/equipEnchant 已亡者等) + 补新键(bindEquip/bindArmory 所需默认)
+    Object.keys($config.settings).forEach((key) => {
+      if (!(key in $config.default)) {
+        delete $config.settings[key];
+      }
+    });
+    Object.entries($config.default).forEach(([key, value]) => {
+      if (!(key in $config.settings)) {
+        $config.settings[key] = JSON.parse(JSON.stringify(value));
+      }
+    });
 
     $config.save();
   },
