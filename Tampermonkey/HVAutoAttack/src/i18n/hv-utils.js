@@ -2127,6 +2127,29 @@ const _it = {
   },
 };
 
+// ===== L3.A2 Character 属性面板双列展开（两 IIFE 收口一处; 铁律1e 应抽尽抽）。能量模型后主世界属性页已同构
+// isekai 的 #stats_scrollable, 主世界旧 #stats_pane/.st1-.st3 折叠按钮段随旧页面死亡(2026-06-10 实站反馈
+// "主世界需下拉、异世界刚好"证实——旧判断落空致主世界无人展开, 保留原站固定高度滚动条)。两 IIFE 顶层经作用域链调 _eqch.init()。
+// 命名取页面骨架 #eqch_outer; 不可用 _ch——两 IIFE 各有 var _ch={}(经验模拟器容器), var 提升会遮蔽公共区符号。=====
+const _eqch = {
+  init() {
+    if (!$id('stats_scrollable')) return;
+    GM_addStyle(/*css*/`
+      #stats_scrollable .spc { width: auto; font-weight: bold; }
+      #stats_scrollable table { font-size: 9pt; }
+      #stats_scrollable td:first-child { min-width: 45px; padding-left: 3px; color: var(--color-font-highlight); }
+      #stats_scrollable td:last-child { white-space: nowrap; }
+      .hvut-ch-expand #eqch_left { width: 660px; }
+      .hvut-ch-expand #eqch_stats { width: 560px; }
+      .hvut-ch-expand #stats_scrollable { column-count: 2; column-rule: 1px dotted; column-gap: 10px; height: 631px; padding: 5px 50px 5px 10px; line-height: 18px; overflow: visible; }
+      .hvut-ch-expand #stats_scrollable .spc:nth-last-of-type(5) { break-before: column; }
+      .hvut-ch-expand #stats_scrollable table:nth-last-of-type(-n+5) { width: 300px; text-align: left; }
+      .hvut-ch-expand #stats_scrollable table:nth-last-of-type(-n+5) tr { display: inline-block; width: 50%; }
+    `);
+    $id('eqch_outer').classList.add('hvut-ch-expand');
+  },
+};
+
 if (IS_ISEKAI) {
   // [ISEKAI 分支] 原 "HV Utils Isekai 汉化" → 迁移至英文 4.2.0
   (function () {
@@ -3626,22 +3649,7 @@ if (false /* [v10.0.1] sssss2 品质整件染色已禁用，改用 indefined 词
   `);
 }
 
-if ($id('stats_scrollable')) {
-  GM_addStyle(/*css*/`
-    #stats_scrollable .spc { width: auto; font-weight: bold; }
-    #stats_scrollable table { font-size: 9pt; }
-    #stats_scrollable td:first-child { min-width: 45px; padding-left: 3px; color: var(--color-font-highlight); }
-    #stats_scrollable td:last-child { white-space: nowrap; }
-    .hvut-ch-expand #eqch_left { width: 660px; }
-    .hvut-ch-expand #eqch_stats { width: 560px; }
-    .hvut-ch-expand #stats_scrollable { column-count: 2; column-rule: 1px dotted; column-gap: 10px; height: 631px; padding: 5px 50px 5px 10px; line-height: 18px; overflow: visible; }
-    .hvut-ch-expand #stats_scrollable .spc:nth-last-of-type(5) { break-before: column; }
-    .hvut-ch-expand #stats_scrollable table:nth-last-of-type(-n+5) { width: 300px; text-align: left; }
-    .hvut-ch-expand #stats_scrollable table:nth-last-of-type(-n+5) tr { display: inline-block; width: 50%; }
-  `);
-
-  $id('eqch_outer').classList.add('hvut-ch-expand');
-}
+_eqch.init(); // 属性面板双列展开收口 L3.A2（两 IIFE 共用）
 
 // DISABLE FONT ENGINE
 _window.common.get_dynamic_digit_string = function (n) { return `<div class="fc4 far fcb"><div>${n.toLocaleString()}</div></div>`; };
@@ -11372,31 +11380,7 @@ if (false /* [v10.0.1] sssss2 品质整件染色已禁用，改用 indefined 词
   `);
 }
 
-if ($id('stats_pane')) {
-  GM_addStyle(/*css*/`
-    #stats_header, #eqch_stats .csps { display: none; }
-    #stats_pane { height: 650px !important; white-space: nowrap; }
-    .stats_page .spc { width: auto; padding: 10px 0 0 10px; font-weight: bold; }
-    .stats_page .far { color: #c00; }
-    .stats_page .st2 > div:nth-child(2n) { width: 100px; }
-    .hvut-ch-expand #eqch_left { width: 660px; }
-    .hvut-ch-expand #eqch_stats { width: 560px; }
-    .hvut-ch-expand #stats_pane { overflow: hidden !important; }
-    .hvut-ch-expand .stats_page { float: left; height: 100%; overflow: hidden; }
-    .hvut-ch-expand .stats_page:hover { overflow: visible; }
-    .hvut-ch-expand .stats_page:nth-of-type(1) { width: 250px; border-right: 1px dotted; }
-    .hvut-ch-expand .stats_page:nth-of-type(2) { width: 300px; margin-left: 3px; }
-    .hvut-ch-expand .st1 > div:nth-child(2n+1) { width: 45px; padding-left: 5px; clear: left; }
-    .hvut-ch-expand .st1 > div:nth-child(2n) { width: 200px; }
-    .hvut-ch-expand .st2 > div:nth-child(2n+1) { width: 45px; padding-left: 5px; }
-    .hvut-ch-expand .st2 > div:nth-child(2n) { width: 100px; }
-    .hvut-ch-expand .st3 > div:nth-child(2n+1) { width: 45px; padding-left: 5px; }
-    .hvut-ch-expand .st3 > div:nth-child(2n) { width: 200px; }
-  `);
-
-  $qs('#stats_pane > div:last-of-type').prepend(...$qsa('#stats_pane > div:first-of-type > div:nth-last-of-type(-n+2)'));
-  toggle_button($input('button', $id('stats_pane'), { style: 'position: absolute; top: 12px; right: 20px; width: 100px;' }), '折叠', '展开', $id('eqch_outer'), 'hvut-ch-expand', true);
-}
+_eqch.init(); // 属性面板双列展开收口 L3.A2（两 IIFE 共用; 旧 #stats_pane/.st1-.st3 折叠按钮段随旧页面死亡, 主世界已同构 isekai #stats_scrollable）
 
 // DISABLE FONT ENGINE
 _window.common.get_dynamic_digit_string = function (n) { return `<div class="fc4 far fcb"><div>${n.toLocaleString()}</div></div>`; };
