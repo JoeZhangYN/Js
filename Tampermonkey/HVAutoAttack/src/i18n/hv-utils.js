@@ -69,10 +69,13 @@ try {
 // 1. IS_ISEKAI = location.pathname.includes("/isekai/")  ——  运行时分发
 // 2. 两版整体各自包在 IIFE 中  ——  顶层 const/var/let 同名声明互不冲突
 // 3. GM_setValue 命名空间: 两版动态切换 (hvut_ / hvuti_), 老用户配置 100% 保留, 未改
-// 4. 两版 utility 不去重原样保留 [实质正确 — 2026-06 dedup epic 实证证伪"可机械去重"]:
-//    两版适配两个不同游戏(persistent HV vs Isekai), infra 游戏机制级分叉(pxp系数 2x/12x、
-//    品质 8/10 级、Forge/附魔 主世界独有、持久化键 hvut_/isekai_), 强合破坏两游戏正确性 +
-//    老用户持久化。原"假内聚警告"措辞已更正; 仅翻译层(显示)可归一(见第 6 点)。
+// 4. 两版 utility 去重策略 [2026-06 dedup epic 证伪"整体可机械去重" → 2026-06-10 修正为分轨]:
+//    a) 机制分叉留各 IIFE: pxp系数 2x/12x、品质 8/10 级、Forge/附魔 主世界独有、$config GM 命名空间
+//       hvut_/hvuti_、$equip dynjs 模型(迁移中) —— 强合破坏两游戏正确性 + 老用户持久化。
+//    b) 真重复(byte-identical / 表层漂移)收口共享区, ctx 注入版本差异: bindTr / bindRe / bindPrice /
+//       bindBattlePanel(渲染内核, 数据层留各版) / render_supply_li / equip-name-render / .hvut-warn 归一。
+//       反退化: scripts/verify-no-iife-dup.mjs 锁回潮; 候选召回: scripts/dup-probe.mjs(手动)。
+//       留置候选(审查过, 等阻塞解除): $persona/$dfct(topmenu node 形态 + dynjs 模型), $config 小方法群。
 // 5. 迁移基线: 主世界 sleazyfork #533796 英文 4.0.0; Isekai 论坛 211883 英文 4.2.0
 // 6. 汉化策略: 显示层翻译走 canonical SSOT(src/data/i18n) 经 window.HVAA_i18n 桥
 //    (hvaaT/hvaaTEquip/resolveEn); 逻辑值/比较/键/POST 参数一律英文。i18n SSOT epic G0-G3
@@ -350,17 +353,17 @@ const $item = {
 
 // 补给品库存单条 li 渲染(两 IIFE 共用): 名走 canonical 桥(hvaaT item)译中 + 库存数 + buy dataset + 库存 <
 // 阈值标警告。抽此 same-algo 内核消除"两版各写一份致翻译漂移"(主世界版曾漏 hvaaT 显英文)。外层(数据源 settings
-// 键 equipPanel/equipEnchant…ItemInventory / dummy 占位 / repairall 清理 / load-display 分层)是两版
-// bounded-context 真实差异, 留各 IIFE 分支不硬合; 仅 warn class 前缀漂移(hvut-warn/hvut-bt-warn)参数化。
+// 键 equipPanel/equipEnchant…ItemInventory / load-display 分层)是两版 bounded-context 真实差异, 留各
+// IIFE 分支不硬合。原 warnClass 参数已消亡: warn class 已归一 .hvut-warn(2026-06-10, .hvut-bt-warn 删)。
 // ⚠ 必须在 if(!isekai/equip) 守卫块内, 与 $item/$element 同词法作用域 —— 块外定义会 ReferenceError(2026-06-05 修)。
-const render_supply_li = function (parent, name, count, warnClass) {
+const render_supply_li = function (parent, name, count) {
   const stock = $item.count(name);
   const li = $element('li', parent, {
     textContent: `${hvaaT(name, 'item')} (${stock})`,
     dataset: { action: 'buy', item: name, count },
   });
   if (stock < count) {
-    li.classList.add(warnClass);
+    li.classList.add('hvut-warn');
   }
   return li;
 };
@@ -442,6 +445,588 @@ const bindTr = function (tr, ctx) {
   tr.cancel = function (reload) {
     tr.node.select.value = '';
     tr.set(reload);
+  };
+};
+
+// $re 随机遭遇引擎(两 IIFE byte-identical 11/15 方法收口一处, 基准 = ISEKAI 4.2.0; 铁律1e 应抽尽抽)。
+// RE 状态本就跨服共享(显式 'hvut_' 前缀), 两份实现纯属物理散落。收口时统一的 4 处表层漂移:
+//   ba(): 保留 reBattle 守卫(4.2.0 新增开关; 主世界 settings 已补 reBattle 默认值+UI)
+//   refresh(): 'Expired'→'已错失'(取主世界汉化, isekai 版漏翻)
+//   load(): else 提示取 4.2.0 语义(装备仓库满是 RE 不生成的真实原因, 主世界 4.0.0 泛化文案弃)
+//   start(): 过期警示统一 .hvut-warn class(主世界原 inline style color 弃; .hvut-warn 已两版归一)
+// ctx 注入: config = IIFE-private $config(GM 命名空间载体); top 用 getter(规避 _top 声明在 $re 之后的 TDZ)。
+const bindRe = function (re, ctx) {
+  re.init = function () {
+    if (re.inited) {
+      return;
+    }
+    re.inited = true;
+    re.type = (!location.hostname.includes('hentaiverse.org') || IS_ISEKAI) ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
+    re.get();
+  };
+  re.clock = function (button) {
+    re.init();
+    re.button = button;
+    re.button.addEventListener('click', (e) => { re.run(e.ctrlKey || e.shiftKey); });
+    const date = new Date(re.json.date);
+    const now = new Date();
+    if (date.getUTCDate() !== now.getUTCDate() || date.getUTCMonth() !== now.getUTCMonth() || date.getUTCFullYear() !== now.getUTCFullYear()) {
+      re.reset();
+      re.load();
+    }
+    re.start();
+  };
+  re.hv = function () {
+    re.init();
+    re.check();
+    const button = $element('div', ctx.top.node.div, ['!width: 80px; cursor: pointer;']);
+    re.clock(button);
+  };
+  re.ba = function () {
+    if (!ctx.config.settings.reBattle) {
+      return;
+    }
+    re.init();
+    if ($id('textlog').tBodies[0].lastElementChild.textContent === 'Initializing random encounter ...') {
+      re.check();
+    }
+    const button = $element('div', $id('csp'), ['RE', '!position: absolute; top: 10px; left: 600px; cursor: pointer; font-size: 10pt; font-weight: bold;']);
+    re.clock(button);
+
+    // support monsterbation that clears all timer id when a round starts
+    const target = document.body;
+    const options = { childList: true };
+    const callback = function () {
+      if (!button.parentNode.parentNode && $id('csp')) {
+        $id('csp').appendChild(button);
+      }
+      re.start();
+    };
+    const observer = new MutationObserver(callback);
+    observer.observe(target, options);
+  };
+  re.eh = function () {
+    re.init();
+    const link = $qs('#eventpane a');
+    const onclick = link?.getAttribute('onclick');
+    const key = onclick?.match(/\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/)?.[1];
+    if (key) {
+      re.set(key);
+      if (ctx.config.settings.reGalleryAlt) {
+        link.setAttribute('onclick', onclick.replace('https://hentaiverse.org/', 'http://alt.hentaiverse.org/'));
+      }
+    }
+    if (ctx.config.settings.reGallery && $id('nb')) {
+      $id('nb').style.maxWidth = '1080px';
+      const button = $element('a', $element('div', $id('nb')), ['!display: inline-block; width: 70px; text-align: left; cursor: pointer;']);
+      re.clock(button);
+    }
+  };
+  re.get = function () {
+    re.json = ctx.config.get('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
+  };
+  re.set = function (key) {
+    if (key) {
+      re.json.key = key;
+      re.json.date = Date.now();
+      re.json.count++;
+      re.json.clear = false;
+    }
+    ctx.config.set('re', re.json, 'hvut_');
+  };
+  re.reset = function () {
+    re.json.date = Date.now();
+    re.json.count = 0;
+    re.json.clear = true;
+    re.set();
+    re.start();
+  };
+  re.check = function () {
+    const key = /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(location.search)?.[1];
+    if (key) {
+      const now = Date.now();
+      if (re.json.key === key) {
+        if (!re.json.clear) {
+          re.json.clear = true;
+          re.set();
+        }
+      } else if (re.json.date + 1800000 < now) {
+        re.json.date = now;
+        re.json.key = key;
+        re.json.count++;
+        re.json.clear = true;
+        re.set();
+      }
+    }
+  };
+  re.refresh = function () {
+    const remain = re.json.date + 1800000 - Date.now();
+    if (remain > 0) {
+      re.button.textContent = time_format(remain, 2) + ` [${re.json.count}]`;
+      re.beep = true;
+    } else {
+      re.button.textContent = (!re.json.clear ? '已错失' : '遭遇战') + ` [${re.json.count}]`;
+      if (re.beep) {
+        re.beep = false;
+        play_beep(...ctx.config.settings.reBeep);
+      }
+      re.stop();
+    }
+  };
+  re.run = async function (engage) {
+    if (re.type === 'ba') {
+      re.load();
+    } else if (re.type === 'hv') {
+      if (!re.json.clear || engage) {
+        re.engage();
+      } else {
+        re.load(true);
+      }
+    } else if (re.type === 'eh') {
+      re.stop();
+      re.button.textContent = '检查中...';
+      const html = await $ajax.fetch('https://hentaiverse.org/');
+      if (html.includes('<div id="navbar">')) {
+        if (!re.json.clear || engage) {
+          re.engage();
+        } else {
+          re.load(true);
+        }
+      } else {
+        re.load();
+      }
+    }
+  };
+  re.load = async function (engage) {
+    re.stop();
+    re.get();
+    re.button.textContent = '加载中...';
+    const html = await $ajax.fetch('https://e-hentai.org/news.php');
+    const doc = $doc(html);
+    const eventpane = $id('eventpane', doc)?.innerHTML;
+    const key = eventpane?.match(/\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/)?.[1];
+    if (key) {
+      re.set(key);
+      if (engage) {
+        re.engage();
+        return;
+      }
+    } else if (eventpane?.includes('It is the dawn of a new day')) {
+      popup(eventpane);
+      re.reset();
+    } else {
+      popup('<p style="color: #f00; font-weight: bold;">你的装备仓库快要满了.<br>\n该去整理一下了.</p>');
+    }
+    re.start();
+  };
+  re.engage = function () {
+    if (!re.json.key) {
+      return;
+    }
+    const href = `?s=Battle&ss=ba&encounter=${re.json.key}`;
+    if (re.type === 'ba') {
+      return;
+    } else if (re.type === 'hv') {
+      location.href = href;
+    } else if (re.type === 'eh') {
+      window.open((ctx.config.settings.reGalleryAlt ? 'http://alt.hentaiverse.org/' : 'https://hentaiverse.org/') + href, '_blank');
+      re.json.clear = true;
+      re.start();
+    }
+  };
+  re.start = function () {
+    re.stop();
+    if (!re.json.clear) {
+      re.button.classList.add('hvut-warn');
+    } else {
+      re.button.classList.remove('hvut-warn');
+    }
+    re.tid = setInterval(re.refresh, 1000);
+    re.refresh();
+  };
+  re.stop = function () {
+    if (re.tid) {
+      clearInterval(re.tid);
+      re.tid = 0;
+    }
+  };
+};
+
+// $price 物价管理(两 IIFE 收口一处, 基准 = ISEKAI 4.2.0; 铁律1e 应抽尽抽)。上游 4.2.0 本就按
+// 「单一实现 + IS_ISEKAI 运行时分发」设计(init 内过滤 groups/filters), 主世界副本是旧 4.0.0 残留。
+// 收口时统一的漂移: ① get_items(4.0.0)→items(4.2.0 命名); ② 双向汉化漂移取并集(isekai 已翻按钮
+// 要价/卖价/编辑所有材料 + 主世界已翻 alert 错误提示); ③ parse_market 取 slice(1) 写法;
+// ④ get_market 取 4.2.0 alt 回退(bid 缺则取 ask); ⑤ 主世界获得 value()(原 isekai 独有, 无消费冲突)。
+// 物价数据走 ctx.config.get('prices') 默认命名空间(hvut_/hvuti_ 各服一份) —— 两服市场独立, 数据分服、逻辑统一。
+const bindPrice = function (price, ctx) {
+  price.json = null;
+  price.market = null;
+  price.filters = { co: null, ma: null, tr: null, ar: null, fi: null, mo: null };
+  price.groups = {
+    'Consumables': [
+      'Health Draught', 'Health Potion', 'Health Elixir', 'Mana Draught', 'Mana Potion', 'Mana Elixir', 'Spirit Draught', 'Spirit Potion', 'Spirit Elixir', 'Last Elixir', 'Energy Drink', 'Caffeinated Candy',
+      'Infusion of Flames', 'Infusion of Frost', 'Infusion of Lightning', 'Infusion of Storms', 'Infusion of Divinity', 'Infusion of Darkness', 'Scroll of Swiftness', 'Scroll of Protection', 'Scroll of the Avatar', 'Scroll of Absorption', 'Scroll of Shadows', 'Scroll of Life', 'Scroll of the Gods',
+      'Flower Vase', 'Bubble-Gum',
+    ],
+    'Materials': [
+      'Low-Grade Cloth', 'Mid-Grade Cloth', 'High-Grade Cloth', 'Low-Grade Leather', 'Mid-Grade Leather', 'High-Grade Leather', 'Low-Grade Metals', 'Mid-Grade Metals', 'High-Grade Metals', 'Low-Grade Wood', 'Mid-Grade Wood', 'High-Grade Wood',
+      'Scrap Cloth', 'Scrap Leather', 'Scrap Metal', 'Scrap Wood', 'Energy Cell',
+      'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator',
+      'Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl',
+      'Peerless Weapon Core', 'Legendary Weapon Core', 'Peerless Staff Core', 'Legendary Staff Core', 'Peerless Armor Core', 'Legendary Armor Core',
+      'Voidseeker Shard', 'Aether Shard', 'Featherweight Shard', 'Amnesia Shard',
+    ],
+    'Trophies': ['ManBearPig Tail', 'Holy Hand Grenade of Antioch', "Mithra's Flower", 'Dalek Voicebox', 'Lock of Blue Hair', 'Bunny-Girl Costume', 'Hinamatsuri Doll', 'Broken Glasses', 'Black T-Shirt', 'Sapling', 'Unicorn Horn', 'Noodly Appendage'],
+    'Crystals': ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'],
+    'Figures': ['Twilight Sparkle Figurine', 'Rainbow Dash Figurine', 'Applejack Figurine', 'Fluttershy Figurine', 'Pinkie Pie Figurine', 'Rarity Figurine', 'Trixie Figurine', 'Princess Celestia Figurine', 'Princess Luna Figurine', 'Apple Bloom Figurine', 'Scootaloo Figurine', 'Sweetie Belle Figurine', 'Big Macintosh Figurine', 'Spitfire Figurine', 'Derpy Hooves Figurine', 'Lyra Heartstrings Figurine', 'Octavia Figurine', 'Zecora Figurine', 'Cheerilee Figurine', 'Vinyl Scratch Figurine', 'Daring Do Figurine', 'Doctor Whooves Figurine', 'Berry Punch Figurine', 'Bon-Bon Figurine', 'Fluffle Puff Figurine', 'Angel Bunny Figurine', 'Gummy Figurine'],
+  };
+  price.default = {
+    'Peerless Weapon Core': 500000,
+    'Peerless Staff Core': 500000,
+    'Peerless Armor Core': 500000,
+  };
+
+  price.init = function () {
+    if (price.json) {
+      return;
+    }
+    if (IS_ISEKAI) {
+      price.groups['Consumables'] = price.groups['Consumables'].filter((n) => !'Last Elixir|Energy Drink|Caffeinated Candy'.includes(n));
+      price.groups['Materials'] = price.groups['Materials'].filter((n) => !n.startsWith('Binding of'));
+      delete price.groups['Crystals'];
+      delete price.groups['Figures'];
+      delete price.filters['ar'];
+      delete price.filters['fi'];
+      delete price.filters['mo'];
+    }
+    price.json = ctx.config.get('prices');
+    if (!price.json) {
+      price.reset();
+    }
+  };
+  price.reset = function () {
+    const json = {};
+    Object.values(price.groups).forEach((g) => {
+      g.forEach((n) => {
+        json[n] = 0;
+      });
+    });
+    Object.assign(json, price.default);
+    price.json = json;
+    ctx.config.set('prices', price.json);
+  };
+  price.items = function (i) {
+    let items;
+    if (!i) {
+      items = Object.keys(price.json);
+    } else if (typeof i === 'string') {
+      if (i in price.groups) {
+        items = price.groups[i];
+      } else if (i in price.filters) {
+        items = price.filters[i];
+      } else {
+        items = [];
+        console.log('Invalid items');
+      }
+    } else if (Array.isArray(i)) {
+      items = i;
+    } else {
+      items = [];
+      console.log('Invalid items');
+    }
+    return items;
+  };
+  price.get = function (i) {
+    price.init();
+    const prices = {};
+    const items = price.items(i);
+    items.forEach((n) => { prices[n] = price.json[n] || 0; });
+    return prices;
+  };
+  price.set = function (json, replace) {
+    price.init();
+    if (replace) {
+      price.json = json;
+    } else {
+      Object.assign(price.json, json);
+    }
+    ctx.config.set('prices', price.json);
+  };
+  price.edit = function (i, filter, callback) {
+    price.init();
+    const items = price.items(i);
+    const prices = price.get(items);
+    const all = !filter;
+
+    popup_text(ctx.config.obj2text(prices, ['\n', '@']), 300, 500, [
+      { text: '保存', click: save },
+      { text: '要价', click: (p) => { market(p, 'bid'); } },
+      { text: '卖价', click: (p) => { market(p, 'ask'); } },
+      { text: '编辑所有材料', click: edit_all },
+    ]);
+
+    function save(p) {
+      const { value: new_prices, error } = ctx.config.text2obj(p.textarea.value, ['\n', '@'], 'number');
+      if (error) { // error: invalid input
+        alert(`错误: 价格必须是数字\n\n${error}`);
+        return;
+      }
+      if (all && p.textarea.value.trim() === '') {
+        price.reset();
+      } else {
+        const replace = all;
+        price.set(new_prices, replace);
+      }
+      p.close();
+      if (JSON.stringify(prices) !== JSON.stringify(new_prices)) {
+        callback?.();
+      }
+    }
+    async function market(p, key) {
+      p.textarea.disabled = true;
+      const new_prices = await price.update_market(filter, key);
+      p.textarea.value = ctx.config.obj2text(new_prices, ['\n', '@']);
+      p.textarea.disabled = false;
+      save(p);
+    }
+    function edit_all(p) {
+      if (all) {
+        return;
+      }
+      p.close();
+      price.edit('', '', callback);
+    }
+  };
+  price.value = function (items) {
+    const prices = price.get();
+    let value = 0;
+    Object.entries(items).forEach(([name, count]) => {
+      const p = prices[name];
+      if (p) {
+        value += p * count;
+      }
+    });
+    return value;
+  };
+  price.parse_market = function (filter, doc = document) {
+    if (!price.market) {
+      price.market = {};
+    }
+    price.filters[filter] = [];
+    Array.from($qs('#market_itemlist table', doc).rows).slice(1).forEach((tr) => {
+      const name = tr.cells[0].textContent;
+      const itemid = /itemid=(\d+)/.exec(tr.getAttribute('onclick'))[1];
+      const stock = parseInt(tr.cells[1].textContent);
+      const bid = parseFloat(tr.cells[2].textContent.slice(0, -2)) || 0;
+      const ask = parseFloat(tr.cells[3].textContent.slice(0, -2)) || 0;
+      const market_stock = parseInt(tr.cells[4].textContent.slice(0, -2)) || 0;
+      if (!price.market[name]) {
+        price.market[name] = {};
+      }
+      Object.assign(price.market[name], { itemid, stock, bid, ask, market_stock });
+      price.filters[filter].push(name);
+    });
+  };
+  price.update_market = async function (filter, key, save) {
+    const all = !filter;
+    if (all && !price.market_all) {
+      const filters = Object.keys(price.filters);
+      const requests = filters.map((filter) => update(filter));
+      await Promise.all(requests);
+      price.market_all = true;
+    } else if (!all && !price.market) {
+      await update(filter);
+    }
+    const items = price.items(filter);
+    const prices = price.get(items);
+    const market_prices = price.get_market(items, key);
+    const new_prices = { ...prices, ...market_prices };
+    if (save) {
+      price.set(new_prices);
+    }
+    return new_prices;
+
+    async function update(filter) {
+      const html = await $ajax.fetch(`?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`);
+      const doc = $doc(html);
+      price.parse_market(filter, doc);
+    }
+  };
+  price.get_market = function (items, key, alt = true) {
+    const prices = {};
+    items.forEach((name) => {
+      if (!(name in price.market)) {
+        return;
+      }
+      let p = price.market[name][key];
+      if (!p && alt) {
+        const alt_key = (key === 'bid') ? 'ask' : (key === 'ask') ? 'bid' : '';
+        p = price.market[name][alt_key];
+      }
+      if (p) {
+        prices[name] = p;
+      }
+    });
+    return prices;
+  };
+  price.set_market = function (items, key) {
+    const prices = price.get_market(items, key);
+    price.set(prices);
+  };
+};
+
+// $battle 战斗装备面板·渲染/交互内核(两 IIFE 收口一处; 铁律1e 应抽尽抽)。
+// 边界 = 用户原话「仅数据分发处理和数据使用不同, 外观完全一致」(2026-06-10):
+//   收口(本内核): 布局 CSS 模板 / DOM 四节点构建 / hover-click 交互 / 三个渲染原语(库存网格·材料行·装备行)。
+//   留各 IIFE(数据层): isekai Bazaar repair 流(eqitems/itemdata/能量模型) vs 主世界 Forge 流
+//   (load/parse/repair/dynjs/附魔展示), 以及外层接线(outer 宽度规则/位置类/popup 偏移/token 主题值)。
+// ctx: config(IIFE-private $config) / dict(材料译名词典域 'item'|'material', 两版历史用域不同, 暂不强行归一防翻译回归)
+//      / divSel(面板根选择器 '#hvut-bt-div'|'.hvut-bt-div', 兼作 $element 简写标记) / inventory(库存 settings 取值)
+//      / reloadItems(购买后刷新编排, isekai load_items vs 主世界 load_inventory 分层差异经回调倒置)。
+// 布局 SSOT: 此模板是「主异世界外观完全一致」约束的唯一载体 —— 改布局只改这里, 两版同时生效(反退化锁, 铁律4)。
+const bindBattlePanel = function (battle, ctx) {
+  battle.node = {};
+  battle.equips = [];
+
+  battle.init_panel = function (parent) {
+    const sel = ctx.divSel;
+    GM_addStyle(/*css*/`
+      .hvut-bt-on ${sel} { visibility: visible; }
+      .hvut-bt-left ${sel} { left: 8px; }
+      .hvut-bt-right ${sel} { right: 8px; }
+
+      ${sel} { visibility: hidden; position: absolute !important; bottom: 8px; width: 598px !important; margin: 0 !important; font-size: 9pt; line-height: 20px; font-weight: normal; white-space: nowrap; }
+      ${sel} > ul { position: absolute; margin: 0; padding: 21px 0 0; border: 1px solid var(--color-border-default); list-style: none; display: flex; }
+      ${sel} > ul::before { content: attr(data-header); position: absolute; top: 0; width: 100%; border-bottom: 1px solid var(--color-border-default); background-color: var(--color-bg-h1); font-size: 10pt; font-weight: bold; }
+
+      .hvut-bt-equip { bottom: 0; left: 0; width: 392px; height: 293px; flex-flow: column; }
+      .hvut-bt-equip li { display: flex; flex-wrap: wrap; align-items: flex-start; height: 41px; border-bottom: 1px solid var(--color-border-default); }
+      .hvut-bt-equip li:last-child { border-bottom: 0; }
+      .hvut-bt-equip li > a { width: 100%; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px dotted var(--color-border-default); font-size: 10pt; font-weight: bold; text-decoration: none; }
+      .hvut-bt-equip li:hover > a { background-color: var(--color-bg-alpha); }
+      .hvut-bt-equip li > span:nth-child(2) { width: 100px; order: 1; border-left: 1px dotted var(--color-border-default); cursor: pointer; }
+      .hvut-bt-equip li > span:nth-child(2):hover { color: var(--color-font-light); background-color: var(--color-bg-alpha); }
+      .hvut-bt-equip li > span:nth-child(3) { flex: 1 100px; overflow: hidden; text-overflow: ellipsis; }
+
+      .hvut-bt-items { bottom: 320px; left: 0; width: 596px; min-height: 62px; flex-flow: row wrap; justify-content: start; }
+      .hvut-bt-items li { flex: 1 30%; border-width: 0 1px 1px 0; border-style: dotted; border-color: var(--color-border-default); overflow: hidden; text-overflow: ellipsis; }
+      .hvut-bt-items li:nth-child(3n) { border-right: 0; }
+      .hvut-bt-items li:nth-last-child(-n+3) { border-bottom: 0; }
+      .hvut-bt-items li[data-action] { cursor: pointer; }
+      .hvut-bt-items li:hover { color: var(--color-font-light); background-color: var(--color-bg-alpha); }
+
+      .hvut-bt-repair { bottom: 0; left: 398px; width: 198px; height: 293px; flex-flow: column; justify-content: center; gap: 1px; cursor: pointer; }
+      .hvut-bt-repair li { overflow: hidden; text-overflow: ellipsis; }
+      .hvut-bt-repair:hover { background-color: var(--color-bg-alpha); }
+    `);
+
+    battle.node.div = $element('div', parent, [sel], (e) => { battle.click(e); });
+    battle.node.equip = $element('ul', battle.node.div, ['.hvut-bt-equip', { dataset: { header: '装备' } }], { mouseover: (e) => { battle.hover(e); }, mouseleave: () => { battle.hover_repair(); } });
+    battle.node.items = $element('ul', battle.node.div, ['.hvut-bt-items', { dataset: { header: '补给品库存' } }]);
+    battle.node.repairall = $element('ul', battle.node.div, ['.hvut-bt-repair', { dataset: { header: '修理全部', action: 'repairall' } }]);
+  };
+  battle.get = function (eid) {
+    return battle.equips.find((eq) => eq.info.eid == eid);
+  };
+  battle.click = function (e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) {
+      return;
+    }
+    const { action, eid, item, count } = target.dataset;
+    if (action === 'repair') {
+      battle.repair(eid);
+    } else if (action === 'repairall') {
+      battle.repair('all');
+    } else if (action === 'buy') {
+      battle.buy_items(item, count);
+    }
+  };
+  battle.hover = function (e) {
+    const target = e.target.closest('[data-action="hover"]');
+    if (!target) {
+      battle.hover_repair();
+      return;
+    }
+    const { eid } = target.dataset;
+    battle.hover_repair(eid);
+  };
+  battle.hover_repair = function (eid) {
+    const prev = battle.current;
+    const current = eid && battle.get(eid);
+    if (prev === current) {
+      return;
+    }
+    if (prev) {
+      battle.current = null;
+      prev.node.repair.remove();
+    }
+    if (current) {
+      battle.current = current;
+      battle.node.div.appendChild(current.node.repair);
+      battle.node.repairall.classList.add('hvut-none');
+    } else {
+      battle.node.repairall.classList.remove('hvut-none');
+    }
+  };
+  battle.buy_items = async function (name, count) {
+    if (!confirm(`确定要购买 ${count} x ${hvaaT(name, 'item')} 吗?`)) {
+      return;
+    }
+    const items = [{ name, count }];
+    await $item.buy(items);
+    ctx.reloadItems();
+  };
+  // 库存网格: 行高自适应 + 三列 dummy 补位(不足 9 格补满, 超出补齐行尾) + render_supply_li 循环
+  battle.render_supply_grid = function () {
+    battle.node.items.innerHTML = '';
+    if (!$item.list) {
+      return;
+    }
+    const inventory = ctx.inventory();
+    const items_rows = Math.max(Math.ceil(Object.keys(inventory).length / 3), 3);
+    battle.node.items.style.height = (items_rows * 21 - 1) + 'px';
+    const items = Object.entries(inventory);
+    let dummy;
+    if (items.length < 9) {
+      dummy = 9 - items.length;
+    } else {
+      dummy = 3 - (items.length % 3 || 3);
+    }
+    while (dummy-- > 0) {
+      items.push(['#']);
+    }
+    items.forEach(([name, count]) => {
+      if (name.startsWith('#')) {
+        $element('li', battle.node.items);
+        return;
+      }
+      render_supply_li(battle.node.items, name, count);
+    });
+  };
+  // 修理材料需求行: 「数量 x 材料名 (库存)」+ 缺料 .hvut-warn(两版数据形态不同, 调用方先解包到统一参数)
+  battle.render_requirement_li = function (parent, name, count, stock) {
+    const li = $element('li', parent, `${count} x ${hvaaT(name, ctx.dict)} (${stock})`);
+    if (stock < count) {
+      li.classList.add('hvut-warn');
+    }
+    return li;
+  };
+  // 装备行: 名字 a(hvaaBind 即时重渲染译名) + 耐久列(点击修理) + 提示槽 + hover 才挂载的游离材料面板。
+  // 空槽返回 null; 耐久占位/cat 计算/数据加载等数据层差异由调用方 create 编排。
+  battle.create_equip_li = function (info) {
+    if (!info.eid) {
+      $element('li', battle.node.equip, [`/<a>${info.slot} - 空</a><span></span><span></span>`]);
+      return null;
+    }
+    const eq = { info, data: {}, node: {} };
+    eq.node.li = $element('li', battle.node.equip, { dataset: { action: 'hover', eid: eq.info.eid } });
+    eq.node.name = hvaaBind($element('a', eq.node.li, { href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' }), function (n) { set_equip_name(n, eq); }); // hvaaBind: lang 切换即时重渲染装备译名(自渲染组件复用声明式绑定, 与菜单同机制)
+    eq.node.condition = $element('span', eq.node.li, { dataset: { action: 'repair', eid: eq.info.eid } });
+    eq.node.link = $element('span', eq.node.li);
+    eq.node.repair = $element('ul', null, ['.hvut-bt-repair', { dataset: { header: '修理装备' } }]); // 此材料面板 hover 才挂载，不加 action（加了反与 repairall 同位置→误触修全部）
+    battle.equips.push(eq);
+    return eq;
   };
 };
 
@@ -1496,202 +2081,8 @@ $config.init();
 window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error || e); });
 
 // RANDOM ENCOUNTER
-const $re = {
-  init: function () {
-    if ($re.inited) {
-      return;
-    }
-    $re.inited = true;
-    $re.type = (!location.hostname.includes('hentaiverse.org') || IS_ISEKAI) ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
-    $re.get();
-  },
-  clock: function (button) {
-    $re.init();
-    $re.button = button;
-    $re.button.addEventListener('click', (e) => { $re.run(e.ctrlKey || e.shiftKey); });
-    const date = new Date($re.json.date);
-    const now = new Date();
-    if (date.getUTCDate() !== now.getUTCDate() || date.getUTCMonth() !== now.getUTCMonth() || date.getUTCFullYear() !== now.getUTCFullYear()) {
-      $re.reset();
-      $re.load();
-    }
-    $re.start();
-  },
-  hv: function () {
-    $re.init();
-    $re.check();
-    const button = $element('div', _top.node.div, ['!width: 80px; cursor: pointer;']);
-    $re.clock(button);
-  },
-  ba: function () {
-    if (!$config.settings.reBattle) {
-      return;
-    }
-    $re.init();
-    if ($id('textlog').tBodies[0].lastElementChild.textContent === 'Initializing random encounter ...') {
-      $re.check();
-    }
-    const button = $element('div', $id('csp'), ['RE', '!position: absolute; top: 10px; left: 600px; cursor: pointer; font-size: 10pt; font-weight: bold;']);
-    $re.clock(button);
-
-    // support monsterbation that clears all timer id when a round starts
-    const target = document.body;
-    const options = { childList: true };
-    const callback = function () {
-      if (!button.parentNode.parentNode && $id('csp')) {
-        $id('csp').appendChild(button);
-      }
-      $re.start();
-    };
-    const observer = new MutationObserver(callback);
-    observer.observe(target, options);
-  },
-  eh: function () {
-    $re.init();
-    const link = $qs('#eventpane a');
-    const onclick = link?.getAttribute('onclick');
-    const key = onclick?.match(/\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/)?.[1];
-    if (key) {
-      $re.set(key);
-      if ($config.settings.reGalleryAlt) {
-        link.setAttribute('onclick', onclick.replace('https://hentaiverse.org/', 'http://alt.hentaiverse.org/'));
-      }
-    }
-    if ($config.settings.reGallery && $id('nb')) {
-      $id('nb').style.maxWidth = '1080px';
-      const button = $element('a', $element('div', $id('nb')), ['!display: inline-block; width: 70px; text-align: left; cursor: pointer;']);
-      $re.clock(button);
-    }
-  },
-  get: function () {
-    $re.json = $config.get('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
-  },
-  set: function (key) {
-    if (key) {
-      $re.json.key = key;
-      $re.json.date = Date.now();
-      $re.json.count++;
-      $re.json.clear = false;
-    }
-    $config.set('re', $re.json, 'hvut_');
-  },
-  reset: function () {
-    $re.json.date = Date.now();
-    $re.json.count = 0;
-    $re.json.clear = true;
-    $re.set();
-    $re.start();
-  },
-  check: function () {
-    const key = /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(location.search)?.[1];
-    if (key) {
-      const now = Date.now();
-      if ($re.json.key === key) {
-        if (!$re.json.clear) {
-          $re.json.clear = true;
-          $re.set();
-        }
-      } else if ($re.json.date + 1800000 < now) {
-        $re.json.date = now;
-        $re.json.key = key;
-        $re.json.count++;
-        $re.json.clear = true;
-        $re.set();
-      }
-    }
-  },
-  refresh: function () {
-    const remain = $re.json.date + 1800000 - Date.now();
-    if (remain > 0) {
-      $re.button.textContent = time_format(remain, 2) + ` [${$re.json.count}]`;
-      $re.beep = true;
-    } else {
-      $re.button.textContent = (!$re.json.clear ? 'Expired' : '遭遇战') + ` [${$re.json.count}]`;
-      if ($re.beep) {
-        $re.beep = false;
-        play_beep(...$config.settings.reBeep);
-      }
-      $re.stop();
-    }
-  },
-  run: async function (engage) {
-    if ($re.type === 'ba') {
-      $re.load();
-    } else if ($re.type === 'hv') {
-      if (!$re.json.clear || engage) {
-        $re.engage();
-      } else {
-        $re.load(true);
-      }
-    } else if ($re.type === 'eh') {
-      $re.stop();
-      $re.button.textContent = '检查中...';
-      const html = await $ajax.fetch('https://hentaiverse.org/');
-      if (html.includes('<div id="navbar">')) {
-        if (!$re.json.clear || engage) {
-          $re.engage();
-        } else {
-          $re.load(true);
-        }
-      } else {
-        $re.load();
-      }
-    }
-  },
-  load: async function (engage) {
-    $re.stop();
-    $re.get();
-    $re.button.textContent = '加载中...';
-    const html = await $ajax.fetch('https://e-hentai.org/news.php');
-    const doc = $doc(html);
-    const eventpane = $id('eventpane', doc)?.innerHTML;
-    const key = eventpane?.match(/\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/)?.[1];
-    if (key) {
-      $re.set(key);
-      if (engage) {
-        $re.engage();
-        return;
-      }
-    } else if (eventpane?.includes('It is the dawn of a new day')) {
-      popup(eventpane);
-      $re.reset();
-    } else {
-      popup('<p style="color: #f00; font-weight: bold;">你的装备仓库快要满了.<br>\n该去整理一下了.</p>');
-    }
-    $re.start();
-  },
-  engage: function () {
-    if (!$re.json.key) {
-      return;
-    }
-    const href = `?s=Battle&ss=ba&encounter=${$re.json.key}`;
-    if ($re.type === 'ba') {
-      return;
-    } else if ($re.type === 'hv') {
-      location.href = href;
-    } else if ($re.type === 'eh') {
-      window.open(($config.settings.reGalleryAlt ? 'http://alt.hentaiverse.org/' : 'https://hentaiverse.org/') + href, '_blank');
-      $re.json.clear = true;
-      $re.start();
-    }
-  },
-  start: function () {
-    $re.stop();
-    if (!$re.json.clear) {
-      $re.button.classList.add('hvut-warn');
-    } else {
-      $re.button.classList.remove('hvut-warn');
-    }
-    $re.tid = setInterval($re.refresh, 1000);
-    $re.refresh();
-  },
-  stop: function () {
-    if ($re.tid) {
-      clearInterval($re.tid);
-      $re.tid = 0;
-    }
-  },
-};
+const $re = {};
+bindRe($re, { config: $config, get top() { return _top; } }); // 收口共享内核(L1 bindRe), GM 命名空间经 ctx.config 注入
 
 /* NO-NAVBAR */
 if (!$id('navbar')) {
@@ -2302,235 +2693,19 @@ const $equip = {
 // $item 已提公共区（L2）
 
 // ITEM PRICE
-const $price = {
-  json: null,
-  market: null,
-  filters: { co: null, ma: null, tr: null, ar: null, fi: null, mo: null },
-  groups: {
-    'Consumables': [
-      'Health Draught', 'Health Potion', 'Health Elixir', 'Mana Draught', 'Mana Potion', 'Mana Elixir', 'Spirit Draught', 'Spirit Potion', 'Spirit Elixir', 'Last Elixir', 'Energy Drink', 'Caffeinated Candy',
-      'Infusion of Flames', 'Infusion of Frost', 'Infusion of Lightning', 'Infusion of Storms', 'Infusion of Divinity', 'Infusion of Darkness', 'Scroll of Swiftness', 'Scroll of Protection', 'Scroll of the Avatar', 'Scroll of Absorption', 'Scroll of Shadows', 'Scroll of Life', 'Scroll of the Gods',
-      'Flower Vase', 'Bubble-Gum',
-    ],
-    'Materials': [
-      'Low-Grade Cloth', 'Mid-Grade Cloth', 'High-Grade Cloth', 'Low-Grade Leather', 'Mid-Grade Leather', 'High-Grade Leather', 'Low-Grade Metals', 'Mid-Grade Metals', 'High-Grade Metals', 'Low-Grade Wood', 'Mid-Grade Wood', 'High-Grade Wood',
-      'Scrap Cloth', 'Scrap Leather', 'Scrap Metal', 'Scrap Wood', 'Energy Cell',
-      'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator',
-      'Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl',
-      'Peerless Weapon Core', 'Legendary Weapon Core', 'Peerless Staff Core', 'Legendary Staff Core', 'Peerless Armor Core', 'Legendary Armor Core',
-      'Voidseeker Shard', 'Aether Shard', 'Featherweight Shard', 'Amnesia Shard',
-    ],
-    'Trophies': ['ManBearPig Tail', 'Holy Hand Grenade of Antioch', "Mithra's Flower", 'Dalek Voicebox', 'Lock of Blue Hair', 'Bunny-Girl Costume', 'Hinamatsuri Doll', 'Broken Glasses', 'Black T-Shirt', 'Sapling', 'Unicorn Horn', 'Noodly Appendage'],
-    'Crystals': ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'],
-    'Figures': ['Twilight Sparkle Figurine', 'Rainbow Dash Figurine', 'Applejack Figurine', 'Fluttershy Figurine', 'Pinkie Pie Figurine', 'Rarity Figurine', 'Trixie Figurine', 'Princess Celestia Figurine', 'Princess Luna Figurine', 'Apple Bloom Figurine', 'Scootaloo Figurine', 'Sweetie Belle Figurine', 'Big Macintosh Figurine', 'Spitfire Figurine', 'Derpy Hooves Figurine', 'Lyra Heartstrings Figurine', 'Octavia Figurine', 'Zecora Figurine', 'Cheerilee Figurine', 'Vinyl Scratch Figurine', 'Daring Do Figurine', 'Doctor Whooves Figurine', 'Berry Punch Figurine', 'Bon-Bon Figurine', 'Fluffle Puff Figurine', 'Angel Bunny Figurine', 'Gummy Figurine'],
-  },
-  default: {
-    'Peerless Weapon Core': 500000,
-    'Peerless Staff Core': 500000,
-    'Peerless Armor Core': 500000,
-  },
-
-  init: function () {
-    if ($price.json) {
-      return;
-    }
-    if (IS_ISEKAI) {
-      $price.groups['Consumables'] = $price.groups['Consumables'].filter((n) => !'Last Elixir|Energy Drink|Caffeinated Candy'.includes(n));
-      $price.groups['Materials'] = $price.groups['Materials'].filter((n) => !n.startsWith('Binding of'));
-      delete $price.groups['Crystals'];
-      delete $price.groups['Figures'];
-      delete $price.filters['ar'];
-      delete $price.filters['fi'];
-      delete $price.filters['mo'];
-    }
-    $price.json = $config.get('prices');
-    if (!$price.json) {
-      $price.reset();
-    }
-  },
-  reset: function () {
-    const json = {};
-    Object.values($price.groups).forEach((g) => {
-      g.forEach((n) => {
-        json[n] = 0;
-      });
-    });
-    Object.assign(json, $price.default);
-    $price.json = json;
-    $config.set('prices', $price.json);
-    //$price.set(json, true);
-  },
-  items: function (i) {
-    let items;
-    if (!i) {
-      items = Object.keys($price.json);
-    } else if (typeof i === 'string') {
-      if (i in $price.groups) {
-        items = $price.groups[i];
-      } else if (i in $price.filters) {
-        items = $price.filters[i];
-      } else {
-        items = [];
-        console.log('Invalid items');
-      }
-    } else if (Array.isArray(i)) {
-      items = i;
-    } else {
-      items = [];
-      console.log('Invalid items');
-    }
-    return items;
-  },
-  get: function (i) {
-    $price.init();
-    const prices = {};
-    const items = $price.items(i);
-    items.forEach((n) => { prices[n] = $price.json[n] || 0; });
-    return prices;
-  },
-  set: function (json, replace) {
-    $price.init();
-    if (replace) {
-      $price.json = json;
-    } else {
-      Object.assign($price.json, json);
-    }
-    $config.set('prices', $price.json);
-  },
-  edit: function (i, filter, callback) {
-    $price.init();
-    const items = $price.items(i);
-    const prices = $price.get(items);
-    const all = !filter;
-
-    popup_text($config.obj2text(prices, ['\n', '@']), 300, 500, [
-      { text: '保存', click: save },
-      { text: '要价', click: (p) => { market(p, 'bid'); } },
-      { text: '卖价', click: (p) => { market(p, 'ask'); } },
-      { text: '编辑所有材料', click: edit_all },
-    ]);
-
-    function save(p) {
-      const { value: new_prices, error } = $config.text2obj(p.textarea.value, ['\n', '@'], 'number');
-      if (error) { // error: invalid input
-        alert(`Error: price must be a number\n\n${error}`);
-        return;
-      }
-      if (all && p.textarea.value.trim() === '') {
-        $price.reset();
-      } else {
-        const replace = all;
-        $price.set(new_prices, replace);
-      }
-      p.close();
-      if (JSON.stringify(prices) !== JSON.stringify(new_prices)) {
-        callback?.();
-      }
-    }
-    async function market(p, key) {
-      p.textarea.disabled = true;
-      const new_prices = await $price.update_market(filter, key);
-      p.textarea.value = $config.obj2text(new_prices, ['\n', '@']);
-      p.textarea.disabled = false;
-      save(p);
-    }
-    function edit_all(p) {
-      if (all) {
-        return;
-      }
-      p.close();
-      $price.edit('', '', callback);
-    }
-  },
-  value: function (items) {
-    const prices = $price.get();
-    let value = 0;
-    Object.entries(items).forEach(([name, count]) => {
-      const price = prices[name];
-      if (price) {
-        value += price * count;
-      }
-    });
-    return value;
-  },
-  parse_market: function (filter, doc = document) {
-    if (!$price.market) {
-      $price.market = {};
-    }
-    $price.filters[filter] = [];
-    Array.from($qs('#market_itemlist table', doc).rows).slice(1).forEach((tr) => {
-      const name = tr.cells[0].textContent;
-      const itemid = /itemid=(\d+)/.exec(tr.getAttribute('onclick'))[1];
-      const stock = parseInt(tr.cells[1].textContent);
-      const bid = parseFloat(tr.cells[2].textContent.slice(0, -2)) || 0;
-      const ask = parseFloat(tr.cells[3].textContent.slice(0, -2)) || 0;
-      const market_stock = parseInt(tr.cells[4].textContent.slice(0, -2)) || 0;
-      if (!$price.market[name]) {
-        $price.market[name] = {};
-      }
-      Object.assign($price.market[name], { itemid, stock, bid, ask, market_stock });
-      $price.filters[filter].push(name);
-    });
-  },
-  update_market: async function (filter, key, save) {
-    const all = !filter;
-    if (all && !$price.market_all) {
-      const filters = Object.keys($price.filters);
-      const requests = filters.map((filter) => update(filter));
-      await Promise.all(requests);
-      $price.market_all = true;
-    } else if (!all && !$price.market) {
-      await update(filter);
-    }
-    const items = $price.items(filter);
-    const prices = $price.get(items);
-    const market_prices = $price.get_market(items, key);
-    const new_prices = { ...prices, ...market_prices };
-    if (save) {
-      $price.set(new_prices);
-    }
-    return new_prices;
-
-    async function update(filter) {
-      const html = await $ajax.fetch(`?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`);
-      const doc = $doc(html);
-      $price.parse_market(filter, doc);
-    }
-  },
-  get_market: function (items, key, alt = true) {
-    const prices = {};
-    items.forEach((name) => {
-      if (!(name in $price.market)) {
-        return;
-      }
-      let price = $price.market[name][key];
-      if (!price && alt) {
-        const alt_key = (key === 'bid') ? 'ask' : (key === 'ask') ? 'bid' : '';
-        price = $price.market[name][alt_key];
-      }
-      if (price) {
-        prices[name] = price;
-      }
-    });
-    return prices;
-  },
-  set_market: function (items, key) {
-    const prices = $price.get_market(items, key);
-    $price.set(prices);
-  },
-};
+const $price = {};
+bindPrice($price, { config: $config }); // 收口共享内核(L1 bindPrice), 物价数据分服(默认命名空间)、逻辑统一
 
 // MoogleMail
 // $mail 已提公共区（L2）
 
 // Battle Panel
 const $battle = {
-  node: {},
-  equips: [],
   eqitems: {},
   itemdata: {},
 
   init: function (outer) {
+    // 渲染/交互内核已收口 bindBattlePanel(L1); 此处只留 isekai 外层接线(outer 自身持 on 类的宽度规则)。
     GM_addStyle(/*css*/`
       #mainpane { padding-right: 8px; }
       .hvut-bt-outer { width: 1220px !important; }
@@ -2538,40 +2713,10 @@ const $battle = {
       .hvut-bt-on.hvut-bt-outer { width: 620px !important; }
       .hvut-bt-on.hvut-bt-left { margin-left: 600px !important; }
       .hvut-bt-on.hvut-bt-right { margin-right: 600px !important; }
-      .hvut-bt-on #hvut-bt-div { visibility: visible; }
-      .hvut-bt-left #hvut-bt-div { left: 8px; }
-      .hvut-bt-right #hvut-bt-div { right: 8px; }
-
-      #hvut-bt-div { visibility: hidden; position: absolute !important; bottom: 8px; width: 598px !important; margin: 0 !important; font-size: 9pt; line-height: 20px; font-weight: normal; white-space: nowrap; }
-      #hvut-bt-div > ul { position: absolute; margin: 0; padding: 21px 0 0; border: 1px solid var(--color-border-default); list-style: none; display: flex; }
-      #hvut-bt-div > ul::before { content: attr(data-header); position: absolute; top: 0; width: 100%; border-bottom: 1px solid var(--color-border-default); background-color: var(--color-bg-h1); font-size: 10pt; font-weight: bold; }
-
-      .hvut-bt-equip { bottom: 0; left: 0; width: 392px; height: 293px; flex-flow: column; }
-      .hvut-bt-equip li { display: flex; flex-wrap: wrap; align-items: flex-start; height: 41px; border-bottom: 1px solid var(--color-border-default); }
-      .hvut-bt-equip li:last-child { border-bottom: 0; }
-      .hvut-bt-equip li > a { width: 100%; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px dotted var(--color-border-default); font-size: 10pt; font-weight: bold; text-decoration: none; }
-      .hvut-bt-equip li:hover > a { background-color: var(--color-bg-alpha); }
-      .hvut-bt-equip li > span:nth-child(2) { width: 100px; order: 1; border-left: 1px dotted var(--color-border-default); cursor: pointer; }
-      .hvut-bt-equip li > span:nth-child(2):hover { color: var(--color-font-light); background-color: var(--color-bg-alpha); }
-      .hvut-bt-equip li > span:nth-child(3) { flex: 1 100px; overflow: hidden; text-overflow: ellipsis; }
-
-      .hvut-bt-items { bottom: 320px; left: 0; width: 596px; min-height: 62px; flex-flow: row wrap; justify-content: start; }
-      .hvut-bt-items li { flex: 1 30%; border-width: 0 1px 1px 0; border-style: dotted; border-color: var(--color-border-default); overflow: hidden; text-overflow:ellipsis; }
-      .hvut-bt-items li:nth-child(3n) { border-right: 0; }
-      .hvut-bt-items li:nth-last-child(-n+3) { border-bottom: 0; }
-      .hvut-bt-items li[data-action] { cursor: pointer; }
-      .hvut-bt-items li:hover { color: var(--color-font-light); background-color: var(--color-bg-alpha); }
-
-      .hvut-bt-repair { bottom: 0; left: 398px; width: 198px; height: 293px; flex-flow: column; justify-content: center; gap: 1px; cursor: pointer; }
-      .hvut-bt-repair li { overflow: hidden; text-overflow:ellipsis; }
-      .hvut-bt-repair:hover { background-color: var(--color-bg-alpha); }
     `);
 
     $battle.node.outer = outer || $id('mainpane');
-    $battle.node.div = $element('div', $battle.node.outer, ['#hvut-bt-div'], (e) => { $battle.click(e); });
-    $battle.node.equip = $element('ul', $battle.node.div, ['.hvut-bt-equip', { dataset: { header: '装备' } }], { mouseover: (e) => { $battle.hover(e); }, mouseleave: () => { $battle.hover_repair(); } });
-    $battle.node.items = $element('ul', $battle.node.div, ['.hvut-bt-items', { dataset: { header: '补给品库存' } }]);
-    $battle.node.repairall = $element('ul', $battle.node.div, ['.hvut-bt-repair', { dataset: { header: '修理全部', action: 'repairall' } }]);
+    $battle.init_panel($battle.node.outer);
 
     $battle.node.outer.classList.add('hvut-bt-outer', 'hvut-bt-on');
     if ($config.settings.equipPanelPosition === 'right') {
@@ -2583,8 +2728,6 @@ const $battle = {
     $battle.create();
   },
   create: function () {
-    const items_rows = Math.max(Math.ceil(Object.keys($config.settings.equipPanelItemInventory).length / 3), 3);
-    $battle.node.items.style.height = (items_rows * 21 - 1) + 'px';
     $battle.load_items();
     $battle.equips.length = 0;
     $battle.node.equip.innerHTML = '';
@@ -2594,48 +2737,10 @@ const $battle = {
       return;
     }
     equipset.forEach((info) => {
-      if (!info.eid) {
-        $element('li', $battle.node.equip, [`/<a>${info.slot} - Empty</a><span></span><span></span>`]);
-        return;
-      }
-
-      const eq = { info, data: {}, node: {} };
-      eq.node.li = $element('li', $battle.node.equip, { dataset: { action: 'hover', eid: eq.info.eid } });
-      eq.node.name = hvaaBind($element('a', eq.node.li, { href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' }), function (n) { set_equip_name(n, eq); }); // hvaaBind: lang 切换即时重渲染装备译名(自渲染组件复用声明式绑定, 与菜单同机制)
-      eq.node.condition = $element('span', eq.node.li, { dataset: { action: 'repair', eid: eq.info.eid } });
-      eq.node.link = $element('span', eq.node.li);
-      eq.node.repair = $element('ul', null, ['.hvut-bt-repair', { dataset: { header: '修理装备' } }]);
-
-      $battle.equips.push(eq);
+      $battle.create_equip_li(info);
     });
 
     $battle.load_repair();
-  },
-  click: function (e) {
-    const target = e.target.closest('[data-action]');
-    if (!target) {
-      return;
-    }
-    const { action, eid, item, count } = target.dataset;
-    if (action === 'repair') {
-      $battle.repair(eid);
-    } else if (action === 'repairall') {
-      $battle.repair('all');
-    } else if (action === 'buy') {
-      $battle.buy_items(item, count);
-    }
-  },
-  hover: function (e) {
-    const target = e.target.closest('[data-action="hover"]');
-    if (!target) {
-      $battle.hover_repair();
-      return;
-    }
-    const { eid } = target.dataset;
-    $battle.hover_repair(eid);
-  },
-  get: function (eid) {
-    return $battle.equips.find((eq) => eq.info.eid == eid);
   },
   load_dynjs: async function (doc) {
     const src = $qs('script[src*="/dynjs/"]', doc).src;
@@ -2762,10 +2867,7 @@ const $battle = {
             return;
           }
           const data = $battle.itemdata[id];
-          const li = $element('li', eq.node.repair, `${count} x ${hvaaT(data.n, 'item')} (${data.c})`);
-          if (data.c < count) {
-            li.classList.add('hvut-warn');
-          }
+          $battle.render_requirement_li(eq.node.repair, data.n, count, data.c);
         });
       }
       $battle.update_link(eq);
@@ -2779,10 +2881,7 @@ const $battle = {
           return;
         }
         const data = $battle.itemdata[id];
-        const li = $element('li', $battle.node.repairall, `${count} x ${hvaaT(data.n, 'item')} (${data.c})`);
-        if (data.c < count) {
-          li.classList.add('hvut-warn');
-        }
+        $battle.render_requirement_li($battle.node.repairall, data.n, count, data.c);
       });
     } else {
       $element('li', $battle.node.repairall, '你的装备无需修理');
@@ -2803,61 +2902,20 @@ const $battle = {
       //$element('span', eq.node.link, 'Needs repair');
     }
   },
-  hover_repair: function (eid) {
-    const prev = $battle.current;
-    const current = eid && $battle.get(eid);
-    if (prev === current) {
-      return;
-    }
-    if (prev) {
-      $battle.current = null;
-      prev.node.repair.remove();
-    }
-    if (current) {
-      $battle.current = current;
-      $battle.node.div.appendChild(current.node.repair);
-      $battle.node.repairall.classList.add('hvut-none');
-    } else {
-      $battle.node.repairall.classList.remove('hvut-none');
-    }
-  },
-  buy_items: async function (name, count) {
-    if (!confirm(`Would you like to buy ${count} x ${name}?`)) {
-      return;
-    }
-    const items = [{ name, count }];
-    await $item.buy(items);
-    $battle.load_items();
-  },
   load_items: async function () {
     $battle.node.items.innerHTML = '';
     await $item.load();
-
-    if (!$item.list) {
-      return;
-    }
-    $battle.node.items.innerHTML = '';
-    const items = Object.entries($config.settings.equipPanelItemInventory);
-    let dummy;
-    if (items.length < 9) {
-      dummy = 9 - items.length;
-    } else {
-      dummy = 3 - (items.length % 3 || 3);
-    }
-    while (dummy-- > 0) {
-      items.push(['#']);
-    }
-    items.forEach(([name, count]) => {
-      if (name.startsWith('#')) {
-        $element('li', $battle.node.items);
-        return;
-      }
-      render_supply_li($battle.node.items, name, count, 'hvut-warn');
-    });
-
+    $battle.render_supply_grid();
     $config.set('items', $item.count());
   },
 };
+bindBattlePanel($battle, { // 渲染/交互内核收口(L1); 数据层(Bazaar repair 流/能量模型)留本 IIFE
+  config: $config,
+  dict: 'item',
+  divSel: '#hvut-bt-div',
+  inventory: () => $config.settings.equipPanelItemInventory,
+  reloadItems: () => $battle.load_items(),
+});
 
 // BASIC CSS
 $id('csp').dataset.ss = _query.ss || 'ch';
@@ -9502,6 +9560,7 @@ const settings = {
 
   // [GENERAL]
   reNotification: true,
+  reBattle: true, // 战斗页 RE 通知细分开关(随 bindRe 收口从 isekai 4.2.0 引入; 缺省则 ba() 守卫恒 false 关停通知)
   reGallery: true,
   reGalleryAlt: false,
   reBeep: [0.2, 500, 0.5], // [volume, frequency, duration]
@@ -9626,8 +9685,6 @@ const settings = {
 
   // [BATTLE]
   equipEnchantPosition: 'left',
-  equipEnchantWeapon: 4,
-  equipEnchantArmor: 3,
   equipEnchantRepairThreshold: 55,
   equipEnchantItemInventory: {
     'Health Draught': 200,
@@ -9640,7 +9697,7 @@ const settings = {
     'Mana Elixir': 10,
     'Spirit Elixir': 10,
   },
-  equipEnchantCheckArmors: false,
+  equipEnchantCheckArmors: true, // HVAA: 默认开启——否则主世界装备栏防具不加载状态（耐久/附魔显示"..."），与异世界不一致
 
 };
 
@@ -9679,6 +9736,7 @@ const $config = {
   data: [
     { tag: 'h1', text: 'Random Encounter' },
     { key: 'reNotification', type: 'boolean', label: '启用随机遭遇战通知。' },
+    { key: 'reBattle', type: 'boolean', label: '在战斗中启用随机遭遇战通知。' },
     { key: 'reGallery', type: 'boolean', label: '浏览画廊时也启用随机遭遇战通知。' },
     { key: 'reGalleryAlt', type: 'boolean', label: '从画廊打开随机遭遇战时，跳转到 alt.hentaiverse.org。' },
     { key: 'reBeep', type: 'array', input: 'text', value_type: 'number', value_sep: ',', text: '随机遭遇战就绪时播放蜂鸣声.\n参数顺序为 [音量], [频率], [时长].\n设为 0 可禁用.', style: 'width: 150px;', oncreate: (o) => { $input(['button', '蜂鸣测试'], [o.node.input, 'afterend'], null, () => { const validation = $config.validate(o); if (!validation.error) { play_beep(...validation.value); } }); } },
@@ -9730,11 +9788,9 @@ const $config = {
 
     { tag: 'h1', text: 'Battle' },
     { key: 'equipEnchantPosition', type: 'string', input: 'select', options: ['left', 'right'], label: '设置面板的位置。' },
-    { key: 'equipEnchantWeapon', type: 'number', label: '设置武器的附魔数量：每件耗时 15 分钟' },
-    { key: 'equipEnchantArmor', type: 'number', label: '设置防具的附魔数量：每件耗时 1 小时' },
     { key: 'equipEnchantRepairThreshold', type: 'number', label: '当某件装备耐久度过低时发出警告。' },
     { key: 'equipEnchantItemInventory', type: 'object', input: 'textarea', value_type: 'number', text: 'Show the amount of items in the inventory, and warn if each number is less than the specified value.\nYou can purchase that quantity from the Item Shop by clicking on the item name in the list.' },
-    { key: 'equipEnchantCheckArmors', type: 'boolean', label: '显示防具的附魔。防具加载其状态会多花一点时间。' },
+    { key: 'equipEnchantCheckArmors', type: 'boolean', label: '加载防具的状态（耐久与附魔）。会多花一点时间。' },
   ],
   text: {
     equipHoverFunctions: `
@@ -10243,201 +10299,8 @@ $config.init();
 window.addEventListener('unhandledrejection', (e) => { console.log($ajax.error || e); });
 
 // RANDOM ENCOUNTER
-const $re = {
-
-  init: function () {
-    if ($re.inited) {
-      return;
-    }
-    $re.inited = true;
-    $re.type = (!location.hostname.includes('hentaiverse.org') || IS_ISEKAI) ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
-    $re.get();
-  },
-  clock: function (button) {
-    $re.init();
-    $re.button = button;
-    $re.button.addEventListener('click', (e) => { $re.run(e.ctrlKey || e.shiftKey); });
-    const date = new Date($re.json.date);
-    const now = new Date();
-    if (date.getUTCDate() !== now.getUTCDate() || date.getUTCMonth() !== now.getUTCMonth() || date.getUTCFullYear() !== now.getUTCFullYear()) {
-      $re.reset();
-      $re.load();
-    }
-    $re.start();
-  },
-  hv: function () {
-    $re.init();
-    $re.check();
-    const button = $element('div', _top.node.div, ['!width: 80px; cursor: pointer;']);
-    $re.clock(button);
-  },
-  ba: function () {
-    $re.init();
-    if ($id('textlog').tBodies[0].lastElementChild.textContent === 'Initializing random encounter ...') {
-      $re.check();
-    }
-    const button = $element('div', $id('csp'), ['RE', '!position: absolute; top: 10px; left: 600px; cursor: pointer; font-size: 10pt; font-weight: bold;']);
-    $re.clock(button);
-
-    // support monsterbation that clears all timer id when a round starts
-    const target = document.body;
-    const options = { childList: true };
-    const callback = function () {
-      if (!button.parentNode.parentNode && $id('csp')) {
-        $id('csp').appendChild(button);
-      }
-      $re.start();
-    };
-    const observer = new MutationObserver(callback);
-    observer.observe(target, options);
-  },
-  eh: function () {
-    $re.init();
-    const link = $qs('#eventpane a');
-    const onclick = link?.getAttribute('onclick');
-    const key = onclick?.match(/\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/)?.[1];
-    if (key) {
-      $re.set(key);
-      if ($config.settings.reGalleryAlt) {
-        link.setAttribute('onclick', onclick.replace('https://hentaiverse.org/', 'http://alt.hentaiverse.org/'));
-      }
-    }
-    if ($config.settings.reGallery && $id('nb')) {
-      $id('nb').style.maxWidth = '1080px';
-      const button = $element('a', $element('div', $id('nb')), ['!display: inline-block; width: 70px; text-align: left; cursor: pointer;']);
-      $re.clock(button);
-    }
-  },
-  get: function () {
-    $re.json = $config.get('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
-  },
-  set: function (key) {
-    if (key) {
-      $re.json.key = key;
-      $re.json.date = Date.now();
-      $re.json.count++;
-      $re.json.clear = false;
-    }
-    $config.set('re', $re.json, 'hvut_');
-  },
-  reset: function () {
-    $re.json.date = Date.now();
-    $re.json.count = 0;
-    $re.json.clear = true;
-    $re.set();
-    $re.start();
-  },
-  check: function () {
-    const key = /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(location.search)?.[1];
-    if (key) {
-      const now = Date.now();
-      if ($re.json.key === key) {
-        if (!$re.json.clear) {
-          $re.json.clear = true;
-          $re.set();
-        }
-      } else if ($re.json.date + 1800000 < now) {
-        $re.json.date = now;
-        $re.json.key = key;
-        $re.json.count++;
-        $re.json.clear = true;
-        $re.set();
-      }
-    }
-  },
-  refresh: function () {
-    const remain = $re.json.date + 1800000 - Date.now();
-    if (remain > 0) {
-      $re.button.textContent = time_format(remain, 2) + ` [${$re.json.count}]`;
-      $re.beep = true;
-    } else {
-      $re.button.textContent = (!$re.json.clear ? '已错失' : '遭遇战') + ` [${$re.json.count}]`;
-      if ($re.beep) {
-        $re.beep = false;
-        play_beep(...$config.settings.reBeep);
-      }
-      $re.stop();
-    }
-  },
-  run: async function (engage) {
-    if ($re.type === 'ba') {
-      $re.load();
-    } else if ($re.type === 'hv') {
-      if (!$re.json.clear || engage) {
-        $re.engage();
-      } else {
-        $re.load(true);
-      }
-    } else if ($re.type === 'eh') {
-      $re.stop();
-      $re.button.textContent = '检查中...';
-      const html = await $ajax.fetch('https://hentaiverse.org/');
-      if (html.includes('<div id="navbar">')) {
-        if (!$re.json.clear || engage) {
-          $re.engage();
-        } else {
-          $re.load(true);
-        }
-      } else {
-        $re.load();
-      }
-    }
-  },
-  load: async function (engage) {
-    $re.stop();
-    $re.get();
-    $re.button.textContent = '加载中...';
-    const html = await $ajax.fetch('https://e-hentai.org/news.php');
-    const doc = $doc(html);
-    const eventpane = $id('eventpane', doc)?.innerHTML;
-    const key = eventpane?.match(/\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/)?.[1];
-    if (key) {
-      $re.set(key);
-      if (engage) {
-        $re.engage();
-        return;
-      }
-    } else if (eventpane?.includes('It is the dawn of a new day')) {
-      popup(eventpane);
-      $re.reset();
-    } else {
-      popup('生成新的随机遭遇战密钥失败');
-    }
-    $re.start();
-  },
-  engage: function () {
-    if (!$re.json.key) {
-      return;
-    }
-    const href = `?s=Battle&ss=ba&encounter=${$re.json.key}`;
-    if ($re.type === 'ba') {
-      return;
-    } else if ($re.type === 'hv') {
-      location.href = href;
-    } else if ($re.type === 'eh') {
-      window.open(($config.settings.reGalleryAlt ? 'http://alt.hentaiverse.org/' : 'https://hentaiverse.org/') + href, '_blank');
-      $re.json.clear = true;
-      $re.start();
-    }
-  },
-  start: function () {
-    $re.stop();
-    if (!$re.json.clear) {
-      $re.button.style.color = '#e00';
-    } else {
-      $re.button.style.color = '';
-    }
-    $re.tid = setInterval($re.refresh, 1000);
-    $re.refresh();
-  },
-  stop: function () {
-    if ($re.tid) {
-      clearInterval($re.tid);
-      $re.tid = 0;
-    }
-  },
-
-};
+const $re = {};
+bindRe($re, { config: $config, get top() { return _top; } }); // 收口共享内核(L1 bindRe), GM 命名空间经 ctx.config 注入
 
 /* NO-NAVBAR */
 if (!$id('navbar')) {
@@ -11395,303 +11258,20 @@ const $equip = {
 // $item 已提公共区（L2）
 
 // ITEM PRICE
-const $price = {
-
-  json: null,
-  market: null,
-  filters: { co: null, ma: null, tr: null, ar: null, fi: null, mo: null },
-  groups: {
-    'Consumables': [
-      'Health Draught', 'Health Potion', 'Health Elixir', 'Mana Draught', 'Mana Potion', 'Mana Elixir', 'Spirit Draught', 'Spirit Potion', 'Spirit Elixir', 'Last Elixir', 'Energy Drink', 'Caffeinated Candy',
-      'Infusion of Flames', 'Infusion of Frost', 'Infusion of Lightning', 'Infusion of Storms', 'Infusion of Divinity', 'Infusion of Darkness', 'Scroll of Swiftness', 'Scroll of Protection', 'Scroll of the Avatar', 'Scroll of Absorption', 'Scroll of Shadows', 'Scroll of Life', 'Scroll of the Gods',
-      'Flower Vase', 'Bubble-Gum',
-    ],
-    'Materials': [
-      'Low-Grade Cloth', 'Mid-Grade Cloth', 'High-Grade Cloth', 'Low-Grade Leather', 'Mid-Grade Leather', 'High-Grade Leather', 'Low-Grade Metals', 'Mid-Grade Metals', 'High-Grade Metals', 'Low-Grade Wood', 'Mid-Grade Wood', 'High-Grade Wood',
-      'Scrap Cloth', 'Scrap Leather', 'Scrap Metal', 'Scrap Wood', 'Energy Cell',
-      'Crystallized Phazon', 'Shade Fragment', 'Repurposed Actuator', 'Defense Matrix Modulator',
-      'Wispy Catalyst', 'Diluted Catalyst', 'Regular Catalyst', 'Robust Catalyst', 'Vibrant Catalyst', 'Coruscating Catalyst',
-      'Binding of Slaughter', 'Binding of Balance', 'Binding of Isaac', 'Binding of Destruction', 'Binding of Focus', 'Binding of Friendship', 'Binding of Protection', 'Binding of Warding', 'Binding of the Fleet', 'Binding of the Barrier', 'Binding of the Nimble', 'Binding of Negation', 'Binding of the Elementalist', 'Binding of the Heaven-sent', 'Binding of the Demon-fiend', 'Binding of the Curse-weaver', 'Binding of the Earth-walker', 'Binding of Surtr', 'Binding of Niflheim', 'Binding of Mjolnir', 'Binding of Freyr', 'Binding of Heimdall', 'Binding of Fenrir', 'Binding of Dampening', 'Binding of Stoneskin', 'Binding of Deflection', 'Binding of the Fire-eater', 'Binding of the Frost-born', 'Binding of the Thunder-child', 'Binding of the Wind-waker', 'Binding of the Thrice-blessed', 'Binding of the Spirit-ward', 'Binding of the Ox', 'Binding of the Raccoon', 'Binding of the Cheetah', 'Binding of the Turtle', 'Binding of the Fox', 'Binding of the Owl',
-      'Peerless Weapon Core', 'Legendary Weapon Core', 'Peerless Staff Core', 'Legendary Staff Core', 'Peerless Armor Core', 'Legendary Armor Core',
-      'Voidseeker Shard', 'Aether Shard', 'Featherweight Shard', 'Amnesia Shard',
-    ],
-    'Trophies': ['ManBearPig Tail', 'Holy Hand Grenade of Antioch', "Mithra's Flower", 'Dalek Voicebox', 'Lock of Blue Hair', 'Bunny-Girl Costume', 'Hinamatsuri Doll', 'Broken Glasses', 'Black T-Shirt', 'Sapling', 'Unicorn Horn', 'Noodly Appendage'],
-    'Crystals': ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'],
-    'Figures': ['Twilight Sparkle Figurine', 'Rainbow Dash Figurine', 'Applejack Figurine', 'Fluttershy Figurine', 'Pinkie Pie Figurine', 'Rarity Figurine', 'Trixie Figurine', 'Princess Celestia Figurine', 'Princess Luna Figurine', 'Apple Bloom Figurine', 'Scootaloo Figurine', 'Sweetie Belle Figurine', 'Big Macintosh Figurine', 'Spitfire Figurine', 'Derpy Hooves Figurine', 'Lyra Heartstrings Figurine', 'Octavia Figurine', 'Zecora Figurine', 'Cheerilee Figurine', 'Vinyl Scratch Figurine', 'Daring Do Figurine', 'Doctor Whooves Figurine', 'Berry Punch Figurine', 'Bon-Bon Figurine', 'Fluffle Puff Figurine', 'Angel Bunny Figurine', 'Gummy Figurine'],
-  },
-  default: {
-    'Wispy Catalyst': 100,
-    'Diluted Catalyst': 500,
-    'Regular Catalyst': 1000,
-    'Robust Catalyst': 2500,
-    'Vibrant Catalyst': 5000,
-    'Coruscating Catalyst': 10000,
-  },
-
-  init: function () {
-    if ($price.json) {
-      return;
-    }
-    if (IS_ISEKAI) {
-      $price.groups['Consumables'] = $price.groups['Consumables'].filter((n) => !'Last Elixir|Energy Drink|Caffeinated Candy'.includes(n));
-      $price.groups['Materials'] = $price.groups['Materials'].filter((n) => !n.startsWith('Binding of'));
-      delete $price.groups['Crystals'];
-      delete $price.groups['Figures'];
-      delete $price.filters['ar'];
-      delete $price.filters['fi'];
-      delete $price.filters['mo'];
-    }
-    $price.json = $config.get('prices');
-    if (!$price.json) {
-      $price.reset();
-    }
-  },
-  reset: function () {
-    const json = {};
-    Object.values($price.groups).forEach((g) => {
-      g.forEach((n) => {
-        json[n] = 0;
-      });
-    });
-    Object.assign(json, $price.default);
-    $price.json = json;
-    $config.set('prices', $price.json);
-    //$price.set(json, true);
-  },
-  get_items: function (i) {
-    let items;
-    if (!i) {
-      items = Object.keys($price.json);
-    } else if (typeof i === 'string') {
-      if (i in $price.groups) {
-        items = $price.groups[i];
-      } else if (i in $price.filters) {
-        items = $price.filters[i];
-      } else {
-        items = [];
-        console.log('Invalid items');
-      }
-    } else if (Array.isArray(i)) {
-      items = i;
-    } else {
-      items = [];
-      console.log('Invalid items');
-    }
-    return items;
-  },
-  get: function (i) {
-    $price.init();
-    const prices = {};
-    const items = $price.get_items(i);
-    items.forEach((n) => { prices[n] = $price.json[n] || 0; });
-    return prices;
-  },
-  set: function (json, replace) {
-    $price.init();
-    if (replace) {
-      $price.json = json;
-    } else {
-      Object.assign($price.json, json);
-    }
-    $config.set('prices', $price.json);
-  },
-  edit: function (i, filter, callback) {
-    $price.init();
-    const items = $price.get_items(i);
-    const prices = $price.get(items);
-    const all = !filter;
-
-    popup_text($config.obj2text(prices, ['\n', '@']), 300, 500, [
-      { text: '保存', click: save },
-      { text: 'Bid', click: (p) => { market(p, 'bid'); } },
-      { text: 'Ask', click: (p) => { market(p, 'ask'); } },
-      { text: 'Edit All Items', click: edit_all },
-    ]);
-
-    function save(p) {
-      const { value: new_prices, error } = $config.text2obj(p.textarea.value, ['\n', '@'], 'number');
-      if (error) { // error: invalid input
-        alert(`错误: 价格必须是数字\n\n${error}`);
-        return;
-      }
-      if (all && p.textarea.value.trim() === '') {
-        $price.reset();
-      } else {
-        const replace = all;
-        $price.set(new_prices, replace);
-      }
-      p.close();
-      if (JSON.stringify(prices) !== JSON.stringify(new_prices)) {
-        callback?.();
-      }
-    }
-    async function market(p, key) {
-      p.textarea.disabled = true;
-      const new_prices = await $price.update_market(filter, key);
-      p.textarea.value = $config.obj2text(new_prices, ['\n', '@']);
-      p.textarea.disabled = false;
-      save(p);
-    }
-    function edit_all(p) {
-      if (all) {
-        return;
-      }
-      p.close();
-      $price.edit('', '', callback);
-    }
-  },
-  parse_market: function (filter, doc = document) {
-    if (!$price.market) {
-      $price.market = {};
-    }
-    $price.filters[filter] = [];
-    Array.from($qs('#market_itemlist table', doc).rows).forEach((tr, i) => {
-      if (i === 0) {
-        return;
-      }
-      const name = tr.cells[0].textContent;
-      const itemid = /itemid=(\d+)/.exec(tr.getAttribute('onclick'))[1];
-      const stock = parseInt(tr.cells[1].textContent);
-      const bid = parseFloat(tr.cells[2].textContent.slice(0, -2)) || 0;
-      const ask = parseFloat(tr.cells[3].textContent.slice(0, -2)) || 0;
-      const market_stock = parseInt(tr.cells[4].textContent.slice(0, -2)) || 0;
-      if (!$price.market[name]) {
-        $price.market[name] = {};
-      }
-      Object.assign($price.market[name], { itemid, stock, bid, ask, market_stock });
-      $price.filters[filter].push(name);
-    });
-  },
-  update_market: async function (filter, key, save) {
-    const all = !filter;
-    if (all && !$price.market_all) {
-      const filters = Object.keys($price.filters);
-      const requests = filters.map((filter) => update(filter));
-      await Promise.all(requests);
-      $price.market_all = true;
-    } else if (!all && !$price.market) {
-      await update(filter);
-    }
-    const items = $price.get_items(filter);
-    const prices = $price.get(items);
-    const market_prices = $price.get_market(items, key);
-    const new_prices = { ...prices, ...market_prices };
-    if (save) {
-      $price.set(new_prices);
-    }
-    return new_prices;
-
-    async function update(filter) {
-      const html = await $ajax.fetch(`?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`);
-      const doc = $doc(html);
-      $price.parse_market(filter, doc);
-    }
-  },
-  get_market: function (items, key) {
-    const prices = {};
-    items.forEach((name) => {
-      if (name in $price.market) {
-        prices[name] = $price.market[name][key];
-      }
-    });
-    return prices;
-  },
-  set_market: function (items, key) {
-    const prices = $price.get_market(items, key);
-    $price.set(prices);
-  },
-
-};
+const $price = {};
+bindPrice($price, { config: $config }); // 收口共享内核(L1 bindPrice), 物价数据分服(默认命名空间)、逻辑统一
 
 // MoogleMail
 // $mail 已提公共区（L2）
 
 // Battle Panel: Equipment Enchant and Repair
 const $battle = {
-
-  enchant_data: {
-    'Voidseeker Shard': { effect: '虚空探索者的祝福', weapon: 'vseek' }, // canonical 译名(对齐 interface-dict/equip-dict)
-    'Aether Shard': { effect: '弥漫的以太', weapon: 'ether' },
-    'Featherweight Shard': { effect: '轻如鸿毛', weapon: 'feath', armor: 'feath' },
-    'Infusion of Flames': { effect: '火焰附魔', weapon: 'sfire', armor: 'pfire', day: 2 },
-    'Infusion of Frost': { effect: '冰霜附魔', weapon: 'scold', armor: 'pcold', day: 3 },
-    'Infusion of Lightning': { effect: '雷电附魔', weapon: 'selec', armor: 'pelec', day: 6 },
-    'Infusion of Storms': { effect: '风暴附魔', weapon: 'swind', armor: 'pwind', day: 4 },
-    'Infusion of Divinity': { effect: '神圣附魔', weapon: 'sholy', armor: 'pholy', day: 0 },
-    'Infusion of Darkness': { effect: '黑暗附魔', weapon: 'sdark', armor: 'pdark', day: 1 },
-  },
-  node: {},
-  equips: [],
-
-  click: function (e) {
-    const target = e.target.closest('[data-action]');
-    if (!target) {
-      return;
-    }
-    const { action, eid, item, count } = target.dataset;
-    if (action === 'view') {
-      $battle.view(eid);
-    } else if (action === 'enchant') {
-      $battle.enchant($battle.current, item, count);
-    } else if (action === 'repair') {
-      $battle.repair($battle.current);
-    } else if (action === 'repairall') {
-      $battle.repair('all');
-    } else if (action === 'buy') {
-      $battle.buy(item, count);
-    }
-  },
-  get: function (eid) {
-    return $battle.equips.find((eq) => eq.info.eid == eid);
-  },
-  view: function (eid) {
-    $battle.node.repair.innerHTML = '';
-    $battle.node.enchant.innerHTML = '';
-
-    const eq = $battle.get(eid);
-    if (!eq) {
-      return;
-    }
-    $battle.get($battle.current)?.node.li.classList.remove('hvut-bt-active');
-    $battle.current = eq.info.eid;
-    eq.node.li.classList.add('hvut-bt-active');
-
-    if (eq.data.repair) {
-      eq.data.repair.forEach(({ name, count }) => {
-        const stock = $item.count(name);
-        const textContent = `${hvaaT(name, 'material')} x ${count} (${stock})`;
-        const className = stock < count ? 'hvut-bt-warn' : '';
-        $element('li', $battle.node.repair, { textContent, className });
-      });
-    } else if (eq.data.repair === null) {
-      $element('li', $battle.node.repair, '-');
-    }
-
-    if (!$item.list) {
-      return;
-    }
-    const cat = eq.info.cat;
-    const day = (new Date()).getUTCDay();
-    Object.entries($battle.enchant_data).forEach(([name, item]) => {
-      if (item[cat]) {
-        const li = $element('li', $battle.node.enchant);
-        const count = (cat === 'weapon' && name.includes('Infusion of ') ? $config.settings.equipEnchantWeapon : $config.settings.equipEnchantArmor) || 1;
-        const stock = $item.count(name);
-        if (cat === 'weapon' && item.day === day) {
-          li.classList.add('hvut-bt-day');
-        }
-        if (!stock) {
-          li.classList.add('hvut-bt-nostock');
-        }
-        $element('span', li, [`[+${count}]`, '.hvut-cphu', { dataset: { action: 'enchant', item: name, count } }]);
-        $element('span', li, [`${item.effect}`, '.hvut-cphu', { dataset: { action: 'enchant', item: name, count: 1 } }]);
-        $element('span', li, [`(${stock})`]);
-      }
-    });
-  },
+  // [HVAA 2026-06-10] 渲染/交互内核已收口 bindBattlePanel(L1, 与 isekai 同一实现) —— 「外观完全一致」
+  // 由共享内核结构性保证(铁律4 反退化)。本对象只剩主世界数据层: Forge 修理流 + dynjs condition/durability
+  // + 装备页附魔只读展示(原附魔操作面板已删)。
   load: async function (eid) {
     const eq = $battle.get(eid);
-    eq.node.enc.textContent = '加载中...';
+    eq.node.condition.textContent = '...';
     const html = await $ajax.fetch(`equip/${eq.info.eid}/${eq.info.key}`);
     const doc = $doc(html);
     $battle.parse(eq.info.eid, doc);
@@ -11703,43 +11283,8 @@ const $battle = {
     eq.info.condition = parseInt(exec[1]);
     eq.info.durability = parseInt(exec[2]);
     eq.info.cdt = eq.info.condition / eq.info.durability;
+    eq.data.enchants = $qsa('#ee > span', div).map((e) => e.textContent); // 主世界独有数据: 当前附魔(只读展示)
     $battle.display_condition(eq.info.eid);
-
-    eq.node.enc.innerHTML = '';
-    const enchant = $qsa('#ee > span', div);
-    enchant.forEach((e) => { $element('span', eq.node.enc, e.textContent); });
-    if (!enchant.length) {
-      eq.node.enc.textContent = '无附魔';
-    }
-  },
-  enchant: async function (eid, name, count) {
-    if (!$item.list) {
-      return;
-    }
-    const eq = $battle.get(eid);
-    const item = $battle.enchant_data[name];
-    const stock = $item.count(name);
-    if (count > stock) {
-      count = stock;
-    }
-    if (count < 1) {
-      return;
-    }
-    eq.node.enc.textContent = '加载中...';
-
-    async function enchant(eq) {
-      const html = await $ajax.fetch('?s=Forge&ss=en', `select_item=${eq.info.eid}&enchantment=${item[eq.info.cat]}`);
-      const doc = $doc(html);
-      const error = get_message(doc);
-      if (error) {
-        popup(error);
-      }
-      $battle.parse(eq.info.eid, doc);
-    }
-
-    const requests = $ajax.repeat(count, enchant, eq);
-    await Promise.all(requests);
-    $battle.load_inventory();
   },
   repair: async function (eid) {
     const eq = $battle.get(eid);
@@ -11766,16 +11311,16 @@ const $battle = {
         if (!confirm('修理材料不足.\n是否从系统商店购买材料来修理你的装备?')) {
           return;
         }
-        $battle.node.repairall.innerHTML = '';
-        $battle.node.repair.innerHTML = '';
-        $element('li', $battle.node.repairall, '...');
-        $element('li', $battle.node.repair, '...');
         await $item.buy(items);
       }
     }
 
-    $battle.node.repairall.innerHTML = '';
-    $battle.node.repair.innerHTML = '';
+    $battle.node.repairall.innerHTML = '<li>...</li>';
+    (eqall ? $battle.equips : eq ? [eq] : []).forEach((e) => {
+      e.node.repair.innerHTML = '<li>...</li>';
+      e.node.condition.textContent = '...';
+      e.node.link.innerHTML = '';
+    });
 
     const html = await $ajax.fetch('?s=Forge&ss=re', eq ? 'select_item=' + eq.info.eid : eqall ? 'repair_all=1' : null);
     const doc = $doc(html);
@@ -11832,14 +11377,6 @@ const $battle = {
     }
     $persona.check_warning(doc);
   },
-  buy: async function (name, count) {
-    if (!confirm(`确定要购买 ${count} x ${name} 吗?`)) {
-      return;
-    }
-    const items = [{ name, count }];
-    await $item.buy(items);
-    $battle.load_inventory();
-  },
   load_dynjs: async function (doc) {
     const src = $qs('script[src*="/dynjs/"]', doc).src;
     const html = await $ajax.fetch(src + '?t=' + Date.now());
@@ -11866,36 +11403,51 @@ const $battle = {
     } else { // margin to 50%
       thld = eq.info.condition <= thld + eq.info.durability * 0.5;
     }
-    eq.node.cdt.textContent = `${eq.info.condition} / ${eq.info.durability} (${(eq.info.cdt * 100).toFixed(1)}%)`;
-    eq.node.cdt.className = eq.info.cdt <= 0.5 ? 'hvut-bt-cdt2' : eq.info.cdt <= 0.6 || thld ? 'hvut-bt-cdt1' : '';
+    eq.node.condition.innerHTML = '';
+    eq.node.condition.title = `${eq.info.condition} / ${eq.info.durability}`; // 完整数值降级进 title(100px 列放不下)
+    $element('span', eq.node.condition, [`${(eq.info.cdt * 100).toFixed(1)}%`, (eq.info.cdt <= 0.6 || thld ? '.hvut-warn' : '')]);
+    $battle.update_link(eq);
+  },
+  update_link: function (eq) {
+    eq.node.name.classList.remove('hvut-warn');
+    eq.node.link.innerHTML = '';
+    if (eq.info.condition === 0) {
+      eq.node.name.classList.add('hvut-warn');
+      $element('span', eq.node.link, '修理后方可使用');
+    } else if (eq.data.enchants?.length) {
+      eq.node.link.textContent = eq.data.enchants.join(' / ');
+      eq.node.link.title = eq.data.enchants.join('\n');
+    }
   },
   load_inventory: async function () {
-    $battle.node.inventory.innerHTML = '';
+    $battle.node.items.innerHTML = '';
     $battle.node.repairall.innerHTML = '';
     await $item.load();
     $battle.display_inventory();
     $config.set('items', $item.count());
   },
   display_inventory: function () {
-    $battle.node.inventory.innerHTML = '';
     $battle.node.repairall.innerHTML = '';
+    $battle.render_supply_grid();
     if (!$item.list) {
       return;
     }
-    Object.entries($config.settings.equipEnchantItemInventory).forEach(([name, count]) => {
-      render_supply_li($battle.node.inventory, name, count, 'hvut-bt-warn');
-    });
     if ($battle.repair.repairall) {
       $battle.repair.repairall.forEach(({ name, count }) => {
-        const stock = $item.count(name);
-        const textContent = `${hvaaT(name, 'material')} x ${count} (${stock})`;
-        const className = stock < count ? 'hvut-bt-warn' : '';
-        $element('li', $battle.node.repairall, { textContent, className });
+        $battle.render_requirement_li($battle.node.repairall, name, count, $item.count(name));
       });
     } else if ($battle.repair.repairall === null) {
-      $element('li', $battle.node.repairall, '所有装备已完全修复.');
+      $element('li', $battle.node.repairall, '你的装备无需修理');
     }
-    $battle.view($battle.current);
+    $battle.equips.forEach((eq) => { $battle.render_repair(eq); });
+  },
+  render_repair: function (eq) {
+    eq.node.repair.innerHTML = '';
+    if (eq.data.repair) {
+      eq.data.repair.forEach(({ name, count }) => {
+        $battle.render_requirement_li(eq.node.repair, name, count, $item.count(name));
+      });
+    }
   },
   create: function () {
     $battle.load_inventory();
@@ -11907,86 +11459,37 @@ const $battle = {
       return;
     }
     equipset.forEach((info) => {
-      if (!info.eid) {
-        $element('li', $battle.node.equip, [`/<a>${info.slot}</a><span>空</span><span></span>`]);
-        return false;
+      const eq = $battle.create_equip_li(info);
+      if (!eq) {
+        return; // 空槽
       }
-
-      const eq = { info, data: {}, node: {} };
+      // 主世界数据层编排: cat 判定 + 异步加载占位 + 按 CheckArmors 拉装备页(耐久/附魔)
       eq.info.cat = (eq.info.category === 'One-handed Weapon' || eq.info.category === 'Two-handed Weapon' || eq.info.category === 'Staff') ? 'weapon' : 'armor';
-      eq.node.li = $element('li', $battle.node.equip);
-      eq.node.name = hvaaBind($element('a', eq.node.li, { href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' }), function (n) { set_equip_name(n, eq); }); // hvaaBind: lang 切换即时重渲染装备译名(自渲染组件复用声明式绑定, 与菜单同机制)
-      eq.node.enc = $element('span', eq.node.li);
-      eq.node.cdt = $element('span', eq.node.li, { textContent: '...', dataset: { action: 'view', eid: eq.info.eid } });
-
-      $battle.equips.push(eq);
+      eq.node.condition.textContent = '...';
       if (eq.info.cat === 'weapon' || $config.settings.equipEnchantCheckArmors) {
         $battle.load(eq.info.eid);
       }
     });
 
-    $battle.current = $battle.equips[0]?.info.eid;
     $battle.repair();
   },
   init: function () {
+    // 渲染/交互内核已收口 bindBattlePanel(L1, 与 isekai 同一实现) —— 布局改内核模板, 两版同时生效。
+    // 此处只留主世界外层接线: mainpane 持 on 类的宽度规则 / popup 偏移 / --color-* token 主题值(主世界米黄;
+    // isekai 在 :root 定义暗红, 两 IIFE 互斥执行故各自定义)。
     GM_addStyle(/*css*/`
       .hvut-bt-outer { width: 1220px !important; }
       .hvut-bt-outer > p { width: 520px; margin-left: auto; margin-right: auto; }
       .hvut-bt-on .hvut-bt-outer { width: 620px !important; }
       .hvut-bt-on.hvut-bt-left .hvut-bt-outer { margin-left: 600px !important; }
       .hvut-bt-on.hvut-bt-right .hvut-bt-outer { margin-right: 600px !important; }
-      .hvut-bt-on .hvut-bt-div { visibility: visible; }
-      .hvut-bt-left .hvut-bt-div { left: 8px; }
-      .hvut-bt-right .hvut-bt-div { right: 8px; }
       #popup_box.hvut-bt-right-popup { left: 624px !important; }
       #popup_box.hvut-bt-left-popup { left: 244px !important; }
 
-      .hvut-bt-div { visibility: hidden; position: absolute; bottom: 8px; width: 599px; height: 417px; color: #333; font-size: 10pt; line-height: 20px; white-space: nowrap; }
-      .hvut-bt-div > ul { margin: 0; padding: 21px 0 0; border: 1px solid; list-style: none; display: flex; flex-direction: column; justify-content: center; }
-      .hvut-bt-div > ul::before { content: attr(data-header); position: absolute; top: 0; width: 100%; border-bottom: 1px solid; background-color: #edb; font-size: 10pt; line-height: 20px; font-weight: bold; }
-
-      .hvut-bt-equip { position: absolute; bottom: 0; left: 0; width: 400px; height: 286px; }
-      .hvut-bt-equip li { position: relative; height: 40px; padding-right: 60px; border-bottom: 1px solid; }
-      .hvut-bt-equip li:last-child { border-bottom: none; }
-      .hvut-bt-equip li:hover { background-color: #fff; z-index: 1; }
-      .hvut-bt-active { background-color: #fff; }
-      .hvut-bt-equip li > a { display: block; overflow: hidden; text-overflow: ellipsis; font-weight: bold; text-decoration: none; }
-      .hvut-bt-equip li > span:nth-child(2) { display: block; font-size: 9pt; overflow: hidden; text-overflow: ellipsis; }
-      .hvut-bt-equip li > span:nth-child(2) > span { display: inline-block; margin: 0 3px; color: #e00; }
-      .hvut-bt-equip li > span:nth-child(2):empty { visibility: hidden; }
-      .hvut-bt-equip li:hover > span:nth-child(2) { white-space: normal; border-bottom: 1px solid; background: inherit; pointer-events: none; }
-      .hvut-bt-equip li:last-child:hover > span:nth-child(2) { position: absolute; bottom: 0; width: 340px; border-top: 1px solid; border-bottom: none; }
-      .hvut-bt-equip li > span:nth-child(3) { position: absolute; top: 0; right: 0; width: 59px; height: 100%; border-left: 1px solid #333; font-size: 9pt; white-space: normal; cursor: pointer; }
-      .hvut-bt-equip li > span:nth-child(3):hover { background-color: #fff; }
-      .hvut-bt-cdt1 { color: #e00; }
-      .hvut-bt-cdt2 { color: #fff; background-color: #e00 !important; }
-
-      .hvut-bt-inventory { position: absolute; bottom: 314px; left: 0; width: 400px; min-height: 80px; max-height: 160px; flex-direction: row !important; justify-content: space-between !important; flex-wrap: wrap; align-content: space-evenly; font-size: 9pt; }
-      .hvut-bt-inventory > li { width: 32%; overflow: hidden; cursor: pointer; }
-      .hvut-bt-inventory > li:last-child:nth-child(3n+2) { margin-right: 34%; }
-      .hvut-bt-warn { color: #e00; }
-
-      .hvut-bt-enchant { position: absolute; bottom: 0; left: 407px; width: 190px; height: 204px; line-height: 18px; }
-      .hvut-bt-enchant > li { display: flex; margin: 2px 0; }
-      .hvut-bt-enchant span { margin: 0 2px; }
-      .hvut-bt-enchant span:nth-child(1) { color: #03c; }
-      .hvut-bt-enchant span:nth-child(2) { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; text-align: left; color: #03c; }
-      .hvut-bt-day { background-color: #fff; }
-      .hvut-bt-day span:nth-child(2) { font-weight: bold; }
-      .hvut-bt-nostock span { color: #999 !important; cursor: default; }
-
-      .hvut-bt-repair { position: absolute; bottom: 232px; left: 407px; width: 190px; height: 54px; cursor: pointer; }
-      .hvut-bt-repair:hover { background-color: #fff; }
-      .hvut-bt-repairall { position: absolute; bottom: 314px; left: 407px; width: 190px; min-height: 80px; cursor: pointer; }
-      .hvut-bt-repairall:hover { background-color: #fff; }
+      .hvut-bt-div { --color-border-default: #333; --color-bg-h1: #edb; --color-bg-alpha: #fff9; --color-font-light: #9B4E03; --color-font-warn: #e00; color: #333; }
     `);
 
-    $battle.node.div = $element('div', $id('mainpane'), ['.hvut-bt-div'], (e) => { $battle.click(e); });
-    $battle.node.equip = $element('ul', $battle.node.div, ['.hvut-bt-equip', { dataset: { header: '装备' } }]);
-    $battle.node.enchant = $element('ul', $battle.node.div, ['.hvut-bt-enchant', { dataset: { header: '装备附魔' } }]);
-    $battle.node.repair = $element('ul', $battle.node.div, ['.hvut-bt-repair', { dataset: { header: '修理装备', action: 'repair' } }]);
-    $battle.node.repairall = $element('ul', $battle.node.div, ['.hvut-bt-repairall', { dataset: { header: '修理全部', action: 'repairall' } }]);
-    $battle.node.inventory = $element('ul', $battle.node.div, ['.hvut-bt-inventory', { dataset: { header: '补给品库存' } }]);
+    $battle.init_panel($id('mainpane'));
 
     $id('mainpane').classList.add('hvut-bt-on');
     $id('mainpane').style.paddingRight = '8px';
@@ -12005,6 +11508,13 @@ const $battle = {
   },
 
 };
+bindBattlePanel($battle, { // 渲染/交互内核收口(L1); 数据层(Forge 修理流/附魔只读展示)留本 IIFE
+  config: $config,
+  dict: 'material',
+  divSel: '.hvut-bt-div',
+  inventory: () => $config.settings.equipEnchantItemInventory,
+  reloadItems: () => $battle.load_inventory(),
+});
 
 // BASIC CSS
 GM_addStyle(/*css*/`
@@ -12036,6 +11546,7 @@ GM_addStyle(/*css*/`
   .cspp { overflow-y: auto; }
   .fc2, .fc4 { display: inline; }
 
+  .hvut-warn { color: #e00 !important; }
   .hvut-none { display: none !important; }
   .hvut-none-cont .hvut-none-item { display: none; }
   .hvut-cphu, .hvut-cphu-sub > * { cursor: pointer; }
