@@ -9841,7 +9841,8 @@ const $config = {
     `,
     equipEnchantRepairThreshold: `
       If the value is between 0 and 1, it means the condition % of the equipment (e.g., 0.6 => 60%).
-      If the value is larger than 1, it means a margin to 50% condition (e.g., 55 => 205 / 300).
+      If the value is 1 or larger, it means condition percentage points (e.g., 55 => 55%).
+      (The old "margin to 50%" semantics is gone with durability in the energy-model update.)
       The recommended value for GrindFest is 55.
     `,
   },
@@ -10740,7 +10741,7 @@ const $equip = {
           condition: condition,
           cdt: (condition || 0) / 100, // 新模型无 durability，cdt 退化为 condition/100，使 cdt*100=耐久% 供旧显示沿用
           energy: exec[9] ? parseFloat(exec[9]) : null,
-          salvaged: exec[10] === 'Salvaged',
+          salvaged: exec[11] === 'Salvaged', // 组10=Energy N/A, 组11=Salvaged(上游 4.2.0 原版即错位, 当前无消费方, 修正防未来踩坑)
           pab: dynjs.d.match($equip.reg.pab)?.map((p) => p[0]).join('') || '',
           eid: eid,
           key: dynjs.k,
@@ -11302,24 +11303,25 @@ bindPrice($price, { config: $config }); // 收口共享内核(L1 bindPrice), 物
 // Battle Panel: Equipment Enchant and Repair
 const $battle = {
   // [HVAA 2026-06-10] 渲染/交互内核已收口 bindBattlePanel(L1, 与 isekai 同一实现) —— 「外观完全一致」
-  // 由共享内核结构性保证(铁律4 反退化)。本对象只剩主世界数据层: Forge 修理流 + dynjs condition/durability
-  // + 装备页附魔只读展示(原附魔操作面板已删)。
+  // 由共享内核结构性保证(铁律4 反退化)。本对象只剩主世界数据层: Forge 修理流 + dynjs condition/energy
+  // (能量模型, durability 已消失) + 装备页附魔只读展示(原附魔操作面板已删)。
   load: async function (eid) {
     const eq = $battle.get(eid);
-    eq.node.condition.textContent = '...';
     const html = await $ajax.fetch(`equip/${eq.info.eid}/${eq.info.key}`);
     const doc = $doc(html);
     $battle.parse(eq.info.eid, doc);
   },
   parse: function (eid, doc) {
     const div = $id('equip_extended', doc);
-    const exec = /Condition: (\d+) \/ (\d+) \((\d+)%\)/.exec($qs('.eq', div).children[1].textContent);
     const eq = $battle.get(eid);
-    eq.info.condition = parseInt(exec[1]);
-    eq.info.durability = parseInt(exec[2]);
-    eq.info.cdt = eq.info.condition / eq.info.durability;
     eq.data.enchants = $qsa('#ee > span', div).map((e) => e.textContent); // 主世界独有数据: 当前附魔(只读展示)
-    $battle.display_condition(eq.info.eid);
+    // [Chunk2 能量模型] 详情页旧文本 `Condition: X / Y (Z%)` 已随潜能系统消失, 本方法不再解析耐久——
+    // 耐久/能量读数统一由 load_dynjs(reg.html 组8/9)供给(同一读数单一判定点, 对齐 isekai 数据流)。
+    if (eq.info.condition !== undefined) {
+      $battle.display_condition(eq.info.eid);
+    } else {
+      $battle.update_link(eq);
+    }
   },
   repair: async function (eid) {
     const eq = $battle.get(eid);
@@ -11423,24 +11425,29 @@ const $battle = {
         $persona.change_p();
         return true;
       }
+      // [Chunk2 能量模型] reg.html 新捕获组: 8=耐久% 9=能量%(N/A→null); durability 已消失, cdt 退化 condition/100
       const exec = $equip.reg.html.exec(dynjs.d);
-      eq.info.condition = parseInt(exec[4]);
-      eq.info.durability = parseInt(exec[5]);
-      eq.info.cdt = eq.info.condition / eq.info.durability;
+      if (!exec) {
+        return false;
+      }
+      eq.info.condition = parseFloat(exec[8]);
+      eq.info.energy = exec[9] ? parseFloat(exec[9]) : null;
+      eq.info.cdt = (eq.info.condition || 0) / 100;
       $battle.display_condition(eq.info.eid);
     });
   },
   display_condition: function (eid) {
     const eq = $battle.get(eid);
-    let thld = $config.settings.equipEnchantRepairThreshold;
-    if (thld < 1) {
-      thld = eq.info.cdt <= thld;
-    } else { // margin to 50%
-      thld = eq.info.condition <= thld + eq.info.durability * 0.5;
-    }
+    const raw = $config.settings.equipEnchantRepairThreshold;
+    // [Chunk2 能量模型] durability 已消失: <1 = 耐久比例(0.6=>60%), >=1 = 耐久百分点(55=>55%,
+    // 原"距 50% 耐久的余量"语义随 durability 一并消失); 60% 硬线警示保留(原 cdt<=0.6)。
+    const thld = raw < 1 ? raw * 100 : raw;
     eq.node.condition.innerHTML = '';
-    eq.node.condition.title = `${eq.info.condition} / ${eq.info.durability}`; // 完整数值降级进 title(100px 列放不下)
-    $element('span', eq.node.condition, [`${(eq.info.cdt * 100).toFixed(1)}%`, (eq.info.cdt <= 0.6 || thld ? '.hvut-warn' : '')]);
+    $element('span', eq.node.condition, [`${eq.info.condition}%`, (eq.info.condition <= Math.max(thld, 60) ? '.hvut-warn' : '')]);
+    if (eq.info.energy !== null && eq.info.energy !== undefined) { // 对齐 isekai update_condition: 耐久% / 能量%
+      $element('', eq.node.condition, ' / ');
+      $element('span', eq.node.condition, [`${eq.info.energy}%`, (eq.info.energy <= thld ? '.hvut-warn' : '')]);
+    }
     $battle.update_link(eq);
   },
   update_link: function (eq) {
