@@ -34,6 +34,11 @@ const PARTIAL_OBJECTS = { // R2: 部分收口对象 → 字面量内禁止回潮
     "update_link", "load_items", "load", "parse", "display_condition", "load_inventory",
     "display_inventory", "render_repair",
   ],
+  "$config": [ // bindConfig 配置体系内核 18 方法收口(2026-06-10; init/migration/create/set_panel/set_input 真分叉留各版字面量)
+    "reset", "get", "set", "del", "ls_get", "ls_set", "ls_del",
+    "open", "close", "get_panel", "validate_panel", "validate",
+    "load", "save", "text2obj", "obj2text", "text2array", "array2text",
+  ],
 };
 
 const src = stripComments(readFileSync(TARGET, "utf8"));

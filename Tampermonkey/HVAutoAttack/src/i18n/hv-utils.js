@@ -74,9 +74,10 @@ try {
 //       hvut_/hvuti_、$equip dynjs 模型(迁移中) —— 强合破坏两游戏正确性 + 老用户持久化。
 //    b) 真重复(byte-identical / 表层漂移)收口共享区, ctx 注入版本差异: bindTr / bindRe / bindPrice /
 //       bindDfct / bindPersona(真分叉经 ctx 倒置: warnSelector/parseEquipElem/applyDynjs; parse_stats_pane
-//       留各版) / bindBattlePanel(渲染内核, 数据层留各版) / render_supply_li / equip-name-render /
+//       留各版) / bindBattlePanel(渲染内核, 数据层留各版) / bindConfig(配置体系 18 小方法; ctx.skipField 注入字段门控谓词;
+//       init·migration·create·set_panel·set_input 真分叉留各版) / render_supply_li / equip-name-render /
 //       .hvut-warn·.hvut-bonus 归一。反退化: scripts/verify-no-iife-dup.mjs 锁回潮; 召回: scripts/dup-probe.mjs(手动)。
-//       留置候选(审查过): $config(依赖根, 15 IDENT 小方法可收但 migration/create 大块真分叉需细审), $equip.namecode(品质 8/10 级机制分叉区)。
+//       留置候选(2026-06-10 refuter 复核): $config.migration(版本史 4.2≠2 不可逆迁移, homonym) / $config.create(面板渲染 mixed: CSS·checkbox 签名·门控谓词·textarea 按钮四分叉, 内核过薄留置) / $equip.namecode(已收口一处 caller 留各版; 实测两版同 8 级, 原"8/10 级"描述过时)。
 // 5. 迁移基线: 主世界 sleazyfork #533796 英文 4.0.0; Isekai 论坛 211883 英文 4.2.0
 // 6. 汉化策略: 显示层翻译走 canonical SSOT(src/data/i18n) 经 window.HVAA_i18n 桥
 //    (hvaaT/hvaaTEquip/resolveEn); 逻辑值/比较/键/POST 参数一律英文。i18n SSOT epic G0-G3
@@ -374,6 +375,193 @@ const render_supply_li = function (parent, name, count) {
     li.classList.add('hvut-warn');
   }
   return li;
+};
+
+// $config 配置体系内核(两 IIFE 18 方法 byte-identical/表层漂移收口一处; 铁律1e 应抽尽抽 / 铁律4 抽象即反退化)。
+// 留各 IIFE 字面量(机制分叉, 见设计要点4 + dup-probe 留置裁定): 数据属性 version/ls_savelist/data/text/desc/validator
+//   + init(ns hvut/hvuti·season wiring) + migration(版本史 4.2≠2 不可逆迁移: version-gated 清理 + 键集 equipnames 分叉)
+//   + create(面板 CSS var↔硬编 / checkbox $input 3槽↔2槽 / textarea 恢复默认按钮) + set_panel·set_input(设值流分叉; 主世界无独立 set_input 内联于 set_panel)。
+// ctx.skipField(o): 面板字段适用谓词分叉 —— isekai 按 HV server(o.server!==_server.name) / 主世界按 持久区·isekai(o.disabled)。
+// validate 错误头归一中文 '校验错误'(isekai 原 'Validation Error' 漏翻; 汉化脚本统一中文)。
+// 反退化: scripts/verify-no-iife-dup.mjs PARTIAL_OBJECTS['$config'] 锁这 18 方法名不在 IIFE 字面量回潮。
+const bindConfig = function (config, ctx) {
+  config.reset = function () {
+    config.settings = JSON.parse(JSON.stringify(config.default));
+  };
+  config.get = function (key, dvalue, prefix = config.prefix) {
+    const value = GM_getValue(prefix + key, dvalue);
+    return value;
+  };
+  config.set = function (key, value, prefix = config.prefix) {
+    GM_setValue(prefix + key, value);
+    if (config.ls_savelist.includes(key)) {
+      config.ls_set(key, value, prefix);
+    }
+  };
+  config.del = function (key, prefix = config.prefix) {
+    GM_deleteValue(prefix + key);
+  };
+  config.ls_get = function (key, dvalue, prefix = config.prefix) {
+    const value = localStorage.getItem(prefix + key);
+    return value === null ? dvalue : JSON.parse(value);
+  };
+  config.ls_set = function (key, value, prefix = config.prefix) {
+    localStorage.setItem(prefix + key, JSON.stringify(value));
+  };
+  config.ls_del = function (key, prefix = config.prefix) {
+    localStorage.removeItem(prefix + key);
+  };
+  config.open = function (key) {
+    if (!config.node) {
+      config.create();
+    }
+    $id('csp').appendChild(config.node.div);
+    config.load();
+    if (key) {
+      const o = config.data.find((o) => o.key === key);
+      scrollIntoView(o.node.div);
+    }
+  };
+  config.close = function () {
+    config.node.div.remove();
+  };
+  config.get_panel = function () {
+    const obj = {};
+    const errors = [];
+    config.data.forEach((o) => {
+      if (!o.key) {
+        return;
+      }
+      if (ctx.skipField(o)) {
+        return;
+      }
+      const validation = config.validate(o);
+      if (validation.error) {
+        errors.push(o);
+        return;
+      }
+      obj[o.key] = validation.value;
+    });
+    if (errors.length) {
+      scrollIntoView(errors[0].node.div);
+      return false;
+    }
+    return obj;
+  };
+  config.validate_panel = function (e) {
+    const key = e.target.dataset.key;
+    const o = config.data.find((o) => o.key === key);
+    const validation = config.validate(o);
+    return validation;
+  };
+  config.validate = function (o) {
+    let value;
+    let error;
+    if (o.type === 'boolean') {
+      value = o.node.input.checked;
+    } else if (o.type === 'number') {
+      value = Number(o.node.input.value);
+    } else if (o.type === 'string') {
+      value = o.node.input.value;
+    } else if (o.type === 'array') {
+      ({ value, error } = config.text2array(o.node.input.value, o.value_sep, o.value_type));
+    } else if (o.type === 'object') {
+      ({ value, error } = config.text2obj(o.node.input.value, o.value_sep, o.value_type));
+    }
+    const validator = config.validator[o.validator || o.key];
+    if (validator) {
+      const _error = error;
+      ({ value, error } = validator(value));
+      if (!error) {
+        error = _error;
+      }
+    }
+    if (error) {
+      if (!o.node.error) {
+        o.node.error = $element('p', o.node.div);
+      }
+      const html = error.replace(/\n/g, '<br>');
+      o.node.error.innerHTML = '<h3>校验错误</h3>' + html;
+      o.node.div.appendChild(o.node.error);
+      o.node.div.classList.add('hvut-cfg-error');
+    } else {
+      o.node.error?.remove();
+      o.node.div.classList.remove('hvut-cfg-error');
+    }
+    const result = { value, error };
+    return result;
+  };
+  config.load = function (obj = config.settings) {
+    config.set_panel(obj);
+    config.get_panel();
+  };
+  config.save = function (panel) {
+    if (panel) {
+      const obj = config.get_panel();
+      if (!obj) { // error
+        return;
+      }
+      config.settings = obj;
+    }
+    config.settings.version = config.version;
+    config.set('settings', config.settings);
+    if (panel) {
+      location.href = location.href;
+    }
+  };
+  config.text2obj = function (text, sep = ['\n', ':'], type) {
+    const obj = {};
+    const errors = [];
+    text.split(sep[0]).filter((t) => t.trim()).forEach((t) => {
+      const split = split2(t, sep[1]);
+      const key = split[0];
+      let value = split[1];
+      if (!key || !value) {
+        errors.push(t);
+        return true;
+      }
+      if (type === 'number') {
+        value = Number(value);
+        if (isNaN(value)) {
+          errors.push(t);
+          return true;
+        }
+      }
+      obj[key] = value;
+    });
+    const error = errors.join('\n');
+    const result = { value: obj, error };
+    return result;
+  };
+  config.obj2text = function (obj, sep = ['\n', ':']) {
+    const text = Object.entries(obj).map(([key, value]) => `${key} ${sep[1]} ${value}`).join(sep[0]);
+    return text;
+  };
+  config.text2array = function (text, sep = '\n', type) {
+    const errors = [];
+    const array = text.split(sep).filter((t) => t.trim()).map((t) => {
+      let value = t.trim();
+      if (type === 'number') {
+        value = Number(value);
+        if (isNaN(value)) {
+          errors.push(t);
+          return true;
+        }
+      }
+      return value;
+    });
+    const error = errors.join('\n');
+    const result = { value: array, error };
+    return result;
+  };
+  config.array2text = function (array, sep = '\n') {
+    if (!sep.includes('\n')) {
+      sep += ' ';
+    }
+    const text = array.join(sep);
+    return text;
+  };
+  return config;
 };
 
 // _tr Training 逻辑(两 IIFE byte-identical 5 方法收口一处, 消"两版各写一份致漂移" 铁律1e 应抽尽抽 / 铁律4 抽象即反退化)。
@@ -2718,9 +2906,13 @@ const bindEquip = function (equip, ctx) {
 // ===== bindArmory 装备工坊七屏内核(Organize/Modify/Repair/Soulbind/Purchase/Sell/Salvage; 两 IIFE 收口一处,
 // 基准 = ISEKAI 4.2.0; 铁律1e 应抽尽抽)。能量模型后两服同构 Bazaar am 体系(bindTop 注释实证), 主世界旧
 // Equipment Shop ss=es 段已死删——本内核为其业务继任形态, 含批量出售/分解对比/保护过滤/整合列表。
-// 依赖公共区 $equip(bindEquip 收口后)/$price/$ajax/$input(isekai 5参版)/toggle_button(7参版)。ctx: config。=====
+// 依赖: $ajax/$input(isekai 5参版)/toggle_button(7参版) 走公共区(L1/L2 词法可见);
+// $equip/$price 是各 IIFE-private 闭包符号 → 经 ctx 依赖倒置注入(公共区函数不可直引用闭包内符号,
+// 否则 ReferenceError——2026-06-10 实站 am sell 报 "$price is not defined" 即此漏)。ctx: config/equip/price。=====
 const bindArmory = function (armory, ctx) {
   const $config = ctx.config;
+  const $equip = ctx.equip;
+  const $price = ctx.price;
   const $armory = armory;
   Object.assign($armory, {
     filters: ['weapon_1handed', 'weapon_2handed', 'weapon_staff', 'shield', 'armor_cloth', 'armor_light', 'armor_heavy'],
@@ -4206,32 +4398,7 @@ const $config = {
 
     $config.save();
   },
-  reset: function () {
-    $config.settings = JSON.parse(JSON.stringify($config.default));
-  },
-  get: function (key, dvalue, prefix = $config.prefix) {
-    const value = GM_getValue(prefix + key, dvalue);
-    return value;
-  },
-  set: function (key, value, prefix = $config.prefix) {
-    GM_setValue(prefix + key, value);
-    if ($config.ls_savelist.includes(key)) {
-      $config.ls_set(key, value, prefix);
-    }
-  },
-  del: function (key, prefix = $config.prefix) {
-    GM_deleteValue(prefix + key);
-  },
-  ls_get: function (key, dvalue, prefix = $config.prefix) {
-    const value = localStorage.getItem(prefix + key);
-    return (value === null) ? dvalue : JSON.parse(value);
-  },
-  ls_set: function (key, value, prefix = $config.prefix) {
-    localStorage.setItem(prefix + key, JSON.stringify(value));
-  },
-  ls_del: function (key, prefix = $config.prefix) {
-    localStorage.removeItem(prefix + key);
-  },
+  // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
   create: function () {
     GM_addStyle(/*css*/`
       .hvut-cfg-div { position: absolute; top: 0; left: 0; width: 60%; height: 100%; padding: 0 20%; overflow: auto; font-size: 10pt; text-align: left; background-color: var(--color-bg-default); z-index: 10; }
@@ -4324,20 +4491,7 @@ const $config = {
     $input(['button', '恢复'], bottom, null, () => { $config.load($config.settings); });
     $input(['button', '恢复默认'], bottom, null, () => { $config.load($config.default); });
   },
-  open: function (key) {
-    if (!$config.node) {
-      $config.create();
-    }
-    $id('csp').appendChild($config.node.div);
-    $config.load();
-    if (key) {
-      const o = $config.data.find((o) => o.key === key);
-      scrollIntoView(o.node.div);
-    }
-  },
-  close: function () {
-    $config.node.div.remove();
-  },
+  // open/close: 收口 bindConfig(L1)
   set_panel: function (obj = $config.settings) {
     $config.data.forEach((o) => {
       if (!o.key) {
@@ -4368,144 +4522,9 @@ const $config = {
       input.value = $config.obj2text(value, o.value_sep);
     }
   },
-  get_panel: function () {
-    const obj = {};
-    const errors = [];
-    $config.data.forEach((o) => {
-      if (!o.key) {
-        return;
-      }
-      if (o.server && o.server !== _server.name) {
-        return;
-      }
-      const validation = $config.validate(o);
-      if (validation.error) {
-        errors.push(o);
-        return;
-      }
-      obj[o.key] = validation.value;
-    });
-    if (errors.length) {
-      scrollIntoView(errors[0].node.div);
-      return false;
-    }
-    return obj;
-  },
-  validate_panel: function (e) {
-    const key = e.target.dataset.key;
-    const o = $config.data.find((o) => o.key === key);
-    const validation = $config.validate(o);
-    return validation;
-  },
-  validate: function (o) {
-    let value;
-    let error;
-    if (o.type === 'boolean') {
-      value = o.node.input.checked;
-    } else if (o.type === 'number') {
-      value = Number(o.node.input.value);
-    } else if (o.type === 'string') {
-      value = o.node.input.value;
-    } else if (o.type === 'array') {
-      ({ value, error } = $config.text2array(o.node.input.value, o.value_sep, o.value_type));
-    } else if (o.type === 'object') {
-      ({ value, error } = $config.text2obj(o.node.input.value, o.value_sep, o.value_type));
-    }
-    const validator = $config.validator[o.validator || o.key];
-    if (validator) {
-      const _error = error;
-      ({ value, error } = validator(value));
-      if (!error) {
-        error = _error;
-      }
-    }
-    if (error) {
-      if (!o.node.error) {
-        o.node.error = $element('p', o.node.div);
-      }
-      const html = error.replace(/\n/g, '<br>');
-      o.node.error.innerHTML = '<h3>Validation Error</h3>' + html;
-      o.node.div.appendChild(o.node.error);
-      o.node.div.classList.add('hvut-cfg-error');
-    } else {
-      o.node.error?.remove();
-      o.node.div.classList.remove('hvut-cfg-error');
-    }
-    const result = { value, error };
-    return result;
-  },
-  load: function (obj = $config.settings) {
-    $config.set_panel(obj);
-    $config.get_panel();
-  },
-  save: function (panel) {
-    if (panel) {
-      const obj = $config.get_panel();
-      if (!obj) { // error
-        return;
-      }
-      $config.settings = obj;
-    }
-    $config.settings.version = $config.version;
-    $config.set('settings', $config.settings);
-    if (panel) {
-      location.href = location.href;
-    }
-  },
-  text2obj: function (text, sep = ['\n', ':'], type) {
-    const obj = {};
-    const errors = [];
-    text.split(sep[0]).filter((t) => t.trim()).forEach((t) => {
-      const split = split2(t, sep[1]);
-      const key = split[0];
-      let value = split[1];
-      if (!key || !value) {
-        errors.push(t);
-        return true;
-      }
-      if (type === 'number') {
-        value = Number(value);
-        if (isNaN(value)) {
-          errors.push(t);
-          return true;
-        }
-      }
-      obj[key] = value;
-    });
-    const error = errors.join('\n');
-    const result = { value: obj, error };
-    return result;
-  },
-  obj2text: function (obj, sep = ['\n', ':']) {
-    const text = Object.entries(obj).map(([key, value]) => `${key} ${sep[1]} ${value}`).join(sep[0]);
-    return text;
-  },
-  text2array: function (text, sep = '\n', type) {
-    const errors = [];
-    const array = text.split(sep).filter((t) => t.trim()).map((t) => {
-      let value = t.trim();
-      if (type === 'number') {
-        value = Number(value);
-        if (isNaN(value)) {
-          errors.push(t);
-          return true;
-        }
-      }
-      return value;
-    });
-    const error = errors.join('\n');
-    const result = { value: array, error };
-    return result;
-  },
-  array2text: function (array, sep = '\n') {
-    if (!sep.includes('\n')) {
-      sep += ' ';
-    }
-    const text = array.join(sep);
-    return text;
-  },
+  // get_panel/validate_panel/validate/load/save/text2obj/obj2text/text2array/array2text: 收口 bindConfig(L1)
 };
-
+bindConfig($config, { skipField: (o) => o.server && o.server !== _server.name }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(isekai 按 HV server)
 $config.init();
 //$config.settings = settings;
 
@@ -4923,6 +4942,11 @@ _bottom.init();
 if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
   _ch.persona = $id('persona_form').elements.persona_set.value;
 
+  // _ch 经验模拟器: refuter(2026-06-10) 判 true-dup —— 核心公式(2.850263212287058 等级表 / prof_gain ×4·(1+assim·0.1))
+  // 两版 byte-identical。但 *落地留各版*(对应轴成立·形态受阻): ① $input 签名两 IIFE 分叉(isekai 4 槽含 null /
+  // 主世界 3 槽, = create 同款助手契约差异) ② 结构分叉(isekai 全嵌套 _ch.exp.{table,node} / 主世界平铺
+  // _ch.{exp_table,node}) ③ init/open 流语义对调。全收口需结构归一重构 + UI 实站验证(无单测), 不宜叠加当前未验证
+  // 退化改动 → 待实站基线后专做(同 create mixed 留置逻辑)。
   _ch.exp = {
     node: {},
     total: _window.total_exp,
@@ -5287,6 +5311,11 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       const exec = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(div.getAttribute('onmouseover'));
       const name = exec[1];
       const ab = _ab.abilities[name];
+      // 同 parse_treepane: HV 新增/改名技能时跳过该槽位, 不让一项未知技能崩掉整段汉化。
+      if (!ab) {
+        console.warn('[HVAA][i18n] 技能表缺少此项(槽位), 已跳过:', JSON.stringify(name));
+        return;
+      }
 
       ab.slotted = true;
       ab.level = exec[2] ? 0 : 1 + ab.unlock.indexOf(parseInt(exec[3]));
@@ -5322,6 +5351,11 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     $qsa('#ability_treepane > div').forEach((div) => {
       const name = div.firstElementChild.textContent;
       const ab = _ab.abilities[name];
+      // HV 新增/改名技能时 _ab.abilities 无此键 → 跳过该项, 避免整段汉化崩溃。
+      if (!ab) {
+        console.warn('[HVAA][i18n] 技能表缺少此项, 已跳过:', JSON.stringify(name));
+        return;
+      }
       let point = _ab.point;
 
       ab.div = div;
@@ -9591,7 +9625,7 @@ if (_query.s === 'Battle') {
 //* [10] Armory - Equiplist
 if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
   const $armory = {};
-  bindArmory($armory, { config: $config }); // 七屏内核收口公共区(2026-06-10)
+  bindArmory($armory, { config: $config, equip: $equip, price: $price }); // 七屏内核收口公共区(2026-06-10; $equip/$price 闭包私有, ctx 注入)
 } else
 // [END 10] Armory - Equiplist */
 
@@ -10035,32 +10069,7 @@ const $config = {
 
     $config.save();
   },
-  reset: function () {
-    $config.settings = JSON.parse(JSON.stringify($config.default));
-  },
-  get: function (key, dvalue, prefix = $config.prefix) {
-    const value = GM_getValue(prefix + key, dvalue);
-    return value;
-  },
-  set: function (key, value, prefix = $config.prefix) {
-    GM_setValue(prefix + key, value);
-    if ($config.ls_savelist.includes(key)) {
-      $config.ls_set(key, value, prefix);
-    }
-  },
-  del: function (key, prefix = $config.prefix) {
-    GM_deleteValue(prefix + key);
-  },
-  ls_get: function (key, dvalue, prefix = $config.prefix) {
-    const value = localStorage.getItem(prefix + key);
-    return value === null ? dvalue : JSON.parse(value);
-  },
-  ls_set: function (key, value, prefix = $config.prefix) {
-    localStorage.setItem(prefix + key, JSON.stringify(value));
-  },
-  ls_del: function (key, prefix = $config.prefix) {
-    localStorage.removeItem(prefix + key);
-  },
+  // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
   create: function () {
     GM_addStyle(/*css*/`
       .hvut-cfg-div { position: absolute; top: 27px; left: 0; width: 60%; height: calc(100% - 27px); padding: 0 20%; overflow: auto; font-size: 10pt; text-align: left; background-color:#EDEBDF; z-index: 9; }
@@ -10151,20 +10160,7 @@ const $config = {
     $input(['button', '恢复'], bottom, null, () => { $config.load($config.settings); });
     $input(['button', '恢复默认'], bottom, null, () => { $config.load($config.default); });
   },
-  open: function (key) {
-    if (!$config.node) {
-      $config.create();
-    }
-    $id('csp').appendChild($config.node.div);
-    $config.load();
-    if (key) {
-      const o = $config.data.find((o) => o.key === key);
-      scrollIntoView(o.node.div);
-    }
-  },
-  close: function () {
-    $config.node.div.remove();
-  },
+  // open/close: 收口 bindConfig(L1)
   set_panel: function (obj = $config.settings) {
     $config.data.forEach((o) => {
       if (!o.key) {
@@ -10191,145 +10187,9 @@ const $config = {
       }
     });
   },
-  get_panel: function () {
-    const obj = {};
-    const errors = [];
-    $config.data.forEach((o) => {
-      if (!o.key) {
-        return;
-      }
-      if (o.disabled === 'persistent' && !IS_ISEKAI || o.disabled === 'isekai' && IS_ISEKAI) {
-        return;
-      }
-      const validation = $config.validate(o);
-      if (validation.error) {
-        errors.push(o);
-        return;
-      }
-      obj[o.key] = validation.value;
-    });
-    if (errors.length) {
-      scrollIntoView(errors[0].node.div);
-      return false;
-    }
-    return obj;
-  },
-  validate_panel: function (e) {
-    const key = e.target.dataset.key;
-    const o = $config.data.find((o) => o.key === key);
-    const validation = $config.validate(o);
-    return validation;
-  },
-  validate: function (o) {
-    let value;
-    let error;
-    if (o.type === 'boolean') {
-      value = o.node.input.checked;
-    } else if (o.type === 'number') {
-      value = Number(o.node.input.value);
-    } else if (o.type === 'string') {
-      value = o.node.input.value;
-    } else if (o.type === 'array') {
-      ({ value, error } = $config.text2array(o.node.input.value, o.value_sep, o.value_type));
-    } else if (o.type === 'object') {
-      ({ value, error } = $config.text2obj(o.node.input.value, o.value_sep, o.value_type));
-    }
-    const validator = $config.validator[o.validator || o.key];
-    if (validator) {
-      const _error = error;
-      ({ value, error } = validator(value));
-      if (!error) {
-        error = _error;
-      }
-    }
-    if (error) {
-      if (!o.node.error) {
-        o.node.error = $element('p', o.node.div);
-      }
-      const html = error.replace(/\n/g, '<br>');
-      o.node.error.innerHTML = '<h3>校验错误</h3>' + html;
-      o.node.div.appendChild(o.node.error);
-      o.node.div.classList.add('hvut-cfg-error');
-    } else {
-      o.node.error?.remove();
-      o.node.div.classList.remove('hvut-cfg-error');
-    }
-    const result = { value, error };
-    return result;
-  },
-  load: function (obj = $config.settings) {
-    $config.set_panel(obj);
-    $config.get_panel();
-  },
-  save: function (panel) {
-    if (panel) {
-      const obj = $config.get_panel();
-      if (!obj) { // error
-        return;
-      }
-      $config.settings = obj;
-    }
-    $config.settings.version = $config.version;
-    $config.set('settings', $config.settings);
-    if (panel) {
-      location.href = location.href;
-    }
-  },
-  text2obj: function (text, sep = ['\n', ':'], type) {
-    const obj = {};
-    const errors = [];
-    text.split(sep[0]).filter((t) => t.trim()).forEach((t) => {
-      const split = split2(t, sep[1]);
-      const key = split[0];
-      let value = split[1];
-      if (!key || !value) {
-        errors.push(t);
-        return true;
-      }
-      if (type === 'number') {
-        value = Number(value);
-        if (isNaN(value)) {
-          errors.push(t);
-          return true;
-        }
-      }
-      obj[key] = value;
-    });
-    const error = errors.join('\n');
-    const result = { value: obj, error };
-    return result;
-  },
-  obj2text: function (obj, sep = ['\n', ':']) {
-    const text = Object.entries(obj).map(([key, value]) => `${key} ${sep[1]} ${value}`).join(sep[0]);
-    return text;
-  },
-  text2array: function (text, sep = '\n', type) {
-    const errors = [];
-    const array = text.split(sep).filter((t) => t.trim()).map((t) => {
-      let value = t.trim();
-      if (type === 'number') {
-        value = Number(value);
-        if (isNaN(value)) {
-          errors.push(t);
-          return true;
-        }
-      }
-      return value;
-    });
-    const error = errors.join('\n');
-    const result = { value: array, error };
-    return result;
-  },
-  array2text: function (array, sep = '\n') {
-    if (!sep.includes('\n')) {
-      sep += ' ';
-    }
-    const text = array.join(sep);
-    return text;
-  },
-
+  // get_panel/validate_panel/validate/load/save/text2obj/obj2text/text2array/array2text: 收口 bindConfig(L1)
 };
-
+bindConfig($config, { skipField: (o) => o.disabled === 'persistent' && !IS_ISEKAI || o.disabled === 'isekai' && IS_ISEKAI }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(主世界按 持久区·isekai)
 $config.init();
 //$config.settings = settings;
 
@@ -10932,6 +10792,8 @@ if ($config.settings.lotteryNotification) {
 //* [1] Character - Character
 if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
   _ch.persona = $id('persona_form').elements.persona_set.value;
+  // _ch 经验模拟器: refuter(2026-06-10) 判 true-dup(公式两版 byte-identical), 但 $input 签名/结构/init流 分叉,
+  // 全收口需结构归一重构 + UI 实站验证 → 留各版待实站基线后专做(详 isekai 版注释)。
   _ch.exp_table = [null, { total: 0 }];
 
   _ch.get_exp = function (level) {
@@ -11506,7 +11368,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     _eq.show_base();
     _eq.equiplist = $equip.list.div($id('eqsb'), false);
     _eq.equiplist.forEach((eq) => {
-      eq.node.div.textContent = eq.node.div.textContent;
+      eq.node.elem.textContent = eq.node.elem.textContent; // 旧 $equip.parse.div→eq.node.div 已随退化改名 eq.node.elem(parse.elem); 主世界 mm 同址早改对(8357), isekai 漏改致 Character eq 页崩
       $element('div', eq.node.wrapper.firstElementChild, ['.hvut-eq-info']).append(
         $element('span', null, [(eq.info.soulbound ? 'Soulbound' : 'Lv.' + eq.info.level), (eq.info.soulbound || !eq.info.tradeable ? '.hvut-eq-untradeable' : '')]), ' : ',
         // [HVAA 移植 chunk1] 新能量模型无潜能等级(tier) → 改显能量(Energy)，避免 "潜能等级 undefined"。
@@ -11824,6 +11686,11 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     const exec = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(div.getAttribute('onmouseover'));
     const name = exec[1];
     const ab = _ab.ability[name];
+    // HV 新增/改名技能时 _ab.ability 无此键 → 跳过该槽位, 不让一项未知技能崩掉整段汉化。
+    if (!ab) {
+      console.warn('[HVAA][i18n] 技能表缺少此项(槽位), 已跳过:', JSON.stringify(name));
+      return;
+    }
 
     ab.slotted = true;
     ab.level = exec[2] ? 0 : ab.unlock.indexOf(parseInt(exec[3])) + 1;
@@ -11859,6 +11726,11 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
   $qsa('#ability_treepane > div').forEach((div) => {
     const name = div.firstElementChild.textContent;
     const ab = _ab.ability[name];
+    // HV 新增/改名技能时 _ab.ability 无此键 → 跳过该项, 避免整段汉化崩溃。
+    if (!ab) {
+      console.warn('[HVAA][i18n] 技能表缺少此项, 已跳过:', JSON.stringify(name));
+      return;
+    }
     let point = _ab.point;
 
     ab.div = div;
@@ -14541,9 +14413,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       eq.data.id = eq.info.eid;
       eq.data.name = eq.info.name;
       eq.data.count = 1;
-      eq.node.div.removeAttribute('onclick');
+      eq.node.elem.removeAttribute('onclick'); // 旧 eq.node.div → eq.node.elem(parse.elem 改名); 主世界 mm 同址 8357 早改对, isekai 漏改
       eq.node.lock = eq.node.wrapper.firstElementChild;
-      eq.node.sub = $element('div', [eq.node.div, 'beforebegin'], ['.hvut-mm-sub']);
+      eq.node.sub = $element('div', [eq.node.elem, 'beforebegin'], ['.hvut-mm-sub']);
       eq.node.eid = $element('span', eq.node.sub, [eq.info.eid, '.hvut-mm-eid']);
       eq.node.check = $input('checkbox', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid } });
       eq.node.price = $input('text', eq.node.sub, { dataset: { action: 'calc', eid: eq.info.eid }, className: 'hvut-mm-price', placeholder: '价格', pattern: '(\\d+|\\d{1,3}(,\\d{3})*)(\\.\\d+)?[KMkm]?' });
@@ -15875,7 +15747,7 @@ if (_query.s === 'Battle' && $id('initform')) {
 //* [20] Armory - Equiplist (能量模型 am 体系七屏; 收口内核 bindArmory)
 if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
   const $armory = {};
-  bindArmory($armory, { config: $config });
+  bindArmory($armory, { config: $config, equip: $equip, price: $price });
 } else
 // [END 20] Armory - Equiplist */
 
