@@ -55,4 +55,49 @@ describe("checkCondition 纯化(吃 snap)", () => {
   it("AND 内一假 → 该组 false", () => {
     expect(checkCondition([["hp,2,60", "mp,1,90"]], baseSnap)).toBe(false);
   });
+
+  it("向后兼容：空数组条件 → false（沿用 legacy）", () => {
+    expect(checkCondition([], baseSnap)).toBe(false);
+  });
+});
+
+describe("非门扩展(v2)", () => {
+  // 前缀 "!" = 子句非门；行首 "||" = 该行并联(OR)；纯非门行 = 全局前置守卫。
+  it("带状(前置守卫)：!mp,4,25 在前 + mp,4,45 → 仅 (25,45] 触发", () => {
+    const band = [["!mp,4,25"], ["mp,4,45"]];
+    expect(checkCondition(band, { mp: 40 })).toBe(true); // 25<40<=45 → 用
+    expect(checkCondition(band, { mp: 20 })).toBe(false); // 守卫触发(mp<=25) → 顺延
+    expect(checkCondition(band, { mp: 50 })).toBe(false); // 正向 mp<=45 不满足
+    expect(checkCondition(band, { mp: 25 })).toBe(false); // 边界:mp<=25 守卫触发
+  });
+
+  it("纯守卫(无正向行)：未触发 → true / 触发 → false", () => {
+    expect(checkCondition([["!mp,4,25"]], { mp: 30 })).toBe(true);
+    expect(checkCondition([["!mp,4,25"]], { mp: 20 })).toBe(false);
+  });
+
+  it("多守卫(分行)：任一触发即整体 false", () => {
+    const cfg = [["!mp,4,25"], ["!hp,2,10"], ["mp,4,45"]];
+    expect(checkCondition(cfg, { mp: 40, hp: 50 })).toBe(true); // 都没触发 + 正向成立
+    expect(checkCondition(cfg, { mp: 40, hp: 5 })).toBe(false); // hp<10 守卫触发
+  });
+
+  it("单行多非门(串联 AND)：仅当全部排除条件成立才触发守卫", () => {
+    const cfg = [["!mp,4,25", "!hp,4,25"]];
+    expect(checkCondition(cfg, { mp: 20, hp: 20 })).toBe(false); // 两者都<=25 → 触发
+    expect(checkCondition(cfg, { mp: 20, hp: 90 })).toBe(true); // 仅 mp 低 → 不触发(AND)
+  });
+
+  it("混合行(局部非门,串联)：mp,1,30 AND 非(soloMonsterHp<=25)", () => {
+    const cfg = [["mp,1,30", "!soloMonsterHp,4,25"]];
+    expect(checkCondition(cfg, { mp: 40, soloMonsterHp: 100 })).toBe(true); // mp>30 且 非濒死独怪
+    expect(checkCondition(cfg, { mp: 40, soloMonsterHp: 20 })).toBe(false); // 独怪 HP<=25 → 非门使本行假
+    expect(checkCondition(cfg, { mp: 20, soloMonsterHp: 100 })).toBe(false); // mp>30 不成立
+  });
+
+  it("行并联(||)：行内任一子句成立即该行 true", () => {
+    const cfg = [["||", "hp,2,30", "mp,2,30"]];
+    expect(checkCondition(cfg, { hp: 50, mp: 20 })).toBe(true); // mp<30
+    expect(checkCondition(cfg, { hp: 50, mp: 50 })).toBe(false); // 两者都不<30
+  });
 });

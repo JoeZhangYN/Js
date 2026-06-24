@@ -106,22 +106,14 @@ export function init() {
   }
   // 移动端长时间挂机防卡死：absolute 时钟级 reload，与 reloader.delayReload（action idle 计时）正交
   setupPageRefresh(g("option"));
-  if (
-    gE('[class^="c5"],[class^="c4"]') &&
+  if (gE('[class^="c5"],[class^="c4"]')) {
+    // 旧版会跳 dodying README 字体说明；改为内联提示，不再外链导航。
     _alert(
-      1,
-      "请设置字体\n使用默认字体可能使某些功能失效\n是否查看相关说明？",
-      "請設置字體\n使用默認字體可能使某些功能失效\n是否查看相關說明？",
-      "Please set the font\nThe default font may make some functions fail to work\nDo you want to see instructions?"
-    )
-  ) {
-    openUrl(
-      `https://github.com/dodying/UserJs/blob/master/HentaiVerse/hvAutoAttack/README${
-        g("lang") === "2" ? "_en.md#about-font" : ".md#关于字体的说明"
-      }`,
-      true
+      0,
+      "请设置字体：使用默认字体可能使某些功能失效。\n请在 HV 设置(Settings) → Style 里把界面字体设为非默认(如 Verdana / Arial)。",
+      "請設置字體：使用默認字體可能使某些功能失效。\n請在 HV 設置(Settings) → Style 裡把界面字體設為非默認(如 Verdana / Arial)。",
+      "Please set a font: the default font may break some features.\nIn HV Settings → Style, set the UI font to a non-default one (e.g. Verdana / Arial)."
     );
-    return;
   }
   unsafeWindow = typeof unsafeWindow === "undefined" ? window : unsafeWindow;
   g("spellAoe", getValue("spellAoe", true) || {});

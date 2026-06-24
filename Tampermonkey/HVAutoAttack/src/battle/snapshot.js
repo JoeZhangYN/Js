@@ -160,6 +160,8 @@ export function collectSnapshot() {
     spiritOn: isSpiritActive(spiritEl),
     monsters,
     aliveCount: monsters.filter((m) => !m.isDead).length,
+    // 单怪 HP%（0..100，对齐条件里 hp/mp 口径）：供非门表达"濒死的怪不上 debuff"等。
+    ...monsterHpVars(monsters),
     playerBuffs: playerEffects.map((e) => e.img),
     playerEffectTurns: Object.fromEntries(playerEffects.map((e) => [e.img, e.turns])),
     // ether-tap 玩家效果事实（attack ether-tap gate 用，避免 decideAttack 再读 DOM）：
@@ -208,4 +210,21 @@ export function assertNoDomRefs(snap) {
  */
 export function aliveMonstersByOrder(snap) {
   return [...snap.monsters].sort((a, b) => a.order - b.order).filter((m) => !m.isDead);
+}
+
+/**
+ * 单怪 HP% 派生量（0..100，对齐条件 hp/mp 口径）。供非门"濒死守卫"等表达：
+ * `!soloMonsterHp,4,25` = 仅 1 怪存活且其 HP≤25% 时排除（不放 Drain 等）。
+ * 缺省 100（满血）→ 无对应目标态时守卫不触发、不误伤。纯函数（不读 DOM）。
+ * @param {import("../core/types.js").MonsterFacts[]} monsters
+ * @returns {{soloMonsterHp:number, lowestMonsterHp:number, firstMonsterHp:number}}
+ */
+export function monsterHpVars(monsters) {
+  const alive = monsters.filter((m) => !m.isDead).sort((a, b) => a.order - b.order);
+  const pct = (r) => r * 100;
+  return {
+    soloMonsterHp: alive.length === 1 ? pct(alive[0].hpRatio) : 100,
+    lowestMonsterHp: alive.length ? pct(Math.min(...alive.map((m) => m.hpRatio))) : 100,
+    firstMonsterHp: alive.length ? pct(alive[0].hpRatio) : 100,
+  };
 }

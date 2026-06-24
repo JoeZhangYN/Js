@@ -97,13 +97,22 @@ describe("decidePotion", () => {
     expect(p.candidates).toEqual(["11291"]);
   });
 
-  it("noWaste：deficit 太小（浪费）→ 过滤", () => {
+  it("noWaste：无显式条件 + deficit 太小（浪费）→ 过滤", () => {
     // 11191 Health Draught fallback recovery=200；hpDeficit=10 < 200*0.7 → 浪费跳过
     const p = potionPlan(
       { ...baseOpt, noWastePotion: true },
       snap({ hpDeficit: 10, mpDeficit: 999 })
     );
     expect(p).toEqual({ type: "potion", candidates: ["11291"], noWaste: true });
+  });
+
+  it("noWaste：显式条件满足 → 尊重条件不过滤（即便绝对量算浪费）", () => {
+    // Hp 显式 hp<50 满足(hp=30) + hpDeficit=10(绝对量浪费)→ 仍保留:"条件符合就该用"(message-1 修正)
+    const p = potionPlan(
+      { ...baseOpt, noWastePotion: true, itemHpCondition: [["hp,2,50"]] },
+      snap({ hp: 30, hpDeficit: 10, mpDeficit: 999 })
+    );
+    expect(p.candidates).toEqual(["11191", "11291"]);
   });
 });
 

@@ -42,16 +42,19 @@ export function decidePotion(opt, snap) {
   const name = opt.itemOrderName.split(",");
   const order = opt.itemOrderValue.split(",");
   const noWaste = !!opt.noWastePotion;
+  const tol = opt.potionWasteTolerance ?? 0.7;
   const candidates = [];
   for (let i = 0; i < name.length; i++) {
-    if (
-      opt.item[name[i]] &&
-      checkCondition(opt[`item${name[i]}Condition`], snap) &&
-      (!noWaste ||
-        !isPotionWasteful(order[i], snap, opt.potionWasteTolerance ?? 0.7, getLearnedRecovery))
-    ) {
-      candidates.push(order[i]);
+    if (!opt.item[name[i]]) continue;
+    const cond = opt[`item${name[i]}Condition`];
+    if (!checkCondition(cond, snap)) continue;
+    // noWaste 防溢出仅作用于"无显式条件"的常开药；用户显式设了条件（含非门带状）且已满足
+    //  → "条件符合就该用"，不再被绝对量防溢出悄悄否决（根治 message-1 "条件满足却不放"）。
+    const hasExplicitCond = typeof cond !== "undefined";
+    if (noWaste && !hasExplicitCond && isPotionWasteful(order[i], snap, tol, getLearnedRecovery)) {
+      continue;
     }
+    candidates.push(order[i]);
   }
   return { kind: "item-plan", plan: { type: "potion", candidates, noWaste } };
 }
