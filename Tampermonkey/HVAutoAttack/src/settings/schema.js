@@ -44,6 +44,18 @@ export const OPTION_SCHEMA = [
     },
   },
   {
+    key: "drainTargetMaxHp",
+    kind: "checkbox",
+    group: "Debuff",
+    default: true,
+    defaultOn: true,
+    label: {
+      l0: "Drain 优先打血最多的敌人（存活最久，drain 生效最久）",
+      l1: "Drain 優先打血最多的敵人（存活最久，drain 生效最久）",
+      l2: "Drain targets the highest-HP enemy (survives longest, drain lasts longest)",
+    },
+  },
+  {
     key: "skipDebuffForBigSkillThreshold",
     kind: "number",
     group: "Debuff",
