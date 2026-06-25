@@ -1,4 +1,5 @@
 // 6B-2：decideAttack 6 分支 + fall-through 回归锁(纯决策,喂 mock snap.view 断言 AttackPlan)。
+// file-size-gate: exempt test-verbose（6 分支 + fall-through 全覆盖，逐例断言；与 decide-item.test 同类）
 // 统一视图后：怪物事实全在 snap.view（finWeight/hpAbsNow/hpMax/buffs/order），不再传第三参 monsterStatus。
 import { describe, it, expect, beforeEach } from "vitest";
 import { decideAttack } from "./decide-attack.js";
