@@ -1,11 +1,6 @@
 // Commit 4：runRules 编排语义回归锁（when 门控 / decide→dispatch / acted 短路）。
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { runRules } from "./step-runner.js";
-import { g } from "../state/store.js";
-
-beforeEach(() => {
-  g("end", false);
-});
 
 describe("runRules", () => {
   it("when=false → 跳过该 rule 的 decide", () => {

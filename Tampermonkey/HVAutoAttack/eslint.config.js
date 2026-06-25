@@ -31,6 +31,16 @@ export default [
       "no-empty": ["error", { allowEmptyCatch: true }],
       camelcase: "off",
       "no-inner-declarations": "off",
+      // 反退化锁（拆桥）：g("end") 中断 flag 已彻底拆除（write-only 死路，主循环短路改由
+      // dispatch 返 acted 驱动）。禁重新引入；如需"主循环停止"信号，让 decide 返 { kind } + dispatch 返 true。
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.name='g'][arguments.0.value='end']",
+          message:
+            'g("end") 中断 flag 已拆除（write-only 死路）。主循环停止信号由 dispatch 返 acted 驱动，勿重新引入全局 end flag。',
+        },
+      ],
     },
   },
   {

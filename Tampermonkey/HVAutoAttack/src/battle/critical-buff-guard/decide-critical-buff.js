@@ -10,7 +10,6 @@
 // 2. opt.criticalBuffsList 中至少一个 buff 当前 turns <= minTurns（Infinity 永续不算"即将消失"）
 // 3. 当前 MP < criticalBuffMpFloor%（续 buff 大概率失败的阈值）
 import { gE } from "../../dom/query.js";
-import { tagEndToTrue } from "../../state/store.js";
 import { setValue } from "../../state/storage.js";
 import { setAlarm } from "../../alarm/alarm.js";
 
@@ -49,8 +48,8 @@ export function decideCriticalBuff(opt, snap) {
 }
 
 /**
- * SHELL：忠实复刻原 checkCriticalBuffGuard 命中分支的 6 件副作用
- * （console.warn + setAlarm + setValue disabled + 按钮文案 + document.title + tagEnd）。
+ * SHELL：忠实复刻原 checkCriticalBuffGuard 命中分支的 5 件副作用
+ * （console.warn + setAlarm + setValue disabled + 按钮文案 + document.title）。
  * 由 dispatch 在 "critical-pause" kind 接线调用。
  * @param {{ name:string, turns:number, mp:number, mpFloor:number }} plan
  */
@@ -65,5 +64,4 @@ export function executeCriticalPause(plan) {
     pauseBtn.innerHTML = "<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>";
   }
   document.title = `hvAA 暂停: ${plan.name} 即将消失但 MP 不足`;
-  tagEndToTrue();
 }

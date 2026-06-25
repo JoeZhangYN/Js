@@ -9,18 +9,13 @@ import { isIsekai, hvAAOriginal, hvAAIsekai } from "../env.js";
  * @param {*=} value
  * @returns {*} 读模式返值；无 key 返整个 namespace 对象
  * @example
- *   g("end")          // 读
- *   g("end", true)    // 写
- *   g()               // 整个 namespace
+ *   g("option")          // 读
+ *   g("timeNow", 0)      // 写
+ *   g()                  // 整个 namespace
  */
 export function g(key, value) {
   const hvAA = isIsekai ? hvAAIsekai : hvAAOriginal;
   if (key === undefined && value === undefined) return hvAA;
   if (value === undefined) return hvAA[key];
   hvAA[key] = value;
-}
-
-/** 标记当前主循环步骤已结束。Phase 5 会换成 ActionResult discriminated union。 */
-export function tagEndToTrue() {
-  g("end", true);
 }

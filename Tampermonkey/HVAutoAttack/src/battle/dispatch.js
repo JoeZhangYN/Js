@@ -4,8 +4,7 @@
 // PURE decide 完成，dispatch 只翻译数据 → 副作用（含 isOn 写前探活）。
 import { gE } from "../dom/query.js";
 import { attemptClick, attemptClickWithTarget } from "../dom/attempt-click.js";
-import { tagEndToTrue } from "../state/store.js";
-import { scheduleReload, openUrl } from "../core/navigate.js";
+import { scheduleReload } from "../core/navigate.js";
 import { _alert } from "../core/lang.js";
 import { pauseScript } from "./pause-control.js";
 import { checkAndActivateSpirit } from "./buff/activate-spirit.js";
@@ -26,7 +25,7 @@ export function dispatch(result, snap) {
       return false;
 
     case "click":
-      // attemptClick 内含 isOn 探活 + click + tagEnd，失败（按钮禁用/缺失）返 false 不设 end
+      // attemptClick 内含 isOn 探活 + click，失败（按钮禁用/缺失）返 false → 后续 rule 接管
       return attemptClick(result.selector);
 
     case "click-skill-then-target":
@@ -40,29 +39,22 @@ export function dispatch(result, snap) {
       if (!el) return false;
       el.click();
       scheduleReload(result.delaySec);
-      tagEndToTrue();
       return true;
     }
 
     case "alert-and-pause":
       _alert(0, result.msg.l0, result.msg.l1, result.msg.l2);
-      pauseScript(); // setValue disabled + 按钮文案 + tagEnd
+      pauseScript(); // setValue disabled + 按钮文案
       return true;
 
     case "pause":
-      // autoPause：纯暂停（无 alert），setValue disabled + 按钮文案 + tagEnd
+      // autoPause：纯暂停（无 alert），setValue disabled + 按钮文案
       pauseScript();
       return true;
 
     case "critical-pause":
-      // criticalBuffGuard 命中：告警 + 暂停（setAlarm/disabled/按钮/title/tagEnd），副作用在 executeCriticalPause
+      // criticalBuffGuard 命中：告警 + 暂停（setAlarm/disabled/按钮/title），副作用在 executeCriticalPause
       executeCriticalPause(result);
-      return true;
-
-    case "navigate":
-      // 当前无 step 消费者，保留以备 future（reloader 等）。
-      openUrl(result.url);
-      tagEndToTrue();
       return true;
 
     case "halt":

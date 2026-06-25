@@ -1,5 +1,5 @@
 // Commit 3：dispatch 各 kind 行为回归锁（happy-dom 提供 DOM）。
-// 覆盖核心 DOM-click 系 kind；alert-and-pause/navigate 是现有工具的薄封装，留 HV 运行时验证。
+// 覆盖核心 DOM-click 系 kind；alert-and-pause 是现有工具的薄封装，留 HV 运行时验证。
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { dispatch } from "./dispatch.js";
 import { g } from "../state/store.js";
@@ -17,7 +17,6 @@ function mkBtn(id, { disabled = false } = {}) {
 beforeEach(() => {
   document.body.innerHTML = "";
   g("option", {}); // 无 preCastSS → checkAndActivateSpirit 直接 false
-  g("end", false);
   vi.useFakeTimers(); // 防 click-then-reload 的 scheduleReload 真触发 goto
 });
 

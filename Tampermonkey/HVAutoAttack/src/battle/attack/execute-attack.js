@@ -2,7 +2,7 @@
 // 只写不判断（判断全在 decide-attack.js）；isOn 探活属写路径安全读（与原 attack 一致）。
 // 记账：recordFire(CD) / skillOTOS(once-per-battle) / lastSpiritToggleGlobalTurn。
 import { gE, isOn } from "../../dom/query.js";
-import { g, tagEndToTrue } from "../../state/store.js";
+import { g } from "../../state/store.js";
 import { recordFire } from "../../state/cd-tracker.js";
 
 /**
@@ -15,7 +15,7 @@ export function executeAttack(plan) {
       return false;
 
     case "focus":
-      // 原 attack：直接 click 专注按钮（无 isOn / 无 tagEnd，因 attack 是末步）
+      // 原 attack：直接 click 专注按钮（无 isOn，因 attack 是末步）
       gE("#ckey_focus")?.click();
       return true;
 
@@ -24,7 +24,6 @@ export function executeAttack(plan) {
       if (!el) return false;
       el.click();
       g("lastSpiritToggleGlobalTurn", g("globalTurn") || 0);
-      tagEndToTrue();
       return true;
     }
 
@@ -32,14 +31,12 @@ export function executeAttack(plan) {
       // 原：isOn(spell) 探活后 click spell + click target；CD 漂移则退化为普攻该 target
       if (isOn(plan.spellId)) gE(plan.spellId).click();
       gE(`#mkey_${plan.targetId}`)?.click();
-      tagEndToTrue();
       return true;
     }
 
     case "merciful-single": {
       if (isOn(plan.skillId)) gE(plan.skillId).click();
       gE(`#mkey_${plan.targetId}`)?.click();
-      tagEndToTrue();
       return true;
     }
 
@@ -56,13 +53,11 @@ export function executeAttack(plan) {
         }
       }
       gE(`#mkey_${plan.defaultTargetId}`)?.click();
-      tagEndToTrue();
       return true;
     }
 
     case "default":
       gE(`#mkey_${plan.targetId}`)?.click();
-      tagEndToTrue();
       return true;
 
     default:

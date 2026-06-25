@@ -3,7 +3,7 @@
 // 记账：autoTunePotionCount（autoTune 开时本回合用药计数）/ lastSpiritToggleGlobalTurn / recordPreDrink。
 import { gE, isOn } from "../../dom/query.js";
 import { itemSelector } from "../../dom/selectors.js";
-import { g, tagEndToTrue } from "../../state/store.js";
+import { g } from "../../state/store.js";
 import { recordPreDrink } from "../../state/recovery-learner.js";
 
 /**
@@ -17,9 +17,8 @@ export function executeItem(plan, snap) {
       return false;
 
     case "gem": {
-      // 原 useGem：decideGem 命中后 click #ikey_p + tagEnd + autoTune 计数
+      // 原 useGem：decideGem 命中后 click #ikey_p + autoTune 计数
       gE("#ikey_p")?.click();
-      tagEndToTrue();
       if (g("option").autoTune) {
         g("autoTunePotionCount", (g("autoTunePotionCount") || 0) + 1);
       }
@@ -33,7 +32,6 @@ export function executeItem(plan, snap) {
         if (!el) continue;
         if (plan.noWaste) recordPreDrink(id, snap);
         el.click();
-        tagEndToTrue();
         if (g("option").autoTune) {
           g("autoTunePotionCount", (g("autoTunePotionCount") || 0) + 1);
         }
@@ -50,14 +48,12 @@ export function executeItem(plan, snap) {
           if (!el) continue;
           el.click();
           g("lastSpiritToggleGlobalTurn", g("globalTurn") || 0);
-          tagEndToTrue();
           return true;
         }
         if (attempt.kind === "focus") {
           const el = gE("#ckey_focus");
           if (!el) continue;
           el.click();
-          tagEndToTrue();
           return true;
         }
         if (attempt.kind === "draught") {
@@ -65,7 +61,6 @@ export function executeItem(plan, snap) {
           if (!el) continue;
           recordPreDrink(attempt.id, snap);
           el.click();
-          tagEndToTrue();
           return true;
         }
       }
@@ -78,7 +73,6 @@ export function executeItem(plan, snap) {
         const el = gE(itemSelector(id));
         if (!el) continue;
         el.click();
-        tagEndToTrue();
         return true;
       }
       return false;

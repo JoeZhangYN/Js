@@ -1,4 +1,4 @@
-// 核心类型定义（JSDoc）。Phase 5 ActionResult discriminated union 替代 g("end") 中断 flag。
+// 核心类型定义（JSDoc）。ActionResult discriminated union 承载 PURE decide 的决策结果，dispatch 翻译为副作用。
 // 这文件 export {} 让它成为 ES module；类型仅 IDE 提示用。
 
 /**
@@ -19,7 +19,6 @@
  *         | { kind: "alert-and-pause", msg: { l0: string, l1: string, l2: string } }
  *         | { kind: "pause" }
  *         | { kind: "critical-pause", name: string, turns: number, mp: number, mpFloor: number }
- *         | { kind: "navigate", url: string, delayMs?: number }
  *         | { kind: "attack-plan", plan: AttackPlan }
  *         | { kind: "item-plan", plan: ItemPlan }
  *         | { kind: "channel-plan", plan: ChannelPlan }
