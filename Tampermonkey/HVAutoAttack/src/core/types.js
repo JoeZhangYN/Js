@@ -119,10 +119,11 @@
  * @property {boolean} channeling
  * @property {boolean} spiritOn
  * @property {MonsterFacts[]} monsters
+ * @property {UnifiedMonster[]} view             统一怪物视图(snap+monsterStatus+db join)；目标选择/派生量从此派生
  * @property {number} aliveCount
- * @property {number} soloMonsterHp              仅 1 怪存活时该怪 HP%（0..100），否则 100；非门"濒死守卫"用
- * @property {number} lowestMonsterHp            存活怪里最低 HP%（0..100），无存活则 100
- * @property {number} firstMonsterHp             order 最小存活怪 HP%（0..100），无存活则 100
+ * @property {number} soloMonsterHpPercent       仅 1 怪存活时该怪血条%（0..100），否则 100；非门"濒死守卫"用
+ * @property {number} lowestMonsterHpPercent     存活怪里最低血条%（0..100），无存活则 100
+ * @property {number} firstMonsterHpPercent      order 最小存活怪血条%（0..100），无存活则 100
  * @property {string[]} playerBuffs              img name 列表
  * @property {Record<string,number>} playerEffectTurns  img → 剩余回合（Infinity = 永续）
  * @property {boolean=} etherTapActiveX2         玩家有 "Ether Tap (x2)" 效果（attack ether-tap gate 用）

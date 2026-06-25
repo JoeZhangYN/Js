@@ -13,6 +13,8 @@ import { collectCdMap } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
 import { finalizePending } from "../state/recovery-learner.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
+import { joinMonsterView, monsterHpVars } from "./monster-view.js";
+import { getCachedDb } from "../state/monster-cache.js";
 
 /**
  * 解析一个 effect 容器（玩家 #pane_effects 或怪物 .btm6）内全部 img 为 {img, turns}[]。
@@ -144,6 +146,9 @@ function readSkillReady() {
  */
 export function collectSnapshot() {
   const monsters = readMonsters();
+  // 统一怪物视图：join snap.monsters + monsterStatus(绝对血/finWeight) + monster-db 缓存(九抗/身份)。
+  // countMonsterHP(main-loop) 已先于本函数跑 → monsterStatus 最新；db 走 monster-cache 同步快照。
+  const view = joinMonsterView(monsters, g("monsterStatus"), getCachedDb());
   const playerEffects = readPlayerEffects();
   const vitals = readPlayerVitals();
   const spiritEl = gE("#ckey_spirit");
@@ -159,9 +164,10 @@ export function collectSnapshot() {
     channeling: !!gE('#pane_effects>img[src*="channeling"]'),
     spiritOn: isSpiritActive(spiritEl),
     monsters,
+    view,
     aliveCount: monsters.filter((m) => !m.isDead).length,
-    // 单怪 HP%（0..100，对齐条件里 hp/mp 口径）：供非门表达"濒死的怪不上 debuff"等。
-    ...monsterHpVars(monsters),
+    // 单怪 HP%（0..100，对齐条件里 hp/mp 口径）：供非门表达"濒死的怪不上 debuff"等。从统一视图派生。
+    ...monsterHpVars(view),
     playerBuffs: playerEffects.map((e) => e.img),
     playerEffectTurns: Object.fromEntries(playerEffects.map((e) => [e.img, e.turns])),
     // ether-tap 玩家效果事实（attack ether-tap gate 用，避免 decideAttack 再读 DOM）：
@@ -210,21 +216,4 @@ export function assertNoDomRefs(snap) {
  */
 export function aliveMonstersByOrder(snap) {
   return [...snap.monsters].sort((a, b) => a.order - b.order).filter((m) => !m.isDead);
-}
-
-/**
- * 单怪 HP% 派生量（0..100，对齐条件 hp/mp 口径）。供非门"濒死守卫"等表达：
- * `!soloMonsterHp,4,25` = 仅 1 怪存活且其 HP≤25% 时排除（不放 Drain 等）。
- * 缺省 100（满血）→ 无对应目标态时守卫不触发、不误伤。纯函数（不读 DOM）。
- * @param {import("../core/types.js").MonsterFacts[]} monsters
- * @returns {{soloMonsterHp:number, lowestMonsterHp:number, firstMonsterHp:number}}
- */
-export function monsterHpVars(monsters) {
-  const alive = monsters.filter((m) => !m.isDead).sort((a, b) => a.order - b.order);
-  const pct = (r) => r * 100;
-  return {
-    soloMonsterHp: alive.length === 1 ? pct(alive[0].hpRatio) : 100,
-    lowestMonsterHp: alive.length ? pct(Math.min(...alive.map((m) => m.hpRatio))) : 100,
-    firstMonsterHp: alive.length ? pct(alive[0].hpRatio) : 100,
-  };
 }

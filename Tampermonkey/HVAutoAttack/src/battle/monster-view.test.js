@@ -127,4 +127,9 @@ describe("monsterHpVars", () => {
       firstMonsterHpPercent: 100,
     });
   });
+
+  it("1 活 1 死 → 视为独怪(死怪被排除)", () => {
+    const view = [v({ order: 0, hpPercent: 0.1 }), v({ order: 1, hpPercent: 0.9, isDead: true })];
+    expect(monsterHpVars(view).soloMonsterHpPercent).toBe(10);
+  });
 });

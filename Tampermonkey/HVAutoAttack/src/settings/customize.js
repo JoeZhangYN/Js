@@ -8,29 +8,30 @@ import { g } from "../state/store.js";
 export function customizeBox() {
   const customizeBox = gE("body").appendChild(cE("div"));
   customizeBox.className = "customizeBox";
+  // 状态下拉：显示中文 label 更直观，value 保持逻辑键（condition-eval 按 value 求值，不受 label 影响）。
   const statusOption = [
-    '<option value="hp">hp</option>',
-    '<option value="mp">mp</option>',
-    '<option value="sp">sp</option>',
-    '<option value="oc">oc</option>',
+    '<option value="hp">生命(hp)</option>',
+    '<option value="mp">魔法(mp)</option>',
+    '<option value="sp">灵力(sp)</option>',
+    '<option value="oc">超载(oc)</option>',
     '<option value="">- - - -</option>',
-    '<option value="monsterAll">monsterAll</option>',
-    '<option value="monsterAlive">monsterAlive</option>',
-    '<option value="bossAll">bossAll</option>',
-    '<option value="bossAlive">bossAlive</option>',
-    '<option value="soloMonsterHp">soloMonsterHp</option>',
-    '<option value="lowestMonsterHp">lowestMonsterHp</option>',
-    '<option value="firstMonsterHp">firstMonsterHp</option>',
+    '<option value="monsterAll">怪物总数</option>',
+    '<option value="monsterAlive">存活怪数</option>',
+    '<option value="bossAll">Boss总数</option>',
+    '<option value="bossAlive">存活Boss数</option>',
+    '<option value="soloMonsterHpPercent">独怪血量%</option>',
+    '<option value="lowestMonsterHpPercent">最低怪血%</option>',
+    '<option value="firstMonsterHpPercent">首怪血量%</option>',
     '<option value="">- - - -</option>',
-    '<option value="roundNow">roundNow</option>',
-    '<option value="roundAll">roundAll</option>',
-    '<option value="roundLeft">roundLeft</option>',
-    '<option value="roundType">roundType</option>',
-    '<option value="attackStatus">attackStatus</option>',
-    '<option value="turn">turn</option>',
+    '<option value="roundNow">当前轮</option>',
+    '<option value="roundAll">总轮数</option>',
+    '<option value="roundLeft">剩余轮</option>',
+    '<option value="roundType">轮次类型</option>',
+    '<option value="attackStatus">攻击属性</option>',
+    '<option value="turn">回合数</option>',
     '<option value="">- - - -</option>',
-    '<option value="_isCd_">isCd</option>',
-    '<option value="_buffTurn_">buffTurn</option>',
+    '<option value="_isCd_">技能CD</option>',
+    '<option value="_buffTurn_">Buff回合</option>',
     '<option value=""></option>',
   ].join("");
   customizeBox.innerHTML = [
@@ -42,7 +43,7 @@ export function customizeBox() {
     `<select name="statusA">${statusOption}</select>`,
     '<select name="compareAB"><option value="1">＞</option><option value="2">＜</option><option value="3">≥</option><option value="4">≤</option><option value="5">＝</option><option value="6">≠</option></select>',
     `<select name="statusB">${statusOption}</select>`,
-    '<button class="groupAdd">ADD</button>',
+    '<button class="groupAdd">添加</button>',
     // 内联条件/非门帮助（替换原 dodying 外链；点 "?" 切换显示）
     '<div class="hvAACondHelpBox" style="display:none;max-width:540px;margin-top:4px;padding:6px;border:1px solid #888;font-size:small;line-height:1.5;">' +
       '<b>语法</b>: 变量,比较符,值（如 <code>mp,4,45</code>=mp≤45）。比较符 1=&gt; 2=&lt; 3=≥ 4=≤ 5== 6≠。<br>' +
@@ -51,7 +52,7 @@ export function customizeBox() {
       '　·<b>纯非门行</b>=全局前置守卫，任一触发→整条件不成立(顺延)；<br>' +
       '　·<b>混合行</b>(非门+正向)：非门仅局部作用于本行。<br>' +
       '<b>例·带状</b>：行1 <code>非 mp,4,25</code> + 行2 <code>mp,4,45</code> → 仅 mp∈(25,45] 用药（≤25 让给更大的瓶，不再拖到浪费）。<br>' +
-      '<b>新变量</b>: soloMonsterHp / lowestMonsterHp / firstMonsterHp（单怪 HP%）。<b>例</b> Drain 不打濒死独怪：混合行加 <code>!soloMonsterHp,4,25</code>。' +
+      '<b>新变量</b>: soloMonsterHpPercent / lowestMonsterHpPercent / firstMonsterHpPercent（单怪血条%）。<b>例</b> Drain 不打濒死独怪：混合行加 <code>!soloMonsterHpPercent,4,25</code>。' +
       "</div>",
   ].join(" ");
   // "?" 切换内联帮助

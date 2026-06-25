@@ -88,11 +88,11 @@ describe("非门扩展(v2)", () => {
     expect(checkCondition(cfg, { mp: 20, hp: 90 })).toBe(true); // 仅 mp 低 → 不触发(AND)
   });
 
-  it("混合行(局部非门,串联)：mp,1,30 AND 非(soloMonsterHp<=25)", () => {
-    const cfg = [["mp,1,30", "!soloMonsterHp,4,25"]];
-    expect(checkCondition(cfg, { mp: 40, soloMonsterHp: 100 })).toBe(true); // mp>30 且 非濒死独怪
-    expect(checkCondition(cfg, { mp: 40, soloMonsterHp: 20 })).toBe(false); // 独怪 HP<=25 → 非门使本行假
-    expect(checkCondition(cfg, { mp: 20, soloMonsterHp: 100 })).toBe(false); // mp>30 不成立
+  it("混合行(局部非门,串联)：mp,1,30 AND 非(soloMonsterHpPercent<=25)", () => {
+    const cfg = [["mp,1,30", "!soloMonsterHpPercent,4,25"]];
+    expect(checkCondition(cfg, { mp: 40, soloMonsterHpPercent: 100 })).toBe(true); // mp>30 且 非濒死独怪
+    expect(checkCondition(cfg, { mp: 40, soloMonsterHpPercent: 20 })).toBe(false); // 独怪 HP<=25 → 非门使本行假
+    expect(checkCondition(cfg, { mp: 20, soloMonsterHpPercent: 100 })).toBe(false); // mp>30 不成立
   });
 
   it("行并联(||)：行内任一子句成立即该行 true", () => {
