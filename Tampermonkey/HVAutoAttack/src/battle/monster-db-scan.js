@@ -4,6 +4,7 @@ import { gE } from "../dom/query.js";
 import { time } from "../core/time.js";
 import { parseScanResult, checkScanResultValidity } from "../data/monster-db.js";
 import { setMonster } from "../state/monster-db-store.js";
+import { setCachedMonster } from "../state/monster-cache.js";
 
 /** 按怪名在当前战斗 DOM 找对应怪元素（用于 scan 污染校验）。 */
 function findMonsterEl(name) {
@@ -23,7 +24,10 @@ function handleLogRow(node, onUpdate) {
   const monsterEl = findMonsterEl(info.monsterName);
   if (!checkScanResultValidity(monsterEl?.innerHTML)) return;
   Promise.resolve(setMonster(info))
-    .then(() => onUpdate?.())
+    .then(() => {
+      setCachedMonster(info.monsterName, info); // 即时进内存 cache（消本轮中途新 scan 怪的缺口 R2）
+      onUpdate?.();
+    })
     .catch(() => {});
 }
 

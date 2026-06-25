@@ -1,8 +1,8 @@
 // 怪物九抗面板：战斗中按怪名查库展示九抗。本期纯展示，不接攻击决策。
 // 配色语义：抗性高(+)=红(难打) / 弱点(-)=绿(好打) / 0=灰。
 import { gE, cE } from "../dom/query.js";
-import { getMonster } from "../state/monster-db-store.js";
 import { RESIST_KEYS } from "../data/monster-db.js";
+import { primeMonsterCache, getCachedMonster } from "../state/monster-cache.js";
 
 const RESIST_LABEL = {
   fire: "火", cold: "冰", elec: "雷", wind: "风", holy: "圣",
@@ -55,11 +55,14 @@ export async function renderResistPanel() {
     panel = box.appendChild(cE("div"));
     panel.id = "hvAAResist";
   }
+  const els = [...gE("div.btm1", "all")];
+  // 预取本轮怪名库记录进内存 cache：供本面板渲染 + collectSnapshot(同步) join（路径 B 的预取时机）
+  await primeMonsterCache(els.map((el) => gE(".btm3", el)?.textContent));
   const rows = [];
-  for (const el of gE("div.btm1", "all")) {
+  for (const el of els) {
     const name = gE(".btm3", el)?.textContent;
     if (!name) continue;
-    rows.push(renderRow(name, await getMonster(name)));
+    rows.push(renderRow(name, getCachedMonster(name)));
   }
   panel.innerHTML = rows.join("") || "<div class='hvAAResistNone'>无怪物</div>";
 }
