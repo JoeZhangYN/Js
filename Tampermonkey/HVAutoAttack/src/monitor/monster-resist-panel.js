@@ -2,8 +2,8 @@
 // 配色语义：抗性高(+)=红(难打) / 弱点(-)=绿(好打) / 0=灰。
 import { gE, cE } from "../dom/query.js";
 import { getMonster } from "../state/monster-db-store.js";
+import { RESIST_KEYS } from "../data/monster-db.js";
 
-const RESIST_KEYS = ["fire", "cold", "elec", "wind", "holy", "dark", "crushing", "slashing", "piercing"];
 const RESIST_LABEL = {
   fire: "火", cold: "冰", elec: "雷", wind: "风", holy: "圣",
   dark: "暗", crushing: "钝", slashing: "斩", piercing: "刺",

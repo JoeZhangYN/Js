@@ -27,6 +27,11 @@
  * @property {number} [maxHP] 反推满血 HP（从战斗日志累计伤害在怪物死亡时推算，略高估可接受，todo 491）
  */
 
+/** 九抗字段名（顺序固定，与 scan/sync 解析 + UI 显示 + 视图 join 一致）。@type {readonly string[]} */
+export const RESIST_KEYS = [
+  "fire", "cold", "elec", "wind", "holy", "dark", "crushing", "slashing", "piercing",
+];
+
 // scan 结果 HTML 一次性抽取：怪名 / Class / PL / Trainer / Attack + 九抗（符号+数值）。
 // 与上游 parseLog.ts rMatchScan 完全一致（HV scan 面板 HTML 结构固定）。
 // 注：长正则有理论回溯成本，但 HV scan 面板 HTML 结构固定、长度有限，实测无回溯灾难。

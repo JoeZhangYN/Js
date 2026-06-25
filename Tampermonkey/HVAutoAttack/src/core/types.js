@@ -80,6 +80,31 @@
  * @property {Array<{img:string,turns:number}>=} buffEffects 含剩余回合的版本
  */
 
+/**
+ * 统一怪物视图（business capability）。把"怪物"业务实体散落的 3 个面 join 成单一画像：
+ * snap.monsters(DOM 实时态) + monsterStatus(HP 绝对值/权重) + monster-db(九抗/身份)。
+ * 所有 decide 的目标选择从此视图派生(battle/target-strategy.js)，不再各自裸读散落字段。
+ * **血量三概念显式区分**：hpPercent(百分比) / hpAbsNow(绝对当前) / hpMax(绝对满血)。
+ * @typedef {object} UnifiedMonster
+ * @property {number} id            mkey_${id} 点击用
+ * @property {number} order         战场列表位 0..9（snap↔monsterStatus 的 join key）
+ * @property {string} name          怪名(.btm3；monster-db 查询 key)
+ * @property {boolean} isDead
+ * @property {boolean} isBoss       身份维度：boss(.btm2 background)
+ * @property {string=} monsterClass 身份维度：怪物类别(monster-db)
+ * @property {number=} powerLevel   身份维度：PowerLevel(monster-db plvl；系统怪 0)
+ * @property {string=} attackType   怪物攻击类型(monster-db)
+ * @property {string[]} buffs       debuff img name 列表
+ * @property {Array<{img:string,turns:number}>=} buffEffects 含剩余回合
+ * @property {number} hpPercent     血条百分比 0..1（来自 snap.monsters.hpRatio）
+ * @property {number} hpAbsNow      当前绝对血（来自 monsterStatus.hpNow = hpMax×血条%）
+ * @property {number} hpMax         满血绝对值（来自 monsterStatus.hp；日志 HP= 解析）
+ * @property {number=} inferredMaxHP #491 死亡反推满血
+ * @property {number} finWeight     攻击权重（升序首怪；来自 monsterStatus）
+ * @property {{fire:number,cold:number,elec:number,wind:number,holy:number,dark:number,crushing:number,slashing:number,piercing:number}=} resists 九抗(+抗/-弱；monster-db，缺=undefined)
+ * @property {number=} dbMaxHP      monster-db 持久反推满血
+ */
+
 /** 全 23 技能 CD map：code → turnsUntilReady（0=可用）。 @typedef {Record<string, number>} CdMap */
 
 /**
