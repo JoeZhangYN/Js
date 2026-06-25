@@ -5,56 +5,15 @@
 //
 // globalTurn：跨 battle 累计，main() 每 turn +1，持久化到 GM_*。
 // skillLastUsed：Map<code, globalTurn>，持久化。
-// file-size-gate: exempt phase-5b-skill-registry
 import { g } from "./store.js";
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
+import { SKILL_REGISTRY, effectiveSkillId } from "./skill-registry.js";
+import { getLearnedCd } from "./cd-learner.js";
 
-/**
- * 全 23 个 fixed-CD 技能登记表。
- * - 5 物理技能（盾战 T1/T2/T3 + OFC + FRD）
- * - 18 攻击魔法（6 元素 × 3 阶）
- * 双刀 / 双手流派的 T1-T3 ID 与盾战不同（21x1/2/3, 23x1/2/3），动态由 fightingStyle 解析（见 effectiveSkillId）。
- *
- * cdBase 是基础值——HV 用户 Ability 可能减半，本表保守取上限。
- * @typedef {{ id: string, cdBase: number }} SkillEntry
- */
-export const SKILL_REGISTRY = Object.freeze({
-  // 物理（id 由 fightingStyle 决定的用 effectiveSkillId 计算）
-  OFC: { id: "1111", cdBase: 50 },
-  FRD: { id: "1101", cdBase: 10 },
-  T1: { id: "2{style}01", cdBase: 10 }, // {style} 占位符，运行时替换
-  T2: { id: "2{style}02", cdBase: 5 },
-  T3: { id: "2{style}03", cdBase: 10 },
-  // 攻击魔法（基础 CD：tier1=0, tier2=4, tier3=7）
-  m111: { id: "111", cdBase: 0 },
-  m112: { id: "112", cdBase: 4 },
-  m113: { id: "113", cdBase: 7 },
-  m121: { id: "121", cdBase: 0 },
-  m122: { id: "122", cdBase: 4 },
-  m123: { id: "123", cdBase: 7 },
-  m131: { id: "131", cdBase: 0 },
-  m132: { id: "132", cdBase: 4 },
-  m133: { id: "133", cdBase: 7 },
-  m141: { id: "141", cdBase: 0 },
-  m142: { id: "142", cdBase: 4 },
-  m143: { id: "143", cdBase: 7 },
-  m151: { id: "151", cdBase: 0 },
-  m152: { id: "152", cdBase: 4 },
-  m153: { id: "153", cdBase: 7 },
-  m161: { id: "161", cdBase: 0 },
-  m162: { id: "162", cdBase: 4 },
-  m163: { id: "163", cdBase: 7 },
-});
-
-/**
- * 解析含 {style} 占位符的 skillId（盾战=2, 双刀=1, 双手=3 等）。
- * @param {string} idTemplate
- * @param {string} fightingStyle
- */
-export function effectiveSkillId(idTemplate, fightingStyle) {
-  return idTemplate.replace("{style}", fightingStyle);
-}
+// SKILL_REGISTRY / effectiveSkillId 已抽到 skill-registry.js（打破 cd-tracker ↔ cd-learner 环）。
+// 为兼容既有 import 路径（如有），此处转出口。
+export { SKILL_REGISTRY, effectiveSkillId };
 
 /** 启动时把持久化的 globalTurn / skillLastUsed 灌进 g() runtime。Phase 5b-1 由 init.js 调用一次。 */
 export function loadCdState() {
@@ -94,7 +53,10 @@ export function turnsUntilReady(code) {
   if (!entry) return 0;
   const lastUsed = (g("skillLastUsed") || {})[code];
   if (lastUsed == null) return 0;
-  return Math.max(0, entry.cdBase - ((g("globalTurn") || 0) - lastUsed));
+  // F3：用学到的真实 CD，但 Math.min(learned, cdBase) 夹住 —— 学习永不上调 CD（防被篡改成过大值）。
+  // 即便学习值偏小也安全：真正开火仍以 snap.skillReady(DOM) 为权威，学习值只锐化前瞻 lookahead。
+  const effectiveCd = Math.min(getLearnedCd(code), entry.cdBase);
+  return Math.max(0, effectiveCd - ((g("globalTurn") || 0) - lastUsed));
 }
 
 /**

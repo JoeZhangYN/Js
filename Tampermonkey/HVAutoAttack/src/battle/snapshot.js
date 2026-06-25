@@ -12,6 +12,7 @@ import { g } from "../state/store.js";
 import { collectCdMap } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
 import { finalizePending } from "../state/recovery-learner.js";
+import { finalizeCdPending } from "../state/cd-learner.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 import { joinMonsterView, monsterHpVars } from "./monster-view.js";
 import { getCachedDb } from "../state/monster-cache.js";
@@ -154,12 +155,17 @@ export function collectSnapshot() {
   const spiritEl = gE("#ckey_spirit");
   // 战斗日志只解析一遍，两个 DPS 估计复用同一份 events（避免每 turn 重复全量遍历 textlog）
   const battleLog = parseBattleLog();
+  // 学习器 finalize 全部跑在 rules 之前（结算上回合行动的观测）。globalTurn/skillReady 先备好供两用。
+  const globalTurn = g("globalTurn") || 0;
+  const skillReady = readSkillReady();
   // T1: 上回合若有 pending 喝药观测，此处结算 → 学习 delta
   const snapPartial = { ...vitals };
   finalizePending(snapPartial);
+  // F3: 上回合开火的技能若本回合脱灰 → 收敛真实 CD（只需 globalTurn + skillReady）
+  finalizeCdPending({ globalTurn, skillReady });
   return {
     turn: g("turn") || 0,
-    globalTurn: g("globalTurn") || 0,
+    globalTurn,
     ...vitals,
     channeling: !!gE('#pane_effects>img[src*="channeling"]'),
     spiritOn: isSpiritActive(spiritEl),
@@ -179,7 +185,7 @@ export function collectSnapshot() {
     // 深度B：宝石按钮文案（供 decideGem，PURE 不读 DOM）；无宝石按钮 → null
     gemName: gE("#ikey_p")?.textContent ?? null,
     cdMap: collectCdMap(),
-    skillReady: readSkillReady(),
+    skillReady,
     skillOTOS: g("skillOTOS") || {},
     spellAoe: g("spellAoe") || {},
     attackStatus: g("attackStatus"),

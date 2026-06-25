@@ -4,12 +4,14 @@
 import { gE, isOn } from "../../dom/query.js";
 import { g } from "../../state/store.js";
 import { recordFire } from "../../state/cd-tracker.js";
+import { recordCdFire } from "../../state/cd-learner.js";
 
 /**
  * @param {import("../../core/types.js").AttackPlan} plan
+ * @param {import("../../core/types.js").BattleSnapshot} [snap] 当前 turn 快照（学习器记账用，如 recordCdFire）
  * @returns {boolean} acted —— 是否已触发副作用
  */
-export function executeAttack(plan) {
+export function executeAttack(plan, snap) {
   switch (plan.type) {
     case "noop":
       return false;
@@ -48,6 +50,7 @@ export function executeAttack(plan) {
         g("skillOTOS", otos);
         gE(plan.skillId).click();
         recordFire(plan.code);
+        recordCdFire(plan.code, plan.skillId, snap); // F3：记开火 turn，供脱灰时收敛真实 CD
         if (plan.mercifulTargetId != null) {
           gE(`#mkey_${plan.mercifulTargetId}`)?.click();
         }
