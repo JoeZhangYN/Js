@@ -85,14 +85,18 @@
  * snap.monsters(DOM 实时态) + monsterStatus(HP 绝对值/权重) + monster-db(九抗/身份)。
  * 所有 decide 的目标选择从此视图派生(battle/target-strategy.js)，不再各自裸读散落字段。
  * **血量三概念显式区分**：hpPercent(百分比) / hpAbsNow(绝对当前) / hpMax(绝对满血)。
+ * **三个 id 概念显式区分**：`id`=战场槽位 mkey(0-9，点击用) / `monsterId`=全局 MID(库主键) /
+ * `level`=本场战斗等级 LV(决定 maxHP；≠ 固有 powerLevel/plvl)。
  * @typedef {object} UnifiedMonster
- * @property {number} id            mkey_${id} 点击用
+ * @property {number} id            mkey_${id} 点击用（战场槽位 0-9，非全局身份）
  * @property {number} order         战场列表位 0..9（snap↔monsterStatus 的 join key）
- * @property {string} name          怪名(.btm3；monster-db 查询 key)
+ * @property {number=} monsterId    全局怪物 MID（开局 spawn 行；抗性/maxHP 库主键，区别槽位 id）
+ * @property {number=} level        本场战斗等级 LV（spawn 行；决定 maxHP；≠ 固有 powerLevel）
+ * @property {string} name          怪名(.btm3；显示用，库查询改用 monsterId)
  * @property {boolean} isDead
  * @property {boolean} isBoss       身份维度：boss(.btm2 background)
  * @property {string=} monsterClass 身份维度：怪物类别(monster-db)
- * @property {number=} powerLevel   身份维度：PowerLevel(monster-db plvl；系统怪 0)
+ * @property {number=} powerLevel   身份维度：固有 PowerLevel(monster-db plvl；系统怪 0；≠ 战斗 level)
  * @property {string=} attackType   怪物攻击类型(monster-db)
  * @property {string[]} buffs       debuff img name 列表
  * @property {Array<{img:string,turns:number}>=} buffEffects 含剩余回合
@@ -103,6 +107,32 @@
  * @property {number} finWeight     攻击权重（升序首怪；来自 monsterStatus）
  * @property {{fire:number,cold:number,elec:number,wind:number,holy:number,dark:number,crushing:number,slashing:number,piercing:number}=} resists 九抗(+抗/-弱；monster-db，缺=undefined)
  * @property {number=} dbMaxHP      monster-db 持久反推满血
+ */
+
+/**
+ * 开局 spawn 行解析的单怪条目（log-parser.parseMonsterRoster）。
+ * @typedef {object} MonsterRosterEntry
+ * @property {number=} monsterId 全局 MID（spawn 行 `MID=`）
+ * @property {string=} name      怪名（spawn 行 `(<name>)`）
+ * @property {number=} level     本场战斗 LV（spawn 行 `LV=`；决定 maxHP）
+ * @property {number|null} maxHP 满血绝对值（spawn 行 `HP=`；null=该位未解析到 → 占位）
+ */
+
+/**
+ * monsterStatus 单条（g("monsterStatus")；buildMonsterStatus 产出 → countMonsterHP 每 turn 补 isDead/hpNow/finWeight）。
+ * **三 id 概念**：`id`=槽位 mkey(0-9) / `monsterId`=全局 MID / `level`=战斗 LV（见 UnifiedMonster）。
+ * @typedef {object} MonsterStatus
+ * @property {number} order        战场列表位 0..9（snap join key）
+ * @property {number} id           战场槽位 mkey(0-9)，点击用
+ * @property {number=} monsterId   全局 MID（spawn 行；持久跨 turn，供库 join + 占位兜底）
+ * @property {string=} name        怪名（spawn 行）
+ * @property {number=} level       本场战斗 LV（spawn 行）
+ * @property {number} hp           满血绝对值（maxHP；占位时 = fallbackHp）
+ * @property {boolean=} hpInferred true=hp 为占位（开局未解析到），applyInferredMaxHp 据此判定兜底
+ * @property {boolean=} isDead     countMonsterHP 补
+ * @property {number=} hpNow       当前绝对血（countMonsterHP 补 = hp×血条%）
+ * @property {number=} finWeight   攻击权重（countMonsterHP 补）
+ * @property {number=} inferredMaxHP 死亡反推满血（Step4 升级公式）
  */
 
 /** 全 23 技能 CD map：code → turnsUntilReady（0=可用）。 @typedef {Record<string, number>} CdMap */

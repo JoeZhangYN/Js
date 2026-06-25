@@ -16,7 +16,7 @@ import { runRules } from "./step-runner.js";
 import { BATTLE_RULES } from "./rules/index.js";
 import { incrementGlobalTurn, persistCdState } from "../state/cd-tracker.js";
 import { collectSnapshot, assertNoDomRefs } from "./snapshot.js";
-import { parseMonsterMaxHP, buildMonsterStatus } from "./log-parser.js";
+import { parseMonsterRoster, buildMonsterStatus } from "./log-parser.js";
 import { pauseScript } from "./pause-control.js";
 
 export function main() {
@@ -86,8 +86,8 @@ export function fixMonsterStatus() {
   // 优先真实 HP=（与 new-round 同源，消除硬编码假值主路径）；
   // 仅当连开局日志都拿不到（异常态）才退化到 DOM 占位。
   if (hasInit) {
-    const { hps } = parseMonsterMaxHP(battleLog, monsterAll);
-    setValue("monsterStatus", buildMonsterStatus(hps));
+    const { roster } = parseMonsterRoster(battleLog, monsterAll);
+    setValue("monsterStatus", buildMonsterStatus(roster));
     goto();
     return;
   }
@@ -105,6 +105,9 @@ export function fixMonsterStatus() {
       order: i,
       id: i === 9 ? 0 : i + 1,
       hp: monster.style.background === "" ? 1000 : 100000,
+      // DOM 占位（非真实满血，且无 MID/LV）→ hpInferred 标记占位；此路径 monsterId/level 缺，
+      // applyInferredMaxHp 不会误触发（需 MID+LV 双知），保持占位直到下次开局 spawn 解析。
+      hpInferred: true,
     });
   });
   setValue("monsterStatus", monsterStatus);

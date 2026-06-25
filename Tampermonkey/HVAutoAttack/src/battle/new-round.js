@@ -7,7 +7,7 @@ import { goto } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { fixMonsterStatus, pauseChange } from "./main-loop.js";
-import { parseMonsterMaxHP, buildMonsterStatus } from "./log-parser.js";
+import { parseMonsterRoster, buildMonsterStatus } from "./log-parser.js";
 import { renderResistPanel } from "../monitor/monster-resist-panel.js";
 import { observeBattle } from "../state/auto-tune.js";
 
@@ -94,9 +94,9 @@ export function newRound() {
     }
   }
   if (battleLog[battleLog.length - 1].textContent.match("Initializing")) {
-    // 满血 HP 单一来源：开局日志的 HP=（parseMonsterMaxHP 已含 null 守卫 + 首怪 NaN 安全默认）
-    const { hps } = parseMonsterMaxHP(battleLog, g("monsterAll"));
-    const monsterStatus = buildMonsterStatus(hps);
+    // 怪物身份+满血单一来源：开局 spawn 行 MID/name/LV/HP（parseMonsterRoster 含 null 守卫 + 退化降级）
+    const { roster } = parseMonsterRoster(battleLog, g("monsterAll"));
+    const monsterStatus = buildMonsterStatus(roster);
     setValue("monsterStatus", monsterStatus);
     g("monsterStatus", monsterStatus);
     let roundNow;
