@@ -44,6 +44,18 @@ export const OPTION_SCHEMA = [
     },
   },
   {
+    key: "skipWeakenWhenClearReady",
+    kind: "checkbox",
+    group: "Debuff",
+    default: true,
+    defaultOn: true,
+    label: {
+      l0: "OFC/FRD 本回合已就绪则直接跳过全员 Weaken（不等 OC 窗口/怪数门槛）",
+      l1: "OFC/FRD 本回合已就緒則直接跳過全員 Weaken（不等 OC 窗口/怪數門檻）",
+      l2: "Skip All-Weaken when clear-skill is ready THIS turn (ignores OC-window / alive threshold)",
+    },
+  },
+  {
     key: "drainTargetMaxHp",
     kind: "checkbox",
     group: "Debuff",

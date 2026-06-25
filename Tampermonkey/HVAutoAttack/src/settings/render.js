@@ -265,6 +265,7 @@ export function optionBox() {
     '  <div><l01>特殊</l01><l2>Special</l2><input id="debuffSkillAllWk" type="checkbox"><label for="debuffSkillAllWk"><l0>给所有敌人上Weaken</l0><l1>給所有敵人上Weaken</l1><l2>Weakened all enemies.</l2></label></div>{{debuffSkillWkCondition}}',
     '  <div style="border:1px dashed #888;padding:3px;"><b><l0>OFC/FRD 智能跳过</l0><l1>OFC/FRD 智能跳過</l1><l2>OFC/FRD Smart Skip</l2></b><br>',
     '    <input id="skipDebuffForBigSkill_We" type="checkbox" checked data-default-on><label for="skipDebuffForBigSkill_We"><l0>OFC/FRD 即将就绪时跳过全员 Weaken</l0><l1>OFC/FRD 即將就緒時跳過全員 Weaken</l1><l2>Skip All-Weaken when OFC/FRD ready soon</l2></label><br>',
+    '    <input id="skipWeakenWhenClearReady" type="checkbox" checked data-default-on><label for="skipWeakenWhenClearReady"><l0>　└ 大招本回合已就绪则直接跳过 Weaken（怪少的真开场也跳）</l0><l1>　└ 大招本回合已就緒則直接跳過 Weaken（怪少的真開場也跳）</l1><l2>　└ Skip Weaken when clear-skill ready this turn (covers low-monster opening)</l2></label><br>',
     '    <input id="skipDebuffForBigSkill_Im" type="checkbox" checked data-default-on><label for="skipDebuffForBigSkill_Im"><l0>OFC/FRD 即将就绪时跳过全员 Imperil</l0><l1>OFC/FRD 即將就緒時跳過全員 Imperil</l1><l2>Skip All-Imperil when OFC/FRD ready soon</l2></label><br>',
     '    <l0>CD 阈值（剩余 ≤ N 回合时触发）</l0><l1>CD 閾值（剩餘 ≤ N 回合時觸發）</l1><l2>CD threshold (turns)</l2>: <input class="hvAANumber" name="skipDebuffForBigSkillThreshold" placeholder="3" type="text">',
     '  </div>',
