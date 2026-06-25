@@ -104,7 +104,7 @@ export const BATTLE_RULES = [
       opt.debuffSkillSwitch &&
       opt.debuffSkillAllWk &&
       !shouldSkipForBigSkill(opt, snap, "We") &&
-      snap.monsters.filter((m) => m.buffs.some((b) => b.includes("weaken"))).length <
+      snap.view.filter((m) => m.buffs.some((b) => b.includes("weaken"))).length <
         g("monsterAlive") &&
       checkCondition(opt.debuffSkillWkCondition, snap),
     decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "We"),
@@ -116,7 +116,7 @@ export const BATTLE_RULES = [
       opt.debuffSkillSwitch &&
       opt.debuffSkillAllIm &&
       !shouldSkipForBigSkill(opt, snap, "Im") &&
-      snap.monsters.filter((m) => m.buffs.some((b) => b.includes("imperil"))).length <
+      snap.view.filter((m) => m.buffs.some((b) => b.includes("imperil"))).length <
         g("monsterAlive") &&
       checkCondition(opt.debuffSkillImpCondition, snap),
     decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "Im"),

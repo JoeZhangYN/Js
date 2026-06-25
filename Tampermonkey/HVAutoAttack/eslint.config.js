@@ -40,6 +40,11 @@ export default [
           message:
             'g("end") 中断 flag 已拆除（write-only 死路）。主循环停止信号由 dispatch 返 acted 驱动，勿重新引入全局 end flag。',
         },
+        {
+          selector: "MemberExpression[property.name=/^(hpRatio|hpNow)$/]",
+          message:
+            "裸读 .hpRatio/.hpNow 已废止：决策走统一怪物视图 view.hpPercent(百分比)/view.hpAbsNow(绝对当前)（battle/monster-view.js）。视图源头 monster-view/attack 在 config 末尾豁免。",
+        },
       ],
     },
   },
@@ -50,5 +55,11 @@ export default [
       sourceType: "module",
       globals: { ...globals.node },
     },
+  },
+  {
+    // 统一怪物视图"源头"：monster-view join 读 snap.monsters.hpRatio + monsterStatus.hpNow；
+    // attack.countMonsterHP 写 monsterStatus[i].hpNow。它们是收口点本身，合法访问散落字段 → 豁免 hpRatio/hpNow 锁。
+    files: ["src/battle/monster-view.js", "src/battle/attack.js"],
+    rules: { "no-restricted-syntax": "off" },
   },
 ];

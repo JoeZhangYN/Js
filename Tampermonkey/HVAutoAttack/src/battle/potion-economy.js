@@ -54,9 +54,9 @@ export function isPotionWasteful(potionId, snap, tolerance = 0.7, getRecovery) {
 export function isStallMode(snap, opt, roundNow, roundAll) {
   if (opt.stallMode === false) return false;
   if (!roundNow || !roundAll || roundNow >= roundAll) return false;
-  const alive = snap.monsters.filter((m) => !m.isDead);
+  const alive = snap.view.filter((m) => !m.isDead);
   if (alive.length !== 1) return false;
-  if (alive[0].hpRatio < 0.3) return false; // 已经残血，秒了算了
+  if (alive[0].hpPercent < 0.3) return false; // 已经残血，秒了算了
   if ((snap.oc || 0) >= 250) return false; // OC 已满，没必要再拖
   return true;
 }

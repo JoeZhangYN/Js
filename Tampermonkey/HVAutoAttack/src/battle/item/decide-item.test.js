@@ -19,7 +19,7 @@ function snap(over = {}) {
     spiritOn: false,
     globalTurn: 100,
     gemName: null,
-    monsters: [],
+    view: [],
     playerBuffs: [],
     hpDeficit: 0,
     mpDeficit: 0,
@@ -117,10 +117,10 @@ describe("decidePotion", () => {
 });
 
 describe("decideStallTopup", () => {
-  /** 进入 stall 模式的 snap：仅 1 怪存活 + hpRatio 高 + OC 未满。 */
+  /** 进入 stall 模式的 snap：仅 1 怪存活 + hpPercent 高 + OC 未满。 */
   function stallSnap(over = {}) {
     return snap({
-      monsters: [{ id: 1, isDead: false, hpRatio: 0.8 }],
+      view: [{ id: 1, isDead: false, hpPercent: 0.8 }],
       oc: 100,
       ...over,
     });

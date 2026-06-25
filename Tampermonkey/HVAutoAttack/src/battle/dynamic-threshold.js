@@ -7,16 +7,16 @@ import { getCurrentPad as getAutoTuneSafetyPad } from "../state/auto-tune.js";
 
 /**
  * 估算战斗剩余回合（玩家 DPS 输出 / 怪物总剩余 HP）。
- * 简化版：用 aliveCount × 单怪平均 HP%（snap 已有 hpRatio）反推。
+ * 简化版：用 aliveCount × 单怪平均 HP%（snap.view 已有 hpPercent）反推。
  * @param {import("../core/types.js").BattleSnapshot} snap
  * @returns {number} 估计剩余回合数
  */
 export function estimateRemainingTurns(snap) {
-  const alive = snap.monsters.filter((m) => !m.isDead);
+  const alive = snap.view.filter((m) => !m.isDead);
   if (alive.length === 0) return 0;
   // 玩家平均每回合杀怪进度（占总怪 HP 的比例）。HV 法术模式 ~25-50% / turn，物理 ~10-20% / turn。
   const playerKillRatePerTurn = snap.attackStatus !== 0 ? 0.35 : 0.15;
-  const totalRemainingHp = alive.reduce((s, m) => s + m.hpRatio, 0);
+  const totalRemainingHp = alive.reduce((s, m) => s + m.hpPercent, 0);
   return Math.ceil(totalRemainingHp / Math.max(0.05, playerKillRatePerTurn));
 }
 
