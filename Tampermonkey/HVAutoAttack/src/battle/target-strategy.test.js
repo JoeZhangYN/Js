@@ -1,17 +1,33 @@
 // target-strategy 具名策略回归锁。
 import { describe, it, expect } from "vitest";
 import {
-  firstByFinWeight, firstByOrder, highestAbsHp, selfTarget, aoeNeighborAnchor, bossCoverageWindow,
+  firstByFinWeight,
+  firstByOrder,
+  highestAbsHp,
+  selfTarget,
+  aoeNeighborAnchor,
+  bossCoverageWindow,
 } from "./target-strategy.js";
 
 const m = (over = {}) => ({
-  id: 1, order: 0, isDead: false, isBoss: false, buffs: [],
-  hpAbsNow: 1000, hpPercent: 1, finWeight: 1, ...over,
+  id: 1,
+  order: 0,
+  isDead: false,
+  isBoss: false,
+  buffs: [],
+  hpAbsNow: 1000,
+  hpPercent: 1,
+  finWeight: 1,
+  ...over,
 });
 
 describe("firstByFinWeight", () => {
   it("选 finWeight 最小", () => {
-    const r = firstByFinWeight([m({ id: 1, finWeight: 5 }), m({ id: 2, finWeight: 2 }), m({ id: 3, finWeight: 9 })]);
+    const r = firstByFinWeight([
+      m({ id: 1, finWeight: 5 }),
+      m({ id: 2, finWeight: 2 }),
+      m({ id: 3, finWeight: 9 }),
+    ]);
     expect(r.id).toBe(2);
   });
   it("空 → undefined", () => expect(firstByFinWeight([])).toBeUndefined());
@@ -19,14 +35,22 @@ describe("firstByFinWeight", () => {
 
 describe("firstByOrder", () => {
   it("选 order 最小", () => {
-    const r = firstByOrder([m({ id: 1, order: 2 }), m({ id: 2, order: 0 }), m({ id: 3, order: 1 })]);
+    const r = firstByOrder([
+      m({ id: 1, order: 2 }),
+      m({ id: 2, order: 0 }),
+      m({ id: 3, order: 1 }),
+    ]);
     expect(r.id).toBe(2);
   });
 });
 
 describe("highestAbsHp", () => {
   it("选 hpAbsNow 最大(绝对血)", () => {
-    const r = highestAbsHp([m({ id: 1, hpAbsNow: 300 }), m({ id: 2, hpAbsNow: 9000 }), m({ id: 3, hpAbsNow: 500 })]);
+    const r = highestAbsHp([
+      m({ id: 1, hpAbsNow: 300 }),
+      m({ id: 2, hpAbsNow: 9000 }),
+      m({ id: 3, hpAbsNow: 500 }),
+    ]);
     expect(r.id).toBe(2);
   });
   it("根因回归：满血小怪 hpPercent 高但 hpAbsNow 低 → 仍选 hpAbsNow 高的 boss", () => {
@@ -35,7 +59,10 @@ describe("highestAbsHp", () => {
     expect(highestAbsHp([smallFull, bossHurt]).id).toBe(2);
   });
   it("hpAbsNow 相同 → 取 order 最小(稳定)", () => {
-    const r = highestAbsHp([m({ id: 1, order: 1, hpAbsNow: 500 }), m({ id: 2, order: 0, hpAbsNow: 500 })]);
+    const r = highestAbsHp([
+      m({ id: 1, order: 1, hpAbsNow: 500 }),
+      m({ id: 2, order: 0, hpAbsNow: 500 }),
+    ]);
     expect(r.id).toBe(2);
   });
 });

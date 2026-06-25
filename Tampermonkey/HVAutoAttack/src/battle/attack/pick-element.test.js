@@ -3,8 +3,16 @@ import { describe, it, expect } from "vitest";
 import { pickBestElement } from "./pick-element.js";
 
 const resists = (over = {}) => ({
-  fire: 0, cold: 0, elec: 0, wind: 0, holy: 0, dark: 0,
-  crushing: 0, slashing: 0, piercing: 0, ...over,
+  fire: 0,
+  cold: 0,
+  elec: 0,
+  wind: 0,
+  holy: 0,
+  dark: 0,
+  crushing: 0,
+  slashing: 0,
+  piercing: 0,
+  ...over,
 });
 
 describe("pickBestElement", () => {

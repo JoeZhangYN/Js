@@ -6,18 +6,43 @@ import { RESIST_KEYS } from "../data/monster-db.js";
 
 /** snap.monsters 形态怪物 */
 const sm = (over = {}) => ({
-  id: 1, order: 0, isDead: false, isBoss: false, name: "X",
-  hpRatio: 1, buffs: [], buffEffects: [], ...over,
+  id: 1,
+  order: 0,
+  isDead: false,
+  isBoss: false,
+  name: "X",
+  hpRatio: 1,
+  buffs: [],
+  buffEffects: [],
+  ...over,
 });
 /** monsterStatus 形态记录 */
 const st = (over = {}) => ({
-  id: 1, order: 0, isDead: false, hp: 1000, hpNow: 1000, finWeight: 1, ...over,
+  id: 1,
+  order: 0,
+  isDead: false,
+  hp: 1000,
+  hpNow: 1000,
+  finWeight: 1,
+  ...over,
 });
 /** 满九抗库记录 */
 const fullDb = (over = {}) => ({
-  monsterName: "X", monsterClass: "Arthropod", plvl: 300, attack: "Piercing",
-  fire: 50, cold: -20, elec: 0, wind: 10, holy: -50, dark: 30,
-  crushing: 5, slashing: -10, piercing: 0, lastUpdate: "2026-06-25", ...over,
+  monsterName: "X",
+  monsterClass: "Arthropod",
+  plvl: 300,
+  attack: "Piercing",
+  fire: 50,
+  cold: -20,
+  elec: 0,
+  wind: 10,
+  holy: -50,
+  dark: 30,
+  crushing: 5,
+  slashing: -10,
+  piercing: 0,
+  lastUpdate: "2026-06-25",
+  ...over,
 });
 
 describe("joinMonsterView", () => {
@@ -41,11 +66,7 @@ describe("joinMonsterView", () => {
   });
 
   it("血量三概念分别落到 hpPercent/hpAbsNow/hpMax", () => {
-    const view = joinMonsterView(
-      [sm({ hpRatio: 0.4 })],
-      [st({ hp: 2000, hpNow: 800 })],
-      {}
-    );
+    const view = joinMonsterView([sm({ hpRatio: 0.4 })], [st({ hp: 2000, hpNow: 800 })], {});
     expect(view[0].hpPercent).toBe(0.4); // 百分比
     expect(view[0].hpAbsNow).toBe(800); // 绝对当前
     expect(view[0].hpMax).toBe(2000); // 绝对满血
@@ -67,11 +88,9 @@ describe("joinMonsterView", () => {
   });
 
   it("只 maxHP 的库记录(inferAndStoreMaxHP 写的) → resists undefined 但 dbMaxHP 有", () => {
-    const view = joinMonsterView(
-      [sm({ name: "C" })],
-      [st()],
-      { C: { monsterName: "C", maxHP: 900 } }
-    );
+    const view = joinMonsterView([sm({ name: "C" })], [st()], {
+      C: { monsterName: "C", maxHP: 900 },
+    });
     expect(view[0].resists).toBeUndefined();
     expect(view[0].dbMaxHP).toBe(900);
   });

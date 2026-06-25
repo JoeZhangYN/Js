@@ -45,12 +45,7 @@ function decidePlan(opt, snap) {
   const wantsOn = onCond && !snap.spiritOn;
   const wantsOff = offCond && snap.spiritOn;
   const bothActive = onCond && offCond;
-  if (
-    !stallNow &&
-    !bothActive &&
-    curGlobalTurn - lastToggle >= cooldown &&
-    (wantsOn || wantsOff)
-  ) {
+  if (!stallNow && !bothActive && curGlobalTurn - lastToggle >= cooldown && (wantsOn || wantsOff)) {
     return { type: "toggle-spirit" };
   }
 
@@ -64,7 +59,8 @@ function decidePlan(opt, snap) {
 
   // 4. 法术阶（snap.skillReady 替代 isOn；未 ready → fall through）。
   //    autoElement(默认关)：按首怪九抗选最弱属性覆盖 attackStatus；缺 resists/未配 → 回退 snap.attackStatus(零变化)。
-  const autoEl = opt.autoElement && firstMonster ? pickBestElement(firstMonster, opt).element : null;
+  const autoEl =
+    opt.autoElement && firstMonster ? pickBestElement(firstMonster, opt).element : null;
   const atkStatus = autoEl ?? snap.attackStatus;
   if (!etherTapGate && atkStatus !== 0 && firstMonster) {
     // tier 选择也用覆盖后的属性（基于该属性的 skillReady），保持 tier↔spellId 一致
@@ -89,8 +85,7 @@ function decidePlan(opt, snap) {
 
   // 5. 物理技能
   if (opt.skillSwitch && firstMonster) {
-    const firstStunned =
-      opt.fightingStyle === "2" && buffsOf(firstMonster.id).includes("wpn_stun");
+    const firstStunned = opt.fightingStyle === "2" && buffsOf(firstMonster.id).includes("wpn_stun");
 
     // merciful single：最后一回合仅剩一怪，斩杀流血残血（skill ready 才提交，否则落 utility）
     if (
@@ -119,7 +114,12 @@ function decidePlan(opt, snap) {
     if (winner) {
       // T3 多怪 merciful AoE：斩杀第一个流血残血怪（原 attack 只点首个就 return）
       let mercifulTargetId = null;
-      if (opt.mercifulBlow && opt.fightingStyle === "2" && winner.code === "T3" && alive.length > 1) {
+      if (
+        opt.mercifulBlow &&
+        opt.fightingStyle === "2" &&
+        winner.code === "T3" &&
+        alive.length > 1
+      ) {
         const m = alive.find(
           (x) => x.hpAbsNow / x.hpMax < MERCIFUL_HP && buffsOf(x.id).includes("wpn_bleed")
         );

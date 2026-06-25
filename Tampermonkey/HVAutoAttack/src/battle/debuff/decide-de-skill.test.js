@@ -7,7 +7,7 @@ import { decideDeSkill } from "./decide-de-skill.js";
 /** 最小 snap 工厂（只填 decideDeSkill 读到的字段；怪物走统一视图 view）。 */
 function snap(over = {}) {
   return {
-    skillReady: { "211": true, "232": true }, // Dr=211, Si=232
+    skillReady: { 211: true, 232: true }, // Dr=211, Si=232
     spellAoe: {},
     view: [],
     ...over,
@@ -16,7 +16,16 @@ function snap(over = {}) {
 
 /** UnifiedMonster 工厂：默认未死、绝对血 1000、无 buff。 */
 function mon(over = {}) {
-  return { id: 1, order: 0, isDead: false, isBoss: false, hpAbsNow: 1000, hpPercent: 1, buffEffects: [], ...over };
+  return {
+    id: 1,
+    order: 0,
+    isDead: false,
+    isBoss: false,
+    hpAbsNow: 1000,
+    hpPercent: 1,
+    buffEffects: [],
+    ...over,
+  };
 }
 
 describe("decideDeSkill — Drain 目标策略", () => {
@@ -49,10 +58,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
 
   it("Drain hpAbsNow 相同时取 order 最小（稳定 first）", () => {
     const s = snap({
-      view: [
-        mon({ id: 1, order: 0, hpAbsNow: 800 }),
-        mon({ id: 2, order: 1, hpAbsNow: 800 }),
-      ],
+      view: [mon({ id: 1, order: 0, hpAbsNow: 800 }), mon({ id: 2, order: 1, hpAbsNow: 800 })],
     });
     const opt = { debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } };
     expect(decideDeSkill(opt, s).targetSel).toBe("#mkey_1");
@@ -60,10 +66,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
 
   it("drainTargetMaxHp=false 时 Drain 退回打首怪（order 最小）", () => {
     const s = snap({
-      view: [
-        mon({ id: 1, order: 0, hpAbsNow: 300 }),
-        mon({ id: 2, order: 1, hpAbsNow: 900 }),
-      ],
+      view: [mon({ id: 1, order: 0, hpAbsNow: 300 }), mon({ id: 2, order: 1, hpAbsNow: 900 })],
     });
     const opt = { debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true }, drainTargetMaxHp: false };
     expect(decideDeSkill(opt, s).targetSel).toBe("#mkey_1");
@@ -97,10 +100,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
 
   it("非 Drain debuff（Silence）不受开关影响，恒打首怪", () => {
     const s = snap({
-      view: [
-        mon({ id: 1, order: 0, hpAbsNow: 200 }),
-        mon({ id: 2, order: 1, hpAbsNow: 9500 }),
-      ],
+      view: [mon({ id: 1, order: 0, hpAbsNow: 200 }), mon({ id: 2, order: 1, hpAbsNow: 9500 })],
     });
     const opt = { debuffSkillOrderValue: "Si", debuffSkill: { Si: true } };
     expect(decideDeSkill(opt, s).targetSel).toBe("#mkey_1");
@@ -109,10 +109,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
   it("非 Drain debuff AoE≥2 → 保留邻居覆盖优化(首怪邻居)", () => {
     const s = snap({
       spellAoe: { Silence: 2 },
-      view: [
-        mon({ id: 1, order: 0, hpAbsNow: 200 }),
-        mon({ id: 2, order: 1, hpAbsNow: 900 }),
-      ],
+      view: [mon({ id: 1, order: 0, hpAbsNow: 200 }), mon({ id: 2, order: 1, hpAbsNow: 900 })],
     });
     const opt = { debuffSkillOrderValue: "Si", debuffSkill: { Si: true } };
     expect(decideDeSkill(opt, s).targetSel).toBe("#mkey_2"); // 首怪(id1) 的邻居 id2
