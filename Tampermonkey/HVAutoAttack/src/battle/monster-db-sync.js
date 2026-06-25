@@ -3,7 +3,7 @@
 // 跨域 GET 走统一 gmXhr（@connect 已放开该域）；失败保留旧库（空库不致命，靠 scan 自采补充）。
 import { gmXhr } from "../dom/gm-xhr.js";
 import { isIsekai } from "../env.js";
-import { bulkSetMonsters, getMeta, setMeta } from "../state/monster-db-store.js";
+import { bulkSetMonsters, getMeta, setMeta, isProfileEmpty } from "../state/monster-db-store.js";
 import { time } from "../core/time.js";
 
 const DATA_URL = isIsekai
@@ -14,6 +14,7 @@ const META_LAST_SYNC = "lastSync";
 /** 从上游原始对象挑出 MonsterInfo 核心字段（丢弃 created_at 等冗余，统一与 scan 自采同形态）。 */
 function normalize(m) {
   return {
+    monsterId: m.monsterId, // 库主键（实测社区 JSON 含 `monsterId:84361`；旧 normalize 误丢）
     monsterName: m.monsterName,
     monsterClass: m.monsterClass,
     plvl: m.plvl,
@@ -34,7 +35,11 @@ function normalize(m) {
 export async function syncMonsterDb(force = false) {
   if (!force) {
     const last = await getMeta(META_LAST_SYNC);
-    if (last === time(2)) return { synced: false, reason: "already-synced-today" };
+    // 每日 gate；但画像库为空（v2 升级后首次 / 新装）时绕过，立即重建——否则旧 lastSync 残留致
+    // 空库等到明天才填。
+    if (last === time(2) && !(await isProfileEmpty())) {
+      return { synced: false, reason: "already-synced-today" };
+    }
   }
   return new Promise((resolve) => {
     gmXhr({

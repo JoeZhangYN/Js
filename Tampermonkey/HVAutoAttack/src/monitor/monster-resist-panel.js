@@ -1,6 +1,7 @@
 // 怪物九抗面板：战斗中按怪名查库展示九抗。本期纯展示，不接攻击决策。
 // 配色语义：抗性高(+)=红(难打) / 弱点(-)=绿(好打) / 0=灰。
 import { gE, cE } from "../dom/query.js";
+import { g } from "../state/store.js";
 import { RESIST_KEYS } from "../data/monster-db.js";
 import { primeMonsterCache, getCachedMonster } from "../state/monster-cache.js";
 
@@ -56,13 +57,17 @@ export async function renderResistPanel() {
     panel.id = "hvAAResist";
   }
   const els = [...gE("div.btm1", "all")];
-  // 预取本轮怪名库记录进内存 cache：供本面板渲染 + collectSnapshot(同步) join（路径 B 的预取时机）
-  await primeMonsterCache(els.map((el) => gE(".btm3", el)?.textContent));
+  // 怪物身份键 = monsterId（开局 spawn 行 → monsterStatus）。按 order 取 MID（不能用数组下标——
+  // 本面板也会在 main() countMonsterHP 把 monsterStatus 按 finWeight sort 后被 scan 回调触发，
+  // 故按 order 字段映射，DOM `.btm1` 第 i 个 = order i）。
+  const idByOrder = new Map((g("monsterStatus") || []).map((s) => [s.order, s.monsterId]));
+  // 预取本轮怪 MID 画像进内存 cache：供本面板渲染 + collectSnapshot(同步) join（路径 B 预取时机）
+  await primeMonsterCache(els.map((_, i) => idByOrder.get(i)));
   const rows = [];
-  for (const el of els) {
+  els.forEach((el, i) => {
     const name = gE(".btm3", el)?.textContent;
-    if (!name) continue;
-    rows.push(renderRow(name, getCachedMonster(name)));
-  }
+    if (!name) return;
+    rows.push(renderRow(name, getCachedMonster(idByOrder.get(i)))); // 名仅显示，画像按 MID 查
+  });
   panel.innerHTML = rows.join("") || "<div class='hvAAResistNone'>无怪物</div>";
 }

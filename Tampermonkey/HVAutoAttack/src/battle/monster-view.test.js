@@ -16,10 +16,12 @@ const sm = (over = {}) => ({
   buffEffects: [],
   ...over,
 });
-/** monsterStatus 形态记录 */
+/** monsterStatus 形态记录（含 monsterId/level；库 join 现按 MID 而非 name） */
 const st = (over = {}) => ({
   id: 1,
   order: 0,
+  monsterId: 100,
+  level: 365,
   isDead: false,
   hp: 1000,
   hpNow: 1000,
@@ -72,24 +74,30 @@ describe("joinMonsterView", () => {
     expect(view[0].hpMax).toBe(2000); // 绝对满血
   });
 
-  it("db 有九抗 → resists/powerLevel/monsterClass 填充", () => {
-    const view = joinMonsterView([sm({ name: "A" })], [st()], { A: fullDb() });
-    expect(view[0].powerLevel).toBe(300);
+  it("按 MID join：db 有九抗 → resists/powerLevel/monsterClass + monsterId/level 透传", () => {
+    // st.monsterId=100 → 查 dbById[100]（不再按怪名）
+    const view = joinMonsterView([sm({ name: "A" })], [st({ monsterId: 100 })], { 100: fullDb() });
+    expect(view[0].monsterId).toBe(100);
+    expect(view[0].level).toBe(365);
+    expect(view[0].powerLevel).toBe(300); // 固有 PL ≠ 战斗 level
     expect(view[0].monsterClass).toBe("Arthropod");
     expect(view[0].attackType).toBe("Piercing");
     expect(RESIST_KEYS.every((k) => k in view[0].resists)).toBe(true);
     expect(view[0].resists.holy).toBe(-50);
+    expect(view[0].dbProfile).toMatchObject({ monsterClass: "Arthropod" }); // 战斗画像透传
   });
 
-  it("db 缺该怪 → resists/powerLevel undefined（降级不崩）", () => {
-    const view = joinMonsterView([sm({ name: "B" })], [st()], { A: fullDb() });
+  it("MID 不匹配（同名不同怪）→ resists/powerLevel undefined（降级不崩，根治同名混库）", () => {
+    // 即便怪名相同，st.monsterId=200 查不到 dbById[100] → 不误用别的怪的抗性
+    const view = joinMonsterView([sm({ name: "A" })], [st({ monsterId: 200 })], { 100: fullDb() });
     expect(view[0].resists).toBeUndefined();
     expect(view[0].powerLevel).toBeUndefined();
+    expect(view[0].dbProfile).toBeUndefined();
   });
 
-  it("只 maxHP 的库记录(inferAndStoreMaxHP 写的) → resists undefined 但 dbMaxHP 有", () => {
-    const view = joinMonsterView([sm({ name: "C" })], [st()], {
-      C: { monsterName: "C", maxHP: 900 },
+  it("只 maxHP 的库记录 → resists undefined 但 dbMaxHP 有（按 MID）", () => {
+    const view = joinMonsterView([sm()], [st({ monsterId: 300 })], {
+      300: { monsterId: 300, maxHP: 900 },
     });
     expect(view[0].resists).toBeUndefined();
     expect(view[0].dbMaxHP).toBe(900);

@@ -11,22 +11,26 @@ const FALLBACK_HP = 100000;
 
 /**
  * join 三面成统一怪物视图。**按 order 字段对齐** snap↔monsterStatus（monsterStatus 被 finWeight
- * sort 过——attack.js:121，数组下标≠order，故必须建 Map 按 order 对齐，不能用下标）；按 name 查 monster-db。
+ * sort 过——attack.js:121，数组下标≠order，故必须建 Map 按 order 对齐，不能用下标）；
+ * **按 monsterId(全局 MID) 查 monster-db**（MID 来自 monsterStatus，由开局 spawn 行解析——消除
+ * 同名怪歧义，旧"按 name 查"会把同名不同 MID 的怪混库）。
  * @param {import("../core/types.js").MonsterFacts[]} snapMonsters snap.monsters（DOM order）
- * @param {Array<{id:number,order:number,isDead:boolean,hp:number,hpNow:number,finWeight:number,inferredMaxHP?:number}>} monsterStatus g("monsterStatus")（finWeight 升序）
- * @param {Record<string, import("../data/monster-db.js").MonsterInfo|null>} [dbByName] 怪名→库记录（monster-cache 预取，缺省空）
+ * @param {import("../core/types.js").MonsterStatus[]} monsterStatus g("monsterStatus")（含 monsterId/level；finWeight 升序）
+ * @param {Record<number, import("../data/monster-db.js").MonsterInfo|null>} [dbById] MID→画像（monster-cache 预取，缺省空）
  * @returns {import("../core/types.js").UnifiedMonster[]} 保留 snapMonsters 的 order（DOM 序）
  */
-export function joinMonsterView(snapMonsters, monsterStatus, dbByName = {}) {
+export function joinMonsterView(snapMonsters, monsterStatus, dbById = {}) {
   const statusByOrder = new Map((monsterStatus || []).map((s) => [s.order, s]));
   return (snapMonsters || []).map((m) => {
     const st = statusByOrder.get(m.order);
-    const db = dbByName[m.name] || null;
-    // 只 maxHP 的库记录（inferAndStoreMaxHP 写的 {monsterName,maxHP}）无九抗 → resists 留 undefined
+    const db = (st && st.monsterId != null && dbById[st.monsterId]) || null;
+    // 只 maxHP 的库记录无九抗 → resists 留 undefined（fire 缺判定）
     const hasResists = !!db && db.fire !== undefined;
     return {
       id: m.id,
       order: m.order,
+      monsterId: st?.monsterId, // 全局身份（库 join key；区别槽位 id）
+      level: st?.level, // 本场战斗 LV（决定 maxHP；≠ powerLevel）
       name: m.name,
       isDead: m.isDead,
       isBoss: m.isBoss,
@@ -41,6 +45,8 @@ export function joinMonsterView(snapMonsters, monsterStatus, dbByName = {}) {
       inferredMaxHP: st?.inferredMaxHP,
       finWeight: st ? st.finWeight : Infinity,
       resists: hasResists ? Object.fromEntries(RESIST_KEYS.map((k) => [k, db[k]])) : undefined,
+      // 透传 scan 实测战斗画像（evadeVsMagic/magicResistChance/parryChance/hitChance…）供 Step4 物理vs法术决策
+      dbProfile: db || undefined,
       dbMaxHP: db?.maxHP,
     };
   });

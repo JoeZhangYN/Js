@@ -5,7 +5,7 @@ import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 import { parseBattleLog, accumulateDamageByMonster, normalizeMonsterName } from "./log-parser.js";
-import { getMonster, setMonster } from "../state/monster-db-store.js";
+import { getMonsterHp, setMonsterHp } from "../state/monster-db-store.js";
 
 /**
  * 本次页面生命周期内已触发 HP 反推的怪名集合（todo 491）。
@@ -16,23 +16,20 @@ import { getMonster, setMonster } from "../state/monster-db-store.js";
 const _inferredThisPage = new Set();
 
 /**
- * 怪物死亡时从战斗日志累计伤害反推满血 HP，写入 monsterStatus[i].inferredMaxHP 并补写怪物库。
- * todo 491：从 HVDamageNumber 思路借鉴——累计本场战斗对该怪的总伤害即为其满血 HP 下限。
- * overkill（最后一击超出剩余 HP）会导致略高估，可接受；≤0 的值跳过不写库。
- * fire-and-forget：Promise 链内错误静默，不影响主循环。
- * @param {string} monsterName 怪物名（来自 .btm3 textContent）
- * @param {number} inferredMaxHP 反推值
+ * 怪物死亡时从战斗日志累计伤害反推满血 HP，写入 monsterStatus[i].inferredMaxHP 并补 (MID,LV) 满血表。
+ * 借鉴 HVDamageNumber：累计本场对该怪总伤害 ≈ 其满血下限（overkill 略高估，可接受）。
+ * **(MID,LV) 键**（MID 唯一定位怪、LV 决定本场满血）；仅当该 (MID,LV) 无已存值才写——开局 spawn
+ * 行 / scan 的准确值优先，死亡反推是"开局日志整缺"的末位兜底。fire-and-forget：错误静默。
+ * @param {number|undefined} monsterId
+ * @param {number|undefined} level   本场战斗 LV
+ * @param {number} inferredMaxHP
  */
-function inferAndStoreMaxHP(monsterName, inferredMaxHP) {
-  if (!monsterName || inferredMaxHP <= 0) return;
-  getMonster(monsterName)
+function inferAndStoreMaxHP(monsterId, level, inferredMaxHP) {
+  if (monsterId == null || level == null || !(inferredMaxHP > 0)) return;
+  getMonsterHp(monsterId, level)
     .then((existing) => {
-      if (existing && existing.maxHP != null) return; // 已有 maxHP 则不覆盖
-      /** @type {import("../data/monster-db.js").MonsterInfo} */
-      const toStore = existing
-        ? { ...existing, maxHP: inferredMaxHP }
-        : { monsterName, maxHP: inferredMaxHP };
-      return setMonster(toStore);
+      if (existing && existing.maxHP != null) return; // 已有(准确/先前反推)则不覆盖
+      return setMonsterHp(monsterId, level, inferredMaxHP);
     })
     .catch(() => {}); // 静默：写库失败不影响主循环
 }
@@ -84,12 +81,12 @@ export function countMonsterHP() {
     for (const { idx, name } of newlyDead) {
       // 无论累计是否成功，都标记为已处理（避免后续 reload 重复触发）
       _inferredThisPage.add(name);
-      const acc = dmgMap.get(normalizeMonsterName(name)); // 归一两端怪名(消日志冠词/空白差异)再匹配; _inferredThisPage/写库仍用原始名
+      const acc = dmgMap.get(normalizeMonsterName(name)); // 归一两端怪名(消日志冠词/空白差异)再匹配伤害
       if (acc && acc.totalDamage > 0) {
-        // 写入 monsterStatus[idx].inferredMaxHP（供调试/future panel 显示）
-        monsterStatus[idx].inferredMaxHP = acc.totalDamage;
-        // fire-and-forget 写库
-        inferAndStoreMaxHP(name, acc.totalDamage);
+        const st = monsterStatus[idx];
+        st.inferredMaxHP = acc.totalDamage; // 供调试/panel 显示
+        // fire-and-forget 写 (MID,LV) 满血表（MID/LV 来自开局 spawn 行，存于 monsterStatus）
+        inferAndStoreMaxHP(st.monsterId, st.level, acc.totalDamage);
       }
     }
   }

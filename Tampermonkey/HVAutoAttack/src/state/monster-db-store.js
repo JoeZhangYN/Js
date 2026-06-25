@@ -1,31 +1,35 @@
-// 怪物九抗本地库：IndexedDB 存储。
-// 为何不用 GM_setValue：全量库可达数 MB（上游 persistent.json 数万条怪），
-// GM 存大单值会卡且每次读写全量序列化 → 用 IndexedDB 按 key 随机存取。
-// key = monsterName（HVAutoAttack 战斗中 snapshot 已直接采怪名，省掉 SukkaW 的 name→id 两跳）。
-// 主世界 / isekai 分库（两套抗性数据不同）。
+// 怪物本地库：IndexedDB 存储。**主键 = monsterId(全局 MID)**（不再按怪名——同名怪可属不同
+// trainer = 不同 MID = 不同抗性/血量，按名存会互相覆盖）。怪名→MID 由战场 spawn 行 / scan 时
+// 从 monsterStatus 解析（见 battle/log-parser, monster-db-scan）。
+// 为何不用 GM_setValue：全量库可达数 MB → IndexedDB 按 key 随机存取。
+// 主世界 / isekai 分库（两套数据不同）。
+//
+// 双 store（用户定的两表结构）：
+//   - monsterProfile (key=monsterId)        抗性 + 身份 + scan 实测战斗参数（社区同步 + scan 自采）
+//   - monsterHp      (key=`${monsterId}|${level}`) 满血(开局 spawn 行；LV 决定 HP，故 (MID,LV) 复合键)
 import { isIsekai } from "../env.js";
 
 const DB_NAME = isIsekai ? "hvAA_monsterdb_isekai" : "hvAA_monsterdb";
-const DB_VERSION = 1;
-const STORE_MONSTERS = "monsters";
+const DB_VERSION = 2; // v1→v2：弃旧 name 键 "monsters" store，改 monsterProfile(by MID) + 新 monsterHp
+const STORE_PROFILE = "monsterProfile";
+const STORE_HP = "monsterHp";
 const STORE_META = "meta";
 
 /** @type {Promise<IDBDatabase>|null} */
 let dbPromise = null;
 
-/** 打开（或建）库，单例 Promise。 */
+/** 打开（或建/升级）库，单例 Promise。 */
 function openDb() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_MONSTERS)) {
-        db.createObjectStore(STORE_MONSTERS); // out-of-line key：put 显式传 monsterName
-      }
-      if (!db.objectStoreNames.contains(STORE_META)) {
-        db.createObjectStore(STORE_META);
-      }
+      // v1 旧 name 键库弃用（抗性库社区同步自愈 + scan 重扫即回；无法把无 MID 的旧记录安全迁移）
+      if (db.objectStoreNames.contains("monsters")) db.deleteObjectStore("monsters");
+      if (!db.objectStoreNames.contains(STORE_PROFILE)) db.createObjectStore(STORE_PROFILE); // key=monsterId
+      if (!db.objectStoreNames.contains(STORE_HP)) db.createObjectStore(STORE_HP); // key=`${mid}|${lv}`
+      if (!db.objectStoreNames.contains(STORE_META)) db.createObjectStore(STORE_META);
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -55,43 +59,69 @@ function withStore(storeName, mode, fn) {
 }
 
 /**
- * 按怪名查九抗（不存在返回 null）。
- * @param {string} name
+ * 按 MID 查怪物画像（不存在返回 null）。
+ * @param {number} monsterId
  * @returns {Promise<import("../data/monster-db.js").MonsterInfo|null>}
  */
-export function getMonster(name) {
-  return withStore(STORE_MONSTERS, "readonly", (s) => s.get(name)).then(
-    (v) => v ?? null
-  );
+export function getMonsterById(monsterId) {
+  return withStore(STORE_PROFILE, "readonly", (s) => s.get(monsterId)).then((v) => v ?? null);
 }
 
 /**
- * 写入单只怪（scan 自采）。
+ * 写入单只怪画像（scan 自采 / 社区单条）。需带 monsterId，否则跳过（不可无键入库）。
  * @param {import("../data/monster-db.js").MonsterInfo} info
  */
-export function setMonster(info) {
-  return withStore(STORE_MONSTERS, "readwrite", (s) =>
-    s.put(info, info.monsterName)
-  );
+export function setMonsterById(info) {
+  if (!info || info.monsterId == null) return Promise.resolve();
+  return withStore(STORE_PROFILE, "readwrite", (s) => s.put(info, info.monsterId));
 }
 
 /**
- * 批量写入（全量 JSON 下载）——单事务，避免逐条开销。
+ * 批量写画像（全量 JSON 下载）——单事务。丢无 monsterId 的脏行。
  * @param {import("../data/monster-db.js").MonsterInfo[]} infos
  */
 export function bulkSetMonsters(infos) {
-  return withStore(STORE_MONSTERS, "readwrite", (s) => {
+  return withStore(STORE_PROFILE, "readwrite", (s) => {
     for (const info of infos) {
-      if (info && info.monsterName) s.put(info, info.monsterName);
+      if (info && info.monsterId != null) s.put(info, info.monsterId);
     }
   });
 }
 
+/** 画像库是否为空（升级后首次 → 触发强制重同步，绕过 lastSync 每日 gate）。 */
+export function isProfileEmpty() {
+  return withStore(STORE_PROFILE, "readonly", (s) => s.count()).then((n) => !n);
+}
+
+const hpKey = (monsterId, level) => `${monsterId}|${level}`;
+
+/**
+ * 查 (MID, level) 满血（不存在返 null）。MID 唯一定位怪、LV 决定本场满血 → 复合键不跨等级误用。
+ * @param {number} monsterId
+ * @param {number} level
+ * @returns {Promise<{monsterId:number, level:number, maxHP:number, lastUpdate?:string}|null>}
+ */
+export function getMonsterHp(monsterId, level) {
+  return withStore(STORE_HP, "readonly", (s) => s.get(hpKey(monsterId, level))).then((v) => v ?? null);
+}
+
+/**
+ * 写 (MID, level)→满血（开局 spawn 行 / scan cur·max / 死亡反推）。需 MID+level，否则跳过。
+ * @param {number} monsterId
+ * @param {number} level
+ * @param {number} maxHP
+ * @param {string} [lastUpdate]
+ */
+export function setMonsterHp(monsterId, level, maxHP, lastUpdate) {
+  if (monsterId == null || level == null || !(maxHP > 0)) return Promise.resolve();
+  return withStore(STORE_HP, "readwrite", (s) =>
+    s.put({ monsterId, level, maxHP, lastUpdate }, hpKey(monsterId, level))
+  );
+}
+
 /** 读 meta（如 lastSync 日期）。 */
 export function getMeta(key) {
-  return withStore(STORE_META, "readonly", (s) => s.get(key)).then(
-    (v) => v ?? null
-  );
+  return withStore(STORE_META, "readonly", (s) => s.get(key)).then((v) => v ?? null);
 }
 
 /** 写 meta。 */
