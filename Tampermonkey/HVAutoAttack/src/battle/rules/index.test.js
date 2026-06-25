@@ -1,5 +1,6 @@
 // BATTLE_RULES 结构 + 关键 rule 的 when/decide 回归锁。
-// 深度 B 后全部 16 条 decide 均为 PURE（无 delegate）；此处验证结构 / 自包含 decide 形状 / when 门控。
+// file-size-gate: exempt test-verbose（17 条顺序锁 + F1/F4/F5 多 when 守卫逐例断言）
+// 深度 B 后全部 decide 均为 PURE（无 delegate）；此处验证结构 / 自包含 decide 形状 / when 门控。
 import { describe, it, expect, beforeEach } from "vitest";
 import { BATTLE_RULES } from "./index.js";
 import { g } from "../../state/store.js";
@@ -17,7 +18,7 @@ beforeEach(() => {
 });
 
 describe("BATTLE_RULES 结构", () => {
-  it("16 条，顺序与原 runSteps 一致", () => {
+  it("17 条，顺序与原 runSteps 一致（F5 burstControl 插在 useBuffSkill 与 bossImperil 之间）", () => {
     expect(BATTLE_RULES.map((r) => r.name)).toEqual([
       "criticalBuffGuard",
       "flee",
@@ -30,6 +31,7 @@ describe("BATTLE_RULES 结构", () => {
       "useInfusions",
       "useChannelSkill",
       "useBuffSkill",
+      "burstControl",
       "bossImperil",
       "castWeakenAll",
       "castImperilAll",
@@ -168,5 +170,15 @@ describe("Feature 1: 拖战跳 Imperil", () => {
         skipDebuffForBigSkill_We: false,
       })
     ).toBe(true);
+  });
+});
+
+describe("F5: burstControl.when 门控", () => {
+  it("开关 OFF → falsy；ON + debuffSkillSwitch 不为 false → true；debuffSkillSwitch:false → false", () => {
+    expect(byName("burstControl").when({}, {})).toBeFalsy();
+    expect(byName("burstControl").when({}, { burstControlSwitch: true })).toBe(true);
+    expect(
+      byName("burstControl").when({}, { burstControlSwitch: true, debuffSkillSwitch: false })
+    ).toBe(false);
   });
 });

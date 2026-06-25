@@ -14,6 +14,7 @@ import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from
 import { finalizePending } from "../state/recovery-learner.js";
 import { finalizeCdPending } from "../state/cd-learner.js";
 import { finalizeBigSkillPending } from "../state/big-skill-kill-learner.js";
+import { updateBurstFromEvents, getLearnedBurstMap } from "../state/incoming-burst-learner.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 import { joinMonsterView, monsterHpVars } from "./monster-view.js";
 import { getCachedDb } from "../state/monster-cache.js";
@@ -166,6 +167,9 @@ export function collectSnapshot() {
   finalizeCdPending({ globalTurn, skillReady });
   // F4: 上回合 OFC/FRD 开火的 boss 本回合是否已死 → 按 MID 学击杀率（只需 globalTurn + view）
   finalizeBigSkillPending({ globalTurn, view });
+  // F5（默认 OFF，开关关时零开销）：从本回合战斗日志学每 MID 单发最大伤害 + 类型；attach 给 decide。
+  const burstOn = !!g("option")?.burstControlSwitch;
+  if (burstOn) updateBurstFromEvents(battleLog, g("monsterStatus"));
   return {
     turn: g("turn") || 0,
     globalTurn,
@@ -196,6 +200,8 @@ export function collectSnapshot() {
     // PoC L1：战斗日志解析得 DPS 估计（复用上方 battleLog，本 turn 只解析一遍）
     playerIncomingDps: estimatePlayerIncomingDps(battleLog, g("turn")),
     monsterDpsByName: estimatePerMonsterDps(battleLog, g("turn")),
+    // F5：每 MID 致死/爆发伤害学习表（开关关→空，decide 自然 noop）
+    learnedBurstByMid: burstOn ? getLearnedBurstMap() : {},
   };
 }
 

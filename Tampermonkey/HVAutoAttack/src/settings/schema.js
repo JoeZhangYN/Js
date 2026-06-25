@@ -111,6 +111,41 @@ export const OPTION_SCHEMA = [
       l2: "Console log for OFC kill-learning (debug)",
     },
   },
+  // === F5（实验，默认 OFF）：学进场爆发伤害+类型 → 对高爆发怪单点 Silence/Sleep 防血量蹦极 ===
+  {
+    key: "burstControlSwitch",
+    kind: "checkbox",
+    group: "Debuff",
+    default: false,
+    label: {
+      l0: "【实验】学习致死爆发伤害 → 对高爆发怪单点 Silence(法术)/Sleep(物理) 防血量蹦极",
+      l1: "【實驗】學習致死爆發傷害 → 對高爆發怪單點 Silence(法術)/Sleep(物理) 防血量蹦極",
+      l2: "[Experimental] Learn lethal burst → single-target Silence(spell)/Sleep(phys) the bursty monster",
+    },
+  },
+  {
+    key: "burstControlHpFrac",
+    kind: "number",
+    group: "Debuff",
+    default: 50,
+    label: {
+      l0: "蹦极阈值：单发 ≥ 当前血 N% 即视为威胁（触发控制）",
+      l1: "蹦極閾值：單發 ≥ 當前血 N% 即視為威脅（觸發控制）",
+      l2: "Bungee threshold: single hit ≥ N% of current HP triggers control",
+    },
+  },
+  {
+    key: "burstControlSilenceForSpell",
+    kind: "checkbox",
+    group: "Debuff",
+    default: true,
+    defaultOn: true,
+    label: {
+      l0: "法术爆发优先用 Silence（仅挡施法；物理爆发恒用 Sleep）",
+      l1: "法術爆發優先用 Silence（僅擋施法；物理爆發恆用 Sleep）",
+      l2: "Prefer Silence for spell bursts (physical bursts always use Sleep)",
+    },
+  },
   {
     key: "drainTargetMaxHp",
     kind: "checkbox",
