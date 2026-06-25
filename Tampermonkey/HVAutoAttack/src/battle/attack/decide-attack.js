@@ -10,6 +10,7 @@ import { OFFENSIVE_SPELL_LIB } from "../../data/spell-lib.js";
 import { isStallMode } from "../potion-economy.js";
 import { aliveByOrder } from "../monster-view.js";
 import { firstByFinWeight, firstByOrder } from "../target-strategy.js";
+import { pickBestElement } from "./pick-element.js";
 
 /** merciful blow 斩杀 HP 比例阈值（原 attack.js 字面量 0.248）。 */
 const MERCIFUL_HP = 0.248;
@@ -61,13 +62,18 @@ function decidePlan(opt, snap) {
     (!snap.etherTapActiveX2 || snap.etherTapExpiring) &&
     checkCondition(opt.etherTapCondition, snap);
 
-  // 4. 法术阶（snap.skillReady 替代 isOn；未 ready → fall through）
-  if (!etherTapGate && snap.attackStatus !== 0 && firstMonster) {
-    const { tier } = selectSpellTier(opt, snap);
+  // 4. 法术阶（snap.skillReady 替代 isOn；未 ready → fall through）。
+  //    autoElement(默认关)：按首怪九抗选最弱属性覆盖 attackStatus；缺 resists/未配 → 回退 snap.attackStatus(零变化)。
+  const autoEl = opt.autoElement && firstMonster ? pickBestElement(firstMonster, opt).element : null;
+  const atkStatus = autoEl ?? snap.attackStatus;
+  if (!etherTapGate && atkStatus !== 0 && firstMonster) {
+    // tier 选择也用覆盖后的属性（基于该属性的 skillReady），保持 tier↔spellId 一致
+    const snapForTier = autoEl ? { ...snap, attackStatus: atkStatus } : snap;
+    const { tier } = selectSpellTier(opt, snapForTier);
     if (tier > 0) {
-      const spellId = `1${snap.attackStatus}${tier}`;
+      const spellId = `1${atkStatus}${tier}`;
       if (snap.skillReady[spellId]) {
-        const spellKey = `${snap.attackStatus}${tier}`;
+        const spellKey = `${atkStatus}${tier}`;
         const spellName = OFFENSIVE_SPELL_LIB.get(spellKey);
         const aoeCount = spellName
           ? snap.spellAoe[spellName] || (opt.spellAoe && opt.spellAoe[spellKey]) || 1

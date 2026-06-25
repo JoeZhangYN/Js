@@ -50,9 +50,20 @@ export const OPTION_SCHEMA = [
     default: true,
     defaultOn: true,
     label: {
-      l0: "Drain 优先打血最多的敌人（存活最久，drain 生效最久）",
-      l1: "Drain 優先打血最多的敵人（存活最久，drain 生效最久）",
-      l2: "Drain targets the highest-HP enemy (survives longest, drain lasts longest)",
+      l0: "Drain 优先打绝对血最多的敌人（存活最久，drain 生效最久；天然 boss 优先）",
+      l1: "Drain 優先打絕對血最多的敵人（存活最久，drain 生效最久；天然 boss 優先）",
+      l2: "Drain targets the highest absolute-HP enemy (survives longest; boss-first naturally)",
+    },
+  },
+  {
+    key: "autoElement",
+    kind: "checkbox",
+    group: "Spell",
+    default: false,
+    label: {
+      l0: "按九抗自动选最弱属性攻击（需 scan 怪物九抗，无数据回退当前属性）",
+      l1: "按九抗自動選最弱屬性攻擊（需 scan 怪物九抗，無數據回退當前屬性）",
+      l2: "Auto-pick weakest element by monster resists (needs scanned data; falls back otherwise)",
     },
   },
   {

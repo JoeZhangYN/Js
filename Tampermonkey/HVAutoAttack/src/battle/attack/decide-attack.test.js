@@ -124,4 +124,24 @@ describe("decideAttack 6 分支", () => {
   it("无存活怪 → noop", () => {
     expect(plan({}, snap({ view: [vmon({ id: 1, order: 0, isDead: true })] }))).toEqual({ type: "noop" });
   });
+
+  it("autoElement:按首怪九抗选最弱属性(holy)覆盖 attackStatus", () => {
+    const s = snap({
+      attackStatus: 2, // 当前 cold；autoElement 应覆盖为 holy
+      aliveCount: 5,
+      skillReady: { "153": true }, // holy tier3
+      view: [
+        vmon({
+          id: 1, order: 0,
+          resists: { fire: 0, cold: 0, elec: 0, wind: 0, holy: -70, dark: 0, crushing: 0, slashing: 0, piercing: 0 },
+        }),
+      ],
+    });
+    expect(plan({ autoElement: true }, s)).toEqual({ type: "spell", spellId: "153", targetId: 1 });
+  });
+
+  it("autoElement 开但怪未 scan(无 resists) → 回退 snap.attackStatus", () => {
+    const s = snap({ attackStatus: 2, aliveCount: 5, skillReady: { "123": true }, view: [vmon({ id: 1, order: 0 })] });
+    expect(plan({ autoElement: true }, s)).toEqual({ type: "spell", spellId: "123", targetId: 1 });
+  });
 });
