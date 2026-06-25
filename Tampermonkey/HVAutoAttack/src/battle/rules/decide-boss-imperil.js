@@ -4,7 +4,8 @@
 //   该 kind 的 dispatch 已内置 Spirit 前置 + attemptClickWithTarget，正好对应原
 //   checkAndActivateSpirit + attemptClickWithTarget，无需新 kind。
 // 无目标 → {kind:"noop"}。
-import { aliveMonstersByOrder } from "../snapshot.js";
+import { aliveByOrder } from "../monster-view.js";
+import { bossCoverageWindow } from "../target-strategy.js";
 
 /**
  * 决定给哪只未上 Imperil 的 boss 施放 213（AoE 窗口尽量覆盖多个 needy boss）。
@@ -15,31 +16,16 @@ import { aliveMonstersByOrder } from "../snapshot.js";
  */
 export function decideBossImperil(opt, snap) {
   if (!snap.skillReady["213"]) return { kind: "noop" };
-  const sortedAlive = aliveMonstersByOrder(snap);
+  const sortedAlive = aliveByOrder(snap.view);
   const isBossNoIm = (m) => m.isBoss && !m.buffs.includes("imperil");
   if (!sortedAlive.some(isBossNoIm)) return { kind: "noop" };
-  // HV AoE 模式 = backward（参 legacy castDebuffOnAll：click i+1 覆盖 [i, i+1]）。窗口 [c-aoe+1, c]。
-  // tie-break：相同覆盖时优先 click needy boss 自身——保证它必被击中（防 backward/forward 模式不匹配）。
+  // AoE 覆盖窗口走 target-strategy.bossCoverageWindow（backward 窗口 [c-aoe+1,c] + tie-break 优先 needy 自身）。
   const aoe = (snap.spellAoe && snap.spellAoe.Imperil) || opt.debuffSkillAoe?.Im || 1;
-  let bestIdx = -1,
-    bestCov = -1,
-    bestSelfNeed = false;
-  for (let c = 0; c < sortedAlive.length; c++) {
-    const start = Math.max(0, c - aoe + 1);
-    const end = c;
-    let cov = 0;
-    for (let i = start; i <= end; i++) if (isBossNoIm(sortedAlive[i])) cov++;
-    const selfNeed = isBossNoIm(sortedAlive[c]);
-    if (cov > bestCov || (cov === bestCov && selfNeed && !bestSelfNeed)) {
-      bestCov = cov;
-      bestIdx = c;
-      bestSelfNeed = selfNeed;
-    }
-  }
-  if (bestIdx < 0 || bestCov <= 0) return { kind: "noop" };
+  const best = bossCoverageWindow(sortedAlive, aoe, isBossNoIm);
+  if (!best) return { kind: "noop" };
   return {
     kind: "click-skill-then-target",
     skillSel: "213",
-    targetSel: `#mkey_${sortedAlive[bestIdx].id}`,
+    targetSel: `#mkey_${best.id}`,
   };
 }

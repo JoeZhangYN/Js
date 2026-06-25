@@ -47,13 +47,23 @@ export function joinMonsterView(snapMonsters, monsterStatus, dbByName = {}) {
 }
 
 /**
+ * 视图按 order 升序（**含死怪**）。用于需要"order 相邻"语义的场景（如全员 debuff 的 AoE 邻居覆盖：
+ * 点 order 相邻下一只，死怪不可点但占位）。纯函数（返新数组）。
+ * @param {import("../core/types.js").UnifiedMonster[]} view
+ * @returns {import("../core/types.js").UnifiedMonster[]}
+ */
+export function byOrder(view) {
+  return [...(view || [])].sort((a, b) => a.order - b.order);
+}
+
+/**
  * 视图里存活的怪，按 order 升序。收编原散落在 decide-cast-all / decide-de-skill / snapshot 的
  * `[...].sort(order).filter(!isDead)` 内联（避免四份漂移）。纯函数（返新数组）。
  * @param {import("../core/types.js").UnifiedMonster[]} view
  * @returns {import("../core/types.js").UnifiedMonster[]}
  */
 export function aliveByOrder(view) {
-  return [...(view || [])].sort((a, b) => a.order - b.order).filter((m) => !m.isDead);
+  return byOrder(view).filter((m) => !m.isDead);
 }
 
 /**

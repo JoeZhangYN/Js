@@ -134,6 +134,6 @@ export const BATTLE_RULES = [
   // 16. 攻击（最后一步，PURE decideAttack 返 attack-plan）
   {
     name: "attack",
-    decide: (snap, opt) => decideAttack(opt, snap, g("monsterStatus")),
+    decide: (snap, opt) => decideAttack(opt, snap),
   },
 ];

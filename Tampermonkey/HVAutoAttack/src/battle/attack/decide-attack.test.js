@@ -1,4 +1,5 @@
-// 6B-2：decideAttack 6 分支 + fall-through 回归锁(纯决策,喂 mock snap+monsterStatus 断言 AttackPlan)。
+// 6B-2：decideAttack 6 分支 + fall-through 回归锁(纯决策,喂 mock snap.view 断言 AttackPlan)。
+// 统一视图后：怪物事实全在 snap.view（finWeight/hpAbsNow/hpMax/buffs/order），不再传第三参 monsterStatus。
 import { describe, it, expect, beforeEach } from "vitest";
 import { decideAttack } from "./decide-attack.js";
 import { g } from "../../state/store.js";
@@ -18,12 +19,20 @@ function snap(over = {}) {
     skillOTOS: {},
     etherTapActiveX2: false,
     etherTapExpiring: false,
-    monsters: [],
+    view: [],
     ...over,
   };
 }
 
-const plan = (opt, s, m) => decideAttack(opt, s, m).plan;
+/** UnifiedMonster 工厂：默认未死、满血、无 buff、finWeight 1。 */
+function vmon(over = {}) {
+  return {
+    id: 1, order: 0, isDead: false, isBoss: false, finWeight: 1,
+    hpAbsNow: 1000, hpMax: 1000, hpPercent: 1, buffs: [], ...over,
+  };
+}
+
+const plan = (opt, s) => decideAttack(opt, s).plan;
 
 beforeEach(() => {
   g("option", {});
@@ -35,7 +44,7 @@ beforeEach(() => {
 
 describe("decideAttack 返 {kind:'attack-plan'}", () => {
   it("包一层 attack-plan", () => {
-    const r = decideAttack({}, snap(), [{ id: 1, order: 0, isDead: false, hpNow: 1, hp: 1 }]);
+    const r = decideAttack({}, snap({ view: [vmon({ id: 1, hpAbsNow: 1, hpMax: 1 })] }));
     expect(r.kind).toBe("attack-plan");
     expect(r.plan).toBeTruthy();
   });
@@ -43,100 +52,76 @@ describe("decideAttack 返 {kind:'attack-plan'}", () => {
 
 describe("decideAttack 6 分支", () => {
   it("1. focus:opt.focus + 条件满足", () => {
-    expect(plan({ focus: true }, snap(), [])).toEqual({ type: "focus" });
+    expect(plan({ focus: true }, snap())).toEqual({ type: "focus" });
   });
 
   it("2. toggle-spirit:turnOnSS 且 Spirit 未开 + 过防抖冷却", () => {
-    const p = plan({ turnOnSS: true }, snap({ spiritOn: false }), []);
+    const p = plan({ turnOnSS: true }, snap({ spiritOn: false }));
     expect(p).toEqual({ type: "toggle-spirit" });
   });
 
-  it("3. spell 单目标:tier>0 + ready + aoe<2 → 打默认首怪", () => {
-    const ms = [{ id: 5, order: 0, isDead: false, hpNow: 100, hp: 1000 }];
-    const p = plan(
-      {},
-      snap({ attackStatus: 2, aliveCount: 5, skillReady: { "123": true } }),
-      ms
-    );
-    expect(p).toEqual({ type: "spell", spellId: "123", targetId: 5 });
+  it("3. spell 单目标:tier>0 + ready + aoe<2 → 打默认首怪(finWeight 最小)", () => {
+    const s = snap({
+      attackStatus: 2, aliveCount: 5, skillReady: { "123": true },
+      view: [vmon({ id: 5, order: 0, hpAbsNow: 100 })],
+    });
+    expect(plan({}, s)).toEqual({ type: "spell", spellId: "123", targetId: 5 });
   });
 
   it("3b. spell AoE:aoe>=2 + 多怪 → 打 order 最小存活怪", () => {
-    const ms = [
-      { id: 3, order: 1, isDead: false, hpNow: 100, hp: 1000 },
-      { id: 7, order: 0, isDead: false, hpNow: 100, hp: 1000 },
-    ];
-    const p = plan(
-      { spellAoe: { "23": 2 } },
-      snap({ attackStatus: 2, aliveCount: 5, skillReady: { "123": true } }),
-      ms
-    );
-    expect(p).toEqual({ type: "spell", spellId: "123", targetId: 7 });
+    const s = snap({
+      attackStatus: 2, aliveCount: 5, skillReady: { "123": true },
+      view: [
+        vmon({ id: 3, order: 1, finWeight: 1, hpAbsNow: 100 }), // finWeight 最小=默认首怪
+        vmon({ id: 7, order: 0, finWeight: 2, hpAbsNow: 100 }), // order 最小=AoE 锚
+      ],
+    });
+    expect(plan({ spellAoe: { "23": 2 } }, s)).toEqual({ type: "spell", spellId: "123", targetId: 7 });
   });
 
   it("4. merciful-single:末回合独怪 + 流血残血 + OC 够 + 技能 ready", () => {
     g("roundNow", 2);
     g("roundAll", 2);
-    const ms = [{ id: 9, order: 0, isDead: false, hpNow: 100, hp: 1000 }]; // 0.1 < 0.248
     const s = snap({
-      oc: 200,
-      skillReady: { "2203": true },
-      monsters: [{ id: 9, order: 0, isDead: false, buffs: ["wpn_bleed"], hpRatio: 0.1 }],
+      oc: 200, skillReady: { "2203": true },
+      view: [vmon({ id: 9, order: 0, hpAbsNow: 100, hpMax: 1000, buffs: ["wpn_bleed"] })], // 0.1<0.248
     });
-    const p = plan({ mercifulBlow: true, fightingStyle: "2", skillSwitch: true }, s, ms);
-    expect(p).toEqual({ type: "merciful-single", skillId: "2203", targetId: 9 });
+    expect(plan({ mercifulBlow: true, fightingStyle: "2", skillSwitch: true }, s)).toEqual({
+      type: "merciful-single", skillId: "2203", targetId: 9,
+    });
   });
 
   it("5. physical:utility 选中 T1 → 恒带 defaultTargetId,无 merciful", () => {
     g("roundNow", 1);
     g("roundAll", 1);
-    const ms = [{ id: 1, order: 0, isDead: false, hpNow: 500, hp: 1000 }];
     const s = snap({
-      attackStatus: 0,
-      spiritOn: true,
-      oc: 50,
-      skillReady: { "2201": true },
-      monsters: [{ id: 1, order: 0, isDead: false, buffs: [], hpRatio: 0.5 }],
+      attackStatus: 0, spiritOn: true, oc: 50, skillReady: { "2201": true },
+      view: [vmon({ id: 1, order: 0, hpAbsNow: 500, hpMax: 1000, hpPercent: 0.5, buffs: [] })],
     });
-    const p = plan({ skillSwitch: true, fightingStyle: "2" }, s, ms);
-    expect(p).toEqual({
-      type: "physical",
-      skillId: "2201",
-      code: "T1",
-      defaultTargetId: 1,
-      mercifulTargetId: null,
+    expect(plan({ skillSwitch: true, fightingStyle: "2" }, s)).toEqual({
+      type: "physical", skillId: "2201", code: "T1", defaultTargetId: 1, mercifulTargetId: null,
     });
   });
 
   it("6. default:无法术(attackStatus 0)+ 无物理(skillSwitch off)→ 普攻首怪", () => {
-    const ms = [{ id: 4, order: 0, isDead: false, hpNow: 100, hp: 1000 }];
-    const p = plan({}, snap({ attackStatus: 0, spiritOn: false }), ms);
-    expect(p).toEqual({ type: "default", targetId: 4 });
+    const s = snap({ attackStatus: 0, spiritOn: false, view: [vmon({ id: 4, order: 0 })] });
+    expect(plan({}, s)).toEqual({ type: "default", targetId: 4 });
   });
 
   it("fall-through:法术模式但全 tier 未 ready → 落默认普攻", () => {
-    const ms = [{ id: 8, order: 0, isDead: false, hpNow: 100, hp: 1000 }];
-    const p = plan({}, snap({ attackStatus: 2, aliveCount: 5, skillReady: {}, spiritOn: false }), ms);
-    expect(p).toEqual({ type: "default", targetId: 8 });
+    const s = snap({ attackStatus: 2, aliveCount: 5, skillReady: {}, spiritOn: false, view: [vmon({ id: 8, order: 0 })] });
+    expect(plan({}, s)).toEqual({ type: "default", targetId: 8 });
   });
 
   it("ether-tap gate:命中则跳过法术阶 → 落默认(coalescemana+无x2)", () => {
-    const ms = [{ id: 2, order: 0, isDead: false, hpNow: 100, hp: 1000 }];
     const s = snap({
-      attackStatus: 2,
-      aliveCount: 5,
-      skillReady: { "123": true },
-      spiritOn: false,
-      etherTapActiveX2: false,
-      monsters: [{ id: 2, order: 0, isDead: false, buffs: ["coalescemana"] }],
+      attackStatus: 2, aliveCount: 5, skillReady: { "123": true }, spiritOn: false, etherTapActiveX2: false,
+      view: [vmon({ id: 2, order: 0, buffs: ["coalescemana"] })],
     });
-    const p = plan({ etherTap: true, skillSwitch: false }, s, ms);
-    expect(p).toEqual({ type: "default", targetId: 2 });
+    expect(plan({ etherTap: true, skillSwitch: false }, s)).toEqual({ type: "default", targetId: 2 });
   });
 
   it("无存活怪 → noop", () => {
-    expect(plan({}, snap(), [{ id: 1, order: 0, isDead: true, hpNow: 0, hp: 1 }])).toEqual({
-      type: "noop",
-    });
+    expect(plan({}, snap({ view: [vmon({ id: 1, order: 0, isDead: true })] }))).toEqual({ type: "noop" });
   });
 });

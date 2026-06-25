@@ -4,7 +4,7 @@
 // 盾战 combo：T1 stun → T2（晕状态打 T2 = 200 分高优先）→ T3 斩杀（hpRatio<25%+bleed = 1000 分决定性）
 import { checkCondition } from "../../settings/condition-eval.js";
 import { aoeScore } from "../utility-engine.js";
-import { aliveMonstersByOrder } from "../snapshot.js";
+import { aliveByOrder } from "../monster-view.js";
 
 /**
  * State-aware 打分：传入 snap + 首怪 facts，返该 skill 的当前 score（0 = 不该使用）。
@@ -13,7 +13,7 @@ import { aliveMonstersByOrder } from "../snapshot.js";
 function scoreSkillContextual(skill, opt, snap, firstMonster) {
   const firstStunned = !!firstMonster?.buffs?.includes("wpn_stun");
   const firstBleeding = !!firstMonster?.buffs?.includes("wpn_bleed");
-  const firstLowHp = (firstMonster?.hpRatio ?? 1) < 0.25;
+  const firstLowHp = (firstMonster?.hpPercent ?? 1) < 0.25;
   const overrides = opt.skillBaseScore || {};
   switch (skill) {
     case "OFC":
@@ -62,7 +62,7 @@ export function scorePhysicalSkillCandidates(opt, snap, ctx) {
     !!(opt.skillOTOS && opt.skillOTOS[key] && (snap.skillOTOS?.[key] ?? 0) >= 1);
   const ocCur = snap.oc || 0;
 
-  const firstMonster = aliveMonstersByOrder(snap)[0];
+  const firstMonster = aliveByOrder(snap.view)[0];
 
   return skillOrder.flatMap((skill) => {
     const info = skillLib.get(skill);
@@ -84,7 +84,7 @@ export function scorePhysicalSkillCandidates(opt, snap, ctx) {
     const score = scoreSkillContextual(skill, opt, snap, firstMonster);
     let explain = `score=${score}`;
     if (skill === "T2" && firstMonster?.buffs?.includes("wpn_stun")) explain += " (T1+T2 combo)";
-    if (skill === "T3" && (firstMonster?.hpRatio ?? 1) < 0.25 && firstMonster?.buffs?.includes("wpn_bleed")) explain += " (execute)";
+    if (skill === "T3" && (firstMonster?.hpPercent ?? 1) < 0.25 && firstMonster?.buffs?.includes("wpn_bleed")) explain += " (execute)";
     return [{ code: skill, id: info.id, score, oc: info.oc, explain }];
   });
 }

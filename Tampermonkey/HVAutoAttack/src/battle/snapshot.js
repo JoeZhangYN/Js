@@ -206,14 +206,3 @@ export function assertNoDomRefs(snap) {
     }
   }
 }
-
-/**
- * snap.monsters 中存活的怪物，按战场 order 升序。
- * 纯函数：不改 snap，返回新数组（[...] 浅拷贝后 sort）。
- * 调用方：main-loop Boss-Imperil step（取全部）/ decide-skill 首怪（取 [0]）。
- * @param {import("../core/types.js").BattleSnapshot} snap
- * @returns {Array<object>} 按 order 升序的存活怪物
- */
-export function aliveMonstersByOrder(snap) {
-  return [...snap.monsters].sort((a, b) => a.order - b.order).filter((m) => !m.isDead);
-}
