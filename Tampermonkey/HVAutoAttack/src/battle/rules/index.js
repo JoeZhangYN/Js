@@ -92,9 +92,13 @@ export const BATTLE_RULES = [
     decide: (snap, opt) => decideBuff(opt, snap),
   },
   // 12. Boss-Imperil（decide 算 AoE bestIdx 目标 → click-skill-then-target，含 Spirit 前置）
+  //     拖战时跳过：Imperil 只加速击杀，与「让独怪活久攒 OC/蓝」相悖（与 useDeSkill 同款 stall 守卫）。
   {
     name: "bossImperil",
-    when: (snap, opt) => opt.debuffSkillSwitch !== false && !!snap.skillReady["213"],
+    when: (snap, opt) =>
+      !isStallMode(snap, opt, g("roundNow"), g("roundAll")) &&
+      opt.debuffSkillSwitch !== false &&
+      !!snap.skillReady["213"],
     decide: (snap, opt) => decideBossImperil(opt, snap),
   },
   // 13. 全员 Weaken（OFC/FRD 即将就绪时跳过）
@@ -109,10 +113,11 @@ export const BATTLE_RULES = [
       checkCondition(opt.debuffSkillWkCondition, snap),
     decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "We"),
   },
-  // 14. 全员 Imperil
+  // 14. 全员 Imperil（拖战同样跳过——独怪此时也是 Imperil 唯一目标，加速击杀反拖战意图）
   {
     name: "castImperilAll",
     when: (snap, opt) =>
+      !isStallMode(snap, opt, g("roundNow"), g("roundAll")) &&
       opt.debuffSkillSwitch &&
       opt.debuffSkillAllIm &&
       !shouldSkipForBigSkill(opt, snap, "Im") &&

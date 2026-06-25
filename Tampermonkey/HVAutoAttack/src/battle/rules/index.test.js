@@ -1,9 +1,20 @@
 // BATTLE_RULES 结构 + 关键 rule 的 when/decide 回归锁。
 // 深度 B 后全部 16 条 decide 均为 PURE（无 delegate）；此处验证结构 / 自包含 decide 形状 / when 门控。
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { BATTLE_RULES } from "./index.js";
+import { g } from "../../state/store.js";
 
 const byName = (name) => BATTLE_RULES.find((r) => r.name === name);
+
+// 复位 stall 相关 runtime 键：when 守卫现含 isStallMode(读 g(roundNow)/g(roundAll))，
+// 不复位则 isStallMode 越过早退分支后触 snap.view（多数 when 测试喂无 view 的 snap）。
+// 注意：store 的 g(key, undefined) 是「读」(store.js:19)，无法写 undefined → 必须写定义过的
+// falsy 值 0；isStallMode 以 !roundNow 早退，0 即「非 stall」。
+beforeEach(() => {
+  g("roundNow", 0);
+  g("roundAll", 0);
+  g("monsterAlive", 0);
+});
 
 describe("BATTLE_RULES 结构", () => {
   it("16 条，顺序与原 runSteps 一致", () => {
@@ -102,5 +113,60 @@ describe("when 门控", () => {
     expect(
       byName("bossImperil").when({ skillReady: { "213": true } }, { debuffSkillSwitch: false })
     ).toBe(false);
+  });
+});
+
+// Feature 1 回归锁：拖战(isStallMode)时 Imperil 两路(bossImperil/castImperilAll)被守卫跳过，
+// Weaken 不被跳（减伤助生存）。骑 master stallMode 开关，无独立子开关。
+describe("Feature 1: 拖战跳 Imperil", () => {
+  // isStallMode 触发：stallMode!==false + roundNow<roundAll + 恰 1 活怪 + hpPercent>=0.3 + oc<250
+  const stallSnap = (over = {}) => ({
+    skillReady: { "213": true },
+    oc: 100,
+    view: [{ id: 1, order: 0, isDead: false, isBoss: true, hpPercent: 0.6, buffs: [] }],
+    monsters: [{ id: 1, order: 0, isDead: false, isBoss: true }],
+    ...over,
+  });
+  const enterStall = () => {
+    g("roundNow", 1);
+    g("roundAll", 3);
+    g("monsterAlive", 1);
+  };
+
+  it("stall 中 bossImperil.when → false（不再 imperil 独怪）", () => {
+    enterStall();
+    expect(byName("bossImperil").when(stallSnap(), { stallMode: true })).toBeFalsy();
+  });
+
+  it("stallMode:false → bossImperil.when 恢复（由 skillReady 决定）", () => {
+    enterStall(); // roundNow<roundAll 但 stallMode 关 → isStallMode 早退 false
+    expect(byName("bossImperil").when(stallSnap(), { stallMode: false })).toBe(true);
+  });
+
+  it("非 stall（roundNow 未设）→ bossImperil.when 不受影响", () => {
+    expect(byName("bossImperil").when({ skillReady: { "213": true } }, {})).toBe(true);
+  });
+
+  it("stall 中 castImperilAll.when → false", () => {
+    enterStall();
+    expect(
+      byName("castImperilAll").when(stallSnap(), {
+        stallMode: true,
+        debuffSkillSwitch: true,
+        debuffSkillAllIm: true,
+      })
+    ).toBeFalsy();
+  });
+
+  it("stall 中 castWeakenAll.when 仍触发（Weaken 助生存，不被 stall 跳）", () => {
+    enterStall();
+    expect(
+      byName("castWeakenAll").when(stallSnap(), {
+        stallMode: true,
+        debuffSkillSwitch: true,
+        debuffSkillAllWk: true,
+        skipDebuffForBigSkill_We: false,
+      })
+    ).toBe(true);
   });
 });
