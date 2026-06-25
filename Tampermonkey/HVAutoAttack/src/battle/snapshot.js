@@ -13,6 +13,7 @@ import { collectCdMap } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
 import { finalizePending } from "../state/recovery-learner.js";
 import { finalizeCdPending } from "../state/cd-learner.js";
+import { finalizeBigSkillPending } from "../state/big-skill-kill-learner.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 import { joinMonsterView, monsterHpVars } from "./monster-view.js";
 import { getCachedDb } from "../state/monster-cache.js";
@@ -163,6 +164,8 @@ export function collectSnapshot() {
   finalizePending(snapPartial);
   // F3: 上回合开火的技能若本回合脱灰 → 收敛真实 CD（只需 globalTurn + skillReady）
   finalizeCdPending({ globalTurn, skillReady });
+  // F4: 上回合 OFC/FRD 开火的 boss 本回合是否已死 → 按 MID 学击杀率（只需 globalTurn + view）
+  finalizeBigSkillPending({ globalTurn, view });
   return {
     turn: g("turn") || 0,
     globalTurn,

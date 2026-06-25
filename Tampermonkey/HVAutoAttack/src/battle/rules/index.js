@@ -18,6 +18,7 @@ import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../i
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
 import { shouldSkipForBigSkill } from "./big-skill.js";
 import { decideBossImperil } from "./decide-boss-imperil.js";
+import { ofcWillKillBoss } from "../../state/big-skill-kill-learner.js";
 
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
@@ -93,12 +94,18 @@ export const BATTLE_RULES = [
   },
   // 12. Boss-Imperil（decide 算 AoE bestIdx 目标 → click-skill-then-target，含 Spirit 前置）
   //     拖战时跳过：Imperil 只加速击杀，与「让独怪活久攒 OC/蓝」相悖（与 useDeSkill 同款 stall 守卫）。
+  //     F4（默认 OFF）：每只活 boss 都确认 OFC 能秒 → 跳过 boss-Imperil（能秒连 imperil 都不用上）。
   {
     name: "bossImperil",
-    when: (snap, opt) =>
-      !isStallMode(snap, opt, g("roundNow"), g("roundAll")) &&
-      opt.debuffSkillSwitch !== false &&
-      !!snap.skillReady["213"],
+    when: (snap, opt) => {
+      if (isStallMode(snap, opt, g("roundNow"), g("roundAll"))) return false;
+      if (opt.debuffSkillSwitch === false || !snap.skillReady["213"]) return false;
+      const bosses = (snap.view || []).filter((m) => m.isBoss && !m.isDead);
+      if (bosses.length && bosses.every((b) => ofcWillKillBoss(b.monsterId, snap, opt).skip)) {
+        return false;
+      }
+      return true;
+    },
     decide: (snap, opt) => decideBossImperil(opt, snap),
   },
   // 13. 全员 Weaken（OFC/FRD 即将就绪时跳过）

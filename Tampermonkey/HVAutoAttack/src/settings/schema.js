@@ -55,6 +55,62 @@ export const OPTION_SCHEMA = [
       l2: "Skip All-Weaken when clear-skill is ready THIS turn (ignores OC-window / alive threshold)",
     },
   },
+  // === F4（实验，默认 OFF）：OFC 能秒 boss 则连 Imperil 都跳（按 MID 学击杀率，自适应等级漂移） ===
+  {
+    key: "skipImperilWhenOfcKills",
+    kind: "checkbox",
+    group: "Debuff",
+    default: false,
+    label: {
+      l0: "【实验】OFC 本回合就绪且历史确认能秒杀该 boss（无 imperil）→ 跳过 Imperil",
+      l1: "【實驗】OFC 本回合就緒且歷史確認能秒殺該 boss（無 imperil）→ 跳過 Imperil",
+      l2: "[Experimental] Skip Imperil when OFC ready & confirmed to one-shot this boss (no-imperil)",
+    },
+  },
+  {
+    key: "bigKillMinSamples",
+    kind: "number",
+    group: "Debuff",
+    default: 4,
+    label: {
+      l0: "需多少次「无 imperil 秒杀」样本才信任（防偶然）",
+      l1: "需多少次「無 imperil 秒殺」樣本才信任（防偶然）",
+      l2: "Min no-imperil one-shot samples before trusting",
+    },
+  },
+  {
+    key: "bigKillProbThreshold",
+    kind: "number",
+    group: "Debuff",
+    default: 0.9,
+    label: {
+      l0: "无 imperil 击杀率阈值（≥此值才跳 Imperil，0~1）",
+      l1: "無 imperil 擊殺率閾值（≥此值才跳 Imperil，0~1）",
+      l2: "No-imperil kill-rate threshold (skip when ≥, 0~1)",
+    },
+  },
+  {
+    key: "bigKillScaleDriftTol",
+    kind: "number",
+    group: "Debuff",
+    default: 1.15,
+    label: {
+      l0: "满血漂移容忍（本场 boss 满血涨过 N 倍上次确认值 → 不信任，重新上 Imperil）",
+      l1: "滿血漂移容忍（本場 boss 滿血漲過 N 倍上次確認值 → 不信任，重新上 Imperil）",
+      l2: "MaxHP drift tolerance (distrust if current maxHP > N× last confirmed)",
+    },
+  },
+  {
+    key: "dynamicBigKillLog",
+    kind: "checkbox",
+    group: "Debuff",
+    default: false,
+    label: {
+      l0: "控制台输出 OFC 击杀学习日志（调试）",
+      l1: "控制台輸出 OFC 擊殺學習日誌（調試）",
+      l2: "Console log for OFC kill-learning (debug)",
+    },
+  },
   {
     key: "drainTargetMaxHp",
     kind: "checkbox",

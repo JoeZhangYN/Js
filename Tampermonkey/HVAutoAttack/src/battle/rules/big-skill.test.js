@@ -1,10 +1,14 @@
 // Feature 2 回归锁：shouldSkipForBigSkill「清场大招本回合已就绪即跳 Weaken」快路 +
 // clearSkillReadyNow helper。钉死：就绪即跳(怪少也跳)、OC 不够不跳、开关 off 可回退、
 // Im+boss 强保不变、原 OC 窗口路仍在、顶层 We 开关 false 早退。
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { shouldSkipForBigSkill, clearSkillReadyNow } from "./big-skill.js";
+import { setValue } from "../../state/storage.js";
+import { STORAGE_KEYS } from "../../state/persist-keys.js";
 
 const snap = (over = {}) => ({ cdMap: {}, oc: 0, aliveCount: 5, monsters: [], ...over });
+
+beforeEach(() => localStorage.clear());
 
 describe("clearSkillReadyNow", () => {
   it("OFC 启用 + cd=0 + oc>=205 → true", () => {
@@ -53,5 +57,28 @@ describe("shouldSkipForBigSkill — Feature 2 就绪即跳 Weaken", () => {
   it("skipDebuffForBigSkill_We:false → 顶层早退 false（原行为）", () => {
     const s = snap({ cdMap: { OFC: 0 }, oc: 210, aliveCount: 2 });
     expect(shouldSkipForBigSkill({ skill_OFC: true, skipDebuffForBigSkill_We: false }, s, "We")).toBe(false);
+  });
+});
+
+describe("shouldSkipForBigSkill — F4 Im 放宽（默认 OFF）", () => {
+  const bossView = (over = {}) => ({
+    cdMap: { OFC: 0 },
+    oc: 250,
+    view: [{ monsterId: 100, isBoss: true, isDead: false, hpMax: 5000 }],
+    monsters: [{ isBoss: true, isDead: false }],
+    ...over,
+  });
+
+  it("Im + boss 存活 + 开关 OFF → false（强保 Imperil，旧默认钉死）", () => {
+    expect(shouldSkipForBigSkill({}, bossView(), "Im")).toBe(false);
+  });
+
+  it("Im + boss + 开关 ON 但无学习（未确认）→ false（保留）", () => {
+    expect(shouldSkipForBigSkill({ skipImperilWhenOfcKills: true }, bossView(), "Im")).toBe(false);
+  });
+
+  it("Im + boss + 开关 ON + 已确认能秒（每只）→ true（跳 Imperil）", () => {
+    setValue(STORAGE_KEYS.LEARNED_BIG_KILL, { 100: { OFC: { killProbNoIm: 1, nNoIm: 5, lastHpMax: 5000 } } });
+    expect(shouldSkipForBigSkill({ skipImperilWhenOfcKills: true }, bossView(), "Im")).toBe(true);
   });
 });
