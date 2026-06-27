@@ -13,8 +13,17 @@ export const BattleActionDelayEvent = Object.freeze({
   ACTION_ENDED: EVENT_ACTION_ENDED,
 });
 
+function readDelayOptionField(key, fallback) {
+  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
+}
+
 function readDelayOption() {
-  return runOptionAutomation({ type: OptionEvent.READ }) || {};
+  return {
+    delayAlert: Boolean(readDelayOptionField("delayAlert", false)),
+    delayAlertTime: Number(readDelayOptionField("delayAlertTime", 0)) || 0,
+    delayReload: Boolean(readDelayOptionField("delayReload", false)),
+    delayReloadTime: Number(readDelayOptionField("delayReloadTime", 0)) || 0,
+  };
 }
 
 function startActionDelay(deps) {

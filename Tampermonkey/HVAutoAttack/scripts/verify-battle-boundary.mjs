@@ -250,8 +250,11 @@ function checkActionDelayEntry() {
   if (!/export function runBattleActionDelayAutomation\(\s*event\b/.test(text)) {
     violations.push(`${rel(actionDelayFile)} must expose runBattleActionDelayAutomation(event)`);
   }
-  if (!text.includes("OptionEvent.READ")) {
+  if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(`${rel(actionDelayFile)} must read action delay options through option entry`);
+  }
+  if (/OptionEvent\.READ\b/.test(text)) {
+    violations.push(`${rel(actionDelayFile)} must not read the whole option bag`);
   }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(actionDelayFile)} must not read action delay options directly`);

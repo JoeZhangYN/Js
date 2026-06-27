@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../state/option.js", () => ({
-  OptionEvent: Object.freeze({ READ: "read" }),
+  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
 
@@ -31,12 +31,12 @@ describe("runBattleActionDelayAutomation", () => {
       triggerAlarm: vi.fn(),
       scheduleReload: vi.fn(() => "reload-timer"),
     };
-    mocks.runOptionAutomation.mockReturnValue({
+    mocks.runOptionAutomation.mockImplementation((event) => ({
       delayAlert: true,
       delayAlertTime: 7,
       delayReload: true,
       delayReloadTime: 11,
-    });
+    })[event.key] ?? event.fallback);
 
     expect(
       runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps)
@@ -44,7 +44,26 @@ describe("runBattleActionDelayAutomation", () => {
 
     expect(deps.schedule).toHaveBeenCalledWith(expect.any(Function), 7000);
     expect(deps.scheduleReload).toHaveBeenCalledWith(11);
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "read" });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "delayAlert",
+      fallback: false,
+    });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "delayAlertTime",
+      fallback: 0,
+    });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "delayReload",
+      fallback: false,
+    });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "delayReloadTime",
+      fallback: 0,
+    });
   });
 
   it("cancels only enabled action delay timers at action end", () => {
@@ -54,12 +73,12 @@ describe("runBattleActionDelayAutomation", () => {
       triggerAlarm: vi.fn(),
       scheduleReload: vi.fn(() => "reload-timer"),
     };
-    mocks.runOptionAutomation.mockReturnValue({
+    mocks.runOptionAutomation.mockImplementation((event) => ({
       delayAlert: true,
       delayAlertTime: 1,
       delayReload: false,
       delayReloadTime: 2,
-    });
+    })[event.key] ?? event.fallback);
 
     runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
     runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
@@ -75,21 +94,21 @@ describe("runBattleActionDelayAutomation", () => {
       triggerAlarm: vi.fn(),
       scheduleReload: vi.fn(() => "reload-timer"),
     };
-    mocks.runOptionAutomation
-      .mockReturnValueOnce({
-        delayAlert: true,
-        delayAlertTime: 1,
-        delayReload: true,
-        delayReloadTime: 2,
-      })
-      .mockReturnValueOnce({
-        delayAlert: false,
-        delayAlertTime: 1,
-        delayReload: false,
-        delayReloadTime: 2,
-      });
+    let currentOption = {
+      delayAlert: true,
+      delayAlertTime: 1,
+      delayReload: true,
+      delayReloadTime: 2,
+    };
+    mocks.runOptionAutomation.mockImplementation((event) => currentOption[event.key] ?? event.fallback);
 
     runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
+    currentOption = {
+      delayAlert: false,
+      delayAlertTime: 1,
+      delayReload: false,
+      delayReloadTime: 2,
+    };
     runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
 
     expect(deps.cancel).toHaveBeenCalledWith("alert-timer");
@@ -107,12 +126,12 @@ describe("runBattleActionDelayAutomation", () => {
         .mockReturnValueOnce("first-reload")
         .mockReturnValueOnce("second-reload"),
     };
-    mocks.runOptionAutomation.mockReturnValue({
+    mocks.runOptionAutomation.mockImplementation((event) => ({
       delayAlert: true,
       delayAlertTime: 1,
       delayReload: true,
       delayReloadTime: 2,
-    });
+    })[event.key] ?? event.fallback);
 
     runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
     runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
