@@ -30,6 +30,17 @@ function withCurrentRecord(history, current) {
   return rows.reverse();
 }
 
+function readReportRecordSet({ currentKey, historyKey, normalizeCurrent = (record) => record }) {
+  const currentRaw = getValue(currentKey, true);
+  let current = normalizeCurrent(currentRaw || {});
+  const history = getValue(historyKey, true) || [];
+  if (history.length === 0 || (history.length === 1 && !currentRaw)) {
+    if (history.length === 1) current = history[0];
+    return { mode: "single", current };
+  }
+  return { mode: "history", records: withCurrentRecord(history, current) };
+}
+
 function readBattleReportRecordLabel(deps) {
   return (
     deps.readRecordLabel || (() => runTimeAutomation({ type: TimeEvent.UTC_MONTH_DAY_LABEL }))
@@ -44,53 +55,54 @@ function recordBattleReportStarted({ recordEach, roundType, roundAll }, deps) {
 }
 
 function readDropReport() {
-  let current = objSort(getValue(STORAGE_KEYS.DROP, true) || {});
-  const history = getValue(STORAGE_KEYS.DROP_OLD, true) || [];
-  if (history.length === 0 || (history.length === 1 && !getValue(STORAGE_KEYS.DROP, true))) {
-    if (history.length === 1) current = history[0];
+  const recordSet = readReportRecordSet({
+    currentKey: STORAGE_KEYS.DROP,
+    historyKey: STORAGE_KEYS.DROP_OLD,
+    normalizeCurrent: objSort,
+  });
+  if (recordSet.mode === "single") {
     return {
       mode: "single",
-      rows: Object.entries(current).map(([key, value]) => ({ key, value })),
+      rows: Object.entries(recordSet.current).map(([key, value]) => ({ key, value })),
     };
   }
-  const records = withCurrentRecord(history, current);
   return {
     mode: "history",
-    columns: records.map((record) => record.__name),
-    rows: getKeys(records)
+    columns: recordSet.records.map((record) => record.__name),
+    rows: getKeys(recordSet.records)
       .filter((key) => key !== "__name")
       .map((key) => ({
         key,
-        values: records.map((record) => (key in record ? record[key] : "")),
+        values: recordSet.records.map((record) => (key in record ? record[key] : "")),
       })),
   };
 }
 
 function readUsageReport() {
-  let current = getValue(STORAGE_KEYS.STATS, true) || {};
-  const history = getValue(STORAGE_KEYS.STATS_OLD, true) || [];
-  if (history.length === 0 || (history.length === 1 && !getValue(STORAGE_KEYS.STATS, true))) {
-    if (history.length === 1) current = history[0];
+  const recordSet = readReportRecordSet({
+    currentKey: STORAGE_KEYS.STATS,
+    historyKey: STORAGE_KEYS.STATS_OLD,
+  });
+  if (recordSet.mode === "single") {
     return {
       mode: "single",
       sections: USAGE_SECTIONS.map((section) => ({
         key: section,
-        rows: Object.entries(objSort(current[section] || {})).map(([name, amount]) => ({
+        rows: Object.entries(objSort(recordSet.current[section] || {})).map(([name, amount]) => ({
           key: name,
           value: amount,
         })),
       })),
     };
   }
-  const records = withCurrentRecord(history, current);
   return {
     mode: "history",
-    columns: records.map((record) => record.__name),
+    columns: recordSet.records.map((record) => record.__name),
     sections: USAGE_SECTIONS.map((section) => ({
       key: section,
-      rows: getKeys(records.map((record) => record[section] || {})).map((key) => ({
+      rows: getKeys(recordSet.records.map((record) => record[section] || {})).map((key) => ({
         key,
-        values: records.map((record) => {
+        values: recordSet.records.map((record) => {
           const values = record[section] || {};
           return key in values ? values[key] : "";
         }),

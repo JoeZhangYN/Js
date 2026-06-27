@@ -258,6 +258,14 @@ function checkBattleReportEntry() {
   if (!/\bUTC_MONTH_DAY_LABEL\b/.test(text)) {
     violations.push(`${rel(reportFile)} must own battle report date label format`);
   }
+  if (!/\bfunction readReportRecordSet\b/.test(text)) {
+    violations.push(
+      `${rel(reportFile)} must route current/history report reads through readReportRecordSet`
+    );
+  }
+  if ((text.match(/history\.length\s*===\s*0/g) || []).length !== 1) {
+    violations.push(`${rel(reportFile)} must have one current/history report mode decision`);
+  }
   if (/\bdelValue\s*\(\s*STORAGE_KEYS\.(?:DROP|DROP_OLD|STATS|STATS_OLD)\b/.test(text)) {
     violations.push(
       `${rel(reportFile)} must clear battle record sets through battle-record-archive`
