@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const entryFile = path.join(root, "src/pages/cross-site-encounter-navigation.js");
+const entryTestFile = path.join(root, "src/pages/cross-site-encounter-navigation.test.js");
+const srcDir = path.join(root, "src");
 const violations = [];
 
 function rel(file) {
@@ -69,9 +71,33 @@ function checkPageAutomation() {
   }
 }
 
+function walk(dir, visitor) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full, visitor);
+    else if (entry.isFile() && entry.name.endsWith(".js")) visitor(full);
+  }
+}
+
+function checkReturnOriginStorageOwner() {
+  const allowed = new Set([entryFile, entryTestFile].map((file) => path.normalize(file)));
+  walk(srcDir, (file) => {
+    if (allowed.has(path.normalize(file))) return;
+    const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+    lines.forEach((line, index) => {
+      if (/\bSTORAGE_KEYS\.URL\b/.test(line)) {
+        violations.push(
+          `${rel(file)}:${index + 1} return-origin storage belongs in runCrossSiteEncounterNavigation(event)`
+        );
+      }
+    });
+  });
+}
+
 checkInit();
 checkEntry();
 checkPageAutomation();
+checkReturnOriginStorageOwner();
 
 if (violations.length) {
   console.error("[verify-cross-site-encounter-boundary] FAIL");
