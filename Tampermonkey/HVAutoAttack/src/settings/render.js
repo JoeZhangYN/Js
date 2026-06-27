@@ -431,7 +431,14 @@ export function optionBox() {
       gE("#hvAATab-Riddle>table").innerHTML = _html;
     } else if (name === "About") {
       // 关于本脚本
+      const roundDebug = runBattleRoundAutomation({
+        type: BattleRoundEvent.READ_DEBUG_FIELDS,
+      });
       gE(".hvAADebug", "all", optionBox).forEach((input) => {
+        if (input.name in roundDebug) {
+          if (roundDebug[input.name]) input.value = roundDebug[input.name];
+          return;
+        }
         if (getValue(input.name)) input.value = getValue(input.name);
       });
     }

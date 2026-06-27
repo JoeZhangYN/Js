@@ -58,11 +58,19 @@ for (const required of [
   "RECORD_COUNT",
   "RECORD_COUNT_FROM_INITIALIZATION",
   "RECORD_DEBUG_FIELDS",
+  "READ_DEBUG_FIELDS",
   "SYNC_RUNTIME",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required} event`);
   }
+}
+
+const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
+if (!settingsText.includes("BattleRoundEvent.READ_DEBUG_FIELDS")) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must read round debug fields through battle-round`
+  );
 }
 if (!ownerText.includes("CLASSIFY_TYPE")) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose CLASSIFY_TYPE event`);
