@@ -38,10 +38,21 @@ function checkOwner() {
     "Victory",
     "CLEAR_SESSION",
     "scheduleReload",
+    "readCompletionContext",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
     }
+  }
+  const classifyMatch = text.match(
+    /function\s+classifyCompletion\s*\([^)]*\)\s*\{(?<body>[\s\S]*?)\n\}/
+  );
+  if (!classifyMatch) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own classifyCompletion`);
+  } else if (/\bg\s*\(/.test(classifyMatch.groups.body)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must classify from one completion context, not repeated g() reads`
+    );
   }
   if (!fs.existsSync(path.join(root, ownerTest))) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover battle completion contract`);

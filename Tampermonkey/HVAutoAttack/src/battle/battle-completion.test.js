@@ -14,6 +14,7 @@ beforeEach(() => {
 
 function deps() {
   return {
+    g,
     triggerAlarm: vi.fn(),
     clearSession: vi.fn(),
     scheduleReload: vi.fn(),
@@ -59,5 +60,19 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.triggerAlarm).toHaveBeenCalledWith("Victory");
     expect(d.clearSession).toHaveBeenCalled();
     expect(d.scheduleReload).toHaveBeenCalledWith(3);
+  });
+
+  it("reads completion runtime fields once before classifying the outcome", () => {
+    const d = deps();
+    d.g = vi.fn((key) => ({ monsterAlive: 0, roundNow: 2, roundAll: 2 })[key]);
+
+    expect(
+      runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
+    ).toEqual({ outcome: BattleCompletionOutcome.VICTORY });
+
+    expect(d.g).toHaveBeenCalledWith("monsterAlive");
+    expect(d.g).toHaveBeenCalledWith("roundNow");
+    expect(d.g).toHaveBeenCalledWith("roundAll");
+    expect(d.g).toHaveBeenCalledTimes(3);
   });
 });
