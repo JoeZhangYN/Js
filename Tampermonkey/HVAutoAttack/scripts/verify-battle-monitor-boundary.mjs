@@ -252,8 +252,11 @@ function checkUsageImplementation() {
       `${rel(usageFile)} must read usage completion context through battle-monitor-runtime`
     );
   }
-  if (!/\bg\(\s*["']option["']\s*\)\.recordUsage/.test(text)) {
-    violations.push(`${rel(usageFile)} must own the recordUsage completion switch`);
+  if (!/\bcontext\.recordUsage\b/.test(text)) {
+    violations.push(`${rel(usageFile)} must consume recordUsage from battle-monitor-runtime`);
+  }
+  if (/\bg\(\s*["']option["']\s*\)\.recordUsage/.test(text)) {
+    violations.push(`${rel(usageFile)} must not read recordUsage option directly`);
   }
 }
 
@@ -343,6 +346,15 @@ function checkBattleMonitorRuntimeEntry() {
   }
   if (!/export function runBattleMonitorRuntime\(/.test(text)) {
     violations.push(`${rel(runtimeFile)} must expose runBattleMonitorRuntime(event)`);
+  }
+  if (!text.includes("OptionEvent.READ_FIELD")) {
+    violations.push(`${rel(runtimeFile)} must read monitor option context through option entry`);
+  }
+  if (/\bdeps\.g\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${rel(runtimeFile)} must not read option context directly from store`);
+  }
+  if (!text.includes("recordUsage")) {
+    violations.push(`${rel(runtimeFile)} must expose recordUsage in usage completion context`);
   }
   if (
     /\bexport\s+(?:function|const)\s+(?!BattleMonitorRuntimeEvent\b|runBattleMonitorRuntime\b)/.test(

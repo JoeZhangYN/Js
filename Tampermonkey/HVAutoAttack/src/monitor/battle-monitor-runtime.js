@@ -1,4 +1,5 @@
 import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_REPORT_START_CONTEXT = "reportStartContext";
 const EVENT_ARCHIVE_CONTEXT = "archiveContext";
@@ -14,16 +15,21 @@ export const BattleMonitorRuntimeEvent = Object.freeze({
 
 function readArchiveContext(deps) {
   return {
-    recordEach: deps.g("option").recordEach,
+    recordEach: readOptionField(deps, "recordEach", false),
     roundNow: deps.g("roundNow"),
     roundAll: deps.g("roundAll"),
   };
 }
 
+function readOptionField(deps, key, fallback) {
+  if (deps.readOptionField) return deps.readOptionField(key, fallback);
+  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
+}
+
 export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT }, deps = { g }) {
   if (event.type === EVENT_REPORT_START_CONTEXT) {
     return {
-      recordEach: deps.g("option").recordEach,
+      recordEach: readOptionField(deps, "recordEach", false),
       roundType: deps.g("roundType"),
       roundAll: deps.g("roundAll"),
     };
@@ -40,6 +46,7 @@ export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT },
   if (event.type === EVENT_USAGE_COMPLETION_CONTEXT) {
     return {
       ...readArchiveContext(deps),
+      recordUsage: readOptionField(deps, "recordUsage", false),
       monsterAll: deps.g("monsterAll"),
       bossAll: deps.g("bossAll"),
     };

@@ -2,7 +2,6 @@
 // file-size-gate: exempt phase-4-monolith
 import { setValue, getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
-import { g } from "../state/store.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../battle/pause-automation.js";
 import {
@@ -203,12 +202,12 @@ function recordBattleActionUsage(parm) {
 }
 
 function recordCompletedBattleUsage() {
-  if (!g("option").recordUsage) return;
-  const stats = getValue(STORAGE_KEYS.STATS, true);
-  if (!stats) return;
   const context = runBattleMonitorRuntime({
     type: BattleMonitorRuntimeEvent.USAGE_COMPLETION_CONTEXT,
   });
+  if (!context.recordUsage) return;
+  const stats = getValue(STORAGE_KEYS.STATS, true);
+  if (!stats) return;
   stats.self._monster += context.monsterAll;
   stats.self._boss += context.bossAll;
 

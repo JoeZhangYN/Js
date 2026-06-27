@@ -35,6 +35,7 @@ function deps({ rows, values = {}, option = {}, roundNow = 1, roundAll = 2 }) {
       return rootOrAll.querySelector(selector);
     },
     getValue: (key) => values[key],
+    readOptionField: (key, fallback) => (option[key] !== undefined ? option[key] : fallback),
     setValue,
     readLocalTimestampLabel: () => "now",
     values,

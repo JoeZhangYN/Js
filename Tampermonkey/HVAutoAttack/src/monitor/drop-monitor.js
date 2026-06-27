@@ -26,7 +26,7 @@ function makeDeps(deps) {
       (() =>
         runBattleMonitorRuntime(
           { type: BattleMonitorRuntimeEvent.ARCHIVE_CONTEXT },
-          { g: deps.g || g }
+          { g: deps.g || g, readOptionField: deps.readOptionField }
         )),
     setValue: deps.setValue || setValue,
     readLocalTimestampLabel: deps.readLocalTimestampLabel,
