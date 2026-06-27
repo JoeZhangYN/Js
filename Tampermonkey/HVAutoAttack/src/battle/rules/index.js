@@ -18,7 +18,10 @@ import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../i
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
 import { shouldSkipForBigSkill } from "./big-skill.js";
 import { decideBossImperil } from "./decide-boss-imperil.js";
-import { ofcWillKillBoss } from "../../state/big-skill-kill-learner.js";
+import {
+  BigSkillKillLearningEvent,
+  runBigSkillKillLearningAutomation,
+} from "../../state/big-skill-kill-learner.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 
 /** @type {import("../../core/types.js").BattleRule[]} */
@@ -110,7 +113,18 @@ export const BATTLE_RULES = [
       if (isStallMode(snap, opt, g("roundNow"), g("roundAll"))) return false;
       if (opt.debuffSkillSwitch === false || !snap.skillReady["213"]) return false;
       const bosses = (snap.view || []).filter((m) => m.isBoss && !m.isDead);
-      if (bosses.length && bosses.every((b) => ofcWillKillBoss(b.monsterId, snap, opt).skip)) {
+      if (
+        bosses.length &&
+        bosses.every(
+          (b) =>
+            runBigSkillKillLearningAutomation({
+              type: BigSkillKillLearningEvent.WILL_KILL_BOSS,
+              mid: b.monsterId,
+              snap,
+              opt,
+            }).skip
+        )
+      ) {
         return false;
       }
       return true;

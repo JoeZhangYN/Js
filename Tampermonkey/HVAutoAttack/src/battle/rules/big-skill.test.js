@@ -3,12 +3,34 @@
 // Im+boss 强保不变、原 OC 窗口路仍在、顶层 We 开关 false 早退。
 import { describe, it, expect, beforeEach } from "vitest";
 import { shouldSkipForBigSkill, clearSkillReadyNow } from "./big-skill.js";
-import { setValue } from "../../state/storage.js";
-import { STORAGE_KEYS } from "../../state/persist-keys.js";
+import {
+  BigSkillKillLearningEvent,
+  runBigSkillKillLearningAutomation,
+} from "../../state/big-skill-kill-learner.js";
 
 const snap = (over = {}) => ({ cdMap: {}, oc: 0, aliveCount: 5, monsters: [], ...over });
 
 beforeEach(() => localStorage.clear());
+
+function learnBossKillEvidence() {
+  for (let i = 0; i < 4; i++) {
+    runBigSkillKillLearningAutomation({
+      type: BigSkillKillLearningEvent.RECORD_CAST,
+      code: "OFC",
+      snap: {
+        globalTurn: i * 100,
+        view: [{ monsterId: 100, isBoss: true, isDead: false, hpMax: 5000, buffs: [] }],
+      },
+    });
+    runBigSkillKillLearningAutomation({
+      type: BigSkillKillLearningEvent.FINALIZE_PENDING,
+      snap: {
+        globalTurn: i * 100 + 1,
+        view: [{ monsterId: 100, isBoss: true, isDead: true, hpMax: 5000, buffs: [] }],
+      },
+    });
+  }
+}
 
 describe("clearSkillReadyNow", () => {
   it("OFC 启用 + cd=0 + oc>=205 → true", () => {
@@ -78,7 +100,7 @@ describe("shouldSkipForBigSkill — F4 Im 放宽（默认 OFF）", () => {
   });
 
   it("Im + boss + 开关 ON + 已确认能秒（每只）→ true（跳 Imperil）", () => {
-    setValue(STORAGE_KEYS.LEARNED_BIG_KILL, { 100: { OFC: { killProbNoIm: 1, nNoIm: 5, lastHpMax: 5000 } } });
+    learnBossKillEvidence();
     expect(shouldSkipForBigSkill({ skipImperilWhenOfcKills: true }, bossView(), "Im")).toBe(true);
   });
 });

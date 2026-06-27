@@ -1,7 +1,10 @@
 // PURE: OFC/FRD 即将就绪时跳过全员 Weaken/Imperil 的判定（Phase 5b-5）。
 // 从 main-loop.js 抽出共享给 BATTLE_RULES 的 Weaken/Imperil rule 与（过渡期）main-loop 自身，
 // 单一来源避免重复。不读 DOM / 不调 g()——只吃 opt + snap。
-import { ofcWillKillBoss } from "../../state/big-skill-kill-learner.js";
+import {
+  BigSkillKillLearningEvent,
+  runBigSkillKillLearningAutomation,
+} from "../../state/big-skill-kill-learner.js";
 /**
  * 清场大招(OFC/FRD)本回合是否「真就绪即可开火」= CD 归零且 OC 已够。
  * 与 decide-attack 实际开火 OFC/FRD 的条件同口径 → 命中即代表本回合就会放大招清场。
@@ -36,7 +39,18 @@ export function shouldSkipForBigSkill(opt, snap, kind) {
     );
     if (bosses.length > 0) {
       if (!opt.skipImperilWhenOfcKills) return false; // 默认：boss 存活强保 Imperil
-      if (!bosses.every((b) => ofcWillKillBoss(b.monsterId, snap, opt).skip)) return false;
+      if (
+        !bosses.every(
+          (b) =>
+            runBigSkillKillLearningAutomation({
+              type: BigSkillKillLearningEvent.WILL_KILL_BOSS,
+              mid: b.monsterId,
+              snap,
+              opt,
+            }).skip
+        )
+      )
+        return false;
       return true; // 全确认 OFC 能秒 → 跳过全员 Imperil
     }
     // 无 boss → 落下面原 OFC 优化跳过路

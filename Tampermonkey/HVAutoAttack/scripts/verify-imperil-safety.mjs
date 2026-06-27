@@ -19,9 +19,9 @@ need(/skipImperilWhenOfcKills/.test(learner), "big-skill-kill-learner 缺 skipIm
 need(/mid\s*==\s*null/.test(learner), "big-skill-kill-learner 缺 mid==null 守卫（未知 boss 必须保留 Imperil）");
 need(/bigKillMinSamples/.test(learner), "big-skill-kill-learner 缺 bigKillMinSamples 样本量守卫");
 
-// ② 消费方 big-skill.js：引用 ofcWillKillBoss 必同时受 skipImperilWhenOfcKills 门控
-if (/ofcWillKillBoss/.test(bigSkill)) {
-  need(/skipImperilWhenOfcKills/.test(bigSkill), "big-skill.js 用 ofcWillKillBoss 却无 skipImperilWhenOfcKills 门控");
+// ② 消费方 big-skill.js：引用 big-skill kill query 必同时受 skipImperilWhenOfcKills 门控
+if (/WILL_KILL_BOSS/.test(bigSkill)) {
+  need(/skipImperilWhenOfcKills/.test(bigSkill), "big-skill.js 用 kill query 却无 skipImperilWhenOfcKills 门控");
 }
 
 // ③ bossImperil.when 不得丢掉原始 DOM 就绪条件

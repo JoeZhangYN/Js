@@ -16,6 +16,15 @@ import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 
 const OFC_OC_NEED = 205;
+const EVENT_RECORD_CAST = "recordCast";
+const EVENT_FINALIZE_PENDING = "finalizePending";
+const EVENT_WILL_KILL_BOSS = "willKillBoss";
+
+export const BigSkillKillLearningEvent = Object.freeze({
+  RECORD_CAST: EVENT_RECORD_CAST,
+  FINALIZE_PENDING: EVENT_FINALIZE_PENDING,
+  WILL_KILL_BOSS: EVENT_WILL_KILL_BOSS,
+});
 
 /** EWMA：n 大趋稳，下限 0.1 保对等级漂移敏感（同 recovery/cd 学习器）。 */
 function ewma(prior, obs, n) {
@@ -28,7 +37,7 @@ function ewma(prior, obs, n) {
  * @param {string} code
  * @param {import("../core/types.js").BattleSnapshot} snap
  */
-export function recordBigSkillCast(code, snap) {
+function recordBigSkillCast(code, snap) {
   if (code !== "OFC" && code !== "FRD") return;
   const bosses = (snap?.view || [])
     .filter((m) => m.isBoss && !m.isDead && m.monsterId != null)
@@ -49,7 +58,7 @@ export function recordBigSkillCast(code, snap) {
  * finalize（snapshot 入口，跑在 rules 前）：上回合的 OFC/FRD 是否秒掉各 pending boss（按 MID 判死）。
  * @param {{globalTurn:number, view:Array}} snap
  */
-export function finalizeBigSkillPending(snap) {
+function finalizeBigSkillPending(snap) {
   const pending = g("bigKillPending");
   if (!pending) return;
   const now = snap?.globalTurn ?? g("globalTurn") ?? 0;
@@ -57,14 +66,18 @@ export function finalizeBigSkillPending(snap) {
   const learned = getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true) || {};
   for (const b of pending.bosses) {
     const killed = (snap?.view || []).some((m) => m.monsterId === b.mid && !m.isDead) ? 0 : 1;
-    const rec = (learned[b.mid] ||= {});
-    const sk = (rec[pending.skill] ||= {
-      killProbNoIm: 0,
-      nNoIm: 0,
-      killProbWithIm: 0,
-      nWithIm: 0,
-      lastHpMax: 0,
-    });
+    if (!learned[b.mid]) learned[b.mid] = {};
+    const rec = learned[b.mid];
+    if (!rec[pending.skill]) {
+      rec[pending.skill] = {
+        killProbNoIm: 0,
+        nNoIm: 0,
+        killProbWithIm: 0,
+        nWithIm: 0,
+        lastHpMax: 0,
+      };
+    }
+    const sk = rec[pending.skill];
     if (b.imperilActive) {
       sk.nWithIm += 1;
       sk.killProbWithIm = ewma(sk.killProbWithIm, killed, sk.nWithIm);
@@ -92,7 +105,7 @@ export function finalizeBigSkillPending(snap) {
  * @param {object} opt
  * @returns {{skip:boolean, confidence?:number}}
  */
-export function ofcWillKillBoss(mid, snap, opt) {
+function ofcWillKillBoss(mid, snap, opt) {
   if (!opt?.skipImperilWhenOfcKills) return { skip: false };
   if (mid == null) return { skip: false };
   // OFC 必须本回合就绪即开火，否则跳 Imperil = boss 既不破防也不被秒，纯失误。
@@ -105,4 +118,11 @@ export function ofcWillKillBoss(mid, snap, opt) {
   const tol = opt.bigKillScaleDriftTol ?? 1.15;
   if (boss && sk.lastHpMax && boss.hpMax > sk.lastHpMax * tol) return { skip: false }; // 漂移→distrust
   return { skip: true, confidence: sk.killProbNoIm };
+}
+
+export function runBigSkillKillLearningAutomation(event = { type: EVENT_WILL_KILL_BOSS }) {
+  if (event.type === EVENT_RECORD_CAST) return recordBigSkillCast(event.code, event.snap);
+  if (event.type === EVENT_FINALIZE_PENDING) return finalizeBigSkillPending(event.snap);
+  if (event.type === EVENT_WILL_KILL_BOSS) return ofcWillKillBoss(event.mid, event.snap, event.opt);
+  return undefined;
 }

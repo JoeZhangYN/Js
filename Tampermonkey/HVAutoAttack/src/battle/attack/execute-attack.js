@@ -5,7 +5,10 @@ import { gE, isOn } from "../../dom/query.js";
 import { g } from "../../state/store.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../../state/cd-tracker.js";
 import { CdLearningEvent, runCdLearningAutomation } from "../../state/cd-learner.js";
-import { recordBigSkillCast } from "../../state/big-skill-kill-learner.js";
+import {
+  BigSkillKillLearningEvent,
+  runBigSkillKillLearningAutomation,
+} from "../../state/big-skill-kill-learner.js";
 
 /**
  * @param {import("../../core/types.js").AttackPlan} plan
@@ -57,7 +60,11 @@ export function executeAttack(plan, snap) {
           id: plan.skillId,
           snap,
         }); // F3：记开火 turn，供脱灰时收敛真实 CD
-        recordBigSkillCast(plan.code, snap); // F4：OFC/FRD 记 pre-cast boss 态，下回合判是否秒杀
+        runBigSkillKillLearningAutomation({
+          type: BigSkillKillLearningEvent.RECORD_CAST,
+          code: plan.code,
+          snap,
+        }); // F4：OFC/FRD 记 pre-cast boss 态，下回合判是否秒杀
         if (plan.mercifulTargetId != null) {
           gE(`#mkey_${plan.mercifulTargetId}`)?.click();
         }
