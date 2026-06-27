@@ -1,12 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { setValue, getValue } from "../state/storage.js";
-import {
-  clearDropReport,
-  clearUsageReport,
-  recordBattleReportStarted,
-  readDropReport,
-  readUsageReport,
-} from "./battle-report.js";
+import { g } from "../state/store.js";
+import { BattleMonitorEvent, runBattleMonitorAutomation } from "./battle-monitor-automation.js";
 
 beforeEach(() => {
   localStorage.clear();
@@ -14,31 +9,24 @@ beforeEach(() => {
 
 describe("battle report query", () => {
   it("records battle report code once when per-battle records are enabled", () => {
-    expect(
-      recordBattleReportStarted({
-        recordEach: true,
-        roundType: "ar",
-        roundAll: 5,
-        timeLabel: "12:34",
-      })
-    ).toBe(true);
-    expect(getValue("battleCode")).toBe("12:34: AR-5");
+    g("option", { recordEach: true });
+    g("roundType", "ar");
+    g("roundAll", 5);
 
-    expect(
-      recordBattleReportStarted({
-        recordEach: true,
-        roundType: "rb",
-        roundAll: 1,
-        timeLabel: "12:35",
-      })
-    ).toBe(false);
-    expect(getValue("battleCode")).toBe("12:34: AR-5");
+    runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
+    expect(getValue("battleCode")).toMatch(/: AR-5$/);
+
+    const firstCode = getValue("battleCode");
+    g("roundType", "rb");
+    g("roundAll", 1);
+    runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
+    expect(getValue("battleCode")).toBe(firstCode);
   });
 
   it("builds a single drop report from the active record", () => {
     setValue("drop", { "#Credit": 12, "Health Potion": 1 });
 
-    expect(readDropReport()).toEqual({
+    expect(runBattleMonitorAutomation({ type: BattleMonitorEvent.READ_DROP_REPORT })).toEqual({
       mode: "single",
       rows: [
         { key: "#Credit", value: 12 },
@@ -52,7 +40,7 @@ describe("battle report query", () => {
     setValue("drop", { "#Credit": 12 });
     setValue("dropOld", [{ __name: "old", "#EXP": 20 }]);
 
-    expect(readDropReport()).toEqual({
+    expect(runBattleMonitorAutomation({ type: BattleMonitorEvent.READ_DROP_REPORT })).toEqual({
       mode: "history",
       columns: ["now", "old"],
       rows: [
@@ -67,7 +55,7 @@ describe("battle report query", () => {
     setValue("stats", { self: { _turn: 3 }, magic: { Fireball: 2 } });
     setValue("statsOld", [{ __name: "old", self: { _turn: 1 } }]);
 
-    const report = readUsageReport();
+    const report = runBattleMonitorAutomation({ type: BattleMonitorEvent.READ_USAGE_REPORT });
     expect(report.mode).toBe("history");
     expect(report.columns).toEqual(["now", "old"]);
     expect(report.sections.find((s) => s.key === "self").rows).toEqual([
@@ -84,8 +72,8 @@ describe("battle report query", () => {
     setValue("stats", { self: {} });
     setValue("statsOld", [{ self: {} }]);
 
-    clearDropReport();
-    clearUsageReport();
+    runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_DROP_REPORT });
+    runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_USAGE_REPORT });
 
     expect(getValue("drop", true)).toBeNull();
     expect(getValue("dropOld", true)).toBeNull();

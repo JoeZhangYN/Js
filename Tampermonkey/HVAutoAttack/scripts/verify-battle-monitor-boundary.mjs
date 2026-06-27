@@ -70,16 +70,18 @@ function checkEntry() {
     violations.push(`${entry.replaceAll("\\", "/")} must expose runBattleMonitorAutomation(event)`);
   }
   for (const required of [
-    "battleInfo",
-    "dropMonitor",
-    "recordBattleReportStarted",
-    "recordUsage",
-    "recordUsage2",
-    "readDropReport",
-    "readUsageReport",
+    "BATTLE_STARTED",
+    "HUD_REFRESH",
+    "ACTION_STARTED",
+    "ACTION_ENDED",
+    "COMPLETION_REACHED",
+    "READ_DROP_REPORT",
+    "READ_USAGE_REPORT",
+    "CLEAR_DROP_REPORT",
+    "CLEAR_USAGE_REPORT",
   ]) {
     if (!text.includes(required)) {
-      violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);
+      violations.push(`${entry.replaceAll("\\", "/")} must own ${required} event wiring`);
     }
   }
 }
