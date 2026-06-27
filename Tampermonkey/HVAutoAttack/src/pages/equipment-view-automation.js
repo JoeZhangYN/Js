@@ -2,7 +2,7 @@
 import { isOptionOn, getOption } from "../state/option.js";
 import { PageKind } from "./page-kind.js";
 import { runEquipPercentileEnhancement } from "./equip-percentile-dispatcher.js";
-import { setupForgeCost } from "./showequip-forge-cost.js";
+import { runForgeCostEnhancement } from "./showequip-forge-cost.js";
 
 function shouldRunForgeCost(kind) {
   return kind === PageKind.SHOWEQUIP && isOptionOn("forgeCostShow");
@@ -14,6 +14,6 @@ function shouldRunEquipPercentile() {
 }
 
 export function runEquipmentViewAutomation(kind) {
-  if (shouldRunForgeCost(kind)) setupForgeCost();
+  if (shouldRunForgeCost(kind)) runForgeCostEnhancement();
   if (shouldRunEquipPercentile()) runEquipPercentileEnhancement();
 }

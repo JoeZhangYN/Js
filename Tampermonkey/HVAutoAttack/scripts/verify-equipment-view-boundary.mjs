@@ -40,7 +40,7 @@ function checkEntry() {
     violations.push(`${rel(entryFile)} must expose runEquipmentViewAutomation(kind)`);
   }
   for (const required of [
-    "setupForgeCost",
+    "runForgeCostEnhancement",
     "runEquipPercentileEnhancement",
     "PageKind.SHOWEQUIP",
   ]) {
@@ -75,10 +75,11 @@ function checkDeletedLivePath() {
 function checkDeletedSetupEntrypoints() {
   const files = [
     path.join(root, "src/pages/equipment-view-automation.js"),
+    path.join(root, "src/pages/showequip-forge-cost.js"),
     path.join(root, "src/pages/equip-percentile-dispatcher.js"),
     path.join(root, "src/pages/equip-percentile-offline.js"),
   ];
-  const oldSetupEntrypoint = /\bsetupEquipPercentile(?:Offline|Live)?\b/;
+  const oldSetupEntrypoint = /\bsetup(?:ForgeCost|EquipPercentile(?:Offline|Live)?)\b/;
   for (const file of files) {
     const text = fs.readFileSync(file, "utf8");
     if (oldSetupEntrypoint.test(text)) {
