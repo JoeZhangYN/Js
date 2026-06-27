@@ -93,6 +93,12 @@ function checkRiddleSubmissionTiming() {
       violations.push(`${rel(riddleTimingFile)} must own ${required}`);
     }
   }
+  if (!timingText.includes("recordExternalSubmission")) {
+    violations.push(`${rel(riddleTimingFile)} must let manual submit cancel riddle timing`);
+  }
+  if (/return\s+Object\.freeze\(\{[^}]*\b(?:stop|submitOnce)\b/s.test(timingText)) {
+    violations.push(`${rel(riddleTimingFile)} must not expose raw timer primitives outside the timing entry`);
+  }
 }
 
 function checkRiddleImageEntry() {

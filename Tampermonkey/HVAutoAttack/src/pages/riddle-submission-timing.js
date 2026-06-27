@@ -62,6 +62,13 @@ function startSubmissionTiming(event) {
     return true;
   }
 
+  function recordExternalSubmission() {
+    if (submitted) return false;
+    submitted = true;
+    stop();
+    return true;
+  }
+
   function scheduleMlSubmit(answers, delayMs) {
     if (!answers || !answers.length || submitted) return false;
     if (mlTimer) clearTimeout(mlTimer);
@@ -91,7 +98,7 @@ function startSubmissionTiming(event) {
     if (remaining <= beforeEnd) submitOnce(currentAnswers(), "末端兜底");
   }, 1000);
 
-  return Object.freeze({ stop, submitOnce, scheduleMlSubmit });
+  return Object.freeze({ recordExternalSubmission, scheduleMlSubmit });
 }
 
 export function runRiddleSubmissionTiming(event = { type: EVENT_READ_REMAINING }) {

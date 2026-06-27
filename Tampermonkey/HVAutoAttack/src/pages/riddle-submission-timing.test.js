@@ -69,4 +69,23 @@ describe("riddle submission timing", () => {
     await vi.advanceTimersByTimeAsync(1000);
     expect(submit).toHaveBeenCalledWith(["rd"], "末端兜底");
   });
+
+  it("cancels automatic submissions after an external manual submit", async () => {
+    const submit = vi.fn();
+    const timing = runRiddleSubmissionTiming({
+      type: RiddleSubmissionTimingEvent.START,
+      beforeEnd: 3,
+      mlAnswers: ["ts"],
+      mlDelayMs: 3000,
+      fallbackAnswers: () => ["ra"],
+      readRemaining: () => 2,
+      submit,
+    });
+
+    expect(timing.recordExternalSubmission()).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(submit).not.toHaveBeenCalled();
+    expect(timing.recordExternalSubmission()).toBe(false);
+  });
 });

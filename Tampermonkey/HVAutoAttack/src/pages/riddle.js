@@ -124,6 +124,7 @@ export function runRiddleAnsweringSession() {
   function captureSubmission() {
     if (sampled) return;
     sampled = true;
+    timing.recordExternalSubmission();
     const source = pendingSource
       ? pendingSource === "ML"
         ? RiddleSampleSource.ML
