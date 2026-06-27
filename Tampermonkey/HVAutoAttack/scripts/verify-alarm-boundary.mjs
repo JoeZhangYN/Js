@@ -52,6 +52,12 @@ for (const required of ["runAlarmAutomation", "AlarmEvent", "PREVIEW_AUDIO_URL"]
   if (!ownerText.includes(required))
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
 }
+if (!ownerText.includes("OptionEvent.READ_FIELD")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must read alarm options through option entry`);
+}
+if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not read alarm options directly`);
+}
 
 const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
 if (!settingsText.includes("AlarmEvent.PREVIEW_AUDIO_URL")) {

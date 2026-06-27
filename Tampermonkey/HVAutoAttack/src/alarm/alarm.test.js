@@ -2,15 +2,30 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AlarmEvent, runAlarmAutomation } from "./alarm.js";
 import { g } from "../state/store.js";
 
+const mocks = vi.hoisted(() => ({
+  runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("../state/option.js", () => ({
+  OptionEvent: Object.freeze({
+    READ_FIELD: "readField",
+  }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
+
 beforeEach(() => {
   document.body.innerHTML = "";
   g("lang", 2);
-  g("option", {
+  const option = {
     alert: true,
     notification: false,
     audioEnable: { Error: true },
     audio: {},
-  });
+  };
+  mocks.runOptionAutomation.mockReset();
+  mocks.runOptionAutomation.mockImplementation((event) =>
+    event.type === "readField" ? (option[event.key] ?? event.fallback) : undefined
+  );
   vi.spyOn(window.HTMLMediaElement.prototype, "play").mockImplementation(() => {});
   vi.spyOn(window.HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
 });
@@ -22,7 +37,30 @@ describe("alarm entry", () => {
     const audio = document.getElementById("hvAAAlert-Error");
     expect(audio).toBeTruthy();
     expect(audio.tagName).toBe("AUDIO");
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "audioEnable",
+      fallback: {},
+    });
     expect(audio.play).toHaveBeenCalled();
+  });
+
+  it("reads configured audio URLs through the option entry", () => {
+    mocks.runOptionAutomation.mockImplementation((event) => {
+      const option = {
+        audio: { Riddle: "https://example.test/riddle.ogg" },
+      };
+      return event.type === "readField" ? (option[event.key] ?? event.fallback) : undefined;
+    });
+
+    runAlarmAutomation({ type: AlarmEvent.AUDIO, kind: "Riddle" });
+
+    expect(document.getElementById("hvAAAlert-Riddle").src).toBe("https://example.test/riddle.ogg");
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "audio",
+      fallback: {},
+    });
   });
 
   it("can trigger audio-only alarms through the same entry", () => {

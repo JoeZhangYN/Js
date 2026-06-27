@@ -1,6 +1,7 @@
 // 警报系统：屏幕弹窗 + 音频播放 + 浏览器 desktop notification。
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_TRIGGER = "trigger";
 const EVENT_AUDIO = "audio";
@@ -28,8 +29,13 @@ const AUDIO_PREVIEW_MESSAGE = Object.freeze({
 
 function setAlarm(e) {
   e = e || "Common";
-  if (g("option").notification) setNotification(e);
-  if (g("option").alert && g("option").audioEnable && g("option").audioEnable[e]) setAudioAlarm(e);
+  if (readOptionField("notification", false)) setNotification(e);
+  const audioEnable = readOptionField("audioEnable", {});
+  if (readOptionField("alert", false) && audioEnable?.[e]) setAudioAlarm(e);
+}
+
+function readOptionField(key, fallback) {
+  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
 }
 
 function setAudioAlarm(e) {
@@ -40,9 +46,10 @@ function setAudioAlarm(e) {
     audio = gE("body").appendChild(cE("audio"));
     audio.id = `hvAAAlert-${e}`;
     const fileType = ".ogg"; // var fileType = (/Chrome|Safari/.test(navigator.userAgent)) ? '.mp3' : '.wav';
+    const audioOption = readOptionField("audio", {});
     audio.src =
-      g("option").audio && g("option").audio[e]
-        ? g("option").audio[e]
+      audioOption && audioOption[e]
+        ? audioOption[e]
         : `https://gitee.com/dodying/userJs/raw/master/HentaiVerse/hvAutoAttack/${e}${fileType}`;
 
     audio.controls = true;
