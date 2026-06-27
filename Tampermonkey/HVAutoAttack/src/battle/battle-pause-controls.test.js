@@ -4,6 +4,15 @@ import {
   runBattlePauseControlsAutomation,
 } from "./battle-pause-controls.js";
 
+const mocks = vi.hoisted(() => ({
+  runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("../state/option.js", () => ({
+  OptionEvent: Object.freeze({ READ: "read" }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
+
 function makeDeps(option) {
   const root = document.createElement("div");
   root.id = "battle_main";
@@ -23,6 +32,8 @@ function makeDeps(option) {
 
 beforeEach(() => {
   document.body.innerHTML = "";
+  mocks.runOptionAutomation.mockReset();
+  mocks.runOptionAutomation.mockReturnValue({});
 });
 
 describe("runBattlePauseControlsAutomation", () => {
@@ -52,5 +63,16 @@ describe("runBattlePauseControlsAutomation", () => {
     document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "p", bubbles: true }));
 
     expect(deps.runPauseToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("reads pause control options through the option entry on the default path", () => {
+    const root = document.createElement("div");
+    root.id = "battle_main";
+    document.body.appendChild(root);
+    mocks.runOptionAutomation.mockReturnValue({ pauseButton: false, pauseHotkey: false });
+
+    expect(runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL })).toBe(true);
+
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "read" });
   });
 });

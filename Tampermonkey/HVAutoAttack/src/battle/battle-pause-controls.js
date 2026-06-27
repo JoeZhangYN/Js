@@ -1,5 +1,5 @@
 import { cE, gE } from "../dom/query.js";
-import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 
@@ -46,7 +46,7 @@ export function runBattlePauseControlsAutomation(
     document,
     query: gE,
     createElement: cE,
-    readOption: () => g("option") || {},
+    readOption: () => runOptionAutomation({ type: OptionEvent.READ }) || {},
     runPauseToggle: (toggleDeps) =>
       runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, toggleDeps),
     resume: runBattleTurnAutomation,

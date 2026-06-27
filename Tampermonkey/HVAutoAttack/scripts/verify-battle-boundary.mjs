@@ -461,6 +461,14 @@ function checkPauseControlsEntry() {
       `${rel(pauseControlsFile)} must expose runBattlePauseControlsAutomation(event)`
     );
   }
+  if (!text.includes("OptionEvent.READ")) {
+    violations.push(
+      `${rel(pauseControlsFile)} must read pause control options through option entry`
+    );
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${rel(pauseControlsFile)} must not read pause control options directly`);
+  }
   if (
     /\bexport\s+(?:function|const)\s+(?!BattlePauseControlsEvent\b|runBattlePauseControlsAutomation\b)/.test(
       text
