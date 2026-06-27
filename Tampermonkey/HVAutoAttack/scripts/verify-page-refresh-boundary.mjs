@@ -44,6 +44,14 @@ function checkFile(file) {
     ) {
       violations.push(`${where} page refresh scheduling is owned by page-automation`);
     }
+    if (
+      relative !== owner &&
+      relative !== testFile &&
+      /\bscheduleReload\b/.test(line) &&
+      /page refresh|UNKNOWN_PAGE_READY|5\s*\*\s*60/.test(line)
+    ) {
+      violations.push(`${where} page reload scheduling belongs in alarm/page-refresh.js`);
+    }
   });
 }
 
@@ -52,6 +60,11 @@ walk(srcDir);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (!ownerText.includes("scheduleReload")) {
   violations.push(`${owner.replaceAll("\\", "/")} must use scheduleReload`);
+}
+for (const required of ["PageRefreshEvent", "UNKNOWN_PAGE_READY", "5 * 60"]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own ${required} page refresh policy`);
+  }
 }
 
 if (violations.length) {

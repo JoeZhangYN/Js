@@ -12,9 +12,12 @@
 import { scheduleReload } from "../core/navigate.js";
 
 const EVENT_GAME_PAGE_READY = "gamePageReady";
+const EVENT_UNKNOWN_PAGE_READY = "unknownPageReady";
+const UNKNOWN_PAGE_RELOAD_SEC = 5 * 60;
 
 export const PageRefreshEvent = Object.freeze({
   GAME_PAGE_READY: EVENT_GAME_PAGE_READY,
+  UNKNOWN_PAGE_READY: EVENT_UNKNOWN_PAGE_READY,
 });
 
 function planPageRefreshDelayMs(option, { jitter = Math.random() } = {}) {
@@ -27,6 +30,11 @@ function planPageRefreshDelayMs(option, { jitter = Math.random() } = {}) {
 }
 
 export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }, deps = {}) {
+  if (event.type === EVENT_UNKNOWN_PAGE_READY) {
+    const reload = deps.scheduleReload || scheduleReload;
+    reload(UNKNOWN_PAGE_RELOAD_SEC);
+    return true;
+  }
   if (event.type !== EVENT_GAME_PAGE_READY) return false;
   const delayMs = planPageRefreshDelayMs(event.option, deps);
   if (!delayMs) return false;

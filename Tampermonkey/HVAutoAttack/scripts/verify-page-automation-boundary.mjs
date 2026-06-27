@@ -48,11 +48,14 @@ function checkEntry() {
     "runBattleAutomation",
     "runLobbyAutomation",
     "runPageRefreshAutomation",
-    "scheduleReload",
+    "PageRefreshEvent.UNKNOWN_PAGE_READY",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} page routing wiring`);
     }
+  }
+  if (/\bscheduleReload\b/.test(text)) {
+    violations.push(`${rel(entryFile)} must route page reload scheduling through runPageRefreshAutomation(event)`);
   }
 }
 

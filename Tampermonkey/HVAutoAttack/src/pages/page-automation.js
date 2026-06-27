@@ -1,5 +1,4 @@
 // 页面自动化编排入口：init 只上报页面类型，本入口决定具体页面能力顺序。
-import { scheduleReload } from "../core/navigate.js";
 import { g } from "../state/store.js";
 import { PageRefreshEvent, runPageRefreshAutomation } from "../alarm/page-refresh.js";
 import { AppStartupEvent, runAppStartup } from "./app-startup.js";
@@ -16,8 +15,7 @@ function isGameAutomationPage(kind) {
 
 function scheduleUnknownPageReload(kind) {
   if (isGameAutomationPage(kind)) return false;
-  scheduleReload(5 * 60);
-  return true;
+  return runPageRefreshAutomation({ type: PageRefreshEvent.UNKNOWN_PAGE_READY });
 }
 
 function runGamePageAutomation(kind) {

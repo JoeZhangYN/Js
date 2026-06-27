@@ -42,4 +42,19 @@ describe("runPageRefreshAutomation", () => {
     ).toBe(true);
     expect(scheduleReload).toHaveBeenLastCalledWith(31 * 60);
   });
+
+  it("schedules unknown page reload through the same refresh entry", () => {
+    const scheduleReload = vi.fn();
+
+    expect(
+      runPageRefreshAutomation(
+        {
+          type: PageRefreshEvent.UNKNOWN_PAGE_READY,
+        },
+        { scheduleReload }
+      )
+    ).toBe(true);
+
+    expect(scheduleReload).toHaveBeenCalledWith(5 * 60);
+  });
 });
