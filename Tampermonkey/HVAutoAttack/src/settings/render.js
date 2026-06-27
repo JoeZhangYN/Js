@@ -589,28 +589,11 @@ export function optionBox() {
   gE(".skillOrder", optionBox).onclick = makeSingleOrderHandler("skillOrderValue");
   // 标签页-警报
   gE('input[name="audio_Text"]', optionBox).onchange = function () {
-    if (this.value === "") return;
-    if (!/^http(s)?:|^ftp:|^data:audio/.test(this.value)) {
-      _alert(
-        0,
-        '地址必须以"http:","https:","ftp:","data:audio"开头',
-        '地址必須以"http:","https:","ftp:","data:audio"開頭',
-        'The address must start with "http:", "https:", "ftp:", and "data:audio"'
-      );
-      return;
-    }
-    _alert(
-      0,
-      "接下来将测试该音频\n如果该音频无法播放或无法载入，请变更\n请测试完成后再键入另一个音频",
-      "接下來將測試該音頻\n如果該音頻無法播放或無法載入，請變更\n請測試完成後再鍵入另一個音頻",
-      "The audio will be tested after you close this prompt\nIf the audio doesn't load or play, change the url"
-    );
-    const box = gE("#hvAATab-Alarm").appendChild(cE("div"));
-    box.innerHTML = this.value;
-    const audio = box.appendChild(cE("audio"));
-    audio.controls = true;
-    audio.src = this.value;
-    audio.play();
+    const preview = runAlarmAutomation({
+      type: AlarmEvent.PREVIEW_AUDIO_URL,
+      url: this.value,
+    });
+    if (preview?.message) _alert(0, preview.message.l0, preview.message.l1, preview.message.l2);
   };
   // 标签页-掉落监测
   gE(".reDropMonitor", optionBox).onclick = function () {

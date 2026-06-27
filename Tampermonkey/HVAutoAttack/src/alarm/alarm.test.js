@@ -48,4 +48,33 @@ describe("alarm entry", () => {
     );
     vi.unstubAllGlobals();
   });
+
+  it("previews configured audio URLs through the alarm entry", () => {
+    document.body.innerHTML = '<div id="hvAATab-Alarm"></div>';
+
+    expect(
+      runAlarmAutomation({
+        type: AlarmEvent.PREVIEW_AUDIO_URL,
+        url: "https://example.test/alarm.ogg",
+      })
+    ).toMatchObject({ ok: true, message: expect.objectContaining({ l2: expect.any(String) }) });
+
+    const audio = document.querySelector("#hvAATab-Alarm audio");
+    expect(audio.src).toBe("https://example.test/alarm.ogg");
+    expect(audio.controls).toBe(true);
+    expect(audio.play).toHaveBeenCalled();
+  });
+
+  it("rejects unsupported preview audio URLs through the alarm entry", () => {
+    document.body.innerHTML = '<div id="hvAATab-Alarm"></div>';
+
+    expect(
+      runAlarmAutomation({
+        type: AlarmEvent.PREVIEW_AUDIO_URL,
+        url: "javascript:alert(1)",
+      })
+    ).toMatchObject({ ok: false, message: expect.objectContaining({ l2: expect.any(String) }) });
+
+    expect(document.querySelector("#hvAATab-Alarm audio")).toBeNull();
+  });
 });

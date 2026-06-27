@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/alarm/alarm.js");
 const ownerTest = path.normalize("src/alarm/alarm.test.js");
+const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
 
 function rel(file) {
@@ -31,14 +32,30 @@ function checkFile(file) {
     ) {
       violations.push(`${rel(file)}:${index + 1} legacy alarm imports are forbidden`);
     }
+    if (
+      relative === settingsRender &&
+      (/^http\(s\)\?:\|\^ftp:\|\^data:audio/.test(line) ||
+        /appendChild\(cE\(["']audio["']\)/.test(line) ||
+        /The audio will be tested/.test(line))
+    ) {
+      violations.push(
+        `${rel(file)}:${index + 1} audio preview belongs in runAlarmAutomation(event)`
+      );
+    }
   });
 }
 
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
-for (const required of ["runAlarmAutomation", "AlarmEvent"]) {
-  if (!ownerText.includes(required)) violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+for (const required of ["runAlarmAutomation", "AlarmEvent", "PREVIEW_AUDIO_URL"]) {
+  if (!ownerText.includes(required))
+    violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+}
+
+const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
+if (!settingsText.includes("AlarmEvent.PREVIEW_AUDIO_URL")) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} must preview audio through alarm entry`);
 }
 
 for (const legacy of ["setAlarm", "setAudioAlarm", "setNotification"]) {

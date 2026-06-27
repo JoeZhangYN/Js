@@ -5,22 +5,31 @@ import { g } from "../state/store.js";
 const EVENT_TRIGGER = "trigger";
 const EVENT_AUDIO = "audio";
 const EVENT_NOTIFICATION = "notification";
+const EVENT_PREVIEW_AUDIO_URL = "previewAudioUrl";
 
 export const AlarmEvent = Object.freeze({
   TRIGGER: EVENT_TRIGGER,
   AUDIO: EVENT_AUDIO,
   NOTIFICATION: EVENT_NOTIFICATION,
+  PREVIEW_AUDIO_URL: EVENT_PREVIEW_AUDIO_URL,
+});
+
+const AUDIO_URL_PREFIX = /^http(s)?:|^ftp:|^data:audio/;
+const AUDIO_URL_ERROR_MESSAGE = Object.freeze({
+  l0: '地址必须以"http:","https:","ftp:","data:audio"开头',
+  l1: '地址必須以"http:","https:","ftp:","data:audio"開頭',
+  l2: 'The address must start with "http:", "https:", "ftp:", and "data:audio"',
+});
+const AUDIO_PREVIEW_MESSAGE = Object.freeze({
+  l0: "接下来将测试该音频\n如果该音频无法播放或无法载入，请变更\n请测试完成后再键入另一个音频",
+  l1: "接下來將測試該音頻\n如果該音頻無法播放或無法載入，請變更\n請測試完成後再鍵入另一個音頻",
+  l2: "The audio will be tested after you close this prompt\nIf the audio doesn't load or play, change the url",
 });
 
 function setAlarm(e) {
   e = e || "Common";
   if (g("option").notification) setNotification(e);
-  if (
-    g("option").alert &&
-    g("option").audioEnable &&
-    g("option").audioEnable[e]
-  )
-    setAudioAlarm(e);
+  if (g("option").alert && g("option").audioEnable && g("option").audioEnable[e]) setAudioAlarm(e);
 }
 
 function setAudioAlarm(e) {
@@ -124,9 +133,22 @@ function setNotification(e) {
   }
 }
 
+function previewAudioUrl(url) {
+  if (!url) return { ok: false };
+  if (!AUDIO_URL_PREFIX.test(url)) return { ok: false, message: AUDIO_URL_ERROR_MESSAGE };
+  const box = gE("#hvAATab-Alarm").appendChild(cE("div"));
+  box.textContent = url;
+  const audio = box.appendChild(cE("audio"));
+  audio.controls = true;
+  audio.src = url;
+  audio.play();
+  return { ok: true, message: AUDIO_PREVIEW_MESSAGE };
+}
+
 export function runAlarmAutomation(event = { type: EVENT_TRIGGER }) {
   if (event.type === EVENT_TRIGGER) return setAlarm(event.kind);
   if (event.type === EVENT_AUDIO) return setAudioAlarm(event.kind);
   if (event.type === EVENT_NOTIFICATION) return setNotification(event.kind);
+  if (event.type === EVENT_PREVIEW_AUDIO_URL) return previewAudioUrl(event.url);
   return undefined;
 }
