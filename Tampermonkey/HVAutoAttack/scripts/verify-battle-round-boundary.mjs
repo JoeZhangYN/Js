@@ -9,6 +9,7 @@ const storage = path.normalize("src/state/storage.js");
 const storageTest = path.normalize("src/state/storage.test.js");
 const runtimeTest = path.normalize("src/battle/battle-runtime.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
+const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
 
 function walk(dir) {
@@ -39,6 +40,9 @@ function checkFile(file) {
     ) {
       violations.push(`${where} battle round state must use runBattleRoundAutomation(event)`);
     }
+    if (relative === settingsRender && /setValue\(\s*input\.name\b/.test(line)) {
+      violations.push(`${where} settings must not persist round debug fields directly`);
+    }
   });
 }
 
@@ -53,6 +57,7 @@ for (const required of [
   "RECORD_TYPE",
   "RECORD_COUNT",
   "RECORD_COUNT_FROM_INITIALIZATION",
+  "RECORD_DEBUG_FIELDS",
   "SYNC_RUNTIME",
 ]) {
   if (!ownerText.includes(required)) {

@@ -117,4 +117,21 @@ describe("runBattleRoundAutomation", () => {
     expect(getValue(STORAGE_KEYS.ROUND_NOW)).toBe("1");
     expect(getValue(STORAGE_KEYS.ROUND_ALL)).toBe("1");
   });
+
+  it("records debug round fields through the round entry", () => {
+    expect(
+      runBattleRoundAutomation({
+        type: BattleRoundEvent.RECORD_DEBUG_FIELDS,
+        fields: [
+          { name: "roundType", value: "ar", placeholder: "" },
+          { name: "roundNow", value: "", placeholder: "2" },
+          { name: "roundAll", value: "5", placeholder: "1" },
+        ],
+      })
+    ).toEqual({ roundType: "ar", roundNow: "2", roundAll: "5" });
+
+    expect(getValue(STORAGE_KEYS.ROUND_TYPE)).toBe("ar");
+    expect(getValue(STORAGE_KEYS.ROUND_NOW)).toBe("2");
+    expect(getValue(STORAGE_KEYS.ROUND_ALL)).toBe("5");
+  });
 });

@@ -2,7 +2,7 @@
 // 阶段 5 改成 option schema-driven。当前 chunk 2 仅做物理搬迁，行为不变。
 // file-size-gate: exempt phase-3-monolith
 import { gE, cE } from "../dom/query.js";
-import { setValue, getValue } from "../state/storage.js";
+import { getValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
@@ -20,6 +20,7 @@ import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
+import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 
 /**
@@ -634,8 +635,13 @@ export function optionBox() {
   };
   // 标签页-关于本脚本
   gE(".hvAAFix", optionBox).onclick = function () {
-    gE('.hvAADebug[name^="round"]', "all", optionBox).forEach((input) => {
-      setValue(input.name, input.value || input.placeholder);
+    runBattleRoundAutomation({
+      type: BattleRoundEvent.RECORD_DEBUG_FIELDS,
+      fields: gE('.hvAADebug[name^="round"]', "all", optionBox).map((input) => ({
+        name: input.name,
+        value: input.value,
+        placeholder: input.placeholder,
+      })),
     });
   };
   gE(".quickSiteAdd", optionBox).onclick = function () {
