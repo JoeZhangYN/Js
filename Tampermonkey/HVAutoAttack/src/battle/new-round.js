@@ -1,6 +1,7 @@
 // 新一轮战斗初始化：怪物计数 / 轮次识别。
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import { AutoTuneEvent, runAutoTuneAutomation } from "../state/auto-tune.js";
@@ -18,9 +19,13 @@ export const BattleRoundStartEvent = Object.freeze({
   ROUND_STARTED: EVENT_ROUND_STARTED,
 });
 
+function isOptionEnabled(key) {
+  return Boolean(runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback: false }));
+}
+
 function startRound() {
   // F auto-tune：上一回合结束 → 观测用药数 + 复位计数
-  if (g("option")?.autoTune && (g("turn") || 0) > 0) {
+  if (isOptionEnabled("autoTune") && (g("turn") || 0) > 0) {
     const used = g("autoTunePotionCount") || 0;
     runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_BATTLE, potionsUsed: used });
   }
@@ -41,7 +46,7 @@ function startRound() {
         initializingText: temp,
       });
       if (roundType === "ba") {
-        if (g("option").encounter) {
+        if (isOptionEnabled("encounter")) {
           runEncounterAutomation({
             type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
           });

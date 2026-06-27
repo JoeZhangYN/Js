@@ -138,6 +138,12 @@ function checkRoundStartEntry() {
   if (!/export function runBattleRoundStartAutomation\(/.test(text)) {
     violations.push(`${rel(roundStartFile)} must expose runBattleRoundStartAutomation(event)`);
   }
+  if (!text.includes("OptionEvent.READ_FIELD")) {
+    violations.push(`${rel(roundStartFile)} must read round-start options through option entry`);
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${rel(roundStartFile)} must not read round-start options directly`);
+  }
   if (/\b(?:export\s+)?function\s+newRound\s*\(/.test(text)) {
     violations.push(
       `${rel(roundStartFile)} legacy newRound() bridge must stay deleted; use runBattleRoundStartAutomation(event)`
