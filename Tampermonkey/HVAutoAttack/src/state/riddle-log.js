@@ -8,11 +8,21 @@ import { getValue, setValue, delValue } from "./storage.js";
 const KEY = "riddleLog";
 const CAP = 80; // 环形上限：超出从头截断，恒只留最近 CAP 条。
 
+const EVENT_PUSH = "push";
+const EVENT_READ = "read";
+const EVENT_CLEAR = "clear";
+
+export const RiddleLogEvent = Object.freeze({
+  PUSH: EVENT_PUSH,
+  READ: EVENT_READ,
+  CLEAR: EVENT_CLEAR,
+});
+
 /**
  * 追加一条日志：自动盖时间戳 + 环形截断到 CAP。空串忽略。
  * @param {string} msg 日志正文（>300 字截断；建议英文/码键）
  */
-export function pushRiddleLog(msg) {
+function pushRiddleLog(msg) {
   if (!msg) return;
   const arr = getValue(KEY, true) || [];
   arr.push({ t: new Date().toLocaleTimeString(), m: String(msg).slice(0, 300) });
@@ -24,11 +34,19 @@ export function pushRiddleLog(msg) {
  * 读全部日志（旧→新）。缺失返空数组。
  * @returns {{t:string, m:string}[]}
  */
-export function getRiddleLog() {
+function getRiddleLog() {
   return getValue(KEY, true) || [];
 }
 
 /** 清空日志。 */
-export function clearRiddleLog() {
+function clearRiddleLog() {
   delValue(KEY);
+  return getRiddleLog();
+}
+
+export function runRiddleLogAutomation(event = { type: EVENT_READ }) {
+  if (event.type === EVENT_PUSH) return pushRiddleLog(event.message);
+  if (event.type === EVENT_READ) return getRiddleLog();
+  if (event.type === EVENT_CLEAR) return clearRiddleLog();
+  return undefined;
 }

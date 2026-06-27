@@ -15,7 +15,7 @@ import { clearOption, readOption, setOption, writeOption } from "../state/option
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
 import { OptionBackupEvent, runOptionBackupAutomation } from "../state/option-backup.js";
 import { getRiddleStats, resetRiddleStats, ML_OUTCOMES } from "../state/riddle-stats.js";
-import { getRiddleLog, clearRiddleLog } from "../state/riddle-log.js";
+import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
 import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
@@ -497,10 +497,10 @@ export function optionBox() {
         const safe = String(rs.lastError).replace(/</g, "&lt;").replace(/>/g, "&gt;");
         _html = `${_html}<tr class="hvAATh"><td colspan="2"><l0>最近失败详情</l0><l1>最近失敗詳情</l1><l2>Last failure detail</l2></td></tr><tr><td colspan="2" style="word-break:break-all;text-align:left;">${safe}</td></tr>`;
       }
-      const rlog = getRiddleLog();
+      const rlog = runRiddleLogAutomation({ type: RiddleLogEvent.READ });
       if (rlog.length) {
         // 运行日志（state/riddle-log.js 半持久化滚动缓冲, 过页面跳转不丢, 新→旧）：每行 时间+文本，
-        // 内嵌滚动容器防撑爆面板。重置按钮 .reRiddleStats 一并 clearRiddleLog。
+        // 内嵌滚动容器防撑爆面板。重置按钮 .reRiddleStats 一并清滚动日志。
         const esc = (s) => String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const rows = rlog
           .slice()
@@ -721,7 +721,7 @@ export function optionBox() {
   gE(".reRiddleStats", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
       resetRiddleStats();
-      clearRiddleLog(); // 重置统计同时清滚动日志
+      runRiddleLogAutomation({ type: RiddleLogEvent.CLEAR }); // 重置统计同时清滚动日志
     }
   };
   // 标签页-关于本脚本

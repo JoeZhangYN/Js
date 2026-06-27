@@ -16,7 +16,7 @@ import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { runRiddleVisualAid } from "./riddle-helper.js";
 import { tryMLAnswer, startRiddleMlHealthCheck } from "./riddle-ml.js";
 import { recordRiddleAppear } from "../state/riddle-stats.js";
-import { pushRiddleLog } from "../state/riddle-log.js";
+import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
 import { captureRiddleDataUrl, getRiddleImgEl } from "./riddle-image.js";
 import { recordRiddleSample, SAMPLE_SOURCE } from "../state/riddle-dataset.js";
 
@@ -137,7 +137,10 @@ export function runRiddleAnsweringSession() {
     if (timer) clearInterval(timer);
     console.log(`[HVAA][riddle] 自动提交(${via})`, answers); // 可见性：无反应时看 console 确认走哪条路径
     // 提交即重定向、console 即丢 → 落滚动日志（半持久化）：本次答案 + 路径，事后可翻"答案是什么/走哪条路"
-    pushRiddleLog(`submit via=${via} answers=${Array.isArray(answers) ? answers.join(",") : answers}`);
+    runRiddleLogAutomation({
+      type: RiddleLogEvent.PUSH,
+      message: `submit via=${via} answers=${Array.isArray(answers) ? answers.join(",") : answers}`,
+    });
     pendingSource = via; // 供提交 hook 判 confidence（须在 riddleSubmit 触发 click 之前设好）
     riddleSubmit(answers);
   }
@@ -152,8 +155,16 @@ export function runRiddleAnsweringSession() {
         : SAMPLE_SOURCE.RANDOM
       : SAMPLE_SOURCE.MANUAL;
     const answers = submittedCodes();
-    recordRiddleSample({ imageDataUrl: captureRiddleDataUrl(), answers, source, imageSrc: getRiddleImgEl()?.src });
-    pushRiddleLog(`sample source=${source} answers=${answers}`);
+    recordRiddleSample({
+      imageDataUrl: captureRiddleDataUrl(),
+      answers,
+      source,
+      imageSrc: getRiddleImgEl()?.src,
+    });
+    runRiddleLogAutomation({
+      type: RiddleLogEvent.PUSH,
+      message: `sample source=${source} answers=${answers}`,
+    });
   }
   if (isOptionOn("mlBackupOnFail")) {
     const submitBtn = document.getElementById("riddlesubmit");
@@ -175,11 +186,13 @@ export function runRiddleAnsweringSession() {
     if (submitted) return;
     const remaining = parseRemainingSeconds();
     if (isNaN(remaining)) {
-      if (++unreadable >= 5) doSubmit(mlAnswer && mlAnswer.length ? mlAnswer : randomAnswer(), "兜底·读不到倒计时");
+      if (++unreadable >= 5)
+        doSubmit(mlAnswer && mlAnswer.length ? mlAnswer : randomAnswer(), "兜底·读不到倒计时");
       return;
     }
     unreadable = 0;
     document.title = remaining; // 倒计时显示在标签页标题
-    if (remaining <= beforeEnd) doSubmit(mlAnswer && mlAnswer.length ? mlAnswer : randomAnswer(), "末端兜底");
+    if (remaining <= beforeEnd)
+      doSubmit(mlAnswer && mlAnswer.length ? mlAnswer : randomAnswer(), "末端兜底");
   }, 1000);
 }
