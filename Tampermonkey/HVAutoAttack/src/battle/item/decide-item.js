@@ -8,7 +8,17 @@ import { checkCondition } from "../../settings/condition-eval.js";
 import { decideGem } from "./decide-gem.js";
 import { dynamicHpThreshold } from "../dynamic-threshold.js";
 import { isPotionWasteful, isStallMode, stallTopupCandidates } from "../potion-economy.js";
-import { getLearnedRecovery } from "../../state/recovery-learner.js";
+import {
+  RecoveryLearningEvent,
+  runRecoveryLearningAutomation,
+} from "../../state/recovery-learner.js";
+
+function readRecovery(potionId) {
+  return runRecoveryLearningAutomation({
+    type: RecoveryLearningEvent.READ_RECOVERY,
+    potionId,
+  });
+}
 
 /**
  * 复刻 useGem。无宝石（snap.gemName 空）→ noop；
@@ -51,7 +61,7 @@ export function decidePotion(opt, snap) {
     // noWaste 防溢出仅作用于"无显式条件"的常开药；用户显式设了条件（含非门带状）且已满足
     //  → "条件符合就该用"，不再被绝对量防溢出悄悄否决（根治 message-1 "条件满足却不放"）。
     const hasExplicitCond = typeof cond !== "undefined";
-    if (noWaste && !hasExplicitCond && isPotionWasteful(order[i], snap, tol, getLearnedRecovery)) {
+    if (noWaste && !hasExplicitCond && isPotionWasteful(order[i], snap, tol, readRecovery)) {
       continue;
     }
     candidates.push(order[i]);

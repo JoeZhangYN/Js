@@ -4,7 +4,10 @@
 import { gE, isOn } from "../../dom/query.js";
 import { itemSelector } from "../../dom/selectors.js";
 import { g } from "../../state/store.js";
-import { recordPreDrink } from "../../state/recovery-learner.js";
+import {
+  RecoveryLearningEvent,
+  runRecoveryLearningAutomation,
+} from "../../state/recovery-learner.js";
 
 /**
  * @param {import("../../core/types.js").ItemPlan} plan
@@ -30,7 +33,13 @@ export function executeItem(plan, snap) {
       for (const id of plan.candidates) {
         const el = isOn(id);
         if (!el) continue;
-        if (plan.noWaste) recordPreDrink(id, snap);
+        if (plan.noWaste) {
+          runRecoveryLearningAutomation({
+            type: RecoveryLearningEvent.RECORD_PRE_DRINK,
+            potionId: id,
+            snap,
+          });
+        }
         el.click();
         if (g("option").autoTune) {
           g("autoTunePotionCount", (g("autoTunePotionCount") || 0) + 1);
@@ -59,7 +68,11 @@ export function executeItem(plan, snap) {
         if (attempt.kind === "draught") {
           const el = gE(itemSelector(attempt.id));
           if (!el) continue;
-          recordPreDrink(attempt.id, snap);
+          runRecoveryLearningAutomation({
+            type: RecoveryLearningEvent.RECORD_PRE_DRINK,
+            potionId: attempt.id,
+            snap,
+          });
           el.click();
           return true;
         }

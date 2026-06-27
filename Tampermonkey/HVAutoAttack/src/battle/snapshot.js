@@ -11,7 +11,7 @@ import { gE, isSpiritActive } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
-import { finalizePending } from "../state/recovery-learner.js";
+import { RecoveryLearningEvent, runRecoveryLearningAutomation } from "../state/recovery-learner.js";
 import { finalizeCdPending } from "../state/cd-learner.js";
 import { finalizeBigSkillPending } from "../state/big-skill-kill-learner.js";
 import { updateBurstFromEvents, getLearnedBurstMap } from "../state/incoming-burst-learner.js";
@@ -162,7 +162,7 @@ export function collectSnapshot() {
   const skillReady = readSkillReady();
   // T1: 上回合若有 pending 喝药观测，此处结算 → 学习 delta
   const snapPartial = { ...vitals };
-  finalizePending(snapPartial);
+  runRecoveryLearningAutomation({ type: RecoveryLearningEvent.FINALIZE_PENDING, snap: snapPartial });
   // F3: 上回合开火的技能若本回合脱灰 → 收敛真实 CD（只需 globalTurn + skillReady）
   finalizeCdPending({ globalTurn, skillReady });
   // F4: 上回合 OFC/FRD 开火的 boss 本回合是否已死 → 按 MID 学击杀率（只需 globalTurn + view）

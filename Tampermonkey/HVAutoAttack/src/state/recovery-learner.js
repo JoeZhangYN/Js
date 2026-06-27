@@ -11,12 +11,22 @@ import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { POTION_RECOVERY } from "../battle/potion-economy.js";
 
+const EVENT_RECORD_PRE_DRINK = "recordPreDrink";
+const EVENT_FINALIZE_PENDING = "finalizePending";
+const EVENT_READ_RECOVERY = "readRecovery";
+
+export const RecoveryLearningEvent = Object.freeze({
+  RECORD_PRE_DRINK: EVENT_RECORD_PRE_DRINK,
+  FINALIZE_PENDING: EVENT_FINALIZE_PENDING,
+  READ_RECOVERY: EVENT_READ_RECOVERY,
+});
+
 /**
  * 喝药前调用：保存 pending 观测点。
  * @param {number|string} potionId
  * @param {import("../core/types.js").BattleSnapshot} snap
  */
-export function recordPreDrink(potionId, snap) {
+function recordPreDrink(potionId, snap) {
   const info = POTION_RECOVERY[parseInt(potionId)];
   if (!info) return; // 非药品（Health Gem 等）不学
   g("learnPending", {
@@ -32,7 +42,7 @@ export function recordPreDrink(potionId, snap) {
  * 同回合 click 后立刻 collect snapshot 也 OK（pending.turn === current turn 视为未结算，跳过）。
  * @param {import("../core/types.js").BattleSnapshot} snap
  */
-export function finalizePending(snap) {
+function finalizePending(snap) {
   const pending = g("learnPending");
   if (!pending) return;
   const curTurn = g("turn") || 0;
@@ -74,7 +84,7 @@ function updateLearned(potionId, observedDelta) {
  * @param {number|string} potionId
  * @returns {{stat:string, amount:number}|null}
  */
-export function getLearnedRecovery(potionId) {
+function getLearnedRecovery(potionId) {
   const id = parseInt(potionId);
   const fallback = POTION_RECOVERY[id];
   if (!fallback) return null;
@@ -83,4 +93,11 @@ export function getLearnedRecovery(potionId) {
     return { stat: fallback.stat, amount: learned[id].amount };
   }
   return fallback;
+}
+
+export function runRecoveryLearningAutomation(event = { type: EVENT_READ_RECOVERY }) {
+  if (event.type === EVENT_RECORD_PRE_DRINK) return recordPreDrink(event.potionId, event.snap);
+  if (event.type === EVENT_FINALIZE_PENDING) return finalizePending(event.snap);
+  if (event.type === EVENT_READ_RECOVERY) return getLearnedRecovery(event.potionId);
+  return undefined;
 }
