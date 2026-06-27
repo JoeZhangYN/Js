@@ -72,7 +72,7 @@ describe("riddle submission timing", () => {
 
   it("cancels automatic submissions after an external manual submit", async () => {
     const submit = vi.fn();
-    const timing = runRiddleSubmissionTiming({
+    runRiddleSubmissionTiming({
       type: RiddleSubmissionTimingEvent.START,
       beforeEnd: 3,
       mlAnswers: ["ts"],
@@ -82,10 +82,37 @@ describe("riddle submission timing", () => {
       submit,
     });
 
-    expect(timing.recordExternalSubmission()).toBe(true);
+    expect(
+      runRiddleSubmissionTiming({ type: RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED })
+    ).toBe(true);
 
     await vi.advanceTimersByTimeAsync(5000);
     expect(submit).not.toHaveBeenCalled();
-    expect(timing.recordExternalSubmission()).toBe(false);
+    expect(
+      runRiddleSubmissionTiming({ type: RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED })
+    ).toBe(false);
+  });
+
+  it("schedules ML submit through the same timing entry after start", async () => {
+    const submit = vi.fn();
+    runRiddleSubmissionTiming({
+      type: RiddleSubmissionTimingEvent.START,
+      fallbackAnswers: () => ["ra"],
+      readRemaining: () => 120,
+      submit,
+    });
+
+    expect(
+      runRiddleSubmissionTiming({
+        type: RiddleSubmissionTimingEvent.ML_ANSWERS_READY,
+        mlAnswers: ["fs"],
+        mlDelayMs: 2000,
+      })
+    ).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(submit).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(submit).toHaveBeenCalledWith(["fs"], "ML");
   });
 });

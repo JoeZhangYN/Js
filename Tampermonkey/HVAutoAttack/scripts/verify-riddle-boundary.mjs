@@ -76,6 +76,21 @@ function checkRiddleSubmissionTiming() {
   if (!answerText.includes("runRiddleSubmissionTiming")) {
     violations.push(`${rel(riddleAnswerFile)} must route submit timing through runRiddleSubmissionTiming(event)`);
   }
+  for (const required of [
+    "RiddleSubmissionTimingEvent.START",
+    "RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED",
+    "RiddleSubmissionTimingEvent.ML_ANSWERS_READY",
+  ]) {
+    if (!answerText.includes(required)) {
+      violations.push(`${rel(riddleAnswerFile)} must report ${required} to the timing entry`);
+    }
+  }
+  if (/=\s*runRiddleSubmissionTiming\s*\(/.test(answerText)) {
+    violations.push(`${rel(riddleAnswerFile)} must not keep timing command objects from runRiddleSubmissionTiming(event)`);
+  }
+  if (/\btiming\.(?:recordExternalSubmission|scheduleMlSubmit)\s*\(/.test(answerText)) {
+    violations.push(`${rel(riddleAnswerFile)} must report timing events instead of calling returned timing commands`);
+  }
   answerText.split(/\r?\n/).forEach((line, index) => {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("//")) return;
@@ -93,8 +108,10 @@ function checkRiddleSubmissionTiming() {
       violations.push(`${rel(riddleTimingFile)} must own ${required}`);
     }
   }
-  if (!timingText.includes("recordExternalSubmission")) {
-    violations.push(`${rel(riddleTimingFile)} must let manual submit cancel riddle timing`);
+  for (const required of ["EXTERNAL_SUBMITTED", "ML_ANSWERS_READY"]) {
+    if (!timingText.includes(required)) {
+      violations.push(`${rel(riddleTimingFile)} must own ${required} timing event`);
+    }
   }
   if (/return\s+Object\.freeze\(\{[^}]*\b(?:stop|submitOnce)\b/s.test(timingText)) {
     violations.push(`${rel(riddleTimingFile)} must not expose raw timer primitives outside the timing entry`);

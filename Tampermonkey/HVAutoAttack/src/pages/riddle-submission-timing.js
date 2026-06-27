@@ -2,11 +2,17 @@ import { gE } from "../dom/query.js";
 
 const EVENT_START = "start";
 const EVENT_READ_REMAINING = "readRemaining";
+const EVENT_EXTERNAL_SUBMITTED = "externalSubmitted";
+const EVENT_ML_ANSWERS_READY = "mlAnswersReady";
 
 export const RiddleSubmissionTimingEvent = Object.freeze({
   START: EVENT_START,
   READ_REMAINING: EVENT_READ_REMAINING,
+  EXTERNAL_SUBMITTED: EVENT_EXTERNAL_SUBMITTED,
+  ML_ANSWERS_READY: EVENT_ML_ANSWERS_READY,
 });
+
+let activeSession = null;
 
 function readRemainingSeconds() {
   const counter = gE("#riddlecounter");
@@ -35,7 +41,7 @@ function readRemainingSeconds() {
   return parseInt(time);
 }
 
-function startSubmissionTiming(event) {
+function createSubmissionTiming(event) {
   const beforeEnd = Number(event.beforeEnd) || 3;
   const submit = event.submit;
   const fallbackAnswers = event.fallbackAnswers;
@@ -47,7 +53,7 @@ function startSubmissionTiming(event) {
   let countdownTimer = null;
   let mlTimer = null;
 
-  function stop() {
+  function cancelTimers() {
     if (countdownTimer) clearInterval(countdownTimer);
     if (mlTimer) clearTimeout(mlTimer);
     countdownTimer = null;
@@ -57,7 +63,7 @@ function startSubmissionTiming(event) {
   function submitOnce(answers, via) {
     if (submitted) return false;
     submitted = true;
-    stop();
+    cancelTimers();
     submit(answers, via);
     return true;
   }
@@ -65,7 +71,7 @@ function startSubmissionTiming(event) {
   function recordExternalSubmission() {
     if (submitted) return false;
     submitted = true;
-    stop();
+    cancelTimers();
     return true;
   }
 
@@ -98,11 +104,23 @@ function startSubmissionTiming(event) {
     if (remaining <= beforeEnd) submitOnce(currentAnswers(), "末端兜底");
   }, 1000);
 
-  return Object.freeze({ recordExternalSubmission, scheduleMlSubmit });
+  return Object.freeze({ recordExternalSubmission, scheduleMlSubmit, cancelTimers });
+}
+
+function startSubmissionTiming(event) {
+  if (activeSession) activeSession.cancelTimers();
+  activeSession = createSubmissionTiming(event);
+  return true;
 }
 
 export function runRiddleSubmissionTiming(event = { type: EVENT_READ_REMAINING }) {
   if (event.type === EVENT_READ_REMAINING) return readRemainingSeconds();
   if (event.type === EVENT_START) return startSubmissionTiming(event);
+  if (event.type === EVENT_EXTERNAL_SUBMITTED) {
+    return activeSession ? activeSession.recordExternalSubmission() : false;
+  }
+  if (event.type === EVENT_ML_ANSWERS_READY) {
+    return activeSession ? activeSession.scheduleMlSubmit(event.mlAnswers, event.mlDelayMs) : false;
+  }
   return undefined;
 }

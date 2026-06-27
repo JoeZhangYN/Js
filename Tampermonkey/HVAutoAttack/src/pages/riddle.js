@@ -112,7 +112,7 @@ export function runRiddleAnsweringSession() {
     pendingSource = via; // 供提交 hook 判 confidence（须在 riddleSubmit 触发 click 之前设好）
     riddleSubmit(answers);
   }
-  const timing = runRiddleSubmissionTiming({
+  runRiddleSubmissionTiming({
     type: RiddleSubmissionTimingEvent.START,
     beforeEnd,
     fallbackAnswers: randomAnswer,
@@ -124,7 +124,7 @@ export function runRiddleAnsweringSession() {
   function captureSubmission() {
     if (sampled) return;
     sampled = true;
-    timing.recordExternalSubmission();
+    runRiddleSubmissionTiming({ type: RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED });
     const source = pendingSource
       ? pendingSource === "ML"
         ? RiddleSampleSource.ML
@@ -155,7 +155,11 @@ export function runRiddleAnsweringSession() {
         if (a && a.length) {
           // ML 命中 → 短延迟提交（前台 ~3s / 后台 3-8s 模拟人类），不等末端。
           const delay = document.hasFocus() ? 3000 : 3000 + Math.random() * 5000;
-          timing.scheduleMlSubmit(a, delay);
+          runRiddleSubmissionTiming({
+            type: RiddleSubmissionTimingEvent.ML_ANSWERS_READY,
+            mlAnswers: a,
+            mlDelayMs: delay,
+          });
         }
       })
       .catch(() => {});
