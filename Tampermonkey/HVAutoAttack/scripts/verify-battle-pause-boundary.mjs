@@ -4,7 +4,6 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const entry = path.normalize("src/battle/pause-automation.js");
-const storage = path.normalize("src/state/storage.js");
 const violations = [];
 
 function rel(file) {
@@ -30,17 +29,12 @@ function checkFile(file) {
     if (/\bpauseChange\s*\(/.test(line) || /\bimport\b.*\bpauseChange\b/.test(line)) {
       violations.push(`${where} legacy pauseChange path is forbidden`);
     }
-    if (
-      relative !== entry &&
-      /\bpauseScript\b/.test(line)
-    ) {
-      violations.push(`${where} legacy pauseScript bridge is forbidden; use runBattlePauseAutomation(event)`);
+    if (relative !== entry && /\bpauseScript\b/.test(line)) {
+      violations.push(
+        `${where} legacy pauseScript bridge is forbidden; use runBattlePauseAutomation(event)`
+      );
     }
-    if (
-      relative !== entry &&
-      relative !== storage &&
-      /\b(?:setValue|getValue|delValue)\(\s*["']disabled["']/.test(line)
-    ) {
+    if (/\b(?:setValue|getValue|delValue)\(\s*["']disabled["']/.test(line)) {
       violations.push(`${where} disabled state belongs in runBattlePauseAutomation(event)`);
     }
   });
@@ -51,7 +45,10 @@ function checkEntry() {
   if (!/export function runBattlePauseAutomation\(/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must expose runBattlePauseAutomation(event)`);
   }
-  for (const required of ["setValue(\"disabled\"", "getValue(\"disabled\"", "delValue(0)"]) {
+  if (!text.includes("STORAGE_KEYS.DISABLED")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must use STORAGE_KEYS.DISABLED`);
+  }
+  for (const required of ["STORAGE_KEYS.DISABLED", "delValue(0)"]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} pause wiring`);
     }

@@ -1,6 +1,7 @@
 // 战斗暂停编排入口：暂停、暂停中显示、继续恢复统一从这里进入。
 import { gE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { _alert } from "../core/lang.js";
 
 const EVENT_RENDER_PAUSED = "renderPaused";
@@ -20,18 +21,13 @@ function setPauseButtonText(text) {
 }
 
 function renderPaused() {
-  document.title = _alert(
-    -1,
-    "hvAutoAttack暂停中",
-    "hvAutoAttack暫停中",
-    "hvAutoAttack Paused"
-  );
+  document.title = _alert(-1, "hvAutoAttack暂停中", "hvAutoAttack暫停中", "hvAutoAttack Paused");
   setPauseButtonText("<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>");
 }
 
 function pauseBattle() {
   setPauseButtonText("<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>");
-  setValue("disabled", true);
+  setValue(STORAGE_KEYS.DISABLED, true);
 }
 
 function resumeBattle(resume) {
@@ -40,21 +36,18 @@ function resumeBattle(resume) {
   resume?.();
 }
 
-export function runBattlePauseAutomation(
-  event = { type: EVENT_PAUSE },
-  deps = {}
-) {
+export function runBattlePauseAutomation(event = { type: EVENT_PAUSE }, deps = {}) {
   if (event.type === EVENT_RENDER_PAUSED) {
     renderPaused();
     return true;
   }
   if (event.type === EVENT_RENDER_IF_PAUSED) {
-    if (!getValue("disabled")) return false;
+    if (!getValue(STORAGE_KEYS.DISABLED)) return false;
     renderPaused();
     return true;
   }
   if (event.type === EVENT_TOGGLE) {
-    if (getValue("disabled")) {
+    if (getValue(STORAGE_KEYS.DISABLED)) {
       resumeBattle(deps.resume);
     } else {
       pauseBattle();
