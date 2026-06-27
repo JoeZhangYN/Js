@@ -11,7 +11,7 @@
 //   - 直接用 GM_setValue/GM_getValue（带 prefix 会污染 RMA 兼容性；这里用裸 key 与原 RMA 一致）
 // XHR 兜底通过 GM_xmlhttpRequest 完成（@grant 需加 GM_xmlhttpRequest）
 import { g } from "../state/store.js";
-import { setAlarm } from "../alarm/alarm.js";
+import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { gmXhr, hasNonLatin1 } from "../dom/gm-xhr.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
@@ -27,6 +27,10 @@ function reportMlDetail(detail) {
 
 function reportMlOutcome(outcome) {
   return runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_OUTCOME, outcome });
+}
+
+function triggerErrorAlarm() {
+  runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Error" });
 }
 
 /**
@@ -196,7 +200,7 @@ export async function tryMLAnswer() {
       console.warn("[HVAA][RMA] 图片 blob 为空(canvas 污染/fetch 失败)，本次走随机");
       reportMlDetail("empty_blob (canvas 污染/fetch 失败)");
       reportMlOutcome("empty_blob");
-      setAlarm("Error");
+      triggerErrorAlarm();
       return null;
     }
 
@@ -224,7 +228,7 @@ export async function tryMLAnswer() {
             if (res.status === 429) {
               console.warn("[HVAA][RMA] 429 限流，本次走随机");
               reportMlDetail("rate_limited 429");
-              setAlarm("Error");
+              triggerErrorAlarm();
               resolve("rate_limited");
               return;
             }
@@ -234,7 +238,7 @@ export async function tryMLAnswer() {
             } catch (e) {
               console.warn("[HVAA][RMA] 响应非 JSON，本次走随机:", res.status, e.message);
               reportMlDetail("non_json status=" + res.status + " " + e.message);
-              setAlarm("Error");
+              triggerErrorAlarm();
               resolve("non_json");
               return;
             }
@@ -251,7 +255,7 @@ export async function tryMLAnswer() {
               if (!hits.length) {
                 console.warn("[HVAA][RMA] 响应无可识别答案码，本次走随机:", dict);
                 reportMlDetail("no_answer_code answer=" + JSON.stringify(dict.answer));
-                setAlarm("Error");
+                triggerErrorAlarm();
                 resolve("no_answer_code");
                 return;
               }
@@ -267,26 +271,26 @@ export async function tryMLAnswer() {
             if (dict.return === "finish") {
               console.warn("[HVAA][RMA] no more solves today");
               reportMlDetail("finish (no more solves today)");
-              setAlarm("Error");
+              triggerErrorAlarm();
               resolve("finish");
               return;
             }
             if (dict.return === "error" || dict.expire === true) {
               console.warn("[HVAA][RMA] server error / license issue", dict);
               reportMlDetail("server_error " + JSON.stringify(dict).slice(0, 150));
-              setAlarm("Error");
+              triggerErrorAlarm();
               resolve("server_error");
               return;
             }
             console.warn("[HVAA][RMA] 未知 return 字段，本次走随机:", dict);
             reportMlDetail("unknown " + JSON.stringify(dict).slice(0, 150));
-            setAlarm("Error");
+            triggerErrorAlarm();
             resolve("unknown");
           } catch (e) {
             // 捕获错误兜底：多答案/异形响应等处理异常 → 落库 + resolve，绝不让错误逃逸 console 即丢或 Promise 挂死。
             console.error("[HVAA][RMA] onload 处理异常(疑多答案/异形响应)，本次走随机:", e);
             reportMlDetail("onload_exception " + (e && e.message));
-            setAlarm("Error");
+            triggerErrorAlarm();
             resolve("exception");
           }
         },
@@ -311,13 +315,13 @@ export async function tryMLAnswer() {
             err
           );
           reportMlDetail("onerror status=" + status + " " + cause + (detail ? " | " + detail : ""));
-          setAlarm("Error");
+          triggerErrorAlarm();
           resolve("onerror");
         },
         ontimeout: () => {
           console.warn("[HVAA][RMA] POST 超时(>12s)，本次走随机");
           reportMlDetail("timeout (>12s)");
-          setAlarm("Error");
+          triggerErrorAlarm();
           resolve("timeout");
         },
       });
@@ -333,7 +337,7 @@ export async function tryMLAnswer() {
     console.error("[HVAA][RMA] tryMLAnswer error", err);
     reportMlDetail("exception " + (err && err.message));
     reportMlOutcome("exception");
-    setAlarm("Error");
+    triggerErrorAlarm();
     return null;
   } finally {
     inFlight = false;

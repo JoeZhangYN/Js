@@ -14,7 +14,7 @@ beforeEach(() => {
 
 function deps() {
   return {
-    setAlarm: vi.fn(),
+    triggerAlarm: vi.fn(),
     clearSession: vi.fn(),
     scheduleReload: vi.fn(),
   };
@@ -28,7 +28,7 @@ describe("runBattleCompletionAutomation", () => {
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
     ).toEqual({ outcome: BattleCompletionOutcome.DEFEAT });
-    expect(d.setAlarm).toHaveBeenCalledWith("Defeat");
+    expect(d.triggerAlarm).toHaveBeenCalledWith("Defeat");
     expect(d.clearSession).toHaveBeenCalled();
     expect(d.scheduleReload).not.toHaveBeenCalled();
   });
@@ -42,7 +42,7 @@ describe("runBattleCompletionAutomation", () => {
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
     ).toEqual({ outcome: BattleCompletionOutcome.NEXT_ROUND });
-    expect(d.setAlarm).not.toHaveBeenCalled();
+    expect(d.triggerAlarm).not.toHaveBeenCalled();
     expect(d.clearSession).not.toHaveBeenCalled();
     expect(d.scheduleReload).not.toHaveBeenCalled();
   });
@@ -56,7 +56,7 @@ describe("runBattleCompletionAutomation", () => {
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
     ).toEqual({ outcome: BattleCompletionOutcome.VICTORY });
-    expect(d.setAlarm).toHaveBeenCalledWith("Victory");
+    expect(d.triggerAlarm).toHaveBeenCalledWith("Victory");
     expect(d.clearSession).toHaveBeenCalled();
     expect(d.scheduleReload).toHaveBeenCalledWith(3);
   });

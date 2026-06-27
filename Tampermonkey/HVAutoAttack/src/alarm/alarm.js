@@ -1,9 +1,18 @@
 // 警报系统：屏幕弹窗 + 音频播放 + 浏览器 desktop notification。
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { time } from "../core/time.js";
 
-export function setAlarm(e) {
+const EVENT_TRIGGER = "trigger";
+const EVENT_AUDIO = "audio";
+const EVENT_NOTIFICATION = "notification";
+
+export const AlarmEvent = Object.freeze({
+  TRIGGER: EVENT_TRIGGER,
+  AUDIO: EVENT_AUDIO,
+  NOTIFICATION: EVENT_NOTIFICATION,
+});
+
+function setAlarm(e) {
   e = e || "Common";
   if (g("option").notification) setNotification(e);
   if (
@@ -14,7 +23,7 @@ export function setAlarm(e) {
     setAudioAlarm(e);
 }
 
-export function setAudioAlarm(e) {
+function setAudioAlarm(e) {
   let audio;
   if (gE(`#hvAAAlert-${e}`)) {
     audio = gE(`#hvAAAlert-${e}`);
@@ -39,7 +48,7 @@ export function setAudioAlarm(e) {
   document.addEventListener("mousemove", pauseAudio, true);
 }
 
-export function setNotification(e) {
+function setNotification(e) {
   const notifications = [
     {
       Common: { text: "未知", time: 5 },
@@ -113,4 +122,11 @@ export function setNotification(e) {
       }
     });
   }
+}
+
+export function runAlarmAutomation(event = { type: EVENT_TRIGGER }) {
+  if (event.type === EVENT_TRIGGER) return setAlarm(event.kind);
+  if (event.type === EVENT_AUDIO) return setAudioAlarm(event.kind);
+  if (event.type === EVENT_NOTIFICATION) return setNotification(event.kind);
+  return undefined;
 }

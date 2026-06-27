@@ -56,7 +56,7 @@ export function dispatch(result, snap) {
       return true;
 
     case "critical-pause":
-      // criticalBuffGuard 命中：告警 + 暂停（setAlarm/disabled/按钮/title），副作用在 executeCriticalPause
+      // criticalBuffGuard 命中：告警 + 暂停（alarm/disabled/按钮/title），副作用在 executeCriticalPause
       executeCriticalPause(result);
       return true;
 

@@ -1,6 +1,6 @@
 // 战斗体力损失裁决：唯一入口 runBattleStaminaAutomation(event)。
 import { _alert } from "../core/lang.js";
-import { setAlarm } from "../alarm/alarm.js";
+import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { g } from "../state/store.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
@@ -36,7 +36,7 @@ function handleRoundLogReady(text, deps) {
   runStaminaLossLogAutomation({ type: StaminaLossLogEvent.RECORD, amount: lostStamina });
   if (!shouldPauseForLoss(lostStamina)) return { lostStamina, paused: false };
 
-  deps.setAlarm("Error");
+  deps.triggerAlarm("Error");
   if (confirmContinue(deps.confirm)) return { lostStamina, paused: false };
   deps.pause();
   return { lostStamina, paused: true };
@@ -45,7 +45,7 @@ function handleRoundLogReady(text, deps) {
 export function runBattleStaminaAutomation(
   event = { type: EVENT_ROUND_LOG_READY },
   deps = {
-    setAlarm,
+    triggerAlarm: (kind) => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind }),
     confirm: _alert,
     pause: () => runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE }),
   }

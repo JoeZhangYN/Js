@@ -4,7 +4,7 @@ import { setValue, getValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
-import { setAudioAlarm } from "../alarm/alarm.js";
+import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../battle/pause-automation.js";
 
 function recordBattleActionUsage(parm) {
@@ -174,7 +174,7 @@ function recordBattleActionUsage(parm) {
       // nothing;
     } else if (debug) {
       log = true;
-      setAudioAlarm("Error");
+      runAlarmAutomation({ type: AlarmEvent.AUDIO, kind: "Error" });
       console.log(text);
     }
   }

@@ -6,7 +6,7 @@ import { g } from "../state/store.js";
 import { scheduleReload } from "../core/navigate.js";
 import { post } from "../dom/http.js";
 import { time } from "../core/time.js";
-import { setAlarm } from "../alarm/alarm.js";
+import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { MAIN_URL } from "../env.js";
 import {
   BattleMonitorEvent,
@@ -29,7 +29,10 @@ export function installBattleActionEventBridge() {
   eventStart.id = "eventStart";
   eventStart.onclick = function () {
     if (g("option").delayAlert)
-      delayAlert = setTimeout(setAlarm, g("option").delayAlertTime * 1000);
+      delayAlert = setTimeout(
+        () => runAlarmAutomation({ type: AlarmEvent.TRIGGER }),
+        g("option").delayAlertTime * 1000
+      );
     if (g("option").delayReload) delayReload = scheduleReload(g("option").delayReloadTime);
     runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_STARTED });
   };

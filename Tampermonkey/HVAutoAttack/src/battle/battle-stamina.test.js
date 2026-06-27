@@ -10,7 +10,7 @@ beforeEach(() => {
 
 function deps(confirm = () => true) {
   return {
-    setAlarm: vi.fn(),
+    triggerAlarm: vi.fn(),
     confirm: vi.fn(confirm),
     pause: vi.fn(),
   };
@@ -27,7 +27,7 @@ describe("runBattleStaminaAutomation", () => {
       )
     ).toEqual({ lostStamina: 0, paused: false });
     expect(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});
-    expect(d.setAlarm).not.toHaveBeenCalled();
+    expect(d.triggerAlarm).not.toHaveBeenCalled();
   });
 
   it("records stamina loss below the pause threshold", () => {
@@ -42,7 +42,7 @@ describe("runBattleStaminaAutomation", () => {
     expect(Object.values(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ }))).toEqual([
       3,
     ]);
-    expect(d.setAlarm).not.toHaveBeenCalled();
+    expect(d.triggerAlarm).not.toHaveBeenCalled();
   });
 
   it("alerts and pauses when stamina loss exceeds threshold and user declines", () => {
@@ -54,7 +54,7 @@ describe("runBattleStaminaAutomation", () => {
     );
 
     expect(result).toEqual({ lostStamina: 7, paused: true });
-    expect(d.setAlarm).toHaveBeenCalledWith("Error");
+    expect(d.triggerAlarm).toHaveBeenCalledWith("Error");
     expect(d.confirm).toHaveBeenCalled();
     expect(d.pause).toHaveBeenCalled();
   });

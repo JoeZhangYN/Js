@@ -5,7 +5,7 @@ import { gE, cE } from "../dom/query.js";
 import { setValue, getValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
-import { setNotification } from "../alarm/alarm.js";
+import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { goto } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { customizeBox } from "./customize.js";
@@ -590,7 +590,7 @@ export function optionBox() {
       "接下來開始預處理。\n如果詢問是否允許，請選擇允許",
       "Now, pretreat.\nPlease allow to receive notifications if you are asked for permission"
     );
-    setNotification("Test");
+    runAlarmAutomation({ type: AlarmEvent.NOTIFICATION, kind: "Test" });
   };
   gE(".testPopup", optionBox).onclick = function () {
     _alert(

@@ -9,7 +9,7 @@
 // 1. opt.pauseOnCriticalBuffExpire 开启
 // 2. opt.criticalBuffsList 中至少一个 buff 当前 turns <= minTurns（Infinity 永续不算"即将消失"）
 // 3. 当前 MP < criticalBuffMpFloor%（续 buff 大概率失败的阈值）
-import { setAlarm } from "../../alarm/alarm.js";
+import { AlarmEvent, runAlarmAutomation } from "../../alarm/alarm.js";
 import {
   BattlePauseEvent,
   runBattlePauseAutomation,
@@ -51,7 +51,7 @@ export function decideCriticalBuff(opt, snap) {
 
 /**
  * SHELL：忠实复刻原 checkCriticalBuffGuard 命中分支的 5 件副作用
- * （console.warn + setAlarm + setValue disabled + 按钮文案 + document.title）。
+ * （console.warn + alarm + setValue disabled + 按钮文案 + document.title）。
  * 由 dispatch 在 "critical-pause" kind 接线调用。
  * @param {{ name:string, turns:number, mp:number, mpFloor:number }} plan
  */
@@ -59,7 +59,7 @@ export function executeCriticalPause(plan) {
   console.warn(
     `[critical-buff-guard] "${plan.name}" 剩 ${plan.turns} 回合 + MP ${plan.mp.toFixed(0)}% < ${plan.mpFloor}% → 暂停脚本，请手动接管`
   );
-  setAlarm("Error");
+  runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Error" });
   runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
   document.title = `hvAA 暂停: ${plan.name} 即将消失但 MP 不足`;
 }

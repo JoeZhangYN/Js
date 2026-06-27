@@ -1,5 +1,5 @@
 // 战斗完成裁决：唯一入口 runBattleCompletionAutomation(event)。
-import { setAlarm } from "../alarm/alarm.js";
+import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { scheduleReload } from "../core/navigate.js";
 import { g } from "../state/store.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
@@ -27,10 +27,10 @@ function classifyCompletion() {
 function handleCompletionReached(deps) {
   const outcome = classifyCompletion();
   if (outcome === BattleCompletionOutcome.DEFEAT) {
-    deps.setAlarm("Defeat");
+    deps.triggerAlarm("Defeat");
     deps.clearSession();
   } else if (outcome === BattleCompletionOutcome.VICTORY) {
-    deps.setAlarm("Victory");
+    deps.triggerAlarm("Victory");
     deps.clearSession();
     deps.scheduleReload(3);
   }
@@ -40,7 +40,7 @@ function handleCompletionReached(deps) {
 export function runBattleCompletionAutomation(
   event = { type: EVENT_COMPLETION_REACHED },
   deps = {
-    setAlarm,
+    triggerAlarm: (kind) => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind }),
     clearSession: () => runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION }),
     scheduleReload,
   }
