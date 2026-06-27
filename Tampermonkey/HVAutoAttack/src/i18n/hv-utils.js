@@ -2707,7 +2707,7 @@ const bindEquip = function (equip, ctx) {
           throw new Error('Invalid Filter');
         }
       });
-      return eval(r);
+      return window.HVAA_equipFilterExpression.evaluate(r);
     },
     details: function (filter, equip) {
       if (/\$([a-z]+)\+/.test(filter)) { // $Magnificent+
