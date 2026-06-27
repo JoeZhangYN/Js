@@ -15,7 +15,7 @@ import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { gmXhr, hasNonLatin1 } from "../dom/gm-xhr.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
-import { getRiddleImgEl, waitImageLoaded, getImageBlob } from "./riddle-image.js";
+import { RiddleImageEvent, runRiddleImageAutomation } from "./riddle-image.js";
 
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";
@@ -75,7 +75,7 @@ function parseRespHeaders(headerStr) {
   return headers;
 }
 
-// 图片获取(getRiddleImgEl/waitImageLoaded/getImageBlob) 已抽到 pages/riddle-image.js。
+// 图片获取已抽到 pages/riddle-image.js，ML 只请求“可 POST 的图片负载”。
 // 答题样本保存(saveRiddle) 已抽到 state/riddle-dataset.js 并改为「提交动作」统一采样。
 
 // ---------------- 30s 健康巡检 ----------------
@@ -182,20 +182,15 @@ export async function tryMLAnswer() {
     apiKey = "";
   }
 
-  // 修 H-C 辅助：鲁棒取 <img>（querySelector 跳过文本节点，fallback childNodes[0]）
-  const imgEl = getRiddleImgEl();
-  const imageUrl = imgEl?.src;
-  if (!imageUrl) {
-    console.warn("[HVAA][RMA] 找不到 riddle 图片元素/src，跳过 ML 识别（走随机）");
-    reportMlOutcome("no_image");
-    return null;
-  }
-
   inFlight = true;
   try {
-    // 等图片解码完成，canvas 主路径（最可靠）才能用；超时静默退到 fetch 兜底
-    await waitImageLoaded(imgEl);
-    const imgBlob = await getImageBlob(imageUrl);
+    const payload = await runRiddleImageAutomation({ type: RiddleImageEvent.PREPARE_ML_PAYLOAD });
+    if (!payload) {
+      console.warn("[HVAA][RMA] 找不到 riddle 图片元素/src，跳过 ML 识别（走随机）");
+      reportMlOutcome("no_image");
+      return null;
+    }
+    const imgBlob = payload.blob;
     if (!imgBlob || imgBlob.size === 0) {
       console.warn("[HVAA][RMA] 图片 blob 为空(canvas 污染/fetch 失败)，本次走随机");
       reportMlDetail("empty_blob (canvas 污染/fetch 失败)");

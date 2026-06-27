@@ -3,13 +3,21 @@
 // 两个消费方：pages/riddle-ml.js(ML POST) + state/riddle-dataset.js←pages/riddle.js(提交时采样)。
 // 三级 fallback（参 RMA L79-166）：canvas → fetch(only-if-cached) → fetch(force-cache) → fetch(network)。
 
+const EVENT_CAPTURE_SAMPLE = "captureSample";
+const EVENT_PREPARE_ML_PAYLOAD = "prepareMlPayload";
+
+export const RiddleImageEvent = Object.freeze({
+  CAPTURE_SAMPLE: EVENT_CAPTURE_SAMPLE,
+  PREPARE_ML_PAYLOAD: EVENT_PREPARE_ML_PAYLOAD,
+});
+
 /**
  * 取 riddle 图片 <img> 元素。
  * 优先 querySelector("img")（跳过 #riddleimage 内可能的空白文本节点 / HV UI 改版），
  * fallback childNodes[0]（原 RMA 写法，兼容旧 DOM）。
  * @returns {HTMLImageElement|null}
  */
-export function getRiddleImgEl() {
+function getRiddleImgEl() {
   const holder = document.getElementById("riddleimage");
   return holder?.querySelector("img") || holder?.childNodes?.[0] || null;
 }
@@ -22,7 +30,7 @@ export function getRiddleImgEl() {
  * @param {number} timeoutMs
  * @returns {Promise<void>}
  */
-export function waitImageLoaded(imgEl, timeoutMs = 4000) {
+function waitImageLoaded(imgEl, timeoutMs = 4000) {
   return new Promise((resolve) => {
     if (!imgEl || (imgEl.complete && imgEl.naturalWidth)) {
       resolve();
@@ -87,7 +95,7 @@ async function getImageBlobFromFetch(url) {
  * @param {string} url 图片 src
  * @returns {Promise<Blob>}
  */
-export async function getImageBlob(url) {
+async function getImageBlob(url) {
   try {
     return await getImageBlobFromCanvas();
   } catch {
@@ -102,7 +110,7 @@ export async function getImageBlob(url) {
  * 跨域污染(tainted canvas)时 toDataURL 抛 → 返 null（样本仅存 json，不致命）。
  * @returns {string|null} "data:image/webp;base64,..." 或 null
  */
-export function captureRiddleDataUrl() {
+function captureRiddleDataUrl() {
   const imgEl = getRiddleImgEl();
   if (!imgEl || !imgEl.naturalWidth) return null;
   try {
@@ -114,4 +122,27 @@ export function captureRiddleDataUrl() {
   } catch {
     return null; // tainted canvas / 同步取不到
   }
+}
+
+function captureSampleImage() {
+  const imgEl = getRiddleImgEl();
+  return {
+    imageDataUrl: captureRiddleDataUrl(),
+    imageSrc: imgEl?.src,
+  };
+}
+
+async function prepareMlPayload() {
+  const imgEl = getRiddleImgEl();
+  const imageUrl = imgEl?.src;
+  if (!imageUrl) return null;
+  await waitImageLoaded(imgEl);
+  const blob = await getImageBlob(imageUrl);
+  return { imageUrl, blob };
+}
+
+export function runRiddleImageAutomation(event = { type: EVENT_CAPTURE_SAMPLE }) {
+  if (event.type === EVENT_CAPTURE_SAMPLE) return captureSampleImage();
+  if (event.type === EVENT_PREPARE_ML_PAYLOAD) return prepareMlPayload();
+  return undefined;
 }

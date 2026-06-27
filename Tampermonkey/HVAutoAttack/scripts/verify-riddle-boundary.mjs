@@ -6,6 +6,8 @@ const initFile = path.join(root, "src/pages/init.js");
 const riddleFile = path.join(root, "src/pages/riddle-automation.js");
 const riddleAnswerFile = path.join(root, "src/pages/riddle.js");
 const riddleTimingFile = path.join(root, "src/pages/riddle-submission-timing.js");
+const riddleImageFile = path.join(root, "src/pages/riddle-image.js");
+const srcDir = path.join(root, "src");
 const battleDir = path.join(root, "src/battle");
 const violations = [];
 
@@ -92,6 +94,40 @@ function checkRiddleSubmissionTiming() {
   }
 }
 
+function checkRiddleImageEntry() {
+  const owner = path.normalize("src/pages/riddle-image.js");
+  const ownerTest = path.normalize("src/pages/riddle-image.test.js");
+  const ownerText = fs.readFileSync(riddleImageFile, "utf8");
+  for (const required of ["runRiddleImageAutomation", "RiddleImageEvent"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(riddleImageFile)} must own ${required}`);
+    }
+  }
+  for (const legacy of ["getRiddleImgEl", "waitImageLoaded", "getImageBlob", "captureRiddleDataUrl"]) {
+    if (new RegExp(`export\\s+(?:async\\s+)?function\\s+${legacy}\\s*\\(`).test(ownerText)) {
+      violations.push(`${rel(riddleImageFile)} legacy ${legacy} export must stay private behind runRiddleImageAutomation(event)`);
+    }
+  }
+
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile() && entry.name.endsWith(".js")) {
+        const relative = path.normalize(path.relative(root, full));
+        if (relative === owner || relative === ownerTest) continue;
+        fs.readFileSync(full, "utf8").split(/\r?\n/).forEach((line, index) => {
+          if (!/from\s+["']\.\/riddle-image\.js["']/.test(line)) return;
+          if (!/\bRiddleImageEvent\b/.test(line) || !/\brunRiddleImageAutomation\b/.test(line)) {
+            violations.push(`${rel(full)}:${index + 1} riddle image consumers must use runRiddleImageAutomation(event)`);
+          }
+        });
+      }
+    }
+  }
+  walk(srcDir);
+}
+
 function checkDeletedSetupEntrypoints() {
   const files = [
     path.join(root, "src/pages/riddle-automation.js"),
@@ -112,6 +148,7 @@ checkInit();
 checkBattleLayer();
 checkRiddleEntry();
 checkRiddleSubmissionTiming();
+checkRiddleImageEntry();
 checkDeletedSetupEntrypoints();
 
 if (violations.length) {
