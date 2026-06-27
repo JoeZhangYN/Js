@@ -10,6 +10,22 @@ const DATA_URL = isIsekai
   ? "https://hv-monsterdb-data.skk.moe/isekai.json"
   : "https://hv-monsterdb-data.skk.moe/persistent.json";
 const META_LAST_SYNC = "lastSync";
+const EVENT_SYNC_REQUESTED = "syncRequested";
+
+export const MonsterDbSyncEvent = Object.freeze({
+  SYNC_REQUESTED: EVENT_SYNC_REQUESTED,
+});
+
+function makeDeps(deps) {
+  return {
+    bulkSetMonsters: deps.bulkSetMonsters || bulkSetMonsters,
+    getMeta: deps.getMeta || getMeta,
+    gmXhr: deps.gmXhr || gmXhr,
+    isProfileEmpty: deps.isProfileEmpty || isProfileEmpty,
+    setMeta: deps.setMeta || setMeta,
+    time: deps.time || time,
+  };
+}
 
 /** 从上游原始对象挑出 MonsterInfo 核心字段（丢弃 created_at 等冗余，统一与 scan 自采同形态）。 */
 function normalize(m) {
@@ -32,17 +48,17 @@ function normalize(m) {
  * @param {boolean} [force=false] 跳过每日 gate 强制刷新
  * @returns {Promise<{synced:boolean, count?:number, reason?:string}>}
  */
-export async function syncMonsterDb(force = false) {
+async function syncMonsterDb({ force = false, deps }) {
   if (!force) {
-    const last = await getMeta(META_LAST_SYNC);
+    const last = await deps.getMeta(META_LAST_SYNC);
     // 每日 gate；但画像库为空（v2 升级后首次 / 新装）时绕过，立即重建——否则旧 lastSync 残留致
     // 空库等到明天才填。
-    if (last === time(2) && !(await isProfileEmpty())) {
+    if (last === deps.time(2) && !(await deps.isProfileEmpty())) {
       return { synced: false, reason: "already-synced-today" };
     }
   }
   return new Promise((resolve) => {
-    gmXhr({
+    deps.gmXhr({
       method: "GET",
       url: DATA_URL,
       responseType: "json",
@@ -61,8 +77,8 @@ export async function syncMonsterDb(force = false) {
           resolve({ synced: false, reason: "empty" });
           return;
         }
-        Promise.resolve(bulkSetMonsters(list.map(normalize)))
-          .then(() => setMeta(META_LAST_SYNC, time(2)))
+        Promise.resolve(deps.bulkSetMonsters(list.map(normalize)))
+          .then(() => deps.setMeta(META_LAST_SYNC, deps.time(2)))
           .then(() => resolve({ synced: true, count: list.length }))
           .catch(() => resolve({ synced: false, reason: "store-error" }));
       },
@@ -70,4 +86,12 @@ export async function syncMonsterDb(force = false) {
       ontimeout: () => resolve({ synced: false, reason: "timeout" }),
     });
   });
+}
+
+export function runMonsterDbSyncAutomation(
+  event = { type: EVENT_SYNC_REQUESTED },
+  deps = {}
+) {
+  if (event.type !== EVENT_SYNC_REQUESTED) return undefined;
+  return syncMonsterDb({ force: Boolean(event.force), deps: makeDeps(deps) });
 }
