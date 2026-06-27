@@ -37,7 +37,15 @@ if (/localhost|127\.0\.0\.1/.test(src)) {
   errors.push("contains `localhost` or `127.0.0.1` (dev metadata leaked into prod)");
 }
 
-// 5. @grant 必须列全 5 项
+// 5. 产物不能含动态代码执行；源码侧由 verify-no-eval 先拦，这里防打包产物回退。
+if (/\beval\s*\(/.test(src)) {
+  errors.push("contains `eval(`; route dynamic rules through typed parsers");
+}
+if (/\bnew\s+Function\s*\(/.test(src)) {
+  errors.push("contains `new Function(`; route dynamic rules through typed parsers");
+}
+
+// 6. @grant 必须列全 5 项
 for (const g of ["GM_setValue", "GM_getValue", "GM_deleteValue", "GM_notification", "unsafeWindow"]) {
   if (!new RegExp(`@grant\\s+${g}\\b`).test(src)) errors.push(`@grant missing ${g}`);
 }
