@@ -15,6 +15,8 @@ const actionEndFile = path.join(root, "src/battle/battle-action-end.js");
 const actionEndTest = path.join(root, "src/battle/battle-action-end.test.js");
 const actionStartFile = path.join(root, "src/battle/battle-action-start.js");
 const actionStartTest = path.join(root, "src/battle/battle-action-start.test.js");
+const pauseControlsFile = path.join(root, "src/battle/battle-pause-controls.js");
+const pauseControlsTest = path.join(root, "src/battle/battle-pause-controls.test.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
@@ -74,11 +76,7 @@ function checkBattleEntry() {
       `${rel(battleFile)} must install action events through installBattleActionEventBridge()`
     );
   }
-  for (const required of [
-    "installBattlePauseControls",
-    "startBattleMonsterKnowledge",
-    "startBattleMonitoring",
-  ]) {
+  for (const required of ["startBattleMonsterKnowledge", "startBattleMonitoring"]) {
     if (!text.includes(required)) {
       violations.push(
         `${rel(battleFile)} must make ${required} visible in runBattleAutomation(event)`
@@ -90,6 +88,16 @@ function checkBattleEntry() {
   }
   if (!text.includes("BattleEvent") || !text.includes("EVENT_PAGE_READY")) {
     violations.push(`${rel(battleFile)} must own BattleEvent.PAGE_READY wiring`);
+  }
+  if (!text.includes("BattlePauseControlsEvent.INSTALL")) {
+    violations.push(`${rel(battleFile)} must install pause controls through their entry`);
+  }
+  if (
+    /\bpauseButton\b|\bpauseHotkey\b|\bpauseHotkeyKey\b|\bpauseChange\b|\bhvAABox2\b/.test(text)
+  ) {
+    violations.push(
+      `${rel(battleFile)} pause controls belong in runBattlePauseControlsAutomation(event)`
+    );
   }
   const pageText = fs.readFileSync(path.join(root, "src/pages/page-automation.js"), "utf8");
   if (!pageText.includes("BattleEvent.PAGE_READY")) {
@@ -421,6 +429,54 @@ function checkActionStartEntry() {
   }
 }
 
+function checkPauseControlsEntry() {
+  const text = fs.readFileSync(pauseControlsFile, "utf8");
+  if (!/export const BattlePauseControlsEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(pauseControlsFile)} must expose BattlePauseControlsEvent`);
+  }
+  if (!/export function runBattlePauseControlsAutomation\(\s*event\b/.test(text)) {
+    violations.push(
+      `${rel(pauseControlsFile)} must expose runBattlePauseControlsAutomation(event)`
+    );
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattlePauseControlsEvent\b|runBattlePauseControlsAutomation\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(pauseControlsFile)} may export only its event entry`);
+  }
+  for (const required of [
+    "BattlePauseEvent.TOGGLE",
+    "runBattleTurnAutomation",
+    "pauseButton",
+    "pauseHotkey",
+    "pauseHotkeyKey",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(pauseControlsFile)} must own ${required}`);
+    }
+  }
+  for (const file of [
+    battleFile,
+    reloaderFile,
+    mainLoopFile,
+    roundStartFile,
+    pauseControlsFile,
+    pauseControlsTest,
+  ]) {
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      file !== battleFile &&
+      file !== pauseControlsFile &&
+      file !== pauseControlsTest &&
+      /from\s+["']\.\/battle-pause-controls\.js["']/.test(source)
+    ) {
+      violations.push(`${rel(file)} must not import internal battle pause controls`);
+    }
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -432,6 +488,7 @@ checkApiBridgeEntry();
 checkActionSpeedEntry();
 checkActionEndEntry();
 checkActionStartEntry();
+checkPauseControlsEntry();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");

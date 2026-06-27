@@ -1,10 +1,8 @@
 // 战斗页自动化编排入口：composition root 只调用本入口。
-import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { installBattleActionEventBridge } from "./reloader.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
-import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import {
   MonsterKnowledgeEvent,
   runMonsterKnowledgeAutomation,
@@ -14,45 +12,16 @@ import {
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
 import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle-action-speed.js";
+import {
+  BattlePauseControlsEvent,
+  runBattlePauseControlsAutomation,
+} from "./battle-pause-controls.js";
 
 const EVENT_PAGE_READY = "pageReady";
 
 export const BattleEvent = Object.freeze({
   PAGE_READY: EVENT_PAGE_READY,
 });
-
-function installBattlePauseControls() {
-  const box2 = gE("#battle_main").appendChild(cE("div"));
-  box2.id = "hvAABox2";
-  if (g("option").pauseButton) {
-    const button = box2.appendChild(cE("button"));
-    button.innerHTML = "<l0>暂停</l0><l1>暫停</l1><l2>Pause</l2>";
-    button.className = "pauseChange";
-    button.onclick = function () {
-      runBattlePauseAutomation(
-        { type: BattlePauseEvent.TOGGLE },
-        { resume: runBattleTurnAutomation }
-      );
-    };
-  }
-  if (g("option").pauseHotkey) {
-    document.addEventListener(
-      "keydown",
-      (e) => {
-        if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
-          return;
-        }
-        if (e.key === g("option").pauseHotkeyKey) {
-          runBattlePauseAutomation(
-            { type: BattlePauseEvent.TOGGLE },
-            { resume: runBattleTurnAutomation }
-          );
-        }
-      },
-      false
-    );
-  }
-}
 
 function initBattleRuntime() {
   g("attackStatus", g("option").attackStatus);
@@ -69,7 +38,7 @@ function startBattleMonitoring() {
 
 export function runBattleAutomation(event = { type: EVENT_PAGE_READY }) {
   if (event.type !== EVENT_PAGE_READY) return undefined;
-  installBattlePauseControls();
+  runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL });
   installBattleActionEventBridge();
   initBattleRuntime();
   runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });

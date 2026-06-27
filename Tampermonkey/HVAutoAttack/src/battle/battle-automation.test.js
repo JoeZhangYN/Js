@@ -7,19 +7,14 @@ const mocks = vi.hoisted(() => ({
   gE: vi.fn(),
   installBattleActionEventBridge: vi.fn(),
   runBattleMonitorAutomation: vi.fn(),
-  runBattlePauseAutomation: vi.fn(),
+  runBattlePauseControlsAutomation: vi.fn(),
   runBattleRoundStartAutomation: vi.fn(),
   runBattleTurnAutomation: vi.fn(),
   runMonsterKnowledgeAutomation: vi.fn(),
-  runTimeAutomation: vi.fn(() => 123),
+  runBattleActionSpeedAutomation: vi.fn(),
 }));
 
-vi.mock("../dom/query.js", () => ({ cE: mocks.cE, gE: mocks.gE }));
 vi.mock("../state/store.js", () => ({ g: mocks.g }));
-vi.mock("../core/time.js", () => ({
-  TimeEvent: Object.freeze({ EPOCH_MS: "epochMs" }),
-  runTimeAutomation: mocks.runTimeAutomation,
-}));
 vi.mock("./reloader.js", () => ({
   installBattleActionEventBridge: mocks.installBattleActionEventBridge,
 }));
@@ -28,9 +23,9 @@ vi.mock("./new-round.js", () => ({
   runBattleRoundStartAutomation: mocks.runBattleRoundStartAutomation,
 }));
 vi.mock("./main-loop.js", () => ({ runBattleTurnAutomation: mocks.runBattleTurnAutomation }));
-vi.mock("./pause-automation.js", () => ({
-  BattlePauseEvent: Object.freeze({ TOGGLE: "toggle" }),
-  runBattlePauseAutomation: mocks.runBattlePauseAutomation,
+vi.mock("./battle-pause-controls.js", () => ({
+  BattlePauseControlsEvent: Object.freeze({ INSTALL: "install" }),
+  runBattlePauseControlsAutomation: mocks.runBattlePauseControlsAutomation,
 }));
 vi.mock("./monster-knowledge-automation.js", () => ({
   MonsterKnowledgeEvent: Object.freeze({ BATTLE_STARTED: "battleStarted" }),
@@ -39,6 +34,10 @@ vi.mock("./monster-knowledge-automation.js", () => ({
 vi.mock("../monitor/battle-monitor-automation.js", () => ({
   BattleMonitorEvent: Object.freeze({ BATTLE_STARTED: "battleStarted" }),
   runBattleMonitorAutomation: mocks.runBattleMonitorAutomation,
+}));
+vi.mock("./battle-action-speed.js", () => ({
+  BattleActionSpeedEvent: Object.freeze({ BATTLE_STARTED: "battleStarted" }),
+  runBattleActionSpeedAutomation: mocks.runBattleActionSpeedAutomation,
 }));
 
 beforeEach(() => {
@@ -49,17 +48,16 @@ beforeEach(() => {
     return undefined;
   });
   mocks.gE.mockImplementation((selector) => document.querySelector(selector));
-  mocks.runTimeAutomation.mockReturnValue(123);
 });
 
 describe("runBattleAutomation", () => {
   it("starts battle page capabilities through the event entry", () => {
     runBattleAutomation({ type: BattleEvent.PAGE_READY });
 
+    expect(mocks.runBattlePauseControlsAutomation).toHaveBeenCalledWith({ type: "install" });
     expect(mocks.installBattleActionEventBridge).toHaveBeenCalledTimes(1);
     expect(mocks.g).toHaveBeenCalledWith("attackStatus", "magic");
-    expect(mocks.g).toHaveBeenCalledWith("timeNow", 123);
-    expect(mocks.g).toHaveBeenCalledWith("runSpeed", 1);
+    expect(mocks.runBattleActionSpeedAutomation).toHaveBeenCalledWith({ type: "battleStarted" });
     expect(mocks.runBattleRoundStartAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
     expect(mocks.runMonsterKnowledgeAutomation).toHaveBeenCalledWith({ type: "battleStarted" });
     expect(mocks.runBattleMonitorAutomation).toHaveBeenCalledWith({ type: "battleStarted" });
