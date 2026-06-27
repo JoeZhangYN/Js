@@ -5,11 +5,13 @@ import { TimeEvent, runTimeAutomation } from "../core/time.js";
 const EVENT_READ = "read";
 const EVENT_RECORD = "record";
 const EVENT_CLEAR = "clear";
+const EVENT_CLEAR_CONFIRMATION_MESSAGE = "clearConfirmationMessage";
 
 export const StaminaLossLogEvent = Object.freeze({
   READ: EVENT_READ,
   RECORD: EVENT_RECORD,
   CLEAR: EVENT_CLEAR,
+  CLEAR_CONFIRMATION_MESSAGE: EVENT_CLEAR_CONFIRMATION_MESSAGE,
 });
 
 function readStaminaLossLog() {
@@ -31,9 +33,20 @@ function clearStaminaLossLog() {
   return readStaminaLossLog();
 }
 
+function staminaLossClearConfirmationMessage() {
+  const log = readStaminaLossLog();
+  const rows = Object.entries(log)
+    .map(([stamp, amount]) => `${stamp}: ${amount}`)
+    .reverse();
+  return `总共${rows.length}条记录 (There are ${rows.length} logs): \n${rows.join(
+    "\n"
+  )}\n是否重置 (Whether to reset)?`;
+}
+
 export function runStaminaLossLogAutomation(event = { type: EVENT_READ }) {
   if (event.type === EVENT_READ) return readStaminaLossLog();
   if (event.type === EVENT_RECORD) return recordStaminaLoss(event.amount, event.stamp);
   if (event.type === EVENT_CLEAR) return clearStaminaLossLog();
+  if (event.type === EVENT_CLEAR_CONFIRMATION_MESSAGE) return staminaLossClearConfirmationMessage();
   return undefined;
 }

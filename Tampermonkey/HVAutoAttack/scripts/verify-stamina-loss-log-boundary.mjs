@@ -6,6 +6,7 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/stamina-loss-log.js");
 const ownerTest = path.normalize("src/state/stamina-loss-log.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
+const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
 
 function rel(file) {
@@ -39,6 +40,12 @@ function checkFile(file) {
     ) {
       violations.push(`${where} stamina loss log storage must use stamina loss log entry`);
     }
+    if (
+      relative === settingsRender &&
+      /\bStaminaLossLogEvent\.READ\b|\bconst\s+staminaLostLog\b|There are .* logs/.test(line)
+    ) {
+      violations.push(`${where} settings must not compose stamina loss log reset message`);
+    }
   });
 }
 
@@ -49,10 +56,18 @@ for (const required of [
   "runStaminaLossLogAutomation",
   "StaminaLossLogEvent",
   "STORAGE_KEYS.STAMINA_LOST_LOG",
+  "CLEAR_CONFIRMATION_MESSAGE",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+
+const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
+if (!settingsText.includes("StaminaLossLogEvent.CLEAR_CONFIRMATION_MESSAGE")) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must request stamina loss log reset message`
+  );
 }
 
 for (const legacy of ["readStaminaLossLog", "recordStaminaLoss", "clearStaminaLossLog"]) {

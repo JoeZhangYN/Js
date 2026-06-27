@@ -526,16 +526,11 @@ export function optionBox() {
     }, 3000);
   };
   gE(".staminaLostLog", optionBox).onclick = function () {
-    const out = [];
-    const staminaLostLog = runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ });
-    for (const i in staminaLostLog) {
-      out.push(`${i}: ${staminaLostLog[i]}`);
-    }
     if (
       window.confirm(
-        `总共${out.length}条记录 (There are ${out.length} logs): \n${out
-          .reverse()
-          .join("\n")}\n是否重置 (Whether to reset)?`
+        runStaminaLossLogAutomation({
+          type: StaminaLossLogEvent.CLEAR_CONFIRMATION_MESSAGE,
+        })
       )
     )
       runStaminaLossLogAutomation({ type: StaminaLossLogEvent.CLEAR });

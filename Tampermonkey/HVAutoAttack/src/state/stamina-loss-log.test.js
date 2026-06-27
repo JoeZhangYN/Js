@@ -34,4 +34,25 @@ describe("stamina loss log entry", () => {
 
     expect(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});
   });
+
+  it("renders the clear confirmation message newest first", () => {
+    runStaminaLossLogAutomation({
+      type: StaminaLossLogEvent.RECORD,
+      amount: 3,
+      stamp: "old",
+    });
+    runStaminaLossLogAutomation({
+      type: StaminaLossLogEvent.RECORD,
+      amount: 5,
+      stamp: "new",
+    });
+
+    const message = runStaminaLossLogAutomation({
+      type: StaminaLossLogEvent.CLEAR_CONFIRMATION_MESSAGE,
+    });
+
+    expect(message).toContain("总共2条记录 (There are 2 logs)");
+    expect(message.indexOf("new: 5")).toBeLessThan(message.indexOf("old: 3"));
+    expect(message).toContain("是否重置 (Whether to reset)?");
+  });
 });
