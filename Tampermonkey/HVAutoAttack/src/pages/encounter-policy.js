@@ -1,12 +1,23 @@
-export const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000;
-export const ENCOUNTER_DAILY_LIMIT = 24;
-export const ENCOUNTER_MIDNIGHT_GRACE_MS = 5000;
+const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000,
+  ENCOUNTER_DAILY_LIMIT = 24;
+const ENCOUNTER_MIDNIGHT_GRACE_MS = 5000;
 
 const ONE_MINUTE_MS = 60 * 1000;
 
-export function defaultEncounterState() {
-  return { date: 0, key: "", count: 0, clear: true };
-}
+export const EncounterPolicyEvent = Object.freeze({
+  DEFAULT_STATE: "defaultState",
+  NORMALIZE: "normalize",
+  READINESS: "readiness",
+  NEXT_CHECK_DELAY: "nextCheckDelay",
+  PLAN_ACTIVATION: "planActivation",
+  PARSE_SEARCH_KEY: "parseSearchKey",
+  PARSE_EVENTPANE_KEY: "parseEventpaneKey",
+  MARK_KEY_AVAILABLE: "markKeyAvailable",
+  MARK_STARTED: "markStarted",
+  RESET_DAY: "resetDay",
+});
+
+const defaultEncounterState = () => ({ date: 0, key: "", count: 0, clear: true });
 
 function isDifferentUtcDay(dateMs, nowMs) {
   const date = new Date(dateMs);
@@ -24,12 +35,11 @@ function msUntilNextUtcMidnight(nowMs) {
   return nextMidnight - nowMs;
 }
 
-export function resetEncounterDay(nowMs = Date.now()) {
-  void nowMs;
+function resetEncounterDay() {
   return defaultEncounterState();
 }
 
-export function normalizeEncounterState(state, nowMs = Date.now()) {
+function normalizeEncounterState(state, nowMs = Date.now()) {
   const normalized = {
     date: Number(state?.date) || 0,
     key: state?.key || "",
@@ -42,30 +52,22 @@ export function normalizeEncounterState(state, nowMs = Date.now()) {
   return normalized;
 }
 
-export function msUntilEncounterReady(state, nowMs = Date.now()) {
+function msUntilEncounterReady(state, nowMs = Date.now()) {
   const normalized = normalizeEncounterState(state, nowMs);
   return Math.max(0, normalized.date + ENCOUNTER_INTERVAL_MS - nowMs);
 }
 
-export function canEnterEncounterState(state, nowMs = Date.now()) {
-  const normalized = normalizeEncounterState(state, nowMs);
-  return Boolean(normalized.key && !normalized.clear);
-}
-
-export function readEncounterReadiness(state, nowMs = Date.now()) {
+function readEncounterReadiness(state, nowMs = Date.now()) {
   const normalized = normalizeEncounterState(state, nowMs);
   return {
     state: normalized,
     remainingMs: msUntilEncounterReady(normalized, nowMs),
-    canEnter: canEnterEncounterState(normalized, nowMs),
+    canEnter: Boolean(normalized.key && !normalized.clear),
     dailyLimitReached: normalized.count >= ENCOUNTER_DAILY_LIMIT,
   };
 }
 
-export function msUntilNextEncounterCheck(
-  state,
-  { nowMs = Date.now(), jitter = Math.random() } = {}
-) {
+function msUntilNextEncounterCheck(state, { nowMs = Date.now(), jitter = Math.random() } = {}) {
   const readiness = readEncounterReadiness(state, nowMs);
   const jitteredMinute = ONE_MINUTE_MS * (0.95 + Math.max(0, Math.min(1, jitter)) * 0.1);
   const readyDelay = readiness.remainingMs + ENCOUNTER_MIDNIGHT_GRACE_MS;
@@ -73,7 +75,7 @@ export function msUntilNextEncounterCheck(
   return Math.min(jitteredMinute, readyDelay, midnightDelay);
 }
 
-export function planEncounterActivation(state, { force = false, nowMs = Date.now() } = {}) {
+function planEncounterActivation(state, { force = false, nowMs = Date.now() } = {}) {
   const readiness = readEncounterReadiness(state, nowMs);
   if (readiness.canEnter || (force && readiness.state.key)) {
     return {
@@ -85,19 +87,19 @@ export function planEncounterActivation(state, { force = false, nowMs = Date.now
   return { action: "load", state: readiness.state };
 }
 
-export function parseEncounterKeyFromSearch(search = "") {
+function parseEncounterKeyFromSearch(search = "") {
   return /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(search)?.[1];
 }
 
-export function parseEncounterKeyFromEventpaneHtml(eventpane = "") {
+function parseEncounterKeyFromEventpaneHtml(eventpane = "") {
   return eventpane.match(/\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/)?.[1];
 }
 
-export function buildEncounterUrl(key) {
+function buildEncounterUrl(key) {
   return `?s=Battle&ss=ba&encounter=${key}`;
 }
 
-export function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
+function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
   const next = normalizeEncounterState(state, nowMs);
   if (!key) return next;
   next.date = nowMs;
@@ -107,7 +109,7 @@ export function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
   return next;
 }
 
-export function markEncounterStarted(
+function markEncounterStarted(
   state,
   { search = "", key = parseEncounterKeyFromSearch(search), nowMs = Date.now() } = {}
 ) {
@@ -121,4 +123,44 @@ export function markEncounterStarted(
     next.clear = true;
   }
   return next;
+}
+
+export function runEncounterPolicy(event = { type: EncounterPolicyEvent.READINESS }) {
+  if (event.type === EncounterPolicyEvent.DEFAULT_STATE) return defaultEncounterState();
+  if (event.type === EncounterPolicyEvent.RESET_DAY) return resetEncounterDay();
+  if (event.type === EncounterPolicyEvent.NORMALIZE) {
+    return normalizeEncounterState(event.state, event.nowMs);
+  }
+  if (event.type === EncounterPolicyEvent.READINESS) {
+    return readEncounterReadiness(event.state, event.nowMs);
+  }
+  if (event.type === EncounterPolicyEvent.NEXT_CHECK_DELAY) {
+    return msUntilNextEncounterCheck(event.state, {
+      nowMs: event.nowMs,
+      jitter: event.jitter,
+    });
+  }
+  if (event.type === EncounterPolicyEvent.PLAN_ACTIVATION) {
+    return planEncounterActivation(event.state, {
+      force: event.force,
+      nowMs: event.nowMs,
+    });
+  }
+  if (event.type === EncounterPolicyEvent.PARSE_SEARCH_KEY) {
+    return parseEncounterKeyFromSearch(event.search);
+  }
+  if (event.type === EncounterPolicyEvent.PARSE_EVENTPANE_KEY) {
+    return parseEncounterKeyFromEventpaneHtml(event.eventpane);
+  }
+  if (event.type === EncounterPolicyEvent.MARK_KEY_AVAILABLE) {
+    return markEncounterKeyAvailable(event.state, event.key, event.nowMs);
+  }
+  if (event.type === EncounterPolicyEvent.MARK_STARTED) {
+    return markEncounterStarted(event.state, {
+      search: event.search,
+      key: event.key,
+      nowMs: event.nowMs,
+    });
+  }
+  return undefined;
 }

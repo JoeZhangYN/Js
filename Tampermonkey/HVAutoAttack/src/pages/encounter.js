@@ -4,11 +4,7 @@ import { post } from "../dom/http.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
-import {
-  msUntilNextEncounterCheck,
-  planEncounterActivation,
-  readEncounterReadiness,
-} from "./encounter-policy.js";
+import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
 
@@ -58,7 +54,10 @@ function claimLobby() {
 
 function scheduleNextLobbyTick(state, rerun) {
   if (typeof rerun !== "function") return;
-  const delayMs = msUntilNextEncounterCheck(state);
+  const delayMs = runEncounterPolicy({
+    type: EncounterPolicyEvent.NEXT_CHECK_DELAY,
+    state,
+  });
   if (!Number.isFinite(delayMs) || delayMs <= 0) return;
   if (scheduledLobbyTick) clearTimeout(scheduledLobbyTick);
   scheduledLobbyTick = setTimeout(() => {
@@ -73,7 +72,10 @@ function waitForNextCheck(state, event) {
 }
 
 function executeEncounterActivation(state) {
-  const plan = planEncounterActivation(state);
+  const plan = runEncounterPolicy({
+    type: EncounterPolicyEvent.PLAN_ACTIVATION,
+    state,
+  });
   if (plan.action !== "enter") return false;
   runNavigationAutomation({
     type: NavigationEvent.OPEN_URL,
@@ -85,7 +87,10 @@ function executeEncounterActivation(state) {
 async function runLobbyTick(event) {
   syncDateNow();
   let state = runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
-  const readiness = readEncounterReadiness(state);
+  const readiness = runEncounterPolicy({
+    type: EncounterPolicyEvent.READINESS,
+    state,
+  });
   if (readiness.dailyLimitReached) {
     return waitForNextCheck(state, event);
   }

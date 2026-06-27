@@ -7,6 +7,7 @@ const owner = path.normalize("src/pages/encounter.js");
 const stateHelper = path.normalize("src/pages/encounter-state.js");
 const stateTest = path.normalize("src/pages/encounter-state.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
+const policyTest = path.normalize("src/pages/encounter-policy.test.js");
 const bridgeFile = path.normalize("src/pages/encounter-bridge.js");
 const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
 const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
@@ -99,10 +100,14 @@ function checkFile(file) {
     if (/\blastEncounter\b/.test(line)) {
       violations.push(`${where} legacy lastEncounter cache/UI is forbidden; use hvut_re countdown`);
     }
-    if (relative !== policyFile && /\b1800000\b|30\s*\*\s*60\s*\*\s*1000/.test(line)) {
+    if (
+      relative !== policyFile &&
+      relative !== policyTest &&
+      /\b1800000\b|30\s*\*\s*60\s*\*\s*1000/.test(line)
+    ) {
       violations.push(`${where} encounter interval belongs in encounter-policy.js`);
     }
-    if (relative !== policyFile && /\bcount\s*>=\s*24\b/.test(line)) {
+    if (relative !== policyFile && relative !== policyTest && /\bcount\s*>=\s*24\b/.test(line)) {
       violations.push(`${where} encounter daily limit belongs in encounter-policy.js`);
     }
     if (
@@ -127,6 +132,25 @@ function checkFile(file) {
       /\b(?:setTimeout|setInterval|location\.href|window\.open)\b/.test(line)
     ) {
       violations.push(`${where} encounter widget policy must stay pure; effects belong to callers`);
+    }
+    if (
+      relative === policyFile &&
+      /\bexport\s+(?:function|const)\s+(?!EncounterPolicyEvent\b|runEncounterPolicy\b)/.test(line)
+    ) {
+      violations.push(
+        `${where} encounter policy may export only EncounterPolicyEvent and runEncounterPolicy(event)`
+      );
+    }
+    if (
+      relative !== policyFile &&
+      relative !== policyTest &&
+      /\b(defaultEncounterState|resetEncounterDay|normalizeEncounterState|msUntilEncounterReady|canEnterEncounterState|readEncounterReadiness|msUntilNextEncounterCheck|planEncounterActivation|parseEncounterKeyFromEventpaneHtml|parseEncounterKeyFromSearch|buildEncounterUrl|markEncounterKeyAvailable|markEncounterStarted)\b/.test(
+        line
+      )
+    ) {
+      violations.push(
+        `${where} encounter policy helper usage is forbidden; use runEncounterPolicy(event)`
+      );
     }
     if (
       relative === bridgeFile &&
