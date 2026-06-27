@@ -12,16 +12,35 @@ const EVENT_ENSURE_READY = "ensureReady";
 const EVENT_REPAIR = "repair";
 const EVENT_RECORD_SPAWN_ROSTER = "recordSpawnRoster";
 const EVENT_UPDATE_HP = "updateHp";
+const EVENT_REFRESH_COMBATANT_COUNTS = "refreshCombatantCounts";
 
 export const MonsterStatusEvent = Object.freeze({
   ENSURE_READY: EVENT_ENSURE_READY,
   REPAIR: EVENT_REPAIR,
   RECORD_SPAWN_ROSTER: EVENT_RECORD_SPAWN_ROSTER,
   UPDATE_HP: EVENT_UPDATE_HP,
+  REFRESH_COMBATANT_COUNTS: EVENT_REFRESH_COMBATANT_COUNTS,
 });
 
+function refreshCombatantCounts() {
+  const monsterAll = gE("div.btm1", "all").length;
+  const monsterDead = gE('img[src*="nbardead"]', "all").length;
+  const bossAll = gE('div.btm2[style^="background"]', "all").length;
+  const bossDead = gE('div.btm1[style*="opacity"] div.btm2[style*="background"]', "all").length;
+  g("monsterAll", monsterAll);
+  g("monsterAlive", monsterAll - monsterDead);
+  g("bossAll", bossAll);
+  g("bossAlive", bossAll - bossDead);
+  return {
+    monsterAll,
+    monsterAlive: monsterAll - monsterDead,
+    bossAll,
+    bossAlive: bossAll - bossDead,
+  };
+}
+
 function recordSpawnRoster(event) {
-  const { roster } = parseMonsterRoster(event.battleLog, event.monsterAll);
+  const { roster } = parseMonsterRoster(event.battleLog, event.monsterAll ?? g("monsterAll"));
   const monsterStatus = buildMonsterStatus(roster);
   setValue(STORAGE_KEYS.MONSTER_STATUS, monsterStatus);
   g("monsterStatus", monsterStatus);
@@ -78,6 +97,8 @@ export function runMonsterStatusAutomation(event = { type: EVENT_ENSURE_READY })
     recordSpawnRoster(event);
   } else if (event.type === EVENT_UPDATE_HP) {
     countMonsterHP();
+  } else if (event.type === EVENT_REFRESH_COMBATANT_COUNTS) {
+    return refreshCombatantCounts();
   }
   return false;
 }

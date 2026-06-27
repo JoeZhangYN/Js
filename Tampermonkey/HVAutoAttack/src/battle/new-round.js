@@ -22,12 +22,7 @@ export function newRound() {
   // New Round
   g("turn", 0);
   if (window.location.hash !== "") goto();
-  g("monsterAll", gE("div.btm1", "all").length);
-  const monsterDead = gE('img[src*="nbardead"]', "all").length;
-  g("monsterAlive", g("monsterAll") - monsterDead);
-  g("bossAll", gE('div.btm2[style^="background"]', "all").length);
-  const bossDead = gE('div.btm1[style*="opacity"] div.btm2[style*="background"]', "all").length;
-  g("bossAlive", g("bossAll") - bossDead);
+  runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
   const battleLog = gE("#textlog>tbody>tr>td", "all");
   g(
     "roundType",
@@ -64,7 +59,6 @@ export function newRound() {
     runMonsterStatusAutomation({
       type: MonsterStatusEvent.RECORD_SPAWN_ROSTER,
       battleLog,
-      monsterAll: g("monsterAll"),
     });
     runBattleRoundAutomation({
       type: BattleRoundEvent.RECORD_COUNT_FROM_INITIALIZATION,

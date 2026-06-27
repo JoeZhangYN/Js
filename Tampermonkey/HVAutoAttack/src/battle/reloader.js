@@ -14,6 +14,7 @@ import {
 } from "../monitor/battle-monitor-automation.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
+import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { newRound } from "./new-round.js";
 import { main } from "./main-loop.js";
 
@@ -37,10 +38,7 @@ export function reloader() {
     g("timeNow", timeNow);
     if (g("option").delayAlert) clearTimeout(delayAlert);
     if (g("option").delayReload) clearTimeout(delayReload);
-    const monsterDead = gE('img[src*="nbardead"]', "all").length;
-    g("monsterAlive", g("monsterAll") - monsterDead);
-    const bossDead = gE('div.btm1[style*="opacity"] div.btm2[style*="background"]', "all").length;
-    g("bossAlive", g("bossAll") - bossDead);
+    runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
     runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_ENDED });
     if (gE("#btcp")) {
       runBattleMonitorAutomation({

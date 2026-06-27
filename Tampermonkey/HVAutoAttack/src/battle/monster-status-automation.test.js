@@ -44,4 +44,25 @@ describe("monster status automation", () => {
       },
     ]);
   });
+
+  it("refreshes combatant counts through the monster status entry", () => {
+    document.body.innerHTML = [
+      '<div class="btm1"><div class="btm2" style="background:red"></div></div>',
+      '<div class="btm1"><img src="/x/nbardead.png"><div class="btm2" style="background:blue"></div></div>',
+      '<div class="btm1" style="opacity: 0.3;"><div class="btm2" style="background:green"></div></div>',
+    ].join("");
+
+    expect(
+      runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS })
+    ).toEqual({
+      monsterAll: 3,
+      monsterAlive: 2,
+      bossAll: 3,
+      bossAlive: 2,
+    });
+    expect(g("monsterAll")).toBe(3);
+    expect(g("monsterAlive")).toBe(2);
+    expect(g("bossAll")).toBe(3);
+    expect(g("bossAlive")).toBe(2);
+  });
 });

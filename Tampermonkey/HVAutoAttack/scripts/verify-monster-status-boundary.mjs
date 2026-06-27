@@ -6,6 +6,8 @@ const srcDir = path.join(root, "src/battle");
 const entry = path.normalize("src/battle/monster-status-automation.js");
 const hpImpl = path.normalize("src/battle/attack.js");
 const parserImpl = path.normalize("src/battle/log-parser.js");
+const newRound = path.normalize("src/battle/new-round.js");
+const reloader = path.normalize("src/battle/reloader.js");
 const violations = [];
 
 function rel(file) {
@@ -31,6 +33,16 @@ function checkFile(file) {
       violations.push(`${where} legacy fixMonsterStatus path is forbidden`);
     }
     if (
+      (relative === newRound || relative === reloader) &&
+      /btm1|btm2|nbardead|g\(\s*["'](?:monsterAll|monsterAlive|bossAll|bossAlive)["']\s*,/.test(
+        line
+      ) &&
+      !line.includes("runMonsterStatusAutomation") &&
+      !line.includes("MonsterStatusEvent")
+    ) {
+      violations.push(`${where} combatant counts belong behind runMonsterStatusAutomation(event)`);
+    }
+    if (
       relative !== entry &&
       relative !== hpImpl &&
       relative !== parserImpl &&
@@ -54,7 +66,12 @@ function checkEntry() {
   if (!text.includes("STORAGE_KEYS.MONSTER_STATUS")) {
     violations.push(`${entry.replaceAll("\\", "/")} must use STORAGE_KEYS.MONSTER_STATUS`);
   }
-  for (const required of ["countMonsterHP", "buildMonsterStatus", "monsterStatus"]) {
+  for (const required of [
+    "countMonsterHP",
+    "buildMonsterStatus",
+    "monsterStatus",
+    "REFRESH_COMBATANT_COUNTS",
+  ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);
     }
