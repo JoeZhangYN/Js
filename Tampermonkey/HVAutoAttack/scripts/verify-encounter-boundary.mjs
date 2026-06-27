@@ -228,6 +228,16 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
+if (!/\bfunction executeEncounterEntry\b/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must execute manual and automatic encounter entry through one function`
+  );
+}
+if (/\bexecuteEncounterActivation\b|\bexecuteWidgetNavigation\b/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not keep separate lobby/widget encounter navigation executors`
+  );
+}
 if (!/\bREAD_CLOCK\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose one encounter clock query`);
 }

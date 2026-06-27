@@ -1,5 +1,4 @@
 // 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
-import { g } from "../state/store.js";
 import { post } from "../dom/http.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
@@ -38,43 +37,22 @@ function reloadCurrentPage() {
   runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
 }
 
-function continueLater() {
-  return { claimed: false };
-}
-
 function claimLobby() {
   runEncounterLobbySchedule({ type: EncounterLobbyScheduleEvent.CANCEL_NEXT_CHECK });
   return { claimed: true };
 }
 
-function scheduleNextLobbyTick(state, rerun) {
+function waitForNextCheck(state, event) {
   runEncounterLobbySchedule({
     type: EncounterLobbyScheduleEvent.SCHEDULE_NEXT_CHECK,
     state,
-    rerun,
+    rerun: event.rerun,
   });
+  return { claimed: false };
 }
 
-function waitForNextCheck(state, event) {
-  scheduleNextLobbyTick(state, event.rerun);
-  return continueLater();
-}
-
-function executeEncounterActivation(state) {
-  const plan = runEncounterPolicy({
-    type: EncounterPolicyEvent.PLAN_ACTIVATION,
-    state,
-  });
-  if (plan.action !== "enter") return false;
-  runNavigationAutomation({
-    type: NavigationEvent.OPEN_URL,
-    url: plan.href,
-  });
-  return true;
-}
-
-function executeWidgetNavigation(outcome) {
-  if (outcome?.action === "navigate") {
+function executeEncounterEntry(outcome) {
+  if (outcome?.action === "enter" || outcome?.action === "navigate") {
     runNavigationAutomation({
       type: NavigationEvent.OPEN_URL,
       url: outcome.href,
@@ -92,34 +70,89 @@ function executeWidgetNavigation(outcome) {
   return outcome;
 }
 
-async function runLobbyTick(event) {
+function planStoredEncounterEntry(state) {
+  return runEncounterPolicy({
+    type: EncounterPolicyEvent.PLAN_ACTIVATION,
+    state,
+  });
+}
+
+function enterStoredEncounter(state) {
+  const outcome = executeEncounterEntry(planStoredEncounterEntry(state));
+  if (!outcome?.handled) return undefined;
+  return outcome;
+}
+
+function claimEnteredEncounter(outcome) {
+  if (!outcome?.handled) return undefined;
+  claimLobby();
+  return { ...outcome, claimed: true };
+}
+
+function executeWidgetEvent(event) {
+  return executeEncounterEntry(planEncounterWidgetEvent(event));
+}
+
+function postStaminaRecovery() {
+  post(window.location.href, reloadCurrentPage, "recover=stamina");
+}
+
+async function loadAndEnterEncounter() {
+  const state = await runEncounterStateAutomation({ type: EncounterStateEvent.LOAD_KEY });
+  return enterStoredEncounter(state || {});
+}
+
+function syncDailyRecord() {
   runDayRecordAutomation({ type: DayRecordEvent.SYNC_UTC_DATE });
-  let state = runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
-  const readiness = runEncounterPolicy({
+}
+
+function readEncounterState() {
+  return runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
+}
+
+function readStoredReadiness(state) {
+  return runEncounterPolicy({
     type: EncounterPolicyEvent.READINESS,
     state,
   });
-  if (readiness.dailyLimitReached) {
-    return waitForNextCheck(state, event);
-  }
-  if (executeEncounterActivation(state)) {
-    return claimLobby();
-  }
-  if (readiness.remainingMs > 0) {
-    return waitForNextCheck(state, event);
-  }
-  if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_BATTLE })) {
-    post(window.location.href, reloadCurrentPage, "recover=stamina");
-    return claimLobby();
-  }
-  state = await runEncounterStateAutomation({ type: EncounterStateEvent.LOAD_KEY });
-  if (executeEncounterActivation(state || {})) {
-    return claimLobby();
-  }
-  return waitForNextCheck(
-    runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT }),
-    event
+}
+
+function shouldRestoreForBattle() {
+  return runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_BATTLE });
+}
+
+function waitForCurrentState(event) {
+  return waitForNextCheck(readEncounterState(), event);
+}
+
+function claimStaminaRecovery() {
+  postStaminaRecovery();
+  return claimLobby();
+}
+
+function claimEnteredStoredEncounter(state) {
+  return claimEnteredEncounter(enterStoredEncounter(state));
+}
+
+function continueAfterLoadedEncounter(event) {
+  return loadAndEnterEncounter().then(
+    (outcome) => claimEnteredEncounter(outcome) || waitForCurrentState(event)
   );
+}
+
+function shouldWaitForClock(readiness) {
+  return readiness.dailyLimitReached || readiness.remainingMs > 0;
+}
+
+async function runLobbyTick(event) {
+  syncDailyRecord();
+  const state = readEncounterState();
+  const readiness = readStoredReadiness(state);
+  if (shouldWaitForClock(readiness)) return waitForNextCheck(state, event);
+  const entered = claimEnteredStoredEncounter(state);
+  if (entered) return entered;
+  if (shouldRestoreForBattle()) return claimStaminaRecovery();
+  return continueAfterLoadedEncounter(event);
 }
 
 export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
@@ -131,7 +164,7 @@ export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
     return { claimed: false };
   }
   if (event.type?.startsWith("widget")) {
-    return executeWidgetNavigation(planEncounterWidgetEvent(event));
+    return executeWidgetEvent(event);
   }
   return runLobbyTick(event);
 }

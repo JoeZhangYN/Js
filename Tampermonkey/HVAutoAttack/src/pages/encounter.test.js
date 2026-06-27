@@ -51,6 +51,34 @@ describe("runEncounterAutomation", () => {
     expect(rerun).toHaveBeenCalledTimes(1);
   });
 
+  it("routes lobby auto-entry through the same encounter entry executor", async () => {
+    localStorage.setItem(
+      HVUT_RE_KEY,
+      JSON.stringify({
+        date: Date.now() - 31 * 60 * 1000,
+        key: "abc123=",
+        count: 1,
+        clear: false,
+      })
+    );
+
+    const outcome = await runEncounterAutomation({
+      type: EncounterEvent.LOBBY_TICK,
+      rerun: vi.fn(),
+    });
+
+    expect(outcome).toMatchObject({
+      action: "navigated",
+      href: "?s=Battle&ss=ba&encounter=abc123=",
+      handled: true,
+      claimed: true,
+    });
+    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
+      type: "openUrl",
+      url: "?s=Battle&ss=ba&encounter=abc123=",
+    });
+  });
+
   it("serves the widget countdown from the same UTC day readiness", () => {
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_TICK,
