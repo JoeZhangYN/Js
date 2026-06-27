@@ -9,6 +9,15 @@ vi.mock("../state/store.js", () => ({ g: mocks.g }));
 
 beforeEach(() => {
   mocks.g.mockReset();
+  runBattleActionDelayAutomation(
+    { type: BattleActionDelayEvent.ACTION_ENDED },
+    {
+      schedule: vi.fn(),
+      cancel: vi.fn(),
+      triggerAlarm: vi.fn(),
+      scheduleReload: vi.fn(),
+    }
+  );
 });
 
 describe("runBattleActionDelayAutomation", () => {
@@ -53,5 +62,60 @@ describe("runBattleActionDelayAutomation", () => {
 
     expect(deps.cancel).toHaveBeenCalledWith("alert-timer");
     expect(deps.cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("cancels timers that were started even when options changed before action end", () => {
+    const deps = {
+      schedule: vi.fn(() => "alert-timer"),
+      cancel: vi.fn(),
+      triggerAlarm: vi.fn(),
+      scheduleReload: vi.fn(() => "reload-timer"),
+    };
+    mocks.g
+      .mockReturnValueOnce({
+        delayAlert: true,
+        delayAlertTime: 1,
+        delayReload: true,
+        delayReloadTime: 2,
+      })
+      .mockReturnValueOnce({
+        delayAlert: false,
+        delayAlertTime: 1,
+        delayReload: false,
+        delayReloadTime: 2,
+      });
+
+    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
+    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
+
+    expect(deps.cancel).toHaveBeenCalledWith("alert-timer");
+    expect(deps.cancel).toHaveBeenCalledWith("reload-timer");
+    expect(deps.cancel).toHaveBeenCalledTimes(2);
+  });
+
+  it("clears a previous action delay before starting a new one", () => {
+    const deps = {
+      schedule: vi.fn().mockReturnValueOnce("first-alert").mockReturnValueOnce("second-alert"),
+      cancel: vi.fn(),
+      triggerAlarm: vi.fn(),
+      scheduleReload: vi
+        .fn()
+        .mockReturnValueOnce("first-reload")
+        .mockReturnValueOnce("second-reload"),
+    };
+    mocks.g.mockReturnValue({
+      delayAlert: true,
+      delayAlertTime: 1,
+      delayReload: true,
+      delayReloadTime: 2,
+    });
+
+    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
+    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
+
+    expect(deps.cancel).toHaveBeenCalledWith("first-alert");
+    expect(deps.cancel).toHaveBeenCalledWith("first-reload");
+    expect(deps.schedule).toHaveBeenCalledTimes(2);
+    expect(deps.scheduleReload).toHaveBeenCalledTimes(2);
   });
 });

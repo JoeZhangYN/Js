@@ -18,6 +18,7 @@ function readDelayOption() {
 }
 
 function startActionDelay(deps) {
+  endActionDelay(deps);
   const option = readDelayOption();
   if (option.delayAlert) {
     delayAlertTimer = deps.schedule(
@@ -31,9 +32,8 @@ function startActionDelay(deps) {
 }
 
 function endActionDelay(deps) {
-  const option = readDelayOption();
-  if (option.delayAlert) deps.cancel(delayAlertTimer);
-  if (option.delayReload) deps.cancel(delayReloadTimer);
+  if (delayAlertTimer !== undefined) deps.cancel(delayAlertTimer);
+  if (delayReloadTimer !== undefined) deps.cancel(delayReloadTimer);
   delayAlertTimer = undefined;
   delayReloadTimer = undefined;
 }

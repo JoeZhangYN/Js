@@ -247,6 +247,16 @@ function checkActionDelayEntry() {
   ) {
     violations.push(`${rel(actionDelayFile)} may export only its event entry`);
   }
+  const endActionDelayMatch = text.match(
+    /function\s+endActionDelay\s*\([^)]*\)\s*\{(?<body>[\s\S]*?)\n\}/
+  );
+  if (!endActionDelayMatch) {
+    violations.push(`${rel(actionDelayFile)} must own endActionDelay cleanup`);
+  } else if (/\breadDelayOption\s*\(/.test(endActionDelayMatch.groups.body)) {
+    violations.push(
+      `${rel(actionDelayFile)} action-end cleanup must cancel registered timers, not reread option state`
+    );
+  }
   const files = [
     battleFile,
     reloaderFile,
