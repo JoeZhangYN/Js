@@ -51,10 +51,14 @@ for (const required of [
   "runRecoveryLearningAutomation",
   "RecoveryLearningEvent",
   "STORAGE_KEYS.LEARNED_RECOVERY",
+  "OptionEvent.READ_FIELD",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not read option fields directly`);
 }
 
 for (const legacy of ["recordPreDrink", "finalizePending", "getLearnedRecovery"]) {

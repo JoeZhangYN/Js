@@ -7,6 +7,7 @@
 //   turn N+1 snapshot → finalizePending(snap)            [读 pending → 计算 delta → 更新 learned]
 //   后续决策 getLearnedRecovery(potionId) 优先返学到值，缺省 fallback POTION_RECOVERY
 import { g } from "./store.js";
+import { OptionEvent, runOptionAutomation } from "./option.js";
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { POTION_RECOVERY } from "../battle/potion-economy.js";
@@ -20,6 +21,16 @@ export const RecoveryLearningEvent = Object.freeze({
   FINALIZE_PENDING: EVENT_FINALIZE_PENDING,
   READ_RECOVERY: EVENT_READ_RECOVERY,
 });
+
+function isDynamicHealLogEnabled() {
+  return Boolean(
+    runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "dynamicHealLog",
+      fallback: false,
+    })
+  );
+}
 
 /**
  * 喝药前调用：保存 pending 观测点。
@@ -52,7 +63,7 @@ function finalizePending(snap) {
   g("learnPending", null); // 清 pending
   if (delta <= 0) {
     // 怪物攻击/regen 干扰，不可信，丢弃
-    if (g("option")?.dynamicHealLog) {
+    if (isDynamicHealLogEnabled()) {
       console.log(
         `[recovery-learn] discard ${pending.potionId}: delta=${delta.toFixed(0)} (interference)`
       );
@@ -72,7 +83,7 @@ function updateLearned(potionId, observedDelta) {
   const newAmt = priorAmt * (1 - alpha) + observedDelta * alpha;
   learned[potionId] = { amount: newAmt, n };
   setValue(STORAGE_KEYS.LEARNED_RECOVERY, learned);
-  if (g("option")?.dynamicHealLog) {
+  if (isDynamicHealLogEnabled()) {
     console.log(
       `[recovery-learn] ${potionId}: delta=${observedDelta.toFixed(0)} → learned=${newAmt.toFixed(0)} (n=${n})`
     );

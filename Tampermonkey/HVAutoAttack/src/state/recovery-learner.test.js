@@ -1,14 +1,26 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { g } from "./store.js";
 import { RecoveryLearningEvent, runRecoveryLearningAutomation } from "./recovery-learner.js";
 
+const mocks = vi.hoisted(() => ({
+  runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("./option.js", () => ({
+  OptionEvent: Object.freeze({
+    READ_FIELD: "readField",
+  }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
+
 beforeEach(() => {
   localStorage.clear();
   g("learnPending", null);
   g("turn", 0);
-  g("option", {});
+  mocks.runOptionAutomation.mockReset();
+  mocks.runOptionAutomation.mockReturnValue(false);
 });
 
 describe("recovery learner", () => {
@@ -33,5 +45,29 @@ describe("recovery learner", () => {
         potionId: 11195,
       })
     ).toEqual({ stat: "hp", amount: 450 });
+  });
+
+  it("reads the dynamic heal log switch through the option entry", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    mocks.runOptionAutomation.mockReturnValue(true);
+
+    runRecoveryLearningAutomation({
+      type: RecoveryLearningEvent.RECORD_PRE_DRINK,
+      potionId: 11195,
+      snap: { hpAbs: 1000 },
+    });
+    g("turn", 1);
+    runRecoveryLearningAutomation({
+      type: RecoveryLearningEvent.FINALIZE_PENDING,
+      snap: { hpAbs: 900 },
+    });
+
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "dynamicHealLog",
+      fallback: false,
+    });
+    expect(log).toHaveBeenCalledWith(expect.stringContaining("[recovery-learn] discard"));
+    log.mockRestore();
   });
 });
