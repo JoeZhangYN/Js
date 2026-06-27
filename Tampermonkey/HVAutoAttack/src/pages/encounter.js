@@ -8,19 +8,47 @@ import { goto, openUrl } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { readStaminaValue } from "../state/stamina.js";
 
+const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000;
+const MIDNIGHT_TRIGGER_DELAY_MS = 5000;
+
+function syncDateNow() {
+  const dateNow = time(2);
+  if (g("dateNow") !== dateNow) g("dateNow", dateNow);
+  return dateNow;
+}
+
+function msUntilNextUtcMidnight(now = new Date()) {
+  const nextMidnight = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() + 1
+  );
+  return nextMidnight - now.getTime();
+}
+
+export function nextEncounterCheckDelayMs(now = new Date()) {
+  const jitteredMinute = (60 * 1000 * (Math.random() * 10 + 95)) / 100;
+  return Math.min(
+    jitteredMinute,
+    msUntilNextUtcMidnight(now) + MIDNIGHT_TRIGGER_DELAY_MS
+  );
+}
+
 export function encounterCheck() {
   const timeNow = time(0);
+  const dateNow = syncDateNow();
+  const savedEncounter = getValue("encounter", true);
   const encounter =
-    getValue("encounter") &&
-    getValue("encounter", true).dateNow === g("dateNow")
-      ? getValue("encounter", true)
+    savedEncounter && savedEncounter.dateNow === dateNow
+      ? savedEncounter
       : {
-          dateNow: g("dateNow"),
+          dateNow,
           time: 0,
         };
   if (
     !encounter.lastTime ||
-    (timeNow - encounter.lastTime >= 30 * 60 * 1000 && encounter.time < 24)
+    (timeNow - encounter.lastTime >= ENCOUNTER_INTERVAL_MS &&
+      encounter.time < 24)
   ) {
     if (
       g("option").restoreStamina &&
@@ -55,8 +83,5 @@ export function encounterCheck() {
   lastEncounter.innerHTML = `${Math.floor(
     (timeNow - encounter.lastTime) / 1000 / 60
   )}<l0>分钟前</l0><l1>分鐘前</l1><l2> mins before</l2>`;
-  setTimeout(
-    encounterCheck,
-    (1 * 60 * 1000 * (Math.random() * 10 + 95)) / 100
-  );
+  setTimeout(encounterCheck, nextEncounterCheckDelayMs());
 }
