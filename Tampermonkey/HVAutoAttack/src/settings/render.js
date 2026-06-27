@@ -16,6 +16,7 @@ import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stami
 import { OptionBackupEvent, runOptionBackupAutomation } from "../state/option-backup.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
+import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
 import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
@@ -514,18 +515,7 @@ export function optionBox() {
       "接下來開始預處理。\n關閉本警告框之後，請切換到其他標籤頁，\n並在足夠長的時間後再打開本標籤頁",
       "Now, pretreat.\nAfter dismissing this alert, focus other tab,\nfocus this tab again after long time."
     );
-    setTimeout(() => {
-      const riddleWindow = window.open(
-        window.location.href,
-        "riddleWindow",
-        "resizable,scrollbars,width=1241,height=707"
-      );
-      if (riddleWindow) {
-        setTimeout(() => {
-          riddleWindow.close();
-        }, 200);
-      }
-    }, 3000);
+    runRiddleAutomation({ type: RiddleEvent.TEST_POPUP_PRETREAT });
   };
   gE(".staminaLostLog", optionBox).onclick = function () {
     if (

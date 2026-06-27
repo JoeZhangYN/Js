@@ -36,6 +36,9 @@ if (!owner) {
   if (LEGACY_EXPORT_RE.test(source)) {
     violations.push("legacy navigation helpers must stay private: goto/scheduleReload/openUrl");
   }
+  if (!source.includes("OPEN_WINDOW")) {
+    violations.push("NavigationEvent must expose OPEN_WINDOW for named popup navigation");
+  }
   for (const required of ["event.seconds", "event.minutes", "event.milliseconds"]) {
     if (!source.includes(required)) {
       violations.push(`NavigationEvent.SCHEDULE_RELOAD must normalize ${required}`);

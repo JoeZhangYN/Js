@@ -8,6 +8,7 @@ const riddleAnswerFile = path.join(root, "src/pages/riddle.js");
 const riddleTimingFile = path.join(root, "src/pages/riddle-submission-timing.js");
 const riddleImageFile = path.join(root, "src/pages/riddle-image.js");
 const riddleMlFile = path.join(root, "src/pages/riddle-ml.js");
+const settingsFile = path.join(root, "src/settings/render.js");
 const srcDir = path.join(root, "src");
 const battleDir = path.join(root, "src/battle");
 const violations = [];
@@ -69,12 +70,39 @@ function checkRiddleEntry() {
   if (!text.includes("runRiddleAnsweringSession")) {
     violations.push(`${rel(riddleFile)} must route riddle answering through the business entry`);
   }
+  for (const required of ["TEST_POPUP_PRETREAT", "NavigationEvent.OPEN_WINDOW"]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(riddleFile)} must own riddle popup ${required}`);
+    }
+  }
+  if (/\bwindow\.open\b/.test(text)) {
+    violations.push(`${rel(riddleFile)} must open riddle popup through navigation entry`);
+  }
+}
+
+function checkRiddleSettingsConsumer() {
+  const lines = fs.readFileSync(settingsFile, "utf8").split(/\r?\n/);
+  lines.forEach((line, index) => {
+    if (/\bwindow\.open\b|\briddleWindow\b/.test(line)) {
+      violations.push(
+        `${rel(settingsFile)}:${index + 1} riddle popup details belong in runRiddleAutomation(event)`
+      );
+    }
+  });
+  const text = lines.join("\n");
+  if (!text.includes("RiddleEvent.TEST_POPUP_PRETREAT")) {
+    violations.push(
+      `${rel(settingsFile)} must report riddle popup pretreat to runRiddleAutomation(event)`
+    );
+  }
 }
 
 function checkRiddleSubmissionTiming() {
   const answerText = fs.readFileSync(riddleAnswerFile, "utf8");
   if (!answerText.includes("runRiddleSubmissionTiming")) {
-    violations.push(`${rel(riddleAnswerFile)} must route submit timing through runRiddleSubmissionTiming(event)`);
+    violations.push(
+      `${rel(riddleAnswerFile)} must route submit timing through runRiddleSubmissionTiming(event)`
+    );
   }
   for (const required of [
     "RiddleSubmissionTimingEvent.START",
@@ -86,10 +114,14 @@ function checkRiddleSubmissionTiming() {
     }
   }
   if (/=\s*runRiddleSubmissionTiming\s*\(/.test(answerText)) {
-    violations.push(`${rel(riddleAnswerFile)} must not keep timing command objects from runRiddleSubmissionTiming(event)`);
+    violations.push(
+      `${rel(riddleAnswerFile)} must not keep timing command objects from runRiddleSubmissionTiming(event)`
+    );
   }
   if (/\btiming\.(?:recordExternalSubmission|scheduleMlSubmit)\s*\(/.test(answerText)) {
-    violations.push(`${rel(riddleAnswerFile)} must report timing events instead of calling returned timing commands`);
+    violations.push(
+      `${rel(riddleAnswerFile)} must report timing events instead of calling returned timing commands`
+    );
   }
   answerText.split(/\r?\n/).forEach((line, index) => {
     const trimmed = line.trim();
@@ -114,7 +146,9 @@ function checkRiddleSubmissionTiming() {
     }
   }
   if (/return\s+Object\.freeze\(\{[^}]*\b(?:stop|submitOnce)\b/s.test(timingText)) {
-    violations.push(`${rel(riddleTimingFile)} must not expose raw timer primitives outside the timing entry`);
+    violations.push(
+      `${rel(riddleTimingFile)} must not expose raw timer primitives outside the timing entry`
+    );
   }
 }
 
@@ -127,9 +161,16 @@ function checkRiddleImageEntry() {
       violations.push(`${rel(riddleImageFile)} must own ${required}`);
     }
   }
-  for (const legacy of ["getRiddleImgEl", "waitImageLoaded", "getImageBlob", "captureRiddleDataUrl"]) {
+  for (const legacy of [
+    "getRiddleImgEl",
+    "waitImageLoaded",
+    "getImageBlob",
+    "captureRiddleDataUrl",
+  ]) {
     if (new RegExp(`export\\s+(?:async\\s+)?function\\s+${legacy}\\s*\\(`).test(ownerText)) {
-      violations.push(`${rel(riddleImageFile)} legacy ${legacy} export must stay private behind runRiddleImageAutomation(event)`);
+      violations.push(
+        `${rel(riddleImageFile)} legacy ${legacy} export must stay private behind runRiddleImageAutomation(event)`
+      );
     }
   }
 
@@ -140,12 +181,16 @@ function checkRiddleImageEntry() {
       else if (entry.isFile() && entry.name.endsWith(".js")) {
         const relative = path.normalize(path.relative(root, full));
         if (relative === owner || relative === ownerTest) continue;
-        fs.readFileSync(full, "utf8").split(/\r?\n/).forEach((line, index) => {
-          if (!/from\s+["']\.\/riddle-image\.js["']/.test(line)) return;
-          if (!/\bRiddleImageEvent\b/.test(line) || !/\brunRiddleImageAutomation\b/.test(line)) {
-            violations.push(`${rel(full)}:${index + 1} riddle image consumers must use runRiddleImageAutomation(event)`);
-          }
-        });
+        fs.readFileSync(full, "utf8")
+          .split(/\r?\n/)
+          .forEach((line, index) => {
+            if (!/from\s+["']\.\/riddle-image\.js["']/.test(line)) return;
+            if (!/\bRiddleImageEvent\b/.test(line) || !/\brunRiddleImageAutomation\b/.test(line)) {
+              violations.push(
+                `${rel(full)}:${index + 1} riddle image consumers must use runRiddleImageAutomation(event)`
+              );
+            }
+          });
       }
     }
   }
@@ -162,7 +207,9 @@ function checkRiddleMlEntry() {
   }
   for (const legacy of ["tryMLAnswer", "startRiddleMlHealthCheck"]) {
     if (new RegExp(`export\\s+(?:async\\s+)?function\\s+${legacy}\\s*\\(`).test(ownerText)) {
-      violations.push(`${rel(riddleMlFile)} legacy ${legacy} export must stay private behind runRiddleMlAutomation(event)`);
+      violations.push(
+        `${rel(riddleMlFile)} legacy ${legacy} export must stay private behind runRiddleMlAutomation(event)`
+      );
     }
   }
 
@@ -173,12 +220,16 @@ function checkRiddleMlEntry() {
       else if (entry.isFile() && entry.name.endsWith(".js")) {
         const relative = path.normalize(path.relative(root, full));
         if (relative === owner) continue;
-        fs.readFileSync(full, "utf8").split(/\r?\n/).forEach((line, index) => {
-          if (!/from\s+["']\.\/riddle-ml\.js["']/.test(line)) return;
-          if (!/\bRiddleMlEvent\b/.test(line) || !/\brunRiddleMlAutomation\b/.test(line)) {
-            violations.push(`${rel(full)}:${index + 1} riddle ML consumers must use runRiddleMlAutomation(event)`);
-          }
-        });
+        fs.readFileSync(full, "utf8")
+          .split(/\r?\n/)
+          .forEach((line, index) => {
+            if (!/from\s+["']\.\/riddle-ml\.js["']/.test(line)) return;
+            if (!/\bRiddleMlEvent\b/.test(line) || !/\brunRiddleMlAutomation\b/.test(line)) {
+              violations.push(
+                `${rel(full)}:${index + 1} riddle ML consumers must use runRiddleMlAutomation(event)`
+              );
+            }
+          });
       }
     }
   }
@@ -204,6 +255,7 @@ function checkDeletedSetupEntrypoints() {
 checkInit();
 checkBattleLayer();
 checkRiddleEntry();
+checkRiddleSettingsConsumer();
 checkRiddleSubmissionTiming();
 checkRiddleImageEntry();
 checkRiddleMlEntry();

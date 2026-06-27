@@ -6,14 +6,32 @@ import { runRiddleAnsweringSession } from "./riddle.js";
 
 const EVENT_RIDDLE_PAGE = "riddlePage";
 const EVENT_BATTLE_POST_RESULT = "battlePostResult";
+const EVENT_TEST_POPUP_PRETREAT = "testPopupPretreat";
+const RIDDLE_WINDOW_NAME = "riddleWindow";
+const RIDDLE_WINDOW_FEATURES = "resizable,scrollbars,width=1241,height=707";
 
 export const RiddleEvent = Object.freeze({
   RIDDLE_PAGE: EVENT_RIDDLE_PAGE,
   BATTLE_POST_RESULT: EVENT_BATTLE_POST_RESULT,
+  TEST_POPUP_PRETREAT: EVENT_TEST_POPUP_PRETREAT,
 });
 
 function openRiddlePopup() {
-  window.open(window.location.href, "riddleWindow", "resizable,scrollbars,width=1241,height=707");
+  return runNavigationAutomation({
+    type: NavigationEvent.OPEN_WINDOW,
+    url: window.location.href,
+    name: RIDDLE_WINDOW_NAME,
+    features: RIDDLE_WINDOW_FEATURES,
+  });
+}
+
+function testPopupPretreat(deps = {}) {
+  const schedule = deps.schedule || setTimeout;
+  schedule(() => {
+    const riddleWindow = openRiddlePopup();
+    if (riddleWindow) schedule(() => riddleWindow.close(), 200);
+  }, 3000);
+  return true;
 }
 
 function answerCurrentRiddlePage() {
@@ -35,6 +53,7 @@ function handleBattlePostResult(data) {
 }
 
 export function runRiddleAutomation(event = { type: EVENT_RIDDLE_PAGE }) {
+  if (event.type === EVENT_TEST_POPUP_PRETREAT) return testPopupPretreat(event.deps);
   if (event.type === EVENT_BATTLE_POST_RESULT) {
     return handleBattlePostResult(event.data);
   }

@@ -16,6 +16,26 @@ describe("runNavigationAutomation", () => {
     expect(open).toHaveBeenCalledWith("https://hentaiverse.org/encounter.php", "_blank");
   });
 
+  it("routes named popup windows through the navigation event entry", () => {
+    const popup = { close: vi.fn() };
+    const open = vi.spyOn(window, "open").mockImplementation(() => popup);
+
+    expect(
+      runNavigationAutomation({
+        type: NavigationEvent.OPEN_WINDOW,
+        url: "https://hentaiverse.org/?s=Battle",
+        name: "riddleWindow",
+        features: "resizable,scrollbars,width=1241,height=707",
+      })
+    ).toBe(popup);
+
+    expect(open).toHaveBeenCalledWith(
+      "https://hentaiverse.org/?s=Battle",
+      "riddleWindow",
+      "resizable,scrollbars,width=1241,height=707"
+    );
+  });
+
   it("returns the scheduled reload timer handle", () => {
     vi.useFakeTimers();
 

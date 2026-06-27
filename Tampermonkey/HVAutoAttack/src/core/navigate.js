@@ -3,11 +3,13 @@
 const EVENT_RELOAD_NOW = "reloadNow";
 const EVENT_SCHEDULE_RELOAD = "scheduleReload";
 const EVENT_OPEN_URL = "openUrl";
+const EVENT_OPEN_WINDOW = "openWindow";
 
 export const NavigationEvent = Object.freeze({
   RELOAD_NOW: EVENT_RELOAD_NOW,
   SCHEDULE_RELOAD: EVENT_SCHEDULE_RELOAD,
   OPEN_URL: EVENT_OPEN_URL,
+  OPEN_WINDOW: EVENT_OPEN_WINDOW,
 });
 
 /** 重定向当前页面（带 5s 后重试）。 */
@@ -38,6 +40,10 @@ function openUrl(url, newTab) {
   window.open(url, newTab ? "_blank" : "_self");
 }
 
+function openWindow(url, name, features) {
+  return window.open(url, name, features);
+}
+
 export function runNavigationAutomation(event = { type: EVENT_RELOAD_NOW }) {
   if (event.type === EVENT_RELOAD_NOW) {
     goto();
@@ -49,6 +55,9 @@ export function runNavigationAutomation(event = { type: EVENT_RELOAD_NOW }) {
   if (event.type === EVENT_OPEN_URL) {
     openUrl(event.url, event.newTab);
     return true;
+  }
+  if (event.type === EVENT_OPEN_WINDOW) {
+    return openWindow(event.url, event.name, event.features);
   }
   return false;
 }
