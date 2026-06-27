@@ -2,7 +2,7 @@
 import { g } from "../state/store.js";
 import { post } from "../dom/http.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
-import { TimeEvent, runTimeAutomation } from "../core/time.js";
+import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
@@ -34,12 +34,6 @@ export const EncounterEvent = Object.freeze({
 
 function reloadCurrentPage() {
   runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
-}
-
-function syncDateNow() {
-  const dateNow = runTimeAutomation({ type: TimeEvent.UTC_DATE_KEY });
-  if (g("dateNow") !== dateNow) g("dateNow", dateNow);
-  return dateNow;
 }
 
 function continueLater() {
@@ -104,7 +98,7 @@ function executeWidgetNavigation(outcome) {
 }
 
 async function runLobbyTick(event) {
-  syncDateNow();
+  runDayRecordAutomation({ type: DayRecordEvent.SYNC_UTC_DATE });
   let state = runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
   const readiness = runEncounterPolicy({
     type: EncounterPolicyEvent.READINESS,

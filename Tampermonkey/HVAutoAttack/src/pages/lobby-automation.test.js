@@ -3,6 +3,7 @@ import { LobbyEvent, runLobbyAutomation } from "./lobby-automation.js";
 
 const mocks = vi.hoisted(() => ({
   g: vi.fn(),
+  runDayRecordAutomation: vi.fn(),
   runAbilityAoeAutomation: vi.fn(),
   runBattleRuntimeAutomation: vi.fn(),
   runEncounterAutomation: vi.fn(async () => ({ claimed: false })),
@@ -10,13 +11,12 @@ const mocks = vi.hoisted(() => ({
   runQuickSiteAutomation: vi.fn(),
   runRepairAutomation: vi.fn(),
   runStaminaAutomation: vi.fn(() => false),
-  runTimeAutomation: vi.fn(() => "2026-06-27"),
 }));
 
 vi.mock("../state/store.js", () => ({ g: mocks.g }));
-vi.mock("../core/time.js", () => ({
-  TimeEvent: Object.freeze({ UTC_DATE_KEY: "utcDateKey" }),
-  runTimeAutomation: mocks.runTimeAutomation,
+vi.mock("../state/day-record.js", () => ({
+  DayRecordEvent: Object.freeze({ SYNC_UTC_DATE: "syncUtcDate" }),
+  runDayRecordAutomation: mocks.runDayRecordAutomation,
 }));
 vi.mock("../state/stamina.js", () => ({
   StaminaEvent: Object.freeze({ SHOULD_STOP_LOBBY: "shouldStopLobby" }),
@@ -59,7 +59,6 @@ beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear();
   mocks.runEncounterAutomation.mockResolvedValue({ claimed: false });
   mocks.runStaminaAutomation.mockReturnValue(false);
-  mocks.runTimeAutomation.mockReturnValue("2026-06-27");
   setLobbyOption({ encounter: false, idleArena: false, repair: false });
 });
 
@@ -70,7 +69,7 @@ describe("runLobbyAutomation", () => {
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
 
     expect(mocks.runBattleRuntimeAutomation).toHaveBeenCalledWith({ type: "clearSession" });
-    expect(mocks.g).toHaveBeenCalledWith("dateNow", "2026-06-27");
+    expect(mocks.runDayRecordAutomation).toHaveBeenCalledWith({ type: "syncUtcDate" });
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "captureAbilityPage" });
     expect(mocks.runQuickSiteAutomation).toHaveBeenCalledWith({
       type: "lobbyReady",
