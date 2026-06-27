@@ -12,6 +12,8 @@ const bridgeFile = path.normalize("src/pages/encounter-bridge.js");
 const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
 const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
 const widgetPolicyFile = path.normalize("src/pages/encounter-widget-policy.js");
+const lobbyScheduleFile = path.normalize("src/pages/encounter-lobby-schedule.js");
+const lobbyScheduleTest = path.normalize("src/pages/encounter-lobby-schedule.test.js");
 const violations = [];
 
 function walk(dir) {
@@ -144,6 +146,8 @@ function checkFile(file) {
     if (
       relative !== policyFile &&
       relative !== policyTest &&
+      relative !== lobbyScheduleFile &&
+      relative !== lobbyScheduleTest &&
       /\b(defaultEncounterState|resetEncounterDay|normalizeEncounterState|msUntilEncounterReady|canEnterEncounterState|readEncounterReadiness|readEncounterClock|countdownEncounterClock|msUntilNextEncounterCheck|planEncounterActivation|parseEncounterKeyFromEventpaneHtml|parseEncounterKeyFromSearch|buildEncounterUrl|markEncounterKeyAvailable|markEncounterStarted)\b/.test(
         line
       )
@@ -151,6 +155,34 @@ function checkFile(file) {
       violations.push(
         `${where} encounter policy helper usage is forbidden; use runEncounterPolicy(event)`
       );
+    }
+    if (
+      relative === owner &&
+      /\bscheduledLobbyTick\b|\bsetTimeout\b|\bclearTimeout\b|EncounterPolicyEvent\.NEXT_CHECK_DELAY/.test(
+        line
+      )
+    ) {
+      violations.push(
+        `${where} encounter lobby retry scheduling belongs in runEncounterLobbySchedule(event)`
+      );
+    }
+    if (
+      relative !== owner &&
+      relative !== lobbyScheduleFile &&
+      relative !== lobbyScheduleTest &&
+      /from\s+["']\.\/encounter-lobby-schedule\.js["']/.test(line)
+    ) {
+      violations.push(
+        `${where} encounter lobby schedule is internal to runEncounterAutomation(event)`
+      );
+    }
+    if (
+      relative === lobbyScheduleFile &&
+      /\bexport\s+(?:function|const)\s+(?!EncounterLobbyScheduleEvent\b|runEncounterLobbySchedule\b)/.test(
+        line
+      )
+    ) {
+      violations.push(`${where} encounter lobby schedule may export only its event entry`);
     }
     if (
       relative === bridgeFile &&

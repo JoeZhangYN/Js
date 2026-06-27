@@ -4,6 +4,10 @@ import { post } from "../dom/http.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
+import {
+  EncounterLobbyScheduleEvent,
+  runEncounterLobbySchedule,
+} from "./encounter-lobby-schedule.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
@@ -17,8 +21,6 @@ const EVENT_WIDGET_RESET_DAY = "widgetResetDay";
 const EVENT_WIDGET_CLICKED = "widgetClicked";
 const EVENT_WIDGET_TIMER_ELAPSED = "widgetTimerElapsed";
 const EVENT_WIDGET_NEWS_LOADED = "widgetNewsLoaded";
-
-let scheduledLobbyTick = null;
 
 export const EncounterEvent = Object.freeze({
   LOBBY_TICK: EVENT_LOBBY_TICK,
@@ -41,23 +43,16 @@ function continueLater() {
 }
 
 function claimLobby() {
-  if (scheduledLobbyTick) clearTimeout(scheduledLobbyTick);
-  scheduledLobbyTick = null;
+  runEncounterLobbySchedule({ type: EncounterLobbyScheduleEvent.CANCEL_NEXT_CHECK });
   return { claimed: true };
 }
 
 function scheduleNextLobbyTick(state, rerun) {
-  if (typeof rerun !== "function") return;
-  const delayMs = runEncounterPolicy({
-    type: EncounterPolicyEvent.NEXT_CHECK_DELAY,
+  runEncounterLobbySchedule({
+    type: EncounterLobbyScheduleEvent.SCHEDULE_NEXT_CHECK,
     state,
+    rerun,
   });
-  if (!Number.isFinite(delayMs) || delayMs <= 0) return;
-  if (scheduledLobbyTick) clearTimeout(scheduledLobbyTick);
-  scheduledLobbyTick = setTimeout(() => {
-    scheduledLobbyTick = null;
-    rerun();
-  }, delayMs);
 }
 
 function waitForNextCheck(state, event) {
