@@ -46,15 +46,22 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
-for (const required of [
+for (const required of ["runOptionBackupAutomation", "OptionBackupEvent", "STORAGE_KEYS.BACKUP"]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+
+for (const legacy of [
   "readOptionBackups",
   "saveCurrentOptionBackup",
   "restoreOptionBackup",
   "deleteOptionBackup",
-  "STORAGE_KEYS.BACKUP",
 ]) {
-  if (!ownerText.includes(required)) {
-    violations.push(`${owner.replaceAll("\\", "/")} must expose ${required}`);
+  if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} legacy ${legacy} export must stay private behind runOptionBackupAutomation(event)`
+    );
   }
 }
 

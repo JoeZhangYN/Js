@@ -13,12 +13,7 @@ import { OPTION_SCHEMA } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
 import { clearOption, readOption, setOption, writeOption } from "../state/option.js";
 import { clearStaminaLossLog, readStaminaLossLog } from "../state/stamina-loss-log.js";
-import {
-  deleteOptionBackup,
-  readOptionBackups,
-  restoreOptionBackup,
-  saveCurrentOptionBackup,
-} from "../state/option-backup.js";
+import { OptionBackupEvent, runOptionBackupAutomation } from "../state/option-backup.js";
 import { getRiddleStats, resetRiddleStats, ML_OUTCOMES } from "../state/riddle-stats.js";
 import { getRiddleLog, clearRiddleLog } from "../state/riddle-log.js";
 import {
@@ -762,7 +757,7 @@ export function optionBox() {
         "請輸入當前配置代號",
         "Please put in a name for the current configuration"
       ) || time(3);
-    const backups = readOptionBackups();
+    const backups = runOptionBackupAutomation({ type: OptionBackupEvent.READ });
     if (code in backups) {
       // 覆写同名配置
       if (
@@ -773,11 +768,11 @@ export function optionBox() {
           "Do you want to overwrite the configuration with the same name?"
         )
       ) {
-        deleteOptionBackup(code);
+        runOptionBackupAutomation({ type: OptionBackupEvent.DELETE, code });
         rmListItem(code);
       } else return;
     }
-    saveCurrentOptionBackup(code);
+    runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code });
     const li = gE(".hvAABackupList", optionBox).appendChild(cE("li"));
     li.textContent = code;
   };
@@ -788,7 +783,7 @@ export function optionBox() {
       "請輸入配置代號",
       "Please put in a name for a configuration"
     );
-    if (!restoreOptionBackup(code)) return;
+    if (!runOptionBackupAutomation({ type: OptionBackupEvent.RESTORE, code })) return;
     goto();
   };
   gE(".hvAADelete", optionBox).onclick = function () {
@@ -798,7 +793,7 @@ export function optionBox() {
       "請輸入配置代號",
       "Please put in a name for a configuration"
     );
-    if (!deleteOptionBackup(code)) return;
+    if (!runOptionBackupAutomation({ type: OptionBackupEvent.DELETE, code })) return;
     // goto();
     rmListItem(code);
   };
@@ -965,8 +960,9 @@ export function optionBox() {
       });
       gE(".hvAAQuickSite>table>tbody", optionBox).innerHTML = _html;
     }
-    if (Object.keys(readOptionBackups()).length) {
-      const backups = readOptionBackups();
+    const existingBackups = runOptionBackupAutomation({ type: OptionBackupEvent.READ });
+    if (Object.keys(existingBackups).length) {
+      const backups = existingBackups;
       _html = "";
       for (i in backups) {
         _html = `${_html}<li>${i}</li>`;
