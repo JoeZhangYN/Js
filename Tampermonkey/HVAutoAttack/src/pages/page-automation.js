@@ -15,6 +15,12 @@ import { runLobbyAutomation } from "./lobby-automation.js";
 import { runBattleAutomation } from "../battle/battle-automation.js";
 import { PageKind } from "./page-kind.js";
 
+const EVENT_PAGE_READY = "pageReady";
+
+export const PageAutomationEvent = Object.freeze({
+  PAGE_READY: EVENT_PAGE_READY,
+});
+
 function isGameAutomationPage(kind) {
   return kind === PageKind.RIDDLE || kind === PageKind.BATTLE || kind === PageKind.LOBBY;
 }
@@ -39,7 +45,9 @@ function runGamePageAutomation(kind) {
   }
 }
 
-export function runPageAutomation(kind) {
+export function runPageAutomation(event = { type: EVENT_PAGE_READY }) {
+  if (event.type !== EVENT_PAGE_READY) return undefined;
+  const { kind } = event;
   runEquipmentViewAutomation({ type: EquipmentViewEvent.PAGE_READY, kind });
   if (
     runCrossSiteEncounterNavigation({

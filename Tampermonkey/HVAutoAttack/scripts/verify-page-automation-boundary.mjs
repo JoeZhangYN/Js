@@ -29,18 +29,33 @@ function checkInit() {
     if (line.includes("runPageAutomation")) return;
     if (forbidden.some((re) => re.test(line))) {
       violations.push(
-        `${rel(initFile)}:${index + 1} page routing belongs in runPageAutomation(kind)`
+        `${rel(initFile)}:${index + 1} page routing belongs in runPageAutomation(event)`
       );
     }
   });
+  const initText = fs.readFileSync(initFile, "utf8");
+  if (!initText.includes("PageAutomationEvent.PAGE_READY")) {
+    violations.push(`${rel(initFile)} must report PageAutomationEvent.PAGE_READY`);
+  }
+  if (/runPageAutomation\(\s*kind\s*\)/.test(initText)) {
+    violations.push(`${rel(initFile)} must not call runPageAutomation(kind)`);
+  }
 }
 
 function checkEntry() {
   const text = fs.readFileSync(entryFile, "utf8");
-  if (!/export function runPageAutomation\(\s*kind\s*\)/.test(text)) {
-    violations.push(`${rel(entryFile)} must expose runPageAutomation(kind)`);
+  if (!/export const PageAutomationEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(entryFile)} must expose PageAutomationEvent`);
+  }
+  if (!/export function runPageAutomation\(\s*event\b/.test(text)) {
+    violations.push(`${rel(entryFile)} must expose runPageAutomation(event)`);
+  }
+  if (/export function runPageAutomation\(\s*kind\s*\)/.test(text)) {
+    violations.push(`${rel(entryFile)} must not expose raw kind-based page automation entry`);
   }
   for (const required of [
+    "PageAutomationEvent",
+    "EVENT_PAGE_READY",
     "runEquipmentViewAutomation",
     "runCrossSiteEncounterNavigation",
     "AppStartupEvent.GAME_PAGE_READY",

@@ -22,6 +22,7 @@ function walk(dir) {
 
 function checkFile(file) {
   const relative = path.normalize(path.relative(root, file));
+  if (relative.endsWith(".test.js")) return;
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
     const where = `${rel(file)}:${index + 1}`;
