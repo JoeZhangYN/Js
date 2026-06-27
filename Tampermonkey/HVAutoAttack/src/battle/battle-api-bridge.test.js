@@ -1,5 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleApiBridgeEvent, runBattleApiBridgeAutomation } from "./battle-api-bridge.js";
+
+const mocks = vi.hoisted(() => ({
+  runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("../state/option.js", () => ({
+  OptionEvent: Object.freeze({ READ: "read" }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
 
 function makeDeps() {
   const scripts = [];
@@ -12,6 +21,12 @@ function makeDeps() {
     mainUrl: "https://example.test/",
   };
 }
+
+beforeEach(() => {
+  window.sessionStorage.clear();
+  mocks.runOptionAutomation.mockReset();
+  mocks.runOptionAutomation.mockReturnValue({});
+});
 
 describe("runBattleApiBridgeAutomation", () => {
   it("installs battle api call and response scripts from one entry", () => {
@@ -30,5 +45,15 @@ describe("runBattleApiBridgeAutomation", () => {
 
   it("rejects unknown events", () => {
     expect(runBattleApiBridgeAutomation({ type: "unknown" }, makeDeps())).toBe(false);
+  });
+
+  it("reads API bridge delay options through the option entry on the default path", () => {
+    mocks.runOptionAutomation.mockReturnValue({ delay: 12, delay2: 34 });
+
+    expect(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL })).toBe(true);
+
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "read" });
+    expect(window.sessionStorage.delay).toBe("12");
+    expect(window.sessionStorage.delay2).toBe("34");
   });
 });

@@ -1,6 +1,6 @@
 import { cE, gE } from "../dom/query.js";
 import { MAIN_URL } from "../env.js";
-import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_INSTALL = "install";
 
@@ -82,7 +82,7 @@ function installBridge(deps) {
 export function runBattleApiBridgeAutomation(
   event = { type: EVENT_INSTALL },
   deps = {
-    readOption: () => g("option") || {},
+    readOption: () => runOptionAutomation({ type: OptionEvent.READ }) || {},
     sessionStorage: window.sessionStorage,
     createScript: () => cE("script"),
     appendHead: (script) => gE("head").appendChild(script),

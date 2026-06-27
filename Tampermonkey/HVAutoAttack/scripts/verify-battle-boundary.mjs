@@ -292,6 +292,14 @@ function checkApiBridgeEntry() {
   if (!/export function runBattleApiBridgeAutomation\(\s*event\b/.test(text)) {
     violations.push(`${rel(apiBridgeFile)} must expose runBattleApiBridgeAutomation(event)`);
   }
+  if (!text.includes("OptionEvent.READ")) {
+    violations.push(
+      `${rel(apiBridgeFile)} must read API bridge delay options through option entry`
+    );
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${rel(apiBridgeFile)} must not read API bridge delay options directly`);
+  }
   if (
     /\bexport\s+(?:function|const)\s+(?!BattleApiBridgeEvent\b|runBattleApiBridgeAutomation\b)/.test(
       text
