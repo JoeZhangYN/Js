@@ -2,8 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const srcDirs = ["src/battle", "src/pages"].map((p) => path.join(root, p));
+const srcDir = path.join(root, "src");
 const entry = path.normalize("src/monitor/battle-monitor-automation.js");
+const internalFiles = new Set(
+  [
+    entry,
+    "src/monitor/battle-info.js",
+    "src/monitor/drop-monitor.js",
+    "src/monitor/record-usage.js",
+  ].map((p) => path.normalize(p))
+);
 const violations = [];
 
 function rel(file) {
@@ -19,18 +27,24 @@ function walk(dir) {
 }
 
 function checkFile(file) {
+  const relative = path.normalize(path.relative(root, file));
+  if (relative.endsWith(".test.js")) return;
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("//")) return;
+    if (internalFiles.has(relative)) return;
     if (line.includes("runBattleMonitorAutomation") || line.includes("BattleMonitorEvent")) return;
     const where = `${rel(file)}:${index + 1}`;
     for (const name of ["battleInfo", "dropMonitor", "recordUsage", "recordUsage2"]) {
-      if (new RegExp(`\\b${name}\\b`).test(line)) {
+      if (new RegExp(`\\b${name}\\s*\\(`).test(line)) {
         violations.push(
           `${where} ${name} belongs behind runBattleMonitorAutomation(event)`
         );
       }
+    }
+    if (/from\s+["'](?:\.\.\/monitor\/|\.\.\/\.\.\/monitor\/|\.\/)(battle-info|drop-monitor|record-usage)\.js["']/.test(line)) {
+      violations.push(`${where} battle monitor internals are private; import runBattleMonitorAutomation(event)`);
     }
   });
 }
@@ -47,7 +61,7 @@ function checkEntry() {
   }
 }
 
-for (const dir of srcDirs) walk(dir);
+walk(srcDir);
 checkEntry();
 
 if (violations.length) {

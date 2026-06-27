@@ -36,7 +36,7 @@ export function battleInfo() {
   )}||${g("monsterAlive")}/${g("monsterAll")}`;
 }
 
-export function battleInfoType(type) {
+function battleInfoType(type) {
   switch (type) {
     case "ar":
       return "Arena";
