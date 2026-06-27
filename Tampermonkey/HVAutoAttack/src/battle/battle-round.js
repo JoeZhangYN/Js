@@ -8,6 +8,7 @@ const EVENT_RECORD_TYPE = "recordType";
 const EVENT_RECORD_COUNT = "recordCount";
 const EVENT_RECORD_SINGLE_ROUND = "recordSingleRound";
 const EVENT_SYNC_RUNTIME = "syncRuntime";
+const EVENT_CLASSIFY_TYPE = "classifyType";
 
 export const BattleRoundEvent = Object.freeze({
   READ_TYPE: EVENT_READ_TYPE,
@@ -15,10 +16,24 @@ export const BattleRoundEvent = Object.freeze({
   RECORD_COUNT: EVENT_RECORD_COUNT,
   RECORD_SINGLE_ROUND: EVENT_RECORD_SINGLE_ROUND,
   SYNC_RUNTIME: EVENT_SYNC_RUNTIME,
+  CLASSIFY_TYPE: EVENT_CLASSIFY_TYPE,
 });
 
 function readType() {
   return getValue(STORAGE_KEYS.ROUND_TYPE);
+}
+
+function classifyType(initializingText = "") {
+  if (!initializingText.match(/^Initializing/)) return "";
+  const arenaMatch =
+    initializingText.match(/^Initializing arena challenge/) && initializingText.match(/\d+/);
+  if (arenaMatch && arenaMatch[0] * 1 <= 35) return "ar";
+  if (arenaMatch && arenaMatch[0] * 1 >= 105) return "rb";
+  if (initializingText.match(/^Initializing random encounter/)) return "ba";
+  if (initializingText.match(/^Initializing Item World/)) return "iw";
+  if (initializingText.match(/^Initializing Grindfest/)) return "gr";
+  if (initializingText.match(/^Initializing The Tower/)) return "tw";
+  return "";
 }
 
 function recordType(roundType) {
@@ -43,6 +58,7 @@ function syncRuntime() {
 
 export function runBattleRoundAutomation(event = { type: EVENT_SYNC_RUNTIME }) {
   if (event.type === EVENT_READ_TYPE) return readType();
+  if (event.type === EVENT_CLASSIFY_TYPE) return classifyType(event.initializingText);
   if (event.type === EVENT_RECORD_TYPE) return recordType(event.roundType);
   if (event.type === EVENT_RECORD_COUNT) return recordCount(event.roundNow, event.roundAll);
   if (event.type === EVENT_RECORD_SINGLE_ROUND) return recordCount(1, 1);

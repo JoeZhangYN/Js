@@ -37,29 +37,17 @@ export function newRound() {
     (function () {
       const persistedRoundType = runBattleRoundAutomation({ type: BattleRoundEvent.READ_TYPE });
       if (persistedRoundType) return persistedRoundType;
-      let roundType;
       const temp = battleLog[battleLog.length - 1].textContent;
-      if (!temp.match(/^Initializing/)) {
-        roundType = "";
-      } else if (temp.match(/^Initializing arena challenge/) && temp.match(/\d+/)[0] * 1 <= 35) {
-        roundType = "ar";
-      } else if (temp.match(/^Initializing arena challenge/) && temp.match(/\d+/)[0] * 1 >= 105) {
-        roundType = "rb";
-      } else if (temp.match(/^Initializing random encounter/)) {
-        roundType = "ba";
+      const roundType = runBattleRoundAutomation({
+        type: BattleRoundEvent.CLASSIFY_TYPE,
+        initializingText: temp,
+      });
+      if (roundType === "ba") {
         if (g("option").encounter) {
           runEncounterAutomation({
             type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
           });
         }
-      } else if (temp.match(/^Initializing Item World/)) {
-        roundType = "iw";
-      } else if (temp.match(/^Initializing Grindfest/)) {
-        roundType = "gr";
-      } else if (temp.match(/^Initializing The Tower/)) {
-        roundType = "tw";
-      } else {
-        roundType = "";
       }
       return runBattleRoundAutomation({
         type: BattleRoundEvent.RECORD_TYPE,

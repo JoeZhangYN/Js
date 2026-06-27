@@ -21,6 +21,51 @@ describe("runBattleRoundAutomation", () => {
     expect(getValue(STORAGE_KEYS.ROUND_TYPE)).toBe("ar");
   });
 
+  it("classifies battle type from initialization text in one place", () => {
+    expect(
+      runBattleRoundAutomation({
+        type: BattleRoundEvent.CLASSIFY_TYPE,
+        initializingText: "Initializing arena challenge #5 (Round 1 / 5)",
+      })
+    ).toBe("ar");
+    expect(
+      runBattleRoundAutomation({
+        type: BattleRoundEvent.CLASSIFY_TYPE,
+        initializingText: "Initializing arena challenge #105 (Round 1 / 1)",
+      })
+    ).toBe("rb");
+    expect(
+      runBattleRoundAutomation({
+        type: BattleRoundEvent.CLASSIFY_TYPE,
+        initializingText: "Initializing random encounter",
+      })
+    ).toBe("ba");
+    expect(
+      runBattleRoundAutomation({
+        type: BattleRoundEvent.CLASSIFY_TYPE,
+        initializingText: "Initializing Item World",
+      })
+    ).toBe("iw");
+    expect(
+      runBattleRoundAutomation({
+        type: BattleRoundEvent.CLASSIFY_TYPE,
+        initializingText: "Initializing Grindfest",
+      })
+    ).toBe("gr");
+    expect(
+      runBattleRoundAutomation({
+        type: BattleRoundEvent.CLASSIFY_TYPE,
+        initializingText: "Initializing The Tower",
+      })
+    ).toBe("tw");
+    expect(
+      runBattleRoundAutomation({
+        type: BattleRoundEvent.CLASSIFY_TYPE,
+        initializingText: "You hit the monster",
+      })
+    ).toBe("");
+  });
+
   it("records round counts and syncs runtime from persisted state", () => {
     runBattleRoundAutomation({
       type: BattleRoundEvent.RECORD_COUNT,

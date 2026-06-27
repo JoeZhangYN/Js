@@ -53,6 +53,22 @@ for (const required of ["READ_TYPE", "RECORD_TYPE", "RECORD_COUNT", "SYNC_RUNTIM
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required} event`);
   }
 }
+if (!ownerText.includes("CLASSIFY_TYPE")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must expose CLASSIFY_TYPE event`);
+}
+
+const newRoundText = fs.readFileSync(path.join(root, "src/battle/new-round.js"), "utf8");
+for (const forbidden of [
+  "Initializing arena challenge",
+  "Initializing random encounter",
+  "Initializing Item World",
+  "Initializing Grindfest",
+  "Initializing The Tower",
+]) {
+  if (newRoundText.includes(forbidden)) {
+    violations.push(`src/battle/new-round.js must classify round type through battle-round`);
+  }
+}
 
 if (violations.length) {
   console.error("[verify-battle-round-boundary] FAIL");
