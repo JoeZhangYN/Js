@@ -9,8 +9,11 @@ import { setAlarm } from "../alarm/alarm.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import { fixMonsterStatus, pauseChange } from "./main-loop.js";
 import { parseMonsterRoster, buildMonsterStatus } from "./log-parser.js";
-import { renderResistPanel } from "../monitor/monster-resist-panel.js";
 import { observeBattle } from "../state/auto-tune.js";
+import {
+  MonsterKnowledgeEvent,
+  runMonsterKnowledgeAutomation,
+} from "./monster-knowledge-automation.js";
 
 export function newRound() {
   // F auto-tune：上一回合结束 → 观测用药数 + 复位计数
@@ -131,5 +134,5 @@ export function newRound() {
     T2: 0,
     T1: 0,
   });
-  renderResistPanel(); // C: 每轮刷新九抗面板（首轮 + reloader 切轮的公共入口）
+  runMonsterKnowledgeAutomation({ type: MonsterKnowledgeEvent.ROUND_STARTED });
 }

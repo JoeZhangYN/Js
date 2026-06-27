@@ -3,12 +3,13 @@ import { gE, cE } from "../dom/query.js";
 import { setValue, getValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
-import { renderResistPanel } from "../monitor/monster-resist-panel.js";
 import { reloader } from "./reloader.js";
 import { newRound } from "./new-round.js";
 import { main, pauseChange } from "./main-loop.js";
-import { syncMonsterDb } from "./monster-db-sync.js";
-import { setupScanWatch } from "./monster-db-scan.js";
+import {
+  MonsterKnowledgeEvent,
+  runMonsterKnowledgeAutomation,
+} from "./monster-knowledge-automation.js";
 
 function setupPauseControls() {
   const box2 = gE("#battle_main").appendChild(cE("div"));
@@ -42,8 +43,7 @@ function initBattleRuntime() {
 }
 
 function setupMonsterKnowledge() {
-  syncMonsterDb();
-  setupScanWatch(renderResistPanel);
+  runMonsterKnowledgeAutomation({ type: MonsterKnowledgeEvent.BATTLE_STARTED });
 }
 
 function recordBattleCode() {
