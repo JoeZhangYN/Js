@@ -388,6 +388,122 @@ function CursorHover() { if ( cursor >= 0 ) SetTarget(cursor)(); }
 
 function ClearTarget() { target = false; }
 
+function ParseMonsterbationRegex(value) {
+    if ( value === false || value instanceof RegExp ) return value;
+    if ( typeof value != 'string' ) throw new Error('Invalid config value');
+    value = value.trim();
+    if ( value == 'false' ) return false;
+    if ( value[0] != '/' ) throw new Error('Invalid regexp');
+    var escaped = false;
+    for ( var i = 1; i < value.length; i++ ) {
+        if ( escaped ) escaped = false;
+        else if ( value[i] == '\\' ) escaped = true;
+        else if ( value[i] == '/' ) return new RegExp(value.slice(1, i), value.slice(i + 1)); }
+    throw new Error('Invalid regexp');
+}
+
+function ParseMonsterbationAction(value) {
+    if ( value === false || typeof value == 'function' ) return value;
+    if ( typeof value != 'string' ) throw new Error('Invalid action');
+    value = value.trim();
+    if ( value == 'false' ) return false;
+    var index = 0;
+
+    function skip() { while ( /\s/.test(value[index]) ) index++; }
+    function consume(expected) {
+        skip();
+        if ( value[index] != expected ) throw new Error('Invalid action');
+        index++; }
+    function parseIdentifier() {
+        skip();
+        var match = /^[A-Za-z_][A-Za-z0-9_]*/.exec(value.slice(index));
+        if ( !match ) throw new Error('Invalid action');
+        index += match[0].length;
+        return match[0]; }
+    function parseString() {
+        skip();
+        var quote = value[index];
+        if ( quote != "'" && quote != '"' ) throw new Error('Invalid action');
+        index++;
+        var result = '', escaped = false;
+        while ( index < value.length ) {
+            var char = value[index++];
+            if ( escaped ) { result += char; escaped = false; }
+            else if ( char == '\\' ) escaped = true;
+            else if ( char == quote ) return result;
+            else result += char; }
+        throw new Error('Invalid action'); }
+    function parseNumber() {
+        skip();
+        var match = /^\d+/.exec(value.slice(index));
+        if ( !match ) throw new Error('Invalid action');
+        index += match[0].length;
+        return parseInt(match[0]); }
+    function parseArray() {
+        var result = [];
+        consume('[');
+        skip();
+        if ( value[index] == ']' ) { index++; return result; }
+        while ( index < value.length ) {
+            result.push(parseExpression());
+            skip();
+            if ( value[index] == ']' ) { index++; return result; }
+            consume(','); }
+        throw new Error('Invalid action'); }
+    function parseArgument() {
+        skip();
+        if ( value[index] == "'" || value[index] == '"' ) return parseString();
+        if ( value[index] == '[' ) return parseArray();
+        if ( /\d/.test(value[index]) ) return parseNumber();
+        var identifier = parseIdentifier();
+        if ( identifier == 'true' ) return true;
+        if ( identifier == 'false' ) return false;
+        if ( identifier == 'damage' ) return damage;
+        if ( value[index] == '(' ) return applyCall(identifier, parseArguments());
+        return lookupAction(identifier); }
+    function parseArguments() {
+        var args = [];
+        consume('(');
+        skip();
+        if ( value[index] == ')' ) { index++; return args; }
+        while ( index < value.length ) {
+            args.push(parseArgument());
+            skip();
+            if ( value[index] == ')' ) { index++; return args; }
+            consume(','); }
+        throw new Error('Invalid action'); }
+    function lookupAction(name) {
+        var actions = { Nothing: Nothing, NextRound: NextRound, ToggleHover: ToggleHover, Drops: Drops,
+                        CursorUp: CursorUp, CursorDown: CursorDown, CursorTarget: CursorTarget,
+                        CursorHover: CursorHover, ClearTarget: ClearTarget, Settings: Settings };
+        if ( !actions[name] ) throw new Error('Invalid action');
+        return actions[name]; }
+    function applyCall(name, args) {
+        if ( name == 'Cast' && args.length == 1 ) return Cast(args[0]);
+        if ( name == 'Use' && args.length == 1 ) return Use(args[0]);
+        if ( name == 'Toggle' && args.length == 1 ) return Toggle(args[0]);
+        if ( name == 'TargetMonster' && args.length == 1 ) return TargetMonster(args[0]);
+        if ( name == 'Strongest' && args.length == 1 && args[0] instanceof Array ) return Strongest(args[0]);
+        if ( name == 'HoverAction' && (args.length == 1 || args.length == 2) ) return HoverAction(args[0], args[1]);
+        if ( name == 'Impulse' && args.length == 1 ) return Impulse(args[0]);
+        throw new Error('Invalid action'); }
+    function parseExpression() {
+        var name = parseIdentifier();
+        skip();
+        if ( value[index] == '(' ) return applyCall(name, parseArguments());
+        return lookupAction(name); }
+
+    var action = parseExpression();
+    skip();
+    if ( index != value.length ) throw new Error('Invalid action');
+    return action;
+}
+
+function ParseMonsterbationConfigValue(name, value) {
+    if ( name == 'alertBuffs' || name == 'monsterKeywords' ) return ParseMonsterbationRegex(value);
+    return ParseMonsterbationAction(value);
+}
+
 function Settings() {
     var mainpane, style, form, div, changed = false, p = 0, s = 0, isk = '', select, option, index = 0;
     if ( !(mainpane = document.getElementById('mainpane')) ) return;
@@ -1015,7 +1131,7 @@ function Enhance() {
                        'hoverAction', 'hoverShiftAction', 'hoverCtrlAction', 'hoverAltAction'];
         for ( var i = 0; i < evals.length; i++ ) {
             try {
-                cfg[evals[i]] = eval(cfg[evals[i]]); }
+                cfg[evals[i]] = ParseMonsterbationConfigValue(evals[i], cfg[evals[i]]); }
             catch ( error ) {
                 cfg[evals[i]] = false;
                 alert('非法 ' + evals[i] + ' 格式. 设置停用'); }}
