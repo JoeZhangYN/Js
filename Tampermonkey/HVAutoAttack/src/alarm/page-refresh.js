@@ -17,7 +17,7 @@ export const PageRefreshEvent = Object.freeze({
   GAME_PAGE_READY: EVENT_GAME_PAGE_READY,
 });
 
-export function planPageRefreshDelayMs(option, { jitter = Math.random() } = {}) {
+function planPageRefreshDelayMs(option, { jitter = Math.random() } = {}) {
   if (!option || !option.pageRefresh) return;
   const minutes = Number(option.pageRefreshMinutes) || 30;
   if (minutes <= 0) return;
@@ -26,10 +26,11 @@ export function planPageRefreshDelayMs(option, { jitter = Math.random() } = {}) 
   return (minutes + jitterMinutes) * 60 * 1000;
 }
 
-export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }) {
+export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }, deps = {}) {
   if (event.type !== EVENT_GAME_PAGE_READY) return false;
-  const delayMs = planPageRefreshDelayMs(event.option);
+  const delayMs = planPageRefreshDelayMs(event.option, deps);
   if (!delayMs) return false;
-  scheduleReload(delayMs / 1000);
+  const reload = deps.scheduleReload || scheduleReload;
+  reload(delayMs / 1000);
   return true;
 }

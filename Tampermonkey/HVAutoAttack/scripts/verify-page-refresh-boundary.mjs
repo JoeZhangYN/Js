@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/alarm/page-refresh.js");
+const testFile = path.normalize("src/alarm/page-refresh.test.js");
 const pageAutomation = path.normalize("src/pages/page-automation.js");
 const violations = [];
 
@@ -30,8 +31,14 @@ function checkFile(file) {
     if (/\bsetupPageRefresh\b/.test(line)) {
       violations.push(`${where} legacy setupPageRefresh is forbidden`);
     }
+    if (/\bexport\s+function\s+planPageRefreshDelayMs\s*\(/.test(line)) {
+      violations.push(
+        `${where} page refresh delay planning must stay private behind runPageRefreshAutomation(event)`
+      );
+    }
     if (
       relative !== owner &&
+      relative !== testFile &&
       relative !== pageAutomation &&
       /\brunPageRefreshAutomation\b/.test(line)
     ) {
