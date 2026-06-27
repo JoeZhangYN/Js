@@ -6,7 +6,10 @@ import {
   CrossSiteEncounterEvent,
   runCrossSiteEncounterNavigation,
 } from "./cross-site-encounter-navigation.js";
-import { runEquipmentViewAutomation } from "./equipment-view-automation.js";
+import {
+  EquipmentViewEvent,
+  runEquipmentViewAutomation,
+} from "./equipment-view-automation.js";
 import { runRiddleAutomation } from "./riddle-automation.js";
 import { runLobbyAutomation } from "./lobby-automation.js";
 import { runBattleAutomation } from "../battle/battle-automation.js";
@@ -37,7 +40,7 @@ function runGamePageAutomation(kind) {
 }
 
 export function runPageAutomation(kind) {
-  runEquipmentViewAutomation(kind);
+  runEquipmentViewAutomation({ type: EquipmentViewEvent.PAGE_READY, kind });
   if (
     runCrossSiteEncounterNavigation({
       type: CrossSiteEncounterEvent.PAGE_READY,

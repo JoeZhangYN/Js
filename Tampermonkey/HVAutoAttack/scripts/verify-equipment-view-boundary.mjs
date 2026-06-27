@@ -28,7 +28,7 @@ function checkInit() {
     if (line.includes("runEquipmentViewAutomation")) return;
     if (forbidden.some((re) => re.test(line))) {
       violations.push(
-        `${rel(initFile)}:${index + 1} equipment view workflow belongs in runEquipmentViewAutomation(kind)`
+        `${rel(initFile)}:${index + 1} equipment view workflow belongs in runEquipmentViewAutomation(event)`
       );
     }
   });
@@ -36,10 +36,18 @@ function checkInit() {
 
 function checkEntry() {
   const text = fs.readFileSync(entryFile, "utf8");
-  if (!/export function runEquipmentViewAutomation\(\s*kind\s*\)/.test(text)) {
-    violations.push(`${rel(entryFile)} must expose runEquipmentViewAutomation(kind)`);
+  if (!/export const EquipmentViewEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(entryFile)} must expose EquipmentViewEvent`);
+  }
+  if (!/export function runEquipmentViewAutomation\(\s*event\b/.test(text)) {
+    violations.push(`${rel(entryFile)} must expose runEquipmentViewAutomation(event)`);
+  }
+  if (/export function runEquipmentViewAutomation\(\s*kind\s*\)/.test(text)) {
+    violations.push(`${rel(entryFile)} must not expose raw kind-based equipment entry`);
   }
   for (const required of [
+    "EquipmentViewEvent",
+    "EVENT_PAGE_READY",
     "runForgeCostEnhancement",
     "runEquipPercentileEnhancement",
     "PageKind.SHOWEQUIP",
@@ -47,6 +55,16 @@ function checkEntry() {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} equipment workflow wiring`);
     }
+  }
+}
+
+function checkPageAutomation() {
+  const text = fs.readFileSync(path.join(root, "src/pages/page-automation.js"), "utf8");
+  if (!text.includes("EquipmentViewEvent.PAGE_READY")) {
+    violations.push("src/pages/page-automation.js must report EquipmentViewEvent.PAGE_READY");
+  }
+  if (/runEquipmentViewAutomation\(\s*kind\s*\)/.test(text)) {
+    violations.push("src/pages/page-automation.js must not call equipment view automation with raw kind");
   }
 }
 
@@ -90,6 +108,7 @@ function checkDeletedSetupEntrypoints() {
 
 checkInit();
 checkEntry();
+checkPageAutomation();
 checkDeletedLivePath();
 checkDeletedSetupEntrypoints();
 

@@ -4,16 +4,46 @@ import { PageKind } from "./page-kind.js";
 import { runEquipPercentileEnhancement } from "./equip-percentile-dispatcher.js";
 import { runForgeCostEnhancement } from "./showequip-forge-cost.js";
 
-function shouldRunForgeCost(kind) {
-  return kind === PageKind.SHOWEQUIP && isOptionOn("forgeCostShow");
+const EVENT_PAGE_READY = "pageReady";
+
+export const EquipmentViewEvent = Object.freeze({
+  PAGE_READY: EVENT_PAGE_READY,
+});
+
+function makeDeps(deps) {
+  return {
+    getOption: deps.getOption || getOption,
+    isOptionOn: deps.isOptionOn || isOptionOn,
+    runEquipPercentileEnhancement:
+      deps.runEquipPercentileEnhancement || runEquipPercentileEnhancement,
+    runForgeCostEnhancement: deps.runForgeCostEnhancement || runForgeCostEnhancement,
+  };
 }
 
-function shouldRunEquipPercentile() {
-  const mode = getOption("equipPercentileMode", "off");
+function shouldRunForgeCost(kind, deps) {
+  return kind === PageKind.SHOWEQUIP && deps.isOptionOn("forgeCostShow");
+}
+
+function shouldRunEquipPercentile(deps) {
+  const mode = deps.getOption("equipPercentileMode", "off");
   return mode && mode !== "off";
 }
 
-export function runEquipmentViewAutomation(kind) {
-  if (shouldRunForgeCost(kind)) runForgeCostEnhancement();
-  if (shouldRunEquipPercentile()) runEquipPercentileEnhancement();
+export function runEquipmentViewAutomation(
+  event = { type: EVENT_PAGE_READY },
+  deps = {}
+) {
+  if (event.type !== EVENT_PAGE_READY) return false;
+  const runtime = makeDeps(deps);
+  const { kind } = event;
+  let ran = false;
+  if (shouldRunForgeCost(kind, runtime)) {
+    runtime.runForgeCostEnhancement();
+    ran = true;
+  }
+  if (shouldRunEquipPercentile(runtime)) {
+    runtime.runEquipPercentileEnhancement();
+    ran = true;
+  }
+  return ran;
 }
