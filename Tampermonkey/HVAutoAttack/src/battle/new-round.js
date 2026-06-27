@@ -1,7 +1,5 @@
 // 新一轮战斗初始化：怪物计数 / 轮次识别。
 import { gE } from "../dom/query.js";
-import { setValue, getValue } from "../state/storage.js";
-import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { goto } from "../core/navigate.js";
@@ -15,6 +13,7 @@ import {
 } from "./monster-knowledge-automation.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
+import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
 
 export function newRound() {
   // F auto-tune：上一回合结束 → 观测用药数 + 复位计数
@@ -36,9 +35,8 @@ export function newRound() {
   g(
     "roundType",
     (function () {
-      if (getValue(STORAGE_KEYS.ROUND_TYPE)) {
-        return getValue(STORAGE_KEYS.ROUND_TYPE);
-      }
+      const persistedRoundType = runBattleRoundAutomation({ type: BattleRoundEvent.READ_TYPE });
+      if (persistedRoundType) return persistedRoundType;
       let roundType;
       const temp = battleLog[battleLog.length - 1].textContent;
       if (!temp.match(/^Initializing/)) {
@@ -63,8 +61,10 @@ export function newRound() {
       } else {
         roundType = "";
       }
-      setValue(STORAGE_KEYS.ROUND_TYPE, roundType);
-      return roundType;
+      return runBattleRoundAutomation({
+        type: BattleRoundEvent.RECORD_TYPE,
+        roundType,
+      });
     })()
   );
   if (/You lose \d+ Stamina/.test(battleLog[0].textContent)) {
@@ -101,15 +101,15 @@ export function newRound() {
       roundNow = 1;
       roundAll = 1;
     }
-    setValue(STORAGE_KEYS.ROUND_NOW, roundNow);
-    setValue(STORAGE_KEYS.ROUND_ALL, roundAll);
+    runBattleRoundAutomation({
+      type: BattleRoundEvent.RECORD_COUNT,
+      roundNow,
+      roundAll,
+    });
   } else if (runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY })) {
-    setValue(STORAGE_KEYS.ROUND_NOW, 1);
-    setValue(STORAGE_KEYS.ROUND_ALL, 1);
+    runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_SINGLE_ROUND });
   }
-  g("roundNow", getValue(STORAGE_KEYS.ROUND_NOW) * 1);
-  g("roundAll", getValue(STORAGE_KEYS.ROUND_ALL) * 1);
-  g("roundLeft", getValue(STORAGE_KEYS.ROUND_ALL) - g("roundNow"));
+  runBattleRoundAutomation({ type: BattleRoundEvent.SYNC_RUNTIME });
   g("skillOTOS", {
     OFC: 0,
     FRD: 0,
