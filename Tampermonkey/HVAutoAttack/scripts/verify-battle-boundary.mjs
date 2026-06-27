@@ -5,6 +5,7 @@ const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const battleFile = path.join(root, "src/battle/battle-automation.js");
 const reloaderFile = path.join(root, "src/battle/reloader.js");
+const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
 
 function rel(file) {
@@ -64,9 +65,22 @@ function checkRoundStartCallers() {
   }
 }
 
+function checkRoundStartEntry() {
+  const text = fs.readFileSync(roundStartFile, "utf8");
+  if (!/export function runBattleRoundStartAutomation\(/.test(text)) {
+    violations.push(`${rel(roundStartFile)} must expose runBattleRoundStartAutomation(event)`);
+  }
+  if (/\b(?:export\s+)?function\s+newRound\s*\(/.test(text)) {
+    violations.push(
+      `${rel(roundStartFile)} legacy newRound() bridge must stay deleted; use runBattleRoundStartAutomation(event)`
+    );
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
+checkRoundStartEntry();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");

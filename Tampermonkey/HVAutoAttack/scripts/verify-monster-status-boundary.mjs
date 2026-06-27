@@ -6,7 +6,7 @@ const srcDir = path.join(root, "src/battle");
 const entry = path.normalize("src/battle/monster-status-automation.js");
 const hpImpl = path.normalize("src/battle/attack.js");
 const parserImpl = path.normalize("src/battle/log-parser.js");
-const newRound = path.normalize("src/battle/new-round.js");
+const roundStart = path.normalize("src/battle/new-round.js");
 const reloader = path.normalize("src/battle/reloader.js");
 const violations = [];
 
@@ -33,7 +33,7 @@ function checkFile(file) {
       violations.push(`${where} legacy fixMonsterStatus path is forbidden`);
     }
     if (
-      (relative === newRound || relative === reloader) &&
+      (relative === roundStart || relative === reloader) &&
       /btm1|btm2|nbardead|g\(\s*["'](?:monsterAll|monsterAlive|bossAll|bossAlive)["']\s*,/.test(
         line
       ) &&

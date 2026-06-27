@@ -22,7 +22,7 @@ export function loadCdState() {
   g("skillLastUsed", getValue(STORAGE_KEYS.SKILL_LAST_USED, true) || {});
 }
 
-/** newRound 末尾调用，原子持久化避免 GM_* 写抖动。 */
+/** round-start 入口末尾调用，原子持久化避免 GM_* 写抖动。 */
 export function persistCdState() {
   setValue(STORAGE_KEYS.GLOBAL_TURN, g("globalTurn") || 0);
   setValue(STORAGE_KEYS.SKILL_LAST_USED, g("skillLastUsed") || {});

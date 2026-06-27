@@ -90,7 +90,3 @@ export function runBattleRoundStartAutomation(event = { type: EVENT_ROUND_STARTE
   startRound();
   return true;
 }
-
-export function newRound() {
-  return runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
-}
