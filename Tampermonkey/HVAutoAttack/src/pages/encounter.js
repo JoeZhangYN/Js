@@ -84,6 +84,25 @@ function executeEncounterActivation(state) {
   return true;
 }
 
+function executeWidgetNavigation(outcome) {
+  if (outcome?.action === "navigate") {
+    runNavigationAutomation({
+      type: NavigationEvent.OPEN_URL,
+      url: outcome.href,
+    });
+    return { ...outcome, action: "navigated", handled: true };
+  }
+  if (outcome?.action === "open") {
+    runNavigationAutomation({
+      type: NavigationEvent.OPEN_URL,
+      url: outcome.href,
+      newTab: true,
+    });
+    return { ...outcome, action: "opened", handled: true };
+  }
+  return outcome;
+}
+
 async function runLobbyTick(event) {
   syncDateNow();
   let state = runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
@@ -123,7 +142,7 @@ export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
     return { claimed: false };
   }
   if (event.type?.startsWith("widget")) {
-    return planEncounterWidgetEvent(event);
+    return executeWidgetNavigation(planEncounterWidgetEvent(event));
   }
   return runLobbyTick(event);
 }

@@ -661,18 +661,6 @@ const bindRe = function (re, ctx) {
     re.json = outcome.state;
     ctx.config.set('re', re.json, 'hvut_');
   };
-  const executeEncounterAction = function (outcome) {
-    applyEncounterState(outcome);
-    if (outcome?.action === 'navigate') {
-      location.href = outcome.href;
-      return true;
-    }
-    if (outcome?.action === 'open') {
-      window.open(outcome.href, '_blank');
-      return true;
-    }
-    return false;
-  };
   re.init = function () {
     if (re.inited) {
       return;
@@ -802,7 +790,7 @@ const bindRe = function (re, ctx) {
     const eventpane = $id('eventpane', doc)?.innerHTML;
     const outcome = runEncounter({ type: encounterEvent().WIDGET_NEWS_LOADED, state: re.json, eventpane, engage, pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
     applyEncounterState(outcome);
-    if (executeEncounterAction(outcome)) {
+    if (outcome?.handled) {
       return;
     }
     if (outcome?.action === 'reset') {
@@ -814,7 +802,8 @@ const bindRe = function (re, ctx) {
   };
   re.engage = function () {
     const outcome = runEncounter({ type: encounterEvent().WIDGET_ENGAGE, state: re.json, pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
-    if (executeEncounterAction(outcome) && re.type === 'eh') {
+    applyEncounterState(outcome);
+    if (outcome?.handled && re.type === 'eh') {
       re.start();
     }
   };

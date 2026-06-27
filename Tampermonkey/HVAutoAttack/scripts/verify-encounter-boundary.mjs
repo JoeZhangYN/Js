@@ -168,6 +168,16 @@ function checkFile(file) {
         `${where} hv-utils must call HVAA_encounter.run(event), not encounter policy helpers`
       );
     }
+    if (
+      relative === hvUtilsFile &&
+      /\bexecuteEncounterAction\b|outcome\?\.action === ['"](?:navigate|open)['"]|location\.href = outcome\.href|window\.open\(outcome\.href/.test(
+        line
+      )
+    ) {
+      violations.push(
+        `${where} encounter widget navigation effects belong in runEncounterAutomation(event)`
+      );
+    }
   });
 }
 
