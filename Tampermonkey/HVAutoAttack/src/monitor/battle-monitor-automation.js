@@ -1,11 +1,10 @@
 // 战斗监控编排入口：HUD、使用统计、掉落记录统一从这里进入。
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { BattleHudEvent, runBattleHudAutomation } from "./battle-info.js";
 import { BattleDropEvent, runBattleDropAutomation } from "./drop-monitor.js";
 import { runBattleUsageAutomation } from "./record-usage.js";
-import { runBattleReportAutomation } from "./battle-report.js";
+import { BattleReportEvent, runBattleReportAutomation } from "./battle-report.js";
 
 const EVENT_BATTLE_STARTED = "battleStarted";
 const EVENT_HUD_REFRESH = "hudRefresh";
@@ -66,11 +65,10 @@ function recordCompletion() {
 
 function recordBattleStarted() {
   runBattleReportAutomation({
-    type: EVENT_BATTLE_STARTED,
+    type: BattleReportEvent.BATTLE_STARTED,
     recordEach: g("option").recordEach,
     roundType: g("roundType"),
     roundAll: g("roundAll"),
-    recordLabel: runTimeAutomation({ type: TimeEvent.UTC_MONTH_DAY_LABEL }),
   });
 }
 
@@ -86,13 +84,13 @@ export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) 
   } else if (event.type === EVENT_COMPLETION_REACHED) {
     recordCompletion();
   } else if (event.type === EVENT_READ_DROP_REPORT) {
-    return runBattleReportAutomation({ type: EVENT_READ_DROP_REPORT });
+    return runBattleReportAutomation({ type: BattleReportEvent.READ_DROP_REPORT });
   } else if (event.type === EVENT_READ_USAGE_REPORT) {
-    return runBattleReportAutomation({ type: EVENT_READ_USAGE_REPORT });
+    return runBattleReportAutomation({ type: BattleReportEvent.READ_USAGE_REPORT });
   } else if (event.type === EVENT_CLEAR_DROP_REPORT) {
-    runBattleReportAutomation({ type: EVENT_CLEAR_DROP_REPORT });
+    runBattleReportAutomation({ type: BattleReportEvent.CLEAR_DROP_REPORT });
   } else if (event.type === EVENT_CLEAR_USAGE_REPORT) {
-    runBattleReportAutomation({ type: EVENT_CLEAR_USAGE_REPORT });
+    runBattleReportAutomation({ type: BattleReportEvent.CLEAR_USAGE_REPORT });
   }
   return undefined;
 }

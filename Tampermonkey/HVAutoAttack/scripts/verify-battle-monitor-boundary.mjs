@@ -75,19 +75,38 @@ function checkEntry() {
     violations.push(`${entry.replaceAll("\\", "/")} must expose runBattleMonitorAutomation(event)`);
   }
   if (!text.includes("runBattleHudAutomation") || !text.includes("BattleHudEvent.REFRESH")) {
-    violations.push(`${entry.replaceAll("\\", "/")} must route HUD refresh through runBattleHudAutomation(event)`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must route HUD refresh through runBattleHudAutomation(event)`
+    );
   }
   if (/\brefreshBattleHud\b/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not call raw refreshBattleHud()`);
   }
-  if (!text.includes("runBattleDropAutomation") || !text.includes("BattleDropEvent.COMPLETION_REACHED")) {
-    violations.push(`${entry.replaceAll("\\", "/")} must route drop recording through runBattleDropAutomation(event)`);
+  if (
+    !text.includes("runBattleDropAutomation") ||
+    !text.includes("BattleDropEvent.COMPLETION_REACHED")
+  ) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must route drop recording through runBattleDropAutomation(event)`
+    );
   }
   if (!text.includes("runBattleUsageAutomation")) {
-    violations.push(`${entry.replaceAll("\\", "/")} must route battle usage through runBattleUsageAutomation(event)`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must route battle usage through runBattleUsageAutomation(event)`
+    );
   }
   if (!text.includes("runBattleReportAutomation")) {
-    violations.push(`${entry.replaceAll("\\", "/")} must route battle reports through runBattleReportAutomation(event)`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must route battle reports through runBattleReportAutomation(event)`
+    );
+  }
+  if (!text.includes("BattleReportEvent")) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must report battle-report events through BattleReportEvent`
+    );
+  }
+  if (/\brecordLabel\b|\bUTC_MONTH_DAY_LABEL\b/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must not own battle report date labels`);
   }
   for (const required of [
     "BATTLE_STARTED",
@@ -113,14 +132,19 @@ function checkUsageImplementation() {
   if (!/export function runBattleUsageAutomation\(/.test(text)) {
     violations.push(`${rel(usageFile)} must expose only runBattleUsageAutomation(event)`);
   }
-  if (/\brecordUsage\s*\(/.test(entryText) || /\b(?:export\s+)?function\s+recordUsage\s*\(/.test(text)) {
+  if (
+    /\brecordUsage\s*\(/.test(entryText) ||
+    /\b(?:export\s+)?function\s+recordUsage\s*\(/.test(text)
+  ) {
     violations.push(
       `${rel(usageFile)} legacy recordUsage() bridge must stay deleted; use runBattleUsageAutomation(event)`
     );
   }
   for (const legacy of ["recordBattleActionUsage", "recordCompletedBattleUsage"]) {
     if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(text)) {
-      violations.push(`${rel(usageFile)} legacy ${legacy} export must stay private behind runBattleUsageAutomation(event)`);
+      violations.push(
+        `${rel(usageFile)} legacy ${legacy} export must stay private behind runBattleUsageAutomation(event)`
+      );
     }
   }
   if (/\b(?:export\s+)?function\s+recordUsage2\s*\(/.test(text)) {
@@ -134,8 +158,13 @@ function checkDeletedDropMonitorEntrypoint() {
   const dropFile = path.join(root, "src/monitor/drop-monitor.js");
   const entryText = fs.readFileSync(path.join(root, entry), "utf8");
   const dropText = fs.readFileSync(dropFile, "utf8");
-  if (/\bdropMonitor\s*\(/.test(entryText) || /\b(?:export\s+)?function\s+dropMonitor\s*\(/.test(dropText)) {
-    violations.push(`${rel(dropFile)} legacy dropMonitor() bridge must stay deleted; use runBattleDropAutomation(event)`);
+  if (
+    /\bdropMonitor\s*\(/.test(entryText) ||
+    /\b(?:export\s+)?function\s+dropMonitor\s*\(/.test(dropText)
+  ) {
+    violations.push(
+      `${rel(dropFile)} legacy dropMonitor() bridge must stay deleted; use runBattleDropAutomation(event)`
+    );
   }
   if (!/export const BattleDropEvent\s*=\s*Object\.freeze\(/.test(dropText)) {
     violations.push(`${rel(dropFile)} must expose BattleDropEvent`);
@@ -144,7 +173,9 @@ function checkDeletedDropMonitorEntrypoint() {
     violations.push(`${rel(dropFile)} must expose runBattleDropAutomation(event)`);
   }
   if (/export function recordBattleDrops\(/.test(dropText)) {
-    violations.push(`${rel(dropFile)} must keep recordBattleDrops private behind runBattleDropAutomation(event)`);
+    violations.push(
+      `${rel(dropFile)} must keep recordBattleDrops private behind runBattleDropAutomation(event)`
+    );
   }
   if (/\brecordBattleDrops\s*\(/.test(entryText)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not call raw recordBattleDrops()`);
@@ -155,8 +186,13 @@ function checkDeletedBattleInfoEntrypoint() {
   const hudFile = path.join(root, "src/monitor/battle-info.js");
   const entryText = fs.readFileSync(path.join(root, entry), "utf8");
   const hudText = fs.readFileSync(hudFile, "utf8");
-  if (/\bbattleInfo\s*\(/.test(entryText) || /\b(?:export\s+)?function\s+battleInfo\s*\(/.test(hudText)) {
-    violations.push(`${rel(hudFile)} legacy battleInfo() bridge must stay deleted; use runBattleHudAutomation(event)`);
+  if (
+    /\bbattleInfo\s*\(/.test(entryText) ||
+    /\b(?:export\s+)?function\s+battleInfo\s*\(/.test(hudText)
+  ) {
+    violations.push(
+      `${rel(hudFile)} legacy battleInfo() bridge must stay deleted; use runBattleHudAutomation(event)`
+    );
   }
   if (!/export const BattleHudEvent\s*=\s*Object\.freeze\(/.test(hudText)) {
     violations.push(`${rel(hudFile)} must expose BattleHudEvent`);
@@ -165,15 +201,23 @@ function checkDeletedBattleInfoEntrypoint() {
     violations.push(`${rel(hudFile)} must expose runBattleHudAutomation(event)`);
   }
   if (/export function refreshBattleHud\(/.test(hudText)) {
-    violations.push(`${rel(hudFile)} must keep refreshBattleHud private behind runBattleHudAutomation(event)`);
+    violations.push(
+      `${rel(hudFile)} must keep refreshBattleHud private behind runBattleHudAutomation(event)`
+    );
   }
 }
 
 function checkBattleReportEntry() {
   const reportFile = path.join(root, "src/monitor/battle-report.js");
   const text = fs.readFileSync(reportFile, "utf8");
+  if (!/export const BattleReportEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(reportFile)} must expose BattleReportEvent`);
+  }
   if (!/export function runBattleReportAutomation\(/.test(text)) {
     violations.push(`${rel(reportFile)} must expose only runBattleReportAutomation(event)`);
+  }
+  if (!/\bUTC_MONTH_DAY_LABEL\b/.test(text)) {
+    violations.push(`${rel(reportFile)} must own battle report date label format`);
   }
   for (const legacy of [
     "recordBattleReportStarted",
@@ -183,7 +227,9 @@ function checkBattleReportEntry() {
     "clearUsageReport",
   ]) {
     if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(text)) {
-      violations.push(`${rel(reportFile)} legacy ${legacy} export must stay private behind runBattleReportAutomation(event)`);
+      violations.push(
+        `${rel(reportFile)} legacy ${legacy} export must stay private behind runBattleReportAutomation(event)`
+      );
     }
   }
 }

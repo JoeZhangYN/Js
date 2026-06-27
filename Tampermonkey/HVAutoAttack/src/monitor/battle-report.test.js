@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setValue, getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
@@ -6,6 +6,12 @@ import { BattleMonitorEvent, runBattleMonitorAutomation } from "./battle-monitor
 
 beforeEach(() => {
   localStorage.clear();
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("battle report query", () => {
@@ -22,6 +28,16 @@ describe("battle report query", () => {
     g("roundAll", 1);
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
     expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe(firstCode);
+  });
+
+  it("owns the battle report date label format", () => {
+    g("option", { recordEach: true });
+    g("roundType", "ar");
+    g("roundAll", 5);
+
+    runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
+
+    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("6/27: AR-5");
   });
 
   it("builds a single drop report from the active record", () => {

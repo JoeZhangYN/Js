@@ -1,8 +1,22 @@
 import { getKeys, objSort } from "../core/obj.js";
 import { getValue, setValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 
 const USAGE_SECTIONS = ["self", "restore", "items", "magic", "damage", "hurt", "proficiency"];
+const EVENT_BATTLE_STARTED = "battleStarted";
+const EVENT_READ_DROP_REPORT = "readDropReport";
+const EVENT_READ_USAGE_REPORT = "readUsageReport";
+const EVENT_CLEAR_DROP_REPORT = "clearDropReport";
+const EVENT_CLEAR_USAGE_REPORT = "clearUsageReport";
+
+export const BattleReportEvent = Object.freeze({
+  BATTLE_STARTED: EVENT_BATTLE_STARTED,
+  READ_DROP_REPORT: EVENT_READ_DROP_REPORT,
+  READ_USAGE_REPORT: EVENT_READ_USAGE_REPORT,
+  CLEAR_DROP_REPORT: EVENT_CLEAR_DROP_REPORT,
+  CLEAR_USAGE_REPORT: EVENT_CLEAR_USAGE_REPORT,
+});
 
 function withCurrentRecord(history, current) {
   const rows = [...history];
@@ -12,8 +26,15 @@ function withCurrentRecord(history, current) {
   return rows.reverse();
 }
 
-function recordBattleReportStarted({ recordEach, roundType, roundAll, recordLabel }) {
+function readBattleReportRecordLabel(deps) {
+  return (
+    deps.readRecordLabel || (() => runTimeAutomation({ type: TimeEvent.UTC_MONTH_DAY_LABEL }))
+  )();
+}
+
+function recordBattleReportStarted({ recordEach, roundType, roundAll }, deps) {
   if (!recordEach || getValue(STORAGE_KEYS.BATTLE_CODE)) return false;
+  const recordLabel = readBattleReportRecordLabel(deps);
   setValue(STORAGE_KEYS.BATTLE_CODE, `${recordLabel}: ${roundType.toUpperCase()}-${roundAll}`);
   return true;
 }
@@ -84,21 +105,21 @@ function clearUsageReport() {
   delValue(STORAGE_KEYS.STATS_OLD);
 }
 
-export function runBattleReportAutomation(event) {
-  if (event.type === "battleStarted") {
-    return recordBattleReportStarted(event);
+export function runBattleReportAutomation(event, deps = {}) {
+  if (event.type === EVENT_BATTLE_STARTED) {
+    return recordBattleReportStarted(event, deps);
   }
-  if (event.type === "readDropReport") {
+  if (event.type === EVENT_READ_DROP_REPORT) {
     return readDropReport();
   }
-  if (event.type === "readUsageReport") {
+  if (event.type === EVENT_READ_USAGE_REPORT) {
     return readUsageReport();
   }
-  if (event.type === "clearDropReport") {
+  if (event.type === EVENT_CLEAR_DROP_REPORT) {
     clearDropReport();
     return undefined;
   }
-  if (event.type === "clearUsageReport") {
+  if (event.type === EVENT_CLEAR_USAGE_REPORT) {
     clearUsageReport();
     return undefined;
   }
