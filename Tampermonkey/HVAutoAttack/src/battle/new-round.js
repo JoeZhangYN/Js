@@ -5,10 +5,10 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { goto } from "../core/navigate.js";
-import { time } from "../core/time.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import { observeBattle } from "../state/auto-tune.js";
+import { recordStaminaLoss } from "../state/stamina-loss-log.js";
 import {
   MonsterKnowledgeEvent,
   runMonsterKnowledgeAutomation,
@@ -68,10 +68,8 @@ export function newRound() {
     })()
   );
   if (/You lose \d+ Stamina/.test(battleLog[0].textContent)) {
-    const staminaLostLog = getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true) || {};
-    staminaLostLog[time(3)] = battleLog[0].textContent.match(/You lose (\d+) Stamina/)[1] * 1;
-    setValue(STORAGE_KEYS.STAMINA_LOST_LOG, staminaLostLog);
     const losedStamina = battleLog[0].textContent.match(/\d+/)[0] * 1;
+    recordStaminaLoss(losedStamina);
     if (losedStamina >= g("option").staminaLose) {
       setAlarm("Error");
       if (

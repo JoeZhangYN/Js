@@ -13,6 +13,7 @@ import { customizeBox } from "./customize.js";
 import { OPTION_SCHEMA } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
 import { clearOption, readOption, setOption, writeOption } from "../state/option.js";
+import { clearStaminaLossLog, readStaminaLossLog } from "../state/stamina-loss-log.js";
 import {
   deleteOptionBackup,
   readOptionBackups,
@@ -618,7 +619,7 @@ export function optionBox() {
   };
   gE(".staminaLostLog", optionBox).onclick = function () {
     const out = [];
-    const staminaLostLog = getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true);
+    const staminaLostLog = readStaminaLossLog();
     for (const i in staminaLostLog) {
       out.push(`${i}: ${staminaLostLog[i]}`);
     }
@@ -629,7 +630,7 @@ export function optionBox() {
           .join("\n")}\n是否重置 (Whether to reset)?`
       )
     )
-      setValue(STORAGE_KEYS.STAMINA_LOST_LOG, {});
+      clearStaminaLossLog();
   };
   gE(".idleArenaReset", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) delValue(STORAGE_KEYS.ARENA);
