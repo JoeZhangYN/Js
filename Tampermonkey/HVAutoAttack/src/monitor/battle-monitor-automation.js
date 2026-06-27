@@ -74,7 +74,7 @@ function recordBattleStarted() {
     recordEach: g("option").recordEach,
     roundType: g("roundType"),
     roundAll: g("roundAll"),
-    timeLabel: time(1),
+    recordLabel: time(1),
   });
 }
 

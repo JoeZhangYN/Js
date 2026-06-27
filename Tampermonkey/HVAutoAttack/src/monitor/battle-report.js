@@ -16,9 +16,9 @@ function withCurrentRecord(history, current) {
   return rows.reverse();
 }
 
-export function recordBattleReportStarted({ recordEach, roundType, roundAll, timeLabel }) {
+export function recordBattleReportStarted({ recordEach, roundType, roundAll, recordLabel }) {
   if (!recordEach || getValue(BATTLE_CODE_KEY)) return false;
-  setValue(BATTLE_CODE_KEY, `${timeLabel}: ${roundType.toUpperCase()}-${roundAll}`);
+  setValue(BATTLE_CODE_KEY, `${recordLabel}: ${roundType.toUpperCase()}-${roundAll}`);
   return true;
 }
 
