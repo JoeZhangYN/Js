@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({
-    READ: "read",
+    READ_FIELD: "readField",
   }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
@@ -20,7 +20,7 @@ beforeEach(() => {
 
 describe("quick site entry", () => {
   it("does not render when the option is disabled", () => {
-    mocks.runOptionAutomation.mockReturnValue({ quickSite: false });
+    mocks.runOptionAutomation.mockReturnValue(false);
 
     expect(
       runQuickSiteAutomation({
@@ -28,14 +28,18 @@ describe("quick site entry", () => {
       })
     ).toBe(false);
 
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "read" });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "quickSite",
+      fallback: false,
+    });
     expect(document.querySelector(".quickSiteBar")).toBeNull();
   });
 
   it("renders default and configured links through the entry", () => {
-    mocks.runOptionAutomation.mockReturnValue({
-      quickSite: [{ name: "Wiki", url: "https://example.test/wiki", fav: "" }],
-    });
+    mocks.runOptionAutomation.mockReturnValue([
+      { name: "Wiki", url: "https://example.test/wiki", fav: "" },
+    ]);
 
     expect(
       runQuickSiteAutomation({
@@ -50,9 +54,9 @@ describe("quick site entry", () => {
   });
 
   it("toggles configured link visibility from the rendered control", () => {
-    mocks.runOptionAutomation.mockReturnValue({
-      quickSite: [{ name: "Wiki", url: "https://example.test/wiki", fav: "" }],
-    });
+    mocks.runOptionAutomation.mockReturnValue([
+      { name: "Wiki", url: "https://example.test/wiki", fav: "" },
+    ]);
 
     runQuickSiteAutomation({
       type: QuickSiteEvent.LOBBY_READY,

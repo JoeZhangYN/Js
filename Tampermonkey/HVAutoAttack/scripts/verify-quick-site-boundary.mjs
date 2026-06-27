@@ -100,10 +100,13 @@ if (/export\s+function\s+quickSite\s*\(/.test(ownerText)) {
 if (/from\s+["']\.\.\/state\/store\.js["']/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not import store for lobby rendering`);
 }
-if (!ownerText.includes("OptionEvent.READ")) {
+if (!ownerText.includes("OptionEvent.READ_FIELD")) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must read lobby quickSite option through option entry`
   );
+}
+if (/OptionEvent\.READ\b/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not read the whole option bag`);
 }
 if (/EVENT_LOBBY_READY[\s\S]*renderQuickSite\(\s*event\.option\s*\)/.test(ownerText)) {
   violations.push(

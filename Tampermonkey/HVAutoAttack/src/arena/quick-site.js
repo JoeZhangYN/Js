@@ -22,14 +22,14 @@ function attr(value) {
     .replaceAll(">", "&gt;");
 }
 
-function renderQuickSite(option) {
-  if (!option?.quickSite) return false;
+function renderQuickSite(quickSite) {
+  if (!quickSite) return false;
   const quickSiteBar = gE("body").appendChild(cE("div"));
   quickSiteBar.className = "quickSiteBar";
   quickSiteBar.innerHTML =
     '<span><a href="javascript:void(0);"class="quickSiteBarToggle">&lt;&lt;</a></span><span><a href="http://tieba.baidu.com/f?kw=hv网页游戏"target="_blank"><img src="https://www.baidu.com/favicon.ico" class="favicon"></img>贴吧</a></span><span><a href="https://forums.e-hentai.org/index.php?showforum=76"target="_blank"><img src="https://forums.e-hentai.org/favicon.ico" class="favicon"></img>Forums</a></span>';
-  if (Array.isArray(option.quickSite)) {
-    option.quickSite.forEach((site) => {
+  if (Array.isArray(quickSite)) {
+    quickSite.forEach((site) => {
       quickSiteBar.innerHTML = `${quickSiteBar.innerHTML}<span title="${
         site.name
       }"><a href="${site.url}"target="_blank">${
@@ -79,7 +79,9 @@ function collectSettingsInputs(option, inputs) {
 
 export function runQuickSiteAutomation(event = { type: EVENT_LOBBY_READY }) {
   if (event.type === EVENT_LOBBY_READY) {
-    return renderQuickSite(runOptionAutomation({ type: OptionEvent.READ }));
+    return renderQuickSite(
+      runOptionAutomation({ type: OptionEvent.READ_FIELD, key: "quickSite", fallback: false })
+    );
   }
   if (event.type === EVENT_RENDER_SETTINGS_TABLE_BODY) return renderSettingsTableBody(event.option);
   if (event.type === EVENT_RENDER_SETTINGS_EMPTY_ROW) return renderSettingsEmptyRow();
