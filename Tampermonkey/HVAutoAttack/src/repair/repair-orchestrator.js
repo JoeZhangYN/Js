@@ -14,7 +14,7 @@ import { g } from "../state/store.js";
 import { getOption } from "../state/option.js";
 import { _alert } from "../core/lang.js";
 import { isIsekai } from "../env.js";
-import { idleArena } from "../arena/idle-arena.js";
+import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { makeRepairBackend } from "./repair-backend.js";
 import { decideRepair } from "./decide-repair.js";
 import { ensureMaterials } from "./material-shop.js";
@@ -30,12 +30,9 @@ const BUY_FAIL_MSG = {
 };
 const STUCK_MSG = ["⚠ 装备修理失败，已停止自动竞技场，请检查信用点 / 装备", "⚠ 裝備修理失敗，已停止自動競技場，請檢查信用點 / 裝備", "⚠ Repair failed — idle arena stopped; check credits / equipment"];
 
-/** 默认 idleArena 调度（与旧 repair-check.js proceed 同：jitter 90%-110%）。 */
+/** 默认 idleArena 调度（调度公式归 idle arena 业务能力所有）。 */
 function scheduleIdleArenaDefault() {
-  setTimeout(
-    idleArena,
-    ((g("option").idleArenaTime * (Math.random() * 20 + 90)) / 100) * 1000
-  );
+  runIdleArenaAutomation({ type: IdleArenaEvent.SCHEDULE_NEXT_BATTLE });
 }
 
 /**

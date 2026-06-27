@@ -27,7 +27,7 @@ function st(equips) {
 }
 
 beforeEach(() => {
-  g("option", { idleArena: true, idleArenaTime: 10, repairValue: 50 });
+  g("option", { idleArena: true, repairValue: 50 });
   g("lang", 0);
   document.title = "";
 });
@@ -60,7 +60,7 @@ describe("runRepair 编排", () => {
   });
 
   it("缺料 + buy 开 → 买齐再修 → 复验达标 → 开下一场", () => {
-    g("option", { idleArena: true, idleArenaTime: 10, repairValue: 50, repairBuyMaterials: true });
+    g("option", { idleArena: true, repairValue: 50, repairBuyMaterials: true });
     const mats = [{ matId: "50000", name: "Repair Outfit", count: 3 }];
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 20, mats)]), st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();
@@ -73,7 +73,7 @@ describe("runRepair 编排", () => {
   });
 
   it("买料超上限 → 停机 + 对应三语告警，不修不开下一场", () => {
-    g("option", { idleArena: true, idleArenaTime: 10, repairValue: 50, repairBuyMaterials: true });
+    g("option", { idleArena: true, repairValue: 50, repairBuyMaterials: true });
     const mats = [{ matId: "50000", name: "Repair Outfit", count: 3 }];
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 20, mats)])]);
     const scheduleIdleArena = vi.fn();
@@ -87,7 +87,7 @@ describe("runRepair 编排", () => {
   // A4 反退化：repairValue 留空/非法 → 回落 schema 默认 60%（也间接锁 schema.repairValue.default 存在——
   // 若 schema 删该条目，getOptionDefault 返 undefined → threshold 0 → 55% 不修 → 本用例红）。
   it("repairValue 留空('') → 回落默认 60% → 耐久 55% 的件被修", () => {
-    g("option", { idleArena: true, idleArenaTime: 10, repairValue: "" });
+    g("option", { idleArena: true, repairValue: "" });
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 55)]), st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();
     runRepair({ makeBackend, scheduleIdleArena });
@@ -96,14 +96,14 @@ describe("runRepair 编排", () => {
   });
 
   it("repairValue 非法值('abc') → 回落默认 60%（非静默不修）", () => {
-    g("option", { idleArena: true, idleArenaTime: 10, repairValue: "abc" });
+    g("option", { idleArena: true, repairValue: "abc" });
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 55)]), st([eq(1, 100)])]);
     runRepair({ makeBackend, scheduleIdleArena: vi.fn() });
     expect(submitted).toEqual(["1"]);
   });
 
   it("repairValue 显式填 '0' → 保留（只修完全损坏，55% 不修 → 直接开下一场）", () => {
-    g("option", { idleArena: true, idleArenaTime: 10, repairValue: "0" });
+    g("option", { idleArena: true, repairValue: "0" });
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 55)])]);
     const scheduleIdleArena = vi.fn();
     runRepair({ makeBackend, scheduleIdleArena });

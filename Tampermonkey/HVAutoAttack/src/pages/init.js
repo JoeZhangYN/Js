@@ -14,7 +14,7 @@ import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 import { parseAbilityPage } from "./ability-page.js";
 import { quickSite } from "../arena/quick-site.js";
 import { runRepair } from "../repair/repair-orchestrator.js";
-import { idleArena } from "../arena/idle-arena.js";
+import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { main, pauseChange } from "../battle/main-loop.js";
 import { reloader } from "../battle/reloader.js";
 import { newRound } from "../battle/new-round.js";
@@ -187,10 +187,7 @@ export function init() {
     if (g("option").repair) {
       runRepair();
     } else if (g("option").idleArena) {
-      setTimeout(
-        idleArena,
-        ((g("option").idleArenaTime * (Math.random() * 20 + 90)) / 100) * 1000
-      );
+      runIdleArenaAutomation({ type: IdleArenaEvent.SCHEDULE_NEXT_BATTLE });
     }
   }
 }

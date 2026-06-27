@@ -1,4 +1,4 @@
-// 闲置自动挑战 Arena/RoB/GrindFest。
+// 闲置自动挑战 Arena/RoB/GrindFest：唯一入口 runIdleArenaAutomation(event)。
 import { gE } from "../dom/query.js";
 import { setValue, getValue } from "../state/storage.js";
 import { g } from "../state/store.js";
@@ -9,7 +9,22 @@ import { pollUntil } from "../core/poll.js";
 import { isIsekai } from "../env.js";
 import { readStaminaValue } from "../state/stamina.js";
 
-export function idleArena() {
+const EVENT_SCHEDULE_NEXT_BATTLE = "scheduleNextBattle";
+const EVENT_START_NEXT_BATTLE = "startNextBattle";
+
+export const IdleArenaEvent = Object.freeze({
+  SCHEDULE_NEXT_BATTLE: EVENT_SCHEDULE_NEXT_BATTLE,
+  START_NEXT_BATTLE: EVENT_START_NEXT_BATTLE,
+});
+
+function scheduleNextBattle() {
+  setTimeout(
+    () => runIdleArenaAutomation({ type: EVENT_START_NEXT_BATTLE }),
+    ((g("option").idleArenaTime * (Math.random() * 20 + 90)) / 100) * 1000
+  );
+}
+
+function startNextBattle() {
   let arena = getValue("arena", true) || {};
   if (arena.date !== g("dateNow")) {
     arena = {
@@ -49,7 +64,7 @@ export function idleArena() {
     // 轮询至 4 个 token POST 全部返回 → 存档 + 重入 idleArena
     pollUntil(() => arena.token.length >= 4).then(() => {
       setValue("arena", arena);
-      setTimeout(idleArena, 200);
+      setTimeout(startNextBattle, 200);
     });
     return;
   }
@@ -99,7 +114,7 @@ export function idleArena() {
   if (arena.array[0] === "gr" && arena.gr <= 0) {
     arena.array.splice(0, 1);
     setValue("arena", arena);
-    idleArena();
+    startNextBattle();
     return;
   }
   if (arena.array[0] === "gr" && arena.gr > 0) {
@@ -118,4 +133,14 @@ export function idleArena() {
       ? `initid=${String(id)}&postoken=${arena.token.postoken}`
       : `initid=${String(id)}&postoken=${arena.token.postoken}`
   );
+}
+
+export function runIdleArenaAutomation(
+  event = { type: EVENT_START_NEXT_BATTLE }
+) {
+  if (event.type === EVENT_SCHEDULE_NEXT_BATTLE) {
+    scheduleNextBattle();
+    return;
+  }
+  startNextBattle();
 }
