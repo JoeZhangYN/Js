@@ -29,11 +29,15 @@ function syncDateNow() {
   return dateNow;
 }
 
-function scheduleNextLobbyTick(state = readCurrentReState()) {
-  setTimeout(
-    () => runEncounterAutomation({ type: EVENT_LOBBY_TICK }),
-    msUntilNextEncounterCheck(state)
-  );
+function continueLater(state = readCurrentReState()) {
+  return {
+    claimed: false,
+    nextCheckMs: msUntilNextEncounterCheck(state),
+  };
+}
+
+function claimLobby() {
+  return { claimed: true, nextCheckMs: 0 };
 }
 
 function executeEncounterActivation(state) {
@@ -48,32 +52,29 @@ async function runLobbyTick() {
   let state = readCurrentReState();
   const readiness = readEncounterReadiness(state);
   if (readiness.dailyLimitReached) {
-    scheduleNextLobbyTick(state);
-    return false;
+    return continueLater(state);
   }
   if (executeEncounterActivation(state)) {
-    return true;
+    return claimLobby();
   }
   if (readiness.remainingMs > 0) {
-    scheduleNextLobbyTick(state);
-    return false;
+    return continueLater(state);
   }
   if (g("option").restoreStamina && readStaminaValue() <= g("option").staminaLow) {
     post(window.location.href, goto, "recover=stamina");
-    return true;
+    return claimLobby();
   }
   state = await loadEncounterKey();
   if (executeEncounterActivation(state || {})) {
-    return true;
+    return claimLobby();
   }
-  scheduleNextLobbyTick(readCurrentReState());
-  return false;
+  return continueLater(readCurrentReState());
 }
 
 export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
   if (event.type === EVENT_RANDOM_ENCOUNTER_STARTED) {
     markRandomEncounterStarted();
-    return false;
+    return { claimed: false, nextCheckMs: 0 };
   }
   return runLobbyTick();
 }

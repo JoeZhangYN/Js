@@ -9,15 +9,14 @@ import { runRepair } from "../repair/repair-orchestrator.js";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 
+let scheduledLobbyTick = null;
+
 function syncLobbyDate() {
   g("dateNow", time(2));
 }
 
 function shouldStopForStamina() {
-  return (
-    !g("option").restoreStamina &&
-    readStaminaValue() <= g("option").staminaLow
-  );
+  return !g("option").restoreStamina && readStaminaValue() <= g("option").staminaLow;
 }
 
 function runNextBattleAutomation() {
@@ -28,16 +27,26 @@ function runNextBattleAutomation() {
   }
 }
 
+function scheduleNextLobbyAutomation(delayMs) {
+  if (!Number.isFinite(delayMs) || delayMs <= 0) return;
+  if (scheduledLobbyTick) clearTimeout(scheduledLobbyTick);
+  scheduledLobbyTick = setTimeout(() => {
+    scheduledLobbyTick = null;
+    runLobbyAutomation();
+  }, delayMs);
+}
+
 export async function runLobbyAutomation() {
   delValue(2);
   syncLobbyDate();
   runAbilityAoeAutomation({ type: AbilityAoeEvent.CAPTURE_ABILITY_PAGE });
   if (g("option").quickSite) quickSite();
   if (g("option").encounter) {
-    const encounterClaimedLobby = await runEncounterAutomation({
+    const encounterOutcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
     });
-    if (encounterClaimedLobby) return;
+    scheduleNextLobbyAutomation(encounterOutcome.nextCheckMs);
+    if (encounterOutcome.claimed) return;
   }
   if (shouldStopForStamina()) return;
   runNextBattleAutomation();
