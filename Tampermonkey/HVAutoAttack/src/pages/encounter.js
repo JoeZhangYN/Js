@@ -3,7 +3,7 @@ import { g } from "../state/store.js";
 import { post } from "../dom/http.js";
 import { goto, openUrl } from "../core/navigate.js";
 import { time } from "../core/time.js";
-import { readStaminaValue } from "../state/stamina.js";
+import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import {
   msUntilNextEncounterCheck,
   planEncounterActivation,
@@ -75,7 +75,7 @@ async function runLobbyTick() {
   if (readiness.remainingMs > 0) {
     return continueLater(state);
   }
-  if (g("option").restoreStamina && readStaminaValue() <= g("option").staminaLow) {
+  if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_BATTLE })) {
     post(window.location.href, goto, "recover=stamina");
     return claimLobby();
   }

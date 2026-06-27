@@ -8,7 +8,7 @@ import { post } from "../dom/http.js";
 import { goto } from "../core/navigate.js";
 import { pollUntil } from "../core/poll.js";
 import { isIsekai } from "../env.js";
-import { readStaminaValue } from "../state/stamina.js";
+import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 
 const EVENT_SCHEDULE_NEXT_BATTLE = "scheduleNextBattle";
 const EVENT_START_NEXT_BATTLE = "startNextBattle";
@@ -81,11 +81,7 @@ function startNextBattle() {
     .idleArenaValue.split(",")
     .filter((id) => (id === "gr" || isNaN(id * 1) ? arena.gr > 0 : !arena.done.includes(id)));
   if (arena.array.length === 0) return;
-  if (
-    g("option").restoreStamina &&
-    readStaminaValue() <= g("option").staminaLow &&
-    readStaminaValue() < 85
-  ) {
+  if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_IDLE_ARENA })) {
     post(window.location.href, goto, "recover=stamina");
     return;
   }

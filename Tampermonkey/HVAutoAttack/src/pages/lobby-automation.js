@@ -1,7 +1,7 @@
 // 战斗外自动化编排入口：composition root 只调用本入口，不拼业务顺序。
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
-import { readStaminaValue } from "../state/stamina.js";
+import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { quickSite } from "../arena/quick-site.js";
 import { runRepair } from "../repair/repair-orchestrator.js";
@@ -16,7 +16,7 @@ function syncLobbyDate() {
 }
 
 function shouldStopForStamina() {
-  return !g("option").restoreStamina && readStaminaValue() <= g("option").staminaLow;
+  return runStaminaAutomation({ type: StaminaEvent.SHOULD_STOP_LOBBY });
 }
 
 function runNextBattleAutomation() {
