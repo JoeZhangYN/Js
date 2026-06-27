@@ -34,7 +34,7 @@ describe("runEncounterPolicy route contract", () => {
 
     expect(
       runEncounterPolicy({
-        type: EncounterPolicyEvent.READINESS,
+        type: EncounterPolicyEvent.READ_CLOCK,
         state: available,
         nowMs: 1000,
       }).canEnter

@@ -28,7 +28,7 @@ describe("runEncounterPolicy time contract", () => {
 
     expect(
       runEncounterPolicy({
-        type: EncounterPolicyEvent.READINESS,
+        type: EncounterPolicyEvent.READ_CLOCK,
         state,
         nowMs,
       })
@@ -56,14 +56,14 @@ describe("runEncounterPolicy time contract", () => {
 
     expect(
       runEncounterPolicy({
-        type: EncounterPolicyEvent.READINESS,
+        type: EncounterPolicyEvent.READ_CLOCK,
         state,
         nowMs: 1000 + ENCOUNTER_INTERVAL_MS / 3,
       }).remainingMs
     ).toBe((ENCOUNTER_INTERVAL_MS * 2) / 3);
     expect(
       runEncounterPolicy({
-        type: EncounterPolicyEvent.READINESS,
+        type: EncounterPolicyEvent.READ_CLOCK,
         state,
         nowMs: 1000 + ENCOUNTER_INTERVAL_MS,
       }).remainingMs
@@ -80,7 +80,7 @@ describe("runEncounterPolicy time contract", () => {
 
     expect(
       runEncounterPolicy({
-        type: EncounterPolicyEvent.READINESS,
+        type: EncounterPolicyEvent.READ_CLOCK,
         state,
         nowMs: Date.UTC(2026, 5, 26, 23, 59, 59),
       })
@@ -88,6 +88,8 @@ describe("runEncounterPolicy time contract", () => {
       remainingMs: 901000,
       canEnter: false,
       dailyLimitReached: true,
+      status: "countdown",
+      countdownMs: 1000 + ENCOUNTER_MIDNIGHT_GRACE_MS,
     });
     expect(
       runEncounterPolicy({

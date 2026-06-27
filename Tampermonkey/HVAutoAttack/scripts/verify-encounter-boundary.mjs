@@ -255,6 +255,11 @@ if (/\bexecuteEncounterActivation\b|\bexecuteWidgetNavigation\b/.test(ownerText)
 if (!/\bREAD_CLOCK\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose one encounter clock query`);
 }
+if (/\bREADINESS\b/.test(policyText)) {
+  violations.push(
+    `${policyFile.replaceAll("\\", "/")} must not expose a parallel readiness query; use READ_CLOCK`
+  );
+}
 if (!/TimeEvent\.MS_UNTIL_NEXT_UTC_DAY/.test(policyText)) {
   violations.push(
     `${policyFile.replaceAll("\\", "/")} must read UTC day rollover timing through time entry`

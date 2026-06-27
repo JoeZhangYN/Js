@@ -7,7 +7,6 @@ const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000,
 export const EncounterPolicyEvent = Object.freeze({
   DEFAULT_STATE: "defaultState",
   NORMALIZE: "normalize",
-  READINESS: "readiness",
   READ_CLOCK: "readClock",
   PLAN_NEXT_CHECK: "planNextCheck",
   PLAN_ACTIVATION: "planActivation",
@@ -132,15 +131,13 @@ function markEncounterStarted(
   return next;
 }
 
-export function runEncounterPolicy(event = { type: EncounterPolicyEvent.READINESS }) {
+export function runEncounterPolicy(event = { type: EncounterPolicyEvent.READ_CLOCK }) {
   switch (event.type) {
     case EncounterPolicyEvent.DEFAULT_STATE:
     case EncounterPolicyEvent.RESET_DAY:
       return defaultEncounterState();
     case EncounterPolicyEvent.NORMALIZE:
       return normalizeEncounterState(event.state, event.nowMs);
-    case EncounterPolicyEvent.READINESS:
-      return readEncounterReadiness(event.state, event.nowMs);
     case EncounterPolicyEvent.READ_CLOCK:
       return readEncounterClock(event.state, event.nowMs);
     case EncounterPolicyEvent.PLAN_NEXT_CHECK:
