@@ -13,7 +13,11 @@ import {
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
-import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
+import {
+  BattleCompletionEvent,
+  BattleCompletionOutcome,
+  runBattleCompletionAutomation,
+} from "./battle-completion.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { newRound } from "./new-round.js";
 import { main } from "./main-loop.js";
@@ -44,11 +48,10 @@ export function reloader() {
       runBattleMonitorAutomation({
         type: BattleMonitorEvent.COMPLETION_REACHED,
       });
-      if (g("monsterAlive") > 0) {
-        // Defeat
-        setAlarm("Defeat");
-        runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
-      } else if (g("roundNow") !== g("roundAll")) {
+      const completion = runBattleCompletionAutomation({
+        type: BattleCompletionEvent.COMPLETION_REACHED,
+      });
+      if (completion.outcome === BattleCompletionOutcome.NEXT_ROUND) {
         // Next Round
         gE("#pane_completion").removeChild(gE("#btcp"));
         post(window.location.href, (data) => {
@@ -66,11 +69,6 @@ export function reloader() {
           newRound();
           main();
         });
-      } else if (g("roundNow") === g("roundAll")) {
-        // Victory
-        setAlarm("Victory");
-        runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
-        scheduleReload(3);
       }
     } else {
       main();
