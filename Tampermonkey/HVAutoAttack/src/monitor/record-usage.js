@@ -3,7 +3,6 @@
 import { setValue, getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
-import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../battle/pause-automation.js";
 import {
@@ -11,10 +10,9 @@ import {
   runBattleRecordArchiveAutomation,
 } from "./battle-record-archive.js";
 
-function recordBattleActionUsage(parm) {
-  const stats = getValue(STORAGE_KEYS.STATS, true) || {
+function createDefaultUsageStats() {
+  return {
     self: {
-      _startTime: runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL }),
       _turn: 0,
       _round: 0,
       _battle: 0,
@@ -54,6 +52,19 @@ function recordBattleActionUsage(parm) {
       // 熟练度
     },
   };
+}
+
+function readCurrentUsageStats() {
+  return runBattleRecordArchiveAutomation({
+    type: BattleRecordArchiveEvent.READ_OR_CREATE_CURRENT,
+    currentKey: STORAGE_KEYS.STATS,
+    defaultRecord: createDefaultUsageStats(),
+    startTimeField: "self._startTime",
+  });
+}
+
+function recordBattleActionUsage(parm) {
+  const stats = readCurrentUsageStats();
   let text;
   let magic;
   let point;

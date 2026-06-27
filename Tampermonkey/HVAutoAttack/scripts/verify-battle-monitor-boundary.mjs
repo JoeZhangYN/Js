@@ -166,6 +166,12 @@ function checkRecordArchiveEntry() {
   if (!/export function runBattleRecordArchiveAutomation\(/.test(archiveText)) {
     violations.push(`${rel(archiveFile)} must expose runBattleRecordArchiveAutomation(event)`);
   }
+  if (
+    !archiveText.includes("READ_OR_CREATE_CURRENT") ||
+    !archiveText.includes("STORE_OR_ARCHIVE")
+  ) {
+    violations.push(`${rel(archiveFile)} must own record creation and archiving events`);
+  }
   for (const [label, text] of [
     ["src/monitor/drop-monitor.js", dropText],
     ["src/monitor/record-usage.js", usageText],
@@ -179,6 +185,9 @@ function checkRecordArchiveEntry() {
       /recordEach[\s\S]{0,80}&&[\s\S]{0,80}roundNow[\s\S]{0,80}===[\s\S]{0,80}roundAll/.test(text)
     ) {
       violations.push(`${label} must not own final-round archive decisions`);
+    }
+    if (/\bLOCAL_TIMESTAMP_LABEL\b|\bTimeEvent\b|\brunTimeAutomation\b/.test(text)) {
+      violations.push(`${label} must not own battle record timestamp format`);
     }
   }
 }

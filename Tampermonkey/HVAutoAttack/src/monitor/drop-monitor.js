@@ -3,7 +3,6 @@ import { gE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
-import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import {
   BattleRecordArchiveEvent,
   runBattleRecordArchiveAutomation,
@@ -22,19 +21,21 @@ function makeDeps(deps) {
     gE: deps.gE || gE,
     getValue: deps.getValue || getValue,
     setValue: deps.setValue || setValue,
-    readLocalTimestampLabel:
-      deps.readLocalTimestampLabel ||
-      (() => runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL })),
+    readLocalTimestampLabel: deps.readLocalTimestampLabel,
   };
 }
 
 function recordBattleDrops(deps) {
   const battleLog = deps.gE("#textlog>tbody>tr>td", "all");
-  const drop = deps.getValue(STORAGE_KEYS.DROP, true) || {
-    "#startTime": deps.readLocalTimestampLabel(),
-    "#EXP": 0,
-    "#Credit": 0,
-  };
+  const drop = runBattleRecordArchiveAutomation(
+    {
+      type: BattleRecordArchiveEvent.READ_OR_CREATE_CURRENT,
+      currentKey: STORAGE_KEYS.DROP,
+      defaultRecord: { "#EXP": 0, "#Credit": 0 },
+      startTimeField: "#startTime",
+    },
+    deps
+  );
 
   const quality = [
     "Crude",

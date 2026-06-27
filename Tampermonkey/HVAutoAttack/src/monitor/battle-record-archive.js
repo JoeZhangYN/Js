@@ -3,9 +3,11 @@ import { getValue, setValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 
 const EVENT_STORE_OR_ARCHIVE = "storeOrArchive";
+const EVENT_READ_OR_CREATE_CURRENT = "readOrCreateCurrent";
 
 export const BattleRecordArchiveEvent = Object.freeze({
   STORE_OR_ARCHIVE: EVENT_STORE_OR_ARCHIVE,
+  READ_OR_CREATE_CURRENT: EVENT_READ_OR_CREATE_CURRENT,
 });
 
 function makeDeps(deps) {
@@ -33,6 +35,18 @@ function writePath(record, path, value) {
   target[parts.at(-1)] = value;
 }
 
+function cloneRecord(record) {
+  return JSON.parse(JSON.stringify(record || {}));
+}
+
+function readOrCreateCurrentRecord(event, deps) {
+  const current = deps.getValue(event.currentKey, true);
+  if (current) return current;
+  const record = cloneRecord(event.defaultRecord);
+  if (event.startTimeField) writePath(record, event.startTimeField, deps.readLocalTimestampLabel());
+  return record;
+}
+
 function storeOrArchiveRecord(event, deps) {
   if (!shouldArchive(event)) {
     deps.setValue(event.currentKey, event.record);
@@ -52,6 +66,9 @@ function storeOrArchiveRecord(event, deps) {
 }
 
 export function runBattleRecordArchiveAutomation(event, deps = {}) {
-  if (event.type !== EVENT_STORE_OR_ARCHIVE) return undefined;
-  return storeOrArchiveRecord(event, makeDeps(deps));
+  const fullDeps = makeDeps(deps);
+  if (event.type === EVENT_READ_OR_CREATE_CURRENT)
+    return readOrCreateCurrentRecord(event, fullDeps);
+  if (event.type === EVENT_STORE_OR_ARCHIVE) return storeOrArchiveRecord(event, fullDeps);
+  return undefined;
 }
