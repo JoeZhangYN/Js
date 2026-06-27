@@ -3,6 +3,7 @@ import { setValue, getValue } from "../state/storage.js";
 import {
   clearDropReport,
   clearUsageReport,
+  recordBattleReportStarted,
   readDropReport,
   readUsageReport,
 } from "./battle-report.js";
@@ -12,6 +13,28 @@ beforeEach(() => {
 });
 
 describe("battle report query", () => {
+  it("records battle report code once when per-battle records are enabled", () => {
+    expect(
+      recordBattleReportStarted({
+        recordEach: true,
+        roundType: "ar",
+        roundAll: 5,
+        timeLabel: "12:34",
+      })
+    ).toBe(true);
+    expect(getValue("battleCode")).toBe("12:34: AR-5");
+
+    expect(
+      recordBattleReportStarted({
+        recordEach: true,
+        roundType: "rb",
+        roundAll: 1,
+        timeLabel: "12:35",
+      })
+    ).toBe(false);
+    expect(getValue("battleCode")).toBe("12:34: AR-5");
+  });
+
   it("builds a single drop report from the active record", () => {
     setValue("drop", { "#Credit": 12, "Health Potion": 1 });
 

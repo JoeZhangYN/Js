@@ -1,16 +1,19 @@
 // 战斗监控编排入口：HUD、使用统计、掉落记录统一从这里进入。
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
+import { time } from "../core/time.js";
 import { battleInfo } from "./battle-info.js";
 import { dropMonitor } from "./drop-monitor.js";
 import { recordUsage, recordUsage2 } from "./record-usage.js";
 import {
   clearDropReport,
   clearUsageReport,
+  recordBattleReportStarted,
   readDropReport,
   readUsageReport,
 } from "./battle-report.js";
 
+const EVENT_BATTLE_STARTED = "battleStarted";
 const EVENT_HUD_REFRESH = "hudRefresh";
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
@@ -21,6 +24,7 @@ const EVENT_CLEAR_DROP_REPORT = "clearDropReport";
 const EVENT_CLEAR_USAGE_REPORT = "clearUsageReport";
 
 export const BattleMonitorEvent = Object.freeze({
+  BATTLE_STARTED: EVENT_BATTLE_STARTED,
   HUD_REFRESH: EVENT_HUD_REFRESH,
   ACTION_STARTED: EVENT_ACTION_STARTED,
   ACTION_ENDED: EVENT_ACTION_ENDED,
@@ -65,8 +69,19 @@ function recordCompletion() {
   if (g("option").recordUsage) recordUsage2();
 }
 
+function recordBattleStarted() {
+  recordBattleReportStarted({
+    recordEach: g("option").recordEach,
+    roundType: g("roundType"),
+    roundAll: g("roundAll"),
+    timeLabel: time(1),
+  });
+}
+
 export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) {
-  if (event.type === EVENT_HUD_REFRESH) {
+  if (event.type === EVENT_BATTLE_STARTED) {
+    recordBattleStarted();
+  } else if (event.type === EVENT_HUD_REFRESH) {
     battleInfo();
   } else if (event.type === EVENT_ACTION_STARTED) {
     readActionUsage();

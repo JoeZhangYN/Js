@@ -11,6 +11,7 @@ const internalFiles = new Set(
     "src/monitor/battle-report.js",
     "src/monitor/drop-monitor.js",
     "src/monitor/record-usage.js",
+    "src/state/storage.js",
   ].map((p) => path.normalize(p))
 );
 const violations = [];
@@ -51,7 +52,11 @@ function checkFile(file) {
         `${where} battle monitor internals are private; import runBattleMonitorAutomation(event)`
       );
     }
-    if (/\b(?:getValue|setValue|delValue)\(\s*["'](?:drop|dropOld|stats|statsOld)["']/.test(line)) {
+    if (
+      /\b(?:getValue|setValue|delValue)\(\s*["'](?:battleCode|drop|dropOld|stats|statsOld)["']/.test(
+        line
+      )
+    ) {
       violations.push(
         `${where} battle monitor storage belongs behind runBattleMonitorAutomation(event)`
       );
@@ -67,6 +72,7 @@ function checkEntry() {
   for (const required of [
     "battleInfo",
     "dropMonitor",
+    "recordBattleReportStarted",
     "recordUsage",
     "recordUsage2",
     "readDropReport",

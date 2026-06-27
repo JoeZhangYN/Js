@@ -1,4 +1,4 @@
-// 新一轮战斗初始化：怪物计数 / 轮次识别 / battleCode 记录。
+// 新一轮战斗初始化：怪物计数 / 轮次识别。
 import { gE } from "../dom/query.js";
 import { setValue, getValue } from "../state/storage.js";
 import { g } from "../state/store.js";

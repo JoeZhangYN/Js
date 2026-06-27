@@ -1,19 +1,19 @@
 // 战斗页自动化编排入口：composition root 只调用本入口。
 import { gE, cE } from "../dom/query.js";
-import { setValue, getValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { reloader } from "./reloader.js";
 import { newRound } from "./new-round.js";
 import { main } from "./main-loop.js";
-import {
-  BattlePauseEvent,
-  runBattlePauseAutomation,
-} from "./pause-automation.js";
+import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import {
   MonsterKnowledgeEvent,
   runMonsterKnowledgeAutomation,
 } from "./monster-knowledge-automation.js";
+import {
+  BattleMonitorEvent,
+  runBattleMonitorAutomation,
+} from "../monitor/battle-monitor-automation.js";
 
 function setupPauseControls() {
   const box2 = gE("#battle_main").appendChild(cE("div"));
@@ -23,10 +23,7 @@ function setupPauseControls() {
     button.innerHTML = "<l0>暂停</l0><l1>暫停</l1><l2>Pause</l2>";
     button.className = "pauseChange";
     button.onclick = function () {
-      runBattlePauseAutomation(
-        { type: BattlePauseEvent.TOGGLE },
-        { resume: main }
-      );
+      runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, { resume: main });
     };
   }
   if (g("option").pauseHotkey) {
@@ -37,10 +34,7 @@ function setupPauseControls() {
           return;
         }
         if (e.key === g("option").pauseHotkeyKey) {
-          runBattlePauseAutomation(
-            { type: BattlePauseEvent.TOGGLE },
-            { resume: main }
-          );
+          runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, { resume: main });
         }
       },
       false
@@ -58,12 +52,8 @@ function setupMonsterKnowledge() {
   runMonsterKnowledgeAutomation({ type: MonsterKnowledgeEvent.BATTLE_STARTED });
 }
 
-function recordBattleCode() {
-  if (!g("option").recordEach || getValue("battleCode")) return;
-  setValue(
-    "battleCode",
-    `${time(1)}: ${g("roundType").toUpperCase()}-${g("roundAll")}`
-  );
+function setupBattleMonitor() {
+  runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
 }
 
 export function runBattleAutomation() {
@@ -72,6 +62,6 @@ export function runBattleAutomation() {
   initBattleRuntime();
   newRound();
   setupMonsterKnowledge();
-  recordBattleCode();
+  setupBattleMonitor();
   main();
 }

@@ -1,5 +1,5 @@
 import { getKeys, objSort } from "../core/obj.js";
-import { getValue, delValue } from "../state/storage.js";
+import { getValue, setValue, delValue } from "../state/storage.js";
 
 const DROP_KEY = "drop";
 const DROP_OLD_KEY = "dropOld";
@@ -14,6 +14,12 @@ function withCurrentRecord(history, current) {
     rows.push({ ...current, __name: getValue(BATTLE_CODE_KEY) });
   }
   return rows.reverse();
+}
+
+export function recordBattleReportStarted({ recordEach, roundType, roundAll, timeLabel }) {
+  if (!recordEach || getValue(BATTLE_CODE_KEY)) return false;
+  setValue(BATTLE_CODE_KEY, `${timeLabel}: ${roundType.toUpperCase()}-${roundAll}`);
+  return true;
 }
 
 export function readDropReport() {
