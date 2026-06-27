@@ -11,6 +11,7 @@ const internalFiles = new Set(
     "src/monitor/battle-record-archive.js",
     "src/monitor/battle-report.js",
     "src/monitor/battle-report-view.js",
+    "src/monitor/battle-monitor-runtime.js",
     "src/monitor/drop-monitor.js",
     "src/monitor/record-usage.js",
     "src/state/storage.js",
@@ -107,6 +108,11 @@ function checkEntry() {
       `${entry.replaceAll("\\", "/")} must report battle-report events through BattleReportEvent`
     );
   }
+  if (!text.includes("BattleMonitorRuntimeEvent.REPORT_START_CONTEXT")) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must read report start context through battle-monitor-runtime`
+    );
+  }
   if (/\brecordLabel\b|\bUTC_MONTH_DAY_LABEL\b/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not own battle report date labels`);
   }
@@ -169,6 +175,24 @@ function checkUsageImplementation() {
   if (/\b(?:export\s+)?function\s+recordUsage2\s*\(/.test(text)) {
     violations.push(
       `${rel(usageFile)} legacy recordUsage2() bridge must stay deleted; use runBattleUsageAutomation(event)`
+    );
+  }
+  if (
+    /\bg\(\s*["'](?:monsterAlive|monsterAll|bossAll|turn|roundNow|roundAll)["']\s*\)/.test(text) ||
+    /\bg\(\s*["']option["']\s*\)\.recordEach/.test(text)
+  ) {
+    violations.push(
+      `${rel(usageFile)} must read battle runtime context through battle-monitor-runtime`
+    );
+  }
+  if (!text.includes("BattleMonitorRuntimeEvent.USAGE_ACTION_CONTEXT")) {
+    violations.push(
+      `${rel(usageFile)} must read usage action context through battle-monitor-runtime`
+    );
+  }
+  if (!text.includes("BattleMonitorRuntimeEvent.USAGE_COMPLETION_CONTEXT")) {
+    violations.push(
+      `${rel(usageFile)} must read usage completion context through battle-monitor-runtime`
     );
   }
 }
@@ -236,6 +260,43 @@ function checkDeletedDropMonitorEntrypoint() {
   }
   if (/\brecordBattleDrops\s*\(/.test(entryText)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not call raw recordBattleDrops()`);
+  }
+  if (
+    /\bg\(\s*["'](?:roundNow|roundAll)["']\s*\)/.test(dropText) ||
+    /\bg\(\s*["']option["']\s*\)\.recordEach/.test(dropText)
+  ) {
+    violations.push(`${rel(dropFile)} must read archive context through battle-monitor-runtime`);
+  }
+  if (!dropText.includes("BattleMonitorRuntimeEvent.ARCHIVE_CONTEXT")) {
+    violations.push(`${rel(dropFile)} must read archive context through battle-monitor-runtime`);
+  }
+}
+
+function checkBattleMonitorRuntimeEntry() {
+  const runtimeFile = path.join(root, "src/monitor/battle-monitor-runtime.js");
+  const text = fs.readFileSync(runtimeFile, "utf8");
+  if (!/export const BattleMonitorRuntimeEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(runtimeFile)} must expose BattleMonitorRuntimeEvent`);
+  }
+  if (!/export function runBattleMonitorRuntime\(/.test(text)) {
+    violations.push(`${rel(runtimeFile)} must expose runBattleMonitorRuntime(event)`);
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleMonitorRuntimeEvent\b|runBattleMonitorRuntime\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(runtimeFile)} may export only its event entry`);
+  }
+  for (const required of [
+    "REPORT_START_CONTEXT",
+    "ARCHIVE_CONTEXT",
+    "USAGE_ACTION_CONTEXT",
+    "USAGE_COMPLETION_CONTEXT",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(runtimeFile)} must own ${required}`);
+    }
   }
 }
 
@@ -326,6 +387,7 @@ checkEntry();
 checkSettingsReportConsumption();
 checkRecordArchiveEntry();
 checkUsageImplementation();
+checkBattleMonitorRuntimeEntry();
 checkDeletedDropMonitorEntrypoint();
 checkDeletedBattleInfoEntrypoint();
 checkBattleReportEntry();

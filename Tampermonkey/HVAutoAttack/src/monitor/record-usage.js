@@ -9,6 +9,7 @@ import {
   BattleRecordArchiveEvent,
   runBattleRecordArchiveAutomation,
 } from "./battle-record-archive.js";
+import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
 
 function createDefaultUsageStats() {
   return {
@@ -65,14 +66,15 @@ function readCurrentUsageStats() {
 
 function recordBattleActionUsage(parm) {
   const stats = readCurrentUsageStats();
+  const context = runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.USAGE_ACTION_CONTEXT });
   let text;
   let magic;
   let point;
   let reg;
-  if (g("monsterAlive") === 0) {
-    stats.self._turn += g("turn");
+  if (context.monsterAlive === 0) {
+    stats.self._turn += context.turn;
     stats.self._round += 1;
-    if (g("roundNow") === g("roundAll")) stats.self._battle += 1;
+    if (context.roundNow === context.roundAll) stats.self._battle += 1;
   }
   if (parm.mode === "magic") {
     magic = parm.magic;
@@ -202,8 +204,11 @@ function recordBattleActionUsage(parm) {
 
 function recordCompletedBattleUsage() {
   const stats = getValue(STORAGE_KEYS.STATS, true);
-  stats.self._monster += g("monsterAll");
-  stats.self._boss += g("bossAll");
+  const context = runBattleMonitorRuntime({
+    type: BattleMonitorRuntimeEvent.USAGE_COMPLETION_CONTEXT,
+  });
+  stats.self._monster += context.monsterAll;
+  stats.self._boss += context.bossAll;
 
   runBattleRecordArchiveAutomation({
     type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE,
@@ -211,9 +216,9 @@ function recordCompletedBattleUsage() {
     historyKey: STORAGE_KEYS.STATS_OLD,
     record: stats,
     endTimeField: "self._endTime",
-    recordEach: g("option").recordEach,
-    roundNow: g("roundNow"),
-    roundAll: g("roundAll"),
+    recordEach: context.recordEach,
+    roundNow: context.roundNow,
+    roundAll: context.roundAll,
   });
 }
 

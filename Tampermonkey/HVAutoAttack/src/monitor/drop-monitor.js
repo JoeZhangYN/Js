@@ -7,6 +7,7 @@ import {
   BattleRecordArchiveEvent,
   runBattleRecordArchiveAutomation,
 } from "./battle-record-archive.js";
+import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
 
 const EVENT_COMPLETION_REACHED = "completionReached";
 
@@ -20,6 +21,13 @@ function makeDeps(deps) {
     g: deps.g || g,
     gE: deps.gE || gE,
     getValue: deps.getValue || getValue,
+    readArchiveContext:
+      deps.readArchiveContext ||
+      (() =>
+        runBattleMonitorRuntime(
+          { type: BattleMonitorRuntimeEvent.ARCHIVE_CONTEXT },
+          { g: deps.g || g }
+        )),
     setValue: deps.setValue || setValue,
     readLocalTimestampLabel: deps.readLocalTimestampLabel,
   };
@@ -92,9 +100,7 @@ function recordBattleDrops(deps) {
       historyKey: STORAGE_KEYS.DROP_OLD,
       record: drop,
       endTimeField: "#endTime",
-      recordEach: deps.g("option").recordEach,
-      roundNow: deps.g("roundNow"),
-      roundAll: deps.g("roundAll"),
+      ...deps.readArchiveContext(),
     },
     deps
   );

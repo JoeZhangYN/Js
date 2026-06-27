@@ -5,6 +5,7 @@ import { BattleHudEvent, runBattleHudAutomation } from "./battle-info.js";
 import { BattleDropEvent, runBattleDropAutomation } from "./drop-monitor.js";
 import { runBattleUsageAutomation } from "./record-usage.js";
 import { BattleReportEvent, runBattleReportAutomation } from "./battle-report.js";
+import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
 
 const EVENT_BATTLE_STARTED = "battleStarted";
 const EVENT_HUD_REFRESH = "hudRefresh";
@@ -70,9 +71,7 @@ function recordCompletion() {
 function recordBattleStarted() {
   runBattleReportAutomation({
     type: BattleReportEvent.BATTLE_STARTED,
-    recordEach: g("option").recordEach,
-    roundType: g("roundType"),
-    roundAll: g("roundAll"),
+    ...runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.REPORT_START_CONTEXT }),
   });
 }
 

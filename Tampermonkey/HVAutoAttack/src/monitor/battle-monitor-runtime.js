@@ -1,0 +1,48 @@
+import { g } from "../state/store.js";
+
+const EVENT_REPORT_START_CONTEXT = "reportStartContext";
+const EVENT_ARCHIVE_CONTEXT = "archiveContext";
+const EVENT_USAGE_ACTION_CONTEXT = "usageActionContext";
+const EVENT_USAGE_COMPLETION_CONTEXT = "usageCompletionContext";
+
+export const BattleMonitorRuntimeEvent = Object.freeze({
+  REPORT_START_CONTEXT: EVENT_REPORT_START_CONTEXT,
+  ARCHIVE_CONTEXT: EVENT_ARCHIVE_CONTEXT,
+  USAGE_ACTION_CONTEXT: EVENT_USAGE_ACTION_CONTEXT,
+  USAGE_COMPLETION_CONTEXT: EVENT_USAGE_COMPLETION_CONTEXT,
+});
+
+function readArchiveContext(deps) {
+  return {
+    recordEach: deps.g("option").recordEach,
+    roundNow: deps.g("roundNow"),
+    roundAll: deps.g("roundAll"),
+  };
+}
+
+export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT }, deps = { g }) {
+  if (event.type === EVENT_REPORT_START_CONTEXT) {
+    return {
+      recordEach: deps.g("option").recordEach,
+      roundType: deps.g("roundType"),
+      roundAll: deps.g("roundAll"),
+    };
+  }
+  if (event.type === EVENT_ARCHIVE_CONTEXT) return readArchiveContext(deps);
+  if (event.type === EVENT_USAGE_ACTION_CONTEXT) {
+    return {
+      monsterAlive: deps.g("monsterAlive"),
+      turn: deps.g("turn"),
+      roundNow: deps.g("roundNow"),
+      roundAll: deps.g("roundAll"),
+    };
+  }
+  if (event.type === EVENT_USAGE_COMPLETION_CONTEXT) {
+    return {
+      ...readArchiveContext(deps),
+      monsterAll: deps.g("monsterAll"),
+      bossAll: deps.g("bossAll"),
+    };
+  }
+  return undefined;
+}
