@@ -18,9 +18,16 @@ if (!/\bcfg\s*\[\s*evals\s*\[\s*i\s*\]\s*\]\s*=\s*ParseMonsterbationConfigValue\
   violations.push("Monsterbation action/regexp config does not route through parser entry");
 }
 
-const evalCalls = source.match(/\beval\s*\(/g) || [];
-if (evalCalls.length !== 1 || !/\beval\s*\(\s*cfg\.bind\s*\)/.test(source)) {
-  violations.push("Monsterbation eval scope changed; expected only the cfg.bind parser boundary to remain");
+if (/\beval\s*\(/.test(source)) {
+  violations.push("Monsterbation still uses eval; route config through explicit parsers");
+}
+
+if (!/function\s+ParseMonsterbationBindConfig\s*\(/.test(source)) {
+  violations.push("Monsterbation keybind config lacks explicit parser entry");
+}
+
+if (!/ParseMonsterbationBindConfig\s*\(\s*cfg\.bind\s*\)/.test(source)) {
+  violations.push("Monsterbation keybind config does not route through parser entry");
 }
 
 if (violations.length) {
@@ -29,4 +36,4 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-monsterbation-action-config-boundary] OK — Monsterbation action config uses explicit parser");
+console.log("[verify-monsterbation-action-config-boundary] OK — Monsterbation config uses explicit parsers");

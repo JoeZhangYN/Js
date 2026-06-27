@@ -504,6 +504,74 @@ function ParseMonsterbationConfigValue(name, value) {
     return ParseMonsterbationAction(value);
 }
 
+function SplitMonsterbationTopLevel(value, separator) {
+    var result = [], start = 0, depth = 0, quote = false, escaped = false;
+    for ( var i = 0; i < value.length; i++ ) {
+        var char = value[i];
+        if ( escaped ) {
+            escaped = false; }
+        else if ( quote ) {
+            if ( char == '\\' ) escaped = true;
+            else if ( char == quote ) quote = false; }
+        else if ( char == "'" || char == '"' ) {
+            quote = char; }
+        else if ( char == '(' || char == '[' ) {
+            depth++; }
+        else if ( char == ')' || char == ']' ) {
+            depth--; }
+        else if ( char == separator && depth === 0 ) {
+            result.push(value.slice(start, i));
+            start = i + 1; }}
+    result.push(value.slice(start));
+    return result;
+}
+
+function ParseMonsterbationKey(value) {
+    value = value.trim();
+    if ( /^\d+$/.test(value) ) return parseInt(value);
+    var keys = { KEY_A: KEY_A, KEY_B: KEY_B, KEY_C: KEY_C, KEY_D: KEY_D, KEY_E: KEY_E, KEY_F: KEY_F, KEY_G: KEY_G, KEY_H: KEY_H, KEY_I: KEY_I,
+                 KEY_J: KEY_J, KEY_K: KEY_K, KEY_L: KEY_L, KEY_M: KEY_M, KEY_N: KEY_N, KEY_O: KEY_O, KEY_P: KEY_P, KEY_Q: KEY_Q, KEY_R: KEY_R,
+                 KEY_S: KEY_S, KEY_T: KEY_T, KEY_U: KEY_U, KEY_V: KEY_V, KEY_W: KEY_W, KEY_X: KEY_X, KEY_Y: KEY_Y, KEY_Z: KEY_Z, KEY_1: KEY_1,
+                 KEY_2: KEY_2, KEY_3: KEY_3, KEY_4: KEY_4, KEY_5: KEY_5, KEY_6: KEY_6, KEY_7: KEY_7, KEY_8: KEY_8, KEY_9: KEY_9, KEY_0: KEY_0,
+                 KEY_SPACE: KEY_SPACE, KEY_ENTER: KEY_ENTER, KEY_PAGEUP: KEY_PAGEUP, KEY_PAGEDOWN: KEY_PAGEDOWN, KEY_END: KEY_END,
+                 KEY_HOME: KEY_HOME, KEY_LEFT: KEY_LEFT, KEY_UP: KEY_UP, KEY_RIGHT: KEY_RIGHT, KEY_DOWN: KEY_DOWN, KEY_F1: KEY_F1, KEY_F2: KEY_F2,
+                 KEY_F3: KEY_F3, KEY_F4: KEY_F4, KEY_F5: KEY_F5, KEY_F6: KEY_F6, KEY_F7: KEY_F7, KEY_F8: KEY_F8, KEY_F9: KEY_F9, KEY_F10: KEY_F10,
+                 KEY_F11: KEY_F11, KEY_F12: KEY_F12, KEY_COMMA: KEY_COMMA, KEY_PERIOD: KEY_PERIOD, KEY_SLASH: KEY_SLASH,
+                 KEY_FORWARDSLASH: KEY_FORWARDSLASH, KEY_GRAVE: KEY_GRAVE, KEY_TILDE: KEY_TILDE, KEY_LBRACKET: KEY_LBRACKET,
+                 KEY_BACKSLASH: KEY_BACKSLASH, KEY_SEMI: KEY_SEMI, KEY_RBRACKET: KEY_RBRACKET, KEY_APOSTROPHE: KEY_APOSTROPHE,
+                 KEY_SHIFT: KEY_SHIFT, KEY_CTRL: KEY_CTRL, KEY_ALT: KEY_ALT };
+    if ( !keys[value] ) throw new Error('Invalid keybind');
+    return keys[value];
+}
+
+function ParseMonsterbationModifier(value) {
+    value = value.trim();
+    var modifiers = { NoMod: NoMod, Shift: Shift, Ctrl: Ctrl, Alt: Alt, CtrlShift: CtrlShift, AltShift: AltShift,
+                      CtrlAlt: CtrlAlt, CtrlAltShift: CtrlAltShift, Any: Any };
+    if ( !modifiers[value] ) throw new Error('Invalid keybind');
+    return modifiers[value];
+}
+
+function ParseMonsterbationBindStatement(statement) {
+    statement = statement.trim();
+    if ( !statement ) return;
+    if ( statement.slice(0, 5) != 'Bind(' || statement[statement.length - 1] != ')' ) throw new Error('Invalid keybind');
+    var args = SplitMonsterbationTopLevel(statement.slice(5, -1), ',').map(function(arg) { return arg.trim(); });
+    if ( args.length == 2 ) {
+        Bind(ParseMonsterbationKey(args[0]), ParseMonsterbationAction(args[1]));
+        return; }
+    if ( args.length == 3 ) {
+        Bind(ParseMonsterbationKey(args[0]), ParseMonsterbationModifier(args[1]), ParseMonsterbationAction(args[2]));
+        return; }
+    throw new Error('Invalid keybind');
+}
+
+function ParseMonsterbationBindConfig(value) {
+    if ( typeof value != 'string' ) throw new Error('Invalid keybind');
+    bindings = [];
+    SplitMonsterbationTopLevel(value, ';').forEach(ParseMonsterbationBindStatement);
+}
+
 function Settings() {
     var mainpane, style, form, div, changed = false, p = 0, s = 0, isk = '', select, option, index = 0;
     if ( !(mainpane = document.getElementById('mainpane')) ) return;
@@ -1136,7 +1204,7 @@ function Enhance() {
                 cfg[evals[i]] = false;
                 alert('非法 ' + evals[i] + ' 格式. 设置停用'); }}
         try {
-            eval(cfg.bind); }
+            ParseMonsterbationBindConfig(cfg.bind); }
         catch ( error ) {
             bindings = [];
             alert('非法键位设置，设置停用'); }
