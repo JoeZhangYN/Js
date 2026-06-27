@@ -108,6 +108,8 @@ function recordBattleDrops(deps) {
 
 export function runBattleDropAutomation(event = { type: EVENT_COMPLETION_REACHED }, deps = {}) {
   if (event.type !== EVENT_COMPLETION_REACHED) return false;
-  recordBattleDrops(makeDeps(deps));
+  const runtime = makeDeps(deps);
+  if (!runtime.g("option").dropMonitor) return false;
+  recordBattleDrops(runtime);
   return true;
 }

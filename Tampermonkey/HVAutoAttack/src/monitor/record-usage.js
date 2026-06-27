@@ -203,7 +203,9 @@ function recordBattleActionUsage(parm) {
 }
 
 function recordCompletedBattleUsage() {
+  if (!g("option").recordUsage) return;
   const stats = getValue(STORAGE_KEYS.STATS, true);
+  if (!stats) return;
   const context = runBattleMonitorRuntime({
     type: BattleMonitorRuntimeEvent.USAGE_COMPLETION_CONTEXT,
   });

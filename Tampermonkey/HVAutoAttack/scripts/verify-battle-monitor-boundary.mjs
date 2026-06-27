@@ -136,6 +136,11 @@ function checkEntry() {
   if (/\brecordLabel\b|\bUTC_MONTH_DAY_LABEL\b/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not own battle report date labels`);
   }
+  if (/\bg\(\s*["']option["']\s*\)|\bdropMonitor\b|\brecordUsage\b/.test(text)) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} monitor feature switches belong in their capability entries`
+    );
+  }
   for (const required of [
     "BATTLE_STARTED",
     "HUD_REFRESH",
@@ -238,6 +243,9 @@ function checkUsageImplementation() {
       `${rel(usageFile)} must read usage completion context through battle-monitor-runtime`
     );
   }
+  if (!/\bg\(\s*["']option["']\s*\)\.recordUsage/.test(text)) {
+    violations.push(`${rel(usageFile)} must own the recordUsage completion switch`);
+  }
 }
 
 function checkRecordArchiveEntry() {
@@ -312,6 +320,9 @@ function checkDeletedDropMonitorEntrypoint() {
   }
   if (!dropText.includes("BattleMonitorRuntimeEvent.ARCHIVE_CONTEXT")) {
     violations.push(`${rel(dropFile)} must read archive context through battle-monitor-runtime`);
+  }
+  if (!/\bg\(\s*["']option["']\s*\)\.dropMonitor/.test(dropText)) {
+    violations.push(`${rel(dropFile)} must own the dropMonitor completion switch`);
   }
 }
 

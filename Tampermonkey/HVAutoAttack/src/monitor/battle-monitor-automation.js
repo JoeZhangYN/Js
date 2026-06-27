@@ -1,5 +1,4 @@
 // 战斗监控编排入口：HUD、使用统计、掉落记录统一从这里进入。
-import { g } from "../state/store.js";
 import { BattleHudEvent, runBattleHudAutomation } from "./battle-info.js";
 import { BattleDropEvent, runBattleDropAutomation } from "./drop-monitor.js";
 import { runBattleUsageAutomation } from "./record-usage.js";
@@ -41,10 +40,8 @@ function recordActionEnd() {
 }
 
 function recordCompletion() {
-  if (g("option").dropMonitor) {
-    runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED });
-  }
-  if (g("option").recordUsage) runBattleUsageAutomation({ type: EVENT_COMPLETION_REACHED });
+  runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED });
+  runBattleUsageAutomation({ type: EVENT_COMPLETION_REACHED });
 }
 
 function recordBattleStarted() {

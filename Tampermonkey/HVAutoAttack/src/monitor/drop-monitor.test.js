@@ -42,9 +42,21 @@ function deps({ rows, values = {}, option = {}, roundNow = 1, roundAll = 2 }) {
 }
 
 describe("runBattleDropAutomation", () => {
+  it("does not record drops when the drop monitor option is disabled", () => {
+    const runtime = deps({
+      option: { dropMonitor: false, dropQuality: 0, recordEach: false },
+      rows: [logLine("You gain 12 EXP")],
+    });
+
+    expect(runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED }, runtime)).toBe(
+      false
+    );
+    expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
+  });
+
   it("records EXP, credits, and items through the event entry", () => {
     const runtime = deps({
-      option: { dropQuality: 0, recordEach: false },
+      option: { dropMonitor: true, dropQuality: 0, recordEach: false },
       rows: [
         logLine("You gain 12 EXP"),
         logLine("You gain 34 Credit"),
@@ -70,7 +82,7 @@ describe("runBattleDropAutomation", () => {
       [STORAGE_KEYS.DROP]: { "#Credit": 5, "#EXP": 0, "#startTime": "old" },
     };
     const runtime = deps({
-      option: { dropQuality: 0, recordEach: true },
+      option: { dropMonitor: true, dropQuality: 0, recordEach: true },
       roundAll: 3,
       roundNow: 3,
       rows: [logLine("You gain 1 Credit")],
