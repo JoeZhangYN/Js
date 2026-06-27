@@ -23,6 +23,14 @@ function checkFile(file) {
     if (/\beval\s*\(/.test(line)) {
       violations.push(`${rel(file)}:${index + 1} eval is forbidden; use a typed parser`);
     }
+    if (/\bnew\s+Function\s*\(/.test(line)) {
+      violations.push(`${rel(file)}:${index + 1} new Function is forbidden; use a typed parser`);
+    }
+    if (/\bset(?:Timeout|Interval)\s*\(\s*["']/.test(line)) {
+      violations.push(
+        `${rel(file)}:${index + 1} string timers are forbidden; pass a callback function`
+      );
+    }
   });
 }
 
@@ -34,4 +42,4 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-no-eval] OK — no eval in src");
+console.log("[verify-no-eval] OK — no dynamic code execution in src");
