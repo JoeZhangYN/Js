@@ -1,19 +1,16 @@
 // 新一轮战斗初始化：怪物计数 / 轮次识别。
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { _alert } from "../core/lang.js";
 import { goto } from "../core/navigate.js";
-import { setAlarm } from "../alarm/alarm.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import { observeBattle } from "../state/auto-tune.js";
-import { recordStaminaLoss } from "../state/stamina-loss-log.js";
 import {
   MonsterKnowledgeEvent,
   runMonsterKnowledgeAutomation,
 } from "./monster-knowledge-automation.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
-import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
+import { BattleStaminaEvent, runBattleStaminaAutomation } from "./battle-stamina.js";
 
 export function newRound() {
   // F auto-tune：上一回合结束 → 观测用药数 + 复位计数
@@ -55,23 +52,12 @@ export function newRound() {
       });
     })()
   );
-  if (/You lose \d+ Stamina/.test(battleLog[0].textContent)) {
-    const losedStamina = battleLog[0].textContent.match(/\d+/)[0] * 1;
-    recordStaminaLoss(losedStamina);
-    if (losedStamina >= g("option").staminaLose) {
-      setAlarm("Error");
-      if (
-        !_alert(
-          1,
-          "当前Stamina过低\n或Stamina损失过多\n是否继续？",
-          "當前Stamina過低\n或Stamina損失過多\n是否繼續？",
-          "Continue?\nYou either have too little Stamina or have lost too much"
-        )
-      ) {
-        runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
-        return;
-      }
-    }
+  const staminaOutcome = runBattleStaminaAutomation({
+    type: BattleStaminaEvent.ROUND_LOG_READY,
+    text: battleLog[0].textContent,
+  });
+  if (staminaOutcome.paused) {
+    return;
   }
   if (battleLog[battleLog.length - 1].textContent.match("Initializing")) {
     runMonsterStatusAutomation({

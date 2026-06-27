@@ -1,0 +1,77 @@
+import fs from "node:fs";
+import path from "node:path";
+
+const root = process.cwd();
+const srcDir = path.join(root, "src");
+const owner = path.normalize("src/battle/battle-stamina.js");
+const ownerTest = path.normalize("src/battle/battle-stamina.test.js");
+const logOwner = path.normalize("src/state/stamina-loss-log.js");
+const logOwnerTest = path.normalize("src/state/stamina-loss-log.test.js");
+const settings = path.normalize("src/settings/render.js");
+const settingsSchema = path.normalize("src/settings/schema.js");
+const violations = [];
+
+function walk(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full);
+    else if (entry.isFile() && entry.name.endsWith(".js")) checkFile(full);
+  }
+}
+
+function rel(file) {
+  return path.normalize(path.relative(root, file)).replaceAll("\\", "/");
+}
+
+function checkFile(file) {
+  const relative = path.normalize(path.relative(root, file));
+  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+  lines.forEach((line, index) => {
+    const where = `${rel(file)}:${index + 1}`;
+    if (
+      relative !== owner &&
+      relative !== ownerTest &&
+      relative !== settings &&
+      relative !== settingsSchema &&
+      /You lose .*Stamina|staminaLose\b/.test(line)
+    ) {
+      violations.push(
+        `${where} stamina loss decision belongs in runBattleStaminaAutomation(event)`
+      );
+    }
+    if (
+      relative !== owner &&
+      relative !== ownerTest &&
+      relative !== logOwner &&
+      relative !== logOwnerTest &&
+      relative !== settings &&
+      /\brecordStaminaLoss\b/.test(line)
+    ) {
+      violations.push(`${where} stamina loss recording must use battle-stamina boundary`);
+    }
+  });
+}
+
+walk(srcDir);
+
+const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+for (const required of [
+  "runBattleStaminaAutomation",
+  "ROUND_LOG_READY",
+  "recordStaminaLoss",
+  "runBattlePauseAutomation",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+
+if (violations.length) {
+  console.error("[verify-battle-stamina-boundary] FAIL");
+  for (const v of violations) console.error(`- ${v}`);
+  process.exit(1);
+}
+
+console.log(
+  "[verify-battle-stamina-boundary] OK — battle stamina loss decision is behind one entry"
+);
