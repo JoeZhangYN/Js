@@ -9,8 +9,6 @@ import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "../battle/battle-runtime.js";
 
-let scheduledLobbyTick = null;
-
 function syncLobbyDate() {
   g("dateNow", time(2));
 }
@@ -27,15 +25,6 @@ function runNextBattleAutomation() {
   }
 }
 
-function scheduleNextLobbyAutomation(delayMs) {
-  if (!Number.isFinite(delayMs) || delayMs <= 0) return;
-  if (scheduledLobbyTick) clearTimeout(scheduledLobbyTick);
-  scheduledLobbyTick = setTimeout(() => {
-    scheduledLobbyTick = null;
-    runLobbyAutomation();
-  }, delayMs);
-}
-
 export async function runLobbyAutomation() {
   runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
   syncLobbyDate();
@@ -44,8 +33,8 @@ export async function runLobbyAutomation() {
   if (g("option").encounter) {
     const encounterOutcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
+      rerun: runLobbyAutomation,
     });
-    scheduleNextLobbyAutomation(encounterOutcome.nextCheckMs);
     if (encounterOutcome.claimed) return;
   }
   if (shouldStopForStamina()) return;

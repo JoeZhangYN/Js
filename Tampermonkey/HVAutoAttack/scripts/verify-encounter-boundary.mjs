@@ -94,10 +94,13 @@ function checkFile(file) {
     if (relative !== policyFile && /encounter=\(\[A-Za-z0-9=\]\+\)/.test(line)) {
       violations.push(`${where} encounter key parsing belongs in encounter-policy.js`);
     }
-    if (relative === owner && /\bsetTimeout\s*\(/.test(line)) {
+    if (relative !== owner && /\bnextCheckMs\b/.test(line)) {
       violations.push(
-        `${where} encounter must return nextCheckMs; lobby automation owns scheduling`
+        `${where} encounter check timing belongs inside runEncounterAutomation(event)`
       );
+    }
+    if (relative !== owner && /\bscheduleNextLobbyAutomation\b/.test(line)) {
+      violations.push(`${where} lobby must not own encounter retry timers`);
     }
     if (
       relative === widgetPolicyFile &&

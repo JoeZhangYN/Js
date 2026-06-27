@@ -26,6 +26,8 @@ const EVENT_WIDGET_CLICKED = "widgetClicked";
 const EVENT_WIDGET_NEWS_LOADED = "widgetNewsLoaded";
 const EVENT_WIDGET_ENGAGE = "widgetEngage";
 
+let scheduledLobbyTick = null;
+
 export const EncounterEvent = Object.freeze({
   LOBBY_TICK: EVENT_LOBBY_TICK,
   RANDOM_ENCOUNTER_STARTED: EVENT_RANDOM_ENCOUNTER_STARTED,
@@ -44,15 +46,30 @@ function syncDateNow() {
   return dateNow;
 }
 
-function continueLater(state = readCurrentReState()) {
-  return {
-    claimed: false,
-    nextCheckMs: msUntilNextEncounterCheck(state),
-  };
+function continueLater() {
+  return { claimed: false };
 }
 
 function claimLobby() {
-  return { claimed: true, nextCheckMs: 0 };
+  if (scheduledLobbyTick) clearTimeout(scheduledLobbyTick);
+  scheduledLobbyTick = null;
+  return { claimed: true };
+}
+
+function scheduleNextLobbyTick(state, rerun) {
+  if (typeof rerun !== "function") return;
+  const delayMs = msUntilNextEncounterCheck(state);
+  if (!Number.isFinite(delayMs) || delayMs <= 0) return;
+  if (scheduledLobbyTick) clearTimeout(scheduledLobbyTick);
+  scheduledLobbyTick = setTimeout(() => {
+    scheduledLobbyTick = null;
+    rerun();
+  }, delayMs);
+}
+
+function waitForNextCheck(state, event) {
+  scheduleNextLobbyTick(state, event.rerun);
+  return continueLater();
 }
 
 function executeEncounterActivation(state) {
@@ -62,18 +79,18 @@ function executeEncounterActivation(state) {
   return true;
 }
 
-async function runLobbyTick() {
+async function runLobbyTick(event) {
   syncDateNow();
   let state = readCurrentReState();
   const readiness = readEncounterReadiness(state);
   if (readiness.dailyLimitReached) {
-    return continueLater(state);
+    return waitForNextCheck(state, event);
   }
   if (executeEncounterActivation(state)) {
     return claimLobby();
   }
   if (readiness.remainingMs > 0) {
-    return continueLater(state);
+    return waitForNextCheck(state, event);
   }
   if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_BATTLE })) {
     post(window.location.href, goto, "recover=stamina");
@@ -83,16 +100,16 @@ async function runLobbyTick() {
   if (executeEncounterActivation(state || {})) {
     return claimLobby();
   }
-  return continueLater(readCurrentReState());
+  return waitForNextCheck(readCurrentReState(), event);
 }
 
 export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
   if (event.type === EVENT_RANDOM_ENCOUNTER_STARTED) {
     markRandomEncounterStarted();
-    return { claimed: false, nextCheckMs: 0 };
+    return { claimed: false };
   }
   if (event.type?.startsWith("widget")) {
     return planEncounterWidgetEvent(event);
   }
-  return runLobbyTick();
+  return runLobbyTick(event);
 }

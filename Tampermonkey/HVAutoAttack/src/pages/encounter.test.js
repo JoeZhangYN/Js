@@ -14,7 +14,8 @@ afterEach(() => {
 });
 
 describe("runEncounterAutomation", () => {
-  it("returns the next lobby check instead of owning a child timer", async () => {
+  it("owns the next lobby check timer from the same readiness query", async () => {
+    const rerun = vi.fn();
     localStorage.setItem(
       HVUT_RE_KEY,
       JSON.stringify({
@@ -27,11 +28,13 @@ describe("runEncounterAutomation", () => {
 
     const outcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
+      rerun,
     });
 
     expect(outcome.claimed).toBe(false);
-    expect(outcome.nextCheckMs).toBeGreaterThan(0);
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(1);
+    await vi.runOnlyPendingTimersAsync();
+    expect(rerun).toHaveBeenCalledTimes(1);
   });
 
   it("serves the widget countdown from the same UTC day readiness", () => {
