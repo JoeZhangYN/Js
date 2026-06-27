@@ -4,7 +4,7 @@ import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { refreshBattleHud } from "./battle-info.js";
 import { recordBattleDrops } from "./drop-monitor.js";
-import { recordBattleActionUsage, recordCompletedBattleUsage } from "./record-usage.js";
+import { runBattleUsageAutomation } from "./record-usage.js";
 import { runBattleReportAutomation } from "./battle-report.js";
 
 const EVENT_BATTLE_STARTED = "battleStarted";
@@ -54,13 +54,13 @@ function readActionUsage() {
 function recordActionEnd() {
   if (!g("option").recordUsage || !pendingUsage) return;
   pendingUsage.log = gE("#textlog>tbody>tr>td", "all");
-  recordBattleActionUsage(pendingUsage);
+  runBattleUsageAutomation({ type: EVENT_ACTION_ENDED, usage: pendingUsage });
 }
 
 function recordCompletion() {
   const battleLog = gE("#textlog>tbody>tr>td", "all");
   if (g("option").dropMonitor) recordBattleDrops(battleLog);
-  if (g("option").recordUsage) recordCompletedBattleUsage();
+  if (g("option").recordUsage) runBattleUsageAutomation({ type: EVENT_COMPLETION_REACHED });
 }
 
 function recordBattleStarted() {

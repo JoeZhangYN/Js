@@ -7,7 +7,7 @@ import { time } from "../core/time.js";
 import { setAudioAlarm } from "../alarm/alarm.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../battle/pause-automation.js";
 
-export function recordBattleActionUsage(parm) {
+function recordBattleActionUsage(parm) {
   const stats = getValue(STORAGE_KEYS.STATS, true) || {
     self: {
       _startTime: time(3),
@@ -185,7 +185,7 @@ export function recordBattleActionUsage(parm) {
   setValue(STORAGE_KEYS.STATS, stats);
 }
 
-export function recordCompletedBattleUsage() {
+function recordCompletedBattleUsage() {
   const stats = getValue(STORAGE_KEYS.STATS, true);
   stats.self._monster += g("monsterAll");
   stats.self._boss += g("bossAll");
@@ -200,4 +200,16 @@ export function recordCompletedBattleUsage() {
   } else {
     setValue(STORAGE_KEYS.STATS, stats);
   }
+}
+
+export function runBattleUsageAutomation(event) {
+  if (event.type === "actionEnded") {
+    recordBattleActionUsage(event.usage);
+    return undefined;
+  }
+  if (event.type === "completionReached") {
+    recordCompletedBattleUsage();
+    return undefined;
+  }
+  return undefined;
 }

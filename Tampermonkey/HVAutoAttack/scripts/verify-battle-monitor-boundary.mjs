@@ -41,7 +41,7 @@ function checkFile(file) {
     for (const name of [
       "refreshBattleHud",
       "recordBattleDrops",
-      "recordBattleActionUsage",
+      "runBattleUsageAutomation",
       "recordUsage2",
     ]) {
       if (new RegExp(`\\b${name}\\s*\\(`).test(line)) {
@@ -80,8 +80,8 @@ function checkEntry() {
   if (!text.includes("refreshBattleHud")) {
     violations.push(`${entry.replaceAll("\\", "/")} must own refreshBattleHud HUD wiring`);
   }
-  if (!text.includes("recordBattleActionUsage")) {
-    violations.push(`${entry.replaceAll("\\", "/")} must own recordBattleActionUsage action-end wiring`);
+  if (!text.includes("runBattleUsageAutomation")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must route battle usage through runBattleUsageAutomation(event)`);
   }
   if (!text.includes("runBattleReportAutomation")) {
     violations.push(`${entry.replaceAll("\\", "/")} must route battle reports through runBattleReportAutomation(event)`);
@@ -107,14 +107,22 @@ function checkUsageImplementation() {
   const usageFile = path.join(root, "src/monitor/record-usage.js");
   const entryText = fs.readFileSync(path.join(root, entry), "utf8");
   const text = fs.readFileSync(usageFile, "utf8");
+  if (!/export function runBattleUsageAutomation\(/.test(text)) {
+    violations.push(`${rel(usageFile)} must expose only runBattleUsageAutomation(event)`);
+  }
   if (/\brecordUsage\s*\(/.test(entryText) || /\b(?:export\s+)?function\s+recordUsage\s*\(/.test(text)) {
     violations.push(
-      `${rel(usageFile)} legacy recordUsage() bridge must stay deleted; use recordBattleActionUsage()`
+      `${rel(usageFile)} legacy recordUsage() bridge must stay deleted; use runBattleUsageAutomation(event)`
     );
+  }
+  for (const legacy of ["recordBattleActionUsage", "recordCompletedBattleUsage"]) {
+    if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(text)) {
+      violations.push(`${rel(usageFile)} legacy ${legacy} export must stay private behind runBattleUsageAutomation(event)`);
+    }
   }
   if (/\b(?:export\s+)?function\s+recordUsage2\s*\(/.test(text)) {
     violations.push(
-      `${rel(usageFile)} legacy recordUsage2() bridge must stay deleted; use recordCompletedBattleUsage()`
+      `${rel(usageFile)} legacy recordUsage2() bridge must stay deleted; use runBattleUsageAutomation(event)`
     );
   }
 }
