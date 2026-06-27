@@ -1,0 +1,82 @@
+import fs from "node:fs";
+import path from "node:path";
+
+const root = process.cwd();
+const srcDir = path.join(root, "src");
+const owner = path.normalize("src/arena/quick-site.js");
+const ownerTest = path.normalize("src/arena/quick-site.test.js");
+const lobby = path.normalize("src/pages/lobby-automation.js");
+const settings = path.normalize("src/settings/render.js");
+const style = path.normalize("src/style/inject.js");
+const violations = [];
+
+function rel(file) {
+  return path.normalize(path.relative(root, file)).replaceAll("\\", "/");
+}
+
+function walk(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full);
+    else if (entry.isFile() && entry.name.endsWith(".js")) checkFile(full);
+  }
+}
+
+function checkFile(file) {
+  const relative = path.normalize(path.relative(root, file));
+  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+  lines.forEach((line, index) => {
+    const where = `${rel(file)}:${index + 1}`;
+    if (
+      relative !== owner &&
+      relative !== ownerTest &&
+      /from\s+["'](?:\.\/|\.\.\/arena\/)quick-site\.js["']/.test(line) &&
+      !/\bQuickSiteEvent\b/.test(line)
+    ) {
+      violations.push(`${where} quick site consumers must use runQuickSiteAutomation(event)`);
+    }
+    if (
+      relative !== owner &&
+      relative !== ownerTest &&
+      relative !== style &&
+      /\bquickSiteBar\b/.test(line)
+    ) {
+      violations.push(`${where} quick site DOM belongs in arena/quick-site.js`);
+    }
+    if (
+      relative !== owner &&
+      relative !== ownerTest &&
+      relative !== settings &&
+      relative !== lobby &&
+      /\bquickSite\b/.test(line)
+    ) {
+      violations.push(`${where} quick site business belongs in runQuickSiteAutomation(event)`);
+    }
+    if (relative === lobby && /if\s*\([^)]*quickSite/.test(line)) {
+      violations.push(`${where} lobby must not branch on quickSite option`);
+    }
+  });
+}
+
+walk(srcDir);
+
+const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+for (const required of ["runQuickSiteAutomation", "QuickSiteEvent"]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+if (/export\s+function\s+quickSite\s*\(/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} legacy quickSite export is forbidden`);
+}
+if (/from\s+["']\.\.\/state\/store\.js["']/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must receive option through the entry event`);
+}
+
+if (violations.length) {
+  console.error("[verify-quick-site-boundary] FAIL");
+  for (const v of violations) console.error(`- ${v}`);
+  process.exit(1);
+}
+
+console.log("[verify-quick-site-boundary] OK — quick site rendering is behind one entry");

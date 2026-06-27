@@ -3,7 +3,7 @@ import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
-import { quickSite } from "../arena/quick-site.js";
+import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
 import { runRepair } from "../repair/repair-orchestrator.js";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
@@ -29,7 +29,7 @@ export async function runLobbyAutomation() {
   runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
   syncLobbyDate();
   runAbilityAoeAutomation({ type: AbilityAoeEvent.CAPTURE_ABILITY_PAGE });
-  if (g("option").quickSite) quickSite();
+  runQuickSiteAutomation({ type: QuickSiteEvent.LOBBY_READY, option: g("option") });
   if (g("option").encounter) {
     const encounterOutcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
