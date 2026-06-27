@@ -1,8 +1,19 @@
 // F3 回归锁：CD 收敛学习器。钉死「学习只下拉、永不上调」安全不变量 + 各守卫 + 消费方夹。
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { g } from "./store.js";
 import { CdLearningEvent, runCdLearningAutomation } from "./cd-learner.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "./cd-tracker.js";
+
+const mocks = vi.hoisted(() => ({
+  runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("./option.js", () => ({
+  OptionEvent: Object.freeze({
+    READ_FIELD: "readField",
+  }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
 
 const fire = (code, id, globalTurn) =>
   runCdLearningAutomation({ type: CdLearningEvent.RECORD_FIRE, code, id, snap: { globalTurn } });
@@ -18,7 +29,8 @@ beforeEach(() => {
   g("cdLearnPending", {});
   g("globalTurn", 0);
   g("skillLastUsed", {});
-  g("option", {});
+  mocks.runOptionAutomation.mockReset();
+  mocks.runOptionAutomation.mockReturnValue(false);
 });
 
 describe("cd-learner 学习与守卫", () => {
@@ -74,6 +86,22 @@ describe("cd-learner 学习与守卫", () => {
 
   it("未知 code → 0（无 entry）", () => {
     expect(readCd("NOPE")).toBe(0);
+  });
+
+  it("日志开关通过 option entry 读取", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    mocks.runOptionAutomation.mockReturnValue(true);
+
+    fire("OFC", "1111", 10);
+    settle(35, "1111");
+
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "dynamicHealLog",
+      fallback: false,
+    });
+    expect(log).toHaveBeenCalledWith(expect.stringContaining("[cd-learn] OFC"));
+    log.mockRestore();
   });
 });
 

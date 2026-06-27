@@ -11,6 +11,7 @@
 // pending 为 **map**（多技能可同时计时，异于 recovery 的单 learnPending），runtime-only（g()），
 // 不持久——重载丢一个在途样本可接受。learned 表持久（按需 getValue / 即时 setValue）。
 import { g } from "./store.js";
+import { OptionEvent, runOptionAutomation } from "./option.js";
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { SKILL_REGISTRY } from "./skill-registry.js";
@@ -24,6 +25,16 @@ export const CdLearningEvent = Object.freeze({
   FINALIZE_PENDING: EVENT_FINALIZE_PENDING,
   READ_CD: EVENT_READ_CD,
 });
+
+function isDynamicHealLogEnabled() {
+  return Boolean(
+    runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "dynamicHealLog",
+      fallback: false,
+    })
+  );
+}
 
 /**
  * 开火记录（SHELL）：execute-attack 物理分支 recordFire 之后调。
@@ -74,7 +85,7 @@ function updateLearnedCd(code, sample, cdBase) {
   const newCd = priorCd * (1 - alpha) + sample * alpha;
   learned[code] = { cd: newCd, n };
   setValue(STORAGE_KEYS.LEARNED_CD, learned);
-  if (g("option")?.dynamicHealLog) {
+  if (isDynamicHealLogEnabled()) {
     console.log(`[cd-learn] ${code}: gap→${sample} → cd=${newCd.toFixed(1)} (n=${n})`);
   }
 }

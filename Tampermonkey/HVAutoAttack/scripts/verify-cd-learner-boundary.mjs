@@ -47,10 +47,18 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
-for (const required of ["runCdLearningAutomation", "CdLearningEvent", "STORAGE_KEYS.LEARNED_CD"]) {
+for (const required of [
+  "runCdLearningAutomation",
+  "CdLearningEvent",
+  "STORAGE_KEYS.LEARNED_CD",
+  "OptionEvent.READ_FIELD",
+]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not read option fields directly`);
 }
 
 for (const legacy of ["recordCdFire", "finalizeCdPending", "getLearnedCd"]) {
