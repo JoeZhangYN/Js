@@ -7,6 +7,7 @@ const entry = path.normalize("src/monitor/battle-monitor-automation.js");
 const internalFiles = new Set(
   [
     entry,
+    "src/monitor/battle-action-usage-capture.js",
     "src/monitor/battle-info.js",
     "src/monitor/battle-record-archive.js",
     "src/monitor/battle-report.js",
@@ -108,6 +109,27 @@ function checkEntry() {
       `${entry.replaceAll("\\", "/")} must report battle-report events through BattleReportEvent`
     );
   }
+  if (
+    !text.includes("runBattleActionUsageCapture") ||
+    !text.includes("BattleActionUsageCaptureEvent.ACTION_STARTED") ||
+    !text.includes("BattleActionUsageCaptureEvent.ACTION_ENDED")
+  ) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must route action usage capture through runBattleActionUsageCapture(event)`
+    );
+  }
+  for (const forbidden of [
+    /\bunsafeWindow\.info\b/,
+    /#pane_item/,
+    /#textlog>tbody>tr>td/,
+    /\bpendingUsage\b/,
+  ]) {
+    if (forbidden.test(text)) {
+      violations.push(
+        `${entry.replaceAll("\\", "/")} must not collect action usage directly; use battle-action-usage-capture`
+      );
+    }
+  }
   if (!text.includes("BattleMonitorRuntimeEvent.REPORT_START_CONTEXT")) {
     violations.push(
       `${entry.replaceAll("\\", "/")} must read report start context through battle-monitor-runtime`
@@ -146,6 +168,29 @@ function checkSettingsReportConsumption() {
   for (const required of ["RENDER_DROP_REPORT_TABLE_BODY", "RENDER_USAGE_REPORT_TABLE_BODY"]) {
     if (!text.includes(required)) {
       violations.push(`${rel(settingsFile)} must request ${required}`);
+    }
+  }
+}
+
+function checkActionUsageCaptureEntry() {
+  const captureFile = path.join(root, "src/monitor/battle-action-usage-capture.js");
+  const text = fs.readFileSync(captureFile, "utf8");
+  if (!/export const BattleActionUsageCaptureEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(captureFile)} must expose BattleActionUsageCaptureEvent`);
+  }
+  if (!/export function runBattleActionUsageCapture\(/.test(text)) {
+    violations.push(`${rel(captureFile)} must expose runBattleActionUsageCapture(event)`);
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleActionUsageCaptureEvent\b|runBattleActionUsageCapture\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(captureFile)} may export only its event entry`);
+  }
+  for (const required of ["unsafeWindow.info", "#pane_item", "#textlog>tbody>tr>td"]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(captureFile)} must own action usage ${required} collection`);
     }
   }
 }
@@ -385,6 +430,7 @@ function checkBattleReportViewEntry() {
 walk(srcDir);
 checkEntry();
 checkSettingsReportConsumption();
+checkActionUsageCaptureEntry();
 checkRecordArchiveEntry();
 checkUsageImplementation();
 checkBattleMonitorRuntimeEntry();

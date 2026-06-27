@@ -1,11 +1,14 @@
 // 战斗监控编排入口：HUD、使用统计、掉落记录统一从这里进入。
-import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { BattleHudEvent, runBattleHudAutomation } from "./battle-info.js";
 import { BattleDropEvent, runBattleDropAutomation } from "./drop-monitor.js";
 import { runBattleUsageAutomation } from "./record-usage.js";
 import { BattleReportEvent, runBattleReportAutomation } from "./battle-report.js";
 import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
+import {
+  BattleActionUsageCaptureEvent,
+  runBattleActionUsageCapture,
+} from "./battle-action-usage-capture.js";
 
 const EVENT_BATTLE_STARTED = "battleStarted";
 const EVENT_HUD_REFRESH = "hudRefresh";
@@ -33,32 +36,9 @@ export const BattleMonitorEvent = Object.freeze({
   RENDER_USAGE_REPORT_TABLE_BODY: EVENT_RENDER_USAGE_REPORT_TABLE_BODY,
 });
 
-let pendingUsage;
-
-function readActionUsage() {
-  if (!g("option").recordUsage) {
-    pendingUsage = undefined;
-    return;
-  }
-  const action = unsafeWindow.info;
-  pendingUsage = { mode: action.mode };
-  if (action.mode === "items") {
-    const itemEl = gE(`#pane_item div[id^="ikey"][onclick*="skill('${action.skill}')"]`);
-    pendingUsage.item = itemEl ? itemEl.textContent : action.skill;
-  } else if (action.mode === "magic") {
-    const magicEl = gE(action.skill);
-    pendingUsage.magic = magicEl ? magicEl.textContent : action.skill;
-    const onmouseover = magicEl ? magicEl.getAttribute("onmouseover") : null;
-    const cost = onmouseover ? onmouseover.match(/\('.*', '.*', '.*', (\d+), (\d+), \d+\)/) : null;
-    pendingUsage.mp = cost ? cost[1] * 1 : 0;
-    pendingUsage.oc = cost ? cost[2] * 1 : 0;
-  }
-}
-
 function recordActionEnd() {
-  if (!g("option").recordUsage || !pendingUsage) return;
-  pendingUsage.log = gE("#textlog>tbody>tr>td", "all");
-  runBattleUsageAutomation({ type: EVENT_ACTION_ENDED, usage: pendingUsage });
+  const usage = runBattleActionUsageCapture({ type: BattleActionUsageCaptureEvent.ACTION_ENDED });
+  if (usage) runBattleUsageAutomation({ type: EVENT_ACTION_ENDED, usage });
 }
 
 function recordCompletion() {
@@ -81,7 +61,7 @@ export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) 
   } else if (event.type === EVENT_HUD_REFRESH) {
     runBattleHudAutomation({ type: BattleHudEvent.REFRESH });
   } else if (event.type === EVENT_ACTION_STARTED) {
-    readActionUsage();
+    runBattleActionUsageCapture({ type: BattleActionUsageCaptureEvent.ACTION_STARTED });
   } else if (event.type === EVENT_ACTION_ENDED) {
     recordActionEnd();
   } else if (event.type === EVENT_COMPLETION_REACHED) {
