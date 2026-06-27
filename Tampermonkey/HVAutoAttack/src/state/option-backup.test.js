@@ -46,4 +46,19 @@ describe("option backup entry", () => {
       b: { version: "10.0", lang: "2" },
     });
   });
+
+  it("answers backup code existence and renders backup list items", () => {
+    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", lang: "1" } });
+    runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "a" });
+    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", lang: "2" } });
+    runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "b" });
+
+    expect(runOptionBackupAutomation({ type: OptionBackupEvent.HAS_CODE, code: "a" })).toBe(true);
+    expect(runOptionBackupAutomation({ type: OptionBackupEvent.HAS_CODE, code: "missing" })).toBe(
+      false
+    );
+    expect(runOptionBackupAutomation({ type: OptionBackupEvent.RENDER_LIST_ITEMS })).toBe(
+      "<li>a</li><li>b</li>"
+    );
+  });
 });

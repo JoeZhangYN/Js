@@ -6,6 +6,7 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/option-backup.js");
 const ownerTest = path.normalize("src/state/option-backup.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
+const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
 
 function rel(file) {
@@ -40,15 +41,36 @@ function checkFile(file) {
     ) {
       violations.push(`${where} option backup key belongs in state/option-backup.js`);
     }
+    if (
+      relative === settingsRender &&
+      /\bOptionBackupEvent\.READ\b|\bcode in backups\b|\bexistingBackups\b|\bObject\.keys\(.*backups/.test(
+        line
+      )
+    ) {
+      violations.push(`${where} settings must not inspect option backup shape`);
+    }
   });
 }
 
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
-for (const required of ["runOptionBackupAutomation", "OptionBackupEvent", "STORAGE_KEYS.BACKUP"]) {
+for (const required of [
+  "runOptionBackupAutomation",
+  "OptionBackupEvent",
+  "STORAGE_KEYS.BACKUP",
+  "HAS_CODE",
+  "RENDER_LIST_ITEMS",
+]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+
+const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
+for (const required of ["OptionBackupEvent.HAS_CODE", "OptionBackupEvent.RENDER_LIST_ITEMS"]) {
+  if (!settingsText.includes(required)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} must request ${required}`);
   }
 }
 

@@ -665,8 +665,7 @@ export function optionBox() {
         "請輸入當前配置代號",
         "Please put in a name for the current configuration"
       ) || runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL });
-    const backups = runOptionBackupAutomation({ type: OptionBackupEvent.READ });
-    if (code in backups) {
+    if (runOptionBackupAutomation({ type: OptionBackupEvent.HAS_CODE, code })) {
       // 覆写同名配置
       if (
         _alert(
@@ -870,14 +869,8 @@ export function optionBox() {
       });
       gE(".hvAAQuickSite>table>tbody", optionBox).innerHTML = _html;
     }
-    const existingBackups = runOptionBackupAutomation({ type: OptionBackupEvent.READ });
-    if (Object.keys(existingBackups).length) {
-      const backups = existingBackups;
-      _html = "";
-      for (i in backups) {
-        _html = `${_html}<li>${i}</li>`;
-      }
-      gE(".hvAABackupList", optionBox).innerHTML = _html;
-    }
+    gE(".hvAABackupList", optionBox).innerHTML = runOptionBackupAutomation({
+      type: OptionBackupEvent.RENDER_LIST_ITEMS,
+    });
   }
 }
