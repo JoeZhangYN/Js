@@ -7,7 +7,7 @@ export const EncounterPolicyEvent = Object.freeze({
   NORMALIZE: "normalize",
   READINESS: "readiness",
   READ_CLOCK: "readClock",
-  NEXT_CHECK_DELAY: "nextCheckDelay",
+  PLAN_NEXT_CHECK: "planNextCheck",
   PLAN_ACTIVATION: "planActivation",
   PARSE_SEARCH_KEY: "parseSearchKey",
   PARSE_EVENTPANE_KEY: "parseEventpaneKey",
@@ -77,12 +77,13 @@ function readEncounterClock(state, nowMs = Date.now()) {
   };
 }
 
-function msUntilNextEncounterCheck(state, { nowMs = Date.now(), jitter = Math.random() } = {}) {
+function planNextEncounterCheck(state, { nowMs = Date.now(), jitter = Math.random() } = {}) {
   const clock = readEncounterClock(state, nowMs);
   const jitteredMinute = 60 * 1000 * (0.95 + Math.max(0, Math.min(1, jitter)) * 0.1);
   const readyDelay = clock.countdownMs + ENCOUNTER_MIDNIGHT_GRACE_MS;
   const midnightDelay = msUntilNextUtcMidnight(nowMs) + ENCOUNTER_MIDNIGHT_GRACE_MS;
-  return Math.min(jitteredMinute, readyDelay, midnightDelay);
+  const delayMs = Math.min(jitteredMinute, readyDelay, midnightDelay);
+  return { delayMs, reason: clock.reason, status: clock.status, clock };
 }
 
 function planEncounterActivation(state, { force = false, nowMs = Date.now() } = {}) {
@@ -142,8 +143,8 @@ export function runEncounterPolicy(event = { type: EncounterPolicyEvent.READINES
       return readEncounterReadiness(event.state, event.nowMs);
     case EncounterPolicyEvent.READ_CLOCK:
       return readEncounterClock(event.state, event.nowMs);
-    case EncounterPolicyEvent.NEXT_CHECK_DELAY:
-      return msUntilNextEncounterCheck(event.state, { nowMs: event.nowMs, jitter: event.jitter });
+    case EncounterPolicyEvent.PLAN_NEXT_CHECK:
+      return planNextEncounterCheck(event.state, { nowMs: event.nowMs, jitter: event.jitter });
     case EncounterPolicyEvent.PLAN_ACTIVATION:
       return planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs });
     case EncounterPolicyEvent.PARSE_SEARCH_KEY:

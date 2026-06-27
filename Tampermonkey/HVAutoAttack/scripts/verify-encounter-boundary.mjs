@@ -148,7 +148,7 @@ function checkFile(file) {
       relative !== policyTest &&
       relative !== lobbyScheduleFile &&
       relative !== lobbyScheduleTest &&
-      /\b(defaultEncounterState|resetEncounterDay|normalizeEncounterState|msUntilEncounterReady|canEnterEncounterState|readEncounterReadiness|readEncounterClock|countdownEncounterClock|msUntilNextEncounterCheck|planEncounterActivation|parseEncounterKeyFromEventpaneHtml|parseEncounterKeyFromSearch|buildEncounterUrl|markEncounterKeyAvailable|markEncounterStarted)\b/.test(
+      /\b(defaultEncounterState|resetEncounterDay|normalizeEncounterState|msUntilEncounterReady|canEnterEncounterState|readEncounterReadiness|readEncounterClock|countdownEncounterClock|msUntilNextEncounterCheck|planNextEncounterCheck|planEncounterActivation|parseEncounterKeyFromEventpaneHtml|parseEncounterKeyFromSearch|buildEncounterUrl|markEncounterKeyAvailable|markEncounterStarted)\b/.test(
         line
       )
     ) {
@@ -158,7 +158,7 @@ function checkFile(file) {
     }
     if (
       relative === owner &&
-      /\bscheduledLobbyTick\b|\bsetTimeout\b|\bclearTimeout\b|EncounterPolicyEvent\.NEXT_CHECK_DELAY/.test(
+      /\bscheduledLobbyTick\b|\bsetTimeout\b|\bclearTimeout\b|EncounterPolicyEvent\.PLAN_NEXT_CHECK/.test(
         line
       )
     ) {
@@ -240,6 +240,21 @@ if (/\bexecuteEncounterActivation\b|\bexecuteWidgetNavigation\b/.test(ownerText)
 }
 if (!/\bREAD_CLOCK\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose one encounter clock query`);
+}
+if (!/\bPLAN_NEXT_CHECK\b/.test(policyText)) {
+  violations.push(`${policyFile.replaceAll("\\", "/")} must expose one next-check plan query`);
+}
+if (
+  !/EncounterPolicyEvent\.PLAN_NEXT_CHECK/.test(
+    fs.readFileSync(path.join(root, lobbyScheduleFile), "utf8")
+  )
+) {
+  violations.push(
+    `${lobbyScheduleFile.replaceAll("\\", "/")} must schedule lobby checks from the encounter next-check plan`
+  );
+}
+if (/\bNEXT_CHECK_DELAY\b/.test(policyText)) {
+  violations.push(`${policyFile.replaceAll("\\", "/")} must not expose raw next-check delay`);
 }
 if (!/EncounterPolicyEvent\.READ_CLOCK/.test(widgetPolicyText)) {
   violations.push(

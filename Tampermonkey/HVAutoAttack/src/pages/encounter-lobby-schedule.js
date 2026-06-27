@@ -17,12 +17,13 @@ function cancelNextCheck() {
 
 function scheduleNextCheck(event) {
   if (typeof event.rerun !== "function") return false;
-  const delayMs = runEncounterPolicy({
-    type: EncounterPolicyEvent.NEXT_CHECK_DELAY,
+  const plan = runEncounterPolicy({
+    type: EncounterPolicyEvent.PLAN_NEXT_CHECK,
     state: event.state,
     nowMs: event.nowMs,
     jitter: event.jitter,
   });
+  const delayMs = plan?.delayMs;
   if (!Number.isFinite(delayMs) || delayMs <= 0) return false;
   cancelNextCheck();
   scheduledLobbyTick = setTimeout(() => {

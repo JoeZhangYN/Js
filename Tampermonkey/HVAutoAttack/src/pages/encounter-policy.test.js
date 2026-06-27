@@ -39,12 +39,16 @@ describe("runEncounterPolicy time contract", () => {
     });
     expect(
       runEncounterPolicy({
-        type: EncounterPolicyEvent.NEXT_CHECK_DELAY,
+        type: EncounterPolicyEvent.PLAN_NEXT_CHECK,
         state,
         nowMs,
         jitter: 1,
       })
-    ).toBe(ENCOUNTER_MIDNIGHT_GRACE_MS);
+    ).toMatchObject({
+      delayMs: ENCOUNTER_MIDNIGHT_GRACE_MS,
+      reason: "readyWindow",
+      status: "ready",
+    });
   });
 
   it("uses one thirty-minute readiness window", () => {
@@ -87,12 +91,16 @@ describe("runEncounterPolicy time contract", () => {
     });
     expect(
       runEncounterPolicy({
-        type: EncounterPolicyEvent.NEXT_CHECK_DELAY,
+        type: EncounterPolicyEvent.PLAN_NEXT_CHECK,
         state,
         nowMs: Date.UTC(2026, 5, 26, 23, 59, 59),
         jitter: 1,
       })
-    ).toBe(1000 + ENCOUNTER_MIDNIGHT_GRACE_MS);
+    ).toMatchObject({
+      delayMs: 1000 + ENCOUNTER_MIDNIGHT_GRACE_MS,
+      reason: "dailyReset",
+      status: "countdown",
+    });
   });
 
   it("reports the daily reset as the countdown deadline at the daily limit", () => {
