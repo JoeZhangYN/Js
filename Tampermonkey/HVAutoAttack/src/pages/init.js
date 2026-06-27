@@ -6,8 +6,8 @@ import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { scheduleReload, openUrl } from "../core/navigate.js";
 import { addStyle } from "../style/inject.js";
-import { riddleAlert } from "./riddle.js";
 import { registerExportMenu } from "../state/riddle-dataset.js";
+import { runRiddleAutomation } from "./riddle-automation.js";
 import { runLobbyAutomation } from "./lobby-automation.js";
 import { runBattleAutomation } from "../battle/battle-automation.js";
 import { loadCdState } from "../state/cd-tracker.js";
@@ -104,16 +104,7 @@ export function init() {
   g("spellAoe", getValue("spellAoe", true) || {});
   console.log("[AoE] 启动加载 spellAoe:", JSON.stringify(g("spellAoe")));
   if (kind === PageKind.RIDDLE) {
-    // 需要答题
-    if (g("option").riddlePopup && !window.opener) {
-      window.open(
-        window.location.href,
-        "riddleWindow",
-        "resizable,scrollbars,width=1241,height=707"
-      );
-    } else {
-      riddleAlert(); // 答题警报
-    }
+    runRiddleAutomation();
   } else if (kind === PageKind.BATTLE) {
     runBattleAutomation();
   } else {
