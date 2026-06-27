@@ -35,13 +35,16 @@ function runNextBattleAutomation() {
   }
 }
 
-export function runLobbyAutomation() {
+export async function runLobbyAutomation() {
   delValue(2);
   syncLobbyDate();
   runAbilityPageCapture();
   if (g("option").quickSite) quickSite();
   if (g("option").encounter) {
-    runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK });
+    const encounterClaimedLobby = await runEncounterAutomation({
+      type: EncounterEvent.LOBBY_TICK,
+    });
+    if (encounterClaimedLobby) return;
   }
   if (shouldStopForStamina()) return;
   runNextBattleAutomation();

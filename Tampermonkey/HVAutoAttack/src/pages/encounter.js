@@ -65,35 +65,36 @@ async function runLobbyTick() {
   let state = readCurrentReState();
   if (state.count >= 24) {
     scheduleNextLobbyTick(state);
-    return;
+    return false;
   }
   if (canEnterEncounter(state)) {
     enterEncounter(state);
-    return;
+    return true;
   }
   if (msUntilReady(state) > 0) {
     scheduleNextLobbyTick(state);
-    return;
+    return false;
   }
   if (
     g("option").restoreStamina &&
     readStaminaValue() <= g("option").staminaLow
   ) {
     post(window.location.href, goto, "recover=stamina");
-    return;
+    return true;
   }
   state = await loadEncounterKey();
   if (canEnterEncounter(state || {})) {
     enterEncounter(state);
-    return;
+    return true;
   }
   scheduleNextLobbyTick(readCurrentReState());
+  return false;
 }
 
 export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
   if (event.type === EVENT_RANDOM_ENCOUNTER_STARTED) {
     markRandomEncounterStarted();
-    return;
+    return false;
   }
-  runLobbyTick();
+  return runLobbyTick();
 }

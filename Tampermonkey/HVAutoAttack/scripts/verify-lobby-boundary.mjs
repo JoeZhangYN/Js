@@ -34,8 +34,13 @@ function checkInit() {
 
 function checkLobbyEntry() {
   const text = fs.readFileSync(lobbyFile, "utf8");
-  if (!/export function runLobbyAutomation\(/.test(text)) {
+  if (!/export async function runLobbyAutomation\(/.test(text)) {
     violations.push(`${rel(lobbyFile)} must expose runLobbyAutomation()`);
+  }
+  if (!/await runEncounterAutomation\(/.test(text)) {
+    violations.push(
+      `${rel(lobbyFile)} must await encounter workflow before repair/idle automation`
+    );
   }
 }
 
