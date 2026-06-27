@@ -55,6 +55,12 @@ function checkFile(file) {
     if (relative === lobby && /if\s*\([^)]*quickSite/.test(line)) {
       violations.push(`${where} lobby must not branch on quickSite option`);
     }
+    if (relative === settings && /\b_option\.quickSite\b/.test(line)) {
+      violations.push(`${where} settings must render quickSite through QuickSiteEvent`);
+    }
+    if (relative === settings && /\bi\.(?:fav|name|url)\b/.test(line)) {
+      violations.push(`${where} settings must not know quickSite row fields`);
+    }
   });
 }
 
@@ -65,6 +71,17 @@ for (const required of ["runQuickSiteAutomation", "QuickSiteEvent"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+const settingsText = fs.readFileSync(path.join(root, settings), "utf8");
+if (!settingsText.includes("QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY")) {
+  violations.push(
+    `${settings.replaceAll("\\", "/")} must render quick site settings through the entry`
+  );
+}
+if (!settingsText.includes("QuickSiteEvent.COLLECT_SETTINGS_INPUTS")) {
+  violations.push(
+    `${settings.replaceAll("\\", "/")} must collect quick site settings through the entry`
+  );
 }
 if (/export\s+function\s+quickSite\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy quickSite export is forbidden`);

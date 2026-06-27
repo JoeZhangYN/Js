@@ -22,6 +22,7 @@ import {
 } from "../monitor/battle-monitor-automation.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
+import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
 
 /**
  * 从 option schema 渲染 "checkbox + number + 单位文本" 这类成对字段。
@@ -784,16 +785,11 @@ export function optionBox() {
         }
       }
     }
-    inputs = gE('.hvAAQuickSite input[type="text"]', "all", optionBox);
-    for (i = 0; 3 * i < inputs.length; i++) {
-      if (i === 0 && inputs.length !== 0) _option.quickSite = [];
-      if (inputs[3 * i + 1].value === "") continue;
-      _option.quickSite.push({
-        fav: inputs[3 * i].value,
-        name: inputs[3 * i + 1].value,
-        url: inputs[3 * i + 2].value,
-      });
-    }
+    runQuickSiteAutomation({
+      type: QuickSiteEvent.COLLECT_SETTINGS_INPUTS,
+      option: _option,
+      inputs: gE('.hvAAQuickSite input[type="text"]', "all", optionBox),
+    });
     runOptionAutomation({ type: OptionEvent.WRITE, option: _option });
     optionBox.style.display = "none";
     runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
@@ -866,14 +862,10 @@ export function optionBox() {
         }
       }
     }
-    if (_option.quickSite) {
-      _html =
-        '<tr class="hvAATh"><td><l0>图标</l0><l1>圖標</l1><l2>ICON</l2></td><td><l0>名称</l0><l1>名稱</l1><l2>Name</l2></td><td><l0>链接</l0><l1>鏈接</l1><l2>Link</l2></td></tr>';
-      _option.quickSite.forEach((i) => {
-        _html = `${_html}<tr><td><input class="hvAADebug" type="text" value="${i.fav}"></td><td><input class="hvAADebug" type="text" value="${i.name}"></td><td><input class="hvAADebug" type="text" value="${i.url}"></td></tr>`;
-      });
-      gE(".hvAAQuickSite>table>tbody", optionBox).innerHTML = _html;
-    }
+    gE(".hvAAQuickSite>table>tbody", optionBox).innerHTML = runQuickSiteAutomation({
+      type: QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY,
+      option: _option,
+    });
     gE(".hvAABackupList", optionBox).innerHTML = runOptionBackupAutomation({
       type: OptionBackupEvent.RENDER_LIST_ITEMS,
     });

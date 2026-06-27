@@ -2,10 +2,22 @@
 import { gE, cE } from "../dom/query.js";
 
 const EVENT_LOBBY_READY = "lobbyReady";
+const EVENT_RENDER_SETTINGS_TABLE_BODY = "renderSettingsTableBody";
+const EVENT_COLLECT_SETTINGS_INPUTS = "collectSettingsInputs";
 
 export const QuickSiteEvent = Object.freeze({
   LOBBY_READY: EVENT_LOBBY_READY,
+  RENDER_SETTINGS_TABLE_BODY: EVENT_RENDER_SETTINGS_TABLE_BODY,
+  COLLECT_SETTINGS_INPUTS: EVENT_COLLECT_SETTINGS_INPUTS,
 });
+
+function attr(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
 
 function renderQuickSite(option) {
   if (!option?.quickSite) return false;
@@ -33,7 +45,35 @@ function renderQuickSite(option) {
   return true;
 }
 
+function renderSettingsTableBody(option) {
+  if (!option?.quickSite) return "";
+  let html =
+    '<tr class="hvAATh"><td><l0>图标</l0><l1>圖標</l1><l2>ICON</l2></td><td><l0>名称</l0><l1>名稱</l1><l2>Name</l2></td><td><l0>链接</l0><l1>鏈接</l1><l2>Link</l2></td></tr>';
+  for (const site of option.quickSite) {
+    html = `${html}<tr><td><input class="hvAADebug" type="text" value="${attr(site.fav)}"></td><td><input class="hvAADebug" type="text" value="${attr(site.name)}"></td><td><input class="hvAADebug" type="text" value="${attr(site.url)}"></td></tr>`;
+  }
+  return html;
+}
+
+function collectSettingsInputs(option, inputs) {
+  if (!inputs?.length) return option;
+  option.quickSite = [];
+  for (let i = 0; 3 * i < inputs.length; i++) {
+    const name = inputs[3 * i + 1].value;
+    if (name === "") continue;
+    option.quickSite.push({
+      fav: inputs[3 * i].value,
+      name,
+      url: inputs[3 * i + 2].value,
+    });
+  }
+  return option;
+}
+
 export function runQuickSiteAutomation(event = { type: EVENT_LOBBY_READY }) {
   if (event.type === EVENT_LOBBY_READY) return renderQuickSite(event.option);
+  if (event.type === EVENT_RENDER_SETTINGS_TABLE_BODY) return renderSettingsTableBody(event.option);
+  if (event.type === EVENT_COLLECT_SETTINGS_INPUTS)
+    return collectSettingsInputs(event.option, event.inputs);
   return false;
 }
