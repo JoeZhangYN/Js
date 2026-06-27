@@ -5,13 +5,7 @@ import { time } from "../core/time.js";
 import { refreshBattleHud } from "./battle-info.js";
 import { recordBattleDrops } from "./drop-monitor.js";
 import { recordBattleActionUsage, recordCompletedBattleUsage } from "./record-usage.js";
-import {
-  clearDropReport,
-  clearUsageReport,
-  recordBattleReportStarted,
-  readDropReport,
-  readUsageReport,
-} from "./battle-report.js";
+import { runBattleReportAutomation } from "./battle-report.js";
 
 const EVENT_BATTLE_STARTED = "battleStarted";
 const EVENT_HUD_REFRESH = "hudRefresh";
@@ -70,7 +64,8 @@ function recordCompletion() {
 }
 
 function recordBattleStarted() {
-  recordBattleReportStarted({
+  runBattleReportAutomation({
+    type: EVENT_BATTLE_STARTED,
     recordEach: g("option").recordEach,
     roundType: g("roundType"),
     roundAll: g("roundAll"),
@@ -90,13 +85,13 @@ export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) 
   } else if (event.type === EVENT_COMPLETION_REACHED) {
     recordCompletion();
   } else if (event.type === EVENT_READ_DROP_REPORT) {
-    return readDropReport();
+    return runBattleReportAutomation({ type: EVENT_READ_DROP_REPORT });
   } else if (event.type === EVENT_READ_USAGE_REPORT) {
-    return readUsageReport();
+    return runBattleReportAutomation({ type: EVENT_READ_USAGE_REPORT });
   } else if (event.type === EVENT_CLEAR_DROP_REPORT) {
-    clearDropReport();
+    runBattleReportAutomation({ type: EVENT_CLEAR_DROP_REPORT });
   } else if (event.type === EVENT_CLEAR_USAGE_REPORT) {
-    clearUsageReport();
+    runBattleReportAutomation({ type: EVENT_CLEAR_USAGE_REPORT });
   }
   return undefined;
 }

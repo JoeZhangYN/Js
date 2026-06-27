@@ -83,6 +83,9 @@ function checkEntry() {
   if (!text.includes("recordBattleActionUsage")) {
     violations.push(`${entry.replaceAll("\\", "/")} must own recordBattleActionUsage action-end wiring`);
   }
+  if (!text.includes("runBattleReportAutomation")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must route battle reports through runBattleReportAutomation(event)`);
+  }
   for (const required of [
     "BATTLE_STARTED",
     "HUD_REFRESH",
@@ -134,11 +137,31 @@ function checkDeletedBattleInfoEntrypoint() {
   }
 }
 
+function checkBattleReportEntry() {
+  const reportFile = path.join(root, "src/monitor/battle-report.js");
+  const text = fs.readFileSync(reportFile, "utf8");
+  if (!/export function runBattleReportAutomation\(/.test(text)) {
+    violations.push(`${rel(reportFile)} must expose only runBattleReportAutomation(event)`);
+  }
+  for (const legacy of [
+    "recordBattleReportStarted",
+    "readDropReport",
+    "readUsageReport",
+    "clearDropReport",
+    "clearUsageReport",
+  ]) {
+    if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(text)) {
+      violations.push(`${rel(reportFile)} legacy ${legacy} export must stay private behind runBattleReportAutomation(event)`);
+    }
+  }
+}
+
 walk(srcDir);
 checkEntry();
 checkUsageImplementation();
 checkDeletedDropMonitorEntrypoint();
 checkDeletedBattleInfoEntrypoint();
+checkBattleReportEntry();
 
 if (violations.length) {
   console.error("[verify-battle-monitor-boundary] FAIL");

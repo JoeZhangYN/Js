@@ -12,13 +12,13 @@ function withCurrentRecord(history, current) {
   return rows.reverse();
 }
 
-export function recordBattleReportStarted({ recordEach, roundType, roundAll, recordLabel }) {
+function recordBattleReportStarted({ recordEach, roundType, roundAll, recordLabel }) {
   if (!recordEach || getValue(STORAGE_KEYS.BATTLE_CODE)) return false;
   setValue(STORAGE_KEYS.BATTLE_CODE, `${recordLabel}: ${roundType.toUpperCase()}-${roundAll}`);
   return true;
 }
 
-export function readDropReport() {
+function readDropReport() {
   let current = objSort(getValue(STORAGE_KEYS.DROP, true) || {});
   const history = getValue(STORAGE_KEYS.DROP_OLD, true) || [];
   if (history.length === 0 || (history.length === 1 && !getValue(STORAGE_KEYS.DROP, true))) {
@@ -41,7 +41,7 @@ export function readDropReport() {
   };
 }
 
-export function readUsageReport() {
+function readUsageReport() {
   let current = getValue(STORAGE_KEYS.STATS, true) || {};
   const history = getValue(STORAGE_KEYS.STATS_OLD, true) || [];
   if (history.length === 0 || (history.length === 1 && !getValue(STORAGE_KEYS.STATS, true))) {
@@ -74,12 +74,33 @@ export function readUsageReport() {
   };
 }
 
-export function clearDropReport() {
+function clearDropReport() {
   delValue(STORAGE_KEYS.DROP);
   delValue(STORAGE_KEYS.DROP_OLD);
 }
 
-export function clearUsageReport() {
+function clearUsageReport() {
   delValue(STORAGE_KEYS.STATS);
   delValue(STORAGE_KEYS.STATS_OLD);
+}
+
+export function runBattleReportAutomation(event) {
+  if (event.type === "battleStarted") {
+    return recordBattleReportStarted(event);
+  }
+  if (event.type === "readDropReport") {
+    return readDropReport();
+  }
+  if (event.type === "readUsageReport") {
+    return readUsageReport();
+  }
+  if (event.type === "clearDropReport") {
+    clearDropReport();
+    return undefined;
+  }
+  if (event.type === "clearUsageReport") {
+    clearUsageReport();
+    return undefined;
+  }
+  return undefined;
 }
