@@ -178,6 +178,15 @@ function checkFile(file) {
         `${where} encounter widget navigation effects belong in runEncounterAutomation(event)`
       );
     }
+    if (
+      /\bWIDGET_ENGAGE\b|\bwidgetEngage\b|\bre\.engage\b/.test(line) ||
+      ((relative === hvUtilsFile || relative === widgetPolicyFile) &&
+        /action:\s*["']enter["']|outcome\?\.action === ["']enter["']/.test(line))
+    ) {
+      violations.push(
+        `${where} legacy encounter widget enter bridge is forbidden; WIDGET_CLICKED must be handled by runEncounterAutomation(event)`
+      );
+    }
   });
 }
 

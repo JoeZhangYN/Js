@@ -16,7 +16,6 @@ const EVENT_WIDGET_STARTED_ENCOUNTER = "widgetStartedEncounter";
 const EVENT_WIDGET_RESET_DAY = "widgetResetDay";
 const EVENT_WIDGET_CLICKED = "widgetClicked";
 const EVENT_WIDGET_NEWS_LOADED = "widgetNewsLoaded";
-const EVENT_WIDGET_ENGAGE = "widgetEngage";
 
 let scheduledLobbyTick = null;
 
@@ -29,7 +28,6 @@ export const EncounterEvent = Object.freeze({
   WIDGET_RESET_DAY: EVENT_WIDGET_RESET_DAY,
   WIDGET_CLICKED: EVENT_WIDGET_CLICKED,
   WIDGET_NEWS_LOADED: EVENT_WIDGET_NEWS_LOADED,
-  WIDGET_ENGAGE: EVENT_WIDGET_ENGAGE,
 });
 
 function reloadCurrentPage() {

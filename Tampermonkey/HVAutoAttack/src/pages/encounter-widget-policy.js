@@ -53,7 +53,10 @@ function planWidgetClick(event) {
     force: Boolean(event.force),
   });
   if (plan.action === "enter") {
-    return { ...readWidgetState(plan.state), action: "enter", href: plan.href };
+    if (event.pageType === "eh") {
+      return planWidgetEngage({ ...event, state: plan.state });
+    }
+    return { ...readWidgetState(plan.state), action: "navigate", href: plan.href };
   }
   return { ...readWidgetState(plan.state), action: "load", engage: true };
 }
@@ -123,6 +126,5 @@ export function planEncounterWidgetEvent(event) {
   }
   if (event.type === "widgetClicked") return planWidgetClick(event);
   if (event.type === "widgetNewsLoaded") return planWidgetNewsLoaded(event);
-  if (event.type === "widgetEngage") return planWidgetEngage(event);
   return undefined;
 }

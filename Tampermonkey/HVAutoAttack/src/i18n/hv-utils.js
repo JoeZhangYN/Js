@@ -760,22 +760,18 @@ const bindRe = function (re, ctx) {
       re.load();
     } else if (re.type === 'hv') {
       const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage });
-      if (outcome?.action === 'enter') {
-        re.engage();
-      } else {
-        re.load(true);
-      }
+      applyEncounterState(outcome);
+      if (outcome?.handled) return;
+      re.load(true);
     } else if (re.type === 'eh') {
       re.stop();
       re.button.textContent = '检查中...';
       const html = await $ajax.fetch('https://hentaiverse.org/');
       if (html.includes('<div id="navbar">')) {
         const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage, hvAvailable: true });
-        if (outcome?.action === 'enter') {
-          re.engage();
-        } else {
-          re.load(true);
-        }
+        applyEncounterState(outcome);
+        if (outcome?.handled) return;
+        re.load(true);
       } else {
         re.load();
       }
@@ -799,13 +795,6 @@ const bindRe = function (re, ctx) {
       popup('<p style="color: #f00; font-weight: bold;">你的装备仓库快要满了.<br>\n该去整理一下了.</p>');
     }
     re.start();
-  };
-  re.engage = function () {
-    const outcome = runEncounter({ type: encounterEvent().WIDGET_ENGAGE, state: re.json, pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
-    applyEncounterState(outcome);
-    if (outcome?.handled && re.type === 'eh') {
-      re.start();
-    }
   };
   re.start = function () {
     re.stop();

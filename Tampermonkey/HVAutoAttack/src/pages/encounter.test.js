@@ -69,27 +69,18 @@ describe("runEncounterAutomation", () => {
     });
   });
 
-  it("plans widget click and executes direct engage through the encounter entry", () => {
+  it("handles HV widget click navigation through the encounter entry", () => {
     const state = { date: Date.now(), key: "abc123=", count: 1, clear: false };
 
-    const click = runEncounterAutomation({
+    const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_CLICKED,
       state,
       pageType: "hv",
     });
-    const engage = runEncounterAutomation({
-      type: EncounterEvent.WIDGET_ENGAGE,
-      state,
-      pageType: "hv",
-    });
 
-    expect(click).toMatchObject({
-      action: "enter",
-      href: "?s=Battle&ss=ba&encounter=abc123=",
-    });
-    expect(engage).toMatchObject({
+    expect(outcome).toMatchObject({
       action: "navigated",
-      href: click.href,
+      href: "?s=Battle&ss=ba&encounter=abc123=",
       handled: true,
     });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
@@ -115,13 +106,14 @@ describe("runEncounterAutomation", () => {
     });
   });
 
-  it("opens e-hentai widget engage in a new tab through the encounter entry", () => {
+  it("handles e-hentai widget click opening through the encounter entry", () => {
     const state = { date: Date.now(), key: "abc123=", count: 1, clear: false };
 
     const outcome = runEncounterAutomation({
-      type: EncounterEvent.WIDGET_ENGAGE,
+      type: EncounterEvent.WIDGET_CLICKED,
       state,
       pageType: "eh",
+      hvAvailable: true,
       galleryAlt: true,
     });
 
