@@ -20,6 +20,7 @@ const pauseControlsTest = path.join(root, "src/battle/battle-pause-controls.test
 const startRuntimeFile = path.join(root, "src/battle/battle-start-runtime.js");
 const startRuntimeTest = path.join(root, "src/battle/battle-start-runtime.test.js");
 const utilityEngineFile = path.join(root, "src/battle/utility-engine.js");
+const activateSpiritFile = path.join(root, "src/battle/buff/activate-spirit.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
@@ -582,6 +583,18 @@ function checkUtilityEngine() {
   }
 }
 
+function checkActivateSpirit() {
+  const text = fs.readFileSync(activateSpiritFile, "utf8");
+  if (!text.includes("OptionEvent.READ_FIELD")) {
+    violations.push(
+      `${rel(activateSpiritFile)} must read pre-cast Spirit options through option entry`
+    );
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${rel(activateSpiritFile)} must not read pre-cast Spirit options directly`);
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -596,6 +609,7 @@ checkActionStartEntry();
 checkPauseControlsEntry();
 checkStartRuntimeEntry();
 checkUtilityEngine();
+checkActivateSpirit();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");

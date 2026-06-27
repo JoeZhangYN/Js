@@ -2,8 +2,12 @@
 // 从 buff.js 抽成叶子模块：打破 dispatch → buff → execute-buff → dispatch 的循环依赖
 // （dispatch 只需 Spirit 前置这一点能力，不该被迫 import 整个 buff.js）。buff.js re-export 保持兼容。
 import { gE, isSpiritActive } from "../../dom/query.js";
-import { g } from "../../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../../state/option.js";
 import { checkCondition } from "../../settings/condition-eval.js";
+
+function readOptionField(key, fallback) {
+  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
+}
 
 /**
  * 若开启 preCastSS 且条件满足且 Spirit 当前未激活 → click 激活。
@@ -11,8 +15,8 @@ import { checkCondition } from "../../settings/condition-eval.js";
  * @returns {boolean} true = 已激活（调用方应让出本回合）
  */
 export function checkAndActivateSpirit() {
-  if (!g("option").preCastSS) return false;
-  if (!checkCondition(g("option").preCastSSCondition)) return false;
+  if (!readOptionField("preCastSS", false)) return false;
+  if (!checkCondition(readOptionField("preCastSSCondition", ""))) return false;
   const spiritElement = gE("#ckey_spirit");
   if (!spiritElement) return false;
   if (isSpiritActive(spiritElement)) return false;
