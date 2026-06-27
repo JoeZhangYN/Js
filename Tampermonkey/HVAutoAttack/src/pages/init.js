@@ -7,14 +7,12 @@ import { _alert } from "../core/lang.js";
 import { scheduleReload, openUrl } from "../core/navigate.js";
 import { addStyle } from "../style/inject.js";
 import { registerExportMenu } from "../state/riddle-dataset.js";
+import { runEquipmentViewAutomation } from "./equipment-view-automation.js";
 import { runRiddleAutomation } from "./riddle-automation.js";
 import { runLobbyAutomation } from "./lobby-automation.js";
 import { runBattleAutomation } from "../battle/battle-automation.js";
 import { loadCdState } from "../state/cd-tracker.js";
 import { setupPageRefresh } from "../alarm/page-refresh.js";
-import { setupForgeCost } from "./showequip-forge-cost.js";
-import { setupEquipPercentile } from "./equip-percentile-dispatcher.js";
-import { isOptionOn, getOption } from "../state/option.js";
 import { detectPageKind, PageKind } from "./page-kind.js";
 
 export function init() {
@@ -24,15 +22,7 @@ export function init() {
   registerExportMenu();
   // 页面类型单一判定（page-kind SOT，替代散落 ad-hoc 哨兵检测）。页面进入后 DOM 稳定，算一次复用。
   const kind = detectPageKind();
-  // P1 强化价格 + P3P4 装备百分位（offline 单实现, live 已并入降级）：装备页（#eu span 是 showequip 特征）/ 弹窗（MutationObserver 等待）
-  // 必须早于下方 #navbar 早返回（showequip 页没有 navbar/riddlecounter/textlog）
-  if (isOptionOn("forgeCostShow") && document.querySelector("#eu span")) {
-    setupForgeCost();
-  }
-  const _percentileMode = getOption("equipPercentileMode", "off");
-  if (_percentileMode && _percentileMode !== "off") {
-    setupEquipPercentile();
-  }
+  runEquipmentViewAutomation(kind);
   if (kind === PageKind.EHENTAI) {
     const eventLink = gE("#eventpane>div>a");
     let href =
