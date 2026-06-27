@@ -12,6 +12,7 @@
 // **安全核心**：跳 Imperil 需正面证据（足量 no-im 样本 + 高击杀率 + OFC 本回合就绪 + 未漂移）；
 // 任一缺失 → 保留 Imperil（默认）。MID 未知 → 保留。
 import { g } from "./store.js";
+import { OptionEvent, runOptionAutomation } from "./option.js";
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 
@@ -25,6 +26,16 @@ export const BigSkillKillLearningEvent = Object.freeze({
   FINALIZE_PENDING: EVENT_FINALIZE_PENDING,
   WILL_KILL_BOSS: EVENT_WILL_KILL_BOSS,
 });
+
+function isDynamicBigKillLogEnabled() {
+  return Boolean(
+    runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "dynamicBigKillLog",
+      fallback: false,
+    })
+  );
+}
 
 /** EWMA：n 大趋稳，下限 0.1 保对等级漂移敏感（同 recovery/cd 学习器）。 */
 function ewma(prior, obs, n) {
@@ -89,7 +100,7 @@ function finalizeBigSkillPending(snap) {
   }
   g("bigKillPending", null);
   setValue(STORAGE_KEYS.LEARNED_BIG_KILL, learned);
-  if (g("option")?.dynamicBigKillLog) {
+  if (isDynamicBigKillLogEnabled()) {
     console.log(`[big-kill] settle ${pending.skill}:`, JSON.stringify(learned));
   }
 }

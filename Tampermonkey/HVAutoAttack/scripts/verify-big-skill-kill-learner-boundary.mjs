@@ -28,7 +28,9 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
-      /from\s+["'](?:\.\/|\.\.\/\.\.\/state\/|\.\.\/state\/)big-skill-kill-learner\.js["']/.test(line) &&
+      /from\s+["'](?:\.\/|\.\.\/\.\.\/state\/|\.\.\/state\/)big-skill-kill-learner\.js["']/.test(
+        line
+      ) &&
       /\b(?:recordBigSkillCast|finalizeBigSkillPending|ofcWillKillBoss)\b/.test(line)
     ) {
       violations.push(`${where} legacy big skill kill learner imports are forbidden`);
@@ -51,10 +53,14 @@ for (const required of [
   "runBigSkillKillLearningAutomation",
   "BigSkillKillLearningEvent",
   "STORAGE_KEYS.LEARNED_BIG_KILL",
+  "OptionEvent.READ_FIELD",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not read option fields directly`);
 }
 
 for (const legacy of ["recordBigSkillCast", "finalizeBigSkillPending", "ofcWillKillBoss"]) {
@@ -71,4 +77,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-big-skill-kill-learner-boundary] OK — big-skill kill learning is behind one entry");
+console.log(
+  "[verify-big-skill-kill-learner-boundary] OK — big-skill kill learning is behind one entry"
+);
