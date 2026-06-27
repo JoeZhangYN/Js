@@ -15,7 +15,7 @@ function checkInit() {
   const forbidden = [
     /\bloadCdState\b/,
     /\bregisterExportMenu\b/,
-    /\bsetupPageRefresh\b/,
+    /\brunPageRefreshAutomation\b/,
     /\baddStyle\b/,
     /\b_alert\b/,
     /\bGM_info\b/,
@@ -46,7 +46,6 @@ function checkEntry() {
   for (const required of [
     "loadCdState",
     "registerExportMenu",
-    "setupPageRefresh",
     "runAbilityAoeAutomation",
     "GM_info",
   ]) {

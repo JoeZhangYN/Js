@@ -20,6 +20,7 @@ function checkInit() {
     /\brunRiddleAutomation\b/,
     /\brunBattleAutomation\b/,
     /\brunLobbyAutomation\b/,
+    /\brunPageRefreshAutomation\b/,
     /\bGAME_PAGE_READY\b/,
   ];
   lines.forEach((line, index) => {
@@ -46,6 +47,7 @@ function checkEntry() {
     "runRiddleAutomation",
     "runBattleAutomation",
     "runLobbyAutomation",
+    "runPageRefreshAutomation",
     "scheduleReload",
   ]) {
     if (!text.includes(required)) {

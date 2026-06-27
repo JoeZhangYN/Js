@@ -6,7 +6,6 @@ import { _alert } from "../core/lang.js";
 import { addStyle } from "../style/inject.js";
 import { registerExportMenu } from "../state/riddle-dataset.js";
 import { loadCdState } from "../state/cd-tracker.js";
-import { setupPageRefresh } from "../alarm/page-refresh.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 
 const EVENT_USERSCRIPT_START = "userscriptStart";
@@ -31,9 +30,7 @@ function syncOptionVersion() {
   g("lang", g("option").lang || "0");
   addStyle(g("lang"));
   if (g("option").version !== g("version")) {
-    console.log(
-      `[HVAA] 版本号 ${g("option").version} → ${g("version")}（已静默对齐，未弹窗）`
-    );
+    console.log(`[HVAA] 版本号 ${g("option").version} → ${g("version")}（已静默对齐，未弹窗）`);
     g("option").version = g("version");
     setValue("option", g("option"));
   }
@@ -49,12 +46,7 @@ function requestInitialConfig() {
     ) || 2
   );
   addStyle(g("lang"));
-  _alert(
-    0,
-    "请设置hvAutoAttack",
-    "請設置hvAutoAttack",
-    "Please config this script"
-  );
+  _alert(0, "请设置hvAutoAttack", "請設置hvAutoAttack", "Please config this script");
   gE(".hvAAButton").click();
 }
 
@@ -78,7 +70,6 @@ function runGamePageStartup() {
     requestInitialConfig();
     return false;
   }
-  setupPageRefresh(g("option"));
   warnDefaultFont();
   loadBattleLearningState();
   return true;
