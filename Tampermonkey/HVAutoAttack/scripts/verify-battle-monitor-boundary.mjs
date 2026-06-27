@@ -280,6 +280,8 @@ function checkRecordArchiveEntry() {
   if (
     !archiveText.includes("READ_OR_CREATE_CURRENT") ||
     !archiveText.includes("READ_CURRENT") ||
+    !archiveText.includes("READ_RECORD_SET") ||
+    !archiveText.includes("START_RECORDING") ||
     !archiveText.includes("STORE_OR_ARCHIVE") ||
     !archiveText.includes("CLEAR_RECORD_SET")
   ) {
@@ -444,6 +446,18 @@ function checkBattleReportEntry() {
     violations.push(
       `${rel(reportFile)} must route current/history report reads through readReportRecordSet`
     );
+  }
+  if (!text.includes("BattleRecordArchiveEvent.READ_RECORD_SET")) {
+    violations.push(`${rel(reportFile)} must read report records through battle-record-archive`);
+  }
+  if (!text.includes("BattleRecordArchiveEvent.START_RECORDING")) {
+    violations.push(`${rel(reportFile)} must start report record naming through battle-record-archive`);
+  }
+  if (/from\s+["']\.\.\/state\/storage\.js["']/.test(text)) {
+    violations.push(`${rel(reportFile)} must not import storage directly`);
+  }
+  if (/\b(?:getValue|setValue)\(\s*STORAGE_KEYS\.(?:BATTLE_CODE|DROP|DROP_OLD|STATS|STATS_OLD)\b/.test(text)) {
+    violations.push(`${rel(reportFile)} must not read/write battle report storage directly`);
   }
   if (
     !text.includes("BattleReportViewEvent.RENDER_DROP_TABLE_BODY") ||

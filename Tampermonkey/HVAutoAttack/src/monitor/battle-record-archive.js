@@ -5,12 +5,16 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 const EVENT_STORE_OR_ARCHIVE = "storeOrArchive";
 const EVENT_READ_CURRENT = "readCurrent";
 const EVENT_READ_OR_CREATE_CURRENT = "readOrCreateCurrent";
+const EVENT_READ_RECORD_SET = "readRecordSet";
+const EVENT_START_RECORDING = "startRecording";
 const EVENT_CLEAR_RECORD_SET = "clearRecordSet";
 
 export const BattleRecordArchiveEvent = Object.freeze({
   STORE_OR_ARCHIVE: EVENT_STORE_OR_ARCHIVE,
   READ_CURRENT: EVENT_READ_CURRENT,
   READ_OR_CREATE_CURRENT: EVENT_READ_OR_CREATE_CURRENT,
+  READ_RECORD_SET: EVENT_READ_RECORD_SET,
+  START_RECORDING: EVENT_START_RECORDING,
   CLEAR_RECORD_SET: EVENT_CLEAR_RECORD_SET,
 });
 
@@ -55,6 +59,20 @@ function readCurrentRecord(event, deps) {
   return deps.getValue(event.currentKey, true) || null;
 }
 
+function readRecordSet(event, deps) {
+  return {
+    currentName: deps.getValue(STORAGE_KEYS.BATTLE_CODE),
+    currentRaw: deps.getValue(event.currentKey, true),
+    history: deps.getValue(event.historyKey, true) || [],
+  };
+}
+
+function startRecording(event, deps) {
+  if (!event.enabled || deps.getValue(STORAGE_KEYS.BATTLE_CODE)) return false;
+  deps.setValue(STORAGE_KEYS.BATTLE_CODE, event.code);
+  return true;
+}
+
 function storeOrArchiveRecord(event, deps) {
   if (!shouldArchive(event)) {
     deps.setValue(event.currentKey, event.record);
@@ -84,6 +102,8 @@ export function runBattleRecordArchiveAutomation(event, deps = {}) {
   if (event.type === EVENT_READ_CURRENT) return readCurrentRecord(event, fullDeps);
   if (event.type === EVENT_READ_OR_CREATE_CURRENT)
     return readOrCreateCurrentRecord(event, fullDeps);
+  if (event.type === EVENT_READ_RECORD_SET) return readRecordSet(event, fullDeps);
+  if (event.type === EVENT_START_RECORDING) return startRecording(event, fullDeps);
   if (event.type === EVENT_STORE_OR_ARCHIVE) return storeOrArchiveRecord(event, fullDeps);
   if (event.type === EVENT_CLEAR_RECORD_SET) return clearRecordSet(event, fullDeps);
   return undefined;

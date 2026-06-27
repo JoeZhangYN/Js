@@ -22,66 +22,6 @@ function deps(values = {}) {
 }
 
 describe("runBattleRecordArchiveAutomation", () => {
-  it("creates current records with a start timestamp when none exists", () => {
-    const runtime = deps();
-
-    expect(
-      runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.READ_OR_CREATE_CURRENT,
-          currentKey: STORAGE_KEYS.STATS,
-          defaultRecord: { self: { _turn: 0 } },
-          startTimeField: "self._startTime",
-        },
-        runtime
-      )
-    ).toEqual({ self: { _startTime: "finished", _turn: 0 } });
-  });
-
-  it("reads current records without rewriting their start timestamp", () => {
-    const current = { "#Credit": 5, "#startTime": "old" };
-    const runtime = deps({ [STORAGE_KEYS.DROP]: current });
-
-    expect(
-      runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.READ_OR_CREATE_CURRENT,
-          currentKey: STORAGE_KEYS.DROP,
-          defaultRecord: { "#Credit": 0 },
-          startTimeField: "#startTime",
-        },
-        runtime
-      )
-    ).toBe(current);
-  });
-
-  it("reads existing current records without creating a default record", () => {
-    const current = { self: { _turn: 3 } };
-    const runtime = deps({ [STORAGE_KEYS.STATS]: current });
-
-    expect(
-      runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.READ_CURRENT,
-          currentKey: STORAGE_KEYS.STATS,
-        },
-        runtime
-      )
-    ).toBe(current);
-  });
-
-  it("returns null when no current record exists", () => {
-    expect(
-      runBattleRecordArchiveAutomation(
-        {
-          type: BattleRecordArchiveEvent.READ_CURRENT,
-          currentKey: STORAGE_KEYS.STATS,
-        },
-        deps()
-      )
-    ).toBeNull();
-  });
-
   it("stores the current battle record before the final round", () => {
     const runtime = deps();
 

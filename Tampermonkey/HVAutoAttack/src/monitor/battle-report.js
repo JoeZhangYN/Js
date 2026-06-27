@@ -1,5 +1,4 @@
 import { getKeys, objSort } from "../core/obj.js";
-import { getValue, setValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import {
@@ -21,23 +20,26 @@ export const BattleReportEvent = Object.freeze({
   RENDER_USAGE_REPORT_TABLE_BODY: "renderUsageReportTableBody",
 });
 
-function withCurrentRecord(history, current) {
+function withCurrentRecord(history, current, currentName) {
   const rows = [...history];
   if (current && Object.keys(current).length) {
-    rows.push({ ...current, __name: getValue(STORAGE_KEYS.BATTLE_CODE) });
+    rows.push({ ...current, __name: currentName });
   }
   return rows.reverse();
 }
 
 function readReportRecordSet({ currentKey, historyKey, normalizeCurrent = (record) => record }) {
-  const currentRaw = getValue(currentKey, true);
+  const { currentName, currentRaw, history } = runBattleRecordArchiveAutomation({
+    type: BattleRecordArchiveEvent.READ_RECORD_SET,
+    currentKey,
+    historyKey,
+  });
   let current = normalizeCurrent(currentRaw || {});
-  const history = getValue(historyKey, true) || [];
   if (history.length === 0 || (history.length === 1 && !currentRaw)) {
     if (history.length === 1) current = history[0];
     return { mode: "single", current };
   }
-  return { mode: "history", records: withCurrentRecord(history, current) };
+  return { mode: "history", records: withCurrentRecord(history, current, currentName) };
 }
 
 function readBattleReportRecordLabel(deps) {
@@ -55,10 +57,12 @@ function readBattleReportStartContext(deps) {
 
 function recordBattleReportStarted(deps) {
   const { recordEach, roundType, roundAll } = readBattleReportStartContext(deps);
-  if (!recordEach || getValue(STORAGE_KEYS.BATTLE_CODE)) return false;
   const recordLabel = readBattleReportRecordLabel(deps);
-  setValue(STORAGE_KEYS.BATTLE_CODE, `${recordLabel}: ${roundType.toUpperCase()}-${roundAll}`);
-  return true;
+  return runBattleRecordArchiveAutomation({
+    type: BattleRecordArchiveEvent.START_RECORDING,
+    enabled: recordEach,
+    code: `${recordLabel}: ${roundType.toUpperCase()}-${roundAll}`,
+  });
 }
 
 function readDropReport() {
