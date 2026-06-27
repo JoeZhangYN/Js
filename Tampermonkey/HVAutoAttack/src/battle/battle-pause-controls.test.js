@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../state/option.js", () => ({
-  OptionEvent: Object.freeze({ READ: "read" }),
+  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
 
@@ -23,7 +23,7 @@ function makeDeps(option) {
       document,
       query: vi.fn(() => root),
       createElement: vi.fn((tag) => document.createElement(tag)),
-      readOption: vi.fn(() => option),
+      readOptionField: vi.fn((key, fallback) => option[key] ?? fallback),
       runPauseToggle: vi.fn(),
       resume: vi.fn(),
     },
@@ -69,10 +69,24 @@ describe("runBattlePauseControlsAutomation", () => {
     const root = document.createElement("div");
     root.id = "battle_main";
     document.body.appendChild(root);
-    mocks.runOptionAutomation.mockReturnValue({ pauseButton: false, pauseHotkey: false });
+    mocks.runOptionAutomation.mockImplementation((event) => event.fallback);
 
     expect(runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL })).toBe(true);
 
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "read" });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "pauseButton",
+      fallback: false,
+    });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "pauseHotkey",
+      fallback: false,
+    });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "pauseHotkeyKey",
+      fallback: "p",
+    });
   });
 });

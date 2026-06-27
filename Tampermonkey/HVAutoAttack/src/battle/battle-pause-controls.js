@@ -20,23 +20,25 @@ function installPauseButton(box, deps) {
   button.onclick = () => togglePause(deps);
 }
 
-function installPauseHotkey(option, deps) {
+function installPauseHotkey(pauseHotkeyKey, deps) {
   deps.document.addEventListener(
     "keydown",
     (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-      if (e.key === option.pauseHotkeyKey) togglePause(deps);
+      if (e.key === pauseHotkeyKey) togglePause(deps);
     },
     false
   );
 }
 
 function installControls(deps) {
-  const option = deps.readOption();
+  const pauseButton = Boolean(deps.readOptionField("pauseButton", false));
+  const pauseHotkey = Boolean(deps.readOptionField("pauseHotkey", false));
+  const pauseHotkeyKey = deps.readOptionField("pauseHotkeyKey", "p");
   const box = deps.query("#battle_main").appendChild(deps.createElement("div"));
   box.id = "hvAABox2";
-  if (option.pauseButton) installPauseButton(box, deps);
-  if (option.pauseHotkey) installPauseHotkey(option, deps);
+  if (pauseButton) installPauseButton(box, deps);
+  if (pauseHotkey) installPauseHotkey(pauseHotkeyKey, deps);
   return true;
 }
 
@@ -46,7 +48,8 @@ export function runBattlePauseControlsAutomation(
     document,
     query: gE,
     createElement: cE,
-    readOption: () => runOptionAutomation({ type: OptionEvent.READ }) || {},
+    readOptionField: (key, fallback) =>
+      runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback }),
     runPauseToggle: (toggleDeps) =>
       runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, toggleDeps),
     resume: runBattleTurnAutomation,

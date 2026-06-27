@@ -485,10 +485,13 @@ function checkPauseControlsEntry() {
       `${rel(pauseControlsFile)} must expose runBattlePauseControlsAutomation(event)`
     );
   }
-  if (!text.includes("OptionEvent.READ")) {
+  if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(
       `${rel(pauseControlsFile)} must read pause control options through option entry`
     );
+  }
+  if (/OptionEvent\.READ\b/.test(text)) {
+    violations.push(`${rel(pauseControlsFile)} must not read the whole option bag`);
   }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(pauseControlsFile)} must not read pause control options directly`);
