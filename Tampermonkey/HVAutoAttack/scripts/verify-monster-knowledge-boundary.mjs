@@ -48,7 +48,8 @@ function checkEntry() {
   for (const required of [
     "runMonsterDbSyncAutomation",
     "MonsterDbSyncEvent.SYNC_REQUESTED",
-    "startMonsterScanLearning",
+    "runMonsterScanLearningAutomation",
+    "MonsterScanLearningEvent.START",
     "runMonsterResistPanelAutomation",
     "MonsterResistPanelEvent.REFRESH",
   ]) {
@@ -61,6 +62,9 @@ function checkEntry() {
   }
   if (/\bsyncMonsterDb\b/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must use monster db sync event entry, not syncMonsterDb()`);
+  }
+  if (/\bstartMonsterScanLearning\b/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must use monster scan learning event entry, not startMonsterScanLearning()`);
   }
   const syncText = fs.readFileSync(path.join(root, syncImpl), "utf8");
   if (!/export const MonsterDbSyncEvent\s*=\s*Object\.freeze\(/.test(syncText)) {
@@ -83,6 +87,15 @@ function checkEntry() {
     violations.push(`${panelImpl.replaceAll("\\", "/")} must keep renderResistPanel private behind runMonsterResistPanelAutomation(event)`);
   }
   const scanText = fs.readFileSync(path.join(root, scanImpl), "utf8");
+  if (!/export const MonsterScanLearningEvent\s*=\s*Object\.freeze\(/.test(scanText)) {
+    violations.push(`${scanImpl.replaceAll("\\", "/")} must expose MonsterScanLearningEvent`);
+  }
+  if (!/export function runMonsterScanLearningAutomation\(/.test(scanText)) {
+    violations.push(`${scanImpl.replaceAll("\\", "/")} must expose runMonsterScanLearningAutomation(event)`);
+  }
+  if (/export\s+function\s+startMonsterScanLearning\(/.test(scanText)) {
+    violations.push(`${scanImpl.replaceAll("\\", "/")} must keep startMonsterScanLearning private behind runMonsterScanLearningAutomation(event)`);
+  }
   if (/\bsetupScanWatch\b/.test(text) || /\bsetupScanWatch\b/.test(scanText)) {
     violations.push("monster scan learning must not use legacy setupScanWatch entrypoint");
   }

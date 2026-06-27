@@ -3,7 +3,10 @@ import {
   MonsterResistPanelEvent,
   runMonsterResistPanelAutomation,
 } from "../monitor/monster-resist-panel.js";
-import { startMonsterScanLearning } from "./monster-db-scan.js";
+import {
+  MonsterScanLearningEvent,
+  runMonsterScanLearningAutomation,
+} from "./monster-db-scan.js";
 import { MonsterDbSyncEvent, runMonsterDbSyncAutomation } from "./monster-db-sync.js";
 
 const EVENT_BATTLE_STARTED = "battleStarted";
@@ -22,9 +25,10 @@ function refreshResistPanel() {
 
 function startMonsterKnowledge() {
   runMonsterDbSyncAutomation({ type: MonsterDbSyncEvent.SYNC_REQUESTED });
-  startMonsterScanLearning(() =>
-    runMonsterKnowledgeAutomation({ type: EVENT_SCAN_UPDATED })
-  );
+  runMonsterScanLearningAutomation({
+    type: MonsterScanLearningEvent.START,
+    onStored: () => runMonsterKnowledgeAutomation({ type: EVENT_SCAN_UPDATED }),
+  });
 }
 
 export function runMonsterKnowledgeAutomation(

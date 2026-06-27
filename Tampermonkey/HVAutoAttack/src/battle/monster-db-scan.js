@@ -7,34 +7,54 @@ import { parseScanResult, checkScanResultValidity } from "../data/monster-db.js"
 import { setMonsterById, setMonsterHp } from "../state/monster-db-store.js";
 import { setCachedMonster } from "../state/monster-cache.js";
 
+const EVENT_START = "start";
+
+export const MonsterScanLearningEvent = Object.freeze({
+  START: EVENT_START,
+});
+
+function makeDeps(deps) {
+  return {
+    checkScanResultValidity: deps.checkScanResultValidity || checkScanResultValidity,
+    g: deps.g || g,
+    gE: deps.gE || gE,
+    MutationObserver: deps.MutationObserver || MutationObserver,
+    parseScanResult: deps.parseScanResult || parseScanResult,
+    setCachedMonster: deps.setCachedMonster || setCachedMonster,
+    setMonsterById: deps.setMonsterById || setMonsterById,
+    setMonsterHp: deps.setMonsterHp || setMonsterHp,
+    time: deps.time || time,
+  };
+}
+
 /** 按怪名在当前战斗 DOM 找对应怪元素（用于 scan 污染校验）。 */
-function findMonsterEl(name) {
-  for (const el of gE("div.btm1", "all")) {
-    if (gE(".btm3", el)?.textContent === name) return el;
+function findMonsterEl(name, deps) {
+  for (const el of deps.gE("div.btm1", "all")) {
+    if (deps.gE(".btm3", el)?.textContent === name) return el;
   }
   return null;
 }
 
 /** 处理一条新日志行：含 "Scanning" 才解析入库。 */
-function handleLogRow(node, onUpdate) {
+function handleLogRow(node, onUpdate, deps) {
   const html = node?.innerHTML;
   if (!html || !html.includes("Scanning")) return;
-  const info = parseScanResult(html, time(2));
+  const info = deps.parseScanResult(html, deps.time(2));
   if (!info) return;
   // scan 时若该怪被 imperil/firedot 等 debuff 影响，显示抗性失真 → 丢弃
-  const monsterEl = findMonsterEl(info.monsterName);
-  if (!checkScanResultValidity(monsterEl?.innerHTML)) return;
+  const monsterEl = findMonsterEl(info.monsterName, deps);
+  if (!deps.checkScanResultValidity(monsterEl?.innerHTML)) return;
   // 怪名→MID(+战斗 LV)：库主键 = MID，但 scan 日志只给名 → 从当前战场 monsterStatus(开局 spawn
   // 行已解析 MID/LV)按名定位。无法定位 MID → 不入库（不可无键）。
   // 注：同一战斗内极罕见的同名怪取首条匹配（抗性同名同 trainer 一致；跨 trainer 同名为已知边界）。
-  const st = (g("monsterStatus") || []).find((s) => s.name === info.monsterName);
+  const st = (deps.g("monsterStatus") || []).find((s) => s.name === info.monsterName);
   if (!st || st.monsterId == null) return;
   info.monsterId = st.monsterId;
-  Promise.resolve(setMonsterById(info))
+  Promise.resolve(deps.setMonsterById(info))
     .then(() => {
-      setCachedMonster(info.monsterId, info); // 即时进内存 cache（消本轮中途新 scan 怪的缺口）
+      deps.setCachedMonster(info.monsterId, info); // 即时进内存 cache（消本轮中途新 scan 怪的缺口）
       // scan 的 max HP + 战斗 LV → 顺带补 (MID,LV) 满血表（与开局 spawn 行同源、互为兜底）
-      if (st.level != null && info.maxHP > 0) setMonsterHp(info.monsterId, st.level, info.maxHP, info.lastUpdate);
+      if (st.level != null && info.maxHP > 0) deps.setMonsterHp(info.monsterId, st.level, info.maxHP, info.lastUpdate);
       onUpdate?.();
     })
     .catch(() => {});
@@ -44,13 +64,19 @@ function handleLogRow(node, onUpdate) {
  * 启动 scan 监听：MutationObserver 盯 #textlog 新增行。
  * @param {() => void} [onUpdate] 入库成功回调（刷新 UI 面板）
  */
-export function startMonsterScanLearning(onUpdate) {
-  const tbody = gE("#textlog>tbody");
-  if (!tbody) return;
-  const observer = new MutationObserver((mutations) => {
+function startMonsterScanLearning(onUpdate, deps) {
+  const tbody = deps.gE("#textlog>tbody");
+  if (!tbody) return false;
+  const observer = new deps.MutationObserver((mutations) => {
     for (const mut of mutations) {
-      for (const node of mut.addedNodes) handleLogRow(node, onUpdate);
+      for (const node of mut.addedNodes) handleLogRow(node, onUpdate, deps);
     }
   });
   observer.observe(tbody, { childList: true });
+  return true;
+}
+
+export function runMonsterScanLearningAutomation(event = { type: EVENT_START }, deps = {}) {
+  if (event.type !== EVENT_START) return false;
+  return startMonsterScanLearning(event.onStored, makeDeps(deps));
 }
