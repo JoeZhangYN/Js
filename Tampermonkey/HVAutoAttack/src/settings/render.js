@@ -423,20 +423,7 @@ export function optionBox() {
       _html = `<tbody>${runRiddleStatsAutomation({
         type: RiddleStatsEvent.RENDER_REPORT_ROWS,
       })}`;
-      const rlog = runRiddleLogAutomation({ type: RiddleLogEvent.READ });
-      if (rlog.length) {
-        // 运行日志（state/riddle-log.js 半持久化滚动缓冲, 过页面跳转不丢, 新→旧）：每行 时间+文本，
-        // 内嵌滚动容器防撑爆面板。重置按钮 .reRiddleStats 一并清滚动日志。
-        const esc = (s) => String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const rows = rlog
-          .slice()
-          .reverse()
-          .map((e) => `<div>[${esc(e.t)}] ${esc(e.m)}</div>`)
-          .join("");
-        _html =
-          `${_html}<tr class="hvAATh"><td colspan="2"><l0>运行日志(最近${rlog.length})</l0><l1>運行日誌(最近${rlog.length})</l1><l2>Run log (last ${rlog.length})</l2></td></tr>` +
-          `<tr><td colspan="2" style="text-align:left;"><div style="max-height:160px;overflow:auto;font:11px/1.5 monospace;word-break:break-all;">${rows}</div></td></tr>`;
-      }
+      _html += runRiddleLogAutomation({ type: RiddleLogEvent.RENDER_REPORT_ROWS });
       _html = `${_html}</tbody>`;
       gE("#hvAATab-Riddle>table").innerHTML = _html;
     } else if (name === "About") {

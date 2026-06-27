@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/riddle-log.js");
 const ownerTest = path.normalize("src/state/riddle-log.test.js");
+const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
 
 function rel(file) {
@@ -39,16 +40,27 @@ function checkFile(file) {
     ) {
       violations.push(`${where} riddle log storage belongs in state/riddle-log.js`);
     }
+    if (
+      relative === settingsRender &&
+      /\bRiddleLogEvent\.READ\b|\brlog\b|Run log \(last/.test(line)
+    ) {
+      violations.push(`${where} settings must not compose riddle log report fields`);
+    }
   });
 }
 
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
-for (const required of ["runRiddleLogAutomation", "RiddleLogEvent"]) {
+for (const required of ["runRiddleLogAutomation", "RiddleLogEvent", "RENDER_REPORT_ROWS"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+
+const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
+if (!settingsText.includes("RiddleLogEvent.RENDER_REPORT_ROWS")) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} must request rendered riddle log rows`);
 }
 
 for (const legacy of ["pushRiddleLog", "getRiddleLog", "clearRiddleLog"]) {

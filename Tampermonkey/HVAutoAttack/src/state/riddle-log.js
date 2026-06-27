@@ -11,11 +11,13 @@ const CAP = 80; // 环形上限：超出从头截断，恒只留最近 CAP 条�
 const EVENT_PUSH = "push";
 const EVENT_READ = "read";
 const EVENT_CLEAR = "clear";
+const EVENT_RENDER_REPORT_ROWS = "renderReportRows";
 
 export const RiddleLogEvent = Object.freeze({
   PUSH: EVENT_PUSH,
   READ: EVENT_READ,
   CLEAR: EVENT_CLEAR,
+  RENDER_REPORT_ROWS: EVENT_RENDER_REPORT_ROWS,
 });
 
 /**
@@ -44,9 +46,28 @@ function clearRiddleLog() {
   return getRiddleLog();
 }
 
+function escapeHtml(value) {
+  return String(value).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function renderRiddleLogReportRows() {
+  const log = getRiddleLog();
+  if (!log.length) return "";
+  const rows = log
+    .slice()
+    .reverse()
+    .map((entry) => `<div>[${escapeHtml(entry.t)}] ${escapeHtml(entry.m)}</div>`)
+    .join("");
+  return (
+    `<tr class="hvAATh"><td colspan="2"><l0>运行日志(最近${log.length})</l0><l1>運行日誌(最近${log.length})</l1><l2>Run log (last ${log.length})</l2></td></tr>` +
+    `<tr><td colspan="2" style="text-align:left;"><div style="max-height:160px;overflow:auto;font:11px/1.5 monospace;word-break:break-all;">${rows}</div></td></tr>`
+  );
+}
+
 export function runRiddleLogAutomation(event = { type: EVENT_READ }) {
   if (event.type === EVENT_PUSH) return pushRiddleLog(event.message);
   if (event.type === EVENT_READ) return getRiddleLog();
   if (event.type === EVENT_CLEAR) return clearRiddleLog();
+  if (event.type === EVENT_RENDER_REPORT_ROWS) return renderRiddleLogReportRows();
   return undefined;
 }
