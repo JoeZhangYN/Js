@@ -3,11 +3,22 @@
 // 记账：autoTunePotionCount（autoTune 开时本回合用药计数）/ lastSpiritToggleGlobalTurn / recordPreDrink。
 import { gE, isOn } from "../../dom/query.js";
 import { itemSelector } from "../../dom/selectors.js";
+import { OptionEvent, runOptionAutomation } from "../../state/option.js";
 import { g } from "../../state/store.js";
 import {
   RecoveryLearningEvent,
   runRecoveryLearningAutomation,
 } from "../../state/recovery-learner.js";
+
+function shouldCountAutoTunePotion() {
+  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key: "autoTune", fallback: false });
+}
+
+function recordAutoTunePotionUse() {
+  if (shouldCountAutoTunePotion()) {
+    g("autoTunePotionCount", (g("autoTunePotionCount") || 0) + 1);
+  }
+}
 
 /**
  * @param {import("../../core/types.js").ItemPlan} plan
@@ -22,9 +33,7 @@ export function executeItem(plan, snap) {
     case "gem": {
       // 原 useGem：decideGem 命中后 click #ikey_p + autoTune 计数
       gE("#ikey_p")?.click();
-      if (g("option").autoTune) {
-        g("autoTunePotionCount", (g("autoTunePotionCount") || 0) + 1);
-      }
+      recordAutoTunePotionUse();
       return true;
     }
 
@@ -41,9 +50,7 @@ export function executeItem(plan, snap) {
           });
         }
         el.click();
-        if (g("option").autoTune) {
-          g("autoTunePotionCount", (g("autoTunePotionCount") || 0) + 1);
-        }
+        recordAutoTunePotionUse();
         return true;
       }
       return false;
