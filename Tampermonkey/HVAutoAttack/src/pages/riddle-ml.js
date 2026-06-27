@@ -14,12 +14,20 @@ import { g } from "../state/store.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { gmXhr, hasNonLatin1 } from "../dom/gm-xhr.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
-import { recordMLOutcome, recordMLDetail } from "../state/riddle-stats.js";
+import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { getRiddleImgEl, waitImageLoaded, getImageBlob } from "./riddle-image.js";
 
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";
 const ANSWER_CODES = Object.keys(ANSWER_MAP); // ["ts","ra","fs","rd","pp","aj"]
+
+function reportMlDetail(detail) {
+  return runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_DETAIL, detail });
+}
+
+function reportMlOutcome(outcome) {
+  return runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_OUTCOME, outcome });
+}
 
 /**
  * GM API 统一封装：优先 GM_*（同步），退到 GM.*（Promise）。
@@ -164,7 +172,9 @@ export async function tryMLAnswer() {
   // 老用户无需手动清栏；source 端 render.js 已把该 placeholder 改空防再次误存。
   let apiKey = opt.mlApiKey || "";
   if (apiKey && hasNonLatin1(apiKey)) {
-    console.warn('[HVAA][RMA] ML API key 含非 ASCII 字符(疑占位符"(可选)"误存)，已忽略走匿名；如需用 key 请在设置里重输纯 ASCII。');
+    console.warn(
+      '[HVAA][RMA] ML API key 含非 ASCII 字符(疑占位符"(可选)"误存)，已忽略走匿名；如需用 key 请在设置里重输纯 ASCII。'
+    );
     apiKey = "";
   }
 
@@ -173,7 +183,7 @@ export async function tryMLAnswer() {
   const imageUrl = imgEl?.src;
   if (!imageUrl) {
     console.warn("[HVAA][RMA] 找不到 riddle 图片元素/src，跳过 ML 识别（走随机）");
-    recordMLOutcome("no_image");
+    reportMlOutcome("no_image");
     return null;
   }
 
@@ -184,8 +194,8 @@ export async function tryMLAnswer() {
     const imgBlob = await getImageBlob(imageUrl);
     if (!imgBlob || imgBlob.size === 0) {
       console.warn("[HVAA][RMA] 图片 blob 为空(canvas 污染/fetch 失败)，本次走随机");
-      recordMLDetail("empty_blob (canvas 污染/fetch 失败)");
-      recordMLOutcome("empty_blob");
+      reportMlDetail("empty_blob (canvas 污染/fetch 失败)");
+      reportMlOutcome("empty_blob");
       setAlarm("Error");
       return null;
     }
@@ -213,7 +223,7 @@ export async function tryMLAnswer() {
           try {
             if (res.status === 429) {
               console.warn("[HVAA][RMA] 429 限流，本次走随机");
-              recordMLDetail("rate_limited 429");
+              reportMlDetail("rate_limited 429");
               setAlarm("Error");
               resolve("rate_limited");
               return;
@@ -223,7 +233,7 @@ export async function tryMLAnswer() {
               dict = JSON.parse(res.responseText);
             } catch (e) {
               console.warn("[HVAA][RMA] 响应非 JSON，本次走随机:", res.status, e.message);
-              recordMLDetail("non_json status=" + res.status + " " + e.message);
+              reportMlDetail("non_json status=" + res.status + " " + e.message);
               setAlarm("Error");
               resolve("non_json");
               return;
@@ -240,7 +250,7 @@ export async function tryMLAnswer() {
               const hits = ANSWER_CODES.filter((code) => answers.includes(code));
               if (!hits.length) {
                 console.warn("[HVAA][RMA] 响应无可识别答案码，本次走随机:", dict);
-                recordMLDetail("no_answer_code answer=" + JSON.stringify(dict.answer));
+                reportMlDetail("no_answer_code answer=" + JSON.stringify(dict.answer));
                 setAlarm("Error");
                 resolve("no_answer_code");
                 return;
@@ -256,26 +266,26 @@ export async function tryMLAnswer() {
             }
             if (dict.return === "finish") {
               console.warn("[HVAA][RMA] no more solves today");
-              recordMLDetail("finish (no more solves today)");
+              reportMlDetail("finish (no more solves today)");
               setAlarm("Error");
               resolve("finish");
               return;
             }
             if (dict.return === "error" || dict.expire === true) {
               console.warn("[HVAA][RMA] server error / license issue", dict);
-              recordMLDetail("server_error " + JSON.stringify(dict).slice(0, 150));
+              reportMlDetail("server_error " + JSON.stringify(dict).slice(0, 150));
               setAlarm("Error");
               resolve("server_error");
               return;
             }
             console.warn("[HVAA][RMA] 未知 return 字段，本次走随机:", dict);
-            recordMLDetail("unknown " + JSON.stringify(dict).slice(0, 150));
+            reportMlDetail("unknown " + JSON.stringify(dict).slice(0, 150));
             setAlarm("Error");
             resolve("unknown");
           } catch (e) {
             // 捕获错误兜底：多答案/异形响应等处理异常 → 落库 + resolve，绝不让错误逃逸 console 即丢或 Promise 挂死。
             console.error("[HVAA][RMA] onload 处理异常(疑多答案/异形响应)，本次走随机:", e);
-            recordMLDetail("onload_exception " + (e && e.message));
+            reportMlDetail("onload_exception " + (e && e.message));
             setAlarm("Error");
             resolve("exception");
           }
@@ -294,14 +304,19 @@ export async function tryMLAnswer() {
           } else {
             cause = "服务端拒绝(status " + status + ")";
           }
-          console.warn(`[HVAA][RMA] POST onerror，本次走随机 — ${cause}`, "status=" + status, detail, err);
-          recordMLDetail("onerror status=" + status + " " + cause + (detail ? " | " + detail : ""));
+          console.warn(
+            `[HVAA][RMA] POST onerror，本次走随机 — ${cause}`,
+            "status=" + status,
+            detail,
+            err
+          );
+          reportMlDetail("onerror status=" + status + " " + cause + (detail ? " | " + detail : ""));
           setAlarm("Error");
           resolve("onerror");
         },
         ontimeout: () => {
           console.warn("[HVAA][RMA] POST 超时(>12s)，本次走随机");
-          recordMLDetail("timeout (>12s)");
+          reportMlDetail("timeout (>12s)");
           setAlarm("Error");
           resolve("timeout");
         },
@@ -309,15 +324,15 @@ export async function tryMLAnswer() {
     });
     // 小马验证统计：成功(Array) → 记 ok 并返回答案数组；失败 → result 为结局分类字符串，记入对应失败计数(走随机兜底)。
     if (Array.isArray(result)) {
-      recordMLOutcome("ok");
+      reportMlOutcome("ok");
       return result;
     }
-    recordMLOutcome(typeof result === "string" ? result : "unknown");
+    reportMlOutcome(typeof result === "string" ? result : "unknown");
     return null;
   } catch (err) {
     console.error("[HVAA][RMA] tryMLAnswer error", err);
-    recordMLDetail("exception " + (err && err.message));
-    recordMLOutcome("exception");
+    reportMlDetail("exception " + (err && err.message));
+    reportMlOutcome("exception");
     setAlarm("Error");
     return null;
   } finally {

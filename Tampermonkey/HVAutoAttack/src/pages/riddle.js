@@ -15,7 +15,7 @@ import { setAlarm } from "../alarm/alarm.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { runRiddleVisualAid } from "./riddle-helper.js";
 import { tryMLAnswer, startRiddleMlHealthCheck } from "./riddle-ml.js";
-import { recordRiddleAppear } from "../state/riddle-stats.js";
+import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
 import { captureRiddleDataUrl, getRiddleImgEl } from "./riddle-image.js";
 import { recordRiddleSample, SAMPLE_SOURCE } from "../state/riddle-dataset.js";
@@ -102,7 +102,7 @@ function submittedCodes() {
 
 export function runRiddleAnsweringSession() {
   setAlarm("Riddle");
-  recordRiddleAppear(); // 小马验证统计：谜题页出现一次（与 ML 是否开启/成功无关）
+  runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_APPEAR }); // 小马验证统计：谜题页出现一次（与 ML 是否开启/成功无关）
 
   // P2 视觉辅助：async 但不 await（图片预处理不阻塞倒计时；找不到 #riddleimage>img 内部静默 return）
   if (isOptionOn("riddleHelperUi")) {

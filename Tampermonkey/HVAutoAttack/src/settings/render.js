@@ -14,7 +14,7 @@ import { setLang } from "../i18n/core/restore-controller.js";
 import { clearOption, readOption, setOption, writeOption } from "../state/option.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
 import { OptionBackupEvent, runOptionBackupAutomation } from "../state/option-backup.js";
-import { getRiddleStats, resetRiddleStats, ML_OUTCOMES } from "../state/riddle-stats.js";
+import { RiddleStatsEvent, runRiddleStatsAutomation, ML_OUTCOMES } from "../state/riddle-stats.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
 import {
   BattleMonitorEvent,
@@ -480,7 +480,7 @@ export function optionBox() {
       gE("#hvAATab-Usage>table").innerHTML = _html;
     } else if (name === "Riddle") {
       // 小马验证(riddle ML)统计：汇总 + 结局明细（把"为什么失败"也量化进面板，见 ML_OUTCOMES）
-      const rs = getRiddleStats();
+      const rs = runRiddleStatsAutomation({ type: RiddleStatsEvent.READ });
       const rate = rs.mlCall ? ((rs.ok / rs.mlCall) * 100).toFixed(1) : "0.0";
       const lab = (o) => `<l0>${o.l0}</l0><l1>${o.l1}</l1><l2>${o.l2}</l2>`;
       _html =
@@ -720,7 +720,7 @@ export function optionBox() {
   // 标签页-小马验证
   gE(".reRiddleStats", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      resetRiddleStats();
+      runRiddleStatsAutomation({ type: RiddleStatsEvent.RESET });
       runRiddleLogAutomation({ type: RiddleLogEvent.CLEAR }); // 重置统计同时清滚动日志
     }
   };

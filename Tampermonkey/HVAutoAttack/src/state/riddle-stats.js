@@ -8,6 +8,19 @@ import { getValue, setValue, delValue } from "./storage.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "./riddle-log.js";
 
 const KEY = "riddleStats";
+const EVENT_READ = "read";
+const EVENT_RECORD_DETAIL = "recordDetail";
+const EVENT_RECORD_APPEAR = "recordAppear";
+const EVENT_RECORD_OUTCOME = "recordOutcome";
+const EVENT_RESET = "reset";
+
+export const RiddleStatsEvent = Object.freeze({
+  READ: EVENT_READ,
+  RECORD_DETAIL: EVENT_RECORD_DETAIL,
+  RECORD_APPEAR: EVENT_RECORD_APPEAR,
+  RECORD_OUTCOME: EVENT_RECORD_OUTCOME,
+  RESET: EVENT_RESET,
+});
 
 /**
  * ML 识别结局分类（与 riddle-ml.js tryMLAnswer 各终止分支一一对应）。
@@ -32,7 +45,7 @@ export const ML_OUTCOMES = {
  * 读统计并派生汇总。outcomes 补全所有分类为 0（兼容旧存档 / 首次）。
  * @returns {{appear:number, mlCall:number, ok:number, outcomes:Record<string,number>}}
  */
-export function getRiddleStats() {
+function getRiddleStats() {
   const s = getValue(KEY, true) || {};
   const outcomes = {};
   for (const k of Object.keys(ML_OUTCOMES)) {
@@ -47,7 +60,7 @@ export function getRiddleStats() {
  * riddle 提交后页面重定向, console 日志看不到, 故详情必须落库（用户诉求 2026-06-06）。
  * @param {string} detail
  */
-export function recordMLDetail(detail) {
+function recordMLDetail(detail) {
   if (!detail) return;
   const s = getValue(KEY, true) || {};
   s.lastError = String(detail).slice(0, 300);
@@ -56,7 +69,7 @@ export function recordMLDetail(detail) {
 }
 
 /** 小马图出现一次（riddle.js runRiddleAnsweringSession 调用，与 ML 是否开启/成功无关）。 */
-export function recordRiddleAppear() {
+function recordRiddleAppear() {
   const s = getValue(KEY, true) || {};
   s.appear = (s.appear || 0) + 1;
   setValue(KEY, s);
@@ -67,7 +80,7 @@ export function recordRiddleAppear() {
  * 记录一次 ML 识别结局（成功 ok 或某失败原因）。未知分类归 unknown。单次写入。
  * @param {keyof ML_OUTCOMES | string} outcome
  */
-export function recordMLOutcome(outcome) {
+function recordMLOutcome(outcome) {
   const key = outcome in ML_OUTCOMES ? outcome : "unknown";
   const s = getValue(KEY, true) || {};
   if (!s.outcomes) s.outcomes = {};
@@ -77,6 +90,16 @@ export function recordMLOutcome(outcome) {
 }
 
 /** 重置全部统计。 */
-export function resetRiddleStats() {
+function resetRiddleStats() {
   delValue(KEY);
+  return getRiddleStats();
+}
+
+export function runRiddleStatsAutomation(event = { type: EVENT_READ }) {
+  if (event.type === EVENT_READ) return getRiddleStats();
+  if (event.type === EVENT_RECORD_DETAIL) return recordMLDetail(event.detail);
+  if (event.type === EVENT_RECORD_APPEAR) return recordRiddleAppear();
+  if (event.type === EVENT_RECORD_OUTCOME) return recordMLOutcome(event.outcome);
+  if (event.type === EVENT_RESET) return resetRiddleStats();
+  return undefined;
 }
