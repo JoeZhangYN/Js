@@ -1,5 +1,5 @@
-// 主循环 + 暂停切换。
-// Phase 5b 编排倒置：main() 只依赖 BATTLE_RULES + runRules 两个抽象，16 个 step 的具体实现
+// 战斗回合决策编排。
+// Phase 5b 编排倒置：runBattleTurnAutomation() 只依赖 BATTLE_RULES + runRules 两个抽象，16 个 step 的具体实现
 // 全在 battle/rules/（组合根）。拆桥 gate scripts/check-mainloop-imports.mjs 禁止本文件回退
 // import step 实现，强制新增/调整 step 走 battle/rules/index.js。
 // 保留的 import 仅 pre-step 必执行项（monitor/bug guard/monster status）+ 基础设施（snapshot/cd-tracker）。
@@ -22,7 +22,7 @@ import {
   runBattlePauseAutomation,
 } from "./pause-automation.js";
 
-export function main() {
+export function runBattleTurnAutomation() {
   if (runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })) return;
 
   runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY });

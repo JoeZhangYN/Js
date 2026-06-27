@@ -1,6 +1,6 @@
 // 拆桥 gate（Phase 5b 编排倒置）：禁止 battle/main-loop.js 回退 import 已倒置的 step 实现。
-// 背景：main() 原直接 import 16 个具体实现（useGem/castDebuffOnAll/attack…）+ 内联闭包，
-// 编排器与实现焊死。倒置后 main-loop 只该依赖 BATTLE_RULES + runRules 两个抽象；新增/调整 step
+// 背景：旧 main() 原直接 import 16 个具体实现（useGem/castDebuffOnAll/attack…）+ 内联闭包，
+// 编排器与实现焊死。倒置后 runBattleTurnAutomation() 只该依赖 BATTLE_RULES + runRules 两个抽象；新增/调整 step
 // 走 battle/rules/index.js。本门控让旧路径（直接 import step 实现）不能再悄悄回归（反退化锁）。
 //
 // 符号级而非模块级：countMonsterHP/killBug/battleInfo 是 pre-step 必执行项（非倒置的 step），

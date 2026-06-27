@@ -5,6 +5,7 @@ const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const battleFile = path.join(root, "src/battle/battle-automation.js");
 const reloaderFile = path.join(root, "src/battle/reloader.js");
+const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
 
@@ -49,6 +50,9 @@ function checkBattleEntry() {
   if (!text.includes("runBattleRoundStartAutomation")) {
     violations.push(`${rel(battleFile)} must start rounds through runBattleRoundStartAutomation()`);
   }
+  if (!text.includes("runBattleTurnAutomation")) {
+    violations.push(`${rel(battleFile)} must run turns through runBattleTurnAutomation()`);
+  }
 }
 
 function checkRoundStartCallers() {
@@ -77,10 +81,32 @@ function checkRoundStartEntry() {
   }
 }
 
+function checkTurnEntry() {
+  const text = fs.readFileSync(mainLoopFile, "utf8");
+  if (!/export function runBattleTurnAutomation\(/.test(text)) {
+    violations.push(`${rel(mainLoopFile)} must expose runBattleTurnAutomation()`);
+  }
+  if (/\b(?:export\s+)?function\s+main\s*\(/.test(text)) {
+    violations.push(`${rel(mainLoopFile)} legacy main() bridge must stay deleted; use runBattleTurnAutomation()`);
+  }
+  for (const file of [battleFile, reloaderFile]) {
+    const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+    lines.forEach((line, index) => {
+      if (line.includes("runBattleTurnAutomation")) return;
+      if (/\bmain\s*\(/.test(line)) {
+        violations.push(
+          `${rel(file)}:${index + 1} legacy main() call is forbidden; use runBattleTurnAutomation()`
+        );
+      }
+    });
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
 checkRoundStartEntry();
+checkTurnEntry();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");

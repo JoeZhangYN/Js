@@ -20,7 +20,7 @@ import {
 } from "./battle-completion.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
-import { main } from "./main-loop.js";
+import { runBattleTurnAutomation } from "./main-loop.js";
 
 export function reloader() {
   let delayAlert;
@@ -67,11 +67,11 @@ export function reloader() {
           unsafeWindow.battle = new unsafeWindow.Battle();
           unsafeWindow.battle.clear_infopane();
           runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
-          main();
+          runBattleTurnAutomation();
         });
       }
     } else {
-      main();
+      runBattleTurnAutomation();
     }
   };
   gE("body").appendChild(eventEnd);

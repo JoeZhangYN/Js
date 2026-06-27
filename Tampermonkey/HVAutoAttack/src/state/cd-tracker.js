@@ -3,7 +3,7 @@
 // HV 物理/魔法 skill 在 DOM 只显 opacity:0.5，不显剩余回合 → 必须 js-state lastFiredTurn。
 // 物品 CD（如 manapot CD 39）由 snapshot.js 直读 .cooldown div。
 //
-// globalTurn：跨 battle 累计，main() 每 turn +1，持久化到 GM_*。
+// globalTurn：跨 battle 累计，runBattleTurnAutomation() 每 turn +1，持久化到 GM_*。
 // skillLastUsed：Map<code, globalTurn>，持久化。
 import { g } from "./store.js";
 import { setValue, getValue } from "./storage.js";
@@ -28,7 +28,7 @@ export function persistCdState() {
   setValue(STORAGE_KEYS.SKILL_LAST_USED, g("skillLastUsed") || {});
 }
 
-/** main() 每 turn 入口调用一次。 */
+/** runBattleTurnAutomation() 每 turn 入口调用一次。 */
 export function incrementGlobalTurn() {
   g("globalTurn", (g("globalTurn") || 0) + 1);
 }

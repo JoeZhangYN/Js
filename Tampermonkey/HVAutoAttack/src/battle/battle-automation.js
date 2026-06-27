@@ -4,7 +4,7 @@ import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { reloader } from "./reloader.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
-import { main } from "./main-loop.js";
+import { runBattleTurnAutomation } from "./main-loop.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import {
   MonsterKnowledgeEvent,
@@ -23,7 +23,7 @@ function setupPauseControls() {
     button.innerHTML = "<l0>暂停</l0><l1>暫停</l1><l2>Pause</l2>";
     button.className = "pauseChange";
     button.onclick = function () {
-      runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, { resume: main });
+      runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, { resume: runBattleTurnAutomation });
     };
   }
   if (g("option").pauseHotkey) {
@@ -34,7 +34,7 @@ function setupPauseControls() {
           return;
         }
         if (e.key === g("option").pauseHotkeyKey) {
-          runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, { resume: main });
+          runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, { resume: runBattleTurnAutomation });
         }
       },
       false
@@ -63,5 +63,5 @@ export function runBattleAutomation() {
   runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
   setupMonsterKnowledge();
   setupBattleMonitor();
-  main();
+  runBattleTurnAutomation();
 }

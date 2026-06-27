@@ -58,7 +58,7 @@ export async function renderResistPanel() {
   }
   const els = [...gE("div.btm1", "all")];
   // 怪物身份键 = monsterId（开局 spawn 行 → monsterStatus）。按 order 取 MID（不能用数组下标——
-  // 本面板也会在 main() countMonsterHP 把 monsterStatus 按 finWeight sort 后被 scan 回调触发，
+  // 本面板也会在 runBattleTurnAutomation() 更新 monsterStatus 后被 scan 回调触发，
   // 故按 order 字段映射，DOM `.btm1` 第 i 个 = order i）。
   const idByOrder = new Map((g("monsterStatus") || []).map((s) => [s.order, s.monsterId]));
   // 预取本轮怪 MID 画像进内存 cache：供本面板渲染 + collectSnapshot(同步) join（路径 B 预取时机）
