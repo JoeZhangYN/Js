@@ -19,6 +19,7 @@ const pauseControlsFile = path.join(root, "src/battle/battle-pause-controls.js")
 const pauseControlsTest = path.join(root, "src/battle/battle-pause-controls.test.js");
 const startRuntimeFile = path.join(root, "src/battle/battle-start-runtime.js");
 const startRuntimeTest = path.join(root, "src/battle/battle-start-runtime.test.js");
+const utilityEngineFile = path.join(root, "src/battle/utility-engine.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
@@ -563,6 +564,18 @@ function checkStartRuntimeEntry() {
   }
 }
 
+function checkUtilityEngine() {
+  const text = fs.readFileSync(utilityEngineFile, "utf8");
+  if (!text.includes("OptionEvent.READ_FIELD")) {
+    violations.push(
+      `${rel(utilityEngineFile)} must read utility debug options through option entry`
+    );
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${rel(utilityEngineFile)} must not read utility debug options directly`);
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -576,6 +589,7 @@ checkActionEndEntry();
 checkActionStartEntry();
 checkPauseControlsEntry();
 checkStartRuntimeEntry();
+checkUtilityEngine();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");

@@ -7,7 +7,7 @@
 // - score: ≥ 0；0 视为不可用；越高越好
 // - dispatch: 若被选中调用此函数执行副作用
 // - explain: 可选打分理由（debug 日志用）
-import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 /**
  * @typedef {object} ActionCandidate
@@ -24,12 +24,16 @@ import { g } from "../state/store.js";
  * @returns {object|null} 最高分候选（原对象）
  */
 export function pickByUtility(candidates) {
-  const valid = candidates
-    .filter((c) => c && c.score > 0)
-    .sort((a, b) => b.score - a.score);
+  const valid = candidates.filter((c) => c && c.score > 0).sort((a, b) => b.score - a.score);
   if (valid.length === 0) return null;
   const winner = valid[0];
-  if (g("option")?.dynamicHealLog) {
+  if (
+    runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "dynamicHealLog",
+      fallback: false,
+    })
+  ) {
     const label = (c) => c.name ?? c.code;
     const runners = valid
       .slice(1, 3)
