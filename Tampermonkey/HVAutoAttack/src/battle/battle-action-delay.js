@@ -1,6 +1,6 @@
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
-import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
@@ -14,7 +14,7 @@ export const BattleActionDelayEvent = Object.freeze({
 });
 
 function readDelayOption() {
-  return g("option") || {};
+  return runOptionAutomation({ type: OptionEvent.READ }) || {};
 }
 
 function startActionDelay(deps) {

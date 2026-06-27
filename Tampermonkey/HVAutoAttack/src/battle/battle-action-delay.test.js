@@ -2,13 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleActionDelayEvent, runBattleActionDelayAutomation } from "./battle-action-delay.js";
 
 const mocks = vi.hoisted(() => ({
-  g: vi.fn(),
+  runOptionAutomation: vi.fn(),
 }));
 
-vi.mock("../state/store.js", () => ({ g: mocks.g }));
+vi.mock("../state/option.js", () => ({
+  OptionEvent: Object.freeze({ READ: "read" }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
 
 beforeEach(() => {
-  mocks.g.mockReset();
+  mocks.runOptionAutomation.mockReset();
   runBattleActionDelayAutomation(
     { type: BattleActionDelayEvent.ACTION_ENDED },
     {
@@ -28,7 +31,7 @@ describe("runBattleActionDelayAutomation", () => {
       triggerAlarm: vi.fn(),
       scheduleReload: vi.fn(() => "reload-timer"),
     };
-    mocks.g.mockReturnValue({
+    mocks.runOptionAutomation.mockReturnValue({
       delayAlert: true,
       delayAlertTime: 7,
       delayReload: true,
@@ -41,6 +44,7 @@ describe("runBattleActionDelayAutomation", () => {
 
     expect(deps.schedule).toHaveBeenCalledWith(expect.any(Function), 7000);
     expect(deps.scheduleReload).toHaveBeenCalledWith(11);
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "read" });
   });
 
   it("cancels only enabled action delay timers at action end", () => {
@@ -50,7 +54,7 @@ describe("runBattleActionDelayAutomation", () => {
       triggerAlarm: vi.fn(),
       scheduleReload: vi.fn(() => "reload-timer"),
     };
-    mocks.g.mockReturnValue({
+    mocks.runOptionAutomation.mockReturnValue({
       delayAlert: true,
       delayAlertTime: 1,
       delayReload: false,
@@ -71,7 +75,7 @@ describe("runBattleActionDelayAutomation", () => {
       triggerAlarm: vi.fn(),
       scheduleReload: vi.fn(() => "reload-timer"),
     };
-    mocks.g
+    mocks.runOptionAutomation
       .mockReturnValueOnce({
         delayAlert: true,
         delayAlertTime: 1,
@@ -103,7 +107,7 @@ describe("runBattleActionDelayAutomation", () => {
         .mockReturnValueOnce("first-reload")
         .mockReturnValueOnce("second-reload"),
     };
-    mocks.g.mockReturnValue({
+    mocks.runOptionAutomation.mockReturnValue({
       delayAlert: true,
       delayAlertTime: 1,
       delayReload: true,
