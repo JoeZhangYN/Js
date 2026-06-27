@@ -16,8 +16,8 @@ describe("runMonsterResistPanelAutomation", () => {
       <div class="btm1"><span class="btm3">Arthropod</span></div>
       <div class="btm1"><span class="btm3">Dragonkin</span></div>
     `;
-    const primeMonsterCache = vi.fn(async () => {});
-    const getCachedMonster = vi.fn((id) =>
+    const primeProfiles = vi.fn(async () => {});
+    const readProfile = vi.fn((id) =>
       id === 101
         ? {
             attack: "piercing",
@@ -48,14 +48,14 @@ describe("runMonsterResistPanelAutomation", () => {
           if (rootOrAll instanceof Element) return rootOrAll.querySelector(selector);
           return document.querySelector(selector);
         },
-        getCachedMonster,
-        primeMonsterCache,
+        readProfile,
+        primeProfiles,
       }
     );
 
-    expect(primeMonsterCache).toHaveBeenCalledWith([101, 202]);
-    expect(getCachedMonster).toHaveBeenCalledWith(101);
-    expect(getCachedMonster).toHaveBeenCalledWith(202);
+    expect(primeProfiles).toHaveBeenCalledWith([101, 202]);
+    expect(readProfile).toHaveBeenCalledWith(101);
+    expect(readProfile).toHaveBeenCalledWith(202);
     expect(document.querySelector("#hvAAResist").textContent).toContain("Arthropod");
     expect(document.querySelector("#hvAAResist").textContent).toContain("待 scan");
   });

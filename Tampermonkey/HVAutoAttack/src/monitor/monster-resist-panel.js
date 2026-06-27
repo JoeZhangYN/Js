@@ -3,7 +3,7 @@
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { RESIST_KEYS } from "../data/monster-db.js";
-import { primeMonsterCache, getCachedMonster } from "../state/monster-cache.js";
+import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
 
 const RESIST_LABEL = {
   fire: "火", cold: "冰", elec: "雷", wind: "风", holy: "圣",
@@ -26,8 +26,14 @@ function makeDeps(deps) {
     document: deps.document || document,
     g: deps.g || g,
     gE: deps.gE || gE,
-    getCachedMonster: deps.getCachedMonster || getCachedMonster,
-    primeMonsterCache: deps.primeMonsterCache || primeMonsterCache,
+    primeProfiles:
+      deps.primeProfiles ||
+      ((monsterIds) =>
+        runMonsterCacheAutomation({ type: MonsterCacheEvent.PRIME_PROFILES, monsterIds })),
+    readProfile:
+      deps.readProfile ||
+      ((monsterId) =>
+        runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId })),
   };
 }
 
@@ -78,12 +84,12 @@ async function renderResistPanel(deps) {
   // 故按 order 字段映射，DOM `.btm1` 第 i 个 = order i）。
   const idByOrder = new Map((deps.g("monsterStatus") || []).map((s) => [s.order, s.monsterId]));
   // 预取本轮怪 MID 画像进内存 cache：供本面板渲染 + collectSnapshot(同步) join（路径 B 预取时机）
-  await deps.primeMonsterCache(els.map((_, i) => idByOrder.get(i)));
+  await deps.primeProfiles(els.map((_, i) => idByOrder.get(i)));
   const rows = [];
   els.forEach((el, i) => {
     const name = deps.gE(".btm3", el)?.textContent;
     if (!name) return;
-    rows.push(renderRow(name, deps.getCachedMonster(idByOrder.get(i)))); // 名仅显示，画像按 MID 查
+    rows.push(renderRow(name, deps.readProfile(idByOrder.get(i)))); // 名仅显示，画像按 MID 查
   });
   panel.innerHTML = rows.join("") || "<div class='hvAAResistNone'>无怪物</div>";
 }

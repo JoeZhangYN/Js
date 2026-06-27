@@ -9,41 +9,51 @@ vi.mock("./monster-db-store.js", () => ({
   MonsterDbStoreEvent: Object.freeze({ PROFILE_READ: "profileRead" }),
   runMonsterDbStoreAutomation: mocks.runMonsterDbStoreAutomation,
 }));
-import {
-  primeMonsterCache,
-  getCachedMonster,
-  getCachedDb,
-  setCachedMonster,
-  _clearMonsterCache,
-} from "./monster-cache.js";
+import { MonsterCacheEvent, runMonsterCacheAutomation } from "./monster-cache.js";
 
 beforeEach(() => {
-  _clearMonsterCache();
+  runMonsterCacheAutomation({ type: MonsterCacheEvent.CLEAR });
   mocks.runMonsterDbStoreAutomation.mockReset();
 });
 
 describe("monster-cache（按 MID 键）", () => {
-  it("prime 后 getCachedMonster(MID) 拿到画像", async () => {
+  it("primes and reads one monster profile through the cache entry", async () => {
     mocks.runMonsterDbStoreAutomation.mockImplementation(async (event) => ({
       monsterId: event.monsterId,
       plvl: 100,
     }));
-    await primeMonsterCache([158322, 156409]);
-    expect(getCachedMonster(158322)).toEqual({ monsterId: 158322, plvl: 100 });
-    expect(getCachedMonster(156409).plvl).toBe(100);
+    await runMonsterCacheAutomation({
+      type: MonsterCacheEvent.PRIME_PROFILES,
+      monsterIds: [158322, 156409],
+    });
+    expect(
+      runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: 158322 })
+    ).toEqual({ monsterId: 158322, plvl: 100 });
+    expect(
+      runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: 156409 }).plvl
+    ).toBe(100);
   });
 
-  it("getCachedDb 返回 MID→记录 Record（供 join 的 dbById）", async () => {
+  it("reads the cached db snapshot through the cache entry", async () => {
     mocks.runMonsterDbStoreAutomation.mockImplementation(async (event) => ({
       monsterId: event.monsterId,
     }));
-    await primeMonsterCache([1, 2]);
-    expect(getCachedDb()).toEqual({ 1: { monsterId: 1 }, 2: { monsterId: 2 } });
+    await runMonsterCacheAutomation({
+      type: MonsterCacheEvent.PRIME_PROFILES,
+      monsterIds: [1, 2],
+    });
+    expect(runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_DB })).toEqual({
+      1: { monsterId: 1 },
+      2: { monsterId: 2 },
+    });
   });
 
   it("去重：同 MID 只查一次", async () => {
     mocks.runMonsterDbStoreAutomation.mockResolvedValue(null);
-    await primeMonsterCache([7, 7, 7]);
+    await runMonsterCacheAutomation({
+      type: MonsterCacheEvent.PRIME_PROFILES,
+      monsterIds: [7, 7, 7],
+    });
     expect(mocks.runMonsterDbStoreAutomation).toHaveBeenCalledTimes(1);
     expect(mocks.runMonsterDbStoreAutomation).toHaveBeenCalledWith({
       type: "profileRead",
@@ -53,25 +63,44 @@ describe("monster-cache（按 MID 键）", () => {
 
   it("store read 失败 → 存 null 不抛", async () => {
     mocks.runMonsterDbStoreAutomation.mockRejectedValue(new Error("idb fail"));
-    await expect(primeMonsterCache([7])).resolves.toBeUndefined();
-    expect(getCachedMonster(7)).toBeNull();
+    await expect(
+      runMonsterCacheAutomation({ type: MonsterCacheEvent.PRIME_PROFILES, monsterIds: [7] })
+    ).resolves.toBeUndefined();
+    expect(
+      runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: 7 })
+    ).toBeNull();
   });
 
-  it("未预取 / 无 MID → getCachedMonster null", () => {
-    expect(getCachedMonster(999)).toBeNull();
-    expect(getCachedMonster(undefined)).toBeNull();
-    expect(getCachedMonster(null)).toBeNull();
+  it("returns null for missing or absent monster ids", () => {
+    expect(runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: 999 })).toBeNull();
+    expect(
+      runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: undefined })
+    ).toBeNull();
+    expect(runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: null })).toBeNull();
   });
 
-  it("setCachedMonster 即时写入(scan 入库路径)", () => {
-    setCachedMonster(80804, { monsterId: 80804, fire: 50 });
-    expect(getCachedMonster(80804).fire).toBe(50);
-    expect(getCachedDb()[80804].fire).toBe(50);
+  it("writes a freshly scanned profile through the cache entry", () => {
+    runMonsterCacheAutomation({
+      type: MonsterCacheEvent.WRITE_PROFILE,
+      monsterId: 80804,
+      info: { monsterId: 80804, fire: 50 },
+    });
+    expect(
+      runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: 80804 }).fire
+    ).toBe(50);
+    expect(runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_DB })[80804].fire).toBe(50);
   });
 
   it("空/缺 ids + undefined/null 元素 安全", async () => {
-    await expect(primeMonsterCache()).resolves.toBeUndefined();
-    await expect(primeMonsterCache([null, undefined])).resolves.toBeUndefined();
+    await expect(
+      runMonsterCacheAutomation({ type: MonsterCacheEvent.PRIME_PROFILES })
+    ).resolves.toBeUndefined();
+    await expect(
+      runMonsterCacheAutomation({
+        type: MonsterCacheEvent.PRIME_PROFILES,
+        monsterIds: [null, undefined],
+      })
+    ).resolves.toBeUndefined();
     expect(mocks.runMonsterDbStoreAutomation).not.toHaveBeenCalled();
   });
 });

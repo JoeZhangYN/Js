@@ -8,7 +8,7 @@ import {
   MonsterDbStoreEvent,
   runMonsterDbStoreAutomation,
 } from "../state/monster-db-store.js";
-import { setCachedMonster } from "../state/monster-cache.js";
+import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
 
 const EVENT_START = "start";
 
@@ -23,7 +23,14 @@ function makeDeps(deps) {
     gE: deps.gE || gE,
     MutationObserver: deps.MutationObserver || MutationObserver,
     parseScanResult: deps.parseScanResult || parseScanResult,
-    setCachedMonster: deps.setCachedMonster || setCachedMonster,
+    writeCachedProfile:
+      deps.writeCachedProfile ||
+      ((monsterId, info) =>
+        runMonsterCacheAutomation({
+          type: MonsterCacheEvent.WRITE_PROFILE,
+          monsterId,
+          info,
+        })),
     storeProfile:
       deps.storeProfile ||
       ((info) =>
@@ -67,7 +74,7 @@ function handleLogRow(node, onUpdate, deps) {
   info.monsterId = st.monsterId;
   Promise.resolve(deps.storeProfile(info))
     .then(() => {
-      deps.setCachedMonster(info.monsterId, info); // 即时进内存 cache（消本轮中途新 scan 怪的缺口）
+      deps.writeCachedProfile(info.monsterId, info); // 即时进内存 cache（消本轮中途新 scan 怪的缺口）
       // scan 的 max HP + 战斗 LV → 顺带补 (MID,LV) 满血表（与开局 spawn 行同源、互为兜底）
       if (st.level != null && info.maxHP > 0) deps.storeHp(info.monsterId, st.level, info.maxHP, info.lastUpdate);
       onUpdate?.();

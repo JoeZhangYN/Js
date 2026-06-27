@@ -29,7 +29,7 @@ describe("runMonsterScanLearningAutomation", () => {
     FakeMutationObserver.instances = [];
     const monsterEl = document.createElement("div");
     monsterEl.innerHTML = "clean";
-    const setCachedMonster = vi.fn();
+    const writeCachedProfile = vi.fn();
     const storeProfile = vi.fn(async () => {});
     const storeHp = vi.fn();
     const onStored = vi.fn();
@@ -53,7 +53,7 @@ describe("runMonsterScanLearningAutomation", () => {
           },
           MutationObserver: FakeMutationObserver,
           parseScanResult: () => ({ ...info }),
-          setCachedMonster,
+          writeCachedProfile,
           storeProfile,
           storeHp,
           time: () => "2026-06-27",
@@ -68,7 +68,7 @@ describe("runMonsterScanLearningAutomation", () => {
       ...info,
       monsterId: 101,
     });
-    expect(setCachedMonster).toHaveBeenCalledWith(101, {
+    expect(writeCachedProfile).toHaveBeenCalledWith(101, {
       ...info,
       monsterId: 101,
     });

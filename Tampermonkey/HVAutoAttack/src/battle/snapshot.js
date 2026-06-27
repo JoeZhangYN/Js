@@ -17,7 +17,7 @@ import { BigSkillKillLearningEvent, runBigSkillKillLearningAutomation } from "..
 import { IncomingBurstLearningEvent, runIncomingBurstLearningAutomation } from "../state/incoming-burst-learner.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 import { joinMonsterView, monsterHpVars } from "./monster-view.js";
-import { getCachedDb } from "../state/monster-cache.js";
+import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
 
 /**
  * 解析一个 effect 容器（玩家 #pane_effects 或怪物 .btm6）内全部 img 为 {img, turns}[]。
@@ -151,7 +151,7 @@ export function collectSnapshot() {
   const monsters = readMonsters();
   // 统一怪物视图：join snap.monsters + monsterStatus(绝对血/finWeight) + monster-db 缓存(九抗/身份)。
   // countMonsterHP(main-loop) 已先于本函数跑 → monsterStatus 最新；db 走 monster-cache 同步快照。
-  const view = joinMonsterView(monsters, g("monsterStatus"), getCachedDb());
+  const view = joinMonsterView(monsters, g("monsterStatus"), runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_DB }));
   const playerEffects = readPlayerEffects();
   const vitals = readPlayerVitals();
   const spiritEl = gE("#ckey_spirit");
