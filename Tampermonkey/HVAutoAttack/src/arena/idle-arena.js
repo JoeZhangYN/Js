@@ -1,6 +1,6 @@
 // 闲置自动挑战 Arena/RoB/GrindFest：唯一入口 runIdleArenaAutomation(event)。
 import { gE } from "../dom/query.js";
-import { setValue, getValue } from "../state/storage.js";
+import { setValue, getValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
@@ -12,10 +12,12 @@ import { readStaminaValue } from "../state/stamina.js";
 
 const EVENT_SCHEDULE_NEXT_BATTLE = "scheduleNextBattle";
 const EVENT_START_NEXT_BATTLE = "startNextBattle";
+const EVENT_RESET_PROGRESS = "resetProgress";
 
 export const IdleArenaEvent = Object.freeze({
   SCHEDULE_NEXT_BATTLE: EVENT_SCHEDULE_NEXT_BATTLE,
   START_NEXT_BATTLE: EVENT_START_NEXT_BATTLE,
+  RESET_PROGRESS: EVENT_RESET_PROGRESS,
 });
 
 function scheduleNextBattle() {
@@ -23,6 +25,10 @@ function scheduleNextBattle() {
     () => runIdleArenaAutomation({ type: EVENT_START_NEXT_BATTLE }),
     ((g("option").idleArenaTime * (Math.random() * 20 + 90)) / 100) * 1000
   );
+}
+
+function resetProgress() {
+  delValue(STORAGE_KEYS.ARENA);
 }
 
 function startNextBattle() {
@@ -135,6 +141,10 @@ function startNextBattle() {
 export function runIdleArenaAutomation(event = { type: EVENT_START_NEXT_BATTLE }) {
   if (event.type === EVENT_SCHEDULE_NEXT_BATTLE) {
     scheduleNextBattle();
+    return;
+  }
+  if (event.type === EVENT_RESET_PROGRESS) {
+    resetProgress();
     return;
   }
   startNextBattle();

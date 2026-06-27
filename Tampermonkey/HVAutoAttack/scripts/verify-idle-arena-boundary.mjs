@@ -4,7 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/arena/idle-arena.js");
+const ownerTest = path.normalize("src/arena/idle-arena.test.js");
 const settings = path.normalize("src/settings/render.js");
+const storageKeys = path.normalize("src/state/persist-keys.js");
 const violations = [];
 
 function walk(dir) {
@@ -39,8 +41,20 @@ function checkFile(file) {
         `${where} direct idleArena scheduling is forbidden; use SCHEDULE_NEXT_BATTLE`
       );
     }
-    if (/\b(?:getValue|setValue|delValue)\(\s*["']arena["']/.test(line)) {
+    if (
+      relative !== owner &&
+      relative !== ownerTest &&
+      /\b(?:getValue|setValue|delValue)\(\s*["']arena["']/.test(line)
+    ) {
       violations.push(`${where} arena storage key must use STORAGE_KEYS.ARENA`);
+    }
+    if (
+      relative !== owner &&
+      relative !== ownerTest &&
+      relative !== storageKeys &&
+      /\bSTORAGE_KEYS\.ARENA\b/.test(line)
+    ) {
+      violations.push(`${where} arena storage belongs in idle-arena boundary`);
     }
   });
 }
@@ -50,6 +64,12 @@ walk(srcDir);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (!ownerText.includes("STORAGE_KEYS.ARENA")) {
   violations.push(`${owner.replaceAll("\\", "/")} must use STORAGE_KEYS.ARENA`);
+}
+if (!ownerText.includes("RESET_PROGRESS")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must expose RESET_PROGRESS event`);
+}
+if (!ownerText.includes("delValue(STORAGE_KEYS.ARENA)")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must own arena reset storage deletion`);
 }
 
 if (violations.length) {

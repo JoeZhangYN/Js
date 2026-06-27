@@ -19,11 +19,24 @@ describe("encounter policy", () => {
   it("resets stored random encounter state across UTC days", () => {
     const state = { date: Date.UTC(2026, 5, 26, 23, 59), key: "abc", count: 7, clear: false };
     expect(normalizeEncounterState(state, Date.UTC(2026, 5, 27, 0, 0, 5))).toEqual({
-      date: Date.UTC(2026, 5, 27, 0, 0, 5),
+      date: 0,
       key: "",
       count: 0,
       clear: true,
     });
+  });
+
+  it("makes the next UTC day immediately ready for the same encounter check flow", () => {
+    const state = { date: Date.UTC(2026, 5, 26, 23, 59), key: "", count: 24, clear: true };
+    const nowMs = Date.UTC(2026, 5, 27, 0, 0, 5);
+    expect(readEncounterReadiness(state, nowMs)).toMatchObject({
+      remainingMs: 0,
+      canEnter: false,
+      dailyLimitReached: false,
+    });
+    expect(msUntilNextEncounterCheck(state, { nowMs, jitter: 1 })).toBe(
+      ENCOUNTER_MIDNIGHT_GRACE_MS
+    );
   });
 
   it("uses one thirty-minute readiness window", () => {

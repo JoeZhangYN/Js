@@ -25,7 +25,8 @@ function msUntilNextUtcMidnight(nowMs) {
 }
 
 export function resetEncounterDay(nowMs = Date.now()) {
-  return { date: nowMs, key: "", count: 0, clear: true };
+  void nowMs;
+  return defaultEncounterState();
 }
 
 export function normalizeEncounterState(state, nowMs = Date.now()) {

@@ -2,8 +2,7 @@
 // 阶段 5 改成 OPTION_SCHEMA-driven。当前 chunk 2 仅做物理搬迁，行为不变。
 // file-size-gate: exempt phase-3-monolith
 import { gE, cE } from "../dom/query.js";
-import { setValue, getValue, delValue } from "../state/storage.js";
-import { STORAGE_KEYS } from "../state/persist-keys.js";
+import { setValue, getValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { setNotification } from "../alarm/alarm.js";
@@ -26,6 +25,7 @@ import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
+import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 
 /**
  * 从 OPTION_SCHEMA 渲染 "checkbox + number + 单位文本" 这类成对字段。
@@ -633,7 +633,9 @@ export function optionBox() {
       clearStaminaLossLog();
   };
   gE(".idleArenaReset", optionBox).onclick = function () {
-    if (_alert(1, "是否重置", "是否重置", "Whether to reset")) delValue(STORAGE_KEYS.ARENA);
+    if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
+      runIdleArenaAutomation({ type: IdleArenaEvent.RESET_PROGRESS });
+    }
   };
   gE(".hvAAShowLevels", optionBox).onclick = function () {
     gE(".hvAAArenaLevels").style.display =
