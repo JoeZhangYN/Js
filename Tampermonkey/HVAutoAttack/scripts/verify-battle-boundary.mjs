@@ -515,6 +515,14 @@ function checkStartRuntimeEntry() {
   if (!/export function runBattleStartRuntimeAutomation\(\s*event\b/.test(text)) {
     violations.push(`${rel(startRuntimeFile)} must expose runBattleStartRuntimeAutomation(event)`);
   }
+  if (!text.includes("OptionEvent.READ")) {
+    violations.push(
+      `${rel(startRuntimeFile)} must read start runtime options through option entry`
+    );
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${rel(startRuntimeFile)} must not read start runtime options directly`);
+  }
   if (
     /\bexport\s+(?:function|const)\s+(?!BattleStartRuntimeEvent\b|runBattleStartRuntimeAutomation\b)/.test(
       text

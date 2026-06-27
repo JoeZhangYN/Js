@@ -1,3 +1,4 @@
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { g } from "../state/store.js";
 import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle-action-speed.js";
 
@@ -16,7 +17,7 @@ function startRuntime(deps) {
 export function runBattleStartRuntimeAutomation(
   event = { type: EVENT_BATTLE_STARTED },
   deps = {
-    readOption: () => g("option") || {},
+    readOption: () => runOptionAutomation({ type: OptionEvent.READ }) || {},
     write: (key, value) => g(key, value),
     startSpeed: () =>
       runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.BATTLE_STARTED }),
