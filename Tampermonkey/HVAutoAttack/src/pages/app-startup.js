@@ -1,7 +1,7 @@
 // App 启动态编排入口：composition root 只上报启动事件，不拼配置/版本/全局状态。
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { readOption, writeOption } from "../state/option.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { _alert } from "../core/lang.js";
 import { addStyle } from "../style/inject.js";
 import { RiddleDatasetEvent, runRiddleDatasetAutomation } from "../state/riddle-dataset.js";
@@ -23,7 +23,7 @@ function loadGlobalStartupState() {
 
 function syncOptionVersion() {
   g("version", GM_info ? GM_info.script.version.slice(0, 4) : "2.89");
-  const option = readOption();
+  const option = runOptionAutomation({ type: OptionEvent.READ });
   if (!option) return false;
 
   g("option", option);
@@ -32,7 +32,7 @@ function syncOptionVersion() {
   if (option.version !== g("version")) {
     console.log(`[HVAA] 版本号 ${option.version} → ${g("version")}（已静默对齐，未弹窗）`);
     option.version = g("version");
-    writeOption(option);
+    runOptionAutomation({ type: OptionEvent.WRITE, option });
   }
   return true;
 }

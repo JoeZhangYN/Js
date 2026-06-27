@@ -11,16 +11,32 @@ import { g } from "./store.js";
 import { delValue, getValue, setValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 
-export function readOption() {
+const EVENT_READ = "read";
+const EVENT_WRITE = "write";
+const EVENT_CLEAR = "clear";
+const EVENT_READ_FIELD = "readField";
+const EVENT_IS_ON = "isOn";
+const EVENT_WRITE_FIELD = "writeField";
+
+export const OptionEvent = Object.freeze({
+  READ: EVENT_READ,
+  WRITE: EVENT_WRITE,
+  CLEAR: EVENT_CLEAR,
+  READ_FIELD: EVENT_READ_FIELD,
+  IS_ON: EVENT_IS_ON,
+  WRITE_FIELD: EVENT_WRITE_FIELD,
+});
+
+function readOption() {
   return g("option") || getValue(STORAGE_KEYS.OPTION, true) || null;
 }
 
-export function writeOption(option) {
+function writeOption(option) {
   g("option", option);
   setValue(STORAGE_KEYS.OPTION, option);
 }
 
-export function clearOption() {
+function clearOption() {
   g("option", null);
   delValue(STORAGE_KEYS.OPTION);
 }
@@ -31,7 +47,7 @@ export function clearOption() {
  * @param {*=} fallback 字段未设时的默认值
  * @returns {*} option[key]，或 fallback
  */
-export function getOption(key, fallback) {
+function getOption(key, fallback) {
   const opt = readOption() || {};
   return opt[key] !== undefined ? opt[key] : fallback;
 }
@@ -41,7 +57,7 @@ export function getOption(key, fallback) {
  * 等价于 `g("option")?.xxx !== false` 但带 fallback 处理 + 早期未装填兼容。
  * @param {string} key
  */
-export function isOptionOn(key) {
+function isOptionOn(key) {
   return getOption(key, true) !== false;
 }
 
@@ -55,8 +71,27 @@ export function isOptionOn(key) {
  * @param {string} key option 键名
  * @param {*} val 新值
  */
-export function setOption(key, val) {
+function setOption(key, val) {
   const opt = readOption() || {};
   opt[key] = val;
   writeOption(opt);
+}
+
+export function runOptionAutomation(event = { type: EVENT_READ }) {
+  if (event.type === EVENT_READ) return readOption();
+  if (event.type === EVENT_WRITE) {
+    writeOption(event.option);
+    return undefined;
+  }
+  if (event.type === EVENT_CLEAR) {
+    clearOption();
+    return undefined;
+  }
+  if (event.type === EVENT_READ_FIELD) return getOption(event.key, event.fallback);
+  if (event.type === EVENT_IS_ON) return isOptionOn(event.key);
+  if (event.type === EVENT_WRITE_FIELD) {
+    setOption(event.key, event.value);
+    return undefined;
+  }
+  return undefined;
 }

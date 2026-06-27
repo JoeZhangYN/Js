@@ -11,7 +11,7 @@ import { time } from "../core/time.js";
 import { customizeBox } from "./customize.js";
 import { OPTION_SCHEMA } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
-import { clearOption, readOption, setOption, writeOption } from "../state/option.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
 import { OptionBackupEvent, runOptionBackupAutomation } from "../state/option-backup.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation, ML_OUTCOMES } from "../state/riddle-stats.js";
@@ -392,9 +392,9 @@ export function optionBox() {
     if (/^[01]$/.test(this.value))
       gE(".hvAA-LangStyle").textContent += "l01{display:inline!important;}";
     g("lang", this.value);
-    // 持久化 lang 到 option：统一 setOption 写入口（内部 getValue fallback 取完整 option），
+    // 持久化 lang 到 option：统一 option 事件入口（内部 getValue fallback 取完整 option），
     // 避免在 option 未装填的页残缺 {lang} 落盘覆盖完整配置（现象①持久化失效根因）。
-    setOption("lang", this.value);
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "lang", value: this.value });
     // HV 原生汉化(equip/interface) 即时按新 lang 重渲染显示态（0简/1繁/2英），无需重载
     setLang(this.value);
   };
@@ -798,7 +798,7 @@ export function optionBox() {
     rmListItem(code);
   };
   gE(".hvAAExport", optionBox).onclick = function () {
-    const t = readOption();
+    const t = runOptionAutomation({ type: OptionEvent.READ });
     gE(".hvAAConfig").value = typeof t === "string" ? t : JSON.stringify(t);
   };
   gE(".hvAAImport", optionBox).onclick = function () {
@@ -811,13 +811,15 @@ export function optionBox() {
     }
     if (!option) return;
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      writeOption(option);
+      runOptionAutomation({ type: OptionEvent.WRITE, option });
       goto();
     }
   };
   //
   gE(".hvAAReset", optionBox).onclick = function () {
-    if (_alert(1, "是否重置", "是否重置", "Whether to reset")) clearOption();
+    if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
+      runOptionAutomation({ type: OptionEvent.CLEAR });
+    }
   };
   gE(".hvAAApply", optionBox).onclick = function () {
     if (gE('select[name="attackStatus"] option[value="-1"]:checked', optionBox)) {
@@ -880,7 +882,7 @@ export function optionBox() {
         url: inputs[3 * i + 2].value,
       });
     }
-    writeOption(_option);
+    runOptionAutomation({ type: OptionEvent.WRITE, option: _option });
     optionBox.style.display = "none";
     goto();
   };

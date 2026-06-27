@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/option.js");
 const ownerTest = path.normalize("src/state/option.test.js");
+const backupTest = path.normalize("src/state/option-backup.test.js");
 const storage = path.normalize("src/state/storage.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const violations = [];
@@ -29,6 +30,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== backupTest &&
       relative !== storage &&
       /\b(?:getValue|setValue|delValue)\(\s*["']option["']/.test(line)
     ) {
@@ -37,6 +39,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== backupTest &&
       relative !== storage &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.OPTION\b/.test(line)
@@ -49,10 +52,30 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
-for (const required of ["readOption", "writeOption", "clearOption", "STORAGE_KEYS.OPTION"]) {
+for (const required of ["OptionEvent", "runOptionAutomation", "STORAGE_KEYS.OPTION"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required}`);
   }
+}
+for (const legacy of [
+  "readOption",
+  "writeOption",
+  "clearOption",
+  "getOption",
+  "isOptionOn",
+  "setOption",
+]) {
+  if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} legacy ${legacy} export must stay private behind runOptionAutomation(event)`
+    );
+  }
+}
+if (!/export const OptionEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must expose OptionEvent`);
+}
+if (!/export function runOptionAutomation\(\s*event\b/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must expose runOptionAutomation(event)`);
 }
 
 if (violations.length) {

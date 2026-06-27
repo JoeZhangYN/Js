@@ -11,7 +11,7 @@
 // 缺料止损升级（用户要求「联动商店买齐再修，设上限」）：缺料且开 repairBuyMaterials → material-shop 端口
 //   在 cap/余额/库存内自动买齐再修；超限/买不到 → 停机 + 标题三语告警（保留「修不动止损」语义）。
 import { g } from "../state/store.js";
-import { getOption } from "../state/option.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { _alert } from "../core/lang.js";
 import { isIsekai } from "../env.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
@@ -77,15 +77,17 @@ function runRepair(deps = {}) {
   // repairValue 空字符串/null/非数值 → schema 默认（60%）。getOption 的 fallback 只挡 undefined，挡不住
   // 「开了维修但没填阈值」存的空字符串 ""，也挡不住 type=text 输入框里的非法值 "abc"（Number→NaN）；
   // 不兜底则 threshold=0 → 几乎不修（用户实测痛点）。注：用户显式填 "0" 视为有意（只修完全损坏），保留。
-  const rawRepairValue = getOption("repairValue", "");
+  const readOptionField = (key, fallback) =>
+    runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
+  const rawRepairValue = readOptionField("repairValue", "");
   const numRepairValue = Number(rawRepairValue);
   const opt = {
     repairValue:
       rawRepairValue === "" || rawRepairValue === null || Number.isNaN(numRepairValue)
         ? getOptionDefault("repairValue")
         : numRepairValue,
-    repairBuyMaterials: getOption("repairBuyMaterials", false),
-    repairCreditCap: getOption("repairCreditCap", 50000),
+    repairBuyMaterials: readOptionField("repairBuyMaterials", false),
+    repairCreditCap: readOptionField("repairCreditCap", 50000),
   };
   const backend = makeBackend({ type: RepairBackendEvent.CREATE, isIsekai });
   const repairedIds = []; // 本会话止损态：已提交修理的 id 累积（decideRepair 据此判 stuck）

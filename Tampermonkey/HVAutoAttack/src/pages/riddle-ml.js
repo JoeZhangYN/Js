@@ -158,7 +158,7 @@ let inFlight = false;
 async function tryMLAnswer() {
   if (inFlight) return null; // 防同 tick 重入
   const opt = g("option") || {};
-  // defaultOn 语义：与调用侧 riddle.js isOptionOn("mlAnswer") 一致（缺字段=开，仅显式 false 才关）。
+  // defaultOn 语义：与调用侧 riddle.js OptionEvent.IS_ON 一致（缺字段=开，仅显式 false 才关）。
   // 修 H-B：原 `!opt.mlAnswer` 把老配置缺字段误判为关 → 调用侧以为开、这里立刻 bail → 必随机。
   if (opt.mlAnswer === false) {
     console.warn("[HVAA][RMA] mlAnswer 显式关闭，跳过 ML 识别（走随机）");

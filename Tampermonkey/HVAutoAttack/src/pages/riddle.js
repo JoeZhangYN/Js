@@ -9,7 +9,7 @@
 // P2 集成：runRiddleVisualAid（小马旋转/锐化/对比 + 6 缩略图视觉辅助）— async 不 await，不阻塞倒计时
 // P6 集成：runRiddleMlAutomation（rdma.ooguy.com ML 远程答题，失败 fallback 现有随机猜）
 import { g } from "../state/store.js";
-import { isOptionOn } from "../state/option.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { runRiddleVisualAid } from "./riddle-helper.js";
@@ -29,6 +29,10 @@ import {
 
 // 答案码 SSOT 见 data/riddle-answers.js（提取到叶子层打破与 riddle-ml.js 的循环依赖 TDZ）
 const ANSWER_KEYS = Object.keys(ANSWER_MAP);
+
+function readOptionEnabled(key) {
+  return runOptionAutomation({ type: OptionEvent.IS_ON, key });
+}
 
 /**
  * 勾选答案 checkbox 并提交。HV 答题常多只小马同现（多答案不少见）→ 收数组、勾选全部命中 box 后单次提交。
@@ -79,12 +83,12 @@ export function runRiddleAnsweringSession() {
   runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_APPEAR }); // 小马验证统计：谜题页出现一次（与 ML 是否开启/成功无关）
 
   // P2 视觉辅助：async 但不 await（图片预处理不阻塞倒计时；找不到 #riddleimage>img 内部静默 return）
-  if (isOptionOn("riddleHelperUi")) {
+  if (readOptionEnabled("riddleHelperUi")) {
     runRiddleVisualAid();
   }
 
   // P6 ML 健康巡检：30s 周期 setInterval 启动一次（内部 healthStarted 哨兵防重入）
-  if (isOptionOn("mlAnswer")) {
+  if (readOptionEnabled("mlAnswer")) {
     runRiddleMlAutomation({ type: RiddleMlEvent.START_HEALTH });
   }
 
@@ -144,11 +148,11 @@ export function runRiddleAnsweringSession() {
       message: `sample source=${source} answers=${answers}`,
     });
   }
-  if (isOptionOn("mlBackupOnFail")) {
+  if (readOptionEnabled("mlBackupOnFail")) {
     const submitBtn = document.getElementById("riddlesubmit");
     if (submitBtn) submitBtn.addEventListener("click", captureSubmission, { capture: true });
   }
-  if (isOptionOn("mlAnswer")) {
+  if (readOptionEnabled("mlAnswer")) {
     runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })
       .then((a) => {
         mlAnswer = a;

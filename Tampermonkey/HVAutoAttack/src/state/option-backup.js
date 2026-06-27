@@ -1,6 +1,6 @@
 import { getValue, setValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
-import { readOption, writeOption } from "./option.js";
+import { OptionEvent, runOptionAutomation } from "./option.js";
 
 const EVENT_READ = "read";
 const EVENT_SAVE_CURRENT = "saveCurrent";
@@ -21,7 +21,7 @@ function readOptionBackups() {
 function saveCurrentOptionBackup(code) {
   if (!code) return readOptionBackups();
   const backups = readOptionBackups();
-  backups[code] = readOption();
+  backups[code] = runOptionAutomation({ type: OptionEvent.READ });
   setValue(STORAGE_KEYS.BACKUP, backups);
   return backups;
 }
@@ -29,7 +29,7 @@ function saveCurrentOptionBackup(code) {
 function restoreOptionBackup(code) {
   const backups = readOptionBackups();
   if (!code || !(code in backups)) return false;
-  writeOption(backups[code]);
+  runOptionAutomation({ type: OptionEvent.WRITE, option: backups[code] });
   return true;
 }
 

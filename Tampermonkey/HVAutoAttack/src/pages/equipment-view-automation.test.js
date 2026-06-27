@@ -16,8 +16,8 @@ describe("runEquipmentViewAutomation", () => {
 
     expect(
       runEquipmentViewAutomation(pageReady(PageKind.SHOWEQUIP), {
-        getOption: () => "off",
-        isOptionOn: () => true,
+        readOptionField: () => "off",
+        readOptionEnabled: () => true,
         runEquipPercentileEnhancement,
         runForgeCostEnhancement,
       })
@@ -33,8 +33,8 @@ describe("runEquipmentViewAutomation", () => {
 
     expect(
       runEquipmentViewAutomation(pageReady(PageKind.LOBBY), {
-        getOption: () => "offline",
-        isOptionOn: () => false,
+        readOptionField: () => "offline",
+        readOptionEnabled: () => false,
         runEquipPercentileEnhancement,
         runForgeCostEnhancement,
       })
@@ -50,8 +50,8 @@ describe("runEquipmentViewAutomation", () => {
 
     expect(
       runEquipmentViewAutomation(pageReady(PageKind.LOBBY), {
-        getOption: () => "off",
-        isOptionOn: () => false,
+        readOptionField: () => "off",
+        readOptionEnabled: () => false,
         runEquipPercentileEnhancement,
         runForgeCostEnhancement,
       })

@@ -3,7 +3,7 @@ import { gE } from "../dom/query.js";
 import { getValue, setValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
-import { writeOption } from "../state/option.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 import { OFFENSIVE_SPELL_LIB } from "../data/spell-lib.js";
 
@@ -62,7 +62,7 @@ function parseAbilityPage() {
         option.spellAoe[key] = spellAoe[name];
       }
     });
-    writeOption(option);
+    runOptionAutomation({ type: OptionEvent.WRITE, option });
     console.log(
       "[AoE] 已同步到 option:",
       JSON.stringify({ debuffSkillAoe: option.debuffSkillAoe, spellAoe: option.spellAoe })

@@ -1,5 +1,5 @@
 // 装备查看页增强编排入口：init 只上报页面类型，不拼 option/DOM 门控。
-import { isOptionOn, getOption } from "../state/option.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { PageKind } from "./page-kind.js";
 import { runEquipPercentileEnhancement } from "./equip-percentile-dispatcher.js";
 import { runForgeCostEnhancement } from "./showequip-forge-cost.js";
@@ -12,8 +12,11 @@ export const EquipmentViewEvent = Object.freeze({
 
 function makeDeps(deps) {
   return {
-    getOption: deps.getOption || getOption,
-    isOptionOn: deps.isOptionOn || isOptionOn,
+    readOptionField:
+      deps.readOptionField ||
+      ((key, fallback) => runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback })),
+    readOptionEnabled:
+      deps.readOptionEnabled || ((key) => runOptionAutomation({ type: OptionEvent.IS_ON, key })),
     runEquipPercentileEnhancement:
       deps.runEquipPercentileEnhancement || runEquipPercentileEnhancement,
     runForgeCostEnhancement: deps.runForgeCostEnhancement || runForgeCostEnhancement,
@@ -21,11 +24,11 @@ function makeDeps(deps) {
 }
 
 function shouldRunForgeCost(kind, deps) {
-  return kind === PageKind.SHOWEQUIP && deps.isOptionOn("forgeCostShow");
+  return kind === PageKind.SHOWEQUIP && deps.readOptionEnabled("forgeCostShow");
 }
 
 function shouldRunEquipPercentile(deps) {
-  const mode = deps.getOption("equipPercentileMode", "off");
+  const mode = deps.readOptionField("equipPercentileMode", "off");
   return mode && mode !== "off";
 }
 

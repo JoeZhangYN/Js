@@ -44,7 +44,7 @@ vi.mock("../battle/battle-runtime.js", () => ({
   runBattleRuntimeAutomation: mocks.runBattleRuntimeAutomation,
 }));
 
-function setOption(option) {
+function setLobbyOption(option) {
   mocks.g.mockImplementation((key, value) => {
     if (value !== undefined) return value;
     if (key === "option") return option;
@@ -57,12 +57,12 @@ beforeEach(() => {
   mocks.runEncounterAutomation.mockResolvedValue({ claimed: false });
   mocks.runStaminaAutomation.mockReturnValue(false);
   mocks.time.mockReturnValue("2026-06-27");
-  setOption({ encounter: false, idleArena: false, repair: false });
+  setLobbyOption({ encounter: false, idleArena: false, repair: false });
 });
 
 describe("runLobbyAutomation", () => {
   it("runs lobby page-ready capabilities through one event entry", async () => {
-    setOption({ encounter: false, idleArena: false, repair: true });
+    setLobbyOption({ encounter: false, idleArena: false, repair: true });
 
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
 
@@ -77,7 +77,7 @@ describe("runLobbyAutomation", () => {
   });
 
   it("stops later lobby automation when encounter is claimed", async () => {
-    setOption({ encounter: true, idleArena: true, repair: false });
+    setLobbyOption({ encounter: true, idleArena: true, repair: false });
     mocks.runEncounterAutomation.mockResolvedValue({ claimed: true });
 
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
