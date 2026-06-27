@@ -3,9 +3,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const srcDir = path.join(root, "src");
-const owners = new Set(
-  ["src/state/persist-keys.js", "src/state/storage.js"].map((file) => path.normalize(file))
-);
+const owners = new Set(["src/state/persist-keys.js"].map((file) => path.normalize(file)));
 const keys = ["battleCode", "drop", "dropOld", "stats", "statsOld"];
 const violations = [];
 
