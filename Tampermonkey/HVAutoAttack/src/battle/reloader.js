@@ -1,11 +1,10 @@
 // 战斗动作事件桥：eventStart / eventEnd 虚拟节点 + 回合切换 + post 拉新数据。
-// 风险点：内嵌 fakeApiCall 字符串 + 多个闭包变量。Phase 5 不重构此文件。
+// 页面 API 桥脚本安装已收口到 battle-api-bridge。
 // file-size-gate: exempt phase-4-monolith
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { post } from "../dom/http.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
-import { MAIN_URL } from "../env.js";
 import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
@@ -17,6 +16,7 @@ import {
   runBattleCompletionAutomation,
 } from "./battle-completion.js";
 import { BattleActionDelayEvent, runBattleActionDelayAutomation } from "./battle-action-delay.js";
+import { BattleApiBridgeEvent, runBattleApiBridgeAutomation } from "./battle-api-bridge.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
@@ -69,60 +69,5 @@ export function installBattleActionEventBridge() {
     }
   };
   gE("body").appendChild(eventEnd);
-  window.sessionStorage.delay = g("option").delay;
-  window.sessionStorage.delay2 = g("option").delay2;
-  const fakeApiCall = cE("script");
-  fakeApiCall.textContent = `api_call = ${function (b, a, d) {
-    const delay = window.sessionStorage.delay * 1;
-    const delay2 = window.sessionStorage.delay2 * 1;
-    window.info = a;
-    b.open("POST", `${MAIN_URL}json`);
-    b.setRequestHeader("Content-Type", "application/json");
-    b.withCredentials = true;
-    b.onreadystatechange = d;
-    b.onload = function () {
-      document.getElementById("eventEnd").click();
-    };
-    document.getElementById("eventStart").click();
-    if (a.mode === "magic" && a.skill >= 200) {
-      if (delay <= 0) {
-        b.send(JSON.stringify(a));
-      } else {
-        setTimeout(
-          () => {
-            b.send(JSON.stringify(a));
-          },
-          (delay * (Math.random() * 50 + 50)) / 100
-        );
-      }
-    } else if (delay2 <= 0) {
-      b.send(JSON.stringify(a));
-    } else {
-      setTimeout(
-        () => {
-          b.send(JSON.stringify(a));
-        },
-        (delay2 * (Math.random() * 50 + 50)) / 100
-      );
-    }
-  }.toString()}`;
-  gE("head").appendChild(fakeApiCall);
-  const fakeApiResponse = cE("script");
-  fakeApiResponse.textContent = `api_response = ${function (b) {
-    if (b.readyState === 4) {
-      if (b.status === 200) {
-        const a = JSON.parse(b.responseText);
-        if (a.login !== undefined) {
-          //top.window.location.href = login_url;  // 修改后，不知道什么功能
-        } else {
-          if (a.error || a.reload) window.location.href = window.location.search;
-          return a;
-        }
-      } else {
-        window.location.href = window.location.search;
-      }
-    }
-    return false;
-  }.toString()}`;
-  gE("head").appendChild(fakeApiResponse);
+  runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL });
 }

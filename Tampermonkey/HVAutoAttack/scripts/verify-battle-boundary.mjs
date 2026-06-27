@@ -7,6 +7,8 @@ const battleFile = path.join(root, "src/battle/battle-automation.js");
 const reloaderFile = path.join(root, "src/battle/reloader.js");
 const actionDelayFile = path.join(root, "src/battle/battle-action-delay.js");
 const actionDelayTest = path.join(root, "src/battle/battle-action-delay.test.js");
+const apiBridgeFile = path.join(root, "src/battle/battle-api-bridge.js");
+const apiBridgeTest = path.join(root, "src/battle/battle-api-bridge.test.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
@@ -173,6 +175,18 @@ function checkActionEventBridgeEntry() {
   if (!text.includes("BattleActionDelayEvent.ACTION_ENDED")) {
     violations.push(`${rel(reloaderFile)} must report battle action delay end through its entry`);
   }
+  if (
+    /\bapi_call\b|\bapi_response\b|\bfakeApiCall\b|\bfakeApiResponse\b|sessionStorage\.delay\b|sessionStorage\.delay2\b|\.textContent\s*=/.test(
+      text
+    )
+  ) {
+    violations.push(
+      `${rel(reloaderFile)} battle api script injection belongs in runBattleApiBridgeAutomation(event)`
+    );
+  }
+  if (!text.includes("BattleApiBridgeEvent.INSTALL")) {
+    violations.push(`${rel(reloaderFile)} must install battle api bridge through its entry`);
+  }
 }
 
 function checkActionDelayEntry() {
@@ -211,6 +225,41 @@ function checkActionDelayEntry() {
   }
 }
 
+function checkApiBridgeEntry() {
+  const text = fs.readFileSync(apiBridgeFile, "utf8");
+  if (!/export const BattleApiBridgeEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(apiBridgeFile)} must expose BattleApiBridgeEvent`);
+  }
+  if (!/export function runBattleApiBridgeAutomation\(\s*event\b/.test(text)) {
+    violations.push(`${rel(apiBridgeFile)} must expose runBattleApiBridgeAutomation(event)`);
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleApiBridgeEvent\b|runBattleApiBridgeAutomation\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(apiBridgeFile)} may export only its event entry`);
+  }
+  for (const file of [
+    battleFile,
+    reloaderFile,
+    mainLoopFile,
+    roundStartFile,
+    apiBridgeFile,
+    apiBridgeTest,
+  ]) {
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      file !== reloaderFile &&
+      file !== apiBridgeFile &&
+      file !== apiBridgeTest &&
+      /from\s+["']\.\/battle-api-bridge\.js["']/.test(source)
+    ) {
+      violations.push(`${rel(file)} must not import internal battle api bridge`);
+    }
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -218,6 +267,7 @@ checkRoundStartEntry();
 checkTurnEntry();
 checkActionEventBridgeEntry();
 checkActionDelayEntry();
+checkApiBridgeEntry();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");
