@@ -8,7 +8,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("./store.js", () => ({ g: mocks.g }));
 vi.mock("../core/time.js", () => ({
-  TimeEvent: Object.freeze({ EPOCH_MS: "epochMs", UTC_DATE_KEY: "utcDateKey" }),
+  TimeEvent: Object.freeze({
+    EPOCH_MS: "epochMs",
+    UTC_DATE_KEY: "utcDateKey",
+    MS_UNTIL_NEXT_UTC_DAY: "msUntilNextUtcDay",
+  }),
   runTimeAutomation: mocks.runTimeAutomation,
 }));
 
@@ -18,7 +22,9 @@ beforeEach(() => {
     cancel: vi.fn(),
   });
   for (const fn of Object.values(mocks)) fn.mockClear();
-  mocks.runTimeAutomation.mockReturnValue("2026/6/27");
+  mocks.runTimeAutomation.mockImplementation((event) =>
+    event.type === "msUntilNextUtcDay" ? 5000 : "2026/6/27"
+  );
   mocks.g.mockReturnValue(undefined);
 });
 
@@ -56,6 +62,10 @@ describe("runDayRecordAutomation", () => {
     ).toBe("2026/6/27");
 
     expect(schedule).toHaveBeenCalledWith(expect.any(Function), 10000);
+    expect(mocks.runTimeAutomation).toHaveBeenCalledWith({
+      type: "msUntilNextUtcDay",
+      stamp: Date.UTC(2026, 5, 27, 23, 59, 55),
+    });
 
     schedule.mock.calls[0][0]();
     expect(rerun).toHaveBeenCalledTimes(1);

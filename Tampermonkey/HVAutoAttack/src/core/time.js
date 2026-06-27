@@ -6,6 +6,7 @@ const EVENT_UTC_DATE_KEY = "utcDateKey";
 const EVENT_LOCAL_TIMESTAMP_LABEL = "localTimestampLabel";
 const EVENT_LOCAL_FILE_TIMESTAMP = "localFileTimestamp";
 const EVENT_ISO_TIMESTAMP = "isoTimestamp";
+const EVENT_MS_UNTIL_NEXT_UTC_DAY = "msUntilNextUtcDay";
 
 export const TimeEvent = Object.freeze({
   EPOCH_MS: EVENT_EPOCH_MS,
@@ -14,13 +15,20 @@ export const TimeEvent = Object.freeze({
   LOCAL_TIMESTAMP_LABEL: EVENT_LOCAL_TIMESTAMP_LABEL,
   LOCAL_FILE_TIMESTAMP: EVENT_LOCAL_FILE_TIMESTAMP,
   ISO_TIMESTAMP: EVENT_ISO_TIMESTAMP,
+  MS_UNTIL_NEXT_UTC_DAY: EVENT_MS_UNTIL_NEXT_UTC_DAY,
 });
+
+function msUntilNextUtcDay(stamp) {
+  const date = new Date(stamp);
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1) - stamp;
+}
 
 export function runTimeAutomation(event = { type: EVENT_EPOCH_MS }) {
   const stamp = event.stamp;
-  const date = stamp ? new Date(stamp) : new Date();
+  const date = stamp !== undefined ? new Date(stamp) : new Date();
   const pad = (n) => String(n).padStart(2, "0");
   if (event.type === EVENT_EPOCH_MS) return date.getTime();
+  if (event.type === EVENT_MS_UNTIL_NEXT_UTC_DAY) return msUntilNextUtcDay(date.getTime());
   if (event.type === EVENT_UTC_MONTH_DAY_LABEL)
     return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
   if (event.type === EVENT_UTC_DATE_KEY) {

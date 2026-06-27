@@ -44,12 +44,18 @@ for (const required of [
   "DayRecordEvent",
   "runDayRecordAutomation",
   "TimeEvent.UTC_DATE_KEY",
+  "TimeEvent.MS_UNTIL_NEXT_UTC_DAY",
   "REFRESH_AND_SCHEDULE_NEXT_UTC_DAY",
   "UTC_DAY_ROLLOVER_GRACE_MS",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if (/Date\.UTC\(.*getUTCFullYear\(\).*getUTCMonth\(\).*getUTCDate\(\)\s*\+\s*1/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must read UTC day rollover timing through time entry`
+  );
 }
 
 const lobbyText = fs.readFileSync(path.join(root, lobby), "utf8");

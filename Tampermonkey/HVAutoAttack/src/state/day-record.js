@@ -19,11 +19,6 @@ function syncUtcDate() {
   return dateNow;
 }
 
-function msUntilNextUtcDay(nowMs) {
-  const now = new Date(nowMs);
-  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1) - nowMs;
-}
-
 function clearScheduledDayRollover(cancel) {
   if (scheduledDayRollover !== undefined) cancel(scheduledDayRollover);
   scheduledDayRollover = undefined;
@@ -43,7 +38,10 @@ function refreshAndScheduleNextUtcDay(event) {
       scheduledDayRollover = undefined;
       event.rerun();
     },
-    msUntilNextUtcDay(deps.nowMs) + UTC_DAY_ROLLOVER_GRACE_MS
+    runTimeAutomation({
+      type: TimeEvent.MS_UNTIL_NEXT_UTC_DAY,
+      stamp: deps.nowMs,
+    }) + UTC_DAY_ROLLOVER_GRACE_MS
   );
   return dateNow;
 }

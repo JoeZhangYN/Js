@@ -1,3 +1,5 @@
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
+
 const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000,
   ENCOUNTER_DAILY_LIMIT = 24,
   ENCOUNTER_MIDNIGHT_GRACE_MS = 5000;
@@ -22,10 +24,8 @@ function isDifferentUtcDay(dateMs, nowMs) {
   return new Date(dateMs).toISOString().slice(0, 10) !== new Date(nowMs).toISOString().slice(0, 10);
 }
 
-function msUntilNextUtcMidnight(nowMs) {
-  const now = new Date(nowMs);
-  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1) - nowMs;
-}
+const msUntilNextUtcDay = (stamp) =>
+  runTimeAutomation({ type: TimeEvent.MS_UNTIL_NEXT_UTC_DAY, stamp });
 
 function normalizeEncounterState(state, nowMs = Date.now()) {
   const normalized = {
@@ -62,7 +62,7 @@ function readEncounterClock(state, nowMs = Date.now()) {
   if (readiness.dailyLimitReached) {
     return countdownEncounterClock(
       readiness,
-      msUntilNextUtcMidnight(nowMs) + ENCOUNTER_MIDNIGHT_GRACE_MS,
+      msUntilNextUtcDay(nowMs) + ENCOUNTER_MIDNIGHT_GRACE_MS,
       "dailyReset"
     );
   }
@@ -81,7 +81,7 @@ function planNextEncounterCheck(state, { nowMs = Date.now(), jitter = Math.rando
   const clock = readEncounterClock(state, nowMs);
   const jitteredMinute = 60 * 1000 * (0.95 + Math.max(0, Math.min(1, jitter)) * 0.1);
   const readyDelay = clock.countdownMs + ENCOUNTER_MIDNIGHT_GRACE_MS;
-  const midnightDelay = msUntilNextUtcMidnight(nowMs) + ENCOUNTER_MIDNIGHT_GRACE_MS;
+  const midnightDelay = msUntilNextUtcDay(nowMs) + ENCOUNTER_MIDNIGHT_GRACE_MS;
   const delayMs = Math.min(jitteredMinute, readyDelay, midnightDelay);
   return { delayMs, reason: clock.reason, status: clock.status, clock };
 }

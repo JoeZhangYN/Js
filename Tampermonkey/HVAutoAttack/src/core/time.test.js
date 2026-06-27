@@ -42,4 +42,13 @@ describe("runTimeAutomation", () => {
       "2026-06-27T00:00:05.000Z"
     );
   });
+
+  it("owns the UTC day rollover duration used by daily schedulers", () => {
+    expect(
+      runTimeAutomation({
+        type: TimeEvent.MS_UNTIL_NEXT_UTC_DAY,
+        stamp: Date.UTC(2026, 5, 27, 23, 59, 55),
+      })
+    ).toBe(5000);
+  });
 });

@@ -15,6 +15,7 @@ const widgetPolicyFile = path.normalize("src/pages/encounter-widget-policy.js");
 const lobbyScheduleFile = path.normalize("src/pages/encounter-lobby-schedule.js");
 const lobbyScheduleTest = path.normalize("src/pages/encounter-lobby-schedule.test.js");
 const dayRecordFile = path.normalize("src/state/day-record.js");
+const timeFile = path.normalize("src/core/time.js");
 const violations = [];
 
 function walk(dir) {
@@ -116,6 +117,7 @@ function checkFile(file) {
     if (
       relative !== policyFile &&
       relative !== dayRecordFile &&
+      relative !== timeFile &&
       /Date\.UTC\(.*getUTCFullYear\(\).*getUTCMonth\(\).*getUTCDate\(\)\s*\+\s*1/.test(line)
     ) {
       violations.push(`${where} encounter midnight scheduling belongs in encounter-policy.js`);
@@ -242,6 +244,16 @@ if (/\bexecuteEncounterActivation\b|\bexecuteWidgetNavigation\b/.test(ownerText)
 }
 if (!/\bREAD_CLOCK\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose one encounter clock query`);
+}
+if (!/TimeEvent\.MS_UNTIL_NEXT_UTC_DAY/.test(policyText)) {
+  violations.push(
+    `${policyFile.replaceAll("\\", "/")} must read UTC day rollover timing through time entry`
+  );
+}
+if (/Date\.UTC\(.*getUTCFullYear\(\).*getUTCMonth\(\).*getUTCDate\(\)\s*\+\s*1/.test(policyText)) {
+  violations.push(
+    `${policyFile.replaceAll("\\", "/")} must not duplicate UTC day rollover arithmetic`
+  );
 }
 if (!/\bPLAN_NEXT_CHECK\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose one next-check plan query`);
