@@ -51,6 +51,18 @@ function checkLobbyEntry() {
   if (!text.includes("LobbyEvent") || !text.includes("EVENT_PAGE_READY")) {
     violations.push(`${rel(lobbyFile)} must own LobbyEvent.PAGE_READY wiring`);
   }
+  if (!text.includes("OptionEvent.READ_FIELD")) {
+    violations.push(`${rel(lobbyFile)} must read lobby option switches through option entry`);
+  }
+  if (/from\s+["']\.\.\/state\/store\.js["']/.test(text)) {
+    violations.push(`${rel(lobbyFile)} must not import store for lobby option switches`);
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${rel(lobbyFile)} must not read option fields directly`);
+  }
+  if (/runQuickSiteAutomation\(\s*\{[^}]*\boption\s*:/s.test(text)) {
+    violations.push(`${rel(lobbyFile)} must not pass option objects into quick site`);
+  }
   if (/rerun:\s*runLobbyAutomation\b/.test(text)) {
     violations.push(`${rel(lobbyFile)} encounter rerun must report LobbyEvent.PAGE_READY`);
   }

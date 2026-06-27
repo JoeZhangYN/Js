@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LobbyEvent, runLobbyAutomation } from "./lobby-automation.js";
 
 const mocks = vi.hoisted(() => ({
-  g: vi.fn(),
+  runOptionAutomation: vi.fn(),
   runDayRecordAutomation: vi.fn(),
   runAbilityAoeAutomation: vi.fn(),
   runBattleRuntimeAutomation: vi.fn(),
@@ -13,7 +13,12 @@ const mocks = vi.hoisted(() => ({
   runStaminaAutomation: vi.fn(() => false),
 }));
 
-vi.mock("../state/store.js", () => ({ g: mocks.g }));
+vi.mock("../state/option.js", () => ({
+  OptionEvent: Object.freeze({
+    READ_FIELD: "readField",
+  }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
 vi.mock("../state/day-record.js", () => ({
   DayRecordEvent: Object.freeze({
     REFRESH_AND_SCHEDULE_NEXT_UTC_DAY: "refreshAndScheduleNextUtcDay",
@@ -50,9 +55,10 @@ vi.mock("../battle/battle-runtime.js", () => ({
 }));
 
 function setLobbyOption(option) {
-  mocks.g.mockImplementation((key, value) => {
-    if (value !== undefined) return value;
-    if (key === "option") return option;
+  mocks.runOptionAutomation.mockImplementation((event) => {
+    if (event.type === "readField") {
+      return option[event.key] !== undefined ? option[event.key] : event.fallback;
+    }
     return undefined;
   });
 }
@@ -78,7 +84,16 @@ describe("runLobbyAutomation", () => {
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "captureAbilityPage" });
     expect(mocks.runQuickSiteAutomation).toHaveBeenCalledWith({
       type: "lobbyReady",
-      option: { encounter: false, idleArena: false, repair: true },
+    });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "encounter",
+      fallback: false,
+    });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "repair",
+      fallback: false,
     });
     expect(mocks.runRepairAutomation).toHaveBeenCalledWith({ type: "start" });
   });

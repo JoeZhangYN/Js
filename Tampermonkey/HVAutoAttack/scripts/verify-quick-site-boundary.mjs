@@ -98,7 +98,17 @@ if (/export\s+function\s+quickSite\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy quickSite export is forbidden`);
 }
 if (/from\s+["']\.\.\/state\/store\.js["']/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must receive option through the entry event`);
+  violations.push(`${owner.replaceAll("\\", "/")} must not import store for lobby rendering`);
+}
+if (!ownerText.includes("OptionEvent.READ")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must read lobby quickSite option through option entry`
+  );
+}
+if (/EVENT_LOBBY_READY[\s\S]*renderQuickSite\(\s*event\.option\s*\)/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} lobby quick site rendering must not use caller option`
+  );
 }
 
 if (violations.length) {

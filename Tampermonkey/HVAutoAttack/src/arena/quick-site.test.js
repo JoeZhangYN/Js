@@ -1,29 +1,45 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QuickSiteEvent, runQuickSiteAutomation } from "./quick-site.js";
+
+const mocks = vi.hoisted(() => ({
+  runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("../state/option.js", () => ({
+  OptionEvent: Object.freeze({
+    READ: "read",
+  }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
 
 beforeEach(() => {
   document.body.innerHTML = "";
+  mocks.runOptionAutomation.mockReset();
+  mocks.runOptionAutomation.mockReturnValue(null);
 });
 
 describe("quick site entry", () => {
   it("does not render when the option is disabled", () => {
+    mocks.runOptionAutomation.mockReturnValue({ quickSite: false });
+
     expect(
       runQuickSiteAutomation({
         type: QuickSiteEvent.LOBBY_READY,
-        option: { quickSite: false },
       })
     ).toBe(false);
 
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "read" });
     expect(document.querySelector(".quickSiteBar")).toBeNull();
   });
 
   it("renders default and configured links through the entry", () => {
+    mocks.runOptionAutomation.mockReturnValue({
+      quickSite: [{ name: "Wiki", url: "https://example.test/wiki", fav: "" }],
+    });
+
     expect(
       runQuickSiteAutomation({
         type: QuickSiteEvent.LOBBY_READY,
-        option: {
-          quickSite: [{ name: "Wiki", url: "https://example.test/wiki", fav: "" }],
-        },
       })
     ).toBe(true);
 
@@ -34,11 +50,12 @@ describe("quick site entry", () => {
   });
 
   it("toggles configured link visibility from the rendered control", () => {
+    mocks.runOptionAutomation.mockReturnValue({
+      quickSite: [{ name: "Wiki", url: "https://example.test/wiki", fav: "" }],
+    });
+
     runQuickSiteAutomation({
       type: QuickSiteEvent.LOBBY_READY,
-      option: {
-        quickSite: [{ name: "Wiki", url: "https://example.test/wiki", fav: "" }],
-      },
     });
 
     const toggle = document.querySelector(".quickSiteBarToggle");

@@ -1,5 +1,5 @@
 // 战斗外自动化编排入口：composition root 只调用本入口，不拼业务顺序。
-import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
@@ -19,10 +19,14 @@ function shouldStopForStamina() {
   return runStaminaAutomation({ type: StaminaEvent.SHOULD_STOP_LOBBY });
 }
 
+function isLobbyOptionEnabled(key) {
+  return Boolean(runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback: false }));
+}
+
 function runNextBattleAutomation() {
-  if (g("option").repair) {
+  if (isLobbyOptionEnabled("repair")) {
     runRepairAutomation({ type: RepairEvent.START });
-  } else if (g("option").idleArena) {
+  } else if (isLobbyOptionEnabled("idleArena")) {
     runIdleArenaAutomation({ type: IdleArenaEvent.SCHEDULE_NEXT_BATTLE });
   }
 }
@@ -35,8 +39,8 @@ export async function runLobbyAutomation(event = { type: EVENT_PAGE_READY }) {
     rerun: () => runLobbyAutomation({ type: EVENT_PAGE_READY }),
   });
   runAbilityAoeAutomation({ type: AbilityAoeEvent.CAPTURE_ABILITY_PAGE });
-  runQuickSiteAutomation({ type: QuickSiteEvent.LOBBY_READY, option: g("option") });
-  if (g("option").encounter) {
+  runQuickSiteAutomation({ type: QuickSiteEvent.LOBBY_READY });
+  if (isLobbyOptionEnabled("encounter")) {
     const encounterOutcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
       rerun: () => runLobbyAutomation({ type: EVENT_PAGE_READY }),

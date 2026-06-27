@@ -1,5 +1,6 @@
 // 大厅页面侧边栏快速链接渲染。
 import { gE, cE } from "../dom/query.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_LOBBY_READY = "lobbyReady";
 const EVENT_RENDER_SETTINGS_TABLE_BODY = "renderSettingsTableBody";
@@ -77,7 +78,9 @@ function collectSettingsInputs(option, inputs) {
 }
 
 export function runQuickSiteAutomation(event = { type: EVENT_LOBBY_READY }) {
-  if (event.type === EVENT_LOBBY_READY) return renderQuickSite(event.option);
+  if (event.type === EVENT_LOBBY_READY) {
+    return renderQuickSite(runOptionAutomation({ type: OptionEvent.READ }));
+  }
   if (event.type === EVENT_RENDER_SETTINGS_TABLE_BODY) return renderSettingsTableBody(event.option);
   if (event.type === EVENT_RENDER_SETTINGS_EMPTY_ROW) return renderSettingsEmptyRow();
   if (event.type === EVENT_COLLECT_SETTINGS_INPUTS)
