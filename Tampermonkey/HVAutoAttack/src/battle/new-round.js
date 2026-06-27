@@ -1,6 +1,7 @@
 // 新一轮战斗初始化：怪物计数 / 轮次识别。
 import { gE } from "../dom/query.js";
 import { setValue, getValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { goto } from "../core/navigate.js";
@@ -12,14 +13,8 @@ import {
   MonsterKnowledgeEvent,
   runMonsterKnowledgeAutomation,
 } from "./monster-knowledge-automation.js";
-import {
-  MonsterStatusEvent,
-  runMonsterStatusAutomation,
-} from "./monster-status-automation.js";
-import {
-  BattlePauseEvent,
-  runBattlePauseAutomation,
-} from "./pause-automation.js";
+import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
+import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 
 export function newRound() {
   // F auto-tune：上一回合结束 → 观测用药数 + 复位计数
@@ -35,31 +30,22 @@ export function newRound() {
   const monsterDead = gE('img[src*="nbardead"]', "all").length;
   g("monsterAlive", g("monsterAll") - monsterDead);
   g("bossAll", gE('div.btm2[style^="background"]', "all").length);
-  const bossDead = gE(
-    'div.btm1[style*="opacity"] div.btm2[style*="background"]',
-    "all"
-  ).length;
+  const bossDead = gE('div.btm1[style*="opacity"] div.btm2[style*="background"]', "all").length;
   g("bossAlive", g("bossAll") - bossDead);
   const battleLog = gE("#textlog>tbody>tr>td", "all");
   g(
     "roundType",
     (function () {
-      if (getValue("roundType")) {
-        return getValue("roundType");
+      if (getValue(STORAGE_KEYS.ROUND_TYPE)) {
+        return getValue(STORAGE_KEYS.ROUND_TYPE);
       }
       let roundType;
       const temp = battleLog[battleLog.length - 1].textContent;
       if (!temp.match(/^Initializing/)) {
         roundType = "";
-      } else if (
-        temp.match(/^Initializing arena challenge/) &&
-        temp.match(/\d+/)[0] * 1 <= 35
-      ) {
+      } else if (temp.match(/^Initializing arena challenge/) && temp.match(/\d+/)[0] * 1 <= 35) {
         roundType = "ar";
-      } else if (
-        temp.match(/^Initializing arena challenge/) &&
-        temp.match(/\d+/)[0] * 1 >= 105
-      ) {
+      } else if (temp.match(/^Initializing arena challenge/) && temp.match(/\d+/)[0] * 1 >= 105) {
         roundType = "rb";
       } else if (temp.match(/^Initializing random encounter/)) {
         roundType = "ba";
@@ -77,15 +63,14 @@ export function newRound() {
       } else {
         roundType = "";
       }
-      setValue("roundType", roundType);
+      setValue(STORAGE_KEYS.ROUND_TYPE, roundType);
       return roundType;
     })()
   );
   if (/You lose \d+ Stamina/.test(battleLog[0].textContent)) {
-    const staminaLostLog = getValue("staminaLostLog", true) || {};
-    staminaLostLog[time(3)] =
-      battleLog[0].textContent.match(/You lose (\d+) Stamina/)[1] * 1;
-    setValue("staminaLostLog", staminaLostLog);
+    const staminaLostLog = getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true) || {};
+    staminaLostLog[time(3)] = battleLog[0].textContent.match(/You lose (\d+) Stamina/)[1] * 1;
+    setValue(STORAGE_KEYS.STAMINA_LOST_LOG, staminaLostLog);
     const losedStamina = battleLog[0].textContent.match(/\d+/)[0] * 1;
     if (losedStamina >= g("option").staminaLose) {
       setAlarm("Error");
@@ -110,9 +95,7 @@ export function newRound() {
     });
     let roundNow;
     let roundAll;
-    const round = battleLog[battleLog.length - 1].textContent.match(
-      /\(Round (\d+) \/ (\d+)\)/
-    );
+    const round = battleLog[battleLog.length - 1].textContent.match(/\(Round (\d+) \/ (\d+)\)/);
     if (g("roundType") !== "ba" && round !== null) {
       roundNow = round[1] * 1;
       roundAll = round[2] * 1;
@@ -120,17 +103,15 @@ export function newRound() {
       roundNow = 1;
       roundAll = 1;
     }
-    setValue("roundNow", roundNow);
-    setValue("roundAll", roundAll);
-  } else if (
-    runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY })
-  ) {
-    setValue("roundNow", 1);
-    setValue("roundAll", 1);
+    setValue(STORAGE_KEYS.ROUND_NOW, roundNow);
+    setValue(STORAGE_KEYS.ROUND_ALL, roundAll);
+  } else if (runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY })) {
+    setValue(STORAGE_KEYS.ROUND_NOW, 1);
+    setValue(STORAGE_KEYS.ROUND_ALL, 1);
   }
-  g("roundNow", getValue("roundNow") * 1);
-  g("roundAll", getValue("roundAll") * 1);
-  g("roundLeft", getValue("roundAll") - g("roundNow"));
+  g("roundNow", getValue(STORAGE_KEYS.ROUND_NOW) * 1);
+  g("roundAll", getValue(STORAGE_KEYS.ROUND_ALL) * 1);
+  g("roundLeft", getValue(STORAGE_KEYS.ROUND_ALL) - g("roundNow"));
   g("skillOTOS", {
     OFC: 0,
     FRD: 0,

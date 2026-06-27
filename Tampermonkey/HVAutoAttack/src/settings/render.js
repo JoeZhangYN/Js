@@ -612,7 +612,7 @@ export function optionBox() {
   };
   gE(".staminaLostLog", optionBox).onclick = function () {
     const out = [];
-    const staminaLostLog = getValue("staminaLostLog", true);
+    const staminaLostLog = getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true);
     for (const i in staminaLostLog) {
       out.push(`${i}: ${staminaLostLog[i]}`);
     }
@@ -623,7 +623,7 @@ export function optionBox() {
           .join("\n")}\n是否重置 (Whether to reset)?`
       )
     )
-      setValue("staminaLostLog", {});
+      setValue(STORAGE_KEYS.STAMINA_LOST_LOG, {});
   };
   gE(".idleArenaReset", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) delValue(STORAGE_KEYS.ARENA);

@@ -15,6 +15,7 @@ export const STORAGE_KEYS = Object.freeze({
   ROUND_TYPE: "roundType",
   ROUND_NOW: "roundNow",
   ROUND_ALL: "roundAll",
+  STAMINA_LOST_LOG: "staminaLostLog",
   MONSTER_STATUS: "monsterStatus",
   URL: "url",
   ARENA: "arena",
