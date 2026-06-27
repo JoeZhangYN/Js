@@ -44,7 +44,7 @@ function handleLogRow(node, onUpdate) {
  * 启动 scan 监听：MutationObserver 盯 #textlog 新增行。
  * @param {() => void} [onUpdate] 入库成功回调（刷新 UI 面板）
  */
-export function setupScanWatch(onUpdate) {
+export function startMonsterScanLearning(onUpdate) {
   const tbody = gE("#textlog>tbody");
   if (!tbody) return;
   const observer = new MutationObserver((mutations) => {

@@ -1,6 +1,6 @@
 // 怪物知识编排入口：全量库同步、scan 自采监听、九抗面板刷新统一从这里进入。
 import { renderResistPanel } from "../monitor/monster-resist-panel.js";
-import { setupScanWatch } from "./monster-db-scan.js";
+import { startMonsterScanLearning } from "./monster-db-scan.js";
 import { syncMonsterDb } from "./monster-db-sync.js";
 
 const EVENT_BATTLE_STARTED = "battleStarted";
@@ -19,7 +19,7 @@ function refreshResistPanel() {
 
 function startMonsterKnowledge() {
   syncMonsterDb();
-  setupScanWatch(() =>
+  startMonsterScanLearning(() =>
     runMonsterKnowledgeAutomation({ type: EVENT_SCAN_UPDATED })
   );
 }

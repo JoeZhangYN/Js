@@ -30,7 +30,7 @@ function checkFile(file) {
     if (!trimmed || trimmed.startsWith("//")) return;
     if (allowed.has(relative)) return;
     const where = `${rel(file)}:${index + 1}`;
-    for (const name of ["syncMonsterDb", "setupScanWatch", "renderResistPanel"]) {
+    for (const name of ["syncMonsterDb", "startMonsterScanLearning", "renderResistPanel"]) {
       if (new RegExp(`\\b${name}\\b`).test(line)) {
         violations.push(
           `${where} ${name} belongs behind runMonsterKnowledgeAutomation(event)`
@@ -45,10 +45,14 @@ function checkEntry() {
   if (!/export function runMonsterKnowledgeAutomation\(/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must expose runMonsterKnowledgeAutomation(event)`);
   }
-  for (const required of ["syncMonsterDb", "setupScanWatch", "renderResistPanel"]) {
+  for (const required of ["syncMonsterDb", "startMonsterScanLearning", "renderResistPanel"]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);
     }
+  }
+  const scanText = fs.readFileSync(path.join(root, scanImpl), "utf8");
+  if (/\bsetupScanWatch\b/.test(text) || /\bsetupScanWatch\b/.test(scanText)) {
+    violations.push("monster scan learning must not use legacy setupScanWatch entrypoint");
   }
 }
 
