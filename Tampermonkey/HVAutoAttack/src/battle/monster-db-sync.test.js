@@ -11,9 +11,9 @@ describe("runMonsterDbSyncAutomation", () => {
 
     await expect(
       runMonsterDbSyncAutomation(syncRequested(), {
-        getMeta: async () => "2026-06-27",
+        readMeta: async () => "2026-06-27",
         gmXhr,
-        isProfileEmpty: async () => false,
+        profileIsEmpty: async () => false,
         time: () => "2026-06-27",
       })
     ).resolves.toEqual({ synced: false, reason: "already-synced-today" });
@@ -22,12 +22,12 @@ describe("runMonsterDbSyncAutomation", () => {
   });
 
   it("syncs through the event entry when the local profile store is empty", async () => {
-    const bulkSetMonsters = vi.fn(async () => {});
-    const setMeta = vi.fn(async () => {});
+    const storeProfiles = vi.fn(async () => {});
+    const writeMeta = vi.fn(async () => {});
 
     const result = await runMonsterDbSyncAutomation(syncRequested(), {
-      bulkSetMonsters,
-      getMeta: async () => "2026-06-27",
+      storeProfiles,
+      readMeta: async () => "2026-06-27",
       gmXhr: (opts) =>
         opts.onload({
           response: [
@@ -52,13 +52,13 @@ describe("runMonsterDbSyncAutomation", () => {
             },
           ],
         }),
-      isProfileEmpty: async () => true,
-      setMeta,
+      profileIsEmpty: async () => true,
+      writeMeta,
       time: () => "2026-06-27",
     });
 
     expect(result).toEqual({ synced: true, count: 1 });
-    expect(bulkSetMonsters).toHaveBeenCalledWith([
+    expect(storeProfiles).toHaveBeenCalledWith([
       {
         attack: "piercing",
         cold: -5,
@@ -78,6 +78,6 @@ describe("runMonsterDbSyncAutomation", () => {
         wind: 0,
       },
     ]);
-    expect(setMeta).toHaveBeenCalledWith("lastSync", "2026-06-27");
+    expect(writeMeta).toHaveBeenCalledWith("lastSync", "2026-06-27");
   });
 });

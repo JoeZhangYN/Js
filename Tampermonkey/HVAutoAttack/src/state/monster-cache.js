@@ -5,13 +5,16 @@
 // 缓存跨轮累积不清空：抗性/plvl 是怪静态属性（按 MID），同 MID 跨轮一致，旧值可复用。
 // 新怪首轮首 turn 可能 race 输（prime async 未完成 → 该怪降级 db=null，次 turn 即补）；决策影响小：
 // autoElement 默认关、Drain 用 hpAbsNow 不依赖 db。本轮中途新 scan 的怪由 setCachedMonster 即时补。
-import { getMonsterById } from "./monster-db-store.js";
+import {
+  MonsterDbStoreEvent,
+  runMonsterDbStoreAutomation,
+} from "./monster-db-store.js";
 
 /** @type {Map<number, import("../data/monster-db.js").MonsterInfo|null>} */
 const _cache = new Map();
 
 /**
- * 预取一批 MID 的画像进内存（去重；并发 getMonsterById）。永不抛（单条失败存 null）。
+ * 预取一批 MID 的画像进内存（去重；并发读取 store entry）。永不抛（单条失败存 null）。
  * @param {Array<number|undefined|null>} monsterIds 当前战场怪的 MID（来自 monsterStatus.monsterId）
  * @returns {Promise<void>}
  */
@@ -20,7 +23,13 @@ export async function primeMonsterCache(monsterIds) {
   await Promise.all(
     uniq.map(async (id) => {
       try {
-        _cache.set(id, await getMonsterById(id));
+        _cache.set(
+          id,
+          await runMonsterDbStoreAutomation({
+            type: MonsterDbStoreEvent.PROFILE_READ,
+            monsterId: id,
+          })
+        );
       } catch {
         _cache.set(id, null);
       }

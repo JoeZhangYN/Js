@@ -30,8 +30,8 @@ describe("runMonsterScanLearningAutomation", () => {
     const monsterEl = document.createElement("div");
     monsterEl.innerHTML = "clean";
     const setCachedMonster = vi.fn();
-    const setMonsterById = vi.fn(async () => {});
-    const setMonsterHp = vi.fn();
+    const storeProfile = vi.fn(async () => {});
+    const storeHp = vi.fn();
     const onStored = vi.fn();
     const info = {
       lastUpdate: "2026-06-27",
@@ -54,8 +54,8 @@ describe("runMonsterScanLearningAutomation", () => {
           MutationObserver: FakeMutationObserver,
           parseScanResult: () => ({ ...info }),
           setCachedMonster,
-          setMonsterById,
-          setMonsterHp,
+          storeProfile,
+          storeHp,
           time: () => "2026-06-27",
         }
       )
@@ -64,7 +64,7 @@ describe("runMonsterScanLearningAutomation", () => {
     FakeMutationObserver.instances[0].emit(makeScanNode("<td>Scanning Dragon</td>"));
     await Promise.resolve();
 
-    expect(setMonsterById).toHaveBeenCalledWith({
+    expect(storeProfile).toHaveBeenCalledWith({
       ...info,
       monsterId: 101,
     });
@@ -72,7 +72,7 @@ describe("runMonsterScanLearningAutomation", () => {
       ...info,
       monsterId: 101,
     });
-    expect(setMonsterHp).toHaveBeenCalledWith(101, 500, 12345, "2026-06-27");
+    expect(storeHp).toHaveBeenCalledWith(101, 500, 12345, "2026-06-27");
     expect(onStored).toHaveBeenCalledTimes(1);
   });
 

@@ -5,7 +5,10 @@ import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 import { parseBattleLog, accumulateDamageByMonster, normalizeMonsterName } from "./log-parser.js";
-import { getMonsterHp, setMonsterHp } from "../state/monster-db-store.js";
+import {
+  MonsterDbStoreEvent,
+  runMonsterDbStoreAutomation,
+} from "../state/monster-db-store.js";
 
 /**
  * 本次页面生命周期内已触发 HP 反推的怪名集合（todo 491）。
@@ -26,10 +29,19 @@ const _inferredThisPage = new Set();
  */
 function inferAndStoreMaxHP(monsterId, level, inferredMaxHP) {
   if (monsterId == null || level == null || !(inferredMaxHP > 0)) return;
-  getMonsterHp(monsterId, level)
+  runMonsterDbStoreAutomation({
+    type: MonsterDbStoreEvent.HP_READ,
+    monsterId,
+    level,
+  })
     .then((existing) => {
       if (existing && existing.maxHP != null) return; // 已有(准确/先前反推)则不覆盖
-      return setMonsterHp(monsterId, level, inferredMaxHP);
+      return runMonsterDbStoreAutomation({
+        type: MonsterDbStoreEvent.HP_WRITE,
+        monsterId,
+        level,
+        maxHP: inferredMaxHP,
+      });
     })
     .catch(() => {}); // 静默：写库失败不影响主循环
 }

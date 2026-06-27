@@ -14,6 +14,25 @@ const DB_VERSION = 2; // v1→v2：弃旧 name 键 "monsters" store，改 monste
 const STORE_PROFILE = "monsterProfile";
 const STORE_HP = "monsterHp";
 const STORE_META = "meta";
+const EVENT_PROFILE_READ = "profileRead";
+const EVENT_PROFILE_WRITE = "profileWrite";
+const EVENT_PROFILE_BULK_WRITE = "profileBulkWrite";
+const EVENT_PROFILE_IS_EMPTY = "profileIsEmpty";
+const EVENT_HP_READ = "hpRead";
+const EVENT_HP_WRITE = "hpWrite";
+const EVENT_META_READ = "metaRead";
+const EVENT_META_WRITE = "metaWrite";
+
+export const MonsterDbStoreEvent = Object.freeze({
+  PROFILE_READ: EVENT_PROFILE_READ,
+  PROFILE_WRITE: EVENT_PROFILE_WRITE,
+  PROFILE_BULK_WRITE: EVENT_PROFILE_BULK_WRITE,
+  PROFILE_IS_EMPTY: EVENT_PROFILE_IS_EMPTY,
+  HP_READ: EVENT_HP_READ,
+  HP_WRITE: EVENT_HP_WRITE,
+  META_READ: EVENT_META_READ,
+  META_WRITE: EVENT_META_WRITE,
+});
 
 /** @type {Promise<IDBDatabase>|null} */
 let dbPromise = null;
@@ -63,7 +82,7 @@ function withStore(storeName, mode, fn) {
  * @param {number} monsterId
  * @returns {Promise<import("../data/monster-db.js").MonsterInfo|null>}
  */
-export function getMonsterById(monsterId) {
+function getMonsterById(monsterId) {
   return withStore(STORE_PROFILE, "readonly", (s) => s.get(monsterId)).then((v) => v ?? null);
 }
 
@@ -71,7 +90,7 @@ export function getMonsterById(monsterId) {
  * 写入单只怪画像（scan 自采 / 社区单条）。需带 monsterId，否则跳过（不可无键入库）。
  * @param {import("../data/monster-db.js").MonsterInfo} info
  */
-export function setMonsterById(info) {
+function setMonsterById(info) {
   if (!info || info.monsterId == null) return Promise.resolve();
   return withStore(STORE_PROFILE, "readwrite", (s) => s.put(info, info.monsterId));
 }
@@ -80,7 +99,7 @@ export function setMonsterById(info) {
  * 批量写画像（全量 JSON 下载）——单事务。丢无 monsterId 的脏行。
  * @param {import("../data/monster-db.js").MonsterInfo[]} infos
  */
-export function bulkSetMonsters(infos) {
+function bulkSetMonsters(infos) {
   return withStore(STORE_PROFILE, "readwrite", (s) => {
     for (const info of infos) {
       if (info && info.monsterId != null) s.put(info, info.monsterId);
@@ -89,7 +108,7 @@ export function bulkSetMonsters(infos) {
 }
 
 /** 画像库是否为空（升级后首次 → 触发强制重同步，绕过 lastSync 每日 gate）。 */
-export function isProfileEmpty() {
+function isProfileEmpty() {
   return withStore(STORE_PROFILE, "readonly", (s) => s.count()).then((n) => !n);
 }
 
@@ -101,7 +120,7 @@ const hpKey = (monsterId, level) => `${monsterId}|${level}`;
  * @param {number} level
  * @returns {Promise<{monsterId:number, level:number, maxHP:number, lastUpdate?:string}|null>}
  */
-export function getMonsterHp(monsterId, level) {
+function getMonsterHp(monsterId, level) {
   return withStore(STORE_HP, "readonly", (s) => s.get(hpKey(monsterId, level))).then((v) => v ?? null);
 }
 
@@ -112,7 +131,7 @@ export function getMonsterHp(monsterId, level) {
  * @param {number} maxHP
  * @param {string} [lastUpdate]
  */
-export function setMonsterHp(monsterId, level, maxHP, lastUpdate) {
+function setMonsterHp(monsterId, level, maxHP, lastUpdate) {
   if (monsterId == null || level == null || !(maxHP > 0)) return Promise.resolve();
   return withStore(STORE_HP, "readwrite", (s) =>
     s.put({ monsterId, level, maxHP, lastUpdate }, hpKey(monsterId, level))
@@ -120,11 +139,25 @@ export function setMonsterHp(monsterId, level, maxHP, lastUpdate) {
 }
 
 /** 读 meta（如 lastSync 日期）。 */
-export function getMeta(key) {
+function getMeta(key) {
   return withStore(STORE_META, "readonly", (s) => s.get(key)).then((v) => v ?? null);
 }
 
 /** 写 meta。 */
-export function setMeta(key, value) {
+function setMeta(key, value) {
   return withStore(STORE_META, "readwrite", (s) => s.put(value, key));
+}
+
+export function runMonsterDbStoreAutomation(event = { type: EVENT_PROFILE_READ }) {
+  if (event.type === EVENT_PROFILE_READ) return getMonsterById(event.monsterId);
+  if (event.type === EVENT_PROFILE_WRITE) return setMonsterById(event.info);
+  if (event.type === EVENT_PROFILE_BULK_WRITE) return bulkSetMonsters(event.infos || []);
+  if (event.type === EVENT_PROFILE_IS_EMPTY) return isProfileEmpty();
+  if (event.type === EVENT_HP_READ) return getMonsterHp(event.monsterId, event.level);
+  if (event.type === EVENT_HP_WRITE) {
+    return setMonsterHp(event.monsterId, event.level, event.maxHP, event.lastUpdate);
+  }
+  if (event.type === EVENT_META_READ) return getMeta(event.key);
+  if (event.type === EVENT_META_WRITE) return setMeta(event.key, event.value);
+  return undefined;
 }

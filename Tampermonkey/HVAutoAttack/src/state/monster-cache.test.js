@@ -1,8 +1,14 @@
-// monster-cache 回归锁：预取/同步读/即时写/去重/失败降级。**键=monsterId(MID)**；getMonsterById 被 mock。
+// monster-cache 回归锁：预取/同步读/即时写/去重/失败降级。**键=monsterId(MID)**；store entry 被 mock。
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-vi.mock("./monster-db-store.js", () => ({ getMonsterById: vi.fn() }));
-import { getMonsterById } from "./monster-db-store.js";
+const mocks = vi.hoisted(() => ({
+  runMonsterDbStoreAutomation: vi.fn(),
+}));
+
+vi.mock("./monster-db-store.js", () => ({
+  MonsterDbStoreEvent: Object.freeze({ PROFILE_READ: "profileRead" }),
+  runMonsterDbStoreAutomation: mocks.runMonsterDbStoreAutomation,
+}));
 import {
   primeMonsterCache,
   getCachedMonster,
@@ -13,31 +19,40 @@ import {
 
 beforeEach(() => {
   _clearMonsterCache();
-  vi.mocked(getMonsterById).mockReset();
+  mocks.runMonsterDbStoreAutomation.mockReset();
 });
 
 describe("monster-cache（按 MID 键）", () => {
   it("prime 后 getCachedMonster(MID) 拿到画像", async () => {
-    vi.mocked(getMonsterById).mockImplementation(async (id) => ({ monsterId: id, plvl: 100 }));
+    mocks.runMonsterDbStoreAutomation.mockImplementation(async (event) => ({
+      monsterId: event.monsterId,
+      plvl: 100,
+    }));
     await primeMonsterCache([158322, 156409]);
     expect(getCachedMonster(158322)).toEqual({ monsterId: 158322, plvl: 100 });
     expect(getCachedMonster(156409).plvl).toBe(100);
   });
 
   it("getCachedDb 返回 MID→记录 Record（供 join 的 dbById）", async () => {
-    vi.mocked(getMonsterById).mockImplementation(async (id) => ({ monsterId: id }));
+    mocks.runMonsterDbStoreAutomation.mockImplementation(async (event) => ({
+      monsterId: event.monsterId,
+    }));
     await primeMonsterCache([1, 2]);
     expect(getCachedDb()).toEqual({ 1: { monsterId: 1 }, 2: { monsterId: 2 } });
   });
 
   it("去重：同 MID 只查一次", async () => {
-    vi.mocked(getMonsterById).mockResolvedValue(null);
+    mocks.runMonsterDbStoreAutomation.mockResolvedValue(null);
     await primeMonsterCache([7, 7, 7]);
-    expect(getMonsterById).toHaveBeenCalledTimes(1);
+    expect(mocks.runMonsterDbStoreAutomation).toHaveBeenCalledTimes(1);
+    expect(mocks.runMonsterDbStoreAutomation).toHaveBeenCalledWith({
+      type: "profileRead",
+      monsterId: 7,
+    });
   });
 
-  it("getMonsterById 失败 → 存 null 不抛", async () => {
-    vi.mocked(getMonsterById).mockRejectedValue(new Error("idb fail"));
+  it("store read 失败 → 存 null 不抛", async () => {
+    mocks.runMonsterDbStoreAutomation.mockRejectedValue(new Error("idb fail"));
     await expect(primeMonsterCache([7])).resolves.toBeUndefined();
     expect(getCachedMonster(7)).toBeNull();
   });
@@ -57,6 +72,6 @@ describe("monster-cache（按 MID 键）", () => {
   it("空/缺 ids + undefined/null 元素 安全", async () => {
     await expect(primeMonsterCache()).resolves.toBeUndefined();
     await expect(primeMonsterCache([null, undefined])).resolves.toBeUndefined();
-    expect(getMonsterById).not.toHaveBeenCalled();
+    expect(mocks.runMonsterDbStoreAutomation).not.toHaveBeenCalled();
   });
 });

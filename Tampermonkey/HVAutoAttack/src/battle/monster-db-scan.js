@@ -4,7 +4,10 @@ import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { parseScanResult, checkScanResultValidity } from "../data/monster-db.js";
-import { setMonsterById, setMonsterHp } from "../state/monster-db-store.js";
+import {
+  MonsterDbStoreEvent,
+  runMonsterDbStoreAutomation,
+} from "../state/monster-db-store.js";
 import { setCachedMonster } from "../state/monster-cache.js";
 
 const EVENT_START = "start";
@@ -21,8 +24,20 @@ function makeDeps(deps) {
     MutationObserver: deps.MutationObserver || MutationObserver,
     parseScanResult: deps.parseScanResult || parseScanResult,
     setCachedMonster: deps.setCachedMonster || setCachedMonster,
-    setMonsterById: deps.setMonsterById || setMonsterById,
-    setMonsterHp: deps.setMonsterHp || setMonsterHp,
+    storeProfile:
+      deps.storeProfile ||
+      ((info) =>
+        runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_WRITE, info })),
+    storeHp:
+      deps.storeHp ||
+      ((monsterId, level, maxHP, lastUpdate) =>
+        runMonsterDbStoreAutomation({
+          type: MonsterDbStoreEvent.HP_WRITE,
+          monsterId,
+          level,
+          maxHP,
+          lastUpdate,
+        })),
     time: deps.time || time,
   };
 }
@@ -50,11 +65,11 @@ function handleLogRow(node, onUpdate, deps) {
   const st = (deps.g("monsterStatus") || []).find((s) => s.name === info.monsterName);
   if (!st || st.monsterId == null) return;
   info.monsterId = st.monsterId;
-  Promise.resolve(deps.setMonsterById(info))
+  Promise.resolve(deps.storeProfile(info))
     .then(() => {
       deps.setCachedMonster(info.monsterId, info); // 即时进内存 cache（消本轮中途新 scan 怪的缺口）
       // scan 的 max HP + 战斗 LV → 顺带补 (MID,LV) 满血表（与开局 spawn 行同源、互为兜底）
-      if (st.level != null && info.maxHP > 0) deps.setMonsterHp(info.monsterId, st.level, info.maxHP, info.lastUpdate);
+      if (st.level != null && info.maxHP > 0) deps.storeHp(info.monsterId, st.level, info.maxHP, info.lastUpdate);
       onUpdate?.();
     })
     .catch(() => {});

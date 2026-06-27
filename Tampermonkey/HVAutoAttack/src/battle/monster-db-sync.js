@@ -3,7 +3,10 @@
 // 跨域 GET 走统一 gmXhr（@connect 已放开该域）；失败保留旧库（空库不致命，靠 scan 自采补充）。
 import { gmXhr } from "../dom/gm-xhr.js";
 import { isIsekai } from "../env.js";
-import { bulkSetMonsters, getMeta, setMeta, isProfileEmpty } from "../state/monster-db-store.js";
+import {
+  MonsterDbStoreEvent,
+  runMonsterDbStoreAutomation,
+} from "../state/monster-db-store.js";
 import { time } from "../core/time.js";
 
 const DATA_URL = isIsekai
@@ -18,11 +21,24 @@ export const MonsterDbSyncEvent = Object.freeze({
 
 function makeDeps(deps) {
   return {
-    bulkSetMonsters: deps.bulkSetMonsters || bulkSetMonsters,
-    getMeta: deps.getMeta || getMeta,
+    storeProfiles:
+      deps.storeProfiles ||
+      ((infos) =>
+        runMonsterDbStoreAutomation({
+          type: MonsterDbStoreEvent.PROFILE_BULK_WRITE,
+          infos,
+        })),
+    readMeta:
+      deps.readMeta ||
+      ((key) => runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.META_READ, key })),
     gmXhr: deps.gmXhr || gmXhr,
-    isProfileEmpty: deps.isProfileEmpty || isProfileEmpty,
-    setMeta: deps.setMeta || setMeta,
+    profileIsEmpty:
+      deps.profileIsEmpty ||
+      (() => runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_IS_EMPTY })),
+    writeMeta:
+      deps.writeMeta ||
+      ((key, value) =>
+        runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.META_WRITE, key, value })),
     time: deps.time || time,
   };
 }
@@ -50,10 +66,10 @@ function normalize(m) {
  */
 async function syncMonsterDb({ force = false, deps }) {
   if (!force) {
-    const last = await deps.getMeta(META_LAST_SYNC);
+    const last = await deps.readMeta(META_LAST_SYNC);
     // 每日 gate；但画像库为空（v2 升级后首次 / 新装）时绕过，立即重建——否则旧 lastSync 残留致
     // 空库等到明天才填。
-    if (last === deps.time(2) && !(await deps.isProfileEmpty())) {
+    if (last === deps.time(2) && !(await deps.profileIsEmpty())) {
       return { synced: false, reason: "already-synced-today" };
     }
   }
@@ -77,8 +93,8 @@ async function syncMonsterDb({ force = false, deps }) {
           resolve({ synced: false, reason: "empty" });
           return;
         }
-        Promise.resolve(deps.bulkSetMonsters(list.map(normalize)))
-          .then(() => deps.setMeta(META_LAST_SYNC, deps.time(2)))
+        Promise.resolve(deps.storeProfiles(list.map(normalize)))
+          .then(() => deps.writeMeta(META_LAST_SYNC, deps.time(2)))
           .then(() => resolve({ synced: true, count: list.length }))
           .catch(() => resolve({ synced: false, reason: "store-error" }));
       },
