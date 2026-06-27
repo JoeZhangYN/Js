@@ -41,4 +41,25 @@ describe("runBattleMonitorRuntime", () => {
     expect(runtime.readOptionField).toHaveBeenCalledWith("recordEach", false);
     expect(runtime.readOptionField).toHaveBeenCalledWith("recordUsage", false);
   });
+
+  it("reads drop completion context from the same monitor runtime query", () => {
+    const runtime = deps({
+      option: { recordEach: true, dropMonitor: true, dropQuality: 3 },
+      roundNow: 4,
+      roundAll: 5,
+    });
+
+    expect(
+      runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.DROP_COMPLETION_CONTEXT }, runtime)
+    ).toEqual({
+      recordEach: true,
+      dropMonitor: true,
+      dropQuality: 3,
+      roundNow: 4,
+      roundAll: 5,
+    });
+    expect(runtime.readOptionField).toHaveBeenCalledWith("recordEach", false);
+    expect(runtime.readOptionField).toHaveBeenCalledWith("dropMonitor", false);
+    expect(runtime.readOptionField).toHaveBeenCalledWith("dropQuality", 0);
+  });
 });

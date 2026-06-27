@@ -3,12 +3,14 @@ import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_REPORT_START_CONTEXT = "reportStartContext";
 const EVENT_ARCHIVE_CONTEXT = "archiveContext";
+const EVENT_DROP_COMPLETION_CONTEXT = "dropCompletionContext";
 const EVENT_USAGE_ACTION_CONTEXT = "usageActionContext";
 const EVENT_USAGE_COMPLETION_CONTEXT = "usageCompletionContext";
 
 export const BattleMonitorRuntimeEvent = Object.freeze({
   REPORT_START_CONTEXT: EVENT_REPORT_START_CONTEXT,
   ARCHIVE_CONTEXT: EVENT_ARCHIVE_CONTEXT,
+  DROP_COMPLETION_CONTEXT: EVENT_DROP_COMPLETION_CONTEXT,
   USAGE_ACTION_CONTEXT: EVENT_USAGE_ACTION_CONTEXT,
   USAGE_COMPLETION_CONTEXT: EVENT_USAGE_COMPLETION_CONTEXT,
 });
@@ -35,6 +37,13 @@ export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT },
     };
   }
   if (event.type === EVENT_ARCHIVE_CONTEXT) return readArchiveContext(deps);
+  if (event.type === EVENT_DROP_COMPLETION_CONTEXT) {
+    return {
+      ...readArchiveContext(deps),
+      dropMonitor: readOptionField(deps, "dropMonitor", false),
+      dropQuality: readOptionField(deps, "dropQuality", 0),
+    };
+  }
   if (event.type === EVENT_USAGE_ACTION_CONTEXT) {
     return {
       monsterAlive: deps.g("monsterAlive"),

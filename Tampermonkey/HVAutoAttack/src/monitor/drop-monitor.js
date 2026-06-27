@@ -18,22 +18,24 @@ export const BattleDropEvent = Object.freeze({
 function makeDeps(deps) {
   return {
     delValue: deps.delValue || delValue,
-    g: deps.g || g,
     gE: deps.gE || gE,
     getValue: deps.getValue || getValue,
-    readArchiveContext:
-      deps.readArchiveContext ||
+    readDropCompletionContext:
+      deps.readDropCompletionContext ||
       (() =>
         runBattleMonitorRuntime(
-          { type: BattleMonitorRuntimeEvent.ARCHIVE_CONTEXT },
-          { g: deps.g || g, readOptionField: deps.readOptionField }
+          { type: BattleMonitorRuntimeEvent.DROP_COMPLETION_CONTEXT },
+          {
+            g: deps.g || g,
+            readOptionField: deps.readOptionField,
+          }
         )),
     setValue: deps.setValue || setValue,
     readLocalTimestampLabel: deps.readLocalTimestampLabel,
   };
 }
 
-function recordBattleDrops(deps) {
+function recordBattleDrops(deps, context) {
   const battleLog = deps.gE("#textlog>tbody>tr>td", "all");
   const drop = runBattleRecordArchiveAutomation(
     {
@@ -55,7 +57,7 @@ function recordBattleDrops(deps) {
     "Legendary",
     "Peerless",
   ];
-  const dropQuality = deps.g("option").dropQuality;
+  const dropQuality = context.dropQuality;
 
   for (const log of battleLog) {
     const text = log.textContent;
@@ -100,7 +102,9 @@ function recordBattleDrops(deps) {
       historyKey: STORAGE_KEYS.DROP_OLD,
       record: drop,
       endTimeField: "#endTime",
-      ...deps.readArchiveContext(),
+      recordEach: context.recordEach,
+      roundNow: context.roundNow,
+      roundAll: context.roundAll,
     },
     deps
   );
@@ -109,7 +113,8 @@ function recordBattleDrops(deps) {
 export function runBattleDropAutomation(event = { type: EVENT_COMPLETION_REACHED }, deps = {}) {
   if (event.type !== EVENT_COMPLETION_REACHED) return false;
   const runtime = makeDeps(deps);
-  if (!runtime.g("option").dropMonitor) return false;
-  recordBattleDrops(runtime);
+  const context = runtime.readDropCompletionContext();
+  if (!context.dropMonitor) return false;
+  recordBattleDrops(runtime, context);
   return true;
 }

@@ -330,11 +330,19 @@ function checkDeletedDropMonitorEntrypoint() {
   ) {
     violations.push(`${rel(dropFile)} must read archive context through battle-monitor-runtime`);
   }
-  if (!dropText.includes("BattleMonitorRuntimeEvent.ARCHIVE_CONTEXT")) {
-    violations.push(`${rel(dropFile)} must read archive context through battle-monitor-runtime`);
+  if (!dropText.includes("BattleMonitorRuntimeEvent.DROP_COMPLETION_CONTEXT")) {
+    violations.push(
+      `${rel(dropFile)} must read drop completion context through battle-monitor-runtime`
+    );
   }
-  if (!/\bg\(\s*["']option["']\s*\)\.dropMonitor/.test(dropText)) {
-    violations.push(`${rel(dropFile)} must own the dropMonitor completion switch`);
+  if (!/\bcontext\.dropMonitor\b/.test(dropText)) {
+    violations.push(`${rel(dropFile)} must consume dropMonitor from battle-monitor-runtime`);
+  }
+  if (
+    /\bg\(\s*["']option["']\s*\)/.test(dropText) ||
+    /\bdeps\.g\(\s*["']option["']\s*\)/.test(dropText)
+  ) {
+    violations.push(`${rel(dropFile)} must not read drop options directly`);
   }
 }
 
@@ -355,6 +363,11 @@ function checkBattleMonitorRuntimeEntry() {
   }
   if (!text.includes("recordUsage")) {
     violations.push(`${rel(runtimeFile)} must expose recordUsage in usage completion context`);
+  }
+  for (const required of ["DROP_COMPLETION_CONTEXT", "dropMonitor", "dropQuality"]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(runtimeFile)} must expose ${required} in drop completion context`);
+    }
   }
   if (
     /\bexport\s+(?:function|const)\s+(?!BattleMonitorRuntimeEvent\b|runBattleMonitorRuntime\b)/.test(
