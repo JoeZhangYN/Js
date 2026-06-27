@@ -7,6 +7,7 @@ import { addStyle } from "../style/inject.js";
 import { registerExportMenu } from "../state/riddle-dataset.js";
 import { loadCdState } from "../state/cd-tracker.js";
 import { setupPageRefresh } from "../alarm/page-refresh.js";
+import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 
 const EVENT_USERSCRIPT_START = "userscriptStart";
 const EVENT_GAME_PAGE_READY = "gamePageReady";
@@ -69,8 +70,7 @@ function warnDefaultFont() {
 
 function loadBattleLearningState() {
   unsafeWindow = typeof unsafeWindow === "undefined" ? window : unsafeWindow;
-  g("spellAoe", getValue("spellAoe", true) || {});
-  console.log("[AoE] 启动加载 spellAoe:", JSON.stringify(g("spellAoe")));
+  runAbilityAoeAutomation({ type: AbilityAoeEvent.LOAD_STORED_AOE });
 }
 
 function runGamePageStartup() {

@@ -1,11 +1,29 @@
 // 解析 Ability 页 ?s=Character&ss=ab，提取法术 AoE 目标数 → spellAoe 持久化。
 import { gE } from "../dom/query.js";
-import { setValue } from "../state/storage.js";
+import { getValue, setValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 import { OFFENSIVE_SPELL_LIB } from "../data/spell-lib.js";
 
-export function parseAbilityPage() {
+const EVENT_LOAD_STORED_AOE = "loadStoredAoe";
+const EVENT_CAPTURE_ABILITY_PAGE = "captureAbilityPage";
+
+export const AbilityAoeEvent = Object.freeze({
+  LOAD_STORED_AOE: EVENT_LOAD_STORED_AOE,
+  CAPTURE_ABILITY_PAGE: EVENT_CAPTURE_ABILITY_PAGE,
+});
+
+function isAbilityPage() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("s") === "Character" && params.get("ss") === "ab";
+}
+
+function loadStoredAoe() {
+  g("spellAoe", getValue("spellAoe", true) || {});
+  console.log("[AoE] 启动加载 spellAoe:", JSON.stringify(g("spellAoe")));
+}
+
+function parseAbilityPage() {
   const abilityTop = gE("#ability_top");
   if (!abilityTop) return;
   const spellAoe = {};
@@ -44,5 +62,17 @@ export function parseAbilityPage() {
     });
     setValue("option", option);
     console.log("[AoE] 已同步到 option:", JSON.stringify({ debuffSkillAoe: option.debuffSkillAoe, spellAoe: option.spellAoe }));
+  }
+}
+
+export function runAbilityAoeAutomation(
+  event = { type: EVENT_CAPTURE_ABILITY_PAGE }
+) {
+  if (event.type === EVENT_LOAD_STORED_AOE) {
+    loadStoredAoe();
+    return;
+  }
+  if (event.type === EVENT_CAPTURE_ABILITY_PAGE && isAbilityPage()) {
+    parseAbilityPage();
   }
 }

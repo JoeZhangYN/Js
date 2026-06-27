@@ -7,17 +7,10 @@ import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { quickSite } from "../arena/quick-site.js";
 import { runRepair } from "../repair/repair-orchestrator.js";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
-import { parseAbilityPage } from "./ability-page.js";
+import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 
 function syncLobbyDate() {
   g("dateNow", time(2));
-}
-
-function runAbilityPageCapture() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("s") === "Character" && params.get("ss") === "ab") {
-    parseAbilityPage();
-  }
 }
 
 function shouldStopForStamina() {
@@ -38,7 +31,7 @@ function runNextBattleAutomation() {
 export async function runLobbyAutomation() {
   delValue(2);
   syncLobbyDate();
-  runAbilityPageCapture();
+  runAbilityAoeAutomation({ type: AbilityAoeEvent.CAPTURE_ABILITY_PAGE });
   if (g("option").quickSite) quickSite();
   if (g("option").encounter) {
     const encounterClaimedLobby = await runEncounterAutomation({

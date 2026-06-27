@@ -20,7 +20,6 @@ function checkInit() {
     /\b_alert\b/,
     /\bGM_info\b/,
     /\bunsafeWindow\b/,
-    /\bspellAoe\b/,
     /\bwindow\.prompt\b/,
     /\b(?:getValue|setValue)\(\s*["']option["']/,
     /\b(?:getValue|setValue)\(\s*["']spellAoe["']/,
@@ -48,7 +47,7 @@ function checkEntry() {
     "loadCdState",
     "registerExportMenu",
     "setupPageRefresh",
-    "spellAoe",
+    "runAbilityAoeAutomation",
     "GM_info",
   ]) {
     if (!text.includes(required)) {
