@@ -1,5 +1,6 @@
 // 跨站遭遇入口导航：维护 HV origin，并在 e-hentai encounter 页回跳 HV。
 import { getValue, setValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { openUrl } from "../core/navigate.js";
 import { PageKind } from "./page-kind.js";
 
@@ -7,7 +8,7 @@ const DEFAULT_HV_ORIGIN = "https://hentaiverse.org";
 const EHENTAI_ENCOUNTER_URL = "https://e-hentai.org/news.php?encounter";
 
 function readReturnOrigin() {
-  if (getValue("url")) return getValue("url");
+  if (getValue(STORAGE_KEYS.URL)) return getValue(STORAGE_KEYS.URL);
   if (document.referrer.includes("hentaiverse.org")) {
     return new URL(document.referrer).origin;
   }
@@ -29,6 +30,6 @@ export function runCrossSiteEncounterNavigation(kind) {
     redirectToEncounterOrigin();
     return true;
   }
-  setValue("url", window.location.origin);
+  setValue(STORAGE_KEYS.URL, window.location.origin);
   return false;
 }

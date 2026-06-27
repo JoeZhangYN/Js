@@ -37,7 +37,10 @@ function checkEntry() {
   if (!/export function runCrossSiteEncounterNavigation\(\s*kind\s*\)/.test(text)) {
     violations.push(`${rel(entryFile)} must expose runCrossSiteEncounterNavigation(kind)`);
   }
-  for (const required of ["PageKind.EHENTAI", "news.php?encounter", "setValue(\"url\""]) {
+  if (/\b(?:getValue|setValue)\(\s*["']url["']/.test(text)) {
+    violations.push(`${rel(entryFile)} must use STORAGE_KEYS.URL for return-origin storage`);
+  }
+  for (const required of ["PageKind.EHENTAI", "news.php?encounter", "STORAGE_KEYS.URL"]) {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} cross-site navigation wiring`);
     }
@@ -53,4 +56,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-cross-site-encounter-boundary] OK — cross-site encounter navigation is behind one entry");
+console.log(
+  "[verify-cross-site-encounter-boundary] OK — cross-site encounter navigation is behind one entry"
+);
