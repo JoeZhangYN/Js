@@ -1,16 +1,14 @@
 // 每回合技能/物品使用统计 + 战斗结束聚合。
 // file-size-gate: exempt phase-4-monolith
 import { setValue, getValue, delValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { setAudioAlarm } from "../alarm/alarm.js";
-import {
-  BattlePauseEvent,
-  runBattlePauseAutomation,
-} from "../battle/pause-automation.js";
+import { BattlePauseEvent, runBattlePauseAutomation } from "../battle/pause-automation.js";
 
 export function recordUsage(parm) {
-  const stats = getValue("stats", true) || {
+  const stats = getValue(STORAGE_KEYS.STATS, true) || {
     self: {
       _startTime: time(3),
       _turn: 0,
@@ -67,11 +65,9 @@ export function recordUsage(parm) {
     stats.hurt.mp += parm.mp;
     stats.hurt.oc += parm.oc;
   } else if (parm.mode === "items") {
-    stats.items[parm.item] =
-      parm.item in stats.items ? stats.items[parm.item] + 1 : 1;
+    stats.items[parm.item] = parm.item in stats.items ? stats.items[parm.item] + 1 : 1;
   } else {
-    stats.self[parm.mode] =
-      parm.mode in stats.self ? stats.self[parm.mode] + 1 : 1;
+    stats.self[parm.mode] = parm.mode in stats.self ? stats.self[parm.mode] + 1 : 1;
   }
   const debug = false;
   let log = false;
@@ -83,23 +79,18 @@ export function recordUsage(parm) {
       reg = text.match(/you for (\d+) (\w+) damage/);
       magic = reg[2].replace("ing", "");
       point = reg[1] * 1;
-      stats.hurt[magic] =
-        magic in stats.hurt ? stats.hurt[magic] + point : point;
+      stats.hurt[magic] = magic in stats.hurt ? stats.hurt[magic] + point : point;
       stats.hurt._count++;
       stats.hurt._total += point;
       stats.hurt._avg = Math.round(stats.hurt._total / stats.hurt._count);
       if (magic.match(/pierc|crush|slash/)) {
         stats.hurt._pcount++;
         stats.hurt._ptotal += point;
-        stats.hurt._pavg = Math.round(
-          stats.hurt._ptotal / stats.hurt._pcount
-        );
+        stats.hurt._pavg = Math.round(stats.hurt._ptotal / stats.hurt._pcount);
       } else {
         stats.hurt._mcount++;
         stats.hurt._mtotal += point;
-        stats.hurt._mavg = Math.round(
-          stats.hurt._mtotal / stats.hurt._mcount
-        );
+        stats.hurt._mavg = Math.round(stats.hurt._mtotal / stats.hurt._mcount);
       }
     } else if (
       text.match(/^[\w ]+ [a-z]+s [\w+ -]+ for \d+( .*)? damage/) ||
@@ -108,18 +99,14 @@ export function recordUsage(parm) {
       // text.match(/for \d+ .* damage/)
       reg = text.match(/for (\d+)( .*)? damage/);
       magic = text.match(/^[\w ]+ [a-z]+s [\w+ -]+ for/)
-        ? text
-            .match(/^([\w ]+) [a-z]+s [\w+ -]+ for/)[1]
-            .replace(/^Your /, "")
+        ? text.match(/^([\w ]+) [a-z]+s [\w+ -]+ for/)[1].replace(/^Your /, "")
         : text.match(/^You (\w+)/)[1];
       point = reg[1] * 1;
-      stats.damage[magic] =
-        magic in stats.damage ? stats.damage[magic] + point : point;
+      stats.damage[magic] = magic in stats.damage ? stats.damage[magic] + point : point;
     } else if (text.match(/Vital Theft hits .*? for \d+ damage/)) {
       magic = "Vital Theft";
       point = text.match(/Vital Theft hits .*? for (\d+) damage/)[1] * 1;
-      stats.damage[magic] =
-        magic in stats.damage ? stats.damage[magic] + point : point;
+      stats.damage[magic] = magic in stats.damage ? stats.damage[magic] + point : point;
     } else if (
       text.match(
         /You (evade|parry|block) the attack|misses the attack against you|(casts|uses) .* misses the attack/
@@ -143,23 +130,19 @@ export function recordUsage(parm) {
         parm.mode === "defend"
           ? "defend"
           : text.match(/You drain \d+ HP from/)
-          ? "drain"
-          : parm.magic || parm.item;
+            ? "drain"
+            : parm.magic || parm.item;
       point = text.match(/\d+/)[0] * 1;
-      stats.restore[magic] =
-        magic in stats.restore ? stats.restore[magic] + point : point;
+      stats.restore[magic] = magic in stats.restore ? stats.restore[magic] + point : point;
     } else if (text.match(/(restores|drain) \d+ points of/)) {
       reg =
         text.match(/^(.*) restores (\d+) points of (\w+)/) ||
         text.match(/^You (drain) (\d+) points of (\w+)/);
       magic = reg[1];
       point = reg[2] * 1;
-      stats.restore[magic] =
-        magic in stats.restore ? stats.restore[magic] + point : point;
+      stats.restore[magic] = magic in stats.restore ? stats.restore[magic] + point : point;
     } else if (
-      text.match(
-        /absorbs \d+ points of damage from the attack into \d+ points of \w+ damage/
-      )
+      text.match(/absorbs \d+ points of damage from the attack into \d+ points of \w+ damage/)
     ) {
       reg = text.match(
         /(.*) absorbs (\d+) points of damage from the attack into (\d+) points of (\w+) damage/
@@ -168,12 +151,10 @@ export function recordUsage(parm) {
       const prevText = parm.log[i - 1]?.textContent || "";
       const prevMatch = prevText.match(/you for (\d+) (\w+) damage/);
       magic = prevMatch ? prevMatch[2].replace("ing", "") : "unknown";
-      stats.hurt[magic] =
-        magic in stats.hurt ? stats.hurt[magic] + point : point;
+      stats.hurt[magic] = magic in stats.hurt ? stats.hurt[magic] + point : point;
       point = reg[3] * 1;
       magic = `${reg[1].replace("Your ", "")}_${reg[4]}`;
-      stats.hurt[magic] =
-        magic in stats.hurt ? stats.hurt[magic] + point : point;
+      stats.hurt[magic] = magic in stats.hurt ? stats.hurt[magic] + point : point;
     } else if (text.match(/You gain .* proficiency/)) {
       reg = text.match(/You gain ([\d.]+) points of (.*?) proficiency/);
       magic = reg[2];
@@ -201,22 +182,22 @@ export function recordUsage(parm) {
     console.table(stats);
     runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
   }
-  setValue("stats", stats);
+  setValue(STORAGE_KEYS.STATS, stats);
 }
 
 export function recordUsage2() {
-  const stats = getValue("stats", true);
+  const stats = getValue(STORAGE_KEYS.STATS, true);
   stats.self._monster += g("monsterAll");
   stats.self._boss += g("bossAll");
 
   if (g("option").recordEach && g("roundNow") === g("roundAll")) {
-    const old = getValue("statsOld", true) || [];
-    stats.__name = getValue("battleCode");
+    const old = getValue(STORAGE_KEYS.STATS_OLD, true) || [];
+    stats.__name = getValue(STORAGE_KEYS.BATTLE_CODE);
     stats.self._endTime = time(3);
     old.push(stats);
-    setValue("statsOld", old);
-    delValue("stats");
+    setValue(STORAGE_KEYS.STATS_OLD, old);
+    delValue(STORAGE_KEYS.STATS);
   } else {
-    setValue("stats", stats);
+    setValue(STORAGE_KEYS.STATS, stats);
   }
 }

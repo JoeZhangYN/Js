@@ -1,11 +1,12 @@
 // 战斗日志解析 + 掉落物追踪。
 import { gE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 
 export function dropMonitor(battleLog) {
-  const drop = getValue("drop", true) || {
+  const drop = getValue(STORAGE_KEYS.DROP, true) || {
     "#startTime": time(3),
     "#EXP": 0,
     "#Credit": 0,
@@ -50,8 +51,7 @@ export function dropMonitor(battleLog) {
         }
       }
     } else if (item.style.color === "rgb(186, 5, 180)") {
-      const [, amount = "1", crystalName = name] =
-        name.match(/^(\d+)x (Crystal of \w+)$/) || [];
+      const [, amount = "1", crystalName = name] = name.match(/^(\d+)x (Crystal of \w+)$/) || [];
       drop[crystalName] = (drop[crystalName] || 0) + Number(amount);
     } else if (item.style.color === "rgb(168, 144, 0)") {
       drop["#Credit"] += Number(name.match(/\d+/)[0]);
@@ -61,13 +61,13 @@ export function dropMonitor(battleLog) {
   }
 
   if (g("option").recordEach && g("roundNow") === g("roundAll")) {
-    const old = getValue("dropOld", true) || [];
-    drop.__name = getValue("battleCode");
+    const old = getValue(STORAGE_KEYS.DROP_OLD, true) || [];
+    drop.__name = getValue(STORAGE_KEYS.BATTLE_CODE);
     drop["#endTime"] = time(3);
     old.push(drop);
-    setValue("dropOld", old);
-    delValue("drop");
+    setValue(STORAGE_KEYS.DROP_OLD, old);
+    delValue(STORAGE_KEYS.DROP);
   } else {
-    setValue("drop", drop);
+    setValue(STORAGE_KEYS.DROP, drop);
   }
 }

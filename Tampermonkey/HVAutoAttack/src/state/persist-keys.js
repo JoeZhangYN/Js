@@ -5,6 +5,7 @@ export const STORAGE_KEYS = Object.freeze({
   OPTION: "option",
   SPELL_AOE: "spellAoe",
   DROP: "drop",
+  DROP_OLD: "dropOld",
   USAGE: "usage",
   USAGE2: "usage2",
   STATS: "stats",

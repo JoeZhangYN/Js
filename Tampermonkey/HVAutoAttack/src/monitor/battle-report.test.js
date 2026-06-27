@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { setValue, getValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { BattleMonitorEvent, runBattleMonitorAutomation } from "./battle-monitor-automation.js";
 
@@ -14,17 +15,17 @@ describe("battle report query", () => {
     g("roundAll", 5);
 
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
-    expect(getValue("battleCode")).toMatch(/: AR-5$/);
+    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toMatch(/: AR-5$/);
 
-    const firstCode = getValue("battleCode");
+    const firstCode = getValue(STORAGE_KEYS.BATTLE_CODE);
     g("roundType", "rb");
     g("roundAll", 1);
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
-    expect(getValue("battleCode")).toBe(firstCode);
+    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe(firstCode);
   });
 
   it("builds a single drop report from the active record", () => {
-    setValue("drop", { "#Credit": 12, "Health Potion": 1 });
+    setValue(STORAGE_KEYS.DROP, { "#Credit": 12, "Health Potion": 1 });
 
     expect(runBattleMonitorAutomation({ type: BattleMonitorEvent.READ_DROP_REPORT })).toEqual({
       mode: "single",
@@ -36,9 +37,9 @@ describe("battle report query", () => {
   });
 
   it("combines archived and active drop records for history view", () => {
-    setValue("battleCode", "now");
-    setValue("drop", { "#Credit": 12 });
-    setValue("dropOld", [{ __name: "old", "#EXP": 20 }]);
+    setValue(STORAGE_KEYS.BATTLE_CODE, "now");
+    setValue(STORAGE_KEYS.DROP, { "#Credit": 12 });
+    setValue(STORAGE_KEYS.DROP_OLD, [{ __name: "old", "#EXP": 20 }]);
 
     expect(runBattleMonitorAutomation({ type: BattleMonitorEvent.READ_DROP_REPORT })).toEqual({
       mode: "history",
@@ -51,9 +52,9 @@ describe("battle report query", () => {
   });
 
   it("builds usage sections and tolerates missing sections", () => {
-    setValue("battleCode", "now");
-    setValue("stats", { self: { _turn: 3 }, magic: { Fireball: 2 } });
-    setValue("statsOld", [{ __name: "old", self: { _turn: 1 } }]);
+    setValue(STORAGE_KEYS.BATTLE_CODE, "now");
+    setValue(STORAGE_KEYS.STATS, { self: { _turn: 3 }, magic: { Fireball: 2 } });
+    setValue(STORAGE_KEYS.STATS_OLD, [{ __name: "old", self: { _turn: 1 } }]);
 
     const report = runBattleMonitorAutomation({ type: BattleMonitorEvent.READ_USAGE_REPORT });
     expect(report.mode).toBe("history");
@@ -67,17 +68,17 @@ describe("battle report query", () => {
   });
 
   it("clears battle report storage through monitor-owned commands", () => {
-    setValue("drop", { a: 1 });
-    setValue("dropOld", [{ a: 2 }]);
-    setValue("stats", { self: {} });
-    setValue("statsOld", [{ self: {} }]);
+    setValue(STORAGE_KEYS.DROP, { a: 1 });
+    setValue(STORAGE_KEYS.DROP_OLD, [{ a: 2 }]);
+    setValue(STORAGE_KEYS.STATS, { self: {} });
+    setValue(STORAGE_KEYS.STATS_OLD, [{ self: {} }]);
 
     runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_DROP_REPORT });
     runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_USAGE_REPORT });
 
-    expect(getValue("drop", true)).toBeNull();
-    expect(getValue("dropOld", true)).toBeNull();
-    expect(getValue("stats", true)).toBeNull();
-    expect(getValue("statsOld", true)).toBeNull();
+    expect(getValue(STORAGE_KEYS.DROP, true)).toBeNull();
+    expect(getValue(STORAGE_KEYS.DROP_OLD, true)).toBeNull();
+    expect(getValue(STORAGE_KEYS.STATS, true)).toBeNull();
+    expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toBeNull();
   });
 });

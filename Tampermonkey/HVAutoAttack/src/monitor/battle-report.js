@@ -1,31 +1,27 @@
 import { getKeys, objSort } from "../core/obj.js";
 import { getValue, setValue, delValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
 
-const DROP_KEY = "drop";
-const DROP_OLD_KEY = "dropOld";
-const STATS_KEY = "stats";
-const STATS_OLD_KEY = "statsOld";
-const BATTLE_CODE_KEY = "battleCode";
 const USAGE_SECTIONS = ["self", "restore", "items", "magic", "damage", "hurt", "proficiency"];
 
 function withCurrentRecord(history, current) {
   const rows = [...history];
   if (current && Object.keys(current).length) {
-    rows.push({ ...current, __name: getValue(BATTLE_CODE_KEY) });
+    rows.push({ ...current, __name: getValue(STORAGE_KEYS.BATTLE_CODE) });
   }
   return rows.reverse();
 }
 
 export function recordBattleReportStarted({ recordEach, roundType, roundAll, recordLabel }) {
-  if (!recordEach || getValue(BATTLE_CODE_KEY)) return false;
-  setValue(BATTLE_CODE_KEY, `${recordLabel}: ${roundType.toUpperCase()}-${roundAll}`);
+  if (!recordEach || getValue(STORAGE_KEYS.BATTLE_CODE)) return false;
+  setValue(STORAGE_KEYS.BATTLE_CODE, `${recordLabel}: ${roundType.toUpperCase()}-${roundAll}`);
   return true;
 }
 
 export function readDropReport() {
-  let current = objSort(getValue(DROP_KEY, true) || {});
-  const history = getValue(DROP_OLD_KEY, true) || [];
-  if (history.length === 0 || (history.length === 1 && !getValue(DROP_KEY, true))) {
+  let current = objSort(getValue(STORAGE_KEYS.DROP, true) || {});
+  const history = getValue(STORAGE_KEYS.DROP_OLD, true) || [];
+  if (history.length === 0 || (history.length === 1 && !getValue(STORAGE_KEYS.DROP, true))) {
     if (history.length === 1) current = history[0];
     return {
       mode: "single",
@@ -46,9 +42,9 @@ export function readDropReport() {
 }
 
 export function readUsageReport() {
-  let current = getValue(STATS_KEY, true) || {};
-  const history = getValue(STATS_OLD_KEY, true) || [];
-  if (history.length === 0 || (history.length === 1 && !getValue(STATS_KEY, true))) {
+  let current = getValue(STORAGE_KEYS.STATS, true) || {};
+  const history = getValue(STORAGE_KEYS.STATS_OLD, true) || [];
+  if (history.length === 0 || (history.length === 1 && !getValue(STORAGE_KEYS.STATS, true))) {
     if (history.length === 1) current = history[0];
     return {
       mode: "single",
@@ -79,11 +75,11 @@ export function readUsageReport() {
 }
 
 export function clearDropReport() {
-  delValue(DROP_KEY);
-  delValue(DROP_OLD_KEY);
+  delValue(STORAGE_KEYS.DROP);
+  delValue(STORAGE_KEYS.DROP_OLD);
 }
 
 export function clearUsageReport() {
-  delValue(STATS_KEY);
-  delValue(STATS_OLD_KEY);
+  delValue(STORAGE_KEYS.STATS);
+  delValue(STORAGE_KEYS.STATS_OLD);
 }
