@@ -3,11 +3,13 @@ import { gE, cE } from "../dom/query.js";
 
 const EVENT_LOBBY_READY = "lobbyReady";
 const EVENT_RENDER_SETTINGS_TABLE_BODY = "renderSettingsTableBody";
+const EVENT_RENDER_SETTINGS_EMPTY_ROW = "renderSettingsEmptyRow";
 const EVENT_COLLECT_SETTINGS_INPUTS = "collectSettingsInputs";
 
 export const QuickSiteEvent = Object.freeze({
   LOBBY_READY: EVENT_LOBBY_READY,
   RENDER_SETTINGS_TABLE_BODY: EVENT_RENDER_SETTINGS_TABLE_BODY,
+  RENDER_SETTINGS_EMPTY_ROW: EVENT_RENDER_SETTINGS_EMPTY_ROW,
   COLLECT_SETTINGS_INPUTS: EVENT_COLLECT_SETTINGS_INPUTS,
 });
 
@@ -55,6 +57,10 @@ function renderSettingsTableBody(option) {
   return html;
 }
 
+function renderSettingsEmptyRow() {
+  return '<td><input class="hvAADebug" type="text"></td><td><input class="hvAADebug" type="text"></td><td><input class="hvAADebug" type="text"></td>';
+}
+
 function collectSettingsInputs(option, inputs) {
   if (!inputs?.length) return option;
   option.quickSite = [];
@@ -73,6 +79,7 @@ function collectSettingsInputs(option, inputs) {
 export function runQuickSiteAutomation(event = { type: EVENT_LOBBY_READY }) {
   if (event.type === EVENT_LOBBY_READY) return renderQuickSite(event.option);
   if (event.type === EVENT_RENDER_SETTINGS_TABLE_BODY) return renderSettingsTableBody(event.option);
+  if (event.type === EVENT_RENDER_SETTINGS_EMPTY_ROW) return renderSettingsEmptyRow();
   if (event.type === EVENT_COLLECT_SETTINGS_INPUTS)
     return collectSettingsInputs(event.option, event.inputs);
   return false;

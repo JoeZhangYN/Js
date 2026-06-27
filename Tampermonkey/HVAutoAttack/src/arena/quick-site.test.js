@@ -71,6 +71,16 @@ describe("quick site entry", () => {
     ).toBe("");
   });
 
+  it("renders settings empty row through the quick site entry", () => {
+    expect(
+      runQuickSiteAutomation({
+        type: QuickSiteEvent.RENDER_SETTINGS_EMPTY_ROW,
+      })
+    ).toBe(
+      '<td><input class="hvAADebug" type="text"></td><td><input class="hvAADebug" type="text"></td><td><input class="hvAADebug" type="text"></td>'
+    );
+  });
+
   it("collects settings inputs through the quick site entry", () => {
     const inputs = [
       { value: "https://example.test/favicon.ico" },

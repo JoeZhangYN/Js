@@ -637,8 +637,9 @@ export function optionBox() {
   };
   gE(".quickSiteAdd", optionBox).onclick = function () {
     const tr = gE(".hvAAQuickSite>table>tbody", optionBox).appendChild(cE("tr"));
-    tr.innerHTML =
-      '<td><input class="hvAADebug" type="text"></td><td><input class="hvAADebug" type="text"></td><td><input class="hvAADebug" type="text"></td>';
+    tr.innerHTML = runQuickSiteAutomation({
+      type: QuickSiteEvent.RENDER_SETTINGS_EMPTY_ROW,
+    });
   };
   gE(".hvAAConfig", optionBox).onclick = function () {
     this.style.height = 0;

@@ -61,6 +61,12 @@ function checkFile(file) {
     if (relative === settings && /\bi\.(?:fav|name|url)\b/.test(line)) {
       violations.push(`${where} settings must not know quickSite row fields`);
     }
+    if (
+      relative === settings &&
+      /<td><input class=["']hvAADebug["'] type=["']text["']>/.test(line)
+    ) {
+      violations.push(`${where} settings must request quickSite row HTML from QuickSiteEvent`);
+    }
   });
 }
 
@@ -81,6 +87,11 @@ if (!settingsText.includes("QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY")) {
 if (!settingsText.includes("QuickSiteEvent.COLLECT_SETTINGS_INPUTS")) {
   violations.push(
     `${settings.replaceAll("\\", "/")} must collect quick site settings through the entry`
+  );
+}
+if (!settingsText.includes("QuickSiteEvent.RENDER_SETTINGS_EMPTY_ROW")) {
+  violations.push(
+    `${settings.replaceAll("\\", "/")} must request quick site empty rows through the entry`
   );
 }
 if (/export\s+function\s+quickSite\s*\(/.test(ownerText)) {
