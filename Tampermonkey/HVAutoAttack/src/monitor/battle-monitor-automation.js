@@ -4,17 +4,31 @@ import { g } from "../state/store.js";
 import { battleInfo } from "./battle-info.js";
 import { dropMonitor } from "./drop-monitor.js";
 import { recordUsage, recordUsage2 } from "./record-usage.js";
+import {
+  clearDropReport,
+  clearUsageReport,
+  readDropReport,
+  readUsageReport,
+} from "./battle-report.js";
 
 const EVENT_HUD_REFRESH = "hudRefresh";
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
 const EVENT_COMPLETION_REACHED = "completionReached";
+const EVENT_READ_DROP_REPORT = "readDropReport";
+const EVENT_READ_USAGE_REPORT = "readUsageReport";
+const EVENT_CLEAR_DROP_REPORT = "clearDropReport";
+const EVENT_CLEAR_USAGE_REPORT = "clearUsageReport";
 
 export const BattleMonitorEvent = Object.freeze({
   HUD_REFRESH: EVENT_HUD_REFRESH,
   ACTION_STARTED: EVENT_ACTION_STARTED,
   ACTION_ENDED: EVENT_ACTION_ENDED,
   COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
+  READ_DROP_REPORT: EVENT_READ_DROP_REPORT,
+  READ_USAGE_REPORT: EVENT_READ_USAGE_REPORT,
+  CLEAR_DROP_REPORT: EVENT_CLEAR_DROP_REPORT,
+  CLEAR_USAGE_REPORT: EVENT_CLEAR_USAGE_REPORT,
 });
 
 let pendingUsage;
@@ -27,17 +41,13 @@ function readActionUsage() {
   const action = unsafeWindow.info;
   pendingUsage = { mode: action.mode };
   if (action.mode === "items") {
-    const itemEl = gE(
-      `#pane_item div[id^="ikey"][onclick*="skill('${action.skill}')"]`
-    );
+    const itemEl = gE(`#pane_item div[id^="ikey"][onclick*="skill('${action.skill}')"]`);
     pendingUsage.item = itemEl ? itemEl.textContent : action.skill;
   } else if (action.mode === "magic") {
     const magicEl = gE(action.skill);
     pendingUsage.magic = magicEl ? magicEl.textContent : action.skill;
     const onmouseover = magicEl ? magicEl.getAttribute("onmouseover") : null;
-    const cost = onmouseover
-      ? onmouseover.match(/\('.*', '.*', '.*', (\d+), (\d+), \d+\)/)
-      : null;
+    const cost = onmouseover ? onmouseover.match(/\('.*', '.*', '.*', (\d+), (\d+), \d+\)/) : null;
     pendingUsage.mp = cost ? cost[1] * 1 : 0;
     pendingUsage.oc = cost ? cost[2] * 1 : 0;
   }
@@ -64,5 +74,14 @@ export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) 
     recordActionEnd();
   } else if (event.type === EVENT_COMPLETION_REACHED) {
     recordCompletion();
+  } else if (event.type === EVENT_READ_DROP_REPORT) {
+    return readDropReport();
+  } else if (event.type === EVENT_READ_USAGE_REPORT) {
+    return readUsageReport();
+  } else if (event.type === EVENT_CLEAR_DROP_REPORT) {
+    clearDropReport();
+  } else if (event.type === EVENT_CLEAR_USAGE_REPORT) {
+    clearUsageReport();
   }
+  return undefined;
 }

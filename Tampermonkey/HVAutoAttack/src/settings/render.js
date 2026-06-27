@@ -1,22 +1,23 @@
 // 整个配置面板的 HTML 模板渲染 + 事件绑定。
 // 阶段 5 改成 OPTION_SCHEMA-driven。当前 chunk 2 仅做物理搬迁，行为不变。
 // file-size-gate: exempt phase-3-monolith
-/* eslint-disable camelcase */
 import { gE, cE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { setNotification } from "../alarm/alarm.js";
 import { goto } from "../core/navigate.js";
-import { post } from "../dom/http.js";
 import { time } from "../core/time.js";
-import { objSort, getKeys } from "../core/obj.js";
 import { customizeBox } from "./customize.js";
 import { OPTION_SCHEMA } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
 import { setOption } from "../state/option.js";
 import { getRiddleStats, resetRiddleStats, ML_OUTCOMES } from "../state/riddle-stats.js";
 import { getRiddleLog, clearRiddleLog } from "../state/riddle-log.js";
+import {
+  BattleMonitorEvent,
+  runBattleMonitorAutomation,
+} from "../monitor/battle-monitor-automation.js";
 
 /**
  * 从 OPTION_SCHEMA 渲染 "checkbox + number + 单位文本" 这类成对字段。
@@ -46,14 +47,12 @@ function renderCheckboxPlusNumber(checkboxKey, numberKey, unit) {
  */
 export function openHVAAConfig(lang) {
   if (gE("#hvAABox")) {
-    gE("#hvAABox").style.display =
-      gE("#hvAABox").style.display === "none" ? "block" : "none";
+    gE("#hvAABox").style.display = gE("#hvAABox").style.display === "none" ? "block" : "none";
   } else {
     optionBox();
     gE("#hvAATab-Main").style.zIndex = 1;
     // option 已装填时 select[name=lang] 由 optionBox 回填循环统一设值；仅首次(option 未落盘)用 lang/持久化值兜底。
-    if (!g("option"))
-      gE('select[name="lang"]').value = String(lang ?? g("lang") ?? "0");
+    if (!g("option")) gE('select[name="lang"]').value = String(lang ?? g("lang") ?? "0");
   }
 }
 
@@ -128,7 +127,7 @@ export function optionBox() {
     '    <input id="stallFocus" type="checkbox" checked data-default-on><label for="stallFocus"><l0>拖战时 OC 高优先 Focus 换 Channeling（mana regen）</l0><l1>拖戰時 Focus 換 Channeling</l1><l2>Stall: prefer Focus when OC high (Channeling for MP regen)</l2></label> (OC≥<input class="hvAANumber" name="stallFocusOcThreshold" placeholder="60" type="text">, MP&lt;<input class="hvAANumber" name="stallFocusMpMax" placeholder="80" type="text">%)<br>',
     '    <l0>拖战 Draught 阈值</l0><l1>拖戰 Draught 閾值</l1><l2>Stall Draught threshold</l2>: MP&lt;<input class="hvAANumber" name="stallTopupMpFloor" placeholder="70" type="text">%, SP&lt;<input class="hvAANumber" name="stallTopupSpFloor" placeholder="70" type="text">%<br>',
     '    <input id="stallTurnOffSpirit" type="checkbox" checked data-default-on><label for="stallTurnOffSpirit"><l0>拖战时关闭 Spirit Stance（避免与 Focus 双向耗 OC）</l0><l1>拖戰時關閉 Spirit Stance</l1><l2>Stall: turn off Spirit Stance (avoid double OC drain with Focus)</l2></label>',
-    '  </div>',
+    "  </div>",
     renderCheckboxPlusNumber("pauseOnCriticalBuffExpire", "criticalBuffMinTurns", {
       l0: "回合（关键 buff 剩余 ≤N 且 MP 不足时暂停脚本，需先在下方填关键 buff 名）",
       l1: "回合（關鍵 buff 剩餘 ≤N 且 MP 不足時暫停腳本，需先在下方填關鍵 buff 名）",
@@ -198,19 +197,19 @@ export function optionBox() {
     "  </div>",
     '<div class="hvAATab" id="hvAATab-Spell">',
     '  <div><l0>当<a class="hvAAGoto" name="hvAATab-Main"><b>攻击模式</b></a>为法术时生效</l0><l1>當<a class="hvAAGoto" name="hvAATab-Main"><b>攻擊模式</b></a>為法術時生效</l1><l2>Active when <a class="hvAAGoto" name="hvAATab-Main"><b>Attack Mode</b></a> is set to a spell element</l2></div>',
-    '  <div><b><l0>高阶技能使用条件</l0><l1>高階技能使用條件</l1><l2>Conditions for 3rd Tier</l2></b>: {{highSkillCondition}}</div>',
-    '  <div><b><l0>中阶技能使用条件</l0><l1>中階技能使用條件</l1><l2>Conditions for 2nd Tier</l2></b>: {{middleSkillCondition}}</div>',
-    '  <div><l0>T1: 无条件限制，始终可用</l0><l1>T1: 無條件限制，始終可用</l1><l2>T1: No condition, always available</l2></div>',
+    "  <div><b><l0>高阶技能使用条件</l0><l1>高階技能使用條件</l1><l2>Conditions for 3rd Tier</l2></b>: {{highSkillCondition}}</div>",
+    "  <div><b><l0>中阶技能使用条件</l0><l1>中階技能使用條件</l1><l2>Conditions for 2nd Tier</l2></b>: {{middleSkillCondition}}</div>",
+    "  <div><l0>T1: 无条件限制，始终可用</l0><l1>T1: 無條件限制，始終可用</l1><l2>T1: No condition, always available</l2></div>",
     '  <div><input id="channelForceHighTier" type="checkbox" checked data-default-on>',
     '    <label for="channelForceHighTier"><b>Channeling <l0>强制最高阶</l0><l1>強制最高階</l1><l2>Force Highest Tier</l2></b></label>:',
-    '    <l0>Channeling 时 (150% 伤害, 1 MP) 跳过条件检查，使用最高可用阶法术</l0><l1>Channeling 時 (150% 傷害, 1 MP) 跳過條件檢查，使用最高可用階法術</l1><l2>During Channeling (150% dmg, 1 MP), skip condition checks and use highest available tier</l2></div>',
+    "    <l0>Channeling 时 (150% 伤害, 1 MP) 跳过条件检查，使用最高可用阶法术</l0><l1>Channeling 時 (150% 傷害, 1 MP) 跳過條件檢查，使用最高可用階法術</l1><l2>During Channeling (150% dmg, 1 MP), skip condition checks and use highest available tier</l2></div>",
     '  <div><input id="spellTierDowngrade" type="checkbox" checked data-default-on>',
     '    <label for="spellTierDowngrade"><b><l0>少怪降级</l0><l1>少怪降級</l1><l2>Few Monsters Downgrade</l2></b></label>:',
     '    <l0>存活怪物</l0><l1>存活怪物</l1><l2>Alive monsters</l2> ≤ <input class="hvAANumber" name="spellDowngradeThreshold" placeholder="3" type="text">',
-    '    <l0>时仅用 T1 节省 MP (Channeling 时不降级)</l0><l1>時僅用 T1 節省 MP (Channeling 時不降級)</l1><l2>: use T1 only to save MP (does not apply during Channeling)</l2></div>',
-    '  <div><b>AoE</b>:',
+    "    <l0>时仅用 T1 节省 MP (Channeling 时不降级)</l0><l1>時僅用 T1 節省 MP (Channeling 時不降級)</l1><l2>: use T1 only to save MP (does not apply during Channeling)</l2></div>",
+    "  <div><b>AoE</b>:",
     '    <l0>访问</l0><l1>訪問</l1><l2>Visit</l2> <a href="?s=Character&ss=ab" target="_blank"><l0>技能页面</l0><l1>技能頁面</l1><l2>Ability Page</l2></a>',
-    '    <l0>自动检测法术 AoE 目标数</l0><l1>自動檢測法術 AoE 目標數</l1><l2>to auto-detect spell AoE target counts</l2></div></div>',
+    "    <l0>自动检测法术 AoE 目标数</l0><l1>自動檢測法術 AoE 目標數</l1><l2>to auto-detect spell AoE target counts</l2></div></div>",
     '<div class="hvAATab" id="hvAATab-Item">',
     '  <div class="itemOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: <input name="itemOrderName" style="width:80%;" type="text" disabled="true"><input name="itemOrderValue" style="width:80%;" type="hidden" disabled="true"><br>',
     '    <input id="itemOrder_Cure" value="Cure,311" type="checkbox"><label for="itemOrder_Cure">Cure</label><input id="itemOrder_FC" value="FC,313" type="checkbox"><label for="itemOrder_FC">Full-Cure</label><input id="itemOrder_HP" value="HP,11195" type="checkbox"><label for="itemOrder_HP">Health Potion</label><input id="itemOrder_HE" value="HE,11199" type="checkbox"><label for="itemOrder_HE">Health Elixir</label><input id="itemOrder_MP" value="MP,11295" type="checkbox"><label for="itemOrder_MP">Mana Potion</label><br>',
@@ -270,11 +269,11 @@ export function optionBox() {
     '    <l0>CD 阈值（剩余 ≤ N 回合时触发）</l0><l1>CD 閾值（剩餘 ≤ N 回合時觸發）</l1><l2>CD threshold (turns)</l2>: <input class="hvAANumber" name="skipDebuffForBigSkillThreshold" placeholder="3" type="text"><br>',
     '    <input id="skipImperilWhenOfcKills" type="checkbox"><label for="skipImperilWhenOfcKills"><l0>【实验】OFC 能秒该 boss（历史确认，无 imperil）则连 Imperil 都跳</l0><l1>【實驗】OFC 能秒該 boss（歷史確認，無 imperil）則連 Imperil 都跳</l1><l2>[Exp] Skip Imperil when OFC confirmed to one-shot this boss</l2></label><br>',
     '    <l0>　信任阈值</l0><l1>　信任閾值</l1><l2>　Trust</l2>: <l0>样本≥</l0><l1>樣本≥</l1><l2>samples≥</l2><input class="hvAANumber" name="bigKillMinSamples" placeholder="4" type="text"> <l0>击杀率≥</l0><l1>擊殺率≥</l1><l2>killrate≥</l2><input class="hvAANumber" name="bigKillProbThreshold" placeholder="0.9" type="text"> <l0>满血漂移≤</l0><l1>滿血漂移≤</l1><l2>drift≤</l2><input class="hvAANumber" name="bigKillScaleDriftTol" placeholder="1.15" type="text">',
-    '  </div>',
+    "  </div>",
     '  <div style="border:1px dashed #888;padding:3px;"><b><l0>爆发防护（实验，默认关）</l0><l1>爆發防護（實驗，默認關）</l1><l2>Burst Guard (Exp, off)</l2></b><br>',
     '    <input id="burstControlSwitch" type="checkbox"><label for="burstControlSwitch"><l0>学致死爆发伤害 → 对高爆发怪单点 Silence(法术)/Sleep(物理) 防血量蹦极</l0><l1>學致死爆發傷害 → 對高爆發怪單點 Silence(法術)/Sleep(物理) 防血量蹦極</l1><l2>Learn lethal burst → single-target Silence/Sleep to prevent HP bungee</l2></label><br>',
     '    <l0>　蹦极阈值 单发≥当前血</l0><l1>　蹦極閾值 單發≥當前血</l1><l2>　Bungee: single hit ≥ current HP</l2> <input class="hvAANumber" name="burstControlHpFrac" placeholder="50" type="text">% <input id="burstControlSilenceForSpell" type="checkbox" checked data-default-on><label for="burstControlSilenceForSpell"><l0>法术爆发用 Silence</l0><l1>法術爆發用 Silence</l1><l2>Silence for spell bursts</l2></label>',
-    '  </div>',
+    "  </div>",
     '    <div><input id="debuffSkill_Sle" type="checkbox"><label for="debuffSkill_Sle">Sleep</label>{{debuffSkillSleCondition}}</div>',
     '    <div><input id="debuffSkill_Bl" type="checkbox"><label for="debuffSkill_Bl">Blind</label>{{debuffSkillBlCondition}}</div>',
     '    <div><input id="debuffSkill_Slo" type="checkbox"><label for="debuffSkill_Slo">Slow</label>{{debuffSkillSloCondition}}</div>',
@@ -285,7 +284,7 @@ export function optionBox() {
     '    <div style="padding-left:1.5em;"><input id="drainTargetMaxHp" type="checkbox" checked data-default-on><label for="drainTargetMaxHp"><l0>　└ Drain 优先打血最多的敌人（存活最久，drain 生效最久）</l0><l1>　└ Drain 優先打血最多的敵人（存活最久，drain 生效最久）</l1><l2>　└ Drain targets highest-HP enemy (survives longest, drain lasts longest)</l2></label></div>',
     '    <div><input id="debuffSkill_We" type="checkbox"><label for="debuffSkill_We">Weaken</label>{{debuffSkillWeCondition}}</div>',
     '    <div><input id="debuffSkill_Co" type="checkbox"><label for="debuffSkill_Co">Confuse</label>{{debuffSkillCoCondition}}</div>',
-    '  <div>AoE: <l0>当前技能等级下影响的目标数(1=单体, 3=范围)</l0><l1>當前技能等級下影響的目標數(1=單體, 3=範圍)</l1><l2>Targets affected at current skill level (1=single, 3=AoE)</l2><br>',
+    "  <div>AoE: <l0>当前技能等级下影响的目标数(1=单体, 3=范围)</l0><l1>當前技能等級下影響的目標數(1=單體, 3=範圍)</l1><l2>Targets affected at current skill level (1=single, 3=AoE)</l2><br>",
     '    Sleep: <input class="hvAANumber" name="debuffSkillAoe_Sle" placeholder="1" type="text"> Blind: <input class="hvAANumber" name="debuffSkillAoe_Bl" placeholder="1" type="text"> Slow: <input class="hvAANumber" name="debuffSkillAoe_Slo" placeholder="1" type="text"><br>',
     '    Imperil: <input class="hvAANumber" name="debuffSkillAoe_Im" placeholder="1" type="text"> MagNet: <input class="hvAANumber" name="debuffSkillAoe_MN" placeholder="1" type="text"> Silence: <input class="hvAANumber" name="debuffSkillAoe_Si" placeholder="1" type="text"><br>',
     '    Drain: <input class="hvAANumber" name="debuffSkillAoe_Dr" placeholder="1" type="text"> Weaken: <input class="hvAANumber" name="debuffSkillAoe_We" placeholder="1" type="text"> Confuse: <input class="hvAANumber" name="debuffSkillAoe_Co" placeholder="1" type="text"> </div>',
@@ -307,7 +306,7 @@ export function optionBox() {
     '  <div><input id="physicalSkillDowngrade" type="checkbox" checked data-default-on>',
     '    <label for="physicalSkillDowngrade"><b><l0>少怪降级</l0><l1>少怪降級</l1><l2>Few Monsters Downgrade</l2></b></label>:',
     '    <l0>存活怪物</l0><l1>存活怪物</l1><l2>Alive monsters</l2> ≤ <input class="hvAANumber" name="physicalDowngradeThreshold" placeholder="3" type="text">',
-    '    <l0>时跳过 OFC/FRD 全体攻击节省 OC (流派技能总伤害不受怪物数影响, 不跳过)</l0><l1>時跳過 OFC/FRD 全體攻擊節省 OC (流派技能總傷害不受怪物數影響, 不跳過)</l1><l2>: skip OFC/FRD to save OC (style skills total damage unaffected by monster count, not skipped)</l2></div>',
+    "    <l0>时跳过 OFC/FRD 全体攻击节省 OC (流派技能总伤害不受怪物数影响, 不跳过)</l0><l1>時跳過 OFC/FRD 全體攻擊節省 OC (流派技能總傷害不受怪物數影響, 不跳過)</l1><l2>: skip OFC/FRD to save OC (style skills total damage unaffected by monster count, not skipped)</l2></div>",
     '  <div>AoE: <l0>当前技能等级下影响的目标数(1=单体, 3=范围)，访问</l0><l1>當前技能等級下影響的目標數(1=單體, 3=範圍)，訪問</l1><l2>Targets affected at current skill level (1=single, 3=AoE), visit </l2><a href="?s=Character&ss=ab" target="_blank"><l0>技能页面</l0><l1>技能頁面</l1><l2>Ability Page</l2></a><l0>自动检测</l0><l1>自動檢測</l1><l2> to auto-detect</l2><br>',
     '    Fire: T1:<input class="hvAANumber" name="spellAoe_11" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_12" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_13" placeholder="1" type="text"><br>',
     '    Cold: T1:<input class="hvAANumber" name="spellAoe_21" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_22" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_23" placeholder="1" type="text"><br>',
@@ -386,9 +385,7 @@ export function optionBox() {
   // 绑定事件
   gE('select[name="lang"]', optionBox).onchange = function () {
     // 选择语言
-    gE(
-      ".hvAA-LangStyle"
-    ).textContent = `l${this.value}{display:inline!important;}`;
+    gE(".hvAA-LangStyle").textContent = `l${this.value}{display:inline!important;}`;
     if (/^[01]$/.test(this.value))
       gE(".hvAA-LangStyle").textContent += "l01{display:inline!important;}";
     g("lang", this.value);
@@ -404,46 +401,31 @@ export function optionBox() {
   gE(".hvAATabmenu", optionBox).onclick = function (e) {
     // 标签页事件
     if (e.target.tagName === "INPUT") return;
-    const target =
-      e.target.tagName === "SPAN" ? e.target : e.target.parentNode;
+    const target = e.target.tagName === "SPAN" ? e.target : e.target.parentNode;
     const name = target.getAttribute("name");
     let i;
     let _html;
     if (name === "Drop") {
       // 掉落监测
-      let drop = getValue("drop", true) || {};
-      const dropOld = getValue("dropOld", true) || [];
-      drop = objSort(drop);
+      const report = runBattleMonitorAutomation({
+        type: BattleMonitorEvent.READ_DROP_REPORT,
+      });
       _html = "<tbody>";
-      if (
-        dropOld.length === 0 ||
-        (dropOld.length === 1 && !getValue("drop", true))
-      ) {
-        if (dropOld.length === 1) drop = dropOld[0];
+      if (report.mode === "single") {
         _html = `${_html}<tr class="hvAATh"><td></td><td><l0>数量</l0><l1>數量</l1><l2>Amount</l2></td></tr>`;
-        for (i in drop) {
-          _html = `${_html}<tr><td>${i}</td><td>${drop[i]}</td></tr>`;
-        }
+        report.rows.forEach((row) => {
+          _html = `${_html}<tr><td>${row.key}</td><td>${row.value}</td></tr>`;
+        });
       } else {
-        if (getValue("drop")) {
-          drop.__name = getValue("battleCode");
-          dropOld.push(drop);
-        }
-        dropOld.reverse();
         _html = `${_html}<tr class="hvAATh"><td class="selectTable"></td>`;
-        dropOld.forEach((_dropOld) => {
-          _html = `${_html}<td>${_dropOld.__name}</td>`;
+        report.columns.forEach((name) => {
+          _html = `${_html}<td>${name}</td>`;
         });
         _html = `${_html}</tr>`;
-        getKeys(dropOld).forEach((key) => {
-          if (key === "__name") return;
-          _html = `${_html}<tr><td>${key}</td>`;
-          dropOld.forEach((_dropOld) => {
-            if (key in _dropOld) {
-              _html = `${_html}<td>${_dropOld[key]}</td>`;
-            } else {
-              _html = `${_html}<td></td>`;
-            }
+        report.rows.forEach((row) => {
+          _html = `${_html}<tr><td>${row.key}</td>`;
+          row.values.forEach((value) => {
+            _html = `${_html}<td>${value}</td>`;
           });
           _html = `${_html}</tr>`;
         });
@@ -452,60 +434,42 @@ export function optionBox() {
       gE("#hvAATab-Drop>table").innerHTML = _html;
     } else if (name === "Usage") {
       // 数据记录
-      let stats = getValue("stats", true) || {};
-      const statsOld = getValue("statsOld", true) || [];
+      const report = runBattleMonitorAutomation({
+        type: BattleMonitorEvent.READ_USAGE_REPORT,
+      });
       const translation = {
         self: "<l0>自身 (次数)</l0><l1>自身 (次數)</l1><l2>Self (Frequency)</l2>",
-        restore:
-          "<l0>回复 (总量)</l0><l1>回复 (總量)</l1><l2>Restore (Amount)</l2>",
-        items:
-          "<l0>物品 (次数)</l0><l1>物品 (次數)</l1><l2>Items (Frequency)</l2>",
-        magic:
-          "<l0>技能 (次数)</l0><l1>技能 (次數)</l1><l2>Magic (Frequency)</l2>",
-        damage:
-          "<l0>伤害 (总量)</l0><l1>傷害 (總量)</l1><l2>Damage (Amount)</l2>",
+        restore: "<l0>回复 (总量)</l0><l1>回复 (總量)</l1><l2>Restore (Amount)</l2>",
+        items: "<l0>物品 (次数)</l0><l1>物品 (次數)</l1><l2>Items (Frequency)</l2>",
+        magic: "<l0>技能 (次数)</l0><l1>技能 (次數)</l1><l2>Magic (Frequency)</l2>",
+        damage: "<l0>伤害 (总量)</l0><l1>傷害 (總量)</l1><l2>Damage (Amount)</l2>",
         hurt: "<l0>受伤 (总量)</l0><l1>受傷 (總量)</l1><l2>Loss (Amount)</l2>",
-        proficiency:
-          "<l0>熟练度 (总量)</l0><l1>熟練度 (總量)</l1><l2>Proficiency (Amount)</l2>",
+        proficiency: "<l0>熟练度 (总量)</l0><l1>熟練度 (總量)</l1><l2>Proficiency (Amount)</l2>",
       };
       _html = "<tbody>";
-      if (
-        statsOld.length === 0 ||
-        (statsOld.length === 1 && !getValue("stats", true))
-      ) {
-        if (statsOld.length === 1) stats = statsOld[0];
-        for (i in stats) {
-          _html = `${_html}<tr class="hvAATh"><td>${translation[i]}</td><td><l01>值</l01><l2>Value</l2></td></tr>`;
-          stats[i] = objSort(stats[i]);
-          for (const j in stats[i]) {
-            _html = `${_html}<tr><td>${j}</td><td>${stats[i][j]}</td></tr>`;
-          }
-        }
+      if (report.mode === "single") {
+        report.sections.forEach((section) => {
+          _html = `${_html}<tr class="hvAATh"><td>${translation[section.key]}</td><td><l01>值</l01><l2>Value</l2></td></tr>`;
+          section.rows.forEach((row) => {
+            _html = `${_html}<tr><td>${row.key}</td><td>${row.value}</td></tr>`;
+          });
+        });
       } else {
-        if (getValue("stats")) {
-          stats.__name = getValue("battleCode");
-          statsOld.push(stats);
-        }
-        statsOld.reverse();
         _html = `${_html}<tr class="hvAATh"><td class="selectTable"></td>`;
-        statsOld.forEach((_dropOld) => {
-          _html = `${_html}<td>${_dropOld.__name}</td>`;
+        report.columns.forEach((name) => {
+          _html = `${_html}<td>${name}</td>`;
         });
         _html = `${_html}</tr>`;
-        Object.keys(translation).forEach((i) => {
-          if (i === "__name") return;
+        report.sections.forEach((section) => {
           _html = `${_html}<tr class="hvAATh"><td colspan="${
-            statsOld.length + 1
-          }">${translation[i]}</td></tr>`;
-          getKeys(statsOld, i).forEach((key) => {
-            _html = `${_html}<tr><td>${key}</td>`;
-            statsOld.forEach((_statsOld) => {
-              if (key in _statsOld[i]) {
-                _html = `${_html}<td>${_statsOld[i][key]}</td>`;
-              } else {
-                _html = `${_html}<td></td>`;
-              }
+            report.columns.length + 1
+          }">${translation[section.key]}</td></tr>`;
+          section.rows.forEach((row) => {
+            _html = `${_html}<tr><td>${row.key}</td>`;
+            row.values.forEach((value) => {
+              _html = `${_html}<td>${value}</td>`;
             });
+            _html = `${_html}</tr>`;
           });
         });
       }
@@ -570,26 +534,18 @@ export function optionBox() {
   };
   gE(".hvAAGoto", "all", optionBox).forEach((i) => {
     i.onclick = function () {
-      gE(
-        `.hvAATabmenu>span[name="${this.name.replace("hvAATab-", "")}"]`
-      ).click();
+      gE(`.hvAATabmenu>span[name="${this.name.replace("hvAATab-", "")}"]`).click();
     };
   });
 
   function updateGroup() {
     const group = gE(".customizeGroup", "all", g("customizeTarget"));
     const customizeBox = gE(".customizeBox");
-    if (
-      group.length + 1 ===
-      gE('select[name="groupChoose"]>option', "all", customizeBox).length
-    )
+    if (group.length + 1 === gE('select[name="groupChoose"]>option', "all", customizeBox).length)
       return;
     gE('select[name="groupChoose"]', customizeBox).textContent = "";
     for (let i = 0; i <= group.length; i++) {
-      const option = gE(
-        'select[name="groupChoose"]',
-        customizeBox
-      ).appendChild(cE("option"));
+      const option = gE('select[name="groupChoose"]', customizeBox).appendChild(cE("option"));
       if (i === group.length) {
         option.value = "new";
         option.textContent = "new";
@@ -605,16 +561,12 @@ export function optionBox() {
       e.target.className === "customize"
         ? e.target
         : e.target.parentNode.className === "customize"
-        ? e.target.parentNode
-        : e.target.parentNode.parentNode;
+          ? e.target.parentNode
+          : e.target.parentNode.parentNode;
     if (!gE(".customizeBox")) customizeBox();
     updateGroup();
-    if (
-      target.className !== "customize" &&
-      target.parentNode.className !== "customize"
-    ) {
-      if (!target.className.match("customize"))
-        gE(".customizeBox").style.zIndex = -1;
+    if (target.className !== "customize" && target.parentNode.className !== "customize") {
+      if (!target.className.match("customize")) gE(".customizeBox").style.zIndex = -1;
       return;
     }
     g("customizeTarget", target);
@@ -673,8 +625,7 @@ export function optionBox() {
       setValue("staminaLostLog", {});
   };
   gE(".idleArenaReset", optionBox).onclick = function () {
-    if (_alert(1, "是否重置", "是否重置", "Whether to reset"))
-      delValue("arena");
+    if (_alert(1, "是否重置", "是否重置", "Whether to reset")) delValue("arena");
   };
   gE(".hvAAShowLevels", optionBox).onclick = function () {
     gE(".hvAAArenaLevels").style.display =
@@ -692,9 +643,7 @@ export function optionBox() {
     if (checked) {
       el.value = el.value + (el.value ? `,${item}` : item);
     } else {
-      el.value = el.value
-        .replace(new RegExp(`(^|,)${item}(,|$)`), "$2")
-        .replace(/^,/, "");
+      el.value = el.value.replace(new RegExp(`(^|,)${item}(,|$)`), "$2").replace(/^,/, "");
     }
   }
   function makeOrderHandler(nameInput, valueInput) {
@@ -716,7 +665,10 @@ export function optionBox() {
   // 标签页-物品
   gE(".itemOrder", optionBox).onclick = makeOrderHandler("itemOrderName", "itemOrderValue");
   // 标签页-Channel技能
-  gE(".channelSkill2Order", optionBox).onclick = makeOrderHandler("channelSkill2OrderName", "channelSkill2OrderValue");
+  gE(".channelSkill2Order", optionBox).onclick = makeOrderHandler(
+    "channelSkill2OrderName",
+    "channelSkill2OrderValue"
+  );
   // 标签页-BUFF技能
   gE(".buffSkillOrder", optionBox).onclick = makeSingleOrderHandler("buffSkillOrderValue");
   // 标签页-DEBUFF技能
@@ -751,15 +703,13 @@ export function optionBox() {
   // 标签页-掉落监测
   gE(".reDropMonitor", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      delValue("drop");
-      delValue("dropOld");
+      runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_DROP_REPORT });
     }
   };
   // 标签页-数据记录
   gE(".reRecordUsage", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      delValue("stats");
-      delValue("statsOld");
+      runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_USAGE_REPORT });
     }
   };
   // 标签页-小马验证
@@ -776,9 +726,7 @@ export function optionBox() {
     });
   };
   gE(".quickSiteAdd", optionBox).onclick = function () {
-    const tr = gE(".hvAAQuickSite>table>tbody", optionBox).appendChild(
-      cE("tr")
-    );
+    const tr = gE(".hvAAQuickSite>table>tbody", optionBox).appendChild(cE("tr"));
     tr.innerHTML =
       '<td><input class="hvAADebug" type="text"></td><td><input class="hvAADebug" type="text"></td><td><input class="hvAADebug" type="text"></td>';
   };
@@ -789,10 +737,7 @@ export function optionBox() {
   };
   function rmListItem(code) {
     // 同步删除界面显示对应的项
-    const configs = gE(
-      '#hvAATab-About > * > ul[class="hvAABackupList"] > li',
-      "all"
-    );
+    const configs = gE('#hvAATab-About > * > ul[class="hvAABackupList"] > li', "all");
     for (const config of configs) {
       if (config.textContent == code) {
         config.remove();
@@ -861,7 +806,7 @@ export function optionBox() {
     let option;
     try {
       option = JSON.parse(gE(".hvAAConfig").value);
-    } catch (e) {
+    } catch {
       _alert(0, "配置格式错误", "配置格式錯誤", "Invalid configuration format");
       return;
     }
@@ -873,19 +818,11 @@ export function optionBox() {
   };
   //
   gE(".hvAAReset", optionBox).onclick = function () {
-    if (_alert(1, "是否重置", "是否重置", "Whether to reset"))
-      delValue("option");
+    if (_alert(1, "是否重置", "是否重置", "Whether to reset")) delValue("option");
   };
   gE(".hvAAApply", optionBox).onclick = function () {
-    if (
-      gE('select[name="attackStatus"] option[value="-1"]:checked', optionBox)
-    ) {
-      _alert(
-        0,
-        "请选择攻击模式",
-        "請選擇攻擊模式",
-        "Please select the attack mode"
-      );
+    if (gE('select[name="attackStatus"] option[value="-1"]:checked', optionBox)) {
+      _alert(0, "请选择攻击模式", "請選擇攻擊模式", "Please select the attack mode");
       gE('.hvAATabmenu>span[name="Main"]').click();
       gE("#attackStatus", optionBox).style.border = "1px solid red";
       setTimeout(() => {
