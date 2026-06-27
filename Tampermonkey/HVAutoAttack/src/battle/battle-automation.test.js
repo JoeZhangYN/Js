@@ -11,10 +11,9 @@ const mocks = vi.hoisted(() => ({
   runBattleRoundStartAutomation: vi.fn(),
   runBattleTurnAutomation: vi.fn(),
   runMonsterKnowledgeAutomation: vi.fn(),
-  runBattleActionSpeedAutomation: vi.fn(),
+  runBattleStartRuntimeAutomation: vi.fn(),
 }));
 
-vi.mock("../state/store.js", () => ({ g: mocks.g }));
 vi.mock("./reloader.js", () => ({
   installBattleActionEventBridge: mocks.installBattleActionEventBridge,
 }));
@@ -35,18 +34,14 @@ vi.mock("../monitor/battle-monitor-automation.js", () => ({
   BattleMonitorEvent: Object.freeze({ BATTLE_STARTED: "battleStarted" }),
   runBattleMonitorAutomation: mocks.runBattleMonitorAutomation,
 }));
-vi.mock("./battle-action-speed.js", () => ({
-  BattleActionSpeedEvent: Object.freeze({ BATTLE_STARTED: "battleStarted" }),
-  runBattleActionSpeedAutomation: mocks.runBattleActionSpeedAutomation,
+vi.mock("./battle-start-runtime.js", () => ({
+  BattleStartRuntimeEvent: Object.freeze({ BATTLE_STARTED: "battleStarted" }),
+  runBattleStartRuntimeAutomation: mocks.runBattleStartRuntimeAutomation,
 }));
 
 beforeEach(() => {
   document.body.innerHTML = '<div id="battle_main"></div>';
   for (const fn of Object.values(mocks)) fn.mockClear();
-  mocks.g.mockImplementation((key) => {
-    if (key === "option") return { attackStatus: "magic", pauseButton: false, pauseHotkey: false };
-    return undefined;
-  });
   mocks.gE.mockImplementation((selector) => document.querySelector(selector));
 });
 
@@ -56,8 +51,7 @@ describe("runBattleAutomation", () => {
 
     expect(mocks.runBattlePauseControlsAutomation).toHaveBeenCalledWith({ type: "install" });
     expect(mocks.installBattleActionEventBridge).toHaveBeenCalledTimes(1);
-    expect(mocks.g).toHaveBeenCalledWith("attackStatus", "magic");
-    expect(mocks.runBattleActionSpeedAutomation).toHaveBeenCalledWith({ type: "battleStarted" });
+    expect(mocks.runBattleStartRuntimeAutomation).toHaveBeenCalledWith({ type: "battleStarted" });
     expect(mocks.runBattleRoundStartAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
     expect(mocks.runMonsterKnowledgeAutomation).toHaveBeenCalledWith({ type: "battleStarted" });
     expect(mocks.runBattleMonitorAutomation).toHaveBeenCalledWith({ type: "battleStarted" });

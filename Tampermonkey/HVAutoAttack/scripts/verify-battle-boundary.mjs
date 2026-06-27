@@ -17,6 +17,8 @@ const actionStartFile = path.join(root, "src/battle/battle-action-start.js");
 const actionStartTest = path.join(root, "src/battle/battle-action-start.test.js");
 const pauseControlsFile = path.join(root, "src/battle/battle-pause-controls.js");
 const pauseControlsTest = path.join(root, "src/battle/battle-pause-controls.test.js");
+const startRuntimeFile = path.join(root, "src/battle/battle-start-runtime.js");
+const startRuntimeTest = path.join(root, "src/battle/battle-start-runtime.test.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
@@ -97,6 +99,14 @@ function checkBattleEntry() {
   ) {
     violations.push(
       `${rel(battleFile)} pause controls belong in runBattlePauseControlsAutomation(event)`
+    );
+  }
+  if (!text.includes("BattleStartRuntimeEvent.BATTLE_STARTED")) {
+    violations.push(`${rel(battleFile)} must initialize battle runtime through its entry`);
+  }
+  if (/\battackStatus\b|BattleActionSpeedEvent\.BATTLE_STARTED/.test(text)) {
+    violations.push(
+      `${rel(battleFile)} battle start runtime belongs in runBattleStartRuntimeAutomation(event)`
     );
   }
   const pageText = fs.readFileSync(path.join(root, "src/pages/page-automation.js"), "utf8");
@@ -308,10 +318,6 @@ function checkActionSpeedEntry() {
   ) {
     violations.push(`${rel(actionSpeedFile)} may export only its event entry`);
   }
-  const battleText = fs.readFileSync(battleFile, "utf8");
-  if (!battleText.includes("BattleActionSpeedEvent.BATTLE_STARTED")) {
-    violations.push(`${rel(battleFile)} must initialize battle action speed through its entry`);
-  }
   for (const file of [
     battleFile,
     reloaderFile,
@@ -477,6 +483,46 @@ function checkPauseControlsEntry() {
   }
 }
 
+function checkStartRuntimeEntry() {
+  const text = fs.readFileSync(startRuntimeFile, "utf8");
+  if (!/export const BattleStartRuntimeEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(startRuntimeFile)} must expose BattleStartRuntimeEvent`);
+  }
+  if (!/export function runBattleStartRuntimeAutomation\(\s*event\b/.test(text)) {
+    violations.push(`${rel(startRuntimeFile)} must expose runBattleStartRuntimeAutomation(event)`);
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleStartRuntimeEvent\b|runBattleStartRuntimeAutomation\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(startRuntimeFile)} may export only its event entry`);
+  }
+  for (const required of ["attackStatus", "BattleActionSpeedEvent.BATTLE_STARTED"]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(startRuntimeFile)} must own ${required}`);
+    }
+  }
+  for (const file of [
+    battleFile,
+    reloaderFile,
+    mainLoopFile,
+    roundStartFile,
+    startRuntimeFile,
+    startRuntimeTest,
+  ]) {
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      file !== battleFile &&
+      file !== startRuntimeFile &&
+      file !== startRuntimeTest &&
+      /from\s+["']\.\/battle-start-runtime\.js["']/.test(source)
+    ) {
+      violations.push(`${rel(file)} must not import internal battle start runtime`);
+    }
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -489,6 +535,7 @@ checkActionSpeedEntry();
 checkActionEndEntry();
 checkActionStartEntry();
 checkPauseControlsEntry();
+checkStartRuntimeEntry();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");
