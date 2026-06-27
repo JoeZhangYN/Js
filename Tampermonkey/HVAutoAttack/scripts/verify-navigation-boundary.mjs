@@ -4,6 +4,11 @@ import { stripComments } from "./lib/i18n-probe-lex.mjs";
 
 const SRC_DIR = fileURLToPath(new URL("../src", import.meta.url));
 const OWNER = "core/navigate.js";
+const RAW_NAVIGATION_EXEMPT = new Set([
+  "core/navigate.js",
+  "battle/battle-api-bridge.js",
+  "i18n/hv-utils.js",
+]);
 const LEGACY_EXPORT_RE = /\bexport\s+function\s+(goto|scheduleReload|openUrl)\s*\(/;
 const LEGACY_IMPORT_RE =
   /import\s*\{[^}]*\b(goto|scheduleReload|openUrl)\b[^}]*\}\s*from\s*["'][^"']*core\/navigate\.js["']/;
@@ -59,6 +64,14 @@ for (const file of files) {
   }
   if (/NavigationEvent\.SCHEDULE_RELOAD[\s\S]{0,120}\bsec\s*:/.test(source)) {
     violations.push(`src/${file.rel} uses legacy SCHEDULE_RELOAD sec field`);
+  }
+  if (
+    !RAW_NAVIGATION_EXEMPT.has(file.rel) &&
+    /\b(?:window\.)?location\.href\s*=|\bwindow\.open\s*\(/.test(source)
+  ) {
+    violations.push(
+      `src/${file.rel} must route navigation effects through runNavigationAutomation(event)`
+    );
   }
 }
 
