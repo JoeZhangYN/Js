@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { runRepair } from "./repair-orchestrator.js";
+import { RepairEvent, runRepairAutomation } from "./repair-orchestrator.js";
 import { g } from "../state/store.js";
 
 /** 序列化 backend：fetchState 依次返 rounds[i]；submitRepair 记录并推进 i。 */
@@ -32,11 +32,11 @@ beforeEach(() => {
   document.title = "";
 });
 
-describe("runRepair 编排", () => {
+describe("repair automation entry", () => {
   it("无需修理 → 直接开下一场（不修）", () => {
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();
-    runRepair({ makeBackend, scheduleIdleArena });
+    runRepairAutomation({ type: RepairEvent.START }, { makeBackend, scheduleIdleArena });
     expect(submitted).toEqual([]);
     expect(scheduleIdleArena).toHaveBeenCalledOnce();
   });
@@ -44,7 +44,7 @@ describe("runRepair 编排", () => {
   it("修一件 → 复验达标 → 开下一场（buy 关）", () => {
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 20)]), st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();
-    runRepair({ makeBackend, scheduleIdleArena });
+    runRepairAutomation({ type: RepairEvent.START }, { makeBackend, scheduleIdleArena });
     expect(submitted).toEqual(["1"]);
     expect(scheduleIdleArena).toHaveBeenCalledOnce();
     expect(document.title).toBe("");
@@ -53,7 +53,7 @@ describe("runRepair 编排", () => {
   it("修后仍坏 → 止损停机，不开下一场", () => {
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 20)]), st([eq(1, 20)])]);
     const scheduleIdleArena = vi.fn();
-    runRepair({ makeBackend, scheduleIdleArena });
+    runRepairAutomation({ type: RepairEvent.START }, { makeBackend, scheduleIdleArena });
     expect(submitted).toEqual(["1"]);
     expect(scheduleIdleArena).not.toHaveBeenCalled();
     expect(document.title).toContain("修理失败");
@@ -65,7 +65,10 @@ describe("runRepair 编排", () => {
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 20, mats)]), st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();
     const buyMaterials = vi.fn((required, opt, cb) => cb({ ok: true, bought: true, spent: 400 }));
-    runRepair({ makeBackend, buyMaterials, scheduleIdleArena });
+    runRepairAutomation(
+      { type: RepairEvent.START },
+      { makeBackend, buyMaterials, scheduleIdleArena }
+    );
     expect(buyMaterials).toHaveBeenCalledOnce();
     expect(buyMaterials.mock.calls[0][0]).toEqual(mats);
     expect(submitted).toEqual(["1"]);
@@ -78,7 +81,10 @@ describe("runRepair 编排", () => {
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 20, mats)])]);
     const scheduleIdleArena = vi.fn();
     const buyMaterials = vi.fn((required, opt, cb) => cb({ ok: false, reason: "credit-cap" }));
-    runRepair({ makeBackend, buyMaterials, scheduleIdleArena });
+    runRepairAutomation(
+      { type: RepairEvent.START },
+      { makeBackend, buyMaterials, scheduleIdleArena }
+    );
     expect(submitted).toEqual([]);
     expect(scheduleIdleArena).not.toHaveBeenCalled();
     expect(document.title).toContain("单轮上限");
@@ -90,7 +96,7 @@ describe("runRepair 编排", () => {
     g("option", { idleArena: true, repairValue: "" });
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 55)]), st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();
-    runRepair({ makeBackend, scheduleIdleArena });
+    runRepairAutomation({ type: RepairEvent.START }, { makeBackend, scheduleIdleArena });
     expect(submitted).toEqual(["1"]);
     expect(scheduleIdleArena).toHaveBeenCalledOnce();
   });
@@ -98,7 +104,7 @@ describe("runRepair 编排", () => {
   it("repairValue 非法值('abc') → 回落默认 60%（非静默不修）", () => {
     g("option", { idleArena: true, repairValue: "abc" });
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 55)]), st([eq(1, 100)])]);
-    runRepair({ makeBackend, scheduleIdleArena: vi.fn() });
+    runRepairAutomation({ type: RepairEvent.START }, { makeBackend, scheduleIdleArena: vi.fn() });
     expect(submitted).toEqual(["1"]);
   });
 
@@ -106,7 +112,7 @@ describe("runRepair 编排", () => {
     g("option", { idleArena: true, repairValue: "0" });
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 55)])]);
     const scheduleIdleArena = vi.fn();
-    runRepair({ makeBackend, scheduleIdleArena });
+    runRepairAutomation({ type: RepairEvent.START }, { makeBackend, scheduleIdleArena });
     expect(submitted).toEqual([]);
     expect(scheduleIdleArena).toHaveBeenCalledOnce();
   });

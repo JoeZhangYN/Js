@@ -1,5 +1,5 @@
 // 自动维修编排器（SHELL）：大厅页顺序异步 IO 链——扫描 → 决策 → 缺料买齐/停机 → 修 → 复验 → 开下一场。
-// 替代旧 src/arena/repair-check.js（已删）。维修业务能力单一入口 `runRepair()`，两世界后端走端口对应。
+// 替代旧 src/arena/repair-check.js（已删）。维修业务能力单一入口 `runRepairAutomation(event)`，两世界后端走端口对应。
 //
 // 不变量「装备未修好就不开下一场」：旧版（含 legacy）有三处缺陷导致破坏性死循环——
 //   ① json 设值后永不释放 → 修理后的「重扫验证」永久挂起，lastID 止损形同虚设；
@@ -20,15 +20,45 @@ import { decideRepair } from "./decide-repair.js";
 import { ensureMaterials } from "./material-shop.js";
 import { getOptionDefault } from "../settings/schema.js";
 
+const EVENT_START = "start";
+
+export const RepairEvent = Object.freeze({
+  START: EVENT_START,
+});
+
 /** 买料失败 reason → 三语停机文案。 */
 const BUY_FAIL_MSG = {
-  "credit-cap": ["⚠ 维修缺料，购买花费超过单轮上限，已停机", "⚠ 維修缺料，購買花費超過單輪上限，已停機", "⚠ Repair stopped: material cost exceeds per-run cap"],
-  "insufficient-credits": ["⚠ 维修缺料，信用点不足，已停机", "⚠ 維修缺料，信用點不足，已停機", "⚠ Repair stopped: not enough credits for materials"],
-  "no-stock": ["⚠ 维修缺料，物品商店库存不足，已停机", "⚠ 維修缺料，物品商店庫存不足，已停機", "⚠ Repair stopped: item shop out of stock"],
-  "unknown-item": ["⚠ 维修缺料，无法识别所需材料，已停机", "⚠ 維修缺料，無法識別所需材料，已停機", "⚠ Repair stopped: unknown material"],
-  "buy-error": ["⚠ 维修买料请求出错，已停机", "⚠ 維修買料請求出錯，已停機", "⚠ Repair stopped: buy request error"],
+  "credit-cap": [
+    "⚠ 维修缺料，购买花费超过单轮上限，已停机",
+    "⚠ 維修缺料，購買花費超過單輪上限，已停機",
+    "⚠ Repair stopped: material cost exceeds per-run cap",
+  ],
+  "insufficient-credits": [
+    "⚠ 维修缺料，信用点不足，已停机",
+    "⚠ 維修缺料，信用點不足，已停機",
+    "⚠ Repair stopped: not enough credits for materials",
+  ],
+  "no-stock": [
+    "⚠ 维修缺料，物品商店库存不足，已停机",
+    "⚠ 維修缺料，物品商店庫存不足，已停機",
+    "⚠ Repair stopped: item shop out of stock",
+  ],
+  "unknown-item": [
+    "⚠ 维修缺料，无法识别所需材料，已停机",
+    "⚠ 維修缺料，無法識別所需材料，已停機",
+    "⚠ Repair stopped: unknown material",
+  ],
+  "buy-error": [
+    "⚠ 维修买料请求出错，已停机",
+    "⚠ 維修買料請求出錯，已停機",
+    "⚠ Repair stopped: buy request error",
+  ],
 };
-const STUCK_MSG = ["⚠ 装备修理失败，已停止自动竞技场，请检查信用点 / 装备", "⚠ 裝備修理失敗，已停止自動競技場，請檢查信用點 / 裝備", "⚠ Repair failed — idle arena stopped; check credits / equipment"];
+const STUCK_MSG = [
+  "⚠ 装备修理失败，已停止自动竞技场，请检查信用点 / 装备",
+  "⚠ 裝備修理失敗，已停止自動競技場，請檢查信用點 / 裝備",
+  "⚠ Repair failed — idle arena stopped; check credits / equipment",
+];
 
 /** 默认 idleArena 调度（调度公式归 idle arena 业务能力所有）。 */
 function scheduleIdleArenaDefault() {
@@ -36,10 +66,10 @@ function scheduleIdleArenaDefault() {
 }
 
 /**
- * 自动维修入口。仅战斗外（init.js 战斗外分支）调用；repair 开启时 idleArena 由本函数独占调度。
+ * 自动维修实现。仅战斗外（init.js 战斗外分支）调用；repair 开启时 idleArena 由本函数独占调度。
  * @param {{ makeBackend?: typeof makeRepairBackend, buyMaterials?: typeof ensureMaterials, scheduleIdleArena?: () => void }} [deps] 测试注入
  */
-export function runRepair(deps = {}) {
+function runRepair(deps = {}) {
   const makeBackend = deps.makeBackend || makeRepairBackend;
   const buyMaterials = deps.buyMaterials || ensureMaterials;
   const scheduleIdleArena = deps.scheduleIdleArena || scheduleIdleArenaDefault;
@@ -102,4 +132,10 @@ export function runRepair(deps = {}) {
   }
 
   scanAndRepair();
+}
+
+export function runRepairAutomation(event = { type: EVENT_START }, deps = {}) {
+  if (event.type !== EVENT_START) return false;
+  runRepair(deps);
+  return true;
 }
