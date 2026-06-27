@@ -45,6 +45,94 @@ var HVAA_ITEM_CN = {
   "Infusion of Divinity": "神圣灌注", "Infusion of Darkness": "黑暗灌注",
 };
 function hvaaItemCn(name) { return HVAA_ITEM_CN[name] || name; }
+var HVUT_FILTER_TOKEN_RE = /\s*(true|false|\d+(?:\.\d+)?|&&|\|\||<=|>=|===|==|<|>|!|\(|\))/y;
+function evaluateEquipFilterExpression(expression) {
+  var tokens = [];
+  var position = 0;
+  while (position < expression.length) {
+    HVUT_FILTER_TOKEN_RE.lastIndex = position;
+    var match = HVUT_FILTER_TOKEN_RE.exec(expression);
+    if (!match) {
+      throw new Error('Invalid Filter');
+    }
+    tokens.push(match[1]);
+    position = HVUT_FILTER_TOKEN_RE.lastIndex;
+  }
+
+  var index = 0;
+  function peek() { return tokens[index]; }
+  function consume(expected) {
+    var token = tokens[index];
+    if (expected && token !== expected) {
+      throw new Error('Invalid Filter');
+    }
+    index += 1;
+    return token;
+  }
+  function toValue(token) {
+    if (token === 'true') return true;
+    if (token === 'false') return false;
+    var value = Number(token);
+    if (!Number.isFinite(value)) {
+      throw new Error('Invalid Filter');
+    }
+    return value;
+  }
+  function compare(left, operator, right) {
+    if (operator === '<') return left < right;
+    if (operator === '>') return left > right;
+    if (operator === '<=') return left <= right;
+    if (operator === '>=') return left >= right;
+    if (operator === '==' || operator === '===') return left === right;
+    throw new Error('Invalid Filter');
+  }
+  function parsePrimary() {
+    if (peek() === '!') {
+      consume('!');
+      return !parsePrimary();
+    }
+    if (peek() === '(') {
+      consume('(');
+      var value = parseOr();
+      consume(')');
+      return value;
+    }
+    if (peek() == null) {
+      throw new Error('Invalid Filter');
+    }
+    var left = toValue(consume());
+    if (['<', '>', '<=', '>=', '==', '==='].includes(peek())) {
+      var operator = consume();
+      if (peek() == null) {
+        throw new Error('Invalid Filter');
+      }
+      return compare(left, operator, toValue(consume()));
+    }
+    return Boolean(left);
+  }
+  function parseAnd() {
+    var value = parsePrimary();
+    while (peek() === '&&') {
+      consume('&&');
+      value = Boolean(value) && Boolean(parsePrimary());
+    }
+    return value;
+  }
+  function parseOr() {
+    var value = parseAnd();
+    while (peek() === '||') {
+      consume('||');
+      value = Boolean(value) || Boolean(parseAnd());
+    }
+    return value;
+  }
+
+  var value = parseOr();
+  if (index !== tokens.length) {
+    throw new Error('Invalid Filter');
+  }
+  return Boolean(value);
+}
 // ===== 以下为 HV Utils 统一汉化(sssss2 原料, JoeZhangYN 合并/迁移), 显示层汉化 =====
 // ============================================================================
 // HV Utils 主世界版 (v4.0.0) + Isekai 版 (v4.2.0) 统一脚本  [2026-06-02 迁移]
@@ -1583,7 +1671,7 @@ const $equip = {
           throw new Error('Invalid Filter');
         }
       });
-      return eval(r);
+      return evaluateEquipFilterExpression(r);
     },
     details: function (filter, equip) {
       if (/\$([a-z]+)\+/.test(filter)) { // $Magnificent+
@@ -11579,7 +11667,7 @@ const $equip = {
         throw new Error('Invalid Filter');
       }
     });
-    return eval(r);
+    return evaluateEquipFilterExpression(r);
   },
   filter_details: function (filter, equip) {
     if (/\$([a-z]+)\+/.test(filter)) { // $Magnificent+

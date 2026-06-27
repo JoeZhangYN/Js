@@ -23,6 +23,99 @@
 // @run-at         document-end
 // ==/UserScript==
 
+const HVUT_FILTER_TOKEN_RE = /\s*(true|false|\d+(?:\.\d+)?|&&|\|\||<=|>=|===|==|<|>|!|\(|\))/y;
+
+function evaluateEquipFilterExpression(expression) {
+  const tokens = [];
+  let position = 0;
+  while (position < expression.length) {
+    HVUT_FILTER_TOKEN_RE.lastIndex = position;
+    const match = HVUT_FILTER_TOKEN_RE.exec(expression);
+    if (!match) {
+      throw new Error('Invalid Filter');
+    }
+    tokens.push(match[1]);
+    position = HVUT_FILTER_TOKEN_RE.lastIndex;
+  }
+
+  let index = 0;
+  const peek = () => tokens[index];
+  const consume = (expected) => {
+    const token = tokens[index];
+    if (expected && token !== expected) {
+      throw new Error('Invalid Filter');
+    }
+    index += 1;
+    return token;
+  };
+  const toValue = (token) => {
+    if (token === 'true') return true;
+    if (token === 'false') return false;
+    const value = Number(token);
+    if (!Number.isFinite(value)) {
+      throw new Error('Invalid Filter');
+    }
+    return value;
+  };
+  const compare = (left, operator, right) => {
+    if (operator === '<') return left < right;
+    if (operator === '>') return left > right;
+    if (operator === '<=') return left <= right;
+    if (operator === '>=') return left >= right;
+    if (operator === '==' || operator === '===') return left === right;
+    throw new Error('Invalid Filter');
+  };
+
+  function parsePrimary() {
+    if (peek() === '!') {
+      consume('!');
+      return !parsePrimary();
+    }
+    if (peek() === '(') {
+      consume('(');
+      const value = parseOr();
+      consume(')');
+      return value;
+    }
+    if (peek() == null) {
+      throw new Error('Invalid Filter');
+    }
+    const left = toValue(consume());
+    if (['<', '>', '<=', '>=', '==', '==='].includes(peek())) {
+      const operator = consume();
+      if (peek() == null) {
+        throw new Error('Invalid Filter');
+      }
+      return compare(left, operator, toValue(consume()));
+    }
+    return Boolean(left);
+  }
+
+  function parseAnd() {
+    let value = parsePrimary();
+    while (peek() === '&&') {
+      consume('&&');
+      value = Boolean(value) && Boolean(parsePrimary());
+    }
+    return value;
+  }
+
+  function parseOr() {
+    let value = parseAnd();
+    while (peek() === '||') {
+      consume('||');
+      value = Boolean(value) || Boolean(parseAnd());
+    }
+    return value;
+  }
+
+  const value = parseOr();
+  if (index !== tokens.length) {
+    throw new Error('Invalid Filter');
+  }
+  return Boolean(value);
+}
+
 const settings = {
 
   // [GENERAL]
@@ -1542,7 +1635,7 @@ const $equip = {
           throw new Error('Invalid Filter');
         }
       });
-      return eval(r);
+      return evaluateEquipFilterExpression(r);
     },
     details: function (filter, equip) {
       if (/\$([a-z]+)\+/.test(filter)) { // $Magnificent+
