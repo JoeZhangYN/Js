@@ -1,8 +1,7 @@
 // 入口路由：识别页面 (e-hentai redirect / lobby / riddle / battle) 并分派。
 // file-size-gate: exempt phase-4-init
-/* eslint-disable camelcase */
 import { gE, cE } from "../dom/query.js";
-import { setValue, getValue, delValue } from "../state/storage.js";
+import { setValue, getValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { scheduleReload, openUrl } from "../core/navigate.js";
@@ -10,11 +9,7 @@ import { time } from "../core/time.js";
 import { addStyle } from "../style/inject.js";
 import { riddleAlert } from "./riddle.js";
 import { registerExportMenu } from "../state/riddle-dataset.js";
-import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
-import { parseAbilityPage } from "./ability-page.js";
-import { quickSite } from "../arena/quick-site.js";
-import { runRepair } from "../repair/repair-orchestrator.js";
-import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
+import { runLobbyAutomation } from "./lobby-automation.js";
 import { main, pauseChange } from "../battle/main-loop.js";
 import { reloader } from "../battle/reloader.js";
 import { newRound } from "../battle/new-round.js";
@@ -26,7 +21,6 @@ import { setupPageRefresh } from "../alarm/page-refresh.js";
 import { setupForgeCost } from "./showequip-forge-cost.js";
 import { setupEquipPercentile } from "./equip-percentile-dispatcher.js";
 import { isOptionOn, getOption } from "../state/option.js";
-import { readStaminaValue } from "../state/stamina.js";
 import { detectPageKind, PageKind } from "./page-kind.js";
 
 export function init() {
@@ -166,28 +160,6 @@ export function init() {
       );
     main();
   } else {
-    // 战斗外
-    delValue(2);
-    g("dateNow", time(2));
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("s") === "Character" && params.get("ss") === "ab") {
-      parseAbilityPage();
-    }
-    if (g("option").quickSite) quickSite();
-    if (g("option").encounter) {
-      runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK });
-    }
-    if (
-      !g("option").restoreStamina &&
-      readStaminaValue() <= g("option").staminaLow
-    )
-      return;
-    // 自动修复装备。repair 开启时 idleArena 调度由维修能力 runRepair 独占（仅装备达标才开下一场，
-    // 缺料联动商店买齐、修理失败则停机止损）；故此处 else-if 互斥，避免无条件开战与 repair 解耦的破坏性死循环。
-    if (g("option").repair) {
-      runRepair();
-    } else if (g("option").idleArena) {
-      runIdleArenaAutomation({ type: IdleArenaEvent.SCHEDULE_NEXT_BATTLE });
-    }
+    runLobbyAutomation();
   }
 }
