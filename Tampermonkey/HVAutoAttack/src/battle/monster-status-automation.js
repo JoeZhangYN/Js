@@ -1,6 +1,7 @@
 // 怪物状态生命周期入口：持久态恢复、异常修复、每 turn HP/权重更新统一从这里进入。
 import { gE } from "../dom/query.js";
 import { setValue, getValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { goto } from "../core/navigate.js";
@@ -22,7 +23,7 @@ export const MonsterStatusEvent = Object.freeze({
 function recordSpawnRoster(event) {
   const { roster } = parseMonsterRoster(event.battleLog, event.monsterAll);
   const monsterStatus = buildMonsterStatus(roster);
-  setValue("monsterStatus", monsterStatus);
+  setValue(STORAGE_KEYS.MONSTER_STATUS, monsterStatus);
   g("monsterStatus", monsterStatus);
 }
 
@@ -30,12 +31,11 @@ function repairMonsterStatus() {
   const battleLog = gE("#textlog>tbody>tr>td", "all");
   const monsterAll = gE("div.btm2", "all").length;
   const hasInit =
-    battleLog.length &&
-    /Initializing/.test(battleLog[battleLog.length - 1].textContent);
+    battleLog.length && /Initializing/.test(battleLog[battleLog.length - 1].textContent);
 
   if (hasInit) {
     const { roster } = parseMonsterRoster(battleLog, monsterAll);
-    setValue("monsterStatus", buildMonsterStatus(roster));
+    setValue(STORAGE_KEYS.MONSTER_STATUS, buildMonsterStatus(roster));
     goto();
     return;
   }
@@ -55,12 +55,12 @@ function repairMonsterStatus() {
       hpInferred: true,
     });
   });
-  setValue("monsterStatus", monsterStatus);
+  setValue(STORAGE_KEYS.MONSTER_STATUS, monsterStatus);
   goto();
 }
 
 function ensureMonsterStatusReady() {
-  const persisted = getValue("monsterStatus", true);
+  const persisted = getValue(STORAGE_KEYS.MONSTER_STATUS, true);
   if (persisted && persisted.length === g("monsterAll")) {
     g("monsterStatus", persisted);
     return false;
@@ -69,9 +69,7 @@ function ensureMonsterStatusReady() {
   return true;
 }
 
-export function runMonsterStatusAutomation(
-  event = { type: EVENT_ENSURE_READY }
-) {
+export function runMonsterStatusAutomation(event = { type: EVENT_ENSURE_READY }) {
   if (event.type === EVENT_ENSURE_READY) {
     return ensureMonsterStatusReady();
   } else if (event.type === EVENT_REPAIR) {

@@ -38,11 +38,10 @@ function checkFile(file) {
     ) {
       violations.push(`${where} countMonsterHP belongs behind runMonsterStatusAutomation(event)`);
     }
-    if (
-      relative !== entry &&
-      /\b(?:getValue|setValue)\(\s*["']monsterStatus["']/.test(line)
-    ) {
-      violations.push(`${where} monsterStatus persistence belongs in runMonsterStatusAutomation(event)`);
+    if (/\b(?:getValue|setValue)\(\s*["']monsterStatus["']/.test(line)) {
+      violations.push(
+        `${where} monsterStatus persistence belongs in runMonsterStatusAutomation(event)`
+      );
     }
   });
 }
@@ -51,6 +50,9 @@ function checkEntry() {
   const text = fs.readFileSync(path.join(root, entry), "utf8");
   if (!/export function runMonsterStatusAutomation\(/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must expose runMonsterStatusAutomation(event)`);
+  }
+  if (!text.includes("STORAGE_KEYS.MONSTER_STATUS")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must use STORAGE_KEYS.MONSTER_STATUS`);
   }
   for (const required of ["countMonsterHP", "buildMonsterStatus", "monsterStatus"]) {
     if (!text.includes(required)) {
