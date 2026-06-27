@@ -1,8 +1,6 @@
 // file-size-gate: exempt 移植自 Riddle Master Assistant Reborn 独立脚本-自包含功能
 // P6 ML 远程答题（来源：Tampermonkey/HentaiVerse/Riddle Master Assistant Reborn.user.js v0.5.2）
-// 暴露：
-//   - tryMLAnswer(): Promise<string[]|null>  返回命中的 ANSWER_MAP key 数组(多答案题多只) 或 null
-//   - startRiddleMlHealthCheck()          30s 健康巡检（答题业务入口调用一次启动）
+// 暴露：runRiddleMlAutomation(event)
 // 本模块仅做「ML 识别」：图片获取已抽到 pages/riddle-image.js；训练样本保存/导出已抽到
 //   state/riddle-dataset.js（保存统一在「提交动作」riddle.js #riddlesubmit hook 采样）。本模块不再存图。
 //
@@ -20,6 +18,13 @@ import { RiddleImageEvent, runRiddleImageAutomation } from "./riddle-image.js";
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";
 const ANSWER_CODES = Object.keys(ANSWER_MAP); // ["ts","ra","fs","rd","pp","aj"]
+const EVENT_START_HEALTH = "startHealth";
+const EVENT_TRY_ANSWER = "tryAnswer";
+
+export const RiddleMlEvent = Object.freeze({
+  START_HEALTH: EVENT_START_HEALTH,
+  TRY_ANSWER: EVENT_TRY_ANSWER,
+});
 
 function reportMlDetail(detail) {
   return runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_DETAIL, detail });
@@ -133,7 +138,7 @@ async function stayAwake() {
 }
 
 let healthStarted = false;
-export function startRiddleMlHealthCheck() {
+function startRiddleMlHealthCheck() {
   if (healthStarted) return;
   healthStarted = true;
   stayAwake();
@@ -150,7 +155,7 @@ export function startRiddleMlHealthCheck() {
  * @returns {Promise<string[]|null>}
  */
 let inFlight = false;
-export async function tryMLAnswer() {
+async function tryMLAnswer() {
   if (inFlight) return null; // 防同 tick 重入
   const opt = g("option") || {};
   // defaultOn 语义：与调用侧 riddle.js isOptionOn("mlAnswer") 一致（缺字段=开，仅显式 false 才关）。
@@ -337,4 +342,13 @@ export async function tryMLAnswer() {
   } finally {
     inFlight = false;
   }
+}
+
+export function runRiddleMlAutomation(event = { type: EVENT_TRY_ANSWER }) {
+  if (event.type === EVENT_START_HEALTH) {
+    startRiddleMlHealthCheck();
+    return true;
+  }
+  if (event.type === EVENT_TRY_ANSWER) return tryMLAnswer();
+  return undefined;
 }

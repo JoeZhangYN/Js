@@ -7,6 +7,7 @@ const riddleFile = path.join(root, "src/pages/riddle-automation.js");
 const riddleAnswerFile = path.join(root, "src/pages/riddle.js");
 const riddleTimingFile = path.join(root, "src/pages/riddle-submission-timing.js");
 const riddleImageFile = path.join(root, "src/pages/riddle-image.js");
+const riddleMlFile = path.join(root, "src/pages/riddle-ml.js");
 const srcDir = path.join(root, "src");
 const battleDir = path.join(root, "src/battle");
 const violations = [];
@@ -128,6 +129,39 @@ function checkRiddleImageEntry() {
   walk(srcDir);
 }
 
+function checkRiddleMlEntry() {
+  const owner = path.normalize("src/pages/riddle-ml.js");
+  const ownerText = fs.readFileSync(riddleMlFile, "utf8");
+  for (const required of ["runRiddleMlAutomation", "RiddleMlEvent"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(riddleMlFile)} must own ${required}`);
+    }
+  }
+  for (const legacy of ["tryMLAnswer", "startRiddleMlHealthCheck"]) {
+    if (new RegExp(`export\\s+(?:async\\s+)?function\\s+${legacy}\\s*\\(`).test(ownerText)) {
+      violations.push(`${rel(riddleMlFile)} legacy ${legacy} export must stay private behind runRiddleMlAutomation(event)`);
+    }
+  }
+
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile() && entry.name.endsWith(".js")) {
+        const relative = path.normalize(path.relative(root, full));
+        if (relative === owner) continue;
+        fs.readFileSync(full, "utf8").split(/\r?\n/).forEach((line, index) => {
+          if (!/from\s+["']\.\/riddle-ml\.js["']/.test(line)) return;
+          if (!/\bRiddleMlEvent\b/.test(line) || !/\brunRiddleMlAutomation\b/.test(line)) {
+            violations.push(`${rel(full)}:${index + 1} riddle ML consumers must use runRiddleMlAutomation(event)`);
+          }
+        });
+      }
+    }
+  }
+  walk(srcDir);
+}
+
 function checkDeletedSetupEntrypoints() {
   const files = [
     path.join(root, "src/pages/riddle-automation.js"),
@@ -149,6 +183,7 @@ checkBattleLayer();
 checkRiddleEntry();
 checkRiddleSubmissionTiming();
 checkRiddleImageEntry();
+checkRiddleMlEntry();
 checkDeletedSetupEntrypoints();
 
 if (violations.length) {

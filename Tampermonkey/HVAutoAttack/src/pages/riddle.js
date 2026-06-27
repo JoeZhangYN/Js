@@ -7,13 +7,13 @@
 // - 答案分发改 ANSWER_MAP 数据驱动（替代 6 个 if 平铺）
 // - 倒计时双源解析：textContent 正则优先（抗 HV UI 改版），sprite 背景位置作 legacy fallback
 // P2 集成：runRiddleVisualAid（小马旋转/锐化/对比 + 6 缩略图视觉辅助）— async 不 await，不阻塞倒计时
-// P6 集成：tryMLAnswer + startRiddleMlHealthCheck（rdma.ooguy.com ML 远程答题，失败 fallback 现有随机猜）
+// P6 集成：runRiddleMlAutomation（rdma.ooguy.com ML 远程答题，失败 fallback 现有随机猜）
 import { g } from "../state/store.js";
 import { isOptionOn } from "../state/option.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { runRiddleVisualAid } from "./riddle-helper.js";
-import { tryMLAnswer, startRiddleMlHealthCheck } from "./riddle-ml.js";
+import { RiddleMlEvent, runRiddleMlAutomation } from "./riddle-ml.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
 import { RiddleImageEvent, runRiddleImageAutomation } from "./riddle-image.js";
@@ -81,7 +81,7 @@ export function runRiddleAnsweringSession() {
 
   // P6 ML 健康巡检：30s 周期 setInterval 启动一次（内部 healthStarted 哨兵防重入）
   if (isOptionOn("mlAnswer")) {
-    startRiddleMlHealthCheck();
+    runRiddleMlAutomation({ type: RiddleMlEvent.START_HEALTH });
   }
 
   // 提交策略 ★ 对齐原版 Riddle Master Assistant Reborn.user.js v0.5.2（核对认准此文件）：
@@ -143,7 +143,7 @@ export function runRiddleAnsweringSession() {
     if (submitBtn) submitBtn.addEventListener("click", captureSubmission, { capture: true });
   }
   if (isOptionOn("mlAnswer")) {
-    tryMLAnswer()
+    runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })
       .then((a) => {
         mlAnswer = a;
         if (a && a.length) {
