@@ -11,7 +11,7 @@ import {
   runEquipmentViewAutomation,
 } from "./equipment-view-automation.js";
 import { runRiddleAutomation } from "./riddle-automation.js";
-import { runLobbyAutomation } from "./lobby-automation.js";
+import { LobbyEvent, runLobbyAutomation } from "./lobby-automation.js";
 import { runBattleAutomation } from "../battle/battle-automation.js";
 import { PageKind } from "./page-kind.js";
 
@@ -41,7 +41,7 @@ function runGamePageAutomation(kind) {
   } else if (kind === PageKind.BATTLE) {
     runBattleAutomation();
   } else {
-    runLobbyAutomation();
+    runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
   }
 }
 

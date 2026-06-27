@@ -9,6 +9,12 @@ import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "../battle/battle-runtime.js";
 
+const EVENT_PAGE_READY = "pageReady";
+
+export const LobbyEvent = Object.freeze({
+  PAGE_READY: EVENT_PAGE_READY,
+});
+
 function syncLobbyDate() {
   g("dateNow", time(2));
 }
@@ -25,7 +31,8 @@ function runNextBattleAutomation() {
   }
 }
 
-export async function runLobbyAutomation() {
+export async function runLobbyAutomation(event = { type: EVENT_PAGE_READY }) {
+  if (event.type !== EVENT_PAGE_READY) return undefined;
   runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
   syncLobbyDate();
   runAbilityAoeAutomation({ type: AbilityAoeEvent.CAPTURE_ABILITY_PAGE });
@@ -33,7 +40,7 @@ export async function runLobbyAutomation() {
   if (g("option").encounter) {
     const encounterOutcome = await runEncounterAutomation({
       type: EncounterEvent.LOBBY_TICK,
-      rerun: runLobbyAutomation,
+      rerun: () => runLobbyAutomation({ type: EVENT_PAGE_READY }),
     });
     if (encounterOutcome.claimed) return;
   }
