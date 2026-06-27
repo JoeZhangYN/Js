@@ -36,6 +36,11 @@ if (!owner) {
   if (/\bexport\s+function\s+time\s*\(/.test(source)) {
     violations.push("legacy time(e) export is forbidden");
   }
+  for (const required of ["LOCAL_FILE_TIMESTAMP", "ISO_TIMESTAMP"]) {
+    if (!source.includes(required)) {
+      violations.push(`TimeEvent must expose ${required}`);
+    }
+  }
 }
 
 for (const file of files) {

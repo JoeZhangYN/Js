@@ -24,22 +24,35 @@ function checkFile(file) {
   const text = fs.readFileSync(file, "utf8");
   if (relative === owner || relative === ownerTest) return;
 
-  const importRe = /import\s+\{([^}]+)\}\s+from\s+["'](?:\.\/|\.\.\/state\/)riddle-dataset\.js["']/g;
+  const importRe =
+    /import\s+\{([^}]+)\}\s+from\s+["'](?:\.\/|\.\.\/state\/)riddle-dataset\.js["']/g;
   for (const match of text.matchAll(importRe)) {
     const names = match[1].split(",").map((name) => name.trim().split(/\s+as\s+/)[0]);
-    for (const legacy of ["recordRiddleSample", "exportRiddleDataset", "registerExportMenu", "SAMPLE_SOURCE"]) {
+    for (const legacy of [
+      "recordRiddleSample",
+      "exportRiddleDataset",
+      "registerExportMenu",
+      "SAMPLE_SOURCE",
+    ]) {
       if (names.includes(legacy)) {
-        violations.push(`${rel(file)} imports legacy ${legacy}; use runRiddleDatasetAutomation(event)`);
+        violations.push(
+          `${rel(file)} imports legacy ${legacy}; use runRiddleDatasetAutomation(event)`
+        );
       }
     }
     if (!names.includes("runRiddleDatasetAutomation") || !names.includes("RiddleDatasetEvent")) {
-      violations.push(`${rel(file)} riddle dataset consumers must use runRiddleDatasetAutomation(event)`);
+      violations.push(
+        `${rel(file)} riddle dataset consumers must use runRiddleDatasetAutomation(event)`
+      );
     }
   }
 
   text.split(/\r?\n/).forEach((line, index) => {
     const where = `${rel(file)}:${index + 1}`;
-    if (/\bGM_(?:setValue|getValue|deleteValue|listValues)\b/.test(line) && /\bsaved_(?:pony_|riddle_)/.test(line)) {
+    if (
+      /\bGM_(?:setValue|getValue|deleteValue|listValues)\b/.test(line) &&
+      /\bsaved_(?:pony_|riddle_)/.test(line)
+    ) {
       violations.push(`${where} riddle dataset storage belongs in state/riddle-dataset.js`);
     }
   });
@@ -53,6 +66,16 @@ for (const required of ["runRiddleDatasetAutomation", "RiddleDatasetEvent", "Rid
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
+for (const required of ["TimeEvent.LOCAL_FILE_TIMESTAMP", "TimeEvent.ISO_TIMESTAMP"]) {
+  if (!ownerText.includes(required)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must read dataset timestamps through time entry`
+    );
+  }
+}
+if (/\bnew Date\s*\(/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not build dataset timestamps directly`);
+}
 
 for (const legacy of ["recordRiddleSample", "exportRiddleDataset", "registerExportMenu"]) {
   if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {
@@ -63,7 +86,9 @@ for (const legacy of ["recordRiddleSample", "exportRiddleDataset", "registerExpo
 }
 
 if (/export\s+const\s+SAMPLE_SOURCE\b/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} SAMPLE_SOURCE export was replaced by RiddleSampleSource`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} SAMPLE_SOURCE export was replaced by RiddleSampleSource`
+  );
 }
 
 if (violations.length) {

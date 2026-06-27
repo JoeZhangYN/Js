@@ -7,6 +7,7 @@
 // 存储：GM 裸 key saved_pony_<ts>（沿用 RMA 兼容，不加 storagePrefix）。
 // 导出：core/zip 打成真 pony_<ts>.webp + pony_<ts>.json 包；**导出后默认清除原始记录防重复导出**（用户定 2026-06-06）。
 import { makeStoreZip } from "../core/zip.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 
 const SAVE_PREFIX = "pony_";
 
@@ -29,13 +30,7 @@ function confidenceOf(source) {
 }
 
 function tsStr() {
-  const d = new Date();
-  const p = (n) => String(n).padStart(2, "0");
-  // 形如 2025-01-21_07-09-15（导出文件名 pony_<ts>.webp 直接用，人读友好、文件系统安全）。
-  return (
-    d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) +
-    "_" + p(d.getHours()) + "-" + p(d.getMinutes()) + "-" + p(d.getSeconds())
-  );
+  return runTimeAutomation({ type: TimeEvent.LOCAL_FILE_TIMESTAMP });
 }
 
 /**
@@ -49,7 +44,7 @@ function recordRiddleSample({ imageDataUrl, answers, source, imageSrc }) {
   const src = source || RiddleSampleSource.MANUAL;
   GM_setValue(`saved_${SAVE_PREFIX}${tsStr()}`, {
     json: {
-      saved_at: new Date().toISOString(),
+      saved_at: runTimeAutomation({ type: TimeEvent.ISO_TIMESTAMP }),
       source: src,
       confidence: confidenceOf(src),
       answers: answers || "",
@@ -95,7 +90,11 @@ function toCanonicalSampleJson(entry) {
   const answers = Array.isArray(j.answer) ? j.answer.join(",") : j.answer || j.answers || "";
   const failed = j.is_failed === true;
   return {
-    saved_at: j.saved_at || (entry && entry.timestamp ? new Date(entry.timestamp).toISOString() : ""),
+    saved_at:
+      j.saved_at ||
+      (entry && entry.timestamp
+        ? runTimeAutomation({ type: TimeEvent.ISO_TIMESTAMP, stamp: entry.timestamp })
+        : ""),
     source: "ml", // 旧批均为 ML 远程识别的诊断保存
     confidence: failed ? "low" : "high", // is_failed 真→低可信(ML 失败)，假→高可信(ML 命中)
     answers,
@@ -152,7 +151,10 @@ function exportRiddleDataset() {
       base = `${base}_${n}`;
     }
     used.add(base);
-    files.push({ name: `${base}.json`, bytes: strBytes(JSON.stringify(toCanonicalSampleJson(entry), null, 2)) });
+    files.push({
+      name: `${base}.json`,
+      bytes: strBytes(JSON.stringify(toCanonicalSampleJson(entry), null, 2)),
+    });
     const imgBytes = dataUrlToBytes(entry.imageBase64);
     if (imgBytes) files.push({ name: `${base}.${imgExt(entry.imageBase64)}`, bytes: imgBytes });
   }
@@ -172,7 +174,9 @@ function exportRiddleDataset() {
   if (typeof GM_deleteValue !== "undefined") {
     for (const k of keys) GM_deleteValue(k);
   }
-  console.info(`[HVAA][RMA] 已导出 ${keys.length} 条答题样本(zip: webp+json)，并清除原始记录(防重复导出)`);
+  console.info(
+    `[HVAA][RMA] 已导出 ${keys.length} 条答题样本(zip: webp+json)，并清除原始记录(防重复导出)`
+  );
 }
 
 let exportMenuRegistered = false;

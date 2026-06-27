@@ -31,4 +31,15 @@ describe("runTimeAutomation", () => {
   it("returns undefined for unknown time events", () => {
     expect(runTimeAutomation({ type: "unknown", stamp: 0 })).toBeUndefined();
   });
+
+  it("owns file-safe and ISO timestamp labels", () => {
+    const stamp = Date.UTC(2026, 5, 27, 0, 0, 5);
+
+    expect(runTimeAutomation({ type: TimeEvent.LOCAL_FILE_TIMESTAMP, stamp })).toBe(
+      "2026-06-27_00-00-05"
+    );
+    expect(runTimeAutomation({ type: TimeEvent.ISO_TIMESTAMP, stamp })).toBe(
+      "2026-06-27T00:00:05.000Z"
+    );
+  });
 });
