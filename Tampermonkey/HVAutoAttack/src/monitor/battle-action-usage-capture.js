@@ -1,6 +1,6 @@
 // 战斗动作使用采集：动作开始读取用户动作意图，动作结束绑定战斗日志。
 import { gE } from "../dom/query.js";
-import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
@@ -14,14 +14,16 @@ let pendingUsage;
 
 function runtimeDeps(deps = {}) {
   return {
-    g: deps.g || g,
     gE: deps.gE || gE,
+    readOptionField:
+      deps.readOptionField ||
+      ((key, fallback) => runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback })),
     unsafeWindow: deps.unsafeWindow || unsafeWindow,
   };
 }
 
 function readActionUsage(deps) {
-  if (!deps.g("option").recordUsage) {
+  if (!deps.readOptionField("recordUsage", false)) {
     pendingUsage = undefined;
     return undefined;
   }
@@ -43,7 +45,7 @@ function readActionUsage(deps) {
 }
 
 function completeActionUsage(deps) {
-  if (!deps.g("option").recordUsage || !pendingUsage) return undefined;
+  if (!deps.readOptionField("recordUsage", false) || !pendingUsage) return undefined;
 
   const usage = { ...pendingUsage, log: deps.gE("#textlog>tbody>tr>td", "all") };
   pendingUsage = undefined;

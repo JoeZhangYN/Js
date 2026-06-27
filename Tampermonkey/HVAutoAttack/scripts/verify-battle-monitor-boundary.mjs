@@ -196,6 +196,15 @@ function checkActionUsageCaptureEntry() {
       violations.push(`${rel(captureFile)} must own action usage ${required} collection`);
     }
   }
+  if (!text.includes("OptionEvent.READ_FIELD")) {
+    violations.push(`${rel(captureFile)} must read recordUsage through option entry`);
+  }
+  if (/from\s+["']\.\.\/state\/store\.js["']/.test(text)) {
+    violations.push(`${rel(captureFile)} must not import store for recordUsage option reads`);
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(text) || /\bdeps\.g\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${rel(captureFile)} must not read recordUsage option directly`);
+  }
 }
 
 function checkUsageImplementation() {

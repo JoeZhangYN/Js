@@ -6,11 +6,11 @@ import {
 
 function deps({ info, recordUsage = true, elements = {}, log = [] } = {}) {
   return {
-    g: vi.fn((key) => (key === "option" ? { recordUsage } : undefined)),
     gE: vi.fn((selector, mode) => {
       if (selector === "#textlog>tbody>tr>td" && mode === "all") return log;
       return elements[selector];
     }),
+    readOptionField: vi.fn((key, fallback) => (key === "recordUsage" ? recordUsage : fallback)),
     unsafeWindow: { info },
   };
 }
@@ -92,5 +92,15 @@ describe("runBattleActionUsageCapture", () => {
         deps({ log: [{ textContent: "old log" }] })
       )
     ).toBeUndefined();
+  });
+
+  it("reads the recordUsage switch through the option query", () => {
+    const runtime = deps({ info: { mode: "attack", skill: "attack" }, recordUsage: false });
+
+    expect(
+      runBattleActionUsageCapture({ type: BattleActionUsageCaptureEvent.ACTION_STARTED }, runtime)
+    ).toBeUndefined();
+
+    expect(runtime.readOptionField).toHaveBeenCalledWith("recordUsage", false);
   });
 });
