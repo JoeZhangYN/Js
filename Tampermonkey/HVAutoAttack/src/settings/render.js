@@ -10,6 +10,7 @@ import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { customizeBox } from "./customize.js";
 import { OptionSchemaEvent, runOptionSchema } from "./schema.js";
+import { SettingsFormOptionEvent, runSettingsFormOptionAutomation } from "./form-option.js";
 import { setLang } from "../i18n/core/restore-controller.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
@@ -725,47 +726,11 @@ export function optionBox() {
       }, 0.5 * 1000);
       return;
     }
-    const _option = {
+    const _option = runSettingsFormOptionAutomation({
+      type: SettingsFormOptionEvent.COLLECT_OPTION,
       version: g("version"),
-    };
-    let inputs = gE("input,select", "all", optionBox);
-    let itemName;
-    let itemArray;
-    let itemValue;
-    let i;
-    for (i = 0; i < inputs.length; i++) {
-      if (inputs[i].className === "hvAADebug") {
-        continue;
-      } else if (inputs[i].className === "hvAANumber") {
-        itemName = inputs[i].name;
-        itemValue = (inputs[i].value || inputs[i].placeholder) * 1;
-        if (isNaN(itemValue)) continue;
-      } else if (inputs[i].type === "text" || inputs[i].type === "hidden") {
-        itemName = inputs[i].name;
-        itemValue = inputs[i].value || inputs[i].placeholder;
-        if (itemValue === "") continue;
-      } else if (inputs[i].type === "checkbox") {
-        itemName = inputs[i].id;
-        itemValue = inputs[i].checked;
-        if (itemValue === false && !inputs[i].hasAttribute("data-default-on")) continue;
-      } else if (inputs[i].type === "select-one") {
-        itemName = inputs[i].name;
-        itemValue = inputs[i].value;
-      }
-      itemArray = itemName.split("_");
-      if (itemArray.length === 1) {
-        _option[itemName] = itemValue;
-      } else {
-        if (!(itemArray[0] in _option)) _option[itemArray[0]] = {};
-        if (inputs[i].className === "customizeInput") {
-          if (typeof _option[itemArray[0]][itemArray[1]] === "undefined")
-            _option[itemArray[0]][itemArray[1]] = [];
-          _option[itemArray[0]][itemArray[1]].push(itemValue);
-        } else {
-          _option[itemArray[0]][itemArray[1]] = itemValue;
-        }
-      }
-    }
+      inputs: gE("input,select", "all", optionBox),
+    });
     runQuickSiteAutomation({
       type: QuickSiteEvent.COLLECT_SETTINGS_INPUTS,
       option: _option,
