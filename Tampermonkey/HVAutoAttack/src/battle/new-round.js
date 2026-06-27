@@ -7,7 +7,6 @@ import { goto } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
-import { pauseChange } from "./main-loop.js";
 import { observeBattle } from "../state/auto-tune.js";
 import {
   MonsterKnowledgeEvent,
@@ -17,6 +16,10 @@ import {
   MonsterStatusEvent,
   runMonsterStatusAutomation,
 } from "./monster-status-automation.js";
+import {
+  BattlePauseEvent,
+  runBattlePauseAutomation,
+} from "./pause-automation.js";
 
 export function newRound() {
   // F auto-tune：上一回合结束 → 观测用药数 + 复位计数
@@ -94,7 +97,7 @@ export function newRound() {
           "Continue?\nYou either have too little Stamina or have lost too much"
         )
       ) {
-        pauseChange();
+        runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
         return;
       }
     }

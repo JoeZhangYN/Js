@@ -6,7 +6,10 @@ import { gE } from "../dom/query.js";
 import { attemptClick, attemptClickWithTarget } from "../dom/attempt-click.js";
 import { scheduleReload } from "../core/navigate.js";
 import { _alert } from "../core/lang.js";
-import { pauseScript } from "./pause-control.js";
+import {
+  BattlePauseEvent,
+  runBattlePauseAutomation,
+} from "./pause-automation.js";
 import { checkAndActivateSpirit } from "./buff/activate-spirit.js";
 import { executeAttack } from "./attack/execute-attack.js";
 import { executeChannel } from "./buff/execute-channel.js";
@@ -44,12 +47,12 @@ export function dispatch(result, snap) {
 
     case "alert-and-pause":
       _alert(0, result.msg.l0, result.msg.l1, result.msg.l2);
-      pauseScript(); // setValue disabled + 按钮文案
+      runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
       return true;
 
     case "pause":
       // autoPause：纯暂停（无 alert），setValue disabled + 按钮文案
-      pauseScript();
+      runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
       return true;
 
     case "critical-pause":

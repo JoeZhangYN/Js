@@ -4,10 +4,7 @@
 // import step 实现，强制新增/调整 step 走 battle/rules/index.js。
 // 保留的 import 仅 pre-step 必执行项（monitor/bug guard/monster status）+ 基础设施（snapshot/cd-tracker）。
 // file-size-gate: exempt phase-5b-mainloop
-import { gE } from "../dom/query.js";
-import { getValue, delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
-import { _alert } from "../core/lang.js";
 import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
@@ -20,20 +17,13 @@ import {
 import { runRules } from "./step-runner.js";
 import { BATTLE_RULES } from "./rules/index.js";
 import { prepareBattleTurnContext } from "./turn-context.js";
-import { pauseScript } from "./pause-control.js";
+import {
+  BattlePauseEvent,
+  runBattlePauseAutomation,
+} from "./pause-automation.js";
 
 export function main() {
-  if (getValue("disabled")) {
-    document.title = _alert(
-      -1,
-      "hvAutoAttack暂停中",
-      "hvAutoAttack暫停中",
-      "hvAutoAttack Paused"
-    );
-    gE("#hvAABox2>button").innerHTML =
-      "<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>";
-    return;
-  }
+  if (runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })) return;
 
   runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY });
   g("turn", g("turn") + 1);
@@ -46,16 +36,4 @@ export function main() {
   // 编排倒置：遍历 BATTLE_RULES（when 门控 → PURE decide → dispatch），某 rule act 即停止后续。
   // 替代原 runSteps([...18 内联闭包...]) —— 行动决策链现声明在 battle/rules/index.js。
   runRules(BATTLE_RULES, snap, g("option"));
-}
-
-export function pauseChange() {
-  if (getValue("disabled")) {
-    if (gE(".pauseChange"))
-      gE(".pauseChange").innerHTML =
-        "<l0>暂停</l0><l1>暫停</l1><l2>Pause</l2>";
-    delValue(0);
-    main();
-  } else {
-    pauseScript();
-  }
 }

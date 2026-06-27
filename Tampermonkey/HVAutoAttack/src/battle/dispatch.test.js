@@ -72,7 +72,7 @@ describe("dispatch", () => {
     expect(flee.click).toHaveBeenCalledOnce();
   });
 
-  it("pause → pauseScript 暂停，返 true", () => {
+  it("pause → pause automation 暂停，返 true", () => {
     expect(dispatch({ kind: "pause" })).toBe(true);
   });
 

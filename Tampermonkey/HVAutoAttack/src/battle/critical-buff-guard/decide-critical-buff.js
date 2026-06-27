@@ -9,9 +9,11 @@
 // 1. opt.pauseOnCriticalBuffExpire 开启
 // 2. opt.criticalBuffsList 中至少一个 buff 当前 turns <= minTurns（Infinity 永续不算"即将消失"）
 // 3. 当前 MP < criticalBuffMpFloor%（续 buff 大概率失败的阈值）
-import { gE } from "../../dom/query.js";
-import { setValue } from "../../state/storage.js";
 import { setAlarm } from "../../alarm/alarm.js";
+import {
+  BattlePauseEvent,
+  runBattlePauseAutomation,
+} from "../pause-automation.js";
 
 /**
  * PURE：关键 buff 即将消失 + MP 不足 → 触发暂停决策。**不读 DOM**——只读 opt/snap。
@@ -58,10 +60,6 @@ export function executeCriticalPause(plan) {
     `[critical-buff-guard] "${plan.name}" 剩 ${plan.turns} 回合 + MP ${plan.mp.toFixed(0)}% < ${plan.mpFloor}% → 暂停脚本，请手动接管`
   );
   setAlarm("Error");
-  setValue("disabled", true);
-  const pauseBtn = gE(".pauseChange");
-  if (pauseBtn) {
-    pauseBtn.innerHTML = "<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>";
-  }
+  runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
   document.title = `hvAA 暂停: ${plan.name} 即将消失但 MP 不足`;
 }

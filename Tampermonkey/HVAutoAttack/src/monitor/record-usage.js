@@ -4,7 +4,10 @@ import { setValue, getValue, delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { setAudioAlarm } from "../alarm/alarm.js";
-import { pauseScript } from "../battle/pause-control.js";
+import {
+  BattlePauseEvent,
+  runBattlePauseAutomation,
+} from "../battle/pause-automation.js";
 
 export function recordUsage(parm) {
   const stats = getValue("stats", true) || {
@@ -196,7 +199,7 @@ export function recordUsage(parm) {
   }
   if (debug && log) {
     console.table(stats);
-    pauseScript();
+    runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
   }
   setValue("stats", stats);
 }

@@ -5,7 +5,11 @@ import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { reloader } from "./reloader.js";
 import { newRound } from "./new-round.js";
-import { main, pauseChange } from "./main-loop.js";
+import { main } from "./main-loop.js";
+import {
+  BattlePauseEvent,
+  runBattlePauseAutomation,
+} from "./pause-automation.js";
 import {
   MonsterKnowledgeEvent,
   runMonsterKnowledgeAutomation,
@@ -19,7 +23,10 @@ function setupPauseControls() {
     button.innerHTML = "<l0>暂停</l0><l1>暫停</l1><l2>Pause</l2>";
     button.className = "pauseChange";
     button.onclick = function () {
-      pauseChange();
+      runBattlePauseAutomation(
+        { type: BattlePauseEvent.TOGGLE },
+        { resume: main }
+      );
     };
   }
   if (g("option").pauseHotkey) {
@@ -29,7 +36,12 @@ function setupPauseControls() {
         if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
           return;
         }
-        if (e.key === g("option").pauseHotkeyKey) pauseChange();
+        if (e.key === g("option").pauseHotkeyKey) {
+          runBattlePauseAutomation(
+            { type: BattlePauseEvent.TOGGLE },
+            { resume: main }
+          );
+        }
       },
       false
     );
