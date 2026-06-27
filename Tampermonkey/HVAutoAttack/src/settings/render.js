@@ -705,20 +705,19 @@ export function optionBox() {
     rmListItem(code);
   };
   gE(".hvAAExport", optionBox).onclick = function () {
-    const t = runOptionAutomation({ type: OptionEvent.READ });
-    gE(".hvAAConfig").value = typeof t === "string" ? t : JSON.stringify(t);
+    gE(".hvAAConfig").value = runOptionAutomation({ type: OptionEvent.EXPORT_TEXT });
   };
   gE(".hvAAImport", optionBox).onclick = function () {
-    let option;
-    try {
-      option = JSON.parse(gE(".hvAAConfig").value);
-    } catch {
+    const parsed = runOptionAutomation({
+      type: OptionEvent.PARSE_IMPORT_TEXT,
+      text: gE(".hvAAConfig").value,
+    });
+    if (!parsed.ok) {
       _alert(0, "配置格式错误", "配置格式錯誤", "Invalid configuration format");
       return;
     }
-    if (!option) return;
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      runOptionAutomation({ type: OptionEvent.WRITE, option });
+      runOptionAutomation({ type: OptionEvent.WRITE, option: parsed.option });
       runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
     }
   };

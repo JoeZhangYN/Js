@@ -17,6 +17,8 @@ const EVENT_CLEAR = "clear";
 const EVENT_READ_FIELD = "readField";
 const EVENT_IS_ON = "isOn";
 const EVENT_WRITE_FIELD = "writeField";
+const EVENT_EXPORT_TEXT = "exportText";
+const EVENT_PARSE_IMPORT_TEXT = "parseImportText";
 
 export const OptionEvent = Object.freeze({
   READ: EVENT_READ,
@@ -25,6 +27,8 @@ export const OptionEvent = Object.freeze({
   READ_FIELD: EVENT_READ_FIELD,
   IS_ON: EVENT_IS_ON,
   WRITE_FIELD: EVENT_WRITE_FIELD,
+  EXPORT_TEXT: EVENT_EXPORT_TEXT,
+  PARSE_IMPORT_TEXT: EVENT_PARSE_IMPORT_TEXT,
 });
 
 function readOption() {
@@ -77,6 +81,20 @@ function setOption(key, val) {
   writeOption(opt);
 }
 
+function exportOptionText() {
+  const option = readOption();
+  return typeof option === "string" ? option : JSON.stringify(option);
+}
+
+function parseOptionImportText(text) {
+  try {
+    const option = JSON.parse(text);
+    return option ? { ok: true, option } : { ok: false };
+  } catch {
+    return { ok: false };
+  }
+}
+
 export function runOptionAutomation(event = { type: EVENT_READ }) {
   if (event.type === EVENT_READ) return readOption();
   if (event.type === EVENT_WRITE) {
@@ -93,5 +111,7 @@ export function runOptionAutomation(event = { type: EVENT_READ }) {
     setOption(event.key, event.value);
     return undefined;
   }
+  if (event.type === EVENT_EXPORT_TEXT) return exportOptionText();
+  if (event.type === EVENT_PARSE_IMPORT_TEXT) return parseOptionImportText(event.text);
   return undefined;
 }

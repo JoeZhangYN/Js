@@ -60,4 +60,24 @@ describe("option persistence entry", () => {
     expect(runOptionAutomation({ type: OptionEvent.IS_ON, key: "mlAnswer" })).toBe(true);
     expect(runOptionAutomation({ type: OptionEvent.IS_ON, key: "riddleHelperUi" })).toBe(false);
   });
+
+  it("exports and parses option text through the entry", () => {
+    runOptionAutomation({
+      type: OptionEvent.WRITE,
+      option: { version: "10.0", lang: "2" },
+    });
+
+    expect(runOptionAutomation({ type: OptionEvent.EXPORT_TEXT })).toBe(
+      JSON.stringify({ version: "10.0", lang: "2" })
+    );
+    expect(
+      runOptionAutomation({
+        type: OptionEvent.PARSE_IMPORT_TEXT,
+        text: '{"version":"10.0","lang":"1"}',
+      })
+    ).toEqual({ ok: true, option: { version: "10.0", lang: "1" } });
+    expect(runOptionAutomation({ type: OptionEvent.PARSE_IMPORT_TEXT, text: "not json" })).toEqual({
+      ok: false,
+    });
+  });
 });
