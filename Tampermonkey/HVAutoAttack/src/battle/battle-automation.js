@@ -3,7 +3,7 @@ import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { reloader } from "./reloader.js";
-import { newRound } from "./new-round.js";
+import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 import { main } from "./main-loop.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import {
@@ -60,7 +60,7 @@ export function runBattleAutomation() {
   setupPauseControls();
   reloader();
   initBattleRuntime();
-  newRound();
+  runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
   setupMonsterKnowledge();
   setupBattleMonitor();
   main();

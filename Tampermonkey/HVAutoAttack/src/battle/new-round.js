@@ -12,7 +12,13 @@ import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status
 import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
 import { BattleStaminaEvent, runBattleStaminaAutomation } from "./battle-stamina.js";
 
-export function newRound() {
+const EVENT_ROUND_STARTED = "roundStarted";
+
+export const BattleRoundStartEvent = Object.freeze({
+  ROUND_STARTED: EVENT_ROUND_STARTED,
+});
+
+function startRound() {
   // F auto-tune：上一回合结束 → 观测用药数 + 复位计数
   if (g("option")?.autoTune && (g("turn") || 0) > 0) {
     const used = g("autoTunePotionCount") || 0;
@@ -77,4 +83,14 @@ export function newRound() {
     T1: 0,
   });
   runMonsterKnowledgeAutomation({ type: MonsterKnowledgeEvent.ROUND_STARTED });
+}
+
+export function runBattleRoundStartAutomation(event = { type: EVENT_ROUND_STARTED }) {
+  if (event.type !== EVENT_ROUND_STARTED) return false;
+  startRound();
+  return true;
+}
+
+export function newRound() {
+  return runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
 }

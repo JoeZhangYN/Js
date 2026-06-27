@@ -19,7 +19,7 @@ import {
   runBattleCompletionAutomation,
 } from "./battle-completion.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
-import { newRound } from "./new-round.js";
+import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 import { main } from "./main-loop.js";
 
 export function reloader() {
@@ -66,7 +66,7 @@ export function reloader() {
           gE("#battle_main").replaceChild(gE("#battle_left", data), gE("#battle_left"));
           unsafeWindow.battle = new unsafeWindow.Battle();
           unsafeWindow.battle.clear_infopane();
-          newRound();
+          runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
           main();
         });
       }

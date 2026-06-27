@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const battleFile = path.join(root, "src/battle/battle-automation.js");
+const reloaderFile = path.join(root, "src/battle/reloader.js");
 const violations = [];
 
 function rel(file) {
@@ -44,10 +45,28 @@ function checkBattleEntry() {
   if (!/export function runBattleAutomation\(/.test(text)) {
     violations.push(`${rel(battleFile)} must expose runBattleAutomation()`);
   }
+  if (!text.includes("runBattleRoundStartAutomation")) {
+    violations.push(`${rel(battleFile)} must start rounds through runBattleRoundStartAutomation()`);
+  }
+}
+
+function checkRoundStartCallers() {
+  for (const file of [battleFile, reloaderFile]) {
+    const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+    lines.forEach((line, index) => {
+      if (line.includes("runBattleRoundStartAutomation")) return;
+      if (/\bnewRound\s*\(/.test(line)) {
+        violations.push(
+          `${rel(file)}:${index + 1} legacy newRound() call is forbidden; use runBattleRoundStartAutomation(event)`
+        );
+      }
+    });
+  }
 }
 
 checkInit();
 checkBattleEntry();
+checkRoundStartCallers();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");
