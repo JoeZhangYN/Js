@@ -192,6 +192,19 @@ function checkFile(file) {
 
 walk(srcDir);
 
+const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
+if (!/\bWIDGET_TIMER_ELAPSED\b/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must expose widget timer expiry as an encounter event`
+  );
+}
+if (!/\bWIDGET_TIMER_ELAPSED\b/.test(hvUtilsText)) {
+  violations.push(
+    `${hvUtilsFile.replaceAll("\\", "/")} widget countdown expiry must report WIDGET_TIMER_ELAPSED`
+  );
+}
+
 if (violations.length) {
   console.error("[verify-encounter-boundary] FAIL");
   for (const v of violations) console.error(`- ${v}`);

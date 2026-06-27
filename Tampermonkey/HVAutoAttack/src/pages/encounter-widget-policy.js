@@ -5,11 +5,14 @@ function readWidgetState(state) {
     type: EncounterPolicyEvent.READINESS,
     state,
   });
+  const status =
+    readiness.remainingMs > 0 ? "countdown" : readiness.state.clear ? "ready" : "missed";
   return {
     state: readiness.state,
     remainingMs: readiness.remainingMs,
     count: readiness.state.count,
-    status: readiness.remainingMs > 0 ? "countdown" : readiness.state.clear ? "ready" : "missed",
+    status,
+    attemptKey: `${readiness.state.date}:${readiness.state.key}:${readiness.state.clear}:${status}`,
     warn: !readiness.state.clear,
   };
 }
@@ -59,6 +62,17 @@ function planWidgetClick(event) {
     return { ...readWidgetState(plan.state), action: "navigate", href: plan.href };
   }
   return { ...readWidgetState(plan.state), action: "load", engage: true };
+}
+
+function planWidgetTimerElapsed(event) {
+  const current = readWidgetState(event.state);
+  if (current.status === "countdown") return current;
+  if (event.lastAttemptKey === current.attemptKey) return { ...current, action: "none" };
+  if (event.pageType === "eh") return { ...current, action: "checkHv", engage: true };
+  return {
+    ...planWidgetClick({ ...event, force: true }),
+    attemptKey: current.attemptKey,
+  };
 }
 
 function planWidgetNewsLoaded(event) {
@@ -125,6 +139,7 @@ export function planEncounterWidgetEvent(event) {
     return readWidgetState(runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY }));
   }
   if (event.type === "widgetClicked") return planWidgetClick(event);
+  if (event.type === "widgetTimerElapsed") return planWidgetTimerElapsed(event);
   if (event.type === "widgetNewsLoaded") return planWidgetNewsLoaded(event);
   return undefined;
 }

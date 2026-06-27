@@ -746,6 +746,7 @@ const bindRe = function (re, ctx) {
     if (readiness.status === 'countdown') {
       re.button.textContent = time_format(readiness.remainingMs, 2) + ` [${readiness.count}]`;
       re.beep = true;
+      re.readyAttemptKey = '';
     } else {
       re.button.textContent = (readiness.status === 'missed' ? '已错失' : '遭遇战') + ` [${readiness.count}]`;
       if (re.beep) {
@@ -753,6 +754,12 @@ const bindRe = function (re, ctx) {
         play_beep(...ctx.config.settings.reBeep);
       }
       re.stop();
+      const outcome = runEncounter({ type: encounterEvent().WIDGET_TIMER_ELAPSED, state: re.json, pageType: re.type, lastAttemptKey: re.readyAttemptKey, galleryAlt: ctx.config.settings.reGalleryAlt });
+      applyEncounterState(outcome);
+      if (outcome?.attemptKey) re.readyAttemptKey = outcome.attemptKey;
+      if (outcome?.handled) return;
+      if (outcome?.action === 'load') return re.load(outcome.engage);
+      if (outcome?.action === 'checkHv') return re.run(outcome.engage);
     }
   };
   re.run = async function (engage) {

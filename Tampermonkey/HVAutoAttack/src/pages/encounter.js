@@ -15,6 +15,7 @@ const EVENT_WIDGET_LINK_FOUND = "widgetLinkFound";
 const EVENT_WIDGET_STARTED_ENCOUNTER = "widgetStartedEncounter";
 const EVENT_WIDGET_RESET_DAY = "widgetResetDay";
 const EVENT_WIDGET_CLICKED = "widgetClicked";
+const EVENT_WIDGET_TIMER_ELAPSED = "widgetTimerElapsed";
 const EVENT_WIDGET_NEWS_LOADED = "widgetNewsLoaded";
 
 let scheduledLobbyTick = null;
@@ -27,6 +28,7 @@ export const EncounterEvent = Object.freeze({
   WIDGET_STARTED_ENCOUNTER: EVENT_WIDGET_STARTED_ENCOUNTER,
   WIDGET_RESET_DAY: EVENT_WIDGET_RESET_DAY,
   WIDGET_CLICKED: EVENT_WIDGET_CLICKED,
+  WIDGET_TIMER_ELAPSED: EVENT_WIDGET_TIMER_ELAPSED,
   WIDGET_NEWS_LOADED: EVENT_WIDGET_NEWS_LOADED,
 });
 
