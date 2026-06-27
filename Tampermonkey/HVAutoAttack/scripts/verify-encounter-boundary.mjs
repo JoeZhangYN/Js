@@ -5,6 +5,8 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/pages/encounter.js");
 const stateHelper = path.normalize("src/pages/encounter-state.js");
+const policyFile = path.normalize("src/pages/encounter-policy.js");
+const bridgeFile = path.normalize("src/pages/encounter-bridge.js");
 const violations = [];
 
 function walk(dir) {
@@ -29,9 +31,7 @@ function checkFile(file) {
 
   lines.forEach((line, index) => {
     const where = `${rel(file)}:${index + 1}`;
-    if (
-      /\b(?:getValue|setValue|delValue)\(\s*["']encounter["']/.test(line)
-    ) {
+    if (/\b(?:getValue|setValue|delValue)\(\s*["']encounter["']/.test(line)) {
       violations.push(
         `${where} legacy hvAA encounter storage is forbidden; use hvut_re through runEncounterAutomation(event)`
       );
@@ -39,19 +39,18 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== stateHelper &&
+      relative !== policyFile &&
+      relative !== bridgeFile &&
       /\bhvut_re\b/.test(line)
     ) {
-      violations.push(
-        `${where} direct hvut_re access outside encounter boundary is forbidden`
-      );
+      violations.push(`${where} direct hvut_re access outside encounter boundary is forbidden`);
     }
     if (
       relative !== owner &&
+      relative !== bridgeFile &&
       /from\s+["']\.\/encounter-state\.js["']/.test(line)
     ) {
-      violations.push(
-        `${where} encounter-state is internal; import runEncounterAutomation(event)`
-      );
+      violations.push(`${where} encounter-state is internal; import runEncounterAutomation(event)`);
     }
     if (/\bencounterCheck\b/.test(line)) {
       violations.push(
@@ -59,9 +58,13 @@ function checkFile(file) {
       );
     }
     if (/\blastEncounter\b/.test(line)) {
-      violations.push(
-        `${where} legacy lastEncounter cache/UI is forbidden; use hvut_re countdown`
-      );
+      violations.push(`${where} legacy lastEncounter cache/UI is forbidden; use hvut_re countdown`);
+    }
+    if (relative !== policyFile && /\b1800000\b|30\s*\*\s*60\s*\*\s*1000/.test(line)) {
+      violations.push(`${where} encounter interval belongs in encounter-policy.js`);
+    }
+    if (relative !== policyFile && /encounter=\(\[A-Za-z0-9=\]\+\)/.test(line)) {
+      violations.push(`${where} encounter key parsing belongs in encounter-policy.js`);
     }
   });
 }

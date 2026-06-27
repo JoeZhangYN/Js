@@ -2,6 +2,7 @@
 // SOT：原始单文件 ../legacy/[HV]AutoAttack.legacy.js（永不修改）。
 import { initEquipTranslate } from "./i18n/equip-translate.js"; // indefined HV物品装备汉化 #404119（装备词条 + 词缀分色）
 import { initInterfaceTranslate } from "./i18n/interface-translate.js"; // indefined HentaiVerse汉化(界面) #404118（角色页/界面词条，含 Fighting Style 等）
+import "./pages/encounter-bridge.js"; // hv-utils sloppy-mode 不能 import；随机遭遇业务口径通过桥复用。
 import "./i18n/hv-utils.js"; // 副作用 import：HV Utils 统一汉化（sssss2）自执行，整页汉化。
 import { init } from "./pages/init.js";
 import { g } from "./state/store.js";

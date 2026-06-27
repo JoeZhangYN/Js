@@ -705,7 +705,7 @@ const bindRe = function (re, ctx) {
     re.init();
     const link = $qs('#eventpane a');
     const onclick = link?.getAttribute('onclick');
-    const key = onclick?.match(/\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/)?.[1];
+    const key = window.HVAA_encounter?.parseEncounterKeyFromSearch(onclick);
     if (key) {
       re.set(key);
       if (ctx.config.settings.reGalleryAlt) {
@@ -720,9 +720,15 @@ const bindRe = function (re, ctx) {
   };
   re.get = function () {
     re.json = ctx.config.get('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
+    if (window.HVAA_encounter) {
+      re.json = window.HVAA_encounter.normalizeEncounterState(re.json);
+      ctx.config.set('re', re.json, 'hvut_');
+    }
   };
   re.set = function (key) {
-    if (key) {
+    if (window.HVAA_encounter) {
+      re.json = key ? window.HVAA_encounter.markEncounterKeyAvailable(re.json, key) : window.HVAA_encounter.normalizeEncounterState(re.json);
+    } else if (key) {
       re.json.key = key;
       re.json.date = Date.now();
       re.json.count++;
@@ -731,32 +737,24 @@ const bindRe = function (re, ctx) {
     ctx.config.set('re', re.json, 'hvut_');
   };
   re.reset = function () {
-    re.json.date = Date.now();
-    re.json.count = 0;
-    re.json.clear = true;
-    re.set();
+    if (window.HVAA_encounter) {
+      re.json = window.HVAA_encounter.resetEncounterDay();
+      ctx.config.set('re', re.json, 'hvut_');
+    } else {
+      re.json.date = Date.now();
+      re.json.count = 0;
+      re.json.clear = true;
+      re.set();
+    }
     re.start();
   };
   re.check = function () {
-    const key = /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(location.search)?.[1];
-    if (key) {
-      const now = Date.now();
-      if (re.json.key === key) {
-        if (!re.json.clear) {
-          re.json.clear = true;
-          re.set();
-        }
-      } else if (re.json.date + 1800000 < now) {
-        re.json.date = now;
-        re.json.key = key;
-        re.json.count++;
-        re.json.clear = true;
-        re.set();
-      }
-    }
+    if (!window.HVAA_encounter) { return; }
+    re.json = window.HVAA_encounter.markEncounterStarted(re.json, { search: location.search });
+    re.set();
   };
   re.refresh = function () {
-    const remain = re.json.date + 1800000 - Date.now();
+    const remain = window.HVAA_encounter?.msUntilEncounterReady(re.json) ?? 0;
     if (remain > 0) {
       re.button.textContent = time_format(remain, 2) + ` [${re.json.count}]`;
       re.beep = true;
@@ -800,7 +798,7 @@ const bindRe = function (re, ctx) {
     const html = await $ajax.fetch('https://e-hentai.org/news.php');
     const doc = $doc(html);
     const eventpane = $id('eventpane', doc)?.innerHTML;
-    const key = eventpane?.match(/\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/)?.[1];
+    const key = window.HVAA_encounter?.parseEncounterKeyFromEventpaneHtml(eventpane);
     if (key) {
       re.set(key);
       if (engage) {
@@ -819,7 +817,8 @@ const bindRe = function (re, ctx) {
     if (!re.json.key) {
       return;
     }
-    const href = `?s=Battle&ss=ba&encounter=${re.json.key}`;
+    const href = window.HVAA_encounter?.buildEncounterUrl(re.json.key);
+    if (!href) { return; }
     if (re.type === 'ba') {
       return;
     } else if (re.type === 'hv') {

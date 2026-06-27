@@ -5,9 +5,13 @@ import { goto, openUrl } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { readStaminaValue } from "../state/stamina.js";
 import {
+  buildEncounterUrl,
+  canEnterEncounterState,
+  msUntilEncounterReady,
+} from "./encounter-policy.js";
+import {
   loadEncounterKey,
   markRandomEncounterStarted,
-  msUntilReady,
   readCurrentReState,
 } from "./encounter-state.js";
 
@@ -27,24 +31,17 @@ function syncDateNow() {
 }
 
 function msUntilNextUtcMidnight(now = new Date()) {
-  const nextMidnight = Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate() + 1
-  );
+  const nextMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
   return nextMidnight - now.getTime();
 }
 
 function nextEncounterCheckDelayMs(now = new Date()) {
   const jitteredMinute = (60 * 1000 * (Math.random() * 10 + 95)) / 100;
-  return Math.min(
-    jitteredMinute,
-    msUntilNextUtcMidnight(now) + MIDNIGHT_TRIGGER_DELAY_MS
-  );
+  return Math.min(jitteredMinute, msUntilNextUtcMidnight(now) + MIDNIGHT_TRIGGER_DELAY_MS);
 }
 
 function scheduleNextLobbyTick(state = readCurrentReState()) {
-  const dueDelay = msUntilReady(state) + MIDNIGHT_TRIGGER_DELAY_MS;
+  const dueDelay = msUntilEncounterReady(state) + MIDNIGHT_TRIGGER_DELAY_MS;
   setTimeout(
     () => runEncounterAutomation({ type: EVENT_LOBBY_TICK }),
     Math.min(nextEncounterCheckDelayMs(), dueDelay)
@@ -52,12 +49,12 @@ function scheduleNextLobbyTick(state = readCurrentReState()) {
 }
 
 function canEnterEncounter(state) {
-  return state.key && !state.clear;
+  return canEnterEncounterState(state);
 }
 
 function enterEncounter(state) {
   if (!state.key) return;
-  openUrl(`?s=Battle&ss=ba&encounter=${state.key}`);
+  openUrl(buildEncounterUrl(state.key));
 }
 
 async function runLobbyTick() {
@@ -71,14 +68,11 @@ async function runLobbyTick() {
     enterEncounter(state);
     return true;
   }
-  if (msUntilReady(state) > 0) {
+  if (msUntilEncounterReady(state) > 0) {
     scheduleNextLobbyTick(state);
     return false;
   }
-  if (
-    g("option").restoreStamina &&
-    readStaminaValue() <= g("option").staminaLow
-  ) {
+  if (g("option").restoreStamina && readStaminaValue() <= g("option").staminaLow) {
     post(window.location.href, goto, "recover=stamina");
     return true;
   }
