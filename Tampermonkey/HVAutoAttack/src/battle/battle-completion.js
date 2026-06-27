@@ -17,11 +17,11 @@ export const BattleCompletionOutcome = Object.freeze({
   ONGOING: "ongoing",
 });
 
-function readCompletionContext(deps) {
+function readCompletionContext() {
   return {
-    monsterAlive: deps.g("monsterAlive"),
-    roundNow: deps.g("roundNow"),
-    roundAll: deps.g("roundAll"),
+    monsterAlive: g("monsterAlive"),
+    roundNow: g("roundNow"),
+    roundAll: g("roundAll"),
   };
 }
 
@@ -33,7 +33,7 @@ function classifyCompletion(context) {
 }
 
 function handleCompletionReached(deps) {
-  const outcome = classifyCompletion(readCompletionContext(deps));
+  const outcome = classifyCompletion(deps.readCompletionContext());
   if (outcome === BattleCompletionOutcome.DEFEAT) {
     deps.triggerAlarm("Defeat");
     deps.clearSession();
@@ -48,7 +48,7 @@ function handleCompletionReached(deps) {
 export function runBattleCompletionAutomation(
   event = { type: EVENT_COMPLETION_REACHED },
   deps = {
-    g,
+    readCompletionContext,
     triggerAlarm: (kind) => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind }),
     clearSession: () => runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION }),
     scheduleReload: (sec) =>

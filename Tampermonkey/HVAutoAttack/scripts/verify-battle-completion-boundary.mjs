@@ -39,6 +39,7 @@ function checkOwner() {
     "CLEAR_SESSION",
     "scheduleReload",
     "readCompletionContext",
+    "deps.readCompletionContext",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -52,6 +53,11 @@ function checkOwner() {
   } else if (/\bg\s*\(/.test(classifyMatch.groups.body)) {
     violations.push(
       `${owner.replaceAll("\\", "/")} must classify from one completion context, not repeated g() reads`
+    );
+  }
+  if (/\bdeps\.g\(\s*["'](?:monsterAlive|roundNow|roundAll)["']/.test(text)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must read completion fields through readCompletionContext`
     );
   }
   if (!fs.existsSync(path.join(root, ownerTest))) {
