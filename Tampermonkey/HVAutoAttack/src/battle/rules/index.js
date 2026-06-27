@@ -34,7 +34,7 @@ export const BATTLE_RULES = [
     when: (snap, opt) => opt.autoFlee && checkCondition(opt.fleeCondition, snap),
     decide: () => ({ kind: "click-then-reload", selector: "1001", delaySec: 3 }),
   },
-  // 3. 自动暂停（step 内 disabled=false 恒走 pauseScript 分支）
+  // 3. 自动暂停（dispatch 交给 runBattlePauseAutomation 统一写暂停状态）
   {
     name: "autoPause",
     when: (snap, opt) => opt.autoPause && checkCondition(opt.pauseCondition, snap),

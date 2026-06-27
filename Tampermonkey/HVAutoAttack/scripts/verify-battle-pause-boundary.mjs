@@ -4,7 +4,6 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const entry = path.normalize("src/battle/pause-automation.js");
-const bridge = path.normalize("src/battle/pause-control.js");
 const storage = path.normalize("src/state/storage.js");
 const violations = [];
 
@@ -33,10 +32,9 @@ function checkFile(file) {
     }
     if (
       relative !== entry &&
-      relative !== bridge &&
       /\bpauseScript\b/.test(line)
     ) {
-      violations.push(`${where} pauseScript bridge is internal; use runBattlePauseAutomation(event)`);
+      violations.push(`${where} legacy pauseScript bridge is forbidden; use runBattlePauseAutomation(event)`);
     }
     if (
       relative !== entry &&
@@ -60,8 +58,16 @@ function checkEntry() {
   }
 }
 
+function checkBridgeRemoved() {
+  const bridge = path.join(root, "src/battle/pause-control.js");
+  if (fs.existsSync(bridge)) {
+    violations.push("src/battle/pause-control.js legacy pause bridge must stay deleted");
+  }
+}
+
 walk(srcDir);
 checkEntry();
+checkBridgeRemoved();
 
 if (violations.length) {
   console.error("[verify-battle-pause-boundary] FAIL");
