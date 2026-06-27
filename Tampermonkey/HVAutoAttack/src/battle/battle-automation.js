@@ -2,7 +2,7 @@
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
-import { reloader } from "./reloader.js";
+import { installBattleActionEventBridge } from "./reloader.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
@@ -58,7 +58,7 @@ function setupBattleMonitor() {
 
 export function runBattleAutomation() {
   setupPauseControls();
-  reloader();
+  installBattleActionEventBridge();
   initBattleRuntime();
   runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
   setupMonsterKnowledge();

@@ -53,6 +53,9 @@ function checkBattleEntry() {
   if (!text.includes("runBattleTurnAutomation")) {
     violations.push(`${rel(battleFile)} must run turns through runBattleTurnAutomation()`);
   }
+  if (!text.includes("installBattleActionEventBridge")) {
+    violations.push(`${rel(battleFile)} must install action events through installBattleActionEventBridge()`);
+  }
 }
 
 function checkRoundStartCallers() {
@@ -102,11 +105,26 @@ function checkTurnEntry() {
   }
 }
 
+function checkActionEventBridgeEntry() {
+  const text = fs.readFileSync(reloaderFile, "utf8");
+  if (!/export function installBattleActionEventBridge\(/.test(text)) {
+    violations.push(`${rel(reloaderFile)} must expose installBattleActionEventBridge()`);
+  }
+  if (/\b(?:export\s+)?function\s+reloader\s*\(/.test(text)) {
+    violations.push(`${rel(reloaderFile)} legacy reloader() bridge must stay deleted; use installBattleActionEventBridge()`);
+  }
+  const battleText = fs.readFileSync(battleFile, "utf8");
+  if (/\breloader\s*\(/.test(battleText)) {
+    violations.push(`${rel(battleFile)} legacy reloader() call is forbidden; use installBattleActionEventBridge()`);
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
 checkRoundStartEntry();
 checkTurnEntry();
+checkActionEventBridgeEntry();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");

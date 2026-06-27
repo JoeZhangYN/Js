@@ -1,4 +1,4 @@
-// 战斗事件监听：eventStart / eventEnd 虚拟节点 + 回合切换 + post 拉新数据。
+// 战斗动作事件桥：eventStart / eventEnd 虚拟节点 + 回合切换 + post 拉新数据。
 // 风险点：内嵌 fakeApiCall 字符串 + 多个闭包变量。Phase 5 不重构此文件。
 // file-size-gate: exempt phase-4-monolith
 import { gE, cE } from "../dom/query.js";
@@ -22,7 +22,7 @@ import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
 
-export function reloader() {
+export function installBattleActionEventBridge() {
   let delayAlert;
   let delayReload;
   const eventStart = cE("a");
