@@ -1,6 +1,7 @@
 // 解析 Ability 页 ?s=Character&ss=ab，提取法术 AoE 目标数 → spellAoe 持久化。
 import { gE } from "../dom/query.js";
 import { getValue, setValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 import { OFFENSIVE_SPELL_LIB } from "../data/spell-lib.js";
@@ -19,7 +20,7 @@ function isAbilityPage() {
 }
 
 function loadStoredAoe() {
-  g("spellAoe", getValue("spellAoe", true) || {});
+  g("spellAoe", getValue(STORAGE_KEYS.SPELL_AOE, true) || {});
   console.log("[AoE] 启动加载 spellAoe:", JSON.stringify(g("spellAoe")));
 }
 
@@ -44,7 +45,7 @@ function parseAbilityPage() {
     }
   }
   console.log("[AoE] 检测结果:", JSON.stringify(spellAoe));
-  setValue("spellAoe", spellAoe);
+  setValue(STORAGE_KEYS.SPELL_AOE, spellAoe);
   // 同步自动检测结果到 option，使设置页面 UI 同步显示
   const option = g("option");
   if (option) {
@@ -60,14 +61,15 @@ function parseAbilityPage() {
         option.spellAoe[key] = spellAoe[name];
       }
     });
-    setValue("option", option);
-    console.log("[AoE] 已同步到 option:", JSON.stringify({ debuffSkillAoe: option.debuffSkillAoe, spellAoe: option.spellAoe }));
+    setValue(STORAGE_KEYS.OPTION, option);
+    console.log(
+      "[AoE] 已同步到 option:",
+      JSON.stringify({ debuffSkillAoe: option.debuffSkillAoe, spellAoe: option.spellAoe })
+    );
   }
 }
 
-export function runAbilityAoeAutomation(
-  event = { type: EVENT_CAPTURE_ABILITY_PAGE }
-) {
+export function runAbilityAoeAutomation(event = { type: EVENT_CAPTURE_ABILITY_PAGE }) {
   if (event.type === EVENT_LOAD_STORED_AOE) {
     loadStoredAoe();
     return;

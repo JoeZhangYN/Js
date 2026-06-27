@@ -27,13 +27,17 @@ function checkFile(file) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("//")) return;
     const where = `${rel(file)}:${index + 1}`;
-    if (relative !== owner && /\b(?:getValue|setValue)\(\s*["']spellAoe["']/.test(line)) {
+    if (/\b(?:getValue|setValue)\(\s*["']spellAoe["']/.test(line)) {
       violations.push(`${where} spellAoe storage belongs in runAbilityAoeAutomation(event)`);
     }
     if (relative !== owner && /\bparseAbilityPage\b/.test(line)) {
       violations.push(`${where} parseAbilityPage is internal; use runAbilityAoeAutomation(event)`);
     }
-    if (relative !== owner && /\bURLSearchParams\b/.test(line) && relative.endsWith("lobby-automation.js")) {
+    if (
+      relative !== owner &&
+      /\bURLSearchParams\b/.test(line) &&
+      relative.endsWith("lobby-automation.js")
+    ) {
       violations.push(`${where} ability page detection belongs in runAbilityAoeAutomation(event)`);
     }
   });
@@ -46,7 +50,9 @@ function checkCallers() {
   }
   const lobby = fs.readFileSync(lobbyFile, "utf8");
   if (!lobby.includes("AbilityAoeEvent.CAPTURE_ABILITY_PAGE")) {
-    violations.push(`${rel(lobbyFile)} must capture ability AoE through runAbilityAoeAutomation(event)`);
+    violations.push(
+      `${rel(lobbyFile)} must capture ability AoE through runAbilityAoeAutomation(event)`
+    );
   }
 }
 
