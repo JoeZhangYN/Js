@@ -8,6 +8,8 @@ const stateHelper = path.normalize("src/pages/encounter-state.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const bridgeFile = path.normalize("src/pages/encounter-bridge.js");
 const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
+const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
+const widgetPolicyFile = path.normalize("src/pages/encounter-widget-policy.js");
 const violations = [];
 
 function walk(dir) {
@@ -29,6 +31,12 @@ function checkFile(file) {
   const relative = path.normalize(path.relative(root, file));
   const text = fs.readFileSync(file, "utf8");
   const lines = text.split(/\r?\n/);
+
+  if (relative === legacyWidgetFile) {
+    violations.push(
+      `${rel(file)} legacy encounter widget implementation must stay collapsed into runEncounterAutomation(event)`
+    );
+  }
 
   lines.forEach((line, index) => {
     const where = `${rel(file)}:${index + 1}`;
@@ -53,9 +61,14 @@ function checkFile(file) {
     ) {
       violations.push(`${where} encounter-state is internal; import runEncounterAutomation(event)`);
     }
-    if (relative !== owner && /from\s+["']\.\/encounter-widget\.js["']/.test(line)) {
+    if (/from\s+["']\.\/encounter-widget\.js["']/.test(line)) {
       violations.push(
         `${where} encounter widget implementation is internal; import runEncounterAutomation(event)`
+      );
+    }
+    if (relative !== owner && /from\s+["']\.\/encounter-widget-policy\.js["']/.test(line)) {
+      violations.push(
+        `${where} encounter widget policy is internal to runEncounterAutomation(event)`
       );
     }
     if (/\bencounterCheck\b/.test(line)) {
@@ -85,6 +98,12 @@ function checkFile(file) {
       violations.push(
         `${where} encounter must return nextCheckMs; lobby automation owns scheduling`
       );
+    }
+    if (
+      relative === widgetPolicyFile &&
+      /\b(?:setTimeout|setInterval|location\.href|window\.open)\b/.test(line)
+    ) {
+      violations.push(`${where} encounter widget policy must stay pure; effects belong to callers`);
     }
     if (
       relative === bridgeFile &&

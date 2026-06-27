@@ -50,9 +50,7 @@ function planWidgetNewsLoaded(event) {
     parseEncounterKeyFromSearch(event.search || "");
   if (key) {
     const state = markEncounterKeyAvailable(event.state, key);
-    if (event.engage) {
-      return planWidgetEngage({ ...event, state });
-    }
+    if (event.engage) return planWidgetEngage({ ...event, state });
     return { ...readWidgetState(state), action: "ready" };
   }
   if (eventpane.includes("It is the dawn of a new day") || event.dawn) {
@@ -79,27 +77,13 @@ function planWidgetEngage(event) {
   return { ...readWidgetState(plan.state), action: "navigate", href: plan.href };
 }
 
-export function runEncounterWidgetAutomation(event) {
-  if (event.type === "widgetTick") {
-    return readWidgetState(event.state);
-  }
-  if (event.type === "widgetLinkFound") {
-    return runWidgetLinkFound(event);
-  }
-  if (event.type === "widgetStartedEncounter") {
-    return runWidgetStartedEncounter(event);
-  }
-  if (event.type === "widgetResetDay") {
-    return readWidgetState(resetEncounterDay());
-  }
-  if (event.type === "widgetClicked") {
-    return planWidgetClick(event);
-  }
-  if (event.type === "widgetNewsLoaded") {
-    return planWidgetNewsLoaded(event);
-  }
-  if (event.type === "widgetEngage") {
-    return planWidgetEngage(event);
-  }
-  return;
+export function planEncounterWidgetEvent(event) {
+  if (event.type === "widgetTick") return readWidgetState(event.state);
+  if (event.type === "widgetLinkFound") return runWidgetLinkFound(event);
+  if (event.type === "widgetStartedEncounter") return runWidgetStartedEncounter(event);
+  if (event.type === "widgetResetDay") return readWidgetState(resetEncounterDay());
+  if (event.type === "widgetClicked") return planWidgetClick(event);
+  if (event.type === "widgetNewsLoaded") return planWidgetNewsLoaded(event);
+  if (event.type === "widgetEngage") return planWidgetEngage(event);
+  return undefined;
 }

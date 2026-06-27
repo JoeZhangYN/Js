@@ -14,7 +14,7 @@ import {
   markRandomEncounterStarted,
   readCurrentReState,
 } from "./encounter-state.js";
-import { runEncounterWidgetAutomation } from "./encounter-widget.js";
+import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
 
 const EVENT_LOBBY_TICK = "lobbyTick";
 const EVENT_RANDOM_ENCOUNTER_STARTED = "randomEncounterStarted";
@@ -92,7 +92,7 @@ export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
     return { claimed: false, nextCheckMs: 0 };
   }
   if (event.type?.startsWith("widget")) {
-    return runEncounterWidgetAutomation(event);
+    return planEncounterWidgetEvent(event);
   }
   return runLobbyTick();
 }
