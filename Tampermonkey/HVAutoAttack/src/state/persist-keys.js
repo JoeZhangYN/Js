@@ -21,6 +21,7 @@ export const STORAGE_KEYS = Object.freeze({
   GLOBAL_TURN: "globalTurn",
   SKILL_LAST_USED: "skillLastUsed",
   // 资源最优化学习器（F3/F4/F5）：
+  LEARNED_RECOVERY: "learnedRecovery", // T1 药品实际恢复量学习（按 potion id 键）
   LEARNED_CD: "learnedCd", // F3 技能真实 CD 收敛（按 SKILL_REGISTRY code 键）
   LEARNED_BIG_KILL: "learnedBigKill", // F4 OFC/FRD 对 boss 的击杀结果记忆（按 MID 键）
   LEARNED_INCOMING_BURST: "learnedIncomingBurst", // F5 进场爆发伤害 + 类型（按 MID 键，名 fallback）

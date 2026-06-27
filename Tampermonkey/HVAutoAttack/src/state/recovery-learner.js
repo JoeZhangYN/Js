@@ -8,6 +8,7 @@
 //   后续决策 getLearnedRecovery(potionId) 优先返学到值，缺省 fallback POTION_RECOVERY
 import { g } from "./store.js";
 import { setValue, getValue } from "./storage.js";
+import { STORAGE_KEYS } from "./persist-keys.js";
 import { POTION_RECOVERY } from "../battle/potion-economy.js";
 
 /**
@@ -42,7 +43,9 @@ export function finalizePending(snap) {
   if (delta <= 0) {
     // 怪物攻击/regen 干扰，不可信，丢弃
     if (g("option")?.dynamicHealLog) {
-      console.log(`[recovery-learn] discard ${pending.potionId}: delta=${delta.toFixed(0)} (interference)`);
+      console.log(
+        `[recovery-learn] discard ${pending.potionId}: delta=${delta.toFixed(0)} (interference)`
+      );
     }
     return;
   }
@@ -50,7 +53,7 @@ export function finalizePending(snap) {
 }
 
 function updateLearned(potionId, observedDelta) {
-  const learned = getValue("learnedRecovery", true) || {};
+  const learned = getValue(STORAGE_KEYS.LEARNED_RECOVERY, true) || {};
   const prior = learned[potionId];
   const n = (prior?.n ?? 0) + 1;
   const priorAmt = prior?.amount ?? POTION_RECOVERY[potionId]?.amount ?? observedDelta;
@@ -58,9 +61,11 @@ function updateLearned(potionId, observedDelta) {
   const alpha = Math.max(0.1, 1 / n);
   const newAmt = priorAmt * (1 - alpha) + observedDelta * alpha;
   learned[potionId] = { amount: newAmt, n };
-  setValue("learnedRecovery", learned);
+  setValue(STORAGE_KEYS.LEARNED_RECOVERY, learned);
   if (g("option")?.dynamicHealLog) {
-    console.log(`[recovery-learn] ${potionId}: delta=${observedDelta.toFixed(0)} → learned=${newAmt.toFixed(0)} (n=${n})`);
+    console.log(
+      `[recovery-learn] ${potionId}: delta=${observedDelta.toFixed(0)} → learned=${newAmt.toFixed(0)} (n=${n})`
+    );
   }
 }
 
@@ -73,7 +78,7 @@ export function getLearnedRecovery(potionId) {
   const id = parseInt(potionId);
   const fallback = POTION_RECOVERY[id];
   if (!fallback) return null;
-  const learned = getValue("learnedRecovery", true) || {};
+  const learned = getValue(STORAGE_KEYS.LEARNED_RECOVERY, true) || {};
   if (learned[id] && learned[id].n > 0) {
     return { stat: fallback.stat, amount: learned[id].amount };
   }
