@@ -9,49 +9,24 @@ import { post } from "../dom/http.js";
 import { time } from "../core/time.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { MAIN_URL } from "../env.js";
-import { dropMonitor } from "../monitor/drop-monitor.js";
-import { recordUsage, recordUsage2 } from "../monitor/record-usage.js";
+import {
+  BattleMonitorEvent,
+  runBattleMonitorAutomation,
+} from "../monitor/battle-monitor-automation.js";
 import { newRound } from "./new-round.js";
 import { main } from "./main-loop.js";
 
 export function reloader() {
   let delayAlert;
   let delayReload;
-  let obj;
-  let a;
-  let cost;
   const eventStart = cE("a");
   eventStart.id = "eventStart";
   eventStart.onclick = function () {
-    a = unsafeWindow.info;
     if (g("option").delayAlert)
       delayAlert = setTimeout(setAlarm, g("option").delayAlertTime * 1000);
     if (g("option").delayReload)
       delayReload = scheduleReload(g("option").delayReloadTime);
-    if (g("option").recordUsage) {
-      obj = {
-        mode: a.mode,
-      };
-      if (a.mode === "items") {
-        const itemEl = gE(
-          `#pane_item div[id^="ikey"][onclick*="skill('${a.skill}')"]`
-        );
-        obj.item = itemEl ? itemEl.textContent : a.skill;
-      } else if (a.mode === "magic") {
-        const magicEl = gE(a.skill);
-        obj.magic = magicEl ? magicEl.textContent : a.skill;
-        const onmouseover = magicEl
-          ? magicEl.getAttribute("onmouseover")
-          : null;
-        cost = onmouseover
-          ? onmouseover.match(
-              /\('.*', '.*', '.*', (\d+), (\d+), \d+\)/
-            )
-          : null;
-        obj.mp = cost ? cost[1] * 1 : 0;
-        obj.oc = cost ? cost[2] * 1 : 0;
-      }
-    }
+    runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_STARTED });
   };
   gE("body").appendChild(eventStart);
   const eventEnd = cE("a");
@@ -69,14 +44,11 @@ export function reloader() {
       "all"
     ).length;
     g("bossAlive", g("bossAll") - bossDead);
-    const battleLog = gE("#textlog>tbody>tr>td", "all");
-    if (g("option").recordUsage) {
-      obj.log = battleLog;
-      recordUsage(obj);
-    }
+    runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_ENDED });
     if (gE("#btcp")) {
-      if (g("option").dropMonitor) dropMonitor(battleLog);
-      if (g("option").recordUsage) recordUsage2();
+      runBattleMonitorAutomation({
+        type: BattleMonitorEvent.COMPLETION_REACHED,
+      });
       if (g("monsterAlive") > 0) {
         // Defeat
         setAlarm("Defeat");

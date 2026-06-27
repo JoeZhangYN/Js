@@ -2,14 +2,17 @@
 // Phase 5b 编排倒置：main() 只依赖 BATTLE_RULES + runRules 两个抽象，16 个 step 的具体实现
 // 全在 battle/rules/（组合根）。拆桥 gate scripts/check-mainloop-imports.mjs 禁止本文件回退
 // import step 实现，强制新增/调整 step 走 battle/rules/index.js。
-// 保留的 import 仅 pre-step 必执行项（battleInfo/killBug/countMonsterHP）+ 基础设施（snapshot/cd-tracker）。
+// 保留的 import 仅 pre-step 必执行项（monitor/killBug/countMonsterHP）+ 基础设施（snapshot/cd-tracker）。
 // file-size-gate: exempt phase-5b-mainloop
 import { gE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { goto } from "../core/navigate.js";
-import { battleInfo } from "../monitor/battle-info.js";
+import {
+  BattleMonitorEvent,
+  runBattleMonitorAutomation,
+} from "../monitor/battle-monitor-automation.js";
 import { killBug } from "./kill-bug.js";
 import { countMonsterHP } from "./attack.js";
 import { runRules } from "./step-runner.js";
@@ -42,7 +45,7 @@ export function main() {
     fixMonsterStatus();
   }
   g("turn", g("turn") + 1);
-  battleInfo();
+  runBattleMonitorAutomation({ type: BattleMonitorEvent.HUD_REFRESH });
   killBug();
   countMonsterHP();
 
