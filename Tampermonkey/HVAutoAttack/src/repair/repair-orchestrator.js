@@ -15,7 +15,7 @@ import { getOption } from "../state/option.js";
 import { _alert } from "../core/lang.js";
 import { isIsekai } from "../env.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
-import { makeRepairBackend } from "./repair-backend.js";
+import { RepairBackendEvent, runRepairBackendAutomation } from "./repair-backend.js";
 import { decideRepair } from "./decide-repair.js";
 import { MaterialShopEvent, runMaterialShopAutomation } from "./material-shop.js";
 import { getOptionDefault } from "../settings/schema.js";
@@ -67,10 +67,10 @@ function scheduleIdleArenaDefault() {
 
 /**
  * 自动维修实现。仅战斗外（init.js 战斗外分支）调用；repair 开启时 idleArena 由本函数独占调度。
- * @param {{ makeBackend?: typeof makeRepairBackend, buyMaterials?: typeof runMaterialShopAutomation, scheduleIdleArena?: () => void }} [deps] 测试注入
+ * @param {{ makeBackend?: typeof runRepairBackendAutomation, buyMaterials?: typeof runMaterialShopAutomation, scheduleIdleArena?: () => void }} [deps] 测试注入
  */
 function runRepair(deps = {}) {
-  const makeBackend = deps.makeBackend || makeRepairBackend;
+  const makeBackend = deps.makeBackend || runRepairBackendAutomation;
   const buyMaterials = deps.buyMaterials || runMaterialShopAutomation;
   const scheduleIdleArena = deps.scheduleIdleArena || scheduleIdleArenaDefault;
 
@@ -87,7 +87,7 @@ function runRepair(deps = {}) {
     repairBuyMaterials: getOption("repairBuyMaterials", false),
     repairCreditCap: getOption("repairCreditCap", 50000),
   };
-  const backend = makeBackend(isIsekai);
+  const backend = makeBackend({ type: RepairBackendEvent.CREATE, isIsekai });
   const repairedIds = []; // 本会话止损态：已提交修理的 id 累积（decideRepair 据此判 stuck）
 
   // 全达标 / 无需修理 → 若开了闲置竞技场，安排下一场（idleArena 调度收归本能力，init.js else-if 互斥）。

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { makeRepairBackend } from "./repair-backend.js";
+import { RepairBackendEvent, runRepairBackendAutomation } from "./repair-backend.js";
 
 /** happy-dom 全局 DOMParser 造主世界 forge 页 Document。 */
 function doc(html) {
@@ -14,6 +14,10 @@ function fakePost(responses) {
     func(responses[calls.length - 1]);
   };
   return { post, calls };
+}
+
+function makeRepairBackend(isIsekai, post) {
+  return runRepairBackendAutomation({ type: RepairBackendEvent.CREATE, isIsekai }, { post });
 }
 
 describe("makeRepairBackend 主世界 fetchState（dynjs 选择器 + cache-buster 反退化）", () => {
@@ -77,7 +81,11 @@ describe("makeRepairBackend 异世界（token 由 fetchState 取、submitRepair 
     });
     expect(state.token).toBe("tok9");
     expect(state.equips).toEqual([
-      { id: "5", conditionPct: null, materials: [{ matId: "50000", name: "Repair Kit", count: 2 }] },
+      {
+        id: "5",
+        conditionPct: null,
+        materials: [{ matId: "50000", name: "Repair Kit", count: 2 }],
+      },
     ]);
     backend.submitRepair(["5"], () => {});
     expect(calls[1].parm).toBe("postoken=tok9&eqids[]=5");

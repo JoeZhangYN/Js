@@ -14,14 +14,19 @@ import { parsePersistentRepairState, parseIsekaiRepairState } from "./parse-repa
 
 const FORGE_URL = "?s=Forge&ss=re";
 const ARMORY_URL = "?s=Bazaar&ss=am&screen=repair";
+const EVENT_CREATE = "create";
+
+export const RepairBackendEvent = Object.freeze({
+  CREATE: EVENT_CREATE,
+});
 
 /**
  * @param {boolean} isIsekai env.isIsekai
  * @param {(href:string, func:Function, parm?:string, type?:string)=>void} [_post] 测试注入（默认真实 post）
  * @returns {{ fetchState:(cb:Function)=>void, submitRepair:(ids:string[], cb:Function)=>void }}
  */
-export function makeRepairBackend(isIsekai, _post) {
-  const post = _post || realPost;
+function makeRepairBackend(isIsekai, deps = {}) {
+  const post = deps.post || realPost;
   let token = null; // isekai postoken：fetchState 取、submitRepair 用（每轮 fetchState 刷新，天然防过期）
 
   if (isIsekai) {
@@ -74,4 +79,9 @@ export function makeRepairBackend(isIsekai, _post) {
       post(FORGE_URL, () => cb(), `select_item=${ids[0]}`);
     },
   };
+}
+
+export function runRepairBackendAutomation(event, deps = {}) {
+  if (event.type !== EVENT_CREATE) return undefined;
+  return makeRepairBackend(Boolean(event.isIsekai), deps);
 }
