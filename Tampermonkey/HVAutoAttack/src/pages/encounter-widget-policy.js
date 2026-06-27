@@ -1,19 +1,18 @@
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 
 function readWidgetState(state) {
-  const readiness = runEncounterPolicy({
-    type: EncounterPolicyEvent.READINESS,
+  const clock = runEncounterPolicy({
+    type: EncounterPolicyEvent.READ_CLOCK,
     state,
   });
-  const status =
-    readiness.remainingMs > 0 ? "countdown" : readiness.state.clear ? "ready" : "missed";
   return {
-    state: readiness.state,
-    remainingMs: readiness.remainingMs,
-    count: readiness.state.count,
-    status,
-    attemptKey: `${readiness.state.date}:${readiness.state.key}:${readiness.state.clear}:${status}`,
-    warn: !readiness.state.clear,
+    state: clock.state,
+    remainingMs: clock.countdownMs,
+    count: clock.state.count,
+    status: clock.status,
+    reason: clock.reason,
+    attemptKey: `${clock.state.date}:${clock.state.key}:${clock.state.clear}:${clock.status}`,
+    warn: !clock.state.clear,
   };
 }
 

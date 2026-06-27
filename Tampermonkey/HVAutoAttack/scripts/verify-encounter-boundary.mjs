@@ -144,7 +144,7 @@ function checkFile(file) {
     if (
       relative !== policyFile &&
       relative !== policyTest &&
-      /\b(defaultEncounterState|resetEncounterDay|normalizeEncounterState|msUntilEncounterReady|canEnterEncounterState|readEncounterReadiness|msUntilNextEncounterCheck|planEncounterActivation|parseEncounterKeyFromEventpaneHtml|parseEncounterKeyFromSearch|buildEncounterUrl|markEncounterKeyAvailable|markEncounterStarted)\b/.test(
+      /\b(defaultEncounterState|resetEncounterDay|normalizeEncounterState|msUntilEncounterReady|canEnterEncounterState|readEncounterReadiness|readEncounterClock|countdownEncounterClock|msUntilNextEncounterCheck|planEncounterActivation|parseEncounterKeyFromEventpaneHtml|parseEncounterKeyFromSearch|buildEncounterUrl|markEncounterKeyAvailable|markEncounterStarted)\b/.test(
         line
       )
     ) {
@@ -193,7 +193,17 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
+const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
+if (!/\bREAD_CLOCK\b/.test(policyText)) {
+  violations.push(`${policyFile.replaceAll("\\", "/")} must expose one encounter clock query`);
+}
+if (!/EncounterPolicyEvent\.READ_CLOCK/.test(widgetPolicyText)) {
+  violations.push(
+    `${widgetPolicyFile.replaceAll("\\", "/")} widget countdown must use the encounter clock query`
+  );
+}
 if (!/\bWIDGET_TIMER_ELAPSED\b/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must expose widget timer expiry as an encounter event`

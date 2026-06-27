@@ -94,4 +94,26 @@ describe("runEncounterPolicy time contract", () => {
       })
     ).toBe(1000 + ENCOUNTER_MIDNIGHT_GRACE_MS);
   });
+
+  it("reports the daily reset as the countdown deadline at the daily limit", () => {
+    const state = {
+      date: Date.UTC(2026, 5, 26, 23, 45),
+      key: "",
+      count: 24,
+      clear: true,
+    };
+
+    expect(
+      runEncounterPolicy({
+        type: EncounterPolicyEvent.READ_CLOCK,
+        state,
+        nowMs: Date.UTC(2026, 5, 26, 23, 59, 55),
+      })
+    ).toMatchObject({
+      status: "countdown",
+      countdownMs: 10000,
+      reason: "dailyReset",
+      dailyLimitReached: true,
+    });
+  });
 });

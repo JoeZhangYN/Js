@@ -25,6 +25,21 @@ afterEach(() => {
 });
 
 describe("encounter widget timer expiry", () => {
+  it("counts down to the next UTC day when the daily encounter limit is reached", () => {
+    const state = { date: Date.UTC(2026, 5, 27, 23, 45), key: "", count: 24, clear: true };
+
+    expect(
+      runEncounterAutomation({
+        type: EncounterEvent.WIDGET_TICK,
+        state,
+      })
+    ).toMatchObject({
+      status: "countdown",
+      remainingMs: 10000,
+      reason: "dailyReset",
+    });
+  });
+
   it("auto-enters from the widget timer through the encounter entry", () => {
     const state = { date: Date.now() - 31 * 60 * 1000, key: "abc123=", count: 1, clear: false };
 
