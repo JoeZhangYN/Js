@@ -1,7 +1,7 @@
 // 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
 import { g } from "../state/store.js";
 import { post } from "../dom/http.js";
-import { goto, openUrl } from "../core/navigate.js";
+import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import {
@@ -9,10 +9,7 @@ import {
   planEncounterActivation,
   readEncounterReadiness,
 } from "./encounter-policy.js";
-import {
-  EncounterStateEvent,
-  runEncounterStateAutomation,
-} from "./encounter-state.js";
+import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
 
 const EVENT_LOBBY_TICK = "lobbyTick";
@@ -38,6 +35,10 @@ export const EncounterEvent = Object.freeze({
   WIDGET_NEWS_LOADED: EVENT_WIDGET_NEWS_LOADED,
   WIDGET_ENGAGE: EVENT_WIDGET_ENGAGE,
 });
+
+function reloadCurrentPage() {
+  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
+}
 
 function syncDateNow() {
   const dateNow = time(2);
@@ -74,7 +75,10 @@ function waitForNextCheck(state, event) {
 function executeEncounterActivation(state) {
   const plan = planEncounterActivation(state);
   if (plan.action !== "enter") return false;
-  openUrl(plan.href);
+  runNavigationAutomation({
+    type: NavigationEvent.OPEN_URL,
+    url: plan.href,
+  });
   return true;
 }
 
@@ -92,7 +96,7 @@ async function runLobbyTick(event) {
     return waitForNextCheck(state, event);
   }
   if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_BATTLE })) {
-    post(window.location.href, goto, "recover=stamina");
+    post(window.location.href, reloadCurrentPage, "recover=stamina");
     return claimLobby();
   }
   state = await runEncounterStateAutomation({ type: EncounterStateEvent.LOAD_KEY });

@@ -1,7 +1,7 @@
-// 反退化 probe（拆桥）：禁止 src 内裸用 `setTimeout(goto, …)`，统一走 core/navigate.js 的 scheduleReload(sec)。
+// 反退化 probe（拆桥）：禁止 src 内裸用 `setTimeout(goto, …)`，统一走 core/navigate.js 的导航事件入口。
 //
 // 背景：`setTimeout(goto, N*1000)` 延时重载惯用式曾散落 4 处（main-loop/reloader×2/init），已收口到
-// scheduleReload(sec)（core/navigate.js）。本 probe 锁「不再散落」：scheduleReload 是唯一 sanctioned 入口，
+// runNavigationAutomation({ type: NavigationEvent.SCHEDULE_RELOAD, sec })。本 probe 锁「不再散落」：
 // 裸 setTimeout(goto) 只许出现在 core/navigate.js（goto 自重试 primitive + scheduleReload 实现）。
 //
 // 设计：剥注释（复用共用词法库 stripComments）后扫 `setTimeout(<空白>goto<词界>`；豁免 core/navigate.js。
@@ -42,12 +42,14 @@ for (const { abs, rel } of collectJs(SRC_DIR)) {
 
 if (violations.length > 0) {
   console.error(
-    `[verify-no-raw-reload] FAIL: ${violations.length} 处裸用 setTimeout(goto)（应走 scheduleReload(sec)，core/navigate.js）：`
+    `[verify-no-raw-reload] FAIL: ${violations.length} 处裸用 setTimeout(goto)（应走导航事件入口，core/navigate.js）：`
   );
   for (const v of violations) {
-    console.error(`  src/${v.rel}:${v.line} setTimeout(goto, …) → scheduleReload(秒数)`);
+    console.error(
+      `  src/${v.rel}:${v.line} setTimeout(goto, …) → runNavigationAutomation(SCHEDULE_RELOAD)`
+    );
   }
   process.exit(1);
 }
 
-console.log("[verify-no-raw-reload] OK — 延时重载统一走 scheduleReload（无裸 setTimeout(goto)）");
+console.log("[verify-no-raw-reload] OK — 延时重载统一走导航事件入口（无裸 setTimeout(goto)）");

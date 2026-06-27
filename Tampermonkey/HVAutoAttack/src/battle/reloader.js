@@ -3,7 +3,7 @@
 // file-size-gate: exempt phase-4-monolith
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { scheduleReload } from "../core/navigate.js";
+import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { post } from "../dom/http.js";
 import { time } from "../core/time.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
@@ -33,7 +33,11 @@ export function installBattleActionEventBridge() {
         () => runAlarmAutomation({ type: AlarmEvent.TRIGGER }),
         g("option").delayAlertTime * 1000
       );
-    if (g("option").delayReload) delayReload = scheduleReload(g("option").delayReloadTime);
+    if (g("option").delayReload)
+      delayReload = runNavigationAutomation({
+        type: NavigationEvent.SCHEDULE_RELOAD,
+        sec: g("option").delayReloadTime,
+      });
     runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_STARTED });
   };
   gE("body").appendChild(eventStart);

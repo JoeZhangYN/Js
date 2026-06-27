@@ -1,6 +1,6 @@
 // 小马验证页自动化编排入口：composition root 只调用本入口。
 import { gE } from "../dom/query.js";
-import { goto } from "../core/navigate.js";
+import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { g } from "../state/store.js";
 import { runRiddleAnsweringSession } from "./riddle.js";
 
@@ -13,11 +13,7 @@ export const RiddleEvent = Object.freeze({
 });
 
 function openRiddlePopup() {
-  window.open(
-    window.location.href,
-    "riddleWindow",
-    "resizable,scrollbars,width=1241,height=707"
-  );
+  window.open(window.location.href, "riddleWindow", "resizable,scrollbars,width=1241,height=707");
 }
 
 function answerCurrentRiddlePage() {
@@ -34,7 +30,7 @@ function handleBattlePostResult(data) {
     openRiddlePopup();
     return true;
   }
-  goto();
+  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
   return true;
 }
 

@@ -4,7 +4,7 @@ import { setValue, getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
-import { goto } from "../core/navigate.js";
+import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { countMonsterHP } from "./attack.js";
 import { parseMonsterRoster, buildMonsterStatus } from "./log-parser.js";
 
@@ -21,6 +21,10 @@ export const MonsterStatusEvent = Object.freeze({
   UPDATE_HP: EVENT_UPDATE_HP,
   REFRESH_COMBATANT_COUNTS: EVENT_REFRESH_COMBATANT_COUNTS,
 });
+
+function reloadCurrentPage() {
+  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
+}
 
 function refreshCombatantCounts() {
   const monsterAll = gE("div.btm1", "all").length;
@@ -55,7 +59,7 @@ function repairMonsterStatus() {
   if (hasInit) {
     const { roster } = parseMonsterRoster(battleLog, monsterAll);
     setValue(STORAGE_KEYS.MONSTER_STATUS, buildMonsterStatus(roster));
-    goto();
+    reloadCurrentPage();
     return;
   }
 
@@ -75,7 +79,7 @@ function repairMonsterStatus() {
     });
   });
   setValue(STORAGE_KEYS.MONSTER_STATUS, monsterStatus);
-  goto();
+  reloadCurrentPage();
 }
 
 function ensureMonsterStatusReady() {

@@ -1,6 +1,6 @@
 // 战斗完成裁决：唯一入口 runBattleCompletionAutomation(event)。
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
-import { scheduleReload } from "../core/navigate.js";
+import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { g } from "../state/store.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
 
@@ -42,7 +42,11 @@ export function runBattleCompletionAutomation(
   deps = {
     triggerAlarm: (kind) => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind }),
     clearSession: () => runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION }),
-    scheduleReload,
+    scheduleReload: (sec) =>
+      runNavigationAutomation({
+        type: NavigationEvent.SCHEDULE_RELOAD,
+        sec,
+      }),
   }
 ) {
   if (event.type === EVENT_COMPLETION_REACHED) return handleCompletionReached(deps);

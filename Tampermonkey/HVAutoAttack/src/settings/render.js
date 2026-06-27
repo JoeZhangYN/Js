@@ -6,7 +6,7 @@ import { setValue, getValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
-import { goto } from "../core/navigate.js";
+import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { customizeBox } from "./customize.js";
 import { OPTION_SCHEMA } from "./schema.js";
@@ -784,7 +784,7 @@ export function optionBox() {
       "Please put in a name for a configuration"
     );
     if (!runOptionBackupAutomation({ type: OptionBackupEvent.RESTORE, code })) return;
-    goto();
+    runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
   };
   gE(".hvAADelete", optionBox).onclick = function () {
     const code = _alert(
@@ -812,7 +812,7 @@ export function optionBox() {
     if (!option) return;
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
       runOptionAutomation({ type: OptionEvent.WRITE, option });
-      goto();
+      runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
     }
   };
   //
@@ -884,7 +884,7 @@ export function optionBox() {
     }
     runOptionAutomation({ type: OptionEvent.WRITE, option: _option });
     optionBox.style.display = "none";
-    goto();
+    runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
   };
   gE(".hvAACancel", optionBox).onclick = function () {
     optionBox.style.display = "none";

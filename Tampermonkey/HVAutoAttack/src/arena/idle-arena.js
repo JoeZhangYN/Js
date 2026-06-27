@@ -5,7 +5,7 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { post } from "../dom/http.js";
-import { goto } from "../core/navigate.js";
+import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { pollUntil } from "../core/poll.js";
 import { isIsekai } from "../env.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
@@ -19,6 +19,10 @@ export const IdleArenaEvent = Object.freeze({
   START_NEXT_BATTLE: EVENT_START_NEXT_BATTLE,
   RESET_PROGRESS: EVENT_RESET_PROGRESS,
 });
+
+function reloadCurrentPage() {
+  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
+}
 
 function scheduleNextBattle() {
   setTimeout(
@@ -82,7 +86,7 @@ function startNextBattle() {
     .filter((id) => (id === "gr" || isNaN(id * 1) ? arena.gr > 0 : !arena.done.includes(id)));
   if (arena.array.length === 0) return;
   if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_IDLE_ARENA })) {
-    post(window.location.href, goto, "recover=stamina");
+    post(window.location.href, reloadCurrentPage, "recover=stamina");
     return;
   }
   let href;
@@ -127,7 +131,7 @@ function startNextBattle() {
   if (id === "gr") id = 1;
   post(
     `?s=Battle&ss=${href}`,
-    goto,
+    reloadCurrentPage,
     isIsekai
       ? `initid=${String(id)}&postoken=${arena.token.postoken}`
       : `initid=${String(id)}&postoken=${arena.token.postoken}`

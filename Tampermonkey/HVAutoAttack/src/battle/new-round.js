@@ -1,7 +1,7 @@
 // 新一轮战斗初始化：怪物计数 / 轮次识别。
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { goto } from "../core/navigate.js";
+import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import { AutoTuneEvent, runAutoTuneAutomation } from "../state/auto-tune.js";
 import {
@@ -27,7 +27,7 @@ function startRound() {
   g("autoTunePotionCount", 0);
   // New Round
   g("turn", 0);
-  if (window.location.hash !== "") goto();
+  if (window.location.hash !== "") runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
   runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
   const battleLog = gE("#textlog>tbody>tr>td", "all");
   g(

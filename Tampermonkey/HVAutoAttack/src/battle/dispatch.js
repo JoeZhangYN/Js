@@ -4,12 +4,9 @@
 // PURE decide 完成，dispatch 只翻译数据 → 副作用（含 isOn 写前探活）。
 import { gE } from "../dom/query.js";
 import { attemptClick, attemptClickWithTarget } from "../dom/attempt-click.js";
-import { scheduleReload } from "../core/navigate.js";
+import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { _alert } from "../core/lang.js";
-import {
-  BattlePauseEvent,
-  runBattlePauseAutomation,
-} from "./pause-automation.js";
+import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import { checkAndActivateSpirit } from "./buff/activate-spirit.js";
 import { executeAttack } from "./attack/execute-attack.js";
 import { executeChannel } from "./buff/execute-channel.js";
@@ -41,7 +38,10 @@ export function dispatch(result, snap) {
       const el = gE(result.selector);
       if (!el) return false;
       el.click();
-      scheduleReload(result.delaySec);
+      runNavigationAutomation({
+        type: NavigationEvent.SCHEDULE_RELOAD,
+        sec: result.delaySec,
+      });
       return true;
     }
 
