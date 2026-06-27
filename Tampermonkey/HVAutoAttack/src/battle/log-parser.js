@@ -149,7 +149,7 @@ export function parseMonsterRoster(battleLog, monsterAll) {
 }
 
 /**
- * 把 spawn 解析的 roster 组装为 monsterStatus 记录。抽出供 new-round 与 fixMonsterStatus 复用。
+ * 把 spawn 解析的 roster 组装为 monsterStatus 记录。供 monster-status-automation 统一写入。
  * **三个 id 概念显式区分（命名锁）**：
  *   - `id`        = 战场槽位 mkey(0-9)，点击用（id = order===9 ? 0 : order+1）；
  *   - `monsterId` = 全局怪物 MID（spawn 行 / 社区库主键 / maxHP·画像库主键）；

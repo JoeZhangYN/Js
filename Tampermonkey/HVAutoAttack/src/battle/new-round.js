@@ -7,13 +7,16 @@ import { goto } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
-import { fixMonsterStatus, pauseChange } from "./main-loop.js";
-import { parseMonsterRoster, buildMonsterStatus } from "./log-parser.js";
+import { pauseChange } from "./main-loop.js";
 import { observeBattle } from "../state/auto-tune.js";
 import {
   MonsterKnowledgeEvent,
   runMonsterKnowledgeAutomation,
 } from "./monster-knowledge-automation.js";
+import {
+  MonsterStatusEvent,
+  runMonsterStatusAutomation,
+} from "./monster-status-automation.js";
 
 export function newRound() {
   // F auto-tune：上一回合结束 → 观测用药数 + 复位计数
@@ -97,11 +100,11 @@ export function newRound() {
     }
   }
   if (battleLog[battleLog.length - 1].textContent.match("Initializing")) {
-    // 怪物身份+满血单一来源：开局 spawn 行 MID/name/LV/HP（parseMonsterRoster 含 null 守卫 + 退化降级）
-    const { roster } = parseMonsterRoster(battleLog, g("monsterAll"));
-    const monsterStatus = buildMonsterStatus(roster);
-    setValue("monsterStatus", monsterStatus);
-    g("monsterStatus", monsterStatus);
+    runMonsterStatusAutomation({
+      type: MonsterStatusEvent.RECORD_SPAWN_ROSTER,
+      battleLog,
+      monsterAll: g("monsterAll"),
+    });
     let roundNow;
     let roundAll;
     const round = battleLog[battleLog.length - 1].textContent.match(
@@ -117,12 +120,10 @@ export function newRound() {
     setValue("roundNow", roundNow);
     setValue("roundAll", roundAll);
   } else if (
-    !getValue("monsterStatus") ||
-    getValue("monsterStatus", true).length !== gE("div.btm2", "all").length
+    runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY })
   ) {
     setValue("roundNow", 1);
     setValue("roundAll", 1);
-    fixMonsterStatus();
   }
   g("roundNow", getValue("roundNow") * 1);
   g("roundAll", getValue("roundAll") * 1);
