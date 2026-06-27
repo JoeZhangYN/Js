@@ -4,7 +4,7 @@ import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { refreshBattleHud } from "./battle-info.js";
 import { recordBattleDrops } from "./drop-monitor.js";
-import { recordCompletedBattleUsage, recordUsage } from "./record-usage.js";
+import { recordBattleActionUsage, recordCompletedBattleUsage } from "./record-usage.js";
 import {
   clearDropReport,
   clearUsageReport,
@@ -60,7 +60,7 @@ function readActionUsage() {
 function recordActionEnd() {
   if (!g("option").recordUsage || !pendingUsage) return;
   pendingUsage.log = gE("#textlog>tbody>tr>td", "all");
-  recordUsage(pendingUsage);
+  recordBattleActionUsage(pendingUsage);
 }
 
 function recordCompletion() {

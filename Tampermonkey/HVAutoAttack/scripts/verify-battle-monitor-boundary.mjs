@@ -38,7 +38,12 @@ function checkFile(file) {
     if (internalFiles.has(relative)) return;
     if (line.includes("runBattleMonitorAutomation") || line.includes("BattleMonitorEvent")) return;
     const where = `${rel(file)}:${index + 1}`;
-    for (const name of ["refreshBattleHud", "recordBattleDrops", "recordUsage", "recordUsage2"]) {
+    for (const name of [
+      "refreshBattleHud",
+      "recordBattleDrops",
+      "recordBattleActionUsage",
+      "recordUsage2",
+    ]) {
       if (new RegExp(`\\b${name}\\s*\\(`).test(line)) {
         violations.push(`${where} ${name} belongs behind runBattleMonitorAutomation(event)`);
       }
@@ -75,6 +80,9 @@ function checkEntry() {
   if (!text.includes("refreshBattleHud")) {
     violations.push(`${entry.replaceAll("\\", "/")} must own refreshBattleHud HUD wiring`);
   }
+  if (!text.includes("recordBattleActionUsage")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must own recordBattleActionUsage action-end wiring`);
+  }
   for (const required of [
     "BATTLE_STARTED",
     "HUD_REFRESH",
@@ -94,7 +102,13 @@ function checkEntry() {
 
 function checkUsageImplementation() {
   const usageFile = path.join(root, "src/monitor/record-usage.js");
+  const entryText = fs.readFileSync(path.join(root, entry), "utf8");
   const text = fs.readFileSync(usageFile, "utf8");
+  if (/\brecordUsage\s*\(/.test(entryText) || /\b(?:export\s+)?function\s+recordUsage\s*\(/.test(text)) {
+    violations.push(
+      `${rel(usageFile)} legacy recordUsage() bridge must stay deleted; use recordBattleActionUsage()`
+    );
+  }
   if (/\b(?:export\s+)?function\s+recordUsage2\s*\(/.test(text)) {
     violations.push(
       `${rel(usageFile)} legacy recordUsage2() bridge must stay deleted; use recordCompletedBattleUsage()`

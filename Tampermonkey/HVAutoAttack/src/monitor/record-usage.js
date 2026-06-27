@@ -7,7 +7,7 @@ import { time } from "../core/time.js";
 import { setAudioAlarm } from "../alarm/alarm.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../battle/pause-automation.js";
 
-export function recordUsage(parm) {
+export function recordBattleActionUsage(parm) {
   const stats = getValue(STORAGE_KEYS.STATS, true) || {
     self: {
       _startTime: time(3),
