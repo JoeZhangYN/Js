@@ -212,6 +212,12 @@ function checkRiddleMlEntry() {
       );
     }
   }
+  if (!ownerText.includes("TimeEvent.UTC_DATE_KEY")) {
+    violations.push(`${rel(riddleMlFile)} must read ML health day through time entry`);
+  }
+  if (/\bgetUTCFullYear\b|\bgetUTCMonth\b|\bgetUTCDate\b/.test(ownerText)) {
+    violations.push(`${rel(riddleMlFile)} must not build UTC date keys directly`);
+  }
 
   function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

@@ -14,6 +14,7 @@ import { gmXhr, hasNonLatin1 } from "../dom/gm-xhr.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { RiddleImageEvent, runRiddleImageAutomation } from "./riddle-image.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";
@@ -119,8 +120,7 @@ function sendHead() {
 }
 
 async function stayAwake() {
-  const d = new Date();
-  const today = `${d.getUTCFullYear()}/${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+  const today = runTimeAutomation({ type: TimeEvent.UTC_DATE_KEY });
   const lastDay = await gmGet("last_date", "0/0/0");
   if (today !== lastDay) {
     await gmSet("last_date", today);
