@@ -75,9 +75,7 @@ function parseEquip(container) {
   const stats = [];
   const rows = [
     ...eq.querySelectorAll(".ex > div, .ep > div"),
-    ...Array.from(eq.querySelectorAll('[title^="Base: "]')).filter(
-      (el) => !el.closest(".ex, .ep")
-    ),
+    ...Array.from(eq.querySelectorAll('[title^="Base: "]')).filter((el) => !el.closest(".ex, .ep")),
   ];
 
   for (const row of rows) {
@@ -185,10 +183,8 @@ function renderEquip(container, compareQuality) {
   if (equip.type === "Soulbound") {
     const { tier_up: up, tier_iw: iw, tier_max: max } = equip;
     if (showMaxForge && (max - up > 0 || max - iw > 0)) {
-      const diffX =
-        max - up > 0 ? `${up}<span class="hv-txt-green">+${max - up}</span>` : max;
-      const diffY =
-        max - iw > 0 ? `${iw}<span class="hv-txt-green">+${max - iw}</span>` : max;
+      const diffX = max - up > 0 ? `${up}<span class="hv-txt-green">+${max - up}</span>` : max;
+      const diffY = max - iw > 0 ? `${iw}<span class="hv-txt-green">+${max - iw}</span>` : max;
       equip._eqt.innerHTML = `Tier ${diffX} / ${diffY} / ${max}`;
     } else {
       equip._eqt.textContent = `Tier ${up} / ${iw} / ${max}`;
@@ -217,9 +213,7 @@ function renderEquip(container, compareQuality) {
     }
 
     const isForgeMode =
-      showMaxForge &&
-      equip.forge_max > forgeCurrent &&
-      !CHARM_EXCLUSIVE_BONUS.includes(stat.title);
+      showMaxForge && equip.forge_max > forgeCurrent && !CHARM_EXCLUSIVE_BONUS.includes(stat.title);
     const isPercentMode = showPercent && !isForgeMode && percent !== null;
     const hideSurrounding = isForgeMode || isPercentMode;
 
@@ -252,8 +246,8 @@ function renderEquip(container, compareQuality) {
       const mode = showMaxForge
         ? "最大强化(按W返回F切换)"
         : showPercent
-        ? "百分比(按F返回W切换)"
-        : "数值(按F返回W切换)";
+          ? "百分比(按F返回W切换)"
+          : "数值(按F返回W切换)";
       equip._avg.innerHTML =
         `<div class="${getColor(avg, 60, 40)}" style="margin-bottom: 4px;">优秀度: ${avg}%</div>` +
         `<div style="font-size: 12px;" title="热键: f, w">显示模式: ${mode}</div>`;
@@ -276,7 +270,9 @@ function actionTogglePercent() {
   state.showPercent = !state.showPercent;
   try {
     window.localStorage.setItem(STORAGE_KEY_SHOW_PERCENT, JSON.stringify(state.showPercent));
-  } catch (e) { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   renderAll();
 }
 
@@ -309,14 +305,16 @@ function injectStyle() {
 
 let setupDone = false;
 
-export function setupEquipPercentileOffline() {
+export function runOfflineEquipPercentileEnhancement() {
   if (setupDone) return;
   setupDone = true;
 
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY_SHOW_PERCENT);
     if (stored !== null) state.showPercent = JSON.parse(stored);
-  } catch (e) { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   injectStyle();
 

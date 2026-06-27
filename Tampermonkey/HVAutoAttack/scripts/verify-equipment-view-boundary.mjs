@@ -15,7 +15,7 @@ function checkInit() {
   const lines = fs.readFileSync(initFile, "utf8").split(/\r?\n/);
   const forbidden = [
     /\bsetupForgeCost\b/,
-    /\bsetupEquipPercentile\b/,
+    /\bsetupEquipPercentile(?:Offline|Live)?\b/,
     /\bforgeCostShow\b/,
     /\bequipPercentileMode\b/,
     /\bisOptionOn\b/,
@@ -39,7 +39,11 @@ function checkEntry() {
   if (!/export function runEquipmentViewAutomation\(\s*kind\s*\)/.test(text)) {
     violations.push(`${rel(entryFile)} must expose runEquipmentViewAutomation(kind)`);
   }
-  for (const required of ["setupForgeCost", "setupEquipPercentile", "PageKind.SHOWEQUIP"]) {
+  for (const required of [
+    "setupForgeCost",
+    "runEquipPercentileEnhancement",
+    "PageKind.SHOWEQUIP",
+  ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} equipment workflow wiring`);
     }
@@ -68,9 +72,25 @@ function checkDeletedLivePath() {
   }
 }
 
+function checkDeletedSetupEntrypoints() {
+  const files = [
+    path.join(root, "src/pages/equipment-view-automation.js"),
+    path.join(root, "src/pages/equip-percentile-dispatcher.js"),
+    path.join(root, "src/pages/equip-percentile-offline.js"),
+  ];
+  const oldSetupEntrypoint = /\bsetupEquipPercentile(?:Offline|Live)?\b/;
+  for (const file of files) {
+    const text = fs.readFileSync(file, "utf8");
+    if (oldSetupEntrypoint.test(text)) {
+      violations.push(`${rel(file)} must use equipment percentile business entrypoints`);
+    }
+  }
+}
+
 checkInit();
 checkEntry();
 checkDeletedLivePath();
+checkDeletedSetupEntrypoints();
 
 if (violations.length) {
   console.error("[verify-equipment-view-boundary] FAIL");

@@ -10,9 +10,9 @@
 // ⚠ Sentinel H3 已知限制：off ↔ offline 切换需 **刷新页面** 才生效（offline 持文件级 setupDone
 // 闭包 + 全局 keydown 监听 + MutationObserver，无 teardown 接口）——schema label 已警告用户。
 import { getOption } from "../state/option.js";
-import { setupEquipPercentileOffline } from "./equip-percentile-offline.js";
+import { runOfflineEquipPercentileEnhancement } from "./equip-percentile-offline.js";
 
-export function setupEquipPercentile() {
+export function runEquipPercentileEnhancement() {
   const mode = getOption("equipPercentileMode", "off");
   if (mode === "off") return;
   if (mode === "live") {
@@ -20,5 +20,5 @@ export function setupEquipPercentile() {
       "[HVAA] equipPercentileMode=live 已随能量模型过时，自动降级为 offline（本地品质点数公式）"
     );
   }
-  setupEquipPercentileOffline();
+  runOfflineEquipPercentileEnhancement();
 }
