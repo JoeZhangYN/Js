@@ -6,6 +6,7 @@ import { _alert } from "../core/lang.js";
 import { goto } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { setAlarm } from "../alarm/alarm.js";
+import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import { fixMonsterStatus, pauseChange } from "./main-loop.js";
 import { parseMonsterRoster, buildMonsterStatus } from "./log-parser.js";
 import { renderResistPanel } from "../monitor/monster-resist-panel.js";
@@ -54,10 +55,9 @@ export function newRound() {
       } else if (temp.match(/^Initializing random encounter/)) {
         roundType = "ba";
         if (g("option").encounter) {
-          const encounter = getValue("encounter", true);
-          encounter.lastTime = time(0);
-          encounter.time++;
-          setValue("encounter", encounter);
+          runEncounterAutomation({
+            type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
+          });
         }
       } else if (temp.match(/^Initializing Item World/)) {
         roundType = "iw";

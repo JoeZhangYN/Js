@@ -10,7 +10,7 @@ import { time } from "../core/time.js";
 import { addStyle } from "../style/inject.js";
 import { riddleAlert } from "./riddle.js";
 import { registerExportMenu } from "../state/riddle-dataset.js";
-import { encounterCheck } from "./encounter.js";
+import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 import { parseAbilityPage } from "./ability-page.js";
 import { quickSite } from "../arena/quick-site.js";
 import { runRepair } from "../repair/repair-orchestrator.js";
@@ -177,7 +177,9 @@ export function init() {
       parseAbilityPage();
     }
     if (g("option").quickSite) quickSite();
-    if (g("option").encounter) encounterCheck();
+    if (g("option").encounter) {
+      runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK });
+    }
     if (
       !g("option").restoreStamina &&
       readStaminaValue() <= g("option").staminaLow

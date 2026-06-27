@@ -1,4 +1,4 @@
-// 遭遇检测：non-combat 页面的事件入口。
+// 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
 import { gE, cE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
@@ -10,6 +10,13 @@ import { readStaminaValue } from "../state/stamina.js";
 
 const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000;
 const MIDNIGHT_TRIGGER_DELAY_MS = 5000;
+const EVENT_LOBBY_TICK = "lobbyTick";
+const EVENT_RANDOM_ENCOUNTER_STARTED = "randomEncounterStarted";
+
+export const EncounterEvent = Object.freeze({
+  LOBBY_TICK: EVENT_LOBBY_TICK,
+  RANDOM_ENCOUNTER_STARTED: EVENT_RANDOM_ENCOUNTER_STARTED,
+});
 
 function syncDateNow() {
   const dateNow = time(2);
@@ -26,7 +33,7 @@ function msUntilNextUtcMidnight(now = new Date()) {
   return nextMidnight - now.getTime();
 }
 
-export function nextEncounterCheckDelayMs(now = new Date()) {
+function nextEncounterCheckDelayMs(now = new Date()) {
   const jitteredMinute = (60 * 1000 * (Math.random() * 10 + 95)) / 100;
   return Math.min(
     jitteredMinute,
@@ -34,17 +41,36 @@ export function nextEncounterCheckDelayMs(now = new Date()) {
   );
 }
 
-export function encounterCheck() {
-  const timeNow = time(0);
-  const dateNow = syncDateNow();
+function readTodayRecord(dateNow) {
   const savedEncounter = getValue("encounter", true);
-  const encounter =
-    savedEncounter && savedEncounter.dateNow === dateNow
-      ? savedEncounter
-      : {
-          dateNow,
-          time: 0,
-        };
+  if (savedEncounter && savedEncounter.dateNow === dateNow) {
+    return savedEncounter;
+  }
+  return {
+    dateNow,
+    time: 0,
+  };
+}
+
+function markRandomEncounterStarted() {
+  const dateNow = syncDateNow();
+  const encounter = readTodayRecord(dateNow);
+  encounter.lastTime = time(0);
+  encounter.time++;
+  setValue("encounter", encounter);
+}
+
+function scheduleNextLobbyTick() {
+  setTimeout(
+    () => runEncounterAutomation({ type: EVENT_LOBBY_TICK }),
+    nextEncounterCheckDelayMs()
+  );
+}
+
+function runLobbyTick() {
+  const dateNow = syncDateNow();
+  const timeNow = time(0);
+  const encounter = readTodayRecord(dateNow);
   if (
     !encounter.lastTime ||
     (timeNow - encounter.lastTime >= ENCOUNTER_INTERVAL_MS &&
@@ -83,5 +109,13 @@ export function encounterCheck() {
   lastEncounter.innerHTML = `${Math.floor(
     (timeNow - encounter.lastTime) / 1000 / 60
   )}<l0>分钟前</l0><l1>分鐘前</l1><l2> mins before</l2>`;
-  setTimeout(encounterCheck, nextEncounterCheckDelayMs());
+  scheduleNextLobbyTick();
+}
+
+export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
+  if (event.type === EVENT_RANDOM_ENCOUNTER_STARTED) {
+    markRandomEncounterStarted();
+    return;
+  }
+  runLobbyTick();
 }
