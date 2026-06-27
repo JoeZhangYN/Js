@@ -16,7 +16,7 @@ import { _alert } from "../core/lang.js";
 import { isIsekai } from "../env.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { RepairBackendEvent, runRepairBackendAutomation } from "./repair-backend.js";
-import { decideRepair } from "./decide-repair.js";
+import { RepairDecisionEvent, runRepairDecision } from "./decide-repair.js";
 import { MaterialShopEvent, runMaterialShopAutomation } from "./material-shop.js";
 import { getOptionDefault } from "../settings/schema.js";
 
@@ -104,7 +104,12 @@ function runRepair(deps = {}) {
 
   function scanAndRepair() {
     backend.fetchState((state) => {
-      const plan = decideRepair(opt, state, repairedIds);
+      const plan = runRepairDecision({
+        type: RepairDecisionEvent.PLAN,
+        option: opt,
+        state,
+        repairedIds,
+      });
       switch (plan.action) {
         case "proceed":
           proceed();

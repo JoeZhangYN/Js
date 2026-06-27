@@ -17,6 +17,12 @@
  *   | { action: "repair", repairIds: string[], materials: RepairMaterial[] }} RepairPlan
  */
 
+const EVENT_PLAN = "plan";
+
+export const RepairDecisionEvent = Object.freeze({
+  PLAN: EVENT_PLAN,
+});
+
 /**
  * 单件是否需修：主世界(conditionPct 数值) → 耐久 ≤ 阈值；异世界(conditionPct=null) → 有需求材料即需修
  * （异世界维修页只列需修件，满修件无 .m，见 parse）。
@@ -36,7 +42,7 @@ function needsRepair(eq, threshold) {
  * @param {string[]} repairedIds 本会话已提交修理的装备 id（止损态）
  * @returns {RepairPlan}
  */
-export function decideRepair(opt, state, repairedIds) {
+function decideRepair(opt, state, repairedIds) {
   const threshold = Number(opt?.repairValue) || 0;
   const done = repairedIds || [];
   const broken = (state?.equips || []).filter((eq) => needsRepair(eq, threshold));
@@ -55,4 +61,9 @@ export function decideRepair(opt, state, repairedIds) {
     repairIds: [target.id],
     materials: target.materials,
   };
+}
+
+export function runRepairDecision(event) {
+  if (event.type !== EVENT_PLAN) return undefined;
+  return decideRepair(event.option, event.state, event.repairedIds);
 }
