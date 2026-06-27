@@ -65,9 +65,8 @@ function buildApiResponseScript() {
 }
 
 function installBridge(deps) {
-  const option = deps.readOption();
-  deps.sessionStorage.delay = option.delay;
-  deps.sessionStorage.delay2 = option.delay2;
+  deps.sessionStorage.delay = deps.readOptionField("delay");
+  deps.sessionStorage.delay2 = deps.readOptionField("delay2");
 
   const apiCall = deps.createScript();
   apiCall.textContent = buildApiCallScript(deps.mainUrl);
@@ -82,7 +81,8 @@ function installBridge(deps) {
 export function runBattleApiBridgeAutomation(
   event = { type: EVENT_INSTALL },
   deps = {
-    readOption: () => runOptionAutomation({ type: OptionEvent.READ }) || {},
+    readOptionField: (key, fallback) =>
+      runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback }),
     sessionStorage: window.sessionStorage,
     createScript: () => cE("script"),
     appendHead: (script) => gE("head").appendChild(script),

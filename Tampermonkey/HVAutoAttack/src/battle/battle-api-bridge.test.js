@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../state/option.js", () => ({
-  OptionEvent: Object.freeze({ READ: "read" }),
+  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
 
@@ -14,7 +14,7 @@ function makeDeps() {
   const scripts = [];
   return {
     scripts,
-    readOption: vi.fn(() => ({ delay: 120, delay2: 340 })),
+    readOptionField: vi.fn((key) => ({ delay: 120, delay2: 340 })[key]),
     sessionStorage: {},
     createScript: vi.fn(() => ({ textContent: "" })),
     appendHead: vi.fn((script) => scripts.push(script)),
@@ -48,11 +48,20 @@ describe("runBattleApiBridgeAutomation", () => {
   });
 
   it("reads API bridge delay options through the option entry on the default path", () => {
-    mocks.runOptionAutomation.mockReturnValue({ delay: 12, delay2: 34 });
+    mocks.runOptionAutomation.mockImplementation((event) => ({ delay: 12, delay2: 34 })[event.key]);
 
     expect(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL })).toBe(true);
 
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "read" });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "delay",
+      fallback: undefined,
+    });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "delay2",
+      fallback: undefined,
+    });
     expect(window.sessionStorage.delay).toBe("12");
     expect(window.sessionStorage.delay2).toBe("34");
   });

@@ -305,10 +305,13 @@ function checkApiBridgeEntry() {
   if (!/export function runBattleApiBridgeAutomation\(\s*event\b/.test(text)) {
     violations.push(`${rel(apiBridgeFile)} must expose runBattleApiBridgeAutomation(event)`);
   }
-  if (!text.includes("OptionEvent.READ")) {
+  if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(
       `${rel(apiBridgeFile)} must read API bridge delay options through option entry`
     );
+  }
+  if (/OptionEvent\.READ\b/.test(text)) {
+    violations.push(`${rel(apiBridgeFile)} must not read the whole option bag`);
   }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(apiBridgeFile)} must not read API bridge delay options directly`);
