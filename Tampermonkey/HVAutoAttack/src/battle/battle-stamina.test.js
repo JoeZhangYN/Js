@@ -1,11 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleStaminaEvent, runBattleStaminaAutomation } from "./battle-stamina.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
-import { g } from "../state/store.js";
+
+const mocks = vi.hoisted(() => ({
+  runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("../state/option.js", () => ({
+  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
 
 beforeEach(() => {
   localStorage.clear();
-  g("option", { staminaLose: 5 });
+  mocks.runOptionAutomation.mockReset();
+  mocks.runOptionAutomation.mockReturnValue(5);
 });
 
 function deps(confirm = () => true) {
@@ -42,6 +51,11 @@ describe("runBattleStaminaAutomation", () => {
     expect(Object.values(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ }))).toEqual([
       3,
     ]);
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "staminaLose",
+      fallback: Number.POSITIVE_INFINITY,
+    });
     expect(d.triggerAlarm).not.toHaveBeenCalled();
   });
 
@@ -57,5 +71,18 @@ describe("runBattleStaminaAutomation", () => {
     expect(d.triggerAlarm).toHaveBeenCalledWith("Error");
     expect(d.confirm).toHaveBeenCalled();
     expect(d.pause).toHaveBeenCalled();
+  });
+
+  it("keeps missing or invalid thresholds from pausing by default", () => {
+    mocks.runOptionAutomation.mockReturnValue(undefined);
+    const d = deps(() => false);
+
+    const result = runBattleStaminaAutomation(
+      { type: BattleStaminaEvent.ROUND_LOG_READY, text: "You lose 99 Stamina" },
+      d
+    );
+
+    expect(result).toEqual({ lostStamina: 99, paused: false });
+    expect(d.triggerAlarm).not.toHaveBeenCalled();
   });
 });

@@ -58,6 +58,7 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "runBattleStaminaAutomation",
   "ROUND_LOG_READY",
+  "OptionEvent.READ_FIELD",
   "runStaminaLossLogAutomation",
   "StaminaLossLogEvent.RECORD",
   "runBattlePauseAutomation",
@@ -65,6 +66,9 @@ for (const required of [
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must read stamina options through option entry`);
 }
 
 if (violations.length) {

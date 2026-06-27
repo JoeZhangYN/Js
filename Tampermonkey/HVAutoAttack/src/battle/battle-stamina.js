@@ -1,7 +1,7 @@
 // 战斗体力损失裁决：唯一入口 runBattleStaminaAutomation(event)。
 import { _alert } from "../core/lang.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
-import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 
@@ -16,8 +16,19 @@ function parseLostStamina(text = "") {
   return match ? Number(match[1]) : 0;
 }
 
+function readStaminaLossThreshold() {
+  const value = Number(
+    runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "staminaLose",
+      fallback: Number.POSITIVE_INFINITY,
+    })
+  );
+  return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+}
+
 function shouldPauseForLoss(lostStamina) {
-  return lostStamina >= g("option").staminaLose;
+  return lostStamina >= readStaminaLossThreshold();
 }
 
 function confirmContinue(confirm) {
