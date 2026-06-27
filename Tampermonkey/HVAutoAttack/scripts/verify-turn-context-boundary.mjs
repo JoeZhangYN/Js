@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src/battle");
 const entry = path.normalize("src/battle/turn-context.js");
+const entryTest = path.normalize("src/battle/turn-context.test.js");
 const snapshotImpl = path.normalize("src/battle/snapshot.js");
 const violations = [];
 
@@ -25,7 +26,7 @@ function checkFile(file) {
   lines.forEach((line, index) => {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("//")) return;
-    if (relative === entry || relative === snapshotImpl) return;
+    if (relative === entry || relative === entryTest || relative === snapshotImpl) return;
     const where = `${rel(file)}:${index + 1}`;
     for (const name of [
       "CdRuntimeEvent.INCREMENT_TURN",
@@ -51,10 +52,14 @@ function checkEntry() {
     "CdRuntimeEvent.PERSIST",
     "collectSnapshot",
     "assertNoDomRefs",
+    "OptionEvent.READ_FIELD",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);
     }
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must read debugSnapshot through option entry`);
   }
 }
 
