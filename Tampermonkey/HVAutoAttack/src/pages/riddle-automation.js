@@ -1,7 +1,7 @@
 // 小马验证页自动化编排入口：composition root 只调用本入口。
 import { gE } from "../dom/query.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
-import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { runRiddleAnsweringSession } from "./riddle.js";
 
 const EVENT_RIDDLE_PAGE = "riddlePage";
@@ -25,6 +25,16 @@ function openRiddlePopup() {
   });
 }
 
+function isRiddlePopupEnabled() {
+  return Boolean(
+    runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "riddlePopup",
+      fallback: false,
+    })
+  );
+}
+
 function testPopupPretreat(deps = {}) {
   const schedule = deps.schedule || setTimeout;
   schedule(() => {
@@ -35,7 +45,7 @@ function testPopupPretreat(deps = {}) {
 }
 
 function answerCurrentRiddlePage() {
-  if (g("option").riddlePopup && !window.opener) {
+  if (isRiddlePopupEnabled() && !window.opener) {
     openRiddlePopup();
     return;
   }
@@ -44,7 +54,7 @@ function answerCurrentRiddlePage() {
 
 function handleBattlePostResult(data) {
   if (!gE("#riddlecounter", data)) return false;
-  if (g("option").riddlePopup && !window.opener) {
+  if (isRiddlePopupEnabled() && !window.opener) {
     openRiddlePopup();
     return true;
   }

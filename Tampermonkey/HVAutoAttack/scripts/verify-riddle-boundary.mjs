@@ -75,6 +75,15 @@ function checkRiddleEntry() {
       violations.push(`${rel(riddleFile)} must own riddle popup ${required}`);
     }
   }
+  if (!text.includes("OptionEvent.READ_FIELD")) {
+    violations.push(`${rel(riddleFile)} must read riddlePopup through option entry`);
+  }
+  if (/from\s+["']\.\.\/state\/store\.js["']/.test(text)) {
+    violations.push(`${rel(riddleFile)} must not import store for riddle popup option reads`);
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${rel(riddleFile)} must not read riddle popup option directly`);
+  }
   if (/\bwindow\.open\b/.test(text)) {
     violations.push(`${rel(riddleFile)} must open riddle popup through navigation entry`);
   }

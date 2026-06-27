@@ -2,12 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RiddleEvent, runRiddleAutomation } from "./riddle-automation.js";
 
 const mocks = vi.hoisted(() => ({
-  g: vi.fn(),
+  runOptionAutomation: vi.fn(),
   runNavigationAutomation: vi.fn(),
   runRiddleAnsweringSession: vi.fn(),
 }));
 
-vi.mock("../state/store.js", () => ({ g: mocks.g }));
+vi.mock("../state/option.js", () => ({
+  OptionEvent: Object.freeze({
+    READ_FIELD: "readField",
+  }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({
     OPEN_WINDOW: "openWindow",
@@ -21,15 +26,20 @@ vi.mock("./riddle.js", () => ({
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear();
-  mocks.g.mockImplementation((key) => (key === "option" ? {} : undefined));
+  mocks.runOptionAutomation.mockReturnValue(false);
 });
 
 describe("runRiddleAutomation", () => {
   it("opens the configured riddle popup through navigation", () => {
-    mocks.g.mockImplementation((key) => (key === "option" ? { riddlePopup: true } : undefined));
+    mocks.runOptionAutomation.mockReturnValue(true);
 
     expect(runRiddleAutomation({ type: RiddleEvent.RIDDLE_PAGE })).toBe(true);
 
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "riddlePopup",
+      fallback: false,
+    });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "openWindow",
       url: window.location.href,
@@ -37,6 +47,18 @@ describe("runRiddleAutomation", () => {
       features: "resizable,scrollbars,width=1241,height=707",
     });
     expect(mocks.runRiddleAnsweringSession).not.toHaveBeenCalled();
+  });
+
+  it("answers the current riddle page when popup option is disabled", () => {
+    expect(runRiddleAutomation({ type: RiddleEvent.RIDDLE_PAGE })).toBe(true);
+
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "riddlePopup",
+      fallback: false,
+    });
+    expect(mocks.runRiddleAnsweringSession).toHaveBeenCalledTimes(1);
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });
 
   it("owns the settings popup pretreat workflow", () => {
