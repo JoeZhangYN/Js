@@ -185,7 +185,7 @@ export function recordUsage(parm) {
   setValue(STORAGE_KEYS.STATS, stats);
 }
 
-export function recordUsage2() {
+export function recordCompletedBattleUsage() {
   const stats = getValue(STORAGE_KEYS.STATS, true);
   stats.self._monster += g("monsterAll");
   stats.self._boss += g("bossAll");

@@ -86,8 +86,19 @@ function checkEntry() {
   }
 }
 
+function checkUsageImplementation() {
+  const usageFile = path.join(root, "src/monitor/record-usage.js");
+  const text = fs.readFileSync(usageFile, "utf8");
+  if (/\b(?:export\s+)?function\s+recordUsage2\s*\(/.test(text)) {
+    violations.push(
+      `${rel(usageFile)} legacy recordUsage2() bridge must stay deleted; use recordCompletedBattleUsage()`
+    );
+  }
+}
+
 walk(srcDir);
 checkEntry();
+checkUsageImplementation();
 
 if (violations.length) {
   console.error("[verify-battle-monitor-boundary] FAIL");

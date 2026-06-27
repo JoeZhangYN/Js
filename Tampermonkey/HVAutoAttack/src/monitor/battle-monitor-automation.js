@@ -4,7 +4,7 @@ import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { battleInfo } from "./battle-info.js";
 import { dropMonitor } from "./drop-monitor.js";
-import { recordUsage, recordUsage2 } from "./record-usage.js";
+import { recordCompletedBattleUsage, recordUsage } from "./record-usage.js";
 import {
   clearDropReport,
   clearUsageReport,
@@ -66,7 +66,7 @@ function recordActionEnd() {
 function recordCompletion() {
   const battleLog = gE("#textlog>tbody>tr>td", "all");
   if (g("option").dropMonitor) dropMonitor(battleLog);
-  if (g("option").recordUsage) recordUsage2();
+  if (g("option").recordUsage) recordCompletedBattleUsage();
 }
 
 function recordBattleStarted() {
