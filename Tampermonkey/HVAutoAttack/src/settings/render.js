@@ -3,6 +3,7 @@
 // file-size-gate: exempt phase-3-monolith
 import { gE, cE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { setNotification } from "../alarm/alarm.js";
@@ -625,7 +626,7 @@ export function optionBox() {
       setValue("staminaLostLog", {});
   };
   gE(".idleArenaReset", optionBox).onclick = function () {
-    if (_alert(1, "是否重置", "是否重置", "Whether to reset")) delValue("arena");
+    if (_alert(1, "是否重置", "是否重置", "Whether to reset")) delValue(STORAGE_KEYS.ARENA);
   };
   gE(".hvAAShowLevels", optionBox).onclick = function () {
     gE(".hvAAArenaLevels").style.display =

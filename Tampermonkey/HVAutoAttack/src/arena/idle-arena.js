@@ -1,6 +1,7 @@
 // 闲置自动挑战 Arena/RoB/GrindFest：唯一入口 runIdleArenaAutomation(event)。
 import { gE } from "../dom/query.js";
 import { setValue, getValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { post } from "../dom/http.js";
@@ -25,7 +26,7 @@ function scheduleNextBattle() {
 }
 
 function startNextBattle() {
-  let arena = getValue("arena", true) || {};
+  let arena = getValue(STORAGE_KEYS.ARENA, true) || {};
   if (arena.date !== g("dateNow")) {
     arena = {
       date: g("dateNow"),
@@ -37,7 +38,8 @@ function startNextBattle() {
     };
     // iframe打开四个网站，设定四个判断值，同时true才继续
     const getToken = function (data, e) {
-      {  // postoken: both main-world and isekai read it (HV main-world arena uses postoken, verified 2026-06-09)
+      {
+        // postoken: both main-world and isekai read it (HV main-world arena uses postoken, verified 2026-06-09)
         const postokenInput = gE('input[name="postoken"]', data);
         if (postokenInput) arena.token.postoken = postokenInput.value;
       }
@@ -63,15 +65,15 @@ function startNextBattle() {
     post("?s=Battle&ss=rb", getToken);
     // 轮询至 4 个 token POST 全部返回 → 存档 + 重入 idleArena
     pollUntil(() => arena.token.length >= 4).then(() => {
-      setValue("arena", arena);
+      setValue(STORAGE_KEYS.ARENA, arena);
       setTimeout(startNextBattle, 200);
     });
     return;
   }
   arena.done = arena.done || [];
-  arena.array = g("option").idleArenaValue.split(",").filter((id) =>
-    id === "gr" || isNaN(id * 1) ? arena.gr > 0 : !arena.done.includes(id)
-  );
+  arena.array = g("option")
+    .idleArenaValue.split(",")
+    .filter((id) => (id === "gr" || isNaN(id * 1) ? arena.gr > 0 : !arena.done.includes(id)));
   if (arena.array.length === 0) return;
   if (
     g("option").restoreStamina &&
@@ -102,18 +104,13 @@ function startNextBattle() {
     }
   }
   if (arena.array.length === 0) {
-    setValue("arena", arena);
+    setValue(STORAGE_KEYS.ARENA, arena);
     return;
   }
-  document.title = _alert(
-    -1,
-    "闲置竞技场",
-    "閒置競技場開始",
-    "Idle Arena start"
-  );
+  document.title = _alert(-1, "闲置竞技场", "閒置競技場開始", "Idle Arena start");
   if (arena.array[0] === "gr" && arena.gr <= 0) {
     arena.array.splice(0, 1);
-    setValue("arena", arena);
+    setValue(STORAGE_KEYS.ARENA, arena);
     startNextBattle();
     return;
   }
@@ -123,7 +120,7 @@ function startNextBattle() {
     arena.done.push(arena.array[0]);
     arena.array.splice(0, 1);
   }
-  setValue("arena", arena);
+  setValue(STORAGE_KEYS.ARENA, arena);
   // token deprecated: main-world unified to postoken (same as isekai)
   if (id === "gr") id = 1;
   post(
@@ -135,9 +132,7 @@ function startNextBattle() {
   );
 }
 
-export function runIdleArenaAutomation(
-  event = { type: EVENT_START_NEXT_BATTLE }
-) {
+export function runIdleArenaAutomation(event = { type: EVENT_START_NEXT_BATTLE }) {
   if (event.type === EVENT_SCHEDULE_NEXT_BATTLE) {
     scheduleNextBattle();
     return;

@@ -26,35 +26,31 @@ function checkFile(file) {
 
   lines.forEach((line, index) => {
     const where = `${rel(file)}:${index + 1}`;
-    if (
-      relative !== owner &&
-      /import\s+\{[^}]*\bidleArena\b/.test(line)
-    ) {
+    if (relative !== owner && /import\s+\{[^}]*\bidleArena\b/.test(line)) {
       violations.push(
         `${where} idleArena implementation import is forbidden; use runIdleArenaAutomation(event)`
       );
     }
-    if (
-      relative !== owner &&
-      relative !== settings &&
-      /\bidleArenaTime\b/.test(line)
-    ) {
-      violations.push(
-        `${where} idleArenaTime scheduling is owned by idle-arena boundary`
-      );
+    if (relative !== owner && relative !== settings && /\bidleArenaTime\b/.test(line)) {
+      violations.push(`${where} idleArenaTime scheduling is owned by idle-arena boundary`);
     }
-    if (
-      relative !== owner &&
-      /setTimeout\(\s*idleArena\b/.test(line)
-    ) {
+    if (relative !== owner && /setTimeout\(\s*idleArena\b/.test(line)) {
       violations.push(
         `${where} direct idleArena scheduling is forbidden; use SCHEDULE_NEXT_BATTLE`
       );
+    }
+    if (/\b(?:getValue|setValue|delValue)\(\s*["']arena["']/.test(line)) {
+      violations.push(`${where} arena storage key must use STORAGE_KEYS.ARENA`);
     }
   });
 }
 
 walk(srcDir);
+
+const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+if (!ownerText.includes("STORAGE_KEYS.ARENA")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must use STORAGE_KEYS.ARENA`);
+}
 
 if (violations.length) {
   console.error("[verify-idle-arena-boundary] FAIL");
