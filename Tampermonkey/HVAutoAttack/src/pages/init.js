@@ -4,9 +4,10 @@ import { gE } from "../dom/query.js";
 import { setValue, getValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
-import { scheduleReload, openUrl } from "../core/navigate.js";
+import { scheduleReload } from "../core/navigate.js";
 import { addStyle } from "../style/inject.js";
 import { registerExportMenu } from "../state/riddle-dataset.js";
+import { runCrossSiteEncounterNavigation } from "./cross-site-encounter-navigation.js";
 import { runEquipmentViewAutomation } from "./equipment-view-automation.js";
 import { runRiddleAutomation } from "./riddle-automation.js";
 import { runLobbyAutomation } from "./lobby-automation.js";
@@ -23,20 +24,7 @@ export function init() {
   // 页面类型单一判定（page-kind SOT，替代散落 ad-hoc 哨兵检测）。页面进入后 DOM 稳定，算一次复用。
   const kind = detectPageKind();
   runEquipmentViewAutomation(kind);
-  if (kind === PageKind.EHENTAI) {
-    const eventLink = gE("#eventpane>div>a");
-    let href =
-      getValue("url") ||
-      (document.referrer.includes("hentaiverse.org")
-        ? new URL(document.referrer).origin
-        : "https://hentaiverse.org");
-    if (eventLink) href = `${href}/${eventLink.href.split("/")[3]}`;
-    if (window.location.href === "https://e-hentai.org/news.php?encounter") {
-      openUrl(href);
-    }
-    return;
-  }
-  setValue("url", window.location.origin);
+  if (runCrossSiteEncounterNavigation(kind)) return;
   // 兜底：非 RIDDLE/BATTLE/LOBBY 游戏页（SHOWEQUIP 独立页 / UNKNOWN 未加载）→ 延时重载（等价原
   // `!gE("#navbar,#riddlecounter,#textlog")`，依赖 showequip 页无 navbar——见 page-kind.js 设计）。
   if (
