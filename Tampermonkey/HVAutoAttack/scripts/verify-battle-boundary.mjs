@@ -13,6 +13,8 @@ const actionSpeedFile = path.join(root, "src/battle/battle-action-speed.js");
 const actionSpeedTest = path.join(root, "src/battle/battle-action-speed.test.js");
 const actionEndFile = path.join(root, "src/battle/battle-action-end.js");
 const actionEndTest = path.join(root, "src/battle/battle-action-end.test.js");
+const actionStartFile = path.join(root, "src/battle/battle-action-start.js");
+const actionStartTest = path.join(root, "src/battle/battle-action-start.test.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
@@ -164,7 +166,7 @@ function checkActionEventBridgeEntry() {
     );
   }
   if (
-    /\bdelayAlert\b|\bdelayReload\b|AlarmEvent\.TRIGGER|NavigationEvent\.SCHEDULE_RELOAD/.test(
+    /\bdelayAlert\b|\bdelayReload\b|BattleActionDelayEvent|AlarmEvent\.TRIGGER|NavigationEvent\.SCHEDULE_RELOAD/.test(
       text
     ) ||
     /\bclearTimeout\b/.test(text)
@@ -172,9 +174,6 @@ function checkActionEventBridgeEntry() {
     violations.push(
       `${rel(reloaderFile)} battle action delay timers belong in runBattleActionDelayAutomation(event)`
     );
-  }
-  if (!text.includes("BattleActionDelayEvent.ACTION_STARTED")) {
-    violations.push(`${rel(reloaderFile)} must report battle action delay start through its entry`);
   }
   if (
     /\bapi_call\b|\bapi_response\b|\bfakeApiCall\b|\bfakeApiResponse\b|sessionStorage\.delay\b|sessionStorage\.delay2\b|\.textContent\s*=/.test(
@@ -204,6 +203,14 @@ function checkActionEventBridgeEntry() {
   }
   if (!text.includes("BattleActionEndEvent.ACTION_ENDED")) {
     violations.push(`${rel(reloaderFile)} must report battle action end through its entry`);
+  }
+  if (/BattleMonitorEvent\.ACTION_STARTED|runBattleMonitorAutomation/.test(text)) {
+    violations.push(
+      `${rel(reloaderFile)} battle action-start workflow belongs in runBattleActionStartAutomation(event)`
+    );
+  }
+  if (!text.includes("BattleActionStartEvent.ACTION_STARTED")) {
+    violations.push(`${rel(reloaderFile)} must report battle action start through its entry`);
   }
 }
 
@@ -369,6 +376,51 @@ function checkActionEndEntry() {
   }
 }
 
+function checkActionStartEntry() {
+  const text = fs.readFileSync(actionStartFile, "utf8");
+  if (!/export const BattleActionStartEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(actionStartFile)} must expose BattleActionStartEvent`);
+  }
+  if (!/export function runBattleActionStartAutomation\(\s*event\b/.test(text)) {
+    violations.push(`${rel(actionStartFile)} must expose runBattleActionStartAutomation(event)`);
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleActionStartEvent\b|runBattleActionStartAutomation\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(actionStartFile)} may export only its event entry`);
+  }
+  for (const required of [
+    "BattleActionDelayEvent.ACTION_STARTED",
+    "BattleMonitorEvent.ACTION_STARTED",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(
+        `${rel(actionStartFile)} must make ${required} visible in action-start entry`
+      );
+    }
+  }
+  for (const file of [
+    battleFile,
+    reloaderFile,
+    mainLoopFile,
+    roundStartFile,
+    actionStartFile,
+    actionStartTest,
+  ]) {
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      file !== reloaderFile &&
+      file !== actionStartFile &&
+      file !== actionStartTest &&
+      /from\s+["']\.\/battle-action-start\.js["']/.test(source)
+    ) {
+      violations.push(`${rel(file)} must not import internal battle action start workflow`);
+    }
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -379,6 +431,7 @@ checkActionDelayEntry();
 checkApiBridgeEntry();
 checkActionSpeedEntry();
 checkActionEndEntry();
+checkActionStartEntry();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");
