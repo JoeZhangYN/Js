@@ -41,6 +41,17 @@ describe("repair automation entry", () => {
     expect(scheduleIdleArena).toHaveBeenCalledOnce();
   });
 
+  it("无需修理但 idleArena 关闭 → 不调度下一场", () => {
+    g("option", { idleArena: false, repairValue: 50 });
+    const { makeBackend, submitted } = fakeBackend([st([eq(1, 100)])]);
+    const scheduleIdleArena = vi.fn();
+
+    runRepairAutomation({ type: RepairEvent.START }, { makeBackend, scheduleIdleArena });
+
+    expect(submitted).toEqual([]);
+    expect(scheduleIdleArena).not.toHaveBeenCalled();
+  });
+
   it("修一件 → 复验达标 → 开下一场（buy 关）", () => {
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 20)]), st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();

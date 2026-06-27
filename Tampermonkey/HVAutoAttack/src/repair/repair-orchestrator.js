@@ -10,7 +10,6 @@
 //   ③ 由 init.js else-if 互斥（idleArena 调度收归本能力 proceed()，仅全达标才开下一场）解决。
 // 缺料止损升级（用户要求「联动商店买齐再修，设上限」）：缺料且开 repairBuyMaterials → material-shop 端口
 //   在 cap/余额/库存内自动买齐再修；超限/买不到 → 停机 + 标题三语告警（保留「修不动止损」语义）。
-import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { _alert } from "../core/lang.js";
 import { isIsekai } from "../env.js";
@@ -94,7 +93,7 @@ function runRepair(deps = {}) {
 
   // 全达标 / 无需修理 → 若开了闲置竞技场，安排下一场（idleArena 调度收归本能力，init.js else-if 互斥）。
   function proceed() {
-    if (g("option").idleArena) scheduleIdleArena();
+    if (readOptionField("idleArena", false)) scheduleIdleArena();
   }
   function stop(msg) {
     document.title = _alert(-1, msg[0], msg[1], msg[2]);

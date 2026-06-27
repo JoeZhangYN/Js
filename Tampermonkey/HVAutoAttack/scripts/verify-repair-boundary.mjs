@@ -49,6 +49,15 @@ for (const required of ["runRepairAutomation", "RepairEvent"]) {
 if (/export\s+function\s+runRepair\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy runRepair export is forbidden`);
 }
+if (!ownerText.includes("OptionEvent.READ_FIELD")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must read repair options through option entry`);
+}
+if (/from\s+["']\.\.\/state\/store\.js["']/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not import store for repair option reads`);
+}
+if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not read repair options directly`);
+}
 
 if (violations.length) {
   console.error("[verify-repair-boundary] FAIL");
