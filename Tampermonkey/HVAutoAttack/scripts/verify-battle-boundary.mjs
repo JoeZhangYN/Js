@@ -11,6 +11,8 @@ const apiBridgeFile = path.join(root, "src/battle/battle-api-bridge.js");
 const apiBridgeTest = path.join(root, "src/battle/battle-api-bridge.test.js");
 const actionSpeedFile = path.join(root, "src/battle/battle-action-speed.js");
 const actionSpeedTest = path.join(root, "src/battle/battle-action-speed.test.js");
+const actionEndFile = path.join(root, "src/battle/battle-action-end.js");
+const actionEndTest = path.join(root, "src/battle/battle-action-end.test.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
@@ -174,9 +176,6 @@ function checkActionEventBridgeEntry() {
   if (!text.includes("BattleActionDelayEvent.ACTION_STARTED")) {
     violations.push(`${rel(reloaderFile)} must report battle action delay start through its entry`);
   }
-  if (!text.includes("BattleActionDelayEvent.ACTION_ENDED")) {
-    violations.push(`${rel(reloaderFile)} must report battle action delay end through its entry`);
-  }
   if (
     /\bapi_call\b|\bapi_response\b|\bfakeApiCall\b|\bfakeApiResponse\b|sessionStorage\.delay\b|sessionStorage\.delay2\b|\.textContent\s*=/.test(
       text
@@ -194,8 +193,17 @@ function checkActionEventBridgeEntry() {
       `${rel(reloaderFile)} battle action speed belongs in runBattleActionSpeedAutomation(event)`
     );
   }
-  if (!text.includes("BattleActionSpeedEvent.ACTION_ENDED")) {
-    violations.push(`${rel(reloaderFile)} must report battle action speed through its entry`);
+  if (
+    /BattleCompletionEvent|BattleCompletionOutcome|BattleMonitorEvent\.COMPLETION_REACHED|RiddleEvent\.BATTLE_POST_RESULT|runBattleTurnAutomation|runBattleRoundStartAutomation|runMonsterStatusAutomation|unsafeWindow\.battle|#pane_completion|#btcp|#battle_right|#battle_left|window\.location\.href|post\(/.test(
+      text
+    )
+  ) {
+    violations.push(
+      `${rel(reloaderFile)} battle action-end workflow belongs in runBattleActionEndAutomation(event)`
+    );
+  }
+  if (!text.includes("BattleActionEndEvent.ACTION_ENDED")) {
+    violations.push(`${rel(reloaderFile)} must report battle action end through its entry`);
   }
 }
 
@@ -310,6 +318,57 @@ function checkActionSpeedEntry() {
   }
 }
 
+function checkActionEndEntry() {
+  const text = fs.readFileSync(actionEndFile, "utf8");
+  if (!/export const BattleActionEndEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(actionEndFile)} must expose BattleActionEndEvent`);
+  }
+  if (!/export function runBattleActionEndAutomation\(\s*event\b/.test(text)) {
+    violations.push(`${rel(actionEndFile)} must expose runBattleActionEndAutomation(event)`);
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleActionEndEvent\b|runBattleActionEndAutomation\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(actionEndFile)} may export only its event entry`);
+  }
+  for (const required of [
+    "BattleActionSpeedEvent.ACTION_ENDED",
+    "BattleActionDelayEvent.ACTION_ENDED",
+    "MonsterStatusEvent.REFRESH_COMBATANT_COUNTS",
+    "BattleMonitorEvent.ACTION_ENDED",
+    "BattleMonitorEvent.COMPLETION_REACHED",
+    "BattleCompletionEvent.COMPLETION_REACHED",
+    "BattleCompletionOutcome.NEXT_ROUND",
+    "RiddleEvent.BATTLE_POST_RESULT",
+    "BattleRoundStartEvent.ROUND_STARTED",
+    "runBattleTurnAutomation",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(actionEndFile)} must make ${required} visible in action-end entry`);
+    }
+  }
+  for (const file of [
+    battleFile,
+    reloaderFile,
+    mainLoopFile,
+    roundStartFile,
+    actionEndFile,
+    actionEndTest,
+  ]) {
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      file !== reloaderFile &&
+      file !== actionEndFile &&
+      file !== actionEndTest &&
+      /from\s+["']\.\/battle-action-end\.js["']/.test(source)
+    ) {
+      violations.push(`${rel(file)} must not import internal battle action end workflow`);
+    }
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -319,6 +378,7 @@ checkActionEventBridgeEntry();
 checkActionDelayEntry();
 checkApiBridgeEntry();
 checkActionSpeedEntry();
+checkActionEndEntry();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");
