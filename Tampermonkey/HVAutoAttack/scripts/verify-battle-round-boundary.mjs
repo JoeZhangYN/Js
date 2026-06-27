@@ -48,7 +48,13 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (!/export function runBattleRoundAutomation\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose runBattleRoundAutomation()`);
 }
-for (const required of ["READ_TYPE", "RECORD_TYPE", "RECORD_COUNT", "SYNC_RUNTIME"]) {
+for (const required of [
+  "READ_TYPE",
+  "RECORD_TYPE",
+  "RECORD_COUNT",
+  "RECORD_COUNT_FROM_INITIALIZATION",
+  "SYNC_RUNTIME",
+]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required} event`);
   }
@@ -59,13 +65,15 @@ if (!ownerText.includes("CLASSIFY_TYPE")) {
 
 const newRoundText = fs.readFileSync(path.join(root, "src/battle/new-round.js"), "utf8");
 for (const forbidden of [
-  "Initializing arena challenge",
-  "Initializing random encounter",
-  "Initializing Item World",
-  "Initializing Grindfest",
-  "Initializing The Tower",
+  /Initializing arena challenge/,
+  /Initializing random encounter/,
+  /Initializing Item World/,
+  /Initializing Grindfest/,
+  /Initializing The Tower/,
+  /\\\(Round\s+\(\\d\+\)/,
+  /\broundNow\b|\broundAll\b/,
 ]) {
-  if (newRoundText.includes(forbidden)) {
+  if (forbidden.test(newRoundText)) {
     violations.push(`src/battle/new-round.js must classify round type through battle-round`);
   }
 }

@@ -60,25 +60,16 @@ export function newRound() {
     return;
   }
   if (battleLog[battleLog.length - 1].textContent.match("Initializing")) {
+    const initializingText = battleLog[battleLog.length - 1].textContent;
     runMonsterStatusAutomation({
       type: MonsterStatusEvent.RECORD_SPAWN_ROSTER,
       battleLog,
       monsterAll: g("monsterAll"),
     });
-    let roundNow;
-    let roundAll;
-    const round = battleLog[battleLog.length - 1].textContent.match(/\(Round (\d+) \/ (\d+)\)/);
-    if (g("roundType") !== "ba" && round !== null) {
-      roundNow = round[1] * 1;
-      roundAll = round[2] * 1;
-    } else {
-      roundNow = 1;
-      roundAll = 1;
-    }
     runBattleRoundAutomation({
-      type: BattleRoundEvent.RECORD_COUNT,
-      roundNow,
-      roundAll,
+      type: BattleRoundEvent.RECORD_COUNT_FROM_INITIALIZATION,
+      initializingText,
+      roundType: g("roundType"),
     });
   } else if (runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY })) {
     runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_SINGLE_ROUND });

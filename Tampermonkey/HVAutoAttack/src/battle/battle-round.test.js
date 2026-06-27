@@ -83,6 +83,32 @@ describe("runBattleRoundAutomation", () => {
     expect(g("roundLeft")).toBe(3);
   });
 
+  it("records round counts from initialization text in the round boundary", () => {
+    expect(
+      runBattleRoundAutomation({
+        type: BattleRoundEvent.RECORD_COUNT_FROM_INITIALIZATION,
+        initializingText: "Initializing arena challenge #10 (Round 2 / 5)",
+        roundType: "ar",
+      })
+    ).toEqual({ roundNow: 2, roundAll: 5 });
+
+    expect(
+      runBattleRoundAutomation({
+        type: BattleRoundEvent.RECORD_COUNT_FROM_INITIALIZATION,
+        initializingText: "Initializing random encounter (Round 2 / 5)",
+        roundType: "ba",
+      })
+    ).toEqual({ roundNow: 1, roundAll: 1 });
+
+    expect(
+      runBattleRoundAutomation({
+        type: BattleRoundEvent.RECORD_COUNT_FROM_INITIALIZATION,
+        initializingText: "Initializing Item World",
+        roundType: "iw",
+      })
+    ).toEqual({ roundNow: 1, roundAll: 1 });
+  });
+
   it("records fallback single-round battles through the same entry", () => {
     expect(runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_SINGLE_ROUND })).toEqual({
       roundNow: 1,
