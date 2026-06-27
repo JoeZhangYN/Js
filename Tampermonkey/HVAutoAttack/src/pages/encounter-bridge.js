@@ -1,21 +1,6 @@
-import {
-  markEncounterKeyAvailable,
-  markEncounterStarted,
-  normalizeEncounterState,
-  parseEncounterKeyFromEventpaneHtml,
-  parseEncounterKeyFromSearch,
-  planEncounterActivation,
-  readEncounterReadiness,
-  resetEncounterDay,
-} from "./encounter-policy.js";
+import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
 
 window.HVAA_encounter = Object.freeze({
-  markEncounterKeyAvailable,
-  markEncounterStarted,
-  normalizeEncounterState,
-  parseEncounterKeyFromEventpaneHtml,
-  parseEncounterKeyFromSearch,
-  planEncounterActivation,
-  readEncounterReadiness,
-  resetEncounterDay,
+  Event: EncounterEvent,
+  run: runEncounterAutomation,
 });

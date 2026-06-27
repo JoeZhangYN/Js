@@ -33,4 +33,62 @@ describe("runEncounterAutomation", () => {
     expect(outcome.nextCheckMs).toBeGreaterThan(0);
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it("serves the widget countdown from the same UTC day readiness", () => {
+    const outcome = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_TICK,
+      state: {
+        date: Date.UTC(2026, 5, 26, 23, 59),
+        key: "",
+        count: 24,
+        clear: true,
+      },
+    });
+
+    expect(outcome).toMatchObject({
+      remainingMs: 0,
+      count: 0,
+      status: "ready",
+    });
+  });
+
+  it("plans widget click and direct engage through one encounter route", () => {
+    const state = { date: Date.now(), key: "abc123=", count: 1, clear: false };
+
+    const click = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_CLICKED,
+      state,
+      pageType: "hv",
+    });
+    const engage = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_ENGAGE,
+      state,
+      pageType: "hv",
+    });
+
+    expect(click).toMatchObject({
+      action: "enter",
+      href: "?s=Battle&ss=ba&encounter=abc123=",
+    });
+    expect(engage).toMatchObject({
+      action: "navigate",
+      href: click.href,
+    });
+  });
+
+  it("turns a loaded news encounter into the same widget engage action", () => {
+    const outcome = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_NEWS_LOADED,
+      state: { date: 0, key: "", count: 0, clear: true },
+      eventpane: '<a href="?s=Battle&amp;ss=ba&amp;encounter=xyz=">RE</a>',
+      engage: true,
+      pageType: "hv",
+    });
+
+    expect(outcome).toMatchObject({
+      action: "navigate",
+      href: "?s=Battle&ss=ba&encounter=xyz=",
+      state: { key: "xyz=", count: 1, clear: false },
+    });
+  });
 });

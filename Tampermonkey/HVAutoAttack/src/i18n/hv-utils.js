@@ -652,6 +652,27 @@ const bindTr = function (tr, ctx) {
 //   start(): 过期警示统一 .hvut-warn class(主世界原 inline style color 弃; .hvut-warn 已两版归一)
 // ctx 注入: config = IIFE-private $config(GM 命名空间载体); top 用 getter(规避 _top 声明在 $re 之后的 TDZ)。
 const bindRe = function (re, ctx) {
+  const encounterEvent = () => window.HVAA_encounter?.Event || {};
+  const runEncounter = (event) => window.HVAA_encounter?.run(event);
+  const applyEncounterState = function (outcome) {
+    if (!outcome?.state) {
+      return;
+    }
+    re.json = outcome.state;
+    ctx.config.set('re', re.json, 'hvut_');
+  };
+  const executeEncounterAction = function (outcome) {
+    applyEncounterState(outcome);
+    if (outcome?.action === 'navigate') {
+      location.href = outcome.href;
+      return true;
+    }
+    if (outcome?.action === 'open') {
+      window.open(outcome.href, '_blank');
+      return true;
+    }
+    return false;
+  };
   re.init = function () {
     if (re.inited) {
       return;
@@ -664,12 +685,9 @@ const bindRe = function (re, ctx) {
     re.init();
     re.button = button;
     re.button.addEventListener('click', (e) => { re.run(e.ctrlKey || e.shiftKey); });
-    const date = new Date(re.json.date);
-    const now = new Date();
-    if (date.getUTCDate() !== now.getUTCDate() || date.getUTCMonth() !== now.getUTCMonth() || date.getUTCFullYear() !== now.getUTCFullYear()) {
-      re.reset();
-      re.load();
-    }
+    const dayState = runEncounter({ type: encounterEvent().WIDGET_TICK, state: re.json });
+    applyEncounterState(dayState);
+    if (re.json.date === 0) re.load();
     re.start();
   };
   re.hv = function () {
@@ -705,11 +723,13 @@ const bindRe = function (re, ctx) {
     re.init();
     const link = $qs('#eventpane a');
     const onclick = link?.getAttribute('onclick');
-    const key = window.HVAA_encounter?.parseEncounterKeyFromSearch(onclick);
-    if (key) {
-      re.set(key);
-      if (ctx.config.settings.reGalleryAlt) {
-        link.setAttribute('onclick', onclick.replace('https://hentaiverse.org/', 'http://alt.hentaiverse.org/'));
+    if (onclick) {
+      const linkState = runEncounter({ type: encounterEvent().WIDGET_LINK_FOUND, state: re.json, search: onclick });
+      if (linkState?.state?.key) {
+        applyEncounterState(linkState);
+        if (ctx.config.settings.reGalleryAlt) {
+          link.setAttribute('onclick', onclick.replace('https://hentaiverse.org/', 'http://alt.hentaiverse.org/'));
+        }
       }
     }
     if (ctx.config.settings.reGallery && $id('nb')) {
@@ -720,47 +740,26 @@ const bindRe = function (re, ctx) {
   };
   re.get = function () {
     re.json = ctx.config.get('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
-    if (window.HVAA_encounter) {
-      re.json = window.HVAA_encounter.normalizeEncounterState(re.json);
-      ctx.config.set('re', re.json, 'hvut_');
-    }
+    applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_TICK, state: re.json }));
   };
   re.set = function (key) {
-    if (window.HVAA_encounter) {
-      re.json = key ? window.HVAA_encounter.markEncounterKeyAvailable(re.json, key) : window.HVAA_encounter.normalizeEncounterState(re.json);
-    } else if (key) {
-      re.json.key = key;
-      re.json.date = Date.now();
-      re.json.count++;
-      re.json.clear = false;
-    }
-    ctx.config.set('re', re.json, 'hvut_');
+    applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_LINK_FOUND, state: re.json, key }));
   };
   re.reset = function () {
-    if (window.HVAA_encounter) {
-      re.json = window.HVAA_encounter.resetEncounterDay();
-      ctx.config.set('re', re.json, 'hvut_');
-    } else {
-      re.json.date = Date.now();
-      re.json.count = 0;
-      re.json.clear = true;
-      re.set();
-    }
+    applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_RESET_DAY }));
     re.start();
   };
   re.check = function () {
-    if (!window.HVAA_encounter) { return; }
-    re.json = window.HVAA_encounter.markEncounterStarted(re.json, { search: location.search });
-    re.set();
+    applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_STARTED_ENCOUNTER, state: re.json, search: location.search }));
   };
   re.refresh = function () {
-    const readiness = window.HVAA_encounter?.readEncounterReadiness(re.json) ?? { state: re.json, remainingMs: 0 };
-    re.json = readiness.state;
-    if (readiness.remainingMs > 0) {
-      re.button.textContent = time_format(readiness.remainingMs, 2) + ` [${re.json.count}]`;
+    const readiness = runEncounter({ type: encounterEvent().WIDGET_TICK, state: re.json }) ?? { state: re.json, remainingMs: 0 };
+    applyEncounterState(readiness);
+    if (readiness.status === 'countdown') {
+      re.button.textContent = time_format(readiness.remainingMs, 2) + ` [${readiness.count}]`;
       re.beep = true;
     } else {
-      re.button.textContent = (!re.json.clear ? '已错失' : '遭遇战') + ` [${re.json.count}]`;
+      re.button.textContent = (readiness.status === 'missed' ? '已错失' : '遭遇战') + ` [${readiness.count}]`;
       if (re.beep) {
         re.beep = false;
         play_beep(...ctx.config.settings.reBeep);
@@ -772,8 +771,8 @@ const bindRe = function (re, ctx) {
     if (re.type === 'ba') {
       re.load();
     } else if (re.type === 'hv') {
-      const plan = window.HVAA_encounter?.planEncounterActivation(re.json, { force: engage });
-      if (plan?.action === 'enter') {
+      const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage });
+      if (outcome?.action === 'enter') {
         re.engage();
       } else {
         re.load(true);
@@ -783,8 +782,8 @@ const bindRe = function (re, ctx) {
       re.button.textContent = '检查中...';
       const html = await $ajax.fetch('https://hentaiverse.org/');
       if (html.includes('<div id="navbar">')) {
-        const plan = window.HVAA_encounter?.planEncounterActivation(re.json, { force: engage });
-        if (plan?.action === 'enter') {
+        const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage, hvAvailable: true });
+        if (outcome?.action === 'enter') {
           re.engage();
         } else {
           re.load(true);
@@ -801,33 +800,21 @@ const bindRe = function (re, ctx) {
     const html = await $ajax.fetch('https://e-hentai.org/news.php');
     const doc = $doc(html);
     const eventpane = $id('eventpane', doc)?.innerHTML;
-    const key = window.HVAA_encounter?.parseEncounterKeyFromEventpaneHtml(eventpane);
-    if (key) {
-      re.set(key);
-      if (engage) {
-        re.engage();
-        return;
-      }
-    } else if (eventpane?.includes('It is the dawn of a new day')) {
+    const outcome = runEncounter({ type: encounterEvent().WIDGET_NEWS_LOADED, state: re.json, eventpane, engage, pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
+    applyEncounterState(outcome);
+    if (executeEncounterAction(outcome)) {
+      return;
+    }
+    if (outcome?.action === 'reset') {
       popup(eventpane);
-      re.reset();
-    } else {
+    } else if (outcome?.action === 'unavailable') {
       popup('<p style="color: #f00; font-weight: bold;">你的装备仓库快要满了.<br>\n该去整理一下了.</p>');
     }
     re.start();
   };
   re.engage = function () {
-    const plan = window.HVAA_encounter?.planEncounterActivation(re.json, { force: true });
-    if (plan?.action !== 'enter') {
-      return;
-    }
-    if (re.type === 'ba') {
-      return;
-    } else if (re.type === 'hv') {
-      location.href = plan.href;
-    } else if (re.type === 'eh') {
-      window.open((ctx.config.settings.reGalleryAlt ? 'http://alt.hentaiverse.org/' : 'https://hentaiverse.org/') + plan.href, '_blank');
-      re.json.clear = true;
+    const outcome = runEncounter({ type: encounterEvent().WIDGET_ENGAGE, state: re.json, pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
+    if (executeEncounterAction(outcome) && re.type === 'eh') {
       re.start();
     }
   };

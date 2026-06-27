@@ -7,6 +7,7 @@ const owner = path.normalize("src/pages/encounter.js");
 const stateHelper = path.normalize("src/pages/encounter-state.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const bridgeFile = path.normalize("src/pages/encounter-bridge.js");
+const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
 const violations = [];
 
 function walk(dir) {
@@ -52,6 +53,11 @@ function checkFile(file) {
     ) {
       violations.push(`${where} encounter-state is internal; import runEncounterAutomation(event)`);
     }
+    if (relative !== owner && /from\s+["']\.\/encounter-widget\.js["']/.test(line)) {
+      violations.push(
+        `${where} encounter widget implementation is internal; import runEncounterAutomation(event)`
+      );
+    }
     if (/\bencounterCheck\b/.test(line)) {
       violations.push(
         `${where} legacy encounterCheck name is forbidden; use runEncounterAutomation(event)`
@@ -78,6 +84,22 @@ function checkFile(file) {
     if (relative === owner && /\bsetTimeout\s*\(/.test(line)) {
       violations.push(
         `${where} encounter must return nextCheckMs; lobby automation owns scheduling`
+      );
+    }
+    if (
+      relative === bridgeFile &&
+      /\b(markEncounter|normalizeEncounter|parseEncounter|planEncounter|readEncounter|resetEncounter)/.test(
+        line
+      )
+    ) {
+      violations.push(`${where} encounter bridge may expose only runEncounterAutomation(event)`);
+    }
+    if (
+      relative === hvUtilsFile &&
+      /HVAA_encounter\??\.(?:mark|normalize|parse|plan|read|reset)/.test(line)
+    ) {
+      violations.push(
+        `${where} hv-utils must call HVAA_encounter.run(event), not encounter policy helpers`
       );
     }
   });
