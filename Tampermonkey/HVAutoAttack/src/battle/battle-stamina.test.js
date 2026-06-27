@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleStaminaEvent, runBattleStaminaAutomation } from "./battle-stamina.js";
-import { readStaminaLossLog } from "../state/stamina-loss-log.js";
+import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
 import { g } from "../state/store.js";
 
 beforeEach(() => {
@@ -26,7 +26,7 @@ describe("runBattleStaminaAutomation", () => {
         d
       )
     ).toEqual({ lostStamina: 0, paused: false });
-    expect(readStaminaLossLog()).toEqual({});
+    expect(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});
     expect(d.setAlarm).not.toHaveBeenCalled();
   });
 
@@ -39,7 +39,9 @@ describe("runBattleStaminaAutomation", () => {
     );
 
     expect(result).toEqual({ lostStamina: 3, paused: false });
-    expect(Object.values(readStaminaLossLog())).toEqual([3]);
+    expect(Object.values(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ }))).toEqual([
+      3,
+    ]);
     expect(d.setAlarm).not.toHaveBeenCalled();
   });
 

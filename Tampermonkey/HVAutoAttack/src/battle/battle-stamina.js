@@ -2,7 +2,7 @@
 import { _alert } from "../core/lang.js";
 import { setAlarm } from "../alarm/alarm.js";
 import { g } from "../state/store.js";
-import { recordStaminaLoss } from "../state/stamina-loss-log.js";
+import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 
 const EVENT_ROUND_LOG_READY = "roundLogReady";
@@ -33,7 +33,7 @@ function handleRoundLogReady(text, deps) {
   const lostStamina = parseLostStamina(text);
   if (!lostStamina) return { lostStamina: 0, paused: false };
 
-  recordStaminaLoss(lostStamina);
+  runStaminaLossLogAutomation({ type: StaminaLossLogEvent.RECORD, amount: lostStamina });
   if (!shouldPauseForLoss(lostStamina)) return { lostStamina, paused: false };
 
   deps.setAlarm("Error");

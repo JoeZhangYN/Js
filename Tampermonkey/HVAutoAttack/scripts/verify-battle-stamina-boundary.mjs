@@ -58,7 +58,8 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "runBattleStaminaAutomation",
   "ROUND_LOG_READY",
-  "recordStaminaLoss",
+  "runStaminaLossLogAutomation",
+  "StaminaLossLogEvent.RECORD",
   "runBattlePauseAutomation",
 ]) {
   if (!ownerText.includes(required)) {

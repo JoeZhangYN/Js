@@ -46,13 +46,20 @@ walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
-  "readStaminaLossLog",
-  "recordStaminaLoss",
-  "clearStaminaLossLog",
+  "runStaminaLossLogAutomation",
+  "StaminaLossLogEvent",
   "STORAGE_KEYS.STAMINA_LOST_LOG",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+
+for (const legacy of ["readStaminaLossLog", "recordStaminaLoss", "clearStaminaLossLog"]) {
+  if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} legacy ${legacy} export must stay private behind runStaminaLossLogAutomation(event)`
+    );
   }
 }
 

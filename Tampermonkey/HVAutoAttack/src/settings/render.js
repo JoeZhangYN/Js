@@ -12,7 +12,7 @@ import { customizeBox } from "./customize.js";
 import { OPTION_SCHEMA } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
 import { clearOption, readOption, setOption, writeOption } from "../state/option.js";
-import { clearStaminaLossLog, readStaminaLossLog } from "../state/stamina-loss-log.js";
+import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
 import { OptionBackupEvent, runOptionBackupAutomation } from "../state/option-backup.js";
 import { getRiddleStats, resetRiddleStats, ML_OUTCOMES } from "../state/riddle-stats.js";
 import { getRiddleLog, clearRiddleLog } from "../state/riddle-log.js";
@@ -614,7 +614,7 @@ export function optionBox() {
   };
   gE(".staminaLostLog", optionBox).onclick = function () {
     const out = [];
-    const staminaLostLog = readStaminaLossLog();
+    const staminaLostLog = runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ });
     for (const i in staminaLostLog) {
       out.push(`${i}: ${staminaLostLog[i]}`);
     }
@@ -625,7 +625,7 @@ export function optionBox() {
           .join("\n")}\n是否重置 (Whether to reset)?`
       )
     )
-      clearStaminaLossLog();
+      runStaminaLossLogAutomation({ type: StaminaLossLogEvent.CLEAR });
   };
   gE(".idleArenaReset", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
