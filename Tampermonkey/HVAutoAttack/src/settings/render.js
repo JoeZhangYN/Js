@@ -14,7 +14,7 @@ import { setLang } from "../i18n/core/restore-controller.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
 import { OptionBackupEvent, runOptionBackupAutomation } from "../state/option-backup.js";
-import { RiddleStatsEvent, runRiddleStatsAutomation, ML_OUTCOMES } from "../state/riddle-stats.js";
+import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
 import {
   BattleMonitorEvent,
@@ -419,24 +419,10 @@ export function optionBox() {
         type: BattleMonitorEvent.RENDER_USAGE_REPORT_TABLE_BODY,
       });
     } else if (name === "Riddle") {
-      // 小马验证(riddle ML)统计：汇总 + 结局明细（把"为什么失败"也量化进面板，见 ML_OUTCOMES）
-      const rs = runRiddleStatsAutomation({ type: RiddleStatsEvent.READ });
-      const rate = rs.mlCall ? ((rs.ok / rs.mlCall) * 100).toFixed(1) : "0.0";
-      const lab = (o) => `<l0>${o.l0}</l0><l1>${o.l1}</l1><l2>${o.l2}</l2>`;
-      _html =
-        "<tbody>" +
-        `<tr><td><l0>小马图出现次数</l0><l1>小馬圖出現次數</l1><l2>Riddle appearances</l2></td><td>${rs.appear}</td></tr>` +
-        `<tr><td><l0>ML 调用次数</l0><l1>ML 調用次數</l1><l2>ML calls</l2></td><td>${rs.mlCall}</td></tr>` +
-        `<tr><td><l0>ML 成功率</l0><l1>ML 成功率</l1><l2>ML success rate</l2></td><td>${rate}% (${rs.ok}/${rs.mlCall})</td></tr>` +
-        `<tr class="hvAATh"><td><l0>结局明细</l0><l1>結局明細</l1><l2>Outcome breakdown</l2></td><td><l0>次数</l0><l1>次數</l1><l2>Count</l2></td></tr>`;
-      for (i in ML_OUTCOMES) {
-        _html = `${_html}<tr><td>${lab(ML_OUTCOMES[i])}</td><td>${rs.outcomes[i]}</td></tr>`;
-      }
-      if (rs.lastError) {
-        // 最近失败详情（err/status/dict 摘要）落库展示——页面提交后重定向, console 看不到, 故进面板。
-        const safe = String(rs.lastError).replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        _html = `${_html}<tr class="hvAATh"><td colspan="2"><l0>最近失败详情</l0><l1>最近失敗詳情</l1><l2>Last failure detail</l2></td></tr><tr><td colspan="2" style="word-break:break-all;text-align:left;">${safe}</td></tr>`;
-      }
+      // 小马验证(riddle ML)统计：汇总 + 结局明细由 riddle stats 入口渲染。
+      _html = `<tbody>${runRiddleStatsAutomation({
+        type: RiddleStatsEvent.RENDER_REPORT_ROWS,
+      })}`;
       const rlog = runRiddleLogAutomation({ type: RiddleLogEvent.READ });
       if (rlog.length) {
         // 运行日志（state/riddle-log.js 半持久化滚动缓冲, 过页面跳转不丢, 新→旧）：每行 时间+文本，

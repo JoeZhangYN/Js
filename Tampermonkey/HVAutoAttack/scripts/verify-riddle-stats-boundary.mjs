@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/riddle-stats.js");
 const ownerTest = path.normalize("src/state/riddle-stats.test.js");
+const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
 
 function rel(file) {
@@ -37,10 +38,17 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== settingsRender &&
       /from\s+["'](?:\.\/|\.\.\/state\/)riddle-stats\.js["']/.test(line) &&
       !/\b(?:ML_OUTCOMES|RiddleStatsEvent|runRiddleStatsAutomation)\b/.test(line)
     ) {
       violations.push(`${where} riddle stats consumers must use runRiddleStatsAutomation(event)`);
+    }
+    if (
+      relative === settingsRender &&
+      /\bML_OUTCOMES\b|\bmlCall\b|\boutcomes\b|\bRECORD_OUTCOME\b/.test(line)
+    ) {
+      violations.push(`${where} settings must not compose riddle stats report fields`);
     }
     if (
       relative !== owner &&
@@ -55,10 +63,22 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
-for (const required of ["runRiddleStatsAutomation", "RiddleStatsEvent", "ML_OUTCOMES"]) {
+for (const required of [
+  "runRiddleStatsAutomation",
+  "RiddleStatsEvent",
+  "ML_OUTCOMES",
+  "RENDER_REPORT_ROWS",
+]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+
+const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
+if (!settingsText.includes("RiddleStatsEvent.RENDER_REPORT_ROWS")) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must request rendered riddle stats rows`
+  );
 }
 
 for (const legacy of [

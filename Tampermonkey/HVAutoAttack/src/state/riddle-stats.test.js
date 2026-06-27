@@ -42,4 +42,24 @@ describe("riddle stats entry", () => {
     expect(runRiddleStatsAutomation({ type: RiddleStatsEvent.READ }).appear).toBe(0);
     expect(runRiddleLogAutomation({ type: RiddleLogEvent.READ }).length).toBe(1);
   });
+
+  it("renders the stats report rows with derived success rate", () => {
+    runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_APPEAR });
+    runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_OUTCOME, outcome: "ok" });
+    runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_OUTCOME, outcome: "timeout" });
+
+    const html = runRiddleStatsAutomation({ type: RiddleStatsEvent.RENDER_REPORT_ROWS });
+
+    expect(html).toContain("50.0% (1/2)");
+    expect(html).toContain("Riddle appearances");
+    expect(html).toContain("Timeout(>12s)");
+  });
+
+  it("escapes the rendered last failure detail", () => {
+    runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_DETAIL, detail: "<bad>" });
+
+    expect(runRiddleStatsAutomation({ type: RiddleStatsEvent.RENDER_REPORT_ROWS })).toContain(
+      "&lt;bad&gt;"
+    );
+  });
 });

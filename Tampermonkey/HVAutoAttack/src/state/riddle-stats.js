@@ -13,6 +13,7 @@ const EVENT_RECORD_DETAIL = "recordDetail";
 const EVENT_RECORD_APPEAR = "recordAppear";
 const EVENT_RECORD_OUTCOME = "recordOutcome";
 const EVENT_RESET = "reset";
+const EVENT_RENDER_REPORT_ROWS = "renderReportRows";
 
 export const RiddleStatsEvent = Object.freeze({
   READ: EVENT_READ,
@@ -20,6 +21,7 @@ export const RiddleStatsEvent = Object.freeze({
   RECORD_APPEAR: EVENT_RECORD_APPEAR,
   RECORD_OUTCOME: EVENT_RECORD_OUTCOME,
   RESET: EVENT_RESET,
+  RENDER_REPORT_ROWS: EVENT_RENDER_REPORT_ROWS,
 });
 
 /**
@@ -95,11 +97,37 @@ function resetRiddleStats() {
   return getRiddleStats();
 }
 
+function label(outcome) {
+  return `<l0>${outcome.l0}</l0><l1>${outcome.l1}</l1><l2>${outcome.l2}</l2>`;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function renderRiddleStatsReportRows() {
+  const stats = getRiddleStats();
+  const rate = stats.mlCall ? ((stats.ok / stats.mlCall) * 100).toFixed(1) : "0.0";
+  let html =
+    `<tr><td><l0>小马图出现次数</l0><l1>小馬圖出現次數</l1><l2>Riddle appearances</l2></td><td>${stats.appear}</td></tr>` +
+    `<tr><td><l0>ML 调用次数</l0><l1>ML 調用次數</l1><l2>ML calls</l2></td><td>${stats.mlCall}</td></tr>` +
+    `<tr><td><l0>ML 成功率</l0><l1>ML 成功率</l1><l2>ML success rate</l2></td><td>${rate}% (${stats.ok}/${stats.mlCall})</td></tr>` +
+    `<tr class="hvAATh"><td><l0>结局明细</l0><l1>結局明細</l1><l2>Outcome breakdown</l2></td><td><l0>次数</l0><l1>次數</l1><l2>Count</l2></td></tr>`;
+  for (const [key, outcome] of Object.entries(ML_OUTCOMES)) {
+    html += `<tr><td>${label(outcome)}</td><td>${stats.outcomes[key] || 0}</td></tr>`;
+  }
+  if (stats.lastError) {
+    html += `<tr class="hvAATh"><td colspan="2"><l0>最近失败详情</l0><l1>最近失敗詳情</l1><l2>Last failure detail</l2></td></tr><tr><td colspan="2" style="word-break:break-all;text-align:left;">${escapeHtml(stats.lastError)}</td></tr>`;
+  }
+  return html;
+}
+
 export function runRiddleStatsAutomation(event = { type: EVENT_READ }) {
   if (event.type === EVENT_READ) return getRiddleStats();
   if (event.type === EVENT_RECORD_DETAIL) return recordMLDetail(event.detail);
   if (event.type === EVENT_RECORD_APPEAR) return recordRiddleAppear();
   if (event.type === EVENT_RECORD_OUTCOME) return recordMLOutcome(event.outcome);
   if (event.type === EVENT_RESET) return resetRiddleStats();
+  if (event.type === EVENT_RENDER_REPORT_ROWS) return renderRiddleStatsReportRows();
   return undefined;
 }
