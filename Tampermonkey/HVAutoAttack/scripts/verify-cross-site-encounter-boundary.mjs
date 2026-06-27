@@ -26,7 +26,7 @@ function checkInit() {
     if (line.includes("runCrossSiteEncounterNavigation")) return;
     if (forbidden.some((re) => re.test(line))) {
       violations.push(
-        `${rel(initFile)}:${index + 1} cross-site encounter navigation belongs in runCrossSiteEncounterNavigation(kind)`
+        `${rel(initFile)}:${index + 1} cross-site encounter navigation belongs in runCrossSiteEncounterNavigation(event)`
       );
     }
   });
@@ -34,21 +34,44 @@ function checkInit() {
 
 function checkEntry() {
   const text = fs.readFileSync(entryFile, "utf8");
-  if (!/export function runCrossSiteEncounterNavigation\(\s*kind\s*\)/.test(text)) {
-    violations.push(`${rel(entryFile)} must expose runCrossSiteEncounterNavigation(kind)`);
+  if (!/export const CrossSiteEncounterEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(entryFile)} must expose CrossSiteEncounterEvent`);
+  }
+  if (!/export function runCrossSiteEncounterNavigation\(\s*event\b/.test(text)) {
+    violations.push(`${rel(entryFile)} must expose runCrossSiteEncounterNavigation(event)`);
+  }
+  if (/export function runCrossSiteEncounterNavigation\(\s*kind\s*\)/.test(text)) {
+    violations.push(`${rel(entryFile)} must not expose raw kind-based navigation entry`);
   }
   if (/\b(?:getValue|setValue)\(\s*["']url["']/.test(text)) {
     violations.push(`${rel(entryFile)} must use STORAGE_KEYS.URL for return-origin storage`);
   }
-  for (const required of ["PageKind.EHENTAI", "news.php?encounter", "STORAGE_KEYS.URL"]) {
+  for (const required of [
+    "CrossSiteEncounterEvent",
+    "EVENT_PAGE_READY",
+    "PageKind.EHENTAI",
+    "news.php?encounter",
+    "STORAGE_KEYS.URL",
+  ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} cross-site navigation wiring`);
     }
   }
 }
 
+function checkPageAutomation() {
+  const text = fs.readFileSync(path.join(root, "src/pages/page-automation.js"), "utf8");
+  if (!text.includes("CrossSiteEncounterEvent.PAGE_READY")) {
+    violations.push("src/pages/page-automation.js must report CrossSiteEncounterEvent.PAGE_READY");
+  }
+  if (/runCrossSiteEncounterNavigation\(\s*kind\s*\)/.test(text)) {
+    violations.push("src/pages/page-automation.js must not call cross-site navigation with raw kind");
+  }
+}
+
 checkInit();
 checkEntry();
+checkPageAutomation();
 
 if (violations.length) {
   console.error("[verify-cross-site-encounter-boundary] FAIL");

@@ -6,30 +6,55 @@ import { PageKind } from "./page-kind.js";
 
 const DEFAULT_HV_ORIGIN = "https://hentaiverse.org";
 const EHENTAI_ENCOUNTER_URL = "https://e-hentai.org/news.php?encounter";
+const EVENT_PAGE_READY = "pageReady";
 
-function readReturnOrigin() {
-  if (getValue(STORAGE_KEYS.URL)) return getValue(STORAGE_KEYS.URL);
-  if (document.referrer.includes("hentaiverse.org")) {
-    return new URL(document.referrer).origin;
+export const CrossSiteEncounterEvent = Object.freeze({
+  PAGE_READY: EVENT_PAGE_READY,
+});
+
+function readReturnOrigin(deps) {
+  const storedOrigin = deps.getValue(STORAGE_KEYS.URL);
+  if (storedOrigin) return storedOrigin;
+  const referrer = deps.referrer();
+  if (referrer.includes("hentaiverse.org")) {
+    return new URL(referrer).origin;
   }
   return DEFAULT_HV_ORIGIN;
 }
 
-function readEncounterPath() {
-  const eventLink = document.querySelector("#eventpane>div>a");
+function readEncounterPath(deps) {
+  const eventLink = deps.document().querySelector("#eventpane>div>a");
   return eventLink ? `/${eventLink.href.split("/")[3]}` : "";
 }
 
-function redirectToEncounterOrigin() {
-  if (window.location.href !== EHENTAI_ENCOUNTER_URL) return;
-  openUrl(`${readReturnOrigin()}${readEncounterPath()}`);
+function redirectToEncounterOrigin(deps) {
+  if (deps.href() !== EHENTAI_ENCOUNTER_URL) return;
+  deps.openUrl(`${readReturnOrigin(deps)}${readEncounterPath(deps)}`);
 }
 
-export function runCrossSiteEncounterNavigation(kind) {
+function makeDeps(deps) {
+  return {
+    document: deps.document || (() => document),
+    getValue: deps.getValue || getValue,
+    href: deps.href || (() => window.location.href),
+    openUrl: deps.openUrl || openUrl,
+    origin: deps.origin || (() => window.location.origin),
+    referrer: deps.referrer || (() => document.referrer),
+    setValue: deps.setValue || setValue,
+  };
+}
+
+export function runCrossSiteEncounterNavigation(
+  event = { type: EVENT_PAGE_READY },
+  deps = {}
+) {
+  if (event.type !== EVENT_PAGE_READY) return false;
+  const runtime = makeDeps(deps);
+  const { kind } = event;
   if (kind === PageKind.EHENTAI) {
-    redirectToEncounterOrigin();
+    redirectToEncounterOrigin(runtime);
     return true;
   }
-  setValue(STORAGE_KEYS.URL, window.location.origin);
+  runtime.setValue(STORAGE_KEYS.URL, runtime.origin());
   return false;
 }

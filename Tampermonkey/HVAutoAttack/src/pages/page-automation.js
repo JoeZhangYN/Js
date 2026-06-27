@@ -2,7 +2,10 @@
 import { g } from "../state/store.js";
 import { PageRefreshEvent, runPageRefreshAutomation } from "../alarm/page-refresh.js";
 import { AppStartupEvent, runAppStartup } from "./app-startup.js";
-import { runCrossSiteEncounterNavigation } from "./cross-site-encounter-navigation.js";
+import {
+  CrossSiteEncounterEvent,
+  runCrossSiteEncounterNavigation,
+} from "./cross-site-encounter-navigation.js";
 import { runEquipmentViewAutomation } from "./equipment-view-automation.js";
 import { runRiddleAutomation } from "./riddle-automation.js";
 import { runLobbyAutomation } from "./lobby-automation.js";
@@ -35,7 +38,14 @@ function runGamePageAutomation(kind) {
 
 export function runPageAutomation(kind) {
   runEquipmentViewAutomation(kind);
-  if (runCrossSiteEncounterNavigation(kind)) return;
+  if (
+    runCrossSiteEncounterNavigation({
+      type: CrossSiteEncounterEvent.PAGE_READY,
+      kind,
+    })
+  ) {
+    return;
+  }
   if (scheduleUnknownPageReload(kind)) return;
   runGamePageAutomation(kind);
 }
