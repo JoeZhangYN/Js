@@ -17,7 +17,11 @@ import { RiddleMlEvent, runRiddleMlAutomation } from "./riddle-ml.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
 import { RiddleImageEvent, runRiddleImageAutomation } from "./riddle-image.js";
-import { recordRiddleSample, SAMPLE_SOURCE } from "../state/riddle-dataset.js";
+import {
+  RiddleDatasetEvent,
+  RiddleSampleSource,
+  runRiddleDatasetAutomation,
+} from "../state/riddle-dataset.js";
 import {
   RiddleSubmissionTimingEvent,
   runRiddleSubmissionTiming,
@@ -122,12 +126,13 @@ export function runRiddleAnsweringSession() {
     sampled = true;
     const source = pendingSource
       ? pendingSource === "ML"
-        ? SAMPLE_SOURCE.ML
-        : SAMPLE_SOURCE.RANDOM
-      : SAMPLE_SOURCE.MANUAL;
+        ? RiddleSampleSource.ML
+        : RiddleSampleSource.RANDOM
+      : RiddleSampleSource.MANUAL;
     const answers = submittedCodes();
     const image = runRiddleImageAutomation({ type: RiddleImageEvent.CAPTURE_SAMPLE });
-    recordRiddleSample({
+    runRiddleDatasetAutomation({
+      type: RiddleDatasetEvent.RECORD_SAMPLE,
       imageDataUrl: image.imageDataUrl,
       answers,
       source,

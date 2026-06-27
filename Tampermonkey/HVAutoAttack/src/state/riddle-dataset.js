@@ -10,12 +10,22 @@ import { makeStoreZip } from "../core/zip.js";
 
 const SAVE_PREFIX = "pony_";
 
+const EVENT_RECORD_SAMPLE = "recordSample";
+const EVENT_EXPORT = "export";
+const EVENT_REGISTER_EXPORT_MENU = "registerExportMenu";
+
+export const RiddleDatasetEvent = Object.freeze({
+  RECORD_SAMPLE: EVENT_RECORD_SAMPLE,
+  EXPORT: EVENT_EXPORT,
+  REGISTER_EXPORT_MENU: EVENT_REGISTER_EXPORT_MENU,
+});
+
 /** 样本来源枚举（调用侧把自身路径映射到这三种之一）。 */
-export const SAMPLE_SOURCE = { ML: "ml", RANDOM: "random", MANUAL: "manual" };
+export const RiddleSampleSource = Object.freeze({ ML: "ml", RANDOM: "random", MANUAL: "manual" });
 
 /** 业务规则 SSOT：随机兜底=低可信，其余(ML/人工)=高可信。 */
 function confidenceOf(source) {
-  return source === SAMPLE_SOURCE.RANDOM ? "low" : "high";
+  return source === RiddleSampleSource.RANDOM ? "low" : "high";
 }
 
 function tsStr() {
@@ -34,9 +44,9 @@ function tsStr() {
  * 用 GM_setValue 同步写：提交即重定向，异步写会被导航杀掉。
  * @param {{imageDataUrl:string|null, answers:string, source:string, imageSrc?:string}} sample
  */
-export function recordRiddleSample({ imageDataUrl, answers, source, imageSrc }) {
+function recordRiddleSample({ imageDataUrl, answers, source, imageSrc }) {
   if (typeof GM_setValue === "undefined") return; // 同步样本写依赖 GM_setValue(TM)；GM.* 异步过不了跳转
-  const src = source || SAMPLE_SOURCE.MANUAL;
+  const src = source || RiddleSampleSource.MANUAL;
   GM_setValue(`saved_${SAVE_PREFIX}${tsStr()}`, {
     json: {
       saved_at: new Date().toISOString(),
@@ -120,7 +130,7 @@ function sampleBaseName(key) {
  * 手动触发（GM 菜单），规避挂机后台标签页自动下载失效。开箱即用、无需后期解 base64。
  * **导出后默认清除原始 saved_* 记录**（用户定 2026-06-06：防下次重复导出）；zip blob 已在内存、清 GM 不影响下载。
  */
-export function exportRiddleDataset() {
+function exportRiddleDataset() {
   if (typeof GM_listValues === "undefined") {
     console.warn("[HVAA][RMA] GM_listValues 不可用，无法导出");
     return;
@@ -167,9 +177,23 @@ export function exportRiddleDataset() {
 
 let exportMenuRegistered = false;
 /** 注册 GM 菜单命令「导出答题训练样本(zip)」（脚本启动调一次，全局可用）。 */
-export function registerExportMenu() {
+function registerExportMenu() {
   if (exportMenuRegistered) return;
   if (typeof GM_registerMenuCommand === "undefined") return;
   exportMenuRegistered = true;
   GM_registerMenuCommand("导出答题训练样本(zip: 图片+json)", exportRiddleDataset);
+}
+
+export function runRiddleDatasetAutomation(event) {
+  if (!event) return undefined;
+  if (event.type === EVENT_RECORD_SAMPLE) {
+    return recordRiddleSample(event);
+  }
+  if (event.type === EVENT_EXPORT) {
+    return exportRiddleDataset();
+  }
+  if (event.type === EVENT_REGISTER_EXPORT_MENU) {
+    return registerExportMenu();
+  }
+  return undefined;
 }

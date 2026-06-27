@@ -46,7 +46,8 @@ function checkEntry() {
   for (const required of [
     "runCdRuntimeAutomation",
     "CdRuntimeEvent.LOAD",
-    "registerExportMenu",
+    "runRiddleDatasetAutomation",
+    "RiddleDatasetEvent.REGISTER_EXPORT_MENU",
     "runAbilityAoeAutomation",
     "GM_info",
   ]) {
