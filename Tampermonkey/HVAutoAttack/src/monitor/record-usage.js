@@ -1,11 +1,15 @@
 // 每回合技能/物品使用统计 + 战斗结束聚合。
 // file-size-gate: exempt phase-4-monolith
-import { setValue, getValue, delValue } from "../state/storage.js";
+import { setValue, getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../battle/pause-automation.js";
+import {
+  BattleRecordArchiveEvent,
+  runBattleRecordArchiveAutomation,
+} from "./battle-record-archive.js";
 
 function recordBattleActionUsage(parm) {
   const stats = getValue(STORAGE_KEYS.STATS, true) || {
@@ -190,16 +194,16 @@ function recordCompletedBattleUsage() {
   stats.self._monster += g("monsterAll");
   stats.self._boss += g("bossAll");
 
-  if (g("option").recordEach && g("roundNow") === g("roundAll")) {
-    const old = getValue(STORAGE_KEYS.STATS_OLD, true) || [];
-    stats.__name = getValue(STORAGE_KEYS.BATTLE_CODE);
-    stats.self._endTime = runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL });
-    old.push(stats);
-    setValue(STORAGE_KEYS.STATS_OLD, old);
-    delValue(STORAGE_KEYS.STATS);
-  } else {
-    setValue(STORAGE_KEYS.STATS, stats);
-  }
+  runBattleRecordArchiveAutomation({
+    type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE,
+    currentKey: STORAGE_KEYS.STATS,
+    historyKey: STORAGE_KEYS.STATS_OLD,
+    record: stats,
+    endTimeField: "self._endTime",
+    recordEach: g("option").recordEach,
+    roundNow: g("roundNow"),
+    roundAll: g("roundAll"),
+  });
 }
 
 export function runBattleUsageAutomation(event) {

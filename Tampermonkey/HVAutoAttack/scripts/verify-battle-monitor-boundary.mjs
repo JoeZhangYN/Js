@@ -8,6 +8,7 @@ const internalFiles = new Set(
   [
     entry,
     "src/monitor/battle-info.js",
+    "src/monitor/battle-record-archive.js",
     "src/monitor/battle-report.js",
     "src/monitor/drop-monitor.js",
     "src/monitor/record-usage.js",
@@ -49,7 +50,7 @@ function checkFile(file) {
       }
     }
     if (
-      /from\s+["'](?:\.\.\/monitor\/|\.\.\/\.\.\/monitor\/|\.\/)(battle-info|battle-report|drop-monitor|record-usage)\.js["']/.test(
+      /from\s+["'](?:\.\.\/monitor\/|\.\.\/\.\.\/monitor\/|\.\/)(battle-info|battle-record-archive|battle-report|drop-monitor|record-usage)\.js["']/.test(
         line
       )
     ) {
@@ -154,6 +155,34 @@ function checkUsageImplementation() {
   }
 }
 
+function checkRecordArchiveEntry() {
+  const archiveFile = path.join(root, "src/monitor/battle-record-archive.js");
+  const archiveText = fs.readFileSync(archiveFile, "utf8");
+  const dropText = fs.readFileSync(path.join(root, "src/monitor/drop-monitor.js"), "utf8");
+  const usageText = fs.readFileSync(path.join(root, "src/monitor/record-usage.js"), "utf8");
+  if (!/export const BattleRecordArchiveEvent\s*=\s*Object\.freeze\(/.test(archiveText)) {
+    violations.push(`${rel(archiveFile)} must expose BattleRecordArchiveEvent`);
+  }
+  if (!/export function runBattleRecordArchiveAutomation\(/.test(archiveText)) {
+    violations.push(`${rel(archiveFile)} must expose runBattleRecordArchiveAutomation(event)`);
+  }
+  for (const [label, text] of [
+    ["src/monitor/drop-monitor.js", dropText],
+    ["src/monitor/record-usage.js", usageText],
+  ]) {
+    if (!text.includes("runBattleRecordArchiveAutomation")) {
+      violations.push(
+        `${label} must route record archiving through runBattleRecordArchiveAutomation(event)`
+      );
+    }
+    if (
+      /recordEach[\s\S]{0,80}&&[\s\S]{0,80}roundNow[\s\S]{0,80}===[\s\S]{0,80}roundAll/.test(text)
+    ) {
+      violations.push(`${label} must not own final-round archive decisions`);
+    }
+  }
+}
+
 function checkDeletedDropMonitorEntrypoint() {
   const dropFile = path.join(root, "src/monitor/drop-monitor.js");
   const entryText = fs.readFileSync(path.join(root, entry), "utf8");
@@ -236,6 +265,7 @@ function checkBattleReportEntry() {
 
 walk(srcDir);
 checkEntry();
+checkRecordArchiveEntry();
 checkUsageImplementation();
 checkDeletedDropMonitorEntrypoint();
 checkDeletedBattleInfoEntrypoint();

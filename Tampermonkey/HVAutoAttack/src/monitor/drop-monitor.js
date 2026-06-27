@@ -4,6 +4,10 @@ import { setValue, getValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
+import {
+  BattleRecordArchiveEvent,
+  runBattleRecordArchiveAutomation,
+} from "./battle-record-archive.js";
 
 const EVENT_COMPLETION_REACHED = "completionReached";
 
@@ -80,16 +84,19 @@ function recordBattleDrops(deps) {
     }
   }
 
-  if (deps.g("option").recordEach && deps.g("roundNow") === deps.g("roundAll")) {
-    const old = deps.getValue(STORAGE_KEYS.DROP_OLD, true) || [];
-    drop.__name = deps.getValue(STORAGE_KEYS.BATTLE_CODE);
-    drop["#endTime"] = deps.readLocalTimestampLabel();
-    old.push(drop);
-    deps.setValue(STORAGE_KEYS.DROP_OLD, old);
-    deps.delValue(STORAGE_KEYS.DROP);
-  } else {
-    deps.setValue(STORAGE_KEYS.DROP, drop);
-  }
+  runBattleRecordArchiveAutomation(
+    {
+      type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE,
+      currentKey: STORAGE_KEYS.DROP,
+      historyKey: STORAGE_KEYS.DROP_OLD,
+      record: drop,
+      endTimeField: "#endTime",
+      recordEach: deps.g("option").recordEach,
+      roundNow: deps.g("roundNow"),
+      roundAll: deps.g("roundAll"),
+    },
+    deps
+  );
 }
 
 export function runBattleDropAutomation(event = { type: EVENT_COMPLETION_REACHED }, deps = {}) {
