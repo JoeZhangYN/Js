@@ -5,6 +5,8 @@ const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const battleFile = path.join(root, "src/battle/battle-automation.js");
 const reloaderFile = path.join(root, "src/battle/reloader.js");
+const actionDelayFile = path.join(root, "src/battle/battle-action-delay.js");
+const actionDelayTest = path.join(root, "src/battle/battle-action-delay.test.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
@@ -60,7 +62,9 @@ function checkBattleEntry() {
     violations.push(`${rel(battleFile)} must run turns through runBattleTurnAutomation()`);
   }
   if (!text.includes("installBattleActionEventBridge")) {
-    violations.push(`${rel(battleFile)} must install action events through installBattleActionEventBridge()`);
+    violations.push(
+      `${rel(battleFile)} must install action events through installBattleActionEventBridge()`
+    );
   }
   for (const required of [
     "installBattlePauseControls",
@@ -68,7 +72,9 @@ function checkBattleEntry() {
     "startBattleMonitoring",
   ]) {
     if (!text.includes(required)) {
-      violations.push(`${rel(battleFile)} must make ${required} visible in runBattleAutomation(event)`);
+      violations.push(
+        `${rel(battleFile)} must make ${required} visible in runBattleAutomation(event)`
+      );
     }
   }
   if (/\bsetup(?:PauseControls|MonsterKnowledge|BattleMonitor)\b/.test(text)) {
@@ -118,7 +124,9 @@ function checkTurnEntry() {
     violations.push(`${rel(mainLoopFile)} must expose runBattleTurnAutomation()`);
   }
   if (/\b(?:export\s+)?function\s+main\s*\(/.test(text)) {
-    violations.push(`${rel(mainLoopFile)} legacy main() bridge must stay deleted; use runBattleTurnAutomation()`);
+    violations.push(
+      `${rel(mainLoopFile)} legacy main() bridge must stay deleted; use runBattleTurnAutomation()`
+    );
   }
   for (const file of [battleFile, reloaderFile]) {
     const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
@@ -139,11 +147,67 @@ function checkActionEventBridgeEntry() {
     violations.push(`${rel(reloaderFile)} must expose installBattleActionEventBridge()`);
   }
   if (/\b(?:export\s+)?function\s+reloader\s*\(/.test(text)) {
-    violations.push(`${rel(reloaderFile)} legacy reloader() bridge must stay deleted; use installBattleActionEventBridge()`);
+    violations.push(
+      `${rel(reloaderFile)} legacy reloader() bridge must stay deleted; use installBattleActionEventBridge()`
+    );
   }
   const battleText = fs.readFileSync(battleFile, "utf8");
   if (/\breloader\s*\(/.test(battleText)) {
-    violations.push(`${rel(battleFile)} legacy reloader() call is forbidden; use installBattleActionEventBridge()`);
+    violations.push(
+      `${rel(battleFile)} legacy reloader() call is forbidden; use installBattleActionEventBridge()`
+    );
+  }
+  if (
+    /\bdelayAlert\b|\bdelayReload\b|AlarmEvent\.TRIGGER|NavigationEvent\.SCHEDULE_RELOAD/.test(
+      text
+    ) ||
+    /\bclearTimeout\b/.test(text)
+  ) {
+    violations.push(
+      `${rel(reloaderFile)} battle action delay timers belong in runBattleActionDelayAutomation(event)`
+    );
+  }
+  if (!text.includes("BattleActionDelayEvent.ACTION_STARTED")) {
+    violations.push(`${rel(reloaderFile)} must report battle action delay start through its entry`);
+  }
+  if (!text.includes("BattleActionDelayEvent.ACTION_ENDED")) {
+    violations.push(`${rel(reloaderFile)} must report battle action delay end through its entry`);
+  }
+}
+
+function checkActionDelayEntry() {
+  const text = fs.readFileSync(actionDelayFile, "utf8");
+  if (!/export const BattleActionDelayEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(actionDelayFile)} must expose BattleActionDelayEvent`);
+  }
+  if (!/export function runBattleActionDelayAutomation\(\s*event\b/.test(text)) {
+    violations.push(`${rel(actionDelayFile)} must expose runBattleActionDelayAutomation(event)`);
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleActionDelayEvent\b|runBattleActionDelayAutomation\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(actionDelayFile)} may export only its event entry`);
+  }
+  const files = [
+    battleFile,
+    reloaderFile,
+    mainLoopFile,
+    roundStartFile,
+    actionDelayFile,
+    actionDelayTest,
+  ];
+  for (const file of files) {
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      file !== reloaderFile &&
+      file !== actionDelayFile &&
+      file !== actionDelayTest &&
+      /from\s+["']\.\/battle-action-delay\.js["']/.test(source)
+    ) {
+      violations.push(`${rel(file)} must not import internal battle action delay`);
+    }
   }
 }
 
@@ -153,6 +217,7 @@ checkRoundStartCallers();
 checkRoundStartEntry();
 checkTurnEntry();
 checkActionEventBridgeEntry();
+checkActionDelayEntry();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");

@@ -3,10 +3,8 @@
 // file-size-gate: exempt phase-4-monolith
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { post } from "../dom/http.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
-import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { MAIN_URL } from "../env.js";
 import {
   BattleMonitorEvent,
@@ -18,26 +16,16 @@ import {
   BattleCompletionOutcome,
   runBattleCompletionAutomation,
 } from "./battle-completion.js";
+import { BattleActionDelayEvent, runBattleActionDelayAutomation } from "./battle-action-delay.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
 
 export function installBattleActionEventBridge() {
-  let delayAlert;
-  let delayReload;
   const eventStart = cE("a");
   eventStart.id = "eventStart";
   eventStart.onclick = function () {
-    if (g("option").delayAlert)
-      delayAlert = setTimeout(
-        () => runAlarmAutomation({ type: AlarmEvent.TRIGGER }),
-        g("option").delayAlertTime * 1000
-      );
-    if (g("option").delayReload)
-      delayReload = runNavigationAutomation({
-        type: NavigationEvent.SCHEDULE_RELOAD,
-        seconds: g("option").delayReloadTime,
-      });
+    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED });
     runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_STARTED });
   };
   gE("body").appendChild(eventStart);
@@ -47,8 +35,7 @@ export function installBattleActionEventBridge() {
     const timeNow = runTimeAutomation({ type: TimeEvent.EPOCH_MS });
     g("runSpeed", (1000 / (timeNow - g("timeNow"))).toFixed(2));
     g("timeNow", timeNow);
-    if (g("option").delayAlert) clearTimeout(delayAlert);
-    if (g("option").delayReload) clearTimeout(delayReload);
+    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED });
     runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
     runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_ENDED });
     if (gE("#btcp")) {
