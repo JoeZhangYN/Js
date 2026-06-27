@@ -62,4 +62,29 @@ describe("runBattleMonitorRuntime", () => {
     expect(runtime.readOptionField).toHaveBeenCalledWith("dropMonitor", false);
     expect(runtime.readOptionField).toHaveBeenCalledWith("dropQuality", 0);
   });
+
+  it("reads battle HUD context from one monitor runtime query", () => {
+    const runtime = deps({
+      attackStatus: 1,
+      monsterAlive: 2,
+      monsterAll: 3,
+      roundAll: 5,
+      roundNow: 4,
+      roundType: "ar",
+      runSpeed: 1.5,
+      turn: 12,
+    });
+
+    expect(runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.HUD_CONTEXT }, runtime))
+      .toEqual({
+        attackStatus: 1,
+        monsterAlive: 2,
+        monsterAll: 3,
+        roundAll: 5,
+        roundNow: 4,
+        roundType: "ar",
+        runSpeed: 1.5,
+        turn: 12,
+      });
+  });
 });

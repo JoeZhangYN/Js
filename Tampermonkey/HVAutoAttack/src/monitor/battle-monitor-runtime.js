@@ -4,6 +4,7 @@ import { OptionEvent, runOptionAutomation } from "../state/option.js";
 const EVENT_REPORT_START_CONTEXT = "reportStartContext";
 const EVENT_ARCHIVE_CONTEXT = "archiveContext";
 const EVENT_DROP_COMPLETION_CONTEXT = "dropCompletionContext";
+const EVENT_HUD_CONTEXT = "hudContext";
 const EVENT_USAGE_ACTION_CONTEXT = "usageActionContext";
 const EVENT_USAGE_COMPLETION_CONTEXT = "usageCompletionContext";
 
@@ -11,6 +12,7 @@ export const BattleMonitorRuntimeEvent = Object.freeze({
   REPORT_START_CONTEXT: EVENT_REPORT_START_CONTEXT,
   ARCHIVE_CONTEXT: EVENT_ARCHIVE_CONTEXT,
   DROP_COMPLETION_CONTEXT: EVENT_DROP_COMPLETION_CONTEXT,
+  HUD_CONTEXT: EVENT_HUD_CONTEXT,
   USAGE_ACTION_CONTEXT: EVENT_USAGE_ACTION_CONTEXT,
   USAGE_COMPLETION_CONTEXT: EVENT_USAGE_COMPLETION_CONTEXT,
 });
@@ -42,6 +44,18 @@ export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT },
       ...readArchiveContext(deps),
       dropMonitor: readOptionField(deps, "dropMonitor", false),
       dropQuality: readOptionField(deps, "dropQuality", 0),
+    };
+  }
+  if (event.type === EVENT_HUD_CONTEXT) {
+    return {
+      attackStatus: deps.g("attackStatus"),
+      monsterAlive: deps.g("monsterAlive"),
+      monsterAll: deps.g("monsterAll"),
+      roundAll: deps.g("roundAll"),
+      roundNow: deps.g("roundNow"),
+      roundType: deps.g("roundType"),
+      runSpeed: deps.g("runSpeed"),
+      turn: deps.g("turn"),
     };
   }
   if (event.type === EVENT_USAGE_ACTION_CONTEXT) {

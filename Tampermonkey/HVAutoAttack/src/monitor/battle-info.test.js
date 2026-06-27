@@ -10,8 +10,8 @@ function makeDeps(values) {
   return {
     cE: (tag) => document.createElement(tag),
     document,
-    g: (key) => values[key],
     gE: (selector) => document.querySelector(selector),
+    readHudContext: () => values,
   };
 }
 

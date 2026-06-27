@@ -1,6 +1,6 @@
 // 战斗 HUD 渲染：左上角显示当前回合 / 怪物剩余 / 时间等。
 import { gE, cE } from "../dom/query.js";
-import { g } from "../state/store.js";
+import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
 
 const EVENT_REFRESH = "refresh";
 
@@ -12,8 +12,10 @@ function makeDeps(deps) {
   return {
     cE: deps.cE || cE,
     document: deps.document || document,
-    g: deps.g || g,
     gE: deps.gE || gE,
+    readHudContext:
+      deps.readHudContext ||
+      (() => runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.HUD_CONTEXT })),
   };
 }
 
@@ -32,23 +34,18 @@ function refreshBattleHud(deps) {
     "<l0>圣</l0><l1>聖</l1><l2>Divine</l2>",
     "<l0>暗</l0><l1>暗</l1><l2>Forbidden</l2>",
   ];
+  const context = deps.readHudContext();
   logElement.innerHTML = [
-    `Turns: ${deps.g("turn")}`,
-    `<br>Speed: ${deps.g("runSpeed")} t/s`,
-    `<br>Round: ${deps.g("roundNow")}/${deps.g("roundAll")}`,
+    `Turns: ${context.turn}`,
+    `<br>Speed: ${context.runSpeed} t/s`,
+    `<br>Round: ${context.roundNow}/${context.roundAll}`,
     `<br><l0>攻击模式</l0><l1>攻擊模式</l1><l2>Attack Mode</l2>: ${
-      status[deps.g("attackStatus")]
+      status[context.attackStatus]
     }`,
-    `<br><l0>敌人</l0><l1>敌人</l1><l2>Monsters</l2>: ${deps.g(
-      "monsterAlive"
-    )}/${deps.g("monsterAll")}`,
-    `<br><l0>战役模式</l0><l1>戰役模式</l1><l2>Type</l2>: ${battleInfoType(
-      deps.g("roundType")
-    )}`,
+    `<br><l0>敌人</l0><l1>敌人</l1><l2>Monsters</l2>: ${context.monsterAlive}/${context.monsterAll}`,
+    `<br><l0>战役模式</l0><l1>戰役模式</l1><l2>Type</l2>: ${battleInfoType(context.roundType)}`,
   ].join("");
-  deps.document.title = `${deps.g("turn")}||${deps.g("runSpeed")}||${deps.g("roundNow")}/${deps.g(
-    "roundAll"
-  )}||${deps.g("monsterAlive")}/${deps.g("monsterAll")}`;
+  deps.document.title = `${context.turn}||${context.runSpeed}||${context.roundNow}/${context.roundAll}||${context.monsterAlive}/${context.monsterAll}`;
 }
 
 function battleInfoType(type) {

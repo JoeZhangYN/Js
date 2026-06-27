@@ -390,6 +390,7 @@ function checkBattleMonitorRuntimeEntry() {
   for (const required of [
     "REPORT_START_CONTEXT",
     "ARCHIVE_CONTEXT",
+    "HUD_CONTEXT",
     "USAGE_ACTION_CONTEXT",
     "USAGE_COMPLETION_CONTEXT",
   ]) {
@@ -421,6 +422,15 @@ function checkDeletedBattleInfoEntrypoint() {
     violations.push(
       `${rel(hudFile)} must keep refreshBattleHud private behind runBattleHudAutomation(event)`
     );
+  }
+  if (!hudText.includes("BattleMonitorRuntimeEvent.HUD_CONTEXT")) {
+    violations.push(`${rel(hudFile)} must read HUD runtime fields through battle-monitor-runtime`);
+  }
+  if (/from\s+["']\.\.\/state\/store\.js["']/.test(hudText)) {
+    violations.push(`${rel(hudFile)} must not import store directly`);
+  }
+  if (/\b(?:deps\.)?g\(\s*["'](?:turn|runSpeed|roundNow|roundAll|attackStatus|monsterAlive|monsterAll|roundType)["']/.test(hudText)) {
+    violations.push(`${rel(hudFile)} must not assemble HUD context from raw store fields`);
   }
 }
 
