@@ -9,16 +9,32 @@ const RESIST_LABEL = {
   fire: "火", cold: "冰", elec: "雷", wind: "风", holy: "圣",
   dark: "暗", crushing: "钝", slashing: "斩", piercing: "刺",
 };
+const EVENT_REFRESH = "refresh";
+
+export const MonsterResistPanelEvent = Object.freeze({
+  REFRESH: EVENT_REFRESH,
+});
 
 let styleInjected = false;
 
 const esc = (s) =>
   String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 
-function injectStyle() {
+function makeDeps(deps) {
+  return {
+    cE: deps.cE || cE,
+    document: deps.document || document,
+    g: deps.g || g,
+    gE: deps.gE || gE,
+    getCachedMonster: deps.getCachedMonster || getCachedMonster,
+    primeMonsterCache: deps.primeMonsterCache || primeMonsterCache,
+  };
+}
+
+function injectStyle(deps) {
   if (styleInjected) return;
   styleInjected = true;
-  const style = cE("style");
+  const style = deps.cE("style");
   style.textContent = `
     #hvAAResist { font-size: 10px; margin-top: 4px; max-width: 380px; line-height: 1.4; }
     .hvAAResistRow { padding: 1px 0; border-top: 1px solid rgba(0,0,0,.15); white-space: nowrap; }
@@ -28,7 +44,7 @@ function injectStyle() {
     .hvAAResistCell.r-zero { color: #999; }
     .hvAAResistNone { color: #999; }
   `;
-  document.head.appendChild(style);
+  deps.document.head.appendChild(style);
 }
 
 function renderRow(name, info) {
@@ -47,27 +63,32 @@ function renderRow(name, info) {
 /**
  * 渲染/刷新九抗面板（读当前每怪名查库）。抗性不随血量变，每 round 刷一次即可。
  */
-export async function renderResistPanel() {
-  injectStyle();
-  let panel = gE("#hvAAResist");
+async function renderResistPanel(deps) {
+  injectStyle(deps);
+  let panel = deps.gE("#hvAAResist");
   if (!panel) {
-    const box = gE("#hvAABox2");
+    const box = deps.gE("#hvAABox2");
     if (!box) return;
-    panel = box.appendChild(cE("div"));
+    panel = box.appendChild(deps.cE("div"));
     panel.id = "hvAAResist";
   }
-  const els = [...gE("div.btm1", "all")];
+  const els = [...deps.gE("div.btm1", "all")];
   // 怪物身份键 = monsterId（开局 spawn 行 → monsterStatus）。按 order 取 MID（不能用数组下标——
   // 本面板也会在 runBattleTurnAutomation() 更新 monsterStatus 后被 scan 回调触发，
   // 故按 order 字段映射，DOM `.btm1` 第 i 个 = order i）。
-  const idByOrder = new Map((g("monsterStatus") || []).map((s) => [s.order, s.monsterId]));
+  const idByOrder = new Map((deps.g("monsterStatus") || []).map((s) => [s.order, s.monsterId]));
   // 预取本轮怪 MID 画像进内存 cache：供本面板渲染 + collectSnapshot(同步) join（路径 B 预取时机）
-  await primeMonsterCache(els.map((_, i) => idByOrder.get(i)));
+  await deps.primeMonsterCache(els.map((_, i) => idByOrder.get(i)));
   const rows = [];
   els.forEach((el, i) => {
-    const name = gE(".btm3", el)?.textContent;
+    const name = deps.gE(".btm3", el)?.textContent;
     if (!name) return;
-    rows.push(renderRow(name, getCachedMonster(idByOrder.get(i)))); // 名仅显示，画像按 MID 查
+    rows.push(renderRow(name, deps.getCachedMonster(idByOrder.get(i)))); // 名仅显示，画像按 MID 查
   });
   panel.innerHTML = rows.join("") || "<div class='hvAAResistNone'>无怪物</div>";
+}
+
+export function runMonsterResistPanelAutomation(event = { type: EVENT_REFRESH }, deps = {}) {
+  if (event.type !== EVENT_REFRESH) return undefined;
+  return renderResistPanel(makeDeps(deps));
 }
