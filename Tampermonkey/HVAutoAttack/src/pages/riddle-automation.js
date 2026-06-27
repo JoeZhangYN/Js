@@ -2,7 +2,7 @@
 import { gE } from "../dom/query.js";
 import { goto } from "../core/navigate.js";
 import { g } from "../state/store.js";
-import { riddleAlert } from "./riddle.js";
+import { runRiddleAnsweringSession } from "./riddle.js";
 
 const EVENT_RIDDLE_PAGE = "riddlePage";
 const EVENT_BATTLE_POST_RESULT = "battlePostResult";
@@ -25,7 +25,7 @@ function answerCurrentRiddlePage() {
     openRiddlePopup();
     return;
   }
-  riddleAlert();
+  runRiddleAnsweringSession();
 }
 
 function handleBattlePostResult(data) {

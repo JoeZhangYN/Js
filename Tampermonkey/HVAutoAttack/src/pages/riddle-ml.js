@@ -2,7 +2,7 @@
 // P6 ML 远程答题（来源：Tampermonkey/HentaiVerse/Riddle Master Assistant Reborn.user.js v0.5.2）
 // 暴露：
 //   - tryMLAnswer(): Promise<string[]|null>  返回命中的 ANSWER_MAP key 数组(多答案题多只) 或 null
-//   - setupRMAHealth()                     30s 健康巡检（init 时调用一次启动）
+//   - startRiddleMlHealthCheck()          30s 健康巡检（答题业务入口调用一次启动）
 // 本模块仅做「ML 识别」：图片获取已抽到 pages/riddle-image.js；训练样本保存/导出已抽到
 //   state/riddle-dataset.js（保存统一在「提交动作」riddle.js #riddlesubmit hook 采样）。本模块不再存图。
 //
@@ -121,7 +121,7 @@ async function stayAwake() {
 }
 
 let healthStarted = false;
-export function setupRMAHealth() {
+export function startRiddleMlHealthCheck() {
   if (healthStarted) return;
   healthStarted = true;
   stayAwake();

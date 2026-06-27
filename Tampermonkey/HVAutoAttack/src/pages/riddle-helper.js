@@ -87,7 +87,7 @@ function attachThumbnails() {
  * 异步等图片 onload 后定位 + 加面板 + 拖拽 + 滚轮缩放。
  * @returns {Promise<void>}
  */
-export async function setupRiddleHelper() {
+export async function runRiddleVisualAid() {
   const img = gE("#riddleimage>img");
   if (!img) return;
   if (!img.complete) await new Promise((resolve) => (img.onload = resolve));
