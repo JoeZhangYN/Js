@@ -46,17 +46,28 @@ walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
+  "runCdRuntimeAutomation",
+  "CdRuntimeEvent",
+  "STORAGE_KEYS.GLOBAL_TURN",
+  "STORAGE_KEYS.SKILL_LAST_USED",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+
+for (const legacy of [
   "loadCdState",
   "persistCdState",
   "incrementGlobalTurn",
   "recordFire",
   "turnsUntilReady",
   "collectCdMap",
-  "STORAGE_KEYS.GLOBAL_TURN",
-  "STORAGE_KEYS.SKILL_LAST_USED",
 ]) {
-  if (!ownerText.includes(required)) {
-    violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} legacy ${legacy} export must stay private behind runCdRuntimeAutomation(event)`
+    );
   }
 }
 

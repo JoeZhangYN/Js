@@ -44,7 +44,8 @@ function checkEntry() {
     violations.push(`${rel(entryFile)} must expose runAppStartup(event)`);
   }
   for (const required of [
-    "loadCdState",
+    "runCdRuntimeAutomation",
+    "CdRuntimeEvent.LOAD",
     "registerExportMenu",
     "runAbilityAoeAutomation",
     "GM_info",

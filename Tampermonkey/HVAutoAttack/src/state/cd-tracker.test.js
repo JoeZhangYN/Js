@@ -1,11 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  incrementGlobalTurn,
-  loadCdState,
-  persistCdState,
-  recordFire,
-  turnsUntilReady,
-} from "./cd-tracker.js";
+import { CdRuntimeEvent, runCdRuntimeAutomation } from "./cd-tracker.js";
 import { getValue, setValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { g } from "./store.js";
@@ -21,18 +15,18 @@ describe("cd tracker runtime persistence", () => {
     setValue(STORAGE_KEYS.GLOBAL_TURN, 12);
     setValue(STORAGE_KEYS.SKILL_LAST_USED, { OFC: 7 });
 
-    loadCdState();
+    runCdRuntimeAutomation({ type: CdRuntimeEvent.LOAD });
 
     expect(g("globalTurn")).toBe(12);
     expect(g("skillLastUsed")).toEqual({ OFC: 7 });
   });
 
   it("increments, records skill fire, and persists runtime state", () => {
-    incrementGlobalTurn();
-    incrementGlobalTurn();
-    recordFire("OFC");
+    runCdRuntimeAutomation({ type: CdRuntimeEvent.INCREMENT_TURN });
+    runCdRuntimeAutomation({ type: CdRuntimeEvent.INCREMENT_TURN });
+    runCdRuntimeAutomation({ type: CdRuntimeEvent.RECORD_FIRE, code: "OFC" });
 
-    persistCdState();
+    runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST });
 
     expect(getValue(STORAGE_KEYS.GLOBAL_TURN, true)).toBe(2);
     expect(getValue(STORAGE_KEYS.SKILL_LAST_USED, true)).toEqual({ OFC: 2 });
@@ -42,6 +36,6 @@ describe("cd tracker runtime persistence", () => {
     g("globalTurn", 20);
     g("skillLastUsed", { OFC: 10 });
 
-    expect(turnsUntilReady("OFC")).toBe(40);
+    expect(runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_TURNS, code: "OFC" })).toBe(40);
   });
 });

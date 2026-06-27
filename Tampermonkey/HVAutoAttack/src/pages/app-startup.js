@@ -5,7 +5,7 @@ import { readOption, writeOption } from "../state/option.js";
 import { _alert } from "../core/lang.js";
 import { addStyle } from "../style/inject.js";
 import { registerExportMenu } from "../state/riddle-dataset.js";
-import { loadCdState } from "../state/cd-tracker.js";
+import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 
 const EVENT_USERSCRIPT_START = "userscriptStart";
@@ -17,7 +17,7 @@ export const AppStartupEvent = Object.freeze({
 });
 
 function loadGlobalStartupState() {
-  loadCdState();
+  runCdRuntimeAutomation({ type: CdRuntimeEvent.LOAD });
   registerExportMenu();
 }
 

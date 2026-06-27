@@ -28,8 +28,8 @@ function checkFile(file) {
     if (relative === entry || relative === snapshotImpl) return;
     const where = `${rel(file)}:${index + 1}`;
     for (const name of [
-      "incrementGlobalTurn",
-      "persistCdState",
+      "CdRuntimeEvent.INCREMENT_TURN",
+      "CdRuntimeEvent.PERSIST",
       "collectSnapshot",
       "assertNoDomRefs",
     ]) {
@@ -46,8 +46,9 @@ function checkEntry() {
     violations.push(`${entry.replaceAll("\\", "/")} must expose prepareBattleTurnContext()`);
   }
   for (const required of [
-    "incrementGlobalTurn",
-    "persistCdState",
+    "runCdRuntimeAutomation",
+    "CdRuntimeEvent.INCREMENT_TURN",
+    "CdRuntimeEvent.PERSIST",
     "collectSnapshot",
     "assertNoDomRefs",
   ]) {

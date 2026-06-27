@@ -9,7 +9,7 @@
 // file-size-gate: exempt phase-5b-snapshot
 import { gE, isSpiritActive } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { collectCdMap } from "../state/cd-tracker.js";
+import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
 import { finalizePending } from "../state/recovery-learner.js";
 import { finalizeCdPending } from "../state/cd-learner.js";
@@ -191,7 +191,7 @@ export function collectSnapshot() {
     playerEffects,
     // 深度B：宝石按钮文案（供 decideGem，PURE 不读 DOM）；无宝石按钮 → null
     gemName: gE("#ikey_p")?.textContent ?? null,
-    cdMap: collectCdMap(),
+    cdMap: runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_MAP }),
     skillReady,
     skillOTOS: g("skillOTOS") || {},
     spellAoe: g("spellAoe") || {},

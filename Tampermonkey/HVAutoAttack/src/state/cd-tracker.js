@@ -15,21 +15,37 @@ import { getLearnedCd } from "./cd-learner.js";
 // 为兼容既有 import 路径（如有），此处转出口。
 export { SKILL_REGISTRY, effectiveSkillId };
 
+const EVENT_LOAD = "load";
+const EVENT_PERSIST = "persist";
+const EVENT_INCREMENT_TURN = "incrementTurn";
+const EVENT_RECORD_FIRE = "recordFire";
+const EVENT_READ_TURNS = "readTurns";
+const EVENT_READ_MAP = "readMap";
+
+export const CdRuntimeEvent = Object.freeze({
+  LOAD: EVENT_LOAD,
+  PERSIST: EVENT_PERSIST,
+  INCREMENT_TURN: EVENT_INCREMENT_TURN,
+  RECORD_FIRE: EVENT_RECORD_FIRE,
+  READ_TURNS: EVENT_READ_TURNS,
+  READ_MAP: EVENT_READ_MAP,
+});
+
 /** 启动时把持久化的 globalTurn / skillLastUsed 灌进 g() runtime。Phase 5b-1 由 init.js 调用一次。 */
-export function loadCdState() {
+function loadCdState() {
   const gt = parseInt(getValue(STORAGE_KEYS.GLOBAL_TURN));
   g("globalTurn", isNaN(gt) ? 0 : gt);
   g("skillLastUsed", getValue(STORAGE_KEYS.SKILL_LAST_USED, true) || {});
 }
 
 /** round-start 入口末尾调用，原子持久化避免 GM_* 写抖动。 */
-export function persistCdState() {
+function persistCdState() {
   setValue(STORAGE_KEYS.GLOBAL_TURN, g("globalTurn") || 0);
   setValue(STORAGE_KEYS.SKILL_LAST_USED, g("skillLastUsed") || {});
 }
 
 /** runBattleTurnAutomation() 每 turn 入口调用一次。 */
-export function incrementGlobalTurn() {
+function incrementGlobalTurn() {
   g("globalTurn", (g("globalTurn") || 0) + 1);
 }
 
@@ -37,7 +53,7 @@ export function incrementGlobalTurn() {
  * 记录技能在当前 globalTurn 释放。dispatch 在 click 后调用。
  * @param {string} code SKILL_REGISTRY 的 key
  */
-export function recordFire(code) {
+function recordFire(code) {
   const map = g("skillLastUsed") || {};
   map[code] = g("globalTurn") || 0;
   g("skillLastUsed", map);
@@ -48,7 +64,7 @@ export function recordFire(code) {
  * @param {string} code
  * @returns {number}
  */
-export function turnsUntilReady(code) {
+function turnsUntilReady(code) {
   const entry = SKILL_REGISTRY[code];
   if (!entry) return 0;
   const lastUsed = (g("skillLastUsed") || {})[code];
@@ -63,10 +79,20 @@ export function turnsUntilReady(code) {
  * 一次性组装全 cdMap。snapshot.js 调用。
  * @returns {Record<string, number>}
  */
-export function collectCdMap() {
+function collectCdMap() {
   const map = {};
   for (const code of Object.keys(SKILL_REGISTRY)) {
     map[code] = turnsUntilReady(code);
   }
   return map;
+}
+
+export function runCdRuntimeAutomation(event = { type: EVENT_READ_MAP }) {
+  if (event.type === EVENT_LOAD) return loadCdState();
+  if (event.type === EVENT_PERSIST) return persistCdState();
+  if (event.type === EVENT_INCREMENT_TURN) return incrementGlobalTurn();
+  if (event.type === EVENT_RECORD_FIRE) return recordFire(event.code);
+  if (event.type === EVENT_READ_TURNS) return turnsUntilReady(event.code);
+  if (event.type === EVENT_READ_MAP) return collectCdMap();
+  return undefined;
 }

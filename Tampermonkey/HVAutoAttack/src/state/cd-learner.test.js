@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { g } from "./store.js";
 import { recordCdFire, finalizeCdPending, getLearnedCd } from "./cd-learner.js";
-import { turnsUntilReady } from "./cd-tracker.js";
+import { CdRuntimeEvent, runCdRuntimeAutomation } from "./cd-tracker.js";
 
 const fire = (code, id, globalTurn) => recordCdFire(code, id, { globalTurn });
 const settle = (globalTurn, readyId) =>
@@ -78,12 +78,12 @@ describe("turnsUntilReady 用学习 CD（夹 Math.min cdBase）", () => {
     settle(20, "1111"); // 学 20
     g("skillLastUsed", { OFC: 100 });
     g("globalTurn", 110);
-    expect(turnsUntilReady("OFC")).toBe(10); // min(20,50)-10
+    expect(runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_TURNS, code: "OFC" })).toBe(10); // min(20,50)-10
   });
 
   it("未学习 → 退 cdBase 50（开火 10 回合后剩 40）", () => {
     g("skillLastUsed", { OFC: 100 });
     g("globalTurn", 110);
-    expect(turnsUntilReady("OFC")).toBe(40);
+    expect(runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_TURNS, code: "OFC" })).toBe(40);
   });
 });
