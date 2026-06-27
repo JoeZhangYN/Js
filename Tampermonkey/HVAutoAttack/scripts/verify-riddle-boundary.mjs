@@ -104,6 +104,12 @@ function checkRiddleSubmissionTiming() {
       `${rel(riddleAnswerFile)} must route submit timing through runRiddleSubmissionTiming(event)`
     );
   }
+  if (!answerText.includes("OptionEvent.READ_FIELD")) {
+    violations.push(`${rel(riddleAnswerFile)} must read riddleAnswerTime through option entry`);
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(answerText)) {
+    violations.push(`${rel(riddleAnswerFile)} must not read option fields directly`);
+  }
   for (const required of [
     "RiddleSubmissionTimingEvent.START",
     "RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED",

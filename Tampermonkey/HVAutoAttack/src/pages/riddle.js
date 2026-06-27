@@ -8,7 +8,6 @@
 // - 倒计时双源解析：textContent 正则优先（抗 HV UI 改版），sprite 背景位置作 legacy fallback
 // P2 集成：runRiddleVisualAid（小马旋转/锐化/对比 + 6 缩略图视觉辅助）— async 不 await，不阻塞倒计时
 // P6 集成：runRiddleMlAutomation（rdma.ooguy.com ML 远程答题，失败 fallback 现有随机猜）
-import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
@@ -32,6 +31,10 @@ const ANSWER_KEYS = Object.keys(ANSWER_MAP);
 
 function readOptionEnabled(key) {
   return runOptionAutomation({ type: OptionEvent.IS_ON, key });
+}
+
+function readOptionField(key, fallback) {
+  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
 }
 
 /**
@@ -99,7 +102,7 @@ export function runRiddleAnsweringSession() {
   //    → 小马验证统计"错误/成功都不+1"（用户实证 2026-06-06）。现恢复原版：成功即提交。
   // ② ML 失败/未就绪 → 每秒**重读真实倒计时** #riddlecounter（对齐原版 getRemainingSeconds/
   //    waitUntilNearEnd），剩余 ≤ riddleAnswerTime（或连续读不到 5s）随机单只兜底提交。任意时长鲁棒。
-  const beforeEnd = parseInt(g("option").riddleAnswerTime) || 3;
+  const beforeEnd = parseInt(readOptionField("riddleAnswerTime", 3)) || 3;
   /** @type {string[]|null} ML 命中答案码数组（多答案题多只）；null=未就绪/失败 */
   let mlAnswer = null;
   let pendingSource = null; // doSubmit 设置；#riddlesubmit hook 据此判 source（手动点击=null→manual）
