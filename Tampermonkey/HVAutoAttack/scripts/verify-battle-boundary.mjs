@@ -56,6 +56,18 @@ function checkBattleEntry() {
   if (!text.includes("installBattleActionEventBridge")) {
     violations.push(`${rel(battleFile)} must install action events through installBattleActionEventBridge()`);
   }
+  for (const required of [
+    "installBattlePauseControls",
+    "startBattleMonsterKnowledge",
+    "startBattleMonitoring",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(battleFile)} must make ${required} visible in runBattleAutomation()`);
+    }
+  }
+  if (/\bsetup(?:PauseControls|MonsterKnowledge|BattleMonitor)\b/.test(text)) {
+    violations.push(`${rel(battleFile)} must not use legacy setup* names for battle orchestration`);
+  }
 }
 
 function checkRoundStartCallers() {

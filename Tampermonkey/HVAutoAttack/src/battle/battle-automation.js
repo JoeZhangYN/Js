@@ -15,7 +15,7 @@ import {
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
 
-function setupPauseControls() {
+function installBattlePauseControls() {
   const box2 = gE("#battle_main").appendChild(cE("div"));
   box2.id = "hvAABox2";
   if (g("option").pauseButton) {
@@ -48,20 +48,20 @@ function initBattleRuntime() {
   g("runSpeed", 1);
 }
 
-function setupMonsterKnowledge() {
+function startBattleMonsterKnowledge() {
   runMonsterKnowledgeAutomation({ type: MonsterKnowledgeEvent.BATTLE_STARTED });
 }
 
-function setupBattleMonitor() {
+function startBattleMonitoring() {
   runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
 }
 
 export function runBattleAutomation() {
-  setupPauseControls();
+  installBattlePauseControls();
   installBattleActionEventBridge();
   initBattleRuntime();
   runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
-  setupMonsterKnowledge();
-  setupBattleMonitor();
+  startBattleMonsterKnowledge();
+  startBattleMonitoring();
   runBattleTurnAutomation();
 }
