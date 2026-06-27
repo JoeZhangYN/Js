@@ -30,6 +30,20 @@ describe("battle report query", () => {
     expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe(firstCode);
   });
 
+  it("reads battle-start context inside the battle report entry", () => {
+    g("option", { recordEach: false });
+    runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
+    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBeNull();
+
+    g("option", { recordEach: true });
+    g("roundType", "ar");
+    g("roundAll", 5);
+
+    runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
+
+    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("6/27: AR-5");
+  });
+
   it("owns the battle report date label format", () => {
     g("option", { recordEach: true });
     g("roundType", "ar");

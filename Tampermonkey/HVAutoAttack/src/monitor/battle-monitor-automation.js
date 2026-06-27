@@ -4,7 +4,6 @@ import { BattleHudEvent, runBattleHudAutomation } from "./battle-info.js";
 import { BattleDropEvent, runBattleDropAutomation } from "./drop-monitor.js";
 import { runBattleUsageAutomation } from "./record-usage.js";
 import { BattleReportEvent, runBattleReportAutomation } from "./battle-report.js";
-import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
 import {
   BattleActionUsageCaptureEvent,
   runBattleActionUsageCapture,
@@ -49,10 +48,7 @@ function recordCompletion() {
 }
 
 function recordBattleStarted() {
-  runBattleReportAutomation({
-    type: BattleReportEvent.BATTLE_STARTED,
-    ...runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.REPORT_START_CONTEXT }),
-  });
+  runBattleReportAutomation({ type: BattleReportEvent.BATTLE_STARTED });
 }
 
 export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) {

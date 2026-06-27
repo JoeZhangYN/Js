@@ -130,10 +130,8 @@ function checkEntry() {
       );
     }
   }
-  if (!text.includes("BattleMonitorRuntimeEvent.REPORT_START_CONTEXT")) {
-    violations.push(
-      `${entry.replaceAll("\\", "/")} must read report start context through battle-monitor-runtime`
-    );
+  if (/BattleMonitorRuntimeEvent\.REPORT_START_CONTEXT|runBattleMonitorRuntime/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must not assemble battle report start context`);
   }
   if (/\brecordLabel\b|\bUTC_MONTH_DAY_LABEL\b/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not own battle report date labels`);
@@ -381,6 +379,12 @@ function checkBattleReportEntry() {
   }
   if (!/\bUTC_MONTH_DAY_LABEL\b/.test(text)) {
     violations.push(`${rel(reportFile)} must own battle report date label format`);
+  }
+  if (
+    !text.includes("BattleMonitorRuntimeEvent.REPORT_START_CONTEXT") ||
+    !text.includes("runBattleMonitorRuntime")
+  ) {
+    violations.push(`${rel(reportFile)} must read report start context through monitor runtime`);
   }
   if (!/\bfunction readReportRecordSet\b/.test(text)) {
     violations.push(

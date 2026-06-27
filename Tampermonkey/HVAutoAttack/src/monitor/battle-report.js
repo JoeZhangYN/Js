@@ -7,6 +7,7 @@ import {
   runBattleRecordArchiveAutomation,
 } from "./battle-record-archive.js";
 import { BattleReportViewEvent, runBattleReportViewAutomation } from "./battle-report-view.js";
+import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
 
 const USAGE_SECTIONS = ["self", "restore", "items", "magic", "damage", "hurt", "proficiency"];
 
@@ -45,7 +46,15 @@ function readBattleReportRecordLabel(deps) {
   )();
 }
 
-function recordBattleReportStarted({ recordEach, roundType, roundAll }, deps) {
+function readBattleReportStartContext(deps) {
+  return (
+    deps.readStartContext ||
+    (() => runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.REPORT_START_CONTEXT }))
+  )();
+}
+
+function recordBattleReportStarted(deps) {
+  const { recordEach, roundType, roundAll } = readBattleReportStartContext(deps);
   if (!recordEach || getValue(STORAGE_KEYS.BATTLE_CODE)) return false;
   const recordLabel = readBattleReportRecordLabel(deps);
   setValue(STORAGE_KEYS.BATTLE_CODE, `${recordLabel}: ${roundType.toUpperCase()}-${roundAll}`);
@@ -109,25 +118,21 @@ function readUsageReport() {
   };
 }
 
-function clearDropReport() {
+function clearReportRecordSet(currentKey, historyKey) {
   runBattleRecordArchiveAutomation({
     type: BattleRecordArchiveEvent.CLEAR_RECORD_SET,
-    currentKey: STORAGE_KEYS.DROP,
-    historyKey: STORAGE_KEYS.DROP_OLD,
+    currentKey,
+    historyKey,
   });
 }
 
-function clearUsageReport() {
-  runBattleRecordArchiveAutomation({
-    type: BattleRecordArchiveEvent.CLEAR_RECORD_SET,
-    currentKey: STORAGE_KEYS.STATS,
-    historyKey: STORAGE_KEYS.STATS_OLD,
-  });
+function renderReportTableBody(type, report) {
+  return runBattleReportViewAutomation({ type, report });
 }
 
 export function runBattleReportAutomation(event, deps = {}) {
   if (event.type === BattleReportEvent.BATTLE_STARTED) {
-    return recordBattleReportStarted(event, deps);
+    return recordBattleReportStarted(deps);
   }
   if (event.type === BattleReportEvent.READ_DROP_REPORT) {
     return readDropReport();
@@ -136,23 +141,17 @@ export function runBattleReportAutomation(event, deps = {}) {
     return readUsageReport();
   }
   if (event.type === BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY) {
-    return runBattleReportViewAutomation({
-      type: BattleReportViewEvent.RENDER_DROP_TABLE_BODY,
-      report: readDropReport(),
-    });
+    return renderReportTableBody(BattleReportViewEvent.RENDER_DROP_TABLE_BODY, readDropReport());
   }
   if (event.type === BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY) {
-    return runBattleReportViewAutomation({
-      type: BattleReportViewEvent.RENDER_USAGE_TABLE_BODY,
-      report: readUsageReport(),
-    });
+    return renderReportTableBody(BattleReportViewEvent.RENDER_USAGE_TABLE_BODY, readUsageReport());
   }
   if (event.type === BattleReportEvent.CLEAR_DROP_REPORT) {
-    clearDropReport();
+    clearReportRecordSet(STORAGE_KEYS.DROP, STORAGE_KEYS.DROP_OLD);
     return undefined;
   }
   if (event.type === BattleReportEvent.CLEAR_USAGE_REPORT) {
-    clearUsageReport();
+    clearReportRecordSet(STORAGE_KEYS.STATS, STORAGE_KEYS.STATS_OLD);
     return undefined;
   }
   return undefined;
