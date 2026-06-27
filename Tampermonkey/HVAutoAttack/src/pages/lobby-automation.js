@@ -30,7 +30,10 @@ function runNextBattleAutomation() {
 export async function runLobbyAutomation(event = { type: EVENT_PAGE_READY }) {
   if (event.type !== EVENT_PAGE_READY) return undefined;
   runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
-  runDayRecordAutomation({ type: DayRecordEvent.SYNC_UTC_DATE });
+  runDayRecordAutomation({
+    type: DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY,
+    rerun: () => runLobbyAutomation({ type: EVENT_PAGE_READY }),
+  });
   runAbilityAoeAutomation({ type: AbilityAoeEvent.CAPTURE_ABILITY_PAGE });
   runQuickSiteAutomation({ type: QuickSiteEvent.LOBBY_READY, option: g("option") });
   if (g("option").encounter) {

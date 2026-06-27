@@ -15,7 +15,9 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../state/store.js", () => ({ g: mocks.g }));
 vi.mock("../state/day-record.js", () => ({
-  DayRecordEvent: Object.freeze({ SYNC_UTC_DATE: "syncUtcDate" }),
+  DayRecordEvent: Object.freeze({
+    REFRESH_AND_SCHEDULE_NEXT_UTC_DAY: "refreshAndScheduleNextUtcDay",
+  }),
   runDayRecordAutomation: mocks.runDayRecordAutomation,
 }));
 vi.mock("../state/stamina.js", () => ({
@@ -69,7 +71,10 @@ describe("runLobbyAutomation", () => {
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
 
     expect(mocks.runBattleRuntimeAutomation).toHaveBeenCalledWith({ type: "clearSession" });
-    expect(mocks.runDayRecordAutomation).toHaveBeenCalledWith({ type: "syncUtcDate" });
+    expect(mocks.runDayRecordAutomation).toHaveBeenCalledWith({
+      type: "refreshAndScheduleNextUtcDay",
+      rerun: expect.any(Function),
+    });
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "captureAbilityPage" });
     expect(mocks.runQuickSiteAutomation).toHaveBeenCalledWith({
       type: "lobbyReady",

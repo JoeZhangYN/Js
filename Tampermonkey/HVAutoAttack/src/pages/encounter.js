@@ -1,7 +1,6 @@
 // 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
 import { post } from "../dom/http.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
-import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import {
   EncounterLobbyScheduleEvent,
@@ -102,10 +101,6 @@ async function loadAndEnterEncounter() {
   return enterStoredEncounter(state || {});
 }
 
-function syncDailyRecord() {
-  runDayRecordAutomation({ type: DayRecordEvent.SYNC_UTC_DATE });
-}
-
 function readEncounterState() {
   return runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
 }
@@ -145,7 +140,6 @@ function shouldWaitForClock(readiness) {
 }
 
 async function runLobbyTick(event) {
-  syncDailyRecord();
   const state = readEncounterState();
   const readiness = readStoredReadiness(state);
   if (shouldWaitForClock(readiness)) return waitForNextCheck(state, event);

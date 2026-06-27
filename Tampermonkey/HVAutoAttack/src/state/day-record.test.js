@@ -8,11 +8,15 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("./store.js", () => ({ g: mocks.g }));
 vi.mock("../core/time.js", () => ({
-  TimeEvent: Object.freeze({ UTC_DATE_KEY: "utcDateKey" }),
+  TimeEvent: Object.freeze({ EPOCH_MS: "epochMs", UTC_DATE_KEY: "utcDateKey" }),
   runTimeAutomation: mocks.runTimeAutomation,
 }));
 
 beforeEach(() => {
+  runDayRecordAutomation({
+    type: DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY,
+    cancel: vi.fn(),
+  });
   for (const fn of Object.values(mocks)) fn.mockClear();
   mocks.runTimeAutomation.mockReturnValue("2026/6/27");
   mocks.g.mockReturnValue(undefined);
@@ -34,5 +38,53 @@ describe("runDayRecordAutomation", () => {
 
     expect(mocks.g).toHaveBeenCalledTimes(1);
     expect(mocks.g).toHaveBeenCalledWith("dateNow");
+  });
+
+  it("refreshes the date record and schedules the next UTC day rollover", () => {
+    const schedule = vi.fn(() => "day-timer");
+    const cancel = vi.fn();
+    const rerun = vi.fn();
+
+    expect(
+      runDayRecordAutomation({
+        type: DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY,
+        nowMs: Date.UTC(2026, 5, 27, 23, 59, 55),
+        schedule,
+        cancel,
+        rerun,
+      })
+    ).toBe("2026/6/27");
+
+    expect(schedule).toHaveBeenCalledWith(expect.any(Function), 10000);
+
+    schedule.mock.calls[0][0]();
+    expect(rerun).toHaveBeenCalledTimes(1);
+  });
+
+  it("cancels the previous UTC day rollover timer before scheduling a new one", () => {
+    const schedule = vi
+      .fn()
+      .mockReturnValueOnce("old-day-timer")
+      .mockReturnValueOnce("new-day-timer");
+    const cancel = vi.fn();
+    const rerun = vi.fn();
+
+    runDayRecordAutomation({
+      type: DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY,
+      nowMs: Date.UTC(2026, 5, 27, 23, 59, 55),
+      schedule,
+      cancel,
+      rerun,
+    });
+    runDayRecordAutomation({
+      type: DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY,
+      nowMs: Date.UTC(2026, 5, 27, 23, 59, 56),
+      schedule,
+      cancel,
+      rerun,
+    });
+
+    expect(cancel).toHaveBeenCalledWith("old-day-timer");
+    expect(schedule).toHaveBeenCalledTimes(2);
   });
 });

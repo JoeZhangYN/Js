@@ -14,6 +14,7 @@ const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
 const widgetPolicyFile = path.normalize("src/pages/encounter-widget-policy.js");
 const lobbyScheduleFile = path.normalize("src/pages/encounter-lobby-schedule.js");
 const lobbyScheduleTest = path.normalize("src/pages/encounter-lobby-schedule.test.js");
+const dayRecordFile = path.normalize("src/state/day-record.js");
 const violations = [];
 
 function walk(dir) {
@@ -114,6 +115,7 @@ function checkFile(file) {
     }
     if (
       relative !== policyFile &&
+      relative !== dayRecordFile &&
       /Date\.UTC\(.*getUTCFullYear\(\).*getUTCMonth\(\).*getUTCDate\(\)\s*\+\s*1/.test(line)
     ) {
       violations.push(`${where} encounter midnight scheduling belongs in encounter-policy.js`);
