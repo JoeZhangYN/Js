@@ -64,13 +64,13 @@ describe("repair automation entry", () => {
     const mats = [{ matId: "50000", name: "Repair Outfit", count: 3 }];
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 20, mats)]), st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();
-    const buyMaterials = vi.fn((required, opt, cb) => cb({ ok: true, bought: true, spent: 400 }));
+    const buyMaterials = vi.fn((event) => event.callback({ ok: true, bought: true, spent: 400 }));
     runRepairAutomation(
       { type: RepairEvent.START },
       { makeBackend, buyMaterials, scheduleIdleArena }
     );
     expect(buyMaterials).toHaveBeenCalledOnce();
-    expect(buyMaterials.mock.calls[0][0]).toEqual(mats);
+    expect(buyMaterials.mock.calls[0][0].required).toEqual(mats);
     expect(submitted).toEqual(["1"]);
     expect(scheduleIdleArena).toHaveBeenCalledOnce();
   });
@@ -80,7 +80,7 @@ describe("repair automation entry", () => {
     const mats = [{ matId: "50000", name: "Repair Outfit", count: 3 }];
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 20, mats)])]);
     const scheduleIdleArena = vi.fn();
-    const buyMaterials = vi.fn((required, opt, cb) => cb({ ok: false, reason: "credit-cap" }));
+    const buyMaterials = vi.fn((event) => event.callback({ ok: false, reason: "credit-cap" }));
     runRepairAutomation(
       { type: RepairEvent.START },
       { makeBackend, buyMaterials, scheduleIdleArena }

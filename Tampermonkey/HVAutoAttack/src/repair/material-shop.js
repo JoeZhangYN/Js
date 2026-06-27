@@ -6,7 +6,7 @@
 // 持有量(`#item_pane`)+ 售价/库存(`#shop_pane`)+ 信用点(`#networth`)+ storetoken 全从商店页一次取——
 // 故维修页解析层(parse-repair-state)无需取持有数，两世界买料统一走此端口（减少业务孤岛）。
 //
-// ensureMaterials(required, opt, cb)：required=本件维修需求材料 → 算缺料(需求-持有) → 缺料为空即 ok（不买）；
+// runMaterialShopAutomation(ENSURE_MATERIALS)：required=本件维修需求材料 → 算缺料(需求-持有) → 缺料为空即 ok（不买）；
 // 否则 cap(单轮花费上限) / 余额 / 库存 三道闸 → 逐件 POST 买 → 结果回调。任一闸不过即不发买请求、回报 reason。
 import { post as realPost } from "../dom/http.js";
 
@@ -18,13 +18,18 @@ import { post as realPost } from "../dom/http.js";
 
 const SHOP_URL = "?s=Bazaar&ss=is";
 const SET_ITEM_RE = /set_item\(\s*'(\w+)'\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/;
+const EVENT_ENSURE_MATERIALS = "ensureMaterials";
+
+export const MaterialShopEvent = Object.freeze({
+  ENSURE_MATERIALS: EVENT_ENSURE_MATERIALS,
+});
 
 /**
  * 解析商店页（PURE）→ { storetoken, networth, held, shop }。
  * held: 你的库存(item_pane) name→数量；shop: 可购货架(shop_pane) name→{id,stock,price}。
  * @param {Document} doc `?s=Bazaar&ss=is` 页 document
  */
-export function parseShopPage(doc) {
+function parseShopPage(doc) {
   const form = doc?.querySelector("#shopform");
   const storetoken = form?.elements?.storetoken?.value || null;
   const networthText = doc?.querySelector("#networth")?.textContent || "";
@@ -83,8 +88,8 @@ function buyError(doc) {
  * @param {(res: BuyResult) => void} cb
  * @param {(href:string, func:Function, parm?:string, type?:string)=>void} [_post] 测试注入（默认真实 post）
  */
-export function ensureMaterials(required, opt, cb, _post) {
-  const post = _post || realPost;
+function ensureMaterials(required, opt, cb, deps = {}) {
+  const post = deps.post || realPost;
   post(SHOP_URL, (doc) => {
     const { storetoken, networth, held, shop } = parseShopPage(doc);
     const shortfall = computeShortfall(required, held);
@@ -144,4 +149,10 @@ export function ensureMaterials(required, opt, cb, _post) {
     };
     buyNext();
   });
+}
+
+export function runMaterialShopAutomation(event, deps = {}) {
+  if (event.type !== EVENT_ENSURE_MATERIALS) return false;
+  ensureMaterials(event.required, event.option, event.callback, deps);
+  return true;
 }

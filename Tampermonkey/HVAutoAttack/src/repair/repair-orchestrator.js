@@ -17,7 +17,7 @@ import { isIsekai } from "../env.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { makeRepairBackend } from "./repair-backend.js";
 import { decideRepair } from "./decide-repair.js";
-import { ensureMaterials } from "./material-shop.js";
+import { MaterialShopEvent, runMaterialShopAutomation } from "./material-shop.js";
 import { getOptionDefault } from "../settings/schema.js";
 
 const EVENT_START = "start";
@@ -67,11 +67,11 @@ function scheduleIdleArenaDefault() {
 
 /**
  * 自动维修实现。仅战斗外（init.js 战斗外分支）调用；repair 开启时 idleArena 由本函数独占调度。
- * @param {{ makeBackend?: typeof makeRepairBackend, buyMaterials?: typeof ensureMaterials, scheduleIdleArena?: () => void }} [deps] 测试注入
+ * @param {{ makeBackend?: typeof makeRepairBackend, buyMaterials?: typeof runMaterialShopAutomation, scheduleIdleArena?: () => void }} [deps] 测试注入
  */
 function runRepair(deps = {}) {
   const makeBackend = deps.makeBackend || makeRepairBackend;
-  const buyMaterials = deps.buyMaterials || ensureMaterials;
+  const buyMaterials = deps.buyMaterials || runMaterialShopAutomation;
   const scheduleIdleArena = deps.scheduleIdleArena || scheduleIdleArenaDefault;
 
   // repairValue 空字符串/null/非数值 → schema 默认（60%）。getOption 的 fallback 只挡 undefined，挡不住
@@ -114,12 +114,17 @@ function runRepair(deps = {}) {
           return;
         case "repair":
           if (opt.repairBuyMaterials) {
-            buyMaterials(plan.materials, opt, (res) => {
-              if (!res.ok) {
-                stop(BUY_FAIL_MSG[res.reason] || STUCK_MSG);
-                return;
-              }
-              doRepair(plan.repairIds);
+            buyMaterials({
+              type: MaterialShopEvent.ENSURE_MATERIALS,
+              required: plan.materials,
+              option: opt,
+              callback: (res) => {
+                if (!res.ok) {
+                  stop(BUY_FAIL_MSG[res.reason] || STUCK_MSG);
+                  return;
+                }
+                doRepair(plan.repairIds);
+              },
             });
           } else {
             doRepair(plan.repairIds);

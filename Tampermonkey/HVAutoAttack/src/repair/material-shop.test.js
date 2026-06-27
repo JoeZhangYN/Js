@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseShopPage, ensureMaterials } from "./material-shop.js";
+import { MaterialShopEvent, runMaterialShopAutomation } from "./material-shop.js";
 
 function doc(html) {
   return new DOMParser().parseFromString(html, "text/html");
@@ -32,53 +32,70 @@ function makePost(shop, buyDoc) {
   return { post, calls };
 }
 
-describe("parseShopPage", () => {
-  it("解析 storetoken/networth/held/shop", () => {
-    const r = parseShopPage(
-      shopDoc({
-        networth: 12345,
-        itemPane: [["Repair Outfit", 50000, 7, 0]],
-        shopPane: [["Repair Outfit", 50000, 99, 200]],
-      })
-    );
-    expect(r.storetoken).toBe("stok_1");
-    expect(r.networth).toBe(12345);
-    expect(r.held).toEqual({ "Repair Outfit": 7 });
-    expect(r.shop).toEqual({ "Repair Outfit": { id: "50000", stock: 99, price: 200 } });
-  });
-});
+function ensureMaterials(required, option, callback, post) {
+  return runMaterialShopAutomation(
+    { type: MaterialShopEvent.ENSURE_MATERIALS, required, option, callback },
+    { post }
+  );
+}
 
-describe("ensureMaterials", () => {
+describe("material shop entry", () => {
   const opt = { repairCreditCap: 50000 };
 
   it("持有充足 → 不买，ok bought:false", () => {
     const { post, calls } = makePost(
-      shopDoc({ itemPane: [["Repair Outfit", 50000, 5, 0]], shopPane: [["Repair Outfit", 50000, 99, 200]] })
+      shopDoc({
+        itemPane: [["Repair Outfit", 50000, 5, 0]],
+        shopPane: [["Repair Outfit", 50000, 99, 200]],
+      })
     );
     let res;
-    ensureMaterials([{ matId: "50000", name: "Repair Outfit", count: 3 }], opt, (r) => (res = r), post);
+    ensureMaterials(
+      [{ matId: "50000", name: "Repair Outfit", count: 3 }],
+      opt,
+      (r) => (res = r),
+      post
+    );
     expect(res).toEqual({ ok: true, bought: false, spent: 0 });
     expect(calls.filter((c) => c.parm !== undefined)).toHaveLength(0); // 无买请求
   });
 
   it("缺料且在上限内 → 买齐，spent=缺口*售价，发正确 POST", () => {
     const { post, calls } = makePost(
-      shopDoc({ itemPane: [["Repair Outfit", 50000, 1, 0]], shopPane: [["Repair Outfit", 50000, 99, 200]] })
+      shopDoc({
+        itemPane: [["Repair Outfit", 50000, 1, 0]],
+        shopPane: [["Repair Outfit", 50000, 99, 200]],
+      })
     );
     let res;
-    ensureMaterials([{ matId: "50000", name: "Repair Outfit", count: 3 }], opt, (r) => (res = r), post);
+    ensureMaterials(
+      [{ matId: "50000", name: "Repair Outfit", count: 3 }],
+      opt,
+      (r) => (res = r),
+      post
+    );
     expect(res).toEqual({ ok: true, bought: true, spent: 400 }); // 缺 2 * 200
     const buys = calls.filter((c) => c.parm !== undefined);
     expect(buys).toHaveLength(1);
-    expect(buys[0].parm).toBe("storetoken=stok_1&select_mode=shop_pane&select_item=50000&select_count=2");
+    expect(buys[0].parm).toBe(
+      "storetoken=stok_1&select_mode=shop_pane&select_item=50000&select_count=2"
+    );
   });
 
   it("花费超单轮上限 → credit-cap，不发买请求", () => {
     const { post, calls } = makePost(
-      shopDoc({ itemPane: [["Repair Outfit", 50000, 0, 0]], shopPane: [["Repair Outfit", 50000, 99, 200]] })
+      shopDoc({
+        itemPane: [["Repair Outfit", 50000, 0, 0]],
+        shopPane: [["Repair Outfit", 50000, 99, 200]],
+      })
     );
     let res;
-    ensureMaterials([{ name: "Repair Outfit", count: 3 }], { repairCreditCap: 100 }, (r) => (res = r), post);
+    ensureMaterials(
+      [{ name: "Repair Outfit", count: 3 }],
+      { repairCreditCap: 100 },
+      (r) => (res = r),
+      post
+    );
     expect(res.ok).toBe(false);
     expect(res.reason).toBe("credit-cap");
     expect(calls.filter((c) => c.parm !== undefined)).toHaveLength(0);
@@ -86,7 +103,11 @@ describe("ensureMaterials", () => {
 
   it("花费超余额 → insufficient-credits", () => {
     const { post } = makePost(
-      shopDoc({ networth: 100, itemPane: [["Repair Outfit", 50000, 0, 0]], shopPane: [["Repair Outfit", 50000, 99, 200]] })
+      shopDoc({
+        networth: 100,
+        itemPane: [["Repair Outfit", 50000, 0, 0]],
+        shopPane: [["Repair Outfit", 50000, 99, 200]],
+      })
     );
     let res;
     ensureMaterials([{ name: "Repair Outfit", count: 3 }], opt, (r) => (res = r), post);
@@ -96,7 +117,10 @@ describe("ensureMaterials", () => {
 
   it("货架库存不足 → no-stock", () => {
     const { post } = makePost(
-      shopDoc({ itemPane: [["Repair Outfit", 50000, 0, 0]], shopPane: [["Repair Outfit", 50000, 1, 200]] })
+      shopDoc({
+        itemPane: [["Repair Outfit", 50000, 0, 0]],
+        shopPane: [["Repair Outfit", 50000, 1, 200]],
+      })
     );
     let res;
     ensureMaterials([{ name: "Repair Outfit", count: 3 }], opt, (r) => (res = r), post);
@@ -116,7 +140,10 @@ describe("ensureMaterials", () => {
   it("买请求返回错误 messagebox → buy-error", () => {
     const buyDoc = doc('<div id="messagebox">You do not have enough credits.</div>');
     const { post } = makePost(
-      shopDoc({ itemPane: [["Repair Outfit", 50000, 0, 0]], shopPane: [["Repair Outfit", 50000, 99, 200]] }),
+      shopDoc({
+        itemPane: [["Repair Outfit", 50000, 0, 0]],
+        shopPane: [["Repair Outfit", 50000, 99, 200]],
+      }),
       buyDoc
     );
     let res;
