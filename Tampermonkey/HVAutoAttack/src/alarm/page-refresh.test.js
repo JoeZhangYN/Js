@@ -4,20 +4,30 @@ import { PageRefreshEvent, runPageRefreshAutomation } from "./page-refresh.js";
 describe("runPageRefreshAutomation", () => {
   it("does not schedule reload when periodic page refresh is disabled", () => {
     const scheduleReload = vi.fn();
+    const readOptionField = vi.fn((key, fallback) =>
+      key === "pageRefresh" ? false : fallback
+    );
 
     expect(
       runPageRefreshAutomation(
         {
           type: PageRefreshEvent.GAME_PAGE_READY,
         },
-        { readOption: () => ({ pageRefresh: false, pageRefreshMinutes: 30 }), scheduleReload }
+        { readOptionField, scheduleReload }
       )
     ).toBe(false);
+    expect(readOptionField).toHaveBeenCalledWith("pageRefresh", false);
+    expect(readOptionField).toHaveBeenCalledWith("pageRefreshMinutes", 30);
     expect(scheduleReload).not.toHaveBeenCalled();
   });
 
   it("schedules through the entry with configured minutes and bounded minute jitter", () => {
     const scheduleReload = vi.fn();
+    const readOptionField = vi.fn((key, fallback) => {
+      if (key === "pageRefresh") return true;
+      if (key === "pageRefreshMinutes") return 30;
+      return fallback;
+    });
 
     expect(
       runPageRefreshAutomation(
@@ -26,7 +36,7 @@ describe("runPageRefreshAutomation", () => {
         },
         {
           jitter: 0,
-          readOption: () => ({ pageRefresh: true, pageRefreshMinutes: 30 }),
+          readOptionField,
           scheduleReload,
         }
       )
@@ -40,7 +50,7 @@ describe("runPageRefreshAutomation", () => {
         },
         {
           jitter: 1,
-          readOption: () => ({ pageRefresh: true, pageRefreshMinutes: 30 }),
+          readOptionField,
           scheduleReload,
         }
       )

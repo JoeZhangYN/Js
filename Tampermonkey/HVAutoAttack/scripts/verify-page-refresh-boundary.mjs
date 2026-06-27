@@ -67,10 +67,15 @@ for (const required of ["PageRefreshEvent", "UNKNOWN_PAGE_READY", "UNKNOWN_PAGE_
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required} page refresh policy`);
   }
 }
-for (const required of ["OptionEvent.READ", "runOptionAutomation"]) {
+for (const required of ["OptionEvent.READ_FIELD", "runOptionAutomation"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must read page refresh option internally`);
   }
+}
+if (/OptionEvent\.READ\b/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not read the whole option bag for page refresh fields`
+  );
 }
 
 if (violations.length) {

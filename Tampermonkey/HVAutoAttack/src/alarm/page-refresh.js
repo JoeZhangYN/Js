@@ -21,9 +21,24 @@ export const PageRefreshEvent = Object.freeze({
   UNKNOWN_PAGE_READY: EVENT_UNKNOWN_PAGE_READY,
 });
 
+function readPageRefreshOption(deps) {
+  const readField =
+    deps.readOptionField ||
+    ((key, fallback) =>
+      runOptionAutomation({
+        type: OptionEvent.READ_FIELD,
+        key,
+        fallback,
+      }));
+  return {
+    enabled: Boolean(readField("pageRefresh", false)),
+    minutes: Number(readField("pageRefreshMinutes", 30)) || 30,
+  };
+}
+
 function planPageRefreshDelayMinutes(option, { jitter = Math.random() } = {}) {
-  if (!option || !option.pageRefresh) return;
-  const minutes = Number(option.pageRefreshMinutes) || 30;
+  if (!option.enabled) return;
+  const minutes = option.minutes;
   if (minutes <= 0) return;
   const boundedJitter = Math.max(0, Math.min(0.999999, jitter));
   const jitterMinutes = Math.floor(boundedJitter * 2); // 0~1 分钟抖动
@@ -43,7 +58,7 @@ export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }
     return true;
   }
   if (event.type !== EVENT_GAME_PAGE_READY) return false;
-  const option = deps.readOption?.() || runOptionAutomation({ type: OptionEvent.READ }) || {};
+  const option = readPageRefreshOption(deps);
   const delayMinutes = planPageRefreshDelayMinutes(option, deps);
   if (!delayMinutes) return false;
   const reload =
