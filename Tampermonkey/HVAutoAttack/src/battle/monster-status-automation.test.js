@@ -65,4 +65,19 @@ describe("monster status automation", () => {
     expect(g("bossAll")).toBe(3);
     expect(g("bossAlive")).toBe(2);
   });
+
+  it("exposes monster identity by combatant order through the entry", () => {
+    g("monsterStatus", [
+      { order: 1, monsterId: 202 },
+      { order: 0, monsterId: 101 },
+    ]);
+
+    const readMonsterIdByOrder = runMonsterStatusAutomation({
+      type: MonsterStatusEvent.READ_IDS_BY_ORDER,
+    });
+
+    expect(readMonsterIdByOrder(0)).toBe(101);
+    expect(readMonsterIdByOrder(1)).toBe(202);
+    expect(readMonsterIdByOrder(2)).toBeUndefined();
+  });
 });

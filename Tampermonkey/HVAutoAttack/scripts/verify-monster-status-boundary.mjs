@@ -71,6 +71,7 @@ function checkEntry() {
     "buildMonsterStatus",
     "monsterStatus",
     "REFRESH_COMBATANT_COUNTS",
+    "READ_IDS_BY_ORDER",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);

@@ -499,6 +499,29 @@ function checkBattleReportViewEntry() {
   }
 }
 
+function checkMonsterResistPanelEntry() {
+  const panelFile = path.join(root, "src/monitor/monster-resist-panel.js");
+  const text = fs.readFileSync(panelFile, "utf8");
+  if (!/export const MonsterResistPanelEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(panelFile)} must expose MonsterResistPanelEvent`);
+  }
+  if (!/export function runMonsterResistPanelAutomation\(/.test(text)) {
+    violations.push(`${rel(panelFile)} must expose runMonsterResistPanelAutomation(event)`);
+  }
+  if (!text.includes("MonsterStatusEvent.READ_IDS_BY_ORDER")) {
+    violations.push(`${rel(panelFile)} must read monster identities through monster-status entry`);
+  }
+  if (/from\s+["']\.\.\/state\/store\.js["']/.test(text)) {
+    violations.push(`${rel(panelFile)} must not import store for monsterStatus`);
+  }
+  if (/\b(?:deps\.)?g\(\s*["']monsterStatus["']\s*\)/.test(text)) {
+    violations.push(`${rel(panelFile)} must not read monsterStatus directly`);
+  }
+  if (/\bnew Map\(\s*\(.*monsterStatus/s.test(text)) {
+    violations.push(`${rel(panelFile)} must not build monsterStatus identity maps directly`);
+  }
+}
+
 walk(srcDir);
 checkEntry();
 checkSettingsReportConsumption();
@@ -510,6 +533,7 @@ checkDeletedDropMonitorEntrypoint();
 checkDeletedBattleInfoEntrypoint();
 checkBattleReportEntry();
 checkBattleReportViewEntry();
+checkMonsterResistPanelEntry();
 
 if (violations.length) {
   console.error("[verify-battle-monitor-boundary] FAIL");

@@ -39,15 +39,12 @@ describe("runMonsterResistPanelAutomation", () => {
       {
         cE: (tag) => document.createElement(tag),
         document,
-        g: () => [
-          { order: 0, monsterId: 101 },
-          { order: 1, monsterId: 202 },
-        ],
         gE: (selector, rootOrAll) => {
           if (rootOrAll === "all") return document.querySelectorAll(selector);
           if (rootOrAll instanceof Element) return rootOrAll.querySelector(selector);
           return document.querySelector(selector);
         },
+        readMonsterIdByOrder: () => (order) => [101, 202][order],
         readProfile,
         primeProfiles,
       }
