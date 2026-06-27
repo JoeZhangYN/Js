@@ -2,7 +2,7 @@
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
-import { battleInfo } from "./battle-info.js";
+import { refreshBattleHud } from "./battle-info.js";
 import { recordBattleDrops } from "./drop-monitor.js";
 import { recordCompletedBattleUsage, recordUsage } from "./record-usage.js";
 import {
@@ -82,7 +82,7 @@ export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) 
   if (event.type === EVENT_BATTLE_STARTED) {
     recordBattleStarted();
   } else if (event.type === EVENT_HUD_REFRESH) {
-    battleInfo();
+    refreshBattleHud();
   } else if (event.type === EVENT_ACTION_STARTED) {
     readActionUsage();
   } else if (event.type === EVENT_ACTION_ENDED) {

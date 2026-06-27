@@ -38,7 +38,7 @@ function checkFile(file) {
     if (internalFiles.has(relative)) return;
     if (line.includes("runBattleMonitorAutomation") || line.includes("BattleMonitorEvent")) return;
     const where = `${rel(file)}:${index + 1}`;
-    for (const name of ["battleInfo", "recordBattleDrops", "recordUsage", "recordUsage2"]) {
+    for (const name of ["refreshBattleHud", "recordBattleDrops", "recordUsage", "recordUsage2"]) {
       if (new RegExp(`\\b${name}\\s*\\(`).test(line)) {
         violations.push(`${where} ${name} belongs behind runBattleMonitorAutomation(event)`);
       }
@@ -71,6 +71,9 @@ function checkEntry() {
   }
   if (!text.includes("recordBattleDrops")) {
     violations.push(`${entry.replaceAll("\\", "/")} must own recordBattleDrops completion wiring`);
+  }
+  if (!text.includes("refreshBattleHud")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must own refreshBattleHud HUD wiring`);
   }
   for (const required of [
     "BATTLE_STARTED",
@@ -108,10 +111,20 @@ function checkDeletedDropMonitorEntrypoint() {
   }
 }
 
+function checkDeletedBattleInfoEntrypoint() {
+  const hudFile = path.join(root, "src/monitor/battle-info.js");
+  const entryText = fs.readFileSync(path.join(root, entry), "utf8");
+  const hudText = fs.readFileSync(hudFile, "utf8");
+  if (/\bbattleInfo\s*\(/.test(entryText) || /\b(?:export\s+)?function\s+battleInfo\s*\(/.test(hudText)) {
+    violations.push(`${rel(hudFile)} legacy battleInfo() bridge must stay deleted; use refreshBattleHud()`);
+  }
+}
+
 walk(srcDir);
 checkEntry();
 checkUsageImplementation();
 checkDeletedDropMonitorEntrypoint();
+checkDeletedBattleInfoEntrypoint();
 
 if (violations.length) {
   console.error("[verify-battle-monitor-boundary] FAIL");

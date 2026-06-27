@@ -2,7 +2,7 @@
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 
-export function battleInfo() {
+export function refreshBattleHud() {
   let logElement = gE(".hvAALog");
   if (!logElement) {
     logElement = gE("#hvAABox2").appendChild(cE("div"));

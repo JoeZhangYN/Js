@@ -3,7 +3,7 @@
 // 编排器与实现焊死。倒置后 runBattleTurnAutomation() 只该依赖 BATTLE_RULES + runRules 两个抽象；新增/调整 step
 // 走 battle/rules/index.js。本门控让旧路径（直接 import step 实现）不能再悄悄回归（反退化锁）。
 //
-// 符号级而非模块级：countMonsterHP/killBug/battleInfo 是 pre-step 必执行项（非倒置的 step），
+// 符号级而非模块级：countMonsterHP/killBug/refreshBattleHud 是 pre-step 必执行项（非倒置的 step），
 // 仍允许从 attack.js / kill-bug.js / battle-info.js import；只禁 step-action 符号本身。
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
