@@ -4,7 +4,7 @@
 import { gE, cE } from "../dom/query.js";
 import { delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
-import { goto, scheduleReload } from "../core/navigate.js";
+import { scheduleReload } from "../core/navigate.js";
 import { post } from "../dom/http.js";
 import { time } from "../core/time.js";
 import { setAlarm } from "../alarm/alarm.js";
@@ -13,6 +13,7 @@ import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
+import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
 import { newRound } from "./new-round.js";
 import { main } from "./main-loop.js";
 
@@ -57,18 +58,12 @@ export function reloader() {
         // Next Round
         gE("#pane_completion").removeChild(gE("#btcp"));
         post(window.location.href, (data) => {
-          if (gE("#riddlecounter", data)) {
-            if (g("option").riddlePopup && !window.opener) {
-              window.open(
-                window.location.href,
-                "riddleWindow",
-                "resizable,scrollbars,width=1241,height=707"
-              );
-              return;
-            }
-            goto();
-            return;
-          }
+          if (
+            runRiddleAutomation({
+              type: RiddleEvent.BATTLE_POST_RESULT,
+              data,
+            })
+          ) return;
           gE("#battle_main").replaceChild(
             gE("#battle_right", data),
             gE("#battle_right")
