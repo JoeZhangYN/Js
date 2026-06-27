@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/pages/encounter.js");
 const stateHelper = path.normalize("src/pages/encounter-state.js");
+const stateTest = path.normalize("src/pages/encounter-state.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const bridgeFile = path.normalize("src/pages/encounter-bridge.js");
 const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
@@ -48,6 +49,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== stateHelper &&
+      relative !== stateTest &&
       relative !== policyFile &&
       relative !== bridgeFile &&
       /\bhvut_re\b/.test(line)
@@ -56,10 +58,28 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== stateTest &&
       relative !== bridgeFile &&
       /from\s+["']\.\/encounter-state\.js["']/.test(line)
     ) {
       violations.push(`${where} encounter-state is internal; import runEncounterAutomation(event)`);
+    }
+    if (
+      relative === stateHelper &&
+      /export function (?:writeReState|readCurrentReState|markRandomEncounterStarted|loadEncounterKey)\b/.test(
+        line
+      )
+    ) {
+      violations.push(
+        `${where} encounter state IO must stay private behind runEncounterStateAutomation(event)`
+      );
+    }
+    if (
+      relative === stateHelper &&
+      !/\brunEncounterStateAutomation\b|\bEncounterStateEvent\b/.test(line) &&
+      /export (?:function|const)\b/.test(line)
+    ) {
+      violations.push(`${where} encounter-state may export only its event entry`);
     }
     if (/from\s+["']\.\/encounter-widget\.js["']/.test(line)) {
       violations.push(

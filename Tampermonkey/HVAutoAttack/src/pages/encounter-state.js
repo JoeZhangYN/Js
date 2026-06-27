@@ -9,6 +9,15 @@ import {
 } from "./encounter-policy.js";
 
 const HVUT_RE_KEY = "hvut_re";
+const EVENT_READ_CURRENT = "readCurrent";
+const EVENT_MARK_STARTED = "markStarted";
+const EVENT_LOAD_KEY = "loadKey";
+
+export const EncounterStateEvent = Object.freeze({
+  READ_CURRENT: EVENT_READ_CURRENT,
+  MARK_STARTED: EVENT_MARK_STARTED,
+  LOAD_KEY: EVENT_LOAD_KEY,
+});
 
 function readRawReState() {
   if (typeof GM_getValue !== "undefined") {
@@ -18,7 +27,7 @@ function readRawReState() {
   return raw ? JSON.parse(raw) : defaultEncounterState();
 }
 
-export function writeReState(state) {
+function writeReState(state) {
   if (typeof GM_setValue !== "undefined") {
     GM_setValue(HVUT_RE_KEY, state);
     return;
@@ -26,13 +35,13 @@ export function writeReState(state) {
   localStorage.setItem(HVUT_RE_KEY, JSON.stringify(state));
 }
 
-export function readCurrentReState() {
+function readCurrentReState() {
   const state = normalizeEncounterState(readRawReState());
   writeReState(state);
   return state;
 }
 
-export function markRandomEncounterStarted(search = window.location.search) {
+function markRandomEncounterStarted(search = window.location.search) {
   writeReState(markEncounterStarted(readCurrentReState(), { search }));
 }
 
@@ -45,7 +54,7 @@ function parseEncounterKey(html) {
   };
 }
 
-export function loadEncounterKey() {
+function loadEncounterKey() {
   return new Promise((resolve) => {
     gmXhr({
       method: "GET",
@@ -65,4 +74,14 @@ export function loadEncounterKey() {
       ontimeout: () => resolve(null),
     });
   });
+}
+
+export function runEncounterStateAutomation(event = { type: EVENT_READ_CURRENT }) {
+  if (event.type === EVENT_READ_CURRENT) return readCurrentReState();
+  if (event.type === EVENT_MARK_STARTED) {
+    markRandomEncounterStarted(event.search);
+    return undefined;
+  }
+  if (event.type === EVENT_LOAD_KEY) return loadEncounterKey();
+  return undefined;
 }

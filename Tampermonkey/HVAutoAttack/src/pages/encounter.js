@@ -10,9 +10,8 @@ import {
   readEncounterReadiness,
 } from "./encounter-policy.js";
 import {
-  loadEncounterKey,
-  markRandomEncounterStarted,
-  readCurrentReState,
+  EncounterStateEvent,
+  runEncounterStateAutomation,
 } from "./encounter-state.js";
 import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
 
@@ -81,7 +80,7 @@ function executeEncounterActivation(state) {
 
 async function runLobbyTick(event) {
   syncDateNow();
-  let state = readCurrentReState();
+  let state = runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
   const readiness = readEncounterReadiness(state);
   if (readiness.dailyLimitReached) {
     return waitForNextCheck(state, event);
@@ -96,16 +95,22 @@ async function runLobbyTick(event) {
     post(window.location.href, goto, "recover=stamina");
     return claimLobby();
   }
-  state = await loadEncounterKey();
+  state = await runEncounterStateAutomation({ type: EncounterStateEvent.LOAD_KEY });
   if (executeEncounterActivation(state || {})) {
     return claimLobby();
   }
-  return waitForNextCheck(readCurrentReState(), event);
+  return waitForNextCheck(
+    runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT }),
+    event
+  );
 }
 
 export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
   if (event.type === EVENT_RANDOM_ENCOUNTER_STARTED) {
-    markRandomEncounterStarted();
+    runEncounterStateAutomation({
+      type: EncounterStateEvent.MARK_STARTED,
+      search: event.search,
+    });
     return { claimed: false };
   }
   if (event.type?.startsWith("widget")) {
