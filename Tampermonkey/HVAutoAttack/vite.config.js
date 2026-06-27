@@ -5,9 +5,7 @@ import { defineConfig } from "vite";
 import monkey from "vite-plugin-monkey";
 import { readFileSync } from "node:fs";
 
-const pkg = JSON.parse(
-  readFileSync(new URL("./package.json", import.meta.url), "utf8")
-);
+const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
 
 // @version 每次构建自增（pkg.version + 构建时间戳）：让 Tampermonkey「覆盖安装」时识别为新版本 →
 // 刷新 @connect / @grant 授权。背景（2026-06-06 排查结论）：原 @version 恒 10.0.1 → 覆盖安装 TM
@@ -58,18 +56,16 @@ export default defineConfig({
           "GM_deleteValue",
           "GM_notification",
           "GM_xmlhttpRequest", // P6 RMA ML 远程答题 POST rdma.ooguy.com
-          "GM_addStyle",       // HV Utils 汉化 60+ 处 CSS 注入
-          "GM_listValues",          // P6 导出答题备份遍历 saved_*
+          "GM_addStyle", // HV Utils 汉化 60+ 处 CSS 注入
+          "GM_listValues", // P6 导出答题备份遍历 saved_*
           "GM_registerMenuCommand", // P6 GM 菜单「导出答题备份」
           "unsafeWindow",
         ],
         connect: [
-          "rdma.ooguy.com",        // P6 RMA ML 答题端点
-          "hvitems.niblseed.com",  // P4 Send Range 喂数据回社区 DB（高玩 / Jenga 维护）
-          "reasoningtheory.net",   // P4 Live Percentile 装备数据库（声明 connect 让 GM_xmlhttpRequest 可用）
+          "rdma.ooguy.com", // P6 RMA ML 答题端点
           "hv-monsterdb-data.skk.moe", // C 怪物九抗全量库（SukkaW 社区 DB, MIT）
-          "hentaiverse.org",       // HV Utils 汉化 $ajax 自请求
-          "e-hentai.org",          // HV Utils 汉化 e-hentai 域请求
+          "hentaiverse.org", // HV Utils 汉化 $ajax 自请求
+          "e-hentai.org", // HV Utils 汉化 e-hentai 域请求
         ],
         "run-at": "document-end",
       },

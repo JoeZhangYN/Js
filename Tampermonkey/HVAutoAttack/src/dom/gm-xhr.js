@@ -1,6 +1,6 @@
 // GM_xmlhttpRequest 兼容封装（铁律 §1e 应抽未抽 — ≥4 处真重复，同形态同失败模式）。
 //
-// Sentinel M1 触发：riddle-ml.js gmXhr + equip-percentile-live.js get/post/sendThisPage 三处独立实现，
+// Sentinel M1 触发：riddle-ml.js gmXhr + 旧 equip-percentile live 跨域请求三处独立实现，
 // 都做 GM_xmlhttpRequest 优先 → GM.xmlHttpRequest（Greasemonkey API 变种）fallback → 都没则 onerror。
 //
 // 在 Tampermonkey/Violentmonkey/Greasemonkey 多 GM 实现间提供单一稳定 API。

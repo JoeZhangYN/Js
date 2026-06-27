@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const entryFile = path.join(root, "src/pages/equipment-view-automation.js");
+const deletedLiveFile = path.join(root, "src/pages/equip-percentile-live.js");
 const violations = [];
 
 function rel(file) {
@@ -38,19 +39,38 @@ function checkEntry() {
   if (!/export function runEquipmentViewAutomation\(\s*kind\s*\)/.test(text)) {
     violations.push(`${rel(entryFile)} must expose runEquipmentViewAutomation(kind)`);
   }
-  for (const required of [
-    "setupForgeCost",
-    "setupEquipPercentile",
-    "PageKind.SHOWEQUIP",
-  ]) {
+  for (const required of ["setupForgeCost", "setupEquipPercentile", "PageKind.SHOWEQUIP"]) {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} equipment workflow wiring`);
     }
   }
 }
 
+function checkDeletedLivePath() {
+  if (fs.existsSync(deletedLiveFile)) {
+    violations.push(
+      `${rel(deletedLiveFile)} deprecated live percentile implementation must stay deleted`
+    );
+  }
+  const files = [
+    path.join(root, "src/pages/equip-percentile-dispatcher.js"),
+    path.join(root, "src/pages/equipment-view-automation.js"),
+  ];
+  for (const file of files) {
+    const text = fs.readFileSync(file, "utf8");
+    if (/\bsetupEquipPercentileLive\b|equip-percentile-live\.js/.test(text)) {
+      violations.push(`${rel(file)} must not reference deleted live percentile path`);
+    }
+  }
+  const viteConfig = fs.readFileSync(path.join(root, "vite.config.js"), "utf8");
+  if (/\b(?:hvitems\.niblseed\.com|reasoningtheory\.net)\b/.test(viteConfig)) {
+    violations.push("vite.config.js must not keep deprecated live percentile @connect hosts");
+  }
+}
+
 checkInit();
 checkEntry();
+checkDeletedLivePath();
 
 if (violations.length) {
   console.error("[verify-equipment-view-boundary] FAIL");
