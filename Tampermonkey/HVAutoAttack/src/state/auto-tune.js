@@ -5,29 +5,38 @@
 // 未做 GP / Thompson Sampling：当前问题状态空间小，过设计反不利。
 //
 // file-size-gate: exempt phase-poc-autotune
-import { g } from "./store.js";
 import { setValue, getValue } from "./storage.js";
+import { STORAGE_KEYS } from "./persist-keys.js";
 
 const PAD_GRID = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0];
 const MIN_OBSERVATIONS = 5;
-const PAD_KEY = "autoTunePad";
-const HISTORY_KEY = "autoTuneHistory";
+const EVENT_READ_PAD = "readPad";
+const EVENT_RECORD_BATTLE = "recordBattle";
+const EVENT_RESET = "reset";
+const EVENT_READ_STATUS = "readStatus";
+
+export const AutoTuneEvent = Object.freeze({
+  READ_PAD: EVENT_READ_PAD,
+  RECORD_BATTLE: EVENT_RECORD_BATTLE,
+  RESET: EVENT_RESET,
+  READ_STATUS: EVENT_READ_STATUS,
+});
 
 /** 当前 safetyPad 值（持久化）。默认 1.3 = grid 中心。 */
-export function getCurrentPad() {
-  const p = parseFloat(getValue(PAD_KEY));
+function getCurrentPad() {
+  const p = parseFloat(getValue(STORAGE_KEYS.AUTO_TUNE_PAD));
   return isNaN(p) ? 1.3 : p;
 }
 
 /** UI 重置按钮调用：清掉历史 + 复位 1.3。 */
-export function resetAutoTune() {
-  setValue(PAD_KEY, 1.3);
-  setValue(HISTORY_KEY, {});
+function resetAutoTune() {
+  setValue(STORAGE_KEYS.AUTO_TUNE_PAD, 1.3);
+  setValue(STORAGE_KEYS.AUTO_TUNE_HISTORY, {});
 }
 
 /** UI 显示用：返回当前 history 摘要 + 当前 pad。 */
-export function getAutoTuneStatus() {
-  const history = getValue(HISTORY_KEY, true) || {};
+function getAutoTuneStatus() {
+  const history = getValue(STORAGE_KEYS.AUTO_TUNE_HISTORY, true) || {};
   return {
     currentPad: getCurrentPad(),
     history: Object.entries(history)
@@ -44,14 +53,14 @@ export function getAutoTuneStatus() {
  * 一轮战斗末尾调用，记录观测 + 触发 gradient step。
  * @param {number} potionsUsed 本轮用药数
  */
-export function observeBattle(potionsUsed) {
+function observeBattle(potionsUsed) {
   const pad = getCurrentPad();
-  const history = getValue(HISTORY_KEY, true) || {};
+  const history = getValue(STORAGE_KEYS.AUTO_TUNE_HISTORY, true) || {};
   const key = pad.toFixed(2);
   if (!history[key]) history[key] = { n: 0, sumPotions: 0 };
   history[key].n += 1;
   history[key].sumPotions += potionsUsed;
-  setValue(HISTORY_KEY, history);
+  setValue(STORAGE_KEYS.AUTO_TUNE_HISTORY, history);
   maybeStep(history, pad, key);
 }
 
@@ -62,7 +71,7 @@ function maybeStep(history, pad, key) {
   const padNum = parseFloat(pad.toFixed(2));
   const idx = PAD_GRID.indexOf(padNum);
   if (idx < 0) {
-    setValue(PAD_KEY, 1.3); // grid 漂移恢复
+    setValue(STORAGE_KEYS.AUTO_TUNE_PAD, 1.3); // grid 漂移恢复
     return;
   }
 
@@ -71,12 +80,12 @@ function maybeStep(history, pad, key) {
 
   // 探索：未访问的邻居优先（确保 line search 覆盖）
   if (lowerKey && !history[lowerKey]) {
-    setValue(PAD_KEY, parseFloat(lowerKey));
+    setValue(STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(lowerKey));
     console.log(`[auto-tune] explore ${pad} → ${lowerKey}`);
     return;
   }
   if (upperKey && !history[upperKey]) {
-    setValue(PAD_KEY, parseFloat(upperKey));
+    setValue(STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(upperKey));
     console.log(`[auto-tune] explore ${pad} → ${upperKey}`);
     return;
   }
@@ -92,7 +101,15 @@ function maybeStep(history, pad, key) {
   else if (meanU < meanCur * 0.95 && meanU <= meanL) next = parseFloat(upperKey);
 
   if (next !== padNum) {
-    setValue(PAD_KEY, next);
+    setValue(STORAGE_KEYS.AUTO_TUNE_PAD, next);
     console.log(`[auto-tune] safetyPad ${padNum} → ${next} (mean potions: cur=${meanCur.toFixed(1)}, L=${meanL.toFixed(1)}, U=${meanU.toFixed(1)})`);
   }
+}
+
+export function runAutoTuneAutomation(event = { type: EVENT_READ_PAD }) {
+  if (event.type === EVENT_READ_PAD) return getCurrentPad();
+  if (event.type === EVENT_RECORD_BATTLE) return observeBattle(event.potionsUsed);
+  if (event.type === EVENT_RESET) return resetAutoTune();
+  if (event.type === EVENT_READ_STATUS) return getAutoTuneStatus();
+  return undefined;
 }

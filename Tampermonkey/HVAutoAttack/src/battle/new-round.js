@@ -3,7 +3,7 @@ import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { goto } from "../core/navigate.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
-import { observeBattle } from "../state/auto-tune.js";
+import { AutoTuneEvent, runAutoTuneAutomation } from "../state/auto-tune.js";
 import {
   MonsterKnowledgeEvent,
   runMonsterKnowledgeAutomation,
@@ -22,7 +22,7 @@ function startRound() {
   // F auto-tune：上一回合结束 → 观测用药数 + 复位计数
   if (g("option")?.autoTune && (g("turn") || 0) > 0) {
     const used = g("autoTunePotionCount") || 0;
-    observeBattle(used);
+    runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_BATTLE, potionsUsed: used });
   }
   g("autoTunePotionCount", 0);
   // New Round

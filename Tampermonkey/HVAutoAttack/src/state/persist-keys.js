@@ -28,4 +28,6 @@ export const STORAGE_KEYS = Object.freeze({
   LEARNED_CD: "learnedCd", // F3 技能真实 CD 收敛（按 SKILL_REGISTRY code 键）
   LEARNED_BIG_KILL: "learnedBigKill", // F4 OFC/FRD 对 boss 的击杀结果记忆（按 MID 键）
   LEARNED_INCOMING_BURST: "learnedIncomingBurst", // F5 进场爆发伤害 + 类型（按 MID 键，名 fallback）
+  AUTO_TUNE_PAD: "autoTunePad", // F safetyPad 自学习当前探索点
+  AUTO_TUNE_HISTORY: "autoTuneHistory", // F safetyPad 自学习观测历史
 });

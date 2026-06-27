@@ -2,8 +2,8 @@
 // 替代死阈值 option.hp1 / mp1 / sp1。
 // 配置：option.dynamicHealThreshold (开关) + option.dynamicHealSafetyPad (静态值) + option.autoTune (启用自学覆盖静态)
 //
-// 注：不再 100% PURE——auto-tune 的 getCurrentPad 读 GM_*。可接受：tune 状态属于持久化跨 battle 状态。
-import { getCurrentPad as getAutoTuneSafetyPad } from "../state/auto-tune.js";
+// 注：不再 100% PURE——auto-tune 入口读 GM_*。可接受：tune 状态属于持久化跨 battle 状态。
+import { AutoTuneEvent, runAutoTuneAutomation } from "../state/auto-tune.js";
 
 /**
  * 估算战斗剩余回合（玩家 DPS 输出 / 怪物总剩余 HP）。
@@ -39,7 +39,7 @@ export function dynamicHpThreshold(snap, opt) {
   const expectedTotalDmg = dpsEstimate * turns;
   // F: 自学 safetyPad（auto-tune 开则用学到的；否则用用户配置）
   const padding = opt.autoTune
-    ? getAutoTuneSafetyPad()
+    ? runAutoTuneAutomation({ type: AutoTuneEvent.READ_PAD })
     : opt.dynamicHealSafetyPad ?? 1.3;
   const playerMaxHp = opt.playerMaxHp || 17000;
   const dangerHpPct = (expectedTotalDmg * padding * 100) / playerMaxHp;
