@@ -1,7 +1,6 @@
 // 战斗页自动化编排入口：composition root 只调用本入口。
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { installBattleActionEventBridge } from "./reloader.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
@@ -14,6 +13,7 @@ import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
+import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle-action-speed.js";
 
 const EVENT_PAGE_READY = "pageReady";
 
@@ -56,8 +56,7 @@ function installBattlePauseControls() {
 
 function initBattleRuntime() {
   g("attackStatus", g("option").attackStatus);
-  g("timeNow", runTimeAutomation({ type: TimeEvent.EPOCH_MS }));
-  g("runSpeed", 1);
+  runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.BATTLE_STARTED });
 }
 
 function startBattleMonsterKnowledge() {

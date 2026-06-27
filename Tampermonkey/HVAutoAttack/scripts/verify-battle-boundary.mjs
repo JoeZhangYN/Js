@@ -9,6 +9,8 @@ const actionDelayFile = path.join(root, "src/battle/battle-action-delay.js");
 const actionDelayTest = path.join(root, "src/battle/battle-action-delay.test.js");
 const apiBridgeFile = path.join(root, "src/battle/battle-api-bridge.js");
 const apiBridgeTest = path.join(root, "src/battle/battle-api-bridge.test.js");
+const actionSpeedFile = path.join(root, "src/battle/battle-action-speed.js");
+const actionSpeedTest = path.join(root, "src/battle/battle-action-speed.test.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
@@ -187,6 +189,14 @@ function checkActionEventBridgeEntry() {
   if (!text.includes("BattleApiBridgeEvent.INSTALL")) {
     violations.push(`${rel(reloaderFile)} must install battle api bridge through its entry`);
   }
+  if (/\brunSpeed\b|\btimeNow\b|TimeEvent\.EPOCH_MS/.test(text)) {
+    violations.push(
+      `${rel(reloaderFile)} battle action speed belongs in runBattleActionSpeedAutomation(event)`
+    );
+  }
+  if (!text.includes("BattleActionSpeedEvent.ACTION_ENDED")) {
+    violations.push(`${rel(reloaderFile)} must report battle action speed through its entry`);
+  }
 }
 
 function checkActionDelayEntry() {
@@ -260,6 +270,46 @@ function checkApiBridgeEntry() {
   }
 }
 
+function checkActionSpeedEntry() {
+  const text = fs.readFileSync(actionSpeedFile, "utf8");
+  if (!/export const BattleActionSpeedEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(actionSpeedFile)} must expose BattleActionSpeedEvent`);
+  }
+  if (!/export function runBattleActionSpeedAutomation\(\s*event\b/.test(text)) {
+    violations.push(`${rel(actionSpeedFile)} must expose runBattleActionSpeedAutomation(event)`);
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleActionSpeedEvent\b|runBattleActionSpeedAutomation\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(actionSpeedFile)} may export only its event entry`);
+  }
+  const battleText = fs.readFileSync(battleFile, "utf8");
+  if (!battleText.includes("BattleActionSpeedEvent.BATTLE_STARTED")) {
+    violations.push(`${rel(battleFile)} must initialize battle action speed through its entry`);
+  }
+  for (const file of [
+    battleFile,
+    reloaderFile,
+    mainLoopFile,
+    roundStartFile,
+    actionSpeedFile,
+    actionSpeedTest,
+  ]) {
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      file !== battleFile &&
+      file !== reloaderFile &&
+      file !== actionSpeedFile &&
+      file !== actionSpeedTest &&
+      /from\s+["']\.\/battle-action-speed\.js["']/.test(source)
+    ) {
+      violations.push(`${rel(file)} must not import internal battle action speed`);
+    }
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -268,6 +318,7 @@ checkTurnEntry();
 checkActionEventBridgeEntry();
 checkActionDelayEntry();
 checkApiBridgeEntry();
+checkActionSpeedEntry();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");

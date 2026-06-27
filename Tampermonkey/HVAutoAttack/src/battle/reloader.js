@@ -4,7 +4,6 @@
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { post } from "../dom/http.js";
-import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
@@ -17,6 +16,7 @@ import {
 } from "./battle-completion.js";
 import { BattleActionDelayEvent, runBattleActionDelayAutomation } from "./battle-action-delay.js";
 import { BattleApiBridgeEvent, runBattleApiBridgeAutomation } from "./battle-api-bridge.js";
+import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle-action-speed.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
@@ -32,9 +32,7 @@ export function installBattleActionEventBridge() {
   const eventEnd = cE("a");
   eventEnd.id = "eventEnd";
   eventEnd.onclick = function () {
-    const timeNow = runTimeAutomation({ type: TimeEvent.EPOCH_MS });
-    g("runSpeed", (1000 / (timeNow - g("timeNow"))).toFixed(2));
-    g("timeNow", timeNow);
+    runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.ACTION_ENDED });
     runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED });
     runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
     runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_ENDED });
