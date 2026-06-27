@@ -12,7 +12,7 @@ import { time } from "../core/time.js";
 import { customizeBox } from "./customize.js";
 import { OPTION_SCHEMA } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
-import { setOption } from "../state/option.js";
+import { clearOption, readOption, setOption, writeOption } from "../state/option.js";
 import { getRiddleStats, resetRiddleStats, ML_OUTCOMES } from "../state/riddle-stats.js";
 import { getRiddleLog, clearRiddleLog } from "../state/riddle-log.js";
 import {
@@ -768,7 +768,7 @@ export function optionBox() {
         rmListItem(code);
       } else return;
     }
-    backups[code] = getValue("option");
+    backups[code] = readOption();
     setValue("backup", backups);
     const li = gE(".hvAABackupList", optionBox).appendChild(cE("li"));
     li.textContent = code;
@@ -782,7 +782,7 @@ export function optionBox() {
     );
     const backups = getValue("backup", true) || {};
     if (!(code in backups) || !code) return;
-    setValue("option", backups[code]);
+    writeOption(backups[code]);
     goto();
   };
   gE(".hvAADelete", optionBox).onclick = function () {
@@ -800,7 +800,7 @@ export function optionBox() {
     rmListItem(code);
   };
   gE(".hvAAExport", optionBox).onclick = function () {
-    const t = getValue("option");
+    const t = readOption();
     gE(".hvAAConfig").value = typeof t === "string" ? t : JSON.stringify(t);
   };
   gE(".hvAAImport", optionBox).onclick = function () {
@@ -813,13 +813,13 @@ export function optionBox() {
     }
     if (!option) return;
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      setValue("option", option);
+      writeOption(option);
       goto();
     }
   };
   //
   gE(".hvAAReset", optionBox).onclick = function () {
-    if (_alert(1, "是否重置", "是否重置", "Whether to reset")) delValue("option");
+    if (_alert(1, "是否重置", "是否重置", "Whether to reset")) clearOption();
   };
   gE(".hvAAApply", optionBox).onclick = function () {
     if (gE('select[name="attackStatus"] option[value="-1"]:checked', optionBox)) {
@@ -882,7 +882,7 @@ export function optionBox() {
         url: inputs[3 * i + 2].value,
       });
     }
-    setValue("option", _option);
+    writeOption(_option);
     optionBox.style.display = "none";
     goto();
   };

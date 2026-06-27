@@ -8,7 +8,22 @@
 //
 // 同形态同失败模式 → 抽 helper 防退化。
 import { g } from "./store.js";
-import { getValue, setValue } from "./storage.js";
+import { delValue, getValue, setValue } from "./storage.js";
+import { STORAGE_KEYS } from "./persist-keys.js";
+
+export function readOption() {
+  return g("option") || getValue(STORAGE_KEYS.OPTION, true) || null;
+}
+
+export function writeOption(option) {
+  g("option", option);
+  setValue(STORAGE_KEYS.OPTION, option);
+}
+
+export function clearOption() {
+  g("option", null);
+  delValue(STORAGE_KEYS.OPTION);
+}
 
 /**
  * 读 option 字段值：g("option") 优先（已装填），缺则 fallback 到 GM_setValue 直读，再缺返 fallback。
@@ -17,7 +32,7 @@ import { getValue, setValue } from "./storage.js";
  * @returns {*} option[key]，或 fallback
  */
 export function getOption(key, fallback) {
-  const opt = g("option") || getValue("option", true) || {};
+  const opt = readOption() || {};
   return opt[key] !== undefined ? opt[key] : fallback;
 }
 
@@ -41,8 +56,7 @@ export function isOptionOn(key) {
  * @param {*} val 新值
  */
 export function setOption(key, val) {
-  const opt = g("option") || getValue("option", true) || {};
+  const opt = readOption() || {};
   opt[key] = val;
-  g("option", opt);
-  setValue("option", opt);
+  writeOption(opt);
 }
