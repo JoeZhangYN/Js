@@ -12,7 +12,7 @@ import {
 } from "./equipment-view-automation.js";
 import { runRiddleAutomation } from "./riddle-automation.js";
 import { LobbyEvent, runLobbyAutomation } from "./lobby-automation.js";
-import { runBattleAutomation } from "../battle/battle-automation.js";
+import { BattleEvent, runBattleAutomation } from "../battle/battle-automation.js";
 import { PageKind } from "./page-kind.js";
 
 const EVENT_PAGE_READY = "pageReady";
@@ -39,7 +39,7 @@ function runGamePageAutomation(kind) {
   if (kind === PageKind.RIDDLE) {
     runRiddleAutomation();
   } else if (kind === PageKind.BATTLE) {
-    runBattleAutomation();
+    runBattleAutomation({ type: BattleEvent.PAGE_READY });
   } else {
     runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
   }

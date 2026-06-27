@@ -35,7 +35,10 @@ vi.mock("./equipment-view-automation.js", () => ({
 }));
 vi.mock("./riddle-automation.js", () => ({ runRiddleAutomation: mocks.runRiddleAutomation }));
 vi.mock("./lobby-automation.js", () => ({ runLobbyAutomation: mocks.runLobbyAutomation }));
-vi.mock("../battle/battle-automation.js", () => ({ runBattleAutomation: mocks.runBattleAutomation }));
+vi.mock("../battle/battle-automation.js", () => ({
+  BattleEvent: Object.freeze({ PAGE_READY: "pageReady" }),
+  runBattleAutomation: mocks.runBattleAutomation,
+}));
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear();

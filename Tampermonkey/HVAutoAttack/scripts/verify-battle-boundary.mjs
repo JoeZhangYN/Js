@@ -36,7 +36,7 @@ function checkInit() {
     if (line.includes("runBattleAutomation")) return;
     if (forbidden.some((re) => re.test(line))) {
       violations.push(
-        `${rel(initFile)}:${index + 1} battle workflow belongs in runBattleAutomation()`
+        `${rel(initFile)}:${index + 1} battle workflow belongs in runBattleAutomation(event)`
       );
     }
   });
@@ -44,8 +44,14 @@ function checkInit() {
 
 function checkBattleEntry() {
   const text = fs.readFileSync(battleFile, "utf8");
-  if (!/export function runBattleAutomation\(/.test(text)) {
-    violations.push(`${rel(battleFile)} must expose runBattleAutomation()`);
+  if (!/export const BattleEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(battleFile)} must expose BattleEvent`);
+  }
+  if (!/export function runBattleAutomation\(\s*event\b/.test(text)) {
+    violations.push(`${rel(battleFile)} must expose runBattleAutomation(event)`);
+  }
+  if (/export function runBattleAutomation\(\s*\)/.test(text)) {
+    violations.push(`${rel(battleFile)} must not expose no-arg battle entry`);
   }
   if (!text.includes("runBattleRoundStartAutomation")) {
     violations.push(`${rel(battleFile)} must start rounds through runBattleRoundStartAutomation()`);
@@ -62,11 +68,21 @@ function checkBattleEntry() {
     "startBattleMonitoring",
   ]) {
     if (!text.includes(required)) {
-      violations.push(`${rel(battleFile)} must make ${required} visible in runBattleAutomation()`);
+      violations.push(`${rel(battleFile)} must make ${required} visible in runBattleAutomation(event)`);
     }
   }
   if (/\bsetup(?:PauseControls|MonsterKnowledge|BattleMonitor)\b/.test(text)) {
     violations.push(`${rel(battleFile)} must not use legacy setup* names for battle orchestration`);
+  }
+  if (!text.includes("BattleEvent") || !text.includes("EVENT_PAGE_READY")) {
+    violations.push(`${rel(battleFile)} must own BattleEvent.PAGE_READY wiring`);
+  }
+  const pageText = fs.readFileSync(path.join(root, "src/pages/page-automation.js"), "utf8");
+  if (!pageText.includes("BattleEvent.PAGE_READY")) {
+    violations.push("src/pages/page-automation.js must report BattleEvent.PAGE_READY");
+  }
+  if (/runBattleAutomation\(\s*\)/.test(pageText)) {
+    violations.push("src/pages/page-automation.js must not call no-arg battle entry");
   }
 }
 

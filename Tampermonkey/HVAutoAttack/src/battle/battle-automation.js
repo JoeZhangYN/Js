@@ -15,6 +15,12 @@ import {
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
 
+const EVENT_PAGE_READY = "pageReady";
+
+export const BattleEvent = Object.freeze({
+  PAGE_READY: EVENT_PAGE_READY,
+});
+
 function installBattlePauseControls() {
   const box2 = gE("#battle_main").appendChild(cE("div"));
   box2.id = "hvAABox2";
@@ -56,7 +62,8 @@ function startBattleMonitoring() {
   runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
 }
 
-export function runBattleAutomation() {
+export function runBattleAutomation(event = { type: EVENT_PAGE_READY }) {
+  if (event.type !== EVENT_PAGE_READY) return undefined;
   installBattlePauseControls();
   installBattleActionEventBridge();
   initBattleRuntime();
