@@ -19,8 +19,7 @@ import {
 } from "./monster-status-automation.js";
 import { runRules } from "./step-runner.js";
 import { BATTLE_RULES } from "./rules/index.js";
-import { incrementGlobalTurn, persistCdState } from "../state/cd-tracker.js";
-import { collectSnapshot, assertNoDomRefs } from "./snapshot.js";
+import { prepareBattleTurnContext } from "./turn-context.js";
 import { pauseScript } from "./pause-control.js";
 
 export function main() {
@@ -42,18 +41,7 @@ export function main() {
   killBug();
   runMonsterStatusAutomation({ type: MonsterStatusEvent.UPDATE_HP });
 
-  // Phase 5b-1: 跨 battle globalTurn 累计 + 持久化 + 一次性收集 snapshot
-  incrementGlobalTurn();
-  persistCdState();
-  const snap = collectSnapshot();
-  // vitals 镜像到 g()：snapshot 内 readPlayerVitals 已读过 hp/mp/sp/oc 的 DOM，
-  // 此处只搬值，供"不传 snap 的 checkCondition"经 g(str) fallback 消费。
-  g("hp", snap.hp);
-  g("mp", snap.mp);
-  g("sp", snap.sp);
-  g("oc", snap.oc);
-  // R9 调试断言：snapshot 不含 DOM 引用（生产可关，开发期保留）
-  if (g("option")?.debugSnapshot) assertNoDomRefs(snap);
+  const snap = prepareBattleTurnContext();
 
   // 编排倒置：遍历 BATTLE_RULES（when 门控 → PURE decide → dispatch），某 rule act 即停止后续。
   // 替代原 runSteps([...18 内联闭包...]) —— 行动决策链现声明在 battle/rules/index.js。
