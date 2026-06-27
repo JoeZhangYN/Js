@@ -111,4 +111,15 @@ describe("runLobbyAutomation", () => {
     expect(mocks.runStaminaAutomation).not.toHaveBeenCalled();
     expect(mocks.runIdleArenaAutomation).not.toHaveBeenCalled();
   });
+
+  it("reruns the lobby page-ready workflow when the daily rollover timer fires", async () => {
+    await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
+
+    const rolloverEvent = mocks.runDayRecordAutomation.mock.calls[0][0];
+    await rolloverEvent.rerun();
+
+    expect(mocks.runBattleRuntimeAutomation).toHaveBeenCalledTimes(2);
+    expect(mocks.runDayRecordAutomation).toHaveBeenCalledTimes(2);
+    expect(mocks.runQuickSiteAutomation).toHaveBeenCalledTimes(2);
+  });
 });

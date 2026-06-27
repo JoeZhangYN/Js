@@ -64,6 +64,11 @@ if (!lobbyText.includes("DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY")) {
     `${lobby.replaceAll("\\", "/")} must refresh and schedule daily records through day-record`
   );
 }
+if (!/rerun:\s*\(\)\s*=>\s*runLobbyAutomation\(\s*\{\s*type:\s*EVENT_PAGE_READY\s*\}\s*\)/.test(lobbyText)) {
+  violations.push(
+    `${lobby.replaceAll("\\", "/")} must let the UTC day rollover rerun the lobby page-ready workflow`
+  );
+}
 if (/DayRecordEvent\.SYNC_UTC_DATE/.test(lobbyText)) {
   violations.push(
     `${lobby.replaceAll("\\", "/")} must not bypass the daily record rollover scheduler`
