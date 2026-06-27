@@ -33,7 +33,12 @@ function checkFile(file) {
         `${where} idleArena implementation import is forbidden; use runIdleArenaAutomation(event)`
       );
     }
-    if (relative !== owner && relative !== settings && /\bidleArenaTime\b/.test(line)) {
+    if (
+      relative !== owner &&
+      relative !== ownerTest &&
+      relative !== settings &&
+      /\bidleArenaTime\b/.test(line)
+    ) {
       violations.push(`${where} idleArenaTime scheduling is owned by idle-arena boundary`);
     }
     if (relative !== owner && /setTimeout\(\s*idleArena\b/.test(line)) {
@@ -64,6 +69,17 @@ walk(srcDir);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (!ownerText.includes("STORAGE_KEYS.ARENA")) {
   violations.push(`${owner.replaceAll("\\", "/")} must use STORAGE_KEYS.ARENA`);
+}
+if (!ownerText.includes("OptionEvent.READ_FIELD")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must read idle arena options through option entry`
+  );
+}
+if (/from\s+["']\.\.\/state\/store\.js["']/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not import store for idle arena options`);
+}
+if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not read idle arena options directly`);
 }
 if (!ownerText.includes("RESET_PROGRESS")) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose RESET_PROGRESS event`);

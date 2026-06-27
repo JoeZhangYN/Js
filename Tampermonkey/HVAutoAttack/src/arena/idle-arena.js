@@ -2,7 +2,7 @@
 import { gE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
-import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { _alert } from "../core/lang.js";
 import { post } from "../dom/http.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
@@ -25,10 +25,15 @@ function reloadCurrentPage() {
   runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
 }
 
+function readIdleArenaOption(key, fallback) {
+  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
+}
+
 function scheduleNextBattle() {
+  const idleSeconds = Number(readIdleArenaOption("idleArenaTime", 0)) || 0;
   setTimeout(
     () => runIdleArenaAutomation({ type: EVENT_START_NEXT_BATTLE }),
-    ((g("option").idleArenaTime * (Math.random() * 20 + 90)) / 100) * 1000
+    ((idleSeconds * (Math.random() * 20 + 90)) / 100) * 1000
   );
 }
 
@@ -42,7 +47,7 @@ function startNextBattle() {
   if (arena.date !== dateNow) {
     arena = {
       date: dateNow,
-      gr: g("option").idleArenaGrTime,
+      gr: readIdleArenaOption("idleArenaGrTime", 0),
       done: [],
       token: {
         length: 0,
@@ -83,8 +88,8 @@ function startNextBattle() {
     return;
   }
   arena.done = arena.done || [];
-  arena.array = g("option")
-    .idleArenaValue.split(",")
+  arena.array = String(readIdleArenaOption("idleArenaValue", ""))
+    .split(",")
     .filter((id) => (id === "gr" || isNaN(id * 1) ? arena.gr > 0 : !arena.done.includes(id)));
   if (arena.array.length === 0) return;
   if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_IDLE_ARENA })) {
