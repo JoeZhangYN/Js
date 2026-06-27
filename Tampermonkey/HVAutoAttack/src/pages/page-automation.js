@@ -1,15 +1,11 @@
 // 页面自动化编排入口：init 只上报页面类型，本入口决定具体页面能力顺序。
-import { g } from "../state/store.js";
 import { PageRefreshEvent, runPageRefreshAutomation } from "../alarm/page-refresh.js";
 import { AppStartupEvent, runAppStartup } from "./app-startup.js";
 import {
   CrossSiteEncounterEvent,
   runCrossSiteEncounterNavigation,
 } from "./cross-site-encounter-navigation.js";
-import {
-  EquipmentViewEvent,
-  runEquipmentViewAutomation,
-} from "./equipment-view-automation.js";
+import { EquipmentViewEvent, runEquipmentViewAutomation } from "./equipment-view-automation.js";
 import { runRiddleAutomation } from "./riddle-automation.js";
 import { LobbyEvent, runLobbyAutomation } from "./lobby-automation.js";
 import { BattleEvent, runBattleAutomation } from "../battle/battle-automation.js";
@@ -32,10 +28,7 @@ function scheduleUnknownPageReload(kind) {
 
 function runGamePageAutomation(kind) {
   if (!runAppStartup({ type: AppStartupEvent.GAME_PAGE_READY })) return;
-  runPageRefreshAutomation({
-    type: PageRefreshEvent.GAME_PAGE_READY,
-    option: g("option"),
-  });
+  runPageRefreshAutomation({ type: PageRefreshEvent.GAME_PAGE_READY });
   if (kind === PageKind.RIDDLE) {
     runRiddleAutomation();
   } else if (kind === PageKind.BATTLE) {

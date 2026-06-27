@@ -9,9 +9,8 @@ describe("runPageRefreshAutomation", () => {
       runPageRefreshAutomation(
         {
           type: PageRefreshEvent.GAME_PAGE_READY,
-          option: { pageRefresh: false, pageRefreshMinutes: 30 },
         },
-        { scheduleReload }
+        { readOption: () => ({ pageRefresh: false, pageRefreshMinutes: 30 }), scheduleReload }
       )
     ).toBe(false);
     expect(scheduleReload).not.toHaveBeenCalled();
@@ -24,9 +23,12 @@ describe("runPageRefreshAutomation", () => {
       runPageRefreshAutomation(
         {
           type: PageRefreshEvent.GAME_PAGE_READY,
-          option: { pageRefresh: true, pageRefreshMinutes: 30 },
         },
-        { jitter: 0, scheduleReload }
+        {
+          jitter: 0,
+          readOption: () => ({ pageRefresh: true, pageRefreshMinutes: 30 }),
+          scheduleReload,
+        }
       )
     ).toBe(true);
     expect(scheduleReload).toHaveBeenLastCalledWith(30);
@@ -35,9 +37,12 @@ describe("runPageRefreshAutomation", () => {
       runPageRefreshAutomation(
         {
           type: PageRefreshEvent.GAME_PAGE_READY,
-          option: { pageRefresh: true, pageRefreshMinutes: 30 },
         },
-        { jitter: 1, scheduleReload }
+        {
+          jitter: 1,
+          readOption: () => ({ pageRefresh: true, pageRefreshMinutes: 30 }),
+          scheduleReload,
+        }
       )
     ).toBe(true);
     expect(scheduleReload).toHaveBeenLastCalledWith(31);

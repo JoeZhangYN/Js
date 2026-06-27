@@ -70,7 +70,12 @@ function checkEntry() {
     }
   }
   if (/\bscheduleReload\b/.test(text)) {
-    violations.push(`${rel(entryFile)} must route page reload scheduling through runPageRefreshAutomation(event)`);
+    violations.push(
+      `${rel(entryFile)} must route page reload scheduling through runPageRefreshAutomation(event)`
+    );
+  }
+  if (/from\s+["']\.\.\/state\/store\.js["']/.test(text) || /\boption:\s*g\(/.test(text)) {
+    violations.push(`${rel(entryFile)} must not compose page refresh option fields`);
   }
 }
 

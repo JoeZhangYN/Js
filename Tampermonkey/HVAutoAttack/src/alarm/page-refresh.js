@@ -10,6 +10,7 @@
 // 关联：用户提供的 legacy snippet 是独立 UserScript "30分钟间隔刷新,防止移动端页面卡主"，
 // 此模块为其在 HVAutoAttack 体系内的等价实现（option 开关 + 可配间隔）。
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_GAME_PAGE_READY = "gamePageReady";
 const EVENT_UNKNOWN_PAGE_READY = "unknownPageReady";
@@ -42,7 +43,8 @@ export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }
     return true;
   }
   if (event.type !== EVENT_GAME_PAGE_READY) return false;
-  const delayMinutes = planPageRefreshDelayMinutes(event.option, deps);
+  const option = deps.readOption?.() || runOptionAutomation({ type: OptionEvent.READ }) || {};
+  const delayMinutes = planPageRefreshDelayMinutes(option, deps);
   if (!delayMinutes) return false;
   const reload =
     deps.scheduleReload ||

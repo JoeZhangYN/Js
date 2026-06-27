@@ -3,7 +3,6 @@ import { PageKind } from "./page-kind.js";
 import { PageAutomationEvent, runPageAutomation } from "./page-automation.js";
 
 const mocks = vi.hoisted(() => ({
-  g: vi.fn(() => ({ pageRefresh: true })),
   runAppStartup: vi.fn(() => true),
   runBattleAutomation: vi.fn(),
   runCrossSiteEncounterNavigation: vi.fn(() => false),
@@ -13,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   runRiddleAutomation: vi.fn(),
 }));
 
-vi.mock("../state/store.js", () => ({ g: mocks.g }));
 vi.mock("../alarm/page-refresh.js", () => ({
   PageRefreshEvent: Object.freeze({
     GAME_PAGE_READY: "gamePageReady",
@@ -42,7 +40,6 @@ vi.mock("../battle/battle-automation.js", () => ({
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear();
-  mocks.g.mockReturnValue({ pageRefresh: true });
   mocks.runAppStartup.mockReturnValue(true);
   mocks.runCrossSiteEncounterNavigation.mockReturnValue(false);
   mocks.runPageRefreshAutomation.mockReturnValue(false);
@@ -59,7 +56,6 @@ describe("runPageAutomation", () => {
     expect(mocks.runAppStartup).toHaveBeenCalledWith({ type: "gamePageReady" });
     expect(mocks.runPageRefreshAutomation).toHaveBeenCalledWith({
       type: "gamePageReady",
-      option: { pageRefresh: true },
     });
     expect(mocks.runRiddleAutomation).toHaveBeenCalledTimes(1);
   });
