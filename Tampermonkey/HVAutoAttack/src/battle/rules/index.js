@@ -4,7 +4,6 @@
 //
 // 每条 rule：{ name, when?(snap,opt), decide(snap,opt)→ActionResult }。顺序 = 原 runSteps 顺序。
 // 深度 B 后**全部 16 条 decide 均为 PURE**（只读 snap + g() runtime，零 DOM 判断）；副作用全在
-// dispatch/execute-*（SHELL）。已无 delegate 过渡桥。
 import { g } from "../../state/store.js";
 import { checkCondition } from "../../settings/condition-eval.js";
 import { isStallMode } from "../potion-economy.js";
@@ -18,11 +17,20 @@ import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../i
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
 import { shouldSkipForBigSkill } from "./big-skill.js";
 import { decideBossImperil } from "./decide-boss-imperil.js";
-import {
-  BigSkillKillLearningEvent,
-  runBigSkillKillLearningAutomation,
-} from "../../state/big-skill-kill-learner.js";
+import { BigSkillKillLearningEvent, runBigSkillKillLearningAutomation } from "../../state/big-skill-kill-learner.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
+
+const readRuleRuntimeContext = () => ({
+  monsterAlive: g("monsterAlive"),
+  roundAll: g("roundAll"),
+  roundNow: g("roundNow"),
+  roundType: g("roundType"),
+});
+const isStallingForRules = (snap, opt, runtime = readRuleRuntimeContext()) =>
+  isStallMode(snap, opt, runtime.roundNow, runtime.roundAll);
+const hasMissingDebuff = (snap, runtime, debuffName) =>
+  snap.view.filter((m) => m.buffs.some((b) => b.includes(debuffName))).length <
+  runtime.monsterAlive;
 
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
@@ -73,7 +81,7 @@ export const BATTLE_RULES = [
       opt.scroll &&
       checkCondition(opt.scrollCondition, snap) &&
       opt.scrollRoundType &&
-      opt.scrollRoundType[g("roundType")],
+      opt.scrollRoundType[readRuleRuntimeContext().roundType],
     decide: (snap, opt) => decideScroll(opt, snap),
   },
   // 9. 元素灌注（仅法术模式）
@@ -110,7 +118,7 @@ export const BATTLE_RULES = [
   {
     name: "bossImperil",
     when: (snap, opt) => {
-      if (isStallMode(snap, opt, g("roundNow"), g("roundAll"))) return false;
+      if (isStallingForRules(snap, opt)) return false;
       if (opt.debuffSkillSwitch === false || !snap.skillReady["213"]) return false;
       const bosses = (snap.view || []).filter((m) => m.isBoss && !m.isDead);
       if (
@@ -138,8 +146,7 @@ export const BATTLE_RULES = [
       opt.debuffSkillSwitch &&
       opt.debuffSkillAllWk &&
       !shouldSkipForBigSkill(opt, snap, "We") &&
-      snap.view.filter((m) => m.buffs.some((b) => b.includes("weaken"))).length <
-        g("monsterAlive") &&
+      hasMissingDebuff(snap, readRuleRuntimeContext(), "weaken") &&
       checkCondition(opt.debuffSkillWkCondition, snap),
     decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "We"),
   },
@@ -147,12 +154,11 @@ export const BATTLE_RULES = [
   {
     name: "castImperilAll",
     when: (snap, opt) =>
-      !isStallMode(snap, opt, g("roundNow"), g("roundAll")) &&
+      !isStallingForRules(snap, opt) &&
       opt.debuffSkillSwitch &&
       opt.debuffSkillAllIm &&
       !shouldSkipForBigSkill(opt, snap, "Im") &&
-      snap.view.filter((m) => m.buffs.some((b) => b.includes("imperil"))).length <
-        g("monsterAlive") &&
+      hasMissingDebuff(snap, readRuleRuntimeContext(), "imperil") &&
       checkCondition(opt.debuffSkillImpCondition, snap),
     decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "Im"),
   },
@@ -160,7 +166,7 @@ export const BATTLE_RULES = [
   {
     name: "useDeSkill",
     when: (snap, opt) =>
-      !isStallMode(snap, opt, g("roundNow"), g("roundAll")) &&
+      !isStallingForRules(snap, opt) &&
       opt.debuffSkillSwitch &&
       opt.debuffSkill &&
       checkCondition(opt.debuffSkillCondition, snap),

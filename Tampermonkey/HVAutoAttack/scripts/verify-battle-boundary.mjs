@@ -25,6 +25,7 @@ const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
 const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
+const battleRulesFile = path.join(root, "src/battle/rules/index.js");
 const violations = [];
 
 function rel(file) {
@@ -631,6 +632,25 @@ function checkSnapshot() {
   }
 }
 
+function checkBattleRulesRuntimeContext() {
+  const text = fs.readFileSync(battleRulesFile, "utf8");
+  if (!text.includes("readRuleRuntimeContext")) {
+    violations.push(`${rel(battleRulesFile)} must centralize rule runtime reads`);
+  }
+  if (!text.includes("isStallingForRules")) {
+    violations.push(`${rel(battleRulesFile)} must centralize stall runtime decisions`);
+  }
+  if (!text.includes("hasMissingDebuff")) {
+    violations.push(`${rel(battleRulesFile)} must centralize debuff coverage decisions`);
+  }
+  const rulesBody = text.split("/** @type")[1] || "";
+  if (/\bg\(\s*["'](?:roundNow|roundAll|roundType|monsterAlive)["']/.test(rulesBody)) {
+    violations.push(
+      `${rel(battleRulesFile)} rule definitions must read runtime fields through rule runtime context`
+    );
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -648,6 +668,7 @@ checkUtilityEngine();
 checkActivateSpirit();
 checkExecuteItem();
 checkSnapshot();
+checkBattleRulesRuntimeContext();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");
