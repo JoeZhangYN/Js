@@ -1,5 +1,5 @@
 // file-size-gate: exempt schema 声明式 SOT-设计上渐增至 80+ 字段（待办 C 全量迁入）
-// OPTION_SCHEMA 单 SOT（Phase 5 chunk A 引入；现存 ~80 字段渐进迁入，新字段直接进 schema）。
+// Option schema 单 SOT（Phase 5 chunk A 引入；现存 ~80 字段渐进迁入，新字段直接进 schema）。
 // 当前阶段只声明 Phase 6 新增的 3 个字段；老字段仍由 settings/render.js 内联模板渲染。
 // 后续 chunk 把全 80 字段迁入 schema、render.js 改为 schema-driven。
 
@@ -17,7 +17,7 @@
  */
 
 /** @type {OptionField[]} */
-export const OPTION_SCHEMA = [
+const OPTION_SCHEMA = [
   // === Phase 6 新增：OFC/FRD CD 跟踪 + 跳过 debuff ===
   {
     key: "skipDebuffForBigSkill_We",
@@ -372,19 +372,37 @@ export const OPTION_SCHEMA = [
   },
 ];
 
-/**
- * 取 schema 中字段默认值。未注册返 undefined（Phase 5 渐进迁入期老字段不在表里）。
- * @param {string} key
- */
-export function getOptionDefault(key) {
-  const f = OPTION_SCHEMA.find((x) => x.key === key);
-  return f ? f.default : undefined;
+const EVENT_READ_FIELD = "readField";
+const EVENT_READ_DEFAULT = "readDefault";
+const EVENT_READ_GROUP = "readGroup";
+
+export const OptionSchemaEvent = Object.freeze({
+  READ_FIELD: EVENT_READ_FIELD,
+  READ_DEFAULT: EVENT_READ_DEFAULT,
+  READ_GROUP: EVENT_READ_GROUP,
+});
+
+function readOptionSchemaField(key) {
+  return OPTION_SCHEMA.find((field) => field.key === key);
 }
 
-/**
- * 取某 tab 下所有字段（用于 render.js 渐进迁入）。
- * @param {string} group
- */
-export function getFieldsByGroup(group) {
-  return OPTION_SCHEMA.filter((f) => f.group === group);
+function readOptionSchemaDefault(key) {
+  return readOptionSchemaField(key)?.default;
+}
+
+function readOptionSchemaGroup(group) {
+  return OPTION_SCHEMA.filter((field) => field.group === group);
+}
+
+export function runOptionSchema(event) {
+  switch (event?.type) {
+    case EVENT_READ_FIELD:
+      return readOptionSchemaField(event.key);
+    case EVENT_READ_DEFAULT:
+      return readOptionSchemaDefault(event.key);
+    case EVENT_READ_GROUP:
+      return readOptionSchemaGroup(event.group);
+    default:
+      return undefined;
+  }
 }

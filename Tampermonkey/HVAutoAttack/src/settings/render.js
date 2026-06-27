@@ -1,5 +1,5 @@
 // 整个配置面板的 HTML 模板渲染 + 事件绑定。
-// 阶段 5 改成 OPTION_SCHEMA-driven。当前 chunk 2 仅做物理搬迁，行为不变。
+// 阶段 5 改成 option schema-driven。当前 chunk 2 仅做物理搬迁，行为不变。
 // file-size-gate: exempt phase-3-monolith
 import { gE, cE } from "../dom/query.js";
 import { setValue, getValue } from "../state/storage.js";
@@ -9,7 +9,7 @@ import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { customizeBox } from "./customize.js";
-import { OPTION_SCHEMA } from "./schema.js";
+import { OptionSchemaEvent, runOptionSchema } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
@@ -23,7 +23,7 @@ import {
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 
 /**
- * 从 OPTION_SCHEMA 渲染 "checkbox + number + 单位文本" 这类成对字段。
+ * 从 option schema 渲染 "checkbox + number + 单位文本" 这类成对字段。
  * Phase 5 渐进迁入示例：新加的 pageRefresh / criticalBuff 等用此 helper 直接消费 schema，
  * 不再手写 template string。老字段仍走 inline template。
  * @param {string} checkboxKey
@@ -31,8 +31,8 @@ import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
  * @param {{l0:string,l1:string,l2:string}} unit 单位/补充说明
  */
 function renderCheckboxPlusNumber(checkboxKey, numberKey, unit) {
-  const cb = OPTION_SCHEMA.find((f) => f.key === checkboxKey);
-  const num = OPTION_SCHEMA.find((f) => f.key === numberKey);
+  const cb = runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: checkboxKey });
+  const num = runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: numberKey });
   if (!cb || !num) return "";
   const checkedAttr = cb.defaultOn ? " checked data-default-on" : "";
   return (

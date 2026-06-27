@@ -91,7 +91,7 @@ describe("repair automation entry", () => {
   });
 
   // A4 反退化：repairValue 留空/非法 → 回落 schema 默认 60%（也间接锁 schema.repairValue.default 存在——
-  // 若 schema 删该条目，getOptionDefault 返 undefined → threshold 0 → 55% 不修 → 本用例红）。
+  // 若 schema 删该条目，默认值入口返 undefined → threshold 0 → 55% 不修 → 本用例红）。
   it("repairValue 留空('') → 回落默认 60% → 耐久 55% 的件被修", () => {
     g("option", { idleArena: true, repairValue: "" });
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 55)]), st([eq(1, 100)])]);

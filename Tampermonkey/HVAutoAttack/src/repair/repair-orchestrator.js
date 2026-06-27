@@ -18,7 +18,7 @@ import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { RepairBackendEvent, runRepairBackendAutomation } from "./repair-backend.js";
 import { RepairDecisionEvent, runRepairDecision } from "./decide-repair.js";
 import { MaterialShopEvent, runMaterialShopAutomation } from "./material-shop.js";
-import { getOptionDefault } from "../settings/schema.js";
+import { OptionSchemaEvent, runOptionSchema } from "../settings/schema.js";
 
 const EVENT_START = "start";
 
@@ -84,7 +84,7 @@ function runRepair(deps = {}) {
   const opt = {
     repairValue:
       rawRepairValue === "" || rawRepairValue === null || Number.isNaN(numRepairValue)
-        ? getOptionDefault("repairValue")
+        ? runOptionSchema({ type: OptionSchemaEvent.READ_DEFAULT, key: "repairValue" })
         : numRepairValue,
     repairBuyMaterials: readOptionField("repairBuyMaterials", false),
     repairCreditCap: readOptionField("repairCreditCap", 50000),
