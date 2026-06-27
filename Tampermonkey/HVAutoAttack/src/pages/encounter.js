@@ -105,9 +105,9 @@ function readEncounterState() {
   return runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
 }
 
-function readStoredReadiness(state) {
+function readStoredClock(state) {
   return runEncounterPolicy({
-    type: EncounterPolicyEvent.READINESS,
+    type: EncounterPolicyEvent.READ_CLOCK,
     state,
   });
 }
@@ -135,14 +135,14 @@ function continueAfterLoadedEncounter(event) {
   );
 }
 
-function shouldWaitForClock(readiness) {
-  return readiness.dailyLimitReached || readiness.remainingMs > 0;
+function shouldWaitForClock(clock) {
+  return clock.status === "countdown";
 }
 
 async function runLobbyTick(event) {
   const state = readEncounterState();
-  const readiness = readStoredReadiness(state);
-  if (shouldWaitForClock(readiness)) return waitForNextCheck(state, event);
+  const clock = readStoredClock(state);
+  if (shouldWaitForClock(clock)) return waitForNextCheck(state, event);
   const entered = claimEnteredStoredEncounter(state);
   if (entered) return entered;
   if (shouldRestoreForBattle()) return claimStaminaRecovery();

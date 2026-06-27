@@ -237,6 +237,16 @@ if (!/\bfunction executeEncounterEntry\b/.test(ownerText)) {
     `${owner.replaceAll("\\", "/")} must execute manual and automatic encounter entry through one function`
   );
 }
+if (!/EncounterPolicyEvent\.READ_CLOCK/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} lobby countdown and widget countdown must read one encounter clock query`
+  );
+}
+if (/EncounterPolicyEvent\.READINESS/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not duplicate countdown readiness decisions; use READ_CLOCK`
+  );
+}
 if (/\bexecuteEncounterActivation\b|\bexecuteWidgetNavigation\b/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not keep separate lobby/widget encounter navigation executors`
