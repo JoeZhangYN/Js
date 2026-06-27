@@ -5,7 +5,9 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/option.js");
 const ownerTest = path.normalize("src/state/option.test.js");
+const backup = path.normalize("src/state/option-backup.js");
 const backupTest = path.normalize("src/state/option-backup.test.js");
+const appStartup = path.normalize("src/pages/app-startup.js");
 const storage = path.normalize("src/state/storage.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const settingsRender = path.normalize("src/settings/render.js");
@@ -54,6 +56,12 @@ function checkFile(file) {
       )
     ) {
       violations.push(`${where} settings must not compose option import/export payloads`);
+    }
+    if (
+      ![owner, ownerTest, backup, backupTest, appStartup].includes(relative) &&
+      /\bOptionEvent\.READ\b/.test(line)
+    ) {
+      violations.push(`${where} whole option reads are reserved for option owners`);
     }
   });
 }
