@@ -9,7 +9,7 @@ import { g } from "./store.js";
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { SKILL_REGISTRY, effectiveSkillId } from "./skill-registry.js";
-import { getLearnedCd } from "./cd-learner.js";
+import { CdLearningEvent, runCdLearningAutomation } from "./cd-learner.js";
 
 // SKILL_REGISTRY / effectiveSkillId 已抽到 skill-registry.js（打破 cd-tracker ↔ cd-learner 环）。
 // 为兼容既有 import 路径（如有），此处转出口。
@@ -71,7 +71,8 @@ function turnsUntilReady(code) {
   if (lastUsed == null) return 0;
   // F3：用学到的真实 CD，但 Math.min(learned, cdBase) 夹住 —— 学习永不上调 CD（防被篡改成过大值）。
   // 即便学习值偏小也安全：真正开火仍以 snap.skillReady(DOM) 为权威，学习值只锐化前瞻 lookahead。
-  const effectiveCd = Math.min(getLearnedCd(code), entry.cdBase);
+  const learnedCd = runCdLearningAutomation({ type: CdLearningEvent.READ_CD, code });
+  const effectiveCd = Math.min(learnedCd, entry.cdBase);
   return Math.max(0, effectiveCd - ((g("globalTurn") || 0) - lastUsed));
 }
 

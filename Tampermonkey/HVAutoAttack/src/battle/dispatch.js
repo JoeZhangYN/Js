@@ -64,7 +64,7 @@ export function dispatch(result, snap) {
       return true;
 
     case "attack-plan":
-      // attack PURE 决策产出 AttackPlan，executeAttack 翻译为 click + 记账（需 snap 做 recordCdFire/F4 记账）。
+      // attack PURE 决策产出 AttackPlan，executeAttack 翻译为 click + 学习器/F4 记账。
       return executeAttack(result.plan, snap);
 
     case "item-plan":

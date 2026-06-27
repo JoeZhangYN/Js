@@ -12,7 +12,7 @@ import { g } from "../state/store.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
 import { RecoveryLearningEvent, runRecoveryLearningAutomation } from "../state/recovery-learner.js";
-import { finalizeCdPending } from "../state/cd-learner.js";
+import { CdLearningEvent, runCdLearningAutomation } from "../state/cd-learner.js";
 import { finalizeBigSkillPending } from "../state/big-skill-kill-learner.js";
 import { updateBurstFromEvents, getLearnedBurstMap } from "../state/incoming-burst-learner.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
@@ -164,7 +164,7 @@ export function collectSnapshot() {
   const snapPartial = { ...vitals };
   runRecoveryLearningAutomation({ type: RecoveryLearningEvent.FINALIZE_PENDING, snap: snapPartial });
   // F3: 上回合开火的技能若本回合脱灰 → 收敛真实 CD（只需 globalTurn + skillReady）
-  finalizeCdPending({ globalTurn, skillReady });
+  runCdLearningAutomation({ type: CdLearningEvent.FINALIZE_PENDING, snap: { globalTurn, skillReady } });
   // F4: 上回合 OFC/FRD 开火的 boss 本回合是否已死 → 按 MID 学击杀率（只需 globalTurn + view）
   finalizeBigSkillPending({ globalTurn, view });
   // F5（默认 OFF，开关关时零开销）：从本回合战斗日志学每 MID 单发最大伤害 + 类型；attach 给 decide。

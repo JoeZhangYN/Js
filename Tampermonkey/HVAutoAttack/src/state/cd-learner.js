@@ -15,13 +15,23 @@ import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { SKILL_REGISTRY } from "./skill-registry.js";
 
+const EVENT_RECORD_FIRE = "recordFire";
+const EVENT_FINALIZE_PENDING = "finalizePending";
+const EVENT_READ_CD = "readCd";
+
+export const CdLearningEvent = Object.freeze({
+  RECORD_FIRE: EVENT_RECORD_FIRE,
+  FINALIZE_PENDING: EVENT_FINALIZE_PENDING,
+  READ_CD: EVENT_READ_CD,
+});
+
 /**
  * 开火记录（SHELL）：execute-attack 物理分支 recordFire 之后调。
  * @param {string} code SKILL_REGISTRY 的 key
  * @param {string} id 本次开火解析后的 skillId（脱灰探测用 snap.skillReady[id]）
  * @param {import("../core/types.js").BattleSnapshot} snap 仅读 globalTurn
  */
-export function recordCdFire(code, id, snap) {
+function recordCdFire(code, id, snap) {
   if (!SKILL_REGISTRY[code]) return;
   const pending = g("cdLearnPending") || {};
   pending[code] = { firedTurn: snap?.globalTurn ?? g("globalTurn") ?? 0, id };
@@ -32,7 +42,7 @@ export function recordCdFire(code, id, snap) {
  * finalize（snapshot 入口，跑在 rules 前）：对每个在途 pending，若其技能已脱灰则结算 gap。
  * @param {{globalTurn:number, skillReady:Record<string,boolean>}} snap
  */
-export function finalizeCdPending(snap) {
+function finalizeCdPending(snap) {
   const pending = g("cdLearnPending");
   if (!pending) return;
   const now = snap?.globalTurn ?? g("globalTurn") ?? 0;
@@ -71,14 +81,21 @@ function updateLearnedCd(code, sample, cdBase) {
 
 /**
  * 取学到的真实 CD（n>0 返学值，否则 fallback cdBase）。
- * 注：消费方仍需再夹 Math.min(getLearnedCd, cdBase)（防持久化被篡改成过大值）。
+ * 注：消费方仍需再夹 Math.min(learnedCd, cdBase)（防持久化被篡改成过大值）。
  * @param {string} code
  * @returns {number}
  */
-export function getLearnedCd(code) {
+function getLearnedCd(code) {
   const entry = SKILL_REGISTRY[code];
   const fallback = entry ? entry.cdBase : 0;
   const learned = getValue(STORAGE_KEYS.LEARNED_CD, true) || {};
   if (learned[code] && learned[code].n > 0) return learned[code].cd;
   return fallback;
+}
+
+export function runCdLearningAutomation(event = { type: EVENT_READ_CD }) {
+  if (event.type === EVENT_RECORD_FIRE) return recordCdFire(event.code, event.id, event.snap);
+  if (event.type === EVENT_FINALIZE_PENDING) return finalizeCdPending(event.snap);
+  if (event.type === EVENT_READ_CD) return getLearnedCd(event.code);
+  return undefined;
 }

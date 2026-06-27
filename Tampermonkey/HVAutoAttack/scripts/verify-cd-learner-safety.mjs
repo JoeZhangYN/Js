@@ -1,5 +1,5 @@
 // 编译期反退化：钉死 F3 CD 学习器的两道安全夹 + 消费方 DOM 就绪权威，防未来重构悄悄移除。
-// 不变量：① 学习 CD 只能下拉(cd-tracker 夹 Math.min(getLearnedCd, cdBase))；
+// 不变量：① 学习 CD 只能下拉(cd-tracker 夹 Math.min(learnedCd, cdBase))；
 //        ② 拒学膨胀(cd-learner 夹 Math.min(gap, entry.cdBase))；
 //        ③ 真正开火仍以 DOM snap.skillReady 为权威(decide-skill 仍读它) —— 学习值只锐化前瞻。
 import { readFileSync } from "node:fs";
@@ -11,8 +11,8 @@ const read = (rel) => readFileSync(`${SRC}/${rel}`, "utf8");
 const checks = [
   {
     file: "state/cd-tracker.js",
-    re: /Math\.min\(\s*getLearnedCd\([^)]*\)\s*,[^)]*cdBase[^)]*\)/,
-    msg: "cd-tracker.turnsUntilReady 缺 Math.min(getLearnedCd, cdBase) 下拉夹",
+    re: /CdLearningEvent\.READ_CD[\s\S]*Math\.min\(\s*learnedCd\s*,\s*entry\.cdBase\s*\)/,
+    msg: "cd-tracker.turnsUntilReady 缺 CD learner 入口读取 + Math.min(learnedCd, cdBase) 下拉夹",
   },
   {
     file: "state/cd-learner.js",
