@@ -5,9 +5,9 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/day-record.js");
 const ownerTest = path.normalize("src/state/day-record.test.js");
-const idleArena = path.normalize("src/arena/idle-arena.js");
 const lobby = path.normalize("src/pages/lobby-automation.js");
 const encounter = path.normalize("src/pages/encounter.js");
+const idleArena = path.normalize("src/arena/idle-arena.js");
 const violations = [];
 
 function rel(file) {
@@ -31,12 +31,7 @@ function checkFile(file) {
     if (relative !== owner && /\bg\(\s*["']dateNow["']\s*,/.test(line)) {
       violations.push(`${where} dateNow writes belong in state/day-record.js`);
     }
-    if (
-      relative !== owner &&
-      relative !== ownerTest &&
-      relative !== idleArena &&
-      /\bg\(\s*["']dateNow["']\s*\)/.test(line)
-    ) {
+    if (relative !== owner && relative !== ownerTest && /\bg\(\s*["']dateNow["']\s*\)/.test(line)) {
       violations.push(`${where} dateNow reads must be an explicit daily-record consumer`);
     }
   });
@@ -51,7 +46,7 @@ for (const required of ["DayRecordEvent", "runDayRecordAutomation", "TimeEvent.U
   }
 }
 
-for (const consumer of [lobby, encounter]) {
+for (const consumer of [lobby, encounter, idleArena]) {
   const text = fs.readFileSync(path.join(root, consumer), "utf8");
   if (!text.includes("DayRecordEvent.SYNC_UTC_DATE")) {
     violations.push(`${consumer.replaceAll("\\", "/")} must sync daily records through day-record`);

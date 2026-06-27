@@ -9,6 +9,7 @@ import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { pollUntil } from "../core/poll.js";
 import { isIsekai } from "../env.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
+import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
 
 const EVENT_SCHEDULE_NEXT_BATTLE = "scheduleNextBattle";
 const EVENT_START_NEXT_BATTLE = "startNextBattle";
@@ -37,9 +38,10 @@ function resetProgress() {
 
 function startNextBattle() {
   let arena = getValue(STORAGE_KEYS.ARENA, true) || {};
-  if (arena.date !== g("dateNow")) {
+  const dateNow = runDayRecordAutomation({ type: DayRecordEvent.SYNC_UTC_DATE });
+  if (arena.date !== dateNow) {
     arena = {
-      date: g("dateNow"),
+      date: dateNow,
       gr: g("option").idleArenaGrTime,
       done: [],
       token: {
