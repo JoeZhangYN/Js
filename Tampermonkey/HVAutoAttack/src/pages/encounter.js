@@ -5,9 +5,9 @@ import { goto, openUrl } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { readStaminaValue } from "../state/stamina.js";
 import {
-  buildEncounterUrl,
-  canEnterEncounterState,
-  msUntilEncounterReady,
+  msUntilNextEncounterCheck,
+  planEncounterActivation,
+  readEncounterReadiness,
 } from "./encounter-policy.js";
 import {
   loadEncounterKey,
@@ -15,7 +15,6 @@ import {
   readCurrentReState,
 } from "./encounter-state.js";
 
-const MIDNIGHT_TRIGGER_DELAY_MS = 5000;
 const EVENT_LOBBY_TICK = "lobbyTick";
 const EVENT_RANDOM_ENCOUNTER_STARTED = "randomEncounterStarted";
 
@@ -30,45 +29,32 @@ function syncDateNow() {
   return dateNow;
 }
 
-function msUntilNextUtcMidnight(now = new Date()) {
-  const nextMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
-  return nextMidnight - now.getTime();
-}
-
-function nextEncounterCheckDelayMs(now = new Date()) {
-  const jitteredMinute = (60 * 1000 * (Math.random() * 10 + 95)) / 100;
-  return Math.min(jitteredMinute, msUntilNextUtcMidnight(now) + MIDNIGHT_TRIGGER_DELAY_MS);
-}
-
 function scheduleNextLobbyTick(state = readCurrentReState()) {
-  const dueDelay = msUntilEncounterReady(state) + MIDNIGHT_TRIGGER_DELAY_MS;
   setTimeout(
     () => runEncounterAutomation({ type: EVENT_LOBBY_TICK }),
-    Math.min(nextEncounterCheckDelayMs(), dueDelay)
+    msUntilNextEncounterCheck(state)
   );
 }
 
-function canEnterEncounter(state) {
-  return canEnterEncounterState(state);
-}
-
-function enterEncounter(state) {
-  if (!state.key) return;
-  openUrl(buildEncounterUrl(state.key));
+function executeEncounterActivation(state) {
+  const plan = planEncounterActivation(state);
+  if (plan.action !== "enter") return false;
+  openUrl(plan.href);
+  return true;
 }
 
 async function runLobbyTick() {
   syncDateNow();
   let state = readCurrentReState();
-  if (state.count >= 24) {
+  const readiness = readEncounterReadiness(state);
+  if (readiness.dailyLimitReached) {
     scheduleNextLobbyTick(state);
     return false;
   }
-  if (canEnterEncounter(state)) {
-    enterEncounter(state);
+  if (executeEncounterActivation(state)) {
     return true;
   }
-  if (msUntilEncounterReady(state) > 0) {
+  if (readiness.remainingMs > 0) {
     scheduleNextLobbyTick(state);
     return false;
   }
@@ -77,8 +63,7 @@ async function runLobbyTick() {
     return true;
   }
   state = await loadEncounterKey();
-  if (canEnterEncounter(state || {})) {
-    enterEncounter(state);
+  if (executeEncounterActivation(state || {})) {
     return true;
   }
   scheduleNextLobbyTick(readCurrentReState());

@@ -63,6 +63,15 @@ function checkFile(file) {
     if (relative !== policyFile && /\b1800000\b|30\s*\*\s*60\s*\*\s*1000/.test(line)) {
       violations.push(`${where} encounter interval belongs in encounter-policy.js`);
     }
+    if (relative !== policyFile && /\bcount\s*>=\s*24\b/.test(line)) {
+      violations.push(`${where} encounter daily limit belongs in encounter-policy.js`);
+    }
+    if (
+      relative !== policyFile &&
+      /Date\.UTC\(.*getUTCFullYear\(\).*getUTCMonth\(\).*getUTCDate\(\)\s*\+\s*1/.test(line)
+    ) {
+      violations.push(`${where} encounter midnight scheduling belongs in encounter-policy.js`);
+    }
     if (relative !== policyFile && /encounter=\(\[A-Za-z0-9=\]\+\)/.test(line)) {
       violations.push(`${where} encounter key parsing belongs in encounter-policy.js`);
     }

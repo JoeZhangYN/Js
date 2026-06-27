@@ -1,4 +1,8 @@
 export const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000;
+export const ENCOUNTER_DAILY_LIMIT = 24;
+export const ENCOUNTER_MIDNIGHT_GRACE_MS = 5000;
+
+const ONE_MINUTE_MS = 60 * 1000;
 
 export function defaultEncounterState() {
   return { date: 0, key: "", count: 0, clear: true };
@@ -12,6 +16,12 @@ function isDifferentUtcDay(dateMs, nowMs) {
     date.getUTCMonth() !== now.getUTCMonth() ||
     date.getUTCFullYear() !== now.getUTCFullYear()
   );
+}
+
+function msUntilNextUtcMidnight(nowMs) {
+  const now = new Date(nowMs);
+  const nextMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  return nextMidnight - nowMs;
 }
 
 export function resetEncounterDay(nowMs = Date.now()) {
@@ -39,6 +49,39 @@ export function msUntilEncounterReady(state, nowMs = Date.now()) {
 export function canEnterEncounterState(state, nowMs = Date.now()) {
   const normalized = normalizeEncounterState(state, nowMs);
   return Boolean(normalized.key && !normalized.clear);
+}
+
+export function readEncounterReadiness(state, nowMs = Date.now()) {
+  const normalized = normalizeEncounterState(state, nowMs);
+  return {
+    state: normalized,
+    remainingMs: msUntilEncounterReady(normalized, nowMs),
+    canEnter: canEnterEncounterState(normalized, nowMs),
+    dailyLimitReached: normalized.count >= ENCOUNTER_DAILY_LIMIT,
+  };
+}
+
+export function msUntilNextEncounterCheck(
+  state,
+  { nowMs = Date.now(), jitter = Math.random() } = {}
+) {
+  const readiness = readEncounterReadiness(state, nowMs);
+  const jitteredMinute = ONE_MINUTE_MS * (0.95 + Math.max(0, Math.min(1, jitter)) * 0.1);
+  const readyDelay = readiness.remainingMs + ENCOUNTER_MIDNIGHT_GRACE_MS;
+  const midnightDelay = msUntilNextUtcMidnight(nowMs) + ENCOUNTER_MIDNIGHT_GRACE_MS;
+  return Math.min(jitteredMinute, readyDelay, midnightDelay);
+}
+
+export function planEncounterActivation(state, { force = false, nowMs = Date.now() } = {}) {
+  const readiness = readEncounterReadiness(state, nowMs);
+  if (readiness.canEnter || (force && readiness.state.key)) {
+    return {
+      action: "enter",
+      href: buildEncounterUrl(readiness.state.key),
+      state: readiness.state,
+    };
+  }
+  return { action: "load", state: readiness.state };
 }
 
 export function parseEncounterKeyFromSearch(search = "") {

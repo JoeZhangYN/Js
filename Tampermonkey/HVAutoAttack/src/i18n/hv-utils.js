@@ -754,9 +754,10 @@ const bindRe = function (re, ctx) {
     re.set();
   };
   re.refresh = function () {
-    const remain = window.HVAA_encounter?.msUntilEncounterReady(re.json) ?? 0;
-    if (remain > 0) {
-      re.button.textContent = time_format(remain, 2) + ` [${re.json.count}]`;
+    const readiness = window.HVAA_encounter?.readEncounterReadiness(re.json) ?? { state: re.json, remainingMs: 0 };
+    re.json = readiness.state;
+    if (readiness.remainingMs > 0) {
+      re.button.textContent = time_format(readiness.remainingMs, 2) + ` [${re.json.count}]`;
       re.beep = true;
     } else {
       re.button.textContent = (!re.json.clear ? '已错失' : '遭遇战') + ` [${re.json.count}]`;
@@ -771,7 +772,8 @@ const bindRe = function (re, ctx) {
     if (re.type === 'ba') {
       re.load();
     } else if (re.type === 'hv') {
-      if (!re.json.clear || engage) {
+      const plan = window.HVAA_encounter?.planEncounterActivation(re.json, { force: engage });
+      if (plan?.action === 'enter') {
         re.engage();
       } else {
         re.load(true);
@@ -781,7 +783,8 @@ const bindRe = function (re, ctx) {
       re.button.textContent = '检查中...';
       const html = await $ajax.fetch('https://hentaiverse.org/');
       if (html.includes('<div id="navbar">')) {
-        if (!re.json.clear || engage) {
+        const plan = window.HVAA_encounter?.planEncounterActivation(re.json, { force: engage });
+        if (plan?.action === 'enter') {
           re.engage();
         } else {
           re.load(true);
@@ -814,17 +817,16 @@ const bindRe = function (re, ctx) {
     re.start();
   };
   re.engage = function () {
-    if (!re.json.key) {
+    const plan = window.HVAA_encounter?.planEncounterActivation(re.json, { force: true });
+    if (plan?.action !== 'enter') {
       return;
     }
-    const href = window.HVAA_encounter?.buildEncounterUrl(re.json.key);
-    if (!href) { return; }
     if (re.type === 'ba') {
       return;
     } else if (re.type === 'hv') {
-      location.href = href;
+      location.href = plan.href;
     } else if (re.type === 'eh') {
-      window.open((ctx.config.settings.reGalleryAlt ? 'http://alt.hentaiverse.org/' : 'https://hentaiverse.org/') + href, '_blank');
+      window.open((ctx.config.settings.reGalleryAlt ? 'http://alt.hentaiverse.org/' : 'https://hentaiverse.org/') + plan.href, '_blank');
       re.json.clear = true;
       re.start();
     }
