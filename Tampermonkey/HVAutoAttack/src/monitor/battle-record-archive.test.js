@@ -55,6 +55,33 @@ describe("runBattleRecordArchiveAutomation", () => {
     ).toBe(current);
   });
 
+  it("reads existing current records without creating a default record", () => {
+    const current = { self: { _turn: 3 } };
+    const runtime = deps({ [STORAGE_KEYS.STATS]: current });
+
+    expect(
+      runBattleRecordArchiveAutomation(
+        {
+          type: BattleRecordArchiveEvent.READ_CURRENT,
+          currentKey: STORAGE_KEYS.STATS,
+        },
+        runtime
+      )
+    ).toBe(current);
+  });
+
+  it("returns null when no current record exists", () => {
+    expect(
+      runBattleRecordArchiveAutomation(
+        {
+          type: BattleRecordArchiveEvent.READ_CURRENT,
+          currentKey: STORAGE_KEYS.STATS,
+        },
+        deps()
+      )
+    ).toBeNull();
+  });
+
   it("stores the current battle record before the final round", () => {
     const runtime = deps();
 

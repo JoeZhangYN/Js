@@ -1,6 +1,5 @@
 // 每回合技能/物品使用统计 + 战斗结束聚合。
 // file-size-gate: exempt phase-4-monolith
-import { setValue, getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../battle/pause-automation.js";
@@ -60,6 +59,23 @@ function readCurrentUsageStats() {
     currentKey: STORAGE_KEYS.STATS,
     defaultRecord: createDefaultUsageStats(),
     startTimeField: "self._startTime",
+  });
+}
+
+function readExistingUsageStats() {
+  return runBattleRecordArchiveAutomation({
+    type: BattleRecordArchiveEvent.READ_CURRENT,
+    currentKey: STORAGE_KEYS.STATS,
+  });
+}
+
+function storeCurrentUsageStats(stats) {
+  runBattleRecordArchiveAutomation({
+    type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE,
+    currentKey: STORAGE_KEYS.STATS,
+    historyKey: STORAGE_KEYS.STATS_OLD,
+    record: stats,
+    recordEach: false,
   });
 }
 
@@ -198,7 +214,7 @@ function recordBattleActionUsage(parm) {
     console.table(stats);
     runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
   }
-  setValue(STORAGE_KEYS.STATS, stats);
+  storeCurrentUsageStats(stats);
 }
 
 function recordCompletedBattleUsage() {
@@ -206,7 +222,7 @@ function recordCompletedBattleUsage() {
     type: BattleMonitorRuntimeEvent.USAGE_COMPLETION_CONTEXT,
   });
   if (!context.recordUsage) return;
-  const stats = getValue(STORAGE_KEYS.STATS, true);
+  const stats = readExistingUsageStats();
   if (!stats) return;
   stats.self._monster += context.monsterAll;
   stats.self._boss += context.bossAll;

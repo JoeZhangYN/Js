@@ -258,6 +258,12 @@ function checkUsageImplementation() {
   if (/\bg\(\s*["']option["']\s*\)\.recordUsage/.test(text)) {
     violations.push(`${rel(usageFile)} must not read recordUsage option directly`);
   }
+  if (/\b(?:getValue|setValue)\(\s*STORAGE_KEYS\.STATS\b/.test(text)) {
+    violations.push(`${rel(usageFile)} must read/write usage records through battle-record-archive`);
+  }
+  if (/from\s+["']\.\.\/state\/storage\.js["']/.test(text)) {
+    violations.push(`${rel(usageFile)} must not import storage directly`);
+  }
 }
 
 function checkRecordArchiveEntry() {
@@ -273,10 +279,13 @@ function checkRecordArchiveEntry() {
   }
   if (
     !archiveText.includes("READ_OR_CREATE_CURRENT") ||
+    !archiveText.includes("READ_CURRENT") ||
     !archiveText.includes("STORE_OR_ARCHIVE") ||
     !archiveText.includes("CLEAR_RECORD_SET")
   ) {
-    violations.push(`${rel(archiveFile)} must own record creation, archiving, and clearing events`);
+    violations.push(
+      `${rel(archiveFile)} must own record reads, creation, archiving, and clearing events`
+    );
   }
   for (const [label, text] of [
     ["src/monitor/drop-monitor.js", dropText],
