@@ -1,21 +1,15 @@
 // 入口路由：识别页面 (e-hentai redirect / lobby / riddle / battle) 并分派。
 // file-size-gate: exempt phase-4-init
-import { gE, cE } from "../dom/query.js";
+import { gE } from "../dom/query.js";
 import { setValue, getValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { scheduleReload, openUrl } from "../core/navigate.js";
-import { time } from "../core/time.js";
 import { addStyle } from "../style/inject.js";
 import { riddleAlert } from "./riddle.js";
 import { registerExportMenu } from "../state/riddle-dataset.js";
 import { runLobbyAutomation } from "./lobby-automation.js";
-import { main, pauseChange } from "../battle/main-loop.js";
-import { reloader } from "../battle/reloader.js";
-import { newRound } from "../battle/new-round.js";
-import { setupScanWatch } from "../battle/monster-db-scan.js";
-import { syncMonsterDb } from "../battle/monster-db-sync.js";
-import { renderResistPanel } from "../monitor/monster-resist-panel.js";
+import { runBattleAutomation } from "../battle/battle-automation.js";
 import { loadCdState } from "../state/cd-tracker.js";
 import { setupPageRefresh } from "../alarm/page-refresh.js";
 import { setupForgeCost } from "./showequip-forge-cost.js";
@@ -121,44 +115,7 @@ export function init() {
       riddleAlert(); // 答题警报
     }
   } else if (kind === PageKind.BATTLE) {
-    // 战斗中
-    const box2 = gE("#battle_main").appendChild(cE("div"));
-    box2.id = "hvAABox2";
-    if (g("option").pauseButton) {
-      const button = box2.appendChild(cE("button"));
-      button.innerHTML = "<l0>暂停</l0><l1>暫停</l1><l2>Pause</l2>";
-      button.className = "pauseChange";
-      button.onclick = function () {
-        pauseChange();
-      };
-    }
-    if (g("option").pauseHotkey) {
-      document.addEventListener(
-        "keydown",
-        (e) => {
-          if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
-            return;
-          if (e.key === g("option").pauseHotkeyKey) {
-            pauseChange();
-          }
-        },
-        false
-      );
-    }
-    reloader();
-    g("attackStatus", g("option").attackStatus);
-    g("timeNow", time(0));
-    g("runSpeed", 1);
-    newRound();
-    // C: 怪物九抗数据层 + 展示（纯展示，未接攻击决策；后续可加 option 开关）
-    syncMonsterDb(); // 每日下载社区全量库（内部日期 gate，异步不阻塞主循环）
-    setupScanWatch(renderResistPanel); // scan 自采监听 → 入库后刷新面板（newRound 末尾负责首刷/每轮刷新）
-    if (g("option").recordEach && !getValue("battleCode"))
-      setValue(
-        "battleCode",
-        `${time(1)}: ${g("roundType").toUpperCase()}-${g("roundAll")}`
-      );
-    main();
+    runBattleAutomation();
   } else {
     runLobbyAutomation();
   }

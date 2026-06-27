@@ -1,0 +1,65 @@
+// 战斗页自动化编排入口：composition root 只调用本入口。
+import { gE, cE } from "../dom/query.js";
+import { setValue, getValue } from "../state/storage.js";
+import { g } from "../state/store.js";
+import { time } from "../core/time.js";
+import { renderResistPanel } from "../monitor/monster-resist-panel.js";
+import { reloader } from "./reloader.js";
+import { newRound } from "./new-round.js";
+import { main, pauseChange } from "./main-loop.js";
+import { syncMonsterDb } from "./monster-db-sync.js";
+import { setupScanWatch } from "./monster-db-scan.js";
+
+function setupPauseControls() {
+  const box2 = gE("#battle_main").appendChild(cE("div"));
+  box2.id = "hvAABox2";
+  if (g("option").pauseButton) {
+    const button = box2.appendChild(cE("button"));
+    button.innerHTML = "<l0>暂停</l0><l1>暫停</l1><l2>Pause</l2>";
+    button.className = "pauseChange";
+    button.onclick = function () {
+      pauseChange();
+    };
+  }
+  if (g("option").pauseHotkey) {
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+          return;
+        }
+        if (e.key === g("option").pauseHotkeyKey) pauseChange();
+      },
+      false
+    );
+  }
+}
+
+function initBattleRuntime() {
+  g("attackStatus", g("option").attackStatus);
+  g("timeNow", time(0));
+  g("runSpeed", 1);
+}
+
+function setupMonsterKnowledge() {
+  syncMonsterDb();
+  setupScanWatch(renderResistPanel);
+}
+
+function recordBattleCode() {
+  if (!g("option").recordEach || getValue("battleCode")) return;
+  setValue(
+    "battleCode",
+    `${time(1)}: ${g("roundType").toUpperCase()}-${g("roundAll")}`
+  );
+}
+
+export function runBattleAutomation() {
+  setupPauseControls();
+  reloader();
+  initBattleRuntime();
+  newRound();
+  setupMonsterKnowledge();
+  recordBattleCode();
+  main();
+}
