@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../state/store.js", () => ({ g: mocks.g }));
 vi.mock("../state/option.js", () => ({
-  OptionEvent: Object.freeze({ READ: "read" }),
+  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
 vi.mock("./battle-action-speed.js", () => ({
@@ -28,7 +28,7 @@ beforeEach(() => {
 describe("runBattleStartRuntimeAutomation", () => {
   it("initializes battle runtime attack mode and action speed", () => {
     const deps = {
-      readOption: vi.fn(() => ({ attackStatus: "magic" })),
+      readOptionField: vi.fn(() => "magic"),
       write: vi.fn(),
       startSpeed: vi.fn(),
     };
@@ -38,6 +38,7 @@ describe("runBattleStartRuntimeAutomation", () => {
     ).toBe(true);
 
     expect(deps.write).toHaveBeenCalledWith("attackStatus", "magic");
+    expect(deps.readOptionField).toHaveBeenCalledWith("attackStatus");
     expect(deps.startSpeed).toHaveBeenCalledTimes(1);
   });
 
@@ -46,13 +47,17 @@ describe("runBattleStartRuntimeAutomation", () => {
   });
 
   it("reads battle start runtime options through the option entry on the default path", () => {
-    mocks.runOptionAutomation.mockReturnValue({ attackStatus: "melee" });
+    mocks.runOptionAutomation.mockReturnValue("melee");
 
     expect(runBattleStartRuntimeAutomation({ type: BattleStartRuntimeEvent.BATTLE_STARTED })).toBe(
       true
     );
 
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "read" });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "attackStatus",
+      fallback: undefined,
+    });
     expect(mocks.g).toHaveBeenCalledWith("attackStatus", "melee");
     expect(mocks.runBattleActionSpeedAutomation).toHaveBeenCalledWith({
       type: "battleStarted",

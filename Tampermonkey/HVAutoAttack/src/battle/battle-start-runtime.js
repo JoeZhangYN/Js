@@ -9,7 +9,7 @@ export const BattleStartRuntimeEvent = Object.freeze({
 });
 
 function startRuntime(deps) {
-  deps.write("attackStatus", deps.readOption().attackStatus);
+  deps.write("attackStatus", deps.readOptionField("attackStatus"));
   deps.startSpeed();
   return true;
 }
@@ -17,7 +17,8 @@ function startRuntime(deps) {
 export function runBattleStartRuntimeAutomation(
   event = { type: EVENT_BATTLE_STARTED },
   deps = {
-    readOption: () => runOptionAutomation({ type: OptionEvent.READ }) || {},
+    readOptionField: (key, fallback) =>
+      runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback }),
     write: (key, value) => g(key, value),
     startSpeed: () =>
       runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.BATTLE_STARTED }),
