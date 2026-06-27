@@ -15,8 +15,6 @@ export const STORAGE_KEYS = Object.freeze({
   ROUND_NOW: "roundNow",
   ROUND_ALL: "roundAll",
   MONSTER_STATUS: "monsterStatus",
-  ENCOUNTER: "encounter",
-  LAST_ENCOUNTER: "lastEncounter",
   URL: "url",
   BACKUP: "backup",
   // Phase 6 新增：

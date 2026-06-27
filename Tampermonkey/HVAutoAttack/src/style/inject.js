@@ -52,7 +52,6 @@ export function addStyle(lang) {
     ".hvAAArenaLevels{display:none;}",
     ".hvAAConfig{width:100%;height:16px;}",
     ".hvAAButtonBox{position:absolute;left:0;right:0;bottom:12px;}",
-    ".lastEncounter{font-weight:bold;font-size:large;position:absolute;top:32px;left:1240px;text-decoration:none;}",
     ".quickSiteBar{position:absolute;top:55px;left:1240px;font-size:18px;text-align:left;width:calc(99% - 1236px);}",
     ".quickSiteBar>span{display:block;max-height:24px;overflow:hidden;text-overflow:ellipsis;}",
     ".quickSiteBar>span>a{text-decoration:none;}",

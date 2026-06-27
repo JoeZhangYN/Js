@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/pages/encounter.js");
+const stateHelper = path.normalize("src/pages/encounter-state.js");
 const violations = [];
 
 function walk(dir) {
@@ -29,16 +30,37 @@ function checkFile(file) {
   lines.forEach((line, index) => {
     const where = `${rel(file)}:${index + 1}`;
     if (
-      relative !== owner &&
       /\b(?:getValue|setValue|delValue)\(\s*["']encounter["']/.test(line)
     ) {
       violations.push(
-        `${where} direct encounter storage access; use runEncounterAutomation(event)`
+        `${where} legacy hvAA encounter storage is forbidden; use hvut_re through runEncounterAutomation(event)`
+      );
+    }
+    if (
+      relative !== owner &&
+      relative !== stateHelper &&
+      /\bhvut_re\b/.test(line)
+    ) {
+      violations.push(
+        `${where} direct hvut_re access outside encounter boundary is forbidden`
+      );
+    }
+    if (
+      relative !== owner &&
+      /from\s+["']\.\/encounter-state\.js["']/.test(line)
+    ) {
+      violations.push(
+        `${where} encounter-state is internal; import runEncounterAutomation(event)`
       );
     }
     if (/\bencounterCheck\b/.test(line)) {
       violations.push(
         `${where} legacy encounterCheck name is forbidden; use runEncounterAutomation(event)`
+      );
+    }
+    if (/\blastEncounter\b/.test(line)) {
+      violations.push(
+        `${where} legacy lastEncounter cache/UI is forbidden; use hvut_re countdown`
       );
     }
   });

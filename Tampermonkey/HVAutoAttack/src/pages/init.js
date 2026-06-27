@@ -46,18 +46,15 @@ export function init() {
     setupEquipPercentile();
   }
   if (kind === PageKind.EHENTAI) {
+    const eventLink = gE("#eventpane>div>a");
     let href =
       getValue("url") ||
       (document.referrer.includes("hentaiverse.org")
         ? new URL(document.referrer).origin
         : "https://hentaiverse.org");
-    href = gE("#eventpane>div>a")
-      ? `${href}/${gE("#eventpane>div>a").href.split("/")[3]}`
-      : getValue("lastEncounter") || href;
+    if (eventLink) href = `${href}/${eventLink.href.split("/")[3]}`;
     if (window.location.href === "https://e-hentai.org/news.php?encounter") {
       openUrl(href);
-    } else if (gE("#eventpane>div>a")) {
-      setValue("lastEncounter", href);
     }
     return;
   }

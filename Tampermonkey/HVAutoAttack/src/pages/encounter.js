@@ -1,14 +1,16 @@
 // 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
-import { gE, cE } from "../dom/query.js";
-import { setValue, getValue, delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
-import { _alert } from "../core/lang.js";
 import { post } from "../dom/http.js";
 import { goto, openUrl } from "../core/navigate.js";
 import { time } from "../core/time.js";
 import { readStaminaValue } from "../state/stamina.js";
+import {
+  loadEncounterKey,
+  markRandomEncounterStarted,
+  msUntilReady,
+  readCurrentReState,
+} from "./encounter-state.js";
 
-const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000;
 const MIDNIGHT_TRIGGER_DELAY_MS = 5000;
 const EVENT_LOBBY_TICK = "lobbyTick";
 const EVENT_RANDOM_ENCOUNTER_STARTED = "randomEncounterStarted";
@@ -41,75 +43,51 @@ function nextEncounterCheckDelayMs(now = new Date()) {
   );
 }
 
-function readTodayRecord(dateNow) {
-  const savedEncounter = getValue("encounter", true);
-  if (savedEncounter && savedEncounter.dateNow === dateNow) {
-    return savedEncounter;
-  }
-  return {
-    dateNow,
-    time: 0,
-  };
-}
-
-function markRandomEncounterStarted() {
-  const dateNow = syncDateNow();
-  const encounter = readTodayRecord(dateNow);
-  encounter.lastTime = time(0);
-  encounter.time++;
-  setValue("encounter", encounter);
-}
-
-function scheduleNextLobbyTick() {
+function scheduleNextLobbyTick(state = readCurrentReState()) {
+  const dueDelay = msUntilReady(state) + MIDNIGHT_TRIGGER_DELAY_MS;
   setTimeout(
     () => runEncounterAutomation({ type: EVENT_LOBBY_TICK }),
-    nextEncounterCheckDelayMs()
+    Math.min(nextEncounterCheckDelayMs(), dueDelay)
   );
 }
 
-function runLobbyTick() {
-  const dateNow = syncDateNow();
-  const timeNow = time(0);
-  const encounter = readTodayRecord(dateNow);
-  if (
-    !encounter.lastTime ||
-    (timeNow - encounter.lastTime >= ENCOUNTER_INTERVAL_MS &&
-      encounter.time < 24)
-  ) {
-    if (
-      g("option").restoreStamina &&
-      readStaminaValue() <= g("option").staminaLow
-    ) {
-      post(window.location.href, goto, "recover=stamina");
-      return;
-    }
-    encounter.lastTime = timeNow;
-    setValue("encounter", encounter);
-    openUrl("https://e-hentai.org/news.php?encounter");
+function canEnterEncounter(state) {
+  return state.key && !state.clear;
+}
+
+function enterEncounter(state) {
+  if (!state.key) return;
+  openUrl(`?s=Battle&ss=ba&encounter=${state.key}`);
+}
+
+async function runLobbyTick() {
+  syncDateNow();
+  let state = readCurrentReState();
+  if (state.count >= 24) {
+    scheduleNextLobbyTick(state);
     return;
   }
-  let lastEncounter;
-  if (gE(".lastEncounter")) {
-    lastEncounter = gE(".lastEncounter");
-  } else {
-    lastEncounter = gE("body").appendChild(cE("a"));
-    lastEncounter.className = "lastEncounter";
-    lastEncounter.title = `${time(3, encounter.lastTime)}\nEncounter TIme: ${
-      encounter.time
-    }`;
-    lastEncounter.href = "https://e-hentai.org/news.php?encounter";
-    lastEncounter.onclick = function () {
-      if (
-        encounter.time >= 24 &&
-        _alert(1, "是否重置", "是否重置", "Whether to reset")
-      )
-        delValue("encounter");
-    };
+  if (canEnterEncounter(state)) {
+    enterEncounter(state);
+    return;
   }
-  lastEncounter.innerHTML = `${Math.floor(
-    (timeNow - encounter.lastTime) / 1000 / 60
-  )}<l0>分钟前</l0><l1>分鐘前</l1><l2> mins before</l2>`;
-  scheduleNextLobbyTick();
+  if (msUntilReady(state) > 0) {
+    scheduleNextLobbyTick(state);
+    return;
+  }
+  if (
+    g("option").restoreStamina &&
+    readStaminaValue() <= g("option").staminaLow
+  ) {
+    post(window.location.href, goto, "recover=stamina");
+    return;
+  }
+  state = await loadEncounterKey();
+  if (canEnterEncounter(state || {})) {
+    enterEncounter(state);
+    return;
+  }
+  scheduleNextLobbyTick(readCurrentReState());
 }
 
 export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
