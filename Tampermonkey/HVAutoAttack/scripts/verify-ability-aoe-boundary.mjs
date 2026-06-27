@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/pages/ability-page.js");
+const ownerTest = path.normalize("src/pages/ability-page.test.js");
 const startupFile = path.join(root, "src/pages/app-startup.js");
 const lobbyFile = path.join(root, "src/pages/lobby-automation.js");
 const violations = [];
@@ -27,8 +28,15 @@ function checkFile(file) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("//")) return;
     const where = `${rel(file)}:${index + 1}`;
-    if (/\b(?:getValue|setValue)\(\s*["']spellAoe["']/.test(line)) {
+    if (
+      relative !== owner &&
+      relative !== ownerTest &&
+      /\b(?:getValue|setValue)\(\s*["']spellAoe["']/.test(line)
+    ) {
       violations.push(`${where} spellAoe storage belongs in runAbilityAoeAutomation(event)`);
+    }
+    if (relative !== owner && relative !== ownerTest && /\bSTORAGE_KEYS\.SPELL_AOE\b/.test(line)) {
+      violations.push(`${where} spellAoe storage key belongs in runAbilityAoeAutomation(event)`);
     }
     if (relative !== owner && /\bparseAbilityPage\b/.test(line)) {
       violations.push(`${where} parseAbilityPage is internal; use runAbilityAoeAutomation(event)`);
