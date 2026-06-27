@@ -36,6 +36,16 @@ if (!owner) {
   if (LEGACY_EXPORT_RE.test(source)) {
     violations.push("legacy navigation helpers must stay private: goto/scheduleReload/openUrl");
   }
+  for (const required of ["event.seconds", "event.minutes", "event.milliseconds"]) {
+    if (!source.includes(required)) {
+      violations.push(`NavigationEvent.SCHEDULE_RELOAD must normalize ${required}`);
+    }
+  }
+  if (/\bevent\.sec\b/.test(source)) {
+    violations.push(
+      "legacy SCHEDULE_RELOAD sec field must stay deleted; use seconds/minutes/milliseconds"
+    );
+  }
 }
 
 for (const file of files) {
@@ -43,6 +53,9 @@ for (const file of files) {
   const source = stripComments(readFileSync(file.abs, "utf8"));
   if (LEGACY_IMPORT_RE.test(source)) {
     violations.push(`src/${file.rel} imports legacy navigation helper directly`);
+  }
+  if (/NavigationEvent\.SCHEDULE_RELOAD[\s\S]{0,120}\bsec\s*:/.test(source)) {
+    violations.push(`src/${file.rel} uses legacy SCHEDULE_RELOAD sec field`);
   }
 }
 

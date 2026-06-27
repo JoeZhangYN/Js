@@ -29,7 +29,7 @@ describe("runPageRefreshAutomation", () => {
         { jitter: 0, scheduleReload }
       )
     ).toBe(true);
-    expect(scheduleReload).toHaveBeenLastCalledWith(30 * 60);
+    expect(scheduleReload).toHaveBeenLastCalledWith(30);
 
     expect(
       runPageRefreshAutomation(
@@ -40,7 +40,7 @@ describe("runPageRefreshAutomation", () => {
         { jitter: 1, scheduleReload }
       )
     ).toBe(true);
-    expect(scheduleReload).toHaveBeenLastCalledWith(31 * 60);
+    expect(scheduleReload).toHaveBeenLastCalledWith(31);
   });
 
   it("schedules unknown page reload through the same refresh entry", () => {
@@ -55,6 +55,6 @@ describe("runPageRefreshAutomation", () => {
       )
     ).toBe(true);
 
-    expect(scheduleReload).toHaveBeenCalledWith(5 * 60);
+    expect(scheduleReload).toHaveBeenCalledWith(5);
   });
 });

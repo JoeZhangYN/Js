@@ -45,7 +45,7 @@ export function runBattleCompletionAutomation(
     scheduleReload: (sec) =>
       runNavigationAutomation({
         type: NavigationEvent.SCHEDULE_RELOAD,
-        sec,
+        seconds: sec,
       }),
   }
 ) {

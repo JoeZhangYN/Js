@@ -21,12 +21,44 @@ describe("runNavigationAutomation", () => {
 
     const timer = runNavigationAutomation({
       type: NavigationEvent.SCHEDULE_RELOAD,
-      sec: 3,
+      seconds: 3,
     });
 
     expect(timer).toBeTruthy();
     expect(vi.getTimerCount()).toBe(1);
     clearTimeout(timer);
+
+    vi.useRealTimers();
+  });
+
+  it("normalizes reload delay units inside the navigation entry", () => {
+    vi.useFakeTimers();
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+
+    const secondsTimer = runNavigationAutomation({
+      type: NavigationEvent.SCHEDULE_RELOAD,
+      seconds: 3,
+    });
+    const minutesTimer = runNavigationAutomation({
+      type: NavigationEvent.SCHEDULE_RELOAD,
+      minutes: 5,
+    });
+    const millisecondsTimer = runNavigationAutomation({
+      type: NavigationEvent.SCHEDULE_RELOAD,
+      milliseconds: 250,
+    });
+
+    expect(secondsTimer).toBeTruthy();
+    expect(minutesTimer).toBeTruthy();
+    expect(millisecondsTimer).toBeTruthy();
+    expect(setTimeoutSpy).toHaveBeenNthCalledWith(1, expect.any(Function), 3000);
+    expect(setTimeoutSpy).toHaveBeenNthCalledWith(2, expect.any(Function), 5 * 60 * 1000);
+    expect(setTimeoutSpy).toHaveBeenNthCalledWith(3, expect.any(Function), 250);
+    expect(vi.getTimerCount()).toBe(3);
+    clearTimeout(secondsTimer);
+    clearTimeout(minutesTimer);
+    clearTimeout(millisecondsTimer);
+    setTimeoutSpy.mockRestore();
 
     vi.useRealTimers();
   });

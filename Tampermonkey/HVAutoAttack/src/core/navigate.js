@@ -17,12 +17,16 @@ function goto() {
 }
 
 /**
- * 延时重载页面：sec 秒后调 goto()。
- * @param {number} sec 延迟秒数
+ * 延时重载页面。
  * @returns {number} setTimeout 句柄（供 clearTimeout 取消，如 reloader 回合结束取消 delayReload）
  */
-function scheduleReload(sec) {
-  return setTimeout(goto, sec * 1000);
+function scheduleReload(event) {
+  let delayMs;
+  if (typeof event.milliseconds !== "undefined") delayMs = event.milliseconds;
+  else if (typeof event.seconds !== "undefined") delayMs = event.seconds * 1000;
+  else if (typeof event.minutes !== "undefined") delayMs = event.minutes * 60 * 1000;
+  else return false;
+  return setTimeout(goto, delayMs);
 }
 
 /**
@@ -40,7 +44,7 @@ export function runNavigationAutomation(event = { type: EVENT_RELOAD_NOW }) {
     return true;
   }
   if (event.type === EVENT_SCHEDULE_RELOAD) {
-    return scheduleReload(event.sec);
+    return scheduleReload(event);
   }
   if (event.type === EVENT_OPEN_URL) {
     openUrl(event.url, event.newTab);

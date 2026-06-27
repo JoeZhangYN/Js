@@ -13,44 +13,44 @@ import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 
 const EVENT_GAME_PAGE_READY = "gamePageReady";
 const EVENT_UNKNOWN_PAGE_READY = "unknownPageReady";
-const UNKNOWN_PAGE_RELOAD_SEC = 5 * 60;
+const UNKNOWN_PAGE_RELOAD_MINUTES = 5;
 
 export const PageRefreshEvent = Object.freeze({
   GAME_PAGE_READY: EVENT_GAME_PAGE_READY,
   UNKNOWN_PAGE_READY: EVENT_UNKNOWN_PAGE_READY,
 });
 
-function planPageRefreshDelayMs(option, { jitter = Math.random() } = {}) {
+function planPageRefreshDelayMinutes(option, { jitter = Math.random() } = {}) {
   if (!option || !option.pageRefresh) return;
   const minutes = Number(option.pageRefreshMinutes) || 30;
   if (minutes <= 0) return;
   const boundedJitter = Math.max(0, Math.min(0.999999, jitter));
   const jitterMinutes = Math.floor(boundedJitter * 2); // 0~1 分钟抖动
-  return (minutes + jitterMinutes) * 60 * 1000;
+  return minutes + jitterMinutes;
 }
 
 export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }, deps = {}) {
   if (event.type === EVENT_UNKNOWN_PAGE_READY) {
     const reload =
       deps.scheduleReload ||
-      ((sec) =>
+      ((minutes) =>
         runNavigationAutomation({
           type: NavigationEvent.SCHEDULE_RELOAD,
-          sec,
+          minutes,
         }));
-    reload(UNKNOWN_PAGE_RELOAD_SEC);
+    reload(UNKNOWN_PAGE_RELOAD_MINUTES);
     return true;
   }
   if (event.type !== EVENT_GAME_PAGE_READY) return false;
-  const delayMs = planPageRefreshDelayMs(event.option, deps);
-  if (!delayMs) return false;
+  const delayMinutes = planPageRefreshDelayMinutes(event.option, deps);
+  if (!delayMinutes) return false;
   const reload =
     deps.scheduleReload ||
-    ((sec) =>
+    ((minutes) =>
       runNavigationAutomation({
         type: NavigationEvent.SCHEDULE_RELOAD,
-        sec,
+        minutes,
       }));
-  reload(delayMs / 1000);
+  reload(delayMinutes);
   return true;
 }

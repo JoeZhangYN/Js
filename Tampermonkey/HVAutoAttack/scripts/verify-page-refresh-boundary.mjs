@@ -49,7 +49,7 @@ function checkFile(file) {
       relative !== owner &&
       relative !== testFile &&
       /\bscheduleReload\b/.test(line) &&
-      /page refresh|UNKNOWN_PAGE_READY|5\s*\*\s*60/.test(line)
+      /page refresh|UNKNOWN_PAGE_READY|UNKNOWN_PAGE_RELOAD_MINUTES/.test(line)
     ) {
       violations.push(`${where} page reload scheduling belongs in alarm/page-refresh.js`);
     }
@@ -62,7 +62,7 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (!ownerText.includes("scheduleReload")) {
   violations.push(`${owner.replaceAll("\\", "/")} must use scheduleReload`);
 }
-for (const required of ["PageRefreshEvent", "UNKNOWN_PAGE_READY", "5 * 60"]) {
+for (const required of ["PageRefreshEvent", "UNKNOWN_PAGE_READY", "UNKNOWN_PAGE_RELOAD_MINUTES"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required} page refresh policy`);
   }

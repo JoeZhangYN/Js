@@ -36,7 +36,7 @@ export function installBattleActionEventBridge() {
     if (g("option").delayReload)
       delayReload = runNavigationAutomation({
         type: NavigationEvent.SCHEDULE_RELOAD,
-        sec: g("option").delayReloadTime,
+        seconds: g("option").delayReloadTime,
       });
     runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_STARTED });
   };

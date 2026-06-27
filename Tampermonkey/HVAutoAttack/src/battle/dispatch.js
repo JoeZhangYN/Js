@@ -40,7 +40,7 @@ export function dispatch(result, snap) {
       el.click();
       runNavigationAutomation({
         type: NavigationEvent.SCHEDULE_RELOAD,
-        sec: result.delaySec,
+        seconds: result.delaySec,
       });
       return true;
     }
