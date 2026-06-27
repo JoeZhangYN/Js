@@ -2,10 +2,25 @@
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 
-export function refreshBattleHud() {
-  let logElement = gE(".hvAALog");
+const EVENT_REFRESH = "refresh";
+
+export const BattleHudEvent = Object.freeze({
+  REFRESH: EVENT_REFRESH,
+});
+
+function makeDeps(deps) {
+  return {
+    cE: deps.cE || cE,
+    document: deps.document || document,
+    g: deps.g || g,
+    gE: deps.gE || gE,
+  };
+}
+
+function refreshBattleHud(deps) {
+  let logElement = deps.gE(".hvAALog");
   if (!logElement) {
-    logElement = gE("#hvAABox2").appendChild(cE("div"));
+    logElement = deps.gE("#hvAABox2").appendChild(deps.cE("div"));
     logElement.className = "hvAALog";
   }
   const status = [
@@ -18,22 +33,22 @@ export function refreshBattleHud() {
     "<l0>暗</l0><l1>暗</l1><l2>Forbidden</l2>",
   ];
   logElement.innerHTML = [
-    `Turns: ${g("turn")}`,
-    `<br>Speed: ${g("runSpeed")} t/s`,
-    `<br>Round: ${g("roundNow")}/${g("roundAll")}`,
+    `Turns: ${deps.g("turn")}`,
+    `<br>Speed: ${deps.g("runSpeed")} t/s`,
+    `<br>Round: ${deps.g("roundNow")}/${deps.g("roundAll")}`,
     `<br><l0>攻击模式</l0><l1>攻擊模式</l1><l2>Attack Mode</l2>: ${
-      status[g("attackStatus")]
+      status[deps.g("attackStatus")]
     }`,
-    `<br><l0>敌人</l0><l1>敌人</l1><l2>Monsters</l2>: ${g(
+    `<br><l0>敌人</l0><l1>敌人</l1><l2>Monsters</l2>: ${deps.g(
       "monsterAlive"
-    )}/${g("monsterAll")}`,
+    )}/${deps.g("monsterAll")}`,
     `<br><l0>战役模式</l0><l1>戰役模式</l1><l2>Type</l2>: ${battleInfoType(
-      g("roundType")
+      deps.g("roundType")
     )}`,
   ].join("");
-  document.title = `${g("turn")}||${g("runSpeed")}||${g("roundNow")}/${g(
+  deps.document.title = `${deps.g("turn")}||${deps.g("runSpeed")}||${deps.g("roundNow")}/${deps.g(
     "roundAll"
-  )}||${g("monsterAlive")}/${g("monsterAll")}`;
+  )}||${deps.g("monsterAlive")}/${deps.g("monsterAll")}`;
 }
 
 function battleInfoType(type) {
@@ -51,4 +66,10 @@ function battleInfoType(type) {
     case "gr":
       return "GrindFest";
   }
+}
+
+export function runBattleHudAutomation(event = { type: EVENT_REFRESH }, deps = {}) {
+  if (event.type !== EVENT_REFRESH) return false;
+  refreshBattleHud(makeDeps(deps));
+  return true;
 }

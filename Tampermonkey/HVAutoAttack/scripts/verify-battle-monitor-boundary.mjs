@@ -77,8 +77,11 @@ function checkEntry() {
   if (!text.includes("recordBattleDrops")) {
     violations.push(`${entry.replaceAll("\\", "/")} must own recordBattleDrops completion wiring`);
   }
-  if (!text.includes("refreshBattleHud")) {
-    violations.push(`${entry.replaceAll("\\", "/")} must own refreshBattleHud HUD wiring`);
+  if (!text.includes("runBattleHudAutomation") || !text.includes("BattleHudEvent.REFRESH")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must route HUD refresh through runBattleHudAutomation(event)`);
+  }
+  if (/\brefreshBattleHud\b/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must not call raw refreshBattleHud()`);
   }
   if (!text.includes("runBattleUsageAutomation")) {
     violations.push(`${entry.replaceAll("\\", "/")} must route battle usage through runBattleUsageAutomation(event)`);
@@ -141,7 +144,16 @@ function checkDeletedBattleInfoEntrypoint() {
   const entryText = fs.readFileSync(path.join(root, entry), "utf8");
   const hudText = fs.readFileSync(hudFile, "utf8");
   if (/\bbattleInfo\s*\(/.test(entryText) || /\b(?:export\s+)?function\s+battleInfo\s*\(/.test(hudText)) {
-    violations.push(`${rel(hudFile)} legacy battleInfo() bridge must stay deleted; use refreshBattleHud()`);
+    violations.push(`${rel(hudFile)} legacy battleInfo() bridge must stay deleted; use runBattleHudAutomation(event)`);
+  }
+  if (!/export const BattleHudEvent\s*=\s*Object\.freeze\(/.test(hudText)) {
+    violations.push(`${rel(hudFile)} must expose BattleHudEvent`);
+  }
+  if (!/export function runBattleHudAutomation\(/.test(hudText)) {
+    violations.push(`${rel(hudFile)} must expose runBattleHudAutomation(event)`);
+  }
+  if (/export function refreshBattleHud\(/.test(hudText)) {
+    violations.push(`${rel(hudFile)} must keep refreshBattleHud private behind runBattleHudAutomation(event)`);
   }
 }
 
