@@ -22,6 +22,7 @@ const startRuntimeTest = path.join(root, "src/battle/battle-start-runtime.test.j
 const utilityEngineFile = path.join(root, "src/battle/utility-engine.js");
 const activateSpiritFile = path.join(root, "src/battle/buff/activate-spirit.js");
 const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
+const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const violations = [];
@@ -608,6 +609,16 @@ function checkExecuteItem() {
   }
 }
 
+function checkSnapshot() {
+  const text = fs.readFileSync(snapshotFile, "utf8");
+  if (!text.includes("OptionEvent.READ_FIELD")) {
+    violations.push(`${rel(snapshotFile)} must read snapshot option facts through option entry`);
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not read snapshot option facts directly`);
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -624,6 +635,7 @@ checkStartRuntimeEntry();
 checkUtilityEngine();
 checkActivateSpirit();
 checkExecuteItem();
+checkSnapshot();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");

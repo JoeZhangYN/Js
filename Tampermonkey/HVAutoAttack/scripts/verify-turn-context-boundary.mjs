@@ -6,6 +6,7 @@ const srcDir = path.join(root, "src/battle");
 const entry = path.normalize("src/battle/turn-context.js");
 const entryTest = path.normalize("src/battle/turn-context.test.js");
 const snapshotImpl = path.normalize("src/battle/snapshot.js");
+const snapshotTest = path.normalize("src/battle/snapshot.test.js");
 const violations = [];
 
 function rel(file) {
@@ -26,7 +27,13 @@ function checkFile(file) {
   lines.forEach((line, index) => {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("//")) return;
-    if (relative === entry || relative === entryTest || relative === snapshotImpl) return;
+    if (
+      relative === entry ||
+      relative === entryTest ||
+      relative === snapshotImpl ||
+      relative === snapshotTest
+    )
+      return;
     const where = `${rel(file)}:${index + 1}`;
     for (const name of [
       "CdRuntimeEvent.INCREMENT_TURN",

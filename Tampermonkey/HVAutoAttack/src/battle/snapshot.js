@@ -1,4 +1,5 @@
 // BattleSnapshot 收集（Phase 5b-1）。
+// file-size-gate: exempt phase-5b-snapshot
 // 每 turn 入口一次性 batch DOM 读取 → plain object → decide 函数全程纯函数（不再读 DOM）。
 //
 // **3 铁律**：
@@ -6,8 +7,8 @@
 // B. snapshot 生命周期 = 当前 turn 内（不入 store / setValue）
 // C. dispatch 副作用用 selector 字符串重查询 DOM，不用缓存引用
 //
-// file-size-gate: exempt phase-5b-snapshot
 import { gE, isSpiritActive } from "../dom/query.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { g } from "../state/store.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
@@ -18,6 +19,10 @@ import { IncomingBurstLearningEvent, runIncomingBurstLearningAutomation } from "
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 import { joinMonsterView, monsterHpVars } from "./monster-view.js";
 import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
+
+function readOptionField(key, fallback) {
+  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
+}
 
 /**
  * 解析一个 effect 容器（玩家 #pane_effects 或怪物 .btm6）内全部 img 为 {img, turns}[]。
@@ -168,7 +173,7 @@ export function collectSnapshot() {
   // F4: 上回合 OFC/FRD 开火的 boss 本回合是否已死 → 按 MID 学击杀率（只需 globalTurn + view）
   runBigSkillKillLearningAutomation({ type: BigSkillKillLearningEvent.FINALIZE_PENDING, snap: { globalTurn, view } });
   // F5（默认 OFF，开关关时零开销）：从本回合战斗日志学每 MID 单发最大伤害 + 类型；attach 给 decide。
-  const burstOn = !!g("option")?.burstControlSwitch;
+  const burstOn = !!readOptionField("burstControlSwitch", false);
   if (burstOn) runIncomingBurstLearningAutomation({ type: IncomingBurstLearningEvent.RECORD_EVENTS, events: battleLog, monsterStatus: g("monsterStatus") });
   return {
     turn: g("turn") || 0,
@@ -196,7 +201,7 @@ export function collectSnapshot() {
     skillOTOS: g("skillOTOS") || {},
     spellAoe: g("spellAoe") || {},
     attackStatus: g("attackStatus"),
-    fightingStyle: g("option")?.fightingStyle || "2",
+    fightingStyle: readOptionField("fightingStyle", "2") || "2",
     // PoC L1：战斗日志解析得 DPS 估计（复用上方 battleLog，本 turn 只解析一遍）
     playerIncomingDps: estimatePlayerIncomingDps(battleLog, g("turn")),
     monsterDpsByName: estimatePerMonsterDps(battleLog, g("turn")),
