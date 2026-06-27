@@ -10,11 +10,14 @@ const mocks = vi.hoisted(() => ({
   runQuickSiteAutomation: vi.fn(),
   runRepairAutomation: vi.fn(),
   runStaminaAutomation: vi.fn(() => false),
-  time: vi.fn(() => "2026-06-27"),
+  runTimeAutomation: vi.fn(() => "2026-06-27"),
 }));
 
 vi.mock("../state/store.js", () => ({ g: mocks.g }));
-vi.mock("../core/time.js", () => ({ time: mocks.time }));
+vi.mock("../core/time.js", () => ({
+  TimeEvent: Object.freeze({ UTC_DATE_KEY: "utcDateKey" }),
+  runTimeAutomation: mocks.runTimeAutomation,
+}));
 vi.mock("../state/stamina.js", () => ({
   StaminaEvent: Object.freeze({ SHOULD_STOP_LOBBY: "shouldStopLobby" }),
   runStaminaAutomation: mocks.runStaminaAutomation,
@@ -56,7 +59,7 @@ beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear();
   mocks.runEncounterAutomation.mockResolvedValue({ claimed: false });
   mocks.runStaminaAutomation.mockReturnValue(false);
-  mocks.time.mockReturnValue("2026-06-27");
+  mocks.runTimeAutomation.mockReturnValue("2026-06-27");
   setLobbyOption({ encounter: false, idleArena: false, repair: false });
 });
 

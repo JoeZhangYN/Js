@@ -5,7 +5,7 @@ import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { post } from "../dom/http.js";
-import { time } from "../core/time.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { MAIN_URL } from "../env.js";
 import {
@@ -44,7 +44,7 @@ export function installBattleActionEventBridge() {
   const eventEnd = cE("a");
   eventEnd.id = "eventEnd";
   eventEnd.onclick = function () {
-    const timeNow = time(0);
+    const timeNow = runTimeAutomation({ type: TimeEvent.EPOCH_MS });
     g("runSpeed", (1000 / (timeNow - g("timeNow"))).toFixed(2));
     g("timeNow", timeNow);
     if (g("option").delayAlert) clearTimeout(delayAlert);

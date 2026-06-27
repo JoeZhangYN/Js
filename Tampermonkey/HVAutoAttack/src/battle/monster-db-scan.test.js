@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  MonsterScanLearningEvent,
-  runMonsterScanLearningAutomation,
-} from "./monster-db-scan.js";
+import { MonsterScanLearningEvent, runMonsterScanLearningAutomation } from "./monster-db-scan.js";
 
 class FakeMutationObserver {
   static instances = [];
@@ -56,7 +53,7 @@ describe("runMonsterScanLearningAutomation", () => {
           writeCachedProfile,
           storeProfile,
           storeHp,
-          time: () => "2026-06-27",
+          readUtcDateKey: () => "2026-06-27",
         }
       )
     ).toBe(true);

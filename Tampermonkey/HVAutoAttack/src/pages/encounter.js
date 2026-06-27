@@ -2,7 +2,7 @@
 import { g } from "../state/store.js";
 import { post } from "../dom/http.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
-import { time } from "../core/time.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
@@ -35,7 +35,7 @@ function reloadCurrentPage() {
 }
 
 function syncDateNow() {
-  const dateNow = time(2);
+  const dateNow = runTimeAutomation({ type: TimeEvent.UTC_DATE_KEY });
   if (g("dateNow") !== dateNow) g("dateNow", dateNow);
   return dateNow;
 }

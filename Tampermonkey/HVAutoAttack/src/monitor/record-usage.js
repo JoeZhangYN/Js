@@ -3,14 +3,14 @@
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
-import { time } from "../core/time.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../battle/pause-automation.js";
 
 function recordBattleActionUsage(parm) {
   const stats = getValue(STORAGE_KEYS.STATS, true) || {
     self: {
-      _startTime: time(3),
+      _startTime: runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL }),
       _turn: 0,
       _round: 0,
       _battle: 0,
@@ -193,7 +193,7 @@ function recordCompletedBattleUsage() {
   if (g("option").recordEach && g("roundNow") === g("roundAll")) {
     const old = getValue(STORAGE_KEYS.STATS_OLD, true) || [];
     stats.__name = getValue(STORAGE_KEYS.BATTLE_CODE);
-    stats.self._endTime = time(3);
+    stats.self._endTime = runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL });
     old.push(stats);
     setValue(STORAGE_KEYS.STATS_OLD, old);
     delValue(STORAGE_KEYS.STATS);

@@ -3,7 +3,7 @@ import { gE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
-import { time } from "../core/time.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 
 const EVENT_COMPLETION_REACHED = "completionReached";
 
@@ -18,14 +18,16 @@ function makeDeps(deps) {
     gE: deps.gE || gE,
     getValue: deps.getValue || getValue,
     setValue: deps.setValue || setValue,
-    time: deps.time || time,
+    readLocalTimestampLabel:
+      deps.readLocalTimestampLabel ||
+      (() => runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL })),
   };
 }
 
 function recordBattleDrops(deps) {
   const battleLog = deps.gE("#textlog>tbody>tr>td", "all");
   const drop = deps.getValue(STORAGE_KEYS.DROP, true) || {
-    "#startTime": deps.time(3),
+    "#startTime": deps.readLocalTimestampLabel(),
     "#EXP": 0,
     "#Credit": 0,
   };
@@ -81,7 +83,7 @@ function recordBattleDrops(deps) {
   if (deps.g("option").recordEach && deps.g("roundNow") === deps.g("roundAll")) {
     const old = deps.getValue(STORAGE_KEYS.DROP_OLD, true) || [];
     drop.__name = deps.getValue(STORAGE_KEYS.BATTLE_CODE);
-    drop["#endTime"] = deps.time(3);
+    drop["#endTime"] = deps.readLocalTimestampLabel();
     old.push(drop);
     deps.setValue(STORAGE_KEYS.DROP_OLD, old);
     deps.delValue(STORAGE_KEYS.DROP);

@@ -1,6 +1,6 @@
 import { getValue, setValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
-import { time } from "../core/time.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 
 const EVENT_READ = "read";
 const EVENT_RECORD = "record";
@@ -16,7 +16,10 @@ function readStaminaLossLog() {
   return getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true) || {};
 }
 
-function recordStaminaLoss(amount, stamp = time(3)) {
+function recordStaminaLoss(
+  amount,
+  stamp = runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL })
+) {
   const log = readStaminaLossLog();
   log[stamp] = Number(amount) || 0;
   setValue(STORAGE_KEYS.STAMINA_LOST_LOG, log);

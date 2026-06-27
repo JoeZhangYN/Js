@@ -7,7 +7,7 @@ import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
-import { time } from "../core/time.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { customizeBox } from "./customize.js";
 import { OPTION_SCHEMA } from "./schema.js";
 import { setLang } from "../i18n/core/restore-controller.js";
@@ -756,7 +756,7 @@ export function optionBox() {
         "请输入当前配置代号",
         "請輸入當前配置代號",
         "Please put in a name for the current configuration"
-      ) || time(3);
+      ) || runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL });
     const backups = runOptionBackupAutomation({ type: OptionBackupEvent.READ });
     if (code in backups) {
       // 覆写同名配置

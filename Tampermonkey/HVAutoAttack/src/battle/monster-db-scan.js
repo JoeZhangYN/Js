@@ -2,12 +2,9 @@
 // SHELL：MutationObserver 副作用 + DOM 读取；解析/校验委托纯函数 data/monster-db.js。
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { time } from "../core/time.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { parseScanResult, checkScanResultValidity } from "../data/monster-db.js";
-import {
-  MonsterDbStoreEvent,
-  runMonsterDbStoreAutomation,
-} from "../state/monster-db-store.js";
+import { MonsterDbStoreEvent, runMonsterDbStoreAutomation } from "../state/monster-db-store.js";
 import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
 
 const EVENT_START = "start";
@@ -33,8 +30,7 @@ function makeDeps(deps) {
         })),
     storeProfile:
       deps.storeProfile ||
-      ((info) =>
-        runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_WRITE, info })),
+      ((info) => runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_WRITE, info })),
     storeHp:
       deps.storeHp ||
       ((monsterId, level, maxHP, lastUpdate) =>
@@ -45,7 +41,8 @@ function makeDeps(deps) {
           maxHP,
           lastUpdate,
         })),
-    time: deps.time || time,
+    readUtcDateKey:
+      deps.readUtcDateKey || (() => runTimeAutomation({ type: TimeEvent.UTC_DATE_KEY })),
   };
 }
 
@@ -61,7 +58,7 @@ function findMonsterEl(name, deps) {
 function handleLogRow(node, onUpdate, deps) {
   const html = node?.innerHTML;
   if (!html || !html.includes("Scanning")) return;
-  const info = deps.parseScanResult(html, deps.time(2));
+  const info = deps.parseScanResult(html, deps.readUtcDateKey());
   if (!info) return;
   // scan 时若该怪被 imperil/firedot 等 debuff 影响，显示抗性失真 → 丢弃
   const monsterEl = findMonsterEl(info.monsterName, deps);
@@ -76,7 +73,8 @@ function handleLogRow(node, onUpdate, deps) {
     .then(() => {
       deps.writeCachedProfile(info.monsterId, info); // 即时进内存 cache（消本轮中途新 scan 怪的缺口）
       // scan 的 max HP + 战斗 LV → 顺带补 (MID,LV) 满血表（与开局 spawn 行同源、互为兜底）
-      if (st.level != null && info.maxHP > 0) deps.storeHp(info.monsterId, st.level, info.maxHP, info.lastUpdate);
+      if (st.level != null && info.maxHP > 0)
+        deps.storeHp(info.monsterId, st.level, info.maxHP, info.lastUpdate);
       onUpdate?.();
     })
     .catch(() => {});

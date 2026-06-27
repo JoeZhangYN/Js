@@ -1,7 +1,7 @@
 // 战斗监控编排入口：HUD、使用统计、掉落记录统一从这里进入。
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { time } from "../core/time.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { BattleHudEvent, runBattleHudAutomation } from "./battle-info.js";
 import { BattleDropEvent, runBattleDropAutomation } from "./drop-monitor.js";
 import { runBattleUsageAutomation } from "./record-usage.js";
@@ -70,7 +70,7 @@ function recordBattleStarted() {
     recordEach: g("option").recordEach,
     roundType: g("roundType"),
     roundAll: g("roundAll"),
-    recordLabel: time(1),
+    recordLabel: runTimeAutomation({ type: TimeEvent.UTC_MONTH_DAY_LABEL }),
   });
 }
 

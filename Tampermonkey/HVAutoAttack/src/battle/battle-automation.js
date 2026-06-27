@@ -1,7 +1,7 @@
 // 战斗页自动化编排入口：composition root 只调用本入口。
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { time } from "../core/time.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { installBattleActionEventBridge } from "./reloader.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
@@ -29,7 +29,10 @@ function installBattlePauseControls() {
     button.innerHTML = "<l0>暂停</l0><l1>暫停</l1><l2>Pause</l2>";
     button.className = "pauseChange";
     button.onclick = function () {
-      runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, { resume: runBattleTurnAutomation });
+      runBattlePauseAutomation(
+        { type: BattlePauseEvent.TOGGLE },
+        { resume: runBattleTurnAutomation }
+      );
     };
   }
   if (g("option").pauseHotkey) {
@@ -40,7 +43,10 @@ function installBattlePauseControls() {
           return;
         }
         if (e.key === g("option").pauseHotkeyKey) {
-          runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, { resume: runBattleTurnAutomation });
+          runBattlePauseAutomation(
+            { type: BattlePauseEvent.TOGGLE },
+            { resume: runBattleTurnAutomation }
+          );
         }
       },
       false
@@ -50,7 +56,7 @@ function installBattlePauseControls() {
 
 function initBattleRuntime() {
   g("attackStatus", g("option").attackStatus);
-  g("timeNow", time(0));
+  g("timeNow", runTimeAutomation({ type: TimeEvent.EPOCH_MS }));
   g("runSpeed", 1);
 }
 

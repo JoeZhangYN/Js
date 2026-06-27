@@ -36,7 +36,7 @@ function deps({ rows, values = {}, option = {}, roundNow = 1, roundAll = 2 }) {
     },
     getValue: (key) => values[key],
     setValue,
-    time: () => "now",
+    readLocalTimestampLabel: () => "now",
     values,
   };
 }
@@ -52,9 +52,9 @@ describe("runBattleDropAutomation", () => {
       ],
     });
 
-    expect(
-      runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED }, runtime)
-    ).toBe(true);
+    expect(runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED }, runtime)).toBe(
+      true
+    );
 
     expect(runtime.values[STORAGE_KEYS.DROP]).toMatchObject({
       "#Credit": 34,

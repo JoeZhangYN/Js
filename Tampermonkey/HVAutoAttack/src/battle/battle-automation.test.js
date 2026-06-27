@@ -11,13 +11,18 @@ const mocks = vi.hoisted(() => ({
   runBattleRoundStartAutomation: vi.fn(),
   runBattleTurnAutomation: vi.fn(),
   runMonsterKnowledgeAutomation: vi.fn(),
-  time: vi.fn(() => 123),
+  runTimeAutomation: vi.fn(() => 123),
 }));
 
 vi.mock("../dom/query.js", () => ({ cE: mocks.cE, gE: mocks.gE }));
 vi.mock("../state/store.js", () => ({ g: mocks.g }));
-vi.mock("../core/time.js", () => ({ time: mocks.time }));
-vi.mock("./reloader.js", () => ({ installBattleActionEventBridge: mocks.installBattleActionEventBridge }));
+vi.mock("../core/time.js", () => ({
+  TimeEvent: Object.freeze({ EPOCH_MS: "epochMs" }),
+  runTimeAutomation: mocks.runTimeAutomation,
+}));
+vi.mock("./reloader.js", () => ({
+  installBattleActionEventBridge: mocks.installBattleActionEventBridge,
+}));
 vi.mock("./new-round.js", () => ({
   BattleRoundStartEvent: Object.freeze({ ROUND_STARTED: "roundStarted" }),
   runBattleRoundStartAutomation: mocks.runBattleRoundStartAutomation,
@@ -44,7 +49,7 @@ beforeEach(() => {
     return undefined;
   });
   mocks.gE.mockImplementation((selector) => document.querySelector(selector));
-  mocks.time.mockReturnValue(123);
+  mocks.runTimeAutomation.mockReturnValue(123);
 });
 
 describe("runBattleAutomation", () => {

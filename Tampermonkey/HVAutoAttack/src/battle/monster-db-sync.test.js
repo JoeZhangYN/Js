@@ -14,7 +14,7 @@ describe("runMonsterDbSyncAutomation", () => {
         readMeta: async () => "2026-06-27",
         gmXhr,
         profileIsEmpty: async () => false,
-        time: () => "2026-06-27",
+        readUtcDateKey: () => "2026-06-27",
       })
     ).resolves.toEqual({ synced: false, reason: "already-synced-today" });
 
@@ -54,7 +54,7 @@ describe("runMonsterDbSyncAutomation", () => {
         }),
       profileIsEmpty: async () => true,
       writeMeta,
-      time: () => "2026-06-27",
+      readUtcDateKey: () => "2026-06-27",
     });
 
     expect(result).toEqual({ synced: true, count: 1 });

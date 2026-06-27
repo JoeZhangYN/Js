@@ -3,11 +3,8 @@
 // 跨域 GET 走统一 gmXhr（@connect 已放开该域）；失败保留旧库（空库不致命，靠 scan 自采补充）。
 import { gmXhr } from "../dom/gm-xhr.js";
 import { isIsekai } from "../env.js";
-import {
-  MonsterDbStoreEvent,
-  runMonsterDbStoreAutomation,
-} from "../state/monster-db-store.js";
-import { time } from "../core/time.js";
+import { MonsterDbStoreEvent, runMonsterDbStoreAutomation } from "../state/monster-db-store.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 
 const DATA_URL = isIsekai
   ? "https://hv-monsterdb-data.skk.moe/isekai.json"
@@ -39,7 +36,8 @@ function makeDeps(deps) {
       deps.writeMeta ||
       ((key, value) =>
         runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.META_WRITE, key, value })),
-    time: deps.time || time,
+    readUtcDateKey:
+      deps.readUtcDateKey || (() => runTimeAutomation({ type: TimeEvent.UTC_DATE_KEY })),
   };
 }
 
@@ -52,9 +50,15 @@ function normalize(m) {
     plvl: m.plvl,
     attack: m.attack,
     trainer: m.trainer,
-    fire: m.fire, cold: m.cold, elec: m.elec, wind: m.wind,
-    holy: m.holy, dark: m.dark,
-    crushing: m.crushing, slashing: m.slashing, piercing: m.piercing,
+    fire: m.fire,
+    cold: m.cold,
+    elec: m.elec,
+    wind: m.wind,
+    holy: m.holy,
+    dark: m.dark,
+    crushing: m.crushing,
+    slashing: m.slashing,
+    piercing: m.piercing,
     lastUpdate: m.lastUpdate,
   };
 }
@@ -69,7 +73,7 @@ async function syncMonsterDb({ force = false, deps }) {
     const last = await deps.readMeta(META_LAST_SYNC);
     // 每日 gate；但画像库为空（v2 升级后首次 / 新装）时绕过，立即重建——否则旧 lastSync 残留致
     // 空库等到明天才填。
-    if (last === deps.time(2) && !(await deps.profileIsEmpty())) {
+    if (last === deps.readUtcDateKey() && !(await deps.profileIsEmpty())) {
       return { synced: false, reason: "already-synced-today" };
     }
   }
@@ -94,7 +98,7 @@ async function syncMonsterDb({ force = false, deps }) {
           return;
         }
         Promise.resolve(deps.storeProfiles(list.map(normalize)))
-          .then(() => deps.writeMeta(META_LAST_SYNC, deps.time(2)))
+          .then(() => deps.writeMeta(META_LAST_SYNC, deps.readUtcDateKey()))
           .then(() => resolve({ synced: true, count: list.length }))
           .catch(() => resolve({ synced: false, reason: "store-error" }));
       },
@@ -104,10 +108,7 @@ async function syncMonsterDb({ force = false, deps }) {
   });
 }
 
-export function runMonsterDbSyncAutomation(
-  event = { type: EVENT_SYNC_REQUESTED },
-  deps = {}
-) {
+export function runMonsterDbSyncAutomation(event = { type: EVENT_SYNC_REQUESTED }, deps = {}) {
   if (event.type !== EVENT_SYNC_REQUESTED) return undefined;
   return syncMonsterDb({ force: Boolean(event.force), deps: makeDeps(deps) });
 }

@@ -1,6 +1,6 @@
 // 战斗外自动化编排入口：composition root 只调用本入口，不拼业务顺序。
 import { g } from "../state/store.js";
-import { time } from "../core/time.js";
+import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
@@ -16,7 +16,7 @@ export const LobbyEvent = Object.freeze({
 });
 
 function syncLobbyDate() {
-  g("dateNow", time(2));
+  g("dateNow", runTimeAutomation({ type: TimeEvent.UTC_DATE_KEY }));
 }
 
 function shouldStopForStamina() {
