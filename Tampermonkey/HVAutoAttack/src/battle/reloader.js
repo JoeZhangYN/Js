@@ -2,7 +2,6 @@
 // 风险点：内嵌 fakeApiCall 字符串 + 多个闭包变量。Phase 5 不重构此文件。
 // file-size-gate: exempt phase-4-monolith
 import { gE, cE } from "../dom/query.js";
-import { delValue } from "../state/storage.js";
 import { g } from "../state/store.js";
 import { scheduleReload } from "../core/navigate.js";
 import { post } from "../dom/http.js";
@@ -14,6 +13,7 @@ import {
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
+import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
 import { newRound } from "./new-round.js";
 import { main } from "./main-loop.js";
 
@@ -25,8 +25,7 @@ export function reloader() {
   eventStart.onclick = function () {
     if (g("option").delayAlert)
       delayAlert = setTimeout(setAlarm, g("option").delayAlertTime * 1000);
-    if (g("option").delayReload)
-      delayReload = scheduleReload(g("option").delayReloadTime);
+    if (g("option").delayReload) delayReload = scheduleReload(g("option").delayReloadTime);
     runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_STARTED });
   };
   gE("body").appendChild(eventStart);
@@ -40,10 +39,7 @@ export function reloader() {
     if (g("option").delayReload) clearTimeout(delayReload);
     const monsterDead = gE('img[src*="nbardead"]', "all").length;
     g("monsterAlive", g("monsterAll") - monsterDead);
-    const bossDead = gE(
-      'div.btm1[style*="opacity"] div.btm2[style*="background"]',
-      "all"
-    ).length;
+    const bossDead = gE('div.btm1[style*="opacity"] div.btm2[style*="background"]', "all").length;
     g("bossAlive", g("bossAll") - bossDead);
     runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_ENDED });
     if (gE("#btcp")) {
@@ -53,7 +49,7 @@ export function reloader() {
       if (g("monsterAlive") > 0) {
         // Defeat
         setAlarm("Defeat");
-        delValue(2);
+        runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
       } else if (g("roundNow") !== g("roundAll")) {
         // Next Round
         gE("#pane_completion").removeChild(gE("#btcp"));
@@ -63,15 +59,10 @@ export function reloader() {
               type: RiddleEvent.BATTLE_POST_RESULT,
               data,
             })
-          ) return;
-          gE("#battle_main").replaceChild(
-            gE("#battle_right", data),
-            gE("#battle_right")
-          );
-          gE("#battle_main").replaceChild(
-            gE("#battle_left", data),
-            gE("#battle_left")
-          );
+          )
+            return;
+          gE("#battle_main").replaceChild(gE("#battle_right", data), gE("#battle_right"));
+          gE("#battle_main").replaceChild(gE("#battle_left", data), gE("#battle_left"));
           unsafeWindow.battle = new unsafeWindow.Battle();
           unsafeWindow.battle.clear_infopane();
           newRound();
@@ -80,7 +71,7 @@ export function reloader() {
       } else if (g("roundNow") === g("roundAll")) {
         // Victory
         setAlarm("Victory");
-        delValue(2);
+        runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
         scheduleReload(3);
       }
     } else {
@@ -107,16 +98,22 @@ export function reloader() {
       if (delay <= 0) {
         b.send(JSON.stringify(a));
       } else {
-        setTimeout(() => {
-          b.send(JSON.stringify(a));
-        }, (delay * (Math.random() * 50 + 50)) / 100);
+        setTimeout(
+          () => {
+            b.send(JSON.stringify(a));
+          },
+          (delay * (Math.random() * 50 + 50)) / 100
+        );
       }
     } else if (delay2 <= 0) {
       b.send(JSON.stringify(a));
     } else {
-      setTimeout(() => {
-        b.send(JSON.stringify(a));
-      }, (delay2 * (Math.random() * 50 + 50)) / 100);
+      setTimeout(
+        () => {
+          b.send(JSON.stringify(a));
+        },
+        (delay2 * (Math.random() * 50 + 50)) / 100
+      );
     }
   }.toString()}`;
   gE("head").appendChild(fakeApiCall);
@@ -128,8 +125,7 @@ export function reloader() {
         if (a.login !== undefined) {
           //top.window.location.href = login_url;  // 修改后，不知道什么功能
         } else {
-          if (a.error || a.reload)
-            window.location.href = window.location.search;
+          if (a.error || a.reload) window.location.href = window.location.search;
           return a;
         }
       } else {
