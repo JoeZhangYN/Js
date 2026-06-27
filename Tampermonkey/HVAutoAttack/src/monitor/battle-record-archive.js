@@ -4,10 +4,12 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 
 const EVENT_STORE_OR_ARCHIVE = "storeOrArchive";
 const EVENT_READ_OR_CREATE_CURRENT = "readOrCreateCurrent";
+const EVENT_CLEAR_RECORD_SET = "clearRecordSet";
 
 export const BattleRecordArchiveEvent = Object.freeze({
   STORE_OR_ARCHIVE: EVENT_STORE_OR_ARCHIVE,
   READ_OR_CREATE_CURRENT: EVENT_READ_OR_CREATE_CURRENT,
+  CLEAR_RECORD_SET: EVENT_CLEAR_RECORD_SET,
 });
 
 function makeDeps(deps) {
@@ -65,10 +67,17 @@ function storeOrArchiveRecord(event, deps) {
   return { archived: true, record: archived };
 }
 
+function clearRecordSet(event, deps) {
+  deps.delValue(event.currentKey);
+  deps.delValue(event.historyKey);
+  return true;
+}
+
 export function runBattleRecordArchiveAutomation(event, deps = {}) {
   const fullDeps = makeDeps(deps);
   if (event.type === EVENT_READ_OR_CREATE_CURRENT)
     return readOrCreateCurrentRecord(event, fullDeps);
   if (event.type === EVENT_STORE_OR_ARCHIVE) return storeOrArchiveRecord(event, fullDeps);
+  if (event.type === EVENT_CLEAR_RECORD_SET) return clearRecordSet(event, fullDeps);
   return undefined;
 }

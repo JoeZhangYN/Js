@@ -98,4 +98,25 @@ describe("runBattleRecordArchiveAutomation", () => {
       { __name: "AR-10", self: { _endTime: "finished", _turn: 3 } },
     ]);
   });
+
+  it("clears a current/history record set through the same lifecycle entry", () => {
+    const runtime = deps({
+      [STORAGE_KEYS.DROP]: { "#Credit": 1 },
+      [STORAGE_KEYS.DROP_OLD]: [{ "#Credit": 2 }],
+    });
+
+    expect(
+      runBattleRecordArchiveAutomation(
+        {
+          type: BattleRecordArchiveEvent.CLEAR_RECORD_SET,
+          currentKey: STORAGE_KEYS.DROP,
+          historyKey: STORAGE_KEYS.DROP_OLD,
+        },
+        runtime
+      )
+    ).toBe(true);
+
+    expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
+    expect(runtime.values[STORAGE_KEYS.DROP_OLD]).toBeUndefined();
+  });
 });

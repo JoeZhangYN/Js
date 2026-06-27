@@ -168,9 +168,10 @@ function checkRecordArchiveEntry() {
   }
   if (
     !archiveText.includes("READ_OR_CREATE_CURRENT") ||
-    !archiveText.includes("STORE_OR_ARCHIVE")
+    !archiveText.includes("STORE_OR_ARCHIVE") ||
+    !archiveText.includes("CLEAR_RECORD_SET")
   ) {
-    violations.push(`${rel(archiveFile)} must own record creation and archiving events`);
+    violations.push(`${rel(archiveFile)} must own record creation, archiving, and clearing events`);
   }
   for (const [label, text] of [
     ["src/monitor/drop-monitor.js", dropText],
@@ -256,6 +257,11 @@ function checkBattleReportEntry() {
   }
   if (!/\bUTC_MONTH_DAY_LABEL\b/.test(text)) {
     violations.push(`${rel(reportFile)} must own battle report date label format`);
+  }
+  if (/\bdelValue\s*\(\s*STORAGE_KEYS\.(?:DROP|DROP_OLD|STATS|STATS_OLD)\b/.test(text)) {
+    violations.push(
+      `${rel(reportFile)} must clear battle record sets through battle-record-archive`
+    );
   }
   for (const legacy of [
     "recordBattleReportStarted",

@@ -1,7 +1,11 @@
 import { getKeys, objSort } from "../core/obj.js";
-import { getValue, setValue, delValue } from "../state/storage.js";
+import { getValue, setValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
+import {
+  BattleRecordArchiveEvent,
+  runBattleRecordArchiveAutomation,
+} from "./battle-record-archive.js";
 
 const USAGE_SECTIONS = ["self", "restore", "items", "magic", "damage", "hurt", "proficiency"];
 const EVENT_BATTLE_STARTED = "battleStarted";
@@ -96,13 +100,19 @@ function readUsageReport() {
 }
 
 function clearDropReport() {
-  delValue(STORAGE_KEYS.DROP);
-  delValue(STORAGE_KEYS.DROP_OLD);
+  runBattleRecordArchiveAutomation({
+    type: BattleRecordArchiveEvent.CLEAR_RECORD_SET,
+    currentKey: STORAGE_KEYS.DROP,
+    historyKey: STORAGE_KEYS.DROP_OLD,
+  });
 }
 
 function clearUsageReport() {
-  delValue(STORAGE_KEYS.STATS);
-  delValue(STORAGE_KEYS.STATS_OLD);
+  runBattleRecordArchiveAutomation({
+    type: BattleRecordArchiveEvent.CLEAR_RECORD_SET,
+    currentKey: STORAGE_KEYS.STATS,
+    historyKey: STORAGE_KEYS.STATS_OLD,
+  });
 }
 
 export function runBattleReportAutomation(event, deps = {}) {
