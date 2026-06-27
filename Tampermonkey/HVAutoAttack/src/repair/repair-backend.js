@@ -10,7 +10,7 @@
 // 编排器只传单元素，未来批量优化改编排器一处。
 import { post as realPost } from "../dom/http.js";
 import { gE } from "../dom/query.js";
-import { parsePersistentRepairState, parseIsekaiRepairState } from "./parse-repair-state.js";
+import { RepairStateParseEvent, runRepairStateParser } from "./parse-repair-state.js";
 
 const FORGE_URL = "?s=Forge&ss=re";
 const ARMORY_URL = "?s=Bazaar&ss=am&screen=repair";
@@ -35,7 +35,10 @@ function makeRepairBackend(isIsekai, deps = {}) {
         post(
           ARMORY_URL,
           (text) => {
-            const state = parseIsekaiRepairState(text);
+            const state = runRepairStateParser({
+              type: RepairStateParseEvent.ISEKAI,
+              pageText: text,
+            });
             token = state.token;
             cb(state);
           },
@@ -59,7 +62,13 @@ function makeRepairBackend(isIsekai, deps = {}) {
           gE('script[src*="/dynjs/"]', pageDoc) || gE("#mainpane>script[src]", pageDoc);
         if (!scriptEl) {
           // 维修页无 dynjs 脚本（异常页）→ 空状态（orchestrator 会 proceed，不崩）
-          cb(parsePersistentRepairState(pageDoc, ""));
+          cb(
+            runRepairStateParser({
+              type: RepairStateParseEvent.PERSISTENT,
+              pageDoc,
+              dynjsText: "",
+            })
+          );
           return;
         }
         // dynjs 内容随耐久变化但 URL 稳定 → 必须 cache-bust，否则修后复验（orchestrator 修一件后回调
@@ -69,7 +78,14 @@ function makeRepairBackend(isIsekai, deps = {}) {
           scriptEl.src + (scriptEl.src.includes("?") ? "&" : "?") + "t=" + Date.now();
         post(
           dynjsUrl,
-          (dynjsText) => cb(parsePersistentRepairState(pageDoc, dynjsText)),
+          (dynjsText) =>
+            cb(
+              runRepairStateParser({
+                type: RepairStateParseEvent.PERSISTENT,
+                pageDoc,
+                dynjsText,
+              })
+            ),
           null,
           "text"
         );

@@ -1,15 +1,27 @@
 import { describe, it, expect } from "vitest";
-import {
-  parsePersistentRepairState,
-  parseIsekaiRepairState,
-} from "./parse-repair-state.js";
+import { RepairStateParseEvent, runRepairStateParser } from "./parse-repair-state.js";
 
 /** 用 happy-dom 全局 DOMParser 造 Document（主世界 parse 吃 document）。 */
 function doc(html) {
   return new DOMParser().parseFromString(html, "text/html");
 }
 
-describe("parsePersistentRepairState", () => {
+function parsePersistentRepairState(pageDoc, dynjsText) {
+  return runRepairStateParser({
+    type: RepairStateParseEvent.PERSISTENT,
+    pageDoc,
+    dynjsText,
+  });
+}
+
+function parseIsekaiRepairState(pageText) {
+  return runRepairStateParser({
+    type: RepairStateParseEvent.ISEKAI,
+    pageText,
+  });
+}
+
+describe("repair state parser entry — persistent", () => {
   it("解析耐久% + set_forge_cost 材料（枚举来自 dynjs JSON keys）", () => {
     // 真实维修页装备数据在 dynjs；set_forge_cost 提供每件材料（在页 HTML 里，容器无关）。
     const html = `<div class="equiplist">
@@ -63,7 +75,7 @@ describe("parsePersistentRepairState", () => {
   });
 });
 
-describe("parseIsekaiRepairState", () => {
+describe("repair state parser entry — isekai", () => {
   const page = `
     <form id="equipform"><input type="hidden" name="postoken" value="tok_abc123"></form>
     <script>

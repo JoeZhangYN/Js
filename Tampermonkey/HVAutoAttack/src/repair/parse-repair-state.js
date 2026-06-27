@@ -24,6 +24,13 @@ const REQ_ITEM_RE = /(\d+)\s*x\s+(.+)/;
 // 护符料 id 区间（异世界）：走替换非维修，剔除。
 const CHARM_MIN = 61900;
 const CHARM_MAX = 64999;
+const EVENT_PARSE_PERSISTENT = "parsePersistent";
+const EVENT_PARSE_ISEKAI = "parseIsekai";
+
+export const RepairStateParseEvent = Object.freeze({
+  PERSISTENT: EVENT_PARSE_PERSISTENT,
+  ISEKAI: EVENT_PARSE_ISEKAI,
+});
 
 /**
  * 解析「Requires: 5x A, 3x B」材料清单文本 → [{name,count}]。
@@ -46,7 +53,7 @@ function parseRequiresList(requiresText) {
  * @param {string} dynjsText `script[src*="/dynjs/"]` 拉回的 JSON 原文（含 {id:{d:"...Condition..."}}）
  * @returns {RepairState}
  */
-export function parsePersistentRepairState(pageDoc, dynjsText) {
+function parsePersistentRepairState(pageDoc, dynjsText) {
   // dynjs 形如 `<前缀> = {<装备 JSON>};`：按首/末花括号切片再 parse，鲁棒于变量名与换行
   // （替代旧 /\{.*\}/——换行即失效；语义对齐 HVUT load_dynjs 的「切前缀+末分号」）。
   let json = {};
@@ -92,9 +99,10 @@ export function parsePersistentRepairState(pageDoc, dynjsText) {
  * @param {string} pageText `?s=Bazaar&ss=am&screen=repair` 页原文
  * @returns {RepairState}
  */
-export function parseIsekaiRepairState(pageText) {
+function parseIsekaiRepairState(pageText) {
   const text = pageText || "";
-  const tokenMatch = text.match(/name=['"]postoken['"][^>]*value=['"]([^'"]+)['"]/) ||
+  const tokenMatch =
+    text.match(/name=['"]postoken['"][^>]*value=['"]([^'"]+)['"]/) ||
     text.match(/value=['"]([^'"]+)['"][^>]*name=['"]postoken['"]/);
   const token = tokenMatch ? tokenMatch[1] : null;
 
@@ -128,4 +136,14 @@ export function parseIsekaiRepairState(pageText) {
     equips.push({ id: String(eid), conditionPct: null, materials });
   }
   return { isIsekai: true, token, equips };
+}
+
+export function runRepairStateParser(event) {
+  if (event.type === EVENT_PARSE_PERSISTENT) {
+    return parsePersistentRepairState(event.pageDoc, event.dynjsText);
+  }
+  if (event.type === EVENT_PARSE_ISEKAI) {
+    return parseIsekaiRepairState(event.pageText);
+  }
+  return undefined;
 }
