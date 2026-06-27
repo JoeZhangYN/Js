@@ -38,7 +38,7 @@ function checkFile(file) {
     if (internalFiles.has(relative)) return;
     if (line.includes("runBattleMonitorAutomation") || line.includes("BattleMonitorEvent")) return;
     const where = `${rel(file)}:${index + 1}`;
-    for (const name of ["battleInfo", "dropMonitor", "recordUsage", "recordUsage2"]) {
+    for (const name of ["battleInfo", "recordBattleDrops", "recordUsage", "recordUsage2"]) {
       if (new RegExp(`\\b${name}\\s*\\(`).test(line)) {
         violations.push(`${where} ${name} belongs behind runBattleMonitorAutomation(event)`);
       }
@@ -69,6 +69,9 @@ function checkEntry() {
   if (!/export function runBattleMonitorAutomation\(/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must expose runBattleMonitorAutomation(event)`);
   }
+  if (!text.includes("recordBattleDrops")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must own recordBattleDrops completion wiring`);
+  }
   for (const required of [
     "BATTLE_STARTED",
     "HUD_REFRESH",
@@ -96,9 +99,19 @@ function checkUsageImplementation() {
   }
 }
 
+function checkDeletedDropMonitorEntrypoint() {
+  const dropFile = path.join(root, "src/monitor/drop-monitor.js");
+  const entryText = fs.readFileSync(path.join(root, entry), "utf8");
+  const dropText = fs.readFileSync(dropFile, "utf8");
+  if (/\bdropMonitor\s*\(/.test(entryText) || /\b(?:export\s+)?function\s+dropMonitor\s*\(/.test(dropText)) {
+    violations.push(`${rel(dropFile)} legacy dropMonitor() bridge must stay deleted; use recordBattleDrops()`);
+  }
+}
+
 walk(srcDir);
 checkEntry();
 checkUsageImplementation();
+checkDeletedDropMonitorEntrypoint();
 
 if (violations.length) {
   console.error("[verify-battle-monitor-boundary] FAIL");

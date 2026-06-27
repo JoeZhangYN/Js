@@ -5,7 +5,7 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 
-export function dropMonitor(battleLog) {
+export function recordBattleDrops(battleLog) {
   const drop = getValue(STORAGE_KEYS.DROP, true) || {
     "#startTime": time(3),
     "#EXP": 0,
