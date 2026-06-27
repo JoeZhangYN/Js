@@ -5,9 +5,27 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 
-export function recordBattleDrops(battleLog) {
-  const drop = getValue(STORAGE_KEYS.DROP, true) || {
-    "#startTime": time(3),
+const EVENT_COMPLETION_REACHED = "completionReached";
+
+export const BattleDropEvent = Object.freeze({
+  COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
+});
+
+function makeDeps(deps) {
+  return {
+    delValue: deps.delValue || delValue,
+    g: deps.g || g,
+    gE: deps.gE || gE,
+    getValue: deps.getValue || getValue,
+    setValue: deps.setValue || setValue,
+    time: deps.time || time,
+  };
+}
+
+function recordBattleDrops(deps) {
+  const battleLog = deps.gE("#textlog>tbody>tr>td", "all");
+  const drop = deps.getValue(STORAGE_KEYS.DROP, true) || {
+    "#startTime": deps.time(3),
     "#EXP": 0,
     "#Credit": 0,
   };
@@ -22,7 +40,7 @@ export function recordBattleDrops(battleLog) {
     "Legendary",
     "Peerless",
   ];
-  const dropQuality = g("option").dropQuality;
+  const dropQuality = deps.g("option").dropQuality;
 
   for (const log of battleLog) {
     const text = log.textContent;
@@ -37,7 +55,7 @@ export function recordBattleDrops(battleLog) {
       continue;
     }
 
-    const item = gE("span", log);
+    const item = deps.gE("span", log);
     if (!item) continue;
 
     const name = item.textContent.match(/^\[(.*?)\]$/)[1];
@@ -60,14 +78,20 @@ export function recordBattleDrops(battleLog) {
     }
   }
 
-  if (g("option").recordEach && g("roundNow") === g("roundAll")) {
-    const old = getValue(STORAGE_KEYS.DROP_OLD, true) || [];
-    drop.__name = getValue(STORAGE_KEYS.BATTLE_CODE);
-    drop["#endTime"] = time(3);
+  if (deps.g("option").recordEach && deps.g("roundNow") === deps.g("roundAll")) {
+    const old = deps.getValue(STORAGE_KEYS.DROP_OLD, true) || [];
+    drop.__name = deps.getValue(STORAGE_KEYS.BATTLE_CODE);
+    drop["#endTime"] = deps.time(3);
     old.push(drop);
-    setValue(STORAGE_KEYS.DROP_OLD, old);
-    delValue(STORAGE_KEYS.DROP);
+    deps.setValue(STORAGE_KEYS.DROP_OLD, old);
+    deps.delValue(STORAGE_KEYS.DROP);
   } else {
-    setValue(STORAGE_KEYS.DROP, drop);
+    deps.setValue(STORAGE_KEYS.DROP, drop);
   }
+}
+
+export function runBattleDropAutomation(event = { type: EVENT_COMPLETION_REACHED }, deps = {}) {
+  if (event.type !== EVENT_COMPLETION_REACHED) return false;
+  recordBattleDrops(makeDeps(deps));
+  return true;
 }

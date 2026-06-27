@@ -3,7 +3,7 @@ import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { time } from "../core/time.js";
 import { BattleHudEvent, runBattleHudAutomation } from "./battle-info.js";
-import { recordBattleDrops } from "./drop-monitor.js";
+import { BattleDropEvent, runBattleDropAutomation } from "./drop-monitor.js";
 import { runBattleUsageAutomation } from "./record-usage.js";
 import { runBattleReportAutomation } from "./battle-report.js";
 
@@ -58,8 +58,9 @@ function recordActionEnd() {
 }
 
 function recordCompletion() {
-  const battleLog = gE("#textlog>tbody>tr>td", "all");
-  if (g("option").dropMonitor) recordBattleDrops(battleLog);
+  if (g("option").dropMonitor) {
+    runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED });
+  }
   if (g("option").recordUsage) runBattleUsageAutomation({ type: EVENT_COMPLETION_REACHED });
 }
 

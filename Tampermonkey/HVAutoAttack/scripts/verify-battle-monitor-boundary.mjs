@@ -74,14 +74,14 @@ function checkEntry() {
   if (!/export function runBattleMonitorAutomation\(/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must expose runBattleMonitorAutomation(event)`);
   }
-  if (!text.includes("recordBattleDrops")) {
-    violations.push(`${entry.replaceAll("\\", "/")} must own recordBattleDrops completion wiring`);
-  }
   if (!text.includes("runBattleHudAutomation") || !text.includes("BattleHudEvent.REFRESH")) {
     violations.push(`${entry.replaceAll("\\", "/")} must route HUD refresh through runBattleHudAutomation(event)`);
   }
   if (/\brefreshBattleHud\b/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not call raw refreshBattleHud()`);
+  }
+  if (!text.includes("runBattleDropAutomation") || !text.includes("BattleDropEvent.COMPLETION_REACHED")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must route drop recording through runBattleDropAutomation(event)`);
   }
   if (!text.includes("runBattleUsageAutomation")) {
     violations.push(`${entry.replaceAll("\\", "/")} must route battle usage through runBattleUsageAutomation(event)`);
@@ -135,7 +135,19 @@ function checkDeletedDropMonitorEntrypoint() {
   const entryText = fs.readFileSync(path.join(root, entry), "utf8");
   const dropText = fs.readFileSync(dropFile, "utf8");
   if (/\bdropMonitor\s*\(/.test(entryText) || /\b(?:export\s+)?function\s+dropMonitor\s*\(/.test(dropText)) {
-    violations.push(`${rel(dropFile)} legacy dropMonitor() bridge must stay deleted; use recordBattleDrops()`);
+    violations.push(`${rel(dropFile)} legacy dropMonitor() bridge must stay deleted; use runBattleDropAutomation(event)`);
+  }
+  if (!/export const BattleDropEvent\s*=\s*Object\.freeze\(/.test(dropText)) {
+    violations.push(`${rel(dropFile)} must expose BattleDropEvent`);
+  }
+  if (!/export function runBattleDropAutomation\(/.test(dropText)) {
+    violations.push(`${rel(dropFile)} must expose runBattleDropAutomation(event)`);
+  }
+  if (/export function recordBattleDrops\(/.test(dropText)) {
+    violations.push(`${rel(dropFile)} must keep recordBattleDrops private behind runBattleDropAutomation(event)`);
+  }
+  if (/\brecordBattleDrops\s*\(/.test(entryText)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must not call raw recordBattleDrops()`);
   }
 }
 
