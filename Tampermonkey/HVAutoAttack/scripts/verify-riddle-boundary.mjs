@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const riddleFile = path.join(root, "src/pages/riddle-automation.js");
+const riddleAnswerFile = path.join(root, "src/pages/riddle.js");
+const riddleTimingFile = path.join(root, "src/pages/riddle-submission-timing.js");
 const battleDir = path.join(root, "src/battle");
 const violations = [];
 
@@ -66,6 +68,30 @@ function checkRiddleEntry() {
   }
 }
 
+function checkRiddleSubmissionTiming() {
+  const answerText = fs.readFileSync(riddleAnswerFile, "utf8");
+  if (!answerText.includes("runRiddleSubmissionTiming")) {
+    violations.push(`${rel(riddleAnswerFile)} must route submit timing through runRiddleSubmissionTiming(event)`);
+  }
+  answerText.split(/\r?\n/).forEach((line, index) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("//")) return;
+    for (const forbidden of [/\bsetTimeout\s*\(/, /\bsetInterval\s*\(/, /\bdocument\.title\b/]) {
+      if (forbidden.test(line)) {
+        violations.push(
+          `${rel(riddleAnswerFile)}:${index + 1} riddle submit timing belongs in riddle-submission-timing.js`
+        );
+      }
+    }
+  });
+  const timingText = fs.readFileSync(riddleTimingFile, "utf8");
+  for (const required of ["runRiddleSubmissionTiming", "RiddleSubmissionTimingEvent"]) {
+    if (!timingText.includes(required)) {
+      violations.push(`${rel(riddleTimingFile)} must own ${required}`);
+    }
+  }
+}
+
 function checkDeletedSetupEntrypoints() {
   const files = [
     path.join(root, "src/pages/riddle-automation.js"),
@@ -85,6 +111,7 @@ function checkDeletedSetupEntrypoints() {
 checkInit();
 checkBattleLayer();
 checkRiddleEntry();
+checkRiddleSubmissionTiming();
 checkDeletedSetupEntrypoints();
 
 if (violations.length) {

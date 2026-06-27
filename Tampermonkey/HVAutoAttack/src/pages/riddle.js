@@ -8,7 +8,6 @@
 // - 倒计时双源解析：textContent 正则优先（抗 HV UI 改版），sprite 背景位置作 legacy fallback
 // P2 集成：runRiddleVisualAid（小马旋转/锐化/对比 + 6 缩略图视觉辅助）— async 不 await，不阻塞倒计时
 // P6 集成：tryMLAnswer + startRiddleMlHealthCheck（rdma.ooguy.com ML 远程答题，失败 fallback 现有随机猜）
-import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { isOptionOn } from "../state/option.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
@@ -19,42 +18,13 @@ import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stat
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
 import { captureRiddleDataUrl, getRiddleImgEl } from "./riddle-image.js";
 import { recordRiddleSample, SAMPLE_SOURCE } from "../state/riddle-dataset.js";
+import {
+  RiddleSubmissionTimingEvent,
+  runRiddleSubmissionTiming,
+} from "./riddle-submission-timing.js";
 
 // 答案码 SSOT 见 data/riddle-answers.js（提取到叶子层打破与 riddle-ml.js 的循环依赖 TDZ）
 const ANSWER_KEYS = Object.keys(ANSWER_MAP);
-
-/**
- * 读 #riddlecounter 剩余秒数。
- * 优先用 textContent 正则（HV UI 改版仍可用），fallback 到 sprite 背景位置（legacy 兼容）。
- * @returns {number} 剩余秒；NaN 表示读不到
- */
-function parseRemainingSeconds() {
-  const counter = gE("#riddlecounter");
-  if (counter) {
-    const text = (counter.textContent || "").trim();
-    // M:SS 优先（对齐 RMA 原版 getRemainingSeconds；移植曾漏 → 倒计时 "2:30" 被读成 2s 误判）。
-    const ms = text.match(/(\d+):(\d+)/);
-    if (ms) {
-      const sec = parseInt(ms[1]) * 60 + parseInt(ms[2]);
-      if (sec > 0 && sec < 3600) return sec;
-    }
-    const m = text.match(/(\d+)/);
-    if (m) {
-      const sec = parseInt(m[1]);
-      if (!isNaN(sec) && sec > 0 && sec < 3600) return sec;
-    }
-  }
-  // legacy: 数字精灵图 backgroundPosition.x / 12 = 数字位
-  const timeDiv = gE("#riddlecounter>div>div", "all");
-  if (!timeDiv || timeDiv.length === 0) return NaN;
-  let time = "";
-  for (let j = 0; j < timeDiv.length; j++) {
-    const bp = timeDiv[j].style.backgroundPosition.match(/(\d+)px$/);
-    if (!bp) return NaN;
-    time = (bp[1] / 12).toString() + time;
-  }
-  return parseInt(time);
-}
 
 /**
  * 勾选答案 checkbox 并提交。HV 答题常多只小马同现（多答案不少见）→ 收数组、勾选全部命中 box 后单次提交。
@@ -124,17 +94,11 @@ export function runRiddleAnsweringSession() {
   const beforeEnd = parseInt(g("option").riddleAnswerTime) || 3;
   /** @type {string[]|null} ML 命中答案码数组（多答案题多只）；null=未就绪/失败 */
   let mlAnswer = null;
-  let submitted = false;
-  let unreadable = 0;
-  let timer = null;
   let pendingSource = null; // doSubmit 设置；#riddlesubmit hook 据此判 source（手动点击=null→manual）
   let sampled = false; // 训练样本每题只采一次
   // ANSWER_KEYS.length 防退化（原 answers 漏 "ra" 命中率 1/5 旧 bug）。
   const randomAnswer = () => [ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)]];
   function doSubmit(answers, via) {
-    if (submitted) return;
-    submitted = true;
-    if (timer) clearInterval(timer);
     console.log(`[HVAA][riddle] 自动提交(${via})`, answers); // 可见性：无反应时看 console 确认走哪条路径
     // 提交即重定向、console 即丢 → 落滚动日志（半持久化）：本次答案 + 路径，事后可翻"答案是什么/走哪条路"
     runRiddleLogAutomation({
@@ -144,6 +108,13 @@ export function runRiddleAnsweringSession() {
     pendingSource = via; // 供提交 hook 判 confidence（须在 riddleSubmit 触发 click 之前设好）
     riddleSubmit(answers);
   }
+  const timing = runRiddleSubmissionTiming({
+    type: RiddleSubmissionTimingEvent.START,
+    beforeEnd,
+    fallbackAnswers: randomAnswer,
+    getMlAnswers: () => mlAnswer,
+    submit: doSubmit,
+  });
   // 训练样本采集：hook #riddlesubmit 点击（脚本 riddleSubmit 的 .click() 与用户手动点都经此）→ 跳转前
   // **同步**采样。无论 ML/随机/手动只要提交就存（用户诉求 2026-06-06）；source→confidence 规则内化在 riddle-dataset。
   function captureSubmission() {
@@ -177,22 +148,9 @@ export function runRiddleAnsweringSession() {
         if (a && a.length) {
           // ML 命中 → 短延迟提交（前台 ~3s / 后台 3-8s 模拟人类），不等末端。
           const delay = document.hasFocus() ? 3000 : 3000 + Math.random() * 5000;
-          setTimeout(() => doSubmit(a, "ML"), delay);
+          timing.scheduleMlSubmit(a, delay);
         }
       })
       .catch(() => {});
   }
-  timer = setInterval(function () {
-    if (submitted) return;
-    const remaining = parseRemainingSeconds();
-    if (isNaN(remaining)) {
-      if (++unreadable >= 5)
-        doSubmit(mlAnswer && mlAnswer.length ? mlAnswer : randomAnswer(), "兜底·读不到倒计时");
-      return;
-    }
-    unreadable = 0;
-    document.title = remaining; // 倒计时显示在标签页标题
-    if (remaining <= beforeEnd)
-      doSubmit(mlAnswer && mlAnswer.length ? mlAnswer : randomAnswer(), "末端兜底");
-  }, 1000);
 }
