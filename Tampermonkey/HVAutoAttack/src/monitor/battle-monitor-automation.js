@@ -15,6 +15,8 @@ const EVENT_READ_DROP_REPORT = "readDropReport";
 const EVENT_READ_USAGE_REPORT = "readUsageReport";
 const EVENT_CLEAR_DROP_REPORT = "clearDropReport";
 const EVENT_CLEAR_USAGE_REPORT = "clearUsageReport";
+const EVENT_RENDER_DROP_REPORT_TABLE_BODY = "renderDropReportTableBody";
+const EVENT_RENDER_USAGE_REPORT_TABLE_BODY = "renderUsageReportTableBody";
 
 export const BattleMonitorEvent = Object.freeze({
   BATTLE_STARTED: EVENT_BATTLE_STARTED,
@@ -26,6 +28,8 @@ export const BattleMonitorEvent = Object.freeze({
   READ_USAGE_REPORT: EVENT_READ_USAGE_REPORT,
   CLEAR_DROP_REPORT: EVENT_CLEAR_DROP_REPORT,
   CLEAR_USAGE_REPORT: EVENT_CLEAR_USAGE_REPORT,
+  RENDER_DROP_REPORT_TABLE_BODY: EVENT_RENDER_DROP_REPORT_TABLE_BODY,
+  RENDER_USAGE_REPORT_TABLE_BODY: EVENT_RENDER_USAGE_REPORT_TABLE_BODY,
 });
 
 let pendingUsage;
@@ -87,6 +91,10 @@ export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) 
     return runBattleReportAutomation({ type: BattleReportEvent.READ_DROP_REPORT });
   } else if (event.type === EVENT_READ_USAGE_REPORT) {
     return runBattleReportAutomation({ type: BattleReportEvent.READ_USAGE_REPORT });
+  } else if (event.type === EVENT_RENDER_DROP_REPORT_TABLE_BODY) {
+    return runBattleReportAutomation({ type: BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY });
+  } else if (event.type === EVENT_RENDER_USAGE_REPORT_TABLE_BODY) {
+    return runBattleReportAutomation({ type: BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY });
   } else if (event.type === EVENT_CLEAR_DROP_REPORT) {
     runBattleReportAutomation({ type: BattleReportEvent.CLEAR_DROP_REPORT });
   } else if (event.type === EVENT_CLEAR_USAGE_REPORT) {

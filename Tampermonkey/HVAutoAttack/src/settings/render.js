@@ -410,74 +410,14 @@ export function optionBox() {
     let _html;
     if (name === "Drop") {
       // 掉落监测
-      const report = runBattleMonitorAutomation({
-        type: BattleMonitorEvent.READ_DROP_REPORT,
+      gE("#hvAATab-Drop>table").innerHTML = runBattleMonitorAutomation({
+        type: BattleMonitorEvent.RENDER_DROP_REPORT_TABLE_BODY,
       });
-      _html = "<tbody>";
-      if (report.mode === "single") {
-        _html = `${_html}<tr class="hvAATh"><td></td><td><l0>数量</l0><l1>數量</l1><l2>Amount</l2></td></tr>`;
-        report.rows.forEach((row) => {
-          _html = `${_html}<tr><td>${row.key}</td><td>${row.value}</td></tr>`;
-        });
-      } else {
-        _html = `${_html}<tr class="hvAATh"><td class="selectTable"></td>`;
-        report.columns.forEach((name) => {
-          _html = `${_html}<td>${name}</td>`;
-        });
-        _html = `${_html}</tr>`;
-        report.rows.forEach((row) => {
-          _html = `${_html}<tr><td>${row.key}</td>`;
-          row.values.forEach((value) => {
-            _html = `${_html}<td>${value}</td>`;
-          });
-          _html = `${_html}</tr>`;
-        });
-      }
-      _html = `${_html}</tbody>`;
-      gE("#hvAATab-Drop>table").innerHTML = _html;
     } else if (name === "Usage") {
       // 数据记录
-      const report = runBattleMonitorAutomation({
-        type: BattleMonitorEvent.READ_USAGE_REPORT,
+      gE("#hvAATab-Usage>table").innerHTML = runBattleMonitorAutomation({
+        type: BattleMonitorEvent.RENDER_USAGE_REPORT_TABLE_BODY,
       });
-      const translation = {
-        self: "<l0>自身 (次数)</l0><l1>自身 (次數)</l1><l2>Self (Frequency)</l2>",
-        restore: "<l0>回复 (总量)</l0><l1>回复 (總量)</l1><l2>Restore (Amount)</l2>",
-        items: "<l0>物品 (次数)</l0><l1>物品 (次數)</l1><l2>Items (Frequency)</l2>",
-        magic: "<l0>技能 (次数)</l0><l1>技能 (次數)</l1><l2>Magic (Frequency)</l2>",
-        damage: "<l0>伤害 (总量)</l0><l1>傷害 (總量)</l1><l2>Damage (Amount)</l2>",
-        hurt: "<l0>受伤 (总量)</l0><l1>受傷 (總量)</l1><l2>Loss (Amount)</l2>",
-        proficiency: "<l0>熟练度 (总量)</l0><l1>熟練度 (總量)</l1><l2>Proficiency (Amount)</l2>",
-      };
-      _html = "<tbody>";
-      if (report.mode === "single") {
-        report.sections.forEach((section) => {
-          _html = `${_html}<tr class="hvAATh"><td>${translation[section.key]}</td><td><l01>值</l01><l2>Value</l2></td></tr>`;
-          section.rows.forEach((row) => {
-            _html = `${_html}<tr><td>${row.key}</td><td>${row.value}</td></tr>`;
-          });
-        });
-      } else {
-        _html = `${_html}<tr class="hvAATh"><td class="selectTable"></td>`;
-        report.columns.forEach((name) => {
-          _html = `${_html}<td>${name}</td>`;
-        });
-        _html = `${_html}</tr>`;
-        report.sections.forEach((section) => {
-          _html = `${_html}<tr class="hvAATh"><td colspan="${
-            report.columns.length + 1
-          }">${translation[section.key]}</td></tr>`;
-          section.rows.forEach((row) => {
-            _html = `${_html}<tr><td>${row.key}</td>`;
-            row.values.forEach((value) => {
-              _html = `${_html}<td>${value}</td>`;
-            });
-            _html = `${_html}</tr>`;
-          });
-        });
-      }
-      _html = `${_html}</tbody>`;
-      gE("#hvAATab-Usage>table").innerHTML = _html;
     } else if (name === "Riddle") {
       // 小马验证(riddle ML)统计：汇总 + 结局明细（把"为什么失败"也量化进面板，见 ML_OUTCOMES）
       const rs = runRiddleStatsAutomation({ type: RiddleStatsEvent.READ });

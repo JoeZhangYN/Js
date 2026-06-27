@@ -6,20 +6,18 @@ import {
   BattleRecordArchiveEvent,
   runBattleRecordArchiveAutomation,
 } from "./battle-record-archive.js";
+import { BattleReportViewEvent, runBattleReportViewAutomation } from "./battle-report-view.js";
 
 const USAGE_SECTIONS = ["self", "restore", "items", "magic", "damage", "hurt", "proficiency"];
-const EVENT_BATTLE_STARTED = "battleStarted";
-const EVENT_READ_DROP_REPORT = "readDropReport";
-const EVENT_READ_USAGE_REPORT = "readUsageReport";
-const EVENT_CLEAR_DROP_REPORT = "clearDropReport";
-const EVENT_CLEAR_USAGE_REPORT = "clearUsageReport";
 
 export const BattleReportEvent = Object.freeze({
-  BATTLE_STARTED: EVENT_BATTLE_STARTED,
-  READ_DROP_REPORT: EVENT_READ_DROP_REPORT,
-  READ_USAGE_REPORT: EVENT_READ_USAGE_REPORT,
-  CLEAR_DROP_REPORT: EVENT_CLEAR_DROP_REPORT,
-  CLEAR_USAGE_REPORT: EVENT_CLEAR_USAGE_REPORT,
+  BATTLE_STARTED: "battleStarted",
+  READ_DROP_REPORT: "readDropReport",
+  READ_USAGE_REPORT: "readUsageReport",
+  CLEAR_DROP_REPORT: "clearDropReport",
+  CLEAR_USAGE_REPORT: "clearUsageReport",
+  RENDER_DROP_REPORT_TABLE_BODY: "renderDropReportTableBody",
+  RENDER_USAGE_REPORT_TABLE_BODY: "renderUsageReportTableBody",
 });
 
 function withCurrentRecord(history, current) {
@@ -128,20 +126,32 @@ function clearUsageReport() {
 }
 
 export function runBattleReportAutomation(event, deps = {}) {
-  if (event.type === EVENT_BATTLE_STARTED) {
+  if (event.type === BattleReportEvent.BATTLE_STARTED) {
     return recordBattleReportStarted(event, deps);
   }
-  if (event.type === EVENT_READ_DROP_REPORT) {
+  if (event.type === BattleReportEvent.READ_DROP_REPORT) {
     return readDropReport();
   }
-  if (event.type === EVENT_READ_USAGE_REPORT) {
+  if (event.type === BattleReportEvent.READ_USAGE_REPORT) {
     return readUsageReport();
   }
-  if (event.type === EVENT_CLEAR_DROP_REPORT) {
+  if (event.type === BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY) {
+    return runBattleReportViewAutomation({
+      type: BattleReportViewEvent.RENDER_DROP_TABLE_BODY,
+      report: readDropReport(),
+    });
+  }
+  if (event.type === BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY) {
+    return runBattleReportViewAutomation({
+      type: BattleReportViewEvent.RENDER_USAGE_TABLE_BODY,
+      report: readUsageReport(),
+    });
+  }
+  if (event.type === BattleReportEvent.CLEAR_DROP_REPORT) {
     clearDropReport();
     return undefined;
   }
-  if (event.type === EVENT_CLEAR_USAGE_REPORT) {
+  if (event.type === BattleReportEvent.CLEAR_USAGE_REPORT) {
     clearUsageReport();
     return undefined;
   }

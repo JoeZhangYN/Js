@@ -10,6 +10,7 @@ const internalFiles = new Set(
     "src/monitor/battle-info.js",
     "src/monitor/battle-record-archive.js",
     "src/monitor/battle-report.js",
+    "src/monitor/battle-report-view.js",
     "src/monitor/drop-monitor.js",
     "src/monitor/record-usage.js",
     "src/state/storage.js",
@@ -50,7 +51,7 @@ function checkFile(file) {
       }
     }
     if (
-      /from\s+["'](?:\.\.\/monitor\/|\.\.\/\.\.\/monitor\/|\.\/)(battle-info|battle-record-archive|battle-report|drop-monitor|record-usage)\.js["']/.test(
+      /from\s+["'](?:\.\.\/monitor\/|\.\.\/\.\.\/monitor\/|\.\/)(battle-info|battle-record-archive|battle-report|battle-report-view|drop-monitor|record-usage)\.js["']/.test(
         line
       )
     ) {
@@ -119,9 +120,26 @@ function checkEntry() {
     "READ_USAGE_REPORT",
     "CLEAR_DROP_REPORT",
     "CLEAR_USAGE_REPORT",
+    "RENDER_DROP_REPORT_TABLE_BODY",
+    "RENDER_USAGE_REPORT_TABLE_BODY",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} event wiring`);
+    }
+  }
+}
+
+function checkSettingsReportConsumption() {
+  const settingsFile = path.join(root, "src/settings/render.js");
+  const text = fs.readFileSync(settingsFile, "utf8");
+  if (/\breport\.(?:mode|rows|columns|sections)\b/.test(text)) {
+    violations.push(
+      `${rel(settingsFile)} must not inspect battle report shape; request rendered report output`
+    );
+  }
+  for (const required of ["RENDER_DROP_REPORT_TABLE_BODY", "RENDER_USAGE_REPORT_TABLE_BODY"]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(settingsFile)} must request ${required}`);
     }
   }
 }
@@ -263,6 +281,12 @@ function checkBattleReportEntry() {
       `${rel(reportFile)} must route current/history report reads through readReportRecordSet`
     );
   }
+  if (
+    !text.includes("BattleReportViewEvent.RENDER_DROP_TABLE_BODY") ||
+    !text.includes("BattleReportViewEvent.RENDER_USAGE_TABLE_BODY")
+  ) {
+    violations.push(`${rel(reportFile)} must route rendered reports through battle-report-view`);
+  }
   if ((text.match(/history\.length\s*===\s*0/g) || []).length !== 1) {
     violations.push(`${rel(reportFile)} must have one current/history report mode decision`);
   }
@@ -286,13 +310,26 @@ function checkBattleReportEntry() {
   }
 }
 
+function checkBattleReportViewEntry() {
+  const viewFile = path.join(root, "src/monitor/battle-report-view.js");
+  const text = fs.readFileSync(viewFile, "utf8");
+  if (!/export const BattleReportViewEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(viewFile)} must expose BattleReportViewEvent`);
+  }
+  if (!/export function runBattleReportViewAutomation\(/.test(text)) {
+    violations.push(`${rel(viewFile)} must expose runBattleReportViewAutomation(event)`);
+  }
+}
+
 walk(srcDir);
 checkEntry();
+checkSettingsReportConsumption();
 checkRecordArchiveEntry();
 checkUsageImplementation();
 checkDeletedDropMonitorEntrypoint();
 checkDeletedBattleInfoEntrypoint();
 checkBattleReportEntry();
+checkBattleReportViewEntry();
 
 if (violations.length) {
   console.error("[verify-battle-monitor-boundary] FAIL");
