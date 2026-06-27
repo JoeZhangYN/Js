@@ -8,12 +8,20 @@ import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { normalizeMonsterName } from "../battle/log-parser.js";
 
+const EVENT_RECORD_EVENTS = "recordEvents";
+const EVENT_READ_MAP = "readMap";
+
+export const IncomingBurstLearningEvent = Object.freeze({
+  RECORD_EVENTS: EVENT_RECORD_EVENTS,
+  READ_MAP: EVENT_READ_MAP,
+});
+
 /**
  * 从本回合全量 DamageEvent[] 更新每 MID 的单发最大伤害 + 类型（运行 max，幂等）。
  * @param {Array<{kind:string,source:string,dmg:number,type:string}>} events
  * @param {Array<{monsterId?:number,name?:string}>} monsterStatus 名→MID 映射源
  */
-export function updateBurstFromEvents(events, monsterStatus) {
+function updateBurstFromEvents(events, monsterStatus) {
   if (!events || !events.length) return;
   const nameToMid = {};
   for (const st of monsterStatus || []) {
@@ -35,6 +43,12 @@ export function updateBurstFromEvents(events, monsterStatus) {
 }
 
 /** 取全量学习表（snapshot attach 给 decide，保 decide PURE 不读 storage）。 */
-export function getLearnedBurstMap() {
+function getLearnedBurstMap() {
   return getValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, true) || {};
+}
+
+export function runIncomingBurstLearningAutomation(event = { type: EVENT_READ_MAP }) {
+  if (event.type === EVENT_RECORD_EVENTS) return updateBurstFromEvents(event.events, event.monsterStatus);
+  if (event.type === EVENT_READ_MAP) return getLearnedBurstMap();
+  return undefined;
 }

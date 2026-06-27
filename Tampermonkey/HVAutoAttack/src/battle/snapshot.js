@@ -14,7 +14,7 @@ import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from
 import { RecoveryLearningEvent, runRecoveryLearningAutomation } from "../state/recovery-learner.js";
 import { CdLearningEvent, runCdLearningAutomation } from "../state/cd-learner.js";
 import { BigSkillKillLearningEvent, runBigSkillKillLearningAutomation } from "../state/big-skill-kill-learner.js";
-import { updateBurstFromEvents, getLearnedBurstMap } from "../state/incoming-burst-learner.js";
+import { IncomingBurstLearningEvent, runIncomingBurstLearningAutomation } from "../state/incoming-burst-learner.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 import { joinMonsterView, monsterHpVars } from "./monster-view.js";
 import { getCachedDb } from "../state/monster-cache.js";
@@ -169,7 +169,7 @@ export function collectSnapshot() {
   runBigSkillKillLearningAutomation({ type: BigSkillKillLearningEvent.FINALIZE_PENDING, snap: { globalTurn, view } });
   // F5（默认 OFF，开关关时零开销）：从本回合战斗日志学每 MID 单发最大伤害 + 类型；attach 给 decide。
   const burstOn = !!g("option")?.burstControlSwitch;
-  if (burstOn) updateBurstFromEvents(battleLog, g("monsterStatus"));
+  if (burstOn) runIncomingBurstLearningAutomation({ type: IncomingBurstLearningEvent.RECORD_EVENTS, events: battleLog, monsterStatus: g("monsterStatus") });
   return {
     turn: g("turn") || 0,
     globalTurn,
@@ -201,7 +201,7 @@ export function collectSnapshot() {
     playerIncomingDps: estimatePlayerIncomingDps(battleLog, g("turn")),
     monsterDpsByName: estimatePerMonsterDps(battleLog, g("turn")),
     // F5：每 MID 致死/爆发伤害学习表（开关关→空，decide 自然 noop）
-    learnedBurstByMid: burstOn ? getLearnedBurstMap() : {},
+    learnedBurstByMid: burstOn ? runIncomingBurstLearningAutomation({ type: IncomingBurstLearningEvent.READ_MAP }) : {},
   };
 }
 
