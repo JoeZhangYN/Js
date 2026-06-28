@@ -11,6 +11,8 @@ const battleRound = path.normalize("src/battle/battle-round.js");
 const battleRoundTest = path.normalize("src/battle/battle-round.test.js");
 const monsterStatus = path.normalize("src/battle/monster-status-automation.js");
 const monsterStatusTest = path.normalize("src/battle/monster-status-automation.test.js");
+const spiritToggle = path.normalize("src/battle/battle-spirit-toggle.js");
+const spiritToggleTest = path.normalize("src/battle/battle-spirit-toggle.test.js");
 const rawRuntimeReaders = new Set([
   path.normalize("src/battle/attack/decide-attack.js"),
   path.normalize("src/battle/item/decide-item.js"),
@@ -44,7 +46,9 @@ function checkFile(file) {
       relative === battleRound ||
       relative === battleRoundTest ||
       relative === monsterStatus ||
-      relative === monsterStatusTest
+      relative === monsterStatusTest ||
+      relative === spiritToggle ||
+      relative === spiritToggleTest
     )
       return;
     const where = `${rel(file)}:${index + 1}`;
@@ -66,6 +70,9 @@ function checkFile(file) {
     ) {
       violations.push(`${where} turn decisions must read prepared snap context, not raw g()`);
     }
+    if (/\bg\(\s*["']lastSpiritToggleGlobalTurn["']/.test(line)) {
+      violations.push(`${where} Spirit toggle cooldown state belongs in battle-spirit-toggle`);
+    }
   });
 }
 
@@ -84,7 +91,7 @@ function checkEntry() {
     "BattleRoundEvent.READ_RUNTIME",
     "BattleRoundEvent.READ_TYPE",
     "MonsterStatusEvent.READ_COMBATANT_COUNTS",
-    "lastSpiritToggleGlobalTurn",
+    "BattleSpiritToggleEvent.READ_LAST_TOGGLE",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);

@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   collectSnapshot: vi.fn(),
   g: vi.fn(),
   runBattleRoundAutomation: vi.fn(),
+  runBattleSpiritToggleAutomation: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
   runMonsterStatusAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
@@ -17,6 +18,10 @@ vi.mock("./battle-round.js", () => ({
     READ_TYPE: "readType",
   }),
   runBattleRoundAutomation: mocks.runBattleRoundAutomation,
+}));
+vi.mock("./battle-spirit-toggle.js", () => ({
+  BattleSpiritToggleEvent: Object.freeze({ READ_LAST_TOGGLE: "readLastToggle" }),
+  runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
 }));
 vi.mock("../state/cd-tracker.js", () => ({
   CdRuntimeEvent: Object.freeze({ INCREMENT_TURN: "incrementTurn", PERSIST: "persist" }),
@@ -43,7 +48,6 @@ beforeEach(() => {
   mocks.collectSnapshot.mockReturnValue(snap);
   mocks.g.mockImplementation((key, value) => {
     if (value !== undefined) return undefined;
-    if (key === "lastSpiritToggleGlobalTurn") return 97;
     return undefined;
   });
   mocks.runBattleRoundAutomation.mockImplementation((event) => {
@@ -57,6 +61,7 @@ beforeEach(() => {
     bossAll: 1,
     bossAlive: 1,
   });
+  mocks.runBattleSpiritToggleAutomation.mockReturnValue(97);
   mocks.runOptionAutomation.mockReturnValue(false);
 });
 
@@ -86,6 +91,9 @@ describe("prepareBattleTurnContext", () => {
     expect(mocks.runBattleRoundAutomation).toHaveBeenCalledWith({ type: "readType" });
     expect(mocks.runMonsterStatusAutomation).toHaveBeenCalledWith({
       type: "readCombatantCounts",
+    });
+    expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
+      type: "readLastToggle",
     });
   });
 

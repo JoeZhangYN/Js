@@ -1,10 +1,13 @@
 // SHELL: 把 decide-item 的 ItemPlan 翻译为 DOM 副作用 + 状态记账。
 // 只写不判断（判断全在 decide-item.js）；isOn/gE 探活属写路径安全读（与原 item.js 一致）。
-// 记账：autoTune 用药事件 / lastSpiritToggleGlobalTurn / recordPreDrink。
+// 记账：autoTune 用药事件 / Spirit toggle cooldown / recordPreDrink。
 import { gE, isOn } from "../../dom/query.js";
 import { itemSelector } from "../../dom/selectors.js";
-import { g } from "../../state/store.js";
 import { AutoTuneEvent, runAutoTuneAutomation } from "../../state/auto-tune.js";
+import {
+  BattleSpiritToggleEvent,
+  runBattleSpiritToggleAutomation,
+} from "../battle-spirit-toggle.js";
 import {
   RecoveryLearningEvent,
   runRecoveryLearningAutomation,
@@ -57,7 +60,7 @@ export function executeItem(plan, snap) {
           const el = gE("#ckey_spirit");
           if (!el) continue;
           el.click();
-          g("lastSpiritToggleGlobalTurn", g("globalTurn") || 0);
+          runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.RECORD_TOGGLE });
           return true;
         }
         if (attempt.kind === "focus") {

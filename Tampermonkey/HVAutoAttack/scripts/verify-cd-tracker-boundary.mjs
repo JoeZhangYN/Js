@@ -50,6 +50,7 @@ for (const required of [
   "CdRuntimeEvent",
   "STORAGE_KEYS.GLOBAL_TURN",
   "STORAGE_KEYS.SKILL_LAST_USED",
+  "READ_GLOBAL_TURN",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);

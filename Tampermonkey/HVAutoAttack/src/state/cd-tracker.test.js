@@ -38,4 +38,10 @@ describe("cd tracker runtime persistence", () => {
 
     expect(runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_TURNS, code: "OFC" })).toBe(40);
   });
+
+  it("reads global turn through the runtime entry", () => {
+    g("globalTurn", 20);
+
+    expect(runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_GLOBAL_TURN })).toBe(20);
+  });
 });

@@ -1,6 +1,6 @@
 // SHELL: 把 decideAttack 的 AttackPlan 翻译为 DOM 副作用 + 状态记账。
 // 只写不判断（判断全在 decide-attack.js）；isOn 探活属写路径安全读（与原 attack 一致）。
-// 记账：recordFire(CD) / skillOTOS(once-per-battle) / lastSpiritToggleGlobalTurn。
+// 记账：recordFire(CD) / skillOTOS(once-per-battle) / Spirit toggle cooldown。
 import { gE, isOn } from "../../dom/query.js";
 import { g } from "../../state/store.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../../state/cd-tracker.js";
@@ -9,6 +9,10 @@ import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,
 } from "../../state/big-skill-kill-learner.js";
+import {
+  BattleSpiritToggleEvent,
+  runBattleSpiritToggleAutomation,
+} from "../battle-spirit-toggle.js";
 
 /**
  * @param {import("../../core/types.js").AttackPlan} plan
@@ -29,7 +33,7 @@ export function executeAttack(plan, snap) {
       const el = gE("#ckey_spirit");
       if (!el) return false;
       el.click();
-      g("lastSpiritToggleGlobalTurn", g("globalTurn") || 0);
+      runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.RECORD_TOGGLE });
       return true;
     }
 

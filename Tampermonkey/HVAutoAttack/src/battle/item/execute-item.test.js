@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   gE: vi.fn(),
   isOn: vi.fn(),
   runAutoTuneAutomation: vi.fn(),
+  runBattleSpiritToggleAutomation: vi.fn(),
   runRecoveryLearningAutomation: vi.fn(),
 }));
 
@@ -19,6 +20,10 @@ vi.mock("../../dom/selectors.js", () => ({
 vi.mock("../../state/auto-tune.js", () => ({
   AutoTuneEvent: Object.freeze({ RECORD_POTION_USE: "recordPotionUse" }),
   runAutoTuneAutomation: mocks.runAutoTuneAutomation,
+}));
+vi.mock("../battle-spirit-toggle.js", () => ({
+  BattleSpiritToggleEvent: Object.freeze({ RECORD_TOGGLE: "recordToggle" }),
+  runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
 }));
 vi.mock("../../state/store.js", () => ({ g: mocks.g }));
 vi.mock("../../state/recovery-learner.js", () => ({
@@ -53,6 +58,18 @@ describe("executeItem", () => {
     expect(potion.click).toHaveBeenCalledTimes(1);
     expect(mocks.runAutoTuneAutomation).toHaveBeenCalledWith({
       type: "recordPotionUse",
+    });
+  });
+
+  it("reports Spirit toggle cooldown event for stall spirit-off", () => {
+    const spirit = { click: vi.fn() };
+    mocks.gE.mockReturnValue(spirit);
+
+    expect(executeItem({ type: "stall", attempts: [{ kind: "spirit-off" }] }, {})).toBe(true);
+
+    expect(spirit.click).toHaveBeenCalledTimes(1);
+    expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
+      type: "recordToggle",
     });
   });
 });

@@ -5,6 +5,10 @@ import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { collectSnapshot, assertNoDomRefs } from "./snapshot.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
+import {
+  BattleSpiritToggleEvent,
+  runBattleSpiritToggleAutomation,
+} from "./battle-spirit-toggle.js";
 
 function mirrorVitalsToRuntime(snap) {
   g("hp", snap.hp);
@@ -23,7 +27,9 @@ function attachDecisionRuntime(snap) {
     roundAll: round.roundAll,
     roundNow: round.roundNow,
     roundType: runBattleRoundAutomation({ type: BattleRoundEvent.READ_TYPE }),
-    lastSpiritToggleGlobalTurn: g("lastSpiritToggleGlobalTurn"),
+    lastSpiritToggleGlobalTurn: runBattleSpiritToggleAutomation({
+      type: BattleSpiritToggleEvent.READ_LAST_TOGGLE,
+    }),
   });
 }
 

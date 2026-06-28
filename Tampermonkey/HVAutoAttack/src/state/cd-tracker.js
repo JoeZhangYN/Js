@@ -21,6 +21,7 @@ const EVENT_INCREMENT_TURN = "incrementTurn";
 const EVENT_RECORD_FIRE = "recordFire";
 const EVENT_READ_TURNS = "readTurns";
 const EVENT_READ_MAP = "readMap";
+const EVENT_READ_GLOBAL_TURN = "readGlobalTurn";
 
 export const CdRuntimeEvent = Object.freeze({
   LOAD: EVENT_LOAD,
@@ -29,6 +30,7 @@ export const CdRuntimeEvent = Object.freeze({
   RECORD_FIRE: EVENT_RECORD_FIRE,
   READ_TURNS: EVENT_READ_TURNS,
   READ_MAP: EVENT_READ_MAP,
+  READ_GLOBAL_TURN: EVENT_READ_GLOBAL_TURN,
 });
 
 /** 启动时把持久化的 globalTurn / skillLastUsed 灌进 g() runtime。Phase 5b-1 由 init.js 调用一次。 */
@@ -95,5 +97,6 @@ export function runCdRuntimeAutomation(event = { type: EVENT_READ_MAP }) {
   if (event.type === EVENT_RECORD_FIRE) return recordFire(event.code);
   if (event.type === EVENT_READ_TURNS) return turnsUntilReady(event.code);
   if (event.type === EVENT_READ_MAP) return collectCdMap();
+  if (event.type === EVENT_READ_GLOBAL_TURN) return g("globalTurn") || 0;
   return undefined;
 }
