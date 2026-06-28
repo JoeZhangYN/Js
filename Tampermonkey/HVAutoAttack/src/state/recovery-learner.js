@@ -10,6 +10,7 @@ import { g } from "./store.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
+import { BattleTurnEvent, runBattleTurnAutomation } from "./battle-turn.js";
 
 const EVENT_RECORD_PRE_DRINK = "recordPreDrink";
 const EVENT_FINALIZE_PENDING = "finalizePending";
@@ -58,7 +59,7 @@ function recordPreDrink(potionId, snap) {
     potionId: parseInt(potionId),
     stat: info.stat,
     pre: snap[`${info.stat}Abs`],
-    turn: g("turn") || 0,
+    turn: runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT }),
   });
 }
 
@@ -70,7 +71,7 @@ function recordPreDrink(potionId, snap) {
 function finalizePending(snap) {
   const pending = g("learnPending");
   if (!pending) return;
-  const curTurn = g("turn") || 0;
+  const curTurn = runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT });
   if (curTurn === pending.turn) return; // 同回合，未结算
   const post = snap[`${pending.stat}Abs`];
   const delta = post - pending.pre;

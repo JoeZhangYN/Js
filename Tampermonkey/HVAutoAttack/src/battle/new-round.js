@@ -1,6 +1,7 @@
 // 新一轮战斗初始化：怪物计数 / 轮次识别。
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
+import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
@@ -26,7 +27,7 @@ function isOptionEnabled(key) {
 function startRound() {
   runAutoTuneAutomation({ type: AutoTuneEvent.ROUND_STARTED });
   // New Round
-  g("turn", 0);
+  runBattleTurnAutomation({ type: BattleTurnEvent.ROUND_STARTED });
   if (window.location.hash !== "") runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
   runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
   const battleLog = gE("#textlog>tbody>tr>td", "all");

@@ -1,5 +1,6 @@
 import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
+import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
 
 const EVENT_REPORT_START_CONTEXT = "reportStartContext";
 const EVENT_ARCHIVE_CONTEXT = "archiveContext";
@@ -30,6 +31,11 @@ function readOptionField(deps, key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
 }
 
+function readTurn(deps) {
+  if (deps.readTurn) return deps.readTurn();
+  return runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT });
+}
+
 export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT }, deps = { g }) {
   if (event.type === EVENT_REPORT_START_CONTEXT) {
     return {
@@ -55,13 +61,13 @@ export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT },
       roundNow: deps.g("roundNow"),
       roundType: deps.g("roundType"),
       runSpeed: deps.g("runSpeed"),
-      turn: deps.g("turn"),
+      turn: readTurn(deps),
     };
   }
   if (event.type === EVENT_USAGE_ACTION_CONTEXT) {
     return {
       monsterAlive: deps.g("monsterAlive"),
-      turn: deps.g("turn"),
+      turn: readTurn(deps),
       roundNow: deps.g("roundNow"),
       roundAll: deps.g("roundAll"),
     };

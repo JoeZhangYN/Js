@@ -3,6 +3,7 @@ import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-mon
 
 const deps = (values) => ({
   g: vi.fn((key) => values[key]),
+  readTurn: vi.fn(() => values.turn),
   readOptionField: vi.fn((key, fallback) => {
     const option = values.option || {};
     return option[key] !== undefined ? option[key] : fallback;
@@ -75,16 +76,18 @@ describe("runBattleMonitorRuntime", () => {
       turn: 12,
     });
 
-    expect(runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.HUD_CONTEXT }, runtime))
-      .toEqual({
-        attackStatus: 1,
-        monsterAlive: 2,
-        monsterAll: 3,
-        roundAll: 5,
-        roundNow: 4,
-        roundType: "ar",
-        runSpeed: 1.5,
-        turn: 12,
-      });
+    expect(
+      runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.HUD_CONTEXT }, runtime)
+    ).toEqual({
+      attackStatus: 1,
+      monsterAlive: 2,
+      monsterAll: 3,
+      roundAll: 5,
+      roundNow: 4,
+      roundType: "ar",
+      runSpeed: 1.5,
+      turn: 12,
+    });
+    expect(runtime.readTurn).toHaveBeenCalledTimes(1);
   });
 });

@@ -2,31 +2,29 @@
 // Phase 5b 编排倒置：runBattleTurnAutomation() 只依赖 BATTLE_RULES + runRules 两个抽象，16 个 step 的具体实现
 // 全在 battle/rules/（组合根）。拆桥 gate scripts/check-mainloop-imports.mjs 禁止本文件回退
 // import step 实现，强制新增/调整 step 走 battle/rules/index.js。
-// 保留的 import 仅 pre-step 必执行项（monitor/bug guard/monster status）+ 基础设施（snapshot/cd-tracker）。
+// 保留的 import 仅 pre-step 必执行项（monitor/bug guard/monster status）+ 基础设施。
 // file-size-gate: exempt phase-5b-mainloop
 import { g } from "../state/store.js";
+import {
+  BattleTurnEvent,
+  runBattleTurnAutomation as runBattleTurnRuntime,
+} from "../state/battle-turn.js";
 import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
 import { killBug } from "./kill-bug.js";
-import {
-  MonsterStatusEvent,
-  runMonsterStatusAutomation,
-} from "./monster-status-automation.js";
+import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { runRules } from "./step-runner.js";
 import { BATTLE_RULES } from "./rules/index.js";
 import { prepareBattleTurnContext } from "./turn-context.js";
-import {
-  BattlePauseEvent,
-  runBattlePauseAutomation,
-} from "./pause-automation.js";
+import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 
 export function runBattleTurnAutomation() {
   if (runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })) return;
 
   runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY });
-  g("turn", g("turn") + 1);
+  runBattleTurnRuntime({ type: BattleTurnEvent.TURN_STARTED });
   runBattleMonitorAutomation({ type: BattleMonitorEvent.HUD_REFRESH });
   killBug();
   runMonsterStatusAutomation({ type: MonsterStatusEvent.UPDATE_HP });

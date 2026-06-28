@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   g: vi.fn(),
   gE: vi.fn(),
   runAutoTuneAutomation: vi.fn(),
+  runBattleTurnAutomation: vi.fn(),
   runBattleRoundAutomation: vi.fn(),
   runBattleStaminaAutomation: vi.fn(),
   runEncounterAutomation: vi.fn(),
@@ -31,6 +32,10 @@ vi.mock("../pages/encounter.js", () => ({
 vi.mock("../state/auto-tune.js", () => ({
   AutoTuneEvent: Object.freeze({ ROUND_STARTED: "roundStarted" }),
   runAutoTuneAutomation: mocks.runAutoTuneAutomation,
+}));
+vi.mock("../state/battle-turn.js", () => ({
+  BattleTurnEvent: Object.freeze({ ROUND_STARTED: "roundStarted" }),
+  runBattleTurnAutomation: mocks.runBattleTurnAutomation,
 }));
 vi.mock("./monster-knowledge-automation.js", () => ({
   MonsterKnowledgeEvent: Object.freeze({ ROUND_STARTED: "roundStarted" }),
@@ -106,6 +111,7 @@ describe("runBattleRoundStartAutomation", () => {
       fallback: false,
     });
     expect(mocks.runAutoTuneAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
+    expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
     expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
       type: "randomEncounterStarted",
     });

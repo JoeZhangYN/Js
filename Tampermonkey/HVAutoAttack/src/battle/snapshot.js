@@ -10,12 +10,19 @@
 import { gE, isSpiritActive } from "../dom/query.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { g } from "../state/store.js";
+import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
 import { RecoveryLearningEvent, runRecoveryLearningAutomation } from "../state/recovery-learner.js";
 import { CdLearningEvent, runCdLearningAutomation } from "../state/cd-learner.js";
-import { BigSkillKillLearningEvent, runBigSkillKillLearningAutomation } from "../state/big-skill-kill-learner.js";
-import { IncomingBurstLearningEvent, runIncomingBurstLearningAutomation } from "../state/incoming-burst-learner.js";
+import {
+  BigSkillKillLearningEvent,
+  runBigSkillKillLearningAutomation,
+} from "../state/big-skill-kill-learner.js";
+import {
+  IncomingBurstLearningEvent,
+  runIncomingBurstLearningAutomation,
+} from "../state/incoming-burst-learner.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 import { joinMonsterView, monsterHpVars } from "./monster-view.js";
 import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
@@ -109,8 +116,13 @@ function readPlayerVitals() {
   const mpMax = parseInt(gE("#dvrm")?.textContent) || 0;
   const spMax = parseInt(gE("#dvrs")?.textContent) || 0;
   return {
-    hp, mp, sp, oc,
-    hpMax, mpMax, spMax,
+    hp,
+    mp,
+    sp,
+    oc,
+    hpMax,
+    mpMax,
+    spMax,
     hpAbs: (hp / 100) * hpMax,
     mpAbs: (mp / 100) * mpMax,
     spAbs: (sp / 100) * spMax,
@@ -133,12 +145,57 @@ function readSkillReady() {
   // Magic IDs 111-163 (18 个)
   // Physical IDs 1101/1111/2{1,2,3}{0,1,2,3,4} 等
   const ids = [
-    "111","112","113","121","122","123","131","132","133",
-    "141","142","143","151","152","153","161","162","163",
-    "211","212","213","221","222","223","231","232","233",
-    "311","312","313","411","412","413","421","422","423","431","432",
-    "1001","1011","1101","1111",
-    "2101","2102","2103","2201","2202","2203","2301","2302","2303",
+    "111",
+    "112",
+    "113",
+    "121",
+    "122",
+    "123",
+    "131",
+    "132",
+    "133",
+    "141",
+    "142",
+    "143",
+    "151",
+    "152",
+    "153",
+    "161",
+    "162",
+    "163",
+    "211",
+    "212",
+    "213",
+    "221",
+    "222",
+    "223",
+    "231",
+    "232",
+    "233",
+    "311",
+    "312",
+    "313",
+    "411",
+    "412",
+    "413",
+    "421",
+    "422",
+    "423",
+    "431",
+    "432",
+    "1001",
+    "1011",
+    "1101",
+    "1111",
+    "2101",
+    "2102",
+    "2103",
+    "2201",
+    "2202",
+    "2203",
+    "2301",
+    "2302",
+    "2303",
   ];
   for (const id of ids) {
     const el = document.getElementById(id);
@@ -156,27 +213,46 @@ export function collectSnapshot() {
   const monsters = readMonsters();
   // 统一怪物视图：join snap.monsters + monsterStatus(绝对血/finWeight) + monster-db 缓存(九抗/身份)。
   // countMonsterHP(main-loop) 已先于本函数跑 → monsterStatus 最新；db 走 monster-cache 同步快照。
-  const view = joinMonsterView(monsters, g("monsterStatus"), runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_DB }));
+  const view = joinMonsterView(
+    monsters,
+    g("monsterStatus"),
+    runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_DB })
+  );
   const playerEffects = readPlayerEffects();
   const vitals = readPlayerVitals();
   const spiritEl = gE("#ckey_spirit");
   // 战斗日志只解析一遍，两个 DPS 估计复用同一份 events（避免每 turn 重复全量遍历 textlog）
   const battleLog = parseBattleLog();
+  const turn = runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT });
   // 学习器 finalize 全部跑在 rules 之前（结算上回合行动的观测）。globalTurn/skillReady 先备好供两用。
   const globalTurn = g("globalTurn") || 0;
   const skillReady = readSkillReady();
   // T1: 上回合若有 pending 喝药观测，此处结算 → 学习 delta
   const snapPartial = { ...vitals };
-  runRecoveryLearningAutomation({ type: RecoveryLearningEvent.FINALIZE_PENDING, snap: snapPartial });
+  runRecoveryLearningAutomation({
+    type: RecoveryLearningEvent.FINALIZE_PENDING,
+    snap: snapPartial,
+  });
   // F3: 上回合开火的技能若本回合脱灰 → 收敛真实 CD（只需 globalTurn + skillReady）
-  runCdLearningAutomation({ type: CdLearningEvent.FINALIZE_PENDING, snap: { globalTurn, skillReady } });
+  runCdLearningAutomation({
+    type: CdLearningEvent.FINALIZE_PENDING,
+    snap: { globalTurn, skillReady },
+  });
   // F4: 上回合 OFC/FRD 开火的 boss 本回合是否已死 → 按 MID 学击杀率（只需 globalTurn + view）
-  runBigSkillKillLearningAutomation({ type: BigSkillKillLearningEvent.FINALIZE_PENDING, snap: { globalTurn, view } });
+  runBigSkillKillLearningAutomation({
+    type: BigSkillKillLearningEvent.FINALIZE_PENDING,
+    snap: { globalTurn, view },
+  });
   // F5（默认 OFF，开关关时零开销）：从本回合战斗日志学每 MID 单发最大伤害 + 类型；attach 给 decide。
   const burstOn = !!readOptionField("burstControlSwitch", false);
-  if (burstOn) runIncomingBurstLearningAutomation({ type: IncomingBurstLearningEvent.RECORD_EVENTS, events: battleLog, monsterStatus: g("monsterStatus") });
+  if (burstOn)
+    runIncomingBurstLearningAutomation({
+      type: IncomingBurstLearningEvent.RECORD_EVENTS,
+      events: battleLog,
+      monsterStatus: g("monsterStatus"),
+    });
   return {
-    turn: g("turn") || 0,
+    turn,
     globalTurn,
     ...vitals,
     channeling: !!gE('#pane_effects>img[src*="channeling"]'),
@@ -203,10 +279,12 @@ export function collectSnapshot() {
     attackStatus: g("attackStatus"),
     fightingStyle: readOptionField("fightingStyle", "2") || "2",
     // PoC L1：战斗日志解析得 DPS 估计（复用上方 battleLog，本 turn 只解析一遍）
-    playerIncomingDps: estimatePlayerIncomingDps(battleLog, g("turn")),
-    monsterDpsByName: estimatePerMonsterDps(battleLog, g("turn")),
+    playerIncomingDps: estimatePlayerIncomingDps(battleLog, turn),
+    monsterDpsByName: estimatePerMonsterDps(battleLog, turn),
     // F5：每 MID 致死/爆发伤害学习表（开关关→空，decide 自然 noop）
-    learnedBurstByMid: burstOn ? runIncomingBurstLearningAutomation({ type: IncomingBurstLearningEvent.READ_MAP }) : {},
+    learnedBurstByMid: burstOn
+      ? runIncomingBurstLearningAutomation({ type: IncomingBurstLearningEvent.READ_MAP })
+      : {},
   };
 }
 

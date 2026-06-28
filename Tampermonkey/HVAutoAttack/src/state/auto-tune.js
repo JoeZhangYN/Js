@@ -9,6 +9,7 @@ import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { g } from "./store.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
+import { BattleTurnEvent, runBattleTurnAutomation } from "./battle-turn.js";
 
 const PAD_GRID = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0];
 const MIN_OBSERVATIONS = 5;
@@ -83,7 +84,7 @@ function recordPotionUse() {
 }
 
 function recordRoundStarted() {
-  if (isAutoTuneEnabled() && (g("turn") || 0) > 0) {
+  if (isAutoTuneEnabled() && runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT }) > 0) {
     observeBattle(g("autoTunePotionCount") || 0);
   }
   g("autoTunePotionCount", 0);

@@ -3,11 +3,12 @@ import { AutoTuneEvent, runAutoTuneAutomation } from "./auto-tune.js";
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { g } from "./store.js";
+import { BattleTurnEvent, runBattleTurnAutomation } from "./battle-turn.js";
 
 beforeEach(() => {
   localStorage.clear();
   g("autoTunePotionCount", 0);
-  g("turn", 0);
+  runBattleTurnAutomation({ type: BattleTurnEvent.ROUND_STARTED });
   g("option", { autoTune: true });
 });
 
@@ -50,7 +51,7 @@ describe("auto-tune safetyPad entry", () => {
     runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_POTION_USE });
     expect(g("autoTunePotionCount")).toBe(2);
 
-    g("turn", 3);
+    runBattleTurnAutomation({ type: BattleTurnEvent.TURN_STARTED });
     runAutoTuneAutomation({ type: AutoTuneEvent.ROUND_STARTED });
 
     expect(getValue(STORAGE_KEYS.AUTO_TUNE_HISTORY, true)["1.30"]).toEqual({
@@ -64,7 +65,7 @@ describe("auto-tune safetyPad entry", () => {
     g("option", { autoTune: false });
 
     runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_POTION_USE });
-    g("turn", 3);
+    runBattleTurnAutomation({ type: BattleTurnEvent.TURN_STARTED });
     runAutoTuneAutomation({ type: AutoTuneEvent.ROUND_STARTED });
 
     expect(g("autoTunePotionCount")).toBe(0);
