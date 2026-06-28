@@ -380,6 +380,9 @@ function checkBattleMonitorRuntimeEntry() {
   if (!text.includes("MonsterStatusEvent.READ_COMBATANT_COUNTS")) {
     violations.push(`${rel(runtimeFile)} must read combatants through monster-status entry`);
   }
+  if (!text.includes("BattleActionSpeedEvent.READ_CURRENT")) {
+    violations.push(`${rel(runtimeFile)} must read runSpeed through battle action-speed entry`);
+  }
   if (/\bdeps\.g\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(runtimeFile)} must not read option context directly from store`);
   }
@@ -391,6 +394,9 @@ function checkBattleMonitorRuntimeEntry() {
     violations.push(
       `${rel(runtimeFile)} must not assemble round/combatant context from raw store fields`
     );
+  }
+  if (/\bdeps\.g\(\s*["']runSpeed["']/.test(text)) {
+    violations.push(`${rel(runtimeFile)} must not read battle action speed from raw store fields`);
   }
   if (!text.includes("recordUsage")) {
     violations.push(`${rel(runtimeFile)} must expose recordUsage in usage completion context`);

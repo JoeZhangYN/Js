@@ -19,6 +19,7 @@ const deps = (values) => ({
       }
   ),
   readRoundType: vi.fn(() => values.roundType),
+  readRunSpeed: vi.fn(() => values.runSpeed),
   readTurn: vi.fn(() => values.turn),
   readOptionField: vi.fn((key, fallback) => {
     const option = values.option || {};
@@ -112,6 +113,7 @@ describe("runBattleMonitorRuntime", () => {
     expect(runtime.readCombatantCounts).toHaveBeenCalledTimes(1);
     expect(runtime.readRoundRuntime).toHaveBeenCalledTimes(1);
     expect(runtime.readRoundType).toHaveBeenCalledTimes(1);
+    expect(runtime.readRunSpeed).toHaveBeenCalledTimes(1);
     expect(runtime.readTurn).toHaveBeenCalledTimes(1);
   });
 });

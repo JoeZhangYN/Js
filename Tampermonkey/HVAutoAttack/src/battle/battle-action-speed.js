@@ -3,10 +3,12 @@ import { g } from "../state/store.js";
 
 const EVENT_ACTION_ENDED = "actionEnded";
 const EVENT_BATTLE_STARTED = "battleStarted";
+const EVENT_READ_CURRENT = "readCurrent";
 
 export const BattleActionSpeedEvent = Object.freeze({
   ACTION_ENDED: EVENT_ACTION_ENDED,
   BATTLE_STARTED: EVENT_BATTLE_STARTED,
+  READ_CURRENT: EVENT_READ_CURRENT,
 });
 
 function startBattle(deps) {
@@ -25,6 +27,10 @@ function recordActionEnd(deps) {
   return { timeNow, runSpeed };
 }
 
+function readCurrentSpeed(deps) {
+  return deps.read("runSpeed");
+}
+
 export function runBattleActionSpeedAutomation(
   event = { type: EVENT_ACTION_ENDED },
   deps = {
@@ -35,5 +41,6 @@ export function runBattleActionSpeedAutomation(
 ) {
   if (event.type === EVENT_BATTLE_STARTED) return startBattle(deps);
   if (event.type === EVENT_ACTION_ENDED) return recordActionEnd(deps);
+  if (event.type === EVENT_READ_CURRENT) return readCurrentSpeed(deps);
   return undefined;
 }

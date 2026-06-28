@@ -36,6 +36,17 @@ describe("runBattleActionSpeedAutomation", () => {
     expect(state).toMatchObject({ timeNow: 1250, runSpeed: "4.00" });
   });
 
+  it("reads current battle action speed through the entry", () => {
+    const { deps, state } = makeDeps();
+    state.runSpeed = "3.25";
+
+    expect(
+      runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.READ_CURRENT }, deps)
+    ).toBe("3.25");
+
+    expect(deps.read).toHaveBeenCalledWith("runSpeed");
+  });
+
   it("rejects unknown events", () => {
     expect(runBattleActionSpeedAutomation({ type: "unknown" }, makeDeps().deps)).toBeUndefined();
   });

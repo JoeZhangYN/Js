@@ -6,6 +6,10 @@ import {
   MonsterStatusEvent,
   runMonsterStatusAutomation,
 } from "../battle/monster-status-automation.js";
+import {
+  BattleActionSpeedEvent,
+  runBattleActionSpeedAutomation,
+} from "../battle/battle-action-speed.js";
 
 const EVENT_REPORT_START_CONTEXT = "reportStartContext";
 const EVENT_ARCHIVE_CONTEXT = "archiveContext";
@@ -57,6 +61,11 @@ function readCombatantCounts(deps) {
   return runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_COMBATANT_COUNTS });
 }
 
+function readRunSpeed(deps) {
+  if (deps.readRunSpeed) return deps.readRunSpeed();
+  return runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.READ_CURRENT });
+}
+
 export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT }, deps = { g }) {
   if (event.type === EVENT_REPORT_START_CONTEXT) {
     const round = readRoundRuntime(deps);
@@ -84,7 +93,7 @@ export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT },
       roundAll: round.roundAll,
       roundNow: round.roundNow,
       roundType: readRoundType(deps),
-      runSpeed: deps.g("runSpeed"),
+      runSpeed: readRunSpeed(deps),
       turn: readTurn(deps),
     };
   }
