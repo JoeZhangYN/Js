@@ -1,6 +1,11 @@
 import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
+import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
+import {
+  MonsterStatusEvent,
+  runMonsterStatusAutomation,
+} from "../battle/monster-status-automation.js";
 
 const EVENT_REPORT_START_CONTEXT = "reportStartContext";
 const EVENT_ARCHIVE_CONTEXT = "archiveContext";
@@ -19,10 +24,11 @@ export const BattleMonitorRuntimeEvent = Object.freeze({
 });
 
 function readArchiveContext(deps) {
+  const round = readRoundRuntime(deps);
   return {
     recordEach: readOptionField(deps, "recordEach", false),
-    roundNow: deps.g("roundNow"),
-    roundAll: deps.g("roundAll"),
+    roundNow: round.roundNow,
+    roundAll: round.roundAll,
   };
 }
 
@@ -36,12 +42,28 @@ function readTurn(deps) {
   return runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT });
 }
 
+function readRoundRuntime(deps) {
+  if (deps.readRoundRuntime) return deps.readRoundRuntime();
+  return runBattleRoundAutomation({ type: BattleRoundEvent.READ_RUNTIME });
+}
+
+function readRoundType(deps) {
+  if (deps.readRoundType) return deps.readRoundType();
+  return runBattleRoundAutomation({ type: BattleRoundEvent.READ_TYPE });
+}
+
+function readCombatantCounts(deps) {
+  if (deps.readCombatantCounts) return deps.readCombatantCounts();
+  return runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_COMBATANT_COUNTS });
+}
+
 export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT }, deps = { g }) {
   if (event.type === EVENT_REPORT_START_CONTEXT) {
+    const round = readRoundRuntime(deps);
     return {
       recordEach: readOptionField(deps, "recordEach", false),
-      roundType: deps.g("roundType"),
-      roundAll: deps.g("roundAll"),
+      roundType: readRoundType(deps),
+      roundAll: round.roundAll,
     };
   }
   if (event.type === EVENT_ARCHIVE_CONTEXT) return readArchiveContext(deps);
@@ -53,31 +75,36 @@ export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT },
     };
   }
   if (event.type === EVENT_HUD_CONTEXT) {
+    const combatants = readCombatantCounts(deps);
+    const round = readRoundRuntime(deps);
     return {
       attackStatus: deps.g("attackStatus"),
-      monsterAlive: deps.g("monsterAlive"),
-      monsterAll: deps.g("monsterAll"),
-      roundAll: deps.g("roundAll"),
-      roundNow: deps.g("roundNow"),
-      roundType: deps.g("roundType"),
+      monsterAlive: combatants.monsterAlive,
+      monsterAll: combatants.monsterAll,
+      roundAll: round.roundAll,
+      roundNow: round.roundNow,
+      roundType: readRoundType(deps),
       runSpeed: deps.g("runSpeed"),
       turn: readTurn(deps),
     };
   }
   if (event.type === EVENT_USAGE_ACTION_CONTEXT) {
+    const combatants = readCombatantCounts(deps);
+    const round = readRoundRuntime(deps);
     return {
-      monsterAlive: deps.g("monsterAlive"),
+      monsterAlive: combatants.monsterAlive,
       turn: readTurn(deps),
-      roundNow: deps.g("roundNow"),
-      roundAll: deps.g("roundAll"),
+      roundNow: round.roundNow,
+      roundAll: round.roundAll,
     };
   }
   if (event.type === EVENT_USAGE_COMPLETION_CONTEXT) {
+    const combatants = readCombatantCounts(deps);
     return {
       ...readArchiveContext(deps),
       recordUsage: readOptionField(deps, "recordUsage", false),
-      monsterAll: deps.g("monsterAll"),
-      bossAll: deps.g("bossAll"),
+      monsterAll: combatants.monsterAll,
+      bossAll: combatants.bossAll,
     };
   }
   return undefined;

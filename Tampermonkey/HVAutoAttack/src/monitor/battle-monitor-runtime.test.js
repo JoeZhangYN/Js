@@ -3,6 +3,22 @@ import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-mon
 
 const deps = (values) => ({
   g: vi.fn((key) => values[key]),
+  readCombatantCounts: vi.fn(
+    () =>
+      values.combatants || {
+        bossAll: values.bossAll,
+        monsterAlive: values.monsterAlive,
+        monsterAll: values.monsterAll,
+      }
+  ),
+  readRoundRuntime: vi.fn(
+    () =>
+      values.round || {
+        roundAll: values.roundAll,
+        roundNow: values.roundNow,
+      }
+  ),
+  readRoundType: vi.fn(() => values.roundType),
   readTurn: vi.fn(() => values.turn),
   readOptionField: vi.fn((key, fallback) => {
     const option = values.option || {};
@@ -18,6 +34,8 @@ describe("runBattleMonitorRuntime", () => {
       runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.REPORT_START_CONTEXT }, runtime)
     ).toEqual({ recordEach: true, roundType: "ar", roundAll: 5 });
     expect(runtime.readOptionField).toHaveBeenCalledWith("recordEach", false);
+    expect(runtime.readRoundRuntime).toHaveBeenCalledTimes(1);
+    expect(runtime.readRoundType).toHaveBeenCalledTimes(1);
   });
 
   it("reads archive and usage completion context consistently", () => {
@@ -41,6 +59,8 @@ describe("runBattleMonitorRuntime", () => {
     });
     expect(runtime.readOptionField).toHaveBeenCalledWith("recordEach", false);
     expect(runtime.readOptionField).toHaveBeenCalledWith("recordUsage", false);
+    expect(runtime.readCombatantCounts).toHaveBeenCalledTimes(1);
+    expect(runtime.readRoundRuntime).toHaveBeenCalledTimes(1);
   });
 
   it("reads drop completion context from the same monitor runtime query", () => {
@@ -62,6 +82,7 @@ describe("runBattleMonitorRuntime", () => {
     expect(runtime.readOptionField).toHaveBeenCalledWith("recordEach", false);
     expect(runtime.readOptionField).toHaveBeenCalledWith("dropMonitor", false);
     expect(runtime.readOptionField).toHaveBeenCalledWith("dropQuality", 0);
+    expect(runtime.readRoundRuntime).toHaveBeenCalledTimes(1);
   });
 
   it("reads battle HUD context from one monitor runtime query", () => {
@@ -88,6 +109,9 @@ describe("runBattleMonitorRuntime", () => {
       runSpeed: 1.5,
       turn: 12,
     });
+    expect(runtime.readCombatantCounts).toHaveBeenCalledTimes(1);
+    expect(runtime.readRoundRuntime).toHaveBeenCalledTimes(1);
+    expect(runtime.readRoundType).toHaveBeenCalledTimes(1);
     expect(runtime.readTurn).toHaveBeenCalledTimes(1);
   });
 });

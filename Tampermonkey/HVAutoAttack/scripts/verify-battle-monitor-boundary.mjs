@@ -259,7 +259,9 @@ function checkUsageImplementation() {
     violations.push(`${rel(usageFile)} must not read recordUsage option directly`);
   }
   if (/\b(?:getValue|setValue)\(\s*STORAGE_KEYS\.STATS\b/.test(text)) {
-    violations.push(`${rel(usageFile)} must read/write usage records through battle-record-archive`);
+    violations.push(
+      `${rel(usageFile)} must read/write usage records through battle-record-archive`
+    );
   }
   if (/from\s+["']\.\.\/state\/storage\.js["']/.test(text)) {
     violations.push(`${rel(usageFile)} must not import storage directly`);
@@ -369,8 +371,26 @@ function checkBattleMonitorRuntimeEntry() {
   if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(`${rel(runtimeFile)} must read monitor option context through option entry`);
   }
+  if (
+    !text.includes("BattleRoundEvent.READ_RUNTIME") ||
+    !text.includes("BattleRoundEvent.READ_TYPE")
+  ) {
+    violations.push(`${rel(runtimeFile)} must read round context through battle-round entry`);
+  }
+  if (!text.includes("MonsterStatusEvent.READ_COMBATANT_COUNTS")) {
+    violations.push(`${rel(runtimeFile)} must read combatants through monster-status entry`);
+  }
   if (/\bdeps\.g\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(runtimeFile)} must not read option context directly from store`);
+  }
+  if (
+    /\bdeps\.g\(\s*["'](?:roundNow|roundAll|roundType|monsterAlive|monsterAll|bossAll)["']/.test(
+      text
+    )
+  ) {
+    violations.push(
+      `${rel(runtimeFile)} must not assemble round/combatant context from raw store fields`
+    );
   }
   if (!text.includes("recordUsage")) {
     violations.push(`${rel(runtimeFile)} must expose recordUsage in usage completion context`);
@@ -429,7 +449,11 @@ function checkDeletedBattleInfoEntrypoint() {
   if (/from\s+["']\.\.\/state\/store\.js["']/.test(hudText)) {
     violations.push(`${rel(hudFile)} must not import store directly`);
   }
-  if (/\b(?:deps\.)?g\(\s*["'](?:turn|runSpeed|roundNow|roundAll|attackStatus|monsterAlive|monsterAll|roundType)["']/.test(hudText)) {
+  if (
+    /\b(?:deps\.)?g\(\s*["'](?:turn|runSpeed|roundNow|roundAll|attackStatus|monsterAlive|monsterAll|roundType)["']/.test(
+      hudText
+    )
+  ) {
     violations.push(`${rel(hudFile)} must not assemble HUD context from raw store fields`);
   }
 }
@@ -461,12 +485,18 @@ function checkBattleReportEntry() {
     violations.push(`${rel(reportFile)} must read report records through battle-record-archive`);
   }
   if (!text.includes("BattleRecordArchiveEvent.START_RECORDING")) {
-    violations.push(`${rel(reportFile)} must start report record naming through battle-record-archive`);
+    violations.push(
+      `${rel(reportFile)} must start report record naming through battle-record-archive`
+    );
   }
   if (/from\s+["']\.\.\/state\/storage\.js["']/.test(text)) {
     violations.push(`${rel(reportFile)} must not import storage directly`);
   }
-  if (/\b(?:getValue|setValue)\(\s*STORAGE_KEYS\.(?:BATTLE_CODE|DROP|DROP_OLD|STATS|STATS_OLD)\b/.test(text)) {
+  if (
+    /\b(?:getValue|setValue)\(\s*STORAGE_KEYS\.(?:BATTLE_CODE|DROP|DROP_OLD|STATS|STATS_OLD)\b/.test(
+      text
+    )
+  ) {
     violations.push(`${rel(reportFile)} must not read/write battle report storage directly`);
   }
   if (
