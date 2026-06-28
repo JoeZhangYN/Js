@@ -383,6 +383,11 @@ function checkBattleMonitorRuntimeEntry() {
   if (!text.includes("BattleActionSpeedEvent.READ_CURRENT")) {
     violations.push(`${rel(runtimeFile)} must read runSpeed through battle action-speed entry`);
   }
+  if (!text.includes("BattleStartRuntimeEvent.READ_ATTACK_STATUS")) {
+    violations.push(
+      `${rel(runtimeFile)} must read attackStatus through battle start-runtime entry`
+    );
+  }
   if (/\bdeps\.g\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(runtimeFile)} must not read option context directly from store`);
   }
@@ -397,6 +402,9 @@ function checkBattleMonitorRuntimeEntry() {
   }
   if (/\bdeps\.g\(\s*["']runSpeed["']/.test(text)) {
     violations.push(`${rel(runtimeFile)} must not read battle action speed from raw store fields`);
+  }
+  if (/\bdeps\.g\(\s*["']attackStatus["']/.test(text)) {
+    violations.push(`${rel(runtimeFile)} must not read attack mode from raw store fields`);
   }
   if (!text.includes("recordUsage")) {
     violations.push(`${rel(runtimeFile)} must expose recordUsage in usage completion context`);

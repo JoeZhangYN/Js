@@ -3,6 +3,7 @@ import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-mon
 
 const deps = (values) => ({
   g: vi.fn((key) => values[key]),
+  readAttackStatus: vi.fn(() => values.attackStatus),
   readCombatantCounts: vi.fn(
     () =>
       values.combatants || {
@@ -111,6 +112,7 @@ describe("runBattleMonitorRuntime", () => {
       turn: 12,
     });
     expect(runtime.readCombatantCounts).toHaveBeenCalledTimes(1);
+    expect(runtime.readAttackStatus).toHaveBeenCalledTimes(1);
     expect(runtime.readRoundRuntime).toHaveBeenCalledTimes(1);
     expect(runtime.readRoundType).toHaveBeenCalledTimes(1);
     expect(runtime.readRunSpeed).toHaveBeenCalledTimes(1);

@@ -10,6 +10,10 @@ import {
   BattleActionSpeedEvent,
   runBattleActionSpeedAutomation,
 } from "../battle/battle-action-speed.js";
+import {
+  BattleStartRuntimeEvent,
+  runBattleStartRuntimeAutomation,
+} from "../battle/battle-start-runtime.js";
 
 const EVENT_REPORT_START_CONTEXT = "reportStartContext";
 const EVENT_ARCHIVE_CONTEXT = "archiveContext";
@@ -66,6 +70,11 @@ function readRunSpeed(deps) {
   return runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.READ_CURRENT });
 }
 
+function readAttackStatus(deps) {
+  if (deps.readAttackStatus) return deps.readAttackStatus();
+  return runBattleStartRuntimeAutomation({ type: BattleStartRuntimeEvent.READ_ATTACK_STATUS });
+}
+
 export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT }, deps = { g }) {
   if (event.type === EVENT_REPORT_START_CONTEXT) {
     const round = readRoundRuntime(deps);
@@ -87,7 +96,7 @@ export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT },
     const combatants = readCombatantCounts(deps);
     const round = readRoundRuntime(deps);
     return {
-      attackStatus: deps.g("attackStatus"),
+      attackStatus: readAttackStatus(deps),
       monsterAlive: combatants.monsterAlive,
       monsterAll: combatants.monsterAll,
       roundAll: round.roundAll,

@@ -29,6 +29,7 @@ describe("runBattleStartRuntimeAutomation", () => {
   it("initializes battle runtime attack mode and action speed", () => {
     const deps = {
       readOptionField: vi.fn(() => "magic"),
+      read: vi.fn(),
       write: vi.fn(),
       startSpeed: vi.fn(),
     };
@@ -40,6 +41,21 @@ describe("runBattleStartRuntimeAutomation", () => {
     expect(deps.write).toHaveBeenCalledWith("attackStatus", "magic");
     expect(deps.readOptionField).toHaveBeenCalledWith("attackStatus");
     expect(deps.startSpeed).toHaveBeenCalledTimes(1);
+  });
+
+  it("reads current attack mode through the runtime entry", () => {
+    const deps = {
+      readOptionField: vi.fn(),
+      read: vi.fn(() => "magic"),
+      write: vi.fn(),
+      startSpeed: vi.fn(),
+    };
+
+    expect(
+      runBattleStartRuntimeAutomation({ type: BattleStartRuntimeEvent.READ_ATTACK_STATUS }, deps)
+    ).toBe("magic");
+
+    expect(deps.read).toHaveBeenCalledWith("attackStatus");
   });
 
   it("rejects unknown events", () => {
