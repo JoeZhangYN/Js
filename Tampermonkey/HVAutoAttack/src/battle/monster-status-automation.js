@@ -13,6 +13,7 @@ const EVENT_REPAIR = "repair";
 const EVENT_RECORD_SPAWN_ROSTER = "recordSpawnRoster";
 const EVENT_UPDATE_HP = "updateHp";
 const EVENT_REFRESH_COMBATANT_COUNTS = "refreshCombatantCounts";
+const EVENT_READ_COMBATANT_COUNTS = "readCombatantCounts";
 const EVENT_READ_IDS_BY_ORDER = "readIdsByOrder";
 
 export const MonsterStatusEvent = Object.freeze({
@@ -21,6 +22,7 @@ export const MonsterStatusEvent = Object.freeze({
   RECORD_SPAWN_ROSTER: EVENT_RECORD_SPAWN_ROSTER,
   UPDATE_HP: EVENT_UPDATE_HP,
   REFRESH_COMBATANT_COUNTS: EVENT_REFRESH_COMBATANT_COUNTS,
+  READ_COMBATANT_COUNTS: EVENT_READ_COMBATANT_COUNTS,
   READ_IDS_BY_ORDER: EVENT_READ_IDS_BY_ORDER,
 });
 
@@ -42,6 +44,15 @@ function refreshCombatantCounts() {
     monsterAlive: monsterAll - monsterDead,
     bossAll,
     bossAlive: bossAll - bossDead,
+  };
+}
+
+function readCombatantCounts() {
+  return {
+    monsterAll: g("monsterAll"),
+    monsterAlive: g("monsterAlive"),
+    bossAll: g("bossAll"),
+    bossAlive: g("bossAlive"),
   };
 }
 
@@ -112,6 +123,8 @@ export function runMonsterStatusAutomation(event = { type: EVENT_ENSURE_READY })
     countMonsterHP();
   } else if (event.type === EVENT_REFRESH_COMBATANT_COUNTS) {
     return refreshCombatantCounts();
+  } else if (event.type === EVENT_READ_COMBATANT_COUNTS) {
+    return readCombatantCounts();
   } else if (event.type === EVENT_READ_IDS_BY_ORDER) {
     return readMonsterIdsByOrder();
   }

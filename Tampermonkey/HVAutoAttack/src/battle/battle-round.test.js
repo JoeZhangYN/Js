@@ -83,6 +83,17 @@ describe("runBattleRoundAutomation", () => {
     expect(g("roundLeft")).toBe(3);
   });
 
+  it("reads synced runtime round context through the round entry", () => {
+    g("roundNow", 4);
+    g("roundAll", 6);
+
+    expect(runBattleRoundAutomation({ type: BattleRoundEvent.READ_RUNTIME })).toEqual({
+      roundNow: 4,
+      roundAll: 6,
+      roundLeft: 2,
+    });
+  });
+
   it("records round counts from initialization text in the round boundary", () => {
     expect(
       runBattleRoundAutomation({

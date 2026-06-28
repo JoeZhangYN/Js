@@ -12,6 +12,7 @@ const EVENT_SYNC_RUNTIME = "syncRuntime";
 const EVENT_CLASSIFY_TYPE = "classifyType";
 const EVENT_RECORD_DEBUG_FIELDS = "recordDebugFields";
 const EVENT_READ_DEBUG_FIELDS = "readDebugFields";
+const EVENT_READ_RUNTIME = "readRuntime";
 
 export const BattleRoundEvent = Object.freeze({
   READ_TYPE: EVENT_READ_TYPE,
@@ -23,6 +24,7 @@ export const BattleRoundEvent = Object.freeze({
   CLASSIFY_TYPE: EVENT_CLASSIFY_TYPE,
   RECORD_DEBUG_FIELDS: EVENT_RECORD_DEBUG_FIELDS,
   READ_DEBUG_FIELDS: EVENT_READ_DEBUG_FIELDS,
+  READ_RUNTIME: EVENT_READ_RUNTIME,
 });
 
 function readType() {
@@ -67,6 +69,12 @@ function syncRuntime() {
   g("roundNow", roundNow);
   g("roundAll", roundAll);
   g("roundLeft", roundAll - roundNow);
+  return readRuntime();
+}
+
+function readRuntime() {
+  const roundNow = g("roundNow");
+  const roundAll = g("roundAll");
   return { roundNow, roundAll, roundLeft: roundAll - roundNow };
 }
 
@@ -99,6 +107,7 @@ export function runBattleRoundAutomation(event = { type: EVENT_SYNC_RUNTIME }) {
   }
   if (event.type === EVENT_RECORD_SINGLE_ROUND) return recordCount(1, 1);
   if (event.type === EVENT_SYNC_RUNTIME) return syncRuntime();
+  if (event.type === EVENT_READ_RUNTIME) return readRuntime();
   if (event.type === EVENT_RECORD_DEBUG_FIELDS) return recordDebugFields(event.fields);
   if (event.type === EVENT_READ_DEBUG_FIELDS) return readDebugFields();
   return null;

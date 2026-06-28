@@ -60,6 +60,7 @@ for (const required of [
   "RECORD_DEBUG_FIELDS",
   "READ_DEBUG_FIELDS",
   "SYNC_RUNTIME",
+  "READ_RUNTIME",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required} event`);

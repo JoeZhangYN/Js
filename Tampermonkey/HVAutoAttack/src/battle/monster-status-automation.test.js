@@ -66,6 +66,20 @@ describe("monster status automation", () => {
     expect(g("bossAlive")).toBe(2);
   });
 
+  it("reads combatant counts through the monster status entry", () => {
+    g("monsterAll", 4);
+    g("monsterAlive", 3);
+    g("bossAll", 2);
+    g("bossAlive", 1);
+
+    expect(runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_COMBATANT_COUNTS })).toEqual({
+      monsterAll: 4,
+      monsterAlive: 3,
+      bossAll: 2,
+      bossAlive: 1,
+    });
+  });
+
   it("exposes monster identity by combatant order through the entry", () => {
     g("monsterStatus", [
       { order: 1, monsterId: 202 },

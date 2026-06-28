@@ -1,8 +1,9 @@
 // 战斗完成裁决：唯一入口 runBattleCompletionAutomation(event)。
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
-import { g } from "../state/store.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
+import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
+import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 
 const EVENT_COMPLETION_REACHED = "completionReached";
 
@@ -18,10 +19,14 @@ export const BattleCompletionOutcome = Object.freeze({
 });
 
 function readCompletionContext() {
+  const combatants = runMonsterStatusAutomation({
+    type: MonsterStatusEvent.READ_COMBATANT_COUNTS,
+  });
+  const round = runBattleRoundAutomation({ type: BattleRoundEvent.READ_RUNTIME });
   return {
-    monsterAlive: g("monsterAlive"),
-    roundNow: g("roundNow"),
-    roundAll: g("roundAll"),
+    monsterAlive: combatants.monsterAlive,
+    roundNow: round.roundNow,
+    roundAll: round.roundAll,
   };
 }
 

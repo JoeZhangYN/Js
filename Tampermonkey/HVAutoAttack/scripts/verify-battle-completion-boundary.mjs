@@ -40,6 +40,8 @@ function checkOwner() {
     "scheduleReload",
     "readCompletionContext",
     "deps.readCompletionContext",
+    "MonsterStatusEvent.READ_COMBATANT_COUNTS",
+    "BattleRoundEvent.READ_RUNTIME",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -58,6 +60,11 @@ function checkOwner() {
   if (/\bdeps\.g\(\s*["'](?:monsterAlive|roundNow|roundAll)["']/.test(text)) {
     violations.push(
       `${owner.replaceAll("\\", "/")} must read completion fields through readCompletionContext`
+    );
+  }
+  if (/\bg\(\s*["'](?:monsterAlive|roundNow|roundAll)["']\s*\)/.test(text)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must compose completion context through capability entries`
     );
   }
   if (!fs.existsSync(path.join(root, ownerTest))) {
