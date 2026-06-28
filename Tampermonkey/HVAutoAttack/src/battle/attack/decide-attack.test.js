@@ -1,15 +1,17 @@
 // 6B-2：decideAttack 6 分支 + fall-through 回归锁(纯决策,喂 mock snap.view 断言 AttackPlan)。
 // file-size-gate: exempt test-verbose（6 分支 + fall-through 全覆盖，逐例断言；与 decide-item.test 同类）
 // 统一视图后：怪物事实全在 snap.view（finWeight/hpAbsNow/hpMax/buffs/order），不再传第三参 monsterStatus。
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { decideAttack } from "./decide-attack.js";
-import { g } from "../../state/store.js";
 
 /** 最小 snap 工厂(只填 decideAttack 及其纯 callee 读到的字段)。 */
 function snap(over = {}) {
   return {
     spiritOn: true,
     globalTurn: 100,
+    lastSpiritToggleGlobalTurn: undefined,
+    roundAll: undefined,
+    roundNow: undefined,
     attackStatus: 0,
     channeling: false,
     aliveCount: 1,
@@ -42,14 +44,6 @@ function vmon(over = {}) {
 }
 
 const plan = (opt, s) => decideAttack(opt, s).plan;
-
-beforeEach(() => {
-  g("option", {});
-  g("roundNow", undefined);
-  g("roundAll", undefined);
-  g("lastSpiritToggleGlobalTurn", undefined);
-  g("skillOTOS", {});
-});
 
 describe("decideAttack 返 {kind:'attack-plan'}", () => {
   it("包一层 attack-plan", () => {
@@ -97,10 +91,10 @@ describe("decideAttack 6 分支", () => {
   });
 
   it("4. merciful-single:末回合独怪 + 流血残血 + OC 够 + 技能 ready", () => {
-    g("roundNow", 2);
-    g("roundAll", 2);
     const s = snap({
       oc: 200,
+      roundNow: 2,
+      roundAll: 2,
       skillReady: { 2203: true },
       view: [vmon({ id: 9, order: 0, hpAbsNow: 100, hpMax: 1000, buffs: ["wpn_bleed"] })], // 0.1<0.248
     });
@@ -112,10 +106,10 @@ describe("decideAttack 6 分支", () => {
   });
 
   it("5. physical:utility 选中 T1 → 恒带 defaultTargetId,无 merciful", () => {
-    g("roundNow", 1);
-    g("roundAll", 1);
     const s = snap({
       attackStatus: 0,
+      roundNow: 1,
+      roundAll: 1,
       spiritOn: true,
       oc: 50,
       skillReady: { 2201: true },

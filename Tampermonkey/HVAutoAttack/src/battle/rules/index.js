@@ -3,8 +3,7 @@
 // 本文件即「组合根」(composition root)：把 PURE decide 实现 wire 进 BattleRule 抽象。
 //
 // 每条 rule：{ name, when?(snap,opt), decide(snap,opt)→ActionResult }。顺序 = 原 runSteps 顺序。
-// 深度 B 后**全部 16 条 decide 均为 PURE**（只读 snap + g() runtime，零 DOM 判断）；副作用全在
-import { g } from "../../state/store.js";
+// 深度 B 后**全部 16 条 decide 均为 PURE**（只读 snap，零 DOM 判断）；副作用全在
 import { checkCondition } from "../../settings/condition-eval.js";
 import { isStallMode } from "../potion-economy.js";
 import { decideInfusion } from "../buff/decide-infusion.js";
@@ -17,16 +16,14 @@ import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../i
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
 import { shouldSkipForBigSkill } from "./big-skill.js";
 import { decideBossImperil } from "./decide-boss-imperil.js";
-import { BigSkillKillLearningEvent, runBigSkillKillLearningAutomation } from "../../state/big-skill-kill-learner.js";
+import {
+  BigSkillKillLearningEvent,
+  runBigSkillKillLearningAutomation,
+} from "../../state/big-skill-kill-learner.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 
-const readRuleRuntimeContext = () => ({
-  monsterAlive: g("monsterAlive"),
-  roundAll: g("roundAll"),
-  roundNow: g("roundNow"),
-  roundType: g("roundType"),
-});
-const isStallingForRules = (snap, opt, runtime = readRuleRuntimeContext()) =>
+const readRuleRuntimeContext = (snap) => snap;
+const isStallingForRules = (snap, opt, runtime = readRuleRuntimeContext(snap)) =>
   isStallMode(snap, opt, runtime.roundNow, runtime.roundAll);
 const hasMissingDebuff = (snap, runtime, debuffName) =>
   snap.view.filter((m) => m.buffs.some((b) => b.includes(debuffName))).length <
@@ -81,7 +78,7 @@ export const BATTLE_RULES = [
       opt.scroll &&
       checkCondition(opt.scrollCondition, snap) &&
       opt.scrollRoundType &&
-      opt.scrollRoundType[readRuleRuntimeContext().roundType],
+      opt.scrollRoundType[readRuleRuntimeContext(snap).roundType],
     decide: (snap, opt) => decideScroll(opt, snap),
   },
   // 9. 元素灌注（仅法术模式）
@@ -146,7 +143,7 @@ export const BATTLE_RULES = [
       opt.debuffSkillSwitch &&
       opt.debuffSkillAllWk &&
       !shouldSkipForBigSkill(opt, snap, "We") &&
-      hasMissingDebuff(snap, readRuleRuntimeContext(), "weaken") &&
+      hasMissingDebuff(snap, readRuleRuntimeContext(snap), "weaken") &&
       checkCondition(opt.debuffSkillWkCondition, snap),
     decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "We"),
   },
@@ -158,7 +155,7 @@ export const BATTLE_RULES = [
       opt.debuffSkillSwitch &&
       opt.debuffSkillAllIm &&
       !shouldSkipForBigSkill(opt, snap, "Im") &&
-      hasMissingDebuff(snap, readRuleRuntimeContext(), "imperil") &&
+      hasMissingDebuff(snap, readRuleRuntimeContext(snap), "imperil") &&
       checkCondition(opt.debuffSkillImpCondition, snap),
     decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "Im"),
   },

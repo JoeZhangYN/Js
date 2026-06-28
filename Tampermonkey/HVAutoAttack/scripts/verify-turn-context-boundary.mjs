@@ -7,6 +7,15 @@ const entry = path.normalize("src/battle/turn-context.js");
 const entryTest = path.normalize("src/battle/turn-context.test.js");
 const snapshotImpl = path.normalize("src/battle/snapshot.js");
 const snapshotTest = path.normalize("src/battle/snapshot.test.js");
+const battleRound = path.normalize("src/battle/battle-round.js");
+const battleRoundTest = path.normalize("src/battle/battle-round.test.js");
+const monsterStatus = path.normalize("src/battle/monster-status-automation.js");
+const monsterStatusTest = path.normalize("src/battle/monster-status-automation.test.js");
+const rawRuntimeReaders = new Set([
+  path.normalize("src/battle/attack/decide-attack.js"),
+  path.normalize("src/battle/item/decide-item.js"),
+  path.normalize("src/battle/rules/index.js"),
+]);
 const violations = [];
 
 function rel(file) {
@@ -31,7 +40,11 @@ function checkFile(file) {
       relative === entry ||
       relative === entryTest ||
       relative === snapshotImpl ||
-      relative === snapshotTest
+      relative === snapshotTest ||
+      relative === battleRound ||
+      relative === battleRoundTest ||
+      relative === monsterStatus ||
+      relative === monsterStatusTest
     )
       return;
     const where = `${rel(file)}:${index + 1}`;
@@ -44,6 +57,14 @@ function checkFile(file) {
       if (new RegExp(`\\b${name}\\b`).test(line)) {
         violations.push(`${where} ${name} belongs behind prepareBattleTurnContext()`);
       }
+    }
+    if (
+      rawRuntimeReaders.has(relative) &&
+      /\bg\(\s*["'](?:roundNow|roundAll|roundType|monsterAlive|globalTurn|lastSpiritToggleGlobalTurn)["']/.test(
+        line
+      )
+    ) {
+      violations.push(`${where} turn decisions must read prepared snap context, not raw g()`);
     }
   });
 }
@@ -60,6 +81,10 @@ function checkEntry() {
     "collectSnapshot",
     "assertNoDomRefs",
     "OptionEvent.READ_FIELD",
+    "BattleRoundEvent.READ_RUNTIME",
+    "BattleRoundEvent.READ_TYPE",
+    "MonsterStatusEvent.READ_COMBATANT_COUNTS",
+    "lastSpiritToggleGlobalTurn",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);

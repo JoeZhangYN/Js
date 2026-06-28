@@ -1,7 +1,6 @@
 // PURE: attack 6 分支优先级决策（focus / spirit 切换 / spell+AoE / merciful 斩杀 / physical-utility / 默认攻击）。
-// **不读 DOM**：只读 snap（含统一怪物视图 snap.view：finWeight/hpAbsNow/hpMax/buffs/order）+ g() runtime。
+// **不读 DOM**：只读 snap（含统一怪物视图 snap.view：finWeight/hpAbsNow/hpMax/buffs/order）。
 // 目标选择走 target-strategy 具名策略：firstByFinWeight=默认首怪(综合权重最优) / firstByOrder=AoE 锚(order 最小)。
-import { g } from "../../state/store.js";
 import { checkCondition } from "../../settings/condition-eval.js";
 import { selectSpellTier } from "./decide-tier.js";
 import { scorePhysicalSkillCandidates } from "./decide-skill.js";
@@ -36,8 +35,8 @@ function decidePlan(opt, snap) {
   }
 
   // 2. 灵动架势切换：stall 跳过 + both-active 冲突跳过 + hysteresis 防抖
-  const stallNow = isStallMode(snap, opt, g("roundNow"), g("roundAll"));
-  const lastToggle = g("lastSpiritToggleGlobalTurn") ?? -999;
+  const stallNow = isStallMode(snap, opt, snap.roundNow, snap.roundAll);
+  const lastToggle = snap.lastSpiritToggleGlobalTurn ?? -999;
   const curGlobalTurn = snap.globalTurn || 0;
   const cooldown = opt.spiritToggleMinInterval ?? 3;
   const onCond = opt.turnOnSS && checkCondition(opt.turnOnSSCondition, snap);
@@ -92,7 +91,7 @@ function decidePlan(opt, snap) {
       opt.mercifulBlow &&
       opt.fightingStyle === "2" &&
       alive.length === 1 &&
-      g("roundNow") === g("roundAll")
+      snap.roundNow === snap.roundAll
     ) {
       const t = firstMonster;
       const skillId = `2${opt.fightingStyle}03`;

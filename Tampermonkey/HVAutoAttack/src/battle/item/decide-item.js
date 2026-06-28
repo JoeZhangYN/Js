@@ -1,9 +1,8 @@
 // PURE: item 4 step 决策（gem / potion / stall topup / scroll）。
-// **不读 DOM**：只读 opt / snap / g() runtime（roundNow/roundAll/globalTurn/lastSpiritToggleGlobalTurn）。
+// **不读 DOM**：只读 opt / snap。
 // 原 item.js 内联的 gE/isOn 探活下沉到 execute-item.js（写路径），判断逻辑全部上提到此处。
 // 复用现有纯 helper：decideGem / dynamicHpThreshold / isPotionWasteful / isStallMode /
 // stallTopupCandidates / getLearnedRecovery / checkCondition（均不读 DOM 或仅读持久化态）。
-import { g } from "../../state/store.js";
 import { checkCondition } from "../../settings/condition-eval.js";
 import { decideGem } from "./decide-gem.js";
 import { dynamicHpThreshold } from "../dynamic-threshold.js";
@@ -79,19 +78,19 @@ export function decidePotion(opt, snap) {
  */
 export function decideStallTopup(opt, snap) {
   if (opt.stallMode === false) return { kind: "item-plan", plan: { type: "noop" } };
-  if (!isStallMode(snap, opt, g("roundNow"), g("roundAll"))) {
+  if (!isStallMode(snap, opt, snap.roundNow, snap.roundAll)) {
     return { kind: "item-plan", plan: { type: "noop" } };
   }
 
   const attempts = [];
 
   // step 0: 关 Spirit Stance（防抖）
-  const lastToggle = g("lastSpiritToggleGlobalTurn") ?? -999;
+  const lastToggle = snap.lastSpiritToggleGlobalTurn ?? -999;
   const cooldown = opt.spiritToggleMinInterval ?? 3;
   if (
     snap.spiritOn &&
     opt.stallTurnOffSpirit !== false &&
-    (g("globalTurn") || 0) - lastToggle >= cooldown
+    (snap.globalTurn || 0) - lastToggle >= cooldown
   ) {
     attempts.push({ kind: "spirit-off" });
   }

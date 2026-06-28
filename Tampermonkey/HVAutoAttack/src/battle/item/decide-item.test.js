@@ -1,13 +1,7 @@
 // item 4 step PURE decide 回归锁（纯决策，喂 mock snap 断言 ItemPlan；decide 不读 DOM）。
 // file-size-gate: exempt test-verbose（19 用例覆盖 gem/potion/stall/scroll 四 step）
 import { describe, it, expect, beforeEach } from "vitest";
-import {
-  decideGemUse,
-  decidePotion,
-  decideStallTopup,
-  decideScroll,
-} from "./decide-item.js";
-import { g } from "../../state/store.js";
+import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "./decide-item.js";
 
 /** 最小 snap 工厂（只填 decide-item 及其纯 callee 读到的字段）。 */
 function snap(over = {}) {
@@ -18,6 +12,9 @@ function snap(over = {}) {
     oc: 0,
     spiritOn: false,
     globalTurn: 100,
+    lastSpiritToggleGlobalTurn: undefined,
+    roundAll: undefined,
+    roundNow: undefined,
     gemName: null,
     view: [],
     playerBuffs: [],
@@ -32,14 +29,6 @@ const gemPlan = (opt, s) => decideGemUse(opt, s).plan;
 const potionPlan = (opt, s) => decidePotion(opt, s).plan;
 const stallPlan = (opt, s) => decideStallTopup(opt, s).plan;
 const scrollPlan = (opt, s) => decideScroll(opt, s).plan;
-
-beforeEach(() => {
-  g("option", {});
-  g("roundNow", undefined);
-  g("roundAll", undefined);
-  g("globalTurn", undefined);
-  g("lastSpiritToggleGlobalTurn", undefined);
-});
 
 describe("decideGemUse", () => {
   it("无宝石（gemName 空）→ noop", () => {
@@ -90,10 +79,7 @@ describe("decidePotion", () => {
 
   it("条件不满足 → 过滤该项", () => {
     // itemHpCondition: hp < 50（比较符 2=<）；hp=90 不满足 → Hp 被过滤
-    const p = potionPlan(
-      { ...baseOpt, itemHpCondition: [["hp,2,50"]] },
-      snap({ hp: 90 })
-    );
+    const p = potionPlan({ ...baseOpt, itemHpCondition: [["hp,2,50"]] }, snap({ hp: 90 }));
     expect(p.candidates).toEqual(["11291"]);
   });
 
@@ -126,44 +112,43 @@ describe("decideStallTopup", () => {
     });
   }
   function enterStall() {
-    g("roundNow", 1);
-    g("roundAll", 3); // roundNow < roundAll
+    return { roundNow: 1, roundAll: 3 };
   }
 
   it("stallMode===false → noop", () => {
-    enterStall();
-    expect(stallPlan({ stallMode: false }, stallSnap())).toEqual({ type: "noop" });
+    expect(stallPlan({ stallMode: false }, stallSnap(enterStall()))).toEqual({ type: "noop" });
   });
 
   it("非 stall 模式（末轮）→ noop", () => {
-    g("roundNow", 3);
-    g("roundAll", 3); // roundNow >= roundAll
-    expect(stallPlan({}, stallSnap())).toEqual({ type: "noop" });
+    expect(stallPlan({}, stallSnap({ roundNow: 3, roundAll: 3 }))).toEqual({ type: "noop" });
   });
 
   it("Spirit 开 + 过冷却 → spirit-off attempt", () => {
-    enterStall();
-    g("globalTurn", 100);
-    g("lastSpiritToggleGlobalTurn", 90); // 100-90>=3
-    const p = stallPlan({}, stallSnap({ spiritOn: true }));
+    const p = stallPlan(
+      {},
+      stallSnap({
+        ...enterStall(),
+        spiritOn: true,
+        globalTurn: 100,
+        lastSpiritToggleGlobalTurn: 90,
+      })
+    );
     expect(p.type).toBe("stall");
     expect(p.attempts).toContainEqual({ kind: "spirit-off" });
   });
 
   it("Spirit 关 + OC 够 + MP 未满 + 无 channeling → focus attempt", () => {
-    enterStall();
     const p = stallPlan(
       {},
-      stallSnap({ spiritOn: false, oc: 100, mp: 50, playerBuffs: [] })
+      stallSnap({ ...enterStall(), spiritOn: false, oc: 100, mp: 50, playerBuffs: [] })
     );
     expect(p.attempts).toContainEqual({ kind: "focus" });
   });
 
   it("MP 低于 floor → draught attempt（11291）", () => {
-    enterStall();
     const p = stallPlan(
       {},
-      stallSnap({ spiritOn: false, oc: 0, mp: 30, sp: 100, playerBuffs: [] })
+      stallSnap({ ...enterStall(), spiritOn: false, oc: 0, mp: 30, sp: 100, playerBuffs: [] })
     );
     expect(p.attempts).toContainEqual({ kind: "draught", id: 11291 });
   });
@@ -172,18 +157,12 @@ describe("decideStallTopup", () => {
 describe("decideScroll", () => {
   it("启用 + buff 未上 → 收集 scroll item id", () => {
     // Pr = Scroll of Protection（id 13111, img1 "protection"）
-    const p = scrollPlan(
-      { scroll: { Pr: true } },
-      snap({ playerBuffs: [] })
-    );
+    const p = scrollPlan({ scroll: { Pr: true } }, snap({ playerBuffs: [] }));
     expect(p.candidates).toContain(13111);
   });
 
   it("对应 buff 已上 → 不收集", () => {
-    const p = scrollPlan(
-      { scroll: { Pr: true } },
-      snap({ playerBuffs: ["protection"] })
-    );
+    const p = scrollPlan({ scroll: { Pr: true } }, snap({ playerBuffs: ["protection"] }));
     expect(p.candidates).not.toContain(13111);
   });
 
@@ -203,10 +182,7 @@ describe("decideScroll", () => {
 
   it("多 img 卷轴（Go mult=3）：任一 buff 已上 → 不收集", () => {
     // Go img2 "shadowveil" 已上 → 整张不收集
-    const p = scrollPlan(
-      { scroll: { Go: true } },
-      snap({ playerBuffs: ["shadowveil"] })
-    );
+    const p = scrollPlan({ scroll: { Go: true } }, snap({ playerBuffs: ["shadowveil"] }));
     expect(p.candidates).not.toContain(13299);
   });
 });
