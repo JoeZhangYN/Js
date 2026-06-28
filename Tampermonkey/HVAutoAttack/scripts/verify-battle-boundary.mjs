@@ -612,9 +612,9 @@ function checkActivateSpirit() {
 
 function checkExecuteItem() {
   const text = fs.readFileSync(executeItemFile, "utf8");
-  if (!text.includes("OptionEvent.READ_FIELD")) {
+  if (!text.includes("AutoTuneEvent.RECORD_POTION_USE")) {
     violations.push(
-      `${rel(executeItemFile)} must read item execution options through option entry`
+      `${rel(executeItemFile)} must report potion-use bookkeeping through auto-tune entry`
     );
   }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {

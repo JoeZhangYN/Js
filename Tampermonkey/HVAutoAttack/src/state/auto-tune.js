@@ -7,20 +7,32 @@
 // file-size-gate: exempt phase-poc-autotune
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
+import { g } from "./store.js";
+import { OptionEvent, runOptionAutomation } from "./option.js";
 
 const PAD_GRID = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0];
 const MIN_OBSERVATIONS = 5;
 const EVENT_READ_PAD = "readPad";
 const EVENT_RECORD_BATTLE = "recordBattle";
+const EVENT_RECORD_POTION_USE = "recordPotionUse";
+const EVENT_ROUND_STARTED = "roundStarted";
 const EVENT_RESET = "reset";
 const EVENT_READ_STATUS = "readStatus";
 
 export const AutoTuneEvent = Object.freeze({
   READ_PAD: EVENT_READ_PAD,
   RECORD_BATTLE: EVENT_RECORD_BATTLE,
+  RECORD_POTION_USE: EVENT_RECORD_POTION_USE,
+  ROUND_STARTED: EVENT_ROUND_STARTED,
   RESET: EVENT_RESET,
   READ_STATUS: EVENT_READ_STATUS,
 });
+
+function isAutoTuneEnabled() {
+  return Boolean(
+    runOptionAutomation({ type: OptionEvent.READ_FIELD, key: "autoTune", fallback: false })
+  );
+}
 
 /** 当前 safetyPad 值（持久化）。默认 1.3 = grid 中心。 */
 function getCurrentPad() {
@@ -64,6 +76,19 @@ function observeBattle(potionsUsed) {
   maybeStep(history, pad, key);
 }
 
+function recordPotionUse() {
+  if (isAutoTuneEnabled()) {
+    g("autoTunePotionCount", (g("autoTunePotionCount") || 0) + 1);
+  }
+}
+
+function recordRoundStarted() {
+  if (isAutoTuneEnabled() && (g("turn") || 0) > 0) {
+    observeBattle(g("autoTunePotionCount") || 0);
+  }
+  g("autoTunePotionCount", 0);
+}
+
 function maybeStep(history, pad, key) {
   const cur = history[key];
   if (cur.n < MIN_OBSERVATIONS) return;
@@ -92,8 +117,14 @@ function maybeStep(history, pad, key) {
 
   // 利用：邻居都有数据 → 比 mean potion，下降梯度
   const meanCur = cur.sumPotions / cur.n;
-  const meanL = lowerKey && history[lowerKey].n >= MIN_OBSERVATIONS ? history[lowerKey].sumPotions / history[lowerKey].n : Infinity;
-  const meanU = upperKey && history[upperKey].n >= MIN_OBSERVATIONS ? history[upperKey].sumPotions / history[upperKey].n : Infinity;
+  const meanL =
+    lowerKey && history[lowerKey].n >= MIN_OBSERVATIONS
+      ? history[lowerKey].sumPotions / history[lowerKey].n
+      : Infinity;
+  const meanU =
+    upperKey && history[upperKey].n >= MIN_OBSERVATIONS
+      ? history[upperKey].sumPotions / history[upperKey].n
+      : Infinity;
 
   let next = padNum;
   // 容差 5% 防抖动
@@ -102,13 +133,17 @@ function maybeStep(history, pad, key) {
 
   if (next !== padNum) {
     setValue(STORAGE_KEYS.AUTO_TUNE_PAD, next);
-    console.log(`[auto-tune] safetyPad ${padNum} → ${next} (mean potions: cur=${meanCur.toFixed(1)}, L=${meanL.toFixed(1)}, U=${meanU.toFixed(1)})`);
+    console.log(
+      `[auto-tune] safetyPad ${padNum} → ${next} (mean potions: cur=${meanCur.toFixed(1)}, L=${meanL.toFixed(1)}, U=${meanU.toFixed(1)})`
+    );
   }
 }
 
 export function runAutoTuneAutomation(event = { type: EVENT_READ_PAD }) {
   if (event.type === EVENT_READ_PAD) return getCurrentPad();
   if (event.type === EVENT_RECORD_BATTLE) return observeBattle(event.potionsUsed);
+  if (event.type === EVENT_RECORD_POTION_USE) return recordPotionUse();
+  if (event.type === EVENT_ROUND_STARTED) return recordRoundStarted();
   if (event.type === EVENT_RESET) return resetAutoTune();
   if (event.type === EVENT_READ_STATUS) return getAutoTuneStatus();
   return undefined;

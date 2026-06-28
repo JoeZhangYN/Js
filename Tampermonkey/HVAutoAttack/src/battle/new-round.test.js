@@ -29,7 +29,7 @@ vi.mock("../pages/encounter.js", () => ({
   runEncounterAutomation: mocks.runEncounterAutomation,
 }));
 vi.mock("../state/auto-tune.js", () => ({
-  AutoTuneEvent: Object.freeze({ RECORD_BATTLE: "recordBattle" }),
+  AutoTuneEvent: Object.freeze({ ROUND_STARTED: "roundStarted" }),
   runAutoTuneAutomation: mocks.runAutoTuneAutomation,
 }));
 vi.mock("./monster-knowledge-automation.js", () => ({
@@ -61,7 +61,7 @@ vi.mock("./battle-stamina.js", () => ({
 }));
 
 beforeEach(() => {
-  const state = { turn: 2, autoTunePotionCount: 3 };
+  const state = { turn: 2 };
   for (const fn of Object.values(mocks)) fn.mockReset();
   mocks.g.mockImplementation((key, value) => {
     if (value !== undefined) {
@@ -97,23 +97,15 @@ describe("runBattleRoundStartAutomation", () => {
     expect(BattleRoundStartEvent.ROUND_STARTED).toBe("roundStarted");
   });
 
-  it("reads round-start options through the option entry", () => {
+  it("routes round-start auto-tune bookkeeping through the auto-tune entry", () => {
     expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(true);
 
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
-      type: "readField",
-      key: "autoTune",
-      fallback: false,
-    });
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",
       key: "encounter",
       fallback: false,
     });
-    expect(mocks.runAutoTuneAutomation).toHaveBeenCalledWith({
-      type: "recordBattle",
-      potionsUsed: 3,
-    });
+    expect(mocks.runAutoTuneAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
     expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
       type: "randomEncounterStarted",
     });

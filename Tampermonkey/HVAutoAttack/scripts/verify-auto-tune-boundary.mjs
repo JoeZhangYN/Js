@@ -46,6 +46,13 @@ function checkFile(file) {
         violations.push(`${where} auto-tune storage key "${key}" must use STORAGE_KEYS`);
       }
     }
+    if (
+      relative !== owner &&
+      relative !== ownerTest &&
+      /\bg\(\s*["']autoTunePotionCount["']/.test(line)
+    ) {
+      violations.push(`${where} auto-tune potion-use counter belongs in auto-tune`);
+    }
   });
 }
 
@@ -57,6 +64,9 @@ for (const required of [
   "AutoTuneEvent",
   "STORAGE_KEYS.AUTO_TUNE_PAD",
   "STORAGE_KEYS.AUTO_TUNE_HISTORY",
+  "RECORD_POTION_USE",
+  "ROUND_STARTED",
+  "OptionEvent.READ_FIELD",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);

@@ -1,23 +1,17 @@
 // SHELL: 把 decide-item 的 ItemPlan 翻译为 DOM 副作用 + 状态记账。
 // 只写不判断（判断全在 decide-item.js）；isOn/gE 探活属写路径安全读（与原 item.js 一致）。
-// 记账：autoTunePotionCount（autoTune 开时本回合用药计数）/ lastSpiritToggleGlobalTurn / recordPreDrink。
+// 记账：autoTune 用药事件 / lastSpiritToggleGlobalTurn / recordPreDrink。
 import { gE, isOn } from "../../dom/query.js";
 import { itemSelector } from "../../dom/selectors.js";
-import { OptionEvent, runOptionAutomation } from "../../state/option.js";
 import { g } from "../../state/store.js";
+import { AutoTuneEvent, runAutoTuneAutomation } from "../../state/auto-tune.js";
 import {
   RecoveryLearningEvent,
   runRecoveryLearningAutomation,
 } from "../../state/recovery-learner.js";
 
-function shouldCountAutoTunePotion() {
-  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key: "autoTune", fallback: false });
-}
-
 function recordAutoTunePotionUse() {
-  if (shouldCountAutoTunePotion()) {
-    g("autoTunePotionCount", (g("autoTunePotionCount") || 0) + 1);
-  }
+  runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_POTION_USE });
 }
 
 /**

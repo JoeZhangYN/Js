@@ -24,12 +24,7 @@ function isOptionEnabled(key) {
 }
 
 function startRound() {
-  // F auto-tune：上一回合结束 → 观测用药数 + 复位计数
-  if (isOptionEnabled("autoTune") && (g("turn") || 0) > 0) {
-    const used = g("autoTunePotionCount") || 0;
-    runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_BATTLE, potionsUsed: used });
-  }
-  g("autoTunePotionCount", 0);
+  runAutoTuneAutomation({ type: AutoTuneEvent.ROUND_STARTED });
   // New Round
   g("turn", 0);
   if (window.location.hash !== "") runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
