@@ -5,12 +5,11 @@
 // 数据流：
 //   turn N 喝药 → recordPreDrink(potionId, snap)        [写 g("learnPending")]
 //   turn N+1 snapshot → finalizePending(snap)            [读 pending → 计算 delta → 更新 learned]
-//   后续决策 getLearnedRecovery(potionId) 优先返学到值，缺省 fallback POTION_RECOVERY
+//   后续决策 getLearnedRecovery(potionId) 优先返学到值，缺省 fallback RECOVERY_PRIOR
 import { g } from "./store.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
-import { POTION_RECOVERY } from "../battle/potion-economy.js";
 
 const EVENT_RECORD_PRE_DRINK = "recordPreDrink";
 const EVENT_FINALIZE_PENDING = "finalizePending";
@@ -20,6 +19,21 @@ export const RecoveryLearningEvent = Object.freeze({
   RECORD_PRE_DRINK: EVENT_RECORD_PRE_DRINK,
   FINALIZE_PENDING: EVENT_FINALIZE_PENDING,
   READ_RECOVERY: EVENT_READ_RECOVERY,
+});
+
+const RECOVERY_PRIOR = Object.freeze({
+  // Health
+  11191: { stat: "hp", amount: 200 }, // Health Draught
+  11195: { stat: "hp", amount: 400 }, // Health Potion
+  11199: { stat: "hp", amount: 800 }, // Health Elixir
+  // Mana
+  11291: { stat: "mp", amount: 50 }, // Mana Draught
+  11295: { stat: "mp", amount: 100 }, // Mana Potion
+  11299: { stat: "mp", amount: 200 }, // Mana Elixir
+  // Spirit
+  11391: { stat: "sp", amount: 80 }, // Spirit Draught
+  11395: { stat: "sp", amount: 160 }, // Spirit Potion
+  11399: { stat: "sp", amount: 320 }, // Spirit Elixir
 });
 
 function isDynamicHealLogEnabled() {
@@ -38,7 +52,7 @@ function isDynamicHealLogEnabled() {
  * @param {import("../core/types.js").BattleSnapshot} snap
  */
 function recordPreDrink(potionId, snap) {
-  const info = POTION_RECOVERY[parseInt(potionId)];
+  const info = RECOVERY_PRIOR[parseInt(potionId)];
   if (!info) return; // 非药品（Health Gem 等）不学
   g("learnPending", {
     potionId: parseInt(potionId),
@@ -77,7 +91,7 @@ function updateLearned(potionId, observedDelta) {
   const learned = getValue(STORAGE_KEYS.LEARNED_RECOVERY, true) || {};
   const prior = learned[potionId];
   const n = (prior?.n ?? 0) + 1;
-  const priorAmt = prior?.amount ?? POTION_RECOVERY[potionId]?.amount ?? observedDelta;
+  const priorAmt = prior?.amount ?? RECOVERY_PRIOR[potionId]?.amount ?? observedDelta;
   // EWMA：n 越大 alpha 越小（趋稳），但下限 0.1 保对装备变化敏感
   const alpha = Math.max(0.1, 1 / n);
   const newAmt = priorAmt * (1 - alpha) + observedDelta * alpha;
@@ -97,7 +111,7 @@ function updateLearned(potionId, observedDelta) {
  */
 function getLearnedRecovery(potionId) {
   const id = parseInt(potionId);
-  const fallback = POTION_RECOVERY[id];
+  const fallback = RECOVERY_PRIOR[id];
   if (!fallback) return null;
   const learned = getValue(STORAGE_KEYS.LEARNED_RECOVERY, true) || {};
   if (learned[id] && learned[id].n > 0) {

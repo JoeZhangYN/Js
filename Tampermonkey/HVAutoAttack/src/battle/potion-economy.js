@@ -3,22 +3,22 @@
 
 /**
  * 药品 ID → 估计单次恢复绝对值（HP/MP/SP）。
- * 数值是 mid-tier 玩家保守估计的 fallback；运行时已由 state/recovery-learner.js
- * 按"喝药前后 deficit delta"观测自学，getLearnedRecovery 优先返学到值。
+ * 数值是 mid-tier 玩家保守估计的 local fallback；battle decisions should inject
+ * state/recovery-learner.js READ_RECOVERY so learned recovery remains the business answer.
  */
-export const POTION_RECOVERY = Object.freeze({
+const POTION_RECOVERY = Object.freeze({
   // Health
-  11191: { stat: "hp", amount: 200 },   // Health Draught
-  11195: { stat: "hp", amount: 400 },   // Health Potion
-  11199: { stat: "hp", amount: 800 },   // Health Elixir
+  11191: { stat: "hp", amount: 200 }, // Health Draught
+  11195: { stat: "hp", amount: 400 }, // Health Potion
+  11199: { stat: "hp", amount: 800 }, // Health Elixir
   // Mana
-  11291: { stat: "mp", amount: 50 },    // Mana Draught
-  11295: { stat: "mp", amount: 100 },   // Mana Potion
-  11299: { stat: "mp", amount: 200 },   // Mana Elixir
+  11291: { stat: "mp", amount: 50 }, // Mana Draught
+  11295: { stat: "mp", amount: 100 }, // Mana Potion
+  11299: { stat: "mp", amount: 200 }, // Mana Elixir
   // Spirit
-  11391: { stat: "sp", amount: 80 },    // Spirit Draught
-  11395: { stat: "sp", amount: 160 },   // Spirit Potion
-  11399: { stat: "sp", amount: 320 },   // Spirit Elixir
+  11391: { stat: "sp", amount: 80 }, // Spirit Draught
+  11395: { stat: "sp", amount: 160 }, // Spirit Potion
+  11399: { stat: "sp", amount: 320 }, // Spirit Elixir
 });
 
 /**
@@ -30,9 +30,7 @@ export const POTION_RECOVERY = Object.freeze({
  * @param {(id:number)=>{stat:string,amount:number}|null} [getRecovery] 注入查询函数（默认查 POTION_RECOVERY）
  */
 export function isPotionWasteful(potionId, snap, tolerance = 0.7, getRecovery) {
-  const info = getRecovery
-    ? getRecovery(parseInt(potionId))
-    : POTION_RECOVERY[parseInt(potionId)];
+  const info = getRecovery ? getRecovery(parseInt(potionId)) : POTION_RECOVERY[parseInt(potionId)];
   if (!info) return false;
   const deficit = snap[`${info.stat}Deficit`] || 0;
   return deficit < info.amount * tolerance;

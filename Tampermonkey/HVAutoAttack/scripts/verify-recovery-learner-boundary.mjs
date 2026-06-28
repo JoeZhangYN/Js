@@ -6,6 +6,7 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/recovery-learner.js");
 const ownerTest = path.normalize("src/state/recovery-learner.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
+const potionEconomy = path.normalize("src/battle/potion-economy.js");
 const violations = [];
 
 function rel(file) {
@@ -41,6 +42,12 @@ function checkFile(file) {
     ) {
       violations.push(`${where} learned recovery storage belongs in recovery learner`);
     }
+    if (relative === owner && /from\s+["']\.\.\/battle\//.test(line)) {
+      violations.push(`${where} recovery learner must not depend on battle internals`);
+    }
+    if (relative === potionEconomy && /\bexport\s+const\s+POTION_RECOVERY\b/.test(line)) {
+      violations.push(`${where} battle fallback recovery must not be a public answer path`);
+    }
   });
 }
 
@@ -52,6 +59,7 @@ for (const required of [
   "RecoveryLearningEvent",
   "STORAGE_KEYS.LEARNED_RECOVERY",
   "OptionEvent.READ_FIELD",
+  "RECOVERY_PRIOR",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
