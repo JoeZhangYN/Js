@@ -27,6 +27,18 @@ function mon(over = {}) {
   return { id: 1, order: 0, isDead: false, isBoss: false, buffs: [], ...over };
 }
 
+function bossImperilFacts(snap) {
+  return {
+    imperilSkillReady: !!snap?.skillReady?.["213"],
+    imperilAoe: snap?.spellAoe?.Imperil,
+    skillCooldowns: snap?.cdMap,
+    overcharge: snap?.oc,
+    roundNow: snap?.roundNow,
+    roundAll: snap?.roundAll,
+    monsterFacts: snap?.view || [],
+  };
+}
+
 function observeOfcKill(mid, turn) {
   runBigSkillKillLearningAutomation({
     type: BigSkillKillLearningEvent.RECORD_CAST,
@@ -43,7 +55,11 @@ function observeOfcKill(mid, turn) {
 
 describe("decideBossImperil", () => {
   const decideBossImperil = (opt, snap) =>
-    runBossImperilAutomation({ type: BossImperilEvent.DECIDE, opt, snap });
+    runBossImperilAutomation({
+      type: BossImperilEvent.DECIDE,
+      opt,
+      ...bossImperilFacts(snap),
+    });
 
   it("213 未 ready → noop", () => {
     const s = snap({
@@ -176,7 +192,11 @@ describe("decideBossImperil", () => {
 
 describe("boss Imperil permission", () => {
   const canCast = (opt, snap) =>
-    runBossImperilAutomation({ type: BossImperilEvent.CAN_CAST, opt, snap });
+    runBossImperilAutomation({
+      type: BossImperilEvent.CAN_CAST,
+      opt,
+      ...bossImperilFacts(snap),
+    });
 
   it("requires skill 213 ready and debuff skill enabled", () => {
     expect(canCast({}, snap({ skillReady: { 213: true } }))).toBe(true);

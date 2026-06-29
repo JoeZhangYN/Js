@@ -14,6 +14,27 @@ import { decideFlee } from "../escape/decide-flee.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 
+function bossImperilFacts(snap) {
+  return {
+    imperilSkillReady: !!snap?.skillReady?.["213"],
+    imperilAoe: snap?.spellAoe?.Imperil,
+    skillCooldowns: snap?.cdMap,
+    overcharge: snap?.oc,
+    roundNow: snap?.roundNow,
+    roundAll: snap?.roundAll,
+    monsterFacts: (snap?.view || []).map((monster) => ({
+      id: monster.id,
+      order: monster.order,
+      monsterId: monster.monsterId,
+      isDead: monster.isDead,
+      isBoss: monster.isBoss,
+      buffs: monster.buffs || [],
+      hpMax: monster.hpMax,
+      hpPercent: monster.hpPercent,
+    })),
+  };
+}
+
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
@@ -68,7 +89,7 @@ export const BATTLE_RULES = [
   //     F4（默认 OFF）：每只活 boss 都确认 OFC 能秒 → 跳过 boss-Imperil（能秒连 imperil 都不用上）。
   {
     name: "bossImperil",
-    decide: (snap, opt) => runBossImperilAutomation({ snap, opt }),
+    decide: (snap, opt) => runBossImperilAutomation({ opt, ...bossImperilFacts(snap) }),
   },
   // 13. 全员 Weaken（OFC/FRD 即将就绪时跳过）
   {

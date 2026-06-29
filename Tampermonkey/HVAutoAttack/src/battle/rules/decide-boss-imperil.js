@@ -20,29 +20,31 @@ export const BossImperilEvent = Object.freeze({
   DECIDE: EVENT_DECIDE,
 });
 
-function stallActiveFacts(snap) {
+function stallActiveFacts(event) {
   return {
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
-    aliveMonsterHpPercents: (snap?.view || [])
+    roundNow: event?.roundNow,
+    roundAll: event?.roundAll,
+    aliveMonsterHpPercents: (event?.monsterFacts || [])
       .filter((monster) => !monster.isDead)
       .map((monster) => monster.hpPercent),
-    overcharge: snap?.oc,
+    overcharge: event?.overcharge,
   };
 }
 
-function canCastBossImperil(opt, snap) {
+function canCastBossImperil(event) {
+  const opt = event?.opt || {};
   if (
     runBattleStallModeAutomation({
       type: BattleStallModeEvent.READ_ACTIVE,
       opt,
-      ...stallActiveFacts(snap),
+      ...stallActiveFacts(event),
     })
   ) {
     return false;
   }
-  if (opt?.debuffSkillSwitch === false || !snap?.skillReady?.["213"]) return false;
-  const bosses = (snap?.view || []).filter((m) => m.isBoss && !m.isDead);
+  if (opt?.debuffSkillSwitch === false || !event?.imperilSkillReady) return false;
+  const skillCooldowns = event?.skillCooldowns || {};
+  const bosses = (event?.monsterFacts || []).filter((m) => m.isBoss && !m.isDead);
   if (
     bosses.length &&
     bosses.every(
@@ -50,8 +52,8 @@ function canCastBossImperil(opt, snap) {
         runBigSkillKillLearningAutomation({
           type: BigSkillKillLearningEvent.WILL_KILL_BOSS,
           mid: b.monsterId,
-          ofcCooldown: snap?.cdMap?.OFC,
-          overcharge: snap?.oc,
+          ofcCooldown: skillCooldowns.OFC,
+          overcharge: event?.overcharge,
           bossHpMax: b.hpMax,
           opt,
         }).skip
@@ -65,17 +67,17 @@ function canCastBossImperil(opt, snap) {
 /**
  * 决定给哪只未上 Imperil 的 boss 施放 213（AoE 窗口尽量覆盖多个 needy boss）。
  * 入口自守卫：stall / debuffSkillSwitch / skillReady["213"] / learned OFC kill skip。
- * @param {object} opt
- * @param {import("../../core/types.js").BattleSnapshot} snap
+ * @param {object} event
  * @returns {import("../../core/types.js").ActionResult}
  */
-function decideBossImperil(opt, snap) {
-  if (!canCastBossImperil(opt, snap)) return { kind: "noop" };
-  const sortedAlive = aliveByOrder(snap.view);
+function decideBossImperil(event) {
+  if (!canCastBossImperil(event)) return { kind: "noop" };
+  const opt = event?.opt || {};
+  const sortedAlive = aliveByOrder(event?.monsterFacts || []);
   const isBossNoIm = (m) => m.isBoss && !m.buffs.includes("imperil");
   if (!sortedAlive.some(isBossNoIm)) return { kind: "noop" };
   // AoE 覆盖窗口走 target-strategy.bossCoverageWindow（backward 窗口 [c-aoe+1,c] + tie-break 优先 needy 自身）。
-  const aoe = (snap.spellAoe && snap.spellAoe.Imperil) || opt.debuffSkillAoe?.Im || 1;
+  const aoe = event?.imperilAoe || opt.debuffSkillAoe?.Im || 1;
   const best = bossCoverageWindow(sortedAlive, aoe, isBossNoIm);
   if (!best) return { kind: "noop" };
   return {
@@ -87,7 +89,7 @@ function decideBossImperil(opt, snap) {
 
 export function runBossImperilAutomation(event = { type: EVENT_DECIDE }) {
   const type = event.type || EVENT_DECIDE;
-  if (type === EVENT_CAN_CAST) return canCastBossImperil(event.opt, event.snap);
-  if (type === EVENT_DECIDE) return decideBossImperil(event.opt, event.snap);
+  if (type === EVENT_CAN_CAST) return canCastBossImperil(event);
+  if (type === EVENT_DECIDE) return decideBossImperil(event);
   return undefined;
 }

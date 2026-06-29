@@ -1,6 +1,6 @@
 // 编译期反退化：钉死 F4 跳 Imperil 的「costly-direction 默认保留」安全不变量，防重构悄悄放开。
 // 不变量：① 跳 Imperil 全程门控 opt.skipImperilWhenOfcKills（默认 OFF）；② 学习器有 mid 缺失 +
-//        样本量两道守卫（无证据→不跳）；③ boss Imperil 入口仍保留 DOM skillReady["213"] 原始就绪条件。
+//        样本量两道守卫（无证据→不跳）；③ boss Imperil 入口仍保留 skillReady["213"] 就绪事实。
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +10,7 @@ const read = (rel) => readFileSync(`${SRC}/${rel}`, "utf8");
 const learner = read("state/big-skill-kill-learner.js");
 const bigSkill = read("battle/rules/big-skill.js");
 const bossImperil = read("battle/rules/decide-boss-imperil.js");
+const battleRules = read("battle/rules/index.js");
 
 const fails = [];
 const need = (cond, msg) => {
@@ -36,10 +37,14 @@ if (/WILL_KILL_BOSS/.test(bigSkill)) {
   );
 }
 
-// ③ boss Imperil 入口不得丢掉原始 DOM 就绪条件
+// ③ boss Imperil 入口不得丢掉 213 就绪事实：rule table 映射，entry 消费。
 need(
-  /skillReady\??\.\["213"\]/.test(bossImperil),
-  'boss Imperil 入口丢失 snap.skillReady["213"] 原始就绪条件'
+  /imperilSkillReady:\s*!!snap\?\.skillReady\?\.\["213"\]/.test(battleRules),
+  'boss Imperil rule 丢失 snap.skillReady["213"] 就绪事实映射'
+);
+need(
+  /event\?\.imperilSkillReady/.test(bossImperil),
+  "boss Imperil 入口丢失 imperilSkillReady 就绪事实门控"
 );
 
 if (fails.length) {
@@ -48,5 +53,5 @@ if (fails.length) {
   process.exit(1);
 }
 console.log(
-  "[verify-imperil-safety] OK — 跳 Imperil 全程门控 + 无证据保留 + DOM 就绪条件 三不变量在位"
+  "[verify-imperil-safety] OK — 跳 Imperil 全程门控 + 无证据保留 + 213 就绪事实 三不变量在位"
 );

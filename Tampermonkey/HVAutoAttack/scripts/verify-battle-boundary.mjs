@@ -950,9 +950,30 @@ function checkBossImperilEntry() {
   if (/export\s+function\s+decideBossImperil\s*\(/.test(ownerText)) {
     violations.push(`${rel(bossImperilFile)} legacy decideBossImperil export must stay private`);
   }
+  for (const required of [
+    "event?.monsterFacts",
+    "event?.imperilSkillReady",
+    "event?.imperilAoe",
+    "event?.skillCooldowns",
+    "event?.overcharge",
+    "event?.roundNow",
+    "event?.roundAll",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(bossImperilFile)} must consume ${required}`);
+    }
+  }
+  if (/\bevent\.snap\b/.test(ownerText)) {
+    violations.push(`${rel(bossImperilFile)} must not consume snap-shaped event input`);
+  }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
   if (!rulesText.includes("runBossImperilAutomation")) {
     violations.push(`${rel(battleRulesFile)} must read boss Imperil decisions through their entry`);
+  }
+  for (const call of rulesText.matchAll(/runBossImperilAutomation\s*\(\s*\{[\s\S]*?\}\s*\)/g)) {
+    if (/\bsnap\s*:/.test(call[0])) {
+      violations.push(`${rel(battleRulesFile)} must pass narrow facts, not snap, to boss Imperil`);
+    }
   }
   const bossRule =
     rulesText.match(/name:\s*["']bossImperil["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
