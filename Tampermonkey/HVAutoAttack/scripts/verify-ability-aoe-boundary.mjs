@@ -48,6 +48,9 @@ function checkFile(file) {
     ) {
       violations.push(`${where} ability page detection belongs in runAbilityAoeAutomation(event)`);
     }
+    if (relative === owner && /\bg\(\s*["']option["']/.test(line)) {
+      violations.push(`${where} ability AoE option sync must use runOptionAutomation(event)`);
+    }
   });
 }
 
@@ -71,6 +74,11 @@ function checkEntry() {
   }
   if (!text.includes("READ_SPELL_AOE")) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose READ_SPELL_AOE`);
+  }
+  for (const required of ["OptionEvent.READ_FIELD", "OptionEvent.WRITE_FIELD"]) {
+    if (!text.includes(required)) {
+      violations.push(`${owner.replaceAll("\\", "/")} must sync option AoE through ${required}`);
+    }
   }
   if (/export function parseAbilityPage\(/.test(text)) {
     violations.push(`${owner.replaceAll("\\", "/")} must keep parseAbilityPage internal`);

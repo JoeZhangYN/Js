@@ -31,6 +31,56 @@ function readSpellAoe() {
   return g("spellAoe") || {};
 }
 
+function syncSpellAoeToOption(spellAoe) {
+  const optionVersion = runOptionAutomation({
+    type: OptionEvent.READ_FIELD,
+    key: "version",
+    fallback: undefined,
+  });
+  if (optionVersion === undefined) return;
+
+  const debuffSkillAoe = {
+    ...runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "debuffSkillAoe",
+      fallback: {},
+    }),
+  };
+  DEBUFF_SKILL_LIB.forEach((skill, key) => {
+    if (skill.id && spellAoe[skill.name] !== undefined) {
+      debuffSkillAoe[key] = spellAoe[skill.name];
+    }
+  });
+
+  const offensiveSpellAoe = {
+    ...runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "spellAoe",
+      fallback: {},
+    }),
+  };
+  OFFENSIVE_SPELL_LIB.forEach((name, key) => {
+    if (spellAoe[name] !== undefined) {
+      offensiveSpellAoe[key] = spellAoe[name];
+    }
+  });
+
+  runOptionAutomation({
+    type: OptionEvent.WRITE_FIELD,
+    key: "debuffSkillAoe",
+    value: debuffSkillAoe,
+  });
+  runOptionAutomation({
+    type: OptionEvent.WRITE_FIELD,
+    key: "spellAoe",
+    value: offensiveSpellAoe,
+  });
+  console.log(
+    "[AoE] 已同步到 option:",
+    JSON.stringify({ debuffSkillAoe, spellAoe: offensiveSpellAoe })
+  );
+}
+
 function parseAbilityPage() {
   const abilityTop = gE("#ability_top");
   if (!abilityTop) return;
@@ -54,26 +104,7 @@ function parseAbilityPage() {
   console.log("[AoE] 检测结果:", JSON.stringify(spellAoe));
   setValue(STORAGE_KEYS.SPELL_AOE, spellAoe);
   // 同步自动检测结果到 option，使设置页面 UI 同步显示
-  const option = g("option");
-  if (option) {
-    if (!option.debuffSkillAoe) option.debuffSkillAoe = {};
-    DEBUFF_SKILL_LIB.forEach((skill, key) => {
-      if (skill.id && spellAoe[skill.name] !== undefined) {
-        option.debuffSkillAoe[key] = spellAoe[skill.name];
-      }
-    });
-    if (!option.spellAoe) option.spellAoe = {};
-    OFFENSIVE_SPELL_LIB.forEach((name, key) => {
-      if (spellAoe[name] !== undefined) {
-        option.spellAoe[key] = spellAoe[name];
-      }
-    });
-    runOptionAutomation({ type: OptionEvent.WRITE, option });
-    console.log(
-      "[AoE] 已同步到 option:",
-      JSON.stringify({ debuffSkillAoe: option.debuffSkillAoe, spellAoe: option.spellAoe })
-    );
-  }
+  syncSpellAoeToOption(spellAoe);
 }
 
 export function runAbilityAoeAutomation(event = { type: EVENT_CAPTURE_ABILITY_PAGE }) {
