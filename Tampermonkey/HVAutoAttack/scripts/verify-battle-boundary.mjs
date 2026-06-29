@@ -48,6 +48,8 @@ const decideAttackFile = path.join(root, "src/battle/attack/decide-attack.js");
 const decideTierFile = path.join(root, "src/battle/attack/decide-tier.js");
 const decideSkillFile = path.join(root, "src/battle/attack/decide-skill.js");
 const physicalSkillScoringFile = path.join(root, "src/battle/attack/physical-skill-scoring.js");
+const pickElementFile = path.join(root, "src/battle/attack/pick-element.js");
+const autoElementSelectionFile = path.join(root, "src/battle/attack/auto-element-selection.js");
 const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const violations = [];
 
@@ -1047,6 +1049,11 @@ function checkAttackEntry() {
       `${rel(decideSkillFile)} legacy technical skill helper must stay deleted; physical scoring belongs in physical-skill-scoring`
     );
   }
+  if (fs.existsSync(pickElementFile)) {
+    violations.push(
+      `${rel(pickElementFile)} legacy technical element helper must stay deleted; auto element selection belongs in auto-element-selection`
+    );
+  }
   const ownerText = fs.readFileSync(decideAttackFile, "utf8");
   for (const required of ["decideAttack", "selectSpellTier", "highSkillCondition"]) {
     if (!ownerText.includes(required)) {
@@ -1058,6 +1065,14 @@ function checkAttackEntry() {
     if (!scoringText.includes(required)) {
       violations.push(
         `${rel(physicalSkillScoringFile)} must own physical skill scoring ${required}`
+      );
+    }
+  }
+  const autoElementText = fs.readFileSync(autoElementSelectionFile, "utf8");
+  for (const required of ["selectAutoElement", "autoElementPool", "target.resists"]) {
+    if (!autoElementText.includes(required)) {
+      violations.push(
+        `${rel(autoElementSelectionFile)} must own auto element selection ${required}`
       );
     }
   }
@@ -1073,11 +1088,20 @@ function checkAttackEntry() {
       if (/from\s+["'][^"']*decide-skill\.js["']/.test(text)) {
         violations.push(`${rel(file)} must not import legacy decide-skill.js`);
       }
+      if (/from\s+["'][^"']*pick-element\.js["']/.test(text)) {
+        violations.push(`${rel(file)} must not import legacy pick-element.js`);
+      }
       if (
         file !== decideAttackFile &&
         /from\s+["'][^"']*physical-skill-scoring\.js["']/.test(text)
       ) {
         violations.push(`${rel(file)} must not bypass decideAttack for physical skill scoring`);
+      }
+      if (
+        file !== decideAttackFile &&
+        /from\s+["'][^"']*auto-element-selection\.js["']/.test(text)
+      ) {
+        violations.push(`${rel(file)} must not bypass decideAttack for auto element selection`);
       }
     }
   }

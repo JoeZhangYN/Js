@@ -1,4 +1,4 @@
-// PURE: 按怪物九抗选最优攻击元素（autoElement，默认关）。choose 弱点(resists 最负 = 最易破)元素。
+// PURE: 按怪物九抗选自动攻击元素（autoElement，默认关）。choose 弱点(resists 最负 = 最易破)元素。
 // 缺 resists(未 scan/库无该怪) → null → 调用方回退 snap.attackStatus（零行为变化，安全降级）。
 // element 编码对齐 spell-lib / attackStatus：1=Fire 2=Cold 3=Elec 4=Wind 5=Holy 6=Dark。
 // 把"数据库九抗"接进攻击决策（原 resist-panel 仅显示、决策不消费 → 孤岛接通 live consumer）。
@@ -12,7 +12,7 @@ const DEFAULT_POOL = ["fire", "cold", "elec", "wind", "holy", "dark"];
  * @param {object} opt opt.autoElementPool 可选限定玩家可用元素(默认全 6)
  * @returns {{element: (1|2|3|4|5|6|null)}} 弱点元素编码；缺 resists/无候选 → null
  */
-export function pickBestElement(target, opt) {
+export function selectAutoElement(target, opt) {
   if (!target || !target.resists) return { element: null };
   const pool =
     opt && opt.autoElementPool && opt.autoElementPool.length ? opt.autoElementPool : DEFAULT_POOL;

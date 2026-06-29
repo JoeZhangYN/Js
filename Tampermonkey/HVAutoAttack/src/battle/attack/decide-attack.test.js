@@ -43,6 +43,19 @@ function vmon(over = {}) {
   };
 }
 
+const resists = (over = {}) => ({
+  fire: 0,
+  cold: 0,
+  elec: 0,
+  wind: 0,
+  holy: 0,
+  dark: 0,
+  crushing: 0,
+  slashing: 0,
+  piercing: 0,
+  ...over,
+});
+
 const plan = (opt, s) => decideAttack(opt, s).plan;
 
 describe("decideAttack 返 {kind:'attack-plan'}", () => {
@@ -195,6 +208,42 @@ describe("decideAttack 6 分支", () => {
       view: [vmon({ id: 1, order: 0 })],
     });
     expect(plan({ autoElement: true }, s)).toEqual({ type: "spell", spellId: "123", targetId: 1 });
+  });
+
+  it("autoElementPool 限定候选：弱点 holy 不在池 → 选池内最弱 cold", () => {
+    const s = snap({
+      attackStatus: 1,
+      aliveCount: 5,
+      skillReady: { 123: true },
+      view: [
+        vmon({
+          id: 1,
+          order: 0,
+          resists: resists({ holy: -50, cold: -20 }),
+        }),
+      ],
+    });
+    expect(plan({ autoElement: true, autoElementPool: ["fire", "cold", "elec"] }, s)).toEqual({
+      type: "spell",
+      spellId: "123",
+      targetId: 1,
+    });
+  });
+
+  it("autoElement 不把物理抗当成元素弱点", () => {
+    const s = snap({
+      attackStatus: 2,
+      aliveCount: 5,
+      skillReady: { 113: true },
+      view: [
+        vmon({
+          id: 1,
+          order: 0,
+          resists: resists({ crushing: -99 }),
+        }),
+      ],
+    });
+    expect(plan({ autoElement: true }, s)).toEqual({ type: "spell", spellId: "113", targetId: 1 });
   });
 });
 
