@@ -91,6 +91,7 @@ for (const required of [
   /renderSchemaCheckboxField\(\s*["']burstControlSwitch["']/,
   /renderSchemaNumberInput\(\s*["']burstControlHpFrac["']/,
   /renderSchemaCheckboxField\(\s*["']burstControlSilenceForSpell["']/,
+  /renderSchemaCheckboxField\(\s*["']drainTargetMaxHp["']/,
 ]) {
   if (!required.test(renderText)) {
     violations.push(
@@ -119,6 +120,7 @@ for (const forbidden of [
   /id=["']burstControlSwitch["'][\s\S]{0,140}学致死爆发伤害/,
   /name=["']burstControlHpFrac["']\s+placeholder=["']50["']/,
   /id=["']burstControlSilenceForSpell["'][\s\S]{0,140}法术爆发用 Silence/,
+  /id=["']drainTargetMaxHp["'][\s\S]{0,140}Drain 优先打血最多/,
 ]) {
   if (forbidden.test(renderText)) {
     violations.push(

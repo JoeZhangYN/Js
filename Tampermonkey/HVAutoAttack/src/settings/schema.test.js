@@ -45,6 +45,14 @@ describe("runOptionSchema", () => {
       kind: "number",
       default: 50,
     });
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "drainTargetMaxHp" })
+    ).toMatchObject({
+      key: "drainTargetMaxHp",
+      kind: "checkbox",
+      default: true,
+      defaultOn: true,
+    });
     expect(runOptionSchema({ type: OptionSchemaEvent.READ_DEFAULT, key: "repairValue" })).toBe(60);
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_GROUP, group: "Debuff" }).some(

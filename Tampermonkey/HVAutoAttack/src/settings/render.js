@@ -62,13 +62,14 @@ function renderSchemaNumberInput(key, suffix = "") {
   return `<input class="hvAANumber" name="${field.key}" placeholder="${field.default}" type="text">${suffix}`;
 }
 
-function renderSchemaCheckboxField(key, suffix = "") {
+function renderSchemaCheckboxField(key, suffix = "", { bold = true, style = "" } = {}) {
   const field = readSchemaField(key);
   if (!field) return "";
   const checkedAttr = field.defaultOn ? " checked data-default-on" : "";
+  const styleAttr = style ? ` style="${style}"` : "";
   return (
-    `<div><input id="${field.key}" type="checkbox"${checkedAttr}>` +
-    `<label for="${field.key}">${renderSchemaLabel(field, { bold: true })}</label>${suffix}</div>`
+    `<div${styleAttr}><input id="${field.key}" type="checkbox"${checkedAttr}>` +
+    `<label for="${field.key}">${renderSchemaLabel(field, { bold })}</label>${suffix}</div>`
   );
 }
 
@@ -471,7 +472,7 @@ export function optionBox() {
     '    <div><input id="debuffSkill_MN" type="checkbox"><label for="debuffSkill_MN">MagNet</label>{{debuffSkillMNCondition}}</div>',
     '    <div><input id="debuffSkill_Si" type="checkbox"><label for="debuffSkill_Si">Silence</label>{{debuffSkillSiCondition}}</div>',
     '    <div><input id="debuffSkill_Dr" type="checkbox"><label for="debuffSkill_Dr">Drain</label>{{debuffSkillDrCondition}}</div>',
-    '    <div style="padding-left:1.5em;"><input id="drainTargetMaxHp" type="checkbox" checked data-default-on><label for="drainTargetMaxHp"><l0>　└ Drain 优先打血最多的敌人（存活最久，drain 生效最久）</l0><l1>　└ Drain 優先打血最多的敵人（存活最久，drain 生效最久）</l1><l2>　└ Drain targets highest-HP enemy (survives longest, drain lasts longest)</l2></label></div>',
+    renderSchemaCheckboxField("drainTargetMaxHp", "", { bold: false, style: "padding-left:1.5em;" }),
     '    <div><input id="debuffSkill_We" type="checkbox"><label for="debuffSkill_We">Weaken</label>{{debuffSkillWeCondition}}</div>',
     '    <div><input id="debuffSkill_Co" type="checkbox"><label for="debuffSkill_Co">Confuse</label>{{debuffSkillCoCondition}}</div>',
     "  <div>AoE: <l0>当前技能等级下影响的目标数(1=单体, 3=范围)</l0><l1>當前技能等級下影響的目標數(1=單體, 3=範圍)</l1><l2>Targets affected at current skill level (1=single, 3=AoE)</l2><br>",
