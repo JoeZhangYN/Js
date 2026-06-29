@@ -12,6 +12,16 @@ import {
   runBattleSpiritToggleAutomation,
 } from "../battle-spirit-toggle.js";
 
+function observedBigSkillBosses(snap) {
+  return (snap?.view || [])
+    .filter((monster) => monster.isBoss && !monster.isDead && monster.monsterId != null)
+    .map((monster) => ({
+      mid: monster.monsterId,
+      hpMax: monster.hpMax,
+      imperilActive: (monster.buffs || []).includes("imperil"),
+    }));
+}
+
 /**
  * @param {import("../../core/types.js").AttackPlan} plan
  * @param {import("../../core/types.js").BattleSnapshot} [snap] 当前 turn 快照（学习器事件记账用）
@@ -66,7 +76,7 @@ export function executeAttack(plan, snap) {
               code: plan.code,
               skillId: plan.skillId,
               globalTurn: snap?.globalTurn,
-              snap,
+              observedBosses: observedBigSkillBosses(snap),
             });
           },
         });
@@ -81,7 +91,7 @@ export function executeAttack(plan, snap) {
               code: plan.code,
               skillId: plan.skillId,
               globalTurn: snap?.globalTurn,
-              snap,
+              observedBosses: observedBigSkillBosses(snap),
             });
           },
         });

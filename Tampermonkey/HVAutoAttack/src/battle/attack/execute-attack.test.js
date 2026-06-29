@@ -67,7 +67,13 @@ describe("executeAttack", () => {
           code: "OFC",
           defaultTargetId: 3,
         },
-        { globalTurn: 10 }
+        {
+          globalTurn: 10,
+          view: [
+            { monsterId: 100, isBoss: true, isDead: false, hpMax: 5000, buffs: ["imperil"] },
+            { monsterId: 200, isBoss: true, isDead: true, hpMax: 6000, buffs: [] },
+          ],
+        }
       )
     ).toBe(true);
 
@@ -83,7 +89,7 @@ describe("executeAttack", () => {
       code: "OFC",
       skillId: "1111",
       globalTurn: 10,
-      snap: { globalTurn: 10 },
+      observedBosses: [{ mid: 100, hpMax: 5000, imperilActive: true }],
     });
   });
 

@@ -776,10 +776,16 @@ function checkPhysicalSkillBookkeeping() {
     "CdRuntimeEvent.RECORD_FIRE",
     "CdLearningEvent.RECORD_FIRE",
     "BigSkillKillLearningEvent.RECORD_CAST",
+    "event.observedBosses",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(physicalSkillBookkeepingFile)} must own physical fire ${required}`);
     }
+  }
+  if (/\bevent\.snap\b/.test(text)) {
+    violations.push(
+      `${rel(physicalSkillBookkeepingFile)} must consume observedBosses, not snap, for physical fire bookkeeping`
+    );
   }
   const executeText = fs.readFileSync(
     path.join(root, "src/battle/attack/execute-attack.js"),
@@ -794,6 +800,13 @@ function checkPhysicalSkillBookkeeping() {
     if (executeText.includes(legacy)) {
       violations.push(
         `src/battle/attack/execute-attack.js must report physical skill fire through runPhysicalSkillBookkeeping`
+      );
+    }
+  }
+  for (const call of executeText.matchAll(/runPhysicalSkillBookkeeping\(\s*\{[\s\S]*?\}\s*\)/g)) {
+    if (/\bsnap\s*:/.test(call[0])) {
+      violations.push(
+        `src/battle/attack/execute-attack.js must pass observedBosses, not snap, to physical skill bookkeeping`
       );
     }
   }
