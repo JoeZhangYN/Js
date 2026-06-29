@@ -84,7 +84,6 @@ export const BATTLE_RULES = [
   // 10. Channel（decide 三段优先级返单 click，execute 探活+click）
   {
     name: "useChannelSkill",
-    when: (snap, opt) => opt.channelSkillSwitch && opt.channelSkill && snap.channeling,
     decide: (snap, opt) => decideChannel(opt, snap),
   },
   // 11. BUFF

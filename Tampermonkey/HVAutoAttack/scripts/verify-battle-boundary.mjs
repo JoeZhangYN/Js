@@ -835,6 +835,21 @@ function checkInfusionEntry() {
   }
 }
 
+function checkChannelEntry() {
+  const ownerText = fs.readFileSync(decideChannelFile, "utf8");
+  for (const required of ["decideChannel", "channelSkillSwitch", "channelSkill", "channeling"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideChannelFile)} must own channel gate ${required}`);
+    }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  for (const legacy of ["channelSkillSwitch", "channelSkill"]) {
+    if (rulesText.includes(legacy)) {
+      violations.push(`${rel(battleRulesFile)} must not assemble channel rule gates directly`);
+    }
+  }
+}
+
 function checkItemScrollEntry() {
   const itemText = fs.readFileSync(decideScrollFile, "utf8");
   for (const required of ["decideScroll", "scrollSwitch", "scrollCondition", "scrollRoundType"]) {
@@ -924,6 +939,7 @@ checkBossImperilEntry();
 checkBigSkillDebuffEntry();
 checkBurstControlEntry();
 checkInfusionEntry();
+checkChannelEntry();
 checkItemScrollEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();

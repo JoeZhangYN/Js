@@ -100,6 +100,14 @@ describe("when 门控", () => {
     });
   });
 
+  it("useChannelSkill: 规则表不拼门控，未开启时 decide 自行 noop", () => {
+    expect(byName("useChannelSkill").when).toBeUndefined();
+    expect(byName("useChannelSkill").decide({ channeling: true }, {})).toEqual({
+      kind: "channel-plan",
+      plan: { type: "noop" },
+    });
+  });
+
   it("bossImperil.when: 需 skillReady[213] 且 debuffSkillSwitch!==false", () => {
     expect(byName("bossImperil").when({ skillReady: { 213: true } }, {})).toBe(true);
     expect(byName("bossImperil").when({ skillReady: { 213: false } }, {})).toBe(false);

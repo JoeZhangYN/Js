@@ -1,4 +1,5 @@
 // PURE: channeling 期 3 段 fallback 链决策（零 DOM）。忠实复刻 buff.js::useChannelSkill 优先级：
+//   0. channelSkillSwitch + channelSkill + snap.channeling 入口守卫
 //   1. channelSkill 列表（buffSkillOrderValue 序，needsRecast && skillReady → click BUFF_SKILL_LIB.id）
 //   2. channelSkill2（channelSkill2OrderValue 序，skillReady → click skillId）
 //   3. buff 续施（playerEffects 升序，turns<=1：Cloak of the Fallen→422 / NAME_TO_BUFF_CODE→lib.id）
@@ -23,8 +24,7 @@ export function decideChannel(opt, snap) {
 
 /** @returns {ChannelPlan} */
 function decidePlan(opt, snap) {
-  // rule.when 已守 channeling；保守再判一次，非 channeling → noop（与原 useChannelSkill 入口守卫一致）。
-  if (!snap.channeling) return { type: "noop" };
+  if (!opt.channelSkillSwitch || !opt.channelSkill || !snap.channeling) return { type: "noop" };
 
   // —— 第一段：施放 Channel 技能（按 buffSkillOrderValue 序）——
   const channelSkill = opt.channelSkill;
