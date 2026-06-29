@@ -1089,7 +1089,7 @@ function checkAutoPauseEntry() {
 
 function checkFleeEntry() {
   const ownerText = fs.readFileSync(decideFleeFile, "utf8");
-  for (const required of ["decideFlee", "autoFlee", "fleeCondition", "click-then-reload"]) {
+  for (const required of ["decideFlee", "autoFlee", "fleeCondition", "flee-command"]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideFleeFile)} must own flee gate ${required}`);
     }

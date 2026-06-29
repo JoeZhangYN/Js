@@ -17,7 +17,7 @@ function mkBtn(id, { disabled = false } = {}) {
 beforeEach(() => {
   document.body.innerHTML = "";
   runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0" } });
-  vi.useFakeTimers(); // 防 click-then-reload 的 scheduleReload 真触发 goto
+  vi.useFakeTimers(); // 防 flee-command 的 scheduleReload 真触发 goto
 });
 
 afterEach(() => {
@@ -95,9 +95,9 @@ describe("dispatch", () => {
     expect(skill.click).not.toHaveBeenCalled();
   });
 
-  it("click-then-reload → click 逃跑按钮，返 true", () => {
+  it("flee-command → click 逃跑按钮，返 true", () => {
     const flee = mkBtn("1001");
-    expect(dispatch({ kind: "click-then-reload", selector: "1001", delaySec: 3 })).toBe(true);
+    expect(dispatch({ kind: "flee-command" })).toBe(true);
     expect(flee.click).toHaveBeenCalledOnce();
   });
 

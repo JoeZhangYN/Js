@@ -12,11 +12,9 @@ describe("decideFlee", () => {
     });
   });
 
-  it("autoFlee 开启且条件满足 -> click-then-reload", () => {
+  it("autoFlee 开启且条件满足 -> flee-command", () => {
     expect(decideFlee({ autoFlee: true }, {})).toEqual({
-      kind: "click-then-reload",
-      selector: "1001",
-      delaySec: 3,
+      kind: "flee-command",
     });
   });
 });

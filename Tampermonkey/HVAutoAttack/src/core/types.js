@@ -6,7 +6,7 @@
  *
  * - click-skill-then-target: dispatch 含 **Spirit Stance 前置**（checkAndActivateSpirit 命中则本回合让出），
  *   收编 debuff 全员/单目标 + boss-imperil 的统一双段语义。
- * - click-then-reload: flee 专用——click 逃跑按钮后 scheduleReload。
+ * - flee-command: flee 专用 command——click 逃跑按钮后 scheduleReload。
  * - pause / critical-pause: 纯暂停 / 关键 buff 即将消失告警暂停。
  * - *-plan: attack/item/channel 多分支决策的数据计划，由对应 execute-*（execute-attack/item/channel）
  *   执行——保持通用 dispatch 不被各 step 细节污染。深度 B 后已无 delegate 过渡桥。
@@ -17,7 +17,7 @@
  *         | { kind: "item-command", itemId: string|number }
  *         | { kind: "toggle-spirit" }
  *         | { kind: "click-skill-then-target", skillId: string, targetId: number }
- *         | { kind: "click-then-reload", selector: string, delaySec: number }
+ *         | { kind: "flee-command" }
  *         | { kind: "halt", reason: "victory"|"defeat"|"flee"|"pause"|"acted" }
  *         | { kind: "alert-and-pause", msg: { l0: string, l1: string, l2: string } }
  *         | { kind: "pause" }

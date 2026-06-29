@@ -76,11 +76,9 @@ describe("PURE decide 形状（深度 B 后无 delegate）", () => {
 });
 
 describe("rule decide 门控", () => {
-  it("flee: 规则表不拼门控，开启时由 decide 返回 click-then-reload", () => {
+  it("flee: 规则表不拼门控，开启时由 decide 返回 flee-command", () => {
     expect(byName("flee").decide({}, { autoFlee: true })).toEqual({
-      kind: "click-then-reload",
-      selector: "1001",
-      delaySec: 3,
+      kind: "flee-command",
     });
   });
 

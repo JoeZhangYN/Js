@@ -2,10 +2,9 @@
 // 复用 attempt-click / navigate / lang / pause-automation / activate-spirit + 各 step 的 execute-*。
 // 返回 acted(boolean)：runRules 据此短路。深度 B 后已无 delegate 过渡桥——所有 step 的判断都在
 // PURE decide 完成，dispatch 只翻译数据 → 副作用（含 isOn 写前探活）。
-import { gE } from "../dom/query.js";
 import { attemptClick } from "../dom/attempt-click.js";
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { _alert } from "../core/lang.js";
+import { BattleFleeCommandEvent, runBattleFleeCommand } from "./battle-flee-command.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import { BattleItemCommandEvent, runBattleItemCommand } from "./battle-item-command.js";
 import { BattleSkillCommandEvent, runBattleSkillCommand } from "./battle-skill-command.js";
@@ -61,17 +60,8 @@ export function dispatch(result, snap) {
         targetId: result.targetId,
       });
 
-    case "click-then-reload": {
-      // flee：逃跑按钮 click + 延时 reload（逃跑按钮恒可点，无需 isOn 探活）
-      const el = gE(result.selector);
-      if (!el) return false;
-      el.click();
-      runNavigationAutomation({
-        type: NavigationEvent.SCHEDULE_RELOAD,
-        seconds: result.delaySec,
-      });
-      return true;
-    }
+    case "flee-command":
+      return !!runBattleFleeCommand({ type: BattleFleeCommandEvent.CLICK_AND_RELOAD });
 
     case "alert-and-pause":
       _alert(0, result.msg.l0, result.msg.l1, result.msg.l2);
