@@ -764,6 +764,13 @@ function checkBossImperilEntry() {
   if (!rulesText.includes("runBossImperilAutomation")) {
     violations.push(`${rel(battleRulesFile)} must read boss Imperil decisions through their entry`);
   }
+  const bossRule =
+    rulesText.match(/name:\s*["']bossImperil["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  for (const legacy of ["BossImperilEvent", "CAN_CAST", "debuffSkillSwitch", "skillReady"]) {
+    if (new RegExp(`\\b${legacy}\\b`).test(bossRule)) {
+      violations.push(`${rel(battleRulesFile)} must not assemble boss Imperil gates directly`);
+    }
+  }
   for (const legacy of [
     "runBigSkillKillLearningAutomation",
     "BigSkillKillLearningEvent",

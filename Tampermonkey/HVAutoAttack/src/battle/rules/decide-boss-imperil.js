@@ -51,13 +51,13 @@ function canCastBossImperil(opt, snap) {
 
 /**
  * 决定给哪只未上 Imperil 的 boss 施放 213（AoE 窗口尽量覆盖多个 needy boss）。
- * 调用前提（由 rule.when 守卫）：opt.debuffSkillSwitch !== false && snap.skillReady["213"]。
+ * 入口自守卫：stall / debuffSkillSwitch / skillReady["213"] / learned OFC kill skip。
  * @param {object} opt
  * @param {import("../../core/types.js").BattleSnapshot} snap
  * @returns {import("../../core/types.js").ActionResult}
  */
 function decideBossImperil(opt, snap) {
-  if (!snap.skillReady["213"]) return { kind: "noop" };
+  if (!canCastBossImperil(opt, snap)) return { kind: "noop" };
   const sortedAlive = aliveByOrder(snap.view);
   const isBossNoIm = (m) => m.isBoss && !m.buffs.includes("imperil");
   if (!sortedAlive.some(isBossNoIm)) return { kind: "noop" };
@@ -73,7 +73,8 @@ function decideBossImperil(opt, snap) {
 }
 
 export function runBossImperilAutomation(event = { type: EVENT_DECIDE }) {
-  if (event.type === EVENT_CAN_CAST) return canCastBossImperil(event.opt, event.snap);
-  if (event.type === EVENT_DECIDE) return decideBossImperil(event.opt, event.snap);
+  const type = event.type || EVENT_DECIDE;
+  if (type === EVENT_CAN_CAST) return canCastBossImperil(event.opt, event.snap);
+  if (type === EVENT_DECIDE) return decideBossImperil(event.opt, event.snap);
   return undefined;
 }

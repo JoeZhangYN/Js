@@ -131,12 +131,11 @@ describe("when 门控", () => {
     expect(byName("useDeSkill").decide({ view: [] }, {})).toEqual({ kind: "noop" });
   });
 
-  it("bossImperil.when: 需 skillReady[213] 且 debuffSkillSwitch!==false", () => {
-    expect(byName("bossImperil").when({ skillReady: { 213: true } }, {})).toBe(true);
-    expect(byName("bossImperil").when({ skillReady: { 213: false } }, {})).toBe(false);
-    expect(
-      byName("bossImperil").when({ skillReady: { 213: true } }, { debuffSkillSwitch: false })
-    ).toBe(false);
+  it("bossImperil: 规则表不拼 CAN_CAST 门控，未 ready 时 decide 自行 noop", () => {
+    expect(byName("bossImperil").when).toBeUndefined();
+    expect(byName("bossImperil").decide({ skillReady: { 213: false }, view: [] }, {})).toEqual({
+      kind: "noop",
+    });
   });
 });
 
@@ -155,15 +154,33 @@ describe("Feature 1: 拖战跳 Imperil", () => {
     ...over,
   });
   it("stall 中 bossImperil.when → false（不再 imperil 独怪）", () => {
-    expect(byName("bossImperil").when(stallSnap(), { stallMode: true })).toBeFalsy();
+    expect(byName("bossImperil").decide(stallSnap(), { stallMode: true })).toEqual({
+      kind: "noop",
+    });
   });
 
-  it("stallMode:false → bossImperil.when 恢复（由 skillReady 决定）", () => {
-    expect(byName("bossImperil").when(stallSnap(), { stallMode: false })).toBe(true);
+  it("stallMode:false → bossImperil decide 恢复（由业务入口决定是否命中）", () => {
+    expect(byName("bossImperil").decide(stallSnap(), { stallMode: false })).toEqual({
+      kind: "click-skill-then-target",
+      skillSel: "213",
+      targetSel: "#mkey_1",
+    });
   });
 
   it("非 stall（roundNow 未设）→ bossImperil.when 不受影响", () => {
-    expect(byName("bossImperil").when({ skillReady: { 213: true } }, {})).toBe(true);
+    expect(
+      byName("bossImperil").decide(
+        {
+          skillReady: { 213: true },
+          view: [{ id: 1, order: 0, isDead: false, isBoss: true, buffs: [] }],
+        },
+        {}
+      )
+    ).toEqual({
+      kind: "click-skill-then-target",
+      skillSel: "213",
+      targetSel: "#mkey_1",
+    });
   });
 
   it("stall 中 castImperilAll 由 decide 自行跳过", () => {

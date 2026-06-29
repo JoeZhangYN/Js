@@ -11,7 +11,7 @@ import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.
 import { decideDefend } from "../defense/decide-defend.js";
 import { decideAutoPause } from "../pause/decide-auto-pause.js";
 import { decideFlee } from "../escape/decide-flee.js";
-import { BossImperilEvent, runBossImperilAutomation } from "./decide-boss-imperil.js";
+import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 
 /** @type {import("../../core/types.js").BattleRule[]} */
@@ -68,8 +68,7 @@ export const BATTLE_RULES = [
   //     F4（默认 OFF）：每只活 boss 都确认 OFC 能秒 → 跳过 boss-Imperil（能秒连 imperil 都不用上）。
   {
     name: "bossImperil",
-    when: (snap, opt) => runBossImperilAutomation({ type: BossImperilEvent.CAN_CAST, snap, opt }),
-    decide: (snap, opt) => runBossImperilAutomation({ type: BossImperilEvent.DECIDE, snap, opt }),
+    decide: (snap, opt) => runBossImperilAutomation({ snap, opt }),
   },
   // 13. 全员 Weaken（OFC/FRD 即将就绪时跳过）
   {
