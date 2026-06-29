@@ -15,10 +15,14 @@ function readBattleMonsterView(monsters) {
     monsterStatus,
     runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_DB })
   );
-  return { view, monsterStatus };
+  const monsterIdentities = view.map((monster) => ({
+    monsterId: monster.monsterId,
+    name: monster.name,
+  }));
+  return { view, monsterIdentities };
 }
 
 export function runBattleMonsterView(event = { type: EVENT_READ_VIEW }) {
   if (event.type === EVENT_READ_VIEW) return readBattleMonsterView(event.monsters);
-  return { view: [], monsterStatus: [] };
+  return { view: [], monsterIdentities: [] };
 }

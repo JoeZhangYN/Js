@@ -8,18 +8,18 @@ import {
 } from "./incoming-burst-learner.js";
 
 const ev = (source, dmg, type) => ({ kind: "player-incoming", source, dmg, type });
-const status = [
+const identities = [
   { monsterId: 100, name: "Orc" },
   { monsterId: 200, name: "Goblin" },
 ];
 
 beforeEach(() => localStorage.clear());
 
-const record = (events, monsterStatus = status) =>
+const record = (events, monsterIdentities = identities) =>
   runIncomingBurstLearningAutomation({
     type: IncomingBurstLearningEvent.RECORD_EVENTS,
     events,
-    monsterStatus,
+    monsterIdentities,
   });
 const readMap = () =>
   runIncomingBurstLearningAutomation({ type: IncomingBurstLearningEvent.READ_MAP });
@@ -38,7 +38,7 @@ describe("incoming-burst-learner", () => {
     expect(readMap()[100]).toEqual({ maxHit: 800, type: "dark" });
   });
 
-  it("名归一：'the Orc' 命中 monsterStatus 的 'Orc'", () => {
+  it("名归一：'the Orc' 命中 monster identity 的 'Orc'", () => {
     record([ev("the Orc", 400, "elec")]);
     expect(readMap()[100]).toEqual({ maxHit: 400, type: "elec" });
   });
@@ -48,7 +48,7 @@ describe("incoming-burst-learner", () => {
     expect(readMap()[100]).toBeUndefined();
   });
 
-  it("无法定位 MID（名不在 status）→ 跳", () => {
+  it("无法定位 MID（名不在 identity map）→ 跳", () => {
     record([ev("Dragon", 999, "fire")]);
     expect(Object.keys(readMap())).toHaveLength(0);
   });

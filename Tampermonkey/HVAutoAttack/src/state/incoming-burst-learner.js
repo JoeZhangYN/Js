@@ -50,14 +50,14 @@ function readLearnedBurstMap() {
 /**
  * 从本回合全量 DamageEvent[] 更新每 MID 的单发最大伤害 + 类型（运行 max，幂等）。
  * @param {Array<{kind:string,source:string,dmg:number,type:string}>} events
- * @param {Array<{monsterId?:number,name?:string}>} monsterStatus 名→MID 映射源
+ * @param {Array<{monsterId?:number,name?:string}>} monsterIdentities 名→MID 映射源
  */
-function updateBurstFromEvents(events, monsterStatus) {
+function updateBurstFromEvents(events, monsterIdentities) {
   if (!events || !events.length) return;
   const nameToMid = {};
-  for (const st of monsterStatus || []) {
-    const mid = normalizeMonsterId(st?.monsterId);
-    if (mid != null && st?.name) nameToMid[normalizeMonsterName(st.name)] = mid;
+  for (const identity of monsterIdentities || []) {
+    const mid = normalizeMonsterId(identity?.monsterId);
+    if (mid != null && identity?.name) nameToMid[normalizeMonsterName(identity.name)] = mid;
   }
   const learned = readLearnedBurstMap();
   let changed = false;
@@ -82,7 +82,7 @@ function getLearnedBurstMap() {
 
 export function runIncomingBurstLearningAutomation(event = { type: EVENT_READ_MAP }) {
   if (event.type === EVENT_RECORD_EVENTS)
-    return updateBurstFromEvents(event.events, event.monsterStatus);
+    return updateBurstFromEvents(event.events, event.monsterIdentities);
   if (event.type === EVENT_READ_MAP) return getLearnedBurstMap();
   return undefined;
 }

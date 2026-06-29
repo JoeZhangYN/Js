@@ -211,7 +211,7 @@ function readSkillReady() {
  */
 export function collectSnapshot(event = {}) {
   const monsters = readMonsters();
-  const { view, monsterStatus } = runBattleMonsterView({
+  const { view, monsterIdentities } = runBattleMonsterView({
     type: BattleMonsterViewEvent.READ_VIEW,
     monsters,
   });
@@ -246,7 +246,7 @@ export function collectSnapshot(event = {}) {
     runIncomingBurstLearningAutomation({
       type: IncomingBurstLearningEvent.RECORD_EVENTS,
       events: battleLog,
-      monsterStatus,
+      monsterIdentities,
     });
   return {
     turn,

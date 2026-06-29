@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   isSpiritActive: vi.fn(() => false),
   runBattleMonsterView: vi.fn(() => ({
     view: [],
-    monsterStatus: [{ order: 0, monsterId: 101 }],
+    monsterIdentities: [{ name: "Alpha", monsterId: 101 }],
   })),
   monsterHpVars: vi.fn(() => ({})),
   parseBattleLog: vi.fn(() => []),
@@ -123,7 +123,7 @@ describe("collectSnapshot", () => {
     expect(mocks.runIncomingBurstLearningAutomation).toHaveBeenCalledWith({
       type: "recordEvents",
       events: [],
-      monsterStatus: [{ order: 0, monsterId: 101 }],
+      monsterIdentities: [{ name: "Alpha", monsterId: 101 }],
     });
     expect(snap.learnedBurstByMid).toEqual({ learned: true });
   });
@@ -134,7 +134,7 @@ describe("collectSnapshot", () => {
     expect(mocks.runIncomingBurstLearningAutomation).not.toHaveBeenCalledWith({
       type: "recordEvents",
       events: [],
-      monsterStatus: [{ order: 0, monsterId: 101 }],
+      monsterIdentities: [{ name: "Alpha", monsterId: 101 }],
     });
     expect(snap.learnedBurstByMid).toEqual({});
   });

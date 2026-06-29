@@ -860,6 +860,9 @@ function checkSnapshot() {
   if (/MonsterStatusEvent\.READ_STATUS|MonsterCacheEvent\.READ_DB|joinMonsterView/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not assemble monster status/cache/view directly`);
   }
+  if (/\bmonsterStatus\b/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not pass full monsterStatus downstream`);
+  }
   if (/\bg\(\s*["']monsterStatus["']/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read monsterStatus directly`);
   }

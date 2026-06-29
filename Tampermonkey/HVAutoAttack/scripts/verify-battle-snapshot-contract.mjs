@@ -48,6 +48,9 @@ if (
 ) {
   violations.push(`${snapshot.replaceAll("\\", "/")} must not assemble monster view directly`);
 }
+if (/monsterStatus/.test(snapshotText)) {
+  violations.push(`${snapshot.replaceAll("\\", "/")} must not pass full monsterStatus downstream`);
+}
 if (/snap\.fightingStyle/.test(scoringText)) {
   violations.push(`${physicalScoring.replaceAll("\\", "/")} must use opt.fightingStyle`);
 }

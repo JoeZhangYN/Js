@@ -45,10 +45,7 @@ function checkFile(file) {
     ) {
       violations.push(`${where} learned incoming-burst storage belongs in incoming burst learner`);
     }
-    if (
-      relative === owner &&
-      /from\s+["']\.\.\/battle\/log-parser\.js["']/.test(line)
-    ) {
+    if (relative === owner && /from\s+["']\.\.\/battle\/log-parser\.js["']/.test(line)) {
       violations.push(
         `${where} incoming burst learning must use monster identity matching, not battle log-parser internals`
       );
@@ -63,6 +60,7 @@ for (const required of [
   "runIncomingBurstLearningAutomation",
   "IncomingBurstLearningEvent",
   "STORAGE_KEYS.LEARNED_INCOMING_BURST",
+  "monsterIdentities",
   "normalizeMonsterId",
   "../monster/monster-identity.js",
   "normalizeLearnedBurstRecord",
@@ -75,6 +73,11 @@ for (const required of [
 if ((ownerText.match(/readLearnedBurstMap\(/g) || []).length < 3) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must normalize learned incoming-burst storage reads`
+  );
+}
+if (/\bmonsterStatus\b/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must learn from narrow monsterIdentities, not full monsterStatus`
   );
 }
 

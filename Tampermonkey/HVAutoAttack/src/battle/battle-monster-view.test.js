@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "./battle-monster-view.js";
 
 const mocks = vi.hoisted(() => ({
-  joinMonsterView: vi.fn(() => [{ order: 0, monsterId: 101 }]),
+  joinMonsterView: vi.fn(() => [{ order: 0, monsterId: 101, name: "Alpha" }]),
   runMonsterCacheAutomation: vi.fn(() => ({ 101: { monsterId: 101 } })),
   runMonsterStatusAutomation: vi.fn(() => [{ order: 0, monsterId: 101 }]),
 }));
@@ -22,8 +22,8 @@ describe("battle monster view", () => {
     const monsters = [{ order: 0, name: "Alpha" }];
 
     expect(runBattleMonsterView({ type: BattleMonsterViewEvent.READ_VIEW, monsters })).toEqual({
-      view: [{ order: 0, monsterId: 101 }],
-      monsterStatus: [{ order: 0, monsterId: 101 }],
+      view: [{ order: 0, monsterId: 101, name: "Alpha" }],
+      monsterIdentities: [{ monsterId: 101, name: "Alpha" }],
     });
 
     expect(mocks.runMonsterStatusAutomation).toHaveBeenCalledWith({ type: "readStatus" });
