@@ -153,25 +153,20 @@ describe("Feature 1: 拖战跳 Imperil", () => {
     expect(byName("bossImperil").when({ skillReady: { 213: true } }, {})).toBe(true);
   });
 
-  it("stall 中 castImperilAll.when → false", () => {
+  it("stall 中 castImperilAll 由 decide 自行跳过", () => {
+    expect(byName("castImperilAll").when).toBeUndefined();
     expect(
-      byName("castImperilAll").when(stallSnap(), {
+      byName("castImperilAll").decide(stallSnap(), {
         stallMode: true,
         debuffSkillSwitch: true,
         debuffSkillAllIm: true,
       })
-    ).toBeFalsy();
+    ).toEqual({ kind: "noop" });
   });
 
-  it("stall 中 castWeakenAll.when 仍触发（Weaken 助生存，不被 stall 跳）", () => {
-    expect(
-      byName("castWeakenAll").when(stallSnap(), {
-        stallMode: true,
-        debuffSkillSwitch: true,
-        debuffSkillAllWk: true,
-        skipDebuffForBigSkill_We: false,
-      })
-    ).toBe(true);
+  it("stall 中 castWeakenAll 规则表不拼门控", () => {
+    expect(byName("castWeakenAll").when).toBeUndefined();
+    expect(byName("castWeakenAll").decide(stallSnap(), {})).toEqual({ kind: "noop" });
   });
 });
 

@@ -1,11 +1,6 @@
 // 每条 rule：{ name, when?(snap,opt), decide(snap,opt)→ActionResult }。顺序 = 原 runSteps 顺序。
 // 深度 B 后**全部 16 条 decide 均为 PURE**（只读 snap，零 DOM 判断）；副作用全在
 import { checkCondition } from "../../settings/condition-eval.js";
-import {
-  BattleDebuffCoverageEvent,
-  runBattleDebuffCoverageAutomation,
-} from "../battle-debuff-coverage.js";
-import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { decideInfusion } from "../buff/decide-infusion.js";
 import { decideBuff } from "../buff/decide-buff.js";
 import { decideChannel } from "../buff/decide-channel.js";
@@ -14,40 +9,15 @@ import { decideCastDebuffOnAll } from "../debuff/decide-cast-all.js";
 import { decideAttack } from "../attack/decide-attack.js";
 import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../item/decide-item.js";
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
-import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill.js";
 import { BossImperilEvent, runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 
-const readRuleRuntimeContext = (snap) => snap;
-const isStallingForRules = (snap, opt, runtime = readRuleRuntimeContext(snap)) =>
-  runBattleStallModeAutomation({
-    type: BattleStallModeEvent.READ_ACTIVE,
-    snap,
-    opt,
-    roundNow: runtime.roundNow,
-    roundAll: runtime.roundAll,
-  });
-const hasMissingDebuff = (snap, runtime, debuffName) =>
-  runBattleDebuffCoverageAutomation({
-    type: BattleDebuffCoverageEvent.HAS_MISSING_DEBUFF,
-    snap,
-    debuffName,
-    monsterAlive: runtime.monsterAlive,
-  });
 const canFlee = (snap, opt) => opt.autoFlee && checkCondition(opt.fleeCondition, snap);
 const flee = () => ({ kind: "click-then-reload", selector: "1001", delaySec: 3 });
 const canAutoPause = (snap, opt) => opt.autoPause && checkCondition(opt.pauseCondition, snap);
 const pause = () => ({ kind: "pause" });
 const canDefend = (snap, opt) => opt.defend && checkCondition(opt.defendCondition, snap);
 const defend = () => ({ kind: "click", selector: "#ckey_defend" });
-const shouldSkipDebuffForBigSkill = (opt, snap, kind) =>
-  runBigSkillDebuffAutomation({
-    type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
-    opt,
-    snap,
-    kind,
-  });
-
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
@@ -109,24 +79,11 @@ export const BATTLE_RULES = [
   // 13. 全员 Weaken（OFC/FRD 即将就绪时跳过）
   {
     name: "castWeakenAll",
-    when: (snap, opt) =>
-      opt.debuffSkillSwitch &&
-      opt.debuffSkillAllWk &&
-      !shouldSkipDebuffForBigSkill(opt, snap, "We") &&
-      hasMissingDebuff(snap, readRuleRuntimeContext(snap), "weaken") &&
-      checkCondition(opt.debuffSkillWkCondition, snap),
     decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "We"),
   },
   // 14. 全员 Imperil（拖战同样跳过——独怪此时也是 Imperil 唯一目标，加速击杀反拖战意图）
   {
     name: "castImperilAll",
-    when: (snap, opt) =>
-      !isStallingForRules(snap, opt) &&
-      opt.debuffSkillSwitch &&
-      opt.debuffSkillAllIm &&
-      !shouldSkipDebuffForBigSkill(opt, snap, "Im") &&
-      hasMissingDebuff(snap, readRuleRuntimeContext(snap), "imperil") &&
-      checkCondition(opt.debuffSkillImpCondition, snap),
     decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "Im"),
   },
   // 15. 单目标 Debuff（stall 模式跳过——独怪上 debuff 浪费 MP + CD）

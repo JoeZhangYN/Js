@@ -39,6 +39,7 @@ const bigSkillFile = path.join(root, "src/battle/rules/big-skill.js");
 const bossImperilFile = path.join(root, "src/battle/rules/decide-boss-imperil.js");
 const burstControlFile = path.join(root, "src/battle/debuff/decide-burst-control.js");
 const decideDeSkillFile = path.join(root, "src/battle/debuff/decide-de-skill.js");
+const decideCastAllFile = path.join(root, "src/battle/debuff/decide-cast-all.js");
 const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const violations = [];
 
@@ -714,17 +715,13 @@ function checkSnapshot() {
 
 function checkBattleRulesRuntimeContext() {
   const text = fs.readFileSync(battleRulesFile, "utf8");
-  if (!text.includes("readRuleRuntimeContext")) {
-    violations.push(`${rel(battleRulesFile)} must centralize rule runtime reads`);
+  for (const legacy of ["readRuleRuntimeContext", "isStallingForRules", "hasMissingDebuff"]) {
+    if (new RegExp(`\\b${legacy}\\b`).test(text)) {
+      violations.push(`${rel(battleRulesFile)} must not own all-debuff runtime gate helpers`);
+    }
   }
-  if (!text.includes("isStallingForRules")) {
-    violations.push(`${rel(battleRulesFile)} must centralize stall runtime decisions`);
-  }
-  if (!text.includes("hasMissingDebuff")) {
-    violations.push(`${rel(battleRulesFile)} must centralize debuff coverage decisions`);
-  }
-  if (!text.includes("runBattleDebuffCoverageAutomation")) {
-    violations.push(`${rel(battleRulesFile)} must read debuff coverage through its entry`);
+  if (text.includes("runBattleDebuffCoverageAutomation")) {
+    violations.push(`${rel(battleRulesFile)} all-debuff coverage belongs in decideCastDebuffOnAll`);
   }
   if (/\.filter\(\s*\(?\w+\)?\s*=>\s*\w+\.buffs/.test(text)) {
     violations.push(`${rel(battleRulesFile)} must not assemble debuff coverage from monster buffs`);
@@ -797,7 +794,7 @@ function checkBigSkillDebuffEntry() {
       violations.push(`${rel(bigSkillFile)} legacy ${legacy} export must stay private`);
     }
   }
-  for (const file of [battleRulesFile, burstControlFile]) {
+  for (const file of [decideCastAllFile, burstControlFile]) {
     const text = fs.readFileSync(file, "utf8");
     if (!text.includes("runBigSkillDebuffAutomation")) {
       violations.push(`${rel(file)} must read big-skill debuff decisions through their entry`);
@@ -891,6 +888,46 @@ function checkSingleDebuffEntry() {
   }
 }
 
+function checkAllDebuffEntry() {
+  const ownerText = fs.readFileSync(decideCastAllFile, "utf8");
+  for (const required of [
+    "decideCastDebuffOnAll",
+    "debuffSkillSwitch",
+    "debuffSkillAllWk",
+    "debuffSkillAllIm",
+    "debuffSkillWkCondition",
+    "debuffSkillImpCondition",
+    "runBattleDebuffCoverageAutomation",
+    "runBigSkillDebuffAutomation",
+    "runBattleStallModeAutomation",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideCastAllFile)} must own all-debuff gate ${required}`);
+    }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  for (const ruleName of ["castWeakenAll", "castImperilAll"]) {
+    const rule =
+      rulesText.match(
+        new RegExp(`name:\\s*["']${ruleName}["'][\\s\\S]*?decide:[\\s\\S]*?\\n\\s*\\}`)
+      )?.[0] || "";
+    for (const legacy of [
+      "debuffSkillSwitch",
+      "debuffSkillAllWk",
+      "debuffSkillAllIm",
+      "debuffSkillWkCondition",
+      "debuffSkillImpCondition",
+      "runBattleDebuffCoverageAutomation",
+      "runBigSkillDebuffAutomation",
+      "runBattleStallModeAutomation",
+    ]) {
+      if (new RegExp(`\\b${legacy}\\b`).test(rule)) {
+        violations.push(`${rel(battleRulesFile)} must not assemble all-debuff rule gates directly`);
+      }
+    }
+  }
+}
+
 function checkItemScrollEntry() {
   const itemText = fs.readFileSync(decideScrollFile, "utf8");
   for (const required of ["decideScroll", "scrollSwitch", "scrollCondition", "scrollRoundType"]) {
@@ -925,7 +962,8 @@ function checkBattleStallMode() {
     }
   }
   for (const file of [
-    battleRulesFile,
+    decideCastAllFile,
+    decideDeSkillFile,
     path.join(root, "src/battle/attack/decide-attack.js"),
     path.join(root, "src/battle/item/decide-item.js"),
   ]) {
@@ -983,6 +1021,7 @@ checkInfusionEntry();
 checkChannelEntry();
 checkBuffEntry();
 checkSingleDebuffEntry();
+checkAllDebuffEntry();
 checkItemScrollEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();
