@@ -60,6 +60,10 @@ for (const required of [
   "STORAGE_KEYS.LEARNED_RECOVERY",
   "OptionEvent.READ_FIELD",
   "RECOVERY_PRIOR",
+  "normalizePotionId",
+  "normalizePending",
+  "normalizeLearnedRecoveryRecord",
+  "readLearnedRecoveryMap",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -75,6 +79,17 @@ for (const legacy of ["recordPreDrink", "finalizePending", "getLearnedRecovery"]
       `${owner.replaceAll("\\", "/")} legacy ${legacy} export must stay private behind runRecoveryLearningAutomation(event)`
     );
   }
+}
+
+if ((ownerText.match(/\bnormalizePending\(/g) || []).length < 3) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} pending recovery state must be normalized on record and finalize paths`
+  );
+}
+if ((ownerText.match(/\breadLearnedRecoveryMap\(/g) || []).length < 3) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} learned recovery storage must be read through its normalized map`
+  );
 }
 
 if (violations.length) {

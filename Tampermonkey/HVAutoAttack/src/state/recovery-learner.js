@@ -47,20 +47,70 @@ function isDynamicHealLogEnabled() {
   );
 }
 
+function normalizeNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function normalizeTurn(value) {
+  return Math.max(0, Math.trunc(normalizeNumber(value)));
+}
+
+function normalizePotionId(value) {
+  const id = Number.parseInt(value, 10);
+  return RECOVERY_PRIOR[id] ? id : null;
+}
+
+function normalizePending(value) {
+  const potionId = normalizePotionId(value?.potionId);
+  if (!potionId) return null;
+  const stat = RECOVERY_PRIOR[potionId].stat;
+  return {
+    potionId,
+    stat,
+    pre: normalizeNumber(value?.pre),
+    turn: normalizeTurn(value?.turn),
+  };
+}
+
+function normalizeLearnedRecoveryRecord(value) {
+  const amount = Number(value?.amount);
+  const n = Number(value?.n);
+  if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(n) || n <= 0) return null;
+  return {
+    amount,
+    n: Math.trunc(n),
+  };
+}
+
+function readLearnedRecoveryMap() {
+  const source = getValue(STORAGE_KEYS.LEARNED_RECOVERY, true) || {};
+  const learned = {};
+  for (const key of Object.keys(source)) {
+    const potionId = normalizePotionId(key);
+    const record = normalizeLearnedRecoveryRecord(source[key]);
+    if (potionId && record) learned[potionId] = record;
+  }
+  return learned;
+}
+
 /**
  * 喝药前调用：保存 pending 观测点。
  * @param {number|string} potionId
  * @param {import("../core/types.js").BattleSnapshot} snap
  */
 function recordPreDrink(potionId, snap) {
-  const info = RECOVERY_PRIOR[parseInt(potionId)];
+  const id = normalizePotionId(potionId);
+  const info = RECOVERY_PRIOR[id];
   if (!info) return; // 非药品（Health Gem 等）不学
-  g("learnPending", {
-    potionId: parseInt(potionId),
-    stat: info.stat,
-    pre: snap[`${info.stat}Abs`],
-    turn: runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT }),
-  });
+  g(
+    "learnPending",
+    normalizePending({
+      potionId: id,
+      pre: snap?.[`${info.stat}Abs`],
+      turn: runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT }),
+    })
+  );
 }
 
 /**
@@ -69,11 +119,18 @@ function recordPreDrink(potionId, snap) {
  * @param {import("../core/types.js").BattleSnapshot} snap
  */
 function finalizePending(snap) {
-  const pending = g("learnPending");
-  if (!pending) return;
-  const curTurn = runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT });
-  if (curTurn === pending.turn) return; // 同回合，未结算
-  const post = snap[`${pending.stat}Abs`];
+  const rawPending = g("learnPending");
+  const pending = normalizePending(rawPending);
+  if (!pending) {
+    if (rawPending) g("learnPending", null);
+    return;
+  }
+  const curTurn = normalizeTurn(runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT }));
+  if (curTurn === pending.turn) {
+    g("learnPending", pending);
+    return; // 同回合，未结算
+  }
+  const post = normalizeNumber(snap?.[`${pending.stat}Abs`]);
   const delta = post - pending.pre;
   g("learnPending", null); // 清 pending
   if (delta <= 0) {
@@ -89,7 +146,7 @@ function finalizePending(snap) {
 }
 
 function updateLearned(potionId, observedDelta) {
-  const learned = getValue(STORAGE_KEYS.LEARNED_RECOVERY, true) || {};
+  const learned = readLearnedRecoveryMap();
   const prior = learned[potionId];
   const n = (prior?.n ?? 0) + 1;
   const priorAmt = prior?.amount ?? RECOVERY_PRIOR[potionId]?.amount ?? observedDelta;
@@ -111,10 +168,10 @@ function updateLearned(potionId, observedDelta) {
  * @returns {{stat:string, amount:number}|null}
  */
 function getLearnedRecovery(potionId) {
-  const id = parseInt(potionId);
+  const id = normalizePotionId(potionId);
   const fallback = RECOVERY_PRIOR[id];
   if (!fallback) return null;
-  const learned = getValue(STORAGE_KEYS.LEARNED_RECOVERY, true) || {};
+  const learned = readLearnedRecoveryMap();
   if (learned[id] && learned[id].n > 0) {
     return { stat: fallback.stat, amount: learned[id].amount };
   }
