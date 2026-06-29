@@ -42,6 +42,13 @@ const roundLifecycleText = requireText(path.normalize("src/battle/round-lifecycl
   "BattleSkillUsageEvent.RESET_ROUND",
   "MonsterKnowledgeEvent.ROUND_STARTED",
 ]);
+const roundStartLogText = requireText(path.normalize("src/battle/round-start-log.js"), [
+  "BattleRoundStartLogEvent",
+  "runBattleRoundStartLog",
+  "battleRoundStartLogEventHandlers",
+  "BATTLE_LOG_SELECTOR",
+  "emptyRoundStartLog",
+]);
 requireText(ownerTest, ["recordStartContext", "recordStartCount", 'roundType: "ba"']);
 
 if (
@@ -84,6 +91,9 @@ if (/if\s*\(\s*event\.type\s*(?:={2,3}|!==?)\s*EVENT_/.test(ownerText)) {
 }
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(roundLifecycleText)) {
   violations.push("src/battle/round-lifecycle.js must dispatch events through handler table");
+}
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(roundStartLogText)) {
+  violations.push("src/battle/round-start-log.js must dispatch events through handler table");
 }
 
 if (violations.length) {

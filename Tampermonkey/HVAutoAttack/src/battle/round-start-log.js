@@ -16,7 +16,14 @@ function readCurrentRoundStartLog() {
   };
 }
 
-export function runBattleRoundStartLog(event = { type: EVENT_READ_CURRENT }) {
-  if (event.type === EVENT_READ_CURRENT) return readCurrentRoundStartLog();
+function emptyRoundStartLog() {
   return { rows: [], firstText: "", initializingText: "" };
+}
+
+const battleRoundStartLogEventHandlers = Object.freeze({
+  [EVENT_READ_CURRENT]: () => readCurrentRoundStartLog(),
+});
+
+export function runBattleRoundStartLog(event = { type: EVENT_READ_CURRENT }) {
+  return battleRoundStartLogEventHandlers[event.type]?.(event) ?? emptyRoundStartLog();
 }
