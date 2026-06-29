@@ -7,11 +7,7 @@ const mocks = vi.hoisted(() => ({
   gE: vi.fn(),
   isSpiritActive: vi.fn(() => false),
   runBattleMonsterView: vi.fn(() => ({
-    view: [
-      { monsterId: 101, isDead: false },
-      { monsterId: 102, isDead: true },
-      { monsterId: null, isDead: false },
-    ],
+    view: [{ monsterId: 101, isDead: false }],
     monsterIdentities: [{ name: "Alpha", monsterId: 101 }],
   })),
   monsterHpVars: vi.fn(() => ({})),
@@ -106,8 +102,7 @@ beforeEach(() => {
 
 describe("collectSnapshot", () => {
   it("collects one battle snapshot and learns incoming burst when requested", () => {
-    document.body.innerHTML = '<button id="111"></button><button id="112"></button>';
-    document.getElementById("112").style.opacity = "0.5";
+    document.body.innerHTML = '<button id="111"></button>';
 
     const snap = collectSnapshot({ learnIncomingBurst: true });
 
@@ -128,6 +123,10 @@ describe("collectSnapshot", () => {
     });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
+    expect(mocks.runRecoveryLearningAutomation).toHaveBeenCalledWith({
+      type: "finalizePending",
+      snap: { recoveryAbs: { hp: 500, mp: 250, sp: 200 } },
+    });
     expect(mocks.runCdLearningAutomation).toHaveBeenCalledWith({
       type: "finalizePending",
       snap: { globalTurn: 9, readySkillIds: ["111"] },

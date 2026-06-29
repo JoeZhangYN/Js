@@ -23,7 +23,8 @@ function walk(dir) {
 
 function checkFile(file) {
   const relative = path.normalize(path.relative(root, file));
-  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+  const source = fs.readFileSync(file, "utf8");
+  const lines = source.split(/\r?\n/);
   lines.forEach((line, index) => {
     const where = `${rel(file)}:${index + 1}`;
     if (
@@ -49,6 +50,14 @@ function checkFile(file) {
       violations.push(`${where} battle fallback recovery belongs in recovery learner`);
     }
   });
+  if (
+    relative !== owner &&
+    /RecoveryLearningEvent\.(?:RECORD_PRE_DRINK|FINALIZE_PENDING)[\s\S]{0,220}\bsnap:\s*\{[\s\S]{0,140}\b(?:hpAbs|mpAbs|spAbs)\s*:/.test(
+      source
+    )
+  ) {
+    violations.push(`${rel(file)} must pass recoveryAbs, not raw vitals, to recovery learning`);
+  }
 }
 
 walk(srcDir);
@@ -62,6 +71,7 @@ for (const required of [
   "RECOVERY_PRIOR",
   "normalizePotionId",
   "normalizePending",
+  "normalizeRecoveryAbs",
   "normalizeLearnedRecoveryRecord",
   "readLearnedRecoveryMap",
 ]) {
@@ -71,6 +81,15 @@ for (const required of [
 }
 if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not read option fields directly`);
+}
+if (
+  /\bsnap\?\.\[\s*`\$\{info\.stat\}Abs`\s*\]|\bsnap\?\.\[\s*`\$\{pending\.stat\}Abs`\s*\]/.test(
+    ownerText
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must consume recoveryAbs, not raw snapshot vitals`
+  );
 }
 
 for (const legacy of ["recordPreDrink", "finalizePending", "getLearnedRecovery"]) {

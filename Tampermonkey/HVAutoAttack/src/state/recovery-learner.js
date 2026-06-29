@@ -1,10 +1,10 @@
 // T1：药品恢复量自学。
-// 喝药前记录 HP/MP/SP 绝对值 → 下回合 snapshot 入口取 delta → EWMA 更新该 potion ID 的实际恢复量。
+// 喝药前记录 HP/MP/SP 绝对值 → 下回合 snapshot 入口取 recoveryAbs delta → EWMA 更新该 potion ID 的实际恢复量。
 // 抗扰动：负 delta 丢弃（怪物攻击/regen 干扰）；EWMA alpha 自适应保收敛。
 //
 // 数据流：
-//   turn N 喝药 → recordPreDrink(potionId, snap)        [写 g("learnPending")]
-//   turn N+1 snapshot → finalizePending(snap)            [读 pending → 计算 delta → 更新 learned]
+//   turn N 喝药 → recordPreDrink(potionId, recoveryAbs)  [写 g("learnPending")]
+//   turn N+1 snapshot → finalizePending(recoveryAbs)      [读 pending → 计算 delta → 更新 learned]
 //   后续决策 getLearnedRecovery(potionId) 优先返学到值，缺省 fallback RECOVERY_PRIOR
 import { g } from "./store.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
@@ -73,6 +73,14 @@ function normalizePending(value) {
   };
 }
 
+function normalizeRecoveryAbs(value) {
+  return {
+    hp: normalizeNumber(value?.hp),
+    mp: normalizeNumber(value?.mp),
+    sp: normalizeNumber(value?.sp),
+  };
+}
+
 function normalizeLearnedRecoveryRecord(value) {
   const amount = Number(value?.amount);
   const n = Number(value?.n);
@@ -97,7 +105,7 @@ function readLearnedRecoveryMap() {
 /**
  * 喝药前调用：保存 pending 观测点。
  * @param {number|string} potionId
- * @param {import("../core/types.js").BattleSnapshot} snap
+ * @param {{recoveryAbs?:{hp?:number,mp?:number,sp?:number}}} snap
  */
 function recordPreDrink(potionId, snap) {
   const id = normalizePotionId(potionId);
@@ -107,7 +115,7 @@ function recordPreDrink(potionId, snap) {
     "learnPending",
     normalizePending({
       potionId: id,
-      pre: snap?.[`${info.stat}Abs`],
+      pre: normalizeRecoveryAbs(snap?.recoveryAbs)[info.stat],
       turn: runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT }),
     })
   );
@@ -116,7 +124,7 @@ function recordPreDrink(potionId, snap) {
 /**
  * snapshot 入口调用：若有 pending 且非同回合 → 取 delta 更新 learned。
  * 同回合 click 后立刻 collect snapshot 也 OK（pending.turn === current turn 视为未结算，跳过）。
- * @param {import("../core/types.js").BattleSnapshot} snap
+ * @param {{recoveryAbs?:{hp?:number,mp?:number,sp?:number}}} snap
  */
 function finalizePending(snap) {
   const rawPending = g("learnPending");
@@ -130,7 +138,7 @@ function finalizePending(snap) {
     g("learnPending", pending);
     return; // 同回合，未结算
   }
-  const post = normalizeNumber(snap?.[`${pending.stat}Abs`]);
+  const post = normalizeRecoveryAbs(snap?.recoveryAbs)[pending.stat];
   const delta = post - pending.pre;
   g("learnPending", null); // 清 pending
   if (delta <= 0) {

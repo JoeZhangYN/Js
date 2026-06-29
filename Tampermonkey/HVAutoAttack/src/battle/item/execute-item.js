@@ -17,6 +17,10 @@ function recordAutoTunePotionUse() {
   runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_POTION_USE });
 }
 
+function recoveryAbs(snap) {
+  return { hp: snap?.hpAbs, mp: snap?.mpAbs, sp: snap?.spAbs };
+}
+
 /**
  * @param {import("../../core/types.js").ItemPlan} plan
  * @param {import("../../core/types.js").BattleSnapshot} snap
@@ -46,7 +50,7 @@ export function executeItem(plan, snap) {
             runRecoveryLearningAutomation({
               type: RecoveryLearningEvent.RECORD_PRE_DRINK,
               potionId: id,
-              snap,
+              snap: { recoveryAbs: recoveryAbs(snap) },
             });
           };
         }
@@ -84,7 +88,7 @@ export function executeItem(plan, snap) {
                 runRecoveryLearningAutomation({
                   type: RecoveryLearningEvent.RECORD_PRE_DRINK,
                   potionId: attempt.id,
-                  snap,
+                  snap: { recoveryAbs: recoveryAbs(snap) },
                 });
               },
             })

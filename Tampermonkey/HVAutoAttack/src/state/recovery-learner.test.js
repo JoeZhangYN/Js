@@ -29,12 +29,12 @@ describe("recovery learner", () => {
     runRecoveryLearningAutomation({
       type: RecoveryLearningEvent.RECORD_PRE_DRINK,
       potionId: 11195,
-      snap: { hpAbs: 1000 },
+      snap: { recoveryAbs: { hp: 1000 } },
     });
     runBattleTurnAutomation({ type: BattleTurnEvent.TURN_STARTED });
     runRecoveryLearningAutomation({
       type: RecoveryLearningEvent.FINALIZE_PENDING,
-      snap: { hpAbs: 1450 },
+      snap: { recoveryAbs: { hp: 1450 } },
     });
 
     expect(getValue(STORAGE_KEYS.LEARNED_RECOVERY, true)).toEqual({
@@ -55,12 +55,12 @@ describe("recovery learner", () => {
     runRecoveryLearningAutomation({
       type: RecoveryLearningEvent.RECORD_PRE_DRINK,
       potionId: 11195,
-      snap: { hpAbs: 1000 },
+      snap: { recoveryAbs: { hp: 1000 } },
     });
     runBattleTurnAutomation({ type: BattleTurnEvent.TURN_STARTED });
     runRecoveryLearningAutomation({
       type: RecoveryLearningEvent.FINALIZE_PENDING,
-      snap: { hpAbs: 900 },
+      snap: { recoveryAbs: { hp: 900 } },
     });
 
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
@@ -83,7 +83,7 @@ describe("recovery learner", () => {
 
     runRecoveryLearningAutomation({
       type: RecoveryLearningEvent.FINALIZE_PENDING,
-      snap: { hpAbs: "1450.5", mpAbs: 9999 },
+      snap: { recoveryAbs: { hp: "1450.5", mp: 9999 } },
     });
 
     const learned = getValue(STORAGE_KEYS.LEARNED_RECOVERY, true);
@@ -102,7 +102,7 @@ describe("recovery learner", () => {
 
     runRecoveryLearningAutomation({
       type: RecoveryLearningEvent.FINALIZE_PENDING,
-      snap: { hpAbs: 1450 },
+      snap: { recoveryAbs: { hp: 1450 } },
     });
 
     expect(g("learnPending")).toBeNull();

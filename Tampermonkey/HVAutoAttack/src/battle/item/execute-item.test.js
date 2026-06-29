@@ -69,9 +69,9 @@ describe("executeItem", () => {
       return true;
     });
 
-    expect(executeItem({ type: "potion", candidates: [11191], noWaste: true }, { hp: 20 })).toBe(
-      true
-    );
+    expect(
+      executeItem({ type: "potion", candidates: [11191], noWaste: true }, { hpAbs: 200 })
+    ).toBe(true);
 
     expect(mocks.runBattleItemCommand).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -82,7 +82,7 @@ describe("executeItem", () => {
     expect(mocks.runRecoveryLearningAutomation).toHaveBeenCalledWith({
       type: "recordPreDrink",
       potionId: 11191,
-      snap: { hp: 20 },
+      snap: { recoveryAbs: { hp: 200, mp: undefined, sp: undefined } },
     });
   });
 
@@ -114,7 +114,7 @@ describe("executeItem", () => {
     expect(
       executeItem(
         { type: "stall", attempts: [{ kind: "focus" }, { kind: "draught", id: 123 }] },
-        { mp: 50 }
+        { mpAbs: 50 }
       )
     ).toBe(true);
 
@@ -122,7 +122,7 @@ describe("executeItem", () => {
     expect(mocks.runRecoveryLearningAutomation).toHaveBeenCalledWith({
       type: "recordPreDrink",
       potionId: 123,
-      snap: { mp: 50 },
+      snap: { recoveryAbs: { hp: undefined, mp: 50, sp: undefined } },
     });
     expect(mocks.runBattleItemCommand).toHaveBeenCalledWith(
       expect.objectContaining({
