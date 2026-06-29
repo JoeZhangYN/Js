@@ -10,7 +10,7 @@ const read = (rel) => readFileSync(`${SRC}/${rel}`, "utf8");
 const learner = read("state/big-skill-kill-learner.js");
 const bigSkill = read("battle/rules/big-skill.js");
 const bossImperil = read("battle/rules/decide-boss-imperil.js");
-const battleRules = read("battle/rules/index.js");
+const ruleFacts = read("battle/rules/rule-facts.js");
 
 const fails = [];
 const need = (cond, msg) => {
@@ -37,9 +37,9 @@ if (/WILL_KILL_BOSS/.test(bigSkill)) {
   );
 }
 
-// ③ boss Imperil 入口不得丢掉 213 就绪事实：rule table 映射，entry 消费。
+// ③ boss Imperil 入口不得丢掉 213 就绪事实：rule fact 映射，entry 消费。
 need(
-  /imperilSkillReady:\s*!!snap\?\.skillReady\?\.\["213"\]/.test(battleRules),
+  /imperilSkillReady:\s*!!snap\?\.skillReady\?\.\["213"\]/.test(ruleFacts),
   'boss Imperil rule 丢失 snap.skillReady["213"] 就绪事实映射'
 );
 need(

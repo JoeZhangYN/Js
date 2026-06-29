@@ -1363,13 +1363,25 @@ function checkAutoPauseEntry() {
 
 function checkFleeEntry() {
   const ownerText = fs.readFileSync(decideFleeFile, "utf8");
-  for (const required of ["decideFlee", "autoFlee", "fleeCondition", "flee-command"]) {
+  for (const required of [
+    "decideFlee",
+    "autoFlee",
+    "fleeCondition",
+    "flee-command",
+    "conditionFacts",
+  ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideFleeFile)} must own flee gate ${required}`);
     }
   }
+  if (/decideFlee\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
+    violations.push(`${rel(decideFleeFile)} must not expose opt/snap flee input`);
+  }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
   const fleeRule = rulesText.match(/name:\s*["']flee["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideFlee\(\s*opt\s*,\s*snap\s*\)/.test(fleeRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass condition facts, not snap, to flee`);
+  }
   for (const legacy of ["canFlee", "autoFlee", "fleeCondition", "click-then-reload"]) {
     if (new RegExp(`\\b${legacy}\\b`).test(fleeRule)) {
       violations.push(`${rel(battleRulesFile)} must not assemble flee rule gates directly`);

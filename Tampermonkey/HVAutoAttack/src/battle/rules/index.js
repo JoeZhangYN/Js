@@ -13,90 +13,15 @@ import { decideAutoPause } from "../pause/decide-auto-pause.js";
 import { decideFlee } from "../escape/decide-flee.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
-
-function bossImperilFacts(snap) {
-  return {
-    imperilSkillReady: !!snap?.skillReady?.["213"],
-    imperilAoe: snap?.spellAoe?.Imperil,
-    skillCooldowns: snap?.cdMap,
-    overcharge: snap?.oc,
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
-    monsterFacts: (snap?.view || []).map((monster) => ({
-      id: monster.id,
-      order: monster.order,
-      monsterId: monster.monsterId,
-      isDead: monster.isDead,
-      isBoss: monster.isBoss,
-      buffs: monster.buffs || [],
-      hpMax: monster.hpMax,
-      hpPercent: monster.hpPercent,
-    })),
-  };
-}
-
-function criticalBuffFacts(snap) {
-  return {
-    manaPercent: snap?.mp,
-    playerEffects: snap?.playerEffects,
-  };
-}
-
-function channelFacts(snap) {
-  return {
-    channeling: snap?.channeling,
-    skillReady: snap?.skillReady,
-    playerEffects: snap?.playerEffects,
-    playerBuffs: snap?.playerBuffs,
-  };
-}
-
-function burstControlFacts(snap) {
-  return {
-    healthAbs: snap?.hpAbs,
-    skillReady: snap?.skillReady,
-    skillCooldowns: snap?.cdMap,
-    overcharge: snap?.oc,
-    learnedBurstByMid: snap?.learnedBurstByMid,
-    monsterFacts: snap?.view,
-  };
-}
-
-function gemFacts(snap) {
-  return {
-    gemName: snap?.gemName,
-    healthPercent: snap?.hp,
-    manaPercent: snap?.mp,
-    spiritPercent: snap?.sp,
-    attackStatus: snap?.attackStatus,
-    aliveMonsterHpPercents: (snap?.view || [])
-      .filter((monster) => !monster.isDead)
-      .map((monster) => monster.hpPercent),
-    playerIncomingDps: snap?.playerIncomingDps,
-  };
-}
-
-function stallTopupFacts(snap) {
-  return {
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
-    aliveMonsterHpPercents: (snap?.view || [])
-      .filter((monster) => !monster.isDead)
-      .map((monster) => monster.hpPercent),
-    overcharge: snap?.oc,
-    manaPercent: snap?.mp,
-    spiritPercent: snap?.sp,
-    spiritOn: snap?.spiritOn,
-    globalTurn: snap?.globalTurn,
-    lastSpiritToggleGlobalTurn: snap?.lastSpiritToggleGlobalTurn,
-    playerBuffs: snap?.playerBuffs,
-  };
-}
-
-function conditionFacts(snap) {
-  // User-authored condition expressions address a variable map, so the snapshot is the condition context.
-  return snap;
-}
+import {
+  bossImperilFacts,
+  burstControlFacts,
+  channelFacts,
+  conditionFacts,
+  criticalBuffFacts,
+  gemFacts,
+  stallTopupFacts,
+} from "./rule-facts.js";
 
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
@@ -106,7 +31,10 @@ export const BATTLE_RULES = [
     decide: (snap, opt) => decideCriticalBuff({ opt, ...criticalBuffFacts(snap) }),
   },
   // 2. 逃跑
-  { name: "flee", decide: (snap, opt) => decideFlee(opt, snap) },
+  {
+    name: "flee",
+    decide: (snap, opt) => decideFlee({ opt, conditionFacts: conditionFacts(snap) }),
+  },
   // 3. 自动暂停（dispatch 交给 runBattlePauseAutomation 统一写暂停状态）
   { name: "autoPause", decide: (snap, opt) => decideAutoPause(opt, snap) },
   // 4. 宝石（decideGemUse 自 gate snap.gemName；dyn-threshold 在 decide，autoTune 计数在 execute）
