@@ -41,6 +41,7 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "BattleTurnEvent",
   "runBattleTurnAutomation",
+  "battleTurnEventHandlers",
   "ROUND_STARTED",
   "TURN_STARTED",
   "READ_CURRENT",
@@ -48,6 +49,10 @@ for (const required of [
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
 
 for (const legacy of ["resetTurn", "advanceTurn", "readCurrentTurn"]) {

@@ -26,9 +26,12 @@ function readCurrentTurn() {
   return g("turn") || 0;
 }
 
+const battleTurnEventHandlers = Object.freeze({
+  [EVENT_ROUND_STARTED]: () => resetTurn(),
+  [EVENT_TURN_STARTED]: () => advanceTurn(),
+  [EVENT_READ_CURRENT]: () => readCurrentTurn(),
+});
+
 export function runBattleTurnAutomation(event = { type: EVENT_READ_CURRENT }) {
-  if (event.type === EVENT_ROUND_STARTED) return resetTurn();
-  if (event.type === EVENT_TURN_STARTED) return advanceTurn();
-  if (event.type === EVENT_READ_CURRENT) return readCurrentTurn();
-  return undefined;
+  return battleTurnEventHandlers[event.type]?.(event);
 }
