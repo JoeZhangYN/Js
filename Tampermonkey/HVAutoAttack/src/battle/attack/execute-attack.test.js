@@ -82,6 +82,7 @@ describe("executeAttack", () => {
       type: "recordFire",
       code: "OFC",
       skillId: "1111",
+      globalTurn: 10,
       snap: { globalTurn: 10 },
     });
   });

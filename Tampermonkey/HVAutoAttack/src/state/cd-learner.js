@@ -85,12 +85,12 @@ function readLearnedCdMap() {
  * 开火记录（SHELL）：execute-attack 物理分支 recordFire 之后调。
  * @param {string} code SKILL_REGISTRY 的 key
  * @param {string} id 本次开火解析后的 skillId（脱灰探测用 readySkillIds）
- * @param {import("../core/types.js").BattleSnapshot} snap 仅读入口传入的 globalTurn
+ * @param {number} globalTurn 开火时的全局回合
  */
-function recordCdFire(code, id, snap) {
+function recordCdFire(code, id, globalTurn) {
   if (!SKILL_REGISTRY[code] || typeof id !== "string" || !id) return;
   const pending = normalizePending(g("cdLearnPending"));
-  pending[code] = { firedTurn: normalizeTurn(snap?.globalTurn), id };
+  pending[code] = { firedTurn: normalizeTurn(globalTurn), id };
   g("cdLearnPending", pending);
 }
 
@@ -151,7 +151,7 @@ function getLearnedCd(code) {
 }
 
 export function runCdLearningAutomation(event = { type: EVENT_READ_CD }) {
-  if (event.type === EVENT_RECORD_FIRE) return recordCdFire(event.code, event.id, event.snap);
+  if (event.type === EVENT_RECORD_FIRE) return recordCdFire(event.code, event.id, event.globalTurn);
   if (event.type === EVENT_FINALIZE_PENDING) return finalizeCdPending(event.snap);
   if (event.type === EVENT_READ_CD) return getLearnedCd(event.code);
   return undefined;

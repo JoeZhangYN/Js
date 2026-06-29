@@ -40,6 +40,7 @@ describe("runPhysicalSkillBookkeeping", () => {
       type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
       code: "OFC",
       skillId: "1111",
+      globalTurn: 10,
       snap,
     });
 
@@ -55,7 +56,7 @@ describe("runPhysicalSkillBookkeeping", () => {
       type: "recordFire",
       code: "OFC",
       id: "1111",
-      snap,
+      globalTurn: 10,
     });
     expect(mocks.runBigSkillKillLearningAutomation).toHaveBeenCalledWith({
       type: "recordCast",

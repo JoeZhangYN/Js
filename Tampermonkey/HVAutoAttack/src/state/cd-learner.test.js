@@ -18,7 +18,7 @@ vi.mock("./option.js", () => ({
 }));
 
 const fire = (code, id, globalTurn) =>
-  runCdLearningAutomation({ type: CdLearningEvent.RECORD_FIRE, code, id, snap: { globalTurn } });
+  runCdLearningAutomation({ type: CdLearningEvent.RECORD_FIRE, code, id, globalTurn });
 const settle = (globalTurn, readyId) =>
   runCdLearningAutomation({
     type: CdLearningEvent.FINALIZE_PENDING,
@@ -96,7 +96,6 @@ describe("cd-learner 学习与守卫", () => {
       type: CdLearningEvent.RECORD_FIRE,
       code: "OFC",
       id: "1111",
-      snap: {},
     });
     expect(g("cdLearnPending").OFC.firedTurn).toBe(0);
 

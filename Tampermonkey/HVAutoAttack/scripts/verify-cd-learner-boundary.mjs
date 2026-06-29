@@ -43,6 +43,15 @@ function checkFile(file) {
       violations.push(`${where} learned CD storage belongs in cd learner`);
     }
   });
+  for (const call of source.matchAll(/runCdLearningAutomation\(\s*\{[\s\S]*?\}\s*\)/g)) {
+    if (
+      relative !== owner &&
+      call[0].includes("CdLearningEvent.RECORD_FIRE") &&
+      /\bsnap\s*:/.test(call[0])
+    ) {
+      violations.push(`${rel(file)} must pass globalTurn, not snap, to CD fire learning`);
+    }
+  }
   if (
     relative !== owner &&
     /CdLearningEvent\.FINALIZE_PENDING[\s\S]{0,220}\bsnap:\s*\{[\s\S]{0,120}\bskillReady\s*:/.test(
@@ -88,6 +97,15 @@ if (!finalizeBody?.includes("snap?.readySkillIds")) {
 }
 if (/\bsnap\?\.skillReady\b|\bsnap\.skillReady\b/.test(finalizeBody || "")) {
   violations.push(`${owner.replaceAll("\\", "/")} finalize must not consume full skillReady map`);
+}
+const recordBody = ownerText.match(
+  /function recordCdFire\(code, id, globalTurn\) \{[\s\S]*?\n\}/
+)?.[0];
+if (!recordBody?.includes("normalizeTurn(globalTurn)")) {
+  violations.push(`${owner.replaceAll("\\", "/")} record fire must consume direct globalTurn`);
+}
+if (/\bsnap\?\.globalTurn\b|\bsnap\.globalTurn\b/.test(recordBody || "")) {
+  violations.push(`${owner.replaceAll("\\", "/")} record fire must not consume full snap`);
 }
 
 for (const legacy of ["recordCdFire", "finalizeCdPending", "getLearnedCd"]) {

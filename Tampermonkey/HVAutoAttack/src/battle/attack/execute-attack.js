@@ -65,6 +65,7 @@ export function executeAttack(plan, snap) {
               type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
               code: plan.code,
               skillId: plan.skillId,
+              globalTurn: snap?.globalTurn,
               snap,
             });
           },
@@ -79,6 +80,7 @@ export function executeAttack(plan, snap) {
               type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
               code: plan.code,
               skillId: plan.skillId,
+              globalTurn: snap?.globalTurn,
               snap,
             });
           },

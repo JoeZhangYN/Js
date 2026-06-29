@@ -23,7 +23,7 @@ export function runPhysicalSkillBookkeeping(event) {
     type: CdLearningEvent.RECORD_FIRE,
     code: event.code,
     id: event.skillId,
-    snap: event.snap,
+    globalTurn: event.globalTurn,
   });
   runBigSkillKillLearningAutomation({
     type: BigSkillKillLearningEvent.RECORD_CAST,
