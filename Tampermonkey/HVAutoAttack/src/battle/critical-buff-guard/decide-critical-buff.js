@@ -10,21 +10,18 @@
 // 2. opt.criticalBuffsList 中至少一个 buff 当前 turns <= minTurns（Infinity 永续不算"即将消失"）
 // 3. 当前 MP < criticalBuffMpFloor%（续 buff 大概率失败的阈值）
 import { AlarmEvent, runAlarmAutomation } from "../../alarm/alarm.js";
-import {
-  BattlePauseEvent,
-  runBattlePauseAutomation,
-} from "../pause-automation.js";
+import { BattlePauseEvent, runBattlePauseAutomation } from "../pause-automation.js";
 
 /**
- * PURE：关键 buff 即将消失 + MP 不足 → 触发暂停决策。**不读 DOM**——只读 opt/snap。
- * snap.playerEffects = [{img,name,turns}]，name 为显示名（与 opt.criticalBuffsList 同口径）；
+ * PURE：关键 buff 即将消失 + MP 不足 → 触发暂停决策。**不读 DOM**——只读 explicit facts。
+ * event.playerEffects = [{img,name,turns}]，name 为显示名（与 opt.criticalBuffsList 同口径）；
  * turns 永续 = Infinity（被 turns<=minTurns 跳过，不算"即将消失"）。
- * @param {object} opt
- * @param {import("../../core/types.js").BattleSnapshot} snap
+ * @param {object} event
  * @returns {import("../../core/types.js").ActionResult}
  *   命中 → { kind:"critical-pause", name, turns, mp, mpFloor }；否则 { kind:"noop" }
  */
-export function decideCriticalBuff(opt, snap) {
+export function decideCriticalBuff(event = {}) {
+  const opt = event.opt || {};
   if (!opt.pauseOnCriticalBuffExpire) return { kind: "noop" };
 
   const minTurns = opt.criticalBuffMinTurns ?? 2;
@@ -36,10 +33,10 @@ export function decideCriticalBuff(opt, snap) {
   if (list.length === 0) return { kind: "noop" };
 
   // MP 充足 → 自动续 buff 大概率成功，不触发暂停
-  const mp = snap.mp ?? 100;
+  const mp = event.manaPercent ?? 100;
   if (mp >= mpFloor) return { kind: "noop" };
 
-  for (const eff of snap.playerEffects || []) {
+  for (const eff of event.playerEffects || []) {
     const name = eff.name;
     if (!name || !list.includes(name)) continue;
     // 永续 buff → turns=Infinity → 被 > minTurns 跳过（不算"即将消失"）

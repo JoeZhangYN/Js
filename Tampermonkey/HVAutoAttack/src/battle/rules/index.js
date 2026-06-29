@@ -35,10 +35,20 @@ function bossImperilFacts(snap) {
   };
 }
 
+function criticalBuffFacts(snap) {
+  return {
+    manaPercent: snap?.mp,
+    playerEffects: snap?.playerEffects,
+  };
+}
+
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
-  { name: "criticalBuffGuard", decide: (snap, opt) => decideCriticalBuff(opt, snap) },
+  {
+    name: "criticalBuffGuard",
+    decide: (snap, opt) => decideCriticalBuff({ opt, ...criticalBuffFacts(snap) }),
+  },
   // 2. 逃跑
   { name: "flee", decide: (snap, opt) => decideFlee(opt, snap) },
   // 3. 自动暂停（dispatch 交给 runBattlePauseAutomation 统一写暂停状态）

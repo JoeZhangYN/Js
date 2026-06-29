@@ -35,6 +35,10 @@ const activateSpiritFile = path.join(root, "src/battle/buff/activate-spirit.js")
 const decideInfusionFile = path.join(root, "src/battle/buff/decide-infusion.js");
 const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
 const decideChannelFile = path.join(root, "src/battle/buff/decide-channel.js");
+const decideCriticalBuffFile = path.join(
+  root,
+  "src/battle/critical-buff-guard/decide-critical-buff.js"
+);
 const decideItemFile = path.join(root, "src/battle/item/decide-item.js");
 const decideScrollFile = path.join(root, "src/battle/item/decide-scroll.js");
 const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
@@ -1057,6 +1061,31 @@ function checkBurstControlEntry() {
   }
 }
 
+function checkCriticalBuffEntry() {
+  const ownerText = fs.readFileSync(decideCriticalBuffFile, "utf8");
+  for (const required of [
+    "decideCriticalBuff",
+    "event.manaPercent",
+    "event.playerEffects",
+    "critical-pause",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideCriticalBuffFile)} must own critical buff fact ${required}`);
+    }
+  }
+  if (/decideCriticalBuff\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
+    violations.push(`${rel(decideCriticalBuffFile)} must not expose opt/snap decision input`);
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const criticalRule =
+    rulesText.match(/name:\s*["']criticalBuffGuard["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideCriticalBuff\(\s*opt\s*,\s*snap\s*\)/.test(criticalRule)) {
+    violations.push(
+      `${rel(battleRulesFile)} must pass narrow facts, not snap, to critical buff guard`
+    );
+  }
+}
+
 function checkInfusionEntry() {
   const ownerText = fs.readFileSync(decideInfusionFile, "utf8");
   for (const required of ["decideInfusion", "infusionSwitch", "infusionCondition"]) {
@@ -1416,6 +1445,7 @@ checkBattleDebuffCoverage();
 checkBossImperilEntry();
 checkBigSkillDebuffEntry();
 checkBurstControlEntry();
+checkCriticalBuffEntry();
 checkInfusionEntry();
 checkChannelEntry();
 checkBuffEntry();
