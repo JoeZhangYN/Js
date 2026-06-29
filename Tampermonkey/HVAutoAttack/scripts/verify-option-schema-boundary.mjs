@@ -103,6 +103,14 @@ for (const required of [
   /renderSchemaCheckboxField\(\s*["']autoTune["']/,
   /renderNoWastePotionSchemaFields/,
   /renderCheckboxPlusNumber\(\s*["']noWastePotion["']\s*,\s*["']potionWasteTolerance["']/,
+  /renderStallStrategySchemaFields/,
+  /renderSchemaCheckboxField\(\s*["']stallMode["']/,
+  /renderSchemaCheckboxField\(\s*["']stallFocus["']/,
+  /renderSchemaNumberInput\(\s*["']stallFocusOcThreshold["']/,
+  /renderSchemaNumberInput\(\s*["']stallFocusMpMax["']/,
+  /renderSchemaNumberInput\(\s*["']stallTopupMpFloor["']/,
+  /renderSchemaNumberInput\(\s*["']stallTopupSpFloor["']/,
+  /renderSchemaCheckboxField\(\s*["']stallTurnOffSpirit["']/,
 ]) {
   if (!required.test(renderText)) {
     violations.push(
@@ -147,6 +155,13 @@ for (const forbidden of [
   /id=["']autoTune["'][\s\S]{0,160}自学 safetyPad/,
   /id=["']noWastePotion["'][\s\S]{0,180}药品防溢出/,
   /name=["']potionWasteTolerance["']\s+placeholder=["']0\.7["']/,
+  /id=["']stallMode["'][\s\S]{0,180}拖战策略/,
+  /id=["']stallFocus["'][\s\S]{0,180}拖战时 OC 高优先 Focus/,
+  /name=["']stallFocusOcThreshold["']\s+placeholder=["']60["']/,
+  /name=["']stallFocusMpMax["']\s+placeholder=["']80["']/,
+  /name=["']stallTopupMpFloor["']\s+placeholder=["']70["']/,
+  /name=["']stallTopupSpFloor["']\s+placeholder=["']70["']/,
+  /id=["']stallTurnOffSpirit["'][\s\S]{0,180}拖战时关闭 Spirit Stance/,
 ]) {
   if (forbidden.test(renderText)) {
     violations.push(

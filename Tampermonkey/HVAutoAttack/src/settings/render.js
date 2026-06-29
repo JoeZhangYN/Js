@@ -191,6 +191,25 @@ function renderNoWastePotionSchemaFields() {
   });
 }
 
+function renderStallStrategySchemaFields() {
+  const stallFocus = renderSchemaCheckboxField("stallFocus").replace(/^<div>|<\/div>$/g, "");
+  const stallTurnOffSpirit = renderSchemaCheckboxField("stallTurnOffSpirit").replace(
+    /^<div>|<\/div>$/g,
+    ""
+  );
+  return [
+    renderSchemaCheckboxField("stallMode", "<br>"),
+    `<div>${stallFocus} (OC≥${renderSchemaNumberInput(
+      "stallFocusOcThreshold"
+    )}, MP&lt;${renderSchemaNumberInput("stallFocusMpMax", "%")})</div>`,
+    `<div>${renderSchemaLabel(readSchemaField("stallTopupMpFloor"))}: MP&lt;${renderSchemaNumberInput(
+      "stallTopupMpFloor",
+      "%"
+    )}, SP&lt;${renderSchemaNumberInput("stallTopupSpFloor", "%")}</div>`,
+    `<div>${stallTurnOffSpirit}</div>`,
+  ];
+}
+
 /**
  * 打开 / 切换显隐 HVAA 配置面板。浮动按钮(button.js)与 hv-utils 顶部栏触发器(window.HVAA_openConfig)
  * 共用此单一入口（收口原 button.js 内联 onclick 逻辑，去重）。
@@ -351,10 +370,7 @@ export function optionBox() {
     '  <div style="border:1px dashed #888;padding:3px;font-size:12px;"><b><l0>动态阈值（PoC）</l0><l1>動態閾值（PoC）</l1><l2>Dynamic Threshold (PoC)</l2></b>:',
     ...renderDynamicHealSchemaFields(),
     renderNoWastePotionSchemaFields(),
-    '    <input id="stallMode" type="checkbox" checked data-default-on><label for="stallMode"><l0>拖战策略：仅剩 1 怪+后续轮还有时主动喝 MP/SP pot 拉满下轮开局，同时跳 useDeSkill</l0><l1>拖戰策略</l1><l2>Stall mode: when 1 alive + more rounds, drink MP/SP pots to top up</l2></label><br>',
-    '    <input id="stallFocus" type="checkbox" checked data-default-on><label for="stallFocus"><l0>拖战时 OC 高优先 Focus 换 Channeling（mana regen）</l0><l1>拖戰時 Focus 換 Channeling</l1><l2>Stall: prefer Focus when OC high (Channeling for MP regen)</l2></label> (OC≥<input class="hvAANumber" name="stallFocusOcThreshold" placeholder="60" type="text">, MP&lt;<input class="hvAANumber" name="stallFocusMpMax" placeholder="80" type="text">%)<br>',
-    '    <l0>拖战 Draught 阈值</l0><l1>拖戰 Draught 閾值</l1><l2>Stall Draught threshold</l2>: MP&lt;<input class="hvAANumber" name="stallTopupMpFloor" placeholder="70" type="text">%, SP&lt;<input class="hvAANumber" name="stallTopupSpFloor" placeholder="70" type="text">%<br>',
-    '    <input id="stallTurnOffSpirit" type="checkbox" checked data-default-on><label for="stallTurnOffSpirit"><l0>拖战时关闭 Spirit Stance（避免与 Focus 双向耗 OC）</l0><l1>拖戰時關閉 Spirit Stance</l1><l2>Stall: turn off Spirit Stance (avoid double OC drain with Focus)</l2></label>',
+    ...renderStallStrategySchemaFields(),
     "  </div>",
     ...renderCriticalBuffSchemaFields(),
     "  </div>",
