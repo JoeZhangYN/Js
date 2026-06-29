@@ -132,11 +132,6 @@ export const BATTLE_RULES = [
   // 15. 单目标 Debuff（stall 模式跳过——独怪上 debuff 浪费 MP + CD）
   {
     name: "useDeSkill",
-    when: (snap, opt) =>
-      !isStallingForRules(snap, opt) &&
-      opt.debuffSkillSwitch &&
-      opt.debuffSkill &&
-      checkCondition(opt.debuffSkillCondition, snap),
     decide: (snap, opt) => decideDeSkill(opt, snap),
   },
   // 16. 攻击（最后一步，PURE decideAttack 返 attack-plan）

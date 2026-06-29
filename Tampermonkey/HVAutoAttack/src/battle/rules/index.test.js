@@ -113,6 +113,11 @@ describe("when 门控", () => {
     expect(byName("useBuffSkill").decide({}, {})).toEqual({ kind: "noop" });
   });
 
+  it("useDeSkill: 规则表不拼门控，未开启时 decide 自行 noop", () => {
+    expect(byName("useDeSkill").when).toBeUndefined();
+    expect(byName("useDeSkill").decide({ view: [] }, {})).toEqual({ kind: "noop" });
+  });
+
   it("bossImperil.when: 需 skillReady[213] 且 debuffSkillSwitch!==false", () => {
     expect(byName("bossImperil").when({ skillReady: { 213: true } }, {})).toBe(true);
     expect(byName("bossImperil").when({ skillReady: { 213: false } }, {})).toBe(false);

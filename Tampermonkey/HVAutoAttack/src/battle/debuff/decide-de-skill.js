@@ -7,6 +7,7 @@ import { checkCondition } from "../../settings/condition-eval.js";
 import { canApplyDebuffPure } from "./can-apply.js";
 import { aliveByOrder } from "../monster-view.js";
 import { firstByOrder, highestAbsHp, selfTarget, aoeNeighborAnchor } from "../target-strategy.js";
+import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 
 /**
  * 决定单目标 debuff 该施哪一种 + 打哪只怪。
@@ -15,6 +16,14 @@ import { firstByOrder, highestAbsHp, selfTarget, aoeNeighborAnchor } from "../ta
  * @returns {import("../../core/types.js").ActionResult}
  */
 export function decideDeSkill(opt, snap) {
+  if (isStallingForDeSkill(opt, snap)) return { kind: "noop" };
+  if (
+    !opt.debuffSkillSwitch ||
+    !opt.debuffSkill ||
+    !checkCondition(opt.debuffSkillCondition, snap)
+  ) {
+    return { kind: "noop" };
+  }
   const skillPack = (opt.debuffSkillOrderValue || "").split(",").filter(Boolean);
   const alive = aliveByOrder(snap.view);
   if (!alive.length) return { kind: "noop" };
@@ -55,4 +64,14 @@ export function decideDeSkill(opt, snap) {
     };
   }
   return { kind: "noop" };
+}
+
+function isStallingForDeSkill(opt, snap) {
+  return runBattleStallModeAutomation({
+    type: BattleStallModeEvent.READ_ACTIVE,
+    snap,
+    opt,
+    roundNow: snap?.roundNow,
+    roundAll: snap?.roundAll,
+  });
 }

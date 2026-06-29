@@ -38,6 +38,7 @@ const battleRulesFile = path.join(root, "src/battle/rules/index.js");
 const bigSkillFile = path.join(root, "src/battle/rules/big-skill.js");
 const bossImperilFile = path.join(root, "src/battle/rules/decide-boss-imperil.js");
 const burstControlFile = path.join(root, "src/battle/debuff/decide-burst-control.js");
+const decideDeSkillFile = path.join(root, "src/battle/debuff/decide-de-skill.js");
 const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const violations = [];
 
@@ -865,6 +866,31 @@ function checkBuffEntry() {
   }
 }
 
+function checkSingleDebuffEntry() {
+  const ownerText = fs.readFileSync(decideDeSkillFile, "utf8");
+  for (const required of [
+    "decideDeSkill",
+    "debuffSkillSwitch",
+    "debuffSkill",
+    "debuffSkillCondition",
+    "runBattleStallModeAutomation",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideDeSkillFile)} must own single-debuff gate ${required}`);
+    }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const useDeSkillRule =
+    rulesText.match(/name:\s*["']useDeSkill["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  for (const legacy of ["isStallingForRules", "debuffSkillSwitch", "debuffSkillCondition"]) {
+    if (new RegExp(`\\b${legacy}\\b`).test(useDeSkillRule)) {
+      violations.push(
+        `${rel(battleRulesFile)} must not assemble single-debuff rule gates directly`
+      );
+    }
+  }
+}
+
 function checkItemScrollEntry() {
   const itemText = fs.readFileSync(decideScrollFile, "utf8");
   for (const required of ["decideScroll", "scrollSwitch", "scrollCondition", "scrollRoundType"]) {
@@ -956,6 +982,7 @@ checkBurstControlEntry();
 checkInfusionEntry();
 checkChannelEntry();
 checkBuffEntry();
+checkSingleDebuffEntry();
 checkItemScrollEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();
