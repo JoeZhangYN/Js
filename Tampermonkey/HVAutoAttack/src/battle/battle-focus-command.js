@@ -14,7 +14,10 @@ function clickFocus() {
   return true;
 }
 
+const battleFocusCommandEventHandlers = Object.freeze({
+  [EVENT_CLICK]: () => clickFocus(),
+});
+
 export function runBattleFocusCommand(event = { type: EVENT_CLICK }) {
-  if (event.type === EVENT_CLICK) return clickFocus();
-  return undefined;
+  return battleFocusCommandEventHandlers[event.type]?.(event);
 }

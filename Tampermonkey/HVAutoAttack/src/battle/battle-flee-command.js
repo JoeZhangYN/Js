@@ -21,7 +21,10 @@ function clickFleeAndScheduleReload() {
   return true;
 }
 
+const battleFleeCommandEventHandlers = Object.freeze({
+  [EVENT_CLICK_AND_RELOAD]: () => clickFleeAndScheduleReload(),
+});
+
 export function runBattleFleeCommand(event = { type: EVENT_CLICK_AND_RELOAD }) {
-  if (event.type === EVENT_CLICK_AND_RELOAD) return clickFleeAndScheduleReload();
-  return undefined;
+  return battleFleeCommandEventHandlers[event.type]?.(event);
 }

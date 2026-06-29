@@ -56,10 +56,15 @@ walk(srcDir);
 requireText(owner, [
   "BattleFleeCommandEvent",
   "runBattleFleeCommand",
+  "battleFleeCommandEventHandlers",
   "CLICK_AND_RELOAD",
   "NavigationEvent.SCHEDULE_RELOAD",
   '"1001"',
 ]);
+const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
+}
 requireText("src/battle/dispatch.js", [
   "BattleFleeCommandEvent.CLICK_AND_RELOAD",
   "runBattleFleeCommand",

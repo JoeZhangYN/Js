@@ -12,7 +12,10 @@ function clickDefend() {
   return attemptClick(DEFEND_BUTTON_SELECTOR);
 }
 
+const battleDefendCommandEventHandlers = Object.freeze({
+  [EVENT_CLICK]: () => clickDefend(),
+});
+
 export function runBattleDefendCommand(event = { type: EVENT_CLICK }) {
-  if (event.type === EVENT_CLICK) return clickDefend();
-  return undefined;
+  return battleDefendCommandEventHandlers[event.type]?.(event);
 }
