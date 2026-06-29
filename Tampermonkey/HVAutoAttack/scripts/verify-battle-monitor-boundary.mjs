@@ -13,6 +13,7 @@ const internalFiles = new Set(
     "src/monitor/battle-record-archive.js",
     "src/monitor/battle-record-archive-usage-records.js",
     "src/monitor/battle-report.js",
+    "src/monitor/battle-report-model.js",
     "src/monitor/battle-report-view.js",
     "src/monitor/battle-monitor-runtime.js",
     "src/monitor/drop-monitor.js",
@@ -655,7 +656,9 @@ function checkDeletedBattleInfoEntrypoint() {
 
 function checkBattleReportEntry() {
   const reportFile = path.join(root, "src/monitor/battle-report.js");
+  const reportModelFile = path.join(root, "src/monitor/battle-report-model.js");
   const text = fs.readFileSync(reportFile, "utf8");
+  const modelText = fs.readFileSync(reportModelFile, "utf8");
   if (!/export const BattleReportEvent\s*=\s*Object\.freeze\(/.test(text)) {
     violations.push(`${rel(reportFile)} must expose BattleReportEvent`);
   }
@@ -671,19 +674,28 @@ function checkBattleReportEntry() {
   ) {
     violations.push(`${rel(reportFile)} must read report start context through monitor runtime`);
   }
-  if (!/\bfunction readReportRecordSet\b/.test(text)) {
+  if (!text.includes("./battle-report-model.js")) {
     violations.push(
-      `${rel(reportFile)} must route current/history report reads through readReportRecordSet`
+      `${rel(reportFile)} must build report table models through battle-report-model`
     );
   }
+  if (!/\bfunction readReportRecordSet\b/.test(modelText)) {
+    violations.push(`${rel(reportModelFile)} must own current/history report model decision`);
+  }
   for (const required of [
-    "BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET",
-    "BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET",
     "BattleRecordArchiveEvent.CLEAR_DROP_REPORT_RECORD_SET",
     "BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(reportFile)} must route report records through ${required}`);
+    }
+  }
+  for (const required of [
+    "BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET",
+    "BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET",
+  ]) {
+    if (!modelText.includes(required)) {
+      violations.push(`${rel(reportModelFile)} must read report records through ${required}`);
     }
   }
   if (!text.includes("BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING")) {
@@ -707,8 +719,11 @@ function checkBattleReportEntry() {
   ) {
     violations.push(`${rel(reportFile)} must route rendered reports through battle-report-view`);
   }
-  if ((text.match(/history\.length\s*===\s*0/g) || []).length !== 1) {
-    violations.push(`${rel(reportFile)} must have one current/history report mode decision`);
+  if ((text.match(/history\.length\s*===\s*0/g) || []).length !== 0) {
+    violations.push(`${rel(reportFile)} must not own current/history report mode decisions`);
+  }
+  if ((modelText.match(/history\.length\s*===\s*0/g) || []).length !== 1) {
+    violations.push(`${rel(reportModelFile)} must have one current/history report mode decision`);
   }
   if (/\bdelValue\s*\(\s*STORAGE_KEYS\.(?:DROP|DROP_OLD|STATS|STATS_OLD)\b/.test(text)) {
     violations.push(
@@ -737,6 +752,14 @@ function checkBattleReportEntry() {
     )
   ) {
     violations.push(`${rel(reportFile)} must use report-specific archive events`);
+  }
+  const reportModelImports = [];
+  walkImportUsers(srcDir, "battle-report-model.js", reportModelImports);
+  const allowedImport = path.normalize("src/monitor/battle-report.js");
+  for (const user of reportModelImports) {
+    if (user !== allowedImport) {
+      violations.push(`${user.replaceAll("\\", "/")} must not import battle-report-model directly`);
+    }
   }
 }
 
