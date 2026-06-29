@@ -6,7 +6,7 @@
 // 类型决定控制选择：Silence 只挡施法(对物理无效)，故法术爆发→Silence、物理→Sleep（整回合禁用）。
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
-import { normalizeMonsterName } from "../battle/log-parser.js";
+import { normalizeMonsterName } from "../monster/monster-identity.js";
 
 const EVENT_RECORD_EVENTS = "recordEvents";
 const EVENT_READ_MAP = "readMap";

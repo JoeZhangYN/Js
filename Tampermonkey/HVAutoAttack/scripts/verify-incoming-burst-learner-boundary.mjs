@@ -6,6 +6,7 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/incoming-burst-learner.js");
 const ownerTest = path.normalize("src/state/incoming-burst-learner.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
+const monsterIdentity = path.normalize("src/monster/monster-identity.js");
 const violations = [];
 
 function rel(file) {
@@ -38,10 +39,19 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== monsterIdentity &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.LEARNED_INCOMING_BURST\b/.test(line)
     ) {
       violations.push(`${where} learned incoming-burst storage belongs in incoming burst learner`);
+    }
+    if (
+      relative === owner &&
+      /from\s+["']\.\.\/battle\/log-parser\.js["']/.test(line)
+    ) {
+      violations.push(
+        `${where} incoming burst learning must use monster identity matching, not battle log-parser internals`
+      );
     }
   });
 }
@@ -54,6 +64,7 @@ for (const required of [
   "IncomingBurstLearningEvent",
   "STORAGE_KEYS.LEARNED_INCOMING_BURST",
   "normalizeMonsterId",
+  "../monster/monster-identity.js",
   "normalizeLearnedBurstRecord",
   "readLearnedBurstMap",
 ]) {

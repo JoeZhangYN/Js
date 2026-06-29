@@ -2,6 +2,7 @@
 // 从 #textlog>tbody>tr>td 文本提取伤害事件 → 聚合为玩家承受 DPS / 怪物输出 DPS。
 // **PURE-ish**：仅取 textContent，不缓存 Element。返 plain object 数组。
 import { gE } from "../dom/query.js";
+import { normalizeMonsterName } from "../monster/monster-identity.js";
 
 /**
  * @typedef {object} DamageEvent
@@ -199,21 +200,6 @@ export function applyInferredMaxHp(monsterStatus, lookupMaxHp) {
       st.hpInferred = false;
     }
   }
-}
-
-/**
- * 归一怪名：消「战斗日志怪名 ↔ DOM .btm3 怪名」的前导冠词 / 空白差异（todo 491 匹配命门）。
- * 日志正则取 "You hit <target> for"，target 可能含冠词("the Orc")，而 .btm3 多为净名("Orc")，
- * 直接 dmgMap.get 会 miss → 反推静默失效。**匹配两端均过此归一**（accumulate 建键 + monster-status-hp 查键）。
- * 仅用于匹配，不改怪物库存储键（库键须与 monster-db scan 一致，保留原始名）；不 lowercase（避免大小写异名误并）。
- * @param {string} name
- * @returns {string}
- */
-export function normalizeMonsterName(name) {
-  return (name || "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .replace(/^(?:a|an|the) /i, "");
 }
 
 /**

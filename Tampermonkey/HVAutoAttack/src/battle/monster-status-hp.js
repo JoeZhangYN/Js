@@ -3,7 +3,8 @@ import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
-import { parseBattleLog, accumulateDamageByMonster, normalizeMonsterName } from "./log-parser.js";
+import { parseBattleLog, accumulateDamageByMonster } from "./log-parser.js";
+import { normalizeMonsterName } from "../monster/monster-identity.js";
 import { MonsterDbStoreEvent, runMonsterDbStoreAutomation } from "../state/monster-db-store.js";
 
 /**
