@@ -25,7 +25,7 @@ function walk(dir) {
 const GRANT_RE = /\b(GM_\w+|unsafeWindow)\b/g;
 
 // 免-grant 特例：GM_info（及 GM.info）在所有 GM 实现中无需 @grant 即可访问，
-// 是 GM API 标准特例。reloader.js 用 `typeof GM_info !== "undefined"` 做存在性守卫，
+// 是 GM API 标准特例。battle action event bridge 用 `typeof GM_info !== "undefined"` 做存在性守卫，
 // 不应据此要求 vite grant 声明 GM_info，否则误报 "grant missing"。
 const NO_GRANT_NEEDED = new Set(["GM_info"]);
 
@@ -43,9 +43,7 @@ if (!grantsBlockMatch) {
   console.error("[verify-metadata] FAIL: cannot locate `grant: [...]` in vite.config.js");
   process.exit(1);
 }
-const declaredGrants = new Set(
-  [...grantsBlockMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1])
-);
+const declaredGrants = new Set([...grantsBlockMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]));
 
 const missingGrant = [...usedInCode].filter((g) => !declaredGrants.has(g));
 const unusedGrant = [...declaredGrants].filter((g) => !usedInCode.has(g));
@@ -55,6 +53,8 @@ if (missingGrant.length > 0) {
   process.exit(1);
 }
 if (unusedGrant.length > 0) {
-  console.warn(`[verify-metadata] WARN: @grant declared but code unused: ${unusedGrant.join(", ")}`);
+  console.warn(
+    `[verify-metadata] WARN: @grant declared but code unused: ${unusedGrant.join(", ")}`
+  );
 }
 console.log(`[verify-metadata] OK — code uses: ${[...usedInCode].join(", ") || "(none)"}`);

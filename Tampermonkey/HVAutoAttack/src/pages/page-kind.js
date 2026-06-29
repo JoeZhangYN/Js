@@ -1,5 +1,5 @@
 // HV 页面类型检测单 SOT（Sentinel M3 应抽未抽 — `#eu span` / `#navbar` / `#riddlecounter` / `#textlog`
-// 等检查散落 ≥4 处 init.js + reloader.js + showequip-forge-cost.js + 旧 equip-percentile live 实现）。
+// 等检查散落 ≥4 处 init.js + battle action event bridge + showequip-forge-cost.js + 旧 equip-percentile live 实现）。
 //
 // 单一入口 runPageKindAutomation(event) 返回 enum-style 字符串，调用方 switch 穷尽。
 // 现存 page 判断 ad-hoc 逻辑保留作 fallback（不强制全量迁移，本模块作 SOT 优先）。

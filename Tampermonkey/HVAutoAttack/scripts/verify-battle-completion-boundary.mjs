@@ -4,15 +4,15 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-completion.js");
 const ownerTest = path.normalize("src/battle/battle-completion.test.js");
-const reloader = path.normalize("src/battle/reloader.js");
+const actionEventBridge = path.normalize("src/battle/battle-action-event-bridge.js");
 const violations = [];
 
 function rel(file) {
   return path.normalize(path.relative(root, file)).replaceAll("\\", "/");
 }
 
-function checkReloader() {
-  const file = path.join(root, reloader);
+function checkActionEventBridge() {
+  const file = path.join(root, actionEventBridge);
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
     const where = `${rel(file)}:${index + 1}`;
@@ -84,7 +84,7 @@ function checkOwner() {
   }
 }
 
-checkReloader();
+checkActionEventBridge();
 checkOwner();
 
 if (violations.length) {

@@ -1,5 +1,8 @@
 // 战斗页自动化编排入口：composition root 只调用本入口。
-import { installBattleActionEventBridge } from "./reloader.js";
+import {
+  BattleActionEventBridgeEvent,
+  runBattleActionEventBridgeAutomation,
+} from "./battle-action-event-bridge.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
 import {
@@ -36,7 +39,7 @@ function startBattleMonitoring() {
 export function runBattleAutomation(event = { type: EVENT_PAGE_READY }) {
   if (event.type !== EVENT_PAGE_READY) return undefined;
   runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL });
-  installBattleActionEventBridge();
+  runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL });
   runBattleStartRuntimeAutomation({ type: BattleStartRuntimeEvent.BATTLE_STARTED });
   runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
   startBattleMonsterKnowledge();

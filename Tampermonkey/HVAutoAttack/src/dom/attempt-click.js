@@ -3,7 +3,7 @@
 //
 // 历史背景：channeling 激活时 defend 按钮被游戏禁用（opacity 0.5），裸 click 不触发
 // api_call。探活返 false（acted=false）→ runRules 不短路、后续 rule 接管；若误返 true
-// 而又没真发出 api_call，reloader 的 eventEnd 永不触发 → 主循环挂死，故写前探活是硬约束。
+// 而又没真发出 api_call，action event bridge 的 eventEnd 永不触发 → 主循环挂死，故写前探活是硬约束。
 // 此模式至少在 main-loop defend / boss-Imperil / attack 法术阶 / physical-skill-ranking / channel buff 等 ≥10 处复刻 →
 // 抽 helper 防退化（CLAUDE.md 铁律 1(e)：≥2 真重复必抽，反退化锁让旧路径不能再回归）。
 import { gE, isOn } from "./query.js";

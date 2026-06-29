@@ -1,5 +1,5 @@
 // 页面停留刷新能力：防移动端浏览器长时间挂机内存堆积 / JS 上下文死锁导致卡死。
-// 与 reloader.js 的 delayReload 正交：delayReload 是 action-driven（每次 api_call 起 idle 计时器，eventEnd 清），
+// 与 battle action event bridge 的 action-driven reload 正交（每次 api_call 起 idle 计时器，eventEnd 清），
 // 本模块是 absolute-clock：页面自动化启动后倒计时 N 分钟触发一次同页 reload，不依赖战斗事件。
 //
 // 设计点：

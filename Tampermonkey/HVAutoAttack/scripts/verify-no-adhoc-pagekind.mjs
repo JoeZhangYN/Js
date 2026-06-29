@@ -7,7 +7,7 @@
 //   - 只禁两种**无歧义即检测**的惯用式：
 //       ① host 等值 `=== "e-hentai.org"`（引号紧裹 host；不匹配 `"https://e-hentai.org/news.php"` 这类完整 URL）
 //       ② 三哨兵复合 `#navbar,#riddlecounter,#textlog`（「是否任一游戏页」的检测复合，绝不会是值读）
-//   - **不禁**单哨兵（`#riddlecounter` 等可能是读计时器值 / 读响应文档，如 riddle.js / reloader.js），
+//   - **不禁**单哨兵（`#riddlecounter` 等可能是读计时器值 / 读响应文档，如 riddle.js / action event bridge），
 //     禁了会假阳违反精度契约；单哨兵检测靠 page-kind SOT + 注释约定治理。
 //   - 豁免 page-kind.js（页面类型入口实现所在）。
 //

@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   cE: vi.fn((tag) => document.createElement(tag)),
   g: vi.fn(),
   gE: vi.fn(),
-  installBattleActionEventBridge: vi.fn(),
+  runBattleActionEventBridgeAutomation: vi.fn(),
   runBattleMonitorAutomation: vi.fn(),
   runBattlePauseControlsAutomation: vi.fn(),
   runBattleRoundStartAutomation: vi.fn(),
@@ -14,8 +14,9 @@ const mocks = vi.hoisted(() => ({
   runBattleStartRuntimeAutomation: vi.fn(),
 }));
 
-vi.mock("./reloader.js", () => ({
-  installBattleActionEventBridge: mocks.installBattleActionEventBridge,
+vi.mock("./battle-action-event-bridge.js", () => ({
+  BattleActionEventBridgeEvent: Object.freeze({ INSTALL: "install" }),
+  runBattleActionEventBridgeAutomation: mocks.runBattleActionEventBridgeAutomation,
 }));
 vi.mock("./new-round.js", () => ({
   BattleRoundStartEvent: Object.freeze({ ROUND_STARTED: "roundStarted" }),
@@ -50,7 +51,7 @@ describe("runBattleAutomation", () => {
     runBattleAutomation({ type: BattleEvent.PAGE_READY });
 
     expect(mocks.runBattlePauseControlsAutomation).toHaveBeenCalledWith({ type: "install" });
-    expect(mocks.installBattleActionEventBridge).toHaveBeenCalledTimes(1);
+    expect(mocks.runBattleActionEventBridgeAutomation).toHaveBeenCalledWith({ type: "install" });
     expect(mocks.runBattleStartRuntimeAutomation).toHaveBeenCalledWith({ type: "battleStarted" });
     expect(mocks.runBattleRoundStartAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
     expect(mocks.runMonsterKnowledgeAutomation).toHaveBeenCalledWith({ type: "battleStarted" });
@@ -60,6 +61,6 @@ describe("runBattleAutomation", () => {
 
   it("ignores unknown events", () => {
     expect(runBattleAutomation({ type: "unknown" })).toBeUndefined();
-    expect(mocks.installBattleActionEventBridge).not.toHaveBeenCalled();
+    expect(mocks.runBattleActionEventBridgeAutomation).not.toHaveBeenCalled();
   });
 });

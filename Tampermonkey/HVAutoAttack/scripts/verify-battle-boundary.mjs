@@ -4,7 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const battleFile = path.join(root, "src/battle/battle-automation.js");
-const reloaderFile = path.join(root, "src/battle/reloader.js");
+const actionEventBridgeFile = path.join(root, "src/battle/battle-action-event-bridge.js");
+const legacyReloaderFile = path.join(root, "src/battle/reloader.js");
 const actionDelayFile = path.join(root, "src/battle/battle-action-delay.js");
 const actionDelayTest = path.join(root, "src/battle/battle-action-delay.test.js");
 const apiBridgeFile = path.join(root, "src/battle/battle-api-bridge.js");
@@ -115,9 +116,9 @@ function checkBattleEntry() {
   if (!text.includes("runBattleTurnAutomation")) {
     violations.push(`${rel(battleFile)} must run turns through runBattleTurnAutomation()`);
   }
-  if (!text.includes("installBattleActionEventBridge")) {
+  if (!text.includes("runBattleActionEventBridgeAutomation")) {
     violations.push(
-      `${rel(battleFile)} must install action events through installBattleActionEventBridge()`
+      `${rel(battleFile)} must install action events through runBattleActionEventBridgeAutomation(event)`
     );
   }
   for (const required of ["startBattleMonsterKnowledge", "startBattleMonitoring"]) {
@@ -161,7 +162,7 @@ function checkBattleEntry() {
 }
 
 function checkRoundStartCallers() {
-  for (const file of [battleFile, reloaderFile]) {
+  for (const file of [battleFile, actionEventBridgeFile]) {
     const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
     lines.forEach((line, index) => {
       if (line.includes("runBattleRoundStartAutomation")) return;
@@ -202,7 +203,7 @@ function checkTurnEntry() {
       `${rel(mainLoopFile)} legacy main() bridge must stay deleted; use runBattleTurnAutomation()`
     );
   }
-  for (const file of [battleFile, reloaderFile]) {
+  for (const file of [battleFile, actionEventBridgeFile]) {
     const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
     lines.forEach((line, index) => {
       if (line.includes("runBattleTurnAutomation")) return;
@@ -216,19 +217,24 @@ function checkTurnEntry() {
 }
 
 function checkActionEventBridgeEntry() {
-  const text = fs.readFileSync(reloaderFile, "utf8");
-  if (!/export function installBattleActionEventBridge\(/.test(text)) {
-    violations.push(`${rel(reloaderFile)} must expose installBattleActionEventBridge()`);
+  if (fs.existsSync(legacyReloaderFile)) {
+    violations.push("src/battle/reloader.js legacy action event bridge path must stay deleted");
+  }
+  const text = fs.readFileSync(actionEventBridgeFile, "utf8");
+  if (!/export function runBattleActionEventBridgeAutomation\(/.test(text)) {
+    violations.push(
+      `${rel(actionEventBridgeFile)} must expose runBattleActionEventBridgeAutomation(event)`
+    );
   }
   if (/\b(?:export\s+)?function\s+reloader\s*\(/.test(text)) {
     violations.push(
-      `${rel(reloaderFile)} legacy reloader() bridge must stay deleted; use installBattleActionEventBridge()`
+      `${rel(actionEventBridgeFile)} legacy reloader() bridge must stay deleted; use runBattleActionEventBridgeAutomation(event)`
     );
   }
   const battleText = fs.readFileSync(battleFile, "utf8");
   if (/\breloader\s*\(/.test(battleText)) {
     violations.push(
-      `${rel(battleFile)} legacy reloader() call is forbidden; use installBattleActionEventBridge()`
+      `${rel(battleFile)} legacy reloader() call is forbidden; use runBattleActionEventBridgeAutomation(event)`
     );
   }
   if (
@@ -238,7 +244,7 @@ function checkActionEventBridgeEntry() {
     /\bclearTimeout\b/.test(text)
   ) {
     violations.push(
-      `${rel(reloaderFile)} battle action delay timers belong in runBattleActionDelayAutomation(event)`
+      `${rel(actionEventBridgeFile)} battle action delay timers belong in runBattleActionDelayAutomation(event)`
     );
   }
   if (
@@ -247,15 +253,17 @@ function checkActionEventBridgeEntry() {
     )
   ) {
     violations.push(
-      `${rel(reloaderFile)} battle api script injection belongs in runBattleApiBridgeAutomation(event)`
+      `${rel(actionEventBridgeFile)} battle api script injection belongs in runBattleApiBridgeAutomation(event)`
     );
   }
   if (!text.includes("BattleApiBridgeEvent.INSTALL")) {
-    violations.push(`${rel(reloaderFile)} must install battle api bridge through its entry`);
+    violations.push(
+      `${rel(actionEventBridgeFile)} must install battle api bridge through its entry`
+    );
   }
   if (/\brunSpeed\b|\btimeNow\b|TimeEvent\.EPOCH_MS/.test(text)) {
     violations.push(
-      `${rel(reloaderFile)} battle action speed belongs in runBattleActionSpeedAutomation(event)`
+      `${rel(actionEventBridgeFile)} battle action speed belongs in runBattleActionSpeedAutomation(event)`
     );
   }
   if (
@@ -264,19 +272,23 @@ function checkActionEventBridgeEntry() {
     )
   ) {
     violations.push(
-      `${rel(reloaderFile)} battle action-end workflow belongs in runBattleActionEndAutomation(event)`
+      `${rel(actionEventBridgeFile)} battle action-end workflow belongs in runBattleActionEndAutomation(event)`
     );
   }
   if (!text.includes("BattleActionEndEvent.ACTION_ENDED")) {
-    violations.push(`${rel(reloaderFile)} must report battle action end through its entry`);
+    violations.push(
+      `${rel(actionEventBridgeFile)} must report battle action end through its entry`
+    );
   }
   if (/BattleMonitorEvent\.ACTION_STARTED|runBattleMonitorAutomation/.test(text)) {
     violations.push(
-      `${rel(reloaderFile)} battle action-start workflow belongs in runBattleActionStartAutomation(event)`
+      `${rel(actionEventBridgeFile)} battle action-start workflow belongs in runBattleActionStartAutomation(event)`
     );
   }
   if (!text.includes("BattleActionStartEvent.ACTION_STARTED")) {
-    violations.push(`${rel(reloaderFile)} must report battle action start through its entry`);
+    violations.push(
+      `${rel(actionEventBridgeFile)} must report battle action start through its entry`
+    );
   }
 }
 
@@ -325,7 +337,7 @@ function checkActionDelayEntry() {
   }
   const files = [
     battleFile,
-    reloaderFile,
+    actionEventBridgeFile,
     mainLoopFile,
     roundStartFile,
     actionDelayFile,
@@ -334,7 +346,7 @@ function checkActionDelayEntry() {
   for (const file of files) {
     const source = fs.readFileSync(file, "utf8");
     if (
-      file !== reloaderFile &&
+      file !== actionEventBridgeFile &&
       file !== actionDelayFile &&
       file !== actionDelayTest &&
       /from\s+["']\.\/battle-action-delay\.js["']/.test(source)
@@ -383,7 +395,7 @@ function checkApiBridgeEntry() {
   }
   for (const file of [
     battleFile,
-    reloaderFile,
+    actionEventBridgeFile,
     mainLoopFile,
     roundStartFile,
     apiBridgeFile,
@@ -391,7 +403,7 @@ function checkApiBridgeEntry() {
   ]) {
     const source = fs.readFileSync(file, "utf8");
     if (
-      file !== reloaderFile &&
+      file !== actionEventBridgeFile &&
       file !== apiBridgeFile &&
       file !== apiBridgeTest &&
       /from\s+["']\.\/battle-api-bridge\.js["']/.test(source)
@@ -426,7 +438,7 @@ function checkActionSpeedEntry() {
   }
   for (const file of [
     battleFile,
-    reloaderFile,
+    actionEventBridgeFile,
     mainLoopFile,
     roundStartFile,
     actionSpeedFile,
@@ -435,7 +447,7 @@ function checkActionSpeedEntry() {
     const source = fs.readFileSync(file, "utf8");
     if (
       file !== battleFile &&
-      file !== reloaderFile &&
+      file !== actionEventBridgeFile &&
       file !== actionSpeedFile &&
       file !== actionSpeedTest &&
       /from\s+["']\.\/battle-action-speed\.js["']/.test(source)
@@ -478,7 +490,7 @@ function checkActionEndEntry() {
   }
   for (const file of [
     battleFile,
-    reloaderFile,
+    actionEventBridgeFile,
     mainLoopFile,
     roundStartFile,
     actionEndFile,
@@ -486,7 +498,7 @@ function checkActionEndEntry() {
   ]) {
     const source = fs.readFileSync(file, "utf8");
     if (
-      file !== reloaderFile &&
+      file !== actionEventBridgeFile &&
       file !== actionEndFile &&
       file !== actionEndTest &&
       /from\s+["']\.\/battle-action-end\.js["']/.test(source)
@@ -523,7 +535,7 @@ function checkActionStartEntry() {
   }
   for (const file of [
     battleFile,
-    reloaderFile,
+    actionEventBridgeFile,
     mainLoopFile,
     roundStartFile,
     actionStartFile,
@@ -531,7 +543,7 @@ function checkActionStartEntry() {
   ]) {
     const source = fs.readFileSync(file, "utf8");
     if (
-      file !== reloaderFile &&
+      file !== actionEventBridgeFile &&
       file !== actionStartFile &&
       file !== actionStartTest &&
       /from\s+["']\.\/battle-action-start\.js["']/.test(source)
@@ -582,7 +594,7 @@ function checkPauseControlsEntry() {
   }
   for (const file of [
     battleFile,
-    reloaderFile,
+    actionEventBridgeFile,
     mainLoopFile,
     roundStartFile,
     pauseControlsFile,
@@ -644,7 +656,7 @@ function checkStartRuntimeEntry() {
   }
   for (const file of [
     battleFile,
-    reloaderFile,
+    actionEventBridgeFile,
     mainLoopFile,
     roundStartFile,
     startRuntimeFile,
