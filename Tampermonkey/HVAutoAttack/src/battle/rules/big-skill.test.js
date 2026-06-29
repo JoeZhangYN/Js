@@ -1,14 +1,23 @@
-// Feature 2 回归锁：shouldSkipForBigSkill「清场大招本回合已就绪即跳 Weaken」快路 +
-// clearSkillReadyNow helper。钉死：就绪即跳(怪少也跳)、OC 不够不跳、开关 off 可回退、
+// Feature 2 回归锁：big-skill debuff 入口「清场大招本回合已就绪即跳 Weaken」快路 +
+// clear-ready query。钉死：就绪即跳(怪少也跳)、OC 不够不跳、开关 off 可回退、
 // Im+boss 强保不变、原 OC 窗口路仍在、顶层 We 开关 false 早退。
 import { describe, it, expect, beforeEach } from "vitest";
-import { shouldSkipForBigSkill, clearSkillReadyNow } from "./big-skill.js";
+import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill.js";
 import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,
 } from "../../state/big-skill-kill-learner.js";
 
 const snap = (over = {}) => ({ cdMap: {}, oc: 0, aliveCount: 5, monsters: [], ...over });
+const clearSkillReadyNow = (opt, snap) =>
+  runBigSkillDebuffAutomation({ type: BigSkillDebuffEvent.READ_CLEAR_READY, opt, snap });
+const shouldSkipForBigSkill = (opt, snap, kind) =>
+  runBigSkillDebuffAutomation({
+    type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
+    opt,
+    snap,
+    kind,
+  });
 
 beforeEach(() => localStorage.clear());
 
@@ -34,19 +43,27 @@ function learnBossKillEvidence() {
 
 describe("clearSkillReadyNow", () => {
   it("OFC 启用 + cd=0 + oc>=205 → true", () => {
-    expect(clearSkillReadyNow({ skill_OFC: true }, snap({ cdMap: { OFC: 0 }, oc: 210 }))).toBe(true);
+    expect(clearSkillReadyNow({ skill_OFC: true }, snap({ cdMap: { OFC: 0 }, oc: 210 }))).toBe(
+      true
+    );
   });
   it("OFC 未启用 → false（即便就绪）", () => {
     expect(clearSkillReadyNow({}, snap({ cdMap: { OFC: 0 }, oc: 210 }))).toBe(false);
   });
   it("cd 未归零 → false", () => {
-    expect(clearSkillReadyNow({ skill_OFC: true }, snap({ cdMap: { OFC: 2 }, oc: 210 }))).toBe(false);
+    expect(clearSkillReadyNow({ skill_OFC: true }, snap({ cdMap: { OFC: 2 }, oc: 210 }))).toBe(
+      false
+    );
   });
   it("OC 不够（<205）→ false", () => {
-    expect(clearSkillReadyNow({ skill_OFC: true }, snap({ cdMap: { OFC: 0 }, oc: 200 }))).toBe(false);
+    expect(clearSkillReadyNow({ skill_OFC: true }, snap({ cdMap: { OFC: 0 }, oc: 200 }))).toBe(
+      false
+    );
   });
   it("FRD 启用 + cd=0 + oc>=105 → true（nested opt.skill.FRD 亦认）", () => {
-    expect(clearSkillReadyNow({ skill: { FRD: true } }, snap({ cdMap: { FRD: 0 }, oc: 110 }))).toBe(true);
+    expect(clearSkillReadyNow({ skill: { FRD: true } }, snap({ cdMap: { FRD: 0 }, oc: 110 }))).toBe(
+      true
+    );
   });
 });
 
@@ -63,7 +80,9 @@ describe("shouldSkipForBigSkill — Feature 2 就绪即跳 Weaken", () => {
 
   it("skipWeakenWhenClearReady:false → 快路关，怪少落 false（可回退锁）", () => {
     const s = snap({ cdMap: { OFC: 0 }, oc: 210, aliveCount: 2 });
-    expect(shouldSkipForBigSkill({ skill_OFC: true, skipWeakenWhenClearReady: false }, s, "We")).toBe(false);
+    expect(
+      shouldSkipForBigSkill({ skill_OFC: true, skipWeakenWhenClearReady: false }, s, "We")
+    ).toBe(false);
   });
 
   it("kind=Im + boss 存活 → false（强保 Imperil 不变）", () => {
@@ -78,7 +97,9 @@ describe("shouldSkipForBigSkill — Feature 2 就绪即跳 Weaken", () => {
 
   it("skipDebuffForBigSkill_We:false → 顶层早退 false（原行为）", () => {
     const s = snap({ cdMap: { OFC: 0 }, oc: 210, aliveCount: 2 });
-    expect(shouldSkipForBigSkill({ skill_OFC: true, skipDebuffForBigSkill_We: false }, s, "We")).toBe(false);
+    expect(
+      shouldSkipForBigSkill({ skill_OFC: true, skipDebuffForBigSkill_We: false }, s, "We")
+    ).toBe(false);
   });
 });
 

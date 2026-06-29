@@ -2,7 +2,7 @@
 // 不读 DOM / 不调 g()——吃 opt + snap（snap.learnedBurstByMid 由 snapshot attach，保本函数纯）。
 // 选择逻辑（load-bearing）：Silence 只挡施法 → 仅法术爆发用；物理/未知 → Sleep（整回合禁用）；再退 Confuse。
 import { aliveByOrder } from "../monster-view.js";
-import { clearSkillReadyNow } from "../rules/big-skill.js";
+import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "../rules/big-skill.js";
 
 const PHYSICAL_TYPES = new Set(["piercing", "crushing", "slashing", "physical"]);
 const CONTROL_IMG = { 232: "silence", 222: "sleep", 223: "confuse" };
@@ -10,7 +10,8 @@ const CONTROL_IMG = { 232: "silence", 222: "sleep", 223: "confuse" };
 /** 按致死伤害类型 + 技能就绪挑控制技：法术→Silence，否则 Sleep，再退 Confuse；都不就绪→null。 */
 function pickControl(type, snap, opt) {
   const isSpell = !!type && !PHYSICAL_TYPES.has(type) && type !== "unknown";
-  if (isSpell && opt.burstControlSilenceForSpell !== false && snap.skillReady?.["232"]) return "232";
+  if (isSpell && opt.burstControlSilenceForSpell !== false && snap.skillReady?.["232"])
+    return "232";
   if (snap.skillReady?.["222"]) return "222"; // Sleep 通用（整回合禁用，物理爆发也挡）
   if (snap.skillReady?.["223"]) return "223"; // Confuse 兜底
   return null;
@@ -24,7 +25,15 @@ function pickControl(type, snap, opt) {
 export function decideBurstControl(opt, snap) {
   if (!opt.burstControlSwitch) return { kind: "noop" };
   // OFC 本回合就清场 → 蹦极源即灭，别白费一回合控制（与 F2/F4 同口径，避免过控）。
-  if (clearSkillReadyNow(opt, snap)) return { kind: "noop" };
+  if (
+    runBigSkillDebuffAutomation({
+      type: BigSkillDebuffEvent.READ_CLEAR_READY,
+      opt,
+      snap,
+    })
+  ) {
+    return { kind: "noop" };
+  }
   const burstMap = snap.learnedBurstByMid || {};
   const hpAbs = snap.hpAbs ?? 0;
   if (!(hpAbs > 0)) return { kind: "noop" };
@@ -43,5 +52,9 @@ export function decideBurstControl(opt, snap) {
     }
   }
   if (!best) return { kind: "noop" };
-  return { kind: "click-skill-then-target", skillSel: best.skillSel, targetSel: `#mkey_${best.id}` };
+  return {
+    kind: "click-skill-then-target",
+    skillSel: best.skillSel,
+    targetSel: `#mkey_${best.id}`,
+  };
 }

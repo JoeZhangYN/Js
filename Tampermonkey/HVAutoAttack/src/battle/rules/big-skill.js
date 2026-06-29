@@ -5,6 +5,15 @@ import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,
 } from "../../state/big-skill-kill-learner.js";
+
+const EVENT_READ_CLEAR_READY = "readClearReady";
+const EVENT_SHOULD_SKIP_DEBUFF = "shouldSkipDebuff";
+
+export const BigSkillDebuffEvent = Object.freeze({
+  READ_CLEAR_READY: EVENT_READ_CLEAR_READY,
+  SHOULD_SKIP_DEBUFF: EVENT_SHOULD_SKIP_DEBUFF,
+});
+
 /**
  * 清场大招(OFC/FRD)本回合是否「真就绪即可开火」= CD 归零且 OC 已够。
  * 与 decide-attack 实际开火 OFC/FRD 的条件同口径 → 命中即代表本回合就会放大招清场。
@@ -13,7 +22,7 @@ import {
  * @param {import("../../core/types.js").BattleSnapshot} snap
  * @returns {boolean}
  */
-export function clearSkillReadyNow(opt, snap) {
+function clearSkillReadyNow(opt, snap) {
   for (const skill of ["OFC", "FRD"]) {
     if (!opt[`skill_${skill}`] && !opt.skill?.[skill]) continue;
     const ocNeed = skill === "OFC" ? 205 : 105;
@@ -28,7 +37,7 @@ export function clearSkillReadyNow(opt, snap) {
  * @param {"We"|"Im"} kind
  * @returns {boolean} true = 应跳过该全员 debuff（让位给即将就绪的大招）
  */
-export function shouldSkipForBigSkill(opt, snap, kind) {
+function shouldSkipForBigSkill(opt, snap, kind) {
   if (opt[`skipDebuffForBigSkill_${kind}`] === false) return false;
   // Boss 存活时默认不跳过 Imperil——Imperil 破防让 OFC 打 boss 更狠（一发不够也增伤）。
   // Weaken 减对面伤害，不影响 OFC 杀 boss 速度，仍按 OFC 优化跳过。
@@ -70,4 +79,12 @@ export function shouldSkipForBigSkill(opt, snap, kind) {
     if (ocFutureMax >= ocNeed) return true;
   }
   return false;
+}
+
+export function runBigSkillDebuffAutomation(event = { type: EVENT_SHOULD_SKIP_DEBUFF }) {
+  if (event.type === EVENT_READ_CLEAR_READY) return clearSkillReadyNow(event.opt, event.snap);
+  if (event.type === EVENT_SHOULD_SKIP_DEBUFF) {
+    return shouldSkipForBigSkill(event.opt, event.snap, event.kind);
+  }
+  return undefined;
 }

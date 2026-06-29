@@ -32,7 +32,9 @@ const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const battleRulesFile = path.join(root, "src/battle/rules/index.js");
+const bigSkillFile = path.join(root, "src/battle/rules/big-skill.js");
 const bossImperilFile = path.join(root, "src/battle/rules/decide-boss-imperil.js");
+const burstControlFile = path.join(root, "src/battle/debuff/decide-burst-control.js");
 const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const violations = [];
 
@@ -774,6 +776,34 @@ function checkBossImperilEntry() {
   }
 }
 
+function checkBigSkillDebuffEntry() {
+  const ownerText = fs.readFileSync(bigSkillFile, "utf8");
+  for (const required of [
+    "BigSkillDebuffEvent",
+    "runBigSkillDebuffAutomation",
+    "READ_CLEAR_READY",
+    "SHOULD_SKIP_DEBUFF",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(bigSkillFile)} must own ${required}`);
+    }
+  }
+  for (const legacy of ["clearSkillReadyNow", "shouldSkipForBigSkill"]) {
+    if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {
+      violations.push(`${rel(bigSkillFile)} legacy ${legacy} export must stay private`);
+    }
+  }
+  for (const file of [battleRulesFile, burstControlFile]) {
+    const text = fs.readFileSync(file, "utf8");
+    if (!text.includes("runBigSkillDebuffAutomation")) {
+      violations.push(`${rel(file)} must read big-skill debuff decisions through their entry`);
+    }
+    if (/\b(?:clearSkillReadyNow|shouldSkipForBigSkill)\b/.test(text)) {
+      violations.push(`${rel(file)} must not call legacy big-skill debuff helpers`);
+    }
+  }
+}
+
 function checkBattleStallMode() {
   const ownerText = fs.readFileSync(stallModeFile, "utf8");
   for (const required of [
@@ -845,6 +875,7 @@ checkSnapshot();
 checkBattleRulesRuntimeContext();
 checkBattleDebuffCoverage();
 checkBossImperilEntry();
+checkBigSkillDebuffEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();
 checkBattleOptionVocabulary();

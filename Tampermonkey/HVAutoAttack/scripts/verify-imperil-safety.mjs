@@ -28,6 +28,7 @@ need(
 need(/bigKillMinSamples/.test(learner), "big-skill-kill-learner 缺 bigKillMinSamples 样本量守卫");
 
 // ② 消费方 big-skill.js：引用 big-skill kill query 必同时受 skipImperilWhenOfcKills 门控
+need(/runBigSkillDebuffAutomation/.test(bigSkill), "big-skill.js 缺 debuff decision 入口");
 if (/WILL_KILL_BOSS/.test(bigSkill)) {
   need(
     /skipImperilWhenOfcKills/.test(bigSkill),

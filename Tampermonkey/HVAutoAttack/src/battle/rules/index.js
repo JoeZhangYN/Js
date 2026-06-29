@@ -14,7 +14,7 @@ import { decideCastDebuffOnAll } from "../debuff/decide-cast-all.js";
 import { decideAttack } from "../attack/decide-attack.js";
 import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../item/decide-item.js";
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
-import { shouldSkipForBigSkill } from "./big-skill.js";
+import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill.js";
 import { BossImperilEvent, runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 
@@ -40,6 +40,13 @@ const canAutoPause = (snap, opt) => opt.autoPause && checkCondition(opt.pauseCon
 const pause = () => ({ kind: "pause" });
 const canDefend = (snap, opt) => opt.defend && checkCondition(opt.defendCondition, snap);
 const defend = () => ({ kind: "click", selector: "#ckey_defend" });
+const shouldSkipDebuffForBigSkill = (opt, snap, kind) =>
+  runBigSkillDebuffAutomation({
+    type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
+    opt,
+    snap,
+    kind,
+  });
 
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
@@ -117,7 +124,7 @@ export const BATTLE_RULES = [
     when: (snap, opt) =>
       opt.debuffSkillSwitch &&
       opt.debuffSkillAllWk &&
-      !shouldSkipForBigSkill(opt, snap, "We") &&
+      !shouldSkipDebuffForBigSkill(opt, snap, "We") &&
       hasMissingDebuff(snap, readRuleRuntimeContext(snap), "weaken") &&
       checkCondition(opt.debuffSkillWkCondition, snap),
     decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "We"),
@@ -129,7 +136,7 @@ export const BATTLE_RULES = [
       !isStallingForRules(snap, opt) &&
       opt.debuffSkillSwitch &&
       opt.debuffSkillAllIm &&
-      !shouldSkipForBigSkill(opt, snap, "Im") &&
+      !shouldSkipDebuffForBigSkill(opt, snap, "Im") &&
       hasMissingDebuff(snap, readRuleRuntimeContext(snap), "imperil") &&
       checkCondition(opt.debuffSkillImpCondition, snap),
     decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "Im"),
