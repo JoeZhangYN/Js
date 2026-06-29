@@ -47,11 +47,8 @@ describe("干净 rule 的 decide 返真 ActionResult", () => {
     });
   });
 
-  it("defend → click #ckey_defend", () => {
-    expect(byName("defend").decide({}, {})).toEqual({
-      kind: "click",
-      selector: "#ckey_defend",
-    });
+  it("defend → noop when disabled", () => {
+    expect(byName("defend").decide({}, {})).toEqual({ kind: "noop" });
   });
 });
 
@@ -88,9 +85,12 @@ describe("when 门控", () => {
     expect(byName("flee").when({}, { autoFlee: false })).toBeFalsy();
   });
 
-  it("defend.when: 需 opt.defend", () => {
-    expect(byName("defend").when({}, { defend: true })).toBe(true);
-    expect(byName("defend").when({}, {})).toBeFalsy();
+  it("defend: 规则表不拼门控，开启时由 decide 返回 click", () => {
+    expect(byName("defend").when).toBeUndefined();
+    expect(byName("defend").decide({}, { defend: true })).toEqual({
+      kind: "click",
+      selector: "#ckey_defend",
+    });
   });
 
   it("deadSoon: 规则表不拼门控，未配置时 decide 自行返回空 potion plan", () => {

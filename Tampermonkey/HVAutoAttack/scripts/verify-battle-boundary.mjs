@@ -40,6 +40,7 @@ const bossImperilFile = path.join(root, "src/battle/rules/decide-boss-imperil.js
 const burstControlFile = path.join(root, "src/battle/debuff/decide-burst-control.js");
 const decideDeSkillFile = path.join(root, "src/battle/debuff/decide-de-skill.js");
 const decideCastAllFile = path.join(root, "src/battle/debuff/decide-cast-all.js");
+const decideDefendFile = path.join(root, "src/battle/defense/decide-defend.js");
 const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const violations = [];
 
@@ -960,6 +961,23 @@ function checkPotionEntry() {
   }
 }
 
+function checkDefendEntry() {
+  const ownerText = fs.readFileSync(decideDefendFile, "utf8");
+  for (const required of ["decideDefend", "defendCondition", "#ckey_defend"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideDefendFile)} must own defend gate ${required}`);
+    }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const defendRule =
+    rulesText.match(/name:\s*["']defend["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  for (const legacy of ["defendCondition", "#ckey_defend"]) {
+    if (defendRule.includes(legacy)) {
+      violations.push(`${rel(battleRulesFile)} must not assemble defend rule gates directly`);
+    }
+  }
+}
+
 function checkBattleStallMode() {
   const ownerText = fs.readFileSync(stallModeFile, "utf8");
   for (const required of [
@@ -1041,6 +1059,7 @@ checkSingleDebuffEntry();
 checkAllDebuffEntry();
 checkItemScrollEntry();
 checkPotionEntry();
+checkDefendEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();
 checkBattleOptionVocabulary();

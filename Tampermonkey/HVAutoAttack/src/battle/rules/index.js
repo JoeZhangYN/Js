@@ -9,6 +9,7 @@ import { decideCastDebuffOnAll } from "../debuff/decide-cast-all.js";
 import { decideAttack } from "../attack/decide-attack.js";
 import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../item/decide-item.js";
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
+import { decideDefend } from "../defense/decide-defend.js";
 import { BossImperilEvent, runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 
@@ -16,8 +17,6 @@ const canFlee = (snap, opt) => opt.autoFlee && checkCondition(opt.fleeCondition,
 const flee = () => ({ kind: "click-then-reload", selector: "1001", delaySec: 3 });
 const canAutoPause = (snap, opt) => opt.autoPause && checkCondition(opt.pauseCondition, snap);
 const pause = () => ({ kind: "pause" });
-const canDefend = (snap, opt) => opt.defend && checkCondition(opt.defendCondition, snap);
-const defend = () => ({ kind: "click", selector: "#ckey_defend" });
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
@@ -39,7 +38,7 @@ export const BATTLE_RULES = [
     decide: (snap, opt) => decideStallTopup(opt, snap),
   },
   // 7. 防御（attemptClick 内置 isOn 探活）
-  { name: "defend", when: canDefend, decide: defend },
+  { name: "defend", decide: (snap, opt) => decideDefend(opt, snap) },
   // 8. 卷轴（decide 出候选 item id，execute 探活+点第一个可用）
   {
     name: "useScroll",
