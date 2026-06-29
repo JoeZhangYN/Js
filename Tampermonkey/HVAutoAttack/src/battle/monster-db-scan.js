@@ -53,7 +53,10 @@ function startMonsterScanLearning(onUpdate, deps) {
   return true;
 }
 
+const monsterScanLearningEventHandlers = Object.freeze({
+  [EVENT_START]: (event, deps) => startMonsterScanLearning(event.onStored, makeDeps(deps)),
+});
+
 export function runMonsterScanLearningAutomation(event = { type: EVENT_START }, deps = {}) {
-  if (event.type !== EVENT_START) return false;
-  return startMonsterScanLearning(event.onStored, makeDeps(deps));
+  return monsterScanLearningEventHandlers[event.type]?.(event, deps) || false;
 }

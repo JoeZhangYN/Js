@@ -156,6 +156,14 @@ function checkEntry() {
       `${scanImpl.replaceAll("\\", "/")} must expose runMonsterScanLearningAutomation(event)`
     );
   }
+  if (!/const monsterScanLearningEventHandlers\s*=\s*Object\.freeze\(/.test(scanText)) {
+    violations.push(`${scanImpl.replaceAll("\\", "/")} must route events through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*!==\s*EVENT_START/.test(scanText)) {
+    violations.push(
+      `${scanImpl.replaceAll("\\", "/")} must not route scan events through an if ladder`
+    );
+  }
   if (/export\s+function\s+startMonsterScanLearning\(/.test(scanText)) {
     violations.push(
       `${scanImpl.replaceAll("\\", "/")} must keep startMonsterScanLearning private behind runMonsterScanLearningAutomation(event)`
