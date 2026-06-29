@@ -33,64 +33,49 @@ function createDefaultUsageStats() {
   };
 }
 
-export function readOrCreateUsageStats(ops, deps) {
-  return ops.readOrCreateCurrentRecord(
-    {
-      currentKey: STORAGE_KEYS.STATS,
-      defaultRecord: createDefaultUsageStats(),
-      startTimeField: "self._startTime",
-    },
-    deps
-  );
+export function readOrCreateUsageStats(recordStore) {
+  return recordStore.readOrCreateCurrentRecord({
+    currentKey: STORAGE_KEYS.STATS,
+    defaultRecord: createDefaultUsageStats(),
+    startTimeField: "self._startTime",
+  });
 }
 
-export function readUsageStats(ops, deps) {
-  return ops.readCurrentRecord({ currentKey: STORAGE_KEYS.STATS }, deps);
+export function readUsageStats(recordStore) {
+  return recordStore.readCurrentRecord({ currentKey: STORAGE_KEYS.STATS });
 }
 
-export function storeUsageStats(event, ops, deps) {
-  return ops.storeOrArchiveRecord(
-    {
-      currentKey: STORAGE_KEYS.STATS,
-      historyKey: STORAGE_KEYS.STATS_OLD,
-      record: event.record,
-      recordEach: false,
-    },
-    deps
-  );
+export function storeUsageStats(event, recordStore) {
+  return recordStore.storeOrArchiveRecord({
+    currentKey: STORAGE_KEYS.STATS,
+    historyKey: STORAGE_KEYS.STATS_OLD,
+    record: event.record,
+    recordEach: false,
+  });
 }
 
-export function storeOrArchiveUsageStats(event, ops, deps) {
-  return ops.storeOrArchiveRecord(
-    {
-      currentKey: STORAGE_KEYS.STATS,
-      historyKey: STORAGE_KEYS.STATS_OLD,
-      record: event.record,
-      endTimeField: "self._endTime",
-      recordEach: event.recordEach,
-      roundNow: event.roundNow,
-      roundAll: event.roundAll,
-    },
-    deps
-  );
+export function storeOrArchiveUsageStats(event, recordStore) {
+  return recordStore.storeOrArchiveRecord({
+    currentKey: STORAGE_KEYS.STATS,
+    historyKey: STORAGE_KEYS.STATS_OLD,
+    record: event.record,
+    endTimeField: "self._endTime",
+    recordEach: event.recordEach,
+    roundNow: event.roundNow,
+    roundAll: event.roundAll,
+  });
 }
 
-export function readUsageReportRecordSet(ops, deps) {
-  return ops.readRecordSet(
-    {
-      currentKey: STORAGE_KEYS.STATS,
-      historyKey: STORAGE_KEYS.STATS_OLD,
-    },
-    deps
-  );
+export function readUsageReportRecordSet(recordStore) {
+  return recordStore.readRecordSet({
+    currentKey: STORAGE_KEYS.STATS,
+    historyKey: STORAGE_KEYS.STATS_OLD,
+  });
 }
 
-export function clearUsageReportRecordSet(ops, deps) {
-  return ops.clearRecordSet(
-    {
-      currentKey: STORAGE_KEYS.STATS,
-      historyKey: STORAGE_KEYS.STATS_OLD,
-    },
-    deps
-  );
+export function clearUsageReportRecordSet(recordStore) {
+  return recordStore.clearRecordSet({
+    currentKey: STORAGE_KEYS.STATS,
+    historyKey: STORAGE_KEYS.STATS_OLD,
+  });
 }

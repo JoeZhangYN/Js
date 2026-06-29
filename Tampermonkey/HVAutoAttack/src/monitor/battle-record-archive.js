@@ -109,40 +109,43 @@ function clearRecordSet(event, deps) {
   return true;
 }
 
+function makeRecordStore(deps) {
+  return {
+    clearRecordSet: (event) => clearRecordSet(event, deps),
+    readCurrentRecord: (event) => readCurrentRecord(event, deps),
+    readOrCreateCurrentRecord: (event) => readOrCreateCurrentRecord(event, deps),
+    readRecordSet: (event) => readRecordSet(event, deps),
+    storeOrArchiveRecord: (event) => storeOrArchiveRecord(event, deps),
+  };
+}
+
 export function runBattleRecordArchiveAutomation(event, deps = {}) {
   const fullDeps = makeDeps(deps);
-  const ops = {
-    clearRecordSet,
-    readCurrentRecord,
-    readOrCreateCurrentRecord,
-    readRecordSet,
-    storeOrArchiveRecord,
-  };
+  const recordStore = makeRecordStore(fullDeps);
   if (event.type === BattleRecordArchiveEvent.READ_OR_CREATE_DROP_RECORD)
-    return readOrCreateDropRecord(ops, fullDeps);
+    return readOrCreateDropRecord(recordStore);
   if (event.type === BattleRecordArchiveEvent.STORE_OR_ARCHIVE_DROP_RECORD) {
-    return storeOrArchiveDropRecord(event, ops, fullDeps);
+    return storeOrArchiveDropRecord(event, recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.READ_OR_CREATE_USAGE_STATS)
-    return readOrCreateUsageStats(ops, fullDeps);
-  if (event.type === BattleRecordArchiveEvent.READ_USAGE_STATS)
-    return readUsageStats(ops, fullDeps);
+    return readOrCreateUsageStats(recordStore);
+  if (event.type === BattleRecordArchiveEvent.READ_USAGE_STATS) return readUsageStats(recordStore);
   if (event.type === BattleRecordArchiveEvent.STORE_USAGE_STATS)
-    return storeUsageStats(event, ops, fullDeps);
+    return storeUsageStats(event, recordStore);
   if (event.type === BattleRecordArchiveEvent.STORE_OR_ARCHIVE_USAGE_STATS) {
-    return storeOrArchiveUsageStats(event, ops, fullDeps);
+    return storeOrArchiveUsageStats(event, recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET) {
-    return readDropReportRecordSet(ops, fullDeps);
+    return readDropReportRecordSet(recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET) {
-    return readUsageReportRecordSet(ops, fullDeps);
+    return readUsageReportRecordSet(recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.CLEAR_DROP_REPORT_RECORD_SET) {
-    return clearDropReportRecordSet(ops, fullDeps);
+    return clearDropReportRecordSet(recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET) {
-    return clearUsageReportRecordSet(ops, fullDeps);
+    return clearUsageReportRecordSet(recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING)
     return startBattleReportRecording(event, fullDeps);

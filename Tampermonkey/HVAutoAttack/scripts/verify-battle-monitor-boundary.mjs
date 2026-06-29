@@ -389,6 +389,14 @@ function checkRecordArchiveEntry() {
     }
   }
   for (const [label, text] of [
+    [rel(archiveDropRecordsFile), archiveDropRecordsText],
+    [rel(archiveUsageRecordsFile), archiveUsageRecordsText],
+  ]) {
+    if (/\bops\b/.test(text) || /\bdeps\b/.test(text)) {
+      violations.push(`${label} must consume the archive recordStore, not ops/deps`);
+    }
+  }
+  for (const [label, text] of [
     ["src/monitor/drop-monitor.js", dropText],
     ["src/monitor/record-usage.js", usageText],
   ]) {
