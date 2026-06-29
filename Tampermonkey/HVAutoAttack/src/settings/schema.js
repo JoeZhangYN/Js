@@ -12,6 +12,7 @@
  * @property {*} default 默认值
  * @property {boolean} [defaultOn] checkbox 上是否标 data-default-on
  * @property {string[]} [enum] select 选项
+ * @property {Record<string,string>} [enumLabel] select 选项显示文本
  * @property {(v:any)=>boolean} [validate] 自定义校验
  * @property {string} [description] 三语说明（可选）
  */
@@ -317,6 +318,11 @@ const OPTION_SCHEMA = [
     group: "Main",
     default: "off",
     enum: ["off", "offline", "live"],
+    enumLabel: {
+      off: "off (关闭)",
+      offline: "offline (本地公式)",
+      live: "live (已并入 offline)",
+    },
     label: {
       l0: "装备浮动百分位（off / offline 本地公式；live 已并入 offline — ⚠ 切模式需刷新页面）",
       l1: "裝備浮動百分位（off / offline 本地公式；live 已併入 offline — ⚠ 切模式需刷新頁面）",

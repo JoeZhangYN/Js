@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/settings/schema.js");
 const ownerTest = path.normalize("src/settings/schema.test.js");
+const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
 
 function rel(file) {
@@ -59,6 +60,29 @@ if (!/export const OptionSchemaEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
 }
 if (!/export function runOptionSchema\(\s*event\b/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose runOptionSchema(event)`);
+}
+
+const renderText = fs.readFileSync(path.join(root, settingsRender), "utf8");
+for (const required of [
+  "renderEquipmentSchemaFields",
+  'readSchemaField("repairValue")',
+  'renderSchemaCheckboxField("forgeCostShow")',
+  'renderSchemaSelectField("equipPercentileMode")',
+]) {
+  if (!renderText.includes(required)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} must render equipment options from schema`);
+  }
+}
+for (const forbidden of [
+  /name=["']repairValue["']\s+placeholder=["']60["']/,
+  /id=["']forgeCostShow["'][\s\S]{0,120}强化价格/,
+  /name=["']equipPercentileMode["'][\s\S]{0,160}<option value=["']offline["']/,
+]) {
+  if (forbidden.test(renderText)) {
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} must not inline equipment option defaults/labels`
+    );
+  }
 }
 
 if (violations.length) {

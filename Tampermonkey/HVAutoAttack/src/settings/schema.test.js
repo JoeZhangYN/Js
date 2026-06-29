@@ -7,6 +7,16 @@ describe("runOptionSchema", () => {
     const field = runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "repairValue" });
 
     expect(field).toMatchObject({ key: "repairValue", kind: "number", default: 60 });
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "equipPercentileMode" })
+    ).toMatchObject({
+      enum: ["off", "offline", "live"],
+      enumLabel: {
+        off: "off (关闭)",
+        offline: "offline (本地公式)",
+        live: "live (已并入 offline)",
+      },
+    });
     expect(runOptionSchema({ type: OptionSchemaEvent.READ_DEFAULT, key: "repairValue" })).toBe(60);
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_GROUP, group: "Debuff" }).some(

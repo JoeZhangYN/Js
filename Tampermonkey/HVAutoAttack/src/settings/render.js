@@ -47,6 +47,59 @@ function renderCheckboxPlusNumber(checkboxKey, numberKey, unit) {
   );
 }
 
+function renderSchemaLabel(field, { bold = false } = {}) {
+  const label = `<l0>${field.label.l0}</l0><l1>${field.label.l1}</l1><l2>${field.label.l2}</l2>`;
+  return bold ? `<b>${label}</b>` : label;
+}
+
+function readSchemaField(key) {
+  return runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key });
+}
+
+function renderSchemaNumberInput(key, suffix = "") {
+  const field = readSchemaField(key);
+  if (!field) return "";
+  return `<input class="hvAANumber" name="${field.key}" placeholder="${field.default}" type="text">${suffix}`;
+}
+
+function renderSchemaCheckboxField(key, suffix = "") {
+  const field = readSchemaField(key);
+  if (!field) return "";
+  const checkedAttr = field.defaultOn ? " checked data-default-on" : "";
+  return (
+    `<div><input id="${field.key}" type="checkbox"${checkedAttr}>` +
+    `<label for="${field.key}">${renderSchemaLabel(field, { bold: true })}</label>${suffix}</div>`
+  );
+}
+
+function renderSchemaSelectField(key) {
+  const field = readSchemaField(key);
+  if (!field) return "";
+  const options = (field.enum || [])
+    .map((value) => `<option value="${value}">${field.enumLabel?.[value] || value}</option>`)
+    .join("");
+  return (
+    `<div>${renderSchemaLabel(field, { bold: true })}: ` +
+    `<select name="${field.key}">${options}</select></div>`
+  );
+}
+
+function renderEquipmentSchemaFields() {
+  return [
+    `    ${renderSchemaLabel(readSchemaField("repairValue"))} ≤ ${renderSchemaNumberInput(
+      "repairValue",
+      "%"
+    )}</div>`,
+    renderCheckboxPlusNumber("repairBuyMaterials", "repairCreditCap", {
+      l0: " 信用点单轮上限（缺料则联动物品商店买齐再修，超限停机告警；不勾=缺料即停机）",
+      l1: " 信用點單輪上限（缺料則聯動物品商店買齊再修，超限停機告警；不勾=缺料即停機）",
+      l2: " credits/run cap (auto-buy materials to repair; stop if over cap; unchecked = stop on shortage)",
+    }),
+    renderSchemaCheckboxField("forgeCostShow"),
+    renderSchemaSelectField("equipPercentileMode"),
+  ];
+}
+
 /**
  * 打开 / 切换显隐 HVAA 配置面板。浮动按钮(button.js)与 hv-utils 顶部栏触发器(window.HVAA_openConfig)
  * 共用此单一入口（收口原 button.js 内联 onclick 逻辑，去重）。
@@ -257,15 +310,7 @@ export function optionBox() {
     // === Equipment 装备维护 tab（修复装备 + 缺料买料 + 强化价格 + 装备百分位，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-Equipment">',
     '  <div><input id="repair" type="checkbox"><label for="repair"><b><l0>修复装备</l0><l1>修復裝備</l1><l2>Repair Equipment</l2></b></label>: ',
-    '    <l0>耐久度</l0><l1>耐久度</l1><l2>Durability</l2> ≤ <input class="hvAANumber" name="repairValue" placeholder="60" type="text">%</div>',
-    // 缺料联动商店买齐（schema-driven，单 SOT；同 pageRefresh/criticalBuff 范式）。
-    renderCheckboxPlusNumber("repairBuyMaterials", "repairCreditCap", {
-      l0: " 信用点单轮上限（缺料则联动物品商店买齐再修，超限停机告警；不勾=缺料即停机）",
-      l1: " 信用點單輪上限（缺料則聯動物品商店買齊再修，超限停機告警；不勾=缺料即停機）",
-      l2: " credits/run cap (auto-buy materials to repair; stop if over cap; unchecked = stop on shortage)",
-    }),
-    '  <div><input id="forgeCostShow" type="checkbox" checked data-default-on><label for="forgeCostShow"><b><l0>强化价格</l0><l1>強化價格</l1><l2>Forge Cost</l2></b></label>: <l0>装备页显示材料/总价/Lv 预测（isekai/persistent 自动选）</l0><l1>裝備頁顯示材料/總價/Lv 預測（isekai/persistent 自動選）</l1><l2>Show material/total/Lv predict on equipment page</l2></div>',
-    '  <div><b><l0>装备浮动百分位</l0><l1>裝備浮動百分位</l1><l2>Equip Percentile</l2></b>: <select name="equipPercentileMode"><option value="off">off (关闭)</option><option value="offline">offline (本地公式)</option><option value="live">live (已并入 offline)</option></select></div>',
+    ...renderEquipmentSchemaFields(),
     "  </div>",
     // === System 系统/页面 tab（页面停留 alert/reload + 定时刷新 + 记录每场 + 延迟，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-System">',
