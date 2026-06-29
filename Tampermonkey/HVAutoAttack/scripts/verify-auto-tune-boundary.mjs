@@ -71,6 +71,7 @@ const roundLifecycleText = fs.readFileSync(path.join(root, roundLifecycle), "utf
 for (const required of [
   "runAutoTuneAutomation",
   "AutoTuneEvent",
+  "autoTuneEventHandlers",
   "STORAGE_KEYS.AUTO_TUNE_PAD",
   "STORAGE_KEYS.AUTO_TUNE_HISTORY",
   "RECORD_POTION_USE",
@@ -87,6 +88,10 @@ if (/AutoTuneEvent\.ROUND_STARTED|runAutoTuneAutomation/.test(roundStartText)) {
 }
 if (!roundLifecycleText.includes("AutoTuneEvent.ROUND_STARTED")) {
   violations.push(`${roundLifecycle.replaceAll("\\", "/")} must own round-start auto-tune`);
+}
+
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
 
 for (const legacy of ["getCurrentPad", "resetAutoTune", "getAutoTuneStatus", "observeBattle"]) {

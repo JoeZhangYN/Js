@@ -140,12 +140,15 @@ function maybeStep(history, pad, key) {
   }
 }
 
+const autoTuneEventHandlers = Object.freeze({
+  [EVENT_READ_PAD]: () => getCurrentPad(),
+  [EVENT_RECORD_BATTLE]: (event) => observeBattle(event.potionsUsed),
+  [EVENT_RECORD_POTION_USE]: () => recordPotionUse(),
+  [EVENT_ROUND_STARTED]: () => recordRoundStarted(),
+  [EVENT_RESET]: () => resetAutoTune(),
+  [EVENT_READ_STATUS]: () => getAutoTuneStatus(),
+});
+
 export function runAutoTuneAutomation(event = { type: EVENT_READ_PAD }) {
-  if (event.type === EVENT_READ_PAD) return getCurrentPad();
-  if (event.type === EVENT_RECORD_BATTLE) return observeBattle(event.potionsUsed);
-  if (event.type === EVENT_RECORD_POTION_USE) return recordPotionUse();
-  if (event.type === EVENT_ROUND_STARTED) return recordRoundStarted();
-  if (event.type === EVENT_RESET) return resetAutoTune();
-  if (event.type === EVENT_READ_STATUS) return getAutoTuneStatus();
-  return undefined;
+  return autoTuneEventHandlers[event.type]?.(event);
 }
