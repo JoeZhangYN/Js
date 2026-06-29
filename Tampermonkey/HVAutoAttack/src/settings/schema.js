@@ -171,6 +171,50 @@ const OPTION_SCHEMA = [
     },
   },
   {
+    key: "dynamicHealThreshold",
+    kind: "checkbox",
+    group: "Heal",
+    default: false,
+    label: {
+      l0: "智能 Health Gem 阈值（按敌方 DPS + 剩余回合估算危险线）",
+      l1: "智能 Health Gem 閾值（按敵方 DPS + 剩餘回合估算危險線）",
+      l2: "Smart Health Gem threshold (DPS-based danger line)",
+    },
+  },
+  {
+    key: "playerMaxHp",
+    kind: "number",
+    group: "Heal",
+    default: 17000,
+    label: {
+      l0: "玩家最大 HP",
+      l1: "玩家最大 HP",
+      l2: "Player max HP",
+    },
+  },
+  {
+    key: "dynamicHealSafetyPad",
+    kind: "number",
+    group: "Heal",
+    default: 1.3,
+    label: {
+      l0: "安全系数",
+      l1: "安全係數",
+      l2: "Safety pad",
+    },
+  },
+  {
+    key: "autoTune",
+    kind: "checkbox",
+    group: "Heal",
+    default: false,
+    label: {
+      l0: "自学 safetyPad（每 5 场战斗自动调节，覆盖上方静态值）",
+      l1: "自學 safetyPad（每 5 場戰鬥自動調節，覆蓋上方靜態值）",
+      l2: "Auto-tune safetyPad (online learning, overrides static value)",
+    },
+  },
+  {
     key: "skipDebuffForBigSkillThreshold",
     kind: "number",
     group: "Debuff",

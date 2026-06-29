@@ -96,6 +96,11 @@ for (const required of [
   /renderSchemaCheckboxField\(\s*["']drainTargetMaxHp["']/,
   /renderSchemaCheckboxField\(\s*["']autoElement["']\s*\)/,
   /renderCheckboxPlusNumber\(\s*["']pageRefresh["']\s*,\s*["']pageRefreshMinutes["']/,
+  /renderDynamicHealSchemaFields/,
+  /renderSchemaCheckboxField\(\s*["']dynamicHealThreshold["']/,
+  /renderSchemaNumberInput\(\s*["']playerMaxHp["']/,
+  /renderSchemaNumberInput\(\s*["']dynamicHealSafetyPad["']/,
+  /renderSchemaCheckboxField\(\s*["']autoTune["']/,
 ]) {
   if (!required.test(renderText)) {
     violations.push(
@@ -134,6 +139,10 @@ for (const forbidden of [
   /id=["']autoElement["'][\s\S]{0,160}按九抗自动选最弱属性攻击/,
   /id=["']pageRefresh["'][\s\S]{0,160}定时刷新页面/,
   /name=["']pageRefreshMinutes["']\s+placeholder=["']30["']/,
+  /id=["']dynamicHealThreshold["'][\s\S]{0,180}智能 Health Gem 阈值/,
+  /name=["']playerMaxHp["']\s+placeholder=["']17000["']/,
+  /name=["']dynamicHealSafetyPad["']\s+placeholder=["']1\.3["']/,
+  /id=["']autoTune["'][\s\S]{0,160}自学 safetyPad/,
 ]) {
   if (forbidden.test(renderText)) {
     violations.push(
