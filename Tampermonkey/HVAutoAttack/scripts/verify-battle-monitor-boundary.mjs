@@ -197,6 +197,30 @@ function checkEntry() {
       `${entry.replaceAll("\\", "/")} must route action usage capture through runBattleActionUsageCapture(event)`
     );
   }
+  for (const forbidden of ["const EVENT_ACTION_STARTED", "const EVENT_ACTION_ENDED"]) {
+    if (text.includes(forbidden)) {
+      violations.push(
+        `${entry.replaceAll("\\", "/")} must not duplicate action usage capture command literals`
+      );
+    }
+  }
+  for (const required of [
+    "ACTION_STARTED: BattleActionUsageCaptureEvent.ACTION_STARTED",
+    "ACTION_ENDED: BattleActionUsageCaptureEvent.ACTION_ENDED",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(
+        `${entry.replaceAll("\\", "/")} must expose action lifecycle commands from BattleActionUsageCaptureEvent`
+      );
+    }
+  }
+  if (
+    /runBattleActionUsageCapture\(\s*\{\s*type:\s*BattleActionUsageCaptureEvent\.(?:ACTION_STARTED|ACTION_ENDED)/.test(
+      text
+    )
+  ) {
+    violations.push(`${entry.replaceAll("\\", "/")} must not rebuild action usage capture events`);
+  }
   for (const forbidden of [
     /\bunsafeWindow\.info\b/,
     /#pane_item/,

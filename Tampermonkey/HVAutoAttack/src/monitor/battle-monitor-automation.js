@@ -9,15 +9,13 @@ import {
 } from "./battle-action-usage-capture.js";
 
 const EVENT_HUD_REFRESH = "hudRefresh";
-const EVENT_ACTION_STARTED = "actionStarted";
-const EVENT_ACTION_ENDED = "actionEnded";
 const EVENT_COMPLETION_REACHED = "completionReached";
 
 export const BattleMonitorEvent = Object.freeze({
   BATTLE_STARTED: BattleReportEvent.BATTLE_STARTED,
   HUD_REFRESH: EVENT_HUD_REFRESH,
-  ACTION_STARTED: EVENT_ACTION_STARTED,
-  ACTION_ENDED: EVENT_ACTION_ENDED,
+  ACTION_STARTED: BattleActionUsageCaptureEvent.ACTION_STARTED,
+  ACTION_ENDED: BattleActionUsageCaptureEvent.ACTION_ENDED,
   COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
   CLEAR_DROP_REPORT: BattleReportEvent.CLEAR_DROP_REPORT,
   CLEAR_USAGE_REPORT: BattleReportEvent.CLEAR_USAGE_REPORT,
@@ -25,8 +23,8 @@ export const BattleMonitorEvent = Object.freeze({
   RENDER_USAGE_REPORT_TABLE_BODY: BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY,
 });
 
-function recordActionEnd() {
-  const usage = runBattleActionUsageCapture({ type: BattleActionUsageCaptureEvent.ACTION_ENDED });
+function recordActionEnd(event) {
+  const usage = runBattleActionUsageCapture(event);
   if (usage) runBattleUsageAutomation({ type: BattleUsageEvent.ACTION_ENDED, usage });
 }
 
@@ -43,10 +41,10 @@ function routeBattleReportCommand(event) {
 export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) {
   if (event.type === EVENT_HUD_REFRESH) {
     runBattleHudAutomation({ type: BattleHudEvent.REFRESH });
-  } else if (event.type === EVENT_ACTION_STARTED) {
-    runBattleActionUsageCapture({ type: BattleActionUsageCaptureEvent.ACTION_STARTED });
-  } else if (event.type === EVENT_ACTION_ENDED) {
-    recordActionEnd();
+  } else if (event.type === BattleActionUsageCaptureEvent.ACTION_STARTED) {
+    runBattleActionUsageCapture(event);
+  } else if (event.type === BattleActionUsageCaptureEvent.ACTION_ENDED) {
+    recordActionEnd(event);
   } else if (event.type === EVENT_COMPLETION_REACHED) {
     recordCompletion();
   } else {
