@@ -3,7 +3,7 @@
 // 目标选择走 target-strategy 具名策略：firstByFinWeight=默认首怪(综合权重最优) / firstByOrder=AoE 锚(order 最小)。
 import { checkCondition } from "../../settings/condition-eval.js";
 import { scorePhysicalSkillCandidates } from "./physical-skill-scoring.js";
-import { pickByUtility } from "../utility-engine.js";
+import { pickByUtility } from "./physical-skill-ranking.js";
 import { OFFENSIVE_SPELL_LIB } from "../../data/spell-lib.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { aliveByOrder } from "../monster-view.js";

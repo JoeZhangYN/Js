@@ -3,7 +3,7 @@
 // 不只是常量 base × multiplier。OFC/FRD 仍用 aoeScore（少怪降级 + 怪数比例）。
 // 盾战 combo：T1 stun → T2（晕状态打 T2 = 200 分高优先）→ T3 斩杀（hpRatio<25%+bleed = 1000 分决定性）
 import { checkCondition } from "../../settings/condition-eval.js";
-import { aoeScore } from "../utility-engine.js";
+import { aoeScore } from "./physical-skill-ranking.js";
 import { aliveByOrder } from "../monster-view.js";
 
 /**

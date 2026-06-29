@@ -21,6 +21,11 @@ const startRuntimeFile = path.join(root, "src/battle/battle-start-runtime.js");
 const startRuntimeTest = path.join(root, "src/battle/battle-start-runtime.test.js");
 const debuffCoverageFile = path.join(root, "src/battle/battle-debuff-coverage.js");
 const utilityEngineFile = path.join(root, "src/battle/utility-engine.js");
+const physicalSkillRankingFile = path.join(root, "src/battle/attack/physical-skill-ranking.js");
+const physicalSkillRankingTest = path.join(
+  root,
+  "src/battle/attack/physical-skill-ranking.test.js"
+);
 const activateSpiritFile = path.join(root, "src/battle/buff/activate-spirit.js");
 const decideInfusionFile = path.join(root, "src/battle/buff/decide-infusion.js");
 const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
@@ -653,15 +658,39 @@ function checkStartRuntimeEntry() {
   }
 }
 
-function checkUtilityEngine() {
-  const text = fs.readFileSync(utilityEngineFile, "utf8");
+function checkPhysicalSkillRanking() {
+  if (fs.existsSync(utilityEngineFile)) {
+    violations.push(
+      `${rel(utilityEngineFile)} legacy top-level utility engine must stay deleted; physical ranking belongs in attack`
+    );
+  }
+  const text = fs.readFileSync(physicalSkillRankingFile, "utf8");
   if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(
-      `${rel(utilityEngineFile)} must read utility debug options through option entry`
+      `${rel(physicalSkillRankingFile)} must read ranking debug options through option entry`
     );
   }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
-    violations.push(`${rel(utilityEngineFile)} must not read utility debug options directly`);
+    violations.push(
+      `${rel(physicalSkillRankingFile)} must not read ranking debug options directly`
+    );
+  }
+  for (const relative of ["src/battle", "src/core"]) {
+    const dir = path.join(root, relative);
+    for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
+      const file = path.join(entry.parentPath, entry.name);
+      const source = fs.readFileSync(file, "utf8");
+      if (/from\s+["'][^"']*utility-engine\.js["']/.test(source)) {
+        violations.push(`${rel(file)} must not import legacy utility-engine.js`);
+      }
+      if (
+        ![decideAttackFile, physicalSkillScoringFile, physicalSkillRankingTest].includes(file) &&
+        /from\s+["'][^"']*physical-skill-ranking\.js["']/.test(source)
+      ) {
+        violations.push(`${rel(file)} must not bypass attack physical skill ranking owners`);
+      }
+    }
   }
 }
 
@@ -1172,7 +1201,7 @@ checkActionEndEntry();
 checkActionStartEntry();
 checkPauseControlsEntry();
 checkStartRuntimeEntry();
-checkUtilityEngine();
+checkPhysicalSkillRanking();
 checkActivateSpirit();
 checkExecuteItem();
 checkSnapshot();

@@ -1,12 +1,12 @@
 // 6B-1：pickByUtility 纯选择回归锁(选最高分 >0,无副作用)。
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { pickByUtility, aoeScore } from "./utility-engine.js";
+import { pickByUtility, aoeScore } from "./physical-skill-ranking.js";
 
 const mocks = vi.hoisted(() => ({
   runOptionAutomation: vi.fn(),
 }));
 
-vi.mock("../state/option.js", () => ({
+vi.mock("../../state/option.js", () => ({
   OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
@@ -73,7 +73,9 @@ describe("pickByUtility", () => {
       key: "dynamicHealLog",
       fallback: false,
     });
-    expect(log).toHaveBeenCalledWith(expect.stringContaining("[utility] OFC score=100"));
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining("[physical-skill-ranking] OFC score=100")
+    );
     log.mockRestore();
   });
 });

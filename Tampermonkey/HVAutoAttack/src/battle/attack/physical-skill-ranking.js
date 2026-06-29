@@ -1,16 +1,16 @@
-// Utility scoring decision engine（A 方案 PoC）。
-// 替代 first-match 优先级：枚举所有候选 action 各自打分，取分数最高（且 > 0）的执行。
+// Physical skill ranking decision（OFC/FRD/T3/T2/T1）。
+// 替代 first-match 优先级：枚举所有候选 skill 各自打分，取分数最高（且 > 0）的执行。
 // 优势：能比较权衡（OFC vs FRD vs T3，分数化），不再死优先级；F (auto-tune) 后续可学权重。
 //
-// ActionCandidate 契约：
+// SkillCandidate 契约：
 // - name: 日志用
 // - score: ≥ 0；0 视为不可用；越高越好
 // - dispatch: 若被选中调用此函数执行副作用
 // - explain: 可选打分理由（debug 日志用）
-import { OptionEvent, runOptionAutomation } from "../state/option.js";
+import { OptionEvent, runOptionAutomation } from "../../state/option.js";
 
 /**
- * @typedef {object} ActionCandidate
+ * @typedef {object} SkillCandidate
  * @property {string} name
  * @property {number} score
  * @property {() => void} dispatch
@@ -19,7 +19,7 @@ import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 /**
  * PURE 选择：挑最高分（>0）候选并打日志，**不执行**（无 dispatch）。无可行候选返 null。
- * 供 decideAttack 等纯决策复用（候选可为 {code,...} 或 {name,...}，日志取 name ?? code）。
+ * 供 decideAttack 物理技能分支复用（候选可为 {code,...} 或 {name,...}，日志取 name ?? code）。
  * @param {Array<{score:number, name?:string, code?:string, explain?:string}>} candidates
  * @returns {object|null} 最高分候选（原对象）
  */
@@ -40,7 +40,7 @@ export function pickByUtility(candidates) {
       .map((c) => `${label(c)}=${c.score.toFixed(0)}`)
       .join(", ");
     console.log(
-      `[utility] ${label(winner)} score=${winner.score.toFixed(0)}${winner.explain ? " (" + winner.explain + ")" : ""}${runners ? ` vs [${runners}]` : ""}`
+      `[physical-skill-ranking] ${label(winner)} score=${winner.score.toFixed(0)}${winner.explain ? " (" + winner.explain + ")" : ""}${runners ? ` vs [${runners}]` : ""}`
     );
   }
   return winner;
