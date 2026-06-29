@@ -93,12 +93,13 @@ function prepareRoundStart(event) {
 
 function repairMonsterStatus() {
   const battleLog = gE("#textlog>tbody>tr>td", "all");
+  const battleLogRows = Array.from(battleLog || []).map((row) => row.textContent || "");
   const monsterAll = gE("div.btm2", "all").length;
   const hasInit =
-    battleLog.length && /Initializing/.test(battleLog[battleLog.length - 1].textContent);
+    battleLogRows.length && /Initializing/.test(battleLogRows[battleLogRows.length - 1]);
 
   if (hasInit) {
-    const { roster } = parseMonsterRoster(battleLog, monsterAll);
+    const { roster } = parseMonsterRoster(battleLogRows, monsterAll);
     setValue(STORAGE_KEYS.MONSTER_STATUS, buildMonsterStatus(roster));
     reloadCurrentPage();
     return;

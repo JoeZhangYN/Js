@@ -106,6 +106,27 @@ function checkEntry() {
   if (/battleLog:/.test(roundStartText)) {
     violations.push(`${roundStart.replaceAll("\\", "/")} must pass text rows, not raw battleLog`);
   }
+  if (!text.includes("battleLogRows")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must parse spawn rosters from text rows`);
+  }
+}
+
+function checkParser() {
+  const text = fs.readFileSync(path.join(root, parserImpl), "utf8");
+  if (!/function parseMonsterRoster\(battleLogRows, monsterAll\)/.test(text)) {
+    violations.push(
+      `${parserImpl.replaceAll("\\", "/")} must name spawn parser input battleLogRows`
+    );
+  }
+  const rosterBody = text.slice(
+    text.indexOf("export function parseMonsterRoster"),
+    text.indexOf("export function buildMonsterStatus")
+  );
+  if (/textContent|typeof\s+battleLogRows\[i\]/.test(rosterBody)) {
+    violations.push(
+      `${parserImpl.replaceAll("\\", "/")} parseMonsterRoster must not accept DOM rows`
+    );
+  }
 }
 
 function checkHpImpl() {
@@ -122,6 +143,7 @@ function checkHpImpl() {
 walk(srcDir);
 checkEntry();
 checkHpImpl();
+checkParser();
 
 if (violations.length) {
   console.error("[verify-monster-status-boundary] FAIL");
