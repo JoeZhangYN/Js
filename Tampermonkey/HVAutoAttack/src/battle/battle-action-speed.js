@@ -5,6 +5,8 @@ const EVENT_ACTION_ENDED = "actionEnded";
 const EVENT_BATTLE_STARTED = "battleStarted";
 const EVENT_READ_CURRENT = "readCurrent";
 const DEFAULT_RUN_SPEED = "0.00";
+const ACTION_TIMESTAMP_RUNTIME_KEY = "timeNow";
+const ACTION_SPEED_RUNTIME_KEY = "runSpeed";
 
 export const BattleActionSpeedEvent = Object.freeze({
   ACTION_ENDED: EVENT_ACTION_ENDED,
@@ -25,23 +27,23 @@ function formatRunSpeed(value) {
 function startBattle(deps) {
   const timeNow = normalizeTimestamp(deps.now());
   const runSpeed = formatRunSpeed(1);
-  deps.write("timeNow", timeNow);
-  deps.write("runSpeed", runSpeed);
+  deps.write(ACTION_TIMESTAMP_RUNTIME_KEY, timeNow);
+  deps.write(ACTION_SPEED_RUNTIME_KEY, runSpeed);
   return { runSpeed };
 }
 
 function recordActionEnd(deps) {
   const timeNow = normalizeTimestamp(deps.now());
-  const previousTime = normalizeTimestamp(deps.read("timeNow"));
+  const previousTime = normalizeTimestamp(deps.read(ACTION_TIMESTAMP_RUNTIME_KEY));
   const elapsedMs = timeNow - previousTime;
   const runSpeed = elapsedMs > 0 ? formatRunSpeed(1000 / elapsedMs) : DEFAULT_RUN_SPEED;
-  deps.write("runSpeed", runSpeed);
-  deps.write("timeNow", timeNow);
+  deps.write(ACTION_SPEED_RUNTIME_KEY, runSpeed);
+  deps.write(ACTION_TIMESTAMP_RUNTIME_KEY, timeNow);
   return { timeNow, runSpeed };
 }
 
 function readCurrentSpeed(deps) {
-  return formatRunSpeed(deps.read("runSpeed"));
+  return formatRunSpeed(deps.read(ACTION_SPEED_RUNTIME_KEY));
 }
 
 export function runBattleActionSpeedAutomation(

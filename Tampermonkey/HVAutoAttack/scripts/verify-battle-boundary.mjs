@@ -443,10 +443,23 @@ function checkActionSpeedEntry() {
   ) {
     violations.push(`${rel(actionSpeedFile)} may export only its event entry`);
   }
-  for (const required of ["DEFAULT_RUN_SPEED", "normalizeTimestamp", "formatRunSpeed"]) {
+  for (const required of [
+    "DEFAULT_RUN_SPEED",
+    "ACTION_TIMESTAMP_RUNTIME_KEY",
+    "ACTION_SPEED_RUNTIME_KEY",
+    "normalizeTimestamp",
+    "formatRunSpeed",
+  ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(actionSpeedFile)} must internalize action speed invariants`);
     }
+  }
+  if (
+    /deps\.read\(["'](?:timeNow|runSpeed)["']\)|deps\.write\(["'](?:timeNow|runSpeed)["']/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(actionSpeedFile)} must use runtime key constants for speed state`);
   }
   if ((text.match(/formatRunSpeed\(/g) || []).length < 4) {
     violations.push(`${rel(actionSpeedFile)} must normalize action speed writes and reads`);
