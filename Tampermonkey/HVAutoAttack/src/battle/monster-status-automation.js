@@ -7,6 +7,7 @@ import { _alert } from "../core/lang.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { parseMonsterRoster, buildMonsterStatus } from "./log-parser.js";
 import { updateMonsterHpRuntime } from "./monster-status-hp.js";
+import { BattleRoundStartLogEvent, runBattleRoundStartLog } from "./round-start-log.js";
 
 const EVENT_ENSURE_READY = "ensureReady";
 const EVENT_REPAIR = "repair";
@@ -92,14 +93,12 @@ function prepareRoundStart(event) {
 }
 
 function repairMonsterStatus() {
-  const battleLog = gE("#textlog>tbody>tr>td", "all");
-  const battleLogRows = Array.from(battleLog || []).map((row) => row.textContent || "");
+  const battleLog = runBattleRoundStartLog({ type: BattleRoundStartLogEvent.READ_CURRENT });
   const monsterAll = gE("div.btm2", "all").length;
-  const hasInit =
-    battleLogRows.length && /Initializing/.test(battleLogRows[battleLogRows.length - 1]);
+  const hasInit = battleLog.rows.length && /Initializing/.test(battleLog.initializingText);
 
   if (hasInit) {
-    const { roster } = parseMonsterRoster(battleLogRows, monsterAll);
+    const { roster } = parseMonsterRoster(battleLog.rows, monsterAll);
     setValue(STORAGE_KEYS.MONSTER_STATUS, buildMonsterStatus(roster));
     reloadCurrentPage();
     return;

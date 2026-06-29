@@ -109,6 +109,14 @@ function checkEntry() {
   if (!text.includes("battleLogRows")) {
     violations.push(`${entry.replaceAll("\\", "/")} must parse spawn rosters from text rows`);
   }
+  if (!text.includes("BattleRoundStartLogEvent.READ_CURRENT")) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} repair must read textlog through round-start log entry`
+    );
+  }
+  if (/#textlog|textContent/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must not read textlog DOM directly`);
+  }
 }
 
 function checkParser() {
