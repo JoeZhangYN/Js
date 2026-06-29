@@ -69,6 +69,9 @@ function checkEntry() {
   if (!/export function runAbilityAoeAutomation\(/.test(text)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose runAbilityAoeAutomation(event)`);
   }
+  if (!text.includes("READ_SPELL_AOE")) {
+    violations.push(`${owner.replaceAll("\\", "/")} must expose READ_SPELL_AOE`);
+  }
   if (/export function parseAbilityPage\(/.test(text)) {
     violations.push(`${owner.replaceAll("\\", "/")} must keep parseAbilityPage internal`);
   }

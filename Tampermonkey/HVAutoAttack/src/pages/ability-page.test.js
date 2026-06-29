@@ -35,6 +35,14 @@ describe("runAbilityAoeAutomation", () => {
     expect(mocks.g).toHaveBeenCalledWith("spellAoe", { Imperil: 2 });
   });
 
+  it("reads current spell AoE through the ability AoE entry", () => {
+    mocks.g.mockImplementation((key) => (key === "spellAoe" ? { Imperil: 2 } : undefined));
+
+    expect(runAbilityAoeAutomation({ type: AbilityAoeEvent.READ_SPELL_AOE })).toEqual({
+      Imperil: 2,
+    });
+  });
+
   it("captures the ability page AoE map and syncs option display fields", () => {
     window.history.pushState({}, "", "/?s=Character&ss=ab");
     const slot = document.createElement("div");

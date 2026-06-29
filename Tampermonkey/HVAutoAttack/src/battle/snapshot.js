@@ -30,6 +30,7 @@ import {
   BattleStartRuntimeEvent,
   runBattleStartRuntimeAutomation,
 } from "./battle-start-runtime.js";
+import { AbilityAoeEvent, runAbilityAoeAutomation } from "../pages/ability-page.js";
 
 function readOptionField(key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
@@ -279,7 +280,7 @@ export function collectSnapshot() {
     cdMap: runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_MAP }),
     skillReady,
     skillOTOS: g("skillOTOS") || {},
-    spellAoe: g("spellAoe") || {},
+    spellAoe: runAbilityAoeAutomation({ type: AbilityAoeEvent.READ_SPELL_AOE }),
     attackStatus: runBattleStartRuntimeAutomation({
       type: BattleStartRuntimeEvent.READ_ATTACK_STATUS,
     }),

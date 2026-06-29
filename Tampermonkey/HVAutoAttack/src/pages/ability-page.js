@@ -9,10 +9,12 @@ import { OFFENSIVE_SPELL_LIB } from "../data/spell-lib.js";
 
 const EVENT_LOAD_STORED_AOE = "loadStoredAoe";
 const EVENT_CAPTURE_ABILITY_PAGE = "captureAbilityPage";
+const EVENT_READ_SPELL_AOE = "readSpellAoe";
 
 export const AbilityAoeEvent = Object.freeze({
   LOAD_STORED_AOE: EVENT_LOAD_STORED_AOE,
   CAPTURE_ABILITY_PAGE: EVENT_CAPTURE_ABILITY_PAGE,
+  READ_SPELL_AOE: EVENT_READ_SPELL_AOE,
 });
 
 function isAbilityPage() {
@@ -23,6 +25,10 @@ function isAbilityPage() {
 function loadStoredAoe() {
   g("spellAoe", getValue(STORAGE_KEYS.SPELL_AOE, true) || {});
   console.log("[AoE] 启动加载 spellAoe:", JSON.stringify(g("spellAoe")));
+}
+
+function readSpellAoe() {
+  return g("spellAoe") || {};
 }
 
 function parseAbilityPage() {
@@ -78,4 +84,6 @@ export function runAbilityAoeAutomation(event = { type: EVENT_CAPTURE_ABILITY_PA
   if (event.type === EVENT_CAPTURE_ABILITY_PAGE && isAbilityPage()) {
     parseAbilityPage();
   }
+  if (event.type === EVENT_READ_SPELL_AOE) return readSpellAoe();
+  return undefined;
 }

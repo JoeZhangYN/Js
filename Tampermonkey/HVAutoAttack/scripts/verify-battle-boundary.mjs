@@ -636,6 +636,12 @@ function checkSnapshot() {
   if (/\bg\(\s*["']attackStatus["']/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read attackStatus directly`);
   }
+  if (!text.includes("AbilityAoeEvent.READ_SPELL_AOE")) {
+    violations.push(`${rel(snapshotFile)} must read spellAoe through ability AoE entry`);
+  }
+  if (/\bg\(\s*["']spellAoe["']/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not read spellAoe directly`);
+  }
 }
 
 function checkBattleRulesRuntimeContext() {

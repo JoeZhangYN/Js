@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   joinMonsterView: vi.fn(() => []),
   monsterHpVars: vi.fn(() => ({})),
   parseBattleLog: vi.fn(() => []),
+  runAbilityAoeAutomation: vi.fn(() => ({ Imperil: 2 })),
   runBigSkillKillLearningAutomation: vi.fn(),
   runBattleStartRuntimeAutomation: vi.fn(() => 2),
   runBattleTurnAutomation: vi.fn(() => 7),
@@ -68,6 +69,10 @@ vi.mock("../state/monster-cache.js", () => ({
   MonsterCacheEvent: Object.freeze({ READ_DB: "readDb" }),
   runMonsterCacheAutomation: mocks.runMonsterCacheAutomation,
 }));
+vi.mock("../pages/ability-page.js", () => ({
+  AbilityAoeEvent: Object.freeze({ READ_SPELL_AOE: "readSpellAoe" }),
+  runAbilityAoeAutomation: mocks.runAbilityAoeAutomation,
+}));
 vi.mock("./battle-start-runtime.js", () => ({
   BattleStartRuntimeEvent: Object.freeze({ READ_ATTACK_STATUS: "readAttackStatus" }),
   runBattleStartRuntimeAutomation: mocks.runBattleStartRuntimeAutomation,
@@ -123,7 +128,9 @@ describe("collectSnapshot", () => {
     expect(snap.turn).toBe(7);
     expect(snap.globalTurn).toBe(9);
     expect(snap.attackStatus).toBe(2);
+    expect(snap.spellAoe).toEqual({ Imperil: 2 });
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "readCurrent" });
+    expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "readSpellAoe" });
     expect(mocks.runBattleStartRuntimeAutomation).toHaveBeenCalledWith({
       type: "readAttackStatus",
     });
