@@ -332,12 +332,7 @@ function checkRecordArchiveEntry() {
     violations.push(`${rel(archiveFile)} must expose runBattleRecordArchiveAutomation(event)`);
   }
   if (
-    !archiveText.includes("READ_OR_CREATE_CURRENT") ||
-    !archiveText.includes("READ_CURRENT") ||
-    !archiveText.includes("READ_RECORD_SET") ||
     !archiveText.includes("START_RECORDING") ||
-    !archiveText.includes("STORE_OR_ARCHIVE") ||
-    !archiveText.includes("CLEAR_RECORD_SET") ||
     !archiveText.includes("READ_OR_CREATE_DROP_RECORD") ||
     !archiveText.includes("STORE_OR_ARCHIVE_DROP_RECORD") ||
     !archiveText.includes("READ_OR_CREATE_USAGE_STATS") ||
@@ -352,6 +347,17 @@ function checkRecordArchiveEntry() {
     violations.push(
       `${rel(archiveFile)} must own record reads, creation, archiving, and clearing events`
     );
+  }
+  for (const retired of [
+    "STORE_OR_ARCHIVE:",
+    "READ_CURRENT:",
+    "READ_OR_CREATE_CURRENT:",
+    "READ_RECORD_SET:",
+    "CLEAR_RECORD_SET:",
+  ]) {
+    if (archiveText.includes(retired)) {
+      violations.push(`${rel(archiveFile)} must not expose retired generic ${retired}`);
+    }
   }
   if (!archiveText.includes("./battle-record-archive-records.js")) {
     violations.push(`${rel(archiveFile)} must own typed record specs through archive records`);

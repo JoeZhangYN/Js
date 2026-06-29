@@ -15,12 +15,7 @@ import {
 } from "./battle-record-archive-records.js";
 
 export const BattleRecordArchiveEvent = Object.freeze({
-  STORE_OR_ARCHIVE: "storeOrArchive",
-  READ_CURRENT: "readCurrent",
-  READ_OR_CREATE_CURRENT: "readOrCreateCurrent",
-  READ_RECORD_SET: "readRecordSet",
   START_RECORDING: "startRecording",
-  CLEAR_RECORD_SET: "clearRecordSet",
   READ_OR_CREATE_DROP_RECORD: "readOrCreateDropRecord",
   STORE_OR_ARCHIVE_DROP_RECORD: "storeOrArchiveDropRecord",
   READ_OR_CREATE_USAGE_STATS: "readOrCreateUsageStats",
@@ -147,17 +142,7 @@ export function runBattleRecordArchiveAutomation(event, deps = {}) {
   if (event.type === BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET) {
     return clearUsageReportRecordSet(ops, fullDeps);
   }
-  if (event.type === BattleRecordArchiveEvent.READ_CURRENT)
-    return readCurrentRecord(event, fullDeps);
-  if (event.type === BattleRecordArchiveEvent.READ_OR_CREATE_CURRENT)
-    return readOrCreateCurrentRecord(event, fullDeps);
-  if (event.type === BattleRecordArchiveEvent.READ_RECORD_SET)
-    return readRecordSet(event, fullDeps);
   if (event.type === BattleRecordArchiveEvent.START_RECORDING)
     return startRecording(event, fullDeps);
-  if (event.type === BattleRecordArchiveEvent.STORE_OR_ARCHIVE)
-    return storeOrArchiveRecord(event, fullDeps);
-  if (event.type === BattleRecordArchiveEvent.CLEAR_RECORD_SET)
-    return clearRecordSet(event, fullDeps);
   return undefined;
 }
