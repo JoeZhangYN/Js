@@ -68,7 +68,7 @@ function checkRiddleEntry() {
     violations.push(`${rel(riddleFile)} must expose runRiddleAutomation()`);
   }
   if (!text.includes("runRiddleAnsweringSession")) {
-    violations.push(`${rel(riddleFile)} must route riddle answering through the business entry`);
+    violations.push(`${rel(riddleFile)} must route riddle answering through its implementation`);
   }
   for (const required of ["TEST_POPUP_PRETREAT", "NavigationEvent.OPEN_WINDOW"]) {
     if (!text.includes(required)) {
@@ -87,6 +87,36 @@ function checkRiddleEntry() {
   if (/\bwindow\.open\b/.test(text)) {
     violations.push(`${rel(riddleFile)} must open riddle popup through navigation entry`);
   }
+}
+
+function checkRiddleAnswerImplementationConsumers() {
+  const allowed = new Set([
+    path.normalize("src/pages/riddle-automation.js"),
+    path.normalize("src/pages/riddle-automation.test.js"),
+    path.normalize("src/pages/riddle.js"),
+  ]);
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile() && entry.name.endsWith(".js")) {
+        const relative = path.normalize(path.relative(root, full));
+        const text = fs.readFileSync(full, "utf8");
+        if (allowed.has(relative)) continue;
+        if (/from\s+["']\.\/riddle\.js["']/.test(text)) {
+          violations.push(
+            `${rel(full)} must use runRiddleAutomation(event), not the riddle answering implementation`
+          );
+        }
+        if (/\brunRiddleAnsweringSession\b/.test(text)) {
+          violations.push(
+            `${rel(full)} must not call the riddle answering implementation directly`
+          );
+        }
+      }
+    }
+  }
+  walk(srcDir);
 }
 
 function checkRiddleSettingsConsumer() {
@@ -285,6 +315,7 @@ function checkDeletedSetupEntrypoints() {
 checkInit();
 checkBattleLayer();
 checkRiddleEntry();
+checkRiddleAnswerImplementationConsumers();
 checkRiddleSettingsConsumer();
 checkRiddleSubmissionTiming();
 checkRiddleImageEntry();

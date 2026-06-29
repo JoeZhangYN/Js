@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { runRiddleAnsweringSession } from "./riddle.js";
+import { RiddleEvent, runRiddleAutomation } from "./riddle-automation.js";
 
 const mocks = vi.hoisted(() => ({
   runAlarmAutomation: vi.fn(),
@@ -20,6 +20,13 @@ vi.mock("../alarm/alarm.js", () => ({
 vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({ IS_ON: "isOn", READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
+}));
+vi.mock("../core/navigate.js", () => ({
+  NavigationEvent: Object.freeze({
+    OPEN_WINDOW: "openWindow",
+    RELOAD_NOW: "reloadNow",
+  }),
+  runNavigationAutomation: vi.fn(),
 }));
 vi.mock("../state/riddle-dataset.js", () => ({
   RiddleDatasetEvent: Object.freeze({ RECORD_SAMPLE: "recordSample" }),
@@ -64,9 +71,9 @@ beforeEach(() => {
   mocks.runRiddleImageAutomation.mockReturnValue({ imageDataUrl: null, imageSrc: "" });
 });
 
-describe("runRiddleAnsweringSession", () => {
+describe("runRiddleAutomation answering session", () => {
   it("reads riddle answer timing through the option entry", () => {
-    runRiddleAnsweringSession();
+    runRiddleAutomation({ type: RiddleEvent.RIDDLE_PAGE });
 
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",

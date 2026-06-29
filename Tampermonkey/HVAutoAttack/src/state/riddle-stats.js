@@ -1,5 +1,5 @@
 // 小马验证（riddle ML）统计内核。
-// 计数：appear(小马图出现, 每次 runRiddleAnsweringSession) + outcomes(每次 ML 识别的结局分类, 见 ML_OUTCOMES)。
+// 计数：appear(小马图出现, 每次 riddle answer session) + outcomes(每次 ML 识别的结局分类, 见 ML_OUTCOMES)。
 // ML 调用次数 = outcomes 各项之和；ML 成功次数 = outcomes.ok；成功率 = ok / 调用次数。
 // 把"为什么失败"也量化进面板（统计的意义）：超时/限流/网络/无答案码… 各自单列。
 // 存储走 state/storage.js（带 prefix），与掉落/数据记录面板同机制；面板在 settings/render.js「小马验证」tab 展示。
@@ -70,7 +70,7 @@ function recordMLDetail(detail) {
   runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message: "detail: " + detail }); // 同步进滚动日志（半持久化, 可翻历史）
 }
 
-/** 小马图出现一次（riddle.js runRiddleAnsweringSession 调用，与 ML 是否开启/成功无关）。 */
+/** 小马图出现一次（riddle answer session 调用，与 ML 是否开启/成功无关）。 */
 function recordRiddleAppear() {
   const s = getValue(KEY, true) || {};
   s.appear = (s.appear || 0) + 1;
