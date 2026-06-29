@@ -100,6 +100,25 @@ function checkEntry() {
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must read debugSnapshot through option entry`);
   }
+  if (/import\s+\{[^}]*assertNoDomRefs/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must own the debug snapshot invariant check`);
+  }
+  if (/\bexport\s+(?:function|const)\s+(?!prepareBattleTurnContext\b)/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} may export only prepareBattleTurnContext`);
+  }
+}
+
+function checkSnapshotEntry() {
+  const text = fs.readFileSync(path.join(root, snapshotImpl), "utf8");
+  if (!/export function collectSnapshot\(/.test(text)) {
+    violations.push(`${snapshotImpl.replaceAll("\\", "/")} must expose collectSnapshot()`);
+  }
+  if (/\bexport\s+(?:function|const)\s+(?!collectSnapshot\b)/.test(text)) {
+    violations.push(`${snapshotImpl.replaceAll("\\", "/")} may export only collectSnapshot`);
+  }
+  if (/\bassertNoDomRefs\b/.test(text)) {
+    violations.push(`${snapshotImpl.replaceAll("\\", "/")} must not export turn debug checks`);
+  }
 }
 
 function checkSpiritToggleEntry() {
@@ -137,6 +156,7 @@ function checkSpiritToggleEntry() {
 
 walk(srcDir);
 checkEntry();
+checkSnapshotEntry();
 checkSpiritToggleEntry();
 
 if (violations.length) {

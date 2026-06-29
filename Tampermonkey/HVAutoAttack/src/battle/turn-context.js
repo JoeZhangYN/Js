@@ -2,7 +2,7 @@
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { g } from "../state/store.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
-import { collectSnapshot, assertNoDomRefs } from "./snapshot.js";
+import { collectSnapshot } from "./snapshot.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import {
@@ -31,6 +31,19 @@ function attachDecisionRuntime(snap) {
       type: BattleSpiritToggleEvent.READ_LAST_TOGGLE,
     }),
   });
+}
+
+function assertNoDomRefs(snap) {
+  const stack = [{ path: "snap", val: snap }];
+  while (stack.length) {
+    const { path, val } = stack.pop();
+    if (val instanceof Element || val instanceof Node) {
+      throw new Error(`[snapshot] BUG: ${path} 含 DOM 引用，违反铁律 A`);
+    }
+    if (val && typeof val === "object") {
+      for (const k of Object.keys(val)) stack.push({ path: `${path}.${k}`, val: val[k] });
+    }
+  }
 }
 
 export function prepareBattleTurnContext() {

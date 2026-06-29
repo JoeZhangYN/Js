@@ -296,20 +296,3 @@ export function collectSnapshot() {
       : {},
   };
 }
-
-/**
- * 启动时调用，验证铁律 A：snapshot 任一字段不应为 Element/Node。
- * @param {object} snap
- */
-export function assertNoDomRefs(snap) {
-  const stack = [{ path: "snap", val: snap }];
-  while (stack.length) {
-    const { path, val } = stack.pop();
-    if (val instanceof Element || val instanceof Node) {
-      throw new Error(`[snapshot] BUG: ${path} 含 DOM 引用，违反铁律 A`);
-    }
-    if (val && typeof val === "object") {
-      for (const k of Object.keys(val)) stack.push({ path: `${path}.${k}`, val: val[k] });
-    }
-  }
-}

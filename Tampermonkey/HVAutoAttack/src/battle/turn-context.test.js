@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prepareBattleTurnContext } from "./turn-context.js";
 
 const mocks = vi.hoisted(() => ({
-  assertNoDomRefs: vi.fn(),
   collectSnapshot: vi.fn(),
   g: vi.fn(),
   runBattleRoundAutomation: vi.fn(),
@@ -37,7 +36,6 @@ vi.mock("../state/option.js", () => ({
 }));
 vi.mock("../state/store.js", () => ({ g: mocks.g }));
 vi.mock("./snapshot.js", () => ({
-  assertNoDomRefs: mocks.assertNoDomRefs,
   collectSnapshot: mocks.collectSnapshot,
 }));
 
@@ -97,7 +95,7 @@ describe("prepareBattleTurnContext", () => {
     });
   });
 
-  it("reads debug snapshot through the option entry", () => {
+  it("reads debug snapshot through the option entry and accepts plain snapshot values", () => {
     mocks.runOptionAutomation.mockReturnValue(true);
 
     prepareBattleTurnContext();
@@ -107,6 +105,12 @@ describe("prepareBattleTurnContext", () => {
       key: "debugSnapshot",
       fallback: false,
     });
-    expect(mocks.assertNoDomRefs).toHaveBeenCalledWith(snap);
+  });
+
+  it("rejects DOM references when debug snapshot checking is enabled", () => {
+    mocks.runOptionAutomation.mockReturnValue(true);
+    mocks.collectSnapshot.mockReturnValue({ hp: document.createElement("div") });
+
+    expect(() => prepareBattleTurnContext()).toThrow("含 DOM 引用");
   });
 });
