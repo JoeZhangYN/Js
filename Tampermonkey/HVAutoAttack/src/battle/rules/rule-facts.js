@@ -103,6 +103,17 @@ export function scrollFacts(snap) {
   };
 }
 
+export function potionFacts(snap) {
+  return {
+    conditionFacts: conditionFacts(snap),
+    deficitFacts: {
+      hpDeficit: snap?.hpDeficit,
+      mpDeficit: snap?.mpDeficit,
+      spDeficit: snap?.spDeficit,
+    },
+  };
+}
+
 export function allDebuffFacts(snap) {
   return {
     conditionFacts: conditionFacts(snap),

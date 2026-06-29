@@ -65,8 +65,19 @@ function scrollFacts(snap) {
   };
 }
 
+function potionFacts(snap) {
+  return {
+    conditionFacts: snap,
+    deficitFacts: {
+      hpDeficit: snap.hpDeficit,
+      mpDeficit: snap.mpDeficit,
+      spDeficit: snap.spDeficit,
+    },
+  };
+}
+
 const gemPlan = (opt, s) => decideGemUse({ opt, ...gemFacts(s) }).plan;
-const potionPlan = (opt, s) => decidePotion(opt, s).plan;
+const potionPlan = (opt, s) => decidePotion({ opt, ...potionFacts(s) }).plan;
 const stallPlan = (opt, s) => decideStallTopup({ opt, ...stallTopupFacts(s) }).plan;
 const scrollPlan = (opt, s) => decideScroll({ opt, ...scrollFacts(s) }).plan;
 

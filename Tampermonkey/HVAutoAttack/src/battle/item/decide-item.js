@@ -62,11 +62,11 @@ export function decideGemUse(event = {}) {
 /**
  * 复刻 deadSoon。遍历 itemOrderName/itemOrderValue，收集启用 + 条件满足 + （noWaste 时）非浪费
  * 的药品 id（保持原顺序）。isOn 可用性探活归 execute 侧（不在 decide）。
- * @param {object} opt
- * @param {import("../../core/types.js").BattleSnapshot} snap
+ * @param {object} event
  * @returns {import("../../core/types.js").ActionResult} { kind:"item-plan", plan }
  */
-export function decidePotion(opt, snap) {
+export function decidePotion(event = {}) {
+  const opt = event.opt || {};
   if (!opt.item || !opt.itemOrderName || !opt.itemOrderValue) {
     return { kind: "item-plan", plan: { type: "potion", candidates: [], noWaste: false } };
   }
@@ -78,11 +78,15 @@ export function decidePotion(opt, snap) {
   for (let i = 0; i < name.length; i++) {
     if (!opt.item[name[i]]) continue;
     const cond = opt[`item${name[i]}Condition`];
-    if (!checkCondition(cond, snap)) continue;
+    if (!checkCondition(cond, event.conditionFacts)) continue;
     // noWaste 防溢出仅作用于"无显式条件"的常开药；用户显式设了条件（含非门带状）且已满足
     //  → "条件符合就该用"，不再被绝对量防溢出悄悄否决（根治 message-1 "条件满足却不放"）。
     const hasExplicitCond = typeof cond !== "undefined";
-    if (noWaste && !hasExplicitCond && isPotionWasteful(order[i], snap, tol, readRecovery)) {
+    if (
+      noWaste &&
+      !hasExplicitCond &&
+      isPotionWasteful(order[i], event.deficitFacts, tol, readRecovery)
+    ) {
       continue;
     }
     candidates.push(order[i]);
