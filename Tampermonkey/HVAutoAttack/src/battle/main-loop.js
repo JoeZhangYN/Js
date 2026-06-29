@@ -31,7 +31,7 @@ export function runBattleTurnAutomation() {
 
   const snap = prepareBattleTurnContext();
 
-  // 编排倒置：遍历 BATTLE_RULES（when 门控 → PURE decide → dispatch），某 rule act 即停止后续。
+  // 编排倒置：遍历 BATTLE_RULES（PURE decide → dispatch），某 rule act 即停止后续。
   // 替代原 runSteps([...18 内联闭包...]) —— 行动决策链现声明在 battle/rules/index.js。
   runRules(BATTLE_RULES, snap, runOptionAutomation({ type: OptionEvent.READ_BATTLE_RULE_OPTIONS }));
 }

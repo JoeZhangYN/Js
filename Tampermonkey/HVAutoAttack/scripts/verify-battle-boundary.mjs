@@ -32,6 +32,7 @@ const potionEconomyFile = path.join(root, "src/battle/potion-economy.js");
 const stallModeFile = path.join(root, "src/battle/battle-stall-mode.js");
 const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
+const stepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const battleRulesFile = path.join(root, "src/battle/rules/index.js");
@@ -718,6 +719,11 @@ function checkSnapshot() {
 
 function checkBattleRulesRuntimeContext() {
   const text = fs.readFileSync(battleRulesFile, "utf8");
+  if (/\bwhen\s*:/.test(text)) {
+    violations.push(
+      `${rel(battleRulesFile)} must not define rule.when; business gates belong in decide entries`
+    );
+  }
   for (const legacy of ["readRuleRuntimeContext", "isStallingForRules", "hasMissingDebuff"]) {
     if (new RegExp(`\\b${legacy}\\b`).test(text)) {
       violations.push(`${rel(battleRulesFile)} must not own all-debuff runtime gate helpers`);
@@ -733,6 +739,12 @@ function checkBattleRulesRuntimeContext() {
   if (/\bg\(\s*["'](?:roundNow|roundAll|roundType|monsterAlive)["']/.test(rulesBody)) {
     violations.push(
       `${rel(battleRulesFile)} rule definitions must read runtime fields through rule runtime context`
+    );
+  }
+  const runnerText = fs.readFileSync(stepRunnerFile, "utf8");
+  if (/\brule\.when\b|\bwhen 门控\b/.test(runnerText)) {
+    violations.push(
+      `${rel(stepRunnerFile)} must not support legacy rule.when gates; decide returns noop instead`
     );
   }
 }

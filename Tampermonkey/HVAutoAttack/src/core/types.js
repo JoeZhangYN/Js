@@ -61,7 +61,6 @@
  * 不再 import 具体 execute 实现。decide 纯函数返 ActionResult 交 dispatch 执行。
  * @typedef {object} BattleRule
  * @property {string} name                                           日志/调试用
- * @property {(snap: BattleSnapshot, opt: object) => boolean} [when]  可选前置门控；省略=总是 decide
  * @property {(snap: BattleSnapshot, opt: object) => ActionResult} decide PURE 决策
  */
 

@@ -1,4 +1,4 @@
-// 每条 rule：{ name, when?(snap,opt), decide(snap,opt)→ActionResult }。顺序 = 原 runSteps 顺序。
+// 每条 rule：{ name, decide(snap,opt)→ActionResult }。顺序 = 原 runSteps 顺序。
 // 深度 B 后**全部 16 条 decide 均为 PURE**（只读 snap，零 DOM 判断）；副作用全在
 import { decideInfusion } from "../buff/decide-infusion.js";
 import { decideBuff } from "../buff/decide-buff.js";

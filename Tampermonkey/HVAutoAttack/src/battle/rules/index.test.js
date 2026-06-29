@@ -1,6 +1,6 @@
-// BATTLE_RULES 结构 + 关键 rule 的 when/decide 回归锁。
-// file-size-gate: exempt test-verbose（17 条顺序锁 + F1/F4/F5 多 when 守卫逐例断言）
-// 深度 B 后全部 decide 均为 PURE（无 delegate）；此处验证结构 / 自包含 decide 形状 / when 门控。
+// BATTLE_RULES 结构 + 关键 rule 的 decide 回归锁。
+// file-size-gate: exempt test-verbose（17 条顺序锁 + F1/F4/F5 多守卫逐例断言）
+// 深度 B 后全部 decide 均为 PURE（无 delegate）；此处验证结构 / 自包含 decide 形状。
 import { describe, it, expect } from "vitest";
 import { BATTLE_RULES } from "./index.js";
 
@@ -33,7 +33,7 @@ describe("BATTLE_RULES 结构", () => {
     for (const r of BATTLE_RULES) {
       expect(typeof r.name).toBe("string");
       expect(typeof r.decide).toBe("function");
-      if (r.when !== undefined) expect(typeof r.when).toBe("function");
+      expect(r).not.toHaveProperty("when");
     }
   });
 });
@@ -75,9 +75,8 @@ describe("PURE decide 形状（深度 B 后无 delegate）", () => {
   });
 });
 
-describe("when 门控", () => {
+describe("rule decide 门控", () => {
   it("flee: 规则表不拼门控，开启时由 decide 返回 click-then-reload", () => {
-    expect(byName("flee").when).toBeUndefined();
     expect(byName("flee").decide({}, { autoFlee: true })).toEqual({
       kind: "click-then-reload",
       selector: "1001",
@@ -86,12 +85,10 @@ describe("when 门控", () => {
   });
 
   it("autoPause: 规则表不拼门控，开启时由 decide 返回 pause", () => {
-    expect(byName("autoPause").when).toBeUndefined();
     expect(byName("autoPause").decide({}, { autoPause: true })).toEqual({ kind: "pause" });
   });
 
   it("defend: 规则表不拼门控，开启时由 decide 返回 click", () => {
-    expect(byName("defend").when).toBeUndefined();
     expect(byName("defend").decide({}, { defend: true })).toEqual({
       kind: "click",
       selector: "#ckey_defend",
@@ -99,7 +96,6 @@ describe("when 门控", () => {
   });
 
   it("deadSoon: 规则表不拼门控，未配置时 decide 自行返回空 potion plan", () => {
-    expect(byName("deadSoon").when).toBeUndefined();
     expect(byName("deadSoon").decide({}, {})).toEqual({
       kind: "item-plan",
       plan: { type: "potion", candidates: [], noWaste: false },
@@ -107,14 +103,12 @@ describe("when 门控", () => {
   });
 
   it("useInfusions: 规则表不拼门控，未开启时 decide 自行 noop", () => {
-    expect(byName("useInfusions").when).toBeUndefined();
     expect(byName("useInfusions").decide({ attackStatus: 2, playerBuffs: [] }, {})).toEqual({
       kind: "noop",
     });
   });
 
   it("useChannelSkill: 规则表不拼门控，未开启时 decide 自行 noop", () => {
-    expect(byName("useChannelSkill").when).toBeUndefined();
     expect(byName("useChannelSkill").decide({ channeling: true }, {})).toEqual({
       kind: "channel-plan",
       plan: { type: "noop" },
@@ -122,17 +116,14 @@ describe("when 门控", () => {
   });
 
   it("useBuffSkill: 规则表不拼门控，未开启时 decide 自行 noop", () => {
-    expect(byName("useBuffSkill").when).toBeUndefined();
     expect(byName("useBuffSkill").decide({}, {})).toEqual({ kind: "noop" });
   });
 
   it("useDeSkill: 规则表不拼门控，未开启时 decide 自行 noop", () => {
-    expect(byName("useDeSkill").when).toBeUndefined();
     expect(byName("useDeSkill").decide({ view: [] }, {})).toEqual({ kind: "noop" });
   });
 
   it("bossImperil: 规则表不拼 CAN_CAST 门控，未 ready 时 decide 自行 noop", () => {
-    expect(byName("bossImperil").when).toBeUndefined();
     expect(byName("bossImperil").decide({ skillReady: { 213: false }, view: [] }, {})).toEqual({
       kind: "noop",
     });
@@ -153,7 +144,7 @@ describe("Feature 1: 拖战跳 Imperil", () => {
     monsters: [{ id: 1, order: 0, isDead: false, isBoss: true }],
     ...over,
   });
-  it("stall 中 bossImperil.when → false（不再 imperil 独怪）", () => {
+  it("stall 中 bossImperil decide → noop（不再 imperil 独怪）", () => {
     expect(byName("bossImperil").decide(stallSnap(), { stallMode: true })).toEqual({
       kind: "noop",
     });
@@ -167,7 +158,7 @@ describe("Feature 1: 拖战跳 Imperil", () => {
     });
   });
 
-  it("非 stall（roundNow 未设）→ bossImperil.when 不受影响", () => {
+  it("非 stall（roundNow 未设）→ bossImperil decide 不受影响", () => {
     expect(
       byName("bossImperil").decide(
         {
@@ -184,7 +175,6 @@ describe("Feature 1: 拖战跳 Imperil", () => {
   });
 
   it("stall 中 castImperilAll 由 decide 自行跳过", () => {
-    expect(byName("castImperilAll").when).toBeUndefined();
     expect(
       byName("castImperilAll").decide(stallSnap(), {
         stallMode: true,
@@ -195,14 +185,12 @@ describe("Feature 1: 拖战跳 Imperil", () => {
   });
 
   it("stall 中 castWeakenAll 规则表不拼门控", () => {
-    expect(byName("castWeakenAll").when).toBeUndefined();
     expect(byName("castWeakenAll").decide(stallSnap(), {})).toEqual({ kind: "noop" });
   });
 });
 
 describe("F5: burstControl 入口门控", () => {
   it("规则表不拼开关门控；未开启时 decide 自行返回 noop", () => {
-    expect(byName("burstControl").when).toBeUndefined();
     expect(byName("burstControl").decide({}, {})).toEqual({ kind: "noop" });
   });
 });
