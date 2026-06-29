@@ -57,11 +57,14 @@ export function executeItem(plan, snap) {
       // 原 stallTopup tryFirst 链：第一个能落地的 attempt 生效，后续不再尝试
       for (const attempt of plan.attempts) {
         if (attempt.kind === "spirit-off") {
-          const el = gE("#ckey_spirit");
-          if (!el) continue;
-          el.click();
-          runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.RECORD_TOGGLE });
-          return true;
+          if (
+            runBattleSpiritToggleAutomation({
+              type: BattleSpiritToggleEvent.CLICK_AND_RECORD,
+            })
+          ) {
+            return true;
+          }
+          continue;
         }
         if (attempt.kind === "focus") {
           const el = gE("#ckey_focus");

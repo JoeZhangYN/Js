@@ -19,7 +19,7 @@ vi.mock("./physical-skill-bookkeeping.js", () => ({
   runPhysicalSkillBookkeeping: mocks.runPhysicalSkillBookkeeping,
 }));
 vi.mock("../battle-spirit-toggle.js", () => ({
-  BattleSpiritToggleEvent: Object.freeze({ RECORD_TOGGLE: "recordToggle" }),
+  BattleSpiritToggleEvent: Object.freeze({ CLICK_AND_RECORD: "clickAndRecord" }),
   runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
 }));
 
@@ -29,14 +29,12 @@ beforeEach(() => {
 
 describe("executeAttack", () => {
   it("reports Spirit toggle cooldown through the Spirit toggle entry", () => {
-    const spirit = { click: vi.fn() };
-    mocks.gE.mockReturnValue(spirit);
+    mocks.runBattleSpiritToggleAutomation.mockReturnValue(true);
 
     expect(executeAttack({ type: "toggle-spirit" }, {})).toBe(true);
 
-    expect(spirit.click).toHaveBeenCalledTimes(1);
     expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
-      type: "recordToggle",
+      type: "clickAndRecord",
     });
   });
 

@@ -22,7 +22,7 @@ vi.mock("../../state/auto-tune.js", () => ({
   runAutoTuneAutomation: mocks.runAutoTuneAutomation,
 }));
 vi.mock("../battle-spirit-toggle.js", () => ({
-  BattleSpiritToggleEvent: Object.freeze({ RECORD_TOGGLE: "recordToggle" }),
+  BattleSpiritToggleEvent: Object.freeze({ CLICK_AND_RECORD: "clickAndRecord" }),
   runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
 }));
 vi.mock("../../state/store.js", () => ({ g: mocks.g }));
@@ -62,14 +62,12 @@ describe("executeItem", () => {
   });
 
   it("reports Spirit toggle cooldown event for stall spirit-off", () => {
-    const spirit = { click: vi.fn() };
-    mocks.gE.mockReturnValue(spirit);
+    mocks.runBattleSpiritToggleAutomation.mockReturnValue(true);
 
     expect(executeItem({ type: "stall", attempts: [{ kind: "spirit-off" }] }, {})).toBe(true);
 
-    expect(spirit.click).toHaveBeenCalledTimes(1);
     expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
-      type: "recordToggle",
+      type: "clickAndRecord",
     });
   });
 });

@@ -27,11 +27,9 @@ export function executeAttack(plan, snap) {
       return true;
 
     case "toggle-spirit": {
-      const el = gE("#ckey_spirit");
-      if (!el) return false;
-      el.click();
-      runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.RECORD_TOGGLE });
-      return true;
+      return !!runBattleSpiritToggleAutomation({
+        type: BattleSpiritToggleEvent.CLICK_AND_RECORD,
+      });
     }
 
     case "spell": {

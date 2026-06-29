@@ -104,7 +104,12 @@ function checkEntry() {
 
 function checkSpiritToggleEntry() {
   const text = fs.readFileSync(path.join(root, spiritToggle), "utf8");
-  for (const required of ["DEFAULT_SPIRIT_TOGGLE_TURN", "normalizeSpiritToggleTurn"]) {
+  for (const required of [
+    "CLICK_AND_RECORD",
+    "#ckey_spirit",
+    "DEFAULT_SPIRIT_TOGGLE_TURN",
+    "normalizeSpiritToggleTurn",
+  ]) {
     if (!text.includes(required)) {
       violations.push(`${spiritToggle.replaceAll("\\", "/")} must internalize turn invariants`);
     }
@@ -113,6 +118,20 @@ function checkSpiritToggleEntry() {
     violations.push(
       `${spiritToggle.replaceAll("\\", "/")} must normalize Spirit toggle writes and reads`
     );
+  }
+  for (const relative of [
+    path.normalize("src/battle/attack/execute-attack.js"),
+    path.normalize("src/battle/item/execute-item.js"),
+  ]) {
+    const source = fs.readFileSync(path.join(root, relative), "utf8");
+    if (
+      source.includes("#ckey_spirit") ||
+      source.includes("BattleSpiritToggleEvent.RECORD_TOGGLE")
+    ) {
+      violations.push(
+        `${relative.replaceAll("\\", "/")} must use BattleSpiritToggleEvent.CLICK_AND_RECORD`
+      );
+    }
   }
 }
 
