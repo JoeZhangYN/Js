@@ -153,7 +153,8 @@ function renderDebuffSmartSkipSchemaFields() {
       "bigKillProbThreshold"
     )} ${renderSchemaLabel(readSchemaField("bigKillScaleDriftTol"))}: ${renderSchemaNumberInput(
       "bigKillScaleDriftTol"
-    )}`,
+    )}<br>`,
+    renderSchemaCheckboxField("dynamicBigKillLog"),
   ];
 }
 

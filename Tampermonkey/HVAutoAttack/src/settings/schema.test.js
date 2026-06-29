@@ -39,6 +39,14 @@ describe("runOptionSchema", () => {
       default: 3,
     });
     expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "dynamicBigKillLog" })
+    ).toMatchObject({
+      key: "dynamicBigKillLog",
+      kind: "checkbox",
+      default: false,
+      group: "Debuff",
+    });
+    expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "burstControlHpFrac" })
     ).toMatchObject({
       key: "burstControlHpFrac",
