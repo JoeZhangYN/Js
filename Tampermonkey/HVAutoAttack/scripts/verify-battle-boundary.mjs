@@ -319,6 +319,17 @@ function checkActionDelayEntry() {
   if (!text.includes("activeDelayTimers")) {
     violations.push(`${rel(actionDelayFile)} must track action delay timers in one registry`);
   }
+  for (const required of [
+    "DELAY_ALERT_OPTION_KEY",
+    "DELAY_ALERT_TIME_OPTION_KEY",
+    "DELAY_RELOAD_OPTION_KEY",
+    "DELAY_RELOAD_TIME_OPTION_KEY",
+    "trackDelayTimer",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(actionDelayFile)} must own action delay contract ${required}`);
+    }
+  }
   if (/\bdelayAlertTimer\b|\bdelayReloadTimer\b/.test(text)) {
     violations.push(`${rel(actionDelayFile)} must not track action delay timers in parallel vars`);
   }

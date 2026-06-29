@@ -148,4 +148,22 @@ describe("runBattleActionDelayAutomation", () => {
 
     expect(deps.cancel).toHaveBeenCalledTimes(2);
   });
+
+  it("does not track missing timer handles", () => {
+    const deps = makeDeps(
+      () => undefined,
+      () => null
+    );
+    setDelayOption({
+      delayAlert: true,
+      delayAlertTime: 1,
+      delayReload: true,
+      delayReloadTime: 2,
+    });
+
+    start(deps);
+    end(deps);
+
+    expect(deps.cancel).not.toHaveBeenCalled();
+  });
 });

@@ -4,6 +4,10 @@ import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
+const DELAY_ALERT_OPTION_KEY = "delayAlert";
+const DELAY_ALERT_TIME_OPTION_KEY = "delayAlertTime";
+const DELAY_RELOAD_OPTION_KEY = "delayReload";
+const DELAY_RELOAD_TIME_OPTION_KEY = "delayReloadTime";
 
 const activeDelayTimers = new Set();
 
@@ -18,21 +22,25 @@ function readDelayOptionField(key, fallback) {
 
 function readDelayOption() {
   return {
-    delayAlert: Boolean(readDelayOptionField("delayAlert", false)),
-    delayAlertTime: Number(readDelayOptionField("delayAlertTime", 0)) || 0,
-    delayReload: Boolean(readDelayOptionField("delayReload", false)),
-    delayReloadTime: Number(readDelayOptionField("delayReloadTime", 0)) || 0,
+    delayAlert: Boolean(readDelayOptionField(DELAY_ALERT_OPTION_KEY, false)),
+    delayAlertTime: Number(readDelayOptionField(DELAY_ALERT_TIME_OPTION_KEY, 0)) || 0,
+    delayReload: Boolean(readDelayOptionField(DELAY_RELOAD_OPTION_KEY, false)),
+    delayReloadTime: Number(readDelayOptionField(DELAY_RELOAD_TIME_OPTION_KEY, 0)) || 0,
   };
+}
+
+function trackDelayTimer(timer) {
+  if (typeof timer !== "undefined" && timer !== null) activeDelayTimers.add(timer);
 }
 
 function startActionDelay(deps) {
   endActionDelay(deps);
   const option = readDelayOption();
   if (option.delayAlert) {
-    activeDelayTimers.add(deps.schedule(() => deps.triggerAlarm(), option.delayAlertTime * 1000));
+    trackDelayTimer(deps.schedule(() => deps.triggerAlarm(), option.delayAlertTime * 1000));
   }
   if (option.delayReload) {
-    activeDelayTimers.add(deps.scheduleReload(option.delayReloadTime));
+    trackDelayTimer(deps.scheduleReload(option.delayReloadTime));
   }
 }
 
