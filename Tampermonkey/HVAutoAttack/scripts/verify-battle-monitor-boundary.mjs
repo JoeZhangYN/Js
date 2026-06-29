@@ -332,6 +332,14 @@ function checkActionUsageCaptureEntry() {
   if (!/export function runBattleActionUsageCapture\(/.test(text)) {
     violations.push(`${rel(captureFile)} must expose runBattleActionUsageCapture(event)`);
   }
+  if (!/const actionUsageCaptureHandlers\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(captureFile)} must route action usage lifecycle through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*===\s*EVENT_ACTION_/.test(text)) {
+    violations.push(
+      `${rel(captureFile)} must not route action usage lifecycle through an if ladder`
+    );
+  }
   if (
     /\bexport\s+(?:function|const)\s+(?!BattleActionUsageCaptureEvent\b|runBattleActionUsageCapture\b)/.test(
       text

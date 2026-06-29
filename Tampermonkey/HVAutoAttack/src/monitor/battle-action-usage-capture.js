@@ -52,9 +52,12 @@ function completeActionUsage(deps) {
   return usage;
 }
 
+const actionUsageCaptureHandlers = Object.freeze({
+  [EVENT_ACTION_STARTED]: (_event, runtime) => readActionUsage(runtime),
+  [EVENT_ACTION_ENDED]: (_event, runtime) => completeActionUsage(runtime),
+});
+
 export function runBattleActionUsageCapture(event, deps) {
   const runtime = runtimeDeps(deps);
-  if (event.type === EVENT_ACTION_STARTED) return readActionUsage(runtime);
-  if (event.type === EVENT_ACTION_ENDED) return completeActionUsage(runtime);
-  return undefined;
+  return actionUsageCaptureHandlers[event.type]?.(event, runtime);
 }
