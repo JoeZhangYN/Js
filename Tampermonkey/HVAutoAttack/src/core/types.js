@@ -15,6 +15,7 @@
  *         | { kind: "click", selector: string }
  *         | { kind: "skill-command", skillId: string }
  *         | { kind: "item-command", itemId: string|number }
+ *         | { kind: "defend-command" }
  *         | { kind: "toggle-spirit" }
  *         | { kind: "click-skill-then-target", skillId: string, targetId: number }
  *         | { kind: "flee-command" }

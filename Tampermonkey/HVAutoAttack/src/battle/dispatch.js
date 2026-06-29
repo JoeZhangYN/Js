@@ -4,6 +4,7 @@
 // PURE decide 完成，dispatch 只翻译数据 → 副作用（含 isOn 写前探活）。
 import { attemptClick } from "../dom/attempt-click.js";
 import { _alert } from "../core/lang.js";
+import { BattleDefendCommandEvent, runBattleDefendCommand } from "./battle-defend-command.js";
 import { BattleFleeCommandEvent, runBattleFleeCommand } from "./battle-flee-command.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import { BattleItemCommandEvent, runBattleItemCommand } from "./battle-item-command.js";
@@ -45,6 +46,9 @@ export function dispatch(result, snap) {
         type: BattleSkillCommandEvent.CLICK_READY,
         skillId: result.skillId,
       });
+
+    case "defend-command":
+      return !!runBattleDefendCommand({ type: BattleDefendCommandEvent.CLICK });
 
     case "toggle-spirit":
       return !!runBattleSpiritToggleAutomation({

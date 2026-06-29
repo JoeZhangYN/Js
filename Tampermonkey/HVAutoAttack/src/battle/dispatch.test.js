@@ -65,6 +65,14 @@ describe("dispatch", () => {
     expect(skill.click).toHaveBeenCalledOnce();
   });
 
+  it("defend-command → clicks Defend through the defend command entry", () => {
+    const defend = mkBtn("ckey_defend");
+
+    expect(dispatch({ kind: "defend-command" })).toBe(true);
+
+    expect(defend.click).toHaveBeenCalledOnce();
+  });
+
   it("toggle-spirit → 走 Spirit toggle command，click 并记录", () => {
     const spirit = mkBtn("ckey_spirit");
     expect(dispatch({ kind: "toggle-spirit" })).toBe(true);

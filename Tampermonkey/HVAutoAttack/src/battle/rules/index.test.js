@@ -86,10 +86,9 @@ describe("rule decide 门控", () => {
     expect(byName("autoPause").decide({}, { autoPause: true })).toEqual({ kind: "pause" });
   });
 
-  it("defend: 规则表不拼门控，开启时由 decide 返回 click", () => {
+  it("defend: 规则表不拼门控，开启时由 decide 返回 defend-command", () => {
     expect(byName("defend").decide({}, { defend: true })).toEqual({
-      kind: "click",
-      selector: "#ckey_defend",
+      kind: "defend-command",
     });
   });
 

@@ -1,0 +1,18 @@
+// Battle defend command: one write entry for clicking the Defend battle control.
+import { attemptClick } from "../dom/attempt-click.js";
+
+const EVENT_CLICK = "click";
+const DEFEND_BUTTON_SELECTOR = "#ckey_defend";
+
+export const BattleDefendCommandEvent = Object.freeze({
+  CLICK: EVENT_CLICK,
+});
+
+function clickDefend() {
+  return attemptClick(DEFEND_BUTTON_SELECTOR);
+}
+
+export function runBattleDefendCommand(event = { type: EVENT_CLICK }) {
+  if (event.type === EVENT_CLICK) return clickDefend();
+  return undefined;
+}

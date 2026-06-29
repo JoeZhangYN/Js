@@ -1055,7 +1055,7 @@ function checkPotionEntry() {
 
 function checkDefendEntry() {
   const ownerText = fs.readFileSync(decideDefendFile, "utf8");
-  for (const required of ["decideDefend", "defendCondition", "#ckey_defend"]) {
+  for (const required of ["decideDefend", "defendCondition", "defend-command"]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideDefendFile)} must own defend gate ${required}`);
     }

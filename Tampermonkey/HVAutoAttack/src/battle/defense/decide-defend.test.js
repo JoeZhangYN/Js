@@ -12,10 +12,9 @@ describe("decideDefend", () => {
     });
   });
 
-  it("defend 开启且条件满足 -> click defend", () => {
+  it("defend 开启且条件满足 -> defend-command", () => {
     expect(decideDefend({ defend: true }, {})).toEqual({
-      kind: "click",
-      selector: "#ckey_defend",
+      kind: "defend-command",
     });
   });
 });
