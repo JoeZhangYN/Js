@@ -835,6 +835,12 @@ function checkDeletedDropMonitorEntrypoint() {
   if (!/export function runBattleDropAutomation\(/.test(dropText)) {
     violations.push(`${rel(dropFile)} must expose runBattleDropAutomation(event)`);
   }
+  if (!/const dropEventHandlers\s*=\s*Object\.freeze\(/.test(dropText)) {
+    violations.push(`${rel(dropFile)} must route drop commands through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*!==\s*EVENT_RECORD_BATTLE_DROPS/.test(dropText)) {
+    violations.push(`${rel(dropFile)} must not route drop commands through an if ladder`);
+  }
   if (/export function recordBattleDrops\(/.test(dropText)) {
     violations.push(
       `${rel(dropFile)} must keep recordBattleDrops private behind runBattleDropAutomation(event)`

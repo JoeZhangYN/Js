@@ -60,11 +60,18 @@ function recordBattleDrops(deps, context) {
   );
 }
 
+const dropEventHandlers = Object.freeze({
+  [EVENT_RECORD_BATTLE_DROPS]: (_event, deps) => {
+    const runtime = makeDeps(deps);
+    const context = runtime.readDropCompletionContext();
+    if (!context.dropMonitor) return false;
+    recordBattleDrops(runtime, context);
+    return true;
+  },
+});
+
 export function runBattleDropAutomation(event = { type: EVENT_RECORD_BATTLE_DROPS }, deps = {}) {
-  if (event.type !== EVENT_RECORD_BATTLE_DROPS) return false;
-  const runtime = makeDeps(deps);
-  const context = runtime.readDropCompletionContext();
-  if (!context.dropMonitor) return false;
-  recordBattleDrops(runtime, context);
-  return true;
+  const handler = dropEventHandlers[event.type];
+  if (!handler) return false;
+  return handler(event, deps);
 }
