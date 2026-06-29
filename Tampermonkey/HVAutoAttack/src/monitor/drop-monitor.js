@@ -8,10 +8,10 @@ import {
 } from "./battle-record-archive.js";
 import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
 
-const EVENT_COMPLETION_REACHED = "completionReached";
+const EVENT_RECORD_BATTLE_DROPS = "recordBattleDrops";
 
 export const BattleDropEvent = Object.freeze({
-  COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
+  RECORD_BATTLE_DROPS: EVENT_RECORD_BATTLE_DROPS,
 });
 
 function makeDeps(deps) {
@@ -103,8 +103,8 @@ function recordBattleDrops(deps, context) {
   );
 }
 
-export function runBattleDropAutomation(event = { type: EVENT_COMPLETION_REACHED }, deps = {}) {
-  if (event.type !== EVENT_COMPLETION_REACHED) return false;
+export function runBattleDropAutomation(event = { type: EVENT_RECORD_BATTLE_DROPS }, deps = {}) {
+  if (event.type !== EVENT_RECORD_BATTLE_DROPS) return false;
   const runtime = makeDeps(deps);
   const context = runtime.readDropCompletionContext();
   if (!context.dropMonitor) return false;

@@ -28,7 +28,7 @@ function recordActionEnd(event) {
 }
 
 function recordCompletion() {
-  runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED });
+  runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS });
   runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE });
 }
 

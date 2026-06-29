@@ -120,7 +120,7 @@ function checkEntry() {
   }
   if (
     !text.includes("runBattleDropAutomation") ||
-    !text.includes("BattleDropEvent.COMPLETION_REACHED")
+    !text.includes("BattleDropEvent.RECORD_BATTLE_DROPS")
   ) {
     violations.push(
       `${entry.replaceAll("\\", "/")} must route drop recording through runBattleDropAutomation(event)`
@@ -711,6 +711,18 @@ function checkDeletedDropMonitorEntrypoint() {
   }
   if (!/export const BattleDropEvent\s*=\s*Object\.freeze\(/.test(dropText)) {
     violations.push(`${rel(dropFile)} must expose BattleDropEvent`);
+  }
+  if (!dropText.includes("RECORD_BATTLE_DROPS")) {
+    violations.push(`${rel(dropFile)} must expose drop recording as a business command`);
+  }
+  for (const forbidden of [
+    "const EVENT_COMPLETION_REACHED",
+    "COMPLETION_REACHED:",
+    "completionReached",
+  ]) {
+    if (dropText.includes(forbidden)) {
+      violations.push(`${rel(dropFile)} must not expose completion lifecycle commands`);
+    }
   }
   if (!/export function runBattleDropAutomation\(/.test(dropText)) {
     violations.push(`${rel(dropFile)} must expose runBattleDropAutomation(event)`);

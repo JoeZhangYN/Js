@@ -49,7 +49,7 @@ describe("runBattleDropAutomation", () => {
       rows: [logLine("You gain 12 EXP")],
     });
 
-    expect(runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED }, runtime)).toBe(
+    expect(runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime)).toBe(
       false
     );
     expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
@@ -65,7 +65,7 @@ describe("runBattleDropAutomation", () => {
       ],
     });
 
-    expect(runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED }, runtime)).toBe(
+    expect(runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime)).toBe(
       true
     );
 
@@ -90,7 +90,7 @@ describe("runBattleDropAutomation", () => {
       values,
     });
 
-    runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED }, runtime);
+    runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime);
 
     expect(values[STORAGE_KEYS.DROP]).toBeUndefined();
     expect(values[STORAGE_KEYS.DROP_OLD]).toEqual([
