@@ -1,5 +1,6 @@
 // PURE: 元素灌注决策。attackStatus 决定灌注种类，已存在效果则跳过。
 import { itemSelector } from "../../dom/selectors.js";
+import { checkCondition } from "../../settings/condition-eval.js";
 
 const INFUSION_LIB = [
   null,
@@ -17,6 +18,8 @@ const INFUSION_LIB = [
  * @returns {import("../../core/types.js").ActionResult}
  */
 export function decideInfusion(opt, snap) {
+  if (!opt.infusionSwitch) return { kind: "noop" };
+  if (!checkCondition(opt.infusionCondition, snap)) return { kind: "noop" };
   const status = snap.attackStatus;
   if (!status || status === 0) return { kind: "noop" };
   const lib = INFUSION_LIB[status];

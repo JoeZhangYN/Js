@@ -79,8 +79,6 @@ export const BATTLE_RULES = [
   // 9. 元素灌注（仅法术模式）
   {
     name: "useInfusions",
-    when: (snap, opt) =>
-      snap.attackStatus !== 0 && opt.infusionSwitch && checkCondition(opt.infusionCondition, snap),
     decide: (snap, opt) => decideInfusion(opt, snap),
   },
   // 10. Channel（decide 三段优先级返单 click，execute 探活+click）

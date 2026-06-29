@@ -93,9 +93,11 @@ describe("when 门控", () => {
     expect(byName("defend").when({}, {})).toBeFalsy();
   });
 
-  it("useInfusions.when: 需 attackStatus!=0 + infusionSwitch", () => {
-    expect(byName("useInfusions").when({ attackStatus: 2 }, { infusionSwitch: true })).toBe(true);
-    expect(byName("useInfusions").when({ attackStatus: 0 }, { infusionSwitch: true })).toBe(false);
+  it("useInfusions: 规则表不拼门控，未开启时 decide 自行 noop", () => {
+    expect(byName("useInfusions").when).toBeUndefined();
+    expect(byName("useInfusions").decide({ attackStatus: 2, playerBuffs: [] }, {})).toEqual({
+      kind: "noop",
+    });
   });
 
   it("bossImperil.when: 需 skillReady[213] 且 debuffSkillSwitch!==false", () => {

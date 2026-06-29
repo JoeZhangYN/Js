@@ -22,6 +22,7 @@ const startRuntimeTest = path.join(root, "src/battle/battle-start-runtime.test.j
 const debuffCoverageFile = path.join(root, "src/battle/battle-debuff-coverage.js");
 const utilityEngineFile = path.join(root, "src/battle/utility-engine.js");
 const activateSpiritFile = path.join(root, "src/battle/buff/activate-spirit.js");
+const decideInfusionFile = path.join(root, "src/battle/buff/decide-infusion.js");
 const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
 const decideChannelFile = path.join(root, "src/battle/buff/decide-channel.js");
 const decideItemFile = path.join(root, "src/battle/item/decide-item.js");
@@ -819,6 +820,21 @@ function checkBurstControlEntry() {
   }
 }
 
+function checkInfusionEntry() {
+  const ownerText = fs.readFileSync(decideInfusionFile, "utf8");
+  for (const required of ["decideInfusion", "infusionSwitch", "infusionCondition"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideInfusionFile)} must own infusion gate ${required}`);
+    }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  for (const legacy of ["infusionSwitch", "infusionCondition"]) {
+    if (rulesText.includes(legacy)) {
+      violations.push(`${rel(battleRulesFile)} must not assemble infusion rule gates directly`);
+    }
+  }
+}
+
 function checkItemScrollEntry() {
   const itemText = fs.readFileSync(decideScrollFile, "utf8");
   for (const required of ["decideScroll", "scrollSwitch", "scrollCondition", "scrollRoundType"]) {
@@ -907,6 +923,7 @@ checkBattleDebuffCoverage();
 checkBossImperilEntry();
 checkBigSkillDebuffEntry();
 checkBurstControlEntry();
+checkInfusionEntry();
 checkItemScrollEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();
