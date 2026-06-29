@@ -75,6 +75,9 @@ function checkEntry() {
     violations.push(`${entry.replaceAll("\\", "/")} must use STORAGE_KEYS.MONSTER_STATUS`);
   }
   for (const required of [
+    "DEFAULT_COMBATANT_COUNT",
+    "normalizeCombatantCount",
+    "combatantCounts",
     "updateMonsterHpRuntime",
     "buildMonsterStatus",
     "monsterStatus",
@@ -86,6 +89,11 @@ function checkEntry() {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);
     }
+  }
+  if ((text.match(/combatantCounts\(/g) || []).length < 3) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must normalize combatant counts on refresh and read`
+    );
   }
 }
 

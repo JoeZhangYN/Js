@@ -16,6 +16,7 @@ const EVENT_REFRESH_COMBATANT_COUNTS = "refreshCombatantCounts";
 const EVENT_READ_COMBATANT_COUNTS = "readCombatantCounts";
 const EVENT_READ_IDS_BY_ORDER = "readIdsByOrder";
 const EVENT_READ_STATUS = "readStatus";
+const DEFAULT_COMBATANT_COUNT = 0;
 
 export const MonsterStatusEvent = Object.freeze({
   ENSURE_READY: EVENT_ENSURE_READY,
@@ -32,30 +33,47 @@ function reloadCurrentPage() {
   runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
 }
 
+function normalizeCombatantCount(value) {
+  const count = Number(value);
+  return Number.isFinite(count) && count > 0 ? Math.trunc(count) : DEFAULT_COMBATANT_COUNT;
+}
+
+function combatantCounts({ monsterAll, monsterAlive, bossAll, bossAlive }) {
+  const normalizedMonsterAll = normalizeCombatantCount(monsterAll);
+  const normalizedBossAll = normalizeCombatantCount(bossAll);
+  return {
+    monsterAll: normalizedMonsterAll,
+    monsterAlive: Math.min(normalizeCombatantCount(monsterAlive), normalizedMonsterAll),
+    bossAll: normalizedBossAll,
+    bossAlive: Math.min(normalizeCombatantCount(bossAlive), normalizedBossAll),
+  };
+}
+
 function refreshCombatantCounts() {
   const monsterAll = gE("div.btm1", "all").length;
   const monsterDead = gE('img[src*="nbardead"]', "all").length;
   const bossAll = gE('div.btm2[style^="background"]', "all").length;
   const bossDead = gE('div.btm1[style*="opacity"] div.btm2[style*="background"]', "all").length;
-  g("monsterAll", monsterAll);
-  g("monsterAlive", monsterAll - monsterDead);
-  g("bossAll", bossAll);
-  g("bossAlive", bossAll - bossDead);
-  return {
+  const counts = combatantCounts({
     monsterAll,
     monsterAlive: monsterAll - monsterDead,
     bossAll,
     bossAlive: bossAll - bossDead,
-  };
+  });
+  g("monsterAll", counts.monsterAll);
+  g("monsterAlive", counts.monsterAlive);
+  g("bossAll", counts.bossAll);
+  g("bossAlive", counts.bossAlive);
+  return counts;
 }
 
 function readCombatantCounts() {
-  return {
+  return combatantCounts({
     monsterAll: g("monsterAll"),
     monsterAlive: g("monsterAlive"),
     bossAll: g("bossAll"),
     bossAlive: g("bossAlive"),
-  };
+  });
 }
 
 function recordSpawnRoster(event) {
