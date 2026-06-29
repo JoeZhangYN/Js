@@ -92,6 +92,7 @@ for (const required of [
   /renderSchemaNumberInput\(\s*["']burstControlHpFrac["']/,
   /renderSchemaCheckboxField\(\s*["']burstControlSilenceForSpell["']/,
   /renderSchemaCheckboxField\(\s*["']drainTargetMaxHp["']/,
+  /renderSchemaCheckboxField\(\s*["']autoElement["']\s*\)/,
 ]) {
   if (!required.test(renderText)) {
     violations.push(
@@ -121,6 +122,7 @@ for (const forbidden of [
   /name=["']burstControlHpFrac["']\s+placeholder=["']50["']/,
   /id=["']burstControlSilenceForSpell["'][\s\S]{0,140}法术爆发用 Silence/,
   /id=["']drainTargetMaxHp["'][\s\S]{0,140}Drain 优先打血最多/,
+  /id=["']autoElement["'][\s\S]{0,160}按九抗自动选最弱属性攻击/,
 ]) {
   if (forbidden.test(renderText)) {
     violations.push(
