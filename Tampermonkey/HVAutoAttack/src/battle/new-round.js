@@ -56,8 +56,13 @@ function startRound() {
   runBattleRoundLifecycle({ type: BattleRoundLifecycleEvent.ROUND_READY });
 }
 
+const battleRoundStartEventHandlers = Object.freeze({
+  [EVENT_ROUND_STARTED]: () => {
+    startRound();
+    return true;
+  },
+});
+
 export function runBattleRoundStartAutomation(event = { type: EVENT_ROUND_STARTED }) {
-  if (event.type !== EVENT_ROUND_STARTED) return false;
-  startRound();
-  return true;
+  return battleRoundStartEventHandlers[event.type]?.(event) ?? false;
 }

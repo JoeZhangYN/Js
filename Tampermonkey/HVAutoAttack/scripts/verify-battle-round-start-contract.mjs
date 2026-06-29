@@ -23,6 +23,7 @@ function requireText(relative, required) {
 const ownerText = requireText(owner, [
   "BattleRoundStartEvent",
   "runBattleRoundStartAutomation",
+  "battleRoundStartEventHandlers",
   "recordRoundStartContext",
   "BattleRoundLifecycleEvent.ROUND_STARTED",
   "BattleRoundLifecycleEvent.ROUND_READY",
@@ -77,6 +78,9 @@ if (/gE\(|#textlog|textContent|battleLog\b/.test(ownerText)) {
 }
 if (/\.match\(\s*["']Initializing["']\s*\)|\/Initializing/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not decide initialization text directly`);
+}
+if (/if\s*\(\s*event\.type\s*(?:={2,3}|!==?)\s*EVENT_/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(roundLifecycleText)) {
   violations.push("src/battle/round-lifecycle.js must dispatch events through handler table");
