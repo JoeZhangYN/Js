@@ -34,6 +34,13 @@ const ownerText = requireText(owner, [
   "MonsterStatusEvent.PREPARE_ROUND_START",
   "EncounterEvent.RANDOM_ENCOUNTER_STARTED",
 ]);
+const roundLifecycleText = requireText(path.normalize("src/battle/round-lifecycle.js"), [
+  "BattleRoundLifecycleEvent",
+  "runBattleRoundLifecycle",
+  "battleRoundLifecycleEventHandlers",
+  "BattleSkillUsageEvent.RESET_ROUND",
+  "MonsterKnowledgeEvent.ROUND_STARTED",
+]);
 requireText(ownerTest, ["recordStartContext", "recordStartCount", 'roundType: "ba"']);
 
 if (
@@ -70,6 +77,9 @@ if (/gE\(|#textlog|textContent|battleLog\b/.test(ownerText)) {
 }
 if (/\.match\(\s*["']Initializing["']\s*\)|\/Initializing/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not decide initialization text directly`);
+}
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(roundLifecycleText)) {
+  violations.push("src/battle/round-lifecycle.js must dispatch events through handler table");
 }
 
 if (violations.length) {

@@ -25,8 +25,11 @@ function readyRoundLifecycle() {
   return true;
 }
 
+const battleRoundLifecycleEventHandlers = Object.freeze({
+  [EVENT_ROUND_STARTED]: () => startRoundLifecycle(),
+  [EVENT_ROUND_READY]: () => readyRoundLifecycle(),
+});
+
 export function runBattleRoundLifecycle(event = { type: EVENT_ROUND_STARTED }) {
-  if (event.type === EVENT_ROUND_STARTED) return startRoundLifecycle();
-  if (event.type === EVENT_ROUND_READY) return readyRoundLifecycle();
-  return undefined;
+  return battleRoundLifecycleEventHandlers[event.type]?.(event);
 }
