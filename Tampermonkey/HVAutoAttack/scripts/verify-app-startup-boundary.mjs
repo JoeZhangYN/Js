@@ -49,11 +49,18 @@ function checkEntry() {
     "runRiddleDatasetAutomation",
     "RiddleDatasetEvent.REGISTER_EXPORT_MENU",
     "runAbilityAoeAutomation",
+    "OptionEvent.SYNC_STARTUP_OPTION",
     "GM_info",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} startup wiring`);
     }
+  }
+  if (/\bg\(\s*["']option["']/.test(text)) {
+    violations.push(`${rel(entryFile)} must not install raw option state directly`);
+  }
+  if (/\bOptionEvent\.READ\b|\bOptionEvent\.WRITE\b/.test(text)) {
+    violations.push(`${rel(entryFile)} must sync startup option through named option command`);
   }
 }
 

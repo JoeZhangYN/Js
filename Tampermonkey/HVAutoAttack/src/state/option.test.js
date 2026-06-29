@@ -73,6 +73,42 @@ describe("option persistence entry", () => {
     });
   });
 
+  it("syncs startup option version and runtime language through one command", () => {
+    runOptionAutomation({
+      type: OptionEvent.WRITE,
+      option: { version: "9.9", lang: "2", repair: true },
+    });
+
+    expect(
+      runOptionAutomation({
+        type: OptionEvent.SYNC_STARTUP_OPTION,
+        currentVersion: "10.0",
+      })
+    ).toEqual({
+      configured: true,
+      lang: "2",
+      previousVersion: "9.9",
+      currentVersion: "10.0",
+      versionUpdated: true,
+    });
+    expect(g("lang")).toBe("2");
+    expect(runOptionAutomation({ type: OptionEvent.READ })).toEqual({
+      version: "10.0",
+      lang: "2",
+      repair: true,
+    });
+  });
+
+  it("reports missing startup option without creating partial state", () => {
+    expect(
+      runOptionAutomation({
+        type: OptionEvent.SYNC_STARTUP_OPTION,
+        currentVersion: "10.0",
+      })
+    ).toEqual({ configured: false });
+    expect(runOptionAutomation({ type: OptionEvent.READ })).toBeNull();
+  });
+
   it("exports and parses option text through the entry", () => {
     runOptionAutomation({
       type: OptionEvent.WRITE,

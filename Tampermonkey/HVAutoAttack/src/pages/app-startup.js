@@ -23,16 +23,17 @@ function loadGlobalStartupState() {
 
 function syncOptionVersion() {
   g("version", GM_info ? GM_info.script.version.slice(0, 4) : "2.89");
-  const option = runOptionAutomation({ type: OptionEvent.READ });
-  if (!option) return false;
+  const startupOption = runOptionAutomation({
+    type: OptionEvent.SYNC_STARTUP_OPTION,
+    currentVersion: g("version"),
+  });
+  if (!startupOption.configured) return false;
 
-  g("option", option);
-  g("lang", option.lang || "0");
-  addStyle(g("lang"));
-  if (option.version !== g("version")) {
-    console.log(`[HVAA] 版本号 ${option.version} → ${g("version")}（已静默对齐，未弹窗）`);
-    option.version = g("version");
-    runOptionAutomation({ type: OptionEvent.WRITE, option });
+  addStyle(startupOption.lang);
+  if (startupOption.versionUpdated) {
+    console.log(
+      `[HVAA] 版本号 ${startupOption.previousVersion} → ${startupOption.currentVersion}（已静默对齐，未弹窗）`
+    );
   }
   return true;
 }
@@ -61,7 +62,7 @@ function warnDefaultFont() {
 }
 
 function loadBattleLearningState() {
-  unsafeWindow = typeof unsafeWindow === "undefined" ? window : unsafeWindow;
+  globalThis.unsafeWindow = typeof unsafeWindow === "undefined" ? window : unsafeWindow;
   runAbilityAoeAutomation({ type: AbilityAoeEvent.LOAD_STORED_AOE });
 }
 

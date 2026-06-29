@@ -7,7 +7,6 @@ const owner = path.normalize("src/state/option.js");
 const ownerTest = path.normalize("src/state/option.test.js");
 const backup = path.normalize("src/state/option-backup.js");
 const backupTest = path.normalize("src/state/option-backup.test.js");
-const appStartup = path.normalize("src/pages/app-startup.js");
 const battleMainLoop = path.normalize("src/battle/main-loop.js");
 const storage = path.normalize("src/state/storage.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
@@ -59,7 +58,7 @@ function checkFile(file) {
       violations.push(`${where} settings must not compose option import/export payloads`);
     }
     if (
-      ![owner, ownerTest, backup, backupTest, appStartup].includes(relative) &&
+      ![owner, ownerTest, backup, backupTest].includes(relative) &&
       /\bOptionEvent\.READ\b/.test(line)
     ) {
       violations.push(`${where} whole option reads are reserved for option owners`);
@@ -82,6 +81,7 @@ for (const required of [
   "EXPORT_TEXT",
   "PARSE_IMPORT_TEXT",
   "READ_BATTLE_RULE_OPTIONS",
+  "SYNC_STARTUP_OPTION",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required}`);

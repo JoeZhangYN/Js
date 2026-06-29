@@ -20,6 +20,7 @@ const EVENT_WRITE_FIELD = "writeField";
 const EVENT_EXPORT_TEXT = "exportText";
 const EVENT_PARSE_IMPORT_TEXT = "parseImportText";
 const EVENT_READ_BATTLE_RULE_OPTIONS = "readBattleRuleOptions";
+const EVENT_SYNC_STARTUP_OPTION = "syncStartupOption";
 
 export const OptionEvent = Object.freeze({
   READ: EVENT_READ,
@@ -31,6 +32,7 @@ export const OptionEvent = Object.freeze({
   EXPORT_TEXT: EVENT_EXPORT_TEXT,
   PARSE_IMPORT_TEXT: EVENT_PARSE_IMPORT_TEXT,
   READ_BATTLE_RULE_OPTIONS: EVENT_READ_BATTLE_RULE_OPTIONS,
+  SYNC_STARTUP_OPTION: EVENT_SYNC_STARTUP_OPTION,
 });
 
 function readOption() {
@@ -39,6 +41,27 @@ function readOption() {
 
 function readBattleRuleOptions() {
   return readOption() || {};
+}
+
+function syncStartupOption(currentVersion) {
+  const option = readOption();
+  if (!option) return { configured: false };
+  const previousVersion = option.version;
+  const lang = option.lang || "0";
+  if (option.version !== currentVersion) {
+    option.version = currentVersion;
+    writeOption(option);
+  } else {
+    g("option", option);
+  }
+  g("lang", lang);
+  return {
+    configured: true,
+    lang,
+    previousVersion,
+    currentVersion,
+    versionUpdated: previousVersion !== currentVersion,
+  };
 }
 
 function writeOption(option) {
@@ -120,5 +143,6 @@ export function runOptionAutomation(event = { type: EVENT_READ }) {
   if (event.type === EVENT_EXPORT_TEXT) return exportOptionText();
   if (event.type === EVENT_PARSE_IMPORT_TEXT) return parseOptionImportText(event.text);
   if (event.type === EVENT_READ_BATTLE_RULE_OPTIONS) return readBattleRuleOptions();
+  if (event.type === EVENT_SYNC_STARTUP_OPTION) return syncStartupOption(event.currentVersion);
   return undefined;
 }
