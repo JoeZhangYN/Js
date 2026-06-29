@@ -47,6 +47,12 @@ function checkEntry() {
       `${entry.replaceAll("\\", "/")} must expose runMonsterKnowledgeAutomation(event)`
     );
   }
+  if (!/const monsterKnowledgeEventHandlers\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must route events through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must not route events through an if ladder`);
+  }
   for (const required of [
     "runMonsterDbSyncAutomation",
     "MonsterDbSyncEvent.SYNC_REQUESTED",

@@ -3,10 +3,7 @@ import {
   MonsterResistPanelEvent,
   runMonsterResistPanelAutomation,
 } from "../monitor/monster-resist-panel.js";
-import {
-  MonsterScanLearningEvent,
-  runMonsterScanLearningAutomation,
-} from "./monster-db-scan.js";
+import { MonsterScanLearningEvent, runMonsterScanLearningAutomation } from "./monster-db-scan.js";
 import { MonsterDbSyncEvent, runMonsterDbSyncAutomation } from "./monster-db-sync.js";
 
 const EVENT_BATTLE_STARTED = "battleStarted";
@@ -31,14 +28,12 @@ function startMonsterKnowledge() {
   });
 }
 
-export function runMonsterKnowledgeAutomation(
-  event = { type: EVENT_ROUND_STARTED }
-) {
-  if (event.type === EVENT_BATTLE_STARTED) {
-    startMonsterKnowledge();
-    return;
-  }
-  if (event.type === EVENT_ROUND_STARTED || event.type === EVENT_SCAN_UPDATED) {
-    refreshResistPanel();
-  }
+const monsterKnowledgeEventHandlers = Object.freeze({
+  [EVENT_BATTLE_STARTED]: () => startMonsterKnowledge(),
+  [EVENT_ROUND_STARTED]: () => refreshResistPanel(),
+  [EVENT_SCAN_UPDATED]: () => refreshResistPanel(),
+});
+
+export function runMonsterKnowledgeAutomation(event = { type: EVENT_ROUND_STARTED }) {
+  return monsterKnowledgeEventHandlers[event.type]?.(event);
 }
