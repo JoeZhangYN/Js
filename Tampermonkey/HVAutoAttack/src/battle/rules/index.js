@@ -42,6 +42,15 @@ function criticalBuffFacts(snap) {
   };
 }
 
+function channelFacts(snap) {
+  return {
+    channeling: snap?.channeling,
+    skillReady: snap?.skillReady,
+    playerEffects: snap?.playerEffects,
+    playerBuffs: snap?.playerBuffs,
+  };
+}
+
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
@@ -80,7 +89,7 @@ export const BATTLE_RULES = [
   // 10. Channel（decide 三段优先级返单 click，execute 探活+click）
   {
     name: "useChannelSkill",
-    decide: (snap, opt) => decideChannel(opt, snap),
+    decide: (snap, opt) => decideChannel({ opt, ...channelFacts(snap) }),
   },
   // 11. BUFF
   {

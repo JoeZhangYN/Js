@@ -1103,12 +1103,28 @@ function checkInfusionEntry() {
 
 function checkChannelEntry() {
   const ownerText = fs.readFileSync(decideChannelFile, "utf8");
-  for (const required of ["decideChannel", "channelSkillSwitch", "channelSkill", "channeling"]) {
+  for (const required of [
+    "decideChannel",
+    "channelSkillSwitch",
+    "channelSkill",
+    "event.channeling",
+    "event.skillReady",
+    "event.playerEffects",
+    "event.playerBuffs",
+  ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideChannelFile)} must own channel gate ${required}`);
     }
   }
+  if (/decideChannel\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
+    violations.push(`${rel(decideChannelFile)} must not expose opt/snap decision input`);
+  }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const channelRule =
+    rulesText.match(/name:\s*["']useChannelSkill["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideChannel\(\s*opt\s*,\s*snap\s*\)/.test(channelRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass narrow facts, not snap, to channel`);
+  }
   for (const legacy of ["channelSkillSwitch", "channelSkill"]) {
     if (rulesText.includes(legacy)) {
       violations.push(`${rel(battleRulesFile)} must not assemble channel rule gates directly`);
