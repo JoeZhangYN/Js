@@ -51,6 +51,8 @@ const stepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const battleRulesFile = path.join(root, "src/battle/rules/index.js");
+const ruleFactsFile = path.join(root, "src/battle/rules/rule-facts.js");
+const attackFactsFile = path.join(root, "src/battle/rules/attack-facts.js");
 const bigSkillFile = path.join(root, "src/battle/rules/big-skill.js");
 const bossImperilFile = path.join(root, "src/battle/rules/decide-boss-imperil.js");
 const burstControlFile = path.join(root, "src/battle/debuff/decide-burst-control.js");
@@ -1563,6 +1565,44 @@ function checkAttackEntry() {
   }
 }
 
+function checkBattleRuleFactMappers() {
+  const ruleFactsText = fs.readFileSync(ruleFactsFile, "utf8");
+  const attackFactsText = fs.readFileSync(attackFactsFile, "utf8");
+  for (const required of ["conditionFacts", "bossImperilFacts", "singleDebuffFacts"]) {
+    if (!ruleFactsText.includes(required)) {
+      violations.push(`${rel(ruleFactsFile)} must own rule fact mapper ${required}`);
+    }
+  }
+  for (const required of ["attackFacts", "conditionFacts", "monsterFacts"]) {
+    if (!attackFactsText.includes(required)) {
+      violations.push(`${rel(attackFactsFile)} must own attack fact mapper ${required}`);
+    }
+  }
+
+  const allowedRuleFactsImporters = new Set([battleRulesFile, attackFactsFile]);
+  const allowedAttackFactsImporters = new Set([battleRulesFile]);
+  for (const relative of ["src/battle", "src/core"]) {
+    const dir = path.join(root, relative);
+    for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
+      const file = path.join(entry.parentPath, entry.name);
+      const text = fs.readFileSync(file, "utf8");
+      if (
+        /from\s+["'][^"']*rule-facts\.js["']/.test(text) &&
+        !allowedRuleFactsImporters.has(file)
+      ) {
+        violations.push(`${rel(file)} must not bypass battle rules for rule fact mapping`);
+      }
+      if (
+        /from\s+["'][^"']*attack-facts\.js["']/.test(text) &&
+        !allowedAttackFactsImporters.has(file)
+      ) {
+        violations.push(`${rel(file)} must not bypass battle rules for attack fact mapping`);
+      }
+    }
+  }
+}
+
 function checkBattleStallMode() {
   const ownerText = fs.readFileSync(stallModeFile, "utf8");
   for (const required of [
@@ -1675,6 +1715,7 @@ checkDefendEntry();
 checkAutoPauseEntry();
 checkFleeEntry();
 checkAttackEntry();
+checkBattleRuleFactMappers();
 checkBattleStallMode();
 checkBattleTestFixtures();
 checkBattleOptionVocabulary();
