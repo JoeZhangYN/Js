@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/alarm/alarm.js");
 const ownerTest = path.normalize("src/alarm/alarm.test.js");
+const notificationCatalog = path.normalize("src/alarm/notification-catalog.js");
 const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
 
@@ -27,10 +28,18 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== notificationCatalog &&
       /from\s+["'](?:\.\/|\.\.\/alarm\/|\.\.\/\.\.\/alarm\/)alarm\.js["']/.test(line) &&
       /\b(?:setAlarm|setAudioAlarm|setNotification)\b/.test(line)
     ) {
       violations.push(`${rel(file)}:${index + 1} legacy alarm imports are forbidden`);
+    }
+    if (
+      relative !== owner &&
+      relative !== notificationCatalog &&
+      /from\s+["'][^"']*notification-catalog\.js["']/.test(line)
+    ) {
+      violations.push(`${rel(file)}:${index + 1} notification catalog is internal to alarm entry`);
     }
     if (
       relative === settingsRender &&
@@ -48,6 +57,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const notificationCatalogText = fs.readFileSync(path.join(root, notificationCatalog), "utf8");
 for (const required of ["runAlarmAutomation", "AlarmEvent", "PREVIEW_AUDIO_URL"]) {
   if (!ownerText.includes(required))
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -59,6 +69,22 @@ for (const required of ["ALARM_KINDS", "normalizeAlarmKind"]) {
 }
 if (!ownerText.includes("OptionEvent.READ_FIELD")) {
   violations.push(`${owner.replaceAll("\\", "/")} must read alarm options through option entry`);
+}
+if (!ownerText.includes("getAlarmNotification")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must delegate notification copy lookup`);
+}
+if (!notificationCatalogText.includes("getAlarmNotification")) {
+  violations.push(
+    `${notificationCatalog.replaceAll("\\", "/")} must own alarm notification catalog lookup`
+  );
+}
+if (/export\s+(?:const|function)\s+(?!getAlarmNotification\b)/.test(notificationCatalogText)) {
+  violations.push(
+    `${notificationCatalog.replaceAll("\\", "/")} must expose only getAlarmNotification`
+  );
+}
+if (/\bconst\s+notifications\s*=/.test(ownerText) || /Some errors have occurred/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not keep notification copy catalog inline`);
 }
 if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not read alarm options directly`);
