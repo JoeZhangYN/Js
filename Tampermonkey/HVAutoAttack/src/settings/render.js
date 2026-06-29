@@ -229,6 +229,14 @@ function renderBattleControlSchemaFields() {
   ];
 }
 
+function renderSpiritStanceSchemaFields() {
+  return [
+    renderSchemaCheckboxField("turnOnSS", ": {{turnOnSSCondition}}"),
+    renderSchemaCheckboxField("turnOffSS", ": {{turnOffSSCondition}}"),
+    renderSchemaCheckboxField("preCastSS", ": {{preCastSSCondition}}"),
+  ];
+}
+
 /**
  * 打开 / 切换显隐 HVAA 配置面板。浮动按钮(button.js)与 hv-utils 顶部栏触发器(window.HVAA_openConfig)
  * 共用此单一入口（收口原 button.js 内联 onclick 逻辑，去重）。
@@ -393,9 +401,7 @@ export function optionBox() {
     "  </div>",
     // === Tactics 战术姿态 tab（Spirit Stance / Defend / Focus / Ether Tap / 逃跑 / 暂停，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-Tactics">',
-    '  <div><input id="turnOnSS" type="checkbox"><label for="turnOnSS"><b><l0>开启</l0><l1>開啟</l1><l2>Turn on </l2>Spirit Stance</b></label>: {{turnOnSSCondition}}</div>',
-    '  <div><input id="turnOffSS" type="checkbox"><label for="turnOffSS"><b><l0>关闭</l0><l1>關閉</l1><l2>Turn off </l2>Spirit Stance</b></label>: {{turnOffSSCondition}}</div>',
-    '  <div><input id="preCastSS" type="checkbox"><label for="preCastSS"><b><l0>释放Buff/Debuff前开启Spirit Stance</l0><l1>釋放Buff/Debuff前開啟Spirit Stance</l1><l2>Activate Spirit Stance before Buff/Debuff</l2></b></label>: {{preCastSSCondition}}</div>',
+    ...renderSpiritStanceSchemaFields(),
     '  <div><input id="focus" type="checkbox"><label for="focus"><b>Focus</b></label>: {{focusCondition}}</div>',
     '  <div><input id="etherTap" type="checkbox"><label for="etherTap"><b>Ether Tap</b></label>: {{etherTapCondition}}</div>',
     ...renderBattleControlSchemaFields(),
@@ -533,7 +539,7 @@ export function optionBox() {
     '    Imperil: <input class="hvAANumber" name="debuffSkillTurn_Im" type="text"> MagNet: <input class="hvAANumber" name="debuffSkillTurn_MN" type="text"> Silence: <input class="hvAANumber" name="debuffSkillTurn_Si" type="text"><br>',
     '    Drain: <input class="hvAANumber" name="debuffSkillTurn_Dr" type="text"> Weaken: <input class="hvAANumber" name="debuffSkillTurn_We" type="text"> Confuse: <input class="hvAANumber" name="debuffSkillTurn_Co" type="text"> </div></div>',
     '<div class="hvAATab" id="hvAATab-Skill">',
-    '  <div><span><l0>注意: 默认在Spirit状态下使用，请在<a class="hvAAGoto" name="hvAATab-Main">主要选项</a>勾选并设置<b>开启/关闭Spirit Stance</b></l0><l1>注意: 默認在Spirit狀態下使用，請在<a class="hvAAGoto" name="hvAATab-Main">主要選項</a>勾選並設置<b>開啟/關閉Spirit Stance</b></l1><l2>Note: use under Spirit by default, please check and set the <b>Turn on/off Spirit Stance</b> in <a class="hvAAGoto" name="hvAATab-Main">Main</a></l2></span></div>',
+    '  <div><span><l0>注意: 默认在Spirit状态下使用，请在<a class="hvAAGoto" name="hvAATab-Tactics">战术姿态</a>勾选并设置<b>开启/关闭Spirit Stance</b></l0><l1>注意: 默認在Spirit狀態下使用，請在<a class="hvAAGoto" name="hvAATab-Tactics">戰術姿態</a>勾選並設置<b>開啟/關閉Spirit Stance</b></l1><l2>Note: use under Spirit by default, please check and set the <b>Turn on/off Spirit Stance</b> in <a class="hvAAGoto" name="hvAATab-Tactics">Tactics</a></l2></span></div>',
     '  <div class="skillOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: ',
     '  <input name="skillOrderValue" style="width:80%;" type="text" disabled="true"><br>',
     '  <input id="skillOrder_OFC" type="checkbox"><label for="skillOrder_OFC"><l0>友情小马砲</l0><l1>友情小馬砲</l1><l2>OFC</l2></label><input id="skillOrder_FRD" type="checkbox"><label for="skillOrder_FRD"><l0>龙吼</l0><l1>龍吼</l1><l2>FRD</l2></label><input id="skillOrder_T3" type="checkbox"><label for="skillOrder_T3">T3</label><input id="skillOrder_T2" type="checkbox"><label for="skillOrder_T2">T2</label><input id="skillOrder_T1" type="checkbox"><label for="skillOrder_T1">T1</label></div>',

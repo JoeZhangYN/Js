@@ -357,6 +357,40 @@ const OPTION_SCHEMA = [
       l2: "Refresh interval (minutes)",
     },
   },
+  // === Spirit Stance：攻击流开/关姿态与技能前置姿态的配置说明 SOT ===
+  {
+    key: "turnOnSS",
+    kind: "checkbox",
+    group: "Tactics",
+    default: false,
+    label: {
+      l0: "开启 Spirit Stance",
+      l1: "開啟 Spirit Stance",
+      l2: "Turn on Spirit Stance",
+    },
+  },
+  {
+    key: "turnOffSS",
+    kind: "checkbox",
+    group: "Tactics",
+    default: false,
+    label: {
+      l0: "关闭 Spirit Stance",
+      l1: "關閉 Spirit Stance",
+      l2: "Turn off Spirit Stance",
+    },
+  },
+  {
+    key: "preCastSS",
+    kind: "checkbox",
+    group: "Tactics",
+    default: false,
+    label: {
+      l0: "释放 Buff/Debuff 前开启 Spirit Stance",
+      l1: "釋放 Buff/Debuff 前開啟 Spirit Stance",
+      l2: "Activate Spirit Stance before Buff/Debuff",
+    },
+  },
   // === 战斗控制：规则表只调用唯一纯决策，设置页说明/默认值由 schema 派生 ===
   {
     key: "defend",
