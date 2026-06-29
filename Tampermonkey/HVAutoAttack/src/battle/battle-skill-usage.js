@@ -50,9 +50,12 @@ function recordUse(code) {
   return usage;
 }
 
+const skillUsageEventHandlers = Object.freeze({
+  [EVENT_RESET_ROUND]: () => resetRound(),
+  [EVENT_RECORD_USE]: (event) => recordUse(event.code),
+  [EVENT_READ_USAGE]: () => readUsage(),
+});
+
 export function runBattleSkillUsageAutomation(event = { type: EVENT_READ_USAGE }) {
-  if (event.type === EVENT_RESET_ROUND) return resetRound();
-  if (event.type === EVENT_RECORD_USE) return recordUse(event.code);
-  if (event.type === EVENT_READ_USAGE) return readUsage();
-  return null;
+  return skillUsageEventHandlers[event.type]?.(event) ?? null;
 }

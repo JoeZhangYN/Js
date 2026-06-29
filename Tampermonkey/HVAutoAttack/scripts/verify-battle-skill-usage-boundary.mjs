@@ -61,6 +61,7 @@ requireText(owner, [
   "normalizeUsageCount",
   "normalizeUsage",
   "isKnownUsageCode",
+  "skillUsageEventHandlers",
   "RESET_ROUND",
   "RECORD_USE",
   "READ_USAGE",
@@ -68,6 +69,11 @@ requireText(owner, [
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if ((ownerText.match(/normalizeUsage\(/g) || []).length < 2) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize skill usage reads and writes`);
+}
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must dispatch battle skill usage events through skillUsageEventHandlers`
+  );
 }
 requireText(roundLifecycle, ["BattleSkillUsageEvent.RESET_ROUND", "runBattleSkillUsageAutomation"]);
 requireText(executeAttack, [
