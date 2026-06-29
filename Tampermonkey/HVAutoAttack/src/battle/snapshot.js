@@ -248,7 +248,8 @@ export function collectSnapshot(event = {}) {
   // F3: 上回合开火的技能若本回合脱灰 → 收敛真实 CD（只需 globalTurn + readySkillIds）
   runCdLearningAutomation({
     type: CdLearningEvent.FINALIZE_PENDING,
-    snap: { globalTurn, readySkillIds: readySkillIds(skillReady) },
+    globalTurn,
+    readySkillIds: readySkillIds(skillReady),
   });
   // F4: 上回合 OFC/FRD 开火的 boss 本回合是否已死 → 按 MID 学击杀率（只需 globalTurn + liveMonsterIds）
   runBigSkillKillLearningAutomation({

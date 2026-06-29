@@ -129,7 +129,8 @@ describe("collectSnapshot", () => {
     });
     expect(mocks.runCdLearningAutomation).toHaveBeenCalledWith({
       type: "finalizePending",
-      snap: { globalTurn: 9, readySkillIds: ["111"] },
+      globalTurn: 9,
+      readySkillIds: ["111"],
     });
     expect(mocks.runBigSkillKillLearningAutomation).toHaveBeenCalledWith({
       type: "finalizePending",

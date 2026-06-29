@@ -22,7 +22,8 @@ const fire = (code, id, globalTurn) =>
 const settle = (globalTurn, readyId) =>
   runCdLearningAutomation({
     type: CdLearningEvent.FINALIZE_PENDING,
-    snap: { globalTurn, readySkillIds: readyId ? [readyId] : [] },
+    globalTurn,
+    readySkillIds: readyId ? [readyId] : [],
   });
 const readCd = (code) => runCdLearningAutomation({ type: CdLearningEvent.READ_CD, code });
 
@@ -101,7 +102,7 @@ describe("cd-learner 学习与守卫", () => {
 
     runCdLearningAutomation({
       type: CdLearningEvent.FINALIZE_PENDING,
-      snap: { readySkillIds: ["1111"] },
+      readySkillIds: ["1111"],
     });
     expect(readCd("OFC")).toBe(50);
   });

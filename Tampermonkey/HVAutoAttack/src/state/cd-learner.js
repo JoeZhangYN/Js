@@ -96,13 +96,13 @@ function recordCdFire(code, id, globalTurn) {
 
 /**
  * finalize（snapshot 入口，跑在 rules 前）：对每个在途 pending，若其技能已脱灰则结算 gap。
- * @param {{globalTurn:number, readySkillIds:Array<string>}} snap
+ * @param {{globalTurn:number, readySkillIds:Array<string>}} event
  */
-function finalizeCdPending(snap) {
+function finalizeCdPending(event) {
   const pending = normalizePending(g("cdLearnPending"));
   if (!Object.keys(pending).length) return;
-  const now = normalizeTurn(snap?.globalTurn);
-  const readySkillIds = normalizeReadySkillIds(snap?.readySkillIds);
+  const now = normalizeTurn(event?.globalTurn);
+  const readySkillIds = normalizeReadySkillIds(event?.readySkillIds);
   let changed = false;
   for (const code of Object.keys(pending)) {
     const p = pending[code];
@@ -152,7 +152,7 @@ function getLearnedCd(code) {
 
 export function runCdLearningAutomation(event = { type: EVENT_READ_CD }) {
   if (event.type === EVENT_RECORD_FIRE) return recordCdFire(event.code, event.id, event.globalTurn);
-  if (event.type === EVENT_FINALIZE_PENDING) return finalizeCdPending(event.snap);
+  if (event.type === EVENT_FINALIZE_PENDING) return finalizeCdPending(event);
   if (event.type === EVENT_READ_CD) return getLearnedCd(event.code);
   return undefined;
 }

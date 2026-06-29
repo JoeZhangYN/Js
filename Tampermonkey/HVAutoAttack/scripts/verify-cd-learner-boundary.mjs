@@ -51,6 +51,13 @@ function checkFile(file) {
     ) {
       violations.push(`${rel(file)} must pass globalTurn, not snap, to CD fire learning`);
     }
+    if (
+      relative !== owner &&
+      call[0].includes("CdLearningEvent.FINALIZE_PENDING") &&
+      /\bsnap\s*:/.test(call[0])
+    ) {
+      violations.push(`${rel(file)} must pass globalTurn/readySkillIds, not snap, to CD finalize`);
+    }
   }
   if (
     relative !== owner &&
@@ -89,14 +96,21 @@ if ((ownerText.match(/readLearnedCdMap\(/g) || []).length < 3) {
 if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not read option fields directly`);
 }
-const finalizeBody = ownerText.match(/function finalizeCdPending\(snap\) \{[\s\S]*?\n\}/)?.[0];
-if (!finalizeBody?.includes("snap?.readySkillIds")) {
+const finalizeBody = ownerText.match(/function finalizeCdPending\(event\) \{[\s\S]*?\n\}/)?.[0];
+if (
+  !finalizeBody?.includes("event?.readySkillIds") ||
+  !finalizeBody?.includes("event?.globalTurn")
+) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} finalize must consume narrow readySkillIds, not full skillReady`
+    `${owner.replaceAll("\\", "/")} finalize must consume narrow globalTurn/readySkillIds facts`
   );
 }
-if (/\bsnap\?\.skillReady\b|\bsnap\.skillReady\b/.test(finalizeBody || "")) {
-  violations.push(`${owner.replaceAll("\\", "/")} finalize must not consume full skillReady map`);
+if (
+  /\bsnap\?\.globalTurn\b|\bsnap\.globalTurn\b|\bsnap\?\.readySkillIds\b|\bsnap\.readySkillIds\b|\bsnap\?\.skillReady\b|\bsnap\.skillReady\b/.test(
+    finalizeBody || ""
+  )
+) {
+  violations.push(`${owner.replaceAll("\\", "/")} finalize must not consume snap-shaped input`);
 }
 const recordBody = ownerText.match(
   /function recordCdFire\(code, id, globalTurn\) \{[\s\S]*?\n\}/
