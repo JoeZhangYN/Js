@@ -9,45 +9,45 @@ import { aliveByOrder } from "../monster-view.js";
 import { firstByOrder, highestAbsHp, selfTarget, aoeNeighborAnchor } from "../target-strategy.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 
-function stallActiveFacts(snap) {
+function stallActiveFacts(event) {
   return {
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
-    aliveMonsterHpPercents: (snap?.view || [])
+    roundNow: event?.roundNow,
+    roundAll: event?.roundAll,
+    aliveMonsterHpPercents: (event?.monsterFacts || [])
       .filter((monster) => !monster.isDead)
       .map((monster) => monster.hpPercent),
-    overcharge: snap?.oc,
+    overcharge: event?.overcharge,
   };
 }
 
 /**
  * 决定单目标 debuff 该施哪一种 + 打哪只怪。
- * @param {object} opt
- * @param {import("../../core/types.js").BattleSnapshot} snap
+ * @param {object} event
  * @returns {import("../../core/types.js").ActionResult}
  */
-export function decideDeSkill(opt, snap) {
-  if (isStallingForDeSkill(opt, snap)) return { kind: "noop" };
+export function decideDeSkill(event = {}) {
+  const opt = event.opt || {};
+  if (isStallingForDeSkill(opt, event)) return { kind: "noop" };
   if (
     !opt.debuffSkillSwitch ||
     !opt.debuffSkill ||
-    !checkCondition(opt.debuffSkillCondition, snap)
+    !checkCondition(opt.debuffSkillCondition, event.conditionFacts)
   ) {
     return { kind: "noop" };
   }
   const skillPack = (opt.debuffSkillOrderValue || "").split(",").filter(Boolean);
-  const alive = aliveByOrder(snap.view);
+  const alive = aliveByOrder(event.monsterFacts);
   if (!alive.length) return { kind: "noop" };
 
   for (const key of skillPack) {
     if (!opt.debuffSkill?.[key]) continue;
-    if (!checkCondition(opt[`debuffSkill${key}Condition`], snap)) continue;
+    if (!checkCondition(opt[`debuffSkill${key}Condition`], event.conditionFacts)) continue;
     const skill = DEBUFF_SKILL_LIB.get(key);
     if (!skill) continue;
     // 目标怪：Drain 且开关开 → 绝对血最多(highestAbsHp)；其余单体 debuff → 首怪(order 最小)。
     const isDrainMaxHp = key === "Dr" && opt.drainTargetMaxHp !== false;
     const target = isDrainMaxHp ? highestAbsHp(alive) : firstByOrder(alive);
-    const skillReady = !!snap.skillReady[skill.id];
+    const skillReady = !!event.skillReady?.[skill.id];
     const verdict = canApplyDebuffPure(target.buffEffects, key, opt, skillReady);
     if (verdict === "skip") continue;
     if (verdict === "blocked") {
@@ -61,7 +61,7 @@ export function decideDeSkill(opt, snap) {
       };
     }
     const aoeCount =
-      (snap.spellAoe && snap.spellAoe[skill.name]) ||
+      (event.spellAoe && event.spellAoe[skill.name]) ||
       (opt.debuffSkillAoe && opt.debuffSkillAoe[key]) ||
       1;
     // Drain 恒点选定的血最多怪本身（取消邻居偏移）；其余 debuff 保留 AoE 邻居覆盖优化（首怪邻居 alive[1]）。
@@ -77,10 +77,10 @@ export function decideDeSkill(opt, snap) {
   return { kind: "noop" };
 }
 
-function isStallingForDeSkill(opt, snap) {
+function isStallingForDeSkill(opt, event) {
   return runBattleStallModeAutomation({
     type: BattleStallModeEvent.READ_ACTIVE,
     opt,
-    ...stallActiveFacts(snap),
+    ...stallActiveFacts(event),
   });
 }

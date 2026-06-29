@@ -118,6 +118,18 @@ export function allDebuffFacts(snap) {
   };
 }
 
+export function singleDebuffFacts(snap) {
+  return {
+    conditionFacts: conditionFacts(snap),
+    skillReady: snap?.skillReady,
+    spellAoe: snap?.spellAoe,
+    overcharge: snap?.oc,
+    roundNow: snap?.roundNow,
+    roundAll: snap?.roundAll,
+    monsterFacts: snap?.view,
+  };
+}
+
 export function conditionFacts(snap) {
   // User-authored condition expressions address a variable map, so the snapshot is the condition context.
   return snap;

@@ -1206,14 +1206,24 @@ function checkSingleDebuffEntry() {
     "debuffSkill",
     "debuffSkillCondition",
     "runBattleStallModeAutomation",
+    "conditionFacts",
+    "event.monsterFacts",
+    "event.skillReady",
+    "event.spellAoe",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideDeSkillFile)} must own single-debuff gate ${required}`);
     }
   }
+  if (/decideDeSkill\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
+    violations.push(`${rel(decideDeSkillFile)} must not expose opt/snap single-debuff input`);
+  }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
   const useDeSkillRule =
     rulesText.match(/name:\s*["']useDeSkill["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideDeSkill\(\s*opt\s*,\s*snap\s*\)/.test(useDeSkillRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass single-debuff facts, not snap`);
+  }
   for (const legacy of ["isStallingForRules", "debuffSkillSwitch", "debuffSkillCondition"]) {
     if (new RegExp(`\\b${legacy}\\b`).test(useDeSkillRule)) {
       violations.push(

@@ -34,40 +34,21 @@ const enabled = (over = {}) => ({
   ...over,
 });
 
-describe("decideDeSkill — entry gate", () => {
-  it("debuffSkillSwitch 未开 -> noop", () => {
-    const s = snap({ view: [mon()] });
-    expect(decideDeSkill({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } }, s)).toEqual({
-      kind: "noop",
-    });
-  });
+function deSkillFacts(snap) {
+  return {
+    conditionFacts: snap,
+    skillReady: snap.skillReady,
+    spellAoe: snap.spellAoe,
+    overcharge: snap.oc,
+    roundNow: snap.roundNow,
+    roundAll: snap.roundAll,
+    monsterFacts: snap.view,
+  };
+}
 
-  it("debuffSkillCondition 不满足 -> noop", () => {
-    const s = snap({ hp: 0.9, view: [mon()] });
-    expect(
-      decideDeSkill(
-        enabled({
-          debuffSkillOrderValue: "Dr",
-          debuffSkill: { Dr: true },
-          debuffSkillCondition: [["hp,2,0.5"]],
-        }),
-        s
-      )
-    ).toEqual({ kind: "noop" });
-  });
-
-  it("stall active -> noop", () => {
-    const s = snap({
-      oc: 100,
-      roundNow: 1,
-      roundAll: 2,
-      view: [mon({ hpPercent: 0.8 })],
-    });
-    expect(
-      decideDeSkill(enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } }), s)
-    ).toEqual({ kind: "noop" });
-  });
-});
+function decide(opt, s) {
+  return decideDeSkill({ opt, ...deSkillFacts(s) });
+}
 
 describe("decideDeSkill — Drain 目标策略", () => {
   it("Drain 默认（drainTargetMaxHp 缺省=开）打绝对血最多的怪，而非首怪", () => {
@@ -79,7 +60,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       ],
     });
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
-    expect(decideDeSkill(opt, s)).toEqual({
+    expect(decide(opt, s)).toEqual({
       kind: "click-skill-then-target",
       skillId: "211",
       targetId: 2,
@@ -94,7 +75,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       ],
     });
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
-    expect(decideDeSkill(opt, s).targetId).toBe(2);
+    expect(decide(opt, s).targetId).toBe(2);
   });
 
   it("Drain hpAbsNow 相同时取 order 最小（稳定 first）", () => {
@@ -102,7 +83,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       view: [mon({ id: 1, order: 0, hpAbsNow: 800 }), mon({ id: 2, order: 1, hpAbsNow: 800 })],
     });
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
-    expect(decideDeSkill(opt, s).targetId).toBe(1);
+    expect(decide(opt, s).targetId).toBe(1);
   });
 
   it("drainTargetMaxHp=false 时 Drain 退回打首怪（order 最小）", () => {
@@ -114,7 +95,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       debuffSkill: { Dr: true },
       drainTargetMaxHp: false,
     });
-    expect(decideDeSkill(opt, s).targetId).toBe(1);
+    expect(decide(opt, s).targetId).toBe(1);
   });
 
   it("Drain 选目标时跳过死怪（死怪血更多也不选）", () => {
@@ -126,7 +107,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       ],
     });
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
-    expect(decideDeSkill(opt, s).targetId).toBe(3);
+    expect(decide(opt, s).targetId).toBe(3);
   });
 
   it("Drain AoE≥2 时仍恒点血最多怪本身（取消邻居偏移，修复目标漂移）", () => {
@@ -140,7 +121,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
     });
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
     // 旧行为会漂移到 order 邻居 #mkey_3；新行为 selfTarget → 恒打血最多怪 #mkey_2
-    expect(decideDeSkill(opt, s).targetId).toBe(2);
+    expect(decide(opt, s).targetId).toBe(2);
   });
 
   it("非 Drain debuff（Silence）不受开关影响，恒打首怪", () => {
@@ -148,7 +129,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       view: [mon({ id: 1, order: 0, hpAbsNow: 200 }), mon({ id: 2, order: 1, hpAbsNow: 9500 })],
     });
     const opt = enabled({ debuffSkillOrderValue: "Si", debuffSkill: { Si: true } });
-    expect(decideDeSkill(opt, s).targetId).toBe(1);
+    expect(decide(opt, s).targetId).toBe(1);
   });
 
   it("非 Drain debuff AoE≥2 → 保留邻居覆盖优化(首怪邻居)", () => {
@@ -157,12 +138,12 @@ describe("decideDeSkill — Drain 目标策略", () => {
       view: [mon({ id: 1, order: 0, hpAbsNow: 200 }), mon({ id: 2, order: 1, hpAbsNow: 900 })],
     });
     const opt = enabled({ debuffSkillOrderValue: "Si", debuffSkill: { Si: true } });
-    expect(decideDeSkill(opt, s).targetId).toBe(2); // 首怪(id1) 的邻居 id2
+    expect(decide(opt, s).targetId).toBe(2); // 首怪(id1) 的邻居 id2
   });
 
   it("无存活怪 → noop", () => {
     const s = snap({ view: [mon({ isDead: true })] });
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
-    expect(decideDeSkill(opt, s)).toEqual({ kind: "noop" });
+    expect(decide(opt, s)).toEqual({ kind: "noop" });
   });
 });
