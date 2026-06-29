@@ -48,6 +48,7 @@ function requireText(relative, required) {
 const ownerText = requireText(owner, [
   "BattleActionSpeedEvent",
   "runBattleActionSpeedAutomation",
+  "actionSpeedEventHandlers",
   "ACTION_TIMESTAMP_RUNTIME_KEY",
   "ACTION_SPEED_RUNTIME_KEY",
   "normalizeTimestamp",
@@ -63,6 +64,12 @@ if (
   )
 ) {
   violations.push(`${owner.replaceAll("\\", "/")} may export only its event entry`);
+}
+if (!/const actionSpeedEventHandlers\s*=\s*Object\.freeze\(/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through one table`);
+}
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not route events through an if ladder`);
 }
 for (const key of runtimeKeys) {
   if (!new RegExp(`const\\s+[A-Z_]+_RUNTIME_KEY\\s*=\\s*"${key}"`).test(ownerText)) {
