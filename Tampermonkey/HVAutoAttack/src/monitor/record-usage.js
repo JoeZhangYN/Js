@@ -28,7 +28,7 @@ function storeCurrentUsageStats(stats) {
   });
 }
 
-function recordBattleActionUsage(parm) {
+function recordActionUsage(parm) {
   const stats = readCurrentUsageStats();
   const context = runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.USAGE_ACTION_CONTEXT });
   applyBattleActionUsageStats(stats, parm, context);
@@ -36,7 +36,7 @@ function recordBattleActionUsage(parm) {
 }
 
 const usageEventHandlers = Object.freeze({
-  [EVENT_RECORD_ACTION_USAGE]: (event) => recordBattleActionUsage(event.usage),
+  [EVENT_RECORD_ACTION_USAGE]: (event) => recordActionUsage(event.usage),
   [EVENT_RECORD_COMPLETED_USAGE]: () => recordCompletedUsage(),
 });
 

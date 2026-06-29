@@ -401,6 +401,9 @@ function checkUsageImplementation() {
       );
     }
   }
+  if (/\brecordBattleActionUsage\b/.test(text)) {
+    violations.push(`${rel(usageFile)} must use recordActionUsage command vocabulary`);
+  }
   if (/\b(?:export\s+)?function\s+recordUsage2\s*\(/.test(text)) {
     violations.push(
       `${rel(usageFile)} legacy recordUsage2() bridge must stay deleted; use runBattleUsageAutomation(event)`
