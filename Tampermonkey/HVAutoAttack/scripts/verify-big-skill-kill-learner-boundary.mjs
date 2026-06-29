@@ -50,6 +50,15 @@ function checkFile(file) {
       violations.push(`${where} learned big-kill storage belongs in big skill kill learner`);
     }
   });
+  for (const call of source.matchAll(/runBigSkillKillLearningAutomation\(\s*\{[\s\S]*?\}\s*\)/g)) {
+    if (
+      relative !== owner &&
+      call[0].includes("BigSkillKillLearningEvent.RECORD_CAST") &&
+      /\bsnap\s*:/.test(call[0])
+    ) {
+      violations.push(`${rel(file)} must pass observedBosses, not snap, to big-skill record cast`);
+    }
+  }
   if (
     relative !== owner &&
     /BigSkillKillLearningEvent\.FINALIZE_PENDING[\s\S]{0,220}\bsnap:\s*\{[\s\S]{0,120}\bview\s*:/.test(
@@ -101,6 +110,21 @@ if (/\bsnap\?\.view\b|\bsnap\.view\b/.test(finalizeBody || "")) {
   violations.push(
     `${owner.replaceAll("\\", "/")} finalize must not consume full monster view rows`
   );
+}
+const recordBody = ownerText.match(
+  /function recordBigSkillCast\(code, event\) \{[\s\S]*?\n\}/
+)?.[0];
+if (!recordBody?.includes("event?.observedBosses") || !recordBody?.includes("event?.globalTurn")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} record cast must consume observedBosses and globalTurn`
+  );
+}
+if (
+  /\bsnap\?\.view\b|\bsnap\.view\b|\bsnap\?\.globalTurn\b|\bsnap\.globalTurn\b/.test(
+    recordBody || ""
+  )
+) {
+  violations.push(`${owner.replaceAll("\\", "/")} record cast must not consume full snap`);
 }
 
 const snapshotText = fs.readFileSync(path.join(root, snapshot), "utf8");

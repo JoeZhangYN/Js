@@ -34,7 +34,14 @@ beforeEach(() => {
 
 describe("runPhysicalSkillBookkeeping", () => {
   it("records one physical skill fire through all bookkeeping entries", () => {
-    const snap = { globalTurn: 10 };
+    const snap = {
+      globalTurn: 10,
+      view: [
+        { monsterId: 100, isBoss: true, isDead: false, hpMax: 5000, buffs: ["imperil"] },
+        { monsterId: 200, isBoss: true, isDead: true, hpMax: 6000, buffs: [] },
+        { monsterId: 300, isBoss: false, isDead: false, hpMax: 7000, buffs: [] },
+      ],
+    };
 
     runPhysicalSkillBookkeeping({
       type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
@@ -61,7 +68,8 @@ describe("runPhysicalSkillBookkeeping", () => {
     expect(mocks.runBigSkillKillLearningAutomation).toHaveBeenCalledWith({
       type: "recordCast",
       code: "OFC",
-      snap,
+      globalTurn: 10,
+      observedBosses: [{ mid: 100, hpMax: 5000, imperilActive: true }],
     });
   });
 });

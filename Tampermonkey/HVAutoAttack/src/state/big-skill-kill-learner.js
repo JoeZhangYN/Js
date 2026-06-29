@@ -66,24 +66,18 @@ function readLearnedBigKillMap() {
 }
 
 /**
- * 开火记录（SHELL，execute-attack 物理分支）：code∈OFC/FRD 且有活 boss 才记 pending。
+ * 开火记录（SHELL，execute-attack 物理分支）：code∈OFC/FRD 且有活 boss 观测才记 pending。
  * @param {string} code
- * @param {import("../core/types.js").BattleSnapshot} snap
+ * @param {{globalTurn?:number, observedBosses?:Array<{mid?:number,hpMax?:number,imperilActive?:boolean}>}} event
  */
-function recordBigSkillCast(code, snap) {
+function recordBigSkillCast(code, event) {
   if (code !== "OFC" && code !== "FRD") return;
-  const bosses = (snap?.view || [])
-    .filter((m) => m.isBoss && !m.isDead && m.monsterId != null)
-    .map((m) => ({
-      mid: m.monsterId,
-      hpMax: m.hpMax,
-      imperilActive: (m.buffs || []).includes("imperil"),
-    }));
+  const bosses = event?.observedBosses || [];
   if (!bosses.length) return;
   g(
     "bigKillPending",
     normalizePending({
-      globalTurn: snap?.globalTurn,
+      globalTurn: event?.globalTurn,
       skill: code,
       bosses,
     })
@@ -158,7 +152,7 @@ function ofcWillKillBoss(mid, snap, opt) {
 }
 
 export function runBigSkillKillLearningAutomation(event = { type: EVENT_WILL_KILL_BOSS }) {
-  if (event.type === EVENT_RECORD_CAST) return recordBigSkillCast(event.code, event.snap);
+  if (event.type === EVENT_RECORD_CAST) return recordBigSkillCast(event.code, event);
   if (event.type === EVENT_FINALIZE_PENDING) return finalizeBigSkillPending(event.snap);
   if (event.type === EVENT_WILL_KILL_BOSS) return ofcWillKillBoss(event.mid, event.snap, event.opt);
   return undefined;

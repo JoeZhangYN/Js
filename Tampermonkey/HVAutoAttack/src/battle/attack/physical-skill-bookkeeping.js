@@ -12,6 +12,16 @@ export const PhysicalSkillBookkeepingEvent = Object.freeze({
   RECORD_FIRE: EVENT_RECORD_FIRE,
 });
 
+function observedBigSkillBosses(snap) {
+  return (snap?.view || [])
+    .filter((monster) => monster.isBoss && !monster.isDead && monster.monsterId != null)
+    .map((monster) => ({
+      mid: monster.monsterId,
+      hpMax: monster.hpMax,
+      imperilActive: (monster.buffs || []).includes("imperil"),
+    }));
+}
+
 export function runPhysicalSkillBookkeeping(event) {
   if (event.type !== EVENT_RECORD_FIRE) return;
   runBattleSkillUsageAutomation({
@@ -28,6 +38,7 @@ export function runPhysicalSkillBookkeeping(event) {
   runBigSkillKillLearningAutomation({
     type: BigSkillKillLearningEvent.RECORD_CAST,
     code: event.code,
-    snap: event.snap,
+    globalTurn: event.globalTurn,
+    observedBosses: observedBigSkillBosses(event.snap),
   });
 }

@@ -31,10 +31,8 @@ function observeOfcKill(mid, turn) {
   runBigSkillKillLearningAutomation({
     type: BigSkillKillLearningEvent.RECORD_CAST,
     code: "OFC",
-    snap: {
-      globalTurn: turn,
-      view: [mon({ isBoss: true, monsterId: mid, hpMax: 5000, buffs: [] })],
-    },
+    globalTurn: turn,
+    observedBosses: [{ mid, hpMax: 5000, imperilActive: false }],
   });
   runBigSkillKillLearningAutomation({
     type: BigSkillKillLearningEvent.FINALIZE_PENDING,

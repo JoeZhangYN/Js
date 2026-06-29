@@ -40,7 +40,8 @@ function observe({ killed = true, t = 0 }) {
   run({
     type: BigSkillKillLearningEvent.RECORD_CAST,
     code: "OFC",
-    snap: { view: [boss()], globalTurn: t },
+    globalTurn: t,
+    observedBosses: [{ mid: 100, hpMax: 5000, imperilActive: false }],
   });
   run({
     type: BigSkillKillLearningEvent.FINALIZE_PENDING,
@@ -53,10 +54,8 @@ describe("big-skill kill learner normalization", () => {
     run({
       type: BigSkillKillLearningEvent.RECORD_CAST,
       code: "FRD",
-      snap: {
-        view: [boss({ monsterId: "100.9", hpMax: "5000.8", buffs: "bad" })],
-        globalTurn: "5.9",
-      },
+      globalTurn: "5.9",
+      observedBosses: [{ mid: "100.9", hpMax: "5000.8", imperilActive: "" }],
     });
 
     expect(g("bigKillPending")).toEqual({

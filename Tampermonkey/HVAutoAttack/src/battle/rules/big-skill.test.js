@@ -26,10 +26,8 @@ function learnBossKillEvidence() {
     runBigSkillKillLearningAutomation({
       type: BigSkillKillLearningEvent.RECORD_CAST,
       code: "OFC",
-      snap: {
-        globalTurn: i * 100,
-        view: [{ monsterId: 100, isBoss: true, isDead: false, hpMax: 5000, buffs: [] }],
-      },
+      globalTurn: i * 100,
+      observedBosses: [{ mid: 100, hpMax: 5000, imperilActive: false }],
     });
     runBigSkillKillLearningAutomation({
       type: BigSkillKillLearningEvent.FINALIZE_PENDING,
