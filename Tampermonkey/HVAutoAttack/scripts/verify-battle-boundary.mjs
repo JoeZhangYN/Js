@@ -27,6 +27,7 @@ const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const battleRulesFile = path.join(root, "src/battle/rules/index.js");
+const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const violations = [];
 
 function rel(file) {
@@ -679,6 +680,15 @@ function checkBattleRulesRuntimeContext() {
   }
 }
 
+function checkBattleTestFixtures() {
+  const text = fs.readFileSync(dispatchTestFile, "utf8");
+  if (/\bg\(\s*["']option["']/.test(text)) {
+    violations.push(
+      `${rel(dispatchTestFile)} must seed options through runOptionAutomation(event)`
+    );
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -697,6 +707,7 @@ checkActivateSpirit();
 checkExecuteItem();
 checkSnapshot();
 checkBattleRulesRuntimeContext();
+checkBattleTestFixtures();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");

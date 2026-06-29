@@ -2,7 +2,7 @@
 // 覆盖核心 DOM-click 系 kind；alert-and-pause 是现有工具的薄封装，留 HV 运行时验证。
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { dispatch } from "./dispatch.js";
-import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 /** 在 happy-dom 造按钮。opacity!=="0.5" → isOn 视为可用。 */
 function mkBtn(id, { disabled = false } = {}) {
@@ -16,7 +16,7 @@ function mkBtn(id, { disabled = false } = {}) {
 
 beforeEach(() => {
   document.body.innerHTML = "";
-  g("option", {}); // 无 preCastSS → checkAndActivateSpirit 直接 false
+  runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0" } });
   vi.useFakeTimers(); // 防 click-then-reload 的 scheduleReload 真触发 goto
 });
 
