@@ -7,6 +7,7 @@ import {
   runBattleRecordArchiveAutomation,
 } from "./battle-record-archive.js";
 import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
+import { applyBattleDropLog } from "./drop-recording.js";
 
 const EVENT_RECORD_BATTLE_DROPS = "recordBattleDrops";
 
@@ -42,54 +43,10 @@ function recordBattleDrops(deps, context) {
     },
     deps
   );
-
-  const quality = [
-    "Crude",
-    "Fair",
-    "Average",
-    "Superior",
-    "Exquisite",
-    "Magnificent",
-    "Legendary",
-    "Peerless",
-  ];
-  const dropQuality = context.dropQuality;
-
-  for (const log of battleLog) {
-    const text = log.textContent;
-
-    if (text === "You are Victorious!") {
-      break;
-    }
-
-    if (/^You gain \d+ (EXP|Credit)/.test(text)) {
-      const [, amount, type] = text.match(/^You gain (\d+) (EXP|Credit)/);
-      drop[`#${type}`] += Number(amount);
-      continue;
-    }
-
-    const item = deps.gE("span", log);
-    if (!item) continue;
-
-    const name = item.textContent.match(/^\[(.*?)\]$/)[1];
-
-    if (item.style.color === "rgb(255, 0, 0)") {
-      for (let j = dropQuality; j < quality.length; j++) {
-        if (name.includes(quality[j])) {
-          const equipmentName = `Equipment of ${name.match(/^\w+/)[0]}`;
-          drop[equipmentName] = (drop[equipmentName] || 0) + 1;
-          break;
-        }
-      }
-    } else if (item.style.color === "rgb(186, 5, 180)") {
-      const [, amount = "1", crystalName = name] = name.match(/^(\d+)x (Crystal of \w+)$/) || [];
-      drop[crystalName] = (drop[crystalName] || 0) + Number(amount);
-    } else if (item.style.color === "rgb(168, 144, 0)") {
-      drop["#Credit"] += Number(name.match(/\d+/)[0]);
-    } else {
-      drop[name] = (drop[name] || 0) + 1;
-    }
-  }
+  applyBattleDropLog(drop, battleLog, {
+    dropQuality: context.dropQuality,
+    readItem: (log) => deps.gE("span", log),
+  });
 
   runBattleRecordArchiveAutomation(
     {

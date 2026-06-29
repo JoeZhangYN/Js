@@ -16,6 +16,7 @@ const internalFiles = new Set(
     "src/monitor/battle-report-model.js",
     "src/monitor/battle-report-view.js",
     "src/monitor/battle-monitor-runtime.js",
+    "src/monitor/drop-recording.js",
     "src/monitor/drop-monitor.js",
     "src/monitor/record-usage-action-stats.js",
     "src/monitor/record-usage-completion.js",
@@ -33,6 +34,10 @@ const violations = [];
 
 function rel(file) {
   return path.normalize(path.relative(root, file)).replaceAll("\\", "/");
+}
+
+function includesAll(text, required) {
+  return required.every((item) => text.includes(item));
 }
 
 function walk(dir) {
@@ -699,8 +704,10 @@ function walkImportUsers(dir, target, users) {
 
 function checkDeletedDropMonitorEntrypoint() {
   const dropFile = path.join(root, "src/monitor/drop-monitor.js");
+  const dropRecordingFile = path.join(root, "src/monitor/drop-recording.js");
   const entryText = fs.readFileSync(path.join(root, entry), "utf8");
   const dropText = fs.readFileSync(dropFile, "utf8");
+  const dropRecordingText = fs.readFileSync(dropRecordingFile, "utf8");
   if (
     /\bdropMonitor\s*\(/.test(entryText) ||
     /\b(?:export\s+)?function\s+dropMonitor\s*\(/.test(dropText)
@@ -735,6 +742,28 @@ function checkDeletedDropMonitorEntrypoint() {
   if (/\brecordBattleDrops\s*\(/.test(entryText)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not call raw recordBattleDrops()`);
   }
+  if (!dropText.includes("./drop-recording.js")) {
+    violations.push(`${rel(dropFile)} must route drop log mutation through private helper`);
+  }
+  if (!/export function applyBattleDropLog\(/.test(dropRecordingText)) {
+    violations.push(`${rel(dropRecordingFile)} must own drop log mutation`);
+  }
+  if (!includesAll(dropText, ["applyBattleDropLog(drop, battleLog", "readItem"])) {
+    violations.push(`${rel(dropFile)} must compose drop log mutation with DOM item reads`);
+  }
+  for (const classifier of [
+    /You gain \\d\+ \(EXP\|Credit\)/,
+    /Crystal of \\w\+/,
+    /rgb\(255, 0, 0\)/,
+    /You are Victorious!/,
+  ]) {
+    if (classifier.test(dropText)) {
+      violations.push(`${rel(dropFile)} must not own drop log classification`);
+    }
+    if (!classifier.test(dropRecordingText)) {
+      violations.push(`${rel(dropRecordingFile)} must own drop log classification`);
+    }
+  }
   if (
     /\bg\(\s*["'](?:roundNow|roundAll)["']\s*\)/.test(dropText) ||
     /\bg\(\s*["']option["']\s*\)\.recordEach/.test(dropText)
@@ -754,6 +783,18 @@ function checkDeletedDropMonitorEntrypoint() {
     /\bdeps\.g\(\s*["']option["']\s*\)/.test(dropText)
   ) {
     violations.push(`${rel(dropFile)} must not read drop options directly`);
+  }
+  const dropRecordingImports = [];
+  walkImportUsers(srcDir, "drop-recording.js", dropRecordingImports);
+  const allowedDropRecordingImports = new Set(
+    ["src/monitor/drop-monitor.js", "src/monitor/drop-recording.test.js"].map((p) =>
+      path.normalize(p)
+    )
+  );
+  for (const user of dropRecordingImports) {
+    if (!allowedDropRecordingImports.has(user)) {
+      violations.push(`${user.replaceAll("\\", "/")} must not import drop-recording directly`);
+    }
   }
 }
 
