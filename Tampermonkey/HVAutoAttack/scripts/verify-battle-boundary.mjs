@@ -850,6 +850,21 @@ function checkChannelEntry() {
   }
 }
 
+function checkBuffEntry() {
+  const ownerText = fs.readFileSync(decideBuffFile, "utf8");
+  for (const required of ["decideBuff", "buffSkillSwitch", "buffSkill", "buffSkillCondition"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideBuffFile)} must own buff gate ${required}`);
+    }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  for (const legacy of ["buffSkillSwitch", "buffSkillCondition"]) {
+    if (new RegExp(`\\b${legacy}\\b`).test(rulesText)) {
+      violations.push(`${rel(battleRulesFile)} must not assemble buff rule gates directly`);
+    }
+  }
+}
+
 function checkItemScrollEntry() {
   const itemText = fs.readFileSync(decideScrollFile, "utf8");
   for (const required of ["decideScroll", "scrollSwitch", "scrollCondition", "scrollRoundType"]) {
@@ -940,6 +955,7 @@ checkBigSkillDebuffEntry();
 checkBurstControlEntry();
 checkInfusionEntry();
 checkChannelEntry();
+checkBuffEntry();
 checkItemScrollEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();

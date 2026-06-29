@@ -89,8 +89,6 @@ export const BATTLE_RULES = [
   // 11. BUFF
   {
     name: "useBuffSkill",
-    when: (snap, opt) =>
-      opt.buffSkillSwitch && opt.buffSkill && checkCondition(opt.buffSkillCondition, snap),
     decide: (snap, opt) => decideBuff(opt, snap),
   },
   // 11.5 burstControl（F5，默认 OFF）：学习到的高爆发怪威胁血量蹦极 → 单点 Silence/Sleep 控住它。

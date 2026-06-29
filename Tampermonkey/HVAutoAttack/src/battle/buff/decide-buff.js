@@ -20,6 +20,9 @@ const DRAUGHT_PACK = [
  * @returns {import("../../core/types.js").ActionResult}
  */
 export function decideBuff(opt, snap) {
+  if (!opt.buffSkillSwitch || !checkCondition(opt.buffSkillCondition, snap)) {
+    return { kind: "noop" };
+  }
   const buffSkill = opt.buffSkill;
   if (!buffSkill) return { kind: "noop" };
   const skillPack = (opt.buffSkillOrderValue || "").split(",").filter(Boolean);
