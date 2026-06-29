@@ -343,7 +343,11 @@ function checkRecordArchiveEntry() {
     !archiveText.includes("READ_OR_CREATE_USAGE_STATS") ||
     !archiveText.includes("READ_USAGE_STATS") ||
     !archiveText.includes("STORE_USAGE_STATS") ||
-    !archiveText.includes("STORE_OR_ARCHIVE_USAGE_STATS")
+    !archiveText.includes("STORE_OR_ARCHIVE_USAGE_STATS") ||
+    !archiveText.includes("READ_DROP_REPORT_RECORD_SET") ||
+    !archiveText.includes("READ_USAGE_REPORT_RECORD_SET") ||
+    !archiveText.includes("CLEAR_DROP_REPORT_RECORD_SET") ||
+    !archiveText.includes("CLEAR_USAGE_REPORT_RECORD_SET")
   ) {
     violations.push(
       `${rel(archiveFile)} must own record reads, creation, archiving, and clearing events`
@@ -354,6 +358,16 @@ function checkRecordArchiveEntry() {
   }
   if (!archiveRecordsText.includes("createDefaultUsageStats")) {
     violations.push(`${rel(archiveRecordsFile)} must own usage stats default shape`);
+  }
+  for (const required of [
+    "readDropReportRecordSet",
+    "readUsageReportRecordSet",
+    "clearDropReportRecordSet",
+    "clearUsageReportRecordSet",
+  ]) {
+    if (!archiveRecordsText.includes(required)) {
+      violations.push(`${rel(archiveRecordsFile)} must own ${required}`);
+    }
   }
   for (const [label, text] of [
     ["src/monitor/drop-monitor.js", dropText],
@@ -619,8 +633,15 @@ function checkBattleReportEntry() {
       `${rel(reportFile)} must route current/history report reads through readReportRecordSet`
     );
   }
-  if (!text.includes("BattleRecordArchiveEvent.READ_RECORD_SET")) {
-    violations.push(`${rel(reportFile)} must read report records through battle-record-archive`);
+  for (const required of [
+    "BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET",
+    "BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET",
+    "BattleRecordArchiveEvent.CLEAR_DROP_REPORT_RECORD_SET",
+    "BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(reportFile)} must route report records through ${required}`);
+    }
   }
   if (!text.includes("BattleRecordArchiveEvent.START_RECORDING")) {
     violations.push(
@@ -666,6 +687,13 @@ function checkBattleReportEntry() {
     violations.push(
       `${rel(reportFile)} raw report read events must stay deleted; expose rendered report events`
     );
+  }
+  if (
+    /STORAGE_KEYS\.(?:DROP|DROP_OLD|STATS|STATS_OLD)\b|\b(?:currentKey|historyKey)\s*:\s*STORAGE_KEYS\.(?:DROP|DROP_OLD|STATS|STATS_OLD)\b/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(reportFile)} must use report-specific archive events`);
   }
 }
 

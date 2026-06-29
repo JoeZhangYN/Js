@@ -1,5 +1,4 @@
 import { getKeys, objSort } from "../core/obj.js";
-import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import {
   BattleRecordArchiveEvent,
@@ -26,11 +25,9 @@ function withCurrentRecord(history, current, currentName) {
   return rows.reverse();
 }
 
-function readReportRecordSet({ currentKey, historyKey, normalizeCurrent = (record) => record }) {
+function readReportRecordSet(type, normalizeCurrent = (record) => record) {
   const { currentName, currentRaw, history } = runBattleRecordArchiveAutomation({
-    type: BattleRecordArchiveEvent.READ_RECORD_SET,
-    currentKey,
-    historyKey,
+    type,
   });
   let current = normalizeCurrent(currentRaw || {});
   if (history.length === 0 || (history.length === 1 && !currentRaw)) {
@@ -64,11 +61,10 @@ function recordBattleReportStarted(deps) {
 }
 
 function readDropReport() {
-  const recordSet = readReportRecordSet({
-    currentKey: STORAGE_KEYS.DROP,
-    historyKey: STORAGE_KEYS.DROP_OLD,
-    normalizeCurrent: objSort,
-  });
+  const recordSet = readReportRecordSet(
+    BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET,
+    objSort
+  );
   if (recordSet.mode === "single") {
     return {
       mode: "single",
@@ -88,10 +84,7 @@ function readDropReport() {
 }
 
 function readUsageReport() {
-  const recordSet = readReportRecordSet({
-    currentKey: STORAGE_KEYS.STATS,
-    historyKey: STORAGE_KEYS.STATS_OLD,
-  });
+  const recordSet = readReportRecordSet(BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET);
   if (recordSet.mode === "single") {
     return {
       mode: "single",
@@ -120,11 +113,9 @@ function readUsageReport() {
   };
 }
 
-function clearReportRecordSet(currentKey, historyKey) {
+function clearReportRecordSet(type) {
   runBattleRecordArchiveAutomation({
-    type: BattleRecordArchiveEvent.CLEAR_RECORD_SET,
-    currentKey,
-    historyKey,
+    type,
   });
 }
 
@@ -143,11 +134,11 @@ export function runBattleReportAutomation(event, deps = {}) {
     return renderReportTableBody(BattleReportViewEvent.RENDER_USAGE_TABLE_BODY, readUsageReport());
   }
   if (event.type === BattleReportEvent.CLEAR_DROP_REPORT) {
-    clearReportRecordSet(STORAGE_KEYS.DROP, STORAGE_KEYS.DROP_OLD);
+    clearReportRecordSet(BattleRecordArchiveEvent.CLEAR_DROP_REPORT_RECORD_SET);
     return undefined;
   }
   if (event.type === BattleReportEvent.CLEAR_USAGE_REPORT) {
-    clearReportRecordSet(STORAGE_KEYS.STATS, STORAGE_KEYS.STATS_OLD);
+    clearReportRecordSet(BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET);
     return undefined;
   }
   return undefined;

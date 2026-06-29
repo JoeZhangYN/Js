@@ -70,9 +70,7 @@ describe("runBattleRecordArchiveAutomation", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.CLEAR_RECORD_SET,
-          currentKey: STORAGE_KEYS.DROP,
-          historyKey: STORAGE_KEYS.DROP_OLD,
+          type: BattleRecordArchiveEvent.CLEAR_DROP_REPORT_RECORD_SET,
         },
         runtime
       )
@@ -80,5 +78,24 @@ describe("runBattleRecordArchiveAutomation", () => {
 
     expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
     expect(runtime.values[STORAGE_KEYS.DROP_OLD]).toBeUndefined();
+  });
+
+  it("clears usage report records through usage report archive commands", () => {
+    const runtime = deps({
+      [STORAGE_KEYS.STATS]: { self: {} },
+      [STORAGE_KEYS.STATS_OLD]: [{ self: {} }],
+    });
+
+    expect(
+      runBattleRecordArchiveAutomation(
+        {
+          type: BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET,
+        },
+        runtime
+      )
+    ).toBe(true);
+
+    expect(runtime.values[STORAGE_KEYS.STATS]).toBeUndefined();
+    expect(runtime.values[STORAGE_KEYS.STATS_OLD]).toBeUndefined();
   });
 });

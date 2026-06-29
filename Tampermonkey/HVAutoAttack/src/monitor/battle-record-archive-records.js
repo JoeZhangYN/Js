@@ -59,6 +59,26 @@ export function storeOrArchiveDropRecord(event, ops, deps) {
   );
 }
 
+export function readDropReportRecordSet(ops, deps) {
+  return ops.readRecordSet(
+    {
+      currentKey: STORAGE_KEYS.DROP,
+      historyKey: STORAGE_KEYS.DROP_OLD,
+    },
+    deps
+  );
+}
+
+export function clearDropReportRecordSet(ops, deps) {
+  return ops.clearRecordSet(
+    {
+      currentKey: STORAGE_KEYS.DROP,
+      historyKey: STORAGE_KEYS.DROP_OLD,
+    },
+    deps
+  );
+}
+
 export function readOrCreateUsageStats(ops, deps) {
   return ops.readOrCreateCurrentRecord(
     {
@@ -96,6 +116,26 @@ export function storeOrArchiveUsageStats(event, ops, deps) {
       recordEach: event.recordEach,
       roundNow: event.roundNow,
       roundAll: event.roundAll,
+    },
+    deps
+  );
+}
+
+export function readUsageReportRecordSet(ops, deps) {
+  return ops.readRecordSet(
+    {
+      currentKey: STORAGE_KEYS.STATS,
+      historyKey: STORAGE_KEYS.STATS_OLD,
+    },
+    deps
+  );
+}
+
+export function clearUsageReportRecordSet(ops, deps) {
+  return ops.clearRecordSet(
+    {
+      currentKey: STORAGE_KEYS.STATS,
+      historyKey: STORAGE_KEYS.STATS_OLD,
     },
     deps
   );

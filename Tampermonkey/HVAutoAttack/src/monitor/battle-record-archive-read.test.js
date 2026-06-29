@@ -70,9 +70,7 @@ describe("battle record archive reads", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.READ_RECORD_SET,
-          currentKey: STORAGE_KEYS.DROP,
-          historyKey: STORAGE_KEYS.DROP_OLD,
+          type: BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET,
         },
         deps({
           [STORAGE_KEYS.BATTLE_CODE]: "now",
@@ -84,6 +82,25 @@ describe("battle record archive reads", () => {
       currentName: "now",
       currentRaw: { "#Credit": 5 },
       history: [{ __name: "old", "#EXP": 20 }],
+    });
+  });
+
+  it("reads usage report record sets with current battle name", () => {
+    expect(
+      runBattleRecordArchiveAutomation(
+        {
+          type: BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET,
+        },
+        deps({
+          [STORAGE_KEYS.BATTLE_CODE]: "now",
+          [STORAGE_KEYS.STATS]: { self: { _turn: 3 } },
+          [STORAGE_KEYS.STATS_OLD]: [{ __name: "old", self: { _turn: 1 } }],
+        })
+      )
+    ).toEqual({
+      currentName: "now",
+      currentRaw: { self: { _turn: 3 } },
+      history: [{ __name: "old", self: { _turn: 1 } }],
     });
   });
 
