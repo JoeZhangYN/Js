@@ -52,6 +52,11 @@ for (const required of ["runAlarmAutomation", "AlarmEvent", "PREVIEW_AUDIO_URL"]
   if (!ownerText.includes(required))
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
 }
+for (const required of ["ALARM_KINDS", "normalizeAlarmKind"]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must internalize alarm kind invariants`);
+  }
+}
 if (!ownerText.includes("OptionEvent.READ_FIELD")) {
   violations.push(`${owner.replaceAll("\\", "/")} must read alarm options through option entry`);
 }
@@ -69,6 +74,15 @@ for (const legacy of ["setAlarm", "setAudioAlarm", "setNotification"]) {
     violations.push(
       `${owner.replaceAll("\\", "/")} legacy ${legacy} export must stay private behind runAlarmAutomation(event)`
     );
+  }
+}
+for (const fn of ["setAlarm", "setAudioAlarm", "setNotification"]) {
+  if (
+    !new RegExp(
+      `function\\s+${fn}\\s*\\([^)]*\\)\\s*\\{\\s*\\w+\\s*=\\s*normalizeAlarmKind\\(`
+    ).test(ownerText)
+  ) {
+    violations.push(`${owner.replaceAll("\\", "/")} ${fn} must normalize alarm kind before use`);
   }
 }
 

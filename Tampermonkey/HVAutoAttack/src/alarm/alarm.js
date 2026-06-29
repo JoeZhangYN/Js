@@ -26,9 +26,14 @@ const AUDIO_PREVIEW_MESSAGE = Object.freeze({
   l1: "接下來將測試該音頻\n如果該音頻無法播放或無法載入，請變更\n請測試完成後再鍵入另一個音頻",
   l2: "The audio will be tested after you close this prompt\nIf the audio doesn't load or play, change the url",
 });
+const ALARM_KINDS = Object.freeze(["Common", "Error", "Defeat", "Riddle", "Victory", "Test"]);
+
+function normalizeAlarmKind(kind) {
+  return ALARM_KINDS.includes(kind) ? kind : "Common";
+}
 
 function setAlarm(e) {
-  e = e || "Common";
+  e = normalizeAlarmKind(e);
   if (readOptionField("notification", false)) setNotification(e);
   const audioEnable = readOptionField("audioEnable", {});
   if (readOptionField("alert", false) && audioEnable?.[e]) setAudioAlarm(e);
@@ -39,6 +44,7 @@ function readOptionField(key, fallback) {
 }
 
 function setAudioAlarm(e) {
+  e = normalizeAlarmKind(e);
   let audio;
   if (gE(`#hvAAAlert-${e}`)) {
     audio = gE(`#hvAAAlert-${e}`);
@@ -65,6 +71,7 @@ function setAudioAlarm(e) {
 }
 
 function setNotification(e) {
+  e = normalizeAlarmKind(e);
   const notifications = [
     {
       Common: { text: "未知", time: 5 },

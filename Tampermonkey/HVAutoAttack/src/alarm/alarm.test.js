@@ -87,6 +87,21 @@ describe("alarm entry", () => {
     vi.unstubAllGlobals();
   });
 
+  it("normalizes unknown alarm kinds to the common alarm contract", () => {
+    const gmNotification = vi.fn();
+    vi.stubGlobal("GM_notification", gmNotification);
+
+    runAlarmAutomation({ type: AlarmEvent.NOTIFICATION, kind: "Bad Kind" });
+
+    expect(gmNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: "unknown",
+        timeout: 5000,
+      })
+    );
+    vi.unstubAllGlobals();
+  });
+
   it("previews configured audio URLs through the alarm entry", () => {
     document.body.innerHTML = '<div id="hvAATab-Alarm"></div>';
 
