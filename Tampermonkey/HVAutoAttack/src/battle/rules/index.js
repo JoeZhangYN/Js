@@ -16,6 +16,7 @@ import { decideBurstControl } from "../debuff/decide-burst-control.js";
 import {
   bossImperilFacts,
   burstControlFacts,
+  buffFacts,
   channelFacts,
   conditionFacts,
   criticalBuffFacts,
@@ -76,7 +77,7 @@ export const BATTLE_RULES = [
   // 11. BUFF
   {
     name: "useBuffSkill",
-    decide: (snap, opt) => decideBuff(opt, snap),
+    decide: (snap, opt) => decideBuff({ opt, ...buffFacts(snap) }),
   },
   // 11.5 burstControl（F5，默认 OFF）：学习到的高爆发怪威胁血量蹦极 → 单点 Silence/Sleep 控住它。
   //      置于进攻 debuff（bossImperil 等）之前——保命先于增伤；但在急救/topup（步 4-6）之后。

@@ -14,12 +14,12 @@ const DRAUGHT_PACK = [
 
 /**
  * 决定本 turn 是否要施 buff / 用 draught，返 ActionResult。
- * @param {object} opt battle rule option subset
- * @param {import("../../core/types.js").BattleSnapshot} snap
+ * @param {object} event battle rule option subset and buff facts
  * @returns {import("../../core/types.js").ActionResult}
  */
-export function decideBuff(opt, snap) {
-  if (!opt.buffSkillSwitch || !checkCondition(opt.buffSkillCondition, snap)) {
+export function decideBuff(event = {}) {
+  const opt = event.opt || {};
+  if (!opt.buffSkillSwitch || !checkCondition(opt.buffSkillCondition, event.conditionFacts)) {
     return { kind: "noop" };
   }
   const buffSkill = opt.buffSkill;
@@ -29,16 +29,20 @@ export function decideBuff(opt, snap) {
   // Phase 1: buff 法术（含 pre-cast Spirit）
   for (const skill of skillPack) {
     if (!buffSkill[skill]) continue;
-    if (!checkCondition(opt[`buffSkill${skill}Condition`], snap)) continue;
+    if (!checkCondition(opt[`buffSkill${skill}Condition`], event.conditionFacts)) continue;
     const lib = BUFF_SKILL_LIB.get(skill);
     if (!lib) continue;
-    const turnsLeft = snap.playerEffectTurns[lib.img];
+    const turnsLeft = event.playerEffectTurns?.[lib.img];
     // needsRecast: img 不存在（undefined）or 剩余 ≤ 1
     if (turnsLeft != null && turnsLeft > 1) continue;
-    if (!snap.skillReady[lib.id]) continue;
+    if (!event.skillReady?.[lib.id]) continue;
 
     // 是否需要先开 Spirit Stance？
-    if (opt.preCastSS && !snap.spiritOn && checkCondition(opt.preCastSSCondition, snap)) {
+    if (
+      opt.preCastSS &&
+      !event.spiritOn &&
+      checkCondition(opt.preCastSSCondition, event.conditionFacts)
+    ) {
       return { kind: "toggle-spirit" };
     }
     return { kind: "skill-command", skillId: lib.id };
@@ -46,9 +50,9 @@ export function decideBuff(opt, snap) {
 
   // Phase 2: draughts (items 5 个)
   for (const [key, draught] of DRAUGHT_PACK) {
-    if (snap.playerBuffs.includes(draught.img)) continue;
+    if ((event.playerBuffs || []).includes(draught.img)) continue;
     if (!buffSkill[key]) continue;
-    if (!checkCondition(opt[`buffSkill${key}Condition`], snap)) continue;
+    if (!checkCondition(opt[`buffSkill${key}Condition`], event.conditionFacts)) continue;
     return {
       kind: "item-command",
       itemId: draught.id,

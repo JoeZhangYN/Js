@@ -1168,12 +1168,29 @@ function checkChannelEntry() {
 
 function checkBuffEntry() {
   const ownerText = fs.readFileSync(decideBuffFile, "utf8");
-  for (const required of ["decideBuff", "buffSkillSwitch", "buffSkill", "buffSkillCondition"]) {
+  for (const required of [
+    "decideBuff",
+    "buffSkillSwitch",
+    "buffSkill",
+    "buffSkillCondition",
+    "conditionFacts",
+    "event.skillReady",
+    "event.playerBuffs",
+    "event.playerEffectTurns",
+  ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideBuffFile)} must own buff gate ${required}`);
     }
   }
+  if (/decideBuff\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
+    violations.push(`${rel(decideBuffFile)} must not expose opt/snap buff input`);
+  }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const buffRule =
+    rulesText.match(/name:\s*["']useBuffSkill["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideBuff\(\s*opt\s*,\s*snap\s*\)/.test(buffRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass buff facts, not snap, to buff`);
+  }
   for (const legacy of ["buffSkillSwitch", "buffSkillCondition"]) {
     if (new RegExp(`\\b${legacy}\\b`).test(rulesText)) {
       violations.push(`${rel(battleRulesFile)} must not assemble buff rule gates directly`);

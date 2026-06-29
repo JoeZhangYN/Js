@@ -85,6 +85,16 @@ export function infusionFacts(snap) {
   };
 }
 
+export function buffFacts(snap) {
+  return {
+    conditionFacts: conditionFacts(snap),
+    spiritOn: snap?.spiritOn,
+    skillReady: snap?.skillReady,
+    playerBuffs: snap?.playerBuffs,
+    playerEffectTurns: snap?.playerEffectTurns,
+  };
+}
+
 export function conditionFacts(snap) {
   // User-authored condition expressions address a variable map, so the snapshot is the condition context.
   return snap;
