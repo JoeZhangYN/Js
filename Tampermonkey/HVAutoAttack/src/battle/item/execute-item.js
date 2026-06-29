@@ -1,9 +1,10 @@
 // SHELL: 把 decide-item 的 ItemPlan 翻译为 DOM 副作用 + 状态记账。
 // 只写不判断（判断全在 decide-item.js）；isOn/gE 探活属写路径安全读（与原 item.js 一致）。
-// 记账：autoTune 用药事件 / Spirit toggle cooldown / recordPreDrink。
+// 记账：autoTune 用药事件 / Spirit toggle cooldown / Focus command / recordPreDrink。
 import { gE, isOn } from "../../dom/query.js";
 import { itemSelector } from "../../dom/selectors.js";
 import { AutoTuneEvent, runAutoTuneAutomation } from "../../state/auto-tune.js";
+import { BattleFocusCommandEvent, runBattleFocusCommand } from "../battle-focus-command.js";
 import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
@@ -67,10 +68,8 @@ export function executeItem(plan, snap) {
           continue;
         }
         if (attempt.kind === "focus") {
-          const el = gE("#ckey_focus");
-          if (!el) continue;
-          el.click();
-          return true;
+          if (runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK })) return true;
+          continue;
         }
         if (attempt.kind === "draught") {
           const el = gE(itemSelector(attempt.id));

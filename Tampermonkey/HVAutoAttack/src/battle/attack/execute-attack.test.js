@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   g: vi.fn(),
   gE: vi.fn(),
   isOn: vi.fn(),
+  runBattleFocusCommand: vi.fn(),
   runPhysicalSkillBookkeeping: vi.fn(),
   runBattleSpiritToggleAutomation: vi.fn(),
 }));
@@ -14,6 +15,10 @@ vi.mock("../../dom/query.js", () => ({
   isOn: mocks.isOn,
 }));
 vi.mock("../../state/store.js", () => ({ g: mocks.g }));
+vi.mock("../battle-focus-command.js", () => ({
+  BattleFocusCommandEvent: Object.freeze({ CLICK: "click" }),
+  runBattleFocusCommand: mocks.runBattleFocusCommand,
+}));
 vi.mock("./physical-skill-bookkeeping.js", () => ({
   PhysicalSkillBookkeepingEvent: Object.freeze({ RECORD_FIRE: "recordFire" }),
   runPhysicalSkillBookkeeping: mocks.runPhysicalSkillBookkeeping,
@@ -28,6 +33,14 @@ beforeEach(() => {
 });
 
 describe("executeAttack", () => {
+  it("routes Focus through the Focus command entry and still claims the attack branch", () => {
+    mocks.runBattleFocusCommand.mockReturnValue(false);
+
+    expect(executeAttack({ type: "focus" }, {})).toBe(true);
+
+    expect(mocks.runBattleFocusCommand).toHaveBeenCalledWith({ type: "click" });
+  });
+
   it("reports Spirit toggle cooldown through the Spirit toggle entry", () => {
     mocks.runBattleSpiritToggleAutomation.mockReturnValue(true);
 

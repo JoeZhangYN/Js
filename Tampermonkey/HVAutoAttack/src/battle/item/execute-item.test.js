@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   gE: vi.fn(),
   isOn: vi.fn(),
   runAutoTuneAutomation: vi.fn(),
+  runBattleFocusCommand: vi.fn(),
   runBattleSpiritToggleAutomation: vi.fn(),
   runRecoveryLearningAutomation: vi.fn(),
 }));
@@ -20,6 +21,10 @@ vi.mock("../../dom/selectors.js", () => ({
 vi.mock("../../state/auto-tune.js", () => ({
   AutoTuneEvent: Object.freeze({ RECORD_POTION_USE: "recordPotionUse" }),
   runAutoTuneAutomation: mocks.runAutoTuneAutomation,
+}));
+vi.mock("../battle-focus-command.js", () => ({
+  BattleFocusCommandEvent: Object.freeze({ CLICK: "click" }),
+  runBattleFocusCommand: mocks.runBattleFocusCommand,
 }));
 vi.mock("../battle-spirit-toggle.js", () => ({
   BattleSpiritToggleEvent: Object.freeze({ CLICK_AND_RECORD: "clickAndRecord" }),
@@ -69,5 +74,34 @@ describe("executeItem", () => {
     expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
       type: "clickAndRecord",
     });
+  });
+
+  it("routes stall Focus attempts through the Focus command entry", () => {
+    mocks.runBattleFocusCommand.mockReturnValue(true);
+
+    expect(executeItem({ type: "stall", attempts: [{ kind: "focus" }] }, {})).toBe(true);
+
+    expect(mocks.runBattleFocusCommand).toHaveBeenCalledWith({ type: "click" });
+  });
+
+  it("continues stall attempts when the Focus command cannot click", () => {
+    const draught = { click: vi.fn() };
+    mocks.runBattleFocusCommand.mockReturnValue(false);
+    mocks.gE.mockReturnValue(draught);
+
+    expect(
+      executeItem(
+        { type: "stall", attempts: [{ kind: "focus" }, { kind: "draught", id: 123 }] },
+        { mp: 50 }
+      )
+    ).toBe(true);
+
+    expect(mocks.runBattleFocusCommand).toHaveBeenCalledWith({ type: "click" });
+    expect(mocks.runRecoveryLearningAutomation).toHaveBeenCalledWith({
+      type: "recordPreDrink",
+      potionId: 123,
+      snap: { mp: 50 },
+    });
+    expect(draught.click).toHaveBeenCalledTimes(1);
   });
 });

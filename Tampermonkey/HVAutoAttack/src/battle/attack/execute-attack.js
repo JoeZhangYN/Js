@@ -1,11 +1,12 @@
 // SHELL: 把 decideAttack 的 AttackPlan 翻译为 DOM 副作用 + 状态记账。
 // 只写不判断（判断全在 decide-attack.js）；isOn 探活属写路径安全读（与原 attack 一致）。
-// 记账：physical skill bookkeeping / Spirit toggle cooldown。
+// 记账：physical skill bookkeeping / Spirit toggle cooldown / Focus command。
 import { gE, isOn } from "../../dom/query.js";
 import {
   PhysicalSkillBookkeepingEvent,
   runPhysicalSkillBookkeeping,
 } from "./physical-skill-bookkeeping.js";
+import { BattleFocusCommandEvent, runBattleFocusCommand } from "../battle-focus-command.js";
 import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
@@ -22,8 +23,8 @@ export function executeAttack(plan, snap) {
       return false;
 
     case "focus":
-      // 原 attack：直接 click 专注按钮（无 isOn，因 attack 是末步）
-      gE("#ckey_focus")?.click();
+      // 原 attack：Focus 是末步，即使按钮缺失也消耗本次 attack 分支。
+      runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK });
       return true;
 
     case "toggle-spirit": {
