@@ -94,4 +94,11 @@ describe("monster status automation", () => {
     expect(readMonsterIdByOrder(1)).toBe(202);
     expect(readMonsterIdByOrder(2)).toBeUndefined();
   });
+
+  it("reads current monster status through the entry", () => {
+    const status = [{ order: 0, monsterId: 101, hp: 1000 }];
+    g("monsterStatus", status);
+
+    expect(runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_STATUS })).toBe(status);
+  });
 });

@@ -4,7 +4,6 @@ import { collectSnapshot } from "./snapshot.js";
 const mocks = vi.hoisted(() => ({
   estimatePerMonsterDps: vi.fn(() => ({})),
   estimatePlayerIncomingDps: vi.fn(() => 0),
-  g: vi.fn(),
   gE: vi.fn(),
   isSpiritActive: vi.fn(() => false),
   joinMonsterView: vi.fn(() => []),
@@ -19,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   runCdRuntimeAutomation: vi.fn(),
   runIncomingBurstLearningAutomation: vi.fn(() => ({ learned: true })),
   runMonsterCacheAutomation: vi.fn(() => ({})),
+  runMonsterStatusAutomation: vi.fn(() => [{ order: 0, monsterId: 101 }]),
   runOptionAutomation: vi.fn(),
   runRecoveryLearningAutomation: vi.fn(),
 }));
@@ -28,7 +28,6 @@ vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
-vi.mock("../state/store.js", () => ({ g: mocks.g }));
 vi.mock("../state/battle-turn.js", () => ({
   BattleTurnEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
   runBattleTurnAutomation: mocks.runBattleTurnAutomation,
@@ -70,6 +69,10 @@ vi.mock("../state/monster-cache.js", () => ({
   MonsterCacheEvent: Object.freeze({ READ_DB: "readDb" }),
   runMonsterCacheAutomation: mocks.runMonsterCacheAutomation,
 }));
+vi.mock("./monster-status-automation.js", () => ({
+  MonsterStatusEvent: Object.freeze({ READ_STATUS: "readStatus" }),
+  runMonsterStatusAutomation: mocks.runMonsterStatusAutomation,
+}));
 vi.mock("../pages/ability-page.js", () => ({
   AbilityAoeEvent: Object.freeze({ READ_SPELL_AOE: "readSpellAoe" }),
   runAbilityAoeAutomation: mocks.runAbilityAoeAutomation,
@@ -83,13 +86,8 @@ vi.mock("./battle-skill-usage.js", () => ({
   runBattleSkillUsageAutomation: mocks.runBattleSkillUsageAutomation,
 }));
 
-function effectsContainer() {
-  return { querySelectorAll: () => [] };
-}
-
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear?.();
-  mocks.g.mockImplementation((key) => ({ globalTurn: 9 })[key]);
   mocks.runCdRuntimeAutomation.mockImplementation((event) => {
     if (event.type === "readGlobalTurn") return 9;
     if (event.type === "readMap") return {};
@@ -97,7 +95,7 @@ beforeEach(() => {
   });
   mocks.gE.mockImplementation((selector, mode) => {
     if (mode === "all") return [];
-    if (selector === "#pane_effects") return effectsContainer();
+    if (selector === "#pane_effects") return { querySelectorAll: () => [] };
     if (selector === "#vbh") return {};
     if (selector === "#vbh>div>img") return { offsetWidth: 250 };
     if (selector === "#vbm>div>img") return { offsetWidth: 105 };
@@ -136,6 +134,8 @@ describe("collectSnapshot", () => {
     expect(snap.spellAoe).toEqual({ Imperil: 2 });
     expect(snap.skillOTOS).toEqual({ OFC: 1 });
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "readCurrent" });
+    expect(mocks.runMonsterStatusAutomation).toHaveBeenCalledWith({ type: "readStatus" });
+    expect(mocks.joinMonsterView).toHaveBeenCalledWith([], [{ order: 0, monsterId: 101 }], {});
     expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({ type: "readUsage" });
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "readSpellAoe" });
     expect(mocks.runBattleStartRuntimeAutomation).toHaveBeenCalledWith({
@@ -143,6 +143,11 @@ describe("collectSnapshot", () => {
     });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
+    expect(mocks.runIncomingBurstLearningAutomation).toHaveBeenCalledWith({
+      type: "recordEvents",
+      events: [],
+      monsterStatus: [{ order: 0, monsterId: 101 }],
+    });
     expect(snap.learnedBurstByMid).toEqual({ learned: true });
   });
 });

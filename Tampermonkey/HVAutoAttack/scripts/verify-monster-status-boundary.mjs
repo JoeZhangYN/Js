@@ -73,6 +73,7 @@ function checkEntry() {
     "REFRESH_COMBATANT_COUNTS",
     "READ_COMBATANT_COUNTS",
     "READ_IDS_BY_ORDER",
+    "READ_STATUS",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);

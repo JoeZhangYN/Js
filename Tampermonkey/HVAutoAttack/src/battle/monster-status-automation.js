@@ -15,6 +15,7 @@ const EVENT_UPDATE_HP = "updateHp";
 const EVENT_REFRESH_COMBATANT_COUNTS = "refreshCombatantCounts";
 const EVENT_READ_COMBATANT_COUNTS = "readCombatantCounts";
 const EVENT_READ_IDS_BY_ORDER = "readIdsByOrder";
+const EVENT_READ_STATUS = "readStatus";
 
 export const MonsterStatusEvent = Object.freeze({
   ENSURE_READY: EVENT_ENSURE_READY,
@@ -24,6 +25,7 @@ export const MonsterStatusEvent = Object.freeze({
   REFRESH_COMBATANT_COUNTS: EVENT_REFRESH_COMBATANT_COUNTS,
   READ_COMBATANT_COUNTS: EVENT_READ_COMBATANT_COUNTS,
   READ_IDS_BY_ORDER: EVENT_READ_IDS_BY_ORDER,
+  READ_STATUS: EVENT_READ_STATUS,
 });
 
 function reloadCurrentPage() {
@@ -112,6 +114,10 @@ function readMonsterIdsByOrder() {
   return (order) => idByOrder.get(order);
 }
 
+function readMonsterStatus() {
+  return g("monsterStatus") || [];
+}
+
 export function runMonsterStatusAutomation(event = { type: EVENT_ENSURE_READY }) {
   if (event.type === EVENT_ENSURE_READY) {
     return ensureMonsterStatusReady();
@@ -127,6 +133,8 @@ export function runMonsterStatusAutomation(event = { type: EVENT_ENSURE_READY })
     return readCombatantCounts();
   } else if (event.type === EVENT_READ_IDS_BY_ORDER) {
     return readMonsterIdsByOrder();
+  } else if (event.type === EVENT_READ_STATUS) {
+    return readMonsterStatus();
   }
   return false;
 }

@@ -648,6 +648,12 @@ function checkSnapshot() {
   if (/\bg\(\s*["']skillOTOS["']/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read skillOTOS directly`);
   }
+  if (!text.includes("MonsterStatusEvent.READ_STATUS")) {
+    violations.push(`${rel(snapshotFile)} must read monsterStatus through monster status entry`);
+  }
+  if (/\bg\(\s*["']monsterStatus["']/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not read monsterStatus directly`);
+  }
 }
 
 function checkBattleRulesRuntimeContext() {

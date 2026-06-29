@@ -9,7 +9,6 @@
 //
 import { gE, isSpiritActive } from "../dom/query.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
-import { g } from "../state/store.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
@@ -32,6 +31,7 @@ import {
 } from "./battle-start-runtime.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "../pages/ability-page.js";
 import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-skill-usage.js";
+import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 
 function readOptionField(key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
@@ -217,11 +217,12 @@ function readSkillReady() {
  */
 export function collectSnapshot() {
   const monsters = readMonsters();
+  const monsterStatus = runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_STATUS });
   // 统一怪物视图：join snap.monsters + monsterStatus(绝对血/finWeight) + monster-db 缓存(九抗/身份)。
   // countMonsterHP(main-loop) 已先于本函数跑 → monsterStatus 最新；db 走 monster-cache 同步快照。
   const view = joinMonsterView(
     monsters,
-    g("monsterStatus"),
+    monsterStatus,
     runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_DB })
   );
   const playerEffects = readPlayerEffects();
@@ -255,7 +256,7 @@ export function collectSnapshot() {
     runIncomingBurstLearningAutomation({
       type: IncomingBurstLearningEvent.RECORD_EVENTS,
       events: battleLog,
-      monsterStatus: g("monsterStatus"),
+      monsterStatus,
     });
   return {
     turn,
