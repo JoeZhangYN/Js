@@ -36,6 +36,46 @@ function isDynamicHealLogEnabled() {
   );
 }
 
+function normalizeTurn(value) {
+  const turn = Number(value);
+  return Number.isFinite(turn) && turn > 0 ? Math.trunc(turn) : 0;
+}
+
+function normalizePending(value) {
+  const source = value && typeof value === "object" ? value : {};
+  const pending = {};
+  for (const code of Object.keys(source)) {
+    if (!SKILL_REGISTRY[code]) continue;
+    const id = source[code]?.id;
+    if (typeof id !== "string" || !id) continue;
+    pending[code] = {
+      firedTurn: normalizeTurn(source[code].firedTurn),
+      id,
+    };
+  }
+  return pending;
+}
+
+function normalizeLearnedCdRecord(value, cdBase) {
+  const cd = Number(value?.cd);
+  const n = Number(value?.n);
+  if (!Number.isFinite(cd) || !Number.isFinite(n) || n <= 0) return null;
+  return {
+    cd: Math.max(0, Math.min(cd, cdBase)),
+    n: Math.trunc(n),
+  };
+}
+
+function readLearnedCdMap() {
+  const source = getValue(STORAGE_KEYS.LEARNED_CD, true) || {};
+  const learned = {};
+  for (const code of Object.keys(SKILL_REGISTRY)) {
+    const record = normalizeLearnedCdRecord(source[code], SKILL_REGISTRY[code].cdBase);
+    if (record) learned[code] = record;
+  }
+  return learned;
+}
+
 /**
  * 开火记录（SHELL）：execute-attack 物理分支 recordFire 之后调。
  * @param {string} code SKILL_REGISTRY 的 key
@@ -43,9 +83,9 @@ function isDynamicHealLogEnabled() {
  * @param {import("../core/types.js").BattleSnapshot} snap 仅读入口传入的 globalTurn
  */
 function recordCdFire(code, id, snap) {
-  if (!SKILL_REGISTRY[code]) return;
-  const pending = g("cdLearnPending") || {};
-  pending[code] = { firedTurn: snap?.globalTurn ?? 0, id };
+  if (!SKILL_REGISTRY[code] || typeof id !== "string" || !id) return;
+  const pending = normalizePending(g("cdLearnPending"));
+  pending[code] = { firedTurn: normalizeTurn(snap?.globalTurn), id };
   g("cdLearnPending", pending);
 }
 
@@ -54,9 +94,9 @@ function recordCdFire(code, id, snap) {
  * @param {{globalTurn:number, skillReady:Record<string,boolean>}} snap
  */
 function finalizeCdPending(snap) {
-  const pending = g("cdLearnPending");
-  if (!pending) return;
-  const now = snap?.globalTurn ?? 0;
+  const pending = normalizePending(g("cdLearnPending"));
+  if (!Object.keys(pending).length) return;
+  const now = normalizeTurn(snap?.globalTurn);
   let changed = false;
   for (const code of Object.keys(pending)) {
     const p = pending[code];
@@ -77,7 +117,7 @@ function finalizeCdPending(snap) {
 
 /** EWMA 更新并即时持久化（数学复刻 recovery-learner.updateLearned）。 */
 function updateLearnedCd(code, sample, cdBase) {
-  const learned = getValue(STORAGE_KEYS.LEARNED_CD, true) || {};
+  const learned = readLearnedCdMap();
   const prior = learned[code];
   const n = (prior?.n ?? 0) + 1;
   const priorCd = prior?.cd ?? cdBase;
@@ -99,7 +139,7 @@ function updateLearnedCd(code, sample, cdBase) {
 function getLearnedCd(code) {
   const entry = SKILL_REGISTRY[code];
   const fallback = entry ? entry.cdBase : 0;
-  const learned = getValue(STORAGE_KEYS.LEARNED_CD, true) || {};
+  const learned = readLearnedCdMap();
   if (learned[code] && learned[code].n > 0) return learned[code].cd;
   return fallback;
 }

@@ -1,6 +1,8 @@
 // F3 回归锁：CD 收敛学习器。钉死「学习只下拉、永不上调」安全不变量 + 各守卫 + 消费方夹。
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { g } from "./store.js";
+import { getValue, setValue } from "./storage.js";
+import { STORAGE_KEYS } from "./persist-keys.js";
 import { CdLearningEvent, runCdLearningAutomation } from "./cd-learner.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "./cd-tracker.js";
 
@@ -103,6 +105,39 @@ describe("cd-learner 学习与守卫", () => {
       snap: { skillReady: { 1111: true } },
     });
     expect(readCd("OFC")).toBe(50);
+  });
+
+  it("normalizes malformed pending entries before finalizing", () => {
+    g("cdLearnPending", {
+      OFC: { firedTurn: "10.9", id: "1111" },
+      T2: { firedTurn: "bad", id: "" },
+      UNKNOWN: { firedTurn: 10, id: "9999" },
+    });
+
+    settle(35, "1111");
+
+    expect(readCd("OFC")).toBeCloseTo(25, 5);
+    expect(g("cdLearnPending")).toEqual({});
+  });
+
+  it("normalizes learned CD storage before reading and updating", () => {
+    setValue(STORAGE_KEYS.LEARNED_CD, {
+      OFC: { cd: 999, n: 2 },
+      FRD: { cd: "bad", n: 1 },
+      T2: { cd: 3.5, n: "2.8" },
+      UNKNOWN: { cd: 1, n: 1 },
+    });
+
+    expect(readCd("OFC")).toBe(50);
+    expect(readCd("FRD")).toBe(10);
+    expect(readCd("T2")).toBe(3.5);
+
+    fire("T2", "2202", 10);
+    settle(12, "2202");
+    expect(getValue(STORAGE_KEYS.LEARNED_CD, true)).toEqual({
+      OFC: { cd: 50, n: 2 },
+      T2: { cd: 3, n: 3 },
+    });
   });
 
   it("日志开关通过 option entry 读取", () => {

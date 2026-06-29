@@ -52,10 +52,20 @@ for (const required of [
   "CdLearningEvent",
   "STORAGE_KEYS.LEARNED_CD",
   "OptionEvent.READ_FIELD",
+  "normalizeTurn",
+  "normalizePending",
+  "normalizeLearnedCdRecord",
+  "readLearnedCdMap",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if ((ownerText.match(/normalizePending\(/g) || []).length < 3) {
+  violations.push(`${owner.replaceAll("\\", "/")} must normalize pending CD learning state`);
+}
+if ((ownerText.match(/readLearnedCdMap\(/g) || []).length < 3) {
+  violations.push(`${owner.replaceAll("\\", "/")} must normalize learned CD storage reads`);
 }
 if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not read option fields directly`);
