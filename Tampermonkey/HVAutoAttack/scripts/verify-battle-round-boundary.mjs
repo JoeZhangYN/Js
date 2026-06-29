@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/battle/battle-round.js");
 const ownerTest = path.normalize("src/battle/battle-round.test.js");
+const ownerRuntimeTest = path.normalize("src/battle/battle-round-runtime.test.js");
 const storage = path.normalize("src/state/storage.js");
 const storageTest = path.normalize("src/state/storage.test.js");
 const runtimeTest = path.normalize("src/battle/battle-runtime.test.js");
@@ -32,6 +33,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== ownerRuntimeTest &&
       relative !== storage &&
       relative !== storageTest &&
       relative !== runtimeTest &&
@@ -65,6 +67,17 @@ for (const required of [
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required} event`);
   }
+}
+for (const required of ["DEFAULT_ROUND_COUNT", "normalizeRoundCount", "roundRuntime"]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must internalize round count invariants`);
+  }
+}
+if ((ownerText.match(/roundRuntime\(/g) || []).length < 4) {
+  violations.push(`${owner.replaceAll("\\", "/")} must normalize round count writes and reads`);
+}
+if (/getValue\([^)]*\)\s*\*\s*1/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not coerce round counts at read sites`);
 }
 
 const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");

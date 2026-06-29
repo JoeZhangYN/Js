@@ -13,6 +13,7 @@ const EVENT_CLASSIFY_TYPE = "classifyType";
 const EVENT_RECORD_DEBUG_FIELDS = "recordDebugFields";
 const EVENT_READ_DEBUG_FIELDS = "readDebugFields";
 const EVENT_READ_RUNTIME = "readRuntime";
+const DEFAULT_ROUND_COUNT = 1;
 
 export const BattleRoundEvent = Object.freeze({
   READ_TYPE: EVENT_READ_TYPE,
@@ -49,10 +50,26 @@ function recordType(roundType) {
   return roundType;
 }
 
+function normalizeRoundCount(value) {
+  const count = Number(value);
+  return Number.isFinite(count) && count > 0 ? Math.trunc(count) : DEFAULT_ROUND_COUNT;
+}
+
+function roundRuntime(roundNow, roundAll) {
+  const normalizedRoundNow = normalizeRoundCount(roundNow);
+  const normalizedRoundAll = normalizeRoundCount(roundAll);
+  return {
+    roundNow: normalizedRoundNow,
+    roundAll: normalizedRoundAll,
+    roundLeft: normalizedRoundAll - normalizedRoundNow,
+  };
+}
+
 function recordCount(roundNow, roundAll) {
-  setValue(STORAGE_KEYS.ROUND_NOW, roundNow);
-  setValue(STORAGE_KEYS.ROUND_ALL, roundAll);
-  return { roundNow, roundAll };
+  const runtime = roundRuntime(roundNow, roundAll);
+  setValue(STORAGE_KEYS.ROUND_NOW, runtime.roundNow);
+  setValue(STORAGE_KEYS.ROUND_ALL, runtime.roundAll);
+  return { roundNow: runtime.roundNow, roundAll: runtime.roundAll };
 }
 
 function recordCountFromInitialization(initializingText = "", roundType = "") {
@@ -64,18 +81,15 @@ function recordCountFromInitialization(initializingText = "", roundType = "") {
 }
 
 function syncRuntime() {
-  const roundNow = getValue(STORAGE_KEYS.ROUND_NOW) * 1;
-  const roundAll = getValue(STORAGE_KEYS.ROUND_ALL) * 1;
-  g("roundNow", roundNow);
-  g("roundAll", roundAll);
-  g("roundLeft", roundAll - roundNow);
+  const runtime = roundRuntime(getValue(STORAGE_KEYS.ROUND_NOW), getValue(STORAGE_KEYS.ROUND_ALL));
+  g("roundNow", runtime.roundNow);
+  g("roundAll", runtime.roundAll);
+  g("roundLeft", runtime.roundLeft);
   return readRuntime();
 }
 
 function readRuntime() {
-  const roundNow = g("roundNow");
-  const roundAll = g("roundAll");
-  return { roundNow, roundAll, roundLeft: roundAll - roundNow };
+  return roundRuntime(g("roundNow"), g("roundAll"));
 }
 
 function recordDebugFields(fields = []) {
