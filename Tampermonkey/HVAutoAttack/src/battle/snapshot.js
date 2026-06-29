@@ -286,7 +286,6 @@ export function collectSnapshot() {
     attackStatus: runBattleStartRuntimeAutomation({
       type: BattleStartRuntimeEvent.READ_ATTACK_STATUS,
     }),
-    fightingStyle: readOptionField("fightingStyle", "2") || "2",
     // PoC L1：战斗日志解析得 DPS 估计（复用上方 battleLog，本 turn 只解析一遍）
     playerIncomingDps: estimatePlayerIncomingDps(battleLog, turn),
     monsterDpsByName: estimatePerMonsterDps(battleLog, turn),

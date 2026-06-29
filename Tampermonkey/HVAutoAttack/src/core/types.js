@@ -164,7 +164,6 @@
  * @property {(string|null)=} gemName            宝石按钮文案（#ikey_p textContent，decideGem 用）
  * @property {CdMap} cdMap
  * @property {number} attackStatus
- * @property {string} fightingStyle
  */
 
 export {};

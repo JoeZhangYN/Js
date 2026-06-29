@@ -108,7 +108,6 @@ beforeEach(() => {
   });
   mocks.runOptionAutomation.mockImplementation((event) => {
     if (event.key === "burstControlSwitch") return true;
-    if (event.key === "fightingStyle") return "1";
     return event.fallback;
   });
 });
@@ -122,12 +121,6 @@ describe("collectSnapshot", () => {
       key: "burstControlSwitch",
       fallback: false,
     });
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
-      type: "readField",
-      key: "fightingStyle",
-      fallback: "2",
-    });
-    expect(snap.fightingStyle).toBe("1");
     expect(snap.turn).toBe(7);
     expect(snap.globalTurn).toBe(9);
     expect(snap.attackStatus).toBe(2);

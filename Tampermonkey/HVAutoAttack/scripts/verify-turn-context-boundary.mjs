@@ -119,6 +119,11 @@ function checkSnapshotEntry() {
   if (/\bassertNoDomRefs\b/.test(text)) {
     violations.push(`${snapshotImpl.replaceAll("\\", "/")} must not export turn debug checks`);
   }
+  if (/\bfightingStyle\b/.test(text)) {
+    violations.push(
+      `${snapshotImpl.replaceAll("\\", "/")} must not duplicate rule option fightingStyle`
+    );
+  }
 }
 
 function checkSpiritToggleEntry() {

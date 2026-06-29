@@ -1,0 +1,55 @@
+import fs from "node:fs";
+import path from "node:path";
+
+const root = process.cwd();
+const snapshot = path.normalize("src/battle/snapshot.js");
+const snapshotTest = path.normalize("src/battle/snapshot.test.js");
+const physicalScoring = path.normalize("src/battle/attack/physical-skill-scoring.js");
+const types = path.normalize("src/core/types.js");
+const violations = [];
+
+function read(relative) {
+  return fs.readFileSync(path.join(root, relative), "utf8");
+}
+
+function requireText(relative, required) {
+  const text = read(relative);
+  for (const token of required) {
+    if (!text.includes(token)) {
+      violations.push(`${relative.replaceAll("\\", "/")} must use ${token}`);
+    }
+  }
+  return text;
+}
+
+const snapshotText = requireText(snapshot, [
+  "collectSnapshot",
+  "burstControlSwitch",
+  "BattleStartRuntimeEvent.READ_ATTACK_STATUS",
+  "BattleSkillUsageEvent.READ_USAGE",
+]);
+const scoringText = requireText(physicalScoring, ["opt.fightingStyle", "skillLib"]);
+requireText(snapshotTest, ["burstControlSwitch", "collectSnapshot"]);
+
+if (/\bexport\s+(?:function|const)\s+(?!collectSnapshot\b)/.test(snapshotText)) {
+  violations.push(`${snapshot.replaceAll("\\", "/")} may export only collectSnapshot`);
+}
+if (/fightingStyle/.test(snapshotText)) {
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must not duplicate fightingStyle option reads`
+  );
+}
+if (/snap\.fightingStyle/.test(scoringText)) {
+  violations.push(`${physicalScoring.replaceAll("\\", "/")} must use opt.fightingStyle`);
+}
+if (/fightingStyle/.test(read(types))) {
+  violations.push(`${types.replaceAll("\\", "/")} snapshot contract must not expose fightingStyle`);
+}
+
+if (violations.length) {
+  console.error("[verify-battle-snapshot-contract] FAIL");
+  for (const v of violations) console.error(`- ${v}`);
+  process.exit(1);
+}
+
+console.log("[verify-battle-snapshot-contract] OK - snapshot option facts are converged");

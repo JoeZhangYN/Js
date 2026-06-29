@@ -47,7 +47,7 @@ function scoreSkillContextual(skill, opt, snap, firstMonster) {
 export function scorePhysicalSkillCandidates(opt, snap, ctx) {
   if (!opt.skillSwitch || !snap.spiritOn) return [];
   const skillOrder = (opt.skillOrderValue || "OFC,FRD,T3,T2,T1").split(",");
-  const style = snap.fightingStyle || "2";
+  const style = opt.fightingStyle || "2";
   const skillLib = new Map([
     ["OFC", { id: "1111", oc: 205 }],
     ["FRD", { id: "1101", oc: 105 }],
