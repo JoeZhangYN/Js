@@ -218,6 +218,17 @@ function renderStallStrategySchemaFields() {
   ];
 }
 
+function renderBattleControlSchemaFields() {
+  return [
+    renderSchemaCheckboxField("defend", ": {{defendCondition}}"),
+    renderSchemaCheckboxField("autoFlee", ": {{fleeCondition}}"),
+    `<div><div class="hvAANew"></div>${renderSchemaCheckboxField(
+      "autoPause",
+      ": {{pauseCondition}}"
+    ).replace(/^<div>|<\/div>$/g, "")}</div>`,
+  ];
+}
+
 /**
  * 打开 / 切换显隐 HVAA 配置面板。浮动按钮(button.js)与 hv-utils 顶部栏触发器(window.HVAA_openConfig)
  * 共用此单一入口（收口原 button.js 内联 onclick 逻辑，去重）。
@@ -385,11 +396,9 @@ export function optionBox() {
     '  <div><input id="turnOnSS" type="checkbox"><label for="turnOnSS"><b><l0>开启</l0><l1>開啟</l1><l2>Turn on </l2>Spirit Stance</b></label>: {{turnOnSSCondition}}</div>',
     '  <div><input id="turnOffSS" type="checkbox"><label for="turnOffSS"><b><l0>关闭</l0><l1>關閉</l1><l2>Turn off </l2>Spirit Stance</b></label>: {{turnOffSSCondition}}</div>',
     '  <div><input id="preCastSS" type="checkbox"><label for="preCastSS"><b><l0>释放Buff/Debuff前开启Spirit Stance</l0><l1>釋放Buff/Debuff前開啟Spirit Stance</l1><l2>Activate Spirit Stance before Buff/Debuff</l2></b></label>: {{preCastSSCondition}}</div>',
-    '  <div><input id="defend" type="checkbox"><label for="defend"><b>Defend</b></label>: {{defendCondition}}</div>',
     '  <div><input id="focus" type="checkbox"><label for="focus"><b>Focus</b></label>: {{focusCondition}}</div>',
     '  <div><input id="etherTap" type="checkbox"><label for="etherTap"><b>Ether Tap</b></label>: {{etherTapCondition}}</div>',
-    '  <div><input id="autoFlee" type="checkbox"><label for="autoFlee"><b><l0>自动逃跑</l0><l1>自動逃跑</l1><l2>Flee</l2></b></label>: {{fleeCondition}}</div>',
-    '  <div><div class="hvAANew"></div><input id="autoPause" type="checkbox"><label for="autoPause"><b><l0>自动暂停</l0><l1>自動暫停</l1><l2>Pause</l2></b></label>: {{pauseCondition}}</div>',
+    ...renderBattleControlSchemaFields(),
     "  </div>",
     // === Arena 竞技场/体力 tab（Stamina 损失处理 + 闲置竞技场 + 战前回复，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-Arena">',

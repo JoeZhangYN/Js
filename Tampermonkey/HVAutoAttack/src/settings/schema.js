@@ -7,7 +7,7 @@
  * @typedef {object} OptionField
  * @property {string} key 存储 key
  * @property {"checkbox"|"number"|"text"|"select"} kind UI 类型
- * @property {string} group tab 分组（Main/Spell/Item/Channel/Buff/Debuff/Skill/Drop/Usage/Alarm/QuickSite/Backup）
+ * @property {string} group tab 分组（Main/Heal/Tactics/Spell/Item/Channel/Buff/Debuff/Skill/Drop/Usage/Alarm/QuickSite/Backup）
  * @property {{l0:string,l1:string,l2:string}} label 三语标签
  * @property {*} default 默认值
  * @property {boolean} [defaultOn] checkbox 上是否标 data-default-on
@@ -355,6 +355,36 @@ const OPTION_SCHEMA = [
       l0: "刷新间隔（分钟）",
       l1: "刷新間隔（分鐘）",
       l2: "Refresh interval (minutes)",
+    },
+  },
+  // === 战斗控制：规则表只调用唯一纯决策，设置页说明/默认值由 schema 派生 ===
+  {
+    key: "defend",
+    kind: "checkbox",
+    group: "Tactics",
+    default: false,
+    label: { l0: "Defend", l1: "Defend", l2: "Defend" },
+  },
+  {
+    key: "autoFlee",
+    kind: "checkbox",
+    group: "Tactics",
+    default: false,
+    label: {
+      l0: "自动逃跑",
+      l1: "自動逃跑",
+      l2: "Flee",
+    },
+  },
+  {
+    key: "autoPause",
+    kind: "checkbox",
+    group: "Tactics",
+    default: false,
+    label: {
+      l0: "自动暂停",
+      l1: "自動暫停",
+      l2: "Pause",
     },
   },
   // === 关键 buff graceful degradation (Monsterbation L1318 灵感) ===
