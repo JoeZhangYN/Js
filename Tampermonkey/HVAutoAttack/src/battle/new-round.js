@@ -1,6 +1,5 @@
 // 新一轮战斗初始化：怪物计数 / 轮次识别。
 import { gE } from "../dom/query.js";
-import { g } from "../state/store.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
@@ -25,6 +24,25 @@ function isOptionEnabled(key) {
   return Boolean(runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback: false }));
 }
 
+function determineRoundType(battleLog) {
+  const persistedRoundType = runBattleRoundAutomation({ type: BattleRoundEvent.READ_TYPE });
+  if (persistedRoundType) return persistedRoundType;
+  const initializingText = battleLog[battleLog.length - 1].textContent;
+  const roundType = runBattleRoundAutomation({
+    type: BattleRoundEvent.CLASSIFY_TYPE,
+    initializingText,
+  });
+  if (roundType === "ba" && isOptionEnabled("encounter")) {
+    runEncounterAutomation({
+      type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
+    });
+  }
+  return runBattleRoundAutomation({
+    type: BattleRoundEvent.RECORD_TYPE,
+    roundType,
+  });
+}
+
 function startRound() {
   runAutoTuneAutomation({ type: AutoTuneEvent.ROUND_STARTED });
   // New Round
@@ -32,29 +50,7 @@ function startRound() {
   if (window.location.hash !== "") runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
   runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
   const battleLog = gE("#textlog>tbody>tr>td", "all");
-  g(
-    "roundType",
-    (function () {
-      const persistedRoundType = runBattleRoundAutomation({ type: BattleRoundEvent.READ_TYPE });
-      if (persistedRoundType) return persistedRoundType;
-      const temp = battleLog[battleLog.length - 1].textContent;
-      const roundType = runBattleRoundAutomation({
-        type: BattleRoundEvent.CLASSIFY_TYPE,
-        initializingText: temp,
-      });
-      if (roundType === "ba") {
-        if (isOptionEnabled("encounter")) {
-          runEncounterAutomation({
-            type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
-          });
-        }
-      }
-      return runBattleRoundAutomation({
-        type: BattleRoundEvent.RECORD_TYPE,
-        roundType,
-      });
-    })()
-  );
+  const roundType = determineRoundType(battleLog);
   const staminaOutcome = runBattleStaminaAutomation({
     type: BattleStaminaEvent.ROUND_LOG_READY,
     text: battleLog[0].textContent,
@@ -71,7 +67,7 @@ function startRound() {
     runBattleRoundAutomation({
       type: BattleRoundEvent.RECORD_COUNT_FROM_INITIALIZATION,
       initializingText,
-      roundType: g("roundType"),
+      roundType,
     });
   } else if (runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY })) {
     runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_SINGLE_ROUND });

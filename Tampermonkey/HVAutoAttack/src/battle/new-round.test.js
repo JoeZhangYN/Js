@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 
 const mocks = vi.hoisted(() => ({
-  g: vi.fn(),
   gE: vi.fn(),
   runAutoTuneAutomation: vi.fn(),
   runBattleSkillUsageAutomation: vi.fn(),
@@ -17,7 +16,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
-vi.mock("../state/store.js", () => ({ g: mocks.g }));
 vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
@@ -71,15 +69,7 @@ vi.mock("./battle-skill-usage.js", () => ({
 }));
 
 beforeEach(() => {
-  const state = { turn: 2 };
   for (const fn of Object.values(mocks)) fn.mockReset();
-  mocks.g.mockImplementation((key, value) => {
-    if (value !== undefined) {
-      state[key] = value;
-      return value;
-    }
-    return state[key];
-  });
   mocks.gE.mockReturnValue([
     { textContent: "Round begins" },
     { textContent: "Initializing random encounter" },
@@ -120,6 +110,11 @@ describe("runBattleRoundStartAutomation", () => {
     expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({ type: "resetRound" });
     expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
       type: "randomEncounterStarted",
+    });
+    expect(mocks.runBattleRoundAutomation).toHaveBeenCalledWith({
+      type: "recordCountFromInitialization",
+      initializingText: "Initializing random encounter",
+      roundType: "ba",
     });
   });
 });

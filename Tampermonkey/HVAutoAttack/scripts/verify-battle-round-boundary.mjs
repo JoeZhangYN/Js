@@ -91,6 +91,12 @@ if (!ownerText.includes("CLASSIFY_TYPE")) {
 }
 
 const newRoundText = fs.readFileSync(path.join(root, "src/battle/new-round.js"), "utf8");
+if (/from\s+["']\.\.\/state\/store\.js["']/.test(newRoundText)) {
+  violations.push("src/battle/new-round.js must not import raw battle runtime store");
+}
+if (/\bg\(\s*["']roundType["']/.test(newRoundText)) {
+  violations.push("src/battle/new-round.js must not read or write roundType directly");
+}
 for (const forbidden of [
   /Initializing arena challenge/,
   /Initializing random encounter/,
