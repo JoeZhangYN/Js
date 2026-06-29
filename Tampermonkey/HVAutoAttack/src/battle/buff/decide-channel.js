@@ -8,7 +8,7 @@ import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
 import { NAME_TO_BUFF_CODE } from "../../data/spell-lib.js";
 
 /**
- * @param {object} opt g("option")
+ * @param {object} opt battle rule option subset
  * @param {import("../../core/types.js").BattleSnapshot} snap
  * @returns {{kind:"channel-plan", plan: import("./decide-channel.js").ChannelPlan}}
  */
@@ -33,11 +33,7 @@ function decidePlan(opt, snap) {
     for (const j of skillPack) {
       const lib = BUFF_SKILL_LIB.get(j);
       if (!lib) continue;
-      if (
-        channelSkill[j] &&
-        needsRecast(snap, lib.img) &&
-        snap.skillReady[lib.id]
-      ) {
+      if (channelSkill[j] && needsRecast(snap, lib.img) && snap.skillReady[lib.id]) {
         return { type: "click", skillId: lib.id };
       }
     }

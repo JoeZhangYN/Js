@@ -15,7 +15,7 @@ const DRAUGHT_PACK = [
 
 /**
  * 决定本 turn 是否要施 buff / 用 draught，返 ActionResult。
- * @param {object} opt g("option")
+ * @param {object} opt battle rule option subset
  * @param {import("../../core/types.js").BattleSnapshot} snap
  * @returns {import("../../core/types.js").ActionResult}
  */
@@ -36,11 +36,7 @@ export function decideBuff(opt, snap) {
     if (!snap.skillReady[lib.id]) continue;
 
     // 是否需要先开 Spirit Stance？
-    if (
-      opt.preCastSS &&
-      !snap.spiritOn &&
-      checkCondition(opt.preCastSSCondition, snap)
-    ) {
+    if (opt.preCastSS && !snap.spiritOn && checkCondition(opt.preCastSSCondition, snap)) {
       return { kind: "click", selector: "#ckey_spirit" };
     }
     return { kind: "click", selector: lib.id };

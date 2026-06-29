@@ -37,7 +37,7 @@ function needsRepair(eq, threshold) {
 }
 
 /**
- * @param {{ repairValue?: number }} opt g("option") 子集
+ * @param {{ repairValue?: number }} opt repair orchestration option subset
  * @param {RepairState} state
  * @param {string[]} repairedIds 本会话已提交修理的装备 id（止损态）
  * @returns {RepairPlan}

@@ -46,7 +46,7 @@ export function isPotionWasteful(potionId, snap, tolerance = 0.7, getRecovery) {
  *  4. OC 没满（< 250），有继续刷的空间
  *
  * @param {import("../core/types.js").BattleSnapshot} snap
- * @param {object} opt g("option") + g("roundNow")/g("roundAll") 由 caller 注入或读 g()
+ * @param {object} opt battle rule option subset
  * @returns {boolean}
  */
 export function isStallMode(snap, opt, roundNow, roundAll) {

@@ -49,6 +49,11 @@ for (const required of ["runRepairDecision", "RepairDecisionEvent"]) {
 if (/export\s+function\s+decideRepair\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy decideRepair export is forbidden`);
 }
+if (/g\(\s*["']option["']/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not describe repair decisions as raw option reads`
+  );
+}
 
 if (violations.length) {
   console.error("[verify-repair-decision-boundary] FAIL");

@@ -21,7 +21,10 @@ const startRuntimeFile = path.join(root, "src/battle/battle-start-runtime.js");
 const startRuntimeTest = path.join(root, "src/battle/battle-start-runtime.test.js");
 const utilityEngineFile = path.join(root, "src/battle/utility-engine.js");
 const activateSpiritFile = path.join(root, "src/battle/buff/activate-spirit.js");
+const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
+const decideChannelFile = path.join(root, "src/battle/buff/decide-channel.js");
 const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
+const potionEconomyFile = path.join(root, "src/battle/potion-economy.js");
 const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
@@ -689,6 +692,15 @@ function checkBattleTestFixtures() {
   }
 }
 
+function checkBattleOptionVocabulary() {
+  for (const file of [decideBuffFile, decideChannelFile, potionEconomyFile]) {
+    const text = fs.readFileSync(file, "utf8");
+    if (/g\(\s*["']option["']/.test(text)) {
+      violations.push(`${rel(file)} must not describe pure battle decisions as raw option reads`);
+    }
+  }
+}
+
 checkInit();
 checkBattleEntry();
 checkRoundStartCallers();
@@ -708,6 +720,7 @@ checkExecuteItem();
 checkSnapshot();
 checkBattleRulesRuntimeContext();
 checkBattleTestFixtures();
+checkBattleOptionVocabulary();
 
 if (violations.length) {
   console.error("[verify-battle-boundary] FAIL");
