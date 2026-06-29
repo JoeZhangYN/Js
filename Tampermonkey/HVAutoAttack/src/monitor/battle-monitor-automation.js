@@ -8,14 +8,13 @@ import {
   runBattleActionUsageCapture,
 } from "./battle-action-usage-capture.js";
 
-const EVENT_BATTLE_STARTED = "battleStarted";
 const EVENT_HUD_REFRESH = "hudRefresh";
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
 const EVENT_COMPLETION_REACHED = "completionReached";
 
 export const BattleMonitorEvent = Object.freeze({
-  BATTLE_STARTED: EVENT_BATTLE_STARTED,
+  BATTLE_STARTED: BattleReportEvent.BATTLE_STARTED,
   HUD_REFRESH: EVENT_HUD_REFRESH,
   ACTION_STARTED: EVENT_ACTION_STARTED,
   ACTION_ENDED: EVENT_ACTION_ENDED,
@@ -36,19 +35,13 @@ function recordCompletion() {
   runBattleUsageAutomation({ type: BattleUsageEvent.COMPLETION_REACHED });
 }
 
-function recordBattleStarted() {
-  runBattleReportAutomation({ type: BattleReportEvent.BATTLE_STARTED });
-}
-
 function routeBattleReportCommand(event) {
   if (!Object.values(BattleReportEvent).includes(event.type)) return undefined;
   return runBattleReportAutomation(event);
 }
 
 export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) {
-  if (event.type === EVENT_BATTLE_STARTED) {
-    recordBattleStarted();
-  } else if (event.type === EVENT_HUD_REFRESH) {
+  if (event.type === EVENT_HUD_REFRESH) {
     runBattleHudAutomation({ type: BattleHudEvent.REFRESH });
   } else if (event.type === EVENT_ACTION_STARTED) {
     runBattleActionUsageCapture({ type: BattleActionUsageCaptureEvent.ACTION_STARTED });

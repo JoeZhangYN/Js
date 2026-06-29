@@ -142,6 +142,7 @@ function checkEntry() {
     );
   }
   for (const forbidden of [
+    "const EVENT_BATTLE_STARTED",
     "const EVENT_CLEAR_DROP_REPORT",
     "const EVENT_CLEAR_USAGE_REPORT",
     "const EVENT_RENDER_DROP_REPORT_TABLE_BODY",
@@ -154,6 +155,7 @@ function checkEntry() {
     }
   }
   for (const required of [
+    "BATTLE_STARTED: BattleReportEvent.BATTLE_STARTED",
     "CLEAR_DROP_REPORT: BattleReportEvent.CLEAR_DROP_REPORT",
     "CLEAR_USAGE_REPORT: BattleReportEvent.CLEAR_USAGE_REPORT",
     "RENDER_DROP_REPORT_TABLE_BODY: BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY",
@@ -174,8 +176,13 @@ function checkEntry() {
       `${entry.replaceAll("\\", "/")} must pass report commands through without remapping`
     );
   }
+  if (/\bfunction recordBattleStarted\b/.test(text)) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must route report start through the shared report command path`
+    );
+  }
   if (
-    /runBattleReportAutomation\(\s*\{\s*type:\s*BattleReportEvent\.(?:CLEAR_DROP_REPORT|CLEAR_USAGE_REPORT|RENDER_DROP_REPORT_TABLE_BODY|RENDER_USAGE_REPORT_TABLE_BODY)/.test(
+    /runBattleReportAutomation\(\s*\{\s*type:\s*BattleReportEvent\.(?:BATTLE_STARTED|CLEAR_DROP_REPORT|CLEAR_USAGE_REPORT|RENDER_DROP_REPORT_TABLE_BODY|RENDER_USAGE_REPORT_TABLE_BODY)/.test(
       text
     )
   ) {
