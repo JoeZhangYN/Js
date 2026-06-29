@@ -5,7 +5,6 @@ const mocks = vi.hoisted(() => ({
   g: vi.fn(),
   killBug: vi.fn(),
   prepareBattleTurnContext: vi.fn(),
-  runOptionAutomation: vi.fn(),
   runBattleMonitorAutomation: vi.fn(),
   runBattlePauseAutomation: vi.fn(),
   runBattleTurnRuntime: vi.fn(),
@@ -13,10 +12,6 @@ const mocks = vi.hoisted(() => ({
   runRules: vi.fn(),
 }));
 
-vi.mock("../state/option.js", () => ({
-  OptionEvent: Object.freeze({ READ_BATTLE_RULE_OPTIONS: "readBattleRuleOptions" }),
-  runOptionAutomation: mocks.runOptionAutomation,
-}));
 vi.mock("../state/battle-turn.js", () => ({
   BattleTurnEvent: Object.freeze({ TURN_STARTED: "turnStarted" }),
   runBattleTurnAutomation: mocks.runBattleTurnRuntime,
@@ -42,8 +37,10 @@ vi.mock("./pause-automation.js", () => ({
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
-  mocks.runOptionAutomation.mockReturnValue({ ok: true });
-  mocks.prepareBattleTurnContext.mockReturnValue({ snap: true });
+  mocks.prepareBattleTurnContext.mockReturnValue({
+    snap: { snap: true },
+    battleRuleOptions: { ok: true },
+  });
   mocks.runBattlePauseAutomation.mockReturnValue(false);
 });
 
@@ -52,10 +49,7 @@ describe("runBattleTurnAutomation", () => {
     runBattleTurnAutomation();
 
     expect(mocks.runBattleTurnRuntime).toHaveBeenCalledWith({ type: "turnStarted" });
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readBattleRuleOptions" });
-    expect(mocks.prepareBattleTurnContext).toHaveBeenCalledWith({
-      battleRuleOptions: { ok: true },
-    });
+    expect(mocks.prepareBattleTurnContext).toHaveBeenCalledWith();
     expect(mocks.runRules).toHaveBeenCalledWith(
       [{ name: "testRule" }],
       { snap: true },

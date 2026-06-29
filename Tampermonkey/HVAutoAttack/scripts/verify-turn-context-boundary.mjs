@@ -83,6 +83,7 @@ function checkEntry() {
   }
   for (const required of [
     "runCdRuntimeAutomation",
+    "OptionEvent.READ_BATTLE_RULE_OPTIONS",
     "CdRuntimeEvent.INCREMENT_TURN",
     "CdRuntimeEvent.PERSIST",
     "collectSnapshot",

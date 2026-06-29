@@ -8,6 +8,7 @@ const ownerTest = path.normalize("src/state/option.test.js");
 const backup = path.normalize("src/state/option-backup.js");
 const backupTest = path.normalize("src/state/option-backup.test.js");
 const battleMainLoop = path.normalize("src/battle/main-loop.js");
+const turnContext = path.normalize("src/battle/turn-context.js");
 const storage = path.normalize("src/state/storage.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const settingsRender = path.normalize("src/settings/render.js");
@@ -89,9 +90,15 @@ for (const required of [
 }
 
 const battleMainLoopText = fs.readFileSync(path.join(root, battleMainLoop), "utf8");
+if (/OptionEvent\.READ_BATTLE_RULE_OPTIONS|runOptionAutomation/.test(battleMainLoopText)) {
+  violations.push(
+    `${battleMainLoop.replaceAll("\\", "/")} must receive battle rule options from turn context`
+  );
+}
+const turnContextText = fs.readFileSync(path.join(root, turnContext), "utf8");
 for (const required of ["runOptionAutomation", "OptionEvent.READ_BATTLE_RULE_OPTIONS"]) {
-  if (!battleMainLoopText.includes(required)) {
-    violations.push(`${battleMainLoop.replaceAll("\\", "/")} must request ${required}`);
+  if (!turnContextText.includes(required)) {
+    violations.push(`${turnContext.replaceAll("\\", "/")} must request ${required}`);
   }
 }
 

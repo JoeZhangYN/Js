@@ -31,7 +31,10 @@ vi.mock("./monster-status-automation.js", () => ({
   runMonsterStatusAutomation: mocks.runMonsterStatusAutomation,
 }));
 vi.mock("../state/option.js", () => ({
-  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
+  OptionEvent: Object.freeze({
+    READ_BATTLE_RULE_OPTIONS: "readBattleRuleOptions",
+    READ_FIELD: "readField",
+  }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
 vi.mock("../state/store.js", () => ({ g: mocks.g }));
@@ -60,14 +63,22 @@ beforeEach(() => {
     bossAlive: 1,
   });
   mocks.runBattleSpiritToggleAutomation.mockReturnValue(97);
-  mocks.runOptionAutomation.mockReturnValue(false);
+  mocks.runOptionAutomation.mockImplementation((event) => {
+    if (event.type === "readBattleRuleOptions") return { burstControlSwitch: false };
+    if (event.type === "readField") return false;
+    return undefined;
+  });
 });
 
 describe("prepareBattleTurnContext", () => {
   it("prepares one turn context through the entry", () => {
-    expect(prepareBattleTurnContext()).toBe(snap);
+    expect(prepareBattleTurnContext()).toEqual({
+      snap,
+      battleRuleOptions: { burstControlSwitch: false },
+    });
 
     expect(mocks.collectSnapshot).toHaveBeenCalledWith({ learnIncomingBurst: false });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readBattleRuleOptions" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(1, { type: "incrementTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(2, { type: "persist" });
     expect(mocks.g).toHaveBeenCalledWith("hp", 90);
@@ -77,7 +88,7 @@ describe("prepareBattleTurnContext", () => {
   });
 
   it("attaches decision runtime facts through capability entries", () => {
-    const prepared = prepareBattleTurnContext();
+    const prepared = prepareBattleTurnContext().snap;
 
     expect(prepared).toMatchObject({
       monsterAlive: 3,
@@ -97,13 +108,23 @@ describe("prepareBattleTurnContext", () => {
   });
 
   it("passes the burst-control rule decision into snapshot collection", () => {
-    prepareBattleTurnContext({ battleRuleOptions: { burstControlSwitch: true } });
+    mocks.runOptionAutomation.mockImplementation((event) => {
+      if (event.type === "readBattleRuleOptions") return { burstControlSwitch: true };
+      if (event.type === "readField") return false;
+      return undefined;
+    });
+
+    prepareBattleTurnContext();
 
     expect(mocks.collectSnapshot).toHaveBeenCalledWith({ learnIncomingBurst: true });
   });
 
   it("reads debug snapshot through the option entry and accepts plain snapshot values", () => {
-    mocks.runOptionAutomation.mockReturnValue(true);
+    mocks.runOptionAutomation.mockImplementation((event) => {
+      if (event.type === "readBattleRuleOptions") return { burstControlSwitch: false };
+      if (event.type === "readField") return true;
+      return undefined;
+    });
 
     prepareBattleTurnContext();
 
@@ -115,7 +136,11 @@ describe("prepareBattleTurnContext", () => {
   });
 
   it("rejects DOM references when debug snapshot checking is enabled", () => {
-    mocks.runOptionAutomation.mockReturnValue(true);
+    mocks.runOptionAutomation.mockImplementation((event) => {
+      if (event.type === "readBattleRuleOptions") return { burstControlSwitch: false };
+      if (event.type === "readField") return true;
+      return undefined;
+    });
     mocks.collectSnapshot.mockReturnValue({ hp: document.createElement("div") });
 
     expect(() => prepareBattleTurnContext()).toThrow("含 DOM 引用");

@@ -4,7 +4,6 @@
 // import step 实现，强制新增/调整 step 走 battle/rules/index.js。
 // 保留的 import 仅 pre-step 必执行项（monitor/bug guard/monster status）+ 基础设施。
 // file-size-gate: exempt phase-5b-mainloop
-import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import {
   BattleTurnEvent,
   runBattleTurnAutomation as runBattleTurnRuntime,
@@ -29,8 +28,7 @@ export function runBattleTurnAutomation() {
   killBug();
   runMonsterStatusAutomation({ type: MonsterStatusEvent.UPDATE_HP });
 
-  const battleRuleOptions = runOptionAutomation({ type: OptionEvent.READ_BATTLE_RULE_OPTIONS });
-  const snap = prepareBattleTurnContext({ battleRuleOptions });
+  const { snap, battleRuleOptions } = prepareBattleTurnContext();
 
   // 编排倒置：遍历 BATTLE_RULES（PURE decide → dispatch），某 rule act 即停止后续。
   // 替代原 runSteps([...18 内联闭包...]) —— 行动决策链现声明在 battle/rules/index.js。
