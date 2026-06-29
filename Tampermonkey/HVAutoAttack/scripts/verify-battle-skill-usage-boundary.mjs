@@ -5,9 +5,8 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/battle/battle-skill-usage.js");
 const ownerTest = path.normalize("src/battle/battle-skill-usage.test.js");
-const roundStart = path.normalize("src/battle/new-round.js");
+const roundLifecycle = path.normalize("src/battle/round-lifecycle.js");
 const executeAttack = path.normalize("src/battle/attack/execute-attack.js");
-const executeAttackTest = path.normalize("src/battle/attack/execute-attack.test.js");
 const physicalSkillBookkeeping = path.normalize("src/battle/attack/physical-skill-bookkeeping.js");
 const physicalSkillBookkeepingTest = path.normalize(
   "src/battle/attack/physical-skill-bookkeeping.test.js"
@@ -70,7 +69,7 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if ((ownerText.match(/normalizeUsage\(/g) || []).length < 2) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize skill usage reads and writes`);
 }
-requireText(roundStart, ["BattleSkillUsageEvent.RESET_ROUND", "runBattleSkillUsageAutomation"]);
+requireText(roundLifecycle, ["BattleSkillUsageEvent.RESET_ROUND", "runBattleSkillUsageAutomation"]);
 requireText(executeAttack, [
   "PhysicalSkillBookkeepingEvent.RECORD_FIRE",
   "runPhysicalSkillBookkeeping",

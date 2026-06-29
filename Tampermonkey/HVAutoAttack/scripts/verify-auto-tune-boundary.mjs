@@ -6,6 +6,8 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/auto-tune.js");
 const ownerTest = path.normalize("src/state/auto-tune.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
+const roundStart = path.normalize("src/battle/new-round.js");
+const roundLifecycle = path.normalize("src/battle/round-lifecycle.js");
 const violations = [];
 
 function rel(file) {
@@ -64,6 +66,8 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const roundStartText = fs.readFileSync(path.join(root, roundStart), "utf8");
+const roundLifecycleText = fs.readFileSync(path.join(root, roundLifecycle), "utf8");
 for (const required of [
   "runAutoTuneAutomation",
   "AutoTuneEvent",
@@ -76,6 +80,13 @@ for (const required of [
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+
+if (/AutoTuneEvent\.ROUND_STARTED|runAutoTuneAutomation/.test(roundStartText)) {
+  violations.push(`${roundStart.replaceAll("\\", "/")} must use round lifecycle entry`);
+}
+if (!roundLifecycleText.includes("AutoTuneEvent.ROUND_STARTED")) {
+  violations.push(`${roundLifecycle.replaceAll("\\", "/")} must own round-start auto-tune`);
 }
 
 for (const legacy of ["getCurrentPad", "resetAutoTune", "getAutoTuneStatus", "observeBattle"]) {

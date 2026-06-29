@@ -3,13 +3,10 @@ import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-roun
 
 const mocks = vi.hoisted(() => ({
   gE: vi.fn(),
-  runAutoTuneAutomation: vi.fn(),
-  runBattleSkillUsageAutomation: vi.fn(),
-  runBattleTurnAutomation: vi.fn(),
   runBattleRoundAutomation: vi.fn(),
+  runBattleRoundLifecycle: vi.fn(),
   runBattleStaminaAutomation: vi.fn(),
   runEncounterAutomation: vi.fn(),
-  runMonsterKnowledgeAutomation: vi.fn(),
   runMonsterStatusAutomation: vi.fn(),
   runNavigationAutomation: vi.fn(),
 }));
@@ -22,18 +19,6 @@ vi.mock("../core/navigate.js", () => ({
 vi.mock("../pages/encounter.js", () => ({
   EncounterEvent: Object.freeze({ RANDOM_ENCOUNTER_STARTED: "randomEncounterStarted" }),
   runEncounterAutomation: mocks.runEncounterAutomation,
-}));
-vi.mock("../state/auto-tune.js", () => ({
-  AutoTuneEvent: Object.freeze({ ROUND_STARTED: "roundStarted" }),
-  runAutoTuneAutomation: mocks.runAutoTuneAutomation,
-}));
-vi.mock("../state/battle-turn.js", () => ({
-  BattleTurnEvent: Object.freeze({ ROUND_STARTED: "roundStarted" }),
-  runBattleTurnAutomation: mocks.runBattleTurnAutomation,
-}));
-vi.mock("./monster-knowledge-automation.js", () => ({
-  MonsterKnowledgeEvent: Object.freeze({ ROUND_STARTED: "roundStarted" }),
-  runMonsterKnowledgeAutomation: mocks.runMonsterKnowledgeAutomation,
 }));
 vi.mock("./monster-status-automation.js", () => ({
   MonsterStatusEvent: Object.freeze({
@@ -60,9 +45,12 @@ vi.mock("./battle-stamina.js", () => ({
   BattleStaminaEvent: Object.freeze({ ROUND_LOG_READY: "roundLogReady" }),
   runBattleStaminaAutomation: mocks.runBattleStaminaAutomation,
 }));
-vi.mock("./battle-skill-usage.js", () => ({
-  BattleSkillUsageEvent: Object.freeze({ RESET_ROUND: "resetRound" }),
-  runBattleSkillUsageAutomation: mocks.runBattleSkillUsageAutomation,
+vi.mock("./round-lifecycle.js", () => ({
+  BattleRoundLifecycleEvent: Object.freeze({
+    ROUND_READY: "roundReady",
+    ROUND_STARTED: "roundStarted",
+  }),
+  runBattleRoundLifecycle: mocks.runBattleRoundLifecycle,
 }));
 
 beforeEach(() => {
@@ -93,12 +81,10 @@ describe("runBattleRoundStartAutomation", () => {
     expect(BattleRoundStartEvent.ROUND_STARTED).toBe("roundStarted");
   });
 
-  it("routes round-start auto-tune bookkeeping through the auto-tune entry", () => {
+  it("routes round-start bookkeeping through the lifecycle entry", () => {
     expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(true);
 
-    expect(mocks.runAutoTuneAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
-    expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
-    expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({ type: "resetRound" });
+    expect(mocks.runBattleRoundLifecycle).toHaveBeenCalledWith({ type: "roundStarted" });
     expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
       type: "randomEncounterStarted",
     });
@@ -121,5 +107,6 @@ describe("runBattleRoundStartAutomation", () => {
       ],
       initialized: true,
     });
+    expect(mocks.runBattleRoundLifecycle).toHaveBeenCalledWith({ type: "roundReady" });
   });
 });

@@ -1,17 +1,11 @@
 // 新一轮战斗初始化：怪物计数 / 轮次识别。
 import { gE } from "../dom/query.js";
-import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
-import { AutoTuneEvent, runAutoTuneAutomation } from "../state/auto-tune.js";
-import {
-  MonsterKnowledgeEvent,
-  runMonsterKnowledgeAutomation,
-} from "./monster-knowledge-automation.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
 import { BattleStaminaEvent, runBattleStaminaAutomation } from "./battle-stamina.js";
-import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-skill-usage.js";
+import { BattleRoundLifecycleEvent, runBattleRoundLifecycle } from "./round-lifecycle.js";
 
 const EVENT_ROUND_STARTED = "roundStarted";
 
@@ -33,9 +27,7 @@ function recordRoundStartContext(initializingText) {
 }
 
 function startRound() {
-  runAutoTuneAutomation({ type: AutoTuneEvent.ROUND_STARTED });
-  // New Round
-  runBattleTurnAutomation({ type: BattleTurnEvent.ROUND_STARTED });
+  runBattleRoundLifecycle({ type: BattleRoundLifecycleEvent.ROUND_STARTED });
   if (window.location.hash !== "") runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
   runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
   const battleLog = gE("#textlog>tbody>tr>td", "all");
@@ -61,8 +53,7 @@ function startRound() {
     repaired: monsterStatusOutcome.repaired,
   });
   runBattleRoundAutomation({ type: BattleRoundEvent.SYNC_RUNTIME });
-  runBattleSkillUsageAutomation({ type: BattleSkillUsageEvent.RESET_ROUND });
-  runMonsterKnowledgeAutomation({ type: MonsterKnowledgeEvent.ROUND_STARTED });
+  runBattleRoundLifecycle({ type: BattleRoundLifecycleEvent.ROUND_READY });
 }
 
 export function runBattleRoundStartAutomation(event = { type: EVENT_ROUND_STARTED }) {
