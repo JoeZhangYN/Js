@@ -54,7 +54,7 @@ function recordBattleReportStarted(deps) {
   const { recordEach, roundType, roundAll } = readBattleReportStartContext(deps);
   const recordLabel = readBattleReportRecordLabel(deps);
   return runBattleRecordArchiveAutomation({
-    type: BattleRecordArchiveEvent.START_RECORDING,
+    type: BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING,
     enabled: recordEach,
     code: `${recordLabel}: ${roundType.toUpperCase()}-${roundAll}`,
   });

@@ -15,7 +15,7 @@ import {
 } from "./battle-record-archive-records.js";
 
 export const BattleRecordArchiveEvent = Object.freeze({
-  START_RECORDING: "startRecording",
+  START_BATTLE_REPORT_RECORDING: "startBattleReportRecording",
   READ_OR_CREATE_DROP_RECORD: "readOrCreateDropRecord",
   STORE_OR_ARCHIVE_DROP_RECORD: "storeOrArchiveDropRecord",
   READ_OR_CREATE_USAGE_STATS: "readOrCreateUsageStats",
@@ -77,7 +77,7 @@ function readRecordSet(event, deps) {
   };
 }
 
-function startRecording(event, deps) {
+function startBattleReportRecording(event, deps) {
   if (!event.enabled || deps.getValue(STORAGE_KEYS.BATTLE_CODE)) return false;
   deps.setValue(STORAGE_KEYS.BATTLE_CODE, event.code);
   return true;
@@ -142,7 +142,7 @@ export function runBattleRecordArchiveAutomation(event, deps = {}) {
   if (event.type === BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET) {
     return clearUsageReportRecordSet(ops, fullDeps);
   }
-  if (event.type === BattleRecordArchiveEvent.START_RECORDING)
-    return startRecording(event, fullDeps);
+  if (event.type === BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING)
+    return startBattleReportRecording(event, fullDeps);
   return undefined;
 }

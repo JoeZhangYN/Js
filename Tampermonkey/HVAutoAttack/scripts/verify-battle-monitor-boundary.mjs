@@ -332,7 +332,7 @@ function checkRecordArchiveEntry() {
     violations.push(`${rel(archiveFile)} must expose runBattleRecordArchiveAutomation(event)`);
   }
   if (
-    !archiveText.includes("START_RECORDING") ||
+    !archiveText.includes("START_BATTLE_REPORT_RECORDING") ||
     !archiveText.includes("READ_OR_CREATE_DROP_RECORD") ||
     !archiveText.includes("STORE_OR_ARCHIVE_DROP_RECORD") ||
     !archiveText.includes("READ_OR_CREATE_USAGE_STATS") ||
@@ -354,6 +354,7 @@ function checkRecordArchiveEntry() {
     "READ_OR_CREATE_CURRENT:",
     "READ_RECORD_SET:",
     "CLEAR_RECORD_SET:",
+    "START_RECORDING:",
   ]) {
     if (archiveText.includes(retired)) {
       violations.push(`${rel(archiveFile)} must not expose retired generic ${retired}`);
@@ -649,7 +650,7 @@ function checkBattleReportEntry() {
       violations.push(`${rel(reportFile)} must route report records through ${required}`);
     }
   }
-  if (!text.includes("BattleRecordArchiveEvent.START_RECORDING")) {
+  if (!text.includes("BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING")) {
     violations.push(
       `${rel(reportFile)} must start report record naming through battle-record-archive`
     );

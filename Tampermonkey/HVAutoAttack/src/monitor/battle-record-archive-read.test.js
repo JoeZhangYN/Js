@@ -110,7 +110,7 @@ describe("battle record archive reads", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.START_RECORDING,
+          type: BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING,
           enabled: true,
           code: "6/27: AR-5",
         },
@@ -122,7 +122,7 @@ describe("battle record archive reads", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.START_RECORDING,
+          type: BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING,
           enabled: true,
           code: "6/27: RB-1",
         },
@@ -138,7 +138,7 @@ describe("battle record archive reads", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.START_RECORDING,
+          type: BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING,
           enabled: false,
           code: "6/27: AR-5",
         },
