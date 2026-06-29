@@ -391,6 +391,21 @@ const OPTION_SCHEMA = [
       l2: "Activate Spirit Stance before Buff/Debuff",
     },
   },
+  // === 攻击资源动作：由 decideAttack 唯一裁决，设置页说明/默认值由 schema 派生 ===
+  {
+    key: "focus",
+    kind: "checkbox",
+    group: "Tactics",
+    default: false,
+    label: { l0: "Focus", l1: "Focus", l2: "Focus" },
+  },
+  {
+    key: "etherTap",
+    kind: "checkbox",
+    group: "Tactics",
+    default: false,
+    label: { l0: "Ether Tap", l1: "Ether Tap", l2: "Ether Tap" },
+  },
   // === 战斗控制：规则表只调用唯一纯决策，设置页说明/默认值由 schema 派生 ===
   {
     key: "defend",

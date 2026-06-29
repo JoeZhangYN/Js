@@ -237,6 +237,13 @@ function renderSpiritStanceSchemaFields() {
   ];
 }
 
+function renderAttackResourceSchemaFields() {
+  return [
+    renderSchemaCheckboxField("focus", ": {{focusCondition}}"),
+    renderSchemaCheckboxField("etherTap", ": {{etherTapCondition}}"),
+  ];
+}
+
 /**
  * 打开 / 切换显隐 HVAA 配置面板。浮动按钮(button.js)与 hv-utils 顶部栏触发器(window.HVAA_openConfig)
  * 共用此单一入口（收口原 button.js 内联 onclick 逻辑，去重）。
@@ -402,8 +409,7 @@ export function optionBox() {
     // === Tactics 战术姿态 tab（Spirit Stance / Defend / Focus / Ether Tap / 逃跑 / 暂停，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-Tactics">',
     ...renderSpiritStanceSchemaFields(),
-    '  <div><input id="focus" type="checkbox"><label for="focus"><b>Focus</b></label>: {{focusCondition}}</div>',
-    '  <div><input id="etherTap" type="checkbox"><label for="etherTap"><b>Ether Tap</b></label>: {{etherTapCondition}}</div>',
+    ...renderAttackResourceSchemaFields(),
     ...renderBattleControlSchemaFields(),
     "  </div>",
     // === Arena 竞技场/体力 tab（Stamina 损失处理 + 闲置竞技场 + 战前回复，原 Main 拆出）===
