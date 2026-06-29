@@ -101,6 +101,8 @@ for (const required of [
   /renderSchemaNumberInput\(\s*["']playerMaxHp["']/,
   /renderSchemaNumberInput\(\s*["']dynamicHealSafetyPad["']/,
   /renderSchemaCheckboxField\(\s*["']autoTune["']/,
+  /renderNoWastePotionSchemaFields/,
+  /renderCheckboxPlusNumber\(\s*["']noWastePotion["']\s*,\s*["']potionWasteTolerance["']/,
 ]) {
   if (!required.test(renderText)) {
     violations.push(
@@ -143,6 +145,8 @@ for (const forbidden of [
   /name=["']playerMaxHp["']\s+placeholder=["']17000["']/,
   /name=["']dynamicHealSafetyPad["']\s+placeholder=["']1\.3["']/,
   /id=["']autoTune["'][\s\S]{0,160}自学 safetyPad/,
+  /id=["']noWastePotion["'][\s\S]{0,180}药品防溢出/,
+  /name=["']potionWasteTolerance["']\s+placeholder=["']0\.7["']/,
 ]) {
   if (forbidden.test(renderText)) {
     violations.push(

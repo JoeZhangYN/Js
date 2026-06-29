@@ -215,6 +215,29 @@ const OPTION_SCHEMA = [
     },
   },
   {
+    key: "noWastePotion",
+    kind: "checkbox",
+    group: "Heal",
+    default: true,
+    defaultOn: true,
+    label: {
+      l0: "药品防溢出：deficit 不够大时跳过该瓶",
+      l1: "藥品防溢出：deficit 不夠大時跳過該瓶",
+      l2: "No-waste potion: skip if deficit too small",
+    },
+  },
+  {
+    key: "potionWasteTolerance",
+    kind: "number",
+    group: "Heal",
+    default: 0.7,
+    label: {
+      l0: "容差",
+      l1: "容差",
+      l2: "tolerance",
+    },
+  },
+  {
     key: "skipDebuffForBigSkillThreshold",
     kind: "number",
     group: "Debuff",
