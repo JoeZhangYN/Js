@@ -10,6 +10,7 @@ const internalFiles = new Set(
     "src/monitor/battle-action-usage-capture.js",
     "src/monitor/battle-info.js",
     "src/monitor/battle-record-archive-drop-records.js",
+    "src/monitor/battle-record-archive-store.js",
     "src/monitor/battle-record-archive.js",
     "src/monitor/battle-record-archive-usage-records.js",
     "src/monitor/battle-report.js",
@@ -496,6 +497,7 @@ function checkRecordArchiveEntry() {
     root,
     "src/monitor/battle-record-archive-drop-records.js"
   );
+  const archiveStoreFile = path.join(root, "src/monitor/battle-record-archive-store.js");
   const dropDefaultRecordFile = path.join(root, "src/monitor/drop-default-record.js");
   const archiveUsageRecordsFile = path.join(
     root,
@@ -504,6 +506,7 @@ function checkRecordArchiveEntry() {
   const usageDefaultStatsFile = path.join(root, "src/monitor/record-usage-default-stats.js");
   const archiveText = fs.readFileSync(archiveFile, "utf8");
   const archiveDropRecordsText = fs.readFileSync(archiveDropRecordsFile, "utf8");
+  const archiveStoreText = fs.readFileSync(archiveStoreFile, "utf8");
   const dropDefaultRecordText = fs.readFileSync(dropDefaultRecordFile, "utf8");
   const archiveUsageRecordsText = fs.readFileSync(archiveUsageRecordsFile, "utf8");
   const usageDefaultStatsText = fs.readFileSync(usageDefaultStatsFile, "utf8");
@@ -536,17 +539,31 @@ function checkRecordArchiveEntry() {
       `${rel(archiveFile)} must own record reads, creation, archiving, and clearing events`
     );
   }
+  if (!archiveText.includes("./battle-record-archive-store.js")) {
+    violations.push(`${rel(archiveFile)} must use the private archive record store`);
+  }
+  if (/from\s+["']\.\.\/state\/(?:storage|persist-keys)\.js["']/.test(archiveText)) {
+    violations.push(`${rel(archiveFile)} must not import archive storage implementation directly`);
+  }
+  if (/\bTimeEvent\b|\brunTimeAutomation\b/.test(archiveText)) {
+    violations.push(`${rel(archiveFile)} must not own archive timestamp formatting directly`);
+  }
+  if (!/export function createBattleRecordArchiveStore\(/.test(archiveStoreText)) {
+    violations.push(`${rel(archiveStoreFile)} must expose one archive record store factory`);
+  }
   for (const required of [
     "REPORT_RECORD_NAME_FIELD",
     "readCurrentBattleReportName",
     "nameArchivedBattleReportRecord",
   ]) {
-    if (!archiveText.includes(required)) {
-      violations.push(`${rel(archiveFile)} must own battle report record identity via ${required}`);
+    if (!archiveStoreText.includes(required)) {
+      violations.push(
+        `${rel(archiveStoreFile)} must own battle report record identity via ${required}`
+      );
     }
   }
-  if (/__name\s*:\s*deps\.getValue\(\s*STORAGE_KEYS\.BATTLE_CODE/.test(archiveText)) {
-    violations.push(`${rel(archiveFile)} must name archived records through identity helper`);
+  if (/__name\s*:\s*deps\.getValue\(\s*STORAGE_KEYS\.BATTLE_CODE/.test(archiveStoreText)) {
+    violations.push(`${rel(archiveStoreFile)} must name archived records through identity helper`);
   }
   for (const retired of [
     "STORE_OR_ARCHIVE:",
@@ -692,6 +709,7 @@ function checkRecordArchiveEntry() {
   }
   const archiveRecordImports = [];
   walkImportUsers(srcDir, "battle-record-archive-drop-records.js", archiveRecordImports);
+  walkImportUsers(srcDir, "battle-record-archive-store.js", archiveRecordImports);
   walkImportUsers(srcDir, "battle-record-archive-usage-records.js", archiveRecordImports);
   const allowedImport = path.normalize("src/monitor/battle-record-archive.js");
   for (const user of archiveRecordImports) {
