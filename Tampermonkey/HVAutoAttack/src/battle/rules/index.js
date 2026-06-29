@@ -14,6 +14,7 @@ import { decideFlee } from "../escape/decide-flee.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 import {
+  allDebuffFacts,
   bossImperilFacts,
   burstControlFacts,
   buffFacts,
@@ -97,12 +98,12 @@ export const BATTLE_RULES = [
   // 13. 全员 Weaken（OFC/FRD 即将就绪时跳过）
   {
     name: "castWeakenAll",
-    decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "We"),
+    decide: (snap, opt) => decideCastDebuffOnAll({ opt, debuffKey: "We", ...allDebuffFacts(snap) }),
   },
   // 14. 全员 Imperil（拖战同样跳过——独怪此时也是 Imperil 唯一目标，加速击杀反拖战意图）
   {
     name: "castImperilAll",
-    decide: (snap, opt) => decideCastDebuffOnAll(opt, snap, "Im"),
+    decide: (snap, opt) => decideCastDebuffOnAll({ opt, debuffKey: "Im", ...allDebuffFacts(snap) }),
   },
   // 15. 单目标 Debuff（stall 模式跳过——独怪上 debuff 浪费 MP + CD）
   {

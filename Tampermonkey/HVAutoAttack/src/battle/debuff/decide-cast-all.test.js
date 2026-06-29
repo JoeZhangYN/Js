@@ -24,22 +24,41 @@ function snap(over = {}) {
   };
 }
 
+function allDebuffFacts(snap) {
+  return {
+    conditionFacts: snap,
+    monsterAlive: snap.monsterAlive,
+    skillReady: snap.skillReady,
+    spellAoe: snap.spellAoe,
+    skillCooldowns: snap.cdMap,
+    aliveCount: snap.aliveCount,
+    overcharge: snap.oc,
+    roundNow: snap.roundNow,
+    roundAll: snap.roundAll,
+    monsterFacts: snap.view,
+  };
+}
+
+function decide(opt, s, debuffKey) {
+  return decideCastDebuffOnAll({ opt, debuffKey, ...allDebuffFacts(s) });
+}
+
 describe("decideCastDebuffOnAll", () => {
   it("requires global debuff switch", () => {
-    expect(decideCastDebuffOnAll({ debuffSkillAllWk: true }, snap(), "We")).toEqual({
+    expect(decide({ debuffSkillAllWk: true }, snap(), "We")).toEqual({
       kind: "noop",
     });
   });
 
   it("requires kind-specific all switch", () => {
-    expect(decideCastDebuffOnAll({ debuffSkillSwitch: true }, snap(), "We")).toEqual({
+    expect(decide({ debuffSkillSwitch: true }, snap(), "We")).toEqual({
       kind: "noop",
     });
   });
 
   it("requires kind-specific condition", () => {
     expect(
-      decideCastDebuffOnAll(
+      decide(
         {
           debuffSkillSwitch: true,
           debuffSkillAllWk: true,
@@ -53,7 +72,7 @@ describe("decideCastDebuffOnAll", () => {
 
   it("requires missing debuff coverage", () => {
     expect(
-      decideCastDebuffOnAll(
+      decide(
         { debuffSkillSwitch: true, debuffSkillAllWk: true },
         snap({ view: [{ ...snap().view[0], buffs: ["weaken"] }] }),
         "We"
@@ -62,9 +81,7 @@ describe("decideCastDebuffOnAll", () => {
   });
 
   it("casts Weaken when all gate facts allow it", () => {
-    expect(
-      decideCastDebuffOnAll({ debuffSkillSwitch: true, debuffSkillAllWk: true }, snap(), "We")
-    ).toEqual({
+    expect(decide({ debuffSkillSwitch: true, debuffSkillAllWk: true }, snap(), "We")).toEqual({
       kind: "click-skill-then-target",
       skillId: "212",
       targetId: 1,
@@ -73,7 +90,7 @@ describe("decideCastDebuffOnAll", () => {
 
   it("skips Weaken when clear skill is ready", () => {
     expect(
-      decideCastDebuffOnAll(
+      decide(
         {
           debuffSkillSwitch: true,
           debuffSkillAllWk: true,
@@ -87,7 +104,7 @@ describe("decideCastDebuffOnAll", () => {
 
   it("skips Imperil during stall", () => {
     expect(
-      decideCastDebuffOnAll(
+      decide(
         { debuffSkillSwitch: true, debuffSkillAllIm: true, stallMode: true },
         snap({ roundNow: 1, roundAll: 2, oc: 100 }),
         "Im"
@@ -97,7 +114,7 @@ describe("decideCastDebuffOnAll", () => {
 
   it("does not skip Weaken only because stall is active", () => {
     expect(
-      decideCastDebuffOnAll(
+      decide(
         {
           debuffSkillSwitch: true,
           debuffSkillAllWk: true,
@@ -114,9 +131,7 @@ describe("decideCastDebuffOnAll", () => {
   });
 
   it("casts Imperil when all gate facts allow it", () => {
-    expect(
-      decideCastDebuffOnAll({ debuffSkillSwitch: true, debuffSkillAllIm: true }, snap(), "Im")
-    ).toEqual({
+    expect(decide({ debuffSkillSwitch: true, debuffSkillAllIm: true }, snap(), "Im")).toEqual({
       kind: "click-skill-then-target",
       skillId: "213",
       targetId: 1,

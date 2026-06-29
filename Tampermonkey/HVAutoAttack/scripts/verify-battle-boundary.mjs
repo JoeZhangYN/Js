@@ -1235,10 +1235,17 @@ function checkAllDebuffEntry() {
     "runBattleDebuffCoverageAutomation",
     "runBigSkillDebuffAutomation",
     "runBattleStallModeAutomation",
+    "conditionFacts",
+    "event.monsterFacts",
+    "event.skillReady",
+    "event.spellAoe",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideCastAllFile)} must own all-debuff gate ${required}`);
     }
+  }
+  if (/decideCastDebuffOnAll\s*\(\s*opt\s*,\s*snap\s*,/.test(ownerText)) {
+    violations.push(`${rel(decideCastAllFile)} must not expose opt/snap all-debuff input`);
   }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
   for (const ruleName of ["castWeakenAll", "castImperilAll"]) {
@@ -1246,6 +1253,9 @@ function checkAllDebuffEntry() {
       rulesText.match(
         new RegExp(`name:\\s*["']${ruleName}["'][\\s\\S]*?decide:[\\s\\S]*?\\n\\s*\\}`)
       )?.[0] || "";
+    if (/decideCastDebuffOnAll\(\s*opt\s*,\s*snap\s*,/.test(rule)) {
+      violations.push(`${rel(battleRulesFile)} must pass all-debuff facts, not snap`);
+    }
     for (const legacy of [
       "debuffSkillSwitch",
       "debuffSkillAllWk",

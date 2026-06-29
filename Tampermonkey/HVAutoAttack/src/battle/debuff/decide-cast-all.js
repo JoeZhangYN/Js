@@ -28,49 +28,49 @@ const ALL_DEBUFF_GATES = {
   },
 };
 
-function stallActiveFacts(snap) {
+function stallActiveFacts(event) {
   return {
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
-    aliveMonsterHpPercents: (snap?.view || [])
+    roundNow: event?.roundNow,
+    roundAll: event?.roundAll,
+    aliveMonsterHpPercents: (event?.monsterFacts || [])
       .filter((monster) => !monster.isDead)
       .map((monster) => monster.hpPercent),
-    overcharge: snap?.oc,
+    overcharge: event?.overcharge,
   };
 }
 
-function bigSkillDebuffFacts(snap) {
-  const monsterFacts = (snap?.view || []).map((monster) => ({
+function bigSkillDebuffFacts(event) {
+  const monsterFacts = (event?.monsterFacts || []).map((monster) => ({
     monsterId: monster.monsterId,
     isBoss: monster.isBoss,
     isDead: monster.isDead,
     hpMax: monster.hpMax,
   }));
   return {
-    skillCooldowns: snap?.cdMap,
-    overcharge: snap?.oc,
-    aliveCount: snap?.aliveCount,
+    skillCooldowns: event?.skillCooldowns,
+    overcharge: event?.overcharge,
+    aliveCount: event?.aliveCount,
     monsterFacts,
   };
 }
 
 /**
  * 决定全员 debuff 该施给哪只怪物，返 ActionResult。
- * @param {object} opt
- * @param {import("../../core/types.js").BattleSnapshot} snap
- * @param {string} debuffKey "We" / "Im" / etc
+ * @param {object} event
  * @returns {import("../../core/types.js").ActionResult}
  */
-export function decideCastDebuffOnAll(opt, snap, debuffKey) {
-  if (!canCastDebuffOnAll(opt, snap, debuffKey)) return { kind: "noop" };
+export function decideCastDebuffOnAll(event = {}) {
+  const opt = event.opt || {};
+  const debuffKey = event.debuffKey;
+  if (!canCastDebuffOnAll(opt, event, debuffKey)) return { kind: "noop" };
   const skill = DEBUFF_SKILL_LIB.get(debuffKey);
   if (!skill) return { kind: "noop" };
   const aoeCount =
-    (snap.spellAoe && snap.spellAoe[skill.name]) ||
+    (event.spellAoe && event.spellAoe[skill.name]) ||
     (opt.debuffSkillAoe && opt.debuffSkillAoe[debuffKey]) ||
     1;
-  const sorted = byOrder(snap.view); // 含死序：AoE 邻居覆盖需 order 相邻语义
-  const skillIsReady = !!snap.skillReady[skill.id];
+  const sorted = byOrder(event.monsterFacts); // 含死序：AoE 邻居覆盖需 order 相邻语义
+  const skillIsReady = !!event.skillReady?.[skill.id];
 
   for (let i = 0; i < sorted.length; i++) {
     const monster = sorted[i];
@@ -98,38 +98,38 @@ export function decideCastDebuffOnAll(opt, snap, debuffKey) {
   return { kind: "noop" };
 }
 
-function canCastDebuffOnAll(opt, snap, debuffKey) {
+function canCastDebuffOnAll(opt, event, debuffKey) {
   const gate = ALL_DEBUFF_GATES[debuffKey];
   if (!gate) return false;
-  if (gate.skipInStall && isStallingForAllDebuff(opt, snap)) return false;
+  if (gate.skipInStall && isStallingForAllDebuff(opt, event)) return false;
   if (!opt.debuffSkillSwitch || !opt[gate.enabledKey]) return false;
-  if (shouldSkipDebuffForBigSkill(opt, snap, debuffKey)) return false;
-  if (!hasMissingDebuff(snap, gate.coverageName)) return false;
-  return checkCondition(opt[gate.conditionKey], snap);
+  if (shouldSkipDebuffForBigSkill(opt, event, debuffKey)) return false;
+  if (!hasMissingDebuff(event, gate.coverageName)) return false;
+  return checkCondition(opt[gate.conditionKey], event.conditionFacts);
 }
 
-function shouldSkipDebuffForBigSkill(opt, snap, kind) {
+function shouldSkipDebuffForBigSkill(opt, event, kind) {
   return runBigSkillDebuffAutomation({
     type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
     opt,
     kind,
-    ...bigSkillDebuffFacts(snap),
+    ...bigSkillDebuffFacts(event),
   });
 }
 
-function hasMissingDebuff(snap, debuffName) {
+function hasMissingDebuff(event, debuffName) {
   return runBattleDebuffCoverageAutomation({
     type: BattleDebuffCoverageEvent.HAS_MISSING_DEBUFF,
-    monsterBuffs: (snap?.view || []).map((monster) => monster.buffs),
+    monsterBuffs: (event?.monsterFacts || []).map((monster) => monster.buffs),
     debuffName,
-    monsterAlive: snap?.monsterAlive,
+    monsterAlive: event?.monsterAlive,
   });
 }
 
-function isStallingForAllDebuff(opt, snap) {
+function isStallingForAllDebuff(opt, event) {
   return runBattleStallModeAutomation({
     type: BattleStallModeEvent.READ_ACTIVE,
     opt,
-    ...stallActiveFacts(snap),
+    ...stallActiveFacts(event),
   });
 }
