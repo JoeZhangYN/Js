@@ -180,8 +180,13 @@ function checkRoundStartEntry() {
   if (!/export function runBattleRoundStartAutomation\(/.test(text)) {
     violations.push(`${rel(roundStartFile)} must expose runBattleRoundStartAutomation(event)`);
   }
-  if (!text.includes("OptionEvent.READ_FIELD")) {
-    violations.push(`${rel(roundStartFile)} must read round-start options through option entry`);
+  if (!text.includes("EncounterEvent.RANDOM_ENCOUNTER_STARTED")) {
+    violations.push(
+      `${rel(roundStartFile)} must report random encounter starts through encounter entry`
+    );
+  }
+  if (/OptionEvent|runOptionAutomation|["']encounter["']/.test(text)) {
+    violations.push(`${rel(roundStartFile)} must not decide encounter option gates directly`);
   }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(roundStartFile)} must not read round-start options directly`);

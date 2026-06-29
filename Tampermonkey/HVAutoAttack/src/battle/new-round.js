@@ -1,7 +1,6 @@
 // 新一轮战斗初始化：怪物计数 / 轮次识别。
 import { gE } from "../dom/query.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
-import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import { AutoTuneEvent, runAutoTuneAutomation } from "../state/auto-tune.js";
@@ -20,10 +19,6 @@ export const BattleRoundStartEvent = Object.freeze({
   ROUND_STARTED: EVENT_ROUND_STARTED,
 });
 
-function isOptionEnabled(key) {
-  return Boolean(runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback: false }));
-}
-
 function determineRoundType(battleLog) {
   const persistedRoundType = runBattleRoundAutomation({ type: BattleRoundEvent.READ_TYPE });
   if (persistedRoundType) return persistedRoundType;
@@ -32,7 +27,7 @@ function determineRoundType(battleLog) {
     type: BattleRoundEvent.CLASSIFY_TYPE,
     initializingText,
   });
-  if (roundType === "ba" && isOptionEnabled("encounter")) {
+  if (roundType === "ba") {
     runEncounterAutomation({
       type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
     });

@@ -28,6 +28,7 @@ const ownerText = requireText(owner, [
   "BattleRoundEvent.CLASSIFY_TYPE",
   "BattleRoundEvent.RECORD_TYPE",
   "BattleRoundEvent.RECORD_COUNT_FROM_INITIALIZATION",
+  "EncounterEvent.RANDOM_ENCOUNTER_STARTED",
 ]);
 requireText(ownerTest, ["recordCountFromInitialization", 'roundType: "ba"']);
 
@@ -43,6 +44,9 @@ if (/from\s+["']\.\.\/state\/store\.js["']/.test(ownerText)) {
 }
 if (/\bg\(\s*["']roundType["']/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not read or write roundType directly`);
+}
+if (/OptionEvent|runOptionAutomation|["']encounter["']/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not decide encounter option gates directly`);
 }
 
 if (violations.length) {

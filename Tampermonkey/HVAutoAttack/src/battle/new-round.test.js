@@ -12,14 +12,9 @@ const mocks = vi.hoisted(() => ({
   runMonsterKnowledgeAutomation: vi.fn(),
   runMonsterStatusAutomation: vi.fn(),
   runNavigationAutomation: vi.fn(),
-  runOptionAutomation: vi.fn(),
 }));
 
 vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
-vi.mock("../state/option.js", () => ({
-  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
-  runOptionAutomation: mocks.runOptionAutomation,
-}));
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({ RELOAD_NOW: "reloadNow" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
@@ -82,9 +77,6 @@ beforeEach(() => {
   });
   mocks.runBattleStaminaAutomation.mockReturnValue({ lostStamina: 1, paused: false });
   mocks.runMonsterStatusAutomation.mockReturnValue(false);
-  mocks.runOptionAutomation.mockImplementation(
-    (event) => event.key === "autoTune" || event.key === "encounter"
-  );
   window.location.hash = "";
 });
 
@@ -100,11 +92,6 @@ describe("runBattleRoundStartAutomation", () => {
   it("routes round-start auto-tune bookkeeping through the auto-tune entry", () => {
     expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(true);
 
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
-      type: "readField",
-      key: "encounter",
-      fallback: false,
-    });
     expect(mocks.runAutoTuneAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
     expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({ type: "resetRound" });

@@ -6,6 +6,7 @@ import {
   EncounterLobbyScheduleEvent,
   runEncounterLobbySchedule,
 } from "./encounter-lobby-schedule.js";
+import { isAutomaticEncounterEnabled } from "./encounter-option-gate.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
@@ -151,6 +152,7 @@ async function runLobbyTick(event) {
 
 export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
   if (event.type === EVENT_RANDOM_ENCOUNTER_STARTED) {
+    if (!isAutomaticEncounterEnabled()) return { claimed: false, skipped: true };
     runEncounterStateAutomation({
       type: EncounterStateEvent.MARK_STARTED,
       search: event.search,

@@ -14,6 +14,7 @@ const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
 const widgetPolicyFile = path.normalize("src/pages/encounter-widget-policy.js");
 const lobbyScheduleFile = path.normalize("src/pages/encounter-lobby-schedule.js");
 const lobbyScheduleTest = path.normalize("src/pages/encounter-lobby-schedule.test.js");
+const optionGateFile = path.normalize("src/pages/encounter-option-gate.js");
 const dayRecordFile = path.normalize("src/state/day-record.js");
 const timeFile = path.normalize("src/core/time.js");
 const violations = [];
@@ -236,6 +237,20 @@ if (!/\bfunction executeEncounterEntry\b/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must execute manual and automatic encounter entry through one function`
   );
+}
+for (const required of ["isAutomaticEncounterEnabled", "EVENT_RANDOM_ENCOUNTER_STARTED"]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+const optionGateText = fs.readFileSync(path.join(root, optionGateFile), "utf8");
+for (const required of ["ENCOUNTER_OPTION_KEY", "OptionEvent.READ_FIELD"]) {
+  if (!optionGateText.includes(required)) {
+    violations.push(`${optionGateFile.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+if (/key:\s*["']encounter["']/.test(optionGateText)) {
+  violations.push(`${optionGateFile.replaceAll("\\", "/")} must use ENCOUNTER_OPTION_KEY`);
 }
 if (!/EncounterPolicyEvent\.READ_CLOCK/.test(ownerText)) {
   violations.push(
