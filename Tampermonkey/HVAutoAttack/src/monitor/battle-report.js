@@ -38,7 +38,7 @@ function recordBattleReportStarted(deps) {
   });
 }
 
-function clearReportRecordSet(type) {
+function clearReport(type) {
   runBattleRecordArchiveAutomation({
     type,
   });
@@ -65,11 +65,11 @@ export function runBattleReportAutomation(event, deps = {}) {
     );
   }
   if (event.type === BattleReportEvent.CLEAR_DROP_REPORT) {
-    clearReportRecordSet(BattleRecordArchiveEvent.CLEAR_DROP_REPORT_RECORD_SET);
+    clearReport(BattleRecordArchiveEvent.CLEAR_DROP_REPORT);
     return undefined;
   }
   if (event.type === BattleReportEvent.CLEAR_USAGE_REPORT) {
-    clearReportRecordSet(BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET);
+    clearReport(BattleRecordArchiveEvent.CLEAR_USAGE_REPORT);
     return undefined;
   }
   return undefined;

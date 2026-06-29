@@ -529,8 +529,8 @@ function checkRecordArchiveEntry() {
     !archiveText.includes("STORE_OR_ARCHIVE_USAGE_STATS") ||
     !archiveText.includes("READ_DROP_REPORT_SOURCE") ||
     !archiveText.includes("READ_USAGE_REPORT_SOURCE") ||
-    !archiveText.includes("CLEAR_DROP_REPORT_RECORD_SET") ||
-    !archiveText.includes("CLEAR_USAGE_REPORT_RECORD_SET")
+    !archiveText.includes("CLEAR_DROP_REPORT") ||
+    !archiveText.includes("CLEAR_USAGE_REPORT")
   ) {
     violations.push(
       `${rel(archiveFile)} must own record reads, creation, archiving, and clearing events`
@@ -555,6 +555,8 @@ function checkRecordArchiveEntry() {
     "READ_RECORD_SET:",
     "CLEAR_RECORD_SET:",
     "START_RECORDING:",
+    "CLEAR_DROP_REPORT_RECORD_SET:",
+    "CLEAR_USAGE_REPORT_RECORD_SET:",
   ]) {
     if (archiveText.includes(retired)) {
       violations.push(`${rel(archiveFile)} must not expose retired generic ${retired}`);
@@ -969,8 +971,8 @@ function checkBattleReportEntry() {
     violations.push(`${rel(reportModelFile)} must own current/history report model decision`);
   }
   for (const required of [
-    "BattleRecordArchiveEvent.CLEAR_DROP_REPORT_RECORD_SET",
-    "BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET",
+    "BattleRecordArchiveEvent.CLEAR_DROP_REPORT",
+    "BattleRecordArchiveEvent.CLEAR_USAGE_REPORT",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(reportFile)} must route report records through ${required}`);
@@ -987,9 +989,11 @@ function checkBattleReportEntry() {
   for (const forbidden of [
     "BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET",
     "BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET",
+    "BattleRecordArchiveEvent.CLEAR_DROP_REPORT_RECORD_SET",
+    "BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET",
   ]) {
     if (modelText.includes(forbidden) || text.includes(forbidden)) {
-      violations.push(`${rel(reportFile)} must not use record-set read events for report queries`);
+      violations.push(`${rel(reportFile)} must not use record-set events for report commands`);
     }
   }
   if (!text.includes("BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING")) {

@@ -61,7 +61,7 @@ describe("runBattleRecordArchiveAutomation", () => {
     ]);
   });
 
-  it("clears a current/history record set through the same lifecycle entry", () => {
+  it("clears a drop report through the same lifecycle entry", () => {
     const runtime = deps({
       [STORAGE_KEYS.DROP]: { "#Credit": 1 },
       [STORAGE_KEYS.DROP_OLD]: [{ "#Credit": 2 }],
@@ -70,7 +70,7 @@ describe("runBattleRecordArchiveAutomation", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.CLEAR_DROP_REPORT_RECORD_SET,
+          type: BattleRecordArchiveEvent.CLEAR_DROP_REPORT,
         },
         runtime
       )
@@ -89,7 +89,7 @@ describe("runBattleRecordArchiveAutomation", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET,
+          type: BattleRecordArchiveEvent.CLEAR_USAGE_REPORT,
         },
         runtime
       )

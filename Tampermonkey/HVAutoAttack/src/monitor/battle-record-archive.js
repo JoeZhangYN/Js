@@ -26,8 +26,8 @@ export const BattleRecordArchiveEvent = Object.freeze({
   STORE_OR_ARCHIVE_USAGE_STATS: "storeOrArchiveUsageStats",
   READ_DROP_REPORT_SOURCE: "readDropReportSource",
   READ_USAGE_REPORT_SOURCE: "readUsageReportSource",
-  CLEAR_DROP_REPORT_RECORD_SET: "clearDropReportRecordSet",
-  CLEAR_USAGE_REPORT_RECORD_SET: "clearUsageReportRecordSet",
+  CLEAR_DROP_REPORT: "clearDropReport",
+  CLEAR_USAGE_REPORT: "clearUsageReport",
 });
 
 const REPORT_RECORD_NAME_FIELD = "__name";
@@ -151,10 +151,10 @@ export function runBattleRecordArchiveAutomation(event, deps = {}) {
   if (event.type === BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE) {
     return readUsageReportSource(recordStore);
   }
-  if (event.type === BattleRecordArchiveEvent.CLEAR_DROP_REPORT_RECORD_SET) {
+  if (event.type === BattleRecordArchiveEvent.CLEAR_DROP_REPORT) {
     return clearDropReportRecordSet(recordStore);
   }
-  if (event.type === BattleRecordArchiveEvent.CLEAR_USAGE_REPORT_RECORD_SET) {
+  if (event.type === BattleRecordArchiveEvent.CLEAR_USAGE_REPORT) {
     return clearUsageReportRecordSet(recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING)
