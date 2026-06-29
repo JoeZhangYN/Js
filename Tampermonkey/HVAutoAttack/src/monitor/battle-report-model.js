@@ -14,7 +14,7 @@ function withCurrentRecord(history, current, currentName) {
   return rows.reverse();
 }
 
-function readReportRecordSet(type, normalizeCurrent = (record) => record) {
+function readReportSource(type, normalizeCurrent = (record) => record) {
   const { currentName, currentRaw, history } = runBattleRecordArchiveAutomation({ type });
   let current = normalizeCurrent(currentRaw || {});
   if (history.length === 0 || (history.length === 1 && !currentRaw)) {
@@ -25,47 +25,49 @@ function readReportRecordSet(type, normalizeCurrent = (record) => record) {
 }
 
 export function readDropReportModel() {
-  const recordSet = readReportRecordSet(BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE, objSort);
-  if (recordSet.mode === "single") {
+  const reportSource = readReportSource(BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE, objSort);
+  if (reportSource.mode === "single") {
     return {
       mode: "single",
-      rows: Object.entries(recordSet.current).map(([key, value]) => ({ key, value })),
+      rows: Object.entries(reportSource.current).map(([key, value]) => ({ key, value })),
     };
   }
   return {
     mode: "history",
-    columns: recordSet.records.map((record) => record.__name),
-    rows: getKeys(recordSet.records)
+    columns: reportSource.records.map((record) => record.__name),
+    rows: getKeys(reportSource.records)
       .filter((key) => key !== "__name")
       .map((key) => ({
         key,
-        values: recordSet.records.map((record) => (key in record ? record[key] : "")),
+        values: reportSource.records.map((record) => (key in record ? record[key] : "")),
       })),
   };
 }
 
 export function readUsageReportModel() {
-  const recordSet = readReportRecordSet(BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE);
-  if (recordSet.mode === "single") {
+  const reportSource = readReportSource(BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE);
+  if (reportSource.mode === "single") {
     return {
       mode: "single",
       sections: USAGE_SECTIONS.map((section) => ({
         key: section,
-        rows: Object.entries(objSort(recordSet.current[section] || {})).map(([name, amount]) => ({
-          key: name,
-          value: amount,
-        })),
+        rows: Object.entries(objSort(reportSource.current[section] || {})).map(
+          ([name, amount]) => ({
+            key: name,
+            value: amount,
+          })
+        ),
       })),
     };
   }
   return {
     mode: "history",
-    columns: recordSet.records.map((record) => record.__name),
+    columns: reportSource.records.map((record) => record.__name),
     sections: USAGE_SECTIONS.map((section) => ({
       key: section,
-      rows: getKeys(recordSet.records.map((record) => record[section] || {})).map((key) => ({
+      rows: getKeys(reportSource.records.map((record) => record[section] || {})).map((key) => ({
         key,
-        values: recordSet.records.map((record) => {
+        values: reportSource.records.map((record) => {
           const values = record[section] || {};
           return key in values ? values[key] : "";
         }),

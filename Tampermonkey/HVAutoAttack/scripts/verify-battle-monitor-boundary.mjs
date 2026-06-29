@@ -967,8 +967,11 @@ function checkBattleReportEntry() {
       `${rel(reportFile)} must build report table models through battle-report-model`
     );
   }
-  if (!/\bfunction readReportRecordSet\b/.test(modelText)) {
+  if (!/\bfunction readReportSource\b/.test(modelText)) {
     violations.push(`${rel(reportModelFile)} must own current/history report model decision`);
+  }
+  if (/\breadReportRecordSet\b|\brecordSet\b/.test(modelText)) {
+    violations.push(`${rel(reportModelFile)} must name report model inputs as report sources`);
   }
   for (const required of [
     "BattleRecordArchiveEvent.CLEAR_DROP_REPORT",
