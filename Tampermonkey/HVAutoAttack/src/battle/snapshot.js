@@ -26,6 +26,10 @@ import {
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 import { joinMonsterView, monsterHpVars } from "./monster-view.js";
 import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
+import {
+  BattleStartRuntimeEvent,
+  runBattleStartRuntimeAutomation,
+} from "./battle-start-runtime.js";
 
 function readOptionField(key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
@@ -276,7 +280,9 @@ export function collectSnapshot() {
     skillReady,
     skillOTOS: g("skillOTOS") || {},
     spellAoe: g("spellAoe") || {},
-    attackStatus: g("attackStatus"),
+    attackStatus: runBattleStartRuntimeAutomation({
+      type: BattleStartRuntimeEvent.READ_ATTACK_STATUS,
+    }),
     fightingStyle: readOptionField("fightingStyle", "2") || "2",
     // PoC L1：战斗日志解析得 DPS 估计（复用上方 battleLog，本 turn 只解析一遍）
     playerIncomingDps: estimatePlayerIncomingDps(battleLog, turn),

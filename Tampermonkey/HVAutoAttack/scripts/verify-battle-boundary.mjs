@@ -630,6 +630,12 @@ function checkSnapshot() {
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read snapshot option facts directly`);
   }
+  if (!text.includes("BattleStartRuntimeEvent.READ_ATTACK_STATUS")) {
+    violations.push(`${rel(snapshotFile)} must read attackStatus through battle start runtime`);
+  }
+  if (/\bg\(\s*["']attackStatus["']/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not read attackStatus directly`);
+  }
 }
 
 function checkBattleRulesRuntimeContext() {

@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   monsterHpVars: vi.fn(() => ({})),
   parseBattleLog: vi.fn(() => []),
   runBigSkillKillLearningAutomation: vi.fn(),
+  runBattleStartRuntimeAutomation: vi.fn(() => 2),
   runBattleTurnAutomation: vi.fn(() => 7),
   runCdLearningAutomation: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
@@ -67,6 +68,10 @@ vi.mock("../state/monster-cache.js", () => ({
   MonsterCacheEvent: Object.freeze({ READ_DB: "readDb" }),
   runMonsterCacheAutomation: mocks.runMonsterCacheAutomation,
 }));
+vi.mock("./battle-start-runtime.js", () => ({
+  BattleStartRuntimeEvent: Object.freeze({ READ_ATTACK_STATUS: "readAttackStatus" }),
+  runBattleStartRuntimeAutomation: mocks.runBattleStartRuntimeAutomation,
+}));
 
 function effectsContainer() {
   return { querySelectorAll: () => [] };
@@ -117,7 +122,11 @@ describe("collectSnapshot", () => {
     expect(snap.fightingStyle).toBe("1");
     expect(snap.turn).toBe(7);
     expect(snap.globalTurn).toBe(9);
+    expect(snap.attackStatus).toBe(2);
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "readCurrent" });
+    expect(mocks.runBattleStartRuntimeAutomation).toHaveBeenCalledWith({
+      type: "readAttackStatus",
+    });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
     expect(snap.learnedBurstByMid).toEqual({ learned: true });
