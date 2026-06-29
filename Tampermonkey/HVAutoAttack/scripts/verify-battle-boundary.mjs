@@ -41,6 +41,7 @@ const burstControlFile = path.join(root, "src/battle/debuff/decide-burst-control
 const decideDeSkillFile = path.join(root, "src/battle/debuff/decide-de-skill.js");
 const decideCastAllFile = path.join(root, "src/battle/debuff/decide-cast-all.js");
 const decideDefendFile = path.join(root, "src/battle/defense/decide-defend.js");
+const decideAutoPauseFile = path.join(root, "src/battle/pause/decide-auto-pause.js");
 const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const violations = [];
 
@@ -978,6 +979,23 @@ function checkDefendEntry() {
   }
 }
 
+function checkAutoPauseEntry() {
+  const ownerText = fs.readFileSync(decideAutoPauseFile, "utf8");
+  for (const required of ["decideAutoPause", "autoPause", "pauseCondition"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideAutoPauseFile)} must own auto-pause gate ${required}`);
+    }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const pauseRule =
+    rulesText.match(/name:\s*["']autoPause["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  for (const legacy of ["canAutoPause", "pauseCondition"]) {
+    if (new RegExp(`\\b${legacy}\\b`).test(pauseRule)) {
+      violations.push(`${rel(battleRulesFile)} must not assemble auto-pause rule gates directly`);
+    }
+  }
+}
+
 function checkBattleStallMode() {
   const ownerText = fs.readFileSync(stallModeFile, "utf8");
   for (const required of [
@@ -1060,6 +1078,7 @@ checkAllDebuffEntry();
 checkItemScrollEntry();
 checkPotionEntry();
 checkDefendEntry();
+checkAutoPauseEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();
 checkBattleOptionVocabulary();

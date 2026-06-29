@@ -10,13 +10,12 @@ import { decideAttack } from "../attack/decide-attack.js";
 import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../item/decide-item.js";
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
 import { decideDefend } from "../defense/decide-defend.js";
+import { decideAutoPause } from "../pause/decide-auto-pause.js";
 import { BossImperilEvent, runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 
 const canFlee = (snap, opt) => opt.autoFlee && checkCondition(opt.fleeCondition, snap);
 const flee = () => ({ kind: "click-then-reload", selector: "1001", delaySec: 3 });
-const canAutoPause = (snap, opt) => opt.autoPause && checkCondition(opt.pauseCondition, snap);
-const pause = () => ({ kind: "pause" });
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
@@ -24,7 +23,7 @@ export const BATTLE_RULES = [
   // 2. 逃跑
   { name: "flee", when: canFlee, decide: flee },
   // 3. 自动暂停（dispatch 交给 runBattlePauseAutomation 统一写暂停状态）
-  { name: "autoPause", when: canAutoPause, decide: pause },
+  { name: "autoPause", decide: (snap, opt) => decideAutoPause(opt, snap) },
   // 4. 宝石（decideGemUse 自 gate snap.gemName；dyn-threshold 在 decide，autoTune 计数在 execute）
   { name: "useGem", decide: (snap, opt) => decideGemUse(opt, snap) },
   // 5. 紧急回血回魔（decide 出候选 id 列表，execute 探活+喝第一个可用）

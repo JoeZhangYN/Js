@@ -57,8 +57,8 @@ describe("PURE decide 形状（深度 B 后无 delegate）", () => {
     expect(byName("criticalBuffGuard").decide({}, {})).toEqual({ kind: "noop" });
   });
 
-  it("autoPause → pause", () => {
-    expect(byName("autoPause").decide({}, {})).toEqual({ kind: "pause" });
+  it("autoPause → noop when disabled", () => {
+    expect(byName("autoPause").decide({}, {})).toEqual({ kind: "noop" });
   });
 
   it("attack → attack-plan（PURE，非 delegate）", () => {
@@ -83,6 +83,11 @@ describe("when 门控", () => {
   it("flee.when: autoFlee 且 fleeCondition 满足(undefined→true)", () => {
     expect(byName("flee").when({}, { autoFlee: true })).toBe(true);
     expect(byName("flee").when({}, { autoFlee: false })).toBeFalsy();
+  });
+
+  it("autoPause: 规则表不拼门控，开启时由 decide 返回 pause", () => {
+    expect(byName("autoPause").when).toBeUndefined();
+    expect(byName("autoPause").decide({}, { autoPause: true })).toEqual({ kind: "pause" });
   });
 
   it("defend: 规则表不拼门控，开启时由 decide 返回 click", () => {
