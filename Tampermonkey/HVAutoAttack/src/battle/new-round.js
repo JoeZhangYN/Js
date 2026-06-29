@@ -1,11 +1,11 @@
 // 新一轮战斗初始化：怪物计数 / 轮次识别。
-import { gE } from "../dom/query.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
 import { BattleStaminaEvent, runBattleStaminaAutomation } from "./battle-stamina.js";
 import { BattleRoundLifecycleEvent, runBattleRoundLifecycle } from "./round-lifecycle.js";
+import { BattleRoundStartLogEvent, runBattleRoundStartLog } from "./round-start-log.js";
 
 const EVENT_ROUND_STARTED = "roundStarted";
 
@@ -30,19 +30,19 @@ function startRound() {
   runBattleRoundLifecycle({ type: BattleRoundLifecycleEvent.ROUND_STARTED });
   if (window.location.hash !== "") runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
   runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
-  const battleLog = gE("#textlog>tbody>tr>td", "all");
-  const initializingText = battleLog[battleLog.length - 1].textContent;
+  const roundStartLog = runBattleRoundStartLog({ type: BattleRoundStartLogEvent.READ_CURRENT });
+  const { initializingText } = roundStartLog;
   const roundStartContext = recordRoundStartContext(initializingText);
   const staminaOutcome = runBattleStaminaAutomation({
     type: BattleStaminaEvent.ROUND_LOG_READY,
-    text: battleLog[0].textContent,
+    text: roundStartLog.firstText,
   });
   if (staminaOutcome.paused) {
     return;
   }
   const monsterStatusOutcome = runMonsterStatusAutomation({
     type: MonsterStatusEvent.PREPARE_ROUND_START,
-    battleLog,
+    battleLogRows: roundStartLog.rows,
     initialized: roundStartContext.initialized,
   });
   runBattleRoundAutomation({

@@ -103,6 +103,9 @@ function checkEntry() {
   if (/MonsterStatusEvent\.(?:RECORD_SPAWN_ROSTER|ENSURE_READY)/.test(roundStartText)) {
     violations.push(`${roundStart.replaceAll("\\", "/")} must use PREPARE_ROUND_START`);
   }
+  if (/battleLog:/.test(roundStartText)) {
+    violations.push(`${roundStart.replaceAll("\\", "/")} must pass text rows, not raw battleLog`);
+  }
 }
 
 function checkHpImpl() {

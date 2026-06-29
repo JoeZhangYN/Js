@@ -77,7 +77,7 @@ function readCombatantCounts() {
 }
 
 function recordSpawnRoster(event) {
-  const { roster } = parseMonsterRoster(event.battleLog, event.monsterAll ?? g("monsterAll"));
+  const { roster } = parseMonsterRoster(event.battleLogRows, event.monsterAll ?? g("monsterAll"));
   const monsterStatus = buildMonsterStatus(roster);
   setValue(STORAGE_KEYS.MONSTER_STATUS, monsterStatus);
   g("monsterStatus", monsterStatus);

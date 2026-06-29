@@ -27,6 +27,8 @@ const ownerText = requireText(owner, [
   "BattleRoundLifecycleEvent.ROUND_STARTED",
   "BattleRoundLifecycleEvent.ROUND_READY",
   "runBattleRoundLifecycle",
+  "BattleRoundStartLogEvent.READ_CURRENT",
+  "runBattleRoundStartLog",
   "BattleRoundEvent.RECORD_START_CONTEXT",
   "BattleRoundEvent.RECORD_START_COUNT",
   "MonsterStatusEvent.PREPARE_ROUND_START",
@@ -62,6 +64,9 @@ if (/MonsterStatusEvent\.(?:RECORD_SPAWN_ROSTER|ENSURE_READY)/.test(ownerText)) 
 }
 if (/AutoTuneEvent|BattleTurnEvent|BattleSkillUsageEvent|MonsterKnowledgeEvent/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must use the round lifecycle entry`);
+}
+if (/gE\(|#textlog|textContent|battleLog\b/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must use the round-start log entry`);
 }
 if (/\.match\(\s*["']Initializing["']\s*\)|\/Initializing/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not decide initialization text directly`);

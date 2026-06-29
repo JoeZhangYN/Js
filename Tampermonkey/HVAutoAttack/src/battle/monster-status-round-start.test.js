@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { g } from "../state/store.js";
 
-const td = (text) => ({ textContent: text });
-
 beforeEach(() => {
   localStorage.clear();
   document.body.innerHTML = "";
@@ -17,9 +15,9 @@ describe("monster status round start preparation", () => {
       type: MonsterStatusEvent.PREPARE_ROUND_START,
       initialized: true,
       monsterAll: 1,
-      battleLog: [
-        td("Spawned Monster A: MID=101 (Alpha) LV=10 HP=1000"),
-        td("Initializing the battle... (Round 1 / 1)"),
+      battleLogRows: [
+        "Spawned Monster A: MID=101 (Alpha) LV=10 HP=1000",
+        "Initializing the battle... (Round 1 / 1)",
       ],
     });
 
@@ -37,7 +35,7 @@ describe("monster status round start preparation", () => {
       runMonsterStatusAutomation({
         type: MonsterStatusEvent.PREPARE_ROUND_START,
         initialized: false,
-        battleLog: [td("Round begins")],
+        battleLogRows: ["Round begins"],
       })
     ).toEqual({ initialized: false, repaired: true });
   });

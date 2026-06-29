@@ -5,8 +5,6 @@ import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 
-const td = (text) => ({ textContent: text });
-
 beforeEach(() => {
   localStorage.clear();
   g("monsterStatus", null);
@@ -19,10 +17,10 @@ describe("monster status automation", () => {
       type: MonsterStatusEvent.PREPARE_ROUND_START,
       initialized: true,
       monsterAll: 2,
-      battleLog: [
-        td("Spawned Monster B: MID=202 (Beta) LV=10 HP=2000"),
-        td("Spawned Monster A: MID=101 (Alpha) LV=10 HP=1000"),
-        td("Initializing the battle... (Round 1 / 1)"),
+      battleLogRows: [
+        "Spawned Monster B: MID=202 (Beta) LV=10 HP=2000",
+        "Spawned Monster A: MID=101 (Alpha) LV=10 HP=1000",
+        "Initializing the battle... (Round 1 / 1)",
       ],
     });
 

@@ -123,7 +123,7 @@ export function estimatePerMonsterDps(events, turn) {
  * 退化两级：① 行匹配 MID/LV 失败但有行尾 `HP=` → 仅 maxHP（id/level undefined）；
  *           ② 整行无 HP → maxHP=null（占位，由 buildMonsterStatus 落 hpInferred）。
  * 关键纠正：LV(战斗等级，决定 HP) ≠ scan 的 Power Level(怪固有强度)。
- * @param {Element[]} battleLog `#textlog>tbody>tr>td` 元素数组
+ * @param {(Element|string)[]} battleLog `#textlog>tbody>tr>td` 文本行或元素数组
  * @param {number} monsterAll 怪物总数
  * @returns {{roster:Array<{monsterId?:number,name?:string,level?:number,maxHP:(number|null)}>, allParsed:boolean}}
  */
@@ -132,7 +132,7 @@ export function parseMonsterRoster(battleLog, monsterAll) {
   let allParsed = true;
   let lastHp = null; // carry-forward（保留旧 parseMonsterMaxHP 的非首怪沿用上一有效值行为）
   for (let i = battleLog.length - 2; i > battleLog.length - 2 - monsterAll; i--) {
-    const text = battleLog[i]?.textContent || "";
+    const text = typeof battleLog[i] === "string" ? battleLog[i] : battleLog[i]?.textContent || "";
     const full = text.match(/MID=(\d+) \((.+)\) LV=(\d+) HP=(\d+)$/);
     if (full) {
       lastHp = parseInt(full[4], 10);

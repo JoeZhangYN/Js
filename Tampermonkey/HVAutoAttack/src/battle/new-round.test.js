@@ -2,16 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 
 const mocks = vi.hoisted(() => ({
-  gE: vi.fn(),
   runBattleRoundAutomation: vi.fn(),
   runBattleRoundLifecycle: vi.fn(),
+  runBattleRoundStartLog: vi.fn(),
   runBattleStaminaAutomation: vi.fn(),
   runEncounterAutomation: vi.fn(),
   runMonsterStatusAutomation: vi.fn(),
   runNavigationAutomation: vi.fn(),
 }));
 
-vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({ RELOAD_NOW: "reloadNow" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
@@ -52,13 +51,18 @@ vi.mock("./round-lifecycle.js", () => ({
   }),
   runBattleRoundLifecycle: mocks.runBattleRoundLifecycle,
 }));
+vi.mock("./round-start-log.js", () => ({
+  BattleRoundStartLogEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
+  runBattleRoundStartLog: mocks.runBattleRoundStartLog,
+}));
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
-  mocks.gE.mockReturnValue([
-    { textContent: "Round begins" },
-    { textContent: "Initializing random encounter" },
-  ]);
+  mocks.runBattleRoundStartLog.mockReturnValue({
+    rows: ["Round begins", "Initializing random encounter"],
+    firstText: "Round begins",
+    initializingText: "Initializing random encounter",
+  });
   mocks.runBattleRoundAutomation.mockImplementation((event) => {
     if (event.type === "recordStartContext") {
       return { initialized: true, roundType: "ba", randomEncounterStarted: true };
@@ -85,6 +89,7 @@ describe("runBattleRoundStartAutomation", () => {
     expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(true);
 
     expect(mocks.runBattleRoundLifecycle).toHaveBeenCalledWith({ type: "roundStarted" });
+    expect(mocks.runBattleRoundStartLog).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
       type: "randomEncounterStarted",
     });
@@ -101,10 +106,7 @@ describe("runBattleRoundStartAutomation", () => {
     });
     expect(mocks.runMonsterStatusAutomation).toHaveBeenCalledWith({
       type: "prepareRoundStart",
-      battleLog: [
-        { textContent: "Round begins" },
-        { textContent: "Initializing random encounter" },
-      ],
+      battleLogRows: ["Round begins", "Initializing random encounter"],
       initialized: true,
     });
     expect(mocks.runBattleRoundLifecycle).toHaveBeenCalledWith({ type: "roundReady" });
