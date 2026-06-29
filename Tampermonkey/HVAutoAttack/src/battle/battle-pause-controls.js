@@ -4,6 +4,10 @@ import { runBattleTurnAutomation } from "./main-loop.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 
 const EVENT_INSTALL = "install";
+const PAUSE_BUTTON_OPTION_KEY = "pauseButton";
+const PAUSE_HOTKEY_OPTION_KEY = "pauseHotkey";
+const PAUSE_HOTKEY_KEY_OPTION_KEY = "pauseHotkeyKey";
+const DEFAULT_PAUSE_HOTKEY_KEY = "p";
 
 export const BattlePauseControlsEvent = Object.freeze({
   INSTALL: EVENT_INSTALL,
@@ -32,9 +36,12 @@ function installPauseHotkey(pauseHotkeyKey, deps) {
 }
 
 function installControls(deps) {
-  const pauseButton = Boolean(deps.readOptionField("pauseButton", false));
-  const pauseHotkey = Boolean(deps.readOptionField("pauseHotkey", false));
-  const pauseHotkeyKey = deps.readOptionField("pauseHotkeyKey", "p");
+  const pauseButton = Boolean(deps.readOptionField(PAUSE_BUTTON_OPTION_KEY, false));
+  const pauseHotkey = Boolean(deps.readOptionField(PAUSE_HOTKEY_OPTION_KEY, false));
+  const pauseHotkeyKey = deps.readOptionField(
+    PAUSE_HOTKEY_KEY_OPTION_KEY,
+    DEFAULT_PAUSE_HOTKEY_KEY
+  );
   const box = deps.query("#battle_main").appendChild(deps.createElement("div"));
   box.id = "hvAABox2";
   if (pauseButton) installPauseButton(box, deps);

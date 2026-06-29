@@ -612,12 +612,22 @@ function checkPauseControlsEntry() {
   for (const required of [
     "BattlePauseEvent.TOGGLE",
     "runBattleTurnAutomation",
-    "pauseButton",
-    "pauseHotkey",
-    "pauseHotkeyKey",
+    "PAUSE_BUTTON_OPTION_KEY",
+    "PAUSE_HOTKEY_OPTION_KEY",
+    "PAUSE_HOTKEY_KEY_OPTION_KEY",
+    "DEFAULT_PAUSE_HOTKEY_KEY",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(pauseControlsFile)} must own ${required}`);
+    }
+  }
+  for (const direct of [
+    /readOptionField\(["']pauseButton["']/,
+    /readOptionField\(["']pauseHotkey["']/,
+    /readOptionField\(["']pauseHotkeyKey["']/,
+  ]) {
+    if (direct.test(text)) {
+      violations.push(`${rel(pauseControlsFile)} must use pause option key constants`);
     }
   }
   for (const file of [
