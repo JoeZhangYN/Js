@@ -48,6 +48,7 @@ function requireText(relative, required) {
 const ownerText = requireText(owner, [
   "BattleStartRuntimeEvent",
   "runBattleStartRuntimeAutomation",
+  "startRuntimeEventHandlers",
   "ATTACK_STATUS_RUNTIME_KEY",
   "ATTACK_STATUS_OPTION_KEY",
   "DEFAULT_ATTACK_STATUS",
@@ -63,6 +64,12 @@ if (
   )
 ) {
   violations.push(`${owner.replaceAll("\\", "/")} may export only its event entry`);
+}
+if (!/const startRuntimeEventHandlers\s*=\s*Object\.freeze\(/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through one table`);
+}
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not route events through an if ladder`);
 }
 for (const [constant, key] of [
   ["ATTACK_STATUS_RUNTIME_KEY", "attackStatus"],

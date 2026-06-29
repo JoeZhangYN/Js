@@ -42,7 +42,10 @@ export function runBattleStartRuntimeAutomation(
       runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.BATTLE_STARTED }),
   }
 ) {
-  if (event.type === EVENT_BATTLE_STARTED) return startRuntime(deps);
-  if (event.type === EVENT_READ_ATTACK_STATUS) return readAttackStatus(deps);
-  return false;
+  return startRuntimeEventHandlers[event.type]?.(event, deps) ?? false;
 }
+
+const startRuntimeEventHandlers = Object.freeze({
+  [EVENT_BATTLE_STARTED]: (_event, deps) => startRuntime(deps),
+  [EVENT_READ_ATTACK_STATUS]: (_event, deps) => readAttackStatus(deps),
+});

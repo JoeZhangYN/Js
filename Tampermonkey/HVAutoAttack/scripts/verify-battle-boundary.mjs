@@ -719,6 +719,12 @@ function checkStartRuntimeEntry() {
   ) {
     violations.push(`${rel(startRuntimeFile)} may export only its event entry`);
   }
+  if (!/const startRuntimeEventHandlers\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(startRuntimeFile)} must route events through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(text)) {
+    violations.push(`${rel(startRuntimeFile)} must not route events through an if ladder`);
+  }
   for (const required of ["attackStatus", "BattleActionSpeedEvent.BATTLE_STARTED"]) {
     if (!text.includes(required)) {
       violations.push(`${rel(startRuntimeFile)} must own ${required}`);
