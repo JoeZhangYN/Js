@@ -183,6 +183,14 @@ function renderDynamicHealSchemaFields() {
   ];
 }
 
+function renderGemThresholdSchemaFields() {
+  return [
+    `    Gem: ${renderSchemaLabel(readSchemaField("hp1"))}.${renderSchemaNumberInput("hp1", "%")}`,
+    `    ${renderSchemaLabel(readSchemaField("mp1"))}.${renderSchemaNumberInput("mp1", "%%")}`,
+    `    ${renderSchemaLabel(readSchemaField("sp1"))}.${renderSchemaNumberInput("sp1", "%")}</div>`,
+  ];
+}
+
 function renderNoWastePotionSchemaFields() {
   return renderCheckboxPlusNumber("noWastePotion", "potionWasteTolerance", {
     l0: "（deficit 不够大时跳过该瓶）",
@@ -364,9 +372,7 @@ export function optionBox() {
     // === Heal 治疗药品 tab（Gem 阈值 + 动态阈值/拖战 + 关键 buff 保护，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-Heal">',
     '  <div class="hvAACenter">',
-    '    Gem: Health.<input class="hvAANumber" name="hp1" placeholder="50" type="text">%',
-    '    Mana.<input class="hvAANumber" name="mp1" placeholder="70" type="text">%%',
-    '    Spirt.<input class="hvAANumber" name="sp1" placeholder="75" type="text">%</div>',
+    ...renderGemThresholdSchemaFields(),
     '  <div style="border:1px dashed #888;padding:3px;font-size:12px;"><b><l0>动态阈值（PoC）</l0><l1>動態閾值（PoC）</l1><l2>Dynamic Threshold (PoC)</l2></b>:',
     ...renderDynamicHealSchemaFields(),
     renderNoWastePotionSchemaFields(),

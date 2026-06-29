@@ -171,6 +171,27 @@ const OPTION_SCHEMA = [
     },
   },
   {
+    key: "hp1",
+    kind: "number",
+    group: "Heal",
+    default: 50,
+    label: { l0: "Health Gem", l1: "Health Gem", l2: "Health Gem" },
+  },
+  {
+    key: "mp1",
+    kind: "number",
+    group: "Heal",
+    default: 70,
+    label: { l0: "Mana Gem", l1: "Mana Gem", l2: "Mana Gem" },
+  },
+  {
+    key: "sp1",
+    kind: "number",
+    group: "Heal",
+    default: 75,
+    label: { l0: "Spirit Gem", l1: "Spirit Gem", l2: "Spirit Gem" },
+  },
+  {
     key: "dynamicHealThreshold",
     kind: "checkbox",
     group: "Heal",
