@@ -6,7 +6,10 @@ const mocks = vi.hoisted(() => ({
   estimatePlayerIncomingDps: vi.fn(() => 0),
   gE: vi.fn(),
   isSpiritActive: vi.fn(() => false),
-  joinMonsterView: vi.fn(() => []),
+  runBattleMonsterView: vi.fn(() => ({
+    view: [],
+    monsterStatus: [{ order: 0, monsterId: 101 }],
+  })),
   monsterHpVars: vi.fn(() => ({})),
   parseBattleLog: vi.fn(() => []),
   runAbilityAoeAutomation: vi.fn(() => ({ Imperil: 2 })),
@@ -17,8 +20,6 @@ const mocks = vi.hoisted(() => ({
   runCdLearningAutomation: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
   runIncomingBurstLearningAutomation: vi.fn(() => ({ learned: true })),
-  runMonsterCacheAutomation: vi.fn(() => ({})),
-  runMonsterStatusAutomation: vi.fn(() => [{ order: 0, monsterId: 101 }]),
   runRecoveryLearningAutomation: vi.fn(),
 }));
 
@@ -57,16 +58,11 @@ vi.mock("../state/incoming-burst-learner.js", () => ({
 }));
 vi.mock("./effect-parse.js", () => ({ parseEffectName: () => "", parseEffectTurns: () => 0 }));
 vi.mock("./monster-view.js", () => ({
-  joinMonsterView: mocks.joinMonsterView,
   monsterHpVars: mocks.monsterHpVars,
 }));
-vi.mock("../state/monster-cache.js", () => ({
-  MonsterCacheEvent: Object.freeze({ READ_DB: "readDb" }),
-  runMonsterCacheAutomation: mocks.runMonsterCacheAutomation,
-}));
-vi.mock("./monster-status-automation.js", () => ({
-  MonsterStatusEvent: Object.freeze({ READ_STATUS: "readStatus" }),
-  runMonsterStatusAutomation: mocks.runMonsterStatusAutomation,
+vi.mock("./battle-monster-view.js", () => ({
+  BattleMonsterViewEvent: Object.freeze({ READ_VIEW: "readView" }),
+  runBattleMonsterView: mocks.runBattleMonsterView,
 }));
 vi.mock("../pages/ability-page.js", () => ({
   AbilityAoeEvent: Object.freeze({ READ_SPELL_AOE: "readSpellAoe" }),
@@ -113,8 +109,10 @@ describe("collectSnapshot", () => {
     expect(snap.spellAoe).toEqual({ Imperil: 2 });
     expect(snap.skillOTOS).toEqual({ OFC: 1 });
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "readCurrent" });
-    expect(mocks.runMonsterStatusAutomation).toHaveBeenCalledWith({ type: "readStatus" });
-    expect(mocks.joinMonsterView).toHaveBeenCalledWith([], [{ order: 0, monsterId: 101 }], {});
+    expect(mocks.runBattleMonsterView).toHaveBeenCalledWith({
+      type: "readView",
+      monsters: [],
+    });
     expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({ type: "readUsage" });
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "readSpellAoe" });
     expect(mocks.runBattleStartRuntimeAutomation).toHaveBeenCalledWith({

@@ -22,15 +22,14 @@ import {
   runIncomingBurstLearningAutomation,
 } from "../state/incoming-burst-learner.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
-import { joinMonsterView, monsterHpVars } from "./monster-view.js";
-import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
+import { monsterHpVars } from "./monster-view.js";
 import {
   BattleStartRuntimeEvent,
   runBattleStartRuntimeAutomation,
 } from "./battle-start-runtime.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "../pages/ability-page.js";
 import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-skill-usage.js";
-import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
+import { BattleMonsterViewEvent, runBattleMonsterView } from "./battle-monster-view.js";
 
 /**
  * 解析一个 effect 容器（玩家 #pane_effects 或怪物 .btm6）内全部 img 为 {img, turns}[]。
@@ -212,14 +211,10 @@ function readSkillReady() {
  */
 export function collectSnapshot(event = {}) {
   const monsters = readMonsters();
-  const monsterStatus = runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_STATUS });
-  // 统一怪物视图：join snap.monsters + monsterStatus(绝对血/finWeight) + monster-db 缓存(九抗/身份)。
-  // MonsterStatusEvent.UPDATE_HP 已先于本函数跑 → monsterStatus 最新；db 走 monster-cache 同步快照。
-  const view = joinMonsterView(
+  const { view, monsterStatus } = runBattleMonsterView({
+    type: BattleMonsterViewEvent.READ_VIEW,
     monsters,
-    monsterStatus,
-    runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_DB })
-  );
+  });
   const playerEffects = readPlayerEffects();
   const vitals = readPlayerVitals();
   const spiritEl = gE("#ckey_spirit");

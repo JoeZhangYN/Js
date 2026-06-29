@@ -25,6 +25,7 @@ function requireText(relative, required) {
 const snapshotText = requireText(snapshot, [
   "collectSnapshot",
   "learnIncomingBurst",
+  "BattleMonsterViewEvent.READ_VIEW",
   "BattleStartRuntimeEvent.READ_ATTACK_STATUS",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
@@ -41,6 +42,11 @@ if (/fightingStyle/.test(snapshotText)) {
 }
 if (/OptionEvent|runOptionAutomation|burstControlSwitch/.test(snapshotText)) {
   violations.push(`${snapshot.replaceAll("\\", "/")} must not read battle rule options directly`);
+}
+if (
+  /MonsterStatusEvent\.READ_STATUS|MonsterCacheEvent\.READ_DB|joinMonsterView/.test(snapshotText)
+) {
+  violations.push(`${snapshot.replaceAll("\\", "/")} must not assemble monster view directly`);
 }
 if (/snap\.fightingStyle/.test(scoringText)) {
   violations.push(`${physicalScoring.replaceAll("\\", "/")} must use opt.fightingStyle`);

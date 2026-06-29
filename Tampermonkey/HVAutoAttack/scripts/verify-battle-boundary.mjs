@@ -852,8 +852,13 @@ function checkSnapshot() {
   if (/\bg\(\s*["']skillOTOS["']/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read skillOTOS directly`);
   }
-  if (!text.includes("MonsterStatusEvent.READ_STATUS")) {
-    violations.push(`${rel(snapshotFile)} must read monsterStatus through monster status entry`);
+  if (!text.includes("BattleMonsterViewEvent.READ_VIEW")) {
+    violations.push(
+      `${rel(snapshotFile)} must read unified monster view through battle monster view entry`
+    );
+  }
+  if (/MonsterStatusEvent\.READ_STATUS|MonsterCacheEvent\.READ_DB|joinMonsterView/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not assemble monster status/cache/view directly`);
   }
   if (/\bg\(\s*["']monsterStatus["']/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read monsterStatus directly`);
