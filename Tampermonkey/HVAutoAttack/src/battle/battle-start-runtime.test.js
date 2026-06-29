@@ -38,8 +38,8 @@ describe("runBattleStartRuntimeAutomation", () => {
       runBattleStartRuntimeAutomation({ type: BattleStartRuntimeEvent.BATTLE_STARTED }, deps)
     ).toBe(true);
 
-    expect(deps.write).toHaveBeenCalledWith("attackStatus", "magic");
-    expect(deps.readOptionField).toHaveBeenCalledWith("attackStatus");
+    expect(deps.write).toHaveBeenCalledWith("attackStatus", 0);
+    expect(deps.readOptionField).toHaveBeenCalledWith("attackStatus", 0);
     expect(deps.startSpeed).toHaveBeenCalledTimes(1);
   });
 
@@ -53,7 +53,7 @@ describe("runBattleStartRuntimeAutomation", () => {
 
     expect(
       runBattleStartRuntimeAutomation({ type: BattleStartRuntimeEvent.READ_ATTACK_STATUS }, deps)
-    ).toBe("magic");
+    ).toBe(0);
 
     expect(deps.read).toHaveBeenCalledWith("attackStatus");
   });
@@ -72,11 +72,29 @@ describe("runBattleStartRuntimeAutomation", () => {
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",
       key: "attackStatus",
-      fallback: undefined,
+      fallback: 0,
     });
-    expect(mocks.g).toHaveBeenCalledWith("attackStatus", "melee");
+    expect(mocks.g).toHaveBeenCalledWith("attackStatus", 0);
     expect(mocks.runBattleActionSpeedAutomation).toHaveBeenCalledWith({
       type: "battleStarted",
     });
+  });
+
+  it("normalizes numeric attack status before writing and reading runtime state", () => {
+    const deps = {
+      readOptionField: vi.fn(() => "2"),
+      read: vi.fn(() => "5"),
+      write: vi.fn(),
+      startSpeed: vi.fn(),
+    };
+
+    expect(
+      runBattleStartRuntimeAutomation({ type: BattleStartRuntimeEvent.BATTLE_STARTED }, deps)
+    ).toBe(true);
+    expect(
+      runBattleStartRuntimeAutomation({ type: BattleStartRuntimeEvent.READ_ATTACK_STATUS }, deps)
+    ).toBe(5);
+
+    expect(deps.write).toHaveBeenCalledWith("attackStatus", 2);
   });
 });

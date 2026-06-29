@@ -4,20 +4,29 @@ import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle
 
 const EVENT_BATTLE_STARTED = "battleStarted";
 const EVENT_READ_ATTACK_STATUS = "readAttackStatus";
+const DEFAULT_ATTACK_STATUS = 0;
 
 export const BattleStartRuntimeEvent = Object.freeze({
   BATTLE_STARTED: EVENT_BATTLE_STARTED,
   READ_ATTACK_STATUS: EVENT_READ_ATTACK_STATUS,
 });
 
+function normalizeAttackStatus(value) {
+  const status = Number(value);
+  return Number.isFinite(status) ? status : DEFAULT_ATTACK_STATUS;
+}
+
 function startRuntime(deps) {
-  deps.write("attackStatus", deps.readOptionField("attackStatus"));
+  deps.write(
+    "attackStatus",
+    normalizeAttackStatus(deps.readOptionField("attackStatus", DEFAULT_ATTACK_STATUS))
+  );
   deps.startSpeed();
   return true;
 }
 
 function readAttackStatus(deps) {
-  return deps.read("attackStatus");
+  return normalizeAttackStatus(deps.read("attackStatus"));
 }
 
 export function runBattleStartRuntimeAutomation(

@@ -576,6 +576,17 @@ function checkStartRuntimeEntry() {
       `${rel(startRuntimeFile)} must read start runtime options through option entry`
     );
   }
+  for (const required of ["DEFAULT_ATTACK_STATUS", "normalizeAttackStatus"]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(startRuntimeFile)} must internalize attackStatus invariants`);
+    }
+  }
+  if (!/readOptionField\(["']attackStatus["'],\s*DEFAULT_ATTACK_STATUS\)/.test(text)) {
+    violations.push(`${rel(startRuntimeFile)} must read attackStatus with an explicit fallback`);
+  }
+  if ((text.match(/normalizeAttackStatus\(/g) || []).length < 3) {
+    violations.push(`${rel(startRuntimeFile)} must normalize attackStatus on write and read`);
+  }
   if (/OptionEvent\.READ\b/.test(text)) {
     violations.push(`${rel(startRuntimeFile)} must not read the whole option bag`);
   }
