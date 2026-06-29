@@ -1265,12 +1265,28 @@ function checkAllDebuffEntry() {
 
 function checkItemScrollEntry() {
   const itemText = fs.readFileSync(decideScrollFile, "utf8");
-  for (const required of ["decideScroll", "scrollSwitch", "scrollCondition", "scrollRoundType"]) {
+  for (const required of [
+    "decideScroll",
+    "scrollSwitch",
+    "scrollCondition",
+    "scrollRoundType",
+    "conditionFacts",
+    "event.roundType",
+    "event.playerBuffs",
+  ]) {
     if (!itemText.includes(required)) {
       violations.push(`${rel(decideScrollFile)} must own scroll gate ${required}`);
     }
   }
+  if (/decideScroll\s*\(\s*opt\s*,\s*snap\s*\)/.test(itemText)) {
+    violations.push(`${rel(decideScrollFile)} must not expose opt/snap scroll input`);
+  }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const scrollRule =
+    rulesText.match(/name:\s*["']useScroll["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideScroll\(\s*opt\s*,\s*snap\s*\)/.test(scrollRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass scroll facts, not snap, to scroll`);
+  }
   for (const legacy of ["scrollSwitch", "scrollCondition", "scrollRoundType"]) {
     if (rulesText.includes(legacy)) {
       violations.push(`${rel(battleRulesFile)} must not assemble scroll rule gates directly`);

@@ -6,25 +6,27 @@ function emptyScrollPlan() {
 
 /**
  * 复刻 useScroll。遍历 scrollLib，对每张卷轴：启用 + 条件满足 + 对应 buff（j=1..mult）全部未上
- * → 收集为候选 item id（保持声明顺序）。原 DOM buff 探测改读 snap.playerBuffs 子串匹配。
- * @param {object} opt
- * @param {import("../../core/types.js").BattleSnapshot} snap
+ * → 收集为候选 item id（保持声明顺序）。原 DOM buff 探测改读 event.playerBuffs 子串匹配。
+ * @param {object} event
  * @returns {import("../../core/types.js").ActionResult} { kind:"item-plan", plan }
  */
-export function decideScroll(opt, snap) {
+export function decideScroll(event = {}) {
+  const opt = event.opt || {};
   if (!opt.scrollSwitch || !opt.scroll) return emptyScrollPlan();
-  if (!checkCondition(opt.scrollCondition, snap)) return emptyScrollPlan();
-  if (!opt.scrollRoundType || !opt.scrollRoundType[snap.roundType]) return emptyScrollPlan();
+  if (!checkCondition(opt.scrollCondition, event.conditionFacts)) return emptyScrollPlan();
+  if (!opt.scrollRoundType || !opt.scrollRoundType[event.roundType]) return emptyScrollPlan();
   const scrollSuffix = opt.scrollFirst ? "_scroll" : "";
   const candidates = [];
   for (const i in SCROLL_LIB) {
     const lib = SCROLL_LIB[i];
-    if (!(opt.scroll[i] && checkCondition(opt[`scroll${i}Condition`], snap))) continue;
+    if (!(opt.scroll[i] && checkCondition(opt[`scroll${i}Condition`], event.conditionFacts))) {
+      continue;
+    }
     // 原 useScroll：j=1..mult 任一 buff 已上 → 视为已用，跳过；全部未上才用
     let alreadyUp = false;
     for (let j = 1; j <= lib.mult; j++) {
       const needle = `${lib[`img${j}`]}${scrollSuffix}`;
-      if (snap.playerBuffs.some((b) => b.includes(needle))) {
+      if ((event.playerBuffs || []).some((b) => b.includes(needle))) {
         alreadyUp = true;
         break;
       }

@@ -22,6 +22,7 @@ import {
   criticalBuffFacts,
   gemFacts,
   infusionFacts,
+  scrollFacts,
   stallTopupFacts,
 } from "./rule-facts.js";
 
@@ -62,7 +63,7 @@ export const BATTLE_RULES = [
   // 8. 卷轴（decide 出候选 item id，execute 探活+点第一个可用）
   {
     name: "useScroll",
-    decide: (snap, opt) => decideScroll(opt, snap),
+    decide: (snap, opt) => decideScroll({ opt, ...scrollFacts(snap) }),
   },
   // 9. 元素灌注（仅法术模式）
   {

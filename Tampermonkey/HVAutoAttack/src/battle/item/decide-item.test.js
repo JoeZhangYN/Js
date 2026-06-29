@@ -57,10 +57,18 @@ function stallTopupFacts(snap) {
   };
 }
 
+function scrollFacts(snap) {
+  return {
+    conditionFacts: snap,
+    roundType: snap.roundType,
+    playerBuffs: snap.playerBuffs,
+  };
+}
+
 const gemPlan = (opt, s) => decideGemUse({ opt, ...gemFacts(s) }).plan;
 const potionPlan = (opt, s) => decidePotion(opt, s).plan;
 const stallPlan = (opt, s) => decideStallTopup({ opt, ...stallTopupFacts(s) }).plan;
-const scrollPlan = (opt, s) => decideScroll(opt, s).plan;
+const scrollPlan = (opt, s) => decideScroll({ opt, ...scrollFacts(s) }).plan;
 
 describe("decideGemUse", () => {
   it("无宝石（gemName 空）→ noop", () => {

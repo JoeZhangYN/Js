@@ -95,6 +95,14 @@ export function buffFacts(snap) {
   };
 }
 
+export function scrollFacts(snap) {
+  return {
+    conditionFacts: conditionFacts(snap),
+    roundType: snap?.roundType,
+    playerBuffs: snap?.playerBuffs,
+  };
+}
+
 export function conditionFacts(snap) {
   // User-authored condition expressions address a variable map, so the snapshot is the condition context.
   return snap;
