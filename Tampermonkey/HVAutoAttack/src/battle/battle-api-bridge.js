@@ -3,24 +3,28 @@ import { MAIN_URL } from "../env.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_INSTALL = "install";
+const ACTION_START_EVENT_NODE_ID = "eventStart";
+const ACTION_END_EVENT_NODE_ID = "eventEnd";
+const MAGIC_DELAY_SESSION_KEY = "delay";
+const ACTION_DELAY_SESSION_KEY = "delay2";
 
 export const BattleApiBridgeEvent = Object.freeze({
   INSTALL: EVENT_INSTALL,
 });
 
-function buildApiCallScript(mainUrl) {
+function buildApiCallScript(mainUrl, protocol) {
   return `api_call = ${function (b, a, d) {
-    const delay = window.sessionStorage.delay * 1;
-    const delay2 = window.sessionStorage.delay2 * 1;
+    const delay = window.sessionStorage.__HVAA_MAGIC_DELAY_SESSION_KEY__ * 1;
+    const delay2 = window.sessionStorage.__HVAA_ACTION_DELAY_SESSION_KEY__ * 1;
     window.info = a;
     b.open("POST", "__HVAA_MAIN_JSON_URL__");
     b.setRequestHeader("Content-Type", "application/json");
     b.withCredentials = true;
     b.onreadystatechange = d;
     b.onload = function () {
-      document.getElementById("eventEnd").click();
+      document.getElementById("__HVAA_ACTION_END_EVENT_NODE_ID__").click();
     };
-    document.getElementById("eventStart").click();
+    document.getElementById("__HVAA_ACTION_START_EVENT_NODE_ID__").click();
     if (a.mode === "magic" && a.skill >= 200) {
       if (delay <= 0) {
         b.send(JSON.stringify(a));
@@ -42,7 +46,12 @@ function buildApiCallScript(mainUrl) {
         (delay2 * (Math.random() * 50 + 50)) / 100
       );
     }
-  }.toString()}`.replaceAll("__HVAA_MAIN_JSON_URL__", `${mainUrl}json`);
+  }.toString()}`
+    .replaceAll("__HVAA_MAIN_JSON_URL__", `${mainUrl}json`)
+    .replaceAll("__HVAA_ACTION_START_EVENT_NODE_ID__", protocol.actionStartEventNodeId)
+    .replaceAll("__HVAA_ACTION_END_EVENT_NODE_ID__", protocol.actionEndEventNodeId)
+    .replaceAll("__HVAA_MAGIC_DELAY_SESSION_KEY__", protocol.magicDelaySessionKey)
+    .replaceAll("__HVAA_ACTION_DELAY_SESSION_KEY__", protocol.actionDelaySessionKey);
 }
 
 function buildApiResponseScript() {
@@ -66,21 +75,26 @@ function buildApiResponseScript() {
 
 function readApiBridgeDelayOption(deps) {
   return {
-    delay: Number(deps.readOptionField("delay", 0)) || 0,
-    delay2: Number(deps.readOptionField("delay2", 0)) || 0,
+    delay: Number(deps.readOptionField(MAGIC_DELAY_SESSION_KEY, 0)) || 0,
+    delay2: Number(deps.readOptionField(ACTION_DELAY_SESSION_KEY, 0)) || 0,
   };
 }
 
 function writeApiBridgeDelayRuntime(deps, option) {
-  deps.sessionStorage.delay = option.delay;
-  deps.sessionStorage.delay2 = option.delay2;
+  deps.sessionStorage[MAGIC_DELAY_SESSION_KEY] = option.delay;
+  deps.sessionStorage[ACTION_DELAY_SESSION_KEY] = option.delay2;
 }
 
 function installBridge(deps) {
   writeApiBridgeDelayRuntime(deps, readApiBridgeDelayOption(deps));
 
   const apiCall = deps.createScript();
-  apiCall.textContent = buildApiCallScript(deps.mainUrl);
+  apiCall.textContent = buildApiCallScript(deps.mainUrl, {
+    actionStartEventNodeId: ACTION_START_EVENT_NODE_ID,
+    actionEndEventNodeId: ACTION_END_EVENT_NODE_ID,
+    magicDelaySessionKey: MAGIC_DELAY_SESSION_KEY,
+    actionDelaySessionKey: ACTION_DELAY_SESSION_KEY,
+  });
   deps.appendHead(apiCall);
 
   const apiResponse = deps.createScript();

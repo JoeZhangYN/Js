@@ -374,10 +374,14 @@ function checkApiBridgeEntry() {
       violations.push(`${rel(apiBridgeFile)} must own ${required}`);
     }
   }
-  if (!/Number\([^)]*readOptionField\(["']delay["'],\s*0\)[^)]*\)\s*\|\|\s*0/.test(text)) {
+  if (
+    !/Number\([^)]*readOptionField\(MAGIC_DELAY_SESSION_KEY,\s*0\)[^)]*\)\s*\|\|\s*0/.test(text)
+  ) {
     violations.push(`${rel(apiBridgeFile)} must normalize delay before writing runtime state`);
   }
-  if (!/Number\([^)]*readOptionField\(["']delay2["'],\s*0\)[^)]*\)\s*\|\|\s*0/.test(text)) {
+  if (
+    !/Number\([^)]*readOptionField\(ACTION_DELAY_SESSION_KEY,\s*0\)[^)]*\)\s*\|\|\s*0/.test(text)
+  ) {
     violations.push(`${rel(apiBridgeFile)} must normalize delay2 before writing runtime state`);
   }
   if (/OptionEvent\.READ\b/.test(text)) {

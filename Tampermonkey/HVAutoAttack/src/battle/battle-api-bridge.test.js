@@ -39,8 +39,26 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.appendHead).toHaveBeenCalledTimes(2);
     expect(deps.scripts[0].textContent).toContain("api_call =");
     expect(deps.scripts[0].textContent).toContain('b.open("POST", "https://example.test/json")');
+    expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay * 1");
+    expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay2 * 1");
+    expect(deps.scripts[0].textContent).toContain('document.getElementById("eventStart").click()');
+    expect(deps.scripts[0].textContent).toContain('document.getElementById("eventEnd").click()');
     expect(deps.scripts[1].textContent).toContain("api_response =");
     expect(deps.scripts[1].textContent).toContain("JSON.parse(b.responseText)");
+  });
+
+  it("keeps the action event protocol around API sends", () => {
+    const deps = makeDeps();
+
+    runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }, deps);
+
+    const script = deps.scripts[0].textContent;
+    expect(script.indexOf('document.getElementById("eventStart").click()')).toBeLessThan(
+      script.indexOf("b.send(JSON.stringify(a))")
+    );
+    expect(script.indexOf('document.getElementById("eventEnd").click()')).toBeGreaterThan(
+      script.indexOf("b.onload = function")
+    );
   });
 
   it("rejects unknown events", () => {
