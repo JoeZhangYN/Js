@@ -19,6 +19,7 @@ const pauseControlsFile = path.join(root, "src/battle/battle-pause-controls.js")
 const pauseControlsTest = path.join(root, "src/battle/battle-pause-controls.test.js");
 const startRuntimeFile = path.join(root, "src/battle/battle-start-runtime.js");
 const startRuntimeTest = path.join(root, "src/battle/battle-start-runtime.test.js");
+const debuffCoverageFile = path.join(root, "src/battle/battle-debuff-coverage.js");
 const utilityEngineFile = path.join(root, "src/battle/utility-engine.js");
 const activateSpiritFile = path.join(root, "src/battle/buff/activate-spirit.js");
 const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
@@ -715,11 +716,30 @@ function checkBattleRulesRuntimeContext() {
   if (!text.includes("hasMissingDebuff")) {
     violations.push(`${rel(battleRulesFile)} must centralize debuff coverage decisions`);
   }
+  if (!text.includes("runBattleDebuffCoverageAutomation")) {
+    violations.push(`${rel(battleRulesFile)} must read debuff coverage through its entry`);
+  }
+  if (/\.filter\(\s*\(?\w+\)?\s*=>\s*\w+\.buffs/.test(text)) {
+    violations.push(`${rel(battleRulesFile)} must not assemble debuff coverage from monster buffs`);
+  }
   const rulesBody = text.split("/** @type")[1] || "";
   if (/\bg\(\s*["'](?:roundNow|roundAll|roundType|monsterAlive)["']/.test(rulesBody)) {
     violations.push(
       `${rel(battleRulesFile)} rule definitions must read runtime fields through rule runtime context`
     );
+  }
+}
+
+function checkBattleDebuffCoverage() {
+  const text = fs.readFileSync(debuffCoverageFile, "utf8");
+  for (const required of [
+    "BattleDebuffCoverageEvent",
+    "runBattleDebuffCoverageAutomation",
+    "HAS_MISSING_DEBUFF",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(debuffCoverageFile)} must own ${required}`);
+    }
   }
 }
 
@@ -792,6 +812,7 @@ checkActivateSpirit();
 checkExecuteItem();
 checkSnapshot();
 checkBattleRulesRuntimeContext();
+checkBattleDebuffCoverage();
 checkBattleStallMode();
 checkBattleTestFixtures();
 checkBattleOptionVocabulary();

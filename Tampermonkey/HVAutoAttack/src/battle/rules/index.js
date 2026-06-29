@@ -1,6 +1,10 @@
 // 每条 rule：{ name, when?(snap,opt), decide(snap,opt)→ActionResult }。顺序 = 原 runSteps 顺序。
 // 深度 B 后**全部 16 条 decide 均为 PURE**（只读 snap，零 DOM 判断）；副作用全在
 import { checkCondition } from "../../settings/condition-eval.js";
+import {
+  BattleDebuffCoverageEvent,
+  runBattleDebuffCoverageAutomation,
+} from "../battle-debuff-coverage.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { decideInfusion } from "../buff/decide-infusion.js";
 import { decideBuff } from "../buff/decide-buff.js";
@@ -28,25 +32,27 @@ const isStallingForRules = (snap, opt, runtime = readRuleRuntimeContext(snap)) =
     roundAll: runtime.roundAll,
   });
 const hasMissingDebuff = (snap, runtime, debuffName) =>
-  snap.view.filter((m) => m.buffs.some((b) => b.includes(debuffName))).length <
-  runtime.monsterAlive;
+  runBattleDebuffCoverageAutomation({
+    type: BattleDebuffCoverageEvent.HAS_MISSING_DEBUFF,
+    snap,
+    debuffName,
+    monsterAlive: runtime.monsterAlive,
+  });
+const canFlee = (snap, opt) => opt.autoFlee && checkCondition(opt.fleeCondition, snap);
+const flee = () => ({ kind: "click-then-reload", selector: "1001", delaySec: 3 });
+const canAutoPause = (snap, opt) => opt.autoPause && checkCondition(opt.pauseCondition, snap);
+const pause = () => ({ kind: "pause" });
+const canDefend = (snap, opt) => opt.defend && checkCondition(opt.defendCondition, snap);
+const defend = () => ({ kind: "click", selector: "#ckey_defend" });
 
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
   { name: "criticalBuffGuard", decide: (snap, opt) => decideCriticalBuff(opt, snap) },
   // 2. 逃跑
-  {
-    name: "flee",
-    when: (snap, opt) => opt.autoFlee && checkCondition(opt.fleeCondition, snap),
-    decide: () => ({ kind: "click-then-reload", selector: "1001", delaySec: 3 }),
-  },
+  { name: "flee", when: canFlee, decide: flee },
   // 3. 自动暂停（dispatch 交给 runBattlePauseAutomation 统一写暂停状态）
-  {
-    name: "autoPause",
-    when: (snap, opt) => opt.autoPause && checkCondition(opt.pauseCondition, snap),
-    decide: () => ({ kind: "pause" }),
-  },
+  { name: "autoPause", when: canAutoPause, decide: pause },
   // 4. 宝石（decideGemUse 自 gate snap.gemName；dyn-threshold 在 decide，autoTune 计数在 execute）
   { name: "useGem", decide: (snap, opt) => decideGemUse(opt, snap) },
   // 5. 紧急回血回魔（decide 出候选 id 列表，execute 探活+喝第一个可用）
@@ -61,11 +67,7 @@ export const BATTLE_RULES = [
     decide: (snap, opt) => decideStallTopup(opt, snap),
   },
   // 7. 防御（attemptClick 内置 isOn 探活）
-  {
-    name: "defend",
-    when: (snap, opt) => opt.defend && checkCondition(opt.defendCondition, snap),
-    decide: () => ({ kind: "click", selector: "#ckey_defend" }),
-  },
+  { name: "defend", when: canDefend, decide: defend },
   // 8. 卷轴（decide 出候选 item id，execute 探活+点第一个可用）
   {
     name: "useScroll",
