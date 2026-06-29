@@ -9,8 +9,9 @@ const internalFiles = new Set(
     entry,
     "src/monitor/battle-action-usage-capture.js",
     "src/monitor/battle-info.js",
+    "src/monitor/battle-record-archive-drop-records.js",
     "src/monitor/battle-record-archive.js",
-    "src/monitor/battle-record-archive-records.js",
+    "src/monitor/battle-record-archive-usage-records.js",
     "src/monitor/battle-report.js",
     "src/monitor/battle-report-view.js",
     "src/monitor/battle-monitor-runtime.js",
@@ -320,9 +321,17 @@ function checkUsageImplementation() {
 
 function checkRecordArchiveEntry() {
   const archiveFile = path.join(root, "src/monitor/battle-record-archive.js");
-  const archiveRecordsFile = path.join(root, "src/monitor/battle-record-archive-records.js");
+  const archiveDropRecordsFile = path.join(
+    root,
+    "src/monitor/battle-record-archive-drop-records.js"
+  );
+  const archiveUsageRecordsFile = path.join(
+    root,
+    "src/monitor/battle-record-archive-usage-records.js"
+  );
   const archiveText = fs.readFileSync(archiveFile, "utf8");
-  const archiveRecordsText = fs.readFileSync(archiveRecordsFile, "utf8");
+  const archiveDropRecordsText = fs.readFileSync(archiveDropRecordsFile, "utf8");
+  const archiveUsageRecordsText = fs.readFileSync(archiveUsageRecordsFile, "utf8");
   const dropText = fs.readFileSync(path.join(root, "src/monitor/drop-monitor.js"), "utf8");
   const usageText = fs.readFileSync(path.join(root, "src/monitor/record-usage.js"), "utf8");
   if (!/export const BattleRecordArchiveEvent\s*=\s*Object\.freeze\(/.test(archiveText)) {
@@ -360,20 +369,23 @@ function checkRecordArchiveEntry() {
       violations.push(`${rel(archiveFile)} must not expose retired generic ${retired}`);
     }
   }
-  if (!archiveText.includes("./battle-record-archive-records.js")) {
-    violations.push(`${rel(archiveFile)} must own typed record specs through archive records`);
+  if (
+    !archiveText.includes("./battle-record-archive-drop-records.js") ||
+    !archiveText.includes("./battle-record-archive-usage-records.js")
+  ) {
+    violations.push(`${rel(archiveFile)} must own typed record specs through family helpers`);
   }
-  if (!archiveRecordsText.includes("createDefaultUsageStats")) {
-    violations.push(`${rel(archiveRecordsFile)} must own usage stats default shape`);
+  if (!archiveUsageRecordsText.includes("createDefaultUsageStats")) {
+    violations.push(`${rel(archiveUsageRecordsFile)} must own usage stats default shape`);
   }
-  for (const required of [
-    "readDropReportRecordSet",
-    "readUsageReportRecordSet",
-    "clearDropReportRecordSet",
-    "clearUsageReportRecordSet",
-  ]) {
-    if (!archiveRecordsText.includes(required)) {
-      violations.push(`${rel(archiveRecordsFile)} must own ${required}`);
+  for (const required of ["readDropReportRecordSet", "clearDropReportRecordSet"]) {
+    if (!archiveDropRecordsText.includes(required)) {
+      violations.push(`${rel(archiveDropRecordsFile)} must own ${required}`);
+    }
+  }
+  for (const required of ["readUsageReportRecordSet", "clearUsageReportRecordSet"]) {
+    if (!archiveUsageRecordsText.includes(required)) {
+      violations.push(`${rel(archiveUsageRecordsFile)} must own ${required}`);
     }
   }
   for (const [label, text] of [
@@ -431,14 +443,18 @@ function checkRecordArchiveEntry() {
     }
   }
   const archiveRecordImports = [];
-  walkImportUsers(srcDir, "battle-record-archive-records.js", archiveRecordImports);
+  walkImportUsers(srcDir, "battle-record-archive-drop-records.js", archiveRecordImports);
+  walkImportUsers(srcDir, "battle-record-archive-usage-records.js", archiveRecordImports);
   const allowedImport = path.normalize("src/monitor/battle-record-archive.js");
   for (const user of archiveRecordImports) {
     if (user !== allowedImport) {
       violations.push(
-        `${user.replaceAll("\\", "/")} must not import battle-record-archive-records directly`
+        `${user.replaceAll("\\", "/")} must not import battle-record-archive family helpers directly`
       );
     }
+  }
+  if (fs.existsSync(path.join(root, "src/monitor/battle-record-archive-records.js"))) {
+    violations.push("src/monitor/battle-record-archive-records.js mixed helper must stay deleted");
   }
 }
 

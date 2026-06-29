@@ -3,16 +3,18 @@ import { getValue, setValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import {
   clearDropReportRecordSet,
-  clearUsageReportRecordSet,
   readOrCreateDropRecord,
-  readOrCreateUsageStats,
   readDropReportRecordSet,
+  storeOrArchiveDropRecord,
+} from "./battle-record-archive-drop-records.js";
+import {
+  clearUsageReportRecordSet,
+  readOrCreateUsageStats,
   readUsageReportRecordSet,
   readUsageStats,
-  storeOrArchiveDropRecord,
   storeOrArchiveUsageStats,
   storeUsageStats,
-} from "./battle-record-archive-records.js";
+} from "./battle-record-archive-usage-records.js";
 
 export const BattleRecordArchiveEvent = Object.freeze({
   START_BATTLE_REPORT_RECORDING: "startBattleReportRecording",
