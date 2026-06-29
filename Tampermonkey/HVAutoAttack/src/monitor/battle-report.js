@@ -48,29 +48,18 @@ function renderReportTableBody(type, report) {
   return runBattleReportViewAutomation({ type, report });
 }
 
+const reportEventHandlers = Object.freeze({
+  [BattleReportEvent.BATTLE_STARTED]: (_event, deps) => recordBattleReportStarted(deps),
+  [BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY]: () =>
+    renderReportTableBody(BattleReportViewEvent.RENDER_DROP_TABLE_BODY, readDropReportModel()),
+  [BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY]: () =>
+    renderReportTableBody(BattleReportViewEvent.RENDER_USAGE_TABLE_BODY, readUsageReportModel()),
+  [BattleReportEvent.CLEAR_DROP_REPORT]: () =>
+    clearReport(BattleRecordArchiveEvent.CLEAR_DROP_REPORT),
+  [BattleReportEvent.CLEAR_USAGE_REPORT]: () =>
+    clearReport(BattleRecordArchiveEvent.CLEAR_USAGE_REPORT),
+});
+
 export function runBattleReportAutomation(event, deps = {}) {
-  if (event.type === BattleReportEvent.BATTLE_STARTED) {
-    return recordBattleReportStarted(deps);
-  }
-  if (event.type === BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY) {
-    return renderReportTableBody(
-      BattleReportViewEvent.RENDER_DROP_TABLE_BODY,
-      readDropReportModel()
-    );
-  }
-  if (event.type === BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY) {
-    return renderReportTableBody(
-      BattleReportViewEvent.RENDER_USAGE_TABLE_BODY,
-      readUsageReportModel()
-    );
-  }
-  if (event.type === BattleReportEvent.CLEAR_DROP_REPORT) {
-    clearReport(BattleRecordArchiveEvent.CLEAR_DROP_REPORT);
-    return undefined;
-  }
-  if (event.type === BattleReportEvent.CLEAR_USAGE_REPORT) {
-    clearReport(BattleRecordArchiveEvent.CLEAR_USAGE_REPORT);
-    return undefined;
-  }
-  return undefined;
+  return reportEventHandlers[event.type]?.(event, deps);
 }

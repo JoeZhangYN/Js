@@ -1023,6 +1023,12 @@ function checkBattleReportEntry() {
   if (!/export function runBattleReportAutomation\(/.test(text)) {
     violations.push(`${rel(reportFile)} must expose only runBattleReportAutomation(event)`);
   }
+  if (!/const reportEventHandlers\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(reportFile)} must route report commands through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*===\s*BattleReportEvent\./.test(text)) {
+    violations.push(`${rel(reportFile)} must not route report commands through an if ladder`);
+  }
   if (!/\bUTC_MONTH_DAY_LABEL\b/.test(text)) {
     violations.push(`${rel(reportFile)} must own battle report date label format`);
   }
