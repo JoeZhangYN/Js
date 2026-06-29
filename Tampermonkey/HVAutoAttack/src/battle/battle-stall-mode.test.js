@@ -23,6 +23,14 @@ function activeFacts(snap) {
   };
 }
 
+function topupFacts(snap) {
+  return {
+    manaPercent: snap.mp,
+    spiritPercent: snap.sp,
+    playerBuffs: snap.playerBuffs,
+  };
+}
+
 describe("battle stall mode", () => {
   it("answers whether battle should stall from one entry", () => {
     expect(
@@ -57,8 +65,8 @@ describe("battle stall mode", () => {
     expect(
       runBattleStallModeAutomation({
         type: BattleStallModeEvent.READ_TOPUP_CANDIDATES,
-        snap: snap({ mp: 50, sp: 50, playerBuffs: ["spiritpot"] }),
         opt: {},
+        ...topupFacts(snap({ mp: 50, sp: 50, playerBuffs: ["spiritpot"] })),
       })
     ).toEqual([11291]);
   });

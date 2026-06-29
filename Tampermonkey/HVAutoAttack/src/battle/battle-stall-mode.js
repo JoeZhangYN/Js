@@ -30,14 +30,16 @@ function isStallActive(event) {
 /**
  * Stall 模式专属：仅 Draught（Replenishment 慢回 buff），百分比控制。
  */
-function readTopupCandidates(snap, opt = {}) {
+function readTopupCandidates(event) {
   const candidates = [];
+  const opt = event?.opt || {};
   const mpFloor = opt.stallTopupMpFloor ?? 70;
   const spFloor = opt.stallTopupSpFloor ?? 70;
-  if ((snap?.mp ?? 100) < mpFloor && !snap?.playerBuffs?.includes("manapot")) {
+  const playerBuffs = event?.playerBuffs || [];
+  if ((event?.manaPercent ?? 100) < mpFloor && !playerBuffs.includes("manapot")) {
     candidates.push(11291);
   }
-  if ((snap?.sp ?? 100) < spFloor && !snap?.playerBuffs?.includes("spiritpot")) {
+  if ((event?.spiritPercent ?? 100) < spFloor && !playerBuffs.includes("spiritpot")) {
     candidates.push(11391);
   }
   return candidates;
@@ -48,7 +50,7 @@ export function runBattleStallModeAutomation(event = { type: EVENT_READ_ACTIVE }
     return isStallActive(event);
   }
   if (event.type === EVENT_READ_TOPUP_CANDIDATES) {
-    return readTopupCandidates(event.snap, event.opt);
+    return readTopupCandidates(event);
   }
   return undefined;
 }

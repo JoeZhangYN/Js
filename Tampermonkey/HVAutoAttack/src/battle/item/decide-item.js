@@ -25,6 +25,14 @@ function stallActiveFacts(snap) {
   };
 }
 
+function stallTopupFacts(snap) {
+  return {
+    manaPercent: snap?.mp,
+    spiritPercent: snap?.sp,
+    playerBuffs: snap?.playerBuffs,
+  };
+}
+
 function readRecovery(potionId) {
   return runRecoveryLearningAutomation({
     type: RecoveryLearningEvent.READ_RECOVERY,
@@ -131,8 +139,8 @@ export function decideStallTopup(opt, snap) {
   // step 2: MP/SP Draught 兜底
   for (const potId of runBattleStallModeAutomation({
     type: BattleStallModeEvent.READ_TOPUP_CANDIDATES,
-    snap,
     opt,
+    ...stallTopupFacts(snap),
   })) {
     attempts.push({ kind: "draught", id: potId });
   }

@@ -1288,6 +1288,8 @@ function checkBattleStallMode() {
     "READ_TOPUP_CANDIDATES",
     "event?.aliveMonsterHpPercents",
     "event?.overcharge",
+    "event?.manaPercent",
+    "event?.spiritPercent",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(stallModeFile)} must own ${required}`);
@@ -1296,6 +1298,9 @@ function checkBattleStallMode() {
   const activeBody = ownerText.match(/function isStallActive\(event\) \{[\s\S]*?\n\}/)?.[0];
   if (/\bevent\.snap\b|\bsnap\?\.view\b|\bsnap\.view\b/.test(activeBody || "")) {
     violations.push(`${rel(stallModeFile)} active query must consume narrow facts, not snap`);
+  }
+  if (/\bevent\.snap\b/.test(ownerText)) {
+    violations.push(`${rel(stallModeFile)} must not consume snap-shaped event input`);
   }
   const economyText = fs.readFileSync(potionEconomyFile, "utf8");
   for (const legacy of ["isStallMode", "stallTopupCandidates"]) {
@@ -1320,6 +1325,12 @@ function checkBattleStallMode() {
     for (const call of text.matchAll(/runBattleStallModeAutomation\(\s*\{[\s\S]*?\}\s*\)/g)) {
       if (call[0].includes("BattleStallModeEvent.READ_ACTIVE") && /\bsnap\s*:/.test(call[0])) {
         violations.push(`${rel(file)} must pass narrow facts, not snap, to stall active query`);
+      }
+      if (
+        call[0].includes("BattleStallModeEvent.READ_TOPUP_CANDIDATES") &&
+        /\bsnap\s*:/.test(call[0])
+      ) {
+        violations.push(`${rel(file)} must pass narrow facts, not snap, to stall top-up query`);
       }
     }
   }
