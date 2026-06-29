@@ -4,12 +4,13 @@ import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { g } from "./store.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "./battle-turn.js";
+import { OptionEvent, runOptionAutomation } from "./option.js";
 
 beforeEach(() => {
   localStorage.clear();
   g("autoTunePotionCount", 0);
   runBattleTurnAutomation({ type: BattleTurnEvent.ROUND_STARTED });
-  g("option", { autoTune: true });
+  runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", autoTune: true } });
 });
 
 const readPad = () => runAutoTuneAutomation({ type: AutoTuneEvent.READ_PAD });
@@ -62,7 +63,7 @@ describe("auto-tune safetyPad entry", () => {
   });
 
   it("does not count potion uses when auto-tune is disabled", () => {
-    g("option", { autoTune: false });
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "autoTune", value: false });
 
     runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_POTION_USE });
     runBattleTurnAutomation({ type: BattleTurnEvent.TURN_STARTED });

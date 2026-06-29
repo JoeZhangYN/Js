@@ -53,6 +53,11 @@ function checkFile(file) {
     ) {
       violations.push(`${where} auto-tune potion-use counter belongs in auto-tune`);
     }
+    if (relative === ownerTest && /\bg\(\s*["']option["']/.test(line)) {
+      violations.push(
+        `${where} auto-tune tests must seed option through runOptionAutomation(event)`
+      );
+    }
   });
 }
 
