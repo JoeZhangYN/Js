@@ -1,5 +1,5 @@
 // Commit 3：dispatch 各 kind 行为回归锁（happy-dom 提供 DOM）。
-// 覆盖核心 DOM-click 系 kind；alert-and-pause 是现有工具的薄封装，留 HV 运行时验证。
+// 覆盖核心 command/plan kind；alert-and-pause 是现有工具的薄封装，留 HV 运行时验证。
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { dispatch } from "./dispatch.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
@@ -28,18 +28,6 @@ afterEach(() => {
 describe("dispatch", () => {
   it("noop → 不动作，返 false", () => {
     expect(dispatch({ kind: "noop" })).toBe(false);
-  });
-
-  it("click 可用按钮 → 命中 click，返 true", () => {
-    const btn = mkBtn("111");
-    expect(dispatch({ kind: "click", selector: "111" })).toBe(true);
-    expect(btn.click).toHaveBeenCalledOnce();
-  });
-
-  it("click 禁用按钮(opacity .5) → 返 false 不 click", () => {
-    const btn = mkBtn("111", { disabled: true });
-    expect(dispatch({ kind: "click", selector: "111" })).toBe(false);
-    expect(btn.click).not.toHaveBeenCalled();
   });
 
   it("item-command → clicks the item by id through the item command entry", () => {
@@ -119,5 +107,13 @@ describe("dispatch", () => {
 
   it("未知 kind → 返 false（default 兜底）", () => {
     expect(dispatch({ kind: "??" })).toBe(false);
+  });
+
+  it("retired generic click kind → 返 false", () => {
+    const btn = mkBtn("111");
+
+    expect(dispatch({ kind: "click", selector: "111" })).toBe(false);
+
+    expect(btn.click).not.toHaveBeenCalled();
   });
 });

@@ -12,7 +12,6 @@
  *   执行——保持通用 dispatch 不被各 step 细节污染。深度 B 后已无 delegate 过渡桥。
  *
  * @typedef {{ kind: "noop" }
- *         | { kind: "click", selector: string }
  *         | { kind: "skill-command", skillId: string }
  *         | { kind: "item-command", itemId: string|number }
  *         | { kind: "defend-command" }
