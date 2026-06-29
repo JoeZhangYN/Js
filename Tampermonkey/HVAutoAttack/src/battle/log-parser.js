@@ -73,12 +73,21 @@ export function estimatePlayerIncomingDps(events, turn) {
   const dmgs = incoming.map((e) => e.dmg).sort((a, b) => a - b);
   const total = dmgs.reduce((s, d) => s + d, 0);
   const t = Math.max(1, turn || 1);
-  const q = (p) => (dmgs.length === 0 ? 0 : dmgs[Math.min(dmgs.length - 1, Math.floor(dmgs.length * p))]);
+  const q = (p) =>
+    dmgs.length === 0 ? 0 : dmgs[Math.min(dmgs.length - 1, Math.floor(dmgs.length * p))];
   const p50 = q(0.5);
   const p95 = q(0.95);
   const hitsPerTurn = incoming.length / t;
   const perTurnP95 = p95 * hitsPerTurn;
-  return { total, perTurn: total / t, p50, p95, hitsPerTurn, perTurnP95, sampleCount: incoming.length };
+  return {
+    total,
+    perTurn: total / t,
+    p50,
+    p95,
+    hitsPerTurn,
+    perTurnP95,
+    sampleCount: incoming.length,
+  };
 }
 
 /**
@@ -195,19 +204,22 @@ export function applyInferredMaxHp(monsterStatus, lookupMaxHp) {
 /**
  * 归一怪名：消「战斗日志怪名 ↔ DOM .btm3 怪名」的前导冠词 / 空白差异（todo 491 匹配命门）。
  * 日志正则取 "You hit <target> for"，target 可能含冠词("the Orc")，而 .btm3 多为净名("Orc")，
- * 直接 dmgMap.get 会 miss → 反推静默失效。**匹配两端均过此归一**（accumulate 建键 + countMonsterHP 查键）。
+ * 直接 dmgMap.get 会 miss → 反推静默失效。**匹配两端均过此归一**（accumulate 建键 + monster-status-hp 查键）。
  * 仅用于匹配，不改怪物库存储键（库键须与 monster-db scan 一致，保留原始名）；不 lowercase（避免大小写异名误并）。
  * @param {string} name
  * @returns {string}
  */
 export function normalizeMonsterName(name) {
-  return (name || "").trim().replace(/\s+/g, " ").replace(/^(?:a|an|the) /i, "");
+  return (name || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/^(?:a|an|the) /i, "");
 }
 
 /**
  * 按怪物名累计 "monster-taking"（玩家对怪的）伤害（todo 491：HP 反推）。
  * 只聚合 kind === "monster-taking" 的事件；key = normalizeMonsterName(target)（与查表端一致）。
- * **PURE**：无副作用，供 countMonsterHP 内死亡检测调用。
+ * **PURE**：无副作用，供 monster-status-hp 内死亡检测调用。
  * @param {DamageEvent[]} events
  * @returns {Map<string, {totalDamage: number, events: DamageEvent[]}>}
  */

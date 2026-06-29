@@ -24,6 +24,7 @@ const activateSpiritFile = path.join(root, "src/battle/buff/activate-spirit.js")
 const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
 const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
+const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const battleRulesFile = path.join(root, "src/battle/rules/index.js");
 const violations = [];
@@ -62,6 +63,9 @@ function checkInit() {
 }
 
 function checkBattleEntry() {
+  if (fs.existsSync(legacyAttackFile)) {
+    violations.push("src/battle/attack.js legacy HP updater module must stay deleted");
+  }
   const text = fs.readFileSync(battleFile, "utf8");
   if (!/export const BattleEvent\s*=\s*Object\.freeze\(/.test(text)) {
     violations.push(`${rel(battleFile)} must expose BattleEvent`);

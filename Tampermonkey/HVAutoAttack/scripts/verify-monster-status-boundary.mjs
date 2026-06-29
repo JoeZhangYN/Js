@@ -4,7 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src/battle");
 const entry = path.normalize("src/battle/monster-status-automation.js");
-const hpImpl = path.normalize("src/battle/attack.js");
+const hpImpl = path.normalize("src/battle/monster-status-hp.js");
 const parserImpl = path.normalize("src/battle/log-parser.js");
 const roundStart = path.normalize("src/battle/new-round.js");
 const reloader = path.normalize("src/battle/reloader.js");
@@ -42,13 +42,18 @@ function checkFile(file) {
     ) {
       violations.push(`${where} combatant counts belong behind runMonsterStatusAutomation(event)`);
     }
+    if (/\bcountMonsterHP\b/.test(line)) {
+      violations.push(`${where} legacy countMonsterHP path is forbidden`);
+    }
     if (
       relative !== entry &&
       relative !== hpImpl &&
       relative !== parserImpl &&
-      /\bcountMonsterHP\b/.test(line)
+      /\bupdateMonsterHpRuntime\b/.test(line)
     ) {
-      violations.push(`${where} countMonsterHP belongs behind runMonsterStatusAutomation(event)`);
+      violations.push(
+        `${where} monster HP updates belong behind runMonsterStatusAutomation(event)`
+      );
     }
     if (/\b(?:getValue|setValue)\(\s*["']monsterStatus["']/.test(line)) {
       violations.push(
@@ -67,7 +72,7 @@ function checkEntry() {
     violations.push(`${entry.replaceAll("\\", "/")} must use STORAGE_KEYS.MONSTER_STATUS`);
   }
   for (const required of [
-    "countMonsterHP",
+    "updateMonsterHpRuntime",
     "buildMonsterStatus",
     "monsterStatus",
     "REFRESH_COMBATANT_COUNTS",

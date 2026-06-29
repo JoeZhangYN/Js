@@ -11,7 +11,7 @@ const FALLBACK_HP = 100000;
 
 /**
  * join 三面成统一怪物视图。**按 order 字段对齐** snap↔monsterStatus（monsterStatus 被 finWeight
- * sort 过——attack.js:121，数组下标≠order，故必须建 Map 按 order 对齐，不能用下标）；
+ * sort 过，数组下标≠order，故必须建 Map 按 order 对齐，不能用下标）；
  * **按 monsterId(全局 MID) 查 monster-db**（MID 来自 monsterStatus，由开局 spawn 行解析——消除
  * 同名怪歧义，旧"按 name 查"会把同名不同 MID 的怪混库）。
  * @param {import("../core/types.js").MonsterFacts[]} snapMonsters snap.monsters（DOM order）

@@ -3,8 +3,8 @@
 // 编排器与实现焊死。倒置后 runBattleTurnAutomation() 只该依赖 BATTLE_RULES + runRules 两个抽象；新增/调整 step
 // 走 battle/rules/index.js。本门控让旧路径（直接 import step 实现）不能再悄悄回归（反退化锁）。
 //
-// 符号级而非模块级：countMonsterHP/killBug/refreshBattleHud 是 pre-step 必执行项（非倒置的 step），
-// 仍允许从 attack.js / kill-bug.js / battle-info.js import；只禁 step-action 符号本身。
+// 符号级而非模块级：killBug/refreshBattleHud 是 pre-step 必执行项（非倒置的 step），
+// 仍允许从 kill-bug.js / battle-info.js import；只禁 step-action 符号本身。
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -13,11 +13,21 @@ const src = readFileSync(MAIN_LOOP, "utf8");
 
 // 已倒置进 BATTLE_RULES 的 step-action 符号 + 旧编排器 —— main-loop 不得再直接 import。
 const BANNED = [
-  "useGem", "deadSoon", "useScroll", "stallTopup",
-  "useChannelSkill", "useBuffSkill", "useInfusions",
-  "useDeSkill", "castDebuffOnAll", "attack",
-  "checkCriticalBuffGuard", "checkAndActivateSpirit",
-  "isStallMode", "shouldSkipForBigSkill", "runBossImperil",
+  "useGem",
+  "deadSoon",
+  "useScroll",
+  "stallTopup",
+  "useChannelSkill",
+  "useBuffSkill",
+  "useInfusions",
+  "useDeSkill",
+  "castDebuffOnAll",
+  "attack",
+  "checkCriticalBuffGuard",
+  "checkAndActivateSpirit",
+  "isStallMode",
+  "shouldSkipForBigSkill",
+  "runBossImperil",
   "runSteps",
 ];
 
@@ -27,7 +37,10 @@ const imported = new Set();
 let m;
 while ((m = importRe.exec(src))) {
   for (const part of m[1].split(",")) {
-    const name = part.trim().split(/\s+as\s+/)[0].trim();
+    const name = part
+      .trim()
+      .split(/\s+as\s+/)[0]
+      .trim();
     if (name) imported.add(name);
   }
 }

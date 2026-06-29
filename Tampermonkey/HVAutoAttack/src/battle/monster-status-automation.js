@@ -5,8 +5,8 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
-import { countMonsterHP } from "./attack.js";
 import { parseMonsterRoster, buildMonsterStatus } from "./log-parser.js";
+import { updateMonsterHpRuntime } from "./monster-status-hp.js";
 
 const EVENT_ENSURE_READY = "ensureReady";
 const EVENT_REPAIR = "repair";
@@ -126,7 +126,7 @@ export function runMonsterStatusAutomation(event = { type: EVENT_ENSURE_READY })
   } else if (event.type === EVENT_RECORD_SPAWN_ROSTER) {
     recordSpawnRoster(event);
   } else if (event.type === EVENT_UPDATE_HP) {
-    countMonsterHP();
+    updateMonsterHpRuntime();
   } else if (event.type === EVENT_REFRESH_COMBATANT_COUNTS) {
     return refreshCombatantCounts();
   } else if (event.type === EVENT_READ_COMBATANT_COUNTS) {

@@ -43,7 +43,7 @@ export default [
         {
           selector: "MemberExpression[property.name=/^(hpRatio|hpNow)$/]",
           message:
-            "裸读 .hpRatio/.hpNow 已废止：决策走统一怪物视图 view.hpPercent(百分比)/view.hpAbsNow(绝对当前)（battle/monster-view.js）。视图源头 monster-view/attack 在 config 末尾豁免。",
+            "裸读 .hpRatio/.hpNow 已废止：决策走统一怪物视图 view.hpPercent(百分比)/view.hpAbsNow(绝对当前)（battle/monster-view.js）。视图源头 monster-view/monster-status-hp 在 config 末尾豁免。",
         },
       ],
     },
@@ -58,8 +58,8 @@ export default [
   },
   {
     // 统一怪物视图"源头"：monster-view join 读 snap.monsters.hpRatio + monsterStatus.hpNow；
-    // attack.countMonsterHP 写 monsterStatus[i].hpNow。它们是收口点本身，合法访问散落字段 → 豁免 hpRatio/hpNow 锁。
-    files: ["src/battle/monster-view.js", "src/battle/attack.js"],
+    // monster-status-hp 写 monsterStatus[i].hpNow。它们是收口点本身，合法访问散落字段 → 豁免 hpRatio/hpNow 锁。
+    files: ["src/battle/monster-view.js", "src/battle/monster-status-hp.js"],
     rules: { "no-restricted-syntax": "off" },
   },
 ];

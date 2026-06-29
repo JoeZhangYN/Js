@@ -119,7 +119,7 @@
  */
 
 /**
- * monsterStatus 单条（g("monsterStatus")；buildMonsterStatus 产出 → countMonsterHP 每 turn 补 isDead/hpNow/finWeight）。
+ * monsterStatus 单条（g("monsterStatus")；buildMonsterStatus 产出 → monster-status-hp 每 turn 补 isDead/hpNow/finWeight）。
  * **三 id 概念**：`id`=槽位 mkey(0-9) / `monsterId`=全局 MID / `level`=战斗 LV（见 UnifiedMonster）。
  * @typedef {object} MonsterStatus
  * @property {number} order        战场列表位 0..9（snap join key）
@@ -129,9 +129,9 @@
  * @property {number=} level       本场战斗 LV（spawn 行）
  * @property {number} hp           满血绝对值（maxHP；占位时 = fallbackHp）
  * @property {boolean=} hpInferred true=hp 为占位（开局未解析到），applyInferredMaxHp 据此判定兜底
- * @property {boolean=} isDead     countMonsterHP 补
- * @property {number=} hpNow       当前绝对血（countMonsterHP 补 = hp×血条%）
- * @property {number=} finWeight   攻击权重（countMonsterHP 补）
+ * @property {boolean=} isDead     monster-status-hp 补
+ * @property {number=} hpNow       当前绝对血（monster-status-hp 补 = hp×血条%）
+ * @property {number=} finWeight   攻击权重（monster-status-hp 补）
  * @property {number=} inferredMaxHP 死亡反推满血（Step4 升级公式）
  */
 

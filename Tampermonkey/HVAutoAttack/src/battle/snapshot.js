@@ -219,7 +219,7 @@ export function collectSnapshot() {
   const monsters = readMonsters();
   const monsterStatus = runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_STATUS });
   // 统一怪物视图：join snap.monsters + monsterStatus(绝对血/finWeight) + monster-db 缓存(九抗/身份)。
-  // countMonsterHP(main-loop) 已先于本函数跑 → monsterStatus 最新；db 走 monster-cache 同步快照。
+  // MonsterStatusEvent.UPDATE_HP 已先于本函数跑 → monsterStatus 最新；db 走 monster-cache 同步快照。
   const view = joinMonsterView(
     monsters,
     monsterStatus,
