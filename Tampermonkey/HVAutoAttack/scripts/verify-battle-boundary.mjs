@@ -32,6 +32,7 @@ const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/new-round.js");
 const battleRulesFile = path.join(root, "src/battle/rules/index.js");
+const bossImperilFile = path.join(root, "src/battle/rules/decide-boss-imperil.js");
 const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const violations = [];
 
@@ -743,6 +744,36 @@ function checkBattleDebuffCoverage() {
   }
 }
 
+function checkBossImperilEntry() {
+  const ownerText = fs.readFileSync(bossImperilFile, "utf8");
+  for (const required of ["BossImperilEvent", "runBossImperilAutomation", "CAN_CAST", "DECIDE"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(bossImperilFile)} must own ${required}`);
+    }
+  }
+  if (/export\s+function\s+decideBossImperil\s*\(/.test(ownerText)) {
+    violations.push(`${rel(bossImperilFile)} legacy decideBossImperil export must stay private`);
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  if (!rulesText.includes("runBossImperilAutomation")) {
+    violations.push(`${rel(battleRulesFile)} must read boss Imperil decisions through their entry`);
+  }
+  for (const legacy of [
+    "runBigSkillKillLearningAutomation",
+    "BigSkillKillLearningEvent",
+    "WILL_KILL_BOSS",
+  ]) {
+    if (rulesText.includes(legacy)) {
+      violations.push(
+        `${rel(battleRulesFile)} must not assemble boss Imperil kill checks directly`
+      );
+    }
+  }
+  if (/\.filter\(\s*\(?\w+\)?\s*=>\s*\w+\.isBoss\s*&&\s*!\w+\.isDead/.test(rulesText)) {
+    violations.push(`${rel(battleRulesFile)} must not assemble boss Imperil boss lists directly`);
+  }
+}
+
 function checkBattleStallMode() {
   const ownerText = fs.readFileSync(stallModeFile, "utf8");
   for (const required of [
@@ -813,6 +844,7 @@ checkExecuteItem();
 checkSnapshot();
 checkBattleRulesRuntimeContext();
 checkBattleDebuffCoverage();
+checkBossImperilEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();
 checkBattleOptionVocabulary();

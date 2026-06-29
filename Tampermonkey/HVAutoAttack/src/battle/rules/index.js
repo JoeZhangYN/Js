@@ -15,11 +15,7 @@ import { decideAttack } from "../attack/decide-attack.js";
 import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../item/decide-item.js";
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
 import { shouldSkipForBigSkill } from "./big-skill.js";
-import { decideBossImperil } from "./decide-boss-imperil.js";
-import {
-  BigSkillKillLearningEvent,
-  runBigSkillKillLearningAutomation,
-} from "../../state/big-skill-kill-learner.js";
+import { BossImperilEvent, runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 
 const readRuleRuntimeContext = (snap) => snap;
@@ -112,27 +108,8 @@ export const BATTLE_RULES = [
   //     F4（默认 OFF）：每只活 boss 都确认 OFC 能秒 → 跳过 boss-Imperil（能秒连 imperil 都不用上）。
   {
     name: "bossImperil",
-    when: (snap, opt) => {
-      if (isStallingForRules(snap, opt)) return false;
-      if (opt.debuffSkillSwitch === false || !snap.skillReady["213"]) return false;
-      const bosses = (snap.view || []).filter((m) => m.isBoss && !m.isDead);
-      if (
-        bosses.length &&
-        bosses.every(
-          (b) =>
-            runBigSkillKillLearningAutomation({
-              type: BigSkillKillLearningEvent.WILL_KILL_BOSS,
-              mid: b.monsterId,
-              snap,
-              opt,
-            }).skip
-        )
-      ) {
-        return false;
-      }
-      return true;
-    },
-    decide: (snap, opt) => decideBossImperil(opt, snap),
+    when: (snap, opt) => runBossImperilAutomation({ type: BossImperilEvent.CAN_CAST, snap, opt }),
+    decide: (snap, opt) => runBossImperilAutomation({ type: BossImperilEvent.DECIDE, snap, opt }),
   },
   // 13. 全员 Weaken（OFC/FRD 即将就绪时跳过）
   {

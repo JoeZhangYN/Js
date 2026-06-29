@@ -1,12 +1,21 @@
 // task #3-A：decideBossImperil PURE 回归锁（喂 mock snap 断言 ActionResult）。
+// file-size-gate: exempt test-verbose（Boss Imperil 目标选择 + permission 门控逐例断言）
 // 覆盖：命中目标 / 无 boss noop / 213 未 ready noop / AoE 窗口覆盖选择 / tie-break 优先 needy 自身。
-import { describe, it, expect } from "vitest";
-import { decideBossImperil } from "./decide-boss-imperil.js";
+import { beforeEach, describe, it, expect } from "vitest";
+import { BossImperilEvent, runBossImperilAutomation } from "./decide-boss-imperil.js";
+import {
+  BigSkillKillLearningEvent,
+  runBigSkillKillLearningAutomation,
+} from "../../state/big-skill-kill-learner.js";
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 /** 最小 snap 工厂（只填 decideBossImperil 从 snap.view 读到的字段）。 */
 function snap(over = {}) {
   return {
-    skillReady: { "213": true },
+    skillReady: { 213: true },
     spellAoe: {},
     view: [],
     ...over,
@@ -18,10 +27,28 @@ function mon(over = {}) {
   return { id: 1, order: 0, isDead: false, isBoss: false, buffs: [], ...over };
 }
 
+function observeOfcKill(mid, turn) {
+  runBigSkillKillLearningAutomation({
+    type: BigSkillKillLearningEvent.RECORD_CAST,
+    code: "OFC",
+    snap: {
+      globalTurn: turn,
+      view: [mon({ isBoss: true, monsterId: mid, hpMax: 5000, buffs: [] })],
+    },
+  });
+  runBigSkillKillLearningAutomation({
+    type: BigSkillKillLearningEvent.FINALIZE_PENDING,
+    snap: { globalTurn: turn + 1, view: [] },
+  });
+}
+
 describe("decideBossImperil", () => {
+  const decideBossImperil = (opt, snap) =>
+    runBossImperilAutomation({ type: BossImperilEvent.DECIDE, opt, snap });
+
   it("213 未 ready → noop", () => {
     const s = snap({
-      skillReady: { "213": false },
+      skillReady: { 213: false },
       view: [mon({ id: 1, order: 0, isBoss: true })],
     });
     expect(decideBossImperil({}, s)).toEqual({ kind: "noop" });
@@ -145,5 +172,47 @@ describe("decideBossImperil", () => {
       skillSel: "213",
       targetSel: "#mkey_9",
     });
+  });
+});
+
+describe("boss Imperil permission", () => {
+  const canCast = (opt, snap) =>
+    runBossImperilAutomation({ type: BossImperilEvent.CAN_CAST, opt, snap });
+
+  it("requires skill 213 ready and debuff skill enabled", () => {
+    expect(canCast({}, snap({ skillReady: { 213: true } }))).toBe(true);
+    expect(canCast({}, snap({ skillReady: { 213: false } }))).toBe(false);
+    expect(canCast({ debuffSkillSwitch: false }, snap({ skillReady: { 213: true } }))).toBe(false);
+  });
+
+  it("blocks boss Imperil while battle is stalling", () => {
+    expect(
+      canCast(
+        { stallMode: true },
+        snap({
+          oc: 100,
+          roundNow: 1,
+          roundAll: 3,
+          skillReady: { 213: true },
+          view: [mon({ id: 1, isBoss: true, hpPercent: 0.8 })],
+        })
+      )
+    ).toBe(false);
+  });
+
+  it("blocks boss Imperil when every boss is learned killable without Imperil", () => {
+    for (let i = 0; i < 4; i++) observeOfcKill(100, i * 10);
+
+    expect(
+      canCast(
+        { skipImperilWhenOfcKills: true },
+        snap({
+          skillReady: { 213: true },
+          cdMap: { OFC: 0 },
+          oc: 250,
+          view: [mon({ id: 1, isBoss: true, monsterId: 100, hpMax: 5000 })],
+        })
+      )
+    ).toBe(false);
   });
 });
