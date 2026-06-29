@@ -5,6 +5,13 @@ import {
 } from "./battle-record-archive.js";
 
 const USAGE_SECTIONS = ["self", "restore", "items", "magic", "damage", "hurt", "proficiency"];
+const EVENT_READ_DROP_REPORT_MODEL = "readDropReportModel";
+const EVENT_READ_USAGE_REPORT_MODEL = "readUsageReportModel";
+
+export const BattleReportModelEvent = Object.freeze({
+  READ_DROP_REPORT_MODEL: EVENT_READ_DROP_REPORT_MODEL,
+  READ_USAGE_REPORT_MODEL: EVENT_READ_USAGE_REPORT_MODEL,
+});
 
 function withCurrentRecord(history, current, currentName) {
   const rows = [...history];
@@ -24,7 +31,7 @@ function readReportSource(type, normalizeCurrent = (record) => record) {
   return { mode: "history", records: withCurrentRecord(history, current, currentName) };
 }
 
-export function readDropReportModel() {
+function readDropReportModel() {
   const reportSource = readReportSource(BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE, objSort);
   if (reportSource.mode === "single") {
     return {
@@ -44,7 +51,7 @@ export function readDropReportModel() {
   };
 }
 
-export function readUsageReportModel() {
+function readUsageReportModel() {
   const reportSource = readReportSource(BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE);
   if (reportSource.mode === "single") {
     return {
@@ -74,4 +81,13 @@ export function readUsageReportModel() {
       })),
     })),
   };
+}
+
+const reportModelEventHandlers = Object.freeze({
+  [EVENT_READ_DROP_REPORT_MODEL]: () => readDropReportModel(),
+  [EVENT_READ_USAGE_REPORT_MODEL]: () => readUsageReportModel(),
+});
+
+export function runBattleReportModel(event) {
+  return reportModelEventHandlers[event.type]?.(event);
 }

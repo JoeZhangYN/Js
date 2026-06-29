@@ -3,7 +3,7 @@ import {
   BattleRecordArchiveEvent,
   runBattleRecordArchiveAutomation,
 } from "./battle-record-archive.js";
-import { readDropReportModel, readUsageReportModel } from "./battle-report-model.js";
+import { BattleReportModelEvent, runBattleReportModel } from "./battle-report-model.js";
 import { BattleReportViewEvent, runBattleReportViewAutomation } from "./battle-report-view.js";
 import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
 
@@ -51,9 +51,15 @@ function renderReportTableBody(type, report) {
 const reportEventHandlers = Object.freeze({
   [BattleReportEvent.BATTLE_STARTED]: (_event, deps) => recordBattleReportStarted(deps),
   [BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY]: () =>
-    renderReportTableBody(BattleReportViewEvent.RENDER_DROP_TABLE_BODY, readDropReportModel()),
+    renderReportTableBody(
+      BattleReportViewEvent.RENDER_DROP_TABLE_BODY,
+      runBattleReportModel({ type: BattleReportModelEvent.READ_DROP_REPORT_MODEL })
+    ),
   [BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY]: () =>
-    renderReportTableBody(BattleReportViewEvent.RENDER_USAGE_TABLE_BODY, readUsageReportModel()),
+    renderReportTableBody(
+      BattleReportViewEvent.RENDER_USAGE_TABLE_BODY,
+      runBattleReportModel({ type: BattleReportModelEvent.READ_USAGE_REPORT_MODEL })
+    ),
   [BattleReportEvent.CLEAR_DROP_REPORT]: () =>
     clearReport(BattleRecordArchiveEvent.CLEAR_DROP_REPORT),
   [BattleReportEvent.CLEAR_USAGE_REPORT]: () =>

@@ -1063,6 +1063,40 @@ function checkBattleReportEntry() {
       `${rel(reportFile)} must build report table models through battle-report-model`
     );
   }
+  if (!text.includes("runBattleReportModel")) {
+    violations.push(
+      `${rel(reportFile)} must read report models through runBattleReportModel(event)`
+    );
+  }
+  if (!text.includes("BattleReportModelEvent.READ_DROP_REPORT_MODEL")) {
+    violations.push(
+      `${rel(reportFile)} must request drop report models through BattleReportModelEvent`
+    );
+  }
+  if (!text.includes("BattleReportModelEvent.READ_USAGE_REPORT_MODEL")) {
+    violations.push(
+      `${rel(reportFile)} must request usage report models through BattleReportModelEvent`
+    );
+  }
+  if (/read(?:Drop|Usage)ReportModel\(\)/.test(text)) {
+    violations.push(`${rel(reportFile)} must not call raw report model helpers`);
+  }
+  if (!/export const BattleReportModelEvent\s*=\s*Object\.freeze\(/.test(modelText)) {
+    violations.push(`${rel(reportModelFile)} must expose BattleReportModelEvent`);
+  }
+  if (!/export function runBattleReportModel\(/.test(modelText)) {
+    violations.push(`${rel(reportModelFile)} must expose runBattleReportModel(event)`);
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleReportModelEvent\b|runBattleReportModel\b)/.test(
+      modelText
+    )
+  ) {
+    violations.push(`${rel(reportModelFile)} may export only its event entry`);
+  }
+  if (!/const reportModelEventHandlers\s*=\s*Object\.freeze\(/.test(modelText)) {
+    violations.push(`${rel(reportModelFile)} must route report model queries through one table`);
+  }
   if (!/\bfunction readReportSource\b/.test(modelText)) {
     violations.push(`${rel(reportModelFile)} must own current/history report model decision`);
   }
