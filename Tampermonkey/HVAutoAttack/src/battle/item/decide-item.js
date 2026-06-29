@@ -41,20 +41,20 @@ function readRecovery(potionId) {
 }
 
 /**
- * 复刻 useGem。无宝石（snap.gemName 空）→ noop；
+ * 复刻 useGem。无宝石（event.gemName 空）→ noop；
  * dynamicHealThreshold 且 Health Gem 时用 dynamicHpThreshold 覆盖 hp1；
  * decideGem 命中 click → {type:"gem"}，否则 noop。
- * @param {object} opt
- * @param {import("../../core/types.js").BattleSnapshot} snap
+ * @param {object} event
  * @returns {import("../../core/types.js").ActionResult} { kind:"item-plan", plan }
  */
-export function decideGemUse(opt, snap) {
-  if (!snap.gemName) return { kind: "item-plan", plan: { type: "noop" } };
+export function decideGemUse(event = {}) {
+  const opt = event.opt || {};
+  if (!event.gemName) return { kind: "item-plan", plan: { type: "noop" } };
   const optEffective = { ...opt };
-  if (opt.dynamicHealThreshold && snap.gemName === "Health Gem") {
-    optEffective.hp1 = dynamicHpThreshold(snap, opt);
+  if (opt.dynamicHealThreshold && event.gemName === "Health Gem") {
+    optEffective.hp1 = dynamicHpThreshold(event, opt);
   }
-  const result = decideGem(optEffective, snap, snap.gemName);
+  const result = decideGem(optEffective, event);
   return {
     kind: "item-plan",
     plan: result.kind === "gem" ? { type: "gem" } : { type: "noop" },

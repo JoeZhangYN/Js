@@ -40,6 +40,7 @@ const decideCriticalBuffFile = path.join(
   "src/battle/critical-buff-guard/decide-critical-buff.js"
 );
 const decideItemFile = path.join(root, "src/battle/item/decide-item.js");
+const decideGemFile = path.join(root, "src/battle/item/decide-gem.js");
 const decideScrollFile = path.join(root, "src/battle/item/decide-scroll.js");
 const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
 const potionEconomyFile = path.join(root, "src/battle/potion-economy.js");
@@ -1245,6 +1246,34 @@ function checkItemScrollEntry() {
   }
 }
 
+function checkItemGemEntry() {
+  const itemText = fs.readFileSync(decideItemFile, "utf8");
+  const gemText = fs.readFileSync(decideGemFile, "utf8");
+  for (const required of [
+    "decideGemUse",
+    "event.gemName",
+    "event?.healthPercent",
+    "event?.manaPercent",
+    "event?.spiritPercent",
+  ]) {
+    if (!itemText.includes(required) && !gemText.includes(required)) {
+      violations.push(`${rel(decideItemFile)} gem use must own fact ${required}`);
+    }
+  }
+  if (/decideGemUse\s*\(\s*opt\s*,\s*snap\s*\)/.test(itemText)) {
+    violations.push(`${rel(decideItemFile)} must not expose opt/snap gem decision input`);
+  }
+  if (/decideGem\s*\(\s*opt\s*,\s*snap\s*,\s*gemName\s*\)/.test(gemText)) {
+    violations.push(`${rel(decideGemFile)} must not expose opt/snap gem helper input`);
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const gemRule =
+    rulesText.match(/name:\s*["']useGem["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideGemUse\(\s*opt\s*,\s*snap\s*\)/.test(gemRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass narrow facts, not snap, to gem use`);
+  }
+}
+
 function checkPotionEntry() {
   const itemText = fs.readFileSync(decideItemFile, "utf8");
   for (const required of ["decidePotion", "itemOrderName", "itemOrderValue", "item"]) {
@@ -1485,6 +1514,7 @@ checkChannelEntry();
 checkBuffEntry();
 checkSingleDebuffEntry();
 checkAllDebuffEntry();
+checkItemGemEntry();
 checkItemScrollEntry();
 checkPotionEntry();
 checkDefendEntry();

@@ -1,6 +1,6 @@
 // item 4 step PURE decide 回归锁（纯决策，喂 mock snap 断言 ItemPlan；decide 不读 DOM）。
 // file-size-gate: exempt test-verbose（19 用例覆盖 gem/potion/stall/scroll 四 step）
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "./decide-item.js";
 
 /** 最小 snap 工厂（只填 decide-item 及其纯 callee 读到的字段）。 */
@@ -26,7 +26,21 @@ function snap(over = {}) {
   };
 }
 
-const gemPlan = (opt, s) => decideGemUse(opt, s).plan;
+function gemFacts(snap) {
+  return {
+    gemName: snap.gemName,
+    healthPercent: snap.hp,
+    manaPercent: snap.mp,
+    spiritPercent: snap.sp,
+    attackStatus: snap.attackStatus,
+    aliveMonsterHpPercents: (snap.view || [])
+      .filter((monster) => !monster.isDead)
+      .map((monster) => monster.hpPercent),
+    playerIncomingDps: snap.playerIncomingDps,
+  };
+}
+
+const gemPlan = (opt, s) => decideGemUse({ opt, ...gemFacts(s) }).plan;
 const potionPlan = (opt, s) => decidePotion(opt, s).plan;
 const stallPlan = (opt, s) => decideStallTopup(opt, s).plan;
 const scrollPlan = (opt, s) => decideScroll(opt, s).plan;
@@ -58,6 +72,30 @@ describe("decideGemUse", () => {
       playerIncomingDps: { sampleCount: 0, perTurnP95: 0 },
     });
     expect(gemPlan({ dynamicHealThreshold: true, hp1: 50 }, s)).toEqual({ type: "noop" });
+  });
+
+  it("dynamicHealThreshold：足够样本 + 剩余怪血量推高阈值 → gem", () => {
+    const s = snap({
+      gemName: "Health Gem",
+      hp: 70,
+      attackStatus: 0,
+      view: [
+        { isDead: false, hpPercent: 80 },
+        { isDead: false, hpPercent: 40 },
+      ],
+      playerIncomingDps: { sampleCount: 3, perTurnP95: 3000 },
+    });
+    expect(
+      gemPlan(
+        {
+          dynamicHealThreshold: true,
+          hp1: 50,
+          dynamicHealSafetyPad: 1.3,
+          playerMaxHp: 17000,
+        },
+        s
+      )
+    ).toEqual({ type: "gem" });
   });
 });
 

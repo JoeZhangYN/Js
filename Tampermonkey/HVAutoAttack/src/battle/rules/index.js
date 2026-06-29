@@ -62,6 +62,20 @@ function burstControlFacts(snap) {
   };
 }
 
+function gemFacts(snap) {
+  return {
+    gemName: snap?.gemName,
+    healthPercent: snap?.hp,
+    manaPercent: snap?.mp,
+    spiritPercent: snap?.sp,
+    attackStatus: snap?.attackStatus,
+    aliveMonsterHpPercents: (snap?.view || [])
+      .filter((monster) => !monster.isDead)
+      .map((monster) => monster.hpPercent),
+    playerIncomingDps: snap?.playerIncomingDps,
+  };
+}
+
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
@@ -74,7 +88,7 @@ export const BATTLE_RULES = [
   // 3. 自动暂停（dispatch 交给 runBattlePauseAutomation 统一写暂停状态）
   { name: "autoPause", decide: (snap, opt) => decideAutoPause(opt, snap) },
   // 4. 宝石（decideGemUse 自 gate snap.gemName；dyn-threshold 在 decide，autoTune 计数在 execute）
-  { name: "useGem", decide: (snap, opt) => decideGemUse(opt, snap) },
+  { name: "useGem", decide: (snap, opt) => decideGemUse({ opt, ...gemFacts(snap) }) },
   // 5. 紧急回血回魔（decide 出候选 id 列表，execute 探活+喝第一个可用）
   {
     name: "deadSoon",
