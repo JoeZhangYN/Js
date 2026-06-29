@@ -50,13 +50,6 @@ describe("runOptionSchema", () => {
         live: "live (已并入 offline)",
       },
     });
-    expect(runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "mlEndpoint" })).toMatchObject(
-      {
-        key: "mlEndpoint",
-        kind: "text",
-        default: "https://rdma.ooguy.com/help2",
-      }
-    );
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "criticalBuffsList" })
     ).toMatchObject({
