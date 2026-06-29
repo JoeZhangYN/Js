@@ -198,6 +198,14 @@ function checkEntry() {
   if (!/export function runMonsterScanResultLearning\(/.test(scanResultText)) {
     violations.push(`${scanResultImpl.replaceAll("\\", "/")} must expose one scan result entry`);
   }
+  if (!/const monsterScanResultEventHandlers\s*=\s*Object\.freeze\(/.test(scanResultText)) {
+    violations.push(`${scanResultImpl.replaceAll("\\", "/")} must route events through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*===\s*EVENT_RECORD_LOG_ROW/.test(scanResultText)) {
+    violations.push(
+      `${scanResultImpl.replaceAll("\\", "/")} must not route scan result events through an if ladder`
+    );
+  }
   for (const required of [
     "parseScanResult",
     "checkScanResultValidity",

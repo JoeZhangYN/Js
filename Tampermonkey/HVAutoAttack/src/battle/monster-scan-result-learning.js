@@ -77,7 +77,10 @@ function recordLogRow(event, deps) {
   return true;
 }
 
+const monsterScanResultEventHandlers = Object.freeze({
+  [EVENT_RECORD_LOG_ROW]: (event, deps) => recordLogRow(event, makeDeps(deps)),
+});
+
 export function runMonsterScanResultLearning(event = { type: EVENT_RECORD_LOG_ROW }, deps = {}) {
-  if (event.type === EVENT_RECORD_LOG_ROW) return recordLogRow(event, makeDeps(deps));
-  return false;
+  return monsterScanResultEventHandlers[event.type]?.(event, deps) || false;
 }
