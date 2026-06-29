@@ -1000,6 +1000,12 @@ function checkDeletedBattleInfoEntrypoint() {
   if (!/export function runBattleHudAutomation\(/.test(hudText)) {
     violations.push(`${rel(hudFile)} must expose runBattleHudAutomation(event)`);
   }
+  if (!/const hudEventHandlers\s*=\s*Object\.freeze\(/.test(hudText)) {
+    violations.push(`${rel(hudFile)} must route HUD commands through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*!==\s*EVENT_REFRESH/.test(hudText)) {
+    violations.push(`${rel(hudFile)} must not route HUD refresh through an if ladder`);
+  }
   if (/export function refreshBattleHud\(/.test(hudText)) {
     violations.push(
       `${rel(hudFile)} must keep refreshBattleHud private behind runBattleHudAutomation(event)`

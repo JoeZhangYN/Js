@@ -39,9 +39,7 @@ function refreshBattleHud(deps) {
     `Turns: ${context.turn}`,
     `<br>Speed: ${context.runSpeed} t/s`,
     `<br>Round: ${context.roundNow}/${context.roundAll}`,
-    `<br><l0>攻击模式</l0><l1>攻擊模式</l1><l2>Attack Mode</l2>: ${
-      status[context.attackStatus]
-    }`,
+    `<br><l0>攻击模式</l0><l1>攻擊模式</l1><l2>Attack Mode</l2>: ${status[context.attackStatus]}`,
     `<br><l0>敌人</l0><l1>敌人</l1><l2>Monsters</l2>: ${context.monsterAlive}/${context.monsterAll}`,
     `<br><l0>战役模式</l0><l1>戰役模式</l1><l2>Type</l2>: ${battleInfoType(context.roundType)}`,
   ].join("");
@@ -65,8 +63,15 @@ function battleInfoType(type) {
   }
 }
 
+const hudEventHandlers = Object.freeze({
+  [EVENT_REFRESH]: (_event, deps) => {
+    refreshBattleHud(makeDeps(deps));
+    return true;
+  },
+});
+
 export function runBattleHudAutomation(event = { type: EVENT_REFRESH }, deps = {}) {
-  if (event.type !== EVENT_REFRESH) return false;
-  refreshBattleHud(makeDeps(deps));
-  return true;
+  const handler = hudEventHandlers[event.type];
+  if (!handler) return false;
+  return handler(event, deps);
 }
