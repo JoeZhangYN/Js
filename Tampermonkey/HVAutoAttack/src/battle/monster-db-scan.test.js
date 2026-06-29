@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import { MonsterScanLearningEvent, runMonsterScanLearningAutomation } from "./monster-db-scan.js";
 
 class FakeMutationObserver {
-  static instances = [];
-
   constructor(callback) {
     this.callback = callback;
     this.observe = vi.fn();
@@ -14,6 +12,7 @@ class FakeMutationObserver {
     this.callback([{ addedNodes: [node] }]);
   }
 }
+FakeMutationObserver.instances = [];
 
 function makeScanNode(html) {
   const node = document.createElement("tr");
@@ -41,7 +40,6 @@ describe("runMonsterScanLearningAutomation", () => {
         { type: MonsterScanLearningEvent.START, onStored },
         {
           checkScanResultValidity: () => true,
-          g: () => [{ level: 500, monsterId: 101, name: "Dragon" }],
           gE: (selector, root) => {
             if (selector === "#textlog>tbody") return document.createElement("tbody");
             if (selector === "div.btm1") return [monsterEl];
@@ -54,6 +52,7 @@ describe("runMonsterScanLearningAutomation", () => {
           storeProfile,
           storeHp,
           readUtcDateKey: () => "2026-06-27",
+          readMonsterStatus: () => [{ level: 500, monsterId: 101, name: "Dragon" }],
         }
       )
     ).toBe(true);

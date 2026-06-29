@@ -32,9 +32,7 @@ function checkFile(file) {
     const where = `${rel(file)}:${index + 1}`;
     for (const name of ["syncMonsterDb", "startMonsterScanLearning", "renderResistPanel"]) {
       if (new RegExp(`\\b${name}\\b`).test(line)) {
-        violations.push(
-          `${where} ${name} belongs behind runMonsterKnowledgeAutomation(event)`
-        );
+        violations.push(`${where} ${name} belongs behind runMonsterKnowledgeAutomation(event)`);
       }
     }
   });
@@ -43,7 +41,9 @@ function checkFile(file) {
 function checkEntry() {
   const text = fs.readFileSync(path.join(root, entry), "utf8");
   if (!/export function runMonsterKnowledgeAutomation\(/.test(text)) {
-    violations.push(`${entry.replaceAll("\\", "/")} must expose runMonsterKnowledgeAutomation(event)`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must expose runMonsterKnowledgeAutomation(event)`
+    );
   }
   for (const required of [
     "runMonsterDbSyncAutomation",
@@ -58,46 +58,72 @@ function checkEntry() {
     }
   }
   if (/\brenderResistPanel\b/.test(text)) {
-    violations.push(`${entry.replaceAll("\\", "/")} must use monster resist panel event entry, not renderResistPanel()`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must use monster resist panel event entry, not renderResistPanel()`
+    );
   }
   if (/\bsyncMonsterDb\b/.test(text)) {
-    violations.push(`${entry.replaceAll("\\", "/")} must use monster db sync event entry, not syncMonsterDb()`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must use monster db sync event entry, not syncMonsterDb()`
+    );
   }
   if (/\bstartMonsterScanLearning\b/.test(text)) {
-    violations.push(`${entry.replaceAll("\\", "/")} must use monster scan learning event entry, not startMonsterScanLearning()`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must use monster scan learning event entry, not startMonsterScanLearning()`
+    );
   }
   const syncText = fs.readFileSync(path.join(root, syncImpl), "utf8");
   if (!/export const MonsterDbSyncEvent\s*=\s*Object\.freeze\(/.test(syncText)) {
     violations.push(`${syncImpl.replaceAll("\\", "/")} must expose MonsterDbSyncEvent`);
   }
   if (!/export function runMonsterDbSyncAutomation\(/.test(syncText)) {
-    violations.push(`${syncImpl.replaceAll("\\", "/")} must expose runMonsterDbSyncAutomation(event)`);
+    violations.push(
+      `${syncImpl.replaceAll("\\", "/")} must expose runMonsterDbSyncAutomation(event)`
+    );
   }
   if (/export\s+async\s+function\s+syncMonsterDb\(/.test(syncText)) {
-    violations.push(`${syncImpl.replaceAll("\\", "/")} must keep syncMonsterDb private behind runMonsterDbSyncAutomation(event)`);
+    violations.push(
+      `${syncImpl.replaceAll("\\", "/")} must keep syncMonsterDb private behind runMonsterDbSyncAutomation(event)`
+    );
   }
   const panelText = fs.readFileSync(path.join(root, panelImpl), "utf8");
   if (!/export const MonsterResistPanelEvent\s*=\s*Object\.freeze\(/.test(panelText)) {
     violations.push(`${panelImpl.replaceAll("\\", "/")} must expose MonsterResistPanelEvent`);
   }
   if (!/export function runMonsterResistPanelAutomation\(/.test(panelText)) {
-    violations.push(`${panelImpl.replaceAll("\\", "/")} must expose runMonsterResistPanelAutomation(event)`);
+    violations.push(
+      `${panelImpl.replaceAll("\\", "/")} must expose runMonsterResistPanelAutomation(event)`
+    );
   }
   if (/export\s+async\s+function\s+renderResistPanel\(/.test(panelText)) {
-    violations.push(`${panelImpl.replaceAll("\\", "/")} must keep renderResistPanel private behind runMonsterResistPanelAutomation(event)`);
+    violations.push(
+      `${panelImpl.replaceAll("\\", "/")} must keep renderResistPanel private behind runMonsterResistPanelAutomation(event)`
+    );
   }
   const scanText = fs.readFileSync(path.join(root, scanImpl), "utf8");
   if (!/export const MonsterScanLearningEvent\s*=\s*Object\.freeze\(/.test(scanText)) {
     violations.push(`${scanImpl.replaceAll("\\", "/")} must expose MonsterScanLearningEvent`);
   }
   if (!/export function runMonsterScanLearningAutomation\(/.test(scanText)) {
-    violations.push(`${scanImpl.replaceAll("\\", "/")} must expose runMonsterScanLearningAutomation(event)`);
+    violations.push(
+      `${scanImpl.replaceAll("\\", "/")} must expose runMonsterScanLearningAutomation(event)`
+    );
   }
   if (/export\s+function\s+startMonsterScanLearning\(/.test(scanText)) {
-    violations.push(`${scanImpl.replaceAll("\\", "/")} must keep startMonsterScanLearning private behind runMonsterScanLearningAutomation(event)`);
+    violations.push(
+      `${scanImpl.replaceAll("\\", "/")} must keep startMonsterScanLearning private behind runMonsterScanLearningAutomation(event)`
+    );
   }
   if (/\bsetupScanWatch\b/.test(text) || /\bsetupScanWatch\b/.test(scanText)) {
     violations.push("monster scan learning must not use legacy setupScanWatch entrypoint");
+  }
+  if (!scanText.includes("MonsterStatusEvent.READ_STATUS")) {
+    violations.push(
+      `${scanImpl.replaceAll("\\", "/")} must resolve scan identity through monster status entry`
+    );
+  }
+  if (/\bg\(\s*["']monsterStatus["']/.test(scanText)) {
+    violations.push(`${scanImpl.replaceAll("\\", "/")} must not read monsterStatus directly`);
   }
 }
 
@@ -110,4 +136,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-monster-knowledge-boundary] OK — monster knowledge workflow is behind one entry");
+console.log(
+  "[verify-monster-knowledge-boundary] OK — monster knowledge workflow is behind one entry"
+);
