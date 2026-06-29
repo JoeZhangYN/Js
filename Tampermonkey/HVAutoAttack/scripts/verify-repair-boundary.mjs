@@ -35,6 +35,9 @@ function checkFile(file) {
     if (relative !== owner && relative !== ownerTest && /\brunRepair\s*\(/.test(line)) {
       violations.push(`${where} legacy runRepair call is forbidden`);
     }
+    if (relative === ownerTest && /\bg\(\s*["']option["']/.test(line)) {
+      violations.push(`${where} repair tests must seed option through runOptionAutomation(event)`);
+    }
   });
 }
 

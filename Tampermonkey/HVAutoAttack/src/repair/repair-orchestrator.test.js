@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { RepairEvent, runRepairAutomation } from "./repair-orchestrator.js";
 import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 /** 序列化 backend：fetchState 依次返 rounds[i]；submitRepair 记录并推进 i。 */
 function fakeBackend(rounds) {
@@ -27,7 +28,10 @@ function st(equips) {
 }
 
 beforeEach(() => {
-  g("option", { idleArena: true, repairValue: 50 });
+  runOptionAutomation({
+    type: OptionEvent.WRITE,
+    option: { version: "10.0", idleArena: true, repairValue: 50 },
+  });
   g("lang", 0);
   document.title = "";
 });
@@ -42,7 +46,7 @@ describe("repair automation entry", () => {
   });
 
   it("无需修理但 idleArena 关闭 → 不调度下一场", () => {
-    g("option", { idleArena: false, repairValue: 50 });
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "idleArena", value: false });
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();
 
@@ -71,7 +75,7 @@ describe("repair automation entry", () => {
   });
 
   it("缺料 + buy 开 → 买齐再修 → 复验达标 → 开下一场", () => {
-    g("option", { idleArena: true, repairValue: 50, repairBuyMaterials: true });
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "repairBuyMaterials", value: true });
     const mats = [{ matId: "50000", name: "Repair Outfit", count: 3 }];
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 20, mats)]), st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();
@@ -87,7 +91,7 @@ describe("repair automation entry", () => {
   });
 
   it("买料超上限 → 停机 + 对应三语告警，不修不开下一场", () => {
-    g("option", { idleArena: true, repairValue: 50, repairBuyMaterials: true });
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "repairBuyMaterials", value: true });
     const mats = [{ matId: "50000", name: "Repair Outfit", count: 3 }];
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 20, mats)])]);
     const scheduleIdleArena = vi.fn();
@@ -104,7 +108,7 @@ describe("repair automation entry", () => {
   // A4 反退化：repairValue 留空/非法 → 回落 schema 默认 60%（也间接锁 schema.repairValue.default 存在——
   // 若 schema 删该条目，默认值入口返 undefined → threshold 0 → 55% 不修 → 本用例红）。
   it("repairValue 留空('') → 回落默认 60% → 耐久 55% 的件被修", () => {
-    g("option", { idleArena: true, repairValue: "" });
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "repairValue", value: "" });
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 55)]), st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();
     runRepairAutomation({ type: RepairEvent.START }, { makeBackend, scheduleIdleArena });
@@ -113,14 +117,14 @@ describe("repair automation entry", () => {
   });
 
   it("repairValue 非法值('abc') → 回落默认 60%（非静默不修）", () => {
-    g("option", { idleArena: true, repairValue: "abc" });
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "repairValue", value: "abc" });
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 55)]), st([eq(1, 100)])]);
     runRepairAutomation({ type: RepairEvent.START }, { makeBackend, scheduleIdleArena: vi.fn() });
     expect(submitted).toEqual(["1"]);
   });
 
   it("repairValue 显式填 '0' → 保留（只修完全损坏，55% 不修 → 直接开下一场）", () => {
-    g("option", { idleArena: true, repairValue: "0" });
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "repairValue", value: "0" });
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 55)])]);
     const scheduleIdleArena = vi.fn();
     runRepairAutomation({ type: RepairEvent.START }, { makeBackend, scheduleIdleArena });
