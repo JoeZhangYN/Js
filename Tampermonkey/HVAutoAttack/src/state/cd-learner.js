@@ -40,12 +40,12 @@ function isDynamicHealLogEnabled() {
  * 开火记录（SHELL）：execute-attack 物理分支 recordFire 之后调。
  * @param {string} code SKILL_REGISTRY 的 key
  * @param {string} id 本次开火解析后的 skillId（脱灰探测用 snap.skillReady[id]）
- * @param {import("../core/types.js").BattleSnapshot} snap 仅读 globalTurn
+ * @param {import("../core/types.js").BattleSnapshot} snap 仅读入口传入的 globalTurn
  */
 function recordCdFire(code, id, snap) {
   if (!SKILL_REGISTRY[code]) return;
   const pending = g("cdLearnPending") || {};
-  pending[code] = { firedTurn: snap?.globalTurn ?? g("globalTurn") ?? 0, id };
+  pending[code] = { firedTurn: snap?.globalTurn ?? 0, id };
   g("cdLearnPending", pending);
 }
 
@@ -56,7 +56,7 @@ function recordCdFire(code, id, snap) {
 function finalizeCdPending(snap) {
   const pending = g("cdLearnPending");
   if (!pending) return;
-  const now = snap?.globalTurn ?? g("globalTurn") ?? 0;
+  const now = snap?.globalTurn ?? 0;
   let changed = false;
   for (const code of Object.keys(pending)) {
     const p = pending[code];

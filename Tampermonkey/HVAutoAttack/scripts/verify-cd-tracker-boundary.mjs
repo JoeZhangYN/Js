@@ -25,6 +25,7 @@ function checkFile(file) {
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
     const where = `${rel(file)}:${index + 1}`;
+    const isTest = relative.endsWith(".test.js");
     if (
       relative !== owner &&
       relative !== ownerTest &&
@@ -38,6 +39,9 @@ function checkFile(file) {
       /\b(?:getValue|setValue|delValue)\(\s*["'](?:globalTurn|skillLastUsed)["']/.test(line)
     ) {
       violations.push(`${where} CD runtime storage must use cd-tracker entry`);
+    }
+    if (relative !== owner && !isTest && /\bg\(\s*["']globalTurn["']/.test(line)) {
+      violations.push(`${where} globalTurn reads belong behind runCdRuntimeAutomation(event)`);
     }
   });
 }

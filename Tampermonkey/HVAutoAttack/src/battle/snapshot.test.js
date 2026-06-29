@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   runBigSkillKillLearningAutomation: vi.fn(),
   runBattleTurnAutomation: vi.fn(() => 7),
   runCdLearningAutomation: vi.fn(),
-  runCdRuntimeAutomation: vi.fn(() => ({})),
+  runCdRuntimeAutomation: vi.fn(),
   runIncomingBurstLearningAutomation: vi.fn(() => ({ learned: true })),
   runMonsterCacheAutomation: vi.fn(() => ({})),
   runOptionAutomation: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock("../state/battle-turn.js", () => ({
   runBattleTurnAutomation: mocks.runBattleTurnAutomation,
 }));
 vi.mock("../state/cd-tracker.js", () => ({
-  CdRuntimeEvent: Object.freeze({ READ_MAP: "readMap" }),
+  CdRuntimeEvent: Object.freeze({ READ_GLOBAL_TURN: "readGlobalTurn", READ_MAP: "readMap" }),
   runCdRuntimeAutomation: mocks.runCdRuntimeAutomation,
 }));
 vi.mock("./log-parser.js", () => ({
@@ -75,6 +75,11 @@ function effectsContainer() {
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear?.();
   mocks.g.mockImplementation((key) => ({ globalTurn: 9 })[key]);
+  mocks.runCdRuntimeAutomation.mockImplementation((event) => {
+    if (event.type === "readGlobalTurn") return 9;
+    if (event.type === "readMap") return {};
+    return undefined;
+  });
   mocks.gE.mockImplementation((selector, mode) => {
     if (mode === "all") return [];
     if (selector === "#pane_effects") return effectsContainer();
@@ -111,7 +116,10 @@ describe("collectSnapshot", () => {
     });
     expect(snap.fightingStyle).toBe("1");
     expect(snap.turn).toBe(7);
+    expect(snap.globalTurn).toBe(9);
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "readCurrent" });
+    expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
+    expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
     expect(snap.learnedBurstByMid).toEqual({ learned: true });
   });
 });

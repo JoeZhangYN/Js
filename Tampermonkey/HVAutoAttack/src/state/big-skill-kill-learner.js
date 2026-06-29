@@ -59,7 +59,7 @@ function recordBigSkillCast(code, snap) {
     }));
   if (!bosses.length) return;
   g("bigKillPending", {
-    globalTurn: snap?.globalTurn ?? g("globalTurn") ?? 0,
+    globalTurn: snap?.globalTurn ?? 0,
     skill: code,
     bosses,
   });
@@ -72,7 +72,7 @@ function recordBigSkillCast(code, snap) {
 function finalizeBigSkillPending(snap) {
   const pending = g("bigKillPending");
   if (!pending) return;
-  const now = snap?.globalTurn ?? g("globalTurn") ?? 0;
+  const now = snap?.globalTurn ?? 0;
   if (now === pending.globalTurn) return; // 同回合，未结算
   const learned = getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true) || {};
   for (const b of pending.bosses) {

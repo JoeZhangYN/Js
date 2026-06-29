@@ -78,6 +78,11 @@ describe("recordBigSkillCast", () => {
       imperilActive: true,
     });
   });
+  it("缺失 globalTurn 不回退 ambient runtime turn", () => {
+    g("globalTurn", 99);
+    recordCast("OFC", { view: [boss()] });
+    expect(g("bigKillPending").globalTurn).toBe(0);
+  });
 });
 
 describe("finalize 学击杀率 + ofcWillKillBoss 守卫", () => {

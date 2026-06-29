@@ -88,6 +88,23 @@ describe("cd-learner 学习与守卫", () => {
     expect(readCd("NOPE")).toBe(0);
   });
 
+  it("缺失 globalTurn 不回退 ambient runtime turn", () => {
+    g("globalTurn", 99);
+    runCdLearningAutomation({
+      type: CdLearningEvent.RECORD_FIRE,
+      code: "OFC",
+      id: "1111",
+      snap: {},
+    });
+    expect(g("cdLearnPending").OFC.firedTurn).toBe(0);
+
+    runCdLearningAutomation({
+      type: CdLearningEvent.FINALIZE_PENDING,
+      snap: { skillReady: { 1111: true } },
+    });
+    expect(readCd("OFC")).toBe(50);
+  });
+
   it("日志开关通过 option entry 读取", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     mocks.runOptionAutomation.mockReturnValue(true);
