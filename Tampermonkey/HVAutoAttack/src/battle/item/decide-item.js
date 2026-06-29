@@ -14,6 +14,17 @@ import {
 
 export { decideScroll } from "./decide-scroll.js";
 
+function stallActiveFacts(snap) {
+  return {
+    roundNow: snap?.roundNow,
+    roundAll: snap?.roundAll,
+    aliveMonsterHpPercents: (snap?.view || [])
+      .filter((monster) => !monster.isDead)
+      .map((monster) => monster.hpPercent),
+    overcharge: snap?.oc,
+  };
+}
+
 function readRecovery(potionId) {
   return runRecoveryLearningAutomation({
     type: RecoveryLearningEvent.READ_RECOVERY,
@@ -86,8 +97,8 @@ export function decideStallTopup(opt, snap) {
   if (
     !runBattleStallModeAutomation({
       type: BattleStallModeEvent.READ_ACTIVE,
-      snap,
       opt,
+      ...stallActiveFacts(snap),
     })
   ) {
     return { kind: "item-plan", plan: { type: "noop" } };

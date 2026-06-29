@@ -13,6 +13,17 @@ import { selectAutoElement } from "./auto-element-selection.js";
 /** merciful blow 斩杀 HP 比例阈值（原 attack.js 字面量 0.248）。 */
 const MERCIFUL_HP = 0.248;
 
+function stallActiveFacts(snap) {
+  return {
+    roundNow: snap?.roundNow,
+    roundAll: snap?.roundAll,
+    aliveMonsterHpPercents: (snap?.view || [])
+      .filter((monster) => !monster.isDead)
+      .map((monster) => monster.hpPercent),
+    overcharge: snap?.oc,
+  };
+}
+
 function selectSpellTier(opt, snap) {
   const attackStatus = snap.attackStatus;
   if (attackStatus === 0 || attackStatus == null) return { tier: 0 };
@@ -63,8 +74,8 @@ function decidePlan(opt, snap) {
   // 2. 灵动架势切换：stall 跳过 + both-active 冲突跳过 + hysteresis 防抖
   const stallNow = runBattleStallModeAutomation({
     type: BattleStallModeEvent.READ_ACTIVE,
-    snap,
     opt,
+    ...stallActiveFacts(snap),
   });
   const lastToggle = snap.lastSpiritToggleGlobalTurn ?? -999;
   const curGlobalTurn = snap.globalTurn || 0;

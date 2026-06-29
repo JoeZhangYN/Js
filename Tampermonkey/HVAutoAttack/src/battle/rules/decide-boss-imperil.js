@@ -20,12 +20,23 @@ export const BossImperilEvent = Object.freeze({
   DECIDE: EVENT_DECIDE,
 });
 
+function stallActiveFacts(snap) {
+  return {
+    roundNow: snap?.roundNow,
+    roundAll: snap?.roundAll,
+    aliveMonsterHpPercents: (snap?.view || [])
+      .filter((monster) => !monster.isDead)
+      .map((monster) => monster.hpPercent),
+    overcharge: snap?.oc,
+  };
+}
+
 function canCastBossImperil(opt, snap) {
   if (
     runBattleStallModeAutomation({
       type: BattleStallModeEvent.READ_ACTIVE,
-      snap,
       opt,
+      ...stallActiveFacts(snap),
     })
   ) {
     return false;

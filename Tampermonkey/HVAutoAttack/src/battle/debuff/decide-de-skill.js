@@ -9,6 +9,17 @@ import { aliveByOrder } from "../monster-view.js";
 import { firstByOrder, highestAbsHp, selfTarget, aoeNeighborAnchor } from "../target-strategy.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 
+function stallActiveFacts(snap) {
+  return {
+    roundNow: snap?.roundNow,
+    roundAll: snap?.roundAll,
+    aliveMonsterHpPercents: (snap?.view || [])
+      .filter((monster) => !monster.isDead)
+      .map((monster) => monster.hpPercent),
+    overcharge: snap?.oc,
+  };
+}
+
 /**
  * 决定单目标 debuff 该施哪一种 + 打哪只怪。
  * @param {object} opt
@@ -69,9 +80,7 @@ export function decideDeSkill(opt, snap) {
 function isStallingForDeSkill(opt, snap) {
   return runBattleStallModeAutomation({
     type: BattleStallModeEvent.READ_ACTIVE,
-    snap,
     opt,
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
+    ...stallActiveFacts(snap),
   });
 }

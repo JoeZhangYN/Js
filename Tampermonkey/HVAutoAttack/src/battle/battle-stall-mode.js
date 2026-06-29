@@ -15,13 +15,15 @@ export const BattleStallModeEvent = Object.freeze({
  *  3. 怪还活着且 hpRatio 足够高，避免在 monster 即将被秒杀的回合白拖
  *  4. OC 没满（< 250），有继续刷的空间
  */
-function isStallActive(snap, opt, roundNow = snap?.roundNow, roundAll = snap?.roundAll) {
-  if (opt?.stallMode === false) return false;
+function isStallActive(event) {
+  const roundNow = event?.roundNow;
+  const roundAll = event?.roundAll;
+  if (event?.opt?.stallMode === false) return false;
   if (!roundNow || !roundAll || roundNow >= roundAll) return false;
-  const alive = (snap?.view || []).filter((m) => !m.isDead);
-  if (alive.length !== 1) return false;
-  if (alive[0].hpPercent < 0.3) return false;
-  if ((snap?.oc || 0) >= 250) return false;
+  const aliveHpPercents = event?.aliveMonsterHpPercents || [];
+  if (aliveHpPercents.length !== 1) return false;
+  if (aliveHpPercents[0] < 0.3) return false;
+  if ((event?.overcharge || 0) >= 250) return false;
   return true;
 }
 
@@ -43,7 +45,7 @@ function readTopupCandidates(snap, opt = {}) {
 
 export function runBattleStallModeAutomation(event = { type: EVENT_READ_ACTIVE }) {
   if (event.type === EVENT_READ_ACTIVE) {
-    return isStallActive(event.snap, event.opt, event.roundNow, event.roundAll);
+    return isStallActive(event);
   }
   if (event.type === EVENT_READ_TOPUP_CANDIDATES) {
     return readTopupCandidates(event.snap, event.opt);

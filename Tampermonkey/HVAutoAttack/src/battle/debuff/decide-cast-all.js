@@ -28,6 +28,17 @@ const ALL_DEBUFF_GATES = {
   },
 };
 
+function stallActiveFacts(snap) {
+  return {
+    roundNow: snap?.roundNow,
+    roundAll: snap?.roundAll,
+    aliveMonsterHpPercents: (snap?.view || [])
+      .filter((monster) => !monster.isDead)
+      .map((monster) => monster.hpPercent),
+    overcharge: snap?.oc,
+  };
+}
+
 /**
  * 决定全员 debuff 该施给哪只怪物，返 ActionResult。
  * @param {object} opt
@@ -103,9 +114,7 @@ function hasMissingDebuff(snap, debuffName) {
 function isStallingForAllDebuff(opt, snap) {
   return runBattleStallModeAutomation({
     type: BattleStallModeEvent.READ_ACTIVE,
-    snap,
     opt,
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
+    ...stallActiveFacts(snap),
   });
 }

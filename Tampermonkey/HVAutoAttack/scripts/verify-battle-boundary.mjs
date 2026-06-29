@@ -1286,10 +1286,16 @@ function checkBattleStallMode() {
     "runBattleStallModeAutomation",
     "READ_ACTIVE",
     "READ_TOPUP_CANDIDATES",
+    "event?.aliveMonsterHpPercents",
+    "event?.overcharge",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(stallModeFile)} must own ${required}`);
     }
+  }
+  const activeBody = ownerText.match(/function isStallActive\(event\) \{[\s\S]*?\n\}/)?.[0];
+  if (/\bevent\.snap\b|\bsnap\?\.view\b|\bsnap\.view\b/.test(activeBody || "")) {
+    violations.push(`${rel(stallModeFile)} active query must consume narrow facts, not snap`);
   }
   const economyText = fs.readFileSync(potionEconomyFile, "utf8");
   for (const legacy of ["isStallMode", "stallTopupCandidates"]) {
@@ -1300,6 +1306,7 @@ function checkBattleStallMode() {
   for (const file of [
     decideCastAllFile,
     decideDeSkillFile,
+    bossImperilFile,
     path.join(root, "src/battle/attack/decide-attack.js"),
     path.join(root, "src/battle/item/decide-item.js"),
   ]) {
@@ -1309,6 +1316,11 @@ function checkBattleStallMode() {
     }
     if (/\b(?:isStallMode|stallTopupCandidates)\b/.test(text)) {
       violations.push(`${rel(file)} must not call legacy stall helper paths`);
+    }
+    for (const call of text.matchAll(/runBattleStallModeAutomation\(\s*\{[\s\S]*?\}\s*\)/g)) {
+      if (call[0].includes("BattleStallModeEvent.READ_ACTIVE") && /\bsnap\s*:/.test(call[0])) {
+        violations.push(`${rel(file)} must pass narrow facts, not snap, to stall active query`);
+      }
     }
   }
 }

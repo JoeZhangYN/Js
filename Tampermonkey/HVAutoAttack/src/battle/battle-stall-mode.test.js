@@ -14,20 +14,29 @@ function snap(over = {}) {
   };
 }
 
+function activeFacts(snap) {
+  return {
+    roundNow: snap.roundNow,
+    roundAll: snap.roundAll,
+    aliveMonsterHpPercents: snap.view.filter((monster) => !monster.isDead).map((m) => m.hpPercent),
+    overcharge: snap.oc,
+  };
+}
+
 describe("battle stall mode", () => {
   it("answers whether battle should stall from one entry", () => {
     expect(
       runBattleStallModeAutomation({
         type: BattleStallModeEvent.READ_ACTIVE,
-        snap: snap(),
         opt: {},
+        ...activeFacts(snap()),
       })
     ).toBe(true);
     expect(
       runBattleStallModeAutomation({
         type: BattleStallModeEvent.READ_ACTIVE,
-        snap: snap({ roundNow: 3, roundAll: 3 }),
         opt: {},
+        ...activeFacts(snap({ roundNow: 3, roundAll: 3 })),
       })
     ).toBe(false);
   });
@@ -36,8 +45,8 @@ describe("battle stall mode", () => {
     expect(
       runBattleStallModeAutomation({
         type: BattleStallModeEvent.READ_ACTIVE,
-        snap: snap({ roundNow: undefined, roundAll: undefined }),
         opt: {},
+        ...activeFacts(snap({ roundNow: undefined, roundAll: undefined })),
         roundNow: 1,
         roundAll: 3,
       })
