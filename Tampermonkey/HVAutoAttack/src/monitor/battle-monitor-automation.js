@@ -13,10 +13,6 @@ const EVENT_HUD_REFRESH = "hudRefresh";
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
 const EVENT_COMPLETION_REACHED = "completionReached";
-const EVENT_CLEAR_DROP_REPORT = "clearDropReport";
-const EVENT_CLEAR_USAGE_REPORT = "clearUsageReport";
-const EVENT_RENDER_DROP_REPORT_TABLE_BODY = "renderDropReportTableBody";
-const EVENT_RENDER_USAGE_REPORT_TABLE_BODY = "renderUsageReportTableBody";
 
 export const BattleMonitorEvent = Object.freeze({
   BATTLE_STARTED: EVENT_BATTLE_STARTED,
@@ -24,10 +20,10 @@ export const BattleMonitorEvent = Object.freeze({
   ACTION_STARTED: EVENT_ACTION_STARTED,
   ACTION_ENDED: EVENT_ACTION_ENDED,
   COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
-  CLEAR_DROP_REPORT: EVENT_CLEAR_DROP_REPORT,
-  CLEAR_USAGE_REPORT: EVENT_CLEAR_USAGE_REPORT,
-  RENDER_DROP_REPORT_TABLE_BODY: EVENT_RENDER_DROP_REPORT_TABLE_BODY,
-  RENDER_USAGE_REPORT_TABLE_BODY: EVENT_RENDER_USAGE_REPORT_TABLE_BODY,
+  CLEAR_DROP_REPORT: BattleReportEvent.CLEAR_DROP_REPORT,
+  CLEAR_USAGE_REPORT: BattleReportEvent.CLEAR_USAGE_REPORT,
+  RENDER_DROP_REPORT_TABLE_BODY: BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY,
+  RENDER_USAGE_REPORT_TABLE_BODY: BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY,
 });
 
 function recordActionEnd() {
@@ -44,6 +40,11 @@ function recordBattleStarted() {
   runBattleReportAutomation({ type: BattleReportEvent.BATTLE_STARTED });
 }
 
+function routeBattleReportCommand(event) {
+  if (!Object.values(BattleReportEvent).includes(event.type)) return undefined;
+  return runBattleReportAutomation(event);
+}
+
 export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) {
   if (event.type === EVENT_BATTLE_STARTED) {
     recordBattleStarted();
@@ -55,14 +56,8 @@ export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) 
     recordActionEnd();
   } else if (event.type === EVENT_COMPLETION_REACHED) {
     recordCompletion();
-  } else if (event.type === EVENT_RENDER_DROP_REPORT_TABLE_BODY) {
-    return runBattleReportAutomation({ type: BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY });
-  } else if (event.type === EVENT_RENDER_USAGE_REPORT_TABLE_BODY) {
-    return runBattleReportAutomation({ type: BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY });
-  } else if (event.type === EVENT_CLEAR_DROP_REPORT) {
-    runBattleReportAutomation({ type: BattleReportEvent.CLEAR_DROP_REPORT });
-  } else if (event.type === EVENT_CLEAR_USAGE_REPORT) {
-    runBattleReportAutomation({ type: BattleReportEvent.CLEAR_USAGE_REPORT });
+  } else {
+    return routeBattleReportCommand(event);
   }
   return undefined;
 }

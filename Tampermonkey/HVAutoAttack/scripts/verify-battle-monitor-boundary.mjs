@@ -141,6 +141,46 @@ function checkEntry() {
       `${entry.replaceAll("\\", "/")} must report battle-report events through BattleReportEvent`
     );
   }
+  for (const forbidden of [
+    "const EVENT_CLEAR_DROP_REPORT",
+    "const EVENT_CLEAR_USAGE_REPORT",
+    "const EVENT_RENDER_DROP_REPORT_TABLE_BODY",
+    "const EVENT_RENDER_USAGE_REPORT_TABLE_BODY",
+  ]) {
+    if (text.includes(forbidden)) {
+      violations.push(
+        `${entry.replaceAll("\\", "/")} must not duplicate battle-report command literals`
+      );
+    }
+  }
+  for (const required of [
+    "CLEAR_DROP_REPORT: BattleReportEvent.CLEAR_DROP_REPORT",
+    "CLEAR_USAGE_REPORT: BattleReportEvent.CLEAR_USAGE_REPORT",
+    "RENDER_DROP_REPORT_TABLE_BODY: BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY",
+    "RENDER_USAGE_REPORT_TABLE_BODY: BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(
+        `${entry.replaceAll("\\", "/")} must expose report commands from BattleReportEvent`
+      );
+    }
+  }
+  if (
+    !/function routeBattleReportCommand\([^)]*\)\s*\{[\s\S]*runBattleReportAutomation\(event\)/.test(
+      text
+    )
+  ) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must pass report commands through without remapping`
+    );
+  }
+  if (
+    /runBattleReportAutomation\(\s*\{\s*type:\s*BattleReportEvent\.(?:CLEAR_DROP_REPORT|CLEAR_USAGE_REPORT|RENDER_DROP_REPORT_TABLE_BODY|RENDER_USAGE_REPORT_TABLE_BODY)/.test(
+      text
+    )
+  ) {
+    violations.push(`${entry.replaceAll("\\", "/")} must not rebuild report render/clear events`);
+  }
   if (
     !text.includes("runBattleActionUsageCapture") ||
     !text.includes("BattleActionUsageCaptureEvent.ACTION_STARTED") ||
