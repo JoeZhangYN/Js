@@ -1,11 +1,14 @@
 import { gE } from "../dom/query.js";
+import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 
 const EVENT_READ_COMBATANT_COUNTS = "readCombatantCounts";
 const EVENT_READ_REPAIR_SNAPSHOT = "readRepairSnapshot";
+const EVENT_READ_HP_RUNTIME_SNAPSHOT = "readHpRuntimeSnapshot";
 
 export const MonsterStatusViewEvent = Object.freeze({
   READ_COMBATANT_COUNTS: EVENT_READ_COMBATANT_COUNTS,
   READ_REPAIR_SNAPSHOT: EVENT_READ_REPAIR_SNAPSHOT,
+  READ_HP_RUNTIME_SNAPSHOT: EVENT_READ_HP_RUNTIME_SNAPSHOT,
 });
 
 function readCombatantCountSnapshot() {
@@ -35,9 +38,35 @@ function readRepairSnapshot() {
   };
 }
 
+function readActiveDebuffKeys(buffElement) {
+  if (!buffElement) return [];
+  return Array.from(DEBUFF_SKILL_LIB.entries())
+    .filter(([, skill]) => gE(`img[src*="${skill.img}"]`, buffElement))
+    .map(([key]) => key);
+}
+
+function readHpRuntimeSnapshot() {
+  const hpElements = Array.from(gE("div.btm4>div.btm5:nth-child(1)", "all"));
+  const monsterEls = Array.from(gE("div.btm1", "all"));
+  const buffElements = Array.from(gE("div.btm6", "all"));
+
+  return hpElements.map((hpElement, order) => {
+    const hpImage = gE("img", hpElement);
+    const nameElement = monsterEls[order]?.querySelector?.(".btm3");
+    return {
+      order,
+      isDead: !!gE('img[src*="nbardead.png"]', hpElement),
+      hpBarWidth: parseFloat(hpImage?.style?.width),
+      name: nameElement ? nameElement.textContent.trim() : "",
+      activeDebuffKeys: readActiveDebuffKeys(buffElements[order]),
+    };
+  });
+}
+
 export function runMonsterStatusView(event = { type: EVENT_READ_COMBATANT_COUNTS }) {
   if (event.type === EVENT_READ_COMBATANT_COUNTS) return readCombatantCountSnapshot();
   if (event.type === EVENT_READ_REPAIR_SNAPSHOT) return readRepairSnapshot();
+  if (event.type === EVENT_READ_HP_RUNTIME_SNAPSHOT) return readHpRuntimeSnapshot();
   return {
     monsterAll: 0,
     monsterDead: 0,

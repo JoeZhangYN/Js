@@ -35,4 +35,34 @@ describe("monster status view", () => {
       ],
     });
   });
+
+  it("reads HP runtime facts by rendered monster order", () => {
+    document.body.innerHTML = [
+      '<div class="btm1"><span class="btm3">Alpha</span></div>',
+      '<div class="btm1"><span class="btm3">Beta</span></div>',
+      '<div class="btm4"><div class="btm5"><img style="width:60px"></div></div>',
+      '<div class="btm4"><div class="btm5"><img style="width:120px"><img src="/x/nbardead.png"></div></div>',
+      '<div class="btm6"><img src="/y/sleep.png"></div>',
+      '<div class="btm6"><img src="/y/weaken.png"></div>',
+    ].join("");
+
+    expect(runMonsterStatusView({ type: MonsterStatusViewEvent.READ_HP_RUNTIME_SNAPSHOT })).toEqual(
+      [
+        {
+          order: 0,
+          isDead: false,
+          hpBarWidth: 60,
+          name: "Alpha",
+          activeDebuffKeys: ["Sle"],
+        },
+        {
+          order: 1,
+          isDead: true,
+          hpBarWidth: 120,
+          name: "Beta",
+          activeDebuffKeys: ["We"],
+        },
+      ]
+    );
+  });
 });

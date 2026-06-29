@@ -129,4 +129,29 @@ describe("monster status automation", () => {
       expect.objectContaining({ monsterId: 202, hpNow: 1001 }),
     ]);
   });
+
+  it("updates HP by monster order after status has been weight-sorted", () => {
+    document.body.innerHTML = [
+      '<div class="btm1"><div class="btm3">Alpha</div></div>',
+      '<div class="btm1"><div class="btm3">Beta</div></div>',
+      '<div class="btm4"><div class="btm5"><img style="width:60px"></div></div>',
+      '<div class="btm4"><div class="btm5"><img style="width:120px"></div></div>',
+      '<div class="btm6"></div>',
+      '<div class="btm6"></div>',
+    ].join("");
+    g("monsterStatus", [
+      { order: 1, monsterId: 202, hp: 2000 },
+      { order: 0, monsterId: 101, hp: 1000 },
+    ]);
+
+    runMonsterStatusAutomation({ type: MonsterStatusEvent.UPDATE_HP });
+
+    const updated = g("monsterStatus");
+    expect(updated.find((status) => status.monsterId === 101)).toEqual(
+      expect.objectContaining({ order: 0, hpNow: 501 })
+    );
+    expect(updated.find((status) => status.monsterId === 202)).toEqual(
+      expect.objectContaining({ order: 1, hpNow: 2001 })
+    );
+  });
 });

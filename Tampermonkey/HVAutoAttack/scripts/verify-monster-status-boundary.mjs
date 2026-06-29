@@ -161,7 +161,10 @@ function checkStatusView() {
     "export function runMonsterStatusView",
     "READ_COMBATANT_COUNTS",
     "READ_REPAIR_SNAPSHOT",
+    "READ_HP_RUNTIME_SNAPSHOT",
     'gE("div.btm1"',
+    'gE("div.btm4>div.btm5:nth-child(1)"',
+    "activeDebuffKeys",
     'img[src*="nbardead"]',
     'gE("div.btm2"',
   ]) {
@@ -183,6 +186,20 @@ function checkHpImpl() {
       violations.push(
         `${hpImpl.replaceAll("\\", "/")} must read target weight options through ${required}`
       );
+    }
+  }
+  for (const required of [
+    "MonsterStatusViewEvent.READ_HP_RUNTIME_SNAPSHOT",
+    "runMonsterStatusView",
+    "statusByOrder",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${hpImpl.replaceAll("\\", "/")} must update HP from ${required}`);
+    }
+  }
+  for (const forbidden of ["gE(", "btm1", "btm4", "btm5", "btm6", "nbardead"]) {
+    if (text.includes(forbidden)) {
+      violations.push(`${hpImpl.replaceAll("\\", "/")} must not read monster status DOM directly`);
     }
   }
 }
