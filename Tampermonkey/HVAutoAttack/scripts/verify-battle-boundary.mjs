@@ -328,6 +328,17 @@ function checkApiBridgeEntry() {
       `${rel(apiBridgeFile)} must read API bridge delay options through option entry`
     );
   }
+  for (const required of ["readApiBridgeDelayOption", "writeApiBridgeDelayRuntime"]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(apiBridgeFile)} must own ${required}`);
+    }
+  }
+  if (!/Number\([^)]*readOptionField\(["']delay["'],\s*0\)[^)]*\)\s*\|\|\s*0/.test(text)) {
+    violations.push(`${rel(apiBridgeFile)} must normalize delay before writing runtime state`);
+  }
+  if (!/Number\([^)]*readOptionField\(["']delay2["'],\s*0\)[^)]*\)\s*\|\|\s*0/.test(text)) {
+    violations.push(`${rel(apiBridgeFile)} must normalize delay2 before writing runtime state`);
+  }
   if (/OptionEvent\.READ\b/.test(text)) {
     violations.push(`${rel(apiBridgeFile)} must not read the whole option bag`);
   }

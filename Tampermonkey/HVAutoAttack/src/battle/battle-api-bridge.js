@@ -64,9 +64,20 @@ function buildApiResponseScript() {
   }.toString()}`;
 }
 
+function readApiBridgeDelayOption(deps) {
+  return {
+    delay: Number(deps.readOptionField("delay", 0)) || 0,
+    delay2: Number(deps.readOptionField("delay2", 0)) || 0,
+  };
+}
+
+function writeApiBridgeDelayRuntime(deps, option) {
+  deps.sessionStorage.delay = option.delay;
+  deps.sessionStorage.delay2 = option.delay2;
+}
+
 function installBridge(deps) {
-  deps.sessionStorage.delay = deps.readOptionField("delay");
-  deps.sessionStorage.delay2 = deps.readOptionField("delay2");
+  writeApiBridgeDelayRuntime(deps, readApiBridgeDelayOption(deps));
 
   const apiCall = deps.createScript();
   apiCall.textContent = buildApiCallScript(deps.mainUrl);

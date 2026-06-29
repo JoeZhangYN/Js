@@ -55,14 +55,23 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",
       key: "delay",
-      fallback: undefined,
+      fallback: 0,
     });
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",
       key: "delay2",
-      fallback: undefined,
+      fallback: 0,
     });
     expect(window.sessionStorage.delay).toBe("12");
     expect(window.sessionStorage.delay2).toBe("34");
+  });
+
+  it("normalizes missing API bridge delays before writing runtime state", () => {
+    mocks.runOptionAutomation.mockReturnValue(undefined);
+
+    expect(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL })).toBe(true);
+
+    expect(window.sessionStorage.delay).toBe("0");
+    expect(window.sessionStorage.delay2).toBe("0");
   });
 });
