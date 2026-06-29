@@ -4,13 +4,13 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 import {
   clearDropReportRecordSet,
   readOrCreateDropRecord,
-  readDropReportRecordSet,
+  readDropReportSource,
   storeOrArchiveDropRecord,
 } from "./battle-record-archive-drop-records.js";
 import {
   clearUsageReportRecordSet,
   readOrCreateUsageStats,
-  readUsageReportRecordSet,
+  readUsageReportSource,
   readUsageStats,
   storeOrArchiveUsageStats,
   storeUsageStats,
@@ -24,8 +24,8 @@ export const BattleRecordArchiveEvent = Object.freeze({
   READ_USAGE_STATS: "readUsageStats",
   STORE_USAGE_STATS: "storeUsageStats",
   STORE_OR_ARCHIVE_USAGE_STATS: "storeOrArchiveUsageStats",
-  READ_DROP_REPORT_RECORD_SET: "readDropReportRecordSet",
-  READ_USAGE_REPORT_RECORD_SET: "readUsageReportRecordSet",
+  READ_DROP_REPORT_SOURCE: "readDropReportSource",
+  READ_USAGE_REPORT_SOURCE: "readUsageReportSource",
   CLEAR_DROP_REPORT_RECORD_SET: "clearDropReportRecordSet",
   CLEAR_USAGE_REPORT_RECORD_SET: "clearUsageReportRecordSet",
 });
@@ -145,11 +145,11 @@ export function runBattleRecordArchiveAutomation(event, deps = {}) {
   if (event.type === BattleRecordArchiveEvent.STORE_OR_ARCHIVE_USAGE_STATS) {
     return storeOrArchiveUsageStats(event, recordStore);
   }
-  if (event.type === BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET) {
-    return readDropReportRecordSet(recordStore);
+  if (event.type === BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE) {
+    return readDropReportSource(recordStore);
   }
-  if (event.type === BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET) {
-    return readUsageReportRecordSet(recordStore);
+  if (event.type === BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE) {
+    return readUsageReportSource(recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.CLEAR_DROP_REPORT_RECORD_SET) {
     return clearDropReportRecordSet(recordStore);

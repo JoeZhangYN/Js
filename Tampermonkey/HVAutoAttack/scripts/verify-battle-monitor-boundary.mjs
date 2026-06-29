@@ -527,8 +527,8 @@ function checkRecordArchiveEntry() {
     !archiveText.includes("READ_USAGE_STATS") ||
     !archiveText.includes("STORE_USAGE_STATS") ||
     !archiveText.includes("STORE_OR_ARCHIVE_USAGE_STATS") ||
-    !archiveText.includes("READ_DROP_REPORT_RECORD_SET") ||
-    !archiveText.includes("READ_USAGE_REPORT_RECORD_SET") ||
+    !archiveText.includes("READ_DROP_REPORT_SOURCE") ||
+    !archiveText.includes("READ_USAGE_REPORT_SOURCE") ||
     !archiveText.includes("CLEAR_DROP_REPORT_RECORD_SET") ||
     !archiveText.includes("CLEAR_USAGE_REPORT_RECORD_SET")
   ) {
@@ -602,12 +602,12 @@ function checkRecordArchiveEntry() {
       violations.push(`${rel(usageDefaultStatsFile)} must include default usage stat ${required}`);
     }
   }
-  for (const required of ["readDropReportRecordSet", "clearDropReportRecordSet"]) {
+  for (const required of ["readDropReportSource", "clearDropReportRecordSet"]) {
     if (!archiveDropRecordsText.includes(required)) {
       violations.push(`${rel(archiveDropRecordsFile)} must own ${required}`);
     }
   }
-  for (const required of ["readUsageReportRecordSet", "clearUsageReportRecordSet"]) {
+  for (const required of ["readUsageReportSource", "clearUsageReportRecordSet"]) {
     if (!archiveUsageRecordsText.includes(required)) {
       violations.push(`${rel(archiveUsageRecordsFile)} must own ${required}`);
     }
@@ -977,11 +977,19 @@ function checkBattleReportEntry() {
     }
   }
   for (const required of [
-    "BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET",
-    "BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET",
+    "BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE",
+    "BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE",
   ]) {
     if (!modelText.includes(required)) {
       violations.push(`${rel(reportModelFile)} must read report records through ${required}`);
+    }
+  }
+  for (const forbidden of [
+    "BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET",
+    "BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET",
+  ]) {
+    if (modelText.includes(forbidden) || text.includes(forbidden)) {
+      violations.push(`${rel(reportFile)} must not use record-set read events for report queries`);
     }
   }
   if (!text.includes("BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING")) {

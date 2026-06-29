@@ -34,7 +34,7 @@ export function storeOrArchiveUsageStats(event, recordStore) {
   });
 }
 
-export function readUsageReportRecordSet(recordStore) {
+export function readUsageReportSource(recordStore) {
   return recordStore.readRecordSet({
     currentKey: STORAGE_KEYS.STATS,
     historyKey: STORAGE_KEYS.STATS_OLD,

@@ -21,7 +21,7 @@ export function storeOrArchiveDropRecord(event, recordStore) {
   });
 }
 
-export function readDropReportRecordSet(recordStore) {
+export function readDropReportSource(recordStore) {
   return recordStore.readRecordSet({
     currentKey: STORAGE_KEYS.DROP,
     historyKey: STORAGE_KEYS.DROP_OLD,

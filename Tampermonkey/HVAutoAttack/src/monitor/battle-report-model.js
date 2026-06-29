@@ -25,10 +25,7 @@ function readReportRecordSet(type, normalizeCurrent = (record) => record) {
 }
 
 export function readDropReportModel() {
-  const recordSet = readReportRecordSet(
-    BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET,
-    objSort
-  );
+  const recordSet = readReportRecordSet(BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE, objSort);
   if (recordSet.mode === "single") {
     return {
       mode: "single",
@@ -48,7 +45,7 @@ export function readDropReportModel() {
 }
 
 export function readUsageReportModel() {
-  const recordSet = readReportRecordSet(BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET);
+  const recordSet = readReportRecordSet(BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE);
   if (recordSet.mode === "single") {
     return {
       mode: "single",

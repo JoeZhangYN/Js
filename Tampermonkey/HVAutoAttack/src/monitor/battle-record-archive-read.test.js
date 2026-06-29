@@ -70,7 +70,7 @@ describe("battle record archive reads", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.READ_DROP_REPORT_RECORD_SET,
+          type: BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE,
         },
         deps({
           [STORAGE_KEYS.BATTLE_CODE]: "now",
@@ -89,7 +89,7 @@ describe("battle record archive reads", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.READ_USAGE_REPORT_RECORD_SET,
+          type: BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE,
         },
         deps({
           [STORAGE_KEYS.BATTLE_CODE]: "now",
