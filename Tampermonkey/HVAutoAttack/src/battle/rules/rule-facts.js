@@ -77,6 +77,14 @@ export function stallTopupFacts(snap) {
   };
 }
 
+export function infusionFacts(snap) {
+  return {
+    conditionFacts: conditionFacts(snap),
+    attackStatus: snap?.attackStatus,
+    playerBuffs: snap?.playerBuffs,
+  };
+}
+
 export function conditionFacts(snap) {
   // User-authored condition expressions address a variable map, so the snapshot is the condition context.
   return snap;

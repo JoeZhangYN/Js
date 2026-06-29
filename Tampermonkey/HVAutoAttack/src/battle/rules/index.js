@@ -20,6 +20,7 @@ import {
   conditionFacts,
   criticalBuffFacts,
   gemFacts,
+  infusionFacts,
   stallTopupFacts,
 } from "./rule-facts.js";
 
@@ -65,7 +66,7 @@ export const BATTLE_RULES = [
   // 9. 元素灌注（仅法术模式）
   {
     name: "useInfusions",
-    decide: (snap, opt) => decideInfusion(opt, snap),
+    decide: (snap, opt) => decideInfusion({ opt, ...infusionFacts(snap) }),
   },
   // 10. Channel（decide 三段优先级返单 click，execute 探活+click）
   {

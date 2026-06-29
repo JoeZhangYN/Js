@@ -1107,12 +1107,27 @@ function checkCriticalBuffEntry() {
 
 function checkInfusionEntry() {
   const ownerText = fs.readFileSync(decideInfusionFile, "utf8");
-  for (const required of ["decideInfusion", "infusionSwitch", "infusionCondition"]) {
+  for (const required of [
+    "decideInfusion",
+    "infusionSwitch",
+    "infusionCondition",
+    "conditionFacts",
+    "event.attackStatus",
+    "event.playerBuffs",
+  ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideInfusionFile)} must own infusion gate ${required}`);
     }
   }
+  if (/decideInfusion\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
+    violations.push(`${rel(decideInfusionFile)} must not expose opt/snap infusion input`);
+  }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const infusionRule =
+    rulesText.match(/name:\s*["']useInfusions["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideInfusion\(\s*opt\s*,\s*snap\s*\)/.test(infusionRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass infusion facts, not snap, to infusion`);
+  }
   for (const legacy of ["infusionSwitch", "infusionCondition"]) {
     if (rulesText.includes(legacy)) {
       violations.push(`${rel(battleRulesFile)} must not assemble infusion rule gates directly`);

@@ -12,19 +12,19 @@ const INFUSION_LIB = [
 ];
 
 /**
- * @param {object} opt
- * @param {import("../../core/types.js").BattleSnapshot} snap
+ * @param {object} event
  * @returns {import("../../core/types.js").ActionResult}
  */
-export function decideInfusion(opt, snap) {
+export function decideInfusion(event = {}) {
+  const opt = event.opt || {};
   if (!opt.infusionSwitch) return { kind: "noop" };
-  if (!checkCondition(opt.infusionCondition, snap)) return { kind: "noop" };
-  const status = snap.attackStatus;
+  if (!checkCondition(opt.infusionCondition, event.conditionFacts)) return { kind: "noop" };
+  const status = event.attackStatus;
   if (!status || status === 0) return { kind: "noop" };
   const lib = INFUSION_LIB[status];
   if (!lib) return { kind: "noop" };
   // 已存在该灌注 buff → 不重复施
-  if (snap.playerBuffs.includes(lib.img)) return { kind: "noop" };
+  if ((event.playerBuffs || []).includes(lib.img)) return { kind: "noop" };
   return {
     kind: "item-command",
     itemId: lib.id,
