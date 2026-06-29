@@ -1,4 +1,4 @@
-// 6B-2：decideAttack 6 分支 + fall-through 回归锁(纯决策,喂 mock snap.view 断言 AttackPlan)。
+// 6B-2：decideAttack 6 分支 + fall-through 回归锁(纯决策,喂 mock monsterFacts 断言 AttackPlan)。
 // file-size-gate: exempt test-verbose（6 分支 + fall-through 全覆盖，逐例断言；与 decide-item.test 同类）
 // 统一视图后：怪物事实全在 snap.view（finWeight/hpAbsNow/hpMax/buffs/order），不再传第三参 monsterStatus。
 import { describe, it, expect } from "vitest";
@@ -56,11 +56,36 @@ const resists = (over = {}) => ({
   ...over,
 });
 
-const plan = (opt, s) => decideAttack(opt, s).plan;
+function attackFacts(snap) {
+  return {
+    conditionFacts: snap,
+    spiritOn: snap.spiritOn,
+    globalTurn: snap.globalTurn,
+    lastSpiritToggleGlobalTurn: snap.lastSpiritToggleGlobalTurn,
+    roundAll: snap.roundAll,
+    roundNow: snap.roundNow,
+    attackStatus: snap.attackStatus,
+    channeling: snap.channeling,
+    aliveCount: snap.aliveCount,
+    fightingStyle: snap.fightingStyle,
+    overcharge: snap.oc,
+    skillReady: snap.skillReady,
+    spellAoe: snap.spellAoe,
+    skillOTOS: snap.skillOTOS,
+    etherTapActiveX2: snap.etherTapActiveX2,
+    etherTapExpiring: snap.etherTapExpiring,
+    monsterFacts: snap.view,
+  };
+}
+
+const plan = (opt, s) => decideAttack({ opt, ...attackFacts(s) }).plan;
 
 describe("decideAttack 返 {kind:'attack-plan'}", () => {
   it("包一层 attack-plan", () => {
-    const r = decideAttack({}, snap({ view: [vmon({ id: 1, hpAbsNow: 1, hpMax: 1 })] }));
+    const r = decideAttack({
+      opt: {},
+      ...attackFacts(snap({ view: [vmon({ id: 1, hpAbsNow: 1, hpMax: 1 })] })),
+    });
     expect(r.kind).toBe("attack-plan");
     expect(r.plan).toBeTruthy();
   });

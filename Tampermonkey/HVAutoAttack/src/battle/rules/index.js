@@ -13,6 +13,7 @@ import { decideAutoPause } from "../pause/decide-auto-pause.js";
 import { decideFlee } from "../escape/decide-flee.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
+import { attackFacts } from "./attack-facts.js";
 import {
   allDebuffFacts,
   bossImperilFacts,
@@ -115,6 +116,6 @@ export const BATTLE_RULES = [
   // 16. 攻击（最后一步，PURE decideAttack 返 attack-plan）
   {
     name: "attack",
-    decide: (snap, opt) => decideAttack(opt, snap),
+    decide: (snap, opt) => decideAttack({ opt, ...attackFacts(snap) }),
   },
 ];

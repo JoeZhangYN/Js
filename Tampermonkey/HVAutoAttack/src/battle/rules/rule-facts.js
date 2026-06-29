@@ -1,3 +1,7 @@
+function aliveHpPercents(monsters) {
+  return (monsters || []).filter((monster) => !monster.isDead).map((monster) => monster.hpPercent);
+}
+
 export function bossImperilFacts(snap) {
   return {
     imperilSkillReady: !!snap?.skillReady?.["213"],
@@ -53,9 +57,7 @@ export function gemFacts(snap) {
     manaPercent: snap?.mp,
     spiritPercent: snap?.sp,
     attackStatus: snap?.attackStatus,
-    aliveMonsterHpPercents: (snap?.view || [])
-      .filter((monster) => !monster.isDead)
-      .map((monster) => monster.hpPercent),
+    aliveMonsterHpPercents: aliveHpPercents(snap?.view),
     playerIncomingDps: snap?.playerIncomingDps,
   };
 }
@@ -64,9 +66,7 @@ export function stallTopupFacts(snap) {
   return {
     roundNow: snap?.roundNow,
     roundAll: snap?.roundAll,
-    aliveMonsterHpPercents: (snap?.view || [])
-      .filter((monster) => !monster.isDead)
-      .map((monster) => monster.hpPercent),
+    aliveMonsterHpPercents: aliveHpPercents(snap?.view),
     overcharge: snap?.oc,
     manaPercent: snap?.mp,
     spiritPercent: snap?.sp,

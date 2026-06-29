@@ -1493,13 +1493,25 @@ function checkAttackEntry() {
     );
   }
   const ownerText = fs.readFileSync(decideAttackFile, "utf8");
-  for (const required of ["decideAttack", "selectSpellTier", "highSkillCondition"]) {
+  for (const required of [
+    "decideAttack",
+    "selectSpellTier",
+    "highSkillCondition",
+    "conditionFacts",
+    "event.monsterFacts",
+    "event.skillReady",
+    "event.attackStatus",
+    "event.overcharge",
+  ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideAttackFile)} must own attack spell-tier decision ${required}`);
     }
   }
+  if (/decideAttack\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
+    violations.push(`${rel(decideAttackFile)} must not expose opt/snap attack input`);
+  }
   const scoringText = fs.readFileSync(physicalSkillScoringFile, "utf8");
-  for (const required of ["scorePhysicalSkillCandidates", "snap.skillReady", "skillBaseScore"]) {
+  for (const required of ["scorePhysicalSkillCandidates", "event.skillReady", "skillBaseScore"]) {
     if (!scoringText.includes(required)) {
       violations.push(
         `${rel(physicalSkillScoringFile)} must own physical skill scoring ${required}`
@@ -1513,6 +1525,12 @@ function checkAttackEntry() {
         `${rel(autoElementSelectionFile)} must own auto element selection ${required}`
       );
     }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const attackRule =
+    rulesText.match(/name:\s*["']attack["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideAttack\(\s*opt\s*,\s*snap\s*\)/.test(attackRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass attack facts, not snap`);
   }
   for (const relative of ["src/battle", "src/core"]) {
     const dir = path.join(root, relative);

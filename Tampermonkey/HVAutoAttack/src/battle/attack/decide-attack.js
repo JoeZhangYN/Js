@@ -1,5 +1,5 @@
 // PURE: attack 6 分支优先级决策（focus / spirit 切换 / spell+AoE / merciful 斩杀 / physical-utility / 默认攻击）。
-// **不读 DOM**：只读 snap（含统一怪物视图 snap.view：finWeight/hpAbsNow/hpMax/buffs/order）。
+// **不读 DOM**：只读 event facts（含统一怪物视图 event.monsterFacts：finWeight/hpAbsNow/hpMax/buffs/order）。
 // 目标选择走 target-strategy 具名策略：firstByFinWeight=默认首怪(综合权重最优) / firstByOrder=AoE 锚(order 最小)。
 import { checkCondition } from "../../settings/condition-eval.js";
 import { scorePhysicalSkillCandidates } from "./physical-skill-scoring.js";
@@ -13,38 +13,38 @@ import { selectAutoElement } from "./auto-element-selection.js";
 /** merciful blow 斩杀 HP 比例阈值（原 attack.js 字面量 0.248）。 */
 const MERCIFUL_HP = 0.248;
 
-function stallActiveFacts(snap) {
+function stallActiveFacts(event) {
   return {
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
-    aliveMonsterHpPercents: (snap?.view || [])
+    roundNow: event?.roundNow,
+    roundAll: event?.roundAll,
+    aliveMonsterHpPercents: (event?.monsterFacts || [])
       .filter((monster) => !monster.isDead)
       .map((monster) => monster.hpPercent),
-    overcharge: snap?.oc,
+    overcharge: event?.overcharge,
   };
 }
 
-function selectSpellTier(opt, snap) {
-  const attackStatus = snap.attackStatus;
+function selectSpellTier(opt, event) {
+  const attackStatus = event.attackStatus;
   if (attackStatus === 0 || attackStatus == null) return { tier: 0 };
 
-  const channelLock = opt.channelForceHighTier !== false && snap.channeling;
+  const channelLock = opt.channelForceHighTier !== false && event.channeling;
   const downgrade =
     !channelLock &&
     opt.spellTierDowngrade !== false &&
-    snap.aliveCount <= (opt.spellDowngradeThreshold || 3);
+    event.aliveCount <= (opt.spellDowngradeThreshold || 3);
 
   const id1 = `1${attackStatus}1`;
   const id2 = `1${attackStatus}2`;
   const id3 = `1${attackStatus}3`;
-  const ready1 = !!snap.skillReady[id1];
-  const ready2 = !!snap.skillReady[id2];
-  const ready3 = !!snap.skillReady[id3];
+  const ready1 = !!event.skillReady?.[id1];
+  const ready2 = !!event.skillReady?.[id2];
+  const ready3 = !!event.skillReady?.[id3];
 
   if (downgrade) return { tier: ready1 ? 1 : 0 };
 
-  const highMet = channelLock || checkCondition(opt.highSkillCondition, snap);
-  const midMet = channelLock || checkCondition(opt.middleSkillCondition, snap);
+  const highMet = channelLock || checkCondition(opt.highSkillCondition, event.conditionFacts);
+  const midMet = channelLock || checkCondition(opt.middleSkillCondition, event.conditionFacts);
   if (highMet && ready3) return { tier: 3 };
   if (midMet && ready2) return { tier: 2 };
   if (ready1) return { tier: 1 };
@@ -52,22 +52,22 @@ function selectSpellTier(opt, snap) {
 }
 
 /**
- * @param {object} opt
- * @param {import("../../core/types.js").BattleSnapshot} snap 含 snap.view 统一怪物视图（finWeight/hpAbsNow/hpMax/buffs）
+ * @param {object} event
  * @returns {import("../../core/types.js").ActionResult} { kind:"attack-plan", plan }
  */
-export function decideAttack(opt, snap) {
-  return { kind: "attack-plan", plan: decidePlan(opt, snap) };
+export function decideAttack(event = {}) {
+  const opt = event.opt || {};
+  return { kind: "attack-plan", plan: decidePlan(opt, event) };
 }
 
 /** @returns {import("../../core/types.js").AttackPlan} */
-function decidePlan(opt, snap) {
-  const alive = aliveByOrder(snap.view);
+function decidePlan(opt, event) {
+  const alive = aliveByOrder(event.monsterFacts);
   const firstMonster = firstByFinWeight(alive); // finWeight 最小 = 默认攻击目标
-  const buffsOf = (id) => snap.view.find((m) => m.id === id)?.buffs || [];
+  const buffsOf = (id) => (event.monsterFacts || []).find((m) => m.id === id)?.buffs || [];
 
   // 1. 专注
-  if (opt.focus && checkCondition(opt.focusCondition, snap)) {
+  if (opt.focus && checkCondition(opt.focusCondition, event.conditionFacts)) {
     return { type: "focus" };
   }
 
@@ -75,15 +75,15 @@ function decidePlan(opt, snap) {
   const stallNow = runBattleStallModeAutomation({
     type: BattleStallModeEvent.READ_ACTIVE,
     opt,
-    ...stallActiveFacts(snap),
+    ...stallActiveFacts(event),
   });
-  const lastToggle = snap.lastSpiritToggleGlobalTurn ?? -999;
-  const curGlobalTurn = snap.globalTurn || 0;
+  const lastToggle = event.lastSpiritToggleGlobalTurn ?? -999;
+  const curGlobalTurn = event.globalTurn || 0;
   const cooldown = opt.spiritToggleMinInterval ?? 3;
-  const onCond = opt.turnOnSS && checkCondition(opt.turnOnSSCondition, snap);
-  const offCond = opt.turnOffSS && checkCondition(opt.turnOffSSCondition, snap);
-  const wantsOn = onCond && !snap.spiritOn;
-  const wantsOff = offCond && snap.spiritOn;
+  const onCond = opt.turnOnSS && checkCondition(opt.turnOnSSCondition, event.conditionFacts);
+  const offCond = opt.turnOffSS && checkCondition(opt.turnOffSSCondition, event.conditionFacts);
+  const wantsOn = onCond && !event.spiritOn;
+  const wantsOff = offCond && event.spiritOn;
   const bothActive = onCond && offCond;
   if (!stallNow && !bothActive && curGlobalTurn - lastToggle >= cooldown && (wantsOn || wantsOff)) {
     return { type: "toggle-spirit" };
@@ -94,25 +94,25 @@ function decidePlan(opt, snap) {
     opt.etherTap &&
     !!firstMonster &&
     buffsOf(firstMonster.id).includes("coalescemana") &&
-    (!snap.etherTapActiveX2 || snap.etherTapExpiring) &&
-    checkCondition(opt.etherTapCondition, snap);
+    (!event.etherTapActiveX2 || event.etherTapExpiring) &&
+    checkCondition(opt.etherTapCondition, event.conditionFacts);
 
   // 4. 法术阶（snap.skillReady 替代 isOn；未 ready → fall through）。
   //    autoElement(默认关)：按首怪九抗选最弱属性覆盖 attackStatus；缺 resists/未配 → 回退 snap.attackStatus(零变化)。
   const autoEl =
     opt.autoElement && firstMonster ? selectAutoElement(firstMonster, opt).element : null;
-  const atkStatus = autoEl ?? snap.attackStatus;
+  const atkStatus = autoEl ?? event.attackStatus;
   if (!etherTapGate && atkStatus !== 0 && firstMonster) {
     // tier 选择也用覆盖后的属性（基于该属性的 skillReady），保持 tier↔spellId 一致
-    const snapForTier = autoEl ? { ...snap, attackStatus: atkStatus } : snap;
-    const { tier } = selectSpellTier(opt, snapForTier);
+    const eventForTier = autoEl ? { ...event, attackStatus: atkStatus } : event;
+    const { tier } = selectSpellTier(opt, eventForTier);
     if (tier > 0) {
       const spellId = `1${atkStatus}${tier}`;
-      if (snap.skillReady[spellId]) {
+      if (event.skillReady?.[spellId]) {
         const spellKey = `${atkStatus}${tier}`;
         const spellName = OFFENSIVE_SPELL_LIB.get(spellKey);
         const aoeCount = spellName
-          ? snap.spellAoe[spellName] || (opt.spellAoe && opt.spellAoe[spellKey]) || 1
+          ? event.spellAoe?.[spellName] || (opt.spellAoe && opt.spellAoe[spellKey]) || 1
           : 1;
         if (aoeCount >= 2 && alive.length > 1) {
           return { type: "spell", spellId, targetId: firstByOrder(alive).id }; // AoE：order 最小
@@ -132,22 +132,22 @@ function decidePlan(opt, snap) {
       opt.mercifulBlow &&
       opt.fightingStyle === "2" &&
       alive.length === 1 &&
-      snap.roundNow === snap.roundAll
+      event.roundNow === event.roundAll
     ) {
       const t = firstMonster;
       const skillId = `2${opt.fightingStyle}03`;
       if (
         t.hpAbsNow / t.hpMax < MERCIFUL_HP &&
         buffsOf(t.id).includes("wpn_bleed") &&
-        snap.oc >= 105 &&
-        snap.skillReady[skillId]
+        event.overcharge >= 105 &&
+        event.skillReady?.[skillId]
       ) {
         return { type: "merciful-single", skillId, targetId: t.id };
       }
     }
 
     // utility scoring 选物理技能（PURE 候选 + 纯选择）
-    const scored = scorePhysicalSkillCandidates(opt, snap, {
+    const scored = scorePhysicalSkillCandidates(opt, event, {
       firstMonsterStunned: !!firstStunned,
     });
     const winner = pickByUtility(scored);
