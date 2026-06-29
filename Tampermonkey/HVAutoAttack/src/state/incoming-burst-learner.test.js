@@ -1,9 +1,17 @@
 // F5 回归锁：进场爆发学习器（运行 max + 类型，按 MID，名归一桥）。
 import { describe, it, expect, beforeEach } from "vitest";
-import { IncomingBurstLearningEvent, runIncomingBurstLearningAutomation } from "./incoming-burst-learner.js";
+import { setValue } from "./storage.js";
+import { STORAGE_KEYS } from "./persist-keys.js";
+import {
+  IncomingBurstLearningEvent,
+  runIncomingBurstLearningAutomation,
+} from "./incoming-burst-learner.js";
 
 const ev = (source, dmg, type) => ({ kind: "player-incoming", source, dmg, type });
-const status = [{ monsterId: 100, name: "Orc" }, { monsterId: 200, name: "Goblin" }];
+const status = [
+  { monsterId: 100, name: "Orc" },
+  { monsterId: 200, name: "Goblin" },
+];
 
 beforeEach(() => localStorage.clear());
 
@@ -13,7 +21,8 @@ const record = (events, monsterStatus = status) =>
     events,
     monsterStatus,
   });
-const readMap = () => runIncomingBurstLearningAutomation({ type: IncomingBurstLearningEvent.READ_MAP });
+const readMap = () =>
+  runIncomingBurstLearningAutomation({ type: IncomingBurstLearningEvent.READ_MAP });
 
 describe("incoming-burst-learner", () => {
   it("学单发最大伤害 + 类型（按 MID）", () => {
@@ -47,5 +56,17 @@ describe("incoming-burst-learner", () => {
   it("非 player-incoming（玩家打怪）不学", () => {
     record([{ kind: "monster-taking", source: "you", target: "Orc", dmg: 999, type: "fire" }]);
     expect(Object.keys(readMap())).toHaveLength(0);
+  });
+
+  it("normalizes learned burst storage before reading and updating", () => {
+    setValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, {
+      100.9: { maxHit: "500.5", type: "" },
+      200: { maxHit: "bad", type: "cold" },
+      bad: { maxHit: 999, type: "fire" },
+    });
+
+    expect(readMap()).toEqual({ 100: { maxHit: 500.5, type: "unknown" } });
+    record([ev("Orc", "800.5", "")], [{ monsterId: "100.9", name: "Orc" }]);
+    expect(readMap()).toEqual({ 100: { maxHit: 800.5, type: "unknown" } });
   });
 });

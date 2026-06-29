@@ -28,7 +28,9 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
-      /from\s+["'](?:\.\/|\.\.\/\.\.\/state\/|\.\.\/state\/)incoming-burst-learner\.js["']/.test(line) &&
+      /from\s+["'](?:\.\/|\.\.\/\.\.\/state\/|\.\.\/state\/)incoming-burst-learner\.js["']/.test(
+        line
+      ) &&
       /\b(?:updateBurstFromEvents|getLearnedBurstMap)\b/.test(line)
     ) {
       violations.push(`${where} legacy incoming burst learner imports are forbidden`);
@@ -51,10 +53,18 @@ for (const required of [
   "runIncomingBurstLearningAutomation",
   "IncomingBurstLearningEvent",
   "STORAGE_KEYS.LEARNED_INCOMING_BURST",
+  "normalizeMonsterId",
+  "normalizeLearnedBurstRecord",
+  "readLearnedBurstMap",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if ((ownerText.match(/readLearnedBurstMap\(/g) || []).length < 3) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must normalize learned incoming-burst storage reads`
+  );
 }
 
 for (const legacy of ["updateBurstFromEvents", "getLearnedBurstMap"]) {
@@ -71,4 +81,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-incoming-burst-learner-boundary] OK — incoming burst learning is behind one entry");
+console.log(
+  "[verify-incoming-burst-learner-boundary] OK — incoming burst learning is behind one entry"
+);

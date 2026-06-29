@@ -16,6 +16,37 @@ export const IncomingBurstLearningEvent = Object.freeze({
   READ_MAP: EVENT_READ_MAP,
 });
 
+function normalizePositiveNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function normalizeMonsterId(value) {
+  const number = normalizePositiveNumber(value);
+  return number == null ? null : Math.trunc(number);
+}
+
+function normalizeDamageType(value) {
+  return typeof value === "string" && value ? value : "unknown";
+}
+
+function normalizeLearnedBurstRecord(value) {
+  const maxHit = normalizePositiveNumber(value?.maxHit);
+  if (maxHit == null) return null;
+  return { maxHit, type: normalizeDamageType(value?.type) };
+}
+
+function readLearnedBurstMap() {
+  const source = getValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, true) || {};
+  const learned = {};
+  for (const mid of Object.keys(source)) {
+    const normalizedMid = normalizeMonsterId(mid);
+    const record = normalizeLearnedBurstRecord(source[mid]);
+    if (normalizedMid != null && record) learned[normalizedMid] = record;
+  }
+  return learned;
+}
+
 /**
  * 从本回合全量 DamageEvent[] 更新每 MID 的单发最大伤害 + 类型（运行 max，幂等）。
  * @param {Array<{kind:string,source:string,dmg:number,type:string}>} events
@@ -25,17 +56,19 @@ function updateBurstFromEvents(events, monsterStatus) {
   if (!events || !events.length) return;
   const nameToMid = {};
   for (const st of monsterStatus || []) {
-    if (st?.monsterId != null && st?.name) nameToMid[normalizeMonsterName(st.name)] = st.monsterId;
+    const mid = normalizeMonsterId(st?.monsterId);
+    if (mid != null && st?.name) nameToMid[normalizeMonsterName(st.name)] = mid;
   }
-  const learned = getValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, true) || {};
+  const learned = readLearnedBurstMap();
   let changed = false;
   for (const e of events) {
-    if (e.kind !== "player-incoming" || !(e.dmg > 0)) continue;
+    const dmg = normalizePositiveNumber(e.dmg);
+    if (e.kind !== "player-incoming" || dmg == null) continue;
     const mid = nameToMid[normalizeMonsterName(e.source)];
     if (mid == null) continue; // 无法定位 MID（与 decide 的 MID lookup 对齐）→ 跳
     const rec = learned[mid];
-    if (!rec || e.dmg > rec.maxHit) {
-      learned[mid] = { maxHit: e.dmg, type: e.type || "unknown" };
+    if (!rec || dmg > rec.maxHit) {
+      learned[mid] = { maxHit: dmg, type: normalizeDamageType(e.type) };
       changed = true;
     }
   }
@@ -44,11 +77,12 @@ function updateBurstFromEvents(events, monsterStatus) {
 
 /** 取全量学习表（snapshot attach 给 decide，保 decide PURE 不读 storage）。 */
 function getLearnedBurstMap() {
-  return getValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, true) || {};
+  return readLearnedBurstMap();
 }
 
 export function runIncomingBurstLearningAutomation(event = { type: EVENT_READ_MAP }) {
-  if (event.type === EVENT_RECORD_EVENTS) return updateBurstFromEvents(event.events, event.monsterStatus);
+  if (event.type === EVENT_RECORD_EVENTS)
+    return updateBurstFromEvents(event.events, event.monsterStatus);
   if (event.type === EVENT_READ_MAP) return getLearnedBurstMap();
   return undefined;
 }
