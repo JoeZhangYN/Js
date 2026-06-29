@@ -653,13 +653,27 @@ function checkStartRuntimeEntry() {
       `${rel(startRuntimeFile)} must read start runtime options through option entry`
     );
   }
-  for (const required of ["DEFAULT_ATTACK_STATUS", "normalizeAttackStatus"]) {
+  for (const required of [
+    "ATTACK_STATUS_RUNTIME_KEY",
+    "ATTACK_STATUS_OPTION_KEY",
+    "DEFAULT_ATTACK_STATUS",
+    "normalizeAttackStatus",
+  ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(startRuntimeFile)} must internalize attackStatus invariants`);
     }
   }
-  if (!/readOptionField\(["']attackStatus["'],\s*DEFAULT_ATTACK_STATUS\)/.test(text)) {
+  if (!/readOptionField\(ATTACK_STATUS_OPTION_KEY,\s*DEFAULT_ATTACK_STATUS\)/.test(text)) {
     violations.push(`${rel(startRuntimeFile)} must read attackStatus with an explicit fallback`);
+  }
+  for (const direct of [
+    /deps\.read\(["']attackStatus["']\)/,
+    /deps\.write\(["']attackStatus["']/,
+    /readOptionField\(["']attackStatus["']/,
+  ]) {
+    if (direct.test(text)) {
+      violations.push(`${rel(startRuntimeFile)} must use attackStatus key constants`);
+    }
   }
   if ((text.match(/normalizeAttackStatus\(/g) || []).length < 3) {
     violations.push(`${rel(startRuntimeFile)} must normalize attackStatus on write and read`);
