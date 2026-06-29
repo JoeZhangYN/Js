@@ -1,5 +1,4 @@
 // 怪物状态生命周期入口：持久态恢复、异常修复、每 turn HP/权重更新统一从这里进入。
-import { gE } from "../dom/query.js";
 import { setValue, getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
@@ -7,6 +6,7 @@ import { _alert } from "../core/lang.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { parseMonsterRoster, buildMonsterStatus } from "./log-parser.js";
 import { updateMonsterHpRuntime } from "./monster-status-hp.js";
+import { MonsterStatusViewEvent, runMonsterStatusView } from "./monster-status-view.js";
 import { BattleRoundStartLogEvent, runBattleRoundStartLog } from "./round-start-log.js";
 
 const EVENT_ENSURE_READY = "ensureReady";
@@ -51,10 +51,9 @@ function combatantCounts({ monsterAll, monsterAlive, bossAll, bossAlive }) {
 }
 
 function refreshCombatantCounts() {
-  const monsterAll = gE("div.btm1", "all").length;
-  const monsterDead = gE('img[src*="nbardead"]', "all").length;
-  const bossAll = gE('div.btm2[style^="background"]', "all").length;
-  const bossDead = gE('div.btm1[style*="opacity"] div.btm2[style*="background"]', "all").length;
+  const { monsterAll, monsterDead, bossAll, bossDead } = runMonsterStatusView({
+    type: MonsterStatusViewEvent.READ_COMBATANT_COUNTS,
+  });
   const counts = combatantCounts({
     monsterAll,
     monsterAlive: monsterAll - monsterDead,
@@ -94,11 +93,13 @@ function prepareRoundStart(event) {
 
 function repairMonsterStatus() {
   const battleLog = runBattleRoundStartLog({ type: BattleRoundStartLogEvent.READ_CURRENT });
-  const monsterAll = gE("div.btm2", "all").length;
+  const repairSnapshot = runMonsterStatusView({
+    type: MonsterStatusViewEvent.READ_REPAIR_SNAPSHOT,
+  });
   const hasInit = battleLog.rows.length && /Initializing/.test(battleLog.initializingText);
 
   if (hasInit) {
-    const { roster } = parseMonsterRoster(battleLog.rows, monsterAll);
+    const { roster } = parseMonsterRoster(battleLog.rows, repairSnapshot.monsterAll);
     setValue(STORAGE_KEYS.MONSTER_STATUS, buildMonsterStatus(roster));
     reloadCurrentPage();
     return;
@@ -110,16 +111,7 @@ function repairMonsterStatus() {
     "monsterStatus錯誤，正在嘗試修復",
     "monsterStatus Error, trying to fix"
   );
-  const monsterStatus = [];
-  gE("div.btm2", "all").forEach((monster, i) => {
-    monsterStatus.push({
-      order: i,
-      id: i === 9 ? 0 : i + 1,
-      hp: monster.style.background === "" ? 1000 : 100000,
-      hpInferred: true,
-    });
-  });
-  setValue(STORAGE_KEYS.MONSTER_STATUS, monsterStatus);
+  setValue(STORAGE_KEYS.MONSTER_STATUS, repairSnapshot.inferredStatus);
   reloadCurrentPage();
 }
 

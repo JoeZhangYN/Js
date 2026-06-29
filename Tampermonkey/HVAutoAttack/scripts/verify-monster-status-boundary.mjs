@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src/battle");
 const entry = path.normalize("src/battle/monster-status-automation.js");
+const statusView = path.normalize("src/battle/monster-status-view.js");
 const hpImpl = path.normalize("src/battle/monster-status-hp.js");
 const parserImpl = path.normalize("src/battle/log-parser.js");
 const roundStart = path.normalize("src/battle/new-round.js");
@@ -96,6 +97,22 @@ function checkEntry() {
       `${entry.replaceAll("\\", "/")} must normalize combatant counts on refresh and read`
     );
   }
+  for (const forbidden of ["gE(", "btm1", "btm2", "nbardead"]) {
+    if (text.includes(forbidden)) {
+      violations.push(
+        `${entry.replaceAll("\\", "/")} must read combatant DOM facts through monster-status-view`
+      );
+    }
+  }
+  for (const required of [
+    "MonsterStatusViewEvent.READ_COMBATANT_COUNTS",
+    "MonsterStatusViewEvent.READ_REPAIR_SNAPSHOT",
+    "runMonsterStatusView",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${entry.replaceAll("\\", "/")} must consume ${required}`);
+    }
+  }
   if (/RECORD_SPAWN_ROSTER/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must keep spawn roster behind prepare event`);
   }
@@ -137,6 +154,28 @@ function checkParser() {
   }
 }
 
+function checkStatusView() {
+  const text = fs.readFileSync(path.join(root, statusView), "utf8");
+  for (const required of [
+    "export const MonsterStatusViewEvent",
+    "export function runMonsterStatusView",
+    "READ_COMBATANT_COUNTS",
+    "READ_REPAIR_SNAPSHOT",
+    'gE("div.btm1"',
+    'img[src*="nbardead"]',
+    'gE("div.btm2"',
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${statusView.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
+  for (const forbidden of ["../state/store.js", "../state/storage.js", "setValue(", "g("]) {
+    if (text.includes(forbidden)) {
+      violations.push(`${statusView.replaceAll("\\", "/")} must only snapshot rendered DOM facts`);
+    }
+  }
+}
+
 function checkHpImpl() {
   const text = fs.readFileSync(path.join(root, hpImpl), "utf8");
   for (const required of ["OptionEvent.READ_FIELD", "runOptionAutomation"]) {
@@ -150,6 +189,7 @@ function checkHpImpl() {
 
 walk(srcDir);
 checkEntry();
+checkStatusView();
 checkHpImpl();
 checkParser();
 
