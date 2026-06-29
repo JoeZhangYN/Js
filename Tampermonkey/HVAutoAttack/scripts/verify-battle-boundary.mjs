@@ -275,6 +275,15 @@ function checkActionDelayEntry() {
   ) {
     violations.push(`${rel(actionDelayFile)} may export only its event entry`);
   }
+  if (!text.includes("activeDelayTimers")) {
+    violations.push(`${rel(actionDelayFile)} must track action delay timers in one registry`);
+  }
+  if (/\bdelayAlertTimer\b|\bdelayReloadTimer\b/.test(text)) {
+    violations.push(`${rel(actionDelayFile)} must not track action delay timers in parallel vars`);
+  }
+  if (!/for\s*\(\s*const\s+timer\s+of\s+activeDelayTimers\s*\)/.test(text)) {
+    violations.push(`${rel(actionDelayFile)} must cancel action delay timers through one loop`);
+  }
   const endActionDelayMatch = text.match(
     /function\s+endActionDelay\s*\([^)]*\)\s*\{(?<body>[\s\S]*?)\n\}/
   );

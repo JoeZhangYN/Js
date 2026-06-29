@@ -10,37 +10,43 @@ vi.mock("../state/option.js", () => ({
   runOptionAutomation: mocks.runOptionAutomation,
 }));
 
+function makeDeps(schedule = () => "alert-timer", scheduleReload = () => "reload-timer") {
+  return {
+    schedule: vi.fn(schedule),
+    cancel: vi.fn(),
+    triggerAlarm: vi.fn(),
+    scheduleReload: vi.fn(scheduleReload),
+  };
+}
+
+function setDelayOption(option) {
+  mocks.runOptionAutomation.mockImplementation((event) => option[event.key] ?? event.fallback);
+}
+
+function start(deps) {
+  return runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
+}
+
+function end(deps) {
+  return runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
+}
+
 beforeEach(() => {
   mocks.runOptionAutomation.mockReset();
-  runBattleActionDelayAutomation(
-    { type: BattleActionDelayEvent.ACTION_ENDED },
-    {
-      schedule: vi.fn(),
-      cancel: vi.fn(),
-      triggerAlarm: vi.fn(),
-      scheduleReload: vi.fn(),
-    }
-  );
+  end(makeDeps());
 });
 
 describe("runBattleActionDelayAutomation", () => {
   it("starts alert and reload timers from battle action delay options", () => {
-    const deps = {
-      schedule: vi.fn(() => "alert-timer"),
-      cancel: vi.fn(),
-      triggerAlarm: vi.fn(),
-      scheduleReload: vi.fn(() => "reload-timer"),
-    };
-    mocks.runOptionAutomation.mockImplementation((event) => ({
+    const deps = makeDeps();
+    setDelayOption({
       delayAlert: true,
       delayAlertTime: 7,
       delayReload: true,
       delayReloadTime: 11,
-    })[event.key] ?? event.fallback);
+    });
 
-    expect(
-      runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps)
-    ).toBe(true);
+    expect(start(deps)).toBe(true);
 
     expect(deps.schedule).toHaveBeenCalledWith(expect.any(Function), 7000);
     expect(deps.scheduleReload).toHaveBeenCalledWith(11);
@@ -67,49 +73,39 @@ describe("runBattleActionDelayAutomation", () => {
   });
 
   it("cancels only enabled action delay timers at action end", () => {
-    const deps = {
-      schedule: vi.fn(() => "alert-timer"),
-      cancel: vi.fn(),
-      triggerAlarm: vi.fn(),
-      scheduleReload: vi.fn(() => "reload-timer"),
-    };
-    mocks.runOptionAutomation.mockImplementation((event) => ({
+    const deps = makeDeps();
+    setDelayOption({
       delayAlert: true,
       delayAlertTime: 1,
       delayReload: false,
       delayReloadTime: 2,
-    })[event.key] ?? event.fallback);
+    });
 
-    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
-    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
+    start(deps);
+    end(deps);
 
     expect(deps.cancel).toHaveBeenCalledWith("alert-timer");
     expect(deps.cancel).toHaveBeenCalledTimes(1);
   });
 
   it("cancels timers that were started even when options changed before action end", () => {
-    const deps = {
-      schedule: vi.fn(() => "alert-timer"),
-      cancel: vi.fn(),
-      triggerAlarm: vi.fn(),
-      scheduleReload: vi.fn(() => "reload-timer"),
-    };
+    const deps = makeDeps();
     let currentOption = {
       delayAlert: true,
       delayAlertTime: 1,
       delayReload: true,
       delayReloadTime: 2,
     };
-    mocks.runOptionAutomation.mockImplementation((event) => currentOption[event.key] ?? event.fallback);
+    setDelayOption(currentOption);
 
-    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
+    start(deps);
     currentOption = {
       delayAlert: false,
       delayAlertTime: 1,
       delayReload: false,
       delayReloadTime: 2,
     };
-    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
+    end(deps);
 
     expect(deps.cancel).toHaveBeenCalledWith("alert-timer");
     expect(deps.cancel).toHaveBeenCalledWith("reload-timer");
@@ -117,28 +113,39 @@ describe("runBattleActionDelayAutomation", () => {
   });
 
   it("clears a previous action delay before starting a new one", () => {
-    const deps = {
-      schedule: vi.fn().mockReturnValueOnce("first-alert").mockReturnValueOnce("second-alert"),
-      cancel: vi.fn(),
-      triggerAlarm: vi.fn(),
-      scheduleReload: vi
-        .fn()
-        .mockReturnValueOnce("first-reload")
-        .mockReturnValueOnce("second-reload"),
-    };
-    mocks.runOptionAutomation.mockImplementation((event) => ({
+    const deps = makeDeps(
+      vi.fn().mockReturnValueOnce("first-alert").mockReturnValueOnce("second-alert"),
+      vi.fn().mockReturnValueOnce("first-reload").mockReturnValueOnce("second-reload")
+    );
+    setDelayOption({
       delayAlert: true,
       delayAlertTime: 1,
       delayReload: true,
       delayReloadTime: 2,
-    })[event.key] ?? event.fallback);
+    });
 
-    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
-    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
+    start(deps);
+    start(deps);
 
     expect(deps.cancel).toHaveBeenCalledWith("first-alert");
     expect(deps.cancel).toHaveBeenCalledWith("first-reload");
     expect(deps.schedule).toHaveBeenCalledTimes(2);
     expect(deps.scheduleReload).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not cancel stale handles after the active delay registry is cleared", () => {
+    const deps = makeDeps();
+    setDelayOption({
+      delayAlert: true,
+      delayAlertTime: 1,
+      delayReload: true,
+      delayReloadTime: 2,
+    });
+
+    start(deps);
+    end(deps);
+    end(deps);
+
+    expect(deps.cancel).toHaveBeenCalledTimes(2);
   });
 });

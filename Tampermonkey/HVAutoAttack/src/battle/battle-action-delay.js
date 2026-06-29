@@ -5,8 +5,7 @@ import { OptionEvent, runOptionAutomation } from "../state/option.js";
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
 
-let delayAlertTimer;
-let delayReloadTimer;
+const activeDelayTimers = new Set();
 
 export const BattleActionDelayEvent = Object.freeze({
   ACTION_STARTED: EVENT_ACTION_STARTED,
@@ -30,21 +29,16 @@ function startActionDelay(deps) {
   endActionDelay(deps);
   const option = readDelayOption();
   if (option.delayAlert) {
-    delayAlertTimer = deps.schedule(
-      () => deps.triggerAlarm(),
-      Number(option.delayAlertTime || 0) * 1000
-    );
+    activeDelayTimers.add(deps.schedule(() => deps.triggerAlarm(), option.delayAlertTime * 1000));
   }
   if (option.delayReload) {
-    delayReloadTimer = deps.scheduleReload(Number(option.delayReloadTime || 0));
+    activeDelayTimers.add(deps.scheduleReload(option.delayReloadTime));
   }
 }
 
 function endActionDelay(deps) {
-  if (delayAlertTimer !== undefined) deps.cancel(delayAlertTimer);
-  if (delayReloadTimer !== undefined) deps.cancel(delayReloadTimer);
-  delayAlertTimer = undefined;
-  delayReloadTimer = undefined;
+  for (const timer of activeDelayTimers) deps.cancel(timer);
+  activeDelayTimers.clear();
 }
 
 export function runBattleActionDelayAutomation(
