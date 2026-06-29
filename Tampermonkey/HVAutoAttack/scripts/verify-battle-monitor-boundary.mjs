@@ -205,13 +205,27 @@ function checkEntry() {
       );
     }
   }
-  if (
-    !/function routeBattleReportCommand\([^)]*\)\s*\{[\s\S]*runBattleReportAutomation\(event\)/.test(
-      text
-    )
-  ) {
+  for (const required of [
+    "[BattleReportEvent.BATTLE_STARTED]: (event) => runBattleReportAutomation(event)",
+    "[BattleReportEvent.CLEAR_DROP_REPORT]: (event) => runBattleReportAutomation(event)",
+    "[BattleReportEvent.CLEAR_USAGE_REPORT]: (event) => runBattleReportAutomation(event)",
+    "[BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY]: (event) => runBattleReportAutomation(event)",
+    "[BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY]: (event) => runBattleReportAutomation(event)",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(
+        `${entry.replaceAll("\\", "/")} must route report commands through the monitor handler table`
+      );
+    }
+  }
+  if (/\bObject\.values\(BattleReportEvent\)\.includes\(event\.type\)/.test(text)) {
     violations.push(
-      `${entry.replaceAll("\\", "/")} must pass report commands through without remapping`
+      `${entry.replaceAll("\\", "/")} must not route report commands through fallback membership checks`
+    );
+  }
+  if (/\bfunction routeBattleReportCommand\b/.test(text)) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must not split report routing out of the monitor handler table`
     );
   }
   if (/\bfunction recordBattleStarted\b/.test(text)) {

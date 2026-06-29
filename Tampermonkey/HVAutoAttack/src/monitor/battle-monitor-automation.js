@@ -32,23 +32,23 @@ function recordCompletion() {
   runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE });
 }
 
-function routeBattleReportCommand(event) {
-  if (!Object.values(BattleReportEvent).includes(event.type)) return undefined;
-  return runBattleReportAutomation(event);
-}
-
 const monitorEventHandlers = Object.freeze({
-  [BattleHudEvent.REFRESH]: (event) => runBattleHudAutomation(event),
-  [BattleActionUsageCaptureEvent.ACTION_STARTED]: (event) => runBattleActionUsageCapture(event),
+  [BattleHudEvent.REFRESH]: (event) => {
+    runBattleHudAutomation(event);
+  },
+  [BattleActionUsageCaptureEvent.ACTION_STARTED]: (event) => {
+    runBattleActionUsageCapture(event);
+  },
   [BattleActionUsageCaptureEvent.ACTION_ENDED]: (event) => recordActionEnd(event),
   [EVENT_COMPLETION_REACHED]: () => recordCompletion(),
+  [BattleReportEvent.BATTLE_STARTED]: (event) => runBattleReportAutomation(event),
+  [BattleReportEvent.CLEAR_DROP_REPORT]: (event) => runBattleReportAutomation(event),
+  [BattleReportEvent.CLEAR_USAGE_REPORT]: (event) => runBattleReportAutomation(event),
+  [BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY]: (event) => runBattleReportAutomation(event),
+  [BattleReportEvent.RENDER_USAGE_REPORT_TABLE_BODY]: (event) => runBattleReportAutomation(event),
 });
 
 export function runBattleMonitorAutomation(event = { type: BattleHudEvent.REFRESH }) {
   const handler = monitorEventHandlers[event.type];
-  if (handler) {
-    handler(event);
-    return undefined;
-  }
-  return routeBattleReportCommand(event);
+  return handler?.(event);
 }
