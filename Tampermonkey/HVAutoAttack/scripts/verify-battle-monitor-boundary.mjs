@@ -522,6 +522,12 @@ function checkRecordArchiveEntry() {
   if (!/export function runBattleRecordArchiveAutomation\(/.test(archiveText)) {
     violations.push(`${rel(archiveFile)} must expose runBattleRecordArchiveAutomation(event)`);
   }
+  if (!/const archiveEventHandlers\s*=\s*Object\.freeze\(/.test(archiveText)) {
+    violations.push(`${rel(archiveFile)} must route archive events through one handler table`);
+  }
+  if (/if\s*\(\s*event\.type\s*===\s*BattleRecordArchiveEvent\./.test(archiveText)) {
+    violations.push(`${rel(archiveFile)} must not route archive events through an if ladder`);
+  }
   if (
     !archiveText.includes("START_BATTLE_REPORT_RECORDING") ||
     !archiveText.includes("READ_OR_CREATE_DROP_RECORD") ||
