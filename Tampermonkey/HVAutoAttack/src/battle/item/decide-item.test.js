@@ -40,9 +40,26 @@ function gemFacts(snap) {
   };
 }
 
+function stallTopupFacts(snap) {
+  return {
+    roundNow: snap.roundNow,
+    roundAll: snap.roundAll,
+    aliveMonsterHpPercents: (snap.view || [])
+      .filter((monster) => !monster.isDead)
+      .map((monster) => monster.hpPercent),
+    overcharge: snap.oc,
+    manaPercent: snap.mp,
+    spiritPercent: snap.sp,
+    spiritOn: snap.spiritOn,
+    globalTurn: snap.globalTurn,
+    lastSpiritToggleGlobalTurn: snap.lastSpiritToggleGlobalTurn,
+    playerBuffs: snap.playerBuffs,
+  };
+}
+
 const gemPlan = (opt, s) => decideGemUse({ opt, ...gemFacts(s) }).plan;
 const potionPlan = (opt, s) => decidePotion(opt, s).plan;
-const stallPlan = (opt, s) => decideStallTopup(opt, s).plan;
+const stallPlan = (opt, s) => decideStallTopup({ opt, ...stallTopupFacts(s) }).plan;
 const scrollPlan = (opt, s) => decideScroll(opt, s).plan;
 
 describe("decideGemUse", () => {

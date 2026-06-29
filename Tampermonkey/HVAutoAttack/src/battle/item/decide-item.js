@@ -14,22 +14,20 @@ import {
 
 export { decideScroll } from "./decide-scroll.js";
 
-function stallActiveFacts(snap) {
+function stallActiveFacts(event) {
   return {
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
-    aliveMonsterHpPercents: (snap?.view || [])
-      .filter((monster) => !monster.isDead)
-      .map((monster) => monster.hpPercent),
-    overcharge: snap?.oc,
+    roundNow: event?.roundNow,
+    roundAll: event?.roundAll,
+    aliveMonsterHpPercents: event?.aliveMonsterHpPercents,
+    overcharge: event?.overcharge,
   };
 }
 
-function stallTopupFacts(snap) {
+function stallTopupFacts(event) {
   return {
-    manaPercent: snap?.mp,
-    spiritPercent: snap?.sp,
-    playerBuffs: snap?.playerBuffs,
+    manaPercent: event?.manaPercent,
+    spiritPercent: event?.spiritPercent,
+    playerBuffs: event?.playerBuffs,
   };
 }
 
@@ -96,17 +94,17 @@ export function decidePotion(opt, snap) {
  * 复刻 stallTopup（含 tryStallSpiritOff / tryStallFocus / tryStallDraught 的判断部分）。
  * 非 stall 模式 → noop；否则按 tryFirst 顺序产出满足条件的 attempts（spirit-off → focus → draught）。
  * 元素探活与点击归 execute 侧；此处只判断条件是否成立。
- * @param {object} opt
- * @param {import("../../core/types.js").BattleSnapshot} snap
+ * @param {object} event
  * @returns {import("../../core/types.js").ActionResult} { kind:"item-plan", plan }
  */
-export function decideStallTopup(opt, snap) {
+export function decideStallTopup(event = {}) {
+  const opt = event.opt || {};
   if (opt.stallMode === false) return { kind: "item-plan", plan: { type: "noop" } };
   if (
     !runBattleStallModeAutomation({
       type: BattleStallModeEvent.READ_ACTIVE,
       opt,
-      ...stallActiveFacts(snap),
+      ...stallActiveFacts(event),
     })
   ) {
     return { kind: "item-plan", plan: { type: "noop" } };
@@ -115,12 +113,12 @@ export function decideStallTopup(opt, snap) {
   const attempts = [];
 
   // step 0: 关 Spirit Stance（防抖）
-  const lastToggle = snap.lastSpiritToggleGlobalTurn ?? -999;
+  const lastToggle = event.lastSpiritToggleGlobalTurn ?? -999;
   const cooldown = opt.spiritToggleMinInterval ?? 3;
   if (
-    snap.spiritOn &&
+    event.spiritOn &&
     opt.stallTurnOffSpirit !== false &&
-    (snap.globalTurn || 0) - lastToggle >= cooldown
+    (event.globalTurn || 0) - lastToggle >= cooldown
   ) {
     attempts.push({ kind: "spirit-off" });
   }
@@ -128,10 +126,10 @@ export function decideStallTopup(opt, snap) {
   // step 1: Focus（OC 高 + MP 未满 + 无 Channeling）
   if (
     opt.stallFocus !== false &&
-    !snap.spiritOn &&
-    (snap.oc || 0) >= (opt.stallFocusOcThreshold ?? 60) &&
-    (snap.mp ?? 100) < (opt.stallFocusMpMax ?? 80) &&
-    !snap.playerBuffs.includes("channeling")
+    !event.spiritOn &&
+    (event.overcharge || 0) >= (opt.stallFocusOcThreshold ?? 60) &&
+    (event.manaPercent ?? 100) < (opt.stallFocusMpMax ?? 80) &&
+    !(event.playerBuffs || []).includes("channeling")
   ) {
     attempts.push({ kind: "focus" });
   }
@@ -140,7 +138,7 @@ export function decideStallTopup(opt, snap) {
   for (const potId of runBattleStallModeAutomation({
     type: BattleStallModeEvent.READ_TOPUP_CANDIDATES,
     opt,
-    ...stallTopupFacts(snap),
+    ...stallTopupFacts(event),
   })) {
     attempts.push({ kind: "draught", id: potId });
   }

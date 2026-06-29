@@ -1274,6 +1274,36 @@ function checkItemGemEntry() {
   }
 }
 
+function checkItemStallTopupEntry() {
+  const itemText = fs.readFileSync(decideItemFile, "utf8");
+  for (const required of [
+    "decideStallTopup",
+    "event?.roundNow",
+    "event?.roundAll",
+    "event?.aliveMonsterHpPercents",
+    "event?.overcharge",
+    "event?.manaPercent",
+    "event?.spiritPercent",
+    "event.spiritOn",
+    "event.globalTurn",
+    "event.lastSpiritToggleGlobalTurn",
+    "event.playerBuffs",
+  ]) {
+    if (!itemText.includes(required)) {
+      violations.push(`${rel(decideItemFile)} stall top-up must own fact ${required}`);
+    }
+  }
+  if (/decideStallTopup\s*\(\s*opt\s*,\s*snap\s*\)/.test(itemText)) {
+    violations.push(`${rel(decideItemFile)} must not expose opt/snap stall top-up input`);
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const stallRule =
+    rulesText.match(/name:\s*["']stallTopup["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideStallTopup\(\s*opt\s*,\s*snap\s*\)/.test(stallRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass narrow facts, not snap, to stall top-up`);
+  }
+}
+
 function checkPotionEntry() {
   const itemText = fs.readFileSync(decideItemFile, "utf8");
   for (const required of ["decidePotion", "itemOrderName", "itemOrderValue", "item"]) {
@@ -1515,6 +1545,7 @@ checkBuffEntry();
 checkSingleDebuffEntry();
 checkAllDebuffEntry();
 checkItemGemEntry();
+checkItemStallTopupEntry();
 checkItemScrollEntry();
 checkPotionEntry();
 checkDefendEntry();

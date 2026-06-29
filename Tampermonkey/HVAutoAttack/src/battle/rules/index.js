@@ -76,6 +76,23 @@ function gemFacts(snap) {
   };
 }
 
+function stallTopupFacts(snap) {
+  return {
+    roundNow: snap?.roundNow,
+    roundAll: snap?.roundAll,
+    aliveMonsterHpPercents: (snap?.view || [])
+      .filter((monster) => !monster.isDead)
+      .map((monster) => monster.hpPercent),
+    overcharge: snap?.oc,
+    manaPercent: snap?.mp,
+    spiritPercent: snap?.sp,
+    spiritOn: snap?.spiritOn,
+    globalTurn: snap?.globalTurn,
+    lastSpiritToggleGlobalTurn: snap?.lastSpiritToggleGlobalTurn,
+    playerBuffs: snap?.playerBuffs,
+  };
+}
+
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
@@ -97,7 +114,7 @@ export const BATTLE_RULES = [
   // 6. stall 主动 topup（decide 自 gate stallMode，出 attempts 链；execute tryFirst）
   {
     name: "stallTopup",
-    decide: (snap, opt) => decideStallTopup(opt, snap),
+    decide: (snap, opt) => decideStallTopup({ opt, ...stallTopupFacts(snap) }),
   },
   // 7. 防御（attemptClick 内置 isOn 探活）
   { name: "defend", decide: (snap, opt) => decideDefend(opt, snap) },
