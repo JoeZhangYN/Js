@@ -25,7 +25,7 @@ beforeEach(() => {
     }
     return state[key];
   });
-  mocks.runCdRuntimeAutomation.mockReturnValue(12);
+  mocks.runCdRuntimeAutomation.mockReturnValue(12.8);
 });
 
 describe("runBattleSpiritToggleAutomation", () => {
@@ -42,5 +42,18 @@ describe("runBattleSpiritToggleAutomation", () => {
     expect(
       runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.READ_LAST_TOGGLE })
     ).toBe(7);
+  });
+
+  it("normalizes invalid Spirit toggle turns through the entry", () => {
+    mocks.runCdRuntimeAutomation.mockReturnValue("bad");
+    expect(runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.RECORD_TOGGLE })).toBe(
+      0
+    );
+    expect(mocks.g).toHaveBeenCalledWith("lastSpiritToggleGlobalTurn", 0);
+
+    mocks.g.mockImplementation((key, value) => (value !== undefined ? value : "bad"));
+    expect(
+      runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.READ_LAST_TOGGLE })
+    ).toBe(0);
   });
 });

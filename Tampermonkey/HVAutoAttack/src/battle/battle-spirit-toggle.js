@@ -4,6 +4,7 @@ import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 
 const EVENT_RECORD_TOGGLE = "recordToggle";
 const EVENT_READ_LAST_TOGGLE = "readLastToggle";
+const DEFAULT_SPIRIT_TOGGLE_TURN = 0;
 
 export const BattleSpiritToggleEvent = Object.freeze({
   RECORD_TOGGLE: EVENT_RECORD_TOGGLE,
@@ -14,14 +15,19 @@ function readGlobalTurn() {
   return runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_GLOBAL_TURN });
 }
 
+function normalizeSpiritToggleTurn(value) {
+  const turn = Number(value);
+  return Number.isFinite(turn) && turn > 0 ? Math.trunc(turn) : DEFAULT_SPIRIT_TOGGLE_TURN;
+}
+
 function recordToggle() {
-  const turn = readGlobalTurn() || 0;
+  const turn = normalizeSpiritToggleTurn(readGlobalTurn());
   g("lastSpiritToggleGlobalTurn", turn);
   return turn;
 }
 
 function readLastToggle() {
-  return g("lastSpiritToggleGlobalTurn");
+  return normalizeSpiritToggleTurn(g("lastSpiritToggleGlobalTurn"));
 }
 
 export function runBattleSpiritToggleAutomation(event = { type: EVENT_READ_LAST_TOGGLE }) {

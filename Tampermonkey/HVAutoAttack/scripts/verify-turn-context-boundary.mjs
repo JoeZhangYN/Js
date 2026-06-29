@@ -102,8 +102,23 @@ function checkEntry() {
   }
 }
 
+function checkSpiritToggleEntry() {
+  const text = fs.readFileSync(path.join(root, spiritToggle), "utf8");
+  for (const required of ["DEFAULT_SPIRIT_TOGGLE_TURN", "normalizeSpiritToggleTurn"]) {
+    if (!text.includes(required)) {
+      violations.push(`${spiritToggle.replaceAll("\\", "/")} must internalize turn invariants`);
+    }
+  }
+  if ((text.match(/normalizeSpiritToggleTurn\(/g) || []).length < 3) {
+    violations.push(
+      `${spiritToggle.replaceAll("\\", "/")} must normalize Spirit toggle writes and reads`
+    );
+  }
+}
+
 walk(srcDir);
 checkEntry();
+checkSpiritToggleEntry();
 
 if (violations.length) {
   console.error("[verify-turn-context-boundary] FAIL");
