@@ -888,6 +888,14 @@ function checkBattleMonitorRuntimeEntry() {
   if (!/export function runBattleMonitorRuntime\(/.test(text)) {
     violations.push(`${rel(runtimeFile)} must expose runBattleMonitorRuntime(event)`);
   }
+  if (!/const runtimeContextHandlers\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(runtimeFile)} must route runtime context queries through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*===\s*EVENT_.*CONTEXT/.test(text)) {
+    violations.push(
+      `${rel(runtimeFile)} must not route runtime context queries through an if ladder`
+    );
+  }
   if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(`${rel(runtimeFile)} must read monitor option context through option entry`);
   }

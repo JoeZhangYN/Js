@@ -75,24 +75,24 @@ function readAttackStatus(deps) {
   return runBattleStartRuntimeAutomation({ type: BattleStartRuntimeEvent.READ_ATTACK_STATUS });
 }
 
-export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT }, deps = { g }) {
-  if (event.type === EVENT_REPORT_START_CONTEXT) {
+const runtimeContextHandlers = Object.freeze({
+  [EVENT_REPORT_START_CONTEXT]: (deps) => {
     const round = readRoundRuntime(deps);
     return {
       recordEach: readOptionField(deps, "recordEach", false),
       roundType: readRoundType(deps),
       roundAll: round.roundAll,
     };
-  }
-  if (event.type === EVENT_ARCHIVE_CONTEXT) return readArchiveContext(deps);
-  if (event.type === EVENT_DROP_COMPLETION_CONTEXT) {
+  },
+  [EVENT_ARCHIVE_CONTEXT]: (deps) => readArchiveContext(deps),
+  [EVENT_DROP_COMPLETION_CONTEXT]: (deps) => {
     return {
       ...readArchiveContext(deps),
       dropMonitor: readOptionField(deps, "dropMonitor", false),
       dropQuality: readOptionField(deps, "dropQuality", 0),
     };
-  }
-  if (event.type === EVENT_HUD_CONTEXT) {
+  },
+  [EVENT_HUD_CONTEXT]: (deps) => {
     const combatants = readCombatantCounts(deps);
     const round = readRoundRuntime(deps);
     return {
@@ -105,8 +105,8 @@ export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT },
       runSpeed: readRunSpeed(deps),
       turn: readTurn(deps),
     };
-  }
-  if (event.type === EVENT_USAGE_ACTION_CONTEXT) {
+  },
+  [EVENT_USAGE_ACTION_CONTEXT]: (deps) => {
     const combatants = readCombatantCounts(deps);
     const round = readRoundRuntime(deps);
     return {
@@ -115,8 +115,8 @@ export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT },
       roundNow: round.roundNow,
       roundAll: round.roundAll,
     };
-  }
-  if (event.type === EVENT_USAGE_COMPLETION_CONTEXT) {
+  },
+  [EVENT_USAGE_COMPLETION_CONTEXT]: (deps) => {
     const combatants = readCombatantCounts(deps);
     return {
       ...readArchiveContext(deps),
@@ -124,6 +124,9 @@ export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT },
       monsterAll: combatants.monsterAll,
       bossAll: combatants.bossAll,
     };
-  }
-  return undefined;
+  },
+});
+
+export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT }, deps = { g }) {
+  return runtimeContextHandlers[event.type]?.(deps);
 }
