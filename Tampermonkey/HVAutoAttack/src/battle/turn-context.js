@@ -46,10 +46,12 @@ function assertNoDomRefs(snap) {
   }
 }
 
-export function prepareBattleTurnContext() {
+export function prepareBattleTurnContext(event = {}) {
   runCdRuntimeAutomation({ type: CdRuntimeEvent.INCREMENT_TURN });
   runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST });
-  const snap = collectSnapshot();
+  const snap = collectSnapshot({
+    learnIncomingBurst: !!event.battleRuleOptions?.burstControlSwitch,
+  });
   mirrorVitalsToRuntime(snap);
   attachDecisionRuntime(snap);
   if (

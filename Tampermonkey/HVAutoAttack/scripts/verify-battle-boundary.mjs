@@ -820,8 +820,11 @@ function checkExecuteItem() {
 
 function checkSnapshot() {
   const text = fs.readFileSync(snapshotFile, "utf8");
-  if (!text.includes("OptionEvent.READ_FIELD")) {
-    violations.push(`${rel(snapshotFile)} must read snapshot option facts through option entry`);
+  if (!text.includes("learnIncomingBurst")) {
+    violations.push(`${rel(snapshotFile)} must receive burst learning decision from turn context`);
+  }
+  if (/OptionEvent|runOptionAutomation|burstControlSwitch/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not read battle rule options directly`);
   }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read snapshot option facts directly`);

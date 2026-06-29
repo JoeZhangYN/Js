@@ -67,6 +67,7 @@ describe("prepareBattleTurnContext", () => {
   it("prepares one turn context through the entry", () => {
     expect(prepareBattleTurnContext()).toBe(snap);
 
+    expect(mocks.collectSnapshot).toHaveBeenCalledWith({ learnIncomingBurst: false });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(1, { type: "incrementTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(2, { type: "persist" });
     expect(mocks.g).toHaveBeenCalledWith("hp", 90);
@@ -93,6 +94,12 @@ describe("prepareBattleTurnContext", () => {
     expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
       type: "readLastToggle",
     });
+  });
+
+  it("passes the burst-control rule decision into snapshot collection", () => {
+    prepareBattleTurnContext({ battleRuleOptions: { burstControlSwitch: true } });
+
+    expect(mocks.collectSnapshot).toHaveBeenCalledWith({ learnIncomingBurst: true });
   });
 
   it("reads debug snapshot through the option entry and accepts plain snapshot values", () => {

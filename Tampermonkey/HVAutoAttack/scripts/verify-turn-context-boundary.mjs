@@ -86,6 +86,8 @@ function checkEntry() {
     "CdRuntimeEvent.INCREMENT_TURN",
     "CdRuntimeEvent.PERSIST",
     "collectSnapshot",
+    "learnIncomingBurst",
+    "burstControlSwitch",
     "assertNoDomRefs",
     "OptionEvent.READ_FIELD",
     "BattleRoundEvent.READ_RUNTIME",

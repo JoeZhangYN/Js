@@ -19,15 +19,10 @@ const mocks = vi.hoisted(() => ({
   runIncomingBurstLearningAutomation: vi.fn(() => ({ learned: true })),
   runMonsterCacheAutomation: vi.fn(() => ({})),
   runMonsterStatusAutomation: vi.fn(() => [{ order: 0, monsterId: 101 }]),
-  runOptionAutomation: vi.fn(),
   runRecoveryLearningAutomation: vi.fn(),
 }));
 
 vi.mock("../dom/query.js", () => ({ gE: mocks.gE, isSpiritActive: mocks.isSpiritActive }));
-vi.mock("../state/option.js", () => ({
-  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
-  runOptionAutomation: mocks.runOptionAutomation,
-}));
 vi.mock("../state/battle-turn.js", () => ({
   BattleTurnEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
   runBattleTurnAutomation: mocks.runBattleTurnAutomation,
@@ -106,21 +101,12 @@ beforeEach(() => {
     if (selector === "#dvrs") return { textContent: "400" };
     return null;
   });
-  mocks.runOptionAutomation.mockImplementation((event) => {
-    if (event.key === "burstControlSwitch") return true;
-    return event.fallback;
-  });
 });
 
 describe("collectSnapshot", () => {
-  it("reads snapshot option facts through the option entry", () => {
-    const snap = collectSnapshot();
+  it("collects one battle snapshot and learns incoming burst when requested", () => {
+    const snap = collectSnapshot({ learnIncomingBurst: true });
 
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
-      type: "readField",
-      key: "burstControlSwitch",
-      fallback: false,
-    });
     expect(snap.turn).toBe(7);
     expect(snap.globalTurn).toBe(9);
     expect(snap.attackStatus).toBe(2);
@@ -142,5 +128,16 @@ describe("collectSnapshot", () => {
       monsterStatus: [{ order: 0, monsterId: 101 }],
     });
     expect(snap.learnedBurstByMid).toEqual({ learned: true });
+  });
+
+  it("skips incoming burst learning when the turn context does not request it", () => {
+    const snap = collectSnapshot();
+
+    expect(mocks.runIncomingBurstLearningAutomation).not.toHaveBeenCalledWith({
+      type: "recordEvents",
+      events: [],
+      monsterStatus: [{ order: 0, monsterId: 101 }],
+    });
+    expect(snap.learnedBurstByMid).toEqual({});
   });
 });

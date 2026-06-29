@@ -8,7 +8,6 @@
 // C. dispatch 副作用用 selector 字符串重查询 DOM，不用缓存引用
 //
 import { gE, isSpiritActive } from "../dom/query.js";
-import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
@@ -32,10 +31,6 @@ import {
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "../pages/ability-page.js";
 import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-skill-usage.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
-
-function readOptionField(key, fallback) {
-  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
-}
 
 /**
  * 解析一个 effect 容器（玩家 #pane_effects 或怪物 .btm6）内全部 img 为 {img, turns}[]。
@@ -215,7 +210,7 @@ function readSkillReady() {
  * 一次性 batch DOM read 组装当前 turn snapshot。
  * @returns {import("../core/types.js").BattleSnapshot}
  */
-export function collectSnapshot() {
+export function collectSnapshot(event = {}) {
   const monsters = readMonsters();
   const monsterStatus = runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_STATUS });
   // 统一怪物视图：join snap.monsters + monsterStatus(绝对血/finWeight) + monster-db 缓存(九抗/身份)。
@@ -251,8 +246,8 @@ export function collectSnapshot() {
     snap: { globalTurn, view },
   });
   // F5（默认 OFF，开关关时零开销）：从本回合战斗日志学每 MID 单发最大伤害 + 类型；attach 给 decide。
-  const burstOn = !!readOptionField("burstControlSwitch", false);
-  if (burstOn)
+  const learnIncomingBurst = !!event.learnIncomingBurst;
+  if (learnIncomingBurst)
     runIncomingBurstLearningAutomation({
       type: IncomingBurstLearningEvent.RECORD_EVENTS,
       events: battleLog,
@@ -290,7 +285,7 @@ export function collectSnapshot() {
     playerIncomingDps: estimatePlayerIncomingDps(battleLog, turn),
     monsterDpsByName: estimatePerMonsterDps(battleLog, turn),
     // F5：每 MID 致死/爆发伤害学习表（开关关→空，decide 自然 noop）
-    learnedBurstByMid: burstOn
+    learnedBurstByMid: learnIncomingBurst
       ? runIncomingBurstLearningAutomation({ type: IncomingBurstLearningEvent.READ_MAP })
       : {},
   };

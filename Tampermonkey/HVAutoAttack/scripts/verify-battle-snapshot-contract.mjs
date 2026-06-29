@@ -24,12 +24,12 @@ function requireText(relative, required) {
 
 const snapshotText = requireText(snapshot, [
   "collectSnapshot",
-  "burstControlSwitch",
+  "learnIncomingBurst",
   "BattleStartRuntimeEvent.READ_ATTACK_STATUS",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
 const scoringText = requireText(physicalScoring, ["opt.fightingStyle", "skillLib"]);
-requireText(snapshotTest, ["burstControlSwitch", "collectSnapshot"]);
+requireText(snapshotTest, ["learnIncomingBurst", "collectSnapshot"]);
 
 if (/\bexport\s+(?:function|const)\s+(?!collectSnapshot\b)/.test(snapshotText)) {
   violations.push(`${snapshot.replaceAll("\\", "/")} may export only collectSnapshot`);
@@ -38,6 +38,9 @@ if (/fightingStyle/.test(snapshotText)) {
   violations.push(
     `${snapshot.replaceAll("\\", "/")} must not duplicate fightingStyle option reads`
   );
+}
+if (/OptionEvent|runOptionAutomation|burstControlSwitch/.test(snapshotText)) {
+  violations.push(`${snapshot.replaceAll("\\", "/")} must not read battle rule options directly`);
 }
 if (/snap\.fightingStyle/.test(scoringText)) {
   violations.push(`${physicalScoring.replaceAll("\\", "/")} must use opt.fightingStyle`);

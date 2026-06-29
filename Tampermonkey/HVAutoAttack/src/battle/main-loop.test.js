@@ -52,8 +52,10 @@ describe("runBattleTurnAutomation", () => {
     runBattleTurnAutomation();
 
     expect(mocks.runBattleTurnRuntime).toHaveBeenCalledWith({ type: "turnStarted" });
-    expect(mocks.prepareBattleTurnContext).toHaveBeenCalledTimes(1);
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readBattleRuleOptions" });
+    expect(mocks.prepareBattleTurnContext).toHaveBeenCalledWith({
+      battleRuleOptions: { ok: true },
+    });
     expect(mocks.runRules).toHaveBeenCalledWith(
       [{ name: "testRule" }],
       { snap: true },
