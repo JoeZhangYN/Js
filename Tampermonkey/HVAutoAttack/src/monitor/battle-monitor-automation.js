@@ -13,8 +13,6 @@ const EVENT_HUD_REFRESH = "hudRefresh";
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
 const EVENT_COMPLETION_REACHED = "completionReached";
-const EVENT_READ_DROP_REPORT = "readDropReport";
-const EVENT_READ_USAGE_REPORT = "readUsageReport";
 const EVENT_CLEAR_DROP_REPORT = "clearDropReport";
 const EVENT_CLEAR_USAGE_REPORT = "clearUsageReport";
 const EVENT_RENDER_DROP_REPORT_TABLE_BODY = "renderDropReportTableBody";
@@ -26,8 +24,6 @@ export const BattleMonitorEvent = Object.freeze({
   ACTION_STARTED: EVENT_ACTION_STARTED,
   ACTION_ENDED: EVENT_ACTION_ENDED,
   COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
-  READ_DROP_REPORT: EVENT_READ_DROP_REPORT,
-  READ_USAGE_REPORT: EVENT_READ_USAGE_REPORT,
   CLEAR_DROP_REPORT: EVENT_CLEAR_DROP_REPORT,
   CLEAR_USAGE_REPORT: EVENT_CLEAR_USAGE_REPORT,
   RENDER_DROP_REPORT_TABLE_BODY: EVENT_RENDER_DROP_REPORT_TABLE_BODY,
@@ -59,10 +55,6 @@ export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) 
     recordActionEnd();
   } else if (event.type === EVENT_COMPLETION_REACHED) {
     recordCompletion();
-  } else if (event.type === EVENT_READ_DROP_REPORT) {
-    return runBattleReportAutomation({ type: BattleReportEvent.READ_DROP_REPORT });
-  } else if (event.type === EVENT_READ_USAGE_REPORT) {
-    return runBattleReportAutomation({ type: BattleReportEvent.READ_USAGE_REPORT });
   } else if (event.type === EVENT_RENDER_DROP_REPORT_TABLE_BODY) {
     return runBattleReportAutomation({ type: BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY });
   } else if (event.type === EVENT_RENDER_USAGE_REPORT_TABLE_BODY) {

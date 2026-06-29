@@ -12,8 +12,6 @@ const USAGE_SECTIONS = ["self", "restore", "items", "magic", "damage", "hurt", "
 
 export const BattleReportEvent = Object.freeze({
   BATTLE_STARTED: "battleStarted",
-  READ_DROP_REPORT: "readDropReport",
-  READ_USAGE_REPORT: "readUsageReport",
   CLEAR_DROP_REPORT: "clearDropReport",
   CLEAR_USAGE_REPORT: "clearUsageReport",
   RENDER_DROP_REPORT_TABLE_BODY: "renderDropReportTableBody",
@@ -137,12 +135,6 @@ function renderReportTableBody(type, report) {
 export function runBattleReportAutomation(event, deps = {}) {
   if (event.type === BattleReportEvent.BATTLE_STARTED) {
     return recordBattleReportStarted(deps);
-  }
-  if (event.type === BattleReportEvent.READ_DROP_REPORT) {
-    return readDropReport();
-  }
-  if (event.type === BattleReportEvent.READ_USAGE_REPORT) {
-    return readUsageReport();
   }
   if (event.type === BattleReportEvent.RENDER_DROP_REPORT_TABLE_BODY) {
     return renderReportTableBody(BattleReportViewEvent.RENDER_DROP_TABLE_BODY, readDropReport());

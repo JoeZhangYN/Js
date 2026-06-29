@@ -176,8 +176,6 @@ function checkEntry() {
     "ACTION_STARTED",
     "ACTION_ENDED",
     "COMPLETION_REACHED",
-    "READ_DROP_REPORT",
-    "READ_USAGE_REPORT",
     "CLEAR_DROP_REPORT",
     "CLEAR_USAGE_REPORT",
     "RENDER_DROP_REPORT_TABLE_BODY",
@@ -186,6 +184,15 @@ function checkEntry() {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} event wiring`);
     }
+  }
+  if (
+    /\b(?:READ_DROP_REPORT|READ_USAGE_REPORT)\b|["'](?:readDropReport|readUsageReport)["']/.test(
+      text
+    )
+  ) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must not expose raw battle report reads; use rendered report events`
+    );
   }
 }
 
@@ -569,18 +576,21 @@ function checkBattleReportEntry() {
       `${rel(reportFile)} must clear battle record sets through battle-record-archive`
     );
   }
-  for (const legacy of [
-    "recordBattleReportStarted",
-    "readDropReport",
-    "readUsageReport",
-    "clearDropReport",
-    "clearUsageReport",
-  ]) {
+  for (const legacy of ["recordBattleReportStarted", "clearDropReport", "clearUsageReport"]) {
     if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(text)) {
       violations.push(
         `${rel(reportFile)} legacy ${legacy} export must stay private behind runBattleReportAutomation(event)`
       );
     }
+  }
+  if (
+    /\b(?:READ_DROP_REPORT|READ_USAGE_REPORT)\b|["'](?:readDropReport|readUsageReport)["']/.test(
+      text
+    )
+  ) {
+    violations.push(
+      `${rel(reportFile)} raw report read events must stay deleted; expose rendered report events`
+    );
   }
 }
 

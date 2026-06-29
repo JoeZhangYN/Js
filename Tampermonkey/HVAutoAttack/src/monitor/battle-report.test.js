@@ -61,47 +61,41 @@ describe("battle report query", () => {
     expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("6/27: AR-5");
   });
 
-  it("builds a single drop report from the active record", () => {
+  it("renders a single drop report from the active record", () => {
     setValue(STORAGE_KEYS.DROP, { "#Credit": 12, "Health Potion": 1 });
 
-    expect(runBattleMonitorAutomation({ type: BattleMonitorEvent.READ_DROP_REPORT })).toEqual({
-      mode: "single",
-      rows: [
-        { key: "#Credit", value: 12 },
-        { key: "Health Potion", value: 1 },
-      ],
-    });
+    expect(
+      runBattleMonitorAutomation({ type: BattleMonitorEvent.RENDER_DROP_REPORT_TABLE_BODY })
+    ).toBe(
+      '<tbody><tr class="hvAATh"><td></td><td><l0>数量</l0><l1>數量</l1><l2>Amount</l2></td></tr><tr><td>#Credit</td><td>12</td></tr><tr><td>Health Potion</td><td>1</td></tr></tbody>'
+    );
   });
 
-  it("combines archived and active drop records for history view", () => {
+  it("renders archived and active drop records for history view", () => {
     setValue(STORAGE_KEYS.BATTLE_CODE, "now");
     setValue(STORAGE_KEYS.DROP, { "#Credit": 12 });
     setValue(STORAGE_KEYS.DROP_OLD, [{ __name: "old", "#EXP": 20 }]);
 
-    expect(runBattleMonitorAutomation({ type: BattleMonitorEvent.READ_DROP_REPORT })).toEqual({
-      mode: "history",
-      columns: ["now", "old"],
-      rows: [
-        { key: "#Credit", values: [12, ""] },
-        { key: "#EXP", values: ["", 20] },
-      ],
-    });
+    expect(
+      runBattleMonitorAutomation({ type: BattleMonitorEvent.RENDER_DROP_REPORT_TABLE_BODY })
+    ).toBe(
+      '<tbody><tr class="hvAATh"><td class="selectTable"></td><td>now</td><td>old</td></tr><tr><td>#Credit</td><td>12</td><td></td></tr><tr><td>#EXP</td><td></td><td>20</td></tr></tbody>'
+    );
   });
 
-  it("builds usage sections and tolerates missing sections", () => {
+  it("renders usage sections and tolerates missing sections", () => {
     setValue(STORAGE_KEYS.BATTLE_CODE, "now");
     setValue(STORAGE_KEYS.STATS, { self: { _turn: 3 }, magic: { Fireball: 2 } });
     setValue(STORAGE_KEYS.STATS_OLD, [{ __name: "old", self: { _turn: 1 } }]);
 
-    const report = runBattleMonitorAutomation({ type: BattleMonitorEvent.READ_USAGE_REPORT });
-    expect(report.mode).toBe("history");
-    expect(report.columns).toEqual(["now", "old"]);
-    expect(report.sections.find((s) => s.key === "self").rows).toEqual([
-      { key: "_turn", values: [3, 1] },
-    ]);
-    expect(report.sections.find((s) => s.key === "magic").rows).toEqual([
-      { key: "Fireball", values: [2, ""] },
-    ]);
+    const html = runBattleMonitorAutomation({
+      type: BattleMonitorEvent.RENDER_USAGE_REPORT_TABLE_BODY,
+    });
+
+    expect(html).toContain('<td colspan="3"><l0>自身 (次数)</l0>');
+    expect(html).toContain("<tr><td>_turn</td><td>3</td><td>1</td></tr>");
+    expect(html).toContain('<td colspan="3"><l0>技能 (次数)</l0>');
+    expect(html).toContain("<tr><td>Fireball</td><td>2</td><td></td></tr>");
   });
 
   it("clears battle report storage through monitor-owned commands", () => {
