@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setValue, getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
-import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
+import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { BattleMonitorEvent, runBattleMonitorAutomation } from "./battle-monitor-automation.js";
 
 beforeEach(() => {
@@ -14,30 +15,37 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+function setRoundContext(roundType, roundNow, roundAll) {
+  runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_TYPE, roundType });
+  runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_COUNT, roundNow, roundAll });
+  runBattleRoundAutomation({ type: BattleRoundEvent.SYNC_RUNTIME });
+}
+
 describe("battle report query", () => {
   it("records battle report code once when per-battle records are enabled", () => {
-    g("option", { recordEach: true });
-    g("roundType", "ar");
-    g("roundAll", 5);
+    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", recordEach: true } });
+    setRoundContext("ar", 1, 5);
 
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
     expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toMatch(/: AR-5$/);
 
     const firstCode = getValue(STORAGE_KEYS.BATTLE_CODE);
-    g("roundType", "rb");
-    g("roundAll", 1);
+    setRoundContext("rb", 1, 1);
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
     expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe(firstCode);
   });
 
   it("reads battle-start context inside the battle report entry", () => {
-    g("option", { recordEach: false });
+    runOptionAutomation({
+      type: OptionEvent.WRITE,
+      option: { version: "10.0", recordEach: false },
+    });
+    setRoundContext("ar", 1, 5);
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
     expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBeNull();
 
-    g("option", { recordEach: true });
-    g("roundType", "ar");
-    g("roundAll", 5);
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "recordEach", value: true });
+    setRoundContext("ar", 1, 5);
 
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
 
@@ -45,9 +53,8 @@ describe("battle report query", () => {
   });
 
   it("owns the battle report date label format", () => {
-    g("option", { recordEach: true });
-    g("roundType", "ar");
-    g("roundAll", 5);
+    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", recordEach: true } });
+    setRoundContext("ar", 1, 5);
 
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
 

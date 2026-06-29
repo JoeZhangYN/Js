@@ -18,6 +18,11 @@ const internalFiles = new Set(
     "src/state/storage.js",
   ].map((p) => path.normalize(p))
 );
+const monitorOptionFixtureTests = new Set(
+  ["src/monitor/battle-report.test.js", "src/monitor/record-usage.test.js"].map((p) =>
+    path.normalize(p)
+  )
+);
 const violations = [];
 
 function rel(file) {
@@ -34,14 +39,19 @@ function walk(dir) {
 
 function checkFile(file) {
   const relative = path.normalize(path.relative(root, file));
-  if (relative.endsWith(".test.js")) return;
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("//")) return;
+    const where = `${rel(file)}:${index + 1}`;
+    if (monitorOptionFixtureTests.has(relative) && /\bg\(\s*["']option["']/.test(line)) {
+      violations.push(
+        `${where} monitor tests must seed options through runOptionAutomation(event)`
+      );
+    }
+    if (relative.endsWith(".test.js")) return;
     if (internalFiles.has(relative)) return;
     if (line.includes("runBattleMonitorAutomation") || line.includes("BattleMonitorEvent")) return;
-    const where = `${rel(file)}:${index + 1}`;
     for (const name of [
       "refreshBattleHud",
       "recordBattleDrops",

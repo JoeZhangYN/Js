@@ -2,11 +2,15 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { g } from "../state/store.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { getValue, setValue } from "../state/storage.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { runBattleUsageAutomation } from "./record-usage.js";
 
 beforeEach(() => {
   localStorage.clear();
-  g("option", { recordUsage: false, recordEach: false });
+  runOptionAutomation({
+    type: OptionEvent.WRITE,
+    option: { version: "10.0", recordUsage: false, recordEach: false },
+  });
   g("roundNow", 1);
   g("roundAll", 1);
   g("monsterAll", 3);
@@ -24,7 +28,8 @@ describe("runBattleUsageAutomation", () => {
   });
 
   it("archives completion usage through the usage entry when enabled", () => {
-    g("option", { recordUsage: true, recordEach: true });
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "recordUsage", value: true });
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "recordEach", value: true });
     setValue(STORAGE_KEYS.BATTLE_CODE, "AR-1");
     setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
 
