@@ -3,21 +3,20 @@ import { checkAndActivateSpirit } from "./activate-spirit.js";
 
 const mocks = vi.hoisted(() => ({
   checkCondition: vi.fn(),
-  gE: vi.fn(),
-  isSpiritActive: vi.fn(),
+  runBattleSpiritToggleAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
 }));
 
-vi.mock("../../dom/query.js", () => ({
-  gE: mocks.gE,
-  isSpiritActive: mocks.isSpiritActive,
-}));
 vi.mock("../../settings/condition-eval.js", () => ({
   checkCondition: mocks.checkCondition,
 }));
 vi.mock("../../state/option.js", () => ({
   OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
+}));
+vi.mock("../battle-spirit-toggle.js", () => ({
+  BattleSpiritToggleEvent: Object.freeze({ ACTIVATE_IF_INACTIVE: "activateIfInactive" }),
+  runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
 }));
 
 function optionReader(enabled = true, condition = "cond") {
@@ -32,8 +31,7 @@ beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
   mocks.runOptionAutomation.mockImplementation(optionReader());
   mocks.checkCondition.mockReturnValue(true);
-  mocks.gE.mockReturnValue({ click: vi.fn() });
-  mocks.isSpiritActive.mockReturnValue(false);
+  mocks.runBattleSpiritToggleAutomation.mockReturnValue(true);
 });
 
 describe("checkAndActivateSpirit", () => {
@@ -63,22 +61,21 @@ describe("checkAndActivateSpirit", () => {
     expect(mocks.checkCondition).toHaveBeenCalledWith("cond");
   });
 
-  it("does not click when Spirit is already active", () => {
-    const spirit = { click: vi.fn() };
-    mocks.gE.mockReturnValue(spirit);
-    mocks.isSpiritActive.mockReturnValue(true);
+  it("claims the turn only when the Spirit toggle command activates it", () => {
+    mocks.runBattleSpiritToggleAutomation.mockReturnValue(false);
 
     expect(checkAndActivateSpirit()).toBe(false);
 
-    expect(spirit.click).not.toHaveBeenCalled();
+    expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
+      type: "activateIfInactive",
+    });
   });
 
-  it("clicks Spirit and claims the turn when enabled and inactive", () => {
-    const spirit = { click: vi.fn() };
-    mocks.gE.mockReturnValue(spirit);
-
+  it("routes pre-cast Spirit activation through the command entry", () => {
     expect(checkAndActivateSpirit()).toBe(true);
 
-    expect(spirit.click).toHaveBeenCalledTimes(1);
+    expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
+      type: "activateIfInactive",
+    });
   });
 });

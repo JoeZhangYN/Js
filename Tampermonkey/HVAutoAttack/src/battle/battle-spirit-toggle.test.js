@@ -7,10 +7,11 @@ import {
 const mocks = vi.hoisted(() => ({
   g: vi.fn(),
   gE: vi.fn(),
+  isSpiritActive: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
 }));
 
-vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
+vi.mock("../dom/query.js", () => ({ gE: mocks.gE, isSpiritActive: mocks.isSpiritActive }));
 vi.mock("../state/store.js", () => ({ g: mocks.g }));
 vi.mock("../state/cd-tracker.js", () => ({
   CdRuntimeEvent: Object.freeze({ READ_GLOBAL_TURN: "readGlobalTurn" }),
@@ -52,6 +53,38 @@ describe("runBattleSpiritToggleAutomation", () => {
       runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.CLICK_AND_RECORD })
     ).toBe(false);
 
+    expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
+    expect(mocks.g).not.toHaveBeenCalledWith("lastSpiritToggleGlobalTurn", expect.anything());
+  });
+
+  it("activates inactive Spirit and records cooldown through the command", () => {
+    const spirit = { click: vi.fn() };
+    mocks.gE.mockReturnValue(spirit);
+    mocks.isSpiritActive.mockReturnValue(false);
+
+    expect(
+      runBattleSpiritToggleAutomation({
+        type: BattleSpiritToggleEvent.ACTIVATE_IF_INACTIVE,
+      })
+    ).toBe(true);
+
+    expect(mocks.isSpiritActive).toHaveBeenCalledWith(spirit);
+    expect(spirit.click).toHaveBeenCalledTimes(1);
+    expect(mocks.g).toHaveBeenCalledWith("lastSpiritToggleGlobalTurn", 12);
+  });
+
+  it("does not click or record when Spirit is already active", () => {
+    const spirit = { click: vi.fn() };
+    mocks.gE.mockReturnValue(spirit);
+    mocks.isSpiritActive.mockReturnValue(true);
+
+    expect(
+      runBattleSpiritToggleAutomation({
+        type: BattleSpiritToggleEvent.ACTIVATE_IF_INACTIVE,
+      })
+    ).toBe(false);
+
+    expect(spirit.click).not.toHaveBeenCalled();
     expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
     expect(mocks.g).not.toHaveBeenCalledWith("lastSpiritToggleGlobalTurn", expect.anything());
   });
