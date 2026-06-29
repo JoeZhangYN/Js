@@ -5,7 +5,7 @@
 //  ① 本学习器拒学「gap > cdBase」的样本（clamp 到 cdBase）—— OC 饿/未及时开火只会膨胀 gap，
 //     故学习 CD 永 ≤ cdBase（只能把 CD 往下拉，永不上调）。
 //  ② 消费方 cd-tracker.turnsUntilReady 再夹 Math.min(learned, cdBase)；且真正开火仍以 DOM
-//     snap.skillReady 为权威（physical-skill-scoring.js）—— 学习 CD 只锐化 shouldSkipForBigSkill 的前瞻，
+//     snapshot skillReady 为开火权威（physical-skill-scoring.js）—— 学习 CD 只锐化 shouldSkipForBigSkill 的前瞻，
 //     绝不导致误开火。
 //
 // pending 为 **map**（多技能可同时计时，异于 recovery 的单 learnPending），runtime-only（g()），
@@ -66,6 +66,11 @@ function normalizeLearnedCdRecord(value, cdBase) {
   };
 }
 
+function normalizeReadySkillIds(value) {
+  const ids = Array.isArray(value) ? value : [];
+  return new Set(ids.filter((id) => typeof id === "string" && id));
+}
+
 function readLearnedCdMap() {
   const source = getValue(STORAGE_KEYS.LEARNED_CD, true) || {};
   const learned = {};
@@ -79,7 +84,7 @@ function readLearnedCdMap() {
 /**
  * 开火记录（SHELL）：execute-attack 物理分支 recordFire 之后调。
  * @param {string} code SKILL_REGISTRY 的 key
- * @param {string} id 本次开火解析后的 skillId（脱灰探测用 snap.skillReady[id]）
+ * @param {string} id 本次开火解析后的 skillId（脱灰探测用 readySkillIds）
  * @param {import("../core/types.js").BattleSnapshot} snap 仅读入口传入的 globalTurn
  */
 function recordCdFire(code, id, snap) {
@@ -91,18 +96,19 @@ function recordCdFire(code, id, snap) {
 
 /**
  * finalize（snapshot 入口，跑在 rules 前）：对每个在途 pending，若其技能已脱灰则结算 gap。
- * @param {{globalTurn:number, skillReady:Record<string,boolean>}} snap
+ * @param {{globalTurn:number, readySkillIds:Array<string>}} snap
  */
 function finalizeCdPending(snap) {
   const pending = normalizePending(g("cdLearnPending"));
   if (!Object.keys(pending).length) return;
   const now = normalizeTurn(snap?.globalTurn);
+  const readySkillIds = normalizeReadySkillIds(snap?.readySkillIds);
   let changed = false;
   for (const code of Object.keys(pending)) {
     const p = pending[code];
     const gap = now - p.firedTurn;
     if (gap <= 0) continue; // 同回合，未结算（与 recovery-learner 同款守卫）
-    if (!snap?.skillReady?.[p.id]) continue; // 仍灰（CD 中 / OC 不足）→ 续等
+    if (!readySkillIds.has(p.id)) continue; // 仍灰（CD 中 / OC 不足）→ 续等
     const entry = SKILL_REGISTRY[code];
     delete pending[code];
     changed = true;

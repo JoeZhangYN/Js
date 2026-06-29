@@ -22,7 +22,8 @@ function walk(dir) {
 
 function checkFile(file) {
   const relative = path.normalize(path.relative(root, file));
-  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+  const source = fs.readFileSync(file, "utf8");
+  const lines = source.split(/\r?\n/);
   lines.forEach((line, index) => {
     const where = `${rel(file)}:${index + 1}`;
     if (
@@ -42,6 +43,14 @@ function checkFile(file) {
       violations.push(`${where} learned CD storage belongs in cd learner`);
     }
   });
+  if (
+    relative !== owner &&
+    /CdLearningEvent\.FINALIZE_PENDING[\s\S]{0,220}\bsnap:\s*\{[\s\S]{0,120}\bskillReady\s*:/.test(
+      source
+    )
+  ) {
+    violations.push(`${rel(file)} must pass readySkillIds, not full skillReady, to CD finalize`);
+  }
 }
 
 walk(srcDir);
@@ -54,6 +63,7 @@ for (const required of [
   "OptionEvent.READ_FIELD",
   "normalizeTurn",
   "normalizePending",
+  "normalizeReadySkillIds",
   "normalizeLearnedCdRecord",
   "readLearnedCdMap",
 ]) {
@@ -69,6 +79,15 @@ if ((ownerText.match(/readLearnedCdMap\(/g) || []).length < 3) {
 }
 if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not read option fields directly`);
+}
+const finalizeBody = ownerText.match(/function finalizeCdPending\(snap\) \{[\s\S]*?\n\}/)?.[0];
+if (!finalizeBody?.includes("snap?.readySkillIds")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} finalize must consume narrow readySkillIds, not full skillReady`
+  );
+}
+if (/\bsnap\?\.skillReady\b|\bsnap\.skillReady\b/.test(finalizeBody || "")) {
+  violations.push(`${owner.replaceAll("\\", "/")} finalize must not consume full skillReady map`);
 }
 
 for (const legacy of ["recordCdFire", "finalizeCdPending", "getLearnedCd"]) {

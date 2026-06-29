@@ -205,6 +205,12 @@ function readSkillReady() {
   return map;
 }
 
+function readySkillIds(skillReady) {
+  return Object.entries(skillReady || {})
+    .filter(([, ready]) => ready)
+    .map(([id]) => id);
+}
+
 function liveMonsterIds(view) {
   return (view || [])
     .filter((monster) => monster.monsterId != null && !monster.isDead)
@@ -236,10 +242,10 @@ export function collectSnapshot(event = {}) {
     type: RecoveryLearningEvent.FINALIZE_PENDING,
     snap: snapPartial,
   });
-  // F3: 上回合开火的技能若本回合脱灰 → 收敛真实 CD（只需 globalTurn + skillReady）
+  // F3: 上回合开火的技能若本回合脱灰 → 收敛真实 CD（只需 globalTurn + readySkillIds）
   runCdLearningAutomation({
     type: CdLearningEvent.FINALIZE_PENDING,
-    snap: { globalTurn, skillReady },
+    snap: { globalTurn, readySkillIds: readySkillIds(skillReady) },
   });
   // F4: 上回合 OFC/FRD 开火的 boss 本回合是否已死 → 按 MID 学击杀率（只需 globalTurn + liveMonsterIds）
   runBigSkillKillLearningAutomation({

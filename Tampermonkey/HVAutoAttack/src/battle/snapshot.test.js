@@ -82,6 +82,7 @@ vi.mock("./battle-skill-usage.js", () => ({
 }));
 
 beforeEach(() => {
+  document.body.innerHTML = "";
   for (const fn of Object.values(mocks)) fn.mockClear?.();
   mocks.runCdRuntimeAutomation.mockImplementation((event) => {
     if (event.type === "readGlobalTurn") return 9;
@@ -105,6 +106,9 @@ beforeEach(() => {
 
 describe("collectSnapshot", () => {
   it("collects one battle snapshot and learns incoming burst when requested", () => {
+    document.body.innerHTML = '<button id="111"></button><button id="112"></button>';
+    document.getElementById("112").style.opacity = "0.5";
+
     const snap = collectSnapshot({ learnIncomingBurst: true });
 
     expect(snap.turn).toBe(7);
@@ -124,6 +128,10 @@ describe("collectSnapshot", () => {
     });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
+    expect(mocks.runCdLearningAutomation).toHaveBeenCalledWith({
+      type: "finalizePending",
+      snap: { globalTurn: 9, readySkillIds: ["111"] },
+    });
     expect(mocks.runBigSkillKillLearningAutomation).toHaveBeenCalledWith({
       type: "finalizePending",
       snap: { globalTurn: 9, liveMonsterIds: [101] },
