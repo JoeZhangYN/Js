@@ -45,8 +45,8 @@ function checkFile(file) {
     if (relative === owner && /from\s+["']\.\.\/battle\//.test(line)) {
       violations.push(`${where} recovery learner must not depend on battle internals`);
     }
-    if (relative === potionEconomy && /\bexport\s+const\s+POTION_RECOVERY\b/.test(line)) {
-      violations.push(`${where} battle fallback recovery must not be a public answer path`);
+    if (relative === potionEconomy && /\bPOTION_RECOVERY\b/.test(line)) {
+      violations.push(`${where} battle fallback recovery belongs in recovery learner`);
     }
   });
 }

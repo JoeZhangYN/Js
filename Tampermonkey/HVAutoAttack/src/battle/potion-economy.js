@@ -1,36 +1,19 @@
 // PoC：药品经济学。避免"喝药满血溢出"浪费 + 拖战策略。
-// HV 药品恢复量为定值（不是 %）→ 喝药时若 deficit < 恢复量 × 容差，溢出=浪费。
-
-/**
- * 药品 ID → 估计单次恢复绝对值（HP/MP/SP）。
- * 数值是 mid-tier 玩家保守估计的 local fallback；battle decisions should inject
- * state/recovery-learner.js READ_RECOVERY so learned recovery remains the business answer.
- */
-const POTION_RECOVERY = Object.freeze({
-  // Health
-  11191: { stat: "hp", amount: 200 }, // Health Draught
-  11195: { stat: "hp", amount: 400 }, // Health Potion
-  11199: { stat: "hp", amount: 800 }, // Health Elixir
-  // Mana
-  11291: { stat: "mp", amount: 50 }, // Mana Draught
-  11295: { stat: "mp", amount: 100 }, // Mana Potion
-  11299: { stat: "mp", amount: 200 }, // Mana Elixir
-  // Spirit
-  11391: { stat: "sp", amount: 80 }, // Spirit Draught
-  11395: { stat: "sp", amount: 160 }, // Spirit Potion
-  11399: { stat: "sp", amount: 320 }, // Spirit Elixir
-});
+// HV 药品恢复量为定值（不是 %），但实际答案统一由 recovery-learner READ_RECOVERY 入口提供。
 
 /**
  * 喝药是否浪费（deficit 不够大）。
- * 优先用 recovery-learner 学到的 amount，缺省 fallback hardcoded。
+ * 恢复量答案必须由调用方通过 recovery-learner 入口注入；本模块只做浪费判定。
  * @param {number|string} potionId
  * @param {{hpDeficit:number,mpDeficit:number,spDeficit:number}} snap
  * @param {number} tolerance 0..1 容差，0.7=允许 30% 溢出
- * @param {(id:number)=>{stat:string,amount:number}|null} [getRecovery] 注入查询函数（默认查 POTION_RECOVERY）
+ * @param {(id:number)=>{stat:string,amount:number}|null} getRecovery
  */
 export function isPotionWasteful(potionId, snap, tolerance = 0.7, getRecovery) {
-  const info = getRecovery ? getRecovery(parseInt(potionId)) : POTION_RECOVERY[parseInt(potionId)];
+  if (typeof getRecovery !== "function") {
+    throw new TypeError("isPotionWasteful requires recovery learner query");
+  }
+  const info = getRecovery(Number.parseInt(potionId, 10));
   if (!info) return false;
   const deficit = snap[`${info.stat}Deficit`] || 0;
   return deficit < info.amount * tolerance;
