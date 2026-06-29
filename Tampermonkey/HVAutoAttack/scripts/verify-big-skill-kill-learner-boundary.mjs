@@ -8,6 +8,7 @@ const ownerTest = path.normalize("src/state/big-skill-kill-learner.test.js");
 const ownerNormalizationTest = path.normalize(
   "src/state/big-skill-kill-learner-normalization.test.js"
 );
+const snapshot = path.normalize("src/battle/snapshot.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const violations = [];
 
@@ -60,6 +61,7 @@ for (const required of [
   "OptionEvent.READ_FIELD",
   "normalizeTurn",
   "normalizePending",
+  "normalizeLiveMonsterIds",
   "normalizeLearnedSkill",
   "readLearnedBigKillMap",
 ]) {
@@ -67,7 +69,7 @@ for (const required of [
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
-if ((ownerText.match(/normalizePending\(/g) || []).length < 3) {
+if ((ownerText.match(/normalizePending\(/g) || []).length < 2) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize pending big-kill state`);
 }
 if ((ownerText.match(/readLearnedBigKillMap\(/g) || []).length < 3) {
@@ -75,6 +77,31 @@ if ((ownerText.match(/readLearnedBigKillMap\(/g) || []).length < 3) {
 }
 if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not read option fields directly`);
+}
+const finalizeBody = ownerText.match(
+  /function finalizeBigSkillPending\(snap\) \{[\s\S]*?\n\}/
+)?.[0];
+if (!finalizeBody?.includes("snap?.liveMonsterIds")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} finalize must consume narrow liveMonsterIds, not full monster view`
+  );
+}
+if (/\bsnap\?\.view\b|\bsnap\.view\b/.test(finalizeBody || "")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} finalize must not consume full monster view rows`
+  );
+}
+
+const snapshotText = fs.readFileSync(path.join(root, snapshot), "utf8");
+if (!snapshotText.includes("liveMonsterIds(view)")) {
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must derive narrow liveMonsterIds for finalize`
+  );
+}
+if (/FINALIZE_PENDING[\s\S]{0,120}snap:\s*\{\s*globalTurn,\s*view\s*\}/.test(snapshotText)) {
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must not pass full view to big-skill kill finalize`
+  );
 }
 
 for (const legacy of ["recordBigSkillCast", "finalizeBigSkillPending", "ofcWillKillBoss"]) {

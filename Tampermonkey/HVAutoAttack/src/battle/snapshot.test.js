@@ -7,7 +7,11 @@ const mocks = vi.hoisted(() => ({
   gE: vi.fn(),
   isSpiritActive: vi.fn(() => false),
   runBattleMonsterView: vi.fn(() => ({
-    view: [],
+    view: [
+      { monsterId: 101, isDead: false },
+      { monsterId: 102, isDead: true },
+      { monsterId: null, isDead: false },
+    ],
     monsterIdentities: [{ name: "Alpha", monsterId: 101 }],
   })),
   monsterHpVars: vi.fn(() => ({})),
@@ -120,6 +124,10 @@ describe("collectSnapshot", () => {
     });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
+    expect(mocks.runBigSkillKillLearningAutomation).toHaveBeenCalledWith({
+      type: "finalizePending",
+      snap: { globalTurn: 9, liveMonsterIds: [101] },
+    });
     expect(mocks.runIncomingBurstLearningAutomation).toHaveBeenCalledWith({
       type: "recordEvents",
       events: [],

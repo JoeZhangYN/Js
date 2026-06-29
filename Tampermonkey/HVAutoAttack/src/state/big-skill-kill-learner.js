@@ -15,6 +15,13 @@ import { g } from "./store.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
+import {
+  normalizeLearnedMid,
+  normalizeLearnedSkill,
+  normalizeLiveMonsterIds,
+  normalizePending,
+  normalizeTurn,
+} from "./big-skill-kill-normalize.js";
 
 const OFC_OC_NEED = 205;
 const EVENT_RECORD_CAST = "recordCast";
@@ -43,59 +50,17 @@ function ewma(prior, obs, n) {
   return prior * (1 - alpha) + obs * alpha;
 }
 
-function normalizeNumber(value, fallback = 0) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : fallback;
-}
-
-const normalizeTurn = (value) => Math.max(0, Math.trunc(normalizeNumber(value)));
-const normalizeProbability = (value) => Math.max(0, Math.min(1, normalizeNumber(value)));
-const normalizeSampleCount = (value) => Math.max(0, Math.trunc(normalizeNumber(value)));
-
-function normalizeObservedBoss(value) {
-  const mid = normalizeNumber(value?.mid, NaN);
-  if (!Number.isFinite(mid)) return null;
-  return {
-    mid: Math.trunc(mid),
-    hpMax: Math.max(0, normalizeNumber(value?.hpMax)),
-    imperilActive: Boolean(value?.imperilActive),
-  };
-}
-
-function normalizePending(value) {
-  if (!value || (value.skill !== "OFC" && value.skill !== "FRD")) return null;
-  const bosses = (Array.isArray(value.bosses) ? value.bosses : [])
-    .map(normalizeObservedBoss)
-    .filter(Boolean);
-  if (!bosses.length) return null;
-  return {
-    globalTurn: normalizeTurn(value.globalTurn),
-    skill: value.skill,
-    bosses,
-  };
-}
-
-function normalizeLearnedSkill(value) {
-  return {
-    killProbNoIm: normalizeProbability(value?.killProbNoIm),
-    nNoIm: normalizeSampleCount(value?.nNoIm),
-    killProbWithIm: normalizeProbability(value?.killProbWithIm),
-    nWithIm: normalizeSampleCount(value?.nWithIm),
-    lastHpMax: Math.max(0, normalizeNumber(value?.lastHpMax)),
-  };
-}
-
 function readLearnedBigKillMap() {
   const source = getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true) || {};
   const learned = {};
   for (const mid of Object.keys(source)) {
-    const numericMid = normalizeNumber(mid, NaN);
-    if (!Number.isFinite(numericMid)) continue;
+    const numericMid = normalizeLearnedMid(mid);
+    if (numericMid == null) continue;
     const record = {};
     for (const skill of ["OFC", "FRD"]) {
       if (source[mid]?.[skill]) record[skill] = normalizeLearnedSkill(source[mid][skill]);
     }
-    if (Object.keys(record).length) learned[Math.trunc(numericMid)] = record;
+    if (Object.keys(record).length) learned[numericMid] = record;
   }
   return learned;
 }
@@ -127,16 +92,17 @@ function recordBigSkillCast(code, snap) {
 
 /**
  * finalize（snapshot 入口，跑在 rules 前）：上回合的 OFC/FRD 是否秒掉各 pending boss（按 MID 判死）。
- * @param {{globalTurn:number, view:Array}} snap
+ * @param {{globalTurn:number, liveMonsterIds:Array<number>}} snap
  */
 function finalizeBigSkillPending(snap) {
   const pending = normalizePending(g("bigKillPending"));
   if (!pending) return;
   const now = normalizeTurn(snap?.globalTurn);
   if (now === pending.globalTurn) return; // 同回合，未结算
+  const liveMonsterIds = normalizeLiveMonsterIds(snap?.liveMonsterIds);
   const learned = readLearnedBigKillMap();
   for (const b of pending.bosses) {
-    const killed = (snap?.view || []).some((m) => m.monsterId === b.mid && !m.isDead) ? 0 : 1;
+    const killed = liveMonsterIds.has(b.mid) ? 0 : 1;
     if (!learned[b.mid]) learned[b.mid] = {};
     const rec = learned[b.mid];
     if (!rec[pending.skill]) {

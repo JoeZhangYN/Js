@@ -205,6 +205,12 @@ function readSkillReady() {
   return map;
 }
 
+function liveMonsterIds(view) {
+  return (view || [])
+    .filter((monster) => monster.monsterId != null && !monster.isDead)
+    .map((monster) => monster.monsterId);
+}
+
 /**
  * 一次性 batch DOM read 组装当前 turn snapshot。
  * @returns {import("../core/types.js").BattleSnapshot}
@@ -235,10 +241,10 @@ export function collectSnapshot(event = {}) {
     type: CdLearningEvent.FINALIZE_PENDING,
     snap: { globalTurn, skillReady },
   });
-  // F4: 上回合 OFC/FRD 开火的 boss 本回合是否已死 → 按 MID 学击杀率（只需 globalTurn + view）
+  // F4: 上回合 OFC/FRD 开火的 boss 本回合是否已死 → 按 MID 学击杀率（只需 globalTurn + liveMonsterIds）
   runBigSkillKillLearningAutomation({
     type: BigSkillKillLearningEvent.FINALIZE_PENDING,
-    snap: { globalTurn, view },
+    snap: { globalTurn, liveMonsterIds: liveMonsterIds(view) },
   });
   // F5（默认 OFF，开关关时零开销）：从本回合战斗日志学每 MID 单发最大伤害 + 类型；attach 给 decide。
   const learnIncomingBurst = !!event.learnIncomingBurst;

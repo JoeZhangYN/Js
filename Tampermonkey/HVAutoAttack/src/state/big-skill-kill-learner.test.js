@@ -24,11 +24,14 @@ const boss = (over = {}) => ({
   ...over,
 });
 const ready = { cdMap: { OFC: 0 }, oc: 250, view: [boss()] };
+const finalizeSnap = ({ mid = 100, killed = true, t = 1 } = {}) => ({
+  globalTurn: t,
+  liveMonsterIds: killed ? [] : [mid],
+});
 
 beforeEach(() => {
   localStorage.clear();
   g("bigKillPending", null);
-  g("globalTurn", 0);
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue(false);
 });
@@ -45,7 +48,7 @@ function observe({ imperil = false, killed = true, mid = 100, hpMax = 5000, t = 
   });
   runBigSkillKillLearningAutomation({
     type: BigSkillKillLearningEvent.FINALIZE_PENDING,
-    snap: { view: [boss({ monsterId: mid, hpMax, isDead: killed })], globalTurn: t + 1 },
+    snap: finalizeSnap({ mid, killed, t: t + 1 }),
   });
 }
 const learnHigh = () => {
@@ -98,7 +101,7 @@ describe("finalize 学击杀率 + ofcWillKillBoss 守卫", () => {
     recordCast("OFC", { view: [boss()], globalTurn: 7 });
     runBigSkillKillLearningAutomation({
       type: BigSkillKillLearningEvent.FINALIZE_PENDING,
-      snap: { view: [boss({ isDead: true })], globalTurn: 7 },
+      snap: finalizeSnap({ t: 7 }),
     });
     expect(g("bigKillPending")).toBeTruthy();
   });
