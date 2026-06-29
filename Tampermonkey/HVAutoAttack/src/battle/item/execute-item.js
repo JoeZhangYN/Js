@@ -50,7 +50,7 @@ export function executeItem(plan, snap) {
             runRecoveryLearningAutomation({
               type: RecoveryLearningEvent.RECORD_PRE_DRINK,
               potionId: id,
-              snap: { recoveryAbs: recoveryAbs(snap) },
+              recoveryAbs: recoveryAbs(snap),
             });
           };
         }
@@ -88,7 +88,7 @@ export function executeItem(plan, snap) {
                 runRecoveryLearningAutomation({
                   type: RecoveryLearningEvent.RECORD_PRE_DRINK,
                   potionId: attempt.id,
-                  snap: { recoveryAbs: recoveryAbs(snap) },
+                  recoveryAbs: recoveryAbs(snap),
                 });
               },
             })

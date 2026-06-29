@@ -105,17 +105,16 @@ function readLearnedRecoveryMap() {
 /**
  * 喝药前调用：保存 pending 观测点。
  * @param {number|string} potionId
- * @param {{recoveryAbs?:{hp?:number,mp?:number,sp?:number}}} snap
  */
-function recordPreDrink(potionId, snap) {
+function recordPreDrink(potionId, recoveryAbs) {
   const id = normalizePotionId(potionId);
   const info = RECOVERY_PRIOR[id];
-  if (!info) return; // 非药品（Health Gem 等）不学
+  if (!info) return;
   g(
     "learnPending",
     normalizePending({
       potionId: id,
-      pre: normalizeRecoveryAbs(snap?.recoveryAbs)[info.stat],
+      pre: normalizeRecoveryAbs(recoveryAbs)[info.stat],
       turn: runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT }),
     })
   );
@@ -180,14 +179,13 @@ function getLearnedRecovery(potionId) {
   const fallback = RECOVERY_PRIOR[id];
   if (!fallback) return null;
   const learned = readLearnedRecoveryMap();
-  if (learned[id] && learned[id].n > 0) {
-    return { stat: fallback.stat, amount: learned[id].amount };
-  }
+  if (learned[id]?.n > 0) return { stat: fallback.stat, amount: learned[id].amount };
   return fallback;
 }
 
 export function runRecoveryLearningAutomation(event = { type: EVENT_READ_RECOVERY }) {
-  if (event.type === EVENT_RECORD_PRE_DRINK) return recordPreDrink(event.potionId, event.snap);
+  if (event.type === EVENT_RECORD_PRE_DRINK)
+    return recordPreDrink(event.potionId, event.recoveryAbs);
   if (event.type === EVENT_FINALIZE_PENDING) return finalizePending(event);
   if (event.type === EVENT_READ_RECOVERY) return getLearnedRecovery(event.potionId);
   return undefined;

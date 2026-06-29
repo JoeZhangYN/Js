@@ -29,7 +29,7 @@ describe("recovery learner", () => {
     runRecoveryLearningAutomation({
       type: RecoveryLearningEvent.RECORD_PRE_DRINK,
       potionId: 11195,
-      snap: { recoveryAbs: { hp: 1000 } },
+      recoveryAbs: { hp: 1000 },
     });
     runBattleTurnAutomation({ type: BattleTurnEvent.TURN_STARTED });
     runRecoveryLearningAutomation({
@@ -55,7 +55,7 @@ describe("recovery learner", () => {
     runRecoveryLearningAutomation({
       type: RecoveryLearningEvent.RECORD_PRE_DRINK,
       potionId: 11195,
-      snap: { recoveryAbs: { hp: 1000 } },
+      recoveryAbs: { hp: 1000 },
     });
     runBattleTurnAutomation({ type: BattleTurnEvent.TURN_STARTED });
     runRecoveryLearningAutomation({

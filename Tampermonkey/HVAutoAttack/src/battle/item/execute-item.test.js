@@ -82,7 +82,7 @@ describe("executeItem", () => {
     expect(mocks.runRecoveryLearningAutomation).toHaveBeenCalledWith({
       type: "recordPreDrink",
       potionId: 11191,
-      snap: { recoveryAbs: { hp: 200, mp: undefined, sp: undefined } },
+      recoveryAbs: { hp: 200, mp: undefined, sp: undefined },
     });
   });
 
@@ -122,7 +122,7 @@ describe("executeItem", () => {
     expect(mocks.runRecoveryLearningAutomation).toHaveBeenCalledWith({
       type: "recordPreDrink",
       potionId: 123,
-      snap: { recoveryAbs: { hp: undefined, mp: 50, sp: undefined } },
+      recoveryAbs: { hp: undefined, mp: 50, sp: undefined },
     });
     expect(mocks.runBattleItemCommand).toHaveBeenCalledWith(
       expect.objectContaining({

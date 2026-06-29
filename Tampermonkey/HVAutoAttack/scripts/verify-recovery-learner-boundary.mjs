@@ -61,6 +61,13 @@ function checkFile(file) {
   for (const call of source.matchAll(/runRecoveryLearningAutomation\(\s*\{[\s\S]*?\}\s*\)/g)) {
     if (
       relative !== owner &&
+      call[0].includes("RecoveryLearningEvent.RECORD_PRE_DRINK") &&
+      /\bsnap\s*:/.test(call[0])
+    ) {
+      violations.push(`${rel(file)} must pass recoveryAbs, not snap, to recovery record pre-drink`);
+    }
+    if (
+      relative !== owner &&
       call[0].includes("RecoveryLearningEvent.FINALIZE_PENDING") &&
       /\bsnap\s*:/.test(call[0])
     ) {
@@ -106,6 +113,19 @@ if (!finalizeBody?.includes("event?.recoveryAbs")) {
 }
 if (/\bsnap\?\.recoveryAbs\b|\bsnap\.recoveryAbs\b/.test(finalizeBody || "")) {
   violations.push(`${owner.replaceAll("\\", "/")} finalize must not consume snap-shaped input`);
+}
+const recordBody = ownerText.match(
+  /function recordPreDrink\(potionId, recoveryAbs\) \{[\s\S]*?\n\}/
+)?.[0];
+if (!recordBody?.includes("normalizeRecoveryAbs(recoveryAbs)")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} record pre-drink must consume direct recoveryAbs`
+  );
+}
+if (/\bsnap\?\.recoveryAbs\b|\bsnap\.recoveryAbs\b/.test(recordBody || "")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} record pre-drink must not consume snap-shaped input`
+  );
 }
 
 for (const legacy of ["recordPreDrink", "finalizePending", "getLearnedRecovery"]) {
