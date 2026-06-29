@@ -5,7 +5,7 @@ import {
 } from "./battle-record-archive.js";
 import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
 import { applyBattleActionUsageStats } from "./record-usage-action-stats.js";
-import { recordCompletedBattleUsage } from "./record-usage-completion.js";
+import { recordCompletedUsage } from "./record-usage-completion.js";
 
 const EVENT_RECORD_ACTION_USAGE = "recordActionUsage";
 const EVENT_RECORD_COMPLETED_USAGE = "recordCompletedUsage";
@@ -41,7 +41,7 @@ export function runBattleUsageAutomation(event) {
     return undefined;
   }
   if (event.type === EVENT_RECORD_COMPLETED_USAGE) {
-    recordCompletedBattleUsage();
+    recordCompletedUsage();
     return undefined;
   }
   return undefined;

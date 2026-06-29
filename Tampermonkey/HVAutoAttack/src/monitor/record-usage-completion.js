@@ -10,7 +10,7 @@ function readExistingUsageStats() {
   });
 }
 
-export function recordCompletedBattleUsage() {
+export function recordCompletedUsage() {
   const context = runBattleMonitorRuntime({
     type: BattleMonitorRuntimeEvent.USAGE_COMPLETION_CONTEXT,
   });

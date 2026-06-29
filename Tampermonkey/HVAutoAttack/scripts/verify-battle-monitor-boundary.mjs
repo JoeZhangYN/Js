@@ -438,8 +438,11 @@ function checkUsageImplementation() {
   if (!text.includes("./record-usage-completion.js")) {
     violations.push(`${rel(usageFile)} must route completion aggregation through private helper`);
   }
-  if (!/export function recordCompletedBattleUsage\(/.test(completionText)) {
+  if (!/export function recordCompletedUsage\(/.test(completionText)) {
     violations.push(`${rel(usageCompletionFile)} must own completion usage aggregation`);
+  }
+  if (/\brecordCompletedBattleUsage\b/.test(text + completionText)) {
+    violations.push(`${rel(usageFile)} must use recordCompletedUsage command vocabulary`);
   }
   if (!completionText.includes("BattleMonitorRuntimeEvent.USAGE_COMPLETION_CONTEXT")) {
     violations.push(
