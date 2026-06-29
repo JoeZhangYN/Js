@@ -26,7 +26,8 @@ function walk(dir) {
 
 function checkFile(file) {
   const relative = path.normalize(path.relative(root, file));
-  const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
+  const source = fs.readFileSync(file, "utf8");
+  const lines = source.split(/\r?\n/);
   lines.forEach((line, index) => {
     const where = `${rel(file)}:${index + 1}`;
     if (
@@ -49,6 +50,16 @@ function checkFile(file) {
       violations.push(`${where} learned big-kill storage belongs in big skill kill learner`);
     }
   });
+  if (
+    relative !== owner &&
+    /BigSkillKillLearningEvent\.FINALIZE_PENDING[\s\S]{0,220}\bsnap:\s*\{[\s\S]{0,120}\bview\s*:/.test(
+      source
+    )
+  ) {
+    violations.push(
+      `${rel(file)} must pass liveMonsterIds, not full view, to big-skill kill finalize`
+    );
+  }
 }
 
 walk(srcDir);

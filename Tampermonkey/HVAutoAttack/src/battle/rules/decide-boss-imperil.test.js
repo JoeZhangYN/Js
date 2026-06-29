@@ -38,7 +38,7 @@ function observeOfcKill(mid, turn) {
   });
   runBigSkillKillLearningAutomation({
     type: BigSkillKillLearningEvent.FINALIZE_PENDING,
-    snap: { globalTurn: turn + 1, view: [] },
+    snap: { globalTurn: turn + 1, liveMonsterIds: [] },
   });
 }
 

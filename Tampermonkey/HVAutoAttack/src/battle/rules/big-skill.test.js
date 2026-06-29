@@ -35,7 +35,7 @@ function learnBossKillEvidence() {
       type: BigSkillKillLearningEvent.FINALIZE_PENDING,
       snap: {
         globalTurn: i * 100 + 1,
-        view: [{ monsterId: 100, isBoss: true, isDead: true, hpMax: 5000, buffs: [] }],
+        liveMonsterIds: [],
       },
     });
   }
