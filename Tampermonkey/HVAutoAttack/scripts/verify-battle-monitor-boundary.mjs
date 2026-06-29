@@ -577,6 +577,12 @@ function checkRecordArchiveEntry() {
   if (!archiveDropRecordsText.includes("./drop-default-record.js")) {
     violations.push(`${rel(archiveDropRecordsFile)} must use drop record default helper`);
   }
+  if (!/export const dropRecordArchiveFamily\s*=\s*Object\.freeze\(/.test(archiveDropRecordsText)) {
+    violations.push(`${rel(archiveDropRecordsFile)} must expose one drop archive family object`);
+  }
+  if (/export function\s+/.test(archiveDropRecordsText)) {
+    violations.push(`${rel(archiveDropRecordsFile)} must not export individual drop helpers`);
+  }
   if (/{\s*["']#EXP["']:\s*0,\s*["']#Credit["']:\s*0\s*}/.test(archiveDropRecordsText)) {
     violations.push(`${rel(archiveDropRecordsFile)} must not duplicate drop record default shape`);
   }
@@ -587,6 +593,14 @@ function checkRecordArchiveEntry() {
   }
   if (!archiveUsageRecordsText.includes("./record-usage-default-stats.js")) {
     violations.push(`${rel(archiveUsageRecordsFile)} must use usage stats default helper`);
+  }
+  if (
+    !/export const usageRecordArchiveFamily\s*=\s*Object\.freeze\(/.test(archiveUsageRecordsText)
+  ) {
+    violations.push(`${rel(archiveUsageRecordsFile)} must expose one usage archive family object`);
+  }
+  if (/export function\s+/.test(archiveUsageRecordsText)) {
+    violations.push(`${rel(archiveUsageRecordsFile)} must not export individual usage helpers`);
   }
   if (/function createDefaultUsageStats\(/.test(archiveUsageRecordsText)) {
     violations.push(`${rel(archiveUsageRecordsFile)} must not duplicate usage stats default shape`);

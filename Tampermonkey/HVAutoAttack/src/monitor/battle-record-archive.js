@@ -1,20 +1,8 @@
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { getValue, setValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
-import {
-  clearDropReportRecordSet,
-  readOrCreateDropRecord,
-  readDropReportSource,
-  storeOrArchiveDropRecord,
-} from "./battle-record-archive-drop-records.js";
-import {
-  clearUsageReportRecordSet,
-  readOrCreateUsageStats,
-  readUsageReportSource,
-  readUsageStats,
-  storeOrArchiveUsageStats,
-  storeUsageStats,
-} from "./battle-record-archive-usage-records.js";
+import { dropRecordArchiveFamily } from "./battle-record-archive-drop-records.js";
+import { usageRecordArchiveFamily } from "./battle-record-archive-usage-records.js";
 
 export const BattleRecordArchiveEvent = Object.freeze({
   START_BATTLE_REPORT_RECORDING: "startBattleReportRecording",
@@ -133,29 +121,30 @@ export function runBattleRecordArchiveAutomation(event, deps = {}) {
   const fullDeps = makeDeps(deps);
   const recordStore = makeRecordStore(fullDeps);
   if (event.type === BattleRecordArchiveEvent.READ_OR_CREATE_DROP_RECORD)
-    return readOrCreateDropRecord(recordStore);
+    return dropRecordArchiveFamily.readOrCreateDropRecord(recordStore);
   if (event.type === BattleRecordArchiveEvent.STORE_OR_ARCHIVE_DROP_RECORD) {
-    return storeOrArchiveDropRecord(event, recordStore);
+    return dropRecordArchiveFamily.storeOrArchiveDropRecord(event, recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.READ_OR_CREATE_USAGE_STATS)
-    return readOrCreateUsageStats(recordStore);
-  if (event.type === BattleRecordArchiveEvent.READ_USAGE_STATS) return readUsageStats(recordStore);
+    return usageRecordArchiveFamily.readOrCreateUsageStats(recordStore);
+  if (event.type === BattleRecordArchiveEvent.READ_USAGE_STATS)
+    return usageRecordArchiveFamily.readUsageStats(recordStore);
   if (event.type === BattleRecordArchiveEvent.STORE_USAGE_STATS)
-    return storeUsageStats(event, recordStore);
+    return usageRecordArchiveFamily.storeUsageStats(event, recordStore);
   if (event.type === BattleRecordArchiveEvent.STORE_OR_ARCHIVE_USAGE_STATS) {
-    return storeOrArchiveUsageStats(event, recordStore);
+    return usageRecordArchiveFamily.storeOrArchiveUsageStats(event, recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.READ_DROP_REPORT_SOURCE) {
-    return readDropReportSource(recordStore);
+    return dropRecordArchiveFamily.readDropReportSource(recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.READ_USAGE_REPORT_SOURCE) {
-    return readUsageReportSource(recordStore);
+    return usageRecordArchiveFamily.readUsageReportSource(recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.CLEAR_DROP_REPORT) {
-    return clearDropReportRecordSet(recordStore);
+    return dropRecordArchiveFamily.clearDropReportRecordSet(recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.CLEAR_USAGE_REPORT) {
-    return clearUsageReportRecordSet(recordStore);
+    return usageRecordArchiveFamily.clearUsageReportRecordSet(recordStore);
   }
   if (event.type === BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING)
     return startBattleReportRecording(event, fullDeps);
