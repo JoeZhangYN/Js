@@ -23,6 +23,14 @@ if (!renderText.includes("SettingsFormOptionEvent.COLLECT_OPTION")) {
     `${settingsRender.replaceAll("\\", "/")} must collect option through form-option`
   );
 }
+if (!renderText.includes("OptionEvent.READ_FIELD")) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must hydrate settings from option fields through option entry`
+  );
+}
+if (/\bg\(\s*["']option["']/.test(renderText)) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} must not read raw option state`);
+}
 const applyBlock =
   /gE\(["']\.hvAAApply["'][\s\S]*?gE\(["']\.hvAACancel["']/.exec(renderText)?.[0] || "";
 for (const forbidden of [

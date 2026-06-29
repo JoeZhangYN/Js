@@ -59,13 +59,93 @@ export function openHVAAConfig(lang) {
     optionBox();
     gE("#hvAATab-Main").style.zIndex = 1;
     // option 已装填时 select[name=lang] 由 optionBox 回填循环统一设值；仅首次(option 未落盘)用 lang/持久化值兜底。
-    if (!g("option")) gE('select[name="lang"]').value = String(lang ?? g("lang") ?? "0");
+    if (!hasStoredOption()) gE('select[name="lang"]').value = String(lang ?? g("lang") ?? "0");
   }
 }
 
 // 反向桥(对称于 hv-utils 暴露的 window.HVUT_openConfig)：hv-utils 顶部栏内 HVAA 触发器经此开 HVAA 面板。
 // hv-utils 是 sloppy-mode 第三方脚本不能 ESM import，故经 window 桥(与 window.HVAA_i18n 同模式)。
 if (typeof window !== "undefined") window.HVAA_openConfig = openHVAAConfig;
+
+function readOptionField(key, fallback) {
+  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
+}
+
+function hasStoredOption() {
+  return readOptionField("version", undefined) !== undefined;
+}
+
+function readSettingsInputValue(name, className) {
+  const directValue = readOptionField(name, undefined);
+  if (directValue !== undefined) return directValue;
+  const path = name.split("_");
+  if (path.length !== 2 || className === "hvAACustomize") return "";
+  const parent = readOptionField(path[0], undefined);
+  return parent && typeof parent === "object" && parent[path[1]] !== undefined
+    ? parent[path[1]]
+    : "";
+}
+
+function hydrateSettingsForm(optionBox) {
+  if (!hasStoredOption()) return;
+
+  let i;
+  let j;
+  let k;
+  const inputs = gE("input,select", "all", optionBox);
+  for (i = 0; i < inputs.length; i++) {
+    if (inputs[i].className === "hvAADebug") continue;
+    const itemName = inputs[i].name || inputs[i].id;
+    const itemValue = readSettingsInputValue(itemName, inputs[i].className);
+    if (
+      inputs[i].type === "text" ||
+      inputs[i].type === "hidden" ||
+      inputs[i].type === "select-one" ||
+      inputs[i].type === "number"
+    ) {
+      inputs[i].value = itemValue;
+    } else if (inputs[i].type === "checkbox") {
+      inputs[i].checked = itemValue;
+    }
+  }
+
+  const defaultOnInputs = gE("input[data-default-on]", "all", optionBox);
+  for (const input of defaultOnInputs) {
+    if (readOptionField(input.id, undefined) === undefined) input.checked = true;
+  }
+
+  const customize = gE(".customize", "all", optionBox);
+  for (i = 0; i < customize.length; i++) {
+    const itemName = customize[i].getAttribute("name");
+    const groups = readOptionField(itemName, undefined);
+    if (!groups || typeof groups !== "object") continue;
+    for (j in groups) {
+      const group = customize[i].appendChild(cE("div"));
+      group.className = "customizeGroup";
+      group.innerHTML = `${j * 1 + 1}. `;
+      for (k = 0; k < groups[j].length; k++) {
+        const input = group.appendChild(cE("input"));
+        input.type = "text";
+        input.className = "customizeInput";
+        input.name = `${itemName}_${j}`;
+        input.value = groups[j][k];
+        // "||" 行类型哨兵：只读窄显示，原样 round-trip（非门 "!" 前缀按普通文本回填）
+        if (input.value === "||") {
+          input.readOnly = true;
+          input.style.width = "2em";
+        }
+      }
+    }
+  }
+
+  gE(".hvAAQuickSite>table>tbody", optionBox).innerHTML = runQuickSiteAutomation({
+    type: QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY,
+    option: { quickSite: readOptionField("quickSite", undefined) },
+  });
+  gE(".hvAABackupList", optionBox).innerHTML = runOptionBackupAutomation({
+    type: OptionBackupEvent.RENDER_LIST_ITEMS,
+  });
+}
 
 export function optionBox() {
   // 配置界面
@@ -410,7 +490,6 @@ export function optionBox() {
     if (e.target.tagName === "INPUT") return;
     const target = e.target.tagName === "SPAN" ? e.target : e.target.parentNode;
     const name = target.getAttribute("name");
-    let i;
     let _html;
     if (name === "Drop") {
       // 掉落监测
@@ -743,77 +822,5 @@ export function optionBox() {
   gE(".hvAACancel", optionBox).onclick = function () {
     optionBox.style.display = "none";
   };
-  if (g("option")) {
-    let i;
-    let j;
-    let k;
-    const _option = g("option");
-    const inputs = gE("input,select", "all", optionBox);
-    let itemName;
-    let itemArray;
-    let itemValue;
-    let _html;
-    for (i = 0; i < inputs.length; i++) {
-      if (inputs[i].className === "hvAADebug") continue;
-      itemName = inputs[i].name || inputs[i].id;
-      if (typeof _option[itemName] !== "undefined") {
-        itemValue = _option[itemName];
-      } else {
-        itemArray = itemName.split("_");
-        itemValue = "";
-        if (
-          itemArray.length === 2 &&
-          typeof _option[itemArray[0]] === "object" &&
-          inputs[i].className !== "hvAACustomize" &&
-          typeof _option[itemArray[0]][itemArray[1]] !== "undefined"
-        ) {
-          itemValue = _option[itemArray[0]][itemArray[1]];
-        }
-      }
-      if (
-        inputs[i].type === "text" ||
-        inputs[i].type === "hidden" ||
-        inputs[i].type === "select-one" ||
-        inputs[i].type === "number"
-      ) {
-        inputs[i].value = itemValue;
-      } else if (inputs[i].type === "checkbox") {
-        inputs[i].checked = itemValue;
-      }
-    }
-    const defaultOnInputs = gE("input[data-default-on]", "all", optionBox);
-    for (const input of defaultOnInputs) {
-      if (typeof _option[input.id] === "undefined") input.checked = true;
-    }
-    const customize = gE(".customize", "all", optionBox);
-    for (i = 0; i < customize.length; i++) {
-      itemName = customize[i].getAttribute("name");
-      if (itemName in _option) {
-        for (j in _option[itemName]) {
-          const group = customize[i].appendChild(cE("div"));
-          group.className = "customizeGroup";
-          group.innerHTML = `${j * 1 + 1}. `;
-          for (k = 0; k < _option[itemName][j].length; k++) {
-            const input = group.appendChild(cE("input"));
-            input.type = "text";
-            input.className = "customizeInput";
-            input.name = `${itemName}_${j}`;
-            input.value = _option[itemName][j][k];
-            // "||" 行类型哨兵：只读窄显示，原样 round-trip（非门 "!" 前缀按普通文本回填）
-            if (input.value === "||") {
-              input.readOnly = true;
-              input.style.width = "2em";
-            }
-          }
-        }
-      }
-    }
-    gE(".hvAAQuickSite>table>tbody", optionBox).innerHTML = runQuickSiteAutomation({
-      type: QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY,
-      option: _option,
-    });
-    gE(".hvAABackupList", optionBox).innerHTML = runOptionBackupAutomation({
-      type: OptionBackupEvent.RENDER_LIST_ITEMS,
-    });
-  }
+  hydrateSettingsForm(optionBox);
 }
