@@ -109,6 +109,25 @@ function checkEntry() {
       `${entry.replaceAll("\\", "/")} must route battle usage through runBattleUsageAutomation(event)`
     );
   }
+  if (!text.includes("BattleUsageEvent.ACTION_ENDED")) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must route action usage through BattleUsageEvent.ACTION_ENDED`
+    );
+  }
+  if (!text.includes("BattleUsageEvent.COMPLETION_REACHED")) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must route completion usage through BattleUsageEvent.COMPLETION_REACHED`
+    );
+  }
+  if (
+    /runBattleUsageAutomation\(\s*\{\s*type:\s*(?:EVENT_ACTION_ENDED|EVENT_COMPLETION_REACHED|["'](?:actionEnded|completionReached)["'])/.test(
+      text
+    )
+  ) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must not assemble raw usage events; use BattleUsageEvent`
+    );
+  }
   if (!text.includes("runBattleReportAutomation")) {
     violations.push(
       `${entry.replaceAll("\\", "/")} must route battle reports through runBattleReportAutomation(event)`
@@ -222,7 +241,20 @@ function checkUsageImplementation() {
   const entryText = fs.readFileSync(path.join(root, entry), "utf8");
   const text = fs.readFileSync(usageFile, "utf8");
   if (!/export function runBattleUsageAutomation\(/.test(text)) {
-    violations.push(`${rel(usageFile)} must expose only runBattleUsageAutomation(event)`);
+    violations.push(`${rel(usageFile)} must expose runBattleUsageAutomation(event)`);
+  }
+  if (!/export const BattleUsageEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(usageFile)} must expose BattleUsageEvent`);
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleUsageEvent\b|runBattleUsageAutomation\b)/.test(text)
+  ) {
+    violations.push(`${rel(usageFile)} may export only its event entry`);
+  }
+  for (const required of ["ACTION_ENDED", "COMPLETION_REACHED"]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(usageFile)} must own ${required}`);
+    }
   }
   if (
     /\brecordUsage\s*\(/.test(entryText) ||

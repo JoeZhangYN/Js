@@ -1,7 +1,7 @@
 // 战斗监控编排入口：HUD、使用统计、掉落记录统一从这里进入。
 import { BattleHudEvent, runBattleHudAutomation } from "./battle-info.js";
 import { BattleDropEvent, runBattleDropAutomation } from "./drop-monitor.js";
-import { runBattleUsageAutomation } from "./record-usage.js";
+import { BattleUsageEvent, runBattleUsageAutomation } from "./record-usage.js";
 import { BattleReportEvent, runBattleReportAutomation } from "./battle-report.js";
 import {
   BattleActionUsageCaptureEvent,
@@ -36,12 +36,12 @@ export const BattleMonitorEvent = Object.freeze({
 
 function recordActionEnd() {
   const usage = runBattleActionUsageCapture({ type: BattleActionUsageCaptureEvent.ACTION_ENDED });
-  if (usage) runBattleUsageAutomation({ type: EVENT_ACTION_ENDED, usage });
+  if (usage) runBattleUsageAutomation({ type: BattleUsageEvent.ACTION_ENDED, usage });
 }
 
 function recordCompletion() {
   runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED });
-  runBattleUsageAutomation({ type: EVENT_COMPLETION_REACHED });
+  runBattleUsageAutomation({ type: BattleUsageEvent.COMPLETION_REACHED });
 }
 
 function recordBattleStarted() {

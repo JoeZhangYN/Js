@@ -9,6 +9,14 @@ import {
 } from "./battle-record-archive.js";
 import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-monitor-runtime.js";
 
+const EVENT_ACTION_ENDED = "actionEnded";
+const EVENT_COMPLETION_REACHED = "completionReached";
+
+export const BattleUsageEvent = Object.freeze({
+  ACTION_ENDED: EVENT_ACTION_ENDED,
+  COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
+});
+
 function createDefaultUsageStats() {
   return {
     self: {
@@ -240,11 +248,11 @@ function recordCompletedBattleUsage() {
 }
 
 export function runBattleUsageAutomation(event) {
-  if (event.type === "actionEnded") {
+  if (event.type === EVENT_ACTION_ENDED) {
     recordBattleActionUsage(event.usage);
     return undefined;
   }
-  if (event.type === "completionReached") {
+  if (event.type === EVENT_COMPLETION_REACHED) {
     recordCompletedBattleUsage();
     return undefined;
   }

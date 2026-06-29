@@ -3,7 +3,7 @@ import { g } from "../state/store.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { getValue, setValue } from "../state/storage.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
-import { runBattleUsageAutomation } from "./record-usage.js";
+import { BattleUsageEvent, runBattleUsageAutomation } from "./record-usage.js";
 
 beforeEach(() => {
   localStorage.clear();
@@ -21,7 +21,7 @@ describe("runBattleUsageAutomation", () => {
   it("does not archive completion usage when record usage is disabled", () => {
     setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
 
-    runBattleUsageAutomation({ type: "completionReached" });
+    runBattleUsageAutomation({ type: BattleUsageEvent.COMPLETION_REACHED });
 
     expect(getValue(STORAGE_KEYS.STATS, true)).toEqual({ self: { _monster: 0, _boss: 0 } });
     expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toBeNull();
@@ -33,7 +33,7 @@ describe("runBattleUsageAutomation", () => {
     setValue(STORAGE_KEYS.BATTLE_CODE, "AR-1");
     setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
 
-    runBattleUsageAutomation({ type: "completionReached" });
+    runBattleUsageAutomation({ type: BattleUsageEvent.COMPLETION_REACHED });
 
     expect(getValue(STORAGE_KEYS.STATS, true)).toBeNull();
     expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toEqual([
