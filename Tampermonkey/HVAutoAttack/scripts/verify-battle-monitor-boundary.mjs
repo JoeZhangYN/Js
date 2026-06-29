@@ -597,23 +597,30 @@ function checkBattleReportViewEntry() {
 
 function checkMonsterResistPanelEntry() {
   const panelFile = path.join(root, "src/monitor/monster-resist-panel.js");
+  const panelModelFile = path.join(root, "src/monitor/monster-resist-panel-model.js");
   const text = fs.readFileSync(panelFile, "utf8");
+  const modelText = fs.readFileSync(panelModelFile, "utf8");
   if (!/export const MonsterResistPanelEvent\s*=\s*Object\.freeze\(/.test(text)) {
     violations.push(`${rel(panelFile)} must expose MonsterResistPanelEvent`);
   }
   if (!/export function runMonsterResistPanelAutomation\(/.test(text)) {
     violations.push(`${rel(panelFile)} must expose runMonsterResistPanelAutomation(event)`);
   }
-  if (!text.includes("MonsterStatusEvent.READ_IDS_BY_ORDER")) {
-    violations.push(`${rel(panelFile)} must read monster identities through monster-status entry`);
+  if (!text.includes("runMonsterResistPanelModel")) {
+    violations.push(`${rel(panelFile)} must render resist rows from monster resist panel model`);
   }
-  if (/from\s+["']\.\.\/state\/store\.js["']/.test(text)) {
+  if (!modelText.includes("MonsterStatusEvent.READ_IDS_BY_ORDER")) {
+    violations.push(
+      `${rel(panelModelFile)} must read monster identities through monster-status entry`
+    );
+  }
+  if (/from\s+["']\.\.\/state\/store\.js["']/.test(text + modelText)) {
     violations.push(`${rel(panelFile)} must not import store for monsterStatus`);
   }
-  if (/\b(?:deps\.)?g\(\s*["']monsterStatus["']\s*\)/.test(text)) {
+  if (/\b(?:deps\.)?g\(\s*["']monsterStatus["']\s*\)/.test(text + modelText)) {
     violations.push(`${rel(panelFile)} must not read monsterStatus directly`);
   }
-  if (/\bnew Map\(\s*\(.*monsterStatus/s.test(text)) {
+  if (/\bnew Map\(\s*\(.*monsterStatus/s.test(text + modelText)) {
     violations.push(`${rel(panelFile)} must not build monsterStatus identity maps directly`);
   }
 }

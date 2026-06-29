@@ -8,6 +8,7 @@ const syncImpl = path.normalize("src/battle/monster-db-sync.js");
 const scanImpl = path.normalize("src/battle/monster-db-scan.js");
 const scanResultImpl = path.normalize("src/battle/monster-scan-result-learning.js");
 const panelImpl = path.normalize("src/monitor/monster-resist-panel.js");
+const panelModelImpl = path.normalize("src/monitor/monster-resist-panel-model.js");
 const violations = [];
 
 function rel(file) {
@@ -24,7 +25,7 @@ function walk(dir) {
 
 function checkFile(file) {
   const relative = path.normalize(path.relative(root, file));
-  const allowed = new Set([entry, syncImpl, scanImpl, scanResultImpl, panelImpl]);
+  const allowed = new Set([entry, syncImpl, scanImpl, scanResultImpl, panelImpl, panelModelImpl]);
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
     const trimmed = line.trim();
@@ -100,6 +101,37 @@ function checkEntry() {
     violations.push(
       `${panelImpl.replaceAll("\\", "/")} must keep renderResistPanel private behind runMonsterResistPanelAutomation(event)`
     );
+  }
+  if (!panelText.includes("runMonsterResistPanelModel")) {
+    violations.push(`${panelImpl.replaceAll("\\", "/")} must render rows from panel model entry`);
+  }
+  for (const forbidden of [
+    "MonsterStatusEvent.READ_IDS_BY_ORDER",
+    "MonsterCacheEvent",
+    "runMonsterCacheAutomation",
+    "readProfile",
+    "primeProfiles",
+  ]) {
+    if (panelText.includes(forbidden)) {
+      violations.push(`${panelImpl.replaceAll("\\", "/")} must not assemble resist model directly`);
+    }
+  }
+  const panelModelText = fs.readFileSync(path.join(root, panelModelImpl), "utf8");
+  if (!/export const MonsterResistPanelModelEvent\s*=\s*Object\.freeze\(/.test(panelModelText)) {
+    violations.push(`${panelModelImpl.replaceAll("\\", "/")} must expose event constants`);
+  }
+  if (!/export function runMonsterResistPanelModel\(/.test(panelModelText)) {
+    violations.push(`${panelModelImpl.replaceAll("\\", "/")} must expose one model entry`);
+  }
+  for (const required of [
+    "MonsterStatusEvent.READ_IDS_BY_ORDER",
+    "MonsterCacheEvent.PRIME_PROFILES",
+    "MonsterCacheEvent.READ_PROFILE",
+    "readMonsterIdByOrder",
+  ]) {
+    if (!panelModelText.includes(required)) {
+      violations.push(`${panelModelImpl.replaceAll("\\", "/")} must own ${required}`);
+    }
   }
   const scanText = fs.readFileSync(path.join(root, scanImpl), "utf8");
   if (!/export const MonsterScanLearningEvent\s*=\s*Object\.freeze\(/.test(scanText)) {

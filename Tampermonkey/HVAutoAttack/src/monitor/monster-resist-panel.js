@@ -2,15 +2,21 @@
 // 配色语义：抗性高(+)=红(难打) / 弱点(-)=绿(好打) / 0=灰。
 import { gE, cE } from "../dom/query.js";
 import { RESIST_KEYS } from "../data/monster-db.js";
-import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
 import {
-  MonsterStatusEvent,
-  runMonsterStatusAutomation,
-} from "../battle/monster-status-automation.js";
+  MonsterResistPanelModelEvent,
+  runMonsterResistPanelModel,
+} from "./monster-resist-panel-model.js";
 
 const RESIST_LABEL = {
-  fire: "火", cold: "冰", elec: "雷", wind: "风", holy: "圣",
-  dark: "暗", crushing: "钝", slashing: "斩", piercing: "刺",
+  fire: "火",
+  cold: "冰",
+  elec: "雷",
+  wind: "风",
+  holy: "圣",
+  dark: "暗",
+  crushing: "钝",
+  slashing: "斩",
+  piercing: "刺",
 };
 const EVENT_REFRESH = "refresh";
 
@@ -21,24 +27,20 @@ export const MonsterResistPanelEvent = Object.freeze({
 let styleInjected = false;
 
 const esc = (s) =>
-  String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
 
 function makeDeps(deps) {
   return {
     cE: deps.cE || cE,
     document: deps.document || document,
     gE: deps.gE || gE,
-    primeProfiles:
-      deps.primeProfiles ||
-      ((monsterIds) =>
-        runMonsterCacheAutomation({ type: MonsterCacheEvent.PRIME_PROFILES, monsterIds })),
-    readProfile:
-      deps.readProfile ||
-      ((monsterId) =>
-        runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId })),
-    readMonsterIdByOrder:
-      deps.readMonsterIdByOrder ||
-      (() => runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_IDS_BY_ORDER })),
+    readRows:
+      deps.readRows ||
+      ((monsterNames) =>
+        runMonsterResistPanelModel(
+          { type: MonsterResistPanelModelEvent.BUILD_ROWS, monsterNames },
+          deps
+        )),
   };
 }
 
@@ -84,18 +86,8 @@ async function renderResistPanel(deps) {
     panel.id = "hvAAResist";
   }
   const els = [...deps.gE("div.btm1", "all")];
-  // 怪物身份键 = monsterId（开局 spawn 行 → monsterStatus）。按 order 取 MID（不能用数组下标——
-  // 本面板也会在 runBattleTurnAutomation() 更新 monsterStatus 后被 scan 回调触发，
-  // 故按 order 字段映射，DOM `.btm1` 第 i 个 = order i）。
-  const readMonsterIdByOrder = deps.readMonsterIdByOrder();
-  // 预取本轮怪 MID 画像进内存 cache：供本面板渲染 + collectSnapshot(同步) join（路径 B 预取时机）
-  await deps.primeProfiles(els.map((_, i) => readMonsterIdByOrder(i)));
-  const rows = [];
-  els.forEach((el, i) => {
-    const name = deps.gE(".btm3", el)?.textContent;
-    if (!name) return;
-    rows.push(renderRow(name, deps.readProfile(readMonsterIdByOrder(i)))); // 名仅显示，画像按 MID 查
-  });
+  const monsterNames = els.map((el) => deps.gE(".btm3", el)?.textContent || "");
+  const rows = (await deps.readRows(monsterNames)).map((row) => renderRow(row.name, row.info));
   panel.innerHTML = rows.join("") || "<div class='hvAAResistNone'>无怪物</div>";
 }
 
