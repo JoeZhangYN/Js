@@ -45,7 +45,8 @@ function observe({ killed = true, t = 0 }) {
   });
   run({
     type: BigSkillKillLearningEvent.FINALIZE_PENDING,
-    snap: { liveMonsterIds: killed ? [] : [100], globalTurn: t + 1 },
+    liveMonsterIds: killed ? [] : [100],
+    globalTurn: t + 1,
   });
 }
 
@@ -77,7 +78,8 @@ describe("big-skill kill learner normalization", () => {
 
     run({
       type: BigSkillKillLearningEvent.FINALIZE_PENDING,
-      snap: { liveMonsterIds: ["bad"], globalTurn: "8.9" },
+      liveMonsterIds: ["bad"],
+      globalTurn: "8.9",
     });
 
     expect(getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true)).toEqual({

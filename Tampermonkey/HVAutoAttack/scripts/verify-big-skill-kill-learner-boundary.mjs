@@ -67,6 +67,15 @@ function checkFile(file) {
         `${rel(file)} must pass ofcCooldown/overcharge/bossHpMax, not snap, to big-skill kill query`
       );
     }
+    if (
+      relative !== owner &&
+      call[0].includes("BigSkillKillLearningEvent.FINALIZE_PENDING") &&
+      /\bsnap\s*:/.test(call[0])
+    ) {
+      violations.push(
+        `${rel(file)} must pass globalTurn/liveMonsterIds, not snap, to big-skill kill finalize`
+      );
+    }
   }
   if (
     relative !== owner &&
@@ -109,16 +118,23 @@ if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not read option fields directly`);
 }
 const finalizeBody = ownerText.match(
-  /function finalizeBigSkillPending\(snap\) \{[\s\S]*?\n\}/
+  /function finalizeBigSkillPending\(event\) \{[\s\S]*?\n\}/
 )?.[0];
-if (!finalizeBody?.includes("snap?.liveMonsterIds")) {
+if (
+  !finalizeBody?.includes("event?.liveMonsterIds") ||
+  !finalizeBody?.includes("event?.globalTurn")
+) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} finalize must consume narrow liveMonsterIds, not full monster view`
+    `${owner.replaceAll("\\", "/")} finalize must consume narrow globalTurn/liveMonsterIds facts`
   );
 }
-if (/\bsnap\?\.view\b|\bsnap\.view\b/.test(finalizeBody || "")) {
+if (
+  /\bsnap\?\.globalTurn\b|\bsnap\.globalTurn\b|\bsnap\?\.liveMonsterIds\b|\bsnap\.liveMonsterIds\b|\bsnap\?\.view\b|\bsnap\.view\b/.test(
+    finalizeBody || ""
+  )
+) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} finalize must not consume full monster view rows`
+    `${owner.replaceAll("\\", "/")} finalize must not consume snap-shaped input or full monster view rows`
   );
 }
 const recordBody = ownerText.match(
@@ -160,9 +176,9 @@ if (!snapshotText.includes("liveMonsterIds(view)")) {
     `${snapshot.replaceAll("\\", "/")} must derive narrow liveMonsterIds for finalize`
   );
 }
-if (/FINALIZE_PENDING[\s\S]{0,120}snap:\s*\{\s*globalTurn,\s*view\s*\}/.test(snapshotText)) {
+if (/FINALIZE_PENDING[\s\S]{0,180}\bsnap\s*:/.test(snapshotText)) {
   violations.push(
-    `${snapshot.replaceAll("\\", "/")} must not pass full view to big-skill kill finalize`
+    `${snapshot.replaceAll("\\", "/")} must not pass snap-shaped input to big-skill kill finalize`
   );
 }
 

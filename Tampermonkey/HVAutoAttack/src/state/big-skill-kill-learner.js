@@ -87,14 +87,14 @@ function recordBigSkillCast(code, event) {
 
 /**
  * finalize（snapshot 入口，跑在 rules 前）：上回合的 OFC/FRD 是否秒掉各 pending boss（按 MID 判死）。
- * @param {{globalTurn:number, liveMonsterIds:Array<number>}} snap
+ * @param {{globalTurn:number, liveMonsterIds:Array<number>}} event
  */
-function finalizeBigSkillPending(snap) {
+function finalizeBigSkillPending(event) {
   const pending = normalizePending(g("bigKillPending"));
   if (!pending) return;
-  const now = normalizeTurn(snap?.globalTurn);
+  const now = normalizeTurn(event?.globalTurn);
   if (now === pending.globalTurn) return; // 同回合，未结算
-  const liveMonsterIds = normalizeLiveMonsterIds(snap?.liveMonsterIds);
+  const liveMonsterIds = normalizeLiveMonsterIds(event?.liveMonsterIds);
   const learned = readLearnedBigKillMap();
   for (const b of pending.bosses) {
     const killed = liveMonsterIds.has(b.mid) ? 0 : 1;
@@ -158,7 +158,7 @@ function ofcWillKillBoss(event) {
 
 export function runBigSkillKillLearningAutomation(event = { type: EVENT_WILL_KILL_BOSS }) {
   if (event.type === EVENT_RECORD_CAST) return recordBigSkillCast(event.code, event);
-  if (event.type === EVENT_FINALIZE_PENDING) return finalizeBigSkillPending(event.snap);
+  if (event.type === EVENT_FINALIZE_PENDING) return finalizeBigSkillPending(event);
   if (event.type === EVENT_WILL_KILL_BOSS) return ofcWillKillBoss(event);
   return undefined;
 }

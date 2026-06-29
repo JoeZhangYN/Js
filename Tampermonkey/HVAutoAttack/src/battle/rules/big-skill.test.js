@@ -31,10 +31,8 @@ function learnBossKillEvidence() {
     });
     runBigSkillKillLearningAutomation({
       type: BigSkillKillLearningEvent.FINALIZE_PENDING,
-      snap: {
-        globalTurn: i * 100 + 1,
-        liveMonsterIds: [],
-      },
+      globalTurn: i * 100 + 1,
+      liveMonsterIds: [],
     });
   }
 }

@@ -47,7 +47,7 @@ function observe({ imperil = false, killed = true, mid = 100, hpMax = 5000, t = 
   });
   runBigSkillKillLearningAutomation({
     type: BigSkillKillLearningEvent.FINALIZE_PENDING,
-    snap: finalizeSnap({ mid, killed, t: t + 1 }),
+    ...finalizeSnap({ mid, killed, t: t + 1 }),
   });
 }
 const learnHigh = () => {
@@ -79,7 +79,7 @@ describe("finalize 学击杀率 + ofcWillKillBoss 守卫", () => {
     });
     runBigSkillKillLearningAutomation({
       type: BigSkillKillLearningEvent.FINALIZE_PENDING,
-      snap: finalizeSnap({ t: 7 }),
+      ...finalizeSnap({ t: 7 }),
     });
     expect(g("bigKillPending")).toBeTruthy();
   });

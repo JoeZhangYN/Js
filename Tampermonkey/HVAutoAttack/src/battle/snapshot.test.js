@@ -134,7 +134,8 @@ describe("collectSnapshot", () => {
     });
     expect(mocks.runBigSkillKillLearningAutomation).toHaveBeenCalledWith({
       type: "finalizePending",
-      snap: { globalTurn: 9, liveMonsterIds: [101] },
+      globalTurn: 9,
+      liveMonsterIds: [101],
     });
     expect(mocks.runIncomingBurstLearningAutomation).toHaveBeenCalledWith({
       type: "recordEvents",
