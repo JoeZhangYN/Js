@@ -113,6 +113,8 @@ for (const forbidden of [
   /id=["']mlAnswer["'][\s\S]{0,120}ML 答题/,
   /id=["']mlBackupOnFail["'][\s\S]{0,120}备份图片/,
   /name=["']mlEndpoint["']\s+placeholder=["']https:\/\/rdma\.ooguy\.com\/help2["']/,
+  /id=["']pauseOnCriticalBuffExpire["'][\s\S]{0,160}关键 buff 即将消失/,
+  /name=["']criticalBuffMinTurns["']\s+placeholder=["']2["']/,
   /name=["']criticalBuffsList["']\s+placeholder=["']Hastened,Protection,Spark of Life["']/,
   /name=["']criticalBuffMpFloor["']\s+placeholder=["']30["']/,
   /id=["']skipDebuffForBigSkill_We["'][\s\S]{0,140}OFC\/FRD 即将就绪/,

@@ -65,6 +65,30 @@ describe("runOptionSchema", () => {
       default: "Hastened,Protection,Spark of Life",
     });
     expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "pauseOnCriticalBuffExpire" })
+    ).toMatchObject({
+      key: "pauseOnCriticalBuffExpire",
+      kind: "checkbox",
+      default: false,
+      group: "Main",
+    });
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "criticalBuffMinTurns" })
+    ).toMatchObject({
+      key: "criticalBuffMinTurns",
+      kind: "number",
+      default: 2,
+      group: "Main",
+    });
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "criticalBuffMpFloor" })
+    ).toMatchObject({
+      key: "criticalBuffMpFloor",
+      kind: "number",
+      default: 30,
+      group: "Main",
+    });
+    expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "skipDebuffForBigSkillThreshold" })
     ).toMatchObject({
       key: "skipDebuffForBigSkillThreshold",
