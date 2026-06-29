@@ -17,6 +17,7 @@ const internalFiles = new Set(
     "src/monitor/battle-report-view.js",
     "src/monitor/battle-monitor-runtime.js",
     "src/monitor/drop-monitor.js",
+    "src/monitor/record-usage-action-stats.js",
     "src/monitor/record-usage-completion.js",
     "src/monitor/record-usage.js",
     "src/state/storage.js",
@@ -336,9 +337,11 @@ function checkActionUsageCaptureEntry() {
 
 function checkUsageImplementation() {
   const usageFile = path.join(root, "src/monitor/record-usage.js");
+  const usageActionStatsFile = path.join(root, "src/monitor/record-usage-action-stats.js");
   const usageCompletionFile = path.join(root, "src/monitor/record-usage-completion.js");
   const entryText = fs.readFileSync(path.join(root, entry), "utf8");
   const text = fs.readFileSync(usageFile, "utf8");
+  const actionStatsText = fs.readFileSync(usageActionStatsFile, "utf8");
   const completionText = fs.readFileSync(usageCompletionFile, "utf8");
   if (!/export function runBattleUsageAutomation\(/.test(text)) {
     violations.push(`${rel(usageFile)} must expose runBattleUsageAutomation(event)`);
@@ -389,6 +392,28 @@ function checkUsageImplementation() {
       `${rel(usageFile)} must read usage action context through battle-monitor-runtime`
     );
   }
+  if (!text.includes("./record-usage-action-stats.js")) {
+    violations.push(`${rel(usageFile)} must route action stat mutation through private helper`);
+  }
+  if (!/export function applyBattleActionUsageStats\(/.test(actionStatsText)) {
+    violations.push(`${rel(usageActionStatsFile)} must own action usage stat mutation`);
+  }
+  if (!text.includes("applyBattleActionUsageStats(stats, parm, context)")) {
+    violations.push(`${rel(usageFile)} must compose action context with action stat mutation`);
+  }
+  for (const classifier of [
+    /you for \\d\+ \\w\+ damage/,
+    /Vital Theft hits/,
+    /You gain .* proficiency/,
+    /absorbs \\d\+ points of damage/,
+  ]) {
+    if (classifier.test(text)) {
+      violations.push(`${rel(usageFile)} must not own action usage log classification`);
+    }
+    if (!classifier.test(actionStatsText)) {
+      violations.push(`${rel(usageActionStatsFile)} must own action usage log classification`);
+    }
+  }
   if (!text.includes("./record-usage-completion.js")) {
     violations.push(`${rel(usageFile)} must route completion aggregation through private helper`);
   }
@@ -418,6 +443,20 @@ function checkUsageImplementation() {
   }
   if (/from\s+["']\.\.\/state\/storage\.js["']/.test(text + completionText)) {
     violations.push(`${rel(usageFile)} must not import storage directly`);
+  }
+  const usageActionStatsImports = [];
+  walkImportUsers(srcDir, "record-usage-action-stats.js", usageActionStatsImports);
+  const allowedActionStatsImports = new Set(
+    ["src/monitor/record-usage.js", "src/monitor/record-usage-action-stats.test.js"].map((p) =>
+      path.normalize(p)
+    )
+  );
+  for (const user of usageActionStatsImports) {
+    if (!allowedActionStatsImports.has(user)) {
+      violations.push(
+        `${user.replaceAll("\\", "/")} must not import record-usage-action-stats directly`
+      );
+    }
   }
   const usageCompletionImports = [];
   walkImportUsers(srcDir, "record-usage-completion.js", usageCompletionImports);
