@@ -68,6 +68,16 @@ describe("decidePotion", () => {
     item: { Hp: true, Mp: true },
   };
 
+  it("item 未配置 → 空 potion plan", () => {
+    const p = potionPlan({}, snap());
+    expect(p).toEqual({ type: "potion", candidates: [], noWaste: false });
+  });
+
+  it("itemOrderValue 未配置 → 空 potion plan", () => {
+    const p = potionPlan({ itemOrderName: "Hp", item: { Hp: true } }, snap());
+    expect(p).toEqual({ type: "potion", candidates: [], noWaste: false });
+  });
+
   it("启用 + 无条件门控 → 全收集（保持顺序）", () => {
     const p = potionPlan({ ...baseOpt }, snap());
     expect(p).toEqual({ type: "potion", candidates: ["11191", "11291"], noWaste: false });

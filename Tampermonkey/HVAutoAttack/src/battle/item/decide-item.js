@@ -50,6 +50,9 @@ export function decideGemUse(opt, snap) {
  * @returns {import("../../core/types.js").ActionResult} { kind:"item-plan", plan }
  */
 export function decidePotion(opt, snap) {
+  if (!opt.item || !opt.itemOrderName || !opt.itemOrderValue) {
+    return { kind: "item-plan", plan: { type: "potion", candidates: [], noWaste: false } };
+  }
   const name = opt.itemOrderName.split(",");
   const order = opt.itemOrderValue.split(",");
   const noWaste = !!opt.noWastePotion;

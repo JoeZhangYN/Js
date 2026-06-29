@@ -93,6 +93,14 @@ describe("when 门控", () => {
     expect(byName("defend").when({}, {})).toBeFalsy();
   });
 
+  it("deadSoon: 规则表不拼门控，未配置时 decide 自行返回空 potion plan", () => {
+    expect(byName("deadSoon").when).toBeUndefined();
+    expect(byName("deadSoon").decide({}, {})).toEqual({
+      kind: "item-plan",
+      plan: { type: "potion", candidates: [], noWaste: false },
+    });
+  });
+
   it("useInfusions: 规则表不拼门控，未开启时 decide 自行 noop", () => {
     expect(byName("useInfusions").when).toBeUndefined();
     expect(byName("useInfusions").decide({ attackStatus: 2, playerBuffs: [] }, {})).toEqual({

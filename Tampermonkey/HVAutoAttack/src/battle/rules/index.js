@@ -31,7 +31,6 @@ export const BATTLE_RULES = [
   // 5. 紧急回血回魔（decide 出候选 id 列表，execute 探活+喝第一个可用）
   {
     name: "deadSoon",
-    when: (snap, opt) => opt.item && opt.itemOrderValue,
     decide: (snap, opt) => decidePotion(opt, snap),
   },
   // 6. stall 主动 topup（decide 自 gate stallMode，出 attempts 链；execute tryFirst）

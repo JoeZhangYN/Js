@@ -943,6 +943,23 @@ function checkItemScrollEntry() {
   }
 }
 
+function checkPotionEntry() {
+  const itemText = fs.readFileSync(decideItemFile, "utf8");
+  for (const required of ["decidePotion", "itemOrderName", "itemOrderValue", "item"]) {
+    if (!itemText.includes(required)) {
+      violations.push(`${rel(decideItemFile)} must own potion gate ${required}`);
+    }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const deadSoonRule =
+    rulesText.match(/name:\s*["']deadSoon["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  for (const legacy of ["itemOrderName", "itemOrderValue", "item"]) {
+    if (new RegExp(`\\b${legacy}\\b`).test(deadSoonRule)) {
+      violations.push(`${rel(battleRulesFile)} must not assemble potion rule gates directly`);
+    }
+  }
+}
+
 function checkBattleStallMode() {
   const ownerText = fs.readFileSync(stallModeFile, "utf8");
   for (const required of [
@@ -1023,6 +1040,7 @@ checkBuffEntry();
 checkSingleDebuffEntry();
 checkAllDebuffEntry();
 checkItemScrollEntry();
+checkPotionEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();
 checkBattleOptionVocabulary();
