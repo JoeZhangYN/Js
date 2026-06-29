@@ -8,6 +8,7 @@ const EVENT_RECORD_TYPE = "recordType";
 const EVENT_RECORD_COUNT = "recordCount";
 const EVENT_RECORD_COUNT_FROM_INITIALIZATION = "recordCountFromInitialization";
 const EVENT_RECORD_SINGLE_ROUND = "recordSingleRound";
+const EVENT_RECORD_START_COUNT = "recordStartCount";
 const EVENT_SYNC_RUNTIME = "syncRuntime";
 const EVENT_CLASSIFY_TYPE = "classifyType";
 const EVENT_RECORD_START_CONTEXT = "recordStartContext";
@@ -22,6 +23,7 @@ export const BattleRoundEvent = Object.freeze({
   RECORD_COUNT: EVENT_RECORD_COUNT,
   RECORD_COUNT_FROM_INITIALIZATION: EVENT_RECORD_COUNT_FROM_INITIALIZATION,
   RECORD_SINGLE_ROUND: EVENT_RECORD_SINGLE_ROUND,
+  RECORD_START_COUNT: EVENT_RECORD_START_COUNT,
   SYNC_RUNTIME: EVENT_SYNC_RUNTIME,
   CLASSIFY_TYPE: EVENT_CLASSIFY_TYPE,
   RECORD_START_CONTEXT: EVENT_RECORD_START_CONTEXT,
@@ -103,6 +105,14 @@ function recordCountFromInitialization(initializingText = "", roundType = "") {
   return recordCount(1, 1);
 }
 
+function recordStartCount(event) {
+  if (event.initialized) {
+    return recordCountFromInitialization(event.initializingText, event.roundType);
+  }
+  if (event.repaired) return recordCount(1, 1);
+  return null;
+}
+
 function syncRuntime() {
   const runtime = roundRuntime(getValue(STORAGE_KEYS.ROUND_NOW), getValue(STORAGE_KEYS.ROUND_ALL));
   g("roundNow", runtime.roundNow);
@@ -143,6 +153,7 @@ export function runBattleRoundAutomation(event = { type: EVENT_SYNC_RUNTIME }) {
   if (event.type === EVENT_RECORD_COUNT_FROM_INITIALIZATION) {
     return recordCountFromInitialization(event.initializingText, event.roundType);
   }
+  if (event.type === EVENT_RECORD_START_COUNT) return recordStartCount(event);
   if (event.type === EVENT_RECORD_SINGLE_ROUND) return recordCount(1, 1);
   if (event.type === EVENT_SYNC_RUNTIME) return syncRuntime();
   if (event.type === EVENT_READ_RUNTIME) return readRuntime();

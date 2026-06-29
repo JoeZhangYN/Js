@@ -10,7 +10,7 @@ import { updateMonsterHpRuntime } from "./monster-status-hp.js";
 
 const EVENT_ENSURE_READY = "ensureReady";
 const EVENT_REPAIR = "repair";
-const EVENT_RECORD_SPAWN_ROSTER = "recordSpawnRoster";
+const EVENT_PREPARE_ROUND_START = "prepareRoundStart";
 const EVENT_UPDATE_HP = "updateHp";
 const EVENT_REFRESH_COMBATANT_COUNTS = "refreshCombatantCounts";
 const EVENT_READ_COMBATANT_COUNTS = "readCombatantCounts";
@@ -21,7 +21,7 @@ const DEFAULT_COMBATANT_COUNT = 0;
 export const MonsterStatusEvent = Object.freeze({
   ENSURE_READY: EVENT_ENSURE_READY,
   REPAIR: EVENT_REPAIR,
-  RECORD_SPAWN_ROSTER: EVENT_RECORD_SPAWN_ROSTER,
+  PREPARE_ROUND_START: EVENT_PREPARE_ROUND_START,
   UPDATE_HP: EVENT_UPDATE_HP,
   REFRESH_COMBATANT_COUNTS: EVENT_REFRESH_COMBATANT_COUNTS,
   READ_COMBATANT_COUNTS: EVENT_READ_COMBATANT_COUNTS,
@@ -83,6 +83,14 @@ function recordSpawnRoster(event) {
   g("monsterStatus", monsterStatus);
 }
 
+function prepareRoundStart(event) {
+  if (event.initialized) recordSpawnRoster(event);
+  return {
+    initialized: event.initialized,
+    repaired: !event.initialized && ensureMonsterStatusReady(),
+  };
+}
+
 function repairMonsterStatus() {
   const battleLog = gE("#textlog>tbody>tr>td", "all");
   const monsterAll = gE("div.btm2", "all").length;
@@ -141,8 +149,8 @@ export function runMonsterStatusAutomation(event = { type: EVENT_ENSURE_READY })
     return ensureMonsterStatusReady();
   } else if (event.type === EVENT_REPAIR) {
     repairMonsterStatus();
-  } else if (event.type === EVENT_RECORD_SPAWN_ROSTER) {
-    recordSpawnRoster(event);
+  } else if (event.type === EVENT_PREPARE_ROUND_START) {
+    return prepareRoundStart(event);
   } else if (event.type === EVENT_UPDATE_HP) {
     updateMonsterHpRuntime();
   } else if (event.type === EVENT_REFRESH_COMBATANT_COUNTS) {

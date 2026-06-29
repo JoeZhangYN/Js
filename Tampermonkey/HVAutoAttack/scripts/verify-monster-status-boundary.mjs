@@ -82,6 +82,7 @@ function checkEntry() {
     "buildMonsterStatus",
     "monsterStatus",
     "REFRESH_COMBATANT_COUNTS",
+    "PREPARE_ROUND_START",
     "READ_COMBATANT_COUNTS",
     "READ_IDS_BY_ORDER",
     "READ_STATUS",
@@ -94,6 +95,13 @@ function checkEntry() {
     violations.push(
       `${entry.replaceAll("\\", "/")} must normalize combatant counts on refresh and read`
     );
+  }
+  if (/RECORD_SPAWN_ROSTER/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must keep spawn roster behind prepare event`);
+  }
+  const roundStartText = fs.readFileSync(path.join(root, roundStart), "utf8");
+  if (/MonsterStatusEvent\.(?:RECORD_SPAWN_ROSTER|ENSURE_READY)/.test(roundStartText)) {
+    violations.push(`${roundStart.replaceAll("\\", "/")} must use PREPARE_ROUND_START`);
   }
 }
 

@@ -25,10 +25,11 @@ const ownerText = requireText(owner, [
   "runBattleRoundStartAutomation",
   "recordRoundStartContext",
   "BattleRoundEvent.RECORD_START_CONTEXT",
-  "BattleRoundEvent.RECORD_COUNT_FROM_INITIALIZATION",
+  "BattleRoundEvent.RECORD_START_COUNT",
+  "MonsterStatusEvent.PREPARE_ROUND_START",
   "EncounterEvent.RANDOM_ENCOUNTER_STARTED",
 ]);
-requireText(ownerTest, ["recordStartContext", "recordCountFromInitialization", 'roundType: "ba"']);
+requireText(ownerTest, ["recordStartContext", "recordStartCount", 'roundType: "ba"']);
 
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleRoundStartEvent\b|runBattleRoundStartAutomation\b)/.test(
@@ -46,8 +47,15 @@ if (/\bg\(\s*["']roundType["']/.test(ownerText)) {
 if (/OptionEvent|runOptionAutomation|["']encounter["']/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not decide encounter option gates directly`);
 }
-if (/BattleRoundEvent\.(?:READ_TYPE|CLASSIFY_TYPE|RECORD_TYPE)/.test(ownerText)) {
+if (
+  /BattleRoundEvent\.(?:READ_TYPE|CLASSIFY_TYPE|RECORD_TYPE|RECORD_COUNT_FROM_INITIALIZATION|RECORD_SINGLE_ROUND)/.test(
+    ownerText
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must use the battle-round start context`);
+}
+if (/MonsterStatusEvent\.(?:RECORD_SPAWN_ROSTER|ENSURE_READY)/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must use monster-status round start prepare`);
 }
 if (/\.match\(\s*["']Initializing["']\s*\)|\/Initializing/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not decide initialization text directly`);

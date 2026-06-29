@@ -38,7 +38,7 @@ vi.mock("./monster-knowledge-automation.js", () => ({
 vi.mock("./monster-status-automation.js", () => ({
   MonsterStatusEvent: Object.freeze({
     ENSURE_READY: "ensureReady",
-    RECORD_SPAWN_ROSTER: "recordSpawnRoster",
+    PREPARE_ROUND_START: "prepareRoundStart",
     REFRESH_COMBATANT_COUNTS: "refreshCombatantCounts",
   }),
   runMonsterStatusAutomation: mocks.runMonsterStatusAutomation,
@@ -50,6 +50,7 @@ vi.mock("./battle-round.js", () => ({
     RECORD_START_CONTEXT: "recordStartContext",
     RECORD_COUNT_FROM_INITIALIZATION: "recordCountFromInitialization",
     RECORD_SINGLE_ROUND: "recordSingleRound",
+    RECORD_START_COUNT: "recordStartCount",
     RECORD_TYPE: "recordType",
     SYNC_RUNTIME: "syncRuntime",
   }),
@@ -77,7 +78,9 @@ beforeEach(() => {
     return undefined;
   });
   mocks.runBattleStaminaAutomation.mockReturnValue({ lostStamina: 1, paused: false });
-  mocks.runMonsterStatusAutomation.mockReturnValue(false);
+  mocks.runMonsterStatusAutomation.mockImplementation((event) =>
+    event.type === "prepareRoundStart" ? { initialized: true, repaired: false } : false
+  );
   window.location.hash = "";
 });
 
@@ -104,9 +107,19 @@ describe("runBattleRoundStartAutomation", () => {
       initializingText: "Initializing random encounter",
     });
     expect(mocks.runBattleRoundAutomation).toHaveBeenCalledWith({
-      type: "recordCountFromInitialization",
+      type: "recordStartCount",
       initializingText: "Initializing random encounter",
       roundType: "ba",
+      initialized: true,
+      repaired: false,
+    });
+    expect(mocks.runMonsterStatusAutomation).toHaveBeenCalledWith({
+      type: "prepareRoundStart",
+      battleLog: [
+        { textContent: "Round begins" },
+        { textContent: "Initializing random encounter" },
+      ],
+      initialized: true,
     });
   });
 });

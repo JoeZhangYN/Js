@@ -59,6 +59,7 @@ for (const required of [
   "RECORD_TYPE",
   "RECORD_COUNT",
   "RECORD_COUNT_FROM_INITIALIZATION",
+  "RECORD_START_COUNT",
   "RECORD_START_CONTEXT",
   "RECORD_DEBUG_FIELDS",
   "READ_DEBUG_FIELDS",
@@ -102,7 +103,7 @@ if (/\bg\(\s*["']roundType["']/.test(newRoundText)) {
   violations.push("src/battle/new-round.js must not read or write roundType directly");
 }
 for (const forbidden of [
-  /BattleRoundEvent\.(?:READ_TYPE|CLASSIFY_TYPE|RECORD_TYPE)/,
+  /BattleRoundEvent\.(?:READ_TYPE|CLASSIFY_TYPE|RECORD_TYPE|RECORD_COUNT_FROM_INITIALIZATION|RECORD_SINGLE_ROUND)/,
   /Initializing arena challenge/,
   /Initializing random encounter/,
   /Initializing Item World/,

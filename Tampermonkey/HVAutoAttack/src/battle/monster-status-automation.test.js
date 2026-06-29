@@ -16,7 +16,8 @@ beforeEach(() => {
 describe("monster status automation", () => {
   it("records spawn roster through the monster status entry", () => {
     runMonsterStatusAutomation({
-      type: MonsterStatusEvent.RECORD_SPAWN_ROSTER,
+      type: MonsterStatusEvent.PREPARE_ROUND_START,
+      initialized: true,
       monsterAll: 2,
       battleLog: [
         td("Spawned Monster B: MID=202 (Beta) LV=10 HP=2000"),

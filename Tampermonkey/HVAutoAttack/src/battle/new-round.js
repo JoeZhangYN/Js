@@ -48,19 +48,18 @@ function startRound() {
   if (staminaOutcome.paused) {
     return;
   }
-  if (roundStartContext.initialized) {
-    runMonsterStatusAutomation({
-      type: MonsterStatusEvent.RECORD_SPAWN_ROSTER,
-      battleLog,
-    });
-    runBattleRoundAutomation({
-      type: BattleRoundEvent.RECORD_COUNT_FROM_INITIALIZATION,
-      initializingText,
-      roundType: roundStartContext.roundType,
-    });
-  } else if (runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY })) {
-    runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_SINGLE_ROUND });
-  }
+  const monsterStatusOutcome = runMonsterStatusAutomation({
+    type: MonsterStatusEvent.PREPARE_ROUND_START,
+    battleLog,
+    initialized: roundStartContext.initialized,
+  });
+  runBattleRoundAutomation({
+    type: BattleRoundEvent.RECORD_START_COUNT,
+    initializingText,
+    roundType: roundStartContext.roundType,
+    initialized: roundStartContext.initialized,
+    repaired: monsterStatusOutcome.repaired,
+  });
   runBattleRoundAutomation({ type: BattleRoundEvent.SYNC_RUNTIME });
   runBattleSkillUsageAutomation({ type: BattleSkillUsageEvent.RESET_ROUND });
   runMonsterKnowledgeAutomation({ type: MonsterKnowledgeEvent.ROUND_STARTED });
