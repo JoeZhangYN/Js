@@ -9,14 +9,24 @@ import {
 } from "../../state/big-skill-kill-learner.js";
 
 const snap = (over = {}) => ({ cdMap: {}, oc: 0, aliveCount: 5, monsters: [], ...over });
+const bigSkillDebuffFacts = (snap) => ({
+  skillCooldowns: snap.cdMap,
+  overcharge: snap.oc,
+  aliveCount: snap.aliveCount,
+  monsterFacts: snap.view,
+});
 const clearSkillReadyNow = (opt, snap) =>
-  runBigSkillDebuffAutomation({ type: BigSkillDebuffEvent.READ_CLEAR_READY, opt, snap });
+  runBigSkillDebuffAutomation({
+    type: BigSkillDebuffEvent.READ_CLEAR_READY,
+    opt,
+    ...bigSkillDebuffFacts(snap),
+  });
 const shouldSkipForBigSkill = (opt, snap, kind) =>
   runBigSkillDebuffAutomation({
     type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
     opt,
-    snap,
     kind,
+    ...bigSkillDebuffFacts(snap),
   });
 
 beforeEach(() => localStorage.clear());
@@ -82,7 +92,7 @@ describe("shouldSkipForBigSkill — Feature 2 就绪即跳 Weaken", () => {
   });
 
   it("kind=Im + boss 存活 → false（强保 Imperil 不变）", () => {
-    const s = snap({ cdMap: { OFC: 0 }, oc: 210, monsters: [{ isBoss: true, isDead: false }] });
+    const s = snap({ cdMap: { OFC: 0 }, oc: 210, view: [{ isBoss: true, isDead: false }] });
     expect(shouldSkipForBigSkill({ skill_OFC: true }, s, "Im")).toBe(false);
   });
 
@@ -104,7 +114,6 @@ describe("shouldSkipForBigSkill — F4 Im 放宽（默认 OFF）", () => {
     cdMap: { OFC: 0 },
     oc: 250,
     view: [{ monsterId: 100, isBoss: true, isDead: false, hpMax: 5000 }],
-    monsters: [{ isBoss: true, isDead: false }],
     ...over,
   });
 

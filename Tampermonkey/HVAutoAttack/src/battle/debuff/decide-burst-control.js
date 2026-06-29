@@ -7,6 +7,13 @@ import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "../rules/big-s
 const PHYSICAL_TYPES = new Set(["piercing", "crushing", "slashing", "physical"]);
 const CONTROL_IMG = { 232: "silence", 222: "sleep", 223: "confuse" };
 
+function bigSkillDebuffFacts(snap) {
+  return {
+    skillCooldowns: snap?.cdMap,
+    overcharge: snap?.oc,
+  };
+}
+
 /** 按致死伤害类型 + 技能就绪挑控制技：法术→Silence，否则 Sleep，再退 Confuse；都不就绪→null。 */
 function pickControl(type, snap, opt) {
   const isSpell = !!type && !PHYSICAL_TYPES.has(type) && type !== "unknown";
@@ -30,7 +37,7 @@ export function decideBurstControl(opt, snap) {
     runBigSkillDebuffAutomation({
       type: BigSkillDebuffEvent.READ_CLEAR_READY,
       opt,
-      snap,
+      ...bigSkillDebuffFacts(snap),
     })
   ) {
     return { kind: "noop" };

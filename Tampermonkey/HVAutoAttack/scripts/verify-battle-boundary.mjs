@@ -994,6 +994,19 @@ function checkBigSkillDebuffEntry() {
       violations.push(`${rel(bigSkillFile)} legacy ${legacy} export must stay private`);
     }
   }
+  for (const required of [
+    "event?.skillCooldowns",
+    "event?.overcharge",
+    "event?.aliveCount",
+    "event?.monsterFacts",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(bigSkillFile)} must consume ${required}`);
+    }
+  }
+  if (/\bevent\.snap\b/.test(ownerText)) {
+    violations.push(`${rel(bigSkillFile)} must not consume snap-shaped event input`);
+  }
   for (const file of [decideCastAllFile, burstControlFile]) {
     const text = fs.readFileSync(file, "utf8");
     if (!text.includes("runBigSkillDebuffAutomation")) {
@@ -1001,6 +1014,11 @@ function checkBigSkillDebuffEntry() {
     }
     if (/\b(?:clearSkillReadyNow|shouldSkipForBigSkill)\b/.test(text)) {
       violations.push(`${rel(file)} must not call legacy big-skill debuff helpers`);
+    }
+    for (const call of text.matchAll(/runBigSkillDebuffAutomation\s*\(\s*\{[\s\S]*?\}\s*\)/g)) {
+      if (/\bsnap\s*:/.test(call[0])) {
+        violations.push(`${rel(file)} must pass narrow facts, not snap, to big-skill debuff entry`);
+      }
     }
   }
 }

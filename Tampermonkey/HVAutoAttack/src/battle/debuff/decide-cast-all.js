@@ -39,6 +39,21 @@ function stallActiveFacts(snap) {
   };
 }
 
+function bigSkillDebuffFacts(snap) {
+  const monsterFacts = (snap?.view || []).map((monster) => ({
+    monsterId: monster.monsterId,
+    isBoss: monster.isBoss,
+    isDead: monster.isDead,
+    hpMax: monster.hpMax,
+  }));
+  return {
+    skillCooldowns: snap?.cdMap,
+    overcharge: snap?.oc,
+    aliveCount: snap?.aliveCount,
+    monsterFacts,
+  };
+}
+
 /**
  * 决定全员 debuff 该施给哪只怪物，返 ActionResult。
  * @param {object} opt
@@ -97,8 +112,8 @@ function shouldSkipDebuffForBigSkill(opt, snap, kind) {
   return runBigSkillDebuffAutomation({
     type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
     opt,
-    snap,
     kind,
+    ...bigSkillDebuffFacts(snap),
   });
 }
 
