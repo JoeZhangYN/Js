@@ -48,6 +48,19 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.scheduleReload).toHaveBeenCalledWith(3);
   });
 
+  it("clears terminal battle sessions through one completion side-effect path", () => {
+    const defeat = deps({ monsterAlive: 1, roundNow: 1, roundAll: 1 });
+    const victory = deps({ monsterAlive: 0, roundNow: 1, roundAll: 1 });
+
+    runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, defeat);
+    runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, victory);
+
+    expect(defeat.clearSession).toHaveBeenCalledTimes(1);
+    expect(victory.clearSession).toHaveBeenCalledTimes(1);
+    expect(defeat.scheduleReload).not.toHaveBeenCalled();
+    expect(victory.scheduleReload).toHaveBeenCalledWith(3);
+  });
+
   it("reads completion runtime fields once before classifying the outcome", () => {
     const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
 

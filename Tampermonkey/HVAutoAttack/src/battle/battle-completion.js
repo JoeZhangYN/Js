@@ -6,6 +6,7 @@ import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 
 const EVENT_COMPLETION_REACHED = "completionReached";
+const VICTORY_RELOAD_SECONDS = 3;
 
 export const BattleCompletionEvent = Object.freeze({
   COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
@@ -37,15 +38,19 @@ function classifyCompletion(context) {
   return BattleCompletionOutcome.ONGOING;
 }
 
+function handleTerminalCompletion(outcome, deps) {
+  const alarmKind = outcome === BattleCompletionOutcome.DEFEAT ? "Defeat" : "Victory";
+  deps.triggerAlarm(alarmKind);
+  deps.clearSession();
+  if (outcome === BattleCompletionOutcome.VICTORY) {
+    deps.scheduleReload(VICTORY_RELOAD_SECONDS);
+  }
+}
+
 function handleCompletionReached(deps) {
   const outcome = classifyCompletion(deps.readCompletionContext());
-  if (outcome === BattleCompletionOutcome.DEFEAT) {
-    deps.triggerAlarm("Defeat");
-    deps.clearSession();
-  } else if (outcome === BattleCompletionOutcome.VICTORY) {
-    deps.triggerAlarm("Victory");
-    deps.clearSession();
-    deps.scheduleReload(3);
+  if (outcome === BattleCompletionOutcome.DEFEAT || outcome === BattleCompletionOutcome.VICTORY) {
+    handleTerminalCompletion(outcome, deps);
   }
   return { outcome };
 }

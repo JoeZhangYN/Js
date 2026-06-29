@@ -36,10 +36,12 @@ function checkOwner() {
     "NEXT_ROUND",
     "Defeat",
     "Victory",
+    "VICTORY_RELOAD_SECONDS",
     "CLEAR_SESSION",
     "scheduleReload",
     "readCompletionContext",
     "deps.readCompletionContext",
+    "handleTerminalCompletion",
     "MonsterStatusEvent.READ_COMBATANT_COUNTS",
     "BattleRoundEvent.READ_RUNTIME",
   ]) {
@@ -69,6 +71,16 @@ function checkOwner() {
   }
   if (!fs.existsSync(path.join(root, ownerTest))) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover battle completion contract`);
+  }
+  if (/scheduleReload\(\s*3\s*\)/.test(text)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must route victory reload through VICTORY_RELOAD_SECONDS`
+    );
+  }
+  if ((text.match(/deps\.clearSession\(\)/g) || []).length !== 1) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} terminal completion cleanup must have one side-effect point`
+    );
   }
 }
 
