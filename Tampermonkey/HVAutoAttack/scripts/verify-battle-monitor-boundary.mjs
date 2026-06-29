@@ -101,6 +101,18 @@ function checkEntry() {
   if (!/export function runBattleMonitorAutomation\(/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must expose runBattleMonitorAutomation(event)`);
   }
+  if (!/const monitorEventHandlers\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must route monitor commands through one table`);
+  }
+  if (
+    /if\s*\(\s*event\.type\s*===\s*(?:BattleHudEvent|BattleActionUsageCaptureEvent|EVENT_COMPLETION_REACHED)/.test(
+      text
+    )
+  ) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must not route monitor commands through an if ladder`
+    );
+  }
   if (!text.includes("runBattleHudAutomation") || !text.includes("BattleHudEvent.REFRESH")) {
     violations.push(
       `${entry.replaceAll("\\", "/")} must route HUD refresh through runBattleHudAutomation(event)`

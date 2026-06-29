@@ -37,17 +37,18 @@ function routeBattleReportCommand(event) {
   return runBattleReportAutomation(event);
 }
 
+const monitorEventHandlers = Object.freeze({
+  [BattleHudEvent.REFRESH]: (event) => runBattleHudAutomation(event),
+  [BattleActionUsageCaptureEvent.ACTION_STARTED]: (event) => runBattleActionUsageCapture(event),
+  [BattleActionUsageCaptureEvent.ACTION_ENDED]: (event) => recordActionEnd(event),
+  [EVENT_COMPLETION_REACHED]: () => recordCompletion(),
+});
+
 export function runBattleMonitorAutomation(event = { type: BattleHudEvent.REFRESH }) {
-  if (event.type === BattleHudEvent.REFRESH) {
-    runBattleHudAutomation(event);
-  } else if (event.type === BattleActionUsageCaptureEvent.ACTION_STARTED) {
-    runBattleActionUsageCapture(event);
-  } else if (event.type === BattleActionUsageCaptureEvent.ACTION_ENDED) {
-    recordActionEnd(event);
-  } else if (event.type === EVENT_COMPLETION_REACHED) {
-    recordCompletion();
-  } else {
-    return routeBattleReportCommand(event);
+  const handler = monitorEventHandlers[event.type];
+  if (handler) {
+    handler(event);
+    return undefined;
   }
-  return undefined;
+  return routeBattleReportCommand(event);
 }
