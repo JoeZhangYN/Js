@@ -55,7 +55,7 @@ export function decideBurstControl(opt, snap) {
   if (!best) return { kind: "noop" };
   return {
     kind: "click-skill-then-target",
-    skillSel: best.skillSel,
-    targetSel: `#mkey_${best.id}`,
+    skillId: best.skillSel,
+    targetId: best.id,
   };
 }

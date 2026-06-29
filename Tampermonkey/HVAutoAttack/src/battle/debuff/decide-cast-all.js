@@ -65,8 +65,8 @@ export function decideCastDebuffOnAll(opt, snap, debuffKey) {
     const targetId = aoeNeighborAnchor(monster, sorted[i + 1], aoeCount);
     return {
       kind: "click-skill-then-target",
-      skillSel: skill.id,
-      targetSel: `#mkey_${targetId}`,
+      skillId: skill.id,
+      targetId,
     };
   }
   return { kind: "noop" };

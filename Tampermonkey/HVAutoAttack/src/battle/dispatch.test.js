@@ -69,7 +69,7 @@ describe("dispatch", () => {
     target.id = "mkey_3";
     target.click = vi.fn();
     document.body.appendChild(target);
-    const r = dispatch({ kind: "click-skill-then-target", skillSel: "213", targetSel: "#mkey_3" });
+    const r = dispatch({ kind: "click-skill-then-target", skillId: "213", targetId: 3 });
     expect(r).toBe(true);
     expect(skill.click).toHaveBeenCalledOnce();
     expect(target.click).toHaveBeenCalledOnce();
@@ -82,7 +82,7 @@ describe("dispatch", () => {
     target.innerHTML = '<img src="x/nbardead.png">';
     target.click = vi.fn();
     document.body.appendChild(target);
-    const r = dispatch({ kind: "click-skill-then-target", skillSel: "213", targetSel: "#mkey_3" });
+    const r = dispatch({ kind: "click-skill-then-target", skillId: "213", targetId: 3 });
     expect(r).toBe(false);
     expect(skill.click).not.toHaveBeenCalled();
   });

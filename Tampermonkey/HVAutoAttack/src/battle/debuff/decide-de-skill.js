@@ -59,8 +59,8 @@ export function decideDeSkill(opt, snap) {
       : aoeNeighborAnchor(target, alive[1], aoeCount);
     return {
       kind: "click-skill-then-target",
-      skillSel: skill.id,
-      targetSel: `#mkey_${targetId}`,
+      skillId: skill.id,
+      targetId,
     };
   }
   return { kind: "noop" };

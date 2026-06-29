@@ -15,7 +15,7 @@
  *         | { kind: "click", selector: string }
  *         | { kind: "item-command", itemId: string|number }
  *         | { kind: "toggle-spirit" }
- *         | { kind: "click-skill-then-target", skillSel: string, targetSel: string }
+ *         | { kind: "click-skill-then-target", skillId: string, targetId: number }
  *         | { kind: "click-then-reload", selector: string, delaySec: number }
  *         | { kind: "halt", reason: "victory"|"defeat"|"flee"|"pause"|"acted" }
  *         | { kind: "alert-and-pause", msg: { l0: string, l1: string, l2: string } }

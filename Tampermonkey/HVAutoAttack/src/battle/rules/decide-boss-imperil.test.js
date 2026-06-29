@@ -72,8 +72,8 @@ describe("decideBossImperil", () => {
     });
     expect(decideBossImperil({}, s)).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "213",
-      targetSel: "#mkey_7",
+      skillId: "213",
+      targetId: 7,
     });
   });
 
@@ -86,8 +86,8 @@ describe("decideBossImperil", () => {
     });
     expect(decideBossImperil({}, s)).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "213",
-      targetSel: "#mkey_2",
+      skillId: "213",
+      targetId: 2,
     });
   });
 
@@ -103,8 +103,8 @@ describe("decideBossImperil", () => {
     });
     expect(decideBossImperil({}, s)).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "213",
-      targetSel: "#mkey_1",
+      skillId: "213",
+      targetId: 1,
     });
   });
 
@@ -119,8 +119,8 @@ describe("decideBossImperil", () => {
     });
     expect(decideBossImperil({}, s)).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "213",
-      targetSel: "#mkey_2", // order 1，AoE 向前覆盖 order 0
+      skillId: "213",
+      targetId: 2, // order 1，AoE 向前覆盖 order 0
     });
   });
 
@@ -133,8 +133,8 @@ describe("decideBossImperil", () => {
     });
     expect(decideBossImperil({ debuffSkillAoe: { Im: 2 } }, s)).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "213",
-      targetSel: "#mkey_2",
+      skillId: "213",
+      targetId: 2,
     });
   });
 
@@ -152,8 +152,8 @@ describe("decideBossImperil", () => {
     });
     expect(decideBossImperil({}, s)).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "213",
-      targetSel: "#mkey_2",
+      skillId: "213",
+      targetId: 2,
     });
   });
 
@@ -169,8 +169,8 @@ describe("decideBossImperil", () => {
     });
     expect(decideBossImperil({}, s)).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "213",
-      targetSel: "#mkey_9",
+      skillId: "213",
+      targetId: 9,
     });
   });
 });

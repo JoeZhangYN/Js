@@ -30,14 +30,14 @@ describe("decideBurstControl", () => {
     const s = snap({ learnedBurstByMid: { 100: { maxHit: 600, type: "fire" } } }); // 600 ≥ 1000*0.5
     expect(decideBurstControl({ burstControlSwitch: true }, s)).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "232",
-      targetSel: "#mkey_1",
+      skillId: "232",
+      targetId: 1,
     });
   });
 
   it("物理爆发 → Sleep(222)（Silence 对物理无效）", () => {
     const s = snap({ learnedBurstByMid: { 100: { maxHit: 600, type: "crushing" } } });
-    expect(decideBurstControl({ burstControlSwitch: true }, s).skillSel).toBe("222");
+    expect(decideBurstControl({ burstControlSwitch: true }, s).skillId).toBe("222");
   });
 
   it("不构成蹦极（单发 < 阈值）→ noop", () => {
@@ -69,14 +69,14 @@ describe("decideBurstControl", () => {
       skillReady: { 232: false, 222: true },
       learnedBurstByMid: { 100: { maxHit: 600, type: "fire" } },
     });
-    expect(decideBurstControl({ burstControlSwitch: true }, s).skillSel).toBe("222");
+    expect(decideBurstControl({ burstControlSwitch: true }, s).skillId).toBe("222");
   });
 
   it("burstControlSilenceForSpell:false → 法术爆发也用 Sleep", () => {
     const s = snap({ learnedBurstByMid: { 100: { maxHit: 600, type: "fire" } } });
     expect(
       decideBurstControl({ burstControlSwitch: true, burstControlSilenceForSpell: false }, s)
-        .skillSel
+        .skillId
     ).toBe("222");
   });
 });

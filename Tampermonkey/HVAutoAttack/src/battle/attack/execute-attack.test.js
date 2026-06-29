@@ -3,21 +3,23 @@ import { executeAttack } from "./execute-attack.js";
 
 const mocks = vi.hoisted(() => ({
   g: vi.fn(),
-  gE: vi.fn(),
-  isOn: vi.fn(),
   runBattleFocusCommand: vi.fn(),
+  runBattleTargetCommand: vi.fn(),
   runPhysicalSkillBookkeeping: vi.fn(),
   runBattleSpiritToggleAutomation: vi.fn(),
 }));
 
-vi.mock("../../dom/query.js", () => ({
-  gE: mocks.gE,
-  isOn: mocks.isOn,
-}));
 vi.mock("../../state/store.js", () => ({ g: mocks.g }));
 vi.mock("../battle-focus-command.js", () => ({
   BattleFocusCommandEvent: Object.freeze({ CLICK: "click" }),
   runBattleFocusCommand: mocks.runBattleFocusCommand,
+}));
+vi.mock("../battle-target-command.js", () => ({
+  BattleTargetCommandEvent: Object.freeze({
+    CLICK_TARGET: "clickTarget",
+    TRY_SKILL_THEN_TARGET: "trySkillThenTarget",
+  }),
+  runBattleTargetCommand: mocks.runBattleTargetCommand,
 }));
 vi.mock("./physical-skill-bookkeeping.js", () => ({
   PhysicalSkillBookkeepingEvent: Object.freeze({ RECORD_FIRE: "recordFire" }),
@@ -52,13 +54,9 @@ describe("executeAttack", () => {
   });
 
   it("reports physical skill fire through the bookkeeping entry", () => {
-    const skill = { click: vi.fn() };
-    const target = { click: vi.fn() };
-    mocks.isOn.mockReturnValue(true);
-    mocks.gE.mockImplementation((selector) => {
-      if (selector === "1111") return skill;
-      if (selector === "#mkey_3") return target;
-      return null;
+    mocks.runBattleTargetCommand.mockImplementation((event) => {
+      event.afterSkillClick?.();
+      return true;
     });
 
     expect(
@@ -73,13 +71,45 @@ describe("executeAttack", () => {
       )
     ).toBe(true);
 
+    expect(mocks.runBattleTargetCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "trySkillThenTarget",
+        skillId: "1111",
+        targetId: 3,
+      })
+    );
     expect(mocks.runPhysicalSkillBookkeeping).toHaveBeenCalledWith({
       type: "recordFire",
       code: "OFC",
       skillId: "1111",
       snap: { globalTurn: 10 },
     });
-    expect(skill.click).toHaveBeenCalledTimes(1);
-    expect(target.click).toHaveBeenCalledTimes(1);
+  });
+
+  it("requires physical skill fire before the merciful target and still clicks the default target", () => {
+    executeAttack(
+      {
+        type: "physical",
+        skillId: "1111",
+        code: "OFC",
+        mercifulTargetId: 2,
+        defaultTargetId: 3,
+      },
+      { globalTurn: 11 }
+    );
+
+    expect(mocks.runBattleTargetCommand).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        type: "trySkillThenTarget",
+        skillId: "1111",
+        targetId: 2,
+        targetRequiresSkill: true,
+      })
+    );
+    expect(mocks.runBattleTargetCommand).toHaveBeenNthCalledWith(2, {
+      type: "clickTarget",
+      targetId: 3,
+    });
   });
 });

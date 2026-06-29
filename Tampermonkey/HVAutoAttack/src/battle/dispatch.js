@@ -3,11 +3,12 @@
 // 返回 acted(boolean)：runRules 据此短路。深度 B 后已无 delegate 过渡桥——所有 step 的判断都在
 // PURE decide 完成，dispatch 只翻译数据 → 副作用（含 isOn 写前探活）。
 import { gE } from "../dom/query.js";
-import { attemptClick, attemptClickWithTarget } from "../dom/attempt-click.js";
+import { attemptClick } from "../dom/attempt-click.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { _alert } from "../core/lang.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import { BattleItemCommandEvent, runBattleItemCommand } from "./battle-item-command.js";
+import { BattleTargetCommandEvent, runBattleTargetCommand } from "./battle-target-command.js";
 import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
@@ -47,7 +48,11 @@ export function dispatch(result, snap) {
     case "click-skill-then-target":
       // debuff/boss 双段：Spirit 前置（命中则本回合让出）再 skill→target 双击。
       if (checkAndActivateSpirit()) return true;
-      return attemptClickWithTarget(result.skillSel, result.targetSel);
+      return !!runBattleTargetCommand({
+        type: BattleTargetCommandEvent.CLICK_SKILL_THEN_TARGET,
+        skillId: result.skillId,
+        targetId: result.targetId,
+      });
 
     case "click-then-reload": {
       // flee：逃跑按钮 click + 延时 reload（逃跑按钮恒可点，无需 isOn 探活）

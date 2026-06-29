@@ -153,8 +153,8 @@ describe("Feature 1: 拖战跳 Imperil", () => {
   it("stallMode:false → bossImperil decide 恢复（由业务入口决定是否命中）", () => {
     expect(byName("bossImperil").decide(stallSnap(), { stallMode: false })).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "213",
-      targetSel: "#mkey_1",
+      skillId: "213",
+      targetId: 1,
     });
   });
 
@@ -169,8 +169,8 @@ describe("Feature 1: 拖战跳 Imperil", () => {
       )
     ).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "213",
-      targetSel: "#mkey_1",
+      skillId: "213",
+      targetId: 1,
     });
   });
 

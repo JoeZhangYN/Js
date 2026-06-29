@@ -1,12 +1,12 @@
 // SHELL: 把 decideAttack 的 AttackPlan 翻译为 DOM 副作用 + 状态记账。
 // 只写不判断（判断全在 decide-attack.js）；isOn 探活属写路径安全读（与原 attack 一致）。
 // 记账：physical skill bookkeeping / Spirit toggle cooldown / Focus command。
-import { gE, isOn } from "../../dom/query.js";
 import {
   PhysicalSkillBookkeepingEvent,
   runPhysicalSkillBookkeeping,
 } from "./physical-skill-bookkeeping.js";
 import { BattleFocusCommandEvent, runBattleFocusCommand } from "../battle-focus-command.js";
+import { BattleTargetCommandEvent, runBattleTargetCommand } from "../battle-target-command.js";
 import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
@@ -35,37 +35,69 @@ export function executeAttack(plan, snap) {
 
     case "spell": {
       // 原：isOn(spell) 探活后 click spell + click target；CD 漂移则退化为普攻该 target
-      if (isOn(plan.spellId)) gE(plan.spellId).click();
-      gE(`#mkey_${plan.targetId}`)?.click();
+      runBattleTargetCommand({
+        type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
+        skillId: plan.spellId,
+        targetId: plan.targetId,
+      });
       return true;
     }
 
     case "merciful-single": {
-      if (isOn(plan.skillId)) gE(plan.skillId).click();
-      gE(`#mkey_${plan.targetId}`)?.click();
+      runBattleTargetCommand({
+        type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
+        skillId: plan.skillId,
+        targetId: plan.targetId,
+      });
       return true;
     }
 
     case "physical": {
       // isOn 探活通过才发技能 + 记账；merciful 斩杀点流血怪；末尾恒点默认首怪（原 attack 语义）
-      if (isOn(plan.skillId)) {
-        gE(plan.skillId).click();
-        runPhysicalSkillBookkeeping({
-          type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
-          code: plan.code,
+      if (plan.mercifulTargetId != null) {
+        runBattleTargetCommand({
+          type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
           skillId: plan.skillId,
-          snap,
+          targetId: plan.mercifulTargetId,
+          targetRequiresSkill: true,
+          afterSkillClick: () => {
+            runPhysicalSkillBookkeeping({
+              type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
+              code: plan.code,
+              skillId: plan.skillId,
+              snap,
+            });
+          },
         });
-        if (plan.mercifulTargetId != null) {
-          gE(`#mkey_${plan.mercifulTargetId}`)?.click();
-        }
+      } else {
+        runBattleTargetCommand({
+          type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
+          skillId: plan.skillId,
+          targetId: plan.defaultTargetId,
+          afterSkillClick: () => {
+            runPhysicalSkillBookkeeping({
+              type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
+              code: plan.code,
+              skillId: plan.skillId,
+              snap,
+            });
+          },
+        });
       }
-      gE(`#mkey_${plan.defaultTargetId}`)?.click();
+      if (plan.mercifulTargetId != null) {
+        runBattleTargetCommand({
+          type: BattleTargetCommandEvent.CLICK_TARGET,
+          targetId: plan.defaultTargetId,
+        });
+      }
       return true;
     }
 
     case "default":
-      gE(`#mkey_${plan.targetId}`)?.click();
+      runBattleTargetCommand({
+        type: BattleTargetCommandEvent.CLICK_TARGET,
+        targetId: plan.targetId,
+      });
       return true;
 
     default:

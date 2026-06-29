@@ -81,8 +81,8 @@ describe("decideDeSkill — Drain 目标策略", () => {
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
     expect(decideDeSkill(opt, s)).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "211",
-      targetSel: "#mkey_2",
+      skillId: "211",
+      targetId: 2,
     });
   });
 
@@ -94,7 +94,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       ],
     });
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
-    expect(decideDeSkill(opt, s).targetSel).toBe("#mkey_2");
+    expect(decideDeSkill(opt, s).targetId).toBe(2);
   });
 
   it("Drain hpAbsNow 相同时取 order 最小（稳定 first）", () => {
@@ -102,7 +102,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       view: [mon({ id: 1, order: 0, hpAbsNow: 800 }), mon({ id: 2, order: 1, hpAbsNow: 800 })],
     });
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
-    expect(decideDeSkill(opt, s).targetSel).toBe("#mkey_1");
+    expect(decideDeSkill(opt, s).targetId).toBe(1);
   });
 
   it("drainTargetMaxHp=false 时 Drain 退回打首怪（order 最小）", () => {
@@ -114,7 +114,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       debuffSkill: { Dr: true },
       drainTargetMaxHp: false,
     });
-    expect(decideDeSkill(opt, s).targetSel).toBe("#mkey_1");
+    expect(decideDeSkill(opt, s).targetId).toBe(1);
   });
 
   it("Drain 选目标时跳过死怪（死怪血更多也不选）", () => {
@@ -126,7 +126,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       ],
     });
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
-    expect(decideDeSkill(opt, s).targetSel).toBe("#mkey_3");
+    expect(decideDeSkill(opt, s).targetId).toBe(3);
   });
 
   it("Drain AoE≥2 时仍恒点血最多怪本身（取消邻居偏移，修复目标漂移）", () => {
@@ -140,7 +140,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
     });
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
     // 旧行为会漂移到 order 邻居 #mkey_3；新行为 selfTarget → 恒打血最多怪 #mkey_2
-    expect(decideDeSkill(opt, s).targetSel).toBe("#mkey_2");
+    expect(decideDeSkill(opt, s).targetId).toBe(2);
   });
 
   it("非 Drain debuff（Silence）不受开关影响，恒打首怪", () => {
@@ -148,7 +148,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       view: [mon({ id: 1, order: 0, hpAbsNow: 200 }), mon({ id: 2, order: 1, hpAbsNow: 9500 })],
     });
     const opt = enabled({ debuffSkillOrderValue: "Si", debuffSkill: { Si: true } });
-    expect(decideDeSkill(opt, s).targetSel).toBe("#mkey_1");
+    expect(decideDeSkill(opt, s).targetId).toBe(1);
   });
 
   it("非 Drain debuff AoE≥2 → 保留邻居覆盖优化(首怪邻居)", () => {
@@ -157,7 +157,7 @@ describe("decideDeSkill — Drain 目标策略", () => {
       view: [mon({ id: 1, order: 0, hpAbsNow: 200 }), mon({ id: 2, order: 1, hpAbsNow: 900 })],
     });
     const opt = enabled({ debuffSkillOrderValue: "Si", debuffSkill: { Si: true } });
-    expect(decideDeSkill(opt, s).targetSel).toBe("#mkey_2"); // 首怪(id1) 的邻居 id2
+    expect(decideDeSkill(opt, s).targetId).toBe(2); // 首怪(id1) 的邻居 id2
   });
 
   it("无存活怪 → noop", () => {

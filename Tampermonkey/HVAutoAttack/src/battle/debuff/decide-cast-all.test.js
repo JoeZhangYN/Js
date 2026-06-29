@@ -66,8 +66,8 @@ describe("decideCastDebuffOnAll", () => {
       decideCastDebuffOnAll({ debuffSkillSwitch: true, debuffSkillAllWk: true }, snap(), "We")
     ).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "212",
-      targetSel: "#mkey_1",
+      skillId: "212",
+      targetId: 1,
     });
   });
 
@@ -108,8 +108,8 @@ describe("decideCastDebuffOnAll", () => {
       )
     ).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "212",
-      targetSel: "#mkey_1",
+      skillId: "212",
+      targetId: 1,
     });
   });
 
@@ -118,8 +118,8 @@ describe("decideCastDebuffOnAll", () => {
       decideCastDebuffOnAll({ debuffSkillSwitch: true, debuffSkillAllIm: true }, snap(), "Im")
     ).toEqual({
       kind: "click-skill-then-target",
-      skillSel: "213",
-      targetSel: "#mkey_1",
+      skillId: "213",
+      targetId: 1,
     });
   });
 });
