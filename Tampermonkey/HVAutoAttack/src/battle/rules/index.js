@@ -93,6 +93,11 @@ function stallTopupFacts(snap) {
   };
 }
 
+function conditionFacts(snap) {
+  // User-authored condition expressions address a variable map, so the snapshot is the condition context.
+  return snap;
+}
+
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
@@ -117,7 +122,10 @@ export const BATTLE_RULES = [
     decide: (snap, opt) => decideStallTopup({ opt, ...stallTopupFacts(snap) }),
   },
   // 7. 防御（attemptClick 内置 isOn 探活）
-  { name: "defend", decide: (snap, opt) => decideDefend(opt, snap) },
+  {
+    name: "defend",
+    decide: (snap, opt) => decideDefend({ opt, conditionFacts: conditionFacts(snap) }),
+  },
   // 8. 卷轴（decide 出候选 item id，execute 探活+点第一个可用）
   {
     name: "useScroll",

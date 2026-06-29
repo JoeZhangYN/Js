@@ -1323,14 +1323,20 @@ function checkPotionEntry() {
 
 function checkDefendEntry() {
   const ownerText = fs.readFileSync(decideDefendFile, "utf8");
-  for (const required of ["decideDefend", "defendCondition", "defend-command"]) {
+  for (const required of ["decideDefend", "defendCondition", "defend-command", "conditionFacts"]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideDefendFile)} must own defend gate ${required}`);
     }
   }
+  if (/decideDefend\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
+    violations.push(`${rel(decideDefendFile)} must not expose opt/snap defend input`);
+  }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
   const defendRule =
     rulesText.match(/name:\s*["']defend["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideDefend\(\s*opt\s*,\s*snap\s*\)/.test(defendRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass condition facts, not snap, to defend`);
+  }
   for (const legacy of ["defendCondition", "#ckey_defend"]) {
     if (defendRule.includes(legacy)) {
       violations.push(`${rel(battleRulesFile)} must not assemble defend rule gates directly`);
