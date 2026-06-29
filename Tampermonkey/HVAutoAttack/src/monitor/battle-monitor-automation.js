@@ -24,12 +24,12 @@ export const BattleMonitorEvent = Object.freeze({
 
 function recordActionEnd(event) {
   const usage = runBattleActionUsageCapture(event);
-  if (usage) runBattleUsageAutomation({ type: BattleUsageEvent.ACTION_ENDED, usage });
+  if (usage) runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_ACTION_USAGE, usage });
 }
 
 function recordCompletion() {
   runBattleDropAutomation({ type: BattleDropEvent.COMPLETION_REACHED });
-  runBattleUsageAutomation({ type: BattleUsageEvent.COMPLETION_REACHED });
+  runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE });
 }
 
 function routeBattleReportCommand(event) {

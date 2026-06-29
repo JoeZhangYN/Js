@@ -131,18 +131,18 @@ function checkEntry() {
       `${entry.replaceAll("\\", "/")} must route battle usage through runBattleUsageAutomation(event)`
     );
   }
-  if (!text.includes("BattleUsageEvent.ACTION_ENDED")) {
+  if (!text.includes("BattleUsageEvent.RECORD_ACTION_USAGE")) {
     violations.push(
-      `${entry.replaceAll("\\", "/")} must route action usage through BattleUsageEvent.ACTION_ENDED`
+      `${entry.replaceAll("\\", "/")} must route action usage through BattleUsageEvent.RECORD_ACTION_USAGE`
     );
   }
-  if (!text.includes("BattleUsageEvent.COMPLETION_REACHED")) {
+  if (!text.includes("BattleUsageEvent.RECORD_COMPLETED_USAGE")) {
     violations.push(
-      `${entry.replaceAll("\\", "/")} must route completion usage through BattleUsageEvent.COMPLETION_REACHED`
+      `${entry.replaceAll("\\", "/")} must route completion usage through BattleUsageEvent.RECORD_COMPLETED_USAGE`
     );
   }
   if (
-    /runBattleUsageAutomation\(\s*\{\s*type:\s*(?:EVENT_ACTION_ENDED|EVENT_COMPLETION_REACHED|["'](?:actionEnded|completionReached)["'])/.test(
+    /runBattleUsageAutomation\(\s*\{\s*type:\s*(?:EVENT_ACTION_ENDED|EVENT_COMPLETION_REACHED|["'](?:actionEnded|completionReached)["']|BattleUsageEvent\.(?:ACTION_ENDED|COMPLETION_REACHED))/.test(
       text
     )
   ) {
@@ -355,10 +355,23 @@ function checkUsageImplementation() {
   ) {
     violations.push(`${rel(usageFile)} may export only its event entry`);
   }
-  for (const required of ["ACTION_ENDED", "COMPLETION_REACHED"]) {
+  for (const required of ["RECORD_ACTION_USAGE", "RECORD_COMPLETED_USAGE"]) {
     if (!text.includes(required)) {
       violations.push(`${rel(usageFile)} must own ${required}`);
     }
+  }
+  for (const forbidden of [
+    "const EVENT_ACTION_ENDED",
+    "const EVENT_COMPLETION_REACHED",
+    "ACTION_ENDED:",
+    "COMPLETION_REACHED:",
+  ]) {
+    if (text.includes(forbidden)) {
+      violations.push(`${rel(usageFile)} must expose usage-specific commands`);
+    }
+  }
+  if (!text.includes("recordActionUsage") || !text.includes("recordCompletedUsage")) {
+    violations.push(`${rel(usageFile)} must name usage commands by business action`);
   }
   if (
     /\brecordUsage\s*\(/.test(entryText) ||

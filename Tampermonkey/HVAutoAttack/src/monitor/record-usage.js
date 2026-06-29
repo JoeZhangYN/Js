@@ -7,12 +7,12 @@ import { BattleMonitorRuntimeEvent, runBattleMonitorRuntime } from "./battle-mon
 import { applyBattleActionUsageStats } from "./record-usage-action-stats.js";
 import { recordCompletedBattleUsage } from "./record-usage-completion.js";
 
-const EVENT_ACTION_ENDED = "actionEnded";
-const EVENT_COMPLETION_REACHED = "completionReached";
+const EVENT_RECORD_ACTION_USAGE = "recordActionUsage";
+const EVENT_RECORD_COMPLETED_USAGE = "recordCompletedUsage";
 
 export const BattleUsageEvent = Object.freeze({
-  ACTION_ENDED: EVENT_ACTION_ENDED,
-  COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
+  RECORD_ACTION_USAGE: EVENT_RECORD_ACTION_USAGE,
+  RECORD_COMPLETED_USAGE: EVENT_RECORD_COMPLETED_USAGE,
 });
 
 function readCurrentUsageStats() {
@@ -36,11 +36,11 @@ function recordBattleActionUsage(parm) {
 }
 
 export function runBattleUsageAutomation(event) {
-  if (event.type === EVENT_ACTION_ENDED) {
+  if (event.type === EVENT_RECORD_ACTION_USAGE) {
     recordBattleActionUsage(event.usage);
     return undefined;
   }
-  if (event.type === EVENT_COMPLETION_REACHED) {
+  if (event.type === EVENT_RECORD_COMPLETED_USAGE) {
     recordCompletedBattleUsage();
     return undefined;
   }

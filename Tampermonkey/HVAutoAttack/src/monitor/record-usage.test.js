@@ -21,7 +21,7 @@ describe("runBattleUsageAutomation", () => {
   it("does not archive completion usage when record usage is disabled", () => {
     setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
 
-    runBattleUsageAutomation({ type: BattleUsageEvent.COMPLETION_REACHED });
+    runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE });
 
     expect(getValue(STORAGE_KEYS.STATS, true)).toEqual({ self: { _monster: 0, _boss: 0 } });
     expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toBeNull();
@@ -33,7 +33,7 @@ describe("runBattleUsageAutomation", () => {
     setValue(STORAGE_KEYS.BATTLE_CODE, "AR-1");
     setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
 
-    runBattleUsageAutomation({ type: BattleUsageEvent.COMPLETION_REACHED });
+    runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE });
 
     expect(getValue(STORAGE_KEYS.STATS, true)).toBeNull();
     expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toEqual([
