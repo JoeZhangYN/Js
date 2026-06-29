@@ -54,10 +54,18 @@ walk(srcDir);
 requireText(owner, [
   "BattleSkillUsageEvent",
   "runBattleSkillUsageAutomation",
+  "SKILL_USAGE_CODES",
+  "normalizeUsageCount",
+  "normalizeUsage",
+  "isKnownUsageCode",
   "RESET_ROUND",
   "RECORD_USE",
   "READ_USAGE",
 ]);
+const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+if ((ownerText.match(/normalizeUsage\(/g) || []).length < 2) {
+  violations.push(`${owner.replaceAll("\\", "/")} must normalize skill usage reads and writes`);
+}
 requireText(roundStart, ["BattleSkillUsageEvent.RESET_ROUND", "runBattleSkillUsageAutomation"]);
 requireText(executeAttack, ["BattleSkillUsageEvent.RECORD_USE", "runBattleSkillUsageAutomation"]);
 requireText(snapshot, ["BattleSkillUsageEvent.READ_USAGE", "runBattleSkillUsageAutomation"]);

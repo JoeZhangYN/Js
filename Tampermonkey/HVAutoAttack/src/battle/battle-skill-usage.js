@@ -4,6 +4,7 @@ import { g } from "../state/store.js";
 const EVENT_RESET_ROUND = "resetRound";
 const EVENT_RECORD_USE = "recordUse";
 const EVENT_READ_USAGE = "readUsage";
+const SKILL_USAGE_CODES = Object.freeze(["OFC", "FRD", "T3", "T2", "T1"]);
 
 export const BattleSkillUsageEvent = Object.freeze({
   RESET_ROUND: EVENT_RESET_ROUND,
@@ -12,13 +13,23 @@ export const BattleSkillUsageEvent = Object.freeze({
 });
 
 function emptyUsage() {
-  return {
-    OFC: 0,
-    FRD: 0,
-    T3: 0,
-    T2: 0,
-    T1: 0,
-  };
+  return Object.fromEntries(SKILL_USAGE_CODES.map((code) => [code, 0]));
+}
+
+function normalizeUsageCount(value) {
+  const count = Number(value);
+  return Number.isFinite(count) && count > 0 ? Math.trunc(count) : 0;
+}
+
+function normalizeUsage(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return Object.fromEntries(
+    SKILL_USAGE_CODES.map((code) => [code, normalizeUsageCount(source[code])])
+  );
+}
+
+function isKnownUsageCode(code) {
+  return SKILL_USAGE_CODES.includes(code);
 }
 
 function resetRound() {
@@ -28,13 +39,13 @@ function resetRound() {
 }
 
 function readUsage() {
-  return g("skillOTOS") || {};
+  return normalizeUsage(g("skillOTOS"));
 }
 
 function recordUse(code) {
-  if (!code) return readUsage();
-  const usage = { ...readUsage() };
-  usage[code] = (usage[code] || 0) + 1;
+  if (!isKnownUsageCode(code)) return readUsage();
+  const usage = readUsage();
+  usage[code] += 1;
   g("skillOTOS", usage);
   return usage;
 }
