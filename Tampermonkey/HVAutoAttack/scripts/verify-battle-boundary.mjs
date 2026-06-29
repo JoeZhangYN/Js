@@ -42,6 +42,7 @@ const decideDeSkillFile = path.join(root, "src/battle/debuff/decide-de-skill.js"
 const decideCastAllFile = path.join(root, "src/battle/debuff/decide-cast-all.js");
 const decideDefendFile = path.join(root, "src/battle/defense/decide-defend.js");
 const decideAutoPauseFile = path.join(root, "src/battle/pause/decide-auto-pause.js");
+const decideFleeFile = path.join(root, "src/battle/escape/decide-flee.js");
 const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const violations = [];
 
@@ -996,6 +997,22 @@ function checkAutoPauseEntry() {
   }
 }
 
+function checkFleeEntry() {
+  const ownerText = fs.readFileSync(decideFleeFile, "utf8");
+  for (const required of ["decideFlee", "autoFlee", "fleeCondition", "click-then-reload"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideFleeFile)} must own flee gate ${required}`);
+    }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const fleeRule = rulesText.match(/name:\s*["']flee["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  for (const legacy of ["canFlee", "autoFlee", "fleeCondition", "click-then-reload"]) {
+    if (new RegExp(`\\b${legacy}\\b`).test(fleeRule)) {
+      violations.push(`${rel(battleRulesFile)} must not assemble flee rule gates directly`);
+    }
+  }
+}
+
 function checkBattleStallMode() {
   const ownerText = fs.readFileSync(stallModeFile, "utf8");
   for (const required of [
@@ -1079,6 +1096,7 @@ checkItemScrollEntry();
 checkPotionEntry();
 checkDefendEntry();
 checkAutoPauseEntry();
+checkFleeEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();
 checkBattleOptionVocabulary();

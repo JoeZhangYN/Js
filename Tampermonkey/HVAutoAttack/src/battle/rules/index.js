@@ -1,6 +1,5 @@
 // 每条 rule：{ name, when?(snap,opt), decide(snap,opt)→ActionResult }。顺序 = 原 runSteps 顺序。
 // 深度 B 后**全部 16 条 decide 均为 PURE**（只读 snap，零 DOM 判断）；副作用全在
-import { checkCondition } from "../../settings/condition-eval.js";
 import { decideInfusion } from "../buff/decide-infusion.js";
 import { decideBuff } from "../buff/decide-buff.js";
 import { decideChannel } from "../buff/decide-channel.js";
@@ -11,17 +10,16 @@ import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../i
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
 import { decideDefend } from "../defense/decide-defend.js";
 import { decideAutoPause } from "../pause/decide-auto-pause.js";
+import { decideFlee } from "../escape/decide-flee.js";
 import { BossImperilEvent, runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 
-const canFlee = (snap, opt) => opt.autoFlee && checkCondition(opt.fleeCondition, snap);
-const flee = () => ({ kind: "click-then-reload", selector: "1001", delaySec: 3 });
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
   { name: "criticalBuffGuard", decide: (snap, opt) => decideCriticalBuff(opt, snap) },
   // 2. 逃跑
-  { name: "flee", when: canFlee, decide: flee },
+  { name: "flee", decide: (snap, opt) => decideFlee(opt, snap) },
   // 3. 自动暂停（dispatch 交给 runBattlePauseAutomation 统一写暂停状态）
   { name: "autoPause", decide: (snap, opt) => decideAutoPause(opt, snap) },
   // 4. 宝石（decideGemUse 自 gate snap.gemName；dyn-threshold 在 decide，autoTune 计数在 execute）

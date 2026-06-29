@@ -39,12 +39,8 @@ describe("BATTLE_RULES 结构", () => {
 });
 
 describe("干净 rule 的 decide 返真 ActionResult", () => {
-  it("flee → click-then-reload(1001, 3s)", () => {
-    expect(byName("flee").decide({}, {})).toEqual({
-      kind: "click-then-reload",
-      selector: "1001",
-      delaySec: 3,
-    });
+  it("flee → noop when disabled", () => {
+    expect(byName("flee").decide({}, {})).toEqual({ kind: "noop" });
   });
 
   it("defend → noop when disabled", () => {
@@ -80,9 +76,13 @@ describe("PURE decide 形状（深度 B 后无 delegate）", () => {
 });
 
 describe("when 门控", () => {
-  it("flee.when: autoFlee 且 fleeCondition 满足(undefined→true)", () => {
-    expect(byName("flee").when({}, { autoFlee: true })).toBe(true);
-    expect(byName("flee").when({}, { autoFlee: false })).toBeFalsy();
+  it("flee: 规则表不拼门控，开启时由 decide 返回 click-then-reload", () => {
+    expect(byName("flee").when).toBeUndefined();
+    expect(byName("flee").decide({}, { autoFlee: true })).toEqual({
+      kind: "click-then-reload",
+      selector: "1001",
+      delaySec: 3,
+    });
   });
 
   it("autoPause: 规则表不拼门控，开启时由 decide 返回 pause", () => {
