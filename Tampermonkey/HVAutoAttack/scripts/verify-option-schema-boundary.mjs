@@ -87,6 +87,10 @@ for (const required of [
   /renderSchemaNumberInput\(\s*["']bigKillMinSamples["']/,
   /renderSchemaNumberInput\(\s*["']bigKillProbThreshold["']/,
   /renderSchemaNumberInput\(\s*["']bigKillScaleDriftTol["']/,
+  /renderBurstGuardSchemaFields/,
+  /renderSchemaCheckboxField\(\s*["']burstControlSwitch["']/,
+  /renderSchemaNumberInput\(\s*["']burstControlHpFrac["']/,
+  /renderSchemaCheckboxField\(\s*["']burstControlSilenceForSpell["']/,
 ]) {
   if (!required.test(renderText)) {
     violations.push(
@@ -112,6 +116,9 @@ for (const forbidden of [
   /name=["']bigKillMinSamples["']\s+placeholder=["']4["']/,
   /name=["']bigKillProbThreshold["']\s+placeholder=["']0\.9["']/,
   /name=["']bigKillScaleDriftTol["']\s+placeholder=["']1\.15["']/,
+  /id=["']burstControlSwitch["'][\s\S]{0,140}学致死爆发伤害/,
+  /name=["']burstControlHpFrac["']\s+placeholder=["']50["']/,
+  /id=["']burstControlSilenceForSpell["'][\s\S]{0,140}法术爆发用 Silence/,
 ]) {
   if (forbidden.test(renderText)) {
     violations.push(

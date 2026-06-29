@@ -38,6 +38,13 @@ describe("runOptionSchema", () => {
       kind: "number",
       default: 3,
     });
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "burstControlHpFrac" })
+    ).toMatchObject({
+      key: "burstControlHpFrac",
+      kind: "number",
+      default: 50,
+    });
     expect(runOptionSchema({ type: OptionSchemaEvent.READ_DEFAULT, key: "repairValue" })).toBe(60);
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_GROUP, group: "Debuff" }).some(

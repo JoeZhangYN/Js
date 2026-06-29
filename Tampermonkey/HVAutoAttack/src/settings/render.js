@@ -156,6 +156,19 @@ function renderDebuffSmartSkipSchemaFields() {
   ];
 }
 
+function renderBurstGuardSchemaFields() {
+  return [
+    renderSchemaCheckboxField("burstControlSwitch", "<br>"),
+    `${renderSchemaLabel(readSchemaField("burstControlHpFrac"))}: ${renderSchemaNumberInput(
+      "burstControlHpFrac",
+      "%"
+    )} ${renderSchemaCheckboxField("burstControlSilenceForSpell").replace(
+      /^<div>|<\/div>$/g,
+      ""
+    )}`,
+  ];
+}
+
 /**
  * 打开 / 切换显隐 HVAA 配置面板。浮动按钮(button.js)与 hv-utils 顶部栏触发器(window.HVAA_openConfig)
  * 共用此单一入口（收口原 button.js 内联 onclick 逻辑，去重）。
@@ -449,8 +462,7 @@ export function optionBox() {
     ...renderDebuffSmartSkipSchemaFields(),
     "  </div>",
     '  <div style="border:1px dashed #888;padding:3px;"><b><l0>爆发防护（实验，默认关）</l0><l1>爆發防護（實驗，默認關）</l1><l2>Burst Guard (Exp, off)</l2></b><br>',
-    '    <input id="burstControlSwitch" type="checkbox"><label for="burstControlSwitch"><l0>学致死爆发伤害 → 对高爆发怪单点 Silence(法术)/Sleep(物理) 防血量蹦极</l0><l1>學致死爆發傷害 → 對高爆發怪單點 Silence(法術)/Sleep(物理) 防血量蹦極</l1><l2>Learn lethal burst → single-target Silence/Sleep to prevent HP bungee</l2></label><br>',
-    '    <l0>　蹦极阈值 单发≥当前血</l0><l1>　蹦極閾值 單發≥當前血</l1><l2>　Bungee: single hit ≥ current HP</l2> <input class="hvAANumber" name="burstControlHpFrac" placeholder="50" type="text">% <input id="burstControlSilenceForSpell" type="checkbox" checked data-default-on><label for="burstControlSilenceForSpell"><l0>法术爆发用 Silence</l0><l1>法術爆發用 Silence</l1><l2>Silence for spell bursts</l2></label>',
+    ...renderBurstGuardSchemaFields(),
     "  </div>",
     '    <div><input id="debuffSkill_Sle" type="checkbox"><label for="debuffSkill_Sle">Sleep</label>{{debuffSkillSleCondition}}</div>',
     '    <div><input id="debuffSkill_Bl" type="checkbox"><label for="debuffSkill_Bl">Blind</label>{{debuffSkillBlCondition}}</div>',
