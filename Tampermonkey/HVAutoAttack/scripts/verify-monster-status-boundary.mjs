@@ -7,6 +7,7 @@ const entry = path.normalize("src/battle/monster-status-automation.js");
 const statusView = path.normalize("src/battle/monster-status-view.js");
 const hpImpl = path.normalize("src/battle/monster-status-hp.js");
 const maxHpInference = path.normalize("src/battle/monster-max-hp-inference.js");
+const targetWeight = path.normalize("src/battle/monster-target-weight.js");
 const parserImpl = path.normalize("src/battle/log-parser.js");
 const roundStart = path.normalize("src/battle/new-round.js");
 const actionEventBridge = path.normalize("src/battle/battle-action-event-bridge.js");
@@ -192,8 +193,10 @@ function checkHpImpl() {
   for (const required of [
     "MonsterStatusViewEvent.READ_HP_RUNTIME_SNAPSHOT",
     "MonsterMaxHpInferenceEvent.APPLY_DEATHS",
+    "MonsterTargetWeightEvent.APPLY",
     "runMonsterMaxHpInference",
     "runMonsterStatusView",
+    "runMonsterTargetWeight",
     "statusByOrder",
   ]) {
     if (!text.includes(required)) {
@@ -212,10 +215,11 @@ function checkHpImpl() {
     "MonsterDbStoreEvent.HP_READ",
     "MonsterDbStoreEvent.HP_WRITE",
     "inferredThisPage",
+    "weightFactor",
   ]) {
     if (text.includes(forbidden)) {
       violations.push(
-        `${hpImpl.replaceAll("\\", "/")} death-based max HP learning belongs in monster-max-hp-inference`
+        `${hpImpl.replaceAll("\\", "/")} max HP learning and target weighting belong in sub-capability entries`
       );
     }
   }
@@ -239,11 +243,38 @@ function checkMaxHpInference() {
   }
 }
 
+function checkTargetWeight() {
+  const text = fs.readFileSync(path.join(root, targetWeight), "utf8");
+  for (const required of [
+    "export const MonsterTargetWeightEvent",
+    "export function runMonsterTargetWeight",
+    "APPLY",
+    "finitePositive",
+    "optionWeight",
+    "Infinity",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${targetWeight.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
+  for (const forbidden of [
+    "../state/store.js",
+    "../state/option.js",
+    "g(",
+    "runOptionAutomation",
+  ]) {
+    if (text.includes(forbidden)) {
+      violations.push(`${targetWeight.replaceAll("\\", "/")} must stay a pure weighting core`);
+    }
+  }
+}
+
 walk(srcDir);
 checkEntry();
 checkStatusView();
 checkHpImpl();
 checkMaxHpInference();
+checkTargetWeight();
 checkParser();
 
 if (violations.length) {

@@ -6,6 +6,7 @@ import {
   MonsterMaxHpInferenceEvent,
   runMonsterMaxHpInference,
 } from "./monster-max-hp-inference.js";
+import { MonsterTargetWeightEvent, runMonsterTargetWeight } from "./monster-target-weight.js";
 
 function readTargetWeightOptions() {
   return {
@@ -30,7 +31,6 @@ export function updateMonsterHpRuntime() {
     type: MonsterStatusViewEvent.READ_HP_RUNTIME_SNAPSHOT,
   });
   const statusByOrder = new Map(monsterStatus.map((status) => [status.order, status]));
-  const hpArray = [];
 
   runtimeSnapshot.forEach((monster) => {
     const status = statusByOrder.get(monster.order);
@@ -41,8 +41,6 @@ export function updateMonsterHpRuntime() {
 
     status.isDead = monster.isDead;
     status.hpNow = hpNow;
-
-    if (!monster.isDead) hpArray.push(hpNow);
   });
 
   runMonsterMaxHpInference({
@@ -51,30 +49,21 @@ export function updateMonsterHpRuntime() {
     runtimeSnapshot,
   });
 
-  const hpLowest = Math.min(...hpArray);
-  const hpMost = Math.max(...hpArray);
-  const targetWeightOptions = readTargetWeightOptions();
-  const isReverse = targetWeightOptions.ruleReverse;
-  const weightFactor = isReverse ? hpMost * 10 : 10 / hpLowest;
-
-  monsterStatus.forEach((monster) => {
-    monster.finWeight = monster.isDead
-      ? Infinity
-      : isReverse
-        ? weightFactor / monster.hpNow
-        : monster.hpNow * weightFactor;
+  const weightedStatuses = runMonsterTargetWeight({
+    type: MonsterTargetWeightEvent.APPLY,
+    monsterStatus: monsterStatus.map((status) => ({
+      order: status.order,
+      currentHp: status.hpNow,
+      isDead: status.isDead,
+    })),
+    runtimeSnapshot,
+    options: readTargetWeightOptions(),
   });
-
-  runtimeSnapshot.forEach((monster) => {
-    const status = statusByOrder.get(monster.order);
-    if (!status) return;
-    monster.activeDebuffKeys.forEach((key) => {
-      status.finWeight += isReverse
-        ? -targetWeightOptions.weight[key]
-        : targetWeightOptions.weight[key];
-    });
+  weightedStatuses.forEach((weightedStatus) => {
+    const status = statusByOrder.get(weightedStatus.order);
+    if (status) status.finWeight = weightedStatus.finWeight;
   });
-
   monsterStatus.sort((a, b) => a.finWeight - b.finWeight);
+
   g("monsterStatus", monsterStatus);
 }
