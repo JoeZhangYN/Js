@@ -58,6 +58,15 @@ function checkFile(file) {
   ) {
     violations.push(`${rel(file)} must pass recoveryAbs, not raw vitals, to recovery learning`);
   }
+  for (const call of source.matchAll(/runRecoveryLearningAutomation\(\s*\{[\s\S]*?\}\s*\)/g)) {
+    if (
+      relative !== owner &&
+      call[0].includes("RecoveryLearningEvent.FINALIZE_PENDING") &&
+      /\bsnap\s*:/.test(call[0])
+    ) {
+      violations.push(`${rel(file)} must pass recoveryAbs, not snap, to recovery finalize`);
+    }
+  }
 }
 
 walk(srcDir);
@@ -90,6 +99,13 @@ if (
   violations.push(
     `${owner.replaceAll("\\", "/")} must consume recoveryAbs, not raw snapshot vitals`
   );
+}
+const finalizeBody = ownerText.match(/function finalizePending\(event\) \{[\s\S]*?\n\}/)?.[0];
+if (!finalizeBody?.includes("event?.recoveryAbs")) {
+  violations.push(`${owner.replaceAll("\\", "/")} finalize must consume direct recoveryAbs`);
+}
+if (/\bsnap\?\.recoveryAbs\b|\bsnap\.recoveryAbs\b/.test(finalizeBody || "")) {
+  violations.push(`${owner.replaceAll("\\", "/")} finalize must not consume snap-shaped input`);
 }
 
 for (const legacy of ["recordPreDrink", "finalizePending", "getLearnedRecovery"]) {

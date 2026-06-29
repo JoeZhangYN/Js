@@ -243,7 +243,7 @@ export function collectSnapshot(event = {}) {
   // T1: 上回合若有 pending 喝药观测，此处结算 → 学习 delta
   runRecoveryLearningAutomation({
     type: RecoveryLearningEvent.FINALIZE_PENDING,
-    snap: { recoveryAbs: recoveryAbs(vitals) },
+    recoveryAbs: recoveryAbs(vitals),
   });
   // F3: 上回合开火的技能若本回合脱灰 → 收敛真实 CD（只需 globalTurn + readySkillIds）
   runCdLearningAutomation({

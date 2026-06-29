@@ -125,7 +125,7 @@ describe("collectSnapshot", () => {
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
     expect(mocks.runRecoveryLearningAutomation).toHaveBeenCalledWith({
       type: "finalizePending",
-      snap: { recoveryAbs: { hp: 500, mp: 250, sp: 200 } },
+      recoveryAbs: { hp: 500, mp: 250, sp: 200 },
     });
     expect(mocks.runCdLearningAutomation).toHaveBeenCalledWith({
       type: "finalizePending",

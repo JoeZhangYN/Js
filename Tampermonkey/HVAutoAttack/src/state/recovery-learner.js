@@ -124,9 +124,9 @@ function recordPreDrink(potionId, snap) {
 /**
  * snapshot 入口调用：若有 pending 且非同回合 → 取 delta 更新 learned。
  * 同回合 click 后立刻 collect snapshot 也 OK（pending.turn === current turn 视为未结算，跳过）。
- * @param {{recoveryAbs?:{hp?:number,mp?:number,sp?:number}}} snap
+ * @param {{recoveryAbs?:{hp?:number,mp?:number,sp?:number}}} event
  */
-function finalizePending(snap) {
+function finalizePending(event) {
   const rawPending = g("learnPending");
   const pending = normalizePending(rawPending);
   if (!pending) {
@@ -138,7 +138,7 @@ function finalizePending(snap) {
     g("learnPending", pending);
     return; // 同回合，未结算
   }
-  const post = normalizeRecoveryAbs(snap?.recoveryAbs)[pending.stat];
+  const post = normalizeRecoveryAbs(event?.recoveryAbs)[pending.stat];
   const delta = post - pending.pre;
   g("learnPending", null); // 清 pending
   if (delta <= 0) {
@@ -188,7 +188,7 @@ function getLearnedRecovery(potionId) {
 
 export function runRecoveryLearningAutomation(event = { type: EVENT_READ_RECOVERY }) {
   if (event.type === EVENT_RECORD_PRE_DRINK) return recordPreDrink(event.potionId, event.snap);
-  if (event.type === EVENT_FINALIZE_PENDING) return finalizePending(event.snap);
+  if (event.type === EVENT_FINALIZE_PENDING) return finalizePending(event);
   if (event.type === EVENT_READ_RECOVERY) return getLearnedRecovery(event.potionId);
   return undefined;
 }
