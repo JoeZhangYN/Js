@@ -45,22 +45,7 @@ function planPageRefreshDelayMinutes(option, { jitter = Math.random() } = {}) {
   return minutes + jitterMinutes;
 }
 
-export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }, deps = {}) {
-  if (event.type === EVENT_UNKNOWN_PAGE_READY) {
-    const reload =
-      deps.scheduleReload ||
-      ((minutes) =>
-        runNavigationAutomation({
-          type: NavigationEvent.SCHEDULE_RELOAD,
-          minutes,
-        }));
-    reload(UNKNOWN_PAGE_RELOAD_MINUTES);
-    return true;
-  }
-  if (event.type !== EVENT_GAME_PAGE_READY) return false;
-  const option = readPageRefreshOption(deps);
-  const delayMinutes = planPageRefreshDelayMinutes(option, deps);
-  if (!delayMinutes) return false;
+function schedulePageRefreshReload(minutes, deps) {
   const reload =
     deps.scheduleReload ||
     ((minutes) =>
@@ -68,6 +53,18 @@ export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }
         type: NavigationEvent.SCHEDULE_RELOAD,
         minutes,
       }));
-  reload(delayMinutes);
+  reload(minutes);
+}
+
+export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }, deps = {}) {
+  if (event.type === EVENT_UNKNOWN_PAGE_READY) {
+    schedulePageRefreshReload(UNKNOWN_PAGE_RELOAD_MINUTES, deps);
+    return true;
+  }
+  if (event.type !== EVENT_GAME_PAGE_READY) return false;
+  const option = readPageRefreshOption(deps);
+  const delayMinutes = planPageRefreshDelayMinutes(option, deps);
+  if (!delayMinutes) return false;
+  schedulePageRefreshReload(delayMinutes, deps);
   return true;
 }

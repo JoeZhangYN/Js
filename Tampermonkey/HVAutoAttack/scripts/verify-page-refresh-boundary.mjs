@@ -62,6 +62,14 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (!ownerText.includes("scheduleReload")) {
   violations.push(`${owner.replaceAll("\\", "/")} must use scheduleReload`);
 }
+if (!ownerText.includes("schedulePageRefreshReload")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must converge page refresh reload execution`);
+}
+if ((ownerText.match(/NavigationEvent\.SCHEDULE_RELOAD/g) || []).length !== 1) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must have one page refresh navigation command construction`
+  );
+}
 for (const required of ["PageRefreshEvent", "UNKNOWN_PAGE_READY", "UNKNOWN_PAGE_RELOAD_MINUTES"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required} page refresh policy`);
