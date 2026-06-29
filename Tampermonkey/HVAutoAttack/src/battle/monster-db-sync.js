@@ -108,7 +108,11 @@ async function syncMonsterDb({ force = false, deps }) {
   });
 }
 
+const monsterDbSyncEventHandlers = Object.freeze({
+  [EVENT_SYNC_REQUESTED]: (event, deps) =>
+    syncMonsterDb({ force: Boolean(event.force), deps: makeDeps(deps) }),
+});
+
 export function runMonsterDbSyncAutomation(event = { type: EVENT_SYNC_REQUESTED }, deps = {}) {
-  if (event.type !== EVENT_SYNC_REQUESTED) return undefined;
-  return syncMonsterDb({ force: Boolean(event.force), deps: makeDeps(deps) });
+  return monsterDbSyncEventHandlers[event.type]?.(event, deps);
 }

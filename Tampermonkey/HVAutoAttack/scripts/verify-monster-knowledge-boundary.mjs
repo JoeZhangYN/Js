@@ -89,6 +89,14 @@ function checkEntry() {
       `${syncImpl.replaceAll("\\", "/")} must expose runMonsterDbSyncAutomation(event)`
     );
   }
+  if (!/const monsterDbSyncEventHandlers\s*=\s*Object\.freeze\(/.test(syncText)) {
+    violations.push(`${syncImpl.replaceAll("\\", "/")} must route events through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*!==\s*EVENT_SYNC_REQUESTED/.test(syncText)) {
+    violations.push(
+      `${syncImpl.replaceAll("\\", "/")} must not route sync events through an if ladder`
+    );
+  }
   if (/export\s+async\s+function\s+syncMonsterDb\(/.test(syncText)) {
     violations.push(
       `${syncImpl.replaceAll("\\", "/")} must keep syncMonsterDb private behind runMonsterDbSyncAutomation(event)`
