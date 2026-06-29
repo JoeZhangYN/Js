@@ -22,14 +22,11 @@ describe("battle record archive reads", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.READ_OR_CREATE_CURRENT,
-          currentKey: STORAGE_KEYS.STATS,
-          defaultRecord: { self: { _turn: 0 } },
-          startTimeField: "self._startTime",
+          type: BattleRecordArchiveEvent.READ_OR_CREATE_USAGE_STATS,
         },
         deps()
       )
-    ).toEqual({ self: { _startTime: "finished", _turn: 0 } });
+    ).toMatchObject({ self: { _startTime: "finished", _turn: 0 } });
   });
 
   it("reads current records without rewriting their start timestamp", () => {
@@ -51,8 +48,7 @@ describe("battle record archive reads", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.READ_CURRENT,
-          currentKey: STORAGE_KEYS.STATS,
+          type: BattleRecordArchiveEvent.READ_USAGE_STATS,
         },
         deps({ [STORAGE_KEYS.STATS]: current })
       )
@@ -63,8 +59,7 @@ describe("battle record archive reads", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.READ_CURRENT,
-          currentKey: STORAGE_KEYS.STATS,
+          type: BattleRecordArchiveEvent.READ_USAGE_STATS,
         },
         deps()
       )

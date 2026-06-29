@@ -45,11 +45,8 @@ describe("runBattleRecordArchiveAutomation", () => {
 
     const outcome = runBattleRecordArchiveAutomation(
       {
-        type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE,
-        currentKey: STORAGE_KEYS.STATS,
-        historyKey: STORAGE_KEYS.STATS_OLD,
+        type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE_USAGE_STATS,
         record: { self: { _turn: 3 } },
-        endTimeField: "self._endTime",
         recordEach: true,
         roundNow: 2,
         roundAll: 2,

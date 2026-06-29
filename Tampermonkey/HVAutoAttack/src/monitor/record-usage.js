@@ -1,6 +1,5 @@
 // 每回合技能/物品使用统计 + 战斗结束聚合。
 // file-size-gate: exempt phase-4-monolith
-import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../battle/pause-automation.js";
 import {
@@ -17,73 +16,22 @@ export const BattleUsageEvent = Object.freeze({
   COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
 });
 
-function createDefaultUsageStats() {
-  return {
-    self: {
-      _turn: 0,
-      _round: 0,
-      _battle: 0,
-      _monster: 0,
-      _boss: 0,
-      evade: 0,
-      miss: 0,
-      focus: 0,
-    },
-    restore: {
-      // 回复量
-    },
-    items: {
-      // 物品使用次数
-    },
-    magic: {
-      // 技能使用次数
-    },
-    damage: {
-      // 技能攻击造成的伤害
-    },
-    hurt: {
-      // 受到攻击造成的伤害
-      mp: 0,
-      oc: 0,
-      _avg: 0,
-      _count: 0,
-      _total: 0,
-      _mavg: 0,
-      _mcount: 0,
-      _mtotal: 0,
-      _pavg: 0,
-      _pcount: 0,
-      _ptotal: 0,
-    },
-    proficiency: {
-      // 熟练度
-    },
-  };
-}
-
 function readCurrentUsageStats() {
   return runBattleRecordArchiveAutomation({
-    type: BattleRecordArchiveEvent.READ_OR_CREATE_CURRENT,
-    currentKey: STORAGE_KEYS.STATS,
-    defaultRecord: createDefaultUsageStats(),
-    startTimeField: "self._startTime",
+    type: BattleRecordArchiveEvent.READ_OR_CREATE_USAGE_STATS,
   });
 }
 
 function readExistingUsageStats() {
   return runBattleRecordArchiveAutomation({
-    type: BattleRecordArchiveEvent.READ_CURRENT,
-    currentKey: STORAGE_KEYS.STATS,
+    type: BattleRecordArchiveEvent.READ_USAGE_STATS,
   });
 }
 
 function storeCurrentUsageStats(stats) {
   runBattleRecordArchiveAutomation({
-    type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE,
-    currentKey: STORAGE_KEYS.STATS,
-    historyKey: STORAGE_KEYS.STATS_OLD,
+    type: BattleRecordArchiveEvent.STORE_USAGE_STATS,
     record: stats,
-    recordEach: false,
   });
 }
 
@@ -236,11 +184,8 @@ function recordCompletedBattleUsage() {
   stats.self._boss += context.bossAll;
 
   runBattleRecordArchiveAutomation({
-    type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE,
-    currentKey: STORAGE_KEYS.STATS,
-    historyKey: STORAGE_KEYS.STATS_OLD,
+    type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE_USAGE_STATS,
     record: stats,
-    endTimeField: "self._endTime",
     recordEach: context.recordEach,
     roundNow: context.roundNow,
     roundAll: context.roundAll,

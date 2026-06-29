@@ -10,6 +10,7 @@ const internalFiles = new Set(
     "src/monitor/battle-action-usage-capture.js",
     "src/monitor/battle-info.js",
     "src/monitor/battle-record-archive.js",
+    "src/monitor/battle-record-archive-records.js",
     "src/monitor/battle-report.js",
     "src/monitor/battle-report-view.js",
     "src/monitor/battle-monitor-runtime.js",
@@ -319,7 +320,9 @@ function checkUsageImplementation() {
 
 function checkRecordArchiveEntry() {
   const archiveFile = path.join(root, "src/monitor/battle-record-archive.js");
+  const archiveRecordsFile = path.join(root, "src/monitor/battle-record-archive-records.js");
   const archiveText = fs.readFileSync(archiveFile, "utf8");
+  const archiveRecordsText = fs.readFileSync(archiveRecordsFile, "utf8");
   const dropText = fs.readFileSync(path.join(root, "src/monitor/drop-monitor.js"), "utf8");
   const usageText = fs.readFileSync(path.join(root, "src/monitor/record-usage.js"), "utf8");
   if (!/export const BattleRecordArchiveEvent\s*=\s*Object\.freeze\(/.test(archiveText)) {
@@ -336,11 +339,21 @@ function checkRecordArchiveEntry() {
     !archiveText.includes("STORE_OR_ARCHIVE") ||
     !archiveText.includes("CLEAR_RECORD_SET") ||
     !archiveText.includes("READ_OR_CREATE_DROP_RECORD") ||
-    !archiveText.includes("STORE_OR_ARCHIVE_DROP_RECORD")
+    !archiveText.includes("STORE_OR_ARCHIVE_DROP_RECORD") ||
+    !archiveText.includes("READ_OR_CREATE_USAGE_STATS") ||
+    !archiveText.includes("READ_USAGE_STATS") ||
+    !archiveText.includes("STORE_USAGE_STATS") ||
+    !archiveText.includes("STORE_OR_ARCHIVE_USAGE_STATS")
   ) {
     violations.push(
       `${rel(archiveFile)} must own record reads, creation, archiving, and clearing events`
     );
+  }
+  if (!archiveText.includes("./battle-record-archive-records.js")) {
+    violations.push(`${rel(archiveFile)} must own typed record specs through archive records`);
+  }
+  if (!archiveRecordsText.includes("createDefaultUsageStats")) {
+    violations.push(`${rel(archiveRecordsFile)} must own usage stats default shape`);
   }
   for (const [label, text] of [
     ["src/monitor/drop-monitor.js", dropText],
@@ -376,6 +389,49 @@ function checkRecordArchiveEntry() {
     violations.push(
       `src/monitor/drop-monitor.js must route drop records through drop-specific archive events`
     );
+  }
+  if (
+    /STORAGE_KEYS\.(?:STATS|STATS_OLD)\b|\b(?:currentKey|historyKey)\s*:\s*STORAGE_KEYS\.(?:STATS|STATS_OLD)\b/.test(
+      usageText
+    )
+  ) {
+    violations.push(
+      `src/monitor/record-usage.js must use usage-specific battle-record-archive events`
+    );
+  }
+  for (const required of [
+    "BattleRecordArchiveEvent.READ_OR_CREATE_USAGE_STATS",
+    "BattleRecordArchiveEvent.READ_USAGE_STATS",
+    "BattleRecordArchiveEvent.STORE_USAGE_STATS",
+    "BattleRecordArchiveEvent.STORE_OR_ARCHIVE_USAGE_STATS",
+  ]) {
+    if (!usageText.includes(required)) {
+      violations.push(`src/monitor/record-usage.js must route usage stats through ${required}`);
+    }
+  }
+  const archiveRecordImports = [];
+  walkImportUsers(srcDir, "battle-record-archive-records.js", archiveRecordImports);
+  const allowedImport = path.normalize("src/monitor/battle-record-archive.js");
+  for (const user of archiveRecordImports) {
+    if (user !== allowedImport) {
+      violations.push(
+        `${user.replaceAll("\\", "/")} must not import battle-record-archive-records directly`
+      );
+    }
+  }
+}
+
+function walkImportUsers(dir, target, users) {
+  for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, item.name);
+    if (item.isDirectory()) {
+      walkImportUsers(full, target, users);
+      continue;
+    }
+    if (!item.isFile() || !item.name.endsWith(".js")) continue;
+    const relative = path.normalize(path.relative(root, full));
+    const text = fs.readFileSync(full, "utf8");
+    if (text.includes(target)) users.push(relative);
   }
 }
 

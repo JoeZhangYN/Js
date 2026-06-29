@@ -1,6 +1,14 @@
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { getValue, setValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
+import {
+  readOrCreateDropRecord,
+  readOrCreateUsageStats,
+  readUsageStats,
+  storeOrArchiveDropRecord,
+  storeOrArchiveUsageStats,
+  storeUsageStats,
+} from "./battle-record-archive-records.js";
 
 const EVENT_STORE_OR_ARCHIVE = "storeOrArchive";
 const EVENT_READ_CURRENT = "readCurrent";
@@ -10,6 +18,10 @@ const EVENT_START_RECORDING = "startRecording";
 const EVENT_CLEAR_RECORD_SET = "clearRecordSet";
 const EVENT_READ_OR_CREATE_DROP_RECORD = "readOrCreateDropRecord";
 const EVENT_STORE_OR_ARCHIVE_DROP_RECORD = "storeOrArchiveDropRecord";
+const EVENT_READ_OR_CREATE_USAGE_STATS = "readOrCreateUsageStats";
+const EVENT_READ_USAGE_STATS = "readUsageStats";
+const EVENT_STORE_USAGE_STATS = "storeUsageStats";
+const EVENT_STORE_OR_ARCHIVE_USAGE_STATS = "storeOrArchiveUsageStats";
 
 export const BattleRecordArchiveEvent = Object.freeze({
   STORE_OR_ARCHIVE: EVENT_STORE_OR_ARCHIVE,
@@ -20,6 +32,10 @@ export const BattleRecordArchiveEvent = Object.freeze({
   CLEAR_RECORD_SET: EVENT_CLEAR_RECORD_SET,
   READ_OR_CREATE_DROP_RECORD: EVENT_READ_OR_CREATE_DROP_RECORD,
   STORE_OR_ARCHIVE_DROP_RECORD: EVENT_STORE_OR_ARCHIVE_DROP_RECORD,
+  READ_OR_CREATE_USAGE_STATS: EVENT_READ_OR_CREATE_USAGE_STATS,
+  READ_USAGE_STATS: EVENT_READ_USAGE_STATS,
+  STORE_USAGE_STATS: EVENT_STORE_USAGE_STATS,
+  STORE_OR_ARCHIVE_USAGE_STATS: EVENT_STORE_OR_ARCHIVE_USAGE_STATS,
 });
 
 function makeDeps(deps) {
@@ -103,29 +119,16 @@ function clearRecordSet(event, deps) {
 
 export function runBattleRecordArchiveAutomation(event, deps = {}) {
   const fullDeps = makeDeps(deps);
-  if (event.type === EVENT_READ_OR_CREATE_DROP_RECORD) {
-    return readOrCreateCurrentRecord(
-      {
-        currentKey: STORAGE_KEYS.DROP,
-        defaultRecord: { "#EXP": 0, "#Credit": 0 },
-        startTimeField: "#startTime",
-      },
-      fullDeps
-    );
-  }
+  const ops = { readCurrentRecord, readOrCreateCurrentRecord, storeOrArchiveRecord };
+  if (event.type === EVENT_READ_OR_CREATE_DROP_RECORD) return readOrCreateDropRecord(ops, fullDeps);
   if (event.type === EVENT_STORE_OR_ARCHIVE_DROP_RECORD) {
-    return storeOrArchiveRecord(
-      {
-        currentKey: STORAGE_KEYS.DROP,
-        historyKey: STORAGE_KEYS.DROP_OLD,
-        record: event.record,
-        endTimeField: "#endTime",
-        recordEach: event.recordEach,
-        roundNow: event.roundNow,
-        roundAll: event.roundAll,
-      },
-      fullDeps
-    );
+    return storeOrArchiveDropRecord(event, ops, fullDeps);
+  }
+  if (event.type === EVENT_READ_OR_CREATE_USAGE_STATS) return readOrCreateUsageStats(ops, fullDeps);
+  if (event.type === EVENT_READ_USAGE_STATS) return readUsageStats(ops, fullDeps);
+  if (event.type === EVENT_STORE_USAGE_STATS) return storeUsageStats(event, ops, fullDeps);
+  if (event.type === EVENT_STORE_OR_ARCHIVE_USAGE_STATS) {
+    return storeOrArchiveUsageStats(event, ops, fullDeps);
   }
   if (event.type === EVENT_READ_CURRENT) return readCurrentRecord(event, fullDeps);
   if (event.type === EVENT_READ_OR_CREATE_CURRENT)
