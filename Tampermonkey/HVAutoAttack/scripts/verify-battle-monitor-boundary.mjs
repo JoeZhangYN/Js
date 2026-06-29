@@ -16,6 +16,7 @@ const internalFiles = new Set(
     "src/monitor/battle-report-model.js",
     "src/monitor/battle-report-view.js",
     "src/monitor/battle-monitor-runtime.js",
+    "src/monitor/drop-default-record.js",
     "src/monitor/drop-recording.js",
     "src/monitor/drop-monitor.js",
     "src/monitor/record-usage-action-stats.js",
@@ -495,6 +496,7 @@ function checkRecordArchiveEntry() {
     root,
     "src/monitor/battle-record-archive-drop-records.js"
   );
+  const dropDefaultRecordFile = path.join(root, "src/monitor/drop-default-record.js");
   const archiveUsageRecordsFile = path.join(
     root,
     "src/monitor/battle-record-archive-usage-records.js"
@@ -502,6 +504,7 @@ function checkRecordArchiveEntry() {
   const usageDefaultStatsFile = path.join(root, "src/monitor/record-usage-default-stats.js");
   const archiveText = fs.readFileSync(archiveFile, "utf8");
   const archiveDropRecordsText = fs.readFileSync(archiveDropRecordsFile, "utf8");
+  const dropDefaultRecordText = fs.readFileSync(dropDefaultRecordFile, "utf8");
   const archiveUsageRecordsText = fs.readFileSync(archiveUsageRecordsFile, "utf8");
   const usageDefaultStatsText = fs.readFileSync(usageDefaultStatsFile, "utf8");
   const dropText = fs.readFileSync(path.join(root, "src/monitor/drop-monitor.js"), "utf8");
@@ -565,6 +568,20 @@ function checkRecordArchiveEntry() {
   }
   if (!/export function createDefaultUsageStats\(/.test(usageDefaultStatsText)) {
     violations.push(`${rel(usageDefaultStatsFile)} must own usage stats default shape`);
+  }
+  if (!/export function createDefaultDropRecord\(/.test(dropDefaultRecordText)) {
+    violations.push(`${rel(dropDefaultRecordFile)} must own drop record default shape`);
+  }
+  if (!archiveDropRecordsText.includes("./drop-default-record.js")) {
+    violations.push(`${rel(archiveDropRecordsFile)} must use drop record default helper`);
+  }
+  if (/{\s*["']#EXP["']:\s*0,\s*["']#Credit["']:\s*0\s*}/.test(archiveDropRecordsText)) {
+    violations.push(`${rel(archiveDropRecordsFile)} must not duplicate drop record default shape`);
+  }
+  for (const required of ['"#EXP": 0', '"#Credit": 0']) {
+    if (!dropDefaultRecordText.includes(required)) {
+      violations.push(`${rel(dropDefaultRecordFile)} must include default drop field ${required}`);
+    }
   }
   if (!archiveUsageRecordsText.includes("./record-usage-default-stats.js")) {
     violations.push(`${rel(archiveUsageRecordsFile)} must use usage stats default helper`);
@@ -684,6 +701,18 @@ function checkRecordArchiveEntry() {
       violations.push(
         `${user.replaceAll("\\", "/")} must not import record-usage-default-stats directly`
       );
+    }
+  }
+  const dropDefaultRecordImports = [];
+  walkImportUsers(srcDir, "drop-default-record.js", dropDefaultRecordImports);
+  const allowedDropDefaultRecordImports = new Set(
+    ["src/monitor/battle-record-archive-drop-records.js", "src/monitor/drop-recording.test.js"].map(
+      (p) => path.normalize(p)
+    )
+  );
+  for (const user of dropDefaultRecordImports) {
+    if (!allowedDropDefaultRecordImports.has(user)) {
+      violations.push(`${user.replaceAll("\\", "/")} must not import drop-default-record directly`);
     }
   }
 }

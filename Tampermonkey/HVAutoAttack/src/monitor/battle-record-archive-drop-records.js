@@ -1,9 +1,10 @@
 import { STORAGE_KEYS } from "../state/persist-keys.js";
+import { createDefaultDropRecord } from "./drop-default-record.js";
 
 export function readOrCreateDropRecord(recordStore) {
   return recordStore.readOrCreateCurrentRecord({
     currentKey: STORAGE_KEYS.DROP,
-    defaultRecord: { "#EXP": 0, "#Credit": 0 },
+    defaultRecord: createDefaultDropRecord(),
     startTimeField: "#startTime",
   });
 }

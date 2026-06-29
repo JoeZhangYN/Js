@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createDefaultDropRecord } from "./drop-default-record.js";
 import { applyBattleDropLog } from "./drop-recording.js";
 
 function line(text, item) {
@@ -21,7 +22,7 @@ function apply(drop, battleLog, dropQuality = 0) {
 
 describe("applyBattleDropLog", () => {
   it("records EXP, credit, crystals, credit drops, and equipment by quality", () => {
-    const drop = { "#Credit": 0, "#EXP": 0 };
+    const drop = createDefaultDropRecord();
 
     apply(drop, [
       line("You gain 12 EXP"),
@@ -40,7 +41,7 @@ describe("applyBattleDropLog", () => {
   });
 
   it("ignores equipment below the configured quality and stops at victory", () => {
-    const drop = { "#Credit": 0, "#EXP": 0 };
+    const drop = createDefaultDropRecord();
 
     apply(
       drop,
