@@ -23,6 +23,23 @@ describe("runOptionSchema", () => {
       default: 50000,
       group: "Main",
     });
+    expect(runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "pageRefresh" })).toMatchObject(
+      {
+        key: "pageRefresh",
+        kind: "checkbox",
+        default: true,
+        defaultOn: true,
+        group: "Main",
+      }
+    );
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "pageRefreshMinutes" })
+    ).toMatchObject({
+      key: "pageRefreshMinutes",
+      kind: "number",
+      default: 30,
+      group: "Main",
+    });
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "equipPercentileMode" })
     ).toMatchObject({

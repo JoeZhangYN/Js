@@ -95,6 +95,7 @@ for (const required of [
   /renderSchemaCheckboxField\(\s*["']burstControlSilenceForSpell["']/,
   /renderSchemaCheckboxField\(\s*["']drainTargetMaxHp["']/,
   /renderSchemaCheckboxField\(\s*["']autoElement["']\s*\)/,
+  /renderCheckboxPlusNumber\(\s*["']pageRefresh["']\s*,\s*["']pageRefreshMinutes["']/,
 ]) {
   if (!required.test(renderText)) {
     violations.push(
@@ -128,6 +129,8 @@ for (const forbidden of [
   /id=["']burstControlSilenceForSpell["'][\s\S]{0,140}法术爆发用 Silence/,
   /id=["']drainTargetMaxHp["'][\s\S]{0,140}Drain 优先打血最多/,
   /id=["']autoElement["'][\s\S]{0,160}按九抗自动选最弱属性攻击/,
+  /id=["']pageRefresh["'][\s\S]{0,160}定时刷新页面/,
+  /name=["']pageRefreshMinutes["']\s+placeholder=["']30["']/,
 ]) {
   if (forbidden.test(renderText)) {
     violations.push(
