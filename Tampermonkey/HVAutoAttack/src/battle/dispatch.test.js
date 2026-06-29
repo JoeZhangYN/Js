@@ -42,6 +42,12 @@ describe("dispatch", () => {
     expect(btn.click).not.toHaveBeenCalled();
   });
 
+  it("toggle-spirit → 走 Spirit toggle command，click 并记录", () => {
+    const spirit = mkBtn("ckey_spirit");
+    expect(dispatch({ kind: "toggle-spirit" })).toBe(true);
+    expect(spirit.click).toHaveBeenCalledOnce();
+  });
+
   it("click-skill-then-target(无 preCastSS) → skill+target 双击，返 true", () => {
     const skill = mkBtn("213");
     const target = document.createElement("div");

@@ -121,16 +121,16 @@ function checkSpiritToggleEntry() {
   }
   for (const relative of [
     path.normalize("src/battle/attack/execute-attack.js"),
+    path.normalize("src/battle/buff/decide-buff.js"),
     path.normalize("src/battle/item/execute-item.js"),
   ]) {
     const source = fs.readFileSync(path.join(root, relative), "utf8");
     if (
       source.includes("#ckey_spirit") ||
-      source.includes("BattleSpiritToggleEvent.RECORD_TOGGLE")
+      source.includes("BattleSpiritToggleEvent.RECORD_TOGGLE") ||
+      source.includes('{ kind: "click", selector: "#ckey_spirit" }')
     ) {
-      violations.push(
-        `${relative.replaceAll("\\", "/")} must use BattleSpiritToggleEvent.CLICK_AND_RECORD`
-      );
+      violations.push(`${relative.replaceAll("\\", "/")} must use the Spirit toggle command path`);
     }
   }
 }

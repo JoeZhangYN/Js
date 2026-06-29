@@ -40,7 +40,7 @@ export function decideBuff(opt, snap) {
 
     // 是否需要先开 Spirit Stance？
     if (opt.preCastSS && !snap.spiritOn && checkCondition(opt.preCastSSCondition, snap)) {
-      return { kind: "click", selector: "#ckey_spirit" };
+      return { kind: "toggle-spirit" };
     }
     return { kind: "click", selector: lib.id };
   }

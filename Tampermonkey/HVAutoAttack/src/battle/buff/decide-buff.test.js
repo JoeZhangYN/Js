@@ -65,7 +65,7 @@ describe("decideBuff", () => {
         }),
         snap({ sp: 0.8, skillReady: { 412: true } })
       )
-    ).toEqual({ kind: "click", selector: "#ckey_spirit" });
+    ).toEqual({ kind: "toggle-spirit" });
   });
 
   it("enabled draught without active item buff -> click item selector", () => {
