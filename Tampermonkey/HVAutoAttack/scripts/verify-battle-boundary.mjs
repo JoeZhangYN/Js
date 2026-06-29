@@ -46,6 +46,8 @@ const decideAutoPauseFile = path.join(root, "src/battle/pause/decide-auto-pause.
 const decideFleeFile = path.join(root, "src/battle/escape/decide-flee.js");
 const decideAttackFile = path.join(root, "src/battle/attack/decide-attack.js");
 const decideTierFile = path.join(root, "src/battle/attack/decide-tier.js");
+const decideSkillFile = path.join(root, "src/battle/attack/decide-skill.js");
+const physicalSkillScoringFile = path.join(root, "src/battle/attack/physical-skill-scoring.js");
 const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const violations = [];
 
@@ -1040,10 +1042,23 @@ function checkAttackEntry() {
       `${rel(decideTierFile)} legacy spell-tier helper must stay deleted; tier decisions belong in decideAttack`
     );
   }
+  if (fs.existsSync(decideSkillFile)) {
+    violations.push(
+      `${rel(decideSkillFile)} legacy technical skill helper must stay deleted; physical scoring belongs in physical-skill-scoring`
+    );
+  }
   const ownerText = fs.readFileSync(decideAttackFile, "utf8");
   for (const required of ["decideAttack", "selectSpellTier", "highSkillCondition"]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideAttackFile)} must own attack spell-tier decision ${required}`);
+    }
+  }
+  const scoringText = fs.readFileSync(physicalSkillScoringFile, "utf8");
+  for (const required of ["scorePhysicalSkillCandidates", "snap.skillReady", "skillBaseScore"]) {
+    if (!scoringText.includes(required)) {
+      violations.push(
+        `${rel(physicalSkillScoringFile)} must own physical skill scoring ${required}`
+      );
     }
   }
   for (const relative of ["src/battle", "src/core"]) {
@@ -1054,6 +1069,15 @@ function checkAttackEntry() {
       const text = fs.readFileSync(file, "utf8");
       if (/from\s+["'][^"']*decide-tier\.js["']/.test(text)) {
         violations.push(`${rel(file)} must not import legacy decide-tier.js`);
+      }
+      if (/from\s+["'][^"']*decide-skill\.js["']/.test(text)) {
+        violations.push(`${rel(file)} must not import legacy decide-skill.js`);
+      }
+      if (
+        file !== decideAttackFile &&
+        /from\s+["'][^"']*physical-skill-scoring\.js["']/.test(text)
+      ) {
+        violations.push(`${rel(file)} must not bypass decideAttack for physical skill scoring`);
       }
     }
   }

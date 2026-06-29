@@ -2,7 +2,7 @@
 // **不读 DOM**：只读 snap（含统一怪物视图 snap.view：finWeight/hpAbsNow/hpMax/buffs/order）。
 // 目标选择走 target-strategy 具名策略：firstByFinWeight=默认首怪(综合权重最优) / firstByOrder=AoE 锚(order 最小)。
 import { checkCondition } from "../../settings/condition-eval.js";
-import { scorePhysicalSkillCandidates } from "./decide-skill.js";
+import { scorePhysicalSkillCandidates } from "./physical-skill-scoring.js";
 import { pickByUtility } from "../utility-engine.js";
 import { OFFENSIVE_SPELL_LIB } from "../../data/spell-lib.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";

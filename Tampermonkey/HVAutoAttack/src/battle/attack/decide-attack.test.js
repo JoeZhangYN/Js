@@ -229,3 +229,39 @@ describe("decideAttack 法术 tier 入口契约", () => {
     expect(plan({}, s)).toEqual({ type: "spell", spellId: "122", targetId: 1 });
   });
 });
+
+describe("decideAttack 物理技能评分入口契约", () => {
+  it("少怪降级时不选 OFC/FRD，落到可用 T1", () => {
+    const s = snap({
+      attackStatus: 0,
+      aliveCount: 2,
+      oc: 300,
+      skillReady: { 1111: true, 1101: true, 2201: true },
+      view: [vmon({ id: 1, hpPercent: 0.8 })],
+    });
+    expect(plan({ skillSwitch: true, fightingStyle: "2" }, s)).toEqual({
+      type: "physical",
+      skillId: "2201",
+      code: "T1",
+      defaultTargetId: 1,
+      mercifulTargetId: null,
+    });
+  });
+
+  it("首怪已 stun 时 T2 combo 优先，且不浪费 T1", () => {
+    const s = snap({
+      attackStatus: 0,
+      aliveCount: 5,
+      oc: 100,
+      skillReady: { 2201: true, 2202: true },
+      view: [vmon({ id: 1, hpPercent: 0.8, buffs: ["wpn_stun"] })],
+    });
+    expect(plan({ skillSwitch: true, fightingStyle: "2" }, s)).toEqual({
+      type: "physical",
+      skillId: "2202",
+      code: "T2",
+      defaultTargetId: 1,
+      mercifulTargetId: null,
+    });
+  });
+});

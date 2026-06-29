@@ -5,7 +5,7 @@
 //  ① 本学习器拒学「gap > cdBase」的样本（clamp 到 cdBase）—— OC 饿/未及时开火只会膨胀 gap，
 //     故学习 CD 永 ≤ cdBase（只能把 CD 往下拉，永不上调）。
 //  ② 消费方 cd-tracker.turnsUntilReady 再夹 Math.min(learned, cdBase)；且真正开火仍以 DOM
-//     snap.skillReady 为权威（decide-skill.js）—— 学习 CD 只锐化 shouldSkipForBigSkill 的前瞻，
+//     snap.skillReady 为权威（physical-skill-scoring.js）—— 学习 CD 只锐化 shouldSkipForBigSkill 的前瞻，
 //     绝不导致误开火。
 //
 // pending 为 **map**（多技能可同时计时，异于 recovery 的单 learnPending），runtime-only（g()），

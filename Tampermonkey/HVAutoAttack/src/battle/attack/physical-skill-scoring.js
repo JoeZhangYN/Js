@@ -1,4 +1,4 @@
-// PURE: 物理技能选择（OFC/FRD/T3/T2/T1）。
+// PURE: 物理技能评分（OFC/FRD/T3/T2/T1）。
 // A 方案：**state-aware utility scoring**——T1/T2/T3 分数读 snap 实时算（combo 逻辑），
 // 不只是常量 base × multiplier。OFC/FRD 仍用 aoeScore（少怪降级 + 怪数比例）。
 // 盾战 combo：T1 stun → T2（晕状态打 T2 = 200 分高优先）→ T3 斩杀（hpRatio<25%+bleed = 1000 分决定性）
@@ -19,7 +19,7 @@ function scoreSkillContextual(skill, opt, snap, firstMonster) {
     case "OFC":
       return aoeScore(overrides.OFC ?? 100, snap.aliveCount); // 全体 void：每怪 100
     case "FRD":
-      return aoeScore(overrides.FRD ?? 60, snap.aliveCount);  // 全体 void + 眩晕
+      return aoeScore(overrides.FRD ?? 60, snap.aliveCount); // 全体 void + 眩晕
     case "T3":
       // 斩杀条件命中 = 1000（碾压所有选项）；普通情况 80
       if (firstLowHp && firstBleeding) return overrides.T3_execute ?? 1000;
@@ -72,7 +72,9 @@ export function scorePhysicalSkillCandidates(opt, snap, ctx) {
       return [{ code: skill, id: info.id, score: 0, oc: info.oc, explain: "downgrade" }];
     }
     if (ctx.firstMonsterStunned && skill === "T1") {
-      return [{ code: skill, id: info.id, score: 0, oc: info.oc, explain: "first-stunned-skip-T1" }];
+      return [
+        { code: skill, id: info.id, score: 0, oc: info.oc, explain: "first-stunned-skip-T1" },
+      ];
     }
     if (otosUsed(skill) || !snap.skillReady[info.id] || ocCur < info.oc) {
       return [{ code: skill, id: info.id, score: 0, oc: info.oc, explain: "blocked" }];
@@ -84,7 +86,12 @@ export function scorePhysicalSkillCandidates(opt, snap, ctx) {
     const score = scoreSkillContextual(skill, opt, snap, firstMonster);
     let explain = `score=${score}`;
     if (skill === "T2" && firstMonster?.buffs?.includes("wpn_stun")) explain += " (T1+T2 combo)";
-    if (skill === "T3" && (firstMonster?.hpPercent ?? 1) < 0.25 && firstMonster?.buffs?.includes("wpn_bleed")) explain += " (execute)";
+    if (
+      skill === "T3" &&
+      (firstMonster?.hpPercent ?? 1) < 0.25 &&
+      firstMonster?.buffs?.includes("wpn_bleed")
+    )
+      explain += " (execute)";
     return [{ code: skill, id: info.id, score, oc: info.oc, explain }];
   });
 }
