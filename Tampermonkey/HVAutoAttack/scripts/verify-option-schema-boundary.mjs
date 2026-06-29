@@ -66,6 +66,7 @@ const renderText = fs.readFileSync(path.join(root, settingsRender), "utf8");
 for (const required of [
   /renderEquipmentSchemaFields/,
   /readSchemaField\(\s*["']repairValue["']\s*\)/,
+  /renderCheckboxPlusNumber\(\s*["']repairBuyMaterials["']\s*,\s*["']repairCreditCap["']/,
   /renderSchemaCheckboxField\(\s*["']forgeCostShow["']\s*\)/,
   /renderSchemaSelectField\(\s*["']equipPercentileMode["']\s*\)/,
   /renderRiddleSchemaFields/,
@@ -103,6 +104,8 @@ for (const required of [
 }
 for (const forbidden of [
   /name=["']repairValue["']\s+placeholder=["']60["']/,
+  /id=["']repairBuyMaterials["'][\s\S]{0,140}维修缺料时自动/,
+  /name=["']repairCreditCap["']\s+placeholder=["']50000["']/,
   /id=["']forgeCostShow["'][\s\S]{0,120}强化价格/,
   /name=["']equipPercentileMode["'][\s\S]{0,160}<option value=["']offline["']/,
   /id=["']riddleHelperUi["'][\s\S]{0,120}小马图片助手/,

@@ -8,6 +8,22 @@ describe("runOptionSchema", () => {
 
     expect(field).toMatchObject({ key: "repairValue", kind: "number", default: 60 });
     expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "repairBuyMaterials" })
+    ).toMatchObject({
+      key: "repairBuyMaterials",
+      kind: "checkbox",
+      default: false,
+      group: "Main",
+    });
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "repairCreditCap" })
+    ).toMatchObject({
+      key: "repairCreditCap",
+      kind: "number",
+      default: 50000,
+      group: "Main",
+    });
+    expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "equipPercentileMode" })
     ).toMatchObject({
       enum: ["off", "offline", "live"],
