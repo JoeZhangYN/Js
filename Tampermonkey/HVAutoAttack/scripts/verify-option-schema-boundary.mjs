@@ -64,23 +64,35 @@ if (!/export function runOptionSchema\(\s*event\b/.test(ownerText)) {
 
 const renderText = fs.readFileSync(path.join(root, settingsRender), "utf8");
 for (const required of [
-  "renderEquipmentSchemaFields",
-  'readSchemaField("repairValue")',
-  'renderSchemaCheckboxField("forgeCostShow")',
-  'renderSchemaSelectField("equipPercentileMode")',
+  /renderEquipmentSchemaFields/,
+  /readSchemaField\(\s*["']repairValue["']\s*\)/,
+  /renderSchemaCheckboxField\(\s*["']forgeCostShow["']\s*\)/,
+  /renderSchemaSelectField\(\s*["']equipPercentileMode["']\s*\)/,
+  /renderRiddleSchemaFields/,
+  /renderSchemaCheckboxField\(\s*["']riddleHelperUi["']\s*\)/,
+  /renderSchemaCheckboxField\(\s*["']mlAnswer["']/,
+  /renderSchemaCheckboxField\(\s*["']mlBackupOnFail["']\s*\)/,
+  /renderSchemaTextInput\(\s*["']mlEndpoint["']/,
+  /renderSchemaTextInput\(\s*["']mlApiKey["']/,
 ]) {
-  if (!renderText.includes(required)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} must render equipment options from schema`);
+  if (!required.test(renderText)) {
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} must render migrated options from schema`
+    );
   }
 }
 for (const forbidden of [
   /name=["']repairValue["']\s+placeholder=["']60["']/,
   /id=["']forgeCostShow["'][\s\S]{0,120}强化价格/,
   /name=["']equipPercentileMode["'][\s\S]{0,160}<option value=["']offline["']/,
+  /id=["']riddleHelperUi["'][\s\S]{0,120}小马图片助手/,
+  /id=["']mlAnswer["'][\s\S]{0,120}ML 答题/,
+  /id=["']mlBackupOnFail["'][\s\S]{0,120}备份图片/,
+  /name=["']mlEndpoint["']\s+placeholder=["']https:\/\/rdma\.ooguy\.com\/help2["']/,
 ]) {
   if (forbidden.test(renderText)) {
     violations.push(
-      `${settingsRender.replaceAll("\\", "/")} must not inline equipment option defaults/labels`
+      `${settingsRender.replaceAll("\\", "/")} must not inline migrated option defaults/labels`
     );
   }
 }

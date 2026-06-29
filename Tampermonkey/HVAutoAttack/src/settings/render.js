@@ -84,6 +84,13 @@ function renderSchemaSelectField(key) {
   );
 }
 
+function renderSchemaTextInput(key, style = "") {
+  const field = readSchemaField(key);
+  if (!field) return "";
+  const styleAttr = style ? ` style="${style}"` : "";
+  return `<input name="${field.key}" placeholder="${field.default}" type="text"${styleAttr}>`;
+}
+
 function renderEquipmentSchemaFields() {
   return [
     `    ${renderSchemaLabel(readSchemaField("repairValue"))} ≤ ${renderSchemaNumberInput(
@@ -97,6 +104,22 @@ function renderEquipmentSchemaFields() {
     }),
     renderSchemaCheckboxField("forgeCostShow"),
     renderSchemaSelectField("equipPercentileMode"),
+  ];
+}
+
+function renderRiddleSchemaFields() {
+  const mlAnswer = renderSchemaCheckboxField("mlAnswer", "; ").replace(/^<div>|<\/div>$/g, "");
+  const mlBackup = renderSchemaCheckboxField("mlBackupOnFail").replace(/^<div>|<\/div>$/g, "");
+  return [
+    renderSchemaCheckboxField("riddleHelperUi"),
+    `<div>${mlAnswer}${mlBackup}</div>`,
+    `<div>${renderSchemaLabel(readSchemaField("mlEndpoint"))}: ${renderSchemaTextInput(
+      "mlEndpoint",
+      "width:50%;"
+    )} ${renderSchemaLabel(readSchemaField("mlApiKey"))}: ${renderSchemaTextInput(
+      "mlApiKey",
+      "width:20%;"
+    )}</div>`,
   ];
 }
 
@@ -484,9 +507,7 @@ export function optionBox() {
     "  <table></table></div>",
     '<div class="hvAATab hvAACenter" id="hvAATab-Riddle">',
     // 答题配置（原 Main 拆入，与下方统计同 tab）
-    '  <div><input id="riddleHelperUi" type="checkbox" checked data-default-on><label for="riddleHelperUi"><b><l0>小马图片助手</l0><l1>小馬圖片助手</l1><l2>MLP Helper</l2></b></label>: <l0>答题页旋转/锐化/对比面板 + 6 缩略图</l0><l1>答題頁旋轉/銳化/對比面板 + 6 縮略圖</l1><l2>riddle rotate/sharpen/contrast + 6 thumbnails</l2></div>',
-    '  <div><input id="mlAnswer" type="checkbox" checked data-default-on><label for="mlAnswer"><b><l0>ML 答题</l0><l1>ML 答題</l1><l2>ML Riddle</l2></b></label>: <l0>启用 rdma.ooguy.com 远程识别（失败 fallback 到随机猜）</l0><l1>啟用 rdma.ooguy.com 遠程識別（失敗 fallback 到隨機猜）</l1><l2>Enable rdma.ooguy.com ML solver (fallback to random)</l2>; <input id="mlBackupOnFail" type="checkbox" checked data-default-on><label for="mlBackupOnFail"><l0>备份图片+json(成功+失败)</l0><l1>備份圖片+json(成功+失敗)</l1><l2>Backup img+json</l2></label></div>',
-    '  <div><l0>ML 端点</l0><l1>ML 端點</l1><l2>ML endpoint</l2>: <input name="mlEndpoint" placeholder="https://rdma.ooguy.com/help2" type="text" style="width:50%;"> <l0>API key(可选,留空匿名)</l0><l1>API key(可選,留空匿名)</l1><l2>API key (optional)</l2>: <input name="mlApiKey" placeholder="" type="text" style="width:20%;"></div>',
+    ...renderRiddleSchemaFields(),
     '  <div><l0>当<b>小马答题</b>时间</l0><l1>當<b>小馬答題</b>時間</l1><l2>If <b>RIDDLE</b> ETR</l2><l0></l0><l1></l1><l2></l2> ≤ <input class="hvAANumber" name="riddleAnswerTime" placeholder="3" type="text"><l0>秒，如果输入框为空则随机生成答案并提交</l0><l1>秒，如果輸入框為空則隨機生成答案並提交</l1><l2>s and no answer has been chosen yet, a random answer will be generated and submitted</l2></div>',
     "  <div><l0>当<b>小马答题</b>时</l0><l1>當<b>小馬答題</b>時</l1><l2>If <b>RIDDLE</b></l2>: ",
     '    <input id="riddlePopup" type="checkbox"><label for="riddlePopup"><l0>弹窗答题</l0><l1>弹窗答题</l1><l2>POPUP a window to answer</l2></label>; <button class="testPopup"><l0>预处理</l0><l1>預處理</l1><l2>Pretreat</l2></button></div>',
