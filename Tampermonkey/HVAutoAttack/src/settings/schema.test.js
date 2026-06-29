@@ -31,6 +31,13 @@ describe("runOptionSchema", () => {
       kind: "text",
       default: "Hastened,Protection,Spark of Life",
     });
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "skipDebuffForBigSkillThreshold" })
+    ).toMatchObject({
+      key: "skipDebuffForBigSkillThreshold",
+      kind: "number",
+      default: 3,
+    });
     expect(runOptionSchema({ type: OptionSchemaEvent.READ_DEFAULT, key: "repairValue" })).toBe(60);
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_GROUP, group: "Debuff" }).some(

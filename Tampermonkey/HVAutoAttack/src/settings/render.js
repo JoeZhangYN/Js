@@ -137,6 +137,25 @@ function renderCriticalBuffSchemaFields() {
   ];
 }
 
+function renderDebuffSmartSkipSchemaFields() {
+  return [
+    renderSchemaCheckboxField("skipDebuffForBigSkill_We", "<br>"),
+    renderSchemaCheckboxField("skipWeakenWhenClearReady", "<br>"),
+    renderSchemaCheckboxField("skipDebuffForBigSkill_Im", "<br>"),
+    `${renderSchemaLabel(readSchemaField("skipDebuffForBigSkillThreshold"))}: ${renderSchemaNumberInput(
+      "skipDebuffForBigSkillThreshold"
+    )}<br>`,
+    renderSchemaCheckboxField("skipImperilWhenOfcKills", "<br>"),
+    `${renderSchemaLabel(readSchemaField("bigKillMinSamples"))}: ${renderSchemaNumberInput(
+      "bigKillMinSamples"
+    )} ${renderSchemaLabel(readSchemaField("bigKillProbThreshold"))}: ${renderSchemaNumberInput(
+      "bigKillProbThreshold"
+    )} ${renderSchemaLabel(readSchemaField("bigKillScaleDriftTol"))}: ${renderSchemaNumberInput(
+      "bigKillScaleDriftTol"
+    )}`,
+  ];
+}
+
 /**
  * 打开 / 切换显隐 HVAA 配置面板。浮动按钮(button.js)与 hv-utils 顶部栏触发器(window.HVAA_openConfig)
  * 共用此单一入口（收口原 button.js 内联 onclick 逻辑，去重）。
@@ -427,12 +446,7 @@ export function optionBox() {
     '  <div><l01>特殊</l01><l2>Special</l2><input id="debuffSkillAllIm" type="checkbox"><label for="debuffSkillAllIm"><l0>给所有敌人上Imperil</l0><l1>給所有敵人上Imperil</l1><l2>Imperiled all enemies.</l2></label></div>{{debuffSkillImpCondition}}',
     '  <div><l01>特殊</l01><l2>Special</l2><input id="debuffSkillAllWk" type="checkbox"><label for="debuffSkillAllWk"><l0>给所有敌人上Weaken</l0><l1>給所有敵人上Weaken</l1><l2>Weakened all enemies.</l2></label></div>{{debuffSkillWkCondition}}',
     '  <div style="border:1px dashed #888;padding:3px;"><b><l0>OFC/FRD 智能跳过</l0><l1>OFC/FRD 智能跳過</l1><l2>OFC/FRD Smart Skip</l2></b><br>',
-    '    <input id="skipDebuffForBigSkill_We" type="checkbox" checked data-default-on><label for="skipDebuffForBigSkill_We"><l0>OFC/FRD 即将就绪时跳过全员 Weaken</l0><l1>OFC/FRD 即將就緒時跳過全員 Weaken</l1><l2>Skip All-Weaken when OFC/FRD ready soon</l2></label><br>',
-    '    <input id="skipWeakenWhenClearReady" type="checkbox" checked data-default-on><label for="skipWeakenWhenClearReady"><l0>　└ 大招本回合已就绪则直接跳过 Weaken（怪少的真开场也跳）</l0><l1>　└ 大招本回合已就緒則直接跳過 Weaken（怪少的真開場也跳）</l1><l2>　└ Skip Weaken when clear-skill ready this turn (covers low-monster opening)</l2></label><br>',
-    '    <input id="skipDebuffForBigSkill_Im" type="checkbox" checked data-default-on><label for="skipDebuffForBigSkill_Im"><l0>OFC/FRD 即将就绪时跳过全员 Imperil</l0><l1>OFC/FRD 即將就緒時跳過全員 Imperil</l1><l2>Skip All-Imperil when OFC/FRD ready soon</l2></label><br>',
-    '    <l0>CD 阈值（剩余 ≤ N 回合时触发）</l0><l1>CD 閾值（剩餘 ≤ N 回合時觸發）</l1><l2>CD threshold (turns)</l2>: <input class="hvAANumber" name="skipDebuffForBigSkillThreshold" placeholder="3" type="text"><br>',
-    '    <input id="skipImperilWhenOfcKills" type="checkbox"><label for="skipImperilWhenOfcKills"><l0>【实验】OFC 能秒该 boss（历史确认，无 imperil）则连 Imperil 都跳</l0><l1>【實驗】OFC 能秒該 boss（歷史確認，無 imperil）則連 Imperil 都跳</l1><l2>[Exp] Skip Imperil when OFC confirmed to one-shot this boss</l2></label><br>',
-    '    <l0>　信任阈值</l0><l1>　信任閾值</l1><l2>　Trust</l2>: <l0>样本≥</l0><l1>樣本≥</l1><l2>samples≥</l2><input class="hvAANumber" name="bigKillMinSamples" placeholder="4" type="text"> <l0>击杀率≥</l0><l1>擊殺率≥</l1><l2>killrate≥</l2><input class="hvAANumber" name="bigKillProbThreshold" placeholder="0.9" type="text"> <l0>满血漂移≤</l0><l1>滿血漂移≤</l1><l2>drift≤</l2><input class="hvAANumber" name="bigKillScaleDriftTol" placeholder="1.15" type="text">',
+    ...renderDebuffSmartSkipSchemaFields(),
     "  </div>",
     '  <div style="border:1px dashed #888;padding:3px;"><b><l0>爆发防护（实验，默认关）</l0><l1>爆發防護（實驗，默認關）</l1><l2>Burst Guard (Exp, off)</l2></b><br>',
     '    <input id="burstControlSwitch" type="checkbox"><label for="burstControlSwitch"><l0>学致死爆发伤害 → 对高爆发怪单点 Silence(法术)/Sleep(物理) 防血量蹦极</l0><l1>學致死爆發傷害 → 對高爆發怪單點 Silence(法術)/Sleep(物理) 防血量蹦極</l1><l2>Learn lethal burst → single-target Silence/Sleep to prevent HP bungee</l2></label><br>',

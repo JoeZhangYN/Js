@@ -78,6 +78,15 @@ for (const required of [
   /renderCheckboxPlusNumber\(\s*["']pauseOnCriticalBuffExpire["']\s*,\s*["']criticalBuffMinTurns["']/,
   /renderSchemaTextInput\(\s*["']criticalBuffsList["']/,
   /renderSchemaNumberInput\(\s*["']criticalBuffMpFloor["']/,
+  /renderDebuffSmartSkipSchemaFields/,
+  /renderSchemaCheckboxField\(\s*["']skipDebuffForBigSkill_We["']/,
+  /renderSchemaCheckboxField\(\s*["']skipWeakenWhenClearReady["']/,
+  /renderSchemaCheckboxField\(\s*["']skipDebuffForBigSkill_Im["']/,
+  /renderSchemaNumberInput\(\s*["']skipDebuffForBigSkillThreshold["']/,
+  /renderSchemaCheckboxField\(\s*["']skipImperilWhenOfcKills["']/,
+  /renderSchemaNumberInput\(\s*["']bigKillMinSamples["']/,
+  /renderSchemaNumberInput\(\s*["']bigKillProbThreshold["']/,
+  /renderSchemaNumberInput\(\s*["']bigKillScaleDriftTol["']/,
 ]) {
   if (!required.test(renderText)) {
     violations.push(
@@ -95,6 +104,14 @@ for (const forbidden of [
   /name=["']mlEndpoint["']\s+placeholder=["']https:\/\/rdma\.ooguy\.com\/help2["']/,
   /name=["']criticalBuffsList["']\s+placeholder=["']Hastened,Protection,Spark of Life["']/,
   /name=["']criticalBuffMpFloor["']\s+placeholder=["']30["']/,
+  /id=["']skipDebuffForBigSkill_We["'][\s\S]{0,140}OFC\/FRD 即将就绪/,
+  /id=["']skipWeakenWhenClearReady["'][\s\S]{0,140}大招本回合已就绪/,
+  /id=["']skipDebuffForBigSkill_Im["'][\s\S]{0,140}OFC\/FRD 即将就绪/,
+  /name=["']skipDebuffForBigSkillThreshold["']\s+placeholder=["']3["']/,
+  /id=["']skipImperilWhenOfcKills["'][\s\S]{0,140}OFC 能秒/,
+  /name=["']bigKillMinSamples["']\s+placeholder=["']4["']/,
+  /name=["']bigKillProbThreshold["']\s+placeholder=["']0\.9["']/,
+  /name=["']bigKillScaleDriftTol["']\s+placeholder=["']1\.15["']/,
 ]) {
   if (forbidden.test(renderText)) {
     violations.push(
