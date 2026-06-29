@@ -3,7 +3,7 @@
 // `gE("#stamina_readout .fc4.far>div").textContent.match(/\d+/)[0]*1` 同业务「读玩家当前体力数值」
 // 散在 idle-arena(×2) / encounter / init，裸 `[0]` 元素缺失即崩。收口为防御解析：读不到/无数字 → 0（不崩）。
 import { gE } from "../dom/query.js";
-import { g } from "./store.js";
+import { OptionEvent, runOptionAutomation } from "./option.js";
 
 const EVENT_READ_VALUE = "readValue";
 const EVENT_SHOULD_RESTORE_FOR_BATTLE = "shouldRestoreForBattle";
@@ -27,19 +27,34 @@ function readStaminaValue() {
   return m ? Number(m[0]) : 0;
 }
 
+function readStaminaOptions() {
+  return {
+    restoreStamina: runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "restoreStamina",
+      fallback: false,
+    }),
+    staminaLow: runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "staminaLow",
+      fallback: 0,
+    }),
+  };
+}
+
 function shouldRestoreForBattle() {
-  const opt = g("option") || {};
+  const opt = readStaminaOptions();
   return !!opt.restoreStamina && readStaminaValue() <= opt.staminaLow;
 }
 
 function shouldStopLobby() {
-  const opt = g("option") || {};
+  const opt = readStaminaOptions();
   return !opt.restoreStamina && readStaminaValue() <= opt.staminaLow;
 }
 
 function shouldRestoreForIdleArena() {
   const value = readStaminaValue();
-  const opt = g("option") || {};
+  const opt = readStaminaOptions();
   return !!opt.restoreStamina && value <= opt.staminaLow && value < 85;
 }
 

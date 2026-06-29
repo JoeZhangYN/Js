@@ -1,10 +1,25 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { StaminaEvent, runStaminaAutomation } from "./stamina.js";
-import { g } from "./store.js";
+
+const mocks = vi.hoisted(() => ({
+  runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("./option.js", () => ({
+  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
+  runOptionAutomation: mocks.runOptionAutomation,
+}));
+
+function mockOptions(option = {}) {
+  mocks.runOptionAutomation.mockImplementation((event) =>
+    Object.prototype.hasOwnProperty.call(option, event.key) ? option[event.key] : event.fallback
+  );
+}
 
 beforeEach(() => {
   document.body.innerHTML = "";
-  g("option", {});
+  mocks.runOptionAutomation.mockReset();
+  mockOptions();
 });
 
 const readValue = () => runStaminaAutomation({ type: StaminaEvent.READ_VALUE });
@@ -35,23 +50,33 @@ describe("stamina entry", () => {
   it("decides battle restore from restore switch and low threshold", () => {
     document.body.innerHTML =
       '<div id="stamina_readout"><div class="fc4 far"><div>25</div></div></div>';
-    g("option", { restoreStamina: true, staminaLow: 30 });
+    mockOptions({ restoreStamina: true, staminaLow: 30 });
     expect(runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_BATTLE })).toBe(true);
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "restoreStamina",
+      fallback: false,
+    });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "staminaLow",
+      fallback: 0,
+    });
   });
 
   it("decides lobby stop only when restore is disabled and stamina is low", () => {
     document.body.innerHTML =
       '<div id="stamina_readout"><div class="fc4 far"><div>25</div></div></div>';
-    g("option", { restoreStamina: false, staminaLow: 30 });
+    mockOptions({ restoreStamina: false, staminaLow: 30 });
     expect(runStaminaAutomation({ type: StaminaEvent.SHOULD_STOP_LOBBY })).toBe(true);
-    g("option", { restoreStamina: true, staminaLow: 30 });
+    mockOptions({ restoreStamina: true, staminaLow: 30 });
     expect(runStaminaAutomation({ type: StaminaEvent.SHOULD_STOP_LOBBY })).toBe(false);
   });
 
   it("keeps idle arena restore below both configured low and hard 85 caps", () => {
     document.body.innerHTML =
       '<div id="stamina_readout"><div class="fc4 far"><div>84</div></div></div>';
-    g("option", { restoreStamina: true, staminaLow: 90 });
+    mockOptions({ restoreStamina: true, staminaLow: 90 });
     expect(runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_IDLE_ARENA })).toBe(true);
     document.body.innerHTML =
       '<div id="stamina_readout"><div class="fc4 far"><div>85</div></div></div>';

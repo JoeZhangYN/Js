@@ -38,7 +38,12 @@ function checkFile(file) {
       /restoreStamina/.test(line) &&
       /staminaLow/.test(line)
     ) {
-      violations.push(`${where} stamina restore/stop decision belongs in runStaminaAutomation(event)`);
+      violations.push(
+        `${where} stamina restore/stop decision belongs in runStaminaAutomation(event)`
+      );
+    }
+    if (relative === owner && /\bg\(\s*["']option["']/.test(line)) {
+      violations.push(`${where} stamina decisions must read options through option entry`);
     }
   });
 }
@@ -46,8 +51,10 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
-for (const required of ["runStaminaAutomation", "StaminaEvent"]) {
-  if (!ownerText.includes(required)) violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+for (const required of ["runStaminaAutomation", "StaminaEvent", "OptionEvent.READ_FIELD"]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
 }
 
 if (/export\s+function\s+readStaminaValue\s*\(/.test(ownerText)) {
@@ -62,4 +69,6 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-stamina-boundary] OK — stamina value and restore decisions are behind one entry");
+console.log(
+  "[verify-stamina-boundary] OK — stamina value and restore decisions are behind one entry"
+);
