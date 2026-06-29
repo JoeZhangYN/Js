@@ -19,23 +19,17 @@ export const BattleRoundStartEvent = Object.freeze({
   ROUND_STARTED: EVENT_ROUND_STARTED,
 });
 
-function determineRoundType(battleLog) {
-  const persistedRoundType = runBattleRoundAutomation({ type: BattleRoundEvent.READ_TYPE });
-  if (persistedRoundType) return persistedRoundType;
-  const initializingText = battleLog[battleLog.length - 1].textContent;
-  const roundType = runBattleRoundAutomation({
-    type: BattleRoundEvent.CLASSIFY_TYPE,
+function recordRoundStartContext(initializingText) {
+  const context = runBattleRoundAutomation({
+    type: BattleRoundEvent.RECORD_START_CONTEXT,
     initializingText,
   });
-  if (roundType === "ba") {
+  if (context.randomEncounterStarted) {
     runEncounterAutomation({
       type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
     });
   }
-  return runBattleRoundAutomation({
-    type: BattleRoundEvent.RECORD_TYPE,
-    roundType,
-  });
+  return context;
 }
 
 function startRound() {
@@ -45,7 +39,8 @@ function startRound() {
   if (window.location.hash !== "") runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
   runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
   const battleLog = gE("#textlog>tbody>tr>td", "all");
-  const roundType = determineRoundType(battleLog);
+  const initializingText = battleLog[battleLog.length - 1].textContent;
+  const roundStartContext = recordRoundStartContext(initializingText);
   const staminaOutcome = runBattleStaminaAutomation({
     type: BattleStaminaEvent.ROUND_LOG_READY,
     text: battleLog[0].textContent,
@@ -53,8 +48,7 @@ function startRound() {
   if (staminaOutcome.paused) {
     return;
   }
-  if (battleLog[battleLog.length - 1].textContent.match("Initializing")) {
-    const initializingText = battleLog[battleLog.length - 1].textContent;
+  if (roundStartContext.initialized) {
     runMonsterStatusAutomation({
       type: MonsterStatusEvent.RECORD_SPAWN_ROSTER,
       battleLog,
@@ -62,7 +56,7 @@ function startRound() {
     runBattleRoundAutomation({
       type: BattleRoundEvent.RECORD_COUNT_FROM_INITIALIZATION,
       initializingText,
-      roundType,
+      roundType: roundStartContext.roundType,
     });
   } else if (runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY })) {
     runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_SINGLE_ROUND });

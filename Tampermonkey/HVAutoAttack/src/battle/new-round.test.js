@@ -47,6 +47,7 @@ vi.mock("./battle-round.js", () => ({
   BattleRoundEvent: Object.freeze({
     CLASSIFY_TYPE: "classifyType",
     READ_TYPE: "readType",
+    RECORD_START_CONTEXT: "recordStartContext",
     RECORD_COUNT_FROM_INITIALIZATION: "recordCountFromInitialization",
     RECORD_SINGLE_ROUND: "recordSingleRound",
     RECORD_TYPE: "recordType",
@@ -70,9 +71,9 @@ beforeEach(() => {
     { textContent: "Initializing random encounter" },
   ]);
   mocks.runBattleRoundAutomation.mockImplementation((event) => {
-    if (event.type === "readType") return "";
-    if (event.type === "classifyType") return "ba";
-    if (event.type === "recordType") return event.roundType;
+    if (event.type === "recordStartContext") {
+      return { initialized: true, roundType: "ba", randomEncounterStarted: true };
+    }
     return undefined;
   });
   mocks.runBattleStaminaAutomation.mockReturnValue({ lostStamina: 1, paused: false });
@@ -97,6 +98,10 @@ describe("runBattleRoundStartAutomation", () => {
     expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({ type: "resetRound" });
     expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
       type: "randomEncounterStarted",
+    });
+    expect(mocks.runBattleRoundAutomation).toHaveBeenCalledWith({
+      type: "recordStartContext",
+      initializingText: "Initializing random encounter",
     });
     expect(mocks.runBattleRoundAutomation).toHaveBeenCalledWith({
       type: "recordCountFromInitialization",

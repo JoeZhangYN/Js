@@ -10,6 +10,7 @@ const EVENT_RECORD_COUNT_FROM_INITIALIZATION = "recordCountFromInitialization";
 const EVENT_RECORD_SINGLE_ROUND = "recordSingleRound";
 const EVENT_SYNC_RUNTIME = "syncRuntime";
 const EVENT_CLASSIFY_TYPE = "classifyType";
+const EVENT_RECORD_START_CONTEXT = "recordStartContext";
 const EVENT_RECORD_DEBUG_FIELDS = "recordDebugFields";
 const EVENT_READ_DEBUG_FIELDS = "readDebugFields";
 const EVENT_READ_RUNTIME = "readRuntime";
@@ -23,6 +24,7 @@ export const BattleRoundEvent = Object.freeze({
   RECORD_SINGLE_ROUND: EVENT_RECORD_SINGLE_ROUND,
   SYNC_RUNTIME: EVENT_SYNC_RUNTIME,
   CLASSIFY_TYPE: EVENT_CLASSIFY_TYPE,
+  RECORD_START_CONTEXT: EVENT_RECORD_START_CONTEXT,
   RECORD_DEBUG_FIELDS: EVENT_RECORD_DEBUG_FIELDS,
   READ_DEBUG_FIELDS: EVENT_READ_DEBUG_FIELDS,
   READ_RUNTIME: EVENT_READ_RUNTIME,
@@ -45,9 +47,30 @@ function classifyType(initializingText = "") {
   return "";
 }
 
+function isInitializationText(initializingText = "") {
+  return /^Initializing/.test(initializingText);
+}
+
 function recordType(roundType) {
   setValue(STORAGE_KEYS.ROUND_TYPE, roundType);
   return roundType;
+}
+
+function recordStartContext(initializingText = "") {
+  const persistedRoundType = readType();
+  if (persistedRoundType) {
+    return {
+      initialized: isInitializationText(initializingText),
+      roundType: persistedRoundType,
+      randomEncounterStarted: false,
+    };
+  }
+  const roundType = recordType(classifyType(initializingText));
+  return {
+    initialized: isInitializationText(initializingText),
+    roundType,
+    randomEncounterStarted: roundType === "ba",
+  };
 }
 
 function normalizeRoundCount(value) {
@@ -114,6 +137,7 @@ function readDebugFields() {
 export function runBattleRoundAutomation(event = { type: EVENT_SYNC_RUNTIME }) {
   if (event.type === EVENT_READ_TYPE) return readType();
   if (event.type === EVENT_CLASSIFY_TYPE) return classifyType(event.initializingText);
+  if (event.type === EVENT_RECORD_START_CONTEXT) return recordStartContext(event.initializingText);
   if (event.type === EVENT_RECORD_TYPE) return recordType(event.roundType);
   if (event.type === EVENT_RECORD_COUNT) return recordCount(event.roundNow, event.roundAll);
   if (event.type === EVENT_RECORD_COUNT_FROM_INITIALIZATION) {

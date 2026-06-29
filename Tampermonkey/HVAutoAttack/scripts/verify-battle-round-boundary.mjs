@@ -59,6 +59,7 @@ for (const required of [
   "RECORD_TYPE",
   "RECORD_COUNT",
   "RECORD_COUNT_FROM_INITIALIZATION",
+  "RECORD_START_CONTEXT",
   "RECORD_DEBUG_FIELDS",
   "READ_DEBUG_FIELDS",
   "SYNC_RUNTIME",
@@ -89,6 +90,9 @@ if (!settingsText.includes("BattleRoundEvent.READ_DEBUG_FIELDS")) {
 if (!ownerText.includes("CLASSIFY_TYPE")) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose CLASSIFY_TYPE event`);
 }
+if (!ownerText.includes("randomEncounterStarted")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must decide random encounter start context`);
+}
 
 const newRoundText = fs.readFileSync(path.join(root, "src/battle/new-round.js"), "utf8");
 if (/from\s+["']\.\.\/state\/store\.js["']/.test(newRoundText)) {
@@ -98,6 +102,7 @@ if (/\bg\(\s*["']roundType["']/.test(newRoundText)) {
   violations.push("src/battle/new-round.js must not read or write roundType directly");
 }
 for (const forbidden of [
+  /BattleRoundEvent\.(?:READ_TYPE|CLASSIFY_TYPE|RECORD_TYPE)/,
   /Initializing arena challenge/,
   /Initializing random encounter/,
   /Initializing Item World/,

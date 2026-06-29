@@ -23,14 +23,12 @@ function requireText(relative, required) {
 const ownerText = requireText(owner, [
   "BattleRoundStartEvent",
   "runBattleRoundStartAutomation",
-  "determineRoundType",
-  "BattleRoundEvent.READ_TYPE",
-  "BattleRoundEvent.CLASSIFY_TYPE",
-  "BattleRoundEvent.RECORD_TYPE",
+  "recordRoundStartContext",
+  "BattleRoundEvent.RECORD_START_CONTEXT",
   "BattleRoundEvent.RECORD_COUNT_FROM_INITIALIZATION",
   "EncounterEvent.RANDOM_ENCOUNTER_STARTED",
 ]);
-requireText(ownerTest, ["recordCountFromInitialization", 'roundType: "ba"']);
+requireText(ownerTest, ["recordStartContext", "recordCountFromInitialization", 'roundType: "ba"']);
 
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleRoundStartEvent\b|runBattleRoundStartAutomation\b)/.test(
@@ -47,6 +45,12 @@ if (/\bg\(\s*["']roundType["']/.test(ownerText)) {
 }
 if (/OptionEvent|runOptionAutomation|["']encounter["']/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not decide encounter option gates directly`);
+}
+if (/BattleRoundEvent\.(?:READ_TYPE|CLASSIFY_TYPE|RECORD_TYPE)/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must use the battle-round start context`);
+}
+if (/\.match\(\s*["']Initializing["']\s*\)|\/Initializing/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not decide initialization text directly`);
 }
 
 if (violations.length) {
