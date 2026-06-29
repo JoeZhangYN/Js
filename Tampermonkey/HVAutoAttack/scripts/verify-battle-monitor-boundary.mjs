@@ -96,6 +96,22 @@ function checkEntry() {
       `${entry.replaceAll("\\", "/")} must route HUD refresh through runBattleHudAutomation(event)`
     );
   }
+  if (text.includes("const EVENT_HUD_REFRESH")) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must not duplicate HUD refresh command literals`
+    );
+  }
+  if (!text.includes("HUD_REFRESH: BattleHudEvent.REFRESH")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must expose HUD refresh from BattleHudEvent`);
+  }
+  if (!/runBattleHudAutomation\(event\)/.test(text)) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must pass HUD refresh through without remapping`
+    );
+  }
+  if (/runBattleHudAutomation\(\s*\{\s*type:\s*BattleHudEvent\.REFRESH/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must not rebuild HUD refresh events`);
+  }
   if (/\brefreshBattleHud\b/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not call raw refreshBattleHud()`);
   }

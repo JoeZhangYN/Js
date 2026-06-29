@@ -8,12 +8,11 @@ import {
   runBattleActionUsageCapture,
 } from "./battle-action-usage-capture.js";
 
-const EVENT_HUD_REFRESH = "hudRefresh";
 const EVENT_COMPLETION_REACHED = "completionReached";
 
 export const BattleMonitorEvent = Object.freeze({
   BATTLE_STARTED: BattleReportEvent.BATTLE_STARTED,
-  HUD_REFRESH: EVENT_HUD_REFRESH,
+  HUD_REFRESH: BattleHudEvent.REFRESH,
   ACTION_STARTED: BattleActionUsageCaptureEvent.ACTION_STARTED,
   ACTION_ENDED: BattleActionUsageCaptureEvent.ACTION_ENDED,
   COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
@@ -38,9 +37,9 @@ function routeBattleReportCommand(event) {
   return runBattleReportAutomation(event);
 }
 
-export function runBattleMonitorAutomation(event = { type: EVENT_HUD_REFRESH }) {
-  if (event.type === EVENT_HUD_REFRESH) {
-    runBattleHudAutomation({ type: BattleHudEvent.REFRESH });
+export function runBattleMonitorAutomation(event = { type: BattleHudEvent.REFRESH }) {
+  if (event.type === BattleHudEvent.REFRESH) {
+    runBattleHudAutomation(event);
   } else if (event.type === BattleActionUsageCaptureEvent.ACTION_STARTED) {
     runBattleActionUsageCapture(event);
   } else if (event.type === BattleActionUsageCaptureEvent.ACTION_ENDED) {
