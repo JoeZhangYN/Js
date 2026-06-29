@@ -24,6 +24,7 @@ function pickControl(type, snap, opt) {
  */
 export function decideBurstControl(opt, snap) {
   if (!opt.burstControlSwitch) return { kind: "noop" };
+  if (opt.debuffSkillSwitch === false) return { kind: "noop" };
   // OFC 本回合就清场 → 蹦极源即灭，别白费一回合控制（与 F2/F4 同口径，避免过控）。
   if (
     runBigSkillDebuffAutomation({

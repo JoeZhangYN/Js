@@ -5,7 +5,7 @@ import { decideBurstControl } from "./decide-burst-control.js";
 const mon = (over = {}) => ({ id: 1, order: 0, isDead: false, monsterId: 100, buffs: [], ...over });
 const snap = (over = {}) => ({
   hpAbs: 1000,
-  skillReady: { "232": true, "222": true, "223": true },
+  skillReady: { 232: true, 222: true, 223: true },
   cdMap: {},
   oc: 0,
   view: [mon()],
@@ -17,6 +17,13 @@ describe("decideBurstControl", () => {
   it("开关 OFF → noop", () => {
     const s = snap({ learnedBurstByMid: { 100: { maxHit: 900, type: "fire" } } });
     expect(decideBurstControl({}, s)).toEqual({ kind: "noop" });
+  });
+
+  it("debuffSkillSwitch:false → noop", () => {
+    const s = snap({ learnedBurstByMid: { 100: { maxHit: 900, type: "fire" } } });
+    expect(decideBurstControl({ burstControlSwitch: true, debuffSkillSwitch: false }, s)).toEqual({
+      kind: "noop",
+    });
   });
 
   it("法术爆发蹦极 + Silence 就绪 → 单点 Silence(232)", () => {
@@ -44,7 +51,9 @@ describe("decideBurstControl", () => {
       cdMap: { OFC: 0 },
       oc: 250,
     });
-    expect(decideBurstControl({ burstControlSwitch: true, skill_OFC: true }, s)).toEqual({ kind: "noop" });
+    expect(decideBurstControl({ burstControlSwitch: true, skill_OFC: true }, s)).toEqual({
+      kind: "noop",
+    });
   });
 
   it("已被该控制覆盖（已 silence）→ 跳该怪 → noop", () => {
@@ -57,7 +66,7 @@ describe("decideBurstControl", () => {
 
   it("法术爆发但 Silence 未就绪 → 退 Sleep", () => {
     const s = snap({
-      skillReady: { "232": false, "222": true },
+      skillReady: { 232: false, 222: true },
       learnedBurstByMid: { 100: { maxHit: 600, type: "fire" } },
     });
     expect(decideBurstControl({ burstControlSwitch: true }, s).skillSel).toBe("222");
@@ -66,7 +75,8 @@ describe("decideBurstControl", () => {
   it("burstControlSilenceForSpell:false → 法术爆发也用 Sleep", () => {
     const s = snap({ learnedBurstByMid: { 100: { maxHit: 600, type: "fire" } } });
     expect(
-      decideBurstControl({ burstControlSwitch: true, burstControlSilenceForSpell: false }, s).skillSel
+      decideBurstControl({ burstControlSwitch: true, burstControlSilenceForSpell: false }, s)
+        .skillSel
     ).toBe("222");
   });
 });

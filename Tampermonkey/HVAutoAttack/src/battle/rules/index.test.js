@@ -155,12 +155,9 @@ describe("Feature 1: 拖战跳 Imperil", () => {
   });
 });
 
-describe("F5: burstControl.when 门控", () => {
-  it("开关 OFF → falsy；ON + debuffSkillSwitch 不为 false → true；debuffSkillSwitch:false → false", () => {
-    expect(byName("burstControl").when({}, {})).toBeFalsy();
-    expect(byName("burstControl").when({}, { burstControlSwitch: true })).toBe(true);
-    expect(
-      byName("burstControl").when({}, { burstControlSwitch: true, debuffSkillSwitch: false })
-    ).toBe(false);
+describe("F5: burstControl 入口门控", () => {
+  it("规则表不拼开关门控；未开启时 decide 自行返回 noop", () => {
+    expect(byName("burstControl").when).toBeUndefined();
+    expect(byName("burstControl").decide({}, {})).toEqual({ kind: "noop" });
   });
 });

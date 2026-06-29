@@ -806,6 +806,19 @@ function checkBigSkillDebuffEntry() {
   }
 }
 
+function checkBurstControlEntry() {
+  const ownerText = fs.readFileSync(burstControlFile, "utf8");
+  for (const required of ["decideBurstControl", "burstControlSwitch", "debuffSkillSwitch"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(burstControlFile)} must own burst-control gate ${required}`);
+    }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  if (rulesText.includes("burstControlSwitch")) {
+    violations.push(`${rel(battleRulesFile)} must not assemble burst-control gates directly`);
+  }
+}
+
 function checkItemScrollEntry() {
   const itemText = fs.readFileSync(decideScrollFile, "utf8");
   for (const required of ["decideScroll", "scrollSwitch", "scrollCondition", "scrollRoundType"]) {
@@ -893,6 +906,7 @@ checkBattleRulesRuntimeContext();
 checkBattleDebuffCoverage();
 checkBossImperilEntry();
 checkBigSkillDebuffEntry();
+checkBurstControlEntry();
 checkItemScrollEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();

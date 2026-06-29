@@ -98,10 +98,9 @@ export const BATTLE_RULES = [
   },
   // 11.5 burstControl（F5，默认 OFF）：学习到的高爆发怪威胁血量蹦极 → 单点 Silence/Sleep 控住它。
   //      置于进攻 debuff（bossImperil 等）之前——保命先于增伤；但在急救/topup（步 4-6）之后。
-  //      重逻辑在 decide，不适用时返 noop（不空耗回合）。开关关 → when 即 false，零开销。
+  //      重逻辑在 decide，不适用时返 noop（不空耗回合）。
   {
     name: "burstControl",
-    when: (snap, opt) => opt.burstControlSwitch && opt.debuffSkillSwitch !== false,
     decide: (snap, opt) => decideBurstControl(opt, snap),
   },
   // 12. Boss-Imperil（decide 算 AoE bestIdx 目标 → click-skill-then-target，含 Spirit 前置）
