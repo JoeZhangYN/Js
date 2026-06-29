@@ -919,9 +919,23 @@ function checkBattleDebuffCoverage() {
     "BattleDebuffCoverageEvent",
     "runBattleDebuffCoverageAutomation",
     "HAS_MISSING_DEBUFF",
+    "event.monsterBuffs",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(debuffCoverageFile)} must own ${required}`);
+    }
+  }
+  if (/\bevent\.snap\b|\bsnap\?\.view\b|\bsnap\.view\b/.test(text)) {
+    violations.push(`${rel(debuffCoverageFile)} must consume monsterBuffs, not snap`);
+  }
+  const castAllText = fs.readFileSync(decideCastAllFile, "utf8");
+  for (const call of castAllText.matchAll(
+    /runBattleDebuffCoverageAutomation\(\s*\{[\s\S]*?\}\s*\)/g
+  )) {
+    if (/\bsnap\s*:/.test(call[0])) {
+      violations.push(
+        `${rel(decideCastAllFile)} must pass monsterBuffs, not snap, to debuff coverage`
+      );
     }
   }
 }

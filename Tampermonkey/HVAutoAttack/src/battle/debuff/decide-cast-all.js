@@ -94,7 +94,7 @@ function shouldSkipDebuffForBigSkill(opt, snap, kind) {
 function hasMissingDebuff(snap, debuffName) {
   return runBattleDebuffCoverageAutomation({
     type: BattleDebuffCoverageEvent.HAS_MISSING_DEBUFF,
-    snap,
+    monsterBuffs: (snap?.view || []).map((monster) => monster.buffs),
     debuffName,
     monsterAlive: snap?.monsterAlive,
   });

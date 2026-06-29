@@ -4,36 +4,24 @@ import {
   runBattleDebuffCoverageAutomation,
 } from "./battle-debuff-coverage.js";
 
-const hasMissing = (snap, debuffName = "weaken", monsterAlive = snap.monsterAlive) =>
+const hasMissing = (monsterBuffs, debuffName = "weaken", monsterAlive = monsterBuffs.length) =>
   runBattleDebuffCoverageAutomation({
     type: BattleDebuffCoverageEvent.HAS_MISSING_DEBUFF,
-    snap,
+    monsterBuffs,
     debuffName,
     monsterAlive,
   });
 
 describe("battle debuff coverage", () => {
   it("reports missing coverage when fewer alive monsters carry the debuff", () => {
-    expect(
-      hasMissing({
-        monsterAlive: 2,
-        view: [{ buffs: ["weaken"] }, { buffs: [] }],
-      })
-    ).toBe(true);
+    expect(hasMissing([["weaken"], []])).toBe(true);
   });
 
   it("reports complete coverage when every alive monster carries the debuff", () => {
-    expect(
-      hasMissing({
-        monsterAlive: 2,
-        view: [{ buffs: ["weaken"] }, { buffs: ["weaken"] }],
-      })
-    ).toBe(false);
+    expect(hasMissing([["weaken"], ["weaken"]])).toBe(false);
   });
 
   it("uses rule runtime alive count when supplied", () => {
-    expect(hasMissing({ monsterAlive: 1, view: [{ buffs: ["imperil"] }] }, "imperil", 2)).toBe(
-      true
-    );
+    expect(hasMissing([["imperil"]], "imperil", 2)).toBe(true);
   });
 });
