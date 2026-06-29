@@ -45,13 +45,13 @@ describe("decideBuff", () => {
     expect(decideBuff({ buffSkillSwitch: true }, snap())).toEqual({ kind: "noop" });
   });
 
-  it("enabled buff spell ready and missing -> click skill id", () => {
+  it("enabled buff spell ready and missing -> skill command", () => {
     expect(
       decideBuff(
         enabled({ buffSkill: { Ha: true }, buffSkillOrderValue: "Ha" }),
         snap({ skillReady: { 412: true } })
       )
-    ).toEqual({ kind: "click", selector: "412" });
+    ).toEqual({ kind: "skill-command", skillId: "412" });
   });
 
   it("pre-cast Spirit gates before buff spell", () => {

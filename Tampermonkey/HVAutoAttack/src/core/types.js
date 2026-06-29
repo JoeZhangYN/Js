@@ -13,6 +13,7 @@
  *
  * @typedef {{ kind: "noop" }
  *         | { kind: "click", selector: string }
+ *         | { kind: "skill-command", skillId: string }
  *         | { kind: "item-command", itemId: string|number }
  *         | { kind: "toggle-spirit" }
  *         | { kind: "click-skill-then-target", skillId: string, targetId: number }

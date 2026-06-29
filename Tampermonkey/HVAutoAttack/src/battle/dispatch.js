@@ -8,6 +8,7 @@ import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { _alert } from "../core/lang.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import { BattleItemCommandEvent, runBattleItemCommand } from "./battle-item-command.js";
+import { BattleSkillCommandEvent, runBattleSkillCommand } from "./battle-skill-command.js";
 import { BattleTargetCommandEvent, runBattleTargetCommand } from "./battle-target-command.js";
 import {
   BattleSpiritToggleEvent,
@@ -38,6 +39,12 @@ export function dispatch(result, snap) {
       return !!runBattleItemCommand({
         type: BattleItemCommandEvent.CLICK_ITEM,
         itemId: result.itemId,
+      });
+
+    case "skill-command":
+      return !!runBattleSkillCommand({
+        type: BattleSkillCommandEvent.CLICK_READY,
+        skillId: result.skillId,
       });
 
     case "toggle-spirit":

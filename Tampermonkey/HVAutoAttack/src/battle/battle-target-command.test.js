@@ -3,10 +3,14 @@ import { BattleTargetCommandEvent, runBattleTargetCommand } from "./battle-targe
 
 const mocks = vi.hoisted(() => ({
   gE: vi.fn(),
-  isOn: vi.fn(),
+  runBattleSkillCommand: vi.fn(),
 }));
 
-vi.mock("../dom/query.js", () => ({ gE: mocks.gE, isOn: mocks.isOn }));
+vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
+vi.mock("./battle-skill-command.js", () => ({
+  BattleSkillCommandEvent: Object.freeze({ CLICK_READY: "clickReady" }),
+  runBattleSkillCommand: mocks.runBattleSkillCommand,
+}));
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
@@ -26,11 +30,9 @@ describe("runBattleTargetCommand", () => {
   });
 
   it("clicks ready skill then live target", () => {
-    const skill = { click: vi.fn() };
     const target = { click: vi.fn(), querySelector: vi.fn(() => null) };
-    mocks.isOn.mockReturnValue(true);
+    mocks.runBattleSkillCommand.mockReturnValue(true);
     mocks.gE.mockImplementation((selector) => {
-      if (selector === "213") return skill;
       if (selector === "#mkey_3") return target;
       return null;
     });
@@ -43,16 +45,16 @@ describe("runBattleTargetCommand", () => {
       })
     ).toBe(true);
 
-    expect(skill.click).toHaveBeenCalledTimes(1);
+    expect(mocks.runBattleSkillCommand).toHaveBeenCalledWith({
+      type: "clickReady",
+      skillId: "213",
+    });
     expect(target.click).toHaveBeenCalledTimes(1);
   });
 
   it("does not click skill when the target is dead", () => {
-    const skill = { click: vi.fn() };
     const target = { click: vi.fn(), querySelector: vi.fn(() => ({})) };
-    mocks.isOn.mockReturnValue(true);
     mocks.gE.mockImplementation((selector) => {
-      if (selector === "213") return skill;
       if (selector === "#mkey_3") return target;
       return null;
     });
@@ -65,17 +67,19 @@ describe("runBattleTargetCommand", () => {
       })
     ).toBe(false);
 
-    expect(skill.click).not.toHaveBeenCalled();
+    expect(mocks.runBattleSkillCommand).not.toHaveBeenCalled();
     expect(target.click).not.toHaveBeenCalled();
   });
 
   it("tries skill if ready, runs hook, then clicks target", () => {
     const calls = [];
-    const skill = { click: vi.fn(() => calls.push("skill")) };
     const target = { click: vi.fn(() => calls.push("target")) };
-    mocks.isOn.mockReturnValue(true);
+    mocks.runBattleSkillCommand.mockImplementation((event) => {
+      calls.push("skill");
+      event.afterClick();
+      return true;
+    });
     mocks.gE.mockImplementation((selector) => {
-      if (selector === "1111") return skill;
       if (selector === "#mkey_3") return target;
       return null;
     });
@@ -94,7 +98,7 @@ describe("runBattleTargetCommand", () => {
 
   it("can require skill readiness before clicking the target", () => {
     const target = { click: vi.fn() };
-    mocks.isOn.mockReturnValue(false);
+    mocks.runBattleSkillCommand.mockReturnValue(false);
     mocks.gE.mockImplementation((selector) => (selector === "#mkey_3" ? target : null));
 
     expect(

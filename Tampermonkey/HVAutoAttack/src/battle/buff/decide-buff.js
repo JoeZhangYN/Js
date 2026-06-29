@@ -41,7 +41,7 @@ export function decideBuff(opt, snap) {
     if (opt.preCastSS && !snap.spiritOn && checkCondition(opt.preCastSSCondition, snap)) {
       return { kind: "toggle-spirit" };
     }
-    return { kind: "click", selector: lib.id };
+    return { kind: "skill-command", skillId: lib.id };
   }
 
   // Phase 2: draughts (items 5 个)

@@ -1,5 +1,6 @@
 // Battle target command: one write entry for monster target clicks and skill-target pairs.
-import { gE, isOn } from "../dom/query.js";
+import { gE } from "../dom/query.js";
+import { BattleSkillCommandEvent, runBattleSkillCommand } from "./battle-skill-command.js";
 
 const EVENT_CLICK_TARGET = "clickTarget";
 const EVENT_CLICK_SKILL_THEN_TARGET = "clickSkillThenTarget";
@@ -30,23 +31,27 @@ function clickTarget(targetId) {
 }
 
 function clickSkillThenTarget(skillId, targetId) {
-  if (!isOn(skillId)) return false;
-  const skillEl = gE(skillId);
-  if (!skillEl) return false;
   const targetEl = readLiveTarget(targetId);
   if (!targetEl) return false;
-  skillEl.click();
+  if (
+    !runBattleSkillCommand({
+      type: BattleSkillCommandEvent.CLICK_READY,
+      skillId,
+    })
+  ) {
+    return false;
+  }
   targetEl.click();
   return true;
 }
 
 function trySkillThenTarget(skillId, targetId, afterSkillClick, targetRequiresSkill = false) {
-  const skillEl = isOn(skillId) ? gE(skillId) : null;
-  if (!skillEl && targetRequiresSkill) return false;
-  if (skillEl) {
-    skillEl.click();
-    afterSkillClick?.();
-  }
+  const clickedSkill = runBattleSkillCommand({
+    type: BattleSkillCommandEvent.CLICK_READY,
+    skillId,
+    afterClick: afterSkillClick,
+  });
+  if (!clickedSkill && targetRequiresSkill) return false;
   clickTarget(targetId);
   return true;
 }

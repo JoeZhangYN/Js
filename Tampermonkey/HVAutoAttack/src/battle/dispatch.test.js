@@ -57,6 +57,14 @@ describe("dispatch", () => {
     expect(item.click).toHaveBeenCalledTimes(1);
   });
 
+  it("skill-command → clicks a ready skill through the skill command entry", () => {
+    const skill = mkBtn("412");
+
+    expect(dispatch({ kind: "skill-command", skillId: "412" })).toBe(true);
+
+    expect(skill.click).toHaveBeenCalledOnce();
+  });
+
   it("toggle-spirit → 走 Spirit toggle command，click 并记录", () => {
     const spirit = mkBtn("ckey_spirit");
     expect(dispatch({ kind: "toggle-spirit" })).toBe(true);
