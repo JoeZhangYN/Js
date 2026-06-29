@@ -1188,6 +1188,12 @@ function checkMonsterResistPanelEntry() {
   if (!/export function runMonsterResistPanelAutomation\(/.test(text)) {
     violations.push(`${rel(panelFile)} must expose runMonsterResistPanelAutomation(event)`);
   }
+  if (!/const resistPanelEventHandlers\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(panelFile)} must route resist panel commands through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*!==\s*EVENT_REFRESH/.test(text)) {
+    violations.push(`${rel(panelFile)} must not route resist panel refresh through an if ladder`);
+  }
   if (!text.includes("runMonsterResistPanelModel")) {
     violations.push(`${rel(panelFile)} must render resist rows from monster resist panel model`);
   }

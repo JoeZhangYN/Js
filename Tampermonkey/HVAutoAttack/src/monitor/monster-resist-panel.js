@@ -91,7 +91,10 @@ async function renderResistPanel(deps) {
   panel.innerHTML = rows.join("") || "<div class='hvAAResistNone'>无怪物</div>";
 }
 
+const resistPanelEventHandlers = Object.freeze({
+  [EVENT_REFRESH]: (_event, deps) => renderResistPanel(makeDeps(deps)),
+});
+
 export function runMonsterResistPanelAutomation(event = { type: EVENT_REFRESH }, deps = {}) {
-  if (event.type !== EVENT_REFRESH) return undefined;
-  return renderResistPanel(makeDeps(deps));
+  return resistPanelEventHandlers[event.type]?.(event, deps);
 }
