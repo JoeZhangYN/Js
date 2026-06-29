@@ -6,6 +6,7 @@ const srcDir = path.join(root, "src");
 const entry = path.normalize("src/battle/monster-knowledge-automation.js");
 const syncImpl = path.normalize("src/battle/monster-db-sync.js");
 const scanImpl = path.normalize("src/battle/monster-db-scan.js");
+const scanResultImpl = path.normalize("src/battle/monster-scan-result-learning.js");
 const panelImpl = path.normalize("src/monitor/monster-resist-panel.js");
 const violations = [];
 
@@ -23,7 +24,7 @@ function walk(dir) {
 
 function checkFile(file) {
   const relative = path.normalize(path.relative(root, file));
-  const allowed = new Set([entry, syncImpl, scanImpl, panelImpl]);
+  const allowed = new Set([entry, syncImpl, scanImpl, scanResultImpl, panelImpl]);
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
     const trimmed = line.trim();
@@ -117,13 +118,51 @@ function checkEntry() {
   if (/\bsetupScanWatch\b/.test(text) || /\bsetupScanWatch\b/.test(scanText)) {
     violations.push("monster scan learning must not use legacy setupScanWatch entrypoint");
   }
-  if (!scanText.includes("MonsterStatusEvent.READ_STATUS")) {
+  if (!scanText.includes("runMonsterScanResultLearning")) {
     violations.push(
-      `${scanImpl.replaceAll("\\", "/")} must resolve scan identity through monster status entry`
+      `${scanImpl.replaceAll("\\", "/")} must delegate scan row business decisions to scan result entry`
     );
   }
-  if (/\bg\(\s*["']monsterStatus["']/.test(scanText)) {
-    violations.push(`${scanImpl.replaceAll("\\", "/")} must not read monsterStatus directly`);
+  for (const forbidden of [
+    "parseScanResult",
+    "checkScanResultValidity",
+    "MonsterDbStoreEvent",
+    "MonsterCacheEvent",
+    "MonsterStatusEvent.READ_STATUS",
+    "runTimeAutomation",
+    "storeProfile",
+    "storeHp",
+  ]) {
+    if (scanText.includes(forbidden)) {
+      violations.push(`${scanImpl.replaceAll("\\", "/")} must stay a DOM observer shell`);
+    }
+  }
+  const scanResultText = fs.readFileSync(path.join(root, scanResultImpl), "utf8");
+  if (!/export const MonsterScanResultLearningEvent\s*=\s*Object\.freeze\(/.test(scanResultText)) {
+    violations.push(`${scanResultImpl.replaceAll("\\", "/")} must expose event constants`);
+  }
+  if (!/export function runMonsterScanResultLearning\(/.test(scanResultText)) {
+    violations.push(`${scanResultImpl.replaceAll("\\", "/")} must expose one scan result entry`);
+  }
+  for (const required of [
+    "parseScanResult",
+    "checkScanResultValidity",
+    "MonsterStatusEvent.READ_STATUS",
+    "MonsterDbStoreEvent.PROFILE_WRITE",
+    "MonsterDbStoreEvent.HP_WRITE",
+    "MonsterCacheEvent.WRITE_PROFILE",
+  ]) {
+    if (!scanResultText.includes(required)) {
+      violations.push(`${scanResultImpl.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
+  if (!scanResultText.includes("MonsterStatusEvent.READ_STATUS")) {
+    violations.push(
+      `${scanResultImpl.replaceAll("\\", "/")} must resolve scan identity through monster status entry`
+    );
+  }
+  if (/\bg\(\s*["']monsterStatus["']/.test(scanText + scanResultText)) {
+    violations.push(`monster scan learning must not read monsterStatus directly`);
   }
 }
 
