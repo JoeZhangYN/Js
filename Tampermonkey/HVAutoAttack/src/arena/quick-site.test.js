@@ -53,6 +53,27 @@ describe("quick site entry", () => {
     );
   });
 
+  it("renders configured link fields as DOM values instead of raw HTML", () => {
+    mocks.runOptionAutomation.mockReturnValue([
+      {
+        name: '<img src=x onerror="alert(1)">',
+        url: "https://example.test/?a=<b>",
+        fav: "https://example.test/icon.svg?x=<y>",
+      },
+    ]);
+
+    runQuickSiteAutomation({
+      type: QuickSiteEvent.LOBBY_READY,
+    });
+
+    const link = document.querySelector(".quickSiteBar span:last-child a");
+    expect(link.textContent).toBe('<img src=x onerror="alert(1)">');
+    expect(link.querySelector("img")?.getAttribute("src")).toBe(
+      "https://example.test/icon.svg?x=<y>"
+    );
+    expect(document.querySelector(".quickSiteBar span:last-child > img")).toBeNull();
+  });
+
   it("toggles configured link visibility from the rendered control", () => {
     mocks.runOptionAutomation.mockReturnValue([
       { name: "Wiki", url: "https://example.test/wiki", fav: "" },

@@ -113,6 +113,16 @@ if (/EVENT_LOBBY_READY[\s\S]*renderQuickSite\(\s*event\.option\s*\)/.test(ownerT
     `${owner.replaceAll("\\", "/")} lobby quick site rendering must not use caller option`
   );
 }
+if (/innerHTML\s*=\s*`\$\{[^`]*(?:site\.|quickSite)/s.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not interpolate configured quickSite fields into HTML`
+  );
+}
+if (!ownerText.includes("renderConfiguredSite")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must render configured quickSite fields through DOM nodes`
+  );
+}
 
 if (violations.length) {
   console.error("[verify-quick-site-boundary] FAIL");

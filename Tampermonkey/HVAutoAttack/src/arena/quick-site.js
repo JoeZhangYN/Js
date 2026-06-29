@@ -22,6 +22,20 @@ function attr(value) {
     .replaceAll(">", "&gt;");
 }
 
+function renderConfiguredSite(quickSiteBar, site) {
+  const row = quickSiteBar.appendChild(cE("span"));
+  row.title = String(site.name ?? "");
+  const link = row.appendChild(cE("a"));
+  link.href = String(site.url ?? "");
+  link.target = "_blank";
+  if (site.fav) {
+    const icon = link.appendChild(cE("img"));
+    icon.src = String(site.fav);
+    icon.className = "favicon";
+  }
+  link.append(String(site.name ?? ""));
+}
+
 function renderQuickSite(quickSite) {
   if (!quickSite) return false;
   const quickSiteBar = gE("body").appendChild(cE("div"));
@@ -29,13 +43,7 @@ function renderQuickSite(quickSite) {
   quickSiteBar.innerHTML =
     '<span><a href="javascript:void(0);"class="quickSiteBarToggle">&lt;&lt;</a></span><span><a href="http://tieba.baidu.com/f?kw=hv网页游戏"target="_blank"><img src="https://www.baidu.com/favicon.ico" class="favicon"></img>贴吧</a></span><span><a href="https://forums.e-hentai.org/index.php?showforum=76"target="_blank"><img src="https://forums.e-hentai.org/favicon.ico" class="favicon"></img>Forums</a></span>';
   if (Array.isArray(quickSite)) {
-    quickSite.forEach((site) => {
-      quickSiteBar.innerHTML = `${quickSiteBar.innerHTML}<span title="${
-        site.name
-      }"><a href="${site.url}"target="_blank">${
-        site.fav ? `<img src="${site.fav}"class="favicon"></img>` : ""
-      }${site.name}</a></span>`;
-    });
+    quickSite.forEach((site) => renderConfiguredSite(quickSiteBar, site));
   }
   gE(".quickSiteBarToggle", quickSiteBar).onclick = function (event) {
     const toggle = event.currentTarget;
