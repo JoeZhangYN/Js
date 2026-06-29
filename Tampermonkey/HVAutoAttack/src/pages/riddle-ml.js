@@ -8,13 +8,13 @@
 // GM 存储 key：is_maintenance / is_down / last_awake_ts / last_date / check_interval / extend_submit_interval
 //   - 直接用 GM_setValue/GM_getValue（带 prefix 会污染 RMA 兼容性；这里用裸 key 与原 RMA 一致）
 // XHR 兜底通过 GM_xmlhttpRequest 完成（@grant 需加 GM_xmlhttpRequest）
-import { g } from "../state/store.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { gmXhr, hasNonLatin1 } from "../dom/gm-xhr.js";
 import { ANSWER_MAP } from "../data/riddle-answers.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { RiddleImageEvent, runRiddleImageAutomation } from "./riddle-image.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const ML_ENDPOINT_DEFAULT = "https://rdma.ooguy.com/help2";
 const STATUS_ENDPOINT = "https://rdma.ooguy.com/status";
@@ -37,6 +37,26 @@ function reportMlOutcome(outcome) {
 
 function triggerErrorAlarm() {
   runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Error" });
+}
+
+function readMlOptions() {
+  return {
+    mlAnswer: runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "mlAnswer",
+      fallback: true,
+    }),
+    mlEndpoint: runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "mlEndpoint",
+      fallback: ML_ENDPOINT_DEFAULT,
+    }),
+    mlApiKey: runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "mlApiKey",
+      fallback: "",
+    }),
+  };
 }
 
 /**
@@ -157,7 +177,7 @@ function startRiddleMlHealthCheck() {
 let inFlight = false;
 async function tryMLAnswer() {
   if (inFlight) return null; // 防同 tick 重入
-  const opt = g("option") || {};
+  const opt = readMlOptions();
   // defaultOn 语义：与调用侧 riddle.js OptionEvent.IS_ON 一致（缺字段=开，仅显式 false 才关）。
   // 修 H-B：原 `!opt.mlAnswer` 把老配置缺字段误判为关 → 调用侧以为开、这里立刻 bail → 必随机。
   if (opt.mlAnswer === false) {

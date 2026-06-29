@@ -230,6 +230,15 @@ function checkRiddleMlEntry() {
   if (!ownerText.includes("TimeEvent.UTC_DATE_KEY")) {
     violations.push(`${rel(riddleMlFile)} must read ML health day through time entry`);
   }
+  if (!ownerText.includes("OptionEvent.READ_FIELD")) {
+    violations.push(`${rel(riddleMlFile)} must read ML options through option entry`);
+  }
+  if (/from\s+["']\.\.\/state\/store\.js["']/.test(ownerText)) {
+    violations.push(`${rel(riddleMlFile)} must not import store for ML option reads`);
+  }
+  if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
+    violations.push(`${rel(riddleMlFile)} must not read ML options directly`);
+  }
   if (/\bgetUTCFullYear\b|\bgetUTCMonth\b|\bgetUTCDate\b/.test(ownerText)) {
     violations.push(`${rel(riddleMlFile)} must not build UTC date keys directly`);
   }
