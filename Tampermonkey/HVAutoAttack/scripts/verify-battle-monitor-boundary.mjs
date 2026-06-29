@@ -17,6 +17,7 @@ const internalFiles = new Set(
     "src/monitor/battle-report-view.js",
     "src/monitor/battle-monitor-runtime.js",
     "src/monitor/drop-monitor.js",
+    "src/monitor/record-usage-completion.js",
     "src/monitor/record-usage.js",
     "src/state/storage.js",
   ].map((p) => path.normalize(p))
@@ -335,8 +336,10 @@ function checkActionUsageCaptureEntry() {
 
 function checkUsageImplementation() {
   const usageFile = path.join(root, "src/monitor/record-usage.js");
+  const usageCompletionFile = path.join(root, "src/monitor/record-usage-completion.js");
   const entryText = fs.readFileSync(path.join(root, entry), "utf8");
   const text = fs.readFileSync(usageFile, "utf8");
+  const completionText = fs.readFileSync(usageCompletionFile, "utf8");
   if (!/export function runBattleUsageAutomation\(/.test(text)) {
     violations.push(`${rel(usageFile)} must expose runBattleUsageAutomation(event)`);
   }
@@ -386,24 +389,45 @@ function checkUsageImplementation() {
       `${rel(usageFile)} must read usage action context through battle-monitor-runtime`
     );
   }
-  if (!text.includes("BattleMonitorRuntimeEvent.USAGE_COMPLETION_CONTEXT")) {
+  if (!text.includes("./record-usage-completion.js")) {
+    violations.push(`${rel(usageFile)} must route completion aggregation through private helper`);
+  }
+  if (!/export function recordCompletedBattleUsage\(/.test(completionText)) {
+    violations.push(`${rel(usageCompletionFile)} must own completion usage aggregation`);
+  }
+  if (!completionText.includes("BattleMonitorRuntimeEvent.USAGE_COMPLETION_CONTEXT")) {
     violations.push(
-      `${rel(usageFile)} must read usage completion context through battle-monitor-runtime`
+      `${rel(usageCompletionFile)} must read usage completion context through battle-monitor-runtime`
     );
   }
-  if (!/\bcontext\.recordUsage\b/.test(text)) {
-    violations.push(`${rel(usageFile)} must consume recordUsage from battle-monitor-runtime`);
+  if (text.includes("BattleMonitorRuntimeEvent.USAGE_COMPLETION_CONTEXT")) {
+    violations.push(`${rel(usageFile)} must not own completion usage runtime context`);
   }
-  if (/\bg\(\s*["']option["']\s*\)\.recordUsage/.test(text)) {
+  if (!/\bcontext\.recordUsage\b/.test(completionText)) {
+    violations.push(
+      `${rel(usageCompletionFile)} must consume recordUsage from battle-monitor-runtime`
+    );
+  }
+  if (/\bg\(\s*["']option["']\s*\)\.recordUsage/.test(text + completionText)) {
     violations.push(`${rel(usageFile)} must not read recordUsage option directly`);
   }
-  if (/\b(?:getValue|setValue)\(\s*STORAGE_KEYS\.STATS\b/.test(text)) {
+  if (/\b(?:getValue|setValue)\(\s*STORAGE_KEYS\.STATS\b/.test(text + completionText)) {
     violations.push(
       `${rel(usageFile)} must read/write usage records through battle-record-archive`
     );
   }
-  if (/from\s+["']\.\.\/state\/storage\.js["']/.test(text)) {
+  if (/from\s+["']\.\.\/state\/storage\.js["']/.test(text + completionText)) {
     violations.push(`${rel(usageFile)} must not import storage directly`);
+  }
+  const usageCompletionImports = [];
+  walkImportUsers(srcDir, "record-usage-completion.js", usageCompletionImports);
+  const allowedImport = path.normalize("src/monitor/record-usage.js");
+  for (const user of usageCompletionImports) {
+    if (user !== allowedImport) {
+      violations.push(
+        `${user.replaceAll("\\", "/")} must not import record-usage-completion directly`
+      );
+    }
   }
 }
 
@@ -422,6 +446,10 @@ function checkRecordArchiveEntry() {
   const archiveUsageRecordsText = fs.readFileSync(archiveUsageRecordsFile, "utf8");
   const dropText = fs.readFileSync(path.join(root, "src/monitor/drop-monitor.js"), "utf8");
   const usageText = fs.readFileSync(path.join(root, "src/monitor/record-usage.js"), "utf8");
+  const usageCompletionText = fs.readFileSync(
+    path.join(root, "src/monitor/record-usage-completion.js"),
+    "utf8"
+  );
   if (!/export const BattleRecordArchiveEvent\s*=\s*Object\.freeze\(/.test(archiveText)) {
     violations.push(`${rel(archiveFile)} must expose BattleRecordArchiveEvent`);
   }
@@ -546,7 +574,7 @@ function checkRecordArchiveEntry() {
     "BattleRecordArchiveEvent.STORE_USAGE_STATS",
     "BattleRecordArchiveEvent.STORE_OR_ARCHIVE_USAGE_STATS",
   ]) {
-    if (!usageText.includes(required)) {
+    if (!(usageText + usageCompletionText).includes(required)) {
       violations.push(`src/monitor/record-usage.js must route usage stats through ${required}`);
     }
   }
