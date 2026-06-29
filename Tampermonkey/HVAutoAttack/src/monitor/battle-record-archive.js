@@ -30,6 +30,8 @@ export const BattleRecordArchiveEvent = Object.freeze({
   CLEAR_USAGE_REPORT_RECORD_SET: "clearUsageReportRecordSet",
 });
 
+const REPORT_RECORD_NAME_FIELD = "__name";
+
 function makeDeps(deps) {
   return {
     delValue: deps.delValue || delValue,
@@ -73,16 +75,27 @@ function readCurrentRecord(event, deps) {
 
 function readRecordSet(event, deps) {
   return {
-    currentName: deps.getValue(STORAGE_KEYS.BATTLE_CODE),
+    currentName: readCurrentBattleReportName(deps),
     currentRaw: deps.getValue(event.currentKey, true),
     history: deps.getValue(event.historyKey, true) || [],
   };
 }
 
+function readCurrentBattleReportName(deps) {
+  return deps.getValue(STORAGE_KEYS.BATTLE_CODE);
+}
+
 function startBattleReportRecording(event, deps) {
-  if (!event.enabled || deps.getValue(STORAGE_KEYS.BATTLE_CODE)) return false;
+  if (!event.enabled || readCurrentBattleReportName(deps)) return false;
   deps.setValue(STORAGE_KEYS.BATTLE_CODE, event.code);
   return true;
+}
+
+function nameArchivedBattleReportRecord(record, deps) {
+  return {
+    ...record,
+    [REPORT_RECORD_NAME_FIELD]: readCurrentBattleReportName(deps),
+  };
 }
 
 function storeOrArchiveRecord(event, deps) {
@@ -92,10 +105,7 @@ function storeOrArchiveRecord(event, deps) {
   }
 
   const history = deps.getValue(event.historyKey, true) || [];
-  const archived = {
-    ...event.record,
-    __name: deps.getValue(STORAGE_KEYS.BATTLE_CODE),
-  };
+  const archived = nameArchivedBattleReportRecord(event.record, deps);
   if (event.endTimeField) writePath(archived, event.endTimeField, deps.readLocalTimestampLabel());
   history.push(archived);
   deps.setValue(event.historyKey, history);

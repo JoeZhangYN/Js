@@ -357,6 +357,18 @@ function checkRecordArchiveEntry() {
       `${rel(archiveFile)} must own record reads, creation, archiving, and clearing events`
     );
   }
+  for (const required of [
+    "REPORT_RECORD_NAME_FIELD",
+    "readCurrentBattleReportName",
+    "nameArchivedBattleReportRecord",
+  ]) {
+    if (!archiveText.includes(required)) {
+      violations.push(`${rel(archiveFile)} must own battle report record identity via ${required}`);
+    }
+  }
+  if (/__name\s*:\s*deps\.getValue\(\s*STORAGE_KEYS\.BATTLE_CODE/.test(archiveText)) {
+    violations.push(`${rel(archiveFile)} must name archived records through identity helper`);
+  }
   for (const retired of [
     "STORE_OR_ARCHIVE:",
     "READ_CURRENT:",
