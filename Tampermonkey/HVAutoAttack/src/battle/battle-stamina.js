@@ -6,6 +6,8 @@ import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stami
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 
 const EVENT_ROUND_LOG_READY = "roundLogReady";
+const STAMINA_LOSS_THRESHOLD_OPTION_KEY = "staminaLose";
+const DEFAULT_STAMINA_LOSS_THRESHOLD = Number.POSITIVE_INFINITY;
 
 export const BattleStaminaEvent = Object.freeze({
   ROUND_LOG_READY: EVENT_ROUND_LOG_READY,
@@ -20,11 +22,11 @@ function readStaminaLossThreshold() {
   const value = Number(
     runOptionAutomation({
       type: OptionEvent.READ_FIELD,
-      key: "staminaLose",
-      fallback: Number.POSITIVE_INFINITY,
+      key: STAMINA_LOSS_THRESHOLD_OPTION_KEY,
+      fallback: DEFAULT_STAMINA_LOSS_THRESHOLD,
     })
   );
-  return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+  return Number.isFinite(value) ? value : DEFAULT_STAMINA_LOSS_THRESHOLD;
 }
 
 function shouldPauseForLoss(lostStamina) {

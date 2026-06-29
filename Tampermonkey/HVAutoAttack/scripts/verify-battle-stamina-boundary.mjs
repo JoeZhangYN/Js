@@ -58,6 +58,8 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "runBattleStaminaAutomation",
   "ROUND_LOG_READY",
+  "STAMINA_LOSS_THRESHOLD_OPTION_KEY",
+  "DEFAULT_STAMINA_LOSS_THRESHOLD",
   "OptionEvent.READ_FIELD",
   "runStaminaLossLogAutomation",
   "StaminaLossLogEvent.RECORD",
@@ -69,6 +71,12 @@ for (const required of [
 }
 if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must read stamina options through option entry`);
+}
+if (/key:\s*["']staminaLose["']/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must use stamina threshold option key constant`);
+}
+if (/fallback:\s*Number\.POSITIVE_INFINITY/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must use stamina threshold fallback constant`);
 }
 
 if (violations.length) {
