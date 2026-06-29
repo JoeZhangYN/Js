@@ -8,6 +8,10 @@ const ownerTest = path.normalize("src/battle/battle-skill-usage.test.js");
 const roundStart = path.normalize("src/battle/new-round.js");
 const executeAttack = path.normalize("src/battle/attack/execute-attack.js");
 const executeAttackTest = path.normalize("src/battle/attack/execute-attack.test.js");
+const physicalSkillBookkeeping = path.normalize("src/battle/attack/physical-skill-bookkeeping.js");
+const physicalSkillBookkeepingTest = path.normalize(
+  "src/battle/attack/physical-skill-bookkeeping.test.js"
+);
 const snapshot = path.normalize("src/battle/snapshot.js");
 const snapshotTest = path.normalize("src/battle/snapshot.test.js");
 const violations = [];
@@ -67,10 +71,17 @@ if ((ownerText.match(/normalizeUsage\(/g) || []).length < 2) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize skill usage reads and writes`);
 }
 requireText(roundStart, ["BattleSkillUsageEvent.RESET_ROUND", "runBattleSkillUsageAutomation"]);
-requireText(executeAttack, ["BattleSkillUsageEvent.RECORD_USE", "runBattleSkillUsageAutomation"]);
+requireText(executeAttack, [
+  "PhysicalSkillBookkeepingEvent.RECORD_FIRE",
+  "runPhysicalSkillBookkeeping",
+]);
+requireText(physicalSkillBookkeeping, [
+  "BattleSkillUsageEvent.RECORD_USE",
+  "runBattleSkillUsageAutomation",
+]);
 requireText(snapshot, ["BattleSkillUsageEvent.READ_USAGE", "runBattleSkillUsageAutomation"]);
 
-for (const relative of [executeAttackTest, snapshotTest]) {
+for (const relative of [physicalSkillBookkeepingTest, snapshotTest]) {
   requireText(relative, ["runBattleSkillUsageAutomation"]);
 }
 

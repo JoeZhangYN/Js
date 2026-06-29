@@ -26,6 +26,10 @@ const physicalSkillRankingTest = path.join(
   root,
   "src/battle/attack/physical-skill-ranking.test.js"
 );
+const physicalSkillBookkeepingFile = path.join(
+  root,
+  "src/battle/attack/physical-skill-bookkeeping.js"
+);
 const activateSpiritFile = path.join(root, "src/battle/buff/activate-spirit.js");
 const decideInfusionFile = path.join(root, "src/battle/buff/decide-infusion.js");
 const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
@@ -694,6 +698,38 @@ function checkPhysicalSkillRanking() {
   }
 }
 
+function checkPhysicalSkillBookkeeping() {
+  const text = fs.readFileSync(physicalSkillBookkeepingFile, "utf8");
+  for (const required of [
+    "PhysicalSkillBookkeepingEvent",
+    "runPhysicalSkillBookkeeping",
+    "BattleSkillUsageEvent.RECORD_USE",
+    "CdRuntimeEvent.RECORD_FIRE",
+    "CdLearningEvent.RECORD_FIRE",
+    "BigSkillKillLearningEvent.RECORD_CAST",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(physicalSkillBookkeepingFile)} must own physical fire ${required}`);
+    }
+  }
+  const executeText = fs.readFileSync(
+    path.join(root, "src/battle/attack/execute-attack.js"),
+    "utf8"
+  );
+  for (const legacy of [
+    "runBattleSkillUsageAutomation",
+    "runCdRuntimeAutomation",
+    "runCdLearningAutomation",
+    "runBigSkillKillLearningAutomation",
+  ]) {
+    if (executeText.includes(legacy)) {
+      violations.push(
+        `src/battle/attack/execute-attack.js must report physical skill fire through runPhysicalSkillBookkeeping`
+      );
+    }
+  }
+}
+
 function checkActivateSpirit() {
   const text = fs.readFileSync(activateSpiritFile, "utf8");
   if (!text.includes("OptionEvent.READ_FIELD")) {
@@ -1202,6 +1238,7 @@ checkActionStartEntry();
 checkPauseControlsEntry();
 checkStartRuntimeEntry();
 checkPhysicalSkillRanking();
+checkPhysicalSkillBookkeeping();
 checkActivateSpirit();
 checkExecuteItem();
 checkSnapshot();

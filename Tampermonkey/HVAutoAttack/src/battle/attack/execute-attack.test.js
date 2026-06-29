@@ -5,11 +5,8 @@ const mocks = vi.hoisted(() => ({
   g: vi.fn(),
   gE: vi.fn(),
   isOn: vi.fn(),
-  runBattleSkillUsageAutomation: vi.fn(),
+  runPhysicalSkillBookkeeping: vi.fn(),
   runBattleSpiritToggleAutomation: vi.fn(),
-  runBigSkillKillLearningAutomation: vi.fn(),
-  runCdLearningAutomation: vi.fn(),
-  runCdRuntimeAutomation: vi.fn(),
 }));
 
 vi.mock("../../dom/query.js", () => ({
@@ -17,25 +14,13 @@ vi.mock("../../dom/query.js", () => ({
   isOn: mocks.isOn,
 }));
 vi.mock("../../state/store.js", () => ({ g: mocks.g }));
-vi.mock("../../state/cd-tracker.js", () => ({
-  CdRuntimeEvent: Object.freeze({ RECORD_FIRE: "recordFire" }),
-  runCdRuntimeAutomation: mocks.runCdRuntimeAutomation,
-}));
-vi.mock("../../state/cd-learner.js", () => ({
-  CdLearningEvent: Object.freeze({ RECORD_FIRE: "recordFire" }),
-  runCdLearningAutomation: mocks.runCdLearningAutomation,
-}));
-vi.mock("../../state/big-skill-kill-learner.js", () => ({
-  BigSkillKillLearningEvent: Object.freeze({ RECORD_CAST: "recordCast" }),
-  runBigSkillKillLearningAutomation: mocks.runBigSkillKillLearningAutomation,
+vi.mock("./physical-skill-bookkeeping.js", () => ({
+  PhysicalSkillBookkeepingEvent: Object.freeze({ RECORD_FIRE: "recordFire" }),
+  runPhysicalSkillBookkeeping: mocks.runPhysicalSkillBookkeeping,
 }));
 vi.mock("../battle-spirit-toggle.js", () => ({
   BattleSpiritToggleEvent: Object.freeze({ RECORD_TOGGLE: "recordToggle" }),
   runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
-}));
-vi.mock("../battle-skill-usage.js", () => ({
-  BattleSkillUsageEvent: Object.freeze({ RECORD_USE: "recordUse" }),
-  runBattleSkillUsageAutomation: mocks.runBattleSkillUsageAutomation,
 }));
 
 beforeEach(() => {
@@ -55,7 +40,7 @@ describe("executeAttack", () => {
     });
   });
 
-  it("reports physical skill usage through the battle skill usage entry", () => {
+  it("reports physical skill fire through the bookkeeping entry", () => {
     const skill = { click: vi.fn() };
     const target = { click: vi.fn() };
     mocks.isOn.mockReturnValue(true);
@@ -77,9 +62,11 @@ describe("executeAttack", () => {
       )
     ).toBe(true);
 
-    expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({
-      type: "recordUse",
+    expect(mocks.runPhysicalSkillBookkeeping).toHaveBeenCalledWith({
+      type: "recordFire",
       code: "OFC",
+      skillId: "1111",
+      snap: { globalTurn: 10 },
     });
     expect(skill.click).toHaveBeenCalledTimes(1);
     expect(target.click).toHaveBeenCalledTimes(1);

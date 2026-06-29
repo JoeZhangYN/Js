@@ -1,18 +1,15 @@
 // SHELL: 把 decideAttack 的 AttackPlan 翻译为 DOM 副作用 + 状态记账。
 // 只写不判断（判断全在 decide-attack.js）；isOn 探活属写路径安全读（与原 attack 一致）。
-// 记账：recordFire(CD) / skillOTOS(once-per-battle) / Spirit toggle cooldown。
+// 记账：physical skill bookkeeping / Spirit toggle cooldown。
 import { gE, isOn } from "../../dom/query.js";
-import { CdRuntimeEvent, runCdRuntimeAutomation } from "../../state/cd-tracker.js";
-import { CdLearningEvent, runCdLearningAutomation } from "../../state/cd-learner.js";
 import {
-  BigSkillKillLearningEvent,
-  runBigSkillKillLearningAutomation,
-} from "../../state/big-skill-kill-learner.js";
+  PhysicalSkillBookkeepingEvent,
+  runPhysicalSkillBookkeeping,
+} from "./physical-skill-bookkeeping.js";
 import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
 } from "../battle-spirit-toggle.js";
-import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "../battle-skill-usage.js";
 
 /**
  * @param {import("../../core/types.js").AttackPlan} plan
@@ -53,23 +50,13 @@ export function executeAttack(plan, snap) {
     case "physical": {
       // isOn 探活通过才发技能 + 记账；merciful 斩杀点流血怪；末尾恒点默认首怪（原 attack 语义）
       if (isOn(plan.skillId)) {
-        runBattleSkillUsageAutomation({
-          type: BattleSkillUsageEvent.RECORD_USE,
-          code: plan.code,
-        });
         gE(plan.skillId).click();
-        runCdRuntimeAutomation({ type: CdRuntimeEvent.RECORD_FIRE, code: plan.code });
-        runCdLearningAutomation({
-          type: CdLearningEvent.RECORD_FIRE,
+        runPhysicalSkillBookkeeping({
+          type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
           code: plan.code,
-          id: plan.skillId,
+          skillId: plan.skillId,
           snap,
-        }); // F3：记开火 turn，供脱灰时收敛真实 CD
-        runBigSkillKillLearningAutomation({
-          type: BigSkillKillLearningEvent.RECORD_CAST,
-          code: plan.code,
-          snap,
-        }); // F4：OFC/FRD 记 pre-cast boss 态，下回合判是否秒杀
+        });
         if (plan.mercifulTargetId != null) {
           gE(`#mkey_${plan.mercifulTargetId}`)?.click();
         }
