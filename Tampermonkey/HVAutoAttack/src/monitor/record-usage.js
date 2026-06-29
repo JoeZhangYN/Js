@@ -35,14 +35,12 @@ function recordBattleActionUsage(parm) {
   storeCurrentUsageStats(stats);
 }
 
+const usageEventHandlers = Object.freeze({
+  [EVENT_RECORD_ACTION_USAGE]: (event) => recordBattleActionUsage(event.usage),
+  [EVENT_RECORD_COMPLETED_USAGE]: () => recordCompletedUsage(),
+});
+
 export function runBattleUsageAutomation(event) {
-  if (event.type === EVENT_RECORD_ACTION_USAGE) {
-    recordBattleActionUsage(event.usage);
-    return undefined;
-  }
-  if (event.type === EVENT_RECORD_COMPLETED_USAGE) {
-    recordCompletedUsage();
-    return undefined;
-  }
+  usageEventHandlers[event.type]?.(event);
   return undefined;
 }

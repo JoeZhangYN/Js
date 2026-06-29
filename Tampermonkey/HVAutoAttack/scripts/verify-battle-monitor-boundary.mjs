@@ -362,6 +362,12 @@ function checkUsageImplementation() {
   ) {
     violations.push(`${rel(usageFile)} may export only its event entry`);
   }
+  if (!/const usageEventHandlers\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(usageFile)} must route usage events through one handler table`);
+  }
+  if (/if\s*\(\s*event\.type\s*===\s*EVENT_RECORD_/.test(text)) {
+    violations.push(`${rel(usageFile)} must not route usage events through an if ladder`);
+  }
   for (const required of ["RECORD_ACTION_USAGE", "RECORD_COMPLETED_USAGE"]) {
     if (!text.includes(required)) {
       violations.push(`${rel(usageFile)} must own ${required}`);
