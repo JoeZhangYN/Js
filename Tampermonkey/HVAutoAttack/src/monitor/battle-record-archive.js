@@ -8,6 +8,8 @@ const EVENT_READ_OR_CREATE_CURRENT = "readOrCreateCurrent";
 const EVENT_READ_RECORD_SET = "readRecordSet";
 const EVENT_START_RECORDING = "startRecording";
 const EVENT_CLEAR_RECORD_SET = "clearRecordSet";
+const EVENT_READ_OR_CREATE_DROP_RECORD = "readOrCreateDropRecord";
+const EVENT_STORE_OR_ARCHIVE_DROP_RECORD = "storeOrArchiveDropRecord";
 
 export const BattleRecordArchiveEvent = Object.freeze({
   STORE_OR_ARCHIVE: EVENT_STORE_OR_ARCHIVE,
@@ -16,6 +18,8 @@ export const BattleRecordArchiveEvent = Object.freeze({
   READ_RECORD_SET: EVENT_READ_RECORD_SET,
   START_RECORDING: EVENT_START_RECORDING,
   CLEAR_RECORD_SET: EVENT_CLEAR_RECORD_SET,
+  READ_OR_CREATE_DROP_RECORD: EVENT_READ_OR_CREATE_DROP_RECORD,
+  STORE_OR_ARCHIVE_DROP_RECORD: EVENT_STORE_OR_ARCHIVE_DROP_RECORD,
 });
 
 function makeDeps(deps) {
@@ -99,6 +103,30 @@ function clearRecordSet(event, deps) {
 
 export function runBattleRecordArchiveAutomation(event, deps = {}) {
   const fullDeps = makeDeps(deps);
+  if (event.type === EVENT_READ_OR_CREATE_DROP_RECORD) {
+    return readOrCreateCurrentRecord(
+      {
+        currentKey: STORAGE_KEYS.DROP,
+        defaultRecord: { "#EXP": 0, "#Credit": 0 },
+        startTimeField: "#startTime",
+      },
+      fullDeps
+    );
+  }
+  if (event.type === EVENT_STORE_OR_ARCHIVE_DROP_RECORD) {
+    return storeOrArchiveRecord(
+      {
+        currentKey: STORAGE_KEYS.DROP,
+        historyKey: STORAGE_KEYS.DROP_OLD,
+        record: event.record,
+        endTimeField: "#endTime",
+        recordEach: event.recordEach,
+        roundNow: event.roundNow,
+        roundAll: event.roundAll,
+      },
+      fullDeps
+    );
+  }
   if (event.type === EVENT_READ_CURRENT) return readCurrentRecord(event, fullDeps);
   if (event.type === EVENT_READ_OR_CREATE_CURRENT)
     return readOrCreateCurrentRecord(event, fullDeps);

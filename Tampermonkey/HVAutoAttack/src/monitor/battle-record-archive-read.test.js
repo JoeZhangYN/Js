@@ -38,10 +38,7 @@ describe("battle record archive reads", () => {
     expect(
       runBattleRecordArchiveAutomation(
         {
-          type: BattleRecordArchiveEvent.READ_OR_CREATE_CURRENT,
-          currentKey: STORAGE_KEYS.DROP,
-          defaultRecord: { "#Credit": 0 },
-          startTimeField: "#startTime",
+          type: BattleRecordArchiveEvent.READ_OR_CREATE_DROP_RECORD,
         },
         deps({ [STORAGE_KEYS.DROP]: current })
       )

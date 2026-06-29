@@ -27,9 +27,7 @@ describe("runBattleRecordArchiveAutomation", () => {
 
     const outcome = runBattleRecordArchiveAutomation(
       {
-        type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE,
-        currentKey: STORAGE_KEYS.DROP,
-        historyKey: STORAGE_KEYS.DROP_OLD,
+        type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE_DROP_RECORD,
         record: { "#Credit": 5 },
         recordEach: true,
         roundNow: 1,

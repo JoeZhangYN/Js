@@ -1,7 +1,6 @@
 // 战斗日志解析 + 掉落物追踪。
 import { gE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
-import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import {
   BattleRecordArchiveEvent,
@@ -39,10 +38,7 @@ function recordBattleDrops(deps, context) {
   const battleLog = deps.gE("#textlog>tbody>tr>td", "all");
   const drop = runBattleRecordArchiveAutomation(
     {
-      type: BattleRecordArchiveEvent.READ_OR_CREATE_CURRENT,
-      currentKey: STORAGE_KEYS.DROP,
-      defaultRecord: { "#EXP": 0, "#Credit": 0 },
-      startTimeField: "#startTime",
+      type: BattleRecordArchiveEvent.READ_OR_CREATE_DROP_RECORD,
     },
     deps
   );
@@ -97,11 +93,8 @@ function recordBattleDrops(deps, context) {
 
   runBattleRecordArchiveAutomation(
     {
-      type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE,
-      currentKey: STORAGE_KEYS.DROP,
-      historyKey: STORAGE_KEYS.DROP_OLD,
+      type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE_DROP_RECORD,
       record: drop,
-      endTimeField: "#endTime",
       recordEach: context.recordEach,
       roundNow: context.roundNow,
       roundAll: context.roundAll,

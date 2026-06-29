@@ -334,7 +334,9 @@ function checkRecordArchiveEntry() {
     !archiveText.includes("READ_RECORD_SET") ||
     !archiveText.includes("START_RECORDING") ||
     !archiveText.includes("STORE_OR_ARCHIVE") ||
-    !archiveText.includes("CLEAR_RECORD_SET")
+    !archiveText.includes("CLEAR_RECORD_SET") ||
+    !archiveText.includes("READ_OR_CREATE_DROP_RECORD") ||
+    !archiveText.includes("STORE_OR_ARCHIVE_DROP_RECORD")
   ) {
     violations.push(
       `${rel(archiveFile)} must own record reads, creation, archiving, and clearing events`
@@ -357,6 +359,23 @@ function checkRecordArchiveEntry() {
     if (/\bLOCAL_TIMESTAMP_LABEL\b|\bTimeEvent\b|\brunTimeAutomation\b/.test(text)) {
       violations.push(`${label} must not own battle record timestamp format`);
     }
+  }
+  if (
+    /STORAGE_KEYS\.(?:DROP|DROP_OLD)\b|\b(?:currentKey|historyKey)\s*:\s*STORAGE_KEYS\.(?:DROP|DROP_OLD)\b/.test(
+      dropText
+    )
+  ) {
+    violations.push(
+      `src/monitor/drop-monitor.js must use drop-specific battle-record-archive events`
+    );
+  }
+  if (
+    !dropText.includes("BattleRecordArchiveEvent.READ_OR_CREATE_DROP_RECORD") ||
+    !dropText.includes("BattleRecordArchiveEvent.STORE_OR_ARCHIVE_DROP_RECORD")
+  ) {
+    violations.push(
+      `src/monitor/drop-monitor.js must route drop records through drop-specific archive events`
+    );
   }
 }
 
