@@ -1157,6 +1157,12 @@ function checkBattleReportViewEntry() {
   if (!/export function runBattleReportViewAutomation\(/.test(text)) {
     violations.push(`${rel(viewFile)} must expose runBattleReportViewAutomation(event)`);
   }
+  if (!/const reportViewRenderHandlers\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(viewFile)} must route report view rendering through one table`);
+  }
+  if (/if\s*\(\s*event\.type\s*===\s*EVENT_RENDER_/.test(text)) {
+    violations.push(`${rel(viewFile)} must not route report view rendering through an if ladder`);
+  }
 }
 
 function checkMonsterResistPanelEntry() {

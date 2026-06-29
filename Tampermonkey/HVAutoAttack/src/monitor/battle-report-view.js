@@ -58,8 +58,11 @@ function renderUsageTableBody(report) {
     .join("")}</tbody>`;
 }
 
+const reportViewRenderHandlers = Object.freeze({
+  [EVENT_RENDER_DROP_TABLE_BODY]: (event) => renderDropTableBody(event.report),
+  [EVENT_RENDER_USAGE_TABLE_BODY]: (event) => renderUsageTableBody(event.report),
+});
+
 export function runBattleReportViewAutomation(event) {
-  if (event.type === EVENT_RENDER_DROP_TABLE_BODY) return renderDropTableBody(event.report);
-  if (event.type === EVENT_RENDER_USAGE_TABLE_BODY) return renderUsageTableBody(event.report);
-  return "";
+  return reportViewRenderHandlers[event.type]?.(event) || "";
 }
