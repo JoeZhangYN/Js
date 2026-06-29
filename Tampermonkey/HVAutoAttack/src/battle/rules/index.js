@@ -51,6 +51,17 @@ function channelFacts(snap) {
   };
 }
 
+function burstControlFacts(snap) {
+  return {
+    healthAbs: snap?.hpAbs,
+    skillReady: snap?.skillReady,
+    skillCooldowns: snap?.cdMap,
+    overcharge: snap?.oc,
+    learnedBurstByMid: snap?.learnedBurstByMid,
+    monsterFacts: snap?.view,
+  };
+}
+
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
@@ -101,7 +112,7 @@ export const BATTLE_RULES = [
   //      重逻辑在 decide，不适用时返 noop（不空耗回合）。
   {
     name: "burstControl",
-    decide: (snap, opt) => decideBurstControl(opt, snap),
+    decide: (snap, opt) => decideBurstControl({ opt, ...burstControlFacts(snap) }),
   },
   // 12. Boss-Imperil（decide 算 AoE bestIdx 目标 → click-skill-then-target，含 Spirit 前置）
   //     拖战时跳过：Imperil 只加速击杀，与「让独怪活久攒 OC/蓝」相悖（与 useDeSkill 同款 stall 守卫）。

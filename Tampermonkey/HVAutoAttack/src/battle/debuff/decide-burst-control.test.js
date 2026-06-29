@@ -13,22 +13,37 @@ const snap = (over = {}) => ({
   ...over,
 });
 
+function burstControlFacts(snap) {
+  return {
+    healthAbs: snap.hpAbs,
+    skillReady: snap.skillReady,
+    skillCooldowns: snap.cdMap,
+    overcharge: snap.oc,
+    learnedBurstByMid: snap.learnedBurstByMid,
+    monsterFacts: snap.view,
+  };
+}
+
+function decide(opt, snap) {
+  return decideBurstControl({ opt, ...burstControlFacts(snap) });
+}
+
 describe("decideBurstControl", () => {
   it("开关 OFF → noop", () => {
     const s = snap({ learnedBurstByMid: { 100: { maxHit: 900, type: "fire" } } });
-    expect(decideBurstControl({}, s)).toEqual({ kind: "noop" });
+    expect(decide({}, s)).toEqual({ kind: "noop" });
   });
 
   it("debuffSkillSwitch:false → noop", () => {
     const s = snap({ learnedBurstByMid: { 100: { maxHit: 900, type: "fire" } } });
-    expect(decideBurstControl({ burstControlSwitch: true, debuffSkillSwitch: false }, s)).toEqual({
+    expect(decide({ burstControlSwitch: true, debuffSkillSwitch: false }, s)).toEqual({
       kind: "noop",
     });
   });
 
   it("法术爆发蹦极 + Silence 就绪 → 单点 Silence(232)", () => {
     const s = snap({ learnedBurstByMid: { 100: { maxHit: 600, type: "fire" } } }); // 600 ≥ 1000*0.5
-    expect(decideBurstControl({ burstControlSwitch: true }, s)).toEqual({
+    expect(decide({ burstControlSwitch: true }, s)).toEqual({
       kind: "click-skill-then-target",
       skillId: "232",
       targetId: 1,
@@ -37,12 +52,12 @@ describe("decideBurstControl", () => {
 
   it("物理爆发 → Sleep(222)（Silence 对物理无效）", () => {
     const s = snap({ learnedBurstByMid: { 100: { maxHit: 600, type: "crushing" } } });
-    expect(decideBurstControl({ burstControlSwitch: true }, s).skillId).toBe("222");
+    expect(decide({ burstControlSwitch: true }, s).skillId).toBe("222");
   });
 
   it("不构成蹦极（单发 < 阈值）→ noop", () => {
     const s = snap({ learnedBurstByMid: { 100: { maxHit: 300, type: "fire" } } }); // 300 < 500
-    expect(decideBurstControl({ burstControlSwitch: true }, s)).toEqual({ kind: "noop" });
+    expect(decide({ burstControlSwitch: true }, s)).toEqual({ kind: "noop" });
   });
 
   it("OFC 本回合就绪清场 → noop（不过控）", () => {
@@ -51,7 +66,7 @@ describe("decideBurstControl", () => {
       cdMap: { OFC: 0 },
       oc: 250,
     });
-    expect(decideBurstControl({ burstControlSwitch: true, skill_OFC: true }, s)).toEqual({
+    expect(decide({ burstControlSwitch: true, skill_OFC: true }, s)).toEqual({
       kind: "noop",
     });
   });
@@ -61,7 +76,7 @@ describe("decideBurstControl", () => {
       view: [mon({ buffs: ["silence"] })],
       learnedBurstByMid: { 100: { maxHit: 900, type: "fire" } },
     });
-    expect(decideBurstControl({ burstControlSwitch: true }, s)).toEqual({ kind: "noop" });
+    expect(decide({ burstControlSwitch: true }, s)).toEqual({ kind: "noop" });
   });
 
   it("法术爆发但 Silence 未就绪 → 退 Sleep", () => {
@@ -69,14 +84,13 @@ describe("decideBurstControl", () => {
       skillReady: { 232: false, 222: true },
       learnedBurstByMid: { 100: { maxHit: 600, type: "fire" } },
     });
-    expect(decideBurstControl({ burstControlSwitch: true }, s).skillId).toBe("222");
+    expect(decide({ burstControlSwitch: true }, s).skillId).toBe("222");
   });
 
   it("burstControlSilenceForSpell:false → 法术爆发也用 Sleep", () => {
     const s = snap({ learnedBurstByMid: { 100: { maxHit: 600, type: "fire" } } });
     expect(
-      decideBurstControl({ burstControlSwitch: true, burstControlSilenceForSpell: false }, s)
-        .skillId
+      decide({ burstControlSwitch: true, burstControlSilenceForSpell: false }, s).skillId
     ).toBe("222");
   });
 });

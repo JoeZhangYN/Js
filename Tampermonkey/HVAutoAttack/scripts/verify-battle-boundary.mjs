@@ -1050,12 +1050,30 @@ function checkBigSkillDebuffEntry() {
 
 function checkBurstControlEntry() {
   const ownerText = fs.readFileSync(burstControlFile, "utf8");
-  for (const required of ["decideBurstControl", "burstControlSwitch", "debuffSkillSwitch"]) {
+  for (const required of [
+    "decideBurstControl",
+    "burstControlSwitch",
+    "debuffSkillSwitch",
+    "event.healthAbs",
+    "event.skillReady",
+    "event.skillCooldowns",
+    "event.overcharge",
+    "event.learnedBurstByMid",
+    "event.monsterFacts",
+  ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(burstControlFile)} must own burst-control gate ${required}`);
     }
   }
+  if (/decideBurstControl\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
+    violations.push(`${rel(burstControlFile)} must not expose opt/snap decision input`);
+  }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const burstRule =
+    rulesText.match(/name:\s*["']burstControl["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideBurstControl\(\s*opt\s*,\s*snap\s*\)/.test(burstRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass narrow facts, not snap, to burst control`);
+  }
   if (rulesText.includes("burstControlSwitch")) {
     violations.push(`${rel(battleRulesFile)} must not assemble burst-control gates directly`);
   }
