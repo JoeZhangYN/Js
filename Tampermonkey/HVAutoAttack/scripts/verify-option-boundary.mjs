@@ -8,6 +8,7 @@ const ownerTest = path.normalize("src/state/option.test.js");
 const backup = path.normalize("src/state/option-backup.js");
 const backupTest = path.normalize("src/state/option-backup.test.js");
 const appStartup = path.normalize("src/pages/app-startup.js");
+const battleMainLoop = path.normalize("src/battle/main-loop.js");
 const storage = path.normalize("src/state/storage.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const settingsRender = path.normalize("src/settings/render.js");
@@ -63,6 +64,11 @@ function checkFile(file) {
     ) {
       violations.push(`${where} whole option reads are reserved for option owners`);
     }
+    if (relative === battleMainLoop && /\bg\(\s*["']option["']/.test(line)) {
+      violations.push(
+        `${where} battle rules must read options through OptionEvent.READ_BATTLE_RULE_OPTIONS`
+      );
+    }
   });
 }
 
@@ -75,9 +81,17 @@ for (const required of [
   "STORAGE_KEYS.OPTION",
   "EXPORT_TEXT",
   "PARSE_IMPORT_TEXT",
+  "READ_BATTLE_RULE_OPTIONS",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+
+const battleMainLoopText = fs.readFileSync(path.join(root, battleMainLoop), "utf8");
+for (const required of ["runOptionAutomation", "OptionEvent.READ_BATTLE_RULE_OPTIONS"]) {
+  if (!battleMainLoopText.includes(required)) {
+    violations.push(`${battleMainLoop.replaceAll("\\", "/")} must request ${required}`);
   }
 }
 
