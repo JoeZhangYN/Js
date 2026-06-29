@@ -24,6 +24,8 @@ const utilityEngineFile = path.join(root, "src/battle/utility-engine.js");
 const activateSpiritFile = path.join(root, "src/battle/buff/activate-spirit.js");
 const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
 const decideChannelFile = path.join(root, "src/battle/buff/decide-channel.js");
+const decideItemFile = path.join(root, "src/battle/item/decide-item.js");
+const decideScrollFile = path.join(root, "src/battle/item/decide-scroll.js");
 const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
 const potionEconomyFile = path.join(root, "src/battle/potion-economy.js");
 const stallModeFile = path.join(root, "src/battle/battle-stall-mode.js");
@@ -804,6 +806,21 @@ function checkBigSkillDebuffEntry() {
   }
 }
 
+function checkItemScrollEntry() {
+  const itemText = fs.readFileSync(decideScrollFile, "utf8");
+  for (const required of ["decideScroll", "scrollSwitch", "scrollCondition", "scrollRoundType"]) {
+    if (!itemText.includes(required)) {
+      violations.push(`${rel(decideScrollFile)} must own scroll gate ${required}`);
+    }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  for (const legacy of ["scrollSwitch", "scrollCondition", "scrollRoundType"]) {
+    if (rulesText.includes(legacy)) {
+      violations.push(`${rel(battleRulesFile)} must not assemble scroll rule gates directly`);
+    }
+  }
+}
+
 function checkBattleStallMode() {
   const ownerText = fs.readFileSync(stallModeFile, "utf8");
   for (const required of [
@@ -876,6 +893,7 @@ checkBattleRulesRuntimeContext();
 checkBattleDebuffCoverage();
 checkBossImperilEntry();
 checkBigSkillDebuffEntry();
+checkItemScrollEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();
 checkBattleOptionVocabulary();

@@ -15,6 +15,7 @@ function snap(over = {}) {
     lastSpiritToggleGlobalTurn: undefined,
     roundAll: undefined,
     roundNow: undefined,
+    roundType: "arena",
     gemName: null,
     view: [],
     playerBuffs: [],
@@ -157,32 +158,78 @@ describe("decideStallTopup", () => {
 describe("decideScroll", () => {
   it("启用 + buff 未上 → 收集 scroll item id", () => {
     // Pr = Scroll of Protection（id 13111, img1 "protection"）
-    const p = scrollPlan({ scroll: { Pr: true } }, snap({ playerBuffs: [] }));
+    const p = scrollPlan(
+      { scrollSwitch: true, scroll: { Pr: true }, scrollRoundType: { arena: true } },
+      snap({ playerBuffs: [] })
+    );
     expect(p.candidates).toContain(13111);
   });
 
   it("对应 buff 已上 → 不收集", () => {
-    const p = scrollPlan({ scroll: { Pr: true } }, snap({ playerBuffs: ["protection"] }));
+    const p = scrollPlan(
+      { scrollSwitch: true, scroll: { Pr: true }, scrollRoundType: { arena: true } },
+      snap({ playerBuffs: ["protection"] })
+    );
     expect(p.candidates).not.toContain(13111);
   });
 
   it("scrollFirst：buff 名需带 _scroll 后缀才算已上", () => {
     // scrollFirst 开 → 检查 "protection_scroll"；只有 "protection" → 视为未上 → 仍收集
     const p = scrollPlan(
-      { scroll: { Pr: true }, scrollFirst: true },
+      {
+        scrollSwitch: true,
+        scroll: { Pr: true },
+        scrollFirst: true,
+        scrollRoundType: { arena: true },
+      },
       snap({ playerBuffs: ["protection"] })
     );
     expect(p.candidates).toContain(13111);
   });
 
   it("scroll 开关关 → 不收集", () => {
-    const p = scrollPlan({ scroll: { Pr: false } }, snap());
+    const p = scrollPlan(
+      { scrollSwitch: true, scroll: { Pr: false }, scrollRoundType: { arena: true } },
+      snap()
+    );
     expect(p.candidates).not.toContain(13111);
   });
 
   it("多 img 卷轴（Go mult=3）：任一 buff 已上 → 不收集", () => {
     // Go img2 "shadowveil" 已上 → 整张不收集
-    const p = scrollPlan({ scroll: { Go: true } }, snap({ playerBuffs: ["shadowveil"] }));
+    const p = scrollPlan(
+      { scrollSwitch: true, scroll: { Go: true }, scrollRoundType: { arena: true } },
+      snap({ playerBuffs: ["shadowveil"] })
+    );
     expect(p.candidates).not.toContain(13299);
+  });
+
+  it("总开关关 → 不收集", () => {
+    const p = scrollPlan(
+      { scrollSwitch: false, scroll: { Pr: true }, scrollRoundType: { arena: true } },
+      snap()
+    );
+    expect(p.candidates).toEqual([]);
+  });
+
+  it("总条件不满足 → 不收集", () => {
+    const p = scrollPlan(
+      {
+        scrollSwitch: true,
+        scroll: { Pr: true },
+        scrollCondition: [["hp,2,50"]],
+        scrollRoundType: { arena: true },
+      },
+      snap({ hp: 90 })
+    );
+    expect(p.candidates).toEqual([]);
+  });
+
+  it("当前轮次未启用 → 不收集", () => {
+    const p = scrollPlan(
+      { scrollSwitch: true, scroll: { Pr: true }, scrollRoundType: { grindfest: true } },
+      snap({ roundType: "arena" })
+    );
+    expect(p.candidates).toEqual([]);
   });
 });

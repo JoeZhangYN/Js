@@ -74,12 +74,6 @@ export const BATTLE_RULES = [
   // 8. 卷轴（decide 出候选 item id，execute 探活+点第一个可用）
   {
     name: "useScroll",
-    when: (snap, opt) =>
-      opt.scrollSwitch &&
-      opt.scroll &&
-      checkCondition(opt.scrollCondition, snap) &&
-      opt.scrollRoundType &&
-      opt.scrollRoundType[readRuleRuntimeContext(snap).roundType],
     decide: (snap, opt) => decideScroll(opt, snap),
   },
   // 9. 元素灌注（仅法术模式）
