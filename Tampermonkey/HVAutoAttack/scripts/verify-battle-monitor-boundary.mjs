@@ -19,6 +19,7 @@ const internalFiles = new Set(
     "src/monitor/drop-monitor.js",
     "src/monitor/record-usage-action-stats.js",
     "src/monitor/record-usage-completion.js",
+    "src/monitor/record-usage-default-stats.js",
     "src/monitor/record-usage.js",
     "src/state/storage.js",
   ].map((p) => path.normalize(p))
@@ -480,9 +481,11 @@ function checkRecordArchiveEntry() {
     root,
     "src/monitor/battle-record-archive-usage-records.js"
   );
+  const usageDefaultStatsFile = path.join(root, "src/monitor/record-usage-default-stats.js");
   const archiveText = fs.readFileSync(archiveFile, "utf8");
   const archiveDropRecordsText = fs.readFileSync(archiveDropRecordsFile, "utf8");
   const archiveUsageRecordsText = fs.readFileSync(archiveUsageRecordsFile, "utf8");
+  const usageDefaultStatsText = fs.readFileSync(usageDefaultStatsFile, "utf8");
   const dropText = fs.readFileSync(path.join(root, "src/monitor/drop-monitor.js"), "utf8");
   const usageText = fs.readFileSync(path.join(root, "src/monitor/record-usage.js"), "utf8");
   const usageCompletionText = fs.readFileSync(
@@ -542,8 +545,27 @@ function checkRecordArchiveEntry() {
   ) {
     violations.push(`${rel(archiveFile)} must own typed record specs through family helpers`);
   }
-  if (!archiveUsageRecordsText.includes("createDefaultUsageStats")) {
-    violations.push(`${rel(archiveUsageRecordsFile)} must own usage stats default shape`);
+  if (!/export function createDefaultUsageStats\(/.test(usageDefaultStatsText)) {
+    violations.push(`${rel(usageDefaultStatsFile)} must own usage stats default shape`);
+  }
+  if (!archiveUsageRecordsText.includes("./record-usage-default-stats.js")) {
+    violations.push(`${rel(archiveUsageRecordsFile)} must use usage stats default helper`);
+  }
+  if (/function createDefaultUsageStats\(/.test(archiveUsageRecordsText)) {
+    violations.push(`${rel(archiveUsageRecordsFile)} must not duplicate usage stats default shape`);
+  }
+  for (const required of [
+    "_turn",
+    "_round",
+    "_battle",
+    "_monster",
+    "_boss",
+    "hurt",
+    "proficiency",
+  ]) {
+    if (!usageDefaultStatsText.includes(required)) {
+      violations.push(`${rel(usageDefaultStatsFile)} must include default usage stat ${required}`);
+    }
   }
   for (const required of ["readDropReportRecordSet", "clearDropReportRecordSet"]) {
     if (!archiveDropRecordsText.includes(required)) {
@@ -630,6 +652,21 @@ function checkRecordArchiveEntry() {
   }
   if (fs.existsSync(path.join(root, "src/monitor/battle-record-archive-records.js"))) {
     violations.push("src/monitor/battle-record-archive-records.js mixed helper must stay deleted");
+  }
+  const usageDefaultStatsImports = [];
+  walkImportUsers(srcDir, "record-usage-default-stats.js", usageDefaultStatsImports);
+  const allowedDefaultStatsImports = new Set(
+    [
+      "src/monitor/battle-record-archive-usage-records.js",
+      "src/monitor/record-usage-action-stats.test.js",
+    ].map((p) => path.normalize(p))
+  );
+  for (const user of usageDefaultStatsImports) {
+    if (!allowedDefaultStatsImports.has(user)) {
+      violations.push(
+        `${user.replaceAll("\\", "/")} must not import record-usage-default-stats directly`
+      );
+    }
   }
 }
 
