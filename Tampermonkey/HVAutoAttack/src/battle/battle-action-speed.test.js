@@ -21,9 +21,9 @@ describe("runBattleActionSpeedAutomation", () => {
 
     expect(
       runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.BATTLE_STARTED }, deps)
-    ).toEqual({ runSpeed: 1 });
+    ).toEqual({ runSpeed: "1.00" });
 
-    expect(state).toMatchObject({ timeNow: 1234, runSpeed: 1 });
+    expect(state).toMatchObject({ timeNow: 1234, runSpeed: "1.00" });
   });
 
   it("records action speed from the previous action timestamp", () => {
@@ -45,6 +45,18 @@ describe("runBattleActionSpeedAutomation", () => {
     ).toBe("3.25");
 
     expect(deps.read).toHaveBeenCalledWith("runSpeed");
+  });
+
+  it("normalizes invalid action speed runtime values through the entry", () => {
+    const { deps, state } = makeDeps("bad", "also bad");
+    state.runSpeed = "fast";
+
+    expect(
+      runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.ACTION_ENDED }, deps)
+    ).toEqual({ timeNow: 0, runSpeed: "0.00" });
+    expect(
+      runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.READ_CURRENT }, deps)
+    ).toBe("0.00");
   });
 
   it("rejects unknown events", () => {

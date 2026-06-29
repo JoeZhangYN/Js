@@ -387,6 +387,14 @@ function checkActionSpeedEntry() {
   ) {
     violations.push(`${rel(actionSpeedFile)} may export only its event entry`);
   }
+  for (const required of ["DEFAULT_RUN_SPEED", "normalizeTimestamp", "formatRunSpeed"]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(actionSpeedFile)} must internalize action speed invariants`);
+    }
+  }
+  if ((text.match(/formatRunSpeed\(/g) || []).length < 4) {
+    violations.push(`${rel(actionSpeedFile)} must normalize action speed writes and reads`);
+  }
   for (const file of [
     battleFile,
     reloaderFile,
