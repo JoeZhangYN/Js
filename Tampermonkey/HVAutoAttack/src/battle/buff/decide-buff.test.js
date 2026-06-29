@@ -68,10 +68,10 @@ describe("decideBuff", () => {
     ).toEqual({ kind: "toggle-spirit" });
   });
 
-  it("enabled draught without active item buff -> click item selector", () => {
+  it("enabled draught without active item buff -> item command", () => {
     expect(decideBuff(enabled({ buffSkill: { HD: true } }), snap())).toEqual({
-      kind: "click",
-      selector: '.bti3>div[onmouseover*="11191"]',
+      kind: "item-command",
+      itemId: 11191,
     });
   });
 });

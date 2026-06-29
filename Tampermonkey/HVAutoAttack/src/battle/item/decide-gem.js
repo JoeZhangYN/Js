@@ -4,8 +4,8 @@
 /**
  * @param {object} opt
  * @param {import("../../core/types.js").BattleSnapshot} snap
- * @param {string|null} gemName 当前 #ikey_p 的 textContent，无则 null
- * @returns {import("../../core/types.js").ActionResult}
+ * @param {string|null} gemName 当前 gem button textContent，无则 null
+ * @returns {{kind:"gem"}|{kind:"noop"}}
  */
 export function decideGem(opt, snap, gemName) {
   if (!gemName) return { kind: "noop" };
@@ -15,5 +15,5 @@ export function decideGem(opt, snap, gemName) {
     (gemName === "Spirit Gem" && snap.sp <= opt.sp1) ||
     gemName === "Mystic Gem";
   if (!trigger) return { kind: "noop" };
-  return { kind: "click", selector: "#ikey_p" };
+  return { kind: "gem" };
 }

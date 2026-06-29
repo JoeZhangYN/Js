@@ -1,10 +1,9 @@
 // SHELL: 把 decide-item 的 ItemPlan 翻译为 DOM 副作用 + 状态记账。
 // 只写不判断（判断全在 decide-item.js）；isOn/gE 探活属写路径安全读（与原 item.js 一致）。
 // 记账：autoTune 用药事件 / Spirit toggle cooldown / Focus command / recordPreDrink。
-import { gE, isOn } from "../../dom/query.js";
-import { itemSelector } from "../../dom/selectors.js";
 import { AutoTuneEvent, runAutoTuneAutomation } from "../../state/auto-tune.js";
 import { BattleFocusCommandEvent, runBattleFocusCommand } from "../battle-focus-command.js";
+import { BattleItemCommandEvent, runBattleItemCommand } from "../battle-item-command.js";
 import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
@@ -29,27 +28,32 @@ export function executeItem(plan, snap) {
       return false;
 
     case "gem": {
-      // 原 useGem：decideGem 命中后 click #ikey_p + autoTune 计数
-      gE("#ikey_p")?.click();
+      // 原 useGem：decideGem 命中后 click gem + autoTune 计数
+      runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM });
       recordAutoTunePotionUse();
       return true;
     }
 
     case "potion": {
-      // 原 deadSoon：按 candidates 顺序 isOn 探活，第一个可用的喝（noWaste 时先 recordPreDrink）
+      // 原 deadSoon：按 candidates 顺序探活，第一个可用的喝（noWaste 时先 recordPreDrink）
       for (const id of plan.candidates) {
-        const el = isOn(id);
-        if (!el) continue;
+        const event = {
+          type: BattleItemCommandEvent.CLICK_ITEM,
+          itemId: id,
+        };
         if (plan.noWaste) {
-          runRecoveryLearningAutomation({
-            type: RecoveryLearningEvent.RECORD_PRE_DRINK,
-            potionId: id,
-            snap,
-          });
+          event.beforeClick = () => {
+            runRecoveryLearningAutomation({
+              type: RecoveryLearningEvent.RECORD_PRE_DRINK,
+              potionId: id,
+              snap,
+            });
+          };
         }
-        el.click();
-        recordAutoTunePotionUse();
-        return true;
+        if (runBattleItemCommand(event)) {
+          recordAutoTunePotionUse();
+          return true;
+        }
       }
       return false;
     }
@@ -72,27 +76,33 @@ export function executeItem(plan, snap) {
           continue;
         }
         if (attempt.kind === "draught") {
-          const el = gE(itemSelector(attempt.id));
-          if (!el) continue;
-          runRecoveryLearningAutomation({
-            type: RecoveryLearningEvent.RECORD_PRE_DRINK,
-            potionId: attempt.id,
-            snap,
-          });
-          el.click();
-          return true;
+          if (
+            runBattleItemCommand({
+              type: BattleItemCommandEvent.CLICK_ITEM,
+              itemId: attempt.id,
+              beforeClick: () => {
+                runRecoveryLearningAutomation({
+                  type: RecoveryLearningEvent.RECORD_PRE_DRINK,
+                  potionId: attempt.id,
+                  snap,
+                });
+              },
+            })
+          ) {
+            return true;
+          }
+          continue;
         }
       }
       return false;
     }
 
     case "scroll": {
-      // 原 useScroll：按 candidates 顺序 gE 探活，第一个存在的 click
+      // 原 useScroll：按 candidates 顺序探活，第一个存在的 click
       for (const id of plan.candidates) {
-        const el = gE(itemSelector(id));
-        if (!el) continue;
-        el.click();
-        return true;
+        if (runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_ITEM, itemId: id })) {
+          return true;
+        }
       }
       return false;
     }

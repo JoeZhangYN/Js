@@ -31,10 +31,10 @@ describe("decideInfusion", () => {
     ).toEqual({ kind: "noop" });
   });
 
-  it("enabled fire infusion -> click fire infusion item", () => {
+  it("enabled fire infusion -> item command", () => {
     expect(decideInfusion({ infusionSwitch: true }, snap({ attackStatus: 1 }))).toEqual({
-      kind: "click",
-      selector: '.bti3>div[onmouseover*="12101"]',
+      kind: "item-command",
+      itemId: 12101,
     });
   });
 });

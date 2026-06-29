@@ -7,6 +7,7 @@ import { attemptClick, attemptClickWithTarget } from "../dom/attempt-click.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { _alert } from "../core/lang.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
+import { BattleItemCommandEvent, runBattleItemCommand } from "./battle-item-command.js";
 import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
@@ -31,6 +32,12 @@ export function dispatch(result, snap) {
     case "click":
       // attemptClick 内含 isOn 探活 + click，失败（按钮禁用/缺失）返 false → 后续 rule 接管
       return attemptClick(result.selector);
+
+    case "item-command":
+      return !!runBattleItemCommand({
+        type: BattleItemCommandEvent.CLICK_ITEM,
+        itemId: result.itemId,
+      });
 
     case "toggle-spirit":
       return !!runBattleSpiritToggleAutomation({

@@ -1,5 +1,4 @@
 // PURE: 元素灌注决策。attackStatus 决定灌注种类，已存在效果则跳过。
-import { itemSelector } from "../../dom/selectors.js";
 import { checkCondition } from "../../settings/condition-eval.js";
 
 const INFUSION_LIB = [
@@ -27,7 +26,7 @@ export function decideInfusion(opt, snap) {
   // 已存在该灌注 buff → 不重复施
   if (snap.playerBuffs.includes(lib.img)) return { kind: "noop" };
   return {
-    kind: "click",
-    selector: itemSelector(lib.id),
+    kind: "item-command",
+    itemId: lib.id,
   };
 }

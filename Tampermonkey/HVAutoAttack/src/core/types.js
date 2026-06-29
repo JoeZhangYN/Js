@@ -13,6 +13,7 @@
  *
  * @typedef {{ kind: "noop" }
  *         | { kind: "click", selector: string }
+ *         | { kind: "item-command", itemId: string|number }
  *         | { kind: "toggle-spirit" }
  *         | { kind: "click-skill-then-target", skillSel: string, targetSel: string }
  *         | { kind: "click-then-reload", selector: string, delaySec: number }

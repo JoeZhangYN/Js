@@ -42,6 +42,21 @@ describe("dispatch", () => {
     expect(btn.click).not.toHaveBeenCalled();
   });
 
+  it("item-command → clicks the item by id through the item command entry", () => {
+    const item = document.createElement("div");
+    item.setAttribute("onmouseover", "item 12101");
+    item.className = "";
+    item.click = vi.fn();
+    const slot = document.createElement("div");
+    slot.className = "bti3";
+    slot.appendChild(item);
+    document.body.appendChild(slot);
+
+    expect(dispatch({ kind: "item-command", itemId: 12101 })).toBe(true);
+
+    expect(item.click).toHaveBeenCalledTimes(1);
+  });
+
   it("toggle-spirit → 走 Spirit toggle command，click 并记录", () => {
     const spirit = mkBtn("ckey_spirit");
     expect(dispatch({ kind: "toggle-spirit" })).toBe(true);

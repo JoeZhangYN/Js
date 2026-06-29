@@ -38,7 +38,7 @@ export function decideGemUse(opt, snap) {
   const result = decideGem(optEffective, snap, snap.gemName);
   return {
     kind: "item-plan",
-    plan: result.kind === "click" ? { type: "gem" } : { type: "noop" },
+    plan: result.kind === "gem" ? { type: "gem" } : { type: "noop" },
   };
 }
 
