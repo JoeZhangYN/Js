@@ -6,7 +6,7 @@ import { selectSpellTier } from "./decide-tier.js";
 import { scorePhysicalSkillCandidates } from "./decide-skill.js";
 import { pickByUtility } from "../utility-engine.js";
 import { OFFENSIVE_SPELL_LIB } from "../../data/spell-lib.js";
-import { isStallMode } from "../potion-economy.js";
+import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { aliveByOrder } from "../monster-view.js";
 import { firstByFinWeight, firstByOrder } from "../target-strategy.js";
 import { pickBestElement } from "./pick-element.js";
@@ -35,7 +35,11 @@ function decidePlan(opt, snap) {
   }
 
   // 2. 灵动架势切换：stall 跳过 + both-active 冲突跳过 + hysteresis 防抖
-  const stallNow = isStallMode(snap, opt, snap.roundNow, snap.roundAll);
+  const stallNow = runBattleStallModeAutomation({
+    type: BattleStallModeEvent.READ_ACTIVE,
+    snap,
+    opt,
+  });
   const lastToggle = snap.lastSpiritToggleGlobalTurn ?? -999;
   const curGlobalTurn = snap.globalTurn || 0;
   const cooldown = opt.spiritToggleMinInterval ?? 3;

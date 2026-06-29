@@ -1,11 +1,7 @@
-// BATTLE_RULES：主循环 16 个决策步骤的声明式注册表（Phase 5b 编排倒置 + 深度 B 全 PURE）。
-// main-loop 只依赖 此数组 + runRules + dispatch 三个抽象，不再 import 具体 execute 实现——
-// 本文件即「组合根」(composition root)：把 PURE decide 实现 wire 进 BattleRule 抽象。
-//
 // 每条 rule：{ name, when?(snap,opt), decide(snap,opt)→ActionResult }。顺序 = 原 runSteps 顺序。
 // 深度 B 后**全部 16 条 decide 均为 PURE**（只读 snap，零 DOM 判断）；副作用全在
 import { checkCondition } from "../../settings/condition-eval.js";
-import { isStallMode } from "../potion-economy.js";
+import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { decideInfusion } from "../buff/decide-infusion.js";
 import { decideBuff } from "../buff/decide-buff.js";
 import { decideChannel } from "../buff/decide-channel.js";
@@ -24,7 +20,13 @@ import { decideBurstControl } from "../debuff/decide-burst-control.js";
 
 const readRuleRuntimeContext = (snap) => snap;
 const isStallingForRules = (snap, opt, runtime = readRuleRuntimeContext(snap)) =>
-  isStallMode(snap, opt, runtime.roundNow, runtime.roundAll);
+  runBattleStallModeAutomation({
+    type: BattleStallModeEvent.READ_ACTIVE,
+    snap,
+    opt,
+    roundNow: runtime.roundNow,
+    roundAll: runtime.roundAll,
+  });
 const hasMissingDebuff = (snap, runtime, debuffName) =>
   snap.view.filter((m) => m.buffs.some((b) => b.includes(debuffName))).length <
   runtime.monsterAlive;
@@ -32,10 +34,7 @@ const hasMissingDebuff = (snap, runtime, debuffName) =>
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [
   // 1. 关键 buff 即将消失 + MP 不足 → 暂停告警（decide 自 gate opt.pauseOnCriticalBuffExpire）
-  {
-    name: "criticalBuffGuard",
-    decide: (snap, opt) => decideCriticalBuff(opt, snap),
-  },
+  { name: "criticalBuffGuard", decide: (snap, opt) => decideCriticalBuff(opt, snap) },
   // 2. 逃跑
   {
     name: "flee",
@@ -49,10 +48,7 @@ export const BATTLE_RULES = [
     decide: () => ({ kind: "pause" }),
   },
   // 4. 宝石（decideGemUse 自 gate snap.gemName；dyn-threshold 在 decide，autoTune 计数在 execute）
-  {
-    name: "useGem",
-    decide: (snap, opt) => decideGemUse(opt, snap),
-  },
+  { name: "useGem", decide: (snap, opt) => decideGemUse(opt, snap) },
   // 5. 紧急回血回魔（decide 出候选 id 列表，execute 探活+喝第一个可用）
   {
     name: "deadSoon",

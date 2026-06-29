@@ -107,10 +107,10 @@ describe("when 门控", () => {
   });
 });
 
-// Feature 1 回归锁：拖战(isStallMode)时 Imperil 两路(bossImperil/castImperilAll)被守卫跳过，
+// Feature 1 回归锁：拖战入口判定为 active 时 Imperil 两路(bossImperil/castImperilAll)被守卫跳过，
 // Weaken 不被跳（减伤助生存）。骑 master stallMode 开关，无独立子开关。
 describe("Feature 1: 拖战跳 Imperil", () => {
-  // isStallMode 触发：stallMode!==false + roundNow<roundAll + 恰 1 活怪 + hpPercent>=0.3 + oc<250
+  // stall active：stallMode!==false + roundNow<roundAll + 恰 1 活怪 + hpPercent>=0.3 + oc<250
   const stallSnap = (over = {}) => ({
     skillReady: { 213: true },
     oc: 100,

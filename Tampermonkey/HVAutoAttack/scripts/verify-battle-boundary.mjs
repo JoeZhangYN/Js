@@ -25,6 +25,7 @@ const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
 const decideChannelFile = path.join(root, "src/battle/buff/decide-channel.js");
 const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
 const potionEconomyFile = path.join(root, "src/battle/potion-economy.js");
+const stallModeFile = path.join(root, "src/battle/battle-stall-mode.js");
 const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
@@ -722,6 +723,39 @@ function checkBattleRulesRuntimeContext() {
   }
 }
 
+function checkBattleStallMode() {
+  const ownerText = fs.readFileSync(stallModeFile, "utf8");
+  for (const required of [
+    "BattleStallModeEvent",
+    "runBattleStallModeAutomation",
+    "READ_ACTIVE",
+    "READ_TOPUP_CANDIDATES",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(stallModeFile)} must own ${required}`);
+    }
+  }
+  const economyText = fs.readFileSync(potionEconomyFile, "utf8");
+  for (const legacy of ["isStallMode", "stallTopupCandidates"]) {
+    if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(economyText)) {
+      violations.push(`${rel(potionEconomyFile)} legacy ${legacy} belongs in battle stall entry`);
+    }
+  }
+  for (const file of [
+    battleRulesFile,
+    path.join(root, "src/battle/attack/decide-attack.js"),
+    path.join(root, "src/battle/item/decide-item.js"),
+  ]) {
+    const text = fs.readFileSync(file, "utf8");
+    if (!text.includes("runBattleStallModeAutomation")) {
+      violations.push(`${rel(file)} must read stall decisions through battle stall entry`);
+    }
+    if (/\b(?:isStallMode|stallTopupCandidates)\b/.test(text)) {
+      violations.push(`${rel(file)} must not call legacy stall helper paths`);
+    }
+  }
+}
+
 function checkBattleTestFixtures() {
   const text = fs.readFileSync(dispatchTestFile, "utf8");
   if (/\bg\(\s*["']option["']/.test(text)) {
@@ -758,6 +792,7 @@ checkActivateSpirit();
 checkExecuteItem();
 checkSnapshot();
 checkBattleRulesRuntimeContext();
+checkBattleStallMode();
 checkBattleTestFixtures();
 checkBattleOptionVocabulary();
 

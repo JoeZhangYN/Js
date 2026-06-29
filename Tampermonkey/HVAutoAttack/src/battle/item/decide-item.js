@@ -1,12 +1,12 @@
 // PURE: item 4 step 决策（gem / potion / stall topup / scroll）。
 // **不读 DOM**：只读 opt / snap。
 // 原 item.js 内联的 gE/isOn 探活下沉到 execute-item.js（写路径），判断逻辑全部上提到此处。
-// 复用现有纯 helper：decideGem / dynamicHpThreshold / isPotionWasteful / isStallMode /
-// stallTopupCandidates / getLearnedRecovery / checkCondition（均不读 DOM 或仅读持久化态）。
+// 复用现有纯 helper：decideGem / dynamicHpThreshold / isPotionWasteful / checkCondition。
 import { checkCondition } from "../../settings/condition-eval.js";
 import { decideGem } from "./decide-gem.js";
 import { dynamicHpThreshold } from "../dynamic-threshold.js";
-import { isPotionWasteful, isStallMode, stallTopupCandidates } from "../potion-economy.js";
+import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
+import { isPotionWasteful } from "../potion-economy.js";
 import {
   RecoveryLearningEvent,
   runRecoveryLearningAutomation,
@@ -78,7 +78,13 @@ export function decidePotion(opt, snap) {
  */
 export function decideStallTopup(opt, snap) {
   if (opt.stallMode === false) return { kind: "item-plan", plan: { type: "noop" } };
-  if (!isStallMode(snap, opt, snap.roundNow, snap.roundAll)) {
+  if (
+    !runBattleStallModeAutomation({
+      type: BattleStallModeEvent.READ_ACTIVE,
+      snap,
+      opt,
+    })
+  ) {
     return { kind: "item-plan", plan: { type: "noop" } };
   }
 
@@ -107,7 +113,11 @@ export function decideStallTopup(opt, snap) {
   }
 
   // step 2: MP/SP Draught 兜底
-  for (const potId of stallTopupCandidates(snap, opt)) {
+  for (const potId of runBattleStallModeAutomation({
+    type: BattleStallModeEvent.READ_TOPUP_CANDIDATES,
+    snap,
+    opt,
+  })) {
     attempts.push({ kind: "draught", id: potId });
   }
 
