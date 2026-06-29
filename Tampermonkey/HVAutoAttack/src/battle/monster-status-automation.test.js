@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 
 const td = (text) => ({ textContent: text });
@@ -9,6 +10,7 @@ const td = (text) => ({ textContent: text });
 beforeEach(() => {
   localStorage.clear();
   g("monsterStatus", null);
+  runOptionAutomation({ type: OptionEvent.CLEAR });
 });
 
 describe("monster status automation", () => {
@@ -100,5 +102,32 @@ describe("monster status automation", () => {
     g("monsterStatus", status);
 
     expect(runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_STATUS })).toBe(status);
+  });
+
+  it("updates target weights through option entry configuration", () => {
+    document.body.innerHTML = [
+      '<div class="btm1"><div class="btm3">Alpha</div></div>',
+      '<div class="btm1"><div class="btm3">Beta</div></div>',
+      '<div class="btm4"><div class="btm5"><img style="width:60px"></div></div>',
+      '<div class="btm4"><div class="btm5"><img style="width:120px"></div></div>',
+      '<div class="btm6"><img src="/y/sleep.png"></div>',
+      '<div class="btm6"></div>',
+    ].join("");
+    const status = [
+      { order: 0, monsterId: 101, hp: 1000 },
+      { order: 1, monsterId: 202, hp: 1000 },
+    ];
+    g("monsterStatus", status);
+    runOptionAutomation({
+      type: OptionEvent.WRITE,
+      option: { version: "10.0", ruleReverse: false, weight: { Sle: 5 } },
+    });
+
+    runMonsterStatusAutomation({ type: MonsterStatusEvent.UPDATE_HP });
+
+    expect(g("monsterStatus")).toEqual([
+      expect.objectContaining({ monsterId: 101, hpNow: 501, finWeight: 15 }),
+      expect.objectContaining({ monsterId: 202, hpNow: 1001 }),
+    ]);
   });
 });

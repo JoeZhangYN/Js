@@ -1,6 +1,7 @@
 // Monster HP runtime update implementation. Called only by monster-status-automation.
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
+import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 import { parseBattleLog, accumulateDamageByMonster, normalizeMonsterName } from "./log-parser.js";
 import { MonsterDbStoreEvent, runMonsterDbStoreAutomation } from "../state/monster-db-store.js";
@@ -29,6 +30,21 @@ function inferAndStoreMaxHP(monsterId, level, inferredMaxHP) {
       });
     })
     .catch(() => {});
+}
+
+function readTargetWeightOptions() {
+  return {
+    ruleReverse: runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "ruleReverse",
+      fallback: false,
+    }),
+    weight: runOptionAutomation({
+      type: OptionEvent.READ_FIELD,
+      key: "weight",
+      fallback: {},
+    }),
+  };
 }
 
 export function updateMonsterHpRuntime() {
@@ -70,7 +86,8 @@ export function updateMonsterHpRuntime() {
 
   const hpLowest = Math.min(...hpArray);
   const hpMost = Math.max(...hpArray);
-  const isReverse = g("option").ruleReverse;
+  const targetWeightOptions = readTargetWeightOptions();
+  const isReverse = targetWeightOptions.ruleReverse;
   const weightFactor = isReverse ? hpMost * 10 : 10 / hpLowest;
 
   monsterStatus.forEach((monster) => {
@@ -86,8 +103,8 @@ export function updateMonsterHpRuntime() {
     DEBUFF_SKILL_LIB.forEach((skill, key) => {
       if (gE(`img[src*="${skill.img}"]`, buffElement)) {
         monsterStatus[i].finWeight += isReverse
-          ? -g("option").weight[key]
-          : g("option").weight[key];
+          ? -targetWeightOptions.weight[key]
+          : targetWeightOptions.weight[key];
       }
     });
   });

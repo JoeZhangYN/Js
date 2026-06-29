@@ -60,6 +60,9 @@ function checkFile(file) {
         `${where} monsterStatus persistence belongs in runMonsterStatusAutomation(event)`
       );
     }
+    if (relative === hpImpl && /\bg\(\s*["']option["']/.test(line)) {
+      violations.push(`${where} monster HP target weights must read options through option entry`);
+    }
   });
 }
 
@@ -86,8 +89,20 @@ function checkEntry() {
   }
 }
 
+function checkHpImpl() {
+  const text = fs.readFileSync(path.join(root, hpImpl), "utf8");
+  for (const required of ["OptionEvent.READ_FIELD", "runOptionAutomation"]) {
+    if (!text.includes(required)) {
+      violations.push(
+        `${hpImpl.replaceAll("\\", "/")} must read target weight options through ${required}`
+      );
+    }
+  }
+}
+
 walk(srcDir);
 checkEntry();
+checkHpImpl();
 
 if (violations.length) {
   console.error("[verify-monster-status-boundary] FAIL");
