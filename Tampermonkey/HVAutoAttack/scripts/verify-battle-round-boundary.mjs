@@ -75,6 +75,16 @@ for (const required of ["DEFAULT_ROUND_COUNT", "normalizeRoundCount", "roundRunt
     violations.push(`${owner.replaceAll("\\", "/")} must internalize round count invariants`);
   }
 }
+if (!ownerText.includes("battleRoundEventHandlers")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must dispatch events through battleRoundEventHandlers`
+  );
+}
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not branch directly on battle round event types`
+  );
+}
 if ((ownerText.match(/roundRuntime\(/g) || []).length < 4) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize round count writes and reads`);
 }

@@ -144,20 +144,22 @@ function readDebugFields() {
   };
 }
 
+const battleRoundEventHandlers = Object.freeze({
+  [EVENT_READ_TYPE]: () => readType(),
+  [EVENT_CLASSIFY_TYPE]: (event) => classifyType(event.initializingText),
+  [EVENT_RECORD_START_CONTEXT]: (event) => recordStartContext(event.initializingText),
+  [EVENT_RECORD_TYPE]: (event) => recordType(event.roundType),
+  [EVENT_RECORD_COUNT]: (event) => recordCount(event.roundNow, event.roundAll),
+  [EVENT_RECORD_COUNT_FROM_INITIALIZATION]: (event) =>
+    recordCountFromInitialization(event.initializingText, event.roundType),
+  [EVENT_RECORD_START_COUNT]: (event) => recordStartCount(event),
+  [EVENT_RECORD_SINGLE_ROUND]: () => recordCount(1, 1),
+  [EVENT_SYNC_RUNTIME]: () => syncRuntime(),
+  [EVENT_READ_RUNTIME]: () => readRuntime(),
+  [EVENT_RECORD_DEBUG_FIELDS]: (event) => recordDebugFields(event.fields),
+  [EVENT_READ_DEBUG_FIELDS]: () => readDebugFields(),
+});
+
 export function runBattleRoundAutomation(event = { type: EVENT_SYNC_RUNTIME }) {
-  if (event.type === EVENT_READ_TYPE) return readType();
-  if (event.type === EVENT_CLASSIFY_TYPE) return classifyType(event.initializingText);
-  if (event.type === EVENT_RECORD_START_CONTEXT) return recordStartContext(event.initializingText);
-  if (event.type === EVENT_RECORD_TYPE) return recordType(event.roundType);
-  if (event.type === EVENT_RECORD_COUNT) return recordCount(event.roundNow, event.roundAll);
-  if (event.type === EVENT_RECORD_COUNT_FROM_INITIALIZATION) {
-    return recordCountFromInitialization(event.initializingText, event.roundType);
-  }
-  if (event.type === EVENT_RECORD_START_COUNT) return recordStartCount(event);
-  if (event.type === EVENT_RECORD_SINGLE_ROUND) return recordCount(1, 1);
-  if (event.type === EVENT_SYNC_RUNTIME) return syncRuntime();
-  if (event.type === EVENT_READ_RUNTIME) return readRuntime();
-  if (event.type === EVENT_RECORD_DEBUG_FIELDS) return recordDebugFields(event.fields);
-  if (event.type === EVENT_READ_DEBUG_FIELDS) return readDebugFields();
-  return null;
+  return battleRoundEventHandlers[event.type]?.(event) ?? null;
 }
