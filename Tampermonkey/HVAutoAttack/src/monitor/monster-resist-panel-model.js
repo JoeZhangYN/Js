@@ -39,7 +39,10 @@ async function buildRows(monsterNames, deps) {
     .filter((row) => row.name);
 }
 
+const resistPanelModelEventHandlers = Object.freeze({
+  [EVENT_BUILD_ROWS]: (event, deps) => buildRows(event.monsterNames, makeDeps(deps)),
+});
+
 export function runMonsterResistPanelModel(event = { type: EVENT_BUILD_ROWS }, deps = {}) {
-  if (event.type === EVENT_BUILD_ROWS) return buildRows(event.monsterNames, makeDeps(deps));
-  return [];
+  return resistPanelModelEventHandlers[event.type]?.(event, deps) || [];
 }

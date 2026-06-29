@@ -1197,6 +1197,22 @@ function checkMonsterResistPanelEntry() {
   if (!text.includes("runMonsterResistPanelModel")) {
     violations.push(`${rel(panelFile)} must render resist rows from monster resist panel model`);
   }
+  if (!/export const MonsterResistPanelModelEvent\s*=\s*Object\.freeze\(/.test(modelText)) {
+    violations.push(`${rel(panelModelFile)} must expose MonsterResistPanelModelEvent`);
+  }
+  if (!/export function runMonsterResistPanelModel\(/.test(modelText)) {
+    violations.push(`${rel(panelModelFile)} must expose runMonsterResistPanelModel(event)`);
+  }
+  if (!/const resistPanelModelEventHandlers\s*=\s*Object\.freeze\(/.test(modelText)) {
+    violations.push(
+      `${rel(panelModelFile)} must route resist panel model queries through one table`
+    );
+  }
+  if (/if\s*\(\s*event\.type\s*===\s*EVENT_BUILD_ROWS/.test(modelText)) {
+    violations.push(
+      `${rel(panelModelFile)} must not route resist panel model queries through an if ladder`
+    );
+  }
   if (!modelText.includes("MonsterStatusEvent.READ_IDS_BY_ORDER")) {
     violations.push(
       `${rel(panelModelFile)} must read monster identities through monster-status entry`
