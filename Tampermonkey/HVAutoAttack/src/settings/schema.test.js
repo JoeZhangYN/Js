@@ -24,6 +24,13 @@ describe("runOptionSchema", () => {
         default: "https://rdma.ooguy.com/help2",
       }
     );
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "criticalBuffsList" })
+    ).toMatchObject({
+      key: "criticalBuffsList",
+      kind: "text",
+      default: "Hastened,Protection,Spark of Life",
+    });
     expect(runOptionSchema({ type: OptionSchemaEvent.READ_DEFAULT, key: "repairValue" })).toBe(60);
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_GROUP, group: "Debuff" }).some(

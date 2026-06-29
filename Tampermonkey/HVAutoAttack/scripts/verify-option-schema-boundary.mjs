@@ -74,6 +74,10 @@ for (const required of [
   /renderSchemaCheckboxField\(\s*["']mlBackupOnFail["']\s*\)/,
   /renderSchemaTextInput\(\s*["']mlEndpoint["']/,
   /renderSchemaTextInput\(\s*["']mlApiKey["']/,
+  /renderCriticalBuffSchemaFields/,
+  /renderCheckboxPlusNumber\(\s*["']pauseOnCriticalBuffExpire["']\s*,\s*["']criticalBuffMinTurns["']/,
+  /renderSchemaTextInput\(\s*["']criticalBuffsList["']/,
+  /renderSchemaNumberInput\(\s*["']criticalBuffMpFloor["']/,
 ]) {
   if (!required.test(renderText)) {
     violations.push(
@@ -89,6 +93,8 @@ for (const forbidden of [
   /id=["']mlAnswer["'][\s\S]{0,120}ML 答题/,
   /id=["']mlBackupOnFail["'][\s\S]{0,120}备份图片/,
   /name=["']mlEndpoint["']\s+placeholder=["']https:\/\/rdma\.ooguy\.com\/help2["']/,
+  /name=["']criticalBuffsList["']\s+placeholder=["']Hastened,Protection,Spark of Life["']/,
+  /name=["']criticalBuffMpFloor["']\s+placeholder=["']30["']/,
 ]) {
   if (forbidden.test(renderText)) {
     violations.push(

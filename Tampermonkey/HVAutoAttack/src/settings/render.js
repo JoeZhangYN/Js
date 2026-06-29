@@ -123,6 +123,20 @@ function renderRiddleSchemaFields() {
   ];
 }
 
+function renderCriticalBuffSchemaFields() {
+  return [
+    renderCheckboxPlusNumber("pauseOnCriticalBuffExpire", "criticalBuffMinTurns", {
+      l0: "回合（关键 buff 剩余 ≤N 且 MP 不足时暂停脚本，需先在下方填关键 buff 名）",
+      l1: "回合（關鍵 buff 剩餘 ≤N 且 MP 不足時暫停腳本，需先在下方填關鍵 buff 名）",
+      l2: " turns (pause when critical buff ≤N & MP low; fill buff names below)",
+    }),
+    `<div>${renderSchemaLabel(readSchemaField("criticalBuffsList"))}: ${renderSchemaTextInput(
+      "criticalBuffsList",
+      "width:60%;"
+    )} MP&lt; ${renderSchemaNumberInput("criticalBuffMpFloor", "%")}</div>`,
+  ];
+}
+
 /**
  * 打开 / 切换显隐 HVAA 配置面板。浮动按钮(button.js)与 hv-utils 顶部栏触发器(window.HVAA_openConfig)
  * 共用此单一入口（收口原 button.js 内联 onclick 逻辑，去重）。
@@ -291,12 +305,7 @@ export function optionBox() {
     '    <l0>拖战 Draught 阈值</l0><l1>拖戰 Draught 閾值</l1><l2>Stall Draught threshold</l2>: MP&lt;<input class="hvAANumber" name="stallTopupMpFloor" placeholder="70" type="text">%, SP&lt;<input class="hvAANumber" name="stallTopupSpFloor" placeholder="70" type="text">%<br>',
     '    <input id="stallTurnOffSpirit" type="checkbox" checked data-default-on><label for="stallTurnOffSpirit"><l0>拖战时关闭 Spirit Stance（避免与 Focus 双向耗 OC）</l0><l1>拖戰時關閉 Spirit Stance</l1><l2>Stall: turn off Spirit Stance (avoid double OC drain with Focus)</l2></label>',
     "  </div>",
-    renderCheckboxPlusNumber("pauseOnCriticalBuffExpire", "criticalBuffMinTurns", {
-      l0: "回合（关键 buff 剩余 ≤N 且 MP 不足时暂停脚本，需先在下方填关键 buff 名）",
-      l1: "回合（關鍵 buff 剩餘 ≤N 且 MP 不足時暫停腳本，需先在下方填關鍵 buff 名）",
-      l2: " turns (pause when critical buff ≤N & MP low; fill buff names below)",
-    }),
-    '  <div><l0>关键 buff 列表</l0><l1>關鍵 buff 列表</l1><l2>Critical buffs</l2>: <input name="criticalBuffsList" placeholder="Hastened,Protection,Spark of Life" type="text" style="width:60%;"> MP&lt; <input class="hvAANumber" name="criticalBuffMpFloor" placeholder="30" type="text">%</div>',
+    ...renderCriticalBuffSchemaFields(),
     "  </div>",
     // === Tactics 战术姿态 tab（Spirit Stance / Defend / Focus / Ether Tap / 逃跑 / 暂停，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-Tactics">',
