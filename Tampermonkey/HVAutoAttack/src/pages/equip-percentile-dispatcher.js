@@ -1,5 +1,4 @@
-// 装备百分位分发器：option.equipPercentileMode = 'off' | 'offline' | 'live'（schema 扁平 key 对齐）
-// 早调路径：init.js 在 g("option") 装填前调本函数，故通过 option query 读取配置。
+// 装备百分位执行器：equipment view 编排入口已裁定 mode，本函数只执行对应增强。
 //
 // [2026-06-10 能量模型] live(联网旧实现, 移植自 Live Percentile Ranges) 整体过时：
 // 潜能体系消失后, 装备页直印 Base 点数 + 固定品质 range(QUALITY_CONFIG) 直接回答"浮动百分位"，
@@ -9,16 +8,9 @@
 //
 // ⚠ Sentinel H3 已知限制：off ↔ offline 切换需 **刷新页面** 才生效（offline 持文件级 setupDone
 // 闭包 + 全局 keydown 监听 + MutationObserver，无 teardown 接口）——schema label 已警告用户。
-import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { runOfflineEquipPercentileEnhancement } from "./equip-percentile-offline.js";
 
-export function runEquipPercentileEnhancement() {
-  const mode = runOptionAutomation({
-    type: OptionEvent.READ_FIELD,
-    key: "equipPercentileMode",
-    fallback: "off",
-  });
-  if (mode === "off") return;
+export function runEquipPercentileEnhancement(mode) {
   if (mode === "live") {
     console.info(
       "[HVAA] equipPercentileMode=live 已随能量模型过时，自动降级为 offline（本地品质点数公式）"

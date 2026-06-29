@@ -27,15 +27,12 @@ function shouldRunForgeCost(kind, deps) {
   return kind === PageKind.SHOWEQUIP && deps.readOptionEnabled("forgeCostShow");
 }
 
-function shouldRunEquipPercentile(deps) {
+function readEquipPercentileMode(deps) {
   const mode = deps.readOptionField("equipPercentileMode", "off");
-  return mode && mode !== "off";
+  return mode || "off";
 }
 
-export function runEquipmentViewAutomation(
-  event = { type: EVENT_PAGE_READY },
-  deps = {}
-) {
+export function runEquipmentViewAutomation(event = { type: EVENT_PAGE_READY }, deps = {}) {
   if (event.type !== EVENT_PAGE_READY) return false;
   const runtime = makeDeps(deps);
   const { kind } = event;
@@ -44,8 +41,9 @@ export function runEquipmentViewAutomation(
     runtime.runForgeCostEnhancement();
     ran = true;
   }
-  if (shouldRunEquipPercentile(runtime)) {
-    runtime.runEquipPercentileEnhancement();
+  const equipPercentileMode = readEquipPercentileMode(runtime);
+  if (equipPercentileMode !== "off") {
+    runtime.runEquipPercentileEnhancement(equipPercentileMode);
     ran = true;
   }
   return ran;

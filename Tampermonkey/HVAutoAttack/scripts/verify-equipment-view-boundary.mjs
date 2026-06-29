@@ -64,7 +64,9 @@ function checkPageAutomation() {
     violations.push("src/pages/page-automation.js must report EquipmentViewEvent.PAGE_READY");
   }
   if (/runEquipmentViewAutomation\(\s*kind\s*\)/.test(text)) {
-    violations.push("src/pages/page-automation.js must not call equipment view automation with raw kind");
+    violations.push(
+      "src/pages/page-automation.js must not call equipment view automation with raw kind"
+    );
   }
 }
 
@@ -106,11 +108,29 @@ function checkDeletedSetupEntrypoints() {
   }
 }
 
+function checkPercentileModeDecisionPoint() {
+  const entryText = fs.readFileSync(entryFile, "utf8");
+  const dispatcherFile = path.join(root, "src/pages/equip-percentile-dispatcher.js");
+  const dispatcherText = fs.readFileSync(dispatcherFile, "utf8");
+
+  if (!/runEquipPercentileEnhancement\(\s*equipPercentileMode\s*\)/.test(entryText)) {
+    violations.push(
+      `${rel(entryFile)} must pass the decided equip percentile mode to the executor`
+    );
+  }
+  if (
+    /OptionEvent|runOptionAutomation|READ_FIELD|equipPercentileMode",\s*"off"/.test(dispatcherText)
+  ) {
+    violations.push(`${rel(dispatcherFile)} must not re-read equip percentile option state`);
+  }
+}
+
 checkInit();
 checkEntry();
 checkPageAutomation();
 checkDeletedLivePath();
 checkDeletedSetupEntrypoints();
+checkPercentileModeDecisionPoint();
 
 if (violations.length) {
   console.error("[verify-equipment-view-boundary] FAIL");

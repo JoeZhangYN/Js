@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  EquipmentViewEvent,
-  runEquipmentViewAutomation,
-} from "./equipment-view-automation.js";
+import { EquipmentViewEvent, runEquipmentViewAutomation } from "./equipment-view-automation.js";
 import { PageKind } from "./page-kind.js";
 
 function pageReady(kind) {
@@ -41,7 +38,24 @@ describe("runEquipmentViewAutomation", () => {
     ).toBe(true);
 
     expect(runForgeCostEnhancement).not.toHaveBeenCalled();
-    expect(runEquipPercentileEnhancement).toHaveBeenCalledTimes(1);
+    expect(runEquipPercentileEnhancement).toHaveBeenCalledWith("offline");
+  });
+
+  it("passes live mode to the percentile executor for compatibility downgrade", () => {
+    const runForgeCostEnhancement = vi.fn();
+    const runEquipPercentileEnhancement = vi.fn();
+
+    expect(
+      runEquipmentViewAutomation(pageReady(PageKind.SHOWEQUIP), {
+        readOptionField: () => "live",
+        readOptionEnabled: () => false,
+        runEquipPercentileEnhancement,
+        runForgeCostEnhancement,
+      })
+    ).toBe(true);
+
+    expect(runForgeCostEnhancement).not.toHaveBeenCalled();
+    expect(runEquipPercentileEnhancement).toHaveBeenCalledWith("live");
   });
 
   it("does nothing when no equipment enhancement is enabled", () => {
