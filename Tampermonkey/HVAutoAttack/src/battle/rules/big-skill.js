@@ -54,7 +54,9 @@ function shouldSkipForBigSkill(opt, snap, kind) {
             runBigSkillKillLearningAutomation({
               type: BigSkillKillLearningEvent.WILL_KILL_BOSS,
               mid: b.monsterId,
-              snap,
+              ofcCooldown: snap?.cdMap?.OFC,
+              overcharge: snap?.oc,
+              bossHpMax: b.hpMax,
               opt,
             }).skip
         )

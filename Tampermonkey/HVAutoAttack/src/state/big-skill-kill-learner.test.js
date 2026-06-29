@@ -23,7 +23,7 @@ const boss = (over = {}) => ({
   buffs: [],
   ...over,
 });
-const ready = { cdMap: { OFC: 0 }, oc: 250, view: [boss()] };
+const ready = { ofcCooldown: 0, overcharge: 250, bossHpMax: 5000 };
 const observedBoss = { mid: 100, hpMax: 5000, imperilActive: false };
 const finalizeSnap = ({ mid = 100, killed = true, t = 1 } = {}) => ({
   globalTurn: t,
@@ -53,11 +53,11 @@ function observe({ imperil = false, killed = true, mid = 100, hpMax = 5000, t = 
 const learnHigh = () => {
   for (let i = 0; i < 4; i++) observe({ imperil: false, killed: true, t: i * 100 });
 };
-const willKill = (mid, snap, opt) =>
+const willKill = (mid, facts, opt) =>
   runBigSkillKillLearningAutomation({
     type: BigSkillKillLearningEvent.WILL_KILL_BOSS,
     mid,
-    snap,
+    ...facts,
     opt,
   });
 
@@ -102,7 +102,7 @@ describe("finalize 学击杀率 + ofcWillKillBoss 守卫", () => {
     expect(
       willKill(
         100,
-        { cdMap: { OFC: 3 }, oc: 250, view: [boss()] },
+        { ofcCooldown: 3, overcharge: 250, bossHpMax: 5000 },
         { skipImperilWhenOfcKills: true }
       ).skip
     ).toBe(false);
@@ -112,7 +112,7 @@ describe("finalize 学击杀率 + ofcWillKillBoss 守卫", () => {
     expect(
       willKill(
         100,
-        { cdMap: { OFC: 0 }, oc: 200, view: [boss()] },
+        { ofcCooldown: 0, overcharge: 200, bossHpMax: 5000 },
         { skipImperilWhenOfcKills: true }
       ).skip
     ).toBe(false);
@@ -126,7 +126,7 @@ describe("finalize 学击杀率 + ofcWillKillBoss 守卫", () => {
     expect(
       willKill(
         100,
-        { cdMap: { OFC: 0 }, oc: 250, view: [boss({ hpMax: 6000 })] },
+        { ofcCooldown: 0, overcharge: 250, bossHpMax: boss({ hpMax: 6000 }).hpMax },
         { skipImperilWhenOfcKills: true }
       ).skip
     ).toBe(false);

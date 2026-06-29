@@ -18,6 +18,7 @@ import { STORAGE_KEYS } from "./persist-keys.js";
 import {
   normalizeLearnedMid,
   normalizeLearnedSkill,
+  normalizeBossHpMax,
   normalizeLiveMonsterIds,
   normalizePending,
   normalizeTurn,
@@ -126,34 +127,38 @@ function finalizeBigSkillPending(snap) {
 }
 
 /**
- * 决策：是否「能确认 OFC 这一发会秒掉此 boss，故可跳过 Imperil」。PURE-ish（读 snap + 学习表）。
+ * 决策：是否「能确认 OFC 这一发会秒掉此 boss，故可跳过 Imperil」。PURE-ish（读事实 + 学习表）。
  * **仅全部成立返 skip:true**（任一缺失→保留 Imperil）：
  *  ① opt.skipImperilWhenOfcKills 开（默认 OFF，最先短路 → 默认零存储读）；② OFC 本回合就绪即开火；
  *  ③ 该 MID 有足量 **无 imperil** 样本（nNoIm≥bigKillMinSamples）；④ killProbNoIm≥bigKillProbThreshold；
  *  ⑤ scale-drift 未触发（本场满血未较 lastHpMax 涨过 bigKillScaleDriftTol）。
- * @param {number|undefined} mid
- * @param {import("../core/types.js").BattleSnapshot} snap
- * @param {object} opt
+ * @param {{mid?:number, ofcCooldown?:number, overcharge?:number, bossHpMax?:number, opt?:object}} event
  * @returns {{skip:boolean, confidence?:number}}
  */
-function ofcWillKillBoss(mid, snap, opt) {
+function ofcWillKillBoss(event) {
+  const opt = event?.opt;
   if (!opt?.skipImperilWhenOfcKills) return { skip: false };
+  const mid = event?.mid;
   if (mid == null) return { skip: false };
   // OFC 必须本回合就绪即开火，否则跳 Imperil = boss 既不破防也不被秒，纯失误。
-  if ((snap?.cdMap?.OFC ?? 99) !== 0 || (snap?.oc ?? 0) < OFC_OC_NEED) return { skip: false };
+  if ((event?.ofcCooldown ?? 99) !== 0 || (event?.overcharge ?? 0) < OFC_OC_NEED) {
+    return { skip: false };
+  }
   const learned = readLearnedBigKillMap();
   const sk = learned[mid]?.OFC;
   if (!sk || sk.nNoIm < (opt.bigKillMinSamples ?? 4)) return { skip: false };
   if (sk.killProbNoIm < (opt.bigKillProbThreshold ?? 0.9)) return { skip: false };
-  const boss = (snap?.view || []).find((m) => m.monsterId === mid && !m.isDead);
   const tol = opt.bigKillScaleDriftTol ?? 1.15;
-  if (boss && sk.lastHpMax && boss.hpMax > sk.lastHpMax * tol) return { skip: false }; // 漂移→distrust
+  const bossHpMax = normalizeBossHpMax(event?.bossHpMax);
+  if (bossHpMax && sk.lastHpMax && bossHpMax > sk.lastHpMax * tol) {
+    return { skip: false };
+  }
   return { skip: true, confidence: sk.killProbNoIm };
 }
 
 export function runBigSkillKillLearningAutomation(event = { type: EVENT_WILL_KILL_BOSS }) {
   if (event.type === EVENT_RECORD_CAST) return recordBigSkillCast(event.code, event);
   if (event.type === EVENT_FINALIZE_PENDING) return finalizeBigSkillPending(event.snap);
-  if (event.type === EVENT_WILL_KILL_BOSS) return ofcWillKillBoss(event.mid, event.snap, event.opt);
+  if (event.type === EVENT_WILL_KILL_BOSS) return ofcWillKillBoss(event);
   return undefined;
 }

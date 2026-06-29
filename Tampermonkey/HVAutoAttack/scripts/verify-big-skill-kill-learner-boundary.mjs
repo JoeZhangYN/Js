@@ -58,6 +58,15 @@ function checkFile(file) {
     ) {
       violations.push(`${rel(file)} must pass observedBosses, not snap, to big-skill record cast`);
     }
+    if (
+      relative !== owner &&
+      call[0].includes("BigSkillKillLearningEvent.WILL_KILL_BOSS") &&
+      /\bsnap\s*:/.test(call[0])
+    ) {
+      violations.push(
+        `${rel(file)} must pass ofcCooldown/overcharge/bossHpMax, not snap, to big-skill kill query`
+      );
+    }
   }
   if (
     relative !== owner &&
@@ -82,6 +91,7 @@ for (const required of [
   "normalizeTurn",
   "normalizePending",
   "normalizeLiveMonsterIds",
+  "normalizeBossHpMax",
   "normalizeLearnedSkill",
   "readLearnedBigKillMap",
 ]) {
@@ -125,6 +135,23 @@ if (
   )
 ) {
   violations.push(`${owner.replaceAll("\\", "/")} record cast must not consume full snap`);
+}
+const willKillBody = ownerText.match(/function ofcWillKillBoss\(event\) \{[\s\S]*?\n\}/)?.[0];
+if (
+  !willKillBody?.includes("event?.ofcCooldown") ||
+  !willKillBody?.includes("event?.overcharge") ||
+  !willKillBody?.includes("event?.bossHpMax")
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} kill query must consume narrow ofcCooldown/overcharge/bossHpMax facts`
+  );
+}
+if (
+  /\bsnap\?\.cdMap\b|\bsnap\.cdMap\b|\bsnap\?\.oc\b|\bsnap\.oc\b|\bsnap\?\.view\b|\bsnap\.view\b/.test(
+    willKillBody || ""
+  )
+) {
+  violations.push(`${owner.replaceAll("\\", "/")} kill query must not consume full snap`);
 }
 
 const snapshotText = fs.readFileSync(path.join(root, snapshot), "utf8");

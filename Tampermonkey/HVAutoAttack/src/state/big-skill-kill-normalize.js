@@ -9,12 +9,14 @@ const normalizeProbability = (value) => Math.max(0, Math.min(1, normalizeNumber(
 
 const normalizeSampleCount = (value) => Math.max(0, Math.trunc(normalizeNumber(value)));
 
+export const normalizeBossHpMax = (value) => Math.max(0, normalizeNumber(value));
+
 function normalizeObservedBoss(value) {
   const mid = normalizeNumber(value?.mid, NaN);
   if (!Number.isFinite(mid)) return null;
   return {
     mid: Math.trunc(mid),
-    hpMax: Math.max(0, normalizeNumber(value?.hpMax)),
+    hpMax: normalizeBossHpMax(value?.hpMax),
     imperilActive: Boolean(value?.imperilActive),
   };
 }

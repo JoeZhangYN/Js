@@ -112,7 +112,9 @@ describe("big-skill kill learner normalization", () => {
       run({
         type: BigSkillKillLearningEvent.WILL_KILL_BOSS,
         mid: 100,
-        snap: { cdMap: { OFC: 0 }, oc: 250, view: [boss()] },
+        ofcCooldown: 0,
+        overcharge: 250,
+        bossHpMax: boss().hpMax,
         opt: { skipImperilWhenOfcKills: true },
       }).skip
     ).toBe(true);
