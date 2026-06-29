@@ -1346,14 +1346,20 @@ function checkDefendEntry() {
 
 function checkAutoPauseEntry() {
   const ownerText = fs.readFileSync(decideAutoPauseFile, "utf8");
-  for (const required of ["decideAutoPause", "autoPause", "pauseCondition"]) {
+  for (const required of ["decideAutoPause", "autoPause", "pauseCondition", "conditionFacts"]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideAutoPauseFile)} must own auto-pause gate ${required}`);
     }
   }
+  if (/decideAutoPause\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
+    violations.push(`${rel(decideAutoPauseFile)} must not expose opt/snap auto-pause input`);
+  }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
   const pauseRule =
     rulesText.match(/name:\s*["']autoPause["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (/decideAutoPause\(\s*opt\s*,\s*snap\s*\)/.test(pauseRule)) {
+    violations.push(`${rel(battleRulesFile)} must pass condition facts, not snap, to auto-pause`);
+  }
   for (const legacy of ["canAutoPause", "pauseCondition"]) {
     if (new RegExp(`\\b${legacy}\\b`).test(pauseRule)) {
       violations.push(`${rel(battleRulesFile)} must not assemble auto-pause rule gates directly`);

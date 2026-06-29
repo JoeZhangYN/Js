@@ -36,7 +36,10 @@ export const BATTLE_RULES = [
     decide: (snap, opt) => decideFlee({ opt, conditionFacts: conditionFacts(snap) }),
   },
   // 3. 自动暂停（dispatch 交给 runBattlePauseAutomation 统一写暂停状态）
-  { name: "autoPause", decide: (snap, opt) => decideAutoPause(opt, snap) },
+  {
+    name: "autoPause",
+    decide: (snap, opt) => decideAutoPause({ opt, conditionFacts: conditionFacts(snap) }),
+  },
   // 4. 宝石（decideGemUse 自 gate snap.gemName；dyn-threshold 在 decide，autoTune 计数在 execute）
   { name: "useGem", decide: (snap, opt) => decideGemUse({ opt, ...gemFacts(snap) }) },
   // 5. 紧急回血回魔（decide 出候选 id 列表，execute 探活+喝第一个可用）
