@@ -13,6 +13,7 @@ import {
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
 import { BattleStaminaEvent, runBattleStaminaAutomation } from "./battle-stamina.js";
+import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-skill-usage.js";
 
 const EVENT_ROUND_STARTED = "roundStarted";
 
@@ -76,13 +77,7 @@ function startRound() {
     runBattleRoundAutomation({ type: BattleRoundEvent.RECORD_SINGLE_ROUND });
   }
   runBattleRoundAutomation({ type: BattleRoundEvent.SYNC_RUNTIME });
-  g("skillOTOS", {
-    OFC: 0,
-    FRD: 0,
-    T3: 0,
-    T2: 0,
-    T1: 0,
-  });
+  runBattleSkillUsageAutomation({ type: BattleSkillUsageEvent.RESET_ROUND });
   runMonsterKnowledgeAutomation({ type: MonsterKnowledgeEvent.ROUND_STARTED });
 }
 

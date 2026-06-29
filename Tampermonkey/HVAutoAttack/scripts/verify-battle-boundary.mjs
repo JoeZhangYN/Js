@@ -642,6 +642,12 @@ function checkSnapshot() {
   if (/\bg\(\s*["']spellAoe["']/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read spellAoe directly`);
   }
+  if (!text.includes("BattleSkillUsageEvent.READ_USAGE")) {
+    violations.push(`${rel(snapshotFile)} must read skillOTOS through battle skill usage entry`);
+  }
+  if (/\bg\(\s*["']skillOTOS["']/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not read skillOTOS directly`);
+  }
 }
 
 function checkBattleRulesRuntimeContext() {

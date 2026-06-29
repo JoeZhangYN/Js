@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   g: vi.fn(),
   gE: vi.fn(),
   isOn: vi.fn(),
+  runBattleSkillUsageAutomation: vi.fn(),
   runBattleSpiritToggleAutomation: vi.fn(),
   runBigSkillKillLearningAutomation: vi.fn(),
   runCdLearningAutomation: vi.fn(),
@@ -32,6 +33,10 @@ vi.mock("../battle-spirit-toggle.js", () => ({
   BattleSpiritToggleEvent: Object.freeze({ RECORD_TOGGLE: "recordToggle" }),
   runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
 }));
+vi.mock("../battle-skill-usage.js", () => ({
+  BattleSkillUsageEvent: Object.freeze({ RECORD_USE: "recordUse" }),
+  runBattleSkillUsageAutomation: mocks.runBattleSkillUsageAutomation,
+}));
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
@@ -48,5 +53,35 @@ describe("executeAttack", () => {
     expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
       type: "recordToggle",
     });
+  });
+
+  it("reports physical skill usage through the battle skill usage entry", () => {
+    const skill = { click: vi.fn() };
+    const target = { click: vi.fn() };
+    mocks.isOn.mockReturnValue(true);
+    mocks.gE.mockImplementation((selector) => {
+      if (selector === "1111") return skill;
+      if (selector === "#mkey_3") return target;
+      return null;
+    });
+
+    expect(
+      executeAttack(
+        {
+          type: "physical",
+          skillId: "1111",
+          code: "OFC",
+          defaultTargetId: 3,
+        },
+        { globalTurn: 10 }
+      )
+    ).toBe(true);
+
+    expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({
+      type: "recordUse",
+      code: "OFC",
+    });
+    expect(skill.click).toHaveBeenCalledTimes(1);
+    expect(target.click).toHaveBeenCalledTimes(1);
   });
 });

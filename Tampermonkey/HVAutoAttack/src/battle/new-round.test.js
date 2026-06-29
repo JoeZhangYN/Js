@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   g: vi.fn(),
   gE: vi.fn(),
   runAutoTuneAutomation: vi.fn(),
+  runBattleSkillUsageAutomation: vi.fn(),
   runBattleTurnAutomation: vi.fn(),
   runBattleRoundAutomation: vi.fn(),
   runBattleStaminaAutomation: vi.fn(),
@@ -64,6 +65,10 @@ vi.mock("./battle-stamina.js", () => ({
   BattleStaminaEvent: Object.freeze({ ROUND_LOG_READY: "roundLogReady" }),
   runBattleStaminaAutomation: mocks.runBattleStaminaAutomation,
 }));
+vi.mock("./battle-skill-usage.js", () => ({
+  BattleSkillUsageEvent: Object.freeze({ RESET_ROUND: "resetRound" }),
+  runBattleSkillUsageAutomation: mocks.runBattleSkillUsageAutomation,
+}));
 
 beforeEach(() => {
   const state = { turn: 2 };
@@ -112,6 +117,7 @@ describe("runBattleRoundStartAutomation", () => {
     });
     expect(mocks.runAutoTuneAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
+    expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({ type: "resetRound" });
     expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
       type: "randomEncounterStarted",
     });

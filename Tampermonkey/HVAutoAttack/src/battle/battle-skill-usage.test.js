@@ -1,0 +1,39 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { g } from "../state/store.js";
+import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-skill-usage.js";
+
+beforeEach(() => {
+  g("skillOTOS", null);
+});
+
+describe("runBattleSkillUsageAutomation", () => {
+  it("resets per-round skill usage through one entry", () => {
+    expect(runBattleSkillUsageAutomation({ type: BattleSkillUsageEvent.RESET_ROUND })).toEqual({
+      OFC: 0,
+      FRD: 0,
+      T3: 0,
+      T2: 0,
+      T1: 0,
+    });
+    expect(g("skillOTOS")).toEqual({ OFC: 0, FRD: 0, T3: 0, T2: 0, T1: 0 });
+  });
+
+  it("records physical skill usage without dropping existing counts", () => {
+    g("skillOTOS", { OFC: 1, T3: 2 });
+
+    expect(
+      runBattleSkillUsageAutomation({
+        type: BattleSkillUsageEvent.RECORD_USE,
+        code: "T3",
+      })
+    ).toEqual({ OFC: 1, T3: 3 });
+  });
+
+  it("reads current usage through the entry", () => {
+    g("skillOTOS", { OFC: 1 });
+
+    expect(runBattleSkillUsageAutomation({ type: BattleSkillUsageEvent.READ_USAGE })).toEqual({
+      OFC: 1,
+    });
+  });
+});

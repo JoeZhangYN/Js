@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   parseBattleLog: vi.fn(() => []),
   runAbilityAoeAutomation: vi.fn(() => ({ Imperil: 2 })),
   runBigSkillKillLearningAutomation: vi.fn(),
+  runBattleSkillUsageAutomation: vi.fn(() => ({ OFC: 1 })),
   runBattleStartRuntimeAutomation: vi.fn(() => 2),
   runBattleTurnAutomation: vi.fn(() => 7),
   runCdLearningAutomation: vi.fn(),
@@ -77,6 +78,10 @@ vi.mock("./battle-start-runtime.js", () => ({
   BattleStartRuntimeEvent: Object.freeze({ READ_ATTACK_STATUS: "readAttackStatus" }),
   runBattleStartRuntimeAutomation: mocks.runBattleStartRuntimeAutomation,
 }));
+vi.mock("./battle-skill-usage.js", () => ({
+  BattleSkillUsageEvent: Object.freeze({ READ_USAGE: "readUsage" }),
+  runBattleSkillUsageAutomation: mocks.runBattleSkillUsageAutomation,
+}));
 
 function effectsContainer() {
   return { querySelectorAll: () => [] };
@@ -129,7 +134,9 @@ describe("collectSnapshot", () => {
     expect(snap.globalTurn).toBe(9);
     expect(snap.attackStatus).toBe(2);
     expect(snap.spellAoe).toEqual({ Imperil: 2 });
+    expect(snap.skillOTOS).toEqual({ OFC: 1 });
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "readCurrent" });
+    expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({ type: "readUsage" });
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "readSpellAoe" });
     expect(mocks.runBattleStartRuntimeAutomation).toHaveBeenCalledWith({
       type: "readAttackStatus",
