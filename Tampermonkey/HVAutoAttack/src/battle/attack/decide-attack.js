@@ -2,7 +2,6 @@
 // **不读 DOM**：只读 snap（含统一怪物视图 snap.view：finWeight/hpAbsNow/hpMax/buffs/order）。
 // 目标选择走 target-strategy 具名策略：firstByFinWeight=默认首怪(综合权重最优) / firstByOrder=AoE 锚(order 最小)。
 import { checkCondition } from "../../settings/condition-eval.js";
-import { selectSpellTier } from "./decide-tier.js";
 import { scorePhysicalSkillCandidates } from "./decide-skill.js";
 import { pickByUtility } from "../utility-engine.js";
 import { OFFENSIVE_SPELL_LIB } from "../../data/spell-lib.js";
@@ -13,6 +12,33 @@ import { pickBestElement } from "./pick-element.js";
 
 /** merciful blow 斩杀 HP 比例阈值（原 attack.js 字面量 0.248）。 */
 const MERCIFUL_HP = 0.248;
+
+function selectSpellTier(opt, snap) {
+  const attackStatus = snap.attackStatus;
+  if (attackStatus === 0 || attackStatus == null) return { tier: 0 };
+
+  const channelLock = opt.channelForceHighTier !== false && snap.channeling;
+  const downgrade =
+    !channelLock &&
+    opt.spellTierDowngrade !== false &&
+    snap.aliveCount <= (opt.spellDowngradeThreshold || 3);
+
+  const id1 = `1${attackStatus}1`;
+  const id2 = `1${attackStatus}2`;
+  const id3 = `1${attackStatus}3`;
+  const ready1 = !!snap.skillReady[id1];
+  const ready2 = !!snap.skillReady[id2];
+  const ready3 = !!snap.skillReady[id3];
+
+  if (downgrade) return { tier: ready1 ? 1 : 0 };
+
+  const highMet = channelLock || checkCondition(opt.highSkillCondition, snap);
+  const midMet = channelLock || checkCondition(opt.middleSkillCondition, snap);
+  if (highMet && ready3) return { tier: 3 };
+  if (midMet && ready2) return { tier: 2 };
+  if (ready1) return { tier: 1 };
+  return { tier: 0 };
+}
 
 /**
  * @param {object} opt

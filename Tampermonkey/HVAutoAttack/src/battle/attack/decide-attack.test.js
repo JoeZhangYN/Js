@@ -197,3 +197,35 @@ describe("decideAttack 6 分支", () => {
     expect(plan({ autoElement: true }, s)).toEqual({ type: "spell", spellId: "123", targetId: 1 });
   });
 });
+
+describe("decideAttack 法术 tier 入口契约", () => {
+  it("少怪降级(aliveCount<=阈值) → 仅 tier1", () => {
+    const s = snap({
+      attackStatus: 2,
+      aliveCount: 2,
+      skillReady: { 121: true, 122: true, 123: true },
+      view: [vmon({ id: 1 })],
+    });
+    expect(plan({}, s)).toEqual({ type: "spell", spellId: "121", targetId: 1 });
+  });
+
+  it("多怪 + 高阶 ready + 条件满足 → tier3", () => {
+    const s = snap({
+      attackStatus: 2,
+      aliveCount: 5,
+      skillReady: { 121: true, 122: true, 123: true },
+      view: [vmon({ id: 1 })],
+    });
+    expect(plan({}, s)).toEqual({ type: "spell", spellId: "123", targetId: 1 });
+  });
+
+  it("多怪 + 仅中阶 ready → tier2", () => {
+    const s = snap({
+      attackStatus: 2,
+      aliveCount: 5,
+      skillReady: { 121: true, 122: true },
+      view: [vmon({ id: 1 })],
+    });
+    expect(plan({}, s)).toEqual({ type: "spell", spellId: "122", targetId: 1 });
+  });
+});

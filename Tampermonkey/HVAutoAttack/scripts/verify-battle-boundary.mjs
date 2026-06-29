@@ -44,6 +44,8 @@ const decideCastAllFile = path.join(root, "src/battle/debuff/decide-cast-all.js"
 const decideDefendFile = path.join(root, "src/battle/defense/decide-defend.js");
 const decideAutoPauseFile = path.join(root, "src/battle/pause/decide-auto-pause.js");
 const decideFleeFile = path.join(root, "src/battle/escape/decide-flee.js");
+const decideAttackFile = path.join(root, "src/battle/attack/decide-attack.js");
+const decideTierFile = path.join(root, "src/battle/attack/decide-tier.js");
 const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const violations = [];
 
@@ -1032,6 +1034,31 @@ function checkFleeEntry() {
   }
 }
 
+function checkAttackEntry() {
+  if (fs.existsSync(decideTierFile)) {
+    violations.push(
+      `${rel(decideTierFile)} legacy spell-tier helper must stay deleted; tier decisions belong in decideAttack`
+    );
+  }
+  const ownerText = fs.readFileSync(decideAttackFile, "utf8");
+  for (const required of ["decideAttack", "selectSpellTier", "highSkillCondition"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideAttackFile)} must own attack spell-tier decision ${required}`);
+    }
+  }
+  for (const relative of ["src/battle", "src/core"]) {
+    const dir = path.join(root, relative);
+    for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
+      const file = path.join(entry.parentPath, entry.name);
+      const text = fs.readFileSync(file, "utf8");
+      if (/from\s+["'][^"']*decide-tier\.js["']/.test(text)) {
+        violations.push(`${rel(file)} must not import legacy decide-tier.js`);
+      }
+    }
+  }
+}
+
 function checkBattleStallMode() {
   const ownerText = fs.readFileSync(stallModeFile, "utf8");
   for (const required of [
@@ -1116,6 +1143,7 @@ checkPotionEntry();
 checkDefendEntry();
 checkAutoPauseEntry();
 checkFleeEntry();
+checkAttackEntry();
 checkBattleStallMode();
 checkBattleTestFixtures();
 checkBattleOptionVocabulary();
