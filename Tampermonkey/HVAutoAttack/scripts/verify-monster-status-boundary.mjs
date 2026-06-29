@@ -6,6 +6,7 @@ const srcDir = path.join(root, "src/battle");
 const entry = path.normalize("src/battle/monster-status-automation.js");
 const statusView = path.normalize("src/battle/monster-status-view.js");
 const hpImpl = path.normalize("src/battle/monster-status-hp.js");
+const maxHpInference = path.normalize("src/battle/monster-max-hp-inference.js");
 const parserImpl = path.normalize("src/battle/log-parser.js");
 const roundStart = path.normalize("src/battle/new-round.js");
 const actionEventBridge = path.normalize("src/battle/battle-action-event-bridge.js");
@@ -190,6 +191,8 @@ function checkHpImpl() {
   }
   for (const required of [
     "MonsterStatusViewEvent.READ_HP_RUNTIME_SNAPSHOT",
+    "MonsterMaxHpInferenceEvent.APPLY_DEATHS",
+    "runMonsterMaxHpInference",
     "runMonsterStatusView",
     "statusByOrder",
   ]) {
@@ -202,12 +205,45 @@ function checkHpImpl() {
       violations.push(`${hpImpl.replaceAll("\\", "/")} must not read monster status DOM directly`);
     }
   }
+  for (const forbidden of [
+    "parseBattleLog",
+    "accumulateDamageByMonster",
+    "normalizeMonsterName",
+    "MonsterDbStoreEvent.HP_READ",
+    "MonsterDbStoreEvent.HP_WRITE",
+    "inferredThisPage",
+  ]) {
+    if (text.includes(forbidden)) {
+      violations.push(
+        `${hpImpl.replaceAll("\\", "/")} death-based max HP learning belongs in monster-max-hp-inference`
+      );
+    }
+  }
+}
+
+function checkMaxHpInference() {
+  const text = fs.readFileSync(path.join(root, maxHpInference), "utf8");
+  for (const required of [
+    "export const MonsterMaxHpInferenceEvent",
+    "export function runMonsterMaxHpInference",
+    "APPLY_DEATHS",
+    "parseBattleLog",
+    "accumulateDamageByMonster",
+    "MonsterDbStoreEvent.HP_READ",
+    "MonsterDbStoreEvent.HP_WRITE",
+    "inferredThisPage",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${maxHpInference.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
 }
 
 walk(srcDir);
 checkEntry();
 checkStatusView();
 checkHpImpl();
+checkMaxHpInference();
 checkParser();
 
 if (violations.length) {
