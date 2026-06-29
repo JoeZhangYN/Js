@@ -33,22 +33,44 @@ export const CdRuntimeEvent = Object.freeze({
   READ_GLOBAL_TURN: EVENT_READ_GLOBAL_TURN,
 });
 
+function normalizeGlobalTurn(value) {
+  const turn = Number(value);
+  return Number.isFinite(turn) && turn > 0 ? Math.trunc(turn) : 0;
+}
+
+function normalizeSkillLastUsed(value) {
+  const source = value && typeof value === "object" ? value : {};
+  const map = {};
+  for (const code of Object.keys(SKILL_REGISTRY)) {
+    const turn = Number(source[code]);
+    if (Number.isFinite(turn) && turn >= 0) map[code] = Math.trunc(turn);
+  }
+  return map;
+}
+
+function readGlobalTurn() {
+  return normalizeGlobalTurn(g("globalTurn"));
+}
+
+function readSkillLastUsed() {
+  return normalizeSkillLastUsed(g("skillLastUsed"));
+}
+
 /** 启动时把持久化的 globalTurn / skillLastUsed 灌进 g() runtime。Phase 5b-1 由 init.js 调用一次。 */
 function loadCdState() {
-  const gt = parseInt(getValue(STORAGE_KEYS.GLOBAL_TURN));
-  g("globalTurn", isNaN(gt) ? 0 : gt);
-  g("skillLastUsed", getValue(STORAGE_KEYS.SKILL_LAST_USED, true) || {});
+  g("globalTurn", normalizeGlobalTurn(getValue(STORAGE_KEYS.GLOBAL_TURN)));
+  g("skillLastUsed", normalizeSkillLastUsed(getValue(STORAGE_KEYS.SKILL_LAST_USED, true)));
 }
 
 /** round-start 入口末尾调用，原子持久化避免 GM_* 写抖动。 */
 function persistCdState() {
-  setValue(STORAGE_KEYS.GLOBAL_TURN, g("globalTurn") || 0);
-  setValue(STORAGE_KEYS.SKILL_LAST_USED, g("skillLastUsed") || {});
+  setValue(STORAGE_KEYS.GLOBAL_TURN, readGlobalTurn());
+  setValue(STORAGE_KEYS.SKILL_LAST_USED, readSkillLastUsed());
 }
 
 /** runBattleTurnAutomation() 每 turn 入口调用一次。 */
 function incrementGlobalTurn() {
-  g("globalTurn", (g("globalTurn") || 0) + 1);
+  g("globalTurn", readGlobalTurn() + 1);
 }
 
 /**
@@ -56,8 +78,9 @@ function incrementGlobalTurn() {
  * @param {string} code SKILL_REGISTRY 的 key
  */
 function recordFire(code) {
-  const map = g("skillLastUsed") || {};
-  map[code] = g("globalTurn") || 0;
+  if (!SKILL_REGISTRY[code]) return;
+  const map = readSkillLastUsed();
+  map[code] = readGlobalTurn();
   g("skillLastUsed", map);
 }
 
@@ -69,13 +92,14 @@ function recordFire(code) {
 function turnsUntilReady(code) {
   const entry = SKILL_REGISTRY[code];
   if (!entry) return 0;
-  const lastUsed = (g("skillLastUsed") || {})[code];
+  const lastUsed = readSkillLastUsed()[code];
   if (lastUsed == null) return 0;
   // F3：用学到的真实 CD，但 Math.min(learned, cdBase) 夹住 —— 学习永不上调 CD（防被篡改成过大值）。
   // 即便学习值偏小也安全：真正开火仍以 snap.skillReady(DOM) 为权威，学习值只锐化前瞻 lookahead。
-  const learnedCd = runCdLearningAutomation({ type: CdLearningEvent.READ_CD, code });
-  const effectiveCd = Math.min(learnedCd, entry.cdBase);
-  return Math.max(0, effectiveCd - ((g("globalTurn") || 0) - lastUsed));
+  const learnedCd = Number(runCdLearningAutomation({ type: CdLearningEvent.READ_CD, code }));
+  const effectiveCd = Number.isFinite(learnedCd) ? Math.min(learnedCd, entry.cdBase) : entry.cdBase;
+  const elapsedTurns = Math.max(0, readGlobalTurn() - lastUsed);
+  return Math.max(0, effectiveCd - elapsedTurns);
 }
 
 /**
@@ -97,6 +121,6 @@ export function runCdRuntimeAutomation(event = { type: EVENT_READ_MAP }) {
   if (event.type === EVENT_RECORD_FIRE) return recordFire(event.code);
   if (event.type === EVENT_READ_TURNS) return turnsUntilReady(event.code);
   if (event.type === EVENT_READ_MAP) return collectCdMap();
-  if (event.type === EVENT_READ_GLOBAL_TURN) return g("globalTurn") || 0;
+  if (event.type === EVENT_READ_GLOBAL_TURN) return readGlobalTurn();
   return undefined;
 }

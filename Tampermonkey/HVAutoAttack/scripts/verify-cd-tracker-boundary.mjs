@@ -54,11 +54,30 @@ for (const required of [
   "CdRuntimeEvent",
   "STORAGE_KEYS.GLOBAL_TURN",
   "STORAGE_KEYS.SKILL_LAST_USED",
+  "normalizeGlobalTurn",
+  "normalizeSkillLastUsed",
+  "readGlobalTurn",
+  "readSkillLastUsed",
   "READ_GLOBAL_TURN",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+
+if ((ownerText.match(/normalizeSkillLastUsed\(/g) || []).length < 2) {
+  violations.push(`${owner.replaceAll("\\", "/")} must normalize skillLastUsed reads and writes`);
+}
+if ((ownerText.match(/readGlobalTurn\(/g) || []).length < 4) {
+  violations.push(`${owner.replaceAll("\\", "/")} must normalize globalTurn reads and writes`);
+}
+if (/g\(\s*["']globalTurn["']\s*\)\s*\|\|\s*0/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not read raw globalTurn with || fallback`);
+}
+if (/g\(\s*["']skillLastUsed["']\s*\)\s*\|\|\s*\{\}/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not read raw skillLastUsed with || fallback`
+  );
 }
 
 for (const legacy of [
