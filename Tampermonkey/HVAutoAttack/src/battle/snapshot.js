@@ -20,6 +20,7 @@ import { monsterHpVars } from "./monster-view.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "../pages/ability-page.js";
 import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-skill-usage.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "./battle-monster-view.js";
+import { BattleSkillReadinessEvent, runBattleSkillReadiness } from "./battle-skill-readiness.js";
 
 /**
  * 解析一个 effect 容器（玩家 #pane_effects 或怪物 .btm6）内全部 img 为 {img, turns}[]。
@@ -123,79 +124,6 @@ function readPlayerVitals() {
 }
 
 /**
- * 读所有可施法 skill 按钮的 ready 状态（opacity 不为 0.5）。
- * Phase 5b-2 给 decide-* 纯函数用，避免它们再调 isOn (DOM)。
- * @returns {Record<string, boolean>}
- */
-function readSkillReady() {
-  const map = {};
-  // Buff IDs 411/412/413/421/422/423/431/432 + Regen 312
-  // Debuff IDs 211/212/213/221/222/223/231/232/233
-  // Healing IDs 311/312/313
-  // Magic IDs 111-163 (18 个)
-  // Physical IDs 1101/1111/2{1,2,3}{0,1,2,3,4} 等
-  const ids = [
-    "111",
-    "112",
-    "113",
-    "121",
-    "122",
-    "123",
-    "131",
-    "132",
-    "133",
-    "141",
-    "142",
-    "143",
-    "151",
-    "152",
-    "153",
-    "161",
-    "162",
-    "163",
-    "211",
-    "212",
-    "213",
-    "221",
-    "222",
-    "223",
-    "231",
-    "232",
-    "233",
-    "311",
-    "312",
-    "313",
-    "411",
-    "412",
-    "413",
-    "421",
-    "422",
-    "423",
-    "431",
-    "432",
-    "1001",
-    "1011",
-    "1101",
-    "1111",
-    "2101",
-    "2102",
-    "2103",
-    "2201",
-    "2202",
-    "2203",
-    "2301",
-    "2302",
-    "2303",
-  ];
-  for (const id of ids) {
-    const el = document.getElementById(id);
-    if (!el) continue;
-    map[id] = el.style.opacity !== "0.5";
-  }
-  return map;
-}
-
-/**
  * 一次性 batch DOM read 组装当前 turn snapshot。
  * @returns {import("../core/types.js").BattleSnapshot}
  */
@@ -213,7 +141,7 @@ export function collectSnapshot(event = {}) {
   const turn = runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT });
   // 学习器 finalize 全部跑在 rules 之前（结算上回合行动的观测）。globalTurn/skillReady 先备好供两用。
   const globalTurn = runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_GLOBAL_TURN });
-  const skillReady = readSkillReady();
+  const skillReady = runBattleSkillReadiness({ type: BattleSkillReadinessEvent.READ_READY_MAP });
   const learnIncomingBurst = !!event.learnIncomingBurst;
   const observationLearning = runBattleObservationLearning({
     type: BattleObservationLearningEvent.FINALIZE_TURN_OBSERVATIONS,

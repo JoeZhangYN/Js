@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   parseBattleLog: vi.fn(() => []),
   runAbilityAoeAutomation: vi.fn(() => ({ Imperil: 2 })),
   runBattleObservationLearning: vi.fn(() => ({ learnedBurstByMid: { learned: true } })),
+  runBattleSkillReadiness: vi.fn(() => ({ 111: true })),
   runBattleSkillUsageAutomation: vi.fn(() => ({ OFC: 1 })),
   runBattleTurnAutomation: vi.fn(() => 7),
   runCdRuntimeAutomation: vi.fn(),
@@ -46,6 +47,10 @@ vi.mock("./monster-view.js", () => ({
 vi.mock("./battle-monster-view.js", () => ({
   BattleMonsterViewEvent: Object.freeze({ READ_VIEW: "readView" }),
   runBattleMonsterView: mocks.runBattleMonsterView,
+}));
+vi.mock("./battle-skill-readiness.js", () => ({
+  BattleSkillReadinessEvent: Object.freeze({ READ_READY_MAP: "readReadyMap" }),
+  runBattleSkillReadiness: mocks.runBattleSkillReadiness,
 }));
 vi.mock("../pages/ability-page.js", () => ({
   AbilityAoeEvent: Object.freeze({ READ_SPELL_AOE: "readSpellAoe" }),
@@ -95,6 +100,7 @@ describe("collectSnapshot", () => {
       monsters: [],
     });
     expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({ type: "readUsage" });
+    expect(mocks.runBattleSkillReadiness).toHaveBeenCalledWith({ type: "readReadyMap" });
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "readSpellAoe" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
@@ -113,6 +119,7 @@ describe("collectSnapshot", () => {
 
   it("skips incoming burst learning when the turn context does not request it", () => {
     mocks.runBattleObservationLearning.mockReturnValueOnce({ learnedBurstByMid: {} });
+    mocks.runBattleSkillReadiness.mockReturnValueOnce({});
 
     const snap = collectSnapshot();
 

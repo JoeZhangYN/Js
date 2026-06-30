@@ -27,6 +27,8 @@ const snapshotText = requireText(snapshot, [
   "learnIncomingBurst",
   "BattleObservationLearningEvent.FINALIZE_TURN_OBSERVATIONS",
   "runBattleObservationLearning",
+  "BattleSkillReadinessEvent.READ_READY_MAP",
+  "runBattleSkillReadiness",
   "BattleMonsterViewEvent.READ_VIEW",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
@@ -68,6 +70,13 @@ for (const forbidden of [
 }
 if (/monsterStatus/.test(snapshotText)) {
   violations.push(`${snapshot.replaceAll("\\", "/")} must not pass full monsterStatus downstream`);
+}
+if (
+  /document\.getElementById|style\.opacity !== ["']0\.5["']|BATTLE_SKILL_IDS/.test(snapshotText)
+) {
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must read skillReady through battle skill readiness entry`
+  );
 }
 if (/snap\.fightingStyle/.test(scoringText)) {
   violations.push(`${physicalScoring.replaceAll("\\", "/")} must use opt.fightingStyle`);

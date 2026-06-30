@@ -53,6 +53,7 @@ const stallModeFile = path.join(root, "src/battle/battle-stall-mode.js");
 const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const turnContextFile = path.join(root, "src/battle/turn-context.js");
 const observationLearningFile = path.join(root, "src/battle/battle-observation-learning.js");
+const skillReadinessFile = path.join(root, "src/battle/battle-skill-readiness.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const dispatchFile = path.join(root, "src/battle/dispatch.js");
@@ -1099,6 +1100,27 @@ function checkSnapshot() {
   }
   if (!text.includes("BattleSkillUsageEvent.READ_USAGE")) {
     violations.push(`${rel(snapshotFile)} must read skillOTOS through battle skill usage entry`);
+  }
+  if (
+    !text.includes("BattleSkillReadinessEvent.READ_READY_MAP") ||
+    !text.includes("runBattleSkillReadiness")
+  ) {
+    violations.push(
+      `${rel(snapshotFile)} must read skillReady through battle skill readiness entry`
+    );
+  }
+  if (/document\.getElementById|style\.opacity !== ["']0\.5["']|BATTLE_SKILL_IDS/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not own skill readiness DOM rules`);
+  }
+  const skillReadinessText = fs.readFileSync(skillReadinessFile, "utf8");
+  for (const required of [
+    "BattleSkillReadinessEvent",
+    "BATTLE_SKILL_IDS",
+    "document.getElementById",
+  ]) {
+    if (!skillReadinessText.includes(required)) {
+      violations.push(`${rel(skillReadinessFile)} must own ${required}`);
+    }
   }
   if (/\bg\(\s*["']skillOTOS["']/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read skillOTOS directly`);
