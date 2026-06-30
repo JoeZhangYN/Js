@@ -13,13 +13,40 @@ const battleBuffPreparationEventHandlers = Object.freeze({
   [EVENT_DECIDE]: (event) => decideBuffPreparationResult(event.snap, event.opt),
 });
 
+const BUFF_PREPARATION_STEPS = [
+  {
+    capability: "infusion",
+    decide: decideInfusionStep,
+  },
+  {
+    capability: "channel",
+    decide: decideChannelStep,
+  },
+  {
+    capability: "buff",
+    decide: decideBuffStep,
+  },
+];
+
+function decideInfusionStep(buffPreparationContext) {
+  return decideInfusion(buffPreparationContext);
+}
+
+function decideChannelStep(buffPreparationContext) {
+  return decideChannel(buffPreparationContext);
+}
+
+function decideBuffStep(buffPreparationContext) {
+  return decideBuff(buffPreparationContext);
+}
+
 function decideBuffPreparationResult(snap = {}, opt = {}) {
-  const event = {
+  const buffPreparationContext = {
     opt,
     ...buffPreparationFacts(snap),
   };
-  for (const decide of [decideInfusion, decideChannel, decideBuff]) {
-    const result = decide(event);
+  for (const step of BUFF_PREPARATION_STEPS) {
+    const result = step.decide(buffPreparationContext);
     if (!isEmptyDecision(result)) return result;
   }
   return { kind: "noop" };

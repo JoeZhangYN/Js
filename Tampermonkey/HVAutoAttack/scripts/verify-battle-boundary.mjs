@@ -1960,6 +1960,10 @@ function checkBuffPreparationEntry() {
     "BattleBuffPreparationEvent",
     "DECIDE",
     "runBattleBuffPreparation",
+    "BUFF_PREPARATION_STEPS",
+    'capability: "infusion"',
+    'capability: "channel"',
+    'capability: "buff"',
     "buffPreparationFacts",
     "decideInfusion",
     "decideChannel",
@@ -1977,7 +1981,7 @@ function checkBuffPreparationEntry() {
     violations.push(`${rel(decideBuffPreparationFile)} may export only its event entry`);
   }
   if (
-    !/for\s*\(\s*const\s+decide\s+of\s+\[decideInfusion,\s*decideChannel,\s*decideBuff\]/.test(
+    !/const BUFF_PREPARATION_STEPS = \[\s*\{[\s\S]*capability: "infusion"[\s\S]*capability: "channel"[\s\S]*capability: "buff"[\s\S]*\]/.test(
       ownerText
     )
   ) {

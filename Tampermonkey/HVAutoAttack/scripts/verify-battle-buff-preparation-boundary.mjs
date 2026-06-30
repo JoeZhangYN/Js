@@ -23,6 +23,10 @@ for (const required of [
   "battleBuffPreparationEventHandlers",
   "DECIDE",
   "runBattleBuffPreparation",
+  "BUFF_PREPARATION_STEPS",
+  'capability: "infusion"',
+  'capability: "channel"',
+  'capability: "buff"',
   "buffPreparationFacts",
   "decideInfusion",
   "decideChannel",
@@ -30,6 +34,18 @@ for (const required of [
   "isEmptyDecision",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
+}
+
+if (
+  !/const BUFF_PREPARATION_STEPS = \[\s*\{[\s\S]*capability: "infusion"[\s\S]*capability: "channel"[\s\S]*capability: "buff"[\s\S]*\]/.test(
+    ownerText
+  )
+) {
+  violations.push(`${rel(owner)} must own explicit buff preparation priority order`);
+}
+
+if (/for \(const decide of \[/.test(ownerText)) {
+  violations.push(`${rel(owner)} must not hide buff preparation priority in an anonymous array`);
 }
 
 if (
