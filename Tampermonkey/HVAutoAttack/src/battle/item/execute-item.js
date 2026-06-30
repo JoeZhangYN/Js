@@ -19,6 +19,10 @@ export const BattleItemExecutionEvent = Object.freeze({
   APPLY_PLAN: EVENT_APPLY_PLAN,
 });
 
+const battleItemExecutionEventHandlers = Object.freeze({
+  [EVENT_APPLY_PLAN]: (event) => applyItemPlan(event.plan, event.snap),
+});
+
 function recordAutoTunePotionUse() {
   runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_POTION_USE });
 }
@@ -122,6 +126,5 @@ function applyItemPlan(plan, snap) {
 }
 
 export function runBattleItemExecution(event = { type: EVENT_APPLY_PLAN }) {
-  if (event.type === EVENT_APPLY_PLAN) return applyItemPlan(event.plan, event.snap);
-  return false;
+  return battleItemExecutionEventHandlers[event.type]?.(event) ?? false;
 }

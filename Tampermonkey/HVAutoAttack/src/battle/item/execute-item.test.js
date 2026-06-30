@@ -155,7 +155,13 @@ describe("runBattleItemExecution", () => {
     });
   });
 
-  it("rejects unknown events", () => {
+  it("rejects unknown item execution events", () => {
     expect(runBattleItemExecution({ type: "unknown" })).toBe(false);
+
+    expect(mocks.runAutoTuneAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleFocusCommand).not.toHaveBeenCalled();
+    expect(mocks.runBattleItemCommand).not.toHaveBeenCalled();
+    expect(mocks.runBattleSpiritToggleAutomation).not.toHaveBeenCalled();
+    expect(mocks.runRecoveryLearningAutomation).not.toHaveBeenCalled();
   });
 });
