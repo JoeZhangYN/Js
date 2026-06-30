@@ -111,6 +111,24 @@ function readBattleActionRulesText() {
     .join("\n");
 }
 
+function exportedNames(source) {
+  return Array.from(source.matchAll(/\bexport\s+(?:function|const)\s+([A-Za-z0-9_]+)/g)).map(
+    (match) => match[1]
+  );
+}
+
+function requireOnlyExports(file, text, expected) {
+  const actual = exportedNames(text);
+  const extra = actual.filter((name) => !expected.includes(name));
+  const missing = expected.filter((name) => !actual.includes(name));
+  for (const name of missing) {
+    violations.push(`${rel(file)} must export ${name}`);
+  }
+  for (const name of extra) {
+    violations.push(`${rel(file)} must not export ${name}; phase modules are action internals`);
+  }
+}
+
 function checkInit() {
   const text = fs.readFileSync(initFile, "utf8");
   const lines = text.split(/\r?\n/);
@@ -335,6 +353,7 @@ function checkTurnEntry() {
     }
   }
   const actionSequenceText = fs.readFileSync(actionSequenceFile, "utf8");
+  requireOnlyExports(actionSequenceFile, actionSequenceText, ["orderedBattleActionRules"]);
   for (const required of [
     "BATTLE_RULES",
     "orderedBattleActionRules",
@@ -351,12 +370,18 @@ function checkTurnEntry() {
     violations.push(`${rel(actionSequenceFile)} must keep BATTLE_RULES private`);
   }
   const attackActionSequenceText = fs.readFileSync(attackActionSequenceFile, "utf8");
+  requireOnlyExports(attackActionSequenceFile, attackActionSequenceText, [
+    "finalAttackActionRules",
+  ]);
   for (const required of ["finalAttackActionRules", "attack"]) {
     if (!attackActionSequenceText.includes(required)) {
       violations.push(`${rel(attackActionSequenceFile)} must own attack action ${required}`);
     }
   }
   const buffActionSequenceText = fs.readFileSync(buffActionSequenceFile, "utf8");
+  requireOnlyExports(buffActionSequenceFile, buffActionSequenceText, [
+    "buffPreparationActionRules",
+  ]);
   for (const required of [
     "buffPreparationActionRules",
     "useInfusions",
@@ -368,6 +393,9 @@ function checkTurnEntry() {
     }
   }
   const debuffActionSequenceText = fs.readFileSync(debuffActionSequenceFile, "utf8");
+  requireOnlyExports(debuffActionSequenceFile, debuffActionSequenceText, [
+    "offensiveDebuffActionRules",
+  ]);
   for (const required of [
     "offensiveDebuffActionRules",
     "burstControl",
@@ -381,6 +409,9 @@ function checkTurnEntry() {
     }
   }
   const survivalActionSequenceText = fs.readFileSync(survivalActionSequenceFile, "utf8");
+  requireOnlyExports(survivalActionSequenceFile, survivalActionSequenceText, [
+    "survivalActionRules",
+  ]);
   for (const required of ["survivalActionRules", "criticalBuffGuard", "useGem", "useScroll"]) {
     if (!survivalActionSequenceText.includes(required)) {
       violations.push(`${rel(survivalActionSequenceFile)} must own survival action ${required}`);
