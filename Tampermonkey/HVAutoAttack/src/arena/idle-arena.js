@@ -93,7 +93,7 @@ function startNextBattle() {
     .filter((id) => (id === "gr" || isNaN(id * 1) ? arena.gr > 0 : !arena.done.includes(id)));
   if (arena.array.length === 0) return;
   if (runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_IDLE_ARENA })) {
-    post(window.location.href, reloadCurrentPage, "recover=stamina");
+    runStaminaAutomation({ type: StaminaEvent.CLAIM_RECOVERY });
     return;
   }
   let href;

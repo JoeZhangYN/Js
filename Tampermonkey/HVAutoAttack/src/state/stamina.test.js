@@ -2,9 +2,16 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { StaminaEvent, runStaminaAutomation } from "./stamina.js";
 
 const mocks = vi.hoisted(() => ({
+  post: vi.fn(),
+  runNavigationAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
 }));
 
+vi.mock("../dom/http.js", () => ({ post: mocks.post }));
+vi.mock("../core/navigate.js", () => ({
+  NavigationEvent: Object.freeze({ RELOAD_NOW: "reloadNow" }),
+  runNavigationAutomation: mocks.runNavigationAutomation,
+}));
 vi.mock("./option.js", () => ({
   OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
@@ -18,6 +25,9 @@ function mockOptions(option = {}) {
 
 beforeEach(() => {
   document.body.innerHTML = "";
+  window.history.replaceState(null, "", "/battle");
+  mocks.post.mockReset();
+  mocks.runNavigationAutomation.mockReset();
   mocks.runOptionAutomation.mockReset();
   mockOptions();
 });
@@ -81,5 +91,19 @@ describe("stamina entry", () => {
     document.body.innerHTML =
       '<div id="stamina_readout"><div class="fc4 far"><div>85</div></div></div>';
     expect(runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_IDLE_ARENA })).toBe(false);
+  });
+
+  it("claims stamina recovery through one command entry", () => {
+    expect(runStaminaAutomation({ type: StaminaEvent.CLAIM_RECOVERY })).toBe(true);
+
+    expect(mocks.post).toHaveBeenCalledWith(
+      "http://localhost:3000/battle",
+      expect.any(Function),
+      "recover=stamina"
+    );
+
+    const reload = mocks.post.mock.calls[0][1];
+    reload();
+    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({ type: "reloadNow" });
   });
 });

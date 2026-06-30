@@ -1,5 +1,4 @@
 // 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
-import { post } from "../dom/http.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import {
@@ -32,10 +31,6 @@ export const EncounterEvent = Object.freeze({
   WIDGET_TIMER_ELAPSED: EVENT_WIDGET_TIMER_ELAPSED,
   WIDGET_NEWS_LOADED: EVENT_WIDGET_NEWS_LOADED,
 });
-
-function reloadCurrentPage() {
-  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
-}
 
 function claimLobby() {
   runEncounterLobbySchedule({ type: EncounterLobbyScheduleEvent.CANCEL_NEXT_CHECK });
@@ -93,10 +88,6 @@ function executeWidgetEvent(event) {
   return executeEncounterEntry(planEncounterWidgetEvent(event));
 }
 
-function postStaminaRecovery() {
-  post(window.location.href, reloadCurrentPage, "recover=stamina");
-}
-
 async function loadAndEnterEncounter() {
   const state = await runEncounterStateAutomation({ type: EncounterStateEvent.LOAD_KEY });
   return enterStoredEncounter(state || {});
@@ -122,7 +113,7 @@ function waitForCurrentState(event) {
 }
 
 function claimStaminaRecovery() {
-  postStaminaRecovery();
+  runStaminaAutomation({ type: StaminaEvent.CLAIM_RECOVERY });
   return claimLobby();
 }
 
