@@ -62,7 +62,17 @@ function requireText(relative, required) {
 
 walk(srcDir);
 
-requireText(owner, ["BattleSkillCommandEvent", "runBattleSkillCommand", "CLICK_READY", "isOn"]);
+requireText(owner, [
+  "BattleSkillCommandEvent",
+  "runBattleSkillCommand",
+  "battleSkillCommandEventHandlers",
+  "CLICK_READY",
+  "isOn",
+]);
+const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
+}
 requireText("src/battle/battle-target-command.js", [
   "BattleSkillCommandEvent.CLICK_READY",
   "runBattleSkillCommand",

@@ -16,7 +16,10 @@ function clickReady(skillId, afterClick) {
   return true;
 }
 
+const battleSkillCommandEventHandlers = Object.freeze({
+  [EVENT_CLICK_READY]: (event) => clickReady(event.skillId, event.afterClick),
+});
+
 export function runBattleSkillCommand(event) {
-  if (event.type === EVENT_CLICK_READY) return clickReady(event.skillId, event.afterClick);
-  return undefined;
+  return battleSkillCommandEventHandlers[event.type]?.(event);
 }

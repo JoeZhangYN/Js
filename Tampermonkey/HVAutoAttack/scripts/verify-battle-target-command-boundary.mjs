@@ -52,11 +52,16 @@ walk(srcDir);
 requireText(owner, [
   "BattleTargetCommandEvent",
   "runBattleTargetCommand",
+  "battleTargetCommandEventHandlers",
   "CLICK_TARGET",
   "CLICK_SKILL_THEN_TARGET",
   "TRY_SKILL_THEN_TARGET",
   "#mkey_",
 ]);
+const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
+}
 requireText("src/battle/dispatch.js", [
   "BattleTargetCommandEvent.CLICK_SKILL_THEN_TARGET",
   "runBattleTargetCommand",

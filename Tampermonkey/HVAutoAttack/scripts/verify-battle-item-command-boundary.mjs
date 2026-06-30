@@ -65,11 +65,16 @@ walk(srcDir);
 requireText(owner, [
   "BattleItemCommandEvent",
   "runBattleItemCommand",
+  "battleItemCommandEventHandlers",
   "CLICK_GEM",
   "CLICK_ITEM",
   "#ikey_p",
   "itemSelector",
 ]);
+const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
+}
 requireText("src/battle/dispatch.js", [
   "BattleItemCommandEvent.CLICK_ITEM",
   "runBattleItemCommand",

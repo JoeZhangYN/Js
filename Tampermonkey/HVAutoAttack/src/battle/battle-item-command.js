@@ -25,8 +25,11 @@ function clickItem(itemId, beforeClick) {
   return true;
 }
 
+const battleItemCommandEventHandlers = Object.freeze({
+  [EVENT_CLICK_GEM]: () => clickGem(),
+  [EVENT_CLICK_ITEM]: (event) => clickItem(event.itemId, event.beforeClick),
+});
+
 export function runBattleItemCommand(event) {
-  if (event.type === EVENT_CLICK_GEM) return clickGem();
-  if (event.type === EVENT_CLICK_ITEM) return clickItem(event.itemId, event.beforeClick);
-  return undefined;
+  return battleItemCommandEventHandlers[event.type]?.(event);
 }

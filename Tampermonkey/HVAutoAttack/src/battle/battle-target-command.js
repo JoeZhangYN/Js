@@ -56,18 +56,18 @@ function trySkillThenTarget(skillId, targetId, afterSkillClick, targetRequiresSk
   return true;
 }
 
-export function runBattleTargetCommand(event) {
-  if (event.type === EVENT_CLICK_TARGET) return clickTarget(event.targetId);
-  if (event.type === EVENT_CLICK_SKILL_THEN_TARGET) {
-    return clickSkillThenTarget(event.skillId, event.targetId);
-  }
-  if (event.type === EVENT_TRY_SKILL_THEN_TARGET) {
-    return trySkillThenTarget(
+const battleTargetCommandEventHandlers = Object.freeze({
+  [EVENT_CLICK_TARGET]: (event) => clickTarget(event.targetId),
+  [EVENT_CLICK_SKILL_THEN_TARGET]: (event) => clickSkillThenTarget(event.skillId, event.targetId),
+  [EVENT_TRY_SKILL_THEN_TARGET]: (event) =>
+    trySkillThenTarget(
       event.skillId,
       event.targetId,
       event.afterSkillClick,
       event.targetRequiresSkill
-    );
-  }
-  return undefined;
+    ),
+});
+
+export function runBattleTargetCommand(event) {
+  return battleTargetCommandEventHandlers[event.type]?.(event);
 }
