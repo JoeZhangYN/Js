@@ -28,7 +28,7 @@ const ATTACK_PLAN_CLEAR_PREDICATES = Object.freeze({
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult} { kind:"attack-plan", plan }
  */
-export function decideAttack(event = {}) {
+function decideAttack(event = {}) {
   return (attackDecisionEventHandlers[event.type] || attackDecisionEventHandlers[EVENT_DECIDE_PLAN])(
     event
   );
@@ -41,4 +41,8 @@ function willClearWithBigSkill(event) {
 
 function attackPlanWillClearWithBigSkill(plan) {
   return ATTACK_PLAN_CLEAR_PREDICATES[plan?.type]?.(plan) ?? false;
+}
+
+export function runAttackDecision(event = { type: EVENT_DECIDE_PLAN }) {
+  return decideAttack(event);
 }

@@ -30,7 +30,7 @@ for (const required of [
   "AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL",
   "runBattleAttackAction",
   "attackFacts",
-  "decideAttack",
+  "runAttackDecision",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
@@ -117,7 +117,7 @@ for (const relative of ["src/battle", "src/core"]) {
       normalized !== attackDecision &&
       /from\s+["'][^"']*attack\/attack-plan\.js["']/.test(text)
     ) {
-      violations.push(`${rel(normalized)} must not bypass decideAttack for attack plan decisions`);
+      violations.push(`${rel(normalized)} must not bypass runAttackDecision for attack plan decisions`);
     }
     if (
       normalized !== attackPlan &&
@@ -130,7 +130,7 @@ for (const relative of ["src/battle", "src/core"]) {
       normalized !== attackPlan &&
       /\bdecideAttackPlan\s*\(/.test(text)
     ) {
-      violations.push(`${rel(normalized)} must not call attack plan outside decideAttack`);
+      violations.push(`${rel(normalized)} must not call attack plan outside runAttackDecision`);
     }
   }
 }

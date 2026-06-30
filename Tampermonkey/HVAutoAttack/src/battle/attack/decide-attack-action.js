@@ -1,5 +1,5 @@
 import { attackFacts } from "./attack-facts.js";
-import { AttackDecisionEvent, decideAttack } from "./decide-attack.js";
+import { AttackDecisionEvent, runAttackDecision } from "./decide-attack.js";
 
 const EVENT_DECIDE = "decide";
 const EVENT_WILL_CLEAR_WITH_BIG_SKILL = "willClearWithBigSkill";
@@ -15,11 +15,11 @@ const battleAttackActionEventHandlers = Object.freeze({
 });
 
 function decideAttackActionResult(snap = {}, opt = {}) {
-  return decideAttack({ opt, ...attackFacts(snap) });
+  return runAttackDecision({ opt, ...attackFacts(snap) });
 }
 
 function willClearWithBigSkill(snap = {}, opt = {}) {
-  return decideAttack({
+  return runAttackDecision({
     type: AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL,
     opt,
     ...attackFacts(snap),

@@ -3028,7 +3028,7 @@ function checkFleeEntry() {
 function checkAttackEntry() {
   if (fs.existsSync(decideTierFile)) {
     violations.push(
-      `${rel(decideTierFile)} legacy spell-tier helper must stay deleted; tier decisions belong in decideAttack`
+      `${rel(decideTierFile)} legacy spell-tier helper must stay deleted; tier decisions belong in runAttackDecision`
     );
   }
   if (fs.existsSync(decideSkillFile)) {
@@ -3043,7 +3043,7 @@ function checkAttackEntry() {
   }
   const ownerText = fs.readFileSync(decideAttackFile, "utf8");
   for (const required of [
-    "decideAttack",
+    "runAttackDecision",
     "AttackDecisionEvent",
     "attackDecisionEventHandlers",
     "WILL_CLEAR_WITH_BIG_SKILL",
@@ -3097,7 +3097,12 @@ function checkAttackEntry() {
     violations.push(`${rel(decideAttackFile)} must not expose opt/snap attack input`);
   }
   const attackDecisionEntryBody =
-    ownerText.match(/export function decideAttack\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+    ownerText.match(/export function runAttackDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (
+    /\bexport\s+(?:function|const)\s+(?!AttackDecisionEvent\b|runAttackDecision\b)/.test(ownerText)
+  ) {
+    violations.push(`${rel(decideAttackFile)} may export only its event decision entry`);
+  }
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE_PLAN\]/.test(ownerText)) {
     violations.push(`${rel(decideAttackFile)} must route events through a frozen handler table`);
   }
@@ -3132,7 +3137,7 @@ function checkAttackEntry() {
     "AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL",
     "runBattleAttackAction",
     "attackFacts",
-    "decideAttack",
+    "runAttackDecision",
   ]) {
     if (!attackActionText.includes(required)) {
       violations.push(`${rel(decideAttackActionFile)} must own attack action ${required}`);
@@ -3239,13 +3244,13 @@ function checkAttackEntry() {
         file !== attackPlanFile &&
         /from\s+["'][^"']*physical-skill-scoring\.js["']/.test(text)
       ) {
-        violations.push(`${rel(file)} must not bypass decideAttack for physical skill scoring`);
+        violations.push(`${rel(file)} must not bypass runAttackDecision for physical skill scoring`);
       }
       if (
         file !== spellAttackPlanFile &&
         /from\s+["'][^"']*auto-element-selection\.js["']/.test(text)
       ) {
-        violations.push(`${rel(file)} must not bypass decideAttack for auto element selection`);
+        violations.push(`${rel(file)} must not bypass runAttackDecision for auto element selection`);
       }
     }
   }

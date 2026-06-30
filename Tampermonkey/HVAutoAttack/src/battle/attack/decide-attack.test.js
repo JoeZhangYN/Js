@@ -1,10 +1,10 @@
-// 6B-2：decideAttack 6 分支 + fall-through 回归锁(纯决策,喂 mock monsterFacts 断言 AttackPlan)。
+// 6B-2：runAttackDecision 6 分支 + fall-through 回归锁(纯决策,喂 mock monsterFacts 断言 AttackPlan)。
 // file-size-gate: exempt test-verbose（6 分支 + fall-through 全覆盖，逐例断言；与 decide-item.test 同类）
 // 统一视图后：怪物事实全在 snap.view（finWeight/hpAbsNow/hpMax/buffs/order），不再传第三参 monsterStatus。
 import { describe, it, expect } from "vitest";
-import { AttackDecisionEvent, decideAttack } from "./decide-attack.js";
+import { AttackDecisionEvent, runAttackDecision } from "./decide-attack.js";
 
-/** 最小 snap 工厂(只填 decideAttack 及其纯 callee 读到的字段)。 */
+/** 最小 snap 工厂(只填 runAttackDecision 及其纯 callee 读到的字段)。 */
 function snap(over = {}) {
   return {
     spiritOn: true,
@@ -78,11 +78,11 @@ function attackFacts(snap) {
   };
 }
 
-const plan = (opt, s) => decideAttack({ opt, ...attackFacts(s) }).plan;
+const plan = (opt, s) => runAttackDecision({ opt, ...attackFacts(s) }).plan;
 
-describe("decideAttack 返 {kind:'attack-plan'}", () => {
+describe("runAttackDecision 返 {kind:'attack-plan'}", () => {
   it("包一层 attack-plan", () => {
-    const r = decideAttack({
+    const r = runAttackDecision({
       opt: {},
       ...attackFacts(snap({ view: [vmon({ id: 1, hpAbsNow: 1, hpMax: 1 })] })),
     });
@@ -91,7 +91,7 @@ describe("decideAttack 返 {kind:'attack-plan'}", () => {
   });
 
   it("unknown attack decision events use the attack-plan default path", () => {
-    const r = decideAttack({
+    const r = runAttackDecision({
       type: "unknown",
       opt: {},
       ...attackFacts(snap({ view: [vmon({ id: 4, order: 0 })] })),
@@ -101,7 +101,7 @@ describe("decideAttack 返 {kind:'attack-plan'}", () => {
   });
 });
 
-describe("decideAttack 6 分支", () => {
+describe("runAttackDecision 6 分支", () => {
   it("1. focus:opt.focus + 条件满足", () => {
     expect(plan({ focus: true }, snap())).toEqual({ type: "focus" });
   });
@@ -282,7 +282,7 @@ describe("decideAttack 6 分支", () => {
   });
 });
 
-describe("decideAttack 法术 tier 入口契约", () => {
+describe("runAttackDecision 法术 tier 入口契约", () => {
   it("少怪降级(aliveCount<=阈值) → 仅 tier1", () => {
     const s = snap({
       attackStatus: 2,
@@ -314,7 +314,7 @@ describe("decideAttack 法术 tier 入口契约", () => {
   });
 });
 
-describe("decideAttack 物理技能评分入口契约", () => {
+describe("runAttackDecision 物理技能评分入口契约", () => {
   it("少怪降级时不选 OFC/FRD，落到可用 T1", () => {
     const s = snap({
       attackStatus: 0,
@@ -350,7 +350,7 @@ describe("decideAttack 物理技能评分入口契约", () => {
   });
 });
 
-describe("decideAttack 清场大招查询入口契约", () => {
+describe("runAttackDecision 清场大招查询入口契约", () => {
   it("复用攻击计划判断 OFC/FRD 是否会在攻击阶段开火", () => {
     const s = snap({
       attackStatus: 0,
@@ -360,7 +360,7 @@ describe("decideAttack 清场大招查询入口契约", () => {
       view: [vmon({ id: 1, hpPercent: 0.8 })],
     });
     expect(
-      decideAttack({
+      runAttackDecision({
         type: AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL,
         opt: { skillSwitch: true, skill_OFC: true },
         ...attackFacts(s),
@@ -377,7 +377,7 @@ describe("decideAttack 清场大招查询入口契约", () => {
       view: [vmon({ id: 1, hpPercent: 0.8 })],
     });
     expect(
-      decideAttack({
+      runAttackDecision({
         type: AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL,
         opt: { skillSwitch: true, skill_OFC: true },
         ...attackFacts(s),
