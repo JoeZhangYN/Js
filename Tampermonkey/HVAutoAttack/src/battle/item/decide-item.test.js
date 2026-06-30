@@ -1,7 +1,7 @@
 // item 4 step PURE decide 回归锁（纯决策，喂 mock snap 断言 ItemPlan；decide 不读 DOM）。
 // file-size-gate: exempt test-verbose（19 用例覆盖 gem/potion/stall/scroll 四 step）
 import { describe, it, expect } from "vitest";
-import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "./decide-item.js";
+import { BattleItemDecisionEvent, runBattleItemDecision } from "./decide-item.js";
 
 /** 最小 snap 工厂（只填 decide-item 及其纯 callee 读到的字段）。 */
 function snap(over = {}) {
@@ -74,10 +74,20 @@ function potionFacts(snap) {
   };
 }
 
-const gemPlan = (opt, s) => decideGemUse({ opt, ...gemFacts(s) }).plan;
-const potionPlan = (opt, s) => decidePotion({ opt, ...potionFacts(s) }).plan;
-const stallPlan = (opt, s) => decideStallTopup({ opt, ...stallTopupFacts(s) }).plan;
-const scrollPlan = (opt, s) => decideScroll({ opt, ...scrollFacts(s) }).plan;
+const gemPlan = (opt, s) =>
+  runBattleItemDecision({ type: BattleItemDecisionEvent.DECIDE_GEM, opt, ...gemFacts(s) }).plan;
+const potionPlan = (opt, s) =>
+  runBattleItemDecision({ type: BattleItemDecisionEvent.DECIDE_POTION, opt, ...potionFacts(s) })
+    .plan;
+const stallPlan = (opt, s) =>
+  runBattleItemDecision({
+    type: BattleItemDecisionEvent.DECIDE_STALL_TOPUP,
+    opt,
+    ...stallTopupFacts(s),
+  }).plan;
+const scrollPlan = (opt, s) =>
+  runBattleItemDecision({ type: BattleItemDecisionEvent.DECIDE_SCROLL, opt, ...scrollFacts(s) })
+    .plan;
 
 describe("decideGemUse", () => {
   it("无宝石（gemName 空）→ noop", () => {

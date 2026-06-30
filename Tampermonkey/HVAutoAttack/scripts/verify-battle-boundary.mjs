@@ -1585,6 +1585,67 @@ function checkAllDebuffEntry() {
   }
 }
 
+function checkBattleItemDecisionEntry() {
+  const itemText = fs.readFileSync(decideItemFile, "utf8");
+  for (const required of [
+    "BattleItemDecisionEvent",
+    "runBattleItemDecision",
+    "DECIDE_GEM",
+    "DECIDE_POTION",
+    "DECIDE_STALL_TOPUP",
+    "DECIDE_SCROLL",
+  ]) {
+    if (!itemText.includes(required)) {
+      violations.push(`${rel(decideItemFile)} must expose item decision entry ${required}`);
+    }
+  }
+  for (const legacy of ["decideGemUse", "decidePotion", "decideStallTopup"]) {
+    if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(itemText)) {
+      violations.push(`${rel(decideItemFile)} must not export legacy item decision ${legacy}`);
+    }
+  }
+  if (/export\s*\{\s*decideScroll\s*\}/.test(itemText)) {
+    violations.push(`${rel(decideItemFile)} must route scroll through runBattleItemDecision`);
+  }
+
+  const rulesText = readBattleActionRulesText();
+  for (const required of [
+    "runBattleItemDecision",
+    "BattleItemDecisionEvent.DECIDE_GEM",
+    "BattleItemDecisionEvent.DECIDE_POTION",
+    "BattleItemDecisionEvent.DECIDE_STALL_TOPUP",
+    "BattleItemDecisionEvent.DECIDE_SCROLL",
+  ]) {
+    if (!rulesText.includes(required)) {
+      violations.push(`${rel(battleRulesFile)} must call item decisions through ${required}`);
+    }
+  }
+  for (const legacy of ["decideGemUse", "decidePotion", "decideStallTopup", "decideScroll"]) {
+    if (new RegExp(`\\b${legacy}\\s*\\(`).test(rulesText)) {
+      violations.push(`${rel(battleRulesFile)} must not call legacy item decision ${legacy}`);
+    }
+  }
+
+  const battleDir = path.join(root, "src/battle");
+  for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+      continue;
+    }
+    const file = path.join(entry.parentPath, entry.name);
+    if (file === decideItemFile || file === decideScrollFile) continue;
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      /from\s+["'][^"']*item\/decide-item\.js["']/.test(source) &&
+      /\b(?:decideGemUse|decidePotion|decideStallTopup|decideScroll)\b/.test(source)
+    ) {
+      violations.push(`${rel(file)} must import only the item decision entry`);
+    }
+    if (/from\s+["'][^"']*item\/decide-scroll\.js["']/.test(source)) {
+      violations.push(`${rel(file)} must not bypass item decision entry for scroll`);
+    }
+  }
+}
+
 function checkItemScrollEntry() {
   const itemText = fs.readFileSync(decideScrollFile, "utf8");
   for (const required of [
@@ -2128,6 +2189,7 @@ checkChannelEntry();
 checkBuffEntry();
 checkSingleDebuffEntry();
 checkAllDebuffEntry();
+checkBattleItemDecisionEntry();
 checkItemGemEntry();
 checkItemStallTopupEntry();
 checkItemScrollEntry();

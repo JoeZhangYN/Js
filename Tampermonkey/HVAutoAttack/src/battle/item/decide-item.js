@@ -4,6 +4,7 @@
 // 复用现有纯 helper：decideGem / dynamicHpThreshold / isPotionWasteful / checkCondition。
 import { checkCondition } from "../../settings/condition-eval.js";
 import { decideGem } from "./decide-gem.js";
+import { decideScroll } from "./decide-scroll.js";
 import { dynamicHpThreshold } from "../dynamic-threshold.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { isPotionWasteful } from "../potion-economy.js";
@@ -12,7 +13,32 @@ import {
   runRecoveryLearningAutomation,
 } from "../../state/recovery-learner.js";
 
-export { decideScroll } from "./decide-scroll.js";
+const DECIDE_GEM = "decide-gem";
+const DECIDE_POTION = "decide-potion";
+const DECIDE_STALL_TOPUP = "decide-stall-topup";
+const DECIDE_SCROLL = "decide-scroll";
+
+export const BattleItemDecisionEvent = Object.freeze({
+  DECIDE_GEM,
+  DECIDE_POTION,
+  DECIDE_STALL_TOPUP,
+  DECIDE_SCROLL,
+});
+
+export function runBattleItemDecision(event = {}) {
+  switch (event.type) {
+    case DECIDE_GEM:
+      return decideGemUse(event);
+    case DECIDE_POTION:
+      return decidePotion(event);
+    case DECIDE_STALL_TOPUP:
+      return decideStallTopup(event);
+    case DECIDE_SCROLL:
+      return decideScroll(event);
+    default:
+      return { kind: "item-plan", plan: { type: "noop" } };
+  }
+}
 
 function stallTopupFacts(event) {
   return {
@@ -36,7 +62,7 @@ function readRecovery(potionId) {
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult} { kind:"item-plan", plan }
  */
-export function decideGemUse(event = {}) {
+function decideGemUse(event = {}) {
   const opt = event.opt || {};
   if (!event.gemName) return { kind: "item-plan", plan: { type: "noop" } };
   const optEffective = { ...opt };
@@ -56,7 +82,7 @@ export function decideGemUse(event = {}) {
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult} { kind:"item-plan", plan }
  */
-export function decidePotion(event = {}) {
+function decidePotion(event = {}) {
   const opt = event.opt || {};
   if (!opt.item || !opt.itemOrderName || !opt.itemOrderValue) {
     return { kind: "item-plan", plan: { type: "potion", candidates: [], noWaste: false } };
@@ -92,7 +118,7 @@ export function decidePotion(event = {}) {
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult} { kind:"item-plan", plan }
  */
-export function decideStallTopup(event = {}) {
+function decideStallTopup(event = {}) {
   const opt = event.opt || {};
   if (opt.stallMode === false) return { kind: "item-plan", plan: { type: "noop" } };
   if (
