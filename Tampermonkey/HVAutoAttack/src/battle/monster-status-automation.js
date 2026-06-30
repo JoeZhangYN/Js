@@ -4,7 +4,7 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
-import { parseMonsterRoster, buildMonsterStatus } from "./log-parser.js";
+import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js";
 import { updateMonsterHpRuntime } from "./monster-status-hp.js";
 import { MonsterStatusViewEvent, runMonsterStatusView } from "./monster-status-view.js";
 import { BattleRoundStartLogEvent, runBattleRoundStartLog } from "./round-start-log.js";
@@ -88,8 +88,15 @@ function readCombatantCounts() {
 }
 
 function recordSpawnRoster(event) {
-  const { roster } = parseMonsterRoster(event.battleLogRows, event.monsterAll ?? g("monsterAll"));
-  const monsterStatus = buildMonsterStatus(roster);
+  const { roster } = runBattleLogParser({
+    type: BattleLogParserEvent.PARSE_MONSTER_ROSTER,
+    battleLogRows: event.battleLogRows,
+    monsterAll: event.monsterAll ?? g("monsterAll"),
+  });
+  const monsterStatus = runBattleLogParser({
+    type: BattleLogParserEvent.BUILD_MONSTER_STATUS,
+    roster,
+  });
   setValue(STORAGE_KEYS.MONSTER_STATUS, monsterStatus);
   g("monsterStatus", monsterStatus);
 }
@@ -110,8 +117,15 @@ function repairMonsterStatus() {
   const hasInit = battleLog.rows.length && /Initializing/.test(battleLog.initializingText);
 
   if (hasInit) {
-    const { roster } = parseMonsterRoster(battleLog.rows, repairSnapshot.monsterAll);
-    setValue(STORAGE_KEYS.MONSTER_STATUS, buildMonsterStatus(roster));
+    const { roster } = runBattleLogParser({
+      type: BattleLogParserEvent.PARSE_MONSTER_ROSTER,
+      battleLogRows: battleLog.rows,
+      monsterAll: repairSnapshot.monsterAll,
+    });
+    setValue(
+      STORAGE_KEYS.MONSTER_STATUS,
+      runBattleLogParser({ type: BattleLogParserEvent.BUILD_MONSTER_STATUS, roster })
+    );
     reloadCurrentPage();
     return;
   }

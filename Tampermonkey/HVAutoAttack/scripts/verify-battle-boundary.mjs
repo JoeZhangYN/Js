@@ -1508,8 +1508,10 @@ function checkSnapshot() {
   const logTelemetryText = fs.readFileSync(logTelemetryFile, "utf8");
   for (const required of [
     "BattleLogTelemetryEvent",
-    "parseBattleLog",
-    "estimatePlayerIncomingDps",
+    "BattleLogParserEvent.PARSE_CURRENT_LOG",
+    "BattleLogParserEvent.ESTIMATE_PLAYER_INCOMING_DPS",
+    "BattleLogParserEvent.ESTIMATE_PER_MONSTER_DPS",
+    "runBattleLogParser",
   ]) {
     if (!logTelemetryText.includes(required)) {
       violations.push(`${rel(logTelemetryFile)} must own ${required}`);

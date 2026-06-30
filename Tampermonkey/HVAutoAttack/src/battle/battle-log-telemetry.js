@@ -1,4 +1,4 @@
-import { estimatePerMonsterDps, estimatePlayerIncomingDps, parseBattleLog } from "./log-parser.js";
+import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js";
 
 const EVENT_READ_CURRENT = "readCurrent";
 
@@ -25,11 +25,19 @@ const battleLogTelemetryEventHandlers = Object.freeze({
 });
 
 function readCurrentTelemetry(turn) {
-  const battleLog = parseBattleLog();
+  const battleLog = runBattleLogParser({ type: BattleLogParserEvent.PARSE_CURRENT_LOG });
   return {
     battleLog,
-    playerIncomingDps: estimatePlayerIncomingDps(battleLog, turn),
-    monsterDpsByName: estimatePerMonsterDps(battleLog, turn),
+    playerIncomingDps: runBattleLogParser({
+      type: BattleLogParserEvent.ESTIMATE_PLAYER_INCOMING_DPS,
+      events: battleLog,
+      turn,
+    }),
+    monsterDpsByName: runBattleLogParser({
+      type: BattleLogParserEvent.ESTIMATE_PER_MONSTER_DPS,
+      events: battleLog,
+      turn,
+    }),
   };
 }
 

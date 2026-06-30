@@ -13,6 +13,8 @@ const maxHpInferenceTest = path.normalize("src/battle/monster-max-hp-inference.t
 const targetWeight = path.normalize("src/battle/monster-target-weight.js");
 const targetWeightTest = path.normalize("src/battle/monster-target-weight.test.js");
 const parserImpl = path.normalize("src/battle/log-parser.js");
+const parserEntry = path.normalize("src/battle/battle-log-parser.js");
+const parserEntryTest = path.normalize("src/battle/battle-log-parser.test.js");
 const roundStart = path.normalize("src/battle/battle-round-start.js");
 const actionEventBridge = path.normalize("src/battle/battle-action-event-bridge.js");
 const violations = [];
@@ -87,7 +89,9 @@ function checkEntry() {
     "normalizeCombatantCount",
     "combatantCounts",
     "updateMonsterHpRuntime",
-    "buildMonsterStatus",
+    "BattleLogParserEvent.PARSE_MONSTER_ROSTER",
+    "BattleLogParserEvent.BUILD_MONSTER_STATUS",
+    "runBattleLogParser",
     "monsterStatus",
     "REFRESH_COMBATANT_COUNTS",
     "PREPARE_ROUND_START",
@@ -160,6 +164,37 @@ function checkEntry() {
 }
 
 function checkParser() {
+  const entryText = fs.readFileSync(path.join(root, parserEntry), "utf8");
+  for (const required of [
+    "BattleLogParserEvent",
+    "battleLogParserEventHandlers",
+    "runBattleLogParser",
+    "PARSE_CURRENT_LOG",
+    "ESTIMATE_PLAYER_INCOMING_DPS",
+    "ESTIMATE_PER_MONSTER_DPS",
+    "PARSE_MONSTER_ROSTER",
+    "BUILD_MONSTER_STATUS",
+    "ACCUMULATE_DAMAGE_BY_MONSTER",
+  ]) {
+    if (!entryText.includes(required)) {
+      violations.push(`${parserEntry.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleLogParserEvent\b|runBattleLogParser\b)/.test(
+      entryText
+    )
+  ) {
+    violations.push(`${parserEntry.replaceAll("\\", "/")} may export only its event entry`);
+  }
+  if (!fs.existsSync(path.join(root, parserEntryTest))) {
+    violations.push(`${parserEntryTest.replaceAll("\\", "/")} must cover battle log parser entry`);
+  } else {
+    const testText = fs.readFileSync(path.join(root, parserEntryTest), "utf8");
+    if (!testText.includes("rejects unknown battle log parser events")) {
+      violations.push(`${parserEntryTest.replaceAll("\\", "/")} must cover unknown parser events`);
+    }
+  }
   const text = fs.readFileSync(path.join(root, parserImpl), "utf8");
   if (!/function parseMonsterRoster\(battleLogRows, monsterAll\)/.test(text)) {
     violations.push(
@@ -272,7 +307,8 @@ function checkMaxHpInference() {
     "export function runMonsterMaxHpInference",
     "monsterMaxHpInferenceEventHandlers",
     "APPLY_DEATHS",
-    "accumulateDamageByMonster",
+    "BattleLogParserEvent.ACCUMULATE_DAMAGE_BY_MONSTER",
+    "runBattleLogParser",
     "MonsterDbStoreEvent.HP_READ",
     "MonsterDbStoreEvent.HP_WRITE",
     "inferredThisPage",
@@ -348,6 +384,26 @@ function checkTargetWeight() {
   }
 }
 
+function checkLogParserImports() {
+  const allowed = new Set([
+    parserEntry,
+    parserEntryTest,
+    path.normalize("src/battle/log-parser.test.js"),
+  ]);
+  for (const item of fs.readdirSync(srcDir, { recursive: true, withFileTypes: true })) {
+    if (!item.isFile() || !item.name.endsWith(".js")) continue;
+    const file = path.join(item.parentPath, item.name);
+    const relative = path.normalize(path.relative(root, file));
+    if (allowed.has(relative)) continue;
+    const text = fs.readFileSync(file, "utf8");
+    if (/from\s+["'][^"']*(?:^|[\\/])log-parser\.js["']/.test(text)) {
+      violations.push(
+        `${relative.replaceAll("\\", "/")} must parse battle logs through runBattleLogParser`
+      );
+    }
+  }
+}
+
 walk(srcDir);
 checkEntry();
 checkStatusView();
@@ -355,6 +411,7 @@ checkHpImpl();
 checkMaxHpInference();
 checkTargetWeight();
 checkParser();
+checkLogParserImports();
 
 if (violations.length) {
   console.error("[verify-monster-status-boundary] FAIL");

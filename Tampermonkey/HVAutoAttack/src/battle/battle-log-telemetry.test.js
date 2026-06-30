@@ -2,15 +2,27 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleLogTelemetryEvent, runBattleLogTelemetry } from "./battle-log-telemetry.js";
 
 const mocks = vi.hoisted(() => ({
-  estimatePerMonsterDps: vi.fn(() => ({ Alpha: { total: 10, perTurn: 5, count: 1 } })),
-  estimatePlayerIncomingDps: vi.fn(() => ({ total: 10, sampleCount: 1 })),
-  parseBattleLog: vi.fn(() => [{ kind: "player-incoming", source: "Alpha", dmg: 10 }]),
+  runBattleLogParser: vi.fn((event) => {
+    if (event.type === "parseCurrentLog") {
+      return [{ kind: "player-incoming", source: "Alpha", dmg: 10 }];
+    }
+    if (event.type === "estimatePlayerIncomingDps") {
+      return { total: 10, sampleCount: 1 };
+    }
+    if (event.type === "estimatePerMonsterDps") {
+      return { Alpha: { total: 10, perTurn: 5, count: 1 } };
+    }
+    return undefined;
+  }),
 }));
 
-vi.mock("./log-parser.js", () => ({
-  estimatePerMonsterDps: mocks.estimatePerMonsterDps,
-  estimatePlayerIncomingDps: mocks.estimatePlayerIncomingDps,
-  parseBattleLog: mocks.parseBattleLog,
+vi.mock("./battle-log-parser.js", () => ({
+  BattleLogParserEvent: Object.freeze({
+    PARSE_CURRENT_LOG: "parseCurrentLog",
+    ESTIMATE_PLAYER_INCOMING_DPS: "estimatePlayerIncomingDps",
+    ESTIMATE_PER_MONSTER_DPS: "estimatePerMonsterDps",
+  }),
+  runBattleLogParser: mocks.runBattleLogParser,
 }));
 
 beforeEach(() => {
@@ -26,9 +38,17 @@ describe("runBattleLogTelemetry", () => {
       playerIncomingDps: { total: 10, sampleCount: 1 },
       monsterDpsByName: { Alpha: { total: 10, perTurn: 5, count: 1 } },
     });
-    expect(mocks.parseBattleLog).toHaveBeenCalledTimes(1);
-    expect(mocks.estimatePlayerIncomingDps).toHaveBeenCalledWith(result.battleLog, 2);
-    expect(mocks.estimatePerMonsterDps).toHaveBeenCalledWith(result.battleLog, 2);
+    expect(mocks.runBattleLogParser).toHaveBeenCalledWith({ type: "parseCurrentLog" });
+    expect(mocks.runBattleLogParser).toHaveBeenCalledWith({
+      type: "estimatePlayerIncomingDps",
+      events: result.battleLog,
+      turn: 2,
+    });
+    expect(mocks.runBattleLogParser).toHaveBeenCalledWith({
+      type: "estimatePerMonsterDps",
+      events: result.battleLog,
+      turn: 2,
+    });
   });
 
   it("rejects unknown events without parsing or estimating telemetry", () => {
@@ -45,8 +65,6 @@ describe("runBattleLogTelemetry", () => {
       },
       monsterDpsByName: {},
     });
-    expect(mocks.parseBattleLog).not.toHaveBeenCalled();
-    expect(mocks.estimatePlayerIncomingDps).not.toHaveBeenCalled();
-    expect(mocks.estimatePerMonsterDps).not.toHaveBeenCalled();
+    expect(mocks.runBattleLogParser).not.toHaveBeenCalled();
   });
 });

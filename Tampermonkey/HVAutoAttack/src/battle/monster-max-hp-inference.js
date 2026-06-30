@@ -1,6 +1,6 @@
 import { MonsterDbStoreEvent, runMonsterDbStoreAutomation } from "../state/monster-db-store.js";
 import { normalizeMonsterName } from "../monster/monster-identity.js";
-import { accumulateDamageByMonster } from "./log-parser.js";
+import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js";
 
 const EVENT_APPLY_DEATHS = "applyDeaths";
 
@@ -21,7 +21,13 @@ const inferredThisPage = new Set();
 
 function makeDeps(deps) {
   return {
-    accumulateDamageByMonster: deps.accumulateDamageByMonster || accumulateDamageByMonster,
+    accumulateDamageByMonster:
+      deps.accumulateDamageByMonster ||
+      ((events) =>
+        runBattleLogParser({
+          type: BattleLogParserEvent.ACCUMULATE_DAMAGE_BY_MONSTER,
+          events,
+        })),
     normalizeMonsterName: deps.normalizeMonsterName || normalizeMonsterName,
     readStoredMaxHp:
       deps.readStoredMaxHp ||

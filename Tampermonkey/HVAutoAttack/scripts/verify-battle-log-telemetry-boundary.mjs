@@ -23,9 +23,10 @@ for (const required of [
   "battleLogTelemetryEventHandlers",
   "runBattleLogTelemetry",
   "READ_CURRENT",
-  "parseBattleLog",
-  "estimatePlayerIncomingDps",
-  "estimatePerMonsterDps",
+  "BattleLogParserEvent.PARSE_CURRENT_LOG",
+  "BattleLogParserEvent.ESTIMATE_PLAYER_INCOMING_DPS",
+  "BattleLogParserEvent.ESTIMATE_PER_MONSTER_DPS",
+  "runBattleLogParser",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must own ${required}`);
