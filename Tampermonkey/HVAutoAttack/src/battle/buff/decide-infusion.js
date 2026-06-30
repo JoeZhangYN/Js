@@ -1,5 +1,6 @@
 // PURE: 元素灌注决策。attackStatus 决定灌注种类，已存在效果则跳过。
 import { checkCondition } from "../../settings/condition-eval.js";
+import { isPlayerBuffActive } from "./player-buff-state.js";
 
 const INFUSION_LIB = [
   null,
@@ -24,7 +25,7 @@ export function decideInfusion(event = {}) {
   const lib = INFUSION_LIB[status];
   if (!lib) return { kind: "noop" };
   // 已存在该灌注 buff → 不重复施
-  if ((event.playerBuffs || []).includes(lib.img)) return { kind: "noop" };
+  if (isPlayerBuffActive(event, lib.img)) return { kind: "noop" };
   return {
     kind: "item-command",
     itemId: lib.id,

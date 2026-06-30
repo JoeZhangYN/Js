@@ -8,7 +8,7 @@
 // 原 DOM buff 探活 → event.playerEffects（明细 img/name/turns）+ event.playerBuffs（img 名列表）。
 import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
 import { NAME_TO_BUFF_CODE } from "../../data/spell-lib.js";
-import { shouldRecastPlayerBuff } from "./player-buff-recast.js";
+import { isPlayerBuffActive, shouldRecastPlayerBuff } from "./player-buff-state.js";
 
 /**
  * @param {object} event
@@ -64,7 +64,7 @@ function decidePlan(event) {
     // Cloak of the Fallen：玩家无 sparklife buff 且 422 ready → 续 Spark of Life
     if (
       name === "Cloak of the Fallen" &&
-      !(event.playerBuffs || []).includes("sparklife") &&
+      !isPlayerBuffActive(event, "sparklife") &&
       skillReady["422"]
     ) {
       return { type: "click", skillId: "422" };

@@ -1,3 +1,8 @@
+export function isPlayerBuffActive(event = {}, img) {
+  if (!img) return false;
+  return (event.playerBuffs || []).includes(img);
+}
+
 export function shouldRecastPlayerBuff(event = {}, img) {
   if (!img) return false;
   const turnsByImg = event.playerEffectTurns || {};

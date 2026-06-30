@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { shouldRecastPlayerBuff } from "./player-buff-recast.js";
+import { isPlayerBuffActive, shouldRecastPlayerBuff } from "./player-buff-state.js";
+
+describe("isPlayerBuffActive", () => {
+  it("missing buff image is not active", () => {
+    expect(isPlayerBuffActive({}, undefined)).toBe(false);
+    expect(isPlayerBuffActive({}, "")).toBe(false);
+  });
+
+  it("checks exact playerBuffs entries", () => {
+    expect(isPlayerBuffActive({ playerBuffs: ["haste"] }, "haste")).toBe(true);
+    expect(isPlayerBuffActive({ playerBuffs: ["hastened"] }, "haste")).toBe(false);
+  });
+});
 
 describe("shouldRecastPlayerBuff", () => {
   it("missing buff image is not a recast request", () => {

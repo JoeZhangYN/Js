@@ -3,7 +3,7 @@
 // Phase 5b-2 wave 1 第 1 个 L1 切缝示例。
 import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
 import { checkCondition } from "../../settings/condition-eval.js";
-import { shouldRecastPlayerBuff } from "./player-buff-recast.js";
+import { isPlayerBuffActive, shouldRecastPlayerBuff } from "./player-buff-state.js";
 
 const DRAUGHT_PACK = [
   ["HD", { id: 11191, img: "healthpot" }],
@@ -49,7 +49,7 @@ export function decideBuff(event = {}) {
 
   // Phase 2: draughts (items 5 个)
   for (const [key, draught] of DRAUGHT_PACK) {
-    if ((event.playerBuffs || []).includes(draught.img)) continue;
+    if (isPlayerBuffActive(event, draught.img)) continue;
     if (!buffSkill[key]) continue;
     if (!checkCondition(opt[`buffSkill${key}Condition`], event.conditionFacts)) continue;
     return {
