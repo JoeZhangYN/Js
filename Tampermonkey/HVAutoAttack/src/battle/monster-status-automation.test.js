@@ -154,4 +154,14 @@ describe("monster status automation", () => {
       expect.objectContaining({ order: 1, hpNow: 2001 })
     );
   });
+
+  it("rejects unknown monster status events without side effects", () => {
+    const status = [{ order: 0, monsterId: 101, hp: 1000 }];
+    g("monsterStatus", status);
+
+    expect(runMonsterStatusAutomation({ type: "unknown" })).toBe(false);
+
+    expect(g("monsterStatus")).toBe(status);
+    expect(getValue(STORAGE_KEYS.MONSTER_STATUS, true)).toBeNull();
+  });
 });

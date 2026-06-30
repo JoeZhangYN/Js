@@ -30,6 +30,17 @@ export const MonsterStatusEvent = Object.freeze({
   READ_STATUS: EVENT_READ_STATUS,
 });
 
+const monsterStatusEventHandlers = Object.freeze({
+  [EVENT_ENSURE_READY]: () => ensureMonsterStatusReady(),
+  [EVENT_REPAIR]: () => repairMonsterStatus(),
+  [EVENT_PREPARE_ROUND_START]: (event) => prepareRoundStart(event),
+  [EVENT_UPDATE_HP]: () => updateMonsterHpRuntime(),
+  [EVENT_REFRESH_COMBATANT_COUNTS]: () => refreshCombatantCounts(),
+  [EVENT_READ_COMBATANT_COUNTS]: () => readCombatantCounts(),
+  [EVENT_READ_IDS_BY_ORDER]: () => readMonsterIdsByOrder(),
+  [EVENT_READ_STATUS]: () => readMonsterStatus(),
+});
+
 function reloadCurrentPage() {
   runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
 }
@@ -137,22 +148,5 @@ function readMonsterStatus() {
 }
 
 export function runMonsterStatusAutomation(event = { type: EVENT_ENSURE_READY }) {
-  if (event.type === EVENT_ENSURE_READY) {
-    return ensureMonsterStatusReady();
-  } else if (event.type === EVENT_REPAIR) {
-    repairMonsterStatus();
-  } else if (event.type === EVENT_PREPARE_ROUND_START) {
-    return prepareRoundStart(event);
-  } else if (event.type === EVENT_UPDATE_HP) {
-    updateMonsterHpRuntime();
-  } else if (event.type === EVENT_REFRESH_COMBATANT_COUNTS) {
-    return refreshCombatantCounts();
-  } else if (event.type === EVENT_READ_COMBATANT_COUNTS) {
-    return readCombatantCounts();
-  } else if (event.type === EVENT_READ_IDS_BY_ORDER) {
-    return readMonsterIdsByOrder();
-  } else if (event.type === EVENT_READ_STATUS) {
-    return readMonsterStatus();
-  }
-  return false;
+  return monsterStatusEventHandlers[event.type]?.(event) ?? false;
 }

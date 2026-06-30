@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src/battle");
 const entry = path.normalize("src/battle/monster-status-automation.js");
+const entryTest = path.normalize("src/battle/monster-status-automation.test.js");
 const statusView = path.normalize("src/battle/monster-status-view.js");
 const statusViewTest = path.normalize("src/battle/monster-status-view.test.js");
 const hpImpl = path.normalize("src/battle/monster-status-hp.js");
@@ -82,6 +83,7 @@ function checkEntry() {
   }
   for (const required of [
     "DEFAULT_COMBATANT_COUNT",
+    "monsterStatusEventHandlers",
     "normalizeCombatantCount",
     "combatantCounts",
     "updateMonsterHpRuntime",
@@ -138,6 +140,22 @@ function checkEntry() {
   }
   if (/#textlog|textContent/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not read textlog DOM directly`);
+  }
+  const entryBody =
+    text.match(/export function runMonsterStatusAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_ENSURE_READY\]/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${entry.replaceAll("\\", "/")} entry must dispatch by handler table`);
+  }
+  if (!fs.existsSync(path.join(root, entryTest))) {
+    violations.push(`${entryTest.replaceAll("\\", "/")} must cover monster status entry`);
+  } else {
+    const testText = fs.readFileSync(path.join(root, entryTest), "utf8");
+    if (!testText.includes("rejects unknown monster status events without side effects")) {
+      violations.push(`${entryTest.replaceAll("\\", "/")} must cover unknown monster status events`);
+    }
   }
 }
 
