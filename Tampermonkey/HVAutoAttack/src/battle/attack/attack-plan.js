@@ -8,6 +8,13 @@ import { PhysicalSkillRankingEvent, runPhysicalSkillRanking } from "./physical-s
 
 /** merciful blow 斩杀 HP 比例阈值（原 attack.js 字面量 0.248）。 */
 const MERCIFUL_HP = 0.248;
+const EVENT_DECIDE = "decide";
+
+export const AttackPlanDecisionEvent = Object.freeze({ DECIDE: EVENT_DECIDE });
+
+const attackPlanDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: (event) => decideAttackPlan(event.opt || {}, event),
+});
 
 const ATTACK_PLAN_STEPS = Object.freeze([
   { capability: "focus", decide: decideFocusPlan },
@@ -19,7 +26,7 @@ const ATTACK_PLAN_STEPS = Object.freeze([
 ]);
 
 /** @returns {import("../../core/types.js").AttackPlan} */
-export function decideAttackPlan(opt, event) {
+function decideAttackPlan(opt, event) {
   const context = buildAttackPlanContext(opt, event);
   for (const step of ATTACK_PLAN_STEPS) {
     const plan = step.decide(opt, event, context);
@@ -80,12 +87,7 @@ function decideSpiritTogglePlan(opt, event) {
 }
 
 function decideSpellPlan(opt, event, context) {
-  return runSpellAttackPlan({
-    type: SpellAttackPlanEvent.DECIDE,
-    opt,
-    event,
-    context,
-  });
+  return runSpellAttackPlan({ type: SpellAttackPlanEvent.DECIDE, opt, event, context });
 }
 
 function decideMercifulSinglePlan(opt, event, context) {
@@ -159,4 +161,8 @@ function decideMercifulAoeTarget(opt, alive, winner, buffsOf) {
 function decideDefaultAttackPlan(_opt, _event, context) {
   if (context.firstMonster) return { type: "default", targetId: context.firstMonster.id };
   return { type: "noop" };
+}
+
+export function runAttackPlanDecision(event = { type: EVENT_DECIDE }) {
+  return attackPlanDecisionEventHandlers[event.type]?.(event) ?? { type: "noop" };
 }

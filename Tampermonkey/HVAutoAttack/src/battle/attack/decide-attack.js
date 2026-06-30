@@ -1,7 +1,7 @@
 // PURE: attack 6 分支优先级决策入口。
 // **不读 DOM**：只读 event facts（含统一怪物视图 event.monsterFacts）。
 import { BigSkillCatalogEvent, runBigSkillCatalog } from "../big-skill-catalog.js";
-import { decideAttackPlan } from "./attack-plan.js";
+import { AttackPlanDecisionEvent, runAttackPlanDecision } from "./attack-plan.js";
 
 const EVENT_DECIDE_PLAN = "decidePlan";
 const EVENT_WILL_CLEAR_WITH_BIG_SKILL = "willClearWithBigSkill";
@@ -14,7 +14,7 @@ export const AttackDecisionEvent = Object.freeze({
 const attackDecisionEventHandlers = Object.freeze({
   [EVENT_DECIDE_PLAN]: (event) => ({
     kind: "attack-plan",
-    plan: decideAttackPlan(event.opt || {}, event),
+    plan: runAttackPlanDecision({ ...event, type: AttackPlanDecisionEvent.DECIDE }),
   }),
   [EVENT_WILL_CLEAR_WITH_BIG_SKILL]: (event) => willClearWithBigSkill(event),
 });
@@ -35,7 +35,7 @@ function decideAttack(event = {}) {
 }
 
 function willClearWithBigSkill(event) {
-  const plan = decideAttackPlan(event.opt || {}, event);
+  const plan = runAttackPlanDecision({ ...event, type: AttackPlanDecisionEvent.DECIDE });
   return attackPlanWillClearWithBigSkill(plan);
 }
 

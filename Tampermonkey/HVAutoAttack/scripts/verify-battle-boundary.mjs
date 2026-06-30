@@ -3300,7 +3300,8 @@ function checkAttackEntry() {
     "AttackDecisionEvent",
     "attackDecisionEventHandlers",
     "WILL_CLEAR_WITH_BIG_SKILL",
-    "decideAttackPlan",
+    "AttackPlanDecisionEvent.DECIDE",
+    "runAttackPlanDecision",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideAttackFile)} must own attack decision entry ${required}`);
@@ -3308,6 +3309,11 @@ function checkAttackEntry() {
   }
   const attackPlanText = fs.readFileSync(attackPlanFile, "utf8");
   for (const required of [
+    "AttackPlanDecisionEvent",
+    "attackPlanDecisionEventHandlers",
+    "DECIDE",
+    "runAttackPlanDecision",
+    "decideAttackPlan",
     "ATTACK_PLAN_STEPS",
     'capability: "focus"',
     'capability: "spiritToggle"',
@@ -3329,6 +3335,22 @@ function checkAttackEntry() {
     if (!attackPlanText.includes(required)) {
       violations.push(`${rel(attackPlanFile)} must lock attack plan step ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!AttackPlanDecisionEvent\b|runAttackPlanDecision\b)/.test(
+      attackPlanText
+    )
+  ) {
+    violations.push(`${rel(attackPlanFile)} may export only its event entry`);
+  }
+  const attackPlanEntryBody =
+    attackPlanText.match(/export function runAttackPlanDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(attackPlanText)) {
+    violations.push(`${rel(attackPlanFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(attackPlanEntryBody)) {
+    violations.push(`${rel(attackPlanFile)} entry must dispatch by handler table`);
   }
   if (
     !/const ATTACK_PLAN_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "focus"[\s\S]*capability: "spiritToggle"[\s\S]*capability: "spell"[\s\S]*capability: "mercifulSingle"[\s\S]*capability: "physicalUtility"[\s\S]*capability: "defaultAttack"[\s\S]*\]\)/.test(

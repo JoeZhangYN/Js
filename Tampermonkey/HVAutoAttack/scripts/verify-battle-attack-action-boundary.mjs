@@ -75,6 +75,9 @@ if (/decideAttackAction\(\s*snap\s*,\s*(?:opt|actionOptions)\s*\)/.test(actionDe
 }
 
 for (const required of [
+  "AttackPlanDecisionEvent",
+  "attackPlanDecisionEventHandlers",
+  "runAttackPlanDecision",
   "ATTACK_PLAN_STEPS",
   'capability: "focus"',
   'capability: "spiritToggle"',
@@ -93,6 +96,22 @@ for (const required of [
   if (!attackPlanText.includes(required)) {
     violations.push(`${rel(attackPlan)} must lock attack plan step ${required}`);
   }
+}
+if (
+  /\bexport\s+(?:function|const)\s+(?!AttackPlanDecisionEvent\b|runAttackPlanDecision\b)/.test(
+    attackPlanText
+  )
+) {
+  violations.push(`${rel(attackPlan)} may export only its event entry`);
+}
+const attackPlanEntryBody =
+  attackPlanText.match(/export function runAttackPlanDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(attackPlanText)) {
+  violations.push(`${rel(attackPlan)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(attackPlanEntryBody)) {
+  violations.push(`${rel(attackPlan)} entry must dispatch by handler table`);
 }
 if (
   !/const ATTACK_PLAN_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "focus"[\s\S]*capability: "spiritToggle"[\s\S]*capability: "spell"[\s\S]*capability: "mercifulSingle"[\s\S]*capability: "physicalUtility"[\s\S]*capability: "defaultAttack"[\s\S]*\]\)/.test(
