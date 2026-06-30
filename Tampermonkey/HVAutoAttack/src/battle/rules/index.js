@@ -14,6 +14,7 @@ import { decideFlee } from "../escape/decide-flee.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 import { attackFacts } from "./attack-facts.js";
+import { gemFacts, potionFacts, scrollFacts, stallTopupFacts } from "../item/item-facts.js";
 import {
   allDebuffFacts,
   autoPauseFacts,
@@ -24,12 +25,8 @@ import {
   criticalBuffFacts,
   defendFacts,
   fleeFacts,
-  gemFacts,
   infusionFacts,
-  potionFacts,
-  scrollFacts,
   singleDebuffFacts,
-  stallTopupFacts,
 } from "./rule-facts.js";
 
 /** @type {import("../../core/types.js").BattleRule[]} */

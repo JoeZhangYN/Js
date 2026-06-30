@@ -44,6 +44,7 @@ const decideCriticalBuffFile = path.join(
 const decideItemFile = path.join(root, "src/battle/item/decide-item.js");
 const decideGemFile = path.join(root, "src/battle/item/decide-gem.js");
 const decideScrollFile = path.join(root, "src/battle/item/decide-scroll.js");
+const itemFactsFile = path.join(root, "src/battle/item/item-facts.js");
 const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
 const potionEconomyFile = path.join(root, "src/battle/potion-economy.js");
 const stallModeFile = path.join(root, "src/battle/battle-stall-mode.js");
@@ -1716,6 +1717,7 @@ function checkAttackEntry() {
 function checkBattleRuleFactMappers() {
   const ruleFactsText = fs.readFileSync(ruleFactsFile, "utf8");
   const attackFactsText = fs.readFileSync(attackFactsFile, "utf8");
+  const itemFactsText = fs.readFileSync(itemFactsFile, "utf8");
   for (const required of [
     "conditionFacts",
     "fleeFacts",
@@ -1727,6 +1729,19 @@ function checkBattleRuleFactMappers() {
     if (!ruleFactsText.includes(required)) {
       violations.push(`${rel(ruleFactsFile)} must own rule fact mapper ${required}`);
     }
+  }
+  for (const retired of ["gemFacts", "potionFacts", "stallTopupFacts", "scrollFacts"]) {
+    if (new RegExp(`export\\s+function\\s+${retired}\\s*\\(`).test(ruleFactsText)) {
+      violations.push(`${rel(ruleFactsFile)} item fact mapper ${retired} belongs in item facts`);
+    }
+  }
+  for (const required of ["gemFacts", "potionFacts", "stallTopupFacts", "scrollFacts"]) {
+    if (!itemFactsText.includes(required)) {
+      violations.push(`${rel(itemFactsFile)} must own item fact mapper ${required}`);
+    }
+  }
+  if (/from\s+["'][^"']*rule-facts\.js["']/.test(itemFactsText)) {
+    violations.push(`${rel(itemFactsFile)} must not depend on generic rule fact mappers`);
   }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
   if (/conditionFacts\s*:\s*conditionFacts\s*\(\s*snap\s*\)/.test(rulesText)) {
@@ -1791,7 +1806,7 @@ function checkBattleStallMode() {
     violations.push(`${rel(stallModeFile)} must not consume snap-shaped event input`);
   }
   const allowedAliveHpFiles = new Set([
-    ruleFactsFile,
+    itemFactsFile,
     decideGemFile,
     path.join(root, "src/battle/dynamic-threshold.js"),
   ]);
