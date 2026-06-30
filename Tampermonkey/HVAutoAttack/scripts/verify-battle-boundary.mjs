@@ -58,6 +58,7 @@ const playerVitalsFile = path.join(root, "src/battle/battle-player-vitals.js");
 const playerEffectsFile = path.join(root, "src/battle/battle-player-effects.js");
 const itemSurfaceFile = path.join(root, "src/battle/battle-item-surface.js");
 const monsterSurfaceFile = path.join(root, "src/battle/battle-monster-surface.js");
+const logTelemetryFile = path.join(root, "src/battle/battle-log-telemetry.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const dispatchFile = path.join(root, "src/battle/dispatch.js");
@@ -1184,6 +1185,25 @@ function checkSnapshot() {
   for (const required of ["BattleMonsterSurfaceEvent", "READ_CURRENT", 'gE("div.btm1", "all")']) {
     if (!monsterSurfaceText.includes(required)) {
       violations.push(`${rel(monsterSurfaceFile)} must own ${required}`);
+    }
+  }
+  if (
+    !text.includes("BattleLogTelemetryEvent.READ_CURRENT") ||
+    !text.includes("runBattleLogTelemetry")
+  ) {
+    violations.push(`${rel(snapshotFile)} must read battle log telemetry through one entry`);
+  }
+  if (/parseBattleLog|estimatePlayerIncomingDps|estimatePerMonsterDps/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not assemble battle log telemetry directly`);
+  }
+  const logTelemetryText = fs.readFileSync(logTelemetryFile, "utf8");
+  for (const required of [
+    "BattleLogTelemetryEvent",
+    "parseBattleLog",
+    "estimatePlayerIncomingDps",
+  ]) {
+    if (!logTelemetryText.includes(required)) {
+      violations.push(`${rel(logTelemetryFile)} must own ${required}`);
     }
   }
   if (/\bg\(\s*["']skillOTOS["']/.test(text)) {

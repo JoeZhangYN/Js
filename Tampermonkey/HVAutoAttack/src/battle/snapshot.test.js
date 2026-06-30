@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { collectSnapshot } from "./snapshot.js";
 
 const mocks = vi.hoisted(() => ({
-  estimatePerMonsterDps: vi.fn(() => ({})),
-  estimatePlayerIncomingDps: vi.fn(() => 0),
   gE: vi.fn(),
   isSpiritActive: vi.fn(() => false),
   runBattleMonsterSurface: vi.fn(() => []),
@@ -12,9 +10,13 @@ const mocks = vi.hoisted(() => ({
     monsterIdentities: [{ name: "Alpha", monsterId: 101 }],
   })),
   monsterHpVars: vi.fn(() => ({})),
-  parseBattleLog: vi.fn(() => []),
   runAbilityAoeAutomation: vi.fn(() => ({ Imperil: 2 })),
   runBattleItemSurface: vi.fn(() => "Mystic Gem"),
+  runBattleLogTelemetry: vi.fn(() => ({
+    battleLog: [],
+    monsterDpsByName: {},
+    playerIncomingDps: { sampleCount: 0 },
+  })),
   runBattleObservationLearning: vi.fn(() => ({ learnedBurstByMid: { learned: true } })),
   runBattlePlayerEffects: vi.fn(() => ({
     channeling: false,
@@ -47,11 +49,6 @@ vi.mock("../state/battle-turn.js", () => ({
 vi.mock("../state/cd-tracker.js", () => ({
   CdRuntimeEvent: Object.freeze({ READ_GLOBAL_TURN: "readGlobalTurn", READ_MAP: "readMap" }),
   runCdRuntimeAutomation: mocks.runCdRuntimeAutomation,
-}));
-vi.mock("./log-parser.js", () => ({
-  estimatePerMonsterDps: mocks.estimatePerMonsterDps,
-  estimatePlayerIncomingDps: mocks.estimatePlayerIncomingDps,
-  parseBattleLog: mocks.parseBattleLog,
 }));
 vi.mock("./battle-observation-learning.js", () => ({
   BattleObservationLearningEvent: Object.freeze({
@@ -90,6 +87,10 @@ vi.mock("./battle-item-surface.js", () => ({
   BattleItemSurfaceEvent: Object.freeze({ READ_GEM_NAME: "readGemName" }),
   runBattleItemSurface: mocks.runBattleItemSurface,
 }));
+vi.mock("./battle-log-telemetry.js", () => ({
+  BattleLogTelemetryEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
+  runBattleLogTelemetry: mocks.runBattleLogTelemetry,
+}));
 vi.mock("./battle-skill-usage.js", () => ({
   BattleSkillUsageEvent: Object.freeze({ READ_USAGE: "readUsage" }),
   runBattleSkillUsageAutomation: mocks.runBattleSkillUsageAutomation,
@@ -112,16 +113,15 @@ describe("collectSnapshot", () => {
     expect(snap.turn).toBe(7);
     expect(snap.globalTurn).toBe(9);
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "readCurrent" });
+    expect(mocks.runBattleLogTelemetry).toHaveBeenCalledWith({ type: "readCurrent", turn: 7 });
     expect(mocks.runBattleMonsterSurface).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(mocks.runBattleMonsterView).toHaveBeenCalledWith({
       type: "readView",
       monsters: [],
     });
-    expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({ type: "readUsage" });
     expect(mocks.runBattleSkillReadiness).toHaveBeenCalledWith({ type: "readReadyMap" });
     expect(mocks.runBattlePlayerVitals).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(mocks.runBattlePlayerEffects).toHaveBeenCalledWith({ type: "readCurrent" });
-    expect(mocks.runBattleItemSurface).toHaveBeenCalledWith({ type: "readGemName" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
     expect(mocks.runBattleObservationLearning).toHaveBeenCalledWith({

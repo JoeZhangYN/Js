@@ -10,7 +10,6 @@
 import { gE, isSpiritActive } from "../dom/query.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
-import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
 import {
   BattleObservationLearningEvent,
   runBattleObservationLearning,
@@ -24,6 +23,7 @@ import { BattleSkillReadinessEvent, runBattleSkillReadiness } from "./battle-ski
 import { BattlePlayerVitalsEvent, runBattlePlayerVitals } from "./battle-player-vitals.js";
 import { BattlePlayerEffectsEvent, runBattlePlayerEffects } from "./battle-player-effects.js";
 import { BattleItemSurfaceEvent, runBattleItemSurface } from "./battle-item-surface.js";
+import { BattleLogTelemetryEvent, runBattleLogTelemetry } from "./battle-log-telemetry.js";
 
 /**
  * 一次性 batch DOM read 组装当前 turn snapshot。
@@ -38,16 +38,18 @@ export function collectSnapshot(event = {}) {
   const playerEffects = runBattlePlayerEffects({ type: BattlePlayerEffectsEvent.READ_CURRENT });
   const vitals = runBattlePlayerVitals({ type: BattlePlayerVitalsEvent.READ_CURRENT });
   const spiritEl = gE("#ckey_spirit");
-  // 战斗日志只解析一遍，两个 DPS 估计复用同一份 events（避免每 turn 重复全量遍历 textlog）
-  const battleLog = parseBattleLog();
   const turn = runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT });
+  const logTelemetry = runBattleLogTelemetry({
+    type: BattleLogTelemetryEvent.READ_CURRENT,
+    turn,
+  });
   // 学习器 finalize 全部跑在 rules 之前（结算上回合行动的观测）。globalTurn/skillReady 先备好供两用。
   const globalTurn = runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_GLOBAL_TURN });
   const skillReady = runBattleSkillReadiness({ type: BattleSkillReadinessEvent.READ_READY_MAP });
   const learnIncomingBurst = !!event.learnIncomingBurst;
   const observationLearning = runBattleObservationLearning({
     type: BattleObservationLearningEvent.FINALIZE_TURN_OBSERVATIONS,
-    battleLog,
+    battleLog: logTelemetry.battleLog,
     globalTurn,
     learnIncomingBurst,
     monsterIdentities,
@@ -77,9 +79,8 @@ export function collectSnapshot(event = {}) {
     skillReady,
     skillOTOS: runBattleSkillUsageAutomation({ type: BattleSkillUsageEvent.READ_USAGE }),
     spellAoe: runAbilityAoeAutomation({ type: AbilityAoeEvent.READ_SPELL_AOE }),
-    // PoC L1：战斗日志解析得 DPS 估计（复用上方 battleLog，本 turn 只解析一遍）
-    playerIncomingDps: estimatePlayerIncomingDps(battleLog, turn),
-    monsterDpsByName: estimatePerMonsterDps(battleLog, turn),
+    playerIncomingDps: logTelemetry.playerIncomingDps,
+    monsterDpsByName: logTelemetry.monsterDpsByName,
     // F5：每 MID 致死/爆发伤害学习表（开关关→空，decide 自然 noop）
     learnedBurstByMid: observationLearning.learnedBurstByMid,
   };

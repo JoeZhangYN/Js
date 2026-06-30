@@ -37,6 +37,8 @@ const snapshotText = requireText(snapshot, [
   "runBattleItemSurface",
   "BattleMonsterSurfaceEvent.READ_CURRENT",
   "runBattleMonsterSurface",
+  "BattleLogTelemetryEvent.READ_CURRENT",
+  "runBattleLogTelemetry",
   "BattleMonsterViewEvent.READ_VIEW",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
@@ -104,6 +106,11 @@ if (/#ikey_p|gemName:\s*gE/.test(snapshotText)) {
 if (/readMonsters|readMonsterBuffs|div\.btm1|\.btm5|\.btm6|nbargreen|nbardead/.test(snapshotText)) {
   violations.push(
     `${snapshot.replaceAll("\\", "/")} must read monsters through battle monster surface entry`
+  );
+}
+if (/parseBattleLog|estimatePlayerIncomingDps|estimatePerMonsterDps/.test(snapshotText)) {
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must read battle log telemetry through one entry`
   );
 }
 if (/snap\.fightingStyle/.test(scoringText)) {
