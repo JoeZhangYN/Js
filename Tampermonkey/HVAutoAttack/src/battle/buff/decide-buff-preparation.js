@@ -1,7 +1,7 @@
 import { decideBuff } from "./decide-buff.js";
 import { decideChannel } from "./decide-channel.js";
 import { decideInfusion } from "./decide-infusion.js";
-import { buffFacts, channelFacts, infusionFacts } from "./buff-facts.js";
+import { buffPreparationFacts } from "./buff-facts.js";
 
 const EVENT_DECIDE = "decide";
 
@@ -12,9 +12,7 @@ export const BattleBuffPreparationEvent = Object.freeze({
 function decideBuffPreparationResult(snap = {}, opt = {}) {
   const event = {
     opt,
-    ...infusionFacts(snap),
-    ...channelFacts(snap),
-    ...buffFacts(snap),
+    ...buffPreparationFacts(snap),
   };
   for (const decide of [decideInfusion, decideChannel, decideBuff]) {
     const result = decide(event);

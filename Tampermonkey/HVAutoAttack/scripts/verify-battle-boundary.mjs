@@ -420,6 +420,7 @@ function checkTurnEntry() {
     "infusionFacts",
     "channelFacts",
     "buffFacts",
+    "buffPreparationFacts",
     "burstControlFacts",
     "bossImperilFacts",
     "debuffActionFacts",
@@ -1782,9 +1783,7 @@ function checkBuffPreparationEntry() {
     "BattleBuffPreparationEvent",
     "DECIDE",
     "runBattleBuffPreparation",
-    "infusionFacts",
-    "channelFacts",
-    "buffFacts",
+    "buffPreparationFacts",
     "decideInfusion",
     "decideChannel",
     "decideBuff",
@@ -2471,13 +2470,18 @@ function checkBattleRuleFactMappers() {
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(itemFactsText)) {
     violations.push(`${rel(itemFactsFile)} must not depend on generic rule fact mappers`);
   }
-  for (const required of ["buffFacts", "channelFacts", "infusionFacts"]) {
+  for (const required of ["buffPreparationFacts"]) {
     if (!buffFactsText.includes(required)) {
       violations.push(`${rel(buffFactsFile)} must own buff fact mapper ${required}`);
     }
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(buffFactsText)) {
     violations.push(`${rel(buffFactsFile)} must not depend on generic rule fact mappers`);
+  }
+  for (const retired of ["buffFacts", "channelFacts", "infusionFacts"]) {
+    if (new RegExp(`export\\s+function\\s+${retired}\\s*\\(`).test(buffFactsText)) {
+      violations.push(`${rel(buffFactsFile)} must use one buffPreparationFacts mapper`);
+    }
   }
   for (const required of ["debuffActionFacts", "burstControlFacts", "bossImperilFacts"]) {
     if (!debuffFactsText.includes(required)) {
