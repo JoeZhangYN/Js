@@ -439,14 +439,16 @@ function checkTurnEntry() {
     violations.push(`${rel(mainLoopFile)} must not assemble turn prelude directly`);
   }
   if (
-    !text.includes("prepareBattleTurnContext({ logTelemetry: prelude?.battleLogTelemetry })") ||
+    !/runBattleTurnContext\(\{\s*type:\s*BattleTurnContextEvent\.PREPARE,\s*logTelemetry:\s*prelude\?\.battleLogTelemetry,\s*\}\)/.test(
+      text
+    ) ||
     !text.includes("runBattleActionDecision")
   ) {
     violations.push(
       `${rel(mainLoopFile)} must pass prelude battle log telemetry into prepared turn context before action decision`
     );
   }
-  if (/const\s*\{[^}]*\bsnap\b[^}]*\}\s*=\s*prepareBattleTurnContext\(\)/.test(text)) {
+  if (/const\s*\{[^}]*\bsnap\b[^}]*\}\s*=\s*runBattleTurnContext\(\)/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must not unpack prepared turn context`);
   }
   if (/runBattleActionDecision\([^,\n]+,\s*[^)]+\)/.test(text)) {

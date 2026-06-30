@@ -69,7 +69,7 @@ function checkFile(file) {
       "assertNoDomRefs",
     ]) {
       if (new RegExp(`\\b${name}\\b`).test(line)) {
-        violations.push(`${where} ${name} belongs behind prepareBattleTurnContext()`);
+        violations.push(`${where} ${name} belongs behind runBattleTurnContext(PREPARE)`);
       }
     }
     if (
@@ -88,10 +88,12 @@ function checkFile(file) {
 
 function checkEntry() {
   const text = fs.readFileSync(path.join(root, entry), "utf8");
-  if (!/export function prepareBattleTurnContext\(/.test(text)) {
-    violations.push(`${entry.replaceAll("\\", "/")} must expose prepareBattleTurnContext()`);
-  }
   for (const required of [
+    "BattleTurnContextEvent",
+    "PREPARE",
+    "battleTurnContextEventHandlers",
+    "runBattleTurnContext",
+    "[EVENT_PREPARE]: prepareBattleTurnContext",
     "runCdRuntimeAutomation",
     "OptionEvent.READ_BATTLE_ACTION_OPTIONS",
     "CdRuntimeEvent.INCREMENT_TURN",
@@ -112,14 +114,29 @@ function checkEntry() {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);
     }
   }
+  if (!/function prepareBattleTurnContext\(/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must keep preparation core private`);
+  }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must read debugSnapshot through option entry`);
   }
   if (/import\s+\{[^}]*assertNoDomRefs/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must own the debug snapshot invariant check`);
   }
-  if (/\bexport\s+(?:function|const)\s+(?!prepareBattleTurnContext\b)/.test(text)) {
-    violations.push(`${entry.replaceAll("\\", "/")} may export only prepareBattleTurnContext`);
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleTurnContextEvent\b|runBattleTurnContext\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${entry.replaceAll("\\", "/")} may export only its event entry`);
+  }
+  const entryBody =
+    text.match(/export function runBattleTurnContext\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_PREPARE\]/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${entry.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
   if (!/return\s+\{\s*snap,\s*actionOptions\s*\}/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must return one action decision context`);
@@ -148,6 +165,22 @@ function checkEntry() {
     violations.push(
       `${entry.replaceAll("\\", "/")} must attach decision runtime through one entry`
     );
+  }
+}
+
+function checkEntryTest() {
+  const text = fs.readFileSync(path.join(root, entryTest), "utf8");
+  for (const required of [
+    "BattleTurnContextEvent",
+    "runBattleTurnContext",
+    "rejects unknown turn context events",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${entryTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
+  if (/import\s+\{[^}]*prepareBattleTurnContext/.test(text)) {
+    violations.push(`${entryTest.replaceAll("\\", "/")} must test the public event entry`);
   }
 }
 
@@ -207,6 +240,7 @@ function checkSpiritToggleEntry() {
 
 walk(srcDir);
 checkEntry();
+checkEntryTest();
 checkSnapshotEntry();
 checkSpiritToggleEntry();
 

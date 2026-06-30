@@ -5,6 +5,12 @@ import { collectSnapshot } from "./snapshot.js";
 import { BattleDecisionRuntimeEvent, runBattleDecisionRuntime } from "./battle-decision-runtime.js";
 import { BattlePlayerVitalsEvent, runBattlePlayerVitals } from "./battle-player-vitals.js";
 
+const EVENT_PREPARE = "prepare";
+
+export const BattleTurnContextEvent = Object.freeze({
+  PREPARE: EVENT_PREPARE,
+});
+
 function attachDecisionRuntime(snap) {
   return Object.assign(
     snap,
@@ -25,7 +31,7 @@ function assertNoDomRefs(snap) {
   }
 }
 
-export function prepareBattleTurnContext(event = {}) {
+function prepareBattleTurnContext(event = {}) {
   runCdRuntimeAutomation({ type: CdRuntimeEvent.INCREMENT_TURN });
   runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST });
   const actionOptions = runOptionAutomation({ type: OptionEvent.READ_BATTLE_ACTION_OPTIONS });
@@ -45,4 +51,12 @@ export function prepareBattleTurnContext(event = {}) {
     assertNoDomRefs(snap);
   }
   return { snap, actionOptions };
+}
+
+const battleTurnContextEventHandlers = Object.freeze({
+  [EVENT_PREPARE]: prepareBattleTurnContext,
+});
+
+export function runBattleTurnContext(event = { type: EVENT_PREPARE }) {
+  return battleTurnContextEventHandlers[event.type]?.(event);
 }

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { prepareBattleTurnContext } from "./turn-context.js";
+import { BattleTurnContextEvent, runBattleTurnContext } from "./turn-context.js";
 
 const mocks = vi.hoisted(() => ({
   collectSnapshot: vi.fn(),
@@ -53,9 +53,9 @@ beforeEach(() => {
   });
 });
 
-describe("prepareBattleTurnContext", () => {
+describe("runBattleTurnContext", () => {
   it("prepares one turn context through the entry", () => {
-    expect(prepareBattleTurnContext()).toEqual({
+    expect(runBattleTurnContext({ type: BattleTurnContextEvent.PREPARE })).toEqual({
       snap,
       actionOptions: { burstControlSwitch: false },
     });
@@ -74,7 +74,7 @@ describe("prepareBattleTurnContext", () => {
   });
 
   it("attaches decision runtime facts through one runtime entry", () => {
-    const prepared = prepareBattleTurnContext().snap;
+    const prepared = runBattleTurnContext({ type: BattleTurnContextEvent.PREPARE }).snap;
 
     expect(prepared).toMatchObject({
       monsterAlive: 3,
@@ -94,7 +94,7 @@ describe("prepareBattleTurnContext", () => {
       return undefined;
     });
 
-    prepareBattleTurnContext({ logTelemetry });
+    runBattleTurnContext({ type: BattleTurnContextEvent.PREPARE, logTelemetry });
 
     expect(mocks.collectSnapshot).toHaveBeenCalledWith({
       learnIncomingBurst: true,
@@ -109,7 +109,7 @@ describe("prepareBattleTurnContext", () => {
       return undefined;
     });
 
-    prepareBattleTurnContext();
+    runBattleTurnContext({ type: BattleTurnContextEvent.PREPARE });
 
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",
@@ -126,6 +126,12 @@ describe("prepareBattleTurnContext", () => {
     });
     mocks.collectSnapshot.mockReturnValue({ hp: document.createElement("div") });
 
-    expect(() => prepareBattleTurnContext()).toThrow("含 DOM 引用");
+    expect(() => runBattleTurnContext({ type: BattleTurnContextEvent.PREPARE })).toThrow("含 DOM 引用");
+  });
+
+  it("rejects unknown turn context events without side effects", () => {
+    expect(runBattleTurnContext({ type: "unknown" })).toBeUndefined();
+    expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
+    expect(mocks.collectSnapshot).not.toHaveBeenCalled();
   });
 });

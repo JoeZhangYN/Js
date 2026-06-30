@@ -94,7 +94,8 @@ for (const required of [
   "BattleTurnWorkflowEvent",
   "RUN_CURRENT_TURN",
   "runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN })",
-  "prepareBattleTurnContext({ logTelemetry: prelude?.battleLogTelemetry })",
+  "runBattleTurnContext",
+  "BattleTurnContextEvent.PREPARE",
   "BattleActionDecisionEvent.DECIDE",
   "runBattleActionDecision",
 ]) {

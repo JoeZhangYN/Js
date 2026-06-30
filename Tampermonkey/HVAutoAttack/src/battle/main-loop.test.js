@@ -2,14 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js";
 
 const mocks = vi.hoisted(() => ({
-  prepareBattleTurnContext: vi.fn(),
+  runBattleTurnContext: vi.fn(),
   runBattleActionDecision: vi.fn(),
   runBattlePauseAutomation: vi.fn(),
   runBattleTurnPrelude: vi.fn(),
 }));
 
 vi.mock("./turn-context.js", () => ({
-  prepareBattleTurnContext: mocks.prepareBattleTurnContext,
+  BattleTurnContextEvent: Object.freeze({ PREPARE: "prepare" }),
+  runBattleTurnContext: mocks.runBattleTurnContext,
 }));
 vi.mock("./pause-automation.js", () => ({
   BattlePauseEvent: Object.freeze({ RENDER_IF_PAUSED: "renderIfPaused" }),
@@ -26,7 +27,7 @@ vi.mock("./battle-turn-prelude.js", () => ({
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
-  mocks.prepareBattleTurnContext.mockReturnValue({
+  mocks.runBattleTurnContext.mockReturnValue({
     snap: { snap: true },
     actionOptions: { ok: true },
   });
@@ -41,7 +42,8 @@ describe("runBattleTurnAutomation", () => {
     runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
 
     expect(mocks.runBattleTurnPrelude).toHaveBeenCalledWith({ type: "prepareCurrentTurn" });
-    expect(mocks.prepareBattleTurnContext).toHaveBeenCalledWith({
+    expect(mocks.runBattleTurnContext).toHaveBeenCalledWith({
+      type: "prepare",
       logTelemetry: { battleLog: [{ kind: "player-incoming", dmg: 10 }] },
     });
     expect(mocks.runBattleActionDecision).toHaveBeenCalledWith({

@@ -43,7 +43,7 @@ export function runXxxAutomation(event) { ... }       // 唯一入口，内部 s
 战斗决策严格分两层（项目选 L1，非 L3 六边形——单入口单后端无多租户，六边形过设计）：
 - **PURE CORE（决策层）**：`battle/**/decide-*.js` `can-apply.js` `*-scoring.js` `*-ranking.js` `target-strategy.js` `condition-eval.js` `dynamic-threshold.js` `log-parser.js`。签名恒 `(opt, snap) → ActionResult`，**零 DOM 读、零 g()、零 GM_*、零 setTimeout**。可零依赖单测（vitest fixture）。
 - **IMPERATIVE SHELL（副作用层）**：`battle-action-effect-dispatch.js`（ActionResult 唯一副作用翻译入口）+ 各 `execute-*.js` / command entry + `store/storage/dom/navigate/alarm`。
-- **数据流**：`main-loop` 只运行 `battle-turn-prelude`，再把 `prepareBattleTurnContext()` 的整体结果交给 `runBattleActionDecision(DECIDE)`；行动决策入口按 4 个业务出口（survival → buffPreparation → offensiveDebuff → attack）依序裁决，每个出口只返回 `ActionResult`，由 `battle-action-effect-dispatch` 执行并按 acted 短路。
+- **数据流**：`main-loop` 只运行 `battle-turn-prelude`，再把 `runBattleTurnContext(PREPARE)` 的整体结果交给 `runBattleActionDecision(DECIDE)`；行动决策入口按 4 个业务出口（survival → buffPreparation → offensiveDebuff → attack）依序裁决，每个出口只返回 `ActionResult`，由 `battle-action-effect-dispatch` 执行并按 acted 短路。
 - 机械锁：`check-mainloop-imports.mjs` 禁 `main-loop.js` 回退 import step 实现；`verify-battle-business-map.mjs` 锁定本地图与真实入口/决策链一致。
 
 **ActionResult 是核心契约**（`core/types.js` JSDoc discriminated union）：
@@ -191,7 +191,7 @@ runBattleTurnAutomation(RUN_CURRENT_TURN):
      ├─ monitor HUD_REFRESH
      ├─ killBug()  ← HV「卡死 bug」检测点击
      └─ monster-status UPDATE_HP
-  3. context = prepareBattleTurnContext() ← collectSnapshot + actionOptions + 学习器 finalize
+  3. context = runBattleTurnContext(PREPARE) ← collectSnapshot + actionOptions + 学习器 finalize
   4. runBattleActionDecision(DECIDE)      ← 4 个业务出口裁决，ActionResult acted 即停
 ```
 
