@@ -1,9 +1,12 @@
 import { gE } from "../dom/query.js";
+import { g } from "../state/store.js";
 
 const EVENT_READ_CURRENT = "readCurrent";
+const EVENT_MIRROR_RUNTIME = "mirrorRuntime";
 
 export const BattlePlayerVitalsEvent = Object.freeze({
   READ_CURRENT: EVENT_READ_CURRENT,
+  MIRROR_RUNTIME: EVENT_MIRROR_RUNTIME,
 });
 
 function readLegacyVitals() {
@@ -45,7 +48,16 @@ function readCurrentVitals() {
   };
 }
 
+function mirrorRuntime(vitals = {}) {
+  g("hp", vitals.hp);
+  g("mp", vitals.mp);
+  g("sp", vitals.sp);
+  g("oc", vitals.oc);
+  return true;
+}
+
 export function runBattlePlayerVitals(event = { type: EVENT_READ_CURRENT }) {
   if (event.type === EVENT_READ_CURRENT) return readCurrentVitals();
+  if (event.type === EVENT_MIRROR_RUNTIME) return mirrorRuntime(event.vitals);
   return {};
 }

@@ -3,7 +3,7 @@ import { prepareBattleTurnContext } from "./turn-context.js";
 
 const mocks = vi.hoisted(() => ({
   collectSnapshot: vi.fn(),
-  g: vi.fn(),
+  runBattlePlayerVitals: vi.fn(),
   runBattleProgressAutomation: vi.fn(),
   runBattleStartRuntimeAutomation: vi.fn(),
   runBattleSpiritToggleAutomation: vi.fn(),
@@ -23,6 +23,10 @@ vi.mock("./battle-spirit-toggle.js", () => ({
   BattleSpiritToggleEvent: Object.freeze({ READ_LAST_TOGGLE: "readLastToggle" }),
   runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
 }));
+vi.mock("./battle-player-vitals.js", () => ({
+  BattlePlayerVitalsEvent: Object.freeze({ MIRROR_RUNTIME: "mirrorRuntime" }),
+  runBattlePlayerVitals: mocks.runBattlePlayerVitals,
+}));
 vi.mock("../state/cd-tracker.js", () => ({
   CdRuntimeEvent: Object.freeze({ INCREMENT_TURN: "incrementTurn", PERSIST: "persist" }),
   runCdRuntimeAutomation: mocks.runCdRuntimeAutomation,
@@ -34,7 +38,6 @@ vi.mock("../state/option.js", () => ({
   }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
-vi.mock("../state/store.js", () => ({ g: mocks.g }));
 vi.mock("./snapshot.js", () => ({
   collectSnapshot: mocks.collectSnapshot,
 }));
@@ -44,10 +47,6 @@ const snap = { hp: 90, mp: 80, sp: 70, oc: 60 };
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
   mocks.collectSnapshot.mockReturnValue(snap);
-  mocks.g.mockImplementation((key, value) => {
-    if (value !== undefined) return undefined;
-    return undefined;
-  });
   mocks.runBattleProgressAutomation.mockReturnValue({
     monsterAlive: 3,
     roundAll: 5,
@@ -74,10 +73,10 @@ describe("prepareBattleTurnContext", () => {
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readBattleActionOptions" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(1, { type: "incrementTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(2, { type: "persist" });
-    expect(mocks.g).toHaveBeenCalledWith("hp", 90);
-    expect(mocks.g).toHaveBeenCalledWith("mp", 80);
-    expect(mocks.g).toHaveBeenCalledWith("sp", 70);
-    expect(mocks.g).toHaveBeenCalledWith("oc", 60);
+    expect(mocks.runBattlePlayerVitals).toHaveBeenCalledWith({
+      type: "mirrorRuntime",
+      vitals: snap,
+    });
   });
 
   it("attaches decision runtime facts through battle progress entry", () => {

@@ -22,6 +22,7 @@ for (const required of [
   "BattlePlayerVitalsEvent",
   "runBattlePlayerVitals",
   "READ_CURRENT",
+  "MIRROR_RUNTIME",
   "#vbh",
   "#dvbh>div>img",
   "#dvrhd",
@@ -31,6 +32,8 @@ for (const required of [
   "hpDeficit",
   "mpDeficit",
   "spDeficit",
+  'g("hp"',
+  'g("oc"',
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must own ${required}`);

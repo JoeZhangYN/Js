@@ -99,6 +99,8 @@ function checkEntry() {
     "BattleProgressEvent.READ_CONTEXT",
     "BattleStartRuntimeEvent.READ_ATTACK_STATUS",
     "BattleSpiritToggleEvent.READ_LAST_TOGGLE",
+    "BattlePlayerVitalsEvent.MIRROR_RUNTIME",
+    "runBattlePlayerVitals",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);
@@ -121,6 +123,9 @@ function checkEntry() {
   }
   if (/\bREAD_BATTLE_RULE_OPTIONS\b|\breadBattleRuleOptions\b/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not request legacy rule option events`);
+  }
+  if (/\bg\(\s*["'](?:hp|mp|sp|oc)["']/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must mirror player vitals through entry`);
   }
   if (
     /BattleRoundEvent\.(?:READ_RUNTIME|READ_TYPE)|MonsterStatusEvent\.READ_COMBATANT_COUNTS/.test(

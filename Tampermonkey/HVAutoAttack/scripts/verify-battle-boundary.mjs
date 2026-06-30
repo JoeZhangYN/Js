@@ -1137,7 +1137,14 @@ function checkSnapshot() {
     violations.push(`${rel(snapshotFile)} must not own player vitals DOM rules`);
   }
   const playerVitalsText = fs.readFileSync(playerVitalsFile, "utf8");
-  for (const required of ["BattlePlayerVitalsEvent", "hpAbs", "mpAbs", "spAbs", "hpDeficit"]) {
+  for (const required of [
+    "BattlePlayerVitalsEvent",
+    "MIRROR_RUNTIME",
+    "hpAbs",
+    "mpAbs",
+    "spAbs",
+    "hpDeficit",
+  ]) {
     if (!playerVitalsText.includes(required)) {
       violations.push(`${rel(playerVitalsFile)} must own ${required}`);
     }

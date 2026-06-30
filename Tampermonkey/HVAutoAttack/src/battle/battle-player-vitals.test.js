@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattlePlayerVitalsEvent, runBattlePlayerVitals } from "./battle-player-vitals.js";
 
 const mocks = vi.hoisted(() => ({
+  g: vi.fn(),
   gE: vi.fn(),
 }));
 
 vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
+vi.mock("../state/store.js", () => ({ g: mocks.g }));
 
 beforeEach(() => {
+  mocks.g.mockReset();
   mocks.gE.mockReset();
 });
 
@@ -64,5 +67,19 @@ describe("runBattlePlayerVitals", () => {
       mpAbs: 0,
       spAbs: 0,
     });
+  });
+
+  it("mirrors current vitals to legacy runtime state through the entry", () => {
+    expect(
+      runBattlePlayerVitals({
+        type: BattlePlayerVitalsEvent.MIRROR_RUNTIME,
+        vitals: { hp: 90, mp: 80, sp: 70, oc: 60 },
+      })
+    ).toBe(true);
+
+    expect(mocks.g).toHaveBeenCalledWith("hp", 90);
+    expect(mocks.g).toHaveBeenCalledWith("mp", 80);
+    expect(mocks.g).toHaveBeenCalledWith("sp", 70);
+    expect(mocks.g).toHaveBeenCalledWith("oc", 60);
   });
 });
