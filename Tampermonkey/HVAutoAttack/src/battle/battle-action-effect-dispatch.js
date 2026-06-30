@@ -27,6 +27,10 @@ export const BattleActionEffectDispatchEvent = Object.freeze({
   APPLY_ACTION_RESULT: EVENT_APPLY_ACTION_RESULT,
 });
 
+const battleActionEffectDispatchEventHandlers = Object.freeze({
+  [EVENT_APPLY_ACTION_RESULT]: (event) => applyActionResult(event.result, event.snap),
+});
+
 function applyActionResult(result, snap) {
   switch (result.kind) {
     case "noop":
@@ -161,6 +165,5 @@ function executeChannelPlanResult(result) {
 }
 
 export function runBattleActionEffectDispatch(event = { type: EVENT_APPLY_ACTION_RESULT }) {
-  if (event.type === EVENT_APPLY_ACTION_RESULT) return applyActionResult(event.result, event.snap);
-  return false;
+  return battleActionEffectDispatchEventHandlers[event.type]?.(event) ?? false;
 }

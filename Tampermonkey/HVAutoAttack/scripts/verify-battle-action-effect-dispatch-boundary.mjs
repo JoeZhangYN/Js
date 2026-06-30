@@ -30,6 +30,7 @@ const actionDecisionText = read(actionDecision);
 for (const required of [
   "BattleActionEffectDispatchEvent",
   "APPLY_ACTION_RESULT",
+  "battleActionEffectDispatchEventHandlers",
   "runBattleActionEffectDispatch",
   "BattleItemCommandEvent.CLICK_ITEM",
   "BattleSkillCommandEvent.CLICK_READY",
@@ -80,6 +81,16 @@ for (const forbidden of [
   if (applyBody.includes(forbidden)) {
     violations.push(`${rel(owner)} applyActionResult must route by result kind, not inline ${forbidden}`);
   }
+}
+
+const entryBody =
+  ownerText.match(/export function runBattleActionEffectDispatch\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_ACTION_RESULT\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table, not an event if-chain`);
 }
 
 if (
