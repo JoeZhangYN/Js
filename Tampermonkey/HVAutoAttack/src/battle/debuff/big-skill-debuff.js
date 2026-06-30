@@ -14,6 +14,11 @@ export const BigSkillDebuffEvent = Object.freeze({
   SHOULD_SKIP_DEBUFF: EVENT_SHOULD_SKIP_DEBUFF,
 });
 
+const bigSkillDebuffEventHandlers = Object.freeze({
+  [EVENT_READ_CLEAR_RESOURCE_READY]: (event) => clearSkillResourceReady(event),
+  [EVENT_SHOULD_SKIP_DEBUFF]: (event) => shouldSkipForBigSkill(event),
+});
+
 /**
  * 清场大招(OFC/FRD)资源是否就绪 = 开关启用、CD 归零且 OC 已够。
  * 注意：这不是“实际会开火”的攻击链裁决；攻击链还会看 spirit/skillReady/降级/评分等。
@@ -91,9 +96,5 @@ function shouldSkipForBigSkill(event) {
 }
 
 export function runBigSkillDebuffAutomation(event = { type: EVENT_SHOULD_SKIP_DEBUFF }) {
-  if (event.type === EVENT_READ_CLEAR_RESOURCE_READY) return clearSkillResourceReady(event);
-  if (event.type === EVENT_SHOULD_SKIP_DEBUFF) {
-    return shouldSkipForBigSkill(event);
-  }
-  return undefined;
+  return bigSkillDebuffEventHandlers[event.type]?.(event);
 }

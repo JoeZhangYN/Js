@@ -1572,6 +1572,7 @@ function checkBigSkillDebuffEntry() {
   }
   for (const required of [
     "BigSkillDebuffEvent",
+    "bigSkillDebuffEventHandlers",
     "runBigSkillDebuffAutomation",
     "READ_CLEAR_RESOURCE_READY",
     "SHOULD_SKIP_DEBUFF",
@@ -1597,6 +1598,24 @@ function checkBigSkillDebuffEntry() {
   }
   if (/\bevent\.snap\b/.test(ownerText)) {
     violations.push(`${rel(bigSkillFile)} must not consume snap-shaped event input`);
+  }
+  const entryBody =
+    ownerText.match(/export function runBigSkillDebuffAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CLEAR_RESOURCE_READY\]/.test(ownerText)) {
+    violations.push(`${rel(bigSkillFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${rel(bigSkillFile)} entry must dispatch by handler table`);
+  }
+  const bigSkillTestFile = path.join(root, "src/battle/debuff/big-skill-debuff.test.js");
+  if (!fs.existsSync(bigSkillTestFile)) {
+    violations.push(`${rel(bigSkillTestFile)} must cover big-skill debuff entry`);
+  } else {
+    const testText = fs.readFileSync(bigSkillTestFile, "utf8");
+    if (!testText.includes("rejects unknown big skill debuff events")) {
+      violations.push(`${rel(bigSkillTestFile)} must cover unknown big-skill debuff events`);
+    }
   }
   const offensiveDebuffText = fs.readFileSync(decideOffensiveDebuffFile, "utf8");
   if (!offensiveDebuffText.includes("runBigSkillDebuffAutomation")) {

@@ -130,3 +130,18 @@ describe("shouldSkipForBigSkill — F4 Im 放宽（默认 OFF）", () => {
     expect(shouldSkipForBigSkill({ skipImperilWhenOfcKills: true }, bossView(), "Im")).toBe(true);
   });
 });
+
+describe("big skill debuff entry", () => {
+  it("rejects unknown big skill debuff events", () => {
+    expect(
+      runBigSkillDebuffAutomation({
+        type: "unknown",
+        opt: { skill_OFC: true },
+        skillCooldowns: { OFC: 0 },
+        overcharge: 250,
+        aliveCount: 5,
+        monsterFacts: [{ monsterId: 100, isBoss: true, isDead: false, hpMax: 5000 }],
+      })
+    ).toBeUndefined();
+  });
+});
