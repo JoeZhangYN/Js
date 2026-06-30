@@ -32,6 +32,8 @@ for (const required of [
   "APPLY_ACTION_RESULT",
   "battleActionEffectDispatchEventHandlers",
   "runBattleActionEffectDispatch",
+  "ACTION_RESULT_EXECUTORS",
+  "executeNoopResult",
   "BattleItemCommandEvent.CLICK_ITEM",
   "BattleSkillCommandEvent.CLICK_READY",
   "BattleDefendCommandEvent.CLICK",
@@ -56,6 +58,7 @@ for (const required of [
   "executeAlertPauseResult",
   "executePauseResult",
   "executeCriticalPauseResult",
+  "executeHaltResult",
   "executeAttackPlanResult",
   "executeItemPlanResult",
   "executeChannelPlanResult",
@@ -64,6 +67,29 @@ for (const required of [
 }
 
 const applyBody = ownerText.match(/function applyActionResult\(result, snap\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (/switch\s*\(\s*result\.kind\s*\)/.test(applyBody)) {
+  violations.push(`${rel(owner)} must dispatch ActionResult kinds through ACTION_RESULT_EXECUTORS`);
+}
+for (const required of [
+  "noop: executeNoopResult",
+  '"item-command": executeItemCommandResult',
+  '"skill-command": executeSkillCommandResult',
+  '"defend-command": executeDefendCommandResult',
+  '"toggle-spirit": executeToggleSpiritResult',
+  '"click-skill-then-target": executeSkillTargetResult',
+  '"flee-command": executeFleeCommandResult',
+  '"alert-and-pause": executeAlertPauseResult',
+  "pause: executePauseResult",
+  '"critical-pause": executeCriticalPauseResult',
+  "halt: executeHaltResult",
+  '"attack-plan": executeAttackPlanResult',
+  '"item-plan": executeItemPlanResult',
+  '"channel-plan": executeChannelPlanResult',
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${rel(owner)} must lock ActionResult executor ${required}`);
+  }
+}
 for (const forbidden of [
   "runBattleItemCommand",
   "runBattleSkillCommand",

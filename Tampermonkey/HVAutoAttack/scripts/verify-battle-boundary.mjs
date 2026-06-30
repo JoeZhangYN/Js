@@ -468,6 +468,34 @@ function checkTurnEntry() {
       `${rel(actionDecisionFile)} must not reintroduce repeated two-arg step wrappers`
     );
   }
+  const actionEffectText = fs.readFileSync(dispatchFile, "utf8");
+  for (const required of [
+    "ACTION_RESULT_EXECUTORS",
+    "noop: executeNoopResult",
+    '"item-command": executeItemCommandResult',
+    '"skill-command": executeSkillCommandResult',
+    '"defend-command": executeDefendCommandResult',
+    '"toggle-spirit": executeToggleSpiritResult',
+    '"click-skill-then-target": executeSkillTargetResult',
+    '"flee-command": executeFleeCommandResult',
+    '"alert-and-pause": executeAlertPauseResult',
+    "pause: executePauseResult",
+    '"critical-pause": executeCriticalPauseResult',
+    "halt: executeHaltResult",
+    '"attack-plan": executeAttackPlanResult',
+    '"item-plan": executeItemPlanResult',
+    '"channel-plan": executeChannelPlanResult',
+  ]) {
+    if (!actionEffectText.includes(required)) {
+      violations.push(`${rel(dispatchFile)} must lock ActionResult executor ${required}`);
+    }
+  }
+  const applyActionResultBody =
+    actionEffectText.match(/function applyActionResult\(result, snap\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/switch\s*\(\s*result\.kind\s*\)/.test(applyActionResultBody)) {
+    violations.push(`${rel(dispatchFile)} must dispatch ActionResult through ACTION_RESULT_EXECUTORS`);
+  }
   if (fs.existsSync(actionSequenceFile)) {
     violations.push(
       `${rel(actionSequenceFile)} must stay retired; action order belongs in runBattleActionDecision`

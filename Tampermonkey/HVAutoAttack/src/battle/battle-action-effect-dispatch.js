@@ -31,53 +31,29 @@ const battleActionEffectDispatchEventHandlers = Object.freeze({
   [EVENT_APPLY_ACTION_RESULT]: (event) => applyActionResult(event.result, event.snap),
 });
 
+const ACTION_RESULT_EXECUTORS = Object.freeze({
+  noop: executeNoopResult,
+  "item-command": executeItemCommandResult,
+  "skill-command": executeSkillCommandResult,
+  "defend-command": executeDefendCommandResult,
+  "toggle-spirit": executeToggleSpiritResult,
+  "click-skill-then-target": executeSkillTargetResult,
+  "flee-command": executeFleeCommandResult,
+  "alert-and-pause": executeAlertPauseResult,
+  pause: executePauseResult,
+  "critical-pause": executeCriticalPauseResult,
+  halt: executeHaltResult,
+  "attack-plan": executeAttackPlanResult,
+  "item-plan": executeItemPlanResult,
+  "channel-plan": executeChannelPlanResult,
+});
+
 function applyActionResult(result, snap) {
-  switch (result.kind) {
-    case "noop":
-      return false;
+  return ACTION_RESULT_EXECUTORS[result?.kind]?.(result, snap) ?? false;
+}
 
-    case "item-command":
-      return executeItemCommandResult(result);
-
-    case "skill-command":
-      return executeSkillCommandResult(result);
-
-    case "defend-command":
-      return executeDefendCommandResult();
-
-    case "toggle-spirit":
-      return executeToggleSpiritResult();
-
-    case "click-skill-then-target":
-      return executeSkillTargetResult(result);
-
-    case "flee-command":
-      return executeFleeCommandResult();
-
-    case "alert-and-pause":
-      return executeAlertPauseResult(result);
-
-    case "pause":
-      return executePauseResult();
-
-    case "critical-pause":
-      return executeCriticalPauseResult(result);
-
-    case "halt":
-      return true;
-
-    case "attack-plan":
-      return executeAttackPlanResult(result, snap);
-
-    case "item-plan":
-      return executeItemPlanResult(result, snap);
-
-    case "channel-plan":
-      return executeChannelPlanResult(result);
-
-    default:
-      return false;
-  }
+function executeNoopResult() {
+  return false;
 }
 
 function executeItemCommandResult(result) {
@@ -136,6 +112,10 @@ function executeCriticalPauseResult(result) {
     type: CriticalBuffPauseExecutionEvent.APPLY_PLAN,
     plan: result,
   });
+}
+
+function executeHaltResult() {
+  return true;
 }
 
 function executeAttackPlanResult(result, snap) {
