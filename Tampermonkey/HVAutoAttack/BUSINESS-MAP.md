@@ -42,9 +42,9 @@ export function runXxxAutomation(event) { ... }       // 唯一入口，内部 s
 
 战斗决策严格分两层（项目选 L1，非 L3 六边形——单入口单后端无多租户，六边形过设计）：
 - **PURE CORE（决策层）**：`battle/**/decide-*.js` `can-apply.js` `*-scoring.js` `*-ranking.js` `target-strategy.js` `condition-eval.js` `dynamic-threshold.js` `log-parser.js`。签名恒 `(opt, snap) → ActionResult`，**零 DOM 读、零 g()、零 GM_*、零 setTimeout**。可零依赖单测（vitest fixture）。
-- **IMPERATIVE SHELL（副作用层）**：`dispatch.js`（唯一 SHELL）+ 各 `execute-*.js` + `store/storage/dom/navigate/alarm`。
-- **数据流**：`main-loop` 收一次 `snap` → 遍历 `BATTLE_RULES` 16 条纯 `decide` → 产 `ActionResult` → `dispatch` 翻译成 DOM 副作用 → 返 `acted` 短路。
-- 机械锁：`check-mainloop-imports.mjs` 禁 `main-loop.js` 回退 import step 实现（强制新 step 走 `battle/rules/index.js`）。
+- **IMPERATIVE SHELL（副作用层）**：`battle-action-effect-dispatch.js`（ActionResult 唯一副作用翻译入口）+ 各 `execute-*.js` / command entry + `store/storage/dom/navigate/alarm`。
+- **数据流**：`main-loop` 只运行 `battle-turn-prelude`，再把 `prepareBattleTurnContext()` 的整体结果交给 `runBattleActionDecision(context)`；行动决策入口按 4 个业务出口（survival → buffPreparation → offensiveDebuff → attack）依序裁决，每个出口只返回 `ActionResult`，由 `battle-action-effect-dispatch` 执行并按 acted 短路。
+- 机械锁：`check-mainloop-imports.mjs` 禁 `main-loop.js` 回退 import step 实现；`verify-battle-business-map.mjs` 锁定本地图与真实入口/决策链一致。
 
 **ActionResult 是核心契约**（`core/types.js` JSDoc discriminated union）：
 `noop` | `click` | `toggle-spirit` | `click-skill-then-target` | `click-then-reload` | `alert-and-pause` | `pause` | `critical-pause` | `halt` | `attack-plan` | `item-plan` | `channel-plan`。
@@ -179,47 +179,37 @@ main.js 装配三条独立汉化路径（功能区不重叠）：
 ## 3. 战斗回合引擎（业务心脏，逐层展开）
 
 ### 3.1 装配（battle-automation.js，PAGE_READY 一次）
-顺序固定：pause-controls 安装 → action-event-bridge 安装（reloader）→ battle-start-runtime → round-start → monster-knowledge → monitoring → 首次 turn。
+顺序固定：pause-controls 安装 → action-event-bridge 安装（reloader/action lifecycle）→ battle-lifecycle 上报 BATTLE_STARTED（start-runtime → monster-knowledge → monitoring）→ round-start → 首次 turn。
 
 ### 3.2 每 turn 主循环（main-loop.js）
 ```
 runBattleTurnAutomation():
   1. 暂停态？→ 渲染并 return
-  2. monster-status ensure-ready          ┐
-  3. battle-turn TURN_STARTED             │ pre-step（必执行，非决策）
-  4. monitor HUD_REFRESH                  │
-  5. killBug()  ← HV「卡死 bug」检测点击  │
-  6. monster-status UPDATE_HP             ┘
-  7. snap = prepareBattleTurnContext()    ← collectSnapshot + 学习器 finalize
-  8. runRules(BATTLE_RULES, snap, opt)    ← 16 条纯决策链，act 即停
+  2. runBattleTurnPrelude(PREPARE_CURRENT_TURN)
+     ├─ monster-status ensure-ready
+     ├─ battle-turn TURN_STARTED
+     ├─ monitor HUD_REFRESH
+     ├─ killBug()  ← HV「卡死 bug」检测点击
+     └─ monster-status UPDATE_HP
+  3. context = prepareBattleTurnContext() ← collectSnapshot + actionOptions + 学习器 finalize
+  4. runBattleActionDecision(context)     ← 4 个业务出口裁决，ActionResult acted 即停
 ```
 
-### 3.3 决策链 BATTLE_RULES（battle/rules/index.js）— 16 条，顺序即优先级
-**保命/急救在前，增伤/进攻在后**。每条 `{ name, decide: (snap,opt) → ActionResult }`，全 PURE：
+### 3.3 行动决策入口（battle-action-decision.js）— 4 个业务出口，顺序即优先级
+**保命/急救在前，增伤/进攻在后**。`ACTION_STEPS` 是唯一行动决策组合点；`main-loop.js` 不知道具体规则，只传入完整 turn context。
 
-| # | rule | 业务意图 | 产出 |
+| # | capability | 业务问题 | 入口 |
 |---|---|---|---|
-| 1 | criticalBuffGuard | 关键 buff 将消失+MP 不足 → 告警暂停 | critical-pause |
-| 2 | flee | 逃跑条件满足 | click-then-reload |
-| 3 | autoPause | 自动暂停条件 | pause |
-| 4 | useGem | 法术宝石（dyn-threshold） | item-plan |
-| 5 | deadSoon | 紧急回血回魔（候选 id 列表） | item-plan |
-| 6 | stallTopup | stall 模式主动 topup | item-plan |
-| 7 | defend | 防御 | click |
-| 8 | useScroll | 卷轴 | item-plan |
-| 9 | useInfusions | 元素灌注（仅法术模式） | channel/click |
-| 10 | useChannelSkill | Channel 三段优先级 | channel-plan |
-| 11 | useBuffSkill | BUFF 续杯 | click |
-| 11.5 | burstControl | **F5** 学到的高爆发怪 → 单点 Silence/Sleep 控住（保命先于增伤） | click-skill-then-target |
-| 12 | bossImperil | Boss 单点 Imperil（AoE bestIdx；**F4** 能秒则跳） | click-skill-then-target |
-| 13 | castWeakenAll | 全员 Weaken（OFC/FRD 将就绪则跳） | click-skill-then-target |
-| 14 | castImperilAll | 全员 Imperil（拖战跳过） | click-skill-then-target |
-| 15 | useDeSkill | 单目标 Debuff（stall 跳过） | click-skill-then-target |
-| 16 | attack | 攻击（最后兜底，6 分支优先级） | attack-plan |
+| 1 | survival | 当前回合是否必须先保命/逃跑/暂停/防御/用物品 | `runBattleSurvivalAction(DECIDE)` |
+| 2 | buffPreparation | 当前回合是否需要续 buff、灌注、channel 或关键 buff guard | `runBattleBuffPreparation(DECIDE)` |
+| 3 | offensiveDebuff | 当前回合是否需要 boss imperil、burst control、群体/单体 debuff | `runBattleOffensiveDebuff(DECIDE)` |
+| 4 | attack | 前三类均不行动时如何完成攻击/focus/spirit/法术/物理技能 | `runBattleAttackAction(DECIDE)` |
+
+每个出口内部再拥有自己的事实 mapper 和优先级，调用者只接收 `ActionResult`，不得重新组装 snap 字段、阈值或 action runner 协议。行动结果统一交给 `runBattleActionEffectDispatch(APPLY_ACTION_RESULT)`；该入口是唯一把 `ActionResult` 翻译成 DOM/command 副作用的地方。
 
 **attack 决策（decide-attack.js）6 分支**：focus / spirit 切换 / spell+AoE / merciful 斩杀(HP≤0.248) / physical-utility / 默认攻击。法术阶选择（`selectSpellTier`）按 channeling 锁 + 怪数降级 + high/mid 条件。目标选择走 `target-strategy`：`firstByFinWeight`（综合权重最优首怪）/ `firstByOrder`（AoE 锚）。
 
-**理想**：新增战斗行为 = `battle/rules/index.js` 加一条 rule（声明在组合根）+ 一个 `decide-*.js` 纯函数；绝不在 `main-loop.js` 内联 step。rule 顺序变更 = 业务优先级变更，必须显式。
+**理想**：新增战斗行为先判断属于 survival / buffPreparation / offensiveDebuff / attack 哪个业务问题，在该 capability 内新增纯决策或子入口；只有新增跨 capability 的业务出口时才改 `ACTION_STEPS`。任何顺序变更都是业务优先级变更，必须在 `battle-action-decision.js` 显式改动并由 verifier 锁住。
 
 ---
 
@@ -257,8 +247,8 @@ runBattleTurnAutomation():
 
 ## 6. ActionResult / Event 契约（codex 扩展点速查）
 
-- 加**一种战斗行动** → `core/types.js` ActionResult union 加 variant + `dispatch.js` 加 case（穷尽 switch）+ 对应 `execute-*.js`。
-- 加**一条战斗规则** → `battle/rules/index.js` 插入（位置 = 优先级）+ 新 `decide-*.js`（PURE）。
+- 加**一种战斗行动** → `core/types.js` ActionResult union 加 variant + `battle-action-effect-dispatch.js` 加 case（穷尽 switch）+ 对应 `execute-*.js` / command entry。
+- 加**一条战斗规则** → 先落到 survival / buffPreparation / offensiveDebuff / attack 的能力入口内部；只有新增跨能力业务出口时才改 `battle-action-decision.js` 的 `ACTION_STEPS`。
 - 加**一个能力** → 新文件 `export { XxxEvent, runXxxAutomation }` + 新 `verify-xxx-boundary.mjs` 挂 build。
 - 加**一个配置项** → `OPTION_SCHEMA` 一条（含三语 label + default[On]）。
 - 加**一个持久 key** → `STORAGE_KEYS` 一条。
