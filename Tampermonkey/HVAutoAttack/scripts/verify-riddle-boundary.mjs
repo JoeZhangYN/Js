@@ -164,6 +164,42 @@ function checkRiddleSettingsConsumer() {
 
 function checkRiddleSubmissionTiming() {
   const answerText = fs.readFileSync(riddleAnswerFile, "utf8");
+  for (const required of [
+    "RIDDLE_ANSWERING_FLOW_STEPS",
+    "createRiddleAnsweringContext",
+    "recordRiddleAppearance",
+    "runOptionalRiddleVisualAid",
+    "startOptionalRiddleMlHealth",
+    "startRiddleSubmissionTiming",
+    "installOptionalSubmissionSampleCapture",
+    "startOptionalRiddleMlAnswer",
+  ]) {
+    if (!answerText.includes(required)) {
+      violations.push(`${rel(riddleAnswerFile)} must own answering session flow ${required}`);
+    }
+  }
+  if (
+    !/const RIDDLE_ANSWERING_FLOW_STEPS = \[\s*recordRiddleAppearance,\s*runOptionalRiddleVisualAid,\s*startOptionalRiddleMlHealth,\s*startRiddleSubmissionTiming,\s*installOptionalSubmissionSampleCapture,\s*startOptionalRiddleMlAnswer,\s*\]/.test(
+      answerText
+    )
+  ) {
+    violations.push(`${rel(riddleAnswerFile)} must own explicit riddle answering flow order`);
+  }
+  const answerEntryBody =
+    answerText.match(/export function runRiddleAnsweringSession\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+  for (const forbidden of [
+    "runAlarmAutomation",
+    "runRiddleSubmissionTiming",
+    "runRiddleMlAutomation",
+    "runRiddleDatasetAutomation",
+    "runRiddleImageAutomation",
+  ]) {
+    if (answerEntryBody.includes(forbidden)) {
+      violations.push(
+        `${rel(riddleAnswerFile)} entry must route answering through flow steps`
+      );
+    }
+  }
   if (!answerText.includes("runRiddleSubmissionTiming")) {
     violations.push(
       `${rel(riddleAnswerFile)} must route submit timing through runRiddleSubmissionTiming(event)`

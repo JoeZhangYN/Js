@@ -72,6 +72,17 @@ beforeEach(() => {
 });
 
 describe("runRiddleAutomation answering session", () => {
+  it("runs the answering session in business order", () => {
+    runRiddleAutomation({ type: RiddleEvent.RIDDLE_PAGE });
+
+    const actualOrder = [
+      mocks.runAlarmAutomation.mock.invocationCallOrder[0],
+      mocks.runRiddleStatsAutomation.mock.invocationCallOrder[0],
+      mocks.runRiddleSubmissionTiming.mock.invocationCallOrder[0],
+    ];
+    expect(actualOrder).toEqual([...actualOrder].sort((a, b) => a - b));
+  });
+
   it("reads riddle answer timing through the option entry", () => {
     runRiddleAutomation({ type: RiddleEvent.RIDDLE_PAGE });
 
@@ -84,6 +95,49 @@ describe("runRiddleAutomation answering session", () => {
       expect.objectContaining({
         type: "start",
         beforeEnd: 7,
+      })
+    );
+  });
+
+  it("starts ML health before timing and tries ML after timing when enabled", () => {
+    mocks.runOptionAutomation.mockImplementation((event) => {
+      if (event.type === "isOn" && event.key === "mlAnswer") return true;
+      if (event.type === "readField" && event.key === "riddleAnswerTime") return 7;
+      return false;
+    });
+
+    runRiddleAutomation({ type: RiddleEvent.RIDDLE_PAGE });
+
+    expect(mocks.runRiddleMlAutomation).toHaveBeenNthCalledWith(1, { type: "startHealth" });
+    expect(mocks.runRiddleMlAutomation).toHaveBeenNthCalledWith(2, { type: "tryAnswer" });
+    const actualOrder = [
+      mocks.runRiddleMlAutomation.mock.invocationCallOrder[0],
+      mocks.runRiddleSubmissionTiming.mock.invocationCallOrder[0],
+      mocks.runRiddleMlAutomation.mock.invocationCallOrder[1],
+    ];
+    expect(actualOrder).toEqual([...actualOrder].sort((a, b) => a - b));
+  });
+
+  it("records a manual training sample through the submit hook when backup is enabled", () => {
+    document.body.innerHTML = '<button id="riddlesubmit"></button>';
+    mocks.runOptionAutomation.mockImplementation((event) => {
+      if (event.type === "isOn" && event.key === "mlBackupOnFail") return true;
+      if (event.type === "readField" && event.key === "riddleAnswerTime") return 7;
+      return false;
+    });
+
+    runRiddleAutomation({ type: RiddleEvent.RIDDLE_PAGE });
+    document.getElementById("riddlesubmit").click();
+
+    expect(mocks.runRiddleSubmissionTiming).toHaveBeenCalledWith({
+      type: "externalSubmitted",
+    });
+    expect(mocks.runRiddleImageAutomation).toHaveBeenCalledWith({ type: "captureSample" });
+    expect(mocks.runRiddleDatasetAutomation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "recordSample",
+        answers: "",
+        source: "manual",
       })
     );
   });

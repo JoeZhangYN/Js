@@ -28,6 +28,14 @@ import {
 
 // 答案码 SSOT 见 data/riddle-answers.js（提取到叶子层打破与 riddle-ml.js 的循环依赖 TDZ）
 const ANSWER_KEYS = Object.keys(ANSWER_MAP);
+const RIDDLE_ANSWERING_FLOW_STEPS = [
+  recordRiddleAppearance,
+  runOptionalRiddleVisualAid,
+  startOptionalRiddleMlHealth,
+  startRiddleSubmissionTiming,
+  installOptionalSubmissionSampleCapture,
+  startOptionalRiddleMlAnswer,
+];
 
 function readOptionEnabled(key) {
   return runOptionAutomation({ type: OptionEvent.IS_ON, key });
@@ -81,20 +89,46 @@ function submittedCodes() {
   return hits.join(",");
 }
 
-export function runRiddleAnsweringSession() {
+function createRiddleAnsweringContext() {
+  return { mlAnswer: null, pendingSource: null, sampled: false };
+}
+
+function recordRiddleAppearance() {
   runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Riddle" });
   runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_APPEAR }); // 小马验证统计：谜题页出现一次（与 ML 是否开启/成功无关）
+}
 
+function runOptionalRiddleVisualAid() {
   // P2 视觉辅助：async 但不 await（图片预处理不阻塞倒计时；找不到 #riddleimage>img 内部静默 return）
   if (readOptionEnabled("riddleHelperUi")) {
     runRiddleVisualAid();
   }
+}
 
+function startOptionalRiddleMlHealth() {
   // P6 ML 健康巡检：30s 周期 setInterval 启动一次（内部 healthStarted 哨兵防重入）
   if (readOptionEnabled("mlAnswer")) {
     runRiddleMlAutomation({ type: RiddleMlEvent.START_HEALTH });
   }
+}
 
+function randomAnswer() {
+  // ANSWER_KEYS.length 防退化（原 answers 漏 "ra" 命中率 1/5 旧 bug）。
+  return [ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)]];
+}
+
+function submitRiddleAnswers(context, answers, via) {
+  console.log(`[HVAA][riddle] 自动提交(${via})`, answers); // 可见性：无反应时看 console 确认走哪条路径
+  // 提交即重定向、console 即丢 → 落滚动日志（半持久化）：本次答案 + 路径，事后可翻"答案是什么/走哪条路"
+  runRiddleLogAutomation({
+    type: RiddleLogEvent.PUSH,
+    message: `submit via=${via} answers=${Array.isArray(answers) ? answers.join(",") : answers}`,
+  });
+  context.pendingSource = via; // 供提交 hook 判 confidence（须在 riddleSubmit 触发 click 之前设好）
+  riddleSubmit(answers);
+}
+
+function startRiddleSubmissionTiming(context) {
   // 提交策略 ★ 对齐原版 Riddle Master Assistant Reborn.user.js v0.5.2（核对认准此文件）：
   // ① ML 识别成功 → 短延迟(模拟人类, 原版 extend_submit_interval≈3s)**立即提交，不等末端**
   //    （原版 setTimeout(btn.click, delay)）。移植退化为"ML 成功也等末端" → ML 识别了却不提交，
@@ -103,62 +137,53 @@ export function runRiddleAnsweringSession() {
   // ② ML 失败/未就绪 → 每秒**重读真实倒计时** #riddlecounter（对齐原版 getRemainingSeconds/
   //    waitUntilNearEnd），剩余 ≤ riddleAnswerTime（或连续读不到 5s）随机单只兜底提交。任意时长鲁棒。
   const beforeEnd = parseInt(readOptionField("riddleAnswerTime", 3)) || 3;
-  /** @type {string[]|null} ML 命中答案码数组（多答案题多只）；null=未就绪/失败 */
-  let mlAnswer = null;
-  let pendingSource = null; // doSubmit 设置；#riddlesubmit hook 据此判 source（手动点击=null→manual）
-  let sampled = false; // 训练样本每题只采一次
-  // ANSWER_KEYS.length 防退化（原 answers 漏 "ra" 命中率 1/5 旧 bug）。
-  const randomAnswer = () => [ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)]];
-  function doSubmit(answers, via) {
-    console.log(`[HVAA][riddle] 自动提交(${via})`, answers); // 可见性：无反应时看 console 确认走哪条路径
-    // 提交即重定向、console 即丢 → 落滚动日志（半持久化）：本次答案 + 路径，事后可翻"答案是什么/走哪条路"
-    runRiddleLogAutomation({
-      type: RiddleLogEvent.PUSH,
-      message: `submit via=${via} answers=${Array.isArray(answers) ? answers.join(",") : answers}`,
-    });
-    pendingSource = via; // 供提交 hook 判 confidence（须在 riddleSubmit 触发 click 之前设好）
-    riddleSubmit(answers);
-  }
   runRiddleSubmissionTiming({
     type: RiddleSubmissionTimingEvent.START,
     beforeEnd,
     fallbackAnswers: randomAnswer,
-    getMlAnswers: () => mlAnswer,
-    submit: doSubmit,
+    getMlAnswers: () => context.mlAnswer,
+    submit: (answers, via) => submitRiddleAnswers(context, answers, via),
   });
+}
+
+function captureSubmission(context) {
   // 训练样本采集：hook #riddlesubmit 点击（脚本 riddleSubmit 的 .click() 与用户手动点都经此）→ 跳转前
   // **同步**采样。无论 ML/随机/手动只要提交就存（用户诉求 2026-06-06）；source→confidence 规则内化在 riddle-dataset。
-  function captureSubmission() {
-    if (sampled) return;
-    sampled = true;
-    runRiddleSubmissionTiming({ type: RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED });
-    const source = pendingSource
-      ? pendingSource === "ML"
-        ? RiddleSampleSource.ML
-        : RiddleSampleSource.RANDOM
-      : RiddleSampleSource.MANUAL;
-    const answers = submittedCodes();
-    const image = runRiddleImageAutomation({ type: RiddleImageEvent.CAPTURE_SAMPLE });
-    runRiddleDatasetAutomation({
-      type: RiddleDatasetEvent.RECORD_SAMPLE,
-      imageDataUrl: image.imageDataUrl,
-      answers,
-      source,
-      imageSrc: image.imageSrc,
-    });
-    runRiddleLogAutomation({
-      type: RiddleLogEvent.PUSH,
-      message: `sample source=${source} answers=${answers}`,
-    });
-  }
+  if (context.sampled) return;
+  context.sampled = true;
+  runRiddleSubmissionTiming({ type: RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED });
+  const source = context.pendingSource
+    ? context.pendingSource === "ML"
+      ? RiddleSampleSource.ML
+      : RiddleSampleSource.RANDOM
+    : RiddleSampleSource.MANUAL;
+  const answers = submittedCodes();
+  const image = runRiddleImageAutomation({ type: RiddleImageEvent.CAPTURE_SAMPLE });
+  runRiddleDatasetAutomation({
+    type: RiddleDatasetEvent.RECORD_SAMPLE,
+    imageDataUrl: image.imageDataUrl,
+    answers,
+    source,
+    imageSrc: image.imageSrc,
+  });
+  runRiddleLogAutomation({
+    type: RiddleLogEvent.PUSH,
+    message: `sample source=${source} answers=${answers}`,
+  });
+}
+
+function installOptionalSubmissionSampleCapture(context) {
   if (readOptionEnabled("mlBackupOnFail")) {
     const submitBtn = document.getElementById("riddlesubmit");
-    if (submitBtn) submitBtn.addEventListener("click", captureSubmission, { capture: true });
+    if (submitBtn) submitBtn.addEventListener("click", () => captureSubmission(context), { capture: true });
   }
+}
+
+function startOptionalRiddleMlAnswer(context) {
   if (readOptionEnabled("mlAnswer")) {
     runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })
       .then((a) => {
-        mlAnswer = a;
+        context.mlAnswer = a;
         if (a && a.length) {
           // ML 命中 → 短延迟提交（前台 ~3s / 后台 3-8s 模拟人类），不等末端。
           const delay = document.hasFocus() ? 3000 : 3000 + Math.random() * 5000;
@@ -171,4 +196,9 @@ export function runRiddleAnsweringSession() {
       })
       .catch(() => {});
   }
+}
+
+export function runRiddleAnsweringSession() {
+  const context = createRiddleAnsweringContext();
+  for (const step of RIDDLE_ANSWERING_FLOW_STEPS) step(context);
 }
