@@ -50,7 +50,7 @@ describe("runBattleSurvivalAction", () => {
     ).toEqual({ kind: "item-plan", plan: { type: "scroll", candidates: [13111] } });
   });
 
-  it("rejects unknown events as no action", () => {
+  it("rejects unknown survival action events as no action", () => {
     expect(runBattleSurvivalAction({ type: "unknown" })).toEqual({ kind: "noop" });
   });
 });

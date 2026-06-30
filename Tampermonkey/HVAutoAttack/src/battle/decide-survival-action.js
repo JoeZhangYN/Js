@@ -10,6 +10,10 @@ export const BattleSurvivalActionEvent = Object.freeze({
   DECIDE: EVENT_DECIDE,
 });
 
+const battleSurvivalActionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: (event) => decideSurvivalResult(event.snap, event.opt),
+});
+
 function decideSurvivalResult(snap = {}, opt = {}) {
   for (const decide of [
     () => decideCriticalBuff({ opt, snap }),
@@ -59,6 +63,5 @@ function isEmptyDecision(result) {
 }
 
 export function runBattleSurvivalAction(event = { type: EVENT_DECIDE }) {
-  if (event.type === EVENT_DECIDE) return decideSurvivalResult(event.snap, event.opt);
-  return { kind: "noop" };
+  return battleSurvivalActionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
 }
