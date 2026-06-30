@@ -14,6 +14,18 @@ const input = (overrides) => ({
 });
 
 describe("runSettingsFormOptionAutomation", () => {
+  it("rejects unknown form option events without collecting fields", () => {
+    expect(
+      runSettingsFormOptionAutomation({
+        type: "unknown",
+        version: "10.0",
+        inputs: [
+          input({ className: "hvAANumber", name: "delay", value: "", placeholder: "200" }),
+        ],
+      })
+    ).toBeUndefined();
+  });
+
   it("collects scalar settings fields into an option object", () => {
     expect(
       runSettingsFormOptionAutomation({

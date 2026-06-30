@@ -6,6 +6,10 @@ export const SettingsFormOptionEvent = Object.freeze({
   COLLECT_OPTION: EVENT_COLLECT_OPTION,
 });
 
+const settingsFormOptionEventHandlers = Object.freeze({
+  [EVENT_COLLECT_OPTION]: (event) => collectOption(event),
+});
+
 function writeNestedOption(option, name, value, className) {
   const path = name.split("_");
   if (path.length === 1) {
@@ -50,6 +54,5 @@ function collectOption({ version, inputs = [] }) {
 }
 
 export function runSettingsFormOptionAutomation(event = { type: EVENT_COLLECT_OPTION }) {
-  if (event.type === EVENT_COLLECT_OPTION) return collectOption(event);
-  return undefined;
+  return settingsFormOptionEventHandlers[event.type]?.(event);
 }

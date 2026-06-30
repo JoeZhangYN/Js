@@ -16,6 +16,24 @@ for (const required of ["SettingsFormOptionEvent", "runSettingsFormOptionAutomat
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
+const entryBody =
+  ownerText.match(/export function runSettingsFormOptionAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/const settingsFormOptionEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_COLLECT_OPTION\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
+const ownerTest = path.normalize("src/settings/form-option.test.js");
+if (!fs.existsSync(path.join(root, ownerTest))) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover settings form option entry`);
+} else {
+  const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+  if (!ownerTestText.includes("rejects unknown form option events without collecting fields")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown form option events`);
+  }
+}
 
 const renderText = fs.readFileSync(path.join(root, settingsRender), "utf8");
 if (!renderText.includes("SettingsFormOptionEvent.COLLECT_OPTION")) {
