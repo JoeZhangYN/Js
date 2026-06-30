@@ -41,7 +41,8 @@ for (const required of [
   "executeCriticalPause",
   "BattleAttackExecutionEvent.APPLY_PLAN",
   "runBattleAttackExecution",
-  "executeItem",
+  "BattleItemExecutionEvent.APPLY_PLAN",
+  "runBattleItemExecution",
   "executeChannel",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);

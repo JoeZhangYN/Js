@@ -13,6 +13,12 @@ import {
   runRecoveryLearningAutomation,
 } from "../../state/recovery-learner.js";
 
+const EVENT_APPLY_PLAN = "applyPlan";
+
+export const BattleItemExecutionEvent = Object.freeze({
+  APPLY_PLAN: EVENT_APPLY_PLAN,
+});
+
 function recordAutoTunePotionUse() {
   runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_POTION_USE });
 }
@@ -24,9 +30,8 @@ function recoveryAbs(snap) {
 /**
  * @param {import("../../core/types.js").ItemPlan} plan
  * @param {import("../../core/types.js").BattleSnapshot} snap
- * @returns {boolean} acted —— 是否已触发副作用
  */
-export function executeItem(plan, snap) {
+function applyItemPlan(plan, snap) {
   switch (plan.type) {
     case "noop":
       return false;
@@ -114,4 +119,9 @@ export function executeItem(plan, snap) {
     default:
       return false;
   }
+}
+
+export function runBattleItemExecution(event = { type: EVENT_APPLY_PLAN }) {
+  if (event.type === EVENT_APPLY_PLAN) return applyItemPlan(event.plan, event.snap);
+  return false;
 }

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { executeItem } from "./execute-item.js";
+import { BattleItemExecutionEvent, runBattleItemExecution } from "./execute-item.js";
 
 const mocks = vi.hoisted(() => ({
   g: vi.fn(),
@@ -37,11 +37,19 @@ beforeEach(() => {
   mocks.g.mockReturnValue(undefined);
 });
 
-describe("executeItem", () => {
+function applyPlan(plan, snap) {
+  return runBattleItemExecution({
+    type: BattleItemExecutionEvent.APPLY_PLAN,
+    plan,
+    snap,
+  });
+}
+
+describe("runBattleItemExecution", () => {
   it("reports auto-tune potion-use event for gems", () => {
     mocks.runBattleItemCommand.mockReturnValue(true);
 
-    expect(executeItem({ type: "gem" }, {})).toBe(true);
+    expect(applyPlan({ type: "gem" }, {})).toBe(true);
 
     expect(mocks.runBattleItemCommand).toHaveBeenCalledWith({ type: "clickGem" });
     expect(mocks.runAutoTuneAutomation).toHaveBeenCalledWith({
@@ -52,7 +60,7 @@ describe("executeItem", () => {
   it("reports auto-tune potion-use event for used potions", () => {
     mocks.runBattleItemCommand.mockReturnValue(true);
 
-    expect(executeItem({ type: "potion", candidates: [111], noWaste: false }, {})).toBe(true);
+    expect(applyPlan({ type: "potion", candidates: [111], noWaste: false }, {})).toBe(true);
 
     expect(mocks.runBattleItemCommand).toHaveBeenCalledWith({
       type: "clickItem",
@@ -69,9 +77,9 @@ describe("executeItem", () => {
       return true;
     });
 
-    expect(
-      executeItem({ type: "potion", candidates: [11191], noWaste: true }, { hpAbs: 200 })
-    ).toBe(true);
+    expect(applyPlan({ type: "potion", candidates: [11191], noWaste: true }, { hpAbs: 200 })).toBe(
+      true
+    );
 
     expect(mocks.runBattleItemCommand).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -89,7 +97,7 @@ describe("executeItem", () => {
   it("reports Spirit toggle cooldown event for stall spirit-off", () => {
     mocks.runBattleSpiritToggleAutomation.mockReturnValue(true);
 
-    expect(executeItem({ type: "stall", attempts: [{ kind: "spirit-off" }] }, {})).toBe(true);
+    expect(applyPlan({ type: "stall", attempts: [{ kind: "spirit-off" }] }, {})).toBe(true);
 
     expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
       type: "clickAndRecord",
@@ -99,7 +107,7 @@ describe("executeItem", () => {
   it("routes stall Focus attempts through the Focus command entry", () => {
     mocks.runBattleFocusCommand.mockReturnValue(true);
 
-    expect(executeItem({ type: "stall", attempts: [{ kind: "focus" }] }, {})).toBe(true);
+    expect(applyPlan({ type: "stall", attempts: [{ kind: "focus" }] }, {})).toBe(true);
 
     expect(mocks.runBattleFocusCommand).toHaveBeenCalledWith({ type: "click" });
   });
@@ -112,7 +120,7 @@ describe("executeItem", () => {
     });
 
     expect(
-      executeItem(
+      applyPlan(
         { type: "stall", attempts: [{ kind: "focus" }, { kind: "draught", id: 123 }] },
         { mpAbs: 50 }
       )
@@ -135,7 +143,7 @@ describe("executeItem", () => {
   it("routes scroll candidates through the item command entry", () => {
     mocks.runBattleItemCommand.mockReturnValueOnce(false).mockReturnValueOnce(true);
 
-    expect(executeItem({ type: "scroll", candidates: [11111, 22222] }, {})).toBe(true);
+    expect(applyPlan({ type: "scroll", candidates: [11111, 22222] }, {})).toBe(true);
 
     expect(mocks.runBattleItemCommand).toHaveBeenNthCalledWith(1, {
       type: "clickItem",
@@ -145,5 +153,9 @@ describe("executeItem", () => {
       type: "clickItem",
       itemId: 22222,
     });
+  });
+
+  it("rejects unknown events", () => {
+    expect(runBattleItemExecution({ type: "unknown" })).toBe(false);
   });
 });

@@ -15,7 +15,7 @@ import {
 import { checkAndActivateSpirit } from "./buff/activate-spirit.js";
 import { BattleAttackExecutionEvent, runBattleAttackExecution } from "./attack/execute-attack.js";
 import { executeChannel } from "./buff/execute-channel.js";
-import { executeItem } from "./item/execute-item.js";
+import { BattleItemExecutionEvent, runBattleItemExecution } from "./item/execute-item.js";
 import { executeCriticalPause } from "./critical-buff-guard/decide-critical-buff.js";
 
 const EVENT_APPLY_ACTION_RESULT = "applyActionResult";
@@ -88,8 +88,12 @@ function applyActionResult(result, snap) {
       });
 
     case "item-plan":
-      // 宝石/药水/stall/卷轴 PURE 决策产出 ItemPlan，executeItem 探活+click+记账（需 snap 做 recordPreDrink）。
-      return executeItem(result.plan, snap);
+      // 宝石/药水/stall/卷轴 PURE 决策产出 ItemPlan，item execution 入口探活+click+记账。
+      return runBattleItemExecution({
+        type: BattleItemExecutionEvent.APPLY_PLAN,
+        plan: result.plan,
+        snap,
+      });
 
     case "channel-plan":
       // Channel 三段 PURE 决策产出 ChannelPlan，executeChannel 探活+click。

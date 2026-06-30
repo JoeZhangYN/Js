@@ -29,7 +29,7 @@
  */
 
 /**
- * 物品 step 决策计划（runBattleItemDecision → executeItem）。
+ * 物品 step 决策计划（runBattleItemDecision → item execution 入口）。
  * @typedef {{ type:"noop" }
  *         | { type:"gem" }
  *         | { type:"potion", candidates: string[], noWaste: boolean }
