@@ -1968,6 +1968,9 @@ function checkSurvivalActionEntry() {
     "BattleItemDecisionEvent.DECIDE_POTION",
     "BattleItemDecisionEvent.DECIDE_STALL_TOPUP",
     "BattleItemDecisionEvent.DECIDE_SCROLL",
+    "EMPTY_DECISION_PREDICATES",
+    "EMPTY_ITEM_PLAN_PREDICATES",
+    "isEmptyItemPlanDecision",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideSurvivalActionFile)} must own survival action ${required}`);
@@ -1982,6 +1985,22 @@ function checkSurvivalActionEntry() {
   }
   if (!ownerText.includes("isEmptyDecision")) {
     violations.push(`${rel(decideSurvivalActionFile)} must own structured empty decisions`);
+  }
+  for (const required of [
+    "noop: () => true",
+    '"item-plan": isEmptyItemPlanDecision',
+    "potion: (plan) => !plan.candidates?.length",
+    "stall: (plan) => !plan.attempts?.length",
+    "scroll: (plan) => !plan.candidates?.length",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideSurvivalActionFile)} must lock empty survival decision ${required}`);
+    }
+  }
+  const emptyDecisionBody =
+    ownerText.match(/function isEmptyDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (/result\.kind\s*===|plan\.type\s*===/.test(emptyDecisionBody)) {
+    violations.push(`${rel(decideSurvivalActionFile)} must route empty survival decisions through predicate tables`);
   }
   if (
     /from\s+["'][^"']*(?:critical-buff-facts|flee-facts|auto-pause-facts|defend-facts)\.js["']/.test(

@@ -42,6 +42,9 @@ for (const required of [
   "BattleItemDecisionEvent.DECIDE_STALL_TOPUP",
   "BattleItemDecisionEvent.DECIDE_SCROLL",
   "isEmptyDecision",
+  "EMPTY_DECISION_PREDICATES",
+  "EMPTY_ITEM_PLAN_PREDICATES",
+  "isEmptyItemPlanDecision",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
@@ -56,6 +59,22 @@ if (
 
 if (/for \(const decide of \[/.test(ownerText)) {
   violations.push(`${rel(owner)} must not hide survival priority in an anonymous function array`);
+}
+for (const required of [
+  "noop: () => true",
+  '"item-plan": isEmptyItemPlanDecision',
+  "potion: (plan) => !plan.candidates?.length",
+  "stall: (plan) => !plan.attempts?.length",
+  "scroll: (plan) => !plan.candidates?.length",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${rel(owner)} must lock empty survival decision ${required}`);
+  }
+}
+const emptyDecisionBody =
+  ownerText.match(/function isEmptyDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (/result\.kind\s*===|plan\.type\s*===/.test(emptyDecisionBody)) {
+  violations.push(`${rel(owner)} must route empty decisions through predicate tables`);
 }
 
 if (

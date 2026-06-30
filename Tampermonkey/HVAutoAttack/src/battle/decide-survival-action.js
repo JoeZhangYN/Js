@@ -49,6 +49,18 @@ const SURVIVAL_ACTION_STEPS = [
   },
 ];
 
+const EMPTY_DECISION_PREDICATES = Object.freeze({
+  noop: () => true,
+  "item-plan": isEmptyItemPlanDecision,
+});
+
+const EMPTY_ITEM_PLAN_PREDICATES = Object.freeze({
+  noop: () => true,
+  potion: (plan) => !plan.candidates?.length,
+  stall: (plan) => !plan.attempts?.length,
+  scroll: (plan) => !plan.candidates?.length,
+});
+
 function decideCriticalBuffStep(survivalContext) {
   return decideCriticalBuff(survivalContext);
 }
@@ -99,14 +111,12 @@ function decideSurvivalResult(snap = {}, opt = {}) {
 }
 
 function isEmptyDecision(result) {
-  if (result.kind === "noop") return true;
-  if (result.kind !== "item-plan") return false;
+  return EMPTY_DECISION_PREDICATES[result?.kind]?.(result) ?? false;
+}
+
+function isEmptyItemPlanDecision(result) {
   const plan = result.plan || {};
-  if (plan.type === "noop") return true;
-  if (plan.type === "potion") return !plan.candidates?.length;
-  if (plan.type === "stall") return !plan.attempts?.length;
-  if (plan.type === "scroll") return !plan.candidates?.length;
-  return false;
+  return EMPTY_ITEM_PLAN_PREDICATES[plan.type]?.(plan) ?? false;
 }
 
 export function runBattleSurvivalAction(event = { type: EVENT_DECIDE }) {
