@@ -20,6 +20,7 @@ const actionDecisionText = read(actionDecision);
 
 for (const required of [
   "BattleBuffPreparationEvent",
+  "battleBuffPreparationEventHandlers",
   "DECIDE",
   "runBattleBuffPreparation",
   "buffPreparationFacts",
@@ -39,8 +40,21 @@ if (
   violations.push(`${rel(owner)} may export only its event entry`);
 }
 
+const entryBody =
+  ownerText.match(/export function runBattleBuffPreparation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover buff preparation contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("rejects unknown buff preparation events as no action")) {
+    violations.push(`${rel(ownerTest)} must cover unknown buff preparation events`);
+  }
 }
 
 if (

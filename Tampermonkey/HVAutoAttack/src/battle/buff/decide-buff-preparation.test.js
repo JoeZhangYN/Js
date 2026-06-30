@@ -75,7 +75,7 @@ describe("runBattleBuffPreparation", () => {
     ).toEqual({ kind: "skill-command", skillId: "411" });
   });
 
-  it("rejects unknown events as no action", () => {
+  it("rejects unknown buff preparation events as no action", () => {
     expect(runBattleBuffPreparation({ type: "unknown" })).toEqual({ kind: "noop" });
   });
 });

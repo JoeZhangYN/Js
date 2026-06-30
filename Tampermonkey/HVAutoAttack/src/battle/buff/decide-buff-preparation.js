@@ -9,6 +9,10 @@ export const BattleBuffPreparationEvent = Object.freeze({
   DECIDE: EVENT_DECIDE,
 });
 
+const battleBuffPreparationEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: (event) => decideBuffPreparationResult(event.snap, event.opt),
+});
+
 function decideBuffPreparationResult(snap = {}, opt = {}) {
   const event = {
     opt,
@@ -27,6 +31,5 @@ function isEmptyDecision(result) {
 }
 
 export function runBattleBuffPreparation(event = { type: EVENT_DECIDE }) {
-  if (event.type === EVENT_DECIDE) return decideBuffPreparationResult(event.snap, event.opt);
-  return { kind: "noop" };
+  return battleBuffPreparationEventHandlers[event.type]?.(event) ?? { kind: "noop" };
 }
