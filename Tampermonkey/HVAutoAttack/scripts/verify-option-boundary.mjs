@@ -77,6 +77,7 @@ walk(srcDir);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "OptionEvent",
+  "optionEventHandlers",
   "runOptionAutomation",
   "STORAGE_KEYS.OPTION",
   "EXPORT_TEXT",
@@ -132,6 +133,22 @@ if (!/export const OptionEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
 }
 if (!/export function runOptionAutomation\(\s*event\b/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose runOptionAutomation(event)`);
+}
+const entryBody =
+  ownerText.match(/export function runOptionAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
+if (!fs.existsSync(path.join(root, ownerTest))) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover option entry`);
+} else {
+  const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+  if (!ownerTestText.includes("rejects unknown option events without changing runtime or persisted option")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown option events`);
+  }
 }
 
 if (violations.length) {

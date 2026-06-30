@@ -128,4 +128,14 @@ describe("option persistence entry", () => {
       ok: false,
     });
   });
+
+  it("rejects unknown option events without changing runtime or persisted option", () => {
+    const option = { version: "10.0", lang: "2" };
+    runOptionAutomation({ type: OptionEvent.WRITE, option });
+
+    expect(runOptionAutomation({ type: "unknown", option: { version: "bad" } })).toBeUndefined();
+
+    expect(g("option")).toBe(option);
+    expect(getValue(STORAGE_KEYS.OPTION, true)).toEqual(option);
+  });
 });

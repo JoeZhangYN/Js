@@ -35,6 +35,19 @@ export const OptionEvent = Object.freeze({
   SYNC_STARTUP_OPTION: EVENT_SYNC_STARTUP_OPTION,
 });
 
+const optionEventHandlers = Object.freeze({
+  [EVENT_READ]: () => readOption(),
+  [EVENT_WRITE]: (event) => writeOption(event.option),
+  [EVENT_CLEAR]: () => clearOption(),
+  [EVENT_READ_FIELD]: (event) => getOption(event.key, event.fallback),
+  [EVENT_IS_ON]: (event) => isOptionOn(event.key),
+  [EVENT_WRITE_FIELD]: (event) => setOption(event.key, event.value),
+  [EVENT_EXPORT_TEXT]: () => exportOptionText(),
+  [EVENT_PARSE_IMPORT_TEXT]: (event) => parseOptionImportText(event.text),
+  [EVENT_READ_BATTLE_ACTION_OPTIONS]: () => readBattleActionOptions(),
+  [EVENT_SYNC_STARTUP_OPTION]: (event) => syncStartupOption(event.currentVersion),
+});
+
 function readOption() {
   return g("option") || getValue(STORAGE_KEYS.OPTION, true) || null;
 }
@@ -125,24 +138,5 @@ function parseOptionImportText(text) {
 }
 
 export function runOptionAutomation(event = { type: EVENT_READ }) {
-  if (event.type === EVENT_READ) return readOption();
-  if (event.type === EVENT_WRITE) {
-    writeOption(event.option);
-    return undefined;
-  }
-  if (event.type === EVENT_CLEAR) {
-    clearOption();
-    return undefined;
-  }
-  if (event.type === EVENT_READ_FIELD) return getOption(event.key, event.fallback);
-  if (event.type === EVENT_IS_ON) return isOptionOn(event.key);
-  if (event.type === EVENT_WRITE_FIELD) {
-    setOption(event.key, event.value);
-    return undefined;
-  }
-  if (event.type === EVENT_EXPORT_TEXT) return exportOptionText();
-  if (event.type === EVENT_PARSE_IMPORT_TEXT) return parseOptionImportText(event.text);
-  if (event.type === EVENT_READ_BATTLE_ACTION_OPTIONS) return readBattleActionOptions();
-  if (event.type === EVENT_SYNC_STARTUP_OPTION) return syncStartupOption(event.currentVersion);
-  return undefined;
+  return optionEventHandlers[event.type]?.(event);
 }
