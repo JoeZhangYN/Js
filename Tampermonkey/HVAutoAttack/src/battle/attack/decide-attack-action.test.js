@@ -43,7 +43,7 @@ describe("runBattleAttackAction", () => {
     ).toBe(true);
   });
 
-  it("rejects unknown events as no action", () => {
+  it("rejects unknown attack action events as no action", () => {
     expect(runBattleAttackAction({ type: "unknown" })).toEqual({ kind: "noop" });
   });
 });

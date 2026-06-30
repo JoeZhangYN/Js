@@ -9,6 +9,11 @@ export const BattleAttackActionEvent = Object.freeze({
   WILL_CLEAR_WITH_BIG_SKILL: EVENT_WILL_CLEAR_WITH_BIG_SKILL,
 });
 
+const battleAttackActionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: (event) => decideAttackActionResult(event.snap, event.opt),
+  [EVENT_WILL_CLEAR_WITH_BIG_SKILL]: (event) => willClearWithBigSkill(event.snap, event.opt),
+});
+
 function decideAttackActionResult(snap = {}, opt = {}) {
   return decideAttack({ opt, ...attackFacts(snap) });
 }
@@ -22,9 +27,5 @@ function willClearWithBigSkill(snap = {}, opt = {}) {
 }
 
 export function runBattleAttackAction(event = { type: EVENT_DECIDE }) {
-  if (event.type === EVENT_DECIDE) return decideAttackActionResult(event.snap, event.opt);
-  if (event.type === EVENT_WILL_CLEAR_WITH_BIG_SKILL) {
-    return willClearWithBigSkill(event.snap, event.opt);
-  }
-  return { kind: "noop" };
+  return battleAttackActionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
 }

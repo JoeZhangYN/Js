@@ -21,6 +21,7 @@ const actionDecisionText = read(actionDecision);
 
 for (const required of [
   "BattleAttackActionEvent",
+  "battleAttackActionEventHandlers",
   "DECIDE",
   "WILL_CLEAR_WITH_BIG_SKILL",
   "AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL",
@@ -39,8 +40,21 @@ if (
   violations.push(`${rel(owner)} may export only its event entry`);
 }
 
+const entryBody =
+  ownerText.match(/export function runBattleAttackAction\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\][\s\S]*\[EVENT_WILL_CLEAR_WITH_BIG_SKILL\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover attack action contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("rejects unknown attack action events as no action")) {
+    violations.push(`${rel(ownerTest)} must cover unknown attack action events`);
+  }
 }
 
 if (
