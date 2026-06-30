@@ -29,6 +29,8 @@ const snapshotText = requireText(snapshot, [
   "runBattleObservationLearning",
   "BattleSkillReadinessEvent.READ_READY_MAP",
   "runBattleSkillReadiness",
+  "BattlePlayerVitalsEvent.READ_CURRENT",
+  "runBattlePlayerVitals",
   "BattleMonsterViewEvent.READ_VIEW",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
@@ -76,6 +78,11 @@ if (
 ) {
   violations.push(
     `${snapshot.replaceAll("\\", "/")} must read skillReady through battle skill readiness entry`
+  );
+}
+if (/#vbh|#dvbh|#dvrhd|#dvrm|#dvrs|readPlayerVitals/.test(snapshotText)) {
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must read player vitals through battle player vitals entry`
   );
 }
 if (/snap\.fightingStyle/.test(scoringText)) {

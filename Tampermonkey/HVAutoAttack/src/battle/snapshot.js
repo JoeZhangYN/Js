@@ -21,6 +21,7 @@ import { AbilityAoeEvent, runAbilityAoeAutomation } from "../pages/ability-page.
 import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-skill-usage.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "./battle-monster-view.js";
 import { BattleSkillReadinessEvent, runBattleSkillReadiness } from "./battle-skill-readiness.js";
+import { BattlePlayerVitalsEvent, runBattlePlayerVitals } from "./battle-player-vitals.js";
 
 /**
  * 解析一个 effect 容器（玩家 #pane_effects 或怪物 .btm6）内全部 img 为 {img, turns}[]。
@@ -84,46 +85,6 @@ function readMonsters() {
 }
 
 /**
- * 玩家 hp/mp/sp/oc 读取（兼容 #vbh / #dvbh 双布局）。
- * 返 percentage（hp/mp/sp 0..100）+ 绝对值（hpMax/mpMax/spMax + hpAbs/mpAbs/spAbs）。
- * #dvrhd / #dvrm / #dvrs 是 max 值的 textContent；当前绝对值 = max × percentage / 100。
- */
-function readPlayerVitals() {
-  let hp, mp, sp, oc;
-  if (gE("#vbh")) {
-    hp = (gE("#vbh>div>img").offsetWidth / 500) * 100;
-    mp = (gE("#vbm>div>img").offsetWidth / 210) * 100;
-    sp = (gE("#vbs>div>img").offsetWidth / 210) * 100;
-    oc = gE("#vcp>div>div")
-      ? (gE("#vcp>div>div", "all").length - gE("#vcp>div>div#vcr", "all").length) * 25
-      : 0;
-  } else {
-    hp = (gE("#dvbh>div>img").offsetWidth / 414) * 100;
-    mp = (gE("#dvbm>div>img").offsetWidth / 414) * 100;
-    sp = (gE("#dvbs>div>img").offsetWidth / 414) * 100;
-    oc = parseInt(gE("#dvrc")?.textContent) || 0;
-  }
-  const hpMax = parseInt(gE("#dvrhd")?.textContent) || 0;
-  const mpMax = parseInt(gE("#dvrm")?.textContent) || 0;
-  const spMax = parseInt(gE("#dvrs")?.textContent) || 0;
-  return {
-    hp,
-    mp,
-    sp,
-    oc,
-    hpMax,
-    mpMax,
-    spMax,
-    hpAbs: (hp / 100) * hpMax,
-    mpAbs: (mp / 100) * mpMax,
-    spAbs: (sp / 100) * spMax,
-    hpDeficit: hpMax - (hp / 100) * hpMax,
-    mpDeficit: mpMax - (mp / 100) * mpMax,
-    spDeficit: spMax - (sp / 100) * spMax,
-  };
-}
-
-/**
  * 一次性 batch DOM read 组装当前 turn snapshot。
  * @returns {import("../core/types.js").BattleSnapshot}
  */
@@ -134,7 +95,7 @@ export function collectSnapshot(event = {}) {
     monsters,
   });
   const playerEffects = readPlayerEffects();
-  const vitals = readPlayerVitals();
+  const vitals = runBattlePlayerVitals({ type: BattlePlayerVitalsEvent.READ_CURRENT });
   const spiritEl = gE("#ckey_spirit");
   // 战斗日志只解析一遍，两个 DPS 估计复用同一份 events（避免每 turn 重复全量遍历 textlog）
   const battleLog = parseBattleLog();

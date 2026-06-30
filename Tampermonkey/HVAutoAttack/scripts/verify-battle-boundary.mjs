@@ -54,6 +54,7 @@ const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const turnContextFile = path.join(root, "src/battle/turn-context.js");
 const observationLearningFile = path.join(root, "src/battle/battle-observation-learning.js");
 const skillReadinessFile = path.join(root, "src/battle/battle-skill-readiness.js");
+const playerVitalsFile = path.join(root, "src/battle/battle-player-vitals.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const dispatchFile = path.join(root, "src/battle/dispatch.js");
@@ -1120,6 +1121,21 @@ function checkSnapshot() {
   ]) {
     if (!skillReadinessText.includes(required)) {
       violations.push(`${rel(skillReadinessFile)} must own ${required}`);
+    }
+  }
+  if (
+    !text.includes("BattlePlayerVitalsEvent.READ_CURRENT") ||
+    !text.includes("runBattlePlayerVitals")
+  ) {
+    violations.push(`${rel(snapshotFile)} must read player vitals through one entry`);
+  }
+  if (/#vbh|#dvbh|#dvrhd|#dvrm|#dvrs|readPlayerVitals/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not own player vitals DOM rules`);
+  }
+  const playerVitalsText = fs.readFileSync(playerVitalsFile, "utf8");
+  for (const required of ["BattlePlayerVitalsEvent", "hpAbs", "mpAbs", "spAbs", "hpDeficit"]) {
+    if (!playerVitalsText.includes(required)) {
+      violations.push(`${rel(playerVitalsFile)} must own ${required}`);
     }
   }
   if (/\bg\(\s*["']skillOTOS["']/.test(text)) {
