@@ -26,6 +26,7 @@ describe("decideBossImperil", () => {
       type: BossImperilEvent.DECIDE,
       opt,
       ...bossImperilFacts(snap),
+      stallActive: snap.stallActive,
       skipImperilForBigSkill: snap.skipImperilForBigSkill,
     });
 
@@ -164,6 +165,7 @@ describe("boss Imperil permission", () => {
       type: BossImperilEvent.CAN_CAST,
       opt,
       ...bossImperilFacts(snap),
+      stallActive: snap.stallActive,
       skipImperilForBigSkill: snap.skipImperilForBigSkill,
     });
 
@@ -176,11 +178,9 @@ describe("boss Imperil permission", () => {
   it("blocks boss Imperil while battle is stalling", () => {
     expect(
       canCast(
-        { stallMode: true },
+        {},
         snap({
-          oc: 100,
-          roundNow: 1,
-          roundAll: 3,
+          stallActive: true,
           skillReady: { 213: true },
           view: [mon({ id: 1, isBoss: true, hpPercent: 0.8 })],
         })

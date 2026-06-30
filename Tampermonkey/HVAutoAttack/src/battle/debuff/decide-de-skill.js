@@ -7,7 +7,6 @@ import { checkCondition } from "../../settings/condition-eval.js";
 import { canApplyDebuffPure } from "./can-apply.js";
 import { aliveByOrder } from "../monster-view.js";
 import { firstByOrder, highestAbsHp, selfTarget, aoeNeighborAnchor } from "../target-strategy.js";
-import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 
 /**
  * 决定单目标 debuff 该施哪一种 + 打哪只怪。
@@ -16,7 +15,7 @@ import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-st
  */
 export function decideDeSkill(event = {}) {
   const opt = event.opt || {};
-  if (isStallingForDeSkill(opt, event)) return { kind: "noop" };
+  if (event.stallActive) return { kind: "noop" };
   if (
     !opt.debuffSkillSwitch ||
     !opt.debuffSkill ||
@@ -64,15 +63,4 @@ export function decideDeSkill(event = {}) {
     };
   }
   return { kind: "noop" };
-}
-
-function isStallingForDeSkill(opt, event) {
-  return runBattleStallModeAutomation({
-    type: BattleStallModeEvent.READ_ACTIVE,
-    opt,
-    roundNow: event?.roundNow,
-    roundAll: event?.roundAll,
-    monsterFacts: event?.monsterFacts,
-    overcharge: event?.overcharge,
-  });
 }

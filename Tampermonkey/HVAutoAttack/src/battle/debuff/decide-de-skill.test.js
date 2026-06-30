@@ -43,6 +43,7 @@ function deSkillFacts(snap) {
     roundNow: snap.roundNow,
     roundAll: snap.roundAll,
     monsterFacts: snap.view,
+    stallActive: snap.stallActive,
   };
 }
 

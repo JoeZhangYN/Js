@@ -7,7 +7,6 @@ import {
   BattleDebuffCoverageEvent,
   runBattleDebuffCoverageAutomation,
 } from "../battle-debuff-coverage.js";
-import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { canApplyDebuffPure } from "./can-apply.js";
 import { byOrder } from "../monster-view.js";
 import { aoeNeighborAnchor } from "../target-strategy.js";
@@ -74,7 +73,7 @@ export function decideCastDebuffOnAll(event = {}) {
 function canCastDebuffOnAll(opt, event, debuffKey) {
   const gate = ALL_DEBUFF_GATES[debuffKey];
   if (!gate) return false;
-  if (gate.skipInStall && isStallingForAllDebuff(opt, event)) return false;
+  if (gate.skipInStall && event?.stallActive) return false;
   if (!opt.debuffSkillSwitch || !opt[gate.enabledKey]) return false;
   if (shouldSkipDebuffForBigSkill(event, debuffKey)) return false;
   if (!hasMissingDebuff(event, gate.coverageName)) return false;
@@ -93,16 +92,5 @@ function hasMissingDebuff(event, debuffName) {
     monsterBuffs: (event?.monsterFacts || []).map((monster) => monster.buffs),
     debuffName,
     monsterAlive: event?.monsterAlive,
-  });
-}
-
-function isStallingForAllDebuff(opt, event) {
-  return runBattleStallModeAutomation({
-    type: BattleStallModeEvent.READ_ACTIVE,
-    opt,
-    roundNow: event?.roundNow,
-    roundAll: event?.roundAll,
-    monsterFacts: event?.monsterFacts,
-    overcharge: event?.overcharge,
   });
 }

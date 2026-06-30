@@ -5,7 +5,6 @@
 //   checkAndActivateSpirit + attemptClickWithTarget，无需新 kind。
 // 无目标 → {kind:"noop"}。
 import { aliveByOrder } from "../monster-view.js";
-import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { bossCoverageWindow } from "../target-strategy.js";
 
 const EVENT_CAN_CAST = "canCast";
@@ -18,18 +17,7 @@ export const BossImperilEvent = Object.freeze({
 
 function canCastBossImperil(event) {
   const opt = event?.opt || {};
-  if (
-    runBattleStallModeAutomation({
-      type: BattleStallModeEvent.READ_ACTIVE,
-      opt,
-      roundNow: event?.roundNow,
-      roundAll: event?.roundAll,
-      monsterFacts: event?.monsterFacts,
-      overcharge: event?.overcharge,
-    })
-  ) {
-    return false;
-  }
+  if (event?.stallActive) return false;
   if (opt?.debuffSkillSwitch === false || !event?.imperilSkillReady) return false;
   if (event?.skipImperilForBigSkill) return false;
   return true;
@@ -37,7 +25,7 @@ function canCastBossImperil(event) {
 
 /**
  * 决定给哪只未上 Imperil 的 boss 施放 213（AoE 窗口尽量覆盖多个 needy boss）。
- * 入口自守卫：stall / debuffSkillSwitch / skillReady["213"] / offensive-debuff skip ruling。
+ * 入口自守卫：offensive-debuff stall ruling / debuffSkillSwitch / skillReady["213"] / skip ruling。
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult}
  */

@@ -1,4 +1,5 @@
 import { BattleAttackActionEvent, runBattleAttackAction } from "../attack/decide-attack-action.js";
+import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { decideBurstControl } from "./decide-burst-control.js";
 import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill-debuff.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
@@ -27,6 +28,17 @@ function readBigSkillSkipRulings(event) {
   };
 }
 
+function readStallRuling(event) {
+  return runBattleStallModeAutomation({
+    type: BattleStallModeEvent.READ_ACTIVE,
+    opt: event.opt,
+    roundNow: event.roundNow,
+    roundAll: event.roundAll,
+    monsterFacts: event.monsterFacts,
+    overcharge: event.overcharge,
+  });
+}
+
 function decideOffensiveDebuffResult(snap = {}, opt = {}) {
   const event = {
     opt,
@@ -39,6 +51,7 @@ function decideOffensiveDebuffResult(snap = {}, opt = {}) {
     ...bossImperilFacts(snap),
     ...debuffActionFacts(snap),
   };
+  event.stallActive = readStallRuling(event);
   Object.assign(event, readBigSkillSkipRulings(event));
   for (const decide of [
     decideBurstControl,

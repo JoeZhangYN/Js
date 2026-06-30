@@ -38,6 +38,7 @@ function allDebuffFacts(snap) {
     monsterFacts: snap.view,
     skipWeakenForBigSkill: snap.skipWeakenForBigSkill,
     skipImperilForBigSkill: snap.skipImperilForBigSkill,
+    stallActive: snap.stallActive,
   };
 }
 
@@ -105,11 +106,7 @@ describe("decideCastDebuffOnAll", () => {
 
   it("skips Imperil during stall", () => {
     expect(
-      decide(
-        { debuffSkillSwitch: true, debuffSkillAllIm: true, stallMode: true },
-        snap({ roundNow: 1, roundAll: 2, oc: 100 }),
-        "Im"
-      )
+      decide({ debuffSkillSwitch: true, debuffSkillAllIm: true }, snap({ stallActive: true }), "Im")
     ).toEqual({ kind: "noop" });
   });
 
@@ -119,9 +116,8 @@ describe("decideCastDebuffOnAll", () => {
         {
           debuffSkillSwitch: true,
           debuffSkillAllWk: true,
-          stallMode: true,
         },
-        snap({ roundNow: 1, roundAll: 2, oc: 100 }),
+        snap({ stallActive: true }),
         "We"
       )
     ).toEqual({

@@ -34,6 +34,7 @@ function deSkillFacts(s) {
     roundNow: s.roundNow,
     roundAll: s.roundAll,
     monsterFacts: s.view,
+    stallActive: s.stallActive,
   };
 }
 
@@ -65,7 +66,7 @@ describe("decideDeSkill entry gate", () => {
     expect(
       decide(
         enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } }),
-        snap({ oc: 100, roundNow: 1, roundAll: 2 })
+        snap({ stallActive: true })
       )
     ).toEqual({ kind: "noop" });
   });

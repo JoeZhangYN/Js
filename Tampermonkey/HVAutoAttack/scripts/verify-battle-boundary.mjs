@@ -1393,9 +1393,8 @@ function checkBossImperilEntry() {
     "event?.monsterFacts",
     "event?.imperilSkillReady",
     "event?.imperilAoe",
+    "event?.stallActive",
     "event?.skipImperilForBigSkill",
-    "event?.roundNow",
-    "event?.roundAll",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(bossImperilFile)} must consume ${required}`);
@@ -1578,6 +1577,9 @@ function checkOffensiveDebuffEntry() {
     "willClearWithBigSkill",
     "BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF",
     "runBigSkillDebuffAutomation",
+    "BattleStallModeEvent.READ_ACTIVE",
+    "runBattleStallModeAutomation",
+    "stallActive",
     "skipWeakenForBigSkill",
     "skipImperilForBigSkill",
     "burstControlFacts",
@@ -1948,7 +1950,7 @@ function checkSingleDebuffEntry() {
     "debuffSkillSwitch",
     "debuffSkill",
     "debuffSkillCondition",
-    "runBattleStallModeAutomation",
+    "event.stallActive",
     "conditionFacts",
     "event.monsterFacts",
     "event.skillReady",
@@ -1988,7 +1990,7 @@ function checkAllDebuffEntry() {
     "runBattleDebuffCoverageAutomation",
     "skipWeakenForBigSkill",
     "skipImperilForBigSkill",
-    "runBattleStallModeAutomation",
+    "event?.stallActive",
     "conditionFacts",
     "event.monsterFacts",
     "event.skillReady",
@@ -2627,9 +2629,7 @@ function checkBattleStallMode() {
     }
   }
   for (const file of [
-    decideCastAllFile,
-    decideDeSkillFile,
-    bossImperilFile,
+    decideOffensiveDebuffFile,
     path.join(root, "src/battle/attack/decide-attack.js"),
     path.join(root, "src/battle/item/decide-item.js"),
   ]) {
@@ -2650,6 +2650,12 @@ function checkBattleStallMode() {
       ) {
         violations.push(`${rel(file)} must pass narrow facts, not snap, to stall top-up query`);
       }
+    }
+  }
+  for (const file of [decideCastAllFile, decideDeSkillFile, bossImperilFile]) {
+    const text = fs.readFileSync(file, "utf8");
+    if (/runBattleStallModeAutomation|BattleStallModeEvent/.test(text)) {
+      violations.push(`${rel(file)} must consume offensive debuff stall ruling`);
     }
   }
 }
