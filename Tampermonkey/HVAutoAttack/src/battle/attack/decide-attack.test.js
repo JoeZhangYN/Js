@@ -89,6 +89,16 @@ describe("decideAttack 返 {kind:'attack-plan'}", () => {
     expect(r.kind).toBe("attack-plan");
     expect(r.plan).toBeTruthy();
   });
+
+  it("unknown attack decision events use the attack-plan default path", () => {
+    const r = decideAttack({
+      type: "unknown",
+      opt: {},
+      ...attackFacts(snap({ view: [vmon({ id: 4, order: 0 })] })),
+    });
+
+    expect(r).toEqual({ kind: "attack-plan", plan: { type: "default", targetId: 4 } });
+  });
 });
 
 describe("decideAttack 6 分支", () => {

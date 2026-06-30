@@ -2631,6 +2631,7 @@ function checkAttackEntry() {
   for (const required of [
     "decideAttack",
     "AttackDecisionEvent",
+    "attackDecisionEventHandlers",
     "WILL_CLEAR_WITH_BIG_SKILL",
     "selectSpellTier",
     "highSkillCondition",
@@ -2646,6 +2647,21 @@ function checkAttackEntry() {
   }
   if (/decideAttack\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideAttackFile)} must not expose opt/snap attack input`);
+  }
+  const attackDecisionEntryBody =
+    ownerText.match(/export function decideAttack\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE_PLAN\]/.test(ownerText)) {
+    violations.push(`${rel(decideAttackFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(attackDecisionEntryBody)) {
+    violations.push(`${rel(decideAttackFile)} entry must dispatch by handler table`);
+  }
+  const attackDecisionTestText = fs.readFileSync(
+    path.join(root, "src/battle/attack/decide-attack.test.js"),
+    "utf8"
+  );
+  if (!attackDecisionTestText.includes("unknown attack decision events use the attack-plan default path")) {
+    violations.push(`${rel(decideAttackFile)} tests must cover unknown attack decision events`);
   }
   if (!ownerText.includes("dynamicHealLog")) {
     violations.push(`${rel(decideAttackFile)} must pass ranking debug option into attack ranking`);

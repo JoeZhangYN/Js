@@ -21,6 +21,11 @@ export const AttackDecisionEvent = Object.freeze({
   WILL_CLEAR_WITH_BIG_SKILL: EVENT_WILL_CLEAR_WITH_BIG_SKILL,
 });
 
+const attackDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE_PLAN]: (event) => ({ kind: "attack-plan", plan: decidePlan(event.opt || {}, event) }),
+  [EVENT_WILL_CLEAR_WITH_BIG_SKILL]: (event) => willClearWithBigSkill(event),
+});
+
 function selectSpellTier(opt, event) {
   const attackStatus = event.attackStatus;
   if (attackStatus === 0 || attackStatus == null) return { tier: 0 };
@@ -53,9 +58,7 @@ function selectSpellTier(opt, event) {
  * @returns {import("../../core/types.js").ActionResult} { kind:"attack-plan", plan }
  */
 export function decideAttack(event = {}) {
-  if (event.type === EVENT_WILL_CLEAR_WITH_BIG_SKILL) return willClearWithBigSkill(event);
-  const opt = event.opt || {};
-  return { kind: "attack-plan", plan: decidePlan(opt, event) };
+  return (attackDecisionEventHandlers[event.type] || attackDecisionEventHandlers[EVENT_DECIDE_PLAN])(event);
 }
 
 function willClearWithBigSkill(event) {
