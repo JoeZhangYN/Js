@@ -3,7 +3,7 @@ import {
   BattleActionEventBridgeEvent,
   runBattleActionEventBridgeAutomation,
 } from "./battle-action-event-bridge.js";
-import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
+import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./battle-round-start.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
 import {
   BattlePauseControlsEvent,

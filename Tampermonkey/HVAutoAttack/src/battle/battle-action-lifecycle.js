@@ -14,7 +14,7 @@ import {
 } from "./battle-completion.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
-import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
+import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./battle-round-start.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";

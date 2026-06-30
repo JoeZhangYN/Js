@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
+import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./battle-round-start.js";
 
 const mocks = vi.hoisted(() => ({
   runBattleRoundAutomation: vi.fn(),

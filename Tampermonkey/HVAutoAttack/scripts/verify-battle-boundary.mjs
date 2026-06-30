@@ -51,7 +51,8 @@ const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const stepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
-const roundStartFile = path.join(root, "src/battle/new-round.js");
+const roundStartFile = path.join(root, "src/battle/battle-round-start.js");
+const legacyNewRoundFile = path.join(root, "src/battle/new-round.js");
 const battleRulesFile = path.join(root, "src/battle/rules/index.js");
 const ruleFactsFile = path.join(root, "src/battle/rules/rule-facts.js");
 const attackFactsFile = path.join(root, "src/battle/rules/attack-facts.js");
@@ -237,6 +238,9 @@ function checkRoundStartCallers() {
 }
 
 function checkRoundStartEntry() {
+  if (fs.existsSync(legacyNewRoundFile)) {
+    violations.push("src/battle/new-round.js legacy round start path must stay deleted");
+  }
   const text = fs.readFileSync(roundStartFile, "utf8");
   if (!/export function runBattleRoundStartAutomation\(/.test(text)) {
     violations.push(`${rel(roundStartFile)} must expose runBattleRoundStartAutomation(event)`);
@@ -256,6 +260,9 @@ function checkRoundStartEntry() {
     violations.push(
       `${rel(roundStartFile)} legacy newRound() bridge must stay deleted; use runBattleRoundStartAutomation(event)`
     );
+  }
+  if (/from\s+["']\.\/new-round\.js["']/.test(text)) {
+    violations.push(`${rel(roundStartFile)} must not import legacy new-round path`);
   }
 }
 

@@ -1,4 +1,4 @@
-// 新一轮战斗初始化：怪物计数 / 轮次识别。
+// 战斗轮次开始编排：怪物计数 / 轮次识别。
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";

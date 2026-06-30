@@ -105,12 +105,15 @@ if (!ownerText.includes("randomEncounterStarted")) {
   violations.push(`${owner.replaceAll("\\", "/")} must decide random encounter start context`);
 }
 
-const newRoundText = fs.readFileSync(path.join(root, "src/battle/new-round.js"), "utf8");
-if (/from\s+["']\.\.\/state\/store\.js["']/.test(newRoundText)) {
-  violations.push("src/battle/new-round.js must not import raw battle runtime store");
+const roundStartText = fs.readFileSync(path.join(root, "src/battle/battle-round-start.js"), "utf8");
+if (fs.existsSync(path.join(root, "src/battle/new-round.js"))) {
+  violations.push("src/battle/new-round.js legacy round start path must stay deleted");
 }
-if (/\bg\(\s*["']roundType["']/.test(newRoundText)) {
-  violations.push("src/battle/new-round.js must not read or write roundType directly");
+if (/from\s+["']\.\.\/state\/store\.js["']/.test(roundStartText)) {
+  violations.push("src/battle/battle-round-start.js must not import raw battle runtime store");
+}
+if (/\bg\(\s*["']roundType["']/.test(roundStartText)) {
+  violations.push("src/battle/battle-round-start.js must not read or write roundType directly");
 }
 for (const forbidden of [
   /BattleRoundEvent\.(?:READ_TYPE|CLASSIFY_TYPE|RECORD_TYPE|RECORD_COUNT_FROM_INITIALIZATION|RECORD_SINGLE_ROUND)/,
@@ -122,8 +125,10 @@ for (const forbidden of [
   /\\\(Round\s+\(\\d\+\)/,
   /\broundNow\b|\broundAll\b/,
 ]) {
-  if (forbidden.test(newRoundText)) {
-    violations.push(`src/battle/new-round.js must classify round type through battle-round`);
+  if (forbidden.test(roundStartText)) {
+    violations.push(
+      `src/battle/battle-round-start.js must classify round type through battle-round`
+    );
   }
 }
 

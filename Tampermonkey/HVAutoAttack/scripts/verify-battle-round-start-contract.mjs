@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
-const owner = path.normalize("src/battle/new-round.js");
-const ownerTest = path.normalize("src/battle/new-round.test.js");
+const owner = path.normalize("src/battle/battle-round-start.js");
+const ownerTest = path.normalize("src/battle/battle-round-start.test.js");
 const violations = [];
 
 function read(relative) {
@@ -35,6 +35,12 @@ const ownerText = requireText(owner, [
   "MonsterStatusEvent.PREPARE_ROUND_START",
   "EncounterEvent.RANDOM_ENCOUNTER_STARTED",
 ]);
+if (fs.existsSync(path.join(root, "src/battle/new-round.js"))) {
+  violations.push("src/battle/new-round.js legacy round start path must stay deleted");
+}
+if (fs.existsSync(path.join(root, "src/battle/new-round.test.js"))) {
+  violations.push("src/battle/new-round.test.js legacy round start test path must stay deleted");
+}
 const roundLifecycleText = requireText(path.normalize("src/battle/round-lifecycle.js"), [
   "BattleRoundLifecycleEvent",
   "runBattleRoundLifecycle",

@@ -16,7 +16,7 @@ vi.mock("./battle-action-event-bridge.js", () => ({
   BattleActionEventBridgeEvent: Object.freeze({ INSTALL: "install" }),
   runBattleActionEventBridgeAutomation: mocks.runBattleActionEventBridgeAutomation,
 }));
-vi.mock("./new-round.js", () => ({
+vi.mock("./battle-round-start.js", () => ({
   BattleRoundStartEvent: Object.freeze({ ROUND_STARTED: "roundStarted" }),
   runBattleRoundStartAutomation: mocks.runBattleRoundStartAutomation,
 }));

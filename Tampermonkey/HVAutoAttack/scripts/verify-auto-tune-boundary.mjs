@@ -6,7 +6,7 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/auto-tune.js");
 const ownerTest = path.normalize("src/state/auto-tune.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
-const roundStart = path.normalize("src/battle/new-round.js");
+const roundStart = path.normalize("src/battle/battle-round-start.js");
 const roundLifecycle = path.normalize("src/battle/round-lifecycle.js");
 const violations = [];
 

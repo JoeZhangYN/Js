@@ -9,7 +9,7 @@ const hpImpl = path.normalize("src/battle/monster-status-hp.js");
 const maxHpInference = path.normalize("src/battle/monster-max-hp-inference.js");
 const targetWeight = path.normalize("src/battle/monster-target-weight.js");
 const parserImpl = path.normalize("src/battle/log-parser.js");
-const roundStart = path.normalize("src/battle/new-round.js");
+const roundStart = path.normalize("src/battle/battle-round-start.js");
 const actionEventBridge = path.normalize("src/battle/battle-action-event-bridge.js");
 const violations = [];
 
