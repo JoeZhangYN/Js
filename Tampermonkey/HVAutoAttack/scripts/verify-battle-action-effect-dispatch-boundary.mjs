@@ -39,7 +39,8 @@ for (const required of [
   "BattleFleeCommandEvent.CLICK_AND_RELOAD",
   "BattlePauseEvent.PAUSE",
   "executeCriticalPause",
-  "executeAttack",
+  "BattleAttackExecutionEvent.APPLY_PLAN",
+  "runBattleAttackExecution",
   "executeItem",
   "executeChannel",
 ]) {

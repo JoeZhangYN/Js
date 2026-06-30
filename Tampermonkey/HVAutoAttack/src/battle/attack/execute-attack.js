@@ -12,6 +12,12 @@ import {
   runBattleSpiritToggleAutomation,
 } from "../battle-spirit-toggle.js";
 
+const EVENT_APPLY_PLAN = "applyPlan";
+
+export const BattleAttackExecutionEvent = Object.freeze({
+  APPLY_PLAN: EVENT_APPLY_PLAN,
+});
+
 function observedBigSkillBosses(snap) {
   return (snap?.view || [])
     .filter((monster) => monster.isBoss && !monster.isDead && monster.monsterId != null)
@@ -25,9 +31,8 @@ function observedBigSkillBosses(snap) {
 /**
  * @param {import("../../core/types.js").AttackPlan} plan
  * @param {import("../../core/types.js").BattleSnapshot} [snap] 当前 turn 快照（学习器事件记账用）
- * @returns {boolean} acted —— 是否已触发副作用
  */
-export function executeAttack(plan, snap) {
+function applyAttackPlan(plan, snap) {
   switch (plan.type) {
     case "noop":
       return false;
@@ -115,4 +120,9 @@ export function executeAttack(plan, snap) {
     default:
       return false;
   }
+}
+
+export function runBattleAttackExecution(event = { type: EVENT_APPLY_PLAN }) {
+  if (event.type === EVENT_APPLY_PLAN) return applyAttackPlan(event.plan, event.snap);
+  return false;
 }

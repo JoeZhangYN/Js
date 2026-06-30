@@ -44,7 +44,7 @@
  */
 
 /**
- * attack 决策计划（decideAttack PURE 产出，executeAttack SHELL 执行）。attack 专属，由
+ * attack 决策计划（decideAttack PURE 产出，attack execution 入口执行）。attack 专属，由
  * ActionResult 的 "attack-plan" kind 承载——避免 attack 的多分支细节污染通用 effect dispatch/ActionResult。
  * - spell: 单目标 targetId=首怪(finWeight 最小)；AoE targetId=order 最小存活怪。
  * - physical: 恒带 defaultTargetId(原 attack 物理技能后必点首怪)；mercifulTargetId = T3 多怪场景

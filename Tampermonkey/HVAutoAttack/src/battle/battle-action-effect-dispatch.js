@@ -13,7 +13,7 @@ import {
   runBattleSpiritToggleAutomation,
 } from "./battle-spirit-toggle.js";
 import { checkAndActivateSpirit } from "./buff/activate-spirit.js";
-import { executeAttack } from "./attack/execute-attack.js";
+import { BattleAttackExecutionEvent, runBattleAttackExecution } from "./attack/execute-attack.js";
 import { executeChannel } from "./buff/execute-channel.js";
 import { executeItem } from "./item/execute-item.js";
 import { executeCriticalPause } from "./critical-buff-guard/decide-critical-buff.js";
@@ -80,8 +80,12 @@ function applyActionResult(result, snap) {
       return true;
 
     case "attack-plan":
-      // attack PURE 决策产出 AttackPlan，executeAttack 翻译为 click + 学习器/F4 记账。
-      return executeAttack(result.plan, snap);
+      // attack PURE 决策产出 AttackPlan，attack execution 入口翻译为 click + 学习器/F4 记账。
+      return runBattleAttackExecution({
+        type: BattleAttackExecutionEvent.APPLY_PLAN,
+        plan: result.plan,
+        snap,
+      });
 
     case "item-plan":
       // 宝石/药水/stall/卷轴 PURE 决策产出 ItemPlan，executeItem 探活+click+记账（需 snap 做 recordPreDrink）。

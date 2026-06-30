@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { executeAttack } from "./execute-attack.js";
+import { BattleAttackExecutionEvent, runBattleAttackExecution } from "./execute-attack.js";
 
 const mocks = vi.hoisted(() => ({
   g: vi.fn(),
@@ -34,11 +34,19 @@ beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
 });
 
-describe("executeAttack", () => {
+function applyPlan(plan, snap) {
+  return runBattleAttackExecution({
+    type: BattleAttackExecutionEvent.APPLY_PLAN,
+    plan,
+    snap,
+  });
+}
+
+describe("runBattleAttackExecution", () => {
   it("routes Focus through the Focus command entry and still claims the attack branch", () => {
     mocks.runBattleFocusCommand.mockReturnValue(false);
 
-    expect(executeAttack({ type: "focus" }, {})).toBe(true);
+    expect(applyPlan({ type: "focus" }, {})).toBe(true);
 
     expect(mocks.runBattleFocusCommand).toHaveBeenCalledWith({ type: "click" });
   });
@@ -46,7 +54,7 @@ describe("executeAttack", () => {
   it("reports Spirit toggle cooldown through the Spirit toggle entry", () => {
     mocks.runBattleSpiritToggleAutomation.mockReturnValue(true);
 
-    expect(executeAttack({ type: "toggle-spirit" }, {})).toBe(true);
+    expect(applyPlan({ type: "toggle-spirit" }, {})).toBe(true);
 
     expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
       type: "clickAndRecord",
@@ -60,7 +68,7 @@ describe("executeAttack", () => {
     });
 
     expect(
-      executeAttack(
+      applyPlan(
         {
           type: "physical",
           skillId: "1111",
@@ -94,7 +102,7 @@ describe("executeAttack", () => {
   });
 
   it("requires physical skill fire before the merciful target and still clicks the default target", () => {
-    executeAttack(
+    applyPlan(
       {
         type: "physical",
         skillId: "1111",
@@ -118,5 +126,9 @@ describe("executeAttack", () => {
       type: "clickTarget",
       targetId: 3,
     });
+  });
+
+  it("rejects unknown events", () => {
+    expect(runBattleAttackExecution({ type: "unknown" })).toBe(false);
   });
 });
