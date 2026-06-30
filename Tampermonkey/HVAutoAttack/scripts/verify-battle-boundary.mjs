@@ -1206,6 +1206,17 @@ function checkSnapshot() {
       violations.push(`${rel(logTelemetryFile)} must own ${required}`);
     }
   }
+  if (
+    !text.includes("BattleSpiritToggleEvent.READ_ACTIVE") ||
+    !text.includes("runBattleSpiritToggleAutomation")
+  ) {
+    violations.push(
+      `${rel(snapshotFile)} must read Spirit active state through battle spirit entry`
+    );
+  }
+  if (/#ckey_spirit|isSpiritActive/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not own Spirit active DOM reads`);
+  }
   if (/\bg\(\s*["']skillOTOS["']/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read skillOTOS directly`);
   }

@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { collectSnapshot } from "./snapshot.js";
 
 const mocks = vi.hoisted(() => ({
-  gE: vi.fn(),
-  isSpiritActive: vi.fn(() => false),
   runBattleMonsterSurface: vi.fn(() => []),
   runBattleMonsterView: vi.fn(() => ({
     view: [{ monsterId: 101, isDead: false }],
@@ -37,11 +35,11 @@ const mocks = vi.hoisted(() => ({
   })),
   runBattleSkillReadiness: vi.fn(() => ({ 111: true })),
   runBattleSkillUsageAutomation: vi.fn(() => ({ OFC: 1 })),
+  runBattleSpiritToggleAutomation: vi.fn(() => false),
   runBattleTurnAutomation: vi.fn(() => 7),
   runCdRuntimeAutomation: vi.fn(),
 }));
 
-vi.mock("../dom/query.js", () => ({ gE: mocks.gE, isSpiritActive: mocks.isSpiritActive }));
 vi.mock("../state/battle-turn.js", () => ({
   BattleTurnEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
   runBattleTurnAutomation: mocks.runBattleTurnAutomation,
@@ -95,6 +93,10 @@ vi.mock("./battle-skill-usage.js", () => ({
   BattleSkillUsageEvent: Object.freeze({ READ_USAGE: "readUsage" }),
   runBattleSkillUsageAutomation: mocks.runBattleSkillUsageAutomation,
 }));
+vi.mock("./battle-spirit-toggle.js", () => ({
+  BattleSpiritToggleEvent: Object.freeze({ READ_ACTIVE: "readActive" }),
+  runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
+}));
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear?.();
@@ -103,7 +105,6 @@ beforeEach(() => {
     if (event.type === "readMap") return {};
     return undefined;
   });
-  mocks.gE.mockReturnValue(null);
 });
 
 describe("collectSnapshot", () => {
@@ -115,13 +116,11 @@ describe("collectSnapshot", () => {
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(mocks.runBattleLogTelemetry).toHaveBeenCalledWith({ type: "readCurrent", turn: 7 });
     expect(mocks.runBattleMonsterSurface).toHaveBeenCalledWith({ type: "readCurrent" });
-    expect(mocks.runBattleMonsterView).toHaveBeenCalledWith({
-      type: "readView",
-      monsters: [],
-    });
+    expect(mocks.runBattleMonsterView).toHaveBeenCalledWith({ type: "readView", monsters: [] });
     expect(mocks.runBattleSkillReadiness).toHaveBeenCalledWith({ type: "readReadyMap" });
     expect(mocks.runBattlePlayerVitals).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(mocks.runBattlePlayerEffects).toHaveBeenCalledWith({ type: "readCurrent" });
+    expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({ type: "readActive" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
     expect(mocks.runBattleObservationLearning).toHaveBeenCalledWith({

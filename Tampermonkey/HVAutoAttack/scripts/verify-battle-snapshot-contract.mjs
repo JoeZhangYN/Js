@@ -39,6 +39,8 @@ const snapshotText = requireText(snapshot, [
   "runBattleMonsterSurface",
   "BattleLogTelemetryEvent.READ_CURRENT",
   "runBattleLogTelemetry",
+  "BattleSpiritToggleEvent.READ_ACTIVE",
+  "runBattleSpiritToggleAutomation",
   "BattleMonsterViewEvent.READ_VIEW",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
@@ -111,6 +113,11 @@ if (/readMonsters|readMonsterBuffs|div\.btm1|\.btm5|\.btm6|nbargreen|nbardead/.t
 if (/parseBattleLog|estimatePlayerIncomingDps|estimatePerMonsterDps/.test(snapshotText)) {
   violations.push(
     `${snapshot.replaceAll("\\", "/")} must read battle log telemetry through one entry`
+  );
+}
+if (/#ckey_spirit|isSpiritActive/.test(snapshotText)) {
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must read Spirit active state through battle spirit entry`
   );
 }
 if (/snap\.fightingStyle/.test(scoringText)) {

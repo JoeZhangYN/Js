@@ -7,7 +7,6 @@
 // B. snapshot 生命周期 = 当前 turn 内（不入 store / setValue）
 // C. dispatch 副作用用 selector 字符串重查询 DOM，不用缓存引用
 //
-import { gE, isSpiritActive } from "../dom/query.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import {
@@ -24,6 +23,10 @@ import { BattlePlayerVitalsEvent, runBattlePlayerVitals } from "./battle-player-
 import { BattlePlayerEffectsEvent, runBattlePlayerEffects } from "./battle-player-effects.js";
 import { BattleItemSurfaceEvent, runBattleItemSurface } from "./battle-item-surface.js";
 import { BattleLogTelemetryEvent, runBattleLogTelemetry } from "./battle-log-telemetry.js";
+import {
+  BattleSpiritToggleEvent,
+  runBattleSpiritToggleAutomation,
+} from "./battle-spirit-toggle.js";
 
 /**
  * 一次性 batch DOM read 组装当前 turn snapshot。
@@ -37,7 +40,6 @@ export function collectSnapshot(event = {}) {
   });
   const playerEffects = runBattlePlayerEffects({ type: BattlePlayerEffectsEvent.READ_CURRENT });
   const vitals = runBattlePlayerVitals({ type: BattlePlayerVitalsEvent.READ_CURRENT });
-  const spiritEl = gE("#ckey_spirit");
   const turn = runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT });
   const logTelemetry = runBattleLogTelemetry({
     type: BattleLogTelemetryEvent.READ_CURRENT,
@@ -62,7 +64,7 @@ export function collectSnapshot(event = {}) {
     globalTurn,
     ...vitals,
     channeling: playerEffects.channeling,
-    spiritOn: isSpiritActive(spiritEl),
+    spiritOn: runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.READ_ACTIVE }),
     monsters,
     view,
     aliveCount: monsters.filter((m) => !m.isDead).length,

@@ -7,6 +7,7 @@ const EVENT_CLICK_AND_RECORD = "clickAndRecord";
 const EVENT_ACTIVATE_IF_INACTIVE = "activateIfInactive";
 const EVENT_RECORD_TOGGLE = "recordToggle";
 const EVENT_READ_LAST_TOGGLE = "readLastToggle";
+const EVENT_READ_ACTIVE = "readActive";
 const DEFAULT_SPIRIT_TOGGLE_TURN = 0;
 
 export const BattleSpiritToggleEvent = Object.freeze({
@@ -14,6 +15,7 @@ export const BattleSpiritToggleEvent = Object.freeze({
   ACTIVATE_IF_INACTIVE: EVENT_ACTIVATE_IF_INACTIVE,
   RECORD_TOGGLE: EVENT_RECORD_TOGGLE,
   READ_LAST_TOGGLE: EVENT_READ_LAST_TOGGLE,
+  READ_ACTIVE: EVENT_READ_ACTIVE,
 });
 
 function readGlobalTurn() {
@@ -33,6 +35,10 @@ function recordToggle() {
 
 function readLastToggle() {
   return normalizeSpiritToggleTurn(g("lastSpiritToggleGlobalTurn"));
+}
+
+function readActive() {
+  return isSpiritActive(gE("#ckey_spirit"));
 }
 
 function clickAndRecord() {
@@ -56,5 +62,6 @@ export function runBattleSpiritToggleAutomation(event = { type: EVENT_READ_LAST_
   if (event.type === EVENT_ACTIVATE_IF_INACTIVE) return activateIfInactive();
   if (event.type === EVENT_RECORD_TOGGLE) return recordToggle();
   if (event.type === EVENT_READ_LAST_TOGGLE) return readLastToggle();
+  if (event.type === EVENT_READ_ACTIVE) return readActive();
   return undefined;
 }

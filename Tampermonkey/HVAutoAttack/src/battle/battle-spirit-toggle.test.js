@@ -104,6 +104,18 @@ describe("runBattleSpiritToggleAutomation", () => {
     ).toBe(7);
   });
 
+  it("reads whether Spirit is currently active through the entry", () => {
+    const spirit = {};
+    mocks.gE.mockReturnValue(spirit);
+    mocks.isSpiritActive.mockReturnValue(true);
+
+    expect(runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.READ_ACTIVE })).toBe(
+      true
+    );
+    expect(mocks.gE).toHaveBeenCalledWith("#ckey_spirit");
+    expect(mocks.isSpiritActive).toHaveBeenCalledWith(spirit);
+  });
+
   it("normalizes invalid Spirit toggle turns through the entry", () => {
     mocks.runCdRuntimeAutomation.mockReturnValue("bad");
     expect(runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.RECORD_TOGGLE })).toBe(

@@ -5,7 +5,6 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/battle/battle-spirit-toggle.js");
 const ownerTest = path.normalize("src/battle/battle-spirit-toggle.test.js");
-const snapshot = path.normalize("src/battle/snapshot.js");
 const snapshotTest = path.normalize("src/battle/snapshot.test.js");
 const violations = [];
 
@@ -31,7 +30,6 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
-      relative !== snapshot &&
       relative !== snapshotTest &&
       line.includes("#ckey_spirit")
     ) {
@@ -65,8 +63,13 @@ requireText(owner, [
   "CLICK_AND_RECORD",
   "ACTIVATE_IF_INACTIVE",
   "READ_LAST_TOGGLE",
+  "READ_ACTIVE",
   "DEFAULT_SPIRIT_TOGGLE_TURN",
   "normalizeSpiritToggleTurn",
+]);
+requireText("src/battle/snapshot.js", [
+  "BattleSpiritToggleEvent.READ_ACTIVE",
+  "runBattleSpiritToggleAutomation",
 ]);
 requireText("src/battle/buff/activate-spirit.js", [
   "BattleSpiritToggleEvent.ACTIVATE_IF_INACTIVE",
