@@ -42,6 +42,13 @@ function ensureMaterials(required, option, callback, post) {
 describe("material shop entry", () => {
   const opt = { repairCreditCap: 50000 };
 
+  it("rejects unknown material shop events without reading the shop page", () => {
+    const { post, calls } = makePost(shopDoc({}));
+
+    expect(runMaterialShopAutomation({ type: "unknown" }, { post })).toBe(false);
+    expect(calls).toHaveLength(0);
+  });
+
   it("持有充足 → 不买，ok bought:false", () => {
     const { post, calls } = makePost(
       shopDoc({

@@ -24,6 +24,13 @@ export const MaterialShopEvent = Object.freeze({
   ENSURE_MATERIALS: EVENT_ENSURE_MATERIALS,
 });
 
+const materialShopEventHandlers = Object.freeze({
+  [EVENT_ENSURE_MATERIALS]: (event, deps) => {
+    ensureMaterials(event.required, event.option, event.callback, deps);
+    return true;
+  },
+});
+
 /**
  * 解析商店页（PURE）→ { storetoken, networth, held, shop }。
  * held: 你的库存(item_pane) name→数量；shop: 可购货架(shop_pane) name→{id,stock,price}。
@@ -152,7 +159,5 @@ function ensureMaterials(required, opt, cb, deps = {}) {
 }
 
 export function runMaterialShopAutomation(event, deps = {}) {
-  if (event.type !== EVENT_ENSURE_MATERIALS) return false;
-  ensureMaterials(event.required, event.option, event.callback, deps);
-  return true;
+  return materialShopEventHandlers[event.type]?.(event, deps) || false;
 }

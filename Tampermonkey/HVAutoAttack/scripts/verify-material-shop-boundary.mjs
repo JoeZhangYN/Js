@@ -50,9 +50,26 @@ for (const required of ["runMaterialShopAutomation", "MaterialShopEvent"]) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
+const entryBody =
+  ownerText.match(/export function runMaterialShopAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/const materialShopEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_ENSURE_MATERIALS\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
 for (const legacy of ["parseShopPage", "ensureMaterials"]) {
   if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {
     violations.push(`${owner.replaceAll("\\", "/")} legacy ${legacy} export is forbidden`);
+  }
+}
+if (!fs.existsSync(path.join(root, ownerTest))) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover material shop entry`);
+} else {
+  const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+  if (!ownerTestText.includes("rejects unknown material shop events without reading the shop page")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown material shop events`);
   }
 }
 
