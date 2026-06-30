@@ -55,4 +55,9 @@ describe("stamina loss log entry", () => {
     expect(message.indexOf("new: 5")).toBeLessThan(message.indexOf("old: 3"));
     expect(message).toContain("是否重置 (Whether to reset)?");
   });
+
+  it("ignores unknown stamina loss log events", () => {
+    expect(runStaminaLossLogAutomation({ type: "unknown" })).toBeUndefined();
+    expect(getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true)).toBeNull();
+  });
 });

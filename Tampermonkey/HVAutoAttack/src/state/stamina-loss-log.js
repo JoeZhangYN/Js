@@ -43,10 +43,13 @@ function staminaLossClearConfirmationMessage() {
   )}\n是否重置 (Whether to reset)?`;
 }
 
+const staminaLossLogEventHandlers = Object.freeze({
+  [EVENT_READ]: () => readStaminaLossLog(),
+  [EVENT_RECORD]: (event) => recordStaminaLoss(event.amount, event.stamp),
+  [EVENT_CLEAR]: () => clearStaminaLossLog(),
+  [EVENT_CLEAR_CONFIRMATION_MESSAGE]: () => staminaLossClearConfirmationMessage(),
+});
+
 export function runStaminaLossLogAutomation(event = { type: EVENT_READ }) {
-  if (event.type === EVENT_READ) return readStaminaLossLog();
-  if (event.type === EVENT_RECORD) return recordStaminaLoss(event.amount, event.stamp);
-  if (event.type === EVENT_CLEAR) return clearStaminaLossLog();
-  if (event.type === EVENT_CLEAR_CONFIRMATION_MESSAGE) return staminaLossClearConfirmationMessage();
-  return undefined;
+  return staminaLossLogEventHandlers[event.type]?.(event);
 }

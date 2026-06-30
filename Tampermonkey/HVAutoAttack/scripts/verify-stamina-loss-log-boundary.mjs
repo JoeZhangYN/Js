@@ -78,6 +78,29 @@ for (const legacy of ["readStaminaLossLog", "recordStaminaLoss", "clearStaminaLo
   }
 }
 
+if (!ownerText.includes("const staminaLossLogEventHandlers")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route stamina loss log events through a handler table`
+  );
+}
+const ownerEntry =
+  ownerText.match(/export function runStaminaLossLogAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+}
+for (const internal of [
+  "readStaminaLossLog(",
+  "recordStaminaLoss(",
+  "clearStaminaLossLog(",
+  "staminaLossClearConfirmationMessage(",
+]) {
+  if (ownerEntry.includes(internal)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must dispatch through staminaLossLogEventHandlers`
+    );
+  }
+}
+
 if (violations.length) {
   console.error("[verify-stamina-loss-log-boundary] FAIL");
   for (const v of violations) console.error(`- ${v}`);
