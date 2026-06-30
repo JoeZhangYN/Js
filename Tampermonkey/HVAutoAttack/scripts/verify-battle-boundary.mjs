@@ -392,14 +392,19 @@ function checkTurnEntry() {
     "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
     "runBattleActionEffectDispatch",
     "actionOptions",
+    "const actionContext = { snap, actionOptions }",
     "for (const step of ACTION_STEPS)",
-    "decideActionStep(step, snap, actionOptions)",
+    "decideActionStep(step, actionContext)",
+    "decideSurvivalStep",
     "BattleSurvivalActionEvent.DECIDE",
     "runBattleSurvivalAction",
+    "decideBuffPreparationStep",
     "BattleBuffPreparationEvent.DECIDE",
     "runBattleBuffPreparation",
+    "decideOffensiveDebuffStep",
     "BattleOffensiveDebuffEvent.DECIDE",
     "runBattleOffensiveDebuff",
+    "decideAttackStep",
     "BattleAttackActionEvent.DECIDE",
     "runBattleAttackAction",
   ]) {
@@ -408,11 +413,18 @@ function checkTurnEntry() {
     }
   }
   if (
-    !/const ACTION_STEPS = \[\s*\{[\s\S]*capability: "survival"[\s\S]*type: BattleSurvivalActionEvent\.DECIDE[\s\S]*decide: runBattleSurvivalAction[\s\S]*capability: "buffPreparation"[\s\S]*type: BattleBuffPreparationEvent\.DECIDE[\s\S]*decide: runBattleBuffPreparation[\s\S]*capability: "offensiveDebuff"[\s\S]*type: BattleOffensiveDebuffEvent\.DECIDE[\s\S]*decide: runBattleOffensiveDebuff[\s\S]*capability: "attack"[\s\S]*type: BattleAttackActionEvent\.DECIDE[\s\S]*decide: runBattleAttackAction[\s\S]*\]/.test(
+    !/const ACTION_STEPS = \[\s*\{[\s\S]*capability: "survival"[\s\S]*decide: decideSurvivalStep[\s\S]*capability: "buffPreparation"[\s\S]*decide: decideBuffPreparationStep[\s\S]*capability: "offensiveDebuff"[\s\S]*decide: decideOffensiveDebuffStep[\s\S]*capability: "attack"[\s\S]*decide: decideAttackStep[\s\S]*\]/.test(
       actionDecisionText
     )
   ) {
     violations.push(`${rel(actionDecisionFile)} must own explicit action step order`);
+  }
+  const actionStepsBody =
+    actionDecisionText.match(/const ACTION_STEPS = \[[\s\S]*?\];/)?.[0] || "";
+  if (/type:\s*Battle\w+Event\.DECIDE|decide:\s*runBattle\w+/.test(actionStepsBody)) {
+    violations.push(
+      `${rel(actionDecisionFile)} action step order must name business steps, not expose event fields`
+    );
   }
   if (/\(snap,\s*opt\)\s*=>/.test(actionDecisionText)) {
     violations.push(

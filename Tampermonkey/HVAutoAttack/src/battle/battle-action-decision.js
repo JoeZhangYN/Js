@@ -17,41 +17,66 @@ import { BattleSurvivalActionEvent, runBattleSurvivalAction } from "./decide-sur
 const ACTION_STEPS = [
   {
     capability: "survival",
-    type: BattleSurvivalActionEvent.DECIDE,
-    decide: runBattleSurvivalAction,
+    decide: decideSurvivalStep,
   },
   {
     capability: "buffPreparation",
-    type: BattleBuffPreparationEvent.DECIDE,
-    decide: runBattleBuffPreparation,
+    decide: decideBuffPreparationStep,
   },
   {
     capability: "offensiveDebuff",
-    type: BattleOffensiveDebuffEvent.DECIDE,
-    decide: runBattleOffensiveDebuff,
+    decide: decideOffensiveDebuffStep,
   },
   {
     capability: "attack",
-    type: BattleAttackActionEvent.DECIDE,
-    decide: runBattleAttackAction,
+    decide: decideAttackStep,
   },
 ];
 
-function decideActionStep(step, snap, opt) {
-  return step.decide({
-    type: step.type,
-    snap,
-    opt,
+function decideSurvivalStep(actionContext) {
+  return runBattleSurvivalAction({
+    type: BattleSurvivalActionEvent.DECIDE,
+    snap: actionContext.snap,
+    opt: actionContext.actionOptions,
   });
+}
+
+function decideBuffPreparationStep(actionContext) {
+  return runBattleBuffPreparation({
+    type: BattleBuffPreparationEvent.DECIDE,
+    snap: actionContext.snap,
+    opt: actionContext.actionOptions,
+  });
+}
+
+function decideOffensiveDebuffStep(actionContext) {
+  return runBattleOffensiveDebuff({
+    type: BattleOffensiveDebuffEvent.DECIDE,
+    snap: actionContext.snap,
+    opt: actionContext.actionOptions,
+  });
+}
+
+function decideAttackStep(actionContext) {
+  return runBattleAttackAction({
+    type: BattleAttackActionEvent.DECIDE,
+    snap: actionContext.snap,
+    opt: actionContext.actionOptions,
+  });
+}
+
+function decideActionStep(step, actionContext) {
+  return step.decide(actionContext);
 }
 
 export function runBattleActionDecision(turnContext = {}) {
   const { snap = {}, actionOptions = {} } = turnContext;
+  const actionContext = { snap, actionOptions };
   for (const step of ACTION_STEPS) {
     if (
       runBattleActionEffectDispatch({
         type: BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT,
-        result: decideActionStep(step, snap, actionOptions),
+        result: decideActionStep(step, actionContext),
         snap,
       })
     ) {
