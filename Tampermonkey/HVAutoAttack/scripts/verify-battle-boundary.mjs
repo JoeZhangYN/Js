@@ -1199,6 +1199,26 @@ function checkActivateSpirit() {
 
 function checkExecuteItem() {
   const text = fs.readFileSync(executeItemFile, "utf8");
+  for (const required of [
+    "ITEM_PLAN_EXECUTORS",
+    "STALL_ATTEMPT_EXECUTORS",
+    "noop: executeNoopPlan",
+    "gem: executeGemPlan",
+    "potion: executePotionPlan",
+    "stall: executeStallPlan",
+    "scroll: executeScrollPlan",
+    '"spirit-off": executeStallSpiritOffAttempt',
+    "focus: executeStallFocusAttempt",
+    "draught: executeStallDraughtAttempt",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(executeItemFile)} must lock item execution step ${required}`);
+    }
+  }
+  const applyPlanBody = text.match(/function applyItemPlan\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (/switch\s*\(\s*plan\.type\s*\)/.test(applyPlanBody)) {
+    violations.push(`${rel(executeItemFile)} must dispatch item plans by ITEM_PLAN_EXECUTORS`);
+  }
   if (!text.includes("AutoTuneEvent.RECORD_POTION_USE")) {
     violations.push(
       `${rel(executeItemFile)} must report potion-use bookkeeping through auto-tune entry`

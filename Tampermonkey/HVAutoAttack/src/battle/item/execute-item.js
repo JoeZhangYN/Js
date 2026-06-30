@@ -23,6 +23,20 @@ const battleItemExecutionEventHandlers = Object.freeze({
   [EVENT_APPLY_PLAN]: (event) => applyItemPlan(event.plan, event.snap),
 });
 
+const ITEM_PLAN_EXECUTORS = Object.freeze({
+  noop: executeNoopPlan,
+  gem: executeGemPlan,
+  potion: executePotionPlan,
+  stall: executeStallPlan,
+  scroll: executeScrollPlan,
+});
+
+const STALL_ATTEMPT_EXECUTORS = Object.freeze({
+  "spirit-off": executeStallSpiritOffAttempt,
+  focus: executeStallFocusAttempt,
+  draught: executeStallDraughtAttempt,
+});
+
 function recordAutoTunePotionUse() {
   runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_POTION_USE });
 }
@@ -36,93 +50,75 @@ function recoveryAbs(snap) {
  * @param {import("../../core/types.js").BattleSnapshot} snap
  */
 function applyItemPlan(plan, snap) {
-  switch (plan.type) {
-    case "noop":
-      return false;
+  return ITEM_PLAN_EXECUTORS[plan?.type]?.(plan, snap) ?? false;
+}
 
-    case "gem": {
-      // 原 useGem：decideGem 命中后 click gem + autoTune 计数
-      runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM });
-      recordAutoTunePotionUse();
-      return true;
-    }
+function executeNoopPlan() {
+  return false;
+}
 
-    case "potion": {
-      // 原 deadSoon：按 candidates 顺序探活，第一个可用的喝（noWaste 时先 recordPreDrink）
-      for (const id of plan.candidates) {
-        const event = {
-          type: BattleItemCommandEvent.CLICK_ITEM,
-          itemId: id,
-        };
-        if (plan.noWaste) {
-          event.beforeClick = () => {
-            runRecoveryLearningAutomation({
-              type: RecoveryLearningEvent.RECORD_PRE_DRINK,
-              potionId: id,
-              recoveryAbs: recoveryAbs(snap),
-            });
-          };
-        }
-        if (runBattleItemCommand(event)) {
-          recordAutoTunePotionUse();
-          return true;
-        }
-      }
-      return false;
-    }
+function executeGemPlan() {
+  runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM });
+  recordAutoTunePotionUse();
+  return true;
+}
 
-    case "stall": {
-      // 原 stallTopup tryFirst 链：第一个能落地的 attempt 生效，后续不再尝试
-      for (const attempt of plan.attempts) {
-        if (attempt.kind === "spirit-off") {
-          if (
-            runBattleSpiritToggleAutomation({
-              type: BattleSpiritToggleEvent.CLICK_AND_RECORD,
-            })
-          ) {
-            return true;
-          }
-          continue;
-        }
-        if (attempt.kind === "focus") {
-          if (runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK })) return true;
-          continue;
-        }
-        if (attempt.kind === "draught") {
-          if (
-            runBattleItemCommand({
-              type: BattleItemCommandEvent.CLICK_ITEM,
-              itemId: attempt.id,
-              beforeClick: () => {
-                runRecoveryLearningAutomation({
-                  type: RecoveryLearningEvent.RECORD_PRE_DRINK,
-                  potionId: attempt.id,
-                  recoveryAbs: recoveryAbs(snap),
-                });
-              },
-            })
-          ) {
-            return true;
-          }
-          continue;
-        }
-      }
-      return false;
-    }
-
-    case "scroll": {
-      // 原 useScroll：按 candidates 顺序探活，第一个存在的 click
-      for (const id of plan.candidates) {
-        if (runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_ITEM, itemId: id })) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    default:
-      return false;
+function executePotionPlan(plan, snap) {
+  for (const id of plan.candidates) {
+    if (tryPotionCandidate(id, plan.noWaste, snap)) return true;
   }
+  return false;
+}
+
+function tryPotionCandidate(id, noWaste, snap) {
+  const event = {
+    type: BattleItemCommandEvent.CLICK_ITEM,
+    itemId: id,
+  };
+  if (noWaste) event.beforeClick = () => recordPreDrink(id, snap);
+  if (!runBattleItemCommand(event)) return false;
+  recordAutoTunePotionUse();
+  return true;
+}
+
+function executeStallPlan(plan, snap) {
+  for (const attempt of plan.attempts) {
+    if (STALL_ATTEMPT_EXECUTORS[attempt.kind]?.(attempt, snap)) return true;
+  }
+  return false;
+}
+
+function executeStallSpiritOffAttempt() {
+  return !!runBattleSpiritToggleAutomation({
+    type: BattleSpiritToggleEvent.CLICK_AND_RECORD,
+  });
+}
+
+function executeStallFocusAttempt() {
+  return !!runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK });
+}
+
+function executeStallDraughtAttempt(attempt, snap) {
+  return !!runBattleItemCommand({
+    type: BattleItemCommandEvent.CLICK_ITEM,
+    itemId: attempt.id,
+    beforeClick: () => recordPreDrink(attempt.id, snap),
+  });
+}
+
+function executeScrollPlan(plan) {
+  for (const id of plan.candidates) {
+    if (runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_ITEM, itemId: id })) return true;
+  }
+  return false;
+}
+
+function recordPreDrink(potionId, snap) {
+  runRecoveryLearningAutomation({
+    type: RecoveryLearningEvent.RECORD_PRE_DRINK,
+    potionId,
+    recoveryAbs: recoveryAbs(snap),
+  });
 }
 
 export function runBattleItemExecution(event = { type: EVENT_APPLY_PLAN }) {

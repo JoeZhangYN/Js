@@ -23,6 +23,12 @@ for (const required of [
   "battleItemExecutionEventHandlers",
   "APPLY_PLAN",
   "runBattleItemExecution",
+  "ITEM_PLAN_EXECUTORS",
+  "STALL_ATTEMPT_EXECUTORS",
+  "executeGemPlan",
+  "executePotionPlan",
+  "executeStallPlan",
+  "executeScrollPlan",
   "AutoTuneEvent.RECORD_POTION_USE",
   "BattleItemCommandEvent.CLICK_GEM",
   "BattleItemCommandEvent.CLICK_ITEM",
@@ -50,6 +56,24 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(ownerText)) {
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
+for (const required of [
+  "noop: executeNoopPlan",
+  "gem: executeGemPlan",
+  "potion: executePotionPlan",
+  "stall: executeStallPlan",
+  "scroll: executeScrollPlan",
+  '"spirit-off": executeStallSpiritOffAttempt',
+  "focus: executeStallFocusAttempt",
+  "draught: executeStallDraughtAttempt",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${rel(owner)} must lock item execution step ${required}`);
+  }
+}
+const applyPlanBody = ownerText.match(/function applyItemPlan\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (/switch\s*\(\s*plan\.type\s*\)/.test(applyPlanBody)) {
+  violations.push(`${rel(owner)} must dispatch item plans by ITEM_PLAN_EXECUTORS`);
 }
 
 if (!fs.existsSync(path.join(root, ownerTest))) {
