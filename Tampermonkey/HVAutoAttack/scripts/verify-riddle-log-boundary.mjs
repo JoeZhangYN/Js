@@ -58,6 +58,30 @@ for (const required of ["runRiddleLogAutomation", "RiddleLogEvent", "RENDER_REPO
   }
 }
 
+if (!ownerText.includes("const riddleLogEventHandlers")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route riddle log events through a handler table`);
+}
+
+const entryMatch = ownerText.match(/export function runRiddleLogAutomation[\s\S]*?\n}/);
+if (!entryMatch) {
+  violations.push(`${owner.replaceAll("\\", "/")} must expose runRiddleLogAutomation(event)`);
+} else {
+  const entryBody = entryMatch[0];
+  if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  }
+  for (const internal of [
+    "pushRiddleLog(",
+    "getRiddleLog(",
+    "clearRiddleLog(",
+    "renderRiddleLogReportRows(",
+  ]) {
+    if (entryBody.includes(internal)) {
+      violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through riddleLogEventHandlers`);
+    }
+  }
+}
+
 const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
 if (!settingsText.includes("RiddleLogEvent.RENDER_REPORT_ROWS")) {
   violations.push(`${settingsRender.replaceAll("\\", "/")} must request rendered riddle log rows`);

@@ -20,6 +20,13 @@ export const RiddleLogEvent = Object.freeze({
   RENDER_REPORT_ROWS: EVENT_RENDER_REPORT_ROWS,
 });
 
+const riddleLogEventHandlers = {
+  [EVENT_PUSH]: (event) => pushRiddleLog(event.message),
+  [EVENT_READ]: getRiddleLog,
+  [EVENT_CLEAR]: clearRiddleLog,
+  [EVENT_RENDER_REPORT_ROWS]: renderRiddleLogReportRows,
+};
+
 /**
  * 追加一条日志：自动盖时间戳 + 环形截断到 CAP。空串忽略。
  * @param {string} msg 日志正文（>300 字截断；建议英文/码键）
@@ -65,9 +72,6 @@ function renderRiddleLogReportRows() {
 }
 
 export function runRiddleLogAutomation(event = { type: EVENT_READ }) {
-  if (event.type === EVENT_PUSH) return pushRiddleLog(event.message);
-  if (event.type === EVENT_READ) return getRiddleLog();
-  if (event.type === EVENT_CLEAR) return clearRiddleLog();
-  if (event.type === EVENT_RENDER_REPORT_ROWS) return renderRiddleLogReportRows();
-  return undefined;
+  const handler = riddleLogEventHandlers[event.type];
+  return handler ? handler(event) : undefined;
 }

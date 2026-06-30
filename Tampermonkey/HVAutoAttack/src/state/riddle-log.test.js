@@ -27,6 +27,10 @@ describe("riddle log entry", () => {
     expect(runRiddleLogAutomation({ type: RiddleLogEvent.READ })).toEqual([]);
   });
 
+  it("ignores unknown log events at the entry", () => {
+    expect(runRiddleLogAutomation({ type: "unknown" })).toBeUndefined();
+  });
+
   it("renders report rows newest first and escapes log text", () => {
     vi.useFakeTimers();
     try {
