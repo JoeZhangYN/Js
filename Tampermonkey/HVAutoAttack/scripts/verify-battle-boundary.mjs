@@ -2541,6 +2541,8 @@ function checkSingleDebuffEntry() {
     "event.monsterFacts",
     "event.skillReady",
     "event.spellAoe",
+    "BattleDebuffApplicabilityEvent.READ_VERDICT",
+    "runBattleDebuffApplicability",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideDeSkillFile)} must own single-debuff gate ${required}`);
@@ -2548,6 +2550,9 @@ function checkSingleDebuffEntry() {
   }
   if (/decideDeSkill\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideDeSkillFile)} must not expose opt/snap single-debuff input`);
+  }
+  if (/import\s*\{[^}]*\bcanApplyDebuffPure\b/.test(ownerText)) {
+    violations.push(`${rel(decideDeSkillFile)} must consume debuff applicability through one entry`);
   }
   const rulesText = readBattleActionRulesText();
   const useDeSkillRule =
@@ -2581,6 +2586,8 @@ function checkAllDebuffEntry() {
     "event.monsterFacts",
     "event.skillReady",
     "event.spellAoe",
+    "BattleDebuffApplicabilityEvent.READ_VERDICT",
+    "runBattleDebuffApplicability",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideCastAllFile)} must own all-debuff gate ${required}`);
@@ -2588,6 +2595,28 @@ function checkAllDebuffEntry() {
   }
   if (/decideCastDebuffOnAll\s*\(\s*opt\s*,\s*snap\s*,/.test(ownerText)) {
     violations.push(`${rel(decideCastAllFile)} must not expose opt/snap all-debuff input`);
+  }
+  if (/import\s*\{[^}]*\bcanApplyDebuffPure\b/.test(ownerText)) {
+    violations.push(`${rel(decideCastAllFile)} must consume debuff applicability through one entry`);
+  }
+  const canApplyText = fs.readFileSync(path.join(root, "src/battle/debuff/can-apply.js"), "utf8");
+  for (const required of [
+    "BattleDebuffApplicabilityEvent",
+    "battleDebuffApplicabilityEventHandlers",
+    "runBattleDebuffApplicability",
+    "READ_VERDICT",
+    "canApplyDebuffPure",
+  ]) {
+    if (!canApplyText.includes(required)) {
+      violations.push(`src/battle/debuff/can-apply.js must own debuff applicability query ${required}`);
+    }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleDebuffApplicabilityEvent\b|runBattleDebuffApplicability\b)/.test(
+      canApplyText
+    )
+  ) {
+    violations.push("src/battle/debuff/can-apply.js may export only its event query entry");
   }
   const rulesText = readBattleActionRulesText();
   for (const ruleName of ["castWeakenAll", "castImperilAll"]) {

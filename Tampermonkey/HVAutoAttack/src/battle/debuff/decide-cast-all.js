@@ -9,7 +9,10 @@ import {
 } from "../battle-debuff-coverage.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { BattleTargetStrategyEvent, runBattleTargetStrategy } from "../battle-target-strategy.js";
-import { canApplyDebuffPure } from "./can-apply.js";
+import {
+  BattleDebuffApplicabilityEvent,
+  runBattleDebuffApplicability,
+} from "./can-apply.js";
 
 const ALL_DEBUFF_GATES = Object.freeze({
   We: Object.freeze({
@@ -50,7 +53,13 @@ export function decideCastDebuffOnAll(event = {}) {
   for (let i = 0; i < sorted.length; i++) {
     const monster = sorted[i];
     if (monster.isDead) continue;
-    const verdict = canApplyDebuffPure(monster.buffEffects, debuffKey, opt, skillIsReady);
+    const verdict = runBattleDebuffApplicability({
+      type: BattleDebuffApplicabilityEvent.READ_VERDICT,
+      monsterEffects: monster.buffEffects,
+      debuffKey,
+      opt,
+      skillReady: skillIsReady,
+    });
     if (verdict === "skip") continue;
     if (verdict === "blocked") {
       return {

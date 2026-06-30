@@ -6,7 +6,10 @@ import { DEBUFF_SKILL_LIB } from "../../data/debuff-lib.js";
 import { checkCondition } from "../../settings/condition-eval.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { BattleTargetStrategyEvent, runBattleTargetStrategy } from "../battle-target-strategy.js";
-import { canApplyDebuffPure } from "./can-apply.js";
+import {
+  BattleDebuffApplicabilityEvent,
+  runBattleDebuffApplicability,
+} from "./can-apply.js";
 
 /**
  * 决定单目标 debuff 该施哪一种 + 打哪只怪。
@@ -44,7 +47,13 @@ export function decideDeSkill(event = {}) {
       alive,
     });
     const skillReady = !!event.skillReady?.[skill.id];
-    const verdict = canApplyDebuffPure(target.buffEffects, key, opt, skillReady);
+    const verdict = runBattleDebuffApplicability({
+      type: BattleDebuffApplicabilityEvent.READ_VERDICT,
+      monsterEffects: target.buffEffects,
+      debuffKey: key,
+      opt,
+      skillReady,
+    });
     if (verdict === "skip") continue;
     if (verdict === "blocked") {
       return {
