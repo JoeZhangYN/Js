@@ -49,6 +49,14 @@ beforeEach(() => {
 });
 
 describe("runPageAutomation", () => {
+  it("rejects unknown page automation events without routing pages", () => {
+    expect(runPageAutomation({ type: "unknown", kind: PageKind.RIDDLE })).toBeUndefined();
+
+    expect(mocks.runEquipmentViewAutomation).not.toHaveBeenCalled();
+    expect(mocks.runAppStartup).not.toHaveBeenCalled();
+    expect(mocks.runRiddleAutomation).not.toHaveBeenCalled();
+  });
+
   it("reports page-ready events to equipment and game-page capabilities", () => {
     runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.RIDDLE });
 

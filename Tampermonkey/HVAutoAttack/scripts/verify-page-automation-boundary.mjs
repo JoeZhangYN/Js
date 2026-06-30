@@ -56,6 +56,7 @@ function checkEntry() {
   for (const required of [
     "PageAutomationEvent",
     "EVENT_PAGE_READY",
+    "pageAutomationEventHandlers",
     "runEquipmentViewAutomation",
     "runCrossSiteEncounterNavigation",
     "AppStartupEvent.GAME_PAGE_READY",
@@ -93,6 +94,12 @@ function checkEntry() {
   const entryBody =
     text.match(/export function runPageAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
     "";
+  if (!/const pageAutomationEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PAGE_READY\]/.test(text)) {
+    violations.push(`${rel(entryFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
+    violations.push(`${rel(entryFile)} entry must dispatch by handler table`);
+  }
   for (const forbidden of [
     "runEquipmentViewAutomation",
     "runCrossSiteEncounterNavigation",
@@ -114,6 +121,11 @@ function checkEntry() {
   }
   if (/from\s+["']\.\.\/state\/store\.js["']/.test(text) || /\boption:\s*g\(/.test(text)) {
     violations.push(`${rel(entryFile)} must not compose page refresh option fields`);
+  }
+  const entryTestFile = path.join(root, "src/pages/page-automation.test.js");
+  const entryTestText = fs.existsSync(entryTestFile) ? fs.readFileSync(entryTestFile, "utf8") : "";
+  if (!entryTestText.includes("rejects unknown page automation events without routing pages")) {
+    violations.push(`${rel(entryTestFile)} must cover unknown page automation events`);
   }
 }
 

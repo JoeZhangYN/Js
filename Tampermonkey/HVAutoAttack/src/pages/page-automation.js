@@ -17,6 +17,10 @@ export const PageAutomationEvent = Object.freeze({
   PAGE_READY: EVENT_PAGE_READY,
 });
 
+const pageAutomationEventHandlers = Object.freeze({
+  [EVENT_PAGE_READY]: (event) => runPageReadyFlow({ kind: event.kind }),
+});
+
 const GAME_PAGE_AUTOMATION = Object.freeze({
   [PageKind.RIDDLE]: runRiddlePageAutomation,
   [PageKind.BATTLE]: runBattlePageAutomation,
@@ -85,6 +89,5 @@ function runPageReadyFlow(context) {
 }
 
 export function runPageAutomation(event = { type: EVENT_PAGE_READY }) {
-  if (event.type !== EVENT_PAGE_READY) return undefined;
-  runPageReadyFlow({ kind: event.kind });
+  return pageAutomationEventHandlers[event.type]?.(event);
 }
