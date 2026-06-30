@@ -6,7 +6,7 @@ import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
-import { killBug } from "./kill-bug.js";
+import { BattleKillBugRecoveryEvent, runBattleKillBugRecovery } from "./kill-bug.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 
 const EVENT_PREPARE_CURRENT_TURN = "prepareCurrentTurn";
@@ -63,7 +63,7 @@ function refreshBattleMonitorHud() {
 }
 
 function recoverKillBug() {
-  killBug();
+  runBattleKillBugRecovery({ type: BattleKillBugRecoveryEvent.RECOVER });
 }
 
 function updateMonsterHp(facts) {

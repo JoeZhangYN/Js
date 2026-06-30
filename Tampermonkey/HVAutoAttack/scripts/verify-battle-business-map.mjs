@@ -99,7 +99,8 @@ for (const required of [
   "MonsterStatusEvent.ENSURE_READY",
   "BattleTurnEvent.TURN_STARTED",
   "BattleMonitorEvent.HUD_REFRESH",
-  "killBug()",
+  "BattleKillBugRecoveryEvent.RECOVER",
+  "runBattleKillBugRecovery",
   "MonsterStatusEvent.UPDATE_HP",
   "battleLogTelemetry",
 ]) {

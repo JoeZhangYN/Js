@@ -2,7 +2,17 @@
 import { gE } from "../dom/query.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 
-export function killBug() {
+const EVENT_RECOVER = "recover";
+
+export const BattleKillBugRecoveryEvent = Object.freeze({
+  RECOVER: EVENT_RECOVER,
+});
+
+const battleKillBugRecoveryEventHandlers = Object.freeze({
+  [EVENT_RECOVER]: () => recoverKillBug(),
+});
+
+function recoverKillBug() {
   // 在 HentaiVerse 发生导致 turn 损失的 bug 时发出警告并移除问题元素: https://ehwiki.org/wiki/HentaiVerse_Bugs_%26_Errors#Combat
   const bugLog = gE('#textlog > tbody > tr > td[class="tlb"]', "all");
   const isBug =
@@ -18,4 +28,8 @@ export function killBug() {
       bugLog[i].className = "tlbQRA";
     }
   }
+}
+
+export function runBattleKillBugRecovery(event = { type: EVENT_RECOVER }) {
+  return battleKillBugRecoveryEventHandlers[event.type]?.(event) ?? false;
 }

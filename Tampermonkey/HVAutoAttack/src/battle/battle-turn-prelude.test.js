@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleTurnPreludeEvent, runBattleTurnPrelude } from "./battle-turn-prelude.js";
 
 const mocks = vi.hoisted(() => ({
-  killBug: vi.fn(),
+  runBattleKillBugRecovery: vi.fn(),
   runBattleMonitorAutomation: vi.fn(),
   runBattleTurnRuntime: vi.fn(),
   runMonsterStatusAutomation: vi.fn(),
@@ -16,7 +16,10 @@ vi.mock("../monitor/battle-monitor-automation.js", () => ({
   BattleMonitorEvent: Object.freeze({ HUD_REFRESH: "hudRefresh" }),
   runBattleMonitorAutomation: mocks.runBattleMonitorAutomation,
 }));
-vi.mock("./kill-bug.js", () => ({ killBug: mocks.killBug }));
+vi.mock("./kill-bug.js", () => ({
+  BattleKillBugRecoveryEvent: Object.freeze({ RECOVER: "recover" }),
+  runBattleKillBugRecovery: mocks.runBattleKillBugRecovery,
+}));
 vi.mock("./monster-status-automation.js", () => ({
   MonsterStatusEvent: Object.freeze({ ENSURE_READY: "ensureReady", UPDATE_HP: "updateHp" }),
   runMonsterStatusAutomation: mocks.runMonsterStatusAutomation,
@@ -42,7 +45,7 @@ describe("runBattleTurnPrelude", () => {
     });
     expect(mocks.runBattleTurnRuntime).toHaveBeenCalledWith({ type: "turnStarted" });
     expect(mocks.runBattleMonitorAutomation).toHaveBeenCalledWith({ type: "hudRefresh" });
-    expect(mocks.killBug).toHaveBeenCalledTimes(1);
+    expect(mocks.runBattleKillBugRecovery).toHaveBeenCalledWith({ type: "recover" });
     expect(mocks.runMonsterStatusAutomation).toHaveBeenNthCalledWith(2, {
       type: "updateHp",
       turn: 8,
@@ -55,6 +58,6 @@ describe("runBattleTurnPrelude", () => {
     expect(mocks.runMonsterStatusAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleTurnRuntime).not.toHaveBeenCalled();
     expect(mocks.runBattleMonitorAutomation).not.toHaveBeenCalled();
-    expect(mocks.killBug).not.toHaveBeenCalled();
+    expect(mocks.runBattleKillBugRecovery).not.toHaveBeenCalled();
   });
 });

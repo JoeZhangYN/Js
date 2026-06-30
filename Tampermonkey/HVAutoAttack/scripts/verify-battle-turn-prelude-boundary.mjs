@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-turn-prelude.js");
 const ownerTest = path.normalize("src/battle/battle-turn-prelude.test.js");
+const killBug = path.normalize("src/battle/kill-bug.js");
 const mainLoop = path.normalize("src/battle/main-loop.js");
 const violations = [];
 
@@ -16,6 +17,7 @@ function rel(relative) {
 }
 
 const ownerText = read(owner);
+const killBugText = read(killBug);
 const mainLoopText = read(mainLoop);
 
 for (const required of [
@@ -32,7 +34,8 @@ for (const required of [
   "MonsterStatusEvent.ENSURE_READY",
   "BattleTurnEvent.TURN_STARTED",
   "BattleMonitorEvent.HUD_REFRESH",
-  "killBug",
+  "BattleKillBugRecoveryEvent.RECOVER",
+  "runBattleKillBugRecovery",
   "MonsterStatusEvent.UPDATE_HP",
   "battleLogTelemetry",
 ]) {
@@ -87,6 +90,20 @@ if (
   )
 ) {
   violations.push(`${rel(mainLoop)} must not assemble turn prelude effects directly`);
+}
+for (const required of [
+  "BattleKillBugRecoveryEvent",
+  "battleKillBugRecoveryEventHandlers",
+  "runBattleKillBugRecovery",
+  "RECOVER",
+  "NavigationEvent.RELOAD_NOW",
+]) {
+  if (!killBugText.includes(required)) {
+    violations.push(`${rel(killBug)} must own ${required}`);
+  }
+}
+if (/export function killBug\(/.test(killBugText)) {
+  violations.push(`${rel(killBug)} legacy killBug() export must stay retired`);
 }
 
 if (violations.length) {

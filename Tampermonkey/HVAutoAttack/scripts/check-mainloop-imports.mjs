@@ -38,9 +38,11 @@ const BANNED = [
   "runBattleMonitorAutomation",
   "runMonsterStatusAutomation",
   "runBattleTurnRuntime",
+  "runBattleKillBugRecovery",
   "BattleMonitorEvent",
   "MonsterStatusEvent",
   "BattleTurnEvent",
+  "BattleKillBugRecoveryEvent",
 ];
 
 // 仅解析 `import { ... } from "..."` 的具名绑定（避免误伤注释/字符串/默认导入）。

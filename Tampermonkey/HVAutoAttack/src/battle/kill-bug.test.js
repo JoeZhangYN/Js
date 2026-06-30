@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { killBug } from "./kill-bug.js";
+import { BattleKillBugRecoveryEvent, runBattleKillBugRecovery } from "./kill-bug.js";
 
 const mocks = vi.hoisted(() => ({
   runNavigationAutomation: vi.fn(),
@@ -20,13 +20,13 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("killBug", () => {
+describe("runBattleKillBugRecovery", () => {
   it("routes bug recovery reload through the navigation entry", async () => {
     document.body.innerHTML = `
       <table id="textlog"><tbody><tr><td class="tlb">Inventory slot is empty</td></tr></tbody></table>
     `;
 
-    killBug();
+    runBattleKillBugRecovery({ type: BattleKillBugRecoveryEvent.RECOVER });
 
     expect(document.querySelector("td").className).toBe("tlbWARN");
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
@@ -41,9 +41,21 @@ describe("killBug", () => {
       <table id="textlog"><tbody><tr><td class="tlb">You hit a monster.</td></tr></tbody></table>
     `;
 
-    killBug();
+    runBattleKillBugRecovery({ type: BattleKillBugRecoveryEvent.RECOVER });
 
     expect(document.querySelector("td").className).toBe("tlbQRA");
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("rejects unknown bug recovery events without reading or reloading", () => {
+    document.body.innerHTML = `
+      <table id="textlog"><tbody><tr><td class="tlb">Inventory slot is empty</td></tr></tbody></table>
+    `;
+
+    expect(runBattleKillBugRecovery({ type: "unknown" })).toBe(false);
+
+    expect(document.querySelector("td").className).toBe("tlb");
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
     expect(vi.getTimerCount()).toBe(0);
   });

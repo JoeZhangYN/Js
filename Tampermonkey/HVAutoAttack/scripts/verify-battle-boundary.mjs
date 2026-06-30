@@ -460,7 +460,8 @@ function checkTurnEntry() {
     "MonsterStatusEvent.ENSURE_READY",
     "BattleTurnEvent.TURN_STARTED",
     "BattleMonitorEvent.HUD_REFRESH",
-    "killBug",
+    "BattleKillBugRecoveryEvent.RECOVER",
+    "runBattleKillBugRecovery",
     "MonsterStatusEvent.UPDATE_HP",
   ]) {
     if (!turnPreludeText.includes(required)) {
