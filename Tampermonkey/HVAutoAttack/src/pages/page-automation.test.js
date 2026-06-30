@@ -32,7 +32,10 @@ vi.mock("./equipment-view-automation.js", () => ({
   runEquipmentViewAutomation: mocks.runEquipmentViewAutomation,
 }));
 vi.mock("./riddle-automation.js", () => ({ runRiddleAutomation: mocks.runRiddleAutomation }));
-vi.mock("./lobby-automation.js", () => ({ runLobbyAutomation: mocks.runLobbyAutomation }));
+vi.mock("./lobby-automation.js", () => ({
+  LobbyEvent: Object.freeze({ PAGE_READY: "pageReady" }),
+  runLobbyAutomation: mocks.runLobbyAutomation,
+}));
 vi.mock("../battle/battle-automation.js", () => ({
   BattleEvent: Object.freeze({ PAGE_READY: "pageReady" }),
   runBattleAutomation: mocks.runBattleAutomation,
@@ -60,6 +63,14 @@ describe("runPageAutomation", () => {
     expect(mocks.runRiddleAutomation).toHaveBeenCalledTimes(1);
   });
 
+  it("routes battle and lobby game pages through their page entries", () => {
+    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.BATTLE });
+    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.LOBBY });
+
+    expect(mocks.runBattleAutomation).toHaveBeenCalledWith({ type: "pageReady" });
+    expect(mocks.runLobbyAutomation).toHaveBeenCalledWith({ type: "pageReady" });
+  });
+
   it("stops routing when cross-site encounter navigation handles the page", () => {
     mocks.runCrossSiteEncounterNavigation.mockReturnValue(true);
 
@@ -71,5 +82,23 @@ describe("runPageAutomation", () => {
     });
     expect(mocks.runAppStartup).not.toHaveBeenCalled();
     expect(mocks.runPageRefreshAutomation).not.toHaveBeenCalled();
+  });
+
+  it("schedules unknown page reload before game-page startup", () => {
+    mocks.runPageRefreshAutomation.mockReturnValueOnce(true);
+
+    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.UNKNOWN });
+
+    expect(mocks.runPageRefreshAutomation).toHaveBeenCalledWith({ type: "unknownPageReady" });
+    expect(mocks.runAppStartup).not.toHaveBeenCalled();
+  });
+
+  it("stops game-page routing when startup declines the page", () => {
+    mocks.runAppStartup.mockReturnValue(false);
+
+    runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.BATTLE });
+
+    expect(mocks.runPageRefreshAutomation).not.toHaveBeenCalledWith({ type: "gamePageReady" });
+    expect(mocks.runBattleAutomation).not.toHaveBeenCalled();
   });
 });

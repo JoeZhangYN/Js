@@ -64,10 +64,48 @@ function checkEntry() {
     "runLobbyAutomation",
     "runPageRefreshAutomation",
     "PageRefreshEvent.UNKNOWN_PAGE_READY",
+    "GAME_PAGE_AUTOMATION",
+    "PAGE_READY_FLOW_STEPS",
+    "reportEquipmentViewPageReady",
+    "handleCrossSiteEncounterPageReady",
+    "handleUnknownPageReady",
+    "runGamePageReadyAutomation",
+    "runPageReadyFlow",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} page routing wiring`);
     }
+  }
+  if (
+    !/const PAGE_READY_FLOW_STEPS = \[\s*reportEquipmentViewPageReady,\s*handleCrossSiteEncounterPageReady,\s*handleUnknownPageReady,\s*runGamePageReadyAutomation,\s*\]/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(entryFile)} must own explicit page-ready routing order`);
+  }
+  if (
+    !/\[PageKind\.RIDDLE\]: runRiddlePageAutomation[\s\S]*\[PageKind\.BATTLE\]: runBattlePageAutomation[\s\S]*\[PageKind\.LOBBY\]: runLobbyPageAutomation/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(entryFile)} must route game pages through GAME_PAGE_AUTOMATION`);
+  }
+  const entryBody =
+    text.match(/export function runPageAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  for (const forbidden of [
+    "runEquipmentViewAutomation",
+    "runCrossSiteEncounterNavigation",
+    "scheduleUnknownPageReload",
+    "runGamePageAutomation",
+  ]) {
+    if (entryBody.includes(forbidden)) {
+      violations.push(`${rel(entryFile)} entry must route page ready through flow steps`);
+    }
+  }
+  const gameBody = text.match(/function runGamePageAutomation\(kind\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (/kind\s*===\s*PageKind\.(?:RIDDLE|BATTLE|LOBBY)|else\s*\{/.test(gameBody)) {
+    violations.push(`${rel(entryFile)} must not route game pages through if/else`);
   }
   if (/\bscheduleReload\b/.test(text)) {
     violations.push(
