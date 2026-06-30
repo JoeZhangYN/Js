@@ -1,5 +1,5 @@
 import { gE } from "../dom/query.js";
-import { parseEffectName, parseEffectTurns } from "./effect-parse.js";
+import { BattleEffectParseEvent, runBattleEffectParse } from "./effect-parse.js";
 
 const EVENT_READ_CURRENT = "readCurrent";
 
@@ -15,8 +15,7 @@ function readEffects(container) {
   if (!container) return [];
   return [...container.querySelectorAll("img")].map((img) => ({
     img: img.src.match(/\/e\/(.*?)\.png/)?.[1] || "",
-    name: parseEffectName(img),
-    turns: parseEffectTurns(img),
+    ...runBattleEffectParse({ type: BattleEffectParseEvent.READ_EFFECT, img }),
   }));
 }
 

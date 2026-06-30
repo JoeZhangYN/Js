@@ -13,7 +13,7 @@
 // 普通变量吃 snap[str]；无 snap 或字段未被 snapshot 收集时 fallback g()/DOM（向后兼容）。
 import { gE, isOn } from "../dom/query.js";
 import { g } from "../state/store.js";
-import { parseEffectTurns } from "../battle/effect-parse.js";
+import { BattleEffectParseEvent, runBattleEffectParse } from "../battle/effect-parse.js";
 
 /** 并联(OR)行的行首哨兵 token；普通子句不会等于它。 */
 const ROW_OR = "||";
@@ -58,7 +58,7 @@ export function checkCondition(parms, snap) {
       }
       const buff = gE(`#pane_effects>img[src*="${img}"]`);
       if (!buff) return 0;
-      return parseEffectTurns(buff);
+      return runBattleEffectParse({ type: BattleEffectParseEvent.READ_EFFECT, img: buff }).turns;
     },
   };
   const comparators = {

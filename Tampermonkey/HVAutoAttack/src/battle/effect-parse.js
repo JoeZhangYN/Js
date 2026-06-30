@@ -12,6 +12,22 @@
 const EFFECT_TURN_RE = /\(.*,.*, (.*?)\)$/;
 /** effect 名正则：第一个单引号包裹的串。 */
 const EFFECT_NAME_RE = /'(.*?)'/;
+const EVENT_READ_EFFECT = "readEffect";
+
+export const BattleEffectParseEvent = Object.freeze({
+  READ_EFFECT: EVENT_READ_EFFECT,
+});
+
+const battleEffectParseEventHandlers = Object.freeze({
+  [EVENT_READ_EFFECT]: (event) => readEffect(event.img),
+});
+
+function readEffect(img) {
+  return {
+    name: parseEffectName(img),
+    turns: parseEffectTurns(img),
+  };
+}
 
 /**
  * 解析 effect img 的剩余回合数。
@@ -20,7 +36,7 @@ const EFFECT_NAME_RE = /'(.*?)'/;
  * @param {Element} img
  * @returns {number}
  */
-export function parseEffectTurns(img) {
+function parseEffectTurns(img) {
   const onmouseover = img.getAttribute("onmouseover");
   if (!onmouseover) return Infinity;
   const m = onmouseover.match(EFFECT_TURN_RE);
@@ -36,9 +52,13 @@ export function parseEffectTurns(img) {
  * @param {Element} img
  * @returns {string} 名字；无法解析返 ""。
  */
-export function parseEffectName(img) {
+function parseEffectName(img) {
   const onmouseover = img.getAttribute("onmouseover");
   if (!onmouseover) return "";
   const m = onmouseover.match(EFFECT_NAME_RE);
   return m ? m[1] : "";
+}
+
+export function runBattleEffectParse(event = { type: EVENT_READ_EFFECT }) {
+  return battleEffectParseEventHandlers[event.type]?.(event);
 }

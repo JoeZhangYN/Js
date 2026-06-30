@@ -3,14 +3,16 @@ import { BattlePlayerEffectsEvent, runBattlePlayerEffects } from "./battle-playe
 
 const mocks = vi.hoisted(() => ({
   gE: vi.fn(),
-  parseEffectName: vi.fn((img) => img.getAttribute("data-name") || ""),
-  parseEffectTurns: vi.fn((img) => Number(img.getAttribute("data-turns")) || Infinity),
+  runBattleEffectParse: vi.fn((event) => ({
+    name: event.img.getAttribute("data-name") || "",
+    turns: Number(event.img.getAttribute("data-turns")) || Infinity,
+  })),
 }));
 
 vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
 vi.mock("./effect-parse.js", () => ({
-  parseEffectName: mocks.parseEffectName,
-  parseEffectTurns: mocks.parseEffectTurns,
+  BattleEffectParseEvent: Object.freeze({ READ_EFFECT: "readEffect" }),
+  runBattleEffectParse: mocks.runBattleEffectParse,
 }));
 
 beforeEach(() => {
@@ -62,7 +64,6 @@ describe("runBattlePlayerEffects", () => {
     });
 
     expect(mocks.gE).not.toHaveBeenCalled();
-    expect(mocks.parseEffectName).not.toHaveBeenCalled();
-    expect(mocks.parseEffectTurns).not.toHaveBeenCalled();
+    expect(mocks.runBattleEffectParse).not.toHaveBeenCalled();
   });
 });

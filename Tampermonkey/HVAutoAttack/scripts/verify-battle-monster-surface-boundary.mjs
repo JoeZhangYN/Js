@@ -5,6 +5,7 @@ const root = process.cwd();
 const owner = path.normalize("src/battle/battle-monster-surface.js");
 const ownerTest = path.normalize("src/battle/battle-monster-surface.test.js");
 const snapshot = path.normalize("src/battle/snapshot.js");
+const effectParse = path.normalize("src/battle/effect-parse.js");
 const violations = [];
 
 function read(relative) {
@@ -27,12 +28,35 @@ for (const required of [
   "nbardead",
   "nbargreen",
   ".btm6",
-  "parseEffectName",
-  "parseEffectTurns",
+  "BattleEffectParseEvent.READ_EFFECT",
+  "runBattleEffectParse",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must own ${required}`);
   }
+}
+if (/import\s*\{[^}]*\b(?:parseEffectName|parseEffectTurns)\b/.test(ownerText)) {
+  violations.push(`${rel(owner)} must consume effect parsing through runBattleEffectParse(event)`);
+}
+const effectParseText = read(effectParse);
+for (const required of [
+  "BattleEffectParseEvent",
+  "battleEffectParseEventHandlers",
+  "runBattleEffectParse",
+  "READ_EFFECT",
+  "parseEffectName",
+  "parseEffectTurns",
+]) {
+  if (!effectParseText.includes(required)) {
+    violations.push(`${rel(effectParse)} must own effect parse query ${required}`);
+  }
+}
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattleEffectParseEvent\b|runBattleEffectParse\b)/.test(
+    effectParseText
+  )
+) {
+  violations.push(`${rel(effectParse)} may export only its event query entry`);
 }
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleMonsterSurfaceEvent\b|runBattleMonsterSurface\b)/.test(

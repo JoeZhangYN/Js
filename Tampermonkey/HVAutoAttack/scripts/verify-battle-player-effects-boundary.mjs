@@ -5,6 +5,8 @@ const root = process.cwd();
 const owner = path.normalize("src/battle/battle-player-effects.js");
 const ownerTest = path.normalize("src/battle/battle-player-effects.test.js");
 const snapshot = path.normalize("src/battle/snapshot.js");
+const effectParse = path.normalize("src/battle/effect-parse.js");
+const conditionEval = path.normalize("src/settings/condition-eval.js");
 const violations = [];
 
 function read(relative) {
@@ -24,8 +26,8 @@ for (const required of [
   "runBattlePlayerEffects",
   "READ_CURRENT",
   "#pane_effects",
-  "parseEffectName",
-  "parseEffectTurns",
+  "BattleEffectParseEvent.READ_EFFECT",
+  "runBattleEffectParse",
   "playerBuffs",
   "playerEffectTurns",
   "channeling",
@@ -35,6 +37,36 @@ for (const required of [
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must own ${required}`);
   }
+}
+if (/import\s*\{[^}]*\b(?:parseEffectName|parseEffectTurns)\b/.test(ownerText)) {
+  violations.push(`${rel(owner)} must consume effect parsing through runBattleEffectParse(event)`);
+}
+const conditionEvalText = read(conditionEval);
+if (!conditionEvalText.includes("runBattleEffectParse")) {
+  violations.push(`${rel(conditionEval)} must consume effect parsing through runBattleEffectParse(event)`);
+}
+if (/import\s*\{[^}]*\b(?:parseEffectName|parseEffectTurns)\b/.test(conditionEvalText)) {
+  violations.push(`${rel(conditionEval)} must not import raw effect parser functions`);
+}
+const effectParseText = read(effectParse);
+for (const required of [
+  "BattleEffectParseEvent",
+  "battleEffectParseEventHandlers",
+  "runBattleEffectParse",
+  "READ_EFFECT",
+  "parseEffectName",
+  "parseEffectTurns",
+]) {
+  if (!effectParseText.includes(required)) {
+    violations.push(`${rel(effectParse)} must own effect parse query ${required}`);
+  }
+}
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattleEffectParseEvent\b|runBattleEffectParse\b)/.test(
+    effectParseText
+  )
+) {
+  violations.push(`${rel(effectParse)} may export only its event query entry`);
 }
 if (
   /\bexport\s+(?:function|const)\s+(?!BattlePlayerEffectsEvent\b|runBattlePlayerEffects\b)/.test(
