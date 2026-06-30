@@ -21,6 +21,12 @@ export const RiddleDatasetEvent = Object.freeze({
   REGISTER_EXPORT_MENU: EVENT_REGISTER_EXPORT_MENU,
 });
 
+const riddleDatasetEventHandlers = Object.freeze({
+  [EVENT_RECORD_SAMPLE]: (event) => recordRiddleSample(event),
+  [EVENT_EXPORT]: () => exportRiddleDataset(),
+  [EVENT_REGISTER_EXPORT_MENU]: () => registerExportMenu(),
+});
+
 /** 样本来源枚举（调用侧把自身路径映射到这三种之一）。 */
 export const RiddleSampleSource = Object.freeze({ ML: "ml", RANDOM: "random", MANUAL: "manual" });
 
@@ -189,15 +195,5 @@ function registerExportMenu() {
 }
 
 export function runRiddleDatasetAutomation(event) {
-  if (!event) return undefined;
-  if (event.type === EVENT_RECORD_SAMPLE) {
-    return recordRiddleSample(event);
-  }
-  if (event.type === EVENT_EXPORT) {
-    return exportRiddleDataset();
-  }
-  if (event.type === EVENT_REGISTER_EXPORT_MENU) {
-    return registerExportMenu();
-  }
-  return undefined;
+  return event ? riddleDatasetEventHandlers[event.type]?.(event) : undefined;
 }

@@ -11,6 +11,25 @@ afterEach(() => {
 });
 
 describe("riddle dataset entry", () => {
+  it("rejects unknown dataset events without writing samples or registering menus", () => {
+    const setValue = vi.fn();
+    const registerMenu = vi.fn();
+    vi.stubGlobal("GM_setValue", setValue);
+    vi.stubGlobal("GM_registerMenuCommand", registerMenu);
+
+    expect(
+      runRiddleDatasetAutomation({
+        type: "unknown",
+        imageDataUrl: "data:image/webp;base64,AAAA",
+        answers: "ra",
+        source: RiddleSampleSource.ML,
+      })
+    ).toBeUndefined();
+
+    expect(setValue).not.toHaveBeenCalled();
+    expect(registerMenu).not.toHaveBeenCalled();
+  });
+
   it("records samples through the entry and derives confidence from source", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-27T00:00:01Z"));

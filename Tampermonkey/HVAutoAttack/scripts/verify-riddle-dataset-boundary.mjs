@@ -66,6 +66,14 @@ for (const required of ["runRiddleDatasetAutomation", "RiddleDatasetEvent", "Rid
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
+const entryBody =
+  ownerText.match(/export function runRiddleDatasetAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/const riddleDatasetEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_RECORD_SAMPLE\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
 for (const required of ["TimeEvent.LOCAL_FILE_TIMESTAMP", "TimeEvent.ISO_TIMESTAMP"]) {
   if (!ownerText.includes(required)) {
     violations.push(
@@ -89,6 +97,14 @@ if (/export\s+const\s+SAMPLE_SOURCE\b/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} SAMPLE_SOURCE export was replaced by RiddleSampleSource`
   );
+}
+if (!fs.existsSync(path.join(root, ownerTest))) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover riddle dataset entry`);
+} else {
+  const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+  if (!ownerTestText.includes("rejects unknown dataset events without writing samples or registering menus")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown dataset events`);
+  }
 }
 
 if (violations.length) {
