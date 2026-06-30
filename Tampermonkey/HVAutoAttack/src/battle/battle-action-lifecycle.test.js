@@ -90,5 +90,13 @@ describe("runBattleActionLifecycleAutomation", () => {
     const { deps } = makeDeps();
 
     expect(runBattleActionLifecycleAutomation({ type: "unknown" }, deps)).toBe(false);
+    expect(deps.startDelay).not.toHaveBeenCalled();
+    expect(deps.recordSpeed).not.toHaveBeenCalled();
+    expect(deps.endDelay).not.toHaveBeenCalled();
+    expect(deps.monitorActionStarted).not.toHaveBeenCalled();
+    expect(deps.monitorActionEnded).not.toHaveBeenCalled();
+    expect(deps.completeBattle).not.toHaveBeenCalled();
+    expect(deps.continueNextRound).not.toHaveBeenCalled();
+    expect(deps.runTurn).not.toHaveBeenCalled();
   });
 });

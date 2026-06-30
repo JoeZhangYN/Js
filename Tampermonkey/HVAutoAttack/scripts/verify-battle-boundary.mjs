@@ -848,6 +848,7 @@ function checkActionLifecycleEntry() {
     violations.push(`${rel(actionLifecycleFile)} may export only its event entry`);
   }
   for (const required of [
+    "battleActionLifecycleEventHandlers",
     "BattleActionDelayEvent.ACTION_STARTED",
     "BattleMonitorEvent.ACTION_STARTED",
     "BattleActionSpeedEvent.ACTION_ENDED",
@@ -865,6 +866,19 @@ function checkActionLifecycleEntry() {
         `${rel(actionLifecycleFile)} must make ${required} visible in action lifecycle entry`
       );
     }
+  }
+  const entryBody =
+    text.match(/export function runBattleActionLifecycleAutomation\([^)]*\) \{[\s\S]*?\n\}/)
+      ?.[0] || "";
+  if (
+    !/Object\.freeze\(\{[\s\S]*\[EVENT_ACTION_STARTED\][\s\S]*\[EVENT_ACTION_ENDED\]/.test(text)
+  ) {
+    violations.push(
+      `${rel(actionLifecycleFile)} must route events through a frozen handler table`
+    );
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${rel(actionLifecycleFile)} entry must dispatch by handler table`);
   }
   if (/BattleMonitorEvent\.COMPLETION_REACHED/.test(text)) {
     violations.push(

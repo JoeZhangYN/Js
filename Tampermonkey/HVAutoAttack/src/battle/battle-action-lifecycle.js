@@ -50,7 +50,7 @@ function runActionEnded(deps) {
   return { outcome: BattleCompletionOutcome.ONGOING, continued: "turn" };
 }
 
-const lifecycleHandlers = Object.freeze({
+const battleActionLifecycleEventHandlers = Object.freeze({
   [EVENT_ACTION_STARTED]: (deps) => runActionStarted(deps),
   [EVENT_ACTION_ENDED]: (deps) => runActionEnded(deps),
 });
@@ -76,5 +76,5 @@ export function runBattleActionLifecycleAutomation(
     runTurn: runBattleTurnAutomation,
   }
 ) {
-  return lifecycleHandlers[event.type]?.(deps) ?? false;
+  return battleActionLifecycleEventHandlers[event.type]?.(deps) ?? false;
 }
