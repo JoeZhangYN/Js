@@ -1,5 +1,13 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleMonsterSurfaceEvent, runBattleMonsterSurface } from "./battle-monster-surface.js";
+
+const mocks = vi.hoisted(() => ({
+  gE: vi.fn((selector, mode) =>
+    mode === "all" ? document.querySelectorAll(selector) : document.querySelector(selector)
+  ),
+}));
+
+vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
 
 function setHpBarWidth(img, width) {
   Object.defineProperty(img, "offsetWidth", { configurable: true, value: width });
@@ -7,6 +15,7 @@ function setHpBarWidth(img, width) {
 
 beforeEach(() => {
   document.body.innerHTML = "";
+  mocks.gE.mockClear();
 });
 
 describe("runBattleMonsterSurface", () => {
@@ -50,10 +59,15 @@ describe("runBattleMonsterSurface", () => {
     ]);
   });
 
-  it("keeps HV monster id wrapping and returns empty for unknown events", () => {
+  it("keeps HV monster id wrapping", () => {
     document.body.innerHTML = Array.from({ length: 10 }, () => `<div class="btm1"></div>`).join("");
 
     expect(runBattleMonsterSurface().at(-1)).toMatchObject({ id: 0, order: 9, hpRatio: 1 });
+  });
+
+  it("rejects unknown events without touching DOM", () => {
     expect(runBattleMonsterSurface({ type: "unknown" })).toEqual([]);
+
+    expect(mocks.gE).not.toHaveBeenCalled();
   });
 });

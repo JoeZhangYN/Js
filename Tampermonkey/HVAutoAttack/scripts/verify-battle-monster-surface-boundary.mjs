@@ -20,6 +20,7 @@ const snapshotText = read(snapshot);
 
 for (const required of [
   "BattleMonsterSurfaceEvent",
+  "battleMonsterSurfaceEventHandlers",
   "runBattleMonsterSurface",
   "READ_CURRENT",
   'gE("div.btm1", "all")',
@@ -40,8 +41,21 @@ if (
 ) {
   violations.push(`${rel(owner)} may export only its event entry`);
 }
+const entryBody =
+  ownerText.match(/export function runBattleMonsterSurface\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover monster surface entry contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("rejects unknown events without touching DOM")) {
+    violations.push(`${rel(ownerTest)} must cover unknown monster surface events`);
+  }
 }
 if (
   !snapshotText.includes("BattleMonsterSurfaceEvent.READ_CURRENT") ||

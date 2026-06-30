@@ -7,6 +7,10 @@ export const BattleMonsterSurfaceEvent = Object.freeze({
   READ_CURRENT: EVENT_READ_CURRENT,
 });
 
+const battleMonsterSurfaceEventHandlers = Object.freeze({
+  [EVENT_READ_CURRENT]: () => readCurrentMonsters(),
+});
+
 function readEffects(container) {
   if (!container) return [];
   return [...container.querySelectorAll("img")].map((img) => ({
@@ -44,6 +48,5 @@ function readCurrentMonsters() {
 }
 
 export function runBattleMonsterSurface(event = { type: EVENT_READ_CURRENT }) {
-  if (event.type === EVENT_READ_CURRENT) return readCurrentMonsters();
-  return [];
+  return battleMonsterSurfaceEventHandlers[event.type]?.() ?? [];
 }
