@@ -5,6 +5,7 @@
 import { checkCondition } from "../../settings/condition-eval.js";
 import { aoeScore } from "./physical-skill-ranking.js";
 import { aliveByOrder } from "../monster-view.js";
+import { readBigSkillSpec } from "../big-skill-catalog.js";
 
 /**
  * State-aware 打分：传入 event + 首怪 facts，返该 skill 的当前 score（0 = 不该使用）。
@@ -49,8 +50,8 @@ export function scorePhysicalSkillCandidates(opt, event, ctx) {
   const skillOrder = (opt.skillOrderValue || "OFC,FRD,T3,T2,T1").split(",");
   const style = opt.fightingStyle || "2";
   const skillLib = new Map([
-    ["OFC", { id: "1111", oc: 205 }],
-    ["FRD", { id: "1101", oc: 105 }],
+    ["OFC", readBigSkillSpec("OFC")],
+    ["FRD", readBigSkillSpec("FRD")],
     ["T3", { id: `2${style}03`, oc: 105 }],
     ["T2", { id: `2${style}02`, oc: 55 }],
     ["T1", { id: `2${style}01`, oc: 30 }],

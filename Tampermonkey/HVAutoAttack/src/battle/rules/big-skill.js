@@ -4,6 +4,7 @@ import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,
 } from "../../state/big-skill-kill-learner.js";
+import { bigSkillCodes, isBigSkillEnabled, readBigSkillSpec } from "../big-skill-catalog.js";
 
 const EVENT_READ_CLEAR_READY = "readClearReady";
 const EVENT_SHOULD_SKIP_DEBUFF = "shouldSkipDebuff";
@@ -24,10 +25,10 @@ function clearSkillReadyNow(event) {
   const opt = event?.opt || {};
   const skillCooldowns = event?.skillCooldowns || {};
   const overcharge = event?.overcharge ?? 0;
-  for (const skill of ["OFC", "FRD"]) {
-    if (!opt[`skill_${skill}`] && !opt.skill?.[skill]) continue;
-    const ocNeed = skill === "OFC" ? 205 : 105;
-    if ((skillCooldowns[skill] ?? 99) === 0 && overcharge >= ocNeed) return true;
+  for (const skill of bigSkillCodes()) {
+    if (!isBigSkillEnabled(opt, skill)) continue;
+    const spec = readBigSkillSpec(skill);
+    if ((skillCooldowns[skill] ?? 99) === 0 && overcharge >= spec.oc) return true;
   }
   return false;
 }
@@ -80,11 +81,11 @@ function shouldSkipForBigSkill(event) {
   const N = opt.skipDebuffForBigSkillThreshold ?? 3;
   if (aliveCount <= (opt.physicalDowngradeThreshold || 3)) return false;
   const ocFutureMax = overcharge + N * 10;
-  for (const skill of ["OFC", "FRD"]) {
-    if (!opt[`skill_${skill}`] && !opt.skill?.[skill]) continue;
+  for (const skill of bigSkillCodes()) {
+    if (!isBigSkillEnabled(opt, skill)) continue;
     if ((skillCooldowns[skill] ?? 99) > N) continue;
-    const ocNeed = skill === "OFC" ? 205 : 105;
-    if (ocFutureMax >= ocNeed) return true;
+    const spec = readBigSkillSpec(skill);
+    if (ocFutureMax >= spec.oc) return true;
   }
   return false;
 }

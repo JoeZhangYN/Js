@@ -58,6 +58,7 @@ const legacyNewRoundFile = path.join(root, "src/battle/new-round.js");
 const battleRulesFile = path.join(root, "src/battle/rules/index.js");
 const ruleFactsFile = path.join(root, "src/battle/rules/rule-facts.js");
 const attackFactsFile = path.join(root, "src/battle/rules/attack-facts.js");
+const bigSkillCatalogFile = path.join(root, "src/battle/big-skill-catalog.js");
 const bigSkillFile = path.join(root, "src/battle/rules/big-skill.js");
 const bossImperilFile = path.join(root, "src/battle/rules/decide-boss-imperil.js");
 const burstControlFile = path.join(root, "src/battle/debuff/decide-burst-control.js");
@@ -1114,7 +1115,21 @@ function checkBossImperilEntry() {
 }
 
 function checkBigSkillDebuffEntry() {
+  const catalogText = fs.readFileSync(bigSkillCatalogFile, "utf8");
   const ownerText = fs.readFileSync(bigSkillFile, "utf8");
+  for (const required of ["bigSkillCodes", "readBigSkillSpec", "isBigSkillEnabled"]) {
+    if (!catalogText.includes(required)) {
+      violations.push(`${rel(bigSkillCatalogFile)} must own ${required}`);
+    }
+  }
+  for (const required of ["bigSkillCodes", "readBigSkillSpec", "isBigSkillEnabled"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(bigSkillFile)} must read clear-skill specs through catalog`);
+    }
+  }
+  if (/["']OFC["']\s*,\s*["']FRD["']|skill\s*===\s*["']OFC["']\s*\?\s*205/.test(ownerText)) {
+    violations.push(`${rel(bigSkillFile)} must not hard-code OFC/FRD clear-skill specs`);
+  }
   for (const required of [
     "BigSkillDebuffEvent",
     "runBigSkillDebuffAutomation",
@@ -1631,6 +1646,12 @@ function checkAttackEntry() {
         `${rel(physicalSkillScoringFile)} must own physical skill scoring ${required}`
       );
     }
+  }
+  if (!scoringText.includes("readBigSkillSpec")) {
+    violations.push(`${rel(physicalSkillScoringFile)} must read OFC/FRD specs through catalog`);
+  }
+  if (/["']1111["']|["']1101["']/.test(scoringText)) {
+    violations.push(`${rel(physicalSkillScoringFile)} must not hard-code OFC/FRD skill ids`);
   }
   const autoElementText = fs.readFileSync(autoElementSelectionFile, "utf8");
   for (const required of ["selectAutoElement", "autoElementPool", "target.resists"]) {
