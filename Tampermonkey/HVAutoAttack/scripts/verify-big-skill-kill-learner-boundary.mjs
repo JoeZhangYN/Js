@@ -9,6 +9,7 @@ const ownerNormalizationTest = path.normalize(
   "src/state/big-skill-kill-learner-normalization.test.js"
 );
 const snapshot = path.normalize("src/battle/snapshot.js");
+const observationLearning = path.normalize("src/battle/battle-observation-learning.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const violations = [];
 
@@ -171,9 +172,10 @@ if (
 }
 
 const snapshotText = fs.readFileSync(path.join(root, snapshot), "utf8");
-if (!snapshotText.includes("liveMonsterIds(view)")) {
+const observationLearningText = fs.readFileSync(path.join(root, observationLearning), "utf8");
+if (!observationLearningText.includes("liveMonsterIds(event.view)")) {
   violations.push(
-    `${snapshot.replaceAll("\\", "/")} must derive narrow liveMonsterIds for finalize`
+    `${observationLearning.replaceAll("\\", "/")} must derive narrow liveMonsterIds for finalize`
   );
 }
 if (/FINALIZE_PENDING[\s\S]{0,180}\bsnap\s*:/.test(snapshotText)) {

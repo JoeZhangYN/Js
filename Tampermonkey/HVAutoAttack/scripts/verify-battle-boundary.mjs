@@ -52,6 +52,7 @@ const potionEconomyFile = path.join(root, "src/battle/potion-economy.js");
 const stallModeFile = path.join(root, "src/battle/battle-stall-mode.js");
 const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const turnContextFile = path.join(root, "src/battle/turn-context.js");
+const observationLearningFile = path.join(root, "src/battle/battle-observation-learning.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const dispatchFile = path.join(root, "src/battle/dispatch.js");
@@ -1045,6 +1046,33 @@ function checkSnapshot() {
   const turnContextText = fs.readFileSync(turnContextFile, "utf8");
   if (!text.includes("learnIncomingBurst")) {
     violations.push(`${rel(snapshotFile)} must receive burst learning decision from turn context`);
+  }
+  if (
+    !text.includes("BattleObservationLearningEvent.FINALIZE_TURN_OBSERVATIONS") ||
+    !text.includes("runBattleObservationLearning")
+  ) {
+    violations.push(`${rel(snapshotFile)} must finalize observations through one learning entry`);
+  }
+  for (const forbidden of [
+    "runRecoveryLearningAutomation",
+    "runCdLearningAutomation",
+    "runBigSkillKillLearningAutomation",
+    "runIncomingBurstLearningAutomation",
+  ]) {
+    if (text.includes(forbidden)) {
+      violations.push(`${rel(snapshotFile)} must not bypass observation learning via ${forbidden}`);
+    }
+  }
+  const observationText = fs.readFileSync(observationLearningFile, "utf8");
+  for (const required of [
+    "RecoveryLearningEvent.FINALIZE_PENDING",
+    "CdLearningEvent.FINALIZE_PENDING",
+    "BigSkillKillLearningEvent.FINALIZE_PENDING",
+    "IncomingBurstLearningEvent.RECORD_EVENTS",
+  ]) {
+    if (!observationText.includes(required)) {
+      violations.push(`${rel(observationLearningFile)} must own ${required}`);
+    }
   }
   if (/OptionEvent|runOptionAutomation|burstControlSwitch/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read battle action options directly`);

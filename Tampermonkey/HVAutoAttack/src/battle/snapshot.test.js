@@ -13,13 +13,10 @@ const mocks = vi.hoisted(() => ({
   monsterHpVars: vi.fn(() => ({})),
   parseBattleLog: vi.fn(() => []),
   runAbilityAoeAutomation: vi.fn(() => ({ Imperil: 2 })),
-  runBigSkillKillLearningAutomation: vi.fn(),
+  runBattleObservationLearning: vi.fn(() => ({ learnedBurstByMid: { learned: true } })),
   runBattleSkillUsageAutomation: vi.fn(() => ({ OFC: 1 })),
   runBattleTurnAutomation: vi.fn(() => 7),
-  runCdLearningAutomation: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
-  runIncomingBurstLearningAutomation: vi.fn(() => ({ learned: true })),
-  runRecoveryLearningAutomation: vi.fn(),
 }));
 
 vi.mock("../dom/query.js", () => ({ gE: mocks.gE, isSpiritActive: mocks.isSpiritActive }));
@@ -36,24 +33,11 @@ vi.mock("./log-parser.js", () => ({
   estimatePlayerIncomingDps: mocks.estimatePlayerIncomingDps,
   parseBattleLog: mocks.parseBattleLog,
 }));
-vi.mock("../state/recovery-learner.js", () => ({
-  RecoveryLearningEvent: Object.freeze({ FINALIZE_PENDING: "finalizePending" }),
-  runRecoveryLearningAutomation: mocks.runRecoveryLearningAutomation,
-}));
-vi.mock("../state/cd-learner.js", () => ({
-  CdLearningEvent: Object.freeze({ FINALIZE_PENDING: "finalizePending" }),
-  runCdLearningAutomation: mocks.runCdLearningAutomation,
-}));
-vi.mock("../state/big-skill-kill-learner.js", () => ({
-  BigSkillKillLearningEvent: Object.freeze({ FINALIZE_PENDING: "finalizePending" }),
-  runBigSkillKillLearningAutomation: mocks.runBigSkillKillLearningAutomation,
-}));
-vi.mock("../state/incoming-burst-learner.js", () => ({
-  IncomingBurstLearningEvent: Object.freeze({
-    READ_MAP: "readMap",
-    RECORD_EVENTS: "recordEvents",
+vi.mock("./battle-observation-learning.js", () => ({
+  BattleObservationLearningEvent: Object.freeze({
+    FINALIZE_TURN_OBSERVATIONS: "finalizeTurnObservations",
   }),
-  runIncomingBurstLearningAutomation: mocks.runIncomingBurstLearningAutomation,
+  runBattleObservationLearning: mocks.runBattleObservationLearning,
 }));
 vi.mock("./effect-parse.js", () => ({ parseEffectName: () => "", parseEffectTurns: () => 0 }));
 vi.mock("./monster-view.js", () => ({
@@ -114,35 +98,33 @@ describe("collectSnapshot", () => {
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "readSpellAoe" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
-    expect(mocks.runRecoveryLearningAutomation).toHaveBeenCalledWith({
-      type: "finalizePending",
-      recoveryAbs: { hp: 500, mp: 250, sp: 200 },
-    });
-    expect(mocks.runCdLearningAutomation).toHaveBeenCalledWith({
-      type: "finalizePending",
+    expect(mocks.runBattleObservationLearning).toHaveBeenCalledWith({
+      type: "finalizeTurnObservations",
+      battleLog: [],
       globalTurn: 9,
-      readySkillIds: ["111"],
-    });
-    expect(mocks.runBigSkillKillLearningAutomation).toHaveBeenCalledWith({
-      type: "finalizePending",
-      globalTurn: 9,
-      liveMonsterIds: [101],
-    });
-    expect(mocks.runIncomingBurstLearningAutomation).toHaveBeenCalledWith({
-      type: "recordEvents",
-      events: [],
+      learnIncomingBurst: true,
       monsterIdentities: [{ name: "Alpha", monsterId: 101 }],
+      skillReady: { 111: true },
+      view: [{ monsterId: 101, isDead: false }],
+      vitals: expect.objectContaining({ hpAbs: 500, mpAbs: 250, spAbs: 200 }),
     });
     expect(snap.learnedBurstByMid).toEqual({ learned: true });
   });
 
   it("skips incoming burst learning when the turn context does not request it", () => {
+    mocks.runBattleObservationLearning.mockReturnValueOnce({ learnedBurstByMid: {} });
+
     const snap = collectSnapshot();
 
-    expect(mocks.runIncomingBurstLearningAutomation).not.toHaveBeenCalledWith({
-      type: "recordEvents",
-      events: [],
+    expect(mocks.runBattleObservationLearning).toHaveBeenCalledWith({
+      type: "finalizeTurnObservations",
+      battleLog: [],
+      globalTurn: 9,
+      learnIncomingBurst: false,
       monsterIdentities: [{ name: "Alpha", monsterId: 101 }],
+      skillReady: {},
+      view: [{ monsterId: 101, isDead: false }],
+      vitals: expect.any(Object),
     });
     expect(snap.learnedBurstByMid).toEqual({});
   });

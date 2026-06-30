@@ -11,16 +11,10 @@ import { gE, isSpiritActive } from "../dom/query.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { parseBattleLog, estimatePlayerIncomingDps, estimatePerMonsterDps } from "./log-parser.js";
-import { RecoveryLearningEvent, runRecoveryLearningAutomation } from "../state/recovery-learner.js";
-import { CdLearningEvent, runCdLearningAutomation } from "../state/cd-learner.js";
 import {
-  BigSkillKillLearningEvent,
-  runBigSkillKillLearningAutomation,
-} from "../state/big-skill-kill-learner.js";
-import {
-  IncomingBurstLearningEvent,
-  runIncomingBurstLearningAutomation,
-} from "../state/incoming-burst-learner.js";
+  BattleObservationLearningEvent,
+  runBattleObservationLearning,
+} from "./battle-observation-learning.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 import { monsterHpVars } from "./monster-view.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "../pages/ability-page.js";
@@ -201,22 +195,6 @@ function readSkillReady() {
   return map;
 }
 
-function readySkillIds(skillReady) {
-  return Object.entries(skillReady || {})
-    .filter(([, ready]) => ready)
-    .map(([id]) => id);
-}
-
-function recoveryAbs(vitals) {
-  return { hp: vitals.hpAbs, mp: vitals.mpAbs, sp: vitals.spAbs };
-}
-
-function liveMonsterIds(view) {
-  return (view || [])
-    .filter((monster) => monster.monsterId != null && !monster.isDead)
-    .map((monster) => monster.monsterId);
-}
-
 /**
  * 一次性 batch DOM read 组装当前 turn snapshot。
  * @returns {import("../core/types.js").BattleSnapshot}
@@ -236,31 +214,17 @@ export function collectSnapshot(event = {}) {
   // 学习器 finalize 全部跑在 rules 之前（结算上回合行动的观测）。globalTurn/skillReady 先备好供两用。
   const globalTurn = runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_GLOBAL_TURN });
   const skillReady = readSkillReady();
-  // T1: 上回合若有 pending 喝药观测，此处结算 → 学习 delta
-  runRecoveryLearningAutomation({
-    type: RecoveryLearningEvent.FINALIZE_PENDING,
-    recoveryAbs: recoveryAbs(vitals),
-  });
-  // F3: 上回合开火的技能若本回合脱灰 → 收敛真实 CD（只需 globalTurn + readySkillIds）
-  runCdLearningAutomation({
-    type: CdLearningEvent.FINALIZE_PENDING,
-    globalTurn,
-    readySkillIds: readySkillIds(skillReady),
-  });
-  // F4: 上回合 OFC/FRD 开火的 boss 本回合是否已死 → 按 MID 学击杀率（只需 globalTurn + liveMonsterIds）
-  runBigSkillKillLearningAutomation({
-    type: BigSkillKillLearningEvent.FINALIZE_PENDING,
-    globalTurn,
-    liveMonsterIds: liveMonsterIds(view),
-  });
-  // F5（默认 OFF，开关关时零开销）：从本回合战斗日志学每 MID 单发最大伤害 + 类型；attach 给 decide。
   const learnIncomingBurst = !!event.learnIncomingBurst;
-  if (learnIncomingBurst)
-    runIncomingBurstLearningAutomation({
-      type: IncomingBurstLearningEvent.RECORD_EVENTS,
-      events: battleLog,
-      monsterIdentities,
-    });
+  const observationLearning = runBattleObservationLearning({
+    type: BattleObservationLearningEvent.FINALIZE_TURN_OBSERVATIONS,
+    battleLog,
+    globalTurn,
+    learnIncomingBurst,
+    monsterIdentities,
+    skillReady,
+    view,
+    vitals,
+  });
   return {
     turn,
     globalTurn,
@@ -290,8 +254,6 @@ export function collectSnapshot(event = {}) {
     playerIncomingDps: estimatePlayerIncomingDps(battleLog, turn),
     monsterDpsByName: estimatePerMonsterDps(battleLog, turn),
     // F5：每 MID 致死/爆发伤害学习表（开关关→空，decide 自然 noop）
-    learnedBurstByMid: learnIncomingBurst
-      ? runIncomingBurstLearningAutomation({ type: IncomingBurstLearningEvent.READ_MAP })
-      : {},
+    learnedBurstByMid: observationLearning.learnedBurstByMid,
   };
 }

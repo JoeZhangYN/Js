@@ -25,6 +25,8 @@ function requireText(relative, required) {
 const snapshotText = requireText(snapshot, [
   "collectSnapshot",
   "learnIncomingBurst",
+  "BattleObservationLearningEvent.FINALIZE_TURN_OBSERVATIONS",
+  "runBattleObservationLearning",
   "BattleMonsterViewEvent.READ_VIEW",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
@@ -51,6 +53,18 @@ if (
   /MonsterStatusEvent\.READ_STATUS|MonsterCacheEvent\.READ_DB|joinMonsterView/.test(snapshotText)
 ) {
   violations.push(`${snapshot.replaceAll("\\", "/")} must not assemble monster view directly`);
+}
+for (const forbidden of [
+  "runRecoveryLearningAutomation",
+  "runCdLearningAutomation",
+  "runBigSkillKillLearningAutomation",
+  "runIncomingBurstLearningAutomation",
+]) {
+  if (snapshotText.includes(forbidden)) {
+    violations.push(
+      `${snapshot.replaceAll("\\", "/")} must finalize observations through runBattleObservationLearning`
+    );
+  }
 }
 if (/monsterStatus/.test(snapshotText)) {
   violations.push(`${snapshot.replaceAll("\\", "/")} must not pass full monsterStatus downstream`);
