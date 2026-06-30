@@ -12,10 +12,10 @@ const apiBridgeFile = path.join(root, "src/battle/battle-api-bridge.js");
 const apiBridgeTest = path.join(root, "src/battle/battle-api-bridge.test.js");
 const actionSpeedFile = path.join(root, "src/battle/battle-action-speed.js");
 const actionSpeedTest = path.join(root, "src/battle/battle-action-speed.test.js");
-const actionEndFile = path.join(root, "src/battle/battle-action-end.js");
-const actionEndTest = path.join(root, "src/battle/battle-action-end.test.js");
-const actionStartFile = path.join(root, "src/battle/battle-action-start.js");
-const actionStartTest = path.join(root, "src/battle/battle-action-start.test.js");
+const actionLifecycleFile = path.join(root, "src/battle/battle-action-lifecycle.js");
+const actionLifecycleTest = path.join(root, "src/battle/battle-action-lifecycle.test.js");
+const legacyActionEndFile = path.join(root, "src/battle/battle-action-end.js");
+const legacyActionStartFile = path.join(root, "src/battle/battle-action-start.js");
 const pauseControlsFile = path.join(root, "src/battle/battle-pause-controls.js");
 const pauseControlsTest = path.join(root, "src/battle/battle-pause-controls.test.js");
 const startRuntimeFile = path.join(root, "src/battle/battle-start-runtime.js");
@@ -284,23 +284,26 @@ function checkActionEventBridgeEntry() {
     )
   ) {
     violations.push(
-      `${rel(actionEventBridgeFile)} battle action-end workflow belongs in runBattleActionEndAutomation(event)`
+      `${rel(actionEventBridgeFile)} battle action lifecycle belongs in runBattleActionLifecycleAutomation(event)`
     );
   }
-  if (!text.includes("BattleActionEndEvent.ACTION_ENDED")) {
+  if (!text.includes("BattleActionLifecycleEvent.ACTION_ENDED")) {
     violations.push(
-      `${rel(actionEventBridgeFile)} must report battle action end through its entry`
+      `${rel(actionEventBridgeFile)} must report battle action end through lifecycle entry`
     );
   }
   if (/BattleMonitorEvent\.ACTION_STARTED|runBattleMonitorAutomation/.test(text)) {
     violations.push(
-      `${rel(actionEventBridgeFile)} battle action-start workflow belongs in runBattleActionStartAutomation(event)`
+      `${rel(actionEventBridgeFile)} battle action lifecycle belongs in runBattleActionLifecycleAutomation(event)`
     );
   }
-  if (!text.includes("BattleActionStartEvent.ACTION_STARTED")) {
+  if (!text.includes("BattleActionLifecycleEvent.ACTION_STARTED")) {
     violations.push(
-      `${rel(actionEventBridgeFile)} must report battle action start through its entry`
+      `${rel(actionEventBridgeFile)} must report battle action start through lifecycle entry`
     );
+  }
+  if (/from\s+["']\.\/battle-action-(?:start|end)\.js["']/.test(text)) {
+    violations.push(`${rel(actionEventBridgeFile)} must not import split action lifecycle entries`);
   }
 }
 
@@ -503,22 +506,31 @@ function checkActionSpeedEntry() {
   }
 }
 
-function checkActionEndEntry() {
-  const text = fs.readFileSync(actionEndFile, "utf8");
-  if (!/export const BattleActionEndEvent\s*=\s*Object\.freeze\(/.test(text)) {
-    violations.push(`${rel(actionEndFile)} must expose BattleActionEndEvent`);
+function checkActionLifecycleEntry() {
+  for (const legacy of [legacyActionEndFile, legacyActionStartFile]) {
+    if (fs.existsSync(legacy)) {
+      violations.push(`${rel(legacy)} legacy split action lifecycle entry must stay deleted`);
+    }
   }
-  if (!/export function runBattleActionEndAutomation\(\s*event\b/.test(text)) {
-    violations.push(`${rel(actionEndFile)} must expose runBattleActionEndAutomation(event)`);
+  const text = fs.readFileSync(actionLifecycleFile, "utf8");
+  if (!/export const BattleActionLifecycleEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(actionLifecycleFile)} must expose BattleActionLifecycleEvent`);
+  }
+  if (!/export function runBattleActionLifecycleAutomation\(\s*event\b/.test(text)) {
+    violations.push(
+      `${rel(actionLifecycleFile)} must expose runBattleActionLifecycleAutomation(event)`
+    );
   }
   if (
-    /\bexport\s+(?:function|const)\s+(?!BattleActionEndEvent\b|runBattleActionEndAutomation\b)/.test(
+    /\bexport\s+(?:function|const)\s+(?!BattleActionLifecycleEvent\b|runBattleActionLifecycleAutomation\b)/.test(
       text
     )
   ) {
-    violations.push(`${rel(actionEndFile)} may export only its event entry`);
+    violations.push(`${rel(actionLifecycleFile)} may export only its event entry`);
   }
   for (const required of [
+    "BattleActionDelayEvent.ACTION_STARTED",
+    "BattleMonitorEvent.ACTION_STARTED",
     "BattleActionSpeedEvent.ACTION_ENDED",
     "BattleActionDelayEvent.ACTION_ENDED",
     "MonsterStatusEvent.REFRESH_COMBATANT_COUNTS",
@@ -530,12 +542,14 @@ function checkActionEndEntry() {
     "runBattleTurnAutomation",
   ]) {
     if (!text.includes(required)) {
-      violations.push(`${rel(actionEndFile)} must make ${required} visible in action-end entry`);
+      violations.push(
+        `${rel(actionLifecycleFile)} must make ${required} visible in action lifecycle entry`
+      );
     }
   }
   if (/BattleMonitorEvent\.COMPLETION_REACHED/.test(text)) {
     violations.push(
-      `${rel(actionEndFile)} completion recording belongs in runBattleCompletionAutomation(event)`
+      `${rel(actionLifecycleFile)} completion recording belongs in runBattleCompletionAutomation(event)`
     );
   }
   for (const file of [
@@ -543,64 +557,27 @@ function checkActionEndEntry() {
     actionEventBridgeFile,
     mainLoopFile,
     roundStartFile,
-    actionEndFile,
-    actionEndTest,
+    actionLifecycleFile,
+    actionLifecycleTest,
   ]) {
     const source = fs.readFileSync(file, "utf8");
     if (
       file !== actionEventBridgeFile &&
-      file !== actionEndFile &&
-      file !== actionEndTest &&
-      /from\s+["']\.\/battle-action-end\.js["']/.test(source)
+      file !== actionLifecycleFile &&
+      file !== actionLifecycleTest &&
+      /from\s+["']\.\/battle-action-lifecycle\.js["']/.test(source)
     ) {
-      violations.push(`${rel(file)} must not import internal battle action end workflow`);
+      violations.push(`${rel(file)} must not import internal battle action lifecycle workflow`);
     }
   }
-}
-
-function checkActionStartEntry() {
-  const text = fs.readFileSync(actionStartFile, "utf8");
-  if (!/export const BattleActionStartEvent\s*=\s*Object\.freeze\(/.test(text)) {
-    violations.push(`${rel(actionStartFile)} must expose BattleActionStartEvent`);
-  }
-  if (!/export function runBattleActionStartAutomation\(\s*event\b/.test(text)) {
-    violations.push(`${rel(actionStartFile)} must expose runBattleActionStartAutomation(event)`);
-  }
-  if (
-    /\bexport\s+(?:function|const)\s+(?!BattleActionStartEvent\b|runBattleActionStartAutomation\b)/.test(
-      text
-    )
-  ) {
-    violations.push(`${rel(actionStartFile)} may export only its event entry`);
-  }
-  for (const required of [
-    "BattleActionDelayEvent.ACTION_STARTED",
-    "BattleMonitorEvent.ACTION_STARTED",
-  ]) {
-    if (!text.includes(required)) {
+  const lines = text.split(/\r?\n/);
+  lines.forEach((line, index) => {
+    if (/from\s+["']\.\/battle-action-(?:start|end)\.js["']/.test(line)) {
       violations.push(
-        `${rel(actionStartFile)} must make ${required} visible in action-start entry`
+        `${rel(actionLifecycleFile)}:${index + 1} must not import split action lifecycle entries`
       );
     }
-  }
-  for (const file of [
-    battleFile,
-    actionEventBridgeFile,
-    mainLoopFile,
-    roundStartFile,
-    actionStartFile,
-    actionStartTest,
-  ]) {
-    const source = fs.readFileSync(file, "utf8");
-    if (
-      file !== actionEventBridgeFile &&
-      file !== actionStartFile &&
-      file !== actionStartTest &&
-      /from\s+["']\.\/battle-action-start\.js["']/.test(source)
-    ) {
-      violations.push(`${rel(file)} must not import internal battle action start workflow`);
-    }
-  }
+  });
 }
 
 function checkPauseControlsEntry() {
@@ -1703,8 +1680,7 @@ checkActionEventBridgeEntry();
 checkActionDelayEntry();
 checkApiBridgeEntry();
 checkActionSpeedEntry();
-checkActionEndEntry();
-checkActionStartEntry();
+checkActionLifecycleEntry();
 checkPauseControlsEntry();
 checkStartRuntimeEntry();
 checkPhysicalSkillRanking();

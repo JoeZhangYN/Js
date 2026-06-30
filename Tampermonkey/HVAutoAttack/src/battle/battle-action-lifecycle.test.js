@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { BattleActionEndEvent, runBattleActionEndAutomation } from "./battle-action-end.js";
+import {
+  BattleActionLifecycleEvent,
+  runBattleActionLifecycleAutomation,
+} from "./battle-action-lifecycle.js";
 import { BattleCompletionOutcome } from "./battle-completion.js";
 
 function makeDeps({ hasCompletion = false, outcome = BattleCompletionOutcome.ONGOING } = {}) {
@@ -25,9 +28,11 @@ function makeDeps({ hasCompletion = false, outcome = BattleCompletionOutcome.ONG
       }),
       battle: null,
     },
+    startDelay: vi.fn(),
     recordSpeed: vi.fn(),
     endDelay: vi.fn(),
     refreshCombatants: vi.fn(),
+    monitorActionStarted: vi.fn(),
     monitorActionEnded: vi.fn(),
     completeBattle: vi.fn(() => ({ outcome })),
     handleRiddle: vi.fn(() => false),
@@ -37,13 +42,27 @@ function makeDeps({ hasCompletion = false, outcome = BattleCompletionOutcome.ONG
   return { deps, nodes };
 }
 
-describe("runBattleActionEndAutomation", () => {
+describe("runBattleActionLifecycleAutomation", () => {
+  it("starts action delay before monitor action tracking", () => {
+    const { deps } = makeDeps();
+
+    expect(
+      runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_STARTED }, deps)
+    ).toBe(true);
+
+    expect(deps.startDelay).toHaveBeenCalledTimes(1);
+    expect(deps.monitorActionStarted).toHaveBeenCalledTimes(1);
+    expect(deps.startDelay.mock.invocationCallOrder[0]).toBeLessThan(
+      deps.monitorActionStarted.mock.invocationCallOrder[0]
+    );
+  });
+
   it("continues the current battle turn when no completion pane is present", () => {
     const { deps } = makeDeps();
 
-    expect(runBattleActionEndAutomation({ type: BattleActionEndEvent.ACTION_ENDED }, deps)).toEqual(
-      { outcome: "ongoing", continued: "turn" }
-    );
+    expect(
+      runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED }, deps)
+    ).toEqual({ outcome: "ongoing", continued: "turn" });
 
     expect(deps.recordSpeed.mock.invocationCallOrder[0]).toBeLessThan(
       deps.endDelay.mock.invocationCallOrder[0]
@@ -54,15 +73,15 @@ describe("runBattleActionEndAutomation", () => {
     expect(deps.completeBattle).not.toHaveBeenCalled();
   });
 
-  it("loads and starts the next round through one action-end entry", () => {
+  it("loads and starts the next round through one action lifecycle entry", () => {
     const { deps, nodes } = makeDeps({
       hasCompletion: true,
       outcome: BattleCompletionOutcome.NEXT_ROUND,
     });
 
-    expect(runBattleActionEndAutomation({ type: BattleActionEndEvent.ACTION_ENDED }, deps)).toEqual(
-      { outcome: "nextRound", continued: "nextRound" }
-    );
+    expect(
+      runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED }, deps)
+    ).toEqual({ outcome: "nextRound", continued: "nextRound" });
 
     expect(nodes["#pane_completion"].removeChild).toHaveBeenCalledWith(nodes["#btcp"]);
     expect(deps.post).toHaveBeenCalledWith("https://example.test/battle", expect.any(Function));
@@ -79,10 +98,16 @@ describe("runBattleActionEndAutomation", () => {
     });
     deps.handleRiddle.mockReturnValue(true);
 
-    runBattleActionEndAutomation({ type: BattleActionEndEvent.ACTION_ENDED }, deps);
+    runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED }, deps);
 
     expect(nodes["#battle_main"].replaceChild).not.toHaveBeenCalled();
     expect(deps.startRound).not.toHaveBeenCalled();
     expect(deps.runTurn).not.toHaveBeenCalled();
+  });
+
+  it("rejects unknown events", () => {
+    const { deps } = makeDeps();
+
+    expect(runBattleActionLifecycleAutomation({ type: "unknown" }, deps)).toBe(false);
   });
 });

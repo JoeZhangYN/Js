@@ -7,8 +7,7 @@ import {
 const mocks = vi.hoisted(() => ({
   cE: vi.fn((tag) => document.createElement(tag)),
   gE: vi.fn((selector) => document.querySelector(selector)),
-  runBattleActionEndAutomation: vi.fn(),
-  runBattleActionStartAutomation: vi.fn(),
+  runBattleActionLifecycleAutomation: vi.fn(),
   runBattleApiBridgeAutomation: vi.fn(),
 }));
 
@@ -16,13 +15,12 @@ vi.mock("../dom/query.js", () => ({
   cE: mocks.cE,
   gE: mocks.gE,
 }));
-vi.mock("./battle-action-end.js", () => ({
-  BattleActionEndEvent: Object.freeze({ ACTION_ENDED: "actionEnded" }),
-  runBattleActionEndAutomation: mocks.runBattleActionEndAutomation,
-}));
-vi.mock("./battle-action-start.js", () => ({
-  BattleActionStartEvent: Object.freeze({ ACTION_STARTED: "actionStarted" }),
-  runBattleActionStartAutomation: mocks.runBattleActionStartAutomation,
+vi.mock("./battle-action-lifecycle.js", () => ({
+  BattleActionLifecycleEvent: Object.freeze({
+    ACTION_STARTED: "actionStarted",
+    ACTION_ENDED: "actionEnded",
+  }),
+  runBattleActionLifecycleAutomation: mocks.runBattleActionLifecycleAutomation,
 }));
 vi.mock("./battle-api-bridge.js", () => ({
   BattleApiBridgeEvent: Object.freeze({ INSTALL: "install" }),
@@ -46,14 +44,18 @@ describe("runBattleActionEventBridgeAutomation", () => {
     expect(mocks.runBattleApiBridgeAutomation).toHaveBeenCalledWith({ type: "install" });
   });
 
-  it("routes action start and end node clicks to their entries", () => {
+  it("routes action start and end node clicks to the lifecycle entry", () => {
     runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL });
 
     document.getElementById("eventStart").click();
     document.getElementById("eventEnd").click();
 
-    expect(mocks.runBattleActionStartAutomation).toHaveBeenCalledWith({ type: "actionStarted" });
-    expect(mocks.runBattleActionEndAutomation).toHaveBeenCalledWith({ type: "actionEnded" });
+    expect(mocks.runBattleActionLifecycleAutomation).toHaveBeenCalledWith({
+      type: "actionStarted",
+    });
+    expect(mocks.runBattleActionLifecycleAutomation).toHaveBeenCalledWith({
+      type: "actionEnded",
+    });
   });
 
   it("rejects unknown events", () => {

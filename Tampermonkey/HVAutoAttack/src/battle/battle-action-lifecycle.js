@@ -16,9 +16,11 @@ import { runBattleTurnAutomation } from "./main-loop.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./new-round.js";
 
+const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
 
-export const BattleActionEndEvent = Object.freeze({
+export const BattleActionLifecycleEvent = Object.freeze({
+  ACTION_STARTED: EVENT_ACTION_STARTED,
   ACTION_ENDED: EVENT_ACTION_ENDED,
 });
 
@@ -43,6 +45,12 @@ function continueNextRound(deps) {
   });
 }
 
+function runActionStarted(deps) {
+  deps.startDelay();
+  deps.monitorActionStarted();
+  return true;
+}
+
 function handleCompletion(deps) {
   const completion = deps.completeBattle();
   if (completion.outcome === BattleCompletionOutcome.NEXT_ROUND) {
@@ -62,18 +70,27 @@ function runActionEnded(deps) {
   return { outcome: BattleCompletionOutcome.ONGOING, continued: "turn" };
 }
 
-export function runBattleActionEndAutomation(
-  event = { type: EVENT_ACTION_ENDED },
+const lifecycleHandlers = Object.freeze({
+  [EVENT_ACTION_STARTED]: (deps) => runActionStarted(deps),
+  [EVENT_ACTION_ENDED]: (deps) => runActionEnded(deps),
+});
+
+export function runBattleActionLifecycleAutomation(
+  event = { type: EVENT_ACTION_STARTED },
   deps = {
     gE,
     post,
     href: () => window.location.href,
     unsafeWindow,
+    startDelay: () =>
+      runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }),
     recordSpeed: () =>
       runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.ACTION_ENDED }),
     endDelay: () => runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }),
     refreshCombatants: () =>
       runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS }),
+    monitorActionStarted: () =>
+      runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_STARTED }),
     monitorActionEnded: () => runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_ENDED }),
     completeBattle: () =>
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }),
@@ -86,6 +103,5 @@ export function runBattleActionEndAutomation(
     runTurn: runBattleTurnAutomation,
   }
 ) {
-  if (event.type === EVENT_ACTION_ENDED) return runActionEnded(deps);
-  return undefined;
+  return lifecycleHandlers[event.type]?.(deps) ?? false;
 }

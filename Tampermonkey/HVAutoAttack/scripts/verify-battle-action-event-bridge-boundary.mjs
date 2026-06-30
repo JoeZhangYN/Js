@@ -8,6 +8,8 @@ const ownerTest = path.normalize("src/battle/battle-action-event-bridge.test.js"
 const apiBridge = path.normalize("src/battle/battle-api-bridge.js");
 const apiBridgeTest = path.normalize("src/battle/battle-api-bridge.test.js");
 const legacyReloader = path.normalize("src/battle/reloader.js");
+const legacyActionStart = path.normalize("src/battle/battle-action-start.js");
+const legacyActionEnd = path.normalize("src/battle/battle-action-end.js");
 const violations = [];
 
 function rel(file) {
@@ -45,6 +47,9 @@ function checkFile(file) {
   if (/from\s+["']\.\/reloader\.js["']/.test(text)) {
     violations.push(`${rel(file)} must not import legacy reloader.js`);
   }
+  if (/from\s+["']\.\/battle-action-(?:start|end)\.js["']/.test(text)) {
+    violations.push(`${rel(file)} must report action events through battle-action-lifecycle`);
+  }
 }
 
 function requireText(relative, required) {
@@ -59,14 +64,22 @@ function requireText(relative, required) {
 if (fs.existsSync(path.join(root, legacyReloader))) {
   violations.push(`${legacyReloader.replaceAll("\\", "/")} legacy bridge file must stay deleted`);
 }
+for (const legacy of [legacyActionStart, legacyActionEnd]) {
+  if (fs.existsSync(path.join(root, legacy))) {
+    violations.push(
+      `${legacy.replaceAll("\\", "/")} legacy action lifecycle split must stay deleted`
+    );
+  }
+}
 
 walk(srcDir);
 
 requireText(owner, [
   "BattleActionEventBridgeEvent",
   "runBattleActionEventBridgeAutomation",
-  "BattleActionStartEvent.ACTION_STARTED",
-  "BattleActionEndEvent.ACTION_ENDED",
+  "BattleActionLifecycleEvent.ACTION_STARTED",
+  "BattleActionLifecycleEvent.ACTION_ENDED",
+  "runBattleActionLifecycleAutomation",
   "BattleApiBridgeEvent.INSTALL",
   "eventStart",
   "eventEnd",
