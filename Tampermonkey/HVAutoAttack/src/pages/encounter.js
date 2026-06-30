@@ -141,17 +141,28 @@ async function runLobbyTick(event) {
   return continueAfterLoadedEncounter(event);
 }
 
+function markRandomEncounterStarted(event) {
+  if (!isAutomaticEncounterEnabled()) return { claimed: false, skipped: true };
+  runEncounterStateAutomation({
+    type: EncounterStateEvent.MARK_STARTED,
+    search: event.search,
+  });
+  return { claimed: false };
+}
+
+const encounterEventHandlers = Object.freeze({
+  [EVENT_LOBBY_TICK]: runLobbyTick,
+  [EVENT_RANDOM_ENCOUNTER_STARTED]: markRandomEncounterStarted,
+  [EVENT_WIDGET_TICK]: executeWidgetEvent,
+  [EVENT_WIDGET_LINK_FOUND]: executeWidgetEvent,
+  [EVENT_WIDGET_STARTED_ENCOUNTER]: executeWidgetEvent,
+  [EVENT_WIDGET_RESET_DAY]: executeWidgetEvent,
+  [EVENT_WIDGET_CLICKED]: executeWidgetEvent,
+  [EVENT_WIDGET_TIMER_ELAPSED]: executeWidgetEvent,
+  [EVENT_WIDGET_NEWS_LOADED]: executeWidgetEvent,
+});
+
 export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
-  if (event.type === EVENT_RANDOM_ENCOUNTER_STARTED) {
-    if (!isAutomaticEncounterEnabled()) return { claimed: false, skipped: true };
-    runEncounterStateAutomation({
-      type: EncounterStateEvent.MARK_STARTED,
-      search: event.search,
-    });
-    return { claimed: false };
-  }
-  if (event.type?.startsWith("widget")) {
-    return executeWidgetEvent(event);
-  }
-  return runLobbyTick(event);
+  const handler = encounterEventHandlers[event.type] || encounterEventHandlers[EVENT_LOBBY_TICK];
+  return handler(event);
 }

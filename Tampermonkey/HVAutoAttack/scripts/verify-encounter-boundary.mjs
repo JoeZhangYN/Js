@@ -243,6 +243,23 @@ for (const required of ["isAutomaticEncounterEnabled", "EVENT_RANDOM_ENCOUNTER_S
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
+if (!ownerText.includes("const encounterEventHandlers")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route encounter events through a handler table`);
+}
+const ownerEntryMatch = ownerText.match(/export function runEncounterAutomation[\s\S]*?\n}/);
+if (!ownerEntryMatch) {
+  violations.push(`${owner.replaceAll("\\", "/")} must expose runEncounterAutomation(event)`);
+} else {
+  const entryBody = ownerEntryMatch[0];
+  if (/if\s*\(\s*event\.type\s*===/.test(entryBody) || /event\.type\?\.startsWith/.test(entryBody)) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce event.type branching`);
+  }
+  for (const internal of ["runLobbyTick(", "markRandomEncounterStarted(", "executeWidgetEvent("]) {
+    if (entryBody.includes(internal)) {
+      violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through encounterEventHandlers`);
+    }
+  }
+}
 const optionGateText = fs.readFileSync(path.join(root, optionGateFile), "utf8");
 for (const required of ["ENCOUNTER_OPTION_KEY", "OptionEvent.READ_FIELD"]) {
   if (!optionGateText.includes(required)) {

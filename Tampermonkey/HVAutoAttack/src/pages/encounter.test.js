@@ -156,4 +156,5 @@ describe("runEncounterAutomation", () => {
       newTab: true,
     });
   });
+
 });
