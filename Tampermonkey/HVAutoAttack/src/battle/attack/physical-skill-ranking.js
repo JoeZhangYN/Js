@@ -7,7 +7,6 @@
 // - score: ≥ 0；0 视为不可用；越高越好
 // - dispatch: 若被选中调用此函数执行副作用
 // - explain: 可选打分理由（debug 日志用）
-import { OptionEvent, runOptionAutomation } from "../../state/option.js";
 
 /**
  * @typedef {object} SkillCandidate
@@ -21,19 +20,14 @@ import { OptionEvent, runOptionAutomation } from "../../state/option.js";
  * PURE 选择：挑最高分（>0）候选并打日志，**不执行**（无 dispatch）。无可行候选返 null。
  * 供 decideAttack 物理技能分支复用（候选可为 {code,...} 或 {name,...}，日志取 name ?? code）。
  * @param {Array<{score:number, name?:string, code?:string, explain?:string}>} candidates
+ * @param {{debugLog?: boolean}} options
  * @returns {object|null} 最高分候选（原对象）
  */
-export function pickByUtility(candidates) {
+export function pickByUtility(candidates, options = {}) {
   const valid = candidates.filter((c) => c && c.score > 0).sort((a, b) => b.score - a.score);
   if (valid.length === 0) return null;
   const winner = valid[0];
-  if (
-    runOptionAutomation({
-      type: OptionEvent.READ_FIELD,
-      key: "dynamicHealLog",
-      fallback: false,
-    })
-  ) {
+  if (options.debugLog) {
     const label = (c) => c.name ?? c.code;
     const runners = valid
       .slice(1, 3)

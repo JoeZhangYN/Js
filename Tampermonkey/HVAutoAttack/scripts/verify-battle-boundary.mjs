@@ -817,9 +817,9 @@ function checkPhysicalSkillRanking() {
     );
   }
   const text = fs.readFileSync(physicalSkillRankingFile, "utf8");
-  if (!text.includes("OptionEvent.READ_FIELD")) {
+  if (/OptionEvent|runOptionAutomation/.test(text)) {
     violations.push(
-      `${rel(physicalSkillRankingFile)} must read ranking debug options through option entry`
+      `${rel(physicalSkillRankingFile)} must not read options; attack entry passes ranking debug facts`
     );
   }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
@@ -1643,6 +1643,9 @@ function checkAttackEntry() {
   }
   if (/decideAttack\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideAttackFile)} must not expose opt/snap attack input`);
+  }
+  if (!ownerText.includes("dynamicHealLog")) {
+    violations.push(`${rel(decideAttackFile)} must pass ranking debug option into attack ranking`);
   }
   const scoringText = fs.readFileSync(physicalSkillScoringFile, "utf8");
   for (const required of ["scorePhysicalSkillCandidates", "event.skillReady", "skillBaseScore"]) {

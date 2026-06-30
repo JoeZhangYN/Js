@@ -156,7 +156,7 @@ function decidePlan(opt, event) {
     const scored = scorePhysicalSkillCandidates(opt, event, {
       firstMonsterStunned: !!firstStunned,
     });
-    const winner = pickByUtility(scored);
+    const winner = pickByUtility(scored, { debugLog: !!opt.dynamicHealLog });
     if (winner) {
       // T3 多怪 merciful AoE：斩杀第一个流血残血怪（原 attack 只点首个就 return）
       let mercifulTargetId = null;

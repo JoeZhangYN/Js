@@ -1,20 +1,6 @@
 // 6B-1：pickByUtility 纯选择回归锁(选最高分 >0,无副作用)。
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { pickByUtility, aoeScore } from "./physical-skill-ranking.js";
-
-const mocks = vi.hoisted(() => ({
-  runOptionAutomation: vi.fn(),
-}));
-
-vi.mock("../../state/option.js", () => ({
-  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
-  runOptionAutomation: mocks.runOptionAutomation,
-}));
-
-beforeEach(() => {
-  mocks.runOptionAutomation.mockReset();
-  mocks.runOptionAutomation.mockReturnValue(false);
-});
 
 describe("pickByUtility", () => {
   it("选最高分候选", () => {
@@ -59,20 +45,29 @@ describe("pickByUtility", () => {
     expect(aoeScore(100, 0)).toBe(100);
   });
 
-  it("reads utility debug logging through the option entry", () => {
+  it("默认不打 debug log，保持纯选择安静", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    mocks.runOptionAutomation.mockReturnValue(true);
 
     pickByUtility([
       { code: "T1", score: 40 },
       { code: "OFC", score: 100, explain: "aoe" },
     ]);
 
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
-      type: "readField",
-      key: "dynamicHealLog",
-      fallback: false,
-    });
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
+  });
+
+  it("debugLog:true 时输出 utility debug logging", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    pickByUtility(
+      [
+        { code: "T1", score: 40 },
+        { code: "OFC", score: 100, explain: "aoe" },
+      ],
+      { debugLog: true }
+    );
+
     expect(log).toHaveBeenCalledWith(
       expect.stringContaining("[physical-skill-ranking] OFC score=100")
     );
