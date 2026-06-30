@@ -5,6 +5,7 @@
 import { checkCondition } from "../../settings/condition-eval.js";
 import { decideGem } from "./decide-gem.js";
 import { decideScroll } from "./decide-scroll.js";
+import { gemFacts, potionFacts, scrollFacts, stallTopupFacts } from "./item-facts.js";
 import { dynamicHpThreshold } from "../dynamic-threshold.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { isPotionWasteful } from "../potion-economy.js";
@@ -29,19 +30,27 @@ export const BattleItemDecisionEvent = Object.freeze({
 export function runBattleItemDecision(event = {}) {
   switch (event.type) {
     case DECIDE_GEM:
-      return decideGemUse(event);
+      return decideGemUse(itemDecisionInput(event, gemFacts));
     case DECIDE_POTION:
-      return decidePotion(event);
+      return decidePotion(itemDecisionInput(event, potionFacts));
     case DECIDE_STALL_TOPUP:
-      return decideStallTopup(event);
+      return decideStallTopup(itemDecisionInput(event, stallTopupFacts));
     case DECIDE_SCROLL:
-      return decideScroll(event);
+      return decideScroll(itemDecisionInput(event, scrollFacts));
     default:
       return { kind: "item-plan", plan: { type: "noop" } };
   }
 }
 
-function stallTopupFacts(event) {
+function itemDecisionInput(event, facts) {
+  if (!event?.snap) return event;
+  return {
+    opt: event.opt,
+    ...facts(event.snap),
+  };
+}
+
+function stallTopupRuntimeFacts(event) {
   return {
     manaPercent: event?.manaPercent,
     spiritPercent: event?.spiritPercent,
@@ -163,7 +172,7 @@ function decideStallTopup(event = {}) {
   for (const potId of runBattleStallModeAutomation({
     type: BattleStallModeEvent.READ_TOPUP_CANDIDATES,
     opt,
-    ...stallTopupFacts(event),
+    ...stallTopupRuntimeFacts(event),
   })) {
     attempts.push({ kind: "draught", id: potId });
   }

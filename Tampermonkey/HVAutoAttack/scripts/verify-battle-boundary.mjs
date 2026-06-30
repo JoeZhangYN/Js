@@ -2121,6 +2121,11 @@ function checkBattleItemDecisionEntry() {
     "DECIDE_POTION",
     "DECIDE_STALL_TOPUP",
     "DECIDE_SCROLL",
+    "itemDecisionInput",
+    "gemFacts",
+    "potionFacts",
+    "stallTopupFacts",
+    "scrollFacts",
   ]) {
     if (!itemText.includes(required)) {
       violations.push(`${rel(decideItemFile)} must expose item decision entry ${required}`);
@@ -2146,6 +2151,7 @@ function checkBattleItemDecisionEntry() {
     "BattleItemDecisionEvent.DECIDE_POTION",
     "BattleItemDecisionEvent.DECIDE_STALL_TOPUP",
     "BattleItemDecisionEvent.DECIDE_SCROLL",
+    "snap",
   ]) {
     if (!itemDecisionConsumersText.includes(required)) {
       violations.push(`${rel(battleRulesFile)} must call item decisions through ${required}`);
@@ -2679,6 +2685,7 @@ function checkBattleRuleFactMappers() {
   }
 
   const allowedAttackFactsImporters = new Set([decideAttackActionFile]);
+  const allowedItemFactsImporters = new Set([decideItemFile]);
   const allowedBuffFactsImporters = new Set([decideBuffPreparationFile]);
   const allowedDebuffFactsImporters = new Set([decideOffensiveDebuffFile]);
   for (const relative of ["src/battle", "src/core"]) {
@@ -2696,6 +2703,12 @@ function checkBattleRuleFactMappers() {
         !allowedAttackFactsImporters.has(file)
       ) {
         violations.push(`${rel(file)} must not bypass attack action entry for attack fact mapping`);
+      }
+      if (
+        /from\s+["'][^"']*(?:^|\/)item-facts\.js["']/.test(text) &&
+        !allowedItemFactsImporters.has(file)
+      ) {
+        violations.push(`${rel(file)} must not bypass item decision entry for item fact mapping`);
       }
       if (
         /from\s+["'][^"']*(?:^|\/)buff-facts\.js["']/.test(text) &&

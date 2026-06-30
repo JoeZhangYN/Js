@@ -7,7 +7,6 @@ import { autoPauseFacts } from "./pause/auto-pause-facts.js";
 import { decideFlee } from "./escape/decide-flee.js";
 import { fleeFacts } from "./escape/flee-facts.js";
 import { BattleItemDecisionEvent, runBattleItemDecision } from "./item/decide-item.js";
-import { gemFacts, potionFacts, scrollFacts, stallTopupFacts } from "./item/item-facts.js";
 
 const EVENT_DECIDE = "decide";
 
@@ -24,26 +23,26 @@ function decideSurvivalResult(snap = {}, opt = {}) {
       runBattleItemDecision({
         type: BattleItemDecisionEvent.DECIDE_GEM,
         opt,
-        ...gemFacts(snap),
+        snap,
       }),
     () =>
       runBattleItemDecision({
         type: BattleItemDecisionEvent.DECIDE_POTION,
         opt,
-        ...potionFacts(snap),
+        snap,
       }),
     () =>
       runBattleItemDecision({
         type: BattleItemDecisionEvent.DECIDE_STALL_TOPUP,
         opt,
-        ...stallTopupFacts(snap),
+        snap,
       }),
     () => decideDefend({ opt, ...defendFacts(snap) }),
     () =>
       runBattleItemDecision({
         type: BattleItemDecisionEvent.DECIDE_SCROLL,
         opt,
-        ...scrollFacts(snap),
+        snap,
       }),
   ]) {
     const result = decide();

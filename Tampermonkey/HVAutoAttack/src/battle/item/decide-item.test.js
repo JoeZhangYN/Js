@@ -248,6 +248,15 @@ describe("decideStallTopup", () => {
 });
 
 describe("decideScroll", () => {
+  it("entry maps snap facts internally", () => {
+    const result = runBattleItemDecision({
+      type: BattleItemDecisionEvent.DECIDE_SCROLL,
+      opt: { scrollSwitch: true, scroll: { Pr: true }, scrollRoundType: { arena: true } },
+      snap: snap({ playerBuffs: [] }),
+    });
+    expect(result.plan).toEqual({ type: "scroll", candidates: [13111] });
+  });
+
   it("启用 + buff 未上 → 收集 scroll item id", () => {
     // Pr = Scroll of Protection（id 13111, img1 "protection"）
     const p = scrollPlan(
