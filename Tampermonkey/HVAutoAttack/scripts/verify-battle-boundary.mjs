@@ -88,6 +88,8 @@ const decideSurvivalActionFile = path.join(root, "src/battle/decide-survival-act
 const legacyStepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/battle-round-start.js");
+const roundLifecycleFile = path.join(root, "src/battle/round-lifecycle.js");
+const roundStartLogFile = path.join(root, "src/battle/round-start-log.js");
 const legacyNewRoundFile = path.join(root, "src/battle/new-round.js");
 const battleRulesFile = actionDecisionFile;
 const legacyBattleRulesFile = path.join(root, "src/battle/rules/index.js");
@@ -349,6 +351,8 @@ function checkRoundStartEntry() {
     violations.push("src/battle/new-round.js legacy round start path must stay deleted");
   }
   const text = fs.readFileSync(roundStartFile, "utf8");
+  const roundLifecycleText = fs.readFileSync(roundLifecycleFile, "utf8");
+  const roundStartLogText = fs.readFileSync(roundStartLogFile, "utf8");
   if (!/export function runBattleRoundStartAutomation\(/.test(text)) {
     violations.push(`${rel(roundStartFile)} must expose runBattleRoundStartAutomation(event)`);
   }
@@ -370,6 +374,29 @@ function checkRoundStartEntry() {
   }
   if (/from\s+["']\.\/new-round\.js["']/.test(text)) {
     violations.push(`${rel(roundStartFile)} must not import legacy new-round path`);
+  }
+  const startRoundLifecycleBody =
+    roundLifecycleText.match(/function startRoundLifecycle\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+  const readyRoundLifecycleBody =
+    roundLifecycleText.match(/function readyRoundLifecycle\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (
+    startRoundLifecycleBody.indexOf("AutoTuneEvent.ROUND_STARTED") === -1 ||
+    startRoundLifecycleBody.indexOf("BattleTurnEvent.ROUND_STARTED") === -1 ||
+    startRoundLifecycleBody.indexOf("AutoTuneEvent.ROUND_STARTED") >
+      startRoundLifecycleBody.indexOf("BattleTurnEvent.ROUND_STARTED")
+  ) {
+    violations.push(`${rel(roundLifecycleFile)} must start auto-tune before battle-turn round runtime`);
+  }
+  if (
+    readyRoundLifecycleBody.indexOf("BattleSkillUsageEvent.RESET_ROUND") === -1 ||
+    readyRoundLifecycleBody.indexOf("MonsterKnowledgeEvent.ROUND_STARTED") === -1 ||
+    readyRoundLifecycleBody.indexOf("BattleSkillUsageEvent.RESET_ROUND") >
+      readyRoundLifecycleBody.indexOf("MonsterKnowledgeEvent.ROUND_STARTED")
+  ) {
+    violations.push(`${rel(roundLifecycleFile)} must reset skill usage before monster knowledge round start`);
+  }
+  if (!/const BATTLE_LOG_SELECTOR = ["']#textlog>tbody>tr>td["']/.test(roundStartLogText)) {
+    violations.push(`${rel(roundStartLogFile)} must own the battle log selector constant`);
   }
 }
 

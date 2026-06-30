@@ -105,6 +105,29 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(roundLifecycleText)) {
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(roundStartLogText)) {
   violations.push("src/battle/round-start-log.js must dispatch events through handler table");
 }
+const startRoundLifecycleBody =
+  roundLifecycleText.match(/function startRoundLifecycle\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+const readyRoundLifecycleBody =
+  roundLifecycleText.match(/function readyRoundLifecycle\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (
+  startRoundLifecycleBody.indexOf("AutoTuneEvent.ROUND_STARTED") === -1 ||
+  startRoundLifecycleBody.indexOf("BattleTurnEvent.ROUND_STARTED") === -1 ||
+  startRoundLifecycleBody.indexOf("AutoTuneEvent.ROUND_STARTED") >
+    startRoundLifecycleBody.indexOf("BattleTurnEvent.ROUND_STARTED")
+) {
+  violations.push("src/battle/round-lifecycle.js must start auto-tune before battle-turn round runtime");
+}
+if (
+  readyRoundLifecycleBody.indexOf("BattleSkillUsageEvent.RESET_ROUND") === -1 ||
+  readyRoundLifecycleBody.indexOf("MonsterKnowledgeEvent.ROUND_STARTED") === -1 ||
+  readyRoundLifecycleBody.indexOf("BattleSkillUsageEvent.RESET_ROUND") >
+    readyRoundLifecycleBody.indexOf("MonsterKnowledgeEvent.ROUND_STARTED")
+) {
+  violations.push("src/battle/round-lifecycle.js must reset skill usage before monster knowledge round start");
+}
+if (!/const BATTLE_LOG_SELECTOR = ["']#textlog>tbody>tr>td["']/.test(roundStartLogText)) {
+  violations.push("src/battle/round-start-log.js must own the battle log selector constant");
+}
 const pauseGateIndex = ownerText.indexOf("if (staminaOutcome.paused)");
 const prepareIndex = ownerText.indexOf("MonsterStatusEvent.PREPARE_ROUND_START");
 const recordCountIndex = ownerText.indexOf("BattleRoundEvent.RECORD_START_COUNT");
