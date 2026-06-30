@@ -8,6 +8,10 @@ export const BattleChannelExecutionEvent = Object.freeze({
   APPLY_PLAN: EVENT_APPLY_PLAN,
 });
 
+const battleChannelExecutionEventHandlers = Object.freeze({
+  [EVENT_APPLY_PLAN]: (event) => applyChannelPlan(event.plan),
+});
+
 /**
  * @param {import("./decide-channel.js").ChannelPlan} plan
  * @returns {boolean} acted —— 是否已触发副作用
@@ -25,6 +29,5 @@ function applyChannelPlan(plan) {
 }
 
 export function runBattleChannelExecution(event = { type: EVENT_APPLY_PLAN }) {
-  if (event.type === EVENT_APPLY_PLAN) return applyChannelPlan(event.plan);
-  return false;
+  return battleChannelExecutionEventHandlers[event.type]?.(event) ?? false;
 }

@@ -33,7 +33,9 @@ describe("runBattleChannelExecution", () => {
     });
   });
 
-  it("rejects unknown events", () => {
+  it("rejects unknown channel execution events", () => {
     expect(runBattleChannelExecution({ type: "unknown" })).toBe(false);
+
+    expect(mocks.runBattleSkillCommand).not.toHaveBeenCalled();
   });
 });
