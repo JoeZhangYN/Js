@@ -20,6 +20,7 @@ const SRC_DIR = fileURLToPath(new URL("../src", import.meta.url));
 function isDecideFile(rel) {
   if (rel === "battle/battle-action-sequence.js") return true;
   if (rel === "battle/battle-action-buff-sequence.js") return true;
+  if (rel === "battle/battle-action-debuff-sequence.js") return true;
   if (rel === "battle/battle-action-survival-sequence.js") return true;
   const name = rel.split("/").pop();
   return name.startsWith("decide-") && !name.endsWith(".test.js");

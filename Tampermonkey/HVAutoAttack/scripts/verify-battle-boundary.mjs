@@ -55,6 +55,7 @@ const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const actionSequenceFile = path.join(root, "src/battle/battle-action-sequence.js");
 const buffActionSequenceFile = path.join(root, "src/battle/battle-action-buff-sequence.js");
+const debuffActionSequenceFile = path.join(root, "src/battle/battle-action-debuff-sequence.js");
 const survivalActionSequenceFile = path.join(root, "src/battle/battle-action-survival-sequence.js");
 const legacyStepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
@@ -95,6 +96,17 @@ const violations = [];
 
 function rel(file) {
   return path.normalize(path.relative(root, file)).replaceAll("\\", "/");
+}
+
+function readBattleActionRulesText() {
+  return [
+    actionSequenceFile,
+    survivalActionSequenceFile,
+    buffActionSequenceFile,
+    debuffActionSequenceFile,
+  ]
+    .map((file) => fs.readFileSync(file, "utf8"))
+    .join("\n");
 }
 
 function checkInit() {
@@ -326,6 +338,7 @@ function checkTurnEntry() {
     "orderedBattleActionRules",
     "survivalActionRules",
     "buffPreparationActionRules",
+    "offensiveDebuffActionRules",
     "attack",
   ]) {
     if (!actionSequenceText.includes(required)) {
@@ -344,6 +357,19 @@ function checkTurnEntry() {
   ]) {
     if (!buffActionSequenceText.includes(required)) {
       violations.push(`${rel(buffActionSequenceFile)} must own buff action ${required}`);
+    }
+  }
+  const debuffActionSequenceText = fs.readFileSync(debuffActionSequenceFile, "utf8");
+  for (const required of [
+    "offensiveDebuffActionRules",
+    "burstControl",
+    "bossImperil",
+    "castWeakenAll",
+    "castImperilAll",
+    "useDeSkill",
+  ]) {
+    if (!debuffActionSequenceText.includes(required)) {
+      violations.push(`${rel(debuffActionSequenceFile)} must own debuff action ${required}`);
     }
   }
   const survivalActionSequenceText = fs.readFileSync(survivalActionSequenceFile, "utf8");
@@ -381,6 +407,12 @@ function checkTurnEntry() {
         /from\s+["'][^"']*battle-action-buff-sequence\.js["']/.test(source)
       ) {
         violations.push(`${rel(file)} must use runBattleActionDecision(), not buff sequence`);
+      }
+      if (
+        file !== actionSequenceFile &&
+        /from\s+["'][^"']*battle-action-debuff-sequence\.js["']/.test(source)
+      ) {
+        violations.push(`${rel(file)} must use runBattleActionDecision(), not debuff sequence`);
       }
     }
   }
@@ -1057,7 +1089,7 @@ function checkSnapshot() {
 }
 
 function checkBattleRulesRuntimeContext() {
-  const text = fs.readFileSync(battleRulesFile, "utf8");
+  const text = readBattleActionRulesText();
   if (/\bwhen\s*:/.test(text)) {
     violations.push(
       `${rel(battleRulesFile)} must not define rule.when; business gates belong in decide entries`
@@ -1170,7 +1202,7 @@ function checkBossImperilEntry() {
   if (/\bevent\.snap\b/.test(ownerText)) {
     violations.push(`${rel(bossImperilFile)} must not consume snap-shaped event input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   if (!rulesText.includes("runBossImperilAutomation")) {
     violations.push(`${rel(battleRulesFile)} must read boss Imperil decisions through their entry`);
   }
@@ -1294,7 +1326,7 @@ function checkBurstControlEntry() {
   if (/decideBurstControl\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(burstControlFile)} must not expose opt/snap decision input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const burstRule =
     rulesText.match(/name:\s*["']burstControl["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideBurstControl\(\s*opt\s*,\s*snap\s*\)/.test(burstRule)) {
@@ -1320,7 +1352,7 @@ function checkCriticalBuffEntry() {
   if (/decideCriticalBuff\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideCriticalBuffFile)} must not expose opt/snap decision input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const criticalRule =
     rulesText.match(/name:\s*["']criticalBuffGuard["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideCriticalBuff\(\s*opt\s*,\s*snap\s*\)/.test(criticalRule)) {
@@ -1347,7 +1379,7 @@ function checkInfusionEntry() {
   if (/decideInfusion\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideInfusionFile)} must not expose opt/snap infusion input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const infusionRule =
     rulesText.match(/name:\s*["']useInfusions["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideInfusion\(\s*opt\s*,\s*snap\s*\)/.test(infusionRule)) {
@@ -1378,7 +1410,7 @@ function checkChannelEntry() {
   if (/decideChannel\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideChannelFile)} must not expose opt/snap decision input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const channelRule =
     rulesText.match(/name:\s*["']useChannelSkill["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideChannel\(\s*opt\s*,\s*snap\s*\)/.test(channelRule)) {
@@ -1410,7 +1442,7 @@ function checkBuffEntry() {
   if (/decideBuff\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideBuffFile)} must not expose opt/snap buff input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const buffRule =
     rulesText.match(/name:\s*["']useBuffSkill["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideBuff\(\s*opt\s*,\s*snap\s*\)/.test(buffRule)) {
@@ -1443,7 +1475,7 @@ function checkSingleDebuffEntry() {
   if (/decideDeSkill\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideDeSkillFile)} must not expose opt/snap single-debuff input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const useDeSkillRule =
     rulesText.match(/name:\s*["']useDeSkill["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideDeSkill\(\s*opt\s*,\s*snap\s*\)/.test(useDeSkillRule)) {
@@ -1482,7 +1514,7 @@ function checkAllDebuffEntry() {
   if (/decideCastDebuffOnAll\s*\(\s*opt\s*,\s*snap\s*,/.test(ownerText)) {
     violations.push(`${rel(decideCastAllFile)} must not expose opt/snap all-debuff input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   for (const ruleName of ["castWeakenAll", "castImperilAll"]) {
     const rule =
       rulesText.match(
@@ -1526,7 +1558,7 @@ function checkItemScrollEntry() {
   if (/decideScroll\s*\(\s*opt\s*,\s*snap\s*\)/.test(itemText)) {
     violations.push(`${rel(decideScrollFile)} must not expose opt/snap scroll input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const scrollRule =
     rulesText.match(/name:\s*["']useScroll["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideScroll\(\s*opt\s*,\s*snap\s*\)/.test(scrollRule)) {
@@ -1559,7 +1591,7 @@ function checkItemGemEntry() {
   if (/decideGem\s*\(\s*opt\s*,\s*snap\s*,\s*gemName\s*\)/.test(gemText)) {
     violations.push(`${rel(decideGemFile)} must not expose opt/snap gem helper input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const gemRule =
     rulesText.match(/name:\s*["']useGem["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideGemUse\(\s*opt\s*,\s*snap\s*\)/.test(gemRule)) {
@@ -1589,7 +1621,7 @@ function checkItemStallTopupEntry() {
   if (/decideStallTopup\s*\(\s*opt\s*,\s*snap\s*\)/.test(itemText)) {
     violations.push(`${rel(decideItemFile)} must not expose opt/snap stall top-up input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const stallRule =
     rulesText.match(/name:\s*["']stallTopup["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideStallTopup\(\s*opt\s*,\s*snap\s*\)/.test(stallRule)) {
@@ -1614,7 +1646,7 @@ function checkPotionEntry() {
   if (/decidePotion\s*\(\s*opt\s*,\s*snap\s*\)/.test(itemText)) {
     violations.push(`${rel(decideItemFile)} must not expose opt/snap potion input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const deadSoonRule =
     rulesText.match(/name:\s*["']deadSoon["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decidePotion\(\s*opt\s*,\s*snap\s*\)/.test(deadSoonRule)) {
@@ -1637,7 +1669,7 @@ function checkDefendEntry() {
   if (/decideDefend\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideDefendFile)} must not expose opt/snap defend input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const defendRule =
     rulesText.match(/name:\s*["']defend["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideDefend\(\s*opt\s*,\s*snap\s*\)/.test(defendRule)) {
@@ -1660,7 +1692,7 @@ function checkAutoPauseEntry() {
   if (/decideAutoPause\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideAutoPauseFile)} must not expose opt/snap auto-pause input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const pauseRule =
     rulesText.match(/name:\s*["']autoPause["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideAutoPause\(\s*opt\s*,\s*snap\s*\)/.test(pauseRule)) {
@@ -1689,7 +1721,7 @@ function checkFleeEntry() {
   if (/decideFlee\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideFleeFile)} must not expose opt/snap flee input`);
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const fleeRule = rulesText.match(/name:\s*["']flee["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideFlee\(\s*opt\s*,\s*snap\s*\)/.test(fleeRule)) {
     violations.push(`${rel(battleRulesFile)} must pass condition facts, not snap, to flee`);
@@ -1762,7 +1794,7 @@ function checkAttackEntry() {
       );
     }
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   const attackRule =
     rulesText.match(/name:\s*["']attack["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/decideAttack\(\s*opt\s*,\s*snap\s*\)/.test(attackRule)) {
@@ -1893,7 +1925,7 @@ function checkBattleRuleFactMappers() {
       violations.push(`${rel(file)} must not depend on generic rule fact mappers`);
     }
   }
-  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  const rulesText = readBattleActionRulesText();
   if (/conditionFacts\s*:\s*conditionFacts\s*\(\s*snap\s*\)/.test(rulesText)) {
     violations.push(
       `${rel(battleRulesFile)} must use named fact mappers, not assemble condition facts`
