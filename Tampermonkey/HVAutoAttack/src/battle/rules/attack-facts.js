@@ -1,8 +1,6 @@
-import { conditionFacts } from "./rule-facts.js";
-
 export function attackFacts(snap) {
   return {
-    conditionFacts: conditionFacts(snap),
+    conditionFacts: snap,
     spiritOn: snap?.spiritOn,
     globalTurn: snap?.globalTurn,
     lastSpiritToggleGlobalTurn: snap?.lastSpiritToggleGlobalTurn,

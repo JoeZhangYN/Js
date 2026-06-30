@@ -1739,8 +1739,11 @@ function checkBattleRuleFactMappers() {
       violations.push(`${rel(attackFactsFile)} must own attack fact mapper ${required}`);
     }
   }
+  if (/from\s+["'][^"']*rule-facts\.js["']/.test(attackFactsText)) {
+    violations.push(`${rel(attackFactsFile)} must not depend on generic rule fact mappers`);
+  }
 
-  const allowedRuleFactsImporters = new Set([battleRulesFile, attackFactsFile]);
+  const allowedRuleFactsImporters = new Set([battleRulesFile]);
   const allowedAttackFactsImporters = new Set([battleRulesFile]);
   for (const relative of ["src/battle", "src/core"]) {
     const dir = path.join(root, relative);
