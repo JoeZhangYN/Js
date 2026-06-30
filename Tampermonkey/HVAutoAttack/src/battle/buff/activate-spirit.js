@@ -12,15 +12,31 @@ function readOptionField(key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
 }
 
+const EVENT_ACTIVATE_IF_ALLOWED = "activateIfAllowed";
+
+export const BattlePreCastSpiritEvent = Object.freeze({
+  ACTIVATE_IF_ALLOWED: EVENT_ACTIVATE_IF_ALLOWED,
+});
+
+const battlePreCastSpiritEventHandlers = Object.freeze({
+  [EVENT_ACTIVATE_IF_ALLOWED]: () => activatePreCastSpiritIfAllowed(),
+});
+
 /**
  * 若开启 preCastSS 且条件满足且 Spirit 当前未激活 → click 激活。
  * 与 buff.js 原实现逐字等价（含无 snap 的 checkCondition DOM fallback）。
  * @returns {boolean} true = 已激活（调用方应让出本回合）
  */
-export function checkAndActivateSpirit() {
+function activatePreCastSpiritIfAllowed() {
   if (!readOptionField("preCastSS", false)) return false;
   if (!checkCondition(readOptionField("preCastSSCondition", ""))) return false;
   return !!runBattleSpiritToggleAutomation({
     type: BattleSpiritToggleEvent.ACTIVATE_IF_INACTIVE,
   });
+}
+
+export function runBattlePreCastSpiritAutomation(
+  event = { type: EVENT_ACTIVATE_IF_ALLOWED }
+) {
+  return battlePreCastSpiritEventHandlers[event.type]?.(event) ?? false;
 }

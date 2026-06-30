@@ -29,7 +29,7 @@ const BANNED = [
   "castDebuffOnAll",
   "attack",
   "checkCriticalBuffGuard",
-  "checkAndActivateSpirit",
+  "runBattlePreCastSpiritAutomation",
   "isStallMode",
   "shouldSkipForBigSkill",
   "runBossImperil",

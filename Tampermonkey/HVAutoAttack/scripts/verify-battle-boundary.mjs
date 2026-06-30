@@ -1296,6 +1296,16 @@ function checkPhysicalSkillBookkeeping() {
 
 function checkActivateSpirit() {
   const text = fs.readFileSync(activateSpiritFile, "utf8");
+  for (const required of [
+    "BattlePreCastSpiritEvent",
+    "battlePreCastSpiritEventHandlers",
+    "runBattlePreCastSpiritAutomation",
+    "ACTIVATE_IF_ALLOWED",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(activateSpiritFile)} must own ${required}`);
+    }
+  }
   if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(
       `${rel(activateSpiritFile)} must read pre-cast Spirit options through option entry`
@@ -1303,6 +1313,9 @@ function checkActivateSpirit() {
   }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(activateSpiritFile)} must not read pre-cast Spirit options directly`);
+  }
+  if (/export function checkAndActivateSpirit\(/.test(text)) {
+    violations.push(`${rel(activateSpiritFile)} legacy checkAndActivateSpirit export must stay retired`);
   }
 }
 

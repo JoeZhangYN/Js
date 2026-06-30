@@ -38,6 +38,8 @@ for (const required of [
   "BattleSkillCommandEvent.CLICK_READY",
   "BattleDefendCommandEvent.CLICK",
   "BattleSpiritToggleEvent.CLICK_AND_RECORD",
+  "BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED",
+  "runBattlePreCastSpiritAutomation",
   "BattleTargetCommandEvent.CLICK_SKILL_THEN_TARGET",
   "BattleFleeCommandEvent.CLICK_AND_RELOAD",
   "BattlePauseEvent.PAUSE",

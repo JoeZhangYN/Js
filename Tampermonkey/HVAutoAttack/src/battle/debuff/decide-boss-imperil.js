@@ -2,7 +2,7 @@
 // 不读 DOM / 不调 g() / 不写 setValue —— bestIdx 算法忠实复刻自旧 boss-imperil.js::runBossImperil。
 // 命中 → {kind:"click-skill-then-target", skillId:"213", targetId:id}：
 //   该 kind 的 dispatch 已内置 Spirit 前置 + attemptClickWithTarget，正好对应原
-//   checkAndActivateSpirit + attemptClickWithTarget，无需新 kind。
+//   runBattlePreCastSpiritAutomation + attemptClickWithTarget，无需新 kind。
 // 无目标 → {kind:"noop"}。
 import { aliveByOrder } from "../monster-view.js";
 import { bossCoverageWindow } from "../target-strategy.js";

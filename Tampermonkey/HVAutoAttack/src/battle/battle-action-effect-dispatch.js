@@ -12,7 +12,10 @@ import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
 } from "./battle-spirit-toggle.js";
-import { checkAndActivateSpirit } from "./buff/activate-spirit.js";
+import {
+  BattlePreCastSpiritEvent,
+  runBattlePreCastSpiritAutomation,
+} from "./buff/activate-spirit.js";
 import { BattleAttackExecutionEvent, runBattleAttackExecution } from "./attack/execute-attack.js";
 import { BattleChannelExecutionEvent, runBattleChannelExecution } from "./buff/execute-channel.js";
 import { BattleItemExecutionEvent, runBattleItemExecution } from "./item/execute-item.js";
@@ -82,7 +85,13 @@ function executeToggleSpiritResult() {
 
 function executeSkillTargetResult(result) {
   // debuff/boss 双段：Spirit 前置（命中则本回合让出）再 skill→target 双击。
-  if (checkAndActivateSpirit()) return true;
+  if (
+    runBattlePreCastSpiritAutomation({
+      type: BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED,
+    })
+  ) {
+    return true;
+  }
   return !!runBattleTargetCommand({
     type: BattleTargetCommandEvent.CLICK_SKILL_THEN_TARGET,
     skillId: result.skillId,

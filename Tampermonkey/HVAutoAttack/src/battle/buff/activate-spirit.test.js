@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { checkAndActivateSpirit } from "./activate-spirit.js";
+import { BattlePreCastSpiritEvent, runBattlePreCastSpiritAutomation } from "./activate-spirit.js";
 
 const mocks = vi.hoisted(() => ({
   checkCondition: vi.fn(),
@@ -34,11 +34,13 @@ beforeEach(() => {
   mocks.runBattleSpiritToggleAutomation.mockReturnValue(true);
 });
 
-describe("checkAndActivateSpirit", () => {
+describe("runBattlePreCastSpiritAutomation", () => {
   it("does not activate when pre-cast Spirit is disabled", () => {
     mocks.runOptionAutomation.mockImplementation(optionReader(false));
 
-    expect(checkAndActivateSpirit()).toBe(false);
+    expect(
+      runBattlePreCastSpiritAutomation({ type: BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED })
+    ).toBe(false);
 
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",
@@ -51,7 +53,9 @@ describe("checkAndActivateSpirit", () => {
   it("reads the condition through option entry before checking it", () => {
     mocks.checkCondition.mockReturnValue(false);
 
-    expect(checkAndActivateSpirit()).toBe(false);
+    expect(
+      runBattlePreCastSpiritAutomation({ type: BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED })
+    ).toBe(false);
 
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",
@@ -64,7 +68,9 @@ describe("checkAndActivateSpirit", () => {
   it("claims the turn only when the Spirit toggle command activates it", () => {
     mocks.runBattleSpiritToggleAutomation.mockReturnValue(false);
 
-    expect(checkAndActivateSpirit()).toBe(false);
+    expect(
+      runBattlePreCastSpiritAutomation({ type: BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED })
+    ).toBe(false);
 
     expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
       type: "activateIfInactive",
@@ -72,10 +78,20 @@ describe("checkAndActivateSpirit", () => {
   });
 
   it("routes pre-cast Spirit activation through the command entry", () => {
-    expect(checkAndActivateSpirit()).toBe(true);
+    expect(
+      runBattlePreCastSpiritAutomation({ type: BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED })
+    ).toBe(true);
 
     expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
       type: "activateIfInactive",
     });
+  });
+
+  it("rejects unknown pre-cast Spirit events without option reads", () => {
+    expect(runBattlePreCastSpiritAutomation({ type: "unknown" })).toBe(false);
+
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
+    expect(mocks.checkCondition).not.toHaveBeenCalled();
+    expect(mocks.runBattleSpiritToggleAutomation).not.toHaveBeenCalled();
   });
 });

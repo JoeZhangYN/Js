@@ -85,9 +85,22 @@ requireText("src/battle/snapshot.js", [
   "runBattleSpiritToggleAutomation",
 ]);
 requireText("src/battle/buff/activate-spirit.js", [
+  "BattlePreCastSpiritEvent",
+  "battlePreCastSpiritEventHandlers",
+  "runBattlePreCastSpiritAutomation",
+  "ACTIVATE_IF_ALLOWED",
   "BattleSpiritToggleEvent.ACTIVATE_IF_INACTIVE",
   "runBattleSpiritToggleAutomation",
 ]);
+const activateSpiritText = fs.readFileSync(
+  path.join(root, "src/battle/buff/activate-spirit.js"),
+  "utf8"
+);
+if (/export function checkAndActivateSpirit\(/.test(activateSpiritText)) {
+  violations.push(
+    "src/battle/buff/activate-spirit.js legacy checkAndActivateSpirit export must stay retired"
+  );
+}
 requireText("src/battle/attack/execute-attack.js", [
   "BattleSpiritToggleEvent.CLICK_AND_RECORD",
   "runBattleSpiritToggleAutomation",
