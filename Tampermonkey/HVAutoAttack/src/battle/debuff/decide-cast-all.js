@@ -28,17 +28,6 @@ const ALL_DEBUFF_GATES = {
   },
 };
 
-function stallActiveFacts(event) {
-  return {
-    roundNow: event?.roundNow,
-    roundAll: event?.roundAll,
-    aliveMonsterHpPercents: (event?.monsterFacts || [])
-      .filter((monster) => !monster.isDead)
-      .map((monster) => monster.hpPercent),
-    overcharge: event?.overcharge,
-  };
-}
-
 function bigSkillDebuffFacts(event) {
   const monsterFacts = (event?.monsterFacts || []).map((monster) => ({
     monsterId: monster.monsterId,
@@ -130,6 +119,9 @@ function isStallingForAllDebuff(opt, event) {
   return runBattleStallModeAutomation({
     type: BattleStallModeEvent.READ_ACTIVE,
     opt,
-    ...stallActiveFacts(event),
+    roundNow: event?.roundNow,
+    roundAll: event?.roundAll,
+    monsterFacts: event?.monsterFacts,
+    overcharge: event?.overcharge,
   });
 }

@@ -9,17 +9,6 @@ import { aliveByOrder } from "../monster-view.js";
 import { firstByOrder, highestAbsHp, selfTarget, aoeNeighborAnchor } from "../target-strategy.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 
-function stallActiveFacts(event) {
-  return {
-    roundNow: event?.roundNow,
-    roundAll: event?.roundAll,
-    aliveMonsterHpPercents: (event?.monsterFacts || [])
-      .filter((monster) => !monster.isDead)
-      .map((monster) => monster.hpPercent),
-    overcharge: event?.overcharge,
-  };
-}
-
 /**
  * 决定单目标 debuff 该施哪一种 + 打哪只怪。
  * @param {object} event
@@ -81,6 +70,9 @@ function isStallingForDeSkill(opt, event) {
   return runBattleStallModeAutomation({
     type: BattleStallModeEvent.READ_ACTIVE,
     opt,
-    ...stallActiveFacts(event),
+    roundNow: event?.roundNow,
+    roundAll: event?.roundAll,
+    monsterFacts: event?.monsterFacts,
+    overcharge: event?.overcharge,
   });
 }

@@ -18,7 +18,7 @@ function activeFacts(snap) {
   return {
     roundNow: snap.roundNow,
     roundAll: snap.roundAll,
-    aliveMonsterHpPercents: snap.view.filter((monster) => !monster.isDead).map((m) => m.hpPercent),
+    monsterFacts: snap.view,
     overcharge: snap.oc,
   };
 }

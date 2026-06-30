@@ -66,7 +66,7 @@ export function stallTopupFacts(snap) {
   return {
     roundNow: snap?.roundNow,
     roundAll: snap?.roundAll,
-    aliveMonsterHpPercents: aliveHpPercents(snap?.view),
+    monsterFacts: snap?.view,
     overcharge: snap?.oc,
     manaPercent: snap?.mp,
     spiritPercent: snap?.sp,

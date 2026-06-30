@@ -1450,7 +1450,7 @@ function checkItemStallTopupEntry() {
     "decideStallTopup",
     "event?.roundNow",
     "event?.roundAll",
-    "event?.aliveMonsterHpPercents",
+    "event?.monsterFacts",
     "event?.overcharge",
     "event?.manaPercent",
     "event?.spiritPercent",
@@ -1710,7 +1710,7 @@ function checkBattleStallMode() {
     "runBattleStallModeAutomation",
     "READ_ACTIVE",
     "READ_TOPUP_CANDIDATES",
-    "event?.aliveMonsterHpPercents",
+    "event?.monsterFacts",
     "event?.overcharge",
     "event?.manaPercent",
     "event?.spiritPercent",
@@ -1725,6 +1725,25 @@ function checkBattleStallMode() {
   }
   if (/\bevent\.snap\b/.test(ownerText)) {
     violations.push(`${rel(stallModeFile)} must not consume snap-shaped event input`);
+  }
+  const allowedAliveHpFiles = new Set([
+    ruleFactsFile,
+    decideGemFile,
+    path.join(root, "src/battle/dynamic-threshold.js"),
+  ]);
+  const battleDir = path.join(root, "src/battle");
+  for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+      continue;
+    }
+    const file = path.join(entry.parentPath, entry.name);
+    const source = fs.readFileSync(file, "utf8");
+    if (/\bstallActiveFacts\b/.test(source)) {
+      violations.push(`${rel(file)} must ask battle-stall-mode for stall-active facts`);
+    }
+    if (/\baliveMonsterHpPercents\b/.test(source) && !allowedAliveHpFiles.has(file)) {
+      violations.push(`${rel(file)} must not assemble stall alive HP facts directly`);
+    }
   }
   const economyText = fs.readFileSync(potionEconomyFile, "utf8");
   for (const legacy of ["isStallMode", "stallTopupCandidates"]) {

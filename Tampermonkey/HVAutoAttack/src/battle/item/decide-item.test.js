@@ -44,9 +44,7 @@ function stallTopupFacts(snap) {
   return {
     roundNow: snap.roundNow,
     roundAll: snap.roundAll,
-    aliveMonsterHpPercents: (snap.view || [])
-      .filter((monster) => !monster.isDead)
-      .map((monster) => monster.hpPercent),
+    monsterFacts: snap.view,
     overcharge: snap.oc,
     manaPercent: snap.mp,
     spiritPercent: snap.sp,

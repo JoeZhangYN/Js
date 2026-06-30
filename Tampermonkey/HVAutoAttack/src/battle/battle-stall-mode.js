@@ -6,6 +6,12 @@ export const BattleStallModeEvent = Object.freeze({
   READ_TOPUP_CANDIDATES: EVENT_READ_TOPUP_CANDIDATES,
 });
 
+function aliveHpPercents(event) {
+  return (event?.monsterFacts || [])
+    .filter((monster) => !monster.isDead)
+    .map((monster) => monster.hpPercent);
+}
+
 /**
  * 拖战 (stall) 判断：拖时间让资源回流，下场战斗用满 OC + MP + SP 开局。
  *
@@ -20,9 +26,9 @@ function isStallActive(event) {
   const roundAll = event?.roundAll;
   if (event?.opt?.stallMode === false) return false;
   if (!roundNow || !roundAll || roundNow >= roundAll) return false;
-  const aliveHpPercents = event?.aliveMonsterHpPercents || [];
-  if (aliveHpPercents.length !== 1) return false;
-  if (aliveHpPercents[0] < 0.3) return false;
+  const hpPercents = aliveHpPercents(event);
+  if (hpPercents.length !== 1) return false;
+  if (hpPercents[0] < 0.3) return false;
   if ((event?.overcharge || 0) >= 250) return false;
   return true;
 }

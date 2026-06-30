@@ -20,24 +20,16 @@ export const BossImperilEvent = Object.freeze({
   DECIDE: EVENT_DECIDE,
 });
 
-function stallActiveFacts(event) {
-  return {
-    roundNow: event?.roundNow,
-    roundAll: event?.roundAll,
-    aliveMonsterHpPercents: (event?.monsterFacts || [])
-      .filter((monster) => !monster.isDead)
-      .map((monster) => monster.hpPercent),
-    overcharge: event?.overcharge,
-  };
-}
-
 function canCastBossImperil(event) {
   const opt = event?.opt || {};
   if (
     runBattleStallModeAutomation({
       type: BattleStallModeEvent.READ_ACTIVE,
       opt,
-      ...stallActiveFacts(event),
+      roundNow: event?.roundNow,
+      roundAll: event?.roundAll,
+      monsterFacts: event?.monsterFacts,
+      overcharge: event?.overcharge,
     })
   ) {
     return false;

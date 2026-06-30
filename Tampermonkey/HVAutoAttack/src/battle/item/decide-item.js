@@ -14,15 +14,6 @@ import {
 
 export { decideScroll } from "./decide-scroll.js";
 
-function stallActiveFacts(event) {
-  return {
-    roundNow: event?.roundNow,
-    roundAll: event?.roundAll,
-    aliveMonsterHpPercents: event?.aliveMonsterHpPercents,
-    overcharge: event?.overcharge,
-  };
-}
-
 function stallTopupFacts(event) {
   return {
     manaPercent: event?.manaPercent,
@@ -108,7 +99,10 @@ export function decideStallTopup(event = {}) {
     !runBattleStallModeAutomation({
       type: BattleStallModeEvent.READ_ACTIVE,
       opt,
-      ...stallActiveFacts(event),
+      roundNow: event?.roundNow,
+      roundAll: event?.roundAll,
+      monsterFacts: event?.monsterFacts,
+      overcharge: event?.overcharge,
     })
   ) {
     return { kind: "item-plan", plan: { type: "noop" } };
