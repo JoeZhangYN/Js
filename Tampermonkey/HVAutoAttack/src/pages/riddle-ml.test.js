@@ -103,4 +103,54 @@ describe("riddle ML entry", () => {
     ];
     expect(actualOrder).toEqual([...actualOrder].sort((a, b) => a - b));
   });
+
+  it("classifies malformed ML service responses through the response decision", async () => {
+    mocks.runRiddleImageAutomation.mockResolvedValue({ blob: { size: 12 } });
+    mocks.gmXhr.mockImplementation(({ onload }) => {
+      onload({
+        status: 200,
+        responseText: "not-json",
+        responseHeaders: "",
+      });
+    });
+
+    await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toBeNull();
+
+    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "recordDetail",
+        detail: expect.stringContaining("non_json status=200"),
+      })
+    );
+    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
+      type: "recordOutcome",
+      outcome: "non_json",
+    });
+    expect(mocks.runAlarmAutomation).toHaveBeenCalledWith({ type: "trigger", kind: "Error" });
+  });
+
+  it("classifies good ML responses without answer codes through the response decision", async () => {
+    mocks.runRiddleImageAutomation.mockResolvedValue({ blob: { size: 12 } });
+    mocks.gmXhr.mockImplementation(({ onload }) => {
+      onload({
+        status: 200,
+        responseText: JSON.stringify({ return: "good", answer: "??" }),
+        responseHeaders: "",
+      });
+    });
+
+    await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toBeNull();
+
+    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "recordDetail",
+        detail: 'no_answer_code answer="??"',
+      })
+    );
+    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
+      type: "recordOutcome",
+      outcome: "no_answer_code",
+    });
+    expect(mocks.runAlarmAutomation).toHaveBeenCalledWith({ type: "trigger", kind: "Error" });
+  });
 });

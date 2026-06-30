@@ -270,6 +270,78 @@ function resolveRiddleMlAnswerResult(context) {
   finishRiddleMlAnswer(context, null);
 }
 
+function createRiddleMlResponseDecision(result, { detail = null, alarm = false, warn = null } = {}) {
+  return { result, detail, alarm, warn };
+}
+
+function decideGoodRiddleMlAnswer(dict, responseHeaders) {
+  // HV 答题常多只小马同现（多答案不少见）→ 取响应里全部命中的答案码，调用侧勾选多个 checkbox。
+  // 多答案修复：dict.answer 可能是数组(如 ["ts","ra"])。统一 coerce 后匹配 6 个互不为子串的答案码。
+  const rawAnswer = dict.answer;
+  const answers = (Array.isArray(rawAnswer) ? rawAnswer.join(",") : String(rawAnswer ?? "")).toLowerCase();
+  const hits = ANSWER_CODES.filter((code) => answers.includes(code));
+  if (!hits.length) {
+    return createRiddleMlResponseDecision("no_answer_code", {
+      detail: "no_answer_code answer=" + JSON.stringify(dict.answer),
+      alarm: true,
+      warn: ["[HVAA][RMA] 响应无可识别答案码，本次走随机:", dict],
+    });
+  }
+  const headers = parseRespHeaders(responseHeaders);
+  const remaining = parseInt(headers["x-ratelimit-remaining"] || "999", 10);
+  if (remaining < 3) {
+    console.warn(`[HVAA][RMA] ratelimit remaining ${remaining}`);
+  }
+  return createRiddleMlResponseDecision(hits);
+}
+
+function decideRiddleMlServiceResponse(res) {
+  if (res.status === 429) {
+    return createRiddleMlResponseDecision("rate_limited", {
+      detail: "rate_limited 429",
+      alarm: true,
+      warn: ["[HVAA][RMA] 429 限流，本次走随机"],
+    });
+  }
+  let dict;
+  try {
+    dict = JSON.parse(res.responseText);
+  } catch (e) {
+    return createRiddleMlResponseDecision("non_json", {
+      detail: "non_json status=" + res.status + " " + e.message,
+      alarm: true,
+      warn: ["[HVAA][RMA] 响应非 JSON，本次走随机:", res.status, e.message],
+    });
+  }
+  if (dict.return === "good") return decideGoodRiddleMlAnswer(dict, res.responseHeaders);
+  if (dict.return === "finish") {
+    return createRiddleMlResponseDecision("finish", {
+      detail: "finish (no more solves today)",
+      alarm: true,
+      warn: ["[HVAA][RMA] no more solves today"],
+    });
+  }
+  if (dict.return === "error" || dict.expire === true) {
+    return createRiddleMlResponseDecision("server_error", {
+      detail: "server_error " + JSON.stringify(dict).slice(0, 150),
+      alarm: true,
+      warn: ["[HVAA][RMA] server error / license issue", dict],
+    });
+  }
+  return createRiddleMlResponseDecision("unknown", {
+    detail: "unknown " + JSON.stringify(dict).slice(0, 150),
+    alarm: true,
+    warn: ["[HVAA][RMA] 未知 return 字段，本次走随机:", dict],
+  });
+}
+
+function applyRiddleMlResponseDecision(decision, resolve) {
+  if (decision.warn) console.warn(...decision.warn);
+  if (decision.detail) reportMlDetail(decision.detail);
+  if (decision.alarm) triggerErrorAlarm();
+  resolve(decision.result);
+}
+
 async function requestRiddleMlAnswer(endpoint, imgBlob, postHeaders) {
   return new Promise((resolve) => {
     gmXhr({
@@ -287,67 +359,7 @@ async function requestRiddleMlAnswer(endpoint, imgBlob, postHeaders) {
         // 注：训练样本(图片+json)的保存已统一到「提交动作」(riddle.js #riddlesubmit hook → state/riddle-dataset.js)，
         //    本回调不再各分支 saveRiddle；ML 失败原因仍进滚动日志 + 末端随机兜底提交那次会把图存为 low 可信样本。
         try {
-          if (res.status === 429) {
-            console.warn("[HVAA][RMA] 429 限流，本次走随机");
-            reportMlDetail("rate_limited 429");
-            triggerErrorAlarm();
-            resolve("rate_limited");
-            return;
-          }
-          let dict;
-          try {
-            dict = JSON.parse(res.responseText);
-          } catch (e) {
-            console.warn("[HVAA][RMA] 响应非 JSON，本次走随机:", res.status, e.message);
-            reportMlDetail("non_json status=" + res.status + " " + e.message);
-            triggerErrorAlarm();
-            resolve("non_json");
-            return;
-          }
-          if (dict.return === "good") {
-            // HV 答题常多只小马同现（多答案不少见）→ 取响应里全部命中的答案码，调用侧勾选多个 checkbox。
-            // ② 多答案修复：dict.answer 可能是**数组**(如 ["ts","ra"])，原 (dict.answer||"").toLowerCase()
-            //    在数组上 → TypeError(抛进 onload，未捕获→Promise 永挂)。统一 coerce：数组 join、其它 String()。
-            //    filter+includes 兼容 "ts,ra" / "tsra" / ["ts","ra"] 等格式（6 码互不为子串，无误配）。
-            const rawAnswer = dict.answer;
-            const answers = (
-              Array.isArray(rawAnswer) ? rawAnswer.join(",") : String(rawAnswer ?? "")
-            ).toLowerCase();
-            const hits = ANSWER_CODES.filter((code) => answers.includes(code));
-            if (!hits.length) {
-              console.warn("[HVAA][RMA] 响应无可识别答案码，本次走随机:", dict);
-              reportMlDetail("no_answer_code answer=" + JSON.stringify(dict.answer));
-              triggerErrorAlarm();
-              resolve("no_answer_code");
-              return;
-            }
-            // ratelimit 提示（仅日志，不阻断）
-            const headers = parseRespHeaders(res.responseHeaders);
-            const remaining = parseInt(headers["x-ratelimit-remaining"] || "999", 10);
-            if (remaining < 3) {
-              console.warn(`[HVAA][RMA] ratelimit remaining ${remaining}`);
-            }
-            resolve(hits);
-            return;
-          }
-          if (dict.return === "finish") {
-            console.warn("[HVAA][RMA] no more solves today");
-            reportMlDetail("finish (no more solves today)");
-            triggerErrorAlarm();
-            resolve("finish");
-            return;
-          }
-          if (dict.return === "error" || dict.expire === true) {
-            console.warn("[HVAA][RMA] server error / license issue", dict);
-            reportMlDetail("server_error " + JSON.stringify(dict).slice(0, 150));
-            triggerErrorAlarm();
-            resolve("server_error");
-            return;
-          }
-          console.warn("[HVAA][RMA] 未知 return 字段，本次走随机:", dict);
-          reportMlDetail("unknown " + JSON.stringify(dict).slice(0, 150));
-          triggerErrorAlarm();
-          resolve("unknown");
+          applyRiddleMlResponseDecision(decideRiddleMlServiceResponse(res), resolve);
         } catch (e) {
           // 捕获错误兜底：多答案/异形响应等处理异常 → 落库 + resolve，绝不让错误逃逸 console 即丢或 Promise 挂死。
           console.error("[HVAA][RMA] onload 处理异常(疑多答案/异形响应)，本次走随机:", e);

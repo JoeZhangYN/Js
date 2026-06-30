@@ -349,6 +349,8 @@ function checkRiddleMlEntry() {
     "prepareRiddleMlPayload",
     "submitRiddleMlPayload",
     "resolveRiddleMlAnswerResult",
+    "decideRiddleMlServiceResponse",
+    "applyRiddleMlResponseDecision",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(riddleMlFile)} must own ${required}`);
@@ -377,6 +379,26 @@ function checkRiddleMlEntry() {
   for (const forbidden of ["startRiddleMlHealthCheck", "tryMLAnswer"]) {
     if (mlEntryBody.includes(forbidden)) {
       violations.push(`${rel(riddleMlFile)} entry must route ML work through event handlers`);
+    }
+  }
+  const requestBody =
+    ownerText.match(/async function requestRiddleMlAnswer\([\s\S]*?\n\}/)?.[0] || "";
+  if (
+    !requestBody.includes("applyRiddleMlResponseDecision(decideRiddleMlServiceResponse(res), resolve)")
+  ) {
+    violations.push(`${rel(riddleMlFile)} request IO must use the ML response decision point`);
+  }
+  const onloadBody = requestBody.match(/onload: \(res\) => \{[\s\S]*?\n {6}\},/)?.[0] || "";
+  for (const forbidden of [
+    'resolve("rate_limited")',
+    'resolve("non_json")',
+    'resolve("no_answer_code")',
+    'resolve("finish")',
+    'resolve("server_error")',
+    'resolve("unknown")',
+  ]) {
+    if (onloadBody.includes(forbidden)) {
+      violations.push(`${rel(riddleMlFile)} onload must not own ML response result ${forbidden}`);
     }
   }
   for (const legacy of ["tryMLAnswer", "startRiddleMlHealthCheck"]) {
