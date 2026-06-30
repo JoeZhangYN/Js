@@ -11,6 +11,12 @@ export const MonsterStatusViewEvent = Object.freeze({
   READ_HP_RUNTIME_SNAPSHOT: EVENT_READ_HP_RUNTIME_SNAPSHOT,
 });
 
+const monsterStatusViewEventHandlers = Object.freeze({
+  [EVENT_READ_COMBATANT_COUNTS]: () => readCombatantCountSnapshot(),
+  [EVENT_READ_REPAIR_SNAPSHOT]: () => readRepairSnapshot(),
+  [EVENT_READ_HP_RUNTIME_SNAPSHOT]: () => readHpRuntimeSnapshot(),
+});
+
 function readCombatantCountSnapshot() {
   const monsterAll = gE("div.btm1", "all").length;
   const monsterDead = gE('img[src*="nbardead"]', "all").length;
@@ -64,10 +70,7 @@ function readHpRuntimeSnapshot() {
 }
 
 export function runMonsterStatusView(event = { type: EVENT_READ_COMBATANT_COUNTS }) {
-  if (event.type === EVENT_READ_COMBATANT_COUNTS) return readCombatantCountSnapshot();
-  if (event.type === EVENT_READ_REPAIR_SNAPSHOT) return readRepairSnapshot();
-  if (event.type === EVENT_READ_HP_RUNTIME_SNAPSHOT) return readHpRuntimeSnapshot();
-  return {
+  return monsterStatusViewEventHandlers[event.type]?.(event) ?? {
     monsterAll: 0,
     monsterDead: 0,
     bossAll: 0,

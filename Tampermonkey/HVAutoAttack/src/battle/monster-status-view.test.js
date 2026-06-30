@@ -1,8 +1,12 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MonsterStatusViewEvent, runMonsterStatusView } from "./monster-status-view.js";
 
 beforeEach(() => {
   document.body.innerHTML = "";
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("monster status view", () => {
@@ -64,5 +68,20 @@ describe("monster status view", () => {
         },
       ]
     );
+  });
+
+  it("rejects unknown monster status view events without reading rendered DOM", () => {
+    const querySelector = vi.spyOn(document, "querySelector");
+    const querySelectorAll = vi.spyOn(document, "querySelectorAll");
+
+    expect(runMonsterStatusView({ type: "unknown" })).toEqual({
+      monsterAll: 0,
+      monsterDead: 0,
+      bossAll: 0,
+      bossDead: 0,
+    });
+
+    expect(querySelector).not.toHaveBeenCalled();
+    expect(querySelectorAll).not.toHaveBeenCalled();
   });
 });

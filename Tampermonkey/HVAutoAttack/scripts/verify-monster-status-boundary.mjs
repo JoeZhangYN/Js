@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src/battle");
 const entry = path.normalize("src/battle/monster-status-automation.js");
 const statusView = path.normalize("src/battle/monster-status-view.js");
+const statusViewTest = path.normalize("src/battle/monster-status-view.test.js");
 const hpImpl = path.normalize("src/battle/monster-status-hp.js");
 const maxHpInference = path.normalize("src/battle/monster-max-hp-inference.js");
 const targetWeight = path.normalize("src/battle/monster-target-weight.js");
@@ -161,6 +162,7 @@ function checkStatusView() {
   for (const required of [
     "export const MonsterStatusViewEvent",
     "export function runMonsterStatusView",
+    "monsterStatusViewEventHandlers",
     "READ_COMBATANT_COUNTS",
     "READ_REPAIR_SNAPSHOT",
     "READ_HP_RUNTIME_SNAPSHOT",
@@ -177,6 +179,22 @@ function checkStatusView() {
   for (const forbidden of ["../state/store.js", "../state/storage.js", "setValue(", "g("]) {
     if (text.includes(forbidden)) {
       violations.push(`${statusView.replaceAll("\\", "/")} must only snapshot rendered DOM facts`);
+    }
+  }
+  const entryBody =
+    text.match(/export function runMonsterStatusView\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_COMBATANT_COUNTS\]/.test(text)) {
+    violations.push(`${statusView.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${statusView.replaceAll("\\", "/")} entry must dispatch by handler table`);
+  }
+  if (!fs.existsSync(path.join(root, statusViewTest))) {
+    violations.push(`${statusViewTest.replaceAll("\\", "/")} must cover monster status view entry`);
+  } else {
+    const testText = fs.readFileSync(path.join(root, statusViewTest), "utf8");
+    if (!testText.includes("rejects unknown monster status view events without reading rendered DOM")) {
+      violations.push(`${statusViewTest.replaceAll("\\", "/")} must cover unknown status view events`);
     }
   }
 }
