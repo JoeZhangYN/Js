@@ -113,6 +113,12 @@ describe("quick site entry", () => {
     ).toBe("");
   });
 
+  it("ignores unknown quick site events at the entry", () => {
+    expect(runQuickSiteAutomation({ type: "unknown" })).toBe(false);
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
+    expect(document.querySelector(".quickSiteBar")).toBeNull();
+  });
+
   it("renders settings empty row through the quick site entry", () => {
     expect(
       runQuickSiteAutomation({

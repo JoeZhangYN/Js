@@ -14,6 +14,16 @@ export const QuickSiteEvent = Object.freeze({
   COLLECT_SETTINGS_INPUTS: EVENT_COLLECT_SETTINGS_INPUTS,
 });
 
+const quickSiteEventHandlers = Object.freeze({
+  [EVENT_LOBBY_READY]: () =>
+    renderQuickSite(
+      runOptionAutomation({ type: OptionEvent.READ_FIELD, key: "quickSite", fallback: false })
+    ),
+  [EVENT_RENDER_SETTINGS_TABLE_BODY]: (event) => renderSettingsTableBody(event.option),
+  [EVENT_RENDER_SETTINGS_EMPTY_ROW]: () => renderSettingsEmptyRow(),
+  [EVENT_COLLECT_SETTINGS_INPUTS]: (event) => collectSettingsInputs(event.option, event.inputs),
+});
+
 function attr(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -86,14 +96,6 @@ function collectSettingsInputs(option, inputs) {
 }
 
 export function runQuickSiteAutomation(event = { type: EVENT_LOBBY_READY }) {
-  if (event.type === EVENT_LOBBY_READY) {
-    return renderQuickSite(
-      runOptionAutomation({ type: OptionEvent.READ_FIELD, key: "quickSite", fallback: false })
-    );
-  }
-  if (event.type === EVENT_RENDER_SETTINGS_TABLE_BODY) return renderSettingsTableBody(event.option);
-  if (event.type === EVENT_RENDER_SETTINGS_EMPTY_ROW) return renderSettingsEmptyRow();
-  if (event.type === EVENT_COLLECT_SETTINGS_INPUTS)
-    return collectSettingsInputs(event.option, event.inputs);
-  return false;
+  const handler = quickSiteEventHandlers[event.type];
+  return handler ? handler(event) : false;
 }

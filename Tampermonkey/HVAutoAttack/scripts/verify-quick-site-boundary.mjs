@@ -78,6 +78,28 @@ for (const required of ["runQuickSiteAutomation", "QuickSiteEvent"]) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
+if (!ownerText.includes("const quickSiteEventHandlers")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route quick site events through a handler table`);
+}
+const entryMatch = ownerText.match(/export function runQuickSiteAutomation[\s\S]*?\n}/);
+if (!entryMatch) {
+  violations.push(`${owner.replaceAll("\\", "/")} must expose runQuickSiteAutomation(event)`);
+} else {
+  const entryBody = entryMatch[0];
+  if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  }
+  for (const internal of [
+    "renderQuickSite(",
+    "renderSettingsTableBody(",
+    "renderSettingsEmptyRow(",
+    "collectSettingsInputs(",
+  ]) {
+    if (entryBody.includes(internal)) {
+      violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through quickSiteEventHandlers`);
+    }
+  }
+}
 const settingsText = fs.readFileSync(path.join(root, settings), "utf8");
 if (!settingsText.includes("QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY")) {
   violations.push(
