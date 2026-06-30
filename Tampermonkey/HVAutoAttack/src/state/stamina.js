@@ -72,11 +72,14 @@ function claimStaminaRecovery() {
   return true;
 }
 
+const staminaEventHandlers = Object.freeze({
+  [EVENT_READ_VALUE]: () => readStaminaValue(),
+  [EVENT_SHOULD_RESTORE_FOR_BATTLE]: () => shouldRestoreForBattle(),
+  [EVENT_SHOULD_STOP_LOBBY]: () => shouldStopLobby(),
+  [EVENT_SHOULD_RESTORE_FOR_IDLE_ARENA]: () => shouldRestoreForIdleArena(),
+  [EVENT_CLAIM_RECOVERY]: () => claimStaminaRecovery(),
+});
+
 export function runStaminaAutomation(event = { type: EVENT_READ_VALUE }) {
-  if (event.type === EVENT_READ_VALUE) return readStaminaValue();
-  if (event.type === EVENT_SHOULD_RESTORE_FOR_BATTLE) return shouldRestoreForBattle();
-  if (event.type === EVENT_SHOULD_STOP_LOBBY) return shouldStopLobby();
-  if (event.type === EVENT_SHOULD_RESTORE_FOR_IDLE_ARENA) return shouldRestoreForIdleArena();
-  if (event.type === EVENT_CLAIM_RECOVERY) return claimStaminaRecovery();
-  return undefined;
+  return staminaEventHandlers[event.type]?.(event);
 }

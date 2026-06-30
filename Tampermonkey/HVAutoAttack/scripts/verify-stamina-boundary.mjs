@@ -77,6 +77,25 @@ if (/export\s+function\s+readStaminaValue\s*\(/.test(ownerText)) {
   );
 }
 
+if (!ownerText.includes("const staminaEventHandlers")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route stamina events through a handler table`);
+}
+const ownerEntry = ownerText.match(/export function runStaminaAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+}
+for (const internal of [
+  "readStaminaValue(",
+  "shouldRestoreForBattle(",
+  "shouldStopLobby(",
+  "shouldRestoreForIdleArena(",
+  "claimStaminaRecovery(",
+]) {
+  if (ownerEntry.includes(internal)) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through staminaEventHandlers`);
+  }
+}
+
 if (violations.length) {
   console.error("[verify-stamina-boundary] FAIL");
   for (const v of violations) console.error(`- ${v}`);

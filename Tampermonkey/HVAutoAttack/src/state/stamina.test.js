@@ -106,4 +106,10 @@ describe("stamina entry", () => {
     reload();
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({ type: "reloadNow" });
   });
+
+  it("ignores unknown stamina events", () => {
+    expect(runStaminaAutomation({ type: "unknown" })).toBeUndefined();
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
 });
