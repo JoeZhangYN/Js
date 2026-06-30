@@ -2,29 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runBattleTurnAutomation } from "./main-loop.js";
 
 const mocks = vi.hoisted(() => ({
-  g: vi.fn(),
-  killBug: vi.fn(),
   prepareBattleTurnContext: vi.fn(),
   runBattleActionDecision: vi.fn(),
-  runBattleMonitorAutomation: vi.fn(),
   runBattlePauseAutomation: vi.fn(),
-  runBattleTurnRuntime: vi.fn(),
-  runMonsterStatusAutomation: vi.fn(),
+  runBattleTurnPrelude: vi.fn(),
 }));
 
-vi.mock("../state/battle-turn.js", () => ({
-  BattleTurnEvent: Object.freeze({ TURN_STARTED: "turnStarted" }),
-  runBattleTurnAutomation: mocks.runBattleTurnRuntime,
-}));
-vi.mock("../monitor/battle-monitor-automation.js", () => ({
-  BattleMonitorEvent: Object.freeze({ HUD_REFRESH: "hudRefresh" }),
-  runBattleMonitorAutomation: mocks.runBattleMonitorAutomation,
-}));
-vi.mock("./kill-bug.js", () => ({ killBug: mocks.killBug }));
-vi.mock("./monster-status-automation.js", () => ({
-  MonsterStatusEvent: Object.freeze({ ENSURE_READY: "ensureReady", UPDATE_HP: "updateHp" }),
-  runMonsterStatusAutomation: mocks.runMonsterStatusAutomation,
-}));
 vi.mock("./turn-context.js", () => ({
   prepareBattleTurnContext: mocks.prepareBattleTurnContext,
 }));
@@ -34,6 +17,10 @@ vi.mock("./pause-automation.js", () => ({
 }));
 vi.mock("./battle-action-decision.js", () => ({
   runBattleActionDecision: mocks.runBattleActionDecision,
+}));
+vi.mock("./battle-turn-prelude.js", () => ({
+  BattleTurnPreludeEvent: Object.freeze({ PREPARE_CURRENT_TURN: "prepareCurrentTurn" }),
+  runBattleTurnPrelude: mocks.runBattleTurnPrelude,
 }));
 
 beforeEach(() => {
@@ -46,10 +33,10 @@ beforeEach(() => {
 });
 
 describe("runBattleTurnAutomation", () => {
-  it("reports turn start through the battle turn entry before preparing context", () => {
+  it("runs turn prelude before preparing and dispatching decision context", () => {
     runBattleTurnAutomation();
 
-    expect(mocks.runBattleTurnRuntime).toHaveBeenCalledWith({ type: "turnStarted" });
+    expect(mocks.runBattleTurnPrelude).toHaveBeenCalledWith({ type: "prepareCurrentTurn" });
     expect(mocks.prepareBattleTurnContext).toHaveBeenCalledWith();
     expect(mocks.runBattleActionDecision).toHaveBeenCalledWith({
       snap: { snap: true },

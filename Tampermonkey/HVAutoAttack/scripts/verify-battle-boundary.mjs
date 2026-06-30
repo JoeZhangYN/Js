@@ -60,6 +60,8 @@ const itemSurfaceFile = path.join(root, "src/battle/battle-item-surface.js");
 const monsterSurfaceFile = path.join(root, "src/battle/battle-monster-surface.js");
 const logTelemetryFile = path.join(root, "src/battle/battle-log-telemetry.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
+const turnPreludeFile = path.join(root, "src/battle/battle-turn-prelude.js");
+const turnPreludeTest = path.join(root, "src/battle/battle-turn-prelude.test.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const dispatchFile = path.join(root, "src/battle/dispatch.js");
 const attackActionSequenceFile = path.join(root, "src/battle/battle-action-attack-sequence.js");
@@ -318,6 +320,19 @@ function checkTurnEntry() {
   if (!text.includes("runBattleActionDecision")) {
     violations.push(`${rel(mainLoopFile)} must delegate action decisions to one entry`);
   }
+  if (
+    !text.includes("BattleTurnPreludeEvent.PREPARE_CURRENT_TURN") ||
+    !text.includes("runBattleTurnPrelude")
+  ) {
+    violations.push(`${rel(mainLoopFile)} must run turn prelude through one entry`);
+  }
+  if (
+    /MonsterStatusEvent\.(?:ENSURE_READY|UPDATE_HP)|BattleTurnEvent\.TURN_STARTED|BattleMonitorEvent\.HUD_REFRESH|killBug|runMonsterStatusAutomation|runBattleTurnRuntime|runBattleMonitorAutomation/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(mainLoopFile)} must not assemble turn prelude directly`);
+  }
   if (!text.includes("runBattleActionDecision(prepareBattleTurnContext())")) {
     violations.push(`${rel(mainLoopFile)} must pass prepared turn context as one value`);
   }
@@ -332,6 +347,23 @@ function checkTurnEntry() {
   }
   if (!/export function runBattleActionDecision\(/.test(actionDecisionText)) {
     violations.push(`${rel(actionDecisionFile)} must expose runBattleActionDecision()`);
+  }
+  const turnPreludeText = fs.readFileSync(turnPreludeFile, "utf8");
+  for (const required of [
+    "BattleTurnPreludeEvent",
+    "PREPARE_CURRENT_TURN",
+    "MonsterStatusEvent.ENSURE_READY",
+    "BattleTurnEvent.TURN_STARTED",
+    "BattleMonitorEvent.HUD_REFRESH",
+    "killBug",
+    "MonsterStatusEvent.UPDATE_HP",
+  ]) {
+    if (!turnPreludeText.includes(required)) {
+      violations.push(`${rel(turnPreludeFile)} must own ${required}`);
+    }
+  }
+  if (!fs.existsSync(turnPreludeTest)) {
+    violations.push(`${rel(turnPreludeTest)} must cover turn prelude contract`);
   }
   if (fs.existsSync(legacyBattleRulesFile)) {
     violations.push(

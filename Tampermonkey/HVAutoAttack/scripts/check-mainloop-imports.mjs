@@ -1,11 +1,11 @@
 // 拆桥 gate：禁止 battle/main-loop.js 回退 import 已倒置的 step 实现。
 // 背景：旧 main() 原直接 import 16 个具体实现（useGem/castDebuffOnAll/attack…）+ 内联闭包，
-// 编排器与实现焊死。规则表和 runner 协议收敛后，runBattleTurnAutomation() 只该把
-// prepareBattleTurnContext() 的整体结果交给 runBattleActionDecision(context)；新增/调整 step 走 battle-action-decision.js。
+// 编排器与实现焊死。规则表和 runner 协议收敛后，runBattleTurnAutomation() 只该运行
+// turn prelude，并把 prepareBattleTurnContext() 的整体结果交给 runBattleActionDecision(context)；
+// 新增/调整 step 走 battle-action-decision.js。
 // 本门控让旧路径（直接 import step 实现或拼规则表）不能再悄悄回归（反退化锁）。
 //
-// 符号级而非模块级：killBug/refreshBattleHud 是 pre-step 必执行项（非倒置的 step），
-// 仍允许从 kill-bug.js / battle-info.js import；只禁 step-action 符号本身。
+// 符号级而非模块级：pre-step 也已收敛到 battle-turn-prelude，main-loop 不应直接导入。
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -33,6 +33,13 @@ const BANNED = [
   "shouldSkipForBigSkill",
   "runBossImperil",
   "runSteps",
+  "killBug",
+  "runBattleMonitorAutomation",
+  "runMonsterStatusAutomation",
+  "runBattleTurnRuntime",
+  "BattleMonitorEvent",
+  "MonsterStatusEvent",
+  "BattleTurnEvent",
 ];
 
 // 仅解析 `import { ... } from "..."` 的具名绑定（避免误伤注释/字符串/默认导入）。
@@ -55,6 +62,9 @@ if (/const\s*\{[^}]*\bsnap\b[^}]*\}\s*=\s*prepareBattleTurnContext\(\)/.test(src
 }
 if (/runBattleActionDecision\([^,\n]+,\s*[^)]+\)/.test(src)) {
   violations.push("runBattleActionDecision(snap, options)");
+}
+if (!src.includes("runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN })")) {
+  violations.push("missing turn prelude entry");
 }
 if (violations.length) {
   console.error(
