@@ -61,7 +61,10 @@ function finalizeTurnObservations(event) {
   return { learnedBurstByMid: {} };
 }
 
+const battleObservationLearningEventHandlers = Object.freeze({
+  [EVENT_FINALIZE_TURN_OBSERVATIONS]: (event) => finalizeTurnObservations(event),
+});
+
 export function runBattleObservationLearning(event = { type: EVENT_FINALIZE_TURN_OBSERVATIONS }) {
-  if (event.type === EVENT_FINALIZE_TURN_OBSERVATIONS) return finalizeTurnObservations(event);
-  return { learnedBurstByMid: {} };
+  return battleObservationLearningEventHandlers[event.type]?.(event) || { learnedBurstByMid: {} };
 }

@@ -82,4 +82,14 @@ describe("runBattleObservationLearning", () => {
     expect(mocks.runIncomingBurstLearningAutomation).not.toHaveBeenCalled();
     expect(result).toEqual({ learnedBurstByMid: {} });
   });
+
+  it("ignores unknown observation learning events without touching downstream learners", () => {
+    const result = runBattleObservationLearning({ type: "unknown" });
+
+    expect(result).toEqual({ learnedBurstByMid: {} });
+    expect(mocks.runRecoveryLearningAutomation).not.toHaveBeenCalled();
+    expect(mocks.runCdLearningAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBigSkillKillLearningAutomation).not.toHaveBeenCalled();
+    expect(mocks.runIncomingBurstLearningAutomation).not.toHaveBeenCalled();
+  });
 });

@@ -62,6 +62,18 @@ for (const forbidden of [
   }
 }
 
+if (!ownerText.includes("const battleObservationLearningEventHandlers")) {
+  violations.push(`${rel(owner)} must route observation learning events through a handler table`);
+}
+const ownerEntry =
+  ownerText.match(/export function runBattleObservationLearning[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
+  violations.push(`${rel(owner)} entry must not reintroduce an event.type if-chain`);
+}
+if (ownerEntry.includes("finalizeTurnObservations(")) {
+  violations.push(`${rel(owner)} entry must dispatch through battleObservationLearningEventHandlers`);
+}
+
 if (violations.length) {
   console.error("[verify-battle-observation-learning-boundary] FAIL");
   for (const v of violations) console.error(`- ${v}`);
