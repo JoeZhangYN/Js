@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const battleFile = path.join(root, "src/battle/battle-automation.js");
+const battleLifecycleFile = path.join(root, "src/battle/battle-lifecycle.js");
+const battleLifecycleTest = path.join(root, "src/battle/battle-lifecycle.test.js");
 const actionEventBridgeFile = path.join(root, "src/battle/battle-action-event-bridge.js");
 const legacyReloaderFile = path.join(root, "src/battle/reloader.js");
 const actionDelayFile = path.join(root, "src/battle/battle-action-delay.js");
@@ -128,12 +130,18 @@ function checkBattleEntry() {
       `${rel(battleFile)} must install action events through runBattleActionEventBridgeAutomation(event)`
     );
   }
-  for (const required of ["startBattleMonsterKnowledge", "startBattleMonitoring"]) {
-    if (!text.includes(required)) {
-      violations.push(
-        `${rel(battleFile)} must make ${required} visible in runBattleAutomation(event)`
-      );
-    }
+  if (!text.includes("BattleLifecycleEvent.BATTLE_STARTED")) {
+    violations.push(`${rel(battleFile)} must report battle start through battle lifecycle`);
+  }
+  if (
+    /BattleStartRuntimeEvent\.BATTLE_STARTED|MonsterKnowledgeEvent\.BATTLE_STARTED|BattleMonitorEvent\.BATTLE_STARTED/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(battleFile)} battle started exits belong in battle-lifecycle`);
+  }
+  if (/startBattleMonsterKnowledge|startBattleMonitoring/.test(text)) {
+    violations.push(`${rel(battleFile)} must not split battle started exits in page entry`);
   }
   if (/\bsetup(?:PauseControls|MonsterKnowledge|BattleMonitor)\b/.test(text)) {
     violations.push(`${rel(battleFile)} must not use legacy setup* names for battle orchestration`);
@@ -151,12 +159,9 @@ function checkBattleEntry() {
       `${rel(battleFile)} pause controls belong in runBattlePauseControlsAutomation(event)`
     );
   }
-  if (!text.includes("BattleStartRuntimeEvent.BATTLE_STARTED")) {
-    violations.push(`${rel(battleFile)} must initialize battle runtime through its entry`);
-  }
   if (/\battackStatus\b|BattleActionSpeedEvent\.BATTLE_STARTED/.test(text)) {
     violations.push(
-      `${rel(battleFile)} battle start runtime belongs in runBattleStartRuntimeAutomation(event)`
+      `${rel(battleFile)} battle start runtime belongs in runBattleLifecycleAutomation(event)`
     );
   }
   const pageText = fs.readFileSync(path.join(root, "src/pages/page-automation.js"), "utf8");
@@ -165,6 +170,55 @@ function checkBattleEntry() {
   }
   if (/runBattleAutomation\(\s*\)/.test(pageText)) {
     violations.push("src/pages/page-automation.js must not call no-arg battle entry");
+  }
+}
+
+function checkBattleLifecycleEntry() {
+  const text = fs.readFileSync(battleLifecycleFile, "utf8");
+  if (!/export const BattleLifecycleEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(battleLifecycleFile)} must expose BattleLifecycleEvent`);
+  }
+  if (!/export function runBattleLifecycleAutomation\(\s*event\b/.test(text)) {
+    violations.push(`${rel(battleLifecycleFile)} must expose runBattleLifecycleAutomation(event)`);
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleLifecycleEvent\b|runBattleLifecycleAutomation\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(battleLifecycleFile)} may export only its event entry`);
+  }
+  for (const required of [
+    "BattleStartRuntimeEvent.BATTLE_STARTED",
+    "MonsterKnowledgeEvent.BATTLE_STARTED",
+    "BattleMonitorEvent.BATTLE_STARTED",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(battleLifecycleFile)} must make ${required} visible`);
+    }
+  }
+  const runtimeIndex = text.indexOf("BattleStartRuntimeEvent.BATTLE_STARTED");
+  const knowledgeIndex = text.indexOf("MonsterKnowledgeEvent.BATTLE_STARTED");
+  const monitorIndex = text.indexOf("BattleMonitorEvent.BATTLE_STARTED");
+  if (
+    runtimeIndex === -1 ||
+    knowledgeIndex === -1 ||
+    monitorIndex === -1 ||
+    runtimeIndex > knowledgeIndex ||
+    knowledgeIndex > monitorIndex
+  ) {
+    violations.push(
+      `${rel(battleLifecycleFile)} must start runtime before knowledge and monitor exits`
+    );
+  }
+  if (!fs.existsSync(battleLifecycleTest)) {
+    violations.push(`${rel(battleLifecycleTest)} must cover battle lifecycle contract`);
+  }
+  for (const file of [battleFile, actionEventBridgeFile, mainLoopFile, roundStartFile]) {
+    const source = fs.readFileSync(file, "utf8");
+    if (file !== battleFile && /from\s+["']\.\/battle-lifecycle\.js["']/.test(source)) {
+      violations.push(`${rel(file)} must not import internal battle lifecycle workflow`);
+    }
   }
 }
 
@@ -1673,6 +1727,7 @@ function checkBattleOptionVocabulary() {
 
 checkInit();
 checkBattleEntry();
+checkBattleLifecycleEntry();
 checkRoundStartCallers();
 checkRoundStartEntry();
 checkTurnEntry();
