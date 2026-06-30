@@ -1,6 +1,6 @@
 import { cE, gE } from "../dom/query.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
-import { runBattleTurnAutomation } from "./main-loop.js";
+import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 
 const EVENT_INSTALL = "install";
@@ -63,7 +63,7 @@ export function runBattlePauseControlsAutomation(
       runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback }),
     runPauseToggle: (toggleDeps) =>
       runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, toggleDeps),
-    resume: runBattleTurnAutomation,
+    resume: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
   }
 ) {
   return battlePauseControlsEventHandlers[event.type]?.(event, deps) ?? false;

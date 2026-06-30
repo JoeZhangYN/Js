@@ -4,7 +4,7 @@ import {
   runBattleActionEventBridgeAutomation,
 } from "./battle-action-event-bridge.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./battle-round-start.js";
-import { runBattleTurnAutomation } from "./main-loop.js";
+import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js";
 import {
   BattlePauseControlsEvent,
   runBattlePauseControlsAutomation,
@@ -57,7 +57,7 @@ function startBattleRound() {
 }
 
 function runInitialBattleTurn() {
-  runBattleTurnAutomation();
+  runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
 }
 
 function runPageReadyStartup() {

@@ -20,6 +20,7 @@ const legacyActionEndFile = path.join(root, "src/battle/battle-action-end.js");
 const legacyActionStartFile = path.join(root, "src/battle/battle-action-start.js");
 const pauseControlsFile = path.join(root, "src/battle/battle-pause-controls.js");
 const pauseControlsTest = path.join(root, "src/battle/battle-pause-controls.test.js");
+const nextRoundContinuationFile = path.join(root, "src/battle/battle-next-round-continuation.js");
 const startRuntimeFile = path.join(root, "src/battle/battle-start-runtime.js");
 const startRuntimeTest = path.join(root, "src/battle/battle-start-runtime.test.js");
 const debuffCoverageFile = path.join(root, "src/battle/battle-debuff-coverage.js");
@@ -184,6 +185,9 @@ function checkBattleEntry() {
   }
   if (!text.includes("runBattleTurnAutomation")) {
     violations.push(`${rel(battleFile)} must run turns through runBattleTurnAutomation()`);
+  }
+  if (!text.includes("BattleTurnWorkflowEvent.RUN_CURRENT_TURN")) {
+    violations.push(`${rel(battleFile)} must run turns through BattleTurnWorkflowEvent.RUN_CURRENT_TURN`);
   }
   if (!text.includes("runBattleActionEventBridgeAutomation")) {
     violations.push(
@@ -405,6 +409,12 @@ function checkTurnEntry() {
   const actionDecisionText = fs.readFileSync(actionDecisionFile, "utf8");
   if (!/export function runBattleTurnAutomation\(/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must expose runBattleTurnAutomation()`);
+  }
+  if (!/export const BattleTurnWorkflowEvent\s*=\s*Object\.freeze\(/.test(text)) {
+    violations.push(`${rel(mainLoopFile)} must expose BattleTurnWorkflowEvent`);
+  }
+  if (!text.includes("RUN_CURRENT_TURN")) {
+    violations.push(`${rel(mainLoopFile)} must own RUN_CURRENT_TURN event`);
   }
   if (/\b(?:export\s+)?function\s+main\s*\(/.test(text)) {
     violations.push(
@@ -648,6 +658,23 @@ function checkTurnEntry() {
         );
       }
     });
+  }
+  for (const file of [
+    battleFile,
+    actionLifecycleFile,
+    pauseControlsFile,
+    nextRoundContinuationFile,
+  ]) {
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      source.includes("runBattleTurnAutomation") &&
+      !source.includes("BattleTurnWorkflowEvent.RUN_CURRENT_TURN")
+    ) {
+      violations.push(`${rel(file)} must call battle turn workflow through RUN_CURRENT_TURN event`);
+    }
+    if (/runBattleTurnAutomation\(\s*\)/.test(source)) {
+      violations.push(`${rel(file)} must not call battle turn workflow without an event`);
+    }
   }
 }
 

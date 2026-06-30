@@ -20,7 +20,10 @@ vi.mock("./battle-round-start.js", () => ({
   BattleRoundStartEvent: Object.freeze({ ROUND_STARTED: "roundStarted" }),
   runBattleRoundStartAutomation: mocks.runBattleRoundStartAutomation,
 }));
-vi.mock("./main-loop.js", () => ({ runBattleTurnAutomation: mocks.runBattleTurnAutomation }));
+vi.mock("./main-loop.js", () => ({
+  BattleTurnWorkflowEvent: Object.freeze({ RUN_CURRENT_TURN: "runCurrentTurn" }),
+  runBattleTurnAutomation: mocks.runBattleTurnAutomation,
+}));
 vi.mock("./battle-pause-controls.js", () => ({
   BattlePauseControlsEvent: Object.freeze({ INSTALL: "install" }),
   runBattlePauseControlsAutomation: mocks.runBattlePauseControlsAutomation,
@@ -44,7 +47,7 @@ describe("runBattleAutomation", () => {
     expect(mocks.runBattleActionEventBridgeAutomation).toHaveBeenCalledWith({ type: "install" });
     expect(mocks.runBattleLifecycleAutomation).toHaveBeenCalledWith({ type: "battleStarted" });
     expect(mocks.runBattleRoundStartAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
-    expect(mocks.runBattleTurnAutomation).toHaveBeenCalledTimes(1);
+    expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "runCurrentTurn" });
     const actualOrder = [
       mocks.runBattlePauseControlsAutomation.mock.invocationCallOrder[0],
       mocks.runBattleActionEventBridgeAutomation.mock.invocationCallOrder[0],

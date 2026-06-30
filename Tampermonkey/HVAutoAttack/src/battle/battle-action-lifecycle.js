@@ -8,7 +8,7 @@ import {
   BattleCompletionEvent,
   runBattleCompletionAutomation,
 } from "./battle-completion.js";
-import { runBattleTurnAutomation } from "./main-loop.js";
+import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import {
   BattleNextRoundContinuationEvent,
@@ -74,7 +74,7 @@ export function runBattleActionLifecycleAutomation(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.READ_REACHED }),
     continueNextRound: () =>
       runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }),
-    runTurn: runBattleTurnAutomation,
+    runTurn: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
   }
 ) {
   return battleActionLifecycleEventHandlers[event.type]?.(deps) ?? false;

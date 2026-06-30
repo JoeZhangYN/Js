@@ -7,7 +7,17 @@ import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.j
 import { BattleActionDecisionEvent, runBattleActionDecision } from "./battle-action-decision.js";
 import { BattleTurnPreludeEvent, runBattleTurnPrelude } from "./battle-turn-prelude.js";
 
-export function runBattleTurnAutomation() {
+const EVENT_RUN_CURRENT_TURN = "runCurrentTurn";
+
+export const BattleTurnWorkflowEvent = Object.freeze({
+  RUN_CURRENT_TURN: EVENT_RUN_CURRENT_TURN,
+});
+
+const battleTurnWorkflowEventHandlers = Object.freeze({
+  [EVENT_RUN_CURRENT_TURN]: runCurrentBattleTurn,
+});
+
+function runCurrentBattleTurn() {
   if (runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })) return;
 
   const prelude = runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN });
@@ -15,4 +25,8 @@ export function runBattleTurnAutomation() {
     type: BattleActionDecisionEvent.DECIDE,
     context: prepareBattleTurnContext({ logTelemetry: prelude?.battleLogTelemetry }),
   });
+}
+
+export function runBattleTurnAutomation(event = { type: EVENT_RUN_CURRENT_TURN }) {
+  return battleTurnWorkflowEventHandlers[event.type]?.(event) ?? false;
 }

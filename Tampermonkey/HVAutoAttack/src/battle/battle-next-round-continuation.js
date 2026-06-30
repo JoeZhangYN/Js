@@ -1,7 +1,7 @@
 import { gE } from "../dom/query.js";
 import { post } from "../dom/http.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
-import { runBattleTurnAutomation } from "./main-loop.js";
+import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./battle-round-start.js";
 
 const EVENT_CONTINUE = "continue";
@@ -45,7 +45,7 @@ export function runBattleNextRoundContinuation(
     unsafeWindow,
     handleRiddle: (data) => runRiddleAutomation({ type: RiddleEvent.BATTLE_POST_RESULT, data }),
     startRound: () => runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED }),
-    runTurn: runBattleTurnAutomation,
+    runTurn: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
   }
 ) {
   return battleNextRoundContinuationEventHandlers[event.type]?.(event, deps) ?? false;

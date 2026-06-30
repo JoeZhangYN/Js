@@ -183,7 +183,7 @@ main.js 装配三条独立汉化路径（功能区不重叠）：
 
 ### 3.2 每 turn 主循环（main-loop.js）
 ```
-runBattleTurnAutomation():
+runBattleTurnAutomation(RUN_CURRENT_TURN):
   1. 暂停态？→ 渲染并 return
   2. runBattleTurnPrelude(PREPARE_CURRENT_TURN)
      ├─ monster-status ensure-ready

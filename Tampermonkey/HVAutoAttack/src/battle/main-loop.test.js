@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { runBattleTurnAutomation } from "./main-loop.js";
+import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js";
 
 const mocks = vi.hoisted(() => ({
   prepareBattleTurnContext: vi.fn(),
@@ -38,7 +38,7 @@ beforeEach(() => {
 
 describe("runBattleTurnAutomation", () => {
   it("runs turn prelude before preparing and dispatching decision context", () => {
-    runBattleTurnAutomation();
+    runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
 
     expect(mocks.runBattleTurnPrelude).toHaveBeenCalledWith({ type: "prepareCurrentTurn" });
     expect(mocks.prepareBattleTurnContext).toHaveBeenCalledWith({
@@ -51,5 +51,12 @@ describe("runBattleTurnAutomation", () => {
         actionOptions: { ok: true },
       },
     });
+  });
+
+  it("rejects unknown turn workflow events", () => {
+    expect(runBattleTurnAutomation({ type: "unknown" })).toBe(false);
+    expect(mocks.runBattlePauseAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleTurnPrelude).not.toHaveBeenCalled();
+    expect(mocks.runBattleActionDecision).not.toHaveBeenCalled();
   });
 });
