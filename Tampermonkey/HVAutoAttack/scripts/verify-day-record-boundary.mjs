@@ -64,7 +64,12 @@ if (!lobbyText.includes("DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY")) {
     `${lobby.replaceAll("\\", "/")} must refresh and schedule daily records through day-record`
   );
 }
-if (!/rerun:\s*\(\)\s*=>\s*runLobbyAutomation\(\s*\{\s*type:\s*EVENT_PAGE_READY\s*\}\s*\)/.test(lobbyText)) {
+if (
+  !/function rerunLobbyPageReady\(\) \{\s*return runLobbyAutomation\(\s*\{\s*type:\s*EVENT_PAGE_READY\s*\}\s*\);\s*\}/.test(
+    lobbyText
+  ) ||
+  !/rerun:\s*rerunLobbyPageReady/.test(lobbyText)
+) {
   violations.push(
     `${lobby.replaceAll("\\", "/")} must let the UTC day rollover rerun the lobby page-ready workflow`
   );

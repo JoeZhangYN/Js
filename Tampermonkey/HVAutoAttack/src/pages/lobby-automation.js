@@ -15,6 +15,16 @@ export const LobbyEvent = Object.freeze({
   PAGE_READY: EVENT_PAGE_READY,
 });
 
+const LOBBY_READY_FLOW_STEPS = [
+  clearBattleSession,
+  refreshLobbyDayRecord,
+  captureLobbyAbilityPage,
+  runQuickSiteLobbyReady,
+  handleLobbyEncounter,
+  stopWhenStaminaRequires,
+  runNextBattleAutomation,
+];
+
 function shouldStopForStamina() {
   return runStaminaAutomation({ type: StaminaEvent.SHOULD_STOP_LOBBY });
 }
@@ -31,22 +41,53 @@ function runNextBattleAutomation() {
   }
 }
 
-export async function runLobbyAutomation(event = { type: EVENT_PAGE_READY }) {
-  if (event.type !== EVENT_PAGE_READY) return undefined;
+function rerunLobbyPageReady() {
+  return runLobbyAutomation({ type: EVENT_PAGE_READY });
+}
+
+function clearBattleSession() {
   runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION });
+  return false;
+}
+
+function refreshLobbyDayRecord() {
   runDayRecordAutomation({
     type: DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY,
-    rerun: () => runLobbyAutomation({ type: EVENT_PAGE_READY }),
+    rerun: rerunLobbyPageReady,
   });
+  return false;
+}
+
+function captureLobbyAbilityPage() {
   runAbilityAoeAutomation({ type: AbilityAoeEvent.CAPTURE_ABILITY_PAGE });
+  return false;
+}
+
+function runQuickSiteLobbyReady() {
   runQuickSiteAutomation({ type: QuickSiteEvent.LOBBY_READY });
-  if (isLobbyOptionEnabled("encounter")) {
-    const encounterOutcome = await runEncounterAutomation({
-      type: EncounterEvent.LOBBY_TICK,
-      rerun: () => runLobbyAutomation({ type: EVENT_PAGE_READY }),
-    });
-    if (encounterOutcome.claimed) return;
+  return false;
+}
+
+async function handleLobbyEncounter() {
+  if (!isLobbyOptionEnabled("encounter")) return false;
+  const encounterOutcome = await runEncounterAutomation({
+    type: EncounterEvent.LOBBY_TICK,
+    rerun: rerunLobbyPageReady,
+  });
+  return Boolean(encounterOutcome.claimed);
+}
+
+function stopWhenStaminaRequires() {
+  return shouldStopForStamina();
+}
+
+async function runLobbyReadyFlow() {
+  for (const step of LOBBY_READY_FLOW_STEPS) {
+    if (await step()) return;
   }
-  if (shouldStopForStamina()) return;
-  runNextBattleAutomation();
+}
+
+export async function runLobbyAutomation(event = { type: EVENT_PAGE_READY }) {
+  if (event.type !== EVENT_PAGE_READY) return undefined;
+  await runLobbyReadyFlow();
 }

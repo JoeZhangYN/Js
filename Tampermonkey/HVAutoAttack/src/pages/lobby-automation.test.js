@@ -98,6 +98,22 @@ describe("runLobbyAutomation", () => {
     expect(mocks.runRepairAutomation).toHaveBeenCalledWith({ type: "start" });
   });
 
+  it("runs lobby ready flow in business order", async () => {
+    setLobbyOption({ encounter: false, idleArena: true, repair: false });
+
+    await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
+
+    const actualOrder = [
+      mocks.runBattleRuntimeAutomation.mock.invocationCallOrder[0],
+      mocks.runDayRecordAutomation.mock.invocationCallOrder[0],
+      mocks.runAbilityAoeAutomation.mock.invocationCallOrder[0],
+      mocks.runQuickSiteAutomation.mock.invocationCallOrder[0],
+      mocks.runStaminaAutomation.mock.invocationCallOrder[0],
+      mocks.runIdleArenaAutomation.mock.invocationCallOrder[0],
+    ];
+    expect(actualOrder).toEqual([...actualOrder].sort((a, b) => a - b));
+  });
+
   it("stops later lobby automation when encounter is claimed", async () => {
     setLobbyOption({ encounter: true, idleArena: true, repair: false });
     mocks.runEncounterAutomation.mockResolvedValue({ claimed: true });
@@ -109,6 +125,16 @@ describe("runLobbyAutomation", () => {
       rerun: expect.any(Function),
     });
     expect(mocks.runStaminaAutomation).not.toHaveBeenCalled();
+    expect(mocks.runIdleArenaAutomation).not.toHaveBeenCalled();
+  });
+
+  it("stops next battle automation when stamina requires a stop", async () => {
+    setLobbyOption({ encounter: false, idleArena: true, repair: true });
+    mocks.runStaminaAutomation.mockReturnValue(true);
+
+    await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
+
+    expect(mocks.runRepairAutomation).not.toHaveBeenCalled();
     expect(mocks.runIdleArenaAutomation).not.toHaveBeenCalled();
   });
 

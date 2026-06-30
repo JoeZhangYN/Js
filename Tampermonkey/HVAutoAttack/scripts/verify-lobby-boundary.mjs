@@ -48,6 +48,45 @@ function checkLobbyEntry() {
       `${rel(lobbyFile)} must await encounter workflow before repair/idle automation`
     );
   }
+  for (const required of [
+    "LOBBY_READY_FLOW_STEPS",
+    "clearBattleSession",
+    "refreshLobbyDayRecord",
+    "captureLobbyAbilityPage",
+    "runQuickSiteLobbyReady",
+    "handleLobbyEncounter",
+    "stopWhenStaminaRequires",
+    "runNextBattleAutomation",
+    "runLobbyReadyFlow",
+    "rerunLobbyPageReady",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(lobbyFile)} must name lobby-ready flow step ${required}`);
+    }
+  }
+  if (
+    !/const LOBBY_READY_FLOW_STEPS = \[\s*clearBattleSession,\s*refreshLobbyDayRecord,\s*captureLobbyAbilityPage,\s*runQuickSiteLobbyReady,\s*handleLobbyEncounter,\s*stopWhenStaminaRequires,\s*runNextBattleAutomation,\s*\]/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(lobbyFile)} must own explicit lobby-ready flow order`);
+  }
+  const entryBody =
+    text.match(/export async function runLobbyAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  for (const forbidden of [
+    "runBattleRuntimeAutomation",
+    "runDayRecordAutomation",
+    "runAbilityAoeAutomation",
+    "runQuickSiteAutomation",
+    "runEncounterAutomation",
+    "runRepairAutomation",
+    "runIdleArenaAutomation",
+  ]) {
+    if (entryBody.includes(forbidden)) {
+      violations.push(`${rel(lobbyFile)} entry must route page ready through lobby flow steps`);
+    }
+  }
   if (!text.includes("LobbyEvent") || !text.includes("EVENT_PAGE_READY")) {
     violations.push(`${rel(lobbyFile)} must own LobbyEvent.PAGE_READY wiring`);
   }
@@ -65,6 +104,9 @@ function checkLobbyEntry() {
   }
   if (/rerun:\s*runLobbyAutomation\b/.test(text)) {
     violations.push(`${rel(lobbyFile)} encounter rerun must report LobbyEvent.PAGE_READY`);
+  }
+  if (!/function rerunLobbyPageReady\(\) \{\s*return runLobbyAutomation\(\{ type: EVENT_PAGE_READY \}\);\s*\}/.test(text)) {
+    violations.push(`${rel(lobbyFile)} rerun must report LobbyEvent.PAGE_READY through one helper`);
   }
   const pageText = fs.readFileSync(path.join(root, "src/pages/page-automation.js"), "utf8");
   if (!pageText.includes("LobbyEvent.PAGE_READY")) {
