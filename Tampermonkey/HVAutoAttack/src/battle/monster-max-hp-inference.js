@@ -1,6 +1,6 @@
 import { MonsterDbStoreEvent, runMonsterDbStoreAutomation } from "../state/monster-db-store.js";
 import { normalizeMonsterName } from "../monster/monster-identity.js";
-import { parseBattleLog, accumulateDamageByMonster } from "./log-parser.js";
+import { accumulateDamageByMonster } from "./log-parser.js";
 
 const EVENT_APPLY_DEATHS = "applyDeaths";
 
@@ -23,7 +23,6 @@ function makeDeps(deps) {
   return {
     accumulateDamageByMonster: deps.accumulateDamageByMonster || accumulateDamageByMonster,
     normalizeMonsterName: deps.normalizeMonsterName || normalizeMonsterName,
-    parseBattleLog: deps.parseBattleLog || parseBattleLog,
     readStoredMaxHp:
       deps.readStoredMaxHp ||
       ((monsterId, level) =>
@@ -64,7 +63,8 @@ function applyDeathInferences(event, deps) {
 
   if (!deathCandidates.length) return [];
 
-  const damageByMonster = deps.accumulateDamageByMonster(deps.parseBattleLog());
+  const battleLog = Array.isArray(event.battleLog) ? event.battleLog : [];
+  const damageByMonster = deps.accumulateDamageByMonster(battleLog);
   const learned = [];
   for (const monster of deathCandidates) {
     inferredThisPage.add(monster.name);

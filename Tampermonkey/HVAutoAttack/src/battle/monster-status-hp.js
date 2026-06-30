@@ -2,6 +2,7 @@
 import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { MonsterStatusViewEvent, runMonsterStatusView } from "./monster-status-view.js";
+import { BattleLogTelemetryEvent, runBattleLogTelemetry } from "./battle-log-telemetry.js";
 import {
   MonsterMaxHpInferenceEvent,
   runMonsterMaxHpInference,
@@ -23,7 +24,12 @@ function readTargetWeightOptions() {
   };
 }
 
-export function updateMonsterHpRuntime() {
+function readBattleLogForHpUpdate(event) {
+  if (Array.isArray(event?.battleLog)) return event.battleLog;
+  return runBattleLogTelemetry({ type: BattleLogTelemetryEvent.READ_CURRENT }).battleLog;
+}
+
+export function updateMonsterHpRuntime(event = {}) {
   const monsterStatus = g("monsterStatus");
   if (!Array.isArray(monsterStatus)) return;
 
@@ -45,6 +51,7 @@ export function updateMonsterHpRuntime() {
 
   runMonsterMaxHpInference({
     type: MonsterMaxHpInferenceEvent.APPLY_DEATHS,
+    battleLog: readBattleLogForHpUpdate(event),
     monsterStatus,
     runtimeSnapshot,
   });

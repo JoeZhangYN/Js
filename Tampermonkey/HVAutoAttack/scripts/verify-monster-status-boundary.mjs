@@ -230,8 +230,10 @@ function checkHpImpl() {
   }
   for (const required of [
     "MonsterStatusViewEvent.READ_HP_RUNTIME_SNAPSHOT",
+    "BattleLogTelemetryEvent.READ_CURRENT",
     "MonsterMaxHpInferenceEvent.APPLY_DEATHS",
     "MonsterTargetWeightEvent.APPLY",
+    "runBattleLogTelemetry",
     "runMonsterMaxHpInference",
     "runMonsterStatusView",
     "runMonsterTargetWeight",
@@ -270,15 +272,20 @@ function checkMaxHpInference() {
     "export function runMonsterMaxHpInference",
     "monsterMaxHpInferenceEventHandlers",
     "APPLY_DEATHS",
-    "parseBattleLog",
     "accumulateDamageByMonster",
     "MonsterDbStoreEvent.HP_READ",
     "MonsterDbStoreEvent.HP_WRITE",
     "inferredThisPage",
+    "event.battleLog",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${maxHpInference.replaceAll("\\", "/")} must own ${required}`);
     }
+  }
+  if (/parseBattleLog/.test(text)) {
+    violations.push(
+      `${maxHpInference.replaceAll("\\", "/")} must consume event battleLog, not parse textlog directly`
+    );
   }
   const entryBody =
     text.match(/export function runMonsterMaxHpInference\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
