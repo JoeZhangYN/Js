@@ -403,6 +403,12 @@ function checkTurnEntry() {
   for (const required of [
     "BattleTurnPreludeEvent",
     "PREPARE_CURRENT_TURN",
+    "TURN_PRELUDE_STEPS",
+    'capability: "monsterStatusReady"',
+    'capability: "turnStarted"',
+    'capability: "monitorHudRefresh"',
+    'capability: "killBugRecovery"',
+    'capability: "monsterHpUpdate"',
     "MonsterStatusEvent.ENSURE_READY",
     "BattleTurnEvent.TURN_STARTED",
     "BattleMonitorEvent.HUD_REFRESH",
@@ -415,6 +421,11 @@ function checkTurnEntry() {
   }
   if (!fs.existsSync(turnPreludeTest)) {
     violations.push(`${rel(turnPreludeTest)} must cover turn prelude contract`);
+  }
+  const prepareCurrentTurnBody =
+    turnPreludeText.match(/function prepareCurrentTurn\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/for\s*\(\s*const\s+step\s+of\s+TURN_PRELUDE_STEPS\s*\)/.test(prepareCurrentTurnBody)) {
+    violations.push(`${rel(turnPreludeFile)} must run current-turn prelude through TURN_PRELUDE_STEPS`);
   }
   if (fs.existsSync(legacyBattleRulesFile)) {
     violations.push(

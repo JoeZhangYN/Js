@@ -19,13 +19,52 @@ const battleTurnPreludeEventHandlers = Object.freeze({
   [EVENT_PREPARE_CURRENT_TURN]: () => prepareCurrentTurn(),
 });
 
+const TURN_PRELUDE_STEPS = [
+  {
+    capability: "monsterStatusReady",
+    run: ensureMonsterStatusReady,
+  },
+  {
+    capability: "turnStarted",
+    run: reportTurnStarted,
+  },
+  {
+    capability: "monitorHudRefresh",
+    run: refreshBattleMonitorHud,
+  },
+  {
+    capability: "killBugRecovery",
+    run: recoverKillBug,
+  },
+  {
+    capability: "monsterHpUpdate",
+    run: updateMonsterHp,
+  },
+];
+
 function prepareCurrentTurn() {
-  runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY });
-  runBattleTurnRuntime({ type: BattleTurnEvent.TURN_STARTED });
-  runBattleMonitorAutomation({ type: BattleMonitorEvent.HUD_REFRESH });
-  killBug();
-  runMonsterStatusAutomation({ type: MonsterStatusEvent.UPDATE_HP });
+  for (const step of TURN_PRELUDE_STEPS) step.run();
   return true;
+}
+
+function ensureMonsterStatusReady() {
+  runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY });
+}
+
+function reportTurnStarted() {
+  runBattleTurnRuntime({ type: BattleTurnEvent.TURN_STARTED });
+}
+
+function refreshBattleMonitorHud() {
+  runBattleMonitorAutomation({ type: BattleMonitorEvent.HUD_REFRESH });
+}
+
+function recoverKillBug() {
+  killBug();
+}
+
+function updateMonsterHp() {
+  runMonsterStatusAutomation({ type: MonsterStatusEvent.UPDATE_HP });
 }
 
 export function runBattleTurnPrelude(event = { type: EVENT_PREPARE_CURRENT_TURN }) {

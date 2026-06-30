@@ -23,6 +23,12 @@ for (const required of [
   "battleTurnPreludeEventHandlers",
   "runBattleTurnPrelude",
   "PREPARE_CURRENT_TURN",
+  "TURN_PRELUDE_STEPS",
+  'capability: "monsterStatusReady"',
+  'capability: "turnStarted"',
+  'capability: "monitorHudRefresh"',
+  'capability: "killBugRecovery"',
+  'capability: "monsterHpUpdate"',
   "MonsterStatusEvent.ENSURE_READY",
   "BattleTurnEvent.TURN_STARTED",
   "BattleMonitorEvent.HUD_REFRESH",
@@ -47,6 +53,10 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_PREPARE_CURRENT_TURN\]/.test(ownerText)) 
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
+const prepareBody = ownerText.match(/function prepareCurrentTurn\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/for\s*\(\s*const\s+step\s+of\s+TURN_PRELUDE_STEPS\s*\)/.test(prepareBody)) {
+  violations.push(`${rel(owner)} must run current-turn prelude through TURN_PRELUDE_STEPS`);
 }
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover turn prelude entry contract`);
