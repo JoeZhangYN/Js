@@ -3,12 +3,17 @@
 // 选择逻辑（load-bearing）：Silence 只挡施法 → 仅法术爆发用；物理/未知 → Sleep（整回合禁用）；再退 Confuse。
 import { aliveByOrder } from "../monster-view.js";
 
-const PHYSICAL_TYPES = new Set(["piercing", "crushing", "slashing", "physical"]);
-const CONTROL_IMG = { 232: "silence", 222: "sleep", 223: "confuse" };
+const PHYSICAL_TYPES = Object.freeze({
+  piercing: true,
+  crushing: true,
+  slashing: true,
+  physical: true,
+});
+const CONTROL_IMG = Object.freeze({ 232: "silence", 222: "sleep", 223: "confuse" });
 
 /** 按致死伤害类型 + 技能就绪挑控制技：法术→Silence，否则 Sleep，再退 Confuse；都不就绪→null。 */
 function pickControl(type, skillReady, opt) {
-  const isSpell = !!type && !PHYSICAL_TYPES.has(type) && type !== "unknown";
+  const isSpell = !!type && !PHYSICAL_TYPES[type] && type !== "unknown";
   if (isSpell && opt.burstControlSilenceForSpell !== false && skillReady?.["232"]) return "232";
   if (skillReady?.["222"]) return "222"; // Sleep 通用（整回合禁用，物理爆发也挡）
   if (skillReady?.["223"]) return "223"; // Confuse 兜底

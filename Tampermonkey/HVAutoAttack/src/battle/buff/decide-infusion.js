@@ -2,15 +2,15 @@
 import { checkCondition } from "../../settings/condition-eval.js";
 import { isPlayerBuffActive } from "../player-buff-state.js";
 
-const INFUSION_LIB = [
+const INFUSION_LIB = Object.freeze([
   null,
-  { id: 12101, img: "fireinfusion" },
-  { id: 12201, img: "coldinfusion" },
-  { id: 12301, img: "elecinfusion" },
-  { id: 12401, img: "windinfusion" },
-  { id: 12501, img: "holyinfusion" },
-  { id: 12601, img: "darkinfusion" },
-];
+  Object.freeze({ id: 12101, img: "fireinfusion" }),
+  Object.freeze({ id: 12201, img: "coldinfusion" }),
+  Object.freeze({ id: 12301, img: "elecinfusion" }),
+  Object.freeze({ id: 12401, img: "windinfusion" }),
+  Object.freeze({ id: 12501, img: "holyinfusion" }),
+  Object.freeze({ id: 12601, img: "darkinfusion" }),
+]);
 
 /**
  * @param {object} event

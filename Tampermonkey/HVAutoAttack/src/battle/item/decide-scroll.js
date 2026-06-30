@@ -30,50 +30,50 @@ export function decideScroll(event = {}) {
 }
 
 /** 卷轴库（从 item.js useScroll 内联 scrollLib 原样复制）。 */
-const SCROLL_LIB = {
-  Go: {
+const SCROLL_LIB = Object.freeze({
+  Go: Object.freeze({
     name: "Scroll of the Gods",
     id: 13299,
     mult: "3",
     img1: "absorb",
     img2: "shadowveil",
     img3: "sparklife",
-  },
-  Av: {
+  }),
+  Av: Object.freeze({
     name: "Scroll of the Avatar",
     id: 13199,
     mult: "2",
     img1: "haste",
     img2: "protection",
-  },
-  Pr: {
+  }),
+  Pr: Object.freeze({
     name: "Scroll of Protection",
     id: 13111,
     mult: "1",
     img1: "protection",
-  },
-  Sw: {
+  }),
+  Sw: Object.freeze({
     name: "Scroll of Swiftness",
     id: 13101,
     mult: "1",
     img1: "haste",
-  },
-  Li: {
+  }),
+  Li: Object.freeze({
     name: "Scroll of Life",
     id: 13221,
     mult: "1",
     img1: "sparklife",
-  },
-  Sh: {
+  }),
+  Sh: Object.freeze({
     name: "Scroll of Shadows",
     id: 13211,
     mult: "1",
     img1: "shadowveil",
-  },
-  Ab: {
+  }),
+  Ab: Object.freeze({
     name: "Scroll of Absorption",
     id: 13201,
     mult: "1",
     img1: "absorb",
-  },
-};
+  }),
+});

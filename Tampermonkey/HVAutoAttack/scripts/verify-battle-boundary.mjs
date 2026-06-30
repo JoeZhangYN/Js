@@ -1752,6 +1752,9 @@ function checkBigSkillDebuffEntry() {
   if (/\bbigSkillDebuffFacts\b/.test(castAllText)) {
     violations.push(`${rel(decideCastAllFile)} must not project big-skill boss facts locally`);
   }
+  if (!/const ALL_DEBUFF_GATES = Object\.freeze\(\{/.test(castAllText)) {
+    violations.push(`${rel(decideCastAllFile)} must own frozen all-debuff gate table`);
+  }
   if (/READ_CLEAR_READY|readClearReady/.test(ownerText)) {
     violations.push(`${rel(bigSkillFile)} legacy clear-ready name must stay retired`);
   }
@@ -1761,6 +1764,8 @@ function checkBurstControlEntry() {
   const ownerText = fs.readFileSync(burstControlFile, "utf8");
   for (const required of [
     "decideBurstControl",
+    "PHYSICAL_TYPES",
+    "CONTROL_IMG",
     "burstControlSwitch",
     "debuffSkillSwitch",
     "event.willClearWithBigSkill",
@@ -1772,6 +1777,12 @@ function checkBurstControlEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(burstControlFile)} must own burst-control gate ${required}`);
     }
+  }
+  if (
+    !/const PHYSICAL_TYPES = Object\.freeze\(\{/.test(ownerText) ||
+    !/const CONTROL_IMG = Object\.freeze\(\{/.test(ownerText)
+  ) {
+    violations.push(`${rel(burstControlFile)} must own frozen burst-control decision tables`);
   }
   if (/decideBurstControl\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(burstControlFile)} must not expose opt/snap decision input`);
@@ -2202,6 +2213,7 @@ function checkInfusionEntry() {
   const ownerText = fs.readFileSync(decideInfusionFile, "utf8");
   for (const required of [
     "decideInfusion",
+    "INFUSION_LIB",
     "infusionSwitch",
     "infusionCondition",
     "conditionFacts",
@@ -2211,6 +2223,9 @@ function checkInfusionEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideInfusionFile)} must own infusion gate ${required}`);
     }
+  }
+  if (!/const INFUSION_LIB = Object\.freeze\(\[/.test(ownerText)) {
+    violations.push(`${rel(decideInfusionFile)} must own frozen infusion item table`);
   }
   if (/decideInfusion\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideInfusionFile)} must not expose opt/snap infusion input`);
@@ -2275,6 +2290,7 @@ function checkBuffEntry() {
   const ownerText = fs.readFileSync(decideBuffFile, "utf8");
   for (const required of [
     "decideBuff",
+    "DRAUGHT_PACK",
     "buffSkillSwitch",
     "buffSkill",
     "buffSkillCondition",
@@ -2286,6 +2302,9 @@ function checkBuffEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideBuffFile)} must own buff gate ${required}`);
     }
+  }
+  if (!/const DRAUGHT_PACK = Object\.freeze\(\[/.test(ownerText)) {
+    violations.push(`${rel(decideBuffFile)} must own frozen draught decision table`);
   }
   if (/decideBuff\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideBuffFile)} must not expose opt/snap buff input`);
@@ -2520,6 +2539,10 @@ function checkBattleItemDecisionEntry() {
     itemText.match(/function decideGemUse\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/result\.kind\s*===/.test(decideGemUseBody)) {
     violations.push(`${rel(decideItemFile)} must map gem result kinds through GEM_RESULT_PLAN_MAPPERS`);
+  }
+  const scrollText = fs.readFileSync(decideScrollFile, "utf8");
+  if (!/const SCROLL_LIB = Object\.freeze\(\{/.test(scrollText)) {
+    violations.push(`${rel(decideScrollFile)} must own frozen scroll decision table`);
   }
 
   const rulesText = readBattleActionRulesText();
@@ -2976,12 +2999,24 @@ function checkAttackEntry() {
     violations.push(`${rel(physicalSkillScoringFile)} must not hard-code OFC/FRD skill ids`);
   }
   const autoElementText = fs.readFileSync(autoElementSelectionFile, "utf8");
-  for (const required of ["selectAutoElement", "autoElementPool", "target.resists"]) {
+  for (const required of [
+    "selectAutoElement",
+    "autoElementPool",
+    "target.resists",
+    "ELEMENT_TO_STATUS",
+    "DEFAULT_POOL",
+  ]) {
     if (!autoElementText.includes(required)) {
       violations.push(
         `${rel(autoElementSelectionFile)} must own auto element selection ${required}`
       );
     }
+  }
+  if (
+    !/const ELEMENT_TO_STATUS = Object\.freeze\(\{/.test(autoElementText) ||
+    !/const DEFAULT_POOL = Object\.freeze\(\[/.test(autoElementText)
+  ) {
+    violations.push(`${rel(autoElementSelectionFile)} must own frozen auto-element decision tables`);
   }
   const rulesText = readBattleActionRulesText();
   const attackRule =

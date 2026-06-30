@@ -11,20 +11,20 @@ import { canApplyDebuffPure } from "./can-apply.js";
 import { byOrder } from "../monster-view.js";
 import { aoeNeighborAnchor } from "../target-strategy.js";
 
-const ALL_DEBUFF_GATES = {
-  We: {
+const ALL_DEBUFF_GATES = Object.freeze({
+  We: Object.freeze({
     enabledKey: "debuffSkillAllWk",
     conditionKey: "debuffSkillWkCondition",
     coverageName: "weaken",
     skipInStall: false,
-  },
-  Im: {
+  }),
+  Im: Object.freeze({
     enabledKey: "debuffSkillAllIm",
     conditionKey: "debuffSkillImpCondition",
     coverageName: "imperil",
     skipInStall: true,
-  },
-};
+  }),
+});
 
 /**
  * 决定全员 debuff 该施给哪只怪物，返 ActionResult。

@@ -17,6 +17,8 @@ function rel(relative) {
 
 const ownerText = read(owner);
 const actionDecisionText = read(actionDecision);
+const burstControlText = read(path.normalize("src/battle/debuff/decide-burst-control.js"));
+const castAllText = read(path.normalize("src/battle/debuff/decide-cast-all.js"));
 
 for (const required of [
   "BattleOffensiveDebuffEvent",
@@ -64,6 +66,15 @@ if (
 
 if (/for \(const decide of \[/.test(ownerText)) {
   violations.push(`${rel(owner)} must not hide offensive debuff priority in an anonymous array`);
+}
+if (
+  !/const PHYSICAL_TYPES = Object\.freeze\(\{/.test(burstControlText) ||
+  !/const CONTROL_IMG = Object\.freeze\(\{/.test(burstControlText)
+) {
+  violations.push("src/battle/debuff/decide-burst-control.js must own frozen burst-control decision tables");
+}
+if (!/const ALL_DEBUFF_GATES = Object\.freeze\(\{/.test(castAllText)) {
+  violations.push("src/battle/debuff/decide-cast-all.js must own frozen all-debuff gate table");
 }
 for (const required of ["noop: () => true"]) {
   if (!ownerText.includes(required)) {

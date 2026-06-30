@@ -5,13 +5,13 @@ import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
 import { checkCondition } from "../../settings/condition-eval.js";
 import { isPlayerBuffActive, shouldRecastPlayerBuff } from "../player-buff-state.js";
 
-const DRAUGHT_PACK = [
-  ["HD", { id: 11191, img: "healthpot" }],
-  ["MD", { id: 11291, img: "manapot" }],
-  ["SD", { id: 11391, img: "spiritpot" }],
-  ["FV", { id: 19111, img: "flowers" }],
-  ["BG", { id: 19131, img: "gum" }],
-];
+const DRAUGHT_PACK = Object.freeze([
+  Object.freeze(["HD", Object.freeze({ id: 11191, img: "healthpot" })]),
+  Object.freeze(["MD", Object.freeze({ id: 11291, img: "manapot" })]),
+  Object.freeze(["SD", Object.freeze({ id: 11391, img: "spiritpot" })]),
+  Object.freeze(["FV", Object.freeze({ id: 19111, img: "flowers" })]),
+  Object.freeze(["BG", Object.freeze({ id: 19131, img: "gum" })]),
+]);
 
 /**
  * 决定本 turn 是否要施 buff / 用 draught，返 ActionResult。

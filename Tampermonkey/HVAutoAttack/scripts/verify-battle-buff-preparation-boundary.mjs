@@ -17,6 +17,8 @@ function rel(relative) {
 
 const ownerText = read(owner);
 const actionDecisionText = read(actionDecision);
+const infusionText = read(path.normalize("src/battle/buff/decide-infusion.js"));
+const buffText = read(path.normalize("src/battle/buff/decide-buff.js"));
 
 for (const required of [
   "BattleBuffPreparationEvent",
@@ -49,6 +51,12 @@ if (
 
 if (/for \(const decide of \[/.test(ownerText)) {
   violations.push(`${rel(owner)} must not hide buff preparation priority in an anonymous array`);
+}
+if (!/const INFUSION_LIB = Object\.freeze\(\[/.test(infusionText)) {
+  violations.push("src/battle/buff/decide-infusion.js must own frozen infusion item table");
+}
+if (!/const DRAUGHT_PACK = Object\.freeze\(\[/.test(buffText)) {
+  violations.push("src/battle/buff/decide-buff.js must own frozen draught decision table");
 }
 for (const required of [
   "noop: () => true",

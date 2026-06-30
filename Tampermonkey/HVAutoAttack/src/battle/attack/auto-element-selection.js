@@ -3,8 +3,8 @@
 // element 编码对齐 spell-lib / attackStatus：1=Fire 2=Cold 3=Elec 4=Wind 5=Holy 6=Dark。
 // 把"数据库九抗"接进攻击决策（原 resist-panel 仅显示、决策不消费 → 孤岛接通 live consumer）。
 
-const ELEMENT_TO_STATUS = { fire: 1, cold: 2, elec: 3, wind: 4, holy: 5, dark: 6 };
-const DEFAULT_POOL = ["fire", "cold", "elec", "wind", "holy", "dark"];
+const ELEMENT_TO_STATUS = Object.freeze({ fire: 1, cold: 2, elec: 3, wind: 4, holy: 5, dark: 6 });
+const DEFAULT_POOL = Object.freeze(["fire", "cold", "elec", "wind", "holy", "dark"]);
 
 /**
  * 选目标怪最弱抗性对应的攻击属性编码。
