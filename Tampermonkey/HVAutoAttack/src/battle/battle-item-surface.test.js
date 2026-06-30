@@ -23,6 +23,11 @@ describe("runBattleItemSurface", () => {
     mocks.gE.mockReturnValue(null);
 
     expect(runBattleItemSurface()).toBeNull();
+    expect(mocks.gE).toHaveBeenCalledWith("#ikey_p");
+  });
+
+  it("rejects unknown events without reading item DOM", () => {
     expect(runBattleItemSurface({ type: "unknown" })).toBeNull();
+    expect(mocks.gE).not.toHaveBeenCalled();
   });
 });
