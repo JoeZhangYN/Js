@@ -7,6 +7,19 @@ export const BattlePlayerEffectsEvent = Object.freeze({
   READ_CURRENT: EVENT_READ_CURRENT,
 });
 
+const EMPTY_PLAYER_EFFECT_FACTS = Object.freeze({
+  channeling: false,
+  etherTapActiveX2: false,
+  etherTapExpiring: false,
+  playerBuffs: [],
+  playerEffects: [],
+  playerEffectTurns: {},
+});
+
+const battlePlayerEffectsEventHandlers = Object.freeze({
+  [EVENT_READ_CURRENT]: () => readCurrentPlayerEffects(),
+});
+
 function readEffects(container) {
   if (!container) return [];
   return [...container.querySelectorAll("img")].map((img) => ({
@@ -31,13 +44,5 @@ function readCurrentPlayerEffects() {
 }
 
 export function runBattlePlayerEffects(event = { type: EVENT_READ_CURRENT }) {
-  if (event.type === EVENT_READ_CURRENT) return readCurrentPlayerEffects();
-  return {
-    channeling: false,
-    etherTapActiveX2: false,
-    etherTapExpiring: false,
-    playerBuffs: [],
-    playerEffects: [],
-    playerEffectTurns: {},
-  };
+  return battlePlayerEffectsEventHandlers[event.type]?.() ?? EMPTY_PLAYER_EFFECT_FACTS;
 }

@@ -51,7 +51,7 @@ describe("runBattlePlayerEffects", () => {
     });
   });
 
-  it("returns an empty effect fact set for unknown events", () => {
+  it("rejects unknown events without touching DOM or parsers", () => {
     expect(runBattlePlayerEffects({ type: "unknown" })).toEqual({
       channeling: false,
       etherTapActiveX2: false,
@@ -60,5 +60,9 @@ describe("runBattlePlayerEffects", () => {
       playerEffects: [],
       playerEffectTurns: {},
     });
+
+    expect(mocks.gE).not.toHaveBeenCalled();
+    expect(mocks.parseEffectName).not.toHaveBeenCalled();
+    expect(mocks.parseEffectTurns).not.toHaveBeenCalled();
   });
 });

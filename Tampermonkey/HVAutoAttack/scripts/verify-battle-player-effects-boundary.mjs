@@ -20,6 +20,7 @@ const snapshotText = read(snapshot);
 
 for (const required of [
   "BattlePlayerEffectsEvent",
+  "battlePlayerEffectsEventHandlers",
   "runBattlePlayerEffects",
   "READ_CURRENT",
   "#pane_effects",
@@ -42,8 +43,21 @@ if (
 ) {
   violations.push(`${rel(owner)} may export only its event entry`);
 }
+const entryBody =
+  ownerText.match(/export function runBattlePlayerEffects\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover player effects entry contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("rejects unknown events without touching DOM or parsers")) {
+    violations.push(`${rel(ownerTest)} must cover unknown player effects events`);
+  }
 }
 if (!snapshotText.includes("runBattlePlayerEffects")) {
   violations.push(`${rel(snapshot)} must read player effects through battle player effects entry`);
