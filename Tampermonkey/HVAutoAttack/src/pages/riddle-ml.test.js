@@ -44,6 +44,14 @@ afterEach(() => {
 });
 
 describe("riddle ML entry", () => {
+  it("rejects unknown ML events without starting health checks or answering", () => {
+    expect(runRiddleMlAutomation({ type: "unknown" })).toBeUndefined();
+
+    expect(vi.getTimerCount()).toBe(0);
+    expect(mocks.runRiddleImageAutomation).not.toHaveBeenCalled();
+    expect(mocks.gmXhr).not.toHaveBeenCalled();
+  });
+
   it("starts the health check timer through the entry only once", () => {
     expect(runRiddleMlAutomation({ type: RiddleMlEvent.START_HEALTH })).toBe(true);
     expect(runRiddleMlAutomation({ type: RiddleMlEvent.START_HEALTH })).toBe(true);

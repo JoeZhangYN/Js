@@ -431,14 +431,14 @@ async function tryMLAnswer() {
   }
 }
 
-const riddleMlEventHandlers = {
-  [EVENT_START_HEALTH]: startRiddleMlHealthCheck,
+const riddleMlEventHandlers = Object.freeze({
+  [EVENT_START_HEALTH]: () => {
+    startRiddleMlHealthCheck();
+    return true;
+  },
   [EVENT_TRY_ANSWER]: tryMLAnswer,
-};
+});
 
 export function runRiddleMlAutomation(event = { type: EVENT_TRY_ANSWER }) {
-  const handler = riddleMlEventHandlers[event.type];
-  if (!handler) return undefined;
-  const result = handler(event);
-  return event.type === EVENT_START_HEALTH ? true : result;
+  return riddleMlEventHandlers[event.type]?.(event);
 }

@@ -379,11 +379,11 @@ function checkRiddleMlEntry() {
     violations.push(`${rel(riddleMlFile)} must own explicit ML answer attempt flow order`);
   }
   if (
-    !/\[EVENT_START_HEALTH\]: startRiddleMlHealthCheck[\s\S]*\[EVENT_TRY_ANSWER\]: tryMLAnswer/.test(
+    !/const riddleMlEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_START_HEALTH\]:\s*\(\)\s*=>\s*\{[\s\S]*startRiddleMlHealthCheck\(\);[\s\S]*return true;[\s\S]*\[EVENT_TRY_ANSWER\]: tryMLAnswer/.test(
       ownerText
     )
   ) {
-    violations.push(`${rel(riddleMlFile)} must route ML events through riddleMlEventHandlers`);
+    violations.push(`${rel(riddleMlFile)} must route ML events through a frozen handler table`);
   }
   const mlEntryBody =
     ownerText.match(/export function runRiddleMlAutomation\(event = \{ type: EVENT_TRY_ANSWER \}\) \{[\s\S]*?\n\}/)?.[0] ||
@@ -395,6 +395,13 @@ function checkRiddleMlEntry() {
     if (mlEntryBody.includes(forbidden)) {
       violations.push(`${rel(riddleMlFile)} entry must route ML work through event handlers`);
     }
+  }
+  const ownerTest = path.normalize("src/pages/riddle-ml.test.js");
+  const ownerTestText = fs.existsSync(path.join(root, ownerTest))
+    ? fs.readFileSync(path.join(root, ownerTest), "utf8")
+    : "";
+  if (!ownerTestText.includes("rejects unknown ML events without starting health checks or answering")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown ML events`);
   }
   const requestBody =
     ownerText.match(/async function requestRiddleMlAnswer\([\s\S]*?\n\}/)?.[0] || "";
