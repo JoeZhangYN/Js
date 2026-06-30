@@ -23,6 +23,10 @@ export const RepairDecisionEvent = Object.freeze({
   PLAN: EVENT_PLAN,
 });
 
+const repairDecisionEventHandlers = Object.freeze({
+  [EVENT_PLAN]: (event) => decideRepair(event.option, event.state, event.repairedIds),
+});
+
 /**
  * 单件是否需修：主世界(conditionPct 数值) → 耐久 ≤ 阈值；异世界(conditionPct=null) → 有需求材料即需修
  * （异世界维修页只列需修件，满修件无 .m，见 parse）。
@@ -64,6 +68,5 @@ function decideRepair(opt, state, repairedIds) {
 }
 
 export function runRepairDecision(event) {
-  if (event.type !== EVENT_PLAN) return undefined;
-  return decideRepair(event.option, event.state, event.repairedIds);
+  return repairDecisionEventHandlers[event.type]?.(event);
 }

@@ -46,6 +46,14 @@ for (const required of ["runRepairDecision", "RepairDecisionEvent"]) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
+const entryBody =
+  ownerText.match(/export function runRepairDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/const repairDecisionEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PLAN\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
 if (/export\s+function\s+decideRepair\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy decideRepair export is forbidden`);
 }
@@ -53,6 +61,14 @@ if (/g\(\s*["']option["']/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not describe repair decisions as raw option reads`
   );
+}
+if (!fs.existsSync(path.join(root, ownerTest))) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover repair decision entry`);
+} else {
+  const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+  if (!ownerTestText.includes("rejects unknown repair decision events without choosing a plan")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown repair decision events`);
+  }
 }
 
 if (violations.length) {

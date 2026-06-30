@@ -22,6 +22,19 @@ function decideRepair(option, repairState, repairedIds) {
   });
 }
 
+describe("repair decision entry — event routing", () => {
+  it("rejects unknown repair decision events without choosing a plan", () => {
+    expect(
+      runRepairDecision({
+        type: "unknown",
+        option: { repairValue: 50 },
+        state: state([pEquip(1, 20)]),
+        repairedIds: [],
+      })
+    ).toBeUndefined();
+  });
+});
+
 describe("repair decision entry — 选件 + 阈值", () => {
   it("无件 ≤ 阈值 → proceed", () => {
     const r = decideRepair({ repairValue: 50 }, state([pEquip(1, 80), pEquip(2, 100)]), []);
