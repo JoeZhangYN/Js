@@ -20,6 +20,7 @@ const snapshotText = read(snapshot);
 
 for (const required of [
   "BattlePlayerVitalsEvent",
+  "battlePlayerVitalsEventHandlers",
   "runBattlePlayerVitals",
   "READ_CURRENT",
   "MIRROR_RUNTIME",
@@ -46,8 +47,21 @@ if (
 ) {
   violations.push(`${rel(owner)} may export only its event entry`);
 }
+const entryBody =
+  ownerText.match(/export function runBattlePlayerVitals\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\][\s\S]*\[EVENT_MIRROR_RUNTIME\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover player vitals entry contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("rejects unknown events without touching DOM or runtime state")) {
+    violations.push(`${rel(ownerTest)} must cover unknown player vitals events`);
+  }
 }
 if (!snapshotText.includes("runBattlePlayerVitals")) {
   violations.push(`${rel(snapshot)} must read player vitals through battle player vitals entry`);

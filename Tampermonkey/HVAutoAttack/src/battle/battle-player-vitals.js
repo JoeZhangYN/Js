@@ -9,6 +9,11 @@ export const BattlePlayerVitalsEvent = Object.freeze({
   MIRROR_RUNTIME: EVENT_MIRROR_RUNTIME,
 });
 
+const battlePlayerVitalsEventHandlers = Object.freeze({
+  [EVENT_READ_CURRENT]: () => readCurrentVitals(),
+  [EVENT_MIRROR_RUNTIME]: (event) => mirrorRuntime(event.vitals),
+});
+
 function readLegacyVitals() {
   return {
     hp: (gE("#vbh>div>img").offsetWidth / 500) * 100,
@@ -57,7 +62,5 @@ function mirrorRuntime(vitals = {}) {
 }
 
 export function runBattlePlayerVitals(event = { type: EVENT_READ_CURRENT }) {
-  if (event.type === EVENT_READ_CURRENT) return readCurrentVitals();
-  if (event.type === EVENT_MIRROR_RUNTIME) return mirrorRuntime(event.vitals);
-  return {};
+  return battlePlayerVitalsEventHandlers[event.type]?.(event) ?? {};
 }

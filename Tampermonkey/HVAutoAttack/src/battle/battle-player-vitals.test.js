@@ -82,4 +82,11 @@ describe("runBattlePlayerVitals", () => {
     expect(mocks.g).toHaveBeenCalledWith("sp", 70);
     expect(mocks.g).toHaveBeenCalledWith("oc", 60);
   });
+
+  it("rejects unknown events without touching DOM or runtime state", () => {
+    expect(runBattlePlayerVitals({ type: "unknown" })).toEqual({});
+
+    expect(mocks.gE).not.toHaveBeenCalled();
+    expect(mocks.g).not.toHaveBeenCalled();
+  });
 });
