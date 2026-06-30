@@ -1,11 +1,7 @@
 import { decideCriticalBuff } from "./critical-buff-guard/decide-critical-buff.js";
-import { criticalBuffFacts } from "./critical-buff-guard/critical-buff-facts.js";
 import { decideDefend } from "./defense/decide-defend.js";
-import { defendFacts } from "./defense/defend-facts.js";
 import { decideAutoPause } from "./pause/decide-auto-pause.js";
-import { autoPauseFacts } from "./pause/auto-pause-facts.js";
 import { decideFlee } from "./escape/decide-flee.js";
-import { fleeFacts } from "./escape/flee-facts.js";
 import { BattleItemDecisionEvent, runBattleItemDecision } from "./item/decide-item.js";
 
 const EVENT_DECIDE = "decide";
@@ -16,9 +12,9 @@ export const BattleSurvivalActionEvent = Object.freeze({
 
 function decideSurvivalResult(snap = {}, opt = {}) {
   for (const decide of [
-    () => decideCriticalBuff({ opt, ...criticalBuffFacts(snap) }),
-    () => decideFlee({ opt, ...fleeFacts(snap) }),
-    () => decideAutoPause({ opt, ...autoPauseFacts(snap) }),
+    () => decideCriticalBuff({ opt, snap }),
+    () => decideFlee({ opt, snap }),
+    () => decideAutoPause({ opt, snap }),
     () =>
       runBattleItemDecision({
         type: BattleItemDecisionEvent.DECIDE_GEM,
@@ -37,7 +33,7 @@ function decideSurvivalResult(snap = {}, opt = {}) {
         opt,
         snap,
       }),
-    () => decideDefend({ opt, ...defendFacts(snap) }),
+    () => decideDefend({ opt, snap }),
     () =>
       runBattleItemDecision({
         type: BattleItemDecisionEvent.DECIDE_SCROLL,

@@ -20,4 +20,13 @@ describe("decideFlee", () => {
       kind: "flee-command",
     });
   });
+
+  it("entry maps snap facts internally", () => {
+    expect(
+      decideFlee({
+        opt: { autoFlee: true, fleeCondition: [["hp,2,50"]] },
+        snap: { hp: 40 },
+      })
+    ).toEqual({ kind: "flee-command" });
+  });
 });

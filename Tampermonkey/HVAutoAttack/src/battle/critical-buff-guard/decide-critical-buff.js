@@ -11,6 +11,7 @@
 // 3. 当前 MP < criticalBuffMpFloor%（续 buff 大概率失败的阈值）
 import { AlarmEvent, runAlarmAutomation } from "../../alarm/alarm.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../pause-automation.js";
+import { criticalBuffFacts } from "./critical-buff-facts.js";
 
 /**
  * PURE：关键 buff 即将消失 + MP 不足 → 触发暂停决策。**不读 DOM**——只读 explicit facts。
@@ -21,6 +22,7 @@ import { BattlePauseEvent, runBattlePauseAutomation } from "../pause-automation.
  *   命中 → { kind:"critical-pause", name, turns, mp, mpFloor }；否则 { kind:"noop" }
  */
 export function decideCriticalBuff(event = {}) {
+  event = criticalBuffDecisionInput(event);
   const opt = event.opt || {};
   if (!opt.pauseOnCriticalBuffExpire) return { kind: "noop" };
 
@@ -44,6 +46,14 @@ export function decideCriticalBuff(event = {}) {
     return { kind: "critical-pause", name, turns: eff.turns, mp, mpFloor };
   }
   return { kind: "noop" };
+}
+
+function criticalBuffDecisionInput(event) {
+  if (!event?.snap) return event;
+  return {
+    opt: event.opt,
+    ...criticalBuffFacts(event.snap),
+  };
 }
 
 /**

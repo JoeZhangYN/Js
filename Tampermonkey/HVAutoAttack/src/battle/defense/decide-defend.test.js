@@ -20,4 +20,13 @@ describe("decideDefend", () => {
       kind: "defend-command",
     });
   });
+
+  it("entry maps snap facts internally", () => {
+    expect(
+      decideDefend({
+        opt: { defend: true, defendCondition: [["hp,2,50"]] },
+        snap: { hp: 40 },
+      })
+    ).toEqual({ kind: "defend-command" });
+  });
 });

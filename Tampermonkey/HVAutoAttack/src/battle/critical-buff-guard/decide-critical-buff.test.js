@@ -72,6 +72,24 @@ describe("decideCriticalBuff gate（未命中 → noop）", () => {
 });
 
 describe("decideCriticalBuff 命中 → critical-pause", () => {
+  it("entry maps snap facts internally", () => {
+    expect(
+      decideCriticalBuff({
+        opt: OPT_ON,
+        snap: {
+          mp: 10,
+          playerEffects: [{ img: "", name: "Spark of Life", turns: 1 }],
+        },
+      })
+    ).toEqual({
+      kind: "critical-pause",
+      name: "Spark of Life",
+      turns: 1,
+      mp: 10,
+      mpFloor: 30,
+    });
+  });
+
   it("匹配 buff + turns<=minTurns + MP<mpFloor → critical-pause", () => {
     const s = facts({
       manaPercent: 10,

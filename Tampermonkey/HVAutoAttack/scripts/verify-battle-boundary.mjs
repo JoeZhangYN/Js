@@ -1673,6 +1673,7 @@ function checkCriticalBuffEntry() {
   const ownerText = fs.readFileSync(decideCriticalBuffFile, "utf8");
   for (const required of [
     "decideCriticalBuff",
+    "criticalBuffDecisionInput",
     "event.manaPercent",
     "event.playerEffects",
     "critical-pause",
@@ -1723,6 +1724,13 @@ function checkSurvivalActionEntry() {
   }
   if (!ownerText.includes("isEmptyDecision")) {
     violations.push(`${rel(decideSurvivalActionFile)} must own structured empty decisions`);
+  }
+  if (
+    /from\s+["'][^"']*(?:critical-buff-facts|flee-facts|auto-pause-facts|defend-facts)\.js["']/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideSurvivalActionFile)} must not assemble survival sub-action facts`);
   }
 
   const rulesText = readBattleActionRulesText();
@@ -2359,7 +2367,13 @@ function checkPotionEntry() {
 
 function checkDefendEntry() {
   const ownerText = fs.readFileSync(decideDefendFile, "utf8");
-  for (const required of ["decideDefend", "defendCondition", "defend-command", "conditionFacts"]) {
+  for (const required of [
+    "decideDefend",
+    "defendDecisionInput",
+    "defendCondition",
+    "defend-command",
+    "conditionFacts",
+  ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideDefendFile)} must own defend gate ${required}`);
     }
@@ -2382,7 +2396,13 @@ function checkDefendEntry() {
 
 function checkAutoPauseEntry() {
   const ownerText = fs.readFileSync(decideAutoPauseFile, "utf8");
-  for (const required of ["decideAutoPause", "autoPause", "pauseCondition", "conditionFacts"]) {
+  for (const required of [
+    "decideAutoPause",
+    "autoPauseDecisionInput",
+    "autoPause",
+    "pauseCondition",
+    "conditionFacts",
+  ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideAutoPauseFile)} must own auto-pause gate ${required}`);
     }
@@ -2407,6 +2427,7 @@ function checkFleeEntry() {
   const ownerText = fs.readFileSync(decideFleeFile, "utf8");
   for (const required of [
     "decideFlee",
+    "fleeDecisionInput",
     "autoFlee",
     "fleeCondition",
     "flee-command",
@@ -2698,6 +2719,10 @@ function checkBattleRuleFactMappers() {
   const allowedItemFactsImporters = new Set([decideItemFile]);
   const allowedBuffFactsImporters = new Set([decideBuffPreparationFile]);
   const allowedDebuffFactsImporters = new Set([decideOffensiveDebuffFile]);
+  const allowedCriticalBuffFactsImporters = new Set([decideCriticalBuffFile]);
+  const allowedFleeFactsImporters = new Set([decideFleeFile]);
+  const allowedAutoPauseFactsImporters = new Set([decideAutoPauseFile]);
+  const allowedDefendFactsImporters = new Set([decideDefendFile]);
   for (const relative of ["src/battle", "src/core"]) {
     const dir = path.join(root, relative);
     for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
@@ -2731,6 +2756,30 @@ function checkBattleRuleFactMappers() {
         !allowedDebuffFactsImporters.has(file)
       ) {
         violations.push(`${rel(file)} must not bypass offensive debuff entry for debuff facts`);
+      }
+      if (
+        /from\s+["'][^"']*(?:^|\/)critical-buff-facts\.js["']/.test(text) &&
+        !allowedCriticalBuffFactsImporters.has(file)
+      ) {
+        violations.push(`${rel(file)} must not bypass critical buff entry for fact mapping`);
+      }
+      if (
+        /from\s+["'][^"']*(?:^|\/)flee-facts\.js["']/.test(text) &&
+        !allowedFleeFactsImporters.has(file)
+      ) {
+        violations.push(`${rel(file)} must not bypass flee entry for fact mapping`);
+      }
+      if (
+        /from\s+["'][^"']*(?:^|\/)auto-pause-facts\.js["']/.test(text) &&
+        !allowedAutoPauseFactsImporters.has(file)
+      ) {
+        violations.push(`${rel(file)} must not bypass auto-pause entry for fact mapping`);
+      }
+      if (
+        /from\s+["'][^"']*(?:^|\/)defend-facts\.js["']/.test(text) &&
+        !allowedDefendFactsImporters.has(file)
+      ) {
+        violations.push(`${rel(file)} must not bypass defend entry for fact mapping`);
       }
     }
   }

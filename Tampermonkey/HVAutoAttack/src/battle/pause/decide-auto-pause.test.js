@@ -20,4 +20,13 @@ describe("decideAutoPause", () => {
       kind: "pause",
     });
   });
+
+  it("entry maps snap facts internally", () => {
+    expect(
+      decideAutoPause({
+        opt: { autoPause: true, pauseCondition: [["hp,2,50"]] },
+        snap: { hp: 40 },
+      })
+    ).toEqual({ kind: "pause" });
+  });
 });
