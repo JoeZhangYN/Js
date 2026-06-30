@@ -25,6 +25,13 @@ export const RepairEvent = Object.freeze({
   START: EVENT_START,
 });
 
+const repairEventHandlers = Object.freeze({
+  [EVENT_START]: (_event, deps) => {
+    runRepair(deps);
+    return true;
+  },
+});
+
 /** 买料失败 reason → 三语停机文案。 */
 const BUY_FAIL_MSG = {
   "credit-cap": [
@@ -146,7 +153,5 @@ function runRepair(deps = {}) {
 }
 
 export function runRepairAutomation(event = { type: EVENT_START }, deps = {}) {
-  if (event.type !== EVENT_START) return false;
-  runRepair(deps);
-  return true;
+  return repairEventHandlers[event.type]?.(event, deps) || false;
 }

@@ -37,6 +37,15 @@ beforeEach(() => {
 });
 
 describe("repair automation entry", () => {
+  it("rejects unknown repair automation events without scanning or scheduling", () => {
+    const makeBackend = vi.fn();
+    const scheduleIdleArena = vi.fn();
+
+    expect(runRepairAutomation({ type: "unknown" }, { makeBackend, scheduleIdleArena })).toBe(false);
+    expect(makeBackend).not.toHaveBeenCalled();
+    expect(scheduleIdleArena).not.toHaveBeenCalled();
+  });
+
   it("无需修理 → 直接开下一场（不修）", () => {
     const { makeBackend, submitted } = fakeBackend([st([eq(1, 100)])]);
     const scheduleIdleArena = vi.fn();

@@ -49,6 +49,14 @@ for (const required of ["runRepairAutomation", "RepairEvent"]) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
+const entryBody =
+  ownerText.match(/export function runRepairAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/const repairEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_START\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
 if (/export\s+function\s+runRepair\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy runRepair export is forbidden`);
 }
@@ -60,6 +68,14 @@ if (/from\s+["']\.\.\/state\/store\.js["']/.test(ownerText)) {
 }
 if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not read repair options directly`);
+}
+if (!fs.existsSync(path.join(root, ownerTest))) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover repair workflow entry`);
+} else {
+  const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+  if (!ownerTestText.includes("rejects unknown repair automation events without scanning or scheduling")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown repair events`);
+  }
 }
 
 if (violations.length) {
