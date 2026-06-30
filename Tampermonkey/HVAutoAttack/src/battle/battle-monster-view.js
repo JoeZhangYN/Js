@@ -1,5 +1,5 @@
+import { RESIST_KEYS } from "../data/monster-db.js";
 import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
-import { aliveByOrder, byOrder, joinMonsterView, monsterHpVars } from "./monster-view.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 
 const EVENT_READ_VIEW = "readView";
@@ -46,6 +46,57 @@ function readBattleMonsterView(monsters) {
     monsterIdentities,
     aliveCount: view.filter((monster) => !monster.isDead).length,
     ...runBattleMonsterView({ type: BattleMonsterViewEvent.READ_HP_VARS, view }),
+  };
+}
+
+const FALLBACK_HP = 100000;
+
+function joinMonsterView(snapMonsters, monsterStatus, dbById = {}) {
+  const statusByOrder = new Map((monsterStatus || []).map((s) => [s.order, s]));
+  return (snapMonsters || []).map((m) => {
+    const st = statusByOrder.get(m.order);
+    const db = (st && st.monsterId != null && dbById[st.monsterId]) || null;
+    const hasResists = !!db && db.fire !== undefined;
+    return {
+      id: m.id,
+      order: m.order,
+      monsterId: st?.monsterId,
+      level: st?.level,
+      name: m.name,
+      isDead: m.isDead,
+      isBoss: m.isBoss,
+      monsterClass: db?.monsterClass,
+      powerLevel: db?.plvl,
+      attackType: db?.attack,
+      buffs: m.buffs,
+      buffEffects: m.buffEffects,
+      hpPercent: m.hpRatio,
+      hpAbsNow: st ? st.hpNow : FALLBACK_HP,
+      hpMax: st ? st.hp : FALLBACK_HP,
+      inferredMaxHP: st?.inferredMaxHP,
+      finWeight: st ? st.finWeight : Infinity,
+      resists: hasResists ? Object.fromEntries(RESIST_KEYS.map((k) => [k, db[k]])) : undefined,
+      dbProfile: db || undefined,
+      dbMaxHP: db?.maxHP,
+    };
+  });
+}
+
+function byOrder(view) {
+  return [...(view || [])].sort((a, b) => a.order - b.order);
+}
+
+function aliveByOrder(view) {
+  return byOrder(view).filter((m) => !m.isDead);
+}
+
+function monsterHpVars(view) {
+  const alive = aliveByOrder(view);
+  const pct = (r) => r * 100;
+  return {
+    soloMonsterHpPercent: alive.length === 1 ? pct(alive[0].hpPercent) : 100,
+    lowestMonsterHpPercent: alive.length ? pct(Math.min(...alive.map((m) => m.hpPercent))) : 100,
+    firstMonsterHpPercent: alive.length ? pct(alive[0].hpPercent) : 100,
   };
 }
 

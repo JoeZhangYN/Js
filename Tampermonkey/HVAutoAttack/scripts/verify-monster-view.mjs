@@ -1,5 +1,5 @@
 // 反退化 probe（拆桥）：决策层（decide-*.js + action decision 组合根）的目标选择与血量读取
-// 必须走统一怪物视图 snap.view（battle/monster-view.js join）+ battle-target-strategy 入口，
+// 必须走统一怪物视图 snap.view（battle-monster-view entry）+ battle-target-strategy 入口，
 // 不得裸读散落字段或绕过缓存直查库。
 //
 // 背景：怪物事实曾散在 snap.monsters(血条百分比) / g("monsterStatus")(绝对血/finWeight) /
@@ -8,7 +8,7 @@
 //
 // 锁三类（仅扫决策层，视图源头 monster-view/target-strategy/snapshot/attack 不在 scope）：
 //   ① 裸读 .hpRatio/.hpNow/.finWeight → 走 view.hpPercent/hpAbsNow + target strategy entry
-//   ② 读 .monsters → 走 snap.view + monster-view 的 aliveByOrder/byOrder
+//   ② 读 .monsters → 走 snap.view + battle-monster-view 的 aliveByOrder/byOrder
 //   ③ getMonster（直查 IndexedDB）→ 走 state/monster-cache（同步缓存，prime 在 resist-panel）
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -28,7 +28,10 @@ const RULES = [
     re: /\.(hpRatio|hpNow|finWeight)\b/,
     msg: "裸读 .hpRatio/.hpNow/.finWeight → 走 snap.view 的 hpPercent/hpAbsNow + target strategy entry",
   },
-  { re: /\.monsters\b/, msg: "读 .monsters → 走 snap.view + monster-view 的 aliveByOrder/byOrder" },
+  {
+    re: /\.monsters\b/,
+    msg: "读 .monsters → 走 snap.view + battle-monster-view 的 aliveByOrder/byOrder",
+  },
   { re: /\bgetMonster\b/, msg: "decide 层直查库 getMonster → 走 state/monster-cache（同步缓存）" },
 ];
 

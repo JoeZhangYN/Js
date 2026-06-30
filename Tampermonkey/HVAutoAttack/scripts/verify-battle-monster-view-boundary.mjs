@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-monster-view.js");
 const ownerTest = path.normalize("src/battle/battle-monster-view.test.js");
+const legacyMonsterView = path.normalize("src/battle/monster-view.js");
 const monsterViewCoreTest = path.normalize("src/battle/monster-view.test.js");
 const snapshot = path.normalize("src/battle/snapshot.js");
 const violations = [];
@@ -18,6 +19,10 @@ function rel(relative) {
 
 const ownerText = read(owner);
 const snapshotText = read(snapshot);
+
+if (fs.existsSync(path.join(root, legacyMonsterView))) {
+  violations.push(`${rel(legacyMonsterView)} pure monster view helper exports must stay retired`);
+}
 
 for (const required of [
   "BattleMonsterViewEvent",
@@ -79,17 +84,13 @@ if (/monsterHpVars|\.filter\(\s*\(?\w+\)?\s*=>\s*!\w+\.isDead/.test(snapshotText
   violations.push(`${rel(snapshot)} must not derive monster view summary directly`);
 }
 
-const allowedMonsterViewImporters = new Set([owner, ownerTest, monsterViewCoreTest]);
 const battleDir = path.join(root, "src/battle");
 for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
   if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
   const file = path.join(entry.parentPath, entry.name);
   const relative = path.normalize(path.relative(root, file));
   const text = fs.readFileSync(file, "utf8");
-  if (
-    /from\s+["'][^"']*(?:^|[\\/])monster-view\.js["']/.test(text) &&
-    !allowedMonsterViewImporters.has(relative)
-  ) {
+  if (/from\s+["'][^"']*(?:^|[\\/])monster-view\.js["']/.test(text)) {
     violations.push(`${rel(relative)} must read monster view ordering through runBattleMonsterView`);
   }
 }
