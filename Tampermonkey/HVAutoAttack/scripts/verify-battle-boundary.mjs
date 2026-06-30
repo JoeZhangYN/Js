@@ -1180,6 +1180,8 @@ function checkPhysicalSkillBookkeeping() {
   for (const required of [
     "PhysicalSkillBookkeepingEvent",
     "runPhysicalSkillBookkeeping",
+    "physicalSkillBookkeepingEventHandlers",
+    "[EVENT_RECORD_FIRE]: recordPhysicalSkillFire",
     "BattleSkillUsageEvent.RECORD_USE",
     "CdRuntimeEvent.RECORD_FIRE",
     "CdLearningEvent.RECORD_FIRE",
@@ -1189,6 +1191,11 @@ function checkPhysicalSkillBookkeeping() {
     if (!text.includes(required)) {
       violations.push(`${rel(physicalSkillBookkeepingFile)} must own physical fire ${required}`);
     }
+  }
+  const bookkeepingEntryBody =
+    text.match(/export function runPhysicalSkillBookkeeping\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (/event\.type\s*!==|event\.type\s*===/.test(bookkeepingEntryBody)) {
+    violations.push(`${rel(physicalSkillBookkeepingFile)} entry must dispatch by handler table`);
   }
   if (/\bevent\.snap\b/.test(text)) {
     violations.push(

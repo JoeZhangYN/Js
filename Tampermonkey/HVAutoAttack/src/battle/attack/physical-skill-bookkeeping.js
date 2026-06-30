@@ -12,8 +12,11 @@ export const PhysicalSkillBookkeepingEvent = Object.freeze({
   RECORD_FIRE: EVENT_RECORD_FIRE,
 });
 
-export function runPhysicalSkillBookkeeping(event) {
-  if (event.type !== EVENT_RECORD_FIRE) return;
+const physicalSkillBookkeepingEventHandlers = Object.freeze({
+  [EVENT_RECORD_FIRE]: recordPhysicalSkillFire,
+});
+
+function recordPhysicalSkillFire(event) {
   runBattleSkillUsageAutomation({
     type: BattleSkillUsageEvent.RECORD_USE,
     code: event.code,
@@ -31,4 +34,8 @@ export function runPhysicalSkillBookkeeping(event) {
     globalTurn: event.globalTurn,
     observedBosses: event.observedBosses,
   });
+}
+
+export function runPhysicalSkillBookkeeping(event) {
+  return physicalSkillBookkeepingEventHandlers[event.type]?.(event);
 }
