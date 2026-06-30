@@ -2033,6 +2033,10 @@ function checkOffensiveDebuffEntry() {
 function checkCriticalBuffEntry() {
   const ownerText = fs.readFileSync(decideCriticalBuffFile, "utf8");
   for (const required of [
+    "CriticalBuffDecisionEvent",
+    "criticalBuffDecisionEventHandlers",
+    "DECIDE",
+    "runCriticalBuffDecision",
     "decideCriticalBuff",
     "criticalBuffDecisionInput",
     "event.manaPercent",
@@ -2042,6 +2046,22 @@ function checkCriticalBuffEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideCriticalBuffFile)} must own critical buff fact ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!CriticalBuffDecisionEvent\b|runCriticalBuffDecision\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideCriticalBuffFile)} may export only its event entry`);
+  }
+  const criticalBuffEntryBody =
+    ownerText.match(/export function runCriticalBuffDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+    violations.push(`${rel(decideCriticalBuffFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(criticalBuffEntryBody)) {
+    violations.push(`${rel(decideCriticalBuffFile)} entry must dispatch by handler table`);
   }
   if (/decideCriticalBuff\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideCriticalBuffFile)} must not expose opt/snap decision input`);
@@ -2109,11 +2129,15 @@ function checkSurvivalActionEntry() {
     "BattleSurvivalActionEvent",
     "DECIDE",
     "runBattleSurvivalAction",
-    "decideCriticalBuff",
-    "decideFlee",
-    "decideAutoPause",
+    "CriticalBuffDecisionEvent.DECIDE",
+    "runCriticalBuffDecision",
+    "BattleFleeDecisionEvent.DECIDE",
+    "runBattleFleeDecision",
+    "BattleAutoPauseDecisionEvent.DECIDE",
+    "runBattleAutoPauseDecision",
     "runBattleItemDecision",
-    "decideDefend",
+    "BattleDefendDecisionEvent.DECIDE",
+    "runBattleDefendDecision",
     "BattleItemDecisionEvent.DECIDE_GEM",
     "BattleItemDecisionEvent.DECIDE_POTION",
     "BattleItemDecisionEvent.DECIDE_STALL_TOPUP",
@@ -2941,6 +2965,10 @@ function checkPotionEntry() {
 function checkDefendEntry() {
   const ownerText = fs.readFileSync(decideDefendFile, "utf8");
   for (const required of [
+    "BattleDefendDecisionEvent",
+    "battleDefendDecisionEventHandlers",
+    "DECIDE",
+    "runBattleDefendDecision",
     "decideDefend",
     "defendDecisionInput",
     "defendCondition",
@@ -2950,6 +2978,22 @@ function checkDefendEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideDefendFile)} must own defend gate ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleDefendDecisionEvent\b|runBattleDefendDecision\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideDefendFile)} may export only its event entry`);
+  }
+  const defendEntryBody =
+    ownerText.match(/export function runBattleDefendDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+    violations.push(`${rel(decideDefendFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(defendEntryBody)) {
+    violations.push(`${rel(decideDefendFile)} entry must dispatch by handler table`);
   }
   if (/decideDefend\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideDefendFile)} must not expose opt/snap defend input`);
@@ -2970,6 +3014,10 @@ function checkDefendEntry() {
 function checkAutoPauseEntry() {
   const ownerText = fs.readFileSync(decideAutoPauseFile, "utf8");
   for (const required of [
+    "BattleAutoPauseDecisionEvent",
+    "battleAutoPauseDecisionEventHandlers",
+    "DECIDE",
+    "runBattleAutoPauseDecision",
     "decideAutoPause",
     "autoPauseDecisionInput",
     "autoPause",
@@ -2979,6 +3027,22 @@ function checkAutoPauseEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideAutoPauseFile)} must own auto-pause gate ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleAutoPauseDecisionEvent\b|runBattleAutoPauseDecision\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideAutoPauseFile)} may export only its event entry`);
+  }
+  const autoPauseEntryBody =
+    ownerText.match(/export function runBattleAutoPauseDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+    violations.push(`${rel(decideAutoPauseFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(autoPauseEntryBody)) {
+    violations.push(`${rel(decideAutoPauseFile)} entry must dispatch by handler table`);
   }
   if (/decideAutoPause\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideAutoPauseFile)} must not expose opt/snap auto-pause input`);
@@ -2999,6 +3063,10 @@ function checkAutoPauseEntry() {
 function checkFleeEntry() {
   const ownerText = fs.readFileSync(decideFleeFile, "utf8");
   for (const required of [
+    "BattleFleeDecisionEvent",
+    "battleFleeDecisionEventHandlers",
+    "DECIDE",
+    "runBattleFleeDecision",
     "decideFlee",
     "fleeDecisionInput",
     "autoFlee",
@@ -3009,6 +3077,22 @@ function checkFleeEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideFleeFile)} must own flee gate ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleFleeDecisionEvent\b|runBattleFleeDecision\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideFleeFile)} may export only its event entry`);
+  }
+  const fleeEntryBody =
+    ownerText.match(/export function runBattleFleeDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+    violations.push(`${rel(decideFleeFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(fleeEntryBody)) {
+    violations.push(`${rel(decideFleeFile)} entry must dispatch by handler table`);
   }
   if (/decideFlee\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideFleeFile)} must not expose opt/snap flee input`);

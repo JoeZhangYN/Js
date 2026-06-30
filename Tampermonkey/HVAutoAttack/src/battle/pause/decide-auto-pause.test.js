@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { decideAutoPause } from "./decide-auto-pause.js";
+import {
+  BattleAutoPauseDecisionEvent,
+  runBattleAutoPauseDecision,
+} from "./decide-auto-pause.js";
+
+function decideAutoPause(event) {
+  return runBattleAutoPauseDecision({ type: BattleAutoPauseDecisionEvent.DECIDE, ...event });
+}
 
 describe("decideAutoPause", () => {
   it("autoPause 未开 -> noop", () => {
@@ -28,5 +35,11 @@ describe("decideAutoPause", () => {
         snap: { hp: 40 },
       })
     ).toEqual({ kind: "pause" });
+  });
+
+  it("rejects unknown auto-pause decision events", () => {
+    expect(runBattleAutoPauseDecision({ type: "unknown", opt: { autoPause: true } })).toEqual({
+      kind: "noop",
+    });
   });
 });

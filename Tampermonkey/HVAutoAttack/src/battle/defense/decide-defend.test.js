@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { decideDefend } from "./decide-defend.js";
+import { BattleDefendDecisionEvent, runBattleDefendDecision } from "./decide-defend.js";
+
+function decideDefend(event) {
+  return runBattleDefendDecision({ type: BattleDefendDecisionEvent.DECIDE, ...event });
+}
 
 describe("decideDefend", () => {
   it("defend 未开 -> noop", () => {
@@ -28,5 +32,11 @@ describe("decideDefend", () => {
         snap: { hp: 40 },
       })
     ).toEqual({ kind: "defend-command" });
+  });
+
+  it("rejects unknown defend decision events", () => {
+    expect(runBattleDefendDecision({ type: "unknown", opt: { defend: true } })).toEqual({
+      kind: "noop",
+    });
   });
 });

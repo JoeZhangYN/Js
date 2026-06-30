@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { decideFlee } from "./decide-flee.js";
+import { BattleFleeDecisionEvent, runBattleFleeDecision } from "./decide-flee.js";
+
+function decideFlee(event) {
+  return runBattleFleeDecision({ type: BattleFleeDecisionEvent.DECIDE, ...event });
+}
 
 describe("decideFlee", () => {
   it("autoFlee 未开 -> noop", () => {
@@ -28,5 +32,11 @@ describe("decideFlee", () => {
         snap: { hp: 40 },
       })
     ).toEqual({ kind: "flee-command" });
+  });
+
+  it("rejects unknown flee decision events", () => {
+    expect(runBattleFleeDecision({ type: "unknown", opt: { autoFlee: true } })).toEqual({
+      kind: "noop",
+    });
   });
 });

@@ -1,6 +1,6 @@
 // 深度B：decideCriticalBuff 回归锁（纯决策，喂 explicit facts+opt 断言 ActionResult）。
 import { describe, it, expect } from "vitest";
-import { decideCriticalBuff } from "./decide-critical-buff.js";
+import { CriticalBuffDecisionEvent, runCriticalBuffDecision } from "./decide-critical-buff.js";
 
 /** 最小 facts 工厂（只填 decideCriticalBuff 读到的字段）。 */
 function facts(over = {}) {
@@ -12,7 +12,7 @@ function facts(over = {}) {
 }
 
 function decide(opt, facts) {
-  return decideCriticalBuff({ opt, ...facts });
+  return runCriticalBuffDecision({ type: CriticalBuffDecisionEvent.DECIDE, opt, ...facts });
 }
 
 const OPT_ON = {
@@ -74,7 +74,8 @@ describe("decideCriticalBuff gate（未命中 → noop）", () => {
 describe("decideCriticalBuff 命中 → critical-pause", () => {
   it("entry maps snap facts internally", () => {
     expect(
-      decideCriticalBuff({
+      runCriticalBuffDecision({
+        type: CriticalBuffDecisionEvent.DECIDE,
         opt: OPT_ON,
         snap: {
           mp: 10,
@@ -144,6 +145,12 @@ describe("decideCriticalBuff 命中 → critical-pause", () => {
       kind: "critical-pause",
       name: "Spirit Shield",
       turns: 1,
+    });
+  });
+
+  it("rejects unknown critical buff decision events", () => {
+    expect(runCriticalBuffDecision({ type: "unknown", opt: OPT_ON, ...facts() })).toEqual({
+      kind: "noop",
     });
   });
 });

@@ -1,7 +1,19 @@
-import { decideCriticalBuff } from "./critical-buff-guard/decide-critical-buff.js";
-import { decideDefend } from "./defense/decide-defend.js";
-import { decideAutoPause } from "./pause/decide-auto-pause.js";
-import { decideFlee } from "./escape/decide-flee.js";
+import {
+  CriticalBuffDecisionEvent,
+  runCriticalBuffDecision,
+} from "./critical-buff-guard/decide-critical-buff.js";
+import {
+  BattleDefendDecisionEvent,
+  runBattleDefendDecision,
+} from "./defense/decide-defend.js";
+import {
+  BattleAutoPauseDecisionEvent,
+  runBattleAutoPauseDecision,
+} from "./pause/decide-auto-pause.js";
+import {
+  BattleFleeDecisionEvent,
+  runBattleFleeDecision,
+} from "./escape/decide-flee.js";
 import { BattleItemDecisionEvent, runBattleItemDecision } from "./item/decide-item.js";
 
 const EVENT_DECIDE = "decide";
@@ -62,15 +74,24 @@ const EMPTY_ITEM_PLAN_PREDICATES = Object.freeze({
 });
 
 function decideCriticalBuffStep(survivalContext) {
-  return decideCriticalBuff(survivalContext);
+  return runCriticalBuffDecision({
+    type: CriticalBuffDecisionEvent.DECIDE,
+    ...survivalContext,
+  });
 }
 
 function decideFleeStep(survivalContext) {
-  return decideFlee(survivalContext);
+  return runBattleFleeDecision({
+    type: BattleFleeDecisionEvent.DECIDE,
+    ...survivalContext,
+  });
 }
 
 function decideAutoPauseStep(survivalContext) {
-  return decideAutoPause(survivalContext);
+  return runBattleAutoPauseDecision({
+    type: BattleAutoPauseDecisionEvent.DECIDE,
+    ...survivalContext,
+  });
 }
 
 function decideGemStep(survivalContext) {
@@ -86,7 +107,10 @@ function decideStallTopupStep(survivalContext) {
 }
 
 function decideDefendStep(survivalContext) {
-  return decideDefend(survivalContext);
+  return runBattleDefendDecision({
+    type: BattleDefendDecisionEvent.DECIDE,
+    ...survivalContext,
+  });
 }
 
 function decideScrollStep(survivalContext) {

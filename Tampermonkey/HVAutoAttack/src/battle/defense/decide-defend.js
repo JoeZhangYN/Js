@@ -1,7 +1,17 @@
 import { checkCondition } from "../../settings/condition-eval.js";
 import { defendFacts } from "./defend-facts.js";
 
-export function decideDefend(event = {}) {
+const EVENT_DECIDE = "decide";
+
+export const BattleDefendDecisionEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+const battleDefendDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: decideDefend,
+});
+
+function decideDefend(event = {}) {
   event = defendDecisionInput(event);
   const opt = event.opt || {};
   if (!opt.defend || !checkCondition(opt.defendCondition, event.conditionFacts)) {
@@ -16,4 +26,8 @@ function defendDecisionInput(event) {
     opt: event.opt,
     ...defendFacts(event.snap),
   };
+}
+
+export function runBattleDefendDecision(event = { type: EVENT_DECIDE }) {
+  return battleDefendDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
 }

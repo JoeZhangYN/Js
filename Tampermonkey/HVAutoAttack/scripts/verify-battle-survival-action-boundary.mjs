@@ -5,6 +5,12 @@ const root = process.cwd();
 const owner = path.normalize("src/battle/decide-survival-action.js");
 const ownerTest = path.normalize("src/battle/decide-survival-action.test.js");
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
+const criticalBuffDecision = path.normalize(
+  "src/battle/critical-buff-guard/decide-critical-buff.js"
+);
+const fleeDecision = path.normalize("src/battle/escape/decide-flee.js");
+const autoPauseDecision = path.normalize("src/battle/pause/decide-auto-pause.js");
+const defendDecision = path.normalize("src/battle/defense/decide-defend.js");
 const violations = [];
 
 function read(relative) {
@@ -32,11 +38,15 @@ for (const required of [
   'capability: "stallTopup"',
   'capability: "defend"',
   'capability: "scroll"',
-  "decideCriticalBuff",
-  "decideFlee",
-  "decideAutoPause",
+  "CriticalBuffDecisionEvent.DECIDE",
+  "runCriticalBuffDecision",
+  "BattleFleeDecisionEvent.DECIDE",
+  "runBattleFleeDecision",
+  "BattleAutoPauseDecisionEvent.DECIDE",
+  "runBattleAutoPauseDecision",
   "runBattleItemDecision",
-  "decideDefend",
+  "BattleDefendDecisionEvent.DECIDE",
+  "runBattleDefendDecision",
   "BattleItemDecisionEvent.DECIDE_GEM",
   "BattleItemDecisionEvent.DECIDE_POTION",
   "BattleItemDecisionEvent.DECIDE_STALL_TOPUP",
@@ -120,13 +130,30 @@ for (const relative of ["src/battle", "src/core"]) {
     }
     const file = path.join(entry.parentPath, entry.name);
     const normalized = path.normalize(path.relative(root, file));
-    if (normalized === owner || normalized === actionDecision) continue;
+    if (
+      normalized === owner ||
+      normalized === actionDecision ||
+      normalized === criticalBuffDecision ||
+      normalized === fleeDecision ||
+      normalized === autoPauseDecision ||
+      normalized === defendDecision
+    ) {
+      continue;
+    }
     const text = fs.readFileSync(file, "utf8");
     if (/from\s+["'][^"']*decide-survival-action\.js["']/.test(text)) {
       violations.push(`${rel(normalized)} must not bypass runBattleActionDecision`);
     }
     if (/decideSurvivalAction\(\s*[^)]*,\s*[^)]*\)/.test(text)) {
       violations.push(`${rel(normalized)} must not call retired survival two-arg path`);
+    }
+    if (
+      /from\s+["'][^"']*(?:critical-buff-guard\/decide-critical-buff|escape\/decide-flee|pause\/decide-auto-pause|defense\/decide-defend)\.js["']/.test(
+        text
+      ) ||
+      /\b(?:decideCriticalBuff|decideFlee|decideAutoPause|decideDefend)\s*\(/.test(text)
+    ) {
+      violations.push(`${rel(normalized)} must not bypass survival sub-decision entries`);
     }
   }
 }

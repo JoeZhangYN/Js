@@ -11,6 +11,16 @@
 // 3. 当前 MP < criticalBuffMpFloor%（续 buff 大概率失败的阈值）
 import { criticalBuffFacts } from "./critical-buff-facts.js";
 
+const EVENT_DECIDE = "decide";
+
+export const CriticalBuffDecisionEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+const criticalBuffDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: decideCriticalBuff,
+});
+
 /**
  * PURE：关键 buff 即将消失 + MP 不足 → 触发暂停决策。**不读 DOM**——只读 explicit facts。
  * event.playerEffects = [{img,name,turns}]，name 为显示名（与 opt.criticalBuffsList 同口径）；
@@ -19,7 +29,7 @@ import { criticalBuffFacts } from "./critical-buff-facts.js";
  * @returns {import("../../core/types.js").ActionResult}
  *   命中 → { kind:"critical-pause", name, turns, mp, mpFloor }；否则 { kind:"noop" }
  */
-export function decideCriticalBuff(event = {}) {
+function decideCriticalBuff(event = {}) {
   event = criticalBuffDecisionInput(event);
   const opt = event.opt || {};
   if (!opt.pauseOnCriticalBuffExpire) return { kind: "noop" };
@@ -52,4 +62,8 @@ function criticalBuffDecisionInput(event) {
     opt: event.opt,
     ...criticalBuffFacts(event.snap),
   };
+}
+
+export function runCriticalBuffDecision(event = { type: EVENT_DECIDE }) {
+  return criticalBuffDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
 }
