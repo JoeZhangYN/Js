@@ -7,6 +7,10 @@ beforeEach(() => {
 });
 
 describe("riddle stats entry", () => {
+  it("ignores unknown stats events at the entry", () => {
+    expect(runRiddleStatsAutomation({ type: "unknown" })).toBeUndefined();
+  });
+
   it("records riddle appearances and ML outcomes through the entry", () => {
     runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_APPEAR });
     runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_OUTCOME, outcome: "ok" });

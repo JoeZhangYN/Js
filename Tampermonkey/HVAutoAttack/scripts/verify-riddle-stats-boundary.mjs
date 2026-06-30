@@ -67,10 +67,38 @@ for (const required of [
   "runRiddleStatsAutomation",
   "RiddleStatsEvent",
   "ML_OUTCOMES",
+  "riddleStatsEventHandlers",
   "RENDER_REPORT_ROWS",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+
+if (
+  !/\[EVENT_READ\]: getRiddleStats[\s\S]*\[EVENT_RECORD_DETAIL\]: \(event\) => recordMLDetail\(event\.detail\)[\s\S]*\[EVENT_RECORD_APPEAR\]: recordRiddleAppear[\s\S]*\[EVENT_RECORD_OUTCOME\]: \(event\) => recordMLOutcome\(event\.outcome\)[\s\S]*\[EVENT_RESET\]: resetRiddleStats[\s\S]*\[EVENT_RENDER_REPORT_ROWS\]: renderRiddleStatsReportRows/.test(
+    ownerText
+  )
+) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route stats events through handler table`);
+}
+
+const entryBody =
+  ownerText.match(/export function runRiddleStatsAutomation\(event = \{ type: EVENT_READ \}\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must route events through handler table`);
+}
+for (const forbidden of [
+  "getRiddleStats",
+  "recordMLDetail",
+  "recordRiddleAppear",
+  "recordMLOutcome",
+  "resetRiddleStats",
+  "renderRiddleStatsReportRows",
+]) {
+  if (entryBody.includes(forbidden)) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must route stats work through handlers`);
   }
 }
 

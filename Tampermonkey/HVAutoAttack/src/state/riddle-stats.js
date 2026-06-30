@@ -43,6 +43,15 @@ export const ML_OUTCOMES = {
   exception: { l0: "脚本异常", l1: "腳本異常", l2: "Script exception" },
 };
 
+const riddleStatsEventHandlers = {
+  [EVENT_READ]: getRiddleStats,
+  [EVENT_RECORD_DETAIL]: (event) => recordMLDetail(event.detail),
+  [EVENT_RECORD_APPEAR]: recordRiddleAppear,
+  [EVENT_RECORD_OUTCOME]: (event) => recordMLOutcome(event.outcome),
+  [EVENT_RESET]: resetRiddleStats,
+  [EVENT_RENDER_REPORT_ROWS]: renderRiddleStatsReportRows,
+};
+
 /**
  * 读统计并派生汇总。outcomes 补全所有分类为 0（兼容旧存档 / 首次）。
  * @returns {{appear:number, mlCall:number, ok:number, outcomes:Record<string,number>}}
@@ -123,11 +132,6 @@ function renderRiddleStatsReportRows() {
 }
 
 export function runRiddleStatsAutomation(event = { type: EVENT_READ }) {
-  if (event.type === EVENT_READ) return getRiddleStats();
-  if (event.type === EVENT_RECORD_DETAIL) return recordMLDetail(event.detail);
-  if (event.type === EVENT_RECORD_APPEAR) return recordRiddleAppear();
-  if (event.type === EVENT_RECORD_OUTCOME) return recordMLOutcome(event.outcome);
-  if (event.type === EVENT_RESET) return resetRiddleStats();
-  if (event.type === EVENT_RENDER_REPORT_ROWS) return renderRiddleStatsReportRows();
-  return undefined;
+  const handler = riddleStatsEventHandlers[event.type];
+  return handler ? handler(event) : undefined;
 }
