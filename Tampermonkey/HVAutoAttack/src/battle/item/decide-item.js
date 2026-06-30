@@ -27,19 +27,17 @@ export const BattleItemDecisionEvent = Object.freeze({
   DECIDE_SCROLL,
 });
 
+const noopItemPlan = Object.freeze({ kind: "item-plan", plan: { type: "noop" } });
+
+const battleItemDecisionHandlers = Object.freeze({
+  [DECIDE_GEM]: (event) => decideGemUse(itemDecisionInput(event, gemFacts)),
+  [DECIDE_POTION]: (event) => decidePotion(itemDecisionInput(event, potionFacts)),
+  [DECIDE_STALL_TOPUP]: (event) => decideStallTopup(itemDecisionInput(event, stallTopupFacts)),
+  [DECIDE_SCROLL]: (event) => decideScroll(itemDecisionInput(event, scrollFacts)),
+});
+
 export function runBattleItemDecision(event = {}) {
-  switch (event.type) {
-    case DECIDE_GEM:
-      return decideGemUse(itemDecisionInput(event, gemFacts));
-    case DECIDE_POTION:
-      return decidePotion(itemDecisionInput(event, potionFacts));
-    case DECIDE_STALL_TOPUP:
-      return decideStallTopup(itemDecisionInput(event, stallTopupFacts));
-    case DECIDE_SCROLL:
-      return decideScroll(itemDecisionInput(event, scrollFacts));
-    default:
-      return { kind: "item-plan", plan: { type: "noop" } };
-  }
+  return battleItemDecisionHandlers[event.type]?.(event) || noopItemPlan;
 }
 
 function itemDecisionInput(event, facts) {

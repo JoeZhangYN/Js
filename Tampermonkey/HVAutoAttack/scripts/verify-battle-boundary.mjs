@@ -2289,6 +2289,7 @@ function checkBattleItemDecisionEntry() {
     "DECIDE_STALL_TOPUP",
     "DECIDE_SCROLL",
     "itemDecisionInput",
+    "battleItemDecisionHandlers",
     "gemFacts",
     "potionFacts",
     "stallTopupFacts",
@@ -2305,6 +2306,19 @@ function checkBattleItemDecisionEntry() {
   }
   if (/export\s*\{\s*decideScroll\s*\}/.test(itemText)) {
     violations.push(`${rel(decideItemFile)} must route scroll through runBattleItemDecision`);
+  }
+  const itemEntryBody =
+    itemText.match(/export function runBattleItemDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/const battleItemDecisionHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[DECIDE_GEM\]/.test(itemText)) {
+    violations.push(`${rel(decideItemFile)} must route item decisions through a frozen handler table`);
+  }
+  if (/switch\s*\(\s*event\.type\s*\)|event\.type\s*===/.test(itemEntryBody)) {
+    violations.push(`${rel(decideItemFile)} entry must dispatch by handler table`);
+  }
+  const itemTestFile = path.join(root, "src/battle/item/decide-item.test.js");
+  const itemTestText = fs.existsSync(itemTestFile) ? fs.readFileSync(itemTestFile, "utf8") : "";
+  if (!itemTestText.includes("rejects unknown item decision events with a noop plan")) {
+    violations.push(`${rel(itemTestFile)} must cover unknown item decision events`);
   }
 
   const rulesText = readBattleActionRulesText();

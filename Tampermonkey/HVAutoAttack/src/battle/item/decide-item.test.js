@@ -89,6 +89,15 @@ const scrollPlan = (opt, s) =>
   runBattleItemDecision({ type: BattleItemDecisionEvent.DECIDE_SCROLL, opt, ...scrollFacts(s) })
     .plan;
 
+describe("runBattleItemDecision", () => {
+  it("rejects unknown item decision events with a noop plan", () => {
+    expect(runBattleItemDecision({ type: "unknown", opt: {}, snap: snap() })).toEqual({
+      kind: "item-plan",
+      plan: { type: "noop" },
+    });
+  });
+});
+
 describe("decideGemUse", () => {
   it("无宝石（gemName 空）→ noop", () => {
     expect(gemPlan({}, snap({ gemName: null }))).toEqual({ type: "noop" });
