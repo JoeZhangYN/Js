@@ -45,6 +45,14 @@ const decideCriticalBuffFile = path.join(
   root,
   "src/battle/critical-buff-guard/decide-critical-buff.js"
 );
+const executeCriticalPauseFile = path.join(
+  root,
+  "src/battle/critical-buff-guard/execute-critical-pause.js"
+);
+const executeCriticalPauseTestFile = path.join(
+  root,
+  "src/battle/critical-buff-guard/execute-critical-pause.test.js"
+);
 const decideItemFile = path.join(root, "src/battle/item/decide-item.js");
 const decideGemFile = path.join(root, "src/battle/item/decide-gem.js");
 const decideScrollFile = path.join(root, "src/battle/item/decide-scroll.js");
@@ -1684,6 +1692,37 @@ function checkCriticalBuffEntry() {
   }
   if (/decideCriticalBuff\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideCriticalBuffFile)} must not expose opt/snap decision input`);
+  }
+  for (const forbidden of [
+    "executeCriticalPause",
+    "runAlarmAutomation",
+    "runBattlePauseAutomation",
+    "document.title",
+  ]) {
+    if (ownerText.includes(forbidden)) {
+      violations.push(`${rel(decideCriticalBuffFile)} must not own critical pause execution`);
+    }
+  }
+  const executionText = fs.readFileSync(executeCriticalPauseFile, "utf8");
+  if (!fs.existsSync(executeCriticalPauseTestFile)) {
+    violations.push(`${rel(executeCriticalPauseTestFile)} must lock critical pause execution`);
+  }
+  for (const required of [
+    "CriticalBuffPauseExecutionEvent",
+    "APPLY_PLAN",
+    "runCriticalBuffPauseExecution",
+    "runAlarmAutomation",
+    "runBattlePauseAutomation",
+    "document.title",
+  ]) {
+    if (!executionText.includes(required)) {
+      violations.push(
+        `${rel(executeCriticalPauseFile)} must own critical pause execution ${required}`
+      );
+    }
+  }
+  if (!fs.readFileSync(dispatchFile, "utf8").includes("runCriticalBuffPauseExecution")) {
+    violations.push(`${rel(dispatchFile)} must execute critical pauses through execution entry`);
   }
   const rulesText = readBattleActionRulesText();
   const criticalRule =

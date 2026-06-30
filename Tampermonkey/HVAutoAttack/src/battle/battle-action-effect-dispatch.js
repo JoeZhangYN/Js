@@ -16,7 +16,10 @@ import { checkAndActivateSpirit } from "./buff/activate-spirit.js";
 import { BattleAttackExecutionEvent, runBattleAttackExecution } from "./attack/execute-attack.js";
 import { BattleChannelExecutionEvent, runBattleChannelExecution } from "./buff/execute-channel.js";
 import { BattleItemExecutionEvent, runBattleItemExecution } from "./item/execute-item.js";
-import { executeCriticalPause } from "./critical-buff-guard/decide-critical-buff.js";
+import {
+  CriticalBuffPauseExecutionEvent,
+  runCriticalBuffPauseExecution,
+} from "./critical-buff-guard/execute-critical-pause.js";
 
 const EVENT_APPLY_ACTION_RESULT = "applyActionResult";
 
@@ -72,9 +75,11 @@ function applyActionResult(result, snap) {
       return true;
 
     case "critical-pause":
-      // criticalBuffGuard 命中：告警 + 暂停（alarm/disabled/按钮/title），副作用在 executeCriticalPause
-      executeCriticalPause(result);
-      return true;
+      // criticalBuffGuard 命中：告警 + 暂停（alarm/disabled/按钮/title）。
+      return runCriticalBuffPauseExecution({
+        type: CriticalBuffPauseExecutionEvent.APPLY_PLAN,
+        plan: result,
+      });
 
     case "halt":
       return true;

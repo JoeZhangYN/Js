@@ -1,6 +1,6 @@
 // 深度B PURE 化：关键 buff 即将消失 + MP 不足续施 → 暂停 + 告警的 graceful degradation。
 // 原 critical-buff-guard.js::checkCriticalBuffGuard 读 DOM(#pane_effects>img) + 6 件副作用，
-// 此处拆成 PURE decide（只读 opt/snap）+ SHELL executeCriticalPause（忠实复刻命中分支副作用）。
+// 此处拆成 PURE decide（只读 opt/snap）+ critical pause execution（忠实复刻命中分支副作用）。
 //
 // 灵感来自 Monsterbation L1318 stopOnBuffsExpiring：宁可停下让用户接管，也不要让脚本在
 // "续 buff 失败 → 裸 buff 攻击 → 越打越虚" 的死循环里硬扛。
@@ -9,8 +9,6 @@
 // 1. opt.pauseOnCriticalBuffExpire 开启
 // 2. opt.criticalBuffsList 中至少一个 buff 当前 turns <= minTurns（Infinity 永续不算"即将消失"）
 // 3. 当前 MP < criticalBuffMpFloor%（续 buff 大概率失败的阈值）
-import { AlarmEvent, runAlarmAutomation } from "../../alarm/alarm.js";
-import { BattlePauseEvent, runBattlePauseAutomation } from "../pause-automation.js";
 import { criticalBuffFacts } from "./critical-buff-facts.js";
 
 /**
@@ -54,19 +52,4 @@ function criticalBuffDecisionInput(event) {
     opt: event.opt,
     ...criticalBuffFacts(event.snap),
   };
-}
-
-/**
- * SHELL：忠实复刻原 checkCriticalBuffGuard 命中分支的 5 件副作用
- * （console.warn + alarm + setValue disabled + 按钮文案 + document.title）。
- * 由 dispatch 在 "critical-pause" kind 接线调用。
- * @param {{ name:string, turns:number, mp:number, mpFloor:number }} plan
- */
-export function executeCriticalPause(plan) {
-  console.warn(
-    `[critical-buff-guard] "${plan.name}" 剩 ${plan.turns} 回合 + MP ${plan.mp.toFixed(0)}% < ${plan.mpFloor}% → 暂停脚本，请手动接管`
-  );
-  runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Error" });
-  runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
-  document.title = `hvAA 暂停: ${plan.name} 即将消失但 MP 不足`;
 }
