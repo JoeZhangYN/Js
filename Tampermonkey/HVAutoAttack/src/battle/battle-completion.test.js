@@ -8,6 +8,7 @@ import {
 function deps(context = { monsterAlive: 0, roundNow: 1, roundAll: 1 }) {
   return {
     readCompletionContext: vi.fn(() => context),
+    recordCompletion: vi.fn(),
     triggerAlarm: vi.fn(),
     clearSession: vi.fn(),
     scheduleReload: vi.fn(),
@@ -21,6 +22,7 @@ describe("runBattleCompletionAutomation", () => {
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
     ).toEqual({ outcome: BattleCompletionOutcome.DEFEAT });
+    expect(d.recordCompletion).toHaveBeenCalledTimes(1);
     expect(d.triggerAlarm).toHaveBeenCalledWith("Defeat");
     expect(d.clearSession).toHaveBeenCalled();
     expect(d.scheduleReload).not.toHaveBeenCalled();
@@ -32,6 +34,7 @@ describe("runBattleCompletionAutomation", () => {
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
     ).toEqual({ outcome: BattleCompletionOutcome.NEXT_ROUND });
+    expect(d.recordCompletion).toHaveBeenCalledTimes(1);
     expect(d.triggerAlarm).not.toHaveBeenCalled();
     expect(d.clearSession).not.toHaveBeenCalled();
     expect(d.scheduleReload).not.toHaveBeenCalled();
@@ -43,6 +46,7 @@ describe("runBattleCompletionAutomation", () => {
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
     ).toEqual({ outcome: BattleCompletionOutcome.VICTORY });
+    expect(d.recordCompletion).toHaveBeenCalledTimes(1);
     expect(d.triggerAlarm).toHaveBeenCalledWith("Victory");
     expect(d.clearSession).toHaveBeenCalled();
     expect(d.scheduleReload).toHaveBeenCalledWith(3);
@@ -69,5 +73,15 @@ describe("runBattleCompletionAutomation", () => {
     ).toEqual({ outcome: BattleCompletionOutcome.VICTORY });
 
     expect(d.readCompletionContext).toHaveBeenCalledTimes(1);
+  });
+
+  it("records completion before reading the completion ruling context", () => {
+    const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
+
+    runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d);
+
+    expect(d.recordCompletion.mock.invocationCallOrder[0]).toBeLessThan(
+      d.readCompletionContext.mock.invocationCallOrder[0]
+    );
   });
 });

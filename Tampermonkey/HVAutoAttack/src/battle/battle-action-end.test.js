@@ -29,7 +29,6 @@ function makeDeps({ hasCompletion = false, outcome = BattleCompletionOutcome.ONG
     endDelay: vi.fn(),
     refreshCombatants: vi.fn(),
     monitorActionEnded: vi.fn(),
-    monitorCompletion: vi.fn(),
     completeBattle: vi.fn(() => ({ outcome })),
     handleRiddle: vi.fn(() => false),
     startRound: vi.fn(),

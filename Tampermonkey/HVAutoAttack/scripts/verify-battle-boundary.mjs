@@ -523,7 +523,6 @@ function checkActionEndEntry() {
     "BattleActionDelayEvent.ACTION_ENDED",
     "MonsterStatusEvent.REFRESH_COMBATANT_COUNTS",
     "BattleMonitorEvent.ACTION_ENDED",
-    "BattleMonitorEvent.COMPLETION_REACHED",
     "BattleCompletionEvent.COMPLETION_REACHED",
     "BattleCompletionOutcome.NEXT_ROUND",
     "RiddleEvent.BATTLE_POST_RESULT",
@@ -533,6 +532,11 @@ function checkActionEndEntry() {
     if (!text.includes(required)) {
       violations.push(`${rel(actionEndFile)} must make ${required} visible in action-end entry`);
     }
+  }
+  if (/BattleMonitorEvent\.COMPLETION_REACHED/.test(text)) {
+    violations.push(
+      `${rel(actionEndFile)} completion recording belongs in runBattleCompletionAutomation(event)`
+    );
   }
   for (const file of [
     battleFile,

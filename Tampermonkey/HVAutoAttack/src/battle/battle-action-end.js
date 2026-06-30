@@ -44,7 +44,6 @@ function continueNextRound(deps) {
 }
 
 function handleCompletion(deps) {
-  deps.monitorCompletion();
   const completion = deps.completeBattle();
   if (completion.outcome === BattleCompletionOutcome.NEXT_ROUND) {
     continueNextRound(deps);
@@ -76,8 +75,6 @@ export function runBattleActionEndAutomation(
     refreshCombatants: () =>
       runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS }),
     monitorActionEnded: () => runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_ENDED }),
-    monitorCompletion: () =>
-      runBattleMonitorAutomation({ type: BattleMonitorEvent.COMPLETION_REACHED }),
     completeBattle: () =>
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }),
     handleRiddle: (data) =>

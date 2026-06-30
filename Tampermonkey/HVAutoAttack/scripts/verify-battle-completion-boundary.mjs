@@ -41,7 +41,10 @@ function checkOwner() {
     "scheduleReload",
     "readCompletionContext",
     "deps.readCompletionContext",
+    "deps.recordCompletion",
     "handleTerminalCompletion",
+    "BattleMonitorEvent.COMPLETION_REACHED",
+    "runBattleMonitorAutomation",
     "BattleProgressEvent.READ_CONTEXT",
   ]) {
     if (!text.includes(required)) {
@@ -75,6 +78,13 @@ function checkOwner() {
   ) {
     violations.push(
       `${owner.replaceAll("\\", "/")} must not reassemble battle progress facts directly`
+    );
+  }
+  const recordIndex = text.indexOf("deps.recordCompletion()");
+  const readIndex = text.indexOf("deps.readCompletionContext()");
+  if (recordIndex === -1 || readIndex === -1 || recordIndex > readIndex) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must record completion before reading completion ruling context`
     );
   }
   if (!fs.existsSync(path.join(root, ownerTest))) {

@@ -1,6 +1,10 @@
 // 战斗完成裁决：唯一入口 runBattleCompletionAutomation(event)。
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import {
+  BattleMonitorEvent,
+  runBattleMonitorAutomation,
+} from "../monitor/battle-monitor-automation.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
 import { BattleProgressEvent, runBattleProgressAutomation } from "./battle-progress.js";
 
@@ -44,6 +48,7 @@ function handleTerminalCompletion(outcome, deps) {
 }
 
 function handleCompletionReached(deps) {
+  deps.recordCompletion();
   const outcome = classifyCompletion(deps.readCompletionContext());
   if (outcome === BattleCompletionOutcome.DEFEAT || outcome === BattleCompletionOutcome.VICTORY) {
     handleTerminalCompletion(outcome, deps);
@@ -55,6 +60,8 @@ export function runBattleCompletionAutomation(
   event = { type: EVENT_COMPLETION_REACHED },
   deps = {
     readCompletionContext,
+    recordCompletion: () =>
+      runBattleMonitorAutomation({ type: BattleMonitorEvent.COMPLETION_REACHED }),
     triggerAlarm: (kind) => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind }),
     clearSession: () => runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION }),
     scheduleReload: (sec) =>
