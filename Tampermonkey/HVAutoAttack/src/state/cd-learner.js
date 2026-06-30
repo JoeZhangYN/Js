@@ -150,9 +150,12 @@ function getLearnedCd(code) {
   return fallback;
 }
 
+const cdLearningEventHandlers = Object.freeze({
+  [EVENT_RECORD_FIRE]: (event) => recordCdFire(event.code, event.id, event.globalTurn),
+  [EVENT_FINALIZE_PENDING]: (event) => finalizeCdPending(event),
+  [EVENT_READ_CD]: (event) => getLearnedCd(event.code),
+});
+
 export function runCdLearningAutomation(event = { type: EVENT_READ_CD }) {
-  if (event.type === EVENT_RECORD_FIRE) return recordCdFire(event.code, event.id, event.globalTurn);
-  if (event.type === EVENT_FINALIZE_PENDING) return finalizeCdPending(event);
-  if (event.type === EVENT_READ_CD) return getLearnedCd(event.code);
-  return undefined;
+  return cdLearningEventHandlers[event.type]?.(event);
 }

@@ -89,6 +89,8 @@ describe("cd-learner 学习与守卫", () => {
 
   it("未知 code → 0（无 entry）", () => {
     expect(readCd("NOPE")).toBe(0);
+    g("cdLearnPending", { OFC: { firedTurn: 10, id: "1111" } });
+    expect([runCdLearningAutomation({ type: "unknown" }), g("cdLearnPending"), getValue(STORAGE_KEYS.LEARNED_CD, true)]).toEqual([undefined, { OFC: { firedTurn: 10, id: "1111" } }, null]);
   });
 
   it("缺失 globalTurn 不回退 ambient runtime turn", () => {
