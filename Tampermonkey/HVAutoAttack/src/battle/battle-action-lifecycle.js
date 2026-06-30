@@ -1,10 +1,8 @@
 import { gE } from "../dom/query.js";
-import { post } from "../dom/http.js";
 import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
-import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
 import { BattleActionDelayEvent, runBattleActionDelayAutomation } from "./battle-action-delay.js";
 import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle-action-speed.js";
 import {
@@ -14,7 +12,10 @@ import {
 } from "./battle-completion.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
-import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./battle-round-start.js";
+import {
+  BattleNextRoundContinuationEvent,
+  runBattleNextRoundContinuation,
+} from "./battle-next-round-continuation.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
@@ -23,27 +24,6 @@ export const BattleActionLifecycleEvent = Object.freeze({
   ACTION_STARTED: EVENT_ACTION_STARTED,
   ACTION_ENDED: EVENT_ACTION_ENDED,
 });
-
-function replaceBattlePanels(data, deps) {
-  deps.gE("#battle_main").replaceChild(deps.gE("#battle_right", data), deps.gE("#battle_right"));
-  deps.gE("#battle_main").replaceChild(deps.gE("#battle_left", data), deps.gE("#battle_left"));
-}
-
-function restartBattleRuntime(deps) {
-  deps.unsafeWindow.battle = new deps.unsafeWindow.Battle();
-  deps.unsafeWindow.battle.clear_infopane();
-  deps.startRound();
-  deps.runTurn();
-}
-
-function continueNextRound(deps) {
-  deps.gE("#pane_completion").removeChild(deps.gE("#btcp"));
-  deps.post(deps.href(), (data) => {
-    if (deps.handleRiddle(data)) return;
-    replaceBattlePanels(data, deps);
-    restartBattleRuntime(deps);
-  });
-}
 
 function runActionStarted(deps) {
   deps.startDelay();
@@ -54,7 +34,7 @@ function runActionStarted(deps) {
 function handleCompletion(deps) {
   const completion = deps.completeBattle();
   if (completion.outcome === BattleCompletionOutcome.NEXT_ROUND) {
-    continueNextRound(deps);
+    deps.continueNextRound();
     return { outcome: completion.outcome, continued: "nextRound" };
   }
   return { outcome: completion.outcome, continued: false };
@@ -79,9 +59,6 @@ export function runBattleActionLifecycleAutomation(
   event = { type: EVENT_ACTION_STARTED },
   deps = {
     gE,
-    post,
-    href: () => window.location.href,
-    unsafeWindow,
     startDelay: () =>
       runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }),
     recordSpeed: () =>
@@ -94,12 +71,8 @@ export function runBattleActionLifecycleAutomation(
     monitorActionEnded: () => runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_ENDED }),
     completeBattle: () =>
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }),
-    handleRiddle: (data) =>
-      runRiddleAutomation({
-        type: RiddleEvent.BATTLE_POST_RESULT,
-        data,
-      }),
-    startRound: () => runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED }),
+    continueNextRound: () =>
+      runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }),
     runTurn: runBattleTurnAutomation,
   }
 ) {

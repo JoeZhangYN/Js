@@ -780,8 +780,8 @@ function checkActionLifecycleEntry() {
     "BattleMonitorEvent.ACTION_ENDED",
     "BattleCompletionEvent.COMPLETION_REACHED",
     "BattleCompletionOutcome.NEXT_ROUND",
-    "RiddleEvent.BATTLE_POST_RESULT",
-    "BattleRoundStartEvent.ROUND_STARTED",
+    "BattleNextRoundContinuationEvent.CONTINUE",
+    "runBattleNextRoundContinuation",
     "runBattleTurnAutomation",
   ]) {
     if (!text.includes(required)) {
@@ -794,6 +794,13 @@ function checkActionLifecycleEntry() {
     violations.push(
       `${rel(actionLifecycleFile)} completion recording belongs in runBattleCompletionAutomation(event)`
     );
+  }
+  if (
+    /RiddleEvent\.BATTLE_POST_RESULT|BattleRoundStartEvent\.ROUND_STARTED|runBattleRoundStartAutomation|unsafeWindow\.battle|#pane_completion|#battle_right|#battle_left|post\(/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(actionLifecycleFile)} must not own next-round continuation IO`);
   }
   for (const file of [
     battleFile,

@@ -35,8 +35,7 @@ function makeDeps({ hasCompletion = false, outcome = BattleCompletionOutcome.ONG
     monitorActionStarted: vi.fn(),
     monitorActionEnded: vi.fn(),
     completeBattle: vi.fn(() => ({ outcome })),
-    handleRiddle: vi.fn(() => false),
-    startRound: vi.fn(),
+    continueNextRound: vi.fn(),
     runTurn: vi.fn(),
   };
   return { deps, nodes };
@@ -73,8 +72,8 @@ describe("runBattleActionLifecycleAutomation", () => {
     expect(deps.completeBattle).not.toHaveBeenCalled();
   });
 
-  it("loads and starts the next round through one action lifecycle entry", () => {
-    const { deps, nodes } = makeDeps({
+  it("continues the next round through the next-round entry", () => {
+    const { deps } = makeDeps({
       hasCompletion: true,
       outcome: BattleCompletionOutcome.NEXT_ROUND,
     });
@@ -83,25 +82,7 @@ describe("runBattleActionLifecycleAutomation", () => {
       runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED }, deps)
     ).toEqual({ outcome: "nextRound", continued: "nextRound" });
 
-    expect(nodes["#pane_completion"].removeChild).toHaveBeenCalledWith(nodes["#btcp"]);
-    expect(deps.post).toHaveBeenCalledWith("https://example.test/battle", expect.any(Function));
-    expect(nodes["#battle_main"].replaceChild).toHaveBeenCalledTimes(2);
-    expect(deps.unsafeWindow.Battle).toHaveBeenCalledTimes(1);
-    expect(deps.startRound).toHaveBeenCalledTimes(1);
-    expect(deps.runTurn).toHaveBeenCalledTimes(1);
-  });
-
-  it("lets riddle handling claim the post result before panel replacement", () => {
-    const { deps, nodes } = makeDeps({
-      hasCompletion: true,
-      outcome: BattleCompletionOutcome.NEXT_ROUND,
-    });
-    deps.handleRiddle.mockReturnValue(true);
-
-    runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED }, deps);
-
-    expect(nodes["#battle_main"].replaceChild).not.toHaveBeenCalled();
-    expect(deps.startRound).not.toHaveBeenCalled();
+    expect(deps.continueNextRound).toHaveBeenCalledTimes(1);
     expect(deps.runTurn).not.toHaveBeenCalled();
   });
 
