@@ -12,6 +12,10 @@ export const BattleActionEventBridgeEvent = Object.freeze({
   INSTALL: EVENT_INSTALL,
 });
 
+const battleActionEventBridgeEventHandlers = Object.freeze({
+  [EVENT_INSTALL]: () => installActionEventBridge(),
+});
+
 function installActionEventBridge() {
   const eventStart = cE("a");
   eventStart.id = "eventStart";
@@ -32,6 +36,5 @@ function installActionEventBridge() {
 }
 
 export function runBattleActionEventBridgeAutomation(event = { type: EVENT_INSTALL }) {
-  if (event.type === EVENT_INSTALL) return installActionEventBridge();
-  return false;
+  return battleActionEventBridgeEventHandlers[event.type]?.(event) ?? false;
 }

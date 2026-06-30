@@ -76,6 +76,7 @@ walk(srcDir);
 
 requireText(owner, [
   "BattleActionEventBridgeEvent",
+  "battleActionEventBridgeEventHandlers",
   "runBattleActionEventBridgeAutomation",
   "BattleActionLifecycleEvent.ACTION_STARTED",
   "BattleActionLifecycleEvent.ACTION_ENDED",
@@ -96,6 +97,15 @@ if (
   )
 ) {
   violations.push(`${owner.replaceAll("\\", "/")} may export only its event entry`);
+}
+const entryBody =
+  ownerText.match(/export function runBattleActionEventBridgeAutomation\([^)]*\) \{[\s\S]*?\n\}/)
+    ?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_INSTALL\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (/\bapi_call\b|\bapi_response\b|sessionStorage\.delay\b|\.textContent\s*=/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not own API bridge script injection`);
