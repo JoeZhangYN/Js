@@ -953,6 +953,7 @@ function checkActionLifecycleEntry() {
     "MonsterStatusEvent.REFRESH_COMBATANT_COUNTS",
     "BattleMonitorEvent.ACTION_ENDED",
     "BattleCompletionEvent.COMPLETION_REACHED",
+    "BattleCompletionEvent.READ_REACHED",
     "BattleCompletionOutcome.NEXT_ROUND",
     "BattleNextRoundContinuationEvent.CONTINUE",
     "runBattleNextRoundContinuation",
@@ -980,6 +981,11 @@ function checkActionLifecycleEntry() {
   if (/BattleMonitorEvent\.COMPLETION_REACHED/.test(text)) {
     violations.push(
       `${rel(actionLifecycleFile)} completion recording belongs in runBattleCompletionAutomation(event)`
+    );
+  }
+  if (/#btcp|gE\(/.test(text)) {
+    violations.push(
+      `${rel(actionLifecycleFile)} completion reachability belongs in runBattleCompletionAutomation(event)`
     );
   }
   if (

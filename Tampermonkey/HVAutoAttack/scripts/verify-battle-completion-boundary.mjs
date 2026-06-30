@@ -34,6 +34,8 @@ function checkOwner() {
     "runBattleCompletionAutomation",
     "battleCompletionEventHandlers",
     "COMPLETION_REACHED",
+    "READ_REACHED",
+    'gE("#btcp")',
     "NEXT_ROUND",
     "Defeat",
     "Victory",
@@ -43,6 +45,7 @@ function checkOwner() {
     "readCompletionContext",
     "deps.readCompletionContext",
     "deps.recordCompletion",
+    "deps.isCompletionReached",
     "handleTerminalCompletion",
     "BattleMonitorEvent.COMPLETION_REACHED",
     "runBattleMonitorAutomation",
@@ -66,6 +69,9 @@ function checkOwner() {
     violations.push(
       `${owner.replaceAll("\\", "/")} must read completion fields through readCompletionContext`
     );
+  }
+  if ((text.match(/#btcp/g) || []).length !== 1) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own the completion panel reachability read`);
   }
   if (/\bg\(\s*["'](?:monsterAlive|roundNow|roundAll)["']\s*\)/.test(text)) {
     violations.push(
@@ -113,6 +119,9 @@ function checkOwner() {
     const testText = fs.readFileSync(path.join(root, ownerTest), "utf8");
     if (!testText.includes("rejects unknown battle completion events without side effects")) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown completion events`);
+    }
+    if (!testText.includes("reads completion panel reachability through the completion entry")) {
+      violations.push(`${ownerTest.replaceAll("\\", "/")} must cover completion reachability`);
     }
   }
 }

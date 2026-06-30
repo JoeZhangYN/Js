@@ -1,6 +1,7 @@
 // 战斗完成裁决：唯一入口 runBattleCompletionAutomation(event)。
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import { gE } from "../dom/query.js";
 import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
@@ -9,10 +10,12 @@ import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime
 import { BattleProgressEvent, runBattleProgressAutomation } from "./battle-progress.js";
 
 const EVENT_COMPLETION_REACHED = "completionReached";
+const EVENT_READ_REACHED = "readReached";
 const VICTORY_RELOAD_SECONDS = 3;
 
 export const BattleCompletionEvent = Object.freeze({
   COMPLETION_REACHED: EVENT_COMPLETION_REACHED,
+  READ_REACHED: EVENT_READ_REACHED,
 });
 
 export const BattleCompletionOutcome = Object.freeze({
@@ -24,6 +27,7 @@ export const BattleCompletionOutcome = Object.freeze({
 
 const battleCompletionEventHandlers = Object.freeze({
   [EVENT_COMPLETION_REACHED]: (event, deps) => handleCompletionReached(deps),
+  [EVENT_READ_REACHED]: (event, deps) => deps.isCompletionReached(),
 });
 
 function readCompletionContext() {
@@ -68,6 +72,7 @@ export function runBattleCompletionAutomation(
       runBattleMonitorAutomation({ type: BattleMonitorEvent.COMPLETION_REACHED }),
     triggerAlarm: (kind) => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind }),
     clearSession: () => runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION }),
+    isCompletionReached: () => !!gE("#btcp"),
     scheduleReload: (sec) =>
       runNavigationAutomation({
         type: NavigationEvent.SCHEDULE_RELOAD,

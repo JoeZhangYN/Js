@@ -6,39 +6,19 @@ import {
 import { BattleCompletionOutcome } from "./battle-completion.js";
 
 function makeDeps({ hasCompletion = false, outcome = BattleCompletionOutcome.ONGOING } = {}) {
-  const nodes = {
-    "#btcp": hasCompletion ? { id: "btcp" } : null,
-    "#pane_completion": { removeChild: vi.fn() },
-    "#battle_main": { replaceChild: vi.fn() },
-    "#battle_right": { id: "oldRight" },
-    "#battle_left": { id: "oldLeft" },
-  };
   const deps = {
-    gE: vi.fn((selector, data) => data?.[selector] || nodes[selector]),
-    post: vi.fn((href, cb) =>
-      cb({
-        "#battle_right": { id: "newRight" },
-        "#battle_left": { id: "newLeft" },
-      })
-    ),
-    href: vi.fn(() => "https://example.test/battle"),
-    unsafeWindow: {
-      Battle: vi.fn(function Battle() {
-        this.clear_infopane = vi.fn();
-      }),
-      battle: null,
-    },
     startDelay: vi.fn(),
     recordSpeed: vi.fn(),
     endDelay: vi.fn(),
     refreshCombatants: vi.fn(),
     monitorActionStarted: vi.fn(),
     monitorActionEnded: vi.fn(),
+    isCompletionReached: vi.fn(() => hasCompletion),
     completeBattle: vi.fn(() => ({ outcome })),
     continueNextRound: vi.fn(),
     runTurn: vi.fn(),
   };
-  return { deps, nodes };
+  return { deps };
 }
 
 describe("runBattleActionLifecycleAutomation", () => {
@@ -68,6 +48,7 @@ describe("runBattleActionLifecycleAutomation", () => {
     );
     expect(deps.refreshCombatants).toHaveBeenCalledTimes(1);
     expect(deps.monitorActionEnded).toHaveBeenCalledTimes(1);
+    expect(deps.isCompletionReached).toHaveBeenCalledTimes(1);
     expect(deps.runTurn).toHaveBeenCalledTimes(1);
     expect(deps.completeBattle).not.toHaveBeenCalled();
   });
@@ -83,6 +64,8 @@ describe("runBattleActionLifecycleAutomation", () => {
     ).toEqual({ outcome: "nextRound", continued: "nextRound" });
 
     expect(deps.continueNextRound).toHaveBeenCalledTimes(1);
+    expect(deps.isCompletionReached).toHaveBeenCalledTimes(1);
+    expect(deps.completeBattle).toHaveBeenCalledTimes(1);
     expect(deps.runTurn).not.toHaveBeenCalled();
   });
 
@@ -95,6 +78,7 @@ describe("runBattleActionLifecycleAutomation", () => {
     expect(deps.endDelay).not.toHaveBeenCalled();
     expect(deps.monitorActionStarted).not.toHaveBeenCalled();
     expect(deps.monitorActionEnded).not.toHaveBeenCalled();
+    expect(deps.isCompletionReached).not.toHaveBeenCalled();
     expect(deps.completeBattle).not.toHaveBeenCalled();
     expect(deps.continueNextRound).not.toHaveBeenCalled();
     expect(deps.runTurn).not.toHaveBeenCalled();

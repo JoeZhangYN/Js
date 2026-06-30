@@ -1,4 +1,3 @@
-import { gE } from "../dom/query.js";
 import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
@@ -45,7 +44,7 @@ function runActionEnded(deps) {
   deps.endDelay();
   deps.refreshCombatants();
   deps.monitorActionEnded();
-  if (deps.gE("#btcp")) return handleCompletion(deps);
+  if (deps.isCompletionReached()) return handleCompletion(deps);
   deps.runTurn();
   return { outcome: BattleCompletionOutcome.ONGOING, continued: "turn" };
 }
@@ -58,7 +57,6 @@ const battleActionLifecycleEventHandlers = Object.freeze({
 export function runBattleActionLifecycleAutomation(
   event = { type: EVENT_ACTION_STARTED },
   deps = {
-    gE,
     startDelay: () =>
       runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }),
     recordSpeed: () =>
@@ -71,6 +69,8 @@ export function runBattleActionLifecycleAutomation(
     monitorActionEnded: () => runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_ENDED }),
     completeBattle: () =>
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }),
+    isCompletionReached: () =>
+      runBattleCompletionAutomation({ type: BattleCompletionEvent.READ_REACHED }),
     continueNextRound: () =>
       runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }),
     runTurn: runBattleTurnAutomation,
