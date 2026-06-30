@@ -2903,12 +2903,27 @@ function checkAttackEntry() {
     violations.push(`${rel(decideAttackActionFile)} may export only its event entry`);
   }
   const scoringText = fs.readFileSync(physicalSkillScoringFile, "utf8");
-  for (const required of ["scorePhysicalSkillCandidates", "event.skillReady", "skillBaseScore"]) {
+  for (const required of [
+    "scorePhysicalSkillCandidates",
+    "event.skillReady",
+    "skillBaseScore",
+    "PHYSICAL_SKILL_SCORERS",
+    "OFC: scoreOfcSkill",
+    "FRD: scoreFrdSkill",
+    "T3: scoreT3Skill",
+    "T2: scoreT2Skill",
+    "T1: scoreT1Skill",
+  ]) {
     if (!scoringText.includes(required)) {
       violations.push(
         `${rel(physicalSkillScoringFile)} must own physical skill scoring ${required}`
       );
     }
+  }
+  const scoreContextBody =
+    scoringText.match(/function scoreSkillContextual\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (/switch\s*\(\s*skill\s*\)/.test(scoreContextBody)) {
+    violations.push(`${rel(physicalSkillScoringFile)} must dispatch physical skill scoring through PHYSICAL_SKILL_SCORERS`);
   }
   if (!scoringText.includes("readBigSkillSpec")) {
     violations.push(`${rel(physicalSkillScoringFile)} must read OFC/FRD specs through catalog`);

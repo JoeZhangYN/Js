@@ -7,35 +7,52 @@ import { aoeScore } from "./physical-skill-ranking.js";
 import { aliveByOrder } from "../monster-view.js";
 import { readBigSkillSpec } from "../big-skill-catalog.js";
 
+const PHYSICAL_SKILL_SCORERS = Object.freeze({
+  OFC: scoreOfcSkill,
+  FRD: scoreFrdSkill,
+  T3: scoreT3Skill,
+  T2: scoreT2Skill,
+  T1: scoreT1Skill,
+});
+
 /**
  * State-aware 打分：传入 event + 首怪 facts，返该 skill 的当前 score（0 = 不该使用）。
  * 用户可通过 opt.skillBaseScore 覆盖 baseline。
  */
 function scoreSkillContextual(skill, opt, event, firstMonster) {
-  const firstStunned = !!firstMonster?.buffs?.includes("wpn_stun");
+  return PHYSICAL_SKILL_SCORERS[skill]?.(opt, event, firstMonster) ?? 0;
+}
+
+function scoreOfcSkill(opt, event) {
+  const overrides = opt.skillBaseScore || {};
+  return aoeScore(overrides.OFC ?? 100, event.aliveCount);
+}
+
+function scoreFrdSkill(opt, event) {
+  const overrides = opt.skillBaseScore || {};
+  return aoeScore(overrides.FRD ?? 60, event.aliveCount);
+}
+
+function scoreT3Skill(opt, _event, firstMonster) {
   const firstBleeding = !!firstMonster?.buffs?.includes("wpn_bleed");
   const firstLowHp = (firstMonster?.hpPercent ?? 1) < 0.25;
   const overrides = opt.skillBaseScore || {};
-  switch (skill) {
-    case "OFC":
-      return aoeScore(overrides.OFC ?? 100, event.aliveCount); // 全体 void：每怪 100
-    case "FRD":
-      return aoeScore(overrides.FRD ?? 60, event.aliveCount); // 全体 void + 眩晕
-    case "T3":
-      // 斩杀条件命中 = 1000（碾压所有选项）；普通情况 80
-      if (firstLowHp && firstBleeding) return overrides.T3_execute ?? 1000;
-      return overrides.T3 ?? 80;
-    case "T2":
-      // COMBO：首怪 stun 状态 = 200 高优先；普通 60
-      if (firstStunned) return overrides.T2_combo ?? 200;
-      return overrides.T2 ?? 60;
-    case "T1":
-      // 已 stun 状态打 T1 浪费（重置 stun 计时但 T2 已可用）
-      if (firstStunned) return 0;
-      return overrides.T1 ?? 40;
-    default:
-      return 0;
-  }
+  if (firstLowHp && firstBleeding) return overrides.T3_execute ?? 1000;
+  return overrides.T3 ?? 80;
+}
+
+function scoreT2Skill(opt, _event, firstMonster) {
+  const firstStunned = !!firstMonster?.buffs?.includes("wpn_stun");
+  const overrides = opt.skillBaseScore || {};
+  if (firstStunned) return overrides.T2_combo ?? 200;
+  return overrides.T2 ?? 60;
+}
+
+function scoreT1Skill(opt, _event, firstMonster) {
+  const firstStunned = !!firstMonster?.buffs?.includes("wpn_stun");
+  const overrides = opt.skillBaseScore || {};
+  if (firstStunned) return 0;
+  return overrides.T1 ?? 40;
 }
 
 /**
