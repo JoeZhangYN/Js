@@ -34,6 +34,17 @@ export const MonsterDbStoreEvent = Object.freeze({
   META_WRITE: EVENT_META_WRITE,
 });
 
+const monsterDbStoreEventHandlers = Object.freeze({
+  [EVENT_PROFILE_READ]: (event) => getMonsterById(event.monsterId),
+  [EVENT_PROFILE_WRITE]: (event) => setMonsterById(event.info),
+  [EVENT_PROFILE_BULK_WRITE]: (event) => bulkSetMonsters(event.infos || []),
+  [EVENT_PROFILE_IS_EMPTY]: () => isProfileEmpty(),
+  [EVENT_HP_READ]: (event) => getMonsterHp(event.monsterId, event.level),
+  [EVENT_HP_WRITE]: (event) => setMonsterHp(event.monsterId, event.level, event.maxHP, event.lastUpdate),
+  [EVENT_META_READ]: (event) => getMeta(event.key),
+  [EVENT_META_WRITE]: (event) => setMeta(event.key, event.value),
+});
+
 /** @type {Promise<IDBDatabase>|null} */
 let dbPromise = null;
 
@@ -149,15 +160,5 @@ function setMeta(key, value) {
 }
 
 export function runMonsterDbStoreAutomation(event = { type: EVENT_PROFILE_READ }) {
-  if (event.type === EVENT_PROFILE_READ) return getMonsterById(event.monsterId);
-  if (event.type === EVENT_PROFILE_WRITE) return setMonsterById(event.info);
-  if (event.type === EVENT_PROFILE_BULK_WRITE) return bulkSetMonsters(event.infos || []);
-  if (event.type === EVENT_PROFILE_IS_EMPTY) return isProfileEmpty();
-  if (event.type === EVENT_HP_READ) return getMonsterHp(event.monsterId, event.level);
-  if (event.type === EVENT_HP_WRITE) {
-    return setMonsterHp(event.monsterId, event.level, event.maxHP, event.lastUpdate);
-  }
-  if (event.type === EVENT_META_READ) return getMeta(event.key);
-  if (event.type === EVENT_META_WRITE) return setMeta(event.key, event.value);
-  return undefined;
+  return monsterDbStoreEventHandlers[event.type]?.(event);
 }

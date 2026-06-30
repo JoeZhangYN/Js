@@ -57,11 +57,27 @@ if (!/export const MonsterDbStoreEvent\s*=\s*Object\.freeze\(/.test(ownerText)) 
 if (!/export function runMonsterDbStoreAutomation\(\s*event\b/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose runMonsterDbStoreAutomation(event)`);
 }
+const entryBody =
+  ownerText.match(/export function runMonsterDbStoreAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/const monsterDbStoreEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PROFILE_READ\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
 for (const name of legacy) {
   if (new RegExp(`export\\s+function\\s+${name}\\s*\\(`).test(ownerText)) {
     violations.push(
       `${owner.replaceAll("\\", "/")} legacy ${name} export must stay private behind runMonsterDbStoreAutomation(event)`
     );
+  }
+}
+if (!fs.existsSync(path.join(root, ownerTest))) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover monster db store entry`);
+} else {
+  const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+  if (!ownerTestText.includes("rejects unknown store events without changing persisted profiles")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown store events`);
   }
 }
 

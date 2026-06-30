@@ -135,4 +135,23 @@ describe("runMonsterDbStoreAutomation", () => {
       await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.META_READ, key: "lastSync" })
     ).toBe("2026-06-27");
   });
+
+  it("rejects unknown store events without changing persisted profiles", async () => {
+    const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } = await loadStore();
+
+    await runMonsterDbStoreAutomation({
+      type: MonsterDbStoreEvent.PROFILE_WRITE,
+      info: { monsterId: 99, fire: 50 },
+    });
+
+    expect(
+      await runMonsterDbStoreAutomation({
+        type: "unknown",
+        info: { monsterId: 99, fire: 0 },
+      })
+    ).toBeUndefined();
+    expect(
+      await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_READ, monsterId: 99 })
+    ).toEqual({ monsterId: 99, fire: 50 });
+  });
 });
