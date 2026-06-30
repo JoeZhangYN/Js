@@ -207,6 +207,40 @@ function checkBattleEntry() {
   if (!text.includes("BattlePauseControlsEvent.INSTALL")) {
     violations.push(`${rel(battleFile)} must install pause controls through their entry`);
   }
+  for (const required of [
+    "PAGE_READY_STARTUP_STEPS",
+    "installBattlePauseControls",
+    "installBattleActionEventBridge",
+    "reportBattleStarted",
+    "startBattleRound",
+    "runInitialBattleTurn",
+    "runPageReadyStartup",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(battleFile)} must name page-ready startup step ${required}`);
+    }
+  }
+  if (
+    !/const PAGE_READY_STARTUP_STEPS = \[\s*installBattlePauseControls,\s*installBattleActionEventBridge,\s*reportBattleStarted,\s*startBattleRound,\s*runInitialBattleTurn,\s*\]/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(battleFile)} must own explicit page-ready startup order`);
+  }
+  const entryBody =
+    text.match(/export function runBattleAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  for (const forbidden of [
+    "runBattlePauseControlsAutomation",
+    "runBattleActionEventBridgeAutomation",
+    "runBattleLifecycleAutomation",
+    "runBattleRoundStartAutomation",
+    "runBattleTurnAutomation",
+  ]) {
+    if (entryBody.includes(forbidden)) {
+      violations.push(`${rel(battleFile)} entry must route page ready through startup steps`);
+    }
+  }
   if (
     /\bpauseButton\b|\bpauseHotkey\b|\bpauseHotkeyKey\b|\bpauseChange\b|\bhvAABox2\b/.test(text)
   ) {

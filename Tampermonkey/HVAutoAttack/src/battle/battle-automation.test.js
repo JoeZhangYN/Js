@@ -45,6 +45,14 @@ describe("runBattleAutomation", () => {
     expect(mocks.runBattleLifecycleAutomation).toHaveBeenCalledWith({ type: "battleStarted" });
     expect(mocks.runBattleRoundStartAutomation).toHaveBeenCalledWith({ type: "roundStarted" });
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledTimes(1);
+    const actualOrder = [
+      mocks.runBattlePauseControlsAutomation.mock.invocationCallOrder[0],
+      mocks.runBattleActionEventBridgeAutomation.mock.invocationCallOrder[0],
+      mocks.runBattleLifecycleAutomation.mock.invocationCallOrder[0],
+      mocks.runBattleRoundStartAutomation.mock.invocationCallOrder[0],
+      mocks.runBattleTurnAutomation.mock.invocationCallOrder[0],
+    ];
+    expect(actualOrder).toEqual([...actualOrder].sort((a, b) => a - b));
   });
 
   it("ignores unknown events", () => {

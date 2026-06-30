@@ -17,11 +17,39 @@ export const BattleEvent = Object.freeze({
   PAGE_READY: EVENT_PAGE_READY,
 });
 
+const PAGE_READY_STARTUP_STEPS = [
+  installBattlePauseControls,
+  installBattleActionEventBridge,
+  reportBattleStarted,
+  startBattleRound,
+  runInitialBattleTurn,
+];
+
+function installBattlePauseControls() {
+  runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL });
+}
+
+function installBattleActionEventBridge() {
+  runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL });
+}
+
+function reportBattleStarted() {
+  runBattleLifecycleAutomation({ type: BattleLifecycleEvent.BATTLE_STARTED });
+}
+
+function startBattleRound() {
+  runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
+}
+
+function runInitialBattleTurn() {
+  runBattleTurnAutomation();
+}
+
+function runPageReadyStartup() {
+  for (const step of PAGE_READY_STARTUP_STEPS) step();
+}
+
 export function runBattleAutomation(event = { type: EVENT_PAGE_READY }) {
   if (event.type !== EVENT_PAGE_READY) return undefined;
-  runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL });
-  runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL });
-  runBattleLifecycleAutomation({ type: BattleLifecycleEvent.BATTLE_STARTED });
-  runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
-  runBattleTurnAutomation();
+  runPageReadyStartup();
 }
