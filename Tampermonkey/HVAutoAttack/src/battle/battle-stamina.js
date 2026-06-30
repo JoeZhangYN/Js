@@ -13,6 +13,10 @@ export const BattleStaminaEvent = Object.freeze({
   ROUND_LOG_READY: EVENT_ROUND_LOG_READY,
 });
 
+const battleStaminaEventHandlers = Object.freeze({
+  [EVENT_ROUND_LOG_READY]: (event, deps) => handleRoundLogReady(event.text, deps),
+});
+
 function parseLostStamina(text = "") {
   const match = text.match(/You lose (\d+) Stamina/);
   return match ? Number(match[1]) : 0;
@@ -63,6 +67,5 @@ export function runBattleStaminaAutomation(
     pause: () => runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE }),
   }
 ) {
-  if (event.type === EVENT_ROUND_LOG_READY) return handleRoundLogReady(event.text, deps);
-  return { lostStamina: 0, paused: false };
+  return battleStaminaEventHandlers[event.type]?.(event, deps) ?? { lostStamina: 0, paused: false };
 }

@@ -57,6 +57,7 @@ walk(srcDir);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "runBattleStaminaAutomation",
+  "battleStaminaEventHandlers",
   "ROUND_LOG_READY",
   "STAMINA_LOSS_THRESHOLD_OPTION_KEY",
   "DEFAULT_STAMINA_LOSS_THRESHOLD",
@@ -77,6 +78,21 @@ if (/key:\s*["']staminaLose["']/.test(ownerText)) {
 }
 if (/fallback:\s*Number\.POSITIVE_INFINITY/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must use stamina threshold fallback constant`);
+}
+const entryBody =
+  ownerText.match(/export function runBattleStaminaAutomation\([^)]*\)[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_ROUND_LOG_READY\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
+if (fs.existsSync(path.join(root, ownerTest))) {
+  const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+  if (!ownerTestText.includes("rejects unknown battle stamina events without side effects")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown battle stamina events`);
+  }
 }
 
 if (violations.length) {

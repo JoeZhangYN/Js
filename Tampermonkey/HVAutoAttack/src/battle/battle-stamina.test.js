@@ -85,4 +85,18 @@ describe("runBattleStaminaAutomation", () => {
     expect(result).toEqual({ lostStamina: 99, paused: false });
     expect(d.triggerAlarm).not.toHaveBeenCalled();
   });
+
+  it("rejects unknown battle stamina events without side effects", () => {
+    const d = deps(() => false);
+
+    expect(runBattleStaminaAutomation({ type: "unknown", text: "You lose 7 Stamina" }, d)).toEqual(
+      { lostStamina: 0, paused: false }
+    );
+
+    expect(runStaminaLossLogAutomation({ type: StaminaLossLogEvent.READ })).toEqual({});
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
+    expect(d.triggerAlarm).not.toHaveBeenCalled();
+    expect(d.confirm).not.toHaveBeenCalled();
+    expect(d.pause).not.toHaveBeenCalled();
+  });
 });
