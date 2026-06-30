@@ -1722,12 +1722,29 @@ function checkBigSkillDebuffEntry() {
   }
   const catalogText = fs.readFileSync(bigSkillCatalogFile, "utf8");
   const ownerText = fs.readFileSync(bigSkillFile, "utf8");
-  for (const required of ["bigSkillCodes", "readBigSkillSpec", "isBigSkillEnabled"]) {
+  for (const required of [
+    "BigSkillCatalogEvent",
+    "bigSkillCatalogEventHandlers",
+    "runBigSkillCatalog",
+    "READ_CODES",
+    "READ_SPEC",
+    "IS_ENABLED",
+  ]) {
     if (!catalogText.includes(required)) {
       violations.push(`${rel(bigSkillCatalogFile)} must own ${required}`);
     }
   }
-  for (const required of ["bigSkillCodes", "readBigSkillSpec", "isBigSkillEnabled"]) {
+  for (const legacy of ["bigSkillCodes", "readBigSkillSpec", "isBigSkillEnabled"]) {
+    if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(catalogText)) {
+      violations.push(`${rel(bigSkillCatalogFile)} legacy ${legacy} export must stay retired`);
+    }
+  }
+  for (const required of [
+    "BigSkillCatalogEvent.READ_CODES",
+    "BigSkillCatalogEvent.READ_SPEC",
+    "BigSkillCatalogEvent.IS_ENABLED",
+    "runBigSkillCatalog",
+  ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(bigSkillFile)} must read clear-skill specs through catalog`);
     }
@@ -3051,7 +3068,10 @@ function checkAttackEntry() {
   if (/skill\s*===/.test(scoringText)) {
     violations.push(`${rel(physicalSkillScoringFile)} must route physical skill-specific rulings through tables`);
   }
-  if (!scoringText.includes("readBigSkillSpec")) {
+  if (
+    !scoringText.includes("BigSkillCatalogEvent.READ_SPEC") ||
+    !scoringText.includes("runBigSkillCatalog")
+  ) {
     violations.push(`${rel(physicalSkillScoringFile)} must read OFC/FRD specs through catalog`);
   }
   if (/["']1111["']|["']1101["']/.test(scoringText)) {

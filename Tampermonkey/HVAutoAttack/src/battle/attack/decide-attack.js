@@ -1,6 +1,6 @@
 // PURE: attack 6 分支优先级决策入口。
 // **不读 DOM**：只读 event facts（含统一怪物视图 event.monsterFacts）。
-import { bigSkillCodes } from "../big-skill-catalog.js";
+import { BigSkillCatalogEvent, runBigSkillCatalog } from "../big-skill-catalog.js";
 import { decideAttackPlan } from "./attack-plan.js";
 
 const EVENT_DECIDE_PLAN = "decidePlan";
@@ -20,7 +20,8 @@ const attackDecisionEventHandlers = Object.freeze({
 });
 
 const ATTACK_PLAN_CLEAR_PREDICATES = Object.freeze({
-  physical: (plan) => bigSkillCodes().includes(plan.code),
+  physical: (plan) =>
+    runBigSkillCatalog({ type: BigSkillCatalogEvent.READ_CODES }).includes(plan.code),
 });
 
 /**

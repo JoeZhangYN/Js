@@ -4,7 +4,7 @@ import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,
 } from "../../state/big-skill-kill-learner.js";
-import { bigSkillCodes, isBigSkillEnabled, readBigSkillSpec } from "../big-skill-catalog.js";
+import { BigSkillCatalogEvent, runBigSkillCatalog } from "../big-skill-catalog.js";
 
 const EVENT_READ_CLEAR_RESOURCE_READY = "readClearResourceReady";
 const EVENT_SHOULD_SKIP_DEBUFF = "shouldSkipDebuff";
@@ -30,9 +30,9 @@ function clearSkillResourceReady(event) {
   const opt = event?.opt || {};
   const skillCooldowns = event?.skillCooldowns || {};
   const overcharge = event?.overcharge ?? 0;
-  for (const skill of bigSkillCodes()) {
-    if (!isBigSkillEnabled(opt, skill)) continue;
-    const spec = readBigSkillSpec(skill);
+  for (const skill of readBigSkillCodes()) {
+    if (!isCatalogSkillEnabled(opt, skill)) continue;
+    const spec = readCatalogSkillSpec(skill);
     if ((skillCooldowns[skill] ?? 99) === 0 && overcharge >= spec.oc) return true;
   }
   return false;
@@ -86,13 +86,25 @@ function shouldSkipForBigSkill(event) {
   const N = opt.skipDebuffForBigSkillThreshold ?? 3;
   if (aliveCount <= (opt.physicalDowngradeThreshold || 3)) return false;
   const ocFutureMax = overcharge + N * 10;
-  for (const skill of bigSkillCodes()) {
-    if (!isBigSkillEnabled(opt, skill)) continue;
+  for (const skill of readBigSkillCodes()) {
+    if (!isCatalogSkillEnabled(opt, skill)) continue;
     if ((skillCooldowns[skill] ?? 99) > N) continue;
-    const spec = readBigSkillSpec(skill);
+    const spec = readCatalogSkillSpec(skill);
     if (ocFutureMax >= spec.oc) return true;
   }
   return false;
+}
+
+function readBigSkillCodes() {
+  return runBigSkillCatalog({ type: BigSkillCatalogEvent.READ_CODES });
+}
+
+function readCatalogSkillSpec(code) {
+  return runBigSkillCatalog({ type: BigSkillCatalogEvent.READ_SPEC, code });
+}
+
+function isCatalogSkillEnabled(opt, code) {
+  return runBigSkillCatalog({ type: BigSkillCatalogEvent.IS_ENABLED, opt, code });
 }
 
 export function runBigSkillDebuffAutomation(event = { type: EVENT_SHOULD_SKIP_DEBUFF }) {

@@ -5,7 +5,7 @@
 import { checkCondition } from "../../settings/condition-eval.js";
 import { aoeScore } from "./physical-skill-ranking.js";
 import { aliveByOrder } from "../monster-view.js";
-import { readBigSkillSpec } from "../big-skill-catalog.js";
+import { BigSkillCatalogEvent, runBigSkillCatalog } from "../big-skill-catalog.js";
 
 const PHYSICAL_SKILL_SCORERS = Object.freeze({
   OFC: scoreOfcSkill,
@@ -95,8 +95,8 @@ export function scorePhysicalSkillCandidates(opt, event, ctx) {
   const skillOrder = (opt.skillOrderValue || "OFC,FRD,T3,T2,T1").split(",");
   const style = opt.fightingStyle || "2";
   const skillLib = new Map([
-    ["OFC", readBigSkillSpec("OFC")],
-    ["FRD", readBigSkillSpec("FRD")],
+    ["OFC", runBigSkillCatalog({ type: BigSkillCatalogEvent.READ_SPEC, code: "OFC" })],
+    ["FRD", runBigSkillCatalog({ type: BigSkillCatalogEvent.READ_SPEC, code: "FRD" })],
     ["T3", { id: `2${style}03`, oc: 105 }],
     ["T2", { id: `2${style}02`, oc: 55 }],
     ["T1", { id: `2${style}01`, oc: 30 }],
