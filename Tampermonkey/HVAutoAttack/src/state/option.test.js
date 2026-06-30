@@ -61,13 +61,13 @@ describe("option persistence entry", () => {
     expect(runOptionAutomation({ type: OptionEvent.IS_ON, key: "riddleHelperUi" })).toBe(false);
   });
 
-  it("serves battle rule options as a named business query", () => {
+  it("serves battle action options as a named business query", () => {
     runOptionAutomation({
       type: OptionEvent.WRITE,
       option: { version: "10.0", rules: true },
     });
 
-    expect(runOptionAutomation({ type: OptionEvent.READ_BATTLE_RULE_OPTIONS })).toEqual({
+    expect(runOptionAutomation({ type: OptionEvent.READ_BATTLE_ACTION_OPTIONS })).toEqual({
       version: "10.0",
       rules: true,
     });

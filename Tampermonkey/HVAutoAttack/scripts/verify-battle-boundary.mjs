@@ -1047,7 +1047,7 @@ function checkSnapshot() {
     violations.push(`${rel(snapshotFile)} must receive burst learning decision from turn context`);
   }
   if (/OptionEvent|runOptionAutomation|burstControlSwitch/.test(text)) {
-    violations.push(`${rel(snapshotFile)} must not read battle rule options directly`);
+    violations.push(`${rel(snapshotFile)} must not read battle action options directly`);
   }
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read snapshot option facts directly`);

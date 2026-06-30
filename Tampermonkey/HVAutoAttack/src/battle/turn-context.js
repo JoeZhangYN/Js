@@ -52,7 +52,7 @@ function assertNoDomRefs(snap) {
 export function prepareBattleTurnContext() {
   runCdRuntimeAutomation({ type: CdRuntimeEvent.INCREMENT_TURN });
   runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST });
-  const actionOptions = runOptionAutomation({ type: OptionEvent.READ_BATTLE_RULE_OPTIONS });
+  const actionOptions = runOptionAutomation({ type: OptionEvent.READ_BATTLE_ACTION_OPTIONS });
   const snap = collectSnapshot({
     learnIncomingBurst: !!actionOptions?.burstControlSwitch,
   });

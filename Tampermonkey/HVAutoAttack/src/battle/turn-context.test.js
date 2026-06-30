@@ -29,7 +29,7 @@ vi.mock("../state/cd-tracker.js", () => ({
 }));
 vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({
-    READ_BATTLE_RULE_OPTIONS: "readBattleRuleOptions",
+    READ_BATTLE_ACTION_OPTIONS: "readBattleActionOptions",
     READ_FIELD: "readField",
   }),
   runOptionAutomation: mocks.runOptionAutomation,
@@ -57,7 +57,7 @@ beforeEach(() => {
   mocks.runBattleStartRuntimeAutomation.mockReturnValue(2);
   mocks.runBattleSpiritToggleAutomation.mockReturnValue(97);
   mocks.runOptionAutomation.mockImplementation((event) => {
-    if (event.type === "readBattleRuleOptions") return { burstControlSwitch: false };
+    if (event.type === "readBattleActionOptions") return { burstControlSwitch: false };
     if (event.type === "readField") return false;
     return undefined;
   });
@@ -71,7 +71,7 @@ describe("prepareBattleTurnContext", () => {
     });
 
     expect(mocks.collectSnapshot).toHaveBeenCalledWith({ learnIncomingBurst: false });
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readBattleRuleOptions" });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readBattleActionOptions" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(1, { type: "incrementTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(2, { type: "persist" });
     expect(mocks.g).toHaveBeenCalledWith("hp", 90);
@@ -102,7 +102,7 @@ describe("prepareBattleTurnContext", () => {
 
   it("passes the burst-control rule decision into snapshot collection", () => {
     mocks.runOptionAutomation.mockImplementation((event) => {
-      if (event.type === "readBattleRuleOptions") return { burstControlSwitch: true };
+      if (event.type === "readBattleActionOptions") return { burstControlSwitch: true };
       if (event.type === "readField") return false;
       return undefined;
     });
@@ -114,7 +114,7 @@ describe("prepareBattleTurnContext", () => {
 
   it("reads debug snapshot through the option entry and accepts plain snapshot values", () => {
     mocks.runOptionAutomation.mockImplementation((event) => {
-      if (event.type === "readBattleRuleOptions") return { burstControlSwitch: false };
+      if (event.type === "readBattleActionOptions") return { burstControlSwitch: false };
       if (event.type === "readField") return true;
       return undefined;
     });
@@ -130,7 +130,7 @@ describe("prepareBattleTurnContext", () => {
 
   it("rejects DOM references when debug snapshot checking is enabled", () => {
     mocks.runOptionAutomation.mockImplementation((event) => {
-      if (event.type === "readBattleRuleOptions") return { burstControlSwitch: false };
+      if (event.type === "readBattleActionOptions") return { burstControlSwitch: false };
       if (event.type === "readField") return true;
       return undefined;
     });

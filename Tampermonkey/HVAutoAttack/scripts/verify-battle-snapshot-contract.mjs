@@ -40,7 +40,7 @@ if (/fightingStyle/.test(snapshotText)) {
   );
 }
 if (/OptionEvent|runOptionAutomation|burstControlSwitch/.test(snapshotText)) {
-  violations.push(`${snapshot.replaceAll("\\", "/")} must not read battle rule options directly`);
+  violations.push(`${snapshot.replaceAll("\\", "/")} must not read battle action options directly`);
 }
 if (
   /BattleStartRuntimeEvent\.READ_ATTACK_STATUS|runBattleStartRuntimeAutomation/.test(snapshotText)

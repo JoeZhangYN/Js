@@ -87,7 +87,7 @@ function checkEntry() {
   }
   for (const required of [
     "runCdRuntimeAutomation",
-    "OptionEvent.READ_BATTLE_RULE_OPTIONS",
+    "OptionEvent.READ_BATTLE_ACTION_OPTIONS",
     "CdRuntimeEvent.INCREMENT_TURN",
     "CdRuntimeEvent.PERSIST",
     "collectSnapshot",
@@ -118,6 +118,9 @@ function checkEntry() {
   }
   if (/\bbattleRuleOptions\b/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not expose legacy rule option vocabulary`);
+  }
+  if (/\bREAD_BATTLE_RULE_OPTIONS\b|\breadBattleRuleOptions\b/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must not request legacy rule option events`);
   }
   if (
     /BattleRoundEvent\.(?:READ_RUNTIME|READ_TYPE)|MonsterStatusEvent\.READ_COMBATANT_COUNTS/.test(

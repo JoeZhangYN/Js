@@ -66,7 +66,7 @@ function checkFile(file) {
     }
     if (relative === battleMainLoop && /\bg\(\s*["']option["']/.test(line)) {
       violations.push(
-        `${where} battle rules must read options through OptionEvent.READ_BATTLE_RULE_OPTIONS`
+        `${where} battle action decisions must read options through OptionEvent.READ_BATTLE_ACTION_OPTIONS`
       );
     }
   });
@@ -81,7 +81,7 @@ for (const required of [
   "STORAGE_KEYS.OPTION",
   "EXPORT_TEXT",
   "PARSE_IMPORT_TEXT",
-  "READ_BATTLE_RULE_OPTIONS",
+  "READ_BATTLE_ACTION_OPTIONS",
   "SYNC_STARTUP_OPTION",
 ]) {
   if (!ownerText.includes(required)) {
@@ -90,15 +90,20 @@ for (const required of [
 }
 
 const battleMainLoopText = fs.readFileSync(path.join(root, battleMainLoop), "utf8");
-if (/OptionEvent\.READ_BATTLE_RULE_OPTIONS|runOptionAutomation/.test(battleMainLoopText)) {
+if (/OptionEvent\.READ_BATTLE_ACTION_OPTIONS|runOptionAutomation/.test(battleMainLoopText)) {
   violations.push(
-    `${battleMainLoop.replaceAll("\\", "/")} must receive battle rule options from turn context`
+    `${battleMainLoop.replaceAll("\\", "/")} must receive battle action options from turn context`
   );
 }
 const turnContextText = fs.readFileSync(path.join(root, turnContext), "utf8");
-for (const required of ["runOptionAutomation", "OptionEvent.READ_BATTLE_RULE_OPTIONS"]) {
+for (const required of ["runOptionAutomation", "OptionEvent.READ_BATTLE_ACTION_OPTIONS"]) {
   if (!turnContextText.includes(required)) {
     violations.push(`${turnContext.replaceAll("\\", "/")} must request ${required}`);
+  }
+}
+for (const text of [ownerText, turnContextText]) {
+  if (/\bREAD_BATTLE_RULE_OPTIONS\b|\breadBattleRuleOptions\b/.test(text)) {
+    violations.push("legacy battle rule option vocabulary must stay retired");
   }
 }
 
