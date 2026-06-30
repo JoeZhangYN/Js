@@ -1,5 +1,5 @@
 import { checkCondition } from "../../settings/condition-eval.js";
-import { isScrollCoveredByPlayerBuffs } from "./scroll-coverage.js";
+import { BattleScrollCoverageEvent, runBattleScrollCoverage } from "./scroll-coverage.js";
 
 function emptyScrollPlan() {
   return { kind: "item-plan", plan: { type: "scroll", candidates: [] } };
@@ -22,7 +22,14 @@ export function decideScroll(event = {}) {
     if (!(opt.scroll[i] && checkCondition(opt[`scroll${i}Condition`], event.conditionFacts))) {
       continue;
     }
-    if (!isScrollCoveredByPlayerBuffs(event, lib, { scrollFirst: opt.scrollFirst })) {
+    if (
+      !runBattleScrollCoverage({
+        type: BattleScrollCoverageEvent.READ_COVERAGE,
+        state: event,
+        scrollSpec: lib,
+        options: { scrollFirst: opt.scrollFirst },
+      })
+    ) {
       candidates.push(lib.id);
     }
   }

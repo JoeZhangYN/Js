@@ -1,16 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { isScrollCoveredByPlayerBuffs } from "./scroll-coverage.js";
+import { BattleScrollCoverageEvent, runBattleScrollCoverage } from "./scroll-coverage.js";
 
-describe("isScrollCoveredByPlayerBuffs", () => {
+function isCovered(state, scrollSpec, options) {
+  return runBattleScrollCoverage({
+    type: BattleScrollCoverageEvent.READ_COVERAGE,
+    state,
+    scrollSpec,
+    options,
+  });
+}
+
+describe("runBattleScrollCoverage", () => {
   it("returns false when no scroll image is active", () => {
-    expect(isScrollCoveredByPlayerBuffs({ playerBuffs: [] }, { mult: 1, img1: "protection" })).toBe(
-      false
-    );
+    expect(isCovered({ playerBuffs: [] }, { mult: 1, img1: "protection" })).toBe(false);
   });
 
   it("uses scroll buff containment instead of exact player buff activation", () => {
     expect(
-      isScrollCoveredByPlayerBuffs(
+      isCovered(
         { playerBuffs: ["protection_scroll"] },
         { mult: 1, img1: "protection" }
       )
@@ -19,14 +26,14 @@ describe("isScrollCoveredByPlayerBuffs", () => {
 
   it("requires the scroll suffix when scrollFirst is enabled", () => {
     expect(
-      isScrollCoveredByPlayerBuffs(
+      isCovered(
         { playerBuffs: ["protection"] },
         { mult: 1, img1: "protection" },
         { scrollFirst: true }
       )
     ).toBe(false);
     expect(
-      isScrollCoveredByPlayerBuffs(
+      isCovered(
         { playerBuffs: ["protection_scroll"] },
         { mult: 1, img1: "protection" },
         { scrollFirst: true }
@@ -36,7 +43,7 @@ describe("isScrollCoveredByPlayerBuffs", () => {
 
   it("covers multi-effect scrolls when any required image is active", () => {
     expect(
-      isScrollCoveredByPlayerBuffs(
+      isCovered(
         { playerBuffs: ["shadowveil"] },
         { mult: 3, img1: "absorb", img2: "shadowveil", img3: "sparklife" }
       )
@@ -44,6 +51,10 @@ describe("isScrollCoveredByPlayerBuffs", () => {
   });
 
   it("ignores missing image slots", () => {
-    expect(isScrollCoveredByPlayerBuffs({ playerBuffs: ["absorb"] }, { mult: 2 })).toBe(false);
+    expect(isCovered({ playerBuffs: ["absorb"] }, { mult: 2 })).toBe(false);
+  });
+
+  it("rejects unknown scroll coverage events", () => {
+    expect(runBattleScrollCoverage({ type: "unknown" })).toBe(false);
   });
 });

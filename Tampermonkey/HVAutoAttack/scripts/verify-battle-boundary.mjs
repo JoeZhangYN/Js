@@ -2765,7 +2765,8 @@ function checkItemScrollEntry() {
     "scrollRoundType",
     "conditionFacts",
     "event.roundType",
-    "isScrollCoveredByPlayerBuffs",
+    "BattleScrollCoverageEvent.READ_COVERAGE",
+    "runBattleScrollCoverage",
   ]) {
     if (!itemText.includes(required)) {
       violations.push(`${rel(decideScrollFile)} must own scroll gate ${required}`);
@@ -2773,6 +2774,9 @@ function checkItemScrollEntry() {
   }
   if (/decideScroll\s*\(\s*opt\s*,\s*snap\s*\)/.test(itemText)) {
     violations.push(`${rel(decideScrollFile)} must not expose opt/snap scroll input`);
+  }
+  if (/import\s*\{[^}]*\bisScrollCoveredByPlayerBuffs\b/.test(itemText)) {
+    violations.push(`${rel(decideScrollFile)} must consume scroll coverage through one entry`);
   }
   const rulesText = readBattleActionRulesText();
   const scrollRule =
@@ -2798,6 +2802,10 @@ function checkItemScrollCoverageQuery() {
 
   const ownerText = fs.readFileSync(scrollCoverageFile, "utf8");
   for (const required of [
+    "BattleScrollCoverageEvent",
+    "battleScrollCoverageEventHandlers",
+    "runBattleScrollCoverage",
+    "READ_COVERAGE",
     "isScrollCoveredByPlayerBuffs",
     "playerBuffs",
     "scrollFirst",
@@ -2807,6 +2815,13 @@ function checkItemScrollCoverageQuery() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(scrollCoverageFile)} must own scroll coverage fact ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleScrollCoverageEvent\b|runBattleScrollCoverage\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(scrollCoverageFile)} may export only its event query entry`);
   }
 
   const scrollText = fs.readFileSync(decideScrollFile, "utf8");
@@ -2828,6 +2843,9 @@ function checkItemScrollCoverageQuery() {
       !allowedProductionImporters.has(file)
     ) {
       violations.push(`${rel(file)} must not bypass scroll decision coverage query`);
+    }
+    if (/import\s*\{[^}]*\bisScrollCoveredByPlayerBuffs\b/.test(text)) {
+      violations.push(`${rel(file)} must not import raw scroll coverage function`);
     }
   }
 }
