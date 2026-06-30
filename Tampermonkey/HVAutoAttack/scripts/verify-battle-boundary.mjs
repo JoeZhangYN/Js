@@ -1143,6 +1143,27 @@ function checkPhysicalSkillBookkeeping() {
     path.join(root, "src/battle/attack/execute-attack.js"),
     "utf8"
   );
+  for (const required of [
+    "ATTACK_PLAN_EXECUTORS",
+    "noop: executeNoopPlan",
+    "focus: executeFocusPlan",
+    '"toggle-spirit": executeToggleSpiritPlan',
+    "spell: executeSpellPlan",
+    '"merciful-single": executeMercifulSinglePlan',
+    "physical: executePhysicalPlan",
+    "default: executeDefaultPlan",
+  ]) {
+    if (!executeText.includes(required)) {
+      violations.push(`src/battle/attack/execute-attack.js must lock attack executor ${required}`);
+    }
+  }
+  const applyPlanBody =
+    executeText.match(/function applyAttackPlan\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (/switch\s*\(\s*plan\.type\s*\)/.test(applyPlanBody)) {
+    violations.push(
+      "src/battle/attack/execute-attack.js must dispatch attack plans by ATTACK_PLAN_EXECUTORS"
+    );
+  }
   for (const legacy of [
     "runBattleSkillUsageAutomation",
     "runCdRuntimeAutomation",

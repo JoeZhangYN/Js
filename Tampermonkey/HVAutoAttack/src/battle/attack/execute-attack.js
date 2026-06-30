@@ -22,6 +22,16 @@ const battleAttackExecutionEventHandlers = Object.freeze({
   [EVENT_APPLY_PLAN]: (event) => applyAttackPlan(event.plan, event.snap),
 });
 
+const ATTACK_PLAN_EXECUTORS = Object.freeze({
+  noop: executeNoopPlan,
+  focus: executeFocusPlan,
+  "toggle-spirit": executeToggleSpiritPlan,
+  spell: executeSpellPlan,
+  "merciful-single": executeMercifulSinglePlan,
+  physical: executePhysicalPlan,
+  default: executeDefaultPlan,
+});
+
 function observedBigSkillBosses(snap) {
   return (snap?.view || [])
     .filter((monster) => monster.isBoss && !monster.isDead && monster.monsterId != null)
@@ -37,93 +47,78 @@ function observedBigSkillBosses(snap) {
  * @param {import("../../core/types.js").BattleSnapshot} [snap] 当前 turn 快照（学习器事件记账用）
  */
 function applyAttackPlan(plan, snap) {
-  switch (plan.type) {
-    case "noop":
-      return false;
+  return ATTACK_PLAN_EXECUTORS[plan?.type]?.(plan, snap) ?? false;
+}
 
-    case "focus":
-      // 原 attack：Focus 是末步，即使按钮缺失也消耗本次 attack 分支。
-      runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK });
-      return true;
+function executeNoopPlan() {
+  return false;
+}
 
-    case "toggle-spirit": {
-      return !!runBattleSpiritToggleAutomation({
-        type: BattleSpiritToggleEvent.CLICK_AND_RECORD,
-      });
-    }
+function executeFocusPlan() {
+  // 原 attack：Focus 是末步，即使按钮缺失也消耗本次 attack 分支。
+  runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK });
+  return true;
+}
 
-    case "spell": {
-      // 原：isOn(spell) 探活后 click spell + click target；CD 漂移则退化为普攻该 target
-      runBattleTargetCommand({
-        type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
-        skillId: plan.spellId,
-        targetId: plan.targetId,
-      });
-      return true;
-    }
+function executeToggleSpiritPlan() {
+  return !!runBattleSpiritToggleAutomation({
+    type: BattleSpiritToggleEvent.CLICK_AND_RECORD,
+  });
+}
 
-    case "merciful-single": {
-      runBattleTargetCommand({
-        type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
-        skillId: plan.skillId,
-        targetId: plan.targetId,
-      });
-      return true;
-    }
+function executeSpellPlan(plan) {
+  runBattleTargetCommand({
+    type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
+    skillId: plan.spellId,
+    targetId: plan.targetId,
+  });
+  return true;
+}
 
-    case "physical": {
-      // isOn 探活通过才发技能 + 记账；merciful 斩杀点流血怪；末尾恒点默认首怪（原 attack 语义）
-      if (plan.mercifulTargetId != null) {
-        runBattleTargetCommand({
-          type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
-          skillId: plan.skillId,
-          targetId: plan.mercifulTargetId,
-          targetRequiresSkill: true,
-          afterSkillClick: () => {
-            runPhysicalSkillBookkeeping({
-              type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
-              code: plan.code,
-              skillId: plan.skillId,
-              globalTurn: snap?.globalTurn,
-              observedBosses: observedBigSkillBosses(snap),
-            });
-          },
-        });
-      } else {
-        runBattleTargetCommand({
-          type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
-          skillId: plan.skillId,
-          targetId: plan.defaultTargetId,
-          afterSkillClick: () => {
-            runPhysicalSkillBookkeeping({
-              type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
-              code: plan.code,
-              skillId: plan.skillId,
-              globalTurn: snap?.globalTurn,
-              observedBosses: observedBigSkillBosses(snap),
-            });
-          },
-        });
-      }
-      if (plan.mercifulTargetId != null) {
-        runBattleTargetCommand({
-          type: BattleTargetCommandEvent.CLICK_TARGET,
-          targetId: plan.defaultTargetId,
-        });
-      }
-      return true;
-    }
+function executeMercifulSinglePlan(plan) {
+  runBattleTargetCommand({
+    type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
+    skillId: plan.skillId,
+    targetId: plan.targetId,
+  });
+  return true;
+}
 
-    case "default":
-      runBattleTargetCommand({
-        type: BattleTargetCommandEvent.CLICK_TARGET,
-        targetId: plan.targetId,
-      });
-      return true;
-
-    default:
-      return false;
+function executePhysicalPlan(plan, snap) {
+  const targetId = plan.mercifulTargetId ?? plan.defaultTargetId;
+  const event = {
+    type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
+    skillId: plan.skillId,
+    targetId,
+    afterSkillClick: () => recordPhysicalSkillFire(plan, snap),
+  };
+  if (plan.mercifulTargetId != null) event.targetRequiresSkill = true;
+  runBattleTargetCommand(event);
+  if (plan.mercifulTargetId != null) {
+    runBattleTargetCommand({
+      type: BattleTargetCommandEvent.CLICK_TARGET,
+      targetId: plan.defaultTargetId,
+    });
   }
+  return true;
+}
+
+function recordPhysicalSkillFire(plan, snap) {
+  runPhysicalSkillBookkeeping({
+    type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
+    code: plan.code,
+    skillId: plan.skillId,
+    globalTurn: snap?.globalTurn,
+    observedBosses: observedBigSkillBosses(snap),
+  });
+}
+
+function executeDefaultPlan(plan) {
+  runBattleTargetCommand({
+    type: BattleTargetCommandEvent.CLICK_TARGET,
+    targetId: plan.targetId,
+  });
+  return true;
 }
 
 export function runBattleAttackExecution(event = { type: EVENT_APPLY_PLAN }) {

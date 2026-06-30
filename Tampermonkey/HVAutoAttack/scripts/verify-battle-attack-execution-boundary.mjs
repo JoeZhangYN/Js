@@ -23,6 +23,13 @@ for (const required of [
   "battleAttackExecutionEventHandlers",
   "APPLY_PLAN",
   "runBattleAttackExecution",
+  "ATTACK_PLAN_EXECUTORS",
+  "executeFocusPlan",
+  "executeToggleSpiritPlan",
+  "executeSpellPlan",
+  "executeMercifulSinglePlan",
+  "executePhysicalPlan",
+  "executeDefaultPlan",
   "BattleFocusCommandEvent.CLICK",
   "BattleSpiritToggleEvent.CLICK_AND_RECORD",
   "BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET",
@@ -49,6 +56,23 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(ownerText)) {
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
+for (const required of [
+  "noop: executeNoopPlan",
+  "focus: executeFocusPlan",
+  '"toggle-spirit": executeToggleSpiritPlan',
+  "spell: executeSpellPlan",
+  '"merciful-single": executeMercifulSinglePlan',
+  "physical: executePhysicalPlan",
+  "default: executeDefaultPlan",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${rel(owner)} must lock attack plan executor ${required}`);
+  }
+}
+const applyPlanBody = ownerText.match(/function applyAttackPlan\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (/switch\s*\(\s*plan\.type\s*\)/.test(applyPlanBody)) {
+  violations.push(`${rel(owner)} must dispatch attack plan execution by ATTACK_PLAN_EXECUTORS`);
 }
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover attack execution contract`);
