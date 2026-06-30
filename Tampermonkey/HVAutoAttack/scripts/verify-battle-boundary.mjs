@@ -90,6 +90,7 @@ const decideAutoPauseFile = path.join(root, "src/battle/pause/decide-auto-pause.
 const autoPauseFactsFile = path.join(root, "src/battle/pause/auto-pause-facts.js");
 const decideFleeFile = path.join(root, "src/battle/escape/decide-flee.js");
 const fleeFactsFile = path.join(root, "src/battle/escape/flee-facts.js");
+const decideAttackActionFile = path.join(root, "src/battle/attack/decide-attack-action.js");
 const decideAttackFile = path.join(root, "src/battle/attack/decide-attack.js");
 const decideTierFile = path.join(root, "src/battle/attack/decide-tier.js");
 const decideSkillFile = path.join(root, "src/battle/attack/decide-skill.js");
@@ -332,7 +333,7 @@ function checkTurnEntry() {
     "applyOffensiveDebuffs",
     "decideOffensiveDebuff",
     "attack",
-    "decideAttack",
+    "decideAttackAction",
   ]) {
     if (!actionDecisionText.includes(required)) {
       violations.push(`${rel(actionDecisionFile)} must own action decision ${required}`);
@@ -345,6 +346,20 @@ function checkTurnEntry() {
   }
   if (/export\s+const\s+BATTLE_RULES\b/.test(actionDecisionText)) {
     violations.push(`${rel(actionDecisionFile)} must keep BATTLE_RULES private`);
+  }
+  for (const forbidden of [
+    "attackFacts",
+    "infusionFacts",
+    "channelFacts",
+    "buffFacts",
+    "burstControlFacts",
+    "bossImperilFacts",
+    "allDebuffFacts",
+    "singleDebuffFacts",
+  ]) {
+    if (new RegExp(`\\b${forbidden}\\s*\\(`).test(actionDecisionText)) {
+      violations.push(`${rel(actionDecisionFile)} must not assemble ${forbidden} directly`);
+    }
   }
   for (const retired of [
     attackActionSequenceFile,
@@ -365,6 +380,7 @@ function checkTurnEntry() {
     const dir = path.join(root, relative);
     for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
       if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
+      if (entry.name.endsWith(".test.js")) continue;
       const file = path.join(entry.parentPath, entry.name);
       const source = fs.readFileSync(file, "utf8");
       if (file !== actionDecisionFile && /from\s+["'][^"']*rules\/index\.js["']/.test(source)) {
@@ -1323,6 +1339,10 @@ function checkOffensiveDebuffEntry() {
   const ownerText = fs.readFileSync(decideOffensiveDebuffFile, "utf8");
   for (const required of [
     "decideOffensiveDebuff",
+    "burstControlFacts",
+    "bossImperilFacts",
+    "allDebuffFacts",
+    "singleDebuffFacts",
     "decideBurstControl",
     "runBossImperilAutomation",
     "decideCastDebuffOnAll",
@@ -1493,6 +1513,9 @@ function checkBuffPreparationEntry() {
   const ownerText = fs.readFileSync(decideBuffPreparationFile, "utf8");
   for (const required of [
     "decideBuffPreparation",
+    "infusionFacts",
+    "channelFacts",
+    "buffFacts",
     "decideInfusion",
     "decideChannel",
     "decideBuff",
@@ -2020,6 +2043,12 @@ function checkAttackEntry() {
   if (!ownerText.includes("dynamicHealLog")) {
     violations.push(`${rel(decideAttackFile)} must pass ranking debug option into attack ranking`);
   }
+  const attackActionText = fs.readFileSync(decideAttackActionFile, "utf8");
+  for (const required of ["decideAttackAction", "attackFacts", "decideAttack"]) {
+    if (!attackActionText.includes(required)) {
+      violations.push(`${rel(decideAttackActionFile)} must own attack action ${required}`);
+    }
+  }
   const scoringText = fs.readFileSync(physicalSkillScoringFile, "utf8");
   for (const required of ["scorePhysicalSkillCandidates", "event.skillReady", "skillBaseScore"]) {
     if (!scoringText.includes(required)) {
@@ -2045,6 +2074,9 @@ function checkAttackEntry() {
   const rulesText = readBattleActionRulesText();
   const attackRule =
     rulesText.match(/name:\s*["']attack["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (!attackRule.includes("decideAttackAction")) {
+    violations.push(`${rel(battleRulesFile)} must route attack through decideAttackAction`);
+  }
   if (/decideAttack\(\s*opt\s*,\s*snap\s*\)/.test(attackRule)) {
     violations.push(`${rel(battleRulesFile)} must pass attack facts, not snap`);
   }
@@ -2053,6 +2085,7 @@ function checkAttackEntry() {
     for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
       if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
       const file = path.join(entry.parentPath, entry.name);
+      if (file.endsWith(".test.js")) continue;
       const text = fs.readFileSync(file, "utf8");
       if (/from\s+["'][^"']*decide-tier\.js["']/.test(text)) {
         violations.push(`${rel(file)} must not import legacy decide-tier.js`);
@@ -2188,21 +2221,36 @@ function checkBattleRuleFactMappers() {
     violations.push(`${rel(attackFactsFile)} must not depend on generic rule fact mappers`);
   }
 
-  const allowedAttackFactsImporters = new Set([battleRulesFile, attackActionSequenceFile]);
+  const allowedAttackFactsImporters = new Set([decideAttackActionFile]);
+  const allowedBuffFactsImporters = new Set([decideBuffPreparationFile]);
+  const allowedDebuffFactsImporters = new Set([decideOffensiveDebuffFile]);
   for (const relative of ["src/battle", "src/core"]) {
     const dir = path.join(root, relative);
     for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
       if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
       const file = path.join(entry.parentPath, entry.name);
+      if (file.endsWith(".test.js")) continue;
       const text = fs.readFileSync(file, "utf8");
       if (/from\s+["'][^"']*rule-facts\.js["']/.test(text)) {
         violations.push(`${rel(file)} must not import retired generic rule fact mapping`);
       }
       if (
-        /from\s+["'][^"']*attack-facts\.js["']/.test(text) &&
+        /from\s+["'][^"']*(?:^|\/)attack-facts\.js["']/.test(text) &&
         !allowedAttackFactsImporters.has(file)
       ) {
-        violations.push(`${rel(file)} must not bypass battle rules for attack fact mapping`);
+        violations.push(`${rel(file)} must not bypass attack action entry for attack fact mapping`);
+      }
+      if (
+        /from\s+["'][^"']*(?:^|\/)buff-facts\.js["']/.test(text) &&
+        !allowedBuffFactsImporters.has(file)
+      ) {
+        violations.push(`${rel(file)} must not bypass buff preparation entry for buff facts`);
+      }
+      if (
+        /from\s+["'][^"']*(?:^|\/)debuff-facts\.js["']/.test(text) &&
+        !allowedDebuffFactsImporters.has(file)
+      ) {
+        violations.push(`${rel(file)} must not bypass offensive debuff entry for debuff facts`);
       }
     }
   }
