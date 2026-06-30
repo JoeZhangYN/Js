@@ -9,7 +9,13 @@ import {
   singleDebuffFacts,
 } from "./debuff-facts.js";
 
-export function decideOffensiveDebuff(snap = {}, opt = {}) {
+const EVENT_DECIDE = "decide";
+
+export const BattleOffensiveDebuffEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+function decideOffensiveDebuffResult(snap = {}, opt = {}) {
   const event = {
     opt,
     ...burstControlFacts(snap),
@@ -27,5 +33,10 @@ export function decideOffensiveDebuff(snap = {}, opt = {}) {
     const result = decide(event);
     if (result.kind !== "noop") return result;
   }
+  return { kind: "noop" };
+}
+
+export function runBattleOffensiveDebuff(event = { type: EVENT_DECIDE }) {
+  if (event.type === EVENT_DECIDE) return decideOffensiveDebuffResult(event.snap, event.opt);
   return { kind: "noop" };
 }

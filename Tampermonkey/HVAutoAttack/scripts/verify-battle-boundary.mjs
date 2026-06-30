@@ -385,7 +385,8 @@ function checkTurnEntry() {
     "runBattleSurvivalAction",
     "BattleBuffPreparationEvent.DECIDE",
     "runBattleBuffPreparation",
-    "decideOffensiveDebuff",
+    "BattleOffensiveDebuffEvent.DECIDE",
+    "runBattleOffensiveDebuff",
     "decideAttackAction",
   ]) {
     if (!actionDecisionText.includes(required)) {
@@ -393,7 +394,7 @@ function checkTurnEntry() {
     }
   }
   if (
-    !/const ACTION_STEPS = \[\s*\(snap,\s*opt\)\s*=>[\s\S]*runBattleSurvivalAction[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleBuffPreparation[\s\S]*decideOffensiveDebuff,\s*decideAttackAction,\s*\]/.test(
+    !/const ACTION_STEPS = \[\s*\(snap,\s*opt\)\s*=>[\s\S]*runBattleSurvivalAction[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleBuffPreparation[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleOffensiveDebuff[\s\S]*decideAttackAction,\s*\]/.test(
       actionDecisionText
     )
   ) {
@@ -1550,7 +1551,9 @@ function checkBurstControlEntry() {
 function checkOffensiveDebuffEntry() {
   const ownerText = fs.readFileSync(decideOffensiveDebuffFile, "utf8");
   for (const required of [
-    "decideOffensiveDebuff",
+    "BattleOffensiveDebuffEvent",
+    "DECIDE",
+    "runBattleOffensiveDebuff",
     "burstControlFacts",
     "bossImperilFacts",
     "allDebuffFacts",
@@ -1567,6 +1570,13 @@ function checkOffensiveDebuffEntry() {
     }
   }
   if (
+    /\bexport\s+(?:function|const)\s+(?!BattleOffensiveDebuffEvent\b|runBattleOffensiveDebuff\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideOffensiveDebuffFile)} may export only its event entry`);
+  }
+  if (
     !/for\s*\(\s*const\s+decide\s+of\s+\[\s*decideBurstControl,\s*runBossImperilAutomation,[\s\S]*decideDeSkill,\s*\]/.test(
       ownerText
     )
@@ -1575,8 +1585,16 @@ function checkOffensiveDebuffEntry() {
   }
 
   const rulesText = readBattleActionRulesText();
-  if (!rulesText.includes("decideOffensiveDebuff")) {
+  if (
+    !rulesText.includes("BattleOffensiveDebuffEvent.DECIDE") ||
+    !rulesText.includes("runBattleOffensiveDebuff")
+  ) {
     violations.push(`${rel(battleRulesFile)} must route offensive debuffs through one entry`);
+  }
+  if (/decideOffensiveDebuff\(\s*snap\s*,\s*actionOptions\s*\)/.test(rulesText)) {
+    violations.push(
+      `${rel(battleRulesFile)} must not call offensive debuff through old two-arg path`
+    );
   }
   for (const legacyRule of [
     "burstControl",
@@ -1614,7 +1632,7 @@ function checkOffensiveDebuffEntry() {
         source
       )
     ) {
-      violations.push(`${rel(file)} must call offensive debuffs through decideOffensiveDebuff`);
+      violations.push(`${rel(file)} must call offensive debuffs through runBattleOffensiveDebuff`);
     }
   }
 }

@@ -8,7 +8,10 @@ import {
   BattleBuffPreparationEvent,
   runBattleBuffPreparation,
 } from "./buff/decide-buff-preparation.js";
-import { decideOffensiveDebuff } from "./debuff/decide-offensive-debuff.js";
+import {
+  BattleOffensiveDebuffEvent,
+  runBattleOffensiveDebuff,
+} from "./debuff/decide-offensive-debuff.js";
 import { BattleSurvivalActionEvent, runBattleSurvivalAction } from "./decide-survival-action.js";
 
 const ACTION_STEPS = [
@@ -24,7 +27,12 @@ const ACTION_STEPS = [
       snap,
       opt,
     }),
-  decideOffensiveDebuff,
+  (snap, opt) =>
+    runBattleOffensiveDebuff({
+      type: BattleOffensiveDebuffEvent.DECIDE,
+      snap,
+      opt,
+    }),
   decideAttackAction,
 ];
 

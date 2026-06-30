@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideOffensiveDebuff } from "./decide-offensive-debuff.js";
+import { BattleOffensiveDebuffEvent, runBattleOffensiveDebuff } from "./decide-offensive-debuff.js";
 
 function monster(over = {}) {
   return {
@@ -33,10 +33,18 @@ function snap(over = {}) {
   };
 }
 
-describe("decideOffensiveDebuff", () => {
+function decide(snap, opt) {
+  return runBattleOffensiveDebuff({
+    type: BattleOffensiveDebuffEvent.DECIDE,
+    snap,
+    opt,
+  });
+}
+
+describe("runBattleOffensiveDebuff", () => {
   it("uses burst control before boss imperil", () => {
     expect(
-      decideOffensiveDebuff(
+      decide(
         snap({
           learnedBurstByMid: { 77: { maxHit: 100, type: "fire" } },
           skillReady: { 232: true, 213: true },
@@ -49,7 +57,7 @@ describe("decideOffensiveDebuff", () => {
 
   it("uses boss imperil before all-target debuffs", () => {
     expect(
-      decideOffensiveDebuff(
+      decide(
         snap({
           skillReady: { 213: true, 212: true },
           view: [monster({ isBoss: true })],
@@ -61,7 +69,7 @@ describe("decideOffensiveDebuff", () => {
 
   it("uses all-target Weaken before single-target debuffs", () => {
     expect(
-      decideOffensiveDebuff(
+      decide(
         snap({
           skillReady: { 212: true, 211: true },
         }),
@@ -73,5 +81,9 @@ describe("decideOffensiveDebuff", () => {
         }
       )
     ).toEqual({ kind: "click-skill-then-target", skillId: "212", targetId: 1 });
+  });
+
+  it("rejects unknown events as no action", () => {
+    expect(runBattleOffensiveDebuff({ type: "unknown" })).toEqual({ kind: "noop" });
   });
 });
