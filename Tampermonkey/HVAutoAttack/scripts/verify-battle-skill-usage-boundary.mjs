@@ -70,10 +70,22 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if ((ownerText.match(/normalizeUsage\(/g) || []).length < 2) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize skill usage reads and writes`);
 }
-if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
+const entryBody =
+  ownerText.match(/export function runBattleSkillUsageAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_RESET_ROUND\][\s\S]*\[EVENT_RECORD_USE\][\s\S]*\[EVENT_READ_USAGE\]/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
+}
+if (/event\.type\s*===/.test(entryBody)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must dispatch battle skill usage events through skillUsageEventHandlers`
   );
+}
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+if (!ownerTestText.includes("rejects unknown events without changing skill usage")) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown skill usage events`);
 }
 requireText(roundLifecycle, ["BattleSkillUsageEvent.RESET_ROUND", "runBattleSkillUsageAutomation"]);
 requireText(executeAttack, [
