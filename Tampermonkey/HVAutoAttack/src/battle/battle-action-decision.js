@@ -14,6 +14,16 @@ import {
 } from "./debuff/decide-offensive-debuff.js";
 import { BattleSurvivalActionEvent, runBattleSurvivalAction } from "./decide-survival-action.js";
 
+const EVENT_DECIDE = "decide";
+
+export const BattleActionDecisionEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+const battleActionDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: (event) => decideBattleAction(event.context),
+});
+
 const ACTION_STEPS = Object.freeze([
   {
     capability: "survival",
@@ -69,7 +79,7 @@ function decideActionStep(step, actionContext) {
   return step.decide(actionContext);
 }
 
-export function runBattleActionDecision(turnContext = {}) {
+function decideBattleAction(turnContext = {}) {
   const { snap = {}, actionOptions = {} } = turnContext;
   const actionContext = { snap, actionOptions };
   for (const step of ACTION_STEPS) {
@@ -83,4 +93,8 @@ export function runBattleActionDecision(turnContext = {}) {
       return;
     }
   }
+}
+
+export function runBattleActionDecision(event = { type: EVENT_DECIDE }) {
+  return battleActionDecisionEventHandlers[event.type]?.(event);
 }

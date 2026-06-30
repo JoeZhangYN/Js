@@ -441,11 +441,17 @@ function checkTurnEntry() {
   if (/runBattleActionDecision\([^,\n]+,\s*[^)]+\)/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must not call action decision through old two-arg path`);
   }
+  if (!text.includes("BattleActionDecisionEvent.DECIDE")) {
+    violations.push(`${rel(mainLoopFile)} must call action decision through BattleActionDecisionEvent.DECIDE`);
+  }
   if (/\bBATTLE_RULES\b|\bBattleRule\b|\brunRules\b/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must not assemble battle action rule chains directly`);
   }
   if (!/export function runBattleActionDecision\(/.test(actionDecisionText)) {
     violations.push(`${rel(actionDecisionFile)} must expose runBattleActionDecision()`);
+  }
+  if (!actionDecisionText.includes("BattleActionDecisionEvent")) {
+    violations.push(`${rel(actionDecisionFile)} must expose BattleActionDecisionEvent`);
   }
   const turnPreludeText = fs.readFileSync(turnPreludeFile, "utf8");
   for (const required of [

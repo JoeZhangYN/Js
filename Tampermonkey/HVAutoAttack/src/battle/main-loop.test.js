@@ -16,6 +16,7 @@ vi.mock("./pause-automation.js", () => ({
   runBattlePauseAutomation: mocks.runBattlePauseAutomation,
 }));
 vi.mock("./battle-action-decision.js", () => ({
+  BattleActionDecisionEvent: Object.freeze({ DECIDE: "decide" }),
   runBattleActionDecision: mocks.runBattleActionDecision,
 }));
 vi.mock("./battle-turn-prelude.js", () => ({
@@ -44,8 +45,11 @@ describe("runBattleTurnAutomation", () => {
       logTelemetry: { battleLog: [{ kind: "player-incoming", dmg: 10 }] },
     });
     expect(mocks.runBattleActionDecision).toHaveBeenCalledWith({
-      snap: { snap: true },
-      actionOptions: { ok: true },
+      type: "decide",
+      context: {
+        snap: { snap: true },
+        actionOptions: { ok: true },
+      },
     });
   });
 });

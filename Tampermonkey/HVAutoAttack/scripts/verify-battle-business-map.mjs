@@ -44,7 +44,7 @@ for (const stale of ["BATTLE_RULES", "battle/rules/index.js", "`dispatch.js`"]) 
 
 for (const required of [
   "battle-action-effect-dispatch.js",
-  "runBattleActionDecision(context)",
+  "runBattleActionDecision(DECIDE)",
   "battle-turn-prelude",
   "survival → buffPreparation → offensiveDebuff → attack",
   "runBattleSurvivalAction(DECIDE)",
@@ -67,6 +67,8 @@ if (
 }
 
 for (const required of [
+  "BattleActionDecisionEvent",
+  "DECIDE",
   "runBattleSurvivalAction",
   "runBattleBuffPreparation",
   "runBattleOffensiveDebuff",
@@ -90,6 +92,7 @@ for (const forbidden of ["BATTLE_RULES", "runRules", "battle/rules/index.js"]) {
 for (const required of [
   "runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN })",
   "prepareBattleTurnContext({ logTelemetry: prelude?.battleLogTelemetry })",
+  "BattleActionDecisionEvent.DECIDE",
   "runBattleActionDecision",
 ]) {
   requireText("src/battle/main-loop.js", mainLoop, required);

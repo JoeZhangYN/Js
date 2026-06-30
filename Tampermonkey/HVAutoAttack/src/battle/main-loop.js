@@ -4,14 +4,15 @@
 // file-size-gate: exempt phase-5b-mainloop
 import { prepareBattleTurnContext } from "./turn-context.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
-import { runBattleActionDecision } from "./battle-action-decision.js";
+import { BattleActionDecisionEvent, runBattleActionDecision } from "./battle-action-decision.js";
 import { BattleTurnPreludeEvent, runBattleTurnPrelude } from "./battle-turn-prelude.js";
 
 export function runBattleTurnAutomation() {
   if (runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })) return;
 
   const prelude = runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN });
-  runBattleActionDecision(
-    prepareBattleTurnContext({ logTelemetry: prelude?.battleLogTelemetry })
-  );
+  runBattleActionDecision({
+    type: BattleActionDecisionEvent.DECIDE,
+    context: prepareBattleTurnContext({ logTelemetry: prelude?.battleLogTelemetry }),
+  });
 }

@@ -1,6 +1,6 @@
 // file-size-gate: exempt test-verbose（行动规则顺序 + 短路 + 关键规则契约迁移锁）
 import { describe, expect, it, vi } from "vitest";
-import { runBattleActionDecision } from "./battle-action-decision.js";
+import { BattleActionDecisionEvent, runBattleActionDecision } from "./battle-action-decision.js";
 
 const mocks = vi.hoisted(() => ({
   runBattleActionEffectDispatch: vi.fn(),
@@ -14,7 +14,10 @@ vi.mock("./battle-action-effect-dispatch.js", () => ({
 function dispatchedResults(snap = {}, opt = {}) {
   mocks.runBattleActionEffectDispatch.mockClear();
   mocks.runBattleActionEffectDispatch.mockReturnValue(false);
-  runBattleActionDecision({ snap, actionOptions: opt });
+  runBattleActionDecision({
+    type: BattleActionDecisionEvent.DECIDE,
+    context: { snap, actionOptions: opt },
+  });
   return mocks.runBattleActionEffectDispatch.mock.calls.map((call) => call[0].result);
 }
 
@@ -32,7 +35,10 @@ describe("runBattleActionDecision", () => {
       (event) => event.result.kind === "flee-command"
     );
 
-    runBattleActionDecision({ snap: {}, actionOptions: { autoFlee: true } });
+    runBattleActionDecision({
+      type: BattleActionDecisionEvent.DECIDE,
+      context: { snap: {}, actionOptions: { autoFlee: true } },
+    });
 
     expect(mocks.runBattleActionEffectDispatch).toHaveBeenCalledTimes(1);
     expect(mocks.runBattleActionEffectDispatch.mock.calls[0][0]).toMatchObject({
