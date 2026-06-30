@@ -4,19 +4,15 @@ import { prepareBattleTurnContext } from "./turn-context.js";
 const mocks = vi.hoisted(() => ({
   collectSnapshot: vi.fn(),
   g: vi.fn(),
-  runBattleRoundAutomation: vi.fn(),
+  runBattleProgressAutomation: vi.fn(),
   runBattleSpiritToggleAutomation: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
-  runMonsterStatusAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
 }));
 
-vi.mock("./battle-round.js", () => ({
-  BattleRoundEvent: Object.freeze({
-    READ_RUNTIME: "readRuntime",
-    READ_TYPE: "readType",
-  }),
-  runBattleRoundAutomation: mocks.runBattleRoundAutomation,
+vi.mock("./battle-progress.js", () => ({
+  BattleProgressEvent: Object.freeze({ READ_CONTEXT: "readContext" }),
+  runBattleProgressAutomation: mocks.runBattleProgressAutomation,
 }));
 vi.mock("./battle-spirit-toggle.js", () => ({
   BattleSpiritToggleEvent: Object.freeze({ READ_LAST_TOGGLE: "readLastToggle" }),
@@ -25,10 +21,6 @@ vi.mock("./battle-spirit-toggle.js", () => ({
 vi.mock("../state/cd-tracker.js", () => ({
   CdRuntimeEvent: Object.freeze({ INCREMENT_TURN: "incrementTurn", PERSIST: "persist" }),
   runCdRuntimeAutomation: mocks.runCdRuntimeAutomation,
-}));
-vi.mock("./monster-status-automation.js", () => ({
-  MonsterStatusEvent: Object.freeze({ READ_COMBATANT_COUNTS: "readCombatantCounts" }),
-  runMonsterStatusAutomation: mocks.runMonsterStatusAutomation,
 }));
 vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({
@@ -51,16 +43,11 @@ beforeEach(() => {
     if (value !== undefined) return undefined;
     return undefined;
   });
-  mocks.runBattleRoundAutomation.mockImplementation((event) => {
-    if (event.type === "readRuntime") return { roundNow: 2, roundAll: 5, roundLeft: 3 };
-    if (event.type === "readType") return "ar";
-    return null;
-  });
-  mocks.runMonsterStatusAutomation.mockReturnValue({
-    monsterAll: 4,
+  mocks.runBattleProgressAutomation.mockReturnValue({
     monsterAlive: 3,
-    bossAll: 1,
-    bossAlive: 1,
+    roundAll: 5,
+    roundNow: 2,
+    roundType: "ar",
   });
   mocks.runBattleSpiritToggleAutomation.mockReturnValue(97);
   mocks.runOptionAutomation.mockImplementation((event) => {
@@ -87,7 +74,7 @@ describe("prepareBattleTurnContext", () => {
     expect(mocks.g).toHaveBeenCalledWith("oc", 60);
   });
 
-  it("attaches decision runtime facts through capability entries", () => {
+  it("attaches decision runtime facts through battle progress entry", () => {
     const prepared = prepareBattleTurnContext().snap;
 
     expect(prepared).toMatchObject({
@@ -97,11 +84,7 @@ describe("prepareBattleTurnContext", () => {
       roundType: "ar",
       lastSpiritToggleGlobalTurn: 97,
     });
-    expect(mocks.runBattleRoundAutomation).toHaveBeenCalledWith({ type: "readRuntime" });
-    expect(mocks.runBattleRoundAutomation).toHaveBeenCalledWith({ type: "readType" });
-    expect(mocks.runMonsterStatusAutomation).toHaveBeenCalledWith({
-      type: "readCombatantCounts",
-    });
+    expect(mocks.runBattleProgressAutomation).toHaveBeenCalledWith({ type: "readContext" });
     expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
       type: "readLastToggle",
     });

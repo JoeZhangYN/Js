@@ -9,6 +9,8 @@ const snapshotImpl = path.normalize("src/battle/snapshot.js");
 const snapshotTest = path.normalize("src/battle/snapshot.test.js");
 const battleRound = path.normalize("src/battle/battle-round.js");
 const battleRoundTest = path.normalize("src/battle/battle-round.test.js");
+const battleProgress = path.normalize("src/battle/battle-progress.js");
+const battleProgressTest = path.normalize("src/battle/battle-progress.test.js");
 const monsterStatus = path.normalize("src/battle/monster-status-automation.js");
 const monsterStatusTest = path.normalize("src/battle/monster-status-automation.test.js");
 const spiritToggle = path.normalize("src/battle/battle-spirit-toggle.js");
@@ -45,6 +47,8 @@ function checkFile(file) {
       relative === snapshotTest ||
       relative === battleRound ||
       relative === battleRoundTest ||
+      relative === battleProgress ||
+      relative === battleProgressTest ||
       relative === monsterStatus ||
       relative === monsterStatusTest ||
       relative === spiritToggle ||
@@ -91,9 +95,7 @@ function checkEntry() {
     "burstControlSwitch",
     "assertNoDomRefs",
     "OptionEvent.READ_FIELD",
-    "BattleRoundEvent.READ_RUNTIME",
-    "BattleRoundEvent.READ_TYPE",
-    "MonsterStatusEvent.READ_COMBATANT_COUNTS",
+    "BattleProgressEvent.READ_CONTEXT",
     "BattleSpiritToggleEvent.READ_LAST_TOGGLE",
   ]) {
     if (!text.includes(required)) {
@@ -108,6 +110,13 @@ function checkEntry() {
   }
   if (/\bexport\s+(?:function|const)\s+(?!prepareBattleTurnContext\b)/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} may export only prepareBattleTurnContext`);
+  }
+  if (
+    /BattleRoundEvent\.(?:READ_RUNTIME|READ_TYPE)|MonsterStatusEvent\.READ_COMBATANT_COUNTS/.test(
+      text
+    )
+  ) {
+    violations.push(`${entry.replaceAll("\\", "/")} must read progress through battle-progress`);
   }
 }
 

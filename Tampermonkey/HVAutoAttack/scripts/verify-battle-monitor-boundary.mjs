@@ -939,14 +939,15 @@ function checkBattleMonitorRuntimeEntry() {
   if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(`${rel(runtimeFile)} must read monitor option context through option entry`);
   }
-  if (
-    !text.includes("BattleRoundEvent.READ_RUNTIME") ||
-    !text.includes("BattleRoundEvent.READ_TYPE")
-  ) {
-    violations.push(`${rel(runtimeFile)} must read round context through battle-round entry`);
+  if (!text.includes("BattleProgressEvent.READ_CONTEXT")) {
+    violations.push(`${rel(runtimeFile)} must read battle progress through battle-progress entry`);
   }
-  if (!text.includes("MonsterStatusEvent.READ_COMBATANT_COUNTS")) {
-    violations.push(`${rel(runtimeFile)} must read combatants through monster-status entry`);
+  if (
+    /BattleRoundEvent\.(?:READ_RUNTIME|READ_TYPE)|MonsterStatusEvent\.READ_COMBATANT_COUNTS/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(runtimeFile)} must not reassemble battle progress facts directly`);
   }
   if (!text.includes("BattleActionSpeedEvent.READ_CURRENT")) {
     violations.push(`${rel(runtimeFile)} must read runSpeed through battle action-speed entry`);

@@ -1,11 +1,7 @@
 import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "../state/battle-turn.js";
-import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
-import {
-  MonsterStatusEvent,
-  runMonsterStatusAutomation,
-} from "../battle/monster-status-automation.js";
+import { BattleProgressEvent, runBattleProgressAutomation } from "../battle/battle-progress.js";
 import {
   BattleActionSpeedEvent,
   runBattleActionSpeedAutomation,
@@ -31,12 +27,11 @@ export const BattleMonitorRuntimeEvent = Object.freeze({
   USAGE_COMPLETION_CONTEXT: EVENT_USAGE_COMPLETION_CONTEXT,
 });
 
-function readArchiveContext(deps) {
-  const round = readRoundRuntime(deps);
+function readArchiveContext(deps, progress = readBattleProgress(deps)) {
   return {
     recordEach: readOptionField(deps, "recordEach", false),
-    roundNow: round.roundNow,
-    roundAll: round.roundAll,
+    roundNow: progress.roundNow,
+    roundAll: progress.roundAll,
   };
 }
 
@@ -50,19 +45,9 @@ function readTurn(deps) {
   return runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT });
 }
 
-function readRoundRuntime(deps) {
-  if (deps.readRoundRuntime) return deps.readRoundRuntime();
-  return runBattleRoundAutomation({ type: BattleRoundEvent.READ_RUNTIME });
-}
-
-function readRoundType(deps) {
-  if (deps.readRoundType) return deps.readRoundType();
-  return runBattleRoundAutomation({ type: BattleRoundEvent.READ_TYPE });
-}
-
-function readCombatantCounts(deps) {
-  if (deps.readCombatantCounts) return deps.readCombatantCounts();
-  return runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_COMBATANT_COUNTS });
+function readBattleProgress(deps) {
+  if (deps.readBattleProgress) return deps.readBattleProgress();
+  return runBattleProgressAutomation({ type: BattleProgressEvent.READ_CONTEXT });
 }
 
 function readRunSpeed(deps) {
@@ -77,11 +62,11 @@ function readAttackStatus(deps) {
 
 const runtimeContextHandlers = Object.freeze({
   [EVENT_REPORT_START_CONTEXT]: (deps) => {
-    const round = readRoundRuntime(deps);
+    const progress = readBattleProgress(deps);
     return {
       recordEach: readOptionField(deps, "recordEach", false),
-      roundType: readRoundType(deps),
-      roundAll: round.roundAll,
+      roundType: progress.roundType,
+      roundAll: progress.roundAll,
     };
   },
   [EVENT_ARCHIVE_CONTEXT]: (deps) => readArchiveContext(deps),
@@ -93,36 +78,34 @@ const runtimeContextHandlers = Object.freeze({
     };
   },
   [EVENT_HUD_CONTEXT]: (deps) => {
-    const combatants = readCombatantCounts(deps);
-    const round = readRoundRuntime(deps);
+    const progress = readBattleProgress(deps);
     return {
       attackStatus: readAttackStatus(deps),
-      monsterAlive: combatants.monsterAlive,
-      monsterAll: combatants.monsterAll,
-      roundAll: round.roundAll,
-      roundNow: round.roundNow,
-      roundType: readRoundType(deps),
+      monsterAlive: progress.monsterAlive,
+      monsterAll: progress.monsterAll,
+      roundAll: progress.roundAll,
+      roundNow: progress.roundNow,
+      roundType: progress.roundType,
       runSpeed: readRunSpeed(deps),
       turn: readTurn(deps),
     };
   },
   [EVENT_USAGE_ACTION_CONTEXT]: (deps) => {
-    const combatants = readCombatantCounts(deps);
-    const round = readRoundRuntime(deps);
+    const progress = readBattleProgress(deps);
     return {
-      monsterAlive: combatants.monsterAlive,
+      monsterAlive: progress.monsterAlive,
       turn: readTurn(deps),
-      roundNow: round.roundNow,
-      roundAll: round.roundAll,
+      roundNow: progress.roundNow,
+      roundAll: progress.roundAll,
     };
   },
   [EVENT_USAGE_COMPLETION_CONTEXT]: (deps) => {
-    const combatants = readCombatantCounts(deps);
+    const progress = readBattleProgress(deps);
     return {
-      ...readArchiveContext(deps),
+      ...readArchiveContext(deps, progress),
       recordUsage: readOptionField(deps, "recordUsage", false),
-      monsterAll: combatants.monsterAll,
-      bossAll: combatants.bossAll,
+      monsterAll: progress.monsterAll,
+      bossAll: progress.bossAll,
     };
   },
 });

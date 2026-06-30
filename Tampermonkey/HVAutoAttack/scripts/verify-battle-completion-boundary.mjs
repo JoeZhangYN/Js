@@ -42,8 +42,7 @@ function checkOwner() {
     "readCompletionContext",
     "deps.readCompletionContext",
     "handleTerminalCompletion",
-    "MonsterStatusEvent.READ_COMBATANT_COUNTS",
-    "BattleRoundEvent.READ_RUNTIME",
+    "BattleProgressEvent.READ_CONTEXT",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -66,7 +65,16 @@ function checkOwner() {
   }
   if (/\bg\(\s*["'](?:monsterAlive|roundNow|roundAll)["']\s*\)/.test(text)) {
     violations.push(
-      `${owner.replaceAll("\\", "/")} must compose completion context through capability entries`
+      `${owner.replaceAll("\\", "/")} must compose completion context through battle-progress`
+    );
+  }
+  if (
+    /BattleRoundEvent\.(?:READ_RUNTIME|READ_TYPE)|MonsterStatusEvent\.READ_COMBATANT_COUNTS/.test(
+      text
+    )
+  ) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must not reassemble battle progress facts directly`
     );
   }
   if (!fs.existsSync(path.join(root, ownerTest))) {

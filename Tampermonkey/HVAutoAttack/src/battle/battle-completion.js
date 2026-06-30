@@ -2,8 +2,7 @@
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
-import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
-import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
+import { BattleProgressEvent, runBattleProgressAutomation } from "./battle-progress.js";
 
 const EVENT_COMPLETION_REACHED = "completionReached";
 const VICTORY_RELOAD_SECONDS = 3;
@@ -20,14 +19,11 @@ export const BattleCompletionOutcome = Object.freeze({
 });
 
 function readCompletionContext() {
-  const combatants = runMonsterStatusAutomation({
-    type: MonsterStatusEvent.READ_COMBATANT_COUNTS,
-  });
-  const round = runBattleRoundAutomation({ type: BattleRoundEvent.READ_RUNTIME });
+  const progress = runBattleProgressAutomation({ type: BattleProgressEvent.READ_CONTEXT });
   return {
-    monsterAlive: combatants.monsterAlive,
-    roundNow: round.roundNow,
-    roundAll: round.roundAll,
+    monsterAlive: progress.monsterAlive,
+    roundNow: progress.roundNow,
+    roundAll: progress.roundAll,
   };
 }
 
