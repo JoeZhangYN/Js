@@ -32,15 +32,6 @@ export const fleeFacts = conditionOnlyFacts;
 export const autoPauseFacts = conditionOnlyFacts;
 export const defendFacts = conditionOnlyFacts;
 
-export function channelFacts(snap) {
-  return {
-    channeling: snap?.channeling,
-    skillReady: snap?.skillReady,
-    playerEffects: snap?.playerEffects,
-    playerBuffs: snap?.playerBuffs,
-  };
-}
-
 export function burstControlFacts(snap) {
   return {
     conditionFacts: conditionFacts(snap),
@@ -62,24 +53,6 @@ export function burstControlFacts(snap) {
     etherTapExpiring: snap?.etherTapExpiring,
     learnedBurstByMid: snap?.learnedBurstByMid,
     monsterFacts: snap?.view,
-  };
-}
-
-export function infusionFacts(snap) {
-  return {
-    conditionFacts: conditionFacts(snap),
-    attackStatus: snap?.attackStatus,
-    playerBuffs: snap?.playerBuffs,
-  };
-}
-
-export function buffFacts(snap) {
-  return {
-    conditionFacts: conditionFacts(snap),
-    spiritOn: snap?.spiritOn,
-    skillReady: snap?.skillReady,
-    playerBuffs: snap?.playerBuffs,
-    playerEffectTurns: snap?.playerEffectTurns,
   };
 }
 
