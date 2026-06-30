@@ -10,15 +10,18 @@ import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../i
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
 import { criticalBuffFacts } from "../critical-buff-guard/critical-buff-facts.js";
 import { decideDefend } from "../defense/decide-defend.js";
+import { defendFacts } from "../defense/defend-facts.js";
 import { decideAutoPause } from "../pause/decide-auto-pause.js";
+import { autoPauseFacts } from "../pause/auto-pause-facts.js";
 import { decideFlee } from "../escape/decide-flee.js";
+import { fleeFacts } from "../escape/flee-facts.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
 import { allDebuffFacts, burstControlFacts, singleDebuffFacts } from "../debuff/debuff-facts.js";
 import { buffFacts, channelFacts, infusionFacts } from "../buff/buff-facts.js";
 import { attackFacts } from "./attack-facts.js";
 import { gemFacts, potionFacts, scrollFacts, stallTopupFacts } from "../item/item-facts.js";
-import { autoPauseFacts, bossImperilFacts, defendFacts, fleeFacts } from "./rule-facts.js";
+import { bossImperilFacts } from "./rule-facts.js";
 
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [

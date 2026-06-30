@@ -18,14 +18,3 @@ export function bossImperilFacts(snap) {
     })),
   };
 }
-
-const conditionOnlyFacts = (snap) => ({ conditionFacts: conditionFacts(snap) });
-
-export const fleeFacts = conditionOnlyFacts;
-export const autoPauseFacts = conditionOnlyFacts;
-export const defendFacts = conditionOnlyFacts;
-
-export function conditionFacts(snap) {
-  // User-authored condition expressions address a variable map, so the snapshot is the condition context.
-  return snap;
-}

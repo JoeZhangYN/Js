@@ -72,8 +72,11 @@ const criticalBuffFactsFile = path.join(
   "src/battle/critical-buff-guard/critical-buff-facts.js"
 );
 const decideDefendFile = path.join(root, "src/battle/defense/decide-defend.js");
+const defendFactsFile = path.join(root, "src/battle/defense/defend-facts.js");
 const decideAutoPauseFile = path.join(root, "src/battle/pause/decide-auto-pause.js");
+const autoPauseFactsFile = path.join(root, "src/battle/pause/auto-pause-facts.js");
 const decideFleeFile = path.join(root, "src/battle/escape/decide-flee.js");
+const fleeFactsFile = path.join(root, "src/battle/escape/flee-facts.js");
 const decideAttackFile = path.join(root, "src/battle/attack/decide-attack.js");
 const decideTierFile = path.join(root, "src/battle/attack/decide-tier.js");
 const decideSkillFile = path.join(root, "src/battle/attack/decide-skill.js");
@@ -1727,13 +1730,10 @@ function checkBattleRuleFactMappers() {
   const buffFactsText = fs.readFileSync(buffFactsFile, "utf8");
   const debuffFactsText = fs.readFileSync(debuffFactsFile, "utf8");
   const criticalBuffFactsText = fs.readFileSync(criticalBuffFactsFile, "utf8");
-  for (const required of [
-    "conditionFacts",
-    "fleeFacts",
-    "autoPauseFacts",
-    "defendFacts",
-    "bossImperilFacts",
-  ]) {
+  const fleeFactsText = fs.readFileSync(fleeFactsFile, "utf8");
+  const autoPauseFactsText = fs.readFileSync(autoPauseFactsFile, "utf8");
+  const defendFactsText = fs.readFileSync(defendFactsFile, "utf8");
+  for (const required of ["bossImperilFacts"]) {
     if (!ruleFactsText.includes(required)) {
       violations.push(`${rel(ruleFactsFile)} must own rule fact mapper ${required}`);
     }
@@ -1759,6 +1759,13 @@ function checkBattleRuleFactMappers() {
     violations.push(
       `${rel(ruleFactsFile)} critical buff fact mapper belongs in critical buff guard facts`
     );
+  }
+  for (const retired of ["fleeFacts", "autoPauseFacts", "defendFacts", "conditionFacts"]) {
+    if (new RegExp(`export\\s+(?:function|const)\\s+${retired}\\b`).test(ruleFactsText)) {
+      violations.push(
+        `${rel(ruleFactsFile)} condition action fact mapper ${retired} belongs in its capability facts`
+      );
+    }
   }
   for (const required of ["gemFacts", "potionFacts", "stallTopupFacts", "scrollFacts"]) {
     if (!itemFactsText.includes(required)) {
@@ -1789,6 +1796,18 @@ function checkBattleRuleFactMappers() {
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(criticalBuffFactsText)) {
     violations.push(`${rel(criticalBuffFactsFile)} must not depend on generic rule fact mappers`);
+  }
+  for (const [file, text, required] of [
+    [fleeFactsFile, fleeFactsText, "fleeFacts"],
+    [autoPauseFactsFile, autoPauseFactsText, "autoPauseFacts"],
+    [defendFactsFile, defendFactsText, "defendFacts"],
+  ]) {
+    if (!text.includes(required) || !text.includes("conditionFacts")) {
+      violations.push(`${rel(file)} must own ${required} condition fact mapper`);
+    }
+    if (/from\s+["'][^"']*rule-facts\.js["']/.test(text)) {
+      violations.push(`${rel(file)} must not depend on generic rule fact mappers`);
+    }
   }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
   if (/conditionFacts\s*:\s*conditionFacts\s*\(\s*snap\s*\)/.test(rulesText)) {
