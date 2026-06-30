@@ -297,6 +297,34 @@ if (
     `${lobbyScheduleFile.replaceAll("\\", "/")} must schedule lobby checks from the encounter next-check plan`
   );
 }
+const lobbyScheduleText = fs.readFileSync(path.join(root, lobbyScheduleFile), "utf8");
+if (!lobbyScheduleText.includes("const encounterLobbyScheduleEventHandlers")) {
+  violations.push(
+    `${lobbyScheduleFile.replaceAll("\\", "/")} must route lobby schedule events through a handler table`
+  );
+}
+const lobbyScheduleEntryMatch = lobbyScheduleText.match(
+  /export function runEncounterLobbySchedule[\s\S]*?\n}/
+);
+if (!lobbyScheduleEntryMatch) {
+  violations.push(
+    `${lobbyScheduleFile.replaceAll("\\", "/")} must expose runEncounterLobbySchedule(event)`
+  );
+} else {
+  const entryBody = lobbyScheduleEntryMatch[0];
+  if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+    violations.push(
+      `${lobbyScheduleFile.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+    );
+  }
+  for (const internal of ["scheduleNextCheck(", "cancelNextCheck("]) {
+    if (entryBody.includes(internal)) {
+      violations.push(
+        `${lobbyScheduleFile.replaceAll("\\", "/")} entry must dispatch through encounterLobbyScheduleEventHandlers`
+      );
+    }
+  }
+}
 if (/\bNEXT_CHECK_DELAY\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must not expose raw next-check delay`);
 }

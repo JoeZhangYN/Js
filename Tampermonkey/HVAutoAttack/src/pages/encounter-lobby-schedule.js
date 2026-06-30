@@ -33,11 +33,14 @@ function scheduleNextCheck(event) {
   return true;
 }
 
-export function runEncounterLobbySchedule(event = { type: EVENT_CANCEL_NEXT_CHECK }) {
-  if (event.type === EVENT_SCHEDULE_NEXT_CHECK) return scheduleNextCheck(event);
-  if (event.type === EVENT_CANCEL_NEXT_CHECK) {
+const encounterLobbyScheduleEventHandlers = Object.freeze({
+  [EVENT_SCHEDULE_NEXT_CHECK]: scheduleNextCheck,
+  [EVENT_CANCEL_NEXT_CHECK]: () => {
     cancelNextCheck();
     return true;
-  }
-  return false;
+  },
+});
+
+export function runEncounterLobbySchedule(event = { type: EVENT_CANCEL_NEXT_CHECK }) {
+  return encounterLobbyScheduleEventHandlers[event.type]?.(event) ?? false;
 }

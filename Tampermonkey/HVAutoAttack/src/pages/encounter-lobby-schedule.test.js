@@ -56,4 +56,9 @@ describe("runEncounterLobbySchedule", () => {
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
   });
+
+  it("ignores unknown schedule events without creating a timer", () => {
+    expect(runEncounterLobbySchedule({ type: "unknown" })).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
