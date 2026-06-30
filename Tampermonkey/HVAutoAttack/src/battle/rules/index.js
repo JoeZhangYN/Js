@@ -24,7 +24,7 @@ import {
   singleDebuffFacts,
 } from "../debuff/debuff-facts.js";
 import { buffFacts, channelFacts, infusionFacts } from "../buff/buff-facts.js";
-import { attackFacts } from "./attack-facts.js";
+import { attackFacts } from "../attack/attack-facts.js";
 import { gemFacts, potionFacts, scrollFacts, stallTopupFacts } from "../item/item-facts.js";
 
 /** @type {import("../../core/types.js").BattleRule[]} */

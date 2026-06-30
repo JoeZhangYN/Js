@@ -59,7 +59,8 @@ const roundStartFile = path.join(root, "src/battle/battle-round-start.js");
 const legacyNewRoundFile = path.join(root, "src/battle/new-round.js");
 const battleRulesFile = path.join(root, "src/battle/rules/index.js");
 const ruleFactsFile = path.join(root, "src/battle/rules/rule-facts.js");
-const attackFactsFile = path.join(root, "src/battle/rules/attack-facts.js");
+const attackFactsFile = path.join(root, "src/battle/attack/attack-facts.js");
+const legacyAttackFactsFile = path.join(root, "src/battle/rules/attack-facts.js");
 const bigSkillCatalogFile = path.join(root, "src/battle/big-skill-catalog.js");
 const bigSkillFile = path.join(root, "src/battle/debuff/big-skill-debuff.js");
 const bossImperilFile = path.join(root, "src/battle/debuff/decide-boss-imperil.js");
@@ -1738,6 +1739,11 @@ function checkAttackEntry() {
 function checkBattleRuleFactMappers() {
   if (fs.existsSync(ruleFactsFile)) {
     violations.push(`${rel(ruleFactsFile)} generic rule fact mapper must stay retired`);
+  }
+  if (fs.existsSync(legacyAttackFactsFile)) {
+    violations.push(
+      `${rel(legacyAttackFactsFile)} must stay retired; attack facts belong in attack`
+    );
   }
   const ruleFactsText = fs.existsSync(ruleFactsFile) ? fs.readFileSync(ruleFactsFile, "utf8") : "";
   const attackFactsText = fs.readFileSync(attackFactsFile, "utf8");
