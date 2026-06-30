@@ -121,10 +121,13 @@ function previewAudioUrl(url) {
   return { ok: true, message: AUDIO_PREVIEW_MESSAGE };
 }
 
+const alarmEventHandlers = Object.freeze({
+  [EVENT_TRIGGER]: (event) => setAlarm(event.kind),
+  [EVENT_AUDIO]: (event) => setAudioAlarm(event.kind),
+  [EVENT_NOTIFICATION]: (event) => setNotification(event.kind),
+  [EVENT_PREVIEW_AUDIO_URL]: (event) => previewAudioUrl(event.url),
+});
+
 export function runAlarmAutomation(event = { type: EVENT_TRIGGER }) {
-  if (event.type === EVENT_TRIGGER) return setAlarm(event.kind);
-  if (event.type === EVENT_AUDIO) return setAudioAlarm(event.kind);
-  if (event.type === EVENT_NOTIFICATION) return setNotification(event.kind);
-  if (event.type === EVENT_PREVIEW_AUDIO_URL) return previewAudioUrl(event.url);
-  return undefined;
+  return alarmEventHandlers[event.type]?.(event);
 }

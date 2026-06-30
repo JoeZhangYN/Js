@@ -112,6 +112,24 @@ for (const fn of ["setAlarm", "setAudioAlarm", "setNotification"]) {
   }
 }
 
+if (!ownerText.includes("const alarmEventHandlers")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route alarm events through a handler table`);
+}
+const ownerEntry = ownerText.match(/export function runAlarmAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+}
+for (const internal of [
+  "setAlarm(",
+  "setAudioAlarm(",
+  "setNotification(",
+  "previewAudioUrl(",
+]) {
+  if (ownerEntry.includes(internal)) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through alarmEventHandlers`);
+  }
+}
+
 if (violations.length) {
   console.error("[verify-alarm-boundary] FAIL");
   for (const v of violations) console.error(`- ${v}`);
