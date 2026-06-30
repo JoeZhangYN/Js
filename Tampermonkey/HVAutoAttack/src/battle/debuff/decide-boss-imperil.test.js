@@ -1,17 +1,9 @@
 // task #3-A：decideBossImperil PURE 回归锁（喂 mock snap 断言 ActionResult）。
 // file-size-gate: exempt test-verbose（Boss Imperil 目标选择 + permission 门控逐例断言）
 // 覆盖：命中目标 / 无 boss noop / 213 未 ready noop / AoE 窗口覆盖选择 / tie-break 优先 needy 自身。
-import { beforeEach, describe, it, expect } from "vitest";
+import { describe, it, expect } from "vitest";
 import { BossImperilEvent, runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { bossImperilFacts } from "./debuff-facts.js";
-import {
-  BigSkillKillLearningEvent,
-  runBigSkillKillLearningAutomation,
-} from "../../state/big-skill-kill-learner.js";
-
-beforeEach(() => {
-  localStorage.clear();
-});
 
 /** 最小 snap 工厂（只填 decideBossImperil 从 snap.view 读到的字段）。 */
 function snap(over = {}) {
@@ -28,26 +20,13 @@ function mon(over = {}) {
   return { id: 1, order: 0, isDead: false, isBoss: false, buffs: [], ...over };
 }
 
-function observeOfcKill(mid, turn) {
-  runBigSkillKillLearningAutomation({
-    type: BigSkillKillLearningEvent.RECORD_CAST,
-    code: "OFC",
-    globalTurn: turn,
-    observedBosses: [{ mid, hpMax: 5000, imperilActive: false }],
-  });
-  runBigSkillKillLearningAutomation({
-    type: BigSkillKillLearningEvent.FINALIZE_PENDING,
-    globalTurn: turn + 1,
-    liveMonsterIds: [],
-  });
-}
-
 describe("decideBossImperil", () => {
   const decideBossImperil = (opt, snap) =>
     runBossImperilAutomation({
       type: BossImperilEvent.DECIDE,
       opt,
       ...bossImperilFacts(snap),
+      skipImperilForBigSkill: snap.skipImperilForBigSkill,
     });
 
   it("213 未 ready → noop", () => {
@@ -185,6 +164,7 @@ describe("boss Imperil permission", () => {
       type: BossImperilEvent.CAN_CAST,
       opt,
       ...bossImperilFacts(snap),
+      skipImperilForBigSkill: snap.skipImperilForBigSkill,
     });
 
   it("requires skill 213 ready and debuff skill enabled", () => {
@@ -208,16 +188,13 @@ describe("boss Imperil permission", () => {
     ).toBe(false);
   });
 
-  it("blocks boss Imperil when every boss is learned killable without Imperil", () => {
-    for (let i = 0; i < 4; i++) observeOfcKill(100, i * 10);
-
+  it("blocks boss Imperil when offensive debuff says big skill should skip Imperil", () => {
     expect(
       canCast(
-        { skipImperilWhenOfcKills: true },
+        {},
         snap({
           skillReady: { 213: true },
-          cdMap: { OFC: 0 },
-          oc: 250,
+          skipImperilForBigSkill: true,
           view: [mon({ id: 1, isBoss: true, monsterId: 100, hpMax: 5000 })],
         })
       )

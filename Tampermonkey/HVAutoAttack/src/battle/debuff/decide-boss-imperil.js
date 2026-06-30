@@ -7,7 +7,6 @@
 import { aliveByOrder } from "../monster-view.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { bossCoverageWindow } from "../target-strategy.js";
-import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill-debuff.js";
 
 const EVENT_CAN_CAST = "canCast";
 const EVENT_DECIDE = "decide";
@@ -32,24 +31,13 @@ function canCastBossImperil(event) {
     return false;
   }
   if (opt?.debuffSkillSwitch === false || !event?.imperilSkillReady) return false;
-  if (
-    runBigSkillDebuffAutomation({
-      type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
-      opt,
-      kind: "Im",
-      skillCooldowns: event?.skillCooldowns,
-      overcharge: event?.overcharge,
-      monsterFacts: event?.monsterFacts,
-    })
-  ) {
-    return false;
-  }
+  if (event?.skipImperilForBigSkill) return false;
   return true;
 }
 
 /**
  * 决定给哪只未上 Imperil 的 boss 施放 213（AoE 窗口尽量覆盖多个 needy boss）。
- * 入口自守卫：stall / debuffSkillSwitch / skillReady["213"] / learned OFC kill skip。
+ * 入口自守卫：stall / debuffSkillSwitch / skillReady["213"] / offensive-debuff skip ruling。
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult}
  */

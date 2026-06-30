@@ -1,5 +1,6 @@
 import { BattleAttackActionEvent, runBattleAttackAction } from "../attack/decide-attack-action.js";
 import { decideBurstControl } from "./decide-burst-control.js";
+import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill-debuff.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideCastDebuffOnAll } from "./decide-cast-all.js";
 import { decideDeSkill } from "./decide-de-skill.js";
@@ -10,6 +11,21 @@ const EVENT_DECIDE = "decide";
 export const BattleOffensiveDebuffEvent = Object.freeze({
   DECIDE: EVENT_DECIDE,
 });
+
+function readBigSkillSkipRulings(event) {
+  const input = {
+    type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
+    opt: event.opt,
+    skillCooldowns: event.skillCooldowns,
+    overcharge: event.overcharge,
+    aliveCount: event.aliveCount,
+    monsterFacts: event.monsterFacts,
+  };
+  return {
+    skipWeakenForBigSkill: runBigSkillDebuffAutomation({ ...input, kind: "We" }),
+    skipImperilForBigSkill: runBigSkillDebuffAutomation({ ...input, kind: "Im" }),
+  };
+}
 
 function decideOffensiveDebuffResult(snap = {}, opt = {}) {
   const event = {
@@ -23,6 +39,7 @@ function decideOffensiveDebuffResult(snap = {}, opt = {}) {
     ...bossImperilFacts(snap),
     ...debuffActionFacts(snap),
   };
+  Object.assign(event, readBigSkillSkipRulings(event));
   for (const decide of [
     decideBurstControl,
     runBossImperilAutomation,

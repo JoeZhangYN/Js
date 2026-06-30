@@ -8,7 +8,6 @@ import {
   runBattleDebuffCoverageAutomation,
 } from "../battle-debuff-coverage.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
-import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill-debuff.js";
 import { canApplyDebuffPure } from "./can-apply.js";
 import { byOrder } from "../monster-view.js";
 import { aoeNeighborAnchor } from "../target-strategy.js";
@@ -77,21 +76,15 @@ function canCastDebuffOnAll(opt, event, debuffKey) {
   if (!gate) return false;
   if (gate.skipInStall && isStallingForAllDebuff(opt, event)) return false;
   if (!opt.debuffSkillSwitch || !opt[gate.enabledKey]) return false;
-  if (shouldSkipDebuffForBigSkill(opt, event, debuffKey)) return false;
+  if (shouldSkipDebuffForBigSkill(event, debuffKey)) return false;
   if (!hasMissingDebuff(event, gate.coverageName)) return false;
   return checkCondition(opt[gate.conditionKey], event.conditionFacts);
 }
 
-function shouldSkipDebuffForBigSkill(opt, event, kind) {
-  return runBigSkillDebuffAutomation({
-    type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
-    opt,
-    kind,
-    skillCooldowns: event?.skillCooldowns,
-    overcharge: event?.overcharge,
-    aliveCount: event?.aliveCount,
-    monsterFacts: event?.monsterFacts,
-  });
+function shouldSkipDebuffForBigSkill(event, kind) {
+  if (kind === "We") return !!event?.skipWeakenForBigSkill;
+  if (kind === "Im") return !!event?.skipImperilForBigSkill;
+  return false;
 }
 
 function hasMissingDebuff(event, debuffName) {

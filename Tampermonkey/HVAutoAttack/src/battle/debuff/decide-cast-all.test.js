@@ -36,6 +36,8 @@ function allDebuffFacts(snap) {
     roundNow: snap.roundNow,
     roundAll: snap.roundAll,
     monsterFacts: snap.view,
+    skipWeakenForBigSkill: snap.skipWeakenForBigSkill,
+    skipImperilForBigSkill: snap.skipImperilForBigSkill,
   };
 }
 
@@ -94,9 +96,8 @@ describe("decideCastDebuffOnAll", () => {
         {
           debuffSkillSwitch: true,
           debuffSkillAllWk: true,
-          skill_OFC: true,
         },
-        snap({ cdMap: { OFC: 0 }, oc: 205 }),
+        snap({ skipWeakenForBigSkill: true }),
         "We"
       )
     ).toEqual({ kind: "noop" });

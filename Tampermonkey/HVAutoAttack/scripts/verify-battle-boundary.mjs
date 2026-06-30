@@ -1393,8 +1393,7 @@ function checkBossImperilEntry() {
     "event?.monsterFacts",
     "event?.imperilSkillReady",
     "event?.imperilAoe",
-    "event?.skillCooldowns",
-    "event?.overcharge",
+    "event?.skipImperilForBigSkill",
     "event?.roundNow",
     "event?.roundAll",
   ]) {
@@ -1402,8 +1401,8 @@ function checkBossImperilEntry() {
       violations.push(`${rel(bossImperilFile)} must consume ${required}`);
     }
   }
-  if (!ownerText.includes("runBigSkillDebuffAutomation")) {
-    violations.push(`${rel(bossImperilFile)} must ask big-skill debuff entry for F4 skips`);
+  if (/runBigSkillDebuffAutomation|BigSkillDebuffEvent/.test(ownerText)) {
+    violations.push(`${rel(bossImperilFile)} must consume offensive debuff skip rulings`);
   }
   if (
     /runBigSkillKillLearningAutomation|BigSkillKillLearningEvent|WILL_KILL_BOSS/.test(ownerText)
@@ -1502,10 +1501,14 @@ function checkBigSkillDebuffEntry() {
   if (/\bevent\.snap\b/.test(ownerText)) {
     violations.push(`${rel(bigSkillFile)} must not consume snap-shaped event input`);
   }
+  const offensiveDebuffText = fs.readFileSync(decideOffensiveDebuffFile, "utf8");
+  if (!offensiveDebuffText.includes("runBigSkillDebuffAutomation")) {
+    violations.push(`${rel(decideOffensiveDebuffFile)} must own big-skill debuff skip rulings`);
+  }
   for (const file of [decideCastAllFile, bossImperilFile]) {
     const text = fs.readFileSync(file, "utf8");
-    if (!text.includes("runBigSkillDebuffAutomation")) {
-      violations.push(`${rel(file)} must read big-skill debuff decisions through their entry`);
+    if (/runBigSkillDebuffAutomation|BigSkillDebuffEvent/.test(text)) {
+      violations.push(`${rel(file)} must consume offensive debuff skip rulings`);
     }
     if (/\b(?:clearSkillReadyNow|shouldSkipForBigSkill)\b/.test(text)) {
       violations.push(`${rel(file)} must not call legacy big-skill debuff helpers`);
@@ -1573,6 +1576,10 @@ function checkOffensiveDebuffEntry() {
     "BattleAttackActionEvent.WILL_CLEAR_WITH_BIG_SKILL",
     "runBattleAttackAction",
     "willClearWithBigSkill",
+    "BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF",
+    "runBigSkillDebuffAutomation",
+    "skipWeakenForBigSkill",
+    "skipImperilForBigSkill",
     "burstControlFacts",
     "bossImperilFacts",
     "debuffActionFacts",
@@ -1979,7 +1986,8 @@ function checkAllDebuffEntry() {
     "debuffSkillWkCondition",
     "debuffSkillImpCondition",
     "runBattleDebuffCoverageAutomation",
-    "runBigSkillDebuffAutomation",
+    "skipWeakenForBigSkill",
+    "skipImperilForBigSkill",
     "runBattleStallModeAutomation",
     "conditionFacts",
     "event.monsterFacts",
