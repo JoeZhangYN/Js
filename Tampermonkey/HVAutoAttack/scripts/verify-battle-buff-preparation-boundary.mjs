@@ -5,6 +5,9 @@ const root = process.cwd();
 const owner = path.normalize("src/battle/buff/decide-buff-preparation.js");
 const ownerTest = path.normalize("src/battle/buff/decide-buff-preparation.test.js");
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
+const infusionDecision = path.normalize("src/battle/buff/decide-infusion.js");
+const channelDecision = path.normalize("src/battle/buff/decide-channel.js");
+const buffDecision = path.normalize("src/battle/buff/decide-buff.js");
 const violations = [];
 
 function read(relative) {
@@ -30,9 +33,12 @@ for (const required of [
   'capability: "channel"',
   'capability: "buff"',
   "buffPreparationFacts",
-  "decideInfusion",
-  "decideChannel",
-  "decideBuff",
+  "BattleInfusionDecisionEvent.DECIDE",
+  "runBattleInfusionDecision",
+  "BattleChannelDecisionEvent.DECIDE",
+  "runBattleChannelDecision",
+  "BattleBuffDecisionEvent.DECIDE",
+  "runBattleBuffDecision",
   "isEmptyDecision",
   "EMPTY_DECISION_PREDICATES",
   "EMPTY_CHANNEL_PLAN_PREDICATES",
@@ -55,8 +61,30 @@ if (/for \(const decide of \[/.test(ownerText)) {
 if (!/const INFUSION_LIB = Object\.freeze\(\[/.test(infusionText)) {
   violations.push("src/battle/buff/decide-infusion.js must own frozen infusion item table");
 }
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattleInfusionDecisionEvent\b|runBattleInfusionDecision\b)/.test(
+    infusionText
+  )
+) {
+  violations.push("src/battle/buff/decide-infusion.js may export only its event entry");
+}
 if (!/const DRAUGHT_PACK = Object\.freeze\(\[/.test(buffText)) {
   violations.push("src/battle/buff/decide-buff.js must own frozen draught decision table");
+}
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattleBuffDecisionEvent\b|runBattleBuffDecision\b)/.test(
+    buffText
+  )
+) {
+  violations.push("src/battle/buff/decide-buff.js may export only its event entry");
+}
+const channelText = read(path.normalize("src/battle/buff/decide-channel.js"));
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattleChannelDecisionEvent\b|runBattleChannelDecision\b)/.test(
+    channelText
+  )
+) {
+  violations.push("src/battle/buff/decide-channel.js may export only its event entry");
 }
 for (const required of [
   "noop: () => true",
@@ -115,13 +143,27 @@ for (const relative of ["src/battle", "src/core"]) {
     }
     const file = path.join(entry.parentPath, entry.name);
     const normalized = path.normalize(path.relative(root, file));
-    if (normalized === owner || normalized === actionDecision) continue;
+    if (
+      normalized === owner ||
+      normalized === actionDecision ||
+      normalized === infusionDecision ||
+      normalized === channelDecision ||
+      normalized === buffDecision
+    ) {
+      continue;
+    }
     const text = fs.readFileSync(file, "utf8");
     if (/from\s+["'][^"']*buff\/decide-buff-preparation\.js["']/.test(text)) {
       violations.push(`${rel(normalized)} must not bypass runBattleActionDecision`);
     }
     if (/decideBuffPreparation\(\s*[^)]*,\s*[^)]*\)/.test(text)) {
       violations.push(`${rel(normalized)} must not call retired buff preparation two-arg path`);
+    }
+    if (
+      /from\s+["'][^"']*buff\/decide-(?:infusion|channel|buff)\.js["']/.test(text) ||
+      /\b(?:decideInfusion|decideChannel|decideBuff)\s*\(/.test(text)
+    ) {
+      violations.push(`${rel(normalized)} must not bypass buff preparation sub-decision entries`);
     }
   }
 }

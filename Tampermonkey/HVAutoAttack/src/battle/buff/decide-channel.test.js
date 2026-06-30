@@ -1,7 +1,11 @@
 // decideChannel 3 段 fallback 链 + recast query 精确匹配回归锁（纯决策，喂 explicit facts 断言 ChannelPlan）。
 // file-size-gate: exempt test-verbose（20 用例覆盖三段优先级 + recast query 精确匹配）
 import { describe, it, expect } from "vitest";
-import { decideChannel } from "./decide-channel.js";
+import { BattleChannelDecisionEvent, runBattleChannelDecision } from "./decide-channel.js";
+
+function decideChannel(event) {
+  return runBattleChannelDecision({ type: BattleChannelDecisionEvent.DECIDE, ...event });
+}
 
 /** 最小 facts 工厂（只填 decideChannel 读到的字段）。channeling 默认 true。 */
 function facts(over = {}) {
@@ -253,5 +257,12 @@ describe("第三段：buff 续施", () => {
 describe("全段未命中 → noop", () => {
   it("空 opt + 空 snap → noop", () => {
     expect(plan({}, facts())).toEqual({ type: "noop" });
+  });
+
+  it("rejects unknown channel decision events", () => {
+    expect(runBattleChannelDecision({ type: "unknown" })).toEqual({
+      kind: "channel-plan",
+      plan: { type: "noop" },
+    });
   });
 });

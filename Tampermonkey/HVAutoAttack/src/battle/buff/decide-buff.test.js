@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { decideBuff } from "./decide-buff.js";
+import { BattleBuffDecisionEvent, runBattleBuffDecision } from "./decide-buff.js";
+
+function decideBuff(event) {
+  return runBattleBuffDecision({ type: BattleBuffDecisionEvent.DECIDE, ...event });
+}
 
 const snap = (over = {}) => ({
   opt: enabled(),
@@ -86,5 +90,9 @@ describe("decideBuff", () => {
       kind: "item-command",
       itemId: 11191,
     });
+  });
+
+  it("rejects unknown buff decision events", () => {
+    expect(runBattleBuffDecision({ type: "unknown", ...snap() })).toEqual({ kind: "noop" });
   });
 });

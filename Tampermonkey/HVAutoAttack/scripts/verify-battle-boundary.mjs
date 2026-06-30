@@ -2258,9 +2258,12 @@ function checkBuffPreparationEntry() {
     'capability: "channel"',
     'capability: "buff"',
     "buffPreparationFacts",
-    "decideInfusion",
-    "decideChannel",
-    "decideBuff",
+    "BattleInfusionDecisionEvent.DECIDE",
+    "runBattleInfusionDecision",
+    "BattleChannelDecisionEvent.DECIDE",
+    "runBattleChannelDecision",
+    "BattleBuffDecisionEvent.DECIDE",
+    "runBattleBuffDecision",
     "isEmptyDecision",
     "EMPTY_DECISION_PREDICATES",
     "EMPTY_CHANNEL_PLAN_PREDICATES",
@@ -2343,6 +2346,10 @@ function checkBuffPreparationEntry() {
 function checkInfusionEntry() {
   const ownerText = fs.readFileSync(decideInfusionFile, "utf8");
   for (const required of [
+    "BattleInfusionDecisionEvent",
+    "battleInfusionDecisionEventHandlers",
+    "DECIDE",
+    "runBattleInfusionDecision",
     "decideInfusion",
     "INFUSION_LIB",
     "infusionSwitch",
@@ -2355,6 +2362,22 @@ function checkInfusionEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideInfusionFile)} must own infusion gate ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleInfusionDecisionEvent\b|runBattleInfusionDecision\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideInfusionFile)} may export only its event entry`);
+  }
+  const infusionEntryBody =
+    ownerText.match(/export function runBattleInfusionDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+    violations.push(`${rel(decideInfusionFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(infusionEntryBody)) {
+    violations.push(`${rel(decideInfusionFile)} entry must dispatch by handler table`);
   }
   if (!/const INFUSION_LIB = Object\.freeze\(\[/.test(ownerText)) {
     violations.push(`${rel(decideInfusionFile)} must own frozen infusion item table`);
@@ -2378,6 +2401,10 @@ function checkInfusionEntry() {
 function checkChannelEntry() {
   const ownerText = fs.readFileSync(decideChannelFile, "utf8");
   for (const required of [
+    "BattleChannelDecisionEvent",
+    "battleChannelDecisionEventHandlers",
+    "DECIDE",
+    "runBattleChannelDecision",
     "decideChannel",
     "channelSkillSwitch",
     "channelSkill",
@@ -2391,6 +2418,22 @@ function checkChannelEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideChannelFile)} must own channel gate ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleChannelDecisionEvent\b|runBattleChannelDecision\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideChannelFile)} may export only its event entry`);
+  }
+  const channelEntryBody =
+    ownerText.match(/export function runBattleChannelDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+    violations.push(`${rel(decideChannelFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(channelEntryBody)) {
+    violations.push(`${rel(decideChannelFile)} entry must dispatch by handler table`);
   }
   if (/decideChannel\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideChannelFile)} must not expose opt/snap decision input`);
@@ -2422,6 +2465,10 @@ function checkChannelEntry() {
 function checkBuffEntry() {
   const ownerText = fs.readFileSync(decideBuffFile, "utf8");
   for (const required of [
+    "BattleBuffDecisionEvent",
+    "battleBuffDecisionEventHandlers",
+    "DECIDE",
+    "runBattleBuffDecision",
     "decideBuff",
     "DRAUGHT_PACK",
     "buffSkillSwitch",
@@ -2436,6 +2483,22 @@ function checkBuffEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideBuffFile)} must own buff gate ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleBuffDecisionEvent\b|runBattleBuffDecision\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideBuffFile)} may export only its event entry`);
+  }
+  const buffEntryBody =
+    ownerText.match(/export function runBattleBuffDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+    violations.push(`${rel(decideBuffFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(buffEntryBody)) {
+    violations.push(`${rel(decideBuffFile)} entry must dispatch by handler table`);
   }
   if (!/const DRAUGHT_PACK = Object\.freeze\(\[/.test(ownerText)) {
     violations.push(`${rel(decideBuffFile)} must own frozen draught decision table`);

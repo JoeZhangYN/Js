@@ -1,6 +1,6 @@
-import { decideBuff } from "./decide-buff.js";
-import { decideChannel } from "./decide-channel.js";
-import { decideInfusion } from "./decide-infusion.js";
+import { BattleBuffDecisionEvent, runBattleBuffDecision } from "./decide-buff.js";
+import { BattleChannelDecisionEvent, runBattleChannelDecision } from "./decide-channel.js";
+import { BattleInfusionDecisionEvent, runBattleInfusionDecision } from "./decide-infusion.js";
 import { buffPreparationFacts } from "./buff-facts.js";
 
 const EVENT_DECIDE = "decide";
@@ -38,15 +38,24 @@ const EMPTY_CHANNEL_PLAN_PREDICATES = Object.freeze({
 });
 
 function decideInfusionStep(buffPreparationContext) {
-  return decideInfusion(buffPreparationContext);
+  return runBattleInfusionDecision({
+    type: BattleInfusionDecisionEvent.DECIDE,
+    ...buffPreparationContext,
+  });
 }
 
 function decideChannelStep(buffPreparationContext) {
-  return decideChannel(buffPreparationContext);
+  return runBattleChannelDecision({
+    type: BattleChannelDecisionEvent.DECIDE,
+    ...buffPreparationContext,
+  });
 }
 
 function decideBuffStep(buffPreparationContext) {
-  return decideBuff(buffPreparationContext);
+  return runBattleBuffDecision({
+    type: BattleBuffDecisionEvent.DECIDE,
+    ...buffPreparationContext,
+  });
 }
 
 function decideBuffPreparationResult(snap = {}, opt = {}) {

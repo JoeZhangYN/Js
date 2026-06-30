@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { decideInfusion } from "./decide-infusion.js";
+import { BattleInfusionDecisionEvent, runBattleInfusionDecision } from "./decide-infusion.js";
+
+function decideInfusion(event) {
+  return runBattleInfusionDecision({ type: BattleInfusionDecisionEvent.DECIDE, ...event });
+}
 
 const snap = (over = {}) => ({
   opt: { infusionSwitch: true },
@@ -40,5 +44,9 @@ describe("decideInfusion", () => {
       kind: "item-command",
       itemId: 12101,
     });
+  });
+
+  it("rejects unknown infusion decision events", () => {
+    expect(runBattleInfusionDecision({ type: "unknown", ...snap() })).toEqual({ kind: "noop" });
   });
 });

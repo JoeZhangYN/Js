@@ -12,11 +12,21 @@ const INFUSION_LIB = Object.freeze([
   Object.freeze({ id: 12601, img: "darkinfusion" }),
 ]);
 
+const EVENT_DECIDE = "decide";
+
+export const BattleInfusionDecisionEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+const battleInfusionDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: decideInfusion,
+});
+
 /**
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult}
  */
-export function decideInfusion(event = {}) {
+function decideInfusion(event = {}) {
   const opt = event.opt || {};
   if (!opt.infusionSwitch) return { kind: "noop" };
   if (!checkCondition(opt.infusionCondition, event.conditionFacts)) return { kind: "noop" };
@@ -38,4 +48,8 @@ export function decideInfusion(event = {}) {
     kind: "item-command",
     itemId: lib.id,
   };
+}
+
+export function runBattleInfusionDecision(event = { type: EVENT_DECIDE }) {
+  return battleInfusionDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
 }

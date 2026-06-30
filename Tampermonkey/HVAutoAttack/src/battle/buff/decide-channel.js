@@ -10,11 +10,21 @@ import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
 import { NAME_TO_BUFF_CODE } from "../../data/spell-lib.js";
 import { BattlePlayerBuffStateEvent, runBattlePlayerBuffState } from "../player-buff-state.js";
 
+const EVENT_DECIDE = "decide";
+
+export const BattleChannelDecisionEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+const battleChannelDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: decideChannel,
+});
+
 /**
  * @param {object} event
  * @returns {{kind:"channel-plan", plan: import("./decide-channel.js").ChannelPlan}}
  */
-export function decideChannel(event = {}) {
+function decideChannel(event = {}) {
   return { kind: "channel-plan", plan: decidePlan(event) };
 }
 
@@ -92,4 +102,11 @@ function decidePlan(event) {
   }
 
   return { type: "noop" };
+}
+
+export function runBattleChannelDecision(event = { type: EVENT_DECIDE }) {
+  return battleChannelDecisionEventHandlers[event.type]?.(event) ?? {
+    kind: "channel-plan",
+    plan: { type: "noop" },
+  };
 }

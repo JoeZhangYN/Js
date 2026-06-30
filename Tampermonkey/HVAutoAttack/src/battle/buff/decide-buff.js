@@ -13,12 +13,22 @@ const DRAUGHT_PACK = Object.freeze([
   Object.freeze(["BG", Object.freeze({ id: 19131, img: "gum" })]),
 ]);
 
+const EVENT_DECIDE = "decide";
+
+export const BattleBuffDecisionEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+const battleBuffDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: decideBuff,
+});
+
 /**
  * 决定本 turn 是否要施 buff / 用 draught，返 ActionResult。
  * @param {object} event battle rule option subset and buff facts
  * @returns {import("../../core/types.js").ActionResult}
  */
-export function decideBuff(event = {}) {
+function decideBuff(event = {}) {
   const opt = event.opt || {};
   if (!opt.buffSkillSwitch || !checkCondition(opt.buffSkillCondition, event.conditionFacts)) {
     return { kind: "noop" };
@@ -75,4 +85,8 @@ export function decideBuff(event = {}) {
   }
 
   return { kind: "noop" };
+}
+
+export function runBattleBuffDecision(event = { type: EVENT_DECIDE }) {
+  return battleBuffDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
 }
