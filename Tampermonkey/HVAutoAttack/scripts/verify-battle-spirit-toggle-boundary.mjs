@@ -59,6 +59,7 @@ walk(srcDir);
 
 requireText(owner, [
   "BattleSpiritToggleEvent",
+  "battleSpiritToggleEventHandlers",
   "runBattleSpiritToggleAutomation",
   "CLICK_AND_RECORD",
   "ACTIVATE_IF_INACTIVE",
@@ -67,6 +68,18 @@ requireText(owner, [
   "DEFAULT_SPIRIT_TOGGLE_TURN",
   "normalizeSpiritToggleTurn",
 ]);
+
+const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const entryBody =
+  ownerText.match(/export function runBattleSpiritToggleAutomation\([^)]*\) \{[\s\S]*?\n\}/)
+    ?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_CLICK_AND_RECORD\][\s\S]*\[EVENT_READ_ACTIVE\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
+
 requireText("src/battle/snapshot.js", [
   "BattleSpiritToggleEvent.READ_ACTIVE",
   "runBattleSpiritToggleAutomation",

@@ -128,4 +128,12 @@ describe("runBattleSpiritToggleAutomation", () => {
       runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.READ_LAST_TOGGLE })
     ).toBe(0);
   });
+
+  it("rejects unknown events without touching Spirit state", () => {
+    expect(runBattleSpiritToggleAutomation({ type: "unknown" })).toBeUndefined();
+
+    expect(mocks.gE).not.toHaveBeenCalled();
+    expect(mocks.g).not.toHaveBeenCalled();
+    expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
+  });
 });
