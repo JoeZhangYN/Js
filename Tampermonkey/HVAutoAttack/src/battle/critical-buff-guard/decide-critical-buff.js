@@ -9,7 +9,7 @@
 // 1. opt.pauseOnCriticalBuffExpire 开启
 // 2. opt.criticalBuffsList 中至少一个 buff 当前 turns <= minTurns（Infinity 永续不算"即将消失"）
 // 3. 当前 MP < criticalBuffMpFloor%（续 buff 大概率失败的阈值）
-import { criticalBuffFacts } from "./critical-buff-facts.js";
+import { CriticalBuffFactsEvent, runCriticalBuffFacts } from "./critical-buff-facts.js";
 
 const EVENT_DECIDE = "decide";
 
@@ -60,7 +60,10 @@ function criticalBuffDecisionInput(event) {
   if (!event?.snap) return event;
   return {
     opt: event.opt,
-    ...criticalBuffFacts(event.snap),
+    ...runCriticalBuffFacts({
+      type: CriticalBuffFactsEvent.READ_DECISION,
+      snap: event.snap,
+    }),
   };
 }
 

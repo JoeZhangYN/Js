@@ -1,5 +1,5 @@
 import { checkCondition } from "../../settings/condition-eval.js";
-import { fleeFacts } from "./flee-facts.js";
+import { BattleFleeFactsEvent, runBattleFleeFacts } from "./flee-facts.js";
 
 const EVENT_DECIDE = "decide";
 
@@ -24,7 +24,10 @@ function fleeDecisionInput(event) {
   if (!event?.snap) return event;
   return {
     opt: event.opt,
-    ...fleeFacts(event.snap),
+    ...runBattleFleeFacts({
+      type: BattleFleeFactsEvent.READ_DECISION,
+      snap: event.snap,
+    }),
   };
 }
 

@@ -2062,6 +2062,8 @@ function checkCriticalBuffEntry() {
     "runCriticalBuffDecision",
     "decideCriticalBuff",
     "criticalBuffDecisionInput",
+    "CriticalBuffFactsEvent.READ_DECISION",
+    "runCriticalBuffFacts",
     "event.manaPercent",
     "event.playerEffects",
     "critical-pause",
@@ -3141,6 +3143,8 @@ function checkDefendEntry() {
     "runBattleDefendDecision",
     "decideDefend",
     "defendDecisionInput",
+    "BattleDefendFactsEvent.READ_DECISION",
+    "runBattleDefendFacts",
     "defendCondition",
     "defend-command",
     "conditionFacts",
@@ -3190,6 +3194,8 @@ function checkAutoPauseEntry() {
     "runBattleAutoPauseDecision",
     "decideAutoPause",
     "autoPauseDecisionInput",
+    "BattleAutoPauseFactsEvent.READ_DECISION",
+    "runBattleAutoPauseFacts",
     "autoPause",
     "pauseCondition",
     "conditionFacts",
@@ -3239,6 +3245,8 @@ function checkFleeEntry() {
     "runBattleFleeDecision",
     "decideFlee",
     "fleeDecisionInput",
+    "BattleFleeFactsEvent.READ_DECISION",
+    "runBattleFleeFacts",
     "autoFlee",
     "fleeCondition",
     "flee-command",
@@ -3813,22 +3821,89 @@ function checkBattleRuleFactMappers() {
       violations.push(`${rel(debuffFactsFile)} must use one debuffActionFacts mapper`);
     }
   }
-  if (!criticalBuffFactsText.includes("criticalBuffFacts")) {
-    violations.push(`${rel(criticalBuffFactsFile)} must own critical buff fact mapper`);
-  }
-  if (/from\s+["'][^"']*rule-facts\.js["']/.test(criticalBuffFactsText)) {
-    violations.push(`${rel(criticalBuffFactsFile)} must not depend on generic rule fact mappers`);
-  }
-  for (const [file, text, required] of [
-    [fleeFactsFile, fleeFactsText, "fleeFacts"],
-    [autoPauseFactsFile, autoPauseFactsText, "autoPauseFacts"],
-    [defendFactsFile, defendFactsText, "defendFacts"],
+  for (const spec of [
+    {
+      file: criticalBuffFactsFile,
+      text: criticalBuffFactsText,
+      eventName: "CriticalBuffFactsEvent",
+      handlerName: "criticalBuffFactsEventHandlers",
+      runName: "runCriticalBuffFacts",
+      mapperName: "criticalBuffFacts",
+      testFile: path.join(root, "src/battle/critical-buff-guard/critical-buff-facts.test.js"),
+      unknownEventText: "rejects unknown critical buff facts events",
+      required: ["manaPercent", "playerEffects"],
+    },
+    {
+      file: fleeFactsFile,
+      text: fleeFactsText,
+      eventName: "BattleFleeFactsEvent",
+      handlerName: "battleFleeFactsEventHandlers",
+      runName: "runBattleFleeFacts",
+      mapperName: "fleeFacts",
+      testFile: path.join(root, "src/battle/escape/flee-facts.test.js"),
+      unknownEventText: "rejects unknown flee facts events",
+      required: ["conditionFacts"],
+    },
+    {
+      file: autoPauseFactsFile,
+      text: autoPauseFactsText,
+      eventName: "BattleAutoPauseFactsEvent",
+      handlerName: "battleAutoPauseFactsEventHandlers",
+      runName: "runBattleAutoPauseFacts",
+      mapperName: "autoPauseFacts",
+      testFile: path.join(root, "src/battle/pause/auto-pause-facts.test.js"),
+      unknownEventText: "rejects unknown auto-pause facts events",
+      required: ["conditionFacts"],
+    },
+    {
+      file: defendFactsFile,
+      text: defendFactsText,
+      eventName: "BattleDefendFactsEvent",
+      handlerName: "battleDefendFactsEventHandlers",
+      runName: "runBattleDefendFacts",
+      mapperName: "defendFacts",
+      testFile: path.join(root, "src/battle/defense/defend-facts.test.js"),
+      unknownEventText: "rejects unknown defend facts events",
+      required: ["conditionFacts"],
+    },
   ]) {
-    if (!text.includes(required) || !text.includes("conditionFacts")) {
-      violations.push(`${rel(file)} must own ${required} condition fact mapper`);
+    for (const required of [
+      spec.eventName,
+      spec.handlerName,
+      spec.runName,
+      "READ_DECISION",
+      spec.mapperName,
+      ...spec.required,
+    ]) {
+      if (!spec.text.includes(required)) {
+        violations.push(`${rel(spec.file)} must own facts query ${required}`);
+      }
     }
-    if (/from\s+["'][^"']*rule-facts\.js["']/.test(text)) {
-      violations.push(`${rel(file)} must not depend on generic rule fact mappers`);
+    const exportOnly = new RegExp(
+      `\\bexport\\s+(?:function|const)\\s+(?!${spec.eventName}\\b|${spec.runName}\\b)`
+    );
+    if (exportOnly.test(spec.text)) {
+      violations.push(`${rel(spec.file)} may export only its event query entry`);
+    }
+    const entryBody =
+      spec.text.match(
+        new RegExp(`export function ${spec.runName}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`)
+      )?.[0] ||
+      "";
+    if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_DECISION\]/.test(spec.text)) {
+      violations.push(`${rel(spec.file)} must route events through a frozen handler table`);
+    }
+    if (/event\.type\s*===/.test(entryBody)) {
+      violations.push(`${rel(spec.file)} entry must dispatch by handler table`);
+    }
+    const testText = fs.existsSync(spec.testFile)
+      ? fs.readFileSync(spec.testFile, "utf8")
+      : "";
+    if (!testText.includes(spec.unknownEventText)) {
+      violations.push(`${rel(spec.testFile)} must cover unknown facts events`);
+    }
+    if (/from\s+["'][^"']*rule-facts\.js["']/.test(spec.text)) {
+      violations.push(`${rel(spec.file)} must not depend on generic rule fact mappers`);
     }
   }
   const rulesText = readBattleActionRulesText();

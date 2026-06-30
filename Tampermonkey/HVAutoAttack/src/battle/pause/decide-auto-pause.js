@@ -1,5 +1,5 @@
 import { checkCondition } from "../../settings/condition-eval.js";
-import { autoPauseFacts } from "./auto-pause-facts.js";
+import { BattleAutoPauseFactsEvent, runBattleAutoPauseFacts } from "./auto-pause-facts.js";
 
 const EVENT_DECIDE = "decide";
 
@@ -24,7 +24,10 @@ function autoPauseDecisionInput(event) {
   if (!event?.snap) return event;
   return {
     opt: event.opt,
-    ...autoPauseFacts(event.snap),
+    ...runBattleAutoPauseFacts({
+      type: BattleAutoPauseFactsEvent.READ_DECISION,
+      snap: event.snap,
+    }),
   };
 }
 

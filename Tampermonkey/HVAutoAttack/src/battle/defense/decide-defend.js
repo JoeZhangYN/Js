@@ -1,5 +1,5 @@
 import { checkCondition } from "../../settings/condition-eval.js";
-import { defendFacts } from "./defend-facts.js";
+import { BattleDefendFactsEvent, runBattleDefendFacts } from "./defend-facts.js";
 
 const EVENT_DECIDE = "decide";
 
@@ -24,7 +24,10 @@ function defendDecisionInput(event) {
   if (!event?.snap) return event;
   return {
     opt: event.opt,
-    ...defendFacts(event.snap),
+    ...runBattleDefendFacts({
+      type: BattleDefendFactsEvent.READ_DECISION,
+      snap: event.snap,
+    }),
   };
 }
 
