@@ -70,9 +70,35 @@ function checkRiddleEntry() {
   if (!text.includes("runRiddleAnsweringSession")) {
     violations.push(`${rel(riddleFile)} must route riddle answering through its implementation`);
   }
-  for (const required of ["TEST_POPUP_PRETREAT", "NavigationEvent.OPEN_WINDOW"]) {
+  for (const required of [
+    "riddleEventHandlers",
+    "runCurrentRiddlePage",
+    "runBattlePostResult",
+    "runTestPopupPretreat",
+    "BATTLE_POST_RESULT",
+    "TEST_POPUP_PRETREAT",
+    "NavigationEvent.OPEN_WINDOW",
+  ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(riddleFile)} must own riddle popup ${required}`);
+    }
+  }
+  if (
+    !/\[EVENT_RIDDLE_PAGE\]: runCurrentRiddlePage[\s\S]*\[EVENT_BATTLE_POST_RESULT\]: runBattlePostResult[\s\S]*\[EVENT_TEST_POPUP_PRETREAT\]: runTestPopupPretreat/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(riddleFile)} must route riddle events through riddleEventHandlers`);
+  }
+  const entryBody =
+    text.match(/export function runRiddleAutomation\(event = \{ type: EVENT_RIDDLE_PAGE \}\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+    violations.push(`${rel(riddleFile)} entry must route events through handler table`);
+  }
+  for (const forbidden of ["runRiddleAnsweringSession", "runNavigationAutomation", "openRiddlePopup"]) {
+    if (entryBody.includes(forbidden)) {
+      violations.push(`${rel(riddleFile)} entry must route riddle work through event handlers`);
     }
   }
   if (!text.includes("OptionEvent.READ_FIELD")) {

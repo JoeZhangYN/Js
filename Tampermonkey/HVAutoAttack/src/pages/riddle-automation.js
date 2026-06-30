@@ -16,6 +16,12 @@ export const RiddleEvent = Object.freeze({
   TEST_POPUP_PRETREAT: EVENT_TEST_POPUP_PRETREAT,
 });
 
+const riddleEventHandlers = Object.freeze({
+  [EVENT_RIDDLE_PAGE]: runCurrentRiddlePage,
+  [EVENT_BATTLE_POST_RESULT]: runBattlePostResult,
+  [EVENT_TEST_POPUP_PRETREAT]: runTestPopupPretreat,
+});
+
 function openRiddlePopup() {
   return runNavigationAutomation({
     type: NavigationEvent.OPEN_WINDOW,
@@ -35,7 +41,8 @@ function isRiddlePopupEnabled() {
   );
 }
 
-function testPopupPretreat(deps = {}) {
+function runTestPopupPretreat(event) {
+  const deps = event.deps || {};
   const schedule = deps.schedule || setTimeout;
   schedule(() => {
     const riddleWindow = openRiddlePopup();
@@ -44,15 +51,17 @@ function testPopupPretreat(deps = {}) {
   return true;
 }
 
-function answerCurrentRiddlePage() {
+function runCurrentRiddlePage() {
   if (isRiddlePopupEnabled() && !window.opener) {
     openRiddlePopup();
-    return;
+    return true;
   }
   runRiddleAnsweringSession();
+  return true;
 }
 
-function handleBattlePostResult(data) {
+function runBattlePostResult(event) {
+  const data = event.data;
   if (!gE("#riddlecounter", data)) return false;
   if (isRiddlePopupEnabled() && !window.opener) {
     openRiddlePopup();
@@ -63,10 +72,5 @@ function handleBattlePostResult(data) {
 }
 
 export function runRiddleAutomation(event = { type: EVENT_RIDDLE_PAGE }) {
-  if (event.type === EVENT_TEST_POPUP_PRETREAT) return testPopupPretreat(event.deps);
-  if (event.type === EVENT_BATTLE_POST_RESULT) {
-    return handleBattlePostResult(event.data);
-  }
-  answerCurrentRiddlePage();
-  return true;
+  return (riddleEventHandlers[event.type] || runCurrentRiddlePage)(event);
 }

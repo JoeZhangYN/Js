@@ -83,4 +83,28 @@ describe("runRiddleAutomation", () => {
     expect(schedule).toHaveBeenNthCalledWith(2, expect.any(Function), 200);
     expect(close).toHaveBeenCalled();
   });
+
+  it("reloads when a battle post result contains a riddle and popup is disabled", () => {
+    const data = document.createElement("div");
+    data.innerHTML = '<div id="riddlecounter"></div>';
+
+    expect(runRiddleAutomation({ type: RiddleEvent.BATTLE_POST_RESULT, data })).toBe(true);
+
+    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({ type: "reloadNow" });
+  });
+
+  it("ignores battle post results without a riddle", () => {
+    const data = document.createElement("div");
+
+    expect(runRiddleAutomation({ type: RiddleEvent.BATTLE_POST_RESULT, data })).toBe(false);
+
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(mocks.runRiddleAnsweringSession).not.toHaveBeenCalled();
+  });
+
+  it("treats unknown events as current riddle page automation", () => {
+    expect(runRiddleAutomation({ type: "unknown" })).toBe(true);
+
+    expect(mocks.runRiddleAnsweringSession).toHaveBeenCalledTimes(1);
+  });
 });
