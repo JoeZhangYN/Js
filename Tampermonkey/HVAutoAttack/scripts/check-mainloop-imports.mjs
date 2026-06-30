@@ -1,7 +1,7 @@
 // 拆桥 gate：禁止 battle/main-loop.js 回退 import 已倒置的 step 实现。
 // 背景：旧 main() 原直接 import 16 个具体实现（useGem/castDebuffOnAll/attack…）+ 内联闭包，
 // 编排器与实现焊死。规则表和 runner 协议收敛后，runBattleTurnAutomation() 只该调用
-// runBattleActionDecision(snap, options)；新增/调整 step 走 battle/rules/index.js。
+// runBattleActionDecision(snap, options)；新增/调整 step 走 battle-action-decision.js。
 // 本门控让旧路径（直接 import step 实现或拼规则表）不能再悄悄回归（反退化锁）。
 //
 // 符号级而非模块级：killBug/refreshBattleHud 是 pre-step 必执行项（非倒置的 step），
@@ -52,7 +52,7 @@ const violations = BANNED.filter((b) => imported.has(b));
 if (violations.length) {
   console.error(
     `[check-mainloop-imports] main-loop.js 回退 import 了已倒置的 step 实现: ${violations.join(", ")}\n` +
-      `  → 新增/调整行动 step 请改 battle/rules/index.js 的 BATTLE_RULES;\n` +
+      `  → 新增/调整行动 step 请改 battle-action-decision.js 的内部 BATTLE_RULES;\n` +
       `    main-loop 只该调用 runBattleActionDecision(snap, options)。`
   );
   process.exit(1);

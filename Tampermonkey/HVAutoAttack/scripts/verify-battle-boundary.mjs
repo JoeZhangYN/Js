@@ -57,7 +57,8 @@ const legacyStepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/battle-round-start.js");
 const legacyNewRoundFile = path.join(root, "src/battle/new-round.js");
-const battleRulesFile = path.join(root, "src/battle/rules/index.js");
+const battleRulesFile = actionDecisionFile;
+const legacyBattleRulesFile = path.join(root, "src/battle/rules/index.js");
 const ruleFactsFile = path.join(root, "src/battle/rules/rule-facts.js");
 const attackFactsFile = path.join(root, "src/battle/attack/attack-facts.js");
 const legacyAttackFactsFile = path.join(root, "src/battle/rules/attack-facts.js");
@@ -301,6 +302,11 @@ function checkTurnEntry() {
   }
   if (!/export function runBattleActionDecision\(/.test(actionDecisionText)) {
     violations.push(`${rel(actionDecisionFile)} must expose runBattleActionDecision()`);
+  }
+  if (fs.existsSync(legacyBattleRulesFile)) {
+    violations.push(
+      `${rel(legacyBattleRulesFile)} must stay retired; action rules belong inside runBattleActionDecision`
+    );
   }
   for (const required of ["BATTLE_RULES", "dispatch", "for (const rule of BATTLE_RULES)"]) {
     if (!actionDecisionText.includes(required)) {
