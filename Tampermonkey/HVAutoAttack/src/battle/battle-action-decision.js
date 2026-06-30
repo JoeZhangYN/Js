@@ -15,39 +15,43 @@ import {
 import { BattleSurvivalActionEvent, runBattleSurvivalAction } from "./decide-survival-action.js";
 
 const ACTION_STEPS = [
-  (snap, opt) =>
-    runBattleSurvivalAction({
-      type: BattleSurvivalActionEvent.DECIDE,
-      snap,
-      opt,
-    }),
-  (snap, opt) =>
-    runBattleBuffPreparation({
-      type: BattleBuffPreparationEvent.DECIDE,
-      snap,
-      opt,
-    }),
-  (snap, opt) =>
-    runBattleOffensiveDebuff({
-      type: BattleOffensiveDebuffEvent.DECIDE,
-      snap,
-      opt,
-    }),
-  (snap, opt) =>
-    runBattleAttackAction({
-      type: BattleAttackActionEvent.DECIDE,
-      snap,
-      opt,
-    }),
+  {
+    capability: "survival",
+    type: BattleSurvivalActionEvent.DECIDE,
+    decide: runBattleSurvivalAction,
+  },
+  {
+    capability: "buffPreparation",
+    type: BattleBuffPreparationEvent.DECIDE,
+    decide: runBattleBuffPreparation,
+  },
+  {
+    capability: "offensiveDebuff",
+    type: BattleOffensiveDebuffEvent.DECIDE,
+    decide: runBattleOffensiveDebuff,
+  },
+  {
+    capability: "attack",
+    type: BattleAttackActionEvent.DECIDE,
+    decide: runBattleAttackAction,
+  },
 ];
+
+function decideActionStep(step, snap, opt) {
+  return step.decide({
+    type: step.type,
+    snap,
+    opt,
+  });
+}
 
 export function runBattleActionDecision(turnContext = {}) {
   const { snap = {}, actionOptions = {} } = turnContext;
-  for (const decide of ACTION_STEPS) {
+  for (const step of ACTION_STEPS) {
     if (
       runBattleActionEffectDispatch({
         type: BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT,
-        result: decide(snap, actionOptions),
+        result: decideActionStep(step, snap, actionOptions),
         snap,
       })
     ) {

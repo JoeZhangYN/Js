@@ -380,7 +380,8 @@ function checkTurnEntry() {
     "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
     "runBattleActionEffectDispatch",
     "actionOptions",
-    "for (const decide of ACTION_STEPS)",
+    "for (const step of ACTION_STEPS)",
+    "decideActionStep(step, snap, actionOptions)",
     "BattleSurvivalActionEvent.DECIDE",
     "runBattleSurvivalAction",
     "BattleBuffPreparationEvent.DECIDE",
@@ -395,11 +396,16 @@ function checkTurnEntry() {
     }
   }
   if (
-    !/const ACTION_STEPS = \[\s*\(snap,\s*opt\)\s*=>[\s\S]*runBattleSurvivalAction[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleBuffPreparation[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleOffensiveDebuff[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleAttackAction[\s\S]*\]/.test(
+    !/const ACTION_STEPS = \[\s*\{[\s\S]*capability: "survival"[\s\S]*type: BattleSurvivalActionEvent\.DECIDE[\s\S]*decide: runBattleSurvivalAction[\s\S]*capability: "buffPreparation"[\s\S]*type: BattleBuffPreparationEvent\.DECIDE[\s\S]*decide: runBattleBuffPreparation[\s\S]*capability: "offensiveDebuff"[\s\S]*type: BattleOffensiveDebuffEvent\.DECIDE[\s\S]*decide: runBattleOffensiveDebuff[\s\S]*capability: "attack"[\s\S]*type: BattleAttackActionEvent\.DECIDE[\s\S]*decide: runBattleAttackAction[\s\S]*\]/.test(
       actionDecisionText
     )
   ) {
     violations.push(`${rel(actionDecisionFile)} must own explicit action step order`);
+  }
+  if (/\(snap,\s*opt\)\s*=>/.test(actionDecisionText)) {
+    violations.push(
+      `${rel(actionDecisionFile)} must not reintroduce repeated two-arg step wrappers`
+    );
   }
   if (fs.existsSync(actionSequenceFile)) {
     violations.push(
