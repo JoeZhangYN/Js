@@ -52,7 +52,7 @@ const violations = BANNED.filter((b) => imported.has(b));
 if (violations.length) {
   console.error(
     `[check-mainloop-imports] main-loop.js 回退 import 了已倒置的 step 实现: ${violations.join(", ")}\n` +
-      `  → 新增/调整行动 step 请改 battle-action-sequence.js 的内部 BATTLE_RULES;\n` +
+      `  → 新增/调整行动 step 请改 battle-action-decision.js 的内部 BATTLE_RULES;\n` +
       `    main-loop 只该调用 runBattleActionDecision(snap, options)。`
   );
   process.exit(1);

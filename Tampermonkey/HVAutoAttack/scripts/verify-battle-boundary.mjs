@@ -65,7 +65,7 @@ const legacyStepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/battle-round-start.js");
 const legacyNewRoundFile = path.join(root, "src/battle/new-round.js");
-const battleRulesFile = actionSequenceFile;
+const battleRulesFile = actionDecisionFile;
 const legacyBattleRulesFile = path.join(root, "src/battle/rules/index.js");
 const ruleFactsFile = path.join(root, "src/battle/rules/rule-facts.js");
 const attackFactsFile = path.join(root, "src/battle/attack/attack-facts.js");
@@ -105,7 +105,7 @@ function rel(file) {
 
 function readBattleActionRulesText() {
   return [
-    actionSequenceFile,
+    actionDecisionFile,
     survivalActionSequenceFile,
     buffActionSequenceFile,
     debuffActionSequenceFile,
@@ -348,30 +348,25 @@ function checkTurnEntry() {
     );
   }
   for (const required of [
-    "orderedBattleActionRules",
-    "dispatch",
-    "for (const rule of orderedBattleActionRules())",
-  ]) {
-    if (!actionDecisionText.includes(required)) {
-      violations.push(`${rel(actionDecisionFile)} must own action decision ${required}`);
-    }
-  }
-  const actionSequenceText = fs.readFileSync(actionSequenceFile, "utf8");
-  requireOnlyExports(actionSequenceFile, actionSequenceText, ["orderedBattleActionRules"]);
-  for (const required of [
     "BATTLE_RULES",
-    "orderedBattleActionRules",
+    "dispatch",
+    "for (const rule of BATTLE_RULES)",
     "survivalActionRules",
     "buffPreparationActionRules",
     "offensiveDebuffActionRules",
     "finalAttackActionRules",
   ]) {
-    if (!actionSequenceText.includes(required)) {
-      violations.push(`${rel(actionSequenceFile)} must own action sequence ${required}`);
+    if (!actionDecisionText.includes(required)) {
+      violations.push(`${rel(actionDecisionFile)} must own action decision ${required}`);
     }
   }
-  if (/export\s+const\s+BATTLE_RULES\b/.test(actionSequenceText)) {
-    violations.push(`${rel(actionSequenceFile)} must keep BATTLE_RULES private`);
+  if (fs.existsSync(actionSequenceFile)) {
+    violations.push(
+      `${rel(actionSequenceFile)} must stay retired; action order belongs in runBattleActionDecision`
+    );
+  }
+  if (/export\s+const\s+BATTLE_RULES\b/.test(actionDecisionText)) {
+    violations.push(`${rel(actionDecisionFile)} must keep BATTLE_RULES private`);
   }
   const attackActionSequenceText = fs.readFileSync(attackActionSequenceFile, "utf8");
   requireOnlyExports(attackActionSequenceFile, attackActionSequenceText, [
@@ -432,25 +427,25 @@ function checkTurnEntry() {
         violations.push(`${rel(file)} must use runBattleActionDecision(), not action sequence`);
       }
       if (
-        file !== actionSequenceFile &&
+        file !== actionDecisionFile &&
         /from\s+["'][^"']*battle-action-survival-sequence\.js["']/.test(source)
       ) {
         violations.push(`${rel(file)} must use runBattleActionDecision(), not survival sequence`);
       }
       if (
-        file !== actionSequenceFile &&
+        file !== actionDecisionFile &&
         /from\s+["'][^"']*battle-action-buff-sequence\.js["']/.test(source)
       ) {
         violations.push(`${rel(file)} must use runBattleActionDecision(), not buff sequence`);
       }
       if (
-        file !== actionSequenceFile &&
+        file !== actionDecisionFile &&
         /from\s+["'][^"']*battle-action-debuff-sequence\.js["']/.test(source)
       ) {
         violations.push(`${rel(file)} must use runBattleActionDecision(), not debuff sequence`);
       }
       if (
-        file !== actionSequenceFile &&
+        file !== actionDecisionFile &&
         /from\s+["'][^"']*battle-action-attack-sequence\.js["']/.test(source)
       ) {
         violations.push(`${rel(file)} must use runBattleActionDecision(), not attack sequence`);
