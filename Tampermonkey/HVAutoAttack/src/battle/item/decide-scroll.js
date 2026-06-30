@@ -1,4 +1,5 @@
 import { checkCondition } from "../../settings/condition-eval.js";
+import { isScrollCoveredByPlayerBuffs } from "./scroll-coverage.js";
 
 function emptyScrollPlan() {
   return { kind: "item-plan", plan: { type: "scroll", candidates: [] } };
@@ -15,23 +16,15 @@ export function decideScroll(event = {}) {
   if (!opt.scrollSwitch || !opt.scroll) return emptyScrollPlan();
   if (!checkCondition(opt.scrollCondition, event.conditionFacts)) return emptyScrollPlan();
   if (!opt.scrollRoundType || !opt.scrollRoundType[event.roundType]) return emptyScrollPlan();
-  const scrollSuffix = opt.scrollFirst ? "_scroll" : "";
   const candidates = [];
   for (const i in SCROLL_LIB) {
     const lib = SCROLL_LIB[i];
     if (!(opt.scroll[i] && checkCondition(opt[`scroll${i}Condition`], event.conditionFacts))) {
       continue;
     }
-    // 原 useScroll：j=1..mult 任一 buff 已上 → 视为已用，跳过；全部未上才用
-    let alreadyUp = false;
-    for (let j = 1; j <= lib.mult; j++) {
-      const needle = `${lib[`img${j}`]}${scrollSuffix}`;
-      if ((event.playerBuffs || []).some((b) => b.includes(needle))) {
-        alreadyUp = true;
-        break;
-      }
+    if (!isScrollCoveredByPlayerBuffs(event, lib, { scrollFirst: opt.scrollFirst })) {
+      candidates.push(lib.id);
     }
-    if (!alreadyUp) candidates.push(lib.id);
   }
   return { kind: "item-plan", plan: { type: "scroll", candidates } };
 }

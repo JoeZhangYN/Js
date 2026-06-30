@@ -48,6 +48,8 @@ const decideCriticalBuffFile = path.join(
 const decideItemFile = path.join(root, "src/battle/item/decide-item.js");
 const decideGemFile = path.join(root, "src/battle/item/decide-gem.js");
 const decideScrollFile = path.join(root, "src/battle/item/decide-scroll.js");
+const scrollCoverageFile = path.join(root, "src/battle/item/scroll-coverage.js");
+const scrollCoverageTestFile = path.join(root, "src/battle/item/scroll-coverage.test.js");
 const itemFactsFile = path.join(root, "src/battle/item/item-facts.js");
 const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
 const potionEconomyFile = path.join(root, "src/battle/potion-economy.js");
@@ -2184,7 +2186,7 @@ function checkItemScrollEntry() {
     "scrollRoundType",
     "conditionFacts",
     "event.roundType",
-    "event.playerBuffs",
+    "isScrollCoveredByPlayerBuffs",
   ]) {
     if (!itemText.includes(required)) {
       violations.push(`${rel(decideScrollFile)} must own scroll gate ${required}`);
@@ -2202,6 +2204,51 @@ function checkItemScrollEntry() {
   for (const legacy of ["scrollSwitch", "scrollCondition", "scrollRoundType"]) {
     if (rulesText.includes(legacy)) {
       violations.push(`${rel(battleRulesFile)} must not assemble scroll rule gates directly`);
+    }
+  }
+}
+
+function checkItemScrollCoverageQuery() {
+  if (!fs.existsSync(scrollCoverageFile)) {
+    violations.push(`${rel(scrollCoverageFile)} must own scroll coverage query`);
+    return;
+  }
+  if (!fs.existsSync(scrollCoverageTestFile)) {
+    violations.push(`${rel(scrollCoverageTestFile)} must lock scroll coverage semantics`);
+  }
+
+  const ownerText = fs.readFileSync(scrollCoverageFile, "utf8");
+  for (const required of [
+    "isScrollCoveredByPlayerBuffs",
+    "playerBuffs",
+    "scrollFirst",
+    "_scroll",
+    "includes",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(scrollCoverageFile)} must own scroll coverage fact ${required}`);
+    }
+  }
+
+  const scrollText = fs.readFileSync(decideScrollFile, "utf8");
+  if (
+    /playerBuffs\s*\|\|\s*\[\]\)\.some|\.some\(\s*\(?\w+\)?\s*=>\s*\w+\.includes/.test(scrollText)
+  ) {
+    violations.push(`${rel(decideScrollFile)} must use scroll coverage query`);
+  }
+
+  const allowedProductionImporters = new Set([decideScrollFile]);
+  const battleDir = path.join(root, "src/battle");
+  for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
+    const file = path.join(entry.parentPath, entry.name);
+    if (file.endsWith(".test.js")) continue;
+    const text = fs.readFileSync(file, "utf8");
+    if (
+      /from\s+["'][^"']*scroll-coverage\.js["']/.test(text) &&
+      !allowedProductionImporters.has(file)
+    ) {
+      violations.push(`${rel(file)} must not bypass scroll decision coverage query`);
     }
   }
 }
@@ -2802,6 +2849,7 @@ checkBattleItemDecisionEntry();
 checkItemGemEntry();
 checkItemStallTopupEntry();
 checkItemScrollEntry();
+checkItemScrollCoverageQuery();
 checkPotionEntry();
 checkDefendEntry();
 checkAutoPauseEntry();
