@@ -20,6 +20,7 @@ const mainLoopText = read(mainLoop);
 
 for (const required of [
   "BattleTurnPreludeEvent",
+  "battleTurnPreludeEventHandlers",
   "runBattleTurnPrelude",
   "PREPARE_CURRENT_TURN",
   "MonsterStatusEvent.ENSURE_READY",
@@ -39,8 +40,21 @@ if (
 ) {
   violations.push(`${rel(owner)} may export only its event entry`);
 }
+const entryBody =
+  ownerText.match(/export function runBattleTurnPrelude\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_PREPARE_CURRENT_TURN\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover turn prelude entry contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("rejects unknown prelude events without running prelude effects")) {
+    violations.push(`${rel(ownerTest)} must cover unknown turn prelude events`);
+  }
 }
 if (
   !mainLoopText.includes("BattleTurnPreludeEvent.PREPARE_CURRENT_TURN") ||

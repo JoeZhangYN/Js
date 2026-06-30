@@ -39,8 +39,12 @@ describe("runBattleTurnPrelude", () => {
     expect(mocks.runMonsterStatusAutomation).toHaveBeenNthCalledWith(2, { type: "updateHp" });
   });
 
-  it("ignores unknown prelude events", () => {
+  it("rejects unknown prelude events without running prelude effects", () => {
     expect(runBattleTurnPrelude({ type: "unknown" })).toBe(false);
+
+    expect(mocks.runMonsterStatusAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleTurnRuntime).not.toHaveBeenCalled();
+    expect(mocks.runBattleMonitorAutomation).not.toHaveBeenCalled();
     expect(mocks.killBug).not.toHaveBeenCalled();
   });
 });

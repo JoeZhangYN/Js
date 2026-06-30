@@ -15,6 +15,10 @@ export const BattleTurnPreludeEvent = Object.freeze({
   PREPARE_CURRENT_TURN: EVENT_PREPARE_CURRENT_TURN,
 });
 
+const battleTurnPreludeEventHandlers = Object.freeze({
+  [EVENT_PREPARE_CURRENT_TURN]: () => prepareCurrentTurn(),
+});
+
 function prepareCurrentTurn() {
   runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY });
   runBattleTurnRuntime({ type: BattleTurnEvent.TURN_STARTED });
@@ -25,6 +29,5 @@ function prepareCurrentTurn() {
 }
 
 export function runBattleTurnPrelude(event = { type: EVENT_PREPARE_CURRENT_TURN }) {
-  if (event.type === EVENT_PREPARE_CURRENT_TURN) return prepareCurrentTurn();
-  return false;
+  return battleTurnPreludeEventHandlers[event.type]?.() ?? false;
 }
