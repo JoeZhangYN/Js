@@ -57,6 +57,18 @@ if (/Date\.UTC\(.*getUTCFullYear\(\).*getUTCMonth\(\).*getUTCDate\(\)\s*\+\s*1/.
     `${owner.replaceAll("\\", "/")} must read UTC day rollover timing through time entry`
   );
 }
+if (!ownerText.includes("const dayRecordEventHandlers")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route day-record events through a handler table`);
+}
+const ownerEntry = ownerText.match(/export function runDayRecordAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+}
+for (const internal of ["syncUtcDate(", "refreshAndScheduleNextUtcDay("]) {
+  if (ownerEntry.includes(internal)) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through dayRecordEventHandlers`);
+  }
+}
 
 const lobbyText = fs.readFileSync(path.join(root, lobby), "utf8");
 if (!lobbyText.includes("DayRecordEvent.REFRESH_AND_SCHEDULE_NEXT_UTC_DAY")) {

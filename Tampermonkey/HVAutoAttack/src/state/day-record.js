@@ -46,9 +46,11 @@ function refreshAndScheduleNextUtcDay(event) {
   return dateNow;
 }
 
+const dayRecordEventHandlers = Object.freeze({
+  [EVENT_SYNC_UTC_DATE]: () => syncUtcDate(),
+  [EVENT_REFRESH_AND_SCHEDULE_NEXT_UTC_DAY]: (event) => refreshAndScheduleNextUtcDay(event),
+});
+
 export function runDayRecordAutomation(event = { type: EVENT_SYNC_UTC_DATE }) {
-  if (event.type === EVENT_SYNC_UTC_DATE) return syncUtcDate();
-  if (event.type === EVENT_REFRESH_AND_SCHEDULE_NEXT_UTC_DAY)
-    return refreshAndScheduleNextUtcDay(event);
-  return undefined;
+  return dayRecordEventHandlers[event.type]?.(event);
 }
