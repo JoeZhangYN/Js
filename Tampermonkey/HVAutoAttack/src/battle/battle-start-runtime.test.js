@@ -58,8 +58,20 @@ describe("runBattleStartRuntimeAutomation", () => {
     expect(deps.read).toHaveBeenCalledWith("attackStatus");
   });
 
-  it("rejects unknown events", () => {
-    expect(runBattleStartRuntimeAutomation({ type: "unknown" })).toBe(false);
+  it("rejects unknown events without touching start runtime state", () => {
+    const deps = {
+      readOptionField: vi.fn(),
+      read: vi.fn(),
+      write: vi.fn(),
+      startSpeed: vi.fn(),
+    };
+
+    expect(runBattleStartRuntimeAutomation({ type: "unknown" }, deps)).toBe(false);
+
+    expect(deps.readOptionField).not.toHaveBeenCalled();
+    expect(deps.read).not.toHaveBeenCalled();
+    expect(deps.write).not.toHaveBeenCalled();
+    expect(deps.startSpeed).not.toHaveBeenCalled();
   });
 
   it("reads battle start runtime options through the option entry on the default path", () => {

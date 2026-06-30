@@ -1040,7 +1040,7 @@ function checkStartRuntimeEntry() {
   ) {
     violations.push(`${rel(startRuntimeFile)} may export only its event entry`);
   }
-  if (!/const startRuntimeEventHandlers\s*=\s*Object\.freeze\(/.test(text)) {
+  if (!/const battleStartRuntimeEventHandlers\s*=\s*Object\.freeze\(/.test(text)) {
     violations.push(`${rel(startRuntimeFile)} must route events through one table`);
   }
   if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(text)) {
