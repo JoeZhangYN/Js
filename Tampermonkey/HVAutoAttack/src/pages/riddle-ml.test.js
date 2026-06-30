@@ -2,9 +2,40 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { RiddleMlEvent, runRiddleMlAutomation } from "./riddle-ml.js";
 
+const mocks = vi.hoisted(() => ({
+  gmXhr: vi.fn(),
+  runAlarmAutomation: vi.fn(),
+  runRiddleImageAutomation: vi.fn(),
+  runRiddleStatsAutomation: vi.fn(),
+}));
+
+vi.mock("../dom/gm-xhr.js", () => ({
+  gmXhr: mocks.gmXhr,
+  hasNonLatin1: (value) => [...value].some((char) => char.charCodeAt(0) > 255),
+}));
+
+vi.mock("../alarm/alarm.js", () => ({
+  AlarmEvent: Object.freeze({ TRIGGER: "trigger" }),
+  runAlarmAutomation: mocks.runAlarmAutomation,
+}));
+
+vi.mock("../state/riddle-stats.js", () => ({
+  RiddleStatsEvent: Object.freeze({
+    RECORD_DETAIL: "recordDetail",
+    RECORD_OUTCOME: "recordOutcome",
+  }),
+  runRiddleStatsAutomation: mocks.runRiddleStatsAutomation,
+}));
+
+vi.mock("./riddle-image.js", () => ({
+  RiddleImageEvent: Object.freeze({ PREPARE_ML_PAYLOAD: "prepareMlPayload" }),
+  runRiddleImageAutomation: mocks.runRiddleImageAutomation,
+}));
+
 beforeEach(() => {
   localStorage.clear();
   runOptionAutomation({ type: OptionEvent.CLEAR });
+  vi.clearAllMocks();
   vi.useFakeTimers();
 });
 
@@ -27,5 +58,49 @@ describe("riddle ML entry", () => {
     });
 
     await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toBeNull();
+    expect(mocks.runRiddleImageAutomation).not.toHaveBeenCalled();
+    expect(mocks.gmXhr).not.toHaveBeenCalled();
+  });
+
+  it("runs the ML answer attempt as payload, request, and outcome flow", async () => {
+    runOptionAutomation({
+      type: OptionEvent.WRITE,
+      option: { version: "10.0", mlEndpoint: "https://ml.example/answer", mlApiKey: "key" },
+    });
+    mocks.runRiddleImageAutomation.mockResolvedValue({
+      blob: { size: 12 },
+    });
+    mocks.gmXhr.mockImplementation(({ onload }) => {
+      onload({
+        status: 200,
+        responseText: JSON.stringify({ return: "good", answer: ["ts", "ra"] }),
+        responseHeaders: "x-ratelimit-remaining: 9",
+      });
+    });
+
+    await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toEqual([
+      "ts",
+      "ra",
+    ]);
+
+    expect(mocks.runRiddleImageAutomation).toHaveBeenCalledWith({ type: "prepareMlPayload" });
+    expect(mocks.gmXhr).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: "POST",
+        url: "https://ml.example/answer",
+        data: { size: 12 },
+        headers: { "Content-Type": "image/jpeg", apikey: "key" },
+      })
+    );
+    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
+      type: "recordOutcome",
+      outcome: "ok",
+    });
+    const actualOrder = [
+      mocks.runRiddleImageAutomation.mock.invocationCallOrder[0],
+      mocks.gmXhr.mock.invocationCallOrder[0],
+      mocks.runRiddleStatsAutomation.mock.invocationCallOrder[0],
+    ];
+    expect(actualOrder).toEqual([...actualOrder].sort((a, b) => a - b));
   });
 });

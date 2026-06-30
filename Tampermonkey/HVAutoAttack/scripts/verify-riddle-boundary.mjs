@@ -307,9 +307,47 @@ function checkRiddleImageEntry() {
 function checkRiddleMlEntry() {
   const owner = path.normalize("src/pages/riddle-ml.js");
   const ownerText = fs.readFileSync(riddleMlFile, "utf8");
-  for (const required of ["runRiddleMlAutomation", "RiddleMlEvent"]) {
+  for (const required of [
+    "runRiddleMlAutomation",
+    "RiddleMlEvent",
+    "riddleMlEventHandlers",
+    "RIDDLE_ML_ANSWER_FLOW_STEPS",
+    "createRiddleMlAnswerContext",
+    "readRiddleMlAnswerOptions",
+    "ensureRiddleMlAnswerEnabled",
+    "notePreviousRiddleMlHealthState",
+    "normalizeRiddleMlApiKey",
+    "prepareRiddleMlPayload",
+    "submitRiddleMlPayload",
+    "resolveRiddleMlAnswerResult",
+  ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(riddleMlFile)} must own ${required}`);
+    }
+  }
+  if (
+    !/const RIDDLE_ML_ANSWER_FLOW_STEPS = \[\s*readRiddleMlAnswerOptions,\s*ensureRiddleMlAnswerEnabled,\s*notePreviousRiddleMlHealthState,\s*normalizeRiddleMlApiKey,\s*prepareRiddleMlPayload,\s*submitRiddleMlPayload,\s*resolveRiddleMlAnswerResult,\s*\]/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(riddleMlFile)} must own explicit ML answer attempt flow order`);
+  }
+  if (
+    !/\[EVENT_START_HEALTH\]: startRiddleMlHealthCheck[\s\S]*\[EVENT_TRY_ANSWER\]: tryMLAnswer/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(riddleMlFile)} must route ML events through riddleMlEventHandlers`);
+  }
+  const mlEntryBody =
+    ownerText.match(/export function runRiddleMlAutomation\(event = \{ type: EVENT_TRY_ANSWER \}\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/if\s*\(\s*event\.type\s*===/.test(mlEntryBody)) {
+    violations.push(`${rel(riddleMlFile)} entry must route events through handler table`);
+  }
+  for (const forbidden of ["startRiddleMlHealthCheck", "tryMLAnswer"]) {
+    if (mlEntryBody.includes(forbidden)) {
+      violations.push(`${rel(riddleMlFile)} entry must route ML work through event handlers`);
     }
   }
   for (const legacy of ["tryMLAnswer", "startRiddleMlHealthCheck"]) {
