@@ -1,6 +1,6 @@
-# HVAutoAttack Business-Capability Refactoring Rules
+# JS/Tampermonkey Business-Capability Refactoring Rules
 
-These project rules apply when continuing JS/Tampermonkey business-capability refactoring in this directory.
+These project rules apply when continuing JS/Tampermonkey business-capability refactoring in this repository, especially under `Tampermonkey/HVAutoAttack`.
 
 ## Core Direction
 
