@@ -64,7 +64,10 @@ function runPageReadyStartup() {
   for (const step of PAGE_READY_STARTUP_STEPS) step.run();
 }
 
+const battleEventHandlers = Object.freeze({
+  [EVENT_PAGE_READY]: runPageReadyStartup,
+});
+
 export function runBattleAutomation(event = { type: EVENT_PAGE_READY }) {
-  if (event.type !== EVENT_PAGE_READY) return undefined;
-  runPageReadyStartup();
+  return battleEventHandlers[event.type]?.(event);
 }

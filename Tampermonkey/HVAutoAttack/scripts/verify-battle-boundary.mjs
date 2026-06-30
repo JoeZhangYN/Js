@@ -240,9 +240,15 @@ function checkBattleEntry() {
   if (!/for\s*\(\s*const\s+step\s+of\s+PAGE_READY_STARTUP_STEPS\s*\)/.test(pageReadyStartupBody)) {
     violations.push(`${rel(battleFile)} must run page-ready startup through PAGE_READY_STARTUP_STEPS`);
   }
+  if (!/const battleEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PAGE_READY\]: runPageReadyStartup/.test(text)) {
+    violations.push(`${rel(battleFile)} must route battle events through battleEventHandlers`);
+  }
   const entryBody =
     text.match(/export function runBattleAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
     "";
+  if (/event\.type\s*!==|event\.type\s*===/.test(entryBody)) {
+    violations.push(`${rel(battleFile)} entry must dispatch by handler table`);
+  }
   for (const forbidden of [
     "runBattlePauseControlsAutomation",
     "runBattleActionEventBridgeAutomation",
