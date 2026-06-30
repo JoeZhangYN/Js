@@ -114,13 +114,16 @@ function collectCdMap() {
   return map;
 }
 
+const cdRuntimeEventHandlers = Object.freeze({
+  [EVENT_LOAD]: () => loadCdState(),
+  [EVENT_PERSIST]: () => persistCdState(),
+  [EVENT_INCREMENT_TURN]: () => incrementGlobalTurn(),
+  [EVENT_RECORD_FIRE]: (event) => recordFire(event.code),
+  [EVENT_READ_TURNS]: (event) => turnsUntilReady(event.code),
+  [EVENT_READ_MAP]: () => collectCdMap(),
+  [EVENT_READ_GLOBAL_TURN]: () => readGlobalTurn(),
+});
+
 export function runCdRuntimeAutomation(event = { type: EVENT_READ_MAP }) {
-  if (event.type === EVENT_LOAD) return loadCdState();
-  if (event.type === EVENT_PERSIST) return persistCdState();
-  if (event.type === EVENT_INCREMENT_TURN) return incrementGlobalTurn();
-  if (event.type === EVENT_RECORD_FIRE) return recordFire(event.code);
-  if (event.type === EVENT_READ_TURNS) return turnsUntilReady(event.code);
-  if (event.type === EVENT_READ_MAP) return collectCdMap();
-  if (event.type === EVENT_READ_GLOBAL_TURN) return readGlobalTurn();
-  return undefined;
+  return cdRuntimeEventHandlers[event.type]?.(event);
 }

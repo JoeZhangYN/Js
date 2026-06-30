@@ -95,6 +95,31 @@ for (const legacy of [
   }
 }
 
+if (!ownerText.includes("const cdRuntimeEventHandlers")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route CD runtime events through a handler table`
+  );
+}
+const ownerEntry = ownerText.match(/export function runCdRuntimeAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+}
+for (const internal of [
+  "loadCdState(",
+  "persistCdState(",
+  "incrementGlobalTurn(",
+  "recordFire(",
+  "turnsUntilReady(",
+  "collectCdMap(",
+  "readGlobalTurn(",
+]) {
+  if (ownerEntry.includes(internal)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must dispatch through cdRuntimeEventHandlers`
+    );
+  }
+}
+
 if (violations.length) {
   console.error("[verify-cd-tracker-boundary] FAIL");
   for (const v of violations) console.error(`- ${v}`);

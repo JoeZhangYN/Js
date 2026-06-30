@@ -63,4 +63,15 @@ describe("cd tracker runtime persistence", () => {
 
     expect(runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_GLOBAL_TURN })).toBe(20);
   });
+
+  it("ignores unknown cd runtime events", () => {
+    g("globalTurn", 5);
+    g("skillLastUsed", { OFC: 2 });
+
+    expect(runCdRuntimeAutomation({ type: "unknown" })).toBeUndefined();
+    expect(g("globalTurn")).toBe(5);
+    expect(g("skillLastUsed")).toEqual({ OFC: 2 });
+    expect(getValue(STORAGE_KEYS.GLOBAL_TURN, true)).toBeNull();
+    expect(getValue(STORAGE_KEYS.SKILL_LAST_USED, true)).toBeNull();
+  });
 });
