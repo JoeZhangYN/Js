@@ -297,6 +297,21 @@ function checkRiddleImageEntry() {
       violations.push(`${rel(riddleImageFile)} must own ${required}`);
     }
   }
+  const entryBody =
+    ownerText.match(/export function runRiddleImageAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/const riddleImageEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CAPTURE_SAMPLE\]/.test(ownerText)) {
+    violations.push(`${rel(riddleImageFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${rel(riddleImageFile)} entry must dispatch by handler table`);
+  }
+  const ownerTestText = fs.existsSync(path.join(root, ownerTest))
+    ? fs.readFileSync(path.join(root, ownerTest), "utf8")
+    : "";
+  if (!ownerTestText.includes("rejects unknown image events without reading image state")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown image events`);
+  }
   for (const legacy of [
     "getRiddleImgEl",
     "waitImageLoaded",

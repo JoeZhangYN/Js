@@ -11,6 +11,11 @@ export const RiddleImageEvent = Object.freeze({
   PREPARE_ML_PAYLOAD: EVENT_PREPARE_ML_PAYLOAD,
 });
 
+const riddleImageEventHandlers = Object.freeze({
+  [EVENT_CAPTURE_SAMPLE]: () => captureSampleImage(),
+  [EVENT_PREPARE_ML_PAYLOAD]: () => prepareMlPayload(),
+});
+
 /**
  * 取 riddle 图片 <img> 元素。
  * 优先 querySelector("img")（跳过 #riddleimage 内可能的空白文本节点 / HV UI 改版），
@@ -142,7 +147,5 @@ async function prepareMlPayload() {
 }
 
 export function runRiddleImageAutomation(event = { type: EVENT_CAPTURE_SAMPLE }) {
-  if (event.type === EVENT_CAPTURE_SAMPLE) return captureSampleImage();
-  if (event.type === EVENT_PREPARE_ML_PAYLOAD) return prepareMlPayload();
-  return undefined;
+  return riddleImageEventHandlers[event.type]?.(event);
 }

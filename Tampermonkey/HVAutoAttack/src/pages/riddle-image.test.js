@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { RiddleImageEvent, runRiddleImageAutomation } from "./riddle-image.js";
 
 describe("riddle image entry", () => {
+  it("rejects unknown image events without reading image state", () => {
+    document.body.innerHTML = '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
+
+    expect(runRiddleImageAutomation({ type: "unknown" })).toBeUndefined();
+  });
+
   it("captures sample image metadata through the entry", () => {
     document.body.innerHTML = '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
 
