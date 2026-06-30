@@ -1898,9 +1898,10 @@ function checkOffensiveDebuffEntry() {
     "stallActive",
     "skipWeakenForBigSkill",
     "skipImperilForBigSkill",
-    "burstControlFacts",
-    "bossImperilFacts",
-    "debuffActionFacts",
+    "BattleDebuffFactsEvent.READ_BURST_CONTROL",
+    "BattleDebuffFactsEvent.READ_BOSS_IMPERIL",
+    "BattleDebuffFactsEvent.READ_DEBUFF_ACTION",
+    "runBattleDebuffFacts",
     "decideBurstControl",
     "runBossImperilAutomation",
     "decideCastDebuffOnAll",
@@ -3244,10 +3245,39 @@ function checkBattleRuleFactMappers() {
       violations.push(`${rel(buffFactsFile)} must use one buffPreparationFacts mapper`);
     }
   }
-  for (const required of ["debuffActionFacts", "burstControlFacts", "bossImperilFacts"]) {
+  for (const required of [
+    "BattleDebuffFactsEvent",
+    "battleDebuffFactsEventHandlers",
+    "runBattleDebuffFacts",
+    "READ_BURST_CONTROL",
+    "READ_BOSS_IMPERIL",
+    "READ_DEBUFF_ACTION",
+    "debuffActionFacts",
+    "burstControlFacts",
+    "bossImperilFacts",
+  ]) {
     if (!debuffFactsText.includes(required)) {
-      violations.push(`${rel(debuffFactsFile)} must own debuff fact mapper ${required}`);
+      violations.push(`${rel(debuffFactsFile)} must own debuff fact query ${required}`);
     }
+  }
+  for (const legacy of ["debuffActionFacts", "burstControlFacts", "bossImperilFacts"]) {
+    if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(debuffFactsText)) {
+      violations.push(`${rel(debuffFactsFile)} must not export legacy debuff fact mapper ${legacy}`);
+    }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleDebuffFactsEvent\b|runBattleDebuffFacts\b)/.test(
+      debuffFactsText
+    )
+  ) {
+    violations.push(`${rel(debuffFactsFile)} may export only its event entry`);
+  }
+  const debuffFactsTestFile = path.join(root, "src/battle/debuff/debuff-facts.test.js");
+  const debuffFactsTestText = fs.existsSync(debuffFactsTestFile)
+    ? fs.readFileSync(debuffFactsTestFile, "utf8")
+    : "";
+  if (!debuffFactsTestText.includes("rejects unknown debuff facts events")) {
+    violations.push(`${rel(debuffFactsTestFile)} must cover unknown debuff facts events`);
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(debuffFactsText)) {
     violations.push(`${rel(debuffFactsFile)} must not depend on generic rule fact mappers`);
@@ -3291,7 +3321,7 @@ function checkBattleRuleFactMappers() {
   }
   const debuffFactsOwnerText = fs.readFileSync(debuffFactsFile, "utf8");
   const burstFacts =
-    debuffFactsOwnerText.match(/export function burstControlFacts\(snap\) \{[\s\S]*?\n\}/)?.[0] ||
+    debuffFactsOwnerText.match(/function burstControlFacts\(snap\) \{[\s\S]*?\n\}/)?.[0] ||
     "";
   for (const retired of [
     "conditionFacts",

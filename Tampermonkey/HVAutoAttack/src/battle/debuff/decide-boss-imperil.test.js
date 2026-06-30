@@ -3,7 +3,7 @@
 // 覆盖：命中目标 / 无 boss noop / 213 未 ready noop / AoE 窗口覆盖选择 / tie-break 优先 needy 自身。
 import { describe, it, expect } from "vitest";
 import { BossImperilEvent, runBossImperilAutomation } from "./decide-boss-imperil.js";
-import { bossImperilFacts } from "./debuff-facts.js";
+import { BattleDebuffFactsEvent, runBattleDebuffFacts } from "./debuff-facts.js";
 
 /** 最小 snap 工厂（只填 decideBossImperil 从 snap.view 读到的字段）。 */
 function snap(over = {}) {
@@ -25,7 +25,7 @@ describe("decideBossImperil", () => {
     runBossImperilAutomation({
       type: BossImperilEvent.DECIDE,
       opt,
-      ...bossImperilFacts(snap),
+      ...runBattleDebuffFacts({ type: BattleDebuffFactsEvent.READ_BOSS_IMPERIL, snap }),
       stallActive: snap.stallActive,
       skipImperilForBigSkill: snap.skipImperilForBigSkill,
     });
@@ -164,7 +164,7 @@ describe("boss Imperil permission", () => {
     runBossImperilAutomation({
       type: BossImperilEvent.CAN_CAST,
       opt,
-      ...bossImperilFacts(snap),
+      ...runBattleDebuffFacts({ type: BattleDebuffFactsEvent.READ_BOSS_IMPERIL, snap }),
       stallActive: snap.stallActive,
       skipImperilForBigSkill: snap.skipImperilForBigSkill,
     });

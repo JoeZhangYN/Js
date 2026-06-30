@@ -1,4 +1,20 @@
-export function burstControlFacts(snap) {
+const EVENT_READ_BURST_CONTROL = "readBurstControl";
+const EVENT_READ_BOSS_IMPERIL = "readBossImperil";
+const EVENT_READ_DEBUFF_ACTION = "readDebuffAction";
+
+export const BattleDebuffFactsEvent = Object.freeze({
+  READ_BURST_CONTROL: EVENT_READ_BURST_CONTROL,
+  READ_BOSS_IMPERIL: EVENT_READ_BOSS_IMPERIL,
+  READ_DEBUFF_ACTION: EVENT_READ_DEBUFF_ACTION,
+});
+
+const battleDebuffFactsEventHandlers = Object.freeze({
+  [EVENT_READ_BURST_CONTROL]: (event) => burstControlFacts(event.snap),
+  [EVENT_READ_BOSS_IMPERIL]: (event) => bossImperilFacts(event.snap),
+  [EVENT_READ_DEBUFF_ACTION]: (event) => debuffActionFacts(event.snap),
+});
+
+function burstControlFacts(snap) {
   return {
     healthAbs: snap?.hpAbs,
     skillReady: snap?.skillReady,
@@ -7,7 +23,7 @@ export function burstControlFacts(snap) {
   };
 }
 
-export function bossImperilFacts(snap) {
+function bossImperilFacts(snap) {
   return {
     imperilSkillReady: !!snap?.skillReady?.["213"],
     imperilAoe: snap?.spellAoe?.Imperil,
@@ -28,7 +44,7 @@ export function bossImperilFacts(snap) {
   };
 }
 
-export function debuffActionFacts(snap) {
+function debuffActionFacts(snap) {
   return {
     conditionFacts: snap,
     monsterAlive: snap?.monsterAlive,
@@ -41,4 +57,8 @@ export function debuffActionFacts(snap) {
     roundAll: snap?.roundAll,
     monsterFacts: snap?.view,
   };
+}
+
+export function runBattleDebuffFacts(event = { type: EVENT_READ_DEBUFF_ACTION }) {
+  return battleDebuffFactsEventHandlers[event.type]?.(event);
 }

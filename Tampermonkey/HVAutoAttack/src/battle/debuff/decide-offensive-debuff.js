@@ -5,7 +5,7 @@ import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill-de
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideCastDebuffOnAll } from "./decide-cast-all.js";
 import { decideDeSkill } from "./decide-de-skill.js";
-import { bossImperilFacts, burstControlFacts, debuffActionFacts } from "./debuff-facts.js";
+import { BattleDebuffFactsEvent, runBattleDebuffFacts } from "./debuff-facts.js";
 
 const EVENT_DECIDE = "decide";
 
@@ -98,9 +98,9 @@ function decideOffensiveDebuffResult(snap = {}, opt = {}) {
       snap,
       opt,
     }),
-    ...burstControlFacts(snap),
-    ...bossImperilFacts(snap),
-    ...debuffActionFacts(snap),
+    ...runBattleDebuffFacts({ type: BattleDebuffFactsEvent.READ_BURST_CONTROL, snap }),
+    ...runBattleDebuffFacts({ type: BattleDebuffFactsEvent.READ_BOSS_IMPERIL, snap }),
+    ...runBattleDebuffFacts({ type: BattleDebuffFactsEvent.READ_DEBUFF_ACTION, snap }),
   };
   event.stallActive = readStallRuling(event);
   Object.assign(event, readBigSkillSkipRulings(event));
