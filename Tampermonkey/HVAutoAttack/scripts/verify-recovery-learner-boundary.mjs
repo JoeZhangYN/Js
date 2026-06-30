@@ -49,6 +49,13 @@ function checkFile(file) {
     if (relative === potionEconomy && /\bPOTION_RECOVERY\b/.test(line)) {
       violations.push(`${where} battle fallback recovery belongs in recovery learner`);
     }
+    if (
+      relative !== potionEconomy &&
+      /from\s+["'][^"']*potion-economy\.js["']/.test(line) &&
+      /\bisPotionWasteful\b/.test(line)
+    ) {
+      violations.push(`${where} potion economy must be consumed through runBattlePotionEconomy(event)`);
+    }
   });
   if (
     relative !== owner &&
@@ -79,6 +86,25 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const potionEconomyText = fs.readFileSync(path.join(root, potionEconomy), "utf8");
+for (const required of [
+  "BattlePotionEconomyEvent",
+  "runBattlePotionEconomy",
+  "IS_WASTEFUL",
+  "battlePotionEconomyEventHandlers",
+  "isPotionWasteful",
+]) {
+  if (!potionEconomyText.includes(required)) {
+    violations.push(`${potionEconomy.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattlePotionEconomyEvent\b|runBattlePotionEconomy\b)/.test(
+    potionEconomyText
+  )
+) {
+  violations.push(`${potionEconomy.replaceAll("\\", "/")} may export only its event query entry`);
+}
 for (const required of [
   "runRecoveryLearningAutomation",
   "RecoveryLearningEvent",

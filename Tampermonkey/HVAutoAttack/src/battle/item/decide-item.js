@@ -1,18 +1,15 @@
 // PURE: item 4 step 决策（gem / potion / stall topup / scroll）。
 // **不读 DOM**：只读 opt / snap。
 // 原 item.js 内联的 gE/isOn 探活下沉到 execute-item.js（写路径），判断逻辑全部上提到此处。
-// 复用现有纯 helper：decideGem / dynamicHpThreshold / isPotionWasteful / checkCondition。
+// 复用现有纯 helper 和查询入口：decideGem / dynamic threshold / potion economy / checkCondition。
 import { checkCondition } from "../../settings/condition-eval.js";
 import { decideGem } from "./decide-gem.js";
 import { decideScroll } from "./decide-scroll.js";
 import { BattleItemFactsEvent, runBattleItemFacts } from "./item-facts.js";
-import { dynamicHpThreshold } from "../dynamic-threshold.js";
+import { BattleDynamicThresholdEvent, runBattleDynamicThreshold } from "../dynamic-threshold.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
-import { isPotionWasteful } from "../potion-economy.js";
-import {
-  RecoveryLearningEvent,
-  runRecoveryLearningAutomation,
-} from "../../state/recovery-learner.js";
+import { BattlePotionEconomyEvent, runBattlePotionEconomy } from "../potion-economy.js";
+import { RecoveryLearningEvent, runRecoveryLearningAutomation } from "../../state/recovery-learner.js";
 import { BattlePlayerBuffStateEvent, runBattlePlayerBuffState } from "../player-buff-state.js";
 
 const DECIDE_GEM = "decide-gem";
@@ -83,7 +80,7 @@ function decideGemUse(event = {}) {
   if (!event.gemName) return { kind: "item-plan", plan: { type: "noop" } };
   const optEffective = { ...opt };
   if (opt.dynamicHealThreshold && event.gemName === "Health Gem") {
-    optEffective.hp1 = dynamicHpThreshold(event, opt);
+    optEffective.hp1 = runBattleDynamicThreshold({ type: BattleDynamicThresholdEvent.READ_HP_THRESHOLD, facts: event, opt });
   }
   const result = decideGem(optEffective, event);
   return {
@@ -122,7 +119,7 @@ function decidePotion(event = {}) {
     if (
       noWaste &&
       !hasExplicitCond &&
-      isPotionWasteful(order[i], event.deficitFacts, tol, readRecovery)
+      runBattlePotionEconomy({ type: BattlePotionEconomyEvent.IS_WASTEFUL, potionId: order[i], deficitFacts: event.deficitFacts, tolerance: tol, readRecovery })
     ) {
       continue;
     }
@@ -173,11 +170,7 @@ function decideStallTopup(event = {}) {
     !event.spiritOn &&
     (event.overcharge || 0) >= (opt.stallFocusOcThreshold ?? 60) &&
     (event.manaPercent ?? 100) < (opt.stallFocusMpMax ?? 80) &&
-    !runBattlePlayerBuffState({
-      type: BattlePlayerBuffStateEvent.READ_ACTIVE,
-      state: event,
-      img: "channeling",
-    })
+    !runBattlePlayerBuffState({ type: BattlePlayerBuffStateEvent.READ_ACTIVE, state: event, img: "channeling" })
   ) {
     attempts.push({ kind: "focus" });
   }

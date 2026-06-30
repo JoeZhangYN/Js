@@ -5,13 +5,23 @@
 // 注：不再 100% PURE——auto-tune 入口读 GM_*。可接受：tune 状态属于持久化跨 battle 状态。
 import { AutoTuneEvent, runAutoTuneAutomation } from "../state/auto-tune.js";
 
+const EVENT_READ_HP_THRESHOLD = "readHpThreshold";
+
+export const BattleDynamicThresholdEvent = Object.freeze({
+  READ_HP_THRESHOLD: EVENT_READ_HP_THRESHOLD,
+});
+
+const battleDynamicThresholdEventHandlers = Object.freeze({
+  [EVENT_READ_HP_THRESHOLD]: (event) => dynamicHpThreshold(event.facts, event.opt),
+});
+
 /**
  * 估算战斗剩余回合（玩家 DPS 输出 / 怪物总剩余 HP）。
  * 简化版：用活怪 HP% 反推。
  * @param {object} event
  * @returns {number} 估计剩余回合数
  */
-export function estimateRemainingTurns(event) {
+function estimateRemainingTurns(event) {
   const aliveHpPercents = event?.aliveMonsterHpPercents || [];
   if (aliveHpPercents.length === 0) return 0;
   // 玩家平均每回合杀怪进度（占总怪 HP 的比例）。HV 法术模式 ~25-50% / turn，物理 ~10-20% / turn。
@@ -26,7 +36,7 @@ export function estimateRemainingTurns(event) {
  * @param {object} opt
  * @returns {number} 触发阈值（HP 百分比 0..100）
  */
-export function dynamicHpThreshold(event, opt) {
+function dynamicHpThreshold(event, opt = {}) {
   const fallback = opt.hp1 ?? 50;
   if (!opt.dynamicHealThreshold) return fallback;
   if (!event?.playerIncomingDps || event.playerIncomingDps.sampleCount < 2) {
@@ -44,4 +54,8 @@ export function dynamicHpThreshold(event, opt) {
   const playerMaxHp = opt.playerMaxHp || 17000;
   const dangerHpPct = (expectedTotalDmg * padding * 100) / playerMaxHp;
   return Math.min(80, Math.max(fallback / 2, dangerHpPct));
+}
+
+export function runBattleDynamicThreshold(event = { type: EVENT_READ_HP_THRESHOLD }) {
+  return battleDynamicThresholdEventHandlers[event.type]?.(event);
 }

@@ -1,9 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { isPotionWasteful } from "./potion-economy.js";
+import { BattlePotionEconomyEvent, runBattlePotionEconomy } from "./potion-economy.js";
+
+function isWasteful({ potionId = 11195, deficitFacts = { hpDeficit: 100 }, tolerance, readRecovery } = {}) {
+  return runBattlePotionEconomy({
+    type: BattlePotionEconomyEvent.IS_WASTEFUL,
+    potionId,
+    deficitFacts,
+    tolerance,
+    readRecovery,
+  });
+}
 
 describe("potion economy", () => {
   it("requires the recovery learner query for waste decisions", () => {
-    expect(() => isPotionWasteful(11195, { hpDeficit: 100 }, 0.7)).toThrow(
+    expect(() => isWasteful({ tolerance: 0.7 })).toThrow(
       "requires recovery learner query"
     );
   });
@@ -11,7 +21,15 @@ describe("potion economy", () => {
   it("uses the injected recovery answer when checking waste", () => {
     const readRecovery = () => ({ stat: "hp", amount: 500 });
 
-    expect(isPotionWasteful(11195, { hpDeficit: 300 }, 0.7, readRecovery)).toBe(true);
-    expect(isPotionWasteful(11195, { hpDeficit: 400 }, 0.7, readRecovery)).toBe(false);
+    expect(isWasteful({ deficitFacts: { hpDeficit: 300 }, tolerance: 0.7, readRecovery })).toBe(
+      true
+    );
+    expect(isWasteful({ deficitFacts: { hpDeficit: 400 }, tolerance: 0.7, readRecovery })).toBe(
+      false
+    );
+  });
+
+  it("rejects unknown potion economy events", () => {
+    expect(runBattlePotionEconomy({ type: "unknown" })).toBe(false);
   });
 });

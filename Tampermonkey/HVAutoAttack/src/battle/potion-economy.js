@@ -9,7 +9,18 @@
  * @param {number} tolerance 0..1 容差，0.7=允许 30% 溢出
  * @param {(id:number)=>{stat:string,amount:number}|null} getRecovery
  */
-export function isPotionWasteful(potionId, snap, tolerance = 0.7, getRecovery) {
+const EVENT_IS_WASTEFUL = "isWasteful";
+
+export const BattlePotionEconomyEvent = Object.freeze({
+  IS_WASTEFUL: EVENT_IS_WASTEFUL,
+});
+
+const battlePotionEconomyEventHandlers = Object.freeze({
+  [EVENT_IS_WASTEFUL]: (event) =>
+    isPotionWasteful(event.potionId, event.deficitFacts, event.tolerance, event.readRecovery),
+});
+
+function isPotionWasteful(potionId, snap, tolerance = 0.7, getRecovery) {
   if (typeof getRecovery !== "function") {
     throw new TypeError("isPotionWasteful requires recovery learner query");
   }
@@ -17,4 +28,8 @@ export function isPotionWasteful(potionId, snap, tolerance = 0.7, getRecovery) {
   if (!info) return false;
   const deficit = snap[`${info.stat}Deficit`] || 0;
   return deficit < info.amount * tolerance;
+}
+
+export function runBattlePotionEconomy(event = { type: EVENT_IS_WASTEFUL }) {
+  return battlePotionEconomyEventHandlers[event.type]?.(event) ?? false;
 }

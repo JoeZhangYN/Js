@@ -63,6 +63,7 @@ const scrollCoverageTestFile = path.join(root, "src/battle/item/scroll-coverage.
 const itemFactsFile = path.join(root, "src/battle/item/item-facts.js");
 const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
 const potionEconomyFile = path.join(root, "src/battle/potion-economy.js");
+const dynamicThresholdFile = path.join(root, "src/battle/dynamic-threshold.js");
 const stallModeFile = path.join(root, "src/battle/battle-stall-mode.js");
 const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const turnContextFile = path.join(root, "src/battle/turn-context.js");
@@ -3510,7 +3511,7 @@ function checkBattleStallMode() {
   const allowedAliveHpFiles = new Set([
     itemFactsFile,
     decideGemFile,
-    path.join(root, "src/battle/dynamic-threshold.js"),
+    dynamicThresholdFile,
   ]);
   const battleDir = path.join(root, "src/battle");
   for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
@@ -3527,10 +3528,66 @@ function checkBattleStallMode() {
     }
   }
   const economyText = fs.readFileSync(potionEconomyFile, "utf8");
+  for (const required of [
+    "BattlePotionEconomyEvent",
+    "battlePotionEconomyEventHandlers",
+    "runBattlePotionEconomy",
+    "IS_WASTEFUL",
+    "isPotionWasteful",
+  ]) {
+    if (!economyText.includes(required)) {
+      violations.push(`${rel(potionEconomyFile)} must own potion economy query ${required}`);
+    }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattlePotionEconomyEvent\b|runBattlePotionEconomy\b)/.test(
+      economyText
+    )
+  ) {
+    violations.push(`${rel(potionEconomyFile)} may export only its event query entry`);
+  }
   for (const legacy of ["isStallMode", "stallTopupCandidates"]) {
     if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(economyText)) {
       violations.push(`${rel(potionEconomyFile)} legacy ${legacy} belongs in battle stall entry`);
     }
+  }
+  const dynamicThresholdText = fs.readFileSync(dynamicThresholdFile, "utf8");
+  for (const required of [
+    "BattleDynamicThresholdEvent",
+    "battleDynamicThresholdEventHandlers",
+    "runBattleDynamicThreshold",
+    "READ_HP_THRESHOLD",
+    "estimateRemainingTurns",
+    "dynamicHpThreshold",
+  ]) {
+    if (!dynamicThresholdText.includes(required)) {
+      violations.push(`${rel(dynamicThresholdFile)} must own dynamic threshold query ${required}`);
+    }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleDynamicThresholdEvent\b|runBattleDynamicThreshold\b)/.test(
+      dynamicThresholdText
+    )
+  ) {
+    violations.push(`${rel(dynamicThresholdFile)} may export only its event query entry`);
+  }
+  const itemDecisionText = fs.readFileSync(decideItemFile, "utf8");
+  for (const required of [
+    "BattleDynamicThresholdEvent.READ_HP_THRESHOLD",
+    "runBattleDynamicThreshold",
+    "BattlePotionEconomyEvent.IS_WASTEFUL",
+    "runBattlePotionEconomy",
+  ]) {
+    if (!itemDecisionText.includes(required)) {
+      violations.push(`${rel(decideItemFile)} must consume item recovery query ${required}`);
+    }
+  }
+  if (
+    /import\s*\{[^}]*\b(?:dynamicHpThreshold|estimateRemainingTurns|isPotionWasteful)\b/.test(
+      itemDecisionText
+    )
+  ) {
+    violations.push(`${rel(decideItemFile)} must not import raw recovery decision helpers`);
   }
   for (const file of [
     decideOffensiveDebuffFile,
