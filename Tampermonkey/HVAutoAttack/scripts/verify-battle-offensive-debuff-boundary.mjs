@@ -23,6 +23,12 @@ for (const required of [
   "battleOffensiveDebuffEventHandlers",
   "DECIDE",
   "runBattleOffensiveDebuff",
+  "OFFENSIVE_DEBUFF_STEPS",
+  'capability: "burstControl"',
+  'capability: "bossImperil"',
+  'capability: "weakenAll"',
+  'capability: "imperilAll"',
+  'capability: "singleTargetDebuff"',
   "BattleAttackActionEvent.WILL_CLEAR_WITH_BIG_SKILL",
   "runBattleAttackAction",
   "willClearWithBigSkill",
@@ -44,6 +50,18 @@ for (const required of [
   'debuffKey: "Im"',
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
+}
+
+if (
+  !/const OFFENSIVE_DEBUFF_STEPS = \[\s*\{[\s\S]*capability: "burstControl"[\s\S]*capability: "bossImperil"[\s\S]*capability: "weakenAll"[\s\S]*capability: "imperilAll"[\s\S]*capability: "singleTargetDebuff"[\s\S]*\]/.test(
+    ownerText
+  )
+) {
+  violations.push(`${rel(owner)} must own explicit offensive debuff priority order`);
+}
+
+if (/for \(const decide of \[/.test(ownerText)) {
+  violations.push(`${rel(owner)} must not hide offensive debuff priority in an anonymous array`);
 }
 
 if (

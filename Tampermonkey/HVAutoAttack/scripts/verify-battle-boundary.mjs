@@ -1689,6 +1689,12 @@ function checkOffensiveDebuffEntry() {
     "BattleOffensiveDebuffEvent",
     "DECIDE",
     "runBattleOffensiveDebuff",
+    "OFFENSIVE_DEBUFF_STEPS",
+    'capability: "burstControl"',
+    'capability: "bossImperil"',
+    'capability: "weakenAll"',
+    'capability: "imperilAll"',
+    'capability: "singleTargetDebuff"',
     "BattleAttackActionEvent.WILL_CLEAR_WITH_BIG_SKILL",
     "runBattleAttackAction",
     "willClearWithBigSkill",
@@ -1721,7 +1727,7 @@ function checkOffensiveDebuffEntry() {
     violations.push(`${rel(decideOffensiveDebuffFile)} may export only its event entry`);
   }
   if (
-    !/for\s*\(\s*const\s+decide\s+of\s+\[\s*decideBurstControl,\s*runBossImperilAutomation,[\s\S]*decideDeSkill,\s*\]/.test(
+    !/const OFFENSIVE_DEBUFF_STEPS = \[\s*\{[\s\S]*capability: "burstControl"[\s\S]*capability: "bossImperil"[\s\S]*capability: "weakenAll"[\s\S]*capability: "imperilAll"[\s\S]*capability: "singleTargetDebuff"[\s\S]*\]/.test(
       ownerText
     )
   ) {

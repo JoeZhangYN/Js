@@ -17,6 +17,29 @@ const battleOffensiveDebuffEventHandlers = Object.freeze({
   [EVENT_DECIDE]: (event) => decideOffensiveDebuffResult(event.snap, event.opt),
 });
 
+const OFFENSIVE_DEBUFF_STEPS = [
+  {
+    capability: "burstControl",
+    decide: decideBurstControlStep,
+  },
+  {
+    capability: "bossImperil",
+    decide: decideBossImperilStep,
+  },
+  {
+    capability: "weakenAll",
+    decide: decideWeakenAllStep,
+  },
+  {
+    capability: "imperilAll",
+    decide: decideImperilAllStep,
+  },
+  {
+    capability: "singleTargetDebuff",
+    decide: decideSingleTargetDebuffStep,
+  },
+];
+
 function readBigSkillSkipRulings(event) {
   const input = {
     type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
@@ -43,6 +66,26 @@ function readStallRuling(event) {
   });
 }
 
+function decideBurstControlStep(event) {
+  return decideBurstControl(event);
+}
+
+function decideBossImperilStep(event) {
+  return runBossImperilAutomation(event);
+}
+
+function decideWeakenAllStep(event) {
+  return decideCastDebuffOnAll({ ...event, debuffKey: "We" });
+}
+
+function decideImperilAllStep(event) {
+  return decideCastDebuffOnAll({ ...event, debuffKey: "Im" });
+}
+
+function decideSingleTargetDebuffStep(event) {
+  return decideDeSkill(event);
+}
+
 function decideOffensiveDebuffResult(snap = {}, opt = {}) {
   const event = {
     opt,
@@ -57,14 +100,8 @@ function decideOffensiveDebuffResult(snap = {}, opt = {}) {
   };
   event.stallActive = readStallRuling(event);
   Object.assign(event, readBigSkillSkipRulings(event));
-  for (const decide of [
-    decideBurstControl,
-    runBossImperilAutomation,
-    (input) => decideCastDebuffOnAll({ ...input, debuffKey: "We" }),
-    (input) => decideCastDebuffOnAll({ ...input, debuffKey: "Im" }),
-    decideDeSkill,
-  ]) {
-    const result = decide(event);
+  for (const step of OFFENSIVE_DEBUFF_STEPS) {
+    const result = step.decide(event);
     if (result.kind !== "noop") return result;
   }
   return { kind: "noop" };
