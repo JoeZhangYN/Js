@@ -12,7 +12,6 @@ const maxHpInference = path.normalize("src/battle/monster-max-hp-inference.js");
 const maxHpInferenceTest = path.normalize("src/battle/monster-max-hp-inference.test.js");
 const targetWeight = path.normalize("src/battle/monster-target-weight.js");
 const targetWeightTest = path.normalize("src/battle/monster-target-weight.test.js");
-const parserImpl = path.normalize("src/battle/log-parser.js");
 const parserEntry = path.normalize("src/battle/battle-log-parser.js");
 const parserEntryTest = path.normalize("src/battle/battle-log-parser.test.js");
 const roundStart = path.normalize("src/battle/battle-round-start.js");
@@ -57,7 +56,6 @@ function checkFile(file) {
     if (
       relative !== entry &&
       relative !== hpImpl &&
-      relative !== parserImpl &&
       /\bupdateMonsterHpRuntime\b/.test(line)
     ) {
       violations.push(
@@ -195,19 +193,22 @@ function checkParser() {
       violations.push(`${parserEntryTest.replaceAll("\\", "/")} must cover unknown parser events`);
     }
   }
-  const text = fs.readFileSync(path.join(root, parserImpl), "utf8");
-  if (!/function parseMonsterRoster\(battleLogRows, monsterAll\)/.test(text)) {
+  const parserImpl = path.normalize("src/battle/log-parser.js");
+  if (fs.existsSync(path.join(root, parserImpl))) {
+    violations.push(`${parserImpl.replaceAll("\\", "/")} legacy parser helpers must stay retired`);
+  }
+  if (!/function parseMonsterRoster\(battleLogRows, monsterAll\)/.test(entryText)) {
     violations.push(
-      `${parserImpl.replaceAll("\\", "/")} must name spawn parser input battleLogRows`
+      `${parserEntry.replaceAll("\\", "/")} must name spawn parser input battleLogRows`
     );
   }
-  const rosterBody = text.slice(
-    text.indexOf("export function parseMonsterRoster"),
-    text.indexOf("export function buildMonsterStatus")
+  const rosterBody = entryText.slice(
+    entryText.indexOf("function parseMonsterRoster"),
+    entryText.indexOf("function buildMonsterStatus")
   );
   if (/textContent|typeof\s+battleLogRows\[i\]/.test(rosterBody)) {
     violations.push(
-      `${parserImpl.replaceAll("\\", "/")} parseMonsterRoster must not accept DOM rows`
+      `${parserEntry.replaceAll("\\", "/")} parseMonsterRoster must not accept DOM rows`
     );
   }
 }

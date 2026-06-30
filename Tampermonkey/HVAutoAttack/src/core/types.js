@@ -104,7 +104,7 @@
  */
 
 /**
- * 开局 spawn 行解析的单怪条目（log-parser.parseMonsterRoster）。
+ * 开局 spawn 行解析的单怪条目（battle-log-parser entry 的 parseMonsterRoster event）。
  * @typedef {object} MonsterRosterEntry
  * @property {number=} monsterId 全局 MID（spawn 行 `MID=`）
  * @property {string=} name      怪名（spawn 行 `(<name>)`）
@@ -122,7 +122,7 @@
  * @property {string=} name        怪名（spawn 行）
  * @property {number=} level       本场战斗 LV（spawn 行）
  * @property {number} hp           满血绝对值（maxHP；占位时 = fallbackHp）
- * @property {boolean=} hpInferred true=hp 为占位（开局未解析到），applyInferredMaxHp 据此判定兜底
+ * @property {boolean=} hpInferred true=hp 为占位（开局未解析到），max HP inference 据此判定兜底
  * @property {boolean=} isDead     monster-status-hp 补
  * @property {number=} hpNow       当前绝对血（monster-status-hp 补 = hp×血条%）
  * @property {number=} finWeight   攻击权重（monster-status-hp 补）

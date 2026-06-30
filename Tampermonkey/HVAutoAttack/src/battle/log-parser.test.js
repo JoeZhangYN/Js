@@ -1,7 +1,7 @@
 // 开局 spawn 行解析回归锁：用**真实 HV 数据**(2026-06-25 实测，console 抓取)锁住
 // parseMonsterRoster 能从当前 HV 日志抓 MID/name/LV/maxHP，防退化成只取行尾 HP 丢身份。
 import { describe, it, expect } from "vitest";
-import { parseMonsterRoster, buildMonsterStatus, applyInferredMaxHp } from "./log-parser.js";
+import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js";
 
 // 真实 spawn 行（DOM 源序 G→A，Initializing 在最后＝最底）。
 const REAL_SPAWN = [
@@ -92,30 +92,18 @@ describe("buildMonsterStatus（roster → monsterStatus）", () => {
   });
 });
 
-describe("applyInferredMaxHp（(MID,LV) 占位兜底）", () => {
-  const lookup = (id, lv) => (id === 158322 && lv === 365 ? 110816 : 0);
-
-  it("占位 + MID/LV 已知 + 命中 → 替换 hp 并清占位标记", () => {
-    const st = [{ monsterId: 158322, level: 365, hp: 100000, hpInferred: true }];
-    applyInferredMaxHp(st, lookup);
-    expect(st[0]).toMatchObject({ hp: 110816, hpInferred: false });
+function parseMonsterRoster(battleLogRows, monsterAll) {
+  return runBattleLogParser({
+    type: BattleLogParserEvent.PARSE_MONSTER_ROSTER,
+    battleLogRows,
+    monsterAll,
   });
+}
 
-  it("真实解析(hpInferred=false) → 永不被覆盖（开局值优先）", () => {
-    const st = [{ monsterId: 158322, level: 365, hp: 110816, hpInferred: false }];
-    applyInferredMaxHp(st, () => 999);
-    expect(st[0].hp).toBe(110816);
+function buildMonsterStatus(roster, fallbackHp) {
+  return runBattleLogParser({
+    type: BattleLogParserEvent.BUILD_MONSTER_STATUS,
+    roster,
+    fallbackHp,
   });
-
-  it("占位但 MID/LV 未知 → 不动（id 未知不兜底）", () => {
-    const st = [{ hp: 100000, hpInferred: true }];
-    applyInferredMaxHp(st, () => 5000);
-    expect(st[0]).toMatchObject({ hp: 100000, hpInferred: true });
-  });
-
-  it("占位 + 已知但 lookup miss(≤0) → 不动", () => {
-    const st = [{ monsterId: 999, level: 1, hp: 100000, hpInferred: true }];
-    applyInferredMaxHp(st, lookup);
-    expect(st[0]).toMatchObject({ hp: 100000, hpInferred: true });
-  });
-});
+}
