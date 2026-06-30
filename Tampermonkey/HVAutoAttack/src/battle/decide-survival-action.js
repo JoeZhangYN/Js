@@ -14,7 +14,7 @@ const battleSurvivalActionEventHandlers = Object.freeze({
   [EVENT_DECIDE]: (event) => decideSurvivalResult(event.snap, event.opt),
 });
 
-const SURVIVAL_ACTION_STEPS = [
+const SURVIVAL_ACTION_STEPS = Object.freeze([
   {
     capability: "criticalBuffGuard",
     decide: decideCriticalBuffStep,
@@ -47,7 +47,7 @@ const SURVIVAL_ACTION_STEPS = [
     capability: "scroll",
     decide: decideScrollStep,
   },
-];
+]);
 
 const EMPTY_DECISION_PREDICATES = Object.freeze({
   noop: () => true,

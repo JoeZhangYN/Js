@@ -103,6 +103,13 @@ for (const required of [
 ]) {
   requireText("src/battle/battle-turn-prelude.js", turnPrelude, required);
 }
+if (
+  !/const TURN_PRELUDE_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "monsterStatusReady"[\s\S]*capability: "turnStarted"[\s\S]*capability: "monitorHudRefresh"[\s\S]*capability: "killBugRecovery"[\s\S]*capability: "monsterHpUpdate"[\s\S]*\]\)/.test(
+    turnPrelude
+  )
+) {
+  violations.push("src/battle/battle-turn-prelude.js must keep the frozen documented turn prelude order");
+}
 
 for (const required of [
   "PAGE_READY_STARTUP_STEPS",
@@ -119,6 +126,13 @@ for (const required of [
   'capability: "initialBattleTurn"',
 ]) {
   requireText("src/battle/battle-automation.js", battleAutomation, required);
+}
+if (
+  !/const PAGE_READY_STARTUP_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "pauseControls"[\s\S]*capability: "actionEventBridge"[\s\S]*capability: "battleStarted"[\s\S]*capability: "roundStarted"[\s\S]*capability: "initialBattleTurn"[\s\S]*\]\)/.test(
+    battleAutomation
+  )
+) {
+  violations.push("src/battle/battle-automation.js must keep the frozen documented page-ready order");
 }
 
 if (!/export function runBattleActionEffectDispatch\(/.test(actionEffectDispatch)) {

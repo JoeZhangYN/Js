@@ -229,11 +229,11 @@ function checkBattleEntry() {
     }
   }
   if (
-    !/const PAGE_READY_STARTUP_STEPS = \[\s*\{[\s\S]*capability: "pauseControls"[\s\S]*run: installBattlePauseControls[\s\S]*capability: "actionEventBridge"[\s\S]*run: installBattleActionEventBridge[\s\S]*capability: "battleStarted"[\s\S]*run: reportBattleStarted[\s\S]*capability: "roundStarted"[\s\S]*run: startBattleRound[\s\S]*capability: "initialBattleTurn"[\s\S]*run: runInitialBattleTurn[\s\S]*\]/.test(
+    !/const PAGE_READY_STARTUP_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "pauseControls"[\s\S]*run: installBattlePauseControls[\s\S]*capability: "actionEventBridge"[\s\S]*run: installBattleActionEventBridge[\s\S]*capability: "battleStarted"[\s\S]*run: reportBattleStarted[\s\S]*capability: "roundStarted"[\s\S]*run: startBattleRound[\s\S]*capability: "initialBattleTurn"[\s\S]*run: runInitialBattleTurn[\s\S]*\]\)/.test(
       text
     )
   ) {
-    violations.push(`${rel(battleFile)} must own explicit page-ready startup order`);
+    violations.push(`${rel(battleFile)} must own frozen explicit page-ready startup order`);
   }
   const pageReadyStartupBody =
     text.match(/function runPageReadyStartup\(\) \{[\s\S]*?\n\}/)?.[0] || "";
@@ -437,6 +437,13 @@ function checkTurnEntry() {
   }
   if (!fs.existsSync(turnPreludeTest)) {
     violations.push(`${rel(turnPreludeTest)} must cover turn prelude contract`);
+  }
+  if (
+    !/const TURN_PRELUDE_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "monsterStatusReady"[\s\S]*capability: "turnStarted"[\s\S]*capability: "monitorHudRefresh"[\s\S]*capability: "killBugRecovery"[\s\S]*capability: "monsterHpUpdate"[\s\S]*\]\)/.test(
+      turnPreludeText
+    )
+  ) {
+    violations.push(`${rel(turnPreludeFile)} must own frozen explicit turn prelude order`);
   }
   const prepareCurrentTurnBody =
     turnPreludeText.match(/function prepareCurrentTurn\(\) \{[\s\S]*?\n\}/)?.[0] || "";
@@ -1835,11 +1842,11 @@ function checkOffensiveDebuffEntry() {
     violations.push(`${rel(decideOffensiveDebuffFile)} may export only its event entry`);
   }
   if (
-    !/const OFFENSIVE_DEBUFF_STEPS = \[\s*\{[\s\S]*capability: "burstControl"[\s\S]*capability: "bossImperil"[\s\S]*capability: "weakenAll"[\s\S]*capability: "imperilAll"[\s\S]*capability: "singleTargetDebuff"[\s\S]*\]/.test(
+    !/const OFFENSIVE_DEBUFF_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "burstControl"[\s\S]*capability: "bossImperil"[\s\S]*capability: "weakenAll"[\s\S]*capability: "imperilAll"[\s\S]*capability: "singleTargetDebuff"[\s\S]*\]\)/.test(
       ownerText
     )
   ) {
-    violations.push(`${rel(decideOffensiveDebuffFile)} must own offensive debuff order`);
+    violations.push(`${rel(decideOffensiveDebuffFile)} must own frozen offensive debuff order`);
   }
   for (const required of ["noop: () => true"]) {
     if (!ownerText.includes(required)) {
@@ -2011,6 +2018,13 @@ function checkSurvivalActionEntry() {
   if (!ownerText.includes("isEmptyDecision")) {
     violations.push(`${rel(decideSurvivalActionFile)} must own structured empty decisions`);
   }
+  if (
+    !/const SURVIVAL_ACTION_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "criticalBuffGuard"[\s\S]*capability: "flee"[\s\S]*capability: "autoPause"[\s\S]*capability: "gem"[\s\S]*capability: "potion"[\s\S]*capability: "stallTopup"[\s\S]*capability: "defend"[\s\S]*capability: "scroll"[\s\S]*\]\)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideSurvivalActionFile)} must own frozen survival action priority order`);
+  }
   for (const required of [
     "noop: () => true",
     '"item-plan": isEmptyItemPlanDecision',
@@ -2122,11 +2136,11 @@ function checkBuffPreparationEntry() {
     violations.push(`${rel(decideBuffPreparationFile)} may export only its event entry`);
   }
   if (
-    !/const BUFF_PREPARATION_STEPS = \[\s*\{[\s\S]*capability: "infusion"[\s\S]*capability: "channel"[\s\S]*capability: "buff"[\s\S]*\]/.test(
+    !/const BUFF_PREPARATION_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "infusion"[\s\S]*capability: "channel"[\s\S]*capability: "buff"[\s\S]*\]\)/.test(
       ownerText
     )
   ) {
-    violations.push(`${rel(decideBuffPreparationFile)} must own buff preparation order`);
+    violations.push(`${rel(decideBuffPreparationFile)} must own frozen buff preparation order`);
   }
   for (const required of [
     "noop: () => true",

@@ -19,7 +19,7 @@ const battleTurnPreludeEventHandlers = Object.freeze({
   [EVENT_PREPARE_CURRENT_TURN]: () => prepareCurrentTurn(),
 });
 
-const TURN_PRELUDE_STEPS = [
+const TURN_PRELUDE_STEPS = Object.freeze([
   {
     capability: "monsterStatusReady",
     run: ensureMonsterStatusReady,
@@ -40,7 +40,7 @@ const TURN_PRELUDE_STEPS = [
     capability: "monsterHpUpdate",
     run: updateMonsterHp,
   },
-];
+]);
 
 function prepareCurrentTurn() {
   for (const step of TURN_PRELUDE_STEPS) step.run();

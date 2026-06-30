@@ -17,7 +17,7 @@ export const BattleEvent = Object.freeze({
   PAGE_READY: EVENT_PAGE_READY,
 });
 
-const PAGE_READY_STARTUP_STEPS = [
+const PAGE_READY_STARTUP_STEPS = Object.freeze([
   {
     capability: "pauseControls",
     run: installBattlePauseControls,
@@ -38,7 +38,7 @@ const PAGE_READY_STARTUP_STEPS = [
     capability: "initialBattleTurn",
     run: runInitialBattleTurn,
   },
-];
+]);
 
 function installBattlePauseControls() {
   runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL });

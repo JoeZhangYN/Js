@@ -55,11 +55,11 @@ for (const required of [
 }
 
 if (
-  !/const OFFENSIVE_DEBUFF_STEPS = \[\s*\{[\s\S]*capability: "burstControl"[\s\S]*capability: "bossImperil"[\s\S]*capability: "weakenAll"[\s\S]*capability: "imperilAll"[\s\S]*capability: "singleTargetDebuff"[\s\S]*\]/.test(
+  !/const OFFENSIVE_DEBUFF_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "burstControl"[\s\S]*capability: "bossImperil"[\s\S]*capability: "weakenAll"[\s\S]*capability: "imperilAll"[\s\S]*capability: "singleTargetDebuff"[\s\S]*\]\)/.test(
     ownerText
   )
 ) {
-  violations.push(`${rel(owner)} must own explicit offensive debuff priority order`);
+  violations.push(`${rel(owner)} must own frozen explicit offensive debuff priority order`);
 }
 
 if (/for \(const decide of \[/.test(ownerText)) {

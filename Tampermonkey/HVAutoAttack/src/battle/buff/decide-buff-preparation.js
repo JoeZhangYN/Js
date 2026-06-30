@@ -13,7 +13,7 @@ const battleBuffPreparationEventHandlers = Object.freeze({
   [EVENT_DECIDE]: (event) => decideBuffPreparationResult(event.snap, event.opt),
 });
 
-const BUFF_PREPARATION_STEPS = [
+const BUFF_PREPARATION_STEPS = Object.freeze([
   {
     capability: "infusion",
     decide: decideInfusionStep,
@@ -26,7 +26,7 @@ const BUFF_PREPARATION_STEPS = [
     capability: "buff",
     decide: decideBuffStep,
   },
-];
+]);
 
 const EMPTY_DECISION_PREDICATES = Object.freeze({
   noop: () => true,

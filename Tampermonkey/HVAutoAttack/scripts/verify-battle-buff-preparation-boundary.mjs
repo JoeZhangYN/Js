@@ -40,11 +40,11 @@ for (const required of [
 }
 
 if (
-  !/const BUFF_PREPARATION_STEPS = \[\s*\{[\s\S]*capability: "infusion"[\s\S]*capability: "channel"[\s\S]*capability: "buff"[\s\S]*\]/.test(
+  !/const BUFF_PREPARATION_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "infusion"[\s\S]*capability: "channel"[\s\S]*capability: "buff"[\s\S]*\]\)/.test(
     ownerText
   )
 ) {
-  violations.push(`${rel(owner)} must own explicit buff preparation priority order`);
+  violations.push(`${rel(owner)} must own frozen explicit buff preparation priority order`);
 }
 
 if (/for \(const decide of \[/.test(ownerText)) {

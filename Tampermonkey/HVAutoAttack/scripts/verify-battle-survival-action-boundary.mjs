@@ -50,11 +50,11 @@ for (const required of [
 }
 
 if (
-  !/const SURVIVAL_ACTION_STEPS = \[\s*\{[\s\S]*capability: "criticalBuffGuard"[\s\S]*capability: "flee"[\s\S]*capability: "autoPause"[\s\S]*capability: "gem"[\s\S]*capability: "potion"[\s\S]*capability: "stallTopup"[\s\S]*capability: "defend"[\s\S]*capability: "scroll"[\s\S]*\]/.test(
+  !/const SURVIVAL_ACTION_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "criticalBuffGuard"[\s\S]*capability: "flee"[\s\S]*capability: "autoPause"[\s\S]*capability: "gem"[\s\S]*capability: "potion"[\s\S]*capability: "stallTopup"[\s\S]*capability: "defend"[\s\S]*capability: "scroll"[\s\S]*\]\)/.test(
     ownerText
   )
 ) {
-  violations.push(`${rel(owner)} must own explicit survival action priority order`);
+  violations.push(`${rel(owner)} must own frozen explicit survival action priority order`);
 }
 
 if (/for \(const decide of \[/.test(ownerText)) {

@@ -54,6 +54,13 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_PREPARE_CURRENT_TURN\]/.test(ownerText)) 
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (
+  !/const TURN_PRELUDE_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "monsterStatusReady"[\s\S]*capability: "turnStarted"[\s\S]*capability: "monitorHudRefresh"[\s\S]*capability: "killBugRecovery"[\s\S]*capability: "monsterHpUpdate"[\s\S]*\]\)/.test(
+    ownerText
+  )
+) {
+  violations.push(`${rel(owner)} must own frozen explicit turn prelude order`);
+}
 const prepareBody = ownerText.match(/function prepareCurrentTurn\(\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (!/for\s*\(\s*const\s+step\s+of\s+TURN_PRELUDE_STEPS\s*\)/.test(prepareBody)) {
   violations.push(`${rel(owner)} must run current-turn prelude through TURN_PRELUDE_STEPS`);

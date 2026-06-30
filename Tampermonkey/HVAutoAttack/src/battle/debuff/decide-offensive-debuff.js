@@ -17,7 +17,7 @@ const battleOffensiveDebuffEventHandlers = Object.freeze({
   [EVENT_DECIDE]: (event) => decideOffensiveDebuffResult(event.snap, event.opt),
 });
 
-const OFFENSIVE_DEBUFF_STEPS = [
+const OFFENSIVE_DEBUFF_STEPS = Object.freeze([
   {
     capability: "burstControl",
     decide: decideBurstControlStep,
@@ -38,7 +38,7 @@ const OFFENSIVE_DEBUFF_STEPS = [
     capability: "singleTargetDebuff",
     decide: decideSingleTargetDebuffStep,
   },
-];
+]);
 
 const EMPTY_DECISION_PREDICATES = Object.freeze({
   noop: () => true,
