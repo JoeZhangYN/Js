@@ -46,8 +46,40 @@ for (const required of [
   "runBattleItemExecution",
   "BattleChannelExecutionEvent.APPLY_PLAN",
   "runBattleChannelExecution",
+  "executeItemCommandResult",
+  "executeSkillCommandResult",
+  "executeDefendCommandResult",
+  "executeToggleSpiritResult",
+  "executeSkillTargetResult",
+  "executeFleeCommandResult",
+  "executeAlertPauseResult",
+  "executePauseResult",
+  "executeCriticalPauseResult",
+  "executeAttackPlanResult",
+  "executeItemPlanResult",
+  "executeChannelPlanResult",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
+}
+
+const applyBody = ownerText.match(/function applyActionResult\(result, snap\) \{[\s\S]*?\n\}/)?.[0] || "";
+for (const forbidden of [
+  "runBattleItemCommand",
+  "runBattleSkillCommand",
+  "runBattleDefendCommand",
+  "runBattleSpiritToggleAutomation",
+  "runBattleTargetCommand",
+  "runBattleFleeCommand",
+  "_alert",
+  "runBattlePauseAutomation",
+  "runCriticalBuffPauseExecution",
+  "runBattleAttackExecution",
+  "runBattleItemExecution",
+  "runBattleChannelExecution",
+]) {
+  if (applyBody.includes(forbidden)) {
+    violations.push(`${rel(owner)} applyActionResult must route by result kind, not inline ${forbidden}`);
+  }
 }
 
 if (
