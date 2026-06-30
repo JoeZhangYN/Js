@@ -147,6 +147,24 @@ if ((ownerText.match(/\breadLearnedRecoveryMap\(/g) || []).length < 3) {
   );
 }
 
+if (!ownerText.includes("const recoveryLearningEventHandlers")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route recovery learning events through a handler table`
+  );
+}
+const ownerEntry =
+  ownerText.match(/export function runRecoveryLearningAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+}
+for (const internal of ["recordPreDrink(", "finalizePending(", "getLearnedRecovery("]) {
+  if (ownerEntry.includes(internal)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must dispatch through recoveryLearningEventHandlers`
+    );
+  }
+}
+
 if (violations.length) {
   console.error("[verify-recovery-learner-boundary] FAIL");
   for (const v of violations) console.error(`- ${v}`);

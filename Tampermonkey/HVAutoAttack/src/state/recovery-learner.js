@@ -183,10 +183,12 @@ function getLearnedRecovery(potionId) {
   return fallback;
 }
 
+const recoveryLearningEventHandlers = Object.freeze({
+  [EVENT_RECORD_PRE_DRINK]: (event) => recordPreDrink(event.potionId, event.recoveryAbs),
+  [EVENT_FINALIZE_PENDING]: (event) => finalizePending(event),
+  [EVENT_READ_RECOVERY]: (event) => getLearnedRecovery(event.potionId),
+});
+
 export function runRecoveryLearningAutomation(event = { type: EVENT_READ_RECOVERY }) {
-  if (event.type === EVENT_RECORD_PRE_DRINK)
-    return recordPreDrink(event.potionId, event.recoveryAbs);
-  if (event.type === EVENT_FINALIZE_PENDING) return finalizePending(event);
-  if (event.type === EVENT_READ_RECOVERY) return getLearnedRecovery(event.potionId);
-  return undefined;
+  return recoveryLearningEventHandlers[event.type]?.(event);
 }
