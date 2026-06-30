@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   monsterHpVars: vi.fn(() => ({})),
   parseBattleLog: vi.fn(() => []),
   runAbilityAoeAutomation: vi.fn(() => ({ Imperil: 2 })),
+  runBattleItemSurface: vi.fn(() => "Mystic Gem"),
   runBattleObservationLearning: vi.fn(() => ({ learnedBurstByMid: { learned: true } })),
   runBattlePlayerEffects: vi.fn(() => ({
     channeling: false,
@@ -80,13 +81,16 @@ vi.mock("../pages/ability-page.js", () => ({
   AbilityAoeEvent: Object.freeze({ READ_SPELL_AOE: "readSpellAoe" }),
   runAbilityAoeAutomation: mocks.runAbilityAoeAutomation,
 }));
+vi.mock("./battle-item-surface.js", () => ({
+  BattleItemSurfaceEvent: Object.freeze({ READ_GEM_NAME: "readGemName" }),
+  runBattleItemSurface: mocks.runBattleItemSurface,
+}));
 vi.mock("./battle-skill-usage.js", () => ({
   BattleSkillUsageEvent: Object.freeze({ READ_USAGE: "readUsage" }),
   runBattleSkillUsageAutomation: mocks.runBattleSkillUsageAutomation,
 }));
 
 beforeEach(() => {
-  document.body.innerHTML = "";
   for (const fn of Object.values(mocks)) fn.mockClear?.();
   mocks.runCdRuntimeAutomation.mockImplementation((event) => {
     if (event.type === "readGlobalTurn") return 9;
@@ -101,8 +105,6 @@ beforeEach(() => {
 
 describe("collectSnapshot", () => {
   it("collects one battle snapshot and learns incoming burst when requested", () => {
-    document.body.innerHTML = '<button id="111"></button>';
-
     const snap = collectSnapshot({ learnIncomingBurst: true });
 
     expect(snap.turn).toBe(7);
@@ -118,6 +120,7 @@ describe("collectSnapshot", () => {
     expect(mocks.runBattleSkillReadiness).toHaveBeenCalledWith({ type: "readReadyMap" });
     expect(mocks.runBattlePlayerVitals).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(mocks.runBattlePlayerEffects).toHaveBeenCalledWith({ type: "readCurrent" });
+    expect(mocks.runBattleItemSurface).toHaveBeenCalledWith({ type: "readGemName" });
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "readSpellAoe" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });

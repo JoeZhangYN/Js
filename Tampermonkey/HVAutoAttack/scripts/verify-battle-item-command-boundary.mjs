@@ -5,7 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src", "battle");
 const owner = path.normalize("src/battle/battle-item-command.js");
 const ownerTest = path.normalize("src/battle/battle-item-command.test.js");
-const snapshot = path.normalize("src/battle/snapshot.js");
+const itemSurface = path.normalize("src/battle/battle-item-surface.js");
 const snapshotTest = path.normalize("src/battle/snapshot.test.js");
 const selectors = path.normalize("src/dom/selectors.js");
 const violations = [];
@@ -32,7 +32,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
-      relative !== snapshot &&
+      relative !== itemSurface &&
       relative !== snapshotTest &&
       !relative.endsWith(".test.js") &&
       line.includes("#ikey_p")

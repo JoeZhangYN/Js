@@ -56,6 +56,7 @@ const observationLearningFile = path.join(root, "src/battle/battle-observation-l
 const skillReadinessFile = path.join(root, "src/battle/battle-skill-readiness.js");
 const playerVitalsFile = path.join(root, "src/battle/battle-player-vitals.js");
 const playerEffectsFile = path.join(root, "src/battle/battle-player-effects.js");
+const itemSurfaceFile = path.join(root, "src/battle/battle-item-surface.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const dispatchFile = path.join(root, "src/battle/dispatch.js");
@@ -1152,6 +1153,21 @@ function checkSnapshot() {
   for (const required of ["BattlePlayerEffectsEvent", "playerBuffs", "channeling"]) {
     if (!playerEffectsText.includes(required)) {
       violations.push(`${rel(playerEffectsFile)} must own ${required}`);
+    }
+  }
+  if (
+    !text.includes("BattleItemSurfaceEvent.READ_GEM_NAME") ||
+    !text.includes("runBattleItemSurface")
+  ) {
+    violations.push(`${rel(snapshotFile)} must read gemName through one item surface entry`);
+  }
+  if (/#ikey_p|gemName:\s*gE/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not own item surface DOM reads`);
+  }
+  const itemSurfaceText = fs.readFileSync(itemSurfaceFile, "utf8");
+  for (const required of ["BattleItemSurfaceEvent", "READ_GEM_NAME", "#ikey_p"]) {
+    if (!itemSurfaceText.includes(required)) {
+      violations.push(`${rel(itemSurfaceFile)} must own ${required}`);
     }
   }
   if (/\bg\(\s*["']skillOTOS["']/.test(text)) {

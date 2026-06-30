@@ -23,6 +23,7 @@ import { BattleMonsterViewEvent, runBattleMonsterView } from "./battle-monster-v
 import { BattleSkillReadinessEvent, runBattleSkillReadiness } from "./battle-skill-readiness.js";
 import { BattlePlayerVitalsEvent, runBattlePlayerVitals } from "./battle-player-vitals.js";
 import { BattlePlayerEffectsEvent, runBattlePlayerEffects } from "./battle-player-effects.js";
+import { BattleItemSurfaceEvent, runBattleItemSurface } from "./battle-item-surface.js";
 
 /**
  * 解析一个怪物 effect 容器内全部 img 为 {img, turns}[]。
@@ -124,8 +125,7 @@ export function collectSnapshot(event = {}) {
     etherTapExpiring: playerEffects.etherTapExpiring,
     // 深度B：玩家效果明细 [{img,name,turns}]（供 channel/critical 等 decide 用，含显示名+剩余回合）
     playerEffects: playerEffects.playerEffects,
-    // 深度B：宝石按钮文案（供 decideGem，PURE 不读 DOM）；无宝石按钮 → null
-    gemName: gE("#ikey_p")?.textContent ?? null,
+    gemName: runBattleItemSurface({ type: BattleItemSurfaceEvent.READ_GEM_NAME }),
     cdMap: runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_MAP }),
     skillReady,
     skillOTOS: runBattleSkillUsageAutomation({ type: BattleSkillUsageEvent.READ_USAGE }),

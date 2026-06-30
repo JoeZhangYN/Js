@@ -33,6 +33,8 @@ const snapshotText = requireText(snapshot, [
   "runBattlePlayerVitals",
   "BattlePlayerEffectsEvent.READ_CURRENT",
   "runBattlePlayerEffects",
+  "BattleItemSurfaceEvent.READ_GEM_NAME",
+  "runBattleItemSurface",
   "BattleMonsterViewEvent.READ_VIEW",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
@@ -90,6 +92,11 @@ if (/#vbh|#dvbh|#dvrhd|#dvrm|#dvrs|readPlayerVitals/.test(snapshotText)) {
 if (/#pane_effects|etherTapActiveX2:\s*!!gE|playerBuffs:\s*playerEffects\.map/.test(snapshotText)) {
   violations.push(
     `${snapshot.replaceAll("\\", "/")} must read player effects through battle player effects entry`
+  );
+}
+if (/#ikey_p|gemName:\s*gE/.test(snapshotText)) {
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must read gemName through battle item surface entry`
   );
 }
 if (/snap\.fightingStyle/.test(scoringText)) {
