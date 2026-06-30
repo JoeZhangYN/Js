@@ -3,16 +3,19 @@ import { describe, expect, it, vi } from "vitest";
 import { runBattleActionDecision } from "./battle-action-decision.js";
 
 const mocks = vi.hoisted(() => ({
-  dispatch: vi.fn(),
+  runBattleActionEffectDispatch: vi.fn(),
 }));
 
-vi.mock("./dispatch.js", () => ({ dispatch: mocks.dispatch }));
+vi.mock("./battle-action-effect-dispatch.js", () => ({
+  BattleActionEffectDispatchEvent: { APPLY_ACTION_RESULT: "applyActionResult" },
+  runBattleActionEffectDispatch: mocks.runBattleActionEffectDispatch,
+}));
 
 function dispatchedResults(snap = {}, opt = {}) {
-  mocks.dispatch.mockClear();
-  mocks.dispatch.mockReturnValue(false);
+  mocks.runBattleActionEffectDispatch.mockClear();
+  mocks.runBattleActionEffectDispatch.mockReturnValue(false);
   runBattleActionDecision({ snap, actionOptions: opt });
-  return mocks.dispatch.mock.calls.map((call) => call[0]);
+  return mocks.runBattleActionEffectDispatch.mock.calls.map((call) => call[0].result);
 }
 
 describe("runBattleActionDecision", () => {
@@ -24,19 +27,24 @@ describe("runBattleActionDecision", () => {
   });
 
   it("short-circuits after the first acted dispatch", () => {
-    mocks.dispatch.mockClear();
-    mocks.dispatch.mockImplementation((result) => result.kind === "flee-command");
+    mocks.runBattleActionEffectDispatch.mockClear();
+    mocks.runBattleActionEffectDispatch.mockImplementation(
+      (event) => event.result.kind === "flee-command"
+    );
 
     runBattleActionDecision({ snap: {}, actionOptions: { autoFlee: true } });
 
-    expect(mocks.dispatch).toHaveBeenCalledTimes(1);
-    expect(mocks.dispatch.mock.calls[0][0]).toEqual({ kind: "flee-command" });
+    expect(mocks.runBattleActionEffectDispatch).toHaveBeenCalledTimes(1);
+    expect(mocks.runBattleActionEffectDispatch.mock.calls[0][0]).toMatchObject({
+      type: "applyActionResult",
+      result: { kind: "flee-command" },
+    });
   });
 
-  it("passes the same snap to dispatch for bookkeeping", () => {
+  it("passes the same snap to effect dispatch for bookkeeping", () => {
     const snap = { hp: 70 };
     dispatchedResults(snap, {});
-    expect(mocks.dispatch.mock.calls[0][1]).toBe(snap);
+    expect(mocks.runBattleActionEffectDispatch.mock.calls[0][0].snap).toBe(snap);
   });
 });
 

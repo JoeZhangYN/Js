@@ -60,7 +60,10 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
-requireText("src/battle/dispatch.js", ["BattleDefendCommandEvent.CLICK", "runBattleDefendCommand"]);
+requireText("src/battle/battle-action-effect-dispatch.js", [
+  "BattleDefendCommandEvent.CLICK",
+  "runBattleDefendCommand",
+]);
 requireText("src/battle/defense/decide-defend.js", ['kind: "defend-command"']);
 
 if (violations.length) {

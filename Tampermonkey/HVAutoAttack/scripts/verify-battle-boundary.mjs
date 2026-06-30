@@ -63,7 +63,9 @@ const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const turnPreludeFile = path.join(root, "src/battle/battle-turn-prelude.js");
 const turnPreludeTest = path.join(root, "src/battle/battle-turn-prelude.test.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
-const dispatchFile = path.join(root, "src/battle/dispatch.js");
+const dispatchFile = path.join(root, "src/battle/battle-action-effect-dispatch.js");
+const legacyDispatchFile = path.join(root, "src/battle/dispatch.js");
+const legacyDispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const attackActionSequenceFile = path.join(root, "src/battle/battle-action-attack-sequence.js");
 const actionSequenceFile = path.join(root, "src/battle/battle-action-sequence.js");
 const buffActionSequenceFile = path.join(root, "src/battle/battle-action-buff-sequence.js");
@@ -106,7 +108,7 @@ const decideSkillFile = path.join(root, "src/battle/attack/decide-skill.js");
 const physicalSkillScoringFile = path.join(root, "src/battle/attack/physical-skill-scoring.js");
 const pickElementFile = path.join(root, "src/battle/attack/pick-element.js");
 const autoElementSelectionFile = path.join(root, "src/battle/attack/auto-element-selection.js");
-const dispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
+const dispatchTestFile = path.join(root, "src/battle/battle-action-effect-dispatch.test.js");
 const violations = [];
 
 function rel(file) {
@@ -370,9 +372,13 @@ function checkTurnEntry() {
       `${rel(legacyBattleRulesFile)} must stay retired; action rules belong inside runBattleActionDecision`
     );
   }
+  if (fs.existsSync(legacyDispatchFile) || fs.existsSync(legacyDispatchTestFile)) {
+    violations.push("src/battle/dispatch.js legacy action effect path must stay retired");
+  }
   for (const required of [
     "ACTION_STEPS",
-    "dispatch",
+    "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
+    "runBattleActionEffectDispatch",
     "actionOptions",
     "for (const decide of ACTION_STEPS)",
     "decideSurvivalAction",

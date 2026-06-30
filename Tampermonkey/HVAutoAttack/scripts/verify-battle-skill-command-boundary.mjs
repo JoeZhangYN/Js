@@ -81,7 +81,7 @@ requireText("src/battle/buff/execute-channel.js", [
   "BattleSkillCommandEvent.CLICK_READY",
   "runBattleSkillCommand",
 ]);
-requireText("src/battle/dispatch.js", [
+requireText("src/battle/battle-action-effect-dispatch.js", [
   "BattleSkillCommandEvent.CLICK_READY",
   "runBattleSkillCommand",
 ]);

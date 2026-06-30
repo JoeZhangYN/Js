@@ -1,15 +1,15 @@
-// 核心类型定义（JSDoc）。ActionResult discriminated union 承载 PURE decide 的决策结果，dispatch 翻译为副作用。
+// 核心类型定义（JSDoc）。ActionResult discriminated union 承载 PURE decide 的决策结果，行动效果入口翻译为副作用。
 // 这文件 export {} 让它成为 ES module；类型仅 IDE 提示用。
 
 /**
- * 决策结果。纯决策函数返此类型，dispatch（battle/dispatch.js）翻译为副作用。
+ * 决策结果。纯决策函数返此类型，battle action effect dispatch 入口翻译为副作用。
  *
- * - click-skill-then-target: dispatch 含 **Spirit Stance 前置**（checkAndActivateSpirit 命中则本回合让出），
+ * - click-skill-then-target: effect dispatch 含 **Spirit Stance 前置**（checkAndActivateSpirit 命中则本回合让出），
  *   收编 debuff 全员/单目标 + boss-imperil 的统一双段语义。
  * - flee-command: flee 专用 command——click 逃跑按钮后 scheduleReload。
  * - pause / critical-pause: 纯暂停 / 关键 buff 即将消失告警暂停。
  * - *-plan: attack/item/channel 多分支决策的数据计划，由对应 execute-*（execute-attack/item/channel）
- *   执行——保持通用 dispatch 不被各 step 细节污染。深度 B 后已无 delegate 过渡桥。
+ *   执行——保持通用 effect dispatch 不被各 step 细节污染。深度 B 后已无 delegate 过渡桥。
  *
  * @typedef {{ kind: "noop" }
  *         | { kind: "skill-command", skillId: string }
@@ -45,7 +45,7 @@
 
 /**
  * attack 决策计划（decideAttack PURE 产出，executeAttack SHELL 执行）。attack 专属，由
- * ActionResult 的 "attack-plan" kind 承载——避免 attack 的多分支细节污染通用 dispatch/ActionResult。
+ * ActionResult 的 "attack-plan" kind 承载——避免 attack 的多分支细节污染通用 effect dispatch/ActionResult。
  * - spell: 单目标 targetId=首怪(finWeight 最小)；AoE targetId=order 最小存活怪。
  * - physical: 恒带 defaultTargetId(原 attack 物理技能后必点首怪)；mercifulTargetId = T3 多怪场景
  *   第一个流血残血怪(可空)。

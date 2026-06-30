@@ -1,7 +1,6 @@
-// 唯一 SHELL（Phase 5b 编排倒置 + 深度 B）：把 PURE decide 的 ActionResult 翻译为 DOM 副作用。
-// 复用 command entries / lang / pause-automation / activate-spirit + 各 step 的 execute-*。
+// 行动效果分发入口：把 PURE decide 的 ActionResult 翻译为 DOM/command 副作用。
 // 返回 acted(boolean)：action decision 据此短路。深度 B 后已无 delegate 过渡桥——所有 step 的判断都在
-// PURE decide 完成，dispatch 只翻译数据 → 副作用（含 isOn 写前探活）。
+// PURE decide 完成，本入口只翻译业务结果 → 副作用（含 isOn 写前探活）。
 import { _alert } from "../core/lang.js";
 import { BattleDefendCommandEvent, runBattleDefendCommand } from "./battle-defend-command.js";
 import { BattleFleeCommandEvent, runBattleFleeCommand } from "./battle-flee-command.js";
@@ -19,13 +18,13 @@ import { executeChannel } from "./buff/execute-channel.js";
 import { executeItem } from "./item/execute-item.js";
 import { executeCriticalPause } from "./critical-buff-guard/decide-critical-buff.js";
 
-/**
- * 执行一个 ActionResult，返回是否已触发副作用。
- * @param {import("../core/types.js").ActionResult} result
- * @param {import("../core/types.js").BattleSnapshot} snap 当前 turn 快照（execute-* 记账用，如 recordPreDrink）
- * @returns {boolean} acted —— 已触发副作用（主循环据此停止后续 rule）
- */
-export function dispatch(result, snap) {
+const EVENT_APPLY_ACTION_RESULT = "applyActionResult";
+
+export const BattleActionEffectDispatchEvent = Object.freeze({
+  APPLY_ACTION_RESULT: EVENT_APPLY_ACTION_RESULT,
+});
+
+function applyActionResult(result, snap) {
   switch (result.kind) {
     case "noop":
       return false;
@@ -95,4 +94,9 @@ export function dispatch(result, snap) {
     default:
       return false;
   }
+}
+
+export function runBattleActionEffectDispatch(event = { type: EVENT_APPLY_ACTION_RESULT }) {
+  if (event.type === EVENT_APPLY_ACTION_RESULT) return applyActionResult(event.result, event.snap);
+  return false;
 }

@@ -75,7 +75,7 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
-requireText("src/battle/dispatch.js", [
+requireText("src/battle/battle-action-effect-dispatch.js", [
   "BattleItemCommandEvent.CLICK_ITEM",
   "runBattleItemCommand",
 ]);

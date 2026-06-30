@@ -1,7 +1,10 @@
-// Commit 3：dispatch 各 kind 行为回归锁（happy-dom 提供 DOM）。
+// 行动效果分发各 kind 行为回归锁（happy-dom 提供 DOM）。
 // 覆盖核心 command/plan kind；alert-and-pause 是现有工具的薄封装，留 HV 运行时验证。
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { dispatch } from "./dispatch.js";
+import {
+  BattleActionEffectDispatchEvent,
+  runBattleActionEffectDispatch,
+} from "./battle-action-effect-dispatch.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 /** 在 happy-dom 造按钮。opacity!=="0.5" → isOn 视为可用。 */
@@ -25,9 +28,17 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("dispatch", () => {
+function applyResult(result, snap) {
+  return runBattleActionEffectDispatch({
+    type: BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT,
+    result,
+    snap,
+  });
+}
+
+describe("runBattleActionEffectDispatch", () => {
   it("noop → 不动作，返 false", () => {
-    expect(dispatch({ kind: "noop" })).toBe(false);
+    expect(applyResult({ kind: "noop" })).toBe(false);
   });
 
   it("item-command → clicks the item by id through the item command entry", () => {
@@ -40,7 +51,7 @@ describe("dispatch", () => {
     slot.appendChild(item);
     document.body.appendChild(slot);
 
-    expect(dispatch({ kind: "item-command", itemId: 12101 })).toBe(true);
+    expect(applyResult({ kind: "item-command", itemId: 12101 })).toBe(true);
 
     expect(item.click).toHaveBeenCalledTimes(1);
   });
@@ -48,7 +59,7 @@ describe("dispatch", () => {
   it("skill-command → clicks a ready skill through the skill command entry", () => {
     const skill = mkBtn("412");
 
-    expect(dispatch({ kind: "skill-command", skillId: "412" })).toBe(true);
+    expect(applyResult({ kind: "skill-command", skillId: "412" })).toBe(true);
 
     expect(skill.click).toHaveBeenCalledOnce();
   });
@@ -56,14 +67,14 @@ describe("dispatch", () => {
   it("defend-command → clicks Defend through the defend command entry", () => {
     const defend = mkBtn("ckey_defend");
 
-    expect(dispatch({ kind: "defend-command" })).toBe(true);
+    expect(applyResult({ kind: "defend-command" })).toBe(true);
 
     expect(defend.click).toHaveBeenCalledOnce();
   });
 
   it("toggle-spirit → 走 Spirit toggle command，click 并记录", () => {
     const spirit = mkBtn("ckey_spirit");
-    expect(dispatch({ kind: "toggle-spirit" })).toBe(true);
+    expect(applyResult({ kind: "toggle-spirit" })).toBe(true);
     expect(spirit.click).toHaveBeenCalledOnce();
   });
 
@@ -73,7 +84,7 @@ describe("dispatch", () => {
     target.id = "mkey_3";
     target.click = vi.fn();
     document.body.appendChild(target);
-    const r = dispatch({ kind: "click-skill-then-target", skillId: "213", targetId: 3 });
+    const r = applyResult({ kind: "click-skill-then-target", skillId: "213", targetId: 3 });
     expect(r).toBe(true);
     expect(skill.click).toHaveBeenCalledOnce();
     expect(target.click).toHaveBeenCalledOnce();
@@ -86,34 +97,38 @@ describe("dispatch", () => {
     target.innerHTML = '<img src="x/nbardead.png">';
     target.click = vi.fn();
     document.body.appendChild(target);
-    const r = dispatch({ kind: "click-skill-then-target", skillId: "213", targetId: 3 });
+    const r = applyResult({ kind: "click-skill-then-target", skillId: "213", targetId: 3 });
     expect(r).toBe(false);
     expect(skill.click).not.toHaveBeenCalled();
   });
 
   it("flee-command → click 逃跑按钮，返 true", () => {
     const flee = mkBtn("1001");
-    expect(dispatch({ kind: "flee-command" })).toBe(true);
+    expect(applyResult({ kind: "flee-command" })).toBe(true);
     expect(flee.click).toHaveBeenCalledOnce();
   });
 
   it("pause → pause automation 暂停，返 true", () => {
-    expect(dispatch({ kind: "pause" })).toBe(true);
+    expect(applyResult({ kind: "pause" })).toBe(true);
   });
 
   it("halt → 返 true", () => {
-    expect(dispatch({ kind: "halt", reason: "acted" })).toBe(true);
+    expect(applyResult({ kind: "halt", reason: "acted" })).toBe(true);
   });
 
   it("未知 kind → 返 false（default 兜底）", () => {
-    expect(dispatch({ kind: "??" })).toBe(false);
+    expect(applyResult({ kind: "??" })).toBe(false);
   });
 
   it("retired generic click kind → 返 false", () => {
     const btn = mkBtn("111");
 
-    expect(dispatch({ kind: "click", selector: "111" })).toBe(false);
+    expect(applyResult({ kind: "click", selector: "111" })).toBe(false);
 
     expect(btn.click).not.toHaveBeenCalled();
+  });
+
+  it("rejects unknown events", () => {
+    expect(runBattleActionEffectDispatch({ type: "unknown" })).toBe(false);
   });
 });

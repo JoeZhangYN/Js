@@ -3,7 +3,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const battleDir = path.join(root, "src", "battle");
-const dispatchFile = path.normalize("src/battle/dispatch.js");
+const dispatchFile = path.normalize("src/battle/battle-action-effect-dispatch.js");
 const typesFile = path.normalize("src/core/types.js");
 const violations = [];
 
