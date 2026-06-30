@@ -422,6 +422,7 @@ function checkTurnEntry() {
     "buffFacts",
     "burstControlFacts",
     "bossImperilFacts",
+    "debuffActionFacts",
     "allDebuffFacts",
     "singleDebuffFacts",
   ]) {
@@ -1574,8 +1575,7 @@ function checkOffensiveDebuffEntry() {
     "willClearWithBigSkill",
     "burstControlFacts",
     "bossImperilFacts",
-    "allDebuffFacts",
-    "singleDebuffFacts",
+    "debuffActionFacts",
     "decideBurstControl",
     "runBossImperilAutomation",
     "decideCastDebuffOnAll",
@@ -2469,18 +2469,18 @@ function checkBattleRuleFactMappers() {
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(buffFactsText)) {
     violations.push(`${rel(buffFactsFile)} must not depend on generic rule fact mappers`);
   }
-  for (const required of [
-    "allDebuffFacts",
-    "singleDebuffFacts",
-    "burstControlFacts",
-    "bossImperilFacts",
-  ]) {
+  for (const required of ["debuffActionFacts", "burstControlFacts", "bossImperilFacts"]) {
     if (!debuffFactsText.includes(required)) {
       violations.push(`${rel(debuffFactsFile)} must own debuff fact mapper ${required}`);
     }
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(debuffFactsText)) {
     violations.push(`${rel(debuffFactsFile)} must not depend on generic rule fact mappers`);
+  }
+  for (const retired of ["allDebuffFacts", "singleDebuffFacts"]) {
+    if (new RegExp(`export\\s+function\\s+${retired}\\s*\\(`).test(debuffFactsText)) {
+      violations.push(`${rel(debuffFactsFile)} must use one debuffActionFacts mapper`);
+    }
   }
   if (!criticalBuffFactsText.includes("criticalBuffFacts")) {
     violations.push(`${rel(criticalBuffFactsFile)} must own critical buff fact mapper`);

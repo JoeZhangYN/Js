@@ -28,7 +28,7 @@ export function bossImperilFacts(snap) {
   };
 }
 
-export function allDebuffFacts(snap) {
+export function debuffActionFacts(snap) {
   return {
     conditionFacts: snap,
     monsterAlive: snap?.monsterAlive,
@@ -36,18 +36,6 @@ export function allDebuffFacts(snap) {
     spellAoe: snap?.spellAoe,
     skillCooldowns: snap?.cdMap,
     aliveCount: snap?.aliveCount,
-    overcharge: snap?.oc,
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
-    monsterFacts: snap?.view,
-  };
-}
-
-export function singleDebuffFacts(snap) {
-  return {
-    conditionFacts: snap,
-    skillReady: snap?.skillReady,
-    spellAoe: snap?.spellAoe,
     overcharge: snap?.oc,
     roundNow: snap?.roundNow,
     roundAll: snap?.roundAll,

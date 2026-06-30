@@ -3,12 +3,7 @@ import { decideBurstControl } from "./decide-burst-control.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideCastDebuffOnAll } from "./decide-cast-all.js";
 import { decideDeSkill } from "./decide-de-skill.js";
-import {
-  allDebuffFacts,
-  bossImperilFacts,
-  burstControlFacts,
-  singleDebuffFacts,
-} from "./debuff-facts.js";
+import { bossImperilFacts, burstControlFacts, debuffActionFacts } from "./debuff-facts.js";
 
 const EVENT_DECIDE = "decide";
 
@@ -26,8 +21,7 @@ function decideOffensiveDebuffResult(snap = {}, opt = {}) {
     }),
     ...burstControlFacts(snap),
     ...bossImperilFacts(snap),
-    ...allDebuffFacts(snap),
-    ...singleDebuffFacts(snap),
+    ...debuffActionFacts(snap),
   };
   for (const decide of [
     decideBurstControl,
