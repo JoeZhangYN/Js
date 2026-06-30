@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   BattleCompletionEvent,
-  BattleCompletionOutcome,
   runBattleCompletionAutomation,
 } from "./battle-completion.js";
 
@@ -22,7 +21,7 @@ describe("runBattleCompletionAutomation", () => {
 
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
-    ).toEqual({ outcome: BattleCompletionOutcome.DEFEAT });
+    ).toEqual({ outcome: "defeat" });
     expect(d.recordCompletion).toHaveBeenCalledTimes(1);
     expect(d.triggerAlarm).toHaveBeenCalledWith("Defeat");
     expect(d.clearSession).toHaveBeenCalled();
@@ -34,7 +33,7 @@ describe("runBattleCompletionAutomation", () => {
 
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
-    ).toEqual({ outcome: BattleCompletionOutcome.NEXT_ROUND });
+    ).toEqual({ outcome: "nextRound" });
     expect(d.recordCompletion).toHaveBeenCalledTimes(1);
     expect(d.triggerAlarm).not.toHaveBeenCalled();
     expect(d.clearSession).not.toHaveBeenCalled();
@@ -46,7 +45,7 @@ describe("runBattleCompletionAutomation", () => {
 
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
-    ).toEqual({ outcome: BattleCompletionOutcome.VICTORY });
+    ).toEqual({ outcome: "victory" });
     expect(d.recordCompletion).toHaveBeenCalledTimes(1);
     expect(d.triggerAlarm).toHaveBeenCalledWith("Victory");
     expect(d.clearSession).toHaveBeenCalled();
@@ -71,7 +70,7 @@ describe("runBattleCompletionAutomation", () => {
 
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
-    ).toEqual({ outcome: BattleCompletionOutcome.VICTORY });
+    ).toEqual({ outcome: "victory" });
 
     expect(d.readCompletionContext).toHaveBeenCalledTimes(1);
   });
@@ -90,7 +89,7 @@ describe("runBattleCompletionAutomation", () => {
     const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
 
     expect(runBattleCompletionAutomation({ type: "unknown" }, d)).toEqual({
-      outcome: BattleCompletionOutcome.ONGOING,
+      outcome: "ongoing",
     });
 
     expect(d.recordCompletion).not.toHaveBeenCalled();

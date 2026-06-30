@@ -79,6 +79,13 @@ function checkOwner() {
     );
   }
   if (
+    /\bexport\s+(?:function|const)\s+(?!BattleCompletionEvent\b|runBattleCompletionAutomation\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${owner.replaceAll("\\", "/")} may export only its event entry`);
+  }
+  if (
     /BattleRoundEvent\.(?:READ_RUNTIME|READ_TYPE)|MonsterStatusEvent\.READ_COMBATANT_COUNTS/.test(
       text
     )

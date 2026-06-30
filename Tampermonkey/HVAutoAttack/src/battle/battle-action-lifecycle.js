@@ -6,7 +6,6 @@ import { BattleActionDelayEvent, runBattleActionDelayAutomation } from "./battle
 import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle-action-speed.js";
 import {
   BattleCompletionEvent,
-  BattleCompletionOutcome,
   runBattleCompletionAutomation,
 } from "./battle-completion.js";
 import { runBattleTurnAutomation } from "./main-loop.js";
@@ -18,6 +17,8 @@ import {
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
+const OUTCOME_NEXT_ROUND = "nextRound";
+const OUTCOME_ONGOING = "ongoing";
 
 export const BattleActionLifecycleEvent = Object.freeze({
   ACTION_STARTED: EVENT_ACTION_STARTED,
@@ -32,7 +33,7 @@ function runActionStarted(deps) {
 
 function handleCompletion(deps) {
   const completion = deps.completeBattle();
-  if (completion.outcome === BattleCompletionOutcome.NEXT_ROUND) {
+  if (completion.outcome === OUTCOME_NEXT_ROUND) {
     deps.continueNextRound();
     return { outcome: completion.outcome, continued: "nextRound" };
   }
@@ -46,7 +47,7 @@ function runActionEnded(deps) {
   deps.monitorActionEnded();
   if (deps.isCompletionReached()) return handleCompletion(deps);
   deps.runTurn();
-  return { outcome: BattleCompletionOutcome.ONGOING, continued: "turn" };
+  return { outcome: OUTCOME_ONGOING, continued: "turn" };
 }
 
 const battleActionLifecycleEventHandlers = Object.freeze({

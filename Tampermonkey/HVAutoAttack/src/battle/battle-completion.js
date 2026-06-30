@@ -18,7 +18,7 @@ export const BattleCompletionEvent = Object.freeze({
   READ_REACHED: EVENT_READ_REACHED,
 });
 
-export const BattleCompletionOutcome = Object.freeze({
+const BattleCompletionOutcome = Object.freeze({
   DEFEAT: "defeat",
   NEXT_ROUND: "nextRound",
   VICTORY: "victory",

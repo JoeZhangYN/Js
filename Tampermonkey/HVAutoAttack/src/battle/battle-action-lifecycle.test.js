@@ -3,9 +3,8 @@ import {
   BattleActionLifecycleEvent,
   runBattleActionLifecycleAutomation,
 } from "./battle-action-lifecycle.js";
-import { BattleCompletionOutcome } from "./battle-completion.js";
 
-function makeDeps({ hasCompletion = false, outcome = BattleCompletionOutcome.ONGOING } = {}) {
+function makeDeps({ hasCompletion = false, outcome = "ongoing" } = {}) {
   const deps = {
     startDelay: vi.fn(),
     recordSpeed: vi.fn(),
@@ -56,7 +55,7 @@ describe("runBattleActionLifecycleAutomation", () => {
   it("continues the next round through the next-round entry", () => {
     const { deps } = makeDeps({
       hasCompletion: true,
-      outcome: BattleCompletionOutcome.NEXT_ROUND,
+      outcome: "nextRound",
     });
 
     expect(
