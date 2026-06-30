@@ -53,6 +53,7 @@ const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const turnContextFile = path.join(root, "src/battle/turn-context.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
+const attackActionSequenceFile = path.join(root, "src/battle/battle-action-attack-sequence.js");
 const actionSequenceFile = path.join(root, "src/battle/battle-action-sequence.js");
 const buffActionSequenceFile = path.join(root, "src/battle/battle-action-buff-sequence.js");
 const debuffActionSequenceFile = path.join(root, "src/battle/battle-action-debuff-sequence.js");
@@ -104,6 +105,7 @@ function readBattleActionRulesText() {
     survivalActionSequenceFile,
     buffActionSequenceFile,
     debuffActionSequenceFile,
+    attackActionSequenceFile,
   ]
     .map((file) => fs.readFileSync(file, "utf8"))
     .join("\n");
@@ -339,7 +341,7 @@ function checkTurnEntry() {
     "survivalActionRules",
     "buffPreparationActionRules",
     "offensiveDebuffActionRules",
-    "attack",
+    "finalAttackActionRules",
   ]) {
     if (!actionSequenceText.includes(required)) {
       violations.push(`${rel(actionSequenceFile)} must own action sequence ${required}`);
@@ -347,6 +349,12 @@ function checkTurnEntry() {
   }
   if (/export\s+const\s+BATTLE_RULES\b/.test(actionSequenceText)) {
     violations.push(`${rel(actionSequenceFile)} must keep BATTLE_RULES private`);
+  }
+  const attackActionSequenceText = fs.readFileSync(attackActionSequenceFile, "utf8");
+  for (const required of ["finalAttackActionRules", "attack"]) {
+    if (!attackActionSequenceText.includes(required)) {
+      violations.push(`${rel(attackActionSequenceFile)} must own attack action ${required}`);
+    }
   }
   const buffActionSequenceText = fs.readFileSync(buffActionSequenceFile, "utf8");
   for (const required of [
@@ -413,6 +421,12 @@ function checkTurnEntry() {
         /from\s+["'][^"']*battle-action-debuff-sequence\.js["']/.test(source)
       ) {
         violations.push(`${rel(file)} must use runBattleActionDecision(), not debuff sequence`);
+      }
+      if (
+        file !== actionSequenceFile &&
+        /from\s+["'][^"']*battle-action-attack-sequence\.js["']/.test(source)
+      ) {
+        violations.push(`${rel(file)} must use runBattleActionDecision(), not attack sequence`);
       }
     }
   }
@@ -1940,7 +1954,7 @@ function checkBattleRuleFactMappers() {
     violations.push(`${rel(attackFactsFile)} must not depend on generic rule fact mappers`);
   }
 
-  const allowedAttackFactsImporters = new Set([battleRulesFile]);
+  const allowedAttackFactsImporters = new Set([battleRulesFile, attackActionSequenceFile]);
   for (const relative of ["src/battle", "src/core"]) {
     const dir = path.join(root, relative);
     for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
