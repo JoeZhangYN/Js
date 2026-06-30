@@ -34,6 +34,7 @@ const physicalSkillBookkeepingFile = path.join(
   "src/battle/attack/physical-skill-bookkeeping.js"
 );
 const activateSpiritFile = path.join(root, "src/battle/buff/activate-spirit.js");
+const decideBuffPreparationFile = path.join(root, "src/battle/buff/decide-buff-preparation.js");
 const decideInfusionFile = path.join(root, "src/battle/buff/decide-infusion.js");
 const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
 const decideChannelFile = path.join(root, "src/battle/buff/decide-channel.js");
@@ -382,12 +383,7 @@ function checkTurnEntry() {
   requireOnlyExports(buffActionSequenceFile, buffActionSequenceText, [
     "buffPreparationActionRules",
   ]);
-  for (const required of [
-    "buffPreparationActionRules",
-    "useInfusions",
-    "useChannelSkill",
-    "useBuffSkill",
-  ]) {
+  for (const required of ["buffPreparationActionRules", "prepareBuffs", "decideBuffPreparation"]) {
     if (!buffActionSequenceText.includes(required)) {
       violations.push(`${rel(buffActionSequenceFile)} must own buff action ${required}`);
     }
@@ -1407,6 +1403,62 @@ function checkCriticalBuffEntry() {
   }
 }
 
+function checkBuffPreparationEntry() {
+  const ownerText = fs.readFileSync(decideBuffPreparationFile, "utf8");
+  for (const required of [
+    "decideBuffPreparation",
+    "decideInfusion",
+    "decideChannel",
+    "decideBuff",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideBuffPreparationFile)} must own buff preparation ${required}`);
+    }
+  }
+  if (
+    !/for\s*\(\s*const\s+decide\s+of\s+\[decideInfusion,\s*decideChannel,\s*decideBuff\]/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideBuffPreparationFile)} must own buff preparation order`);
+  }
+
+  const rulesText = readBattleActionRulesText();
+  const buffPreparationRule =
+    rulesText.match(/name:\s*["']prepareBuffs["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (!buffPreparationRule.includes("decideBuffPreparation")) {
+    violations.push(`${rel(battleRulesFile)} must route buff preparation through one entry`);
+  }
+  for (const legacyRule of ["useInfusions", "useChannelSkill", "useBuffSkill"]) {
+    if (rulesText.includes(legacyRule)) {
+      violations.push(`${rel(battleRulesFile)} must not split buff preparation rule ${legacyRule}`);
+    }
+  }
+
+  const battleDir = path.join(root, "src/battle");
+  for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+      continue;
+    }
+    const file = path.join(entry.parentPath, entry.name);
+    if (
+      file === decideBuffPreparationFile ||
+      file === decideInfusionFile ||
+      file === decideChannelFile ||
+      file === decideBuffFile
+    ) {
+      continue;
+    }
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      /from\s+["'][^"']*buff\/decide-(?:infusion|channel|buff)\.js["']/.test(source) ||
+      /\b(?:decideInfusion|decideChannel|decideBuff)\s*\(/.test(source)
+    ) {
+      violations.push(`${rel(file)} must call buff preparation through decideBuffPreparation`);
+    }
+  }
+}
+
 function checkInfusionEntry() {
   const ownerText = fs.readFileSync(decideInfusionFile, "utf8");
   for (const required of [
@@ -2184,6 +2236,7 @@ checkBossImperilEntry();
 checkBigSkillDebuffEntry();
 checkBurstControlEntry();
 checkCriticalBuffEntry();
+checkBuffPreparationEntry();
 checkInfusionEntry();
 checkChannelEntry();
 checkBuffEntry();

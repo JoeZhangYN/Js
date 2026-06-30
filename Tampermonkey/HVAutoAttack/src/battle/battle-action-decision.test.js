@@ -17,15 +17,13 @@ const RULE_INDEX = Object.freeze({
   stallTopup: 5,
   defend: 6,
   useScroll: 7,
-  useInfusions: 8,
-  useChannelSkill: 9,
-  useBuffSkill: 10,
-  burstControl: 11,
-  bossImperil: 12,
-  castWeakenAll: 13,
-  castImperilAll: 14,
-  useDeSkill: 15,
-  attack: 16,
+  prepareBuffs: 8,
+  burstControl: 9,
+  bossImperil: 10,
+  castWeakenAll: 11,
+  castImperilAll: 12,
+  useDeSkill: 13,
+  attack: 14,
 });
 
 function dispatchedResults(snap = {}, opt = {}) {
@@ -38,7 +36,7 @@ function dispatchedResults(snap = {}, opt = {}) {
 describe("runBattleActionDecision", () => {
   it("owns the full action rule order", () => {
     const results = dispatchedResults();
-    expect(results).toHaveLength(17);
+    expect(results).toHaveLength(15);
     expect(results.map((result) => result.kind)).toEqual([
       "noop",
       "noop",
@@ -48,8 +46,6 @@ describe("runBattleActionDecision", () => {
       "item-plan",
       "noop",
       "item-plan",
-      "noop",
-      "channel-plan",
       "noop",
       "noop",
       "noop",
@@ -95,15 +91,13 @@ describe("runBattleActionDecision rule contracts", () => {
       plan: { type: "potion", candidates: [], noWaste: false },
     });
     expect(
-      dispatchedResults({ attackStatus: 2, playerBuffs: [] })[RULE_INDEX.useInfusions]
+      dispatchedResults({ attackStatus: 2, playerBuffs: [] })[RULE_INDEX.prepareBuffs]
     ).toEqual({
       kind: "noop",
     });
-    expect(dispatchedResults({ channeling: true })[RULE_INDEX.useChannelSkill]).toEqual({
-      kind: "channel-plan",
-      plan: { type: "noop" },
+    expect(dispatchedResults({ channeling: true })[RULE_INDEX.prepareBuffs]).toEqual({
+      kind: "noop",
     });
-    expect(dispatchedResults()[RULE_INDEX.useBuffSkill]).toEqual({ kind: "noop" });
     expect(dispatchedResults({ view: [] })[RULE_INDEX.useDeSkill]).toEqual({ kind: "noop" });
     expect(
       dispatchedResults({ skillReady: { 213: false }, view: [] })[RULE_INDEX.bossImperil]
