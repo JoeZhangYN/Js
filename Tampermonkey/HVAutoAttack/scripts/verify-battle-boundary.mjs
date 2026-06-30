@@ -1530,8 +1530,7 @@ function checkBurstControlEntry() {
     "decideBurstControl",
     "burstControlSwitch",
     "debuffSkillSwitch",
-    "decideAttack",
-    "AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL",
+    "event.willClearWithBigSkill",
     "event.healthAbs",
     "event.skillReady",
     "event.learnedBurstByMid",
@@ -1543,6 +1542,15 @@ function checkBurstControlEntry() {
   }
   if (/decideBurstControl\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(burstControlFile)} must not expose opt/snap decision input`);
+  }
+  if (
+    /decideAttack|AttackDecisionEvent|from\s+["'][^"']*attack\/decide-attack\.js["']/.test(
+      ownerText
+    )
+  ) {
+    violations.push(
+      `${rel(burstControlFile)} must consume attack clear verdict, not attack internals`
+    );
   }
   const rulesText = readBattleActionRulesText();
   const burstRule =
@@ -1561,6 +1569,9 @@ function checkOffensiveDebuffEntry() {
     "BattleOffensiveDebuffEvent",
     "DECIDE",
     "runBattleOffensiveDebuff",
+    "BattleAttackActionEvent.WILL_CLEAR_WITH_BIG_SKILL",
+    "runBattleAttackAction",
+    "willClearWithBigSkill",
     "burstControlFacts",
     "bossImperilFacts",
     "allDebuffFacts",
@@ -2309,6 +2320,8 @@ function checkAttackEntry() {
   for (const required of [
     "BattleAttackActionEvent",
     "DECIDE",
+    "WILL_CLEAR_WITH_BIG_SKILL",
+    "AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL",
     "runBattleAttackAction",
     "attackFacts",
     "decideAttack",
@@ -2500,6 +2513,26 @@ function checkBattleRuleFactMappers() {
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(attackFactsText)) {
     violations.push(`${rel(attackFactsFile)} must not depend on generic rule fact mappers`);
+  }
+  const debuffFactsOwnerText = fs.readFileSync(debuffFactsFile, "utf8");
+  const burstFacts =
+    debuffFactsOwnerText.match(/export function burstControlFacts\(snap\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  for (const retired of [
+    "conditionFacts",
+    "attackStatus",
+    "channeling",
+    "aliveCount",
+    "fightingStyle",
+    "overcharge",
+    "spellAoe",
+    "skillOTOS",
+  ]) {
+    if (burstFacts.includes(retired)) {
+      violations.push(
+        `${rel(debuffFactsFile)} burstControlFacts must not rebuild attack ${retired}`
+      );
+    }
   }
 
   const allowedAttackFactsImporters = new Set([decideAttackActionFile]);

@@ -24,6 +24,25 @@ describe("runBattleAttackAction", () => {
     ).toEqual({ kind: "attack-plan", plan: { type: "default", targetId: 7 } });
   });
 
+  it("answers whether attack will clear with a big skill through the same entry", () => {
+    expect(
+      runBattleAttackAction({
+        type: BattleAttackActionEvent.WILL_CLEAR_WITH_BIG_SKILL,
+        snap: {
+          aliveCount: 5,
+          spiritOn: true,
+          fightingStyle: "2",
+          oc: 250,
+          view: [{ id: 7, order: 0, isDead: false, hpAbsNow: 1, hpMax: 1, buffs: [] }],
+          playerBuffs: [],
+          playerEffects: [],
+          skillReady: { 1111: true },
+        },
+        opt: { skillSwitch: true, skill_OFC: true },
+      })
+    ).toBe(true);
+  });
+
   it("rejects unknown events as no action", () => {
     expect(runBattleAttackAction({ type: "unknown" })).toEqual({ kind: "noop" });
   });

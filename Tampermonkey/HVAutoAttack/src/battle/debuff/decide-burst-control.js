@@ -1,7 +1,6 @@
 // PURE 决策（F5，默认 OFF）：学习到的高爆发怪若单发可致血量「蹦极」，单点 Silence/Sleep/Confuse 控住它。
 // 不读 DOM / 不调 g()——吃 opt + explicit burst facts。
 // 选择逻辑（load-bearing）：Silence 只挡施法 → 仅法术爆发用；物理/未知 → Sleep（整回合禁用）；再退 Confuse。
-import { AttackDecisionEvent, decideAttack } from "../attack/decide-attack.js";
 import { aliveByOrder } from "../monster-view.js";
 
 const PHYSICAL_TYPES = new Set(["piercing", "crushing", "slashing", "physical"]);
@@ -24,16 +23,8 @@ export function decideBurstControl(event = {}) {
   const opt = event.opt || {};
   if (!opt.burstControlSwitch) return { kind: "noop" };
   if (opt.debuffSkillSwitch === false) return { kind: "noop" };
-  // 攻击阶段会用 OFC/FRD 清场 → 蹦极源会被清掉，别白费一回合控制（复用攻击入口裁决，避免另拼开火条件）。
-  if (
-    decideAttack({
-      ...event,
-      type: AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL,
-      opt,
-    })
-  ) {
-    return { kind: "noop" };
-  }
+  // 攻击阶段会用 OFC/FRD 清场 → 蹦极源会被清掉，别白费一回合控制。
+  if (event.willClearWithBigSkill) return { kind: "noop" };
   const burstMap = event.learnedBurstByMid || {};
   const hpAbs = event.healthAbs ?? 0;
   if (!(hpAbs > 0)) return { kind: "noop" };

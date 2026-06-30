@@ -5,6 +5,7 @@ const root = process.cwd();
 const owner = path.normalize("src/battle/attack/decide-attack-action.js");
 const ownerTest = path.normalize("src/battle/attack/decide-attack-action.test.js");
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
+const offensiveDebuff = path.normalize("src/battle/debuff/decide-offensive-debuff.js");
 const violations = [];
 
 function read(relative) {
@@ -21,6 +22,8 @@ const actionDecisionText = read(actionDecision);
 for (const required of [
   "BattleAttackActionEvent",
   "DECIDE",
+  "WILL_CLEAR_WITH_BIG_SKILL",
+  "AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL",
   "runBattleAttackAction",
   "attackFacts",
   "decideAttack",
@@ -58,7 +61,9 @@ for (const relative of ["src/battle", "src/core"]) {
     }
     const file = path.join(entry.parentPath, entry.name);
     const normalized = path.normalize(path.relative(root, file));
-    if (normalized === owner || normalized === actionDecision) continue;
+    if (normalized === owner || normalized === actionDecision || normalized === offensiveDebuff) {
+      continue;
+    }
     const text = fs.readFileSync(file, "utf8");
     if (/from\s+["'][^"']*attack\/decide-attack-action\.js["']/.test(text)) {
       violations.push(`${rel(normalized)} must not bypass runBattleActionDecision`);

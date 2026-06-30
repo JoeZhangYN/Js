@@ -1,3 +1,4 @@
+import { BattleAttackActionEvent, runBattleAttackAction } from "../attack/decide-attack-action.js";
 import { decideBurstControl } from "./decide-burst-control.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideCastDebuffOnAll } from "./decide-cast-all.js";
@@ -18,6 +19,11 @@ export const BattleOffensiveDebuffEvent = Object.freeze({
 function decideOffensiveDebuffResult(snap = {}, opt = {}) {
   const event = {
     opt,
+    willClearWithBigSkill: runBattleAttackAction({
+      type: BattleAttackActionEvent.WILL_CLEAR_WITH_BIG_SKILL,
+      snap,
+      opt,
+    }),
     ...burstControlFacts(snap),
     ...bossImperilFacts(snap),
     ...allDebuffFacts(snap),
