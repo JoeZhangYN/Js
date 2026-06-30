@@ -55,7 +55,11 @@ const roundStartLogText = requireText(path.normalize("src/battle/round-start-log
   "BATTLE_LOG_SELECTOR",
   "emptyRoundStartLog",
 ]);
-requireText(ownerTest, ["recordStartContext", "recordStartCount", 'roundType: "ba"']);
+const ownerTestText = requireText(ownerTest, [
+  "recordStartContext",
+  "recordStartCount",
+  'roundType: "ba"',
+]);
 
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleRoundStartEvent\b|runBattleRoundStartAutomation\b)/.test(
@@ -100,6 +104,26 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(roundLifecycleText)) {
 }
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(roundStartLogText)) {
   violations.push("src/battle/round-start-log.js must dispatch events through handler table");
+}
+const pauseGateIndex = ownerText.indexOf("if (staminaOutcome.paused)");
+const prepareIndex = ownerText.indexOf("MonsterStatusEvent.PREPARE_ROUND_START");
+const recordCountIndex = ownerText.indexOf("BattleRoundEvent.RECORD_START_COUNT");
+const roundReadyIndex = ownerText.indexOf("BattleRoundLifecycleEvent.ROUND_READY");
+if (
+  pauseGateIndex === -1 ||
+  prepareIndex === -1 ||
+  recordCountIndex === -1 ||
+  roundReadyIndex === -1 ||
+  pauseGateIndex > prepareIndex ||
+  pauseGateIndex > recordCountIndex ||
+  pauseGateIndex > roundReadyIndex
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must stop round preparation at stamina pause gate`
+  );
+}
+if (!ownerTestText.includes("stops round preparation when stamina gate pauses the round")) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must lock stamina pause round-start gate`);
 }
 
 if (violations.length) {

@@ -111,4 +111,26 @@ describe("runBattleRoundStartAutomation", () => {
     });
     expect(mocks.runBattleRoundLifecycle).toHaveBeenCalledWith({ type: "roundReady" });
   });
+
+  it("stops round preparation when stamina gate pauses the round", () => {
+    mocks.runBattleStaminaAutomation.mockReturnValue({ lostStamina: 99, paused: true });
+
+    expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(true);
+
+    expect(mocks.runBattleRoundAutomation).toHaveBeenCalledWith({
+      type: "recordStartContext",
+      initializingText: "Initializing random encounter",
+    });
+    expect(mocks.runMonsterStatusAutomation).toHaveBeenCalledWith({
+      type: "refreshCombatantCounts",
+    });
+    expect(mocks.runMonsterStatusAutomation).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "prepareRoundStart" })
+    );
+    expect(mocks.runBattleRoundAutomation).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "recordStartCount" })
+    );
+    expect(mocks.runBattleRoundAutomation).not.toHaveBeenCalledWith({ type: "syncRuntime" });
+    expect(mocks.runBattleRoundLifecycle).not.toHaveBeenCalledWith({ type: "roundReady" });
+  });
 });
