@@ -52,6 +52,16 @@ describe("runAppStartup", () => {
     });
   });
 
+  it("runs userscript startup in business order", () => {
+    runAppStartup({ type: AppStartupEvent.USERSCRIPT_START });
+
+    const actualOrder = [
+      mocks.runCdRuntimeAutomation.mock.invocationCallOrder[0],
+      mocks.runRiddleDatasetAutomation.mock.invocationCallOrder[0],
+    ];
+    expect(actualOrder).toEqual([...actualOrder].sort((a, b) => a - b));
+  });
+
   it("delegates option version and language sync to the option entry", () => {
     mocks.runOptionAutomation.mockReturnValue({
       configured: true,
@@ -72,6 +82,23 @@ describe("runAppStartup", () => {
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "loadStoredAoe" });
   });
 
+  it("runs configured game-page startup in business order", () => {
+    mocks.runOptionAutomation.mockReturnValue({
+      configured: true,
+      lang: "2",
+      versionUpdated: false,
+    });
+
+    expect(runAppStartup({ type: AppStartupEvent.GAME_PAGE_READY })).toBe(true);
+
+    const actualOrder = [
+      mocks.runOptionAutomation.mock.invocationCallOrder[0],
+      mocks.addStyle.mock.invocationCallOrder[0],
+      mocks.runAbilityAoeAutomation.mock.invocationCallOrder[0],
+    ];
+    expect(actualOrder).toEqual([...actualOrder].sort((a, b) => a - b));
+  });
+
   it("requests initial config when the option entry reports missing config", () => {
     const click = vi.fn();
     mocks.runOptionAutomation.mockReturnValue({ configured: false });
@@ -85,5 +112,12 @@ describe("runAppStartup", () => {
     });
     expect(mocks.g).toHaveBeenCalledWith("lang", "1");
     expect(click).toHaveBeenCalled();
+    expect(mocks.runAbilityAoeAutomation).not.toHaveBeenCalled();
+  });
+
+  it("accepts unknown startup events as no-op", () => {
+    expect(runAppStartup({ type: "unknown" })).toBe(true);
+    expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
   });
 });

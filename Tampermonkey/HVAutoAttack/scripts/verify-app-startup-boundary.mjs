@@ -44,6 +44,14 @@ function checkEntry() {
     violations.push(`${rel(entryFile)} must expose runAppStartup(event)`);
   }
   for (const required of [
+    "appStartupEventHandlers",
+    "USERSCRIPT_STARTUP_STEPS",
+    "GAME_PAGE_STARTUP_STEPS",
+    "runUserscriptStartup",
+    "runGamePageStartup",
+    "loadCdRuntimeState",
+    "registerRiddleDatasetExportMenu",
+    "syncConfiguredStartupOption",
     "runCdRuntimeAutomation",
     "CdRuntimeEvent.LOAD",
     "runRiddleDatasetAutomation",
@@ -54,6 +62,45 @@ function checkEntry() {
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} startup wiring`);
+    }
+  }
+  if (
+    !/const USERSCRIPT_STARTUP_STEPS = \[\s*loadCdRuntimeState,\s*registerRiddleDatasetExportMenu\s*\]/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(entryFile)} must own explicit userscript startup order`);
+  }
+  if (
+    !/const GAME_PAGE_STARTUP_STEPS = \[\s*syncConfiguredStartupOption,\s*warnDefaultFont,\s*loadBattleLearningState\s*\]/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(entryFile)} must own explicit game-page startup order`);
+  }
+  if (
+    !/\[EVENT_USERSCRIPT_START\]: runUserscriptStartup[\s\S]*\[EVENT_GAME_PAGE_READY\]: runGamePageStartup/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(entryFile)} must route startup events through appStartupEventHandlers`);
+  }
+  const entryBody =
+    text.match(/export function runAppStartup\(event = \{ type: EVENT_USERSCRIPT_START \}\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+    violations.push(`${rel(entryFile)} entry must route events through handler table`);
+  }
+  for (const forbidden of [
+    "runCdRuntimeAutomation",
+    "runRiddleDatasetAutomation",
+    "syncOptionVersion",
+    "requestInitialConfig",
+    "warnDefaultFont",
+    "loadBattleLearningState",
+  ]) {
+    if (entryBody.includes(forbidden)) {
+      violations.push(`${rel(entryFile)} entry must route startup through flow functions`);
     }
   }
   if (/\bg\(\s*["']option["']/.test(text)) {

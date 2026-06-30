@@ -16,9 +16,27 @@ export const AppStartupEvent = Object.freeze({
   GAME_PAGE_READY: EVENT_GAME_PAGE_READY,
 });
 
-function loadGlobalStartupState() {
+const USERSCRIPT_STARTUP_STEPS = [loadCdRuntimeState, registerRiddleDatasetExportMenu];
+const GAME_PAGE_STARTUP_STEPS = [syncConfiguredStartupOption, warnDefaultFont, loadBattleLearningState];
+
+const appStartupEventHandlers = Object.freeze({
+  [EVENT_USERSCRIPT_START]: runUserscriptStartup,
+  [EVENT_GAME_PAGE_READY]: runGamePageStartup,
+});
+
+function loadCdRuntimeState() {
   runCdRuntimeAutomation({ type: CdRuntimeEvent.LOAD });
+  return true;
+}
+
+function registerRiddleDatasetExportMenu() {
   runRiddleDatasetAutomation({ type: RiddleDatasetEvent.REGISTER_EXPORT_MENU });
+  return true;
+}
+
+function runUserscriptStartup() {
+  for (const step of USERSCRIPT_STARTUP_STEPS) step();
+  return true;
 }
 
 function syncOptionVersion() {
@@ -38,6 +56,12 @@ function syncOptionVersion() {
   return true;
 }
 
+function syncConfiguredStartupOption() {
+  if (syncOptionVersion()) return true;
+  requestInitialConfig();
+  return false;
+}
+
 function requestInitialConfig() {
   g(
     "lang",
@@ -52,37 +76,29 @@ function requestInitialConfig() {
 }
 
 function warnDefaultFont() {
-  if (!gE('[class^="c5"],[class^="c4"]')) return;
+  if (!gE('[class^="c5"],[class^="c4"]')) return true;
   _alert(
     0,
     "请设置字体：使用默认字体可能使某些功能失效。\n请在 HV 设置(Settings) → Style 里把界面字体设为非默认(如 Verdana / Arial)。",
     "請設置字體：使用默認字體可能使某些功能失效。\n請在 HV 設置(Settings) → Style 裡把界面字體設為非默認(如 Verdana / Arial)。",
     "Please set a font: the default font may break some features.\nIn HV Settings → Style, set the UI font to a non-default one (e.g. Verdana / Arial)."
   );
+  return true;
 }
 
 function loadBattleLearningState() {
   globalThis.unsafeWindow = typeof unsafeWindow === "undefined" ? window : unsafeWindow;
   runAbilityAoeAutomation({ type: AbilityAoeEvent.LOAD_STORED_AOE });
+  return true;
 }
 
 function runGamePageStartup() {
-  if (!syncOptionVersion()) {
-    requestInitialConfig();
-    return false;
+  for (const step of GAME_PAGE_STARTUP_STEPS) {
+    if (!step()) return false;
   }
-  warnDefaultFont();
-  loadBattleLearningState();
   return true;
 }
 
 export function runAppStartup(event = { type: EVENT_USERSCRIPT_START }) {
-  if (event.type === EVENT_USERSCRIPT_START) {
-    loadGlobalStartupState();
-    return true;
-  }
-  if (event.type === EVENT_GAME_PAGE_READY) {
-    return runGamePageStartup();
-  }
-  return true;
+  return appStartupEventHandlers[event.type]?.(event) ?? true;
 }
