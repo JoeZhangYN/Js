@@ -4,6 +4,11 @@ export const BattleDebuffCoverageEvent = Object.freeze({
   HAS_MISSING_DEBUFF: EVENT_HAS_MISSING_DEBUFF,
 });
 
+const battleDebuffCoverageEventHandlers = Object.freeze({
+  [EVENT_HAS_MISSING_DEBUFF]: (event) =>
+    hasMissingDebuffCoverage(event.monsterBuffs, event.debuffName, event.monsterAlive),
+});
+
 function hasMissingDebuffCoverage(monsterBuffs, debuffName, monsterAlive) {
   if (!debuffName || !monsterAlive) return false;
   const covered = (monsterBuffs || []).filter((buffs) =>
@@ -13,8 +18,5 @@ function hasMissingDebuffCoverage(monsterBuffs, debuffName, monsterAlive) {
 }
 
 export function runBattleDebuffCoverageAutomation(event = { type: EVENT_HAS_MISSING_DEBUFF }) {
-  if (event.type === EVENT_HAS_MISSING_DEBUFF) {
-    return hasMissingDebuffCoverage(event.monsterBuffs, event.debuffName, event.monsterAlive);
-  }
-  return undefined;
+  return battleDebuffCoverageEventHandlers[event.type]?.(event);
 }

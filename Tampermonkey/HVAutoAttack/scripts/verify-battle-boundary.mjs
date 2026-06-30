@@ -1434,6 +1434,7 @@ function checkBattleDebuffCoverage() {
   const text = fs.readFileSync(debuffCoverageFile, "utf8");
   for (const required of [
     "BattleDebuffCoverageEvent",
+    "battleDebuffCoverageEventHandlers",
     "runBattleDebuffCoverageAutomation",
     "HAS_MISSING_DEBUFF",
     "event.monsterBuffs",
@@ -1444,6 +1445,20 @@ function checkBattleDebuffCoverage() {
   }
   if (/\bevent\.snap\b|\bsnap\?\.view\b|\bsnap\.view\b/.test(text)) {
     violations.push(`${rel(debuffCoverageFile)} must consume monsterBuffs, not snap`);
+  }
+  const entryBody =
+    text.match(/export function runBattleDebuffCoverageAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_HAS_MISSING_DEBUFF\]/.test(text)) {
+    violations.push(`${rel(debuffCoverageFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${rel(debuffCoverageFile)} entry must dispatch by handler table`);
+  }
+  const debuffCoverageTest = path.join(root, "src/battle/battle-debuff-coverage.test.js");
+  const testText = fs.readFileSync(debuffCoverageTest, "utf8");
+  if (!testText.includes("rejects unknown debuff coverage events")) {
+    violations.push(`${rel(debuffCoverageTest)} must cover unknown debuff coverage events`);
   }
   const castAllText = fs.readFileSync(decideCastAllFile, "utf8");
   for (const call of castAllText.matchAll(

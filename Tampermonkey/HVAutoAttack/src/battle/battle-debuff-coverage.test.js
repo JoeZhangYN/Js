@@ -24,4 +24,15 @@ describe("battle debuff coverage", () => {
   it("uses rule runtime alive count when supplied", () => {
     expect(hasMissing([["imperil"]], "imperil", 2)).toBe(true);
   });
+
+  it("rejects unknown debuff coverage events", () => {
+    expect(
+      runBattleDebuffCoverageAutomation({
+        type: "unknown",
+        monsterBuffs: [[], []],
+        debuffName: "weaken",
+        monsterAlive: 2,
+      })
+    ).toBeUndefined();
+  });
 });
