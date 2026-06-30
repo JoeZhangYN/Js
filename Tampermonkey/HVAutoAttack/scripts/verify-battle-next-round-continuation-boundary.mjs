@@ -20,6 +20,7 @@ const actionLifecycleText = read(actionLifecycle);
 
 for (const required of [
   "BattleNextRoundContinuationEvent",
+  "battleNextRoundContinuationEventHandlers",
   "runBattleNextRoundContinuation",
   "CONTINUE",
   "RiddleEvent.BATTLE_POST_RESULT",
@@ -42,6 +43,20 @@ if (
 }
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover next-round continuation contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("rejects unknown next-round continuation events without side effects")) {
+    violations.push(`${rel(ownerTest)} must cover unknown next-round continuation events`);
+  }
+}
+const entryBody =
+  ownerText.match(/export function runBattleNextRoundContinuation\([^)]*\)[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_CONTINUE\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
 if (
   !actionLifecycleText.includes("BattleNextRoundContinuationEvent.CONTINUE") ||

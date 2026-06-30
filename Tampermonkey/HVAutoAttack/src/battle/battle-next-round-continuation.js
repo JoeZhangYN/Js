@@ -10,6 +10,10 @@ export const BattleNextRoundContinuationEvent = Object.freeze({
   CONTINUE: EVENT_CONTINUE,
 });
 
+const battleNextRoundContinuationEventHandlers = Object.freeze({
+  [EVENT_CONTINUE]: (event, deps) => continueNextRound(deps),
+});
+
 function replaceBattlePanels(data, deps) {
   deps.gE("#battle_main").replaceChild(deps.gE("#battle_right", data), deps.gE("#battle_right"));
   deps.gE("#battle_main").replaceChild(deps.gE("#battle_left", data), deps.gE("#battle_left"));
@@ -44,6 +48,5 @@ export function runBattleNextRoundContinuation(
     runTurn: runBattleTurnAutomation,
   }
 ) {
-  if (event.type === EVENT_CONTINUE) return continueNextRound(deps);
-  return false;
+  return battleNextRoundContinuationEventHandlers[event.type]?.(event, deps) ?? false;
 }
