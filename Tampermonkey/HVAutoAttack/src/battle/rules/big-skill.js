@@ -1,4 +1,4 @@
-// PURE: OFC/FRD 即将就绪时跳过全员 Weaken/Imperil 的判定（Phase 5b-5）。
+// PURE: OFC/FRD 资源就绪/即将就绪时跳过全员 Weaken/Imperil 的判定（Phase 5b-5）。
 // 单一来源避免重复。不读 DOM / 不调 g()——只吃 opt + explicit battle facts。
 import {
   BigSkillKillLearningEvent,
@@ -6,22 +6,22 @@ import {
 } from "../../state/big-skill-kill-learner.js";
 import { bigSkillCodes, isBigSkillEnabled, readBigSkillSpec } from "../big-skill-catalog.js";
 
-const EVENT_READ_CLEAR_READY = "readClearReady";
+const EVENT_READ_CLEAR_RESOURCE_READY = "readClearResourceReady";
 const EVENT_SHOULD_SKIP_DEBUFF = "shouldSkipDebuff";
 
 export const BigSkillDebuffEvent = Object.freeze({
-  READ_CLEAR_READY: EVENT_READ_CLEAR_READY,
+  READ_CLEAR_RESOURCE_READY: EVENT_READ_CLEAR_RESOURCE_READY,
   SHOULD_SKIP_DEBUFF: EVENT_SHOULD_SKIP_DEBUFF,
 });
 
 /**
- * 清场大招(OFC/FRD)本回合是否「真就绪即可开火」= CD 归零且 OC 已够。
- * 与 decide-attack 实际开火 OFC/FRD 的条件同口径 → 命中即代表本回合就会放大招清场。
- * Feature 5 防守爆发控制复用（OFC 本回合清场则蹦极源即灭，不必再花一回合单点控制）。
+ * 清场大招(OFC/FRD)资源是否就绪 = 开关启用、CD 归零且 OC 已够。
+ * 注意：这不是“实际会开火”的攻击链裁决；攻击链还会看 spirit/skillReady/降级/评分等。
+ * Feature 5 防守爆发控制复用（OFC 资源已就绪则蹦极源即将可被清掉，避免过控）。
  * @param {object} event
  * @returns {boolean}
  */
-function clearSkillReadyNow(event) {
+function clearSkillResourceReady(event) {
   const opt = event?.opt || {};
   const skillCooldowns = event?.skillCooldowns || {};
   const overcharge = event?.overcharge ?? 0;
@@ -75,7 +75,7 @@ function shouldSkipForBigSkill(event) {
   }
   // Feature 2: 清场大招本回合已就绪 → 全员 Weaken 必废，直接跳（不等下面 OC 窗口/怪数门槛——
   //   怪少的真开场会被 aliveCount 早退误压跳过，白烧一回合 + 蓝逼吃 mana potion）。
-  if (kind === "We" && opt.skipWeakenWhenClearReady !== false && clearSkillReadyNow(event)) {
+  if (kind === "We" && opt.skipWeakenWhenClearReady !== false && clearSkillResourceReady(event)) {
     return true;
   }
   const N = opt.skipDebuffForBigSkillThreshold ?? 3;
@@ -91,7 +91,7 @@ function shouldSkipForBigSkill(event) {
 }
 
 export function runBigSkillDebuffAutomation(event = { type: EVENT_SHOULD_SKIP_DEBUFF }) {
-  if (event.type === EVENT_READ_CLEAR_READY) return clearSkillReadyNow(event);
+  if (event.type === EVENT_READ_CLEAR_RESOURCE_READY) return clearSkillResourceReady(event);
   if (event.type === EVENT_SHOULD_SKIP_DEBUFF) {
     return shouldSkipForBigSkill(event);
   }

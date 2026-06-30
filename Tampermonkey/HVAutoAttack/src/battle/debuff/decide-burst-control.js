@@ -24,10 +24,10 @@ export function decideBurstControl(event = {}) {
   const opt = event.opt || {};
   if (!opt.burstControlSwitch) return { kind: "noop" };
   if (opt.debuffSkillSwitch === false) return { kind: "noop" };
-  // OFC 本回合就清场 → 蹦极源即灭，别白费一回合控制（与 F2/F4 同口径，避免过控）。
+  // OFC/FRD 清场资源已就绪 → 蹦极源即将可被清掉，别白费一回合控制（与 F2/F4 同口径，避免过控）。
   if (
     runBigSkillDebuffAutomation({
-      type: BigSkillDebuffEvent.READ_CLEAR_READY,
+      type: BigSkillDebuffEvent.READ_CLEAR_RESOURCE_READY,
       opt,
       skillCooldowns: event.skillCooldowns,
       overcharge: event.overcharge,

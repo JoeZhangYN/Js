@@ -1,5 +1,5 @@
-// Feature 2 回归锁：big-skill debuff 入口「清场大招本回合已就绪即跳 Weaken」快路 +
-// clear-ready query。钉死：就绪即跳(怪少也跳)、OC 不够不跳、开关 off 可回退、
+// Feature 2 回归锁：big-skill debuff 入口「清场大招资源已就绪即跳 Weaken」快路 +
+// clear-resource-ready query。钉死：资源就绪即跳(怪少也跳)、OC 不够不跳、开关 off 可回退、
 // Im+boss 强保不变、原 OC 窗口路仍在、顶层 We 开关 false 早退。
 import { describe, it, expect, beforeEach } from "vitest";
 import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill.js";
@@ -15,9 +15,9 @@ const bigSkillDebuffFacts = (snap) => ({
   aliveCount: snap.aliveCount,
   monsterFacts: snap.view,
 });
-const clearSkillReadyNow = (opt, snap) =>
+const clearSkillResourceReady = (opt, snap) =>
   runBigSkillDebuffAutomation({
-    type: BigSkillDebuffEvent.READ_CLEAR_READY,
+    type: BigSkillDebuffEvent.READ_CLEAR_RESOURCE_READY,
     opt,
     ...bigSkillDebuffFacts(snap),
   });
@@ -47,29 +47,29 @@ function learnBossKillEvidence() {
   }
 }
 
-describe("clearSkillReadyNow", () => {
+describe("clearSkillResourceReady", () => {
   it("OFC 启用 + cd=0 + oc>=205 → true", () => {
-    expect(clearSkillReadyNow({ skill_OFC: true }, snap({ cdMap: { OFC: 0 }, oc: 210 }))).toBe(
+    expect(clearSkillResourceReady({ skill_OFC: true }, snap({ cdMap: { OFC: 0 }, oc: 210 }))).toBe(
       true
     );
   });
   it("OFC 未启用 → false（即便就绪）", () => {
-    expect(clearSkillReadyNow({}, snap({ cdMap: { OFC: 0 }, oc: 210 }))).toBe(false);
+    expect(clearSkillResourceReady({}, snap({ cdMap: { OFC: 0 }, oc: 210 }))).toBe(false);
   });
   it("cd 未归零 → false", () => {
-    expect(clearSkillReadyNow({ skill_OFC: true }, snap({ cdMap: { OFC: 2 }, oc: 210 }))).toBe(
+    expect(clearSkillResourceReady({ skill_OFC: true }, snap({ cdMap: { OFC: 2 }, oc: 210 }))).toBe(
       false
     );
   });
   it("OC 不够（<205）→ false", () => {
-    expect(clearSkillReadyNow({ skill_OFC: true }, snap({ cdMap: { OFC: 0 }, oc: 200 }))).toBe(
+    expect(clearSkillResourceReady({ skill_OFC: true }, snap({ cdMap: { OFC: 0 }, oc: 200 }))).toBe(
       false
     );
   });
   it("FRD 启用 + cd=0 + oc>=105 → true（nested opt.skill.FRD 亦认）", () => {
-    expect(clearSkillReadyNow({ skill: { FRD: true } }, snap({ cdMap: { FRD: 0 }, oc: 110 }))).toBe(
-      true
-    );
+    expect(
+      clearSkillResourceReady({ skill: { FRD: true } }, snap({ cdMap: { FRD: 0 }, oc: 110 }))
+    ).toBe(true);
   });
 });
 

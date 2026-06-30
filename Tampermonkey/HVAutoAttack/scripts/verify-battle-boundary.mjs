@@ -1133,7 +1133,7 @@ function checkBigSkillDebuffEntry() {
   for (const required of [
     "BigSkillDebuffEvent",
     "runBigSkillDebuffAutomation",
-    "READ_CLEAR_READY",
+    "READ_CLEAR_RESOURCE_READY",
     "SHOULD_SKIP_DEBUFF",
   ]) {
     if (!ownerText.includes(required)) {
@@ -1175,6 +1175,9 @@ function checkBigSkillDebuffEntry() {
   const castAllText = fs.readFileSync(decideCastAllFile, "utf8");
   if (/\bbigSkillDebuffFacts\b/.test(castAllText)) {
     violations.push(`${rel(decideCastAllFile)} must not project big-skill boss facts locally`);
+  }
+  if (/READ_CLEAR_READY|readClearReady/.test(ownerText)) {
+    violations.push(`${rel(bigSkillFile)} legacy clear-ready name must stay retired`);
   }
 }
 

@@ -60,7 +60,7 @@ describe("decideBurstControl", () => {
     expect(decide({ burstControlSwitch: true }, s)).toEqual({ kind: "noop" });
   });
 
-  it("OFC 本回合就绪清场 → noop（不过控）", () => {
+  it("OFC 清场资源就绪 → noop（不过控）", () => {
     const s = snap({
       learnedBurstByMid: { 100: { maxHit: 900, type: "fire" } },
       cdMap: { OFC: 0 },
