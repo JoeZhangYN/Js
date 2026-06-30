@@ -1,4 +1,14 @@
-export function attackFacts(snap) {
+const EVENT_READ_ACTION = "read-action";
+
+export const BattleAttackFactsEvent = Object.freeze({
+  READ_ACTION: EVENT_READ_ACTION,
+});
+
+const battleAttackFactsEventHandlers = Object.freeze({
+  [EVENT_READ_ACTION]: (event) => attackFacts(event.snap),
+});
+
+function attackFacts(snap) {
   return {
     conditionFacts: snap,
     spiritOn: snap?.spiritOn,
@@ -18,4 +28,8 @@ export function attackFacts(snap) {
     etherTapExpiring: snap?.etherTapExpiring,
     monsterFacts: snap?.view,
   };
+}
+
+export function runBattleAttackFacts(event = { type: EVENT_READ_ACTION }) {
+  return battleAttackFactsEventHandlers[event.type]?.(event) ?? {};
 }

@@ -3439,7 +3439,8 @@ function checkAttackEntry() {
     "WILL_CLEAR_WITH_BIG_SKILL",
     "AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL",
     "runBattleAttackAction",
-    "attackFacts",
+    "BattleAttackFactsEvent.READ_ACTION",
+    "runBattleAttackFacts",
     "runAttackDecision",
   ]) {
     if (!attackActionText.includes(required)) {
@@ -3807,10 +3808,34 @@ function checkBattleRuleFactMappers() {
       `${rel(battleRulesFile)} must use named fact mappers, not assemble condition facts`
     );
   }
-  for (const required of ["attackFacts", "conditionFacts", "monsterFacts"]) {
+  for (const required of [
+    "BattleAttackFactsEvent",
+    "battleAttackFactsEventHandlers",
+    "runBattleAttackFacts",
+    "READ_ACTION",
+    "attackFacts",
+    "conditionFacts",
+    "monsterFacts",
+  ]) {
     if (!attackFactsText.includes(required)) {
       violations.push(`${rel(attackFactsFile)} must own attack fact mapper ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleAttackFactsEvent\b|runBattleAttackFacts\b)/.test(
+      attackFactsText
+    )
+  ) {
+    violations.push(`${rel(attackFactsFile)} may export only its event entry`);
+  }
+  const attackFactsEntryBody =
+    attackFactsText.match(/export function runBattleAttackFacts\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_ACTION\]/.test(attackFactsText)) {
+    violations.push(`${rel(attackFactsFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(attackFactsEntryBody)) {
+    violations.push(`${rel(attackFactsFile)} entry must dispatch by handler table`);
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(attackFactsText)) {
     violations.push(`${rel(attackFactsFile)} must not depend on generic rule fact mappers`);

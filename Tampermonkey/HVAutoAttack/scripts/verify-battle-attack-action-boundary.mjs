@@ -33,7 +33,8 @@ for (const required of [
   "WILL_CLEAR_WITH_BIG_SKILL",
   "AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL",
   "runBattleAttackAction",
-  "attackFacts",
+  "BattleAttackFactsEvent.READ_ACTION",
+  "runBattleAttackFacts",
   "runAttackDecision",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
