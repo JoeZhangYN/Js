@@ -19,6 +19,7 @@ const rawRuntimeReaders = new Set([
   path.normalize("src/battle/attack/decide-attack.js"),
   path.normalize("src/battle/item/decide-item.js"),
   path.normalize("src/battle/battle-action-sequence.js"),
+  path.normalize("src/battle/battle-action-survival-sequence.js"),
 ]);
 const violations = [];
 

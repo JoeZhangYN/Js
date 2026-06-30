@@ -54,6 +54,7 @@ const turnContextFile = path.join(root, "src/battle/turn-context.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const actionSequenceFile = path.join(root, "src/battle/battle-action-sequence.js");
+const survivalActionSequenceFile = path.join(root, "src/battle/battle-action-survival-sequence.js");
 const legacyStepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/battle-round-start.js");
@@ -322,7 +323,7 @@ function checkTurnEntry() {
   for (const required of [
     "BATTLE_RULES",
     "orderedBattleActionRules",
-    "criticalBuffGuard",
+    "survivalActionRules",
     "attack",
   ]) {
     if (!actionSequenceText.includes(required)) {
@@ -331,6 +332,12 @@ function checkTurnEntry() {
   }
   if (/export\s+const\s+BATTLE_RULES\b/.test(actionSequenceText)) {
     violations.push(`${rel(actionSequenceFile)} must keep BATTLE_RULES private`);
+  }
+  const survivalActionSequenceText = fs.readFileSync(survivalActionSequenceFile, "utf8");
+  for (const required of ["survivalActionRules", "criticalBuffGuard", "useGem", "useScroll"]) {
+    if (!survivalActionSequenceText.includes(required)) {
+      violations.push(`${rel(survivalActionSequenceFile)} must own survival action ${required}`);
+    }
   }
   if (fs.existsSync(legacyStepRunnerFile)) {
     violations.push("src/battle/step-runner.js legacy action runner must stay deleted");
@@ -349,6 +356,12 @@ function checkTurnEntry() {
         /from\s+["'][^"']*battle-action-sequence\.js["']/.test(source)
       ) {
         violations.push(`${rel(file)} must use runBattleActionDecision(), not action sequence`);
+      }
+      if (
+        file !== actionSequenceFile &&
+        /from\s+["'][^"']*battle-action-survival-sequence\.js["']/.test(source)
+      ) {
+        violations.push(`${rel(file)} must use runBattleActionDecision(), not survival sequence`);
       }
     }
   }
