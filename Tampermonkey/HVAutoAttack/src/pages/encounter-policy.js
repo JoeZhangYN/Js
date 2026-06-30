@@ -131,32 +131,28 @@ function markEncounterStarted(
   return next;
 }
 
+const encounterPolicyEventHandlers = Object.freeze({
+  [EncounterPolicyEvent.DEFAULT_STATE]: () => defaultEncounterState(),
+  [EncounterPolicyEvent.RESET_DAY]: () => defaultEncounterState(),
+  [EncounterPolicyEvent.NORMALIZE]: (event) => normalizeEncounterState(event.state, event.nowMs),
+  [EncounterPolicyEvent.READ_CLOCK]: (event) => readEncounterClock(event.state, event.nowMs),
+  [EncounterPolicyEvent.PLAN_NEXT_CHECK]: (event) =>
+    planNextEncounterCheck(event.state, { nowMs: event.nowMs, jitter: event.jitter }),
+  [EncounterPolicyEvent.PLAN_ACTIVATION]: (event) =>
+    planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs }),
+  [EncounterPolicyEvent.PARSE_SEARCH_KEY]: (event) => parseEncounterKeyFromSearch(event.search),
+  [EncounterPolicyEvent.PARSE_EVENTPANE_KEY]: (event) =>
+    parseEncounterKeyFromEventpaneHtml(event.eventpane),
+  [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) =>
+    markEncounterKeyAvailable(event.state, event.key, event.nowMs),
+  [EncounterPolicyEvent.MARK_STARTED]: (event) =>
+    markEncounterStarted(event.state, {
+      search: event.search,
+      key: event.key,
+      nowMs: event.nowMs,
+    }),
+});
+
 export function runEncounterPolicy(event = { type: EncounterPolicyEvent.READ_CLOCK }) {
-  switch (event.type) {
-    case EncounterPolicyEvent.DEFAULT_STATE:
-    case EncounterPolicyEvent.RESET_DAY:
-      return defaultEncounterState();
-    case EncounterPolicyEvent.NORMALIZE:
-      return normalizeEncounterState(event.state, event.nowMs);
-    case EncounterPolicyEvent.READ_CLOCK:
-      return readEncounterClock(event.state, event.nowMs);
-    case EncounterPolicyEvent.PLAN_NEXT_CHECK:
-      return planNextEncounterCheck(event.state, { nowMs: event.nowMs, jitter: event.jitter });
-    case EncounterPolicyEvent.PLAN_ACTIVATION:
-      return planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs });
-    case EncounterPolicyEvent.PARSE_SEARCH_KEY:
-      return parseEncounterKeyFromSearch(event.search);
-    case EncounterPolicyEvent.PARSE_EVENTPANE_KEY:
-      return parseEncounterKeyFromEventpaneHtml(event.eventpane);
-    case EncounterPolicyEvent.MARK_KEY_AVAILABLE:
-      return markEncounterKeyAvailable(event.state, event.key, event.nowMs);
-    case EncounterPolicyEvent.MARK_STARTED:
-      return markEncounterStarted(event.state, {
-        search: event.search,
-        key: event.key,
-        nowMs: event.nowMs,
-      });
-    default:
-      return undefined;
-  }
+  return encounterPolicyEventHandlers[event.type]?.(event);
 }

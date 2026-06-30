@@ -325,6 +325,39 @@ if (/\bREADINESS\b/.test(policyText)) {
     `${policyFile.replaceAll("\\", "/")} must not expose a parallel readiness query; use READ_CLOCK`
   );
 }
+if (!policyText.includes("const encounterPolicyEventHandlers")) {
+  violations.push(
+    `${policyFile.replaceAll("\\", "/")} must route encounter policy events through a handler table`
+  );
+}
+const policyEntryMatch = policyText.match(/export function runEncounterPolicy[\s\S]*?\n}/);
+if (!policyEntryMatch) {
+  violations.push(`${policyFile.replaceAll("\\", "/")} must expose runEncounterPolicy(event)`);
+} else {
+  const entryBody = policyEntryMatch[0];
+  if (/switch\s*\(\s*event\.type\s*\)/.test(entryBody) || /if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+    violations.push(
+      `${policyFile.replaceAll("\\", "/")} entry must not reintroduce event.type branching`
+    );
+  }
+  for (const internal of [
+    "defaultEncounterState(",
+    "normalizeEncounterState(",
+    "readEncounterClock(",
+    "planNextEncounterCheck(",
+    "planEncounterActivation(",
+    "parseEncounterKeyFromSearch(",
+    "parseEncounterKeyFromEventpaneHtml(",
+    "markEncounterKeyAvailable(",
+    "markEncounterStarted(",
+  ]) {
+    if (entryBody.includes(internal)) {
+      violations.push(
+        `${policyFile.replaceAll("\\", "/")} entry must dispatch through encounterPolicyEventHandlers`
+      );
+    }
+  }
+}
 if (!/TimeEvent\.MS_UNTIL_NEXT_UTC_DAY/.test(policyText)) {
   violations.push(
     `${policyFile.replaceAll("\\", "/")} must read UTC day rollover timing through time entry`

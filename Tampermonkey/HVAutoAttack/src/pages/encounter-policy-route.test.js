@@ -85,4 +85,8 @@ describe("runEncounterPolicy route contract", () => {
       href: "?s=Battle&ss=ba&encounter=abc",
     });
   });
+
+  it("ignores unknown policy events", () => {
+    expect(runEncounterPolicy({ type: "unknown" })).toBeUndefined();
+  });
 });
