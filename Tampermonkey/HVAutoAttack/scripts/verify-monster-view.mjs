@@ -1,13 +1,13 @@
 // 反退化 probe（拆桥）：决策层（decide-*.js + action decision 组合根）的目标选择与血量读取
-// 必须走统一怪物视图 snap.view（battle/monster-view.js join）+ target-strategy 具名策略，
+// 必须走统一怪物视图 snap.view（battle/monster-view.js join）+ battle-target-strategy 入口，
 // 不得裸读散落字段或绕过缓存直查库。
 //
 // 背景：怪物事实曾散在 snap.monsters(血条百分比) / g("monsterStatus")(绝对血/finWeight) /
 // monster-db(九抗) 三面，各 decide 各取一面 → Drain 目标漂移即源于此（用了 hpRatio 百分比 + 邻居偏移）。
-// 已收口到 snap.view（含 hpPercent/hpAbsNow/hpMax/finWeight/resists/isBoss）+ target-strategy。
+// 已收口到 snap.view（含 hpPercent/hpAbsNow/hpMax/finWeight/resists/isBoss）+ target strategy entry。
 //
 // 锁三类（仅扫决策层，视图源头 monster-view/target-strategy/snapshot/attack 不在 scope）：
-//   ① 裸读 .hpRatio/.hpNow/.finWeight → 走 view.hpPercent/hpAbsNow + target-strategy 具名策略
+//   ① 裸读 .hpRatio/.hpNow/.finWeight → 走 view.hpPercent/hpAbsNow + target strategy entry
 //   ② 读 .monsters → 走 snap.view + monster-view 的 aliveByOrder/byOrder
 //   ③ getMonster（直查 IndexedDB）→ 走 state/monster-cache（同步缓存，prime 在 resist-panel）
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -26,7 +26,7 @@ function isDecideFile(rel) {
 const RULES = [
   {
     re: /\.(hpRatio|hpNow|finWeight)\b/,
-    msg: "裸读 .hpRatio/.hpNow/.finWeight → 走 snap.view 的 hpPercent/hpAbsNow + target-strategy 具名策略",
+    msg: "裸读 .hpRatio/.hpNow/.finWeight → 走 snap.view 的 hpPercent/hpAbsNow + target strategy entry",
   },
   { re: /\.monsters\b/, msg: "读 .monsters → 走 snap.view + monster-view 的 aliveByOrder/byOrder" },
   { re: /\bgetMonster\b/, msg: "decide 层直查库 getMonster → 走 state/monster-cache（同步缓存）" },
@@ -51,6 +51,33 @@ for (const { abs, rel } of collectJs(SRC_DIR)) {
     for (const r of RULES) {
       if (r.re.test(codeLines[i])) violations.push({ rel, line: i + 1, msg: r.msg });
     }
+    if (/from\s+["'][^"']*(?:^|[\\/])target-strategy\.js["']/.test(codeLines[i])) {
+      violations.push({
+        rel,
+        line: i + 1,
+        msg: "decide 层目标选择必须走 runBattleTargetStrategy(event)",
+      });
+    }
+  }
+}
+
+for (const { abs, rel } of collectJs(`${SRC_DIR}/battle`)) {
+  if (
+    rel === "battle-target-strategy.js" ||
+    rel === "battle-target-strategy.test.js" ||
+    rel === "target-strategy.test.js"
+  ) {
+    continue;
+  }
+  const codeLines = stripComments(readFileSync(abs, "utf8")).split(/\r?\n/);
+  for (let i = 0; i < codeLines.length; i += 1) {
+    if (/from\s+["'][^"']*(?:^|[\\/])target-strategy\.js["']/.test(codeLines[i])) {
+      violations.push({
+        rel: `battle/${rel}`,
+        line: i + 1,
+        msg: "battle 目标选择必须走 runBattleTargetStrategy(event)",
+      });
+    }
   }
 }
 
@@ -61,5 +88,5 @@ if (violations.length > 0) {
 }
 
 console.log(
-  "[verify-monster-view] OK — 决策层目标选择/血量统一走 snap.view + target-strategy（无散落裸读 / 无绕缓存直查库）"
+  "[verify-monster-view] OK — 决策层目标选择/血量统一走 snap.view + target strategy entry（无散落裸读 / 无绕缓存直查库）"
 );

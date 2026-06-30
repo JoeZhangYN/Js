@@ -8,8 +8,8 @@ import {
   runBattleDebuffCoverageAutomation,
 } from "../battle-debuff-coverage.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
+import { BattleTargetStrategyEvent, runBattleTargetStrategy } from "../battle-target-strategy.js";
 import { canApplyDebuffPure } from "./can-apply.js";
-import { aoeNeighborAnchor } from "../target-strategy.js";
 
 const ALL_DEBUFF_GATES = Object.freeze({
   We: Object.freeze({
@@ -63,7 +63,12 @@ export function decideCastDebuffOnAll(event = {}) {
       };
     }
     // cast：选目标（AoE≥2 打 order 邻居否则打自己）
-    const targetId = aoeNeighborAnchor(monster, sorted[i + 1], aoeCount);
+    const targetId = runBattleTargetStrategy({
+      type: BattleTargetStrategyEvent.AOE_NEIGHBOR_ANCHOR,
+      monster,
+      nextMonster: sorted[i + 1],
+      aoeCount,
+    });
     return {
       kind: "click-skill-then-target",
       skillId: skill.id,

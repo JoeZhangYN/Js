@@ -1,7 +1,7 @@
 import { checkCondition } from "../../settings/condition-eval.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
-import { firstByFinWeight } from "../target-strategy.js";
+import { BattleTargetStrategyEvent, runBattleTargetStrategy } from "../battle-target-strategy.js";
 import { decideSpellAttackPlan } from "./spell-attack-plan.js";
 import { scorePhysicalSkillCandidates } from "./physical-skill-scoring.js";
 import { pickByUtility } from "./physical-skill-ranking.js";
@@ -33,7 +33,10 @@ function buildAttackPlanContext(opt, event) {
     type: BattleMonsterViewEvent.READ_ALIVE_BY_ORDER,
     view: event.monsterFacts,
   });
-  const firstMonster = firstByFinWeight(alive); // finWeight 最小 = 默认攻击目标
+  const firstMonster = runBattleTargetStrategy({
+    type: BattleTargetStrategyEvent.FIRST_BY_FIN_WEIGHT,
+    alive,
+  }); // finWeight 最小 = 默认攻击目标
   const buffsOf = (id) => (event.monsterFacts || []).find((m) => m.id === id)?.buffs || [];
   const etherTapGate =
     opt.etherTap &&

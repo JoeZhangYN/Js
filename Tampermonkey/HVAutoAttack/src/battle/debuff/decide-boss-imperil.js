@@ -5,7 +5,7 @@
 //   runBattlePreCastSpiritAutomation + attemptClickWithTarget，无需新 kind。
 // 无目标 → {kind:"noop"}。
 import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
-import { bossCoverageWindow } from "../target-strategy.js";
+import { BattleTargetStrategyEvent, runBattleTargetStrategy } from "../battle-target-strategy.js";
 
 const EVENT_CAN_CAST = "canCast";
 const EVENT_DECIDE = "decide";
@@ -38,9 +38,14 @@ function decideBossImperil(event) {
   });
   const isBossNoIm = (m) => m.isBoss && !m.buffs.includes("imperil");
   if (!sortedAlive.some(isBossNoIm)) return { kind: "noop" };
-  // AoE 覆盖窗口走 target-strategy.bossCoverageWindow（backward 窗口 [c-aoe+1,c] + tie-break 优先 needy 自身）。
+  // AoE 覆盖窗口走 target strategy entry（backward 窗口 [c-aoe+1,c] + tie-break 优先 needy 自身）。
   const aoe = event?.imperilAoe || opt.debuffSkillAoe?.Im || 1;
-  const best = bossCoverageWindow(sortedAlive, aoe, isBossNoIm);
+  const best = runBattleTargetStrategy({
+    type: BattleTargetStrategyEvent.BOSS_COVERAGE_WINDOW,
+    alive: sortedAlive,
+    aoe,
+    isNeedy: isBossNoIm,
+  });
   if (!best) return { kind: "noop" };
   return {
     kind: "click-skill-then-target",

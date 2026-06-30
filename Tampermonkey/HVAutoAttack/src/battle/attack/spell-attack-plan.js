@@ -1,6 +1,6 @@
 import { checkCondition } from "../../settings/condition-eval.js";
 import { OFFENSIVE_SPELL_LIB } from "../../data/spell-lib.js";
-import { firstByOrder } from "../target-strategy.js";
+import { BattleTargetStrategyEvent, runBattleTargetStrategy } from "../battle-target-strategy.js";
 import { selectAutoElement } from "./auto-element-selection.js";
 
 export function decideSpellAttackPlan(opt, event, context) {
@@ -25,7 +25,14 @@ export function decideSpellAttackPlan(opt, event, context) {
     : 1;
 
   if (aoeCount >= 2 && alive.length > 1) {
-    return { type: "spell", spellId, targetId: firstByOrder(alive).id };
+    return {
+      type: "spell",
+      spellId,
+      targetId: runBattleTargetStrategy({
+        type: BattleTargetStrategyEvent.FIRST_BY_ORDER,
+        alive,
+      }).id,
+    };
   }
   return { type: "spell", spellId, targetId: firstMonster.id };
 }
