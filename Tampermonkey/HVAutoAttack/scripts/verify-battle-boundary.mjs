@@ -61,8 +61,10 @@ const battleRulesFile = path.join(root, "src/battle/rules/index.js");
 const ruleFactsFile = path.join(root, "src/battle/rules/rule-facts.js");
 const attackFactsFile = path.join(root, "src/battle/rules/attack-facts.js");
 const bigSkillCatalogFile = path.join(root, "src/battle/big-skill-catalog.js");
-const bigSkillFile = path.join(root, "src/battle/rules/big-skill.js");
-const bossImperilFile = path.join(root, "src/battle/rules/decide-boss-imperil.js");
+const bigSkillFile = path.join(root, "src/battle/debuff/big-skill-debuff.js");
+const bossImperilFile = path.join(root, "src/battle/debuff/decide-boss-imperil.js");
+const legacyBigSkillFile = path.join(root, "src/battle/rules/big-skill.js");
+const legacyBossImperilFile = path.join(root, "src/battle/rules/decide-boss-imperil.js");
 const burstControlFile = path.join(root, "src/battle/debuff/decide-burst-control.js");
 const decideDeSkillFile = path.join(root, "src/battle/debuff/decide-de-skill.js");
 const decideCastAllFile = path.join(root, "src/battle/debuff/decide-cast-all.js");
@@ -1066,6 +1068,11 @@ function checkBattleDebuffCoverage() {
 }
 
 function checkBossImperilEntry() {
+  if (fs.existsSync(legacyBossImperilFile)) {
+    violations.push(
+      `${rel(legacyBossImperilFile)} must stay retired; boss Imperil belongs in debuff`
+    );
+  }
   const ownerText = fs.readFileSync(bossImperilFile, "utf8");
   for (const required of ["BossImperilEvent", "runBossImperilAutomation", "CAN_CAST", "DECIDE"]) {
     if (!ownerText.includes(required)) {
@@ -1132,6 +1139,11 @@ function checkBossImperilEntry() {
 }
 
 function checkBigSkillDebuffEntry() {
+  if (fs.existsSync(legacyBigSkillFile)) {
+    violations.push(
+      `${rel(legacyBigSkillFile)} must stay retired; big-skill debuff belongs in debuff`
+    );
+  }
   const catalogText = fs.readFileSync(bigSkillCatalogFile, "utf8");
   const ownerText = fs.readFileSync(bigSkillFile, "utf8");
   for (const required of ["bigSkillCodes", "readBigSkillSpec", "isBigSkillEnabled"]) {
@@ -1724,7 +1736,10 @@ function checkAttackEntry() {
 }
 
 function checkBattleRuleFactMappers() {
-  const ruleFactsText = fs.readFileSync(ruleFactsFile, "utf8");
+  if (fs.existsSync(ruleFactsFile)) {
+    violations.push(`${rel(ruleFactsFile)} generic rule fact mapper must stay retired`);
+  }
+  const ruleFactsText = fs.existsSync(ruleFactsFile) ? fs.readFileSync(ruleFactsFile, "utf8") : "";
   const attackFactsText = fs.readFileSync(attackFactsFile, "utf8");
   const itemFactsText = fs.readFileSync(itemFactsFile, "utf8");
   const buffFactsText = fs.readFileSync(buffFactsFile, "utf8");
@@ -1733,11 +1748,6 @@ function checkBattleRuleFactMappers() {
   const fleeFactsText = fs.readFileSync(fleeFactsFile, "utf8");
   const autoPauseFactsText = fs.readFileSync(autoPauseFactsFile, "utf8");
   const defendFactsText = fs.readFileSync(defendFactsFile, "utf8");
-  for (const required of ["bossImperilFacts"]) {
-    if (!ruleFactsText.includes(required)) {
-      violations.push(`${rel(ruleFactsFile)} must own rule fact mapper ${required}`);
-    }
-  }
   for (const retired of ["gemFacts", "potionFacts", "stallTopupFacts", "scrollFacts"]) {
     if (new RegExp(`export\\s+function\\s+${retired}\\s*\\(`).test(ruleFactsText)) {
       violations.push(`${rel(ruleFactsFile)} item fact mapper ${retired} belongs in item facts`);
@@ -1783,7 +1793,12 @@ function checkBattleRuleFactMappers() {
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(buffFactsText)) {
     violations.push(`${rel(buffFactsFile)} must not depend on generic rule fact mappers`);
   }
-  for (const required of ["allDebuffFacts", "singleDebuffFacts", "burstControlFacts"]) {
+  for (const required of [
+    "allDebuffFacts",
+    "singleDebuffFacts",
+    "burstControlFacts",
+    "bossImperilFacts",
+  ]) {
     if (!debuffFactsText.includes(required)) {
       violations.push(`${rel(debuffFactsFile)} must own debuff fact mapper ${required}`);
     }
@@ -1824,7 +1839,6 @@ function checkBattleRuleFactMappers() {
     violations.push(`${rel(attackFactsFile)} must not depend on generic rule fact mappers`);
   }
 
-  const allowedRuleFactsImporters = new Set([battleRulesFile]);
   const allowedAttackFactsImporters = new Set([battleRulesFile]);
   for (const relative of ["src/battle", "src/core"]) {
     const dir = path.join(root, relative);
@@ -1832,11 +1846,8 @@ function checkBattleRuleFactMappers() {
       if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
       const file = path.join(entry.parentPath, entry.name);
       const text = fs.readFileSync(file, "utf8");
-      if (
-        /from\s+["'][^"']*rule-facts\.js["']/.test(text) &&
-        !allowedRuleFactsImporters.has(file)
-      ) {
-        violations.push(`${rel(file)} must not bypass battle rules for rule fact mapping`);
+      if (/from\s+["'][^"']*rule-facts\.js["']/.test(text)) {
+        violations.push(`${rel(file)} must not import retired generic rule fact mapping`);
       }
       if (
         /from\s+["'][^"']*attack-facts\.js["']/.test(text) &&

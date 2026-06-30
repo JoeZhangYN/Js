@@ -3,6 +3,7 @@
 // 覆盖：命中目标 / 无 boss noop / 213 未 ready noop / AoE 窗口覆盖选择 / tie-break 优先 needy 自身。
 import { beforeEach, describe, it, expect } from "vitest";
 import { BossImperilEvent, runBossImperilAutomation } from "./decide-boss-imperil.js";
+import { bossImperilFacts } from "./debuff-facts.js";
 import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,
@@ -25,18 +26,6 @@ function snap(over = {}) {
 /** monster 工厂：默认非 boss、未死、无 buff。 */
 function mon(over = {}) {
   return { id: 1, order: 0, isDead: false, isBoss: false, buffs: [], ...over };
-}
-
-function bossImperilFacts(snap) {
-  return {
-    imperilSkillReady: !!snap?.skillReady?.["213"],
-    imperilAoe: snap?.spellAoe?.Imperil,
-    skillCooldowns: snap?.cdMap,
-    overcharge: snap?.oc,
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
-    monsterFacts: snap?.view || [],
-  };
 }
 
 function observeOfcKill(mid, turn) {

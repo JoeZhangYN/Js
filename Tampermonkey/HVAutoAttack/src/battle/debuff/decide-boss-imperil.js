@@ -7,7 +7,7 @@
 import { aliveByOrder } from "../monster-view.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { bossCoverageWindow } from "../target-strategy.js";
-import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill.js";
+import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill-debuff.js";
 
 const EVENT_CAN_CAST = "canCast";
 const EVENT_DECIDE = "decide";

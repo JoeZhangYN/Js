@@ -75,7 +75,7 @@ for (const relative of [
   "src/battle/debuff/decide-cast-all.js",
   "src/battle/debuff/decide-de-skill.js",
   "src/battle/debuff/decide-burst-control.js",
-  "src/battle/rules/decide-boss-imperil.js",
+  "src/battle/debuff/decide-boss-imperil.js",
 ]) {
   requireText(relative, ["targetId", "skillId"]);
 }

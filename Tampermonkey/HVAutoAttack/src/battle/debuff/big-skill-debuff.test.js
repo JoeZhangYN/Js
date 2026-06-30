@@ -2,7 +2,7 @@
 // clear-resource-ready query。钉死：资源就绪即跳(怪少也跳)、OC 不够不跳、开关 off 可回退、
 // Im+boss 强保不变、原 OC 窗口路仍在、顶层 We 开关 false 早退。
 import { describe, it, expect, beforeEach } from "vitest";
-import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill.js";
+import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill-debuff.js";
 import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,

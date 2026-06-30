@@ -8,7 +8,7 @@ import {
   runBattleDebuffCoverageAutomation,
 } from "../battle-debuff-coverage.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
-import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "../rules/big-skill.js";
+import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill-debuff.js";
 import { canApplyDebuffPure } from "./can-apply.js";
 import { byOrder } from "../monster-view.js";
 import { aoeNeighborAnchor } from "../target-strategy.js";
