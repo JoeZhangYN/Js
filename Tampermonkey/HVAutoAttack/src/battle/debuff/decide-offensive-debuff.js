@@ -13,6 +13,10 @@ export const BattleOffensiveDebuffEvent = Object.freeze({
   DECIDE: EVENT_DECIDE,
 });
 
+const battleOffensiveDebuffEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: (event) => decideOffensiveDebuffResult(event.snap, event.opt),
+});
+
 function readBigSkillSkipRulings(event) {
   const input = {
     type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
@@ -67,6 +71,5 @@ function decideOffensiveDebuffResult(snap = {}, opt = {}) {
 }
 
 export function runBattleOffensiveDebuff(event = { type: EVENT_DECIDE }) {
-  if (event.type === EVENT_DECIDE) return decideOffensiveDebuffResult(event.snap, event.opt);
-  return { kind: "noop" };
+  return battleOffensiveDebuffEventHandlers[event.type]?.(event) ?? { kind: "noop" };
 }

@@ -83,7 +83,7 @@ describe("runBattleOffensiveDebuff", () => {
     ).toEqual({ kind: "click-skill-then-target", skillId: "212", targetId: 1 });
   });
 
-  it("rejects unknown events as no action", () => {
+  it("rejects unknown offensive debuff events as no action", () => {
     expect(runBattleOffensiveDebuff({ type: "unknown" })).toEqual({ kind: "noop" });
   });
 });

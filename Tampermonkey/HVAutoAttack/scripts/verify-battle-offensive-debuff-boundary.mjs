@@ -20,6 +20,7 @@ const actionDecisionText = read(actionDecision);
 
 for (const required of [
   "BattleOffensiveDebuffEvent",
+  "battleOffensiveDebuffEventHandlers",
   "DECIDE",
   "runBattleOffensiveDebuff",
   "BattleAttackActionEvent.WILL_CLEAR_WITH_BIG_SKILL",
@@ -53,8 +54,22 @@ if (
   violations.push(`${rel(owner)} may export only its event entry`);
 }
 
+const entryBody =
+  ownerText.match(/export function runBattleOffensiveDebuff\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover offensive debuff contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("rejects unknown offensive debuff events as no action")) {
+    violations.push(`${rel(ownerTest)} must cover unknown offensive debuff events`);
+  }
 }
 
 if (
