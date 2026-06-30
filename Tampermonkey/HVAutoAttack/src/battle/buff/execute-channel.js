@@ -12,20 +12,25 @@ const battleChannelExecutionEventHandlers = Object.freeze({
   [EVENT_APPLY_PLAN]: (event) => applyChannelPlan(event.plan),
 });
 
+const CHANNEL_PLAN_EXECUTORS = Object.freeze({
+  click: executeClickPlan,
+});
+
 /**
  * @param {import("./decide-channel.js").ChannelPlan} plan
  * @returns {boolean} acted —— 是否已触发副作用
  */
 function applyChannelPlan(plan) {
-  if (plan.type === "click") {
-    // 原 useChannelSkill 三段均在 isOn 通过后 click；探活与 turn 入口快照一致。
-    runBattleSkillCommand({
-      type: BattleSkillCommandEvent.CLICK_READY,
-      skillId: plan.skillId,
-    });
-    return true;
-  }
-  return false;
+  return CHANNEL_PLAN_EXECUTORS[plan?.type]?.(plan) ?? false;
+}
+
+function executeClickPlan(plan) {
+  // 原 useChannelSkill 三段均在 isOn 通过后 click；探活与 turn 入口快照一致。
+  runBattleSkillCommand({
+    type: BattleSkillCommandEvent.CLICK_READY,
+    skillId: plan.skillId,
+  });
+  return true;
 }
 
 export function runBattleChannelExecution(event = { type: EVENT_APPLY_PLAN }) {

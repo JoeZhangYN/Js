@@ -38,6 +38,7 @@ const decideBuffPreparationFile = path.join(root, "src/battle/buff/decide-buff-p
 const decideInfusionFile = path.join(root, "src/battle/buff/decide-infusion.js");
 const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
 const decideChannelFile = path.join(root, "src/battle/buff/decide-channel.js");
+const executeChannelFile = path.join(root, "src/battle/buff/execute-channel.js");
 const buffFactsFile = path.join(root, "src/battle/buff/buff-facts.js");
 const playerBuffStateFile = path.join(root, "src/battle/player-buff-state.js");
 const playerBuffStateTestFile = path.join(root, "src/battle/player-buff-state.test.js");
@@ -2132,6 +2133,17 @@ function checkChannelEntry() {
     if (rulesText.includes(legacy)) {
       violations.push(`${rel(battleRulesFile)} must not assemble channel rule gates directly`);
     }
+  }
+  const executeText = fs.readFileSync(executeChannelFile, "utf8");
+  for (const required of ["CHANNEL_PLAN_EXECUTORS", "click: executeClickPlan"]) {
+    if (!executeText.includes(required)) {
+      violations.push(`${rel(executeChannelFile)} must lock channel execution step ${required}`);
+    }
+  }
+  const applyPlanBody =
+    executeText.match(/function applyChannelPlan\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (/plan\.type\s*===/.test(applyPlanBody)) {
+    violations.push(`${rel(executeChannelFile)} must dispatch channel plans by CHANNEL_PLAN_EXECUTORS`);
   }
 }
 

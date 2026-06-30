@@ -23,6 +23,8 @@ for (const required of [
   "battleChannelExecutionEventHandlers",
   "APPLY_PLAN",
   "runBattleChannelExecution",
+  "CHANNEL_PLAN_EXECUTORS",
+  "click: executeClickPlan",
   "BattleSkillCommandEvent.CLICK_READY",
   "runBattleSkillCommand",
 ]) {
@@ -45,6 +47,11 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(ownerText)) {
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
+const applyPlanBody =
+  ownerText.match(/function applyChannelPlan\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (/plan\.type\s*===/.test(applyPlanBody)) {
+  violations.push(`${rel(owner)} must dispatch channel plans by CHANNEL_PLAN_EXECUTORS`);
 }
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover channel execution contract`);
