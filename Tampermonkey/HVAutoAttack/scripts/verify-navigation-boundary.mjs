@@ -54,6 +54,18 @@ if (!owner) {
       "legacy SCHEDULE_RELOAD sec field must stay deleted; use seconds/minutes/milliseconds"
     );
   }
+  if (!source.includes("const navigationEventHandlers")) {
+    violations.push("runNavigationAutomation(event) must route through navigationEventHandlers");
+  }
+  const entry = source.match(/export function runNavigationAutomation[\s\S]*?\n}/)?.[0] || "";
+  if (/if\s*\(\s*event\.type\s*===/.test(entry)) {
+    violations.push("runNavigationAutomation(event) must not reintroduce an event.type if-chain");
+  }
+  for (const internal of ["goto(", "scheduleReload(", "openUrl(", "openWindow("]) {
+    if (entry.includes(internal)) {
+      violations.push("runNavigationAutomation(event) must dispatch through navigationEventHandlers");
+    }
+  }
 }
 
 for (const file of files) {

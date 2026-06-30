@@ -44,20 +44,19 @@ function openWindow(url, name, features) {
   return window.open(url, name, features);
 }
 
-export function runNavigationAutomation(event = { type: EVENT_RELOAD_NOW }) {
-  if (event.type === EVENT_RELOAD_NOW) {
+const navigationEventHandlers = Object.freeze({
+  [EVENT_RELOAD_NOW]: () => {
     goto();
     return true;
-  }
-  if (event.type === EVENT_SCHEDULE_RELOAD) {
-    return scheduleReload(event);
-  }
-  if (event.type === EVENT_OPEN_URL) {
+  },
+  [EVENT_SCHEDULE_RELOAD]: (event) => scheduleReload(event),
+  [EVENT_OPEN_URL]: (event) => {
     openUrl(event.url, event.newTab);
     return true;
-  }
-  if (event.type === EVENT_OPEN_WINDOW) {
-    return openWindow(event.url, event.name, event.features);
-  }
-  return false;
+  },
+  [EVENT_OPEN_WINDOW]: (event) => openWindow(event.url, event.name, event.features),
+});
+
+export function runNavigationAutomation(event = { type: EVENT_RELOAD_NOW }) {
+  return navigationEventHandlers[event.type]?.(event) ?? false;
 }
