@@ -37,12 +37,14 @@ function detectPageKind({ document: doc = document, location = window.location }
   return PageKind.UNKNOWN;
 }
 
-export function runPageKindAutomation(event = { type: EVENT_DETECT_CURRENT }) {
-  if (event.type === EVENT_DETECT_CURRENT) {
-    return detectPageKind({
+const pageKindEventHandlers = Object.freeze({
+  [EVENT_DETECT_CURRENT]: (event) =>
+    detectPageKind({
       document: event.document,
       location: event.location,
-    });
-  }
-  return undefined;
+    }),
+});
+
+export function runPageKindAutomation(event = { type: EVENT_DETECT_CURRENT }) {
+  return pageKindEventHandlers[event.type]?.(event);
 }

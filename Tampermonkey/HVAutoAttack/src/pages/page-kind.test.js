@@ -62,4 +62,8 @@ describe("runPageKindAutomation", () => {
       })
     ).toBe(PageKind.UNKNOWN);
   });
+
+  it("ignores unknown page kind events", () => {
+    expect(runPageKindAutomation({ type: "unknown" })).toBeUndefined();
+  });
 });

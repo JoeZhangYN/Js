@@ -89,6 +89,28 @@ if (/\bexport\s+function\s+detectPageKind\s*\(/.test(ownerText)) {
     hint: "legacy detectPageKind export is forbidden",
   });
 }
+if (!ownerText.includes("const pageKindEventHandlers")) {
+  violations.push({
+    rel: "pages/page-kind.js",
+    line: 1,
+    hint: "must route page-kind events through a handler table",
+  });
+}
+const ownerEntry = ownerText.match(/export function runPageKindAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
+  violations.push({
+    rel: "pages/page-kind.js",
+    line: 1,
+    hint: "runPageKindAutomation(event) must not reintroduce an event.type if-chain",
+  });
+}
+if (ownerEntry.includes("detectPageKind(")) {
+  violations.push({
+    rel: "pages/page-kind.js",
+    line: 1,
+    hint: "runPageKindAutomation(event) must dispatch through pageKindEventHandlers",
+  });
+}
 
 if (violations.length > 0) {
   console.error(
