@@ -2,7 +2,7 @@
 // file-size-gate: exempt test-verbose（6 分支 + fall-through 全覆盖，逐例断言；与 decide-item.test 同类）
 // 统一视图后：怪物事实全在 snap.view（finWeight/hpAbsNow/hpMax/buffs/order），不再传第三参 monsterStatus。
 import { describe, it, expect } from "vitest";
-import { decideAttack } from "./decide-attack.js";
+import { AttackDecisionEvent, decideAttack } from "./decide-attack.js";
 
 /** 最小 snap 工厂(只填 decideAttack 及其纯 callee 读到的字段)。 */
 function snap(over = {}) {
@@ -337,5 +337,41 @@ describe("decideAttack 物理技能评分入口契约", () => {
       defaultTargetId: 1,
       mercifulTargetId: null,
     });
+  });
+});
+
+describe("decideAttack 清场大招查询入口契约", () => {
+  it("复用攻击计划判断 OFC/FRD 是否会在攻击阶段开火", () => {
+    const s = snap({
+      attackStatus: 0,
+      aliveCount: 5,
+      oc: 250,
+      skillReady: { 1111: true },
+      view: [vmon({ id: 1, hpPercent: 0.8 })],
+    });
+    expect(
+      decideAttack({
+        type: AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL,
+        opt: { skillSwitch: true, skill_OFC: true },
+        ...attackFacts(s),
+      })
+    ).toBe(true);
+  });
+
+  it("资源够但攻击入口会先走法术时，不把 OFC 视为本攻击阶段清场", () => {
+    const s = snap({
+      attackStatus: 2,
+      aliveCount: 5,
+      oc: 250,
+      skillReady: { 1111: true, 123: true },
+      view: [vmon({ id: 1, hpPercent: 0.8 })],
+    });
+    expect(
+      decideAttack({
+        type: AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL,
+        opt: { skillSwitch: true, skill_OFC: true },
+        ...attackFacts(s),
+      })
+    ).toBe(false);
   });
 });

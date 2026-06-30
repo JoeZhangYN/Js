@@ -1158,7 +1158,7 @@ function checkBigSkillDebuffEntry() {
   if (/\bevent\.snap\b/.test(ownerText)) {
     violations.push(`${rel(bigSkillFile)} must not consume snap-shaped event input`);
   }
-  for (const file of [decideCastAllFile, burstControlFile, bossImperilFile]) {
+  for (const file of [decideCastAllFile, bossImperilFile]) {
     const text = fs.readFileSync(file, "utf8");
     if (!text.includes("runBigSkillDebuffAutomation")) {
       violations.push(`${rel(file)} must read big-skill debuff decisions through their entry`);
@@ -1187,10 +1187,10 @@ function checkBurstControlEntry() {
     "decideBurstControl",
     "burstControlSwitch",
     "debuffSkillSwitch",
+    "decideAttack",
+    "AttackDecisionEvent.WILL_CLEAR_WITH_BIG_SKILL",
     "event.healthAbs",
     "event.skillReady",
-    "event.skillCooldowns",
-    "event.overcharge",
     "event.learnedBurstByMid",
     "event.monsterFacts",
   ]) {
@@ -1627,6 +1627,8 @@ function checkAttackEntry() {
   const ownerText = fs.readFileSync(decideAttackFile, "utf8");
   for (const required of [
     "decideAttack",
+    "AttackDecisionEvent",
+    "WILL_CLEAR_WITH_BIG_SKILL",
     "selectSpellTier",
     "highSkillCondition",
     "conditionFacts",

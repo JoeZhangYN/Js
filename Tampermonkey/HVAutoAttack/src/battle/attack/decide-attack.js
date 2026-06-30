@@ -6,12 +6,20 @@ import { scorePhysicalSkillCandidates } from "./physical-skill-scoring.js";
 import { pickByUtility } from "./physical-skill-ranking.js";
 import { OFFENSIVE_SPELL_LIB } from "../../data/spell-lib.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
+import { bigSkillCodes } from "../big-skill-catalog.js";
 import { aliveByOrder } from "../monster-view.js";
 import { firstByFinWeight, firstByOrder } from "../target-strategy.js";
 import { selectAutoElement } from "./auto-element-selection.js";
 
 /** merciful blow 斩杀 HP 比例阈值（原 attack.js 字面量 0.248）。 */
 const MERCIFUL_HP = 0.248;
+const EVENT_DECIDE_PLAN = "decidePlan";
+const EVENT_WILL_CLEAR_WITH_BIG_SKILL = "willClearWithBigSkill";
+
+export const AttackDecisionEvent = Object.freeze({
+  DECIDE_PLAN: EVENT_DECIDE_PLAN,
+  WILL_CLEAR_WITH_BIG_SKILL: EVENT_WILL_CLEAR_WITH_BIG_SKILL,
+});
 
 function selectSpellTier(opt, event) {
   const attackStatus = event.attackStatus;
@@ -45,8 +53,14 @@ function selectSpellTier(opt, event) {
  * @returns {import("../../core/types.js").ActionResult} { kind:"attack-plan", plan }
  */
 export function decideAttack(event = {}) {
+  if (event.type === EVENT_WILL_CLEAR_WITH_BIG_SKILL) return willClearWithBigSkill(event);
   const opt = event.opt || {};
   return { kind: "attack-plan", plan: decidePlan(opt, event) };
+}
+
+function willClearWithBigSkill(event) {
+  const plan = decidePlan(event.opt || {}, event);
+  return plan.type === "physical" && bigSkillCodes().includes(plan.code);
 }
 
 /** @returns {import("../../core/types.js").AttackPlan} */

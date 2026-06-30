@@ -5,9 +5,21 @@ import { decideBurstControl } from "./decide-burst-control.js";
 const mon = (over = {}) => ({ id: 1, order: 0, isDead: false, monsterId: 100, buffs: [], ...over });
 const snap = (over = {}) => ({
   hpAbs: 1000,
+  spiritOn: true,
+  globalTurn: 100,
+  lastSpiritToggleGlobalTurn: undefined,
+  roundAll: undefined,
+  roundNow: undefined,
+  attackStatus: 0,
+  channeling: false,
+  aliveCount: 1,
+  fightingStyle: "2",
   skillReady: { 232: true, 222: true, 223: true },
-  cdMap: {},
   oc: 0,
+  spellAoe: {},
+  skillOTOS: {},
+  etherTapActiveX2: false,
+  etherTapExpiring: false,
   view: [mon()],
   learnedBurstByMid: {},
   ...over,
@@ -15,10 +27,23 @@ const snap = (over = {}) => ({
 
 function burstControlFacts(snap) {
   return {
+    conditionFacts: snap,
     healthAbs: snap.hpAbs,
+    spiritOn: snap.spiritOn,
+    globalTurn: snap.globalTurn,
+    lastSpiritToggleGlobalTurn: snap.lastSpiritToggleGlobalTurn,
+    roundAll: snap.roundAll,
+    roundNow: snap.roundNow,
+    attackStatus: snap.attackStatus,
+    channeling: snap.channeling,
+    aliveCount: snap.aliveCount,
+    fightingStyle: snap.fightingStyle,
     skillReady: snap.skillReady,
-    skillCooldowns: snap.cdMap,
     overcharge: snap.oc,
+    spellAoe: snap.spellAoe,
+    skillOTOS: snap.skillOTOS,
+    etherTapActiveX2: snap.etherTapActiveX2,
+    etherTapExpiring: snap.etherTapExpiring,
     learnedBurstByMid: snap.learnedBurstByMid,
     monsterFacts: snap.view,
   };
@@ -60,14 +85,29 @@ describe("decideBurstControl", () => {
     expect(decide({ burstControlSwitch: true }, s)).toEqual({ kind: "noop" });
   });
 
-  it("OFC 清场资源就绪 → noop（不过控）", () => {
+  it("攻击阶段会用 OFC 清场 → noop（不过控）", () => {
     const s = snap({
+      aliveCount: 5,
       learnedBurstByMid: { 100: { maxHit: 900, type: "fire" } },
-      cdMap: { OFC: 0 },
+      skillReady: { 232: true, 222: true, 223: true, 1111: true },
+      oc: 250,
+    });
+    expect(decide({ burstControlSwitch: true, skillSwitch: true, skill_OFC: true }, s)).toEqual({
+      kind: "noop",
+    });
+  });
+
+  it("OFC 资源够但攻击阶段不会开火 → 仍控制蹦极源", () => {
+    const s = snap({
+      aliveCount: 5,
+      learnedBurstByMid: { 100: { maxHit: 900, type: "fire" } },
+      skillReady: { 232: true, 1111: true },
       oc: 250,
     });
     expect(decide({ burstControlSwitch: true, skill_OFC: true }, s)).toEqual({
-      kind: "noop",
+      kind: "click-skill-then-target",
+      skillId: "232",
+      targetId: 1,
     });
   });
 
