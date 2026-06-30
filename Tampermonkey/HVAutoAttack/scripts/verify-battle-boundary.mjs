@@ -2164,6 +2164,7 @@ function checkBattleItemDecisionEntry() {
   }
 
   const battleDir = path.join(root, "src/battle");
+  const allowedItemDecisionImporters = new Set([decideSurvivalActionFile]);
   for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
       continue;
@@ -2173,9 +2174,18 @@ function checkBattleItemDecisionEntry() {
     const source = fs.readFileSync(file, "utf8");
     if (
       /from\s+["'][^"']*item\/decide-item\.js["']/.test(source) &&
+      !allowedItemDecisionImporters.has(file)
+    ) {
+      violations.push(`${rel(file)} must not bypass survival action for item decision entry`);
+    }
+    if (
+      /from\s+["'][^"']*item\/decide-item\.js["']/.test(source) &&
       /\b(?:decideGemUse|decidePotion|decideStallTopup|decideScroll)\b/.test(source)
     ) {
       violations.push(`${rel(file)} must import only the item decision entry`);
+    }
+    if (/from\s+["'][^"']*item\/decide-gem\.js["']/.test(source)) {
+      violations.push(`${rel(file)} must not bypass item decision entry for gem`);
     }
     if (/from\s+["'][^"']*item\/decide-scroll\.js["']/.test(source)) {
       violations.push(`${rel(file)} must not bypass item decision entry for scroll`);
