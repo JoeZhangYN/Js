@@ -90,12 +90,15 @@ function loadEncounterKey() {
   });
 }
 
-export function runEncounterStateAutomation(event = { type: EVENT_READ_CURRENT }) {
-  if (event.type === EVENT_READ_CURRENT) return readCurrentReState();
-  if (event.type === EVENT_MARK_STARTED) {
+const encounterStateEventHandlers = Object.freeze({
+  [EVENT_READ_CURRENT]: () => readCurrentReState(),
+  [EVENT_MARK_STARTED]: (event) => {
     markRandomEncounterStarted(event.search);
     return undefined;
-  }
-  if (event.type === EVENT_LOAD_KEY) return loadEncounterKey();
-  return undefined;
+  },
+  [EVENT_LOAD_KEY]: () => loadEncounterKey(),
+});
+
+export function runEncounterStateAutomation(event = { type: EVENT_READ_CURRENT }) {
+  return encounterStateEventHandlers[event.type]?.(event);
 }

@@ -60,4 +60,10 @@ describe("runEncounterStateAutomation", () => {
     expect(state).toMatchObject({ key: "xyz=", count: 1, clear: false });
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject(state);
   });
+
+  it("ignores unknown state events", () => {
+    expect(runEncounterStateAutomation({ type: "unknown" })).toBeUndefined();
+    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
+    expect(mocks.gmXhr).not.toHaveBeenCalled();
+  });
 });

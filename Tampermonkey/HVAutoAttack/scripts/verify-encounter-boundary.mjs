@@ -230,6 +230,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const stateHelperText = fs.readFileSync(path.join(root, stateHelper), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
@@ -257,6 +258,33 @@ if (!ownerEntryMatch) {
   for (const internal of ["runLobbyTick(", "markRandomEncounterStarted(", "executeWidgetEvent("]) {
     if (entryBody.includes(internal)) {
       violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through encounterEventHandlers`);
+    }
+  }
+}
+if (!stateHelperText.includes("const encounterStateEventHandlers")) {
+  violations.push(
+    `${stateHelper.replaceAll("\\", "/")} must route encounter state events through a handler table`
+  );
+}
+const stateEntryMatch = stateHelperText.match(
+  /export function runEncounterStateAutomation[\s\S]*?\n}/
+);
+if (!stateEntryMatch) {
+  violations.push(
+    `${stateHelper.replaceAll("\\", "/")} must expose runEncounterStateAutomation(event)`
+  );
+} else {
+  const entryBody = stateEntryMatch[0];
+  if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+    violations.push(
+      `${stateHelper.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+    );
+  }
+  for (const internal of ["readCurrentReState(", "markRandomEncounterStarted(", "loadEncounterKey("]) {
+    if (entryBody.includes(internal)) {
+      violations.push(
+        `${stateHelper.replaceAll("\\", "/")} entry must dispatch through encounterStateEventHandlers`
+      );
     }
   }
 }
