@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideBuffPreparation } from "./decide-buff-preparation.js";
+import { BattleBuffPreparationEvent, runBattleBuffPreparation } from "./decide-buff-preparation.js";
 
 function snap(over = {}) {
   return {
@@ -13,10 +13,18 @@ function snap(over = {}) {
   };
 }
 
-describe("decideBuffPreparation", () => {
+function decide(snap, opt) {
+  return runBattleBuffPreparation({
+    type: BattleBuffPreparationEvent.DECIDE,
+    snap,
+    opt,
+  });
+}
+
+describe("runBattleBuffPreparation", () => {
   it("uses infusion before channel and buff decisions", () => {
     expect(
-      decideBuffPreparation(
+      decide(
         snap({
           attackStatus: 1,
           channeling: true,
@@ -36,7 +44,7 @@ describe("decideBuffPreparation", () => {
 
   it("uses channel before ordinary buff recast", () => {
     expect(
-      decideBuffPreparation(
+      decide(
         snap({
           channeling: true,
           skillReady: { 411: true },
@@ -54,7 +62,7 @@ describe("decideBuffPreparation", () => {
 
   it("falls through to ordinary buff decisions", () => {
     expect(
-      decideBuffPreparation(
+      decide(
         snap({
           skillReady: { 411: true },
         }),
@@ -65,5 +73,9 @@ describe("decideBuffPreparation", () => {
         }
       )
     ).toEqual({ kind: "skill-command", skillId: "411" });
+  });
+
+  it("rejects unknown events as no action", () => {
+    expect(runBattleBuffPreparation({ type: "unknown" })).toEqual({ kind: "noop" });
   });
 });

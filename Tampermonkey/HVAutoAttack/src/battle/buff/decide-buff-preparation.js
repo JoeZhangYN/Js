@@ -3,7 +3,13 @@ import { decideChannel } from "./decide-channel.js";
 import { decideInfusion } from "./decide-infusion.js";
 import { buffFacts, channelFacts, infusionFacts } from "./buff-facts.js";
 
-export function decideBuffPreparation(snap = {}, opt = {}) {
+const EVENT_DECIDE = "decide";
+
+export const BattleBuffPreparationEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+function decideBuffPreparationResult(snap = {}, opt = {}) {
   const event = {
     opt,
     ...infusionFacts(snap),
@@ -20,4 +26,9 @@ export function decideBuffPreparation(snap = {}, opt = {}) {
 function isEmptyDecision(result) {
   if (result.kind === "noop") return true;
   return result.kind === "channel-plan" && result.plan?.type === "noop";
+}
+
+export function runBattleBuffPreparation(event = { type: EVENT_DECIDE }) {
+  if (event.type === EVENT_DECIDE) return decideBuffPreparationResult(event.snap, event.opt);
+  return { kind: "noop" };
 }

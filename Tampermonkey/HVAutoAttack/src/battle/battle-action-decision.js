@@ -4,7 +4,10 @@ import {
   BattleActionEffectDispatchEvent,
   runBattleActionEffectDispatch,
 } from "./battle-action-effect-dispatch.js";
-import { decideBuffPreparation } from "./buff/decide-buff-preparation.js";
+import {
+  BattleBuffPreparationEvent,
+  runBattleBuffPreparation,
+} from "./buff/decide-buff-preparation.js";
 import { decideOffensiveDebuff } from "./debuff/decide-offensive-debuff.js";
 import { BattleSurvivalActionEvent, runBattleSurvivalAction } from "./decide-survival-action.js";
 
@@ -15,7 +18,12 @@ const ACTION_STEPS = [
       snap,
       opt,
     }),
-  decideBuffPreparation,
+  (snap, opt) =>
+    runBattleBuffPreparation({
+      type: BattleBuffPreparationEvent.DECIDE,
+      snap,
+      opt,
+    }),
   decideOffensiveDebuff,
   decideAttackAction,
 ];

@@ -383,7 +383,8 @@ function checkTurnEntry() {
     "for (const decide of ACTION_STEPS)",
     "BattleSurvivalActionEvent.DECIDE",
     "runBattleSurvivalAction",
-    "decideBuffPreparation",
+    "BattleBuffPreparationEvent.DECIDE",
+    "runBattleBuffPreparation",
     "decideOffensiveDebuff",
     "decideAttackAction",
   ]) {
@@ -392,7 +393,7 @@ function checkTurnEntry() {
     }
   }
   if (
-    !/const ACTION_STEPS = \[\s*\(snap,\s*opt\)\s*=>[\s\S]*runBattleSurvivalAction[\s\S]*decideBuffPreparation,\s*decideOffensiveDebuff,\s*decideAttackAction,\s*\]/.test(
+    !/const ACTION_STEPS = \[\s*\(snap,\s*opt\)\s*=>[\s\S]*runBattleSurvivalAction[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleBuffPreparation[\s\S]*decideOffensiveDebuff,\s*decideAttackAction,\s*\]/.test(
       actionDecisionText
     )
   ) {
@@ -1733,7 +1734,9 @@ function checkSurvivalActionEntry() {
 function checkBuffPreparationEntry() {
   const ownerText = fs.readFileSync(decideBuffPreparationFile, "utf8");
   for (const required of [
-    "decideBuffPreparation",
+    "BattleBuffPreparationEvent",
+    "DECIDE",
+    "runBattleBuffPreparation",
     "infusionFacts",
     "channelFacts",
     "buffFacts",
@@ -1746,6 +1749,13 @@ function checkBuffPreparationEntry() {
     }
   }
   if (
+    /\bexport\s+(?:function|const)\s+(?!BattleBuffPreparationEvent\b|runBattleBuffPreparation\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideBuffPreparationFile)} may export only its event entry`);
+  }
+  if (
     !/for\s*\(\s*const\s+decide\s+of\s+\[decideInfusion,\s*decideChannel,\s*decideBuff\]/.test(
       ownerText
     )
@@ -1754,8 +1764,16 @@ function checkBuffPreparationEntry() {
   }
 
   const rulesText = readBattleActionRulesText();
-  if (!rulesText.includes("decideBuffPreparation")) {
+  if (
+    !rulesText.includes("BattleBuffPreparationEvent.DECIDE") ||
+    !rulesText.includes("runBattleBuffPreparation")
+  ) {
     violations.push(`${rel(battleRulesFile)} must route buff preparation through one entry`);
+  }
+  if (/decideBuffPreparation\(\s*snap\s*,\s*actionOptions\s*\)/.test(rulesText)) {
+    violations.push(
+      `${rel(battleRulesFile)} must not call buff preparation through old two-arg path`
+    );
   }
   for (const legacyRule of ["useInfusions", "useChannelSkill", "useBuffSkill"]) {
     if (rulesText.includes(legacyRule)) {
@@ -1782,7 +1800,7 @@ function checkBuffPreparationEntry() {
       /from\s+["'][^"']*buff\/decide-(?:infusion|channel|buff)\.js["']/.test(source) ||
       /\b(?:decideInfusion|decideChannel|decideBuff)\s*\(/.test(source)
     ) {
-      violations.push(`${rel(file)} must call buff preparation through decideBuffPreparation`);
+      violations.push(`${rel(file)} must call buff preparation through runBattleBuffPreparation`);
     }
   }
 }
