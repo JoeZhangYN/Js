@@ -23,6 +23,15 @@ for (const required of [
   "battleSurvivalActionEventHandlers",
   "DECIDE",
   "runBattleSurvivalAction",
+  "SURVIVAL_ACTION_STEPS",
+  'capability: "criticalBuffGuard"',
+  'capability: "flee"',
+  'capability: "autoPause"',
+  'capability: "gem"',
+  'capability: "potion"',
+  'capability: "stallTopup"',
+  'capability: "defend"',
+  'capability: "scroll"',
   "decideCriticalBuff",
   "decideFlee",
   "decideAutoPause",
@@ -35,6 +44,18 @@ for (const required of [
   "isEmptyDecision",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
+}
+
+if (
+  !/const SURVIVAL_ACTION_STEPS = \[\s*\{[\s\S]*capability: "criticalBuffGuard"[\s\S]*capability: "flee"[\s\S]*capability: "autoPause"[\s\S]*capability: "gem"[\s\S]*capability: "potion"[\s\S]*capability: "stallTopup"[\s\S]*capability: "defend"[\s\S]*capability: "scroll"[\s\S]*\]/.test(
+    ownerText
+  )
+) {
+  violations.push(`${rel(owner)} must own explicit survival action priority order`);
+}
+
+if (/for \(const decide of \[/.test(ownerText)) {
+  violations.push(`${rel(owner)} must not hide survival priority in an anonymous function array`);
 }
 
 if (

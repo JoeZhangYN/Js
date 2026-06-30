@@ -14,38 +14,85 @@ const battleSurvivalActionEventHandlers = Object.freeze({
   [EVENT_DECIDE]: (event) => decideSurvivalResult(event.snap, event.opt),
 });
 
+const SURVIVAL_ACTION_STEPS = [
+  {
+    capability: "criticalBuffGuard",
+    decide: decideCriticalBuffStep,
+  },
+  {
+    capability: "flee",
+    decide: decideFleeStep,
+  },
+  {
+    capability: "autoPause",
+    decide: decideAutoPauseStep,
+  },
+  {
+    capability: "gem",
+    decide: decideGemStep,
+  },
+  {
+    capability: "potion",
+    decide: decidePotionStep,
+  },
+  {
+    capability: "stallTopup",
+    decide: decideStallTopupStep,
+  },
+  {
+    capability: "defend",
+    decide: decideDefendStep,
+  },
+  {
+    capability: "scroll",
+    decide: decideScrollStep,
+  },
+];
+
+function decideCriticalBuffStep(survivalContext) {
+  return decideCriticalBuff(survivalContext);
+}
+
+function decideFleeStep(survivalContext) {
+  return decideFlee(survivalContext);
+}
+
+function decideAutoPauseStep(survivalContext) {
+  return decideAutoPause(survivalContext);
+}
+
+function decideGemStep(survivalContext) {
+  return decideItemStep(survivalContext, BattleItemDecisionEvent.DECIDE_GEM);
+}
+
+function decidePotionStep(survivalContext) {
+  return decideItemStep(survivalContext, BattleItemDecisionEvent.DECIDE_POTION);
+}
+
+function decideStallTopupStep(survivalContext) {
+  return decideItemStep(survivalContext, BattleItemDecisionEvent.DECIDE_STALL_TOPUP);
+}
+
+function decideDefendStep(survivalContext) {
+  return decideDefend(survivalContext);
+}
+
+function decideScrollStep(survivalContext) {
+  return decideItemStep(survivalContext, BattleItemDecisionEvent.DECIDE_SCROLL);
+}
+
+function decideItemStep({ opt, snap }, type) {
+  return runBattleItemDecision({
+    type,
+    opt,
+    snap,
+  });
+}
+
 function decideSurvivalResult(snap = {}, opt = {}) {
-  for (const decide of [
-    () => decideCriticalBuff({ opt, snap }),
-    () => decideFlee({ opt, snap }),
-    () => decideAutoPause({ opt, snap }),
-    () =>
-      runBattleItemDecision({
-        type: BattleItemDecisionEvent.DECIDE_GEM,
-        opt,
-        snap,
-      }),
-    () =>
-      runBattleItemDecision({
-        type: BattleItemDecisionEvent.DECIDE_POTION,
-        opt,
-        snap,
-      }),
-    () =>
-      runBattleItemDecision({
-        type: BattleItemDecisionEvent.DECIDE_STALL_TOPUP,
-        opt,
-        snap,
-      }),
-    () => decideDefend({ opt, snap }),
-    () =>
-      runBattleItemDecision({
-        type: BattleItemDecisionEvent.DECIDE_SCROLL,
-        opt,
-        snap,
-      }),
-  ]) {
-    const result = decide();
+  const survivalContext = { opt, snap };
+  for (const step of SURVIVAL_ACTION_STEPS) {
+    const result = step.decide(survivalContext);
     if (!isEmptyDecision(result)) return result;
   }
   return { kind: "noop" };
