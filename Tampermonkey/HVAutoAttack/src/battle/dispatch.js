@@ -1,6 +1,6 @@
 // 唯一 SHELL（Phase 5b 编排倒置 + 深度 B）：把 PURE decide 的 ActionResult 翻译为 DOM 副作用。
 // 复用 command entries / lang / pause-automation / activate-spirit + 各 step 的 execute-*。
-// 返回 acted(boolean)：runRules 据此短路。深度 B 后已无 delegate 过渡桥——所有 step 的判断都在
+// 返回 acted(boolean)：action decision 据此短路。深度 B 后已无 delegate 过渡桥——所有 step 的判断都在
 // PURE decide 完成，dispatch 只翻译数据 → 副作用（含 isOn 写前探活）。
 import { _alert } from "../core/lang.js";
 import { BattleDefendCommandEvent, runBattleDefendCommand } from "./battle-defend-command.js";

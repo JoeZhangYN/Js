@@ -1,99 +1,123 @@
+// file-size-gate: exempt test-verbose（行动规则顺序 + 短路 + 关键规则契约迁移锁）
 import { describe, expect, it, vi } from "vitest";
 import { runBattleActionDecision } from "./battle-action-decision.js";
 
 const mocks = vi.hoisted(() => ({
-  runRules: vi.fn(),
+  dispatch: vi.fn(),
 }));
 
-vi.mock("./step-runner.js", () => ({ runRules: mocks.runRules }));
+vi.mock("./dispatch.js", () => ({ dispatch: mocks.dispatch }));
 
-function actionRules(snap = {}, opt = {}) {
-  mocks.runRules.mockClear();
+const RULE_INDEX = Object.freeze({
+  criticalBuffGuard: 0,
+  flee: 1,
+  autoPause: 2,
+  useGem: 3,
+  deadSoon: 4,
+  stallTopup: 5,
+  defend: 6,
+  useScroll: 7,
+  useInfusions: 8,
+  useChannelSkill: 9,
+  useBuffSkill: 10,
+  burstControl: 11,
+  bossImperil: 12,
+  castWeakenAll: 13,
+  castImperilAll: 14,
+  useDeSkill: 15,
+  attack: 16,
+});
+
+function dispatchedResults(snap = {}, opt = {}) {
+  mocks.dispatch.mockClear();
+  mocks.dispatch.mockReturnValue(false);
   runBattleActionDecision(snap, opt);
-  return mocks.runRules.mock.calls.at(-1)[0];
+  return mocks.dispatch.mock.calls.map((call) => call[0]);
 }
 
-const byName = (name, snap = {}, opt = {}) => actionRules(snap, opt).find((r) => r.name === name);
-
 describe("runBattleActionDecision", () => {
-  it("owns the battle rule order and runner protocol", () => {
-    const snap = { hp: 70 };
-    const battleRuleOptions = { autoFlee: false };
-
-    runBattleActionDecision(snap, battleRuleOptions);
-
-    const rules = mocks.runRules.mock.calls.at(-1)[0];
-    expect(rules.map((r) => r.name)).toEqual([
-      "criticalBuffGuard",
-      "flee",
-      "autoPause",
-      "useGem",
-      "deadSoon",
-      "stallTopup",
-      "defend",
-      "useScroll",
-      "useInfusions",
-      "useChannelSkill",
-      "useBuffSkill",
-      "burstControl",
-      "bossImperil",
-      "castWeakenAll",
-      "castImperilAll",
-      "useDeSkill",
-      "attack",
+  it("owns the full action rule order", () => {
+    const results = dispatchedResults();
+    expect(results).toHaveLength(17);
+    expect(results.map((result) => result.kind)).toEqual([
+      "noop",
+      "noop",
+      "noop",
+      "item-plan",
+      "item-plan",
+      "item-plan",
+      "noop",
+      "item-plan",
+      "noop",
+      "channel-plan",
+      "noop",
+      "noop",
+      "noop",
+      "noop",
+      "noop",
+      "noop",
+      "attack-plan",
     ]);
-    expect(mocks.runRules).toHaveBeenCalledWith(rules, snap, battleRuleOptions);
+    expect(results[RULE_INDEX.attack].plan).toBeTruthy();
   });
 
-  it("rules expose name + decide only; no legacy when gate", () => {
-    for (const rule of actionRules()) {
-      expect(typeof rule.name).toBe("string");
-      expect(typeof rule.decide).toBe("function");
-      expect(rule).not.toHaveProperty("when");
-    }
+  it("short-circuits after the first acted dispatch", () => {
+    mocks.dispatch.mockClear();
+    mocks.dispatch.mockImplementation((result) => result.kind === "flee-command");
+
+    runBattleActionDecision({}, { autoFlee: true });
+
+    expect(mocks.dispatch).toHaveBeenCalledTimes(2);
+    expect(mocks.dispatch.mock.calls[0][0]).toEqual({ kind: "noop" });
+    expect(mocks.dispatch.mock.calls[1][0]).toEqual({ kind: "flee-command" });
+  });
+
+  it("passes the same snap to dispatch for bookkeeping", () => {
+    const snap = { hp: 70 };
+    dispatchedResults(snap, {});
+    expect(mocks.dispatch.mock.calls[0][1]).toBe(snap);
   });
 });
 
 describe("runBattleActionDecision rule contracts", () => {
-  it("clean rule decisions return ActionResult, not delegate", () => {
-    expect(byName("flee").decide({}, {})).toEqual({ kind: "noop" });
-    expect(byName("defend").decide({}, {})).toEqual({ kind: "noop" });
-    expect(byName("criticalBuffGuard").decide({}, {})).toEqual({ kind: "noop" });
-    expect(byName("autoPause").decide({}, {})).toEqual({ kind: "noop" });
-    const attack = byName("attack").decide({}, {});
-    expect(attack.kind).toBe("attack-plan");
-    expect(attack.plan).toBeTruthy();
-
-    const kinds = actionRules().map((rule) => {
-      try {
-        return rule.decide({ monsters: [], skillReady: {}, playerEffects: [] }, {})?.kind;
-      } catch {
-        return null;
-      }
+  it("basic gates belong to rule entries, not the action chain", () => {
+    expect(dispatchedResults({}, { autoFlee: true })[RULE_INDEX.flee]).toEqual({
+      kind: "flee-command",
     });
-    expect(kinds).not.toContain("delegate");
-  });
-
-  it("rule table does not assemble basic gates; rule entries decide their own noops/actions", () => {
-    expect(byName("flee").decide({}, { autoFlee: true })).toEqual({ kind: "flee-command" });
-    expect(byName("autoPause").decide({}, { autoPause: true })).toEqual({ kind: "pause" });
-    expect(byName("defend").decide({}, { defend: true })).toEqual({ kind: "defend-command" });
-    expect(byName("deadSoon").decide({}, {})).toEqual({
+    expect(dispatchedResults({}, { autoPause: true })[RULE_INDEX.autoPause]).toEqual({
+      kind: "pause",
+    });
+    expect(dispatchedResults({}, { defend: true })[RULE_INDEX.defend]).toEqual({
+      kind: "defend-command",
+    });
+    expect(dispatchedResults()[RULE_INDEX.deadSoon]).toEqual({
       kind: "item-plan",
       plan: { type: "potion", candidates: [], noWaste: false },
     });
-    expect(byName("useInfusions").decide({ attackStatus: 2, playerBuffs: [] }, {})).toEqual({
+    expect(
+      dispatchedResults({ attackStatus: 2, playerBuffs: [] })[RULE_INDEX.useInfusions]
+    ).toEqual({
       kind: "noop",
     });
-    expect(byName("useChannelSkill").decide({ channeling: true }, {})).toEqual({
+    expect(dispatchedResults({ channeling: true })[RULE_INDEX.useChannelSkill]).toEqual({
       kind: "channel-plan",
       plan: { type: "noop" },
     });
-    expect(byName("useBuffSkill").decide({}, {})).toEqual({ kind: "noop" });
-    expect(byName("useDeSkill").decide({ view: [] }, {})).toEqual({ kind: "noop" });
-    expect(byName("bossImperil").decide({ skillReady: { 213: false }, view: [] }, {})).toEqual({
+    expect(dispatchedResults()[RULE_INDEX.useBuffSkill]).toEqual({ kind: "noop" });
+    expect(dispatchedResults({ view: [] })[RULE_INDEX.useDeSkill]).toEqual({ kind: "noop" });
+    expect(
+      dispatchedResults({ skillReady: { 213: false }, view: [] })[RULE_INDEX.bossImperil]
+    ).toEqual({
       kind: "noop",
     });
+  });
+
+  it("no action result uses the retired delegate bridge", () => {
+    expect(
+      dispatchedResults({ monsters: [], skillReady: {}, playerEffects: [] }).map(
+        (result) => result.kind
+      )
+    ).not.toContain("delegate");
   });
 });
 
@@ -109,29 +133,31 @@ describe("runBattleActionDecision stall Imperil contract", () => {
     ...over,
   });
 
-  it("stall 中 bossImperil decide → noop", () => {
-    expect(byName("bossImperil").decide(stallSnap(), { stallMode: true })).toEqual({
-      kind: "noop",
+  it("stall 中 bossImperil 和 castImperilAll 由各自入口跳过", () => {
+    const results = dispatchedResults(stallSnap(), {
+      stallMode: true,
+      debuffSkillSwitch: true,
+      debuffSkillAllIm: true,
     });
+
+    expect(results[RULE_INDEX.bossImperil]).toEqual({ kind: "noop" });
+    expect(results[RULE_INDEX.castImperilAll]).toEqual({ kind: "noop" });
   });
 
-  it("stallMode:false → bossImperil decide 恢复", () => {
-    expect(byName("bossImperil").decide(stallSnap(), { stallMode: false })).toEqual({
+  it("stallMode:false 时 bossImperil 恢复", () => {
+    expect(dispatchedResults(stallSnap(), { stallMode: false })[RULE_INDEX.bossImperil]).toEqual({
       kind: "click-skill-then-target",
       skillId: "213",
       targetId: 1,
     });
   });
 
-  it("非 stall → bossImperil decide 不受影响", () => {
+  it("非 stall 时 bossImperil 不受影响", () => {
     expect(
-      byName("bossImperil").decide(
-        {
-          skillReady: { 213: true },
-          view: [{ id: 1, order: 0, isDead: false, isBoss: true, buffs: [] }],
-        },
-        {}
-      )
+      dispatchedResults({
+        skillReady: { 213: true },
+        view: [{ id: 1, order: 0, isDead: false, isBoss: true, buffs: [] }],
+      })[RULE_INDEX.bossImperil]
     ).toEqual({
       kind: "click-skill-then-target",
       skillId: "213",
@@ -139,17 +165,7 @@ describe("runBattleActionDecision stall Imperil contract", () => {
     });
   });
 
-  it("stall 中 castImperilAll 由 decide 自行跳过", () => {
-    expect(
-      byName("castImperilAll").decide(stallSnap(), {
-        stallMode: true,
-        debuffSkillSwitch: true,
-        debuffSkillAllIm: true,
-      })
-    ).toEqual({ kind: "noop" });
-  });
-
   it("burstControl 未开启时入口自行返回 noop", () => {
-    expect(byName("burstControl").decide({}, {})).toEqual({ kind: "noop" });
+    expect(dispatchedResults()[RULE_INDEX.burstControl]).toEqual({ kind: "noop" });
   });
 });

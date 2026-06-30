@@ -51,7 +51,7 @@ const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const turnContextFile = path.join(root, "src/battle/turn-context.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
-const stepRunnerFile = path.join(root, "src/battle/step-runner.js");
+const legacyStepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/battle-round-start.js");
 const legacyNewRoundFile = path.join(root, "src/battle/new-round.js");
@@ -289,10 +289,13 @@ function checkTurnEntry() {
   if (!/export function runBattleActionDecision\(/.test(actionDecisionText)) {
     violations.push(`${rel(actionDecisionFile)} must expose runBattleActionDecision()`);
   }
-  for (const required of ["BATTLE_RULES", "runRules"]) {
+  for (const required of ["BATTLE_RULES", "dispatch", "for (const rule of BATTLE_RULES)"]) {
     if (!actionDecisionText.includes(required)) {
       violations.push(`${rel(actionDecisionFile)} must own action decision ${required}`);
     }
+  }
+  if (fs.existsSync(legacyStepRunnerFile)) {
+    violations.push("src/battle/step-runner.js legacy action runner must stay deleted");
   }
   for (const relative of ["src/battle", "src/core"]) {
     const dir = path.join(root, relative);
@@ -1001,12 +1004,6 @@ function checkBattleRulesRuntimeContext() {
       `${rel(battleRulesFile)} rule definitions must read runtime fields through rule runtime context`
     );
   }
-  const runnerText = fs.readFileSync(stepRunnerFile, "utf8");
-  if (/\brule\.when\b|\bwhen 门控\b/.test(runnerText)) {
-    violations.push(
-      `${rel(stepRunnerFile)} must not support legacy rule.when gates; decide returns noop instead`
-    );
-  }
   const allowedRuleChainImporters = new Set([actionDecisionFile]);
   const battleDir = path.join(root, "src/battle");
   for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
@@ -1023,7 +1020,6 @@ function checkBattleRulesRuntimeContext() {
       violations.push(`${rel(file)} must use runBattleActionDecision(), not BATTLE_RULES`);
     }
     if (
-      file !== stepRunnerFile &&
       /from\s+["'][^"']*step-runner\.js["']/.test(source) &&
       !allowedRuleChainImporters.has(file)
     ) {
