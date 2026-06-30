@@ -85,6 +85,18 @@ if (/OptionEvent\.READ\b/.test(ownerText)) {
     `${owner.replaceAll("\\", "/")} must not read the whole option bag for page refresh fields`
   );
 }
+if (!ownerText.includes("const pageRefreshEventHandlers")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route page refresh events through a handler table`);
+}
+const ownerEntry = ownerText.match(/export function runPageRefreshAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*(?:===|!==)/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce event.type branching`);
+}
+for (const internal of ["scheduleUnknownPageRefresh(", "scheduleGamePageRefresh("]) {
+  if (ownerEntry.includes(internal)) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through pageRefreshEventHandlers`);
+  }
+}
 
 if (violations.length) {
   console.error("[verify-page-refresh-boundary] FAIL");

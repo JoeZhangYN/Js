@@ -72,4 +72,11 @@ describe("runPageRefreshAutomation", () => {
 
     expect(scheduleReload).toHaveBeenCalledWith(5);
   });
+
+  it("ignores unknown refresh events", () => {
+    const scheduleReload = vi.fn();
+
+    expect(runPageRefreshAutomation({ type: "unknown" }, { scheduleReload })).toBe(false);
+    expect(scheduleReload).not.toHaveBeenCalled();
+  });
 });

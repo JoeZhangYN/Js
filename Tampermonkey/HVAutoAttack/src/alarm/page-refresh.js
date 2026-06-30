@@ -56,15 +56,24 @@ function schedulePageRefreshReload(minutes, deps) {
   reload(minutes);
 }
 
-export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }, deps = {}) {
-  if (event.type === EVENT_UNKNOWN_PAGE_READY) {
-    schedulePageRefreshReload(UNKNOWN_PAGE_RELOAD_MINUTES, deps);
-    return true;
-  }
-  if (event.type !== EVENT_GAME_PAGE_READY) return false;
+function scheduleUnknownPageRefresh(_event, deps) {
+  schedulePageRefreshReload(UNKNOWN_PAGE_RELOAD_MINUTES, deps);
+  return true;
+}
+
+function scheduleGamePageRefresh(_event, deps) {
   const option = readPageRefreshOption(deps);
   const delayMinutes = planPageRefreshDelayMinutes(option, deps);
   if (!delayMinutes) return false;
   schedulePageRefreshReload(delayMinutes, deps);
   return true;
+}
+
+const pageRefreshEventHandlers = Object.freeze({
+  [EVENT_UNKNOWN_PAGE_READY]: scheduleUnknownPageRefresh,
+  [EVENT_GAME_PAGE_READY]: scheduleGamePageRefresh,
+});
+
+export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }, deps = {}) {
+  return pageRefreshEventHandlers[event.type]?.(event, deps) ?? false;
 }
