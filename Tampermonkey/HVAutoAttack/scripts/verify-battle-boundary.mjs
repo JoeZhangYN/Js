@@ -66,6 +66,7 @@ const bossImperilFile = path.join(root, "src/battle/rules/decide-boss-imperil.js
 const burstControlFile = path.join(root, "src/battle/debuff/decide-burst-control.js");
 const decideDeSkillFile = path.join(root, "src/battle/debuff/decide-de-skill.js");
 const decideCastAllFile = path.join(root, "src/battle/debuff/decide-cast-all.js");
+const debuffFactsFile = path.join(root, "src/battle/debuff/debuff-facts.js");
 const decideDefendFile = path.join(root, "src/battle/defense/decide-defend.js");
 const decideAutoPauseFile = path.join(root, "src/battle/pause/decide-auto-pause.js");
 const decideFleeFile = path.join(root, "src/battle/escape/decide-flee.js");
@@ -1720,13 +1721,13 @@ function checkBattleRuleFactMappers() {
   const attackFactsText = fs.readFileSync(attackFactsFile, "utf8");
   const itemFactsText = fs.readFileSync(itemFactsFile, "utf8");
   const buffFactsText = fs.readFileSync(buffFactsFile, "utf8");
+  const debuffFactsText = fs.readFileSync(debuffFactsFile, "utf8");
   for (const required of [
     "conditionFacts",
     "fleeFacts",
     "autoPauseFacts",
     "defendFacts",
     "bossImperilFacts",
-    "singleDebuffFacts",
   ]) {
     if (!ruleFactsText.includes(required)) {
       violations.push(`${rel(ruleFactsFile)} must own rule fact mapper ${required}`);
@@ -1740,6 +1741,13 @@ function checkBattleRuleFactMappers() {
   for (const retired of ["buffFacts", "channelFacts", "infusionFacts"]) {
     if (new RegExp(`export\\s+function\\s+${retired}\\s*\\(`).test(ruleFactsText)) {
       violations.push(`${rel(ruleFactsFile)} buff fact mapper ${retired} belongs in buff facts`);
+    }
+  }
+  for (const retired of ["allDebuffFacts", "singleDebuffFacts", "burstControlFacts"]) {
+    if (new RegExp(`export\\s+function\\s+${retired}\\s*\\(`).test(ruleFactsText)) {
+      violations.push(
+        `${rel(ruleFactsFile)} debuff fact mapper ${retired} belongs in debuff facts`
+      );
     }
   }
   for (const required of ["gemFacts", "potionFacts", "stallTopupFacts", "scrollFacts"]) {
@@ -1757,6 +1765,14 @@ function checkBattleRuleFactMappers() {
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(buffFactsText)) {
     violations.push(`${rel(buffFactsFile)} must not depend on generic rule fact mappers`);
+  }
+  for (const required of ["allDebuffFacts", "singleDebuffFacts", "burstControlFacts"]) {
+    if (!debuffFactsText.includes(required)) {
+      violations.push(`${rel(debuffFactsFile)} must own debuff fact mapper ${required}`);
+    }
+  }
+  if (/from\s+["'][^"']*rule-facts\.js["']/.test(debuffFactsText)) {
+    violations.push(`${rel(debuffFactsFile)} must not depend on generic rule fact mappers`);
   }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
   if (/conditionFacts\s*:\s*conditionFacts\s*\(\s*snap\s*\)/.test(rulesText)) {

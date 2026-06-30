@@ -32,57 +32,6 @@ export const fleeFacts = conditionOnlyFacts;
 export const autoPauseFacts = conditionOnlyFacts;
 export const defendFacts = conditionOnlyFacts;
 
-export function burstControlFacts(snap) {
-  return {
-    conditionFacts: conditionFacts(snap),
-    healthAbs: snap?.hpAbs,
-    spiritOn: snap?.spiritOn,
-    globalTurn: snap?.globalTurn,
-    lastSpiritToggleGlobalTurn: snap?.lastSpiritToggleGlobalTurn,
-    roundAll: snap?.roundAll,
-    roundNow: snap?.roundNow,
-    attackStatus: snap?.attackStatus,
-    channeling: snap?.channeling,
-    aliveCount: snap?.aliveCount,
-    fightingStyle: snap?.fightingStyle,
-    skillReady: snap?.skillReady,
-    overcharge: snap?.oc,
-    spellAoe: snap?.spellAoe,
-    skillOTOS: snap?.skillOTOS,
-    etherTapActiveX2: snap?.etherTapActiveX2,
-    etherTapExpiring: snap?.etherTapExpiring,
-    learnedBurstByMid: snap?.learnedBurstByMid,
-    monsterFacts: snap?.view,
-  };
-}
-
-export function allDebuffFacts(snap) {
-  return {
-    conditionFacts: conditionFacts(snap),
-    monsterAlive: snap?.monsterAlive,
-    skillReady: snap?.skillReady,
-    spellAoe: snap?.spellAoe,
-    skillCooldowns: snap?.cdMap,
-    aliveCount: snap?.aliveCount,
-    overcharge: snap?.oc,
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
-    monsterFacts: snap?.view,
-  };
-}
-
-export function singleDebuffFacts(snap) {
-  return {
-    conditionFacts: conditionFacts(snap),
-    skillReady: snap?.skillReady,
-    spellAoe: snap?.spellAoe,
-    overcharge: snap?.oc,
-    roundNow: snap?.roundNow,
-    roundAll: snap?.roundAll,
-    monsterFacts: snap?.view,
-  };
-}
-
 export function conditionFacts(snap) {
   // User-authored condition expressions address a variable map, so the snapshot is the condition context.
   return snap;

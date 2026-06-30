@@ -13,18 +13,16 @@ import { decideAutoPause } from "../pause/decide-auto-pause.js";
 import { decideFlee } from "../escape/decide-flee.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
 import { decideBurstControl } from "../debuff/decide-burst-control.js";
+import { allDebuffFacts, burstControlFacts, singleDebuffFacts } from "../debuff/debuff-facts.js";
 import { buffFacts, channelFacts, infusionFacts } from "../buff/buff-facts.js";
 import { attackFacts } from "./attack-facts.js";
 import { gemFacts, potionFacts, scrollFacts, stallTopupFacts } from "../item/item-facts.js";
 import {
-  allDebuffFacts,
   autoPauseFacts,
   bossImperilFacts,
-  burstControlFacts,
   criticalBuffFacts,
   defendFacts,
   fleeFacts,
-  singleDebuffFacts,
 } from "./rule-facts.js";
 
 /** @type {import("../../core/types.js").BattleRule[]} */
