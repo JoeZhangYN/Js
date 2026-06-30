@@ -13,7 +13,7 @@ import {
   RecoveryLearningEvent,
   runRecoveryLearningAutomation,
 } from "../../state/recovery-learner.js";
-import { isPlayerBuffActive } from "../player-buff-state.js";
+import { BattlePlayerBuffStateEvent, runBattlePlayerBuffState } from "../player-buff-state.js";
 
 const DECIDE_GEM = "decide-gem";
 const DECIDE_POTION = "decide-potion";
@@ -173,7 +173,11 @@ function decideStallTopup(event = {}) {
     !event.spiritOn &&
     (event.overcharge || 0) >= (opt.stallFocusOcThreshold ?? 60) &&
     (event.manaPercent ?? 100) < (opt.stallFocusMpMax ?? 80) &&
-    !isPlayerBuffActive(event, "channeling")
+    !runBattlePlayerBuffState({
+      type: BattlePlayerBuffStateEvent.READ_ACTIVE,
+      state: event,
+      img: "channeling",
+    })
   ) {
     attempts.push({ kind: "focus" });
   }

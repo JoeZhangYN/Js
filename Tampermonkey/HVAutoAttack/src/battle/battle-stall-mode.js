@@ -1,4 +1,4 @@
-import { isPlayerBuffActive } from "./player-buff-state.js";
+import { BattlePlayerBuffStateEvent, runBattlePlayerBuffState } from "./player-buff-state.js";
 
 const EVENT_READ_ACTIVE = "readActive";
 const EVENT_READ_TOPUP_CANDIDATES = "readTopupCandidates";
@@ -48,10 +48,24 @@ function readTopupCandidates(event) {
   const opt = event?.opt || {};
   const mpFloor = opt.stallTopupMpFloor ?? 70;
   const spFloor = opt.stallTopupSpFloor ?? 70;
-  if ((event?.manaPercent ?? 100) < mpFloor && !isPlayerBuffActive(event, "manapot")) {
+  if (
+    (event?.manaPercent ?? 100) < mpFloor &&
+    !runBattlePlayerBuffState({
+      type: BattlePlayerBuffStateEvent.READ_ACTIVE,
+      state: event,
+      img: "manapot",
+    })
+  ) {
     candidates.push(11291);
   }
-  if ((event?.spiritPercent ?? 100) < spFloor && !isPlayerBuffActive(event, "spiritpot")) {
+  if (
+    (event?.spiritPercent ?? 100) < spFloor &&
+    !runBattlePlayerBuffState({
+      type: BattlePlayerBuffStateEvent.READ_ACTIVE,
+      state: event,
+      img: "spiritpot",
+    })
+  ) {
     candidates.push(11391);
   }
   return candidates;

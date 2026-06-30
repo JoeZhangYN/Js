@@ -1,46 +1,62 @@
 import { describe, expect, it } from "vitest";
-import { isPlayerBuffActive, shouldRecastPlayerBuff } from "./player-buff-state.js";
+import { BattlePlayerBuffStateEvent, runBattlePlayerBuffState } from "./player-buff-state.js";
 
-describe("isPlayerBuffActive", () => {
+function readActive(state, img) {
+  return runBattlePlayerBuffState({
+    type: BattlePlayerBuffStateEvent.READ_ACTIVE,
+    state,
+    img,
+  });
+}
+
+function shouldRecast(state, img) {
+  return runBattlePlayerBuffState({
+    type: BattlePlayerBuffStateEvent.SHOULD_RECAST,
+    state,
+    img,
+  });
+}
+
+describe("runBattlePlayerBuffState READ_ACTIVE", () => {
   it("missing buff image is not active", () => {
-    expect(isPlayerBuffActive({}, undefined)).toBe(false);
-    expect(isPlayerBuffActive({}, "")).toBe(false);
+    expect(readActive({}, undefined)).toBe(false);
+    expect(readActive({}, "")).toBe(false);
   });
 
   it("checks exact playerBuffs entries", () => {
-    expect(isPlayerBuffActive({ playerBuffs: ["haste"] }, "haste")).toBe(true);
-    expect(isPlayerBuffActive({ playerBuffs: ["hastened"] }, "haste")).toBe(false);
+    expect(readActive({ playerBuffs: ["haste"] }, "haste")).toBe(true);
+    expect(readActive({ playerBuffs: ["hastened"] }, "haste")).toBe(false);
   });
 });
 
-describe("shouldRecastPlayerBuff", () => {
+describe("runBattlePlayerBuffState SHOULD_RECAST", () => {
   it("missing buff image is not a recast request", () => {
-    expect(shouldRecastPlayerBuff({}, undefined)).toBe(false);
-    expect(shouldRecastPlayerBuff({}, "")).toBe(false);
+    expect(shouldRecast({}, undefined)).toBe(false);
+    expect(shouldRecast({}, "")).toBe(false);
   });
 
   it("missing active effect should be recast", () => {
-    expect(shouldRecastPlayerBuff({ playerEffects: [] }, "haste")).toBe(true);
+    expect(shouldRecast({ playerEffects: [] }, "haste")).toBe(true);
   });
 
   it("uses exact playerEffectTurns entries when present", () => {
-    expect(shouldRecastPlayerBuff({ playerEffectTurns: { haste: 5 } }, "haste")).toBe(false);
-    expect(shouldRecastPlayerBuff({ playerEffectTurns: { haste: 1 } }, "haste")).toBe(true);
+    expect(shouldRecast({ playerEffectTurns: { haste: 5 } }, "haste")).toBe(false);
+    expect(shouldRecast({ playerEffectTurns: { haste: 1 } }, "haste")).toBe(true);
   });
 
   it("keeps permanent effects from recasting", () => {
-    expect(shouldRecastPlayerBuff({ playerEffectTurns: { haste: Infinity } }, "haste")).toBe(false);
+    expect(shouldRecast({ playerEffectTurns: { haste: Infinity } }, "haste")).toBe(false);
   });
 
   it("falls back to exact playerEffects matches", () => {
     expect(
-      shouldRecastPlayerBuff(
+      shouldRecast(
         { playerEffects: [{ img: "haste", name: "Hastened", turns: 5 }] },
         "haste"
       )
     ).toBe(false);
     expect(
-      shouldRecastPlayerBuff(
+      shouldRecast(
         { playerEffects: [{ img: "haste", name: "Hastened", turns: 1 }] },
         "haste"
       )
@@ -49,7 +65,7 @@ describe("shouldRecastPlayerBuff", () => {
 
   it("does not treat substring image names as active effects", () => {
     expect(
-      shouldRecastPlayerBuff(
+      shouldRecast(
         { playerEffects: [{ img: "regeneration", name: "Regeneration", turns: 9 }] },
         "regen"
       )
@@ -58,7 +74,7 @@ describe("shouldRecastPlayerBuff", () => {
 
   it("prefers playerEffectTurns over playerEffects for the same image", () => {
     expect(
-      shouldRecastPlayerBuff(
+      shouldRecast(
         {
           playerEffectTurns: { haste: 5 },
           playerEffects: [{ img: "haste", name: "Hastened", turns: 1 }],
@@ -66,5 +82,9 @@ describe("shouldRecastPlayerBuff", () => {
         "haste"
       )
     ).toBe(false);
+  });
+
+  it("rejects unknown player buff state events", () => {
+    expect(runBattlePlayerBuffState({ type: "unknown" })).toBe(false);
   });
 });

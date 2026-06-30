@@ -3,7 +3,7 @@
 // Phase 5b-2 wave 1 第 1 个 L1 切缝示例。
 import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
 import { checkCondition } from "../../settings/condition-eval.js";
-import { isPlayerBuffActive, shouldRecastPlayerBuff } from "../player-buff-state.js";
+import { BattlePlayerBuffStateEvent, runBattlePlayerBuffState } from "../player-buff-state.js";
 
 const DRAUGHT_PACK = Object.freeze([
   Object.freeze(["HD", Object.freeze({ id: 11191, img: "healthpot" })]),
@@ -33,7 +33,15 @@ export function decideBuff(event = {}) {
     if (!checkCondition(opt[`buffSkill${skill}Condition`], event.conditionFacts)) continue;
     const lib = BUFF_SKILL_LIB.get(skill);
     if (!lib) continue;
-    if (!shouldRecastPlayerBuff(event, lib.img)) continue;
+    if (
+      !runBattlePlayerBuffState({
+        type: BattlePlayerBuffStateEvent.SHOULD_RECAST,
+        state: event,
+        img: lib.img,
+      })
+    ) {
+      continue;
+    }
     if (!event.skillReady?.[lib.id]) continue;
 
     // 是否需要先开 Spirit Stance？
@@ -49,7 +57,15 @@ export function decideBuff(event = {}) {
 
   // Phase 2: draughts (items 5 个)
   for (const [key, draught] of DRAUGHT_PACK) {
-    if (isPlayerBuffActive(event, draught.img)) continue;
+    if (
+      runBattlePlayerBuffState({
+        type: BattlePlayerBuffStateEvent.READ_ACTIVE,
+        state: event,
+        img: draught.img,
+      })
+    ) {
+      continue;
+    }
     if (!buffSkill[key]) continue;
     if (!checkCondition(opt[`buffSkill${key}Condition`], event.conditionFacts)) continue;
     return {

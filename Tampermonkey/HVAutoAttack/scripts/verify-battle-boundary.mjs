@@ -2324,7 +2324,8 @@ function checkInfusionEntry() {
     "infusionCondition",
     "conditionFacts",
     "event.attackStatus",
-    "isPlayerBuffActive",
+    "BattlePlayerBuffStateEvent.READ_ACTIVE",
+    "runBattlePlayerBuffState",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideInfusionFile)} must own infusion gate ${required}`);
@@ -2358,8 +2359,9 @@ function checkChannelEntry() {
     "event.channeling",
     "event.skillReady",
     "event.playerEffects",
-    "isPlayerBuffActive",
-    "shouldRecastPlayerBuff",
+    "BattlePlayerBuffStateEvent.READ_ACTIVE",
+    "BattlePlayerBuffStateEvent.SHOULD_RECAST",
+    "runBattlePlayerBuffState",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideChannelFile)} must own channel gate ${required}`);
@@ -2402,8 +2404,9 @@ function checkBuffEntry() {
     "buffSkillCondition",
     "conditionFacts",
     "event.skillReady",
-    "isPlayerBuffActive",
-    "shouldRecastPlayerBuff",
+    "BattlePlayerBuffStateEvent.READ_ACTIVE",
+    "BattlePlayerBuffStateEvent.SHOULD_RECAST",
+    "runBattlePlayerBuffState",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideBuffFile)} must own buff gate ${required}`);
@@ -2439,6 +2442,11 @@ function checkPlayerBuffStateQuery() {
 
   const ownerText = fs.readFileSync(playerBuffStateFile, "utf8");
   for (const required of [
+    "BattlePlayerBuffStateEvent",
+    "battlePlayerBuffStateEventHandlers",
+    "runBattlePlayerBuffState",
+    "READ_ACTIVE",
+    "SHOULD_RECAST",
     "isPlayerBuffActive",
     "shouldRecastPlayerBuff",
     "playerBuffs",
@@ -2449,6 +2457,13 @@ function checkPlayerBuffStateQuery() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(playerBuffStateFile)} must own player buff state fact ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattlePlayerBuffStateEvent\b|runBattlePlayerBuffState\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(playerBuffStateFile)} may export only its event query entry`);
   }
   if (fs.existsSync(path.join(root, "src/battle/buff/player-buff-state.js"))) {
     violations.push(
@@ -2480,6 +2495,12 @@ function checkPlayerBuffStateQuery() {
     if (/playerBuffs\s*\|\|\s*\[\]\)\.includes|playerBuffs\?\.includes/.test(text)) {
       violations.push(`${rel(file)} must use player buff active query`);
     }
+    if (!text.includes("runBattlePlayerBuffState")) {
+      violations.push(`${rel(file)} must query player buff state through one entry`);
+    }
+    if (/import\s*\{[^}]*\b(?:isPlayerBuffActive|shouldRecastPlayerBuff)\b/.test(text)) {
+      violations.push(`${rel(file)} must not import raw player buff state functions`);
+    }
   }
 
   const allowedProductionImporters = new Set([
@@ -2499,7 +2520,7 @@ function checkPlayerBuffStateQuery() {
       /from\s+["'][^"']*player-buff-state\.js["']/.test(text) &&
       !allowedProductionImporters.has(file)
     ) {
-      violations.push(`${rel(file)} must not bypass buff state query consumers`);
+      violations.push(`${rel(file)} must not bypass player buff state query consumers`);
     }
     if (/from\s+["'][^"']*player-buff-recast\.js["']/.test(text)) {
       violations.push(`${rel(file)} must use player-buff-state.js`);
@@ -3458,7 +3479,8 @@ function checkBattleStallMode() {
     "event?.overcharge",
     "event?.manaPercent",
     "event?.spiritPercent",
-    "isPlayerBuffActive",
+    "BattlePlayerBuffStateEvent.READ_ACTIVE",
+    "runBattlePlayerBuffState",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(stallModeFile)} must own ${required}`);
