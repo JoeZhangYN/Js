@@ -1,3 +1,5 @@
+import { isPlayerBuffActive } from "./player-buff-state.js";
+
 const EVENT_READ_ACTIVE = "readActive";
 const EVENT_READ_TOPUP_CANDIDATES = "readTopupCandidates";
 
@@ -41,11 +43,10 @@ function readTopupCandidates(event) {
   const opt = event?.opt || {};
   const mpFloor = opt.stallTopupMpFloor ?? 70;
   const spFloor = opt.stallTopupSpFloor ?? 70;
-  const playerBuffs = event?.playerBuffs || [];
-  if ((event?.manaPercent ?? 100) < mpFloor && !playerBuffs.includes("manapot")) {
+  if ((event?.manaPercent ?? 100) < mpFloor && !isPlayerBuffActive(event, "manapot")) {
     candidates.push(11291);
   }
-  if ((event?.spiritPercent ?? 100) < spFloor && !playerBuffs.includes("spiritpot")) {
+  if ((event?.spiritPercent ?? 100) < spFloor && !isPlayerBuffActive(event, "spiritpot")) {
     candidates.push(11391);
   }
   return candidates;

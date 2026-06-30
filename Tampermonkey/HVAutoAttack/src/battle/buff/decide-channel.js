@@ -8,7 +8,7 @@
 // 原 DOM buff 探活 → event.playerEffects（明细 img/name/turns）+ event.playerBuffs（img 名列表）。
 import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
 import { NAME_TO_BUFF_CODE } from "../../data/spell-lib.js";
-import { isPlayerBuffActive, shouldRecastPlayerBuff } from "./player-buff-state.js";
+import { isPlayerBuffActive, shouldRecastPlayerBuff } from "../player-buff-state.js";
 
 /**
  * @param {object} event

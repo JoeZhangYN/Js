@@ -3,7 +3,7 @@
 // Phase 5b-2 wave 1 第 1 个 L1 切缝示例。
 import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
 import { checkCondition } from "../../settings/condition-eval.js";
-import { isPlayerBuffActive, shouldRecastPlayerBuff } from "./player-buff-state.js";
+import { isPlayerBuffActive, shouldRecastPlayerBuff } from "../player-buff-state.js";
 
 const DRAUGHT_PACK = [
   ["HD", { id: 11191, img: "healthpot" }],

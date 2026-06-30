@@ -39,8 +39,8 @@ const decideInfusionFile = path.join(root, "src/battle/buff/decide-infusion.js")
 const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
 const decideChannelFile = path.join(root, "src/battle/buff/decide-channel.js");
 const buffFactsFile = path.join(root, "src/battle/buff/buff-facts.js");
-const playerBuffStateFile = path.join(root, "src/battle/buff/player-buff-state.js");
-const playerBuffStateTestFile = path.join(root, "src/battle/buff/player-buff-state.test.js");
+const playerBuffStateFile = path.join(root, "src/battle/player-buff-state.js");
+const playerBuffStateTestFile = path.join(root, "src/battle/player-buff-state.test.js");
 const decideCriticalBuffFile = path.join(
   root,
   "src/battle/critical-buff-guard/decide-critical-buff.js"
@@ -1967,6 +1967,11 @@ function checkPlayerBuffStateQuery() {
       violations.push(`${rel(playerBuffStateFile)} must own player buff state fact ${required}`);
     }
   }
+  if (fs.existsSync(path.join(root, "src/battle/buff/player-buff-state.js"))) {
+    violations.push(
+      "src/battle/buff/player-buff-state.js must be promoted to battle player-buff-state"
+    );
+  }
   if (fs.existsSync(path.join(root, "src/battle/buff/player-buff-recast.js"))) {
     violations.push("src/battle/buff/player-buff-recast.js must be retired into player-buff-state");
   }
@@ -1985,6 +1990,8 @@ function checkPlayerBuffStateQuery() {
     [decideInfusionFile, fs.readFileSync(decideInfusionFile, "utf8")],
     [decideChannelFile, channelText],
     [decideBuffFile, buffText],
+    [decideItemFile, fs.readFileSync(decideItemFile, "utf8")],
+    [stallModeFile, fs.readFileSync(stallModeFile, "utf8")],
   ];
   for (const [file, text] of directPlayerBuffReaders) {
     if (/playerBuffs\s*\|\|\s*\[\]\)\.includes|playerBuffs\?\.includes/.test(text)) {
@@ -1996,6 +2003,8 @@ function checkPlayerBuffStateQuery() {
     decideInfusionFile,
     decideChannelFile,
     decideBuffFile,
+    decideItemFile,
+    stallModeFile,
   ]);
   const battleDir = path.join(root, "src/battle");
   for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
@@ -2238,7 +2247,7 @@ function checkItemStallTopupEntry() {
     "event.spiritOn",
     "event.globalTurn",
     "event.lastSpiritToggleGlobalTurn",
-    "event.playerBuffs",
+    "event?.playerBuffs",
   ]) {
     if (!itemText.includes(required)) {
       violations.push(`${rel(decideItemFile)} stall top-up must own fact ${required}`);
@@ -2668,6 +2677,7 @@ function checkBattleStallMode() {
     "event?.overcharge",
     "event?.manaPercent",
     "event?.spiritPercent",
+    "isPlayerBuffActive",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(stallModeFile)} must own ${required}`);

@@ -1,6 +1,6 @@
 // PURE: 元素灌注决策。attackStatus 决定灌注种类，已存在效果则跳过。
 import { checkCondition } from "../../settings/condition-eval.js";
-import { isPlayerBuffActive } from "./player-buff-state.js";
+import { isPlayerBuffActive } from "../player-buff-state.js";
 
 const INFUSION_LIB = [
   null,
