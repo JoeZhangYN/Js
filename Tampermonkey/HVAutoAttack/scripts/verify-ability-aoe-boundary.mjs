@@ -75,6 +75,23 @@ function checkEntry() {
   if (!text.includes("READ_SPELL_AOE")) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose READ_SPELL_AOE`);
   }
+  if (!text.includes("const abilityAoeEventHandlers")) {
+    violations.push(`${owner.replaceAll("\\", "/")} must route ability AoE events through a handler table`);
+  }
+  const entryMatch = text.match(/export function runAbilityAoeAutomation[\s\S]*?\n}/);
+  if (!entryMatch) {
+    violations.push(`${owner.replaceAll("\\", "/")} must expose runAbilityAoeAutomation(event)`);
+  } else {
+    const entryBody = entryMatch[0];
+    if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+      violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+    }
+    for (const internal of ["loadStoredAoe(", "parseAbilityPage(", "readSpellAoe("]) {
+      if (entryBody.includes(internal)) {
+        violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through abilityAoeEventHandlers`);
+      }
+    }
+  }
   for (const required of ["OptionEvent.READ_FIELD", "OptionEvent.WRITE_FIELD"]) {
     if (!text.includes(required)) {
       violations.push(`${owner.replaceAll("\\", "/")} must sync option AoE through ${required}`);

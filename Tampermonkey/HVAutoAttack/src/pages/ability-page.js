@@ -17,6 +17,14 @@ export const AbilityAoeEvent = Object.freeze({
   READ_SPELL_AOE: EVENT_READ_SPELL_AOE,
 });
 
+const abilityAoeEventHandlers = Object.freeze({
+  [EVENT_LOAD_STORED_AOE]: () => loadStoredAoe(),
+  [EVENT_CAPTURE_ABILITY_PAGE]: () => {
+    if (isAbilityPage()) parseAbilityPage();
+  },
+  [EVENT_READ_SPELL_AOE]: () => readSpellAoe(),
+});
+
 function isAbilityPage() {
   const params = new URLSearchParams(window.location.search);
   return params.get("s") === "Character" && params.get("ss") === "ab";
@@ -108,13 +116,6 @@ function parseAbilityPage() {
 }
 
 export function runAbilityAoeAutomation(event = { type: EVENT_CAPTURE_ABILITY_PAGE }) {
-  if (event.type === EVENT_LOAD_STORED_AOE) {
-    loadStoredAoe();
-    return;
-  }
-  if (event.type === EVENT_CAPTURE_ABILITY_PAGE && isAbilityPage()) {
-    parseAbilityPage();
-  }
-  if (event.type === EVENT_READ_SPELL_AOE) return readSpellAoe();
-  return undefined;
+  const handler = abilityAoeEventHandlers[event.type];
+  return handler ? handler(event) : undefined;
 }

@@ -46,6 +46,12 @@ describe("runAbilityAoeAutomation", () => {
     });
   });
 
+  it("ignores unknown ability AoE events at the entry", () => {
+    expect(runAbilityAoeAutomation({ type: "unknown" })).toBeUndefined();
+    expect(mocks.gE).not.toHaveBeenCalled();
+    expect(mocks.setValue).not.toHaveBeenCalled();
+  });
+
   it("captures the ability page AoE map and syncs option display fields", () => {
     window.history.pushState({}, "", "/?s=Character&ss=ab");
     const slot = document.createElement("div");
