@@ -1,11 +1,17 @@
 import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
-import { joinMonsterView, monsterHpVars } from "./monster-view.js";
+import { aliveByOrder, byOrder, joinMonsterView, monsterHpVars } from "./monster-view.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 
 const EVENT_READ_VIEW = "readView";
+const EVENT_READ_ALIVE_BY_ORDER = "readAliveByOrder";
+const EVENT_READ_BY_ORDER = "readByOrder";
+const EVENT_READ_HP_VARS = "readHpVars";
 
 export const BattleMonsterViewEvent = Object.freeze({
   READ_VIEW: EVENT_READ_VIEW,
+  READ_ALIVE_BY_ORDER: EVENT_READ_ALIVE_BY_ORDER,
+  READ_BY_ORDER: EVENT_READ_BY_ORDER,
+  READ_HP_VARS: EVENT_READ_HP_VARS,
 });
 
 const EMPTY_MONSTER_VIEW = Object.freeze({
@@ -19,6 +25,9 @@ const EMPTY_MONSTER_VIEW = Object.freeze({
 
 const battleMonsterViewEventHandlers = Object.freeze({
   [EVENT_READ_VIEW]: (event) => readBattleMonsterView(event.monsters),
+  [EVENT_READ_ALIVE_BY_ORDER]: (event) => aliveByOrder(event.view),
+  [EVENT_READ_BY_ORDER]: (event) => byOrder(event.view),
+  [EVENT_READ_HP_VARS]: (event) => monsterHpVars(event.view),
 });
 
 function readBattleMonsterView(monsters) {
@@ -36,7 +45,7 @@ function readBattleMonsterView(monsters) {
     view,
     monsterIdentities,
     aliveCount: view.filter((monster) => !monster.isDead).length,
-    ...monsterHpVars(view),
+    ...runBattleMonsterView({ type: BattleMonsterViewEvent.READ_HP_VARS, view }),
   };
 }
 

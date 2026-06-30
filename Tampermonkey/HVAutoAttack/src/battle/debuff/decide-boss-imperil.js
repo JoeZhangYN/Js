@@ -4,7 +4,7 @@
 //   该 kind 的 dispatch 已内置 Spirit 前置 + attemptClickWithTarget，正好对应原
 //   runBattlePreCastSpiritAutomation + attemptClickWithTarget，无需新 kind。
 // 无目标 → {kind:"noop"}。
-import { aliveByOrder } from "../monster-view.js";
+import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { bossCoverageWindow } from "../target-strategy.js";
 
 const EVENT_CAN_CAST = "canCast";
@@ -32,7 +32,10 @@ function canCastBossImperil(event) {
 function decideBossImperil(event) {
   if (!canCastBossImperil(event)) return { kind: "noop" };
   const opt = event?.opt || {};
-  const sortedAlive = aliveByOrder(event?.monsterFacts || []);
+  const sortedAlive = runBattleMonsterView({
+    type: BattleMonsterViewEvent.READ_ALIVE_BY_ORDER,
+    view: event?.monsterFacts || [],
+  });
   const isBossNoIm = (m) => m.isBoss && !m.buffs.includes("imperil");
   if (!sortedAlive.some(isBossNoIm)) return { kind: "noop" };
   // AoE 覆盖窗口走 target-strategy.bossCoverageWindow（backward 窗口 [c-aoe+1,c] + tie-break 优先 needy 自身）。

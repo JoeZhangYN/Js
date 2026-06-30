@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   joinMonsterView: vi.fn(() => [
     { order: 0, monsterId: 101, name: "Alpha", isDead: false, hpPercent: 0.4 },
   ]),
+  aliveByOrder: vi.fn((view) => [...(view || [])].filter((monster) => !monster.isDead)),
+  byOrder: vi.fn((view) => [...(view || [])].sort((a, b) => a.order - b.order)),
   monsterHpVars: vi.fn(() => ({
     firstMonsterHpPercent: 40,
     lowestMonsterHpPercent: 40,
@@ -15,6 +17,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./monster-view.js", () => ({
+  aliveByOrder: mocks.aliveByOrder,
+  byOrder: mocks.byOrder,
   joinMonsterView: mocks.joinMonsterView,
   monsterHpVars: mocks.monsterHpVars,
 }));
@@ -68,5 +72,31 @@ describe("battle monster view", () => {
     expect(mocks.runMonsterCacheAutomation).not.toHaveBeenCalled();
     expect(mocks.joinMonsterView).not.toHaveBeenCalled();
     expect(mocks.monsterHpVars).not.toHaveBeenCalled();
+  });
+
+  it("routes monster ordering queries through the entry without reading status or cache", () => {
+    const view = [
+      { id: 2, order: 2, isDead: false },
+      { id: 1, order: 1, isDead: true },
+    ];
+
+    expect(
+      runBattleMonsterView({ type: BattleMonsterViewEvent.READ_ALIVE_BY_ORDER, view })
+    ).toEqual([{ id: 2, order: 2, isDead: false }]);
+    expect(runBattleMonsterView({ type: BattleMonsterViewEvent.READ_BY_ORDER, view })).toEqual([
+      { id: 1, order: 1, isDead: true },
+      { id: 2, order: 2, isDead: false },
+    ]);
+    expect(runBattleMonsterView({ type: BattleMonsterViewEvent.READ_HP_VARS, view })).toEqual({
+      firstMonsterHpPercent: 40,
+      lowestMonsterHpPercent: 40,
+      soloMonsterHpPercent: 40,
+    });
+
+    expect(mocks.runMonsterStatusAutomation).not.toHaveBeenCalled();
+    expect(mocks.runMonsterCacheAutomation).not.toHaveBeenCalled();
+    expect(mocks.aliveByOrder).toHaveBeenCalledWith(view);
+    expect(mocks.byOrder).toHaveBeenCalledWith(view);
+    expect(mocks.monsterHpVars).toHaveBeenCalledWith(view);
   });
 });

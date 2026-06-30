@@ -4,7 +4,7 @@
 // 盾战 combo：T1 stun → T2（晕状态打 T2 = 200 分高优先）→ T3 斩杀（hpRatio<25%+bleed = 1000 分决定性）
 import { checkCondition } from "../../settings/condition-eval.js";
 import { aoeScore } from "./physical-skill-ranking.js";
-import { aliveByOrder } from "../monster-view.js";
+import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { BigSkillCatalogEvent, runBigSkillCatalog } from "../big-skill-catalog.js";
 
 const PHYSICAL_SKILL_SCORERS = Object.freeze({
@@ -108,7 +108,10 @@ export function scorePhysicalSkillCandidates(opt, event, ctx) {
     !!(opt.skillOTOS && opt.skillOTOS[key] && (event.skillOTOS?.[key] ?? 0) >= 1);
   const ocCur = event.overcharge || 0;
 
-  const firstMonster = aliveByOrder(event.monsterFacts)[0];
+  const firstMonster = runBattleMonsterView({
+    type: BattleMonsterViewEvent.READ_ALIVE_BY_ORDER,
+    view: event.monsterFacts,
+  })[0];
   const scoringContext = {
     downgrade,
     firstMonster,

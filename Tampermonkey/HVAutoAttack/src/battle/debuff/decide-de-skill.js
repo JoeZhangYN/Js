@@ -4,8 +4,8 @@
 // 其余单体 debuff → 首怪(order 最小) + 保留 AoE 邻居覆盖优化。
 import { DEBUFF_SKILL_LIB } from "../../data/debuff-lib.js";
 import { checkCondition } from "../../settings/condition-eval.js";
+import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { canApplyDebuffPure } from "./can-apply.js";
-import { aliveByOrder } from "../monster-view.js";
 import { firstByOrder, highestAbsHp, selfTarget, aoeNeighborAnchor } from "../target-strategy.js";
 
 /**
@@ -24,7 +24,10 @@ export function decideDeSkill(event = {}) {
     return { kind: "noop" };
   }
   const skillPack = (opt.debuffSkillOrderValue || "").split(",").filter(Boolean);
-  const alive = aliveByOrder(event.monsterFacts);
+  const alive = runBattleMonsterView({
+    type: BattleMonsterViewEvent.READ_ALIVE_BY_ORDER,
+    view: event.monsterFacts,
+  });
   if (!alive.length) return { kind: "noop" };
 
   for (const key of skillPack) {

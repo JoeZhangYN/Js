@@ -1,7 +1,7 @@
 // PURE 决策（F5，默认 OFF）：学习到的高爆发怪若单发可致血量「蹦极」，单点 Silence/Sleep/Confuse 控住它。
 // 不读 DOM / 不调 g()——吃 opt + explicit burst facts。
 // 选择逻辑（load-bearing）：Silence 只挡施法 → 仅法术爆发用；物理/未知 → Sleep（整回合禁用）；再退 Confuse。
-import { aliveByOrder } from "../monster-view.js";
+import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 
 const PHYSICAL_TYPES = Object.freeze({
   piercing: true,
@@ -36,7 +36,10 @@ export function decideBurstControl(event = {}) {
   const frac = (opt.burstControlHpFrac ?? 50) / 100; // 单发 ≥ 当前血 × frac 视为蹦极威胁
 
   let best = null;
-  for (const m of aliveByOrder(event.monsterFacts || [])) {
+  for (const m of runBattleMonsterView({
+    type: BattleMonsterViewEvent.READ_ALIVE_BY_ORDER,
+    view: event.monsterFacts || [],
+  })) {
     const learned = m.monsterId != null ? burstMap[m.monsterId] : null;
     if (!learned || !(learned.maxHit > 0)) continue;
     if (learned.maxHit < hpAbs * frac) continue; // 单发不构成蹦极

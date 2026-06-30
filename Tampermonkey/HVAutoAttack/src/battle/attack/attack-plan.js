@@ -1,6 +1,6 @@
 import { checkCondition } from "../../settings/condition-eval.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
-import { aliveByOrder } from "../monster-view.js";
+import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { firstByFinWeight } from "../target-strategy.js";
 import { decideSpellAttackPlan } from "./spell-attack-plan.js";
 import { scorePhysicalSkillCandidates } from "./physical-skill-scoring.js";
@@ -29,7 +29,10 @@ export function decideAttackPlan(opt, event) {
 }
 
 function buildAttackPlanContext(opt, event) {
-  const alive = aliveByOrder(event.monsterFacts);
+  const alive = runBattleMonsterView({
+    type: BattleMonsterViewEvent.READ_ALIVE_BY_ORDER,
+    view: event.monsterFacts,
+  });
   const firstMonster = firstByFinWeight(alive); // finWeight 最小 = 默认攻击目标
   const buffsOf = (id) => (event.monsterFacts || []).find((m) => m.id === id)?.buffs || [];
   const etherTapGate =

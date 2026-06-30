@@ -7,8 +7,8 @@ import {
   BattleDebuffCoverageEvent,
   runBattleDebuffCoverageAutomation,
 } from "../battle-debuff-coverage.js";
+import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { canApplyDebuffPure } from "./can-apply.js";
-import { byOrder } from "../monster-view.js";
 import { aoeNeighborAnchor } from "../target-strategy.js";
 
 const ALL_DEBUFF_GATES = Object.freeze({
@@ -41,7 +41,10 @@ export function decideCastDebuffOnAll(event = {}) {
     (event.spellAoe && event.spellAoe[skill.name]) ||
     (opt.debuffSkillAoe && opt.debuffSkillAoe[debuffKey]) ||
     1;
-  const sorted = byOrder(event.monsterFacts); // 含死序：AoE 邻居覆盖需 order 相邻语义
+  const sorted = runBattleMonsterView({
+    type: BattleMonsterViewEvent.READ_BY_ORDER,
+    view: event.monsterFacts,
+  }); // 含死序：AoE 邻居覆盖需 order 相邻语义
   const skillIsReady = !!event.skillReady?.[skill.id];
 
   for (let i = 0; i < sorted.length; i++) {
