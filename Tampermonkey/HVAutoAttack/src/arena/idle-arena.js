@@ -21,6 +21,12 @@ export const IdleArenaEvent = Object.freeze({
   RESET_PROGRESS: EVENT_RESET_PROGRESS,
 });
 
+const idleArenaEventHandlers = Object.freeze({
+  [EVENT_SCHEDULE_NEXT_BATTLE]: () => scheduleNextBattle(),
+  [EVENT_START_NEXT_BATTLE]: () => startNextBattle(),
+  [EVENT_RESET_PROGRESS]: () => resetProgress(),
+});
+
 function reloadCurrentPage() {
   runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
 }
@@ -146,13 +152,6 @@ function startNextBattle() {
 }
 
 export function runIdleArenaAutomation(event = { type: EVENT_START_NEXT_BATTLE }) {
-  if (event.type === EVENT_SCHEDULE_NEXT_BATTLE) {
-    scheduleNextBattle();
-    return;
-  }
-  if (event.type === EVENT_RESET_PROGRESS) {
-    resetProgress();
-    return;
-  }
-  startNextBattle();
+  const handler = idleArenaEventHandlers[event.type] || idleArenaEventHandlers[EVENT_START_NEXT_BATTLE];
+  return handler(event);
 }

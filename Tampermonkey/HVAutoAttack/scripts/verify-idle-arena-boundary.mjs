@@ -87,6 +87,23 @@ if (!ownerText.includes("RESET_PROGRESS")) {
 if (!ownerText.includes("delValue(STORAGE_KEYS.ARENA)")) {
   violations.push(`${owner.replaceAll("\\", "/")} must own arena reset storage deletion`);
 }
+if (!ownerText.includes("const idleArenaEventHandlers")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route idle arena events through a handler table`);
+}
+const entryMatch = ownerText.match(/export function runIdleArenaAutomation[\s\S]*?\n}/);
+if (!entryMatch) {
+  violations.push(`${owner.replaceAll("\\", "/")} must expose runIdleArenaAutomation(event)`);
+} else {
+  const entryBody = entryMatch[0];
+  if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  }
+  for (const internal of ["scheduleNextBattle(", "resetProgress(", "startNextBattle("]) {
+    if (entryBody.includes(internal)) {
+      violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through idleArenaEventHandlers`);
+    }
+  }
+}
 
 if (violations.length) {
   console.error("[verify-idle-arena-boundary] FAIL");

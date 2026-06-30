@@ -4,9 +4,11 @@ import { getValue, setValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 
 const mocks = vi.hoisted(() => ({
+  post: vi.fn(),
   runOptionAutomation: vi.fn(),
 }));
 
+vi.mock("../dom/http.js", () => ({ post: mocks.post }));
 vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({
     READ_FIELD: "readField",
@@ -18,6 +20,7 @@ beforeEach(() => {
   localStorage.clear();
   vi.useRealTimers();
   vi.restoreAllMocks();
+  mocks.post.mockReset();
   mocks.runOptionAutomation.mockReset();
 });
 
@@ -52,5 +55,23 @@ describe("runIdleArenaAutomation", () => {
     runIdleArenaAutomation({ type: IdleArenaEvent.RESET_PROGRESS });
 
     expect(getValue(STORAGE_KEYS.ARENA, true)).toBeNull();
+  });
+
+  it("falls back to starting the next battle for unknown events", () => {
+    vi.useFakeTimers();
+    mocks.runOptionAutomation.mockImplementation((event) => {
+      if (event.key === "idleArenaGrTime") return 0;
+      if (event.key === "idleArenaValue") return "";
+      return event.fallback;
+    });
+
+    runIdleArenaAutomation({ type: "unknown" });
+
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
+      type: "readField",
+      key: "idleArenaGrTime",
+      fallback: 0,
+    });
+    expect(mocks.post).toHaveBeenCalledTimes(4);
   });
 });
