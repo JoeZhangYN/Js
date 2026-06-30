@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleTurnContextEvent, runBattleTurnContext } from "./turn-context.js";
 
 const mocks = vi.hoisted(() => ({
-  collectSnapshot: vi.fn(),
+  runBattleSnapshot: vi.fn(),
   runBattleDecisionRuntime: vi.fn(),
   runBattlePlayerVitals: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
@@ -29,7 +29,8 @@ vi.mock("../state/option.js", () => ({
   runOptionAutomation: mocks.runOptionAutomation,
 }));
 vi.mock("./snapshot.js", () => ({
-  collectSnapshot: mocks.collectSnapshot,
+  BattleSnapshotEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
+  runBattleSnapshot: mocks.runBattleSnapshot,
 }));
 
 const snap = { hp: 90, mp: 80, sp: 70, oc: 60 };
@@ -37,7 +38,7 @@ const logTelemetry = { battleLog: [{ kind: "player-incoming", dmg: 10 }] };
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
-  mocks.collectSnapshot.mockReturnValue(snap);
+  mocks.runBattleSnapshot.mockReturnValue(snap);
   mocks.runBattleDecisionRuntime.mockReturnValue({
     monsterAlive: 3,
     roundAll: 5,
@@ -60,7 +61,8 @@ describe("runBattleTurnContext", () => {
       actionOptions: { burstControlSwitch: false },
     });
 
-    expect(mocks.collectSnapshot).toHaveBeenCalledWith({
+    expect(mocks.runBattleSnapshot).toHaveBeenCalledWith({
+      type: "readCurrent",
       learnIncomingBurst: false,
       logTelemetry: undefined,
     });
@@ -96,7 +98,8 @@ describe("runBattleTurnContext", () => {
 
     runBattleTurnContext({ type: BattleTurnContextEvent.PREPARE, logTelemetry });
 
-    expect(mocks.collectSnapshot).toHaveBeenCalledWith({
+    expect(mocks.runBattleSnapshot).toHaveBeenCalledWith({
+      type: "readCurrent",
       learnIncomingBurst: true,
       logTelemetry,
     });
@@ -124,7 +127,7 @@ describe("runBattleTurnContext", () => {
       if (event.type === "readField") return true;
       return undefined;
     });
-    mocks.collectSnapshot.mockReturnValue({ hp: document.createElement("div") });
+    mocks.runBattleSnapshot.mockReturnValue({ hp: document.createElement("div") });
 
     expect(() => runBattleTurnContext({ type: BattleTurnContextEvent.PREPARE })).toThrow("含 DOM 引用");
   });
@@ -132,6 +135,6 @@ describe("runBattleTurnContext", () => {
   it("rejects unknown turn context events without side effects", () => {
     expect(runBattleTurnContext({ type: "unknown" })).toBeUndefined();
     expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
-    expect(mocks.collectSnapshot).not.toHaveBeenCalled();
+    expect(mocks.runBattleSnapshot).not.toHaveBeenCalled();
   });
 });

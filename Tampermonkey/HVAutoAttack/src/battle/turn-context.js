@@ -1,7 +1,7 @@
 // 单回合决策上下文入口：CD 记账、snapshot 收集、vitals 镜像和 debug invariant 统一在这里。
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
-import { collectSnapshot } from "./snapshot.js";
+import { BattleSnapshotEvent, runBattleSnapshot } from "./snapshot.js";
 import { BattleDecisionRuntimeEvent, runBattleDecisionRuntime } from "./battle-decision-runtime.js";
 import { BattlePlayerVitalsEvent, runBattlePlayerVitals } from "./battle-player-vitals.js";
 
@@ -35,7 +35,8 @@ function prepareBattleTurnContext(event = {}) {
   runCdRuntimeAutomation({ type: CdRuntimeEvent.INCREMENT_TURN });
   runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST });
   const actionOptions = runOptionAutomation({ type: OptionEvent.READ_BATTLE_ACTION_OPTIONS });
-  const snap = collectSnapshot({
+  const snap = runBattleSnapshot({
+    type: BattleSnapshotEvent.READ_CURRENT,
     learnIncomingBurst: !!actionOptions?.burstControlSwitch,
     logTelemetry: event.logTelemetry,
   });

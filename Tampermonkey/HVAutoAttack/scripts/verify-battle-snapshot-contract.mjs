@@ -24,7 +24,11 @@ function requireText(relative, required) {
 }
 
 const snapshotText = requireText(snapshot, [
-  "collectSnapshot",
+  "BattleSnapshotEvent",
+  "READ_CURRENT",
+  "battleSnapshotEventHandlers",
+  "runBattleSnapshot",
+  "collectCurrentSnapshot",
   "learnIncomingBurst",
   "BattleObservationLearningEvent.FINALIZE_TURN_OBSERVATIONS",
   "runBattleObservationLearning",
@@ -49,15 +53,32 @@ const snapshotText = requireText(snapshot, [
 const scoringText = requireText(physicalScoring, ["opt.fightingStyle", "skillLib"]);
 requireText(snapshotTest, [
   "learnIncomingBurst",
-  "collectSnapshot",
+  "BattleSnapshotEvent",
+  "runBattleSnapshot",
+  "rejects unknown snapshot events",
 ]);
 requireText(snapshotLogTelemetryTest, [
   "reuses prelude battle log telemetry when supplied",
   "not.toHaveBeenCalled",
 ]);
 
-if (/\bexport\s+(?:function|const)\s+(?!collectSnapshot\b)/.test(snapshotText)) {
-  violations.push(`${snapshot.replaceAll("\\", "/")} may export only collectSnapshot`);
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattleSnapshotEvent\b|runBattleSnapshot\b)/.test(
+    snapshotText
+  )
+) {
+  violations.push(`${snapshot.replaceAll("\\", "/")} may export only its event entry`);
+}
+const snapshotEntryBody =
+  snapshotText.match(/export function runBattleSnapshot\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\]/.test(snapshotText)) {
+  violations.push(`${snapshot.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(snapshotEntryBody)) {
+  violations.push(`${snapshot.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
+if (/\bcollectSnapshot\b/.test(snapshotText)) {
+  violations.push(`${snapshot.replaceAll("\\", "/")} must not keep the retired collectSnapshot name`);
 }
 if (/fightingStyle/.test(snapshotText)) {
   violations.push(

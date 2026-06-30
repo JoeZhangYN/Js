@@ -65,7 +65,6 @@ function checkFile(file) {
     for (const name of [
       "CdRuntimeEvent.INCREMENT_TURN",
       "CdRuntimeEvent.PERSIST",
-      "collectSnapshot",
       "assertNoDomRefs",
     ]) {
       if (new RegExp(`\\b${name}\\b`).test(line)) {
@@ -98,7 +97,8 @@ function checkEntry() {
     "OptionEvent.READ_BATTLE_ACTION_OPTIONS",
     "CdRuntimeEvent.INCREMENT_TURN",
     "CdRuntimeEvent.PERSIST",
-    "collectSnapshot",
+    "BattleSnapshotEvent.READ_CURRENT",
+    "runBattleSnapshot",
     "actionOptions",
     "logTelemetry",
     "learnIncomingBurst",
@@ -186,11 +186,13 @@ function checkEntryTest() {
 
 function checkSnapshotEntry() {
   const text = fs.readFileSync(path.join(root, snapshotImpl), "utf8");
-  if (!/export function collectSnapshot\(/.test(text)) {
-    violations.push(`${snapshotImpl.replaceAll("\\", "/")} must expose collectSnapshot()`);
+  if (!/export function runBattleSnapshot\(/.test(text)) {
+    violations.push(`${snapshotImpl.replaceAll("\\", "/")} must expose runBattleSnapshot()`);
   }
-  if (/\bexport\s+(?:function|const)\s+(?!collectSnapshot\b)/.test(text)) {
-    violations.push(`${snapshotImpl.replaceAll("\\", "/")} may export only collectSnapshot`);
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleSnapshotEvent\b|runBattleSnapshot\b)/.test(text)
+  ) {
+    violations.push(`${snapshotImpl.replaceAll("\\", "/")} may export only its event entry`);
   }
   if (/\bassertNoDomRefs\b/.test(text)) {
     violations.push(`${snapshotImpl.replaceAll("\\", "/")} must not export turn debug checks`);

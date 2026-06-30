@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { collectSnapshot } from "./snapshot.js";
+import { BattleSnapshotEvent, runBattleSnapshot } from "./snapshot.js";
 
 const mocks = vi.hoisted(() => ({
   runBattleMonsterSurface: vi.fn(() => []),
@@ -13,29 +13,13 @@ const mocks = vi.hoisted(() => ({
   })),
   runAbilityAoeAutomation: vi.fn(() => ({ Imperil: 2 })),
   runBattleItemSurface: vi.fn(() => "Mystic Gem"),
-  runBattleLogTelemetry: vi.fn(() => ({
-    battleLog: [],
-    monsterDpsByName: {},
-    playerIncomingDps: { sampleCount: 0 },
-  })),
+  runBattleLogTelemetry: vi.fn(() => ({ battleLog: [], monsterDpsByName: {}, playerIncomingDps: { sampleCount: 0 } })),
   runBattleObservationLearning: vi.fn(() => ({ learnedBurstByMid: { learned: true } })),
   runBattlePlayerEffects: vi.fn(() => ({
-    channeling: false,
-    etherTapActiveX2: false,
-    etherTapExpiring: false,
-    playerBuffs: [],
-    playerEffectTurns: {},
-    playerEffects: [],
+    channeling: false, etherTapActiveX2: false, etherTapExpiring: false,
+    playerBuffs: [], playerEffectTurns: {}, playerEffects: [],
   })),
-  runBattlePlayerVitals: vi.fn(() => ({
-    hp: 50,
-    mp: 50,
-    sp: 50,
-    oc: 0,
-    hpAbs: 500,
-    mpAbs: 250,
-    spAbs: 200,
-  })),
+  runBattlePlayerVitals: vi.fn(() => ({ hp: 50, mp: 50, sp: 50, oc: 0, hpAbs: 500, mpAbs: 250, spAbs: 200 })),
   runBattleSkillReadiness: vi.fn(() => ({ 111: true })),
   runBattleSkillUsageAutomation: vi.fn(() => ({ OFC: 1 })),
   runBattleSpiritToggleAutomation: vi.fn(() => false),
@@ -107,9 +91,12 @@ beforeEach(() => {
   });
 });
 
-describe("collectSnapshot", () => {
+describe("runBattleSnapshot", () => {
   it("collects one battle snapshot and learns incoming burst when requested", () => {
-    const snap = collectSnapshot({ learnIncomingBurst: true });
+    const snap = runBattleSnapshot({
+      type: BattleSnapshotEvent.READ_CURRENT,
+      learnIncomingBurst: true,
+    });
 
     expect(snap.turn).toBe(7);
     expect(snap.globalTurn).toBe(9);
@@ -140,7 +127,7 @@ describe("collectSnapshot", () => {
     mocks.runBattleObservationLearning.mockReturnValueOnce({ learnedBurstByMid: {} });
     mocks.runBattleSkillReadiness.mockReturnValueOnce({});
 
-    const snap = collectSnapshot();
+    const snap = runBattleSnapshot({ type: BattleSnapshotEvent.READ_CURRENT });
 
     expect(mocks.runBattleObservationLearning).toHaveBeenCalledWith({
       type: "finalizeTurnObservations",
@@ -153,5 +140,11 @@ describe("collectSnapshot", () => {
       vitals: expect.any(Object),
     });
     expect(snap.learnedBurstByMid).toEqual({});
+  });
+
+  it("rejects unknown snapshot events without side effects", () => {
+    expect(runBattleSnapshot({ type: "unknown" })).toBeUndefined();
+    expect(mocks.runBattleMonsterSurface).not.toHaveBeenCalled();
+    expect(mocks.runBattleObservationLearning).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,7 @@
-// 怪物画像内存缓存（路径 B）：让同步的 collectSnapshot 能 join monster-db，而不必把主循环改 async。
+// 怪物画像内存缓存（路径 B）：让同步的 runBattleSnapshot 能 join monster-db，而不必把主循环改 async。
 // **键 = monsterId(全局 MID)**（库已改 MID 主键）。MID 来自开局 spawn 行 → monsterStatus.monsterId。
 // 数据源 = monster-db-store.js 的 IndexedDB（异步）。预取时机复用 resist-panel 每轮的怪遍历
-// （renderResistPanel，async 边界）；collectSnapshot(同步) 经 READ_DB 读快照供 joinMonsterView。
+// （renderResistPanel，async 边界）；runBattleSnapshot(同步) 经 READ_DB 读快照供 joinMonsterView。
 // 缓存跨轮累积不清空：抗性/plvl 是怪静态属性（按 MID），同 MID 跨轮一致，旧值可复用。
 // 新怪首轮首 turn 可能 race 输（prime async 未完成 → 该怪降级 db=null，次 turn 即补）；决策影响小：
 // autoElement 默认关、Drain 用 hpAbsNow 不依赖 db。本轮中途新 scan 的怪由 WRITE_PROFILE 即时补。

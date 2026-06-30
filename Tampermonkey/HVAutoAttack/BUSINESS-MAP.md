@@ -52,12 +52,12 @@ export function runXxxAutomation(event) { ... }       // 唯一入口，内部 s
 
 ### 律 3 — BattleSnapshot 三铁律（turn-local 观测模型）【现状已达标】
 
-每 turn 入口 `collectSnapshot()` 一次性 batch 读 DOM → plain object，供全部 decide 复用：
+每 turn 入口 `runBattleSnapshot(READ_CURRENT)` 一次性 batch 读 DOM → plain object，供全部 decide 复用：
 - **铁律 A**：snapshot 只存值（number/string/array-of-plain-object），**禁 Element/Node 引用**（`assertNoDomRefs` 启动时递归断言）。根因：`reloader` 会 replaceChild 整片 DOM，缓存引用 = detached node 陷阱。
 - **铁律 B**：snapshot 生命周期 = 当前 turn 内，**绝不**入 `g()`/`setValue`/模块顶层。跨 turn 状态（globalTurn/skillLastUsed）才走 `state/store`。
 - **铁律 C**：副作用用 selector 字符串**重查询** DOM，不用缓存引用（`dispatch` 内 `gE(result.selector).click()`）。
 
-> 这条是「DOM 易变性」与「决策可测性」的隔离墙。codex 改 snapshot 字段：只能加值类型字段，且 decide 侧不得再读 DOM 兜底（要读就批进 `collectSnapshot`，维持「DOM 读一次」）。
+> 这条是「DOM 易变性」与「决策可测性」的隔离墙。codex 改 snapshot 字段：只能加值类型字段，且 decide 侧不得再读 DOM 兜底（要读就批进 `runBattleSnapshot(READ_CURRENT)`，维持「DOM 读一次」）。
 
 ### 律 4 — 依赖方向单向 + 无环【现状已达标】
 
@@ -191,7 +191,7 @@ runBattleTurnAutomation(RUN_CURRENT_TURN):
      ├─ monitor HUD_REFRESH
      ├─ killBug()  ← HV「卡死 bug」检测点击
      └─ monster-status UPDATE_HP
-  3. context = runBattleTurnContext(PREPARE) ← collectSnapshot + actionOptions + 学习器 finalize
+  3. context = runBattleTurnContext(PREPARE) ← runBattleSnapshot(READ_CURRENT) + actionOptions + 学习器 finalize
   4. runBattleActionDecision(DECIDE)      ← 4 个业务出口裁决，ActionResult acted 即停
 ```
 

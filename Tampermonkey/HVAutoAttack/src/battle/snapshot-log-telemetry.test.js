@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { collectSnapshot } from "./snapshot.js";
+import { BattleSnapshotEvent, runBattleSnapshot } from "./snapshot.js";
 
 const mocks = vi.hoisted(() => ({
   runAbilityAoeAutomation: vi.fn(() => ({})),
@@ -90,7 +90,7 @@ beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear?.();
 });
 
-describe("collectSnapshot battle log telemetry", () => {
+describe("runBattleSnapshot battle log telemetry", () => {
   it("reuses prelude battle log telemetry when supplied", () => {
     const logTelemetry = {
       battleLog: [{ kind: "player-incoming", source: "Alpha", dmg: 12 }],
@@ -98,7 +98,7 @@ describe("collectSnapshot battle log telemetry", () => {
       playerIncomingDps: { sampleCount: 1 },
     };
 
-    const snap = collectSnapshot({ logTelemetry });
+    const snap = runBattleSnapshot({ type: BattleSnapshotEvent.READ_CURRENT, logTelemetry });
 
     expect(mocks.runBattleLogTelemetry).not.toHaveBeenCalled();
     expect(snap.playerIncomingDps).toBe(logTelemetry.playerIncomingDps);

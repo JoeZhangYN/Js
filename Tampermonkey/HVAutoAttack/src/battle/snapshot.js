@@ -27,11 +27,17 @@ import {
   runBattleSpiritToggleAutomation,
 } from "./battle-spirit-toggle.js";
 
+const EVENT_READ_CURRENT = "readCurrent";
+
+export const BattleSnapshotEvent = Object.freeze({
+  READ_CURRENT: EVENT_READ_CURRENT,
+});
+
 /**
  * 一次性 batch DOM read 组装当前 turn snapshot。
  * @returns {import("../core/types.js").BattleSnapshot}
  */
-export function collectSnapshot(event = {}) {
+function collectCurrentSnapshot(event = {}) {
   const monsters = runBattleMonsterSurface({ type: BattleMonsterSurfaceEvent.READ_CURRENT });
   const monsterView = runBattleMonsterView({
     type: BattleMonsterViewEvent.READ_VIEW,
@@ -89,4 +95,12 @@ export function collectSnapshot(event = {}) {
     // F5：每 MID 致死/爆发伤害学习表（开关关→空，decide 自然 noop）
     learnedBurstByMid: observationLearning.learnedBurstByMid,
   };
+}
+
+const battleSnapshotEventHandlers = Object.freeze({
+  [EVENT_READ_CURRENT]: collectCurrentSnapshot,
+});
+
+export function runBattleSnapshot(event = { type: EVENT_READ_CURRENT }) {
+  return battleSnapshotEventHandlers[event.type]?.(event);
 }
