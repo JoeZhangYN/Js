@@ -2913,6 +2913,10 @@ function checkAttackEntry() {
     "T3: scoreT3Skill",
     "T2: scoreT2Skill",
     "T1: scoreT1Skill",
+    "PHYSICAL_SKILL_BLOCKERS",
+    "PHYSICAL_SKILL_EXPLAINERS",
+    "physicalSkillBlockReason",
+    "explainPhysicalSkillScore",
   ]) {
     if (!scoringText.includes(required)) {
       violations.push(
@@ -2924,6 +2928,9 @@ function checkAttackEntry() {
     scoringText.match(/function scoreSkillContextual\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/switch\s*\(\s*skill\s*\)/.test(scoreContextBody)) {
     violations.push(`${rel(physicalSkillScoringFile)} must dispatch physical skill scoring through PHYSICAL_SKILL_SCORERS`);
+  }
+  if (/skill\s*===/.test(scoringText)) {
+    violations.push(`${rel(physicalSkillScoringFile)} must route physical skill-specific rulings through tables`);
   }
   if (!scoringText.includes("readBigSkillSpec")) {
     violations.push(`${rel(physicalSkillScoringFile)} must read OFC/FRD specs through catalog`);
