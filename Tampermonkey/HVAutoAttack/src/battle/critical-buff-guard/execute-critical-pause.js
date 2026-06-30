@@ -7,6 +7,13 @@ export const CriticalBuffPauseExecutionEvent = Object.freeze({
   APPLY_PLAN: EVENT_APPLY_PLAN,
 });
 
+const criticalBuffPauseExecutionEventHandlers = Object.freeze({
+  [EVENT_APPLY_PLAN]: (event) => {
+    executeCriticalPause(event.plan);
+    return true;
+  },
+});
+
 /**
  * SHELL：忠实复刻原 checkCriticalBuffGuard 命中分支的 5 件副作用
  * （console.warn + alarm + setValue disabled + 按钮文案 + document.title）。
@@ -22,9 +29,5 @@ function executeCriticalPause(plan) {
 }
 
 export function runCriticalBuffPauseExecution(event = { type: EVENT_APPLY_PLAN }) {
-  if (event.type === EVENT_APPLY_PLAN) {
-    executeCriticalPause(event.plan);
-    return true;
-  }
-  return false;
+  return criticalBuffPauseExecutionEventHandlers[event.type]?.(event) ?? false;
 }

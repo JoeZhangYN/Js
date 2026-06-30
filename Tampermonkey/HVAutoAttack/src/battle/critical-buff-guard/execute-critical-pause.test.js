@@ -28,7 +28,11 @@ describe("runCriticalBuffPauseExecution", () => {
     expect(document.querySelector(".pauseChange").innerHTML).toContain("Continue");
   });
 
-  it("rejects unknown events", () => {
+  it("rejects unknown critical pause execution events", () => {
     expect(runCriticalBuffPauseExecution({ type: "unknown" })).toBe(false);
+
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(document.title).toBe("");
+    expect(document.querySelector(".pauseChange").innerHTML).toBe("");
   });
 });

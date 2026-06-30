@@ -1794,6 +1794,7 @@ function checkCriticalBuffEntry() {
   }
   for (const required of [
     "CriticalBuffPauseExecutionEvent",
+    "criticalBuffPauseExecutionEventHandlers",
     "APPLY_PLAN",
     "runCriticalBuffPauseExecution",
     "runAlarmAutomation",
@@ -1804,6 +1805,21 @@ function checkCriticalBuffEntry() {
       violations.push(
         `${rel(executeCriticalPauseFile)} must own critical pause execution ${required}`
       );
+    }
+  }
+  const executionEntryBody =
+    executionText.match(/export function runCriticalBuffPauseExecution\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(executionText)) {
+    violations.push(`${rel(executeCriticalPauseFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(executionEntryBody)) {
+    violations.push(`${rel(executeCriticalPauseFile)} entry must dispatch by handler table`);
+  }
+  if (fs.existsSync(executeCriticalPauseTestFile)) {
+    const executionTestText = fs.readFileSync(executeCriticalPauseTestFile, "utf8");
+    if (!executionTestText.includes("rejects unknown critical pause execution events")) {
+      violations.push(`${rel(executeCriticalPauseTestFile)} must cover unknown critical pause events`);
     }
   }
   if (!fs.readFileSync(dispatchFile, "utf8").includes("runCriticalBuffPauseExecution")) {
