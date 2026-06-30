@@ -20,6 +20,10 @@ export const RepairBackendEvent = Object.freeze({
   CREATE: EVENT_CREATE,
 });
 
+const repairBackendEventHandlers = Object.freeze({
+  [EVENT_CREATE]: (event, deps) => makeRepairBackend(Boolean(event.isIsekai), deps),
+});
+
 /**
  * @param {boolean} isIsekai env.isIsekai
  * @param {(href:string, func:Function, parm?:string, type?:string)=>void} [_post] 测试注入（默认真实 post）
@@ -98,6 +102,5 @@ function makeRepairBackend(isIsekai, deps = {}) {
 }
 
 export function runRepairBackendAutomation(event, deps = {}) {
-  if (event.type !== EVENT_CREATE) return undefined;
-  return makeRepairBackend(Boolean(event.isIsekai), deps);
+  return repairBackendEventHandlers[event.type]?.(event, deps);
 }

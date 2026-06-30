@@ -20,6 +20,14 @@ function makeRepairBackend(isIsekai, post) {
   return runRepairBackendAutomation({ type: RepairBackendEvent.CREATE, isIsekai }, { post });
 }
 
+describe("repair backend entry", () => {
+  it("rejects unknown backend events without creating a backend", () => {
+    const { post } = fakePost([]);
+
+    expect(runRepairBackendAutomation({ type: "unknown", isIsekai: false }, { post })).toBeUndefined();
+  });
+});
+
 describe("makeRepairBackend 主世界 fetchState（dynjs 选择器 + cache-buster 反退化）", () => {
   it("用 script[src*=/dynjs/] 取 dynjs + URL 带 cache-buster；耐久/材料解析对", () => {
     const pageDoc = doc(
