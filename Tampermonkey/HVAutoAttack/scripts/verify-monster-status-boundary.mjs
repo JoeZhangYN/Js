@@ -8,6 +8,7 @@ const entryTest = path.normalize("src/battle/monster-status-automation.test.js")
 const statusView = path.normalize("src/battle/monster-status-view.js");
 const statusViewTest = path.normalize("src/battle/monster-status-view.test.js");
 const hpImpl = path.normalize("src/battle/monster-status-hp.js");
+const hpImplTest = path.normalize("src/battle/monster-status-hp.test.js");
 const maxHpInference = path.normalize("src/battle/monster-max-hp-inference.js");
 const maxHpInferenceTest = path.normalize("src/battle/monster-max-hp-inference.test.js");
 const targetWeight = path.normalize("src/battle/monster-target-weight.js");
@@ -86,7 +87,8 @@ function checkEntry() {
     "monsterStatusEventHandlers",
     "normalizeCombatantCount",
     "combatantCounts",
-    "updateMonsterHpRuntime",
+    "MonsterStatusHpRuntimeEvent.UPDATE",
+    "runMonsterStatusHpRuntime",
     "BattleLogParserEvent.PARSE_MONSTER_ROSTER",
     "BattleLogParserEvent.BUILD_MONSTER_STATUS",
     "runBattleLogParser",
@@ -265,6 +267,10 @@ function checkHpImpl() {
     }
   }
   for (const required of [
+    "MonsterStatusHpRuntimeEvent",
+    "monsterStatusHpRuntimeEventHandlers",
+    "runMonsterStatusHpRuntime",
+    "UPDATE",
     "MonsterStatusViewEvent.READ_HP_RUNTIME_SNAPSHOT",
     "BattleLogTelemetryEvent.READ_CURRENT",
     "MonsterMaxHpInferenceEvent.APPLY_DEATHS",
@@ -277,6 +283,29 @@ function checkHpImpl() {
   ]) {
     if (!text.includes(required)) {
       violations.push(`${hpImpl.replaceAll("\\", "/")} must update HP from ${required}`);
+    }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!MonsterStatusHpRuntimeEvent\b|runMonsterStatusHpRuntime\b)/.test(
+      text
+    )
+  ) {
+    violations.push(`${hpImpl.replaceAll("\\", "/")} may export only its event entry`);
+  }
+  const entryBody =
+    text.match(/export function runMonsterStatusHpRuntime\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_UPDATE\]/.test(text)) {
+    violations.push(`${hpImpl.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${hpImpl.replaceAll("\\", "/")} entry must dispatch by handler table`);
+  }
+  if (!fs.existsSync(path.join(root, hpImplTest))) {
+    violations.push(`${hpImplTest.replaceAll("\\", "/")} must cover HP runtime entry`);
+  } else {
+    const testText = fs.readFileSync(path.join(root, hpImplTest), "utf8");
+    if (!testText.includes("rejects unknown monster status HP runtime events without side effects")) {
+      violations.push(`${hpImplTest.replaceAll("\\", "/")} must cover unknown HP runtime events`);
     }
   }
   for (const forbidden of ["gE(", "btm1", "btm4", "btm5", "btm6", "nbardead"]) {

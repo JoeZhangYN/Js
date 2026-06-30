@@ -5,7 +5,7 @@ import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
 import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js";
-import { updateMonsterHpRuntime } from "./monster-status-hp.js";
+import { MonsterStatusHpRuntimeEvent, runMonsterStatusHpRuntime } from "./monster-status-hp.js";
 import { MonsterStatusViewEvent, runMonsterStatusView } from "./monster-status-view.js";
 import { BattleRoundStartLogEvent, runBattleRoundStartLog } from "./round-start-log.js";
 
@@ -34,7 +34,8 @@ const monsterStatusEventHandlers = Object.freeze({
   [EVENT_ENSURE_READY]: () => ensureMonsterStatusReady(),
   [EVENT_REPAIR]: () => repairMonsterStatus(),
   [EVENT_PREPARE_ROUND_START]: (event) => prepareRoundStart(event),
-  [EVENT_UPDATE_HP]: (event) => updateMonsterHpRuntime(event),
+  [EVENT_UPDATE_HP]: (event) =>
+    runMonsterStatusHpRuntime({ ...event, type: MonsterStatusHpRuntimeEvent.UPDATE }),
   [EVENT_REFRESH_COMBATANT_COUNTS]: () => refreshCombatantCounts(),
   [EVENT_READ_COMBATANT_COUNTS]: () => readCombatantCounts(),
   [EVENT_READ_IDS_BY_ORDER]: () => readMonsterIdsByOrder(),

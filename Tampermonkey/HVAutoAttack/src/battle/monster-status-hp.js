@@ -9,6 +9,16 @@ import {
 } from "./monster-max-hp-inference.js";
 import { MonsterTargetWeightEvent, runMonsterTargetWeight } from "./monster-target-weight.js";
 
+const EVENT_UPDATE = "update";
+
+export const MonsterStatusHpRuntimeEvent = Object.freeze({
+  UPDATE: EVENT_UPDATE,
+});
+
+const monsterStatusHpRuntimeEventHandlers = Object.freeze({
+  [EVENT_UPDATE]: updateMonsterHpRuntime,
+});
+
 function readTargetWeightOptions() {
   return {
     ruleReverse: runOptionAutomation({
@@ -33,7 +43,7 @@ function readBattleLogTelemetryForHpUpdate(event) {
   });
 }
 
-export function updateMonsterHpRuntime(event = {}) {
+function updateMonsterHpRuntime(event = {}) {
   const monsterStatus = g("monsterStatus");
   if (!Array.isArray(monsterStatus)) return;
 
@@ -80,4 +90,8 @@ export function updateMonsterHpRuntime(event = {}) {
 
   g("monsterStatus", monsterStatus);
   return { battleLogTelemetry: logTelemetry };
+}
+
+export function runMonsterStatusHpRuntime(event = { type: EVENT_UPDATE }) {
+  return monsterStatusHpRuntimeEventHandlers[event.type]?.(event) ?? false;
 }
