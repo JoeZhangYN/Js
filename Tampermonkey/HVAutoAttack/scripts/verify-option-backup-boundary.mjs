@@ -87,6 +87,31 @@ for (const legacy of [
   }
 }
 
+if (!ownerText.includes("const optionBackupEventHandlers")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route option backup events through a handler table`
+  );
+}
+const ownerEntry =
+  ownerText.match(/export function runOptionBackupAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+}
+for (const internal of [
+  "readOptionBackups(",
+  "saveCurrentOptionBackup(",
+  "restoreOptionBackup(",
+  "deleteOptionBackup(",
+  "hasOptionBackupCode(",
+  "renderOptionBackupListItems(",
+]) {
+  if (ownerEntry.includes(internal)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must dispatch through optionBackupEventHandlers`
+    );
+  }
+}
+
 if (violations.length) {
   console.error("[verify-option-backup-boundary] FAIL");
   for (const v of violations) console.error(`- ${v}`);

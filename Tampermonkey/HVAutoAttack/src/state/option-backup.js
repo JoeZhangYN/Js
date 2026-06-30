@@ -55,12 +55,15 @@ function renderOptionBackupListItems() {
     .join("");
 }
 
+const optionBackupEventHandlers = Object.freeze({
+  [EVENT_READ]: () => readOptionBackups(),
+  [EVENT_SAVE_CURRENT]: (event) => saveCurrentOptionBackup(event.code),
+  [EVENT_RESTORE]: (event) => restoreOptionBackup(event.code),
+  [EVENT_DELETE]: (event) => deleteOptionBackup(event.code),
+  [EVENT_HAS_CODE]: (event) => hasOptionBackupCode(event.code),
+  [EVENT_RENDER_LIST_ITEMS]: () => renderOptionBackupListItems(),
+});
+
 export function runOptionBackupAutomation(event = { type: EVENT_READ }) {
-  if (event.type === EVENT_READ) return readOptionBackups();
-  if (event.type === EVENT_SAVE_CURRENT) return saveCurrentOptionBackup(event.code);
-  if (event.type === EVENT_RESTORE) return restoreOptionBackup(event.code);
-  if (event.type === EVENT_DELETE) return deleteOptionBackup(event.code);
-  if (event.type === EVENT_HAS_CODE) return hasOptionBackupCode(event.code);
-  if (event.type === EVENT_RENDER_LIST_ITEMS) return renderOptionBackupListItems();
-  return undefined;
+  return optionBackupEventHandlers[event.type]?.(event);
 }

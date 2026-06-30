@@ -61,4 +61,9 @@ describe("option backup entry", () => {
       "<li>a</li><li>b</li>"
     );
   });
+
+  it("ignores unknown option backup events", () => {
+    expect(runOptionBackupAutomation({ type: "unknown" })).toBeUndefined();
+    expect(getValue(STORAGE_KEYS.BACKUP, true)).toBeNull();
+  });
 });
