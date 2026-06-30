@@ -96,6 +96,7 @@ function checkEntry() {
     "assertNoDomRefs",
     "OptionEvent.READ_FIELD",
     "BattleProgressEvent.READ_CONTEXT",
+    "BattleStartRuntimeEvent.READ_ATTACK_STATUS",
     "BattleSpiritToggleEvent.READ_LAST_TOGGLE",
   ]) {
     if (!text.includes(required)) {
@@ -118,6 +119,11 @@ function checkEntry() {
   ) {
     violations.push(`${entry.replaceAll("\\", "/")} must read progress through battle-progress`);
   }
+  if (!text.includes("runBattleStartRuntimeAutomation")) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must attach attackStatus through start runtime`
+    );
+  }
 }
 
 function checkSnapshotEntry() {
@@ -135,6 +141,9 @@ function checkSnapshotEntry() {
     violations.push(
       `${snapshotImpl.replaceAll("\\", "/")} must not duplicate rule option fightingStyle`
     );
+  }
+  if (/BattleStartRuntimeEvent\.READ_ATTACK_STATUS|runBattleStartRuntimeAutomation/.test(text)) {
+    violations.push(`${snapshotImpl.replaceAll("\\", "/")} must not attach turn runtime facts`);
   }
 }
 

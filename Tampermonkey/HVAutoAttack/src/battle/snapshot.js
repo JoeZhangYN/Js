@@ -23,10 +23,6 @@ import {
 } from "../state/incoming-burst-learner.js";
 import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 import { monsterHpVars } from "./monster-view.js";
-import {
-  BattleStartRuntimeEvent,
-  runBattleStartRuntimeAutomation,
-} from "./battle-start-runtime.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "../pages/ability-page.js";
 import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-skill-usage.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "./battle-monster-view.js";
@@ -290,9 +286,6 @@ export function collectSnapshot(event = {}) {
     skillReady,
     skillOTOS: runBattleSkillUsageAutomation({ type: BattleSkillUsageEvent.READ_USAGE }),
     spellAoe: runAbilityAoeAutomation({ type: AbilityAoeEvent.READ_SPELL_AOE }),
-    attackStatus: runBattleStartRuntimeAutomation({
-      type: BattleStartRuntimeEvent.READ_ATTACK_STATUS,
-    }),
     // PoC L1：战斗日志解析得 DPS 估计（复用上方 battleLog，本 turn 只解析一遍）
     playerIncomingDps: estimatePlayerIncomingDps(battleLog, turn),
     monsterDpsByName: estimatePerMonsterDps(battleLog, turn),

@@ -5,6 +5,10 @@ import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { collectSnapshot } from "./snapshot.js";
 import { BattleProgressEvent, runBattleProgressAutomation } from "./battle-progress.js";
 import {
+  BattleStartRuntimeEvent,
+  runBattleStartRuntimeAutomation,
+} from "./battle-start-runtime.js";
+import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
 } from "./battle-spirit-toggle.js";
@@ -23,6 +27,9 @@ function attachDecisionRuntime(snap) {
     roundAll: progress.roundAll,
     roundNow: progress.roundNow,
     roundType: progress.roundType,
+    attackStatus: runBattleStartRuntimeAutomation({
+      type: BattleStartRuntimeEvent.READ_ATTACK_STATUS,
+    }),
     lastSpiritToggleGlobalTurn: runBattleSpiritToggleAutomation({
       type: BattleSpiritToggleEvent.READ_LAST_TOGGLE,
     }),

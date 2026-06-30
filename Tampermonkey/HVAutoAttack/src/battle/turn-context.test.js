@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   collectSnapshot: vi.fn(),
   g: vi.fn(),
   runBattleProgressAutomation: vi.fn(),
+  runBattleStartRuntimeAutomation: vi.fn(),
   runBattleSpiritToggleAutomation: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
@@ -13,6 +14,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock("./battle-progress.js", () => ({
   BattleProgressEvent: Object.freeze({ READ_CONTEXT: "readContext" }),
   runBattleProgressAutomation: mocks.runBattleProgressAutomation,
+}));
+vi.mock("./battle-start-runtime.js", () => ({
+  BattleStartRuntimeEvent: Object.freeze({ READ_ATTACK_STATUS: "readAttackStatus" }),
+  runBattleStartRuntimeAutomation: mocks.runBattleStartRuntimeAutomation,
 }));
 vi.mock("./battle-spirit-toggle.js", () => ({
   BattleSpiritToggleEvent: Object.freeze({ READ_LAST_TOGGLE: "readLastToggle" }),
@@ -49,6 +54,7 @@ beforeEach(() => {
     roundNow: 2,
     roundType: "ar",
   });
+  mocks.runBattleStartRuntimeAutomation.mockReturnValue(2);
   mocks.runBattleSpiritToggleAutomation.mockReturnValue(97);
   mocks.runOptionAutomation.mockImplementation((event) => {
     if (event.type === "readBattleRuleOptions") return { burstControlSwitch: false };
@@ -82,9 +88,13 @@ describe("prepareBattleTurnContext", () => {
       roundAll: 5,
       roundNow: 2,
       roundType: "ar",
+      attackStatus: 2,
       lastSpiritToggleGlobalTurn: 97,
     });
     expect(mocks.runBattleProgressAutomation).toHaveBeenCalledWith({ type: "readContext" });
+    expect(mocks.runBattleStartRuntimeAutomation).toHaveBeenCalledWith({
+      type: "readAttackStatus",
+    });
     expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
       type: "readLastToggle",
     });

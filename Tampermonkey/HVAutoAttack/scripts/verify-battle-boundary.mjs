@@ -48,6 +48,7 @@ const executeItemFile = path.join(root, "src/battle/item/execute-item.js");
 const potionEconomyFile = path.join(root, "src/battle/potion-economy.js");
 const stallModeFile = path.join(root, "src/battle/battle-stall-mode.js");
 const snapshotFile = path.join(root, "src/battle/snapshot.js");
+const turnContextFile = path.join(root, "src/battle/turn-context.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const stepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
@@ -899,6 +900,7 @@ function checkExecuteItem() {
 
 function checkSnapshot() {
   const text = fs.readFileSync(snapshotFile, "utf8");
+  const turnContextText = fs.readFileSync(turnContextFile, "utf8");
   if (!text.includes("learnIncomingBurst")) {
     violations.push(`${rel(snapshotFile)} must receive burst learning decision from turn context`);
   }
@@ -908,8 +910,13 @@ function checkSnapshot() {
   if (/\bg\(\s*["']option["']\s*\)/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read snapshot option facts directly`);
   }
-  if (!text.includes("BattleStartRuntimeEvent.READ_ATTACK_STATUS")) {
-    violations.push(`${rel(snapshotFile)} must read attackStatus through battle start runtime`);
+  if (/BattleStartRuntimeEvent\.READ_ATTACK_STATUS|runBattleStartRuntimeAutomation/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not attach turn runtime facts`);
+  }
+  if (!turnContextText.includes("BattleStartRuntimeEvent.READ_ATTACK_STATUS")) {
+    violations.push(
+      `${rel(turnContextFile)} must attach attackStatus through battle start runtime`
+    );
   }
   if (/\bg\(\s*["']attackStatus["']/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read attackStatus directly`);

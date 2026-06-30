@@ -26,7 +26,6 @@ const snapshotText = requireText(snapshot, [
   "collectSnapshot",
   "learnIncomingBurst",
   "BattleMonsterViewEvent.READ_VIEW",
-  "BattleStartRuntimeEvent.READ_ATTACK_STATUS",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
 const scoringText = requireText(physicalScoring, ["opt.fightingStyle", "skillLib"]);
@@ -42,6 +41,11 @@ if (/fightingStyle/.test(snapshotText)) {
 }
 if (/OptionEvent|runOptionAutomation|burstControlSwitch/.test(snapshotText)) {
   violations.push(`${snapshot.replaceAll("\\", "/")} must not read battle rule options directly`);
+}
+if (
+  /BattleStartRuntimeEvent\.READ_ATTACK_STATUS|runBattleStartRuntimeAutomation/.test(snapshotText)
+) {
+  violations.push(`${snapshot.replaceAll("\\", "/")} must not read attackStatus directly`);
 }
 if (
   /MonsterStatusEvent\.READ_STATUS|MonsterCacheEvent\.READ_DB|joinMonsterView/.test(snapshotText)
