@@ -2280,7 +2280,8 @@ function checkBuffPreparationEntry() {
     'capability: "infusion"',
     'capability: "channel"',
     'capability: "buff"',
-    "buffPreparationFacts",
+    "BattleBuffFactsEvent.READ_PREPARATION",
+    "runBattleBuffFacts",
     "BattleInfusionDecisionEvent.DECIDE",
     "runBattleInfusionDecision",
     "BattleChannelDecisionEvent.DECIDE",
@@ -3729,10 +3730,38 @@ function checkBattleRuleFactMappers() {
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(itemFactsText)) {
     violations.push(`${rel(itemFactsFile)} must not depend on generic rule fact mappers`);
   }
-  for (const required of ["buffPreparationFacts"]) {
+  for (const required of [
+    "BattleBuffFactsEvent",
+    "battleBuffFactsEventHandlers",
+    "runBattleBuffFacts",
+    "READ_PREPARATION",
+    "buffPreparationFacts",
+  ]) {
     if (!buffFactsText.includes(required)) {
-      violations.push(`${rel(buffFactsFile)} must own buff fact mapper ${required}`);
+      violations.push(`${rel(buffFactsFile)} must own buff fact query ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleBuffFactsEvent\b|runBattleBuffFacts\b)/.test(
+      buffFactsText
+    )
+  ) {
+    violations.push(`${rel(buffFactsFile)} may export only its event query entry`);
+  }
+  const buffFactsEntryBody =
+    buffFactsText.match(/export function runBattleBuffFacts\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_PREPARATION\]/.test(buffFactsText)) {
+    violations.push(`${rel(buffFactsFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(buffFactsEntryBody)) {
+    violations.push(`${rel(buffFactsFile)} entry must dispatch by handler table`);
+  }
+  const buffFactsTestFile = path.join(root, "src/battle/buff/buff-facts.test.js");
+  const buffFactsTestText = fs.existsSync(buffFactsTestFile)
+    ? fs.readFileSync(buffFactsTestFile, "utf8")
+    : "";
+  if (!buffFactsTestText.includes("rejects unknown buff facts events")) {
+    violations.push(`${rel(buffFactsTestFile)} must cover unknown buff facts events`);
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(buffFactsText)) {
     violations.push(`${rel(buffFactsFile)} must not depend on generic rule fact mappers`);

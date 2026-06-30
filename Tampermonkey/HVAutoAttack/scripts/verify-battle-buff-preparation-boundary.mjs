@@ -8,6 +8,8 @@ const actionDecision = path.normalize("src/battle/battle-action-decision.js");
 const infusionDecision = path.normalize("src/battle/buff/decide-infusion.js");
 const channelDecision = path.normalize("src/battle/buff/decide-channel.js");
 const buffDecision = path.normalize("src/battle/buff/decide-buff.js");
+const buffFacts = path.normalize("src/battle/buff/buff-facts.js");
+const buffFactsTest = path.normalize("src/battle/buff/buff-facts.test.js");
 const violations = [];
 
 function read(relative) {
@@ -22,6 +24,7 @@ const ownerText = read(owner);
 const actionDecisionText = read(actionDecision);
 const infusionText = read(path.normalize("src/battle/buff/decide-infusion.js"));
 const buffText = read(path.normalize("src/battle/buff/decide-buff.js"));
+const buffFactsText = read(buffFacts);
 
 for (const required of [
   "BattleBuffPreparationEvent",
@@ -32,7 +35,8 @@ for (const required of [
   'capability: "infusion"',
   'capability: "channel"',
   'capability: "buff"',
-  "buffPreparationFacts",
+  "BattleBuffFactsEvent.READ_PREPARATION",
+  "runBattleBuffFacts",
   "BattleInfusionDecisionEvent.DECIDE",
   "runBattleInfusionDecision",
   "BattleChannelDecisionEvent.DECIDE",
@@ -107,6 +111,40 @@ if (
 ) {
   violations.push(`${rel(owner)} may export only its event entry`);
 }
+for (const required of [
+  "BattleBuffFactsEvent",
+  "battleBuffFactsEventHandlers",
+  "READ_PREPARATION",
+  "runBattleBuffFacts",
+  "buffPreparationFacts",
+]) {
+  if (!buffFactsText.includes(required)) {
+    violations.push(`${rel(buffFacts)} must own buff facts query ${required}`);
+  }
+}
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattleBuffFactsEvent\b|runBattleBuffFacts\b)/.test(
+    buffFactsText
+  )
+) {
+  violations.push(`${rel(buffFacts)} may export only its event query entry`);
+}
+const buffFactsEntryBody =
+  buffFactsText.match(/export function runBattleBuffFacts\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_PREPARATION\]/.test(buffFactsText)) {
+  violations.push(`${rel(buffFacts)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(buffFactsEntryBody)) {
+  violations.push(`${rel(buffFacts)} entry must dispatch by handler table`);
+}
+if (!fs.existsSync(path.join(root, buffFactsTest))) {
+  violations.push(`${rel(buffFactsTest)} must cover buff facts contract`);
+} else {
+  const buffFactsTestText = read(buffFactsTest);
+  if (!buffFactsTestText.includes("rejects unknown buff facts events")) {
+    violations.push(`${rel(buffFactsTest)} must cover unknown buff facts events`);
+  }
+}
 
 const entryBody =
   ownerText.match(/export function runBattleBuffPreparation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
@@ -145,6 +183,7 @@ for (const relative of ["src/battle", "src/core"]) {
     const normalized = path.normalize(path.relative(root, file));
     if (
       normalized === owner ||
+      normalized === buffFacts ||
       normalized === actionDecision ||
       normalized === infusionDecision ||
       normalized === channelDecision ||

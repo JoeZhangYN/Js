@@ -1,7 +1,7 @@
 import { BattleBuffDecisionEvent, runBattleBuffDecision } from "./decide-buff.js";
 import { BattleChannelDecisionEvent, runBattleChannelDecision } from "./decide-channel.js";
 import { BattleInfusionDecisionEvent, runBattleInfusionDecision } from "./decide-infusion.js";
-import { buffPreparationFacts } from "./buff-facts.js";
+import { BattleBuffFactsEvent, runBattleBuffFacts } from "./buff-facts.js";
 
 const EVENT_DECIDE = "decide";
 
@@ -61,7 +61,10 @@ function decideBuffStep(buffPreparationContext) {
 function decideBuffPreparationResult(snap = {}, opt = {}) {
   const buffPreparationContext = {
     opt,
-    ...buffPreparationFacts(snap),
+    ...runBattleBuffFacts({
+      type: BattleBuffFactsEvent.READ_PREPARATION,
+      snap,
+    }),
   };
   for (const step of BUFF_PREPARATION_STEPS) {
     const result = step.decide(buffPreparationContext);
