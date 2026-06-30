@@ -115,6 +115,8 @@ const decideFleeFile = path.join(root, "src/battle/escape/decide-flee.js");
 const fleeFactsFile = path.join(root, "src/battle/escape/flee-facts.js");
 const decideAttackActionFile = path.join(root, "src/battle/attack/decide-attack-action.js");
 const decideAttackFile = path.join(root, "src/battle/attack/decide-attack.js");
+const attackPlanFile = path.join(root, "src/battle/attack/attack-plan.js");
+const spellAttackPlanFile = path.join(root, "src/battle/attack/spell-attack-plan.js");
 const decideTierFile = path.join(root, "src/battle/attack/decide-tier.js");
 const decideSkillFile = path.join(root, "src/battle/attack/decide-skill.js");
 const physicalSkillScoringFile = path.join(root, "src/battle/attack/physical-skill-scoring.js");
@@ -1108,7 +1110,7 @@ function checkPhysicalSkillRanking() {
         violations.push(`${rel(file)} must not import legacy utility-engine.js`);
       }
       if (
-        ![decideAttackFile, physicalSkillScoringFile, physicalSkillRankingTest].includes(file) &&
+        ![attackPlanFile, physicalSkillScoringFile, physicalSkillRankingTest].includes(file) &&
         /from\s+["'][^"']*physical-skill-ranking\.js["']/.test(source)
       ) {
         violations.push(`${rel(file)} must not bypass attack physical skill ranking owners`);
@@ -2657,16 +2659,43 @@ function checkAttackEntry() {
     "AttackDecisionEvent",
     "attackDecisionEventHandlers",
     "WILL_CLEAR_WITH_BIG_SKILL",
-    "selectSpellTier",
-    "highSkillCondition",
-    "conditionFacts",
-    "event.monsterFacts",
-    "event.skillReady",
-    "event.attackStatus",
-    "event.overcharge",
+    "decideAttackPlan",
   ]) {
     if (!ownerText.includes(required)) {
-      violations.push(`${rel(decideAttackFile)} must own attack spell-tier decision ${required}`);
+      violations.push(`${rel(decideAttackFile)} must own attack decision entry ${required}`);
+    }
+  }
+  const attackPlanText = fs.readFileSync(attackPlanFile, "utf8");
+  for (const required of [
+    "ATTACK_PLAN_STEPS",
+    'capability: "focus"',
+    'capability: "spiritToggle"',
+    'capability: "spell"',
+    'capability: "mercifulSingle"',
+    'capability: "physicalUtility"',
+    'capability: "defaultAttack"',
+    "buildAttackPlanContext",
+    "conditionFacts",
+    "event.monsterFacts",
+    "event.overcharge",
+  ]) {
+    if (!attackPlanText.includes(required)) {
+      violations.push(`${rel(attackPlanFile)} must lock attack plan step ${required}`);
+    }
+  }
+  if (!/for\s*\(\s*const\s+step\s+of\s+ATTACK_PLAN_STEPS\s*\)/.test(attackPlanText)) {
+    violations.push(`${rel(attackPlanFile)} must choose attack plans through ATTACK_PLAN_STEPS`);
+  }
+  const spellAttackPlanText = fs.readFileSync(spellAttackPlanFile, "utf8");
+  for (const required of [
+    "decideSpellAttackPlan",
+    "selectSpellTier",
+    "highSkillCondition",
+    "event.skillReady",
+    "event.attackStatus",
+  ]) {
+    if (!spellAttackPlanText.includes(required)) {
+      violations.push(`${rel(spellAttackPlanFile)} must own attack spell-tier decision ${required}`);
     }
   }
   if (/decideAttack\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
@@ -2687,8 +2716,8 @@ function checkAttackEntry() {
   if (!attackDecisionTestText.includes("unknown attack decision events use the attack-plan default path")) {
     violations.push(`${rel(decideAttackFile)} tests must cover unknown attack decision events`);
   }
-  if (!ownerText.includes("dynamicHealLog")) {
-    violations.push(`${rel(decideAttackFile)} must pass ranking debug option into attack ranking`);
+  if (!attackPlanText.includes("dynamicHealLog")) {
+    violations.push(`${rel(attackPlanFile)} must pass ranking debug option into attack ranking`);
   }
   const attackActionText = fs.readFileSync(decideAttackActionFile, "utf8");
   for (const required of [
@@ -2765,13 +2794,13 @@ function checkAttackEntry() {
         violations.push(`${rel(file)} must not import legacy pick-element.js`);
       }
       if (
-        file !== decideAttackFile &&
+        file !== attackPlanFile &&
         /from\s+["'][^"']*physical-skill-scoring\.js["']/.test(text)
       ) {
         violations.push(`${rel(file)} must not bypass decideAttack for physical skill scoring`);
       }
       if (
-        file !== decideAttackFile &&
+        file !== spellAttackPlanFile &&
         /from\s+["'][^"']*auto-element-selection\.js["']/.test(text)
       ) {
         violations.push(`${rel(file)} must not bypass decideAttack for auto element selection`);
@@ -3050,7 +3079,7 @@ function checkBattleStallMode() {
   }
   for (const file of [
     decideOffensiveDebuffFile,
-    path.join(root, "src/battle/attack/decide-attack.js"),
+    attackPlanFile,
     path.join(root, "src/battle/item/decide-item.js"),
   ]) {
     const text = fs.readFileSync(file, "utf8");

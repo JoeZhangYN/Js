@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/attack/decide-attack-action.js");
 const ownerTest = path.normalize("src/battle/attack/decide-attack-action.test.js");
+const attackPlan = path.normalize("src/battle/attack/attack-plan.js");
+const attackDecision = path.normalize("src/battle/attack/decide-attack.js");
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
 const offensiveDebuff = path.normalize("src/battle/debuff/decide-offensive-debuff.js");
 const violations = [];
@@ -17,6 +19,7 @@ function rel(relative) {
 }
 
 const ownerText = read(owner);
+const attackPlanText = read(attackPlan);
 const actionDecisionText = read(actionDecision);
 
 for (const required of [
@@ -67,6 +70,24 @@ if (/decideAttackAction\(\s*snap\s*,\s*(?:opt|actionOptions)\s*\)/.test(actionDe
   violations.push(`${rel(actionDecision)} must not call attack action through old two-arg path`);
 }
 
+for (const required of [
+  "ATTACK_PLAN_STEPS",
+  'capability: "focus"',
+  'capability: "spiritToggle"',
+  'capability: "spell"',
+  'capability: "mercifulSingle"',
+  'capability: "physicalUtility"',
+  'capability: "defaultAttack"',
+  "buildAttackPlanContext",
+]) {
+  if (!attackPlanText.includes(required)) {
+    violations.push(`${rel(attackPlan)} must lock attack plan step ${required}`);
+  }
+}
+if (!/for\s*\(\s*const\s+step\s+of\s+ATTACK_PLAN_STEPS\s*\)/.test(attackPlanText)) {
+  violations.push(`${rel(attackPlan)} must choose attack plans through ATTACK_PLAN_STEPS`);
+}
+
 for (const relative of ["src/battle", "src/core"]) {
   const dir = path.join(root, relative);
   for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
@@ -84,6 +105,25 @@ for (const relative of ["src/battle", "src/core"]) {
     }
     if (/decideAttackAction\(\s*[^)]*,\s*[^)]*\)/.test(text)) {
       violations.push(`${rel(normalized)} must not call retired attack action two-arg path`);
+    }
+    if (
+      normalized !== attackDecision &&
+      /from\s+["'][^"']*attack\/attack-plan\.js["']/.test(text)
+    ) {
+      violations.push(`${rel(normalized)} must not bypass decideAttack for attack plan decisions`);
+    }
+    if (
+      normalized !== attackPlan &&
+      /from\s+["'][^"']*attack\/spell-attack-plan\.js["']/.test(text)
+    ) {
+      violations.push(`${rel(normalized)} must not bypass attack plan for spell decisions`);
+    }
+    if (
+      normalized !== attackDecision &&
+      normalized !== attackPlan &&
+      /\bdecideAttackPlan\s*\(/.test(text)
+    ) {
+      violations.push(`${rel(normalized)} must not call attack plan outside decideAttack`);
     }
   }
 }
