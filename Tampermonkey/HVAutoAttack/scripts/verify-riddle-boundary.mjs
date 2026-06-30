@@ -242,9 +242,38 @@ function checkRiddleSubmissionTiming() {
     }
   });
   const timingText = fs.readFileSync(riddleTimingFile, "utf8");
-  for (const required of ["runRiddleSubmissionTiming", "RiddleSubmissionTimingEvent"]) {
+  for (const required of [
+    "runRiddleSubmissionTiming",
+    "RiddleSubmissionTimingEvent",
+    "riddleSubmissionTimingEventHandlers",
+    "recordActiveExternalSubmission",
+    "scheduleActiveMlSubmission",
+  ]) {
     if (!timingText.includes(required)) {
       violations.push(`${rel(riddleTimingFile)} must own ${required}`);
+    }
+  }
+  if (
+    !/\[EVENT_READ_REMAINING\]: readRemainingSeconds[\s\S]*\[EVENT_START\]: startSubmissionTiming[\s\S]*\[EVENT_EXTERNAL_SUBMITTED\]: recordActiveExternalSubmission[\s\S]*\[EVENT_ML_ANSWERS_READY\]: scheduleActiveMlSubmission/.test(
+      timingText
+    )
+  ) {
+    violations.push(`${rel(riddleTimingFile)} must route timing events through handler table`);
+  }
+  const timingEntryBody =
+    timingText.match(/export function runRiddleSubmissionTiming\(event = \{ type: EVENT_READ_REMAINING \}\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/if\s*\(\s*event\.type\s*===/.test(timingEntryBody)) {
+    violations.push(`${rel(riddleTimingFile)} entry must route events through handler table`);
+  }
+  for (const forbidden of [
+    "readRemainingSeconds",
+    "startSubmissionTiming",
+    "recordActiveExternalSubmission",
+    "scheduleActiveMlSubmission",
+  ]) {
+    if (timingEntryBody.includes(forbidden)) {
+      violations.push(`${rel(riddleTimingFile)} entry must route timing work through event handlers`);
     }
   }
   for (const required of ["EXTERNAL_SUBMITTED", "ML_ANSWERS_READY"]) {

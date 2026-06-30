@@ -14,6 +14,13 @@ export const RiddleSubmissionTimingEvent = Object.freeze({
 
 let activeSession = null;
 
+const riddleSubmissionTimingEventHandlers = {
+  [EVENT_READ_REMAINING]: readRemainingSeconds,
+  [EVENT_START]: startSubmissionTiming,
+  [EVENT_EXTERNAL_SUBMITTED]: recordActiveExternalSubmission,
+  [EVENT_ML_ANSWERS_READY]: scheduleActiveMlSubmission,
+};
+
 function readRemainingSeconds() {
   const counter = gE("#riddlecounter");
   if (counter) {
@@ -113,14 +120,15 @@ function startSubmissionTiming(event) {
   return true;
 }
 
+function recordActiveExternalSubmission() {
+  return activeSession ? activeSession.recordExternalSubmission() : false;
+}
+
+function scheduleActiveMlSubmission(event) {
+  return activeSession ? activeSession.scheduleMlSubmit(event.mlAnswers, event.mlDelayMs) : false;
+}
+
 export function runRiddleSubmissionTiming(event = { type: EVENT_READ_REMAINING }) {
-  if (event.type === EVENT_READ_REMAINING) return readRemainingSeconds();
-  if (event.type === EVENT_START) return startSubmissionTiming(event);
-  if (event.type === EVENT_EXTERNAL_SUBMITTED) {
-    return activeSession ? activeSession.recordExternalSubmission() : false;
-  }
-  if (event.type === EVENT_ML_ANSWERS_READY) {
-    return activeSession ? activeSession.scheduleMlSubmit(event.mlAnswers, event.mlDelayMs) : false;
-  }
-  return undefined;
+  const handler = riddleSubmissionTimingEventHandlers[event.type];
+  return handler ? handler(event) : undefined;
 }

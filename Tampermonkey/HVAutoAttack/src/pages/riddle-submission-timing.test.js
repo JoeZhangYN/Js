@@ -14,6 +14,10 @@ afterEach(() => {
 });
 
 describe("riddle submission timing", () => {
+  it("ignores unknown timing events at the entry", () => {
+    expect(runRiddleSubmissionTiming({ type: "unknown" })).toBeUndefined();
+  });
+
   it("reads M:SS countdown text", () => {
     document.body.innerHTML = '<div id="riddlecounter">2:30</div>';
 
