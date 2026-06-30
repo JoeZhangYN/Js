@@ -10,11 +10,12 @@
 //   ① 裸读 .hpRatio/.hpNow/.finWeight → 走 view.hpPercent/hpAbsNow + target strategy entry
 //   ② 读 .monsters → 走 snap.view + battle-monster-view 的 aliveByOrder/byOrder
 //   ③ getMonster（直查 IndexedDB）→ 走 state/monster-cache（同步缓存，prime 在 resist-panel）
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "./lib/i18n-probe-lex.mjs";
 
 const SRC_DIR = fileURLToPath(new URL("../src", import.meta.url));
+const LEGACY_TARGET_STRATEGY = `${SRC_DIR}/battle/target-strategy.js`;
 
 /** scope：决策层 = decide-*.js（非 test）+ action decision 组合根。视图源头不在 scope。 */
 function isDecideFile(rel) {
@@ -47,6 +48,14 @@ function collectJs(dir, base = "") {
 }
 
 const violations = [];
+if (existsSync(LEGACY_TARGET_STRATEGY)) {
+  violations.push({
+    rel: "battle/target-strategy.js",
+    line: 1,
+    msg: "legacy target-strategy helper module must stay retired",
+  });
+}
+
 for (const { abs, rel } of collectJs(SRC_DIR)) {
   if (!isDecideFile(rel)) continue;
   const codeLines = stripComments(readFileSync(abs, "utf8")).split(/\r?\n/);
@@ -79,6 +88,19 @@ for (const { abs, rel } of collectJs(`${SRC_DIR}/battle`)) {
         rel: `battle/${rel}`,
         line: i + 1,
         msg: "battle 目标选择必须走 runBattleTargetStrategy(event)",
+      });
+    }
+  }
+}
+
+for (const { abs, rel } of collectJs(`${SRC_DIR}/battle`)) {
+  const codeLines = stripComments(readFileSync(abs, "utf8")).split(/\r?\n/);
+  for (let i = 0; i < codeLines.length; i += 1) {
+    if (/from\s+["'][^"']*(?:^|[\\/])target-strategy\.js["']/.test(codeLines[i])) {
+      violations.push({
+        rel: `battle/${rel}`,
+        line: i + 1,
+        msg: "legacy target-strategy helper imports must stay retired",
       });
     }
   }

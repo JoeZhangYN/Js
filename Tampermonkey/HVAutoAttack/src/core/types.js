@@ -77,7 +77,7 @@
 /**
  * 统一怪物视图（business capability）。把"怪物"业务实体散落的 3 个面 join 成单一画像：
  * snap.monsters(DOM 实时态) + monsterStatus(HP 绝对值/权重) + monster-db(九抗/身份)。
- * 所有 decide 的目标选择从此视图派生(battle/target-strategy.js)，不再各自裸读散落字段。
+ * 所有 decide 的目标选择从此视图派生(battle-target-strategy entry)，不再各自裸读散落字段。
  * **血量三概念显式区分**：hpPercent(百分比) / hpAbsNow(绝对当前) / hpMax(绝对满血)。
  * **三个 id 概念显式区分**：`id`=战场槽位 mkey(0-9，点击用) / `monsterId`=全局 MID(库主键) /
  * `level`=本场战斗等级 LV(决定 maxHP；≠ 固有 powerLevel/plvl)。

@@ -1,12 +1,3 @@
-import {
-  aoeNeighborAnchor,
-  bossCoverageWindow,
-  firstByFinWeight,
-  firstByOrder,
-  highestAbsHp,
-  selfTarget,
-} from "./target-strategy.js";
-
 const EVENT_FIRST_BY_FIN_WEIGHT = "firstByFinWeight";
 const EVENT_FIRST_BY_ORDER = "firstByOrder";
 const EVENT_HIGHEST_ABS_HP = "highestAbsHp";
@@ -33,6 +24,51 @@ const battleTargetStrategyEventHandlers = Object.freeze({
   [EVENT_BOSS_COVERAGE_WINDOW]: (event) =>
     bossCoverageWindow(event.alive, event.aoe, event.isNeedy),
 });
+
+function firstByFinWeight(alive) {
+  if (!alive || !alive.length) return undefined;
+  return alive.reduce((best, m) => (m.finWeight < best.finWeight ? m : best));
+}
+
+function firstByOrder(alive) {
+  if (!alive || !alive.length) return undefined;
+  return alive.reduce((best, m) => (m.order < best.order ? m : best));
+}
+
+function highestAbsHp(alive) {
+  if (!alive || !alive.length) return undefined;
+  return alive.reduce((best, m) => {
+    if (m.hpAbsNow > best.hpAbsNow) return m;
+    if (m.hpAbsNow === best.hpAbsNow && m.order < best.order) return m;
+    return best;
+  });
+}
+
+function selfTarget(m) {
+  return m.id;
+}
+
+function aoeNeighborAnchor(self, next, aoeCount) {
+  return aoeCount >= 2 && next && !next.isDead ? next.id : self.id;
+}
+
+function bossCoverageWindow(alive, aoe, isNeedy) {
+  let bestIdx = -1;
+  let bestCov = -1;
+  let bestSelfNeed = false;
+  for (let c = 0; c < alive.length; c += 1) {
+    const start = Math.max(0, c - aoe + 1);
+    let cov = 0;
+    for (let i = start; i <= c; i += 1) if (isNeedy(alive[i])) cov += 1;
+    const selfNeed = isNeedy(alive[c]);
+    if (cov > bestCov || (cov === bestCov && selfNeed && !bestSelfNeed)) {
+      bestCov = cov;
+      bestIdx = c;
+      bestSelfNeed = selfNeed;
+    }
+  }
+  return bestIdx >= 0 && bestCov > 0 ? alive[bestIdx] : null;
+}
 
 export function runBattleTargetStrategy(event = { type: EVENT_FIRST_BY_ORDER }) {
   return battleTargetStrategyEventHandlers[event.type]?.(event);

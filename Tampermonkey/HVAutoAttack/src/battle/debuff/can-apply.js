@@ -1,4 +1,4 @@
-// PURE: debuff 可施性判断（canApplyDebuffPure，SSOT）。AoE 目标选择已迁出至 battle/target-strategy.js。
+// PURE: debuff 可施性判断（canApplyDebuffPure，SSOT）。AoE 目标选择已迁出至 battle-target-strategy entry。
 // decide-cast-all.js（全员）与 decide-de-skill.js（单目标）共享，避免两份 copy 漂移。
 // 不读 DOM / 不调 g() / 不写 setValue —— 全程基于传入的 snapshot 数据。
 import { DEBUFF_SKILL_LIB } from "../../data/debuff-lib.js";
