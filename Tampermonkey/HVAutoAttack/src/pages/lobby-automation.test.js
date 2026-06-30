@@ -71,6 +71,14 @@ beforeEach(() => {
 });
 
 describe("runLobbyAutomation", () => {
+  it("rejects unknown lobby events without running lobby flow", async () => {
+    await expect(runLobbyAutomation({ type: "unknown" })).resolves.toBeUndefined();
+
+    expect(mocks.runBattleRuntimeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runDayRecordAutomation).not.toHaveBeenCalled();
+    expect(mocks.runQuickSiteAutomation).not.toHaveBeenCalled();
+  });
+
   it("runs lobby page-ready capabilities through one event entry", async () => {
     setLobbyOption({ encounter: false, idleArena: false, repair: true });
 

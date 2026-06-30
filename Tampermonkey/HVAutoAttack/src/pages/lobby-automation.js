@@ -15,6 +15,10 @@ export const LobbyEvent = Object.freeze({
   PAGE_READY: EVENT_PAGE_READY,
 });
 
+const lobbyEventHandlers = Object.freeze({
+  [EVENT_PAGE_READY]: () => runLobbyReadyFlow(),
+});
+
 const LOBBY_READY_FLOW_STEPS = [
   clearBattleSession,
   refreshLobbyDayRecord,
@@ -88,6 +92,5 @@ async function runLobbyReadyFlow() {
 }
 
 export async function runLobbyAutomation(event = { type: EVENT_PAGE_READY }) {
-  if (event.type !== EVENT_PAGE_READY) return undefined;
-  await runLobbyReadyFlow();
+  return lobbyEventHandlers[event.type]?.(event);
 }

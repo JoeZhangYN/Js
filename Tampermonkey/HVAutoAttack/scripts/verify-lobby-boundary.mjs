@@ -49,6 +49,7 @@ function checkLobbyEntry() {
     );
   }
   for (const required of [
+    "lobbyEventHandlers",
     "LOBBY_READY_FLOW_STEPS",
     "clearBattleSession",
     "refreshLobbyDayRecord",
@@ -74,6 +75,12 @@ function checkLobbyEntry() {
   const entryBody =
     text.match(/export async function runLobbyAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
     "";
+  if (!/const lobbyEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PAGE_READY\]/.test(text)) {
+    violations.push(`${rel(lobbyFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
+    violations.push(`${rel(lobbyFile)} entry must dispatch by handler table`);
+  }
   for (const forbidden of [
     "runBattleRuntimeAutomation",
     "runDayRecordAutomation",
@@ -107,6 +114,11 @@ function checkLobbyEntry() {
   }
   if (!/function rerunLobbyPageReady\(\) \{\s*return runLobbyAutomation\(\{ type: EVENT_PAGE_READY \}\);\s*\}/.test(text)) {
     violations.push(`${rel(lobbyFile)} rerun must report LobbyEvent.PAGE_READY through one helper`);
+  }
+  const lobbyTestFile = path.join(root, "src/pages/lobby-automation.test.js");
+  const lobbyTestText = fs.existsSync(lobbyTestFile) ? fs.readFileSync(lobbyTestFile, "utf8") : "";
+  if (!lobbyTestText.includes("rejects unknown lobby events without running lobby flow")) {
+    violations.push(`${rel(lobbyTestFile)} must cover unknown lobby events`);
   }
   const pageText = fs.readFileSync(path.join(root, "src/pages/page-automation.js"), "utf8");
   if (!pageText.includes("LobbyEvent.PAGE_READY")) {
