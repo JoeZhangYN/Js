@@ -1,6 +1,9 @@
 // F5 回归锁：decideBurstControl 选择与守卫（Silence法术/Sleep物理、蹦极阈值、过控防护、已控跳过）。
 import { describe, it, expect } from "vitest";
-import { decideBurstControl } from "./decide-burst-control.js";
+import {
+  BattleBurstControlDecisionEvent,
+  runBattleBurstControlDecision,
+} from "./decide-burst-control.js";
 
 const mon = (over = {}) => ({ id: 1, order: 0, isDead: false, monsterId: 100, buffs: [], ...over });
 const snap = (over = {}) => ({
@@ -23,7 +26,11 @@ function burstControlFacts(snap) {
 }
 
 function decide(opt, snap) {
-  return decideBurstControl({ opt, ...burstControlFacts(snap) });
+  return runBattleBurstControlDecision({
+    type: BattleBurstControlDecisionEvent.DECIDE,
+    opt,
+    ...burstControlFacts(snap),
+  });
 }
 
 describe("decideBurstControl", () => {
@@ -102,5 +109,9 @@ describe("decideBurstControl", () => {
     expect(
       decide({ burstControlSwitch: true, burstControlSilenceForSpell: false }, s).skillId
     ).toBe("222");
+  });
+
+  it("rejects unknown burst control decision events", () => {
+    expect(runBattleBurstControlDecision({ type: "unknown" })).toEqual({ kind: "noop" });
   });
 });

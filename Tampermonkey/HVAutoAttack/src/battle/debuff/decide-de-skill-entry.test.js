@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideDeSkill } from "./decide-de-skill.js";
+import { BattleDeSkillDecisionEvent, runBattleDeSkillDecision } from "./decide-de-skill.js";
 
 function snap(over = {}) {
   return {
@@ -39,7 +39,11 @@ function deSkillFacts(s) {
 }
 
 function decide(opt, s) {
-  return decideDeSkill({ opt, ...deSkillFacts(s) });
+  return runBattleDeSkillDecision({
+    type: BattleDeSkillDecisionEvent.DECIDE,
+    opt,
+    ...deSkillFacts(s),
+  });
 }
 
 describe("decideDeSkill entry gate", () => {

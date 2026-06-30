@@ -1869,6 +1869,10 @@ function checkBigSkillDebuffEntry() {
 function checkBurstControlEntry() {
   const ownerText = fs.readFileSync(burstControlFile, "utf8");
   for (const required of [
+    "BattleBurstControlDecisionEvent",
+    "battleBurstControlDecisionEventHandlers",
+    "DECIDE",
+    "runBattleBurstControlDecision",
     "decideBurstControl",
     "PHYSICAL_TYPES",
     "CONTROL_IMG",
@@ -1883,6 +1887,22 @@ function checkBurstControlEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(burstControlFile)} must own burst-control gate ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleBurstControlDecisionEvent\b|runBattleBurstControlDecision\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(burstControlFile)} may export only its event entry`);
+  }
+  const burstControlEntryBody =
+    ownerText.match(/export function runBattleBurstControlDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+    violations.push(`${rel(burstControlFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(burstControlEntryBody)) {
+    violations.push(`${rel(burstControlFile)} entry must dispatch by handler table`);
   }
   if (
     !/const PHYSICAL_TYPES = Object\.freeze\(\{/.test(ownerText) ||
@@ -1939,10 +1959,13 @@ function checkOffensiveDebuffEntry() {
     "BattleDebuffFactsEvent.READ_BOSS_IMPERIL",
     "BattleDebuffFactsEvent.READ_DEBUFF_ACTION",
     "runBattleDebuffFacts",
-    "decideBurstControl",
+    "BattleBurstControlDecisionEvent.DECIDE",
+    "runBattleBurstControlDecision",
     "runBossImperilAutomation",
-    "decideCastDebuffOnAll",
-    "decideDeSkill",
+    "BattleAllDebuffDecisionEvent.DECIDE",
+    "runBattleAllDebuffDecision",
+    "BattleDeSkillDecisionEvent.DECIDE",
+    "runBattleDeSkillDecision",
     'debuffKey: "We"',
     'debuffKey: "Im"',
     "isEmptyDecision",
@@ -2619,6 +2642,10 @@ function checkPlayerBuffStateQuery() {
 function checkSingleDebuffEntry() {
   const ownerText = fs.readFileSync(decideDeSkillFile, "utf8");
   for (const required of [
+    "BattleDeSkillDecisionEvent",
+    "battleDeSkillDecisionEventHandlers",
+    "DECIDE",
+    "runBattleDeSkillDecision",
     "decideDeSkill",
     "debuffSkillSwitch",
     "debuffSkill",
@@ -2634,6 +2661,22 @@ function checkSingleDebuffEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideDeSkillFile)} must own single-debuff gate ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleDeSkillDecisionEvent\b|runBattleDeSkillDecision\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideDeSkillFile)} may export only its event entry`);
+  }
+  const deSkillEntryBody =
+    ownerText.match(/export function runBattleDeSkillDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+    violations.push(`${rel(decideDeSkillFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(deSkillEntryBody)) {
+    violations.push(`${rel(decideDeSkillFile)} entry must dispatch by handler table`);
   }
   if (/decideDeSkill\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideDeSkillFile)} must not expose opt/snap single-debuff input`);
@@ -2659,6 +2702,10 @@ function checkSingleDebuffEntry() {
 function checkAllDebuffEntry() {
   const ownerText = fs.readFileSync(decideCastAllFile, "utf8");
   for (const required of [
+    "BattleAllDebuffDecisionEvent",
+    "battleAllDebuffDecisionEventHandlers",
+    "DECIDE",
+    "runBattleAllDebuffDecision",
     "decideCastDebuffOnAll",
     "debuffSkillSwitch",
     "debuffSkillAllWk",
@@ -2679,6 +2726,22 @@ function checkAllDebuffEntry() {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideCastAllFile)} must own all-debuff gate ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleAllDebuffDecisionEvent\b|runBattleAllDebuffDecision\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideCastAllFile)} may export only its event entry`);
+  }
+  const castAllEntryBody =
+    ownerText.match(/export function runBattleAllDebuffDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
+    violations.push(`${rel(decideCastAllFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(castAllEntryBody)) {
+    violations.push(`${rel(decideCastAllFile)} entry must dispatch by handler table`);
   }
   if (/decideCastDebuffOnAll\s*\(\s*opt\s*,\s*snap\s*,/.test(ownerText)) {
     violations.push(`${rel(decideCastAllFile)} must not expose opt/snap all-debuff input`);

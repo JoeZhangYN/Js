@@ -29,12 +29,22 @@ const ALL_DEBUFF_GATES = Object.freeze({
   }),
 });
 
+const EVENT_DECIDE = "decide";
+
+export const BattleAllDebuffDecisionEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+const battleAllDebuffDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: decideCastDebuffOnAll,
+});
+
 /**
  * 决定全员 debuff 该施给哪只怪物，返 ActionResult。
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult}
  */
-export function decideCastDebuffOnAll(event = {}) {
+function decideCastDebuffOnAll(event = {}) {
   const opt = event.opt || {};
   const debuffKey = event.debuffKey;
   if (!canCastDebuffOnAll(opt, event, debuffKey)) return { kind: "noop" };
@@ -110,4 +120,8 @@ function hasMissingDebuff(event, debuffName) {
     debuffName,
     monsterAlive: event?.monsterAlive,
   });
+}
+
+export function runBattleAllDebuffDecision(event = { type: EVENT_DECIDE }) {
+  return battleAllDebuffDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
 }

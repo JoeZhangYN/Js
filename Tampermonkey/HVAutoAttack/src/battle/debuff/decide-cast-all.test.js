@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideCastDebuffOnAll } from "./decide-cast-all.js";
+import { BattleAllDebuffDecisionEvent, runBattleAllDebuffDecision } from "./decide-cast-all.js";
 
 function snap(over = {}) {
   return {
@@ -43,7 +43,12 @@ function allDebuffFacts(snap) {
 }
 
 function decide(opt, s, debuffKey) {
-  return decideCastDebuffOnAll({ opt, debuffKey, ...allDebuffFacts(s) });
+  return runBattleAllDebuffDecision({
+    type: BattleAllDebuffDecisionEvent.DECIDE,
+    opt,
+    debuffKey,
+    ...allDebuffFacts(s),
+  });
 }
 
 describe("decideCastDebuffOnAll", () => {
@@ -133,5 +138,9 @@ describe("decideCastDebuffOnAll", () => {
       skillId: "213",
       targetId: 1,
     });
+  });
+
+  it("rejects unknown all-debuff decision events", () => {
+    expect(runBattleAllDebuffDecision({ type: "unknown" })).toEqual({ kind: "noop" });
   });
 });

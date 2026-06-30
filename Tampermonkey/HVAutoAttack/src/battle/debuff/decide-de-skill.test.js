@@ -2,7 +2,7 @@
 // 重点覆盖 Drain（Dr）目标策略——drainTargetMaxHp 开关（默认开）时打**绝对血最多**的怪(hpAbsNow)，
 // 恒点该怪本身(取消邻居偏移)；关时退回打首怪；其余 debuff 恒打首怪。
 import { describe, it, expect } from "vitest";
-import { decideDeSkill } from "./decide-de-skill.js";
+import { BattleDeSkillDecisionEvent, runBattleDeSkillDecision } from "./decide-de-skill.js";
 
 /** 最小 snap 工厂（只填 decideDeSkill 读到的字段；怪物走统一视图 view）。 */
 function snap(over = {}) {
@@ -48,7 +48,11 @@ function deSkillFacts(snap) {
 }
 
 function decide(opt, s) {
-  return decideDeSkill({ opt, ...deSkillFacts(s) });
+  return runBattleDeSkillDecision({
+    type: BattleDeSkillDecisionEvent.DECIDE,
+    opt,
+    ...deSkillFacts(s),
+  });
 }
 
 describe("decideDeSkill — Drain 目标策略", () => {
@@ -146,5 +150,9 @@ describe("decideDeSkill — Drain 目标策略", () => {
     const s = snap({ view: [mon({ isDead: true })] });
     const opt = enabled({ debuffSkillOrderValue: "Dr", debuffSkill: { Dr: true } });
     expect(decide(opt, s)).toEqual({ kind: "noop" });
+  });
+
+  it("rejects unknown de-skill decision events", () => {
+    expect(runBattleDeSkillDecision({ type: "unknown" })).toEqual({ kind: "noop" });
   });
 });

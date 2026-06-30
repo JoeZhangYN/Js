@@ -1,10 +1,16 @@
 import { BattleAttackActionEvent, runBattleAttackAction } from "../attack/decide-attack-action.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
-import { decideBurstControl } from "./decide-burst-control.js";
+import {
+  BattleBurstControlDecisionEvent,
+  runBattleBurstControlDecision,
+} from "./decide-burst-control.js";
 import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill-debuff.js";
 import { runBossImperilAutomation } from "./decide-boss-imperil.js";
-import { decideCastDebuffOnAll } from "./decide-cast-all.js";
-import { decideDeSkill } from "./decide-de-skill.js";
+import {
+  BattleAllDebuffDecisionEvent,
+  runBattleAllDebuffDecision,
+} from "./decide-cast-all.js";
+import { BattleDeSkillDecisionEvent, runBattleDeSkillDecision } from "./decide-de-skill.js";
 import { BattleDebuffFactsEvent, runBattleDebuffFacts } from "./debuff-facts.js";
 
 const EVENT_DECIDE = "decide";
@@ -71,7 +77,10 @@ function readStallRuling(event) {
 }
 
 function decideBurstControlStep(event) {
-  return decideBurstControl(event);
+  return runBattleBurstControlDecision({
+    type: BattleBurstControlDecisionEvent.DECIDE,
+    ...event,
+  });
 }
 
 function decideBossImperilStep(event) {
@@ -79,15 +88,26 @@ function decideBossImperilStep(event) {
 }
 
 function decideWeakenAllStep(event) {
-  return decideCastDebuffOnAll({ ...event, debuffKey: "We" });
+  return runBattleAllDebuffDecision({
+    type: BattleAllDebuffDecisionEvent.DECIDE,
+    ...event,
+    debuffKey: "We",
+  });
 }
 
 function decideImperilAllStep(event) {
-  return decideCastDebuffOnAll({ ...event, debuffKey: "Im" });
+  return runBattleAllDebuffDecision({
+    type: BattleAllDebuffDecisionEvent.DECIDE,
+    ...event,
+    debuffKey: "Im",
+  });
 }
 
 function decideSingleTargetDebuffStep(event) {
-  return decideDeSkill(event);
+  return runBattleDeSkillDecision({
+    type: BattleDeSkillDecisionEvent.DECIDE,
+    ...event,
+  });
 }
 
 function decideOffensiveDebuffResult(snap = {}, opt = {}) {

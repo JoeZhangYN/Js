@@ -5,6 +5,9 @@ const root = process.cwd();
 const owner = path.normalize("src/battle/debuff/decide-offensive-debuff.js");
 const ownerTest = path.normalize("src/battle/debuff/decide-offensive-debuff.test.js");
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
+const burstControl = path.normalize("src/battle/debuff/decide-burst-control.js");
+const castAll = path.normalize("src/battle/debuff/decide-cast-all.js");
+const deSkill = path.normalize("src/battle/debuff/decide-de-skill.js");
 const violations = [];
 
 function read(relative) {
@@ -45,10 +48,13 @@ for (const required of [
   "BattleDebuffFactsEvent.READ_BOSS_IMPERIL",
   "BattleDebuffFactsEvent.READ_DEBUFF_ACTION",
   "runBattleDebuffFacts",
-  "decideBurstControl",
+  "BattleBurstControlDecisionEvent.DECIDE",
+  "runBattleBurstControlDecision",
   "runBossImperilAutomation",
-  "decideCastDebuffOnAll",
-  "decideDeSkill",
+  "BattleAllDebuffDecisionEvent.DECIDE",
+  "runBattleAllDebuffDecision",
+  "BattleDeSkillDecisionEvent.DECIDE",
+  "runBattleDeSkillDecision",
   'debuffKey: "We"',
   'debuffKey: "Im"',
   "isEmptyDecision",
@@ -74,8 +80,30 @@ if (
 ) {
   violations.push("src/battle/debuff/decide-burst-control.js must own frozen burst-control decision tables");
 }
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattleBurstControlDecisionEvent\b|runBattleBurstControlDecision\b)/.test(
+    burstControlText
+  )
+) {
+  violations.push("src/battle/debuff/decide-burst-control.js may export only its event entry");
+}
 if (!/const ALL_DEBUFF_GATES = Object\.freeze\(\{/.test(castAllText)) {
   violations.push("src/battle/debuff/decide-cast-all.js must own frozen all-debuff gate table");
+}
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattleAllDebuffDecisionEvent\b|runBattleAllDebuffDecision\b)/.test(
+    castAllText
+  )
+) {
+  violations.push("src/battle/debuff/decide-cast-all.js may export only its event entry");
+}
+const deSkillText = read(path.normalize("src/battle/debuff/decide-de-skill.js"));
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattleDeSkillDecisionEvent\b|runBattleDeSkillDecision\b)/.test(
+    deSkillText
+  )
+) {
+  violations.push("src/battle/debuff/decide-de-skill.js may export only its event entry");
 }
 for (const required of ["noop: () => true"]) {
   if (!ownerText.includes(required)) {
@@ -132,13 +160,27 @@ for (const relative of ["src/battle", "src/core"]) {
     }
     const file = path.join(entry.parentPath, entry.name);
     const normalized = path.normalize(path.relative(root, file));
-    if (normalized === owner || normalized === actionDecision) continue;
+    if (
+      normalized === owner ||
+      normalized === actionDecision ||
+      normalized === burstControl ||
+      normalized === castAll ||
+      normalized === deSkill
+    ) {
+      continue;
+    }
     const text = fs.readFileSync(file, "utf8");
     if (/from\s+["'][^"']*debuff\/decide-offensive-debuff\.js["']/.test(text)) {
       violations.push(`${rel(normalized)} must not bypass runBattleActionDecision`);
     }
     if (/decideOffensiveDebuff\(\s*[^)]*,\s*[^)]*\)/.test(text)) {
       violations.push(`${rel(normalized)} must not call retired offensive debuff two-arg path`);
+    }
+    if (
+      /from\s+["'][^"']*debuff\/decide-(?:burst-control|cast-all|de-skill)\.js["']/.test(text) ||
+      /\b(?:decideBurstControl|decideCastDebuffOnAll|decideDeSkill)\s*\(/.test(text)
+    ) {
+      violations.push(`${rel(normalized)} must not bypass offensive debuff sub-decision entries`);
     }
   }
 }

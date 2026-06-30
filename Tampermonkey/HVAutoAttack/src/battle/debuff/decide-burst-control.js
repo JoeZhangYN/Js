@@ -10,6 +10,15 @@ const PHYSICAL_TYPES = Object.freeze({
   physical: true,
 });
 const CONTROL_IMG = Object.freeze({ 232: "silence", 222: "sleep", 223: "confuse" });
+const EVENT_DECIDE = "decide";
+
+export const BattleBurstControlDecisionEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+const battleBurstControlDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: decideBurstControl,
+});
 
 /** 按致死伤害类型 + 技能就绪挑控制技：法术→Silence，否则 Sleep，再退 Confuse；都不就绪→null。 */
 function pickControl(type, skillReady, opt) {
@@ -24,7 +33,7 @@ function pickControl(type, skillReady, opt) {
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult}
  */
-export function decideBurstControl(event = {}) {
+function decideBurstControl(event = {}) {
   const opt = event.opt || {};
   if (!opt.burstControlSwitch) return { kind: "noop" };
   if (opt.debuffSkillSwitch === false) return { kind: "noop" };
@@ -56,4 +65,8 @@ export function decideBurstControl(event = {}) {
     skillId: best.skillSel,
     targetId: best.id,
   };
+}
+
+export function runBattleBurstControlDecision(event = { type: EVENT_DECIDE }) {
+  return battleBurstControlDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
 }

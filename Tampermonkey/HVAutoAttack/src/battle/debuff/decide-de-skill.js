@@ -11,12 +11,22 @@ import {
   runBattleDebuffApplicability,
 } from "./can-apply.js";
 
+const EVENT_DECIDE = "decide";
+
+export const BattleDeSkillDecisionEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+const battleDeSkillDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: decideDeSkill,
+});
+
 /**
  * 决定单目标 debuff 该施哪一种 + 打哪只怪。
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult}
  */
-export function decideDeSkill(event = {}) {
+function decideDeSkill(event = {}) {
   const opt = event.opt || {};
   if (event.stallActive) return { kind: "noop" };
   if (
@@ -85,4 +95,8 @@ export function decideDeSkill(event = {}) {
     };
   }
   return { kind: "noop" };
+}
+
+export function runBattleDeSkillDecision(event = { type: EVENT_DECIDE }) {
+  return battleDeSkillDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
 }
