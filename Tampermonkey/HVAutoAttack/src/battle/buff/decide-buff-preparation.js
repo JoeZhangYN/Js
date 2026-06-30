@@ -28,6 +28,15 @@ const BUFF_PREPARATION_STEPS = [
   },
 ];
 
+const EMPTY_DECISION_PREDICATES = Object.freeze({
+  noop: () => true,
+  "channel-plan": isEmptyChannelPlanDecision,
+});
+
+const EMPTY_CHANNEL_PLAN_PREDICATES = Object.freeze({
+  noop: () => true,
+});
+
 function decideInfusionStep(buffPreparationContext) {
   return decideInfusion(buffPreparationContext);
 }
@@ -53,8 +62,11 @@ function decideBuffPreparationResult(snap = {}, opt = {}) {
 }
 
 function isEmptyDecision(result) {
-  if (result.kind === "noop") return true;
-  return result.kind === "channel-plan" && result.plan?.type === "noop";
+  return EMPTY_DECISION_PREDICATES[result?.kind]?.(result) ?? false;
+}
+
+function isEmptyChannelPlanDecision(result) {
+  return EMPTY_CHANNEL_PLAN_PREDICATES[result.plan?.type]?.(result.plan) ?? false;
 }
 
 export function runBattleBuffPreparation(event = { type: EVENT_DECIDE }) {

@@ -32,6 +32,9 @@ for (const required of [
   "decideChannel",
   "decideBuff",
   "isEmptyDecision",
+  "EMPTY_DECISION_PREDICATES",
+  "EMPTY_CHANNEL_PLAN_PREDICATES",
+  "isEmptyChannelPlanDecision",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
@@ -46,6 +49,19 @@ if (
 
 if (/for \(const decide of \[/.test(ownerText)) {
   violations.push(`${rel(owner)} must not hide buff preparation priority in an anonymous array`);
+}
+for (const required of [
+  "noop: () => true",
+  '"channel-plan": isEmptyChannelPlanDecision',
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${rel(owner)} must lock empty buff preparation decision ${required}`);
+  }
+}
+const emptyDecisionBody =
+  ownerText.match(/function isEmptyDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (/result\.kind\s*===|plan\.type\s*===/.test(emptyDecisionBody)) {
+  violations.push(`${rel(owner)} must route empty buff preparation decisions through predicate tables`);
 }
 
 if (
