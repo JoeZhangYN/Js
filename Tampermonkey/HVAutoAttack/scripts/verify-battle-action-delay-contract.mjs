@@ -50,6 +50,7 @@ function requireText(relative, required) {
 
 const ownerText = requireText(owner, [
   "BattleActionDelayEvent",
+  "battleActionDelayEventHandlers",
   "runBattleActionDelayAutomation",
   "DELAY_ALERT_OPTION_KEY",
   "DELAY_ALERT_TIME_OPTION_KEY",
@@ -61,7 +62,12 @@ const ownerText = requireText(owner, [
   "NavigationEvent.SCHEDULE_RELOAD",
   "AlarmEvent.TRIGGER",
 ]);
-requireText(ownerTest, ["does not track missing timer handles", "delayAlert", "delayReload"]);
+requireText(ownerTest, [
+  "does not track missing timer handles",
+  "rejects unknown events without reading delay options",
+  "delayAlert",
+  "delayReload",
+]);
 
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleActionDelayEvent\b|runBattleActionDelayAutomation\b)/.test(
@@ -69,6 +75,15 @@ if (
   )
 ) {
   violations.push(`${owner.replaceAll("\\", "/")} may export only its event entry`);
+}
+const entryBody =
+  ownerText.match(/export function runBattleActionDelayAutomation\([^)]*\) \{[\s\S]*?\n\}/)
+    ?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_ACTION_STARTED\][\s\S]*\[EVENT_ACTION_ENDED\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 for (const key of delayOptionKeys) {
   if (!new RegExp(`const\\s+[A-Z_]+_OPTION_KEY\\s*=\\s*"${key}"`).test(ownerText)) {

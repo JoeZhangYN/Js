@@ -27,13 +27,9 @@ function start(deps) {
   return runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }, deps);
 }
 
-function end(deps) {
-  return runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
-}
-
 beforeEach(() => {
   mocks.runOptionAutomation.mockReset();
-  end(makeDeps());
+  runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, makeDeps());
 });
 
 describe("runBattleActionDelayAutomation", () => {
@@ -82,7 +78,7 @@ describe("runBattleActionDelayAutomation", () => {
     });
 
     start(deps);
-    end(deps);
+    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
 
     expect(deps.cancel).toHaveBeenCalledWith("alert-timer");
     expect(deps.cancel).toHaveBeenCalledTimes(1);
@@ -105,7 +101,7 @@ describe("runBattleActionDelayAutomation", () => {
       delayReload: false,
       delayReloadTime: 2,
     };
-    end(deps);
+    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
 
     expect(deps.cancel).toHaveBeenCalledWith("alert-timer");
     expect(deps.cancel).toHaveBeenCalledWith("reload-timer");
@@ -143,8 +139,8 @@ describe("runBattleActionDelayAutomation", () => {
     });
 
     start(deps);
-    end(deps);
-    end(deps);
+    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
+    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
 
     expect(deps.cancel).toHaveBeenCalledTimes(2);
   });
@@ -162,8 +158,19 @@ describe("runBattleActionDelayAutomation", () => {
     });
 
     start(deps);
-    end(deps);
+    runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }, deps);
 
+    expect(deps.cancel).not.toHaveBeenCalled();
+  });
+
+  it("rejects unknown events without reading delay options", () => {
+    const deps = makeDeps();
+
+    expect(runBattleActionDelayAutomation({ type: "unknown" }, deps)).toBe(false);
+
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
+    expect(deps.schedule).not.toHaveBeenCalled();
+    expect(deps.scheduleReload).not.toHaveBeenCalled();
     expect(deps.cancel).not.toHaveBeenCalled();
   });
 });

@@ -16,6 +16,11 @@ export const BattleActionDelayEvent = Object.freeze({
   ACTION_ENDED: EVENT_ACTION_ENDED,
 });
 
+const battleActionDelayEventHandlers = Object.freeze({
+  [EVENT_ACTION_STARTED]: (event, deps) => handleActionStarted(deps),
+  [EVENT_ACTION_ENDED]: (event, deps) => handleActionEnded(deps),
+});
+
 function readDelayOptionField(key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
 }
@@ -49,6 +54,16 @@ function endActionDelay(deps) {
   activeDelayTimers.clear();
 }
 
+function handleActionStarted(deps) {
+  startActionDelay(deps);
+  return true;
+}
+
+function handleActionEnded(deps) {
+  endActionDelay(deps);
+  return true;
+}
+
 export function runBattleActionDelayAutomation(
   event = { type: EVENT_ACTION_STARTED },
   deps = {
@@ -62,13 +77,5 @@ export function runBattleActionDelayAutomation(
       }),
   }
 ) {
-  if (event.type === EVENT_ACTION_STARTED) {
-    startActionDelay(deps);
-    return true;
-  }
-  if (event.type === EVENT_ACTION_ENDED) {
-    endActionDelay(deps);
-    return true;
-  }
-  return false;
+  return battleActionDelayEventHandlers[event.type]?.(event, deps) ?? false;
 }
