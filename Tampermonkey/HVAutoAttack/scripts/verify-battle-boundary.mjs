@@ -2868,6 +2868,16 @@ function checkAttackEntry() {
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE_PLAN\]/.test(ownerText)) {
     violations.push(`${rel(decideAttackFile)} must route events through a frozen handler table`);
   }
+  for (const required of ["ATTACK_PLAN_CLEAR_PREDICATES", "attackPlanWillClearWithBigSkill"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideAttackFile)} must route attack clear queries through ${required}`);
+    }
+  }
+  const willClearBody =
+    ownerText.match(/function willClearWithBigSkill\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (/plan\.type\s*===/.test(willClearBody)) {
+    violations.push(`${rel(decideAttackFile)} must not re-interpret plan type inside willClearWithBigSkill`);
+  }
   if (/event\.type\s*===/.test(attackDecisionEntryBody)) {
     violations.push(`${rel(decideAttackFile)} entry must dispatch by handler table`);
   }

@@ -19,6 +19,10 @@ const attackDecisionEventHandlers = Object.freeze({
   [EVENT_WILL_CLEAR_WITH_BIG_SKILL]: (event) => willClearWithBigSkill(event),
 });
 
+const ATTACK_PLAN_CLEAR_PREDICATES = Object.freeze({
+  physical: (plan) => bigSkillCodes().includes(plan.code),
+});
+
 /**
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult} { kind:"attack-plan", plan }
@@ -31,5 +35,9 @@ export function decideAttack(event = {}) {
 
 function willClearWithBigSkill(event) {
   const plan = decideAttackPlan(event.opt || {}, event);
-  return plan.type === "physical" && bigSkillCodes().includes(plan.code);
+  return attackPlanWillClearWithBigSkill(plan);
+}
+
+function attackPlanWillClearWithBigSkill(plan) {
+  return ATTACK_PLAN_CLEAR_PREDICATES[plan?.type]?.(plan) ?? false;
 }
