@@ -7,6 +7,7 @@ const entry = path.normalize("src/battle/turn-context.js");
 const entryTest = path.normalize("src/battle/turn-context.test.js");
 const snapshotImpl = path.normalize("src/battle/snapshot.js");
 const snapshotTest = path.normalize("src/battle/snapshot.test.js");
+const snapshotLogTelemetryTest = path.normalize("src/battle/snapshot-log-telemetry.test.js");
 const battleRound = path.normalize("src/battle/battle-round.js");
 const battleRoundTest = path.normalize("src/battle/battle-round.test.js");
 const battleProgress = path.normalize("src/battle/battle-progress.js");
@@ -47,6 +48,7 @@ function checkFile(file) {
       relative === entryTest ||
       relative === snapshotImpl ||
       relative === snapshotTest ||
+      relative === snapshotLogTelemetryTest ||
       relative === battleRound ||
       relative === battleRoundTest ||
       relative === battleProgress ||
@@ -96,6 +98,7 @@ function checkEntry() {
     "CdRuntimeEvent.PERSIST",
     "collectSnapshot",
     "actionOptions",
+    "logTelemetry",
     "learnIncomingBurst",
     "burstControlSwitch",
     "assertNoDomRefs",

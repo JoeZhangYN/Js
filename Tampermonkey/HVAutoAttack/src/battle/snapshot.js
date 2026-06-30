@@ -41,10 +41,12 @@ export function collectSnapshot(event = {}) {
   const playerEffects = runBattlePlayerEffects({ type: BattlePlayerEffectsEvent.READ_CURRENT });
   const vitals = runBattlePlayerVitals({ type: BattlePlayerVitalsEvent.READ_CURRENT });
   const turn = runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT });
-  const logTelemetry = runBattleLogTelemetry({
-    type: BattleLogTelemetryEvent.READ_CURRENT,
-    turn,
-  });
+  const logTelemetry =
+    event.logTelemetry ||
+    runBattleLogTelemetry({
+      type: BattleLogTelemetryEvent.READ_CURRENT,
+      turn,
+    });
   // 学习器 finalize 全部跑在 rules 之前（结算上回合行动的观测）。globalTurn/skillReady 先备好供两用。
   const globalTurn = runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_GLOBAL_TURN });
   const skillReady = runBattleSkillReadiness({ type: BattleSkillReadinessEvent.READ_READY_MAP });

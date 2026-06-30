@@ -89,7 +89,8 @@ for (const forbidden of ["BATTLE_RULES", "runRules", "battle/rules/index.js"]) {
 
 for (const required of [
   "runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN })",
-  "runBattleActionDecision(prepareBattleTurnContext())",
+  "prepareBattleTurnContext({ logTelemetry: prelude?.battleLogTelemetry })",
+  "runBattleActionDecision",
 ]) {
   requireText("src/battle/main-loop.js", mainLoop, required);
 }
@@ -100,6 +101,7 @@ for (const required of [
   "BattleMonitorEvent.HUD_REFRESH",
   "killBug()",
   "MonsterStatusEvent.UPDATE_HP",
+  "battleLogTelemetry",
 ]) {
   requireText("src/battle/battle-turn-prelude.js", turnPrelude, required);
 }

@@ -34,6 +34,7 @@ for (const required of [
   "BattleMonitorEvent.HUD_REFRESH",
   "killBug",
   "MonsterStatusEvent.UPDATE_HP",
+  "battleLogTelemetry",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must own ${required}`);
@@ -75,7 +76,8 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
 }
 if (
   !mainLoopText.includes("BattleTurnPreludeEvent.PREPARE_CURRENT_TURN") ||
-  !mainLoopText.includes("runBattleTurnPrelude")
+  !mainLoopText.includes("runBattleTurnPrelude") ||
+  !mainLoopText.includes("prelude?.battleLogTelemetry")
 ) {
   violations.push(`${rel(mainLoop)} must run turn prelude through one entry`);
 }

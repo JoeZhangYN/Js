@@ -25,12 +25,13 @@ function assertNoDomRefs(snap) {
   }
 }
 
-export function prepareBattleTurnContext() {
+export function prepareBattleTurnContext(event = {}) {
   runCdRuntimeAutomation({ type: CdRuntimeEvent.INCREMENT_TURN });
   runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST });
   const actionOptions = runOptionAutomation({ type: OptionEvent.READ_BATTLE_ACTION_OPTIONS });
   const snap = collectSnapshot({
     learnIncomingBurst: !!actionOptions?.burstControlSwitch,
+    logTelemetry: event.logTelemetry,
   });
   runBattlePlayerVitals({ type: BattlePlayerVitalsEvent.MIRROR_RUNTIME, vitals: snap });
   attachDecisionRuntime(snap);

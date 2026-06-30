@@ -1,7 +1,8 @@
 // 拆桥 gate：禁止 battle/main-loop.js 回退 import 已倒置的 step 实现。
 // 背景：旧 main() 原直接 import 16 个具体实现（useGem/castDebuffOnAll/attack…）+ 内联闭包，
 // 编排器与实现焊死。规则表和 runner 协议收敛后，runBattleTurnAutomation() 只该运行
-// turn prelude，并把 prepareBattleTurnContext() 的整体结果交给 runBattleActionDecision(context)；
+// turn prelude，把 prelude 读到的 turn facts 转交给 prepareBattleTurnContext()，再把整体结果交给
+// runBattleActionDecision(context)；
 // 新增/调整 step 走 battle-action-decision.js。
 // 本门控让旧路径（直接 import step 实现或拼规则表）不能再悄悄回归（反退化锁）。
 //
@@ -65,6 +66,9 @@ if (/runBattleActionDecision\([^,\n]+,\s*[^)]+\)/.test(src)) {
 }
 if (!src.includes("runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN })")) {
   violations.push("missing turn prelude entry");
+}
+if (!src.includes("prepareBattleTurnContext({ logTelemetry: prelude?.battleLogTelemetry })")) {
+  violations.push("missing prelude battle log telemetry handoff");
 }
 if (violations.length) {
   console.error(

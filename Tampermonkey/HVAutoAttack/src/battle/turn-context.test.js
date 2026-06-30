@@ -33,6 +33,7 @@ vi.mock("./snapshot.js", () => ({
 }));
 
 const snap = { hp: 90, mp: 80, sp: 70, oc: 60 };
+const logTelemetry = { battleLog: [{ kind: "player-incoming", dmg: 10 }] };
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
@@ -59,7 +60,10 @@ describe("prepareBattleTurnContext", () => {
       actionOptions: { burstControlSwitch: false },
     });
 
-    expect(mocks.collectSnapshot).toHaveBeenCalledWith({ learnIncomingBurst: false });
+    expect(mocks.collectSnapshot).toHaveBeenCalledWith({
+      learnIncomingBurst: false,
+      logTelemetry: undefined,
+    });
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readBattleActionOptions" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(1, { type: "incrementTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenNthCalledWith(2, { type: "persist" });
@@ -90,9 +94,12 @@ describe("prepareBattleTurnContext", () => {
       return undefined;
     });
 
-    prepareBattleTurnContext();
+    prepareBattleTurnContext({ logTelemetry });
 
-    expect(mocks.collectSnapshot).toHaveBeenCalledWith({ learnIncomingBurst: true });
+    expect(mocks.collectSnapshot).toHaveBeenCalledWith({
+      learnIncomingBurst: true,
+      logTelemetry,
+    });
   });
 
   it("reads debug snapshot through the option entry and accepts plain snapshot values", () => {

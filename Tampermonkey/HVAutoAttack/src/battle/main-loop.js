@@ -10,6 +10,8 @@ import { BattleTurnPreludeEvent, runBattleTurnPrelude } from "./battle-turn-prel
 export function runBattleTurnAutomation() {
   if (runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })) return;
 
-  runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN });
-  runBattleActionDecision(prepareBattleTurnContext());
+  const prelude = runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN });
+  runBattleActionDecision(
+    prepareBattleTurnContext({ logTelemetry: prelude?.battleLogTelemetry })
+  );
 }

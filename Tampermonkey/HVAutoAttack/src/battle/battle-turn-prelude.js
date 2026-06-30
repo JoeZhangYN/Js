@@ -16,7 +16,7 @@ export const BattleTurnPreludeEvent = Object.freeze({
 });
 
 const battleTurnPreludeEventHandlers = Object.freeze({
-  [EVENT_PREPARE_CURRENT_TURN]: () => prepareCurrentTurn(),
+  [EVENT_PREPARE_CURRENT_TURN]: (event) => prepareCurrentTurn(event),
 });
 
 const TURN_PRELUDE_STEPS = Object.freeze([
@@ -43,16 +43,19 @@ const TURN_PRELUDE_STEPS = Object.freeze([
 ]);
 
 function prepareCurrentTurn() {
-  for (const step of TURN_PRELUDE_STEPS) step.run();
-  return true;
+  const facts = {};
+  for (const step of TURN_PRELUDE_STEPS) step.run(facts);
+  return {
+    battleLogTelemetry: facts.battleLogTelemetry,
+  };
 }
 
 function ensureMonsterStatusReady() {
   runMonsterStatusAutomation({ type: MonsterStatusEvent.ENSURE_READY });
 }
 
-function reportTurnStarted() {
-  runBattleTurnRuntime({ type: BattleTurnEvent.TURN_STARTED });
+function reportTurnStarted(facts) {
+  facts.turn = runBattleTurnRuntime({ type: BattleTurnEvent.TURN_STARTED });
 }
 
 function refreshBattleMonitorHud() {
@@ -63,10 +66,14 @@ function recoverKillBug() {
   killBug();
 }
 
-function updateMonsterHp() {
-  runMonsterStatusAutomation({ type: MonsterStatusEvent.UPDATE_HP });
+function updateMonsterHp(facts) {
+  const result = runMonsterStatusAutomation({
+    type: MonsterStatusEvent.UPDATE_HP,
+    turn: facts.turn,
+  });
+  facts.battleLogTelemetry = result?.battleLogTelemetry;
 }
 
 export function runBattleTurnPrelude(event = { type: EVENT_PREPARE_CURRENT_TURN }) {
-  return battleTurnPreludeEventHandlers[event.type]?.() ?? false;
+  return battleTurnPreludeEventHandlers[event.type]?.(event) ?? false;
 }

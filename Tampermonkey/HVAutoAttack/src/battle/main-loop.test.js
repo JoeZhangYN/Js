@@ -30,6 +30,9 @@ beforeEach(() => {
     actionOptions: { ok: true },
   });
   mocks.runBattlePauseAutomation.mockReturnValue(false);
+  mocks.runBattleTurnPrelude.mockReturnValue({
+    battleLogTelemetry: { battleLog: [{ kind: "player-incoming", dmg: 10 }] },
+  });
 });
 
 describe("runBattleTurnAutomation", () => {
@@ -37,7 +40,9 @@ describe("runBattleTurnAutomation", () => {
     runBattleTurnAutomation();
 
     expect(mocks.runBattleTurnPrelude).toHaveBeenCalledWith({ type: "prepareCurrentTurn" });
-    expect(mocks.prepareBattleTurnContext).toHaveBeenCalledWith();
+    expect(mocks.prepareBattleTurnContext).toHaveBeenCalledWith({
+      logTelemetry: { battleLog: [{ kind: "player-incoming", dmg: 10 }] },
+    });
     expect(mocks.runBattleActionDecision).toHaveBeenCalledWith({
       snap: { snap: true },
       actionOptions: { ok: true },

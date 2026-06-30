@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const snapshot = path.normalize("src/battle/snapshot.js");
 const snapshotTest = path.normalize("src/battle/snapshot.test.js");
+const snapshotLogTelemetryTest = path.normalize("src/battle/snapshot-log-telemetry.test.js");
 const physicalScoring = path.normalize("src/battle/attack/physical-skill-scoring.js");
 const types = path.normalize("src/core/types.js");
 const violations = [];
@@ -39,13 +40,21 @@ const snapshotText = requireText(snapshot, [
   "runBattleMonsterSurface",
   "BattleLogTelemetryEvent.READ_CURRENT",
   "runBattleLogTelemetry",
+  "event.logTelemetry",
   "BattleSpiritToggleEvent.READ_ACTIVE",
   "runBattleSpiritToggleAutomation",
   "BattleMonsterViewEvent.READ_VIEW",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
 const scoringText = requireText(physicalScoring, ["opt.fightingStyle", "skillLib"]);
-requireText(snapshotTest, ["learnIncomingBurst", "collectSnapshot"]);
+requireText(snapshotTest, [
+  "learnIncomingBurst",
+  "collectSnapshot",
+]);
+requireText(snapshotLogTelemetryTest, [
+  "reuses prelude battle log telemetry when supplied",
+  "not.toHaveBeenCalled",
+]);
 
 if (/\bexport\s+(?:function|const)\s+(?!collectSnapshot\b)/.test(snapshotText)) {
   violations.push(`${snapshot.replaceAll("\\", "/")} may export only collectSnapshot`);

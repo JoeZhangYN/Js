@@ -24,9 +24,13 @@ function readTargetWeightOptions() {
   };
 }
 
-function readBattleLogForHpUpdate(event) {
-  if (Array.isArray(event?.battleLog)) return event.battleLog;
-  return runBattleLogTelemetry({ type: BattleLogTelemetryEvent.READ_CURRENT }).battleLog;
+function readBattleLogTelemetryForHpUpdate(event) {
+  if (event?.logTelemetry) return event.logTelemetry;
+  if (Array.isArray(event?.battleLog)) return { battleLog: event.battleLog };
+  return runBattleLogTelemetry({
+    type: BattleLogTelemetryEvent.READ_CURRENT,
+    turn: event?.turn,
+  });
 }
 
 export function updateMonsterHpRuntime(event = {}) {
@@ -49,9 +53,11 @@ export function updateMonsterHpRuntime(event = {}) {
     status.hpNow = hpNow;
   });
 
+  const logTelemetry = readBattleLogTelemetryForHpUpdate(event);
+
   runMonsterMaxHpInference({
     type: MonsterMaxHpInferenceEvent.APPLY_DEATHS,
-    battleLog: readBattleLogForHpUpdate(event),
+    battleLog: logTelemetry.battleLog,
     monsterStatus,
     runtimeSnapshot,
   });
@@ -73,4 +79,5 @@ export function updateMonsterHpRuntime(event = {}) {
   monsterStatus.sort((a, b) => a.finWeight - b.finWeight);
 
   g("monsterStatus", monsterStatus);
+  return { battleLogTelemetry: logTelemetry };
 }

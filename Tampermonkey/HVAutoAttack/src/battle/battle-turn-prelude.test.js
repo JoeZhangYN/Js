@@ -28,7 +28,14 @@ beforeEach(() => {
 
 describe("runBattleTurnPrelude", () => {
   it("runs the current turn prelude through one command entry", () => {
-    expect(runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN })).toBe(true);
+    mocks.runBattleTurnRuntime.mockReturnValue(8);
+    mocks.runMonsterStatusAutomation.mockReturnValueOnce(undefined).mockReturnValueOnce({
+      battleLogTelemetry: { battleLog: [{ kind: "monster-taking", dmg: 10 }] },
+    });
+
+    expect(runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN })).toEqual({
+      battleLogTelemetry: { battleLog: [{ kind: "monster-taking", dmg: 10 }] },
+    });
 
     expect(mocks.runMonsterStatusAutomation).toHaveBeenNthCalledWith(1, {
       type: "ensureReady",
@@ -36,7 +43,10 @@ describe("runBattleTurnPrelude", () => {
     expect(mocks.runBattleTurnRuntime).toHaveBeenCalledWith({ type: "turnStarted" });
     expect(mocks.runBattleMonitorAutomation).toHaveBeenCalledWith({ type: "hudRefresh" });
     expect(mocks.killBug).toHaveBeenCalledTimes(1);
-    expect(mocks.runMonsterStatusAutomation).toHaveBeenNthCalledWith(2, { type: "updateHp" });
+    expect(mocks.runMonsterStatusAutomation).toHaveBeenNthCalledWith(2, {
+      type: "updateHp",
+      turn: 8,
+    });
   });
 
   it("rejects unknown prelude events without running prelude effects", () => {

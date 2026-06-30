@@ -427,8 +427,13 @@ function checkTurnEntry() {
   ) {
     violations.push(`${rel(mainLoopFile)} must not assemble turn prelude directly`);
   }
-  if (!text.includes("runBattleActionDecision(prepareBattleTurnContext())")) {
-    violations.push(`${rel(mainLoopFile)} must pass prepared turn context as one value`);
+  if (
+    !text.includes("prepareBattleTurnContext({ logTelemetry: prelude?.battleLogTelemetry })") ||
+    !text.includes("runBattleActionDecision")
+  ) {
+    violations.push(
+      `${rel(mainLoopFile)} must pass prelude battle log telemetry into prepared turn context before action decision`
+    );
   }
   if (/const\s*\{[^}]*\bsnap\b[^}]*\}\s*=\s*prepareBattleTurnContext\(\)/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must not unpack prepared turn context`);
