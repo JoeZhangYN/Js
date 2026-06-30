@@ -32,6 +32,11 @@ export const RepairStateParseEvent = Object.freeze({
   ISEKAI: EVENT_PARSE_ISEKAI,
 });
 
+const repairStateParseEventHandlers = Object.freeze({
+  [EVENT_PARSE_PERSISTENT]: (event) => parsePersistentRepairState(event.pageDoc, event.dynjsText),
+  [EVENT_PARSE_ISEKAI]: (event) => parseIsekaiRepairState(event.pageText),
+});
+
 /**
  * 解析「Requires: 5x A, 3x B」材料清单文本 → [{name,count}]。
  * 无 matId（主世界只有名）。无法解析项跳过（不崩）。
@@ -139,11 +144,5 @@ function parseIsekaiRepairState(pageText) {
 }
 
 export function runRepairStateParser(event) {
-  if (event.type === EVENT_PARSE_PERSISTENT) {
-    return parsePersistentRepairState(event.pageDoc, event.dynjsText);
-  }
-  if (event.type === EVENT_PARSE_ISEKAI) {
-    return parseIsekaiRepairState(event.pageText);
-  }
-  return undefined;
+  return repairStateParseEventHandlers[event.type]?.(event);
 }

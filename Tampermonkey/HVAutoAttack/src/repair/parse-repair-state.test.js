@@ -22,6 +22,17 @@ function parseIsekaiRepairState(pageText) {
 }
 
 describe("repair state parser entry — persistent", () => {
+  it("rejects unknown parser events without choosing a world parser", () => {
+    expect(
+      runRepairStateParser({
+        type: "unknown",
+        pageDoc: doc("<div></div>"),
+        dynjsText: `x = {"100":{"d":"Condition: 1000 / 1000 (100%)"}};`,
+        pageText: `<script>var eqitems = {"100":{"m":{"50000":1}}};</script>`,
+      })
+    ).toBeUndefined();
+  });
+
   it("解析耐久% + set_forge_cost 材料（枚举来自 dynjs JSON keys）", () => {
     // 真实维修页装备数据在 dynjs；set_forge_cost 提供每件材料（在页 HTML 里，容器无关）。
     const html = `<div class="equiplist">
