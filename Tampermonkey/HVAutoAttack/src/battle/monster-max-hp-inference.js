@@ -8,6 +8,10 @@ export const MonsterMaxHpInferenceEvent = Object.freeze({
   APPLY_DEATHS: EVENT_APPLY_DEATHS,
 });
 
+const monsterMaxHpInferenceEventHandlers = Object.freeze({
+  [EVENT_APPLY_DEATHS]: (event, deps) => applyDeathInferences(event, makeDeps(deps)),
+});
+
 /**
  * This page-local guard keeps repeated dead DOM snapshots from repeatedly parsing
  * the same battle log and checking the same monster DB key.
@@ -83,6 +87,5 @@ function applyDeathInferences(event, deps) {
 }
 
 export function runMonsterMaxHpInference(event = { type: EVENT_APPLY_DEATHS }, deps = {}) {
-  if (event.type === EVENT_APPLY_DEATHS) return applyDeathInferences(event, makeDeps(deps));
-  return [];
+  return monsterMaxHpInferenceEventHandlers[event.type]?.(event, deps) ?? [];
 }

@@ -8,6 +8,7 @@ const statusView = path.normalize("src/battle/monster-status-view.js");
 const statusViewTest = path.normalize("src/battle/monster-status-view.test.js");
 const hpImpl = path.normalize("src/battle/monster-status-hp.js");
 const maxHpInference = path.normalize("src/battle/monster-max-hp-inference.js");
+const maxHpInferenceTest = path.normalize("src/battle/monster-max-hp-inference.test.js");
 const targetWeight = path.normalize("src/battle/monster-target-weight.js");
 const targetWeightTest = path.normalize("src/battle/monster-target-weight.test.js");
 const parserImpl = path.normalize("src/battle/log-parser.js");
@@ -249,6 +250,7 @@ function checkMaxHpInference() {
   for (const required of [
     "export const MonsterMaxHpInferenceEvent",
     "export function runMonsterMaxHpInference",
+    "monsterMaxHpInferenceEventHandlers",
     "APPLY_DEATHS",
     "parseBattleLog",
     "accumulateDamageByMonster",
@@ -258,6 +260,22 @@ function checkMaxHpInference() {
   ]) {
     if (!text.includes(required)) {
       violations.push(`${maxHpInference.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
+  const entryBody =
+    text.match(/export function runMonsterMaxHpInference\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_DEATHS\]/.test(text)) {
+    violations.push(`${maxHpInference.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${maxHpInference.replaceAll("\\", "/")} entry must dispatch by handler table`);
+  }
+  if (!fs.existsSync(path.join(root, maxHpInferenceTest))) {
+    violations.push(`${maxHpInferenceTest.replaceAll("\\", "/")} must cover max HP inference entry`);
+  } else {
+    const testText = fs.readFileSync(path.join(root, maxHpInferenceTest), "utf8");
+    if (!testText.includes("rejects unknown monster max HP inference events without reading or writing")) {
+      violations.push(`${maxHpInferenceTest.replaceAll("\\", "/")} must cover unknown max HP inference events`);
     }
   }
 }

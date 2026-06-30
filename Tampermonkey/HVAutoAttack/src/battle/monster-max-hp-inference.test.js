@@ -54,4 +54,31 @@ describe("monster max HP inference", () => {
     await Promise.resolve();
     expect(writeStoredMaxHp).not.toHaveBeenCalled();
   });
+
+  it("rejects unknown monster max HP inference events without reading or writing", () => {
+    const monsterStatus = [{ order: 0, monsterId: 101, level: 50 }];
+    const parseBattleLog = vi.fn();
+    const readStoredMaxHp = vi.fn();
+    const writeStoredMaxHp = vi.fn();
+
+    expect(
+      runMonsterMaxHpInference(
+        {
+          type: "unknown",
+          monsterStatus,
+          runtimeSnapshot: [{ order: 0, isDead: true, name: "Alpha" }],
+        },
+        {
+          parseBattleLog,
+          readStoredMaxHp,
+          writeStoredMaxHp,
+        }
+      )
+    ).toEqual([]);
+
+    expect(parseBattleLog).not.toHaveBeenCalled();
+    expect(readStoredMaxHp).not.toHaveBeenCalled();
+    expect(writeStoredMaxHp).not.toHaveBeenCalled();
+    expect(monsterStatus[0].inferredMaxHP).toBeUndefined();
+  });
 });
