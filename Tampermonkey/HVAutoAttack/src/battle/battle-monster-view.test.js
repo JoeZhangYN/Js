@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "./battle-monster-view.js";
 
 const mocks = vi.hoisted(() => ({
@@ -27,6 +27,10 @@ vi.mock("./monster-status-automation.js", () => ({
   runMonsterStatusAutomation: mocks.runMonsterStatusAutomation,
 }));
 
+beforeEach(() => {
+  for (const fn of Object.values(mocks)) fn.mockClear();
+});
+
 describe("battle monster view", () => {
   it("builds the current unified monster view through status and cache entries", () => {
     const monsters = [{ order: 0, name: "Alpha" }];
@@ -48,5 +52,21 @@ describe("battle monster view", () => {
     expect(mocks.monsterHpVars).toHaveBeenCalledWith([
       { order: 0, monsterId: 101, name: "Alpha", isDead: false, hpPercent: 0.4 },
     ]);
+  });
+
+  it("rejects unknown events without reading status, cache, or deriving view", () => {
+    expect(runBattleMonsterView({ type: "unknown", monsters: [{ order: 0 }] })).toEqual({
+      view: [],
+      monsterIdentities: [],
+      aliveCount: 0,
+      soloMonsterHpPercent: 100,
+      lowestMonsterHpPercent: 100,
+      firstMonsterHpPercent: 100,
+    });
+
+    expect(mocks.runMonsterStatusAutomation).not.toHaveBeenCalled();
+    expect(mocks.runMonsterCacheAutomation).not.toHaveBeenCalled();
+    expect(mocks.joinMonsterView).not.toHaveBeenCalled();
+    expect(mocks.monsterHpVars).not.toHaveBeenCalled();
   });
 });

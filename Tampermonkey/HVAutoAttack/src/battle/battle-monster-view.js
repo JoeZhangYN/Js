@@ -8,6 +8,19 @@ export const BattleMonsterViewEvent = Object.freeze({
   READ_VIEW: EVENT_READ_VIEW,
 });
 
+const EMPTY_MONSTER_VIEW = Object.freeze({
+  view: [],
+  monsterIdentities: [],
+  aliveCount: 0,
+  soloMonsterHpPercent: 100,
+  lowestMonsterHpPercent: 100,
+  firstMonsterHpPercent: 100,
+});
+
+const battleMonsterViewEventHandlers = Object.freeze({
+  [EVENT_READ_VIEW]: (event) => readBattleMonsterView(event.monsters),
+});
+
 function readBattleMonsterView(monsters) {
   const monsterStatus = runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_STATUS });
   const view = joinMonsterView(
@@ -28,11 +41,5 @@ function readBattleMonsterView(monsters) {
 }
 
 export function runBattleMonsterView(event = { type: EVENT_READ_VIEW }) {
-  if (event.type === EVENT_READ_VIEW) return readBattleMonsterView(event.monsters);
-  return {
-    view: [],
-    monsterIdentities: [],
-    aliveCount: 0,
-    ...monsterHpVars([]),
-  };
+  return battleMonsterViewEventHandlers[event.type]?.(event) ?? EMPTY_MONSTER_VIEW;
 }
