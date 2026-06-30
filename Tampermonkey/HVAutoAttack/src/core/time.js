@@ -23,25 +23,24 @@ function msUntilNextUtcDay(stamp) {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1) - stamp;
 }
 
+const timeEventHandlers = Object.freeze({
+  [EVENT_EPOCH_MS]: ({ date }) => date.getTime(),
+  [EVENT_MS_UNTIL_NEXT_UTC_DAY]: ({ date }) => msUntilNextUtcDay(date.getTime()),
+  [EVENT_UTC_MONTH_DAY_LABEL]: ({ date }) => `${date.getUTCMonth() + 1}/${date.getUTCDate()}`,
+  [EVENT_UTC_DATE_KEY]: ({ date }) =>
+    `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}/${date.getUTCDate()}`,
+  [EVENT_LOCAL_TIMESTAMP_LABEL]: ({ date }) =>
+    date.toLocaleString(navigator.language, { hour12: false }),
+  [EVENT_LOCAL_FILE_TIMESTAMP]: ({ date, pad }) =>
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(
+      date.getHours()
+    )}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`,
+  [EVENT_ISO_TIMESTAMP]: ({ date }) => date.toISOString(),
+});
+
 export function runTimeAutomation(event = { type: EVENT_EPOCH_MS }) {
   const stamp = event.stamp;
   const date = stamp !== undefined ? new Date(stamp) : new Date();
   const pad = (n) => String(n).padStart(2, "0");
-  if (event.type === EVENT_EPOCH_MS) return date.getTime();
-  if (event.type === EVENT_MS_UNTIL_NEXT_UTC_DAY) return msUntilNextUtcDay(date.getTime());
-  if (event.type === EVENT_UTC_MONTH_DAY_LABEL)
-    return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
-  if (event.type === EVENT_UTC_DATE_KEY) {
-    return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
-  }
-  if (event.type === EVENT_LOCAL_TIMESTAMP_LABEL) {
-    return date.toLocaleString(navigator.language, { hour12: false });
-  }
-  if (event.type === EVENT_LOCAL_FILE_TIMESTAMP) {
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(
-      date.getHours()
-    )}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
-  }
-  if (event.type === EVENT_ISO_TIMESTAMP) return date.toISOString();
-  return undefined;
+  return timeEventHandlers[event.type]?.({ date, pad });
 }

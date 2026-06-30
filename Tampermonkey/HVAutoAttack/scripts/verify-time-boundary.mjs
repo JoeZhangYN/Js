@@ -41,6 +41,24 @@ if (!owner) {
       violations.push(`TimeEvent must expose ${required}`);
     }
   }
+  if (!source.includes("const timeEventHandlers")) {
+    violations.push("runTimeAutomation(event) must route through timeEventHandlers");
+  }
+  const entry = source.match(/export function runTimeAutomation[\s\S]*?\n}/)?.[0] || "";
+  if (/if\s*\(\s*event\.type\s*===/.test(entry)) {
+    violations.push("runTimeAutomation(event) must not reintroduce an event.type if-chain");
+  }
+  for (const internal of [
+    "date.getTime(",
+    "msUntilNextUtcDay(",
+    "date.getUTCMonth(",
+    "date.toLocaleString(",
+    "date.toISOString(",
+  ]) {
+    if (entry.includes(internal)) {
+      violations.push("runTimeAutomation(event) must dispatch through timeEventHandlers");
+    }
+  }
 }
 
 for (const file of files) {
