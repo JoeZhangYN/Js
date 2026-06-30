@@ -89,4 +89,14 @@ describe("runBattlePauseControlsAutomation", () => {
       fallback: "p",
     });
   });
+
+  it("rejects unknown events without touching pause controls", () => {
+    const { root, deps } = makeDeps({ pauseButton: true, pauseHotkey: true });
+
+    expect(runBattlePauseControlsAutomation({ type: "unknown" }, deps)).toBe(false);
+
+    expect(root.children).toHaveLength(0);
+    expect(deps.readOptionField).not.toHaveBeenCalled();
+    expect(deps.runPauseToggle).not.toHaveBeenCalled();
+  });
 });

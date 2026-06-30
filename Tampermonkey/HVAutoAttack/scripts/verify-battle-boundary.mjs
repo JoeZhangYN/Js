@@ -949,6 +949,7 @@ function checkPauseControlsEntry() {
     violations.push(`${rel(pauseControlsFile)} may export only its event entry`);
   }
   for (const required of [
+    "battlePauseControlsEventHandlers",
     "BattlePauseEvent.TOGGLE",
     "runBattleTurnAutomation",
     "PAUSE_BUTTON_OPTION_KEY",
@@ -959,6 +960,15 @@ function checkPauseControlsEntry() {
     if (!text.includes(required)) {
       violations.push(`${rel(pauseControlsFile)} must own ${required}`);
     }
+  }
+  const entryBody =
+    text.match(/export function runBattlePauseControlsAutomation\([^)]*\) \{[\s\S]*?\n\}/)
+      ?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_INSTALL\]/.test(text)) {
+    violations.push(`${rel(pauseControlsFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${rel(pauseControlsFile)} entry must dispatch by handler table`);
   }
   for (const direct of [
     /readOptionField\(["']pauseButton["']/,

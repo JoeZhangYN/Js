@@ -22,6 +22,7 @@ function requireText(relative, required) {
 
 const ownerText = requireText(owner, [
   "BattlePauseControlsEvent",
+  "battlePauseControlsEventHandlers",
   "runBattlePauseControlsAutomation",
   "PAUSE_BUTTON_OPTION_KEY",
   "PAUSE_HOTKEY_OPTION_KEY",
@@ -31,7 +32,12 @@ const ownerText = requireText(owner, [
   "BattlePauseEvent.TOGGLE",
   "runBattleTurnAutomation",
 ]);
-requireText(ownerTest, ["pauseButton", "pauseHotkey", "pauseHotkeyKey"]);
+requireText(ownerTest, [
+  "pauseButton",
+  "pauseHotkey",
+  "pauseHotkeyKey",
+  "rejects unknown events without touching pause controls",
+]);
 
 if (
   /\bexport\s+(?:function|const)\s+(?!BattlePauseControlsEvent\b|runBattlePauseControlsAutomation\b)/.test(
@@ -39,6 +45,15 @@ if (
   )
 ) {
   violations.push(`${owner.replaceAll("\\", "/")} may export only its event entry`);
+}
+const entryBody =
+  ownerText.match(/export function runBattlePauseControlsAutomation\([^)]*\) \{[\s\S]*?\n\}/)
+    ?.[0] || "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_INSTALL\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 for (const [constant, key] of [
   ["PAUSE_BUTTON_OPTION_KEY", "pauseButton"],

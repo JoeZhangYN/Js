@@ -13,6 +13,10 @@ export const BattlePauseControlsEvent = Object.freeze({
   INSTALL: EVENT_INSTALL,
 });
 
+const battlePauseControlsEventHandlers = Object.freeze({
+  [EVENT_INSTALL]: (_event, deps) => installControls(deps),
+});
+
 function togglePause(deps) {
   deps.runPauseToggle({ resume: deps.resume });
 }
@@ -62,6 +66,5 @@ export function runBattlePauseControlsAutomation(
     resume: runBattleTurnAutomation,
   }
 ) {
-  if (event.type === EVENT_INSTALL) return installControls(deps);
-  return false;
+  return battlePauseControlsEventHandlers[event.type]?.(event, deps) ?? false;
 }
