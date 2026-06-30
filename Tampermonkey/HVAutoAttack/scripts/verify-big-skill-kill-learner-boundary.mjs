@@ -192,6 +192,24 @@ for (const legacy of ["recordBigSkillCast", "finalizeBigSkillPending", "ofcWillK
   }
 }
 
+if (!ownerText.includes("const bigSkillKillLearningEventHandlers")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route big-skill kill learning events through a handler table`
+  );
+}
+const ownerEntry =
+  ownerText.match(/export function runBigSkillKillLearningAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+}
+for (const internal of ["recordBigSkillCast(", "finalizeBigSkillPending(", "ofcWillKillBoss("]) {
+  if (ownerEntry.includes(internal)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must dispatch through bigSkillKillLearningEventHandlers`
+    );
+  }
+}
+
 if (violations.length) {
   console.error("[verify-big-skill-kill-learner-boundary] FAIL");
   for (const v of violations) console.error(`- ${v}`);

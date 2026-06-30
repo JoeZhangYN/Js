@@ -1,6 +1,8 @@
 // F4 回归锁：OFC 击杀结果记忆 + ofcWillKillBoss 守卫。钉死「跳 Imperil 需正面证据，否则保留」。
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { g } from "./store.js";
+import { getValue } from "./storage.js";
+import { STORAGE_KEYS } from "./persist-keys.js";
 import {
   BigSkillKillLearningEvent,
   runBigSkillKillLearningAutomation,
@@ -134,6 +136,10 @@ describe("finalize 学击杀率 + ofcWillKillBoss 守卫", () => {
   it("未知 MID → false", () => {
     learnHigh();
     expect(willKill(999, ready, { skipImperilWhenOfcKills: true }).skip).toBe(false);
+    const learned = getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true);
+    g("bigKillPending", { globalTurn: 1, skill: "OFC", bosses: [observedBoss] });
+    expect(runBigSkillKillLearningAutomation({ type: "unknown" })).toBeUndefined();
+    expect([g("bigKillPending"), getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true)]).toEqual([{ globalTurn: 1, skill: "OFC", bosses: [observedBoss] }, learned]);
   });
 
   it("日志开关通过 option entry 读取", () => {

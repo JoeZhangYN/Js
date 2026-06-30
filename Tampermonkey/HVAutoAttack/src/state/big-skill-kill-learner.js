@@ -156,9 +156,12 @@ function ofcWillKillBoss(event) {
   return { skip: true, confidence: sk.killProbNoIm };
 }
 
+const bigSkillKillLearningEventHandlers = Object.freeze({
+  [EVENT_RECORD_CAST]: (event) => recordBigSkillCast(event.code, event),
+  [EVENT_FINALIZE_PENDING]: (event) => finalizeBigSkillPending(event),
+  [EVENT_WILL_KILL_BOSS]: (event) => ofcWillKillBoss(event),
+});
+
 export function runBigSkillKillLearningAutomation(event = { type: EVENT_WILL_KILL_BOSS }) {
-  if (event.type === EVENT_RECORD_CAST) return recordBigSkillCast(event.code, event);
-  if (event.type === EVENT_FINALIZE_PENDING) return finalizeBigSkillPending(event);
-  if (event.type === EVENT_WILL_KILL_BOSS) return ofcWillKillBoss(event);
-  return undefined;
+  return bigSkillKillLearningEventHandlers[event.type]?.(event);
 }
