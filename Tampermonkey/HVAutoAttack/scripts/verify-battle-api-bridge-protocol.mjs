@@ -30,6 +30,7 @@ const ownerText = requireText(owner, [
   "__HVAA_MAGIC_DELAY_SESSION_KEY__",
   "__HVAA_ACTION_DELAY_SESSION_KEY__",
   "BattleApiBridgeEvent",
+  "battleApiBridgeEventHandlers",
   "runBattleApiBridgeAutomation",
   "OptionEvent.READ_FIELD",
 ]);
@@ -46,6 +47,15 @@ if (
   )
 ) {
   violations.push(`${owner.replaceAll("\\", "/")} may export only its event entry`);
+}
+const entryBody =
+  ownerText.match(/export function runBattleApiBridgeAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_INSTALL\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (/document\.getElementById\(["']event(Start|End)["']\)/.test(ownerText)) {
   violations.push(

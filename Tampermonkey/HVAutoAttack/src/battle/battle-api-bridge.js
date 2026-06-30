@@ -12,6 +12,10 @@ export const BattleApiBridgeEvent = Object.freeze({
   INSTALL: EVENT_INSTALL,
 });
 
+const battleApiBridgeEventHandlers = Object.freeze({
+  [EVENT_INSTALL]: (event, deps) => installBridge(deps),
+});
+
 function buildApiCallScript(mainUrl, protocol) {
   return `api_call = ${function (b, a, d) {
     const delay = window.sessionStorage.__HVAA_MAGIC_DELAY_SESSION_KEY__ * 1;
@@ -114,6 +118,5 @@ export function runBattleApiBridgeAutomation(
     mainUrl: MAIN_URL,
   }
 ) {
-  if (event.type === EVENT_INSTALL) return installBridge(deps);
-  return false;
+  return battleApiBridgeEventHandlers[event.type]?.(event, deps) ?? false;
 }
