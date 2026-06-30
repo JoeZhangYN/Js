@@ -8,6 +8,7 @@ import { decideCastDebuffOnAll } from "../debuff/decide-cast-all.js";
 import { decideAttack } from "../attack/decide-attack.js";
 import { decideGemUse, decidePotion, decideStallTopup, decideScroll } from "../item/decide-item.js";
 import { decideCriticalBuff } from "../critical-buff-guard/decide-critical-buff.js";
+import { criticalBuffFacts } from "../critical-buff-guard/critical-buff-facts.js";
 import { decideDefend } from "../defense/decide-defend.js";
 import { decideAutoPause } from "../pause/decide-auto-pause.js";
 import { decideFlee } from "../escape/decide-flee.js";
@@ -17,13 +18,7 @@ import { allDebuffFacts, burstControlFacts, singleDebuffFacts } from "../debuff/
 import { buffFacts, channelFacts, infusionFacts } from "../buff/buff-facts.js";
 import { attackFacts } from "./attack-facts.js";
 import { gemFacts, potionFacts, scrollFacts, stallTopupFacts } from "../item/item-facts.js";
-import {
-  autoPauseFacts,
-  bossImperilFacts,
-  criticalBuffFacts,
-  defendFacts,
-  fleeFacts,
-} from "./rule-facts.js";
+import { autoPauseFacts, bossImperilFacts, defendFacts, fleeFacts } from "./rule-facts.js";
 
 /** @type {import("../../core/types.js").BattleRule[]} */
 export const BATTLE_RULES = [

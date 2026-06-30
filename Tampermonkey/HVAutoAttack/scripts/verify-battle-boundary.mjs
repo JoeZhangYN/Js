@@ -67,6 +67,10 @@ const burstControlFile = path.join(root, "src/battle/debuff/decide-burst-control
 const decideDeSkillFile = path.join(root, "src/battle/debuff/decide-de-skill.js");
 const decideCastAllFile = path.join(root, "src/battle/debuff/decide-cast-all.js");
 const debuffFactsFile = path.join(root, "src/battle/debuff/debuff-facts.js");
+const criticalBuffFactsFile = path.join(
+  root,
+  "src/battle/critical-buff-guard/critical-buff-facts.js"
+);
 const decideDefendFile = path.join(root, "src/battle/defense/decide-defend.js");
 const decideAutoPauseFile = path.join(root, "src/battle/pause/decide-auto-pause.js");
 const decideFleeFile = path.join(root, "src/battle/escape/decide-flee.js");
@@ -1722,6 +1726,7 @@ function checkBattleRuleFactMappers() {
   const itemFactsText = fs.readFileSync(itemFactsFile, "utf8");
   const buffFactsText = fs.readFileSync(buffFactsFile, "utf8");
   const debuffFactsText = fs.readFileSync(debuffFactsFile, "utf8");
+  const criticalBuffFactsText = fs.readFileSync(criticalBuffFactsFile, "utf8");
   for (const required of [
     "conditionFacts",
     "fleeFacts",
@@ -1750,6 +1755,11 @@ function checkBattleRuleFactMappers() {
       );
     }
   }
+  if (/export\s+function\s+criticalBuffFacts\s*\(/.test(ruleFactsText)) {
+    violations.push(
+      `${rel(ruleFactsFile)} critical buff fact mapper belongs in critical buff guard facts`
+    );
+  }
   for (const required of ["gemFacts", "potionFacts", "stallTopupFacts", "scrollFacts"]) {
     if (!itemFactsText.includes(required)) {
       violations.push(`${rel(itemFactsFile)} must own item fact mapper ${required}`);
@@ -1773,6 +1783,12 @@ function checkBattleRuleFactMappers() {
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(debuffFactsText)) {
     violations.push(`${rel(debuffFactsFile)} must not depend on generic rule fact mappers`);
+  }
+  if (!criticalBuffFactsText.includes("criticalBuffFacts")) {
+    violations.push(`${rel(criticalBuffFactsFile)} must own critical buff fact mapper`);
+  }
+  if (/from\s+["'][^"']*rule-facts\.js["']/.test(criticalBuffFactsText)) {
+    violations.push(`${rel(criticalBuffFactsFile)} must not depend on generic rule fact mappers`);
   }
   const rulesText = fs.readFileSync(battleRulesFile, "utf8");
   if (/conditionFacts\s*:\s*conditionFacts\s*\(\s*snap\s*\)/.test(rulesText)) {

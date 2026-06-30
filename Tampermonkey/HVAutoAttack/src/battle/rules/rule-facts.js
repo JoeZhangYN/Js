@@ -19,13 +19,6 @@ export function bossImperilFacts(snap) {
   };
 }
 
-export function criticalBuffFacts(snap) {
-  return {
-    manaPercent: snap?.mp,
-    playerEffects: snap?.playerEffects,
-  };
-}
-
 const conditionOnlyFacts = (snap) => ({ conditionFacts: conditionFacts(snap) });
 
 export const fleeFacts = conditionOnlyFacts;
