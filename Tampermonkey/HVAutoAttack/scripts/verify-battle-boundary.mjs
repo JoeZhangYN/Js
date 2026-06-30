@@ -995,6 +995,29 @@ function checkBattleRulesRuntimeContext() {
       `${rel(stepRunnerFile)} must not support legacy rule.when gates; decide returns noop instead`
     );
   }
+  const allowedRuleChainImporters = new Set([actionDecisionFile]);
+  const battleDir = path.join(root, "src/battle");
+  for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+      continue;
+    }
+    const file = path.join(entry.parentPath, entry.name);
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      file !== battleRulesFile &&
+      /from\s+["'][^"']*rules\/index\.js["']/.test(source) &&
+      !allowedRuleChainImporters.has(file)
+    ) {
+      violations.push(`${rel(file)} must use runBattleActionDecision(), not BATTLE_RULES`);
+    }
+    if (
+      file !== stepRunnerFile &&
+      /from\s+["'][^"']*step-runner\.js["']/.test(source) &&
+      !allowedRuleChainImporters.has(file)
+    ) {
+      violations.push(`${rel(file)} must use runBattleActionDecision(), not runRules`);
+    }
+  }
 }
 
 function checkBattleDebuffCoverage() {
