@@ -31,7 +31,7 @@ describe("runBattleLogTelemetry", () => {
     expect(mocks.estimatePerMonsterDps).toHaveBeenCalledWith(result.battleLog, 2);
   });
 
-  it("returns empty telemetry for unknown events", () => {
+  it("rejects unknown events without parsing or estimating telemetry", () => {
     expect(runBattleLogTelemetry({ type: "unknown", turn: 3 })).toEqual({
       battleLog: [],
       playerIncomingDps: {
@@ -47,5 +47,6 @@ describe("runBattleLogTelemetry", () => {
     });
     expect(mocks.parseBattleLog).not.toHaveBeenCalled();
     expect(mocks.estimatePlayerIncomingDps).not.toHaveBeenCalled();
+    expect(mocks.estimatePerMonsterDps).not.toHaveBeenCalled();
   });
 });
