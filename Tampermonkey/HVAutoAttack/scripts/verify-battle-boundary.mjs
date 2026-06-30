@@ -74,6 +74,7 @@ const bossImperilFile = path.join(root, "src/battle/debuff/decide-boss-imperil.j
 const legacyBigSkillFile = path.join(root, "src/battle/rules/big-skill.js");
 const legacyBossImperilFile = path.join(root, "src/battle/rules/decide-boss-imperil.js");
 const burstControlFile = path.join(root, "src/battle/debuff/decide-burst-control.js");
+const decideOffensiveDebuffFile = path.join(root, "src/battle/debuff/decide-offensive-debuff.js");
 const decideDeSkillFile = path.join(root, "src/battle/debuff/decide-de-skill.js");
 const decideCastAllFile = path.join(root, "src/battle/debuff/decide-cast-all.js");
 const debuffFactsFile = path.join(root, "src/battle/debuff/debuff-facts.js");
@@ -394,11 +395,8 @@ function checkTurnEntry() {
   ]);
   for (const required of [
     "offensiveDebuffActionRules",
-    "burstControl",
-    "bossImperil",
-    "castWeakenAll",
-    "castImperilAll",
-    "useDeSkill",
+    "applyOffensiveDebuffs",
+    "decideOffensiveDebuff",
   ]) {
     if (!debuffActionSequenceText.includes(required)) {
       violations.push(`${rel(debuffActionSequenceFile)} must own debuff action ${required}`);
@@ -1244,8 +1242,16 @@ function checkBossImperilEntry() {
     violations.push(`${rel(bossImperilFile)} must not consume snap-shaped event input`);
   }
   const rulesText = readBattleActionRulesText();
-  if (!rulesText.includes("runBossImperilAutomation")) {
-    violations.push(`${rel(battleRulesFile)} must read boss Imperil decisions through their entry`);
+  const offensiveDebuffText = fs.existsSync(decideOffensiveDebuffFile)
+    ? fs.readFileSync(decideOffensiveDebuffFile, "utf8")
+    : "";
+  if (
+    !rulesText.includes("runBossImperilAutomation") &&
+    !offensiveDebuffText.includes("runBossImperilAutomation")
+  ) {
+    violations.push(
+      `${rel(decideOffensiveDebuffFile)} must read boss Imperil decisions through their entry`
+    );
   }
   for (const call of rulesText.matchAll(/runBossImperilAutomation\s*\(\s*\{[\s\S]*?\}\s*\)/g)) {
     if (/\bsnap\s*:/.test(call[0])) {
@@ -1375,6 +1381,77 @@ function checkBurstControlEntry() {
   }
   if (rulesText.includes("burstControlSwitch")) {
     violations.push(`${rel(battleRulesFile)} must not assemble burst-control gates directly`);
+  }
+}
+
+function checkOffensiveDebuffEntry() {
+  const ownerText = fs.readFileSync(decideOffensiveDebuffFile, "utf8");
+  for (const required of [
+    "decideOffensiveDebuff",
+    "decideBurstControl",
+    "runBossImperilAutomation",
+    "decideCastDebuffOnAll",
+    "decideDeSkill",
+    'debuffKey: "We"',
+    'debuffKey: "Im"',
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideOffensiveDebuffFile)} must own offensive debuff ${required}`);
+    }
+  }
+  if (
+    !/for\s*\(\s*const\s+decide\s+of\s+\[\s*decideBurstControl,\s*runBossImperilAutomation,[\s\S]*decideDeSkill,\s*\]/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideOffensiveDebuffFile)} must own offensive debuff order`);
+  }
+
+  const rulesText = readBattleActionRulesText();
+  const offensiveDebuffRule =
+    rulesText.match(/name:\s*["']applyOffensiveDebuffs["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] ||
+    "";
+  if (!offensiveDebuffRule.includes("decideOffensiveDebuff")) {
+    violations.push(`${rel(battleRulesFile)} must route offensive debuffs through one entry`);
+  }
+  for (const legacyRule of [
+    "burstControl",
+    "bossImperil",
+    "castWeakenAll",
+    "castImperilAll",
+    "useDeSkill",
+  ]) {
+    if (new RegExp(`name:\\s*["']${legacyRule}["']`).test(rulesText)) {
+      violations.push(`${rel(battleRulesFile)} must not split offensive debuff rule ${legacyRule}`);
+    }
+  }
+
+  const battleDir = path.join(root, "src/battle");
+  for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+      continue;
+    }
+    const file = path.join(entry.parentPath, entry.name);
+    if (
+      file === decideOffensiveDebuffFile ||
+      file === burstControlFile ||
+      file === bossImperilFile ||
+      file === decideCastAllFile ||
+      file === decideDeSkillFile
+    ) {
+      continue;
+    }
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      /from\s+["'][^"']*debuff\/decide-(?:burst-control|boss-imperil|cast-all|de-skill)\.js["']/.test(
+        source
+      ) ||
+      /\b(?:decideBurstControl|runBossImperilAutomation|decideCastDebuffOnAll|decideDeSkill)\s*\(/.test(
+        source
+      )
+    ) {
+      violations.push(`${rel(file)} must call offensive debuffs through decideOffensiveDebuff`);
+    }
   }
 }
 
@@ -2235,6 +2312,7 @@ checkBattleDebuffCoverage();
 checkBossImperilEntry();
 checkBigSkillDebuffEntry();
 checkBurstControlEntry();
+checkOffensiveDebuffEntry();
 checkCriticalBuffEntry();
 checkBuffPreparationEntry();
 checkInfusionEntry();

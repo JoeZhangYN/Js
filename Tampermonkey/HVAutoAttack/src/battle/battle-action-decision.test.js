@@ -18,12 +18,8 @@ const RULE_INDEX = Object.freeze({
   defend: 6,
   useScroll: 7,
   prepareBuffs: 8,
-  burstControl: 9,
-  bossImperil: 10,
-  castWeakenAll: 11,
-  castImperilAll: 12,
-  useDeSkill: 13,
-  attack: 14,
+  applyOffensiveDebuffs: 9,
+  attack: 10,
 });
 
 function dispatchedResults(snap = {}, opt = {}) {
@@ -36,7 +32,7 @@ function dispatchedResults(snap = {}, opt = {}) {
 describe("runBattleActionDecision", () => {
   it("owns the full action rule order", () => {
     const results = dispatchedResults();
-    expect(results).toHaveLength(15);
+    expect(results).toHaveLength(11);
     expect(results.map((result) => result.kind)).toEqual([
       "noop",
       "noop",
@@ -46,10 +42,6 @@ describe("runBattleActionDecision", () => {
       "item-plan",
       "noop",
       "item-plan",
-      "noop",
-      "noop",
-      "noop",
-      "noop",
       "noop",
       "noop",
       "attack-plan",
@@ -98,9 +90,11 @@ describe("runBattleActionDecision rule contracts", () => {
     expect(dispatchedResults({ channeling: true })[RULE_INDEX.prepareBuffs]).toEqual({
       kind: "noop",
     });
-    expect(dispatchedResults({ view: [] })[RULE_INDEX.useDeSkill]).toEqual({ kind: "noop" });
+    expect(dispatchedResults({ view: [] })[RULE_INDEX.applyOffensiveDebuffs]).toEqual({
+      kind: "noop",
+    });
     expect(
-      dispatchedResults({ skillReady: { 213: false }, view: [] })[RULE_INDEX.bossImperil]
+      dispatchedResults({ skillReady: { 213: false }, view: [] })[RULE_INDEX.applyOffensiveDebuffs]
     ).toEqual({
       kind: "noop",
     });
@@ -127,19 +121,20 @@ describe("runBattleActionDecision stall Imperil contract", () => {
     ...over,
   });
 
-  it("stall 中 bossImperil 和 castImperilAll 由各自入口跳过", () => {
+  it("stall 中 debuff 入口跳过 boss imperil 和全体 Imperil", () => {
     const results = dispatchedResults(stallSnap(), {
       stallMode: true,
       debuffSkillSwitch: true,
       debuffSkillAllIm: true,
     });
 
-    expect(results[RULE_INDEX.bossImperil]).toEqual({ kind: "noop" });
-    expect(results[RULE_INDEX.castImperilAll]).toEqual({ kind: "noop" });
+    expect(results[RULE_INDEX.applyOffensiveDebuffs]).toEqual({ kind: "noop" });
   });
 
   it("stallMode:false 时 bossImperil 恢复", () => {
-    expect(dispatchedResults(stallSnap(), { stallMode: false })[RULE_INDEX.bossImperil]).toEqual({
+    expect(
+      dispatchedResults(stallSnap(), { stallMode: false })[RULE_INDEX.applyOffensiveDebuffs]
+    ).toEqual({
       kind: "click-skill-then-target",
       skillId: "213",
       targetId: 1,
@@ -151,7 +146,7 @@ describe("runBattleActionDecision stall Imperil contract", () => {
       dispatchedResults({
         skillReady: { 213: true },
         view: [{ id: 1, order: 0, isDead: false, isBoss: true, buffs: [] }],
-      })[RULE_INDEX.bossImperil]
+      })[RULE_INDEX.applyOffensiveDebuffs]
     ).toEqual({
       kind: "click-skill-then-target",
       skillId: "213",
@@ -160,6 +155,6 @@ describe("runBattleActionDecision stall Imperil contract", () => {
   });
 
   it("burstControl 未开启时入口自行返回 noop", () => {
-    expect(dispatchedResults()[RULE_INDEX.burstControl]).toEqual({ kind: "noop" });
+    expect(dispatchedResults()[RULE_INDEX.applyOffensiveDebuffs]).toEqual({ kind: "noop" });
   });
 });
