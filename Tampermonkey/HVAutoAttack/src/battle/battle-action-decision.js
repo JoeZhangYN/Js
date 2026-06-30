@@ -1,5 +1,5 @@
 // 战斗行动决策链入口：决策上下文、step 顺序和 acted 短路语义统一收敛在这里。
-import { decideAttackAction } from "./attack/decide-attack-action.js";
+import { BattleAttackActionEvent, runBattleAttackAction } from "./attack/decide-attack-action.js";
 import {
   BattleActionEffectDispatchEvent,
   runBattleActionEffectDispatch,
@@ -33,7 +33,12 @@ const ACTION_STEPS = [
       snap,
       opt,
     }),
-  decideAttackAction,
+  (snap, opt) =>
+    runBattleAttackAction({
+      type: BattleAttackActionEvent.DECIDE,
+      snap,
+      opt,
+    }),
 ];
 
 export function runBattleActionDecision(turnContext = {}) {

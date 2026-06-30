@@ -387,14 +387,15 @@ function checkTurnEntry() {
     "runBattleBuffPreparation",
     "BattleOffensiveDebuffEvent.DECIDE",
     "runBattleOffensiveDebuff",
-    "decideAttackAction",
+    "BattleAttackActionEvent.DECIDE",
+    "runBattleAttackAction",
   ]) {
     if (!actionDecisionText.includes(required)) {
       violations.push(`${rel(actionDecisionFile)} must own action decision ${required}`);
     }
   }
   if (
-    !/const ACTION_STEPS = \[\s*\(snap,\s*opt\)\s*=>[\s\S]*runBattleSurvivalAction[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleBuffPreparation[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleOffensiveDebuff[\s\S]*decideAttackAction,\s*\]/.test(
+    !/const ACTION_STEPS = \[\s*\(snap,\s*opt\)\s*=>[\s\S]*runBattleSurvivalAction[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleBuffPreparation[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleOffensiveDebuff[\s\S]*\(snap,\s*opt\)\s*=>[\s\S]*runBattleAttackAction[\s\S]*\]/.test(
       actionDecisionText
     )
   ) {
@@ -2299,10 +2300,23 @@ function checkAttackEntry() {
     violations.push(`${rel(decideAttackFile)} must pass ranking debug option into attack ranking`);
   }
   const attackActionText = fs.readFileSync(decideAttackActionFile, "utf8");
-  for (const required of ["decideAttackAction", "attackFacts", "decideAttack"]) {
+  for (const required of [
+    "BattleAttackActionEvent",
+    "DECIDE",
+    "runBattleAttackAction",
+    "attackFacts",
+    "decideAttack",
+  ]) {
     if (!attackActionText.includes(required)) {
       violations.push(`${rel(decideAttackActionFile)} must own attack action ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleAttackActionEvent\b|runBattleAttackAction\b)/.test(
+      attackActionText
+    )
+  ) {
+    violations.push(`${rel(decideAttackActionFile)} may export only its event entry`);
   }
   const scoringText = fs.readFileSync(physicalSkillScoringFile, "utf8");
   for (const required of ["scorePhysicalSkillCandidates", "event.skillReady", "skillBaseScore"]) {
@@ -2329,8 +2343,14 @@ function checkAttackEntry() {
   const rulesText = readBattleActionRulesText();
   const attackRule =
     rulesText.match(/name:\s*["']attack["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
-  if (!rulesText.includes("decideAttackAction")) {
+  if (
+    !rulesText.includes("BattleAttackActionEvent.DECIDE") ||
+    !rulesText.includes("runBattleAttackAction")
+  ) {
     violations.push(`${rel(battleRulesFile)} must route attack through decideAttackAction`);
+  }
+  if (/decideAttackAction\(\s*snap\s*,\s*actionOptions\s*\)/.test(rulesText)) {
+    violations.push(`${rel(battleRulesFile)} must not call attack action through old two-arg path`);
   }
   if (/decideAttack\(\s*opt\s*,\s*snap\s*\)/.test(attackRule)) {
     violations.push(`${rel(battleRulesFile)} must pass attack facts, not snap`);

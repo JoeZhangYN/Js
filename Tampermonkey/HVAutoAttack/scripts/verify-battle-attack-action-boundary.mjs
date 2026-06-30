@@ -1,0 +1,78 @@
+import fs from "node:fs";
+import path from "node:path";
+
+const root = process.cwd();
+const owner = path.normalize("src/battle/attack/decide-attack-action.js");
+const ownerTest = path.normalize("src/battle/attack/decide-attack-action.test.js");
+const actionDecision = path.normalize("src/battle/battle-action-decision.js");
+const violations = [];
+
+function read(relative) {
+  return fs.readFileSync(path.join(root, relative), "utf8");
+}
+
+function rel(relative) {
+  return relative.replaceAll("\\", "/");
+}
+
+const ownerText = read(owner);
+const actionDecisionText = read(actionDecision);
+
+for (const required of [
+  "BattleAttackActionEvent",
+  "DECIDE",
+  "runBattleAttackAction",
+  "attackFacts",
+  "decideAttack",
+]) {
+  if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
+}
+
+if (
+  /\bexport\s+(?:function|const)\s+(?!BattleAttackActionEvent\b|runBattleAttackAction\b)/.test(
+    ownerText
+  )
+) {
+  violations.push(`${rel(owner)} may export only its event entry`);
+}
+
+if (!fs.existsSync(path.join(root, ownerTest))) {
+  violations.push(`${rel(ownerTest)} must cover attack action contract`);
+}
+
+if (
+  !actionDecisionText.includes("BattleAttackActionEvent.DECIDE") ||
+  !actionDecisionText.includes("runBattleAttackAction")
+) {
+  violations.push(`${rel(actionDecision)} must route attack through its entry`);
+}
+if (/decideAttackAction\(\s*snap\s*,\s*(?:opt|actionOptions)\s*\)/.test(actionDecisionText)) {
+  violations.push(`${rel(actionDecision)} must not call attack action through old two-arg path`);
+}
+
+for (const relative of ["src/battle", "src/core"]) {
+  const dir = path.join(root, relative);
+  for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+      continue;
+    }
+    const file = path.join(entry.parentPath, entry.name);
+    const normalized = path.normalize(path.relative(root, file));
+    if (normalized === owner || normalized === actionDecision) continue;
+    const text = fs.readFileSync(file, "utf8");
+    if (/from\s+["'][^"']*attack\/decide-attack-action\.js["']/.test(text)) {
+      violations.push(`${rel(normalized)} must not bypass runBattleActionDecision`);
+    }
+    if (/decideAttackAction\(\s*[^)]*,\s*[^)]*\)/.test(text)) {
+      violations.push(`${rel(normalized)} must not call retired attack action two-arg path`);
+    }
+  }
+}
+
+if (violations.length) {
+  console.error("[verify-battle-attack-action-boundary] FAIL");
+  for (const v of violations) console.error(`- ${v}`);
+  process.exit(1);
+}
+
+console.log("[verify-battle-attack-action-boundary] OK - attack action is behind one entry");

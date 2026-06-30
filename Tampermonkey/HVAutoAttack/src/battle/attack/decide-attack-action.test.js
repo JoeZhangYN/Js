@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { decideAttackAction } from "./decide-attack-action.js";
+import { BattleAttackActionEvent, runBattleAttackAction } from "./decide-attack-action.js";
 
-describe("decideAttackAction", () => {
+function decide(snap, opt) {
+  return runBattleAttackAction({
+    type: BattleAttackActionEvent.DECIDE,
+    snap,
+    opt,
+  });
+}
+
+describe("runBattleAttackAction", () => {
   it("accepts snap and options as the attack action entry", () => {
     expect(
-      decideAttackAction(
+      decide(
         {
           view: [{ id: 7, order: 0, isDead: false, hpAbsNow: 1, hpMax: 1, buffs: [] }],
           playerBuffs: [],
@@ -14,5 +22,9 @@ describe("decideAttackAction", () => {
         {}
       )
     ).toEqual({ kind: "attack-plan", plan: { type: "default", targetId: 7 } });
+  });
+
+  it("rejects unknown events as no action", () => {
+    expect(runBattleAttackAction({ type: "unknown" })).toEqual({ kind: "noop" });
   });
 });
