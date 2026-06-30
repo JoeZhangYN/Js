@@ -1070,6 +1070,14 @@ function checkBossImperilEntry() {
       violations.push(`${rel(bossImperilFile)} must consume ${required}`);
     }
   }
+  if (!ownerText.includes("runBigSkillDebuffAutomation")) {
+    violations.push(`${rel(bossImperilFile)} must ask big-skill debuff entry for F4 skips`);
+  }
+  if (
+    /runBigSkillKillLearningAutomation|BigSkillKillLearningEvent|WILL_KILL_BOSS/.test(ownerText)
+  ) {
+    violations.push(`${rel(bossImperilFile)} must not call big-skill kill learner directly`);
+  }
   if (/\bevent\.snap\b/.test(ownerText)) {
     violations.push(`${rel(bossImperilFile)} must not consume snap-shaped event input`);
   }
@@ -1135,7 +1143,7 @@ function checkBigSkillDebuffEntry() {
   if (/\bevent\.snap\b/.test(ownerText)) {
     violations.push(`${rel(bigSkillFile)} must not consume snap-shaped event input`);
   }
-  for (const file of [decideCastAllFile, burstControlFile]) {
+  for (const file of [decideCastAllFile, burstControlFile, bossImperilFile]) {
     const text = fs.readFileSync(file, "utf8");
     if (!text.includes("runBigSkillDebuffAutomation")) {
       violations.push(`${rel(file)} must read big-skill debuff decisions through their entry`);
@@ -1148,6 +1156,10 @@ function checkBigSkillDebuffEntry() {
         violations.push(`${rel(file)} must pass narrow facts, not snap, to big-skill debuff entry`);
       }
     }
+  }
+  const castAllText = fs.readFileSync(decideCastAllFile, "utf8");
+  if (/\bbigSkillDebuffFacts\b/.test(castAllText)) {
+    violations.push(`${rel(decideCastAllFile)} must not project big-skill boss facts locally`);
   }
 }
 

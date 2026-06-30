@@ -28,21 +28,6 @@ const ALL_DEBUFF_GATES = {
   },
 };
 
-function bigSkillDebuffFacts(event) {
-  const monsterFacts = (event?.monsterFacts || []).map((monster) => ({
-    monsterId: monster.monsterId,
-    isBoss: monster.isBoss,
-    isDead: monster.isDead,
-    hpMax: monster.hpMax,
-  }));
-  return {
-    skillCooldowns: event?.skillCooldowns,
-    overcharge: event?.overcharge,
-    aliveCount: event?.aliveCount,
-    monsterFacts,
-  };
-}
-
 /**
  * 决定全员 debuff 该施给哪只怪物，返 ActionResult。
  * @param {object} event
@@ -102,7 +87,10 @@ function shouldSkipDebuffForBigSkill(opt, event, kind) {
     type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
     opt,
     kind,
-    ...bigSkillDebuffFacts(event),
+    skillCooldowns: event?.skillCooldowns,
+    overcharge: event?.overcharge,
+    aliveCount: event?.aliveCount,
+    monsterFacts: event?.monsterFacts,
   });
 }
 

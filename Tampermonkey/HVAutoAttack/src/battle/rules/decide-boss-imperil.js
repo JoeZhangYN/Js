@@ -7,10 +7,7 @@
 import { aliveByOrder } from "../monster-view.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { bossCoverageWindow } from "../target-strategy.js";
-import {
-  BigSkillKillLearningEvent,
-  runBigSkillKillLearningAutomation,
-} from "../../state/big-skill-kill-learner.js";
+import { BigSkillDebuffEvent, runBigSkillDebuffAutomation } from "./big-skill.js";
 
 const EVENT_CAN_CAST = "canCast";
 const EVENT_DECIDE = "decide";
@@ -35,21 +32,15 @@ function canCastBossImperil(event) {
     return false;
   }
   if (opt?.debuffSkillSwitch === false || !event?.imperilSkillReady) return false;
-  const skillCooldowns = event?.skillCooldowns || {};
-  const bosses = (event?.monsterFacts || []).filter((m) => m.isBoss && !m.isDead);
   if (
-    bosses.length &&
-    bosses.every(
-      (b) =>
-        runBigSkillKillLearningAutomation({
-          type: BigSkillKillLearningEvent.WILL_KILL_BOSS,
-          mid: b.monsterId,
-          ofcCooldown: skillCooldowns.OFC,
-          overcharge: event?.overcharge,
-          bossHpMax: b.hpMax,
-          opt,
-        }).skip
-    )
+    runBigSkillDebuffAutomation({
+      type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
+      opt,
+      kind: "Im",
+      skillCooldowns: event?.skillCooldowns,
+      overcharge: event?.overcharge,
+      monsterFacts: event?.monsterFacts,
+    })
   ) {
     return false;
   }
