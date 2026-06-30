@@ -53,11 +53,12 @@ const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const turnContextFile = path.join(root, "src/battle/turn-context.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
+const actionSequenceFile = path.join(root, "src/battle/battle-action-sequence.js");
 const legacyStepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/battle-round-start.js");
 const legacyNewRoundFile = path.join(root, "src/battle/new-round.js");
-const battleRulesFile = actionDecisionFile;
+const battleRulesFile = actionSequenceFile;
 const legacyBattleRulesFile = path.join(root, "src/battle/rules/index.js");
 const ruleFactsFile = path.join(root, "src/battle/rules/rule-facts.js");
 const attackFactsFile = path.join(root, "src/battle/attack/attack-facts.js");
@@ -308,10 +309,28 @@ function checkTurnEntry() {
       `${rel(legacyBattleRulesFile)} must stay retired; action rules belong inside runBattleActionDecision`
     );
   }
-  for (const required of ["BATTLE_RULES", "dispatch", "for (const rule of BATTLE_RULES)"]) {
+  for (const required of [
+    "orderedBattleActionRules",
+    "dispatch",
+    "for (const rule of orderedBattleActionRules())",
+  ]) {
     if (!actionDecisionText.includes(required)) {
       violations.push(`${rel(actionDecisionFile)} must own action decision ${required}`);
     }
+  }
+  const actionSequenceText = fs.readFileSync(actionSequenceFile, "utf8");
+  for (const required of [
+    "BATTLE_RULES",
+    "orderedBattleActionRules",
+    "criticalBuffGuard",
+    "attack",
+  ]) {
+    if (!actionSequenceText.includes(required)) {
+      violations.push(`${rel(actionSequenceFile)} must own action sequence ${required}`);
+    }
+  }
+  if (/export\s+const\s+BATTLE_RULES\b/.test(actionSequenceText)) {
+    violations.push(`${rel(actionSequenceFile)} must keep BATTLE_RULES private`);
   }
   if (fs.existsSync(legacyStepRunnerFile)) {
     violations.push("src/battle/step-runner.js legacy action runner must stay deleted");
@@ -324,6 +343,12 @@ function checkTurnEntry() {
       const source = fs.readFileSync(file, "utf8");
       if (file !== actionDecisionFile && /from\s+["'][^"']*rules\/index\.js["']/.test(source)) {
         violations.push(`${rel(file)} must use runBattleActionDecision(), not rules/index.js`);
+      }
+      if (
+        file !== actionDecisionFile &&
+        /from\s+["'][^"']*battle-action-sequence\.js["']/.test(source)
+      ) {
+        violations.push(`${rel(file)} must use runBattleActionDecision(), not action sequence`);
       }
     }
   }

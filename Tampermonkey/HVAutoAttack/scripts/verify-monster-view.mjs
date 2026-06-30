@@ -1,4 +1,4 @@
-// 反退化 probe（拆桥）：决策层（decide-*.js + action decision 组合根）的目标选择与血量读取
+// 反退化 probe（拆桥）：决策层（decide-*.js + action sequence 组合根）的目标选择与血量读取
 // 必须走统一怪物视图 snap.view（battle/monster-view.js join）+ target-strategy 具名策略，
 // 不得裸读散落字段或绕过缓存直查库。
 //
@@ -16,9 +16,9 @@ import { stripComments } from "./lib/i18n-probe-lex.mjs";
 
 const SRC_DIR = fileURLToPath(new URL("../src", import.meta.url));
 
-/** scope：决策层 = decide-*.js（非 test）+ action decision 组合根。视图源头不在 scope。 */
+/** scope：决策层 = decide-*.js（非 test）+ action sequence 组合根。视图源头不在 scope。 */
 function isDecideFile(rel) {
-  if (rel === "battle/battle-action-decision.js") return true;
+  if (rel === "battle/battle-action-sequence.js") return true;
   const name = rel.split("/").pop();
   return name.startsWith("decide-") && !name.endsWith(".test.js");
 }
