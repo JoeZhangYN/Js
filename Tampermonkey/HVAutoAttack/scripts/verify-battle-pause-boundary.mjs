@@ -48,10 +48,18 @@ function checkEntry() {
   if (!text.includes("STORAGE_KEYS.DISABLED")) {
     violations.push(`${entry.replaceAll("\\", "/")} must use STORAGE_KEYS.DISABLED`);
   }
-  for (const required of ["STORAGE_KEYS.DISABLED", "delValue(0)"]) {
+  for (const required of ["battlePauseEventHandlers", "STORAGE_KEYS.DISABLED", "delValue(0)"]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} pause wiring`);
     }
+  }
+  const entryBody =
+    text.match(/export function runBattlePauseAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_RENDER_PAUSED\][\s\S]*\[EVENT_PAUSE\]/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${entry.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
 }
 

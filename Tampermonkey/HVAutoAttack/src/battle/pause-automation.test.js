@@ -17,4 +17,11 @@ describe("battle pause automation", () => {
     expect(runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })).toBe(true);
     expect(document.querySelector(".pauseChange").innerHTML).toContain("Continue");
   });
+
+  it("rejects unknown events without touching pause state", () => {
+    expect(runBattlePauseAutomation({ type: "unknown" })).toBe(false);
+
+    expect(getValue(STORAGE_KEYS.DISABLED)).toBeNull();
+    expect(document.querySelector(".pauseChange").innerHTML).toBe("");
+  });
 });

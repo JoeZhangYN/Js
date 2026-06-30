@@ -16,6 +16,13 @@ export const BattlePauseEvent = Object.freeze({
   TOGGLE: EVENT_TOGGLE,
 });
 
+const battlePauseEventHandlers = Object.freeze({
+  [EVENT_RENDER_PAUSED]: () => handleRenderPaused(),
+  [EVENT_RENDER_IF_PAUSED]: () => handleRenderIfPaused(),
+  [EVENT_TOGGLE]: (_event, deps) => handleToggle(deps),
+  [EVENT_PAUSE]: () => handlePause(),
+});
+
 function setPauseButtonText(text) {
   if (gE(".pauseChange")) gE(".pauseChange").innerHTML = text;
 }
@@ -36,27 +43,31 @@ function resumeBattle(resume) {
   resume?.();
 }
 
-export function runBattlePauseAutomation(event = { type: EVENT_PAUSE }, deps = {}) {
-  if (event.type === EVENT_RENDER_PAUSED) {
-    renderPaused();
-    return true;
-  }
-  if (event.type === EVENT_RENDER_IF_PAUSED) {
-    if (!getValue(STORAGE_KEYS.DISABLED)) return false;
-    renderPaused();
-    return true;
-  }
-  if (event.type === EVENT_TOGGLE) {
-    if (getValue(STORAGE_KEYS.DISABLED)) {
-      resumeBattle(deps.resume);
-    } else {
-      pauseBattle();
-    }
-    return true;
-  }
-  if (event.type === EVENT_PAUSE) {
+function handleRenderPaused() {
+  renderPaused();
+  return true;
+}
+
+function handleRenderIfPaused() {
+  if (!getValue(STORAGE_KEYS.DISABLED)) return false;
+  renderPaused();
+  return true;
+}
+
+function handleToggle(deps) {
+  if (getValue(STORAGE_KEYS.DISABLED)) {
+    resumeBattle(deps.resume);
+  } else {
     pauseBattle();
-    return true;
   }
-  return false;
+  return true;
+}
+
+function handlePause() {
+  pauseBattle();
+  return true;
+}
+
+export function runBattlePauseAutomation(event = { type: EVENT_PAUSE }, deps = {}) {
+  return battlePauseEventHandlers[event.type]?.(event, deps) ?? false;
 }
