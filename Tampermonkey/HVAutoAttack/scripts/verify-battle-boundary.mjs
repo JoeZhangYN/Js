@@ -55,6 +55,7 @@ const turnContextFile = path.join(root, "src/battle/turn-context.js");
 const observationLearningFile = path.join(root, "src/battle/battle-observation-learning.js");
 const skillReadinessFile = path.join(root, "src/battle/battle-skill-readiness.js");
 const playerVitalsFile = path.join(root, "src/battle/battle-player-vitals.js");
+const playerEffectsFile = path.join(root, "src/battle/battle-player-effects.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const dispatchFile = path.join(root, "src/battle/dispatch.js");
@@ -1136,6 +1137,21 @@ function checkSnapshot() {
   for (const required of ["BattlePlayerVitalsEvent", "hpAbs", "mpAbs", "spAbs", "hpDeficit"]) {
     if (!playerVitalsText.includes(required)) {
       violations.push(`${rel(playerVitalsFile)} must own ${required}`);
+    }
+  }
+  if (
+    !text.includes("BattlePlayerEffectsEvent.READ_CURRENT") ||
+    !text.includes("runBattlePlayerEffects")
+  ) {
+    violations.push(`${rel(snapshotFile)} must read player effects through one entry`);
+  }
+  if (/#pane_effects|etherTapActiveX2:\s*!!gE|playerBuffs:\s*playerEffects\.map/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not own player effect DOM rules`);
+  }
+  const playerEffectsText = fs.readFileSync(playerEffectsFile, "utf8");
+  for (const required of ["BattlePlayerEffectsEvent", "playerBuffs", "channeling"]) {
+    if (!playerEffectsText.includes(required)) {
+      violations.push(`${rel(playerEffectsFile)} must own ${required}`);
     }
   }
   if (/\bg\(\s*["']skillOTOS["']/.test(text)) {

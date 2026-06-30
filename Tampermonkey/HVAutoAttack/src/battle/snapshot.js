@@ -22,9 +22,10 @@ import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-s
 import { BattleMonsterViewEvent, runBattleMonsterView } from "./battle-monster-view.js";
 import { BattleSkillReadinessEvent, runBattleSkillReadiness } from "./battle-skill-readiness.js";
 import { BattlePlayerVitalsEvent, runBattlePlayerVitals } from "./battle-player-vitals.js";
+import { BattlePlayerEffectsEvent, runBattlePlayerEffects } from "./battle-player-effects.js";
 
 /**
- * 解析一个 effect 容器（玩家 #pane_effects 或怪物 .btm6）内全部 img 为 {img, turns}[]。
+ * 解析一个怪物 effect 容器内全部 img 为 {img, turns}[]。
  * img = effect 图标文件名（/e/<name>.png 的 <name>）；turns = 剩余回合（永续 → Infinity）。
  * @param {Element|null} container
  * @returns {Array<{img: string, turns: number}>}
@@ -36,14 +37,6 @@ function readEffects(container) {
     name: parseEffectName(img), // 显示名（onmouseover 第一个引号串），供 decide 区别于 img 文件名
     turns: parseEffectTurns(img),
   }));
-}
-
-/**
- * 解析玩家 #pane_effects buff 列表。
- * @returns {Array<{img: string, turns: number}>}
- */
-function readPlayerEffects() {
-  return readEffects(gE("#pane_effects"));
 }
 
 /**
@@ -94,7 +87,7 @@ export function collectSnapshot(event = {}) {
     type: BattleMonsterViewEvent.READ_VIEW,
     monsters,
   });
-  const playerEffects = readPlayerEffects();
+  const playerEffects = runBattlePlayerEffects({ type: BattlePlayerEffectsEvent.READ_CURRENT });
   const vitals = runBattlePlayerVitals({ type: BattlePlayerVitalsEvent.READ_CURRENT });
   const spiritEl = gE("#ckey_spirit");
   // 战斗日志只解析一遍，两个 DPS 估计复用同一份 events（避免每 turn 重复全量遍历 textlog）
@@ -118,21 +111,19 @@ export function collectSnapshot(event = {}) {
     turn,
     globalTurn,
     ...vitals,
-    channeling: !!gE('#pane_effects>img[src*="channeling"]'),
+    channeling: playerEffects.channeling,
     spiritOn: isSpiritActive(spiritEl),
     monsters,
     view,
     aliveCount: monsters.filter((m) => !m.isDead).length,
     // 单怪 HP%（0..100，对齐条件里 hp/mp 口径）：供非门表达"濒死的怪不上 debuff"等。从统一视图派生。
     ...monsterHpVars(view),
-    playerBuffs: playerEffects.map((e) => e.img),
-    playerEffectTurns: Object.fromEntries(playerEffects.map((e) => [e.img, e.turns])),
-    // ether-tap 玩家效果事实（attack ether-tap gate 用，避免 decideAttack 再读 DOM）：
-    // 与原 attack.js 同选择器，批在本次 #pane_effects 读里 → 维持"DOM 读一次"。
-    etherTapActiveX2: !!gE('#pane_effects>img[onmouseover*="Ether Tap (x2)"]'),
-    etherTapExpiring: !!gE('#pane_effects>img[src*="wpn_et"][id*="effect_expire"]'),
+    playerBuffs: playerEffects.playerBuffs,
+    playerEffectTurns: playerEffects.playerEffectTurns,
+    etherTapActiveX2: playerEffects.etherTapActiveX2,
+    etherTapExpiring: playerEffects.etherTapExpiring,
     // 深度B：玩家效果明细 [{img,name,turns}]（供 channel/critical 等 decide 用，含显示名+剩余回合）
-    playerEffects,
+    playerEffects: playerEffects.playerEffects,
     // 深度B：宝石按钮文案（供 decideGem，PURE 不读 DOM）；无宝石按钮 → null
     gemName: gE("#ikey_p")?.textContent ?? null,
     cdMap: runCdRuntimeAutomation({ type: CdRuntimeEvent.READ_MAP }),

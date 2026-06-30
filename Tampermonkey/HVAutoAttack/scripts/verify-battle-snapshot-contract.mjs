@@ -31,6 +31,8 @@ const snapshotText = requireText(snapshot, [
   "runBattleSkillReadiness",
   "BattlePlayerVitalsEvent.READ_CURRENT",
   "runBattlePlayerVitals",
+  "BattlePlayerEffectsEvent.READ_CURRENT",
+  "runBattlePlayerEffects",
   "BattleMonsterViewEvent.READ_VIEW",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
@@ -83,6 +85,11 @@ if (
 if (/#vbh|#dvbh|#dvrhd|#dvrm|#dvrs|readPlayerVitals/.test(snapshotText)) {
   violations.push(
     `${snapshot.replaceAll("\\", "/")} must read player vitals through battle player vitals entry`
+  );
+}
+if (/#pane_effects|etherTapActiveX2:\s*!!gE|playerBuffs:\s*playerEffects\.map/.test(snapshotText)) {
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must read player effects through battle player effects entry`
   );
 }
 if (/snap\.fightingStyle/.test(scoringText)) {

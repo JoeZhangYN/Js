@@ -14,6 +14,14 @@ const mocks = vi.hoisted(() => ({
   parseBattleLog: vi.fn(() => []),
   runAbilityAoeAutomation: vi.fn(() => ({ Imperil: 2 })),
   runBattleObservationLearning: vi.fn(() => ({ learnedBurstByMid: { learned: true } })),
+  runBattlePlayerEffects: vi.fn(() => ({
+    channeling: false,
+    etherTapActiveX2: false,
+    etherTapExpiring: false,
+    playerBuffs: [],
+    playerEffectTurns: {},
+    playerEffects: [],
+  })),
   runBattlePlayerVitals: vi.fn(() => ({
     hp: 50,
     mp: 50,
@@ -49,7 +57,6 @@ vi.mock("./battle-observation-learning.js", () => ({
   }),
   runBattleObservationLearning: mocks.runBattleObservationLearning,
 }));
-vi.mock("./effect-parse.js", () => ({ parseEffectName: () => "", parseEffectTurns: () => 0 }));
 vi.mock("./monster-view.js", () => ({
   monsterHpVars: mocks.monsterHpVars,
 }));
@@ -64,6 +71,10 @@ vi.mock("./battle-skill-readiness.js", () => ({
 vi.mock("./battle-player-vitals.js", () => ({
   BattlePlayerVitalsEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
   runBattlePlayerVitals: mocks.runBattlePlayerVitals,
+}));
+vi.mock("./battle-player-effects.js", () => ({
+  BattlePlayerEffectsEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
+  runBattlePlayerEffects: mocks.runBattlePlayerEffects,
 }));
 vi.mock("../pages/ability-page.js", () => ({
   AbilityAoeEvent: Object.freeze({ READ_SPELL_AOE: "readSpellAoe" }),
@@ -84,7 +95,6 @@ beforeEach(() => {
   });
   mocks.gE.mockImplementation((selector, mode) => {
     if (mode === "all") return [];
-    if (selector === "#pane_effects") return { querySelectorAll: () => [] };
     return null;
   });
 });
@@ -107,6 +117,7 @@ describe("collectSnapshot", () => {
     expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({ type: "readUsage" });
     expect(mocks.runBattleSkillReadiness).toHaveBeenCalledWith({ type: "readReadyMap" });
     expect(mocks.runBattlePlayerVitals).toHaveBeenCalledWith({ type: "readCurrent" });
+    expect(mocks.runBattlePlayerEffects).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "readSpellAoe" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
