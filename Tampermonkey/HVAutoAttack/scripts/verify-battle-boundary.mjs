@@ -777,7 +777,7 @@ function checkActionSpeedEntry() {
   ) {
     violations.push(`${rel(actionSpeedFile)} may export only its event entry`);
   }
-  if (!/const actionSpeedEventHandlers\s*=\s*Object\.freeze\(/.test(text)) {
+  if (!/const battleActionSpeedEventHandlers\s*=\s*Object\.freeze\(/.test(text)) {
     violations.push(`${rel(actionSpeedFile)} must route events through one table`);
   }
   if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(text)) {

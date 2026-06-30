@@ -60,6 +60,12 @@ describe("runBattleActionSpeedAutomation", () => {
   });
 
   it("rejects unknown events", () => {
-    expect(runBattleActionSpeedAutomation({ type: "unknown" }, makeDeps().deps)).toBeUndefined();
+    const { deps } = makeDeps();
+
+    expect(runBattleActionSpeedAutomation({ type: "unknown" }, deps)).toBeUndefined();
+
+    expect(deps.now).not.toHaveBeenCalled();
+    expect(deps.read).not.toHaveBeenCalled();
+    expect(deps.write).not.toHaveBeenCalled();
   });
 });

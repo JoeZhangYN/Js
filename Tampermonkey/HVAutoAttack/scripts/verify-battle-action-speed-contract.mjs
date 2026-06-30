@@ -48,7 +48,7 @@ function requireText(relative, required) {
 const ownerText = requireText(owner, [
   "BattleActionSpeedEvent",
   "runBattleActionSpeedAutomation",
-  "actionSpeedEventHandlers",
+  "battleActionSpeedEventHandlers",
   "ACTION_TIMESTAMP_RUNTIME_KEY",
   "ACTION_SPEED_RUNTIME_KEY",
   "normalizeTimestamp",
@@ -56,7 +56,12 @@ const ownerText = requireText(owner, [
   "DEFAULT_RUN_SPEED",
   "TimeEvent.EPOCH_MS",
 ]);
-requireText(ownerTest, ["runSpeed", "timeNow", "normalizes invalid action speed runtime values"]);
+requireText(ownerTest, [
+  "runSpeed",
+  "timeNow",
+  "normalizes invalid action speed runtime values",
+  "rejects unknown events",
+]);
 
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleActionSpeedEvent\b|runBattleActionSpeedAutomation\b)/.test(
@@ -65,7 +70,7 @@ if (
 ) {
   violations.push(`${owner.replaceAll("\\", "/")} may export only its event entry`);
 }
-if (!/const actionSpeedEventHandlers\s*=\s*Object\.freeze\(/.test(ownerText)) {
+if (!/const battleActionSpeedEventHandlers\s*=\s*Object\.freeze\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must route events through one table`);
 }
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
