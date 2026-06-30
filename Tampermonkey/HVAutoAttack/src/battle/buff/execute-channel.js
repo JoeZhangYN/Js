@@ -2,11 +2,17 @@
 // 只写不判断（判断全在 decide-channel.js）；isOn 探活属写路径安全读（与原 useChannelSkill 一致）。
 import { BattleSkillCommandEvent, runBattleSkillCommand } from "../battle-skill-command.js";
 
+const EVENT_APPLY_PLAN = "applyPlan";
+
+export const BattleChannelExecutionEvent = Object.freeze({
+  APPLY_PLAN: EVENT_APPLY_PLAN,
+});
+
 /**
  * @param {import("./decide-channel.js").ChannelPlan} plan
  * @returns {boolean} acted —— 是否已触发副作用
  */
-export function executeChannel(plan) {
+function applyChannelPlan(plan) {
   if (plan.type === "click") {
     // 原 useChannelSkill 三段均在 isOn 通过后 click；探活与 turn 入口快照一致。
     runBattleSkillCommand({
@@ -15,5 +21,10 @@ export function executeChannel(plan) {
     });
     return true;
   }
+  return false;
+}
+
+export function runBattleChannelExecution(event = { type: EVENT_APPLY_PLAN }) {
+  if (event.type === EVENT_APPLY_PLAN) return applyChannelPlan(event.plan);
   return false;
 }

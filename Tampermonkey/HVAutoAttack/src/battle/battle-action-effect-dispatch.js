@@ -14,7 +14,7 @@ import {
 } from "./battle-spirit-toggle.js";
 import { checkAndActivateSpirit } from "./buff/activate-spirit.js";
 import { BattleAttackExecutionEvent, runBattleAttackExecution } from "./attack/execute-attack.js";
-import { executeChannel } from "./buff/execute-channel.js";
+import { BattleChannelExecutionEvent, runBattleChannelExecution } from "./buff/execute-channel.js";
 import { BattleItemExecutionEvent, runBattleItemExecution } from "./item/execute-item.js";
 import { executeCriticalPause } from "./critical-buff-guard/decide-critical-buff.js";
 
@@ -96,8 +96,11 @@ function applyActionResult(result, snap) {
       });
 
     case "channel-plan":
-      // Channel 三段 PURE 决策产出 ChannelPlan，executeChannel 探活+click。
-      return executeChannel(result.plan);
+      // Channel 三段 PURE 决策产出 ChannelPlan，channel execution 入口探活+click。
+      return runBattleChannelExecution({
+        type: BattleChannelExecutionEvent.APPLY_PLAN,
+        plan: result.plan,
+      });
 
     default:
       return false;

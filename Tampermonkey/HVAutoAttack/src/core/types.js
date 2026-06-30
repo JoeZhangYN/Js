@@ -39,7 +39,7 @@
  */
 
 /**
- * Channel step 决策计划（decideChannel → executeChannel）。三段优先级返单 click 或 noop。
+ * Channel step 决策计划（decideChannel → channel execution 入口）。三段优先级返单 click 或 noop。
  * @typedef {{ type:"click", skillId:string } | { type:"noop" }} ChannelPlan
  */
 

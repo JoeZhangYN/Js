@@ -43,7 +43,8 @@ for (const required of [
   "runBattleAttackExecution",
   "BattleItemExecutionEvent.APPLY_PLAN",
   "runBattleItemExecution",
-  "executeChannel",
+  "BattleChannelExecutionEvent.APPLY_PLAN",
+  "runBattleChannelExecution",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
