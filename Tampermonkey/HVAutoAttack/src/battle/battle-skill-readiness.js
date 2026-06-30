@@ -4,6 +4,10 @@ export const BattleSkillReadinessEvent = Object.freeze({
   READ_READY_MAP: EVENT_READ_READY_MAP,
 });
 
+const battleSkillReadinessEventHandlers = Object.freeze({
+  [EVENT_READ_READY_MAP]: () => readReadyMap(),
+});
+
 const BATTLE_SKILL_IDS = Object.freeze([
   "111",
   "112",
@@ -68,6 +72,5 @@ function readReadyMap() {
 }
 
 export function runBattleSkillReadiness(event = { type: EVENT_READ_READY_MAP }) {
-  if (event.type === EVENT_READ_READY_MAP) return readReadyMap();
-  return {};
+  return battleSkillReadinessEventHandlers[event.type]?.() ?? {};
 }

@@ -20,6 +20,7 @@ const snapshotText = read(snapshot);
 
 for (const required of [
   "BattleSkillReadinessEvent",
+  "battleSkillReadinessEventHandlers",
   "runBattleSkillReadiness",
   "READ_READY_MAP",
   "BATTLE_SKILL_IDS",
@@ -40,8 +41,22 @@ if (
 ) {
   violations.push(`${rel(owner)} may export only its event entry`);
 }
+const entryBody =
+  ownerText.match(/export function runBattleSkillReadiness\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_READY_MAP\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover skill readiness entry contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("rejects unknown events without reading skill button DOM")) {
+    violations.push(`${rel(ownerTest)} must cover unknown skill readiness events`);
+  }
 }
 if (!snapshotText.includes("runBattleSkillReadiness")) {
   violations.push(`${rel(snapshot)} must read skillReady through battle skill readiness entry`);

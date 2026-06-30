@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleSkillReadinessEvent, runBattleSkillReadiness } from "./battle-skill-readiness.js";
 
 beforeEach(() => {
@@ -26,7 +26,12 @@ describe("runBattleSkillReadiness", () => {
     ).not.toHaveProperty("not-a-skill");
   });
 
-  it("returns an empty readiness map for unknown events", () => {
+  it("rejects unknown events without reading skill button DOM", () => {
+    const getElementById = vi.spyOn(document, "getElementById");
+
     expect(runBattleSkillReadiness({ type: "unknown" })).toEqual({});
+
+    expect(getElementById).not.toHaveBeenCalled();
+    getElementById.mockRestore();
   });
 });
