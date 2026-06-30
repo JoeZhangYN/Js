@@ -218,17 +218,27 @@ function checkBattleEntry() {
     "startBattleRound",
     "runInitialBattleTurn",
     "runPageReadyStartup",
+    'capability: "pauseControls"',
+    'capability: "actionEventBridge"',
+    'capability: "battleStarted"',
+    'capability: "roundStarted"',
+    'capability: "initialBattleTurn"',
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(battleFile)} must name page-ready startup step ${required}`);
     }
   }
   if (
-    !/const PAGE_READY_STARTUP_STEPS = \[\s*installBattlePauseControls,\s*installBattleActionEventBridge,\s*reportBattleStarted,\s*startBattleRound,\s*runInitialBattleTurn,\s*\]/.test(
+    !/const PAGE_READY_STARTUP_STEPS = \[\s*\{[\s\S]*capability: "pauseControls"[\s\S]*run: installBattlePauseControls[\s\S]*capability: "actionEventBridge"[\s\S]*run: installBattleActionEventBridge[\s\S]*capability: "battleStarted"[\s\S]*run: reportBattleStarted[\s\S]*capability: "roundStarted"[\s\S]*run: startBattleRound[\s\S]*capability: "initialBattleTurn"[\s\S]*run: runInitialBattleTurn[\s\S]*\]/.test(
       text
     )
   ) {
     violations.push(`${rel(battleFile)} must own explicit page-ready startup order`);
+  }
+  const pageReadyStartupBody =
+    text.match(/function runPageReadyStartup\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/for\s*\(\s*const\s+step\s+of\s+PAGE_READY_STARTUP_STEPS\s*\)/.test(pageReadyStartupBody)) {
+    violations.push(`${rel(battleFile)} must run page-ready startup through PAGE_READY_STARTUP_STEPS`);
   }
   const entryBody =
     text.match(/export function runBattleAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||

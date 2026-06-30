@@ -18,11 +18,26 @@ export const BattleEvent = Object.freeze({
 });
 
 const PAGE_READY_STARTUP_STEPS = [
-  installBattlePauseControls,
-  installBattleActionEventBridge,
-  reportBattleStarted,
-  startBattleRound,
-  runInitialBattleTurn,
+  {
+    capability: "pauseControls",
+    run: installBattlePauseControls,
+  },
+  {
+    capability: "actionEventBridge",
+    run: installBattleActionEventBridge,
+  },
+  {
+    capability: "battleStarted",
+    run: reportBattleStarted,
+  },
+  {
+    capability: "roundStarted",
+    run: startBattleRound,
+  },
+  {
+    capability: "initialBattleTurn",
+    run: runInitialBattleTurn,
+  },
 ];
 
 function installBattlePauseControls() {
@@ -46,7 +61,7 @@ function runInitialBattleTurn() {
 }
 
 function runPageReadyStartup() {
-  for (const step of PAGE_READY_STARTUP_STEPS) step();
+  for (const step of PAGE_READY_STARTUP_STEPS) step.run();
 }
 
 export function runBattleAutomation(event = { type: EVENT_PAGE_READY }) {

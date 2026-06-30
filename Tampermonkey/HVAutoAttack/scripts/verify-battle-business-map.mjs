@@ -112,6 +112,11 @@ for (const required of [
   "startBattleRound",
   "runInitialBattleTurn",
   "BattleLifecycleEvent.BATTLE_STARTED",
+  'capability: "pauseControls"',
+  'capability: "actionEventBridge"',
+  'capability: "battleStarted"',
+  'capability: "roundStarted"',
+  'capability: "initialBattleTurn"',
 ]) {
   requireText("src/battle/battle-automation.js", battleAutomation, required);
 }
