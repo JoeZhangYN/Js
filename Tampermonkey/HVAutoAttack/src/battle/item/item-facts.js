@@ -1,7 +1,26 @@
 const aliveHpPercents = (monsters) =>
   (monsters || []).filter((monster) => !monster.isDead).map((monster) => monster.hpPercent);
 
-export function gemFacts(snap) {
+const EVENT_READ_GEM = "readGem";
+const EVENT_READ_STALL_TOPUP = "readStallTopup";
+const EVENT_READ_SCROLL = "readScroll";
+const EVENT_READ_POTION = "readPotion";
+
+export const BattleItemFactsEvent = Object.freeze({
+  READ_GEM: EVENT_READ_GEM,
+  READ_STALL_TOPUP: EVENT_READ_STALL_TOPUP,
+  READ_SCROLL: EVENT_READ_SCROLL,
+  READ_POTION: EVENT_READ_POTION,
+});
+
+const battleItemFactsEventHandlers = Object.freeze({
+  [EVENT_READ_GEM]: (event) => gemFacts(event.snap),
+  [EVENT_READ_STALL_TOPUP]: (event) => stallTopupFacts(event.snap),
+  [EVENT_READ_SCROLL]: (event) => scrollFacts(event.snap),
+  [EVENT_READ_POTION]: (event) => potionFacts(event.snap),
+});
+
+function gemFacts(snap) {
   return {
     gemName: snap?.gemName,
     healthPercent: snap?.hp,
@@ -13,7 +32,7 @@ export function gemFacts(snap) {
   };
 }
 
-export function stallTopupFacts(snap) {
+function stallTopupFacts(snap) {
   return {
     roundNow: snap?.roundNow,
     roundAll: snap?.roundAll,
@@ -28,7 +47,7 @@ export function stallTopupFacts(snap) {
   };
 }
 
-export function scrollFacts(snap) {
+function scrollFacts(snap) {
   return {
     conditionFacts: snap,
     roundType: snap?.roundType,
@@ -36,7 +55,7 @@ export function scrollFacts(snap) {
   };
 }
 
-export function potionFacts(snap) {
+function potionFacts(snap) {
   return {
     conditionFacts: snap,
     deficitFacts: {
@@ -45,4 +64,8 @@ export function potionFacts(snap) {
       spDeficit: snap?.spDeficit,
     },
   };
+}
+
+export function runBattleItemFacts(event = { type: EVENT_READ_GEM }) {
+  return battleItemFactsEventHandlers[event.type]?.(event);
 }

@@ -2567,10 +2567,11 @@ function checkBattleItemDecisionEntry() {
     "DECIDE_SCROLL",
     "itemDecisionInput",
     "battleItemDecisionHandlers",
-    "gemFacts",
-    "potionFacts",
-    "stallTopupFacts",
-    "scrollFacts",
+    "BattleItemFactsEvent.READ_GEM",
+    "BattleItemFactsEvent.READ_POTION",
+    "BattleItemFactsEvent.READ_STALL_TOPUP",
+    "BattleItemFactsEvent.READ_SCROLL",
+    "runBattleItemFacts",
     "GEM_RESULT_PLAN_MAPPERS",
     "mapGemResultToItemPlan",
   ]) {
@@ -3191,10 +3192,41 @@ function checkBattleRuleFactMappers() {
       );
     }
   }
-  for (const required of ["gemFacts", "potionFacts", "stallTopupFacts", "scrollFacts"]) {
+  for (const required of [
+    "BattleItemFactsEvent",
+    "battleItemFactsEventHandlers",
+    "runBattleItemFacts",
+    "READ_GEM",
+    "READ_POTION",
+    "READ_STALL_TOPUP",
+    "READ_SCROLL",
+    "gemFacts",
+    "potionFacts",
+    "stallTopupFacts",
+    "scrollFacts",
+  ]) {
     if (!itemFactsText.includes(required)) {
-      violations.push(`${rel(itemFactsFile)} must own item fact mapper ${required}`);
+      violations.push(`${rel(itemFactsFile)} must own item fact query ${required}`);
     }
+  }
+  for (const legacy of ["gemFacts", "potionFacts", "stallTopupFacts", "scrollFacts"]) {
+    if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(itemFactsText)) {
+      violations.push(`${rel(itemFactsFile)} must not export legacy item fact mapper ${legacy}`);
+    }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleItemFactsEvent\b|runBattleItemFacts\b)/.test(
+      itemFactsText
+    )
+  ) {
+    violations.push(`${rel(itemFactsFile)} may export only its event entry`);
+  }
+  const itemFactsTestFile = path.join(root, "src/battle/item/item-facts.test.js");
+  const itemFactsTestText = fs.existsSync(itemFactsTestFile)
+    ? fs.readFileSync(itemFactsTestFile, "utf8")
+    : "";
+  if (!itemFactsTestText.includes("rejects unknown item facts events")) {
+    violations.push(`${rel(itemFactsTestFile)} must cover unknown item facts events`);
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(itemFactsText)) {
     violations.push(`${rel(itemFactsFile)} must not depend on generic rule fact mappers`);

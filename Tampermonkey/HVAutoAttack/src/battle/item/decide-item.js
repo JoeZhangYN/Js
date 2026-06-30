@@ -5,7 +5,7 @@
 import { checkCondition } from "../../settings/condition-eval.js";
 import { decideGem } from "./decide-gem.js";
 import { decideScroll } from "./decide-scroll.js";
-import { gemFacts, potionFacts, scrollFacts, stallTopupFacts } from "./item-facts.js";
+import { BattleItemFactsEvent, runBattleItemFacts } from "./item-facts.js";
 import { dynamicHpThreshold } from "../dynamic-threshold.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { isPotionWasteful } from "../potion-economy.js";
@@ -30,10 +30,13 @@ export const BattleItemDecisionEvent = Object.freeze({
 const noopItemPlan = Object.freeze({ kind: "item-plan", plan: { type: "noop" } });
 
 const battleItemDecisionHandlers = Object.freeze({
-  [DECIDE_GEM]: (event) => decideGemUse(itemDecisionInput(event, gemFacts)),
-  [DECIDE_POTION]: (event) => decidePotion(itemDecisionInput(event, potionFacts)),
-  [DECIDE_STALL_TOPUP]: (event) => decideStallTopup(itemDecisionInput(event, stallTopupFacts)),
-  [DECIDE_SCROLL]: (event) => decideScroll(itemDecisionInput(event, scrollFacts)),
+  [DECIDE_GEM]: (event) => decideGemUse(itemDecisionInput(event, BattleItemFactsEvent.READ_GEM)),
+  [DECIDE_POTION]: (event) =>
+    decidePotion(itemDecisionInput(event, BattleItemFactsEvent.READ_POTION)),
+  [DECIDE_STALL_TOPUP]: (event) =>
+    decideStallTopup(itemDecisionInput(event, BattleItemFactsEvent.READ_STALL_TOPUP)),
+  [DECIDE_SCROLL]: (event) =>
+    decideScroll(itemDecisionInput(event, BattleItemFactsEvent.READ_SCROLL)),
 });
 
 const GEM_RESULT_PLAN_MAPPERS = Object.freeze({
@@ -45,11 +48,11 @@ export function runBattleItemDecision(event = {}) {
   return battleItemDecisionHandlers[event.type]?.(event) || noopItemPlan;
 }
 
-function itemDecisionInput(event, facts) {
+function itemDecisionInput(event, factsEventType) {
   if (!event?.snap) return event;
   return {
     opt: event.opt,
-    ...facts(event.snap),
+    ...runBattleItemFacts({ type: factsEventType, snap: event.snap }),
   };
 }
 
