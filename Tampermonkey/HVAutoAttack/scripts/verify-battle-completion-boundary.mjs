@@ -32,6 +32,7 @@ function checkOwner() {
   const text = fs.readFileSync(path.join(root, owner), "utf8");
   for (const required of [
     "runBattleCompletionAutomation",
+    "battleCompletionEventHandlers",
     "COMPLETION_REACHED",
     "NEXT_ROUND",
     "Defeat",
@@ -99,6 +100,20 @@ function checkOwner() {
     violations.push(
       `${owner.replaceAll("\\", "/")} terminal completion cleanup must have one side-effect point`
     );
+  }
+  const entryBody =
+    text.match(/export function runBattleCompletionAutomation\([^)]*\)[\s\S]*?\n\}/)?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_COMPLETION_REACHED\]/.test(text)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+  }
+  if (fs.existsSync(path.join(root, ownerTest))) {
+    const testText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+    if (!testText.includes("rejects unknown battle completion events without side effects")) {
+      violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown completion events`);
+    }
   }
 }
 

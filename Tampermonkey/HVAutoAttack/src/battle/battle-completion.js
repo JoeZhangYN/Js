@@ -22,6 +22,10 @@ export const BattleCompletionOutcome = Object.freeze({
   ONGOING: "ongoing",
 });
 
+const battleCompletionEventHandlers = Object.freeze({
+  [EVENT_COMPLETION_REACHED]: (event, deps) => handleCompletionReached(deps),
+});
+
 function readCompletionContext() {
   const progress = runBattleProgressAutomation({ type: BattleProgressEvent.READ_CONTEXT });
   return {
@@ -71,6 +75,7 @@ export function runBattleCompletionAutomation(
       }),
   }
 ) {
-  if (event.type === EVENT_COMPLETION_REACHED) return handleCompletionReached(deps);
-  return { outcome: BattleCompletionOutcome.ONGOING };
+  return battleCompletionEventHandlers[event.type]?.(event, deps) ?? {
+    outcome: BattleCompletionOutcome.ONGOING,
+  };
 }

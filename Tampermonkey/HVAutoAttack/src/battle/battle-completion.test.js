@@ -84,4 +84,18 @@ describe("runBattleCompletionAutomation", () => {
       d.readCompletionContext.mock.invocationCallOrder[0]
     );
   });
+
+  it("rejects unknown battle completion events without side effects", () => {
+    const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
+
+    expect(runBattleCompletionAutomation({ type: "unknown" }, d)).toEqual({
+      outcome: BattleCompletionOutcome.ONGOING,
+    });
+
+    expect(d.recordCompletion).not.toHaveBeenCalled();
+    expect(d.readCompletionContext).not.toHaveBeenCalled();
+    expect(d.triggerAlarm).not.toHaveBeenCalled();
+    expect(d.clearSession).not.toHaveBeenCalled();
+    expect(d.scheduleReload).not.toHaveBeenCalled();
+  });
 });
