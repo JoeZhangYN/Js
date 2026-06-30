@@ -84,6 +84,13 @@ for (const required of [
     violations.push(`${rel(attackPlan)} must lock attack plan step ${required}`);
   }
 }
+if (
+  !/const ATTACK_PLAN_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "focus"[\s\S]*capability: "spiritToggle"[\s\S]*capability: "spell"[\s\S]*capability: "mercifulSingle"[\s\S]*capability: "physicalUtility"[\s\S]*capability: "defaultAttack"[\s\S]*\]\)/.test(
+    attackPlanText
+  )
+) {
+  violations.push(`${rel(attackPlan)} must own frozen attack plan step order`);
+}
 if (!/for\s*\(\s*const\s+step\s+of\s+ATTACK_PLAN_STEPS\s*\)/.test(attackPlanText)) {
   violations.push(`${rel(attackPlan)} must choose attack plans through ATTACK_PLAN_STEPS`);
 }
