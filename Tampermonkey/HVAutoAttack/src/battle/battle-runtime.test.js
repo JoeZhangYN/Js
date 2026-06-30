@@ -25,4 +25,11 @@ describe("runBattleRuntimeAutomation", () => {
     expect(getValue(STORAGE_KEYS.ROUND_TYPE, true)).toBeNull();
     expect(getValue(STORAGE_KEYS.BATTLE_CODE, true)).toBeNull();
   });
+
+  it("rejects unknown runtime events without clearing the battle session", () => {
+    setValue(STORAGE_KEYS.BATTLE_CODE, "code");
+
+    expect(runBattleRuntimeAutomation({ type: "unknown" })).toBe(false);
+    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("code");
+  });
 });

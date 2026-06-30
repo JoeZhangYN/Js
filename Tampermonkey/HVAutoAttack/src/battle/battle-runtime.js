@@ -9,10 +9,13 @@ export const BattleRuntimeEvent = Object.freeze({
 
 function clearSession() {
   delValue(2);
+  return true;
 }
 
+const battleRuntimeEventHandlers = Object.freeze({
+  [EVENT_CLEAR_SESSION]: clearSession,
+});
+
 export function runBattleRuntimeAutomation(event = { type: EVENT_CLEAR_SESSION }) {
-  if (event.type !== EVENT_CLEAR_SESSION) return false;
-  clearSession();
-  return true;
+  return battleRuntimeEventHandlers[event.type]?.(event) ?? false;
 }

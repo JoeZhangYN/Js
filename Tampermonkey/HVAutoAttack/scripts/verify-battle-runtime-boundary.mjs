@@ -65,6 +65,14 @@ if (!ownerText.includes("CLEAR_SESSION")) {
 if (!ownerText.includes("delValue(2)")) {
   violations.push(`${owner.replaceAll("\\", "/")} must own legacy delValue(2) bridge`);
 }
+if (!/const battleRuntimeEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CLEAR_SESSION\]: clearSession/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route runtime events through battleRuntimeEventHandlers`);
+}
+const ownerEntryBody =
+  ownerText.match(/export function runBattleRuntimeAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (/event\.type\s*!==|event\.type\s*===/.test(ownerEntryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
 
 if (violations.length) {
   console.error("[verify-battle-runtime-boundary] FAIL");
