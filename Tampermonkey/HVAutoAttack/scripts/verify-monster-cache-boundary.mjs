@@ -48,11 +48,27 @@ if (!/export const MonsterCacheEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
 if (!/export function runMonsterCacheAutomation\(\s*event\b/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose runMonsterCacheAutomation(event)`);
 }
+const entryBody =
+  ownerText.match(/export function runMonsterCacheAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!/const monsterCacheEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PRIME_PROFILES\]/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
 for (const name of legacy) {
   if (new RegExp(`export\\s+(?:async\\s+)?function\\s+${name}\\s*\\(`).test(ownerText)) {
     violations.push(
       `${owner.replaceAll("\\", "/")} legacy ${name} export must stay private behind runMonsterCacheAutomation(event)`
     );
+  }
+}
+if (!fs.existsSync(path.join(root, ownerTest))) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover monster cache entry`);
+} else {
+  const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+  if (!ownerTestText.includes("rejects unknown cache events without changing cached profiles")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown cache events`);
   }
 }
 

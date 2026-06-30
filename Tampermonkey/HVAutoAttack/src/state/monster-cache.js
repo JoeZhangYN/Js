@@ -24,6 +24,14 @@ export const MonsterCacheEvent = Object.freeze({
   CLEAR: EVENT_CLEAR,
 });
 
+const monsterCacheEventHandlers = Object.freeze({
+  [EVENT_PRIME_PROFILES]: (event) => primeMonsterCache(event.monsterIds),
+  [EVENT_READ_PROFILE]: (event) => getCachedMonster(event.monsterId),
+  [EVENT_READ_DB]: () => getCachedDb(),
+  [EVENT_WRITE_PROFILE]: (event) => setCachedMonster(event.monsterId, event.info),
+  [EVENT_CLEAR]: () => clearMonsterCache(),
+});
+
 /** @type {Map<number, import("../data/monster-db.js").MonsterInfo|null>} */
 const _cache = new Map();
 
@@ -82,16 +90,5 @@ function clearMonsterCache() {
 }
 
 export function runMonsterCacheAutomation(event = { type: EVENT_READ_DB }) {
-  if (event.type === EVENT_PRIME_PROFILES) return primeMonsterCache(event.monsterIds);
-  if (event.type === EVENT_READ_PROFILE) return getCachedMonster(event.monsterId);
-  if (event.type === EVENT_READ_DB) return getCachedDb();
-  if (event.type === EVENT_WRITE_PROFILE) {
-    setCachedMonster(event.monsterId, event.info);
-    return undefined;
-  }
-  if (event.type === EVENT_CLEAR) {
-    clearMonsterCache();
-    return undefined;
-  }
-  return undefined;
+  return monsterCacheEventHandlers[event.type]?.(event);
 }

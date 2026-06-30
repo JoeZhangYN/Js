@@ -91,6 +91,25 @@ describe("monster-cache（按 MID 键）", () => {
     expect(runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_DB })[80804].fire).toBe(50);
   });
 
+  it("rejects unknown cache events without changing cached profiles", () => {
+    runMonsterCacheAutomation({
+      type: MonsterCacheEvent.WRITE_PROFILE,
+      monsterId: 80804,
+      info: { monsterId: 80804, fire: 50 },
+    });
+
+    expect(
+      runMonsterCacheAutomation({
+        type: "unknown",
+        monsterId: 80804,
+        info: { monsterId: 80804, fire: 0 },
+      })
+    ).toBeUndefined();
+    expect(
+      runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: 80804 })
+    ).toEqual({ monsterId: 80804, fire: 50 });
+  });
+
   it("空/缺 ids + undefined/null 元素 安全", async () => {
     await expect(
       runMonsterCacheAutomation({ type: MonsterCacheEvent.PRIME_PROFILES })
