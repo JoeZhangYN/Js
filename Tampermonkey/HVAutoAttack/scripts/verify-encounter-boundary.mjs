@@ -12,6 +12,7 @@ const bridgeFile = path.normalize("src/pages/encounter-bridge.js");
 const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
 const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
 const widgetPolicyFile = path.normalize("src/pages/encounter-widget-policy.js");
+const widgetPolicyTest = path.normalize("src/pages/encounter-widget-policy.test.js");
 const lobbyScheduleFile = path.normalize("src/pages/encounter-lobby-schedule.js");
 const lobbyScheduleTest = path.normalize("src/pages/encounter-lobby-schedule.test.js");
 const optionGateFile = path.normalize("src/pages/encounter-option-gate.js");
@@ -92,7 +93,11 @@ function checkFile(file) {
         `${where} encounter widget implementation is internal; import runEncounterAutomation(event)`
       );
     }
-    if (relative !== owner && /from\s+["']\.\/encounter-widget-policy\.js["']/.test(line)) {
+    if (
+      relative !== owner &&
+      relative !== widgetPolicyTest &&
+      /from\s+["']\.\/encounter-widget-policy\.js["']/.test(line)
+    ) {
       violations.push(
         `${where} encounter widget policy is internal to runEncounterAutomation(event)`
       );
@@ -377,6 +382,41 @@ if (!/EncounterPolicyEvent\.READ_CLOCK/.test(widgetPolicyText)) {
   violations.push(
     `${widgetPolicyFile.replaceAll("\\", "/")} widget countdown must use the encounter clock query`
   );
+}
+if (!widgetPolicyText.includes("const encounterWidgetPolicyEventHandlers")) {
+  violations.push(
+    `${widgetPolicyFile.replaceAll("\\", "/")} must route widget policy events through a handler table`
+  );
+}
+const widgetPolicyEntryMatch = widgetPolicyText.match(
+  /export function planEncounterWidgetEvent[\s\S]*?\n}/
+);
+if (!widgetPolicyEntryMatch) {
+  violations.push(
+    `${widgetPolicyFile.replaceAll("\\", "/")} must expose planEncounterWidgetEvent(event)`
+  );
+} else {
+  const entryBody = widgetPolicyEntryMatch[0];
+  if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+    violations.push(
+      `${widgetPolicyFile.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+    );
+  }
+  for (const internal of [
+    "readWidgetState(",
+    "runWidgetLinkFound(",
+    "runWidgetStartedEncounter(",
+    "planWidgetResetDay(",
+    "planWidgetClick(",
+    "planWidgetTimerElapsed(",
+    "planWidgetNewsLoaded(",
+  ]) {
+    if (entryBody.includes(internal)) {
+      violations.push(
+        `${widgetPolicyFile.replaceAll("\\", "/")} entry must dispatch through encounterWidgetPolicyEventHandlers`
+      );
+    }
+  }
 }
 if (!/\bWIDGET_TIMER_ELAPSED\b/.test(ownerText)) {
   violations.push(

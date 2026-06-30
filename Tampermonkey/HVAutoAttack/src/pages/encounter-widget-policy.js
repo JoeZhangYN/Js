@@ -130,15 +130,20 @@ function planWidgetEngage(event) {
   return { ...readWidgetState(plan.state), action: "navigate", href: plan.href };
 }
 
+function planWidgetResetDay() {
+  return readWidgetState(runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY }));
+}
+
+const encounterWidgetPolicyEventHandlers = Object.freeze({
+  widgetTick: (event) => readWidgetState(event.state),
+  widgetLinkFound: runWidgetLinkFound,
+  widgetStartedEncounter: runWidgetStartedEncounter,
+  widgetResetDay: () => planWidgetResetDay(),
+  widgetClicked: planWidgetClick,
+  widgetTimerElapsed: planWidgetTimerElapsed,
+  widgetNewsLoaded: planWidgetNewsLoaded,
+});
+
 export function planEncounterWidgetEvent(event) {
-  if (event.type === "widgetTick") return readWidgetState(event.state);
-  if (event.type === "widgetLinkFound") return runWidgetLinkFound(event);
-  if (event.type === "widgetStartedEncounter") return runWidgetStartedEncounter(event);
-  if (event.type === "widgetResetDay") {
-    return readWidgetState(runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY }));
-  }
-  if (event.type === "widgetClicked") return planWidgetClick(event);
-  if (event.type === "widgetTimerElapsed") return planWidgetTimerElapsed(event);
-  if (event.type === "widgetNewsLoaded") return planWidgetNewsLoaded(event);
-  return undefined;
+  return encounterWidgetPolicyEventHandlers[event.type]?.(event);
 }
