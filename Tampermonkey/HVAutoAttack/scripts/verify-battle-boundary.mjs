@@ -2347,7 +2347,7 @@ function checkAttackEntry() {
     !rulesText.includes("BattleAttackActionEvent.DECIDE") ||
     !rulesText.includes("runBattleAttackAction")
   ) {
-    violations.push(`${rel(battleRulesFile)} must route attack through decideAttackAction`);
+    violations.push(`${rel(battleRulesFile)} must route attack through runBattleAttackAction`);
   }
   if (/decideAttackAction\(\s*snap\s*,\s*actionOptions\s*\)/.test(rulesText)) {
     violations.push(`${rel(battleRulesFile)} must not call attack action through old two-arg path`);
