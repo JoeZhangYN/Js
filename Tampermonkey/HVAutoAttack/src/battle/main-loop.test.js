@@ -5,11 +5,11 @@ const mocks = vi.hoisted(() => ({
   g: vi.fn(),
   killBug: vi.fn(),
   prepareBattleTurnContext: vi.fn(),
+  runBattleActionDecision: vi.fn(),
   runBattleMonitorAutomation: vi.fn(),
   runBattlePauseAutomation: vi.fn(),
   runBattleTurnRuntime: vi.fn(),
   runMonsterStatusAutomation: vi.fn(),
-  runRules: vi.fn(),
 }));
 
 vi.mock("../state/battle-turn.js", () => ({
@@ -25,14 +25,15 @@ vi.mock("./monster-status-automation.js", () => ({
   MonsterStatusEvent: Object.freeze({ ENSURE_READY: "ensureReady", UPDATE_HP: "updateHp" }),
   runMonsterStatusAutomation: mocks.runMonsterStatusAutomation,
 }));
-vi.mock("./step-runner.js", () => ({ runRules: mocks.runRules }));
-vi.mock("./rules/index.js", () => ({ BATTLE_RULES: [{ name: "testRule" }] }));
 vi.mock("./turn-context.js", () => ({
   prepareBattleTurnContext: mocks.prepareBattleTurnContext,
 }));
 vi.mock("./pause-automation.js", () => ({
   BattlePauseEvent: Object.freeze({ RENDER_IF_PAUSED: "renderIfPaused" }),
   runBattlePauseAutomation: mocks.runBattlePauseAutomation,
+}));
+vi.mock("./battle-action-decision.js", () => ({
+  runBattleActionDecision: mocks.runBattleActionDecision,
 }));
 
 beforeEach(() => {
@@ -50,10 +51,6 @@ describe("runBattleTurnAutomation", () => {
 
     expect(mocks.runBattleTurnRuntime).toHaveBeenCalledWith({ type: "turnStarted" });
     expect(mocks.prepareBattleTurnContext).toHaveBeenCalledWith();
-    expect(mocks.runRules).toHaveBeenCalledWith(
-      [{ name: "testRule" }],
-      { snap: true },
-      { ok: true }
-    );
+    expect(mocks.runBattleActionDecision).toHaveBeenCalledWith({ snap: true }, { ok: true });
   });
 });

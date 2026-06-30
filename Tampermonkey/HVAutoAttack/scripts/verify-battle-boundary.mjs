@@ -50,6 +50,7 @@ const stallModeFile = path.join(root, "src/battle/battle-stall-mode.js");
 const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const turnContextFile = path.join(root, "src/battle/turn-context.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
+const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const stepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/battle-round-start.js");
@@ -269,6 +270,7 @@ function checkRoundStartEntry() {
 
 function checkTurnEntry() {
   const text = fs.readFileSync(mainLoopFile, "utf8");
+  const actionDecisionText = fs.readFileSync(actionDecisionFile, "utf8");
   if (!/export function runBattleTurnAutomation\(/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must expose runBattleTurnAutomation()`);
   }
@@ -276,6 +278,20 @@ function checkTurnEntry() {
     violations.push(
       `${rel(mainLoopFile)} legacy main() bridge must stay deleted; use runBattleTurnAutomation()`
     );
+  }
+  if (!text.includes("runBattleActionDecision")) {
+    violations.push(`${rel(mainLoopFile)} must delegate action decisions to one entry`);
+  }
+  if (/\bBATTLE_RULES\b|\brunRules\b/.test(text)) {
+    violations.push(`${rel(mainLoopFile)} must not assemble battle action rule chains directly`);
+  }
+  if (!/export function runBattleActionDecision\(/.test(actionDecisionText)) {
+    violations.push(`${rel(actionDecisionFile)} must expose runBattleActionDecision()`);
+  }
+  for (const required of ["BATTLE_RULES", "runRules"]) {
+    if (!actionDecisionText.includes(required)) {
+      violations.push(`${rel(actionDecisionFile)} must own action decision ${required}`);
+    }
   }
   for (const file of [battleFile, actionEventBridgeFile]) {
     const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);

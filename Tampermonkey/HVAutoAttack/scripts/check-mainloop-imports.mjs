@@ -1,7 +1,8 @@
-// 拆桥 gate（Phase 5b 编排倒置）：禁止 battle/main-loop.js 回退 import 已倒置的 step 实现。
+// 拆桥 gate：禁止 battle/main-loop.js 回退 import 已倒置的 step 实现。
 // 背景：旧 main() 原直接 import 16 个具体实现（useGem/castDebuffOnAll/attack…）+ 内联闭包，
-// 编排器与实现焊死。倒置后 runBattleTurnAutomation() 只该依赖 BATTLE_RULES + runRules 两个抽象；新增/调整 step
-// 走 battle/rules/index.js。本门控让旧路径（直接 import step 实现）不能再悄悄回归（反退化锁）。
+// 编排器与实现焊死。规则表和 runner 协议收敛后，runBattleTurnAutomation() 只该调用
+// runBattleActionDecision(snap, options)；新增/调整 step 走 battle/rules/index.js。
+// 本门控让旧路径（直接 import step 实现或拼规则表）不能再悄悄回归（反退化锁）。
 //
 // 符号级而非模块级：killBug/refreshBattleHud 是 pre-step 必执行项（非倒置的 step），
 // 仍允许从 kill-bug.js / battle-info.js import；只禁 step-action 符号本身。
@@ -11,8 +12,10 @@ import { fileURLToPath } from "node:url";
 const MAIN_LOOP = fileURLToPath(new URL("../src/battle/main-loop.js", import.meta.url));
 const src = readFileSync(MAIN_LOOP, "utf8");
 
-// 已倒置进 BATTLE_RULES 的 step-action 符号 + 旧编排器 —— main-loop 不得再直接 import。
+// 已倒置进行动决策链的 step-action 符号 + 旧编排器 —— main-loop 不得再直接 import。
 const BANNED = [
+  "BATTLE_RULES",
+  "runRules",
   "useGem",
   "deadSoon",
   "useScroll",
@@ -50,8 +53,8 @@ if (violations.length) {
   console.error(
     `[check-mainloop-imports] main-loop.js 回退 import 了已倒置的 step 实现: ${violations.join(", ")}\n` +
       `  → 新增/调整行动 step 请改 battle/rules/index.js 的 BATTLE_RULES;\n` +
-      `    main-loop 只该依赖 BATTLE_RULES + runRules 两个抽象。`
+      `    main-loop 只该调用 runBattleActionDecision(snap, options)。`
   );
   process.exit(1);
 }
-console.log("[check-mainloop-imports] OK — main-loop 仅依赖 Rule 抽象");
+console.log("[check-mainloop-imports] OK — main-loop delegates action decisions to one entry");
