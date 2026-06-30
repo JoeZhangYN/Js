@@ -54,6 +54,7 @@ const turnContextFile = path.join(root, "src/battle/turn-context.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const actionSequenceFile = path.join(root, "src/battle/battle-action-sequence.js");
+const buffActionSequenceFile = path.join(root, "src/battle/battle-action-buff-sequence.js");
 const survivalActionSequenceFile = path.join(root, "src/battle/battle-action-survival-sequence.js");
 const legacyStepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
@@ -324,6 +325,7 @@ function checkTurnEntry() {
     "BATTLE_RULES",
     "orderedBattleActionRules",
     "survivalActionRules",
+    "buffPreparationActionRules",
     "attack",
   ]) {
     if (!actionSequenceText.includes(required)) {
@@ -332,6 +334,17 @@ function checkTurnEntry() {
   }
   if (/export\s+const\s+BATTLE_RULES\b/.test(actionSequenceText)) {
     violations.push(`${rel(actionSequenceFile)} must keep BATTLE_RULES private`);
+  }
+  const buffActionSequenceText = fs.readFileSync(buffActionSequenceFile, "utf8");
+  for (const required of [
+    "buffPreparationActionRules",
+    "useInfusions",
+    "useChannelSkill",
+    "useBuffSkill",
+  ]) {
+    if (!buffActionSequenceText.includes(required)) {
+      violations.push(`${rel(buffActionSequenceFile)} must own buff action ${required}`);
+    }
   }
   const survivalActionSequenceText = fs.readFileSync(survivalActionSequenceFile, "utf8");
   for (const required of ["survivalActionRules", "criticalBuffGuard", "useGem", "useScroll"]) {
@@ -362,6 +375,12 @@ function checkTurnEntry() {
         /from\s+["'][^"']*battle-action-survival-sequence\.js["']/.test(source)
       ) {
         violations.push(`${rel(file)} must use runBattleActionDecision(), not survival sequence`);
+      }
+      if (
+        file !== actionSequenceFile &&
+        /from\s+["'][^"']*battle-action-buff-sequence\.js["']/.test(source)
+      ) {
+        violations.push(`${rel(file)} must use runBattleActionDecision(), not buff sequence`);
       }
     }
   }

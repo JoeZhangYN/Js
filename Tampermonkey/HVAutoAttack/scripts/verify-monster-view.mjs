@@ -19,6 +19,7 @@ const SRC_DIR = fileURLToPath(new URL("../src", import.meta.url));
 /** scope：决策层 = decide-*.js（非 test）+ action sequence 组合根。视图源头不在 scope。 */
 function isDecideFile(rel) {
   if (rel === "battle/battle-action-sequence.js") return true;
+  if (rel === "battle/battle-action-buff-sequence.js") return true;
   if (rel === "battle/battle-action-survival-sequence.js") return true;
   const name = rel.split("/").pop();
   return name.startsWith("decide-") && !name.endsWith(".test.js");
