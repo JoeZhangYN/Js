@@ -8,6 +8,19 @@
 // - dispatch: 若被选中调用此函数执行副作用
 // - explain: 可选打分理由（debug 日志用）
 
+const EVENT_PICK_BY_UTILITY = "pick-by-utility";
+const EVENT_AOE_SCORE = "aoe-score";
+
+export const PhysicalSkillRankingEvent = Object.freeze({
+  PICK_BY_UTILITY: EVENT_PICK_BY_UTILITY,
+  AOE_SCORE: EVENT_AOE_SCORE,
+});
+
+const physicalSkillRankingEventHandlers = Object.freeze({
+  [EVENT_PICK_BY_UTILITY]: (event) => pickByUtility(event.candidates || [], event.options || {}),
+  [EVENT_AOE_SCORE]: (event) => aoeScore(event.baseScore, event.aliveCount),
+});
+
 /**
  * @typedef {object} SkillCandidate
  * @property {string} name
@@ -23,7 +36,7 @@
  * @param {{debugLog?: boolean}} options
  * @returns {object|null} 最高分候选（原对象）
  */
-export function pickByUtility(candidates, options = {}) {
+function pickByUtility(candidates, options = {}) {
   const valid = candidates.filter((c) => c && c.score > 0).sort((a, b) => b.score - a.score);
   if (valid.length === 0) return null;
   const winner = valid[0];
@@ -46,6 +59,10 @@ export function pickByUtility(candidates, options = {}) {
  * @param {number} aliveCount
  * @returns {number}
  */
-export function aoeScore(baseScore, aliveCount) {
+function aoeScore(baseScore, aliveCount) {
   return baseScore * Math.max(1, aliveCount);
+}
+
+export function runPhysicalSkillRanking(event = { type: EVENT_PICK_BY_UTILITY }) {
+  return physicalSkillRankingEventHandlers[event.type]?.(event) ?? null;
 }

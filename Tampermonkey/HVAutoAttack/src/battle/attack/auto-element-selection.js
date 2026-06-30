@@ -5,6 +5,15 @@
 
 const ELEMENT_TO_STATUS = Object.freeze({ fire: 1, cold: 2, elec: 3, wind: 4, holy: 5, dark: 6 });
 const DEFAULT_POOL = Object.freeze(["fire", "cold", "elec", "wind", "holy", "dark"]);
+const EVENT_SELECT = "select";
+
+export const AutoElementSelectionEvent = Object.freeze({
+  SELECT: EVENT_SELECT,
+});
+
+const autoElementSelectionEventHandlers = Object.freeze({
+  [EVENT_SELECT]: (event) => selectAutoElement(event.target, event.opt),
+});
 
 /**
  * 选目标怪最弱抗性对应的攻击属性编码。
@@ -12,7 +21,7 @@ const DEFAULT_POOL = Object.freeze(["fire", "cold", "elec", "wind", "holy", "dar
  * @param {object} opt opt.autoElementPool 可选限定玩家可用元素(默认全 6)
  * @returns {{element: (1|2|3|4|5|6|null)}} 弱点元素编码；缺 resists/无候选 → null
  */
-export function selectAutoElement(target, opt) {
+function selectAutoElement(target, opt) {
   if (!target || !target.resists) return { element: null };
   const pool =
     opt && opt.autoElementPool && opt.autoElementPool.length ? opt.autoElementPool : DEFAULT_POOL;
@@ -27,4 +36,8 @@ export function selectAutoElement(target, opt) {
     }
   }
   return { element: bestEl ? ELEMENT_TO_STATUS[bestEl] : null };
+}
+
+export function runAutoElementSelection(event = { type: EVENT_SELECT }) {
+  return autoElementSelectionEventHandlers[event.type]?.(event) ?? { element: null };
 }

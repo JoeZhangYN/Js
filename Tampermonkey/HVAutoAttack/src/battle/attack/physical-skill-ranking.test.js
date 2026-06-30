@@ -1,6 +1,22 @@
 // 6B-1：pickByUtility 纯选择回归锁(选最高分 >0,无副作用)。
 import { describe, it, expect, vi } from "vitest";
-import { pickByUtility, aoeScore } from "./physical-skill-ranking.js";
+import { PhysicalSkillRankingEvent, runPhysicalSkillRanking } from "./physical-skill-ranking.js";
+
+function pickByUtility(candidates, options = {}) {
+  return runPhysicalSkillRanking({
+    type: PhysicalSkillRankingEvent.PICK_BY_UTILITY,
+    candidates,
+    options,
+  });
+}
+
+function aoeScore(baseScore, aliveCount) {
+  return runPhysicalSkillRanking({
+    type: PhysicalSkillRankingEvent.AOE_SCORE,
+    baseScore,
+    aliveCount,
+  });
+}
 
 describe("pickByUtility", () => {
   it("选最高分候选", () => {
@@ -72,5 +88,9 @@ describe("pickByUtility", () => {
       expect.stringContaining("[physical-skill-ranking] OFC score=100")
     );
     log.mockRestore();
+  });
+
+  it("rejects unknown physical skill ranking events", () => {
+    expect(runPhysicalSkillRanking({ type: "unknown", candidates: [{ code: "OFC", score: 100 }] })).toBeNull();
   });
 });

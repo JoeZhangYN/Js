@@ -6,6 +6,10 @@ const owner = path.normalize("src/battle/attack/decide-attack-action.js");
 const ownerTest = path.normalize("src/battle/attack/decide-attack-action.test.js");
 const attackPlan = path.normalize("src/battle/attack/attack-plan.js");
 const attackDecision = path.normalize("src/battle/attack/decide-attack.js");
+const spellAttackPlan = path.normalize("src/battle/attack/spell-attack-plan.js");
+const physicalSkillScoring = path.normalize("src/battle/attack/physical-skill-scoring.js");
+const physicalSkillRanking = path.normalize("src/battle/attack/physical-skill-ranking.js");
+const autoElementSelection = path.normalize("src/battle/attack/auto-element-selection.js");
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
 const offensiveDebuff = path.normalize("src/battle/debuff/decide-offensive-debuff.js");
 const violations = [];
@@ -79,6 +83,12 @@ for (const required of [
   'capability: "physicalUtility"',
   'capability: "defaultAttack"',
   "buildAttackPlanContext",
+  "SpellAttackPlanEvent.DECIDE",
+  "runSpellAttackPlan",
+  "PhysicalSkillScoringEvent.SCORE_CANDIDATES",
+  "runPhysicalSkillScoring",
+  "PhysicalSkillRankingEvent.PICK_BY_UTILITY",
+  "runPhysicalSkillRanking",
 ]) {
   if (!attackPlanText.includes(required)) {
     violations.push(`${rel(attackPlan)} must lock attack plan step ${required}`);
@@ -103,7 +113,15 @@ for (const relative of ["src/battle", "src/core"]) {
     }
     const file = path.join(entry.parentPath, entry.name);
     const normalized = path.normalize(path.relative(root, file));
-    if (normalized === owner || normalized === actionDecision || normalized === offensiveDebuff) {
+    if (
+      normalized === owner ||
+      normalized === actionDecision ||
+      normalized === offensiveDebuff ||
+      normalized === spellAttackPlan ||
+      normalized === physicalSkillScoring ||
+      normalized === physicalSkillRanking ||
+      normalized === autoElementSelection
+    ) {
       continue;
     }
     const text = fs.readFileSync(file, "utf8");
@@ -126,11 +144,25 @@ for (const relative of ["src/battle", "src/core"]) {
       violations.push(`${rel(normalized)} must not bypass attack plan for spell decisions`);
     }
     if (
+      /from\s+["'][^"']*attack\/(?:physical-skill-scoring|physical-skill-ranking|auto-element-selection)\.js["']/.test(
+        text
+      )
+    ) {
+      violations.push(`${rel(normalized)} must not bypass attack plan sub-decision entries`);
+    }
+    if (
       normalized !== attackDecision &&
       normalized !== attackPlan &&
       /\bdecideAttackPlan\s*\(/.test(text)
     ) {
       violations.push(`${rel(normalized)} must not call attack plan outside runAttackDecision`);
+    }
+    if (
+      /\b(?:decideSpellAttackPlan|scorePhysicalSkillCandidates|pickByUtility|selectAutoElement)\s*\(/.test(
+        text
+      )
+    ) {
+      violations.push(`${rel(normalized)} must not call retired attack sub-decision functions`);
     }
   }
 }

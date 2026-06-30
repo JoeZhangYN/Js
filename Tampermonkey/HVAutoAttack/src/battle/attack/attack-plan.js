@@ -2,9 +2,9 @@ import { checkCondition } from "../../settings/condition-eval.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { BattleTargetStrategyEvent, runBattleTargetStrategy } from "../battle-target-strategy.js";
-import { decideSpellAttackPlan } from "./spell-attack-plan.js";
-import { scorePhysicalSkillCandidates } from "./physical-skill-scoring.js";
-import { pickByUtility } from "./physical-skill-ranking.js";
+import { SpellAttackPlanEvent, runSpellAttackPlan } from "./spell-attack-plan.js";
+import { PhysicalSkillScoringEvent, runPhysicalSkillScoring } from "./physical-skill-scoring.js";
+import { PhysicalSkillRankingEvent, runPhysicalSkillRanking } from "./physical-skill-ranking.js";
 
 /** merciful blow 斩杀 HP 比例阈值（原 attack.js 字面量 0.248）。 */
 const MERCIFUL_HP = 0.248;
@@ -12,7 +12,7 @@ const MERCIFUL_HP = 0.248;
 const ATTACK_PLAN_STEPS = Object.freeze([
   { capability: "focus", decide: decideFocusPlan },
   { capability: "spiritToggle", decide: decideSpiritTogglePlan },
-  { capability: "spell", decide: decideSpellAttackPlan },
+  { capability: "spell", decide: decideSpellPlan },
   { capability: "mercifulSingle", decide: decideMercifulSinglePlan },
   { capability: "physicalUtility", decide: decidePhysicalUtilityPlan },
   { capability: "defaultAttack", decide: decideDefaultAttackPlan },
@@ -79,6 +79,15 @@ function decideSpiritTogglePlan(opt, event) {
   return null;
 }
 
+function decideSpellPlan(opt, event, context) {
+  return runSpellAttackPlan({
+    type: SpellAttackPlanEvent.DECIDE,
+    opt,
+    event,
+    context,
+  });
+}
+
 function decideMercifulSinglePlan(opt, event, context) {
   const { alive, firstMonster, buffsOf } = context;
   if (
@@ -109,10 +118,17 @@ function decidePhysicalUtilityPlan(opt, event, context) {
   if (!opt.skillSwitch || !firstMonster) return null;
 
   const firstStunned = opt.fightingStyle === "2" && buffsOf(firstMonster.id).includes("wpn_stun");
-  const scored = scorePhysicalSkillCandidates(opt, event, {
-    firstMonsterStunned: !!firstStunned,
+  const scored = runPhysicalSkillScoring({
+    type: PhysicalSkillScoringEvent.SCORE_CANDIDATES,
+    opt,
+    event,
+    ctx: { firstMonsterStunned: !!firstStunned },
   });
-  const winner = pickByUtility(scored, { debugLog: !!opt.dynamicHealLog });
+  const winner = runPhysicalSkillRanking({
+    type: PhysicalSkillRankingEvent.PICK_BY_UTILITY,
+    candidates: scored,
+    options: { debugLog: !!opt.dynamicHealLog },
+  });
   if (!winner) return null;
 
   const mercifulTargetId = decideMercifulAoeTarget(opt, alive, winner, buffsOf);

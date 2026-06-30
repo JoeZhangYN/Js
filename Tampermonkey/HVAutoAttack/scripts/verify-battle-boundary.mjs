@@ -3150,6 +3150,12 @@ function checkAttackEntry() {
     "conditionFacts",
     "event.monsterFacts",
     "event.overcharge",
+    "SpellAttackPlanEvent.DECIDE",
+    "runSpellAttackPlan",
+    "PhysicalSkillScoringEvent.SCORE_CANDIDATES",
+    "runPhysicalSkillScoring",
+    "PhysicalSkillRankingEvent.PICK_BY_UTILITY",
+    "runPhysicalSkillRanking",
   ]) {
     if (!attackPlanText.includes(required)) {
       violations.push(`${rel(attackPlanFile)} must lock attack plan step ${required}`);
@@ -3167,7 +3173,13 @@ function checkAttackEntry() {
   }
   const spellAttackPlanText = fs.readFileSync(spellAttackPlanFile, "utf8");
   for (const required of [
+    "SpellAttackPlanEvent",
+    "spellAttackPlanEventHandlers",
+    "DECIDE",
+    "runSpellAttackPlan",
     "decideSpellAttackPlan",
+    "AutoElementSelectionEvent.SELECT",
+    "runAutoElementSelection",
     "selectSpellTier",
     "highSkillCondition",
     "event.skillReady",
@@ -3176,6 +3188,22 @@ function checkAttackEntry() {
     if (!spellAttackPlanText.includes(required)) {
       violations.push(`${rel(spellAttackPlanFile)} must own attack spell-tier decision ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!SpellAttackPlanEvent\b|runSpellAttackPlan\b)/.test(
+      spellAttackPlanText
+    )
+  ) {
+    violations.push(`${rel(spellAttackPlanFile)} may export only its event entry`);
+  }
+  const spellAttackEntryBody =
+    spellAttackPlanText.match(/export function runSpellAttackPlan\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(spellAttackPlanText)) {
+    violations.push(`${rel(spellAttackPlanFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(spellAttackEntryBody)) {
+    violations.push(`${rel(spellAttackPlanFile)} entry must dispatch by handler table`);
   }
   if (/decideAttack\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideAttackFile)} must not expose opt/snap attack input`);
@@ -3236,7 +3264,13 @@ function checkAttackEntry() {
   }
   const scoringText = fs.readFileSync(physicalSkillScoringFile, "utf8");
   for (const required of [
+    "PhysicalSkillScoringEvent",
+    "physicalSkillScoringEventHandlers",
+    "SCORE_CANDIDATES",
+    "runPhysicalSkillScoring",
     "scorePhysicalSkillCandidates",
+    "PhysicalSkillRankingEvent.AOE_SCORE",
+    "runPhysicalSkillRanking",
     "event.skillReady",
     "skillBaseScore",
     "PHYSICAL_SKILL_SCORERS",
@@ -3255,6 +3289,56 @@ function checkAttackEntry() {
         `${rel(physicalSkillScoringFile)} must own physical skill scoring ${required}`
       );
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!PhysicalSkillScoringEvent\b|runPhysicalSkillScoring\b)/.test(
+      scoringText
+    )
+  ) {
+    violations.push(`${rel(physicalSkillScoringFile)} may export only its event entry`);
+  }
+  const scoringEntryBody =
+    scoringText.match(/export function runPhysicalSkillScoring\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_SCORE_CANDIDATES\]/.test(scoringText)) {
+    violations.push(`${rel(physicalSkillScoringFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(scoringEntryBody)) {
+    violations.push(`${rel(physicalSkillScoringFile)} entry must dispatch by handler table`);
+  }
+  const rankingText = fs.readFileSync(physicalSkillRankingFile, "utf8");
+  for (const required of [
+    "PhysicalSkillRankingEvent",
+    "physicalSkillRankingEventHandlers",
+    "PICK_BY_UTILITY",
+    "AOE_SCORE",
+    "runPhysicalSkillRanking",
+    "pickByUtility",
+    "aoeScore",
+  ]) {
+    if (!rankingText.includes(required)) {
+      violations.push(`${rel(physicalSkillRankingFile)} must own physical skill ranking ${required}`);
+    }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!PhysicalSkillRankingEvent\b|runPhysicalSkillRanking\b)/.test(
+      rankingText
+    )
+  ) {
+    violations.push(`${rel(physicalSkillRankingFile)} may export only its event entry`);
+  }
+  const rankingEntryBody =
+    rankingText.match(/export function runPhysicalSkillRanking\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (
+    !/Object\.freeze\(\{[\s\S]*\[EVENT_PICK_BY_UTILITY\][\s\S]*\[EVENT_AOE_SCORE\]/.test(
+      rankingText
+    )
+  ) {
+    violations.push(`${rel(physicalSkillRankingFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(rankingEntryBody)) {
+    violations.push(`${rel(physicalSkillRankingFile)} entry must dispatch by handler table`);
   }
   const scoreContextBody =
     scoringText.match(/function scoreSkillContextual\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
@@ -3275,6 +3359,10 @@ function checkAttackEntry() {
   }
   const autoElementText = fs.readFileSync(autoElementSelectionFile, "utf8");
   for (const required of [
+    "AutoElementSelectionEvent",
+    "autoElementSelectionEventHandlers",
+    "SELECT",
+    "runAutoElementSelection",
     "selectAutoElement",
     "autoElementPool",
     "target.resists",
@@ -3286,6 +3374,22 @@ function checkAttackEntry() {
         `${rel(autoElementSelectionFile)} must own auto element selection ${required}`
       );
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!AutoElementSelectionEvent\b|runAutoElementSelection\b)/.test(
+      autoElementText
+    )
+  ) {
+    violations.push(`${rel(autoElementSelectionFile)} may export only its event entry`);
+  }
+  const autoElementEntryBody =
+    autoElementText.match(/export function runAutoElementSelection\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_SELECT\]/.test(autoElementText)) {
+    violations.push(`${rel(autoElementSelectionFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(autoElementEntryBody)) {
+    violations.push(`${rel(autoElementSelectionFile)} entry must dispatch by handler table`);
   }
   if (
     !/const ELEMENT_TO_STATUS = Object\.freeze\(\{/.test(autoElementText) ||
@@ -3329,6 +3433,13 @@ function checkAttackEntry() {
         /from\s+["'][^"']*physical-skill-scoring\.js["']/.test(text)
       ) {
         violations.push(`${rel(file)} must not bypass runAttackDecision for physical skill scoring`);
+      }
+      if (
+        file !== attackPlanFile &&
+        file !== physicalSkillScoringFile &&
+        /from\s+["'][^"']*physical-skill-ranking\.js["']/.test(text)
+      ) {
+        violations.push(`${rel(file)} must not bypass runAttackDecision for physical skill ranking`);
       }
       if (
         file !== spellAttackPlanFile &&

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scorePhysicalSkillCandidates } from "./physical-skill-scoring.js";
+import { PhysicalSkillScoringEvent, runPhysicalSkillScoring } from "./physical-skill-scoring.js";
 
 function event(over = {}) {
   return {
@@ -26,11 +26,12 @@ function monster(over = {}) {
 }
 
 function scoreOne(skill, opt, eventOver = {}, ctx = {}) {
-  return scorePhysicalSkillCandidates(
-    { skillSwitch: true, fightingStyle: "2", skillOrderValue: skill, ...opt },
-    event(eventOver),
+  return runPhysicalSkillScoring({
+    type: PhysicalSkillScoringEvent.SCORE_CANDIDATES,
+    opt: { skillSwitch: true, fightingStyle: "2", skillOrderValue: skill, ...opt },
+    event: event(eventOver),
     ctx
-  )[0];
+  })[0];
 }
 
 describe("scorePhysicalSkillCandidates", () => {
@@ -78,5 +79,9 @@ describe("scorePhysicalSkillCandidates", () => {
       score: 1000,
       explain: "score=1000 (execute)",
     });
+  });
+
+  it("rejects unknown physical skill scoring events", () => {
+    expect(runPhysicalSkillScoring({ type: "unknown" })).toEqual([]);
   });
 });

@@ -1,12 +1,28 @@
 import { checkCondition } from "../../settings/condition-eval.js";
 import { OFFENSIVE_SPELL_LIB } from "../../data/spell-lib.js";
 import { BattleTargetStrategyEvent, runBattleTargetStrategy } from "../battle-target-strategy.js";
-import { selectAutoElement } from "./auto-element-selection.js";
+import { AutoElementSelectionEvent, runAutoElementSelection } from "./auto-element-selection.js";
 
-export function decideSpellAttackPlan(opt, event, context) {
+const EVENT_DECIDE = "decide";
+
+export const SpellAttackPlanEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+const spellAttackPlanEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: (event) => decideSpellAttackPlan(event.opt, event.event, event.context),
+});
+
+function decideSpellAttackPlan(opt, event, context) {
   const { alive, firstMonster, etherTapGate } = context;
   const autoEl =
-    opt.autoElement && firstMonster ? selectAutoElement(firstMonster, opt).element : null;
+    opt.autoElement && firstMonster
+      ? runAutoElementSelection({
+          type: AutoElementSelectionEvent.SELECT,
+          target: firstMonster,
+          opt,
+        }).element
+      : null;
   const atkStatus = autoEl ?? event.attackStatus;
 
   if (etherTapGate || atkStatus === 0 || !firstMonster) return null;
@@ -62,4 +78,8 @@ function selectSpellTier(opt, event) {
   if (midMet && ready2) return { tier: 2 };
   if (ready1) return { tier: 1 };
   return { tier: 0 };
+}
+
+export function runSpellAttackPlan(event = { type: EVENT_DECIDE }) {
+  return spellAttackPlanEventHandlers[event.type]?.(event) ?? null;
 }

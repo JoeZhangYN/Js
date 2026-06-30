@@ -3,9 +3,23 @@
 // 不只是常量 base × multiplier。OFC/FRD 仍用 aoeScore（少怪降级 + 怪数比例）。
 // 盾战 combo：T1 stun → T2（晕状态打 T2 = 200 分高优先）→ T3 斩杀（hpRatio<25%+bleed = 1000 分决定性）
 import { checkCondition } from "../../settings/condition-eval.js";
-import { aoeScore } from "./physical-skill-ranking.js";
+import {
+  PhysicalSkillRankingEvent,
+  runPhysicalSkillRanking,
+} from "./physical-skill-ranking.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "../battle-monster-view.js";
 import { BigSkillCatalogEvent, runBigSkillCatalog } from "../big-skill-catalog.js";
+
+const EVENT_SCORE_CANDIDATES = "score-candidates";
+
+export const PhysicalSkillScoringEvent = Object.freeze({
+  SCORE_CANDIDATES: EVENT_SCORE_CANDIDATES,
+});
+
+const physicalSkillScoringEventHandlers = Object.freeze({
+  [EVENT_SCORE_CANDIDATES]: (event) =>
+    scorePhysicalSkillCandidates(event.opt, event.event, event.ctx || {}),
+});
 
 const PHYSICAL_SKILL_SCORERS = Object.freeze({
   OFC: scoreOfcSkill,
@@ -45,12 +59,20 @@ function scoreSkillContextual(skill, opt, event, firstMonster) {
 
 function scoreOfcSkill(opt, event) {
   const overrides = opt.skillBaseScore || {};
-  return aoeScore(overrides.OFC ?? 100, event.aliveCount);
+  return runPhysicalSkillRanking({
+    type: PhysicalSkillRankingEvent.AOE_SCORE,
+    baseScore: overrides.OFC ?? 100,
+    aliveCount: event.aliveCount,
+  });
 }
 
 function scoreFrdSkill(opt, event) {
   const overrides = opt.skillBaseScore || {};
-  return aoeScore(overrides.FRD ?? 60, event.aliveCount);
+  return runPhysicalSkillRanking({
+    type: PhysicalSkillRankingEvent.AOE_SCORE,
+    baseScore: overrides.FRD ?? 60,
+    aliveCount: event.aliveCount,
+  });
 }
 
 function scoreT3Skill(opt, _event, firstMonster) {
@@ -90,7 +112,7 @@ function explainPhysicalSkillScore(skill, score, context) {
  * @param {{firstMonsterStunned:boolean}} ctx
  * @returns {Array<{code:string,id:string,score:number,oc:number,explain:string}>}
  */
-export function scorePhysicalSkillCandidates(opt, event, ctx) {
+function scorePhysicalSkillCandidates(opt, event, ctx) {
   if (!opt.skillSwitch || !event.spiritOn) return [];
   const skillOrder = (opt.skillOrderValue || "OFC,FRD,T3,T2,T1").split(",");
   const style = opt.fightingStyle || "2";
@@ -144,4 +166,8 @@ export function scorePhysicalSkillCandidates(opt, event, ctx) {
       },
     ];
   });
+}
+
+export function runPhysicalSkillScoring(event = { type: EVENT_SCORE_CANDIDATES }) {
+  return physicalSkillScoringEventHandlers[event.type]?.(event) ?? [];
 }
