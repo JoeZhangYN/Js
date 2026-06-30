@@ -1,6 +1,5 @@
-function aliveHpPercents(monsters) {
-  return (monsters || []).filter((monster) => !monster.isDead).map((monster) => monster.hpPercent);
-}
+const aliveHpPercents = (monsters) =>
+  (monsters || []).filter((monster) => !monster.isDead).map((monster) => monster.hpPercent);
 
 export function bossImperilFacts(snap) {
   return {
@@ -29,6 +28,12 @@ export function criticalBuffFacts(snap) {
     playerEffects: snap?.playerEffects,
   };
 }
+
+const conditionOnlyFacts = (snap) => ({ conditionFacts: conditionFacts(snap) });
+
+export const fleeFacts = conditionOnlyFacts;
+export const autoPauseFacts = conditionOnlyFacts;
+export const defendFacts = conditionOnlyFacts;
 
 export function channelFacts(snap) {
   return {

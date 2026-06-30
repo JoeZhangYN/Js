@@ -16,12 +16,14 @@ import { decideBurstControl } from "../debuff/decide-burst-control.js";
 import { attackFacts } from "./attack-facts.js";
 import {
   allDebuffFacts,
+  autoPauseFacts,
   bossImperilFacts,
   burstControlFacts,
   buffFacts,
   channelFacts,
-  conditionFacts,
   criticalBuffFacts,
+  defendFacts,
+  fleeFacts,
   gemFacts,
   infusionFacts,
   potionFacts,
@@ -40,12 +42,12 @@ export const BATTLE_RULES = [
   // 2. 逃跑
   {
     name: "flee",
-    decide: (snap, opt) => decideFlee({ opt, conditionFacts: conditionFacts(snap) }),
+    decide: (snap, opt) => decideFlee({ opt, ...fleeFacts(snap) }),
   },
   // 3. 自动暂停（dispatch 交给 runBattlePauseAutomation 统一写暂停状态）
   {
     name: "autoPause",
-    decide: (snap, opt) => decideAutoPause({ opt, conditionFacts: conditionFacts(snap) }),
+    decide: (snap, opt) => decideAutoPause({ opt, ...autoPauseFacts(snap) }),
   },
   // 4. 宝石（decideGemUse 自 gate snap.gemName；dyn-threshold 在 decide，autoTune 计数在 execute）
   { name: "useGem", decide: (snap, opt) => decideGemUse({ opt, ...gemFacts(snap) }) },
@@ -62,7 +64,7 @@ export const BATTLE_RULES = [
   // 7. 防御（attemptClick 内置 isOn 探活）
   {
     name: "defend",
-    decide: (snap, opt) => decideDefend({ opt, conditionFacts: conditionFacts(snap) }),
+    decide: (snap, opt) => decideDefend({ opt, ...defendFacts(snap) }),
   },
   // 8. 卷轴（decide 出候选 item id，execute 探活+点第一个可用）
   {

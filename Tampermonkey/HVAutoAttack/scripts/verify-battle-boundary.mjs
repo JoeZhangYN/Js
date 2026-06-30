@@ -1716,10 +1716,23 @@ function checkAttackEntry() {
 function checkBattleRuleFactMappers() {
   const ruleFactsText = fs.readFileSync(ruleFactsFile, "utf8");
   const attackFactsText = fs.readFileSync(attackFactsFile, "utf8");
-  for (const required of ["conditionFacts", "bossImperilFacts", "singleDebuffFacts"]) {
+  for (const required of [
+    "conditionFacts",
+    "fleeFacts",
+    "autoPauseFacts",
+    "defendFacts",
+    "bossImperilFacts",
+    "singleDebuffFacts",
+  ]) {
     if (!ruleFactsText.includes(required)) {
       violations.push(`${rel(ruleFactsFile)} must own rule fact mapper ${required}`);
     }
+  }
+  const rulesText = fs.readFileSync(battleRulesFile, "utf8");
+  if (/conditionFacts\s*:\s*conditionFacts\s*\(\s*snap\s*\)/.test(rulesText)) {
+    violations.push(
+      `${rel(battleRulesFile)} must use named fact mappers, not assemble condition facts`
+    );
   }
   for (const required of ["attackFacts", "conditionFacts", "monsterFacts"]) {
     if (!attackFactsText.includes(required)) {
