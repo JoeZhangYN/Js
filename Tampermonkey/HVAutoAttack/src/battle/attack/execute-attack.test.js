@@ -128,7 +128,12 @@ describe("runBattleAttackExecution", () => {
     });
   });
 
-  it("rejects unknown events", () => {
+  it("rejects unknown attack execution events", () => {
     expect(runBattleAttackExecution({ type: "unknown" })).toBe(false);
+
+    expect(mocks.runBattleFocusCommand).not.toHaveBeenCalled();
+    expect(mocks.runBattleTargetCommand).not.toHaveBeenCalled();
+    expect(mocks.runPhysicalSkillBookkeeping).not.toHaveBeenCalled();
+    expect(mocks.runBattleSpiritToggleAutomation).not.toHaveBeenCalled();
   });
 });

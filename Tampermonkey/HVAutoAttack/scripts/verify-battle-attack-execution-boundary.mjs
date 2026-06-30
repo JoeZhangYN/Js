@@ -20,6 +20,7 @@ const actionEffectText = read(actionEffect);
 
 for (const required of [
   "BattleAttackExecutionEvent",
+  "battleAttackExecutionEventHandlers",
   "APPLY_PLAN",
   "runBattleAttackExecution",
   "BattleFocusCommandEvent.CLICK",
@@ -40,8 +41,22 @@ if (
   violations.push(`${rel(owner)} may export only its event entry`);
 }
 
+const entryBody =
+  ownerText.match(/export function runBattleAttackExecution\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover attack execution contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("rejects unknown attack execution events")) {
+    violations.push(`${rel(ownerTest)} must cover unknown attack execution events`);
+  }
 }
 
 if (

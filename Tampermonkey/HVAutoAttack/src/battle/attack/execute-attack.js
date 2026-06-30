@@ -18,6 +18,10 @@ export const BattleAttackExecutionEvent = Object.freeze({
   APPLY_PLAN: EVENT_APPLY_PLAN,
 });
 
+const battleAttackExecutionEventHandlers = Object.freeze({
+  [EVENT_APPLY_PLAN]: (event) => applyAttackPlan(event.plan, event.snap),
+});
+
 function observedBigSkillBosses(snap) {
   return (snap?.view || [])
     .filter((monster) => monster.isBoss && !monster.isDead && monster.monsterId != null)
@@ -123,6 +127,5 @@ function applyAttackPlan(plan, snap) {
 }
 
 export function runBattleAttackExecution(event = { type: EVENT_APPLY_PLAN }) {
-  if (event.type === EVENT_APPLY_PLAN) return applyAttackPlan(event.plan, event.snap);
-  return false;
+  return battleAttackExecutionEventHandlers[event.type]?.(event) ?? false;
 }
