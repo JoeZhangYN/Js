@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleDecisionRuntimeEvent, runBattleDecisionRuntime } from "./battle-decision-runtime.js";
 
 const mocks = vi.hoisted(() => ({
@@ -25,6 +25,10 @@ vi.mock("./battle-spirit-toggle.js", () => ({
   runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
 }));
 
+beforeEach(() => {
+  for (const fn of Object.values(mocks)) fn.mockClear();
+});
+
 describe("runBattleDecisionRuntime", () => {
   it("reads decision runtime facts through their capability entries", () => {
     expect(runBattleDecisionRuntime({ type: BattleDecisionRuntimeEvent.READ_CURRENT })).toEqual({
@@ -46,5 +50,9 @@ describe("runBattleDecisionRuntime", () => {
 
   it("returns empty runtime facts for unknown events", () => {
     expect(runBattleDecisionRuntime({ type: "unknown" })).toEqual({});
+
+    expect(mocks.runBattleProgressAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleStartRuntimeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleSpiritToggleAutomation).not.toHaveBeenCalled();
   });
 });

@@ -14,6 +14,10 @@ export const BattleDecisionRuntimeEvent = Object.freeze({
   READ_CURRENT: EVENT_READ_CURRENT,
 });
 
+const battleDecisionRuntimeEventHandlers = Object.freeze({
+  [EVENT_READ_CURRENT]: () => readCurrentDecisionRuntime(),
+});
+
 function readCurrentDecisionRuntime() {
   const progress = runBattleProgressAutomation({ type: BattleProgressEvent.READ_CONTEXT });
   return {
@@ -31,6 +35,5 @@ function readCurrentDecisionRuntime() {
 }
 
 export function runBattleDecisionRuntime(event = { type: EVENT_READ_CURRENT }) {
-  if (event.type === EVENT_READ_CURRENT) return readCurrentDecisionRuntime();
-  return {};
+  return battleDecisionRuntimeEventHandlers[event.type]?.(event) ?? {};
 }

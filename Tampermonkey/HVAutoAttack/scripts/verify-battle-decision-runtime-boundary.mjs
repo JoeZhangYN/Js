@@ -20,6 +20,7 @@ const turnContextText = read(turnContext);
 
 for (const required of [
   "BattleDecisionRuntimeEvent",
+  "battleDecisionRuntimeEventHandlers",
   "runBattleDecisionRuntime",
   "READ_CURRENT",
   "BattleProgressEvent.READ_CONTEXT",
@@ -38,8 +39,22 @@ if (
 ) {
   violations.push(`${rel(owner)} may export only its event entry`);
 }
+const entryBody =
+  ownerText.match(/export function runBattleDecisionRuntime\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\]/.test(ownerText)) {
+  violations.push(`${rel(owner)} must route events through a frozen handler table`);
+}
+if (/event\.type\s*===/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover decision runtime entry contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("returns empty runtime facts for unknown events")) {
+    violations.push(`${rel(ownerTest)} must cover unknown decision runtime events`);
+  }
 }
 if (
   !turnContextText.includes("BattleDecisionRuntimeEvent.READ_CURRENT") ||
