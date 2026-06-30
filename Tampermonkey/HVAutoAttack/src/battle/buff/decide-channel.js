@@ -1,6 +1,6 @@
 // PURE: channeling 期 3 段 fallback 链决策（零 DOM）。忠实复刻 buff.js::useChannelSkill 优先级：
 //   0. channelSkillSwitch + channelSkill + snap.channeling 入口守卫
-//   1. channelSkill 列表（buffSkillOrderValue 序，needsRecast && skillReady → click BUFF_SKILL_LIB.id）
+//   1. channelSkill 列表（buffSkillOrderValue 序，recast query && skillReady → click BUFF_SKILL_LIB.id）
 //   2. channelSkill2（channelSkill2OrderValue 序，skillReady → click skillId）
 //   3. buff 续施（playerEffects 升序，turns<=1：Cloak of the Fallen→422 / NAME_TO_BUFF_CODE→lib.id）
 // 只读 explicit channel facts，**禁** gE/isOn/querySelector/document。
@@ -8,6 +8,7 @@
 // 原 DOM buff 探活 → event.playerEffects（明细 img/name/turns）+ event.playerBuffs（img 名列表）。
 import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
 import { NAME_TO_BUFF_CODE } from "../../data/spell-lib.js";
+import { shouldRecastPlayerBuff } from "./player-buff-recast.js";
 
 /**
  * @param {object} event
@@ -35,7 +36,7 @@ function decidePlan(event) {
     for (const j of skillPack) {
       const lib = BUFF_SKILL_LIB.get(j);
       if (!lib) continue;
-      if (channelSkill[j] && needsRecast(event, lib.img) && skillReady[lib.id]) {
+      if (channelSkill[j] && shouldRecastPlayerBuff(event, lib.img) && skillReady[lib.id]) {
         return { type: "click", skillId: lib.id };
       }
     }
@@ -58,7 +59,7 @@ function decidePlan(event) {
     .sort((a, b) => a.turns - b.turns);
 
   for (const { name, turns } of buffs) {
-    if (turns > 1) continue; // needsRecast 守卫：只续即将消失的 buff（turns<=1）
+    if (turns > 1) continue; // recast query 守卫：只续即将消失的 buff（turns<=1）
 
     // Cloak of the Fallen：玩家无 sparklife buff 且 422 ready → 续 Spark of Life
     if (
@@ -79,19 +80,4 @@ function decidePlan(event) {
   }
 
   return { type: "noop" };
-}
-
-/**
- * 该 buff img 是否需要重施。精确文件名匹配防 substring 冲突（regen↔regeneration / haste↔hastened）。
- * 原 buff.js 用 `img[src$="/${img}.png"]` 精确匹配；snap.playerEffects[].img 已是 /e/<name>.png 的 <name>，
- * 故 e.img === img 即精确等价。
- * @param {object} event
- * @param {string} img effect 图标文件名
- * @returns {boolean}
- */
-function needsRecast(event, img) {
-  const existing = (event.playerEffects || []).find((e) => e.img === img);
-  if (!existing) return true; // buff 未上 → 需重施
-  // 永续（Infinity）→ 不重施（保守省 MP）；剩余 ≤1 才重施
-  return existing.turns <= 1;
 }

@@ -3,6 +3,7 @@
 // Phase 5b-2 wave 1 第 1 个 L1 切缝示例。
 import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
 import { checkCondition } from "../../settings/condition-eval.js";
+import { shouldRecastPlayerBuff } from "./player-buff-recast.js";
 
 const DRAUGHT_PACK = [
   ["HD", { id: 11191, img: "healthpot" }],
@@ -32,9 +33,7 @@ export function decideBuff(event = {}) {
     if (!checkCondition(opt[`buffSkill${skill}Condition`], event.conditionFacts)) continue;
     const lib = BUFF_SKILL_LIB.get(skill);
     if (!lib) continue;
-    const turnsLeft = event.playerEffectTurns?.[lib.img];
-    // needsRecast: img 不存在（undefined）or 剩余 ≤ 1
-    if (turnsLeft != null && turnsLeft > 1) continue;
+    if (!shouldRecastPlayerBuff(event, lib.img)) continue;
     if (!event.skillReady?.[lib.id]) continue;
 
     // 是否需要先开 Spirit Stance？

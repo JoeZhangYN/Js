@@ -39,6 +39,8 @@ const decideInfusionFile = path.join(root, "src/battle/buff/decide-infusion.js")
 const decideBuffFile = path.join(root, "src/battle/buff/decide-buff.js");
 const decideChannelFile = path.join(root, "src/battle/buff/decide-channel.js");
 const buffFactsFile = path.join(root, "src/battle/buff/buff-facts.js");
+const playerBuffRecastFile = path.join(root, "src/battle/buff/player-buff-recast.js");
+const playerBuffRecastTestFile = path.join(root, "src/battle/buff/player-buff-recast.test.js");
 const decideCriticalBuffFile = path.join(
   root,
   "src/battle/critical-buff-guard/decide-critical-buff.js"
@@ -1889,6 +1891,7 @@ function checkChannelEntry() {
     "event.skillReady",
     "event.playerEffects",
     "event.playerBuffs",
+    "shouldRecastPlayerBuff",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideChannelFile)} must own channel gate ${required}`);
@@ -1920,7 +1923,7 @@ function checkBuffEntry() {
     "conditionFacts",
     "event.skillReady",
     "event.playerBuffs",
-    "event.playerEffectTurns",
+    "shouldRecastPlayerBuff",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideBuffFile)} must own buff gate ${required}`);
@@ -1938,6 +1941,53 @@ function checkBuffEntry() {
   for (const legacy of ["buffSkillSwitch", "buffSkillCondition"]) {
     if (new RegExp(`\\b${legacy}\\b`).test(rulesText)) {
       violations.push(`${rel(battleRulesFile)} must not assemble buff rule gates directly`);
+    }
+  }
+}
+
+function checkPlayerBuffRecastQuery() {
+  if (!fs.existsSync(playerBuffRecastFile)) {
+    violations.push(`${rel(playerBuffRecastFile)} must own player buff recast query`);
+    return;
+  }
+  if (!fs.existsSync(playerBuffRecastTestFile)) {
+    violations.push(`${rel(playerBuffRecastTestFile)} must lock player buff recast query`);
+  }
+
+  const ownerText = fs.readFileSync(playerBuffRecastFile, "utf8");
+  for (const required of [
+    "shouldRecastPlayerBuff",
+    "playerEffectTurns",
+    "playerEffects",
+    "hasOwnProperty",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(playerBuffRecastFile)} must own player buff recast fact ${required}`);
+    }
+  }
+
+  const channelText = fs.readFileSync(decideChannelFile, "utf8");
+  if (/function\s+needsRecast\b/.test(channelText)) {
+    violations.push(`${rel(decideChannelFile)} must not keep local needsRecast logic`);
+  }
+
+  const buffText = fs.readFileSync(decideBuffFile, "utf8");
+  if (/playerEffectTurns\?\.\[\s*lib\.img\s*\]|\bturnsLeft\b/.test(buffText)) {
+    violations.push(`${rel(decideBuffFile)} must use player buff recast query`);
+  }
+
+  const allowedProductionImporters = new Set([decideChannelFile, decideBuffFile]);
+  const battleDir = path.join(root, "src/battle");
+  for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
+    const file = path.join(entry.parentPath, entry.name);
+    if (file.endsWith(".test.js")) continue;
+    const text = fs.readFileSync(file, "utf8");
+    if (
+      /from\s+["'][^"']*player-buff-recast\.js["']/.test(text) &&
+      !allowedProductionImporters.has(file)
+    ) {
+      violations.push(`${rel(file)} must not bypass buff recast query consumers`);
     }
   }
 }
@@ -2712,6 +2762,7 @@ checkBuffPreparationEntry();
 checkInfusionEntry();
 checkChannelEntry();
 checkBuffEntry();
+checkPlayerBuffRecastQuery();
 checkSingleDebuffEntry();
 checkAllDebuffEntry();
 checkBattleItemDecisionEntry();

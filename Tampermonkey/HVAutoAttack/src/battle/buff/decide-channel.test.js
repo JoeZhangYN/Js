@@ -1,5 +1,5 @@
-// decideChannel 3 段 fallback 链 + needsRecast 精确匹配回归锁（纯决策，喂 explicit facts 断言 ChannelPlan）。
-// file-size-gate: exempt test-verbose（20 用例覆盖三段优先级 + needsRecast 精确匹配）
+// decideChannel 3 段 fallback 链 + recast query 精确匹配回归锁（纯决策，喂 explicit facts 断言 ChannelPlan）。
+// file-size-gate: exempt test-verbose（20 用例覆盖三段优先级 + recast query 精确匹配）
 import { describe, it, expect } from "vitest";
 import { decideChannel } from "./decide-channel.js";
 
@@ -61,7 +61,7 @@ describe("decideChannel 返 {kind:'channel-plan'}", () => {
 
 describe("第一段：channelSkill 列表", () => {
   it("buff 未上 + skillReady → click BUFF_SKILL_LIB.id", () => {
-    // Ha=haste, id=412；playerEffects 无 haste → needsRecast=true
+    // Ha=haste, id=412；playerEffects 无 haste → recast query=true
     const p = plan(
       enabled({ channelSkill: { Ha: true }, buffSkillOrderValue: "Ha" }),
       facts({ skillReady: { 412: true } })
@@ -69,7 +69,7 @@ describe("第一段：channelSkill 列表", () => {
     expect(p).toEqual({ type: "click", skillId: "412" });
   });
 
-  it("buff 已上且剩余>1 → 不重施（needsRecast=false）", () => {
+  it("buff 已上且剩余>1 → 不重施（recast query=false）", () => {
     const p = plan(
       enabled({ channelSkill: { Ha: true }, buffSkillOrderValue: "Ha" }),
       facts({
@@ -91,7 +91,7 @@ describe("第一段：channelSkill 列表", () => {
     expect(p).toEqual({ type: "click", skillId: "412" });
   });
 
-  it("needsRecast 精确文件名匹配防 substring 冲突（regen vs regeneration）", () => {
+  it("recast query 精确文件名匹配防 substring 冲突（regen vs regeneration）", () => {
     // Re=regen, id=312；玩家身上是 "regeneration"（非 regen）→ 精确匹配视为未上 → 需重施
     const p = plan(
       enabled({ channelSkill: { Re: true }, buffSkillOrderValue: "Re" }),
