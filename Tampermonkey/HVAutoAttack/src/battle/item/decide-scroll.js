@@ -1,6 +1,16 @@
 import { checkCondition } from "../../settings/condition-eval.js";
 import { BattleScrollCoverageEvent, runBattleScrollCoverage } from "./scroll-coverage.js";
 
+const EVENT_DECIDE = "decide";
+
+export const BattleScrollDecisionEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+const battleScrollDecisionEventHandlers = Object.freeze({
+  [EVENT_DECIDE]: decideScroll,
+});
+
 function emptyScrollPlan() {
   return { kind: "item-plan", plan: { type: "scroll", candidates: [] } };
 }
@@ -11,7 +21,7 @@ function emptyScrollPlan() {
  * @param {object} event
  * @returns {import("../../core/types.js").ActionResult} { kind:"item-plan", plan }
  */
-export function decideScroll(event = {}) {
+function decideScroll(event = {}) {
   const opt = event.opt || {};
   if (!opt.scrollSwitch || !opt.scroll) return emptyScrollPlan();
   if (!checkCondition(opt.scrollCondition, event.conditionFacts)) return emptyScrollPlan();
@@ -84,3 +94,7 @@ const SCROLL_LIB = Object.freeze({
     img1: "absorb",
   }),
 });
+
+export function runBattleScrollDecision(event = { type: EVENT_DECIDE }) {
+  return battleScrollDecisionEventHandlers[event.type]?.(event) ?? emptyScrollPlan();
+}

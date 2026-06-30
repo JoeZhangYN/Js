@@ -1,10 +1,10 @@
 // PURE: item 4 step 决策（gem / potion / stall topup / scroll）。
 // **不读 DOM**：只读 opt / snap。
 // 原 item.js 内联的 gE/isOn 探活下沉到 execute-item.js（写路径），判断逻辑全部上提到此处。
-// 复用现有纯 helper 和查询入口：decideGem / dynamic threshold / potion economy / checkCondition。
+// 复用现有纯 helper 和查询入口：gem decision / dynamic threshold / potion economy / checkCondition。
 import { checkCondition } from "../../settings/condition-eval.js";
-import { decideGem } from "./decide-gem.js";
-import { decideScroll } from "./decide-scroll.js";
+import { BattleGemDecisionEvent, runBattleGemDecision } from "./decide-gem.js";
+import { BattleScrollDecisionEvent, runBattleScrollDecision } from "./decide-scroll.js";
 import { BattleItemFactsEvent, runBattleItemFacts } from "./item-facts.js";
 import { BattleDynamicThresholdEvent, runBattleDynamicThreshold } from "../dynamic-threshold.js";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "../battle-stall-mode.js";
@@ -33,7 +33,10 @@ const battleItemDecisionHandlers = Object.freeze({
   [DECIDE_STALL_TOPUP]: (event) =>
     decideStallTopup(itemDecisionInput(event, BattleItemFactsEvent.READ_STALL_TOPUP)),
   [DECIDE_SCROLL]: (event) =>
-    decideScroll(itemDecisionInput(event, BattleItemFactsEvent.READ_SCROLL)),
+    runBattleScrollDecision({
+      ...itemDecisionInput(event, BattleItemFactsEvent.READ_SCROLL),
+      type: BattleScrollDecisionEvent.DECIDE,
+    }),
 });
 
 const GEM_RESULT_PLAN_MAPPERS = Object.freeze({
@@ -82,7 +85,11 @@ function decideGemUse(event = {}) {
   if (opt.dynamicHealThreshold && event.gemName === "Health Gem") {
     optEffective.hp1 = runBattleDynamicThreshold({ type: BattleDynamicThresholdEvent.READ_HP_THRESHOLD, facts: event, opt });
   }
-  const result = decideGem(optEffective, event);
+  const result = runBattleGemDecision({
+    ...event,
+    opt: optEffective,
+    type: BattleGemDecisionEvent.DECIDE,
+  });
   return {
     kind: "item-plan",
     plan: mapGemResultToItemPlan(result),

@@ -2810,6 +2810,10 @@ function checkBattleItemDecisionEntry() {
     "BattleItemFactsEvent.READ_STALL_TOPUP",
     "BattleItemFactsEvent.READ_SCROLL",
     "runBattleItemFacts",
+    "BattleGemDecisionEvent.DECIDE",
+    "runBattleGemDecision",
+    "BattleScrollDecisionEvent.DECIDE",
+    "runBattleScrollDecision",
     "GEM_RESULT_PLAN_MAPPERS",
     "mapGemResultToItemPlan",
   ]) {
@@ -2852,6 +2856,22 @@ function checkBattleItemDecisionEntry() {
   if (!/const SCROLL_LIB = Object\.freeze\(\{/.test(scrollText)) {
     violations.push(`${rel(decideScrollFile)} must own frozen scroll decision table`);
   }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleScrollDecisionEvent\b|runBattleScrollDecision\b)/.test(
+      scrollText
+    )
+  ) {
+    violations.push(`${rel(decideScrollFile)} may export only its event entry`);
+  }
+  const scrollEntryBody =
+    scrollText.match(/export function runBattleScrollDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(scrollText)) {
+    violations.push(`${rel(decideScrollFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(scrollEntryBody)) {
+    violations.push(`${rel(decideScrollFile)} entry must dispatch by handler table`);
+  }
 
   const rulesText = readBattleActionRulesText();
   const survivalText = fs.existsSync(decideSurvivalActionFile)
@@ -2883,7 +2903,7 @@ function checkBattleItemDecisionEntry() {
       continue;
     }
     const file = path.join(entry.parentPath, entry.name);
-    if (file === decideItemFile || file === decideScrollFile) continue;
+    if (file === decideItemFile || file === decideGemFile || file === decideScrollFile) continue;
     const source = fs.readFileSync(file, "utf8");
     if (
       /from\s+["'][^"']*item\/decide-item\.js["']/.test(source) &&
@@ -2909,6 +2929,10 @@ function checkBattleItemDecisionEntry() {
 function checkItemScrollEntry() {
   const itemText = fs.readFileSync(decideScrollFile, "utf8");
   for (const required of [
+    "BattleScrollDecisionEvent",
+    "battleScrollDecisionEventHandlers",
+    "DECIDE",
+    "runBattleScrollDecision",
     "decideScroll",
     "scrollSwitch",
     "scrollCondition",
@@ -3004,6 +3028,10 @@ function checkItemGemEntry() {
   const itemText = fs.readFileSync(decideItemFile, "utf8");
   const gemText = fs.readFileSync(decideGemFile, "utf8");
   for (const required of [
+    "BattleGemDecisionEvent",
+    "battleGemDecisionEventHandlers",
+    "DECIDE",
+    "runBattleGemDecision",
     "decideGemUse",
     "event.gemName",
     "event?.healthPercent",
@@ -3013,6 +3041,21 @@ function checkItemGemEntry() {
     if (!itemText.includes(required) && !gemText.includes(required)) {
       violations.push(`${rel(decideItemFile)} gem use must own fact ${required}`);
     }
+  }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleGemDecisionEvent\b|runBattleGemDecision\b)/.test(
+      gemText
+    )
+  ) {
+    violations.push(`${rel(decideGemFile)} may export only its event entry`);
+  }
+  const gemEntryBody =
+    gemText.match(/export function runBattleGemDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(gemText)) {
+    violations.push(`${rel(decideGemFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(gemEntryBody)) {
+    violations.push(`${rel(decideGemFile)} entry must dispatch by handler table`);
   }
   if (/decideGemUse\s*\(\s*opt\s*,\s*snap\s*\)/.test(itemText)) {
     violations.push(`${rel(decideItemFile)} must not expose opt/snap gem decision input`);
