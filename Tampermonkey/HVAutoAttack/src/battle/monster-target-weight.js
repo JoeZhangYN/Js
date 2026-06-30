@@ -4,6 +4,11 @@ export const MonsterTargetWeightEvent = Object.freeze({
   APPLY: EVENT_APPLY,
 });
 
+const monsterTargetWeightEventHandlers = Object.freeze({
+  [EVENT_APPLY]: (event) =>
+    applyTargetWeights(event.monsterStatus || [], event.runtimeSnapshot || [], event.options || {}),
+});
+
 function finitePositive(value) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
@@ -53,12 +58,5 @@ function applyTargetWeights(monsterStatus, runtimeSnapshot, options) {
 }
 
 export function runMonsterTargetWeight(event = { type: EVENT_APPLY }) {
-  if (event.type === EVENT_APPLY) {
-    return applyTargetWeights(
-      event.monsterStatus || [],
-      event.runtimeSnapshot || [],
-      event.options || {}
-    );
-  }
-  return [];
+  return monsterTargetWeightEventHandlers[event.type]?.(event) ?? [];
 }

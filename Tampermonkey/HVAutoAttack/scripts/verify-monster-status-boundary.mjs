@@ -9,6 +9,7 @@ const statusViewTest = path.normalize("src/battle/monster-status-view.test.js");
 const hpImpl = path.normalize("src/battle/monster-status-hp.js");
 const maxHpInference = path.normalize("src/battle/monster-max-hp-inference.js");
 const targetWeight = path.normalize("src/battle/monster-target-weight.js");
+const targetWeightTest = path.normalize("src/battle/monster-target-weight.test.js");
 const parserImpl = path.normalize("src/battle/log-parser.js");
 const roundStart = path.normalize("src/battle/battle-round-start.js");
 const actionEventBridge = path.normalize("src/battle/battle-action-event-bridge.js");
@@ -266,6 +267,7 @@ function checkTargetWeight() {
   for (const required of [
     "export const MonsterTargetWeightEvent",
     "export function runMonsterTargetWeight",
+    "monsterTargetWeightEventHandlers",
     "APPLY",
     "finitePositive",
     "optionWeight",
@@ -283,6 +285,22 @@ function checkTargetWeight() {
   ]) {
     if (text.includes(forbidden)) {
       violations.push(`${targetWeight.replaceAll("\\", "/")} must stay a pure weighting core`);
+    }
+  }
+  const entryBody =
+    text.match(/export function runMonsterTargetWeight\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY\]/.test(text)) {
+    violations.push(`${targetWeight.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${targetWeight.replaceAll("\\", "/")} entry must dispatch by handler table`);
+  }
+  if (!fs.existsSync(path.join(root, targetWeightTest))) {
+    violations.push(`${targetWeightTest.replaceAll("\\", "/")} must cover target weight entry`);
+  } else {
+    const testText = fs.readFileSync(path.join(root, targetWeightTest), "utf8");
+    if (!testText.includes("rejects unknown monster target weight events")) {
+      violations.push(`${targetWeightTest.replaceAll("\\", "/")} must cover unknown target weight events`);
     }
   }
 }

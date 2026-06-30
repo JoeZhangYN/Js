@@ -58,4 +58,13 @@ describe("monster target weight", () => {
       expect.objectContaining({ monsterId: 202, finWeight: Infinity }),
     ]);
   });
+
+  it("rejects unknown monster target weight events", () => {
+    expect(
+      runMonsterTargetWeight({
+        type: "unknown",
+        monsterStatus: [{ order: 0, currentHp: 500, isDead: false }],
+      })
+    ).toEqual([]);
+  });
 });
