@@ -15,6 +15,7 @@ const src = readFileSync(MAIN_LOOP, "utf8");
 // 已倒置进行动决策链的 step-action 符号 + 旧编排器 —— main-loop 不得再直接 import。
 const BANNED = [
   "BATTLE_RULES",
+  "ACTION_STEPS",
   "runRules",
   "useGem",
   "deadSoon",
@@ -52,7 +53,7 @@ const violations = BANNED.filter((b) => imported.has(b));
 if (violations.length) {
   console.error(
     `[check-mainloop-imports] main-loop.js 回退 import 了已倒置的 step 实现: ${violations.join(", ")}\n` +
-      `  → 新增/调整行动 step 请改 battle-action-decision.js 的内部 BATTLE_RULES;\n` +
+      `  → 新增/调整行动 step 请改 battle-action-decision.js 的内部 ACTION_STEPS;\n` +
       `    main-loop 只该调用 runBattleActionDecision(snap, options)。`
   );
   process.exit(1);

@@ -311,7 +311,7 @@ function checkTurnEntry() {
   if (!text.includes("runBattleActionDecision")) {
     violations.push(`${rel(mainLoopFile)} must delegate action decisions to one entry`);
   }
-  if (/\bBATTLE_RULES\b|\brunRules\b/.test(text)) {
+  if (/\bBATTLE_RULES\b|\bBattleRule\b|\brunRules\b/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must not assemble battle action rule chains directly`);
   }
   if (!/export function runBattleActionDecision\(/.test(actionDecisionText)) {
@@ -323,29 +323,32 @@ function checkTurnEntry() {
     );
   }
   for (const required of [
-    "BATTLE_RULES",
+    "ACTION_STEPS",
     "dispatch",
-    "for (const rule of BATTLE_RULES)",
-    "handleSurvival",
+    "for (const decide of ACTION_STEPS)",
     "decideSurvivalAction",
-    "prepareBuffs",
     "decideBuffPreparation",
-    "applyOffensiveDebuffs",
     "decideOffensiveDebuff",
-    "attack",
     "decideAttackAction",
   ]) {
     if (!actionDecisionText.includes(required)) {
       violations.push(`${rel(actionDecisionFile)} must own action decision ${required}`);
     }
   }
+  if (
+    !/const ACTION_STEPS = \[\s*decideSurvivalAction,\s*decideBuffPreparation,\s*decideOffensiveDebuff,\s*decideAttackAction,\s*\]/.test(
+      actionDecisionText
+    )
+  ) {
+    violations.push(`${rel(actionDecisionFile)} must own explicit action step order`);
+  }
   if (fs.existsSync(actionSequenceFile)) {
     violations.push(
       `${rel(actionSequenceFile)} must stay retired; action order belongs in runBattleActionDecision`
     );
   }
-  if (/export\s+const\s+BATTLE_RULES\b/.test(actionDecisionText)) {
-    violations.push(`${rel(actionDecisionFile)} must keep BATTLE_RULES private`);
+  if (/\bBATTLE_RULES\b|\bBattleRule\b|\brule\.decide\b/.test(actionDecisionText)) {
+    violations.push(`${rel(actionDecisionFile)} must not keep legacy rule-table abstraction`);
   }
   for (const forbidden of [
     "attackFacts",
@@ -1082,7 +1085,7 @@ function checkBattleRulesRuntimeContext() {
   const text = readBattleActionRulesText();
   if (/\bwhen\s*:/.test(text)) {
     violations.push(
-      `${rel(battleRulesFile)} must not define rule.when; business gates belong in decide entries`
+      `${rel(battleRulesFile)} must not define action step gates; business gates belong in decide entries`
     );
   }
   for (const legacy of ["readRuleRuntimeContext", "isStallingForRules", "hasMissingDebuff"]) {
@@ -1096,10 +1099,9 @@ function checkBattleRulesRuntimeContext() {
   if (/\.filter\(\s*\(?\w+\)?\s*=>\s*\w+\.buffs/.test(text)) {
     violations.push(`${rel(battleRulesFile)} must not assemble debuff coverage from monster buffs`);
   }
-  const rulesBody = text.split("/** @type")[1] || "";
-  if (/\bg\(\s*["'](?:roundNow|roundAll|roundType|monsterAlive)["']/.test(rulesBody)) {
+  if (/\bg\(\s*["'](?:roundNow|roundAll|roundType|monsterAlive)["']/.test(text)) {
     violations.push(
-      `${rel(battleRulesFile)} rule definitions must read runtime fields through rule runtime context`
+      `${rel(battleRulesFile)} action decision must read runtime fields through turn context`
     );
   }
   const allowedRuleChainImporters = new Set([actionDecisionFile]);
@@ -1363,10 +1365,7 @@ function checkOffensiveDebuffEntry() {
   }
 
   const rulesText = readBattleActionRulesText();
-  const offensiveDebuffRule =
-    rulesText.match(/name:\s*["']applyOffensiveDebuffs["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] ||
-    "";
-  if (!offensiveDebuffRule.includes("decideOffensiveDebuff")) {
+  if (!rulesText.includes("decideOffensiveDebuff")) {
     violations.push(`${rel(battleRulesFile)} must route offensive debuffs through one entry`);
   }
   for (const legacyRule of [
@@ -1458,9 +1457,7 @@ function checkSurvivalActionEntry() {
   }
 
   const rulesText = readBattleActionRulesText();
-  const survivalRule =
-    rulesText.match(/name:\s*["']handleSurvival["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
-  if (!survivalRule.includes("decideSurvivalAction")) {
+  if (!rulesText.includes("decideSurvivalAction")) {
     violations.push(`${rel(battleRulesFile)} must route survival through one entry`);
   }
   for (const legacyRule of [
@@ -1533,9 +1530,7 @@ function checkBuffPreparationEntry() {
   }
 
   const rulesText = readBattleActionRulesText();
-  const buffPreparationRule =
-    rulesText.match(/name:\s*["']prepareBuffs["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
-  if (!buffPreparationRule.includes("decideBuffPreparation")) {
+  if (!rulesText.includes("decideBuffPreparation")) {
     violations.push(`${rel(battleRulesFile)} must route buff preparation through one entry`);
   }
   for (const legacyRule of ["useInfusions", "useChannelSkill", "useBuffSkill"]) {
@@ -2074,7 +2069,7 @@ function checkAttackEntry() {
   const rulesText = readBattleActionRulesText();
   const attackRule =
     rulesText.match(/name:\s*["']attack["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
-  if (!attackRule.includes("decideAttackAction")) {
+  if (!rulesText.includes("decideAttackAction")) {
     violations.push(`${rel(battleRulesFile)} must route attack through decideAttackAction`);
   }
   if (/decideAttack\(\s*opt\s*,\s*snap\s*\)/.test(attackRule)) {

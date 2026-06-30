@@ -8,13 +8,6 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("./dispatch.js", () => ({ dispatch: mocks.dispatch }));
 
-const RULE_INDEX = Object.freeze({
-  handleSurvival: 0,
-  prepareBuffs: 1,
-  applyOffensiveDebuffs: 2,
-  attack: 3,
-});
-
 function dispatchedResults(snap = {}, opt = {}) {
   mocks.dispatch.mockClear();
   mocks.dispatch.mockReturnValue(false);
@@ -27,7 +20,7 @@ describe("runBattleActionDecision", () => {
     const results = dispatchedResults();
     expect(results).toHaveLength(4);
     expect(results.map((result) => result.kind)).toEqual(["noop", "noop", "noop", "attack-plan"]);
-    expect(results[RULE_INDEX.attack].plan).toBeTruthy();
+    expect(results[3].plan).toBeTruthy();
   });
 
   it("short-circuits after the first acted dispatch", () => {
@@ -49,30 +42,26 @@ describe("runBattleActionDecision", () => {
 
 describe("runBattleActionDecision rule contracts", () => {
   it("basic gates belong to rule entries, not the action chain", () => {
-    expect(dispatchedResults({}, { autoFlee: true })[RULE_INDEX.handleSurvival]).toEqual({
+    expect(dispatchedResults({}, { autoFlee: true })[0]).toEqual({
       kind: "flee-command",
     });
-    expect(dispatchedResults({}, { autoPause: true })[RULE_INDEX.handleSurvival]).toEqual({
+    expect(dispatchedResults({}, { autoPause: true })[0]).toEqual({
       kind: "pause",
     });
-    expect(dispatchedResults({}, { defend: true })[RULE_INDEX.handleSurvival]).toEqual({
+    expect(dispatchedResults({}, { defend: true })[0]).toEqual({
       kind: "defend-command",
     });
-    expect(dispatchedResults()[RULE_INDEX.handleSurvival]).toEqual({ kind: "noop" });
-    expect(
-      dispatchedResults({ attackStatus: 2, playerBuffs: [] })[RULE_INDEX.prepareBuffs]
-    ).toEqual({
+    expect(dispatchedResults()[0]).toEqual({ kind: "noop" });
+    expect(dispatchedResults({ attackStatus: 2, playerBuffs: [] })[1]).toEqual({
       kind: "noop",
     });
-    expect(dispatchedResults({ channeling: true })[RULE_INDEX.prepareBuffs]).toEqual({
+    expect(dispatchedResults({ channeling: true })[1]).toEqual({
       kind: "noop",
     });
-    expect(dispatchedResults({ view: [] })[RULE_INDEX.applyOffensiveDebuffs]).toEqual({
+    expect(dispatchedResults({ view: [] })[2]).toEqual({
       kind: "noop",
     });
-    expect(
-      dispatchedResults({ skillReady: { 213: false }, view: [] })[RULE_INDEX.applyOffensiveDebuffs]
-    ).toEqual({
+    expect(dispatchedResults({ skillReady: { 213: false }, view: [] })[2]).toEqual({
       kind: "noop",
     });
   });
@@ -105,13 +94,11 @@ describe("runBattleActionDecision stall Imperil contract", () => {
       debuffSkillAllIm: true,
     });
 
-    expect(results[RULE_INDEX.applyOffensiveDebuffs]).toEqual({ kind: "noop" });
+    expect(results[2]).toEqual({ kind: "noop" });
   });
 
   it("stallMode:false 时 bossImperil 恢复", () => {
-    expect(
-      dispatchedResults(stallSnap(), { stallMode: false })[RULE_INDEX.applyOffensiveDebuffs]
-    ).toEqual({
+    expect(dispatchedResults(stallSnap(), { stallMode: false })[2]).toEqual({
       kind: "click-skill-then-target",
       skillId: "213",
       targetId: 1,
@@ -123,7 +110,7 @@ describe("runBattleActionDecision stall Imperil contract", () => {
       dispatchedResults({
         skillReady: { 213: true },
         view: [{ id: 1, order: 0, isDead: false, isBoss: true, buffs: [] }],
-      })[RULE_INDEX.applyOffensiveDebuffs]
+      })[2]
     ).toEqual({
       kind: "click-skill-then-target",
       skillId: "213",
@@ -132,6 +119,6 @@ describe("runBattleActionDecision stall Imperil contract", () => {
   });
 
   it("burstControl 未开启时入口自行返回 noop", () => {
-    expect(dispatchedResults()[RULE_INDEX.applyOffensiveDebuffs]).toEqual({ kind: "noop" });
+    expect(dispatchedResults()[2]).toEqual({ kind: "noop" });
   });
 });

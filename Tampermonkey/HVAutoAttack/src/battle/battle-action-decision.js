@@ -5,28 +5,15 @@ import { decideBuffPreparation } from "./buff/decide-buff-preparation.js";
 import { decideOffensiveDebuff } from "./debuff/decide-offensive-debuff.js";
 import { decideSurvivalAction } from "./decide-survival-action.js";
 
-/** @type {import("../core/types.js").BattleRule[]} */
-const BATTLE_RULES = [
-  {
-    name: "handleSurvival",
-    decide: (snap, opt) => decideSurvivalAction(snap, opt),
-  },
-  {
-    name: "prepareBuffs",
-    decide: (snap, opt) => decideBuffPreparation(snap, opt),
-  },
-  {
-    name: "applyOffensiveDebuffs",
-    decide: (snap, opt) => decideOffensiveDebuff(snap, opt),
-  },
-  {
-    name: "attack",
-    decide: (snap, opt) => decideAttackAction(snap, opt),
-  },
+const ACTION_STEPS = [
+  decideSurvivalAction,
+  decideBuffPreparation,
+  decideOffensiveDebuff,
+  decideAttackAction,
 ];
 
 export function runBattleActionDecision(snap, battleRuleOptions) {
-  for (const rule of BATTLE_RULES) {
-    if (dispatch(rule.decide(snap, battleRuleOptions), snap)) return;
+  for (const decide of ACTION_STEPS) {
+    if (dispatch(decide(snap, battleRuleOptions), snap)) return;
   }
 }

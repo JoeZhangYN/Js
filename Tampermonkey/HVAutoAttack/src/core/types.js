@@ -59,14 +59,6 @@
  *         } AttackPlan
  */
 
-/**
- * 主循环决策规则（Phase 5b 编排倒置）。main-loop 只依赖 BattleRule[] + ActionResult 两个抽象，
- * 不再 import 具体 execute 实现。decide 纯函数返 ActionResult 交 dispatch 执行。
- * @typedef {object} BattleRule
- * @property {string} name                                           日志/调试用
- * @property {(snap: BattleSnapshot, opt: object) => ActionResult} decide PURE 决策
- */
-
 /** 攻击模式枚举（Phase 6 OFC/FRD CD tracking 会扩展）。 */
 /** @typedef {"OFC"|"FRD"} BigPhysicalSkill */
 
