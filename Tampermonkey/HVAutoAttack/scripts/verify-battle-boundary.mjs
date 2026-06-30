@@ -477,14 +477,14 @@ function checkTurnEntry() {
     }
   }
   if (
-    !/const ACTION_STEPS = \[\s*\{[\s\S]*capability: "survival"[\s\S]*decide: decideSurvivalStep[\s\S]*capability: "buffPreparation"[\s\S]*decide: decideBuffPreparationStep[\s\S]*capability: "offensiveDebuff"[\s\S]*decide: decideOffensiveDebuffStep[\s\S]*capability: "attack"[\s\S]*decide: decideAttackStep[\s\S]*\]/.test(
+    !/const ACTION_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "survival"[\s\S]*decide: decideSurvivalStep[\s\S]*capability: "buffPreparation"[\s\S]*decide: decideBuffPreparationStep[\s\S]*capability: "offensiveDebuff"[\s\S]*decide: decideOffensiveDebuffStep[\s\S]*capability: "attack"[\s\S]*decide: decideAttackStep[\s\S]*\]\)/.test(
       actionDecisionText
     )
   ) {
-    violations.push(`${rel(actionDecisionFile)} must own explicit action step order`);
+    violations.push(`${rel(actionDecisionFile)} must own frozen explicit action step order`);
   }
   const actionStepsBody =
-    actionDecisionText.match(/const ACTION_STEPS = \[[\s\S]*?\];/)?.[0] || "";
+    actionDecisionText.match(/const ACTION_STEPS = Object\.freeze\(\[[\s\S]*?\]\);/)?.[0] || "";
   if (/type:\s*Battle\w+Event\.DECIDE|decide:\s*runBattle\w+/.test(actionStepsBody)) {
     violations.push(
       `${rel(actionDecisionFile)} action step order must name business steps, not expose event fields`

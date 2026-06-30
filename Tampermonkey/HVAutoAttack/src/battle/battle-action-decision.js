@@ -14,7 +14,7 @@ import {
 } from "./debuff/decide-offensive-debuff.js";
 import { BattleSurvivalActionEvent, runBattleSurvivalAction } from "./decide-survival-action.js";
 
-const ACTION_STEPS = [
+const ACTION_STEPS = Object.freeze([
   {
     capability: "survival",
     decide: decideSurvivalStep,
@@ -31,7 +31,7 @@ const ACTION_STEPS = [
     capability: "attack",
     decide: decideAttackStep,
   },
-];
+]);
 
 function decideSurvivalStep(actionContext) {
   return runBattleSurvivalAction({

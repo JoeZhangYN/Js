@@ -57,12 +57,12 @@ for (const required of [
 }
 
 if (
-  !/const ACTION_STEPS = \[\s*\{[\s\S]*capability: "survival"[\s\S]*capability: "buffPreparation"[\s\S]*capability: "offensiveDebuff"[\s\S]*capability: "attack"[\s\S]*\]/.test(
+  !/const ACTION_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "survival"[\s\S]*capability: "buffPreparation"[\s\S]*capability: "offensiveDebuff"[\s\S]*capability: "attack"[\s\S]*\]\)/.test(
     actionDecision
   )
 ) {
   violations.push(
-    "src/battle/battle-action-decision.js must keep the documented action capability order"
+    "src/battle/battle-action-decision.js must keep the frozen documented action capability order"
   );
 }
 
