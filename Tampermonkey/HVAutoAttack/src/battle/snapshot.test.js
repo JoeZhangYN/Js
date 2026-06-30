@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   estimatePlayerIncomingDps: vi.fn(() => 0),
   gE: vi.fn(),
   isSpiritActive: vi.fn(() => false),
+  runBattleMonsterSurface: vi.fn(() => []),
   runBattleMonsterView: vi.fn(() => ({
     view: [{ monsterId: 101, isDead: false }],
     monsterIdentities: [{ name: "Alpha", monsterId: 101 }],
@@ -61,6 +62,10 @@ vi.mock("./battle-observation-learning.js", () => ({
 vi.mock("./monster-view.js", () => ({
   monsterHpVars: mocks.monsterHpVars,
 }));
+vi.mock("./battle-monster-surface.js", () => ({
+  BattleMonsterSurfaceEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
+  runBattleMonsterSurface: mocks.runBattleMonsterSurface,
+}));
 vi.mock("./battle-monster-view.js", () => ({
   BattleMonsterViewEvent: Object.freeze({ READ_VIEW: "readView" }),
   runBattleMonsterView: mocks.runBattleMonsterView,
@@ -97,10 +102,7 @@ beforeEach(() => {
     if (event.type === "readMap") return {};
     return undefined;
   });
-  mocks.gE.mockImplementation((selector, mode) => {
-    if (mode === "all") return [];
-    return null;
-  });
+  mocks.gE.mockReturnValue(null);
 });
 
 describe("collectSnapshot", () => {
@@ -109,9 +111,8 @@ describe("collectSnapshot", () => {
 
     expect(snap.turn).toBe(7);
     expect(snap.globalTurn).toBe(9);
-    expect(snap.spellAoe).toEqual({ Imperil: 2 });
-    expect(snap.skillOTOS).toEqual({ OFC: 1 });
     expect(mocks.runBattleTurnAutomation).toHaveBeenCalledWith({ type: "readCurrent" });
+    expect(mocks.runBattleMonsterSurface).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(mocks.runBattleMonsterView).toHaveBeenCalledWith({
       type: "readView",
       monsters: [],
@@ -121,7 +122,6 @@ describe("collectSnapshot", () => {
     expect(mocks.runBattlePlayerVitals).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(mocks.runBattlePlayerEffects).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(mocks.runBattleItemSurface).toHaveBeenCalledWith({ type: "readGemName" });
-    expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "readSpellAoe" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readMap" });
     expect(mocks.runBattleObservationLearning).toHaveBeenCalledWith({

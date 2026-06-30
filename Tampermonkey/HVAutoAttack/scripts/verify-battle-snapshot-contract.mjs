@@ -35,6 +35,8 @@ const snapshotText = requireText(snapshot, [
   "runBattlePlayerEffects",
   "BattleItemSurfaceEvent.READ_GEM_NAME",
   "runBattleItemSurface",
+  "BattleMonsterSurfaceEvent.READ_CURRENT",
+  "runBattleMonsterSurface",
   "BattleMonsterViewEvent.READ_VIEW",
   "BattleSkillUsageEvent.READ_USAGE",
 ]);
@@ -97,6 +99,11 @@ if (/#pane_effects|etherTapActiveX2:\s*!!gE|playerBuffs:\s*playerEffects\.map/.t
 if (/#ikey_p|gemName:\s*gE/.test(snapshotText)) {
   violations.push(
     `${snapshot.replaceAll("\\", "/")} must read gemName through battle item surface entry`
+  );
+}
+if (/readMonsters|readMonsterBuffs|div\.btm1|\.btm5|\.btm6|nbargreen|nbardead/.test(snapshotText)) {
+  violations.push(
+    `${snapshot.replaceAll("\\", "/")} must read monsters through battle monster surface entry`
   );
 }
 if (/snap\.fightingStyle/.test(scoringText)) {

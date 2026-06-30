@@ -15,10 +15,10 @@ import {
   BattleObservationLearningEvent,
   runBattleObservationLearning,
 } from "./battle-observation-learning.js";
-import { parseEffectTurns, parseEffectName } from "./effect-parse.js";
 import { monsterHpVars } from "./monster-view.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "../pages/ability-page.js";
 import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-skill-usage.js";
+import { BattleMonsterSurfaceEvent, runBattleMonsterSurface } from "./battle-monster-surface.js";
 import { BattleMonsterViewEvent, runBattleMonsterView } from "./battle-monster-view.js";
 import { BattleSkillReadinessEvent, runBattleSkillReadiness } from "./battle-skill-readiness.js";
 import { BattlePlayerVitalsEvent, runBattlePlayerVitals } from "./battle-player-vitals.js";
@@ -26,64 +26,11 @@ import { BattlePlayerEffectsEvent, runBattlePlayerEffects } from "./battle-playe
 import { BattleItemSurfaceEvent, runBattleItemSurface } from "./battle-item-surface.js";
 
 /**
- * 解析一个怪物 effect 容器内全部 img 为 {img, turns}[]。
- * img = effect 图标文件名（/e/<name>.png 的 <name>）；turns = 剩余回合（永续 → Infinity）。
- * @param {Element|null} container
- * @returns {Array<{img: string, turns: number}>}
- */
-function readEffects(container) {
-  if (!container) return [];
-  return [...container.querySelectorAll("img")].map((img) => ({
-    img: img.src.match(/\/e\/(.*?)\.png/)?.[1] || "",
-    name: parseEffectName(img), // 显示名（onmouseover 第一个引号串），供 decide 区别于 img 文件名
-    turns: parseEffectTurns(img),
-  }));
-}
-
-/**
- * 解析单怪物的 buff/debuff list。
- * @param {Element} mEl `.btm1` 元素
- * @returns {{names: string[], effects: Array<{img: string, turns: number}>}}
- */
-function readMonsterBuffs(mEl) {
-  const effects = readEffects(mEl.querySelector(".btm6"));
-  return { names: effects.map((e) => e.img), effects };
-}
-
-/**
- * 解析所有怪物。返回 plain object 数组，**不**含 DOM 引用。
- * @returns {Array<{id:number, order:number, isDead:boolean, hpRatio:number, buffs:string[]}>}
- */
-function readMonsters() {
-  const els = gE("div.btm1", "all");
-  return [...els].map((el, i) => {
-    const isDead = el.style.opacity === "0.3" || !!el.querySelector('img[src*="nbardead"]');
-    const hpBar = el.querySelector(".btm5 img[src*='nbargreen']");
-    const hpRatio = hpBar ? Math.max(0, hpBar.offsetWidth) / 120 : isDead ? 0 : 1;
-    const { names, effects } = readMonsterBuffs(el);
-    const m2El = el.querySelector(".btm2");
-    const isBoss = !!(m2El && m2El.style.background);
-    const nameEl = el.querySelector(".btm3");
-    const name = nameEl ? nameEl.textContent.trim() : "";
-    return {
-      id: i === 9 ? 0 : i + 1,
-      order: i,
-      isDead,
-      isBoss,
-      name,
-      hpRatio,
-      buffs: names,
-      buffEffects: effects,
-    };
-  });
-}
-
-/**
  * 一次性 batch DOM read 组装当前 turn snapshot。
  * @returns {import("../core/types.js").BattleSnapshot}
  */
 export function collectSnapshot(event = {}) {
-  const monsters = readMonsters();
+  const monsters = runBattleMonsterSurface({ type: BattleMonsterSurfaceEvent.READ_CURRENT });
   const { view, monsterIdentities } = runBattleMonsterView({
     type: BattleMonsterViewEvent.READ_VIEW,
     monsters,

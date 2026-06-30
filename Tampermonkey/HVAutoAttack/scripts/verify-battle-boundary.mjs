@@ -57,6 +57,7 @@ const skillReadinessFile = path.join(root, "src/battle/battle-skill-readiness.js
 const playerVitalsFile = path.join(root, "src/battle/battle-player-vitals.js");
 const playerEffectsFile = path.join(root, "src/battle/battle-player-effects.js");
 const itemSurfaceFile = path.join(root, "src/battle/battle-item-surface.js");
+const monsterSurfaceFile = path.join(root, "src/battle/battle-monster-surface.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const dispatchFile = path.join(root, "src/battle/dispatch.js");
@@ -1168,6 +1169,21 @@ function checkSnapshot() {
   for (const required of ["BattleItemSurfaceEvent", "READ_GEM_NAME", "#ikey_p"]) {
     if (!itemSurfaceText.includes(required)) {
       violations.push(`${rel(itemSurfaceFile)} must own ${required}`);
+    }
+  }
+  if (
+    !text.includes("BattleMonsterSurfaceEvent.READ_CURRENT") ||
+    !text.includes("runBattleMonsterSurface")
+  ) {
+    violations.push(`${rel(snapshotFile)} must read monsters through battle monster surface entry`);
+  }
+  if (/readMonsters|readMonsterBuffs|div\.btm1|\.btm5|\.btm6|nbargreen|nbardead/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not own monster surface DOM reads`);
+  }
+  const monsterSurfaceText = fs.readFileSync(monsterSurfaceFile, "utf8");
+  for (const required of ["BattleMonsterSurfaceEvent", "READ_CURRENT", 'gE("div.btm1", "all")']) {
+    if (!monsterSurfaceText.includes(required)) {
+      violations.push(`${rel(monsterSurfaceFile)} must own ${required}`);
     }
   }
   if (/\bg\(\s*["']skillOTOS["']/.test(text)) {
