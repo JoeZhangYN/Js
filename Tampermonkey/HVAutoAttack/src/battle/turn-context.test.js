@@ -3,25 +3,15 @@ import { prepareBattleTurnContext } from "./turn-context.js";
 
 const mocks = vi.hoisted(() => ({
   collectSnapshot: vi.fn(),
+  runBattleDecisionRuntime: vi.fn(),
   runBattlePlayerVitals: vi.fn(),
-  runBattleProgressAutomation: vi.fn(),
-  runBattleStartRuntimeAutomation: vi.fn(),
-  runBattleSpiritToggleAutomation: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
 }));
 
-vi.mock("./battle-progress.js", () => ({
-  BattleProgressEvent: Object.freeze({ READ_CONTEXT: "readContext" }),
-  runBattleProgressAutomation: mocks.runBattleProgressAutomation,
-}));
-vi.mock("./battle-start-runtime.js", () => ({
-  BattleStartRuntimeEvent: Object.freeze({ READ_ATTACK_STATUS: "readAttackStatus" }),
-  runBattleStartRuntimeAutomation: mocks.runBattleStartRuntimeAutomation,
-}));
-vi.mock("./battle-spirit-toggle.js", () => ({
-  BattleSpiritToggleEvent: Object.freeze({ READ_LAST_TOGGLE: "readLastToggle" }),
-  runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
+vi.mock("./battle-decision-runtime.js", () => ({
+  BattleDecisionRuntimeEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
+  runBattleDecisionRuntime: mocks.runBattleDecisionRuntime,
 }));
 vi.mock("./battle-player-vitals.js", () => ({
   BattlePlayerVitalsEvent: Object.freeze({ MIRROR_RUNTIME: "mirrorRuntime" }),
@@ -47,14 +37,14 @@ const snap = { hp: 90, mp: 80, sp: 70, oc: 60 };
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
   mocks.collectSnapshot.mockReturnValue(snap);
-  mocks.runBattleProgressAutomation.mockReturnValue({
+  mocks.runBattleDecisionRuntime.mockReturnValue({
     monsterAlive: 3,
     roundAll: 5,
     roundNow: 2,
     roundType: "ar",
+    attackStatus: 2,
+    lastSpiritToggleGlobalTurn: 97,
   });
-  mocks.runBattleStartRuntimeAutomation.mockReturnValue(2);
-  mocks.runBattleSpiritToggleAutomation.mockReturnValue(97);
   mocks.runOptionAutomation.mockImplementation((event) => {
     if (event.type === "readBattleActionOptions") return { burstControlSwitch: false };
     if (event.type === "readField") return false;
@@ -79,7 +69,7 @@ describe("prepareBattleTurnContext", () => {
     });
   });
 
-  it("attaches decision runtime facts through battle progress entry", () => {
+  it("attaches decision runtime facts through one runtime entry", () => {
     const prepared = prepareBattleTurnContext().snap;
 
     expect(prepared).toMatchObject({
@@ -90,13 +80,7 @@ describe("prepareBattleTurnContext", () => {
       attackStatus: 2,
       lastSpiritToggleGlobalTurn: 97,
     });
-    expect(mocks.runBattleProgressAutomation).toHaveBeenCalledWith({ type: "readContext" });
-    expect(mocks.runBattleStartRuntimeAutomation).toHaveBeenCalledWith({
-      type: "readAttackStatus",
-    });
-    expect(mocks.runBattleSpiritToggleAutomation).toHaveBeenCalledWith({
-      type: "readLastToggle",
-    });
+    expect(mocks.runBattleDecisionRuntime).toHaveBeenCalledWith({ type: "readCurrent" });
   });
 
   it("passes the burst-control rule decision into snapshot collection", () => {

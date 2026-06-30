@@ -83,7 +83,7 @@ requireText("src/battle/item/execute-item.js", [
   "BattleSpiritToggleEvent.CLICK_AND_RECORD",
   "runBattleSpiritToggleAutomation",
 ]);
-requireText("src/battle/turn-context.js", [
+requireText("src/battle/battle-decision-runtime.js", [
   "BattleSpiritToggleEvent.READ_LAST_TOGGLE",
   "runBattleSpiritToggleAutomation",
 ]);

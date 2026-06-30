@@ -1089,10 +1089,8 @@ function checkSnapshot() {
   if (/BattleStartRuntimeEvent\.READ_ATTACK_STATUS|runBattleStartRuntimeAutomation/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not attach turn runtime facts`);
   }
-  if (!turnContextText.includes("BattleStartRuntimeEvent.READ_ATTACK_STATUS")) {
-    violations.push(
-      `${rel(turnContextFile)} must attach attackStatus through battle start runtime`
-    );
+  if (!turnContextText.includes("BattleDecisionRuntimeEvent.READ_CURRENT")) {
+    violations.push(`${rel(turnContextFile)} must attach decision runtime through one entry`);
   }
   if (/\bg\(\s*["']attackStatus["']/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not read attackStatus directly`);

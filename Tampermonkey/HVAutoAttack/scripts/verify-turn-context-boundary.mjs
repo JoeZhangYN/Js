@@ -15,6 +15,8 @@ const monsterStatus = path.normalize("src/battle/monster-status-automation.js");
 const monsterStatusTest = path.normalize("src/battle/monster-status-automation.test.js");
 const spiritToggle = path.normalize("src/battle/battle-spirit-toggle.js");
 const spiritToggleTest = path.normalize("src/battle/battle-spirit-toggle.test.js");
+const decisionRuntime = path.normalize("src/battle/battle-decision-runtime.js");
+const decisionRuntimeTest = path.normalize("src/battle/battle-decision-runtime.test.js");
 const rawRuntimeReaders = new Set([
   path.normalize("src/battle/attack/decide-attack.js"),
   path.normalize("src/battle/item/decide-item.js"),
@@ -52,7 +54,9 @@ function checkFile(file) {
       relative === monsterStatus ||
       relative === monsterStatusTest ||
       relative === spiritToggle ||
-      relative === spiritToggleTest
+      relative === spiritToggleTest ||
+      relative === decisionRuntime ||
+      relative === decisionRuntimeTest
     )
       return;
     const where = `${rel(file)}:${index + 1}`;
@@ -96,9 +100,8 @@ function checkEntry() {
     "burstControlSwitch",
     "assertNoDomRefs",
     "OptionEvent.READ_FIELD",
-    "BattleProgressEvent.READ_CONTEXT",
-    "BattleStartRuntimeEvent.READ_ATTACK_STATUS",
-    "BattleSpiritToggleEvent.READ_LAST_TOGGLE",
+    "BattleDecisionRuntimeEvent.READ_CURRENT",
+    "runBattleDecisionRuntime",
     "BattlePlayerVitalsEvent.MIRROR_RUNTIME",
     "runBattlePlayerVitals",
   ]) {
@@ -134,9 +137,13 @@ function checkEntry() {
   ) {
     violations.push(`${entry.replaceAll("\\", "/")} must read progress through battle-progress`);
   }
-  if (!text.includes("runBattleStartRuntimeAutomation")) {
+  if (
+    /BattleProgressEvent\.READ_CONTEXT|BattleStartRuntimeEvent\.READ_ATTACK_STATUS|BattleSpiritToggleEvent\.READ_LAST_TOGGLE|runBattleProgressAutomation|runBattleStartRuntimeAutomation|runBattleSpiritToggleAutomation/.test(
+      text
+    )
+  ) {
     violations.push(
-      `${entry.replaceAll("\\", "/")} must attach attackStatus through start runtime`
+      `${entry.replaceAll("\\", "/")} must attach decision runtime through one entry`
     );
   }
 }

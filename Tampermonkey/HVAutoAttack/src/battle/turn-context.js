@@ -2,31 +2,14 @@
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { collectSnapshot } from "./snapshot.js";
-import { BattleProgressEvent, runBattleProgressAutomation } from "./battle-progress.js";
-import {
-  BattleStartRuntimeEvent,
-  runBattleStartRuntimeAutomation,
-} from "./battle-start-runtime.js";
-import {
-  BattleSpiritToggleEvent,
-  runBattleSpiritToggleAutomation,
-} from "./battle-spirit-toggle.js";
+import { BattleDecisionRuntimeEvent, runBattleDecisionRuntime } from "./battle-decision-runtime.js";
 import { BattlePlayerVitalsEvent, runBattlePlayerVitals } from "./battle-player-vitals.js";
 
 function attachDecisionRuntime(snap) {
-  const progress = runBattleProgressAutomation({ type: BattleProgressEvent.READ_CONTEXT });
-  return Object.assign(snap, {
-    monsterAlive: progress.monsterAlive,
-    roundAll: progress.roundAll,
-    roundNow: progress.roundNow,
-    roundType: progress.roundType,
-    attackStatus: runBattleStartRuntimeAutomation({
-      type: BattleStartRuntimeEvent.READ_ATTACK_STATUS,
-    }),
-    lastSpiritToggleGlobalTurn: runBattleSpiritToggleAutomation({
-      type: BattleSpiritToggleEvent.READ_LAST_TOGGLE,
-    }),
-  });
+  return Object.assign(
+    snap,
+    runBattleDecisionRuntime({ type: BattleDecisionRuntimeEvent.READ_CURRENT })
+  );
 }
 
 function assertNoDomRefs(snap) {
