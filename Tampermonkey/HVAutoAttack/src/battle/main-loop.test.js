@@ -40,7 +40,7 @@ beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
   mocks.prepareBattleTurnContext.mockReturnValue({
     snap: { snap: true },
-    battleRuleOptions: { ok: true },
+    actionOptions: { ok: true },
   });
   mocks.runBattlePauseAutomation.mockReturnValue(false);
 });
@@ -51,6 +51,9 @@ describe("runBattleTurnAutomation", () => {
 
     expect(mocks.runBattleTurnRuntime).toHaveBeenCalledWith({ type: "turnStarted" });
     expect(mocks.prepareBattleTurnContext).toHaveBeenCalledWith();
-    expect(mocks.runBattleActionDecision).toHaveBeenCalledWith({ snap: true }, { ok: true });
+    expect(mocks.runBattleActionDecision).toHaveBeenCalledWith({
+      snap: { snap: true },
+      actionOptions: { ok: true },
+    });
   });
 });

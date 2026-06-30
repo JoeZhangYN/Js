@@ -311,6 +311,15 @@ function checkTurnEntry() {
   if (!text.includes("runBattleActionDecision")) {
     violations.push(`${rel(mainLoopFile)} must delegate action decisions to one entry`);
   }
+  if (!text.includes("runBattleActionDecision(prepareBattleTurnContext())")) {
+    violations.push(`${rel(mainLoopFile)} must pass prepared turn context as one value`);
+  }
+  if (/const\s*\{[^}]*\bsnap\b[^}]*\}\s*=\s*prepareBattleTurnContext\(\)/.test(text)) {
+    violations.push(`${rel(mainLoopFile)} must not unpack prepared turn context`);
+  }
+  if (/runBattleActionDecision\([^,\n]+,\s*[^)]+\)/.test(text)) {
+    violations.push(`${rel(mainLoopFile)} must not call action decision through old two-arg path`);
+  }
   if (/\bBATTLE_RULES\b|\bBattleRule\b|\brunRules\b/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must not assemble battle action rule chains directly`);
   }
@@ -325,6 +334,7 @@ function checkTurnEntry() {
   for (const required of [
     "ACTION_STEPS",
     "dispatch",
+    "actionOptions",
     "for (const decide of ACTION_STEPS)",
     "decideSurvivalAction",
     "decideBuffPreparation",

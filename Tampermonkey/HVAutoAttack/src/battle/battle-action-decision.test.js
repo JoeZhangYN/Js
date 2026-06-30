@@ -11,7 +11,7 @@ vi.mock("./dispatch.js", () => ({ dispatch: mocks.dispatch }));
 function dispatchedResults(snap = {}, opt = {}) {
   mocks.dispatch.mockClear();
   mocks.dispatch.mockReturnValue(false);
-  runBattleActionDecision(snap, opt);
+  runBattleActionDecision({ snap, actionOptions: opt });
   return mocks.dispatch.mock.calls.map((call) => call[0]);
 }
 
@@ -27,7 +27,7 @@ describe("runBattleActionDecision", () => {
     mocks.dispatch.mockClear();
     mocks.dispatch.mockImplementation((result) => result.kind === "flee-command");
 
-    runBattleActionDecision({}, { autoFlee: true });
+    runBattleActionDecision({ snap: {}, actionOptions: { autoFlee: true } });
 
     expect(mocks.dispatch).toHaveBeenCalledTimes(1);
     expect(mocks.dispatch.mock.calls[0][0]).toEqual({ kind: "flee-command" });

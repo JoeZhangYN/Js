@@ -91,6 +91,7 @@ function checkEntry() {
     "CdRuntimeEvent.INCREMENT_TURN",
     "CdRuntimeEvent.PERSIST",
     "collectSnapshot",
+    "actionOptions",
     "learnIncomingBurst",
     "burstControlSwitch",
     "assertNoDomRefs",
@@ -111,6 +112,12 @@ function checkEntry() {
   }
   if (/\bexport\s+(?:function|const)\s+(?!prepareBattleTurnContext\b)/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} may export only prepareBattleTurnContext`);
+  }
+  if (!/return\s+\{\s*snap,\s*actionOptions\s*\}/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must return one action decision context`);
+  }
+  if (/\bbattleRuleOptions\b/.test(text)) {
+    violations.push(`${entry.replaceAll("\\", "/")} must not expose legacy rule option vocabulary`);
   }
   if (
     /BattleRoundEvent\.(?:READ_RUNTIME|READ_TYPE)|MonsterStatusEvent\.READ_COMBATANT_COUNTS/.test(

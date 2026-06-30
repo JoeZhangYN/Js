@@ -67,7 +67,7 @@ describe("prepareBattleTurnContext", () => {
   it("prepares one turn context through the entry", () => {
     expect(prepareBattleTurnContext()).toEqual({
       snap,
-      battleRuleOptions: { burstControlSwitch: false },
+      actionOptions: { burstControlSwitch: false },
     });
 
     expect(mocks.collectSnapshot).toHaveBeenCalledWith({ learnIncomingBurst: false });

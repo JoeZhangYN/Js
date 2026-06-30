@@ -1,4 +1,4 @@
-// 战斗行动决策链入口：规则顺序和 acted 短路语义统一收敛在这里。
+// 战斗行动决策链入口：决策上下文、step 顺序和 acted 短路语义统一收敛在这里。
 import { dispatch } from "./dispatch.js";
 import { decideAttackAction } from "./attack/decide-attack-action.js";
 import { decideBuffPreparation } from "./buff/decide-buff-preparation.js";
@@ -12,8 +12,9 @@ const ACTION_STEPS = [
   decideAttackAction,
 ];
 
-export function runBattleActionDecision(snap, battleRuleOptions) {
+export function runBattleActionDecision(turnContext = {}) {
+  const { snap = {}, actionOptions = {} } = turnContext;
   for (const decide of ACTION_STEPS) {
-    if (dispatch(decide(snap, battleRuleOptions), snap)) return;
+    if (dispatch(decide(snap, actionOptions), snap)) return;
   }
 }
