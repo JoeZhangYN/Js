@@ -294,6 +294,17 @@ function checkTurnEntry() {
       violations.push(`${rel(actionDecisionFile)} must own action decision ${required}`);
     }
   }
+  for (const relative of ["src/battle", "src/core"]) {
+    const dir = path.join(root, relative);
+    for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
+      const file = path.join(entry.parentPath, entry.name);
+      const source = fs.readFileSync(file, "utf8");
+      if (file !== actionDecisionFile && /from\s+["'][^"']*rules\/index\.js["']/.test(source)) {
+        violations.push(`${rel(file)} must use runBattleActionDecision(), not rules/index.js`);
+      }
+    }
+  }
   for (const file of [battleFile, actionEventBridgeFile]) {
     const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
     lines.forEach((line, index) => {
