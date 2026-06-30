@@ -381,7 +381,8 @@ function checkTurnEntry() {
     "runBattleActionEffectDispatch",
     "actionOptions",
     "for (const decide of ACTION_STEPS)",
-    "decideSurvivalAction",
+    "BattleSurvivalActionEvent.DECIDE",
+    "runBattleSurvivalAction",
     "decideBuffPreparation",
     "decideOffensiveDebuff",
     "decideAttackAction",
@@ -391,7 +392,7 @@ function checkTurnEntry() {
     }
   }
   if (
-    !/const ACTION_STEPS = \[\s*decideSurvivalAction,\s*decideBuffPreparation,\s*decideOffensiveDebuff,\s*decideAttackAction,\s*\]/.test(
+    !/const ACTION_STEPS = \[\s*\(snap,\s*opt\)\s*=>[\s\S]*runBattleSurvivalAction[\s\S]*decideBuffPreparation,\s*decideOffensiveDebuff,\s*decideAttackAction,\s*\]/.test(
       actionDecisionText
     )
   ) {
@@ -1645,7 +1646,9 @@ function checkCriticalBuffEntry() {
 function checkSurvivalActionEntry() {
   const ownerText = fs.readFileSync(decideSurvivalActionFile, "utf8");
   for (const required of [
-    "decideSurvivalAction",
+    "BattleSurvivalActionEvent",
+    "DECIDE",
+    "runBattleSurvivalAction",
     "decideCriticalBuff",
     "decideFlee",
     "decideAutoPause",
@@ -1660,13 +1663,26 @@ function checkSurvivalActionEntry() {
       violations.push(`${rel(decideSurvivalActionFile)} must own survival action ${required}`);
     }
   }
+  if (
+    /\bexport\s+(?:function|const)\s+(?!BattleSurvivalActionEvent\b|runBattleSurvivalAction\b)/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideSurvivalActionFile)} may export only its event entry`);
+  }
   if (!ownerText.includes("isEmptyDecision")) {
     violations.push(`${rel(decideSurvivalActionFile)} must own structured empty decisions`);
   }
 
   const rulesText = readBattleActionRulesText();
-  if (!rulesText.includes("decideSurvivalAction")) {
+  if (
+    !rulesText.includes("BattleSurvivalActionEvent.DECIDE") ||
+    !rulesText.includes("runBattleSurvivalAction")
+  ) {
     violations.push(`${rel(battleRulesFile)} must route survival through one entry`);
+  }
+  if (/decideSurvivalAction\(\s*snap\s*,\s*actionOptions\s*\)/.test(rulesText)) {
+    violations.push(`${rel(battleRulesFile)} must not call survival through old two-arg path`);
   }
   for (const legacyRule of [
     "criticalBuffGuard",
@@ -1709,7 +1725,7 @@ function checkSurvivalActionEntry() {
         source
       )
     ) {
-      violations.push(`${rel(file)} must call survival through decideSurvivalAction`);
+      violations.push(`${rel(file)} must call survival through runBattleSurvivalAction`);
     }
   }
 }

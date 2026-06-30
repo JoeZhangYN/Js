@@ -6,10 +6,15 @@ import {
 } from "./battle-action-effect-dispatch.js";
 import { decideBuffPreparation } from "./buff/decide-buff-preparation.js";
 import { decideOffensiveDebuff } from "./debuff/decide-offensive-debuff.js";
-import { decideSurvivalAction } from "./decide-survival-action.js";
+import { BattleSurvivalActionEvent, runBattleSurvivalAction } from "./decide-survival-action.js";
 
 const ACTION_STEPS = [
-  decideSurvivalAction,
+  (snap, opt) =>
+    runBattleSurvivalAction({
+      type: BattleSurvivalActionEvent.DECIDE,
+      snap,
+      opt,
+    }),
   decideBuffPreparation,
   decideOffensiveDebuff,
   decideAttackAction,

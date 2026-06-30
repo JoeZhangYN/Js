@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideSurvivalAction } from "./decide-survival-action.js";
+import { BattleSurvivalActionEvent, runBattleSurvivalAction } from "./decide-survival-action.js";
 
 function snap(over = {}) {
   return {
@@ -18,10 +18,18 @@ function snap(over = {}) {
   };
 }
 
-describe("decideSurvivalAction", () => {
+function decide(snap, opt) {
+  return runBattleSurvivalAction({
+    type: BattleSurvivalActionEvent.DECIDE,
+    snap,
+    opt,
+  });
+}
+
+describe("runBattleSurvivalAction", () => {
   it("uses flee before later item and defend decisions", () => {
     expect(
-      decideSurvivalAction(snap({ gemName: "Mystic Gem" }), {
+      decide(snap({ gemName: "Mystic Gem" }), {
         autoFlee: true,
         defend: true,
       })
@@ -29,16 +37,20 @@ describe("decideSurvivalAction", () => {
   });
 
   it("falls through empty potion and stall plans to defend", () => {
-    expect(decideSurvivalAction(snap(), { defend: true })).toEqual({ kind: "defend-command" });
+    expect(decide(snap(), { defend: true })).toEqual({ kind: "defend-command" });
   });
 
   it("uses scroll after earlier survival checks are empty", () => {
     expect(
-      decideSurvivalAction(snap({ playerBuffs: [] }), {
+      decide(snap({ playerBuffs: [] }), {
         scrollSwitch: true,
         scroll: { Pr: true },
         scrollRoundType: { arena: true },
       })
     ).toEqual({ kind: "item-plan", plan: { type: "scroll", candidates: [13111] } });
+  });
+
+  it("rejects unknown events as no action", () => {
+    expect(runBattleSurvivalAction({ type: "unknown" })).toEqual({ kind: "noop" });
   });
 });

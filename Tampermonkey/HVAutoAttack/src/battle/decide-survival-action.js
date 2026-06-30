@@ -9,7 +9,13 @@ import { fleeFacts } from "./escape/flee-facts.js";
 import { BattleItemDecisionEvent, runBattleItemDecision } from "./item/decide-item.js";
 import { gemFacts, potionFacts, scrollFacts, stallTopupFacts } from "./item/item-facts.js";
 
-export function decideSurvivalAction(snap = {}, opt = {}) {
+const EVENT_DECIDE = "decide";
+
+export const BattleSurvivalActionEvent = Object.freeze({
+  DECIDE: EVENT_DECIDE,
+});
+
+function decideSurvivalResult(snap = {}, opt = {}) {
   for (const decide of [
     () => decideCriticalBuff({ opt, ...criticalBuffFacts(snap) }),
     () => decideFlee({ opt, ...fleeFacts(snap) }),
@@ -55,4 +61,9 @@ function isEmptyDecision(result) {
   if (plan.type === "stall") return !plan.attempts?.length;
   if (plan.type === "scroll") return !plan.candidates?.length;
   return false;
+}
+
+export function runBattleSurvivalAction(event = { type: EVENT_DECIDE }) {
+  if (event.type === EVENT_DECIDE) return decideSurvivalResult(event.snap, event.opt);
+  return { kind: "noop" };
 }
