@@ -8,6 +8,11 @@ export const BattleStallModeEvent = Object.freeze({
   READ_TOPUP_CANDIDATES: EVENT_READ_TOPUP_CANDIDATES,
 });
 
+const battleStallModeEventHandlers = Object.freeze({
+  [EVENT_READ_ACTIVE]: (event) => isStallActive(event),
+  [EVENT_READ_TOPUP_CANDIDATES]: (event) => readTopupCandidates(event),
+});
+
 function aliveHpPercents(event) {
   return (event?.monsterFacts || [])
     .filter((monster) => !monster.isDead)
@@ -53,11 +58,5 @@ function readTopupCandidates(event) {
 }
 
 export function runBattleStallModeAutomation(event = { type: EVENT_READ_ACTIVE }) {
-  if (event.type === EVENT_READ_ACTIVE) {
-    return isStallActive(event);
-  }
-  if (event.type === EVENT_READ_TOPUP_CANDIDATES) {
-    return readTopupCandidates(event);
-  }
-  return undefined;
+  return battleStallModeEventHandlers[event.type]?.(event);
 }

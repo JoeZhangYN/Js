@@ -2913,6 +2913,7 @@ function checkBattleStallMode() {
   const ownerText = fs.readFileSync(stallModeFile, "utf8");
   for (const required of [
     "BattleStallModeEvent",
+    "battleStallModeEventHandlers",
     "runBattleStallModeAutomation",
     "READ_ACTIVE",
     "READ_TOPUP_CANDIDATES",
@@ -2932,6 +2933,20 @@ function checkBattleStallMode() {
   }
   if (/\bevent\.snap\b/.test(ownerText)) {
     violations.push(`${rel(stallModeFile)} must not consume snap-shaped event input`);
+  }
+  const entryBody =
+    ownerText.match(/export function runBattleStallModeAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_ACTIVE\][\s\S]*\[EVENT_READ_TOPUP_CANDIDATES\]/.test(ownerText)) {
+    violations.push(`${rel(stallModeFile)} must route events through a frozen handler table`);
+  }
+  if (/event\.type\s*===/.test(entryBody)) {
+    violations.push(`${rel(stallModeFile)} entry must dispatch by handler table`);
+  }
+  const stallModeTest = path.join(root, "src/battle/battle-stall-mode.test.js");
+  const stallModeTestText = fs.readFileSync(stallModeTest, "utf8");
+  if (!stallModeTestText.includes("rejects unknown stall mode events")) {
+    violations.push(`${rel(stallModeTest)} must cover unknown stall mode events`);
   }
   const allowedAliveHpFiles = new Set([
     itemFactsFile,

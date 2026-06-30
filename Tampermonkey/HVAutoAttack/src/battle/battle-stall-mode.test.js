@@ -70,4 +70,14 @@ describe("battle stall mode", () => {
       })
     ).toEqual([11291]);
   });
+
+  it("rejects unknown stall mode events", () => {
+    expect(
+      runBattleStallModeAutomation({
+        type: "unknown",
+        opt: {},
+        ...activeFacts(snap()),
+      })
+    ).toBeUndefined();
+  });
 });
