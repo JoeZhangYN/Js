@@ -1228,6 +1228,9 @@ function checkSnapshot() {
   if (/MonsterStatusEvent\.READ_STATUS|MonsterCacheEvent\.READ_DB|joinMonsterView/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not assemble monster status/cache/view directly`);
   }
+  if (/monsterHpVars|\.filter\(\s*\(?\w+\)?\s*=>\s*!\w+\.isDead/.test(text)) {
+    violations.push(`${rel(snapshotFile)} must not derive monster view summary directly`);
+  }
   if (/\bmonsterStatus\b/.test(text)) {
     violations.push(`${rel(snapshotFile)} must not pass full monsterStatus downstream`);
   }

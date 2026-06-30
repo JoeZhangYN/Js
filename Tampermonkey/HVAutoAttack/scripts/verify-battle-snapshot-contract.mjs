@@ -68,6 +68,9 @@ if (
 ) {
   violations.push(`${snapshot.replaceAll("\\", "/")} must not assemble monster view directly`);
 }
+if (/monsterHpVars|\.filter\(\s*\(?\w+\)?\s*=>\s*!\w+\.isDead/.test(snapshotText)) {
+  violations.push(`${snapshot.replaceAll("\\", "/")} must not derive monster view summary`);
+}
 for (const forbidden of [
   "runRecoveryLearningAutomation",
   "runCdLearningAutomation",

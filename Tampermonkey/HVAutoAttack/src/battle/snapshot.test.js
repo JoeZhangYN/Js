@@ -4,10 +4,13 @@ import { collectSnapshot } from "./snapshot.js";
 const mocks = vi.hoisted(() => ({
   runBattleMonsterSurface: vi.fn(() => []),
   runBattleMonsterView: vi.fn(() => ({
+    aliveCount: 1,
+    firstMonsterHpPercent: 40,
+    lowestMonsterHpPercent: 40,
+    soloMonsterHpPercent: 40,
     view: [{ monsterId: 101, isDead: false }],
     monsterIdentities: [{ name: "Alpha", monsterId: 101 }],
   })),
-  monsterHpVars: vi.fn(() => ({})),
   runAbilityAoeAutomation: vi.fn(() => ({ Imperil: 2 })),
   runBattleItemSurface: vi.fn(() => "Mystic Gem"),
   runBattleLogTelemetry: vi.fn(() => ({
@@ -53,9 +56,6 @@ vi.mock("./battle-observation-learning.js", () => ({
     FINALIZE_TURN_OBSERVATIONS: "finalizeTurnObservations",
   }),
   runBattleObservationLearning: mocks.runBattleObservationLearning,
-}));
-vi.mock("./monster-view.js", () => ({
-  monsterHpVars: mocks.monsterHpVars,
 }));
 vi.mock("./battle-monster-surface.js", () => ({
   BattleMonsterSurfaceEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),

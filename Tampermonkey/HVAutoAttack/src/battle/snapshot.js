@@ -13,7 +13,6 @@ import {
   BattleObservationLearningEvent,
   runBattleObservationLearning,
 } from "./battle-observation-learning.js";
-import { monsterHpVars } from "./monster-view.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "../pages/ability-page.js";
 import { BattleSkillUsageEvent, runBattleSkillUsageAutomation } from "./battle-skill-usage.js";
 import { BattleMonsterSurfaceEvent, runBattleMonsterSurface } from "./battle-monster-surface.js";
@@ -34,10 +33,11 @@ import {
  */
 export function collectSnapshot(event = {}) {
   const monsters = runBattleMonsterSurface({ type: BattleMonsterSurfaceEvent.READ_CURRENT });
-  const { view, monsterIdentities } = runBattleMonsterView({
+  const monsterView = runBattleMonsterView({
     type: BattleMonsterViewEvent.READ_VIEW,
     monsters,
   });
+  const { view, monsterIdentities } = monsterView;
   const playerEffects = runBattlePlayerEffects({ type: BattlePlayerEffectsEvent.READ_CURRENT });
   const vitals = runBattlePlayerVitals({ type: BattlePlayerVitalsEvent.READ_CURRENT });
   const turn = runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT });
@@ -67,9 +67,10 @@ export function collectSnapshot(event = {}) {
     spiritOn: runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.READ_ACTIVE }),
     monsters,
     view,
-    aliveCount: monsters.filter((m) => !m.isDead).length,
-    // 单怪 HP%（0..100，对齐条件里 hp/mp 口径）：供非门表达"濒死的怪不上 debuff"等。从统一视图派生。
-    ...monsterHpVars(view),
+    aliveCount: monsterView.aliveCount,
+    soloMonsterHpPercent: monsterView.soloMonsterHpPercent,
+    lowestMonsterHpPercent: monsterView.lowestMonsterHpPercent,
+    firstMonsterHpPercent: monsterView.firstMonsterHpPercent,
     playerBuffs: playerEffects.playerBuffs,
     playerEffectTurns: playerEffects.playerEffectTurns,
     etherTapActiveX2: playerEffects.etherTapActiveX2,
