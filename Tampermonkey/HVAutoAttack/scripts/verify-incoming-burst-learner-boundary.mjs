@@ -89,6 +89,24 @@ for (const legacy of ["updateBurstFromEvents", "getLearnedBurstMap"]) {
   }
 }
 
+if (!ownerText.includes("const incomingBurstLearningEventHandlers")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route incoming burst learning events through a handler table`
+  );
+}
+const ownerEntry =
+  ownerText.match(/export function runIncomingBurstLearningAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+}
+for (const internal of ["updateBurstFromEvents(", "getLearnedBurstMap("]) {
+  if (ownerEntry.includes(internal)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must dispatch through incomingBurstLearningEventHandlers`
+    );
+  }
+}
+
 if (violations.length) {
   console.error("[verify-incoming-burst-learner-boundary] FAIL");
   for (const v of violations) console.error(`- ${v}`);

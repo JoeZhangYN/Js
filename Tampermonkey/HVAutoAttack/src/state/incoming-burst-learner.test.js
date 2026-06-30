@@ -69,4 +69,10 @@ describe("incoming-burst-learner", () => {
     record([ev("Orc", "800.5", "")], [{ monsterId: "100.9", name: "Orc" }]);
     expect(readMap()).toEqual({ 100: { maxHit: 800.5, type: "unknown" } });
   });
+
+  it("ignores unknown incoming burst learning events", () => {
+    record([ev("Orc", 500, "cold")]);
+    expect(runIncomingBurstLearningAutomation({ type: "unknown" })).toBeUndefined();
+    expect(readMap()).toEqual({ 100: { maxHit: 500, type: "cold" } });
+  });
 });

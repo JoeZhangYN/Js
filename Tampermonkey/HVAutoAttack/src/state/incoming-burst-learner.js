@@ -80,9 +80,11 @@ function getLearnedBurstMap() {
   return readLearnedBurstMap();
 }
 
+const incomingBurstLearningEventHandlers = Object.freeze({
+  [EVENT_RECORD_EVENTS]: (event) => updateBurstFromEvents(event.events, event.monsterIdentities),
+  [EVENT_READ_MAP]: () => getLearnedBurstMap(),
+});
+
 export function runIncomingBurstLearningAutomation(event = { type: EVENT_READ_MAP }) {
-  if (event.type === EVENT_RECORD_EVENTS)
-    return updateBurstFromEvents(event.events, event.monsterIdentities);
-  if (event.type === EVENT_READ_MAP) return getLearnedBurstMap();
-  return undefined;
+  return incomingBurstLearningEventHandlers[event.type]?.(event);
 }
