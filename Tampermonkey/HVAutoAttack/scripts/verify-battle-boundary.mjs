@@ -54,11 +54,13 @@ const snapshotFile = path.join(root, "src/battle/snapshot.js");
 const turnContextFile = path.join(root, "src/battle/turn-context.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
+const dispatchFile = path.join(root, "src/battle/dispatch.js");
 const attackActionSequenceFile = path.join(root, "src/battle/battle-action-attack-sequence.js");
 const actionSequenceFile = path.join(root, "src/battle/battle-action-sequence.js");
 const buffActionSequenceFile = path.join(root, "src/battle/battle-action-buff-sequence.js");
 const debuffActionSequenceFile = path.join(root, "src/battle/battle-action-debuff-sequence.js");
 const survivalActionSequenceFile = path.join(root, "src/battle/battle-action-survival-sequence.js");
+const decideSurvivalActionFile = path.join(root, "src/battle/decide-survival-action.js");
 const legacyStepRunnerFile = path.join(root, "src/battle/step-runner.js");
 const legacyAttackFile = path.join(root, "src/battle/attack.js");
 const roundStartFile = path.join(root, "src/battle/battle-round-start.js");
@@ -406,7 +408,7 @@ function checkTurnEntry() {
   requireOnlyExports(survivalActionSequenceFile, survivalActionSequenceText, [
     "survivalActionRules",
   ]);
-  for (const required of ["survivalActionRules", "criticalBuffGuard", "useGem", "useScroll"]) {
+  for (const required of ["survivalActionRules", "handleSurvival", "decideSurvivalAction"]) {
     if (!survivalActionSequenceText.includes(required)) {
       violations.push(`${rel(survivalActionSequenceFile)} must own survival action ${required}`);
     }
@@ -1480,6 +1482,80 @@ function checkCriticalBuffEntry() {
   }
 }
 
+function checkSurvivalActionEntry() {
+  const ownerText = fs.readFileSync(decideSurvivalActionFile, "utf8");
+  for (const required of [
+    "decideSurvivalAction",
+    "decideCriticalBuff",
+    "decideFlee",
+    "decideAutoPause",
+    "runBattleItemDecision",
+    "decideDefend",
+    "BattleItemDecisionEvent.DECIDE_GEM",
+    "BattleItemDecisionEvent.DECIDE_POTION",
+    "BattleItemDecisionEvent.DECIDE_STALL_TOPUP",
+    "BattleItemDecisionEvent.DECIDE_SCROLL",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideSurvivalActionFile)} must own survival action ${required}`);
+    }
+  }
+  if (!ownerText.includes("isEmptyDecision")) {
+    violations.push(`${rel(decideSurvivalActionFile)} must own structured empty decisions`);
+  }
+
+  const rulesText = readBattleActionRulesText();
+  const survivalRule =
+    rulesText.match(/name:\s*["']handleSurvival["'][\s\S]*?decide:[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (!survivalRule.includes("decideSurvivalAction")) {
+    violations.push(`${rel(battleRulesFile)} must route survival through one entry`);
+  }
+  for (const legacyRule of [
+    "criticalBuffGuard",
+    "flee",
+    "autoPause",
+    "useGem",
+    "deadSoon",
+    "stallTopup",
+    "defend",
+    "useScroll",
+  ]) {
+    if (new RegExp(`name:\\s*["']${legacyRule}["']`).test(rulesText)) {
+      violations.push(`${rel(battleRulesFile)} must not split survival rule ${legacyRule}`);
+    }
+  }
+
+  const battleDir = path.join(root, "src/battle");
+  for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
+      continue;
+    }
+    const file = path.join(entry.parentPath, entry.name);
+    if (
+      file === decideSurvivalActionFile ||
+      file === decideCriticalBuffFile ||
+      file === decideFleeFile ||
+      file === decideAutoPauseFile ||
+      file === decideDefendFile ||
+      file === decideItemFile ||
+      file === dispatchFile
+    ) {
+      continue;
+    }
+    const source = fs.readFileSync(file, "utf8");
+    if (
+      /from\s+["'][^"']*(?:critical-buff-guard\/decide-critical-buff|escape\/decide-flee|pause\/decide-auto-pause|defense\/decide-defend|item\/decide-item)\.js["']/.test(
+        source
+      ) ||
+      /\b(?:decideCriticalBuff|decideFlee|decideAutoPause|decideDefend|runBattleItemDecision)\s*\(/.test(
+        source
+      )
+    ) {
+      violations.push(`${rel(file)} must call survival through decideSurvivalAction`);
+    }
+  }
+}
+
 function checkBuffPreparationEntry() {
   const ownerText = fs.readFileSync(decideBuffPreparationFile, "utf8");
   for (const required of [
@@ -1738,6 +1814,10 @@ function checkBattleItemDecisionEntry() {
   }
 
   const rulesText = readBattleActionRulesText();
+  const survivalText = fs.existsSync(decideSurvivalActionFile)
+    ? fs.readFileSync(decideSurvivalActionFile, "utf8")
+    : "";
+  const itemDecisionConsumersText = `${rulesText}\n${survivalText}`;
   for (const required of [
     "runBattleItemDecision",
     "BattleItemDecisionEvent.DECIDE_GEM",
@@ -1745,12 +1825,12 @@ function checkBattleItemDecisionEntry() {
     "BattleItemDecisionEvent.DECIDE_STALL_TOPUP",
     "BattleItemDecisionEvent.DECIDE_SCROLL",
   ]) {
-    if (!rulesText.includes(required)) {
+    if (!itemDecisionConsumersText.includes(required)) {
       violations.push(`${rel(battleRulesFile)} must call item decisions through ${required}`);
     }
   }
   for (const legacy of ["decideGemUse", "decidePotion", "decideStallTopup", "decideScroll"]) {
-    if (new RegExp(`\\b${legacy}\\s*\\(`).test(rulesText)) {
+    if (new RegExp(`\\b${legacy}\\s*\\(`).test(itemDecisionConsumersText)) {
       violations.push(`${rel(battleRulesFile)} must not call legacy item decision ${legacy}`);
     }
   }
@@ -2314,6 +2394,7 @@ checkBigSkillDebuffEntry();
 checkBurstControlEntry();
 checkOffensiveDebuffEntry();
 checkCriticalBuffEntry();
+checkSurvivalActionEntry();
 checkBuffPreparationEntry();
 checkInfusionEntry();
 checkChannelEntry();

@@ -9,17 +9,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock("./dispatch.js", () => ({ dispatch: mocks.dispatch }));
 
 const RULE_INDEX = Object.freeze({
-  criticalBuffGuard: 0,
-  flee: 1,
-  autoPause: 2,
-  useGem: 3,
-  deadSoon: 4,
-  stallTopup: 5,
-  defend: 6,
-  useScroll: 7,
-  prepareBuffs: 8,
-  applyOffensiveDebuffs: 9,
-  attack: 10,
+  handleSurvival: 0,
+  prepareBuffs: 1,
+  applyOffensiveDebuffs: 2,
+  attack: 3,
 });
 
 function dispatchedResults(snap = {}, opt = {}) {
@@ -32,20 +25,8 @@ function dispatchedResults(snap = {}, opt = {}) {
 describe("runBattleActionDecision", () => {
   it("owns the full action rule order", () => {
     const results = dispatchedResults();
-    expect(results).toHaveLength(11);
-    expect(results.map((result) => result.kind)).toEqual([
-      "noop",
-      "noop",
-      "noop",
-      "item-plan",
-      "item-plan",
-      "item-plan",
-      "noop",
-      "item-plan",
-      "noop",
-      "noop",
-      "attack-plan",
-    ]);
+    expect(results).toHaveLength(4);
+    expect(results.map((result) => result.kind)).toEqual(["noop", "noop", "noop", "attack-plan"]);
     expect(results[RULE_INDEX.attack].plan).toBeTruthy();
   });
 
@@ -55,9 +36,8 @@ describe("runBattleActionDecision", () => {
 
     runBattleActionDecision({}, { autoFlee: true });
 
-    expect(mocks.dispatch).toHaveBeenCalledTimes(2);
-    expect(mocks.dispatch.mock.calls[0][0]).toEqual({ kind: "noop" });
-    expect(mocks.dispatch.mock.calls[1][0]).toEqual({ kind: "flee-command" });
+    expect(mocks.dispatch).toHaveBeenCalledTimes(1);
+    expect(mocks.dispatch.mock.calls[0][0]).toEqual({ kind: "flee-command" });
   });
 
   it("passes the same snap to dispatch for bookkeeping", () => {
@@ -69,19 +49,16 @@ describe("runBattleActionDecision", () => {
 
 describe("runBattleActionDecision rule contracts", () => {
   it("basic gates belong to rule entries, not the action chain", () => {
-    expect(dispatchedResults({}, { autoFlee: true })[RULE_INDEX.flee]).toEqual({
+    expect(dispatchedResults({}, { autoFlee: true })[RULE_INDEX.handleSurvival]).toEqual({
       kind: "flee-command",
     });
-    expect(dispatchedResults({}, { autoPause: true })[RULE_INDEX.autoPause]).toEqual({
+    expect(dispatchedResults({}, { autoPause: true })[RULE_INDEX.handleSurvival]).toEqual({
       kind: "pause",
     });
-    expect(dispatchedResults({}, { defend: true })[RULE_INDEX.defend]).toEqual({
+    expect(dispatchedResults({}, { defend: true })[RULE_INDEX.handleSurvival]).toEqual({
       kind: "defend-command",
     });
-    expect(dispatchedResults()[RULE_INDEX.deadSoon]).toEqual({
-      kind: "item-plan",
-      plan: { type: "potion", candidates: [], noWaste: false },
-    });
+    expect(dispatchedResults()[RULE_INDEX.handleSurvival]).toEqual({ kind: "noop" });
     expect(
       dispatchedResults({ attackStatus: 2, playerBuffs: [] })[RULE_INDEX.prepareBuffs]
     ).toEqual({
