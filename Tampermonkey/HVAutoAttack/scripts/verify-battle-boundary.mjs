@@ -2456,6 +2456,8 @@ function checkBattleItemDecisionEntry() {
     "potionFacts",
     "stallTopupFacts",
     "scrollFacts",
+    "GEM_RESULT_PLAN_MAPPERS",
+    "mapGemResultToItemPlan",
   ]) {
     if (!itemText.includes(required)) {
       violations.push(`${rel(decideItemFile)} must expose item decision entry ${required}`);
@@ -2481,6 +2483,16 @@ function checkBattleItemDecisionEntry() {
   const itemTestText = fs.existsSync(itemTestFile) ? fs.readFileSync(itemTestFile, "utf8") : "";
   if (!itemTestText.includes("rejects unknown item decision events with a noop plan")) {
     violations.push(`${rel(itemTestFile)} must cover unknown item decision events`);
+  }
+  for (const required of ["gem: () => ({ type: \"gem\" })", "noop: () => ({ type: \"noop\" })"]) {
+    if (!itemText.includes(required)) {
+      violations.push(`${rel(decideItemFile)} must lock gem result plan mapper ${required}`);
+    }
+  }
+  const decideGemUseBody =
+    itemText.match(/function decideGemUse\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (/result\.kind\s*===/.test(decideGemUseBody)) {
+    violations.push(`${rel(decideItemFile)} must map gem result kinds through GEM_RESULT_PLAN_MAPPERS`);
   }
 
   const rulesText = readBattleActionRulesText();

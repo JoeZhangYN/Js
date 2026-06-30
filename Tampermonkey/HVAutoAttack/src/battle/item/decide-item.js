@@ -36,6 +36,11 @@ const battleItemDecisionHandlers = Object.freeze({
   [DECIDE_SCROLL]: (event) => decideScroll(itemDecisionInput(event, scrollFacts)),
 });
 
+const GEM_RESULT_PLAN_MAPPERS = Object.freeze({
+  gem: () => ({ type: "gem" }),
+  noop: () => ({ type: "noop" }),
+});
+
 export function runBattleItemDecision(event = {}) {
   return battleItemDecisionHandlers[event.type]?.(event) || noopItemPlan;
 }
@@ -80,8 +85,12 @@ function decideGemUse(event = {}) {
   const result = decideGem(optEffective, event);
   return {
     kind: "item-plan",
-    plan: result.kind === "gem" ? { type: "gem" } : { type: "noop" },
+    plan: mapGemResultToItemPlan(result),
   };
+}
+
+function mapGemResultToItemPlan(result) {
+  return GEM_RESULT_PLAN_MAPPERS[result?.kind]?.(result) ?? { type: "noop" };
 }
 
 /**
