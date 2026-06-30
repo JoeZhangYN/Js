@@ -1807,6 +1807,8 @@ function checkOffensiveDebuffEntry() {
     "decideDeSkill",
     'debuffKey: "We"',
     'debuffKey: "Im"',
+    "isEmptyDecision",
+    "EMPTY_DECISION_PREDICATES",
   ]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(decideOffensiveDebuffFile)} must own offensive debuff ${required}`);
@@ -1825,6 +1827,16 @@ function checkOffensiveDebuffEntry() {
     )
   ) {
     violations.push(`${rel(decideOffensiveDebuffFile)} must own offensive debuff order`);
+  }
+  for (const required of ["noop: () => true"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideOffensiveDebuffFile)} must lock empty offensive debuff decision ${required}`);
+    }
+  }
+  const emptyDecisionBody =
+    ownerText.match(/function isEmptyDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+  if (/result\.kind\s*===|result\.kind\s*!==/.test(emptyDecisionBody)) {
+    violations.push(`${rel(decideOffensiveDebuffFile)} must route empty offensive debuff decisions through predicate tables`);
   }
 
   const rulesText = readBattleActionRulesText();

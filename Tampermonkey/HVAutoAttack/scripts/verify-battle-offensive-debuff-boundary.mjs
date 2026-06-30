@@ -48,6 +48,8 @@ for (const required of [
   "decideDeSkill",
   'debuffKey: "We"',
   'debuffKey: "Im"',
+  "isEmptyDecision",
+  "EMPTY_DECISION_PREDICATES",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
@@ -62,6 +64,16 @@ if (
 
 if (/for \(const decide of \[/.test(ownerText)) {
   violations.push(`${rel(owner)} must not hide offensive debuff priority in an anonymous array`);
+}
+for (const required of ["noop: () => true"]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${rel(owner)} must lock empty offensive debuff decision ${required}`);
+  }
+}
+const emptyDecisionBody =
+  ownerText.match(/function isEmptyDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (/result\.kind\s*===|result\.kind\s*!==/.test(emptyDecisionBody)) {
+  violations.push(`${rel(owner)} must route empty offensive debuff decisions through predicate tables`);
 }
 
 if (

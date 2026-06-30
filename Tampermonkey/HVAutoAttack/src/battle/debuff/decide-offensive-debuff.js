@@ -40,6 +40,10 @@ const OFFENSIVE_DEBUFF_STEPS = [
   },
 ];
 
+const EMPTY_DECISION_PREDICATES = Object.freeze({
+  noop: () => true,
+});
+
 function readBigSkillSkipRulings(event) {
   const input = {
     type: BigSkillDebuffEvent.SHOULD_SKIP_DEBUFF,
@@ -102,9 +106,13 @@ function decideOffensiveDebuffResult(snap = {}, opt = {}) {
   Object.assign(event, readBigSkillSkipRulings(event));
   for (const step of OFFENSIVE_DEBUFF_STEPS) {
     const result = step.decide(event);
-    if (result.kind !== "noop") return result;
+    if (!isEmptyDecision(result)) return result;
   }
   return { kind: "noop" };
+}
+
+function isEmptyDecision(result) {
+  return EMPTY_DECISION_PREDICATES[result?.kind]?.(result) ?? false;
 }
 
 export function runBattleOffensiveDebuff(event = { type: EVENT_DECIDE }) {
