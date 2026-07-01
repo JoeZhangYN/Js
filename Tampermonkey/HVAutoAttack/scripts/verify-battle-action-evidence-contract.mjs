@@ -61,6 +61,8 @@ for (const required of [
   "acted: commandActed(event.result)",
   "failureReason: commandFailureReason(event)",
   "RESULT_ACCEPTED",
+  "export function readBattleCommandEvidence",
+  "JSON.parse(storage.getItem(BATTLE_COMMAND_EVIDENCE_KEY)",
 ]) {
   if (!commandEvidenceText.includes(required)) {
     violations.push(`src/battle/battle-command-evidence.js must normalize command evidence ${required}`);

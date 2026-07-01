@@ -39,6 +39,14 @@ const battleCommandEvidenceEventHandlers = Object.freeze({
   [EVENT_RECORD_RESULT]: recordCommandResult,
 });
 
+export function readBattleCommandEvidence(storage = window.sessionStorage) {
+  try {
+    return JSON.parse(storage.getItem(BATTLE_COMMAND_EVIDENCE_KEY) || "null");
+  } catch (_error) {
+    return null;
+  }
+}
+
 export function runBattleCommandEvidence(
   event = { type: EVENT_RECORD_RESULT },
   deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }

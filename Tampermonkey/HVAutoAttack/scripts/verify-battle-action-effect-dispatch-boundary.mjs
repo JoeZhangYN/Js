@@ -4,6 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-action-effect-dispatch.js");
 const ownerTest = path.normalize("src/battle/battle-action-effect-dispatch.test.js");
+const commandEvidenceTest = path.normalize(
+  "src/battle/battle-action-effect-command-evidence.test.js"
+);
 const evidence = path.normalize("src/battle/battle-action-effect-evidence.js");
 const evidenceTest = path.normalize("src/battle/battle-action-effect-evidence.test.js");
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
@@ -56,6 +59,9 @@ for (const required of [
   "runBattleChannelExecution",
   "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
   "runBattleActionEffectEvidence",
+  "readBattleCommandEvidence",
+  "readFreshCommandEvidence",
+  "commandEvidence: readFreshCommandEvidence(previousCommandEvidence)",
   "rejectUnknownActionEffectEvent",
   "unknownActionEffectDispatchEvent",
   "knownResultKind: Boolean(ACTION_RESULT_EXECUTORS[result?.kind])",
@@ -154,6 +160,21 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     }
   }
 }
+if (!fs.existsSync(path.join(root, commandEvidenceTest))) {
+  violations.push(`${rel(commandEvidenceTest)} must cover command failure evidence bridging`);
+} else {
+  const commandEvidenceTestText = read(commandEvidenceTest);
+  for (const required of [
+    "carries fresh command failure evidence into action effect evidence",
+    "does not reuse stale command evidence for effects that write no command",
+    "targetDead",
+    "HVAA:lastBattleActionEffect",
+  ]) {
+    if (!commandEvidenceTestText.includes(required)) {
+      violations.push(`${rel(commandEvidenceTest)} must cover ${required}`);
+    }
+  }
+}
 for (const forbidden of ["halt: executeHaltResult", "function executeHaltResult"]) {
   if (ownerText.includes(forbidden)) {
     violations.push(`${rel(owner)} must keep retired halt ActionResult out of dispatch`);
@@ -177,6 +198,8 @@ for (const required of [
   "classifyPlanFailure",
   "KNOWN_PLAN_TYPES",
   "failureReason: classifyActionEffectFailure(event)",
+  "command: summarizeCommandEvidence(event.commandEvidence)",
+  "event.commandEvidence?.failureReason",
   "missingActionResult",
   "unknownActionResultKind",
   "noActionCandidate",

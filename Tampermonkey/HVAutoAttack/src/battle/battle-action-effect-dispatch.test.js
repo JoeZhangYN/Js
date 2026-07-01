@@ -108,7 +108,7 @@ describe("runBattleActionEffectDispatch", () => {
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
       result: { kind: "click-skill-then-target", skillId: "213", targetId: 3 },
       acted: false,
-      failureReason: "actionExecutorRejected",
+      failureReason: "targetDead",
     });
   });
 

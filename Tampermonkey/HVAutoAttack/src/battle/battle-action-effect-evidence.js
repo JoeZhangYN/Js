@@ -34,6 +34,7 @@ function recordAppliedActionEffect(event, deps) {
     result: summarizeResult(event.result),
     acted: Boolean(event.acted),
     failureReason: classifyActionEffectFailure(event),
+    command: summarizeCommandEvidence(event.commandEvidence),
     at: new Date().toISOString(),
   };
   try {
@@ -45,9 +46,22 @@ function recordAppliedActionEffect(event, deps) {
   return true;
 }
 
+function summarizeCommandEvidence(commandEvidence) {
+  if (!commandEvidence) return undefined;
+  return {
+    command: commandEvidence.command,
+    result: commandEvidence.result,
+    acted: Boolean(commandEvidence.acted),
+    reason: commandEvidence.reason,
+    failureReason: commandEvidence.failureReason,
+    detail: commandEvidence.detail,
+  };
+}
+
 function classifyActionEffectFailure(event) {
   if (event.acted) return null;
   if (event.failureReason) return event.failureReason;
+  if (event.commandEvidence?.failureReason) return event.commandEvidence.failureReason;
   if (!event.result?.kind) return "missingActionResult";
   if (event.knownResultKind === false) return event.result.reason || "unknownActionResultKind";
   const planFailure = classifyPlanFailure(event.result);
