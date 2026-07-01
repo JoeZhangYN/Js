@@ -12,9 +12,14 @@ function rel(file) {
 
 const body =
   text.match(/_bottom\.load_lottery = async function \(ss\) \{[\s\S]*?\n  \};/)?.[0] || "";
+const filterBody =
+  text.match(/_bottom\.evaluate_lottery_filter = function \(ss, equip\) \{[\s\S]*?\n  \};/)?.[0] || "";
 
 if (!body) {
   violations.push("lottery notification loader must stay explicit");
+}
+if (!filterBody) {
+  violations.push("lottery notification filter decision must stay isolated");
 }
 
 for (const required of [
@@ -26,9 +31,23 @@ for (const required of [
   "const prevMatch =",
   "prevMatch?.[1]",
   "eqname.previousElementSibling?.textContent",
+  "const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip)",
+  "lottery.filterError = filterResult.error",
 ]) {
   if (!body.includes(required)) {
     violations.push(`${rel(target)} lottery loader must include ${required}`);
+  }
+}
+
+for (const required of [
+  "try {",
+  "catch (error)",
+  "$equip.filter.equip($config.settings.lotteryFilters, equip)",
+  "console.warn('[HVUT] lottery notification filter failed'",
+  "matched: false",
+]) {
+  if (!filterBody.includes(required)) {
+    violations.push(`${rel(target)} lottery filter decision must include ${required}`);
   }
 }
 
@@ -37,6 +56,7 @@ for (const forbidden of [
   "RegExp.$1",
   "RegExp.$2",
   ".exec($qs('img[src*=\"lottery_prev_a.png\"]', doc)?.getAttribute('onclick'))[1]",
+  "lottery.check = $equip.filter.equip",
 ]) {
   if (body.includes(forbidden)) {
     violations.push(`${rel(target)} lottery loader must not use brittle parser path: ${forbidden}`);

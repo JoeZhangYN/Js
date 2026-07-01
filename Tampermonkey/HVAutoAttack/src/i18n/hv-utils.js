@@ -10706,6 +10706,21 @@ if ($config.settings.trainingNotification) {
 
 // LOTTERY
 if ($config.settings.lotteryNotification) {
+  _bottom.evaluate_lottery_filter = function (ss, equip) {
+    try {
+      return {
+        matched: $equip.filter.equip($config.settings.lotteryFilters, equip),
+        error: null,
+      };
+    } catch (error) {
+      console.warn('[HVUT] lottery notification filter failed', { ss, equip, error });
+      return {
+        matched: false,
+        error: error?.message || String(error),
+      };
+    }
+  };
+
   _bottom.show_lottery = function (ss) {
     const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
     const lottery = json[ss];
@@ -10767,7 +10782,9 @@ if ($config.settings.lotteryNotification) {
       lottery.id = parseInt(prevMatch?.[1] || 0) + 1;
       lottery.equip = eqname.textContent;
       lottery.date = date;
-      lottery.check = $equip.filter.equip($config.settings.lotteryFilters, lottery.equip);
+      const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip);
+      lottery.check = filterResult.matched;
+      lottery.filterError = filterResult.error;
       lottery.hide = !$config.settings.lotteryNotification;
       // 彩票按「开奖日」去重弹窗：同一抽奖周期(featured 装备持续到当天开奖)只弹一次，
       // 避免「Today's ticket sale is closed」窗口 lottery.date≈now → 每次刷新都重跑 load_lottery 反复弹。
