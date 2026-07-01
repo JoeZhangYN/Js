@@ -154,18 +154,20 @@ describe("runBattleSpiritToggleAutomation", () => {
     ).toBe(0);
   });
 
-  it("rejects unknown events without touching Spirit state", () => {
+  it("rejects unknown events without touching Spirit state and rejects null events without touching Spirit state", () => {
     expect(runBattleSpiritToggleAutomation({ type: "unknown" })).toBe(false);
+    expect(runBattleSpiritToggleAutomation(null)).toBe(false);
 
     expect(mocks.gE).not.toHaveBeenCalled();
     expect(mocks.g).not.toHaveBeenCalled();
     expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
-    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
-      type: "recordResult",
-      command: "spirit.unknown",
-      result: "rejected",
-      reason: "unknownSpiritToggleEvent",
-      detail: { eventType: "unknown" },
-    });
+    expect(mocks.runBattleCommandEvidence.mock.calls).toEqual([
+      [
+        expect.objectContaining({ reason: "unknownSpiritToggleEvent", detail: { eventType: "unknown" } }),
+      ],
+      [
+        expect.objectContaining({ reason: "unknownSpiritToggleEvent", detail: { eventType: undefined } }),
+      ],
+    ]);
   });
 });

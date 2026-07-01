@@ -85,7 +85,14 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_CLICK_AND_RECORD\][\s\S]*\[EVENT_READ_ACT
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
-requireText(ownerTest, ["rejects unknown events without touching Spirit state", "unknownSpiritToggleEvent"]);
+if (!ownerText.includes("battleSpiritToggleEventHandlers[event?.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must reject null Spirit events without side effects`);
+}
+requireText(ownerTest, [
+  "rejects unknown events without touching Spirit state",
+  "rejects null events without touching Spirit state",
+  "unknownSpiritToggleEvent",
+]);
 
 requireText("src/battle/snapshot.js", [
   "BattleSpiritToggleEvent.READ_ACTIVE",
