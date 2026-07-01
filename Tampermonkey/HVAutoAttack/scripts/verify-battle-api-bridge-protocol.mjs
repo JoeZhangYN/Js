@@ -34,10 +34,15 @@ const recoveryPauseTest = path.normalize("src/battle/battle-api-response-recover
 const recoveryRejectionTest = path.normalize(
   "src/battle/battle-api-response-recovery-rejection.test.js"
 );
+const recoveryInstallFailureTest = path.normalize(
+  "src/battle/battle-api-response-recovery-install-failure.test.js"
+);
 const recoveryPersistenceTest = path.normalize(
   "src/battle/battle-api-response-recovery-persistence.test.js"
 );
-const recoveryWarningTest = path.normalize("src/battle/battle-api-response-recovery-warning.test.js");
+const recoveryWarningTest = path.normalize(
+  "src/battle/battle-api-response-recovery-warning.test.js"
+);
 const recoveryDiagnosticsTest = path.normalize(
   "src/battle/battle-api-response-recovery-diagnostics.test.js"
 );
@@ -181,6 +186,8 @@ const responseScriptText = requireText(responseScript, [
   "diagnosticEvidenceKeys",
   "readRecentDiagnosticEvidence",
   "bridgeMissing",
+  "bridgeThrew",
+  "bridgeError",
   "a.error || a.reload",
   "parseApiJsonResponse",
   'responseKind: "malformedJson"',
@@ -203,9 +210,12 @@ requireText(diagnosticEvidenceKeys, [
 ]);
 requireText(responseScriptTest, [
   "records blocked recovery evidence when the page bridge is missing",
+  "records blocked recovery evidence when the recovery bridge throws",
   "routes rejected API responses through the recovery bridge when available",
   "HVAA:battleApiRecovery",
   "bridgeMissing",
+  "bridgeThrew",
+  "bridgeError",
   "recoveryAction",
 ]);
 requireText(responseScriptDiagnosticsTest, [
@@ -265,6 +275,7 @@ const recoveryText = requireText(recovery, [
   "readRecentDiagnosticEvidence",
   "API_RECOVERY_SESSION_KEY",
   "API_RECOVERY_BRIDGE_NAME",
+  "REASON_API_RECOVERY_BRIDGE_INSTALL_THREW",
   "REPEAT_PAUSE_THRESHOLD",
   "EVENT_UNKNOWN_API_RECOVERY",
   "EVENT_REJECTED_API_BRIDGE_EVENT",
@@ -280,6 +291,7 @@ const recoveryText = requireText(recovery, [
   "error: detail?.error",
   "unknownApiResponseRecoveryEvent",
   "unknownApiBridgeEvent",
+  "apiRecoveryBridgeInstallThrew",
   "buildRecoveryState",
   "buildRejectedRecoveryState",
   "handleRejectedApiResponse",
@@ -370,6 +382,13 @@ requireText(recoveryRejectionTest, [
   "HVAA:battleApiRecovery",
   'recoveryAction: "rejected"',
 ]);
+requireText(recoveryInstallFailureTest, [
+  "records recovery bridge install target failures without throwing",
+  "apiRecoveryBridgeInstallThrew",
+  "bridge setter failed",
+  "HVAA:battleApiRecovery",
+  'recoveryAction: "rejected"',
+]);
 requireText(recoveryPersistenceTest, [
   "continues reload recovery when recovery state persistence fails",
   "pauses repeated same-cause recovery through memory fallback when persistence fails",
@@ -382,7 +401,7 @@ requireText(recoveryWarningTest, [
   "continues reload recovery when recovery state persistence and warning fail",
   "keeps repeated-pause recovery accepted when pause warning fails",
   "console hook failed",
-  "storageWriteError: \"quota\"",
+  'storageWriteError: "quota"',
 ]);
 requireText(recoveryMalformedJsonTest, [
   "does not treat different malformed JSON parse failures as the same loop",
@@ -533,9 +552,17 @@ if (!responseScriptText.includes("recordBlockedRecovery")) {
     `${responseScript.replaceAll("\\", "/")} must record missing recovery bridge evidence`
   );
 }
-if (!responseScriptText.includes('recoveryAction: "bridgeMissing"')) {
+if (
+  !responseScriptText.includes("bridgeMissing") ||
+  !responseScriptText.includes("recoveryAction: action")
+) {
   violations.push(
     `${responseScript.replaceAll("\\", "/")} bridge-missing state must use recoveryAction`
+  );
+}
+if (!responseScriptText.includes('"bridgeThrew"') || !responseScriptText.includes("bridgeError")) {
+  violations.push(
+    `${responseScript.replaceAll("\\", "/")} bridge-thrown recovery must be blocked with evidence`
   );
 }
 if (/recovery\s*:\s*["']bridgeMissing["']/.test(responseScriptText + read(responseScriptTest))) {
@@ -604,6 +631,15 @@ if (
 ) {
   violations.push(
     `${recovery.replaceAll("\\", "/")} must route API bridge rejections through explicit recovery event`
+  );
+}
+if (
+  !recoveryText.includes("item.value[API_RECOVERY_BRIDGE_NAME] = bridge") ||
+  !recoveryText.includes("REASON_API_RECOVERY_BRIDGE_INSTALL_THREW") ||
+  !recoveryText.includes("step: item.name")
+) {
+  violations.push(
+    `${recovery.replaceAll("\\", "/")} recovery bridge installation must record target assignment failures`
   );
 }
 if (!recoveryText.includes("repeatCount >= REPEAT_PAUSE_THRESHOLD")) {

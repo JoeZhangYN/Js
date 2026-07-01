@@ -40,7 +40,7 @@ export function buildApiResponseScript(worldContext) {
       }
       return Object.keys(evidence).length ? evidence : undefined;
     }
-    function recordBlockedRecovery(detail) {
+    function recordBlockedRecovery(detail, action, warning) {
       const blockedDetail = { ...detail, world: worldContext, action: actionDetail() };
       const state = {
         key: JSON.stringify({
@@ -50,24 +50,40 @@ export function buildApiResponseScript(worldContext) {
           reload: blockedDetail.reload,
           world: blockedDetail.world,
           action: blockedDetail.action,
-          bridge: "missing",
+          bridge: action,
         }),
         repeatCount: 1,
         detail: blockedDetail,
-        recoveryAction: "bridgeMissing",
+        recoveryAction: action,
       };
       const diagnosticEvidence = readRecentDiagnosticEvidence();
       if (diagnosticEvidence) state.diagnosticEvidence = diagnosticEvidence;
       writeRecoveryState(state);
-      console.warn("[HVAA] battle API recovery bridge missing; reload blocked", blockedDetail);
+      console.warn(warning, blockedDetail);
     }
     function reloadFromApiResponse(detail) {
       const recovery = window.HVAA_battleApiRecovery;
       if (recovery && recovery.handleRejectedResponse) {
-        recovery.handleRejectedResponse({ ...detail, world: worldContext, action: actionDetail() });
+        try {
+          recovery.handleRejectedResponse({
+            ...detail,
+            world: worldContext,
+            action: actionDetail(),
+          });
+        } catch (error) {
+          recordBlockedRecovery(
+            { ...detail, bridgeError: String(error && error.message ? error.message : error) },
+            "bridgeThrew",
+            "[HVAA] battle API recovery bridge threw; reload blocked"
+          );
+        }
         return true;
       }
-      recordBlockedRecovery(detail);
+      recordBlockedRecovery(
+        detail,
+        "bridgeMissing",
+        "[HVAA] battle API recovery bridge missing; reload blocked"
+      );
       return false;
     }
     function parseApiJsonResponse(responseText, status) {

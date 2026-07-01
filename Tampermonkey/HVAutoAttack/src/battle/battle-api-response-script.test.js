@@ -16,7 +16,10 @@ beforeEach(() => {
 describe("buildApiResponseScript", () => {
   it("records blocked recovery evidence when the page bridge is missing", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const apiResponse = installApiResponse({ world: "isekai", apiJsonUrl: "https://hv/isekai/json" });
+    const apiResponse = installApiResponse({
+      world: "isekai",
+      apiJsonUrl: "https://hv/isekai/json",
+    });
     window.info = { mode: "magic", skill: 213, target: 2 };
 
     expect(
@@ -65,5 +68,40 @@ describe("buildApiResponseScript", () => {
       })
     );
     expect(window.sessionStorage.getItem("HVAA:battleApiRecovery")).toBeNull();
+  });
+
+  it("records blocked recovery evidence when the recovery bridge throws", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const apiResponse = installApiResponse();
+    window.info = { mode: "magic", skill: 213, target: 2 };
+    window.HVAA_battleApiRecovery = {
+      handleRejectedResponse: vi.fn(() => {
+        throw new Error("recovery bridge failed");
+      }),
+    };
+
+    expect(
+      apiResponse({
+        readyState: 4,
+        status: 200,
+        responseText: JSON.stringify({ error: "server_error" }),
+      })
+    ).toBe(false);
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
+      repeatCount: 1,
+      recoveryAction: "bridgeThrew",
+      detail: {
+        responseKind: "jsonError",
+        status: 200,
+        error: "server_error",
+        bridgeError: "recovery bridge failed",
+        action: { mode: "magic", skill: 213, target: 2 },
+      },
+    });
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA] battle API recovery bridge threw; reload blocked",
+      expect.any(Object)
+    );
   });
 });

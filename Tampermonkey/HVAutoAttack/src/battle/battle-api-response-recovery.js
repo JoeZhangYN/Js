@@ -19,6 +19,7 @@ const EVENT_REJECTED_RESPONSE = "rejectedResponse";
 const EVENT_REJECTED_API_BRIDGE_EVENT = "rejectedApiBridgeEvent";
 const EVENT_UNKNOWN_API_RECOVERY = "unknownApiResponseRecoveryEvent";
 const EVENT_UNKNOWN_API_BRIDGE = "unknownApiBridgeEvent";
+const REASON_API_RECOVERY_BRIDGE_INSTALL_THREW = "apiRecoveryBridgeInstallThrew";
 const API_RECOVERY_BRIDGE_NAME = "HVAA_battleApiRecovery";
 const REPEAT_PAUSE_THRESHOLD = 2;
 const OUTCOME_REJECTED = "rejected";
@@ -88,11 +89,30 @@ function installApiRecoveryBridge(event, deps) {
     handleRejectedResponse: (detail) =>
       runBattleApiResponseRecovery({ type: EVENT_REJECTED_RESPONSE, detail }, deps),
   });
+  const targets = [];
   const target = bridgeTargetFrom(event);
-  if (target) target[API_RECOVERY_BRIDGE_NAME] = bridge;
-  if (event.unsafeTarget) event.unsafeTarget[API_RECOVERY_BRIDGE_NAME] = bridge;
-  else if (typeof unsafeWindow !== "undefined") unsafeWindow[API_RECOVERY_BRIDGE_NAME] = bridge;
-  return Boolean(target || event.unsafeTarget || typeof unsafeWindow !== "undefined");
+  if (target) targets.push({ name: "target", value: target });
+  if (event.unsafeTarget) targets.push({ name: "unsafeTarget", value: event.unsafeTarget });
+  else if (typeof unsafeWindow !== "undefined")
+    targets.push({ name: "unsafeWindow", value: unsafeWindow });
+  let installed = false;
+  for (const item of targets) {
+    try {
+      item.value[API_RECOVERY_BRIDGE_NAME] = bridge;
+      installed = true;
+    } catch (error) {
+      rejectApiBridgeEvent(
+        {
+          eventType: EVENT_INSTALL_BRIDGE,
+          reason: REASON_API_RECOVERY_BRIDGE_INSTALL_THREW,
+          step: item.name,
+          error: error?.message || String(error),
+        },
+        deps
+      );
+    }
+  }
+  return installed;
 }
 
 export function runBattleApiResponseRecovery(
