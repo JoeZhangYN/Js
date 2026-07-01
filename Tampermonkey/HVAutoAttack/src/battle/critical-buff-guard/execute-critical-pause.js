@@ -4,6 +4,7 @@ import { BattlePauseEvidenceEvent, runBattlePauseEvidence } from "../battle-paus
 
 const EVENT_APPLY_PLAN = "applyPlan";
 const REASON_INVALID_PLAN = "invalidCriticalBuffPausePlan";
+const REASON_UNKNOWN_EVENT = "unknownCriticalPauseExecutionEvent";
 
 export const CriticalBuffPauseExecutionEvent = Object.freeze({
   APPLY_PLAN: EVENT_APPLY_PLAN,
@@ -43,6 +44,19 @@ function rejectCriticalPausePlan(plan) {
   return false;
 }
 
+function rejectUnknownCriticalPauseEvent(event) {
+  runBattlePauseEvidence({
+    type: BattlePauseEvidenceEvent.RECORD_STATE,
+    state: "rejected",
+    reason: REASON_UNKNOWN_EVENT,
+    detail: { eventType: event?.type ?? null },
+  });
+  return false;
+}
+
 export function runCriticalBuffPauseExecution(event = { type: EVENT_APPLY_PLAN }) {
-  return criticalBuffPauseExecutionEventHandlers[event?.type]?.(event) ?? false;
+  return (
+    criticalBuffPauseExecutionEventHandlers[event?.type]?.(event) ??
+    rejectUnknownCriticalPauseEvent(event)
+  );
 }

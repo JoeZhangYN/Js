@@ -31,7 +31,19 @@ describe("runCriticalBuffPauseExecution", () => {
 
   it("rejects unknown critical pause execution events", () => {
     expect(runCriticalBuffPauseExecution({ type: "unknown" })).toBe(false);
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
+      state: "rejected",
+      reason: "unknownCriticalPauseExecutionEvent",
+      detail: { eventType: "unknown" },
+    });
+
+    sessionStorage.clear();
     expect(runCriticalBuffPauseExecution(null)).toBe(false);
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
+      state: "rejected",
+      reason: "unknownCriticalPauseExecutionEvent",
+      detail: { eventType: null },
+    });
 
     expect(console.warn).not.toHaveBeenCalled();
     expect(document.title).toBe("");

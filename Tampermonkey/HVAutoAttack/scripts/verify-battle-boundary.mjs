@@ -2542,6 +2542,9 @@ function checkCriticalBuffEntry() {
     "runBattlePauseEvidence",
     "document.title",
     "invalidCriticalBuffPausePlan",
+    "unknownCriticalPauseExecutionEvent",
+    "rejectUnknownCriticalPauseEvent",
+    "detail: { eventType: event?.type ?? null }",
   ]) {
     if (!executionText.includes(required)) {
       violations.push(
@@ -2565,6 +2568,9 @@ function checkCriticalBuffEntry() {
     const executionTestText = fs.readFileSync(executeCriticalPauseTestFile, "utf8");
     if (!executionTestText.includes("rejects unknown critical pause execution events")) {
       violations.push(`${rel(executeCriticalPauseTestFile)} must cover unknown critical pause events`);
+    }
+    if (!executionTestText.includes("unknownCriticalPauseExecutionEvent")) {
+      violations.push(`${rel(executeCriticalPauseTestFile)} must cover unknown critical pause evidence`);
     }
     if (!executionTestText.includes("runCriticalBuffPauseExecution(null)")) {
       violations.push(`${rel(executeCriticalPauseTestFile)} must cover null critical pause events`);
