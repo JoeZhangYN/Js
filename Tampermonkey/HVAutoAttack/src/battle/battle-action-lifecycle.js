@@ -1,23 +1,11 @@
-import {
-  BattleMonitorEvent,
-  runBattleMonitorAutomation,
-} from "../monitor/battle-monitor-automation.js";
+import { BattleMonitorEvent, runBattleMonitorAutomation } from "../monitor/battle-monitor-automation.js";
 import { BattleActionDelayEvent, runBattleActionDelayAutomation } from "./battle-action-delay.js";
 import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle-action-speed.js";
-import {
-  BattleCompletionEvent,
-  runBattleCompletionAutomation,
-} from "./battle-completion.js";
+import { BattleCompletionEvent, runBattleCompletionAutomation } from "./battle-completion.js";
 import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
-import {
-  BattleNextRoundContinuationEvent,
-  runBattleNextRoundContinuation,
-} from "./battle-next-round-continuation.js";
-import {
-  BattleActionLifecycleEvidenceEvent,
-  runBattleActionLifecycleEvidence,
-} from "./battle-action-lifecycle-evidence.js";
+import { BattleNextRoundContinuationEvent, runBattleNextRoundContinuation } from "./battle-next-round-continuation.js";
+import { BattleActionLifecycleEvidenceEvent, runBattleActionLifecycleEvidence } from "./battle-action-lifecycle-evidence.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
@@ -25,6 +13,7 @@ const EVENT_UNKNOWN_ACTION_LIFECYCLE = "unknownActionLifecycleEvent";
 const OUTCOME_NEXT_ROUND = "nextRound";
 const OUTCOME_ONGOING = "ongoing";
 const OUTCOME_REJECTED = "rejected";
+const REASON_ACTION_LIFECYCLE_STEP_THROW = "actionLifecycleStepThrew";
 
 export const BattleActionLifecycleEvent = Object.freeze({
   ACTION_STARTED: EVENT_ACTION_STARTED,
@@ -41,16 +30,58 @@ function runActionStarted(deps) {
 }
 
 function recordStep(steps, step, run) {
-  const result = run();
-  steps.push({ step, result: result === undefined ? true : result });
-  return result;
+  try {
+    const result = run();
+    steps.push({ step, result: result === undefined ? true : result });
+    return result;
+  } catch (error) {
+    recordThrownStep(steps, step, error);
+    return false;
+  }
 }
 
-function handleCompletion(deps) {
-  const completion = deps.completeBattle();
+function recordThrownStep(steps, step, error) {
+  steps.push({
+    step,
+    result: false,
+    reason: REASON_ACTION_LIFECYCLE_STEP_THROW,
+    error: error?.message || String(error),
+  });
+}
+
+function rejectedLifecycleResult(failedStep) {
+  return {
+    outcome: OUTCOME_REJECTED,
+    reason: REASON_ACTION_LIFECYCLE_STEP_THROW,
+    failedStep,
+  };
+}
+
+function completeBattleStep(deps, steps) {
+  try {
+    const completion = deps.completeBattle();
+    steps.push({ step: "completeBattle", result: completion.outcome });
+    return { ok: true, completion };
+  } catch (error) {
+    recordThrownStep(steps, "completeBattle", error);
+    return { ok: false, result: rejectedLifecycleResult("completeBattle") };
+  }
+}
+
+function continueNextRoundStep(deps, steps) {
+  const continued = "nextRound";
+  const continuationStarted = Boolean(recordStep(steps, "continue", deps.continueNextRound));
+  steps[steps.length - 1].continued = continued;
+  return { continued, continuationStarted };
+}
+
+function handleCompletion(deps, steps) {
+  const completed = completeBattleStep(deps, steps);
+  if (!completed.ok) return completed.result;
+  const completion = completed.completion;
   if (completion.outcome === OUTCOME_NEXT_ROUND) {
-    const continuationStarted = Boolean(deps.continueNextRound());
-    return { outcome: completion.outcome, continued: "nextRound", continuationStarted };
+    const { continued, continuationStarted } = continueNextRoundStep(deps, steps);
+    return { outcome: completion.outcome, continued, continuationStarted };
   }
   return { outcome: completion.outcome, continued: false, continuationStarted: false };
 }
@@ -61,15 +92,18 @@ function runActionEnded(deps) {
   recordStep(steps, "endDelay", deps.endDelay);
   recordStep(steps, "refreshCombatants", deps.refreshCombatants);
   recordStep(steps, "monitorActionEnded", deps.monitorActionEnded);
-  if (deps.isCompletionReached()) {
-    steps.push({ step: "isCompletionReached", result: true });
-    const result = handleCompletion(deps);
-    steps.push({ step: "completeBattle", result: result.outcome });
-    steps.push({ step: "continue", result: result.continuationStarted, continued: result.continued });
+  const completionReached = Boolean(recordStep(steps, "isCompletionReached", deps.isCompletionReached));
+  const completionReachedStep = steps[steps.length - 1];
+  if (completionReachedStep.reason === REASON_ACTION_LIFECYCLE_STEP_THROW) {
+    const result = rejectedLifecycleResult("isCompletionReached");
     deps.recordLifecycle(EVENT_ACTION_ENDED, result, steps);
     return result;
   }
-  steps.push({ step: "isCompletionReached", result: false });
+  if (completionReached) {
+    const result = handleCompletion(deps, steps);
+    deps.recordLifecycle(EVENT_ACTION_ENDED, result, steps);
+    return result;
+  }
   const turnStarted = Boolean(recordStep(steps, "runTurn", deps.runTurn));
   const result = { outcome: OUTCOME_ONGOING, continued: "turn", continuationStarted: turnStarted };
   deps.recordLifecycle(EVENT_ACTION_ENDED, result, steps);

@@ -1306,7 +1306,7 @@ function checkActionLifecycleEntry() {
     "OUTCOME_ONGOING",
     "BattleNextRoundContinuationEvent.CONTINUE",
     "runBattleNextRoundContinuation",
-    "const continuationStarted = Boolean(deps.continueNextRound())",
+    "continueNextRoundStep",
     "continuationStarted",
     "runBattleTurnAutomation",
     "BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE",
@@ -1322,11 +1322,13 @@ function checkActionLifecycleEntry() {
     "recordStep(steps, \"endDelay\", deps.endDelay)",
     "recordStep(steps, \"refreshCombatants\", deps.refreshCombatants)",
     "recordStep(steps, \"monitorActionEnded\", deps.monitorActionEnded)",
+    "REASON_ACTION_LIFECYCLE_STEP_THROW",
+    "rejectedLifecycleResult",
+    "completeBattleStep",
     "result === undefined ? true : result",
     "const started = steps.every((step) => step.result)",
-    "steps.push({ step: \"isCompletionReached\", result: true })",
-    "steps.push({ step: \"isCompletionReached\", result: false })",
-    "steps.push({ step: \"continue\", result: result.continuationStarted, continued: result.continued })",
+    "recordStep(steps, \"isCompletionReached\", deps.isCompletionReached)",
+    "steps[steps.length - 1].continued = continued",
     "recordStep(steps, \"runTurn\", deps.runTurn)",
     "const turnStarted = Boolean(recordStep(steps, \"runTurn\", deps.runTurn))",
     "continuationStarted: turnStarted",
@@ -1374,6 +1376,20 @@ function checkActionLifecycleEntry() {
   );
   if (!lifecycleStepResultTestText.includes("continuationStarted: false")) {
     violations.push("src/battle/battle-action-lifecycle-step-result.test.js must cover continuationStarted: false");
+  }
+  const lifecycleExceptionTestText = fs.readFileSync(
+    path.join(root, "src/battle/battle-action-lifecycle-exception.test.js"),
+    "utf8"
+  );
+  for (const required of [
+    "records action-start step exceptions without throwing",
+    "records completion check exceptions as rejected lifecycle results",
+    "records completeBattle exceptions as rejected lifecycle results",
+    "actionLifecycleStepThrew",
+  ]) {
+    if (!lifecycleExceptionTestText.includes(required)) {
+      violations.push("src/battle/battle-action-lifecycle-exception.test.js must cover " + required);
+    }
   }
   const evidenceText = fs.readFileSync(actionLifecycleEvidenceFile, "utf8");
   for (const required of [
