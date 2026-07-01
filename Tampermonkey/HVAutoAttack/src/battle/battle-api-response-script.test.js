@@ -78,6 +78,10 @@ describe("buildApiResponseScript", () => {
       })
     );
     window.sessionStorage.setItem(
+      DiagnosticEvidenceKey.BATTLE_ACTION_SPEED,
+      JSON.stringify({ decision: "rejected", reason: "unknownActionSpeedEvent", eventType: null })
+    );
+    window.sessionStorage.setItem(
       DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY,
       JSON.stringify({ repeatCount: 99 })
     );
@@ -112,6 +116,7 @@ describe("buildApiResponseScript", () => {
           reason: "unknownActionDelayEvent",
           eventType: null,
         },
+        battleActionSpeed: { decision: "rejected", reason: "unknownActionSpeedEvent", eventType: null },
       },
     });
     expect(

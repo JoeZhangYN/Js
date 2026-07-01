@@ -3,6 +3,7 @@ import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle
 
 function makeDeps(previousTime = 1000, now = 1500) {
   const state = { timeNow: previousTime };
+  const sessionStorage = { setItem: vi.fn() };
   return {
     state,
     deps: {
@@ -11,6 +12,8 @@ function makeDeps(previousTime = 1000, now = 1500) {
       write: vi.fn((key, value) => {
         state[key] = value;
       }),
+      sessionStorage,
+      debug: vi.fn(),
     },
   };
 }
@@ -59,23 +62,31 @@ describe("runBattleActionSpeedAutomation", () => {
     ).toBe("0.00");
   });
 
-  it("rejects unknown events", () => {
+  it("records rejected unknown events without reading or writing runtime state", () => {
     const { deps } = makeDeps();
 
-    expect(runBattleActionSpeedAutomation({ type: "unknown" }, deps)).toBeUndefined();
+    expect(runBattleActionSpeedAutomation({ type: "unknown" }, deps)).toBe(false);
 
     expect(deps.now).not.toHaveBeenCalled();
     expect(deps.read).not.toHaveBeenCalled();
     expect(deps.write).not.toHaveBeenCalled();
+    expect(deps.sessionStorage.setItem).toHaveBeenCalledWith(
+      "HVAA:lastBattleActionSpeed",
+      expect.stringContaining('"reason":"unknownActionSpeedEvent"')
+    );
   });
 
-  it("rejects null events without reading or writing runtime state", () => {
+  it("records rejected null events without reading or writing runtime state", () => {
     const { deps } = makeDeps();
 
-    expect(runBattleActionSpeedAutomation(null, deps)).toBeUndefined();
+    expect(runBattleActionSpeedAutomation(null, deps)).toBe(false);
 
     expect(deps.now).not.toHaveBeenCalled();
     expect(deps.read).not.toHaveBeenCalled();
     expect(deps.write).not.toHaveBeenCalled();
+    expect(deps.sessionStorage.setItem).toHaveBeenCalledWith(
+      "HVAA:lastBattleActionSpeed",
+      expect.stringContaining('"eventType":null')
+    );
   });
 });

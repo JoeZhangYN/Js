@@ -55,13 +55,17 @@ const ownerText = requireText(owner, [
   "formatRunSpeed",
   "DEFAULT_RUN_SPEED",
   "TimeEvent.EPOCH_MS",
+  "DiagnosticEvidenceKey.BATTLE_ACTION_SPEED",
+  "unknownActionSpeedEvent",
+  "rejectUnknownActionSpeedEvent",
 ]);
 requireText(ownerTest, [
   "runSpeed",
   "timeNow",
   "normalizes invalid action speed runtime values",
-  "rejects unknown events",
-  "rejects null events without reading or writing runtime state",
+  "records rejected unknown events without reading or writing runtime state",
+  "records rejected null events without reading or writing runtime state",
+  "HVAA:lastBattleActionSpeed",
 ]);
 
 if (
@@ -76,6 +80,9 @@ if (!/const battleActionSpeedEventHandlers\s*=\s*Object\.freeze\(/.test(ownerTex
 }
 if (!ownerText.includes("battleActionSpeedEventHandlers[event?.type]")) {
   violations.push(`${owner.replaceAll("\\", "/")} must reject null events without touching runtime state`);
+}
+if (!ownerText.includes("?? rejectUnknownActionSpeedEvent(event, deps)")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must record rejected action speed events`);
 }
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not route events through an if ladder`);

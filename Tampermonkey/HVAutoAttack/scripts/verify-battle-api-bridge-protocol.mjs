@@ -132,6 +132,8 @@ requireText(diagnosticEvidenceKeys, [
   "API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES",
   "battleActionDelay",
   "DiagnosticEvidenceKey.BATTLE_ACTION_DELAY",
+  "battleActionSpeed",
+  "DiagnosticEvidenceKey.BATTLE_ACTION_SPEED",
   "item.key !== DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
 ]);
 requireText(responseScriptTest, [
@@ -144,9 +146,12 @@ requireText(responseScriptTest, [
   "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
   "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
   "DiagnosticEvidenceKey.BATTLE_ACTION_DELAY",
+  "DiagnosticEvidenceKey.BATTLE_ACTION_SPEED",
   "failureReason",
   "battleActionDelay",
   "unknownActionDelayEvent",
+  "battleActionSpeed",
+  "unknownActionSpeedEvent",
   "battleApiResponseRecovery",
 ]);
 requireText(responseScriptMalformedJsonTest, [
