@@ -105,6 +105,9 @@ function checkEntry() {
     "REPAIR_SOURCE_RENDERED_SNAPSHOT",
     "runMonsterStatusRepairEvidence",
     "MonsterStatusRepairEvidenceEvent.RECORD_REPAIR",
+    "reloadRepairDetail",
+    "navigationResult: false",
+    "navigationError",
     "unknownMonsterStatusEvent",
   ]) {
     if (!text.includes(required)) {
@@ -174,6 +177,18 @@ function checkEntry() {
     if (!testText.includes("HVAA:lastBattleMonsterStatusRepair")) {
       violations.push(`${entryTest.replaceAll("\\", "/")} must assert monster status repair evidence`);
     }
+  }
+  const repairLogTest = path.normalize("src/battle/monster-status-repair-log.test.js");
+  const repairLogTestText = fs.existsSync(path.join(root, repairLogTest))
+    ? fs.readFileSync(path.join(root, repairLogTest), "utf8")
+    : "";
+  if (
+    !repairLogTestText.includes("keeps repaired monster status when reload scheduling throws") ||
+    !repairLogTestText.includes('navigationError: "navigation bridge failed"')
+  ) {
+    violations.push(
+      `${repairLogTest.replaceAll("\\", "/")} must cover thrown repair reload scheduling with evidence`
+    );
   }
   const evidenceText = fs.existsSync(path.join(root, evidence))
     ? fs.readFileSync(path.join(root, evidence), "utf8")

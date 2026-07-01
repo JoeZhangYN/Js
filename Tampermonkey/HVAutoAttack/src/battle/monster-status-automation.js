@@ -34,8 +34,7 @@ const monsterStatusEventHandlers = Object.freeze({
   [EVENT_ENSURE_READY]: () => ensureMonsterStatusReady(),
   [EVENT_REPAIR]: () => repairMonsterStatus(),
   [EVENT_PREPARE_ROUND_START]: (event) => prepareRoundStart(event),
-  [EVENT_UPDATE_HP]: (event) =>
-    runMonsterStatusHpRuntime({ ...event, type: MonsterStatusHpRuntimeEvent.UPDATE }),
+  [EVENT_UPDATE_HP]: (event) => runMonsterStatusHpRuntime({ ...event, type: MonsterStatusHpRuntimeEvent.UPDATE }),
   [EVENT_REFRESH_COMBATANT_COUNTS]: () => refreshCombatantCounts(),
   [EVENT_READ_COMBATANT_COUNTS]: () => readCombatantCounts(),
   [EVENT_READ_IDS_BY_ORDER]: () => readMonsterIdsByOrder(),
@@ -44,6 +43,14 @@ const monsterStatusEventHandlers = Object.freeze({
 
 function reloadCurrentPage(detail) {
   return runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW, reason: NavigationReloadReason.MONSTER_STATUS_REPAIR, detail });
+}
+
+function reloadRepairDetail(detail) {
+  try {
+    return { ...detail, navigationResult: reloadCurrentPage(detail) };
+  } catch (error) {
+    return { ...detail, navigationResult: false, navigationError: error?.message || String(error) };
+  }
 }
 
 function recordRepair(result, reason, detail) {
@@ -66,9 +73,7 @@ function combatantCounts({ monsterAll, monsterAlive, bossAll, bossAlive }) {
 }
 
 function refreshCombatantCounts() {
-  const { monsterAll, monsterDead, bossAll, bossDead } = runMonsterStatusView({
-    type: MonsterStatusViewEvent.READ_COMBATANT_COUNTS,
-  });
+  const { monsterAll, monsterDead, bossAll, bossDead } = runMonsterStatusView({ type: MonsterStatusViewEvent.READ_COMBATANT_COUNTS });
   const counts = combatantCounts({ monsterAll, monsterAlive: monsterAll - monsterDead, bossAll, bossAlive: bossAll - bossDead });
   g("monsterAll", counts.monsterAll);
   g("monsterAlive", counts.monsterAlive);
@@ -122,7 +127,7 @@ function repairMonsterStatus() {
       runBattleLogParser({ type: BattleLogParserEvent.BUILD_MONSTER_STATUS, roster })
     );
     const detail = repairReloadDetail(REPAIR_SOURCE_ROUND_START_LOG, repairSnapshot);
-    recordRepair("scheduledReload", REPAIR_SOURCE_ROUND_START_LOG, { ...detail, navigationResult: reloadCurrentPage(detail) });
+    recordRepair("scheduledReload", REPAIR_SOURCE_ROUND_START_LOG, reloadRepairDetail(detail));
     return true;
   }
 
@@ -134,7 +139,7 @@ function repairMonsterStatus() {
   );
   setValue(STORAGE_KEYS.MONSTER_STATUS, repairSnapshot.inferredStatus);
   const detail = repairReloadDetail(REPAIR_SOURCE_RENDERED_SNAPSHOT, repairSnapshot);
-  recordRepair("scheduledReload", REPAIR_SOURCE_RENDERED_SNAPSHOT, { ...detail, navigationResult: reloadCurrentPage(detail) });
+  recordRepair("scheduledReload", REPAIR_SOURCE_RENDERED_SNAPSHOT, reloadRepairDetail(detail));
   return true;
 }
 
@@ -149,9 +154,7 @@ function ensureMonsterStatusReady() {
 }
 
 function readMonsterIdsByOrder() {
-  const idByOrder = new Map(
-    (g("monsterStatus") || []).map((status) => [status.order, status.monsterId])
-  );
+  const idByOrder = new Map((g("monsterStatus") || []).map((status) => [status.order, status.monsterId]));
   return (order) => idByOrder.get(order);
 }
 

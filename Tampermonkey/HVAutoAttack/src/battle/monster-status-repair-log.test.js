@@ -64,4 +64,36 @@ describe("monster status repair log snapshot", () => {
       },
     });
   });
+
+  it("keeps repaired monster status when reload scheduling throws", () => {
+    document.body.innerHTML = '<div class="btm2"></div>';
+    mocks.runBattleRoundStartLog.mockReturnValue({
+      rows: [
+        "Spawned Monster A: MID=101 (Alpha) LV=10 HP=1000",
+        "Initializing the battle... (Round 1 / 1)",
+      ],
+      firstText: "Spawned Monster A: MID=101 (Alpha) LV=10 HP=1000",
+      initializingText: "Initializing the battle... (Round 1 / 1)",
+    });
+    mocks.runNavigationAutomation.mockImplementation(() => {
+      throw new Error("navigation bridge failed");
+    });
+
+    expect(runMonsterStatusAutomation({ type: MonsterStatusEvent.REPAIR })).toBe(true);
+
+    expect(getValue(STORAGE_KEYS.MONSTER_STATUS, true)).toEqual([
+      expect.objectContaining({ order: 0, monsterId: 101, hp: 1000 }),
+    ]);
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleMonsterStatusRepair"))).toMatchObject({
+      result: "scheduledReload",
+      reason: "roundStartLog",
+      detail: {
+        source: "monsterStatusRepair",
+        repairSource: "roundStartLog",
+        monsterAll: 1,
+        navigationResult: false,
+        navigationError: "navigation bridge failed",
+      },
+    });
+  });
 });
