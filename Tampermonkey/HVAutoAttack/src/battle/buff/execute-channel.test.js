@@ -3,15 +3,20 @@ import { BattleChannelExecutionEvent, runBattleChannelExecution } from "./execut
 
 const mocks = vi.hoisted(() => ({
   runBattleSkillCommand: vi.fn(),
+  runBattleActionEffectEvidence: vi.fn(),
 }));
 
 vi.mock("../battle-skill-command.js", () => ({
   BattleSkillCommandEvent: Object.freeze({ CLICK_READY: "clickReady" }),
   runBattleSkillCommand: mocks.runBattleSkillCommand,
 }));
+vi.mock("../battle-action-effect-evidence.js", () => ({
+  BattleActionEffectEvidenceEvent: Object.freeze({ RECORD_APPLIED: "recordApplied" }),
+  runBattleActionEffectEvidence: mocks.runBattleActionEffectEvidence,
+}));
 
 beforeEach(() => {
-  mocks.runBattleSkillCommand.mockReset();
+  for (const fn of Object.values(mocks)) fn.mockReset();
 });
 
 function applyPlan(plan) {
@@ -36,15 +41,22 @@ describe("runBattleChannelExecution", () => {
     expect(applyPlan({ type: "click", skillId: "412" })).toBe(true);
   });
 
-  it("rejects unknown channel execution events", () => {
-    expect(runBattleChannelExecution({ type: "unknown" })).toBe(false);
-
-    expect(mocks.runBattleSkillCommand).not.toHaveBeenCalled();
-  });
-
-  it("rejects null channel execution events as not acted", () => {
-    expect(runBattleChannelExecution(null)).toBe(false);
-
-    expect(mocks.runBattleSkillCommand).not.toHaveBeenCalled();
+  it("rejects unknown and null channel execution events as not acted with evidence", () => {
+    for (const [event, eventType] of [[{ type: "unknown" }, "unknown"], [null, null]]) {
+      for (const fn of Object.values(mocks)) fn.mockClear();
+      expect(runBattleChannelExecution(event)).toBe(false);
+      expect(mocks.runBattleSkillCommand).not.toHaveBeenCalled();
+      expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith({
+        type: "recordApplied",
+        result: {
+          kind: "unknown-channel-execution-event",
+          reason: "unknownChannelExecutionEvent",
+          eventType,
+        },
+        acted: false,
+        knownResultKind: false,
+        failureReason: "unknownChannelExecutionEvent",
+      });
+    }
   });
 });

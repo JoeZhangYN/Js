@@ -28,6 +28,10 @@ for (const required of [
   "BattleSkillCommandEvent.CLICK_READY",
   "runBattleSkillCommand",
   "return !!runBattleSkillCommand",
+  "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
+  "runBattleActionEffectEvidence",
+  "unknownChannelExecutionEvent",
+  "rejectUnknownChannelExecutionEvent(event)",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
@@ -61,11 +65,24 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover channel execution contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("rejects unknown channel execution events")) {
-    violations.push(`${rel(ownerTest)} must cover unknown channel execution events`);
+  if (
+    !ownerTestText.includes(
+      "rejects unknown and null channel execution events as not acted with evidence"
+    )
+  ) {
+    violations.push(`${rel(ownerTest)} must cover unknown and null channel execution events`);
   }
-  if (!ownerTestText.includes("rejects null channel execution events as not acted")) {
-    violations.push(`${rel(ownerTest)} must cover null channel execution events`);
+  for (const required of [
+    "runBattleActionEffectEvidence",
+    "unknown-channel-execution-event",
+    "unknownChannelExecutionEvent",
+    '[{ type: "unknown" }, "unknown"]',
+    "[null, null]",
+    "eventType,",
+  ]) {
+    if (!ownerTestText.includes(required)) {
+      violations.push(`${rel(ownerTest)} must cover ${required}`);
+    }
   }
   if (!ownerTestText.includes("returns the command result")) {
     violations.push(`${rel(ownerTest)} must cover channel command acted semantics`);

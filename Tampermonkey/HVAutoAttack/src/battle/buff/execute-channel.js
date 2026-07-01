@@ -1,8 +1,13 @@
 // SHELL: 把 decideChannel 的 ChannelPlan 翻译为 DOM 副作用 + 中断记账。
 // 只写不判断（判断全在 decide-channel.js）；isOn 探活属写路径安全读（与原 useChannelSkill 一致）。
+import {
+  BattleActionEffectEvidenceEvent,
+  runBattleActionEffectEvidence,
+} from "../battle-action-effect-evidence.js";
 import { BattleSkillCommandEvent, runBattleSkillCommand } from "../battle-skill-command.js";
 
 const EVENT_APPLY_PLAN = "applyPlan";
+const EVENT_UNKNOWN_CHANNEL_EXECUTION = "unknownChannelExecutionEvent";
 
 export const BattleChannelExecutionEvent = Object.freeze({
   APPLY_PLAN: EVENT_APPLY_PLAN,
@@ -32,6 +37,21 @@ function executeClickPlan(plan) {
   });
 }
 
+function rejectUnknownChannelExecutionEvent(event) {
+  runBattleActionEffectEvidence({
+    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+    result: {
+      kind: "unknown-channel-execution-event",
+      reason: EVENT_UNKNOWN_CHANNEL_EXECUTION,
+      eventType: event?.type ?? null,
+    },
+    acted: false,
+    knownResultKind: false,
+    failureReason: EVENT_UNKNOWN_CHANNEL_EXECUTION,
+  });
+  return false;
+}
+
 export function runBattleChannelExecution(event = { type: EVENT_APPLY_PLAN }) {
-  return battleChannelExecutionEventHandlers[event?.type]?.(event) ?? false;
+  return battleChannelExecutionEventHandlers[event?.type]?.(event) ?? rejectUnknownChannelExecutionEvent(event);
 }
