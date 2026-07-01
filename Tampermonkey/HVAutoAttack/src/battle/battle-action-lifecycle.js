@@ -35,8 +35,9 @@ function runActionStarted(deps) {
   const steps = [];
   recordStep(steps, "startDelay", deps.startDelay);
   recordStep(steps, "monitorActionStarted", deps.monitorActionStarted);
-  deps.recordLifecycle(EVENT_ACTION_STARTED, true, steps);
-  return true;
+  const started = steps.every((step) => step.result);
+  deps.recordLifecycle(EVENT_ACTION_STARTED, started, steps);
+  return started;
 }
 
 function recordStep(steps, step, run) {
@@ -69,8 +70,8 @@ function runActionEnded(deps) {
     return result;
   }
   steps.push({ step: "isCompletionReached", result: false });
-  recordStep(steps, "runTurn", deps.runTurn);
-  const result = { outcome: OUTCOME_ONGOING, continued: "turn" };
+  const turnStarted = Boolean(recordStep(steps, "runTurn", deps.runTurn));
+  const result = { outcome: OUTCOME_ONGOING, continued: "turn", continuationStarted: turnStarted };
   deps.recordLifecycle(EVENT_ACTION_ENDED, result, steps);
   return result;
 }

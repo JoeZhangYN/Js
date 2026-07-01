@@ -26,7 +26,7 @@ describe("battle action lifecycle step result evidence", () => {
 
     expect(deps.recordLifecycle).toHaveBeenCalledWith(
       "actionEnded",
-      { outcome: "ongoing", continued: "turn" },
+      { outcome: "ongoing", continued: "turn", continuationStarted: false },
       expect.arrayContaining([
         { step: "refreshCombatants", result: false },
         { step: "runTurn", result: false },

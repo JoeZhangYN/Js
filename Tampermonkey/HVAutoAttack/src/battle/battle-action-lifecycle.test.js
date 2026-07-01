@@ -6,16 +6,16 @@ import {
 
 function makeDeps({ hasCompletion = false, outcome = "ongoing" } = {}) {
   const deps = {
-    startDelay: vi.fn(),
-    recordSpeed: vi.fn(),
-    endDelay: vi.fn(),
-    refreshCombatants: vi.fn(),
-    monitorActionStarted: vi.fn(),
-    monitorActionEnded: vi.fn(),
+    startDelay: vi.fn(() => true),
+    recordSpeed: vi.fn(() => true),
+    endDelay: vi.fn(() => true),
+    refreshCombatants: vi.fn(() => true),
+    monitorActionStarted: vi.fn(() => true),
+    monitorActionEnded: vi.fn(() => true),
     isCompletionReached: vi.fn(() => hasCompletion),
     completeBattle: vi.fn(() => ({ outcome })),
     continueNextRound: vi.fn(() => true),
-    runTurn: vi.fn(),
+    runTurn: vi.fn(() => true),
     recordLifecycle: vi.fn(),
   };
   return { deps };
@@ -40,12 +40,26 @@ describe("runBattleActionLifecycleAutomation", () => {
     );
   });
 
+  it("records failed action start steps without claiming action start succeeded", () => {
+    const { deps } = makeDeps();
+    deps.startDelay.mockReturnValue(false);
+
+    expect(
+      runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_STARTED }, deps)
+    ).toBe(false);
+
+    expect(deps.recordLifecycle).toHaveBeenCalledWith("actionStarted", false, [
+      { step: "startDelay", result: false },
+      { step: "monitorActionStarted", result: true },
+    ]);
+  });
+
   it("continues the current battle turn when no completion pane is present", () => {
     const { deps } = makeDeps();
 
     expect(
       runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED }, deps)
-    ).toEqual({ outcome: "ongoing", continued: "turn" });
+    ).toEqual({ outcome: "ongoing", continued: "turn", continuationStarted: true });
 
     expect(deps.recordSpeed.mock.invocationCallOrder[0]).toBeLessThan(
       deps.endDelay.mock.invocationCallOrder[0]
@@ -60,6 +74,7 @@ describe("runBattleActionLifecycleAutomation", () => {
       {
         outcome: "ongoing",
         continued: "turn",
+        continuationStarted: true,
       },
       [
         { step: "recordSpeed", result: true },

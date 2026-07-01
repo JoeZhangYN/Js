@@ -1241,11 +1241,14 @@ function checkActionLifecycleEntry() {
     "recordStep(steps, \"refreshCombatants\", deps.refreshCombatants)",
     "recordStep(steps, \"monitorActionEnded\", deps.monitorActionEnded)",
     "result === undefined ? true : result",
+    "const started = steps.every((step) => step.result)",
     "steps.push({ step: \"isCompletionReached\", result: true })",
     "steps.push({ step: \"isCompletionReached\", result: false })",
     "steps.push({ step: \"continue\", result: result.continuationStarted, continued: result.continued })",
     "recordStep(steps, \"runTurn\", deps.runTurn)",
-    "recordLifecycle(EVENT_ACTION_STARTED, true, steps)",
+    "const turnStarted = Boolean(recordStep(steps, \"runTurn\", deps.runTurn))",
+    "continuationStarted: turnStarted",
+    "recordLifecycle(EVENT_ACTION_STARTED, started, steps)",
     "recordLifecycle(EVENT_ACTION_ENDED, result, steps)",
   ]) {
     if (!text.includes(required)) {
@@ -1273,6 +1276,22 @@ function checkActionLifecycleEntry() {
     )
   ) {
     violations.push(`${rel(actionLifecycleFile)} must record lifecycle evidence for unknown events`);
+  }
+  const lifecycleTestText = fs.readFileSync(actionLifecycleTest, "utf8");
+  for (const required of [
+    "records failed action start steps without claiming action start succeeded",
+    "continuationStarted: true",
+  ]) {
+    if (!lifecycleTestText.includes(required)) {
+      violations.push(`${rel(actionLifecycleTest)} must cover ${required}`);
+    }
+  }
+  const lifecycleStepResultTestText = fs.readFileSync(
+    path.join(root, "src/battle/battle-action-lifecycle-step-result.test.js"),
+    "utf8"
+  );
+  if (!lifecycleStepResultTestText.includes("continuationStarted: false")) {
+    violations.push("src/battle/battle-action-lifecycle-step-result.test.js must cover continuationStarted: false");
   }
   const evidenceText = fs.readFileSync(actionLifecycleEvidenceFile, "utf8");
   for (const required of [
