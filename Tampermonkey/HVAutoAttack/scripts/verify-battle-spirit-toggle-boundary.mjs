@@ -7,6 +7,7 @@ const owner = path.normalize("src/battle/battle-spirit-toggle.js");
 const ownerTest = path.normalize("src/battle/battle-spirit-toggle.test.js");
 const clickFailureTest = path.normalize("src/battle/battle-spirit-toggle-click-failure.test.js");
 const recordFailureTest = path.normalize("src/battle/battle-spirit-toggle-record-failure.test.js");
+const readFailureTest = path.normalize("src/battle/battle-spirit-toggle-read-failure.test.js");
 const snapshotTest = path.normalize("src/battle/snapshot.test.js");
 const violations = [];
 
@@ -76,7 +77,11 @@ requireText(owner, [
   "DEFAULT_SPIRIT_TOGGLE_TURN",
   "normalizeSpiritToggleTurn",
   "recordClickedToggleDetail",
+  "readSpiritElement",
+  "readSpiritActiveState",
   "toggleRecordError",
+  "spiritElementReadFailed",
+  "spiritActiveReadFailed",
   "spirit.unknown",
   "unknownSpiritToggleEvent",
   "event?.type ?? null",
@@ -111,6 +116,13 @@ requireText(recordFailureTest, [
   "keeps clicked Spirit acted when cooldown recording fails",
   "cooldown write failed",
   "toggleRecordError",
+]);
+requireText(readFailureTest, [
+  "records Spirit button read failures as not acted",
+  "records Spirit active-state read failures as not acted",
+  "returns inactive when Spirit status reading fails",
+  "spiritElementReadFailed",
+  "spiritActiveReadFailed",
 ]);
 requireText(clickFailureTest, [
   "records Spirit click failures as not acted without recording cooldown",

@@ -11,6 +11,7 @@ const EVENT_RECORD_TOGGLE = "recordToggle";
 const EVENT_READ_LAST_TOGGLE = "readLastToggle";
 const EVENT_READ_ACTIVE = "readActive";
 const DEFAULT_SPIRIT_TOGGLE_TURN = 0;
+const SPIRIT_BUTTON_SELECTOR = "#ckey_spirit";
 
 export const BattleSpiritToggleEvent = Object.freeze({
   CLICK_AND_RECORD: EVENT_CLICK_AND_RECORD,
@@ -55,12 +56,37 @@ function recordClickedToggleDetail() {
   }
 }
 
+function readSpiritElement() {
+  try {
+    return { el: gE(SPIRIT_BUTTON_SELECTOR) };
+  } catch (error) {
+    return { el: null, error: error?.message || String(error) };
+  }
+}
+
+function readSpiritActiveState(el) {
+  try {
+    return { active: !!isSpiritActive(el) };
+  } catch (error) {
+    return { active: false, error: error?.message || String(error) };
+  }
+}
+
 function readActive() {
-  return isSpiritActive(gE("#ckey_spirit"));
+  const spirit = readSpiritElement();
+  if (!spirit.el) return false;
+  return readSpiritActiveState(spirit.el).active;
 }
 
 function clickAndRecord() {
-  const el = gE("#ckey_spirit");
+  const spirit = readSpiritElement();
+  if (spirit.error) {
+    recordCommandResult("spirit.clickAndRecord", "rejected", "spiritElementReadFailed", {
+      error: spirit.error,
+    });
+    return false;
+  }
+  const el = spirit.el;
   if (!el) {
     recordCommandResult("spirit.clickAndRecord", "rejected", "spiritMissing");
     return false;
@@ -77,12 +103,26 @@ function clickAndRecord() {
 }
 
 function activateIfInactive() {
-  const el = gE("#ckey_spirit");
+  const spirit = readSpiritElement();
+  if (spirit.error) {
+    recordCommandResult("spirit.activateIfInactive", "rejected", "spiritElementReadFailed", {
+      error: spirit.error,
+    });
+    return false;
+  }
+  const el = spirit.el;
   if (!el) {
     recordCommandResult("spirit.activateIfInactive", "rejected", "spiritMissing");
     return false;
   }
-  if (isSpiritActive(el)) {
+  const active = readSpiritActiveState(el);
+  if (active.error) {
+    recordCommandResult("spirit.activateIfInactive", "rejected", "spiritActiveReadFailed", {
+      error: active.error,
+    });
+    return false;
+  }
+  if (active.active) {
     recordCommandResult("spirit.activateIfInactive", "rejected", "alreadyActive");
     return false;
   }
