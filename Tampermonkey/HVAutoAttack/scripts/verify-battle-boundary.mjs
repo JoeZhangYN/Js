@@ -520,6 +520,19 @@ function checkTurnEntry() {
       violations.push(`${rel(turnWorkflowEvidenceFile)} must own ${required}`);
     }
   }
+  if (!turnWorkflowEvidenceText.includes("battleTurnWorkflowEvidenceEventHandlers[event?.type]")) {
+    violations.push(`${rel(turnWorkflowEvidenceFile)} must reject null turn workflow evidence events`);
+  }
+  const turnWorkflowEvidenceTestFile = path.join(
+    root,
+    "src/battle/battle-turn-workflow-evidence.test.js"
+  );
+  const turnWorkflowEvidenceTestText = fs.existsSync(turnWorkflowEvidenceTestFile)
+    ? fs.readFileSync(turnWorkflowEvidenceTestFile, "utf8")
+    : "";
+  if (!turnWorkflowEvidenceTestText.includes("runBattleTurnWorkflowEvidence(null)")) {
+    violations.push(`${rel(turnWorkflowEvidenceTestFile)} must cover null turn workflow evidence events`);
+  }
   if (!/export function runBattleActionDecision\(/.test(actionDecisionText)) {
     violations.push(`${rel(actionDecisionFile)} must expose runBattleActionDecision()`);
   }

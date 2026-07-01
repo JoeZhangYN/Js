@@ -32,5 +32,6 @@ describe("runBattleTurnWorkflowEvidence", () => {
 
   it("rejects unknown turn workflow evidence events", () => {
     expect(runBattleTurnWorkflowEvidence({ type: "unknown" })).toBe(false);
+    expect(runBattleTurnWorkflowEvidence(null)).toBe(false);
   });
 });

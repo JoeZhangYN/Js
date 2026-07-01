@@ -15,7 +15,7 @@ function recordTurnWorkflowStage(event, deps) {
   };
   try {
     deps.sessionStorage.setItem(BATTLE_TURN_WORKFLOW_EVIDENCE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     return false;
   }
   deps.debug("[HVAA] battle turn workflow", evidence);
@@ -30,5 +30,5 @@ export function runBattleTurnWorkflowEvidence(
   event = { type: EVENT_RECORD_STAGE },
   deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
 ) {
-  return battleTurnWorkflowEvidenceEventHandlers[event.type]?.(event, deps) ?? false;
+  return battleTurnWorkflowEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }
