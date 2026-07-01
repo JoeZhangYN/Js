@@ -79,6 +79,9 @@ describe("runBattleApiResponseRecovery", () => {
 
     expect(deps.reload).toHaveBeenCalledTimes(1);
     expect(deps.pause).toHaveBeenCalledTimes(1);
+    expect(deps.pause).toHaveBeenCalledWith(
+      expect.objectContaining({ repeatCount: 2, detail })
+    );
     expect(deps.warn).toHaveBeenCalledWith(
       "[HVAA] battle API response repeated; auto battle paused",
       expect.objectContaining({ repeatCount: 2, detail })
@@ -100,6 +103,7 @@ describe("runBattleApiResponseRecovery", () => {
 
     const state = JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"));
     expect(state).toMatchObject({ repeatCount: 2, detail, diagnosticEvidence });
+    expect(deps.pause).toHaveBeenCalledWith(expect.objectContaining({ diagnosticEvidence }));
     expect(deps.warn).toHaveBeenCalledWith(
       "[HVAA] battle API response repeated; auto battle paused",
       expect.objectContaining({ repeatCount: 2, diagnosticEvidence })

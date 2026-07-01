@@ -60,7 +60,7 @@ function handleRejectedApiResponse(detail, deps) {
   const state = buildRecoveryState(detail, deps);
   writeRecoveryState(deps, state);
   if (state.repeatCount >= REPEAT_PAUSE_THRESHOLD) {
-    deps.pause();
+    deps.pause(state);
     deps.warn("[HVAA] battle API response repeated; auto battle paused", state);
     return "paused";
   }
@@ -95,10 +95,11 @@ export function runBattleApiResponseRecovery(
         reason: NavigationReloadReason.BATTLE_API_RESPONSE,
         detail,
       }),
-    pause: () =>
+    pause: (state) =>
       runBattlePauseAutomation({
         type: BattlePauseEvent.PAUSE,
         reason: "battleApiResponseRepeated",
+        detail: state,
       }),
     readDiagnosticEvidence: () => readRecentDiagnosticEvidence(window.sessionStorage),
     warn: (...args) => console.warn(...args),

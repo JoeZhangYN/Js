@@ -9,6 +9,7 @@ const responseScript = path.normalize("src/battle/battle-api-response-script.js"
 const responseScriptTest = path.normalize("src/battle/battle-api-response-script.test.js");
 const recovery = path.normalize("src/battle/battle-api-response-recovery.js");
 const recoveryTest = path.normalize("src/battle/battle-api-response-recovery.test.js");
+const recoveryPauseTest = path.normalize("src/battle/battle-api-response-recovery-pause.test.js");
 const recoveryDiagnosticsTest = path.normalize(
   "src/battle/battle-api-response-recovery-diagnostics.test.js"
 );
@@ -134,9 +135,10 @@ const recoveryText = requireText(recovery, [
   "handleRejectedApiResponse",
   "diagnosticEvidenceWithoutApiRecovery",
   "world: detail?.world",
-  "deps.pause()",
+  "deps.pause(state)",
   "diagnosticEvidence",
   'reason: "battleApiResponseRepeated"',
+  "detail: state",
   "deps.reload(detail)",
   "repeatCount >= REPEAT_PAUSE_THRESHOLD",
 ]);
@@ -148,6 +150,11 @@ requireText(recoveryTest, [
   "does not treat different rejected response evidence as the same loop",
   "does not treat different battle worlds as the same recovery loop",
   "HVAA:battleApiRecovery",
+]);
+requireText(recoveryPauseTest, [
+  "writes repeated API recovery state into pause evidence on the default path",
+  "HVAA:lastBattlePause",
+  "battleApiResponseRepeated",
 ]);
 requireText(recoveryDiagnosticsTest, [
   "exposes API recovery state through recent diagnostic evidence",
@@ -241,8 +248,11 @@ if (!/export\s+function\s+runBattleApiResponseRecovery/.test(recoveryText)) {
 if (!recoveryText.includes("repeatCount >= REPEAT_PAUSE_THRESHOLD")) {
   violations.push(`${recovery.replaceAll("\\", "/")} must stop repeated API reload loops`);
 }
-if (!recoveryText.includes("deps.pause()") || !recoveryText.includes("deps.reload(detail)")) {
+if (!recoveryText.includes("deps.pause(state)") || !recoveryText.includes("deps.reload(detail)")) {
   violations.push(`${recovery.replaceAll("\\", "/")} must choose between pause and reload centrally`);
+}
+if (!recoveryText.includes("detail: state")) {
+  violations.push(`${recovery.replaceAll("\\", "/")} repeated API pause must carry recovery state detail`);
 }
 if (!recoveryText.includes("world: detail?.world")) {
   violations.push(`${recovery.replaceAll("\\", "/")} repeat key must include battle world identity`);
