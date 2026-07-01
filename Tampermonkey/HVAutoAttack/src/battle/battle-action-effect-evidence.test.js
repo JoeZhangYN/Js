@@ -49,6 +49,30 @@ describe("runBattleActionEffectEvidence", () => {
     });
   });
 
+  it("records event type for rejected dispatch events", () => {
+    runBattleActionEffectEvidence(
+      {
+        type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+        result: {
+          kind: "unknown-dispatch-event",
+          reason: "unknownActionEffectDispatchEvent",
+          eventType: "unknown",
+        },
+        acted: false,
+      },
+      { sessionStorage: window.sessionStorage, debug: vi.fn() }
+    );
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
+      result: {
+        kind: "unknown-dispatch-event",
+        reason: "unknownActionEffectDispatchEvent",
+        eventType: "unknown",
+      },
+      acted: false,
+    });
+  });
+
   it("records real plan type for plan action results", () => {
     runBattleActionEffectEvidence(
       {

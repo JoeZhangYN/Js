@@ -64,6 +64,15 @@ function applyActionResult(result, snap) {
   return acted;
 }
 
+function rejectUnknownActionEffectEvent(event) {
+  runBattleActionEffectEvidence({
+    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+    result: { kind: "unknown-dispatch-event", reason: "unknownActionEffectDispatchEvent", eventType: event?.type ?? null },
+    acted: false,
+  });
+  return false;
+}
+
 function executeNoopResult() {
   return false;
 }
@@ -163,5 +172,5 @@ function executeChannelPlanResult(result) {
 }
 
 export function runBattleActionEffectDispatch(event = { type: EVENT_APPLY_ACTION_RESULT }) {
-  return battleActionEffectDispatchEventHandlers[event.type]?.(event) ?? false;
+  return battleActionEffectDispatchEventHandlers[event?.type]?.(event) ?? rejectUnknownActionEffectEvent(event);
 }

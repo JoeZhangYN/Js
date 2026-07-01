@@ -11,6 +11,7 @@ function summarizeResult(result = {}) {
   return {
     kind: result.kind,
     reason: result.reason,
+    eventType: result.eventType,
     itemId: result.itemId,
     skillId: result.skillId,
     targetId: result.targetId,

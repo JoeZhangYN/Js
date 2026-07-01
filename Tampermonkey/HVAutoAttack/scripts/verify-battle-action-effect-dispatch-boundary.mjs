@@ -56,6 +56,8 @@ for (const required of [
   "runBattleChannelExecution",
   "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
   "runBattleActionEffectEvidence",
+  "rejectUnknownActionEffectEvent",
+  "unknownActionEffectDispatchEvent",
   "executeItemCommandResult",
   "executeSkillCommandResult",
   "executeDefendCommandResult",
@@ -138,8 +140,16 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover action effect dispatch contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("retired halt kind")) {
-    violations.push(`${rel(ownerTest)} must lock retired halt ActionResult as not acted`);
+  for (const required of [
+    "retired halt kind",
+    "rejects unknown events",
+    "rejects null events with structured evidence instead of throwing",
+    "unknownActionEffectDispatchEvent",
+    "HVAA:lastBattleActionEffect",
+  ]) {
+    if (!ownerTestText.includes(required)) {
+      violations.push(`${rel(ownerTest)} must cover ${required}`);
+    }
   }
 }
 for (const forbidden of ["halt: executeHaltResult", "function executeHaltResult"]) {
@@ -158,6 +168,7 @@ for (const required of [
   "ACTION_EFFECT_EVIDENCE_KEY",
   "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
   "summarizeResult",
+  "eventType: result.eventType",
   "result.plan?.type ?? result.plan?.kind",
   "acted: Boolean(event.acted)",
 ]) {
@@ -170,6 +181,7 @@ if (!fs.existsSync(path.join(root, evidenceTest))) {
   for (const required of [
     "records acted action effect evidence for diagnostics",
     "records not-acted effect evidence so empty turns are diagnosable",
+    "records event type for rejected dispatch events",
     "records real plan type for plan action results",
     "keeps legacy plan kind fallback for older evidence producers",
     "rejects unknown evidence events",

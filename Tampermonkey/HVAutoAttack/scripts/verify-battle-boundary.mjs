@@ -653,6 +653,8 @@ function checkTurnEntry() {
     '"attack-plan": executeAttackPlanResult',
     '"item-plan": executeItemPlanResult',
     '"channel-plan": executeChannelPlanResult',
+    "rejectUnknownActionEffectEvent",
+    "unknownActionEffectDispatchEvent",
   ]) {
     if (!actionEffectText.includes(required)) {
       violations.push(`${rel(dispatchFile)} must lock ActionResult executor ${required}`);

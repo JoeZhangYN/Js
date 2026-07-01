@@ -19,6 +19,7 @@ function mkBtn(id, { disabled = false } = {}) {
 
 beforeEach(() => {
   document.body.innerHTML = "";
+  window.sessionStorage.clear();
   runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0" } });
   vi.useFakeTimers(); // 防 flee-command 的 scheduleReload 真触发 goto
 });
@@ -130,5 +131,25 @@ describe("runBattleActionEffectDispatch", () => {
 
   it("rejects unknown events", () => {
     expect(runBattleActionEffectDispatch({ type: "unknown" })).toBe(false);
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
+      result: {
+        kind: "unknown-dispatch-event",
+        reason: "unknownActionEffectDispatchEvent",
+        eventType: "unknown",
+      },
+      acted: false,
+    });
+  });
+
+  it("rejects null events with structured evidence instead of throwing", () => {
+    expect(runBattleActionEffectDispatch(null)).toBe(false);
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
+      result: {
+        kind: "unknown-dispatch-event",
+        reason: "unknownActionEffectDispatchEvent",
+        eventType: null,
+      },
+      acted: false,
+    });
   });
 });
