@@ -61,6 +61,9 @@ if (!owner) {
   if (!source.includes("sessionStorage.setItem") || !source.includes("reportPreviousNavigationAudit")) {
     violations.push("navigation audit must persist and replay across page reloads");
   }
+  if (!source.includes("recordExternalUnload") || !source.includes("outsideNavigationEntry")) {
+    violations.push("navigation audit must record unloads that bypass the navigation entry");
+  }
   if (!source.includes('console.warn(`[HVAA] ${kind}`')) {
     violations.push("navigation audit must warn before navigating");
   }

@@ -78,7 +78,21 @@ function reportPreviousNavigationAudit() {
   }
 }
 
+function recordExternalUnload(event) {
+  try {
+    if (sessionStorage.getItem(NAVIGATION_AUDIT_KEY)) return;
+  } catch (_error) {
+    return;
+  }
+  writeNavigationAudit("externalUnload", {
+    reason: "outsideNavigationEntry",
+    eventType: event.type,
+  });
+}
+
 reportPreviousNavigationAudit();
+window.addEventListener("pagehide", recordExternalUnload);
+window.addEventListener("beforeunload", recordExternalUnload);
 
 /** 重定向当前页面（带 5s 后重试）。 */
 function goto(reason) {
