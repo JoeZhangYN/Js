@@ -55,8 +55,14 @@ if (!owner) {
   if (!source.includes("isRedirectReasonAllowed")) {
     violations.push("openUrl must validate an allowed redirect reason");
   }
-  if (!source.includes('console.log("[HVAA] reload"') || !source.includes("{ reason }")) {
-    violations.push("reload execution must log the reload reason before navigating");
+  if (!source.includes("writeNavigationAudit")) {
+    violations.push("navigation execution must record an audit before navigating");
+  }
+  if (!source.includes("sessionStorage.setItem") || !source.includes("reportPreviousNavigationAudit")) {
+    violations.push("navigation audit must persist and replay across page reloads");
+  }
+  if (!source.includes('console.warn(`[HVAA] ${kind}`')) {
+    violations.push("navigation audit must warn before navigating");
   }
   if (!/Number\.isFinite\(delayMs\)\s*&&\s*delayMs\s*>\s*0/.test(source)) {
     violations.push("scheduled reload delay must be finite and positive");

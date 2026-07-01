@@ -4,6 +4,7 @@ const EVENT_RELOAD_NOW = "reloadNow";
 const EVENT_SCHEDULE_RELOAD = "scheduleReload";
 const EVENT_OPEN_URL = "openUrl";
 const EVENT_OPEN_WINDOW = "openWindow";
+const NAVIGATION_AUDIT_KEY = "HVAA:lastNavigationAudit";
 
 export const NavigationEvent = Object.freeze({
   RELOAD_NOW: EVENT_RELOAD_NOW,
@@ -46,9 +47,42 @@ export const NavigationRedirectReason = Object.freeze({
 
 const REDIRECT_REASONS = new Set(Object.values(NavigationRedirectReason));
 
+function writeNavigationAudit(kind, payload) {
+  const audit = {
+    kind,
+    ...payload,
+    at: new Date().toISOString(),
+    from: window.location.href,
+  };
+  try {
+    sessionStorage.setItem(NAVIGATION_AUDIT_KEY, JSON.stringify(audit));
+  } catch (_error) {
+    // Navigation must not fail because browser storage is unavailable.
+  }
+  console.warn(`[HVAA] ${kind}`, audit);
+}
+
+function reportPreviousNavigationAudit() {
+  let raw;
+  try {
+    raw = sessionStorage.getItem(NAVIGATION_AUDIT_KEY);
+    if (raw) sessionStorage.removeItem(NAVIGATION_AUDIT_KEY);
+  } catch (_error) {
+    return;
+  }
+  if (!raw) return;
+  try {
+    console.warn("[HVAA] previous navigation", JSON.parse(raw));
+  } catch (_error) {
+    console.warn("[HVAA] previous navigation", raw);
+  }
+}
+
+reportPreviousNavigationAudit();
+
 /** 重定向当前页面（带 5s 后重试）。 */
 function goto(reason) {
-  console.log("[HVAA] reload", { reason });
+  writeNavigationAudit("reload", { reason });
   window.location.href = window.location;
   setTimeout(() => goto(reason), 5000);
 }
@@ -87,7 +121,7 @@ function scheduleReload(event) {
  * @param {boolean=} newTab true -> 新标签
  */
 function openUrl(url, newTab, reason) {
-  console.log("[HVAA] navigate", { reason, url, newTab: Boolean(newTab) });
+  writeNavigationAudit("navigate", { reason, url, newTab: Boolean(newTab) });
   window.open(url, newTab ? "_blank" : "_self");
 }
 

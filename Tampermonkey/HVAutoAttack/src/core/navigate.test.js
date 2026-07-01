@@ -9,10 +9,12 @@ import {
 describe("runNavigationAutomation", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    sessionStorage.clear();
   });
 
   it("routes URL opening through the navigation event entry", () => {
     const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     expect(
       runNavigationAutomation({
@@ -24,6 +26,21 @@ describe("runNavigationAutomation", () => {
     ).toBe(true);
 
     expect(open).toHaveBeenCalledWith("https://hentaiverse.org/encounter.php", "_blank");
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA] navigate",
+      expect.objectContaining({
+        kind: "navigate",
+        reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
+        url: "https://hentaiverse.org/encounter.php",
+        newTab: true,
+      })
+    );
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastNavigationAudit"))).toMatchObject({
+      kind: "navigate",
+      reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
+      url: "https://hentaiverse.org/encounter.php",
+      newTab: true,
+    });
   });
 
   it("rejects URL opening without an allowed reason", () => {
