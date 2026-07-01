@@ -112,8 +112,8 @@ describe("runBattleActionEffectDispatch", () => {
     expect(applyResult({ kind: "pause" })).toBe(true);
   });
 
-  it("halt → 返 true", () => {
-    expect(applyResult({ kind: "halt", reason: "acted" })).toBe(true);
+  it("retired halt kind → 返 false", () => {
+    expect(applyResult({ kind: "halt", reason: "acted" })).toBe(false);
   });
 
   it("未知 kind → 返 false（default 兜底）", () => {

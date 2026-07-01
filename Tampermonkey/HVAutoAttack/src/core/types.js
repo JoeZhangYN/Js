@@ -18,7 +18,6 @@
  *         | { kind: "toggle-spirit" }
  *         | { kind: "click-skill-then-target", skillId: string, targetId: number }
  *         | { kind: "flee-command" }
- *         | { kind: "halt", reason: "victory"|"defeat"|"flee"|"pause"|"acted" }
  *         | { kind: "alert-and-pause", msg: { l0: string, l1: string, l2: string } }
  *         | { kind: "pause" }
  *         | { kind: "critical-pause", name: string, turns: number, mp: number, mpFloor: number }

@@ -648,13 +648,17 @@ function checkTurnEntry() {
     '"alert-and-pause": executeAlertPauseResult',
     "pause: executePauseResult",
     '"critical-pause": executeCriticalPauseResult',
-    "halt: executeHaltResult",
     '"attack-plan": executeAttackPlanResult',
     '"item-plan": executeItemPlanResult',
     '"channel-plan": executeChannelPlanResult',
   ]) {
     if (!actionEffectText.includes(required)) {
       violations.push(`${rel(dispatchFile)} must lock ActionResult executor ${required}`);
+    }
+  }
+  for (const forbidden of ["halt: executeHaltResult", "function executeHaltResult"]) {
+    if (actionEffectText.includes(forbidden)) {
+      violations.push(`${rel(dispatchFile)} must keep retired halt ActionResult out of dispatch`);
     }
   }
   const applyActionResultBody =

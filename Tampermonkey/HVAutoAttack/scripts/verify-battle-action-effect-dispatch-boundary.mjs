@@ -65,7 +65,6 @@ for (const required of [
   "executeAlertPauseResult",
   "executePauseResult",
   "executeCriticalPauseResult",
-  "executeHaltResult",
   "executeAttackPlanResult",
   "executeItemPlanResult",
   "executeChannelPlanResult",
@@ -88,7 +87,6 @@ for (const required of [
   '"alert-and-pause": executeAlertPauseResult',
   "pause: executePauseResult",
   '"critical-pause": executeCriticalPauseResult',
-  "halt: executeHaltResult",
   '"attack-plan": executeAttackPlanResult',
   '"item-plan": executeItemPlanResult',
   '"channel-plan": executeChannelPlanResult',
@@ -138,6 +136,20 @@ if (
 
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover action effect dispatch contract`);
+} else {
+  const ownerTestText = read(ownerTest);
+  if (!ownerTestText.includes("retired halt kind")) {
+    violations.push(`${rel(ownerTest)} must lock retired halt ActionResult as not acted`);
+  }
+}
+for (const forbidden of ["halt: executeHaltResult", "function executeHaltResult"]) {
+  if (ownerText.includes(forbidden)) {
+    violations.push(`${rel(owner)} must keep retired halt ActionResult out of dispatch`);
+  }
+}
+const coreTypesText = read(path.normalize("src/core/types.js"));
+if (/kind:\s*"halt"/.test(coreTypesText)) {
+  violations.push("src/core/types.js must keep retired halt out of ActionResult");
 }
 for (const required of [
   "BattleActionEffectEvidenceEvent",

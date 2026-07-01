@@ -49,7 +49,6 @@ const ACTION_RESULT_EXECUTORS = Object.freeze({
   "alert-and-pause": executeAlertPauseResult,
   pause: executePauseResult,
   "critical-pause": executeCriticalPauseResult,
-  halt: executeHaltResult,
   "attack-plan": executeAttackPlanResult,
   "item-plan": executeItemPlanResult,
   "channel-plan": executeChannelPlanResult,
@@ -135,10 +134,6 @@ function executeCriticalPauseResult(result) {
     type: CriticalBuffPauseExecutionEvent.APPLY_PLAN,
     plan: result,
   });
-}
-
-function executeHaltResult() {
-  return true;
 }
 
 function executeAttackPlanResult(result, snap) {
