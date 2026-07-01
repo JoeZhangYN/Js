@@ -34,7 +34,7 @@ function runCurrentBattleTurn() {
   try {
     if (runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })) {
       recordTurnWorkflowStage("paused", { reason: "renderIfPaused" });
-      return;
+      return false;
     }
 
     const prelude = runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN });
@@ -55,6 +55,7 @@ function runCurrentBattleTurn() {
       context,
     });
     recordTurnWorkflowStage("decisionCompleted", { acted: Boolean(acted) });
+    return Boolean(acted);
   } catch (error) {
     recordTurnWorkflowStage("failed", {
       message: error instanceof Error ? error.message : String(error),

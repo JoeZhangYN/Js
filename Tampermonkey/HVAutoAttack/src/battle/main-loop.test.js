@@ -42,7 +42,7 @@ describe("runBattleTurnAutomation", () => {
   it("runs turn prelude before preparing and dispatching decision context", () => {
     mocks.runBattleActionDecision.mockReturnValue(true);
 
-    runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
+    expect(runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN })).toBe(true);
 
     expect(mocks.runBattleTurnPrelude).toHaveBeenCalledWith({ type: "prepareCurrentTurn" });
     expect(mocks.runBattleTurnContext).toHaveBeenCalledWith({
@@ -65,7 +65,7 @@ describe("runBattleTurnAutomation", () => {
   it("records not-acted turn workflow completion", () => {
     mocks.runBattleActionDecision.mockReturnValue(false);
 
-    runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
+    expect(runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN })).toBe(false);
 
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
       stage: "decisionCompleted",
@@ -76,7 +76,7 @@ describe("runBattleTurnAutomation", () => {
   it("records paused turn workflow stage without running the action pipeline", () => {
     mocks.runBattlePauseAutomation.mockReturnValue(true);
 
-    runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
+    expect(runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN })).toBe(false);
 
     expect(mocks.runBattleTurnPrelude).not.toHaveBeenCalled();
     expect(mocks.runBattleTurnContext).not.toHaveBeenCalled();

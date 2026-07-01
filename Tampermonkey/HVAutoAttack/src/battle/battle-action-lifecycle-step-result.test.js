@@ -33,4 +33,19 @@ describe("battle action lifecycle step result evidence", () => {
       ])
     );
   });
+
+  it("records ongoing turn continuation as started when runTurn acted", () => {
+    const deps = makeDeps();
+    deps.runTurn.mockReturnValue(true);
+
+    expect(
+      runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED }, deps)
+    ).toEqual({ outcome: "ongoing", continued: "turn", continuationStarted: true });
+
+    expect(deps.recordLifecycle).toHaveBeenCalledWith(
+      "actionEnded",
+      { outcome: "ongoing", continued: "turn", continuationStarted: true },
+      expect.arrayContaining([{ step: "runTurn", result: true }])
+    );
+  });
 });

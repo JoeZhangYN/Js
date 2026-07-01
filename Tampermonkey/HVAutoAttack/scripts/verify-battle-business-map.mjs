@@ -111,8 +111,35 @@ for (const required of [
   "BattleTurnContextEvent.PREPARE",
   "BattleActionDecisionEvent.DECIDE",
   "runBattleActionDecision",
+  "return Boolean(acted)",
+  'recordTurnWorkflowStage("decisionCompleted", { acted: Boolean(acted) })',
+  'recordTurnWorkflowStage("paused", { reason: "renderIfPaused" })',
 ]) {
   requireText("src/battle/main-loop.js", mainLoop, required);
+}
+
+const mainLoopTest = read(path.join(root, "src/battle/main-loop.test.js"));
+for (const required of [
+  "toBe(true)",
+  "toBe(false)",
+  "records not-acted turn workflow completion",
+]) {
+  requireText("src/battle/main-loop.test.js", mainLoopTest, required);
+}
+
+const lifecycleStepResultTest = read(
+  path.join(root, "src/battle/battle-action-lifecycle-step-result.test.js")
+);
+for (const required of [
+  "records ongoing turn continuation as started when runTurn acted",
+  "continuationStarted: true",
+  '{ step: "runTurn", result: true }',
+]) {
+  requireText(
+    "src/battle/battle-action-lifecycle-step-result.test.js",
+    lifecycleStepResultTest,
+    required
+  );
 }
 
 for (const required of [
