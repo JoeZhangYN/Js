@@ -5,6 +5,10 @@ const root = process.cwd();
 const owner = path.normalize("src/battle/battle-next-round-continuation.js");
 const ownerTest = path.normalize("src/battle/battle-next-round-continuation.test.js");
 const rejectionTest = path.normalize("src/battle/battle-next-round-continuation-rejection.test.js");
+const evidenceFailureTest = path.normalize(
+  "src/battle/battle-next-round-continuation-evidence-failure.test.js"
+);
+const recording = path.normalize("src/battle/battle-next-round-continuation-recording.js");
 const actionLifecycle = path.normalize("src/battle/battle-action-lifecycle.js");
 const violations = [];
 
@@ -17,6 +21,7 @@ function rel(relative) {
 }
 
 const ownerText = read(owner);
+const recordingText = read(recording);
 const actionLifecycleText = read(actionLifecycle);
 
 for (const required of [
@@ -37,6 +42,7 @@ for (const required of [
   "nextRoundRestartRejected",
   "readCompletionControls",
   "recordStep",
+  "recordContinuationSafely",
   "recordCallbackRejection",
   "#pane_completion",
   "#btcp",
@@ -45,6 +51,16 @@ for (const required of [
   "unsafeWindow.battle",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
+}
+for (const required of [
+  "recordContinuationSafely",
+  "nextRoundContinuationEvidenceWriteFailed",
+  'step: "recordContinuation"',
+  "deps.recordContinuation?.(result, steps)",
+]) {
+  if (!recordingText.includes(required)) {
+    violations.push(`${rel(recording)} must own safe continuation recording ${required}`);
+  }
 }
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleNextRoundContinuationEvent\b|runBattleNextRoundContinuation\b)/.test(
@@ -57,20 +73,26 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover next-round continuation contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("rejects unknown next-round continuation events without side effects")) {
+  if (
+    !ownerTestText.includes("rejects unknown next-round continuation events without side effects")
+  ) {
     violations.push(`${rel(ownerTest)} must cover unknown next-round continuation events`);
   }
   if (!ownerTestText.includes("rejects null next-round continuation events without side effects")) {
     violations.push(`${rel(ownerTest)} must cover null next-round continuation events`);
   }
-  if (!ownerTestText.includes("rejects missing next-round completion controls with lifecycle evidence")) {
+  if (
+    !ownerTestText.includes(
+      "rejects missing next-round completion controls with lifecycle evidence"
+    )
+  ) {
     violations.push(`${rel(ownerTest)} must cover missing completion controls`);
   }
   for (const required of [
     "recordContinuation",
-    "outcome: \"continued\"",
-    "outcome: \"riddle\"",
-    "outcome: \"rejected\"",
+    'outcome: "continued"',
+    'outcome: "riddle"',
+    'outcome: "rejected"',
     "replaceBattlePanels",
     "restartBattleRuntime",
     "handleRiddle",
@@ -97,9 +119,24 @@ if (!fs.existsSync(path.join(root, rejectionTest))) {
     }
   }
 }
+if (!fs.existsSync(path.join(root, evidenceFailureTest))) {
+  violations.push(`${rel(evidenceFailureTest)} must cover continuation evidence failures`);
+} else {
+  const evidenceFailureTestText = read(evidenceFailureTest);
+  for (const required of [
+    "keeps a restarted next-round turn accepted when continuation evidence fails once",
+    "keeps rejected continuations rejected when continuation evidence keeps failing",
+    "nextRoundContinuationEvidenceWriteFailed",
+    "continuation evidence failed",
+    "restartBattleRuntime",
+  ]) {
+    if (!evidenceFailureTestText.includes(required)) {
+      violations.push(`${rel(evidenceFailureTest)} must cover ${required}`);
+    }
+  }
+}
 const entryBody =
-  ownerText.match(/export function runBattleNextRoundContinuation\([^)]*\)[\s\S]*?\n\}/)?.[0] ||
-  "";
+  ownerText.match(/export function runBattleNextRoundContinuation\([^)]*\)[\s\S]*?\n\}/)?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_CONTINUE\]/.test(ownerText)) {
   violations.push(`${rel(owner)} must route events through a frozen handler table`);
 }
