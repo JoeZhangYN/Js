@@ -2,7 +2,7 @@
 import { gE } from "../dom/query.js";
 import { itemSelector } from "../dom/selectors.js";
 import { clickBattleCommandElement } from "./battle-command-click.js";
-import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
+import { recordBattleCommandResult } from "./battle-command-recording.js";
 
 const EVENT_CLICK_GEM = "clickGem";
 const EVENT_CLICK_ITEM = "clickItem";
@@ -13,13 +13,7 @@ export const BattleItemCommandEvent = Object.freeze({
 });
 
 function recordCommandResult(command, result, reason, detail) {
-  runBattleCommandEvidence({
-    type: BattleCommandEvidenceEvent.RECORD_RESULT,
-    command,
-    result,
-    reason,
-    detail,
-  });
+  recordBattleCommandResult(command, result, reason, detail);
 }
 
 function clickGem() {
@@ -30,7 +24,9 @@ function clickGem() {
   }
   const clickResult = clickBattleCommandElement(el);
   if (!clickResult.clicked) {
-    recordCommandResult("item.clickGem", "rejected", clickResult.reason, { error: clickResult.error });
+    recordCommandResult("item.clickGem", "rejected", clickResult.reason, {
+      error: clickResult.error,
+    });
     return false;
   }
   recordCommandResult("item.clickGem", "accepted", "clicked");

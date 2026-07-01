@@ -46,6 +46,17 @@ function read(relative) {
   return fs.readFileSync(path.join(root, relative), "utf8");
 }
 
+function collectJs(dir, base = "") {
+  const out = [];
+  for (const name of fs.readdirSync(dir)) {
+    const abs = path.join(dir, name);
+    const rel = base ? `${base}/${name}` : name;
+    if (fs.statSync(abs).isDirectory()) out.push(...collectJs(abs, rel));
+    else if (name.endsWith(".js")) out.push(rel.replaceAll("\\", "/"));
+  }
+  return out;
+}
+
 for (const spec of specs) {
   const ownerText = read(spec.owner);
   const testText = read(spec.test);
@@ -64,6 +75,8 @@ for (const spec of specs) {
 
 const commandEvidenceText = read("src/battle/battle-command-evidence.js");
 const commandEvidenceTestText = read("src/battle/battle-command-evidence.test.js");
+const commandRecordingText = read("src/battle/battle-command-recording.js");
+const commandRecordingFailureTestText = read("src/battle/battle-command-recording-failure.test.js");
 const decisionEvidenceText = read("src/battle/battle-action-decision-evidence.js");
 const effectEvidenceText = read("src/battle/battle-action-effect-evidence.js");
 const lifecycleEvidenceText = read("src/battle/battle-action-lifecycle-evidence.js");
@@ -72,7 +85,10 @@ const actionEvidencePersistenceTestText = read(
   "src/battle/battle-action-evidence-persistence.test.js"
 );
 const evidenceDebugText = read("src/battle/battle-evidence-debug.js");
-if (!evidenceDebugText.includes("export function safeDebug") || !evidenceDebugText.includes("deps.debug?.(label, evidence)")) {
+if (
+  !evidenceDebugText.includes("export function safeDebug") ||
+  !evidenceDebugText.includes("deps.debug?.(label, evidence)")
+) {
   violations.push("src/battle/battle-evidence-debug.js must own safe evidence debug output");
 }
 for (const required of [
@@ -85,18 +101,43 @@ for (const required of [
   "storageWriteError",
 ]) {
   if (!commandEvidenceText.includes(required)) {
-    violations.push(`src/battle/battle-command-evidence.js must normalize command evidence ${required}`);
+    violations.push(
+      `src/battle/battle-command-evidence.js must normalize command evidence ${required}`
+    );
   }
 }
 for (const required of [
   "records accepted commands as acted without a failure reason",
   "acted: false",
-  "failureReason: \"skillNotReady\"",
+  'failureReason: "skillNotReady"',
   "acted: true",
   "failureReason: null",
 ]) {
   if (!commandEvidenceTestText.includes(required)) {
     violations.push(`src/battle/battle-command-evidence.test.js must cover ${required}`);
+  }
+}
+for (const required of [
+  "export function recordBattleCommandResult",
+  "BattleCommandEvidenceEvent.RECORD_RESULT",
+  "runBattleCommandEvidence",
+  "catch (error)",
+  "[HVAA] battle command evidence failed",
+  "recordingError",
+  "return false",
+]) {
+  if (!commandRecordingText.includes(required)) {
+    violations.push(`src/battle/battle-command-recording.js must own ${required}`);
+  }
+}
+for (const required of [
+  "keeps clicked skills acted when command evidence recording throws",
+  "keeps clicked items acted when command evidence recording throws",
+  "command evidence failed",
+  "recordingError",
+]) {
+  if (!commandRecordingFailureTestText.includes(required)) {
+    violations.push(`src/battle/battle-command-recording-failure.test.js must cover ${required}`);
   }
 }
 for (const required of [
@@ -107,18 +148,26 @@ for (const required of [
   "storageWriteError",
 ]) {
   if (!effectEvidenceText.includes(required)) {
-    violations.push(`src/battle/battle-action-effect-evidence.js must expose effect evidence reader ${required}`);
+    violations.push(
+      `src/battle/battle-action-effect-evidence.js must expose effect evidence reader ${required}`
+    );
   }
 }
 for (const required of ["storageWriteOk", "storageWriteError"]) {
   if (!automationEvidenceText.includes(required)) {
-    violations.push(`src/battle/battle-automation-evidence.js must expose automation persistence evidence ${required}`);
+    violations.push(
+      `src/battle/battle-automation-evidence.js must expose automation persistence evidence ${required}`
+    );
   }
   if (!decisionEvidenceText.includes(required)) {
-    violations.push(`src/battle/battle-action-decision-evidence.js must expose decision persistence evidence ${required}`);
+    violations.push(
+      `src/battle/battle-action-decision-evidence.js must expose decision persistence evidence ${required}`
+    );
   }
   if (!lifecycleEvidenceText.includes(required)) {
-    violations.push(`src/battle/battle-action-lifecycle-evidence.js must expose lifecycle persistence evidence ${required}`);
+    violations.push(
+      `src/battle/battle-action-lifecycle-evidence.js must expose lifecycle persistence evidence ${required}`
+    );
   }
 }
 for (const required of [
@@ -145,10 +194,30 @@ for (const spec of specs) {
   }
 }
 
+for (const relative of collectJs(path.join(root, "src", "battle"), "src/battle")) {
+  if (
+    relative.endsWith(".test.js") ||
+    relative === "src/battle/battle-command-evidence.js" ||
+    relative === "src/battle/battle-command-recording.js"
+  ) {
+    continue;
+  }
+  const text = read(relative);
+  if (
+    /import\s*\{[^}]*\b(?:BattleCommandEvidenceEvent|runBattleCommandEvidence)\b[^}]*\}\s*from\s+["'][^"']*battle-command-evidence\.js["']/.test(
+      text
+    )
+  ) {
+    violations.push(`${relative} must record commands through battle-command-recording.js`);
+  }
+}
+
 if (violations.length) {
   console.error("[verify-battle-action-evidence-contract] FAIL");
   for (const violation of violations) console.error(`- ${violation}`);
   process.exit(1);
 }
 
-console.log("[verify-battle-action-evidence-contract] OK - action evidence entries reject null events");
+console.log(
+  "[verify-battle-action-evidence-contract] OK - action evidence entries reject null events"
+);

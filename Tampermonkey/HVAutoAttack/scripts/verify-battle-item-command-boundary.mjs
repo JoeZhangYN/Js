@@ -74,7 +74,7 @@ requireText(owner, [
   "clickResult.reason",
   "clickResult.error",
   "beforeClickFailed",
-  "runBattleCommandEvidence",
+  "recordBattleCommandResult",
   "gemMissing",
   "itemMissing",
   "unknownItemCommand",

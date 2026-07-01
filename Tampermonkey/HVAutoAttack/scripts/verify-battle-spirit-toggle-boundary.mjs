@@ -63,8 +63,7 @@ requireText(owner, [
   "BattleSpiritToggleEvent",
   "battleSpiritToggleEventHandlers",
   "runBattleSpiritToggleAutomation",
-  "BattleCommandEvidenceEvent.RECORD_RESULT",
-  "runBattleCommandEvidence",
+  "recordBattleCommandResult",
   "clickBattleCommandElement",
   "clickResult.reason",
   "clickResult.error",
@@ -85,16 +84,22 @@ requireText(owner, [
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const entryBody =
-  ownerText.match(/export function runBattleSpiritToggleAutomation\([^)]*\) \{[\s\S]*?\n\}/)
-    ?.[0] || "";
-if (!/Object\.freeze\(\{[\s\S]*\[EVENT_CLICK_AND_RECORD\][\s\S]*\[EVENT_READ_ACTIVE\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  ownerText.match(/export function runBattleSpiritToggleAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (
+  !/Object\.freeze\(\{[\s\S]*\[EVENT_CLICK_AND_RECORD\][\s\S]*\[EVENT_READ_ACTIVE\]/.test(ownerText)
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (!ownerText.includes("battleSpiritToggleEventHandlers[event?.type]")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must reject null Spirit events without side effects`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must reject null Spirit events without side effects`
+  );
 }
 requireText(ownerTest, [
   "rejects unknown events without touching Spirit state",
@@ -123,8 +128,7 @@ requireText("src/battle/buff/activate-spirit.js", [
   "runBattlePreCastSpiritAutomation",
   "ACTIVATE_IF_ALLOWED",
   "unknownPreCastSpiritEvent",
-  "BattleCommandEvidenceEvent.RECORD_RESULT",
-  "runBattleCommandEvidence",
+  "recordBattleCommandResult",
   "preCastSpirit.unknown",
   "event?.type ?? null",
   "battlePreCastSpiritEventHandlers[event?.type]",

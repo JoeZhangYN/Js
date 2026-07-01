@@ -3,7 +3,7 @@ import { gE, isSpiritActive } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { clickBattleCommandElement } from "./battle-command-click.js";
-import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
+import { recordBattleCommandResult } from "./battle-command-recording.js";
 
 const EVENT_CLICK_AND_RECORD = "clickAndRecord";
 const EVENT_ACTIVATE_IF_INACTIVE = "activateIfInactive";
@@ -93,18 +93,17 @@ function activateIfInactive() {
     });
     return false;
   }
-  recordCommandResult("spirit.activateIfInactive", "accepted", "clicked", recordClickedToggleDetail());
+  recordCommandResult(
+    "spirit.activateIfInactive",
+    "accepted",
+    "clicked",
+    recordClickedToggleDetail()
+  );
   return true;
 }
 
 function recordCommandResult(command, result, reason, detail) {
-  runBattleCommandEvidence({
-    type: BattleCommandEvidenceEvent.RECORD_RESULT,
-    command,
-    result,
-    reason,
-    detail,
-  });
+  recordBattleCommandResult(command, result, reason, detail);
 }
 
 export function runBattleSpiritToggleAutomation(event = { type: EVENT_READ_LAST_TOGGLE }) {

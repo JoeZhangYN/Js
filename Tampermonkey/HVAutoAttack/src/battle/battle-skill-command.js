@@ -1,7 +1,7 @@
 // Battle skill command: one write entry for ready-checked skill button clicks.
 import { gE, isOn } from "../dom/query.js";
 import { clickBattleCommandElement } from "./battle-command-click.js";
-import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
+import { recordBattleCommandResult } from "./battle-command-recording.js";
 
 const EVENT_CLICK_READY = "clickReady";
 
@@ -10,13 +10,7 @@ export const BattleSkillCommandEvent = Object.freeze({
 });
 
 function recordCommandResult(result, reason, detail) {
-  runBattleCommandEvidence({
-    type: BattleCommandEvidenceEvent.RECORD_RESULT,
-    command: "skill.clickReady",
-    result,
-    reason,
-    detail,
-  });
+  recordBattleCommandResult("skill.clickReady", result, reason, detail);
 }
 
 function clickReady(skillId, afterClick) {

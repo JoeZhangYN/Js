@@ -6,7 +6,7 @@ import {
 } from "../core/navigate.js";
 import { gE } from "../dom/query.js";
 import { clickBattleCommandElement } from "./battle-command-click.js";
-import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
+import { recordBattleCommandResult } from "./battle-command-recording.js";
 
 const EVENT_CLICK_AND_RELOAD = "clickAndReload";
 const FLEE_BUTTON_ID = "1001";
@@ -42,7 +42,11 @@ function scheduleFleeReload() {
       type: NavigationEvent.SCHEDULE_RELOAD,
       reason: NavigationReloadReason.FLEE_CONFIRMATION,
       seconds: FLEE_RELOAD_DELAY_SEC,
-      detail: { source: "battleFleeCommand", command: EVENT_CLICK_AND_RELOAD, seconds: FLEE_RELOAD_DELAY_SEC },
+      detail: {
+        source: "battleFleeCommand",
+        command: EVENT_CLICK_AND_RELOAD,
+        seconds: FLEE_RELOAD_DELAY_SEC,
+      },
     });
     return { result: Boolean(result), error: undefined };
   } catch (error) {
@@ -51,13 +55,7 @@ function scheduleFleeReload() {
 }
 
 function recordCommandResult(result, reason, detail) {
-  runBattleCommandEvidence({
-    type: BattleCommandEvidenceEvent.RECORD_RESULT,
-    command: "flee.clickAndReload",
-    result,
-    reason,
-    detail,
-  });
+  recordBattleCommandResult("flee.clickAndReload", result, reason, detail);
 }
 
 const battleFleeCommandEventHandlers = Object.freeze({

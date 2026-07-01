@@ -1,7 +1,7 @@
 // Battle target command: one write entry for monster target clicks and skill-target pairs.
 import { gE } from "../dom/query.js";
 import { clickBattleCommandElement } from "./battle-command-click.js";
-import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
+import { recordBattleCommandResult } from "./battle-command-recording.js";
 import { BattleSkillCommandEvent, runBattleSkillCommand } from "./battle-skill-command.js";
 
 const EVENT_CLICK_TARGET = "clickTarget";
@@ -19,13 +19,7 @@ function targetSelector(targetId) {
 }
 
 function recordCommandResult(command, result, reason, detail) {
-  runBattleCommandEvidence({
-    type: BattleCommandEvidenceEvent.RECORD_RESULT,
-    command,
-    result,
-    reason,
-    detail,
-  });
+  recordBattleCommandResult(command, result, reason, detail);
 }
 
 function readLiveTarget(targetId) {
@@ -116,11 +110,16 @@ function trySkillThenTarget(skillId, targetId, afterSkillClick, targetRequiresSk
     return false;
   }
   const clickedTarget = clickTarget(targetId);
-  recordCommandResult("target.trySkillThenTarget", clickedTarget ? "accepted" : "rejected", clickedTarget ? "clicked" : "targetCommandRejected", {
-    skillId,
-    targetId,
-    clickedSkill: skillResult.acted,
-  });
+  recordCommandResult(
+    "target.trySkillThenTarget",
+    clickedTarget ? "accepted" : "rejected",
+    clickedTarget ? "clicked" : "targetCommandRejected",
+    {
+      skillId,
+      targetId,
+      clickedSkill: skillResult.acted,
+    }
+  );
   return clickedTarget;
 }
 

@@ -1,7 +1,7 @@
 // Battle defend command: one write entry for clicking the Defend battle control.
 import { gE, isOn } from "../dom/query.js";
 import { clickBattleCommandElement } from "./battle-command-click.js";
-import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
+import { recordBattleCommandResult } from "./battle-command-recording.js";
 
 const EVENT_CLICK = "click";
 const DEFEND_BUTTON_SELECTOR = "#ckey_defend";
@@ -30,13 +30,7 @@ function clickDefend() {
 }
 
 function recordCommandResult(result, reason, detail) {
-  runBattleCommandEvidence({
-    type: BattleCommandEvidenceEvent.RECORD_RESULT,
-    command: "defend.click",
-    result,
-    reason,
-    detail,
-  });
+  recordBattleCommandResult("defend.click", result, reason, detail);
 }
 
 const battleDefendCommandEventHandlers = Object.freeze({

@@ -1,7 +1,7 @@
 // Focus command: one write entry for clicking the battle Focus button.
 import { gE } from "../dom/query.js";
 import { clickBattleCommandElement } from "./battle-command-click.js";
-import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
+import { recordBattleCommandResult } from "./battle-command-recording.js";
 
 const EVENT_CLICK = "click";
 
@@ -25,13 +25,7 @@ function clickFocus() {
 }
 
 function recordCommandResult(result, reason, detail) {
-  runBattleCommandEvidence({
-    type: BattleCommandEvidenceEvent.RECORD_RESULT,
-    command: "focus.click",
-    result,
-    reason,
-    detail,
-  });
+  recordBattleCommandResult("focus.click", result, reason, detail);
 }
 
 const battleFocusCommandEventHandlers = Object.freeze({

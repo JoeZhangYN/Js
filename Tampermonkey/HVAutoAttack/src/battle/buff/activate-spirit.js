@@ -7,7 +7,7 @@ import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
 } from "../battle-spirit-toggle.js";
-import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "../battle-command-evidence.js";
+import { recordBattleCommandResult } from "../battle-command-recording.js";
 
 function readOptionField(key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
@@ -25,12 +25,8 @@ const battlePreCastSpiritEventHandlers = Object.freeze({
 });
 
 function recordRejectedPreCastSpirit(event) {
-  runBattleCommandEvidence({
-    type: BattleCommandEvidenceEvent.RECORD_RESULT,
-    command: "preCastSpirit.unknown",
-    result: "rejected",
-    reason: EVENT_UNKNOWN_PRE_CAST_SPIRIT,
-    detail: { eventType: event?.type ?? null },
+  recordBattleCommandResult("preCastSpirit.unknown", "rejected", EVENT_UNKNOWN_PRE_CAST_SPIRIT, {
+    eventType: event?.type ?? null,
   });
   return false;
 }
@@ -48,8 +44,8 @@ function activatePreCastSpiritIfAllowed() {
   });
 }
 
-export function runBattlePreCastSpiritAutomation(
-  event = { type: EVENT_ACTIVATE_IF_ALLOWED }
-) {
-  return battlePreCastSpiritEventHandlers[event?.type]?.(event) ?? recordRejectedPreCastSpirit(event);
+export function runBattlePreCastSpiritAutomation(event = { type: EVENT_ACTIVATE_IF_ALLOWED }) {
+  return (
+    battlePreCastSpiritEventHandlers[event?.type]?.(event) ?? recordRejectedPreCastSpirit(event)
+  );
 }

@@ -72,7 +72,7 @@ requireText(owner, [
   "clickResult.reason",
   "clickResult.error",
   "afterClickError",
-  "runBattleCommandEvidence",
+  "recordBattleCommandResult",
   "skillNotReady",
   "skillElementMissing",
   "unknownSkillCommand",

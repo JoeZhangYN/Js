@@ -60,7 +60,7 @@ requireText(owner, [
   "CLICK_SKILL_THEN_TARGET",
   "TRY_SKILL_THEN_TARGET",
   "#mkey_",
-  "runBattleCommandEvidence",
+  "recordBattleCommandResult",
   "clickBattleCommandElement",
   "clickResult.reason",
   "clickResult.error",
