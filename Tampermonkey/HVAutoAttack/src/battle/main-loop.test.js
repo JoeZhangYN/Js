@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   runBattleActionDecision: vi.fn(),
   runBattlePauseAutomation: vi.fn(),
   runBattleTurnPrelude: vi.fn(),
+  runBattleTurnWorkflowEvidence: vi.fn(),
 }));
 
 vi.mock("./turn-context.js", () => ({
@@ -24,6 +25,10 @@ vi.mock("./battle-turn-prelude.js", () => ({
   BattleTurnPreludeEvent: Object.freeze({ PREPARE_CURRENT_TURN: "prepareCurrentTurn" }),
   runBattleTurnPrelude: mocks.runBattleTurnPrelude,
 }));
+vi.mock("./battle-turn-workflow-evidence.js", () => ({
+  BattleTurnWorkflowEvidenceEvent: Object.freeze({ RECORD_STAGE: "recordStage" }),
+  runBattleTurnWorkflowEvidence: mocks.runBattleTurnWorkflowEvidence,
+}));
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
@@ -35,6 +40,13 @@ beforeEach(() => {
   mocks.runBattlePauseAutomation.mockReturnValue(false);
   mocks.runBattleTurnPrelude.mockReturnValue({
     battleLogTelemetry: { battleLog: [{ kind: "player-incoming", dmg: 10 }] },
+  });
+  mocks.runBattleTurnWorkflowEvidence.mockImplementation((event) => {
+    sessionStorage.setItem(
+      "HVAA:lastBattleTurnWorkflow",
+      JSON.stringify({ stage: event.stage, detail: event.detail })
+    );
+    return true;
   });
 });
 

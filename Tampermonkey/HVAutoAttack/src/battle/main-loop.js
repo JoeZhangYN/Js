@@ -12,6 +12,7 @@ import {
 } from "./battle-turn-workflow-evidence.js";
 
 const EVENT_RUN_CURRENT_TURN = "runCurrentTurn";
+const REASON_TURN_WORKFLOW_EVIDENCE_WRITE_FAILED = "turnWorkflowEvidenceWriteFailed";
 
 export const BattleTurnWorkflowEvent = Object.freeze({
   RUN_CURRENT_TURN: EVENT_RUN_CURRENT_TURN,
@@ -22,11 +23,27 @@ const battleTurnWorkflowEventHandlers = Object.freeze({
 });
 
 function recordTurnWorkflowStage(stage, detail) {
-  runBattleTurnWorkflowEvidence({
-    type: BattleTurnWorkflowEvidenceEvent.RECORD_STAGE,
-    stage,
-    detail,
-  });
+  try {
+    return runBattleTurnWorkflowEvidence({
+      type: BattleTurnWorkflowEvidenceEvent.RECORD_STAGE,
+      stage,
+      detail,
+    });
+  } catch (error) {
+    try {
+      return runBattleTurnWorkflowEvidence({
+        type: BattleTurnWorkflowEvidenceEvent.RECORD_STAGE,
+        stage: "workflowEvidenceFailed",
+        detail: {
+          reason: REASON_TURN_WORKFLOW_EVIDENCE_WRITE_FAILED,
+          failedStage: stage,
+          message: error?.message || String(error),
+        },
+      });
+    } catch (_error) {
+      return false;
+    }
+  }
 }
 
 function runCurrentBattleTurn() {

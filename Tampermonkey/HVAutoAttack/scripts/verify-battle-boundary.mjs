@@ -561,6 +561,8 @@ function checkTurnEntry() {
     "BattleTurnWorkflowEvidenceEvent.RECORD_STAGE",
     "runBattleTurnWorkflowEvidence",
     "recordTurnWorkflowStage",
+    "turnWorkflowEvidenceWriteFailed",
+    'stage: "workflowEvidenceFailed"',
     'recordTurnWorkflowStage("started")',
     'recordTurnWorkflowStage("paused"',
     'recordTurnWorkflowStage("preludePrepared"',
@@ -592,6 +594,22 @@ function checkTurnEntry() {
   }
   if (!mainLoopTestText.includes("eventType: null")) {
     violations.push("src/battle/main-loop.test.js must preserve null turn workflow event identity");
+  }
+  const mainLoopEvidenceFailureTestFile = path.join(
+    root,
+    "src/battle/main-loop-evidence-failure.test.js"
+  );
+  const mainLoopEvidenceFailureTestText = fs.existsSync(mainLoopEvidenceFailureTestFile)
+    ? fs.readFileSync(mainLoopEvidenceFailureTestFile, "utf8")
+    : "";
+  for (const required of [
+    "continues the turn when workflow evidence recording fails once",
+    "does not throw when workflow evidence recording keeps failing",
+    "turnWorkflowEvidenceWriteFailed",
+  ]) {
+    if (!mainLoopEvidenceFailureTestText.includes(required)) {
+      violations.push(`${rel(mainLoopEvidenceFailureTestFile)} must cover ${required}`);
+    }
   }
   const turnWorkflowEvidenceFile = path.join(
     root,
