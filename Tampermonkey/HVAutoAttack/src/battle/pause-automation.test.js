@@ -28,6 +28,23 @@ describe("battle pause automation", () => {
 
     expect(getValue(STORAGE_KEYS.DISABLED)).toBeNull();
     expect(document.querySelector(".pauseChange").innerHTML).toBe("");
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
+      state: "rejected",
+      reason: "unknownPauseEvent",
+      detail: { eventType: "unknown" },
+    });
+  });
+
+  it("rejects null events with pause evidence instead of throwing", () => {
+    expect(runBattlePauseAutomation(null)).toBe(false);
+
+    expect(getValue(STORAGE_KEYS.DISABLED)).toBeNull();
+    expect(document.querySelector(".pauseChange").innerHTML).toBe("");
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
+      state: "rejected",
+      reason: "unknownPauseEvent",
+      detail: { eventType: null },
+    });
   });
 
   it("records explicit pause reason and detail", () => {

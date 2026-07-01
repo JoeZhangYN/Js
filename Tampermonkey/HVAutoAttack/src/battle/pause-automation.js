@@ -9,6 +9,7 @@ const EVENT_RENDER_PAUSED = "renderPaused";
 const EVENT_RENDER_IF_PAUSED = "renderIfPaused";
 const EVENT_PAUSE = "pause";
 const EVENT_TOGGLE = "toggle";
+const EVENT_UNKNOWN_PAUSE = "unknownPauseEvent";
 
 export const BattlePauseEvent = Object.freeze({
   RENDER_PAUSED: EVENT_RENDER_PAUSED,
@@ -81,6 +82,11 @@ function handlePause(event) {
   return true;
 }
 
+function rejectUnknownPauseEvent(event) {
+  recordPauseState("rejected", EVENT_UNKNOWN_PAUSE, { eventType: event?.type ?? null });
+  return false;
+}
+
 export function runBattlePauseAutomation(event = { type: EVENT_PAUSE }, deps = {}) {
-  return battlePauseEventHandlers[event.type]?.(event, deps) ?? false;
+  return battlePauseEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownPauseEvent(event);
 }

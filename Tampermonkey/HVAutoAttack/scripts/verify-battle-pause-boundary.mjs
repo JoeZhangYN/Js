@@ -102,6 +102,27 @@ function checkEntry() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${entry.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
+  for (const required of [
+    "unknownPauseEvent",
+    "battlePauseEventHandlers[event?.type]",
+    'recordPauseState("rejected", EVENT_UNKNOWN_PAUSE, { eventType: event?.type ?? null })',
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${entry.replaceAll("\\", "/")} must reject unknown pause events with evidence ${required}`);
+    }
+  }
+  const entryTest = path.normalize("src/battle/pause-automation.test.js");
+  const entryTestText = fs.readFileSync(path.join(root, entryTest), "utf8");
+  for (const required of [
+    "rejects unknown events without touching pause state",
+    "rejects null events with pause evidence instead of throwing",
+    "unknownPauseEvent",
+    "eventType: null",
+  ]) {
+    if (!entryTestText.includes(required)) {
+      violations.push(`${entryTest.replaceAll("\\", "/")} must cover pause event rejection ${required}`);
+    }
+  }
 }
 
 function checkBridgeRemoved() {
