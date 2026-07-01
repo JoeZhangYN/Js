@@ -60,7 +60,12 @@ function recoveryAbs(snap) {
  * @param {import("../../core/types.js").BattleSnapshot} snap
  */
 function applyItemPlan(plan, snap) {
-  return ITEM_PLAN_EXECUTORS[plan?.type]?.(plan, snap) ?? false;
+  try {
+    return ITEM_PLAN_EXECUTORS[plan?.type]?.(plan, snap) ?? false;
+  } catch (error) {
+    recordItemExecutionFailure(plan, "itemSubCommandThrew", error);
+    return false;
+  }
 }
 
 function executeNoopPlan() {
@@ -128,6 +133,21 @@ function recordPreDrink(potionId, snap) {
     type: RecoveryLearningEvent.RECORD_PRE_DRINK,
     potionId,
     recoveryAbs: recoveryAbs(snap),
+  });
+}
+
+function recordItemExecutionFailure(plan, reason, error) {
+  runBattleActionEffectEvidence({
+    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+    result: {
+      kind: "item-execution-event",
+      reason,
+      planType: plan?.type ?? null,
+    },
+    acted: false,
+    knownResultKind: true,
+    failureReason: reason,
+    executionError: error?.message || String(error),
   });
 }
 

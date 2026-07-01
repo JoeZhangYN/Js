@@ -5,6 +5,7 @@ const root = process.cwd();
 const owner = path.normalize("src/battle/item/execute-item.js");
 const ownerTest = path.normalize("src/battle/item/execute-item.test.js");
 const autoTuneFailureTest = path.normalize("src/battle/item/execute-item-autotune-failure.test.js");
+const commandFailureTest = path.normalize("src/battle/item/execute-item-command-failure.test.js");
 const rejectionTest = path.normalize("src/battle/item/execute-item-rejection.test.js");
 const actionEffect = path.normalize("src/battle/battle-action-effect-dispatch.js");
 const violations = [];
@@ -38,6 +39,8 @@ for (const required of [
   "RecoveryLearningEvent.RECORD_PRE_DRINK",
   "BattleSpiritToggleEvent.CLICK_AND_RECORD",
   "BattleFocusCommandEvent.CLICK",
+  "recordItemExecutionFailure",
+  "itemSubCommandThrew",
   "recoveryAbs",
   "if (!runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM })) return false",
   "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
@@ -100,6 +103,21 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("does not claim gem use when the gem command cannot click")) {
     violations.push(`${rel(ownerTest)} must cover failed gem commands as not acted`);
+  }
+}
+if (!fs.existsSync(path.join(root, commandFailureTest))) {
+  violations.push(`${rel(commandFailureTest)} must cover item execution sub-command exceptions`);
+} else {
+  const commandFailureTestText = read(commandFailureTest);
+  for (const required of [
+    "records item command exceptions as not acted item execution evidence",
+    "records stall focus command exceptions as not acted item execution evidence",
+    "records stall spirit command exceptions as not acted item execution evidence",
+    "itemSubCommandThrew",
+  ]) {
+    if (!commandFailureTestText.includes(required)) {
+      violations.push(`${rel(commandFailureTest)} must cover ${required}`);
+    }
   }
 }
 if (!fs.existsSync(path.join(root, autoTuneFailureTest))) {
