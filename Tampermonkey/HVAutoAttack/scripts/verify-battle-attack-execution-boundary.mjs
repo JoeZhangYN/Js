@@ -44,6 +44,10 @@ for (const required of [
   "PhysicalSkillBookkeepingEvent.RECORD_FIRE",
   "observedBigSkillBosses",
   "return !!runBattleTargetCommand",
+  "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
+  "runBattleActionEffectEvidence",
+  "unknownAttackExecutionEvent",
+  "rejectUnknownAttackExecutionEvent(event)",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
@@ -110,11 +114,24 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover attack execution contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("rejects unknown attack execution events")) {
-    violations.push(`${rel(ownerTest)} must cover unknown attack execution events`);
+  if (
+    !ownerTestText.includes(
+      "rejects unknown and null attack execution events as not acted with evidence"
+    )
+  ) {
+    violations.push(`${rel(ownerTest)} must cover unknown and null attack execution events`);
   }
-  if (!ownerTestText.includes("rejects null attack execution events as not acted")) {
-    violations.push(`${rel(ownerTest)} must cover null attack execution events`);
+  for (const required of [
+    "runBattleActionEffectEvidence",
+    "unknown-attack-execution-event",
+    "unknownAttackExecutionEvent",
+    '[{ type: "unknown" }, "unknown"]',
+    "[null, null]",
+    "eventType,",
+  ]) {
+    if (!ownerTestText.includes(required)) {
+      violations.push(`${rel(ownerTest)} must cover ${required}`);
+    }
   }
   if (!ownerTestText.includes("does not claim spell, physical, or default attack plans")) {
     violations.push(`${rel(ownerTest)} must cover failed target commands as not acted`);

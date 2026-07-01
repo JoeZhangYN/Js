@@ -11,8 +11,13 @@ import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
 } from "../battle-spirit-toggle.js";
+import {
+  BattleActionEffectEvidenceEvent,
+  runBattleActionEffectEvidence,
+} from "../battle-action-effect-evidence.js";
 
 const EVENT_APPLY_PLAN = "applyPlan";
+const EVENT_UNKNOWN_ATTACK_EXECUTION = "unknownAttackExecutionEvent";
 
 export const BattleAttackExecutionEvent = Object.freeze({
   APPLY_PLAN: EVENT_APPLY_PLAN,
@@ -116,6 +121,21 @@ function executeDefaultPlan(plan) {
   });
 }
 
+function rejectUnknownAttackExecutionEvent(event) {
+  runBattleActionEffectEvidence({
+    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+    result: {
+      kind: "unknown-attack-execution-event",
+      reason: EVENT_UNKNOWN_ATTACK_EXECUTION,
+      eventType: event?.type ?? null,
+    },
+    acted: false,
+    knownResultKind: false,
+    failureReason: EVENT_UNKNOWN_ATTACK_EXECUTION,
+  });
+  return false;
+}
+
 export function runBattleAttackExecution(event = { type: EVENT_APPLY_PLAN }) {
-  return battleAttackExecutionEventHandlers[event?.type]?.(event) ?? false;
+  return battleAttackExecutionEventHandlers[event?.type]?.(event) ?? rejectUnknownAttackExecutionEvent(event);
 }

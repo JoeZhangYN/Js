@@ -2,14 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleAttackExecutionEvent, runBattleAttackExecution } from "./execute-attack.js";
 
 const mocks = vi.hoisted(() => ({
-  g: vi.fn(),
   runBattleFocusCommand: vi.fn(),
   runBattleTargetCommand: vi.fn(),
   runPhysicalSkillBookkeeping: vi.fn(),
   runBattleSpiritToggleAutomation: vi.fn(),
+  runBattleActionEffectEvidence: vi.fn(),
 }));
 
-vi.mock("../../state/store.js", () => ({ g: mocks.g }));
 vi.mock("../battle-focus-command.js", () => ({
   BattleFocusCommandEvent: Object.freeze({ CLICK: "click" }),
   runBattleFocusCommand: mocks.runBattleFocusCommand,
@@ -28,6 +27,10 @@ vi.mock("./physical-skill-bookkeeping.js", () => ({
 vi.mock("../battle-spirit-toggle.js", () => ({
   BattleSpiritToggleEvent: Object.freeze({ CLICK_AND_RECORD: "clickAndRecord" }),
   runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
+}));
+vi.mock("../battle-action-effect-evidence.js", () => ({
+  BattleActionEffectEvidenceEvent: Object.freeze({ RECORD_APPLIED: "recordApplied" }),
+  runBattleActionEffectEvidence: mocks.runBattleActionEffectEvidence,
 }));
 
 beforeEach(() => {
@@ -143,21 +146,24 @@ describe("runBattleAttackExecution", () => {
     });
   });
 
-  it("rejects unknown attack execution events", () => {
-    expect(runBattleAttackExecution({ type: "unknown" })).toBe(false);
-
-    expect(mocks.runBattleFocusCommand).not.toHaveBeenCalled();
-    expect(mocks.runBattleTargetCommand).not.toHaveBeenCalled();
-    expect(mocks.runPhysicalSkillBookkeeping).not.toHaveBeenCalled();
-    expect(mocks.runBattleSpiritToggleAutomation).not.toHaveBeenCalled();
-  });
-
-  it("rejects null attack execution events as not acted", () => {
-    expect(runBattleAttackExecution(null)).toBe(false);
-
-    expect(mocks.runBattleFocusCommand).not.toHaveBeenCalled();
-    expect(mocks.runBattleTargetCommand).not.toHaveBeenCalled();
-    expect(mocks.runPhysicalSkillBookkeeping).not.toHaveBeenCalled();
-    expect(mocks.runBattleSpiritToggleAutomation).not.toHaveBeenCalled();
+  it("rejects unknown and null attack execution events as not acted with evidence", () => {
+    for (const [event, eventType] of [[{ type: "unknown" }, "unknown"], [null, null]]) {
+      for (const fn of Object.values(mocks)) fn.mockClear();
+      expect(runBattleAttackExecution(event)).toBe(false);
+      for (const fn of [mocks.runBattleFocusCommand, mocks.runBattleTargetCommand, mocks.runPhysicalSkillBookkeeping, mocks.runBattleSpiritToggleAutomation]) {
+        expect(fn).not.toHaveBeenCalled();
+      }
+      expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith({
+        type: "recordApplied",
+        result: {
+          kind: "unknown-attack-execution-event",
+          reason: "unknownAttackExecutionEvent",
+          eventType,
+        },
+        acted: false,
+        knownResultKind: false,
+        failureReason: "unknownAttackExecutionEvent",
+      });
+    }
   });
 });
