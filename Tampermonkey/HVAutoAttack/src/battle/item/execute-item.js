@@ -58,7 +58,7 @@ function executeNoopPlan() {
 }
 
 function executeGemPlan() {
-  runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM });
+  if (!runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM })) return false;
   recordAutoTunePotionUse();
   return true;
 }

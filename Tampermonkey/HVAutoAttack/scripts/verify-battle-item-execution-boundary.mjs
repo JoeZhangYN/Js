@@ -36,6 +36,7 @@ for (const required of [
   "BattleSpiritToggleEvent.CLICK_AND_RECORD",
   "BattleFocusCommandEvent.CLICK",
   "recoveryAbs",
+  "if (!runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM })) return false",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
@@ -82,6 +83,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("rejects unknown item execution events")) {
     violations.push(`${rel(ownerTest)} must cover unknown item execution events`);
+  }
+  if (!ownerTestText.includes("does not claim gem use when the gem command cannot click")) {
+    violations.push(`${rel(ownerTest)} must cover failed gem commands as not acted`);
   }
 }
 

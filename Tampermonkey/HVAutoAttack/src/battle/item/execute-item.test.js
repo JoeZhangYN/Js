@@ -57,6 +57,14 @@ describe("runBattleItemExecution", () => {
     });
   });
 
+  it("does not claim gem use when the gem command cannot click", () => {
+    mocks.runBattleItemCommand.mockReturnValue(false);
+
+    expect(applyPlan({ type: "gem" }, {})).toBe(false);
+
+    expect(mocks.runAutoTuneAutomation).not.toHaveBeenCalled();
+  });
+
   it("reports auto-tune potion-use event for used potions", () => {
     mocks.runBattleItemCommand.mockReturnValue(true);
 

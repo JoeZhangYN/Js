@@ -27,6 +27,7 @@ for (const required of [
   "click: executeClickPlan",
   "BattleSkillCommandEvent.CLICK_READY",
   "runBattleSkillCommand",
+  "return !!runBattleSkillCommand",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
@@ -59,6 +60,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("rejects unknown channel execution events")) {
     violations.push(`${rel(ownerTest)} must cover unknown channel execution events`);
+  }
+  if (!ownerTestText.includes("returns the command result")) {
+    violations.push(`${rel(ownerTest)} must cover channel command acted semantics`);
   }
 }
 

@@ -101,7 +101,20 @@ describe("runBattleAttackExecution", () => {
     });
   });
 
+  it("does not claim spell, physical, or default attack plans when target commands do not act", () => {
+    mocks.runBattleTargetCommand.mockReturnValue(false);
+
+    expect(applyPlan({ type: "spell", spellId: "123", targetId: 3 }, {})).toBe(false);
+    expect(applyPlan({ type: "merciful-single", skillId: "2203", targetId: 3 }, {})).toBe(false);
+    expect(
+      applyPlan({ type: "physical", skillId: "1111", code: "OFC", defaultTargetId: 3 }, {})
+    ).toBe(false);
+    expect(applyPlan({ type: "default", targetId: 3 }, {})).toBe(false);
+  });
+
   it("requires physical skill fire before the merciful target and still clicks the default target", () => {
+    mocks.runBattleTargetCommand.mockReturnValue(true);
+
     applyPlan(
       {
         type: "physical",

@@ -22,15 +22,18 @@ function applyPlan(plan) {
 }
 
 describe("runBattleChannelExecution", () => {
-  it("routes channel skill clicks through the skill command entry and claims the channel branch", () => {
+  it("routes channel skill clicks through the skill command entry and returns the command result", () => {
     mocks.runBattleSkillCommand.mockReturnValue(false);
 
-    expect(applyPlan({ type: "click", skillId: "412" })).toBe(true);
+    expect(applyPlan({ type: "click", skillId: "412" })).toBe(false);
 
     expect(mocks.runBattleSkillCommand).toHaveBeenCalledWith({
       type: "clickReady",
       skillId: "412",
     });
+
+    mocks.runBattleSkillCommand.mockReturnValue(true);
+    expect(applyPlan({ type: "click", skillId: "412" })).toBe(true);
   });
 
   it("rejects unknown channel execution events", () => {

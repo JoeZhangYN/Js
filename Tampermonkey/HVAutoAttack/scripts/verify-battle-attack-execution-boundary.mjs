@@ -36,6 +36,7 @@ for (const required of [
   "BattleTargetCommandEvent.CLICK_TARGET",
   "PhysicalSkillBookkeepingEvent.RECORD_FIRE",
   "observedBigSkillBosses",
+  "return !!runBattleTargetCommand",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
@@ -80,6 +81,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("rejects unknown attack execution events")) {
     violations.push(`${rel(ownerTest)} must cover unknown attack execution events`);
+  }
+  if (!ownerTestText.includes("does not claim spell, physical, or default attack plans")) {
+    violations.push(`${rel(ownerTest)} must cover failed target commands as not acted`);
   }
 }
 

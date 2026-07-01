@@ -26,11 +26,10 @@ function applyChannelPlan(plan) {
 
 function executeClickPlan(plan) {
   // 原 useChannelSkill 三段均在 isOn 通过后 click；探活与 turn 入口快照一致。
-  runBattleSkillCommand({
+  return !!runBattleSkillCommand({
     type: BattleSkillCommandEvent.CLICK_READY,
     skillId: plan.skillId,
   });
-  return true;
 }
 
 export function runBattleChannelExecution(event = { type: EVENT_APPLY_PLAN }) {

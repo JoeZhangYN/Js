@@ -67,21 +67,19 @@ function executeToggleSpiritPlan() {
 }
 
 function executeSpellPlan(plan) {
-  runBattleTargetCommand({
+  return !!runBattleTargetCommand({
     type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
     skillId: plan.spellId,
     targetId: plan.targetId,
   });
-  return true;
 }
 
 function executeMercifulSinglePlan(plan) {
-  runBattleTargetCommand({
+  return !!runBattleTargetCommand({
     type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
     skillId: plan.skillId,
     targetId: plan.targetId,
   });
-  return true;
 }
 
 function executePhysicalPlan(plan, snap) {
@@ -93,14 +91,14 @@ function executePhysicalPlan(plan, snap) {
     afterSkillClick: () => recordPhysicalSkillFire(plan, snap),
   };
   if (plan.mercifulTargetId != null) event.targetRequiresSkill = true;
-  runBattleTargetCommand(event);
+  const acted = !!runBattleTargetCommand(event);
   if (plan.mercifulTargetId != null) {
     runBattleTargetCommand({
       type: BattleTargetCommandEvent.CLICK_TARGET,
       targetId: plan.defaultTargetId,
     });
   }
-  return true;
+  return acted;
 }
 
 function recordPhysicalSkillFire(plan, snap) {
@@ -114,11 +112,10 @@ function recordPhysicalSkillFire(plan, snap) {
 }
 
 function executeDefaultPlan(plan) {
-  runBattleTargetCommand({
+  return !!runBattleTargetCommand({
     type: BattleTargetCommandEvent.CLICK_TARGET,
     targetId: plan.targetId,
   });
-  return true;
 }
 
 export function runBattleAttackExecution(event = { type: EVENT_APPLY_PLAN }) {
