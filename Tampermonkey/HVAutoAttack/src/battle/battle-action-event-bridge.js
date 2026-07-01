@@ -47,14 +47,14 @@ function installActionEventBridge() {
   const eventStart = cE("a");
   eventStart.id = "eventStart";
   eventStart.onclick = function () {
-    runLifecycleFromBridge("eventStart", BattleActionLifecycleEvent.ACTION_STARTED);
+    return runLifecycleFromBridge("eventStart", BattleActionLifecycleEvent.ACTION_STARTED);
   };
   gE("body").appendChild(eventStart);
 
   const eventEnd = cE("a");
   eventEnd.id = "eventEnd";
   eventEnd.onclick = function () {
-    runLifecycleFromBridge("eventEnd", BattleActionLifecycleEvent.ACTION_ENDED);
+    return runLifecycleFromBridge("eventEnd", BattleActionLifecycleEvent.ACTION_ENDED);
   };
   gE("body").appendChild(eventEnd);
 

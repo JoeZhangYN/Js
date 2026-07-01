@@ -104,6 +104,8 @@ requireText(owner, [
   "unknownActionEventBridgeEvent",
   "BattleApiBridgeEvent.INSTALL",
   "return Boolean(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }))",
+  "return runLifecycleFromBridge(\"eventStart\", BattleActionLifecycleEvent.ACTION_STARTED)",
+  "return runLifecycleFromBridge(\"eventEnd\", BattleActionLifecycleEvent.ACTION_ENDED)",
   "eventStart",
   "eventEnd",
 ]);
@@ -172,7 +174,8 @@ if (!fs.existsSync(path.join(root, evidenceFailureTest))) {
   const evidenceFailureText = fs.readFileSync(path.join(root, evidenceFailureTest), "utf8");
   for (const required of [
     "rejects unknown bridge events when lifecycle evidence recording fails",
-    "keeps bridge click exception handling nonthrowing when evidence recording fails",
+    "returns rejected bridge click result when evidence recording fails",
+    "expect(result).toBe(false)",
     "lifecycle evidence failed",
     "actionLifecycleBridgeThrew",
   ]) {

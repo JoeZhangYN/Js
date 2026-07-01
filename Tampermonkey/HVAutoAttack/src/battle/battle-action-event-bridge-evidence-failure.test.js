@@ -45,7 +45,7 @@ describe("battle action event bridge evidence failures", () => {
     expect(mocks.runBattleActionLifecycleAutomation).not.toHaveBeenCalled();
   });
 
-  it("keeps bridge click exception handling nonthrowing when evidence recording fails", () => {
+  it("returns rejected bridge click result when evidence recording fails", () => {
     mocks.runBattleActionLifecycleAutomation.mockImplementation(() => {
       throw new Error("lifecycle failed");
     });
@@ -54,7 +54,12 @@ describe("battle action event bridge evidence failures", () => {
     });
     runBattleActionEventBridgeAutomation();
 
-    expect(() => document.getElementById("eventStart").click()).not.toThrow();
+    let result;
+    expect(() => {
+      result = document.getElementById("eventStart").onclick();
+    }).not.toThrow();
+
+    expect(result).toBe(false);
     expect(mocks.runBattleActionLifecycleEvidence).toHaveBeenCalledWith(
       expect.objectContaining({
         result: expect.objectContaining({ reason: "actionLifecycleBridgeThrew" }),
