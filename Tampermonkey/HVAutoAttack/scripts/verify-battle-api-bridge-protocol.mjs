@@ -107,6 +107,7 @@ requireText(ownerRejectionTest, [
 ]);
 requireText(runtimeTest, [
   "battle_continue-capable target",
+  "non-capable window.battle object",
   "window.MAIN_URL",
   "https://hentaiverse.org/isekai/json",
 ]);

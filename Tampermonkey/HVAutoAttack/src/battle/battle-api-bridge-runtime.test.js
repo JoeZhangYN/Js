@@ -10,7 +10,7 @@ function installApiCall() {
       sessionStorage: window.sessionStorage,
       createScript: vi.fn(() => ({ textContent: "" })),
       appendHead: vi.fn((script) => scripts.push(script)),
-      installApiResponseRecovery: vi.fn(),
+      installApiResponseRecovery: vi.fn(() => true),
       readBattleApiWorldContext: vi.fn(() => ({
         world: "persistent",
         apiJsonUrl: "https://fallback.test/json",
@@ -45,6 +45,24 @@ describe("battle API bridge runtime protocol", () => {
 
     expect(callback).toHaveBeenCalledTimes(1);
     expect(xhr.open).toHaveBeenCalledWith("POST", "https://fallback.test/json");
+  });
+
+  it("does not bind process_action callbacks to a non-capable window.battle object", () => {
+    installApiCall();
+    window.battle = {};
+    const xhr = {
+      open: vi.fn(),
+      setRequestHeader: vi.fn(),
+      send: vi.fn(),
+    };
+    const callback = vi.fn(function () {
+      expect(typeof this.battle_continue).toBe("function");
+    });
+
+    window.__testApiCall(xhr, { type: "battle", method: "action" }, callback);
+    xhr.onreadystatechange();
+
+    expect(callback).toHaveBeenCalledTimes(1);
   });
 
   it("uses the page MAIN_URL protocol when the current hvc runtime exposes it", () => {
