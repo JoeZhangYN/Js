@@ -33,12 +33,16 @@ export const BattleActionLifecycleEvent = Object.freeze({
 
 function runActionStarted(deps) {
   const steps = [];
-  deps.startDelay();
-  steps.push({ step: "startDelay", result: true });
-  deps.monitorActionStarted();
-  steps.push({ step: "monitorActionStarted", result: true });
+  recordStep(steps, "startDelay", deps.startDelay);
+  recordStep(steps, "monitorActionStarted", deps.monitorActionStarted);
   deps.recordLifecycle(EVENT_ACTION_STARTED, true, steps);
   return true;
+}
+
+function recordStep(steps, step, run) {
+  const result = run();
+  steps.push({ step, result: result === undefined ? true : result });
+  return result;
 }
 
 function handleCompletion(deps) {
@@ -52,14 +56,10 @@ function handleCompletion(deps) {
 
 function runActionEnded(deps) {
   const steps = [];
-  deps.recordSpeed();
-  steps.push({ step: "recordSpeed", result: true });
-  deps.endDelay();
-  steps.push({ step: "endDelay", result: true });
-  deps.refreshCombatants();
-  steps.push({ step: "refreshCombatants", result: true });
-  deps.monitorActionEnded();
-  steps.push({ step: "monitorActionEnded", result: true });
+  recordStep(steps, "recordSpeed", deps.recordSpeed);
+  recordStep(steps, "endDelay", deps.endDelay);
+  recordStep(steps, "refreshCombatants", deps.refreshCombatants);
+  recordStep(steps, "monitorActionEnded", deps.monitorActionEnded);
   if (deps.isCompletionReached()) {
     steps.push({ step: "isCompletionReached", result: true });
     const result = handleCompletion(deps);
@@ -69,8 +69,7 @@ function runActionEnded(deps) {
     return result;
   }
   steps.push({ step: "isCompletionReached", result: false });
-  deps.runTurn();
-  steps.push({ step: "runTurn", result: true });
+  recordStep(steps, "runTurn", deps.runTurn);
   const result = { outcome: OUTCOME_ONGOING, continued: "turn" };
   deps.recordLifecycle(EVENT_ACTION_ENDED, result, steps);
   return result;

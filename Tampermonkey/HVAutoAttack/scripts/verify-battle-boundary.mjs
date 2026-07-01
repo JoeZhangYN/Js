@@ -1172,15 +1172,16 @@ function checkActionLifecycleEntry() {
     "rejectUnknownActionLifecycleEvent",
     "unknownActionLifecycleEvent",
     'step: "routeEvent"',
-    "steps.push({ step: \"startDelay\", result: true })",
-    "steps.push({ step: \"monitorActionStarted\", result: true })",
-    "steps.push({ step: \"recordSpeed\", result: true })",
-    "steps.push({ step: \"endDelay\", result: true })",
-    "steps.push({ step: \"refreshCombatants\", result: true })",
-    "steps.push({ step: \"monitorActionEnded\", result: true })",
+    "recordStep(steps, \"startDelay\", deps.startDelay)",
+    "recordStep(steps, \"monitorActionStarted\", deps.monitorActionStarted)",
+    "recordStep(steps, \"recordSpeed\", deps.recordSpeed)",
+    "recordStep(steps, \"endDelay\", deps.endDelay)",
+    "recordStep(steps, \"refreshCombatants\", deps.refreshCombatants)",
+    "recordStep(steps, \"monitorActionEnded\", deps.monitorActionEnded)",
+    "result === undefined ? true : result",
     "steps.push({ step: \"isCompletionReached\", result: true })",
     "steps.push({ step: \"isCompletionReached\", result: false })",
-    "steps.push({ step: \"runTurn\", result: true })",
+    "recordStep(steps, \"runTurn\", deps.runTurn)",
     "recordLifecycle(EVENT_ACTION_STARTED, true, steps)",
     "recordLifecycle(EVENT_ACTION_ENDED, result, steps)",
   ]) {
@@ -1263,6 +1264,23 @@ function checkActionLifecycleEntry() {
     )
   ) {
     violations.push(`${rel(actionLifecycleFile)} must not own next-round continuation IO`);
+  }
+  const actionLifecycleStepResultTest = path.join(
+    root,
+    "src/battle/battle-action-lifecycle-step-result.test.js"
+  );
+  const actionLifecycleStepResultTestText = fs.existsSync(actionLifecycleStepResultTest)
+    ? fs.readFileSync(actionLifecycleStepResultTest, "utf8")
+    : "";
+  for (const required of [
+    "records actual lifecycle step results when a dependency reports false",
+    "refreshCombatants",
+    "runTurn",
+    "result: false",
+  ]) {
+    if (!actionLifecycleStepResultTestText.includes(required)) {
+      violations.push(`${rel(actionLifecycleStepResultTest)} must cover ${required}`);
+    }
   }
   for (const file of [
     battleFile,
