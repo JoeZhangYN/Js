@@ -78,10 +78,10 @@ describe("navigation external unload audit", () => {
 
   it("warns about external unloads even when navigation audit storage is unavailable", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    vi.spyOn(window.sessionStorage, "getItem").mockImplementation(() => {
+    const getItem = vi.spyOn(window.sessionStorage, "getItem").mockImplementation(() => {
       throw new Error("read blocked");
     });
-    vi.spyOn(window.sessionStorage, "setItem").mockImplementation(() => {
+    const setItem = vi.spyOn(window.sessionStorage, "setItem").mockImplementation(() => {
       throw new Error("write blocked");
     });
 
@@ -97,5 +97,24 @@ describe("navigation external unload audit", () => {
         storageWriteError: "write blocked",
       })
     );
+    getItem.mockRestore();
+    setItem.mockRestore();
+  });
+
+  it("keeps external unload audit stored when console warning is unavailable", () => {
+    vi.restoreAllMocks();
+    sessionStorage.clear();
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+
+    expect(() => window.dispatchEvent(new Event("pagehide"))).not.toThrow();
+
+    expect(JSON.parse(sessionStorage.getItem(DiagnosticEvidenceKey.NAVIGATION_AUDIT))).toMatchObject({
+      kind: "externalUnload",
+      reason: "outsideNavigationEntry",
+      eventType: "pagehide",
+      storageWriteOk: true,
+    });
   });
 });

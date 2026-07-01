@@ -5,10 +5,19 @@ const NAVIGATION_AUDIT_KEY = DiagnosticEvidenceKey.NAVIGATION_AUDIT;
 
 function writeJson(key, value) {
   try {
-    sessionStorage.setItem(key, JSON.stringify(value));
+    sessionStorage.setItem(key, JSON.stringify({ ...value, storageWriteOk: true }));
     return { storageWriteOk: true };
   } catch (_error) {
     return { storageWriteOk: false, storageWriteError: _error?.message || String(_error) };
+  }
+}
+
+function warnNavigationAudit(kind, audit) {
+  try {
+    console.warn(`[HVAA] ${kind}`, audit);
+    return true;
+  } catch (_error) {
+    return false;
   }
 }
 
@@ -22,7 +31,7 @@ export function writeNavigationAudit(kind, payload) {
   const diagnosticEvidence = readRecentDiagnosticEvidence(sessionStorage);
   if (diagnosticEvidence) audit.diagnosticEvidence = diagnosticEvidence;
   Object.assign(audit, writeJson(NAVIGATION_AUDIT_KEY, audit));
-  console.warn(`[HVAA] ${kind}`, audit);
+  warnNavigationAudit(kind, audit);
 }
 
 export function reportPreviousNavigationAudit() {
@@ -35,9 +44,9 @@ export function reportPreviousNavigationAudit() {
   }
   if (!raw) return;
   try {
-    console.warn("[HVAA] previous navigation", JSON.parse(raw));
+    warnNavigationAudit("previous navigation", JSON.parse(raw));
   } catch (_error) {
-    console.warn("[HVAA] previous navigation", raw);
+    warnNavigationAudit("previous navigation", raw);
   }
 }
 

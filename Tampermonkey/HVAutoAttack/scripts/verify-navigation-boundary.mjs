@@ -160,6 +160,7 @@ if (!owner) {
       "DiagnosticEvidenceKey.NAVIGATION_AUDIT",
       "readRecentDiagnosticEvidence",
       "diagnosticEvidence",
+      "warnNavigationAudit",
     ]) {
       if (!auditText.includes(required)) {
         violations.push(`navigation audit must carry diagnostic evidence ${required}`);
@@ -179,6 +180,9 @@ if (!owner) {
     }
     if (!auditText.includes("console.warn(`[HVAA] ${kind}`")) {
       violations.push("navigation audit must warn before navigating");
+    }
+    if (auditText.includes("console.warn(`[HVAA] ${kind}`, audit);") && !auditText.includes("try {")) {
+      violations.push("navigation audit warning must be protected from console hook failures");
     }
   }
   if (!diagnosticEvidenceSource) {
@@ -270,8 +274,10 @@ if (!owner) {
       : "";
     for (const required of [
       "warns about external unloads even when navigation audit storage is unavailable",
+      "keeps external unload audit stored when console warning is unavailable",
       "storageWriteOk: false",
       'storageWriteError: "write blocked"',
+      'throw new Error("console blocked")',
     ]) {
       if (!externalUnloadText.includes(required)) {
         violations.push(`external unload audit test must cover ${required}`);
