@@ -107,4 +107,15 @@ describe("runBattleActionEffectEvidence", () => {
   it("rejects unknown evidence events", () => {
     expect(runBattleActionEffectEvidence({ type: "unknown" })).toBe(false);
   });
+
+  it("rejects null effect evidence events without writing diagnostics", () => {
+    const debug = vi.fn();
+
+    expect(runBattleActionEffectEvidence(null, { sessionStorage: window.sessionStorage, debug })).toBe(
+      false
+    );
+
+    expect(window.sessionStorage.getItem("HVAA:lastBattleActionEffect")).toBeNull();
+    expect(debug).not.toHaveBeenCalled();
+  });
 });

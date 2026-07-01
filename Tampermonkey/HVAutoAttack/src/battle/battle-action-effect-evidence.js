@@ -42,5 +42,5 @@ export function runBattleActionEffectEvidence(
   event = { type: EVENT_RECORD_APPLIED },
   deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
 ) {
-  return battleActionEffectEvidenceEventHandlers[event.type]?.(event, deps) ?? false;
+  return battleActionEffectEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

@@ -45,5 +45,5 @@ export function runBattleActionDecisionEvidence(
   event = { type: EVENT_RECORD_TRACE },
   deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
 ) {
-  return battleActionDecisionEvidenceEventHandlers[event.type]?.(event, deps) ?? false;
+  return battleActionDecisionEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

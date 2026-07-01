@@ -31,5 +31,5 @@ export function runBattleActionLifecycleEvidence(
   event = { type: EVENT_RECORD_LIFECYCLE },
   deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
 ) {
-  return battleActionLifecycleEvidenceEventHandlers[event.type]?.(event, deps) ?? false;
+  return battleActionLifecycleEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

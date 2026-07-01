@@ -34,4 +34,15 @@ describe("runBattleCommandEvidence", () => {
   it("rejects unknown command evidence events", () => {
     expect(runBattleCommandEvidence({ type: "unknown" })).toBe(false);
   });
+
+  it("rejects null command evidence events without writing diagnostics", () => {
+    const debug = vi.fn();
+
+    expect(runBattleCommandEvidence(null, { sessionStorage: window.sessionStorage, debug })).toBe(
+      false
+    );
+
+    expect(window.sessionStorage.getItem("HVAA:lastBattleCommand")).toBeNull();
+    expect(debug).not.toHaveBeenCalled();
+  });
 });

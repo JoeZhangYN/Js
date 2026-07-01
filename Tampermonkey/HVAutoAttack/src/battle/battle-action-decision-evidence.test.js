@@ -85,4 +85,15 @@ describe("runBattleActionDecisionEvidence", () => {
   it("rejects unknown decision evidence events", () => {
     expect(runBattleActionDecisionEvidence({ type: "unknown" })).toBe(false);
   });
+
+  it("rejects null decision evidence events without writing diagnostics", () => {
+    const debug = vi.fn();
+
+    expect(runBattleActionDecisionEvidence(null, { sessionStorage: window.sessionStorage, debug })).toBe(
+      false
+    );
+
+    expect(window.sessionStorage.getItem("HVAA:lastBattleActionDecision")).toBeNull();
+    expect(debug).not.toHaveBeenCalled();
+  });
 });

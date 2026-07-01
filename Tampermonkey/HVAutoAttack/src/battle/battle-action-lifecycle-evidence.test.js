@@ -35,4 +35,15 @@ describe("runBattleActionLifecycleEvidence", () => {
   it("rejects unknown lifecycle evidence events", () => {
     expect(runBattleActionLifecycleEvidence({ type: "unknown" })).toBe(false);
   });
+
+  it("rejects null lifecycle evidence events without writing diagnostics", () => {
+    const debug = vi.fn();
+
+    expect(
+      runBattleActionLifecycleEvidence(null, { sessionStorage: window.sessionStorage, debug })
+    ).toBe(false);
+
+    expect(window.sessionStorage.getItem("HVAA:lastBattleActionLifecycle")).toBeNull();
+    expect(debug).not.toHaveBeenCalled();
+  });
 });

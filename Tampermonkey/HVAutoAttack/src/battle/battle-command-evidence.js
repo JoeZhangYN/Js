@@ -32,5 +32,5 @@ export function runBattleCommandEvidence(
   event = { type: EVENT_RECORD_RESULT },
   deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
 ) {
-  return battleCommandEvidenceEventHandlers[event.type]?.(event, deps) ?? false;
+  return battleCommandEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }
