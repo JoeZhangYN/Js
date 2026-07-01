@@ -10,6 +10,8 @@ import {
 
 const EVENT_CONTINUE = "continue";
 const PHASE_NEXT_ROUND_CONTINUATION = "nextRoundContinuation";
+const REASON_UNKNOWN_EVENT = "unknownNextRoundContinuationEvent";
+const REASON_MISSING_COMPLETION_CONTROL = "missingCompletionControl";
 
 export const BattleNextRoundContinuationEvent = Object.freeze({
   CONTINUE: EVENT_CONTINUE,
@@ -33,7 +35,12 @@ function restartBattleRuntime(deps) {
 
 function continueNextRound(deps) {
   const steps = [];
-  deps.gE("#pane_completion").removeChild(deps.gE("#btcp"));
+  const pane = deps.gE("#pane_completion");
+  const button = deps.gE("#btcp");
+  if (!pane || !button) {
+    return rejectContinuation(deps, REASON_MISSING_COMPLETION_CONTROL, { hasPane: Boolean(pane), hasButton: Boolean(button) }, steps);
+  }
+  pane.removeChild(button);
   steps.push({ step: "removeCompletionButton", result: true });
   deps.post(deps.href(), (data) => {
     steps.push({ step: "postCallback", result: true });
@@ -51,6 +58,11 @@ function continueNextRound(deps) {
   });
   steps.push({ step: "post", result: true });
   return true;
+}
+
+function rejectContinuation(deps, reason, detail, steps = []) {
+  deps.recordContinuation({ outcome: "rejected", continued: false, reason, detail }, steps);
+  return false;
 }
 
 export function runBattleNextRoundContinuation(
@@ -72,5 +84,5 @@ export function runBattleNextRoundContinuation(
       }),
   }
 ) {
-  return battleNextRoundContinuationEventHandlers[event?.type]?.(event, deps) ?? false;
+  return battleNextRoundContinuationEventHandlers[event?.type]?.(event, deps) ?? rejectContinuation(deps, REASON_UNKNOWN_EVENT, { eventType: event?.type ?? null });
 }

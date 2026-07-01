@@ -29,6 +29,8 @@ for (const required of [
   "BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE",
   "PHASE_NEXT_ROUND_CONTINUATION",
   "recordContinuation",
+  "unknownNextRoundContinuationEvent",
+  "missingCompletionControl",
   "#pane_completion",
   "#btcp",
   "#battle_right",
@@ -54,10 +56,14 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   if (!ownerTestText.includes("rejects null next-round continuation events without side effects")) {
     violations.push(`${rel(ownerTest)} must cover null next-round continuation events`);
   }
+  if (!ownerTestText.includes("rejects missing next-round completion controls with lifecycle evidence")) {
+    violations.push(`${rel(ownerTest)} must cover missing completion controls`);
+  }
   for (const required of [
     "recordContinuation",
     "outcome: \"continued\"",
     "outcome: \"riddle\"",
+    "outcome: \"rejected\"",
     "replaceBattlePanels",
     "restartBattleRuntime",
     "handleRiddle",
