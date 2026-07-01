@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src", "battle");
 const owner = path.normalize("src/battle/battle-target-command.js");
 const ownerTest = path.normalize("src/battle/battle-target-command.test.js");
+const liveTargetTest = path.normalize("src/battle/battle-target-command-live-target.test.js");
 const violations = [];
 
 function rel(file) {
@@ -58,6 +59,7 @@ requireText(owner, [
   "TRY_SKILL_THEN_TARGET",
   "#mkey_",
   "runBattleCommandEvidence",
+  "readLiveTarget",
   "targetMissing",
   "targetDead",
   "skillCommandRejected",
@@ -66,10 +68,24 @@ requireText(owner, [
   "event?.type",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const clickTargetBody =
+  ownerText.match(/function clickTarget\(targetId\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!clickTargetBody.includes("readLiveTarget(targetId)")) {
+  violations.push(`${owner.replaceAll("\\", "/")} direct target clicks must use live-target ruling`);
+}
+if (/gE\(targetSelector\(targetId\)\)/.test(clickTargetBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} direct target clicks must not bypass live-target ruling`);
+}
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
-requireText(ownerTest, ["records missing target command events as not acted"]);
+requireText(ownerTest, [
+  "records missing target command events as not acted",
+]);
+requireText(liveTargetTest, [
+  "rejects direct target clicks when the target is dead",
+  "targetDead",
+]);
 requireText("src/battle/battle-action-effect-dispatch.js", [
   "BattleTargetCommandEvent.CLICK_SKILL_THEN_TARGET",
   "runBattleTargetCommand",

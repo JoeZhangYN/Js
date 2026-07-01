@@ -37,9 +37,9 @@ function readLiveTarget(targetId) {
 }
 
 function clickTarget(targetId) {
-  const targetEl = gE(targetSelector(targetId));
+  const { targetEl, reason } = readLiveTarget(targetId);
   if (!targetEl) {
-    recordCommandResult("target.click", "rejected", "targetMissing", { targetId });
+    recordCommandResult("target.click", "rejected", reason, { targetId });
     return false;
   }
   targetEl.click();

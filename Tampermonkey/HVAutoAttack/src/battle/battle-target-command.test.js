@@ -19,7 +19,7 @@ beforeEach(() => {
 
 describe("runBattleTargetCommand", () => {
   it("clicks a target by battle slot id", () => {
-    const target = { click: vi.fn() };
+    const target = { click: vi.fn(), querySelector: vi.fn(() => null) };
     mocks.gE.mockReturnValue(target);
 
     expect(
@@ -86,7 +86,7 @@ describe("runBattleTargetCommand", () => {
 
   it("tries skill if ready, runs hook, then clicks target", () => {
     const calls = [];
-    const target = { click: vi.fn(() => calls.push("target")) };
+    const target = { click: vi.fn(() => calls.push("target")), querySelector: vi.fn(() => null) };
     mocks.runBattleSkillCommand.mockImplementation((event) => {
       calls.push("skill");
       event.afterClick();
@@ -110,7 +110,7 @@ describe("runBattleTargetCommand", () => {
   });
 
   it("can require skill readiness before clicking the target", () => {
-    const target = { click: vi.fn() };
+    const target = { click: vi.fn(), querySelector: vi.fn(() => null) };
     mocks.runBattleSkillCommand.mockReturnValue(false);
     mocks.gE.mockImplementation((selector) => (selector === "#mkey_3" ? target : null));
 
