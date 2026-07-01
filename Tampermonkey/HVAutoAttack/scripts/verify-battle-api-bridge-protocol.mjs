@@ -6,6 +6,7 @@ const owner = path.normalize("src/battle/battle-api-bridge.js");
 const ownerTest = path.normalize("src/battle/battle-api-bridge.test.js");
 const ownerRejectionTest = path.normalize("src/battle/battle-api-bridge-rejection.test.js");
 const runtimeTest = path.normalize("src/battle/battle-api-bridge-runtime.test.js");
+const apiCallScript = path.normalize("src/battle/battle-api-call-script.js");
 const responseScript = path.normalize("src/battle/battle-api-response-script.js");
 const responseScriptTest = path.normalize("src/battle/battle-api-response-script.test.js");
 const responseScriptMalformedJsonTest = path.normalize(
@@ -56,10 +57,6 @@ const ownerText = requireText(owner, [
   "ACTION_END_EVENT_NODE_ID",
   "MAGIC_DELAY_SESSION_KEY",
   "ACTION_DELAY_SESSION_KEY",
-  "__HVAA_ACTION_START_EVENT_NODE_ID__",
-  "__HVAA_ACTION_END_EVENT_NODE_ID__",
-  "__HVAA_MAGIC_DELAY_SESSION_KEY__",
-  "__HVAA_ACTION_DELAY_SESSION_KEY__",
   "BattleApiBridgeEvent",
   "battleApiBridgeEventHandlers",
   "runBattleApiBridgeAutomation",
@@ -68,21 +65,39 @@ const ownerText = requireText(owner, [
   "BattleApiResponseRecoveryEvent.INSTALL_BRIDGE",
   "BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT",
   "runBattleApiResponseRecovery",
+  "buildApiCallScript",
+  "worldContext.apiJsonUrl",
+]);
+const apiCallScriptText = requireText(apiCallScript, [
+  "buildApiCallScript",
+  "__HVAA_ACTION_START_EVENT_NODE_ID__",
+  "__HVAA_ACTION_END_EVENT_NODE_ID__",
+  "__HVAA_MAGIC_DELAY_SESSION_KEY__",
+  "__HVAA_ACTION_DELAY_SESSION_KEY__",
+  "typeof MAIN_URL",
+  "battle_continue",
+  "window.HVAA_navigation",
+  "BATTLE_API_CALLBACK_FALLBACK",
+  "missingBattleContinue",
+  "clickActionEventNode",
+  "recordApiBridgeEventNode",
+  "apiBridgeEvidenceKey",
+  "eventNodeMissing",
+  "eventNodeClickFailed",
+  "DiagnosticEvidenceKey.BATTLE_API_BRIDGE",
+]);
+requireText(owner, [
   "buildApiResponseScript",
   "BattleApiWorldContextEvent.READ_CURRENT",
   "runBattleApiWorldContext",
   "readBattleApiWorldContext",
   "apiRecoveryBridgeInstallFailed",
   "rejectApiRecoveryBridgeInstallFailed",
-  "typeof MAIN_URL",
-  "battle_continue",
-  "window.HVAA_navigation",
-  "BATTLE_API_CALLBACK_FALLBACK",
-  "missingBattleContinue",
 ]);
 requireText(ownerTest, [
-  'document.getElementById("eventStart").click()',
-  'document.getElementById("eventEnd").click()',
+  'clickActionEventNode("start", "eventStart")',
+  'clickActionEventNode("end", "eventEnd")',
+  "HVAA:lastBattleApiBridge",
   "window.battle.battle_continue",
   "binds native process_action callbacks to the active battle instance",
   "does not navigate directly from generated API response handling",
@@ -117,6 +132,10 @@ requireText(runtimeTest, [
   "battle_continue-capable target",
   "non-capable window.battle object",
   "blocks fallback callback reload when the navigation bridge is missing",
+  "records missing action start event nodes and blocks API send",
+  "records action end event node click failures",
+  "eventNodeMissing",
+  "eventNodeClickFailed",
   "battleApiCallbackFallback",
   "missingBattleContinue",
   "window.MAIN_URL",
@@ -146,6 +165,8 @@ const responseScriptText = requireText(responseScript, [
 requireText(diagnosticEvidenceKeys, [
   "DIAGNOSTIC_EVIDENCE_SOURCES",
   "API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES",
+  "BATTLE_API_BRIDGE",
+  "battleApiBridge",
   "battleActionDelay",
   "DiagnosticEvidenceKey.BATTLE_ACTION_DELAY",
   "battleActionSpeed",
@@ -359,32 +380,32 @@ if (apiBridgeRejectionBody.includes("runBattleApiResponseRecovery(event ?? null)
     `${owner.replaceAll("\\", "/")} must not misclassify bridge rejection as recovery rejection`
   );
 }
-if (/document\.getElementById\(["']event(Start|End)["']\)/.test(ownerText)) {
+if (/document\.getElementById\(["']event(Start|End)["']\)/.test(ownerText + apiCallScriptText)) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} must generate event node ids through protocol constants`
+    `${apiCallScript.replaceAll("\\", "/")} must generate event node ids through protocol constants`
   );
 }
-if (/window\.sessionStorage\.(delay|delay2)\b/.test(ownerText)) {
+if (/window\.sessionStorage\.(delay|delay2)\b/.test(ownerText + apiCallScriptText)) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} must generate delay keys through protocol constants`
+    `${apiCallScript.replaceAll("\\", "/")} must generate delay keys through protocol constants`
   );
 }
 if (
-  !ownerText.includes("window.battle.battle_continue") ||
-  !ownerText.includes("window.HVAA_navigation") ||
-  !ownerText.includes("BATTLE_API_CALLBACK_FALLBACK")
+  !apiCallScriptText.includes("window.battle.battle_continue") ||
+  !apiCallScriptText.includes("window.HVAA_navigation") ||
+  !apiCallScriptText.includes("BATTLE_API_CALLBACK_FALLBACK")
 ) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} must bind native process_action callbacks to a battle_continue-capable target and route fallback reloads through the navigation bridge`
+    `${apiCallScript.replaceAll("\\", "/")} must bind native process_action callbacks to a battle_continue-capable target and route fallback reloads through the navigation bridge`
   );
 }
-if (/document\.location\s*(?:\+=|=)/.test(ownerText + read(ownerTest) + read(runtimeTest))) {
+if (/document\.location\s*(?:\+=|=)/.test(ownerText + apiCallScriptText + read(ownerTest) + read(runtimeTest))) {
   violations.push(`${owner.replaceAll("\\", "/")} must not use document.location fallback reloads`);
 }
 if (/from\s+["']\.\.\/env\.js["']|isIsekai|ISEKAI_URL|BATTLE_API_BASE_URL/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must consume typed battle API world context`);
 }
-if (!ownerText.includes("worldContext.apiJsonUrl") || !ownerText.includes("typeof MAIN_URL")) {
+if (!ownerText.includes("worldContext.apiJsonUrl") || !apiCallScriptText.includes("typeof MAIN_URL")) {
   violations.push(`${owner.replaceAll("\\", "/")} must use typed API JSON URL from world context`);
 }
 if (!responseScriptText.includes("world: worldContext")) {
@@ -407,7 +428,7 @@ if (/b\.onreadystatechange\s*=\s*d\b/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not install bare process_action callbacks`);
 }
 if (
-  /window\.location|location\.href|window\.location\.search/.test(ownerText + responseScriptText)
+  /window\.location|location\.href|window\.location\.search/.test(ownerText + apiCallScriptText + responseScriptText)
 ) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not navigate directly from API response handling`

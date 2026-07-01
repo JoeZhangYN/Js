@@ -67,8 +67,9 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay2 * 1");
     expectContains(deps.scripts[0].textContent, ["window.battle.battle_continue", "window.HVAA_navigation", "BATTLE_API_CALLBACK_FALLBACK", "missingBattleContinue"]);
     expect(deps.scripts[0].textContent).not.toContain("document.location");
-    expect(deps.scripts[0].textContent).toContain('document.getElementById("eventStart").click()');
-    expect(deps.scripts[0].textContent).toContain('document.getElementById("eventEnd").click()');
+    expect(deps.scripts[0].textContent).toContain('clickActionEventNode("start", "eventStart")');
+    expect(deps.scripts[0].textContent).toContain('clickActionEventNode("end", "eventEnd")');
+    expect(deps.scripts[0].textContent).toContain("HVAA:lastBattleApiBridge");
     expect(deps.scripts[1].textContent).toContain("api_response =");
     expect(deps.scripts[1].textContent).toContain("parseApiJsonResponse");
     expect(deps.scripts[1].textContent).toContain('responseKind: "malformedJson"');
@@ -96,10 +97,10 @@ describe("runBattleApiBridgeAutomation", () => {
     runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }, deps);
 
     const script = deps.scripts[0].textContent;
-    expect(script.indexOf('document.getElementById("eventStart").click()')).toBeLessThan(
+    expect(script.indexOf('clickActionEventNode("start", "eventStart")')).toBeLessThan(
       script.indexOf("b.send(JSON.stringify(a))")
     );
-    expect(script.indexOf('document.getElementById("eventEnd").click()')).toBeGreaterThan(
+    expect(script.indexOf('clickActionEventNode("end", "eventEnd")')).toBeGreaterThan(
       script.indexOf("b.onload = function")
     );
   });

@@ -116,4 +116,40 @@ describe("battle API bridge runtime protocol", () => {
 
     expect(xhr.open).toHaveBeenCalledWith("POST", "https://hentaiverse.org/isekai/json");
   });
+
+  it("records missing action start event nodes and blocks API send", () => {
+    installApiCall();
+    document.getElementById("eventStart").remove();
+    const xhr = { open: vi.fn(), setRequestHeader: vi.fn(), send: vi.fn() };
+
+    expect(window.__testApiCall(xhr, { type: "battle", method: "action" }, vi.fn())).toBe(false);
+
+    expect(xhr.send).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleApiBridge"))).toMatchObject({
+      phase: "start",
+      nodeId: "eventStart",
+      result: "rejected",
+      reason: "eventNodeMissing",
+      detail: { reason: "eventNodeMissing" },
+    });
+  });
+
+  it("records action end event node click failures", () => {
+    installApiCall();
+    document.getElementById("eventEnd").click = vi.fn(() => {
+      throw new Error("blocked");
+    });
+    const xhr = { open: vi.fn(), setRequestHeader: vi.fn(), send: vi.fn() };
+
+    window.__testApiCall(xhr, { type: "battle", method: "action" }, vi.fn());
+    xhr.onload();
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleApiBridge"))).toMatchObject({
+      phase: "end",
+      nodeId: "eventEnd",
+      result: "rejected",
+      reason: "eventNodeClickFailed",
+      detail: { reason: "eventNodeClickFailed", error: "blocked" },
+    });
+  });
 });

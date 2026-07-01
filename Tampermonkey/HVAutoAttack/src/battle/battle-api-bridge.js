@@ -5,6 +5,7 @@ import {
   BattleApiResponseRecoveryEvent,
   runBattleApiResponseRecovery,
 } from "./battle-api-response-recovery.js";
+import { buildApiCallScript } from "./battle-api-call-script.js";
 import { buildApiResponseScript } from "./battle-api-response-script.js";
 import { BattleApiWorldContextEvent, runBattleApiWorldContext } from "./battle-api-world-context.js";
 
@@ -39,67 +40,6 @@ function rejectApiRecoveryBridgeInstallFailed(deps) {
       detail: { eventType: EVENT_INSTALL, reason: REASON_API_RECOVERY_INSTALL_FAILED },
     })
   );
-}
-
-function buildApiCallScript(apiJsonUrl, protocol) {
-  return `api_call = ${function (b, a, d) {
-    const delay = window.sessionStorage.__HVAA_MAGIC_DELAY_SESSION_KEY__ * 1;
-    const delay2 = window.sessionStorage.__HVAA_ACTION_DELAY_SESSION_KEY__ * 1;
-    const apiJsonUrl = typeof MAIN_URL !== "undefined" ? MAIN_URL + "json" : "__HVAA_MAIN_JSON_URL__";
-    window.info = a;
-    b.open("POST", apiJsonUrl);
-    b.setRequestHeader("Content-Type", "application/json");
-    b.withCredentials = true;
-    b.onreadystatechange = function () {
-      const callbackTarget =
-        window.battle && typeof window.battle.battle_continue === "function"
-          ? window.battle
-          : {
-              battle_continue: function () {
-                const navigation = window.HVAA_navigation;
-                if (navigation && navigation.reloadCurrentPage && navigation.ReloadReason) {
-                  return navigation.reloadCurrentPage(
-                    navigation.ReloadReason.BATTLE_API_CALLBACK_FALLBACK,
-                    { source: "battleApiBridge", reason: "missingBattleContinue" }
-                  );
-                }
-                console.warn("[HVAA] battle API callback fallback reload blocked; navigation bridge missing");
-                return false;
-              },
-            };
-      return d.apply(callbackTarget, arguments);
-    };
-    b.onload = function () {
-      document.getElementById("__HVAA_ACTION_END_EVENT_NODE_ID__").click();
-    };
-    document.getElementById("__HVAA_ACTION_START_EVENT_NODE_ID__").click();
-    if (a.mode === "magic" && a.skill >= 200) {
-      if (delay <= 0) {
-        b.send(JSON.stringify(a));
-      } else {
-        setTimeout(
-          () => {
-            b.send(JSON.stringify(a));
-          },
-          (delay * (Math.random() * 50 + 50)) / 100
-        );
-      }
-    } else if (delay2 <= 0) {
-      b.send(JSON.stringify(a));
-    } else {
-      setTimeout(
-        () => {
-          b.send(JSON.stringify(a));
-        },
-        (delay2 * (Math.random() * 50 + 50)) / 100
-      );
-    }
-  }.toString()}`
-    .replaceAll("__HVAA_MAIN_JSON_URL__", apiJsonUrl)
-    .replaceAll("__HVAA_ACTION_START_EVENT_NODE_ID__", protocol.actionStartEventNodeId)
-    .replaceAll("__HVAA_ACTION_END_EVENT_NODE_ID__", protocol.actionEndEventNodeId)
-    .replaceAll("__HVAA_MAGIC_DELAY_SESSION_KEY__", protocol.magicDelaySessionKey)
-    .replaceAll("__HVAA_ACTION_DELAY_SESSION_KEY__", protocol.actionDelaySessionKey);
 }
 
 function readApiBridgeDelayOption(deps) {
