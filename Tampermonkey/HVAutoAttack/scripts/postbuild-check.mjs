@@ -13,6 +13,10 @@ try {
 }
 
 const errors = [];
+const lotteryLoaderBody =
+  src.match(/_bottom\.load_lottery = async function\(ss\) \{[\s\S]*?\n            \};/)?.[0] || "";
+const lotteryFilterBody =
+  src.match(/_bottom\.evaluate_lottery_filter = function\(ss, equip\) \{[\s\S]*?\n            \};/)?.[0] || "";
 
 // 1. UserScript metadata block 配对
 if (!src.includes("// ==UserScript==")) errors.push("missing `// ==UserScript==`");
@@ -55,7 +59,8 @@ for (const g of ["GM_setValue", "GM_getValue", "GM_deleteValue", "GM_notificatio
 for (const required of [
   "_bottom.evaluate_lottery_filter = function(ss, equip)",
   "const failClosed =",
-  "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
+  "const result = $equip.filter.match($config.settings.lotteryFilters, equip)",
+  "filterErrors.push(...result.errors)",
   "filter: \"<lotteryFilters>\"",
   "matched: false",
   "const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip)",
@@ -66,10 +71,14 @@ for (const required of [
 for (const forbidden of [
   "lottery.check = $equip.filter.equip",
   "$equip.filter.equip($config.settings.lotteryFilters, equip)",
+  "$equip.filter.test(filter, null, equip)",
+  "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
   "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",
   "Array.isArray($config.settings.lotteryFilters)?$config.settings.lotteryFilters:[$config.settings.lotteryFilters]",
 ]) {
-  if (src.includes(forbidden)) errors.push(`lottery artifact uses old filter path: ${forbidden}`);
+  if (lotteryLoaderBody.includes(forbidden) || lotteryFilterBody.includes(forbidden)) {
+    errors.push(`lottery artifact uses old filter path: ${forbidden}`);
+  }
 }
 
 if (errors.length > 0) {

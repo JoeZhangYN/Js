@@ -2679,16 +2679,20 @@ const bindEquip = function (equip, ctx) {
       'crude': 1, 'fair': 2, 'average': 3, 'superior': 4, 'exquisite': 5, 'magnificent': 6, 'legendary': 7, 'peerless': 8,
     },
     equip: function (filters, equip) {
-      filters = $equip.filter.normalize(filters);
-      if (!filters.length) {
-        return false;
+      const result = $equip.filter.match(filters, equip);
+      if (result.errors.length) {
+        console.warn('[HVUT] equipment filter failed', { equip: result.name, errors: result.errors });
       }
+      return result.matched;
+    },
+    match: function (filters, equip) {
+      filters = $equip.filter.normalize(filters);
       let name;
       if (typeof equip === 'string') {
         name = equip;
         equip = null;
       } else {
-        name = equip.info.name;
+        name = equip?.info?.name ?? '';
       }
       const errors = [];
       const matched = filters.some((filter) => {
@@ -2699,10 +2703,7 @@ const bindEquip = function (equip, ctx) {
           return false;
         }
       });
-      if (errors.length) {
-        console.warn('[HVUT] equipment filter failed', { equip: name, errors });
-      }
-      return matched;
+      return { matched, errors, name };
     },
     normalize: function (filters) {
       const rawFilters = Array.isArray(filters) ? filters : [filters];
@@ -10734,15 +10735,9 @@ if ($config.settings.lotteryNotification) {
     };
     const filterErrors = [];
     try {
-      const filters = $equip.filter.normalize($config.settings.lotteryFilters);
-      const matched = filters.some((filter) => {
-        try {
-          return $equip.filter.test(filter, null, equip);
-        } catch (error) {
-          filterErrors.push({ filter, error: error?.message || String(error) });
-          return false;
-        }
-      });
+      const result = $equip.filter.match($config.settings.lotteryFilters, equip);
+      const matched = result.matched;
+      filterErrors.push(...result.errors);
       if (filterErrors.length) return failClosed(filterErrors);
       return {
         matched,

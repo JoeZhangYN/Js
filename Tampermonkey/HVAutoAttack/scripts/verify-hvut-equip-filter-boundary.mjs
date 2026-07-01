@@ -7,7 +7,9 @@ const text = fs.readFileSync(target, "utf8");
 const violations = [];
 
 const equipBody =
-  text.match(/equip: function \(filters, equip\) \{[\s\S]*?\n    \},\n    test:/)?.[0] || "";
+  text.match(/equip: function \(filters, equip\) \{[\s\S]*?\n    \},\n    match:/)?.[0] || "";
+const matchBody =
+  text.match(/match: function \(filters, equip\) \{[\s\S]*?\n    \},\n    normalize:/)?.[0] || "";
 const normalizeBody =
   text.match(/normalize: function \(filters\) \{[\s\S]*?\n    \},\n    test:/)?.[0] || "";
 const validateBody =
@@ -15,6 +17,9 @@ const validateBody =
 
 if (!equipBody) {
   violations.push("equipment filter match entry must stay explicit");
+}
+if (!matchBody) {
+  violations.push("equipment filter structured match result must stay explicit");
 }
 if (!validateBody) {
   violations.push("equipment filter validation entry must stay explicit");
@@ -24,19 +29,29 @@ if (!normalizeBody) {
 }
 
 for (const required of [
+  "const result = $equip.filter.match(filters, equip)",
+  "console.warn('[HVUT] equipment filter failed'",
+  "errors: result.errors",
+  "return result.matched",
+]) {
+  if (!equipBody.includes(required)) {
+    violations.push(`equipment filter match entry must include ${required}`);
+  }
+}
+
+for (const required of [
   "filters = $equip.filter.normalize(filters)",
-  "if (!filters.length)",
+  "name = equip?.info?.name ?? ''",
   "const errors = []",
   "filters.some((filter) =>",
   "try {",
   "return $equip.filter.test(filter, equip, name)",
   "errors.push({ filter, error: error?.message || String(error) })",
   "return false",
-  "console.warn('[HVUT] equipment filter failed'",
-  "return matched",
+  "return { matched, errors, name }",
 ]) {
-  if (!equipBody.includes(required)) {
-    violations.push(`equipment filter match entry must include ${required}`);
+  if (!matchBody.includes(required)) {
+    violations.push(`equipment filter structured match result must include ${required}`);
   }
 }
 
@@ -66,7 +81,7 @@ for (const forbidden of [
   "return filters.some((f) => $equip.filter.test(f, equip, name))",
   "return filters.some((filter) => $equip.filter.test(filter, equip, name))",
 ]) {
-  if (equipBody.includes(forbidden)) {
+  if (equipBody.includes(forbidden) || matchBody.includes(forbidden)) {
     violations.push(`equipment filter match entry must not throw from first invalid filter: ${forbidden}`);
   }
 }

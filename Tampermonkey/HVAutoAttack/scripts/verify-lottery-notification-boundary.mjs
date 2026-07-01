@@ -4,8 +4,6 @@ import path from "node:path";
 const root = process.cwd();
 const target = path.join(root, "src/i18n/hv-utils.js");
 const text = fs.readFileSync(target, "utf8");
-const distTarget = path.join(root, "dist/HVAutoAttack.user.js");
-const distText = fs.existsSync(distTarget) ? fs.readFileSync(distTarget, "utf8") : "";
 const violations = [];
 
 function rel(file) {
@@ -16,12 +14,6 @@ const body =
   text.match(/_bottom\.load_lottery = async function \(ss\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const filterBody =
   text.match(/_bottom\.evaluate_lottery_filter = function \(ss, equip\) \{[\s\S]*?\n  \};/)?.[0] || "";
-const distLoaderBody =
-  distText.match(/_bottom\.load_lottery = async function\(ss\) \{[\s\S]*?\n            \};/)?.[0] ||
-  "";
-const distFilterBody =
-  distText.match(/_bottom\.evaluate_lottery_filter = function\(ss, equip\) \{[\s\S]*?\n            \};/)?.[0] ||
-  "";
 
 if (!body) {
   violations.push("lottery notification loader must stay explicit");
@@ -49,11 +41,10 @@ for (const required of [
 
 for (const required of [
   "const failClosed = (filterErrors) =>",
-  "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
   "const filterErrors = []",
-  "filters.some((filter) =>",
-  "$equip.filter.test(filter, null, equip)",
-  "filterErrors.push({ filter, error: error?.message || String(error) })",
+  "const result = $equip.filter.match($config.settings.lotteryFilters, equip)",
+  "const matched = result.matched",
+  "filterErrors.push(...result.errors)",
   "return failClosed(filterErrors)",
   "filter: '<lotteryFilters>'",
   "console.warn('[HVUT] lottery notification filter failed'",
@@ -74,39 +65,13 @@ for (const forbidden of [
   ".exec($qs('img[src*=\"lottery_prev_a.png\"]', doc)?.getAttribute('onclick'))[1]",
   "lottery.check = $equip.filter.equip",
   "$equip.filter.equip($config.settings.lotteryFilters, equip)",
+  "$equip.filter.test(filter, null, equip)",
+  "filters.some((filter) =>",
+  "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
   "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",
 ]) {
   if (body.includes(forbidden) || filterBody.includes(forbidden)) {
     violations.push(`${rel(target)} lottery filter boundary must not use brittle parser path: ${forbidden}`);
-  }
-}
-
-if (distText) {
-  for (const required of [
-    "_bottom.evaluate_lottery_filter = function(ss, equip)",
-    "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
-    "const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip)",
-    "lottery.filterError = filterResult.error",
-  ]) {
-    if (!distText.includes(required)) {
-      violations.push(`${rel(distTarget)} installed artifact must include ${required}`);
-    }
-  }
-  if (!distLoaderBody) {
-    violations.push(`${rel(distTarget)} lottery loader artifact must stay explicit`);
-  }
-  if (!distFilterBody) {
-    violations.push(`${rel(distTarget)} lottery filter artifact must stay explicit`);
-  }
-  for (const forbidden of [
-    "lottery.check = $equip.filter.equip",
-    "$equip.filter.equip($config.settings.lotteryFilters, equip)",
-    "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",
-    "Array.isArray($config.settings.lotteryFilters)?$config.settings.lotteryFilters:[$config.settings.lotteryFilters]",
-  ]) {
-    if (distLoaderBody.includes(forbidden) || distFilterBody.includes(forbidden)) {
-      violations.push(`${rel(distTarget)} lottery artifact must not use old filter path: ${forbidden}`);
-    }
   }
 }
 
