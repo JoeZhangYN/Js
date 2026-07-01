@@ -16,6 +16,7 @@ function makeDeps({ hasCompletion = false, outcome = "ongoing" } = {}) {
     completeBattle: vi.fn(() => ({ outcome })),
     continueNextRound: vi.fn(),
     runTurn: vi.fn(),
+    recordLifecycle: vi.fn(),
   };
   return { deps };
 }
@@ -30,6 +31,7 @@ describe("runBattleActionLifecycleAutomation", () => {
 
     expect(deps.startDelay).toHaveBeenCalledTimes(1);
     expect(deps.monitorActionStarted).toHaveBeenCalledTimes(1);
+    expect(deps.recordLifecycle).toHaveBeenCalledWith("actionStarted", true);
     expect(deps.startDelay.mock.invocationCallOrder[0]).toBeLessThan(
       deps.monitorActionStarted.mock.invocationCallOrder[0]
     );
@@ -50,6 +52,10 @@ describe("runBattleActionLifecycleAutomation", () => {
     expect(deps.isCompletionReached).toHaveBeenCalledTimes(1);
     expect(deps.runTurn).toHaveBeenCalledTimes(1);
     expect(deps.completeBattle).not.toHaveBeenCalled();
+    expect(deps.recordLifecycle).toHaveBeenCalledWith("actionEnded", {
+      outcome: "ongoing",
+      continued: "turn",
+    });
   });
 
   it("continues the next round through the next-round entry", () => {
@@ -66,6 +72,10 @@ describe("runBattleActionLifecycleAutomation", () => {
     expect(deps.isCompletionReached).toHaveBeenCalledTimes(1);
     expect(deps.completeBattle).toHaveBeenCalledTimes(1);
     expect(deps.runTurn).not.toHaveBeenCalled();
+    expect(deps.recordLifecycle).toHaveBeenCalledWith("actionEnded", {
+      outcome: "nextRound",
+      continued: "nextRound",
+    });
   });
 
   it("rejects unknown events", () => {
@@ -81,5 +91,6 @@ describe("runBattleActionLifecycleAutomation", () => {
     expect(deps.completeBattle).not.toHaveBeenCalled();
     expect(deps.continueNextRound).not.toHaveBeenCalled();
     expect(deps.runTurn).not.toHaveBeenCalled();
+    expect(deps.recordLifecycle).not.toHaveBeenCalled();
   });
 });

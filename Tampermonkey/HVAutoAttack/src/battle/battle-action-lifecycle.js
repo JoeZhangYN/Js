@@ -14,6 +14,10 @@ import {
   BattleNextRoundContinuationEvent,
   runBattleNextRoundContinuation,
 } from "./battle-next-round-continuation.js";
+import {
+  BattleActionLifecycleEvidenceEvent,
+  runBattleActionLifecycleEvidence,
+} from "./battle-action-lifecycle-evidence.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
@@ -28,6 +32,7 @@ export const BattleActionLifecycleEvent = Object.freeze({
 function runActionStarted(deps) {
   deps.startDelay();
   deps.monitorActionStarted();
+  deps.recordLifecycle(EVENT_ACTION_STARTED, true);
   return true;
 }
 
@@ -45,9 +50,15 @@ function runActionEnded(deps) {
   deps.endDelay();
   deps.refreshCombatants();
   deps.monitorActionEnded();
-  if (deps.isCompletionReached()) return handleCompletion(deps);
+  if (deps.isCompletionReached()) {
+    const result = handleCompletion(deps);
+    deps.recordLifecycle(EVENT_ACTION_ENDED, result);
+    return result;
+  }
   deps.runTurn();
-  return { outcome: OUTCOME_ONGOING, continued: "turn" };
+  const result = { outcome: OUTCOME_ONGOING, continued: "turn" };
+  deps.recordLifecycle(EVENT_ACTION_ENDED, result);
+  return result;
 }
 
 const battleActionLifecycleEventHandlers = Object.freeze({
@@ -75,6 +86,12 @@ export function runBattleActionLifecycleAutomation(
     continueNextRound: () =>
       runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }),
     runTurn: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
+    recordLifecycle: (phase, result) =>
+      runBattleActionLifecycleEvidence({
+        type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
+        phase,
+        result,
+      }),
   }
 ) {
   return battleActionLifecycleEventHandlers[event.type]?.(deps) ?? false;

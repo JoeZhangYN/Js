@@ -16,6 +16,14 @@ const actionSpeedFile = path.join(root, "src/battle/battle-action-speed.js");
 const actionSpeedTest = path.join(root, "src/battle/battle-action-speed.test.js");
 const actionLifecycleFile = path.join(root, "src/battle/battle-action-lifecycle.js");
 const actionLifecycleTest = path.join(root, "src/battle/battle-action-lifecycle.test.js");
+const actionLifecycleEvidenceFile = path.join(
+  root,
+  "src/battle/battle-action-lifecycle-evidence.js"
+);
+const actionLifecycleEvidenceTestFile = path.join(
+  root,
+  "src/battle/battle-action-lifecycle-evidence.test.js"
+);
 const legacyActionEndFile = path.join(root, "src/battle/battle-action-end.js");
 const legacyActionStartFile = path.join(root, "src/battle/battle-action-start.js");
 const pauseControlsFile = path.join(root, "src/battle/battle-pause-controls.js");
@@ -1033,6 +1041,10 @@ function checkActionLifecycleEntry() {
     "BattleNextRoundContinuationEvent.CONTINUE",
     "runBattleNextRoundContinuation",
     "runBattleTurnAutomation",
+    "BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE",
+    "runBattleActionLifecycleEvidence",
+    "recordLifecycle(EVENT_ACTION_STARTED, true)",
+    "recordLifecycle(EVENT_ACTION_ENDED, result)",
   ]) {
     if (!text.includes(required)) {
       violations.push(
@@ -1052,6 +1064,30 @@ function checkActionLifecycleEntry() {
   }
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(actionLifecycleFile)} entry must dispatch by handler table`);
+  }
+  const evidenceText = fs.readFileSync(actionLifecycleEvidenceFile, "utf8");
+  for (const required of [
+    "BattleActionLifecycleEvidenceEvent",
+    "RECORD_LIFECYCLE",
+    "runBattleActionLifecycleEvidence",
+    "DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE",
+    "ACTION_LIFECYCLE_EVIDENCE_KEY",
+    "[HVAA] battle action lifecycle",
+  ]) {
+    if (!evidenceText.includes(required)) {
+      violations.push(`${rel(actionLifecycleEvidenceFile)} must own lifecycle evidence ${required}`);
+    }
+  }
+  const evidenceTestText = fs.existsSync(actionLifecycleEvidenceTestFile)
+    ? fs.readFileSync(actionLifecycleEvidenceTestFile, "utf8")
+    : "";
+  for (const required of [
+    "records action lifecycle phase and result for diagnostics",
+    "rejects unknown lifecycle evidence events",
+  ]) {
+    if (!evidenceTestText.includes(required)) {
+      violations.push(`${rel(actionLifecycleEvidenceTestFile)} must cover ${required}`);
+    }
   }
   if (/BattleMonitorEvent\.COMPLETION_REACHED/.test(text)) {
     violations.push(
