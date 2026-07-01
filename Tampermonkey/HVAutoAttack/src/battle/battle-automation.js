@@ -69,5 +69,5 @@ const battleEventHandlers = Object.freeze({
 });
 
 export function runBattleAutomation(event = { type: EVENT_PAGE_READY }) {
-  return battleEventHandlers[event.type]?.(event);
+  return battleEventHandlers[event?.type]?.(event);
 }

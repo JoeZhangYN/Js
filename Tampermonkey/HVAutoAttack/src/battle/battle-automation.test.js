@@ -65,4 +65,13 @@ describe("runBattleAutomation", () => {
     expect(runBattleAutomation({ type: "unknown" })).toBeUndefined();
     expect(mocks.runBattleActionEventBridgeAutomation).not.toHaveBeenCalled();
   });
+
+  it("ignores null events without starting battle page capabilities", () => {
+    expect(runBattleAutomation(null)).toBeUndefined();
+    expect(mocks.runBattlePauseControlsAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleActionEventBridgeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleRoundStartAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleLifecycleAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleTurnAutomation).not.toHaveBeenCalled();
+  });
 });

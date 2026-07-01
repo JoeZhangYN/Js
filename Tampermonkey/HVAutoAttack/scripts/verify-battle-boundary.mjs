@@ -263,6 +263,9 @@ function checkBattleEntry() {
   if (!/const battleEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PAGE_READY\]: runPageReadyStartup/.test(text)) {
     violations.push(`${rel(battleFile)} must route battle events through battleEventHandlers`);
   }
+  if (!text.includes("battleEventHandlers[event?.type]")) {
+    violations.push(`${rel(battleFile)} must reject null battle page events without startup side effects`);
+  }
   const entryBody =
     text.match(/export function runBattleAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
     "";
@@ -298,6 +301,10 @@ function checkBattleEntry() {
   }
   if (/runBattleAutomation\(\s*\)/.test(pageText)) {
     violations.push("src/pages/page-automation.js must not call no-arg battle entry");
+  }
+  const battleTestText = fs.readFileSync(path.join(root, "src/battle/battle-automation.test.js"), "utf8");
+  if (!battleTestText.includes("ignores null events without starting battle page capabilities")) {
+    violations.push("src/battle/battle-automation.test.js must cover null battle page events");
   }
 }
 
