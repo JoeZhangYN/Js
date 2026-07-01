@@ -117,5 +117,5 @@ function executeDefaultPlan(plan) {
 }
 
 export function runBattleAttackExecution(event = { type: EVENT_APPLY_PLAN }) {
-  return battleAttackExecutionEventHandlers[event.type]?.(event) ?? false;
+  return battleAttackExecutionEventHandlers[event?.type]?.(event) ?? false;
 }

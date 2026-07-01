@@ -41,4 +41,10 @@ describe("runBattleChannelExecution", () => {
 
     expect(mocks.runBattleSkillCommand).not.toHaveBeenCalled();
   });
+
+  it("rejects null channel execution events as not acted", () => {
+    expect(runBattleChannelExecution(null)).toBe(false);
+
+    expect(mocks.runBattleSkillCommand).not.toHaveBeenCalled();
+  });
 });

@@ -163,8 +163,9 @@ describe("runBattleItemExecution", () => {
     });
   });
 
-  it("rejects unknown item execution events", () => {
+  it("rejects unknown item execution events and rejects null item execution events as not acted", () => {
     expect(runBattleItemExecution({ type: "unknown" })).toBe(false);
+    expect(runBattleItemExecution(null)).toBe(false);
 
     expect(mocks.runAutoTuneAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleFocusCommand).not.toHaveBeenCalled();

@@ -122,5 +122,5 @@ function recordPreDrink(potionId, snap) {
 }
 
 export function runBattleItemExecution(event = { type: EVENT_APPLY_PLAN }) {
-  return battleItemExecutionEventHandlers[event.type]?.(event) ?? false;
+  return battleItemExecutionEventHandlers[event?.type]?.(event) ?? false;
 }

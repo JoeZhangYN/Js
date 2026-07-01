@@ -33,5 +33,5 @@ function executeClickPlan(plan) {
 }
 
 export function runBattleChannelExecution(event = { type: EVENT_APPLY_PLAN }) {
-  return battleChannelExecutionEventHandlers[event.type]?.(event) ?? false;
+  return battleChannelExecutionEventHandlers[event?.type]?.(event) ?? false;
 }

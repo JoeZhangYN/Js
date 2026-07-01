@@ -58,6 +58,9 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (!ownerText.includes("battleItemExecutionEventHandlers[event?.type]")) {
+  violations.push(`${rel(owner)} must reject null execution events as not acted`);
+}
 for (const required of [
   "noop: executeNoopPlan",
   "gem: executeGemPlan",
@@ -83,6 +86,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("rejects unknown item execution events")) {
     violations.push(`${rel(ownerTest)} must cover unknown item execution events`);
+  }
+  if (!ownerTestText.includes("rejects null item execution events as not acted")) {
+    violations.push(`${rel(ownerTest)} must cover null item execution events`);
   }
   if (!ownerTestText.includes("does not claim gem use when the gem command cannot click")) {
     violations.push(`${rel(ownerTest)} must cover failed gem commands as not acted`);

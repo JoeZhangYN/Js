@@ -49,6 +49,9 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (!ownerText.includes("battleChannelExecutionEventHandlers[event?.type]")) {
+  violations.push(`${rel(owner)} must reject null execution events as not acted`);
+}
 const applyPlanBody =
   ownerText.match(/function applyChannelPlan\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (/plan\.type\s*===/.test(applyPlanBody)) {
@@ -60,6 +63,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("rejects unknown channel execution events")) {
     violations.push(`${rel(ownerTest)} must cover unknown channel execution events`);
+  }
+  if (!ownerTestText.includes("rejects null channel execution events as not acted")) {
+    violations.push(`${rel(ownerTest)} must cover null channel execution events`);
   }
   if (!ownerTestText.includes("returns the command result")) {
     violations.push(`${rel(ownerTest)} must cover channel command acted semantics`);

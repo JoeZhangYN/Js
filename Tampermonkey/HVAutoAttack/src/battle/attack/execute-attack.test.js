@@ -151,4 +151,13 @@ describe("runBattleAttackExecution", () => {
     expect(mocks.runPhysicalSkillBookkeeping).not.toHaveBeenCalled();
     expect(mocks.runBattleSpiritToggleAutomation).not.toHaveBeenCalled();
   });
+
+  it("rejects null attack execution events as not acted", () => {
+    expect(runBattleAttackExecution(null)).toBe(false);
+
+    expect(mocks.runBattleFocusCommand).not.toHaveBeenCalled();
+    expect(mocks.runBattleTargetCommand).not.toHaveBeenCalled();
+    expect(mocks.runPhysicalSkillBookkeeping).not.toHaveBeenCalled();
+    expect(mocks.runBattleSpiritToggleAutomation).not.toHaveBeenCalled();
+  });
 });

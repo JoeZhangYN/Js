@@ -59,6 +59,9 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (!ownerText.includes("battleAttackExecutionEventHandlers[event?.type]")) {
+  violations.push(`${rel(owner)} must reject null execution events as not acted`);
+}
 for (const required of [
   "noop: executeNoopPlan",
   "focus: executeFocusPlan",
@@ -82,6 +85,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("rejects unknown attack execution events")) {
     violations.push(`${rel(ownerTest)} must cover unknown attack execution events`);
+  }
+  if (!ownerTestText.includes("rejects null attack execution events as not acted")) {
+    violations.push(`${rel(ownerTest)} must cover null attack execution events`);
   }
   if (!ownerTestText.includes("does not claim spell, physical, or default attack plans")) {
     violations.push(`${rel(ownerTest)} must cover failed target commands as not acted`);
