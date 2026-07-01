@@ -9,6 +9,9 @@ const commandEvidenceTest = path.normalize(
 );
 const evidence = path.normalize("src/battle/battle-action-effect-evidence.js");
 const evidenceTest = path.normalize("src/battle/battle-action-effect-evidence.test.js");
+const planFailureTest = path.normalize(
+  "src/battle/battle-action-effect-plan-failure.test.js"
+);
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
 const legacyOwner = path.normalize("src/battle/dispatch.js");
 const legacyOwnerTest = path.normalize("src/battle/dispatch.test.js");
@@ -231,6 +234,22 @@ if (!fs.existsSync(path.join(root, evidenceTest))) {
   ]) {
     if (!evidenceTestText.includes(required)) {
       violations.push(`${rel(evidenceTest)} must cover ${required}`);
+    }
+  }
+}
+if (!fs.existsSync(path.join(root, planFailureTest))) {
+  violations.push(`${rel(planFailureTest)} must cover action effect plan failure evidence`);
+} else {
+  const planFailureTestText = read(planFailureTest);
+  for (const required of [
+    "classifies unknown attack, item, and channel plan types",
+    "unknownAttackPlanType",
+    "unknownItemPlanType",
+    "unknownChannelPlanType",
+    "HVAA:lastBattleActionEffect",
+  ]) {
+    if (!planFailureTestText.includes(required)) {
+      violations.push(`${rel(planFailureTest)} must cover ${required}`);
     }
   }
 }
