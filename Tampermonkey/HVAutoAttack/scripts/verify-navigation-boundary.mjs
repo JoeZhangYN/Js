@@ -41,7 +41,9 @@ if (!owner) {
   }
   if (!/\bexport\s+const\s+NavigationWindowReason\b/.test(source)) {
     if (!source.includes("NavigationWindowReason")) {
-      violations.push("NavigationWindowReason must be the public popup navigation reason vocabulary");
+      violations.push(
+        "NavigationWindowReason must be the public popup navigation reason vocabulary"
+      );
     }
   }
   if (!/\bexport\s+const\s+NavigationReloadReason\b/.test(source)) {
@@ -181,7 +183,10 @@ if (!owner) {
     if (!auditText.includes("console.warn(`[HVAA] ${kind}`")) {
       violations.push("navigation audit must warn before navigating");
     }
-    if (auditText.includes("console.warn(`[HVAA] ${kind}`, audit);") && !auditText.includes("try {")) {
+    if (
+      auditText.includes("console.warn(`[HVAA] ${kind}`, audit);") &&
+      !auditText.includes("try {")
+    ) {
       violations.push("navigation audit warning must be protected from console hook failures");
     }
   }
@@ -314,6 +319,7 @@ if (!owner) {
     );
     for (const required of [
       "recordNavigationDecision",
+      "warnNavigationDecision",
       "DiagnosticEvidenceKey.NAVIGATION_DECISION",
       "[HVAA] navigation decision",
       "eventType: event?.type ?? null",
@@ -349,8 +355,11 @@ if (!owner) {
     );
     for (const required of [
       "warns with structured evidence when decision storage is unavailable",
+      "keeps stored navigation decisions successful when warning output fails",
       "storageWriteOk: false",
       'storageWriteError: "write blocked"',
+      "console blocked",
+      "storageWriteOk: true",
     ]) {
       if (!navigationDecisionTestText.includes(required)) {
         violations.push(`navigation decision test must cover ${required}`);

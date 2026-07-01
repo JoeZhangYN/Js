@@ -1,21 +1,25 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   NavigationEvent,
   NavigationRedirectReason,
   NavigationReloadReason,
   runNavigationAutomation,
 } from "./navigate.js";
+import { recordNavigationDecision } from "./navigation-decision-evidence.js";
 
 function readNavigationDecision() {
   return JSON.parse(sessionStorage.getItem("HVAA:lastNavigationDecision"));
 }
 
 describe("navigation decision evidence", () => {
-  afterEach(() => {
+  function resetTestState() {
     vi.restoreAllMocks();
     vi.useRealTimers();
     sessionStorage.clear();
-  });
+  }
+
+  beforeEach(resetTestState);
+  afterEach(resetTestState);
 
   it("records accepted URL navigation decisions without replacing navigation audit", () => {
     vi.spyOn(window, "open").mockImplementation(() => ({ close: vi.fn() }));
@@ -129,7 +133,7 @@ describe("navigation decision evidence", () => {
 
   it("warns with structured evidence when decision storage is unavailable", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    vi.spyOn(window.sessionStorage, "setItem").mockImplementation(() => {
+    vi.spyOn(window.sessionStorage, "setItem").mockImplementationOnce(() => {
       throw new Error("write blocked");
     });
 
@@ -145,5 +149,30 @@ describe("navigation decision evidence", () => {
         detail: { cause: "unknownNavigationEvent" },
       })
     );
+  });
+
+  it("keeps stored navigation decisions successful when warning output fails", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+
+    let result;
+    expect(() => {
+      result = recordNavigationDecision(
+        "accepted",
+        { type: NavigationEvent.SCHEDULE_RELOAD },
+        {
+          delayMs: 250,
+        }
+      );
+    }).not.toThrow();
+
+    expect(result).toBe(true);
+    expect(readNavigationDecision()).toMatchObject({
+      decision: "accepted",
+      eventType: NavigationEvent.SCHEDULE_RELOAD,
+      detail: { delayMs: 250 },
+      storageWriteOk: true,
+    });
   });
 });

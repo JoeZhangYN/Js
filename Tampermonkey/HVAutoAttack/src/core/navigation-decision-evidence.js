@@ -2,6 +2,19 @@ import { DiagnosticEvidenceKey } from "./diagnostic-evidence-keys.js";
 
 const NAVIGATION_DECISION_KEY = DiagnosticEvidenceKey.NAVIGATION_DECISION;
 
+function warnNavigationDecision(evidence) {
+  try {
+    console.warn("[HVAA] navigation decision", evidence);
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function navigationDecisionStorage() {
+  return globalThis.sessionStorage ?? window.sessionStorage;
+}
+
 export function recordNavigationDecision(decision, event, detail) {
   const evidence = {
     decision,
@@ -11,7 +24,7 @@ export function recordNavigationDecision(decision, event, detail) {
     at: new Date().toISOString(),
   };
   try {
-    sessionStorage.setItem(
+    navigationDecisionStorage().setItem(
       NAVIGATION_DECISION_KEY,
       JSON.stringify({ ...evidence, storageWriteOk: true })
     );
@@ -19,9 +32,9 @@ export function recordNavigationDecision(decision, event, detail) {
   } catch (error) {
     evidence.storageWriteOk = false;
     evidence.storageWriteError = error?.message || String(error);
-    console.warn("[HVAA] navigation decision", evidence);
+    warnNavigationDecision(evidence);
     return false;
   }
-  console.warn("[HVAA] navigation decision", evidence);
+  warnNavigationDecision(evidence);
   return true;
 }
