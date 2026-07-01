@@ -16,6 +16,7 @@ const actionSpeedFile = path.join(root, "src/battle/battle-action-speed.js");
 const actionSpeedTest = path.join(root, "src/battle/battle-action-speed.test.js");
 const actionLifecycleFile = path.join(root, "src/battle/battle-action-lifecycle.js");
 const actionLifecycleTest = path.join(root, "src/battle/battle-action-lifecycle.test.js");
+const actionLifecycleRecordingFile = path.join(root, "src/battle/battle-action-lifecycle-recording.js");
 const actionLifecycleEvidenceFile = path.join(
   root,
   "src/battle/battle-action-lifecycle-evidence.js"
@@ -1315,6 +1316,7 @@ function checkActionLifecycleEntry() {
     "OUTCOME_REJECTED",
     "rejectUnknownActionLifecycleEvent",
     "unknownActionLifecycleEvent",
+    "recordLifecycleSafely",
     'step: "routeEvent"',
     "recordStep(steps, \"startDelay\", deps.startDelay)",
     "recordStep(steps, \"monitorActionStarted\", deps.monitorActionStarted)",
@@ -1332,8 +1334,8 @@ function checkActionLifecycleEntry() {
     "recordStep(steps, \"runTurn\", deps.runTurn)",
     "const turnStarted = Boolean(recordStep(steps, \"runTurn\", deps.runTurn))",
     "continuationStarted: turnStarted",
-    "recordLifecycle(EVENT_ACTION_STARTED, started, steps)",
-    "recordLifecycle(EVENT_ACTION_ENDED, result, steps)",
+    "recordLifecycleSafely(deps, EVENT_ACTION_STARTED, started, steps)",
+    "recordLifecycleSafely(deps, EVENT_ACTION_ENDED, result, steps)",
   ]) {
     if (!text.includes(required)) {
       violations.push(
@@ -1361,6 +1363,18 @@ function checkActionLifecycleEntry() {
   ) {
     violations.push(`${rel(actionLifecycleFile)} must record lifecycle evidence for unknown events`);
   }
+  const recordingText = fs.readFileSync(actionLifecycleRecordingFile, "utf8");
+  for (const required of [
+    "recordLifecycleSafely",
+    "REASON_LIFECYCLE_EVIDENCE_WRITE_FAILED",
+    'step: "recordLifecycle"',
+    "lifecycleEvidenceWriteFailed",
+    "deps.recordLifecycle?.(phase, result, steps)",
+  ]) {
+    if (!recordingText.includes(required)) {
+      violations.push(`${rel(actionLifecycleRecordingFile)} must own safe lifecycle recording ${required}`);
+    }
+  }
   const lifecycleTestText = fs.readFileSync(actionLifecycleTest, "utf8");
   for (const required of [
     "records failed action start steps without claiming action start succeeded",
@@ -1385,7 +1399,10 @@ function checkActionLifecycleEntry() {
     "records action-start step exceptions without throwing",
     "records completion check exceptions as rejected lifecycle results",
     "records completeBattle exceptions as rejected lifecycle results",
+    "keeps action-ended result when lifecycle evidence recording fails once",
+    "does not throw when lifecycle evidence recording keeps failing",
     "actionLifecycleStepThrew",
+    "lifecycleEvidenceWriteFailed",
   ]) {
     if (!lifecycleExceptionTestText.includes(required)) {
       violations.push("src/battle/battle-action-lifecycle-exception.test.js must cover " + required);

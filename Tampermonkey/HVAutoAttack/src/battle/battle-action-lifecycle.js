@@ -6,6 +6,7 @@ import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { BattleNextRoundContinuationEvent, runBattleNextRoundContinuation } from "./battle-next-round-continuation.js";
 import { BattleActionLifecycleEvidenceEvent, runBattleActionLifecycleEvidence } from "./battle-action-lifecycle-evidence.js";
+import { recordLifecycleSafely } from "./battle-action-lifecycle-recording.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
@@ -25,7 +26,7 @@ function runActionStarted(deps) {
   recordStep(steps, "startDelay", deps.startDelay);
   recordStep(steps, "monitorActionStarted", deps.monitorActionStarted);
   const started = steps.every((step) => step.result);
-  deps.recordLifecycle(EVENT_ACTION_STARTED, started, steps);
+  recordLifecycleSafely(deps, EVENT_ACTION_STARTED, started, steps);
   return started;
 }
 
@@ -96,17 +97,17 @@ function runActionEnded(deps) {
   const completionReachedStep = steps[steps.length - 1];
   if (completionReachedStep.reason === REASON_ACTION_LIFECYCLE_STEP_THROW) {
     const result = rejectedLifecycleResult("isCompletionReached");
-    deps.recordLifecycle(EVENT_ACTION_ENDED, result, steps);
+    recordLifecycleSafely(deps, EVENT_ACTION_ENDED, result, steps);
     return result;
   }
   if (completionReached) {
     const result = handleCompletion(deps, steps);
-    deps.recordLifecycle(EVENT_ACTION_ENDED, result, steps);
+    recordLifecycleSafely(deps, EVENT_ACTION_ENDED, result, steps);
     return result;
   }
   const turnStarted = Boolean(recordStep(steps, "runTurn", deps.runTurn));
   const result = { outcome: OUTCOME_ONGOING, continued: "turn", continuationStarted: turnStarted };
-  deps.recordLifecycle(EVENT_ACTION_ENDED, result, steps);
+  recordLifecycleSafely(deps, EVENT_ACTION_ENDED, result, steps);
   return result;
 }
 
@@ -121,7 +122,7 @@ function rejectUnknownActionLifecycleEvent(event, deps) {
     reason: EVENT_UNKNOWN_ACTION_LIFECYCLE,
     eventType: event?.type ?? null,
   };
-  deps.recordLifecycle(EVENT_UNKNOWN_ACTION_LIFECYCLE, result, [
+  recordLifecycleSafely(deps, EVENT_UNKNOWN_ACTION_LIFECYCLE, result, [
     { step: "routeEvent", result: false, reason: EVENT_UNKNOWN_ACTION_LIFECYCLE, eventType: result.eventType },
   ]);
   return false;

@@ -86,4 +86,43 @@ describe("battle action lifecycle step exceptions", () => {
       ])
     );
   });
+
+  it("keeps action-ended result when lifecycle evidence recording fails once", () => {
+    const deps = makeDeps();
+    deps.recordLifecycle
+      .mockImplementationOnce(() => {
+        throw new Error("evidence exploded");
+      })
+      .mockReturnValueOnce(true);
+
+    expect(
+      runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED }, deps)
+    ).toEqual({ outcome: "ongoing", continued: "turn", continuationStarted: true });
+
+    expect(deps.recordLifecycle).toHaveBeenCalledTimes(2);
+    expect(deps.recordLifecycle).toHaveBeenLastCalledWith(
+      "actionEnded",
+      { outcome: "ongoing", continued: "turn", continuationStarted: true },
+      expect.arrayContaining([
+        {
+          step: "recordLifecycle",
+          result: false,
+          reason: "lifecycleEvidenceWriteFailed",
+          error: "evidence exploded",
+        },
+      ])
+    );
+  });
+
+  it("does not throw when lifecycle evidence recording keeps failing", () => {
+    const deps = makeDeps();
+    deps.recordLifecycle.mockImplementation(() => {
+      throw new Error("evidence exploded");
+    });
+
+    expect(() =>
+      runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_STARTED }, deps)
+    ).not.toThrow();
+    expect(deps.recordLifecycle).toHaveBeenCalledTimes(2);
+  });
 });
