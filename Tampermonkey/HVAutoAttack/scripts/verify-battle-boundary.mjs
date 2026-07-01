@@ -669,6 +669,20 @@ function checkTurnEntry() {
   ) {
     violations.push(`${rel(actionDecisionFile)} must record decision evidence for unknown events`);
   }
+  const actionDecisionTestFile = path.join(root, "src/battle/battle-action-decision.test.js");
+  const actionDecisionTestText = fs.existsSync(actionDecisionTestFile)
+    ? fs.readFileSync(actionDecisionTestFile, "utf8")
+    : "";
+  for (const required of [
+    "does not reuse stale effect evidence when dispatch writes no new effect",
+    "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
+    "effectEvidence",
+    "staleFailure",
+  ]) {
+    if (!actionDecisionTestText.includes(required)) {
+      violations.push(`${rel(actionDecisionTestFile)} must cover ${required}`);
+    }
+  }
   const actionDecisionEvidenceText = fs.readFileSync(actionDecisionEvidenceFile, "utf8");
   for (const required of [
     "BattleActionDecisionEvidenceEvent",

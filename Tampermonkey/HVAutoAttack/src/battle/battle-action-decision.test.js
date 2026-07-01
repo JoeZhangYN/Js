@@ -1,5 +1,6 @@
 // file-size-gate: exempt test-verbose（行动规则顺序 + 短路 + 关键规则契约迁移锁）
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
 import { BattleActionDecisionEvent, runBattleActionDecision } from "./battle-action-decision.js";
 
 const mocks = vi.hoisted(() => ({
@@ -15,6 +16,12 @@ vi.mock("./battle-action-decision-evidence.js", () => ({
   BattleActionDecisionEvidenceEvent: { RECORD_TRACE: "recordTrace" },
   runBattleActionDecisionEvidence: mocks.runBattleActionDecisionEvidence,
 }));
+
+beforeEach(() => {
+  window.sessionStorage.clear();
+  mocks.runBattleActionEffectDispatch.mockReset();
+  mocks.runBattleActionDecisionEvidence.mockReset();
+});
 
 function dispatchedResults(snap = {}, opt = {}) {
   mocks.runBattleActionEffectDispatch.mockClear();
@@ -74,6 +81,35 @@ describe("runBattleActionDecision", () => {
     ).toBe(false);
 
     expect(mocks.runBattleActionEffectDispatch).toHaveBeenCalledTimes(4);
+  });
+
+  it("does not reuse stale effect evidence when dispatch writes no new effect", () => {
+    window.sessionStorage.setItem(
+      DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT,
+      JSON.stringify({
+        result: { kind: "stale-result" },
+        acted: false,
+        knownResultKind: true,
+        failureReason: "staleFailure",
+      })
+    );
+    mocks.runBattleActionEffectDispatch.mockReturnValue(false);
+
+    expect(
+      runBattleActionDecision({
+        type: BattleActionDecisionEvent.DECIDE,
+        context: { snap: {}, actionOptions: {} },
+      })
+    ).toBe(false);
+
+    expect(mocks.runBattleActionDecisionEvidence).toHaveBeenCalledWith({
+      type: "recordTrace",
+      steps: expect.arrayContaining([
+        expect.not.objectContaining({ effectEvidence: expect.anything() }),
+      ]),
+    });
+    const recordedSteps = mocks.runBattleActionDecisionEvidence.mock.calls[0][0].steps;
+    expect(recordedSteps.every((step) => !("effectEvidence" in step))).toBe(true);
   });
 
   it("rejects unknown action decision events", () => {
