@@ -47,6 +47,11 @@ describe("monster status repair log snapshot", () => {
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "reloadNow",
       reason: "monsterStatusRepair",
+      detail: {
+        source: "monsterStatusRepair",
+        repairSource: "roundStartLog",
+        monsterAll: 2,
+      },
     });
   });
 });

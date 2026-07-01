@@ -98,6 +98,9 @@ function checkEntry() {
     "READ_COMBATANT_COUNTS",
     "READ_IDS_BY_ORDER",
     "READ_STATUS",
+    'source: "monsterStatusRepair"',
+    "REPAIR_SOURCE_ROUND_START_LOG",
+    "REPAIR_SOURCE_RENDERED_SNAPSHOT",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);

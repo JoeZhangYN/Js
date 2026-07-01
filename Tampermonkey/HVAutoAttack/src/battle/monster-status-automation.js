@@ -4,10 +4,8 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
 import { NavigationEvent, NavigationReloadReason, runNavigationAutomation } from "../core/navigate.js";
-import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js";
-import { MonsterStatusHpRuntimeEvent, runMonsterStatusHpRuntime } from "./monster-status-hp.js";
-import { MonsterStatusViewEvent, runMonsterStatusView } from "./monster-status-view.js";
-import { BattleRoundStartLogEvent, runBattleRoundStartLog } from "./round-start-log.js";
+import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js"; import { MonsterStatusHpRuntimeEvent, runMonsterStatusHpRuntime } from "./monster-status-hp.js";
+import { MonsterStatusViewEvent, runMonsterStatusView } from "./monster-status-view.js"; import { BattleRoundStartLogEvent, runBattleRoundStartLog } from "./round-start-log.js";
 
 const EVENT_ENSURE_READY = "ensureReady";
 const EVENT_REPAIR = "repair";
@@ -17,7 +15,7 @@ const EVENT_REFRESH_COMBATANT_COUNTS = "refreshCombatantCounts";
 const EVENT_READ_COMBATANT_COUNTS = "readCombatantCounts";
 const EVENT_READ_IDS_BY_ORDER = "readIdsByOrder";
 const EVENT_READ_STATUS = "readStatus";
-const DEFAULT_COMBATANT_COUNT = 0;
+const DEFAULT_COMBATANT_COUNT = 0, REPAIR_SOURCE_ROUND_START_LOG = "roundStartLog", REPAIR_SOURCE_RENDERED_SNAPSHOT = "renderedSnapshot";
 
 export const MonsterStatusEvent = Object.freeze({
   ENSURE_READY: EVENT_ENSURE_READY,
@@ -42,8 +40,12 @@ const monsterStatusEventHandlers = Object.freeze({
   [EVENT_READ_STATUS]: () => readMonsterStatus(),
 });
 
-function reloadCurrentPage() {
-  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW, reason: NavigationReloadReason.MONSTER_STATUS_REPAIR });
+function reloadCurrentPage(detail) {
+  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW, reason: NavigationReloadReason.MONSTER_STATUS_REPAIR, detail });
+}
+
+function repairReloadDetail(repairSource, repairSnapshot) {
+  return { source: "monsterStatusRepair", repairSource, monsterAll: repairSnapshot.monsterAll };
 }
 
 function normalizeCombatantCount(value) {
@@ -127,7 +129,7 @@ function repairMonsterStatus() {
       STORAGE_KEYS.MONSTER_STATUS,
       runBattleLogParser({ type: BattleLogParserEvent.BUILD_MONSTER_STATUS, roster })
     );
-    reloadCurrentPage();
+    reloadCurrentPage(repairReloadDetail(REPAIR_SOURCE_ROUND_START_LOG, repairSnapshot));
     return;
   }
 
@@ -138,7 +140,7 @@ function repairMonsterStatus() {
     "monsterStatus Error, trying to fix"
   );
   setValue(STORAGE_KEYS.MONSTER_STATUS, repairSnapshot.inferredStatus);
-  reloadCurrentPage();
+  reloadCurrentPage(repairReloadDetail(REPAIR_SOURCE_RENDERED_SNAPSHOT, repairSnapshot));
 }
 
 function ensureMonsterStatusReady() {
