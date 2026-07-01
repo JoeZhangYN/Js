@@ -1164,6 +1164,8 @@ function checkActionLifecycleEntry() {
     "OUTCOME_ONGOING",
     "BattleNextRoundContinuationEvent.CONTINUE",
     "runBattleNextRoundContinuation",
+    "const continuationStarted = Boolean(deps.continueNextRound())",
+    "continuationStarted",
     "runBattleTurnAutomation",
     "BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE",
     "runBattleActionLifecycleEvidence",
@@ -1181,6 +1183,7 @@ function checkActionLifecycleEntry() {
     "result === undefined ? true : result",
     "steps.push({ step: \"isCompletionReached\", result: true })",
     "steps.push({ step: \"isCompletionReached\", result: false })",
+    "steps.push({ step: \"continue\", result: result.continuationStarted, continued: result.continued })",
     "recordStep(steps, \"runTurn\", deps.runTurn)",
     "recordLifecycle(EVENT_ACTION_STARTED, true, steps)",
     "recordLifecycle(EVENT_ACTION_ENDED, result, steps)",
@@ -1280,6 +1283,24 @@ function checkActionLifecycleEntry() {
   ]) {
     if (!actionLifecycleStepResultTestText.includes(required)) {
       violations.push(`${rel(actionLifecycleStepResultTest)} must cover ${required}`);
+    }
+  }
+  const actionLifecycleContinuationTest = path.join(
+    root,
+    "src/battle/battle-action-lifecycle-continuation.test.js"
+  );
+  const actionLifecycleContinuationTestText = fs.existsSync(actionLifecycleContinuationTest)
+    ? fs.readFileSync(actionLifecycleContinuationTest, "utf8")
+    : "";
+  for (const required of [
+    "records when next-round continuation starts",
+    "records failed next-round continuation start without claiming it succeeded",
+    "continuationStarted: true",
+    "continuationStarted: false",
+    "result: false, continued: \"nextRound\"",
+  ]) {
+    if (!actionLifecycleContinuationTestText.includes(required)) {
+      violations.push(`${rel(actionLifecycleContinuationTest)} must cover ${required}`);
     }
   }
   for (const file of [

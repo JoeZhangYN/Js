@@ -48,10 +48,10 @@ function recordStep(steps, step, run) {
 function handleCompletion(deps) {
   const completion = deps.completeBattle();
   if (completion.outcome === OUTCOME_NEXT_ROUND) {
-    deps.continueNextRound();
-    return { outcome: completion.outcome, continued: "nextRound" };
+    const continuationStarted = Boolean(deps.continueNextRound());
+    return { outcome: completion.outcome, continued: "nextRound", continuationStarted };
   }
-  return { outcome: completion.outcome, continued: false };
+  return { outcome: completion.outcome, continued: false, continuationStarted: false };
 }
 
 function runActionEnded(deps) {
@@ -64,7 +64,7 @@ function runActionEnded(deps) {
     steps.push({ step: "isCompletionReached", result: true });
     const result = handleCompletion(deps);
     steps.push({ step: "completeBattle", result: result.outcome });
-    steps.push({ step: "continue", result: result.continued });
+    steps.push({ step: "continue", result: result.continuationStarted, continued: result.continued });
     deps.recordLifecycle(EVENT_ACTION_ENDED, result, steps);
     return result;
   }

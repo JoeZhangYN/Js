@@ -14,7 +14,7 @@ function makeDeps({ hasCompletion = false, outcome = "ongoing" } = {}) {
     monitorActionEnded: vi.fn(),
     isCompletionReached: vi.fn(() => hasCompletion),
     completeBattle: vi.fn(() => ({ outcome })),
-    continueNextRound: vi.fn(),
+    continueNextRound: vi.fn(() => true),
     runTurn: vi.fn(),
     recordLifecycle: vi.fn(),
   };
@@ -69,34 +69,6 @@ describe("runBattleActionLifecycleAutomation", () => {
         { step: "isCompletionReached", result: false },
         { step: "runTurn", result: true },
       ]
-    );
-  });
-
-  it("continues the next round through the next-round entry", () => {
-    const { deps } = makeDeps({
-      hasCompletion: true,
-      outcome: "nextRound",
-    });
-
-    expect(
-      runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED }, deps)
-    ).toEqual({ outcome: "nextRound", continued: "nextRound" });
-
-    expect(deps.continueNextRound).toHaveBeenCalledTimes(1);
-    expect(deps.isCompletionReached).toHaveBeenCalledTimes(1);
-    expect(deps.completeBattle).toHaveBeenCalledTimes(1);
-    expect(deps.runTurn).not.toHaveBeenCalled();
-    expect(deps.recordLifecycle).toHaveBeenCalledWith(
-      "actionEnded",
-      {
-        outcome: "nextRound",
-        continued: "nextRound",
-      },
-      expect.arrayContaining([
-        { step: "isCompletionReached", result: true },
-        { step: "completeBattle", result: "nextRound" },
-        { step: "continue", result: "nextRound" },
-      ])
     );
   });
 
