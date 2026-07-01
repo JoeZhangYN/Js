@@ -15,6 +15,8 @@ function summarizeResult(result = {}) {
     itemId: result.itemId,
     skillId: result.skillId,
     targetId: result.targetId,
+    capability: result.capability,
+    error: result.error,
     planKind: result.plan?.type ?? result.plan?.kind,
   };
 }

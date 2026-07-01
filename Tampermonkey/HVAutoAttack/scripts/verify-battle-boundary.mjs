@@ -693,6 +693,7 @@ function checkTurnEntry() {
     "const actionContext = { snap, actionOptions }",
     "for (const step of ACTION_STEPS)",
     "decideActionStep(step, actionContext)",
+    "actionDecisionStepThrew",
     "const steps = []",
     "const stepTrace = { capability: step.capability, result, acted }",
     "if (effectEvidence) stepTrace.effectEvidence = effectEvidence",
@@ -748,6 +749,10 @@ function checkTurnEntry() {
     violations.push(`${rel(actionDecisionFile)} must record decision evidence for unknown events`);
   }
   const actionDecisionTestFile = path.join(root, "src/battle/battle-action-decision.test.js");
+  const actionDecisionExceptionTestFile = path.join(
+    root,
+    "src/battle/battle-action-decision-exception.test.js"
+  );
   const actionDecisionTestText = fs.existsSync(actionDecisionTestFile)
     ? fs.readFileSync(actionDecisionTestFile, "utf8")
     : "";
@@ -761,6 +766,19 @@ function checkTurnEntry() {
       violations.push(`${rel(actionDecisionTestFile)} must cover ${required}`);
     }
   }
+  const actionDecisionExceptionTestText = fs.existsSync(actionDecisionExceptionTestFile)
+    ? fs.readFileSync(actionDecisionExceptionTestFile, "utf8")
+    : "";
+  for (const required of [
+    "records thrown decision steps as structured not-acted results",
+    "actionDecisionStepThrew",
+    "decision-step-error",
+    "survival exploded",
+  ]) {
+    if (!actionDecisionExceptionTestText.includes(required)) {
+      violations.push(`${rel(actionDecisionExceptionTestFile)} must cover ${required}`);
+    }
+  }
   const actionDecisionEvidenceText = fs.readFileSync(actionDecisionEvidenceFile, "utf8");
   for (const required of [
     "BattleActionDecisionEvidenceEvent",
@@ -771,6 +789,8 @@ function checkTurnEntry() {
     "summarizeResult",
     "classifyDecisionStepFailure",
     "eventType: result.eventType",
+    "capability: result.capability",
+    "error: result.error",
     "result.plan?.type ?? result.plan?.kind",
     "acted: Boolean(step.acted)",
     "effect: summarizeEffectEvidence(step.effectEvidence)",

@@ -81,7 +81,16 @@ function decideAttackStep(actionContext) {
 }
 
 function decideActionStep(step, actionContext) {
-  return step.decide(actionContext);
+  try {
+    return step.decide(actionContext);
+  } catch (error) {
+    return {
+      kind: "decision-step-error",
+      reason: "actionDecisionStepThrew",
+      capability: step.capability,
+      error: error?.message || String(error),
+    };
+  }
 }
 
 function decideBattleAction(turnContext = {}) {
