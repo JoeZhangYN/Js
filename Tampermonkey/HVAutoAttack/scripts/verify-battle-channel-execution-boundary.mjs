@@ -31,8 +31,7 @@ for (const required of [
   "runBattleSkillCommand",
   "recordChannelExecutionFailure",
   "channelSkillCommandThrew",
-  "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
-  "runBattleActionEffectEvidence",
+  "recordActionEffectEvidence",
   "unknownChannelExecutionEvent",
   "rejectUnknownChannelExecutionEvent(event)",
 ]) {

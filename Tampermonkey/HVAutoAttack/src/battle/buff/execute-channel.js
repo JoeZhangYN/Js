@@ -1,9 +1,6 @@
 // SHELL: 把 decideChannel 的 ChannelPlan 翻译为 DOM 副作用 + 中断记账。
 // 只写不判断（判断全在 decide-channel.js）；isOn 探活属写路径安全读（与原 useChannelSkill 一致）。
-import {
-  BattleActionEffectEvidenceEvent,
-  runBattleActionEffectEvidence,
-} from "../battle-action-effect-evidence.js";
+import { recordActionEffectEvidence } from "../battle-action-effect-recording.js";
 import { BattleSkillCommandEvent, runBattleSkillCommand } from "../battle-skill-command.js";
 
 const EVENT_APPLY_PLAN = "applyPlan";
@@ -43,8 +40,7 @@ function executeClickPlan(plan) {
 }
 
 function recordChannelExecutionFailure(plan, reason, error) {
-  runBattleActionEffectEvidence({
-    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+  recordActionEffectEvidence({
     result: {
       kind: "channel-execution-event",
       reason,
@@ -59,8 +55,7 @@ function recordChannelExecutionFailure(plan, reason, error) {
 }
 
 function rejectUnknownChannelExecutionEvent(event) {
-  runBattleActionEffectEvidence({
-    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+  recordActionEffectEvidence({
     result: {
       kind: "unknown-channel-execution-event",
       reason: EVENT_UNKNOWN_CHANNEL_EXECUTION,
@@ -74,5 +69,8 @@ function rejectUnknownChannelExecutionEvent(event) {
 }
 
 export function runBattleChannelExecution(event = { type: EVENT_APPLY_PLAN }) {
-  return battleChannelExecutionEventHandlers[event?.type]?.(event) ?? rejectUnknownChannelExecutionEvent(event);
+  return (
+    battleChannelExecutionEventHandlers[event?.type]?.(event) ??
+    rejectUnknownChannelExecutionEvent(event)
+  );
 }

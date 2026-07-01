@@ -45,8 +45,7 @@ for (const required of [
   "itemSubCommandThrew",
   "recoveryAbs",
   "if (!runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM })) return false",
-  "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
-  "runBattleActionEffectEvidence",
+  "recordActionEffectEvidence",
   "unknownItemExecutionEvent",
   "rejectUnknownItemExecutionEvent(event)",
 ]) {

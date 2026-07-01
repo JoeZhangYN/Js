@@ -51,8 +51,7 @@ for (const required of [
   "return !!runBattleTargetCommand",
   "recordAttackExecutionFailure",
   "attackSubCommandThrew",
-  "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
-  "runBattleActionEffectEvidence",
+  "recordActionEffectEvidence",
   "unknownAttackExecutionEvent",
   "rejectUnknownAttackExecutionEvent(event)",
 ]) {

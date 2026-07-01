@@ -12,10 +12,7 @@ import {
   RecoveryLearningEvent,
   runRecoveryLearningAutomation,
 } from "../../state/recovery-learner.js";
-import {
-  BattleActionEffectEvidenceEvent,
-  runBattleActionEffectEvidence,
-} from "../battle-action-effect-evidence.js";
+import { recordActionEffectEvidence } from "../battle-action-effect-recording.js";
 
 const EVENT_APPLY_PLAN = "applyPlan";
 const EVENT_UNKNOWN_ITEM_EXECUTION = "unknownItemExecutionEvent";
@@ -137,8 +134,7 @@ function recordPreDrink(potionId, snap) {
 }
 
 function recordItemExecutionFailure(plan, reason, error) {
-  runBattleActionEffectEvidence({
-    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+  recordActionEffectEvidence({
     result: {
       kind: "item-execution-event",
       reason,
@@ -152,8 +148,7 @@ function recordItemExecutionFailure(plan, reason, error) {
 }
 
 function rejectUnknownItemExecutionEvent(event) {
-  runBattleActionEffectEvidence({
-    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+  recordActionEffectEvidence({
     result: {
       kind: "unknown-item-execution-event",
       reason: EVENT_UNKNOWN_ITEM_EXECUTION,
@@ -167,5 +162,7 @@ function rejectUnknownItemExecutionEvent(event) {
 }
 
 export function runBattleItemExecution(event = { type: EVENT_APPLY_PLAN }) {
-  return battleItemExecutionEventHandlers[event?.type]?.(event) ?? rejectUnknownItemExecutionEvent(event);
+  return (
+    battleItemExecutionEventHandlers[event?.type]?.(event) ?? rejectUnknownItemExecutionEvent(event)
+  );
 }

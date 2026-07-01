@@ -24,6 +24,9 @@ const evidenceExceptionTest = path.normalize(
 );
 const planFailureTest = path.normalize("src/battle/battle-action-effect-plan-failure.test.js");
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
+const executionRecordingFailureTest = path.normalize(
+  "src/battle/battle-execution-recording-failure.test.js"
+);
 const legacyOwner = path.normalize("src/battle/dispatch.js");
 const legacyOwnerTest = path.normalize("src/battle/dispatch.test.js");
 const violations = [];
@@ -393,6 +396,24 @@ if (!fs.existsSync(path.join(root, planFailureTest))) {
   ]) {
     if (!planFailureTestText.includes(required)) {
       violations.push(`${rel(planFailureTest)} must cover ${required}`);
+    }
+  }
+}
+if (!fs.existsSync(path.join(root, executionRecordingFailureTest))) {
+  violations.push(
+    `${rel(executionRecordingFailureTest)} must cover execution evidence recording failures`
+  );
+} else {
+  const executionRecordingFailureTestText = read(executionRecordingFailureTest);
+  for (const required of [
+    "does not throw from unknown attack execution events when recording fails",
+    "does not throw from unknown item execution events when recording fails",
+    "does not throw from unknown channel execution events when recording fails",
+    "does not throw when a sub-command throws and failure recording also fails",
+    "effect recording failed",
+  ]) {
+    if (!executionRecordingFailureTestText.includes(required)) {
+      violations.push(`${rel(executionRecordingFailureTest)} must cover ${required}`);
     }
   }
 }

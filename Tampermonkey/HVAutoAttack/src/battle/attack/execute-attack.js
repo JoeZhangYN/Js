@@ -11,10 +11,7 @@ import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
 } from "../battle-spirit-toggle.js";
-import {
-  BattleActionEffectEvidenceEvent,
-  runBattleActionEffectEvidence,
-} from "../battle-action-effect-evidence.js";
+import { recordActionEffectEvidence } from "../battle-action-effect-recording.js";
 
 const EVENT_APPLY_PLAN = "applyPlan";
 const EVENT_UNKNOWN_ATTACK_EXECUTION = "unknownAttackExecutionEvent";
@@ -127,8 +124,7 @@ function executeDefaultPlan(plan) {
 }
 
 function rejectUnknownAttackExecutionEvent(event) {
-  runBattleActionEffectEvidence({
-    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+  recordActionEffectEvidence({
     result: {
       kind: "unknown-attack-execution-event",
       reason: EVENT_UNKNOWN_ATTACK_EXECUTION,
@@ -142,8 +138,7 @@ function rejectUnknownAttackExecutionEvent(event) {
 }
 
 function recordAttackExecutionFailure(plan, reason, error) {
-  runBattleActionEffectEvidence({
-    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+  recordActionEffectEvidence({
     result: {
       kind: "attack-execution-event",
       reason,
