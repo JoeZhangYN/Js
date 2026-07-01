@@ -2,7 +2,6 @@ import {
   BattleMonitorEvent,
   runBattleMonitorAutomation,
 } from "../monitor/battle-monitor-automation.js";
-import { recordNavigationContext } from "../core/navigation-audit.js";
 import { BattleActionDelayEvent, runBattleActionDelayAutomation } from "./battle-action-delay.js";
 import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle-action-speed.js";
 import {
@@ -27,7 +26,6 @@ export const BattleActionLifecycleEvent = Object.freeze({
 });
 
 function runActionStarted(deps) {
-  recordNavigationContext("battleActionStarted");
   deps.startDelay();
   deps.monitorActionStarted();
   return true;
@@ -43,7 +41,6 @@ function handleCompletion(deps) {
 }
 
 function runActionEnded(deps) {
-  recordNavigationContext("battleActionEnded");
   deps.recordSpeed();
   deps.endDelay();
   deps.refreshCombatants();

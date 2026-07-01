@@ -1,14 +1,4 @@
 const NAVIGATION_AUDIT_KEY = "HVAA:lastNavigationAudit";
-const NAVIGATION_CONTEXT_KEY = "HVAA:lastNavigationContext";
-
-function readJson(key) {
-  try {
-    const raw = sessionStorage.getItem(key);
-    return raw ? JSON.parse(raw) : undefined;
-  } catch (_error) {
-    return undefined;
-  }
-}
 
 function writeJson(key, value) {
   try {
@@ -18,20 +8,10 @@ function writeJson(key, value) {
   }
 }
 
-export function recordNavigationContext(kind, payload = {}) {
-  writeJson(NAVIGATION_CONTEXT_KEY, {
-    kind,
-    ...payload,
-    at: new Date().toISOString(),
-    href: window.location.href,
-  });
-}
-
 export function writeNavigationAudit(kind, payload) {
   const audit = {
     kind,
     ...payload,
-    lastAction: readJson(NAVIGATION_CONTEXT_KEY),
     at: new Date().toISOString(),
     from: window.location.href,
   };

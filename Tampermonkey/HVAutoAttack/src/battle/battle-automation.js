@@ -1,5 +1,4 @@
 // 战斗页自动化编排入口：composition root 只调用本入口。
-import { recordNavigationContext } from "../core/navigation-audit.js";
 import {
   BattleActionEventBridgeEvent,
   runBattleActionEventBridgeAutomation,
@@ -62,7 +61,6 @@ function runInitialBattleTurn() {
 }
 
 function runPageReadyStartup() {
-  recordNavigationContext("battlePageReady");
   for (const step of PAGE_READY_STARTUP_STEPS) step.run();
 }
 

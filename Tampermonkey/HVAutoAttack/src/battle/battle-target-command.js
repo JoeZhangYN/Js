@@ -1,5 +1,4 @@
 // Battle target command: one write entry for monster target clicks and skill-target pairs.
-import { recordNavigationContext } from "../core/navigation-audit.js";
 import { gE } from "../dom/query.js";
 import { BattleSkillCommandEvent, runBattleSkillCommand } from "./battle-skill-command.js";
 
@@ -27,7 +26,6 @@ function readLiveTarget(targetId) {
 function clickTarget(targetId) {
   const targetEl = gE(targetSelector(targetId));
   if (!targetEl) return false;
-  recordNavigationContext("battleTargetClick", { targetId });
   targetEl.click();
   return true;
 }
@@ -43,7 +41,6 @@ function clickSkillThenTarget(skillId, targetId) {
   ) {
     return false;
   }
-  recordNavigationContext("battleSkillTargetClick", { skillId, targetId });
   targetEl.click();
   return true;
 }

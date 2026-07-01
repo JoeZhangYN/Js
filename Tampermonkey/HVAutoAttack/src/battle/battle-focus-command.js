@@ -1,5 +1,4 @@
 // Focus command: one write entry for clicking the battle Focus button.
-import { recordNavigationContext } from "../core/navigation-audit.js";
 import { gE } from "../dom/query.js";
 
 const EVENT_CLICK = "click";
@@ -11,7 +10,6 @@ export const BattleFocusCommandEvent = Object.freeze({
 function clickFocus() {
   const el = gE("#ckey_focus");
   if (!el) return false;
-  recordNavigationContext("battleFocusClick");
   el.click();
   return true;
 }

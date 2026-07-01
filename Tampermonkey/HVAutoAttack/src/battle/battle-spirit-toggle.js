@@ -1,5 +1,4 @@
 // Spirit Stance toggle command + cooldown state.
-import { recordNavigationContext } from "../core/navigation-audit.js";
 import { gE, isSpiritActive } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
@@ -53,7 +52,6 @@ function readActive() {
 function clickAndRecord() {
   const el = gE("#ckey_spirit");
   if (!el) return false;
-  recordNavigationContext("battleSpiritToggleClick");
   el.click();
   recordToggle();
   return true;
@@ -62,7 +60,6 @@ function clickAndRecord() {
 function activateIfInactive() {
   const el = gE("#ckey_spirit");
   if (!el || isSpiritActive(el)) return false;
-  recordNavigationContext("battleSpiritActivateClick");
   el.click();
   recordToggle();
   return true;

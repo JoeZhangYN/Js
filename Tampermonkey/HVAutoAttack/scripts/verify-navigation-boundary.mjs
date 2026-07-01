@@ -4,10 +4,6 @@ import { stripComments } from "./lib/i18n-probe-lex.mjs";
 
 const SRC_DIR = fileURLToPath(new URL("../src", import.meta.url));
 const OWNER = "core/navigate.js";
-const RAW_NAVIGATION_EXEMPT = new Set([
-  "core/navigate.js",
-  "battle/battle-api-bridge.js",
-]);
 const LEGACY_EXPORT_RE = /\bexport\s+function\s+(goto|scheduleReload|openUrl)\s*\(/;
 const LEGACY_IMPORT_RE =
   /import\s*\{[^}]*\b(goto|scheduleReload|openUrl)\b[^}]*\}\s*from\s*["'][^"']*core\/navigate\.js["']/;
@@ -72,12 +68,6 @@ if (!owner) {
     if (!auditText.includes('console.warn(`[HVAA] ${kind}`')) {
       violations.push("navigation audit must warn before navigating");
     }
-    if (!auditText.includes("lastAction: readJson(NAVIGATION_CONTEXT_KEY)")) {
-      violations.push("navigation audit must include the last recorded action context");
-    }
-    if (!/\bexport\s+function\s+recordNavigationContext\b/.test(auditText)) {
-      violations.push("navigation audit must expose recordNavigationContext");
-    }
   }
   if (!/Number\.isFinite\(delayMs\)\s*&&\s*delayMs\s*>\s*0/.test(source)) {
     violations.push("scheduled reload delay must be finite and positive");
@@ -116,7 +106,6 @@ for (const file of files) {
     violations.push(`src/${file.rel} uses legacy SCHEDULE_RELOAD sec field`);
   }
   if (
-    !RAW_NAVIGATION_EXEMPT.has(file.rel) &&
     /\b(?:window\.)?location\.href\s*=|\bwindow\.open\s*\(/.test(source)
   ) {
     violations.push(

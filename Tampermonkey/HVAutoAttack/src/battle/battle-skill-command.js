@@ -1,5 +1,4 @@
 // Battle skill command: one write entry for ready-checked skill button clicks.
-import { recordNavigationContext } from "../core/navigation-audit.js";
 import { gE, isOn } from "../dom/query.js";
 
 const EVENT_CLICK_READY = "clickReady";
@@ -12,7 +11,6 @@ function clickReady(skillId, afterClick) {
   if (!isOn(skillId)) return false;
   const el = gE(skillId);
   if (!el) return false;
-  recordNavigationContext("battleSkillClick", { skillId });
   el.click();
   afterClick?.();
   return true;
