@@ -1,5 +1,9 @@
 // 战斗轮次开始编排：怪物计数 / 轮次识别。
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import {
+  NavigationEvent,
+  NavigationReloadReason,
+  runNavigationAutomation,
+} from "../core/navigate.js";
 import { EncounterEvent, runEncounterAutomation } from "../pages/encounter.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "./battle-round.js";
@@ -28,7 +32,11 @@ function recordRoundStartContext(initializingText) {
 
 function startRound() {
   runBattleRoundLifecycle({ type: BattleRoundLifecycleEvent.ROUND_STARTED });
-  if (window.location.hash !== "") runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
+  if (window.location.hash !== "")
+    runNavigationAutomation({
+      type: NavigationEvent.RELOAD_NOW,
+      reason: NavigationReloadReason.BATTLE_HASH_CLEANUP,
+    });
   runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
   const roundStartLog = runBattleRoundStartLog({ type: BattleRoundStartLogEvent.READ_CURRENT });
   const { initializingText } = roundStartLog;

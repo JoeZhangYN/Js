@@ -44,6 +44,18 @@ if (!owner) {
   if (!source.includes("OPEN_WINDOW")) {
     violations.push("NavigationEvent must expose OPEN_WINDOW for named popup navigation");
   }
+  if (!/\bexport\s+const\s+NavigationReloadReason\b/.test(source)) {
+    violations.push("NavigationReloadReason must be the public reload reason vocabulary");
+  }
+  if (!source.includes("isReloadReasonAllowed")) {
+    violations.push("reloadNow/scheduleReload must validate an allowed reload reason");
+  }
+  if (!source.includes('console.log("[HVAA] reload"') || !source.includes("{ reason }")) {
+    violations.push("reload execution must log the reload reason before navigating");
+  }
+  if (!/Number\.isFinite\(delayMs\)\s*&&\s*delayMs\s*>\s*0/.test(source)) {
+    violations.push("scheduled reload delay must be finite and positive");
+  }
   for (const required of ["event.seconds", "event.minutes", "event.milliseconds"]) {
     if (!source.includes(required)) {
       violations.push(`NavigationEvent.SCHEDULE_RELOAD must normalize ${required}`);
@@ -84,6 +96,17 @@ for (const file of files) {
     violations.push(
       `src/${file.rel} must route navigation effects through runNavigationAutomation(event)`
     );
+  }
+  if (!file.rel.endsWith(".test.js")) {
+    const reloadEvents = source.matchAll(
+      /type\s*:\s*NavigationEvent\.(?:RELOAD_NOW|SCHEDULE_RELOAD)/g
+    );
+    for (const match of reloadEvents) {
+      const eventBody = source.slice(match.index, match.index + 220);
+      if (!/\breason\b/.test(eventBody)) {
+        violations.push(`src/${file.rel} reload navigation events must carry reason`);
+      }
+    }
   }
 }
 

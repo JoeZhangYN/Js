@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { NavigationEvent, runNavigationAutomation } from "./navigate.js";
+import {
+  NavigationEvent,
+  NavigationReloadReason,
+  runNavigationAutomation,
+} from "./navigate.js";
 
 describe("runNavigationAutomation", () => {
   it("routes URL opening through the navigation event entry", () => {
@@ -41,6 +45,7 @@ describe("runNavigationAutomation", () => {
 
     const timer = runNavigationAutomation({
       type: NavigationEvent.SCHEDULE_RELOAD,
+      reason: NavigationReloadReason.ACTION_WATCHDOG,
       seconds: 3,
     });
 
@@ -57,14 +62,17 @@ describe("runNavigationAutomation", () => {
 
     const secondsTimer = runNavigationAutomation({
       type: NavigationEvent.SCHEDULE_RELOAD,
+      reason: NavigationReloadReason.ACTION_WATCHDOG,
       seconds: 3,
     });
     const minutesTimer = runNavigationAutomation({
       type: NavigationEvent.SCHEDULE_RELOAD,
+      reason: NavigationReloadReason.PAGE_REFRESH,
       minutes: 5,
     });
     const millisecondsTimer = runNavigationAutomation({
       type: NavigationEvent.SCHEDULE_RELOAD,
+      reason: NavigationReloadReason.ACTION_WATCHDOG,
       milliseconds: 250,
     });
 
@@ -80,6 +88,43 @@ describe("runNavigationAutomation", () => {
     clearTimeout(millisecondsTimer);
     setTimeoutSpy.mockRestore();
 
+    vi.useRealTimers();
+  });
+
+  it("rejects destructive reload events without an allowed reason", () => {
+    vi.useFakeTimers();
+
+    expect(runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW })).toBe(false);
+    expect(
+      runNavigationAutomation({
+        type: NavigationEvent.SCHEDULE_RELOAD,
+        seconds: 3,
+      })
+    ).toBe(false);
+
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it("rejects non-positive scheduled reload delays", () => {
+    vi.useFakeTimers();
+
+    for (const event of [
+      {
+        type: NavigationEvent.SCHEDULE_RELOAD,
+        reason: NavigationReloadReason.ACTION_WATCHDOG,
+        seconds: 0,
+      },
+      {
+        type: NavigationEvent.SCHEDULE_RELOAD,
+        reason: NavigationReloadReason.ACTION_WATCHDOG,
+        milliseconds: -1,
+      },
+    ]) {
+      expect(runNavigationAutomation(event)).toBe(false);
+    }
+
+    expect(vi.getTimerCount()).toBe(0);
     vi.useRealTimers();
   });
 

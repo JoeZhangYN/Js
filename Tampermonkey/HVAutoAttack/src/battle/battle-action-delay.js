@@ -1,5 +1,9 @@
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import {
+  NavigationEvent,
+  NavigationReloadReason,
+  runNavigationAutomation,
+} from "../core/navigate.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
@@ -41,10 +45,10 @@ function trackDelayTimer(timer) {
 function startActionDelay(deps) {
   endActionDelay(deps);
   const option = readDelayOption();
-  if (option.delayAlert) {
+  if (option.delayAlert && option.delayAlertTime > 0) {
     trackDelayTimer(deps.schedule(() => deps.triggerAlarm(), option.delayAlertTime * 1000));
   }
-  if (option.delayReload) {
+  if (option.delayReload && option.delayReloadTime > 0) {
     trackDelayTimer(deps.scheduleReload(option.delayReloadTime));
   }
 }
@@ -73,6 +77,7 @@ export function runBattleActionDelayAutomation(
     scheduleReload: (seconds) =>
       runNavigationAutomation({
         type: NavigationEvent.SCHEDULE_RELOAD,
+        reason: NavigationReloadReason.ACTION_WATCHDOG,
         seconds,
       }),
   }

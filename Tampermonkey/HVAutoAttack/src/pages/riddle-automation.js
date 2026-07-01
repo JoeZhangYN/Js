@@ -1,6 +1,10 @@
 // 小马验证页自动化编排入口：composition root 只调用本入口。
 import { gE } from "../dom/query.js";
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import {
+  NavigationEvent,
+  NavigationReloadReason,
+  runNavigationAutomation,
+} from "../core/navigate.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { runRiddleAnsweringSession } from "./riddle.js";
 
@@ -67,7 +71,10 @@ function runBattlePostResult(event) {
     openRiddlePopup();
     return true;
   }
-  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
+  runNavigationAutomation({
+    type: NavigationEvent.RELOAD_NOW,
+    reason: NavigationReloadReason.RIDDLE_POST_RESULT,
+  });
   return true;
 }
 

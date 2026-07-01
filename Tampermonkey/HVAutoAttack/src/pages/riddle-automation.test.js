@@ -18,6 +18,7 @@ vi.mock("../core/navigate.js", () => ({
     OPEN_WINDOW: "openWindow",
     RELOAD_NOW: "reloadNow",
   }),
+  NavigationReloadReason: Object.freeze({ RIDDLE_POST_RESULT: "riddlePostResult" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
 }));
 vi.mock("./riddle.js", () => ({
@@ -90,7 +91,10 @@ describe("runRiddleAutomation", () => {
 
     expect(runRiddleAutomation({ type: RiddleEvent.BATTLE_POST_RESULT, data })).toBe(true);
 
-    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({ type: "reloadNow" });
+    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
+      type: "reloadNow",
+      reason: "riddlePostResult",
+    });
   });
 
   it("ignores battle post results without a riddle", () => {

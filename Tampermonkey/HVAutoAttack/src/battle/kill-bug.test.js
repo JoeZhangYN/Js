@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({ RELOAD_NOW: "reloadNow" }),
+  NavigationReloadReason: Object.freeze({ KILL_BUG_RECOVERY: "killBugRecovery" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
 }));
 
@@ -33,7 +34,10 @@ describe("runBattleKillBugRecovery", () => {
 
     await vi.advanceTimersByTimeAsync(700);
 
-    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({ type: "reloadNow" });
+    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
+      type: "reloadNow",
+      reason: "killBugRecovery",
+    });
   });
 
   it("marks normal bug log rows as quick-action rows without reloading", () => {

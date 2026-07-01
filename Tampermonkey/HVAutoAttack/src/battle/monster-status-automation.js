@@ -3,7 +3,7 @@ import { setValue, getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import { NavigationEvent, NavigationReloadReason, runNavigationAutomation } from "../core/navigate.js";
 import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js";
 import { MonsterStatusHpRuntimeEvent, runMonsterStatusHpRuntime } from "./monster-status-hp.js";
 import { MonsterStatusViewEvent, runMonsterStatusView } from "./monster-status-view.js";
@@ -43,7 +43,7 @@ const monsterStatusEventHandlers = Object.freeze({
 });
 
 function reloadCurrentPage() {
-  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
+  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW, reason: NavigationReloadReason.MONSTER_STATUS_REPAIR });
 }
 
 function normalizeCombatantCount(value) {

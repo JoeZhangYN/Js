@@ -1,6 +1,10 @@
 // 战斗完成裁决：唯一入口 runBattleCompletionAutomation(event)。
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import {
+  NavigationEvent,
+  NavigationReloadReason,
+  runNavigationAutomation,
+} from "../core/navigate.js";
 import { gE } from "../dom/query.js";
 import {
   BattleMonitorEvent,
@@ -76,6 +80,7 @@ export function runBattleCompletionAutomation(
     scheduleReload: (sec) =>
       runNavigationAutomation({
         type: NavigationEvent.SCHEDULE_RELOAD,
+        reason: NavigationReloadReason.BATTLE_VICTORY,
         seconds: sec,
       }),
   }

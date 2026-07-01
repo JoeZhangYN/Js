@@ -5,7 +5,11 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { _alert } from "../core/lang.js";
 import { post } from "../dom/http.js";
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import {
+  NavigationEvent,
+  NavigationReloadReason,
+  runNavigationAutomation,
+} from "../core/navigate.js";
 import { pollUntil } from "../core/poll.js";
 import { isIsekai } from "../env.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
@@ -28,7 +32,10 @@ const idleArenaEventHandlers = Object.freeze({
 });
 
 function reloadCurrentPage() {
-  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
+  runNavigationAutomation({
+    type: NavigationEvent.RELOAD_NOW,
+    reason: NavigationReloadReason.PAGE_REFRESH,
+  });
 }
 
 function readIdleArenaOption(key, fallback) {

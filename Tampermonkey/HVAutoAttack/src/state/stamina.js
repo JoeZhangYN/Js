@@ -4,7 +4,11 @@
 // 散在 idle-arena(×2) / encounter / init，裸 `[0]` 元素缺失即崩。收口为防御解析：读不到/无数字 → 0（不崩）。
 import { gE } from "../dom/query.js";
 import { post } from "../dom/http.js";
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import {
+  NavigationEvent,
+  NavigationReloadReason,
+  runNavigationAutomation,
+} from "../core/navigate.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
 
 const EVENT_READ_VALUE = "readValue";
@@ -64,7 +68,10 @@ function shouldRestoreForIdleArena() {
 }
 
 function reloadCurrentPage() {
-  runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW });
+  runNavigationAutomation({
+    type: NavigationEvent.RELOAD_NOW,
+    reason: NavigationReloadReason.STAMINA_RECOVERY,
+  });
 }
 
 function claimStaminaRecovery() {

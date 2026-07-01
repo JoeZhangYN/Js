@@ -1,5 +1,9 @@
 // Battle flee command: one write entry for clicking Flee and scheduling the follow-up reload.
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import {
+  NavigationEvent,
+  NavigationReloadReason,
+  runNavigationAutomation,
+} from "../core/navigate.js";
 import { gE } from "../dom/query.js";
 
 const EVENT_CLICK_AND_RELOAD = "clickAndReload";
@@ -16,6 +20,7 @@ function clickFleeAndScheduleReload() {
   el.click();
   runNavigationAutomation({
     type: NavigationEvent.SCHEDULE_RELOAD,
+    reason: NavigationReloadReason.FLEE_CONFIRMATION,
     seconds: FLEE_RELOAD_DELAY_SEC,
   });
   return true;

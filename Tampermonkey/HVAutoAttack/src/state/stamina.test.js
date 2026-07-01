@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../dom/http.js", () => ({ post: mocks.post }));
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({ RELOAD_NOW: "reloadNow" }),
+  NavigationReloadReason: Object.freeze({ STAMINA_RECOVERY: "staminaRecovery" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
 }));
 vi.mock("./option.js", () => ({
@@ -104,7 +105,10 @@ describe("stamina entry", () => {
 
     const reload = mocks.post.mock.calls[0][1];
     reload();
-    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({ type: "reloadNow" });
+    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
+      type: "reloadNow",
+      reason: "staminaRecovery",
+    });
   });
 
   it("ignores unknown stamina events", () => {

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({ RELOAD_NOW: "reloadNow" }),
+  NavigationReloadReason: Object.freeze({ BATTLE_HASH_CLEANUP: "battleHashCleanup" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
 }));
 vi.mock("../pages/encounter.js", () => ({

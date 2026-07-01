@@ -12,10 +12,40 @@ export const NavigationEvent = Object.freeze({
   OPEN_WINDOW: EVENT_OPEN_WINDOW,
 });
 
+export const NavigationReloadReason = Object.freeze({
+  ACTION_WATCHDOG: "actionWatchdog",
+  BATTLE_HASH_CLEANUP: "battleHashCleanup",
+  BATTLE_VICTORY: "battleVictory",
+  FLEE_CONFIRMATION: "fleeConfirmation",
+  KILL_BUG_RECOVERY: "killBugRecovery",
+  MONSTER_STATUS_REPAIR: "monsterStatusRepair",
+  PAGE_REFRESH: "pageRefresh",
+  RIDDLE_POST_RESULT: "riddlePostResult",
+  SETTINGS_CHANGE: "settingsChange",
+  STAMINA_RECOVERY: "staminaRecovery",
+  UNKNOWN_PAGE_REFRESH: "unknownPageRefresh",
+});
+
+const RELOAD_REASONS = new Set(Object.values(NavigationReloadReason));
+
 /** 重定向当前页面（带 5s 后重试）。 */
-function goto() {
+function goto(reason) {
+  console.log("[HVAA] reload", { reason });
   window.location.href = window.location;
-  setTimeout(goto, 5000);
+  setTimeout(() => goto(reason), 5000);
+}
+
+function isReloadReasonAllowed(event) {
+  return RELOAD_REASONS.has(event.reason);
+}
+
+function normalizeReloadDelayMs(event) {
+  let delayMs;
+  if (typeof event.milliseconds !== "undefined") delayMs = Number(event.milliseconds);
+  else if (typeof event.seconds !== "undefined") delayMs = Number(event.seconds) * 1000;
+  else if (typeof event.minutes !== "undefined") delayMs = Number(event.minutes) * 60 * 1000;
+  else return false;
+  return Number.isFinite(delayMs) && delayMs > 0 ? delayMs : false;
 }
 
 /**
@@ -23,12 +53,10 @@ function goto() {
  * @returns {number} setTimeout 句柄（供 clearTimeout 取消，如 reloader 回合结束取消 delayReload）
  */
 function scheduleReload(event) {
-  let delayMs;
-  if (typeof event.milliseconds !== "undefined") delayMs = event.milliseconds;
-  else if (typeof event.seconds !== "undefined") delayMs = event.seconds * 1000;
-  else if (typeof event.minutes !== "undefined") delayMs = event.minutes * 60 * 1000;
-  else return false;
-  return setTimeout(goto, delayMs);
+  if (!isReloadReasonAllowed(event)) return false;
+  const delayMs = normalizeReloadDelayMs(event);
+  if (!delayMs) return false;
+  return setTimeout(() => goto(event.reason), delayMs);
 }
 
 /**
@@ -45,8 +73,9 @@ function openWindow(url, name, features) {
 }
 
 const navigationEventHandlers = Object.freeze({
-  [EVENT_RELOAD_NOW]: () => {
-    goto();
+  [EVENT_RELOAD_NOW]: (event) => {
+    if (!isReloadReasonAllowed(event)) return false;
+    goto(event.reason);
     return true;
   },
   [EVENT_SCHEDULE_RELOAD]: (event) => scheduleReload(event),

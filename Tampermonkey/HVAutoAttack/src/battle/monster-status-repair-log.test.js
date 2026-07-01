@@ -14,6 +14,7 @@ vi.mock("./round-start-log.js", () => ({
 }));
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({ RELOAD_NOW: "reloadNow" }),
+  NavigationReloadReason: Object.freeze({ MONSTER_STATUS_REPAIR: "monsterStatusRepair" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
 }));
 
@@ -43,6 +44,9 @@ describe("monster status repair log snapshot", () => {
       expect.objectContaining({ order: 0, monsterId: 101, hp: 1000 }),
       expect.objectContaining({ order: 1, monsterId: 202, hp: 2000 }),
     ]);
-    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({ type: "reloadNow" });
+    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
+      type: "reloadNow",
+      reason: "monsterStatusRepair",
+    });
   });
 });

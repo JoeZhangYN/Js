@@ -1,6 +1,10 @@
 // HV 战斗 bug 检测：连续相同战斗代码超阈值则重载。
 import { gE } from "../dom/query.js";
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import {
+  NavigationEvent,
+  NavigationReloadReason,
+  runNavigationAutomation,
+} from "../core/navigate.js";
 
 const EVENT_RECOVER = "recover";
 
@@ -22,7 +26,10 @@ function recoverKillBug() {
       bugLog[i].className = "tlbWARN";
       setTimeout(() => {
         // 间隔时间以避免持续刷新
-        runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW }); // 刷新移除问题元素
+        runNavigationAutomation({
+          type: NavigationEvent.RELOAD_NOW,
+          reason: NavigationReloadReason.KILL_BUG_RECOVERY,
+        }); // 刷新移除问题元素
       }, 700);
     } else {
       bugLog[i].className = "tlbQRA";
