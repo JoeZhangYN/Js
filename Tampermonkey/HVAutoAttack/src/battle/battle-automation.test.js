@@ -38,6 +38,7 @@ beforeEach(() => {
   window.sessionStorage.clear();
   for (const fn of Object.values(mocks)) fn.mockClear();
   mocks.gE.mockImplementation((selector) => document.querySelector(selector));
+  mocks.runBattleActionEventBridgeAutomation.mockReturnValue(undefined);
 });
 
 describe("runBattleAutomation", () => {
@@ -66,6 +67,24 @@ describe("runBattleAutomation", () => {
       steps: [
         { capability: "pauseControls", result: true },
         { capability: "actionEventBridge", result: true },
+        { capability: "battleStarted", result: true },
+        { capability: "roundStarted", result: true },
+        { capability: "initialBattleTurn", result: true },
+      ],
+    });
+  });
+
+  it("records failed startup steps without claiming page startup succeeded", () => {
+    mocks.runBattleActionEventBridgeAutomation.mockReturnValue(false);
+
+    expect(runBattleAutomation({ type: BattleEvent.PAGE_READY })).toBe(false);
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleAutomation"))).toMatchObject({
+      phase: "pageReady",
+      result: false,
+      steps: [
+        { capability: "pauseControls", result: true },
+        { capability: "actionEventBridge", result: false },
         { capability: "battleStarted", result: true },
         { capability: "roundStarted", result: true },
         { capability: "initialBattleTurn", result: true },

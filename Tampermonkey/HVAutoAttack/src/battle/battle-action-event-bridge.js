@@ -58,8 +58,7 @@ function installActionEventBridge() {
   };
   gE("body").appendChild(eventEnd);
 
-  runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL });
-  return true;
+  return Boolean(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }));
 }
 
 export function runBattleActionEventBridgeAutomation(event = { type: EVENT_INSTALL }) {

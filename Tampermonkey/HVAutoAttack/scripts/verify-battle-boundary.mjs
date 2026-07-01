@@ -272,8 +272,11 @@ function checkBattleEntry() {
   if (!text.includes("battleEventHandlers[event?.type]")) {
     violations.push(`${rel(battleFile)} must reject null battle page events without startup side effects`);
   }
-  if (!text.includes("recordStartup(EVENT_PAGE_READY, true, steps)")) {
-    violations.push(`${rel(battleFile)} must record page-ready startup evidence`);
+  if (!text.includes("const startupSucceeded = steps.every((step) => step.result)")) {
+    violations.push(`${rel(battleFile)} must derive page-ready success from startup step results`);
+  }
+  if (!text.includes("recordStartup(EVENT_PAGE_READY, startupSucceeded, steps)")) {
+    violations.push(`${rel(battleFile)} must not claim page-ready succeeded when a startup step failed`);
   }
   if (!text.includes("rejectUnknownBattleAutomationEvent(event, deps)")) {
     violations.push(`${rel(battleFile)} must record rejected battle automation evidence`);
@@ -318,6 +321,7 @@ function checkBattleEntry() {
   for (const required of [
     "rejects null events without starting battle page capabilities",
     "rejects unknown events with structured startup evidence",
+    "records failed startup steps without claiming page startup succeeded",
     "HVAA:lastBattleAutomation",
     "unknownBattleAutomationEvent",
   ]) {

@@ -91,6 +91,7 @@ requireText(owner, [
   "rejectUnknownActionEventBridgeEvent",
   "unknownActionEventBridgeEvent",
   "BattleApiBridgeEvent.INSTALL",
+  "return Boolean(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }))",
   "eventStart",
   "eventEnd",
 ]);
@@ -143,6 +144,7 @@ const ownerTestText = fs.existsSync(path.join(root, ownerTest)) ? fs.readFileSyn
 for (const required of [
   "rejects unknown events",
   "rejects null events through bridge evidence instead of throwing",
+  "returns the API bridge installation result instead of claiming startup succeeded",
   "unknownActionEventBridgeEvent",
   "runBattleActionLifecycleAutomation).not.toHaveBeenCalled",
 ]) {

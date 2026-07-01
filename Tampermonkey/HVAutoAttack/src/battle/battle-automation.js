@@ -47,33 +47,34 @@ const PAGE_READY_STARTUP_STEPS = Object.freeze([
 ]);
 
 function installBattlePauseControls() {
-  runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL });
+  return runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL });
 }
 
 function installBattleActionEventBridge() {
-  runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL });
+  return runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL });
 }
 
 function reportBattleStarted() {
-  runBattleLifecycleAutomation({ type: BattleLifecycleEvent.BATTLE_STARTED });
+  return runBattleLifecycleAutomation({ type: BattleLifecycleEvent.BATTLE_STARTED });
 }
 
 function startBattleRound() {
-  runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
+  return runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED });
 }
 
 function runInitialBattleTurn() {
-  runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
+  return runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
 }
 
 function runPageReadyStartup(deps) {
   const steps = [];
   for (const step of PAGE_READY_STARTUP_STEPS) {
     const result = step.run();
-    steps.push({ capability: step.capability, result: result === undefined ? true : result });
+    steps.push({ capability: step.capability, result: result === undefined ? true : Boolean(result) });
   }
-  deps.recordStartup(EVENT_PAGE_READY, true, steps);
-  return true;
+  const startupSucceeded = steps.every((step) => step.result);
+  deps.recordStartup(EVENT_PAGE_READY, startupSucceeded, steps);
+  return startupSucceeded;
 }
 
 const battleEventHandlers = Object.freeze({

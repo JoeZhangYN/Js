@@ -35,10 +35,13 @@ vi.mock("./battle-api-bridge.js", () => ({
 beforeEach(() => {
   document.body.innerHTML = "";
   for (const fn of Object.values(mocks)) fn.mockClear();
+  mocks.runBattleApiBridgeAutomation.mockReturnValue(undefined);
 });
 
 describe("runBattleActionEventBridgeAutomation", () => {
   it("installs action event nodes and the API bridge through one entry", () => {
+    mocks.runBattleApiBridgeAutomation.mockReturnValue(true);
+
     expect(
       runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL })
     ).toBe(true);
@@ -47,6 +50,17 @@ describe("runBattleActionEventBridgeAutomation", () => {
     expect(document.getElementById("eventStart")).toBeTruthy();
     expect(document.getElementById("eventEnd")).toBeTruthy();
     expect(mocks.runBattleApiBridgeAutomation).toHaveBeenCalledWith({ type: "install" });
+  });
+
+  it("returns the API bridge installation result instead of claiming startup succeeded", () => {
+    mocks.runBattleApiBridgeAutomation.mockReturnValue(false);
+
+    expect(
+      runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL })
+    ).toBe(false);
+
+    expect(document.getElementById("eventStart")).toBeTruthy();
+    expect(document.getElementById("eventEnd")).toBeTruthy();
   });
 
   it("routes action start and end node clicks to the lifecycle entry", () => {
