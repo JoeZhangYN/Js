@@ -67,12 +67,15 @@ describe("next-round continuation evidence failures", () => {
       throw new Error("continuation evidence failed");
     });
 
-    expect(() =>
-      runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }, deps)
-    ).not.toThrow();
-    expect(
-      runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }, deps)
-    ).toBe(false);
+    let result;
+    expect(() => {
+      result = runBattleNextRoundContinuation(
+        { type: BattleNextRoundContinuationEvent.CONTINUE },
+        deps
+      );
+    }).not.toThrow();
+
+    expect(result).toBe(false);
     expect(deps.post).not.toHaveBeenCalled();
   });
 });

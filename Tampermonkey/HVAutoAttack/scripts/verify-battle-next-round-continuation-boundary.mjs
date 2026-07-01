@@ -126,6 +126,7 @@ if (!fs.existsSync(path.join(root, evidenceFailureTest))) {
   for (const required of [
     "keeps a restarted next-round turn accepted when continuation evidence fails once",
     "keeps rejected continuations rejected when continuation evidence keeps failing",
+    "expect(result).toBe(false)",
     "nextRoundContinuationEvidenceWriteFailed",
     "continuation evidence failed",
     "restartBattleRuntime",
