@@ -69,4 +69,16 @@ describe("runBattleNextRoundContinuation", () => {
     expect(deps.startRound).not.toHaveBeenCalled();
     expect(deps.runTurn).not.toHaveBeenCalled();
   });
+
+  it("rejects null next-round continuation events without side effects", () => {
+    const { deps, nodes } = makeDeps();
+
+    expect(runBattleNextRoundContinuation(null, deps)).toBe(false);
+    expect(nodes["#pane_completion"].removeChild).not.toHaveBeenCalled();
+    expect(deps.post).not.toHaveBeenCalled();
+    expect(nodes["#battle_main"].replaceChild).not.toHaveBeenCalled();
+    expect(deps.unsafeWindow.Battle).not.toHaveBeenCalled();
+    expect(deps.startRound).not.toHaveBeenCalled();
+    expect(deps.runTurn).not.toHaveBeenCalled();
+  });
 });

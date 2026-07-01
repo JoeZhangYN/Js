@@ -48,5 +48,5 @@ export function runBattleNextRoundContinuation(
     runTurn: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
   }
 ) {
-  return battleNextRoundContinuationEventHandlers[event.type]?.(event, deps) ?? false;
+  return battleNextRoundContinuationEventHandlers[event?.type]?.(event, deps) ?? false;
 }

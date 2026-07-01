@@ -48,6 +48,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   if (!ownerTestText.includes("rejects unknown next-round continuation events without side effects")) {
     violations.push(`${rel(ownerTest)} must cover unknown next-round continuation events`);
   }
+  if (!ownerTestText.includes("rejects null next-round continuation events without side effects")) {
+    violations.push(`${rel(ownerTest)} must cover null next-round continuation events`);
+  }
 }
 const entryBody =
   ownerText.match(/export function runBattleNextRoundContinuation\([^)]*\)[\s\S]*?\n\}/)?.[0] ||
@@ -57,6 +60,9 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_CONTINUE\]/.test(ownerText)) {
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
+}
+if (!ownerText.includes("battleNextRoundContinuationEventHandlers[event?.type]")) {
+  violations.push(`${rel(owner)} must reject null events without next-round side effects`);
 }
 if (
   !actionLifecycleText.includes("BattleNextRoundContinuationEvent.CONTINUE") ||
