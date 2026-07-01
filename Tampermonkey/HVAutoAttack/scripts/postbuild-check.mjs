@@ -50,6 +50,22 @@ for (const g of ["GM_setValue", "GM_getValue", "GM_deleteValue", "GM_notificatio
   if (!new RegExp(`@grant\\s+${g}\\b`).test(src)) errors.push(`@grant missing ${g}`);
 }
 
+// 7. 彩票通知必须通过隔离过滤入口。历史回退路径会让一条坏过滤器抛出 Invalid Filter，
+// 导致 bottom bar 长留“加载中...”。
+for (const required of [
+  "_bottom.evaluate_lottery_filter = function(ss, equip)",
+  "const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip)",
+  "lottery.filterError = filterResult.error",
+]) {
+  if (!src.includes(required)) errors.push(`lottery artifact missing ${required}`);
+}
+for (const forbidden of [
+  "lottery.check = $equip.filter.equip",
+  "$equip.filter.equip($config.settings.lotteryFilters, equip)",
+]) {
+  if (src.includes(forbidden)) errors.push(`lottery artifact uses old filter path: ${forbidden}`);
+}
+
 if (errors.length > 0) {
   console.error("[postbuild-check] FAIL:");
   for (const e of errors) console.error(`  - ${e}`);

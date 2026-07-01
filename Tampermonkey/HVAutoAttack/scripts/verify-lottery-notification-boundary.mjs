@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const target = path.join(root, "src/i18n/hv-utils.js");
 const text = fs.readFileSync(target, "utf8");
+const distTarget = path.join(root, "dist/HVAutoAttack.user.js");
+const distText = fs.existsSync(distTarget) ? fs.readFileSync(distTarget, "utf8") : "";
 const violations = [];
 
 function rel(file) {
@@ -14,6 +16,12 @@ const body =
   text.match(/_bottom\.load_lottery = async function \(ss\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const filterBody =
   text.match(/_bottom\.evaluate_lottery_filter = function \(ss, equip\) \{[\s\S]*?\n  \};/)?.[0] || "";
+const distLoaderBody =
+  distText.match(/_bottom\.load_lottery = async function\(ss\) \{[\s\S]*?\n            \};/)?.[0] ||
+  "";
+const distFilterBody =
+  distText.match(/_bottom\.evaluate_lottery_filter = function\(ss, equip\) \{[\s\S]*?\n            \};/)?.[0] ||
+  "";
 
 if (!body) {
   violations.push("lottery notification loader must stay explicit");
@@ -64,6 +72,32 @@ for (const forbidden of [
 ]) {
   if (body.includes(forbidden) || filterBody.includes(forbidden)) {
     violations.push(`${rel(target)} lottery filter boundary must not use brittle parser path: ${forbidden}`);
+  }
+}
+
+if (distText) {
+  for (const required of [
+    "_bottom.evaluate_lottery_filter = function(ss, equip)",
+    "const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip)",
+    "lottery.filterError = filterResult.error",
+  ]) {
+    if (!distText.includes(required)) {
+      violations.push(`${rel(distTarget)} installed artifact must include ${required}`);
+    }
+  }
+  if (!distLoaderBody) {
+    violations.push(`${rel(distTarget)} lottery loader artifact must stay explicit`);
+  }
+  if (!distFilterBody) {
+    violations.push(`${rel(distTarget)} lottery filter artifact must stay explicit`);
+  }
+  for (const forbidden of [
+    "lottery.check = $equip.filter.equip",
+    "$equip.filter.equip($config.settings.lotteryFilters, equip)",
+  ]) {
+    if (distLoaderBody.includes(forbidden) || distFilterBody.includes(forbidden)) {
+      violations.push(`${rel(distTarget)} lottery artifact must not use old filter path: ${forbidden}`);
+    }
   }
 }
 
