@@ -11,11 +11,21 @@ export const BattleDefendCommandEvent = Object.freeze({
 });
 
 function clickDefend() {
-  if (!isOn(DEFEND_BUTTON_SELECTOR)) {
+  const readiness = readDefendReadiness();
+  if (readiness.error) {
+    recordCommandResult("rejected", "defendReadinessReadFailed", { error: readiness.error });
+    return false;
+  }
+  if (!readiness.ready) {
     recordCommandResult("rejected", "defendUnavailable");
     return false;
   }
-  const el = gE(DEFEND_BUTTON_SELECTOR);
+  const defend = readDefendElement();
+  if (defend.error) {
+    recordCommandResult("rejected", "defendElementReadFailed", { error: defend.error });
+    return false;
+  }
+  const el = defend.el;
   if (!el) {
     recordCommandResult("rejected", "defendUnavailable");
     return false;
@@ -27,6 +37,22 @@ function clickDefend() {
   }
   recordCommandResult("accepted", "clicked");
   return true;
+}
+
+function readDefendReadiness() {
+  try {
+    return { ready: Boolean(isOn(DEFEND_BUTTON_SELECTOR)) };
+  } catch (error) {
+    return { ready: false, error: error?.message || String(error) };
+  }
+}
+
+function readDefendElement() {
+  try {
+    return { el: gE(DEFEND_BUTTON_SELECTOR) };
+  } catch (error) {
+    return { el: null, error: error?.message || String(error) };
+  }
 }
 
 function recordCommandResult(result, reason, detail) {

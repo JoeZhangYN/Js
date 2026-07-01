@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src", "battle");
 const owner = path.normalize("src/battle/battle-defend-command.js");
 const ownerTest = path.normalize("src/battle/battle-defend-command.test.js");
+const readFailureTest = path.normalize("src/battle/battle-defend-command-read-failure.test.js");
 const violations = [];
 
 function rel(file) {
@@ -59,6 +60,10 @@ requireText(owner, [
   "clickResult.error",
   "CLICK",
   "#ckey_defend",
+  "readDefendReadiness",
+  "readDefendElement",
+  "defendReadinessReadFailed",
+  "defendElementReadFailed",
   "defend.click",
   "unknownDefendCommand",
   "event?.type ?? null",
@@ -87,6 +92,12 @@ requireText(ownerTest, [
   "records null Defend events as not acted",
   "unknownDefendCommand",
   "eventType: null",
+]);
+requireText(readFailureTest, [
+  "records Defend readiness read failures as not acted",
+  "records Defend element read failures as not acted",
+  "defendReadinessReadFailed",
+  "defendElementReadFailed",
 ]);
 
 if (violations.length) {
