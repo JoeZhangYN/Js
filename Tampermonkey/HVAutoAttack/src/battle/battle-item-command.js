@@ -1,6 +1,7 @@
 // Battle item command: one write entry for gem and inventory item button clicks.
 import { gE } from "../dom/query.js";
 import { itemSelector } from "../dom/selectors.js";
+import { clickBattleCommandElement } from "./battle-command-click.js";
 import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
 
 const EVENT_CLICK_GEM = "clickGem";
@@ -27,7 +28,11 @@ function clickGem() {
     recordCommandResult("item.clickGem", "rejected", "gemMissing");
     return false;
   }
-  el.click();
+  const clickResult = clickBattleCommandElement(el);
+  if (!clickResult.clicked) {
+    recordCommandResult("item.clickGem", "rejected", clickResult.reason, { error: clickResult.error });
+    return false;
+  }
   recordCommandResult("item.clickGem", "accepted", "clicked");
   return true;
 }
@@ -39,7 +44,14 @@ function clickItem(itemId, beforeClick) {
     return false;
   }
   beforeClick?.();
-  el.click();
+  const clickResult = clickBattleCommandElement(el);
+  if (!clickResult.clicked) {
+    recordCommandResult("item.clickItem", "rejected", clickResult.reason, {
+      itemId,
+      error: clickResult.error,
+    });
+    return false;
+  }
   recordCommandResult("item.clickItem", "accepted", "clicked", { itemId });
   return true;
 }

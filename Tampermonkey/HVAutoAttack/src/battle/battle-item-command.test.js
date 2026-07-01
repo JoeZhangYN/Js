@@ -59,6 +59,26 @@ describe("runBattleItemCommand", () => {
     expect(calls).toEqual(["before", "click"]);
   });
 
+  it("records item click failures as not acted", () => {
+    const item = {
+      click: vi.fn(() => {
+        throw new Error("blocked");
+      }),
+    };
+    mocks.gE.mockReturnValue(item);
+
+    expect(runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_ITEM, itemId: 12101 })).toBe(
+      false
+    );
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "item.clickItem",
+      result: "rejected",
+      reason: "clickFailed",
+      detail: { itemId: 12101, error: "blocked" },
+    });
+  });
+
   it("does not run beforeClick when the item is missing", () => {
     const beforeClick = vi.fn();
     mocks.gE.mockReturnValue(null);

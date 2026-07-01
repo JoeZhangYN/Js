@@ -70,6 +70,9 @@ requireText(owner, [
   "CLICK_ITEM",
   "#ikey_p",
   "itemSelector",
+  "clickBattleCommandElement",
+  "clickResult.reason",
+  "clickResult.error",
   "runBattleCommandEvidence",
   "gemMissing",
   "itemMissing",
@@ -80,7 +83,12 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
-requireText(ownerTest, ["records missing item command events as not acted", "eventType: null"]);
+requireText(ownerTest, [
+  "records item click failures as not acted",
+  "clickFailed",
+  "records missing item command events as not acted",
+  "eventType: null",
+]);
 requireText("src/battle/battle-action-effect-dispatch.js", [
   "BattleItemCommandEvent.CLICK_ITEM",
   "runBattleItemCommand",

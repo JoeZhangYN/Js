@@ -61,6 +61,33 @@ describe("runBattleSkillCommand", () => {
     });
   });
 
+  it("records skill click failures as not acted", () => {
+    const afterClick = vi.fn();
+    const skill = {
+      click: vi.fn(() => {
+        throw new Error("blocked");
+      }),
+    };
+    mocks.isOn.mockReturnValue(true);
+    mocks.gE.mockReturnValue(skill);
+
+    expect(
+      runBattleSkillCommand({
+        type: BattleSkillCommandEvent.CLICK_READY,
+        skillId: "412",
+        afterClick,
+      })
+    ).toBe(false);
+
+    expect(afterClick).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "skill.clickReady",
+      result: "rejected",
+      reason: "clickFailed",
+      detail: { skillId: "412", error: "blocked" },
+    });
+  });
+
   it("records unknown skill command rejections", () => {
     expect(runBattleSkillCommand({ type: "unknown" })).toBe(false);
 

@@ -6,6 +6,7 @@ const srcDir = path.join(root, "src", "battle");
 const owner = path.normalize("src/battle/battle-target-command.js");
 const ownerTest = path.normalize("src/battle/battle-target-command.test.js");
 const liveTargetTest = path.normalize("src/battle/battle-target-command-live-target.test.js");
+const clickFailureTest = path.normalize("src/battle/battle-target-command-click-failure.test.js");
 const violations = [];
 
 function rel(file) {
@@ -59,6 +60,9 @@ requireText(owner, [
   "TRY_SKILL_THEN_TARGET",
   "#mkey_",
   "runBattleCommandEvidence",
+  "clickBattleCommandElement",
+  "clickResult.reason",
+  "clickResult.error",
   "readLiveTarget",
   "targetMissing",
   "targetDead",
@@ -82,6 +86,10 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
 requireText(ownerTest, [
   "records missing target command events as not acted",
   "eventType: null",
+]);
+requireText(clickFailureTest, [
+  "records target click failures as not acted",
+  "clickFailed",
 ]);
 requireText(liveTargetTest, [
   "rejects direct target clicks when the target is dead",
