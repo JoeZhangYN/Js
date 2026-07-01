@@ -4,8 +4,8 @@ export const API_RECOVERY_SESSION_KEY = DiagnosticEvidenceKey.BATTLE_API_RESPONS
 
 const fallbackRecoveryStates = new WeakMap();
 
-function apiFailureKey(detail) {
-  return JSON.stringify({
+function apiFailureKeyParts(detail) {
+  return {
     responseKind: detail?.responseKind,
     status: detail?.status,
     error: detail?.error,
@@ -13,7 +13,25 @@ function apiFailureKey(detail) {
     reload: detail?.reload,
     world: detail?.world,
     action: detail?.action,
-  });
+  };
+}
+
+function apiFailureKey(detail) {
+  try {
+    return { key: JSON.stringify(apiFailureKeyParts(detail)) };
+  } catch (error) {
+    return {
+      key: JSON.stringify({
+        responseKind: detail?.responseKind,
+        status: detail?.status,
+        error: detail?.error,
+        parseError: detail?.parseError,
+        reload: detail?.reload,
+        keyFallback: "unserializableApiFailure",
+      }),
+      apiFailureKeyError: error?.message || String(error),
+    };
+  }
 }
 
 function readRecoveryState(deps) {
@@ -28,11 +46,24 @@ function readRecoveryState(deps) {
   }
 }
 
+function jsonSafeRecoveryState(state) {
+  const seen = new WeakSet();
+  return JSON.parse(
+    JSON.stringify(state, (_key, value) => {
+      if (typeof value === "bigint") return String(value);
+      if (!value || typeof value !== "object") return value;
+      if (seen.has(value)) return "[Circular]";
+      seen.add(value);
+      return value;
+    })
+  );
+}
+
 export function writeRecoveryState(deps, state) {
   try {
     deps.sessionStorage.setItem(
       API_RECOVERY_SESSION_KEY,
-      JSON.stringify({ ...state, storageWriteOk: true })
+      JSON.stringify(jsonSafeRecoveryState({ ...state, storageWriteOk: true }))
     );
     fallbackRecoveryStates.delete(deps.sessionStorage);
     state.storageWriteOk = true;
@@ -84,16 +115,18 @@ function readRecoveryDiagnosticEvidence(deps) {
 }
 
 export function buildRecoveryState(detail, deps) {
-  const key = apiFailureKey(detail);
+  const keyEvidence = apiFailureKey(detail);
+  const key = keyEvidence.key;
   const previous = readRecoveryState(deps);
   const repeatCount = previous?.key === key ? Number(previous.repeatCount || 1) + 1 : 1;
   const diagnostics = readRecoveryDiagnosticEvidence(deps);
-  return { key, repeatCount, detail, ...diagnostics };
+  return { ...keyEvidence, repeatCount, detail, ...diagnostics };
 }
 
 export function buildRejectedRecoveryState(detail, deps, recoveryAction) {
+  const keyEvidence = apiFailureKey(detail);
   return {
-    key: apiFailureKey(detail),
+    ...keyEvidence,
     repeatCount: 1,
     detail,
     recoveryAction,

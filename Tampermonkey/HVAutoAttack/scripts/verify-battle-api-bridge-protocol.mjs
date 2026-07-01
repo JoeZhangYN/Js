@@ -27,6 +27,9 @@ const recoveryEffectResultTest = path.normalize(
 const recoveryMalformedJsonTest = path.normalize(
   "src/battle/battle-api-response-recovery-malformed-json.test.js"
 );
+const recoveryKeyFailureTest = path.normalize(
+  "src/battle/battle-api-response-recovery-key-failure.test.js"
+);
 const recoveryReloadDetailTest = path.normalize(
   "src/battle/battle-api-response-recovery-reload-detail.test.js"
 );
@@ -315,6 +318,12 @@ const recoveryStateText = requireText(recoveryState, [
   "fallbackRecoveryStates.set(deps.sessionStorage",
   "fallbackRecoveryStates.delete(deps.sessionStorage)",
   "apiFailureKey",
+  "apiFailureKeyParts",
+  "apiFailureKeyError",
+  "keyFallback: \"unserializableApiFailure\"",
+  "jsonSafeRecoveryState",
+  "\"[Circular]\"",
+  "typeof value === \"bigint\"",
   "buildRecoveryState",
   "buildRejectedRecoveryState",
   "readRecoveryDiagnosticEvidence",
@@ -407,6 +416,14 @@ requireText(recoveryMalformedJsonTest, [
   "does not treat different malformed JSON parse failures as the same loop",
   "malformedJson",
   "parseError",
+]);
+requireText(recoveryKeyFailureTest, [
+  "continues reload recovery when API failure identity cannot be serialized",
+  "still pauses repeated unserializable API response loops",
+  "apiFailureKeyError",
+  "circular",
+  'recoveryAction: "reload"',
+  'recoveryAction: "pause"',
 ]);
 requireText(recoveryPauseTest, [
   "writes repeated API recovery state into pause evidence on the default path",
