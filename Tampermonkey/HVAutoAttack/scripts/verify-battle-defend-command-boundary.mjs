@@ -58,6 +58,7 @@ requireText(owner, [
   "CLICK",
   "#ckey_defend",
   "defend.click",
+  "unknownDefendCommand",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
@@ -68,6 +69,7 @@ requireText("src/battle/battle-action-effect-dispatch.js", [
   "runBattleDefendCommand",
 ]);
 requireText("src/battle/defense/decide-defend.js", ['kind: "defend-command"']);
+requireText(ownerTest, ["records unknown Defend events as not acted", "unknownDefendCommand"]);
 
 if (violations.length) {
   console.error("[verify-battle-defend-command-boundary] FAIL");

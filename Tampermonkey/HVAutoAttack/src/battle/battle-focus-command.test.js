@@ -43,6 +43,20 @@ describe("runBattleFocusCommand", () => {
       command: "focus.click",
       result: "rejected",
       reason: "focusMissing",
+      detail: undefined,
+    });
+  });
+
+  it("records unknown Focus events as not acted", () => {
+    expect(runBattleFocusCommand({ type: "unknown" })).toBe(false);
+
+    expect(mocks.gE).not.toHaveBeenCalled();
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
+      type: "recordResult",
+      command: "focus.click",
+      result: "rejected",
+      reason: "unknownFocusCommand",
+      detail: { eventType: "unknown" },
     });
   });
 });

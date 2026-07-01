@@ -64,6 +64,7 @@ requireText(owner, [
   'source: "battleFleeCommand"',
   "command: EVENT_CLICK_AND_RELOAD",
   "flee.clickAndReload",
+  "unknownFleeCommand",
   '"1001"',
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
@@ -75,6 +76,7 @@ requireText("src/battle/battle-action-effect-dispatch.js", [
   "runBattleFleeCommand",
 ]);
 requireText("src/battle/escape/decide-flee.js", ['kind: "flee-command"']);
+requireText(ownerTest, ["records unknown Flee events as not acted", "unknownFleeCommand"]);
 
 if (violations.length) {
   console.error("[verify-battle-flee-command-boundary] FAIL");

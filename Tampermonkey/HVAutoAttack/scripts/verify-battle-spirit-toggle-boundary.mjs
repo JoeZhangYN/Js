@@ -71,6 +71,8 @@ requireText(owner, [
   "READ_ACTIVE",
   "DEFAULT_SPIRIT_TOGGLE_TURN",
   "normalizeSpiritToggleTurn",
+  "spirit.unknown",
+  "unknownSpiritToggleEvent",
 ]);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
@@ -83,6 +85,7 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_CLICK_AND_RECORD\][\s\S]*\[EVENT_READ_ACT
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+requireText(ownerTest, ["rejects unknown events without touching Spirit state", "unknownSpiritToggleEvent"]);
 
 requireText("src/battle/snapshot.js", [
   "BattleSpiritToggleEvent.READ_ACTIVE",

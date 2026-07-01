@@ -19,12 +19,13 @@ function clickFocus() {
   return true;
 }
 
-function recordCommandResult(result, reason) {
+function recordCommandResult(result, reason, detail) {
   runBattleCommandEvidence({
     type: BattleCommandEvidenceEvent.RECORD_RESULT,
     command: "focus.click",
     result,
     reason,
+    detail,
   });
 }
 
@@ -33,5 +34,10 @@ const battleFocusCommandEventHandlers = Object.freeze({
 });
 
 export function runBattleFocusCommand(event = { type: EVENT_CLICK }) {
-  return battleFocusCommandEventHandlers[event.type]?.(event);
+  const handler = battleFocusCommandEventHandlers[event.type];
+  if (!handler) {
+    recordCommandResult("rejected", "unknownFocusCommand", { eventType: event?.type });
+    return false;
+  }
+  return handler(event);
 }

@@ -51,5 +51,10 @@ const battleFleeCommandEventHandlers = Object.freeze({
 });
 
 export function runBattleFleeCommand(event = { type: EVENT_CLICK_AND_RELOAD }) {
-  return battleFleeCommandEventHandlers[event.type]?.(event);
+  const handler = battleFleeCommandEventHandlers[event.type];
+  if (!handler) {
+    recordCommandResult("rejected", "unknownFleeCommand", { eventType: event?.type });
+    return false;
+  }
+  return handler(event);
 }

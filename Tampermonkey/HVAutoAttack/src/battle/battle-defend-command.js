@@ -15,12 +15,13 @@ function clickDefend() {
   return clicked;
 }
 
-function recordCommandResult(result, reason) {
+function recordCommandResult(result, reason, detail) {
   runBattleCommandEvidence({
     type: BattleCommandEvidenceEvent.RECORD_RESULT,
     command: "defend.click",
     result,
     reason,
+    detail,
   });
 }
 
@@ -29,5 +30,10 @@ const battleDefendCommandEventHandlers = Object.freeze({
 });
 
 export function runBattleDefendCommand(event = { type: EVENT_CLICK }) {
-  return battleDefendCommandEventHandlers[event.type]?.(event);
+  const handler = battleDefendCommandEventHandlers[event.type];
+  if (!handler) {
+    recordCommandResult("rejected", "unknownDefendCommand", { eventType: event?.type });
+    return false;
+  }
+  return handler(event);
 }

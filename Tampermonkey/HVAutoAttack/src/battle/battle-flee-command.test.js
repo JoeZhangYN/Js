@@ -71,4 +71,17 @@ describe("runBattleFleeCommand", () => {
       detail: undefined,
     });
   });
+
+  it("records unknown Flee events as not acted", () => {
+    expect(runBattleFleeCommand({ type: "unknown" })).toBe(false);
+
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
+      type: "recordResult",
+      command: "flee.clickAndReload",
+      result: "rejected",
+      reason: "unknownFleeCommand",
+      detail: { eventType: "unknown" },
+    });
+  });
 });

@@ -58,6 +58,7 @@ requireText(owner, [
   "CLICK",
   "#ckey_focus",
   "focus.click",
+  "unknownFocusCommand",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
@@ -71,6 +72,7 @@ requireText("src/battle/item/execute-item.js", [
   "BattleFocusCommandEvent.CLICK",
   "runBattleFocusCommand",
 ]);
+requireText(ownerTest, ["records unknown Focus events as not acted", "unknownFocusCommand"]);
 
 if (violations.length) {
   console.error("[verify-battle-focus-command-boundary] FAIL");
