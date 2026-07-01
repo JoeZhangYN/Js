@@ -236,7 +236,7 @@ function checkBattleEntry() {
     }
   }
   if (
-    !/const PAGE_READY_STARTUP_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "pauseControls"[\s\S]*run: installBattlePauseControls[\s\S]*capability: "actionEventBridge"[\s\S]*run: installBattleActionEventBridge[\s\S]*capability: "battleStarted"[\s\S]*run: reportBattleStarted[\s\S]*capability: "roundStarted"[\s\S]*run: startBattleRound[\s\S]*capability: "initialBattleTurn"[\s\S]*run: runInitialBattleTurn[\s\S]*\]\)/.test(
+    !/const PAGE_READY_STARTUP_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "pauseControls"[\s\S]*run: installBattlePauseControls[\s\S]*capability: "actionEventBridge"[\s\S]*run: installBattleActionEventBridge[\s\S]*capability: "roundStarted"[\s\S]*run: startBattleRound[\s\S]*capability: "battleStarted"[\s\S]*run: reportBattleStarted[\s\S]*capability: "initialBattleTurn"[\s\S]*run: runInitialBattleTurn[\s\S]*\]\)/.test(
       text
     )
   ) {

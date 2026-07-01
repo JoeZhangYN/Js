@@ -179,7 +179,7 @@ main.js 装配三条独立汉化路径（功能区不重叠）：
 ## 3. 战斗回合引擎（业务心脏，逐层展开）
 
 ### 3.1 装配（battle-automation.js，PAGE_READY 一次）
-顺序固定：pause-controls 安装 → action-event-bridge 安装（reloader/action lifecycle）→ battle-lifecycle 上报 BATTLE_STARTED（start-runtime → monster-knowledge → monitoring）→ round-start → 首次 turn。
+顺序固定：pause-controls 安装 → action-event-bridge 安装（reloader/action lifecycle）→ round-start 建立 round context → battle-lifecycle 上报 BATTLE_STARTED（start-runtime → monster-knowledge → monitoring）→ 首次 turn。
 
 ### 3.2 每 turn 主循环（main-loop.js）
 ```
