@@ -5,10 +5,7 @@ import {
   runBattleActionEffectDispatch,
 } from "./battle-action-effect-dispatch.js";
 import { readBattleActionEffectEvidence } from "./battle-action-effect-evidence.js";
-import {
-  BattleActionDecisionEvidenceEvent,
-  runBattleActionDecisionEvidence,
-} from "./battle-action-decision-evidence.js";
+import { recordDecisionEvidence } from "./battle-action-decision-recording.js";
 import {
   BattleBuffPreparationEvent,
   runBattleBuffPreparation,
@@ -126,13 +123,6 @@ function readFreshEffectEvidence(previousEffectEvidence) {
     : effectEvidence;
 }
 
-function recordDecisionEvidence(steps) {
-  runBattleActionDecisionEvidence({
-    type: BattleActionDecisionEvidenceEvent.RECORD_TRACE,
-    steps,
-  });
-}
-
 function rejectUnknownActionDecisionEvent(event) {
   recordDecisionEvidence([
     {
@@ -149,5 +139,8 @@ function rejectUnknownActionDecisionEvent(event) {
 }
 
 export function runBattleActionDecision(event = { type: EVENT_DECIDE }) {
-  return battleActionDecisionEventHandlers[event?.type]?.(event) ?? rejectUnknownActionDecisionEvent(event);
+  return (
+    battleActionDecisionEventHandlers[event?.type]?.(event) ??
+    rejectUnknownActionDecisionEvent(event)
+  );
 }

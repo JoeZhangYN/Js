@@ -88,6 +88,7 @@ const turnPreludeFile = path.join(root, "src/battle/battle-turn-prelude.js");
 const turnPreludeTest = path.join(root, "src/battle/battle-turn-prelude.test.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const actionDecisionEvidenceFile = path.join(root, "src/battle/battle-action-decision-evidence.js");
+const actionDecisionRecordingFile = path.join(root, "src/battle/battle-action-decision-recording.js");
 const actionDecisionEvidenceTestFile = path.join(
   root,
   "src/battle/battle-action-decision-evidence.test.js"
@@ -507,6 +508,7 @@ function checkRoundStartEntry() {
 function checkTurnEntry() {
   const text = fs.readFileSync(mainLoopFile, "utf8");
   const actionDecisionText = fs.readFileSync(actionDecisionFile, "utf8");
+  const actionDecisionRecordingText = fs.readFileSync(actionDecisionRecordingFile, "utf8");
   if (!/export function runBattleTurnAutomation\(/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must expose runBattleTurnAutomation()`);
   }
@@ -713,8 +715,6 @@ function checkTurnEntry() {
     "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
     "runBattleActionEffectDispatch",
     "readBattleActionEffectEvidence",
-    "BattleActionDecisionEvidenceEvent.RECORD_TRACE",
-    "runBattleActionDecisionEvidence",
     "actionOptions",
     "const actionContext = { snap, actionOptions }",
     "for (const step of ACTION_STEPS)",
@@ -768,16 +768,30 @@ function checkTurnEntry() {
     );
   }
   if (
-    !actionDecisionText.includes(
-      "battleActionDecisionEventHandlers[event?.type]?.(event) ?? rejectUnknownActionDecisionEvent(event)"
-    )
+    !actionDecisionText.includes("battleActionDecisionEventHandlers[event?.type]?.(event)") ||
+    !actionDecisionText.includes("rejectUnknownActionDecisionEvent(event)")
   ) {
     violations.push(`${rel(actionDecisionFile)} must record decision evidence for unknown events`);
+  }
+  for (const required of [
+    "BattleActionDecisionEvidenceEvent.RECORD_TRACE",
+    "runBattleActionDecisionEvidence",
+    "actionDecisionEvidenceWriteFailed",
+    "decision-evidence-event",
+    "recordDecisionEvidenceFailure",
+  ]) {
+    if (!actionDecisionRecordingText.includes(required)) {
+      violations.push(`${rel(actionDecisionRecordingFile)} must own action decision recording ${required}`);
+    }
   }
   const actionDecisionTestFile = path.join(root, "src/battle/battle-action-decision.test.js");
   const actionDecisionExceptionTestFile = path.join(
     root,
     "src/battle/battle-action-decision-exception.test.js"
+  );
+  const actionDecisionEvidenceFailureTestFile = path.join(
+    root,
+    "src/battle/battle-action-decision-evidence-failure.test.js"
   );
   const actionDecisionTestText = fs.existsSync(actionDecisionTestFile)
     ? fs.readFileSync(actionDecisionTestFile, "utf8")
@@ -803,6 +817,18 @@ function checkTurnEntry() {
   ]) {
     if (!actionDecisionExceptionTestText.includes(required)) {
       violations.push(`${rel(actionDecisionExceptionTestFile)} must cover ${required}`);
+    }
+  }
+  const actionDecisionEvidenceFailureTestText = fs.existsSync(actionDecisionEvidenceFailureTestFile)
+    ? fs.readFileSync(actionDecisionEvidenceFailureTestFile, "utf8")
+    : "";
+  for (const required of [
+    "keeps acted decisions acted when decision evidence recording fails once",
+    "does not throw when decision evidence recording keeps failing",
+    "actionDecisionEvidenceWriteFailed",
+  ]) {
+    if (!actionDecisionEvidenceFailureTestText.includes(required)) {
+      violations.push(`${rel(actionDecisionEvidenceFailureTestFile)} must cover ${required}`);
     }
   }
   const actionDecisionEvidenceText = fs.readFileSync(actionDecisionEvidenceFile, "utf8");

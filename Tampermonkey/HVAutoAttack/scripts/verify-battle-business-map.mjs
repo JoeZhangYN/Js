@@ -8,6 +8,7 @@ const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const turnPreludeFile = path.join(root, "src/battle/battle-turn-prelude.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
 const actionDecisionEvidenceFile = path.join(root, "src/battle/battle-action-decision-evidence.js");
+const actionDecisionRecordingFile = path.join(root, "src/battle/battle-action-decision-recording.js");
 const actionEffectDispatchFile = path.join(root, "src/battle/battle-action-effect-dispatch.js");
 const violations = [];
 
@@ -33,6 +34,7 @@ const mainLoop = read(mainLoopFile);
 const turnPrelude = read(turnPreludeFile);
 const actionDecision = read(actionDecisionFile);
 const actionDecisionEvidence = read(actionDecisionEvidenceFile);
+const actionDecisionRecording = read(actionDecisionRecordingFile);
 const actionEffectDispatch = read(actionEffectDispatchFile);
 
 for (const stale of ["BATTLE_RULES", "battle/rules/index.js", "`dispatch.js`"]) {
@@ -79,10 +81,17 @@ for (const required of [
   "runBattleAttackAction",
   "runBattleActionEffectDispatch",
   "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
-  "BattleActionDecisionEvidenceEvent.RECORD_TRACE",
-  "runBattleActionDecisionEvidence",
+  "recordDecisionEvidence",
 ]) {
   requireText("src/battle/battle-action-decision.js", actionDecision, required);
+}
+
+for (const required of [
+  "BattleActionDecisionEvidenceEvent.RECORD_TRACE",
+  "runBattleActionDecisionEvidence",
+  "actionDecisionEvidenceWriteFailed",
+]) {
+  requireText("src/battle/battle-action-decision-recording.js", actionDecisionRecording, required);
 }
 
 for (const required of [
