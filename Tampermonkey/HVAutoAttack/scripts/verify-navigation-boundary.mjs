@@ -119,6 +119,7 @@ if (!owner) {
     }
   }
   const navigationDecisionSource = files.find((file) => file.rel === "core/navigation-decision-evidence.js");
+  const navigationRejectionTestSource = files.find((file) => file.rel === "core/navigate-rejection.test.js");
   const openWindowAuditTestSource = files.find((file) => file.rel === "core/navigate-open-window-audit.test.js");
   if (!navigationDecisionSource) {
     violations.push("core/navigation-decision-evidence.js is missing");
@@ -143,6 +144,21 @@ if (!owner) {
     ]) {
       if (!source.includes(required)) {
         violations.push(`navigation entry must record decision evidence ${required}`);
+      }
+    }
+  }
+  if (!navigationRejectionTestSource) {
+    violations.push("core/navigate-rejection.test.js must cover unknown/null navigation rejection evidence");
+  } else {
+    const navigationRejectionTestText = stripComments(readFileSync(navigationRejectionTestSource.abs, "utf8"));
+    for (const required of [
+      "records rejected evidence for unknown navigation events",
+      "rejects null navigation events with structured evidence instead of throwing",
+      "HVAA:lastNavigationDecision",
+      "unknownNavigationEvent",
+    ]) {
+      if (!navigationRejectionTestText.includes(required)) {
+        violations.push(`navigation rejection test must cover ${required}`);
       }
     }
   }
@@ -194,6 +210,9 @@ if (!owner) {
   }
   if (!source.includes("const navigationEventHandlers")) {
     violations.push("runNavigationAutomation(event) must route through navigationEventHandlers");
+  }
+  if (!source.includes("navigationEventHandlers[event?.type]")) {
+    violations.push("runNavigationAutomation(event) must reject null events with decision evidence");
   }
   const entry = source.match(/export function runNavigationAutomation[\s\S]*?\n}/)?.[0] || "";
   if (/if\s*\(\s*event\.type\s*===/.test(entry)) {

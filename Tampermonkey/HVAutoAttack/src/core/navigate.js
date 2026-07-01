@@ -154,7 +154,7 @@ const navigationEventHandlers = Object.freeze({
 });
 
 export function runNavigationAutomation(event = { type: EVENT_RELOAD_NOW }) {
-  const handler = navigationEventHandlers[event.type];
+  const handler = navigationEventHandlers[event?.type];
   if (!handler) {
     recordNavigationDecision("rejected", event, { cause: "unknownNavigationEvent" });
     return false;
