@@ -4,6 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/attack/execute-attack.js");
 const ownerTest = path.normalize("src/battle/attack/execute-attack.test.js");
+const mercifulSideEffectTest = path.normalize(
+  "src/battle/attack/execute-attack-merciful-side-effect.test.js"
+);
 const bookkeeping = path.normalize("src/battle/attack/physical-skill-bookkeeping.js");
 const bookkeepingTest = path.normalize("src/battle/attack/physical-skill-bookkeeping.test.js");
 const actionEffect = path.normalize("src/battle/battle-action-effect-dispatch.js");
@@ -119,6 +122,29 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   if (!ownerTestText.includes("returns the Focus command result instead of claiming a missing click acted")) {
     violations.push(`${rel(ownerTest)} must cover failed Focus commands as not acted`);
   }
+}
+if (!fs.existsSync(path.join(root, mercifulSideEffectTest))) {
+  violations.push(`${rel(mercifulSideEffectTest)} must cover failed merciful physical plans`);
+} else {
+  const mercifulSideEffectTestText = read(mercifulSideEffectTest);
+  if (
+    !mercifulSideEffectTestText.includes(
+      "does not click the default target when the merciful skill-target command fails"
+    )
+  ) {
+    violations.push(
+      `${rel(mercifulSideEffectTest)} must cover failed merciful physical plans without side effects`
+    );
+  }
+}
+
+const physicalPlanBody =
+  ownerText.match(/function executePhysicalPlan\(plan, snap\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (!physicalPlanBody.includes("if (acted && plan.mercifulTargetId != null)")) {
+  violations.push(`${rel(owner)} merciful default target click must be gated by acted`);
+}
+if (physicalPlanBody.includes("if (plan.mercifulTargetId != null) {\n    runBattleTargetCommand")) {
+  violations.push(`${rel(owner)} must not click default target after a failed merciful command`);
 }
 
 if (

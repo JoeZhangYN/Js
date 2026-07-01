@@ -90,7 +90,7 @@ function executePhysicalPlan(plan, snap) {
   };
   if (plan.mercifulTargetId != null) event.targetRequiresSkill = true;
   const acted = !!runBattleTargetCommand(event);
-  if (plan.mercifulTargetId != null) {
+  if (acted && plan.mercifulTargetId != null) {
     runBattleTargetCommand({
       type: BattleTargetCommandEvent.CLICK_TARGET,
       targetId: plan.defaultTargetId,
