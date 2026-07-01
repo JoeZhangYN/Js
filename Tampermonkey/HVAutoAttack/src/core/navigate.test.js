@@ -1,23 +1,42 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   NavigationEvent,
+  NavigationRedirectReason,
   NavigationReloadReason,
   runNavigationAutomation,
 } from "./navigate.js";
 
 describe("runNavigationAutomation", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("routes URL opening through the navigation event entry", () => {
     const open = vi.spyOn(window, "open").mockImplementation(() => null);
 
     expect(
       runNavigationAutomation({
         type: NavigationEvent.OPEN_URL,
+        reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
         url: "https://hentaiverse.org/encounter.php",
         newTab: true,
       })
     ).toBe(true);
 
     expect(open).toHaveBeenCalledWith("https://hentaiverse.org/encounter.php", "_blank");
+  });
+
+  it("rejects URL opening without an allowed reason", () => {
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    expect(
+      runNavigationAutomation({
+        type: NavigationEvent.OPEN_URL,
+        url: "https://hentaiverse.org/encounter.php",
+      })
+    ).toBe(false);
+
+    expect(open).not.toHaveBeenCalled();
   });
 
   it("routes named popup windows through the navigation event entry", () => {

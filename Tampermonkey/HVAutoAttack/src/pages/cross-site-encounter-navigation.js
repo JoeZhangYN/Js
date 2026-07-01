@@ -1,7 +1,11 @@
 // 跨站遭遇入口导航：维护 HV origin，并在 e-hentai encounter 页回跳 HV。
 import { getValue, setValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import {
+  NavigationEvent,
+  NavigationRedirectReason,
+  runNavigationAutomation,
+} from "../core/navigate.js";
 import { PageKind } from "./page-kind.js";
 
 const DEFAULT_HV_ORIGIN = "https://hentaiverse.org";
@@ -29,7 +33,7 @@ function readEncounterPath(deps) {
 
 function redirectToEncounterOrigin(deps) {
   if (deps.href() !== EHENTAI_ENCOUNTER_URL) return;
-  deps.openUrl(`${readReturnOrigin(deps)}${readEncounterPath(deps)}`);
+  deps.openUrl(`${readReturnOrigin(deps)}${readEncounterPath(deps)}`, NavigationRedirectReason.CROSS_SITE_ENCOUNTER);
 }
 
 function makeDeps(deps) {
@@ -39,9 +43,10 @@ function makeDeps(deps) {
     href: deps.href || (() => window.location.href),
     openUrl:
       deps.openUrl ||
-      ((url) =>
+      ((url, reason) =>
         runNavigationAutomation({
           type: NavigationEvent.OPEN_URL,
+          reason,
           url,
         })),
     origin: deps.origin || (() => window.location.origin),

@@ -7,7 +7,6 @@ const OWNER = "core/navigate.js";
 const RAW_NAVIGATION_EXEMPT = new Set([
   "core/navigate.js",
   "battle/battle-api-bridge.js",
-  "i18n/hv-utils.js",
 ]);
 const LEGACY_EXPORT_RE = /\bexport\s+function\s+(goto|scheduleReload|openUrl)\s*\(/;
 const LEGACY_IMPORT_RE =
@@ -47,8 +46,14 @@ if (!owner) {
   if (!/\bexport\s+const\s+NavigationReloadReason\b/.test(source)) {
     violations.push("NavigationReloadReason must be the public reload reason vocabulary");
   }
+  if (!/\bexport\s+const\s+NavigationRedirectReason\b/.test(source)) {
+    violations.push("NavigationRedirectReason must be the public redirect reason vocabulary");
+  }
   if (!source.includes("isReloadReasonAllowed")) {
     violations.push("reloadNow/scheduleReload must validate an allowed reload reason");
+  }
+  if (!source.includes("isRedirectReasonAllowed")) {
+    violations.push("openUrl must validate an allowed redirect reason");
   }
   if (!source.includes('console.log("[HVAA] reload"') || !source.includes("{ reason }")) {
     violations.push("reload execution must log the reload reason before navigating");
@@ -105,6 +110,13 @@ for (const file of files) {
       const eventBody = source.slice(match.index, match.index + 220);
       if (!/\breason\b/.test(eventBody)) {
         violations.push(`src/${file.rel} reload navigation events must carry reason`);
+      }
+    }
+    const redirectEvents = source.matchAll(/type\s*:\s*NavigationEvent\.OPEN_URL/g);
+    for (const match of redirectEvents) {
+      const eventBody = source.slice(match.index, match.index + 220);
+      if (!/\breason\b/.test(eventBody)) {
+        violations.push(`src/${file.rel} redirect navigation events must carry reason`);
       }
     }
   }

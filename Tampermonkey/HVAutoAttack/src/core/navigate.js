@@ -24,9 +24,27 @@ export const NavigationReloadReason = Object.freeze({
   SETTINGS_CHANGE: "settingsChange",
   STAMINA_RECOVERY: "staminaRecovery",
   UNKNOWN_PAGE_REFRESH: "unknownPageRefresh",
+  HV_UTILS_ABILITY_UNLOCK: "hvUtilsAbilityUnlock",
+  HV_UTILS_CONFIG_SAVE: "hvUtilsConfigSave",
+  HV_UTILS_MAIL_LOG_RESET: "hvUtilsMailLogReset",
+  HV_UTILS_MONSTER_LAB_FORCE_UPDATE: "hvUtilsMonsterLabForceUpdate",
+  HV_UTILS_MONSTER_LAB_LOG_RESET: "hvUtilsMonsterLabLogReset",
+  HV_UTILS_PERSONA_DYNJS: "hvUtilsPersonaDynjs",
+  HV_UTILS_TRAINING_NOTIFICATION: "hvUtilsTrainingNotification",
 });
 
 const RELOAD_REASONS = new Set(Object.values(NavigationReloadReason));
+
+export const NavigationRedirectReason = Object.freeze({
+  CROSS_SITE_ENCOUNTER: "crossSiteEncounter",
+  ENCOUNTER_ENTRY: "encounterEntry",
+  HV_UTILS_CHARACTER_SETTINGS: "hvUtilsCharacterSettings",
+  HV_UTILS_DISABLE: "hvUtilsDisable",
+  HV_UTILS_EQUIP_POPUP: "hvUtilsEquipPopup",
+  HV_UTILS_MAIL_PAGE: "hvUtilsMailPage",
+});
+
+const REDIRECT_REASONS = new Set(Object.values(NavigationRedirectReason));
 
 /** 重定向当前页面（带 5s 后重试）。 */
 function goto(reason) {
@@ -37,6 +55,10 @@ function goto(reason) {
 
 function isReloadReasonAllowed(event) {
   return RELOAD_REASONS.has(event.reason);
+}
+
+function isRedirectReasonAllowed(event) {
+  return REDIRECT_REASONS.has(event.reason);
 }
 
 function normalizeReloadDelayMs(event) {
@@ -64,7 +86,8 @@ function scheduleReload(event) {
  * @param {string} url
  * @param {boolean=} newTab true -> 新标签
  */
-function openUrl(url, newTab) {
+function openUrl(url, newTab, reason) {
+  console.log("[HVAA] navigate", { reason, url, newTab: Boolean(newTab) });
   window.open(url, newTab ? "_blank" : "_self");
 }
 
@@ -80,7 +103,8 @@ const navigationEventHandlers = Object.freeze({
   },
   [EVENT_SCHEDULE_RELOAD]: (event) => scheduleReload(event),
   [EVENT_OPEN_URL]: (event) => {
-    openUrl(event.url, event.newTab);
+    if (!isRedirectReasonAllowed(event)) return false;
+    openUrl(event.url, event.newTab, event.reason);
     return true;
   },
   [EVENT_OPEN_WINDOW]: (event) => openWindow(event.url, event.name, event.features),

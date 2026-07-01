@@ -1,5 +1,5 @@
 // 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
-import { NavigationEvent, runNavigationAutomation } from "../core/navigate.js";
+import { NavigationEvent, NavigationRedirectReason, runNavigationAutomation } from "../core/navigate.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import {
   EncounterLobbyScheduleEvent,
@@ -50,6 +50,7 @@ function executeEncounterEntry(outcome) {
   if (outcome?.action === "enter" || outcome?.action === "navigate") {
     runNavigationAutomation({
       type: NavigationEvent.OPEN_URL,
+      reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
       url: outcome.href,
     });
     return { ...outcome, action: "navigated", handled: true };
@@ -57,6 +58,7 @@ function executeEncounterEntry(outcome) {
   if (outcome?.action === "open") {
     runNavigationAutomation({
       type: NavigationEvent.OPEN_URL,
+      reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
       url: outcome.href,
       newTab: true,
     });

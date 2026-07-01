@@ -39,7 +39,10 @@ describe("runCrossSiteEncounterNavigation", () => {
       })
     ).toBe(true);
 
-    expect(openUrl).toHaveBeenCalledWith("https://hentaiverse.org/encounter.php");
+    expect(openUrl).toHaveBeenCalledWith(
+      "https://hentaiverse.org/encounter.php",
+      "crossSiteEncounter"
+    );
   });
 
   it("uses HV referrer as fallback return origin without navigating non-encounter e-hentai pages", () => {

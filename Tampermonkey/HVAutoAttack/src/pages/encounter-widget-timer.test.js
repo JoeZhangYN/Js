@@ -11,6 +11,7 @@ vi.mock("../core/navigate.js", () => ({
     RELOAD_NOW: "reloadNow",
     SCHEDULE_RELOAD: "scheduleReload",
   }),
+  NavigationRedirectReason: Object.freeze({ ENCOUNTER_ENTRY: "encounterEntry" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
 }));
 
@@ -57,6 +58,7 @@ describe("encounter widget timer expiry", () => {
     });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "openUrl",
+      reason: "encounterEntry",
       url: "?s=Battle&ss=ba&encounter=abc123=",
     });
   });

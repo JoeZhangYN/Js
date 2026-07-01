@@ -27,6 +27,22 @@ try {
     else { bound(); }
     return node;
   };
+  var hvutReloadReason = function (key) {
+    return window.HVAA_navigation && window.HVAA_navigation.ReloadReason ? window.HVAA_navigation.ReloadReason[key] : undefined;
+  };
+  var hvutRedirectReason = function (key) {
+    return window.HVAA_navigation && window.HVAA_navigation.RedirectReason ? window.HVAA_navigation.RedirectReason[key] : undefined;
+  };
+  var reloadCurrentPage = function (reason) {
+    if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
+    console.warn('[HVAA] navigation bridge missing; reload blocked', { reason: reason });
+    return false;
+  };
+  var openUrl = function (url, reason, newTab) {
+    if (window.HVAA_navigation && window.HVAA_navigation.openUrl) return window.HVAA_navigation.openUrl(url, reason, !!newTab);
+    console.warn('[HVAA] navigation bridge missing; navigation blocked', { reason: reason, url: url, newTab: !!newTab });
+    return false;
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -506,7 +522,7 @@ const bindConfig = function (config, ctx) {
     config.settings.version = config.version;
     config.set('settings', config.settings);
     if (panel) {
-      location.href = location.href;
+      reloadCurrentPage(hvutReloadReason('HV_UTILS_CONFIG_SAVE'));
     }
   };
   config.text2obj = function (text, sep = ['\n', ':'], type) {
@@ -634,7 +650,7 @@ const bindTr = function (tr, ctx) {
     ctx.config.set('tr_notif', tr.json, 'hvut_');
 
     if (reload) {
-      location.href = location.href;
+      reloadCurrentPage(hvutReloadReason('HV_UTILS_TRAINING_NOTIFICATION'));
     }
   };
 
@@ -1900,7 +1916,7 @@ const bindPersona = function (persona, ctx) {
     if (_query.s === 'Battle') {
       ctx.battle?.create();
     } else if (['eq', 'ab', 'it', 'se'].includes(_query.ss)) {
-      location.href = location.href;
+      reloadCurrentPage(hvutReloadReason('HV_UTILS_PERSONA_DYNJS'));
     }
   };
   // [2026-06-10 续收] 原「parse_stats_pane 解析模型大分叉留各 IIFE」: 主世界旧版解析 .spn + #stats_pane
@@ -2152,7 +2168,7 @@ const $mail = {
     if ($mail.queue[$mail.current]) {
       return $mail.send();
     } else {
-      location.href = '?s=Bazaar&ss=mm&filter=sent';
+      openUrl('?s=Bazaar&ss=mm&filter=sent', hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
       return true;
     }
   },
@@ -4547,7 +4563,7 @@ if (!level_exec) {
     form.elements.fontsize.placeholder = '10';
     form.elements.fontoff.placeholder = '0';
   } else {
-    location.href = '?s=Character&ss=se';
+    openUrl('?s=Character&ss=se', hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'));
   }
   return;
 }
@@ -4766,7 +4782,7 @@ if ($config.settings.equipHoverFunctions) {
       }
       const key = e.key.toUpperCase();
       if (key === 'V') {
-        window.open(`equip/${eq.info.eid}/${eq.info.key}`, '_blank');
+        openUrl(`equip/${eq.info.eid}/${eq.info.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
       } else if (key === 'L') {
         prompt('Forum Link:', `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
       } else if (key === 'K') {
@@ -4780,7 +4796,7 @@ if ($config.settings.equipHoverFunctions) {
   document.addEventListener('dblclick', () => {
     const div = $qs('[data-eid]:hover');
     if (div) {
-      window.open(`equip/${div.dataset.eid}/${div.dataset.key}`, '_blank');
+      openUrl(`equip/${div.dataset.eid}/${div.dataset.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
     }
   });
 }
@@ -4792,7 +4808,7 @@ if ($config.settings.equipTouchFunctions) {
     if (!div) {
       return;
     }
-    window.open(`equip/${div.dataset.eid}/${div.dataset.key}`, '_blank');
+    openUrl(`equip/${div.dataset.eid}/${div.dataset.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
   }
 
   let lastTap = 0;
@@ -5396,7 +5412,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
 
     const requests = $ajax.repeat(count, unlock, ab);
     await Promise.all(requests);
-    location.href = location.href;
+    reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'));
   };
 
   _ab.calc = {
@@ -6273,7 +6289,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     reset: function () {
       if (confirm('此浏览器中的当前赛季的邮件记录将被删除.\nAre you sure?')) {
         $config.del('ss_log');
-        location.href = location.href;
+        reloadCurrentPage(hvutReloadReason('HV_UTILS_MAIL_LOG_RESET'));
       }
     },
   };
@@ -6976,7 +6992,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       reset_log: function () {
         if (confirm('本浏览器中的怪物实验室日志将被删除。\n确定吗？')) {
           $config.del('ml_log');
-          location.href = location.href;
+          reloadCurrentPage(hvutReloadReason('HV_UTILS_MONSTER_LAB_LOG_RESET'));
         }
       },
     };
@@ -7228,7 +7244,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           mob.log.pl = -1;
         });
         $config.set('ml_log', _ml.log);
-        location.href = location.href;
+        reloadCurrentPage(hvutReloadReason('HV_UTILS_MONSTER_LAB_FORCE_UPDATE'));
       },
       sort: function (key) {
         if (!['index', '姓名', '类型', '战力', 'wins', 'kills', 'gains', 'gifts', '士气', 'hunger'].includes(key)) {
@@ -7871,7 +7887,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
   if (_query.filter === 'new' && _query.hvut !== 'disabled') {
     if ($id('mmail_attachremove')) {
       alert('请移除附加的物品。');
-      location.href = location.href + '&hvut=disabled';
+      openUrl(location.href + '&hvut=disabled', hvutRedirectReason('HV_UTILS_DISABLE'));
       return;
     }
 
@@ -7915,7 +7931,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
         _mm.write.node.right = $element('div', _mm.write.node.field, ['.hvut-mm-right']);
         _mm.write.node.tabs = $element('div', _mm.write.node.right, ['.hvut-mm-tabs']);
-        $input(['button', '使用原版邮箱'], _mm.write.node.tabs, null, () => { location.href = location.href + '&hvut=disabled'; });
+        $input(['button', '使用原版邮箱'], _mm.write.node.tabs, null, () => { openUrl(location.href + '&hvut=disabled', hvutRedirectReason('HV_UTILS_DISABLE')); });
       },
       calc: function () {
         const queue = [].concat(_mm.credits.list, _mm.equip.list, _mm.item.list).filter((e) => e.node.check.checked && e.data.count);
@@ -8926,7 +8942,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         if (isNaN(p) || p < 0) {
           return;
         }
-        location.href = location.href.replace(/&page=\d+/, '') + `&page=${p}`;
+        openUrl(location.href.replace(/&page=\d+/, '') + `&page=${p}`, hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
       },
     };
 
@@ -8943,7 +8959,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         if (action === 'close') {
           _mm.mail.close();
         } else if (action === 'reply') {
-          location.href = `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;
+          openUrl(`?s=Bazaar&ss=mm&filter=new&reply=${mid}`, hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
         } else if (action === 'take') {
           if (value && !confirm(`Accepting the attachments will deduct ${parseInt(value).toLocaleString()} Credits from your account.\nAre you sure?`)) {
             return;
@@ -10210,7 +10226,7 @@ if (!level_exec) {
     form.fontsize.placeholder = '10';
     form.fontoff.placeholder = '0';
   } else {
-    location.href = '?s=Character&ss=se';
+    openUrl('?s=Character&ss=se', hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'));
   }
   return;
 }
@@ -10455,7 +10471,7 @@ if ($config.settings.equipHoverFunctions) {
       }
       const key = e.key.toUpperCase();
       if (key === 'V') {
-        window.open(`equip/${eq.info.eid}/${eq.info.key}`, '_blank');
+        openUrl(`equip/${eq.info.eid}/${eq.info.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
       } else if (key === 'L') {
         prompt('论坛链接:', `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
       } else if (key === 'K') {
@@ -10469,7 +10485,7 @@ if ($config.settings.equipHoverFunctions) {
   document.addEventListener('dblclick', () => {
     const div = $qs('div[data-eid]:hover');
     if (div) {
-      window.open(`equip/${div.dataset.eid}/${div.dataset.key}`, '_blank');
+      openUrl(`equip/${div.dataset.eid}/${div.dataset.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
     }
   });
 }
@@ -10481,7 +10497,7 @@ if ($config.settings.equipTouchFunctions) {
     if (!div) {
       return;
     }
-    window.open(`equip/${div.dataset.eid}/${div.dataset.key}`, '_blank');
+    openUrl(`equip/${div.dataset.eid}/${div.dataset.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
   }
 
   let lastTap = 0;
@@ -11493,7 +11509,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
 
     const requests = $ajax.repeat(count, unlock, ab);
     await Promise.all(requests);
-    location.href = location.href;
+    reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'));
   };
 
   _ab.calc = {
@@ -13235,7 +13251,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           mob.log.pl = -1;
         });
         $config.set('ml_log', _ml.log);
-        location.href = location.href;
+        reloadCurrentPage(hvutReloadReason('HV_UTILS_MONSTER_LAB_FORCE_UPDATE'));
       },
 
       sort: function (key) {
@@ -13881,7 +13897,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
   if (_query.filter === 'new' && _query.hvut !== 'disabled') {
     if ($id('mmail_attachremove')) {
       alert('请移除附加的物品。');
-      location.href = location.href + '&hvut=disabled';
+      openUrl(location.href + '&hvut=disabled', hvutRedirectReason('HV_UTILS_DISABLE'));
       return;
     }
 
@@ -14078,7 +14094,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
     _mm.node.write_right = $element('div', _mm.node.write_field, ['.hvut-mm-right']);
     _mm.node.write_tabs = $element('div', _mm.node.write_right, ['.hvut-mm-tabs hvut-cphu-sub']);
-    $element('span', _mm.node.write_tabs, '使用原版邮箱', () => { location.href = location.href + '&hvut=disabled'; });
+    $element('span', _mm.node.write_tabs, '使用原版邮箱', () => { openUrl(location.href + '&hvut=disabled', hvutRedirectReason('HV_UTILS_DISABLE')); });
 
     // MM item
     _mm.item_change = function (e) {
@@ -14889,7 +14905,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       if (isNaN(p) || p < 0) {
         return;
       }
-      location.href = location.href.replace(/&page=\d+/, '') + '&page=' + p;
+      openUrl(location.href.replace(/&page=\d+/, '') + '&page=' + p, hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
     };
 
     _mm.mail_data = {};
@@ -15199,7 +15215,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       if (action === 'close') {
         _mm.mail_close();
       } else if (action === 'reply') {
-        location.href = `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;
+        openUrl(`?s=Bazaar&ss=mm&filter=new&reply=${mid}`, hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
       } else if (action === 'take') {
         if (value && !confirm(`拿取附件将从你的账户中扣除 ${parseInt(value).toLocaleString()} Credits.\n确定吗?`)) {
           return;

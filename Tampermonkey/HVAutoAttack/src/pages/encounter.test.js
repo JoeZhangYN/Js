@@ -11,6 +11,7 @@ vi.mock("../core/navigate.js", () => ({
     RELOAD_NOW: "reloadNow",
     SCHEDULE_RELOAD: "scheduleReload",
   }),
+  NavigationRedirectReason: Object.freeze({ ENCOUNTER_ENTRY: "encounterEntry" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
 }));
 
@@ -75,6 +76,7 @@ describe("runEncounterAutomation", () => {
     });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "openUrl",
+      reason: "encounterEntry",
       url: "?s=Battle&ss=ba&encounter=abc123=",
     });
   });
@@ -113,6 +115,7 @@ describe("runEncounterAutomation", () => {
     });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "openUrl",
+      reason: "encounterEntry",
       url: "?s=Battle&ss=ba&encounter=abc123=",
     });
   });
@@ -152,6 +155,7 @@ describe("runEncounterAutomation", () => {
     });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "openUrl",
+      reason: "encounterEntry",
       url: "http://alt.hentaiverse.org/?s=Battle&ss=ba&encounter=abc123=",
       newTab: true,
     });
