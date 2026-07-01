@@ -161,6 +161,7 @@ if (!owner) {
         "DiagnosticEvidenceKey.NAVIGATION_DECISION",
         "DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW",
         "DiagnosticEvidenceKey.BATTLE_COMPLETION",
+        "DiagnosticEvidenceKey.BATTLE_API_BRIDGE",
         "DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
         "DiagnosticEvidenceKey.BATTLE_COMMAND",
         "DiagnosticEvidenceKey.BATTLE_PAUSE",
@@ -173,6 +174,7 @@ if (!owner) {
         "navigationDecision",
         "battleTurnWorkflow",
         "battleCompletion",
+        "battleApiBridge",
         "battleApiResponseRecovery",
         "battleCommand",
         "battlePause",
@@ -204,6 +206,9 @@ if (!owner) {
       }
       if (!testText.includes("battleCompletion")) {
         violations.push(`${testSource.rel} must preserve battle completion diagnostic evidence`);
+      }
+      if (!testText.includes("battleApiBridge")) {
+        violations.push(`${testSource.rel} must preserve battle API bridge diagnostic evidence`);
       }
       if (!testText.includes("unknownActionDelayEvent")) {
         violations.push(`${testSource.rel} must preserve action delay diagnostic evidence`);

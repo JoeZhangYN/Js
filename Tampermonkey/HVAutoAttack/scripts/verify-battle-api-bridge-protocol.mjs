@@ -9,6 +9,9 @@ const runtimeTest = path.normalize("src/battle/battle-api-bridge-runtime.test.js
 const apiCallScript = path.normalize("src/battle/battle-api-call-script.js");
 const responseScript = path.normalize("src/battle/battle-api-response-script.js");
 const responseScriptTest = path.normalize("src/battle/battle-api-response-script.test.js");
+const responseScriptDiagnosticsTest = path.normalize(
+  "src/battle/battle-api-response-script-diagnostics.test.js"
+);
 const responseScriptMalformedJsonTest = path.normalize(
   "src/battle/battle-api-response-script-malformed-json.test.js"
 );
@@ -175,8 +178,13 @@ requireText(diagnosticEvidenceKeys, [
 ]);
 requireText(responseScriptTest, [
   "records blocked recovery evidence when the page bridge is missing",
-  "carries recent diagnostic evidence into bridge-missing recovery state",
   "routes rejected API responses through the recovery bridge when available",
+  "HVAA:battleApiRecovery",
+  "bridgeMissing",
+  "recoveryAction",
+]);
+requireText(responseScriptDiagnosticsTest, [
+  "carries recent diagnostic evidence into bridge-missing recovery state",
   "HVAA:battleApiRecovery",
   "bridgeMissing",
   "recoveryAction",
@@ -186,6 +194,8 @@ requireText(responseScriptTest, [
   "DiagnosticEvidenceKey.BATTLE_ACTION_DELAY",
   "DiagnosticEvidenceKey.BATTLE_ACTION_SPEED",
   "failureReason",
+  "DiagnosticEvidenceKey.BATTLE_API_BRIDGE",
+  "battleApiBridge",
   "battleCompletion",
   "battleActionDelay",
   "unknownActionDelayEvent",
@@ -276,6 +286,7 @@ requireText(recoveryTest, [
   "HVAA:battleApiRecovery",
   "recoveryAction",
   "knownResultKind: true",
+  "battleApiBridge",
   "battleActionDelay",
   "unknownActionDelayEvent",
 ]);

@@ -96,6 +96,7 @@ describe("runBattleApiResponseRecovery", () => {
   it("carries recent battle diagnostic evidence into repeated API pause state", () => {
     const deps = makeDeps();
     const diagnosticEvidence = {
+      battleApiBridge: { phase: "start", result: "rejected", reason: "eventNodeMissing" },
       battleActionDecision: {
         steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
       },

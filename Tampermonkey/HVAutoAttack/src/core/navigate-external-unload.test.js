@@ -25,6 +25,10 @@ describe("navigation external unload audit", () => {
       JSON.stringify({ outcome: "victory", effects: { scheduleReload: false } })
     );
     sessionStorage.setItem(
+      DiagnosticEvidenceKey.BATTLE_API_BRIDGE,
+      JSON.stringify({ phase: "start", result: "rejected", reason: "eventNodeMissing" })
+    );
+    sessionStorage.setItem(
       DiagnosticEvidenceKey.BATTLE_ACTION_DELAY,
       JSON.stringify({ decision: "rejected", reason: "unknownActionDelayEvent", eventType: null })
     );
@@ -43,6 +47,7 @@ describe("navigation external unload audit", () => {
           },
           battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
           battleCompletion: { outcome: "victory", effects: { scheduleReload: false } },
+          battleApiBridge: { phase: "start", result: "rejected", reason: "eventNodeMissing" },
           battleActionDelay: {
             decision: "rejected",
             reason: "unknownActionDelayEvent",
@@ -61,6 +66,7 @@ describe("navigation external unload audit", () => {
         },
         battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
         battleCompletion: { outcome: "victory", effects: { scheduleReload: false } },
+        battleApiBridge: { phase: "start", result: "rejected", reason: "eventNodeMissing" },
         battleActionDelay: {
           decision: "rejected",
           reason: "unknownActionDelayEvent",
