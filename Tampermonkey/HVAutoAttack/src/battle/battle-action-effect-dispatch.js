@@ -67,6 +67,7 @@ function rejectUnknownActionEffectEvent(event) {
     type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
     result: { kind: "unknown-dispatch-event", reason: "unknownActionEffectDispatchEvent", eventType: event?.type ?? null },
     acted: false,
+    knownResultKind: false,
     failureReason: "unknownActionEffectDispatchEvent",
   });
   return false;

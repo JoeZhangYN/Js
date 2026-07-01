@@ -131,6 +131,7 @@ describe("runBattleActionEffectDispatch", () => {
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
       result: { kind: "??" },
       acted: false,
+      knownResultKind: false,
       failureReason: "unknownActionResultKind",
     });
   });
@@ -152,6 +153,7 @@ describe("runBattleActionEffectDispatch", () => {
         eventType: "unknown",
       },
       acted: false,
+      knownResultKind: false,
       failureReason: "unknownActionEffectDispatchEvent",
     });
   });
@@ -165,6 +167,7 @@ describe("runBattleActionEffectDispatch", () => {
         eventType: null,
       },
       acted: false,
+      knownResultKind: false,
       failureReason: "unknownActionEffectDispatchEvent",
     });
   });

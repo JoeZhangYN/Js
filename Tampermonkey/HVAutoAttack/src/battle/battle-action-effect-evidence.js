@@ -33,6 +33,8 @@ function recordAppliedActionEffect(event, deps) {
   const evidence = {
     result: summarizeResult(event.result),
     acted: Boolean(event.acted),
+    knownResultKind:
+      typeof event.knownResultKind === "boolean" ? event.knownResultKind : null,
     failureReason: classifyActionEffectFailure(event),
     command: summarizeCommandEvidence(event.commandEvidence),
     at: new Date().toISOString(),

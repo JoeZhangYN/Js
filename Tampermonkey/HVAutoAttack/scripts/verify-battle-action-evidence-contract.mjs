@@ -83,6 +83,7 @@ for (const required of [
 for (const required of [
   "export function readBattleActionEffectEvidence",
   "JSON.parse(storage.getItem(ACTION_EFFECT_EVIDENCE_KEY)",
+  "knownResultKind:",
 ]) {
   if (!effectEvidenceText.includes(required)) {
     violations.push(`src/battle/battle-action-effect-evidence.js must expose effect evidence reader ${required}`);

@@ -18,6 +18,7 @@ describe("runBattleActionEffectEvidence", () => {
           type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
           result: { kind: "click-skill-then-target", skillId: "213", targetId: 2 },
           acted: true,
+          knownResultKind: true,
         },
         { sessionStorage: window.sessionStorage, debug }
       )
@@ -26,6 +27,7 @@ describe("runBattleActionEffectEvidence", () => {
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
       result: { kind: "click-skill-then-target", skillId: "213", targetId: 2 },
       acted: true,
+      knownResultKind: true,
     });
     expect(debug).toHaveBeenCalledWith(
       "[HVAA] battle action effect",
@@ -51,7 +53,7 @@ describe("runBattleActionEffectEvidence", () => {
     });
   });
 
-  it("records event type for rejected dispatch events", () => {
+  it("records event type for rejected dispatch events and recognized result-kind state", () => {
     runBattleActionEffectEvidence(
       {
         type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
@@ -61,6 +63,7 @@ describe("runBattleActionEffectEvidence", () => {
           eventType: "unknown",
         },
         acted: false,
+        knownResultKind: false,
         failureReason: "unknownActionEffectDispatchEvent",
       },
       { sessionStorage: window.sessionStorage, debug: vi.fn() }
@@ -73,6 +76,7 @@ describe("runBattleActionEffectEvidence", () => {
         eventType: "unknown",
       },
       acted: false,
+      knownResultKind: false,
       failureReason: "unknownActionEffectDispatchEvent",
     });
   });
