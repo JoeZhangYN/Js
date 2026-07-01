@@ -13,7 +13,8 @@ describe("runNavigationAutomation", () => {
   });
 
   it("routes URL opening through the navigation event entry", () => {
-    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    const opened = { close: vi.fn() };
+    const open = vi.spyOn(window, "open").mockImplementation(() => opened);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     expect(
@@ -33,6 +34,7 @@ describe("runNavigationAutomation", () => {
         reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
         url: "https://hentaiverse.org/encounter.php",
         newTab: true,
+        opened: true,
       })
     );
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastNavigationAudit"))).toMatchObject({
@@ -40,6 +42,7 @@ describe("runNavigationAutomation", () => {
       reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
       url: "https://hentaiverse.org/encounter.php",
       newTab: true,
+      opened: true,
     });
   });
 

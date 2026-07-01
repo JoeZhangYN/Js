@@ -73,13 +73,13 @@ if (!owner) {
     violations.push("openWindow must validate an allowed window reason");
   }
   if (!source.includes("opened: Boolean(openedWindow)")) {
-    violations.push("openWindow audit must record whether the popup was actually opened");
+    violations.push("navigation audit must record whether window.open actually opened");
   }
   if (!source.includes('openedWindow ? "accepted" : "rejected"')) {
-    violations.push("openWindow decision must reject blocked popup opens");
+    violations.push("navigation decision must reject blocked window.open calls");
   }
   if (!source.includes('cause: "windowOpenBlocked"')) {
-    violations.push("openWindow rejected decision must record windowOpenBlocked");
+    violations.push("navigation rejected decision must record windowOpenBlocked");
   }
   const auditSource = files.find((file) => file.rel === "core/navigation-audit.js");
   const diagnosticEvidenceSource = files.find((file) => file.rel === "core/diagnostic-evidence.js");
@@ -220,6 +220,10 @@ if (!owner) {
   const navigationRejectionTestSource = files.find(
     (file) => file.rel === "core/navigate-rejection.test.js"
   );
+  const navigationTestSource = files.find((file) => file.rel === "core/navigate.test.js");
+  const openUrlRejectionTestSource = files.find(
+    (file) => file.rel === "core/navigate-open-url-rejection.test.js"
+  );
   const openWindowAuditTestSource = files.find(
     (file) => file.rel === "core/navigate-open-window-audit.test.js"
   );
@@ -295,6 +299,35 @@ if (!owner) {
     ]) {
       if (!navigationRejectionTestText.includes(required)) {
         violations.push(`navigation rejection test must cover ${required}`);
+      }
+    }
+  }
+  if (!navigationTestSource) {
+    violations.push("core/navigate.test.js must cover navigation entry behavior");
+  } else {
+    const navigationTestText = stripComments(readFileSync(navigationTestSource.abs, "utf8"));
+    for (const required of [
+      "routes URL opening through the navigation event entry",
+      "opened: true",
+    ]) {
+      if (!navigationTestText.includes(required)) {
+        violations.push(`navigation entry test must cover ${required}`);
+      }
+    }
+  }
+  if (!openUrlRejectionTestSource) {
+    violations.push("core/navigate-open-url-rejection.test.js must cover blocked OPEN_URL");
+  } else {
+    const openUrlRejectionTestText = stripComments(
+      readFileSync(openUrlRejectionTestSource.abs, "utf8")
+    );
+    for (const required of [
+      "rejects URL opening when the browser blocks the navigation window",
+      "windowOpenBlocked",
+      "opened: false",
+    ]) {
+      if (!openUrlRejectionTestText.includes(required)) {
+        violations.push(`open URL rejection test must cover ${required}`);
       }
     }
   }

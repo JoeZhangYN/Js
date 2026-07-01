@@ -116,9 +116,15 @@ function scheduleReload(event) {
  * @param {boolean=} newTab true -> 新标签
  */
 function openUrl(url, newTab, reason) {
-  recordNavigationDecision("accepted", { type: EVENT_OPEN_URL, reason }, { url, newTab: Boolean(newTab) });
-  writeNavigationAudit("navigate", { reason, url, newTab: Boolean(newTab) });
-  window.open(url, newTab ? "_blank" : "_self");
+  const openedWindow = window.open(url, newTab ? "_blank" : "_self");
+  const detail = { url, newTab: Boolean(newTab), opened: Boolean(openedWindow) };
+  recordNavigationDecision(
+    openedWindow ? "accepted" : "rejected",
+    { type: EVENT_OPEN_URL, reason },
+    openedWindow ? detail : { ...detail, cause: "windowOpenBlocked" }
+  );
+  writeNavigationAudit("navigate", { reason, ...detail });
+  return Boolean(openedWindow);
 }
 
 function openWindow(url, name, features, reason) {
@@ -144,8 +150,7 @@ const navigationEventHandlers = Object.freeze({
       recordNavigationDecision("rejected", event, { cause: "redirectReasonNotAllowed", url: event.url });
       return false;
     }
-    openUrl(event.url, event.newTab, event.reason);
-    return true;
+    return openUrl(event.url, event.newTab, event.reason);
   },
   [EVENT_OPEN_WINDOW]: (event) => {
     if (!isWindowReasonAllowed(event)) {

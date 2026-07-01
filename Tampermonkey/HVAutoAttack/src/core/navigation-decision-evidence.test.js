@@ -18,7 +18,7 @@ describe("navigation decision evidence", () => {
   });
 
   it("records accepted URL navigation decisions without replacing navigation audit", () => {
-    vi.spyOn(window, "open").mockImplementation(() => null);
+    vi.spyOn(window, "open").mockImplementation(() => ({ close: vi.fn() }));
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     expect(
@@ -37,6 +37,7 @@ describe("navigation decision evidence", () => {
       detail: {
         url: "https://hentaiverse.org/encounter.php",
         newTab: true,
+        opened: true,
       },
     });
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastNavigationAudit"))).toMatchObject({
