@@ -43,7 +43,12 @@ const STALL_ATTEMPT_EXECUTORS = Object.freeze({
 });
 
 function recordAutoTunePotionUse() {
-  runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_POTION_USE });
+  try {
+    runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_POTION_USE });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error?.message || String(error) };
+  }
 }
 
 function recoveryAbs(snap) {

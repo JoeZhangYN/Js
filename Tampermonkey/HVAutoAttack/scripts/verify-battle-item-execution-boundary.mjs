@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/item/execute-item.js");
 const ownerTest = path.normalize("src/battle/item/execute-item.test.js");
+const autoTuneFailureTest = path.normalize("src/battle/item/execute-item-autotune-failure.test.js");
 const rejectionTest = path.normalize("src/battle/item/execute-item-rejection.test.js");
 const actionEffect = path.normalize("src/battle/battle-action-effect-dispatch.js");
 const violations = [];
@@ -31,6 +32,7 @@ for (const required of [
   "executeStallPlan",
   "executeScrollPlan",
   "AutoTuneEvent.RECORD_POTION_USE",
+  "recordAutoTunePotionUse",
   "BattleItemCommandEvent.CLICK_GEM",
   "BattleItemCommandEvent.CLICK_ITEM",
   "RecoveryLearningEvent.RECORD_PRE_DRINK",
@@ -44,6 +46,13 @@ for (const required of [
   "rejectUnknownItemExecutionEvent(event)",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
+}
+const recordAutoTuneBody =
+  ownerText.match(/function recordAutoTunePotionUse\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+for (const required of ["try {", "return { ok: true }", "return { ok: false, error: error?.message || String(error) }"]) {
+  if (!recordAutoTuneBody.includes(required)) {
+    violations.push(`${rel(owner)} must keep auto-tune record failures from changing acted semantics`);
+  }
 }
 
 if (
@@ -91,6 +100,20 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("does not claim gem use when the gem command cannot click")) {
     violations.push(`${rel(ownerTest)} must cover failed gem commands as not acted`);
+  }
+}
+if (!fs.existsSync(path.join(root, autoTuneFailureTest))) {
+  violations.push(`${rel(autoTuneFailureTest)} must cover auto-tune record failures`);
+} else {
+  const autoTuneFailureTestText = read(autoTuneFailureTest);
+  for (const required of [
+    "keeps clicked gems acted when auto-tune recording fails",
+    "keeps clicked potions acted when auto-tune recording fails",
+    "auto tune failed",
+  ]) {
+    if (!autoTuneFailureTestText.includes(required)) {
+      violations.push(`${rel(autoTuneFailureTest)} must cover ${required}`);
+    }
   }
 }
 if (!fs.existsSync(path.join(root, rejectionTest))) {
