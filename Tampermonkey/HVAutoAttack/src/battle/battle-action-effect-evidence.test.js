@@ -93,6 +93,38 @@ describe("runBattleActionEffectEvidence", () => {
     });
   });
 
+  it("classifies noop and unknown plan failures for diagnostics", () => {
+    runBattleActionEffectEvidence(
+      {
+        type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+        result: { kind: "item-plan", plan: { type: "noop" } },
+        acted: false,
+      },
+      { sessionStorage: window.sessionStorage, debug: vi.fn() }
+    );
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
+      result: { kind: "item-plan", planKind: "noop" },
+      acted: false,
+      failureReason: "noActionCandidate",
+    });
+
+    runBattleActionEffectEvidence(
+      {
+        type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+        result: { kind: "channel-plan", plan: { type: "unexpected" } },
+        acted: false,
+      },
+      { sessionStorage: window.sessionStorage, debug: vi.fn() }
+    );
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
+      result: { kind: "channel-plan", planKind: "unexpected" },
+      acted: false,
+      failureReason: "unknownChannelPlanType",
+    });
+  });
+
   it("keeps legacy plan kind fallback for older evidence producers", () => {
     runBattleActionEffectEvidence(
       {

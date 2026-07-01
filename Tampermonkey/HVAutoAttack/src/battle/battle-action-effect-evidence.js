@@ -2,6 +2,16 @@ import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
 
 const EVENT_RECORD_APPLIED = "recordApplied";
 const ACTION_EFFECT_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT;
+const KNOWN_PLAN_TYPES = Object.freeze({
+  "attack-plan": new Set(["noop", "focus", "toggle-spirit", "spell", "merciful-single", "physical", "default"]),
+  "item-plan": new Set(["noop", "gem", "potion", "stall", "scroll"]),
+  "channel-plan": new Set(["noop", "click"]),
+});
+const UNKNOWN_PLAN_FAILURE_REASONS = Object.freeze({
+  "attack-plan": "unknownAttackPlanType",
+  "item-plan": "unknownItemPlanType",
+  "channel-plan": "unknownChannelPlanType",
+});
 
 export const BattleActionEffectEvidenceEvent = Object.freeze({
   RECORD_APPLIED: EVENT_RECORD_APPLIED,
@@ -40,7 +50,18 @@ function classifyActionEffectFailure(event) {
   if (event.failureReason) return event.failureReason;
   if (!event.result?.kind) return "missingActionResult";
   if (event.knownResultKind === false) return event.result.reason || "unknownActionResultKind";
+  const planFailure = classifyPlanFailure(event.result);
+  if (planFailure) return planFailure;
   return event.result.reason || "actionExecutorRejected";
+}
+
+function classifyPlanFailure(result) {
+  const knownTypes = KNOWN_PLAN_TYPES[result.kind];
+  if (!knownTypes) return null;
+  const planType = result.plan?.type ?? result.plan?.kind;
+  if (planType === "noop") return result.reason || "noActionCandidate";
+  if (!knownTypes.has(planType)) return UNKNOWN_PLAN_FAILURE_REASONS[result.kind];
+  return null;
 }
 
 const battleActionEffectEvidenceEventHandlers = Object.freeze({
