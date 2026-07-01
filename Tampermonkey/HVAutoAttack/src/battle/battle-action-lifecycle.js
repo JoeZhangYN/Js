@@ -21,8 +21,10 @@ import {
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
+const EVENT_UNKNOWN_ACTION_LIFECYCLE = "unknownActionLifecycleEvent";
 const OUTCOME_NEXT_ROUND = "nextRound";
 const OUTCOME_ONGOING = "ongoing";
+const OUTCOME_REJECTED = "rejected";
 
 export const BattleActionLifecycleEvent = Object.freeze({
   ACTION_STARTED: EVENT_ACTION_STARTED,
@@ -79,6 +81,18 @@ const battleActionLifecycleEventHandlers = Object.freeze({
   [EVENT_ACTION_ENDED]: (deps) => runActionEnded(deps),
 });
 
+function rejectUnknownActionLifecycleEvent(event, deps) {
+  const result = {
+    outcome: OUTCOME_REJECTED,
+    reason: EVENT_UNKNOWN_ACTION_LIFECYCLE,
+    eventType: event?.type ?? null,
+  };
+  deps.recordLifecycle(EVENT_UNKNOWN_ACTION_LIFECYCLE, result, [
+    { step: "routeEvent", result: false, reason: EVENT_UNKNOWN_ACTION_LIFECYCLE, eventType: result.eventType },
+  ]);
+  return false;
+}
+
 export function runBattleActionLifecycleAutomation(
   event = { type: EVENT_ACTION_STARTED },
   deps = {
@@ -108,5 +122,5 @@ export function runBattleActionLifecycleAutomation(
       }),
   }
 ) {
-  return battleActionLifecycleEventHandlers[event.type]?.(deps) ?? false;
+  return battleActionLifecycleEventHandlers[event?.type]?.(deps) ?? rejectUnknownActionLifecycleEvent(event, deps);
 }

@@ -1096,6 +1096,11 @@ function checkActionLifecycleEntry() {
     "runBattleTurnAutomation",
     "BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE",
     "runBattleActionLifecycleEvidence",
+    "EVENT_UNKNOWN_ACTION_LIFECYCLE",
+    "OUTCOME_REJECTED",
+    "rejectUnknownActionLifecycleEvent",
+    "unknownActionLifecycleEvent",
+    'step: "routeEvent"',
     "steps.push({ step: \"startDelay\", result: true })",
     "steps.push({ step: \"monitorActionStarted\", result: true })",
     "steps.push({ step: \"recordSpeed\", result: true })",
@@ -1127,6 +1132,13 @@ function checkActionLifecycleEntry() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(actionLifecycleFile)} entry must dispatch by handler table`);
   }
+  if (
+    !text.includes(
+      "battleActionLifecycleEventHandlers[event?.type]?.(deps) ?? rejectUnknownActionLifecycleEvent(event, deps)"
+    )
+  ) {
+    violations.push(`${rel(actionLifecycleFile)} must record lifecycle evidence for unknown events`);
+  }
   const evidenceText = fs.readFileSync(actionLifecycleEvidenceFile, "utf8");
   for (const required of [
     "BattleActionLifecycleEvidenceEvent",
@@ -1150,6 +1162,18 @@ function checkActionLifecycleEntry() {
   ]) {
     if (!evidenceTestText.includes(required)) {
       violations.push(`${rel(actionLifecycleEvidenceTestFile)} must cover ${required}`);
+    }
+  }
+  const actionLifecycleTestText = fs.existsSync(actionLifecycleTest)
+    ? fs.readFileSync(actionLifecycleTest, "utf8")
+    : "";
+  for (const required of [
+    "rejects unknown events with structured lifecycle evidence",
+    "rejects null events with structured lifecycle evidence instead of throwing",
+    "unknownActionLifecycleEvent",
+  ]) {
+    if (!actionLifecycleTestText.includes(required)) {
+      violations.push(`${rel(actionLifecycleTest)} must cover ${required}`);
     }
   }
   if (/BattleMonitorEvent\.COMPLETION_REACHED/.test(text)) {

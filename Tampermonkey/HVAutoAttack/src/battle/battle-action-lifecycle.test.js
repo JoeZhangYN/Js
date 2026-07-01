@@ -100,7 +100,7 @@ describe("runBattleActionLifecycleAutomation", () => {
     );
   });
 
-  it("rejects unknown events", () => {
+  it("rejects unknown events with structured lifecycle evidence", () => {
     const { deps } = makeDeps();
 
     expect(runBattleActionLifecycleAutomation({ type: "unknown" }, deps)).toBe(false);
@@ -113,6 +113,43 @@ describe("runBattleActionLifecycleAutomation", () => {
     expect(deps.completeBattle).not.toHaveBeenCalled();
     expect(deps.continueNextRound).not.toHaveBeenCalled();
     expect(deps.runTurn).not.toHaveBeenCalled();
-    expect(deps.recordLifecycle).not.toHaveBeenCalled();
+    expect(deps.recordLifecycle).toHaveBeenCalledWith(
+      "unknownActionLifecycleEvent",
+      {
+        outcome: "rejected",
+        reason: "unknownActionLifecycleEvent",
+        eventType: "unknown",
+      },
+      [
+        {
+          step: "routeEvent",
+          result: false,
+          reason: "unknownActionLifecycleEvent",
+          eventType: "unknown",
+        },
+      ]
+    );
+  });
+
+  it("rejects null events with structured lifecycle evidence instead of throwing", () => {
+    const { deps } = makeDeps();
+
+    expect(runBattleActionLifecycleAutomation(null, deps)).toBe(false);
+    expect(deps.recordLifecycle).toHaveBeenCalledWith(
+      "unknownActionLifecycleEvent",
+      {
+        outcome: "rejected",
+        reason: "unknownActionLifecycleEvent",
+        eventType: null,
+      },
+      [
+        {
+          step: "routeEvent",
+          result: false,
+          reason: "unknownActionLifecycleEvent",
+          eventType: null,
+        },
+      ]
+    );
   });
 });
