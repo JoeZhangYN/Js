@@ -42,6 +42,9 @@ if (!owner) {
   if (!/\bexport\s+const\s+NavigationReloadReason\b/.test(source)) {
     violations.push("NavigationReloadReason must be the public reload reason vocabulary");
   }
+  if (!source.includes("BATTLE_API_RESPONSE")) {
+    violations.push("NavigationReloadReason must include battle API response reloads");
+  }
   if (!/\bexport\s+const\s+NavigationRedirectReason\b/.test(source)) {
     violations.push("NavigationRedirectReason must be the public redirect reason vocabulary");
   }
@@ -67,6 +70,19 @@ if (!owner) {
     }
     if (!auditText.includes('console.warn(`[HVAA] ${kind}`')) {
       violations.push("navigation audit must warn before navigating");
+    }
+  }
+  const bridgeSource = files.find((file) => file.rel === "core/navigation-bridge.js");
+  const bridgeTestSource = files.find((file) => file.rel === "core/navigation-bridge.test.js");
+  if (!bridgeSource) {
+    violations.push("core/navigation-bridge.js is missing");
+  } else {
+    const bridgeText = stripComments(readFileSync(bridgeSource.abs, "utf8"));
+    const bridgeTestText = bridgeTestSource
+      ? stripComments(readFileSync(bridgeTestSource.abs, "utf8"))
+      : "";
+    if (!bridgeText.includes("unsafeWindow") || !bridgeTestText.includes("BATTLE_API_RESPONSE")) {
+      violations.push("navigation bridge must expose reload reasons to the page context");
     }
   }
   if (!/Number\.isFinite\(delayMs\)\s*&&\s*delayMs\s*>\s*0/.test(source)) {

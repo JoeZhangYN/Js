@@ -20,6 +20,7 @@ export const NavigationEvent = Object.freeze({
 export const NavigationReloadReason = Object.freeze({
   ACTION_WATCHDOG: "actionWatchdog",
   BATTLE_HASH_CLEANUP: "battleHashCleanup",
+  BATTLE_API_RESPONSE: "battleApiResponse",
   BATTLE_VICTORY: "battleVictory",
   FLEE_CONFIRMATION: "fleeConfirmation",
   KILL_BUG_RECOVERY: "killBugRecovery",

@@ -62,14 +62,29 @@ function buildApiCallScript(mainUrl, protocol) {
 
 function buildApiResponseScript() {
   return `api_response = ${function (b) {
+    function reloadFromApiResponse() {
+      const nav = window.HVAA_navigation;
+      const reason = nav && nav.ReloadReason && nav.ReloadReason.BATTLE_API_RESPONSE;
+      if (nav && nav.reloadCurrentPage && reason) {
+        nav.reloadCurrentPage(reason);
+        return true;
+      }
+      console.warn("[HVAA] navigation bridge missing; battle API reload blocked");
+      return false;
+    }
     if (b.readyState === 4) {
       if (b.status === 200) {
         const a = JSON.parse(b.responseText);
         if (a.login !== undefined) {
           return false;
+        } else if (a.error || a.reload) {
+          reloadFromApiResponse();
+          return false;
         } else {
           return a;
         }
+      } else {
+        reloadFromApiResponse();
       }
     }
     return false;

@@ -48,6 +48,8 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[0].textContent).toContain('document.getElementById("eventEnd").click()');
     expect(deps.scripts[1].textContent).toContain("api_response =");
     expect(deps.scripts[1].textContent).toContain("JSON.parse(b.responseText)");
+    expect(deps.scripts[1].textContent).toContain("reloadFromApiResponse");
+    expect(deps.scripts[1].textContent).toContain("nav.ReloadReason.BATTLE_API_RESPONSE");
     expect(deps.scripts[1].textContent).not.toContain("window.location.href");
   });
 
@@ -85,8 +87,19 @@ describe("runBattleApiBridgeAutomation", () => {
     const script = deps.scripts[1].textContent;
     expect(script).not.toContain("window.location.search");
     expect(script).not.toContain("location.href");
+    expect(script).toContain("nav.reloadCurrentPage(reason)");
     expect(script).toContain("return a");
     expect(script).toContain("return false");
+  });
+
+  it("blocks native process_action for API reload and error responses", () => {
+    const deps = makeDeps();
+
+    runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }, deps);
+
+    const script = deps.scripts[1].textContent;
+    expect(script).toContain("a.error || a.reload");
+    expect(script).toContain("reloadFromApiResponse();\n          return false;");
   });
 
   it("rejects unknown events", () => {

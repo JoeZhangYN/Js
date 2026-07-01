@@ -21,11 +21,15 @@ function openUrl(url, reason, newTab = false) {
   });
 }
 
-if (typeof window !== "undefined") {
-  window.HVAA_navigation = Object.freeze({
+function installNavigationBridge(target) {
+  if (!target) return;
+  target.HVAA_navigation = Object.freeze({
     RedirectReason: NavigationRedirectReason,
     ReloadReason: NavigationReloadReason,
     openUrl,
     reloadCurrentPage,
   });
 }
+
+if (typeof window !== "undefined") installNavigationBridge(window);
+if (typeof unsafeWindow !== "undefined") installNavigationBridge(unsafeWindow);

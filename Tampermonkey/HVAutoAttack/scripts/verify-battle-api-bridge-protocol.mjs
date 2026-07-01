@@ -40,6 +40,10 @@ requireText(ownerTest, [
   "return d.apply(window.battle || this, arguments)",
   "binds native process_action callbacks to the active battle instance",
   "does not navigate directly from generated API response handling",
+  "blocks native process_action for API reload and error responses",
+  "nav.ReloadReason.BATTLE_API_RESPONSE",
+  "nav.reloadCurrentPage(reason)",
+  "a.error || a.reload",
   "window.sessionStorage.delay * 1",
   "window.sessionStorage.delay2 * 1",
 ]);
@@ -83,6 +87,20 @@ if (/b\.onreadystatechange\s*=\s*d\b/.test(ownerText)) {
 if (/window\.location|location\.href|window\.location\.search/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not navigate directly from API response handling`
+  );
+}
+if (!ownerText.includes("function reloadFromApiResponse()")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must classify API response reloads explicitly`);
+}
+if (!ownerText.includes("nav.ReloadReason.BATTLE_API_RESPONSE")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route API response reloads by reason`);
+}
+if (!ownerText.includes("a.error || a.reload")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must intercept API error/reload responses`);
+}
+if (!/a\.error \|\| a\.reload[\s\S]*reloadFromApiResponse\(\);[\s\S]*return false;/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must block native process_action after API error/reload responses`
   );
 }
 
