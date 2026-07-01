@@ -22,7 +22,7 @@ function clickFleeAndScheduleReload() {
     return false;
   }
   el.click();
-  runNavigationAutomation({
+  const navigationResult = runNavigationAutomation({
     type: NavigationEvent.SCHEDULE_RELOAD,
     reason: NavigationReloadReason.FLEE_CONFIRMATION,
     seconds: FLEE_RELOAD_DELAY_SEC,
@@ -32,7 +32,10 @@ function clickFleeAndScheduleReload() {
       seconds: FLEE_RELOAD_DELAY_SEC,
     },
   });
-  recordCommandResult("accepted", "clicked", { seconds: FLEE_RELOAD_DELAY_SEC });
+  recordCommandResult("accepted", "clicked", {
+    seconds: FLEE_RELOAD_DELAY_SEC,
+    navigationResult: Boolean(navigationResult),
+  });
   return true;
 }
 

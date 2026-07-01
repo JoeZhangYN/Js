@@ -39,6 +39,7 @@ afterEach(() => {
 describe("runBattleFleeCommand", () => {
   it("clicks the flee button and schedules the battle reload", () => {
     const flee = mkFleeButton();
+    mocks.runNavigationAutomation.mockReturnValue("reload-timer");
 
     expect(runBattleFleeCommand({ type: BattleFleeCommandEvent.CLICK_AND_RELOAD })).toBeTruthy();
 
@@ -54,7 +55,23 @@ describe("runBattleFleeCommand", () => {
       command: "flee.clickAndReload",
       result: "accepted",
       reason: "clicked",
-      detail: { seconds: 3 },
+      detail: { seconds: 3, navigationResult: true },
+    });
+  });
+
+  it("keeps clicked Flee acted while recording rejected reload scheduling", () => {
+    const flee = mkFleeButton();
+    mocks.runNavigationAutomation.mockReturnValue(false);
+
+    expect(runBattleFleeCommand({ type: BattleFleeCommandEvent.CLICK_AND_RELOAD })).toBe(true);
+
+    expect(flee.click).toHaveBeenCalledOnce();
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
+      type: "recordResult",
+      command: "flee.clickAndReload",
+      result: "accepted",
+      reason: "clicked",
+      detail: { seconds: 3, navigationResult: false },
     });
   });
 

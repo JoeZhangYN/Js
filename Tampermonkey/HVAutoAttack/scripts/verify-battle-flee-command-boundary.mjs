@@ -61,6 +61,8 @@ requireText(owner, [
   "runBattleCommandEvidence",
   "CLICK_AND_RELOAD",
   "NavigationEvent.SCHEDULE_RELOAD",
+  "const navigationResult = runNavigationAutomation",
+  "navigationResult: Boolean(navigationResult)",
   'source: "battleFleeCommand"',
   "command: EVENT_CLICK_AND_RELOAD",
   "flee.clickAndReload",
@@ -81,6 +83,8 @@ requireText("src/battle/battle-action-effect-dispatch.js", [
 ]);
 requireText("src/battle/escape/decide-flee.js", ['kind: "flee-command"']);
 requireText(ownerTest, [
+  "keeps clicked Flee acted while recording rejected reload scheduling",
+  "navigationResult: false",
   "records unknown Flee events as not acted",
   "records null Flee events as not acted without scheduling reload",
   "unknownFleeCommand",
