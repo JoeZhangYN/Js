@@ -12,6 +12,8 @@ const EVENT_CONTINUE = "continue";
 const PHASE_NEXT_ROUND_CONTINUATION = "nextRoundContinuation";
 const REASON_UNKNOWN_EVENT = "unknownNextRoundContinuationEvent";
 const REASON_MISSING_COMPLETION_CONTROL = "missingCompletionControl";
+const REASON_CONTINUATION_STEP_THROW = "nextRoundContinuationStepThrew";
+const REASON_RESTART_REJECTED = "nextRoundRestartRejected";
 
 export const BattleNextRoundContinuationEvent = Object.freeze({
   CONTINUE: EVENT_CONTINUE,
@@ -26,11 +28,35 @@ function replaceBattlePanels(data, deps) {
   deps.gE("#battle_main").replaceChild(deps.gE("#battle_left", data), deps.gE("#battle_left"));
 }
 
-function restartBattleRuntime(deps) {
-  deps.unsafeWindow.battle = new deps.unsafeWindow.Battle();
-  deps.unsafeWindow.battle.clear_infopane();
-  deps.startRound();
-  deps.runTurn();
+function recordStep(steps, step, run) {
+  try {
+    const result = run();
+    steps.push({ step, result: result === undefined ? true : result });
+    return result === undefined ? true : result;
+  } catch (error) {
+    steps.push({
+      step,
+      result: false,
+      reason: REASON_CONTINUATION_STEP_THROW,
+      error: error?.message || String(error),
+    });
+    return false;
+  }
+}
+
+function restartBattleRuntime(deps, steps) {
+  const runtimeReady = recordStep(steps, "createBattleRuntime", () => {
+    deps.unsafeWindow.battle = new deps.unsafeWindow.Battle();
+    deps.unsafeWindow.battle.clear_infopane();
+  });
+  const roundStarted = runtimeReady && Boolean(recordStep(steps, "startRound", deps.startRound));
+  const turnStarted = roundStarted && Boolean(recordStep(steps, "runTurn", deps.runTurn));
+  steps.push({ step: "restartBattleRuntime", result: turnStarted });
+  return turnStarted;
+}
+
+function recordCallbackRejection(deps, reason, steps) {
+  deps.recordContinuation({ outcome: "rejected", continued: false, reason }, steps);
 }
 
 function continueNextRound(deps) {
@@ -40,23 +66,29 @@ function continueNextRound(deps) {
   if (!pane || !button) {
     return rejectContinuation(deps, REASON_MISSING_COMPLETION_CONTROL, { hasPane: Boolean(pane), hasButton: Boolean(button) }, steps);
   }
-  pane.removeChild(button);
-  steps.push({ step: "removeCompletionButton", result: true });
-  deps.post(deps.href(), (data) => {
-    steps.push({ step: "postCallback", result: true });
-    if (deps.handleRiddle(data)) {
-      steps.push({ step: "handleRiddle", result: true });
+  if (!recordStep(steps, "removeCompletionButton", () => pane.removeChild(button))) {
+    return rejectContinuation(deps, REASON_CONTINUATION_STEP_THROW, { step: "removeCompletionButton" }, steps);
+  }
+  const postAccepted = recordStep(steps, "post", () => deps.post(deps.href(), (data) => {
+    if (!recordStep(steps, "postCallback", () => true)) return;
+    if (recordStep(steps, "handleRiddle", () => deps.handleRiddle(data))) {
       deps.recordContinuation({ outcome: "riddle", continued: false }, steps);
       return;
     }
-    steps.push({ step: "handleRiddle", result: false });
-    replaceBattlePanels(data, deps);
-    steps.push({ step: "replaceBattlePanels", result: true });
-    restartBattleRuntime(deps);
-    steps.push({ step: "restartBattleRuntime", result: true });
+    if (!recordStep(steps, "replaceBattlePanels", () => replaceBattlePanels(data, deps))) {
+      recordCallbackRejection(deps, REASON_CONTINUATION_STEP_THROW, steps);
+      return;
+    }
+    const turnStarted = restartBattleRuntime(deps, steps);
+    if (!turnStarted) {
+      recordCallbackRejection(deps, REASON_RESTART_REJECTED, steps);
+      return;
+    }
     deps.recordContinuation({ outcome: "continued", continued: "turn" }, steps);
-  });
-  steps.push({ step: "post", result: true });
+  }));
+  if (!postAccepted) {
+    return rejectContinuation(deps, REASON_CONTINUATION_STEP_THROW, { step: "post" }, steps);
+  }
   return true;
 }
 

@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-next-round-continuation.js");
 const ownerTest = path.normalize("src/battle/battle-next-round-continuation.test.js");
+const rejectionTest = path.normalize("src/battle/battle-next-round-continuation-rejection.test.js");
 const actionLifecycle = path.normalize("src/battle/battle-action-lifecycle.js");
 const violations = [];
 
@@ -31,6 +32,10 @@ for (const required of [
   "recordContinuation",
   "unknownNextRoundContinuationEvent",
   "missingCompletionControl",
+  "nextRoundContinuationStepThrew",
+  "nextRoundRestartRejected",
+  "recordStep",
+  "recordCallbackRejection",
   "#pane_completion",
   "#btcp",
   "#battle_right",
@@ -70,6 +75,21 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   ]) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${rel(ownerTest)} must cover ${required}`);
+    }
+  }
+}
+if (!fs.existsSync(path.join(root, rejectionTest))) {
+  violations.push(`${rel(rejectionTest)} must cover next-round continuation rejection evidence`);
+} else {
+  const rejectionTestText = read(rejectionTest);
+  for (const required of [
+    "records rejected continuation when restarted turn does not act",
+    "records callback step exceptions without throwing",
+    "nextRoundRestartRejected",
+    "nextRoundContinuationStepThrew",
+  ]) {
+    if (!rejectionTestText.includes(required)) {
+      violations.push(`${rel(rejectionTest)} must cover ${required}`);
     }
   }
 }
