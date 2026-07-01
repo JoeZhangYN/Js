@@ -10733,50 +10733,61 @@ if ($config.settings.lotteryNotification) {
   };
 
   _bottom.load_lottery = async function (ss) {
-    const html = await $ajax.fetch('/?s=Bazaar&ss=' + ss);
-    const doc = $doc(html);
-    const eqname = $id('lottery_eqname', doc);
-    if (!eqname) {
-      _bottom.node[ss].equip.textContent = '加载失败';
-      return;
-    }
-    const text = $id('rightpane', doc).lastElementChild.textContent;
-    const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
-    const lottery = json[ss];
-    const now = Date.now();
-    let date = Date.now();
-    let margin = 0;
-    if (/Today's drawing is in (?:(\d+) hours?)?(?: and )?(?:(\d+) minutes?)?/.test(text)) {
-      date += (60 * parseInt(RegExp.$1 || 0) + parseInt(RegExp.$2 || 0)) * 60000;
-      margin = 2;
-    } else if (text.includes("Today's ticket sale is closed")) {
-      margin = 10;
-    } else {
-      throw new Error('分析错误');
-    }
-    const mm = (new Date(date)).getUTCMinutes();
-    if (date && (mm < 1 || 60 - mm <= margin)) {
-      date = Math.round(date / 3600000) * 3600000;
-    }
-    lottery.id = parseInt(/lottery=(\d+)/.exec($qs('img[src*="lottery_prev_a.png"]', doc)?.getAttribute('onclick'))[1] || 0) + 1;
-    lottery.equip = eqname.textContent;
-    lottery.date = date;
-    lottery.check = $equip.filter.equip($config.settings.lotteryFilters, lottery.equip);
-    lottery.hide = !$config.settings.lotteryNotification;
-    // 彩票按「开奖日」去重弹窗：同一抽奖周期(featured 装备持续到当天开奖)只弹一次，
-    // 避免「Today's ticket sale is closed」窗口 lottery.date≈now → 每次刷新都重跑 load_lottery 反复弹。
-    // 键取开奖时间(lottery.date)的 UTC 日：周期内恒定、跨周期(下次开奖+1天)必变 → 开奖换装备即重弹一次。
-    const drawDay = new Date(date).toISOString().slice(0, 10);
-    const shouldPopup = lottery.check && lottery.popDay !== drawDay;
-    if (shouldPopup) lottery.popDay = drawDay;
-    $config.set('lt_notif', json, 'hvut_');
-    if (shouldPopup) {
-      const date_text = eqname.previousElementSibling.textContent;
-      popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${equip_name_text_str(lottery.equip)}</p>`);
-    }
+    try {
+      const html = await $ajax.fetch('/?s=Bazaar&ss=' + ss);
+      const doc = $doc(html);
+      const eqname = $id('lottery_eqname', doc);
+      if (!eqname) {
+        _bottom.node[ss].equip.textContent = '加载失败';
+        return;
+      }
+      const rightpaneText = $id('rightpane', doc)?.lastElementChild?.textContent || '';
+      const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
+      const lottery = json[ss];
+      const now = Date.now();
+      let date = Date.now();
+      let margin = 0;
+      const drawMatch = /Today's drawing is in (?:(\d+) hours?)?(?: and )?(?:(\d+) minutes?)?/.exec(rightpaneText);
+      if (drawMatch) {
+        date += (60 * parseInt(drawMatch[1] || 0) + parseInt(drawMatch[2] || 0)) * 60000;
+        margin = 2;
+      } else if (rightpaneText.includes("Today's ticket sale is closed")) {
+        margin = 10;
+      } else {
+        _bottom.node[ss].equip.textContent = '加载失败';
+        _bottom.node[ss].time.textContent = '--:--';
+        return;
+      }
+      const mm = (new Date(date)).getUTCMinutes();
+      if (date && (mm < 1 || 60 - mm <= margin)) {
+        date = Math.round(date / 3600000) * 3600000;
+      }
+      const prevOnclick = $qs('img[src*="lottery_prev_a.png"]', doc)?.getAttribute('onclick') || '';
+      const prevMatch = /lottery=(\d+)/.exec(prevOnclick);
+      lottery.id = parseInt(prevMatch?.[1] || 0) + 1;
+      lottery.equip = eqname.textContent;
+      lottery.date = date;
+      lottery.check = $equip.filter.equip($config.settings.lotteryFilters, lottery.equip);
+      lottery.hide = !$config.settings.lotteryNotification;
+      // 彩票按「开奖日」去重弹窗：同一抽奖周期(featured 装备持续到当天开奖)只弹一次，
+      // 避免「Today's ticket sale is closed」窗口 lottery.date≈now → 每次刷新都重跑 load_lottery 反复弹。
+      // 键取开奖时间(lottery.date)的 UTC 日：周期内恒定、跨周期(下次开奖+1天)必变 → 开奖换装备即重弹一次。
+      const drawDay = new Date(date).toISOString().slice(0, 10);
+      const shouldPopup = lottery.check && lottery.popDay !== drawDay;
+      if (shouldPopup) lottery.popDay = drawDay;
+      $config.set('lt_notif', json, 'hvut_');
+      if (shouldPopup) {
+        const date_text = eqname.previousElementSibling?.textContent || '';
+        popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${equip_name_text_str(lottery.equip)}</p>`);
+      }
 
-    _bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip);
-    _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
+      _bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip);
+      _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
+    } catch (error) {
+      _bottom.node[ss].equip.textContent = '加载失败';
+      _bottom.node[ss].time.textContent = '--:--';
+      console.warn('[HVUT] lottery notification failed', { ss, error });
+    }
   };
 
   $element('div', _bottom.node.div, ['.hvut-spaceholder']);
