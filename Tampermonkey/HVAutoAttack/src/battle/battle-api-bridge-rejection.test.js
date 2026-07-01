@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runBattleApiBridgeAutomation } from "./battle-api-bridge.js";
 
 function makeDeps() {
@@ -12,6 +12,21 @@ function makeDeps() {
     rejectApiBridgeEvent: vi.fn(() => false),
   };
 }
+
+function makeDefaultRejectDeps() {
+  return {
+    readOptionField: vi.fn(),
+    sessionStorage: window.sessionStorage,
+    createScript: vi.fn(),
+    appendHead: vi.fn(),
+    readBattleApiWorldContext: vi.fn(),
+    installApiResponseRecovery: vi.fn(),
+  };
+}
+
+beforeEach(() => {
+  window.sessionStorage.clear();
+});
 
 describe("runBattleApiBridgeAutomation event rejection", () => {
   it("rejects unknown events through API recovery evidence", () => {
@@ -33,6 +48,24 @@ describe("runBattleApiBridgeAutomation event rejection", () => {
     expect(deps.rejectApiBridgeEvent).toHaveBeenCalledWith(null);
     expect(deps.installApiResponseRecovery).not.toHaveBeenCalled();
     expect(deps.readBattleApiWorldContext).not.toHaveBeenCalled();
+    expect(deps.appendHead).not.toHaveBeenCalled();
+  });
+
+  it("records default unknown bridge events with bridge identity", () => {
+    const deps = makeDefaultRejectDeps();
+
+    expect(runBattleApiBridgeAutomation({ type: "unknown" }, deps)).toBe(false);
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
+      repeatCount: 1,
+      recoveryAction: "rejected",
+      detail: {
+        outcome: "rejected",
+        reason: "unknownApiBridgeEvent",
+        eventType: "unknown",
+      },
+    });
+    expect(deps.installApiResponseRecovery).not.toHaveBeenCalled();
     expect(deps.appendHead).not.toHaveBeenCalled();
   });
 });

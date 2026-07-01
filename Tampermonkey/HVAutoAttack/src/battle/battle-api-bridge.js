@@ -20,7 +20,13 @@ const battleApiBridgeEventHandlers = Object.freeze({
 });
 
 function rejectUnknownApiBridgeEvent(event, deps) {
-  return deps.rejectApiBridgeEvent?.(event ?? null) ?? runBattleApiResponseRecovery(event ?? null);
+  return (
+    deps.rejectApiBridgeEvent?.(event ?? null) ??
+    runBattleApiResponseRecovery({
+      type: BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT,
+      detail: { eventType: event?.type ?? null },
+    })
+  );
 }
 
 function buildApiCallScript(apiJsonUrl, protocol) {

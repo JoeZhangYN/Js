@@ -5,7 +5,9 @@ import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.j
 
 const EVENT_INSTALL_BRIDGE = "installBridge";
 const EVENT_REJECTED_RESPONSE = "rejectedResponse";
+const EVENT_REJECTED_API_BRIDGE_EVENT = "rejectedApiBridgeEvent";
 const EVENT_UNKNOWN_API_RECOVERY = "unknownApiResponseRecoveryEvent";
+const EVENT_UNKNOWN_API_BRIDGE = "unknownApiBridgeEvent";
 const API_RECOVERY_SESSION_KEY = DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY;
 const API_RECOVERY_BRIDGE_NAME = "HVAA_battleApiRecovery";
 const REPEAT_PAUSE_THRESHOLD = 2;
@@ -17,11 +19,13 @@ const RECOVERY_ACTION_REJECTED = "rejected";
 export const BattleApiResponseRecoveryEvent = Object.freeze({
   INSTALL_BRIDGE: EVENT_INSTALL_BRIDGE,
   REJECTED_RESPONSE: EVENT_REJECTED_RESPONSE,
+  REJECTED_API_BRIDGE_EVENT: EVENT_REJECTED_API_BRIDGE_EVENT,
 });
 
 const battleApiResponseRecoveryEventHandlers = Object.freeze({
   [EVENT_INSTALL_BRIDGE]: (event, deps) => installApiRecoveryBridge(event, deps),
   [EVENT_REJECTED_RESPONSE]: (event, deps) => handleRejectedApiResponse(event.detail, deps),
+  [EVENT_REJECTED_API_BRIDGE_EVENT]: (event, deps) => rejectApiBridgeEvent(event.detail, deps),
 });
 
 function apiFailureKey(detail) {
@@ -89,19 +93,32 @@ function handleRejectedApiResponse(detail, deps) {
   return RECOVERY_ACTION_RELOAD;
 }
 
+function buildRejectedRecoveryState(detail) {
+  return {
+    key: apiFailureKey(detail),
+    repeatCount: 1,
+    detail,
+    recoveryAction: RECOVERY_ACTION_REJECTED,
+  };
+}
+
 function rejectUnknownApiRecoveryEvent(event, deps) {
   const detail = {
     outcome: OUTCOME_REJECTED,
     reason: EVENT_UNKNOWN_API_RECOVERY,
     eventType: event?.type ?? null,
   };
-  const state = {
-    key: apiFailureKey(detail),
-    repeatCount: 1,
-    detail,
-    recoveryAction: RECOVERY_ACTION_REJECTED,
+  writeRecoveryState(deps, buildRejectedRecoveryState(detail));
+  return false;
+}
+
+function rejectApiBridgeEvent(detail, deps) {
+  const rejectedDetail = {
+    outcome: OUTCOME_REJECTED,
+    reason: EVENT_UNKNOWN_API_BRIDGE,
+    eventType: detail?.eventType ?? null,
   };
-  writeRecoveryState(deps, state);
+  writeRecoveryState(deps, buildRejectedRecoveryState(rejectedDetail));
   return false;
 }
 

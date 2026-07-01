@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { runBattleApiResponseRecovery } from "./battle-api-response-recovery.js";
+import {
+  BattleApiResponseRecoveryEvent,
+  runBattleApiResponseRecovery,
+} from "./battle-api-response-recovery.js";
 
 function makeDeps() {
   return {
@@ -48,6 +51,32 @@ describe("battle API response recovery event rejection", () => {
         outcome: "rejected",
         reason: "unknownApiResponseRecoveryEvent",
         eventType: null,
+      },
+    });
+  });
+
+  it("records rejected API bridge events with bridge identity", () => {
+    const deps = makeDeps();
+
+    expect(
+      runBattleApiResponseRecovery(
+        {
+          type: BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT,
+          detail: { eventType: "unknown" },
+        },
+        deps
+      )
+    ).toBe(false);
+
+    expect(deps.reload).not.toHaveBeenCalled();
+    expect(deps.pause).not.toHaveBeenCalled();
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
+      repeatCount: 1,
+      recoveryAction: "rejected",
+      detail: {
+        outcome: "rejected",
+        reason: "unknownApiBridgeEvent",
+        eventType: "unknown",
       },
     });
   });

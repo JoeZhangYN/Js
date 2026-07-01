@@ -62,6 +62,7 @@ const ownerText = requireText(owner, [
   "rejectUnknownApiBridgeEvent",
   "OptionEvent.READ_FIELD",
   "BattleApiResponseRecoveryEvent.INSTALL_BRIDGE",
+  "BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT",
   "runBattleApiResponseRecovery",
   "buildApiResponseScript",
   "BattleApiWorldContextEvent.READ_CURRENT",
@@ -95,6 +96,8 @@ requireText(ownerTest, [
 requireText(ownerRejectionTest, [
   "rejects unknown events through API recovery evidence",
   "rejects null events through API recovery evidence instead of throwing",
+  "records default unknown bridge events with bridge identity",
+  "unknownApiBridgeEvent",
   "rejectApiBridgeEvent",
 ]);
 requireText(runtimeTest, [
@@ -174,12 +177,16 @@ const recoveryText = requireText(recovery, [
   "API_RECOVERY_BRIDGE_NAME",
   "REPEAT_PAUSE_THRESHOLD",
   "EVENT_UNKNOWN_API_RECOVERY",
+  "EVENT_REJECTED_API_BRIDGE_EVENT",
+  "EVENT_UNKNOWN_API_BRIDGE",
   "OUTCOME_REJECTED",
   "RECOVERY_ACTION_RELOAD",
   "RECOVERY_ACTION_PAUSE",
   "RECOVERY_ACTION_REJECTED",
   "rejectUnknownApiRecoveryEvent",
+  "rejectApiBridgeEvent",
   "unknownApiResponseRecoveryEvent",
+  "unknownApiBridgeEvent",
   "handleRejectedApiResponse",
   "diagnosticEvidenceWithoutApiRecovery",
   "storageWriteOk",
@@ -215,6 +222,8 @@ requireText(recoveryReloadDetailTest, [
 requireText(recoveryRejectionTest, [
   "rejects unknown recovery events with structured evidence",
   "rejects null recovery events with structured evidence instead of throwing",
+  "records rejected API bridge events with bridge identity",
+  "unknownApiBridgeEvent",
   "HVAA:battleApiRecovery",
   "recoveryAction: \"rejected\"",
 ]);
@@ -266,6 +275,20 @@ if (
   )
 ) {
   violations.push(`${owner.replaceAll("\\", "/")} must route unknown events through API recovery evidence`);
+}
+const apiBridgeRejectionBody =
+  ownerText.match(/function rejectUnknownApiBridgeEvent\(event, deps\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+for (const required of [
+  "BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT",
+  "detail: { eventType: event?.type ?? null }",
+]) {
+  if (!apiBridgeRejectionBody.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} API bridge rejection must include ${required}`);
+  }
+}
+if (apiBridgeRejectionBody.includes("runBattleApiResponseRecovery(event ?? null)")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not misclassify bridge rejection as recovery rejection`);
 }
 if (/document\.getElementById\(["']event(Start|End)["']\)/.test(ownerText)) {
   violations.push(
@@ -362,6 +385,9 @@ if (
   )
 ) {
   violations.push(`${recovery.replaceAll("\\", "/")} must record recovery evidence for unknown events`);
+}
+if (!recoveryText.includes("[EVENT_REJECTED_API_BRIDGE_EVENT]: (event, deps) => rejectApiBridgeEvent(event.detail, deps)")) {
+  violations.push(`${recovery.replaceAll("\\", "/")} must route API bridge rejections through explicit recovery event`);
 }
 if (!recoveryText.includes("repeatCount >= REPEAT_PAUSE_THRESHOLD")) {
   violations.push(`${recovery.replaceAll("\\", "/")} must stop repeated API reload loops`);
