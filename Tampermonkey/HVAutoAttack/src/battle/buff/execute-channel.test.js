@@ -41,6 +41,28 @@ describe("runBattleChannelExecution", () => {
     expect(applyPlan({ type: "click", skillId: "412" })).toBe(true);
   });
 
+  it("records skill command exceptions as not acted channel execution evidence", () => {
+    mocks.runBattleSkillCommand.mockImplementation(() => {
+      throw new Error("skill bridge failed");
+    });
+
+    expect(applyPlan({ type: "click", skillId: "412" })).toBe(false);
+
+    expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith({
+      type: "recordApplied",
+      result: {
+        kind: "channel-execution-event",
+        reason: "channelSkillCommandThrew",
+        planType: "click",
+        skillId: "412",
+      },
+      acted: false,
+      knownResultKind: true,
+      failureReason: "channelSkillCommandThrew",
+      executionError: "skill bridge failed",
+    });
+  });
+
   it("rejects unknown and null channel execution events as not acted with evidence", () => {
     for (const [event, eventType] of [[{ type: "unknown" }, "unknown"], [null, null]]) {
       for (const fn of Object.values(mocks)) fn.mockClear();

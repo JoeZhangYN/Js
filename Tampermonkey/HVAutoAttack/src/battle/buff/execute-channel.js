@@ -26,7 +26,12 @@ const CHANNEL_PLAN_EXECUTORS = Object.freeze({
  * @returns {boolean} acted —— 是否已触发副作用
  */
 function applyChannelPlan(plan) {
-  return CHANNEL_PLAN_EXECUTORS[plan?.type]?.(plan) ?? false;
+  try {
+    return CHANNEL_PLAN_EXECUTORS[plan?.type]?.(plan) ?? false;
+  } catch (error) {
+    recordChannelExecutionFailure(plan, "channelSkillCommandThrew", error);
+    return false;
+  }
 }
 
 function executeClickPlan(plan) {
@@ -34,6 +39,22 @@ function executeClickPlan(plan) {
   return !!runBattleSkillCommand({
     type: BattleSkillCommandEvent.CLICK_READY,
     skillId: plan.skillId,
+  });
+}
+
+function recordChannelExecutionFailure(plan, reason, error) {
+  runBattleActionEffectEvidence({
+    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+    result: {
+      kind: "channel-execution-event",
+      reason,
+      planType: plan?.type ?? null,
+      skillId: plan?.skillId ?? null,
+    },
+    acted: false,
+    knownResultKind: true,
+    failureReason: reason,
+    executionError: error?.message || String(error),
   });
 }
 

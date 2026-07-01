@@ -27,7 +27,8 @@ for (const required of [
   "click: executeClickPlan",
   "BattleSkillCommandEvent.CLICK_READY",
   "runBattleSkillCommand",
-  "return !!runBattleSkillCommand",
+  "recordChannelExecutionFailure",
+  "channelSkillCommandThrew",
   "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
   "runBattleActionEffectEvidence",
   "unknownChannelExecutionEvent",
@@ -86,6 +87,14 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   }
   if (!ownerTestText.includes("returns the command result")) {
     violations.push(`${rel(ownerTest)} must cover channel command acted semantics`);
+  }
+  if (
+    !ownerTestText.includes(
+      "records skill command exceptions as not acted channel execution evidence"
+    ) ||
+    !ownerTestText.includes("channelSkillCommandThrew")
+  ) {
+    violations.push(`${rel(ownerTest)} must cover thrown channel skill command evidence`);
   }
 }
 
