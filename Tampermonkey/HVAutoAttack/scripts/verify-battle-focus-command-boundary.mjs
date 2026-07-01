@@ -55,9 +55,12 @@ requireText(owner, [
   "battleFocusCommandEventHandlers",
   "BattleCommandEvidenceEvent.RECORD_RESULT",
   "runBattleCommandEvidence",
+  "clickBattleCommandElement",
   "CLICK",
   "#ckey_focus",
   "focus.click",
+  "clickResult.reason",
+  "clickResult.error",
   "unknownFocusCommand",
   "event?.type ?? null",
 ]);
@@ -77,6 +80,8 @@ requireText("src/battle/item/execute-item.js", [
   "runBattleFocusCommand",
 ]);
 requireText(ownerTest, [
+  "records Focus click failures as not acted",
+  "clickFailed",
   "records unknown Focus events as not acted",
   "records null Focus events as not acted",
   "unknownFocusCommand",

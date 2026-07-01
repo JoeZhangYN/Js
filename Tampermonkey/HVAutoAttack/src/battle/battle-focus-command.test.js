@@ -47,6 +47,25 @@ describe("runBattleFocusCommand", () => {
     });
   });
 
+  it("records Focus click failures as not acted", () => {
+    const focus = {
+      click: vi.fn(() => {
+        throw new Error("blocked");
+      }),
+    };
+    mocks.gE.mockReturnValue(focus);
+
+    expect(runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK })).toBe(false);
+
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
+      type: "recordResult",
+      command: "focus.click",
+      result: "rejected",
+      reason: "clickFailed",
+      detail: { error: "blocked" },
+    });
+  });
+
   it("records unknown Focus events as not acted", () => {
     expect(runBattleFocusCommand({ type: "unknown" })).toBe(false);
 
