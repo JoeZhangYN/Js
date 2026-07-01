@@ -27,12 +27,12 @@ const PAGE_READY_STARTUP_STEPS = Object.freeze([
     run: installBattleActionEventBridge,
   },
   {
-    capability: "roundStarted",
-    run: startBattleRound,
-  },
-  {
     capability: "battleStarted",
     run: reportBattleStarted,
+  },
+  {
+    capability: "roundStarted",
+    run: startBattleRound,
   },
   {
     capability: "initialBattleTurn",
