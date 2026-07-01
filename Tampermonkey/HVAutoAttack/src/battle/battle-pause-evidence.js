@@ -16,7 +16,7 @@ function recordPauseState(event, deps) {
   };
   try {
     deps.sessionStorage.setItem(BATTLE_PAUSE_EVIDENCE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     return false;
   }
   deps.debug("[HVAA] battle pause", evidence);
@@ -31,5 +31,5 @@ export function runBattlePauseEvidence(
   event = { type: EVENT_RECORD_STATE },
   deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
 ) {
-  return battlePauseEvidenceEventHandlers[event.type]?.(event, deps) ?? false;
+  return battlePauseEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

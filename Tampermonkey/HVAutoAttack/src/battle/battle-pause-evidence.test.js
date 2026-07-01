@@ -31,5 +31,6 @@ describe("runBattlePauseEvidence", () => {
 
   it("rejects unknown pause evidence events", () => {
     expect(runBattlePauseEvidence({ type: "unknown" })).toBe(false);
+    expect(runBattlePauseEvidence(null)).toBe(false);
   });
 });

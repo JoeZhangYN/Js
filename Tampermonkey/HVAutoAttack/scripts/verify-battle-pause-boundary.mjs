@@ -74,6 +74,14 @@ function checkEntry() {
       violations.push(`${evidence.replaceAll("\\", "/")} must own ${required}`);
     }
   }
+  if (!evidenceText.includes("battlePauseEvidenceEventHandlers[event?.type]")) {
+    violations.push(`${evidence.replaceAll("\\", "/")} must reject null pause evidence events`);
+  }
+  const evidenceTest = path.normalize("src/battle/battle-pause-evidence.test.js");
+  const evidenceTestText = fs.readFileSync(path.join(root, evidenceTest), "utf8");
+  if (!evidenceTestText.includes("runBattlePauseEvidence(null)")) {
+    violations.push(`${evidenceTest.replaceAll("\\", "/")} must cover null pause evidence events`);
+  }
   const entryBody =
     text.match(/export function runBattlePauseAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_RENDER_PAUSED\][\s\S]*\[EVENT_PAUSE\]/.test(text)) {
