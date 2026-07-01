@@ -4,6 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/attack/execute-attack.js");
 const ownerTest = path.normalize("src/battle/attack/execute-attack.test.js");
+const commandFailureTest = path.normalize(
+  "src/battle/attack/execute-attack-command-failure.test.js"
+);
 const mercifulSideEffectTest = path.normalize(
   "src/battle/attack/execute-attack-merciful-side-effect.test.js"
 );
@@ -44,6 +47,8 @@ for (const required of [
   "PhysicalSkillBookkeepingEvent.RECORD_FIRE",
   "observedBigSkillBosses",
   "return !!runBattleTargetCommand",
+  "recordAttackExecutionFailure",
+  "attackSubCommandThrew",
   "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
   "runBattleActionEffectEvidence",
   "unknownAttackExecutionEvent",
@@ -61,8 +66,7 @@ if (
 }
 
 const entryBody =
-  ownerText.match(/export function runBattleAttackExecution\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
+  ownerText.match(/export function runBattleAttackExecution\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(ownerText)) {
   violations.push(`${rel(owner)} must route events through a frozen handler table`);
 }
@@ -106,7 +110,8 @@ for (const required of [
     violations.push(`${rel(owner)} must lock attack plan executor ${required}`);
   }
 }
-const applyPlanBody = ownerText.match(/function applyAttackPlan\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
+const applyPlanBody =
+  ownerText.match(/function applyAttackPlan\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (/switch\s*\(\s*plan\.type\s*\)/.test(applyPlanBody)) {
   violations.push(`${rel(owner)} must dispatch attack plan execution by ATTACK_PLAN_EXECUTORS`);
 }
@@ -136,7 +141,11 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   if (!ownerTestText.includes("does not claim spell, physical, or default attack plans")) {
     violations.push(`${rel(ownerTest)} must cover failed target commands as not acted`);
   }
-  if (!ownerTestText.includes("returns the Focus command result instead of claiming a missing click acted")) {
+  if (
+    !ownerTestText.includes(
+      "returns the Focus command result instead of claiming a missing click acted"
+    )
+  ) {
     violations.push(`${rel(ownerTest)} must cover failed Focus commands as not acted`);
   }
 }
@@ -152,6 +161,21 @@ if (!fs.existsSync(path.join(root, mercifulSideEffectTest))) {
     violations.push(
       `${rel(mercifulSideEffectTest)} must cover failed merciful physical plans without side effects`
     );
+  }
+}
+if (!fs.existsSync(path.join(root, commandFailureTest))) {
+  violations.push(`${rel(commandFailureTest)} must cover attack execution sub-command exceptions`);
+} else {
+  const commandFailureTestText = read(commandFailureTest);
+  for (const required of [
+    "records Focus command exceptions as not acted attack execution evidence",
+    "records Spirit command exceptions as not acted attack execution evidence",
+    "records target command exceptions as not acted attack execution evidence",
+    "attackSubCommandThrew",
+  ]) {
+    if (!commandFailureTestText.includes(required)) {
+      violations.push(`${rel(commandFailureTest)} must cover ${required}`);
+    }
   }
 }
 

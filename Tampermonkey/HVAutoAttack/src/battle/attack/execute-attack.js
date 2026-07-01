@@ -52,7 +52,12 @@ function observedBigSkillBosses(snap) {
  * @param {import("../../core/types.js").BattleSnapshot} [snap] 当前 turn 快照（学习器事件记账用）
  */
 function applyAttackPlan(plan, snap) {
-  return ATTACK_PLAN_EXECUTORS[plan?.type]?.(plan, snap) ?? false;
+  try {
+    return ATTACK_PLAN_EXECUTORS[plan?.type]?.(plan, snap) ?? false;
+  } catch (error) {
+    recordAttackExecutionFailure(plan, "attackSubCommandThrew", error);
+    return false;
+  }
 }
 
 function executeNoopPlan() {
@@ -136,6 +141,24 @@ function rejectUnknownAttackExecutionEvent(event) {
   return false;
 }
 
+function recordAttackExecutionFailure(plan, reason, error) {
+  runBattleActionEffectEvidence({
+    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+    result: {
+      kind: "attack-execution-event",
+      reason,
+      planType: plan?.type ?? null,
+    },
+    acted: false,
+    knownResultKind: true,
+    failureReason: reason,
+    executionError: error?.message || String(error),
+  });
+}
+
 export function runBattleAttackExecution(event = { type: EVENT_APPLY_PLAN }) {
-  return battleAttackExecutionEventHandlers[event?.type]?.(event) ?? rejectUnknownAttackExecutionEvent(event);
+  return (
+    battleAttackExecutionEventHandlers[event?.type]?.(event) ??
+    rejectUnknownAttackExecutionEvent(event)
+  );
 }
