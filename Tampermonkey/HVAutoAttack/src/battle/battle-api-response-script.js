@@ -1,6 +1,7 @@
 export function buildApiResponseScript(worldContext) {
   return `api_response = ${function (b) {
     const worldContext = __HVAA_BATTLE_API_WORLD_CONTEXT__;
+    const recoverySessionKey = "__HVAA_BATTLE_API_RECOVERY_SESSION_KEY__";
     function actionDetail() {
       const action = window.info || {};
       return {
@@ -10,13 +11,38 @@ export function buildApiResponseScript(worldContext) {
         item: action.item,
       };
     }
+    function writeRecoveryState(state) {
+      try {
+        window.sessionStorage.setItem(recoverySessionKey, JSON.stringify(state));
+      } catch (_error) {
+        // Diagnostic write failure must not resume native API processing.
+      }
+    }
+    function recordBlockedRecovery(detail) {
+      const blockedDetail = { ...detail, world: worldContext, action: actionDetail() };
+      writeRecoveryState({
+        key: JSON.stringify({
+          responseKind: blockedDetail.responseKind,
+          status: blockedDetail.status,
+          error: blockedDetail.error,
+          reload: blockedDetail.reload,
+          world: blockedDetail.world,
+          action: blockedDetail.action,
+          bridge: "missing",
+        }),
+        repeatCount: 1,
+        detail: blockedDetail,
+        recovery: "bridgeMissing",
+      });
+      console.warn("[HVAA] battle API recovery bridge missing; reload blocked", blockedDetail);
+    }
     function reloadFromApiResponse(detail) {
       const recovery = window.HVAA_battleApiRecovery;
       if (recovery && recovery.handleRejectedResponse) {
         recovery.handleRejectedResponse({ ...detail, world: worldContext, action: actionDetail() });
         return true;
       }
-      console.warn("[HVAA] navigation bridge missing; battle API reload blocked", detail);
+      recordBlockedRecovery(detail);
       return false;
     }
     if (b.readyState === 4) {
@@ -37,5 +63,7 @@ export function buildApiResponseScript(worldContext) {
       reloadFromApiResponse({ responseKind: "httpStatus", status: b.status });
     }
     return false;
-  }.toString()}`.replace("__HVAA_BATTLE_API_WORLD_CONTEXT__", JSON.stringify(worldContext));
+  }.toString()}`
+    .replace("__HVAA_BATTLE_API_WORLD_CONTEXT__", JSON.stringify(worldContext))
+    .replace("__HVAA_BATTLE_API_RECOVERY_SESSION_KEY__", "HVAA:battleApiRecovery");
 }

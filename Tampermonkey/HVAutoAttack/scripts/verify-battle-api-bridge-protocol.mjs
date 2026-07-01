@@ -5,6 +5,7 @@ const root = process.cwd();
 const owner = path.normalize("src/battle/battle-api-bridge.js");
 const ownerTest = path.normalize("src/battle/battle-api-bridge.test.js");
 const responseScript = path.normalize("src/battle/battle-api-response-script.js");
+const responseScriptTest = path.normalize("src/battle/battle-api-response-script.test.js");
 const recovery = path.normalize("src/battle/battle-api-response-recovery.js");
 const recoveryTest = path.normalize("src/battle/battle-api-response-recovery.test.js");
 const recoveryDiagnosticsTest = path.normalize(
@@ -74,12 +75,21 @@ const responseScriptText = requireText(responseScript, [
   "buildApiResponseScript",
   "window.HVAA_battleApiRecovery",
   "recovery.handleRejectedResponse",
+  "window.sessionStorage.setItem",
+  "HVAA:battleApiRecovery",
+  "bridgeMissing",
   "a.error || a.reload",
   "responseKind",
   "actionDetail",
   "worldContext",
   "world: worldContext",
   'responseKind: "httpStatus"',
+]);
+requireText(responseScriptTest, [
+  "records blocked recovery evidence when the page bridge is missing",
+  "routes rejected API responses through the recovery bridge when available",
+  "HVAA:battleApiRecovery",
+  "bridgeMissing",
 ]);
 const worldContextText = requireText(worldContext, [
   "BattleApiWorldContextEvent",
@@ -196,6 +206,9 @@ if (!responseScriptText.includes("function reloadFromApiResponse(detail)")) {
 }
 if (!responseScriptText.includes("window.HVAA_battleApiRecovery")) {
   violations.push(`${responseScript.replaceAll("\\", "/")} page API response must call recovery bridge`);
+}
+if (!responseScriptText.includes("recordBlockedRecovery")) {
+  violations.push(`${responseScript.replaceAll("\\", "/")} must record missing recovery bridge evidence`);
 }
 if (!responseScriptText.includes("a.error || a.reload")) {
   violations.push(`${responseScript.replaceAll("\\", "/")} must intercept API error/reload responses`);
