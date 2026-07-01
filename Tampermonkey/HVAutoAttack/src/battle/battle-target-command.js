@@ -61,16 +61,17 @@ function clickSkillThenTarget(skillId, targetId) {
     recordCommandResult("target.clickSkillThenTarget", "rejected", reason, { skillId, targetId });
     return false;
   }
-  if (
-    !runBattleSkillCommand({
-      type: BattleSkillCommandEvent.CLICK_READY,
-      skillId,
-    })
-  ) {
-    recordCommandResult("target.clickSkillThenTarget", "rejected", "skillCommandRejected", {
-      skillId,
-      targetId,
-    });
+  const skillResult = runSkillCommand("target.clickSkillThenTarget", skillId, targetId, {
+    type: BattleSkillCommandEvent.CLICK_READY,
+    skillId,
+  });
+  if (skillResult.threw || !skillResult.acted) {
+    if (!skillResult.threw) {
+      recordCommandResult("target.clickSkillThenTarget", "rejected", "skillCommandRejected", {
+        skillId,
+        targetId,
+      });
+    }
     return false;
   }
   const clickResult = clickBattleCommandElement(targetEl);
@@ -86,13 +87,28 @@ function clickSkillThenTarget(skillId, targetId) {
   return true;
 }
 
+function runSkillCommand(command, skillId, targetId, event) {
+  try {
+    return { acted: Boolean(runBattleSkillCommand(event)), threw: false };
+  } catch (error) {
+    recordCommandResult(command, "rejected", "skillCommandThrew", {
+      type: BattleSkillCommandEvent.CLICK_READY,
+      skillId,
+      targetId,
+      error: error?.message || String(error),
+    });
+    return { acted: false, threw: true };
+  }
+}
+
 function trySkillThenTarget(skillId, targetId, afterSkillClick, targetRequiresSkill = false) {
-  const clickedSkill = runBattleSkillCommand({
+  const skillResult = runSkillCommand("target.trySkillThenTarget", skillId, targetId, {
     type: BattleSkillCommandEvent.CLICK_READY,
     skillId,
     afterClick: afterSkillClick,
   });
-  if (!clickedSkill && targetRequiresSkill) {
+  if (skillResult.threw) return false;
+  if (!skillResult.acted && targetRequiresSkill) {
     recordCommandResult("target.trySkillThenTarget", "rejected", "skillRequired", {
       skillId,
       targetId,
@@ -103,7 +119,7 @@ function trySkillThenTarget(skillId, targetId, afterSkillClick, targetRequiresSk
   recordCommandResult("target.trySkillThenTarget", clickedTarget ? "accepted" : "rejected", clickedTarget ? "clicked" : "targetCommandRejected", {
     skillId,
     targetId,
-    clickedSkill: Boolean(clickedSkill),
+    clickedSkill: skillResult.acted,
   });
   return clickedTarget;
 }

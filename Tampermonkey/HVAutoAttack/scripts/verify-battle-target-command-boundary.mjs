@@ -7,6 +7,7 @@ const owner = path.normalize("src/battle/battle-target-command.js");
 const ownerTest = path.normalize("src/battle/battle-target-command.test.js");
 const liveTargetTest = path.normalize("src/battle/battle-target-command-live-target.test.js");
 const clickFailureTest = path.normalize("src/battle/battle-target-command-click-failure.test.js");
+const skillFailureTest = path.normalize("src/battle/battle-target-command-skill-failure.test.js");
 const violations = [];
 
 function rel(file) {
@@ -67,6 +68,8 @@ requireText(owner, [
   "targetMissing",
   "targetDead",
   "skillCommandRejected",
+  "skillCommandThrew",
+  "runSkillCommand",
   "targetCommandRejected",
   "unknownTargetCommand",
   "event?.type ?? null",
@@ -90,6 +93,12 @@ requireText(ownerTest, [
 requireText(clickFailureTest, [
   "records target click failures as not acted",
   "clickFailed",
+]);
+requireText(skillFailureTest, [
+  "records click-skill target skill command exceptions without clicking target",
+  "records try-skill target skill command exceptions without fallback target click",
+  "skillCommandThrew",
+  "skill bridge failed",
 ]);
 requireText(liveTargetTest, [
   "rejects direct target clicks when the target is dead",
