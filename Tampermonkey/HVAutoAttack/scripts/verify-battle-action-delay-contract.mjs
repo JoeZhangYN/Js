@@ -62,7 +62,7 @@ const ownerText = requireText(owner, [
   "activeDelayTimers",
   "OptionEvent.READ_FIELD",
   "NavigationEvent.SCHEDULE_RELOAD",
-  "detail: { source: \"battleActionDelay\", seconds }",
+  "detail: { source: \"battleActionDelay\", seconds, option }",
   "AlarmEvent.TRIGGER",
 ]);
 requireText(ownerTest, [
@@ -76,7 +76,8 @@ requireText(ownerRejectionTest, [
 ]);
 requireText(watchdogDetailTest, [
   "passes action watchdog evidence into the navigation reload event",
-  "detail: { source: \"battleActionDelay\", seconds: 11 }",
+  "delayReloadTime: 11",
+  "delayAlertTime: 0",
 ]);
 
 if (

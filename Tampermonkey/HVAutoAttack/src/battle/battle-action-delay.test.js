@@ -44,7 +44,12 @@ describe("runBattleActionDelayAutomation", () => {
     expect(start(deps)).toBe(true);
 
     expect(deps.schedule).toHaveBeenCalledWith(expect.any(Function), 7000);
-    expect(deps.scheduleReload).toHaveBeenCalledWith(11);
+    expect(deps.scheduleReload).toHaveBeenCalledWith(11, {
+      delayAlert: true,
+      delayAlertTime: 7,
+      delayReload: true,
+      delayReloadTime: 11,
+    });
     expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
       type: "readField",
       key: "delayAlert",

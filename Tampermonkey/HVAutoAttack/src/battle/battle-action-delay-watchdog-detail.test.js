@@ -42,7 +42,16 @@ describe("battle action watchdog navigation detail", () => {
       type: "scheduleReload",
       reason: "actionWatchdog",
       seconds: 11,
-      detail: { source: "battleActionDelay", seconds: 11 },
+      detail: {
+        source: "battleActionDelay",
+        seconds: 11,
+        option: {
+          delayAlert: false,
+          delayAlertTime: 0,
+          delayReload: true,
+          delayReloadTime: 11,
+        },
+      },
     });
   });
 });

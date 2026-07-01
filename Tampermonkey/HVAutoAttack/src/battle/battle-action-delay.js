@@ -49,7 +49,7 @@ function startActionDelay(deps) {
     trackDelayTimer(deps.schedule(() => deps.triggerAlarm(), option.delayAlertTime * 1000));
   }
   if (option.delayReload && option.delayReloadTime > 0) {
-    trackDelayTimer(deps.scheduleReload(option.delayReloadTime));
+    trackDelayTimer(deps.scheduleReload(option.delayReloadTime, option));
   }
 }
 
@@ -74,12 +74,12 @@ export function runBattleActionDelayAutomation(
     schedule: setTimeout,
     cancel: clearTimeout,
     triggerAlarm: () => runAlarmAutomation({ type: AlarmEvent.TRIGGER }),
-    scheduleReload: (seconds) =>
+    scheduleReload: (seconds, option) =>
       runNavigationAutomation({
         type: NavigationEvent.SCHEDULE_RELOAD,
         reason: NavigationReloadReason.ACTION_WATCHDOG,
         seconds,
-        detail: { source: "battleActionDelay", seconds },
+        detail: { source: "battleActionDelay", seconds, option },
       }),
   }
 ) {
