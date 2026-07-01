@@ -70,6 +70,14 @@ describe("buildApiResponseScript", () => {
       })
     );
     window.sessionStorage.setItem(
+      DiagnosticEvidenceKey.BATTLE_ACTION_DELAY,
+      JSON.stringify({
+        decision: "rejected",
+        reason: "unknownActionDelayEvent",
+        eventType: null,
+      })
+    );
+    window.sessionStorage.setItem(
       DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY,
       JSON.stringify({ repeatCount: 99 })
     );
@@ -98,6 +106,11 @@ describe("buildApiResponseScript", () => {
           result: { kind: "attack-plan", planKind: "default" },
           acted: false,
           failureReason: "actionExecutorRejected",
+        },
+        battleActionDelay: {
+          decision: "rejected",
+          reason: "unknownActionDelayEvent",
+          eventType: null,
         },
       },
     });

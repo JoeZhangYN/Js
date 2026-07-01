@@ -110,6 +110,7 @@ export function buildApiResponseScript(worldContext) {
         { name: "battleTurnWorkflow", key: DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW },
         { name: "battleCommand", key: DiagnosticEvidenceKey.BATTLE_COMMAND },
         { name: "battlePause", key: DiagnosticEvidenceKey.BATTLE_PAUSE },
+        { name: "battleActionDelay", key: DiagnosticEvidenceKey.BATTLE_ACTION_DELAY },
         { name: "battleActionLifecycle", key: DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE },
         { name: "battleActionDecision", key: DiagnosticEvidenceKey.BATTLE_ACTION_DECISION },
         { name: "battleActionEffect", key: DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT },

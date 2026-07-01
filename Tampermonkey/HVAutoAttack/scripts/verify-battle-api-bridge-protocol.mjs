@@ -134,7 +134,10 @@ requireText(responseScriptTest, [
   "recoveryAction",
   "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
   "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
+  "DiagnosticEvidenceKey.BATTLE_ACTION_DELAY",
   "failureReason",
+  "battleActionDelay",
+  "unknownActionDelayEvent",
   "battleApiResponseRecovery",
 ]);
 requireText(responseScriptMalformedJsonTest, [
