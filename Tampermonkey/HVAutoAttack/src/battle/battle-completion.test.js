@@ -41,7 +41,8 @@ describe("runBattleCompletionAutomation", () => {
   });
 
   it("handles victory completion through the entry", () => {
-    const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
+    const context = { monsterAlive: 0, roundNow: 2, roundAll: 2 };
+    const d = deps(context);
 
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
@@ -49,7 +50,11 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.recordCompletion).toHaveBeenCalledTimes(1);
     expect(d.triggerAlarm).toHaveBeenCalledWith("Victory");
     expect(d.clearSession).toHaveBeenCalled();
-    expect(d.scheduleReload).toHaveBeenCalledWith(3);
+    expect(d.scheduleReload).toHaveBeenCalledWith(3, {
+      source: "battleCompletion",
+      outcome: "victory",
+      context,
+    });
   });
 
   it("clears terminal battle sessions through one completion side-effect path", () => {
@@ -62,7 +67,11 @@ describe("runBattleCompletionAutomation", () => {
     expect(defeat.clearSession).toHaveBeenCalledTimes(1);
     expect(victory.clearSession).toHaveBeenCalledTimes(1);
     expect(defeat.scheduleReload).not.toHaveBeenCalled();
-    expect(victory.scheduleReload).toHaveBeenCalledWith(3);
+    expect(victory.scheduleReload).toHaveBeenCalledWith(3, {
+      source: "battleCompletion",
+      outcome: "victory",
+      context: { monsterAlive: 0, roundNow: 1, roundAll: 1 },
+    });
   });
 
   it("reads completion runtime fields once before classifying the outcome", () => {

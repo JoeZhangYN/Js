@@ -50,20 +50,25 @@ function classifyCompletion(context) {
   return BattleCompletionOutcome.ONGOING;
 }
 
-function handleTerminalCompletion(outcome, deps) {
+function victoryReloadDetail(outcome, context) {
+  return { source: "battleCompletion", outcome, context };
+}
+
+function handleTerminalCompletion(outcome, context, deps) {
   const alarmKind = outcome === BattleCompletionOutcome.DEFEAT ? "Defeat" : "Victory";
   deps.triggerAlarm(alarmKind);
   deps.clearSession();
   if (outcome === BattleCompletionOutcome.VICTORY) {
-    deps.scheduleReload(VICTORY_RELOAD_SECONDS);
+    deps.scheduleReload(VICTORY_RELOAD_SECONDS, victoryReloadDetail(outcome, context));
   }
 }
 
 function handleCompletionReached(deps) {
   deps.recordCompletion();
-  const outcome = classifyCompletion(deps.readCompletionContext());
+  const context = deps.readCompletionContext();
+  const outcome = classifyCompletion(context);
   if (outcome === BattleCompletionOutcome.DEFEAT || outcome === BattleCompletionOutcome.VICTORY) {
-    handleTerminalCompletion(outcome, deps);
+    handleTerminalCompletion(outcome, context, deps);
   }
   return { outcome };
 }
@@ -77,11 +82,12 @@ export function runBattleCompletionAutomation(
     triggerAlarm: (kind) => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind }),
     clearSession: () => runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION }),
     isCompletionReached: () => !!gE("#btcp"),
-    scheduleReload: (sec) =>
+    scheduleReload: (sec, detail) =>
       runNavigationAutomation({
         type: NavigationEvent.SCHEDULE_RELOAD,
         reason: NavigationReloadReason.BATTLE_VICTORY,
         seconds: sec,
+        detail,
       }),
   }
 ) {

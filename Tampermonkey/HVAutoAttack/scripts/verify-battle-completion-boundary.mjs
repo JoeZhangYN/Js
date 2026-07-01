@@ -40,6 +40,9 @@ function checkOwner() {
     "Defeat",
     "Victory",
     "VICTORY_RELOAD_SECONDS",
+    "victoryReloadDetail",
+    'source: "battleCompletion"',
+    "context",
     "CLEAR_SESSION",
     "scheduleReload",
     "readCompletionContext",
@@ -129,6 +132,9 @@ function checkOwner() {
     }
     if (!testText.includes("reads completion panel reachability through the completion entry")) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover completion reachability`);
+    }
+    if (!testText.includes('source: "battleCompletion"')) {
+      violations.push(`${ownerTest.replaceAll("\\", "/")} must cover victory reload detail`);
     }
   }
 }
