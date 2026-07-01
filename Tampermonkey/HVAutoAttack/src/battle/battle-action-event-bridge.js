@@ -4,9 +4,14 @@ import {
   BattleActionLifecycleEvent,
   runBattleActionLifecycleAutomation,
 } from "./battle-action-lifecycle.js";
+import {
+  BattleActionLifecycleEvidenceEvent,
+  runBattleActionLifecycleEvidence,
+} from "./battle-action-lifecycle-evidence.js";
 import { BattleApiBridgeEvent, runBattleApiBridgeAutomation } from "./battle-api-bridge.js";
 
 const EVENT_INSTALL = "install";
+const EVENT_UNKNOWN_ACTION_EVENT_BRIDGE = "unknownActionEventBridgeEvent";
 
 export const BattleActionEventBridgeEvent = Object.freeze({
   INSTALL: EVENT_INSTALL,
@@ -17,7 +22,24 @@ const battleActionEventBridgeEventHandlers = Object.freeze({
 });
 
 function rejectUnknownActionEventBridgeEvent(event) {
-  runBattleActionLifecycleAutomation(event ?? null);
+  const result = {
+    outcome: "rejected",
+    reason: EVENT_UNKNOWN_ACTION_EVENT_BRIDGE,
+    eventType: event?.type ?? null,
+  };
+  runBattleActionLifecycleEvidence({
+    type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
+    phase: EVENT_UNKNOWN_ACTION_EVENT_BRIDGE,
+    result,
+    steps: [
+      {
+        step: "routeEvent",
+        result: false,
+        reason: EVENT_UNKNOWN_ACTION_EVENT_BRIDGE,
+        eventType: result.eventType,
+      },
+    ],
+  });
   return false;
 }
 

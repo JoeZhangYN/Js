@@ -87,7 +87,9 @@ requireText(owner, [
   "BattleActionLifecycleEvent.ACTION_STARTED",
   "BattleActionLifecycleEvent.ACTION_ENDED",
   "runBattleActionLifecycleAutomation",
+  "runBattleActionLifecycleEvidence",
   "rejectUnknownActionEventBridgeEvent",
+  "unknownActionEventBridgeEvent",
   "BattleApiBridgeEvent.INSTALL",
   "eventStart",
   "eventEnd",
@@ -119,12 +121,30 @@ if (
     "battleActionEventBridgeEventHandlers[event?.type]?.(event) ?? rejectUnknownActionEventBridgeEvent(event)"
   )
 ) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route unknown events through lifecycle evidence`);
+  violations.push(`${owner.replaceAll("\\", "/")} must route unknown events through bridge evidence`);
+}
+const rejectionBody =
+  ownerText.match(/function rejectUnknownActionEventBridgeEvent\(event\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+for (const required of [
+  "phase: EVENT_UNKNOWN_ACTION_EVENT_BRIDGE",
+  "reason: EVENT_UNKNOWN_ACTION_EVENT_BRIDGE",
+  "eventType: event?.type ?? null",
+  "runBattleActionLifecycleEvidence",
+]) {
+  if (!rejectionBody.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} bridge rejection must include ${required}`);
+  }
+}
+if (rejectionBody.includes("runBattleActionLifecycleAutomation(event ?? null)")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not misclassify bridge rejection as lifecycle rejection`);
 }
 const ownerTestText = fs.existsSync(path.join(root, ownerTest)) ? fs.readFileSync(path.join(root, ownerTest), "utf8") : "";
 for (const required of [
   "rejects unknown events",
-  "rejects null events through lifecycle evidence instead of throwing",
+  "rejects null events through bridge evidence instead of throwing",
+  "unknownActionEventBridgeEvent",
+  "runBattleActionLifecycleAutomation).not.toHaveBeenCalled",
 ]) {
   if (!ownerTestText.includes(required)) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);

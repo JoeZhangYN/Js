@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   cE: vi.fn((tag) => document.createElement(tag)),
   gE: vi.fn((selector) => document.querySelector(selector)),
   runBattleActionLifecycleAutomation: vi.fn(),
+  runBattleActionLifecycleEvidence: vi.fn(),
   runBattleApiBridgeAutomation: vi.fn(),
 }));
 
@@ -21,6 +22,10 @@ vi.mock("./battle-action-lifecycle.js", () => ({
     ACTION_ENDED: "actionEnded",
   }),
   runBattleActionLifecycleAutomation: mocks.runBattleActionLifecycleAutomation,
+}));
+vi.mock("./battle-action-lifecycle-evidence.js", () => ({
+  BattleActionLifecycleEvidenceEvent: Object.freeze({ RECORD_LIFECYCLE: "recordLifecycle" }),
+  runBattleActionLifecycleEvidence: mocks.runBattleActionLifecycleEvidence,
 }));
 vi.mock("./battle-api-bridge.js", () => ({
   BattleApiBridgeEvent: Object.freeze({ INSTALL: "install" }),
@@ -62,13 +67,47 @@ describe("runBattleActionEventBridgeAutomation", () => {
     expect(runBattleActionEventBridgeAutomation({ type: "unknown" })).toBe(false);
 
     expect(mocks.runBattleApiBridgeAutomation).not.toHaveBeenCalled();
-    expect(mocks.runBattleActionLifecycleAutomation).toHaveBeenCalledWith({ type: "unknown" });
+    expect(mocks.runBattleActionLifecycleAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleActionLifecycleEvidence).toHaveBeenCalledWith({
+      type: "recordLifecycle",
+      phase: "unknownActionEventBridgeEvent",
+      result: {
+        outcome: "rejected",
+        reason: "unknownActionEventBridgeEvent",
+        eventType: "unknown",
+      },
+      steps: [
+        {
+          step: "routeEvent",
+          result: false,
+          reason: "unknownActionEventBridgeEvent",
+          eventType: "unknown",
+        },
+      ],
+    });
   });
 
-  it("rejects null events through lifecycle evidence instead of throwing", () => {
+  it("rejects null events through bridge evidence instead of throwing", () => {
     expect(runBattleActionEventBridgeAutomation(null)).toBe(false);
 
     expect(mocks.runBattleApiBridgeAutomation).not.toHaveBeenCalled();
-    expect(mocks.runBattleActionLifecycleAutomation).toHaveBeenCalledWith(null);
+    expect(mocks.runBattleActionLifecycleAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleActionLifecycleEvidence).toHaveBeenCalledWith({
+      type: "recordLifecycle",
+      phase: "unknownActionEventBridgeEvent",
+      result: {
+        outcome: "rejected",
+        reason: "unknownActionEventBridgeEvent",
+        eventType: null,
+      },
+      steps: [
+        {
+          step: "routeEvent",
+          result: false,
+          reason: "unknownActionEventBridgeEvent",
+          eventType: null,
+        },
+      ],
+    });
   });
 });
