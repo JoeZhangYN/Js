@@ -10707,18 +10707,23 @@ if ($config.settings.trainingNotification) {
 // LOTTERY
 if ($config.settings.lotteryNotification) {
   _bottom.evaluate_lottery_filter = function (ss, equip) {
-    try {
-      return {
-        matched: $equip.filter.equip($config.settings.lotteryFilters, equip),
-        error: null,
-      };
-    } catch (error) {
-      console.warn('[HVUT] lottery notification filter failed', { ss, equip, error });
-      return {
-        matched: false,
-        error: error?.message || String(error),
-      };
+    const filters = Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters];
+    const filterErrors = [];
+    const matched = filters.some((filter) => {
+      try {
+        return $equip.filter.test(filter, null, equip);
+      } catch (error) {
+        filterErrors.push({ filter, error: error?.message || String(error) });
+        return false;
+      }
+    });
+    if (filterErrors.length) {
+      console.warn('[HVUT] lottery notification filter failed', { ss, equip, errors: filterErrors });
     }
+    return {
+      matched,
+      error: filterErrors.map((e) => `${e.filter}: ${e.error}`).join('\n') || null,
+    };
   };
 
   _bottom.show_lottery = function (ss) {

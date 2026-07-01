@@ -40,11 +40,14 @@ for (const required of [
 }
 
 for (const required of [
-  "try {",
-  "catch (error)",
-  "$equip.filter.equip($config.settings.lotteryFilters, equip)",
+  "const filterErrors = []",
+  "filters.some((filter) =>",
+  "$equip.filter.test(filter, null, equip)",
+  "filterErrors.push({ filter, error: error?.message || String(error) })",
   "console.warn('[HVUT] lottery notification filter failed'",
-  "matched: false",
+  "errors: filterErrors",
+  "matched,",
+  "error: filterErrors.map",
 ]) {
   if (!filterBody.includes(required)) {
     violations.push(`${rel(target)} lottery filter decision must include ${required}`);
@@ -57,9 +60,10 @@ for (const forbidden of [
   "RegExp.$2",
   ".exec($qs('img[src*=\"lottery_prev_a.png\"]', doc)?.getAttribute('onclick'))[1]",
   "lottery.check = $equip.filter.equip",
+  "$equip.filter.equip($config.settings.lotteryFilters, equip)",
 ]) {
-  if (body.includes(forbidden)) {
-    violations.push(`${rel(target)} lottery loader must not use brittle parser path: ${forbidden}`);
+  if (body.includes(forbidden) || filterBody.includes(forbidden)) {
+    violations.push(`${rel(target)} lottery filter boundary must not use brittle parser path: ${forbidden}`);
   }
 }
 
