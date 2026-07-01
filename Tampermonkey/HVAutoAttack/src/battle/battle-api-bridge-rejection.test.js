@@ -69,6 +69,27 @@ describe("runBattleApiBridgeAutomation event rejection", () => {
     expect(deps.appendHead).not.toHaveBeenCalled();
   });
 
+  it("falls back to recovery evidence when injected bridge rejection throws", () => {
+    const deps = makeDeps();
+    deps.rejectApiBridgeEvent.mockImplementation(() => {
+      throw new Error("reject hook failed");
+    });
+
+    expect(runBattleApiBridgeAutomation({ type: "unknown" }, deps)).toBe(false);
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
+      recoveryAction: "rejected",
+      detail: {
+        outcome: "rejected",
+        reason: "unknownApiBridgeEvent",
+        eventType: "unknown",
+        rejectApiBridgeEventError: "reject hook failed",
+      },
+    });
+    expect(deps.installApiResponseRecovery).not.toHaveBeenCalled();
+    expect(deps.appendHead).not.toHaveBeenCalled();
+  });
+
   it("rejects API script installation when the recovery bridge cannot be installed", () => {
     const deps = makeDeps();
     deps.installApiResponseRecovery.mockReturnValue(false);

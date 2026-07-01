@@ -115,6 +115,8 @@ requireText(owner, [
   "apiBridgeInstallStepFailed",
   "rejectApiRecoveryBridgeInstallFailed",
   "rejectApiBridgeInstallStepFailed",
+  "rejectApiBridgeEventSafely",
+  "rejectApiBridgeEventError",
   "readApiBridgeDelayOption",
   "writeApiBridgeDelayRuntime",
 ]);
@@ -150,8 +152,11 @@ requireText(ownerRejectionTest, [
   "rejects API script installation when the recovery bridge cannot be installed",
   "records API bridge install step exceptions without throwing",
   "records default API bridge install step exceptions with step evidence",
+  "falls back to recovery evidence when injected bridge rejection throws",
   "apiRecoveryBridgeInstallFailed",
   "apiBridgeInstallStepFailed",
+  "reject hook failed",
+  "rejectApiBridgeEventError",
   "unknownApiBridgeEvent",
   "rejectApiBridgeEvent",
   "readApiBridgeDelayOption",
@@ -292,6 +297,7 @@ const recoveryText = requireText(recovery, [
   "detail?.reason ?? EVENT_UNKNOWN_API_BRIDGE",
   "step: detail?.step",
   "error: detail?.error",
+  "rejectApiBridgeEventError: detail?.rejectApiBridgeEventError",
   "unknownApiResponseRecoveryEvent",
   "unknownApiBridgeEvent",
   "apiRecoveryBridgeInstallThrew",
@@ -473,11 +479,15 @@ if (
 }
 const apiBridgeRejectionBody =
   ownerText.match(/function rejectUnknownApiBridgeEvent\(event, deps\) \{[\s\S]*?\n\}/)?.[0] || "";
+const apiBridgeRejectionHelperBody =
+  ownerText.match(/function rejectApiBridgeEventSafely\(deps, injectedDetail, recoveryDetail\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
 for (const required of [
+  "rejectApiBridgeEventSafely(deps, event ?? null, { eventType: event?.type ?? null })",
   "BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT",
-  "detail: { eventType: event?.type ?? null }",
+  "detail: recoveryDetail",
 ]) {
-  if (!apiBridgeRejectionBody.includes(required)) {
+  if (!(apiBridgeRejectionBody + apiBridgeRejectionHelperBody).includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} API bridge rejection must include ${required}`);
   }
 }

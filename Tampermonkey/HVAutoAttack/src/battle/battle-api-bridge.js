@@ -23,24 +23,15 @@ const battleApiBridgeEventHandlers = Object.freeze({
 });
 
 function rejectUnknownApiBridgeEvent(event, deps) {
-  return (
-    deps.rejectApiBridgeEvent?.(event ?? null) ??
-    runBattleApiResponseRecovery({
-      type: BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT,
-      detail: { eventType: event?.type ?? null },
-    })
-  );
+  return rejectApiBridgeEventSafely(deps, event ?? null, { eventType: event?.type ?? null });
 }
 
 function rejectApiRecoveryBridgeInstallFailed(deps) {
   const detail = { type: EVENT_INSTALL, reason: REASON_API_RECOVERY_INSTALL_FAILED };
-  return (
-    deps.rejectApiBridgeEvent?.(detail) ??
-    runBattleApiResponseRecovery({
-      type: BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT,
-      detail: { eventType: EVENT_INSTALL, reason: REASON_API_RECOVERY_INSTALL_FAILED },
-    })
-  );
+  return rejectApiBridgeEventSafely(deps, detail, {
+    eventType: EVENT_INSTALL,
+    reason: REASON_API_RECOVERY_INSTALL_FAILED,
+  });
 }
 
 function rejectApiBridgeInstallStepFailed(deps, step, error) {
@@ -50,18 +41,25 @@ function rejectApiBridgeInstallStepFailed(deps, step, error) {
     step,
     error: error?.message || String(error),
   };
-  return (
-    deps.rejectApiBridgeEvent?.(detail) ??
-    runBattleApiResponseRecovery({
-      type: BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT,
-      detail: {
-        eventType: EVENT_INSTALL,
-        reason: REASON_API_BRIDGE_INSTALL_STEP_FAILED,
-        step,
-        error: detail.error,
-      },
-    })
-  );
+  return rejectApiBridgeEventSafely(deps, detail, {
+    eventType: EVENT_INSTALL,
+    reason: REASON_API_BRIDGE_INSTALL_STEP_FAILED,
+    step,
+    error: detail.error,
+  });
+}
+
+function rejectApiBridgeEventSafely(deps, injectedDetail, recoveryDetail) {
+  try {
+    const injectedResult = deps.rejectApiBridgeEvent?.(injectedDetail);
+    if (injectedResult !== undefined) return injectedResult;
+  } catch (error) {
+    recoveryDetail.rejectApiBridgeEventError = error?.message || String(error);
+  }
+  return runBattleApiResponseRecovery({
+    type: BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT,
+    detail: recoveryDetail,
+  });
 }
 
 function readApiBridgeDelayOption(deps) {

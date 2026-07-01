@@ -71,6 +71,7 @@ function rejectApiBridgeEvent(detail, deps) {
     eventType: detail?.eventType ?? null,
     step: detail?.step,
     error: detail?.error,
+    rejectApiBridgeEventError: detail?.rejectApiBridgeEventError,
   };
   writeRecoveryState(
     deps,
