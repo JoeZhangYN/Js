@@ -34,8 +34,9 @@ function recordPhysicalSkillFire(event) {
     globalTurn: event.globalTurn,
     observedBosses: event.observedBosses,
   });
+  return true;
 }
 
 export function runPhysicalSkillBookkeeping(event) {
-  return physicalSkillBookkeepingEventHandlers[event.type]?.(event);
+  return physicalSkillBookkeepingEventHandlers[event?.type]?.(event) ?? false;
 }

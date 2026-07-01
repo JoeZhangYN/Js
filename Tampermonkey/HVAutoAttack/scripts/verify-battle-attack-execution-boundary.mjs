@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/attack/execute-attack.js");
 const ownerTest = path.normalize("src/battle/attack/execute-attack.test.js");
+const bookkeeping = path.normalize("src/battle/attack/physical-skill-bookkeeping.js");
+const bookkeepingTest = path.normalize("src/battle/attack/physical-skill-bookkeeping.test.js");
 const actionEffect = path.normalize("src/battle/battle-action-effect-dispatch.js");
 const violations = [];
 
@@ -16,6 +18,7 @@ function rel(relative) {
 }
 
 const ownerText = read(owner);
+const bookkeepingText = read(bookkeeping);
 const actionEffectText = read(actionEffect);
 
 for (const required of [
@@ -61,6 +64,27 @@ if (/event\.type\s*===/.test(entryBody)) {
 }
 if (!ownerText.includes("battleAttackExecutionEventHandlers[event?.type]")) {
   violations.push(`${rel(owner)} must reject null execution events as not acted`);
+}
+if (!bookkeepingText.includes("physicalSkillBookkeepingEventHandlers[event?.type]")) {
+  violations.push(`${rel(bookkeeping)} must reject null physical fire bookkeeping events`);
+}
+if (!bookkeepingText.includes("return true;") || !bookkeepingText.includes("?? false")) {
+  violations.push(`${rel(bookkeeping)} must report whether physical fire bookkeeping was recorded`);
+}
+if (!fs.existsSync(path.join(root, bookkeepingTest))) {
+  violations.push(`${rel(bookkeepingTest)} must cover physical fire bookkeeping contract`);
+} else {
+  const bookkeepingTestText = read(bookkeepingTest);
+  if (
+    !bookkeepingTestText.includes(
+      "rejects unknown physical skill bookkeeping events without side effects"
+    )
+  ) {
+    violations.push(`${rel(bookkeepingTest)} must cover unknown physical bookkeeping events`);
+  }
+  if (!bookkeepingTestText.includes("runPhysicalSkillBookkeeping(null)")) {
+    violations.push(`${rel(bookkeepingTest)} must cover null physical bookkeeping events`);
+  }
 }
 for (const required of [
   "noop: executeNoopPlan",

@@ -1466,6 +1466,26 @@ function checkPhysicalSkillBookkeeping() {
   if (/event\.type\s*!==|event\.type\s*===/.test(bookkeepingEntryBody)) {
     violations.push(`${rel(physicalSkillBookkeepingFile)} entry must dispatch by handler table`);
   }
+  if (!text.includes("physicalSkillBookkeepingEventHandlers[event?.type]")) {
+    violations.push(`${rel(physicalSkillBookkeepingFile)} must reject null physical fire bookkeeping events`);
+  }
+  if (!text.includes("return true;") || !bookkeepingEntryBody.includes("?? false")) {
+    violations.push(`${rel(physicalSkillBookkeepingFile)} must report whether physical fire bookkeeping was recorded`);
+  }
+  const bookkeepingTestText = fs.readFileSync(
+    path.join(root, "src/battle/attack/physical-skill-bookkeeping.test.js"),
+    "utf8"
+  );
+  if (
+    !bookkeepingTestText.includes(
+      "rejects unknown physical skill bookkeeping events without side effects"
+    )
+  ) {
+    violations.push(`${rel(physicalSkillBookkeepingFile)} tests must cover unknown bookkeeping events`);
+  }
+  if (!bookkeepingTestText.includes("runPhysicalSkillBookkeeping(null)")) {
+    violations.push(`${rel(physicalSkillBookkeepingFile)} tests must cover null bookkeeping events`);
+  }
   if (/\bevent\.snap\b/.test(text)) {
     violations.push(
       `${rel(physicalSkillBookkeepingFile)} must consume observedBosses, not snap, for physical fire bookkeeping`

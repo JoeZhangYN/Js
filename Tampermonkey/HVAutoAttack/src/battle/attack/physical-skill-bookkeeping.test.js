@@ -34,7 +34,7 @@ beforeEach(() => {
 
 describe("runPhysicalSkillBookkeeping", () => {
   it("records one physical skill fire through all bookkeeping entries", () => {
-    runPhysicalSkillBookkeeping({
+    const recorded = runPhysicalSkillBookkeeping({
       type: PhysicalSkillBookkeepingEvent.RECORD_FIRE,
       code: "OFC",
       skillId: "1111",
@@ -42,6 +42,7 @@ describe("runPhysicalSkillBookkeeping", () => {
       observedBosses: [{ mid: 100, hpMax: 5000, imperilActive: true }],
     });
 
+    expect(recorded).toBe(true);
     expect(mocks.runBattleSkillUsageAutomation).toHaveBeenCalledWith({
       type: "recordUse",
       code: "OFC",
@@ -62,5 +63,11 @@ describe("runPhysicalSkillBookkeeping", () => {
       globalTurn: 10,
       observedBosses: [{ mid: 100, hpMax: 5000, imperilActive: true }],
     });
+  });
+
+  it("rejects unknown physical skill bookkeeping events without side effects", () => {
+    expect(runPhysicalSkillBookkeeping({ type: "unknown", code: "OFC" })).toBe(false);
+    expect(runPhysicalSkillBookkeeping(null)).toBe(false);
+    for (const fn of Object.values(mocks)) expect(fn).not.toHaveBeenCalled();
   });
 });
