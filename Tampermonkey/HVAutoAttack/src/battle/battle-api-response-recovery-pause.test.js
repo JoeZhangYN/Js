@@ -49,7 +49,7 @@ describe("battle API recovery pause evidence", () => {
 
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
       reason: "battleApiResponseRepeated",
-      detail: { repeatCount: 2, detail },
+      detail: { repeatCount: 2, recoveryAction: "pause", detail },
     });
     warn.mockRestore();
   });

@@ -47,7 +47,9 @@ describe("runBattleApiResponseRecovery", () => {
     const detail = rejectedDetail();
     expect(target.HVAA_battleApiRecovery.handleRejectedResponse(detail)).toBe("reload");
     expect(unsafeTarget.HVAA_battleApiRecovery).toBe(target.HVAA_battleApiRecovery);
-    expect(deps.reload).toHaveBeenCalledWith(detail);
+    expect(deps.reload).toHaveBeenCalledWith(
+      expect.objectContaining({ repeatCount: 1, recoveryAction: "reload", detail })
+    );
   });
 
   it("reloads once for a rejected API response with preserved evidence", () => {
@@ -61,10 +63,13 @@ describe("runBattleApiResponseRecovery", () => {
       )
     ).toBe("reload");
 
-    expect(deps.reload).toHaveBeenCalledWith(detail);
+    expect(deps.reload).toHaveBeenCalledWith(
+      expect.objectContaining({ repeatCount: 1, recoveryAction: "reload", detail })
+    );
     expect(deps.pause).not.toHaveBeenCalled();
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
       repeatCount: 1,
+      recoveryAction: "reload",
       detail,
     });
   });
@@ -80,11 +85,11 @@ describe("runBattleApiResponseRecovery", () => {
     expect(deps.reload).toHaveBeenCalledTimes(1);
     expect(deps.pause).toHaveBeenCalledTimes(1);
     expect(deps.pause).toHaveBeenCalledWith(
-      expect.objectContaining({ repeatCount: 2, detail })
+      expect.objectContaining({ repeatCount: 2, recoveryAction: "pause", detail })
     );
     expect(deps.warn).toHaveBeenCalledWith(
       "[HVAA] battle API response repeated; auto battle paused",
-      expect.objectContaining({ repeatCount: 2, detail })
+      expect.objectContaining({ repeatCount: 2, recoveryAction: "pause", detail })
     );
   });
 
@@ -102,7 +107,7 @@ describe("runBattleApiResponseRecovery", () => {
     expect(runBattleApiResponseRecovery(event, deps)).toBe("paused");
 
     const state = JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"));
-    expect(state).toMatchObject({ repeatCount: 2, detail, diagnosticEvidence });
+    expect(state).toMatchObject({ repeatCount: 2, recoveryAction: "pause", detail, diagnosticEvidence });
     expect(deps.pause).toHaveBeenCalledWith(expect.objectContaining({ diagnosticEvidence }));
     expect(deps.warn).toHaveBeenCalledWith(
       "[HVAA] battle API response repeated; auto battle paused",
@@ -128,6 +133,9 @@ describe("runBattleApiResponseRecovery", () => {
     ).toBe("reload");
 
     expect(deps.reload).toHaveBeenCalledTimes(2);
+    expect(deps.reload).toHaveBeenLastCalledWith(
+      expect.objectContaining({ repeatCount: 1, recoveryAction: "reload" })
+    );
     expect(deps.pause).not.toHaveBeenCalled();
   });
 
@@ -151,6 +159,9 @@ describe("runBattleApiResponseRecovery", () => {
     ).toBe("reload");
 
     expect(deps.reload).toHaveBeenCalledTimes(2);
+    expect(deps.reload).toHaveBeenLastCalledWith(
+      expect.objectContaining({ repeatCount: 1, recoveryAction: "reload" })
+    );
     expect(deps.pause).not.toHaveBeenCalled();
   });
 });

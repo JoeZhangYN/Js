@@ -47,6 +47,7 @@ describe("battle API response recovery diagnostics", () => {
 
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
       repeatCount: 1,
+      recoveryAction: "reload",
       detail,
       diagnosticEvidence,
     });

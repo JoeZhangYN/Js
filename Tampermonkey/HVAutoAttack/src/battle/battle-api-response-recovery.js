@@ -10,6 +10,9 @@ const API_RECOVERY_SESSION_KEY = DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOV
 const API_RECOVERY_BRIDGE_NAME = "HVAA_battleApiRecovery";
 const REPEAT_PAUSE_THRESHOLD = 2;
 const OUTCOME_REJECTED = "rejected";
+const RECOVERY_ACTION_RELOAD = "reload";
+const RECOVERY_ACTION_PAUSE = "pause";
+const RECOVERY_ACTION_REJECTED = "rejected";
 
 export const BattleApiResponseRecoveryEvent = Object.freeze({
   INSTALL_BRIDGE: EVENT_INSTALL_BRIDGE,
@@ -61,14 +64,17 @@ function buildRecoveryState(detail, deps) {
 
 function handleRejectedApiResponse(detail, deps) {
   const state = buildRecoveryState(detail, deps);
-  writeRecoveryState(deps, state);
   if (state.repeatCount >= REPEAT_PAUSE_THRESHOLD) {
+    state.recoveryAction = RECOVERY_ACTION_PAUSE;
+    writeRecoveryState(deps, state);
     deps.pause(state);
     deps.warn("[HVAA] battle API response repeated; auto battle paused", state);
     return "paused";
   }
-  deps.reload(detail);
-  return "reload";
+  state.recoveryAction = RECOVERY_ACTION_RELOAD;
+  writeRecoveryState(deps, state);
+  deps.reload(state);
+  return RECOVERY_ACTION_RELOAD;
 }
 
 function rejectUnknownApiRecoveryEvent(event, deps) {
@@ -81,6 +87,7 @@ function rejectUnknownApiRecoveryEvent(event, deps) {
     key: apiFailureKey(detail),
     repeatCount: 1,
     detail,
+    recoveryAction: RECOVERY_ACTION_REJECTED,
   };
   writeRecoveryState(deps, state);
   return false;

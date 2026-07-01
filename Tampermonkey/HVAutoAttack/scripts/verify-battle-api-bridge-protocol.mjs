@@ -16,6 +16,9 @@ const recoveryTest = path.normalize("src/battle/battle-api-response-recovery.tes
 const recoveryMalformedJsonTest = path.normalize(
   "src/battle/battle-api-response-recovery-malformed-json.test.js"
 );
+const recoveryReloadDetailTest = path.normalize(
+  "src/battle/battle-api-response-recovery-reload-detail.test.js"
+);
 const recoveryPauseTest = path.normalize("src/battle/battle-api-response-recovery-pause.test.js");
 const recoveryRejectionTest = path.normalize(
   "src/battle/battle-api-response-recovery-rejection.test.js"
@@ -168,6 +171,9 @@ const recoveryText = requireText(recovery, [
   "REPEAT_PAUSE_THRESHOLD",
   "EVENT_UNKNOWN_API_RECOVERY",
   "OUTCOME_REJECTED",
+  "RECOVERY_ACTION_RELOAD",
+  "RECOVERY_ACTION_PAUSE",
+  "RECOVERY_ACTION_REJECTED",
   "rejectUnknownApiRecoveryEvent",
   "unknownApiResponseRecoveryEvent",
   "handleRejectedApiResponse",
@@ -176,9 +182,10 @@ const recoveryText = requireText(recovery, [
   "parseError: detail?.parseError",
   "deps.pause(state)",
   "diagnosticEvidence",
+  "recoveryAction",
   'reason: "battleApiResponseRepeated"',
   "detail: state",
-  "deps.reload(detail)",
+  "deps.reload(state)",
   "repeatCount >= REPEAT_PAUSE_THRESHOLD",
 ]);
 requireText(recoveryTest, [
@@ -189,11 +196,19 @@ requireText(recoveryTest, [
   "does not treat different rejected response evidence as the same loop",
   "does not treat different battle worlds as the same recovery loop",
   "HVAA:battleApiRecovery",
+  "recoveryAction",
+]);
+requireText(recoveryReloadDetailTest, [
+  "passes recovery state into the default navigation reload detail",
+  "HVAA:lastNavigationDecision",
+  "commandReason: \"battleApiResponse\"",
+  "recoveryAction: \"reload\"",
 ]);
 requireText(recoveryRejectionTest, [
   "rejects unknown recovery events with structured evidence",
   "rejects null recovery events with structured evidence instead of throwing",
   "HVAA:battleApiRecovery",
+  "recoveryAction: \"rejected\"",
 ]);
 requireText(recoveryMalformedJsonTest, [
   "does not treat different malformed JSON parse failures as the same loop",
@@ -204,12 +219,14 @@ requireText(recoveryPauseTest, [
   "writes repeated API recovery state into pause evidence on the default path",
   "HVAA:lastBattlePause",
   "battleApiResponseRepeated",
+  "recoveryAction: \"pause\"",
 ]);
 requireText(recoveryDiagnosticsTest, [
   "exposes API recovery state through recent diagnostic evidence",
   "does not nest previous API recovery evidence inside the next recovery state",
   "battleApiResponseRecovery",
   "HVAA:battleApiRecovery",
+  "recoveryAction: \"reload\"",
 ]);
 
 if (
@@ -328,11 +345,17 @@ if (
 if (!recoveryText.includes("repeatCount >= REPEAT_PAUSE_THRESHOLD")) {
   violations.push(`${recovery.replaceAll("\\", "/")} must stop repeated API reload loops`);
 }
-if (!recoveryText.includes("deps.pause(state)") || !recoveryText.includes("deps.reload(detail)")) {
+if (!recoveryText.includes("deps.pause(state)") || !recoveryText.includes("deps.reload(state)")) {
   violations.push(`${recovery.replaceAll("\\", "/")} must choose between pause and reload centrally`);
 }
 if (!recoveryText.includes("detail: state")) {
   violations.push(`${recovery.replaceAll("\\", "/")} repeated API pause must carry recovery state detail`);
+}
+if (!recoveryText.includes("state.recoveryAction = RECOVERY_ACTION_RELOAD")) {
+  violations.push(`${recovery.replaceAll("\\", "/")} reload navigation detail must carry recovery action state`);
+}
+if (!recoveryText.includes("state.recoveryAction = RECOVERY_ACTION_PAUSE")) {
+  violations.push(`${recovery.replaceAll("\\", "/")} repeated API pause must carry recovery action state`);
 }
 if (!recoveryText.includes("world: detail?.world")) {
   violations.push(`${recovery.replaceAll("\\", "/")} repeat key must include battle world identity`);

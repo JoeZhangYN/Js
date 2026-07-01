@@ -25,6 +25,7 @@ describe("battle API response recovery event rejection", () => {
     expect(deps.pause).not.toHaveBeenCalled();
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
       repeatCount: 1,
+      recoveryAction: "rejected",
       detail: {
         outcome: "rejected",
         reason: "unknownApiResponseRecoveryEvent",
@@ -42,6 +43,7 @@ describe("battle API response recovery event rejection", () => {
     expect(deps.pause).not.toHaveBeenCalled();
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
       repeatCount: 1,
+      recoveryAction: "rejected",
       detail: {
         outcome: "rejected",
         reason: "unknownApiResponseRecoveryEvent",
