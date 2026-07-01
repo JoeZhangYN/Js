@@ -14,25 +14,45 @@ const battleActionEffectDispatchEventHandlers = Object.freeze({
 });
 
 function applyActionResult(result, snap) {
-  const previousCommandEvidence = readBattleCommandEvidence();
+  const previousCommandEvidence = readCommandEvidenceSafely();
   const execution = executeActionResult(result, snap);
+  const freshCommandEvidence = readFreshCommandEvidence(previousCommandEvidence.value);
   recordActionEffectEvidence({
     result,
     acted: execution.acted,
     knownResultKind: isKnownActionResultKind(result?.kind),
-    commandEvidence: readFreshCommandEvidence(previousCommandEvidence),
+    commandEvidence: freshCommandEvidence.value,
+    commandEvidenceReadError: previousCommandEvidence.error || freshCommandEvidence.error,
     failureReason: execution.failureReason,
     executionError: execution.error,
   });
   return execution.acted;
 }
 
+function readCommandEvidenceSafely() {
+  try {
+    return { value: readBattleCommandEvidence(), error: undefined };
+  } catch (error) {
+    return { value: undefined, error: error?.message || String(error) };
+  }
+}
+
 function readFreshCommandEvidence(previousCommandEvidence) {
-  const commandEvidence = readBattleCommandEvidence();
-  if (!commandEvidence) return undefined;
-  return JSON.stringify(commandEvidence) === JSON.stringify(previousCommandEvidence)
-    ? undefined
-    : commandEvidence;
+  const current = readCommandEvidenceSafely();
+  if (current.error) return current;
+  const commandEvidence = current.value;
+  if (!commandEvidence) return { value: undefined, error: undefined };
+  try {
+    return {
+      value:
+        JSON.stringify(commandEvidence) === JSON.stringify(previousCommandEvidence)
+          ? undefined
+          : commandEvidence,
+      error: undefined,
+    };
+  } catch (error) {
+    return { value: commandEvidence, error: error?.message || String(error) };
+  }
 }
 
 function rejectUnknownActionEffectEvent(event) {

@@ -13,6 +13,9 @@ const pauseResultTest = path.normalize("src/battle/battle-action-effect-pause-re
 const commandEvidenceTest = path.normalize(
   "src/battle/battle-action-effect-command-evidence.test.js"
 );
+const commandEvidenceFailureTest = path.normalize(
+  "src/battle/battle-action-effect-command-evidence-failure.test.js"
+);
 const evidence = path.normalize("src/battle/battle-action-effect-evidence.js");
 const recording = path.normalize("src/battle/battle-action-effect-recording.js");
 const evidenceTest = path.normalize("src/battle/battle-action-effect-evidence.test.js");
@@ -63,8 +66,9 @@ for (const required of [
   "isKnownActionResultKind",
   "recordActionEffectEvidence",
   "readBattleCommandEvidence",
+  "readCommandEvidenceSafely",
   "readFreshCommandEvidence",
-  "commandEvidence: readFreshCommandEvidence(previousCommandEvidence)",
+  "commandEvidenceReadError: previousCommandEvidence.error || freshCommandEvidence.error",
   "rejectUnknownActionEffectEvent",
   "unknownActionEffectDispatchEvent",
   "knownResultKind: isKnownActionResultKind(result?.kind)",
@@ -259,6 +263,22 @@ if (!fs.existsSync(path.join(root, commandEvidenceTest))) {
     }
   }
 }
+if (!fs.existsSync(path.join(root, commandEvidenceFailureTest))) {
+  violations.push(`${rel(commandEvidenceFailureTest)} must cover command evidence read failures`);
+} else {
+  const commandEvidenceFailureTestText = read(commandEvidenceFailureTest);
+  for (const required of [
+    "keeps acted command effects acted when command evidence reads throw",
+    "commandEvidenceReadError",
+    "command evidence read failed",
+    "acted: true",
+    "HVAA:lastBattleActionEffect",
+  ]) {
+    if (!commandEvidenceFailureTestText.includes(required)) {
+      violations.push(`${rel(commandEvidenceFailureTest)} must cover ${required}`);
+    }
+  }
+}
 for (const forbidden of [
   "halt: executeHaltResult",
   "function executeHaltResult",
@@ -319,6 +339,7 @@ for (const required of [
   "KNOWN_PLAN_TYPES",
   "failureReason: classifyActionEffectFailure(event)",
   "executionError: event.executionError",
+  "commandEvidenceReadError: event.commandEvidenceReadError",
   "command: summarizeCommandEvidence(event.commandEvidence)",
   "event.commandEvidence?.failureReason",
   "missingActionResult",
@@ -439,7 +460,12 @@ for (const relative of ["src/battle", "src/core"]) {
     }
     const file = path.join(entry.parentPath, entry.name);
     const normalized = path.normalize(path.relative(root, file));
-    if (normalized === owner || normalized === actionDecision || normalized === actionDecisionDispatch) continue;
+    if (
+      normalized === owner ||
+      normalized === actionDecision ||
+      normalized === actionDecisionDispatch
+    )
+      continue;
     const text = fs.readFileSync(file, "utf8");
     if (/from\s+["'][^"']*battle-action-effect-dispatch\.js["']/.test(text)) {
       violations.push(`${rel(normalized)} must not bypass runBattleActionDecision`);
