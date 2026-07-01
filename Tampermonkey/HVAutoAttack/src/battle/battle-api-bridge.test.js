@@ -42,7 +42,7 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay * 1");
     expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay2 * 1");
     expect(deps.scripts[0].textContent).toContain(
-      'battle.battle_continue = function () {\n        return false;\n      };'
+      "return d.apply(window.battle || this, arguments)"
     );
     expect(deps.scripts[0].textContent).toContain('document.getElementById("eventStart").click()');
     expect(deps.scripts[0].textContent).toContain('document.getElementById("eventEnd").click()');
@@ -51,18 +51,13 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[1].textContent).not.toContain("window.location.href");
   });
 
-  it("binds native process_action callbacks to the active battle instance without native continuation", () => {
+  it("binds native process_action callbacks to the active battle instance", () => {
     const deps = makeDeps();
 
     runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }, deps);
 
     const script = deps.scripts[0].textContent;
     expect(script).not.toContain("b.onreadystatechange = d");
-    expect(script).toContain("const battle = window.battle || this");
-    expect(script).toContain("const nativeBattleContinue = battle.battle_continue");
-    expect(script).toContain('battle.battle_continue = function () {\n        return false;\n      };');
-    expect(script).toContain("return d.apply(battle, arguments)");
-    expect(script).toContain("battle.battle_continue = nativeBattleContinue");
     expect(script.indexOf("b.onreadystatechange = function")).toBeLessThan(
       script.indexOf("b.onload = function")
     );
