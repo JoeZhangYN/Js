@@ -28,13 +28,21 @@ function readBattleReportStartContext(deps) {
   )();
 }
 
+function normalizeBattleReportRoundType(roundType) {
+  return typeof roundType === "string" && roundType.trim() ? roundType.toUpperCase() : "UNKNOWN";
+}
+
+function normalizeBattleReportRoundAll(roundAll) {
+  return roundAll == null || roundAll === "" ? "?" : roundAll;
+}
+
 function recordBattleReportStarted(deps) {
   const { recordEach, roundType, roundAll } = readBattleReportStartContext(deps);
   const recordLabel = readBattleReportRecordLabel(deps);
   return runBattleRecordArchiveAutomation({
     type: BattleRecordArchiveEvent.START_BATTLE_REPORT_RECORDING,
     enabled: recordEach,
-    code: `${recordLabel}: ${roundType.toUpperCase()}-${roundAll}`,
+    code: `${recordLabel}: ${normalizeBattleReportRoundType(roundType)}-${normalizeBattleReportRoundAll(roundAll)}`,
   });
 }
 

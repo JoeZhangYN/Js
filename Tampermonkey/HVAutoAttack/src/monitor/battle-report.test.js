@@ -4,6 +4,7 @@ import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { BattleMonitorEvent, runBattleMonitorAutomation } from "./battle-monitor-automation.js";
+import { BattleReportEvent, runBattleReportAutomation } from "./battle-report.js";
 
 beforeEach(() => {
   localStorage.clear();
@@ -59,6 +60,19 @@ describe("battle report query", () => {
     runBattleMonitorAutomation({ type: BattleMonitorEvent.BATTLE_STARTED });
 
     expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("6/27: AR-5");
+  });
+
+  it("does not abort battle startup when round context is not ready", () => {
+    expect(() =>
+      runBattleReportAutomation(
+        { type: BattleReportEvent.BATTLE_STARTED },
+        {
+          readRecordLabel: () => "6/27",
+          readStartContext: () => ({ recordEach: true, roundType: null, roundAll: null }),
+        }
+      )
+    ).not.toThrow();
+    expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("6/27: UNKNOWN-?");
   });
 
   it("renders a single drop report from the active record", () => {
