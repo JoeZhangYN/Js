@@ -652,9 +652,14 @@ function checkTurnEntry() {
     "ACTION_DECISION_EVIDENCE_KEY",
     "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
     "summarizeResult",
+    "classifyDecisionStepFailure",
     "eventType: result.eventType",
     "result.plan?.type ?? result.plan?.kind",
     "acted: Boolean(step.acted)",
+    "failureReason: classifyDecisionStepFailure(step)",
+    "missingActionResult",
+    "noActionCandidate",
+    "actionExecutorRejected",
     "[HVAA] battle action decision",
   ]) {
     if (!actionDecisionEvidenceText.includes(required)) {
@@ -666,6 +671,8 @@ function checkTurnEntry() {
     : "";
   for (const required of [
     "records decision trace with acted and not-acted steps",
+    "records per-step failure reasons when a real action candidate is rejected",
+    "failureReason",
     "keeps legacy plan kind fallback for older decision evidence",
     "records event type for rejected decision events",
     "HVAA:lastBattleActionDecision",

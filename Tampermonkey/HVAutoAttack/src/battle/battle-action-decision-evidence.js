@@ -19,12 +19,21 @@ function summarizeResult(result = {}) {
   };
 }
 
+function classifyDecisionStepFailure(step) {
+  if (step.acted) return null;
+  const result = step.result || {};
+  if (!result.kind) return "missingActionResult";
+  if (result.kind === "noop") return result.reason || "noActionCandidate";
+  return result.reason || "actionExecutorRejected";
+}
+
 function recordDecisionTrace(event, deps) {
   const evidence = {
     steps: (event.steps || []).map((step) => ({
       capability: step.capability,
       result: summarizeResult(step.result),
       acted: Boolean(step.acted),
+      failureReason: classifyDecisionStepFailure(step),
     })),
     at: new Date().toISOString(),
   };

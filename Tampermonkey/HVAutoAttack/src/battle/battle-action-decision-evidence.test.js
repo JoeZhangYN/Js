@@ -27,11 +27,51 @@ describe("runBattleActionDecisionEvidence", () => {
 
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDecision"))).toMatchObject({
       steps: [
-        { capability: "survival", result: { kind: "noop" }, acted: false },
-        { capability: "attack", result: { kind: "attack-plan", planKind: "default" }, acted: true },
+        {
+          capability: "survival",
+          result: { kind: "noop" },
+          acted: false,
+          failureReason: "noActionCandidate",
+        },
+        {
+          capability: "attack",
+          result: { kind: "attack-plan", planKind: "default" },
+          acted: true,
+          failureReason: null,
+        },
       ],
     });
     expect(debug).toHaveBeenCalledWith("[HVAA] battle action decision", expect.any(Object));
+  });
+
+  it("records per-step failure reasons when a real action candidate is rejected", () => {
+    runBattleActionDecisionEvidence(
+      {
+        type: BattleActionDecisionEvidenceEvent.RECORD_TRACE,
+        steps: [
+          { capability: "survival", result: { kind: "item-plan", plan: { type: "potion" } }, acted: false },
+          { capability: "buffPreparation", result: { kind: "noop", reason: "buffsReady" }, acted: false },
+        ],
+      },
+      { sessionStorage: window.sessionStorage, debug: vi.fn() }
+    );
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDecision"))).toMatchObject({
+      steps: [
+        {
+          capability: "survival",
+          result: { kind: "item-plan", planKind: "potion" },
+          acted: false,
+          failureReason: "actionExecutorRejected",
+        },
+        {
+          capability: "buffPreparation",
+          result: { kind: "noop", reason: "buffsReady" },
+          acted: false,
+          failureReason: "buffsReady",
+        },
+      ],
+    });
   });
 
   it("keeps legacy plan kind fallback for older decision evidence", () => {
@@ -77,6 +117,7 @@ describe("runBattleActionDecisionEvidence", () => {
             eventType: "unknown",
           },
           acted: false,
+          failureReason: "unknownActionDecisionEvent",
         },
       ],
     });
