@@ -125,10 +125,16 @@ function checkOwner() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
+  if (!text.includes("battleCompletionEventHandlers[event?.type]")) {
+    violations.push(`${owner.replaceAll("\\", "/")} must reject null events through the completion entry`);
+  }
   if (fs.existsSync(path.join(root, ownerTest))) {
     const testText = fs.readFileSync(path.join(root, ownerTest), "utf8");
     if (!testText.includes("rejects unknown battle completion events without side effects")) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown completion events`);
+    }
+    if (!testText.includes("rejects null battle completion events without side effects")) {
+      violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null completion events`);
     }
     if (!testText.includes("reads completion panel reachability through the completion entry")) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover completion reachability`);

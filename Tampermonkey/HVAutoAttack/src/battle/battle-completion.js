@@ -91,7 +91,7 @@ export function runBattleCompletionAutomation(
       }),
   }
 ) {
-  return battleCompletionEventHandlers[event.type]?.(event, deps) ?? {
+  return battleCompletionEventHandlers[event?.type]?.(event, deps) ?? {
     outcome: BattleCompletionOutcome.ONGOING,
   };
 }

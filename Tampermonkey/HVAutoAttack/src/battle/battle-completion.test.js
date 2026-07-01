@@ -109,6 +109,21 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.scheduleReload).not.toHaveBeenCalled();
   });
 
+  it("rejects null battle completion events without side effects", () => {
+    const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
+
+    expect(runBattleCompletionAutomation(null, d)).toEqual({
+      outcome: "ongoing",
+    });
+
+    expect(d.recordCompletion).not.toHaveBeenCalled();
+    expect(d.readCompletionContext).not.toHaveBeenCalled();
+    expect(d.triggerAlarm).not.toHaveBeenCalled();
+    expect(d.clearSession).not.toHaveBeenCalled();
+    expect(d.isCompletionReached).not.toHaveBeenCalled();
+    expect(d.scheduleReload).not.toHaveBeenCalled();
+  });
+
   it("reads completion panel reachability through the completion entry", () => {
     const d = deps();
     d.isCompletionReached.mockReturnValue(false);
