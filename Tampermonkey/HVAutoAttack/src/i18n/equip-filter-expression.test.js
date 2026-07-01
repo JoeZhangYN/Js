@@ -12,6 +12,10 @@ describe("evaluateEquipFilterExpression", () => {
     expect(evaluateEquipFilterExpression("300 > 400 || true")).toBe(true);
   });
 
+  it("accepts outer whitespace from text filter replacement", () => {
+    expect(evaluateEquipFilterExpression(" true && (false || true) ")).toBe(true);
+  });
+
   it("rejects unsupported expression syntax", () => {
     expect(() => evaluateEquipFilterExpression("true; alert(1)")).toThrow("Invalid Filter");
     expect(() => evaluateEquipFilterExpression("true ?? false")).toThrow("Invalid Filter");

@@ -31,7 +31,7 @@ function compare(left, operator, right) {
 }
 
 export function evaluateEquipFilterExpression(expression) {
-  const tokens = tokenizeExpression(expression);
+  const tokens = tokenizeExpression(String(expression ?? "").trim());
   let index = 0;
 
   function peek() {
