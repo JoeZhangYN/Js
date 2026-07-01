@@ -4,15 +4,21 @@ import { BattleActionDecisionEvent, runBattleActionDecision } from "./battle-act
 
 const mocks = vi.hoisted(() => ({
   runBattleActionEffectDispatch: vi.fn(),
+  runBattleActionDecisionEvidence: vi.fn(),
 }));
 
 vi.mock("./battle-action-effect-dispatch.js", () => ({
   BattleActionEffectDispatchEvent: { APPLY_ACTION_RESULT: "applyActionResult" },
   runBattleActionEffectDispatch: mocks.runBattleActionEffectDispatch,
 }));
+vi.mock("./battle-action-decision-evidence.js", () => ({
+  BattleActionDecisionEvidenceEvent: { RECORD_TRACE: "recordTrace" },
+  runBattleActionDecisionEvidence: mocks.runBattleActionDecisionEvidence,
+}));
 
 function dispatchedResults(snap = {}, opt = {}) {
   mocks.runBattleActionEffectDispatch.mockClear();
+  mocks.runBattleActionDecisionEvidence.mockClear();
   mocks.runBattleActionEffectDispatch.mockReturnValue(false);
   runBattleActionDecision({
     type: BattleActionDecisionEvent.DECIDE,
@@ -41,9 +47,26 @@ describe("runBattleActionDecision", () => {
     });
 
     expect(mocks.runBattleActionEffectDispatch).toHaveBeenCalledTimes(1);
+    expect(mocks.runBattleActionDecisionEvidence).toHaveBeenCalledWith({
+      type: "recordTrace",
+      steps: [{ capability: "survival", result: { kind: "flee-command" }, acted: true }],
+    });
     expect(mocks.runBattleActionEffectDispatch.mock.calls[0][0]).toMatchObject({
       type: "applyActionResult",
       result: { kind: "flee-command" },
+    });
+  });
+
+  it("records every not-acted decision step when the turn does not short-circuit", () => {
+    dispatchedResults();
+    expect(mocks.runBattleActionDecisionEvidence).toHaveBeenCalledWith({
+      type: "recordTrace",
+      steps: expect.arrayContaining([
+        expect.objectContaining({ capability: "survival", acted: false }),
+        expect.objectContaining({ capability: "buffPreparation", acted: false }),
+        expect.objectContaining({ capability: "offensiveDebuff", acted: false }),
+        expect.objectContaining({ capability: "attack", acted: false }),
+      ]),
     });
   });
 

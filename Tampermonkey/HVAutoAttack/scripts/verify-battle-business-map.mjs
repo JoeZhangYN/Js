@@ -7,6 +7,7 @@ const battleAutomationFile = path.join(root, "src/battle/battle-automation.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const turnPreludeFile = path.join(root, "src/battle/battle-turn-prelude.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
+const actionDecisionEvidenceFile = path.join(root, "src/battle/battle-action-decision-evidence.js");
 const actionEffectDispatchFile = path.join(root, "src/battle/battle-action-effect-dispatch.js");
 const violations = [];
 
@@ -31,6 +32,7 @@ const battleAutomation = read(battleAutomationFile);
 const mainLoop = read(mainLoopFile);
 const turnPrelude = read(turnPreludeFile);
 const actionDecision = read(actionDecisionFile);
+const actionDecisionEvidence = read(actionDecisionEvidenceFile);
 const actionEffectDispatch = read(actionEffectDispatchFile);
 
 for (const stale of ["BATTLE_RULES", "battle/rules/index.js", "`dispatch.js`"]) {
@@ -44,6 +46,7 @@ for (const stale of ["BATTLE_RULES", "battle/rules/index.js", "`dispatch.js`"]) 
 
 for (const required of [
   "battle-action-effect-dispatch.js",
+  "battle-action-decision-evidence.js",
   "runBattleTurnAutomation(RUN_CURRENT_TURN)",
   "runBattleActionDecision(DECIDE)",
   "battle-turn-prelude",
@@ -76,8 +79,18 @@ for (const required of [
   "runBattleAttackAction",
   "runBattleActionEffectDispatch",
   "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
+  "BattleActionDecisionEvidenceEvent.RECORD_TRACE",
+  "runBattleActionDecisionEvidence",
 ]) {
   requireText("src/battle/battle-action-decision.js", actionDecision, required);
+}
+
+for (const required of [
+  "BattleActionDecisionEvidenceEvent",
+  "runBattleActionDecisionEvidence",
+  "HVAA:lastBattleActionDecision",
+]) {
+  requireText("src/battle/battle-action-decision-evidence.js", actionDecisionEvidence, required);
 }
 
 for (const forbidden of ["BATTLE_RULES", "runRules", "battle/rules/index.js"]) {

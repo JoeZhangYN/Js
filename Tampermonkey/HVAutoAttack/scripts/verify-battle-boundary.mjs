@@ -78,6 +78,11 @@ const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const turnPreludeFile = path.join(root, "src/battle/battle-turn-prelude.js");
 const turnPreludeTest = path.join(root, "src/battle/battle-turn-prelude.test.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
+const actionDecisionEvidenceFile = path.join(root, "src/battle/battle-action-decision-evidence.js");
+const actionDecisionEvidenceTestFile = path.join(
+  root,
+  "src/battle/battle-action-decision-evidence.test.js"
+);
 const dispatchFile = path.join(root, "src/battle/battle-action-effect-dispatch.js");
 const legacyDispatchFile = path.join(root, "src/battle/dispatch.js");
 const legacyDispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
@@ -514,10 +519,15 @@ function checkTurnEntry() {
     "ACTION_STEPS",
     "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
     "runBattleActionEffectDispatch",
+    "BattleActionDecisionEvidenceEvent.RECORD_TRACE",
+    "runBattleActionDecisionEvidence",
     "actionOptions",
     "const actionContext = { snap, actionOptions }",
     "for (const step of ACTION_STEPS)",
     "decideActionStep(step, actionContext)",
+    "const steps = []",
+    "steps.push({ capability: step.capability, result, acted })",
+    "recordDecisionEvidence(steps)",
     "decideSurvivalStep",
     "BattleSurvivalActionEvent.DECIDE",
     "runBattleSurvivalAction",
@@ -553,6 +563,33 @@ function checkTurnEntry() {
     violations.push(
       `${rel(actionDecisionFile)} must not reintroduce repeated two-arg step wrappers`
     );
+  }
+  const actionDecisionEvidenceText = fs.readFileSync(actionDecisionEvidenceFile, "utf8");
+  for (const required of [
+    "BattleActionDecisionEvidenceEvent",
+    "RECORD_TRACE",
+    "runBattleActionDecisionEvidence",
+    "ACTION_DECISION_EVIDENCE_KEY",
+    "summarizeResult",
+    "acted: Boolean(step.acted)",
+    "HVAA:lastBattleActionDecision",
+    "[HVAA] battle action decision",
+  ]) {
+    if (!actionDecisionEvidenceText.includes(required)) {
+      violations.push(`${rel(actionDecisionEvidenceFile)} must own decision evidence ${required}`);
+    }
+  }
+  const actionDecisionEvidenceTestText = fs.existsSync(actionDecisionEvidenceTestFile)
+    ? fs.readFileSync(actionDecisionEvidenceTestFile, "utf8")
+    : "";
+  for (const required of [
+    "records decision trace with acted and not-acted steps",
+    "HVAA:lastBattleActionDecision",
+    "rejects unknown decision evidence events",
+  ]) {
+    if (!actionDecisionEvidenceTestText.includes(required)) {
+      violations.push(`${rel(actionDecisionEvidenceTestFile)} must cover ${required}`);
+    }
   }
   const actionEffectText = fs.readFileSync(dispatchFile, "utf8");
   for (const required of [

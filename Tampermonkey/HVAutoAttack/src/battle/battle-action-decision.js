@@ -5,6 +5,10 @@ import {
   runBattleActionEffectDispatch,
 } from "./battle-action-effect-dispatch.js";
 import {
+  BattleActionDecisionEvidenceEvent,
+  runBattleActionDecisionEvidence,
+} from "./battle-action-decision-evidence.js";
+import {
   BattleBuffPreparationEvent,
   runBattleBuffPreparation,
 } from "./buff/decide-buff-preparation.js";
@@ -82,17 +86,28 @@ function decideActionStep(step, actionContext) {
 function decideBattleAction(turnContext = {}) {
   const { snap = {}, actionOptions = {} } = turnContext;
   const actionContext = { snap, actionOptions };
+  const steps = [];
   for (const step of ACTION_STEPS) {
-    if (
-      runBattleActionEffectDispatch({
-        type: BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT,
-        result: decideActionStep(step, actionContext),
-        snap,
-      })
-    ) {
+    const result = decideActionStep(step, actionContext);
+    const acted = runBattleActionEffectDispatch({
+      type: BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT,
+      result,
+      snap,
+    });
+    steps.push({ capability: step.capability, result, acted });
+    if (acted) {
+      recordDecisionEvidence(steps);
       return;
     }
   }
+  recordDecisionEvidence(steps);
+}
+
+function recordDecisionEvidence(steps) {
+  runBattleActionDecisionEvidence({
+    type: BattleActionDecisionEvidenceEvent.RECORD_TRACE,
+    steps,
+  });
 }
 
 export function runBattleActionDecision(event = { type: EVENT_DECIDE }) {
