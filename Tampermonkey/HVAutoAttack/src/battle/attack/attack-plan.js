@@ -164,5 +164,5 @@ function decideDefaultAttackPlan(_opt, _event, context) {
 }
 
 export function runAttackPlanDecision(event = { type: EVENT_DECIDE }) {
-  return attackPlanDecisionEventHandlers[event.type]?.(event) ?? { type: "noop" };
+  return attackPlanDecisionEventHandlers[event?.type]?.(event) ?? { type: "noop" };
 }

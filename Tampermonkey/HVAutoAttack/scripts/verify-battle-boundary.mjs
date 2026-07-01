@@ -3550,6 +3550,9 @@ function checkAttackEntry() {
   if (/event\.type\s*===/.test(attackPlanEntryBody)) {
     violations.push(`${rel(attackPlanFile)} entry must dispatch by handler table`);
   }
+  if (!attackPlanText.includes("attackPlanDecisionEventHandlers[event?.type]")) {
+    violations.push(`${rel(attackPlanFile)} must reject null attack plan events as noop plans`);
+  }
   if (
     !/const ATTACK_PLAN_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "focus"[\s\S]*capability: "spiritToggle"[\s\S]*capability: "spell"[\s\S]*capability: "mercifulSingle"[\s\S]*capability: "physicalUtility"[\s\S]*capability: "defaultAttack"[\s\S]*\]\)/.test(
       attackPlanText
@@ -3620,12 +3623,28 @@ function checkAttackEntry() {
   if (/event\.type\s*===/.test(attackDecisionEntryBody)) {
     violations.push(`${rel(decideAttackFile)} entry must dispatch by handler table`);
   }
+  if (!ownerText.includes("const decisionEvent = event ?? {}")) {
+    violations.push(`${rel(decideAttackFile)} must route null attack decision events through the default attack-plan path`);
+  }
   const attackDecisionTestText = fs.readFileSync(
     path.join(root, "src/battle/attack/decide-attack.test.js"),
     "utf8"
   );
-  if (!attackDecisionTestText.includes("unknown attack decision events use the attack-plan default path")) {
+  if (
+    !attackDecisionTestText.includes("unknown attack decision events use the attack-plan default path")
+  ) {
     violations.push(`${rel(decideAttackFile)} tests must cover unknown attack decision events`);
+  }
+  if (
+    !attackDecisionTestText.includes("null attack decision events use the attack-plan default path")
+  ) {
+    violations.push(`${rel(decideAttackFile)} tests must cover null attack decision events`);
+  }
+  if (!attackDecisionTestText.includes("rejects unknown attack plan events as noop plans")) {
+    violations.push(`${rel(attackPlanFile)} tests must cover unknown attack plan events`);
+  }
+  if (!attackDecisionTestText.includes("runAttackPlanDecision(null)")) {
+    violations.push(`${rel(attackPlanFile)} tests must cover null attack plan events`);
   }
   if (!attackPlanText.includes("dynamicHealLog")) {
     violations.push(`${rel(attackPlanFile)} must pass ranking debug option into attack ranking`);

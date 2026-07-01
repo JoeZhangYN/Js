@@ -29,8 +29,9 @@ const ATTACK_PLAN_CLEAR_PREDICATES = Object.freeze({
  * @returns {import("../../core/types.js").ActionResult} { kind:"attack-plan", plan }
  */
 function decideAttack(event = {}) {
-  return (attackDecisionEventHandlers[event.type] || attackDecisionEventHandlers[EVENT_DECIDE_PLAN])(
-    event
+  const decisionEvent = event ?? {};
+  return (attackDecisionEventHandlers[decisionEvent.type] || attackDecisionEventHandlers[EVENT_DECIDE_PLAN])(
+    decisionEvent
   );
 }
 

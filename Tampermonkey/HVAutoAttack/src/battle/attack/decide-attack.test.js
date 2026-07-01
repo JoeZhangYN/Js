@@ -3,6 +3,7 @@
 // 统一视图后：怪物事实全在 snap.view（finWeight/hpAbsNow/hpMax/buffs/order），不再传第三参 monsterStatus。
 import { describe, it, expect } from "vitest";
 import { AttackDecisionEvent, runAttackDecision } from "./decide-attack.js";
+import { runAttackPlanDecision } from "./attack-plan.js";
 
 /** 最小 snap 工厂(只填 runAttackDecision 及其纯 callee 读到的字段)。 */
 function snap(over = {}) {
@@ -98,6 +99,15 @@ describe("runAttackDecision 返 {kind:'attack-plan'}", () => {
     });
 
     expect(r).toEqual({ kind: "attack-plan", plan: { type: "default", targetId: 4 } });
+  });
+
+  it("null attack decision events use the attack-plan default path", () => {
+    expect(runAttackDecision(null)).toEqual({ kind: "attack-plan", plan: { type: "noop" } });
+  });
+
+  it("rejects unknown attack plan events as noop plans", () => {
+    expect(runAttackPlanDecision({ type: "unknown" })).toEqual({ type: "noop" });
+    expect(runAttackPlanDecision(null)).toEqual({ type: "noop" });
   });
 });
 
