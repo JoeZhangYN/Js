@@ -27,21 +27,27 @@ function clickFleeAndScheduleReload() {
     recordCommandResult("rejected", clickResult.reason, { error: clickResult.error });
     return false;
   }
-  const navigationResult = runNavigationAutomation({
-    type: NavigationEvent.SCHEDULE_RELOAD,
-    reason: NavigationReloadReason.FLEE_CONFIRMATION,
-    seconds: FLEE_RELOAD_DELAY_SEC,
-    detail: {
-      source: "battleFleeCommand",
-      command: EVENT_CLICK_AND_RELOAD,
-      seconds: FLEE_RELOAD_DELAY_SEC,
-    },
-  });
+  const navigation = scheduleFleeReload();
   recordCommandResult("accepted", "clicked", {
     seconds: FLEE_RELOAD_DELAY_SEC,
-    navigationResult: Boolean(navigationResult),
+    navigationResult: navigation.result,
+    ...(navigation.error ? { navigationError: navigation.error } : {}),
   });
   return true;
+}
+
+function scheduleFleeReload() {
+  try {
+    const result = runNavigationAutomation({
+      type: NavigationEvent.SCHEDULE_RELOAD,
+      reason: NavigationReloadReason.FLEE_CONFIRMATION,
+      seconds: FLEE_RELOAD_DELAY_SEC,
+      detail: { source: "battleFleeCommand", command: EVENT_CLICK_AND_RELOAD, seconds: FLEE_RELOAD_DELAY_SEC },
+    });
+    return { result: Boolean(result), error: undefined };
+  } catch (error) {
+    return { result: false, error: error?.message || String(error) };
+  }
 }
 
 function recordCommandResult(result, reason, detail) {

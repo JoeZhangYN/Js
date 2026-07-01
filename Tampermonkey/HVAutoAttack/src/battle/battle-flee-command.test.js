@@ -75,6 +75,24 @@ describe("runBattleFleeCommand", () => {
     });
   });
 
+  it("keeps clicked Flee acted when reload scheduling throws", () => {
+    const flee = mkFleeButton();
+    mocks.runNavigationAutomation.mockImplementation(() => {
+      throw new Error("navigation blocked");
+    });
+
+    expect(runBattleFleeCommand({ type: BattleFleeCommandEvent.CLICK_AND_RELOAD })).toBe(true);
+
+    expect(flee.click).toHaveBeenCalledOnce();
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
+      type: "recordResult",
+      command: "flee.clickAndReload",
+      result: "accepted",
+      reason: "clicked",
+      detail: { seconds: 3, navigationResult: false, navigationError: "navigation blocked" },
+    });
+  });
+
   it("records Flee click failures as not acted without scheduling reload", () => {
     const flee = mkFleeButton();
     flee.click.mockImplementation(() => {
