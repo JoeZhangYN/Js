@@ -112,7 +112,7 @@ function rejectUnknownApiRecoveryEvent(event, deps) {
 }
 
 function rejectApiBridgeEvent(detail, deps) {
-  const rejectedDetail = { outcome: OUTCOME_REJECTED, reason: EVENT_UNKNOWN_API_BRIDGE, eventType: detail?.eventType ?? null };
+  const rejectedDetail = { outcome: OUTCOME_REJECTED, reason: detail?.reason ?? EVENT_UNKNOWN_API_BRIDGE, eventType: detail?.eventType ?? null };
   writeRecoveryState(deps, buildRejectedRecoveryState(rejectedDetail, deps));
   return false;
 }

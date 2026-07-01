@@ -69,6 +69,8 @@ const ownerText = requireText(owner, [
   "BattleApiWorldContextEvent.READ_CURRENT",
   "runBattleApiWorldContext",
   "readBattleApiWorldContext",
+  "apiRecoveryBridgeInstallFailed",
+  "rejectApiRecoveryBridgeInstallFailed",
   "typeof MAIN_URL",
   "battle_continue",
 ]);
@@ -98,6 +100,8 @@ requireText(ownerRejectionTest, [
   "rejects unknown events through API recovery evidence",
   "rejects null events through API recovery evidence instead of throwing",
   "records default unknown bridge events with bridge identity",
+  "rejects API script installation when the recovery bridge cannot be installed",
+  "apiRecoveryBridgeInstallFailed",
   "unknownApiBridgeEvent",
   "rejectApiBridgeEvent",
 ]);
@@ -202,6 +206,7 @@ const recoveryText = requireText(recovery, [
   "RECOVERY_ACTION_REJECTED",
   "rejectUnknownApiRecoveryEvent",
   "rejectApiBridgeEvent",
+  "detail?.reason ?? EVENT_UNKNOWN_API_BRIDGE",
   "unknownApiResponseRecoveryEvent",
   "unknownApiBridgeEvent",
   "buildRejectedRecoveryState(detail, deps)",
@@ -245,6 +250,8 @@ requireText(recoveryRejectionTest, [
   "rejects unknown recovery events with structured evidence",
   "rejects null recovery events with structured evidence instead of throwing",
   "records rejected API bridge events with bridge identity",
+  "preserves explicit API bridge rejection reasons",
+  "apiRecoveryBridgeInstallFailed",
   "carries recent diagnostics into rejected recovery events without nesting recovery state",
   "unknownApiBridgeEvent",
   "battleActionDecision",
@@ -352,6 +359,9 @@ if (!responseScriptText.includes("world: worldContext")) {
 }
 if (!ownerText.includes("deps.installApiResponseRecovery()")) {
   violations.push(`${owner.replaceAll("\\", "/")} must install API recovery before scripts`);
+}
+if (!ownerText.includes("if (!deps.installApiResponseRecovery()) return rejectApiRecoveryBridgeInstallFailed(deps)")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must stop API script install when recovery bridge install fails`);
 }
 if (
   /NavigationReloadReason|BattlePauseEvent|runNavigationAutomation|runBattlePauseAutomation/.test(

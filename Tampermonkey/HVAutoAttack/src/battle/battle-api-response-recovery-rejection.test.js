@@ -81,6 +81,27 @@ describe("battle API response recovery event rejection", () => {
     });
   });
 
+  it("preserves explicit API bridge rejection reasons", () => {
+    const deps = makeDeps();
+
+    runBattleApiResponseRecovery(
+      {
+        type: BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT,
+        detail: { eventType: "install", reason: "apiRecoveryBridgeInstallFailed" },
+      },
+      deps
+    );
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
+      recoveryAction: "rejected",
+      detail: {
+        outcome: "rejected",
+        reason: "apiRecoveryBridgeInstallFailed",
+        eventType: "install",
+      },
+    });
+  });
+
   it("carries recent diagnostics into rejected recovery events without nesting recovery state", () => {
     const deps = makeDeps();
     deps.readDiagnosticEvidence.mockReturnValue({

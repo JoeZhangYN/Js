@@ -26,7 +26,7 @@ function makeDeps() {
     readBattleApiWorldContext: vi.fn(() => ({
       world: "persistent", apiBaseUrl: "https://example.test/", apiJsonUrl: "https://example.test/json",
     })),
-    installApiResponseRecovery: vi.fn(),
+    installApiResponseRecovery: vi.fn(() => true),
   };
 }
 

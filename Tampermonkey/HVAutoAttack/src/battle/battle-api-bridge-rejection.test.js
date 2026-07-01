@@ -68,4 +68,18 @@ describe("runBattleApiBridgeAutomation event rejection", () => {
     expect(deps.installApiResponseRecovery).not.toHaveBeenCalled();
     expect(deps.appendHead).not.toHaveBeenCalled();
   });
+
+  it("rejects API script installation when the recovery bridge cannot be installed", () => {
+    const deps = makeDeps();
+    deps.installApiResponseRecovery.mockReturnValue(false);
+
+    expect(runBattleApiBridgeAutomation(undefined, deps)).toBe(false);
+
+    expect(deps.rejectApiBridgeEvent).toHaveBeenCalledWith({
+      type: "install",
+      reason: "apiRecoveryBridgeInstallFailed",
+    });
+    expect(deps.readBattleApiWorldContext).not.toHaveBeenCalled();
+    expect(deps.appendHead).not.toHaveBeenCalled();
+  });
 });

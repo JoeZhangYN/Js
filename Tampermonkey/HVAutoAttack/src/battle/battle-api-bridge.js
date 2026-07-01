@@ -12,6 +12,7 @@ const EVENT_INSTALL = "install";
 const ACTION_START_EVENT_NODE_ID = "eventStart", ACTION_END_EVENT_NODE_ID = "eventEnd";
 const MAGIC_DELAY_SESSION_KEY = "delay";
 const ACTION_DELAY_SESSION_KEY = "delay2";
+const REASON_API_RECOVERY_INSTALL_FAILED = "apiRecoveryBridgeInstallFailed";
 
 export const BattleApiBridgeEvent = Object.freeze({ INSTALL: EVENT_INSTALL });
 
@@ -25,6 +26,17 @@ function rejectUnknownApiBridgeEvent(event, deps) {
     runBattleApiResponseRecovery({
       type: BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT,
       detail: { eventType: event?.type ?? null },
+    })
+  );
+}
+
+function rejectApiRecoveryBridgeInstallFailed(deps) {
+  const detail = { type: EVENT_INSTALL, reason: REASON_API_RECOVERY_INSTALL_FAILED };
+  return (
+    deps.rejectApiBridgeEvent?.(detail) ??
+    runBattleApiResponseRecovery({
+      type: BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT,
+      detail: { eventType: EVENT_INSTALL, reason: REASON_API_RECOVERY_INSTALL_FAILED },
     })
   );
 }
@@ -92,7 +104,7 @@ function writeApiBridgeDelayRuntime(deps, option) {
 
 function installBridge(deps) {
   writeApiBridgeDelayRuntime(deps, readApiBridgeDelayOption(deps));
-  deps.installApiResponseRecovery();
+  if (!deps.installApiResponseRecovery()) return rejectApiRecoveryBridgeInstallFailed(deps);
   const worldContext = deps.readBattleApiWorldContext();
 
   const apiCall = deps.createScript();
