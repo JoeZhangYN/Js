@@ -28,5 +28,5 @@ export function runBattleApiWorldContext(
   event = { type: EVENT_READ_CURRENT },
   deps = { isIsekai, mainUrl: MAIN_URL, isekaiUrl: ISEKAI_URL, document }
 ) {
-  return battleApiWorldContextEventHandlers[event.type]?.(event, deps);
+  return battleApiWorldContextEventHandlers[event?.type]?.(event, deps);
 }

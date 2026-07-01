@@ -55,4 +55,18 @@ describe("runBattleApiWorldContext", () => {
       runBattleApiWorldContext({ type: "unknown" }, { ...URLS, isIsekai: false })
     ).toBeUndefined();
   });
+
+  it("rejects null world context events without reading document authority", () => {
+    const deps = {
+      ...URLS,
+      isIsekai: true,
+      document: {
+        querySelector: () => {
+          throw new Error("document authority should not be read");
+        },
+      },
+    };
+
+    expect(runBattleApiWorldContext(null, deps)).toBeUndefined();
+  });
 });

@@ -141,6 +141,7 @@ requireText(worldContextTest, [
   "classifies persistent battle API authority",
   "classifies isekai battle API authority",
   "rejects unknown world context events",
+  "rejects null world context events without reading document authority",
   "https://hentaiverse.org/json",
   "https://hentaiverse.org/isekai/json",
   "/z/091c/hvc.js",
@@ -323,6 +324,9 @@ if (/window\.location|location\.href|window\.location\.search/.test(recoveryText
 }
 if (!/export\s+function\s+runBattleApiWorldContext/.test(worldContextText)) {
   violations.push(`${worldContext.replaceAll("\\", "/")} must expose one world context entry`);
+}
+if (!worldContextText.includes("battleApiWorldContextEventHandlers[event?.type]")) {
+  violations.push(`${worldContext.replaceAll("\\", "/")} must reject null world context events`);
 }
 if (!worldContextText.includes("deps.isIsekai ? deps.isekaiUrl : deps.mainUrl")) {
   violations.push(`${worldContext.replaceAll("\\", "/")} must own battle API authority selection`);
