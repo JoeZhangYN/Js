@@ -7,8 +7,14 @@ const ownerTest = path.normalize("src/battle/battle-api-bridge.test.js");
 const runtimeTest = path.normalize("src/battle/battle-api-bridge-runtime.test.js");
 const responseScript = path.normalize("src/battle/battle-api-response-script.js");
 const responseScriptTest = path.normalize("src/battle/battle-api-response-script.test.js");
+const responseScriptMalformedJsonTest = path.normalize(
+  "src/battle/battle-api-response-script-malformed-json.test.js"
+);
 const recovery = path.normalize("src/battle/battle-api-response-recovery.js");
 const recoveryTest = path.normalize("src/battle/battle-api-response-recovery.test.js");
+const recoveryMalformedJsonTest = path.normalize(
+  "src/battle/battle-api-response-recovery-malformed-json.test.js"
+);
 const recoveryPauseTest = path.normalize("src/battle/battle-api-response-recovery-pause.test.js");
 const recoveryDiagnosticsTest = path.normalize(
   "src/battle/battle-api-response-recovery-diagnostics.test.js"
@@ -88,6 +94,8 @@ const responseScriptText = requireText(responseScript, [
   "HVAA:battleApiRecovery",
   "bridgeMissing",
   "a.error || a.reload",
+  "parseApiJsonResponse",
+  'responseKind: "malformedJson"',
   "responseKind",
   "actionDetail",
   "worldContext",
@@ -99,6 +107,12 @@ requireText(responseScriptTest, [
   "routes rejected API responses through the recovery bridge when available",
   "HVAA:battleApiRecovery",
   "bridgeMissing",
+]);
+requireText(responseScriptMalformedJsonTest, [
+  "routes malformed JSON responses through the recovery bridge instead of throwing",
+  "malformedJson",
+  "parseError",
+  "responseTextPreview",
 ]);
 const worldContextText = requireText(worldContext, [
   "BattleApiWorldContextEvent",
@@ -135,6 +149,7 @@ const recoveryText = requireText(recovery, [
   "handleRejectedApiResponse",
   "diagnosticEvidenceWithoutApiRecovery",
   "world: detail?.world",
+  "parseError: detail?.parseError",
   "deps.pause(state)",
   "diagnosticEvidence",
   'reason: "battleApiResponseRepeated"',
@@ -150,6 +165,11 @@ requireText(recoveryTest, [
   "does not treat different rejected response evidence as the same loop",
   "does not treat different battle worlds as the same recovery loop",
   "HVAA:battleApiRecovery",
+]);
+requireText(recoveryMalformedJsonTest, [
+  "does not treat different malformed JSON parse failures as the same loop",
+  "malformedJson",
+  "parseError",
 ]);
 requireText(recoveryPauseTest, [
   "writes repeated API recovery state into pause evidence on the default path",
@@ -241,6 +261,14 @@ if (!responseScriptText.includes("action: actionDetail()")) {
 }
 if (!responseScriptText.includes('responseKind: "httpStatus"')) {
   violations.push(`${responseScript.replaceAll("\\", "/")} must classify non-200 API responses`);
+}
+if (
+  !responseScriptText.includes("function parseApiJsonResponse") ||
+  !responseScriptText.includes('responseKind: "malformedJson"') ||
+  !responseScriptText.includes("parseError") ||
+  !responseScriptText.includes("responseTextPreview")
+) {
+  violations.push(`${responseScript.replaceAll("\\", "/")} must classify malformed JSON API responses`);
 }
 if (!/export\s+function\s+runBattleApiResponseRecovery/.test(recoveryText)) {
   violations.push(`${recovery.replaceAll("\\", "/")} must expose one recovery entry`);

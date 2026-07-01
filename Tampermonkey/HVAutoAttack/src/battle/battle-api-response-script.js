@@ -45,9 +45,24 @@ export function buildApiResponseScript(worldContext) {
       recordBlockedRecovery(detail);
       return false;
     }
+    function parseApiJsonResponse(responseText, status) {
+      try {
+        return { ok: true, value: JSON.parse(responseText) };
+      } catch (error) {
+        reloadFromApiResponse({
+          responseKind: "malformedJson",
+          status,
+          parseError: String(error && error.message ? error.message : error),
+          responseTextPreview: String(responseText || "").slice(0, 200),
+        });
+        return { ok: false };
+      }
+    }
     if (b.readyState === 4) {
       if (b.status === 200) {
-        const a = JSON.parse(b.responseText);
+        const parsed = parseApiJsonResponse(b.responseText, b.status);
+        if (!parsed.ok) return false;
+        const a = parsed.value;
         if (a.login !== undefined) return false;
         if (a.error || a.reload) {
           reloadFromApiResponse({

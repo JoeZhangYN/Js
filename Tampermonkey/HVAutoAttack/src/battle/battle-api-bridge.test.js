@@ -24,12 +24,14 @@ function makeDeps() {
     createScript: vi.fn(() => ({ textContent: "" })),
     appendHead: vi.fn((script) => scripts.push(script)),
     readBattleApiWorldContext: vi.fn(() => ({
-      world: "persistent",
-      apiBaseUrl: "https://example.test/",
-      apiJsonUrl: "https://example.test/json",
+      world: "persistent", apiBaseUrl: "https://example.test/", apiJsonUrl: "https://example.test/json",
     })),
     installApiResponseRecovery: vi.fn(),
   };
+}
+
+function expectContains(text, tokens) {
+  for (const token of tokens) expect(text).toContain(token);
 }
 
 beforeEach(() => {
@@ -40,9 +42,7 @@ beforeEach(() => {
   mocks.runOptionAutomation.mockReturnValue({});
   mocks.runBattleApiWorldContext.mockReset();
   mocks.runBattleApiWorldContext.mockReturnValue({
-    world: "isekai",
-    apiBaseUrl: "https://hentaiverse.org/isekai/",
-    apiJsonUrl: "https://hentaiverse.org/isekai/json",
+    world: "isekai", apiBaseUrl: "https://hentaiverse.org/isekai/", apiJsonUrl: "https://hentaiverse.org/isekai/json",
   });
 });
 
@@ -65,14 +65,15 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[0].textContent).toContain('b.open("POST", apiJsonUrl)');
     expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay * 1");
     expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay2 * 1");
-    for (const token of ["window.battle.battle_continue", "document.location += \"\""]) expect(deps.scripts[0].textContent).toContain(token);
+    expectContains(deps.scripts[0].textContent, ["window.battle.battle_continue", "document.location += \"\""]);
     expect(deps.scripts[0].textContent).toContain('document.getElementById("eventStart").click()');
     expect(deps.scripts[0].textContent).toContain('document.getElementById("eventEnd").click()');
     expect(deps.scripts[1].textContent).toContain("api_response =");
-    expect(deps.scripts[1].textContent).toContain("JSON.parse(b.responseText)");
+    expect(deps.scripts[1].textContent).toContain("parseApiJsonResponse");
+    expect(deps.scripts[1].textContent).toContain('responseKind: "malformedJson"');
     expect(deps.scripts[1].textContent).toContain("reloadFromApiResponse");
     expect(deps.scripts[1].textContent).toContain("window.HVAA_battleApiRecovery");
-    for (const token of ["responseKind", '"world":"persistent"', "actionDetail"]) expect(deps.scripts[1].textContent).toContain(token);
+    expectContains(deps.scripts[1].textContent, ["responseKind", '"world":"persistent"', "actionDetail"]);
     expect(deps.scripts[1].textContent).not.toContain("window.location.href");
   });
 

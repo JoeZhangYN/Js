@@ -24,6 +24,7 @@ function apiFailureKey(detail) {
     responseKind: detail?.responseKind,
     status: detail?.status,
     error: detail?.error,
+    parseError: detail?.parseError,
     reload: detail?.reload,
     world: detail?.world,
     action: detail?.action,
