@@ -83,5 +83,6 @@ describe("scorePhysicalSkillCandidates", () => {
 
   it("rejects unknown physical skill scoring events", () => {
     expect(runPhysicalSkillScoring({ type: "unknown" })).toEqual([]);
+    expect(runPhysicalSkillScoring(null)).toEqual([]);
   });
 });

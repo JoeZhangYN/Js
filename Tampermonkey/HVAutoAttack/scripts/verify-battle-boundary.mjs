@@ -3730,6 +3730,16 @@ function checkAttackEntry() {
   if (/event\.type\s*===/.test(scoringEntryBody)) {
     violations.push(`${rel(physicalSkillScoringFile)} entry must dispatch by handler table`);
   }
+  if (!scoringText.includes("physicalSkillScoringEventHandlers[event?.type]")) {
+    violations.push(`${rel(physicalSkillScoringFile)} must reject null physical skill scoring events`);
+  }
+  const scoringTestText = fs.readFileSync(
+    path.join(root, "src/battle/attack/physical-skill-scoring.test.js"),
+    "utf8"
+  );
+  if (!scoringTestText.includes("runPhysicalSkillScoring(null)")) {
+    violations.push(`${rel(physicalSkillScoringFile)} tests must cover null physical skill scoring events`);
+  }
   const rankingText = fs.readFileSync(physicalSkillRankingFile, "utf8");
   for (const required of [
     "PhysicalSkillRankingEvent",
@@ -3763,6 +3773,16 @@ function checkAttackEntry() {
   }
   if (/event\.type\s*===/.test(rankingEntryBody)) {
     violations.push(`${rel(physicalSkillRankingFile)} entry must dispatch by handler table`);
+  }
+  if (!rankingText.includes("physicalSkillRankingEventHandlers[event?.type]")) {
+    violations.push(`${rel(physicalSkillRankingFile)} must reject null physical skill ranking events`);
+  }
+  const rankingTestText = fs.readFileSync(
+    path.join(root, "src/battle/attack/physical-skill-ranking.test.js"),
+    "utf8"
+  );
+  if (!rankingTestText.includes("runPhysicalSkillRanking(null)")) {
+    violations.push(`${rel(physicalSkillRankingFile)} tests must cover null physical skill ranking events`);
   }
   const scoreContextBody =
     scoringText.match(/function scoreSkillContextual\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";

@@ -169,5 +169,5 @@ function scorePhysicalSkillCandidates(opt, event, ctx) {
 }
 
 export function runPhysicalSkillScoring(event = { type: EVENT_SCORE_CANDIDATES }) {
-  return physicalSkillScoringEventHandlers[event.type]?.(event) ?? [];
+  return physicalSkillScoringEventHandlers[event?.type]?.(event) ?? [];
 }

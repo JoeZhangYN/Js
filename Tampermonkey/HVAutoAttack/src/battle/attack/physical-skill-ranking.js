@@ -64,5 +64,5 @@ function aoeScore(baseScore, aliveCount) {
 }
 
 export function runPhysicalSkillRanking(event = { type: EVENT_PICK_BY_UTILITY }) {
-  return physicalSkillRankingEventHandlers[event.type]?.(event) ?? null;
+  return physicalSkillRankingEventHandlers[event?.type]?.(event) ?? null;
 }
