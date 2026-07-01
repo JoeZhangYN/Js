@@ -24,6 +24,7 @@ afterEach(() => {
 
 describe("runBattleKillBugRecovery", () => {
   it("routes bug recovery reload through the navigation entry", async () => {
+    mocks.runNavigationAutomation.mockReturnValue(true);
     document.body.innerHTML = `
       <table id="textlog"><tbody><tr><td class="tlb">Inventory slot is empty</td></tr></tbody></table>
     `;
@@ -48,6 +49,39 @@ describe("runBattleKillBugRecovery", () => {
       type: "reloadNow",
       reason: "killBugRecovery",
       detail: { source: "battleKillBugRecovery", matchedText: "Inventory slot is empty" },
+    });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleKillBugRecovery"))).toMatchObject({
+      result: "reloadAttempted",
+      reason: "recover",
+      detail: {
+        source: "battleKillBugRecovery",
+        matchedText: "Inventory slot is empty",
+        navigationResult: true,
+      },
+    });
+  });
+
+  it("records thrown reload attempts without throwing from the timer", async () => {
+    document.body.innerHTML = `
+      <table id="textlog"><tbody><tr><td class="tlb">Item does not exist</td></tr></tbody></table>
+    `;
+    mocks.runNavigationAutomation.mockImplementation(() => {
+      throw new Error("navigation bridge failed");
+    });
+
+    expect(runBattleKillBugRecovery({ type: BattleKillBugRecoveryEvent.RECOVER })).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(700);
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleKillBugRecovery"))).toMatchObject({
+      result: "reloadAttempted",
+      reason: "recover",
+      detail: {
+        source: "battleKillBugRecovery",
+        matchedText: "Item does not exist",
+        navigationResult: false,
+        navigationError: "navigation bridge failed",
+      },
     });
   });
 

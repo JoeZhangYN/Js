@@ -31,12 +31,7 @@ function recoverKillBug() {
       matchedTexts.push(matchedText);
       bugLog[i].className = "tlbWARN";
       setTimeout(() => {
-        // 间隔时间以避免持续刷新
-        runNavigationAutomation({
-          type: NavigationEvent.RELOAD_NOW,
-          reason: NavigationReloadReason.KILL_BUG_RECOVERY,
-          detail: { source: "battleKillBugRecovery", matchedText },
-        }); // 刷新移除问题元素
+        reloadForKillBug(matchedText);
       }, KILL_BUG_RELOAD_DELAY_MS);
     } else {
       bugLog[i].className = "tlbQRA";
@@ -49,6 +44,26 @@ function recoverKillBug() {
     delayMs: scheduledReload ? KILL_BUG_RELOAD_DELAY_MS : null,
   });
   return scheduledReload;
+}
+
+function reloadForKillBug(matchedText) {
+  const detail = { source: "battleKillBugRecovery", matchedText };
+  try {
+    recordKillBugRecovery("reloadAttempted", {
+      ...detail,
+      navigationResult: runNavigationAutomation({
+        type: NavigationEvent.RELOAD_NOW,
+        reason: NavigationReloadReason.KILL_BUG_RECOVERY,
+        detail,
+      }),
+    });
+  } catch (error) {
+    recordKillBugRecovery("reloadAttempted", {
+      ...detail,
+      navigationResult: false,
+      navigationError: error?.message || String(error),
+    });
+  }
 }
 
 function recordKillBugRecovery(result, detail, reason = EVENT_RECOVER) {

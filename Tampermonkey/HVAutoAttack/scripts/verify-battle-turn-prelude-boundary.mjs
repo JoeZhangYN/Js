@@ -139,6 +139,10 @@ for (const required of [
   'source: "battleKillBugRecovery"',
   "matchedText",
   "scheduledReload",
+  "reloadForKillBug",
+  "reloadAttempted",
+  "navigationResult",
+  "navigationError",
   "scannedRows",
 ]) {
   if (!killBugText.includes(required)) {
@@ -156,6 +160,8 @@ for (const required of [
   "unknownKillBugRecoveryEvent",
   "scheduledReload",
   "notMatched",
+  "records thrown reload attempts without throwing from the timer",
+  'navigationError: "navigation bridge failed"',
 ]) {
   if (!killBugTestText.includes(required)) {
     violations.push(`${rel(killBugTest)} must cover ${required}`);
