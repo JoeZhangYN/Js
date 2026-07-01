@@ -50,6 +50,17 @@ describe("runEncounterPolicy route contract", () => {
     expect(started).toEqual({ date: 1000, key: "abc", count: 1, clear: true });
   });
 
+  it("marks attempted entry as cleared without counting a new encounter", () => {
+    expect(
+      runEncounterPolicy({
+        type: EncounterPolicyEvent.MARK_ATTEMPTED,
+        state: { date: 1000, key: "abc", count: 1, clear: false },
+        key: "abc",
+        nowMs: 2000,
+      })
+    ).toEqual({ date: 1000, key: "abc", count: 1, clear: true });
+  });
+
   it("plans manual and automatic entry from the same activation rule", () => {
     const available = { date: 1000, key: "abc", count: 1, clear: false };
     expect(

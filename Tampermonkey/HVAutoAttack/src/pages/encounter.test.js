@@ -73,6 +73,7 @@ describe("runEncounterAutomation", () => {
       href: "?s=Battle&ss=ba&encounter=abc123=",
       handled: true,
       claimed: true,
+      state: { key: "abc123=", clear: true },
     });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "openUrl",
@@ -112,6 +113,7 @@ describe("runEncounterAutomation", () => {
       action: "navigated",
       href: "?s=Battle&ss=ba&encounter=abc123=",
       handled: true,
+      state: { key: "abc123=", clear: true },
     });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "openUrl",
@@ -133,7 +135,7 @@ describe("runEncounterAutomation", () => {
       action: "navigated",
       href: "?s=Battle&ss=ba&encounter=xyz=",
       handled: true,
-      state: { key: "xyz=", count: 1, clear: false },
+      state: { key: "xyz=", count: 1, clear: true },
     });
   });
 

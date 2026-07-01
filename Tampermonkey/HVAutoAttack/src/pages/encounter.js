@@ -1,10 +1,7 @@
 // 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
 import { NavigationEvent, NavigationRedirectReason, runNavigationAutomation } from "../core/navigate.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
-import {
-  EncounterLobbyScheduleEvent,
-  runEncounterLobbySchedule,
-} from "./encounter-lobby-schedule.js";
+import { EncounterLobbyScheduleEvent, runEncounterLobbySchedule } from "./encounter-lobby-schedule.js";
 import { isAutomaticEncounterEnabled } from "./encounter-option-gate.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
@@ -48,23 +45,35 @@ function waitForNextCheck(state, event) {
 
 function executeEncounterEntry(outcome) {
   if (outcome?.action === "enter" || outcome?.action === "navigate") {
+    const attemptedState = markEncounterAttempted(outcome);
     runNavigationAutomation({
       type: NavigationEvent.OPEN_URL,
       reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
       url: outcome.href,
     });
-    return { ...outcome, action: "navigated", handled: true };
+    return { ...outcome, action: "navigated", handled: true, state: attemptedState || outcome.state };
   }
   if (outcome?.action === "open") {
+    const attemptedState = markEncounterAttempted(outcome);
     runNavigationAutomation({
       type: NavigationEvent.OPEN_URL,
       reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
       url: outcome.href,
       newTab: true,
     });
-    return { ...outcome, action: "opened", handled: true };
+    return { ...outcome, action: "opened", handled: true, state: attemptedState || outcome.state };
   }
   return outcome;
+}
+
+function markEncounterAttempted(outcome) {
+  const key = outcome?.state?.key;
+  if (!key) return outcome?.state;
+  return runEncounterStateAutomation({
+    type: EncounterStateEvent.MARK_ATTEMPTED,
+    key,
+    state: outcome.state,
+  });
 }
 
 function planStoredEncounterEntry(state) {
@@ -99,19 +108,8 @@ function readEncounterState() {
   return runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
 }
 
-function readStoredClock(state) {
-  return runEncounterPolicy({
-    type: EncounterPolicyEvent.READ_CLOCK,
-    state,
-  });
-}
-
 function shouldRestoreForBattle() {
   return runStaminaAutomation({ type: StaminaEvent.SHOULD_RESTORE_FOR_BATTLE });
-}
-
-function waitForCurrentState(event) {
-  return waitForNextCheck(readEncounterState(), event);
 }
 
 function claimStaminaRecovery() {
@@ -119,25 +117,17 @@ function claimStaminaRecovery() {
   return claimLobby();
 }
 
-function claimEnteredStoredEncounter(state) {
-  return claimEnteredEncounter(enterStoredEncounter(state));
-}
-
 function continueAfterLoadedEncounter(event) {
   return loadAndEnterEncounter().then(
-    (outcome) => claimEnteredEncounter(outcome) || waitForCurrentState(event)
+    (outcome) => claimEnteredEncounter(outcome) || waitForNextCheck(readEncounterState(), event)
   );
-}
-
-function shouldWaitForClock(clock) {
-  return clock.status === "countdown";
 }
 
 async function runLobbyTick(event) {
   const state = readEncounterState();
-  const clock = readStoredClock(state);
-  if (shouldWaitForClock(clock)) return waitForNextCheck(state, event);
-  const entered = claimEnteredStoredEncounter(state);
+  const clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state });
+  if (clock.status === "countdown") return waitForNextCheck(state, event);
+  const entered = claimEnteredEncounter(enterStoredEncounter(state));
   if (entered) return entered;
   if (shouldRestoreForBattle()) return claimStaminaRecovery();
   return continueAfterLoadedEncounter(event);

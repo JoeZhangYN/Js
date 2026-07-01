@@ -13,6 +13,7 @@ export const EncounterPolicyEvent = Object.freeze({
   PARSE_SEARCH_KEY: "parseSearchKey",
   PARSE_EVENTPANE_KEY: "parseEventpaneKey",
   MARK_KEY_AVAILABLE: "markKeyAvailable",
+  MARK_ATTEMPTED: "markAttempted",
   MARK_STARTED: "markStarted",
   RESET_DAY: "resetDay",
 });
@@ -115,6 +116,13 @@ function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
   return next;
 }
 
+function markEncounterAttempted(state, key, nowMs = Date.now()) {
+  const next = normalizeEncounterState(state, nowMs);
+  if (!key || next.key !== key) return next;
+  next.clear = true;
+  return next;
+}
+
 function markEncounterStarted(
   state,
   { search = "", key = parseEncounterKeyFromSearch(search), nowMs = Date.now() } = {}
@@ -145,6 +153,8 @@ const encounterPolicyEventHandlers = Object.freeze({
     parseEncounterKeyFromEventpaneHtml(event.eventpane),
   [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) =>
     markEncounterKeyAvailable(event.state, event.key, event.nowMs),
+  [EncounterPolicyEvent.MARK_ATTEMPTED]: (event) =>
+    markEncounterAttempted(event.state, event.key, event.nowMs),
   [EncounterPolicyEvent.MARK_STARTED]: (event) =>
     markEncounterStarted(event.state, {
       search: event.search,

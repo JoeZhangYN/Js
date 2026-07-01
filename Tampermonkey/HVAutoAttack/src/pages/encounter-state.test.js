@@ -47,6 +47,18 @@ describe("runEncounterStateAutomation", () => {
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({ key: "abc=", clear: true });
   });
 
+  it("marks attempted encounter entry through the state entry", () => {
+    const date = Date.now();
+    const state = runEncounterStateAutomation({
+      type: EncounterStateEvent.MARK_ATTEMPTED,
+      state: { date, key: "abc=", count: 1, clear: false },
+      key: "abc=",
+    });
+
+    expect(state).toEqual({ date, key: "abc=", count: 1, clear: true });
+    expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toEqual(state);
+  });
+
   it("loads a news encounter key through the state entry", async () => {
     localStorage.setItem(HVUT_RE_KEY, JSON.stringify({ date: 0, key: "", count: 0, clear: true }));
     mocks.gmXhr.mockImplementation(({ onload }) => {

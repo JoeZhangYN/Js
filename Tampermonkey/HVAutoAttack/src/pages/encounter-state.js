@@ -4,11 +4,13 @@ import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js"
 const HVUT_RE_KEY = "hvut_re";
 const EVENT_READ_CURRENT = "readCurrent";
 const EVENT_MARK_STARTED = "markStarted";
+const EVENT_MARK_ATTEMPTED = "markAttempted";
 const EVENT_LOAD_KEY = "loadKey";
 
 export const EncounterStateEvent = Object.freeze({
   READ_CURRENT: EVENT_READ_CURRENT,
   MARK_STARTED: EVENT_MARK_STARTED,
+  MARK_ATTEMPTED: EVENT_MARK_ATTEMPTED,
   LOAD_KEY: EVENT_LOAD_KEY,
 });
 
@@ -48,6 +50,17 @@ function markRandomEncounterStarted(search = window.location.search) {
       search,
     })
   );
+}
+
+function markEncounterAttempted(key, state) {
+  writeReState(
+    runEncounterPolicy({
+      type: EncounterPolicyEvent.MARK_ATTEMPTED,
+      state: state || readCurrentReState(),
+      key,
+    })
+  );
+  return readCurrentReState();
 }
 
 function parseEncounterKey(html) {
@@ -96,6 +109,7 @@ const encounterStateEventHandlers = Object.freeze({
     markRandomEncounterStarted(event.search);
     return undefined;
   },
+  [EVENT_MARK_ATTEMPTED]: (event) => markEncounterAttempted(event.key, event.state),
   [EVENT_LOAD_KEY]: () => loadEncounterKey(),
 });
 

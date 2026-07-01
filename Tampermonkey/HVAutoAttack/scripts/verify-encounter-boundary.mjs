@@ -244,7 +244,12 @@ if (!/\bfunction executeEncounterEntry\b/.test(ownerText)) {
     `${owner.replaceAll("\\", "/")} must execute manual and automatic encounter entry through one function`
   );
 }
-for (const required of ["isAutomaticEncounterEnabled", "EVENT_RANDOM_ENCOUNTER_STARTED"]) {
+for (const required of [
+  "isAutomaticEncounterEnabled",
+  "EVENT_RANDOM_ENCOUNTER_STARTED",
+  "EncounterStateEvent.MARK_ATTEMPTED",
+  "markEncounterAttempted",
+]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
@@ -320,6 +325,9 @@ if (/\bexecuteEncounterActivation\b|\bexecuteWidgetNavigation\b/.test(ownerText)
 if (!/\bREAD_CLOCK\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose one encounter clock query`);
 }
+if (!/\bMARK_ATTEMPTED\b/.test(policyText)) {
+  violations.push(`${policyFile.replaceAll("\\", "/")} must expose attempted encounter entry state`);
+}
 if (/\bREADINESS\b/.test(policyText)) {
   violations.push(
     `${policyFile.replaceAll("\\", "/")} must not expose a parallel readiness query; use READ_CLOCK`
@@ -350,6 +358,7 @@ if (!policyEntryMatch) {
     "parseEncounterKeyFromEventpaneHtml(",
     "markEncounterKeyAvailable(",
     "markEncounterStarted(",
+    "markEncounterAttempted(",
   ]) {
     if (entryBody.includes(internal)) {
       violations.push(
