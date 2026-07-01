@@ -62,17 +62,18 @@ const ownerText = requireText(owner, [
   "activeDelayTimers",
   "OptionEvent.READ_FIELD",
   "NavigationEvent.SCHEDULE_RELOAD",
-  "detail: { source: \"battleActionDelay\", seconds, option }",
+  "DiagnosticEvidenceKey.BATTLE_ACTION_DELAY",
+  "unknownActionDelayEvent",
+  "eventType: event?.type ?? null",
+  'detail: { source: "battleActionDelay", seconds, option }',
   "AlarmEvent.TRIGGER",
 ]);
-requireText(ownerTest, [
-  "does not track missing timer handles",
-  "delayAlert",
-  "delayReload",
-]);
+requireText(ownerTest, ["does not track missing timer handles", "delayAlert", "delayReload"]);
 requireText(ownerRejectionTest, [
   "rejects unknown events without reading delay options",
   "rejects null events without reading delay options or touching timers",
+  "HVAA:lastBattleActionDelay",
+  "eventType: null",
 ]);
 requireText(watchdogDetailTest, [
   "passes action watchdog evidence into the navigation reload event",
@@ -88,10 +89,14 @@ if (
   violations.push(`${owner.replaceAll("\\", "/")} may export only its event entry`);
 }
 const entryBody =
-  ownerText.match(/export function runBattleActionDelayAutomation\([^)]*\) \{[\s\S]*?\n\}/)
-    ?.[0] || "";
-if (!/Object\.freeze\(\{[\s\S]*\[EVENT_ACTION_STARTED\][\s\S]*\[EVENT_ACTION_ENDED\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  ownerText.match(/export function runBattleActionDelayAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (
+  !/Object\.freeze\(\{[\s\S]*\[EVENT_ACTION_STARTED\][\s\S]*\[EVENT_ACTION_ENDED\]/.test(ownerText)
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);

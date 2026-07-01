@@ -21,6 +21,7 @@ function makeDeps() {
 
 beforeEach(() => {
   mocks.runOptionAutomation.mockReset();
+  window.sessionStorage.clear();
 });
 
 describe("runBattleActionDelayAutomation event rejection", () => {
@@ -33,6 +34,11 @@ describe("runBattleActionDelayAutomation event rejection", () => {
     expect(deps.schedule).not.toHaveBeenCalled();
     expect(deps.scheduleReload).not.toHaveBeenCalled();
     expect(deps.cancel).not.toHaveBeenCalled();
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDelay"))).toMatchObject({
+      decision: "rejected",
+      reason: "unknownActionDelayEvent",
+      eventType: "unknown",
+    });
   });
 
   it("rejects null events without reading delay options or touching timers", () => {
@@ -44,5 +50,10 @@ describe("runBattleActionDelayAutomation event rejection", () => {
     expect(deps.schedule).not.toHaveBeenCalled();
     expect(deps.scheduleReload).not.toHaveBeenCalled();
     expect(deps.cancel).not.toHaveBeenCalled();
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDelay"))).toMatchObject({
+      decision: "rejected",
+      reason: "unknownActionDelayEvent",
+      eventType: null,
+    });
   });
 });

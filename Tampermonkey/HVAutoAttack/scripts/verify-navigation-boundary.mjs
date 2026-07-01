@@ -84,13 +84,23 @@ if (!owner) {
     if (!source.includes("writeNavigationAudit")) {
       violations.push("navigation execution must record an audit before navigating");
     }
-    if (!auditText.includes("sessionStorage.setItem") || !auditText.includes("reportPreviousNavigationAudit")) {
+    if (
+      !auditText.includes("sessionStorage.setItem") ||
+      !auditText.includes("reportPreviousNavigationAudit")
+    ) {
       violations.push("navigation audit must persist and replay across page reloads");
     }
-    if (!auditText.includes("recordExternalUnload") || !auditText.includes("outsideNavigationEntry")) {
+    if (
+      !auditText.includes("recordExternalUnload") ||
+      !auditText.includes("outsideNavigationEntry")
+    ) {
       violations.push("navigation audit must record unloads that bypass the navigation entry");
     }
-    for (const required of ["DiagnosticEvidenceKey.NAVIGATION_AUDIT", "readRecentDiagnosticEvidence", "diagnosticEvidence"]) {
+    for (const required of [
+      "DiagnosticEvidenceKey.NAVIGATION_AUDIT",
+      "readRecentDiagnosticEvidence",
+      "diagnosticEvidence",
+    ]) {
       if (!auditText.includes(required)) {
         violations.push(`navigation audit must carry diagnostic evidence ${required}`);
       }
@@ -100,23 +110,30 @@ if (!owner) {
         violations.push(`navigation audit must expose storage write evidence ${required}`);
       }
     }
-    if (/catch\s*\(_error\)\s*\{\s*return;\s*\}\s*writeNavigationAudit\("externalUnload"/.test(auditText)) {
+    if (
+      /catch\s*\(_error\)\s*\{\s*return;\s*\}\s*writeNavigationAudit\("externalUnload"/.test(
+        auditText
+      )
+    ) {
       violations.push("external unload audit must not disappear when storage reads fail");
     }
-    if (!auditText.includes('console.warn(`[HVAA] ${kind}`')) {
+    if (!auditText.includes("console.warn(`[HVAA] ${kind}`")) {
       violations.push("navigation audit must warn before navigating");
     }
   }
   if (!diagnosticEvidenceSource) {
     violations.push("core/diagnostic-evidence.js is missing");
   } else {
-    const diagnosticEvidenceText = stripComments(readFileSync(diagnosticEvidenceSource.abs, "utf8"));
+    const diagnosticEvidenceText = stripComments(
+      readFileSync(diagnosticEvidenceSource.abs, "utf8")
+    );
     for (const required of [
       "DiagnosticEvidenceKey.NAVIGATION_DECISION",
       "DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW",
       "DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
       "DiagnosticEvidenceKey.BATTLE_COMMAND",
       "DiagnosticEvidenceKey.BATTLE_PAUSE",
+      "DiagnosticEvidenceKey.BATTLE_ACTION_DELAY",
       "DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE",
       "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
       "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
@@ -126,6 +143,7 @@ if (!owner) {
       "battleApiResponseRecovery",
       "battleCommand",
       "battlePause",
+      "battleActionDelay",
       "battleActionLifecycle",
       "battleActionDecision",
       "battleActionEffect",
@@ -134,8 +152,12 @@ if (!owner) {
         violations.push(`diagnostic evidence must read ${required}`);
       }
     }
-    const diagnosticEvidenceTest = files.find((file) => file.rel === "core/diagnostic-evidence.test.js");
-    const externalUnloadTest = files.find((file) => file.rel === "core/navigate-external-unload.test.js");
+    const diagnosticEvidenceTest = files.find(
+      (file) => file.rel === "core/diagnostic-evidence.test.js"
+    );
+    const externalUnloadTest = files.find(
+      (file) => file.rel === "core/navigate-external-unload.test.js"
+    );
     for (const testSource of [diagnosticEvidenceTest, externalUnloadTest]) {
       if (!testSource) {
         violations.push("diagnostic evidence consumers must have tests");
@@ -159,16 +181,24 @@ if (!owner) {
       }
     }
   }
-  const navigationDecisionSource = files.find((file) => file.rel === "core/navigation-decision-evidence.js");
-  const navigationRejectionTestSource = files.find((file) => file.rel === "core/navigate-rejection.test.js");
-  const openWindowAuditTestSource = files.find((file) => file.rel === "core/navigate-open-window-audit.test.js");
+  const navigationDecisionSource = files.find(
+    (file) => file.rel === "core/navigation-decision-evidence.js"
+  );
+  const navigationRejectionTestSource = files.find(
+    (file) => file.rel === "core/navigate-rejection.test.js"
+  );
+  const openWindowAuditTestSource = files.find(
+    (file) => file.rel === "core/navigate-open-window-audit.test.js"
+  );
   const scheduledReloadDetailTestSource = files.find(
     (file) => file.rel === "core/navigate-scheduled-reload-detail.test.js"
   );
   if (!navigationDecisionSource) {
     violations.push("core/navigation-decision-evidence.js is missing");
   } else {
-    const navigationDecisionText = stripComments(readFileSync(navigationDecisionSource.abs, "utf8"));
+    const navigationDecisionText = stripComments(
+      readFileSync(navigationDecisionSource.abs, "utf8")
+    );
     for (const required of [
       "recordNavigationDecision",
       "DiagnosticEvidenceKey.NAVIGATION_DECISION",
@@ -215,9 +245,13 @@ if (!owner) {
     }
   }
   if (!navigationRejectionTestSource) {
-    violations.push("core/navigate-rejection.test.js must cover unknown/null navigation rejection evidence");
+    violations.push(
+      "core/navigate-rejection.test.js must cover unknown/null navigation rejection evidence"
+    );
   } else {
-    const navigationRejectionTestText = stripComments(readFileSync(navigationRejectionTestSource.abs, "utf8"));
+    const navigationRejectionTestText = stripComments(
+      readFileSync(navigationRejectionTestSource.abs, "utf8")
+    );
     for (const required of [
       "records rejected evidence for unknown navigation events",
       "rejects null navigation events with structured evidence instead of throwing",
@@ -232,9 +266,13 @@ if (!owner) {
     }
   }
   if (!openWindowAuditTestSource) {
-    violations.push("core/navigate-open-window-audit.test.js must cover popup audit and reason rejection");
+    violations.push(
+      "core/navigate-open-window-audit.test.js must cover popup audit and reason rejection"
+    );
   } else {
-    const openWindowAuditTestText = stripComments(readFileSync(openWindowAuditTestSource.abs, "utf8"));
+    const openWindowAuditTestText = stripComments(
+      readFileSync(openWindowAuditTestSource.abs, "utf8")
+    );
     for (const required of [
       "records named popup windows with an allowed reason",
       "rejects named popup windows without an allowed reason",
@@ -248,7 +286,9 @@ if (!owner) {
     }
   }
   if (!scheduledReloadDetailTestSource) {
-    violations.push("core/navigate-scheduled-reload-detail.test.js must cover reload attempt evidence");
+    violations.push(
+      "core/navigate-scheduled-reload-detail.test.js must cover reload attempt evidence"
+    );
   } else {
     const scheduledReloadDetailTestText = stripComments(
       readFileSync(scheduledReloadDetailTestSource.abs, "utf8")
@@ -300,7 +340,9 @@ if (!owner) {
     violations.push("runNavigationAutomation(event) must route through navigationEventHandlers");
   }
   if (!source.includes("navigationEventHandlers[event?.type]")) {
-    violations.push("runNavigationAutomation(event) must reject null events with decision evidence");
+    violations.push(
+      "runNavigationAutomation(event) must reject null events with decision evidence"
+    );
   }
   const entry = source.match(/export function runNavigationAutomation[\s\S]*?\n}/)?.[0] || "";
   if (/if\s*\(\s*event\.type\s*===/.test(entry)) {
@@ -308,7 +350,9 @@ if (!owner) {
   }
   for (const internal of ["goto(", "scheduleReload(", "openUrl(", "openWindow("]) {
     if (entry.includes(internal)) {
-      violations.push("runNavigationAutomation(event) must dispatch through navigationEventHandlers");
+      violations.push(
+        "runNavigationAutomation(event) must dispatch through navigationEventHandlers"
+      );
     }
   }
 }
@@ -322,9 +366,7 @@ for (const file of files) {
   if (/NavigationEvent\.SCHEDULE_RELOAD[\s\S]{0,120}\bsec\s*:/.test(source)) {
     violations.push(`src/${file.rel} uses legacy SCHEDULE_RELOAD sec field`);
   }
-  if (
-    /\b(?:window\.)?location\.href\s*=|\bwindow\.open\s*\(/.test(source)
-  ) {
+  if (/\b(?:window\.)?location\.href\s*=|\bwindow\.open\s*\(/.test(source)) {
     violations.push(
       `src/${file.rel} must route navigation effects through runNavigationAutomation(event)`
     );
@@ -339,7 +381,9 @@ for (const file of files) {
         violations.push(`src/${file.rel} reload navigation events must carry reason`);
       }
       if (file.rel.startsWith("battle/") && !/\bdetail\b/.test(eventBody)) {
-        violations.push(`src/${file.rel} battle reload navigation events must carry detail evidence`);
+        violations.push(
+          `src/${file.rel} battle reload navigation events must carry detail evidence`
+        );
       }
     }
     const redirectEvents = source.matchAll(/type\s*:\s*NavigationEvent\.OPEN_URL/g);

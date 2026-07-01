@@ -28,6 +28,10 @@ describe("readRecentDiagnosticEvidence", () => {
       JSON.stringify({ state: "paused", reason: "autoPause" })
     );
     window.sessionStorage.setItem(
+      "HVAA:lastBattleActionDelay",
+      JSON.stringify({ decision: "rejected", reason: "unknownActionDelayEvent" })
+    );
+    window.sessionStorage.setItem(
       "HVAA:lastBattleActionLifecycle",
       JSON.stringify({ phase: "actionStarted", result: true })
     );
@@ -48,6 +52,7 @@ describe("readRecentDiagnosticEvidence", () => {
       battleApiResponseRecovery: { repeatCount: 2, detail: { responseKind: "jsonReload" } },
       battleCommand: { command: "skill.clickReady", result: "rejected", reason: "skillNotReady" },
       battlePause: { state: "paused", reason: "autoPause" },
+      battleActionDelay: { decision: "rejected", reason: "unknownActionDelayEvent" },
       battleActionLifecycle: { phase: "actionStarted", result: true },
       battleActionDecision: {
         steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],

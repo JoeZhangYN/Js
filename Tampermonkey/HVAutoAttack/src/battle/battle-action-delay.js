@@ -4,6 +4,7 @@ import {
   NavigationReloadReason,
   runNavigationAutomation,
 } from "../core/navigate.js";
+import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
@@ -12,6 +13,8 @@ const DELAY_ALERT_OPTION_KEY = "delayAlert";
 const DELAY_ALERT_TIME_OPTION_KEY = "delayAlertTime";
 const DELAY_RELOAD_OPTION_KEY = "delayReload";
 const DELAY_RELOAD_TIME_OPTION_KEY = "delayReloadTime";
+const ACTION_DELAY_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_ACTION_DELAY;
+const UNKNOWN_ACTION_DELAY_EVENT = "unknownActionDelayEvent";
 
 const activeDelayTimers = new Set();
 
@@ -68,6 +71,31 @@ function handleActionEnded(deps) {
   return true;
 }
 
+function recordRejectedActionDelay(event, deps) {
+  const evidence = {
+    decision: "rejected",
+    reason: UNKNOWN_ACTION_DELAY_EVENT,
+    eventType: event?.type ?? null,
+    at: new Date().toISOString(),
+  };
+  const storage = deps.sessionStorage ?? window.sessionStorage;
+  const debug = deps.debug ?? ((...args) => console.debug(...args));
+  try {
+    storage.setItem(
+      ACTION_DELAY_EVIDENCE_KEY,
+      JSON.stringify({ ...evidence, storageWriteOk: true })
+    );
+    evidence.storageWriteOk = true;
+  } catch (error) {
+    evidence.storageWriteOk = false;
+    evidence.storageWriteError = error?.message || String(error);
+    debug("[HVAA] battle action delay", evidence);
+    return false;
+  }
+  debug("[HVAA] battle action delay", evidence);
+  return false;
+}
+
 export function runBattleActionDelayAutomation(
   event = { type: EVENT_ACTION_STARTED },
   deps = {
@@ -81,7 +109,12 @@ export function runBattleActionDelayAutomation(
         seconds,
         detail: { source: "battleActionDelay", seconds, option },
       }),
+    sessionStorage: window.sessionStorage,
+    debug: (...args) => console.debug(...args),
   }
 ) {
-  return battleActionDelayEventHandlers[event?.type]?.(event, deps) ?? false;
+  return (
+    battleActionDelayEventHandlers[event?.type]?.(event, deps) ??
+    recordRejectedActionDelay(event, deps)
+  );
 }
