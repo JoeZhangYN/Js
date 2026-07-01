@@ -43,15 +43,31 @@ const ACTION_RESULT_EXECUTORS = Object.freeze({
 
 function applyActionResult(result, snap) {
   const previousCommandEvidence = readBattleCommandEvidence();
-  const acted = ACTION_RESULT_EXECUTORS[result?.kind]?.(result, snap) ?? false;
+  const execution = executeActionResult(result, snap);
   runBattleActionEffectEvidence({
     type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
     result,
-    acted,
+    acted: execution.acted,
     knownResultKind: Boolean(ACTION_RESULT_EXECUTORS[result?.kind]),
     commandEvidence: readFreshCommandEvidence(previousCommandEvidence),
+    failureReason: execution.failureReason,
+    executionError: execution.error,
   });
-  return acted;
+  return execution.acted;
+}
+
+function executeActionResult(result, snap) {
+  try {
+    return {
+      acted: Boolean(ACTION_RESULT_EXECUTORS[result?.kind]?.(result, snap) ?? false),
+    };
+  } catch (error) {
+    return {
+      acted: false,
+      failureReason: "actionExecutorThrew",
+      error: error?.message || String(error),
+    };
+  }
 }
 
 function readFreshCommandEvidence(previousCommandEvidence) {

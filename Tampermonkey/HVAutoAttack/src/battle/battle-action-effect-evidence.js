@@ -36,6 +36,7 @@ function recordAppliedActionEffect(event, deps) {
     knownResultKind:
       typeof event.knownResultKind === "boolean" ? event.knownResultKind : null,
     failureReason: classifyActionEffectFailure(event),
+    executionError: event.executionError,
     command: summarizeCommandEvidence(event.commandEvidence),
     at: new Date().toISOString(),
   };

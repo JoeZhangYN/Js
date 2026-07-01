@@ -4,12 +4,18 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-action-effect-dispatch.js");
 const ownerTest = path.normalize("src/battle/battle-action-effect-dispatch.test.js");
+const exceptionTest = path.normalize(
+  "src/battle/battle-action-effect-dispatch-exception.test.js"
+);
 const pauseResultTest = path.normalize("src/battle/battle-action-effect-pause-result.test.js");
 const commandEvidenceTest = path.normalize(
   "src/battle/battle-action-effect-command-evidence.test.js"
 );
 const evidence = path.normalize("src/battle/battle-action-effect-evidence.js");
 const evidenceTest = path.normalize("src/battle/battle-action-effect-evidence.test.js");
+const evidenceExceptionTest = path.normalize(
+  "src/battle/battle-action-effect-evidence-exception.test.js"
+);
 const planFailureTest = path.normalize(
   "src/battle/battle-action-effect-plan-failure.test.js"
 );
@@ -64,6 +70,8 @@ for (const required of [
   "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
   "runBattleActionEffectEvidence",
   "readBattleCommandEvidence",
+  "executeActionResult",
+  "actionExecutorThrew",
   "readFreshCommandEvidence",
   "commandEvidence: readFreshCommandEvidence(previousCommandEvidence)",
   "rejectUnknownActionEffectEvent",
@@ -165,6 +173,21 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     }
   }
 }
+if (!fs.existsSync(path.join(root, exceptionTest))) {
+  violations.push(`${rel(exceptionTest)} must cover action effect executor exceptions`);
+} else {
+  const exceptionTestText = read(exceptionTest);
+  for (const required of [
+    "records executor exceptions as not acted action effect evidence",
+    "actionExecutorThrew",
+    "executionError",
+    "HVAA:lastBattleActionEffect",
+  ]) {
+    if (!exceptionTestText.includes(required)) {
+      violations.push(`${rel(exceptionTest)} must cover ${required}`);
+    }
+  }
+}
 if (!fs.existsSync(path.join(root, commandEvidenceTest))) {
   violations.push(`${rel(commandEvidenceTest)} must cover command failure evidence bridging`);
 } else {
@@ -237,6 +260,7 @@ for (const required of [
   "classifyPlanFailure",
   "KNOWN_PLAN_TYPES",
   "failureReason: classifyActionEffectFailure(event)",
+  "executionError: event.executionError",
   "command: summarizeCommandEvidence(event.commandEvidence)",
   "event.commandEvidence?.failureReason",
   "missingActionResult",
@@ -268,6 +292,21 @@ if (!fs.existsSync(path.join(root, evidenceTest))) {
   ]) {
     if (!evidenceTestText.includes(required)) {
       violations.push(`${rel(evidenceTest)} must cover ${required}`);
+    }
+  }
+}
+if (!fs.existsSync(path.join(root, evidenceExceptionTest))) {
+  violations.push(`${rel(evidenceExceptionTest)} must cover action effect exception evidence`);
+} else {
+  const evidenceExceptionText = read(evidenceExceptionTest);
+  for (const required of [
+    "records executor exceptions as structured failure detail",
+    "actionExecutorThrew",
+    "executionError",
+    "HVAA:lastBattleActionEffect",
+  ]) {
+    if (!evidenceExceptionText.includes(required)) {
+      violations.push(`${rel(evidenceExceptionTest)} must cover ${required}`);
     }
   }
 }
