@@ -23,6 +23,9 @@ const recoveryPauseTest = path.normalize("src/battle/battle-api-response-recover
 const recoveryRejectionTest = path.normalize(
   "src/battle/battle-api-response-recovery-rejection.test.js"
 );
+const recoveryPersistenceTest = path.normalize(
+  "src/battle/battle-api-response-recovery-persistence.test.js"
+);
 const recoveryDiagnosticsTest = path.normalize(
   "src/battle/battle-api-response-recovery-diagnostics.test.js"
 );
@@ -179,6 +182,9 @@ const recoveryText = requireText(recovery, [
   "unknownApiResponseRecoveryEvent",
   "handleRejectedApiResponse",
   "diagnosticEvidenceWithoutApiRecovery",
+  "storageWriteOk",
+  "storageWriteError",
+  "battle API recovery state write failed",
   "world: detail?.world",
   "parseError: detail?.parseError",
   "deps.pause(state)",
@@ -211,6 +217,13 @@ requireText(recoveryRejectionTest, [
   "rejects null recovery events with structured evidence instead of throwing",
   "HVAA:battleApiRecovery",
   "recoveryAction: \"rejected\"",
+]);
+requireText(recoveryPersistenceTest, [
+  "continues reload recovery when recovery state persistence fails",
+  "rejects unknown recovery events without throwing when persistence fails",
+  "storageWriteOk: false",
+  "storageWriteError: \"quota\"",
+  "battle API recovery state write failed",
 ]);
 requireText(recoveryMalformedJsonTest, [
   "does not treat different malformed JSON parse failures as the same loop",

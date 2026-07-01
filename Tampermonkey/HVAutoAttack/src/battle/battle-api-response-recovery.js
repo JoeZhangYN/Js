@@ -45,7 +45,19 @@ function readRecoveryState(deps) {
 }
 
 function writeRecoveryState(deps, state) {
-  deps.sessionStorage.setItem(API_RECOVERY_SESSION_KEY, JSON.stringify(state));
+  try {
+    deps.sessionStorage.setItem(
+      API_RECOVERY_SESSION_KEY,
+      JSON.stringify({ ...state, storageWriteOk: true })
+    );
+    state.storageWriteOk = true;
+    return true;
+  } catch (error) {
+    state.storageWriteOk = false;
+    state.storageWriteError = error?.message || String(error);
+    deps.warn?.("[HVAA] battle API recovery state write failed", state);
+    return false;
+  }
 }
 
 function diagnosticEvidenceWithoutApiRecovery(diagnosticEvidence) {
