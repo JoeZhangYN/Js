@@ -68,5 +68,5 @@ function criticalBuffDecisionInput(event) {
 }
 
 export function runCriticalBuffDecision(event = { type: EVENT_DECIDE }) {
-  return criticalBuffDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return criticalBuffDecisionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }

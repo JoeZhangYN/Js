@@ -11,6 +11,12 @@ const criticalBuffDecision = path.normalize(
 const fleeDecision = path.normalize("src/battle/escape/decide-flee.js");
 const autoPauseDecision = path.normalize("src/battle/pause/decide-auto-pause.js");
 const defendDecision = path.normalize("src/battle/defense/decide-defend.js");
+const criticalBuffDecisionTest = path.normalize(
+  "src/battle/critical-buff-guard/decide-critical-buff.test.js"
+);
+const fleeDecisionTest = path.normalize("src/battle/escape/decide-flee.test.js");
+const autoPauseDecisionTest = path.normalize("src/battle/pause/decide-auto-pause.test.js");
+const defendDecisionTest = path.normalize("src/battle/defense/decide-defend.test.js");
 const violations = [];
 
 function read(relative) {
@@ -23,6 +29,32 @@ function rel(relative) {
 
 const ownerText = read(owner);
 const actionDecisionText = read(actionDecision);
+const subDecisionContracts = [
+  {
+    owner: criticalBuffDecision,
+    test: criticalBuffDecisionTest,
+    handler: "criticalBuffDecisionEventHandlers[event?.type]",
+    nullCall: "runCriticalBuffDecision(null)",
+  },
+  {
+    owner: fleeDecision,
+    test: fleeDecisionTest,
+    handler: "battleFleeDecisionEventHandlers[event?.type]",
+    nullCall: "runBattleFleeDecision(null)",
+  },
+  {
+    owner: autoPauseDecision,
+    test: autoPauseDecisionTest,
+    handler: "battleAutoPauseDecisionEventHandlers[event?.type]",
+    nullCall: "runBattleAutoPauseDecision(null)",
+  },
+  {
+    owner: defendDecision,
+    test: defendDecisionTest,
+    handler: "battleDefendDecisionEventHandlers[event?.type]",
+    nullCall: "runBattleDefendDecision(null)",
+  },
+];
 
 for (const required of [
   "BattleSurvivalActionEvent",
@@ -126,6 +158,18 @@ if (
 }
 if (/decideSurvivalAction\(\s*snap\s*,\s*(?:opt|actionOptions)\s*\)/.test(actionDecisionText)) {
   violations.push(`${rel(actionDecision)} must not call survival through old two-arg path`);
+}
+
+for (const contract of subDecisionContracts) {
+  const subDecisionText = read(contract.owner);
+  if (!subDecisionText.includes(contract.handler)) {
+    violations.push(`${rel(contract.owner)} must reject null sub-decision events as noop`);
+  }
+  if (!fs.existsSync(path.join(root, contract.test))) {
+    violations.push(`${rel(contract.test)} must cover sub-decision event contract`);
+  } else if (!read(contract.test).includes(contract.nullCall)) {
+    violations.push(`${rel(contract.test)} must cover null sub-decision events`);
+  }
 }
 
 for (const relative of ["src/battle", "src/core"]) {

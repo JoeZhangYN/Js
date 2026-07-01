@@ -38,5 +38,6 @@ describe("decideFlee", () => {
     expect(runBattleFleeDecision({ type: "unknown", opt: { autoFlee: true } })).toEqual({
       kind: "noop",
     });
+    expect(runBattleFleeDecision(null)).toEqual({ kind: "noop" });
   });
 });

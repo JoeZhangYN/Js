@@ -32,5 +32,5 @@ function defendDecisionInput(event) {
 }
 
 export function runBattleDefendDecision(event = { type: EVENT_DECIDE }) {
-  return battleDefendDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleDefendDecisionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }

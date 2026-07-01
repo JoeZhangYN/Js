@@ -32,5 +32,5 @@ function autoPauseDecisionInput(event) {
 }
 
 export function runBattleAutoPauseDecision(event = { type: EVENT_DECIDE }) {
-  return battleAutoPauseDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleAutoPauseDecisionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }

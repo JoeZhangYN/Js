@@ -152,5 +152,6 @@ describe("decideCriticalBuff 命中 → critical-pause", () => {
     expect(runCriticalBuffDecision({ type: "unknown", opt: OPT_ON, ...facts() })).toEqual({
       kind: "noop",
     });
+    expect(runCriticalBuffDecision(null)).toEqual({ kind: "noop" });
   });
 });

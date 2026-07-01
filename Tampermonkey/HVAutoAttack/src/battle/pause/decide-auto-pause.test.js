@@ -41,5 +41,6 @@ describe("decideAutoPause", () => {
     expect(runBattleAutoPauseDecision({ type: "unknown", opt: { autoPause: true } })).toEqual({
       kind: "noop",
     });
+    expect(runBattleAutoPauseDecision(null)).toEqual({ kind: "noop" });
   });
 });

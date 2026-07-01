@@ -38,5 +38,6 @@ describe("decideDefend", () => {
     expect(runBattleDefendDecision({ type: "unknown", opt: { defend: true } })).toEqual({
       kind: "noop",
     });
+    expect(runBattleDefendDecision(null)).toEqual({ kind: "noop" });
   });
 });

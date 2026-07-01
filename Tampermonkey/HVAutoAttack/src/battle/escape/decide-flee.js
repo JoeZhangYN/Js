@@ -32,5 +32,5 @@ function fleeDecisionInput(event) {
 }
 
 export function runBattleFleeDecision(event = { type: EVENT_DECIDE }) {
-  return battleFleeDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleFleeDecisionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }
