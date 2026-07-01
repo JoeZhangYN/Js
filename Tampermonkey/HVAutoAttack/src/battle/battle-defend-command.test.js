@@ -57,4 +57,17 @@ describe("runBattleDefendCommand", () => {
       detail: { eventType: "unknown" },
     });
   });
+
+  it("records null Defend events as not acted", () => {
+    expect(runBattleDefendCommand(null)).toBe(false);
+
+    expect(mocks.attemptClick).not.toHaveBeenCalled();
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
+      type: "recordResult",
+      command: "defend.click",
+      result: "rejected",
+      reason: "unknownDefendCommand",
+      detail: { eventType: undefined },
+    });
+  });
 });

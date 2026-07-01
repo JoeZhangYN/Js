@@ -64,12 +64,19 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
+if (!ownerText.includes("battleDefendCommandEventHandlers[event?.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must reject null Defend events as not acted`);
+}
 requireText("src/battle/battle-action-effect-dispatch.js", [
   "BattleDefendCommandEvent.CLICK",
   "runBattleDefendCommand",
 ]);
 requireText("src/battle/defense/decide-defend.js", ['kind: "defend-command"']);
-requireText(ownerTest, ["records unknown Defend events as not acted", "unknownDefendCommand"]);
+requireText(ownerTest, [
+  "records unknown Defend events as not acted",
+  "records null Defend events as not acted",
+  "unknownDefendCommand",
+]);
 
 if (violations.length) {
   console.error("[verify-battle-defend-command-boundary] FAIL");

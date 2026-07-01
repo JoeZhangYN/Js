@@ -71,12 +71,19 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
+if (!ownerText.includes("battleFleeCommandEventHandlers[event?.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must reject null Flee events without reload`);
+}
 requireText("src/battle/battle-action-effect-dispatch.js", [
   "BattleFleeCommandEvent.CLICK_AND_RELOAD",
   "runBattleFleeCommand",
 ]);
 requireText("src/battle/escape/decide-flee.js", ['kind: "flee-command"']);
-requireText(ownerTest, ["records unknown Flee events as not acted", "unknownFleeCommand"]);
+requireText(ownerTest, [
+  "records unknown Flee events as not acted",
+  "records null Flee events as not acted without scheduling reload",
+  "unknownFleeCommand",
+]);
 
 if (violations.length) {
   console.error("[verify-battle-flee-command-boundary] FAIL");

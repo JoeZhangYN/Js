@@ -64,6 +64,9 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
+if (!ownerText.includes("battleFocusCommandEventHandlers[event?.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must reject null Focus events as not acted`);
+}
 requireText("src/battle/attack/execute-attack.js", [
   "BattleFocusCommandEvent.CLICK",
   "runBattleFocusCommand",
@@ -72,7 +75,11 @@ requireText("src/battle/item/execute-item.js", [
   "BattleFocusCommandEvent.CLICK",
   "runBattleFocusCommand",
 ]);
-requireText(ownerTest, ["records unknown Focus events as not acted", "unknownFocusCommand"]);
+requireText(ownerTest, [
+  "records unknown Focus events as not acted",
+  "records null Focus events as not acted",
+  "unknownFocusCommand",
+]);
 
 if (violations.length) {
   console.error("[verify-battle-focus-command-boundary] FAIL");
