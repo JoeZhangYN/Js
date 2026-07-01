@@ -75,4 +75,26 @@ describe("battle API response recovery diagnostics", () => {
     });
     expect(state.diagnosticEvidence.battleApiResponseRecovery).toBeUndefined();
   });
+
+  it("records diagnostic read failures instead of throwing from rejected response recovery", () => {
+    const deps = makeDeps();
+    deps.readDiagnosticEvidence.mockImplementation(() => {
+      throw new Error("diagnostic storage failed");
+    });
+    const detail = rejectedDetail({ error: "reload_loop" });
+
+    expect(() =>
+      runBattleApiResponseRecovery(
+        { type: BattleApiResponseRecoveryEvent.REJECTED_RESPONSE, detail },
+        deps
+      )
+    ).not.toThrow();
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
+      repeatCount: 1,
+      recoveryAction: "reload",
+      detail,
+      diagnosticEvidenceReadError: "diagnostic storage failed",
+    });
+  });
 });

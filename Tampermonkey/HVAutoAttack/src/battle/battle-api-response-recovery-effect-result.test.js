@@ -68,6 +68,33 @@ describe("battle API response recovery effect result evidence", () => {
     });
   });
 
+  it("records thrown reload scheduling as failed recovery evidence", () => {
+    const deps = makeDeps();
+    deps.reload.mockImplementation(() => {
+      throw new Error("navigation bridge failed");
+    });
+    const detail = rejectedDetail({ error: "server_error" });
+
+    expect(() =>
+      runBattleApiResponseRecovery(
+        { type: BattleApiResponseRecoveryEvent.REJECTED_RESPONSE, detail },
+        deps
+      )
+    ).not.toThrow();
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
+      repeatCount: 1,
+      recoveryAction: "reload",
+      reloadResult: false,
+      reloadError: "navigation bridge failed",
+      detail,
+    });
+    expect(deps.warn).toHaveBeenCalledWith(
+      "[HVAA] battle API recovery effect failed",
+      expect.objectContaining({ reloadResult: false, reloadError: "navigation bridge failed" })
+    );
+  });
+
   it("records accepted repeated-pause execution in recovery evidence", () => {
     const deps = makeDeps();
     deps.reload.mockReturnValue(true);
@@ -84,6 +111,31 @@ describe("battle API response recovery effect result evidence", () => {
       pauseResult: true,
       detail,
     });
+  });
+
+  it("records thrown repeated-pause execution as failed recovery evidence", () => {
+    const deps = makeDeps();
+    deps.reload.mockReturnValue(true);
+    deps.pause.mockImplementation(() => {
+      throw new Error("pause bridge failed");
+    });
+    const detail = rejectedDetail();
+    const event = { type: BattleApiResponseRecoveryEvent.REJECTED_RESPONSE, detail };
+
+    runBattleApiResponseRecovery(event, deps);
+    expect(() => runBattleApiResponseRecovery(event, deps)).not.toThrow();
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
+      repeatCount: 2,
+      recoveryAction: "pause",
+      pauseResult: false,
+      pauseError: "pause bridge failed",
+      detail,
+    });
+    expect(deps.warn).toHaveBeenCalledWith(
+      "[HVAA] battle API recovery effect failed",
+      expect.objectContaining({ pauseResult: false, pauseError: "pause bridge failed" })
+    );
   });
 
   it("records rejected repeated-pause execution in recovery evidence", () => {

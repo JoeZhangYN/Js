@@ -50,10 +50,7 @@ function readRecoveryState(deps) {
 
 function writeRecoveryState(deps, state) {
   try {
-    deps.sessionStorage.setItem(
-      API_RECOVERY_SESSION_KEY,
-      JSON.stringify({ ...state, storageWriteOk: true })
-    );
+    deps.sessionStorage.setItem(API_RECOVERY_SESSION_KEY, JSON.stringify({ ...state, storageWriteOk: true }));
     state.storageWriteOk = true;
     return true;
   } catch (error) {
@@ -64,8 +61,15 @@ function writeRecoveryState(deps, state) {
   }
 }
 
-function recordRecoveryEffectResult(deps, state, resultName, result) {
-  state[resultName] = Boolean(result);
+function recordRecoveryEffectResult(deps, state, resultName, runEffect, errorName) {
+  try {
+    const result = runEffect();
+    state[resultName] = Boolean(result);
+  } catch (error) {
+    state[resultName] = false;
+    state[errorName] = error?.message || String(error);
+    deps.warn?.("[HVAA] battle API recovery effect failed", state);
+  }
   writeRecoveryState(deps, state);
 }
 
@@ -75,12 +79,20 @@ function diagnosticEvidenceWithoutApiRecovery(diagnosticEvidence) {
   return Object.keys(rest).length ? rest : undefined;
 }
 
+function readRecoveryDiagnosticEvidence(deps) {
+  try {
+    return { diagnosticEvidence: diagnosticEvidenceWithoutApiRecovery(deps.readDiagnosticEvidence?.()) };
+  } catch (error) {
+    return { diagnosticEvidenceReadError: error?.message || String(error) };
+  }
+}
+
 function buildRecoveryState(detail, deps) {
   const key = apiFailureKey(detail);
   const previous = readRecoveryState(deps);
   const repeatCount = previous?.key === key ? Number(previous.repeatCount || 1) + 1 : 1;
-  const diagnosticEvidence = diagnosticEvidenceWithoutApiRecovery(deps.readDiagnosticEvidence?.());
-  return diagnosticEvidence ? { key, repeatCount, detail, diagnosticEvidence } : { key, repeatCount, detail };
+  const diagnostics = readRecoveryDiagnosticEvidence(deps);
+  return { key, repeatCount, detail, ...diagnostics };
 }
 
 function handleRejectedApiResponse(detail, deps) {
@@ -88,26 +100,24 @@ function handleRejectedApiResponse(detail, deps) {
   if (state.repeatCount >= REPEAT_PAUSE_THRESHOLD) {
     state.recoveryAction = RECOVERY_ACTION_PAUSE;
     writeRecoveryState(deps, state);
-    recordRecoveryEffectResult(deps, state, "pauseResult", deps.pause(state));
-    deps.warn("[HVAA] battle API response repeated; auto battle paused", state);
+    recordRecoveryEffectResult(deps, state, "pauseResult", () => deps.pause(state), "pauseError");
+    deps.warn?.("[HVAA] battle API response repeated; auto battle paused", state);
     return "paused";
   }
   state.recoveryAction = RECOVERY_ACTION_RELOAD;
   writeRecoveryState(deps, state);
-  recordRecoveryEffectResult(deps, state, "reloadResult", deps.reload(state));
+  recordRecoveryEffectResult(deps, state, "reloadResult", () => deps.reload(state), "reloadError");
   return RECOVERY_ACTION_RELOAD;
 }
 
 function buildRejectedRecoveryState(detail, deps) {
-  const diagnosticEvidence = diagnosticEvidenceWithoutApiRecovery(deps.readDiagnosticEvidence?.());
-  const state = {
+  return {
     key: apiFailureKey(detail),
     repeatCount: 1,
     detail,
     recoveryAction: RECOVERY_ACTION_REJECTED,
+    ...readRecoveryDiagnosticEvidence(deps),
   };
-  if (diagnosticEvidence) state.diagnosticEvidence = diagnosticEvidence;
-  return state;
 }
 
 function rejectUnknownApiRecoveryEvent(event, deps) {
@@ -129,8 +139,7 @@ function bridgeTargetFrom(event) {
 
 function installApiRecoveryBridge(event, deps) {
   const bridge = Object.freeze({
-    handleRejectedResponse: (detail) =>
-      runBattleApiResponseRecovery({ type: EVENT_REJECTED_RESPONSE, detail }, deps),
+    handleRejectedResponse: (detail) => runBattleApiResponseRecovery({ type: EVENT_REJECTED_RESPONSE, detail }, deps),
   });
   const target = bridgeTargetFrom(event);
   if (target) target[API_RECOVERY_BRIDGE_NAME] = bridge;
@@ -143,18 +152,12 @@ export function runBattleApiResponseRecovery(
   event = { type: EVENT_INSTALL_BRIDGE },
   deps = {
     sessionStorage: window.sessionStorage,
-    reload: (detail) =>
-      runNavigationAutomation({
-        type: NavigationEvent.RELOAD_NOW,
-        reason: NavigationReloadReason.BATTLE_API_RESPONSE,
-        detail,
-      }),
-    pause: (state) =>
-      runBattlePauseAutomation({
-        type: BattlePauseEvent.PAUSE,
-        reason: "battleApiResponseRepeated",
-        detail: state,
-      }),
+    reload: (detail) => runNavigationAutomation({
+      type: NavigationEvent.RELOAD_NOW, reason: NavigationReloadReason.BATTLE_API_RESPONSE, detail,
+    }),
+    pause: (state) => runBattlePauseAutomation({
+      type: BattlePauseEvent.PAUSE, reason: "battleApiResponseRepeated", detail: state,
+    }),
     readDiagnosticEvidence: () => readRecentDiagnosticEvidence(window.sessionStorage),
     warn: (...args) => console.warn(...args),
   }

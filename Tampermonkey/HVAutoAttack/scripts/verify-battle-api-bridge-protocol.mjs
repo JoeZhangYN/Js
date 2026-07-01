@@ -255,17 +255,21 @@ const recoveryText = requireText(recovery, [
   "unknownApiResponseRecoveryEvent",
   "unknownApiBridgeEvent",
   "buildRejectedRecoveryState(detail, deps)",
-  "const diagnosticEvidence = diagnosticEvidenceWithoutApiRecovery(deps.readDiagnosticEvidence?.())",
-  "if (diagnosticEvidence) state.diagnosticEvidence = diagnosticEvidence",
+  "readRecoveryDiagnosticEvidence",
+  "diagnosticEvidenceReadError",
   "handleRejectedApiResponse",
   "diagnosticEvidenceWithoutApiRecovery",
   "storageWriteOk",
   "storageWriteError",
   "battle API recovery state write failed",
   "recordRecoveryEffectResult",
+  "battle API recovery effect failed",
   'state[resultName] = Boolean(result)',
+  "state[errorName] = error?.message || String(error)",
   '"reloadResult"',
   '"pauseResult"',
+  '"reloadError"',
+  '"pauseError"',
   "world: detail?.world",
   "parseError: detail?.parseError",
   "deps.pause(state)",
@@ -293,12 +297,16 @@ requireText(recoveryTest, [
 requireText(recoveryEffectResultTest, [
   "records accepted reload scheduling in recovery evidence",
   "records rejected reload scheduling instead of claiming recovery effect success",
+  "records thrown reload scheduling as failed recovery evidence",
   "records accepted repeated-pause execution in recovery evidence",
   "records rejected repeated-pause execution in recovery evidence",
+  "records thrown repeated-pause execution as failed recovery evidence",
   "reloadResult: true",
   "reloadResult: false",
+  'reloadError: "navigation bridge failed"',
   "pauseResult: true",
   "pauseResult: false",
+  'pauseError: "pause bridge failed"',
   "HVAA:battleApiRecovery",
 ]);
 requireText(recoveryReloadDetailTest, [
@@ -342,9 +350,11 @@ requireText(recoveryPauseTest, [
 requireText(recoveryDiagnosticsTest, [
   "exposes API recovery state through recent diagnostic evidence",
   "does not nest previous API recovery evidence inside the next recovery state",
+  "records diagnostic read failures instead of throwing from rejected response recovery",
   "battleApiResponseRecovery",
   "HVAA:battleApiRecovery",
   'recoveryAction: "reload"',
+  'diagnosticEvidenceReadError: "diagnostic storage failed"',
   "battleActionDelay",
   "unknownActionDelayEvent",
 ]);
@@ -543,11 +553,11 @@ if (!recoveryText.includes("deps.pause(state)") || !recoveryText.includes("deps.
   );
 }
 if (
-  !recoveryText.includes('recordRecoveryEffectResult(deps, state, "pauseResult", deps.pause(state))') ||
-  !recoveryText.includes('recordRecoveryEffectResult(deps, state, "reloadResult", deps.reload(state))')
+  !recoveryText.includes('recordRecoveryEffectResult(deps, state, "pauseResult", () => deps.pause(state), "pauseError")') ||
+  !recoveryText.includes('recordRecoveryEffectResult(deps, state, "reloadResult", () => deps.reload(state), "reloadError")')
 ) {
   violations.push(
-    `${recovery.replaceAll("\\", "/")} must record API recovery effect results after pause/reload attempts`
+    `${recovery.replaceAll("\\", "/")} must record API recovery effect results and exceptions after pause/reload attempts`
   );
 }
 if (!recoveryText.includes("detail: state")) {
