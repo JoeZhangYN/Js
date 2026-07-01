@@ -35,5 +35,5 @@ function readCurrentDecisionRuntime() {
 }
 
 export function runBattleDecisionRuntime(event = { type: EVENT_READ_CURRENT }) {
-  return battleDecisionRuntimeEventHandlers[event.type]?.(event) ?? {};
+  return battleDecisionRuntimeEventHandlers[event?.type]?.(event) ?? {};
 }

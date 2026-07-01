@@ -50,6 +50,7 @@ describe("runBattleDecisionRuntime", () => {
 
   it("returns empty runtime facts for unknown events", () => {
     expect(runBattleDecisionRuntime({ type: "unknown" })).toEqual({});
+    expect(runBattleDecisionRuntime(null)).toEqual({});
 
     expect(mocks.runBattleProgressAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleStartRuntimeAutomation).not.toHaveBeenCalled();
