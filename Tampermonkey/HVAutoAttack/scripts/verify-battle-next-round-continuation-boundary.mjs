@@ -32,8 +32,10 @@ for (const required of [
   "recordContinuation",
   "unknownNextRoundContinuationEvent",
   "missingCompletionControl",
+  "nextRoundCompletionControlReadFailed",
   "nextRoundContinuationStepThrew",
   "nextRoundRestartRejected",
+  "readCompletionControls",
   "recordStep",
   "recordCallbackRejection",
   "#pane_completion",
@@ -85,6 +87,8 @@ if (!fs.existsSync(path.join(root, rejectionTest))) {
   for (const required of [
     "records rejected continuation when restarted turn does not act",
     "records callback step exceptions without throwing",
+    "records completion control read failures before posting",
+    "nextRoundCompletionControlReadFailed",
     "nextRoundRestartRejected",
     "nextRoundContinuationStepThrew",
   ]) {

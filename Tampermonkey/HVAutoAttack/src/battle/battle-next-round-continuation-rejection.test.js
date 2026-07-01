@@ -77,4 +77,26 @@ describe("runBattleNextRoundContinuation rejection evidence", () => {
     );
     expect(deps.runTurn).not.toHaveBeenCalled();
   });
+
+  it("records completion control read failures before posting", () => {
+    const deps = makeDeps();
+    deps.gE.mockImplementation(() => {
+      throw new Error("completion control read failed");
+    });
+
+    expect(
+      runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }, deps)
+    ).toBe(false);
+
+    expect(deps.post).not.toHaveBeenCalled();
+    expect(deps.recordContinuation).toHaveBeenCalledWith(
+      {
+        outcome: "rejected",
+        continued: false,
+        reason: "nextRoundCompletionControlReadFailed",
+        detail: { error: "completion control read failed" },
+      },
+      []
+    );
+  });
 });

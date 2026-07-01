@@ -12,6 +12,7 @@ const EVENT_CONTINUE = "continue";
 const PHASE_NEXT_ROUND_CONTINUATION = "nextRoundContinuation";
 const REASON_UNKNOWN_EVENT = "unknownNextRoundContinuationEvent";
 const REASON_MISSING_COMPLETION_CONTROL = "missingCompletionControl";
+const REASON_COMPLETION_CONTROL_READ_FAILED = "nextRoundCompletionControlReadFailed";
 const REASON_CONTINUATION_STEP_THROW = "nextRoundContinuationStepThrew";
 const REASON_RESTART_REJECTED = "nextRoundRestartRejected";
 
@@ -26,6 +27,17 @@ const battleNextRoundContinuationEventHandlers = Object.freeze({
 function replaceBattlePanels(data, deps) {
   deps.gE("#battle_main").replaceChild(deps.gE("#battle_right", data), deps.gE("#battle_right"));
   deps.gE("#battle_main").replaceChild(deps.gE("#battle_left", data), deps.gE("#battle_left"));
+}
+
+function readCompletionControls(deps) {
+  try {
+    return {
+      pane: deps.gE("#pane_completion"),
+      button: deps.gE("#btcp"),
+    };
+  } catch (error) {
+    return { pane: null, button: null, error: error?.message || String(error) };
+  }
 }
 
 function recordStep(steps, step, run) {
@@ -61,8 +73,10 @@ function recordCallbackRejection(deps, reason, steps) {
 
 function continueNextRound(deps) {
   const steps = [];
-  const pane = deps.gE("#pane_completion");
-  const button = deps.gE("#btcp");
+  const { pane, button, error } = readCompletionControls(deps);
+  if (error) {
+    return rejectContinuation(deps, REASON_COMPLETION_CONTROL_READ_FAILED, { error }, steps);
+  }
   if (!pane || !button) {
     return rejectContinuation(deps, REASON_MISSING_COMPLETION_CONTROL, { hasPane: Boolean(pane), hasButton: Boolean(button) }, steps);
   }
