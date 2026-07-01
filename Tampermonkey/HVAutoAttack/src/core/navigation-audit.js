@@ -6,8 +6,9 @@ const NAVIGATION_AUDIT_KEY = DiagnosticEvidenceKey.NAVIGATION_AUDIT;
 function writeJson(key, value) {
   try {
     sessionStorage.setItem(key, JSON.stringify(value));
+    return { storageWriteOk: true };
   } catch (_error) {
-    // Diagnostics must not break gameplay when browser storage is unavailable.
+    return { storageWriteOk: false, storageWriteError: _error?.message || String(_error) };
   }
 }
 
@@ -20,7 +21,7 @@ export function writeNavigationAudit(kind, payload) {
   };
   const diagnosticEvidence = readRecentDiagnosticEvidence(sessionStorage);
   if (diagnosticEvidence) audit.diagnosticEvidence = diagnosticEvidence;
-  writeJson(NAVIGATION_AUDIT_KEY, audit);
+  Object.assign(audit, writeJson(NAVIGATION_AUDIT_KEY, audit));
   console.warn(`[HVAA] ${kind}`, audit);
 }
 
@@ -45,7 +46,7 @@ export function installExternalUnloadAudit() {
     try {
       if (sessionStorage.getItem(NAVIGATION_AUDIT_KEY)) return;
     } catch (_error) {
-      return;
+      // Storage may be unavailable during unload; still emit console evidence.
     }
     writeNavigationAudit("externalUnload", {
       reason: "outsideNavigationEntry",

@@ -95,6 +95,14 @@ if (!owner) {
         violations.push(`navigation audit must carry diagnostic evidence ${required}`);
       }
     }
+    for (const required of ["storageWriteOk", "storageWriteError"]) {
+      if (!auditText.includes(required)) {
+        violations.push(`navigation audit must expose storage write evidence ${required}`);
+      }
+    }
+    if (/catch\s*\(_error\)\s*\{\s*return;\s*\}\s*writeNavigationAudit\("externalUnload"/.test(auditText)) {
+      violations.push("external unload audit must not disappear when storage reads fail");
+    }
     if (!auditText.includes('console.warn(`[HVAA] ${kind}`')) {
       violations.push("navigation audit must warn before navigating");
     }
@@ -136,6 +144,18 @@ if (!owner) {
       const testText = stripComments(readFileSync(testSource.abs, "utf8"));
       if (!testText.includes("knownResultKind: true")) {
         violations.push(`${testSource.rel} must preserve action result-kind diagnostic evidence`);
+      }
+    }
+    const externalUnloadText = externalUnloadTest
+      ? stripComments(readFileSync(externalUnloadTest.abs, "utf8"))
+      : "";
+    for (const required of [
+      "warns about external unloads even when navigation audit storage is unavailable",
+      "storageWriteOk: false",
+      'storageWriteError: "write blocked"',
+    ]) {
+      if (!externalUnloadText.includes(required)) {
+        violations.push(`external unload audit test must cover ${required}`);
       }
     }
   }

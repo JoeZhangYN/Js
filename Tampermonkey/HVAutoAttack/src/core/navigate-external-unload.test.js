@@ -49,4 +49,27 @@ describe("navigation external unload audit", () => {
       },
     });
   });
+
+  it("warns about external unloads even when navigation audit storage is unavailable", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    vi.spyOn(window.sessionStorage, "getItem").mockImplementation(() => {
+      throw new Error("read blocked");
+    });
+    vi.spyOn(window.sessionStorage, "setItem").mockImplementation(() => {
+      throw new Error("write blocked");
+    });
+
+    window.dispatchEvent(new Event("pagehide"));
+
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA] externalUnload",
+      expect.objectContaining({
+        kind: "externalUnload",
+        reason: "outsideNavigationEntry",
+        eventType: "pagehide",
+        storageWriteOk: false,
+        storageWriteError: "write blocked",
+      })
+    );
+  });
 });
