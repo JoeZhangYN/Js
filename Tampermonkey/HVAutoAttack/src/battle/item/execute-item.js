@@ -12,8 +12,13 @@ import {
   RecoveryLearningEvent,
   runRecoveryLearningAutomation,
 } from "../../state/recovery-learner.js";
+import {
+  BattleActionEffectEvidenceEvent,
+  runBattleActionEffectEvidence,
+} from "../battle-action-effect-evidence.js";
 
 const EVENT_APPLY_PLAN = "applyPlan";
+const EVENT_UNKNOWN_ITEM_EXECUTION = "unknownItemExecutionEvent";
 
 export const BattleItemExecutionEvent = Object.freeze({
   APPLY_PLAN: EVENT_APPLY_PLAN,
@@ -121,6 +126,21 @@ function recordPreDrink(potionId, snap) {
   });
 }
 
+function rejectUnknownItemExecutionEvent(event) {
+  runBattleActionEffectEvidence({
+    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+    result: {
+      kind: "unknown-item-execution-event",
+      reason: EVENT_UNKNOWN_ITEM_EXECUTION,
+      eventType: event?.type ?? null,
+    },
+    acted: false,
+    knownResultKind: false,
+    failureReason: EVENT_UNKNOWN_ITEM_EXECUTION,
+  });
+  return false;
+}
+
 export function runBattleItemExecution(event = { type: EVENT_APPLY_PLAN }) {
-  return battleItemExecutionEventHandlers[event?.type]?.(event) ?? false;
+  return battleItemExecutionEventHandlers[event?.type]?.(event) ?? rejectUnknownItemExecutionEvent(event);
 }

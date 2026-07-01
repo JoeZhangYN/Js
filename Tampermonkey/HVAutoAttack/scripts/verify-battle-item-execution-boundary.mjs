@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/item/execute-item.js");
 const ownerTest = path.normalize("src/battle/item/execute-item.test.js");
+const rejectionTest = path.normalize("src/battle/item/execute-item-rejection.test.js");
 const actionEffect = path.normalize("src/battle/battle-action-effect-dispatch.js");
 const violations = [];
 
@@ -37,6 +38,10 @@ for (const required of [
   "BattleFocusCommandEvent.CLICK",
   "recoveryAbs",
   "if (!runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM })) return false",
+  "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
+  "runBattleActionEffectEvidence",
+  "unknownItemExecutionEvent",
+  "rejectUnknownItemExecutionEvent(event)",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
 }
@@ -84,14 +89,32 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover item execution contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("rejects unknown item execution events")) {
-    violations.push(`${rel(ownerTest)} must cover unknown item execution events`);
-  }
-  if (!ownerTestText.includes("rejects null item execution events as not acted")) {
-    violations.push(`${rel(ownerTest)} must cover null item execution events`);
-  }
   if (!ownerTestText.includes("does not claim gem use when the gem command cannot click")) {
     violations.push(`${rel(ownerTest)} must cover failed gem commands as not acted`);
+  }
+}
+if (!fs.existsSync(path.join(root, rejectionTest))) {
+  violations.push(`${rel(rejectionTest)} must cover item execution rejection evidence`);
+} else {
+  const rejectionTestText = read(rejectionTest);
+  if (
+    !rejectionTestText.includes(
+      "rejects unknown and null item execution events as not acted with evidence"
+    )
+  ) {
+    violations.push(`${rel(rejectionTest)} must cover unknown and null item execution events`);
+  }
+  for (const required of [
+    "runBattleActionEffectEvidence",
+    "unknown-item-execution-event",
+    "unknownItemExecutionEvent",
+    '[{ type: "unknown" }, "unknown"]',
+    "[null, null]",
+    "eventType,",
+  ]) {
+    if (!rejectionTestText.includes(required)) {
+      violations.push(`${rel(rejectionTest)} must cover ${required}`);
+    }
   }
 }
 
