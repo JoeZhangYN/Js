@@ -237,6 +237,7 @@ walk(srcDir);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const stateHelperText = fs.readFileSync(path.join(root, stateHelper), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
+const policyTestText = fs.readFileSync(path.join(root, policyTest), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
 if (!/\bfunction executeEncounterEntry\b/.test(ownerText)) {
@@ -332,6 +333,24 @@ if (/\bREADINESS\b/.test(policyText)) {
   violations.push(
     `${policyFile.replaceAll("\\", "/")} must not expose a parallel readiness query; use READ_CLOCK`
   );
+}
+const clockBody = policyText.match(/function readEncounterClock[\s\S]*?\n}/)?.[0] || "";
+if (!clockBody.includes("if (readiness.canEnter)")) {
+  violations.push(`${policyFile.replaceAll("\\", "/")} must let available encounter keys bypass cooldown countdown`);
+}
+if (
+  clockBody.indexOf("if (readiness.canEnter)") > clockBody.indexOf("readiness.remainingMs > 0")
+) {
+  violations.push(`${policyFile.replaceAll("\\", "/")} must check keyAvailable before cooldown`);
+}
+for (const required of [
+  "treats an available encounter key as ready instead of counting another cooldown",
+  "reason: \"keyAvailable\"",
+  "countdownMs: 0",
+]) {
+  if (!policyTestText.includes(required)) {
+    violations.push(`${policyTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
 }
 if (!policyText.includes("const encounterPolicyEventHandlers")) {
   violations.push(

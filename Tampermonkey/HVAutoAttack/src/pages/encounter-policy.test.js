@@ -70,6 +70,33 @@ describe("runEncounterPolicy time contract", () => {
     ).toBe(0);
   });
 
+  it("treats an available encounter key as ready instead of counting another cooldown", () => {
+    const state = { date: 1000, key: "abc123=", count: 1, clear: false };
+
+    expect(
+      runEncounterPolicy({
+        type: EncounterPolicyEvent.READ_CLOCK,
+        state,
+        nowMs: 1000 + ENCOUNTER_INTERVAL_MS / 3,
+      })
+    ).toMatchObject({
+      canEnter: true,
+      status: "ready",
+      countdownMs: 0,
+      reason: "keyAvailable",
+    });
+    expect(
+      runEncounterPolicy({
+        type: EncounterPolicyEvent.PLAN_ACTIVATION,
+        state,
+        nowMs: 1000 + ENCOUNTER_INTERVAL_MS / 3,
+      })
+    ).toMatchObject({
+      action: "enter",
+      href: "?s=Battle&ss=ba&encounter=abc123=",
+    });
+  });
+
   it("uses one query for countdown, daily limit, and scheduled checks", () => {
     const state = {
       date: Date.UTC(2026, 5, 26, 23, 45),

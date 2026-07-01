@@ -59,6 +59,9 @@ function countdownEncounterClock(readiness, countdownMs, reason) {
 
 function readEncounterClock(state, nowMs = Date.now()) {
   const readiness = readEncounterReadiness(state, nowMs);
+  if (readiness.canEnter) {
+    return { ...readiness, status: "ready", countdownMs: 0, reason: "keyAvailable" };
+  }
   if (readiness.dailyLimitReached) {
     return countdownEncounterClock(
       readiness,
@@ -69,12 +72,7 @@ function readEncounterClock(state, nowMs = Date.now()) {
   if (readiness.remainingMs > 0) {
     return countdownEncounterClock(readiness, readiness.remainingMs, "cooldown");
   }
-  return {
-    ...readiness,
-    status: readiness.state.clear ? "ready" : "missed",
-    countdownMs: 0,
-    reason: readiness.canEnter ? "keyAvailable" : "readyWindow",
-  };
+  return { ...readiness, status: readiness.state.clear ? "ready" : "missed", countdownMs: 0, reason: "readyWindow" };
 }
 
 function planNextEncounterCheck(state, { nowMs = Date.now(), jitter = Math.random() } = {}) {
