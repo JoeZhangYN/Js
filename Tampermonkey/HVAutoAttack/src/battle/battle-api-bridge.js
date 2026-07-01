@@ -4,6 +4,7 @@ import {
   BattleApiResponseRecoveryEvent,
   runBattleApiResponseRecovery,
 } from "./battle-api-response-recovery.js";
+import { buildApiResponseScript } from "./battle-api-response-script.js";
 import { BattleApiWorldContextEvent, runBattleApiWorldContext } from "./battle-api-world-context.js";
 
 const EVENT_INSTALL = "install";
@@ -61,56 +62,6 @@ function buildApiCallScript(apiJsonUrl, protocol) {
     .replaceAll("__HVAA_ACTION_DELAY_SESSION_KEY__", protocol.actionDelaySessionKey);
 }
 
-function buildApiResponseScript() {
-  return `api_response = ${function (b) {
-    function actionDetail() {
-      const action = window.info || {};
-      return {
-        mode: action.mode,
-        skill: action.skill,
-        target: action.target,
-        item: action.item,
-      };
-    }
-    function reloadFromApiResponse(detail) {
-      const recovery = window.HVAA_battleApiRecovery;
-      if (recovery && recovery.handleRejectedResponse) {
-        recovery.handleRejectedResponse({
-          ...detail,
-          action: actionDetail(),
-        });
-        return true;
-      }
-      console.warn("[HVAA] navigation bridge missing; battle API reload blocked", detail);
-      return false;
-    }
-    if (b.readyState === 4) {
-      if (b.status === 200) {
-        const a = JSON.parse(b.responseText);
-        if (a.login !== undefined) {
-          return false;
-        } else if (a.error || a.reload) {
-          reloadFromApiResponse({
-            responseKind: a.reload ? "jsonReload" : "jsonError",
-            status: b.status,
-            error: a.error,
-            reload: a.reload,
-          });
-          return false;
-        } else {
-          return a;
-        }
-      } else {
-        reloadFromApiResponse({
-          responseKind: "httpStatus",
-          status: b.status,
-        });
-      }
-    }
-    return false;
-  }.toString()}`;
-}
-
 function readApiBridgeDelayOption(deps) {
   return {
     delay: Number(deps.readOptionField(MAGIC_DELAY_SESSION_KEY, 0)) || 0,
@@ -138,7 +89,7 @@ function installBridge(deps) {
   deps.appendHead(apiCall);
 
   const apiResponse = deps.createScript();
-  apiResponse.textContent = buildApiResponseScript();
+  apiResponse.textContent = buildApiResponseScript(worldContext);
   deps.appendHead(apiResponse);
   return true;
 }

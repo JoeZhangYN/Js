@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-api-bridge.js");
 const ownerTest = path.normalize("src/battle/battle-api-bridge.test.js");
+const responseScript = path.normalize("src/battle/battle-api-response-script.js");
 const recovery = path.normalize("src/battle/battle-api-response-recovery.js");
 const recoveryTest = path.normalize("src/battle/battle-api-response-recovery.test.js");
 const worldContext = path.normalize("src/battle/battle-api-world-context.js");
@@ -39,6 +40,7 @@ const ownerText = requireText(owner, [
   "OptionEvent.READ_FIELD",
   "BattleApiResponseRecoveryEvent.INSTALL_BRIDGE",
   "runBattleApiResponseRecovery",
+  "buildApiResponseScript",
   "BattleApiWorldContextEvent.READ_CURRENT",
   "runBattleApiWorldContext",
   "readBattleApiWorldContext",
@@ -57,12 +59,24 @@ requireText(ownerTest, [
   "installApiResponseRecovery",
   "readBattleApiWorldContext",
   "runBattleApiWorldContext",
+  '"world":"persistent"',
   "responseKind",
   "actionDetail",
   "uses the current battle world API endpoint on the default path",
   "https://hentaiverse.org/isekai/json",
   "window.sessionStorage.delay * 1",
   "window.sessionStorage.delay2 * 1",
+]);
+const responseScriptText = requireText(responseScript, [
+  "buildApiResponseScript",
+  "window.HVAA_battleApiRecovery",
+  "recovery.handleRejectedResponse",
+  "a.error || a.reload",
+  "responseKind",
+  "actionDetail",
+  "worldContext",
+  "world: worldContext",
+  'responseKind: "httpStatus"',
 ]);
 const worldContextText = requireText(worldContext, [
   "BattleApiWorldContextEvent",
@@ -92,6 +106,7 @@ const recoveryText = requireText(recovery, [
   "API_RECOVERY_BRIDGE_NAME",
   "REPEAT_PAUSE_THRESHOLD",
   "handleRejectedApiResponse",
+  "world: detail?.world",
   "deps.pause()",
   "deps.reload(detail)",
   "repeatCount >= REPEAT_PAUSE_THRESHOLD",
@@ -101,6 +116,7 @@ requireText(recoveryTest, [
   "reloads once for a rejected API response with preserved evidence",
   "pauses instead of reloading repeated same-cause API rejection loops",
   "does not treat different rejected response evidence as the same loop",
+  "does not treat different battle worlds as the same recovery loop",
   "HVAA:battleApiRecovery",
 ]);
 
@@ -141,6 +157,9 @@ if (/from\s+["']\.\.\/env\.js["']|isIsekai|ISEKAI_URL|MAIN_URL|BATTLE_API_BASE_U
 if (!ownerText.includes("worldContext.apiJsonUrl")) {
   violations.push(`${owner.replaceAll("\\", "/")} must use typed API JSON URL from world context`);
 }
+if (!responseScriptText.includes("world: worldContext")) {
+  violations.push(`${responseScript.replaceAll("\\", "/")} must audit rejected API world identity`);
+}
 if (!ownerText.includes("deps.installApiResponseRecovery()")) {
   violations.push(`${owner.replaceAll("\\", "/")} must install API recovery before scripts`);
 }
@@ -152,30 +171,30 @@ if (/b\.onreadystatechange\s*=\s*d\b/.test(ownerText)) {
     `${owner.replaceAll("\\", "/")} must not install bare process_action callbacks`
   );
 }
-if (/window\.location|location\.href|window\.location\.search/.test(ownerText)) {
+if (/window\.location|location\.href|window\.location\.search/.test(ownerText + responseScriptText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not navigate directly from API response handling`
   );
 }
-if (!ownerText.includes("function reloadFromApiResponse(detail)")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must classify API response reloads explicitly`);
+if (!responseScriptText.includes("function reloadFromApiResponse(detail)")) {
+  violations.push(`${responseScript.replaceAll("\\", "/")} must classify API response reloads explicitly`);
 }
-if (!ownerText.includes("window.HVAA_battleApiRecovery")) {
-  violations.push(`${owner.replaceAll("\\", "/")} page API response must call recovery bridge`);
+if (!responseScriptText.includes("window.HVAA_battleApiRecovery")) {
+  violations.push(`${responseScript.replaceAll("\\", "/")} page API response must call recovery bridge`);
 }
-if (!ownerText.includes("a.error || a.reload")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must intercept API error/reload responses`);
+if (!responseScriptText.includes("a.error || a.reload")) {
+  violations.push(`${responseScript.replaceAll("\\", "/")} must intercept API error/reload responses`);
 }
-if (!/a\.error \|\| a\.reload[\s\S]*reloadFromApiResponse\(\{[\s\S]*return false;/.test(ownerText)) {
+if (!/a\.error \|\| a\.reload[\s\S]*reloadFromApiResponse\(\{[\s\S]*return false;/.test(responseScriptText)) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} must block native process_action after API error/reload responses`
+    `${responseScript.replaceAll("\\", "/")} must block native process_action after API error/reload responses`
   );
 }
-if (!ownerText.includes("action: actionDetail()")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must audit the rejected API action shape`);
+if (!responseScriptText.includes("action: actionDetail()")) {
+  violations.push(`${responseScript.replaceAll("\\", "/")} must audit the rejected API action shape`);
 }
-if (!ownerText.includes('responseKind: "httpStatus"')) {
-  violations.push(`${owner.replaceAll("\\", "/")} must classify non-200 API responses`);
+if (!responseScriptText.includes('responseKind: "httpStatus"')) {
+  violations.push(`${responseScript.replaceAll("\\", "/")} must classify non-200 API responses`);
 }
 if (!/export\s+function\s+runBattleApiResponseRecovery/.test(recoveryText)) {
   violations.push(`${recovery.replaceAll("\\", "/")} must expose one recovery entry`);
@@ -185,6 +204,9 @@ if (!recoveryText.includes("repeatCount >= REPEAT_PAUSE_THRESHOLD")) {
 }
 if (!recoveryText.includes("deps.pause()") || !recoveryText.includes("deps.reload(detail)")) {
   violations.push(`${recovery.replaceAll("\\", "/")} must choose between pause and reload centrally`);
+}
+if (!recoveryText.includes("world: detail?.world")) {
+  violations.push(`${recovery.replaceAll("\\", "/")} repeat key must include battle world identity`);
 }
 if (/window\.location|location\.href|window\.location\.search/.test(recoveryText)) {
   violations.push(`${recovery.replaceAll("\\", "/")} must route reload through navigation entry`);

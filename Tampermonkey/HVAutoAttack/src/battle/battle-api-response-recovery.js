@@ -23,6 +23,7 @@ function apiFailureKey(detail) {
     status: detail?.status,
     error: detail?.error,
     reload: detail?.reload,
+    world: detail?.world,
     action: detail?.action,
   });
 }

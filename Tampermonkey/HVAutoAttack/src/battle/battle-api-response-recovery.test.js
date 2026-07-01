@@ -18,6 +18,7 @@ function rejectedDetail(extra = {}) {
     responseKind: "jsonReload",
     status: 200,
     reload: true,
+    world: { world: "persistent", apiJsonUrl: "https://hentaiverse.org/json" },
     action: { mode: "attack", target: 1 },
     ...extra,
   };
@@ -95,6 +96,29 @@ describe("runBattleApiResponseRecovery", () => {
         {
           type: BattleApiResponseRecoveryEvent.REJECTED_RESPONSE,
           detail: rejectedDetail({ action: { mode: "item", item: 111 } }),
+        },
+        deps
+      )
+    ).toBe("reload");
+
+    expect(deps.reload).toHaveBeenCalledTimes(2);
+    expect(deps.pause).not.toHaveBeenCalled();
+  });
+
+  it("does not treat different battle worlds as the same recovery loop", () => {
+    const deps = makeDeps();
+
+    runBattleApiResponseRecovery(
+      { type: BattleApiResponseRecoveryEvent.REJECTED_RESPONSE, detail: rejectedDetail() },
+      deps
+    );
+    expect(
+      runBattleApiResponseRecovery(
+        {
+          type: BattleApiResponseRecoveryEvent.REJECTED_RESPONSE,
+          detail: rejectedDetail({
+            world: { world: "isekai", apiJsonUrl: "https://hentaiverse.org/isekai/json" },
+          }),
         },
         deps
       )

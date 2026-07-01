@@ -71,8 +71,7 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[1].textContent).toContain("JSON.parse(b.responseText)");
     expect(deps.scripts[1].textContent).toContain("reloadFromApiResponse");
     expect(deps.scripts[1].textContent).toContain("window.HVAA_battleApiRecovery");
-    expect(deps.scripts[1].textContent).toContain("responseKind");
-    expect(deps.scripts[1].textContent).toContain("actionDetail");
+    for (const token of ["responseKind", '"world":"persistent"', "actionDetail"]) expect(deps.scripts[1].textContent).toContain(token);
     expect(deps.scripts[1].textContent).not.toContain("window.location.href");
   });
 
@@ -134,6 +133,7 @@ describe("runBattleApiBridgeAutomation", () => {
     const script = deps.scripts[1].textContent;
     expect(script).toContain('responseKind: a.reload ? "jsonReload" : "jsonError"');
     expect(script).toContain('responseKind: "httpStatus"');
+    expect(script).toContain("world: worldContext");
     expect(script).toContain("action: actionDetail()");
   });
 
