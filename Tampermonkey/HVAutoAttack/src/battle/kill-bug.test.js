@@ -37,6 +37,7 @@ describe("runBattleKillBugRecovery", () => {
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "reloadNow",
       reason: "killBugRecovery",
+      detail: { source: "battleKillBugRecovery", matchedText: "Inventory slot is empty" },
     });
   });
 

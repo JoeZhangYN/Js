@@ -22,6 +22,11 @@ function clickFleeAndScheduleReload() {
     type: NavigationEvent.SCHEDULE_RELOAD,
     reason: NavigationReloadReason.FLEE_CONFIRMATION,
     seconds: FLEE_RELOAD_DELAY_SEC,
+    detail: {
+      source: "battleFleeCommand",
+      command: EVENT_CLICK_AND_RELOAD,
+      seconds: FLEE_RELOAD_DELAY_SEC,
+    },
   });
   return true;
 }

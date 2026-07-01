@@ -97,6 +97,9 @@ for (const required of [
   "runBattleKillBugRecovery",
   "RECOVER",
   "NavigationEvent.RELOAD_NOW",
+  "KILL_BUG_PATTERN",
+  'source: "battleKillBugRecovery"',
+  "matchedText",
 ]) {
   if (!killBugText.includes(required)) {
     violations.push(`${rel(killBug)} must own ${required}`);
