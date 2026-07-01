@@ -16,8 +16,37 @@ function recordCommandResult(command, result, reason, detail) {
   recordBattleCommandResult(command, result, reason, detail);
 }
 
+function readGemElement() {
+  try {
+    return { el: gE("#ikey_p") };
+  } catch (error) {
+    return { el: null, error: error?.message || String(error) };
+  }
+}
+
+function readItemElement(itemId) {
+  let selector;
+  try {
+    selector = itemSelector(itemId);
+  } catch (error) {
+    return { el: null, reason: "itemSelectorFailed", error: error?.message || String(error) };
+  }
+  try {
+    return { el: gE(selector) };
+  } catch (error) {
+    return { el: null, reason: "itemElementReadFailed", error: error?.message || String(error) };
+  }
+}
+
 function clickGem() {
-  const el = gE("#ikey_p");
+  const gem = readGemElement();
+  if (gem.error) {
+    recordCommandResult("item.clickGem", "rejected", "gemElementReadFailed", {
+      error: gem.error,
+    });
+    return false;
+  }
+  const el = gem.el;
   if (!el) {
     recordCommandResult("item.clickGem", "rejected", "gemMissing");
     return false;
@@ -34,7 +63,15 @@ function clickGem() {
 }
 
 function clickItem(itemId, beforeClick) {
-  const el = gE(itemSelector(itemId));
+  const item = readItemElement(itemId);
+  if (item.error) {
+    recordCommandResult("item.clickItem", "rejected", item.reason, {
+      itemId,
+      error: item.error,
+    });
+    return false;
+  }
+  const el = item.el;
   if (!el) {
     recordCommandResult("item.clickItem", "rejected", "itemMissing", { itemId });
     return false;

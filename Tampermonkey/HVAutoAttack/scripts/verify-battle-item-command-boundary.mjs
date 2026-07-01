@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src", "battle");
 const owner = path.normalize("src/battle/battle-item-command.js");
 const ownerTest = path.normalize("src/battle/battle-item-command.test.js");
+const readFailureTest = path.normalize("src/battle/battle-item-command-read-failure.test.js");
 const itemSurface = path.normalize("src/battle/battle-item-surface.js");
 const snapshotTest = path.normalize("src/battle/snapshot.test.js");
 const selectors = path.normalize("src/dom/selectors.js");
@@ -70,6 +71,11 @@ requireText(owner, [
   "CLICK_ITEM",
   "#ikey_p",
   "itemSelector",
+  "readGemElement",
+  "readItemElement",
+  "gemElementReadFailed",
+  "itemSelectorFailed",
+  "itemElementReadFailed",
   "clickBattleCommandElement",
   "clickResult.reason",
   "clickResult.error",
@@ -91,6 +97,14 @@ requireText(ownerTest, [
   "clickFailed",
   "records missing item command events as not acted",
   "eventType: null",
+]);
+requireText(readFailureTest, [
+  "records gem button read failures as not acted",
+  "records item selector failures as not acted before hooks run",
+  "records item element read failures as not acted before hooks run",
+  "gemElementReadFailed",
+  "itemSelectorFailed",
+  "itemElementReadFailed",
 ]);
 requireText("src/battle/battle-action-effect-execution.js", [
   "BattleItemCommandEvent.CLICK_ITEM",
