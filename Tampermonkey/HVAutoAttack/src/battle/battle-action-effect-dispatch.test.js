@@ -40,6 +40,10 @@ function applyResult(result, snap) {
 describe("runBattleActionEffectDispatch", () => {
   it("noop → 不动作，返 false", () => {
     expect(applyResult({ kind: "noop" })).toBe(false);
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
+      acted: false,
+      failureReason: "actionExecutorRejected",
+    });
   });
 
   it("item-command → clicks the item by id through the item command entry", () => {
@@ -101,6 +105,11 @@ describe("runBattleActionEffectDispatch", () => {
     const r = applyResult({ kind: "click-skill-then-target", skillId: "213", targetId: 3 });
     expect(r).toBe(false);
     expect(skill.click).not.toHaveBeenCalled();
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
+      result: { kind: "click-skill-then-target", skillId: "213", targetId: 3 },
+      acted: false,
+      failureReason: "actionExecutorRejected",
+    });
   });
 
   it("flee-command → click 逃跑按钮，返 true", () => {
@@ -119,6 +128,11 @@ describe("runBattleActionEffectDispatch", () => {
 
   it("未知 kind → 返 false（default 兜底）", () => {
     expect(applyResult({ kind: "??" })).toBe(false);
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
+      result: { kind: "??" },
+      acted: false,
+      failureReason: "unknownActionResultKind",
+    });
   });
 
   it("retired generic click kind → 返 false", () => {
@@ -138,6 +152,7 @@ describe("runBattleActionEffectDispatch", () => {
         eventType: "unknown",
       },
       acted: false,
+      failureReason: "unknownActionEffectDispatchEvent",
     });
   });
 
@@ -150,6 +165,7 @@ describe("runBattleActionEffectDispatch", () => {
         eventType: null,
       },
       acted: false,
+      failureReason: "unknownActionEffectDispatchEvent",
     });
   });
 });

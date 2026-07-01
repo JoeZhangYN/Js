@@ -58,6 +58,7 @@ for (const required of [
   "runBattleActionEffectEvidence",
   "rejectUnknownActionEffectEvent",
   "unknownActionEffectDispatchEvent",
+  "knownResultKind: Boolean(ACTION_RESULT_EXECUTORS[result?.kind])",
   "executeItemCommandResult",
   "executeSkillCommandResult",
   "executeDefendCommandResult",
@@ -145,6 +146,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "rejects unknown events",
     "rejects null events with structured evidence instead of throwing",
     "unknownActionEffectDispatchEvent",
+    "failureReason",
     "HVAA:lastBattleActionEffect",
   ]) {
     if (!ownerTestText.includes(required)) {
@@ -171,6 +173,11 @@ for (const required of [
   "eventType: result.eventType",
   "result.plan?.type ?? result.plan?.kind",
   "acted: Boolean(event.acted)",
+  "classifyActionEffectFailure",
+  "failureReason: classifyActionEffectFailure(event)",
+  "missingActionResult",
+  "unknownActionResultKind",
+  "actionExecutorRejected",
 ]) {
   if (!evidenceText.includes(required)) violations.push(`${rel(evidence)} must own ${required}`);
 }
@@ -182,6 +189,7 @@ if (!fs.existsSync(path.join(root, evidenceTest))) {
     "records acted action effect evidence for diagnostics",
     "records not-acted effect evidence so empty turns are diagnosable",
     "records event type for rejected dispatch events",
+    "failureReason",
     "records real plan type for plan action results",
     "keeps legacy plan kind fallback for older evidence producers",
     "rejects unknown evidence events",

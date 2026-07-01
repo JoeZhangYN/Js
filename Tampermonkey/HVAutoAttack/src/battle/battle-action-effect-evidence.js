@@ -23,6 +23,7 @@ function recordAppliedActionEffect(event, deps) {
   const evidence = {
     result: summarizeResult(event.result),
     acted: Boolean(event.acted),
+    failureReason: classifyActionEffectFailure(event),
     at: new Date().toISOString(),
   };
   try {
@@ -32,6 +33,14 @@ function recordAppliedActionEffect(event, deps) {
   }
   deps.debug("[HVAA] battle action effect", evidence);
   return true;
+}
+
+function classifyActionEffectFailure(event) {
+  if (event.acted) return null;
+  if (event.failureReason) return event.failureReason;
+  if (!event.result?.kind) return "missingActionResult";
+  if (event.knownResultKind === false) return event.result.reason || "unknownActionResultKind";
+  return event.result.reason || "actionExecutorRejected";
 }
 
 const battleActionEffectEvidenceEventHandlers = Object.freeze({

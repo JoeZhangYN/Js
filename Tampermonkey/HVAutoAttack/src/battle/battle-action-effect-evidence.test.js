@@ -39,6 +39,7 @@ describe("runBattleActionEffectEvidence", () => {
         type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
         result: { kind: "noop", reason: "noCandidate" },
         acted: false,
+        failureReason: "noCandidate",
       },
       { sessionStorage: window.sessionStorage, debug: vi.fn() }
     );
@@ -46,6 +47,7 @@ describe("runBattleActionEffectEvidence", () => {
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
       result: { kind: "noop", reason: "noCandidate" },
       acted: false,
+      failureReason: "noCandidate",
     });
   });
 
@@ -59,6 +61,7 @@ describe("runBattleActionEffectEvidence", () => {
           eventType: "unknown",
         },
         acted: false,
+        failureReason: "unknownActionEffectDispatchEvent",
       },
       { sessionStorage: window.sessionStorage, debug: vi.fn() }
     );
@@ -70,6 +73,7 @@ describe("runBattleActionEffectEvidence", () => {
         eventType: "unknown",
       },
       acted: false,
+      failureReason: "unknownActionEffectDispatchEvent",
     });
   });
 

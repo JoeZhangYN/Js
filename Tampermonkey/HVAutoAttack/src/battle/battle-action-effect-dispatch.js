@@ -60,6 +60,7 @@ function applyActionResult(result, snap) {
     type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
     result,
     acted,
+    knownResultKind: Boolean(ACTION_RESULT_EXECUTORS[result?.kind]),
   });
   return acted;
 }
@@ -69,6 +70,7 @@ function rejectUnknownActionEffectEvent(event) {
     type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
     result: { kind: "unknown-dispatch-event", reason: "unknownActionEffectDispatchEvent", eventType: event?.type ?? null },
     acted: false,
+    failureReason: "unknownActionEffectDispatchEvent",
   });
   return false;
 }
