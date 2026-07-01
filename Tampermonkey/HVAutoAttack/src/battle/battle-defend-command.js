@@ -1,5 +1,6 @@
 // Battle defend command: one write entry for clicking the Defend battle control.
-import { attemptClick } from "../dom/attempt-click.js";
+import { gE, isOn } from "../dom/query.js";
+import { clickBattleCommandElement } from "./battle-command-click.js";
 import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
 
 const EVENT_CLICK = "click";
@@ -10,9 +11,22 @@ export const BattleDefendCommandEvent = Object.freeze({
 });
 
 function clickDefend() {
-  const clicked = attemptClick(DEFEND_BUTTON_SELECTOR);
-  recordCommandResult(clicked ? "accepted" : "rejected", clicked ? "clicked" : "defendUnavailable");
-  return clicked;
+  if (!isOn(DEFEND_BUTTON_SELECTOR)) {
+    recordCommandResult("rejected", "defendUnavailable");
+    return false;
+  }
+  const el = gE(DEFEND_BUTTON_SELECTOR);
+  if (!el) {
+    recordCommandResult("rejected", "defendUnavailable");
+    return false;
+  }
+  const clickResult = clickBattleCommandElement(el);
+  if (!clickResult.clicked) {
+    recordCommandResult("rejected", clickResult.reason, { error: clickResult.error });
+    return false;
+  }
+  recordCommandResult("accepted", "clicked");
+  return true;
 }
 
 function recordCommandResult(result, reason, detail) {

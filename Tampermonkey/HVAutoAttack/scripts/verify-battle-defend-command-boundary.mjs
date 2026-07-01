@@ -55,6 +55,9 @@ requireText(owner, [
   "battleDefendCommandEventHandlers",
   "BattleCommandEvidenceEvent.RECORD_RESULT",
   "runBattleCommandEvidence",
+  "clickBattleCommandElement",
+  "clickResult.reason",
+  "clickResult.error",
   "CLICK",
   "#ckey_defend",
   "defend.click",
@@ -68,12 +71,17 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
 if (!ownerText.includes("battleDefendCommandEventHandlers[event?.type]")) {
   violations.push(`${owner.replaceAll("\\", "/")} must reject null Defend events as not acted`);
 }
+if (ownerText.includes("attemptClick(")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must use battle command click evidence, not attemptClick`);
+}
 requireText("src/battle/battle-action-effect-dispatch.js", [
   "BattleDefendCommandEvent.CLICK",
   "runBattleDefendCommand",
 ]);
 requireText("src/battle/defense/decide-defend.js", ['kind: "defend-command"']);
 requireText(ownerTest, [
+  "records Defend click failures as not acted",
+  "clickFailed",
   "records unknown Defend events as not acted",
   "records null Defend events as not acted",
   "unknownDefendCommand",
