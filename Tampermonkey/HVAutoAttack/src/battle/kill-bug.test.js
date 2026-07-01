@@ -15,6 +15,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   mocks.runNavigationAutomation.mockReset();
   document.body.innerHTML = "";
+  sessionStorage.clear();
 });
 
 afterEach(() => {
@@ -27,10 +28,19 @@ describe("runBattleKillBugRecovery", () => {
       <table id="textlog"><tbody><tr><td class="tlb">Inventory slot is empty</td></tr></tbody></table>
     `;
 
-    runBattleKillBugRecovery({ type: BattleKillBugRecoveryEvent.RECOVER });
+    expect(runBattleKillBugRecovery({ type: BattleKillBugRecoveryEvent.RECOVER })).toBe(true);
 
     expect(document.querySelector("td").className).toBe("tlbWARN");
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleKillBugRecovery"))).toMatchObject({
+      result: "scheduledReload",
+      reason: "recover",
+      detail: {
+        matchedTexts: ["Inventory slot is empty"],
+        scannedRows: 1,
+        delayMs: 700,
+      },
+    });
 
     await vi.advanceTimersByTimeAsync(700);
 
@@ -46,11 +56,16 @@ describe("runBattleKillBugRecovery", () => {
       <table id="textlog"><tbody><tr><td class="tlb">You hit a monster.</td></tr></tbody></table>
     `;
 
-    runBattleKillBugRecovery({ type: BattleKillBugRecoveryEvent.RECOVER });
+    expect(runBattleKillBugRecovery({ type: BattleKillBugRecoveryEvent.RECOVER })).toBe(false);
 
     expect(document.querySelector("td").className).toBe("tlbQRA");
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
     expect(vi.getTimerCount()).toBe(0);
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleKillBugRecovery"))).toMatchObject({
+      result: "notMatched",
+      reason: "recover",
+      detail: { matchedTexts: [], scannedRows: 1, delayMs: null },
+    });
   });
 
   it("rejects unknown bug recovery events without reading or reloading", () => {
@@ -63,5 +78,22 @@ describe("runBattleKillBugRecovery", () => {
     expect(document.querySelector("td").className).toBe("tlb");
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
     expect(vi.getTimerCount()).toBe(0);
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleKillBugRecovery"))).toMatchObject({
+      result: "rejected",
+      reason: "unknownKillBugRecoveryEvent",
+      detail: { eventType: "unknown" },
+    });
+  });
+
+  it("rejects null bug recovery events with evidence instead of throwing", () => {
+    expect(runBattleKillBugRecovery(null)).toBe(false);
+
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleKillBugRecovery"))).toMatchObject({
+      result: "rejected",
+      reason: "unknownKillBugRecoveryEvent",
+      detail: { eventType: null },
+    });
   });
 });

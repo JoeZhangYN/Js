@@ -16,6 +16,16 @@ function rel(relative) {
   return relative.replaceAll("\\", "/");
 }
 
+function requireText(relative, required) {
+  const text = read(relative);
+  for (const token of required) {
+    if (!text.includes(token)) {
+      violations.push(`${rel(relative)} must own ${token}`);
+    }
+  }
+  return text;
+}
+
 const ownerText = read(owner);
 const killBugText = read(killBug);
 const mainLoopText = read(mainLoop);
@@ -102,10 +112,16 @@ for (const required of [
   "battleKillBugRecoveryEventHandlers",
   "runBattleKillBugRecovery",
   "RECOVER",
+  "BattleKillBugEvidenceEvent.RECORD_RECOVERY",
+  "runBattleKillBugEvidence",
+  "unknownKillBugRecoveryEvent",
+  "battleKillBugRecoveryEventHandlers[event?.type]",
   "NavigationEvent.RELOAD_NOW",
   "KILL_BUG_PATTERN",
   'source: "battleKillBugRecovery"',
   "matchedText",
+  "scheduledReload",
+  "scannedRows",
 ]) {
   if (!killBugText.includes(required)) {
     violations.push(`${rel(killBug)} must own ${required}`);
@@ -113,6 +129,42 @@ for (const required of [
 }
 if (/export function killBug\(/.test(killBugText)) {
   violations.push(`${rel(killBug)} legacy killBug() export must stay retired`);
+}
+const killBugTest = path.normalize("src/battle/kill-bug.test.js");
+const killBugTestText = read(killBugTest);
+for (const required of [
+  "HVAA:lastBattleKillBugRecovery",
+  "rejects null bug recovery events with evidence instead of throwing",
+  "unknownKillBugRecoveryEvent",
+  "scheduledReload",
+  "notMatched",
+]) {
+  if (!killBugTestText.includes(required)) {
+    violations.push(`${rel(killBugTest)} must cover ${required}`);
+  }
+}
+requireText(path.normalize("src/battle/kill-bug-evidence.js"), [
+  "BattleKillBugEvidenceEvent",
+  "runBattleKillBugEvidence",
+  "DiagnosticEvidenceKey.BATTLE_KILL_BUG_RECOVERY",
+  "battleKillBugEvidenceEventHandlers[event?.type]",
+  "[HVAA] battle kill bug recovery",
+  "storageWriteOk",
+  "storageWriteError",
+]);
+requireText(path.normalize("src/battle/kill-bug-evidence.test.js"), [
+  "records battle kill-bug recovery evidence",
+  "rejects null kill-bug evidence events without writing diagnostics",
+  "HVAA:lastBattleKillBugRecovery",
+]);
+const diagnosticKeysText = read(path.normalize("src/core/diagnostic-evidence-keys.js"));
+for (const required of [
+  'BATTLE_KILL_BUG_RECOVERY: "HVAA:lastBattleKillBugRecovery"',
+  'source("battleKillBugRecovery", DiagnosticEvidenceKey.BATTLE_KILL_BUG_RECOVERY)',
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`src/core/diagnostic-evidence-keys.js must include ${required}`);
+  }
 }
 
 if (violations.length) {
