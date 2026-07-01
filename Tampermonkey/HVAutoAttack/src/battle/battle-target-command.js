@@ -1,5 +1,6 @@
 // Battle target command: one write entry for monster target clicks and skill-target pairs.
 import { gE } from "../dom/query.js";
+import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
 import { BattleSkillCommandEvent, runBattleSkillCommand } from "./battle-skill-command.js";
 
 const EVENT_CLICK_TARGET = "clickTarget";
@@ -16,32 +17,56 @@ function targetSelector(targetId) {
   return `#mkey_${targetId}`;
 }
 
+function recordCommandResult(command, result, reason, detail) {
+  runBattleCommandEvidence({
+    type: BattleCommandEvidenceEvent.RECORD_RESULT,
+    command,
+    result,
+    reason,
+    detail,
+  });
+}
+
 function readLiveTarget(targetId) {
   const targetEl = gE(targetSelector(targetId));
-  if (!targetEl) return null;
-  if (targetEl.querySelector('img[src*="nbardead.png"]')) return null;
-  return targetEl;
+  if (!targetEl) return { targetEl: null, reason: "targetMissing" };
+  if (targetEl.querySelector('img[src*="nbardead.png"]')) {
+    return { targetEl: null, reason: "targetDead" };
+  }
+  return { targetEl, reason: "live" };
 }
 
 function clickTarget(targetId) {
   const targetEl = gE(targetSelector(targetId));
-  if (!targetEl) return false;
+  if (!targetEl) {
+    recordCommandResult("target.click", "rejected", "targetMissing", { targetId });
+    return false;
+  }
   targetEl.click();
+  recordCommandResult("target.click", "accepted", "clicked", { targetId });
   return true;
 }
 
 function clickSkillThenTarget(skillId, targetId) {
-  const targetEl = readLiveTarget(targetId);
-  if (!targetEl) return false;
+  const { targetEl, reason } = readLiveTarget(targetId);
+  if (!targetEl) {
+    recordCommandResult("target.clickSkillThenTarget", "rejected", reason, { skillId, targetId });
+    return false;
+  }
   if (
     !runBattleSkillCommand({
       type: BattleSkillCommandEvent.CLICK_READY,
       skillId,
     })
   ) {
+    recordCommandResult("target.clickSkillThenTarget", "rejected", "skillCommandRejected", {
+      skillId,
+      targetId,
+    });
     return false;
   }
   targetEl.click();
+  recordCommandResult("target.clickSkillThenTarget", "accepted", "clicked", { skillId, targetId });
   return true;
 }
 
@@ -51,9 +76,20 @@ function trySkillThenTarget(skillId, targetId, afterSkillClick, targetRequiresSk
     skillId,
     afterClick: afterSkillClick,
   });
-  if (!clickedSkill && targetRequiresSkill) return false;
-  clickTarget(targetId);
-  return true;
+  if (!clickedSkill && targetRequiresSkill) {
+    recordCommandResult("target.trySkillThenTarget", "rejected", "skillRequired", {
+      skillId,
+      targetId,
+    });
+    return false;
+  }
+  const clickedTarget = clickTarget(targetId);
+  recordCommandResult("target.trySkillThenTarget", clickedTarget ? "accepted" : "rejected", clickedTarget ? "clicked" : "targetCommandRejected", {
+    skillId,
+    targetId,
+    clickedSkill: Boolean(clickedSkill),
+  });
+  return clickedTarget;
 }
 
 const battleTargetCommandEventHandlers = Object.freeze({
@@ -69,5 +105,12 @@ const battleTargetCommandEventHandlers = Object.freeze({
 });
 
 export function runBattleTargetCommand(event) {
-  return battleTargetCommandEventHandlers[event.type]?.(event);
+  const handler = battleTargetCommandEventHandlers[event.type];
+  if (!handler) {
+    recordCommandResult("target.unknown", "rejected", "unknownTargetCommand", {
+      eventType: event?.type,
+    });
+    return false;
+  }
+  return handler(event);
 }

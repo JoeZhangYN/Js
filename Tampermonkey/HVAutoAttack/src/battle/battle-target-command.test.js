@@ -14,6 +14,7 @@ vi.mock("./battle-skill-command.js", () => ({
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
+  sessionStorage.clear();
 });
 
 describe("runBattleTargetCommand", () => {
@@ -27,6 +28,12 @@ describe("runBattleTargetCommand", () => {
 
     expect(mocks.gE).toHaveBeenCalledWith("#mkey_3");
     expect(target.click).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "target.click",
+      result: "accepted",
+      reason: "clicked",
+      detail: { targetId: 3 },
+    });
   });
 
   it("clicks ready skill then live target", () => {
@@ -69,6 +76,12 @@ describe("runBattleTargetCommand", () => {
 
     expect(mocks.runBattleSkillCommand).not.toHaveBeenCalled();
     expect(target.click).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "target.clickSkillThenTarget",
+      result: "rejected",
+      reason: "targetDead",
+      detail: { skillId: "213", targetId: 3 },
+    });
   });
 
   it("tries skill if ready, runs hook, then clicks target", () => {
@@ -111,5 +124,42 @@ describe("runBattleTargetCommand", () => {
     ).toBe(false);
 
     expect(target.click).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "target.trySkillThenTarget",
+      result: "rejected",
+      reason: "skillRequired",
+      detail: { skillId: "1111", targetId: 3 },
+    });
+  });
+
+  it("returns not acted when try skill then target cannot click the target", () => {
+    mocks.runBattleSkillCommand.mockReturnValue(false);
+    mocks.gE.mockReturnValue(null);
+
+    expect(
+      runBattleTargetCommand({
+        type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
+        skillId: "1111",
+        targetId: 3,
+      })
+    ).toBe(false);
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "target.trySkillThenTarget",
+      result: "rejected",
+      reason: "targetCommandRejected",
+      detail: { skillId: "1111", targetId: 3, clickedSkill: false },
+    });
+  });
+
+  it("records unknown target command rejections", () => {
+    expect(runBattleTargetCommand({ type: "unknown" })).toBe(false);
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "target.unknown",
+      result: "rejected",
+      reason: "unknownTargetCommand",
+      detail: { eventType: "unknown" },
+    });
   });
 });

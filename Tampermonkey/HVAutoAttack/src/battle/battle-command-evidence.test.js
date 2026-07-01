@@ -1,0 +1,37 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
+
+beforeEach(() => {
+  window.sessionStorage.clear();
+});
+
+describe("runBattleCommandEvidence", () => {
+  it("records command result evidence for diagnostics", () => {
+    const debug = vi.fn();
+
+    expect(
+      runBattleCommandEvidence(
+        {
+          type: BattleCommandEvidenceEvent.RECORD_RESULT,
+          command: "skill.clickReady",
+          result: "rejected",
+          reason: "skillNotReady",
+          detail: { skillId: "213" },
+        },
+        { sessionStorage: window.sessionStorage, debug }
+      )
+    ).toBe(true);
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "skill.clickReady",
+      result: "rejected",
+      reason: "skillNotReady",
+      detail: { skillId: "213" },
+    });
+    expect(debug).toHaveBeenCalledWith("[HVAA] battle command", expect.any(Object));
+  });
+
+  it("rejects unknown command evidence events", () => {
+    expect(runBattleCommandEvidence({ type: "unknown" })).toBe(false);
+  });
+});

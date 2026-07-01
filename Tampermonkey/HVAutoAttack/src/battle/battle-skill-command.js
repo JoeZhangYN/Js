@@ -1,5 +1,6 @@
 // Battle skill command: one write entry for ready-checked skill button clicks.
 import { gE, isOn } from "../dom/query.js";
+import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
 
 const EVENT_CLICK_READY = "clickReady";
 
@@ -7,12 +8,29 @@ export const BattleSkillCommandEvent = Object.freeze({
   CLICK_READY: EVENT_CLICK_READY,
 });
 
+function recordCommandResult(result, reason, detail) {
+  runBattleCommandEvidence({
+    type: BattleCommandEvidenceEvent.RECORD_RESULT,
+    command: "skill.clickReady",
+    result,
+    reason,
+    detail,
+  });
+}
+
 function clickReady(skillId, afterClick) {
-  if (!isOn(skillId)) return false;
+  if (!isOn(skillId)) {
+    recordCommandResult("rejected", "skillNotReady", { skillId });
+    return false;
+  }
   const el = gE(skillId);
-  if (!el) return false;
+  if (!el) {
+    recordCommandResult("rejected", "skillElementMissing", { skillId });
+    return false;
+  }
   el.click();
   afterClick?.();
+  recordCommandResult("accepted", "clicked", { skillId });
   return true;
 }
 
@@ -21,5 +39,10 @@ const battleSkillCommandEventHandlers = Object.freeze({
 });
 
 export function runBattleSkillCommand(event) {
-  return battleSkillCommandEventHandlers[event.type]?.(event);
+  const handler = battleSkillCommandEventHandlers[event.type];
+  if (!handler) {
+    recordCommandResult("rejected", "unknownSkillCommand", { eventType: event?.type });
+    return false;
+  }
+  return handler(event);
 }

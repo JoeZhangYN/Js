@@ -11,6 +11,7 @@ vi.mock("../dom/selectors.js", () => ({ itemSelector: mocks.itemSelector }));
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear();
+  sessionStorage.clear();
 });
 
 describe("runBattleItemCommand", () => {
@@ -22,6 +23,11 @@ describe("runBattleItemCommand", () => {
 
     expect(mocks.gE).toHaveBeenCalledWith("#ikey_p");
     expect(gem.click).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "item.clickGem",
+      result: "accepted",
+      reason: "clicked",
+    });
   });
 
   it("clicks an inventory item by id through the item selector", () => {
@@ -66,5 +72,22 @@ describe("runBattleItemCommand", () => {
     ).toBe(false);
 
     expect(beforeClick).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "item.clickItem",
+      result: "rejected",
+      reason: "itemMissing",
+      detail: { itemId: 11191 },
+    });
+  });
+
+  it("records unknown item command rejections", () => {
+    expect(runBattleItemCommand({ type: "unknown" })).toBe(false);
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "item.unknown",
+      result: "rejected",
+      reason: "unknownItemCommand",
+      detail: { eventType: "unknown" },
+    });
   });
 });

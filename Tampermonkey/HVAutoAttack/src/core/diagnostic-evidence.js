@@ -20,6 +20,8 @@ export function readRecentDiagnosticEvidence(storage = window.sessionStorage) {
     DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY
   );
   if (battleApiResponseRecovery) evidence.battleApiResponseRecovery = battleApiResponseRecovery;
+  const battleCommand = readJson(storage, DiagnosticEvidenceKey.BATTLE_COMMAND);
+  if (battleCommand) evidence.battleCommand = battleCommand;
   const battlePause = readJson(storage, DiagnosticEvidenceKey.BATTLE_PAUSE);
   if (battlePause) evidence.battlePause = battlePause;
   const battleActionLifecycle = readJson(storage, DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE);

@@ -57,6 +57,12 @@ requireText(owner, [
   "CLICK_SKILL_THEN_TARGET",
   "TRY_SKILL_THEN_TARGET",
   "#mkey_",
+  "runBattleCommandEvidence",
+  "targetMissing",
+  "targetDead",
+  "skillCommandRejected",
+  "targetCommandRejected",
+  "unknownTargetCommand",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {

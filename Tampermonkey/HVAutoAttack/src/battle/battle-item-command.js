@@ -1,6 +1,7 @@
 // Battle item command: one write entry for gem and inventory item button clicks.
 import { gE } from "../dom/query.js";
 import { itemSelector } from "../dom/selectors.js";
+import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
 
 const EVENT_CLICK_GEM = "clickGem";
 const EVENT_CLICK_ITEM = "clickItem";
@@ -10,18 +11,36 @@ export const BattleItemCommandEvent = Object.freeze({
   CLICK_ITEM: EVENT_CLICK_ITEM,
 });
 
+function recordCommandResult(command, result, reason, detail) {
+  runBattleCommandEvidence({
+    type: BattleCommandEvidenceEvent.RECORD_RESULT,
+    command,
+    result,
+    reason,
+    detail,
+  });
+}
+
 function clickGem() {
   const el = gE("#ikey_p");
-  if (!el) return false;
+  if (!el) {
+    recordCommandResult("item.clickGem", "rejected", "gemMissing");
+    return false;
+  }
   el.click();
+  recordCommandResult("item.clickGem", "accepted", "clicked");
   return true;
 }
 
 function clickItem(itemId, beforeClick) {
   const el = gE(itemSelector(itemId));
-  if (!el) return false;
+  if (!el) {
+    recordCommandResult("item.clickItem", "rejected", "itemMissing", { itemId });
+    return false;
+  }
   beforeClick?.();
   el.click();
+  recordCommandResult("item.clickItem", "accepted", "clicked", { itemId });
   return true;
 }
 
@@ -31,5 +50,12 @@ const battleItemCommandEventHandlers = Object.freeze({
 });
 
 export function runBattleItemCommand(event) {
-  return battleItemCommandEventHandlers[event.type]?.(event);
+  const handler = battleItemCommandEventHandlers[event.type];
+  if (!handler) {
+    recordCommandResult("item.unknown", "rejected", "unknownItemCommand", {
+      eventType: event?.type,
+    });
+    return false;
+  }
+  return handler(event);
 }

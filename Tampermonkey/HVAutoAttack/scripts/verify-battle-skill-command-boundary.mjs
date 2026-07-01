@@ -68,6 +68,10 @@ requireText(owner, [
   "battleSkillCommandEventHandlers",
   "CLICK_READY",
   "isOn",
+  "runBattleCommandEvidence",
+  "skillNotReady",
+  "skillElementMissing",
+  "unknownSkillCommand",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {

@@ -10,6 +10,7 @@ vi.mock("../dom/query.js", () => ({ gE: mocks.gE, isOn: mocks.isOn }));
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
+  sessionStorage.clear();
 });
 
 describe("runBattleSkillCommand", () => {
@@ -30,6 +31,12 @@ describe("runBattleSkillCommand", () => {
     expect(mocks.isOn).toHaveBeenCalledWith("412");
     expect(mocks.gE).toHaveBeenCalledWith("412");
     expect(calls).toEqual(["click", "hook"]);
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "skill.clickReady",
+      result: "accepted",
+      reason: "clicked",
+      detail: { skillId: "412" },
+    });
   });
 
   it("does not click or run the hook when the skill is unavailable", () => {
@@ -46,5 +53,22 @@ describe("runBattleSkillCommand", () => {
 
     expect(mocks.gE).not.toHaveBeenCalled();
     expect(afterClick).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "skill.clickReady",
+      result: "rejected",
+      reason: "skillNotReady",
+      detail: { skillId: "412" },
+    });
+  });
+
+  it("records unknown skill command rejections", () => {
+    expect(runBattleSkillCommand({ type: "unknown" })).toBe(false);
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "skill.clickReady",
+      result: "rejected",
+      reason: "unknownSkillCommand",
+      detail: { eventType: "unknown" },
+    });
   });
 });
