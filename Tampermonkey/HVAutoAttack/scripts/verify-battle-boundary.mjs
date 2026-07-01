@@ -489,6 +489,7 @@ function checkTurnEntry() {
     'recordTurnWorkflowStage("decisionCompleted", { acted: Boolean(acted) })',
     'recordTurnWorkflowStage("failed"',
     'recordTurnWorkflowStage("rejected"',
+    "eventType: event?.type ?? null",
     "battleTurnWorkflowEventHandlers[event?.type]",
   ]) {
     if (!text.includes(required)) {
@@ -502,6 +503,9 @@ function checkTurnEntry() {
     )
   ) {
     violations.push("src/battle/main-loop.test.js must cover null turn workflow rejection");
+  }
+  if (!mainLoopTestText.includes("eventType: null")) {
+    violations.push("src/battle/main-loop.test.js must preserve null turn workflow event identity");
   }
   const turnWorkflowEvidenceFile = path.join(
     root,

@@ -119,7 +119,7 @@ describe("runBattleTurnAutomation", () => {
     expect(mocks.runBattleActionDecision).not.toHaveBeenCalled();
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
       stage: "rejected",
-      detail: {},
+      detail: { eventType: null },
     });
   });
 });
