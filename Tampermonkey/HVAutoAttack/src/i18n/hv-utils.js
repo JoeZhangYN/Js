@@ -10739,14 +10739,14 @@ if ($config.settings.lotteryNotification) {
   };
 
   _bottom.evaluate_lottery_filter = function (ss, equip) {
-    const failClosed = (filterErrors) => {
+    const reportErrors = (filterErrors, matched = false) => {
       try {
         console.warn('[HVUT] lottery notification filter failed', { ss, equip, errors: filterErrors });
       } catch (_error) {
         // Console hooks must not block lottery equipment display.
       }
       return {
-        matched: false,
+        matched,
         error: (Array.isArray(filterErrors) ? filterErrors : [])
           .map((e) => `${e.filter}: ${e.error}`)
           .join('\n') || null,
@@ -10757,15 +10757,30 @@ if ($config.settings.lotteryNotification) {
       const result = $equip.filter.match($config.settings.lotteryFilters, equip);
       const matched = result.matched;
       filterErrors.push(...result.errors);
-      if (filterErrors.length) return failClosed(filterErrors);
+      if (filterErrors.length) return reportErrors(filterErrors, matched);
       return {
         matched,
         error: null,
       };
     } catch (error) {
       filterErrors.push({ filter: '<lotteryFilters>', error: error?.message || String(error) });
-      return failClosed(filterErrors);
+      return reportErrors(filterErrors, false);
     }
+  };
+
+  _bottom.read_lottery_draw_time = function (text, now) {
+    const drawMatch = /(?:Today's\s+)?drawing is in\s*(?:(\d+)\s*hours?)?(?:\s*(?:,|and)\s*)?(?:(\d+)\s*minutes?)?/i.exec(text || '');
+    if (drawMatch) {
+      return {
+        date: now + (60 * parseInt(drawMatch[1] || 0) + parseInt(drawMatch[2] || 0)) * 60000,
+        margin: 2,
+        known: true,
+      };
+    }
+    if ((text || '').includes("Today's ticket sale is closed")) {
+      return { date: now, margin: 10, known: true };
+    }
+    return { date: now, margin: 0, known: false, error: 'drawTimeNotFound' };
   };
 
   _bottom.render_lottery_equip_text = function (ss, equip, lottery) {
@@ -10813,24 +10828,14 @@ if ($config.settings.lotteryNotification) {
         _bottom.node[ss].equip.textContent = '加载失败';
         return;
       }
-      const rightpaneText = $id('rightpane', doc)?.lastElementChild?.textContent || '';
+      const rightpaneText = $id('rightpane', doc)?.textContent || '';
       const { json, lottery } = _bottom.read_lottery_state(ss);
       const now = Date.now();
-      let date = Date.now();
-      let margin = 0;
-      const drawMatch = /Today's drawing is in (?:(\d+) hours?)?(?: and )?(?:(\d+) minutes?)?/.exec(rightpaneText);
-      if (drawMatch) {
-        date += (60 * parseInt(drawMatch[1] || 0) + parseInt(drawMatch[2] || 0)) * 60000;
-        margin = 2;
-      } else if (rightpaneText.includes("Today's ticket sale is closed")) {
-        margin = 10;
-      } else {
-        _bottom.node[ss].equip.textContent = '加载失败';
-        _bottom.node[ss].time.textContent = '--:--';
-        return;
-      }
+      const drawTime = _bottom.read_lottery_draw_time(rightpaneText, now);
+      let date = drawTime.date;
+      const margin = drawTime.margin;
       const mm = (new Date(date)).getUTCMinutes();
-      if (date && (mm < 1 || 60 - mm <= margin)) {
+      if (drawTime.known && date && (mm < 1 || 60 - mm <= margin)) {
         date = Math.round(date / 3600000) * 3600000;
       }
       const prevOnclick = $qs('img[src*="lottery_prev_a.png"]', doc)?.getAttribute('onclick') || '';
@@ -10838,6 +10843,7 @@ if ($config.settings.lotteryNotification) {
       lottery.id = parseInt(prevMatch?.[1] || 0) + 1;
       lottery.equip = eqname.textContent;
       lottery.date = date;
+      lottery.dateError = drawTime.error || null;
       let filterResult = { matched: false, error: null };
       try {
         filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip) || filterResult;
@@ -10856,7 +10862,7 @@ if ($config.settings.lotteryNotification) {
       if (shouldPopup) lottery.popDay = drawDay;
       const lotteryEquipText = _bottom.render_lottery_equip_text(ss, lottery.equip, lottery);
       _bottom.node[ss].equip.textContent = lotteryEquipText;
-      _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
+      _bottom.node[ss].time.textContent = drawTime.known ? time_format(lottery.date - now, 1) : '--:--';
       try {
         $config.set('lt_notif', json, 'hvut_');
       } catch (error) {

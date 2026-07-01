@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   NavigationEvent,
   NavigationRedirectReason,
@@ -19,7 +19,6 @@ describe("navigation decision evidence", () => {
   }
 
   beforeEach(resetTestState);
-  afterEach(resetTestState);
 
   it("records accepted URL navigation decisions without replacing navigation audit", () => {
     vi.spyOn(window, "open").mockImplementation(() => ({ close: vi.fn() }));
@@ -158,13 +157,7 @@ describe("navigation decision evidence", () => {
 
     let result;
     expect(() => {
-      result = recordNavigationDecision(
-        "accepted",
-        { type: NavigationEvent.SCHEDULE_RELOAD },
-        {
-          delayMs: 250,
-        }
-      );
+      result = recordNavigationDecision("accepted", { type: NavigationEvent.SCHEDULE_RELOAD }, { delayMs: 250 });
     }).not.toThrow();
 
     expect(result).toBe(true);

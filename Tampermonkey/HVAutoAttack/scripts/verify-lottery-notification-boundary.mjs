@@ -53,7 +53,7 @@ for (const required of [
   "catch (error)",
   "加载失败",
   "console.warn('[HVUT] lottery notification failed'",
-  "const drawMatch =",
+  "const drawTime = _bottom.read_lottery_draw_time(rightpaneText, now)",
   "const prevMatch =",
   "prevMatch?.[1]",
   "eqname.previousElementSibling?.textContent",
@@ -83,22 +83,34 @@ if (!lotteryRegion.includes("_bottom.node[ss].equip.textContent = _bottom.render
 }
 
 for (const required of [
-  "const failClosed = (filterErrors) =>",
+  "const reportErrors = (filterErrors, matched = false) =>",
   "Console hooks must not block lottery equipment display.",
   "const filterErrors = []",
   "const result = $equip.filter.match($config.settings.lotteryFilters, equip)",
   "const matched = result.matched",
   "filterErrors.push(...result.errors)",
-  "return failClosed(filterErrors)",
+  "return reportErrors(filterErrors, matched)",
   "filter: '<lotteryFilters>'",
   "console.warn('[HVUT] lottery notification filter failed'",
   "errors: filterErrors",
   "matched,",
-  "matched: false,",
+  "return reportErrors(filterErrors, false)",
   "error: (Array.isArray(filterErrors) ? filterErrors : [])",
 ]) {
   if (!filterBody.includes(required)) {
     violations.push(`${rel(target)} lottery filter decision must include ${required}`);
+  }
+}
+
+for (const required of [
+  "_bottom.read_lottery_draw_time = function (text, now)",
+  "drawTimeNotFound",
+  "const drawTime = _bottom.read_lottery_draw_time(rightpaneText, now)",
+  "lottery.dateError = drawTime.error || null",
+  "drawTime.known ? time_format(lottery.date - now, 1) : '--:--'",
+]) {
+  if (!lotteryRegion.includes(required)) {
+    violations.push(`${rel(target)} lottery draw-time parsing must preserve equipment display with ${required}`);
   }
 }
 

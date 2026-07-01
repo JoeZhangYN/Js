@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  BattleAutomationEvidenceEvent,
+  runBattleAutomationEvidence,
+} from "./battle-automation-evidence.js";
+import {
   BattleActionDecisionEvidenceEvent,
   runBattleActionDecisionEvidence,
 } from "./battle-action-decision-evidence.js";
@@ -20,77 +24,93 @@ import {
 
 beforeEach(() => window.sessionStorage.clear());
 
-const storageFailureCases = [
+const debugFailureCases = [
   [
-    "keeps decision evidence visible when storage is unavailable",
+    "automation",
+    runBattleAutomationEvidence,
+    { type: BattleAutomationEvidenceEvent.RECORD_STARTUP, phase: "pageReady", result: true, steps: [] },
+    "HVAA:lastBattleAutomation",
+    { phase: "pageReady" },
+  ],
+  [
+    "decision",
     runBattleActionDecisionEvidence,
     {
       type: BattleActionDecisionEvidenceEvent.RECORD_TRACE,
       steps: [{ capability: "attack", result: { kind: "noop" }, acted: false }],
     },
-    "[HVAA] battle action decision",
+    "HVAA:lastBattleActionDecision",
+    { steps: [expect.objectContaining({ capability: "attack" })] },
   ],
   [
-    "keeps effect evidence visible when storage is unavailable",
+    "effect",
     runBattleActionEffectEvidence,
     { type: BattleActionEffectEvidenceEvent.RECORD_APPLIED, result: { kind: "noop" }, acted: false },
-    "[HVAA] battle action effect",
+    "HVAA:lastBattleActionEffect",
+    { result: { kind: "noop" }, acted: false },
   ],
   [
-    "keeps command evidence visible when storage is unavailable",
+    "command",
     runBattleCommandEvidence,
-    {
-      type: BattleCommandEvidenceEvent.RECORD_RESULT,
-      command: "target.click",
-      result: "rejected",
-      reason: "targetDead",
-    },
-    "[HVAA] battle command",
+    { type: BattleCommandEvidenceEvent.RECORD_RESULT, command: "target.click", result: "accepted" },
+    "HVAA:lastBattleCommand",
+    { command: "target.click", result: "accepted" },
   ],
   [
-    "keeps lifecycle evidence visible when storage is unavailable",
+    "lifecycle",
     runBattleActionLifecycleEvidence,
     {
       type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
       phase: "actionEnded",
       result: { outcome: "ongoing" },
     },
-    "[HVAA] battle action lifecycle",
+    "HVAA:lastBattleActionLifecycle",
+    { phase: "actionEnded" },
   ],
   [
-    "keeps turn workflow evidence visible when storage is unavailable",
+    "turn",
     runBattleTurnWorkflowEvidence,
     {
       type: BattleTurnWorkflowEvidenceEvent.RECORD_STAGE,
       stage: "decisionCompleted",
       detail: { acted: false },
     },
-    "[HVAA] battle turn workflow",
+    "HVAA:lastBattleTurnWorkflow",
+    { stage: "decisionCompleted" },
   ],
   [
-    "keeps pause evidence visible when storage is unavailable",
+    "pause",
     runBattlePauseEvidence,
     {
       type: BattlePauseEvidenceEvent.RECORD_STATE,
       state: "paused",
       reason: "battleApiResponseRepeated",
     },
-    "[HVAA] battle pause",
+    "HVAA:lastBattlePause",
+    { state: "paused" },
   ],
 ];
 
-describe("battle action evidence persistence failures", () => {
-  it.each(storageFailureCases)("%s", (_name, run, event, label) => {
-    const deps = {
-      sessionStorage: { setItem: vi.fn(() => { throw new Error("quota"); }) },
-      debug: vi.fn(),
-    };
+describe("battle action evidence debug output failures", () => {
+  it("does not throw when evidence debug output fails for every action evidence entry", () => {
+    for (const [label, run, event, key, expected] of debugFailureCases) {
+      const deps = {
+        sessionStorage: window.sessionStorage,
+        debug: vi.fn(() => {
+          throw new Error("console blocked");
+        }),
+      };
+      let result;
 
-    expect(run(event, deps)).toBe(false);
-    expect(deps.debug).toHaveBeenCalledWith(
-      label,
-      expect.objectContaining({ storageWriteOk: false, storageWriteError: "quota" })
-    );
+      expect(() => {
+        result = run(event, deps);
+      }, label).not.toThrow();
+      expect(result, label).toBe(true);
+      expect(JSON.parse(window.sessionStorage.getItem(key))).toMatchObject({
+        ...expected,
+        storageWriteOk: true,
+      });
+      window.sessionStorage.clear();
+    }
   });
-
 });

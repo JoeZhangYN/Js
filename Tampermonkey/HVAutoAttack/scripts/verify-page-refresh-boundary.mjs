@@ -80,6 +80,18 @@ for (const required of ["OptionEvent.READ_FIELD", "runOptionAutomation"]) {
     violations.push(`${owner.replaceAll("\\", "/")} must read page refresh option internally`);
   }
 }
+if (!ownerText.includes("return minutes;")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not add random minutes beyond the configured page refresh limit`
+  );
+}
+for (const forbidden of ["jitterMinutes", "return minutes +"]) {
+  if (ownerText.includes(forbidden)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must not exceed configured page refresh minutes with ${forbidden}`
+    );
+  }
+}
 if (/OptionEvent\.READ\b/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not read the whole option bag for page refresh fields`

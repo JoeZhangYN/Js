@@ -87,6 +87,11 @@ const automationEvidenceText = read("src/battle/battle-automation-evidence.js");
 const actionEvidencePersistenceTestText = read(
   "src/battle/battle-action-evidence-persistence.test.js"
 );
+const actionEvidenceDebugFailureTestText = read(
+  "src/battle/battle-action-evidence-debug-failure.test.js"
+);
+const actionEvidenceFailureTestText =
+  actionEvidencePersistenceTestText + "\n" + actionEvidenceDebugFailureTestText;
 const evidenceDebugText = read("src/battle/battle-evidence-debug.js");
 if (
   !evidenceDebugText.includes("export function safeDebug") ||
@@ -208,8 +213,8 @@ for (const required of [
   'storageWriteError: "quota"',
   'throw new Error("console blocked")',
 ]) {
-  if (!actionEvidencePersistenceTestText.includes(required)) {
-    violations.push(`src/battle/battle-action-evidence-persistence.test.js must cover ${required}`);
+  if (!actionEvidenceFailureTestText.includes(required)) {
+    violations.push(`battle action evidence failure tests must cover ${required}`);
   }
 }
 for (const spec of specs) {

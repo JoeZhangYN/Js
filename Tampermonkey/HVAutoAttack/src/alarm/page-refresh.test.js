@@ -21,7 +21,7 @@ describe("runPageRefreshAutomation", () => {
     expect(scheduleReload).not.toHaveBeenCalled();
   });
 
-  it("schedules through the entry with configured minutes and bounded minute jitter", () => {
+  it("schedules through the entry with configured minutes without exceeding the configured limit", () => {
     const scheduleReload = vi.fn();
     const readOptionField = vi.fn((key, fallback) => {
       if (key === "pageRefresh") return true;
@@ -55,7 +55,7 @@ describe("runPageRefreshAutomation", () => {
         }
       )
     ).toBe(true);
-    expect(scheduleReload).toHaveBeenLastCalledWith(31);
+    expect(scheduleReload).toHaveBeenLastCalledWith(30);
   });
 
   it("schedules unknown page reload through the same refresh entry", () => {

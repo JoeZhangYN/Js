@@ -3,7 +3,7 @@
 // 本模块是 absolute-clock：页面自动化启动后倒计时 N 分钟触发一次同页 reload，不依赖战斗事件。
 //
 // 设计点：
-// - 默认 30 分钟 + 0~1 分钟随机抖动，避免多窗口同步 reload
+// - 默认 30 分钟；配置值就是 reload 上限，不额外加随机分钟
 // - game page 都生效，由 page-automation 统一编排调用
 // - 单次 scheduleReload，reload 后新页面会重新调用本入口自然续期
 //
@@ -40,13 +40,11 @@ function readPageRefreshOption(deps) {
   };
 }
 
-function planPageRefreshDelayMinutes(option, { jitter = Math.random() } = {}) {
+function planPageRefreshDelayMinutes(option) {
   if (!option.enabled) return;
   const minutes = option.minutes;
   if (minutes <= 0) return;
-  const boundedJitter = Math.max(0, Math.min(0.999999, jitter));
-  const jitterMinutes = Math.floor(boundedJitter * 2); // 0~1 分钟抖动
-  return minutes + jitterMinutes;
+  return minutes;
 }
 
 function schedulePageRefreshReload(minutes, deps) {
