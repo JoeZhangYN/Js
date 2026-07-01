@@ -55,17 +55,20 @@ describe("battle action effect evidence failures", () => {
     });
   });
 
-  it("does not throw when effect evidence recording keeps failing", () => {
+  it("keeps acted effects acted when effect evidence recording keeps failing", () => {
     mocks.runBattleSkillCommand.mockReturnValue(true);
     mocks.runBattleActionEffectEvidence.mockImplementation(() => {
       throw new Error("effect evidence failed");
     });
 
-    expect(() =>
-      runBattleActionEffectDispatch({
+    let result;
+    expect(() => {
+      result = runBattleActionEffectDispatch({
         type: BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT,
         result: { kind: "skill-command", skillId: 111 },
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
+
+    expect(result).toBe(true);
   });
 });

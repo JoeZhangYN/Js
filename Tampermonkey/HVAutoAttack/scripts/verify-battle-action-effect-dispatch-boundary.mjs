@@ -240,7 +240,8 @@ if (!fs.existsSync(path.join(root, evidenceFailureTest))) {
   const evidenceFailureTestText = read(evidenceFailureTest);
   for (const required of [
     "keeps acted effects acted when effect evidence recording fails once",
-    "does not throw when effect evidence recording keeps failing",
+    "keeps acted effects acted when effect evidence recording keeps failing",
+    "expect(result).toBe(true)",
     "actionEffectEvidenceWriteFailed",
   ]) {
     if (!evidenceFailureTestText.includes(required)) {
