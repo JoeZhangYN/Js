@@ -35,7 +35,9 @@ for (const required of [
   "const prevMatch =",
   "prevMatch?.[1]",
   "eqname.previousElementSibling?.textContent",
-  "const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip)",
+  "let filterResult = { matched: false, error: null }",
+  "filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip) || filterResult",
+  "console.warn('[HVUT] lottery notification filter decision failed'",
   "lottery.filterError = filterResult.error",
   "_bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip)",
   "$config.set('lt_notif', json, 'hvut_')",
@@ -49,6 +51,7 @@ for (const required of [
 
 for (const required of [
   "const failClosed = (filterErrors) =>",
+  "Console hooks must not block lottery equipment display.",
   "const filterErrors = []",
   "const result = $equip.filter.match($config.settings.lotteryFilters, equip)",
   "const matched = result.matched",
@@ -59,7 +62,7 @@ for (const required of [
   "errors: filterErrors",
   "matched,",
   "matched: false,",
-  "error: filterErrors.map",
+  "error: (Array.isArray(filterErrors) ? filterErrors : [])",
 ]) {
   if (!filterBody.includes(required)) {
     violations.push(`${rel(target)} lottery filter decision must include ${required}`);

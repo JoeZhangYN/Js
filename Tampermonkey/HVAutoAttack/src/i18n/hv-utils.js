@@ -10727,10 +10727,16 @@ if ($config.settings.trainingNotification) {
 if ($config.settings.lotteryNotification) {
   _bottom.evaluate_lottery_filter = function (ss, equip) {
     const failClosed = (filterErrors) => {
-      console.warn('[HVUT] lottery notification filter failed', { ss, equip, errors: filterErrors });
+      try {
+        console.warn('[HVUT] lottery notification filter failed', { ss, equip, errors: filterErrors });
+      } catch (_error) {
+        // Console hooks must not block lottery equipment display.
+      }
       return {
         matched: false,
-        error: filterErrors.map((e) => `${e.filter}: ${e.error}`).join('\n') || null,
+        error: (Array.isArray(filterErrors) ? filterErrors : [])
+          .map((e) => `${e.filter}: ${e.error}`)
+          .join('\n') || null,
       };
     };
     const filterErrors = [];
@@ -10810,7 +10816,13 @@ if ($config.settings.lotteryNotification) {
       lottery.id = parseInt(prevMatch?.[1] || 0) + 1;
       lottery.equip = eqname.textContent;
       lottery.date = date;
-      const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip);
+      let filterResult = { matched: false, error: null };
+      try {
+        filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip) || filterResult;
+      } catch (error) {
+        filterResult = { matched: false, error: error?.message || String(error) };
+        console.warn('[HVUT] lottery notification filter decision failed', { ss, equip: lottery.equip, error });
+      }
       lottery.check = filterResult.matched;
       lottery.filterError = filterResult.error;
       lottery.hide = !$config.settings.lotteryNotification;
