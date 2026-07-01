@@ -47,6 +47,22 @@ describe("runBattleNextRoundContinuation", () => {
     expect(deps.runTurn).toHaveBeenCalledTimes(1);
   });
 
+  it("preserves native battle continuation methods when restarting runtime", () => {
+    const { deps } = makeDeps();
+    const battleContinue = vi.fn();
+    const processAction = vi.fn();
+    deps.unsafeWindow.battle = { battle_continue: battleContinue, process_action: processAction };
+    deps.unsafeWindow.Battle = vi.fn(function Battle() {
+      this.clear_infopane = vi.fn();
+    });
+
+    runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }, deps);
+
+    expect(deps.unsafeWindow.battle.battle_continue).toBe(battleContinue);
+    expect(deps.unsafeWindow.battle.process_action).toBe(processAction);
+    expect(deps.unsafeWindow.battle.clear_infopane).toHaveBeenCalledTimes(1);
+  });
+
   it("lets riddle handling claim the post result before panel replacement", () => {
     const { deps, nodes } = makeDeps();
     deps.handleRiddle.mockReturnValue(true);

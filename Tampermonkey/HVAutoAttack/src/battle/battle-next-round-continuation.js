@@ -19,9 +19,22 @@ function replaceBattlePanels(data, deps) {
   deps.gE("#battle_main").replaceChild(deps.gE("#battle_left", data), deps.gE("#battle_left"));
 }
 
+function preserveNativeBattleMethods(previousBattle, nextBattle) {
+  for (const name of ["battle_continue", "process_action"]) {
+    if (typeof nextBattle[name] !== "function" && typeof previousBattle?.[name] === "function") {
+      nextBattle[name] = previousBattle[name];
+    }
+  }
+  return nextBattle;
+}
+
 function restartBattleRuntime(deps) {
-  deps.unsafeWindow.battle = new deps.unsafeWindow.Battle();
-  deps.unsafeWindow.battle.clear_infopane();
+  const previousBattle = deps.unsafeWindow.battle;
+  deps.unsafeWindow.battle = preserveNativeBattleMethods(
+    previousBattle,
+    new deps.unsafeWindow.Battle()
+  );
+  deps.unsafeWindow.battle.clear_infopane?.();
   deps.startRound();
   deps.runTurn();
 }
