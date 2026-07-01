@@ -1,7 +1,7 @@
 // Battle target command: one write entry for monster target clicks and skill-target pairs.
-import { gE } from "../dom/query.js";
 import { clickBattleCommandElement } from "./battle-command-click.js";
 import { recordBattleCommandResult } from "./battle-command-recording.js";
+import { readLiveTarget, targetReadDetail } from "./battle-target-live-target.js";
 import { BattleSkillCommandEvent, runBattleSkillCommand } from "./battle-skill-command.js";
 
 const EVENT_CLICK_TARGET = "clickTarget";
@@ -14,27 +14,14 @@ export const BattleTargetCommandEvent = Object.freeze({
   TRY_SKILL_THEN_TARGET: EVENT_TRY_SKILL_THEN_TARGET,
 });
 
-function targetSelector(targetId) {
-  return `#mkey_${targetId}`;
-}
-
 function recordCommandResult(command, result, reason, detail) {
   recordBattleCommandResult(command, result, reason, detail);
 }
 
-function readLiveTarget(targetId) {
-  const targetEl = gE(targetSelector(targetId));
-  if (!targetEl) return { targetEl: null, reason: "targetMissing" };
-  if (targetEl.querySelector('img[src*="nbardead.png"]')) {
-    return { targetEl: null, reason: "targetDead" };
-  }
-  return { targetEl, reason: "live" };
-}
-
 function clickTarget(targetId) {
-  const { targetEl, reason } = readLiveTarget(targetId);
+  const { targetEl, reason, error } = readLiveTarget(targetId);
   if (!targetEl) {
-    recordCommandResult("target.click", "rejected", reason, { targetId });
+    recordCommandResult("target.click", "rejected", reason, targetReadDetail(targetId, { error }));
     return false;
   }
   const clickResult = clickBattleCommandElement(targetEl);
@@ -50,9 +37,12 @@ function clickTarget(targetId) {
 }
 
 function clickSkillThenTarget(skillId, targetId) {
-  const { targetEl, reason } = readLiveTarget(targetId);
+  const { targetEl, reason, error } = readLiveTarget(targetId);
   if (!targetEl) {
-    recordCommandResult("target.clickSkillThenTarget", "rejected", reason, { skillId, targetId });
+    recordCommandResult("target.clickSkillThenTarget", "rejected", reason, {
+      skillId,
+      ...targetReadDetail(targetId, { error }),
+    });
     return false;
   }
   const skillResult = runSkillCommand("target.clickSkillThenTarget", skillId, targetId, {

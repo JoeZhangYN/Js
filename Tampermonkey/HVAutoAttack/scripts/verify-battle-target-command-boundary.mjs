@@ -4,9 +4,11 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src", "battle");
 const owner = path.normalize("src/battle/battle-target-command.js");
+const liveTargetOwner = path.normalize("src/battle/battle-target-live-target.js");
 const ownerTest = path.normalize("src/battle/battle-target-command.test.js");
 const liveTargetTest = path.normalize("src/battle/battle-target-command-live-target.test.js");
 const clickFailureTest = path.normalize("src/battle/battle-target-command-click-failure.test.js");
+const readFailureTest = path.normalize("src/battle/battle-target-command-read-failure.test.js");
 const skillFailureTest = path.normalize("src/battle/battle-target-command-skill-failure.test.js");
 const violations = [];
 
@@ -30,6 +32,7 @@ function checkFile(file) {
     if (!trimmed || trimmed.startsWith("//") || trimmed.startsWith("*")) return;
     if (
       relative !== owner &&
+      relative !== liveTargetOwner &&
       relative !== ownerTest &&
       !relative.endsWith(".test.js") &&
       line.includes("#mkey_")
@@ -59,20 +62,30 @@ requireText(owner, [
   "CLICK_TARGET",
   "CLICK_SKILL_THEN_TARGET",
   "TRY_SKILL_THEN_TARGET",
-  "#mkey_",
   "recordBattleCommandResult",
   "clickBattleCommandElement",
   "clickResult.reason",
   "clickResult.error",
   "readLiveTarget",
-  "targetMissing",
-  "targetDead",
-  "skillCommandRejected",
-  "skillCommandThrew",
+  "targetReadDetail",
   "runSkillCommand",
   "targetCommandRejected",
   "unknownTargetCommand",
   "event?.type ?? null",
+]);
+requireText(liveTargetOwner, [
+  "#mkey_",
+  "targetSelector",
+  "readLiveTarget",
+  "targetReadFailed",
+  "targetStateReadFailed",
+  "targetReadDetail",
+  "targetMissing",
+  "targetDead",
+]);
+requireText(owner, [
+  "skillCommandRejected",
+  "skillCommandThrew",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const clickTargetBody =
@@ -92,6 +105,12 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
 }
 requireText(ownerTest, ["records missing target command events as not acted", "eventType: null"]);
 requireText(clickFailureTest, ["records target click failures as not acted", "clickFailed"]);
+requireText(readFailureTest, [
+  "records target selector read failures as not acted",
+  "records target dead-state read failures without clicking skill or target",
+  "targetReadFailed",
+  "targetStateReadFailed",
+]);
 requireText(skillFailureTest, [
   "records click-skill target skill command exceptions without clicking target",
   "records try-skill target skill command exceptions without fallback target click",
