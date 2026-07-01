@@ -30,9 +30,12 @@ export const BattleActionLifecycleEvent = Object.freeze({
 });
 
 function runActionStarted(deps) {
+  const steps = [];
   deps.startDelay();
+  steps.push({ step: "startDelay", result: true });
   deps.monitorActionStarted();
-  deps.recordLifecycle(EVENT_ACTION_STARTED, true);
+  steps.push({ step: "monitorActionStarted", result: true });
+  deps.recordLifecycle(EVENT_ACTION_STARTED, true, steps);
   return true;
 }
 
@@ -46,18 +49,28 @@ function handleCompletion(deps) {
 }
 
 function runActionEnded(deps) {
+  const steps = [];
   deps.recordSpeed();
+  steps.push({ step: "recordSpeed", result: true });
   deps.endDelay();
+  steps.push({ step: "endDelay", result: true });
   deps.refreshCombatants();
+  steps.push({ step: "refreshCombatants", result: true });
   deps.monitorActionEnded();
+  steps.push({ step: "monitorActionEnded", result: true });
   if (deps.isCompletionReached()) {
+    steps.push({ step: "isCompletionReached", result: true });
     const result = handleCompletion(deps);
-    deps.recordLifecycle(EVENT_ACTION_ENDED, result);
+    steps.push({ step: "completeBattle", result: result.outcome });
+    steps.push({ step: "continue", result: result.continued });
+    deps.recordLifecycle(EVENT_ACTION_ENDED, result, steps);
     return result;
   }
+  steps.push({ step: "isCompletionReached", result: false });
   deps.runTurn();
+  steps.push({ step: "runTurn", result: true });
   const result = { outcome: OUTCOME_ONGOING, continued: "turn" };
-  deps.recordLifecycle(EVENT_ACTION_ENDED, result);
+  deps.recordLifecycle(EVENT_ACTION_ENDED, result, steps);
   return result;
 }
 
@@ -86,11 +99,12 @@ export function runBattleActionLifecycleAutomation(
     continueNextRound: () =>
       runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }),
     runTurn: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
-    recordLifecycle: (phase, result) =>
+    recordLifecycle: (phase, result, steps) =>
       runBattleActionLifecycleEvidence({
         type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
         phase,
         result,
+        steps,
       }),
   }
 ) {

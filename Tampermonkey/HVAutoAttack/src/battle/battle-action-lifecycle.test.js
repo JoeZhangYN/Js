@@ -31,7 +31,10 @@ describe("runBattleActionLifecycleAutomation", () => {
 
     expect(deps.startDelay).toHaveBeenCalledTimes(1);
     expect(deps.monitorActionStarted).toHaveBeenCalledTimes(1);
-    expect(deps.recordLifecycle).toHaveBeenCalledWith("actionStarted", true);
+    expect(deps.recordLifecycle).toHaveBeenCalledWith("actionStarted", true, [
+      { step: "startDelay", result: true },
+      { step: "monitorActionStarted", result: true },
+    ]);
     expect(deps.startDelay.mock.invocationCallOrder[0]).toBeLessThan(
       deps.monitorActionStarted.mock.invocationCallOrder[0]
     );
@@ -52,10 +55,21 @@ describe("runBattleActionLifecycleAutomation", () => {
     expect(deps.isCompletionReached).toHaveBeenCalledTimes(1);
     expect(deps.runTurn).toHaveBeenCalledTimes(1);
     expect(deps.completeBattle).not.toHaveBeenCalled();
-    expect(deps.recordLifecycle).toHaveBeenCalledWith("actionEnded", {
-      outcome: "ongoing",
-      continued: "turn",
-    });
+    expect(deps.recordLifecycle).toHaveBeenCalledWith(
+      "actionEnded",
+      {
+        outcome: "ongoing",
+        continued: "turn",
+      },
+      [
+        { step: "recordSpeed", result: true },
+        { step: "endDelay", result: true },
+        { step: "refreshCombatants", result: true },
+        { step: "monitorActionEnded", result: true },
+        { step: "isCompletionReached", result: false },
+        { step: "runTurn", result: true },
+      ]
+    );
   });
 
   it("continues the next round through the next-round entry", () => {
@@ -72,10 +86,18 @@ describe("runBattleActionLifecycleAutomation", () => {
     expect(deps.isCompletionReached).toHaveBeenCalledTimes(1);
     expect(deps.completeBattle).toHaveBeenCalledTimes(1);
     expect(deps.runTurn).not.toHaveBeenCalled();
-    expect(deps.recordLifecycle).toHaveBeenCalledWith("actionEnded", {
-      outcome: "nextRound",
-      continued: "nextRound",
-    });
+    expect(deps.recordLifecycle).toHaveBeenCalledWith(
+      "actionEnded",
+      {
+        outcome: "nextRound",
+        continued: "nextRound",
+      },
+      expect.arrayContaining([
+        { step: "isCompletionReached", result: true },
+        { step: "completeBattle", result: "nextRound" },
+        { step: "continue", result: "nextRound" },
+      ])
+    );
   });
 
   it("rejects unknown events", () => {

@@ -18,6 +18,7 @@ describe("runBattleActionLifecycleEvidence", () => {
           type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
           phase: "actionEnded",
           result: { outcome: "ongoing", continued: "turn" },
+          steps: [{ step: "runTurn", result: true }],
         },
         { sessionStorage: window.sessionStorage, debug }
       )
@@ -26,6 +27,7 @@ describe("runBattleActionLifecycleEvidence", () => {
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionLifecycle"))).toMatchObject({
       phase: "actionEnded",
       result: { outcome: "ongoing", continued: "turn" },
+      steps: [{ step: "runTurn", result: true }],
     });
     expect(debug).toHaveBeenCalledWith("[HVAA] battle action lifecycle", expect.any(Object));
   });

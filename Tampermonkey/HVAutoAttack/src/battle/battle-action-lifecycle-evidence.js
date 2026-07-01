@@ -11,6 +11,7 @@ function recordActionLifecycle(event, deps) {
   const evidence = {
     phase: event.phase,
     result: event.result,
+    steps: event.steps,
     at: new Date().toISOString(),
   };
   try {

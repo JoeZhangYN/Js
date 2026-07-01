@@ -1079,8 +1079,17 @@ function checkActionLifecycleEntry() {
     "runBattleTurnAutomation",
     "BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE",
     "runBattleActionLifecycleEvidence",
-    "recordLifecycle(EVENT_ACTION_STARTED, true)",
-    "recordLifecycle(EVENT_ACTION_ENDED, result)",
+    "steps.push({ step: \"startDelay\", result: true })",
+    "steps.push({ step: \"monitorActionStarted\", result: true })",
+    "steps.push({ step: \"recordSpeed\", result: true })",
+    "steps.push({ step: \"endDelay\", result: true })",
+    "steps.push({ step: \"refreshCombatants\", result: true })",
+    "steps.push({ step: \"monitorActionEnded\", result: true })",
+    "steps.push({ step: \"isCompletionReached\", result: true })",
+    "steps.push({ step: \"isCompletionReached\", result: false })",
+    "steps.push({ step: \"runTurn\", result: true })",
+    "recordLifecycle(EVENT_ACTION_STARTED, true, steps)",
+    "recordLifecycle(EVENT_ACTION_ENDED, result, steps)",
   ]) {
     if (!text.includes(required)) {
       violations.push(
@@ -1108,6 +1117,7 @@ function checkActionLifecycleEntry() {
     "runBattleActionLifecycleEvidence",
     "DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE",
     "ACTION_LIFECYCLE_EVIDENCE_KEY",
+    "steps: event.steps",
     "[HVAA] battle action lifecycle",
   ]) {
     if (!evidenceText.includes(required)) {
