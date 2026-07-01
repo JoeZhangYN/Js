@@ -20,6 +20,7 @@ vi.mock("../core/navigate.js", () => ({
 
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
   document.body.innerHTML = '<div class="btm2"></div><div class="btm2"></div>';
   mocks.runBattleRoundStartLog.mockReset();
   mocks.runNavigationAutomation.mockReset();
@@ -37,7 +38,7 @@ describe("monster status repair log snapshot", () => {
       initializingText: "Initializing the battle... (Round 1 / 1)",
     });
 
-    runMonsterStatusAutomation({ type: MonsterStatusEvent.REPAIR });
+    expect(runMonsterStatusAutomation({ type: MonsterStatusEvent.REPAIR })).toBe(true);
 
     expect(mocks.runBattleRoundStartLog).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(getValue(STORAGE_KEYS.MONSTER_STATUS, true)).toEqual([
@@ -47,6 +48,15 @@ describe("monster status repair log snapshot", () => {
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "reloadNow",
       reason: "monsterStatusRepair",
+      detail: {
+        source: "monsterStatusRepair",
+        repairSource: "roundStartLog",
+        monsterAll: 2,
+      },
+    });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleMonsterStatusRepair"))).toMatchObject({
+      result: "scheduledReload",
+      reason: "roundStartLog",
       detail: {
         source: "monsterStatusRepair",
         repairSource: "roundStartLog",

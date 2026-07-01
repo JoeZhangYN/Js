@@ -17,6 +17,8 @@ const parserEntry = path.normalize("src/battle/battle-log-parser.js");
 const parserEntryTest = path.normalize("src/battle/battle-log-parser.test.js");
 const roundStart = path.normalize("src/battle/battle-round-start.js");
 const actionEventBridge = path.normalize("src/battle/battle-action-event-bridge.js");
+const evidence = path.normalize("src/battle/monster-status-repair-evidence.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const violations = [];
 
 function rel(file) {
@@ -101,6 +103,9 @@ function checkEntry() {
     'source: "monsterStatusRepair"',
     "REPAIR_SOURCE_ROUND_START_LOG",
     "REPAIR_SOURCE_RENDERED_SNAPSHOT",
+    "runMonsterStatusRepairEvidence",
+    "MonsterStatusRepairEvidenceEvent.RECORD_REPAIR",
+    "unknownMonsterStatusEvent",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);
@@ -162,6 +167,27 @@ function checkEntry() {
     const testText = fs.readFileSync(path.join(root, entryTest), "utf8");
     if (!testText.includes("rejects unknown monster status events without side effects")) {
       violations.push(`${entryTest.replaceAll("\\", "/")} must cover unknown monster status events`);
+    }
+    if (!testText.includes("rejects null monster status events without side effects")) {
+      violations.push(`${entryTest.replaceAll("\\", "/")} must cover null monster status events`);
+    }
+    if (!testText.includes("HVAA:lastBattleMonsterStatusRepair")) {
+      violations.push(`${entryTest.replaceAll("\\", "/")} must assert monster status repair evidence`);
+    }
+  }
+  const evidenceText = fs.existsSync(path.join(root, evidence))
+    ? fs.readFileSync(path.join(root, evidence), "utf8")
+    : "";
+  if (!evidenceText.includes("DiagnosticEvidenceKey.BATTLE_MONSTER_STATUS_REPAIR")) {
+    violations.push(`${evidence.replaceAll("\\", "/")} must write diagnostic evidence`);
+  }
+  const diagnosticText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
+  for (const required of [
+    'BATTLE_MONSTER_STATUS_REPAIR: "HVAA:lastBattleMonsterStatusRepair"',
+    'source("battleMonsterStatusRepair", DiagnosticEvidenceKey.BATTLE_MONSTER_STATUS_REPAIR)',
+  ]) {
+    if (!diagnosticText.includes(required)) {
+      violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must include ${required}`);
     }
   }
 }
