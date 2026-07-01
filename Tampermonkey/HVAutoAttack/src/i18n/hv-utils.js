@@ -10820,14 +10820,23 @@ if ($config.settings.lotteryNotification) {
       const drawDay = new Date(date).toISOString().slice(0, 10);
       const shouldPopup = lottery.check && lottery.popDay !== drawDay;
       if (shouldPopup) lottery.popDay = drawDay;
-      $config.set('lt_notif', json, 'hvut_');
-      if (shouldPopup) {
-        const date_text = eqname.previousElementSibling?.textContent || '';
-        popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${equip_name_text_str(lottery.equip)}</p>`);
-      }
-
       _bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip);
       _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
+      try {
+        $config.set('lt_notif', json, 'hvut_');
+      } catch (error) {
+        lottery.persistenceError = error?.message || String(error);
+        console.warn('[HVUT] lottery notification persistence failed', { ss, error });
+      }
+      if (shouldPopup) {
+        try {
+          const date_text = eqname.previousElementSibling?.textContent || '';
+          popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${equip_name_text_str(lottery.equip)}</p>`);
+        } catch (error) {
+          lottery.popupError = error?.message || String(error);
+          console.warn('[HVUT] lottery notification popup failed', { ss, error });
+        }
+      }
     } catch (error) {
       _bottom.node[ss].equip.textContent = '加载失败';
       _bottom.node[ss].time.textContent = '--:--';

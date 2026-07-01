@@ -33,6 +33,10 @@ for (const required of [
   "eqname.previousElementSibling?.textContent",
   "const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip)",
   "lottery.filterError = filterResult.error",
+  "_bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip)",
+  "$config.set('lt_notif', json, 'hvut_')",
+  "console.warn('[HVUT] lottery notification persistence failed'",
+  "console.warn('[HVUT] lottery notification popup failed'",
 ]) {
   if (!body.includes(required)) {
     violations.push(`${rel(target)} lottery loader must include ${required}`);
