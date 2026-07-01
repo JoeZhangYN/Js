@@ -20,15 +20,18 @@ function makeDeps() {
   return {
     scripts,
     readOptionField: vi.fn((key) => ({ delay: 120, delay2: 340 })[key]),
-    sessionStorage: {},
+    sessionStorage: window.sessionStorage,
     createScript: vi.fn(() => ({ textContent: "" })),
     appendHead: vi.fn((script) => scripts.push(script)),
     mainUrl: "https://example.test/",
+    installApiResponseRecovery: vi.fn(),
   };
 }
 
 beforeEach(() => {
   document.head.innerHTML = "";
+  delete window.HVAA_battleApiRecovery;
+  delete globalThis.unsafeWindow;
   window.sessionStorage.clear();
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue({});
@@ -40,7 +43,9 @@ describe("runBattleApiBridgeAutomation", () => {
 
     expect(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }, deps)).toBe(true);
 
-    expect(deps.sessionStorage).toMatchObject({ delay: 120, delay2: 340 });
+    expect(window.sessionStorage.delay).toBe("120");
+    expect(window.sessionStorage.delay2).toBe("340");
+    expect(deps.installApiResponseRecovery).toHaveBeenCalledTimes(1);
     expect(deps.createScript).toHaveBeenCalledTimes(2);
     expect(deps.appendHead).toHaveBeenCalledTimes(2);
     expect(deps.scripts[0].textContent).toContain("api_call =");
@@ -55,7 +60,7 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[1].textContent).toContain("api_response =");
     expect(deps.scripts[1].textContent).toContain("JSON.parse(b.responseText)");
     expect(deps.scripts[1].textContent).toContain("reloadFromApiResponse");
-    expect(deps.scripts[1].textContent).toContain("nav.ReloadReason.BATTLE_API_RESPONSE");
+    expect(deps.scripts[1].textContent).toContain("window.HVAA_battleApiRecovery");
     expect(deps.scripts[1].textContent).toContain("responseKind");
     expect(deps.scripts[1].textContent).toContain("actionDetail");
     expect(deps.scripts[1].textContent).not.toContain("window.location.href");
@@ -95,7 +100,7 @@ describe("runBattleApiBridgeAutomation", () => {
     const script = deps.scripts[1].textContent;
     expect(script).not.toContain("window.location.search");
     expect(script).not.toContain("location.href");
-    expect(script).toContain("nav.reloadCurrentPage(reason,");
+    expect(script).toContain("recovery.handleRejectedResponse");
     expect(script).toContain("return a");
     expect(script).toContain("return false");
   });

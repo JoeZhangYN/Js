@@ -1,6 +1,10 @@
 import { cE, gE } from "../dom/query.js";
 import { ISEKAI_URL, MAIN_URL, isIsekai } from "../env.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
+import {
+  BattleApiResponseRecoveryEvent,
+  runBattleApiResponseRecovery,
+} from "./battle-api-response-recovery.js";
 
 const EVENT_INSTALL = "install";
 const ACTION_START_EVENT_NODE_ID = "eventStart";
@@ -9,12 +13,10 @@ const MAGIC_DELAY_SESSION_KEY = "delay";
 const ACTION_DELAY_SESSION_KEY = "delay2";
 const BATTLE_API_BASE_URL = isIsekai ? ISEKAI_URL : MAIN_URL;
 
-export const BattleApiBridgeEvent = Object.freeze({
-  INSTALL: EVENT_INSTALL,
-});
+export const BattleApiBridgeEvent = Object.freeze({ INSTALL: EVENT_INSTALL });
 
 const battleApiBridgeEventHandlers = Object.freeze({
-  [EVENT_INSTALL]: (event, deps) => installBridge(deps),
+  [EVENT_INSTALL]: (_event, deps) => installBridge(deps),
 });
 
 function buildApiCallScript(mainUrl, protocol) {
@@ -73,10 +75,9 @@ function buildApiResponseScript() {
       };
     }
     function reloadFromApiResponse(detail) {
-      const nav = window.HVAA_navigation;
-      const reason = nav && nav.ReloadReason && nav.ReloadReason.BATTLE_API_RESPONSE;
-      if (nav && nav.reloadCurrentPage && reason) {
-        nav.reloadCurrentPage(reason, {
+      const recovery = window.HVAA_battleApiRecovery;
+      if (recovery && recovery.handleRejectedResponse) {
+        recovery.handleRejectedResponse({
           ...detail,
           action: actionDetail(),
         });
@@ -126,6 +127,7 @@ function writeApiBridgeDelayRuntime(deps, option) {
 
 function installBridge(deps) {
   writeApiBridgeDelayRuntime(deps, readApiBridgeDelayOption(deps));
+  deps.installApiResponseRecovery();
 
   const apiCall = deps.createScript();
   apiCall.textContent = buildApiCallScript(deps.mainUrl, {
@@ -151,6 +153,8 @@ export function runBattleApiBridgeAutomation(
     createScript: () => cE("script"),
     appendHead: (script) => gE("head").appendChild(script),
     mainUrl: BATTLE_API_BASE_URL,
+    installApiResponseRecovery: () =>
+      runBattleApiResponseRecovery({ type: BattleApiResponseRecoveryEvent.INSTALL_BRIDGE }),
   }
 ) {
   return battleApiBridgeEventHandlers[event.type]?.(event, deps) ?? false;
