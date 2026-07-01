@@ -26,8 +26,33 @@ describe("runBattleTurnWorkflowEvidence", () => {
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
       stage: "contextPrepared",
       detail: { hasContext: true },
+      storageWriteOk: true,
     });
     expect(debug).toHaveBeenCalledWith("[HVAA] battle turn workflow", expect.any(Object));
+  });
+
+  it("keeps turn workflow evidence stored when debug output fails", () => {
+    expect(() =>
+      runBattleTurnWorkflowEvidence(
+        {
+          type: BattleTurnWorkflowEvidenceEvent.RECORD_STAGE,
+          stage: "decisionCompleted",
+          detail: { acted: true },
+        },
+        {
+          sessionStorage: window.sessionStorage,
+          debug: () => {
+            throw new Error("console blocked");
+          },
+        }
+      )
+    ).not.toThrow();
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
+      stage: "decisionCompleted",
+      detail: { acted: true },
+      storageWriteOk: true,
+    });
   });
 
   it("rejects unknown turn workflow evidence events", () => {

@@ -651,6 +651,15 @@ function checkTurnEntry() {
   if (!turnWorkflowEvidenceTestText.includes("runBattleTurnWorkflowEvidence(null)")) {
     violations.push(`${rel(turnWorkflowEvidenceTestFile)} must cover null turn workflow evidence events`);
   }
+  for (const required of [
+    "keeps turn workflow evidence stored when debug output fails",
+    "storageWriteOk: true",
+    "console blocked",
+  ]) {
+    if (!turnWorkflowEvidenceTestText.includes(required)) {
+      violations.push(`${rel(turnWorkflowEvidenceTestFile)} must cover ${required}`);
+    }
+  }
   const actionEvidencePersistenceTestFile = path.join(
     root,
     "src/battle/battle-action-evidence-persistence.test.js"
