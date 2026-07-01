@@ -93,12 +93,16 @@ function decideBattleAction(turnContext = {}) {
   const steps = [];
   for (const step of ACTION_STEPS) {
     const result = decideActionStep(step, actionContext);
-    const previousEffectEvidence = readBattleActionEffectEvidence();
+    const previousEffectEvidence = readEffectEvidenceSafely();
     const dispatch = applyActionResultStep(result, snap);
     const acted = dispatch.acted;
     const stepTrace = { capability: step.capability, result, acted };
-    const effectEvidence = dispatch.effectEvidence || readFreshEffectEvidence(previousEffectEvidence);
+    const freshEffectEvidence = readFreshEffectEvidence(previousEffectEvidence.value);
+    const effectEvidence = dispatch.effectEvidence || freshEffectEvidence.value;
     if (effectEvidence) stepTrace.effectEvidence = effectEvidence;
+    if (previousEffectEvidence.error || freshEffectEvidence.error) {
+      stepTrace.effectEvidenceReadError = previousEffectEvidence.error || freshEffectEvidence.error;
+    }
     steps.push(stepTrace);
     if (acted) {
       recordDecisionEvidence(steps);
@@ -109,12 +113,30 @@ function decideBattleAction(turnContext = {}) {
   return false;
 }
 
+function readEffectEvidenceSafely() {
+  try {
+    return { value: readBattleActionEffectEvidence(), error: undefined };
+  } catch (error) {
+    return { value: undefined, error: error?.message || String(error) };
+  }
+}
+
 function readFreshEffectEvidence(previousEffectEvidence) {
-  const effectEvidence = readBattleActionEffectEvidence();
-  if (!effectEvidence) return undefined;
-  return JSON.stringify(effectEvidence) === JSON.stringify(previousEffectEvidence)
-    ? undefined
-    : effectEvidence;
+  const current = readEffectEvidenceSafely();
+  if (current.error) return current;
+  const effectEvidence = current.value;
+  if (!effectEvidence) return { value: undefined, error: undefined };
+  try {
+    return {
+      value:
+        JSON.stringify(effectEvidence) === JSON.stringify(previousEffectEvidence)
+          ? undefined
+          : effectEvidence,
+      error: undefined,
+    };
+  } catch (error) {
+    return { value: effectEvidence, error: error?.message || String(error) };
+  }
 }
 
 function rejectUnknownActionDecisionEvent(event) {

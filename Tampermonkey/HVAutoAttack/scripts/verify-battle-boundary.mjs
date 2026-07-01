@@ -728,7 +728,9 @@ function checkTurnEntry() {
     "const steps = []",
     "const stepTrace = { capability: step.capability, result, acted }",
     "if (effectEvidence) stepTrace.effectEvidence = effectEvidence",
+    "effectEvidenceReadError",
     "steps.push(stepTrace)",
+    "readEffectEvidenceSafely",
     "readFreshEffectEvidence",
     "recordDecisionEvidence(steps)",
     "rejectUnknownActionDecisionEvent",
@@ -811,6 +813,10 @@ function checkTurnEntry() {
     root,
     "src/battle/battle-action-decision-evidence-failure.test.js"
   );
+  const actionDecisionEffectEvidenceFailureTestFile = path.join(
+    root,
+    "src/battle/battle-action-decision-effect-evidence-failure.test.js"
+  );
   const actionDecisionTestText = fs.existsSync(actionDecisionTestFile)
     ? fs.readFileSync(actionDecisionTestFile, "utf8")
     : "";
@@ -851,6 +857,21 @@ function checkTurnEntry() {
       violations.push(`${rel(actionDecisionEvidenceFailureTestFile)} must cover ${required}`);
     }
   }
+  const actionDecisionEffectEvidenceFailureTestText = fs.existsSync(
+    actionDecisionEffectEvidenceFailureTestFile
+  )
+    ? fs.readFileSync(actionDecisionEffectEvidenceFailureTestFile, "utf8")
+    : "";
+  for (const required of [
+    "keeps acted decisions acted when effect evidence reads throw",
+    "effectEvidenceReadError",
+    "effect evidence read failed",
+    "acted: true",
+  ]) {
+    if (!actionDecisionEffectEvidenceFailureTestText.includes(required)) {
+      violations.push(`${rel(actionDecisionEffectEvidenceFailureTestFile)} must cover ${required}`);
+    }
+  }
   const actionDecisionEvidenceText = fs.readFileSync(actionDecisionEvidenceFile, "utf8");
   for (const required of [
     "BattleActionDecisionEvidenceEvent",
@@ -865,6 +886,7 @@ function checkTurnEntry() {
     "error: result.error",
     "result.plan?.type ?? result.plan?.kind",
     "acted: Boolean(step.acted)",
+    "effectEvidenceReadError: step.effectEvidenceReadError",
     "effect: summarizeEffectEvidence(step.effectEvidence)",
     "knownResultKind: effectEvidence.knownResultKind",
     "step.effectEvidence?.failureReason",

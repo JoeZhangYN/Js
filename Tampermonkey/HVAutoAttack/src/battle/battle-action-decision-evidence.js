@@ -49,6 +49,7 @@ function recordDecisionTrace(event, deps) {
       result: summarizeResult(step.result),
       acted: Boolean(step.acted),
       failureReason: classifyDecisionStepFailure(step),
+      effectEvidenceReadError: step.effectEvidenceReadError,
       effect: summarizeEffectEvidence(step.effectEvidence),
     })),
     at: new Date().toISOString(),
