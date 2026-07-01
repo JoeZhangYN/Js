@@ -10,8 +10,14 @@ import {
   runBattlePauseControlsAutomation,
 } from "./battle-pause-controls.js";
 import { BattleLifecycleEvent, runBattleLifecycleAutomation } from "./battle-lifecycle.js";
+import {
+  BattleAutomationEvidenceEvent,
+  runBattleAutomationEvidence,
+} from "./battle-automation-evidence.js";
 
 const EVENT_PAGE_READY = "pageReady";
+const EVENT_UNKNOWN_BATTLE_AUTOMATION = "unknownBattleAutomationEvent";
+const OUTCOME_REJECTED = "rejected";
 
 export const BattleEvent = Object.freeze({
   PAGE_READY: EVENT_PAGE_READY,
@@ -60,14 +66,43 @@ function runInitialBattleTurn() {
   runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
 }
 
-function runPageReadyStartup() {
-  for (const step of PAGE_READY_STARTUP_STEPS) step.run();
+function runPageReadyStartup(deps) {
+  const steps = [];
+  for (const step of PAGE_READY_STARTUP_STEPS) {
+    const result = step.run();
+    steps.push({ capability: step.capability, result: result === undefined ? true : result });
+  }
+  deps.recordStartup(EVENT_PAGE_READY, true, steps);
+  return true;
 }
 
 const battleEventHandlers = Object.freeze({
-  [EVENT_PAGE_READY]: runPageReadyStartup,
+  [EVENT_PAGE_READY]: (event, deps) => runPageReadyStartup(deps),
 });
 
-export function runBattleAutomation(event = { type: EVENT_PAGE_READY }) {
-  return battleEventHandlers[event?.type]?.(event);
+function rejectUnknownBattleAutomationEvent(event, deps) {
+  const result = {
+    outcome: OUTCOME_REJECTED,
+    reason: EVENT_UNKNOWN_BATTLE_AUTOMATION,
+    eventType: event?.type ?? null,
+  };
+  deps.recordStartup(EVENT_UNKNOWN_BATTLE_AUTOMATION, result, [
+    { capability: "routeEvent", result: false, reason: EVENT_UNKNOWN_BATTLE_AUTOMATION, eventType: result.eventType },
+  ]);
+  return false;
+}
+
+export function runBattleAutomation(
+  event = { type: EVENT_PAGE_READY },
+  deps = {
+    recordStartup: (phase, result, steps) =>
+      runBattleAutomationEvidence({
+        type: BattleAutomationEvidenceEvent.RECORD_STARTUP,
+        phase,
+        result,
+        steps,
+      }),
+  }
+) {
+  return battleEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownBattleAutomationEvent(event, deps);
 }

@@ -4,6 +4,13 @@ import path from "node:path";
 const root = process.cwd();
 const specs = [
   {
+    owner: "src/battle/battle-automation-evidence.js",
+    test: "src/battle/battle-automation-evidence.test.js",
+    handler: "battleAutomationEvidenceEventHandlers[event?.type]",
+    nullTest: "rejects null automation evidence events without writing diagnostics",
+    evidenceKey: "HVAA:lastBattleAutomation",
+  },
+  {
     owner: "src/battle/battle-action-decision-evidence.js",
     test: "src/battle/battle-action-decision-evidence.test.js",
     handler: "battleActionDecisionEvidenceEventHandlers[event?.type]",
@@ -60,6 +67,7 @@ const commandEvidenceTestText = read("src/battle/battle-command-evidence.test.js
 const decisionEvidenceText = read("src/battle/battle-action-decision-evidence.js");
 const effectEvidenceText = read("src/battle/battle-action-effect-evidence.js");
 const lifecycleEvidenceText = read("src/battle/battle-action-lifecycle-evidence.js");
+const automationEvidenceText = read("src/battle/battle-automation-evidence.js");
 const actionEvidencePersistenceTestText = read(
   "src/battle/battle-action-evidence-persistence.test.js"
 );
@@ -99,6 +107,9 @@ for (const required of [
   }
 }
 for (const required of ["storageWriteOk", "storageWriteError"]) {
+  if (!automationEvidenceText.includes(required)) {
+    violations.push(`src/battle/battle-automation-evidence.js must expose automation persistence evidence ${required}`);
+  }
   if (!decisionEvidenceText.includes(required)) {
     violations.push(`src/battle/battle-action-decision-evidence.js must expose decision persistence evidence ${required}`);
   }

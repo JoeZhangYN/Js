@@ -35,13 +35,14 @@ vi.mock("./battle-lifecycle.js", () => ({
 
 beforeEach(() => {
   document.body.innerHTML = '<div id="battle_main"></div>';
+  window.sessionStorage.clear();
   for (const fn of Object.values(mocks)) fn.mockClear();
   mocks.gE.mockImplementation((selector) => document.querySelector(selector));
 });
 
 describe("runBattleAutomation", () => {
   it("starts battle page capabilities through the event entry", () => {
-    runBattleAutomation({ type: BattleEvent.PAGE_READY });
+    expect(runBattleAutomation({ type: BattleEvent.PAGE_READY })).toBe(true);
 
     expect(mocks.runBattlePauseControlsAutomation).toHaveBeenCalledWith({ type: "install" });
     expect(mocks.runBattleActionEventBridgeAutomation).toHaveBeenCalledWith({ type: "install" });
@@ -59,19 +60,54 @@ describe("runBattleAutomation", () => {
     expect(mocks.runBattleLifecycleAutomation.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.runBattleRoundStartAutomation.mock.invocationCallOrder[0]
     );
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleAutomation"))).toMatchObject({
+      phase: "pageReady",
+      result: true,
+      steps: [
+        { capability: "pauseControls", result: true },
+        { capability: "actionEventBridge", result: true },
+        { capability: "battleStarted", result: true },
+        { capability: "roundStarted", result: true },
+        { capability: "initialBattleTurn", result: true },
+      ],
+    });
   });
 
-  it("ignores unknown events", () => {
-    expect(runBattleAutomation({ type: "unknown" })).toBeUndefined();
+  it("rejects unknown events with structured startup evidence", () => {
+    expect(runBattleAutomation({ type: "unknown" })).toBe(false);
     expect(mocks.runBattleActionEventBridgeAutomation).not.toHaveBeenCalled();
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleAutomation"))).toMatchObject({
+      phase: "unknownBattleAutomationEvent",
+      result: {
+        outcome: "rejected",
+        reason: "unknownBattleAutomationEvent",
+        eventType: "unknown",
+      },
+      steps: [
+        {
+          capability: "routeEvent",
+          result: false,
+          reason: "unknownBattleAutomationEvent",
+          eventType: "unknown",
+        },
+      ],
+    });
   });
 
-  it("ignores null events without starting battle page capabilities", () => {
-    expect(runBattleAutomation(null)).toBeUndefined();
+  it("rejects null events without starting battle page capabilities", () => {
+    expect(runBattleAutomation(null)).toBe(false);
     expect(mocks.runBattlePauseControlsAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleActionEventBridgeAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleRoundStartAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleLifecycleAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleTurnAutomation).not.toHaveBeenCalled();
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleAutomation"))).toMatchObject({
+      phase: "unknownBattleAutomationEvent",
+      result: {
+        outcome: "rejected",
+        reason: "unknownBattleAutomationEvent",
+        eventType: null,
+      },
+    });
   });
 });

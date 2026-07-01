@@ -238,6 +238,10 @@ function checkBattleEntry() {
     "startBattleRound",
     "runInitialBattleTurn",
     "runPageReadyStartup",
+    "BattleAutomationEvidenceEvent.RECORD_STARTUP",
+    "runBattleAutomationEvidence",
+    "rejectUnknownBattleAutomationEvent",
+    "unknownBattleAutomationEvent",
     'capability: "pauseControls"',
     'capability: "actionEventBridge"',
     'capability: "battleStarted"',
@@ -255,16 +259,24 @@ function checkBattleEntry() {
   ) {
     violations.push(`${rel(battleFile)} must own frozen explicit page-ready startup order`);
   }
-  const pageReadyStartupBody =
-    text.match(/function runPageReadyStartup\(\) \{[\s\S]*?\n\}/)?.[0] || "";
-  if (!/for\s*\(\s*const\s+step\s+of\s+PAGE_READY_STARTUP_STEPS\s*\)/.test(pageReadyStartupBody)) {
+  if (!/function runPageReadyStartup\(deps\)[\s\S]*for\s*\(\s*const\s+step\s+of\s+PAGE_READY_STARTUP_STEPS\s*\)/.test(text)) {
     violations.push(`${rel(battleFile)} must run page-ready startup through PAGE_READY_STARTUP_STEPS`);
   }
-  if (!/const battleEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PAGE_READY\]: runPageReadyStartup/.test(text)) {
+  if (
+    !/const battleEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PAGE_READY\]: \(event, deps\) => runPageReadyStartup\(deps\)/.test(
+      text
+    )
+  ) {
     violations.push(`${rel(battleFile)} must route battle events through battleEventHandlers`);
   }
   if (!text.includes("battleEventHandlers[event?.type]")) {
     violations.push(`${rel(battleFile)} must reject null battle page events without startup side effects`);
+  }
+  if (!text.includes("recordStartup(EVENT_PAGE_READY, true, steps)")) {
+    violations.push(`${rel(battleFile)} must record page-ready startup evidence`);
+  }
+  if (!text.includes("rejectUnknownBattleAutomationEvent(event, deps)")) {
+    violations.push(`${rel(battleFile)} must record rejected battle automation evidence`);
   }
   const entryBody =
     text.match(/export function runBattleAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
@@ -303,8 +315,15 @@ function checkBattleEntry() {
     violations.push("src/pages/page-automation.js must not call no-arg battle entry");
   }
   const battleTestText = fs.readFileSync(path.join(root, "src/battle/battle-automation.test.js"), "utf8");
-  if (!battleTestText.includes("ignores null events without starting battle page capabilities")) {
-    violations.push("src/battle/battle-automation.test.js must cover null battle page events");
+  for (const required of [
+    "rejects null events without starting battle page capabilities",
+    "rejects unknown events with structured startup evidence",
+    "HVAA:lastBattleAutomation",
+    "unknownBattleAutomationEvent",
+  ]) {
+    if (!battleTestText.includes(required)) {
+      violations.push(`src/battle/battle-automation.test.js must cover ${required}`);
+    }
   }
 }
 

@@ -141,6 +141,7 @@ for (const required of [
   "reportBattleStarted",
   "startBattleRound",
   "runInitialBattleTurn",
+  "runBattleAutomationEvidence",
   "BattleLifecycleEvent.BATTLE_STARTED",
   'capability: "pauseControls"',
   'capability: "actionEventBridge"',
