@@ -84,6 +84,7 @@ requireText(owner, [
   "BattleActionLifecycleEvent.ACTION_STARTED",
   "BattleActionLifecycleEvent.ACTION_ENDED",
   "runBattleActionLifecycleAutomation",
+  "rejectUnknownActionEventBridgeEvent",
   "BattleApiBridgeEvent.INSTALL",
   "eventStart",
   "eventEnd",
@@ -109,6 +110,22 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_INSTALL\]/.test(ownerText)) {
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
+if (
+  !ownerText.includes(
+    "battleActionEventBridgeEventHandlers[event?.type]?.(event) ?? rejectUnknownActionEventBridgeEvent(event)"
+  )
+) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route unknown events through lifecycle evidence`);
+}
+const ownerTestText = fs.existsSync(path.join(root, ownerTest)) ? fs.readFileSync(path.join(root, ownerTest), "utf8") : "";
+for (const required of [
+  "rejects unknown events",
+  "rejects null events through lifecycle evidence instead of throwing",
+]) {
+  if (!ownerTestText.includes(required)) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
 }
 if (/\bapi_call\b|\bapi_response\b|sessionStorage\.delay\b|\.textContent\s*=/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not own API bridge script injection`);

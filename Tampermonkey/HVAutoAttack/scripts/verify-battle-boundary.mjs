@@ -824,6 +824,16 @@ function checkActionEventBridgeEntry() {
       `${rel(actionEventBridgeFile)} must install battle api bridge through its entry`
     );
   }
+  if (!text.includes("rejectUnknownActionEventBridgeEvent")) {
+    violations.push(`${rel(actionEventBridgeFile)} must route unknown bridge events to lifecycle evidence`);
+  }
+  if (
+    !text.includes(
+      "battleActionEventBridgeEventHandlers[event?.type]?.(event) ?? rejectUnknownActionEventBridgeEvent(event)"
+    )
+  ) {
+    violations.push(`${rel(actionEventBridgeFile)} must reject null bridge events without throwing`);
+  }
   if (/\brunSpeed\b|\btimeNow\b|TimeEvent\.EPOCH_MS/.test(text)) {
     violations.push(
       `${rel(actionEventBridgeFile)} battle action speed belongs in runBattleActionSpeedAutomation(event)`

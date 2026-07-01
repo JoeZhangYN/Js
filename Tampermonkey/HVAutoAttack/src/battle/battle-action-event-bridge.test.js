@@ -62,5 +62,13 @@ describe("runBattleActionEventBridgeAutomation", () => {
     expect(runBattleActionEventBridgeAutomation({ type: "unknown" })).toBe(false);
 
     expect(mocks.runBattleApiBridgeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleActionLifecycleAutomation).toHaveBeenCalledWith({ type: "unknown" });
+  });
+
+  it("rejects null events through lifecycle evidence instead of throwing", () => {
+    expect(runBattleActionEventBridgeAutomation(null)).toBe(false);
+
+    expect(mocks.runBattleApiBridgeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleActionLifecycleAutomation).toHaveBeenCalledWith(null);
   });
 });

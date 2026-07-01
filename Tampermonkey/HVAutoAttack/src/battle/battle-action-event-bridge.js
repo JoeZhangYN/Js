@@ -16,6 +16,11 @@ const battleActionEventBridgeEventHandlers = Object.freeze({
   [EVENT_INSTALL]: () => installActionEventBridge(),
 });
 
+function rejectUnknownActionEventBridgeEvent(event) {
+  runBattleActionLifecycleAutomation(event ?? null);
+  return false;
+}
+
 function installActionEventBridge() {
   const eventStart = cE("a");
   eventStart.id = "eventStart";
@@ -36,5 +41,5 @@ function installActionEventBridge() {
 }
 
 export function runBattleActionEventBridgeAutomation(event = { type: EVENT_INSTALL }) {
-  return battleActionEventBridgeEventHandlers[event.type]?.(event) ?? false;
+  return battleActionEventBridgeEventHandlers[event?.type]?.(event) ?? rejectUnknownActionEventBridgeEvent(event);
 }
