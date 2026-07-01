@@ -55,12 +55,17 @@ const ownerText = requireText(owner, [
   "normalizeAttackStatus",
   "OptionEvent.READ_FIELD",
   "BattleActionSpeedEvent.BATTLE_STARTED",
+  "runBattleLifecycleEvidence",
+  "unknownStartRuntimeEvent",
+  "rejectUnknownStartRuntimeEvent",
 ]);
 requireText(ownerTest, [
   "attackStatus",
   "normalizes numeric attack status",
   "rejects unknown events without touching start runtime state",
   "rejects null events without touching start runtime state",
+  "HVAA:lastBattleLifecycle",
+  "unknownStartRuntimeEvent",
 ]);
 
 if (
@@ -75,6 +80,9 @@ if (!/const battleStartRuntimeEventHandlers\s*=\s*Object\.freeze\(/.test(ownerTe
 }
 if (!ownerText.includes("battleStartRuntimeEventHandlers[event?.type]")) {
   violations.push(`${owner.replaceAll("\\", "/")} must reject null events without runtime side effects`);
+}
+if (!ownerText.includes("?? rejectUnknownStartRuntimeEvent(event)")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must record rejected start runtime events`);
 }
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not route events through an if ladder`);

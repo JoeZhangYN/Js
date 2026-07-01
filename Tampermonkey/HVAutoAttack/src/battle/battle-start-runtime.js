@@ -1,9 +1,11 @@
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { g } from "../state/store.js";
 import { BattleActionSpeedEvent, runBattleActionSpeedAutomation } from "./battle-action-speed.js";
+import { BattleLifecycleEvidenceEvent, runBattleLifecycleEvidence } from "./battle-lifecycle-evidence.js";
 
 const EVENT_BATTLE_STARTED = "battleStarted";
 const EVENT_READ_ATTACK_STATUS = "readAttackStatus";
+const EVENT_UNKNOWN_START_RUNTIME = "unknownStartRuntimeEvent";
 const ATTACK_STATUS_RUNTIME_KEY = "attackStatus";
 const ATTACK_STATUS_OPTION_KEY = "attackStatus";
 const DEFAULT_ATTACK_STATUS = 0;
@@ -31,6 +33,16 @@ function readAttackStatus(deps) {
   return normalizeAttackStatus(deps.read(ATTACK_STATUS_RUNTIME_KEY));
 }
 
+function rejectUnknownStartRuntimeEvent(event) {
+  runBattleLifecycleEvidence({
+    type: BattleLifecycleEvidenceEvent.RECORD_LIFECYCLE,
+    phase: EVENT_UNKNOWN_START_RUNTIME,
+    result: false,
+    steps: [{ reason: EVENT_UNKNOWN_START_RUNTIME, eventType: event?.type ?? null }],
+  });
+  return false;
+}
+
 export function runBattleStartRuntimeAutomation(
   event = { type: EVENT_BATTLE_STARTED },
   deps = {
@@ -42,7 +54,7 @@ export function runBattleStartRuntimeAutomation(
       runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.BATTLE_STARTED }),
   }
 ) {
-  return battleStartRuntimeEventHandlers[event?.type]?.(event, deps) ?? false;
+  return battleStartRuntimeEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownStartRuntimeEvent(event);
 }
 
 const battleStartRuntimeEventHandlers = Object.freeze({

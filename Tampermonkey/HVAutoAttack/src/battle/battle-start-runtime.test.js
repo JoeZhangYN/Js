@@ -21,6 +21,7 @@ vi.mock("./battle-action-speed.js", () => ({
 }));
 
 beforeEach(() => {
+  sessionStorage.clear();
   for (const fn of Object.values(mocks)) fn.mockReset();
   mocks.runOptionAutomation.mockReturnValue({});
 });
@@ -72,6 +73,11 @@ describe("runBattleStartRuntimeAutomation", () => {
     expect(deps.read).not.toHaveBeenCalled();
     expect(deps.write).not.toHaveBeenCalled();
     expect(deps.startSpeed).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleLifecycle"))).toMatchObject({
+      phase: "unknownStartRuntimeEvent",
+      result: false,
+      steps: [{ reason: "unknownStartRuntimeEvent", eventType: "unknown" }],
+    });
   });
 
   it("rejects null events without touching start runtime state", () => {
@@ -88,6 +94,11 @@ describe("runBattleStartRuntimeAutomation", () => {
     expect(deps.read).not.toHaveBeenCalled();
     expect(deps.write).not.toHaveBeenCalled();
     expect(deps.startSpeed).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleLifecycle"))).toMatchObject({
+      phase: "unknownStartRuntimeEvent",
+      result: false,
+      steps: [{ reason: "unknownStartRuntimeEvent", eventType: null }],
+    });
   });
 
   it("reads battle start runtime options through the option entry on the default path", () => {
