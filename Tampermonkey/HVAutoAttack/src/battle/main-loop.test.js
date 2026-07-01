@@ -27,6 +27,7 @@ vi.mock("./battle-turn-prelude.js", () => ({
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
+  sessionStorage.clear();
   mocks.runBattleTurnContext.mockReturnValue({
     snap: { snap: true },
     actionOptions: { ok: true },
@@ -53,6 +54,37 @@ describe("runBattleTurnAutomation", () => {
         actionOptions: { ok: true },
       },
     });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
+      stage: "decisionCompleted",
+    });
+  });
+
+  it("records paused turn workflow stage without running the action pipeline", () => {
+    mocks.runBattlePauseAutomation.mockReturnValue(true);
+
+    runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
+
+    expect(mocks.runBattleTurnPrelude).not.toHaveBeenCalled();
+    expect(mocks.runBattleTurnContext).not.toHaveBeenCalled();
+    expect(mocks.runBattleActionDecision).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
+      stage: "paused",
+      detail: { reason: "renderIfPaused" },
+    });
+  });
+
+  it("records failed turn workflow stage before rethrowing", () => {
+    mocks.runBattleTurnContext.mockImplementation(() => {
+      throw new Error("context exploded");
+    });
+
+    expect(() =>
+      runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN })
+    ).toThrow("context exploded");
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
+      stage: "failed",
+      detail: { message: "context exploded" },
+    });
   });
 
   it("rejects unknown turn workflow events", () => {
@@ -60,5 +92,9 @@ describe("runBattleTurnAutomation", () => {
     expect(mocks.runBattlePauseAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleTurnPrelude).not.toHaveBeenCalled();
     expect(mocks.runBattleActionDecision).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
+      stage: "rejected",
+      detail: { eventType: "unknown" },
+    });
   });
 });

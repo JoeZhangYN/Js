@@ -6,6 +6,10 @@ import { BattleTurnContextEvent, runBattleTurnContext } from "./turn-context.js"
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 import { BattleActionDecisionEvent, runBattleActionDecision } from "./battle-action-decision.js";
 import { BattleTurnPreludeEvent, runBattleTurnPrelude } from "./battle-turn-prelude.js";
+import {
+  BattleTurnWorkflowEvidenceEvent,
+  runBattleTurnWorkflowEvidence,
+} from "./battle-turn-workflow-evidence.js";
 
 const EVENT_RUN_CURRENT_TURN = "runCurrentTurn";
 
@@ -17,19 +21,53 @@ const battleTurnWorkflowEventHandlers = Object.freeze({
   [EVENT_RUN_CURRENT_TURN]: runCurrentBattleTurn,
 });
 
-function runCurrentBattleTurn() {
-  if (runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })) return;
-
-  const prelude = runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN });
-  runBattleActionDecision({
-    type: BattleActionDecisionEvent.DECIDE,
-    context: runBattleTurnContext({
-      type: BattleTurnContextEvent.PREPARE,
-      logTelemetry: prelude?.battleLogTelemetry,
-    }),
+function recordTurnWorkflowStage(stage, detail) {
+  runBattleTurnWorkflowEvidence({
+    type: BattleTurnWorkflowEvidenceEvent.RECORD_STAGE,
+    stage,
+    detail,
   });
 }
 
+function runCurrentBattleTurn() {
+  recordTurnWorkflowStage("started");
+  try {
+    if (runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })) {
+      recordTurnWorkflowStage("paused", { reason: "renderIfPaused" });
+      return;
+    }
+
+    const prelude = runBattleTurnPrelude({ type: BattleTurnPreludeEvent.PREPARE_CURRENT_TURN });
+    recordTurnWorkflowStage("preludePrepared", {
+      hasBattleLogTelemetry: Boolean(prelude?.battleLogTelemetry),
+    });
+    const context = runBattleTurnContext({
+      type: BattleTurnContextEvent.PREPARE,
+      logTelemetry: prelude?.battleLogTelemetry,
+    });
+    recordTurnWorkflowStage("contextPrepared", {
+      hasContext: Boolean(context),
+      hasSnap: Boolean(context?.snap),
+      hasActionOptions: Boolean(context?.actionOptions),
+    });
+    runBattleActionDecision({
+      type: BattleActionDecisionEvent.DECIDE,
+      context,
+    });
+    recordTurnWorkflowStage("decisionCompleted");
+  } catch (error) {
+    recordTurnWorkflowStage("failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
+}
+
 export function runBattleTurnAutomation(event = { type: EVENT_RUN_CURRENT_TURN }) {
-  return battleTurnWorkflowEventHandlers[event.type]?.(event) ?? false;
+  const handler = battleTurnWorkflowEventHandlers[event.type];
+  if (!handler) {
+    recordTurnWorkflowStage("rejected", { eventType: event?.type });
+    return false;
+  }
+  return handler(event);
 }

@@ -12,6 +12,10 @@ describe("readRecentDiagnosticEvidence", () => {
       JSON.stringify({ decision: "rejected", detail: { cause: "invalidReloadDelay" } })
     );
     window.sessionStorage.setItem(
+      "HVAA:lastBattleTurnWorkflow",
+      JSON.stringify({ stage: "contextPrepared", detail: { hasContext: true } })
+    );
+    window.sessionStorage.setItem(
       "HVAA:lastBattlePause",
       JSON.stringify({ state: "paused", reason: "autoPause" })
     );
@@ -30,6 +34,7 @@ describe("readRecentDiagnosticEvidence", () => {
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
+      battleTurnWorkflow: { stage: "contextPrepared", detail: { hasContext: true } },
       battlePause: { state: "paused", reason: "autoPause" },
       battleActionLifecycle: { phase: "actionStarted", result: true },
       battleActionDecision: { steps: [{ capability: "attack", acted: false }] },

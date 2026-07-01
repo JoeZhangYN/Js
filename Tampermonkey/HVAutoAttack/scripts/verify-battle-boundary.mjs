@@ -452,10 +452,8 @@ function checkTurnEntry() {
     violations.push(`${rel(mainLoopFile)} must not assemble turn prelude directly`);
   }
   if (
-    !/runBattleTurnContext\(\{\s*type:\s*BattleTurnContextEvent\.PREPARE,\s*logTelemetry:\s*prelude\?\.battleLogTelemetry,\s*\}\)/.test(
-      text
-    ) ||
-    !text.includes("runBattleActionDecision")
+    !/runBattleTurnContext\(\{\s*type:\s*BattleTurnContextEvent\.PREPARE,\s*logTelemetry:\s*prelude\?\.battleLogTelemetry,\s*\}\)/.test(text) ||
+    !/runBattleActionDecision\(\{\s*type:\s*BattleActionDecisionEvent\.DECIDE,\s*context,\s*\}\)/.test(text)
   ) {
     violations.push(
       `${rel(mainLoopFile)} must pass prelude battle log telemetry into prepared turn context before action decision`
@@ -472,6 +470,39 @@ function checkTurnEntry() {
   }
   if (/\bBATTLE_RULES\b|\bBattleRule\b|\brunRules\b/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must not assemble battle action rule chains directly`);
+  }
+  for (const required of [
+    "BattleTurnWorkflowEvidenceEvent.RECORD_STAGE",
+    "runBattleTurnWorkflowEvidence",
+    "recordTurnWorkflowStage",
+    'recordTurnWorkflowStage("started")',
+    'recordTurnWorkflowStage("paused"',
+    'recordTurnWorkflowStage("preludePrepared"',
+    'recordTurnWorkflowStage("contextPrepared"',
+    'recordTurnWorkflowStage("decisionCompleted")',
+    'recordTurnWorkflowStage("failed"',
+    'recordTurnWorkflowStage("rejected"',
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(mainLoopFile)} must record turn workflow evidence ${required}`);
+    }
+  }
+  const turnWorkflowEvidenceFile = path.join(
+    root,
+    "src/battle/battle-turn-workflow-evidence.js"
+  );
+  const turnWorkflowEvidenceText = fs.existsSync(turnWorkflowEvidenceFile)
+    ? fs.readFileSync(turnWorkflowEvidenceFile, "utf8")
+    : "";
+  for (const required of [
+    "BattleTurnWorkflowEvidenceEvent",
+    "runBattleTurnWorkflowEvidence",
+    "DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW",
+    "[HVAA] battle turn workflow",
+  ]) {
+    if (!turnWorkflowEvidenceText.includes(required)) {
+      violations.push(`${rel(turnWorkflowEvidenceFile)} must own ${required}`);
+    }
   }
   if (!/export function runBattleActionDecision\(/.test(actionDecisionText)) {
     violations.push(`${rel(actionDecisionFile)} must expose runBattleActionDecision()`);
