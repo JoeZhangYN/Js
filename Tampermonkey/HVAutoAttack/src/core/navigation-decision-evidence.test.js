@@ -82,6 +82,7 @@ describe("navigation decision evidence", () => {
     expect(readNavigationDecision()).toMatchObject({
       decision: "rejected",
       eventType: NavigationEvent.OPEN_URL,
+      commandReason: null,
       detail: {
         cause: "redirectReasonNotAllowed",
         url: "https://hentaiverse.org/encounter.php",
@@ -96,6 +97,7 @@ describe("navigation decision evidence", () => {
     expect(runNavigationAutomation({ type: NavigationEvent.RELOAD_NOW })).toBe(false);
     expect(readNavigationDecision()).toMatchObject({
       decision: "rejected",
+      commandReason: null,
       detail: { cause: "reloadReasonNotAllowed" },
     });
 

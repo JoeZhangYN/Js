@@ -20,6 +20,8 @@ describe("runNavigationAutomation event rejection", () => {
     expect(runNavigationAutomation(null)).toBe(false);
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastNavigationDecision"))).toMatchObject({
       decision: "rejected",
+      eventType: null,
+      commandReason: null,
       detail: { cause: "unknownNavigationEvent" },
     });
   });

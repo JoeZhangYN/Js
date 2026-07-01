@@ -5,8 +5,8 @@ const NAVIGATION_DECISION_KEY = DiagnosticEvidenceKey.NAVIGATION_DECISION;
 export function recordNavigationDecision(decision, event, detail) {
   const evidence = {
     decision,
-    eventType: event?.type,
-    commandReason: event?.reason,
+    eventType: event?.type ?? null,
+    commandReason: event?.reason ?? null,
     detail,
     at: new Date().toISOString(),
   };

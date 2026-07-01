@@ -173,6 +173,8 @@ if (!owner) {
       "recordNavigationDecision",
       "DiagnosticEvidenceKey.NAVIGATION_DECISION",
       "[HVAA] navigation decision",
+      "eventType: event?.type ?? null",
+      "commandReason: event?.reason ?? null",
       "storageWriteOk",
       "storageWriteError",
     ]) {
@@ -221,6 +223,8 @@ if (!owner) {
       "rejects null navigation events with structured evidence instead of throwing",
       "HVAA:lastNavigationDecision",
       "unknownNavigationEvent",
+      "eventType: null",
+      "commandReason: null",
     ]) {
       if (!navigationRejectionTestText.includes(required)) {
         violations.push(`navigation rejection test must cover ${required}`);
