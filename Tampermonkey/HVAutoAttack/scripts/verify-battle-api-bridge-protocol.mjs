@@ -125,6 +125,7 @@ requireText(responseScriptTest, [
   "routes rejected API responses through the recovery bridge when available",
   "HVAA:battleApiRecovery",
   "bridgeMissing",
+  "recoveryAction",
   "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
   "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
   "failureReason",
@@ -300,6 +301,12 @@ if (!responseScriptText.includes("window.HVAA_battleApiRecovery")) {
 }
 if (!responseScriptText.includes("recordBlockedRecovery")) {
   violations.push(`${responseScript.replaceAll("\\", "/")} must record missing recovery bridge evidence`);
+}
+if (!responseScriptText.includes('recoveryAction: "bridgeMissing"')) {
+  violations.push(`${responseScript.replaceAll("\\", "/")} bridge-missing state must use recoveryAction`);
+}
+if (/recovery\s*:\s*["']bridgeMissing["']/.test(responseScriptText + read(responseScriptTest))) {
+  violations.push("bridge-missing API recovery must not use legacy recovery field");
 }
 if (
   !responseScriptText.includes("const diagnosticEvidence = readRecentDiagnosticEvidence()") ||

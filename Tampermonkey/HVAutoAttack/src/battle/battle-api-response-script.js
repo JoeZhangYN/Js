@@ -51,7 +51,7 @@ export function buildApiResponseScript(worldContext) {
         }),
         repeatCount: 1,
         detail: blockedDetail,
-        recovery: "bridgeMissing",
+        recoveryAction: "bridgeMissing",
       };
       const diagnosticEvidence = readRecentDiagnosticEvidence();
       if (diagnosticEvidence) state.diagnosticEvidence = diagnosticEvidence;

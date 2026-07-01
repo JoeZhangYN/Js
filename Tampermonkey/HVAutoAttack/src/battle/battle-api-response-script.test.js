@@ -30,7 +30,7 @@ describe("buildApiResponseScript", () => {
 
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
       repeatCount: 1,
-      recovery: "bridgeMissing",
+      recoveryAction: "bridgeMissing",
       detail: {
         responseKind: "jsonReload",
         status: 200,
@@ -83,7 +83,7 @@ describe("buildApiResponseScript", () => {
     ).toBe(false);
 
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
-      recovery: "bridgeMissing",
+      recoveryAction: "bridgeMissing",
       diagnosticEvidence: {
         battleActionDecision: {
           steps: [
