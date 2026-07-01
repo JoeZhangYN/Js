@@ -2689,7 +2689,20 @@ const bindEquip = function (equip, ctx) {
       } else {
         name = equip.info.name;
       }
-      return filters.some((f) => $equip.filter.test(f, equip, name));
+      filters = Array.isArray(filters) ? filters : [filters];
+      const errors = [];
+      const matched = filters.some((filter) => {
+        try {
+          return $equip.filter.test(filter, equip, name);
+        } catch (error) {
+          errors.push({ filter, error: error?.message || String(error) });
+          return false;
+        }
+      });
+      if (errors.length) {
+        console.warn('[HVUT] equipment filter failed', { equip: name, errors });
+      }
+      return matched;
     },
     test: function (filter, equip, name = equip.info.name) {
       if (!filter) {
