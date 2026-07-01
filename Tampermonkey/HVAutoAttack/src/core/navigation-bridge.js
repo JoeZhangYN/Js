@@ -5,10 +5,11 @@ import {
   runNavigationAutomation,
 } from "./navigate.js";
 
-function reloadCurrentPage(reason) {
+function reloadCurrentPage(reason, detail) {
   return runNavigationAutomation({
     type: NavigationEvent.RELOAD_NOW,
     reason,
+    detail,
   });
 }
 

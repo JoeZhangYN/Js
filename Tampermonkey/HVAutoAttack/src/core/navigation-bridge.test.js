@@ -4,6 +4,8 @@ describe("navigation bridge", () => {
   afterEach(() => {
     delete window.HVAA_navigation;
     delete globalThis.unsafeWindow;
+    sessionStorage.clear();
+    vi.useRealTimers();
     vi.resetModules();
   });
 
@@ -19,6 +21,27 @@ describe("navigation bridge", () => {
     );
     expect(globalThis.unsafeWindow.HVAA_navigation.reloadCurrentPage).toBe(
       window.HVAA_navigation.reloadCurrentPage
+    );
+  });
+
+  it("passes reload detail through the bridge", async () => {
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    globalThis.unsafeWindow = {};
+
+    vi.resetModules();
+    await import("./navigation-bridge.js");
+
+    window.HVAA_navigation.reloadCurrentPage("battleApiResponse", {
+      responseKind: "jsonReload",
+    });
+
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA] reload",
+      expect.objectContaining({
+        reason: "battleApiResponse",
+        detail: { responseKind: "jsonReload" },
+      })
     );
   });
 });

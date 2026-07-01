@@ -56,10 +56,10 @@ reportPreviousNavigationAudit();
 installExternalUnloadAudit();
 
 /** 重定向当前页面（带 5s 后重试）。 */
-function goto(reason) {
-  writeNavigationAudit("reload", { reason });
+function goto(reason, detail) {
+  writeNavigationAudit("reload", { reason, detail });
   window.location.href = window.location;
-  setTimeout(() => goto(reason), 5000);
+  setTimeout(() => goto(reason, detail), 5000);
 }
 
 function isReloadReasonAllowed(event) {
@@ -107,7 +107,7 @@ function openWindow(url, name, features) {
 const navigationEventHandlers = Object.freeze({
   [EVENT_RELOAD_NOW]: (event) => {
     if (!isReloadReasonAllowed(event)) return false;
-    goto(event.reason);
+    goto(event.reason, event.detail);
     return true;
   },
   [EVENT_SCHEDULE_RELOAD]: (event) => scheduleReload(event),

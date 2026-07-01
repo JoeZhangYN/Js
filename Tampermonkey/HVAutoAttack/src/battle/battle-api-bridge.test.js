@@ -56,6 +56,8 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[1].textContent).toContain("JSON.parse(b.responseText)");
     expect(deps.scripts[1].textContent).toContain("reloadFromApiResponse");
     expect(deps.scripts[1].textContent).toContain("nav.ReloadReason.BATTLE_API_RESPONSE");
+    expect(deps.scripts[1].textContent).toContain("responseKind");
+    expect(deps.scripts[1].textContent).toContain("actionDetail");
     expect(deps.scripts[1].textContent).not.toContain("window.location.href");
   });
 
@@ -93,7 +95,7 @@ describe("runBattleApiBridgeAutomation", () => {
     const script = deps.scripts[1].textContent;
     expect(script).not.toContain("window.location.search");
     expect(script).not.toContain("location.href");
-    expect(script).toContain("nav.reloadCurrentPage(reason)");
+    expect(script).toContain("nav.reloadCurrentPage(reason,");
     expect(script).toContain("return a");
     expect(script).toContain("return false");
   });
@@ -105,7 +107,19 @@ describe("runBattleApiBridgeAutomation", () => {
 
     const script = deps.scripts[1].textContent;
     expect(script).toContain("a.error || a.reload");
-    expect(script).toContain("reloadFromApiResponse();\n          return false;");
+    expect(script).toContain("reloadFromApiResponse({");
+    expect(script).toContain("return false;");
+  });
+
+  it("records API response reload evidence for diagnostics", () => {
+    const deps = makeDeps();
+
+    runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }, deps);
+
+    const script = deps.scripts[1].textContent;
+    expect(script).toContain('responseKind: a.reload ? "jsonReload" : "jsonError"');
+    expect(script).toContain('responseKind: "httpStatus"');
+    expect(script).toContain("action: actionDetail()");
   });
 
   it("rejects unknown events", () => {

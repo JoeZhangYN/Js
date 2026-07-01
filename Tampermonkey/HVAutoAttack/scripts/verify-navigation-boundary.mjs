@@ -51,6 +51,9 @@ if (!owner) {
   if (!source.includes("isReloadReasonAllowed")) {
     violations.push("reloadNow/scheduleReload must validate an allowed reload reason");
   }
+  if (!source.includes("goto(event.reason, event.detail)")) {
+    violations.push("reloadNow must preserve reload detail in navigation audit");
+  }
   if (!source.includes("isRedirectReasonAllowed")) {
     violations.push("openUrl must validate an allowed redirect reason");
   }
@@ -81,7 +84,12 @@ if (!owner) {
     const bridgeTestText = bridgeTestSource
       ? stripComments(readFileSync(bridgeTestSource.abs, "utf8"))
       : "";
-    if (!bridgeText.includes("unsafeWindow") || !bridgeTestText.includes("BATTLE_API_RESPONSE")) {
+    if (
+      !bridgeText.includes("unsafeWindow") ||
+      !bridgeText.includes("detail") ||
+      !bridgeTestText.includes("BATTLE_API_RESPONSE") ||
+      !bridgeTestText.includes("passes reload detail through the bridge")
+    ) {
       violations.push("navigation bridge must expose reload reasons to the page context");
     }
   }

@@ -44,8 +44,11 @@ requireText(ownerTest, [
   "does not navigate directly from generated API response handling",
   "blocks native process_action for API reload and error responses",
   "nav.ReloadReason.BATTLE_API_RESPONSE",
-  "nav.reloadCurrentPage(reason)",
+  "nav.reloadCurrentPage(reason,",
   "a.error || a.reload",
+  "records API response reload evidence for diagnostics",
+  "responseKind",
+  "actionDetail",
   "uses the current battle world API endpoint on the default path",
   "https://hentaiverse.org/isekai/json",
   "window.sessionStorage.delay * 1",
@@ -96,7 +99,7 @@ if (/window\.location|location\.href|window\.location\.search/.test(ownerText)) 
     `${owner.replaceAll("\\", "/")} must not navigate directly from API response handling`
   );
 }
-if (!ownerText.includes("function reloadFromApiResponse()")) {
+if (!ownerText.includes("function reloadFromApiResponse(detail)")) {
   violations.push(`${owner.replaceAll("\\", "/")} must classify API response reloads explicitly`);
 }
 if (!ownerText.includes("nav.ReloadReason.BATTLE_API_RESPONSE")) {
@@ -105,10 +108,16 @@ if (!ownerText.includes("nav.ReloadReason.BATTLE_API_RESPONSE")) {
 if (!ownerText.includes("a.error || a.reload")) {
   violations.push(`${owner.replaceAll("\\", "/")} must intercept API error/reload responses`);
 }
-if (!/a\.error \|\| a\.reload[\s\S]*reloadFromApiResponse\(\);[\s\S]*return false;/.test(ownerText)) {
+if (!/a\.error \|\| a\.reload[\s\S]*reloadFromApiResponse\(\{[\s\S]*return false;/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must block native process_action after API error/reload responses`
   );
+}
+if (!ownerText.includes("action: actionDetail()")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must audit the rejected API action shape`);
+}
+if (!ownerText.includes('responseKind: "httpStatus"')) {
+  violations.push(`${owner.replaceAll("\\", "/")} must classify non-200 API responses`);
 }
 
 if (violations.length) {

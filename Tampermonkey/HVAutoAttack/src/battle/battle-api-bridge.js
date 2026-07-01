@@ -63,14 +63,26 @@ function buildApiCallScript(mainUrl, protocol) {
 
 function buildApiResponseScript() {
   return `api_response = ${function (b) {
-    function reloadFromApiResponse() {
+    function actionDetail() {
+      const action = window.info || {};
+      return {
+        mode: action.mode,
+        skill: action.skill,
+        target: action.target,
+        item: action.item,
+      };
+    }
+    function reloadFromApiResponse(detail) {
       const nav = window.HVAA_navigation;
       const reason = nav && nav.ReloadReason && nav.ReloadReason.BATTLE_API_RESPONSE;
       if (nav && nav.reloadCurrentPage && reason) {
-        nav.reloadCurrentPage(reason);
+        nav.reloadCurrentPage(reason, {
+          ...detail,
+          action: actionDetail(),
+        });
         return true;
       }
-      console.warn("[HVAA] navigation bridge missing; battle API reload blocked");
+      console.warn("[HVAA] navigation bridge missing; battle API reload blocked", detail);
       return false;
     }
     if (b.readyState === 4) {
@@ -79,13 +91,21 @@ function buildApiResponseScript() {
         if (a.login !== undefined) {
           return false;
         } else if (a.error || a.reload) {
-          reloadFromApiResponse();
+          reloadFromApiResponse({
+            responseKind: a.reload ? "jsonReload" : "jsonError",
+            status: b.status,
+            error: a.error,
+            reload: a.reload,
+          });
           return false;
         } else {
           return a;
         }
       } else {
-        reloadFromApiResponse();
+        reloadFromApiResponse({
+          responseKind: "httpStatus",
+          status: b.status,
+        });
       }
     }
     return false;
