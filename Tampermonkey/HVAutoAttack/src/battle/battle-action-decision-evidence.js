@@ -51,8 +51,15 @@ function recordDecisionTrace(event, deps) {
     at: new Date().toISOString(),
   };
   try {
-    deps.sessionStorage.setItem(ACTION_DECISION_EVIDENCE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+    deps.sessionStorage.setItem(
+      ACTION_DECISION_EVIDENCE_KEY,
+      JSON.stringify({ ...evidence, storageWriteOk: true })
+    );
+    evidence.storageWriteOk = true;
+  } catch (error) {
+    evidence.storageWriteOk = false;
+    evidence.storageWriteError = error?.message || String(error);
+    deps.debug("[HVAA] battle action decision", evidence);
     return false;
   }
   deps.debug("[HVAA] battle action decision", evidence);

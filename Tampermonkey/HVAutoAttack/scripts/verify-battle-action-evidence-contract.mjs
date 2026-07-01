@@ -57,7 +57,11 @@ for (const spec of specs) {
 
 const commandEvidenceText = read("src/battle/battle-command-evidence.js");
 const commandEvidenceTestText = read("src/battle/battle-command-evidence.test.js");
+const decisionEvidenceText = read("src/battle/battle-action-decision-evidence.js");
 const effectEvidenceText = read("src/battle/battle-action-effect-evidence.js");
+const actionEvidencePersistenceTestText = read(
+  "src/battle/battle-action-evidence-persistence.test.js"
+);
 for (const required of [
   "acted: commandActed(event.result)",
   "failureReason: commandFailureReason(event)",
@@ -84,9 +88,26 @@ for (const required of [
   "export function readBattleActionEffectEvidence",
   "JSON.parse(storage.getItem(ACTION_EFFECT_EVIDENCE_KEY)",
   "knownResultKind:",
+  "storageWriteOk",
+  "storageWriteError",
 ]) {
   if (!effectEvidenceText.includes(required)) {
     violations.push(`src/battle/battle-action-effect-evidence.js must expose effect evidence reader ${required}`);
+  }
+}
+for (const required of ["storageWriteOk", "storageWriteError"]) {
+  if (!decisionEvidenceText.includes(required)) {
+    violations.push(`src/battle/battle-action-decision-evidence.js must expose decision persistence evidence ${required}`);
+  }
+}
+for (const required of [
+  "keeps decision evidence visible when storage is unavailable",
+  "keeps effect evidence visible when storage is unavailable",
+  "storageWriteOk: false",
+  'storageWriteError: "quota"',
+]) {
+  if (!actionEvidencePersistenceTestText.includes(required)) {
+    violations.push(`src/battle/battle-action-evidence-persistence.test.js must cover ${required}`);
   }
 }
 
