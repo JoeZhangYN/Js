@@ -67,11 +67,17 @@ for (const required of [
   "filterErrors.push(...result.errors)",
   "filter: \"<lotteryFilters>\"",
   "matched: false",
+  "_bottom.render_lottery_equip_text = function(ss, equip, lottery)",
+  "lottery.renderError = renderError",
+  'console.warn("[HVUT] lottery notification equip render failed"',
+  "return String(equip ?? \"\")",
   "let filterResult = { matched: false, error: null }",
   "filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip) || filterResult",
   'console.warn("[HVUT] lottery notification filter decision failed"',
   "lottery.filterError = filterResult.error",
-  "_bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip)",
+  "_bottom.node[ss].equip.textContent = _bottom.render_lottery_equip_text(ss, lottery.equip, lottery)",
+  "const lotteryEquipText = _bottom.render_lottery_equip_text(ss, lottery.equip, lottery)",
+  "_bottom.node[ss].equip.textContent = lotteryEquipText",
   '$config.set("lt_notif", json, "hvut_")',
   'console.warn("[HVUT] lottery notification persistence failed"',
   'console.warn("[HVUT] lottery notification popup failed"',
@@ -95,6 +101,8 @@ for (const forbidden of [
   "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
   "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",
   "Array.isArray($config.settings.lotteryFilters)?$config.settings.lotteryFilters:[$config.settings.lotteryFilters]",
+  "_bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip)",
+  'popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${equip_name_text_str(lottery.equip)}</p>`)',
 ]) {
   if (lotteryRegion.includes(forbidden)) {
     errors.push(`lottery artifact uses old filter path: ${forbidden}`);

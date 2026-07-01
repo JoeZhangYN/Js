@@ -10768,6 +10768,17 @@ if ($config.settings.lotteryNotification) {
     }
   };
 
+  _bottom.render_lottery_equip_text = function (ss, equip, lottery) {
+    try {
+      return equip_name_text_str(equip);
+    } catch (error) {
+      const renderError = error?.message || String(error);
+      if (lottery && typeof lottery === 'object') lottery.renderError = renderError;
+      console.warn('[HVUT] lottery notification equip render failed', { ss, equip, error });
+      return String(equip ?? '');
+    }
+  };
+
   _bottom.show_lottery = function (ss) {
     const { lottery } = _bottom.read_lottery_state(ss);
     const now = Date.now();
@@ -10785,7 +10796,7 @@ if ($config.settings.lotteryNotification) {
       } else if (lottery.check) {
         _bottom.node[ss].div.classList.add('hvut-lt-check');
       }
-      _bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip);
+      _bottom.node[ss].equip.textContent = _bottom.render_lottery_equip_text(ss, lottery.equip, lottery);
       _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
       return;
     }
@@ -10843,7 +10854,8 @@ if ($config.settings.lotteryNotification) {
       const drawDay = new Date(date).toISOString().slice(0, 10);
       const shouldPopup = lottery.check && lottery.popDay !== drawDay;
       if (shouldPopup) lottery.popDay = drawDay;
-      _bottom.node[ss].equip.textContent = equip_name_text_str(lottery.equip);
+      const lotteryEquipText = _bottom.render_lottery_equip_text(ss, lottery.equip, lottery);
+      _bottom.node[ss].equip.textContent = lotteryEquipText;
       _bottom.node[ss].time.textContent = time_format(lottery.date - now, 1);
       try {
         $config.set('lt_notif', json, 'hvut_');
@@ -10854,7 +10866,7 @@ if ($config.settings.lotteryNotification) {
       if (shouldPopup) {
         try {
           const date_text = eqname.previousElementSibling?.textContent || '';
-          popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${equip_name_text_str(lottery.equip)}</p>`);
+          popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${lotteryEquipText}</p>`);
         } catch (error) {
           lottery.popupError = error?.message || String(error);
           console.warn('[HVUT] lottery notification popup failed', { ss, error });
