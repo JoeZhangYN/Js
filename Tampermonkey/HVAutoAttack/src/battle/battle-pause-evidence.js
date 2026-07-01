@@ -15,8 +15,15 @@ function recordPauseState(event, deps) {
     at: new Date().toISOString(),
   };
   try {
-    deps.sessionStorage.setItem(BATTLE_PAUSE_EVIDENCE_KEY, JSON.stringify(evidence));
-  } catch {
+    deps.sessionStorage.setItem(
+      BATTLE_PAUSE_EVIDENCE_KEY,
+      JSON.stringify({ ...evidence, storageWriteOk: true })
+    );
+    evidence.storageWriteOk = true;
+  } catch (error) {
+    evidence.storageWriteOk = false;
+    evidence.storageWriteError = error?.message || String(error);
+    deps.debug("[HVAA] battle pause", evidence);
     return false;
   }
   deps.debug("[HVAA] battle pause", evidence);

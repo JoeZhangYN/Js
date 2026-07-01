@@ -12,6 +12,11 @@ import {
   runBattleActionLifecycleEvidence,
 } from "./battle-action-lifecycle-evidence.js";
 import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
+import { BattlePauseEvidenceEvent, runBattlePauseEvidence } from "./battle-pause-evidence.js";
+import {
+  BattleTurnWorkflowEvidenceEvent,
+  runBattleTurnWorkflowEvidence,
+} from "./battle-turn-workflow-evidence.js";
 
 function failingDeps() {
   return {
@@ -101,6 +106,46 @@ describe("battle action evidence persistence failures", () => {
 
     expect(deps.debug).toHaveBeenCalledWith(
       "[HVAA] battle action lifecycle",
+      expect.objectContaining({ storageWriteOk: false, storageWriteError: "quota" })
+    );
+  });
+
+  it("keeps turn workflow evidence visible when storage is unavailable", () => {
+    const deps = failingDeps();
+
+    expect(
+      runBattleTurnWorkflowEvidence(
+        {
+          type: BattleTurnWorkflowEvidenceEvent.RECORD_STAGE,
+          stage: "decisionCompleted",
+          detail: { acted: false },
+        },
+        deps
+      )
+    ).toBe(false);
+
+    expect(deps.debug).toHaveBeenCalledWith(
+      "[HVAA] battle turn workflow",
+      expect.objectContaining({ storageWriteOk: false, storageWriteError: "quota" })
+    );
+  });
+
+  it("keeps pause evidence visible when storage is unavailable", () => {
+    const deps = failingDeps();
+
+    expect(
+      runBattlePauseEvidence(
+        {
+          type: BattlePauseEvidenceEvent.RECORD_STATE,
+          state: "paused",
+          reason: "battleApiResponseRepeated",
+        },
+        deps
+      )
+    ).toBe(false);
+
+    expect(deps.debug).toHaveBeenCalledWith(
+      "[HVAA] battle pause",
       expect.objectContaining({ storageWriteOk: false, storageWriteError: "quota" })
     );
   });

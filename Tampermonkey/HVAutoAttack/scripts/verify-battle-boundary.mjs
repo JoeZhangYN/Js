@@ -515,6 +515,8 @@ function checkTurnEntry() {
     "runBattleTurnWorkflowEvidence",
     "DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW",
     "[HVAA] battle turn workflow",
+    "storageWriteOk",
+    "storageWriteError",
   ]) {
     if (!turnWorkflowEvidenceText.includes(required)) {
       violations.push(`${rel(turnWorkflowEvidenceFile)} must own ${required}`);
@@ -532,6 +534,21 @@ function checkTurnEntry() {
     : "";
   if (!turnWorkflowEvidenceTestText.includes("runBattleTurnWorkflowEvidence(null)")) {
     violations.push(`${rel(turnWorkflowEvidenceTestFile)} must cover null turn workflow evidence events`);
+  }
+  const actionEvidencePersistenceTestFile = path.join(
+    root,
+    "src/battle/battle-action-evidence-persistence.test.js"
+  );
+  const actionEvidencePersistenceTestText = fs.existsSync(actionEvidencePersistenceTestFile)
+    ? fs.readFileSync(actionEvidencePersistenceTestFile, "utf8")
+    : "";
+  for (const required of [
+    "keeps turn workflow evidence visible when storage is unavailable",
+    "storageWriteError: \"quota\"",
+  ]) {
+    if (!actionEvidencePersistenceTestText.includes(required)) {
+      violations.push(`${rel(actionEvidencePersistenceTestFile)} must cover ${required}`);
+    }
   }
   if (!/export function runBattleActionDecision\(/.test(actionDecisionText)) {
     violations.push(`${rel(actionDecisionFile)} must expose runBattleActionDecision()`);

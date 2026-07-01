@@ -69,6 +69,8 @@ function checkEntry() {
     "runBattlePauseEvidence",
     "DiagnosticEvidenceKey.BATTLE_PAUSE",
     "[HVAA] battle pause",
+    "storageWriteOk",
+    "storageWriteError",
   ]) {
     if (!evidenceText.includes(required)) {
       violations.push(`${evidence.replaceAll("\\", "/")} must own ${required}`);
@@ -81,6 +83,16 @@ function checkEntry() {
   const evidenceTestText = fs.readFileSync(path.join(root, evidenceTest), "utf8");
   if (!evidenceTestText.includes("runBattlePauseEvidence(null)")) {
     violations.push(`${evidenceTest.replaceAll("\\", "/")} must cover null pause evidence events`);
+  }
+  const persistenceTest = path.normalize("src/battle/battle-action-evidence-persistence.test.js");
+  const persistenceTestText = fs.readFileSync(path.join(root, persistenceTest), "utf8");
+  for (const required of [
+    "keeps pause evidence visible when storage is unavailable",
+    "storageWriteError: \"quota\"",
+  ]) {
+    if (!persistenceTestText.includes(required)) {
+      violations.push(`${persistenceTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
   }
   const entryBody =
     text.match(/export function runBattlePauseAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";

@@ -14,8 +14,15 @@ function recordTurnWorkflowStage(event, deps) {
     at: new Date().toISOString(),
   };
   try {
-    deps.sessionStorage.setItem(BATTLE_TURN_WORKFLOW_EVIDENCE_KEY, JSON.stringify(evidence));
-  } catch {
+    deps.sessionStorage.setItem(
+      BATTLE_TURN_WORKFLOW_EVIDENCE_KEY,
+      JSON.stringify({ ...evidence, storageWriteOk: true })
+    );
+    evidence.storageWriteOk = true;
+  } catch (error) {
+    evidence.storageWriteOk = false;
+    evidence.storageWriteError = error?.message || String(error);
+    deps.debug("[HVAA] battle turn workflow", evidence);
     return false;
   }
   deps.debug("[HVAA] battle turn workflow", evidence);
