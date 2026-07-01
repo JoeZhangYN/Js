@@ -121,9 +121,11 @@ function openUrl(url, newTab, reason) {
 }
 
 function openWindow(url, name, features, reason) {
-  recordNavigationDecision("accepted", { type: EVENT_OPEN_WINDOW, reason }, { url, name, features });
-  writeNavigationAudit("openWindow", { reason, url, name, features });
-  return window.open(url, name, features);
+  const openedWindow = window.open(url, name, features);
+  const detail = { url, name, features, opened: Boolean(openedWindow) };
+  recordNavigationDecision("accepted", { type: EVENT_OPEN_WINDOW, reason }, detail);
+  writeNavigationAudit("openWindow", { reason, ...detail });
+  return openedWindow;
 }
 
 const navigationEventHandlers = Object.freeze({

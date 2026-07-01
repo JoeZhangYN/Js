@@ -29,6 +29,16 @@ describe("open window navigation audit", () => {
       kind: "openWindow",
       reason: NavigationWindowReason.RIDDLE_POPUP,
       name: "riddleWindow",
+      opened: false,
+    });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastNavigationDecision"))).toMatchObject({
+      decision: "accepted",
+      eventType: NavigationEvent.OPEN_WINDOW,
+      commandReason: NavigationWindowReason.RIDDLE_POPUP,
+      detail: {
+        name: "riddleWindow",
+        opened: false,
+      },
     });
   });
 

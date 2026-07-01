@@ -66,6 +66,9 @@ if (!owner) {
   if (!source.includes("isWindowReasonAllowed")) {
     violations.push("openWindow must validate an allowed window reason");
   }
+  if (!source.includes("opened: Boolean(openedWindow)")) {
+    violations.push("openWindow audit must record whether the popup was actually opened");
+  }
   const auditSource = files.find((file) => file.rel === "core/navigation-audit.js");
   const diagnosticEvidenceSource = files.find((file) => file.rel === "core/diagnostic-evidence.js");
   if (!auditSource) {
@@ -171,6 +174,7 @@ if (!owner) {
       "rejects named popup windows without an allowed reason",
       "NavigationWindowReason.RIDDLE_POPUP",
       "HVAA:lastNavigationAudit",
+      "opened: false",
     ]) {
       if (!openWindowAuditTestText.includes(required)) {
         violations.push(`open window navigation audit test must cover ${required}`);
