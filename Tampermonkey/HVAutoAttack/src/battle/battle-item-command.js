@@ -1,4 +1,5 @@
 // Battle item command: one write entry for gem and inventory item button clicks.
+import { recordNavigationContext } from "../core/navigation-audit.js";
 import { gE } from "../dom/query.js";
 import { itemSelector } from "../dom/selectors.js";
 
@@ -13,6 +14,7 @@ export const BattleItemCommandEvent = Object.freeze({
 function clickGem() {
   const el = gE("#ikey_p");
   if (!el) return false;
+  recordNavigationContext("battleGemClick");
   el.click();
   return true;
 }
@@ -21,6 +23,7 @@ function clickItem(itemId, beforeClick) {
   const el = gE(itemSelector(itemId));
   if (!el) return false;
   beforeClick?.();
+  recordNavigationContext("battleItemClick", { itemId });
   el.click();
   return true;
 }

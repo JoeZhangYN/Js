@@ -4,6 +4,7 @@ import {
   NavigationReloadReason,
   runNavigationAutomation,
 } from "../core/navigate.js";
+import { recordNavigationContext } from "../core/navigation-audit.js";
 import { gE } from "../dom/query.js";
 
 const EVENT_CLICK_AND_RELOAD = "clickAndReload";
@@ -17,6 +18,7 @@ export const BattleFleeCommandEvent = Object.freeze({
 function clickFleeAndScheduleReload() {
   const el = gE(FLEE_BUTTON_ID);
   if (!el) return false;
+  recordNavigationContext("battleFleeClick");
   el.click();
   runNavigationAutomation({
     type: NavigationEvent.SCHEDULE_RELOAD,

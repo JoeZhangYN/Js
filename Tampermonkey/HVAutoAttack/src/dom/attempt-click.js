@@ -7,6 +7,7 @@
 // 此模式至少在 main-loop defend / boss-Imperil / attack 法术阶 / physical-skill-ranking / channel buff 等 ≥10 处复刻 →
 // 抽 helper 防退化（CLAUDE.md 铁律 1(e)：≥2 真重复必抽，反退化锁让旧路径不能再回归）。
 import { gE, isOn } from "./query.js";
+import { recordNavigationContext } from "../core/navigation-audit.js";
 
 /**
  * 探活后 click 目标元素并设 end 标记。
@@ -17,6 +18,9 @@ export function attemptClick(selector) {
   if (!isOn(selector)) return false;
   const el = gE(selector);
   if (!el) return false;
+  recordNavigationContext("battleClick", {
+    selector: typeof selector === "string" ? selector : selector?.id || selector?.className || selector?.tagName,
+  });
   el.click();
   return true;
 }
@@ -37,6 +41,10 @@ export function attemptClickWithTarget(skillSelector, targetSelector) {
   if (!targetEl) return false;
   // 死怪检测：mkey_X 父节点下若存在 nbardead.png → target 已死，弃 click 保 skill click 完整性
   if (targetEl.querySelector('img[src*="nbardead.png"]')) return false;
+  recordNavigationContext("battleClickWithTarget", {
+    skill: typeof skillSelector === "string" ? skillSelector : skillSelector?.id || skillSelector?.tagName,
+    target: typeof targetSelector === "string" ? targetSelector : targetSelector?.id || targetSelector?.tagName,
+  });
   skillEl.click();
   targetEl.click();
   return true;

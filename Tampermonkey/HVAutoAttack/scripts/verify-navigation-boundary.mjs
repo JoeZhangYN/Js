@@ -55,17 +55,29 @@ if (!owner) {
   if (!source.includes("isRedirectReasonAllowed")) {
     violations.push("openUrl must validate an allowed redirect reason");
   }
-  if (!source.includes("writeNavigationAudit")) {
-    violations.push("navigation execution must record an audit before navigating");
-  }
-  if (!source.includes("sessionStorage.setItem") || !source.includes("reportPreviousNavigationAudit")) {
-    violations.push("navigation audit must persist and replay across page reloads");
-  }
-  if (!source.includes("recordExternalUnload") || !source.includes("outsideNavigationEntry")) {
-    violations.push("navigation audit must record unloads that bypass the navigation entry");
-  }
-  if (!source.includes('console.warn(`[HVAA] ${kind}`')) {
-    violations.push("navigation audit must warn before navigating");
+  const auditSource = files.find((file) => file.rel === "core/navigation-audit.js");
+  if (!auditSource) {
+    violations.push("core/navigation-audit.js is missing");
+  } else {
+    const auditText = stripComments(readFileSync(auditSource.abs, "utf8"));
+    if (!source.includes("writeNavigationAudit")) {
+      violations.push("navigation execution must record an audit before navigating");
+    }
+    if (!auditText.includes("sessionStorage.setItem") || !auditText.includes("reportPreviousNavigationAudit")) {
+      violations.push("navigation audit must persist and replay across page reloads");
+    }
+    if (!auditText.includes("recordExternalUnload") || !auditText.includes("outsideNavigationEntry")) {
+      violations.push("navigation audit must record unloads that bypass the navigation entry");
+    }
+    if (!auditText.includes('console.warn(`[HVAA] ${kind}`')) {
+      violations.push("navigation audit must warn before navigating");
+    }
+    if (!auditText.includes("lastAction: readJson(NAVIGATION_CONTEXT_KEY)")) {
+      violations.push("navigation audit must include the last recorded action context");
+    }
+    if (!/\bexport\s+function\s+recordNavigationContext\b/.test(auditText)) {
+      violations.push("navigation audit must expose recordNavigationContext");
+    }
   }
   if (!/Number\.isFinite\(delayMs\)\s*&&\s*delayMs\s*>\s*0/.test(source)) {
     violations.push("scheduled reload delay must be finite and positive");

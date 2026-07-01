@@ -1,10 +1,14 @@
 // 页面导航副作用：唯一对外入口 runNavigationAutomation(event)。
+import {
+  installExternalUnloadAudit,
+  reportPreviousNavigationAudit,
+  writeNavigationAudit,
+} from "./navigation-audit.js";
 
 const EVENT_RELOAD_NOW = "reloadNow";
 const EVENT_SCHEDULE_RELOAD = "scheduleReload";
 const EVENT_OPEN_URL = "openUrl";
 const EVENT_OPEN_WINDOW = "openWindow";
-const NAVIGATION_AUDIT_KEY = "HVAA:lastNavigationAudit";
 
 export const NavigationEvent = Object.freeze({
   RELOAD_NOW: EVENT_RELOAD_NOW,
@@ -47,52 +51,8 @@ export const NavigationRedirectReason = Object.freeze({
 
 const REDIRECT_REASONS = new Set(Object.values(NavigationRedirectReason));
 
-function writeNavigationAudit(kind, payload) {
-  const audit = {
-    kind,
-    ...payload,
-    at: new Date().toISOString(),
-    from: window.location.href,
-  };
-  try {
-    sessionStorage.setItem(NAVIGATION_AUDIT_KEY, JSON.stringify(audit));
-  } catch (_error) {
-    // Navigation must not fail because browser storage is unavailable.
-  }
-  console.warn(`[HVAA] ${kind}`, audit);
-}
-
-function reportPreviousNavigationAudit() {
-  let raw;
-  try {
-    raw = sessionStorage.getItem(NAVIGATION_AUDIT_KEY);
-    if (raw) sessionStorage.removeItem(NAVIGATION_AUDIT_KEY);
-  } catch (_error) {
-    return;
-  }
-  if (!raw) return;
-  try {
-    console.warn("[HVAA] previous navigation", JSON.parse(raw));
-  } catch (_error) {
-    console.warn("[HVAA] previous navigation", raw);
-  }
-}
-
-function recordExternalUnload(event) {
-  try {
-    if (sessionStorage.getItem(NAVIGATION_AUDIT_KEY)) return;
-  } catch (_error) {
-    return;
-  }
-  writeNavigationAudit("externalUnload", {
-    reason: "outsideNavigationEntry",
-    eventType: event.type,
-  });
-}
-
 reportPreviousNavigationAudit();
-window.addEventListener("pagehide", recordExternalUnload);
-window.addEventListener("beforeunload", recordExternalUnload);
+installExternalUnloadAudit();
 
 /** 重定向当前页面（带 5s 后重试）。 */
 function goto(reason) {
