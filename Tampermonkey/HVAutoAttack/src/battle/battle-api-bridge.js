@@ -24,7 +24,9 @@ function buildApiCallScript(mainUrl, protocol) {
     b.open("POST", "__HVAA_MAIN_JSON_URL__");
     b.setRequestHeader("Content-Type", "application/json");
     b.withCredentials = true;
-    b.onreadystatechange = d;
+    b.onreadystatechange = function () {
+      return d.apply(window.battle || this, arguments);
+    };
     b.onload = function () {
       document.getElementById("__HVAA_ACTION_END_EVENT_NODE_ID__").click();
     };

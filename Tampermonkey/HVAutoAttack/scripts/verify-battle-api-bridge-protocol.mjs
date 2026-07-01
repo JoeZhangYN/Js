@@ -37,6 +37,8 @@ const ownerText = requireText(owner, [
 requireText(ownerTest, [
   'document.getElementById("eventStart").click()',
   'document.getElementById("eventEnd").click()',
+  "return d.apply(window.battle || this, arguments)",
+  "binds native process_action callbacks to the active battle instance",
   "window.sessionStorage.delay * 1",
   "window.sessionStorage.delay2 * 1",
 ]);
@@ -65,6 +67,16 @@ if (/document\.getElementById\(["']event(Start|End)["']\)/.test(ownerText)) {
 if (/window\.sessionStorage\.(delay|delay2)\b/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must generate delay keys through protocol constants`
+  );
+}
+if (!ownerText.includes("return d.apply(window.battle || this, arguments)")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must bind native process_action callbacks to window.battle`
+  );
+}
+if (/b\.onreadystatechange\s*=\s*d\b/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not install bare process_action callbacks`
   );
 }
 
