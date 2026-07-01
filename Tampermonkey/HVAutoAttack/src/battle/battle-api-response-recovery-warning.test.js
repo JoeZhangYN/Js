@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 
 describe("battle API response recovery warning failures", () => {
-  it("continues reload recovery when recovery state persistence and warning fail", () => {
+  it("returns reload recovery when recovery state persistence and warning fail", () => {
     const deps = makeDeps({
       getItem: vi.fn(() => null),
       setItem: vi.fn(() => {
@@ -39,13 +39,15 @@ describe("battle API response recovery warning failures", () => {
       }),
     });
 
-    expect(() =>
-      runBattleApiResponseRecovery(
+    let result;
+    expect(() => {
+      result = runBattleApiResponseRecovery(
         { type: BattleApiResponseRecoveryEvent.REJECTED_RESPONSE, detail: rejectedDetail() },
         deps
-      )
-    ).not.toThrow();
+      );
+    }).not.toThrow();
 
+    expect(result).toBe("reload");
     expect(deps.reload).toHaveBeenCalledWith(
       expect.objectContaining({
         recoveryAction: "reload",

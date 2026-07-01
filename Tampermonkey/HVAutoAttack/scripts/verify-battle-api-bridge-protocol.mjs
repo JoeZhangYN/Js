@@ -407,8 +407,9 @@ requireText(recoveryPersistenceTest, [
   "battle API recovery state write failed",
 ]);
 requireText(recoveryWarningTest, [
-  "continues reload recovery when recovery state persistence and warning fail",
+  "returns reload recovery when recovery state persistence and warning fail",
   "keeps repeated-pause recovery accepted when pause warning fails",
+  'expect(result).toBe("reload")',
   "console hook failed",
   'storageWriteError: "quota"',
 ]);
