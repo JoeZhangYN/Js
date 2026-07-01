@@ -24,6 +24,7 @@ vi.mock("./monster-knowledge-automation.js", () => ({
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear();
+  sessionStorage.clear();
 });
 
 describe("runBattleLifecycleAutomation", () => {
@@ -45,9 +46,66 @@ describe("runBattleLifecycleAutomation", () => {
     expect(mocks.runMonsterKnowledgeAutomation.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.runBattleMonitorAutomation.mock.invocationCallOrder[0]
     );
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleLifecycle"))).toMatchObject({
+      phase: "battleStarted",
+      result: true,
+      steps: [
+        { step: "startRuntime", result: true },
+        { step: "startKnowledge", result: true },
+        { step: "startMonitor", result: true },
+      ],
+    });
   });
 
-  it("rejects unknown events", () => {
+  it("returns false and records evidence when a battle-start exit fails", () => {
+    mocks.runBattleMonitorAutomation.mockReturnValue(false);
+
+    expect(runBattleLifecycleAutomation({ type: BattleLifecycleEvent.BATTLE_STARTED })).toBe(false);
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleLifecycle"))).toMatchObject({
+      phase: "battleStarted",
+      result: false,
+      steps: expect.arrayContaining([{ step: "startMonitor", result: false }]),
+    });
+  });
+
+  it("rejects unknown events with lifecycle evidence", () => {
     expect(runBattleLifecycleAutomation({ type: "unknown" })).toBe(false);
+
+    expect(mocks.runBattleStartRuntimeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runMonsterKnowledgeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleMonitorAutomation).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleLifecycle"))).toMatchObject({
+      phase: "unknownBattleLifecycleEvent",
+      result: false,
+      steps: [
+        {
+          step: "routeEvent",
+          result: false,
+          reason: "unknownBattleLifecycleEvent",
+          eventType: "unknown",
+        },
+      ],
+    });
+  });
+
+  it("rejects null events with lifecycle evidence instead of throwing", () => {
+    expect(runBattleLifecycleAutomation(null)).toBe(false);
+
+    expect(mocks.runBattleStartRuntimeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runMonsterKnowledgeAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleMonitorAutomation).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleLifecycle"))).toMatchObject({
+      phase: "unknownBattleLifecycleEvent",
+      result: false,
+      steps: [
+        {
+          step: "routeEvent",
+          result: false,
+          reason: "unknownBattleLifecycleEvent",
+          eventType: null,
+        },
+      ],
+    });
   });
 });

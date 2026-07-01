@@ -350,6 +350,11 @@ function checkBattleLifecycleEntry() {
     "BattleStartRuntimeEvent.BATTLE_STARTED",
     "MonsterKnowledgeEvent.BATTLE_STARTED",
     "BattleMonitorEvent.BATTLE_STARTED",
+    "BattleLifecycleEvidenceEvent.RECORD_LIFECYCLE",
+    "runBattleLifecycleEvidence",
+    "unknownBattleLifecycleEvent",
+    "battleLifecycleHandlers[event?.type]",
+    "recordLifecycle(EVENT_BATTLE_STARTED, started, steps)",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(battleLifecycleFile)} must make ${required} visible`);
@@ -371,6 +376,56 @@ function checkBattleLifecycleEntry() {
   }
   if (!fs.existsSync(battleLifecycleTest)) {
     violations.push(`${rel(battleLifecycleTest)} must cover battle lifecycle contract`);
+  }
+  const testText = fs.readFileSync(battleLifecycleTest, "utf8");
+  for (const required of [
+    "returns false and records evidence when a battle-start exit fails",
+    "rejects unknown events with lifecycle evidence",
+    "rejects null events with lifecycle evidence instead of throwing",
+    "HVAA:lastBattleLifecycle",
+    "unknownBattleLifecycleEvent",
+  ]) {
+    if (!testText.includes(required)) {
+      violations.push(`${rel(battleLifecycleTest)} must cover ${required}`);
+    }
+  }
+  const evidenceFile = path.join(root, "src/battle/battle-lifecycle-evidence.js");
+  const evidenceTestFile = path.join(root, "src/battle/battle-lifecycle-evidence.test.js");
+  const evidenceText = fs.readFileSync(evidenceFile, "utf8");
+  for (const required of [
+    "BattleLifecycleEvidenceEvent",
+    "runBattleLifecycleEvidence",
+    "DiagnosticEvidenceKey.BATTLE_LIFECYCLE",
+    "battleLifecycleEvidenceEventHandlers[event?.type]",
+    "[HVAA] battle lifecycle",
+    "storageWriteOk",
+    "storageWriteError",
+  ]) {
+    if (!evidenceText.includes(required)) {
+      violations.push(`${rel(evidenceFile)} must own ${required}`);
+    }
+  }
+  const evidenceTestText = fs.readFileSync(evidenceTestFile, "utf8");
+  for (const required of [
+    "records battle lifecycle evidence",
+    "rejects null lifecycle evidence events without writing diagnostics",
+    "HVAA:lastBattleLifecycle",
+  ]) {
+    if (!evidenceTestText.includes(required)) {
+      violations.push(`${rel(evidenceTestFile)} must cover ${required}`);
+    }
+  }
+  const diagnosticKeysText = fs.readFileSync(
+    path.join(root, "src/core/diagnostic-evidence-keys.js"),
+    "utf8"
+  );
+  for (const required of [
+    'BATTLE_LIFECYCLE: "HVAA:lastBattleLifecycle"',
+    'source("battleLifecycle", DiagnosticEvidenceKey.BATTLE_LIFECYCLE)',
+  ]) {
+    if (!diagnosticKeysText.includes(required)) {
+      violations.push(`src/core/diagnostic-evidence-keys.js must include ${required}`);
+    }
   }
   for (const file of [battleFile, actionEventBridgeFile, mainLoopFile, roundStartFile]) {
     const source = fs.readFileSync(file, "utf8");

@@ -2,6 +2,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   NAVIGATION_AUDIT: "HVAA:lastNavigationAudit",
   NAVIGATION_DECISION: "HVAA:lastNavigationDecision",
   BATTLE_AUTOMATION: "HVAA:lastBattleAutomation",
+  BATTLE_LIFECYCLE: "HVAA:lastBattleLifecycle",
   BATTLE_TURN_WORKFLOW: "HVAA:lastBattleTurnWorkflow",
   BATTLE_API_RESPONSE_RECOVERY: "HVAA:battleApiRecovery",
   BATTLE_COMMAND: "HVAA:lastBattleCommand",
@@ -19,6 +20,7 @@ function source(name, key) {
 export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("navigationDecision", DiagnosticEvidenceKey.NAVIGATION_DECISION),
   source("battleAutomation", DiagnosticEvidenceKey.BATTLE_AUTOMATION),
+  source("battleLifecycle", DiagnosticEvidenceKey.BATTLE_LIFECYCLE),
   source("battleTurnWorkflow", DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW),
   source("battleApiResponseRecovery", DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY),
   source("battleCommand", DiagnosticEvidenceKey.BATTLE_COMMAND),
