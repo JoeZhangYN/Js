@@ -198,6 +198,7 @@ requireText(recoveryTest, [
   "does not treat different battle worlds as the same recovery loop",
   "HVAA:battleApiRecovery",
   "recoveryAction",
+  "knownResultKind: true",
 ]);
 requireText(recoveryReloadDetailTest, [
   "passes recovery state into the default navigation reload detail",

@@ -126,6 +126,18 @@ if (!owner) {
         violations.push(`diagnostic evidence must read ${required}`);
       }
     }
+    const diagnosticEvidenceTest = files.find((file) => file.rel === "core/diagnostic-evidence.test.js");
+    const externalUnloadTest = files.find((file) => file.rel === "core/navigate-external-unload.test.js");
+    for (const testSource of [diagnosticEvidenceTest, externalUnloadTest]) {
+      if (!testSource) {
+        violations.push("diagnostic evidence consumers must have tests");
+        continue;
+      }
+      const testText = stripComments(readFileSync(testSource.abs, "utf8"));
+      if (!testText.includes("knownResultKind: true")) {
+        violations.push(`${testSource.rel} must preserve action result-kind diagnostic evidence`);
+      }
+    }
   }
   const navigationDecisionSource = files.find((file) => file.rel === "core/navigation-decision-evidence.js");
   const navigationRejectionTestSource = files.find((file) => file.rel === "core/navigate-rejection.test.js");

@@ -12,11 +12,13 @@ describe("navigation external unload audit", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     sessionStorage.setItem(
       DiagnosticEvidenceKey.BATTLE_ACTION_DECISION,
-      JSON.stringify({ steps: [{ capability: "attack", acted: false }] })
+      JSON.stringify({
+        steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
+      })
     );
     sessionStorage.setItem(
       DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT,
-      JSON.stringify({ result: { kind: "noop" }, acted: false })
+      JSON.stringify({ result: { kind: "noop" }, acted: false, knownResultKind: true })
     );
 
     window.dispatchEvent(new Event("pagehide"));
@@ -28,8 +30,10 @@ describe("navigation external unload audit", () => {
         reason: "outsideNavigationEntry",
         eventType: "pagehide",
         diagnosticEvidence: {
-          battleActionDecision: { steps: [{ capability: "attack", acted: false }] },
-          battleActionEffect: { result: { kind: "noop" }, acted: false },
+          battleActionDecision: {
+            steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
+          },
+          battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
         },
       })
     );
@@ -38,8 +42,10 @@ describe("navigation external unload audit", () => {
       reason: "outsideNavigationEntry",
       eventType: "pagehide",
       diagnosticEvidence: {
-        battleActionDecision: { steps: [{ capability: "attack", acted: false }] },
-        battleActionEffect: { result: { kind: "noop" }, acted: false },
+        battleActionDecision: {
+          steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
+        },
+        battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
       },
     });
   });

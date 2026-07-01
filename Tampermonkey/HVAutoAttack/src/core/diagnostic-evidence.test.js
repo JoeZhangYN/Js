@@ -33,11 +33,13 @@ describe("readRecentDiagnosticEvidence", () => {
     );
     window.sessionStorage.setItem(
       "HVAA:lastBattleActionDecision",
-      JSON.stringify({ steps: [{ capability: "attack", acted: false }] })
+      JSON.stringify({
+        steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
+      })
     );
     window.sessionStorage.setItem(
       "HVAA:lastBattleActionEffect",
-      JSON.stringify({ result: { kind: "noop" }, acted: false })
+      JSON.stringify({ result: { kind: "noop" }, acted: false, knownResultKind: true })
     );
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
@@ -47,8 +49,10 @@ describe("readRecentDiagnosticEvidence", () => {
       battleCommand: { command: "skill.clickReady", result: "rejected", reason: "skillNotReady" },
       battlePause: { state: "paused", reason: "autoPause" },
       battleActionLifecycle: { phase: "actionStarted", result: true },
-      battleActionDecision: { steps: [{ capability: "attack", acted: false }] },
-      battleActionEffect: { result: { kind: "noop" }, acted: false },
+      battleActionDecision: {
+        steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
+      },
+      battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
     });
   });
 });

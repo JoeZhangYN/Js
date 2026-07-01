@@ -96,8 +96,10 @@ describe("runBattleApiResponseRecovery", () => {
   it("carries recent battle diagnostic evidence into repeated API pause state", () => {
     const deps = makeDeps();
     const diagnosticEvidence = {
-      battleActionDecision: { steps: [{ capability: "attack", acted: false }] },
-      battleActionEffect: { result: { kind: "noop" }, acted: false },
+      battleActionDecision: {
+        steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
+      },
+      battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
     };
     deps.readDiagnosticEvidence.mockReturnValue(diagnosticEvidence);
     const detail = rejectedDetail();
