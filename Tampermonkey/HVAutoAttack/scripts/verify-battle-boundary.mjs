@@ -2580,6 +2580,9 @@ function checkCriticalBuffEntry() {
   for (const forbidden of [
     "executeCriticalPause",
     "runAlarmAutomation",
+    "triggerCriticalAlarm",
+    "alarmResult",
+    "alarmError",
     "runBattlePauseAutomation",
     'reason: "criticalBuff"',
     "document.title",
@@ -2653,6 +2656,9 @@ function checkCriticalBuffEntry() {
     const resultTestText = fs.readFileSync(executeCriticalPauseResultTestFile, "utf8");
     for (const required of [
       "returns not acted when the pause entry rejects the critical pause",
+      "still pauses when the alarm side effect fails",
+      "alarm failed",
+      "alarmError",
       "runBattlePauseAutomation",
       "toBe(false)",
     ]) {

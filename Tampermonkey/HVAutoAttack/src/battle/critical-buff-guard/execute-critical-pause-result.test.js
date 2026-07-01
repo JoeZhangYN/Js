@@ -45,8 +45,33 @@ describe("critical buff pause execution result semantics", () => {
     expect(mocks.runBattlePauseAutomation).toHaveBeenCalledWith({
       type: "pause",
       reason: "criticalBuff",
-      detail: plan,
+      detail: expect.objectContaining({ ...plan, alarmResult: false }),
     });
     expect(document.title).toContain("Spark of Life");
+  });
+
+  it("still pauses when the alarm side effect fails", () => {
+    const plan = { name: "Spark of Life", turns: 1, mp: 10, mpFloor: 30 };
+    mocks.runAlarmAutomation.mockImplementation(() => {
+      throw new Error("alarm failed");
+    });
+    mocks.runBattlePauseAutomation.mockReturnValue(true);
+
+    expect(
+      runCriticalBuffPauseExecution({
+        type: CriticalBuffPauseExecutionEvent.APPLY_PLAN,
+        plan,
+      })
+    ).toBe(true);
+
+    expect(mocks.runBattlePauseAutomation).toHaveBeenCalledWith({
+      type: "pause",
+      reason: "criticalBuff",
+      detail: expect.objectContaining({
+        ...plan,
+        alarmResult: false,
+        alarmError: "alarm failed",
+      }),
+    });
   });
 });
