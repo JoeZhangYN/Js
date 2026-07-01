@@ -52,6 +52,28 @@ describe("battle command recording failures", () => {
     );
   });
 
+  it("keeps clicked skills acted when command evidence recording and warning both throw", () => {
+    const skill = { click: vi.fn() };
+    mocks.gE.mockReturnValue(skill);
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console failed");
+    });
+    mocks.runBattleCommandEvidence.mockImplementation(() => {
+      throw new Error("command evidence failed");
+    });
+
+    let result;
+    expect(() => {
+      result = runBattleSkillCommand({
+        type: BattleSkillCommandEvent.CLICK_READY,
+        skillId: "412",
+      });
+    }).not.toThrow();
+
+    expect(result).toBe(true);
+    expect(skill.click).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps clicked items acted when command evidence recording throws", () => {
     const item = { click: vi.fn() };
     const warn = makeCommandEvidenceThrow();

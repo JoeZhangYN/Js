@@ -135,8 +135,10 @@ for (const required of [
 }
 for (const required of [
   "keeps clicked skills acted when command evidence recording throws",
+  "keeps clicked skills acted when command evidence recording and warning both throw",
   "keeps clicked items acted when command evidence recording throws",
   "command evidence failed",
+  "console failed",
   "recordingError",
 ]) {
   if (!commandRecordingFailureTestText.includes(required)) {
