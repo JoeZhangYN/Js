@@ -9,6 +9,7 @@ function makeDeps() {
     sessionStorage: window.sessionStorage,
     reload: vi.fn(),
     pause: vi.fn(),
+    readDiagnosticEvidence: vi.fn(),
     warn: vi.fn(),
   };
 }
@@ -81,6 +82,27 @@ describe("runBattleApiResponseRecovery", () => {
     expect(deps.warn).toHaveBeenCalledWith(
       "[HVAA] battle API response repeated; auto battle paused",
       expect.objectContaining({ repeatCount: 2, detail })
+    );
+  });
+
+  it("carries recent battle diagnostic evidence into repeated API pause state", () => {
+    const deps = makeDeps();
+    const diagnosticEvidence = {
+      battleActionDecision: { steps: [{ capability: "attack", acted: false }] },
+      battleActionEffect: { result: { kind: "noop" }, acted: false },
+    };
+    deps.readDiagnosticEvidence.mockReturnValue(diagnosticEvidence);
+    const detail = rejectedDetail();
+    const event = { type: BattleApiResponseRecoveryEvent.REJECTED_RESPONSE, detail };
+
+    runBattleApiResponseRecovery(event, deps);
+    expect(runBattleApiResponseRecovery(event, deps)).toBe("paused");
+
+    const state = JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"));
+    expect(state).toMatchObject({ repeatCount: 2, detail, diagnosticEvidence });
+    expect(deps.warn).toHaveBeenCalledWith(
+      "[HVAA] battle API response repeated; auto battle paused",
+      expect.objectContaining({ repeatCount: 2, diagnosticEvidence })
     );
   });
 

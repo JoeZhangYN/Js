@@ -61,6 +61,7 @@ if (!owner) {
     violations.push("openUrl must validate an allowed redirect reason");
   }
   const auditSource = files.find((file) => file.rel === "core/navigation-audit.js");
+  const diagnosticEvidenceSource = files.find((file) => file.rel === "core/diagnostic-evidence.js");
   if (!auditSource) {
     violations.push("core/navigation-audit.js is missing");
   } else {
@@ -74,19 +75,29 @@ if (!owner) {
     if (!auditText.includes("recordExternalUnload") || !auditText.includes("outsideNavigationEntry")) {
       violations.push("navigation audit must record unloads that bypass the navigation entry");
     }
-    for (const required of [
-      "DiagnosticEvidenceKey.NAVIGATION_AUDIT",
-      "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
-      "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
-      "readRecentDiagnosticEvidence",
-      "diagnosticEvidence",
-    ]) {
+    for (const required of ["DiagnosticEvidenceKey.NAVIGATION_AUDIT", "readRecentDiagnosticEvidence", "diagnosticEvidence"]) {
       if (!auditText.includes(required)) {
         violations.push(`navigation audit must carry diagnostic evidence ${required}`);
       }
     }
     if (!auditText.includes('console.warn(`[HVAA] ${kind}`')) {
       violations.push("navigation audit must warn before navigating");
+    }
+  }
+  if (!diagnosticEvidenceSource) {
+    violations.push("core/diagnostic-evidence.js is missing");
+  } else {
+    const diagnosticEvidenceText = stripComments(readFileSync(diagnosticEvidenceSource.abs, "utf8"));
+    for (const required of [
+      "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
+      "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
+      "readRecentDiagnosticEvidence",
+      "battleActionDecision",
+      "battleActionEffect",
+    ]) {
+      if (!diagnosticEvidenceText.includes(required)) {
+        violations.push(`diagnostic evidence must read ${required}`);
+      }
     }
   }
   const bridgeSource = files.find((file) => file.rel === "core/navigation-bridge.js");

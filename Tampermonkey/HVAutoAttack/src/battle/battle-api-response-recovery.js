@@ -1,4 +1,5 @@
 import { NavigationEvent, NavigationReloadReason, runNavigationAutomation } from "../core/navigate.js";
+import { readRecentDiagnosticEvidence } from "../core/diagnostic-evidence.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 
 const EVENT_INSTALL_BRIDGE = "installBridge";
@@ -44,7 +45,8 @@ function buildRecoveryState(detail, deps) {
   const key = apiFailureKey(detail);
   const previous = readRecoveryState(deps);
   const repeatCount = previous?.key === key ? Number(previous.repeatCount || 1) + 1 : 1;
-  return { key, repeatCount, detail };
+  const diagnosticEvidence = deps.readDiagnosticEvidence?.();
+  return diagnosticEvidence ? { key, repeatCount, detail, diagnosticEvidence } : { key, repeatCount, detail };
 }
 
 function handleRejectedApiResponse(detail, deps) {
@@ -87,6 +89,7 @@ export function runBattleApiResponseRecovery(
         detail,
       }),
     pause: () => runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE }),
+    readDiagnosticEvidence: () => readRecentDiagnosticEvidence(window.sessionStorage),
     warn: (...args) => console.warn(...args),
   }
 ) {
