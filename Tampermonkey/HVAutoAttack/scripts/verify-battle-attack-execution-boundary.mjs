@@ -31,6 +31,7 @@ for (const required of [
   "executePhysicalPlan",
   "executeDefaultPlan",
   "BattleFocusCommandEvent.CLICK",
+  "return !!runBattleFocusCommand",
   "BattleSpiritToggleEvent.CLICK_AND_RECORD",
   "BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET",
   "BattleTargetCommandEvent.CLICK_TARGET",
@@ -84,6 +85,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   }
   if (!ownerTestText.includes("does not claim spell, physical, or default attack plans")) {
     violations.push(`${rel(ownerTest)} must cover failed target commands as not acted`);
+  }
+  if (!ownerTestText.includes("returns the Focus command result instead of claiming a missing click acted")) {
+    violations.push(`${rel(ownerTest)} must cover failed Focus commands as not acted`);
   }
 }
 

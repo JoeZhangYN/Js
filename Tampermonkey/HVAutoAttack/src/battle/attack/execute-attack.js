@@ -55,9 +55,7 @@ function executeNoopPlan() {
 }
 
 function executeFocusPlan() {
-  // 原 attack：Focus 是末步，即使按钮缺失也消耗本次 attack 分支。
-  runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK });
-  return true;
+  return !!runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK });
 }
 
 function executeToggleSpiritPlan() {

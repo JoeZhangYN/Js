@@ -43,12 +43,14 @@ function applyPlan(plan, snap) {
 }
 
 describe("runBattleAttackExecution", () => {
-  it("routes Focus through the Focus command entry and still claims the attack branch", () => {
+  it("returns the Focus command result instead of claiming a missing click acted", () => {
     mocks.runBattleFocusCommand.mockReturnValue(false);
 
-    expect(applyPlan({ type: "focus" }, {})).toBe(true);
+    expect(applyPlan({ type: "focus" }, {})).toBe(false);
 
     expect(mocks.runBattleFocusCommand).toHaveBeenCalledWith({ type: "click" });
+    mocks.runBattleFocusCommand.mockReturnValue(true);
+    expect(applyPlan({ type: "focus" }, {})).toBe(true);
   });
 
   it("reports Spirit toggle cooldown through the Spirit toggle entry", () => {
