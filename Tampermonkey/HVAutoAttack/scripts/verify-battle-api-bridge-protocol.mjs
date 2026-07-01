@@ -110,6 +110,7 @@ const recoveryText = requireText(recovery, [
   "world: detail?.world",
   "deps.pause()",
   "diagnosticEvidence",
+  'reason: "battleApiResponseRepeated"',
   "deps.reload(detail)",
   "repeatCount >= REPEAT_PAUSE_THRESHOLD",
 ]);

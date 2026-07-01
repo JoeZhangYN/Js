@@ -88,7 +88,11 @@ export function runBattleApiResponseRecovery(
         reason: NavigationReloadReason.BATTLE_API_RESPONSE,
         detail,
       }),
-    pause: () => runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE }),
+    pause: () =>
+      runBattlePauseAutomation({
+        type: BattlePauseEvent.PAUSE,
+        reason: "battleApiResponseRepeated",
+      }),
     readDiagnosticEvidence: () => readRecentDiagnosticEvidence(window.sessionStorage),
     warn: (...args) => console.warn(...args),
   }

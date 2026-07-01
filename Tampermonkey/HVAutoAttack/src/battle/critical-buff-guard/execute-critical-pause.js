@@ -24,7 +24,7 @@ function executeCriticalPause(plan) {
     `[critical-buff-guard] "${plan.name}" 剩 ${plan.turns} 回合 + MP ${plan.mp.toFixed(0)}% < ${plan.mpFloor}% → 暂停脚本，请手动接管`
   );
   runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Error" });
-  runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
+  runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "criticalBuff", detail: plan });
   document.title = `hvAA 暂停: ${plan.name} 即将消失但 MP 不足`;
 }
 

@@ -115,13 +115,17 @@ function executeFleeCommandResult() {
 
 function executeAlertPauseResult(result) {
   _alert(0, result.msg.l0, result.msg.l1, result.msg.l2);
-  runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
+  runBattlePauseAutomation({
+    type: BattlePauseEvent.PAUSE,
+    reason: "alertAndPause",
+    detail: { resultKind: result.kind, msg: result.msg },
+  });
   return true;
 }
 
 function executePauseResult() {
   // autoPause：纯暂停（无 alert），setValue disabled + 按钮文案
-  runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
+  runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" });
   return true;
 }
 

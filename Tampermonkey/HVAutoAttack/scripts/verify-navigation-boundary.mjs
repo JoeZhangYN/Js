@@ -89,10 +89,12 @@ if (!owner) {
   } else {
     const diagnosticEvidenceText = stripComments(readFileSync(diagnosticEvidenceSource.abs, "utf8"));
     for (const required of [
+      "DiagnosticEvidenceKey.BATTLE_PAUSE",
       "DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE",
       "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
       "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
       "readRecentDiagnosticEvidence",
+      "battlePause",
       "battleActionLifecycle",
       "battleActionDecision",
       "battleActionEffect",

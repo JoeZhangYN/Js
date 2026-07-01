@@ -3,6 +3,7 @@ import { gE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { _alert } from "../core/lang.js";
+import { BattlePauseEvidenceEvent, runBattlePauseEvidence } from "./battle-pause-evidence.js";
 
 const EVENT_RENDER_PAUSED = "renderPaused";
 const EVENT_RENDER_IF_PAUSED = "renderIfPaused";
@@ -20,7 +21,7 @@ const battlePauseEventHandlers = Object.freeze({
   [EVENT_RENDER_PAUSED]: () => handleRenderPaused(),
   [EVENT_RENDER_IF_PAUSED]: () => handleRenderIfPaused(),
   [EVENT_TOGGLE]: (_event, deps) => handleToggle(deps),
-  [EVENT_PAUSE]: () => handlePause(),
+  [EVENT_PAUSE]: (event) => handlePause(event),
 });
 
 function setPauseButtonText(text) {
@@ -37,9 +38,19 @@ function pauseBattle() {
   setValue(STORAGE_KEYS.DISABLED, true);
 }
 
+function recordPauseState(state, reason, detail) {
+  runBattlePauseEvidence({
+    type: BattlePauseEvidenceEvent.RECORD_STATE,
+    state,
+    reason,
+    detail,
+  });
+}
+
 function resumeBattle(resume) {
   setPauseButtonText("<l0>暂停</l0><l1>暫停</l1><l2>Pause</l2>");
   delValue(0);
+  recordPauseState("resumed", "toggle");
   resume?.();
 }
 
@@ -59,12 +70,14 @@ function handleToggle(deps) {
     resumeBattle(deps.resume);
   } else {
     pauseBattle();
+    recordPauseState("paused", "toggle");
   }
   return true;
 }
 
-function handlePause() {
+function handlePause(event) {
   pauseBattle();
+  recordPauseState("paused", event.reason || EVENT_PAUSE, event.detail);
   return true;
 }
 

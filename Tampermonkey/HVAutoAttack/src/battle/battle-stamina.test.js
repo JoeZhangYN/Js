@@ -70,7 +70,7 @@ describe("runBattleStaminaAutomation", () => {
     expect(result).toEqual({ lostStamina: 7, paused: true });
     expect(d.triggerAlarm).toHaveBeenCalledWith("Error");
     expect(d.confirm).toHaveBeenCalled();
-    expect(d.pause).toHaveBeenCalled();
+    expect(d.pause).toHaveBeenCalledWith({ lostStamina: 7 });
   });
 
   it("keeps missing or invalid thresholds from pausing by default", () => {

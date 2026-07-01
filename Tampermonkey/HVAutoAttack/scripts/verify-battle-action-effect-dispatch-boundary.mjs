@@ -106,6 +106,8 @@ for (const forbidden of [
   "runBattleFleeCommand",
   "_alert",
   "runBattlePauseAutomation",
+  'reason: "alertAndPause"',
+  'reason: "autoPause"',
   "runCriticalBuffPauseExecution",
   "runBattleAttackExecution",
   "runBattleItemExecution",

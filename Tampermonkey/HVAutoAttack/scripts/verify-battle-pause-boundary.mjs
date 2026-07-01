@@ -53,6 +53,27 @@ function checkEntry() {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} pause wiring`);
     }
   }
+  for (const required of [
+    "BattlePauseEvidenceEvent.RECORD_STATE",
+    "runBattlePauseEvidence",
+    "recordPauseState",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${entry.replaceAll("\\", "/")} must record pause evidence ${required}`);
+    }
+  }
+  const evidence = path.normalize("src/battle/battle-pause-evidence.js");
+  const evidenceText = fs.readFileSync(path.join(root, evidence), "utf8");
+  for (const required of [
+    "BattlePauseEvidenceEvent",
+    "runBattlePauseEvidence",
+    "DiagnosticEvidenceKey.BATTLE_PAUSE",
+    "[HVAA] battle pause",
+  ]) {
+    if (!evidenceText.includes(required)) {
+      violations.push(`${evidence.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
   const entryBody =
     text.match(/export function runBattlePauseAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_RENDER_PAUSED\][\s\S]*\[EVENT_PAUSE\]/.test(text)) {

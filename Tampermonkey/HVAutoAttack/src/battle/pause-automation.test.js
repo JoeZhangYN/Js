@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
   document.body.innerHTML = '<button class="pauseChange"></button>';
 });
 
@@ -13,6 +14,10 @@ describe("battle pause automation", () => {
     expect(runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE })).toBe(true);
     expect(getValue(STORAGE_KEYS.DISABLED)).toBe("true");
     expect(document.querySelector(".pauseChange").innerHTML).toContain("Continue");
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
+      state: "paused",
+      reason: "pause",
+    });
 
     expect(runBattlePauseAutomation({ type: BattlePauseEvent.RENDER_IF_PAUSED })).toBe(true);
     expect(document.querySelector(".pauseChange").innerHTML).toContain("Continue");
@@ -23,5 +28,34 @@ describe("battle pause automation", () => {
 
     expect(getValue(STORAGE_KEYS.DISABLED)).toBeNull();
     expect(document.querySelector(".pauseChange").innerHTML).toBe("");
+  });
+
+  it("records explicit pause reason and detail", () => {
+    expect(
+      runBattlePauseAutomation({
+        type: BattlePauseEvent.PAUSE,
+        reason: "staminaLoss",
+        detail: { lostStamina: 7 },
+      })
+    ).toBe(true);
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
+      state: "paused",
+      reason: "staminaLoss",
+      detail: { lostStamina: 7 },
+    });
+  });
+
+  it("records toggle resume evidence", () => {
+    const resume = vi.fn();
+    runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE });
+
+    expect(runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, { resume })).toBe(true);
+
+    expect(resume).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
+      state: "resumed",
+      reason: "toggle",
+    });
   });
 });

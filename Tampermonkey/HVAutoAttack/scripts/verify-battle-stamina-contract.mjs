@@ -28,6 +28,7 @@ const ownerText = requireText(owner, [
   "OptionEvent.READ_FIELD",
   "StaminaLossLogEvent.RECORD",
   "BattlePauseEvent.PAUSE",
+  'reason: "staminaLoss"',
   "parseLostStamina",
   "shouldPauseForLoss",
 ]);

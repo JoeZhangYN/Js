@@ -11,6 +11,8 @@ function readJson(storage, key) {
 
 export function readRecentDiagnosticEvidence(storage = window.sessionStorage) {
   const evidence = {};
+  const battlePause = readJson(storage, DiagnosticEvidenceKey.BATTLE_PAUSE);
+  if (battlePause) evidence.battlePause = battlePause;
   const battleActionLifecycle = readJson(storage, DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE);
   if (battleActionLifecycle) evidence.battleActionLifecycle = battleActionLifecycle;
   const battleActionDecision = readJson(storage, DiagnosticEvidenceKey.BATTLE_ACTION_DECISION);

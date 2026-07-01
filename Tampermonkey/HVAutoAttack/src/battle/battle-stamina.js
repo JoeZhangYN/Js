@@ -55,7 +55,7 @@ function handleRoundLogReady(text, deps) {
 
   deps.triggerAlarm("Error");
   if (confirmContinue(deps.confirm)) return { lostStamina, paused: false };
-  deps.pause();
+  deps.pause({ lostStamina });
   return { lostStamina, paused: true };
 }
 
@@ -64,7 +64,8 @@ export function runBattleStaminaAutomation(
   deps = {
     triggerAlarm: (kind) => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind }),
     confirm: _alert,
-    pause: () => runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE }),
+    pause: (detail) =>
+      runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "staminaLoss", detail }),
   }
 ) {
   return battleStaminaEventHandlers[event.type]?.(event, deps) ?? { lostStamina: 0, paused: false };

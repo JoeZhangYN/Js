@@ -2170,6 +2170,7 @@ function checkCriticalBuffEntry() {
     "executeCriticalPause",
     "runAlarmAutomation",
     "runBattlePauseAutomation",
+    'reason: "criticalBuff"',
     "document.title",
   ]) {
     if (ownerText.includes(forbidden)) {

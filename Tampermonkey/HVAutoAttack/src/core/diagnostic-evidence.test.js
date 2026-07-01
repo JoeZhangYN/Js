@@ -8,6 +8,10 @@ beforeEach(() => {
 describe("readRecentDiagnosticEvidence", () => {
   it("returns lifecycle, decision, and effect evidence together", () => {
     window.sessionStorage.setItem(
+      "HVAA:lastBattlePause",
+      JSON.stringify({ state: "paused", reason: "autoPause" })
+    );
+    window.sessionStorage.setItem(
       "HVAA:lastBattleActionLifecycle",
       JSON.stringify({ phase: "actionStarted", result: true })
     );
@@ -21,6 +25,7 @@ describe("readRecentDiagnosticEvidence", () => {
     );
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
+      battlePause: { state: "paused", reason: "autoPause" },
       battleActionLifecycle: { phase: "actionStarted", result: true },
       battleActionDecision: { steps: [{ capability: "attack", acted: false }] },
       battleActionEffect: { result: { kind: "noop" }, acted: false },
