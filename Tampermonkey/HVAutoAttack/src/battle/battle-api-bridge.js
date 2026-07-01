@@ -1,17 +1,15 @@
 import { cE, gE } from "../dom/query.js";
-import { ISEKAI_URL, MAIN_URL, isIsekai } from "../env.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import {
   BattleApiResponseRecoveryEvent,
   runBattleApiResponseRecovery,
 } from "./battle-api-response-recovery.js";
+import { BattleApiWorldContextEvent, runBattleApiWorldContext } from "./battle-api-world-context.js";
 
 const EVENT_INSTALL = "install";
-const ACTION_START_EVENT_NODE_ID = "eventStart";
-const ACTION_END_EVENT_NODE_ID = "eventEnd";
+const ACTION_START_EVENT_NODE_ID = "eventStart", ACTION_END_EVENT_NODE_ID = "eventEnd";
 const MAGIC_DELAY_SESSION_KEY = "delay";
 const ACTION_DELAY_SESSION_KEY = "delay2";
-const BATTLE_API_BASE_URL = isIsekai ? ISEKAI_URL : MAIN_URL;
 
 export const BattleApiBridgeEvent = Object.freeze({ INSTALL: EVENT_INSTALL });
 
@@ -19,7 +17,7 @@ const battleApiBridgeEventHandlers = Object.freeze({
   [EVENT_INSTALL]: (_event, deps) => installBridge(deps),
 });
 
-function buildApiCallScript(mainUrl, protocol) {
+function buildApiCallScript(apiJsonUrl, protocol) {
   return `api_call = ${function (b, a, d) {
     const delay = window.sessionStorage.__HVAA_MAGIC_DELAY_SESSION_KEY__ * 1;
     const delay2 = window.sessionStorage.__HVAA_ACTION_DELAY_SESSION_KEY__ * 1;
@@ -56,7 +54,7 @@ function buildApiCallScript(mainUrl, protocol) {
       );
     }
   }.toString()}`
-    .replaceAll("__HVAA_MAIN_JSON_URL__", `${mainUrl}json`)
+    .replaceAll("__HVAA_MAIN_JSON_URL__", apiJsonUrl)
     .replaceAll("__HVAA_ACTION_START_EVENT_NODE_ID__", protocol.actionStartEventNodeId)
     .replaceAll("__HVAA_ACTION_END_EVENT_NODE_ID__", protocol.actionEndEventNodeId)
     .replaceAll("__HVAA_MAGIC_DELAY_SESSION_KEY__", protocol.magicDelaySessionKey)
@@ -128,9 +126,10 @@ function writeApiBridgeDelayRuntime(deps, option) {
 function installBridge(deps) {
   writeApiBridgeDelayRuntime(deps, readApiBridgeDelayOption(deps));
   deps.installApiResponseRecovery();
+  const worldContext = deps.readBattleApiWorldContext();
 
   const apiCall = deps.createScript();
-  apiCall.textContent = buildApiCallScript(deps.mainUrl, {
+  apiCall.textContent = buildApiCallScript(worldContext.apiJsonUrl, {
     actionStartEventNodeId: ACTION_START_EVENT_NODE_ID,
     actionEndEventNodeId: ACTION_END_EVENT_NODE_ID,
     magicDelaySessionKey: MAGIC_DELAY_SESSION_KEY,
@@ -152,7 +151,8 @@ export function runBattleApiBridgeAutomation(
     sessionStorage: window.sessionStorage,
     createScript: () => cE("script"),
     appendHead: (script) => gE("head").appendChild(script),
-    mainUrl: BATTLE_API_BASE_URL,
+    readBattleApiWorldContext: () =>
+      runBattleApiWorldContext({ type: BattleApiWorldContextEvent.READ_CURRENT }),
     installApiResponseRecovery: () =>
       runBattleApiResponseRecovery({ type: BattleApiResponseRecoveryEvent.INSTALL_BRIDGE }),
   }

@@ -6,6 +6,8 @@ const owner = path.normalize("src/battle/battle-api-bridge.js");
 const ownerTest = path.normalize("src/battle/battle-api-bridge.test.js");
 const recovery = path.normalize("src/battle/battle-api-response-recovery.js");
 const recoveryTest = path.normalize("src/battle/battle-api-response-recovery.test.js");
+const worldContext = path.normalize("src/battle/battle-api-world-context.js");
+const worldContextTest = path.normalize("src/battle/battle-api-world-context.test.js");
 const violations = [];
 
 function read(relative) {
@@ -37,8 +39,9 @@ const ownerText = requireText(owner, [
   "OptionEvent.READ_FIELD",
   "BattleApiResponseRecoveryEvent.INSTALL_BRIDGE",
   "runBattleApiResponseRecovery",
-  "BATTLE_API_BASE_URL",
-  "isIsekai ? ISEKAI_URL : MAIN_URL",
+  "BattleApiWorldContextEvent.READ_CURRENT",
+  "runBattleApiWorldContext",
+  "readBattleApiWorldContext",
 ]);
 requireText(ownerTest, [
   'document.getElementById("eventStart").click()',
@@ -52,12 +55,32 @@ requireText(ownerTest, [
   "a.error || a.reload",
   "records API response reload evidence for diagnostics",
   "installApiResponseRecovery",
+  "readBattleApiWorldContext",
+  "runBattleApiWorldContext",
   "responseKind",
   "actionDetail",
   "uses the current battle world API endpoint on the default path",
   "https://hentaiverse.org/isekai/json",
   "window.sessionStorage.delay * 1",
   "window.sessionStorage.delay2 * 1",
+]);
+const worldContextText = requireText(worldContext, [
+  "BattleApiWorldContextEvent",
+  "battleApiWorldContextEventHandlers",
+  "runBattleApiWorldContext",
+  "WORLD_ISEKAI",
+  "WORLD_PERSISTENT",
+  "apiJsonUrl",
+  "isIsekai",
+  "ISEKAI_URL",
+  "MAIN_URL",
+]);
+requireText(worldContextTest, [
+  "classifies persistent battle API authority",
+  "classifies isekai battle API authority",
+  "rejects unknown world context events",
+  "https://hentaiverse.org/json",
+  "https://hentaiverse.org/isekai/json",
 ]);
 const recoveryText = requireText(recovery, [
   "BattleApiResponseRecoveryEvent",
@@ -112,8 +135,11 @@ if (!ownerText.includes("return d.apply(window.battle || this, arguments)")) {
     `${owner.replaceAll("\\", "/")} must bind native process_action callbacks to window.battle`
   );
 }
-if (!ownerText.includes("mainUrl: BATTLE_API_BASE_URL")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must use the current battle world API endpoint`);
+if (/from\s+["']\.\.\/env\.js["']|isIsekai|ISEKAI_URL|MAIN_URL|BATTLE_API_BASE_URL/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must consume typed battle API world context`);
+}
+if (!ownerText.includes("worldContext.apiJsonUrl")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must use typed API JSON URL from world context`);
 }
 if (!ownerText.includes("deps.installApiResponseRecovery()")) {
   violations.push(`${owner.replaceAll("\\", "/")} must install API recovery before scripts`);
@@ -162,6 +188,15 @@ if (!recoveryText.includes("deps.pause()") || !recoveryText.includes("deps.reloa
 }
 if (/window\.location|location\.href|window\.location\.search/.test(recoveryText)) {
   violations.push(`${recovery.replaceAll("\\", "/")} must route reload through navigation entry`);
+}
+if (!/export\s+function\s+runBattleApiWorldContext/.test(worldContextText)) {
+  violations.push(`${worldContext.replaceAll("\\", "/")} must expose one world context entry`);
+}
+if (!worldContextText.includes("deps.isIsekai ? deps.isekaiUrl : deps.mainUrl")) {
+  violations.push(`${worldContext.replaceAll("\\", "/")} must own battle API authority selection`);
+}
+if (!worldContextText.includes("world,") || !worldContextText.includes("WORLD_ISEKAI")) {
+  violations.push(`${worldContext.replaceAll("\\", "/")} must preserve typed world identity`);
 }
 
 if (violations.length) {

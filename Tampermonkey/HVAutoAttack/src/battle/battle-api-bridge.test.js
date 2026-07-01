@@ -3,16 +3,16 @@ import { BattleApiBridgeEvent, runBattleApiBridgeAutomation } from "./battle-api
 
 const mocks = vi.hoisted(() => ({
   runOptionAutomation: vi.fn(),
+  runBattleApiWorldContext: vi.fn(),
 }));
 
 vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
-vi.mock("../env.js", () => ({
-  MAIN_URL: "https://hentaiverse.org/",
-  ISEKAI_URL: "https://hentaiverse.org/isekai/",
-  isIsekai: true,
+vi.mock("./battle-api-world-context.js", () => ({
+  BattleApiWorldContextEvent: Object.freeze({ READ_CURRENT: "readCurrent" }),
+  runBattleApiWorldContext: mocks.runBattleApiWorldContext,
 }));
 
 function makeDeps() {
@@ -23,18 +23,27 @@ function makeDeps() {
     sessionStorage: window.sessionStorage,
     createScript: vi.fn(() => ({ textContent: "" })),
     appendHead: vi.fn((script) => scripts.push(script)),
-    mainUrl: "https://example.test/",
+    readBattleApiWorldContext: vi.fn(() => ({
+      world: "persistent",
+      apiBaseUrl: "https://example.test/",
+      apiJsonUrl: "https://example.test/json",
+    })),
     installApiResponseRecovery: vi.fn(),
   };
 }
 
 beforeEach(() => {
   document.head.innerHTML = "";
-  delete window.HVAA_battleApiRecovery;
-  delete globalThis.unsafeWindow;
+  delete window.HVAA_battleApiRecovery; delete globalThis.unsafeWindow;
   window.sessionStorage.clear();
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue({});
+  mocks.runBattleApiWorldContext.mockReset();
+  mocks.runBattleApiWorldContext.mockReturnValue({
+    world: "isekai",
+    apiBaseUrl: "https://hentaiverse.org/isekai/",
+    apiJsonUrl: "https://hentaiverse.org/isekai/json",
+  });
 });
 
 describe("runBattleApiBridgeAutomation", () => {
@@ -46,6 +55,7 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(window.sessionStorage.delay).toBe("120");
     expect(window.sessionStorage.delay2).toBe("340");
     expect(deps.installApiResponseRecovery).toHaveBeenCalledTimes(1);
+    expect(deps.readBattleApiWorldContext).toHaveBeenCalledTimes(1);
     expect(deps.createScript).toHaveBeenCalledTimes(2);
     expect(deps.appendHead).toHaveBeenCalledTimes(2);
     expect(deps.scripts[0].textContent).toContain("api_call =");
@@ -146,8 +156,8 @@ describe("runBattleApiBridgeAutomation", () => {
       key: "delay2",
       fallback: 0,
     });
-    expect(window.sessionStorage.delay).toBe("12");
-    expect(window.sessionStorage.delay2).toBe("34");
+    expect([window.sessionStorage.delay, window.sessionStorage.delay2]).toEqual(["12", "34"]);
+    expect(mocks.runBattleApiWorldContext).toHaveBeenCalledWith({ type: "readCurrent" });
   });
 
   it("uses the current battle world API endpoint on the default path", () => {
