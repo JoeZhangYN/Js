@@ -89,11 +89,13 @@ if (!owner) {
   } else {
     const diagnosticEvidenceText = stripComments(readFileSync(diagnosticEvidenceSource.abs, "utf8"));
     for (const required of [
+      "DiagnosticEvidenceKey.NAVIGATION_DECISION",
       "DiagnosticEvidenceKey.BATTLE_PAUSE",
       "DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE",
       "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
       "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
       "readRecentDiagnosticEvidence",
+      "navigationDecision",
       "battlePause",
       "battleActionLifecycle",
       "battleActionDecision",
@@ -101,6 +103,33 @@ if (!owner) {
     ]) {
       if (!diagnosticEvidenceText.includes(required)) {
         violations.push(`diagnostic evidence must read ${required}`);
+      }
+    }
+  }
+  const navigationDecisionSource = files.find((file) => file.rel === "core/navigation-decision-evidence.js");
+  if (!navigationDecisionSource) {
+    violations.push("core/navigation-decision-evidence.js is missing");
+  } else {
+    const navigationDecisionText = stripComments(readFileSync(navigationDecisionSource.abs, "utf8"));
+    for (const required of [
+      "recordNavigationDecision",
+      "DiagnosticEvidenceKey.NAVIGATION_DECISION",
+      "[HVAA] navigation decision",
+    ]) {
+      if (!navigationDecisionText.includes(required)) {
+        violations.push(`navigation decision evidence must own ${required}`);
+      }
+    }
+    for (const required of [
+      'recordNavigationDecision("accepted"',
+      'recordNavigationDecision("rejected"',
+      "reloadReasonNotAllowed",
+      "redirectReasonNotAllowed",
+      "invalidReloadDelay",
+      "unknownNavigationEvent",
+    ]) {
+      if (!source.includes(required)) {
+        violations.push(`navigation entry must record decision evidence ${required}`);
       }
     }
   }

@@ -8,6 +8,10 @@ beforeEach(() => {
 describe("readRecentDiagnosticEvidence", () => {
   it("returns lifecycle, decision, and effect evidence together", () => {
     window.sessionStorage.setItem(
+      "HVAA:lastNavigationDecision",
+      JSON.stringify({ decision: "rejected", detail: { cause: "invalidReloadDelay" } })
+    );
+    window.sessionStorage.setItem(
       "HVAA:lastBattlePause",
       JSON.stringify({ state: "paused", reason: "autoPause" })
     );
@@ -25,6 +29,7 @@ describe("readRecentDiagnosticEvidence", () => {
     );
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
+      navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
       battlePause: { state: "paused", reason: "autoPause" },
       battleActionLifecycle: { phase: "actionStarted", result: true },
       battleActionDecision: { steps: [{ capability: "attack", acted: false }] },

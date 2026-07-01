@@ -4,6 +4,7 @@ import {
   reportPreviousNavigationAudit,
   writeNavigationAudit,
 } from "./navigation-audit.js";
+import { recordNavigationDecision } from "./navigation-decision-evidence.js";
 
 const EVENT_RELOAD_NOW = "reloadNow";
 const EVENT_SCHEDULE_RELOAD = "scheduleReload";
@@ -57,6 +58,7 @@ installExternalUnloadAudit();
 
 /** 重定向当前页面（带 5s 后重试）。 */
 function goto(reason, detail) {
+  recordNavigationDecision("accepted", { type: EVENT_RELOAD_NOW, reason }, detail);
   writeNavigationAudit("reload", { reason, detail });
   window.location.href = window.location;
   setTimeout(() => goto(reason, detail), 5000);
@@ -84,9 +86,16 @@ function normalizeReloadDelayMs(event) {
  * @returns {number} setTimeout 句柄（供 clearTimeout 取消，如 reloader 回合结束取消 delayReload）
  */
 function scheduleReload(event) {
-  if (!isReloadReasonAllowed(event)) return false;
+  if (!isReloadReasonAllowed(event)) {
+    recordNavigationDecision("rejected", event, { cause: "reloadReasonNotAllowed" });
+    return false;
+  }
   const delayMs = normalizeReloadDelayMs(event);
-  if (!delayMs) return false;
+  if (!delayMs) {
+    recordNavigationDecision("rejected", event, { cause: "invalidReloadDelay" });
+    return false;
+  }
+  recordNavigationDecision("accepted", event, { delayMs, detail: event.detail });
   return setTimeout(() => goto(event.reason, event.detail), delayMs);
 }
 
@@ -96,6 +105,7 @@ function scheduleReload(event) {
  * @param {boolean=} newTab true -> 新标签
  */
 function openUrl(url, newTab, reason) {
+  recordNavigationDecision("accepted", { type: EVENT_OPEN_URL, reason }, { url, newTab: Boolean(newTab) });
   writeNavigationAudit("navigate", { reason, url, newTab: Boolean(newTab) });
   window.open(url, newTab ? "_blank" : "_self");
 }
@@ -106,13 +116,19 @@ function openWindow(url, name, features) {
 
 const navigationEventHandlers = Object.freeze({
   [EVENT_RELOAD_NOW]: (event) => {
-    if (!isReloadReasonAllowed(event)) return false;
+    if (!isReloadReasonAllowed(event)) {
+      recordNavigationDecision("rejected", event, { cause: "reloadReasonNotAllowed" });
+      return false;
+    }
     goto(event.reason, event.detail);
     return true;
   },
   [EVENT_SCHEDULE_RELOAD]: (event) => scheduleReload(event),
   [EVENT_OPEN_URL]: (event) => {
-    if (!isRedirectReasonAllowed(event)) return false;
+    if (!isRedirectReasonAllowed(event)) {
+      recordNavigationDecision("rejected", event, { cause: "redirectReasonNotAllowed", url: event.url });
+      return false;
+    }
     openUrl(event.url, event.newTab, event.reason);
     return true;
   },
@@ -120,5 +136,10 @@ const navigationEventHandlers = Object.freeze({
 });
 
 export function runNavigationAutomation(event = { type: EVENT_RELOAD_NOW }) {
-  return navigationEventHandlers[event.type]?.(event) ?? false;
+  const handler = navigationEventHandlers[event.type];
+  if (!handler) {
+    recordNavigationDecision("rejected", event, { cause: "unknownNavigationEvent" });
+    return false;
+  }
+  return handler(event);
 }
