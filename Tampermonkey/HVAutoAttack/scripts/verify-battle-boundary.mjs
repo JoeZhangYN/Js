@@ -582,6 +582,13 @@ function checkTurnEntry() {
   ) {
     violations.push("src/battle/main-loop.test.js must cover null turn workflow rejection");
   }
+  if (
+    !mainLoopTestText.includes(
+      "records failed turn workflow stage as not acted without rethrowing"
+    )
+  ) {
+    violations.push("src/battle/main-loop.test.js must cover failed turn workflow as not acted");
+  }
   if (!mainLoopTestText.includes("eventType: null")) {
     violations.push("src/battle/main-loop.test.js must preserve null turn workflow event identity");
   }

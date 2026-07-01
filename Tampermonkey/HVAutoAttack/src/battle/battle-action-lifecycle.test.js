@@ -87,6 +87,25 @@ describe("runBattleActionLifecycleAutomation", () => {
     );
   });
 
+  it("records rejected turn continuation when the turn workflow returns not acted", () => {
+    const { deps } = makeDeps();
+    deps.runTurn.mockReturnValue(false);
+
+    expect(
+      runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED }, deps)
+    ).toEqual({ outcome: "ongoing", continued: "turn", continuationStarted: false });
+
+    expect(deps.recordLifecycle).toHaveBeenCalledWith(
+      "actionEnded",
+      {
+        outcome: "ongoing",
+        continued: "turn",
+        continuationStarted: false,
+      },
+      expect.arrayContaining([{ step: "runTurn", result: false }])
+    );
+  });
+
   it("rejects unknown events with structured lifecycle evidence", () => {
     const { deps } = makeDeps();
 

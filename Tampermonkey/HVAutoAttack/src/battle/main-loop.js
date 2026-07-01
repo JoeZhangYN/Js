@@ -60,7 +60,7 @@ function runCurrentBattleTurn() {
     recordTurnWorkflowStage("failed", {
       message: error instanceof Error ? error.message : String(error),
     });
-    throw error;
+    return false;
   }
 }
 

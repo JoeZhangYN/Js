@@ -87,14 +87,12 @@ describe("runBattleTurnAutomation", () => {
     });
   });
 
-  it("records failed turn workflow stage before rethrowing", () => {
+  it("records failed turn workflow stage as not acted without rethrowing", () => {
     mocks.runBattleTurnContext.mockImplementation(() => {
       throw new Error("context exploded");
     });
 
-    expect(() =>
-      runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN })
-    ).toThrow("context exploded");
+    expect(runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN })).toBe(false);
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
       stage: "failed",
       detail: { message: "context exploded" },
