@@ -1,10 +1,7 @@
 // 战斗行动决策链入口：决策上下文、step 顺序和 acted 短路语义统一收敛在这里。
 import { BattleAttackActionEvent, runBattleAttackAction } from "./attack/decide-attack-action.js";
-import {
-  BattleActionEffectDispatchEvent,
-  runBattleActionEffectDispatch,
-} from "./battle-action-effect-dispatch.js";
 import { readBattleActionEffectEvidence } from "./battle-action-effect-evidence.js";
+import { applyActionResultStep } from "./battle-action-decision-dispatch.js";
 import { recordDecisionEvidence } from "./battle-action-decision-recording.js";
 import {
   BattleBuffPreparationEvent,
@@ -97,13 +94,10 @@ function decideBattleAction(turnContext = {}) {
   for (const step of ACTION_STEPS) {
     const result = decideActionStep(step, actionContext);
     const previousEffectEvidence = readBattleActionEffectEvidence();
-    const acted = runBattleActionEffectDispatch({
-      type: BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT,
-      result,
-      snap,
-    });
+    const dispatch = applyActionResultStep(result, snap);
+    const acted = dispatch.acted;
     const stepTrace = { capability: step.capability, result, acted };
-    const effectEvidence = readFreshEffectEvidence(previousEffectEvidence);
+    const effectEvidence = dispatch.effectEvidence || readFreshEffectEvidence(previousEffectEvidence);
     if (effectEvidence) stepTrace.effectEvidence = effectEvidence;
     steps.push(stepTrace);
     if (acted) {

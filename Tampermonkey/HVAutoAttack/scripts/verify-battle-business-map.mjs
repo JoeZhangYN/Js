@@ -7,6 +7,7 @@ const battleAutomationFile = path.join(root, "src/battle/battle-automation.js");
 const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const turnPreludeFile = path.join(root, "src/battle/battle-turn-prelude.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
+const actionDecisionDispatchFile = path.join(root, "src/battle/battle-action-decision-dispatch.js");
 const actionDecisionEvidenceFile = path.join(root, "src/battle/battle-action-decision-evidence.js");
 const actionDecisionRecordingFile = path.join(root, "src/battle/battle-action-decision-recording.js");
 const actionEffectDispatchFile = path.join(root, "src/battle/battle-action-effect-dispatch.js");
@@ -33,6 +34,7 @@ const battleAutomation = read(battleAutomationFile);
 const mainLoop = read(mainLoopFile);
 const turnPrelude = read(turnPreludeFile);
 const actionDecision = read(actionDecisionFile);
+const actionDecisionDispatch = read(actionDecisionDispatchFile);
 const actionDecisionEvidence = read(actionDecisionEvidenceFile);
 const actionDecisionRecording = read(actionDecisionRecordingFile);
 const actionEffectDispatch = read(actionEffectDispatchFile);
@@ -79,11 +81,18 @@ for (const required of [
   "runBattleBuffPreparation",
   "runBattleOffensiveDebuff",
   "runBattleAttackAction",
-  "runBattleActionEffectDispatch",
-  "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
+  "applyActionResultStep",
   "recordDecisionEvidence",
 ]) {
   requireText("src/battle/battle-action-decision.js", actionDecision, required);
+}
+
+for (const required of [
+  "runBattleActionEffectDispatch",
+  "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
+  "actionEffectDispatchThrew",
+]) {
+  requireText("src/battle/battle-action-decision-dispatch.js", actionDecisionDispatch, required);
 }
 
 for (const required of [

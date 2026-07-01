@@ -74,4 +74,37 @@ describe("runBattleActionDecision decision step exceptions", () => {
       ]),
     });
   });
+
+  it("records thrown effect dispatch as structured not-acted evidence", () => {
+    mocks.runBattleSurvivalAction.mockReturnValue({ kind: "noop" });
+    mocks.runBattleActionEffectDispatch
+      .mockImplementationOnce(() => {
+        throw new Error("effect dispatch exploded");
+      })
+      .mockReturnValue(false);
+
+    expect(
+      runBattleActionDecision({
+        type: BattleActionDecisionEvent.DECIDE,
+        context: { snap: {}, actionOptions: {} },
+      })
+    ).toBe(false);
+
+    expect(mocks.runBattleActionDecisionEvidence).toHaveBeenCalledWith({
+      type: "recordTrace",
+      steps: expect.arrayContaining([
+        expect.objectContaining({
+          capability: "survival",
+          acted: false,
+          effectEvidence: expect.objectContaining({
+            failureReason: "actionEffectDispatchThrew",
+            result: expect.objectContaining({
+              reason: "actionEffectDispatchThrew",
+              error: "effect dispatch exploded",
+            }),
+          }),
+        }),
+      ]),
+    });
+  });
 });

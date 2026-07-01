@@ -24,6 +24,7 @@ const evidenceExceptionTest = path.normalize(
 );
 const planFailureTest = path.normalize("src/battle/battle-action-effect-plan-failure.test.js");
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
+const actionDecisionDispatch = path.normalize("src/battle/battle-action-decision-dispatch.js");
 const executionRecordingFailureTest = path.normalize(
   "src/battle/battle-execution-recording-failure.test.js"
 );
@@ -51,6 +52,7 @@ const executionText = read(execution);
 const evidenceText = read(evidence);
 const recordingText = read(recording);
 const actionDecisionText = read(actionDecision);
+const actionDecisionDispatchText = read(actionDecisionDispatch);
 
 for (const required of [
   "BattleActionEffectDispatchEvent",
@@ -419,8 +421,9 @@ if (!fs.existsSync(path.join(root, executionRecordingFailureTest))) {
 }
 
 if (
-  !actionDecisionText.includes("BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT") ||
-  !actionDecisionText.includes("runBattleActionEffectDispatch")
+  !actionDecisionText.includes("applyActionResultStep") ||
+  !actionDecisionDispatchText.includes("BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT") ||
+  !actionDecisionDispatchText.includes("runBattleActionEffectDispatch")
 ) {
   violations.push(`${rel(actionDecision)} must apply decisions through the action effect entry`);
 }
@@ -436,7 +439,7 @@ for (const relative of ["src/battle", "src/core"]) {
     }
     const file = path.join(entry.parentPath, entry.name);
     const normalized = path.normalize(path.relative(root, file));
-    if (normalized === owner || normalized === actionDecision) continue;
+    if (normalized === owner || normalized === actionDecision || normalized === actionDecisionDispatch) continue;
     const text = fs.readFileSync(file, "utf8");
     if (/from\s+["'][^"']*battle-action-effect-dispatch\.js["']/.test(text)) {
       violations.push(`${rel(normalized)} must not bypass runBattleActionDecision`);
@@ -447,7 +450,7 @@ for (const relative of ["src/battle", "src/core"]) {
     ) {
       violations.push(`${rel(normalized)} must not bypass runBattleActionEffectDispatch`);
     }
-    if (/from\s+["'][^"']*dispatch\.js["']/.test(text)) {
+    if (/from\s+["'][^"']*(?:^|\/)dispatch\.js["']/.test(text)) {
       violations.push(`${rel(normalized)} must not import retired dispatch path`);
     }
   }

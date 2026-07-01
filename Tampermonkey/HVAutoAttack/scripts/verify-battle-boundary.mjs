@@ -87,6 +87,10 @@ const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const turnPreludeFile = path.join(root, "src/battle/battle-turn-prelude.js");
 const turnPreludeTest = path.join(root, "src/battle/battle-turn-prelude.test.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
+const actionDecisionDispatchFile = path.join(
+  root,
+  "src/battle/battle-action-decision-dispatch.js"
+);
 const actionDecisionEvidenceFile = path.join(root, "src/battle/battle-action-decision-evidence.js");
 const actionDecisionRecordingFile = path.join(root, "src/battle/battle-action-decision-recording.js");
 const actionDecisionEvidenceTestFile = path.join(
@@ -509,6 +513,7 @@ function checkRoundStartEntry() {
 function checkTurnEntry() {
   const text = fs.readFileSync(mainLoopFile, "utf8");
   const actionDecisionText = fs.readFileSync(actionDecisionFile, "utf8");
+  const actionDecisionDispatchText = fs.readFileSync(actionDecisionDispatchFile, "utf8");
   const actionDecisionRecordingText = fs.readFileSync(actionDecisionRecordingFile, "utf8");
   if (!/export function runBattleTurnAutomation\(/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must expose runBattleTurnAutomation()`);
@@ -713,9 +718,8 @@ function checkTurnEntry() {
   }
   for (const required of [
     "ACTION_STEPS",
-    "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
-    "runBattleActionEffectDispatch",
     "readBattleActionEffectEvidence",
+    "applyActionResultStep",
     "actionOptions",
     "const actionContext = { snap, actionOptions }",
     "for (const step of ACTION_STEPS)",
@@ -747,6 +751,19 @@ function checkTurnEntry() {
   ]) {
     if (!actionDecisionText.includes(required)) {
       violations.push(`${rel(actionDecisionFile)} must own action decision ${required}`);
+    }
+  }
+  for (const required of [
+    "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
+    "runBattleActionEffectDispatch",
+    "applyActionResultStep",
+    "actionEffectDispatchThrew",
+    "effect-dispatch-event",
+    "originalResultKind: result?.kind ?? null",
+    "failureReason: REASON_ACTION_EFFECT_DISPATCH_THROW",
+  ]) {
+    if (!actionDecisionDispatchText.includes(required)) {
+      violations.push(`${rel(actionDecisionDispatchFile)} must own action dispatch ${required}`);
     }
   }
   if (
@@ -812,7 +829,9 @@ function checkTurnEntry() {
     : "";
   for (const required of [
     "records thrown decision steps as structured not-acted results",
+    "records thrown effect dispatch as structured not-acted evidence",
     "actionDecisionStepThrew",
+    "actionEffectDispatchThrew",
     "decision-step-error",
     "survival exploded",
   ]) {
