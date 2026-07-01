@@ -6,6 +6,7 @@ const owner = path.normalize("src/battle/attack/decide-attack-action.js");
 const ownerTest = path.normalize("src/battle/attack/decide-attack-action.test.js");
 const attackPlan = path.normalize("src/battle/attack/attack-plan.js");
 const attackDecision = path.normalize("src/battle/attack/decide-attack.js");
+const attackFacts = path.normalize("src/battle/attack/attack-facts.js");
 const spellAttackPlan = path.normalize("src/battle/attack/spell-attack-plan.js");
 const physicalSkillScoring = path.normalize("src/battle/attack/physical-skill-scoring.js");
 const physicalSkillRanking = path.normalize("src/battle/attack/physical-skill-ranking.js");
@@ -23,6 +24,7 @@ function rel(relative) {
 }
 
 const ownerText = read(owner);
+const attackFactsText = read(attackFacts);
 const attackPlanText = read(attackPlan);
 const actionDecisionText = read(actionDecision);
 
@@ -69,6 +71,16 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   if (!ownerTestText.includes("runBattleAttackAction(null)")) {
     violations.push(`${rel(ownerTest)} must cover null attack action events`);
   }
+  if (!ownerTestText.includes("rejects unknown attack facts events as empty facts")) {
+    violations.push(`${rel(ownerTest)} must cover unknown attack facts events`);
+  }
+  if (!ownerTestText.includes("runBattleAttackFacts(null)")) {
+    violations.push(`${rel(ownerTest)} must cover null attack facts events`);
+  }
+}
+
+if (!attackFactsText.includes("battleAttackFactsEventHandlers[event?.type]")) {
+  violations.push(`${rel(attackFacts)} must reject null attack facts events as empty facts`);
 }
 
 if (

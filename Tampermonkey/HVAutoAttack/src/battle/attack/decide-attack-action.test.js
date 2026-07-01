@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BattleAttackActionEvent, runBattleAttackAction } from "./decide-attack-action.js";
+import { runBattleAttackFacts } from "./attack-facts.js";
 
 function decide(snap, opt) {
   return runBattleAttackAction({
@@ -46,5 +47,10 @@ describe("runBattleAttackAction", () => {
   it("rejects unknown attack action events as no action", () => {
     expect(runBattleAttackAction({ type: "unknown" })).toEqual({ kind: "noop" });
     expect(runBattleAttackAction(null)).toEqual({ kind: "noop" });
+  });
+
+  it("rejects unknown attack facts events as empty facts", () => {
+    expect(runBattleAttackFacts({ type: "unknown" })).toEqual({});
+    expect(runBattleAttackFacts(null)).toEqual({});
   });
 });

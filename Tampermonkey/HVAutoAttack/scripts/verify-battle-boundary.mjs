@@ -4187,6 +4187,19 @@ function checkBattleRuleFactMappers() {
   if (/event\.type\s*===/.test(attackFactsEntryBody)) {
     violations.push(`${rel(attackFactsFile)} entry must dispatch by handler table`);
   }
+  if (!attackFactsText.includes("battleAttackFactsEventHandlers[event?.type]")) {
+    violations.push(`${rel(attackFactsFile)} must reject null attack facts events as empty facts`);
+  }
+  const attackActionTestText = fs.readFileSync(
+    path.join(root, "src/battle/attack/decide-attack-action.test.js"),
+    "utf8"
+  );
+  if (!attackActionTestText.includes("rejects unknown attack facts events as empty facts")) {
+    violations.push(`${rel(attackFactsFile)} tests must cover unknown attack facts events`);
+  }
+  if (!attackActionTestText.includes("runBattleAttackFacts(null)")) {
+    violations.push(`${rel(attackFactsFile)} tests must cover null attack facts events`);
+  }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(attackFactsText)) {
     violations.push(`${rel(attackFactsFile)} must not depend on generic rule fact mappers`);
   }

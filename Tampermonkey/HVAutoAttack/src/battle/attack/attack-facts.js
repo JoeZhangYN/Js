@@ -31,5 +31,5 @@ function attackFacts(snap) {
 }
 
 export function runBattleAttackFacts(event = { type: EVENT_READ_ACTION }) {
-  return battleAttackFactsEventHandlers[event.type]?.(event) ?? {};
+  return battleAttackFactsEventHandlers[event?.type]?.(event) ?? {};
 }
