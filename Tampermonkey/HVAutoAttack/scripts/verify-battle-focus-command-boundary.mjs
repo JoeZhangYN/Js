@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src", "battle");
 const owner = path.normalize("src/battle/battle-focus-command.js");
 const ownerTest = path.normalize("src/battle/battle-focus-command.test.js");
+const readFailureTest = path.normalize("src/battle/battle-focus-command-read-failure.test.js");
 const violations = [];
 
 function rel(file) {
@@ -57,6 +58,8 @@ requireText(owner, [
   "clickBattleCommandElement",
   "CLICK",
   "#ckey_focus",
+  "readFocusElement",
+  "focusElementReadFailed",
   "focus.click",
   "clickResult.reason",
   "clickResult.error",
@@ -85,6 +88,11 @@ requireText(ownerTest, [
   "records null Focus events as not acted",
   "unknownFocusCommand",
   "eventType: null",
+]);
+requireText(readFailureTest, [
+  "records Focus button read failures as not acted",
+  "focusElementReadFailed",
+  "focus read exploded",
 ]);
 
 if (violations.length) {

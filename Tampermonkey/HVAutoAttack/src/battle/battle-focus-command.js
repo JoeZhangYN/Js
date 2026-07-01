@@ -10,7 +10,12 @@ export const BattleFocusCommandEvent = Object.freeze({
 });
 
 function clickFocus() {
-  const el = gE("#ckey_focus");
+  const focus = readFocusElement();
+  if (focus.error) {
+    recordCommandResult("rejected", "focusElementReadFailed", { error: focus.error });
+    return false;
+  }
+  const el = focus.el;
   if (!el) {
     recordCommandResult("rejected", "focusMissing");
     return false;
@@ -22,6 +27,14 @@ function clickFocus() {
   }
   recordCommandResult("accepted", "clicked");
   return true;
+}
+
+function readFocusElement() {
+  try {
+    return { el: gE("#ckey_focus") };
+  } catch (error) {
+    return { el: null, error: error?.message || String(error) };
+  }
 }
 
 function recordCommandResult(result, reason, detail) {
