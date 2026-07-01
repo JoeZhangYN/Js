@@ -66,13 +66,10 @@ function buildApiResponseScript() {
       if (b.status === 200) {
         const a = JSON.parse(b.responseText);
         if (a.login !== undefined) {
-          //top.window.location.href = login_url;  // 修改后，不知道什么功能
+          return false;
         } else {
-          if (a.error || a.reload) window.location.href = window.location.search;
           return a;
         }
-      } else {
-        window.location.href = window.location.search;
       }
     }
     return false;

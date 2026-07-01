@@ -39,6 +39,7 @@ requireText(ownerTest, [
   'document.getElementById("eventEnd").click()',
   "return d.apply(window.battle || this, arguments)",
   "binds native process_action callbacks to the active battle instance",
+  "does not navigate directly from generated API response handling",
   "window.sessionStorage.delay * 1",
   "window.sessionStorage.delay2 * 1",
 ]);
@@ -77,6 +78,11 @@ if (!ownerText.includes("return d.apply(window.battle || this, arguments)")) {
 if (/b\.onreadystatechange\s*=\s*d\b/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not install bare process_action callbacks`
+  );
+}
+if (/window\.location|location\.href|window\.location\.search/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not navigate directly from API response handling`
   );
 }
 

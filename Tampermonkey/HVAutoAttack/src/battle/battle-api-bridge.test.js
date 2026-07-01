@@ -48,6 +48,7 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[0].textContent).toContain('document.getElementById("eventEnd").click()');
     expect(deps.scripts[1].textContent).toContain("api_response =");
     expect(deps.scripts[1].textContent).toContain("JSON.parse(b.responseText)");
+    expect(deps.scripts[1].textContent).not.toContain("window.location.href");
   });
 
   it("binds native process_action callbacks to the active battle instance", () => {
@@ -74,6 +75,18 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(script.indexOf('document.getElementById("eventEnd").click()')).toBeGreaterThan(
       script.indexOf("b.onload = function")
     );
+  });
+
+  it("does not navigate directly from generated API response handling", () => {
+    const deps = makeDeps();
+
+    runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }, deps);
+
+    const script = deps.scripts[1].textContent;
+    expect(script).not.toContain("window.location.search");
+    expect(script).not.toContain("location.href");
+    expect(script).toContain("return a");
+    expect(script).toContain("return false");
   });
 
   it("rejects unknown events", () => {
