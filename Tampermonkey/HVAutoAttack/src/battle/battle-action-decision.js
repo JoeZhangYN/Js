@@ -111,6 +111,21 @@ function recordDecisionEvidence(steps) {
   });
 }
 
+function rejectUnknownActionDecisionEvent(event) {
+  recordDecisionEvidence([
+    {
+      capability: "actionDecision",
+      result: {
+        kind: "unknown-decision-event",
+        reason: "unknownActionDecisionEvent",
+        eventType: event?.type ?? null,
+      },
+      acted: false,
+    },
+  ]);
+  return false;
+}
+
 export function runBattleActionDecision(event = { type: EVENT_DECIDE }) {
-  return battleActionDecisionEventHandlers[event.type]?.(event) ?? false;
+  return battleActionDecisionEventHandlers[event?.type]?.(event) ?? rejectUnknownActionDecisionEvent(event);
 }

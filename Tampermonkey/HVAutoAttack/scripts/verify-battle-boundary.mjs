@@ -567,6 +567,9 @@ function checkTurnEntry() {
     "const steps = []",
     "steps.push({ capability: step.capability, result, acted })",
     "recordDecisionEvidence(steps)",
+    "rejectUnknownActionDecisionEvent",
+    "unknownActionDecisionEvent",
+    'capability: "actionDecision"',
     "return true",
     "return false",
     "decideSurvivalStep",
@@ -605,8 +608,12 @@ function checkTurnEntry() {
       `${rel(actionDecisionFile)} must not reintroduce repeated two-arg step wrappers`
     );
   }
-  if (!actionDecisionText.includes("return battleActionDecisionEventHandlers[event.type]?.(event) ?? false")) {
-    violations.push(`${rel(actionDecisionFile)} must expose acted boolean for unknown events`);
+  if (
+    !actionDecisionText.includes(
+      "battleActionDecisionEventHandlers[event?.type]?.(event) ?? rejectUnknownActionDecisionEvent(event)"
+    )
+  ) {
+    violations.push(`${rel(actionDecisionFile)} must record decision evidence for unknown events`);
   }
   const actionDecisionEvidenceText = fs.readFileSync(actionDecisionEvidenceFile, "utf8");
   for (const required of [
@@ -616,6 +623,7 @@ function checkTurnEntry() {
     "ACTION_DECISION_EVIDENCE_KEY",
     "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
     "summarizeResult",
+    "eventType: result.eventType",
     "result.plan?.type ?? result.plan?.kind",
     "acted: Boolean(step.acted)",
     "[HVAA] battle action decision",
@@ -630,6 +638,7 @@ function checkTurnEntry() {
   for (const required of [
     "records decision trace with acted and not-acted steps",
     "keeps legacy plan kind fallback for older decision evidence",
+    "records event type for rejected decision events",
     "HVAA:lastBattleActionDecision",
     "rejects unknown decision evidence events",
   ]) {

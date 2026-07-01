@@ -83,6 +83,38 @@ describe("runBattleActionDecision", () => {
         context: { snap: {}, actionOptions: {} },
       })
     ).toBe(false);
+    expect(mocks.runBattleActionDecisionEvidence).toHaveBeenCalledWith({
+      type: "recordTrace",
+      steps: [
+        {
+          capability: "actionDecision",
+          result: {
+            kind: "unknown-decision-event",
+            reason: "unknownActionDecisionEvent",
+            eventType: "unknown",
+          },
+          acted: false,
+        },
+      ],
+    });
+  });
+
+  it("rejects null action decision events with structured evidence instead of throwing", () => {
+    expect(runBattleActionDecision(null)).toBe(false);
+    expect(mocks.runBattleActionDecisionEvidence).toHaveBeenCalledWith({
+      type: "recordTrace",
+      steps: [
+        {
+          capability: "actionDecision",
+          result: {
+            kind: "unknown-decision-event",
+            reason: "unknownActionDecisionEvent",
+            eventType: null,
+          },
+          acted: false,
+        },
+      ],
+    });
   });
 
   it("passes the same snap to effect dispatch for bookkeeping", () => {

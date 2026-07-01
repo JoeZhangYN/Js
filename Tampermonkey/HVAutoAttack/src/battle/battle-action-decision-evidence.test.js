@@ -48,6 +48,40 @@ describe("runBattleActionDecisionEvidence", () => {
     });
   });
 
+  it("records event type for rejected decision events", () => {
+    runBattleActionDecisionEvidence(
+      {
+        type: BattleActionDecisionEvidenceEvent.RECORD_TRACE,
+        steps: [
+          {
+            capability: "actionDecision",
+            result: {
+              kind: "unknown-decision-event",
+              reason: "unknownActionDecisionEvent",
+              eventType: "unknown",
+            },
+            acted: false,
+          },
+        ],
+      },
+      { sessionStorage: window.sessionStorage, debug: vi.fn() }
+    );
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDecision"))).toMatchObject({
+      steps: [
+        {
+          capability: "actionDecision",
+          result: {
+            kind: "unknown-decision-event",
+            reason: "unknownActionDecisionEvent",
+            eventType: "unknown",
+          },
+          acted: false,
+        },
+      ],
+    });
+  });
+
   it("rejects unknown decision evidence events", () => {
     expect(runBattleActionDecisionEvidence({ type: "unknown" })).toBe(false);
   });
