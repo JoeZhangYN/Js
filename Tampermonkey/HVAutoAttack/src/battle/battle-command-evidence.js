@@ -27,8 +27,15 @@ function recordCommandResult(event, deps) {
     at: new Date().toISOString(),
   };
   try {
-    deps.sessionStorage.setItem(BATTLE_COMMAND_EVIDENCE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+    deps.sessionStorage.setItem(
+      BATTLE_COMMAND_EVIDENCE_KEY,
+      JSON.stringify({ ...evidence, storageWriteOk: true })
+    );
+    evidence.storageWriteOk = true;
+  } catch (error) {
+    evidence.storageWriteOk = false;
+    evidence.storageWriteError = error?.message || String(error);
+    deps.debug("[HVAA] battle command", evidence);
     return false;
   }
   deps.debug("[HVAA] battle command", evidence);

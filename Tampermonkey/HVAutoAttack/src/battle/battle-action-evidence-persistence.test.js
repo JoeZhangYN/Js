@@ -7,6 +7,11 @@ import {
   BattleActionEffectEvidenceEvent,
   runBattleActionEffectEvidence,
 } from "./battle-action-effect-evidence.js";
+import {
+  BattleActionLifecycleEvidenceEvent,
+  runBattleActionLifecycleEvidence,
+} from "./battle-action-lifecycle-evidence.js";
+import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
 
 function failingDeps() {
   return {
@@ -55,6 +60,47 @@ describe("battle action evidence persistence failures", () => {
 
     expect(deps.debug).toHaveBeenCalledWith(
       "[HVAA] battle action effect",
+      expect.objectContaining({ storageWriteOk: false, storageWriteError: "quota" })
+    );
+  });
+
+  it("keeps command evidence visible when storage is unavailable", () => {
+    const deps = failingDeps();
+
+    expect(
+      runBattleCommandEvidence(
+        {
+          type: BattleCommandEvidenceEvent.RECORD_RESULT,
+          command: "target.click",
+          result: "rejected",
+          reason: "targetDead",
+        },
+        deps
+      )
+    ).toBe(false);
+
+    expect(deps.debug).toHaveBeenCalledWith(
+      "[HVAA] battle command",
+      expect.objectContaining({ storageWriteOk: false, storageWriteError: "quota" })
+    );
+  });
+
+  it("keeps lifecycle evidence visible when storage is unavailable", () => {
+    const deps = failingDeps();
+
+    expect(
+      runBattleActionLifecycleEvidence(
+        {
+          type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
+          phase: "actionEnded",
+          result: { outcome: "ongoing" },
+        },
+        deps
+      )
+    ).toBe(false);
+
+    expect(deps.debug).toHaveBeenCalledWith(
+      "[HVAA] battle action lifecycle",
       expect.objectContaining({ storageWriteOk: false, storageWriteError: "quota" })
     );
   });
