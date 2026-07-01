@@ -37,6 +37,7 @@ requireText(ownerTest, [
   "pauseHotkey",
   "pauseHotkeyKey",
   "rejects unknown events without touching pause controls",
+  "rejects null events without touching pause controls",
 ]);
 
 if (
@@ -54,6 +55,9 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_INSTALL\]/.test(ownerText)) {
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
+if (!ownerText.includes("battlePauseControlsEventHandlers[event?.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must reject null events without pause-control side effects`);
 }
 for (const [constant, key] of [
   ["PAUSE_BUTTON_OPTION_KEY", "pauseButton"],

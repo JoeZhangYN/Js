@@ -42,7 +42,7 @@ export function runBattleStartRuntimeAutomation(
       runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.BATTLE_STARTED }),
   }
 ) {
-  return battleStartRuntimeEventHandlers[event.type]?.(event, deps) ?? false;
+  return battleStartRuntimeEventHandlers[event?.type]?.(event, deps) ?? false;
 }
 
 const battleStartRuntimeEventHandlers = Object.freeze({

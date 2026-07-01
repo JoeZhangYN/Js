@@ -60,6 +60,7 @@ requireText(ownerTest, [
   "attackStatus",
   "normalizes numeric attack status",
   "rejects unknown events without touching start runtime state",
+  "rejects null events without touching start runtime state",
 ]);
 
 if (
@@ -71,6 +72,9 @@ if (
 }
 if (!/const battleStartRuntimeEventHandlers\s*=\s*Object\.freeze\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must route events through one table`);
+}
+if (!ownerText.includes("battleStartRuntimeEventHandlers[event?.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must reject null events without runtime side effects`);
 }
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not route events through an if ladder`);

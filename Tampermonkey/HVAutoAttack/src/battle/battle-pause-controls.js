@@ -66,5 +66,5 @@ export function runBattlePauseControlsAutomation(
     resume: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
   }
 ) {
-  return battlePauseControlsEventHandlers[event.type]?.(event, deps) ?? false;
+  return battlePauseControlsEventHandlers[event?.type]?.(event, deps) ?? false;
 }

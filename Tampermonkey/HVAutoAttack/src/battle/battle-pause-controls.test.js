@@ -99,4 +99,14 @@ describe("runBattlePauseControlsAutomation", () => {
     expect(deps.readOptionField).not.toHaveBeenCalled();
     expect(deps.runPauseToggle).not.toHaveBeenCalled();
   });
+
+  it("rejects null events without touching pause controls", () => {
+    const { root, deps } = makeDeps({ pauseButton: true, pauseHotkey: true });
+
+    expect(runBattlePauseControlsAutomation(null, deps)).toBe(false);
+
+    expect(root.children).toHaveLength(0);
+    expect(deps.readOptionField).not.toHaveBeenCalled();
+    expect(deps.runPauseToggle).not.toHaveBeenCalled();
+  });
 });

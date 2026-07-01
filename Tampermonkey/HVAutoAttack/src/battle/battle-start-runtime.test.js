@@ -74,6 +74,22 @@ describe("runBattleStartRuntimeAutomation", () => {
     expect(deps.startSpeed).not.toHaveBeenCalled();
   });
 
+  it("rejects null events without touching start runtime state", () => {
+    const deps = {
+      readOptionField: vi.fn(),
+      read: vi.fn(),
+      write: vi.fn(),
+      startSpeed: vi.fn(),
+    };
+
+    expect(runBattleStartRuntimeAutomation(null, deps)).toBe(false);
+
+    expect(deps.readOptionField).not.toHaveBeenCalled();
+    expect(deps.read).not.toHaveBeenCalled();
+    expect(deps.write).not.toHaveBeenCalled();
+    expect(deps.startSpeed).not.toHaveBeenCalled();
+  });
+
   it("reads battle start runtime options through the option entry on the default path", () => {
     mocks.runOptionAutomation.mockReturnValue("melee");
 
