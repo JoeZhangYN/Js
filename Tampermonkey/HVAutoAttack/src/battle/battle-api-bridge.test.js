@@ -65,7 +65,8 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.scripts[0].textContent).toContain('b.open("POST", apiJsonUrl)');
     expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay * 1");
     expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay2 * 1");
-    expectContains(deps.scripts[0].textContent, ["window.battle.battle_continue", "document.location += \"\""]);
+    expectContains(deps.scripts[0].textContent, ["window.battle.battle_continue", "window.HVAA_navigation", "BATTLE_API_CALLBACK_FALLBACK", "missingBattleContinue"]);
+    expect(deps.scripts[0].textContent).not.toContain("document.location");
     expect(deps.scripts[0].textContent).toContain('document.getElementById("eventStart").click()');
     expect(deps.scripts[0].textContent).toContain('document.getElementById("eventEnd").click()');
     expect(deps.scripts[1].textContent).toContain("api_response =");

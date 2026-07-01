@@ -54,7 +54,19 @@ function buildApiCallScript(apiJsonUrl, protocol) {
       const callbackTarget =
         window.battle && typeof window.battle.battle_continue === "function"
           ? window.battle
-          : { battle_continue: function () { document.location += ""; } };
+          : {
+              battle_continue: function () {
+                const navigation = window.HVAA_navigation;
+                if (navigation && navigation.reloadCurrentPage && navigation.ReloadReason) {
+                  return navigation.reloadCurrentPage(
+                    navigation.ReloadReason.BATTLE_API_CALLBACK_FALLBACK,
+                    { source: "battleApiBridge", reason: "missingBattleContinue" }
+                  );
+                }
+                console.warn("[HVAA] battle API callback fallback reload blocked; navigation bridge missing");
+                return false;
+              },
+            };
       return d.apply(callbackTarget, arguments);
     };
     b.onload = function () {

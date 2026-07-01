@@ -48,6 +48,9 @@ if (!owner) {
   if (!source.includes("BATTLE_API_RESPONSE")) {
     violations.push("NavigationReloadReason must include battle API response reloads");
   }
+  if (!source.includes("BATTLE_API_CALLBACK_FALLBACK")) {
+    violations.push("NavigationReloadReason must include battle API callback fallback reloads");
+  }
   if (!source.includes("RELOAD_RETRY_DELAY_MS")) {
     violations.push("reload retry delay must be a named navigation invariant");
   }
@@ -386,6 +389,7 @@ if (!owner) {
       !bridgeText.includes("unsafeWindow") ||
       !bridgeText.includes("detail") ||
       !bridgeTestText.includes("BATTLE_API_RESPONSE") ||
+      !bridgeTestText.includes("BATTLE_API_CALLBACK_FALLBACK") ||
       !bridgeTestText.includes("passes reload detail through the bridge")
     ) {
       violations.push("navigation bridge must expose reload reasons to the page context");
@@ -434,7 +438,7 @@ for (const file of files) {
   if (/NavigationEvent\.SCHEDULE_RELOAD[\s\S]{0,120}\bsec\s*:/.test(source)) {
     violations.push(`src/${file.rel} uses legacy SCHEDULE_RELOAD sec field`);
   }
-  if (/\b(?:window\.)?location\.href\s*=|\bwindow\.open\s*\(/.test(source)) {
+  if (/\b(?:window\.)?location\.href\s*=|\bdocument\.location\s*(?:\+=|=)|\bwindow\.open\s*\(/.test(source)) {
     violations.push(
       `src/${file.rel} must route navigation effects through runNavigationAutomation(event)`
     );

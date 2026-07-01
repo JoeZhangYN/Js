@@ -16,6 +16,9 @@ describe("navigation bridge", () => {
     await import("./navigation-bridge.js");
 
     expect(window.HVAA_navigation.ReloadReason.BATTLE_API_RESPONSE).toBe("battleApiResponse");
+    expect(window.HVAA_navigation.ReloadReason.BATTLE_API_CALLBACK_FALLBACK).toBe(
+      "battleApiCallbackFallback"
+    );
     expect(globalThis.unsafeWindow.HVAA_navigation.ReloadReason.BATTLE_API_RESPONSE).toBe(
       "battleApiResponse"
     );

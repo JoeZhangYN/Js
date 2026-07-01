@@ -73,6 +73,9 @@ const ownerText = requireText(owner, [
   "rejectApiRecoveryBridgeInstallFailed",
   "typeof MAIN_URL",
   "battle_continue",
+  "window.HVAA_navigation",
+  "BATTLE_API_CALLBACK_FALLBACK",
+  "missingBattleContinue",
 ]);
 requireText(ownerTest, [
   'document.getElementById("eventStart").click()',
@@ -95,6 +98,8 @@ requireText(ownerTest, [
   "https://hentaiverse.org/isekai/json",
   "window.sessionStorage.delay * 1",
   "window.sessionStorage.delay2 * 1",
+  "BATTLE_API_CALLBACK_FALLBACK",
+  "missingBattleContinue",
 ]);
 requireText(ownerRejectionTest, [
   "rejects unknown events through API recovery evidence",
@@ -108,6 +113,9 @@ requireText(ownerRejectionTest, [
 requireText(runtimeTest, [
   "battle_continue-capable target",
   "non-capable window.battle object",
+  "blocks fallback callback reload when the navigation bridge is missing",
+  "battleApiCallbackFallback",
+  "missingBattleContinue",
   "window.MAIN_URL",
   "https://hentaiverse.org/isekai/json",
 ]);
@@ -343,11 +351,15 @@ if (/window\.sessionStorage\.(delay|delay2)\b/.test(ownerText)) {
 }
 if (
   !ownerText.includes("window.battle.battle_continue") ||
-  !ownerText.includes('document.location += ""')
+  !ownerText.includes("window.HVAA_navigation") ||
+  !ownerText.includes("BATTLE_API_CALLBACK_FALLBACK")
 ) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} must bind native process_action callbacks to a battle_continue-capable target`
+    `${owner.replaceAll("\\", "/")} must bind native process_action callbacks to a battle_continue-capable target and route fallback reloads through the navigation bridge`
   );
+}
+if (/document\.location\s*(?:\+=|=)/.test(ownerText + read(ownerTest) + read(runtimeTest))) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not use document.location fallback reloads`);
 }
 if (/from\s+["']\.\.\/env\.js["']|isIsekai|ISEKAI_URL|BATTLE_API_BASE_URL/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must consume typed battle API world context`);
