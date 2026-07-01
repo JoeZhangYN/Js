@@ -1,4 +1,4 @@
-import { DiagnosticEvidenceKey } from "./diagnostic-evidence-keys.js";
+import { DIAGNOSTIC_EVIDENCE_SOURCES } from "./diagnostic-evidence-keys.js";
 
 function readJson(storage, key) {
   try {
@@ -11,26 +11,9 @@ function readJson(storage, key) {
 
 export function readRecentDiagnosticEvidence(storage = window.sessionStorage) {
   const evidence = {};
-  const navigationDecision = readJson(storage, DiagnosticEvidenceKey.NAVIGATION_DECISION);
-  if (navigationDecision) evidence.navigationDecision = navigationDecision;
-  const battleTurnWorkflow = readJson(storage, DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW);
-  if (battleTurnWorkflow) evidence.battleTurnWorkflow = battleTurnWorkflow;
-  const battleApiResponseRecovery = readJson(
-    storage,
-    DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY
-  );
-  if (battleApiResponseRecovery) evidence.battleApiResponseRecovery = battleApiResponseRecovery;
-  const battleCommand = readJson(storage, DiagnosticEvidenceKey.BATTLE_COMMAND);
-  if (battleCommand) evidence.battleCommand = battleCommand;
-  const battlePause = readJson(storage, DiagnosticEvidenceKey.BATTLE_PAUSE);
-  if (battlePause) evidence.battlePause = battlePause;
-  const battleActionDelay = readJson(storage, DiagnosticEvidenceKey.BATTLE_ACTION_DELAY);
-  if (battleActionDelay) evidence.battleActionDelay = battleActionDelay;
-  const battleActionLifecycle = readJson(storage, DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE);
-  if (battleActionLifecycle) evidence.battleActionLifecycle = battleActionLifecycle;
-  const battleActionDecision = readJson(storage, DiagnosticEvidenceKey.BATTLE_ACTION_DECISION);
-  if (battleActionDecision) evidence.battleActionDecision = battleActionDecision;
-  const battleActionEffect = readJson(storage, DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT);
-  if (battleActionEffect) evidence.battleActionEffect = battleActionEffect;
+  for (const item of DIAGNOSTIC_EVIDENCE_SOURCES) {
+    const value = readJson(storage, item.key);
+    if (value) evidence[item.name] = value;
+  }
   return Object.keys(evidence).length ? evidence : undefined;
 }

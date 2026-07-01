@@ -1,4 +1,7 @@
-import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import {
+  API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES,
+  DiagnosticEvidenceKey,
+} from "../core/diagnostic-evidence-keys.js";
 
 export function buildApiResponseScript(worldContext) {
   return `api_response = ${function (b) {
@@ -102,18 +105,12 @@ export function buildApiResponseScript(worldContext) {
     return false;
   }.toString()}`
     .replace("__HVAA_BATTLE_API_WORLD_CONTEXT__", JSON.stringify(worldContext))
-    .replace("__HVAA_BATTLE_API_RECOVERY_SESSION_KEY__", DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY)
+    .replace(
+      "__HVAA_BATTLE_API_RECOVERY_SESSION_KEY__",
+      DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY
+    )
     .replace(
       "__HVAA_DIAGNOSTIC_EVIDENCE_KEYS__",
-      JSON.stringify([
-        { name: "navigationDecision", key: DiagnosticEvidenceKey.NAVIGATION_DECISION },
-        { name: "battleTurnWorkflow", key: DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW },
-        { name: "battleCommand", key: DiagnosticEvidenceKey.BATTLE_COMMAND },
-        { name: "battlePause", key: DiagnosticEvidenceKey.BATTLE_PAUSE },
-        { name: "battleActionDelay", key: DiagnosticEvidenceKey.BATTLE_ACTION_DELAY },
-        { name: "battleActionLifecycle", key: DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE },
-        { name: "battleActionDecision", key: DiagnosticEvidenceKey.BATTLE_ACTION_DECISION },
-        { name: "battleActionEffect", key: DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT },
-      ])
+      JSON.stringify(API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES)
     );
 }

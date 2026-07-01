@@ -29,6 +29,7 @@ const recoveryPersistenceTest = path.normalize(
 const recoveryDiagnosticsTest = path.normalize(
   "src/battle/battle-api-response-recovery-diagnostics.test.js"
 );
+const diagnosticEvidenceKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const worldContext = path.normalize("src/battle/battle-api-world-context.js");
 const worldContextTest = path.normalize("src/battle/battle-api-world-context.test.js");
 const violations = [];
@@ -107,6 +108,7 @@ requireText(runtimeTest, [
 ]);
 const responseScriptText = requireText(responseScript, [
   "DiagnosticEvidenceKey",
+  "API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES",
   "buildApiResponseScript",
   "window.HVAA_battleApiRecovery",
   "recovery.handleRejectedResponse",
@@ -124,6 +126,13 @@ const responseScriptText = requireText(responseScript, [
   "worldContext",
   "world: worldContext",
   'responseKind: "httpStatus"',
+]);
+requireText(diagnosticEvidenceKeys, [
+  "DIAGNOSTIC_EVIDENCE_SOURCES",
+  "API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES",
+  "battleActionDelay",
+  "DiagnosticEvidenceKey.BATTLE_ACTION_DELAY",
+  "item.key !== DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
 ]);
 requireText(responseScriptTest, [
   "records blocked recovery evidence when the page bridge is missing",
@@ -221,8 +230,8 @@ requireText(recoveryTest, [
 requireText(recoveryReloadDetailTest, [
   "passes recovery state into the default navigation reload detail",
   "HVAA:lastNavigationDecision",
-  "commandReason: \"battleApiResponse\"",
-  "recoveryAction: \"reload\"",
+  'commandReason: "battleApiResponse"',
+  'recoveryAction: "reload"',
 ]);
 requireText(recoveryRejectionTest, [
   "rejects unknown recovery events with structured evidence",
@@ -230,13 +239,13 @@ requireText(recoveryRejectionTest, [
   "records rejected API bridge events with bridge identity",
   "unknownApiBridgeEvent",
   "HVAA:battleApiRecovery",
-  "recoveryAction: \"rejected\"",
+  'recoveryAction: "rejected"',
 ]);
 requireText(recoveryPersistenceTest, [
   "continues reload recovery when recovery state persistence fails",
   "rejects unknown recovery events without throwing when persistence fails",
   "storageWriteOk: false",
-  "storageWriteError: \"quota\"",
+  'storageWriteError: "quota"',
   "battle API recovery state write failed",
 ]);
 requireText(recoveryMalformedJsonTest, [
@@ -248,14 +257,14 @@ requireText(recoveryPauseTest, [
   "writes repeated API recovery state into pause evidence on the default path",
   "HVAA:lastBattlePause",
   "battleApiResponseRepeated",
-  "recoveryAction: \"pause\"",
+  'recoveryAction: "pause"',
 ]);
 requireText(recoveryDiagnosticsTest, [
   "exposes API recovery state through recent diagnostic evidence",
   "does not nest previous API recovery evidence inside the next recovery state",
   "battleApiResponseRecovery",
   "HVAA:battleApiRecovery",
-  "recoveryAction: \"reload\"",
+  'recoveryAction: "reload"',
   "battleActionDelay",
   "unknownActionDelayEvent",
 ]);
@@ -271,7 +280,9 @@ const entryBody =
   ownerText.match(/export function runBattleApiBridgeAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
   "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_INSTALL\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
@@ -281,11 +292,12 @@ if (
     "battleApiBridgeEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownApiBridgeEvent(event, deps)"
   )
 ) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route unknown events through API recovery evidence`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route unknown events through API recovery evidence`
+  );
 }
 const apiBridgeRejectionBody =
-  ownerText.match(/function rejectUnknownApiBridgeEvent\(event, deps\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
+  ownerText.match(/function rejectUnknownApiBridgeEvent\(event, deps\) \{[\s\S]*?\n\}/)?.[0] || "";
 for (const required of [
   "BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT",
   "detail: { eventType: event?.type ?? null }",
@@ -295,7 +307,9 @@ for (const required of [
   }
 }
 if (apiBridgeRejectionBody.includes("runBattleApiResponseRecovery(event ?? null)")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must not misclassify bridge rejection as recovery rejection`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not misclassify bridge rejection as recovery rejection`
+  );
 }
 if (/document\.getElementById\(["']event(Start|End)["']\)/.test(ownerText)) {
   violations.push(
@@ -307,7 +321,10 @@ if (/window\.sessionStorage\.(delay|delay2)\b/.test(ownerText)) {
     `${owner.replaceAll("\\", "/")} must generate delay keys through protocol constants`
   );
 }
-if (!ownerText.includes("window.battle.battle_continue") || !ownerText.includes("document.location += \"\"")) {
+if (
+  !ownerText.includes("window.battle.battle_continue") ||
+  !ownerText.includes('document.location += ""')
+) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must bind native process_action callbacks to a battle_continue-capable target`
   );
@@ -324,30 +341,42 @@ if (!responseScriptText.includes("world: worldContext")) {
 if (!ownerText.includes("deps.installApiResponseRecovery()")) {
   violations.push(`${owner.replaceAll("\\", "/")} must install API recovery before scripts`);
 }
-if (/NavigationReloadReason|BattlePauseEvent|runNavigationAutomation|runBattlePauseAutomation/.test(ownerText)) {
+if (
+  /NavigationReloadReason|BattlePauseEvent|runNavigationAutomation|runBattlePauseAutomation/.test(
+    ownerText
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must not choose recovery effects directly`);
 }
 if (/b\.onreadystatechange\s*=\s*d\b/.test(ownerText)) {
-  violations.push(
-    `${owner.replaceAll("\\", "/")} must not install bare process_action callbacks`
-  );
+  violations.push(`${owner.replaceAll("\\", "/")} must not install bare process_action callbacks`);
 }
-if (/window\.location|location\.href|window\.location\.search/.test(ownerText + responseScriptText)) {
+if (
+  /window\.location|location\.href|window\.location\.search/.test(ownerText + responseScriptText)
+) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not navigate directly from API response handling`
   );
 }
 if (!responseScriptText.includes("function reloadFromApiResponse(detail)")) {
-  violations.push(`${responseScript.replaceAll("\\", "/")} must classify API response reloads explicitly`);
+  violations.push(
+    `${responseScript.replaceAll("\\", "/")} must classify API response reloads explicitly`
+  );
 }
 if (!responseScriptText.includes("window.HVAA_battleApiRecovery")) {
-  violations.push(`${responseScript.replaceAll("\\", "/")} page API response must call recovery bridge`);
+  violations.push(
+    `${responseScript.replaceAll("\\", "/")} page API response must call recovery bridge`
+  );
 }
 if (!responseScriptText.includes("recordBlockedRecovery")) {
-  violations.push(`${responseScript.replaceAll("\\", "/")} must record missing recovery bridge evidence`);
+  violations.push(
+    `${responseScript.replaceAll("\\", "/")} must record missing recovery bridge evidence`
+  );
 }
 if (!responseScriptText.includes('recoveryAction: "bridgeMissing"')) {
-  violations.push(`${responseScript.replaceAll("\\", "/")} bridge-missing state must use recoveryAction`);
+  violations.push(
+    `${responseScript.replaceAll("\\", "/")} bridge-missing state must use recoveryAction`
+  );
 }
 if (/recovery\s*:\s*["']bridgeMissing["']/.test(responseScriptText + read(responseScriptTest))) {
   violations.push("bridge-missing API recovery must not use legacy recovery field");
@@ -356,21 +385,33 @@ if (
   !responseScriptText.includes("const diagnosticEvidence = readRecentDiagnosticEvidence()") ||
   !responseScriptText.includes("state.diagnosticEvidence = diagnosticEvidence")
 ) {
-  violations.push(`${responseScript.replaceAll("\\", "/")} bridge-missing recovery must carry recent diagnostics`);
+  violations.push(
+    `${responseScript.replaceAll("\\", "/")} bridge-missing recovery must carry recent diagnostics`
+  );
 }
 if (responseScriptText.includes('name: "battleApiResponseRecovery"')) {
-  violations.push(`${responseScript.replaceAll("\\", "/")} bridge-missing diagnostics must not self-nest API recovery`);
+  violations.push(
+    `${responseScript.replaceAll("\\", "/")} bridge-missing diagnostics must not self-nest API recovery`
+  );
 }
 if (!responseScriptText.includes("a.error || a.reload")) {
-  violations.push(`${responseScript.replaceAll("\\", "/")} must intercept API error/reload responses`);
+  violations.push(
+    `${responseScript.replaceAll("\\", "/")} must intercept API error/reload responses`
+  );
 }
-if (!/a\.error \|\| a\.reload[\s\S]*reloadFromApiResponse\(\{[\s\S]*return false;/.test(responseScriptText)) {
+if (
+  !/a\.error \|\| a\.reload[\s\S]*reloadFromApiResponse\(\{[\s\S]*return false;/.test(
+    responseScriptText
+  )
+) {
   violations.push(
     `${responseScript.replaceAll("\\", "/")} must block native process_action after API error/reload responses`
   );
 }
 if (!responseScriptText.includes("action: actionDetail()")) {
-  violations.push(`${responseScript.replaceAll("\\", "/")} must audit the rejected API action shape`);
+  violations.push(
+    `${responseScript.replaceAll("\\", "/")} must audit the rejected API action shape`
+  );
 }
 if (!responseScriptText.includes('responseKind: "httpStatus"')) {
   violations.push(`${responseScript.replaceAll("\\", "/")} must classify non-200 API responses`);
@@ -381,7 +422,9 @@ if (
   !responseScriptText.includes("parseError") ||
   !responseScriptText.includes("responseTextPreview")
 ) {
-  violations.push(`${responseScript.replaceAll("\\", "/")} must classify malformed JSON API responses`);
+  violations.push(
+    `${responseScript.replaceAll("\\", "/")} must classify malformed JSON API responses`
+  );
 }
 if (!/export\s+function\s+runBattleApiResponseRecovery/.test(recoveryText)) {
   violations.push(`${recovery.replaceAll("\\", "/")} must expose one recovery entry`);
@@ -391,28 +434,46 @@ if (
     "battleApiResponseRecoveryEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownApiRecoveryEvent(event, deps)"
   )
 ) {
-  violations.push(`${recovery.replaceAll("\\", "/")} must record recovery evidence for unknown events`);
+  violations.push(
+    `${recovery.replaceAll("\\", "/")} must record recovery evidence for unknown events`
+  );
 }
-if (!recoveryText.includes("[EVENT_REJECTED_API_BRIDGE_EVENT]: (event, deps) => rejectApiBridgeEvent(event.detail, deps)")) {
-  violations.push(`${recovery.replaceAll("\\", "/")} must route API bridge rejections through explicit recovery event`);
+if (
+  !recoveryText.includes(
+    "[EVENT_REJECTED_API_BRIDGE_EVENT]: (event, deps) => rejectApiBridgeEvent(event.detail, deps)"
+  )
+) {
+  violations.push(
+    `${recovery.replaceAll("\\", "/")} must route API bridge rejections through explicit recovery event`
+  );
 }
 if (!recoveryText.includes("repeatCount >= REPEAT_PAUSE_THRESHOLD")) {
   violations.push(`${recovery.replaceAll("\\", "/")} must stop repeated API reload loops`);
 }
 if (!recoveryText.includes("deps.pause(state)") || !recoveryText.includes("deps.reload(state)")) {
-  violations.push(`${recovery.replaceAll("\\", "/")} must choose between pause and reload centrally`);
+  violations.push(
+    `${recovery.replaceAll("\\", "/")} must choose between pause and reload centrally`
+  );
 }
 if (!recoveryText.includes("detail: state")) {
-  violations.push(`${recovery.replaceAll("\\", "/")} repeated API pause must carry recovery state detail`);
+  violations.push(
+    `${recovery.replaceAll("\\", "/")} repeated API pause must carry recovery state detail`
+  );
 }
 if (!recoveryText.includes("state.recoveryAction = RECOVERY_ACTION_RELOAD")) {
-  violations.push(`${recovery.replaceAll("\\", "/")} reload navigation detail must carry recovery action state`);
+  violations.push(
+    `${recovery.replaceAll("\\", "/")} reload navigation detail must carry recovery action state`
+  );
 }
 if (!recoveryText.includes("state.recoveryAction = RECOVERY_ACTION_PAUSE")) {
-  violations.push(`${recovery.replaceAll("\\", "/")} repeated API pause must carry recovery action state`);
+  violations.push(
+    `${recovery.replaceAll("\\", "/")} repeated API pause must carry recovery action state`
+  );
 }
 if (!recoveryText.includes("world: detail?.world")) {
-  violations.push(`${recovery.replaceAll("\\", "/")} repeat key must include battle world identity`);
+  violations.push(
+    `${recovery.replaceAll("\\", "/")} repeat key must include battle world identity`
+  );
 }
 if (/window\.location|location\.href|window\.location\.search/.test(recoveryText)) {
   violations.push(`${recovery.replaceAll("\\", "/")} must route reload through navigation entry`);
@@ -429,7 +490,10 @@ if (!worldContextText.includes("deps.isIsekai ? deps.isekaiUrl : deps.mainUrl"))
 if (!worldContextText.includes("world,") || !worldContextText.includes("WORLD_ISEKAI")) {
   violations.push(`${worldContext.replaceAll("\\", "/")} must preserve typed world identity`);
 }
-if (!worldContextText.includes("hvcAssetId") || !worldContextText.includes('script[src*="/hvc.js"]')) {
+if (
+  !worldContextText.includes("hvcAssetId") ||
+  !worldContextText.includes('script[src*="/hvc.js"]')
+) {
   violations.push(`${worldContext.replaceAll("\\", "/")} must expose current hvc asset identity`);
 }
 

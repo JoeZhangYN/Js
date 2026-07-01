@@ -128,28 +128,50 @@ if (!owner) {
       readFileSync(diagnosticEvidenceSource.abs, "utf8")
     );
     for (const required of [
-      "DiagnosticEvidenceKey.NAVIGATION_DECISION",
-      "DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW",
-      "DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
-      "DiagnosticEvidenceKey.BATTLE_COMMAND",
-      "DiagnosticEvidenceKey.BATTLE_PAUSE",
-      "DiagnosticEvidenceKey.BATTLE_ACTION_DELAY",
-      "DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE",
-      "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
-      "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
+      "DIAGNOSTIC_EVIDENCE_SOURCES",
       "readRecentDiagnosticEvidence",
-      "navigationDecision",
-      "battleTurnWorkflow",
-      "battleApiResponseRecovery",
-      "battleCommand",
-      "battlePause",
-      "battleActionDelay",
-      "battleActionLifecycle",
-      "battleActionDecision",
-      "battleActionEffect",
+      "for (const item of DIAGNOSTIC_EVIDENCE_SOURCES)",
+      "evidence[item.name] = value",
     ]) {
       if (!diagnosticEvidenceText.includes(required)) {
         violations.push(`diagnostic evidence must read ${required}`);
+      }
+    }
+    const diagnosticEvidenceKeysSource = files.find(
+      (file) => file.rel === "core/diagnostic-evidence-keys.js"
+    );
+    if (!diagnosticEvidenceKeysSource) {
+      violations.push("core/diagnostic-evidence-keys.js is missing");
+    } else {
+      const diagnosticEvidenceKeysText = stripComments(
+        readFileSync(diagnosticEvidenceKeysSource.abs, "utf8")
+      );
+      for (const required of [
+        "DIAGNOSTIC_EVIDENCE_SOURCES",
+        "API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES",
+        "DiagnosticEvidenceKey.NAVIGATION_DECISION",
+        "DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW",
+        "DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
+        "DiagnosticEvidenceKey.BATTLE_COMMAND",
+        "DiagnosticEvidenceKey.BATTLE_PAUSE",
+        "DiagnosticEvidenceKey.BATTLE_ACTION_DELAY",
+        "DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE",
+        "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
+        "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
+        "item.key !== DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
+        "navigationDecision",
+        "battleTurnWorkflow",
+        "battleApiResponseRecovery",
+        "battleCommand",
+        "battlePause",
+        "battleActionDelay",
+        "battleActionLifecycle",
+        "battleActionDecision",
+        "battleActionEffect",
+      ]) {
+        if (!diagnosticEvidenceKeysText.includes(required)) {
+          violations.push(`diagnostic evidence source list must own ${required}`);
+        }
       }
     }
     const diagnosticEvidenceTest = files.find(
