@@ -82,5 +82,5 @@ function isEmptyChannelPlanDecision(result) {
 }
 
 export function runBattleBuffPreparation(event = { type: EVENT_DECIDE }) {
-  return battleBuffPreparationEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleBuffPreparationEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }

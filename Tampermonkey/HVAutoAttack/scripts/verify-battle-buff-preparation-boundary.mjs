@@ -154,12 +154,18 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (!ownerText.includes("battleBuffPreparationEventHandlers[event?.type]")) {
+  violations.push(`${rel(owner)} must reject null buff preparation events as no action`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover buff preparation contract`);
 } else {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("rejects unknown buff preparation events as no action")) {
     violations.push(`${rel(ownerTest)} must cover unknown buff preparation events`);
+  }
+  if (!ownerTestText.includes("runBattleBuffPreparation(null)")) {
+    violations.push(`${rel(ownerTest)} must cover null buff preparation events`);
   }
 }
 

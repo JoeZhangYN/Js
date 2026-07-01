@@ -103,12 +103,18 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (!ownerText.includes("battleSurvivalActionEventHandlers[event?.type]")) {
+  violations.push(`${rel(owner)} must reject null survival events as no action`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover survival action contract`);
 } else {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("rejects unknown survival action events as no action")) {
     violations.push(`${rel(ownerTest)} must cover unknown survival action events`);
+  }
+  if (!ownerTestText.includes("runBattleSurvivalAction(null)")) {
+    violations.push(`${rel(ownerTest)} must cover null survival action events`);
   }
 }
 

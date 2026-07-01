@@ -136,5 +136,5 @@ function isEmptyDecision(result) {
 }
 
 export function runBattleOffensiveDebuff(event = { type: EVENT_DECIDE }) {
-  return battleOffensiveDebuffEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleOffensiveDebuffEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }

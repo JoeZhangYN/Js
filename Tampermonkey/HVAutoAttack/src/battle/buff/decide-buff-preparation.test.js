@@ -77,5 +77,6 @@ describe("runBattleBuffPreparation", () => {
 
   it("rejects unknown buff preparation events as no action", () => {
     expect(runBattleBuffPreparation({ type: "unknown" })).toEqual({ kind: "noop" });
+    expect(runBattleBuffPreparation(null)).toEqual({ kind: "noop" });
   });
 });

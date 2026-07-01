@@ -85,5 +85,6 @@ describe("runBattleOffensiveDebuff", () => {
 
   it("rejects unknown offensive debuff events as no action", () => {
     expect(runBattleOffensiveDebuff({ type: "unknown" })).toEqual({ kind: "noop" });
+    expect(runBattleOffensiveDebuff(null)).toEqual({ kind: "noop" });
   });
 });

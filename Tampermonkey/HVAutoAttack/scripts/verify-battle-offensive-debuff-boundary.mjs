@@ -133,12 +133,18 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (!ownerText.includes("battleOffensiveDebuffEventHandlers[event?.type]")) {
+  violations.push(`${rel(owner)} must reject null offensive debuff events as no action`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover offensive debuff contract`);
 } else {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("rejects unknown offensive debuff events as no action")) {
     violations.push(`${rel(ownerTest)} must cover unknown offensive debuff events`);
+  }
+  if (!ownerTestText.includes("runBattleOffensiveDebuff(null)")) {
+    violations.push(`${rel(ownerTest)} must cover null offensive debuff events`);
   }
 }
 

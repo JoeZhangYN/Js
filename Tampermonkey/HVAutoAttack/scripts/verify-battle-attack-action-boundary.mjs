@@ -56,12 +56,18 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\][\s\S]*\[EVENT_WILL_CLEAR_WITH_BI
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (!ownerText.includes("battleAttackActionEventHandlers[event?.type]")) {
+  violations.push(`${rel(owner)} must reject null attack action events as no action`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover attack action contract`);
 } else {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("rejects unknown attack action events as no action")) {
     violations.push(`${rel(ownerTest)} must cover unknown attack action events`);
+  }
+  if (!ownerTestText.includes("runBattleAttackAction(null)")) {
+    violations.push(`${rel(ownerTest)} must cover null attack action events`);
   }
 }
 

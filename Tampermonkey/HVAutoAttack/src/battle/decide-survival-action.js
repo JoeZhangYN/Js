@@ -144,5 +144,5 @@ function isEmptyItemPlanDecision(result) {
 }
 
 export function runBattleSurvivalAction(event = { type: EVENT_DECIDE }) {
-  return battleSurvivalActionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleSurvivalActionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }

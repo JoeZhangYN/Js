@@ -52,5 +52,6 @@ describe("runBattleSurvivalAction", () => {
 
   it("rejects unknown survival action events as no action", () => {
     expect(runBattleSurvivalAction({ type: "unknown" })).toEqual({ kind: "noop" });
+    expect(runBattleSurvivalAction(null)).toEqual({ kind: "noop" });
   });
 });

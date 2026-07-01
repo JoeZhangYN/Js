@@ -30,5 +30,5 @@ function willClearWithBigSkill(snap = {}, opt = {}) {
 }
 
 export function runBattleAttackAction(event = { type: EVENT_DECIDE }) {
-  return battleAttackActionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleAttackActionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }
