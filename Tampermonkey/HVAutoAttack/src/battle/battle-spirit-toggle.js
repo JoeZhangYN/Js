@@ -47,6 +47,14 @@ function readLastToggle() {
   return normalizeSpiritToggleTurn(g("lastSpiritToggleGlobalTurn"));
 }
 
+function recordClickedToggleDetail() {
+  try {
+    return { turn: recordToggle() };
+  } catch (error) {
+    return { toggleRecordError: error?.message || String(error) };
+  }
+}
+
 function readActive() {
   return isSpiritActive(gE("#ckey_spirit"));
 }
@@ -64,8 +72,7 @@ function clickAndRecord() {
     });
     return false;
   }
-  const turn = recordToggle();
-  recordCommandResult("spirit.clickAndRecord", "accepted", "clicked", { turn });
+  recordCommandResult("spirit.clickAndRecord", "accepted", "clicked", recordClickedToggleDetail());
   return true;
 }
 
@@ -86,8 +93,7 @@ function activateIfInactive() {
     });
     return false;
   }
-  const turn = recordToggle();
-  recordCommandResult("spirit.activateIfInactive", "accepted", "clicked", { turn });
+  recordCommandResult("spirit.activateIfInactive", "accepted", "clicked", recordClickedToggleDetail());
   return true;
 }
 
