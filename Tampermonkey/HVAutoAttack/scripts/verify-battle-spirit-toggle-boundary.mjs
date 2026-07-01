@@ -73,6 +73,7 @@ requireText(owner, [
   "normalizeSpiritToggleTurn",
   "spirit.unknown",
   "unknownSpiritToggleEvent",
+  "event?.type ?? null",
 ]);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
@@ -92,6 +93,7 @@ requireText(ownerTest, [
   "rejects unknown events without touching Spirit state",
   "rejects null events without touching Spirit state",
   "unknownSpiritToggleEvent",
+  "eventType: null",
 ]);
 
 requireText("src/battle/snapshot.js", [

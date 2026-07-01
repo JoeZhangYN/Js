@@ -39,10 +39,7 @@ describe("runBattleTargetCommand", () => {
   it("clicks ready skill then live target", () => {
     const target = { click: vi.fn(), querySelector: vi.fn(() => null) };
     mocks.runBattleSkillCommand.mockReturnValue(true);
-    mocks.gE.mockImplementation((selector) => {
-      if (selector === "#mkey_3") return target;
-      return null;
-    });
+    mocks.gE.mockImplementation((selector) => (selector === "#mkey_3" ? target : null));
 
     expect(
       runBattleTargetCommand({
@@ -61,10 +58,7 @@ describe("runBattleTargetCommand", () => {
 
   it("does not click skill when the target is dead", () => {
     const target = { click: vi.fn(), querySelector: vi.fn(() => ({})) };
-    mocks.gE.mockImplementation((selector) => {
-      if (selector === "#mkey_3") return target;
-      return null;
-    });
+    mocks.gE.mockImplementation((selector) => (selector === "#mkey_3" ? target : null));
 
     expect(
       runBattleTargetCommand({
@@ -92,10 +86,7 @@ describe("runBattleTargetCommand", () => {
       event.afterClick();
       return true;
     });
-    mocks.gE.mockImplementation((selector) => {
-      if (selector === "#mkey_3") return target;
-      return null;
-    });
+    mocks.gE.mockImplementation((selector) => (selector === "#mkey_3" ? target : null));
 
     expect(
       runBattleTargetCommand({
@@ -170,6 +161,7 @@ describe("runBattleTargetCommand", () => {
       command: "target.unknown",
       result: "rejected",
       reason: "unknownTargetCommand",
+      detail: { eventType: null },
     });
   });
 });

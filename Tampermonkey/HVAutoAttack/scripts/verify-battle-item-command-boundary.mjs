@@ -74,13 +74,13 @@ requireText(owner, [
   "gemMissing",
   "itemMissing",
   "unknownItemCommand",
-  "event?.type",
+  "event?.type ?? null",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
-requireText(ownerTest, ["records missing item command events as not acted"]);
+requireText(ownerTest, ["records missing item command events as not acted", "eventType: null"]);
 requireText("src/battle/battle-action-effect-dispatch.js", [
   "BattleItemCommandEvent.CLICK_ITEM",
   "runBattleItemCommand",

@@ -36,7 +36,7 @@ const battleFocusCommandEventHandlers = Object.freeze({
 export function runBattleFocusCommand(event = { type: EVENT_CLICK }) {
   const handler = battleFocusCommandEventHandlers[event?.type];
   if (!handler) {
-    recordCommandResult("rejected", "unknownFocusCommand", { eventType: event?.type });
+    recordCommandResult("rejected", "unknownFocusCommand", { eventType: event?.type ?? null });
     return false;
   }
   return handler(event);

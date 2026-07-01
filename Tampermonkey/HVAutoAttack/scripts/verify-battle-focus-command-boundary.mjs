@@ -59,6 +59,7 @@ requireText(owner, [
   "#ckey_focus",
   "focus.click",
   "unknownFocusCommand",
+  "event?.type ?? null",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
@@ -79,6 +80,7 @@ requireText(ownerTest, [
   "records unknown Focus events as not acted",
   "records null Focus events as not acted",
   "unknownFocusCommand",
+  "eventType: null",
 ]);
 
 if (violations.length) {

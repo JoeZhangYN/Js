@@ -108,7 +108,7 @@ export function runBattleTargetCommand(event) {
   const handler = battleTargetCommandEventHandlers[event?.type];
   if (!handler) {
     recordCommandResult("target.unknown", "rejected", "unknownTargetCommand", {
-      eventType: event?.type,
+      eventType: event?.type ?? null,
     });
     return false;
   }

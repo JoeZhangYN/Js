@@ -67,7 +67,7 @@ describe("runBattleDefendCommand", () => {
       command: "defend.click",
       result: "rejected",
       reason: "unknownDefendCommand",
-      detail: { eventType: undefined },
+      detail: { eventType: null },
     });
   });
 });

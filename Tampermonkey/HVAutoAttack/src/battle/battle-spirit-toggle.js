@@ -92,7 +92,7 @@ export function runBattleSpiritToggleAutomation(event = { type: EVENT_READ_LAST_
   const handler = battleSpiritToggleEventHandlers[event?.type];
   if (!handler) {
     recordCommandResult("spirit.unknown", "rejected", "unknownSpiritToggleEvent", {
-      eventType: event?.type,
+      eventType: event?.type ?? null,
     });
     return false;
   }

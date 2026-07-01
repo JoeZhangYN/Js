@@ -79,6 +79,7 @@ describe("runBattleSkillCommand", () => {
       command: "skill.clickReady",
       result: "rejected",
       reason: "unknownSkillCommand",
+      detail: { eventType: null },
     });
   });
 });

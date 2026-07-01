@@ -65,7 +65,7 @@ requireText(owner, [
   "skillCommandRejected",
   "targetCommandRejected",
   "unknownTargetCommand",
-  "event?.type",
+  "event?.type ?? null",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const clickTargetBody =
@@ -81,6 +81,7 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
 }
 requireText(ownerTest, [
   "records missing target command events as not acted",
+  "eventType: null",
 ]);
 requireText(liveTargetTest, [
   "rejects direct target clicks when the target is dead",

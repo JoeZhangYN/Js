@@ -65,6 +65,7 @@ requireText(owner, [
   "command: EVENT_CLICK_AND_RELOAD",
   "flee.clickAndReload",
   "unknownFleeCommand",
+  "event?.type ?? null",
   '"1001"',
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
@@ -83,6 +84,7 @@ requireText(ownerTest, [
   "records unknown Flee events as not acted",
   "records null Flee events as not acted without scheduling reload",
   "unknownFleeCommand",
+  "eventType: null",
 ]);
 
 if (violations.length) {

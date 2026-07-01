@@ -98,6 +98,7 @@ describe("runBattleItemCommand", () => {
       command: "item.unknown",
       result: "rejected",
       reason: "unknownItemCommand",
+      detail: { eventType: null },
     });
   });
 });

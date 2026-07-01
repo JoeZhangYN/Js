@@ -59,6 +59,7 @@ requireText(owner, [
   "#ckey_defend",
   "defend.click",
   "unknownDefendCommand",
+  "event?.type ?? null",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
@@ -76,6 +77,7 @@ requireText(ownerTest, [
   "records unknown Defend events as not acted",
   "records null Defend events as not acted",
   "unknownDefendCommand",
+  "eventType: null",
 ]);
 
 if (violations.length) {

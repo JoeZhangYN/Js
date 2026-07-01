@@ -32,7 +32,7 @@ const battleDefendCommandEventHandlers = Object.freeze({
 export function runBattleDefendCommand(event = { type: EVENT_CLICK }) {
   const handler = battleDefendCommandEventHandlers[event?.type];
   if (!handler) {
-    recordCommandResult("rejected", "unknownDefendCommand", { eventType: event?.type });
+    recordCommandResult("rejected", "unknownDefendCommand", { eventType: event?.type ?? null });
     return false;
   }
   return handler(event);

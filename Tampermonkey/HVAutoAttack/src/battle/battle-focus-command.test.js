@@ -69,7 +69,7 @@ describe("runBattleFocusCommand", () => {
       command: "focus.click",
       result: "rejected",
       reason: "unknownFocusCommand",
-      detail: { eventType: undefined },
+      detail: { eventType: null },
     });
   });
 });

@@ -94,7 +94,7 @@ describe("runBattleFleeCommand", () => {
       command: "flee.clickAndReload",
       result: "rejected",
       reason: "unknownFleeCommand",
-      detail: { eventType: undefined },
+      detail: { eventType: null },
     });
   });
 });

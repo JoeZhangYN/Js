@@ -53,7 +53,7 @@ export function runBattleItemCommand(event) {
   const handler = battleItemCommandEventHandlers[event?.type];
   if (!handler) {
     recordCommandResult("item.unknown", "rejected", "unknownItemCommand", {
-      eventType: event?.type,
+      eventType: event?.type ?? null,
     });
     return false;
   }

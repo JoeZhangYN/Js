@@ -166,7 +166,7 @@ describe("runBattleSpiritToggleAutomation", () => {
         expect.objectContaining({ reason: "unknownSpiritToggleEvent", detail: { eventType: "unknown" } }),
       ],
       [
-        expect.objectContaining({ reason: "unknownSpiritToggleEvent", detail: { eventType: undefined } }),
+        expect.objectContaining({ reason: "unknownSpiritToggleEvent", detail: { eventType: null } }),
       ],
     ]);
   });
