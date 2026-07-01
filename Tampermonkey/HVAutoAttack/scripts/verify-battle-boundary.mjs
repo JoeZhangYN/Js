@@ -1503,7 +1503,8 @@ function checkActionLifecycleEntry() {
     "records completion check exceptions as rejected lifecycle results",
     "records completeBattle exceptions as rejected lifecycle results",
     "keeps action-ended result when lifecycle evidence recording fails once",
-    "does not throw when lifecycle evidence recording keeps failing",
+    "keeps action-started accepted when lifecycle evidence recording keeps failing",
+    "expect(result).toBe(true)",
     "actionLifecycleStepThrew",
     "lifecycleEvidenceWriteFailed",
   ]) {

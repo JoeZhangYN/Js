@@ -114,15 +114,21 @@ describe("battle action lifecycle step exceptions", () => {
     );
   });
 
-  it("does not throw when lifecycle evidence recording keeps failing", () => {
+  it("keeps action-started accepted when lifecycle evidence recording keeps failing", () => {
     const deps = makeDeps();
     deps.recordLifecycle.mockImplementation(() => {
       throw new Error("evidence exploded");
     });
 
-    expect(() =>
-      runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_STARTED }, deps)
-    ).not.toThrow();
+    let result;
+    expect(() => {
+      result = runBattleActionLifecycleAutomation(
+        { type: BattleActionLifecycleEvent.ACTION_STARTED },
+        deps
+      );
+    }).not.toThrow();
+
+    expect(result).toBe(true);
     expect(deps.recordLifecycle).toHaveBeenCalledTimes(2);
   });
 });
