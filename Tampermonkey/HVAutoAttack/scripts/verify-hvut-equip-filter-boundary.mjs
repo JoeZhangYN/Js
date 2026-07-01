@@ -8,6 +8,8 @@ const violations = [];
 
 const equipBody =
   text.match(/equip: function \(filters, equip\) \{[\s\S]*?\n    \},\n    test:/)?.[0] || "";
+const normalizeBody =
+  text.match(/normalize: function \(filters\) \{[\s\S]*?\n    \},\n    test:/)?.[0] || "";
 const validateBody =
   text.match(/validate: function \(filters\) \{[\s\S]*?\n    \},/)?.[0] || "";
 
@@ -17,9 +19,13 @@ if (!equipBody) {
 if (!validateBody) {
   violations.push("equipment filter validation entry must stay explicit");
 }
+if (!normalizeBody) {
+  violations.push("equipment filter list normalization entry must stay explicit");
+}
 
 for (const required of [
-  "filters = Array.isArray(filters) ? filters : [filters]",
+  "filters = $equip.filter.normalize(filters)",
+  "if (!filters.length)",
   "const errors = []",
   "filters.some((filter) =>",
   "try {",
@@ -35,6 +41,18 @@ for (const required of [
 }
 
 for (const required of [
+  "const rawFilters = Array.isArray(filters) ? filters : [filters]",
+  ".flatMap((filter) => String(filter ?? '').split(/\\r?\\n/))",
+  ".map((filter) => filter.trim())",
+  ".filter(Boolean)",
+]) {
+  if (!normalizeBody.includes(required)) {
+    violations.push(`equipment filter normalization must include ${required}`);
+  }
+}
+
+for (const required of [
+  "filters = $equip.filter.normalize(filters)",
   "$equip.filter.test(filter, null, '')",
   "return true",
   "const error = errors.join('\\n')",

@@ -2679,7 +2679,8 @@ const bindEquip = function (equip, ctx) {
       'crude': 1, 'fair': 2, 'average': 3, 'superior': 4, 'exquisite': 5, 'magnificent': 6, 'legendary': 7, 'peerless': 8,
     },
     equip: function (filters, equip) {
-      if (!filters) {
+      filters = $equip.filter.normalize(filters);
+      if (!filters.length) {
         return false;
       }
       let name;
@@ -2689,7 +2690,6 @@ const bindEquip = function (equip, ctx) {
       } else {
         name = equip.info.name;
       }
-      filters = Array.isArray(filters) ? filters : [filters];
       const errors = [];
       const matched = filters.some((filter) => {
         try {
@@ -2703,6 +2703,13 @@ const bindEquip = function (equip, ctx) {
         console.warn('[HVUT] equipment filter failed', { equip: name, errors });
       }
       return matched;
+    },
+    normalize: function (filters) {
+      const rawFilters = Array.isArray(filters) ? filters : [filters];
+      return rawFilters
+        .flatMap((filter) => String(filter ?? '').split(/\r?\n/))
+        .map((filter) => filter.trim())
+        .filter(Boolean);
     },
     test: function (filter, equip, name = equip.info.name) {
       if (!filter) {
@@ -2747,9 +2754,7 @@ const bindEquip = function (equip, ctx) {
       throw new Error('Invalid Filter');
     },
     validate: function (filters) {
-      if (!Array.isArray(filters)) {
-        filters = [filters];
-      }
+      filters = $equip.filter.normalize(filters);
       const errors = filters.filter((filter) => {
         try {
           $equip.filter.test(filter, null, '');
@@ -10720,7 +10725,7 @@ if ($config.settings.trainingNotification) {
 // LOTTERY
 if ($config.settings.lotteryNotification) {
   _bottom.evaluate_lottery_filter = function (ss, equip) {
-    const filters = Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters];
+    const filters = $equip.filter.normalize($config.settings.lotteryFilters);
     const filterErrors = [];
     const matched = filters.some((filter) => {
       try {

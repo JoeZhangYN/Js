@@ -54,6 +54,7 @@ for (const g of ["GM_setValue", "GM_getValue", "GM_deleteValue", "GM_notificatio
 // 导致 bottom bar 长留“加载中...”。
 for (const required of [
   "_bottom.evaluate_lottery_filter = function(ss, equip)",
+  "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
   "const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip)",
   "lottery.filterError = filterResult.error",
 ]) {
@@ -62,6 +63,8 @@ for (const required of [
 for (const forbidden of [
   "lottery.check = $equip.filter.equip",
   "$equip.filter.equip($config.settings.lotteryFilters, equip)",
+  "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",
+  "Array.isArray($config.settings.lotteryFilters)?$config.settings.lotteryFilters:[$config.settings.lotteryFilters]",
 ]) {
   if (src.includes(forbidden)) errors.push(`lottery artifact uses old filter path: ${forbidden}`);
 }

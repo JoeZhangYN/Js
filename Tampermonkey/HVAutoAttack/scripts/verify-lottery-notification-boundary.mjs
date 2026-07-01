@@ -48,6 +48,7 @@ for (const required of [
 }
 
 for (const required of [
+  "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
   "const filterErrors = []",
   "filters.some((filter) =>",
   "$equip.filter.test(filter, null, equip)",
@@ -69,6 +70,7 @@ for (const forbidden of [
   ".exec($qs('img[src*=\"lottery_prev_a.png\"]', doc)?.getAttribute('onclick'))[1]",
   "lottery.check = $equip.filter.equip",
   "$equip.filter.equip($config.settings.lotteryFilters, equip)",
+  "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",
 ]) {
   if (body.includes(forbidden) || filterBody.includes(forbidden)) {
     violations.push(`${rel(target)} lottery filter boundary must not use brittle parser path: ${forbidden}`);
@@ -78,6 +80,7 @@ for (const forbidden of [
 if (distText) {
   for (const required of [
     "_bottom.evaluate_lottery_filter = function(ss, equip)",
+    "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
     "const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip)",
     "lottery.filterError = filterResult.error",
   ]) {
@@ -94,6 +97,8 @@ if (distText) {
   for (const forbidden of [
     "lottery.check = $equip.filter.equip",
     "$equip.filter.equip($config.settings.lotteryFilters, equip)",
+    "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",
+    "Array.isArray($config.settings.lotteryFilters)?$config.settings.lotteryFilters:[$config.settings.lotteryFilters]",
   ]) {
     if (distLoaderBody.includes(forbidden) || distFilterBody.includes(forbidden)) {
       violations.push(`${rel(distTarget)} lottery artifact must not use old filter path: ${forbidden}`);
