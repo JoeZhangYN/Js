@@ -859,7 +859,8 @@ function checkTurnEntry() {
     : "";
   for (const required of [
     "keeps acted decisions acted when decision evidence recording fails once",
-    "does not throw when decision evidence recording keeps failing",
+    "keeps acted decisions acted when decision evidence recording keeps failing",
+    "expect(result).toBe(true)",
     "actionDecisionEvidenceWriteFailed",
   ]) {
     if (!actionDecisionEvidenceFailureTestText.includes(required)) {

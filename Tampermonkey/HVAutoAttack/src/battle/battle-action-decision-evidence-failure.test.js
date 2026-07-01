@@ -52,17 +52,20 @@ describe("runBattleActionDecision evidence failures", () => {
     });
   });
 
-  it("does not throw when decision evidence recording keeps failing", () => {
+  it("keeps acted decisions acted when decision evidence recording keeps failing", () => {
     mocks.runBattleActionEffectDispatch.mockReturnValue(true);
     mocks.runBattleActionDecisionEvidence.mockImplementation(() => {
       throw new Error("decision evidence failed");
     });
 
-    expect(() =>
-      runBattleActionDecision({
+    let result;
+    expect(() => {
+      result = runBattleActionDecision({
         type: BattleActionDecisionEvent.DECIDE,
         context: { snap: {}, actionOptions: { autoFlee: true } },
-      })
-    ).not.toThrow();
+      });
+    }).not.toThrow();
+
+    expect(result).toBe(true);
   });
 });
