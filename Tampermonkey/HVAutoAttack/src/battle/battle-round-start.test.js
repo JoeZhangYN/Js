@@ -30,13 +30,8 @@ vi.mock("./monster-status-automation.js", () => ({
 }));
 vi.mock("./battle-round.js", () => ({
   BattleRoundEvent: Object.freeze({
-    CLASSIFY_TYPE: "classifyType",
-    READ_TYPE: "readType",
     RECORD_START_CONTEXT: "recordStartContext",
-    RECORD_COUNT_FROM_INITIALIZATION: "recordCountFromInitialization",
-    RECORD_SINGLE_ROUND: "recordSingleRound",
     RECORD_START_COUNT: "recordStartCount",
-    RECORD_TYPE: "recordType",
     SYNC_RUNTIME: "syncRuntime",
   }),
   runBattleRoundAutomation: mocks.runBattleRoundAutomation,
@@ -59,6 +54,7 @@ vi.mock("./round-start-log.js", () => ({
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
+  sessionStorage.clear();
   mocks.runBattleRoundStartLog.mockReturnValue({
     rows: ["Round begins", "Initializing random encounter"],
     firstText: "Round begins",
@@ -71,21 +67,15 @@ beforeEach(() => {
     return undefined;
   });
   mocks.runBattleStaminaAutomation.mockReturnValue({ lostStamina: 1, paused: false });
-  mocks.runMonsterStatusAutomation.mockImplementation((event) =>
-    event.type === "prepareRoundStart" ? { initialized: true, repaired: false } : false
-  );
+  mocks.runMonsterStatusAutomation.mockImplementation((event) => {
+    if (event.type === "prepareRoundStart") return { initialized: true, repaired: false };
+    if (event.type === "refreshCombatantCounts") return { monsterAll: 3, monsterAlive: 3 };
+    return false;
+  });
   window.location.hash = "";
 });
 
 describe("runBattleRoundStartAutomation", () => {
-  it("ignores unknown events", () => {
-    expect(runBattleRoundStartAutomation({ type: "unknown" })).toBe(false);
-  });
-
-  it("exposes the round started event", () => {
-    expect(BattleRoundStartEvent.ROUND_STARTED).toBe("roundStarted");
-  });
-
   it("routes round-start bookkeeping through the lifecycle entry", () => {
     expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(true);
 
@@ -111,6 +101,17 @@ describe("runBattleRoundStartAutomation", () => {
       initialized: true,
     });
     expect(mocks.runBattleRoundLifecycle).toHaveBeenCalledWith({ type: "roundReady" });
+    const evidence = JSON.parse(sessionStorage.getItem("HVAA:lastBattleRoundStart"));
+    expect(evidence).toMatchObject({
+      phase: "roundStarted",
+      result: true,
+    });
+    expect(evidence.steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ step: "staminaGate", result: true }),
+        expect.objectContaining({ step: "roundReady" }),
+      ])
+    );
   });
 
   it("routes battle hash cleanup reload with the original hash evidence", () => {
@@ -128,7 +129,7 @@ describe("runBattleRoundStartAutomation", () => {
   it("stops round preparation when stamina gate pauses the round", () => {
     mocks.runBattleStaminaAutomation.mockReturnValue({ lostStamina: 99, paused: true });
 
-    expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(true);
+    expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(false);
 
     expect(mocks.runBattleRoundAutomation).toHaveBeenCalledWith({
       type: "recordStartContext",
@@ -145,5 +146,13 @@ describe("runBattleRoundStartAutomation", () => {
     );
     expect(mocks.runBattleRoundAutomation).not.toHaveBeenCalledWith({ type: "syncRuntime" });
     expect(mocks.runBattleRoundLifecycle).not.toHaveBeenCalledWith({ type: "roundReady" });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleRoundStart"))).toMatchObject({
+      phase: "roundStarted",
+      result: false,
+      steps: expect.arrayContaining([
+        { step: "staminaGate", result: false, detail: { lostStamina: 99, paused: true } },
+      ]),
+    });
   });
+
 });

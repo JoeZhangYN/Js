@@ -1,0 +1,42 @@
+import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+
+const EVENT_RECORD_ROUND_START = "recordRoundStart";
+const BATTLE_ROUND_START_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_ROUND_START;
+
+export const BattleRoundStartEvidenceEvent = Object.freeze({
+  RECORD_ROUND_START: EVENT_RECORD_ROUND_START,
+});
+
+function recordRoundStart(event, deps) {
+  const evidence = {
+    phase: event.phase,
+    result: event.result,
+    steps: event.steps,
+    at: new Date().toISOString(),
+  };
+  try {
+    deps.sessionStorage.setItem(
+      BATTLE_ROUND_START_EVIDENCE_KEY,
+      JSON.stringify({ ...evidence, storageWriteOk: true })
+    );
+    evidence.storageWriteOk = true;
+  } catch (error) {
+    evidence.storageWriteOk = false;
+    evidence.storageWriteError = error?.message || String(error);
+    deps.debug("[HVAA] battle round start", evidence);
+    return false;
+  }
+  deps.debug("[HVAA] battle round start", evidence);
+  return true;
+}
+
+const battleRoundStartEvidenceEventHandlers = Object.freeze({
+  [EVENT_RECORD_ROUND_START]: recordRoundStart,
+});
+
+export function runBattleRoundStartEvidence(
+  event = { type: EVENT_RECORD_ROUND_START },
+  deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
+) {
+  return battleRoundStartEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
+}

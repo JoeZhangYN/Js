@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-round-start.js");
 const ownerTest = path.normalize("src/battle/battle-round-start.test.js");
+const rejectionTest = path.normalize("src/battle/battle-round-start-rejection.test.js");
 const violations = [];
 
 function read(relative) {
@@ -24,6 +25,11 @@ const ownerText = requireText(owner, [
   "BattleRoundStartEvent",
   "runBattleRoundStartAutomation",
   "battleRoundStartEventHandlers",
+  "BattleRoundStartEvidenceEvent.RECORD_ROUND_START",
+  "runBattleRoundStartEvidence",
+  "unknownRoundStartEvent",
+  "battleRoundStartEventHandlers[event?.type]",
+  "recordRoundStart(EVENT_ROUND_STARTED, ready, steps)",
   "recordRoundStartContext",
   "BattleRoundLifecycleEvent.ROUND_STARTED",
   "BattleRoundLifecycleEvent.ROUND_READY",
@@ -62,7 +68,37 @@ const ownerTestText = requireText(ownerTest, [
   "recordStartContext",
   "recordStartCount",
   'roundType: "ba"',
+  "HVAA:lastBattleRoundStart",
 ]);
+const rejectionTestText = requireText(rejectionTest, [
+  "rejects unknown events with round-start evidence",
+  "rejects null events with round-start evidence instead of throwing",
+  "returns false when monster status repair schedules recovery before round ready",
+  "HVAA:lastBattleRoundStart",
+]);
+requireText(path.normalize("src/battle/battle-round-start-evidence.js"), [
+  "BattleRoundStartEvidenceEvent",
+  "runBattleRoundStartEvidence",
+  "DiagnosticEvidenceKey.BATTLE_ROUND_START",
+  "battleRoundStartEvidenceEventHandlers[event?.type]",
+  "[HVAA] battle round start",
+  "storageWriteOk",
+  "storageWriteError",
+]);
+requireText(path.normalize("src/battle/battle-round-start-evidence.test.js"), [
+  "records battle round-start evidence",
+  "rejects null round-start evidence events without writing diagnostics",
+  "HVAA:lastBattleRoundStart",
+]);
+const diagnosticKeysText = read(path.normalize("src/core/diagnostic-evidence-keys.js"));
+for (const required of [
+  'BATTLE_ROUND_START: "HVAA:lastBattleRoundStart"',
+  'source("battleRoundStart", DiagnosticEvidenceKey.BATTLE_ROUND_START)',
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`src/core/diagnostic-evidence-keys.js must include ${required}`);
+  }
+}
 
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleRoundStartEvent\b|runBattleRoundStartAutomation\b)/.test(
@@ -150,6 +186,9 @@ if (
 }
 if (!ownerTestText.includes("stops round preparation when stamina gate pauses the round")) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must lock stamina pause round-start gate`);
+}
+if (!ownerTestText.includes("toBe(false)") || !rejectionTestText.includes("toBe(false)")) {
+  violations.push("round-start tests must assert non-ready round-start returns false");
 }
 if (!ownerTestText.includes("routes battle hash cleanup reload with the original hash evidence")) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover battle hash cleanup detail`);
