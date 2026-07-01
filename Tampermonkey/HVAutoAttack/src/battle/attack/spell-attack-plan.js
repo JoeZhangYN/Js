@@ -81,5 +81,5 @@ function selectSpellTier(opt, event) {
 }
 
 export function runSpellAttackPlan(event = { type: EVENT_DECIDE }) {
-  return spellAttackPlanEventHandlers[event.type]?.(event) ?? null;
+  return spellAttackPlanEventHandlers[event?.type]?.(event) ?? null;
 }

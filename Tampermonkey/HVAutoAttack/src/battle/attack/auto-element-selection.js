@@ -39,5 +39,5 @@ function selectAutoElement(target, opt) {
 }
 
 export function runAutoElementSelection(event = { type: EVENT_SELECT }) {
-  return autoElementSelectionEventHandlers[event.type]?.(event) ?? { element: null };
+  return autoElementSelectionEventHandlers[event?.type]?.(event) ?? { element: null };
 }

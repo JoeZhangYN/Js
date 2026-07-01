@@ -3597,6 +3597,9 @@ function checkAttackEntry() {
   if (/event\.type\s*===/.test(spellAttackEntryBody)) {
     violations.push(`${rel(spellAttackPlanFile)} entry must dispatch by handler table`);
   }
+  if (!spellAttackPlanText.includes("spellAttackPlanEventHandlers[event?.type]")) {
+    violations.push(`${rel(spellAttackPlanFile)} must reject null spell attack plan events`);
+  }
   if (/decideAttack\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideAttackFile)} must not expose opt/snap attack input`);
   }
@@ -3645,6 +3648,18 @@ function checkAttackEntry() {
   }
   if (!attackDecisionTestText.includes("runAttackPlanDecision(null)")) {
     violations.push(`${rel(attackPlanFile)} tests must cover null attack plan events`);
+  }
+  if (!attackDecisionTestText.includes("rejects unknown spell attack plan events as empty spell plans")) {
+    violations.push(`${rel(spellAttackPlanFile)} tests must cover unknown spell attack plan events`);
+  }
+  if (!attackDecisionTestText.includes("runSpellAttackPlan(null)")) {
+    violations.push(`${rel(spellAttackPlanFile)} tests must cover null spell attack plan events`);
+  }
+  if (!attackDecisionTestText.includes("rejects unknown auto-element events as no selected element")) {
+    violations.push(`${rel(autoElementSelectionFile)} tests must cover unknown auto-element events`);
+  }
+  if (!attackDecisionTestText.includes("runAutoElementSelection(null)")) {
+    violations.push(`${rel(autoElementSelectionFile)} tests must cover null auto-element events`);
   }
   if (!attackPlanText.includes("dynamicHealLog")) {
     violations.push(`${rel(attackPlanFile)} must pass ranking debug option into attack ranking`);
@@ -3799,6 +3814,9 @@ function checkAttackEntry() {
   }
   if (/event\.type\s*===/.test(autoElementEntryBody)) {
     violations.push(`${rel(autoElementSelectionFile)} entry must dispatch by handler table`);
+  }
+  if (!autoElementText.includes("autoElementSelectionEventHandlers[event?.type]")) {
+    violations.push(`${rel(autoElementSelectionFile)} must reject null auto-element events`);
   }
   if (
     !/const ELEMENT_TO_STATUS = Object\.freeze\(\{/.test(autoElementText) ||

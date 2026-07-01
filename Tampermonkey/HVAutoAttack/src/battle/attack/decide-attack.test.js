@@ -4,6 +4,8 @@
 import { describe, it, expect } from "vitest";
 import { AttackDecisionEvent, runAttackDecision } from "./decide-attack.js";
 import { runAttackPlanDecision } from "./attack-plan.js";
+import { runSpellAttackPlan } from "./spell-attack-plan.js";
+import { runAutoElementSelection } from "./auto-element-selection.js";
 
 /** 最小 snap 工厂(只填 runAttackDecision 及其纯 callee 读到的字段)。 */
 function snap(over = {}) {
@@ -108,6 +110,16 @@ describe("runAttackDecision 返 {kind:'attack-plan'}", () => {
   it("rejects unknown attack plan events as noop plans", () => {
     expect(runAttackPlanDecision({ type: "unknown" })).toEqual({ type: "noop" });
     expect(runAttackPlanDecision(null)).toEqual({ type: "noop" });
+  });
+
+  it("rejects unknown spell attack plan events as empty spell plans", () => {
+    expect(runSpellAttackPlan({ type: "unknown" })).toBeNull();
+    expect(runSpellAttackPlan(null)).toBeNull();
+  });
+
+  it("rejects unknown auto-element events as no selected element", () => {
+    expect(runAutoElementSelection({ type: "unknown" })).toEqual({ element: null });
+    expect(runAutoElementSelection(null)).toEqual({ element: null });
   });
 });
 
