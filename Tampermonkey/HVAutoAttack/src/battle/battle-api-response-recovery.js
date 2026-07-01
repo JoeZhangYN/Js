@@ -10,6 +10,7 @@ import {
   buildRecoveryState,
   buildRejectedRecoveryState,
   recordRecoveryEffectResult,
+  warnRecoveryStateSafely,
   writeRecoveryState,
 } from "./battle-api-response-recovery-state.js";
 
@@ -43,7 +44,7 @@ function handleRejectedApiResponse(detail, deps) {
     state.recoveryAction = RECOVERY_ACTION_PAUSE;
     writeRecoveryState(deps, state);
     recordRecoveryEffectResult(deps, state, "pauseResult", () => deps.pause(state), "pauseError");
-    deps.warn?.("[HVAA] battle API response repeated; auto battle paused", state);
+    warnRecoveryStateSafely(deps, "[HVAA] battle API response repeated; auto battle paused", state);
     return "paused";
   }
   state.recoveryAction = RECOVERY_ACTION_RELOAD;

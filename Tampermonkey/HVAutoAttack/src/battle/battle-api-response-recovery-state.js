@@ -41,7 +41,7 @@ export function writeRecoveryState(deps, state) {
     state.storageWriteOk = false;
     state.storageWriteError = error?.message || String(error);
     fallbackRecoveryStates.set(deps.sessionStorage, { ...state });
-    deps.warn?.("[HVAA] battle API recovery state write failed", state);
+    warnRecoveryStateSafely(deps, "[HVAA] battle API recovery state write failed", state);
     return false;
   }
 }
@@ -53,9 +53,18 @@ export function recordRecoveryEffectResult(deps, state, resultName, runEffect, e
   } catch (error) {
     state[resultName] = false;
     state[errorName] = error?.message || String(error);
-    deps.warn?.("[HVAA] battle API recovery effect failed", state);
+    warnRecoveryStateSafely(deps, "[HVAA] battle API recovery effect failed", state);
   }
   writeRecoveryState(deps, state);
+}
+
+export function warnRecoveryStateSafely(deps, message, state) {
+  try {
+    deps.warn?.(message, state);
+  } catch (_error) {
+    return false;
+  }
+  return true;
 }
 
 function diagnosticEvidenceWithoutApiRecovery(diagnosticEvidence) {

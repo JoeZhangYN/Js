@@ -34,6 +34,7 @@ const recoveryRejectionTest = path.normalize(
 const recoveryPersistenceTest = path.normalize(
   "src/battle/battle-api-response-recovery-persistence.test.js"
 );
+const recoveryWarningTest = path.normalize("src/battle/battle-api-response-recovery-warning.test.js");
 const recoveryDiagnosticsTest = path.normalize(
   "src/battle/battle-api-response-recovery-diagnostics.test.js"
 );
@@ -286,6 +287,7 @@ const recoveryStateText = requireText(recoveryState, [
   "storageWriteError",
   "battle API recovery state write failed",
   "recordRecoveryEffectResult",
+  "warnRecoveryStateSafely",
   "battle API recovery effect failed",
   "state[resultName] = Boolean(result)",
   "state[errorName] = error?.message || String(error)",
@@ -348,6 +350,12 @@ requireText(recoveryPersistenceTest, [
   "storageWriteOk: false",
   'storageWriteError: "quota"',
   "battle API recovery state write failed",
+]);
+requireText(recoveryWarningTest, [
+  "continues reload recovery when recovery state persistence and warning fail",
+  "keeps repeated-pause recovery accepted when pause warning fails",
+  "console hook failed",
+  "storageWriteError: \"quota\"",
 ]);
 requireText(recoveryMalformedJsonTest, [
   "does not treat different malformed JSON parse failures as the same loop",
