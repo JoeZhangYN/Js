@@ -21,10 +21,21 @@ function summarizeResult(result = {}) {
 
 function classifyDecisionStepFailure(step) {
   if (step.acted) return null;
+  if (step.effectEvidence?.failureReason) return step.effectEvidence.failureReason;
   const result = step.result || {};
   if (!result.kind) return "missingActionResult";
   if (result.kind === "noop") return result.reason || "noActionCandidate";
   return result.reason || "actionExecutorRejected";
+}
+
+function summarizeEffectEvidence(effectEvidence) {
+  if (!effectEvidence) return undefined;
+  return {
+    result: effectEvidence.result,
+    acted: Boolean(effectEvidence.acted),
+    failureReason: effectEvidence.failureReason,
+    command: effectEvidence.command,
+  };
 }
 
 function recordDecisionTrace(event, deps) {
@@ -34,6 +45,7 @@ function recordDecisionTrace(event, deps) {
       result: summarizeResult(step.result),
       acted: Boolean(step.acted),
       failureReason: classifyDecisionStepFailure(step),
+      effect: summarizeEffectEvidence(step.effectEvidence),
     })),
     at: new Date().toISOString(),
   };

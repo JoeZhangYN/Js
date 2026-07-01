@@ -57,6 +57,7 @@ for (const spec of specs) {
 
 const commandEvidenceText = read("src/battle/battle-command-evidence.js");
 const commandEvidenceTestText = read("src/battle/battle-command-evidence.test.js");
+const effectEvidenceText = read("src/battle/battle-action-effect-evidence.js");
 for (const required of [
   "acted: commandActed(event.result)",
   "failureReason: commandFailureReason(event)",
@@ -77,6 +78,14 @@ for (const required of [
 ]) {
   if (!commandEvidenceTestText.includes(required)) {
     violations.push(`src/battle/battle-command-evidence.test.js must cover ${required}`);
+  }
+}
+for (const required of [
+  "export function readBattleActionEffectEvidence",
+  "JSON.parse(storage.getItem(ACTION_EFFECT_EVIDENCE_KEY)",
+]) {
+  if (!effectEvidenceText.includes(required)) {
+    violations.push(`src/battle/battle-action-effect-evidence.js must expose effect evidence reader ${required}`);
   }
 }
 

@@ -4,6 +4,7 @@ import {
   BattleActionEffectDispatchEvent,
   runBattleActionEffectDispatch,
 } from "./battle-action-effect-dispatch.js";
+import { readBattleActionEffectEvidence } from "./battle-action-effect-evidence.js";
 import {
   BattleActionDecisionEvidenceEvent,
   runBattleActionDecisionEvidence,
@@ -89,12 +90,16 @@ function decideBattleAction(turnContext = {}) {
   const steps = [];
   for (const step of ACTION_STEPS) {
     const result = decideActionStep(step, actionContext);
+    const previousEffectEvidence = readBattleActionEffectEvidence();
     const acted = runBattleActionEffectDispatch({
       type: BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT,
       result,
       snap,
     });
-    steps.push({ capability: step.capability, result, acted });
+    const stepTrace = { capability: step.capability, result, acted };
+    const effectEvidence = readFreshEffectEvidence(previousEffectEvidence);
+    if (effectEvidence) stepTrace.effectEvidence = effectEvidence;
+    steps.push(stepTrace);
     if (acted) {
       recordDecisionEvidence(steps);
       return true;
@@ -102,6 +107,14 @@ function decideBattleAction(turnContext = {}) {
   }
   recordDecisionEvidence(steps);
   return false;
+}
+
+function readFreshEffectEvidence(previousEffectEvidence) {
+  const effectEvidence = readBattleActionEffectEvidence();
+  if (!effectEvidence) return undefined;
+  return JSON.stringify(effectEvidence) === JSON.stringify(previousEffectEvidence)
+    ? undefined
+    : effectEvidence;
 }
 
 function recordDecisionEvidence(steps) {

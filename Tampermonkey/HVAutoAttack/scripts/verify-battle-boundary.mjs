@@ -587,6 +587,7 @@ function checkTurnEntry() {
     "ACTION_STEPS",
     "BattleActionEffectDispatchEvent.APPLY_ACTION_RESULT",
     "runBattleActionEffectDispatch",
+    "readBattleActionEffectEvidence",
     "BattleActionDecisionEvidenceEvent.RECORD_TRACE",
     "runBattleActionDecisionEvidence",
     "actionOptions",
@@ -594,7 +595,10 @@ function checkTurnEntry() {
     "for (const step of ACTION_STEPS)",
     "decideActionStep(step, actionContext)",
     "const steps = []",
-    "steps.push({ capability: step.capability, result, acted })",
+    "const stepTrace = { capability: step.capability, result, acted }",
+    "if (effectEvidence) stepTrace.effectEvidence = effectEvidence",
+    "steps.push(stepTrace)",
+    "readFreshEffectEvidence",
     "recordDecisionEvidence(steps)",
     "rejectUnknownActionDecisionEvent",
     "unknownActionDecisionEvent",
@@ -656,6 +660,8 @@ function checkTurnEntry() {
     "eventType: result.eventType",
     "result.plan?.type ?? result.plan?.kind",
     "acted: Boolean(step.acted)",
+    "effect: summarizeEffectEvidence(step.effectEvidence)",
+    "step.effectEvidence?.failureReason",
     "failureReason: classifyDecisionStepFailure(step)",
     "missingActionResult",
     "noActionCandidate",
@@ -680,6 +686,25 @@ function checkTurnEntry() {
   ]) {
     if (!actionDecisionEvidenceTestText.includes(required)) {
       violations.push(`${rel(actionDecisionEvidenceTestFile)} must cover ${required}`);
+    }
+  }
+  const actionDecisionEffectEvidenceTestFile = path.join(
+    root,
+    "src/battle/battle-action-decision-effect-evidence.test.js"
+  );
+  if (!fs.existsSync(actionDecisionEffectEvidenceTestFile)) {
+    violations.push(`${rel(actionDecisionEffectEvidenceTestFile)} must cover decision/effect evidence bridging`);
+  } else {
+    const testText = fs.readFileSync(actionDecisionEffectEvidenceTestFile, "utf8");
+    for (const required of [
+      "carries fresh effect command failure evidence into the decision step",
+      "targetDead",
+      "HVAA:lastBattleActionDecision",
+      "command: \"target.clickSkillThenTarget\"",
+    ]) {
+      if (!testText.includes(required)) {
+        violations.push(`${rel(actionDecisionEffectEvidenceTestFile)} must cover ${required}`);
+      }
     }
   }
   const actionEffectText = fs.readFileSync(dispatchFile, "utf8");
