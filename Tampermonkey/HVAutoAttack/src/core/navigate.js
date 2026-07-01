@@ -58,16 +58,17 @@ export const NavigationWindowReason = Object.freeze({
 });
 
 const WINDOW_REASONS = new Set(Object.values(NavigationWindowReason));
+const RELOAD_RETRY_DELAY_MS = 5000;
 
 reportPreviousNavigationAudit();
 installExternalUnloadAudit();
 
-/** 重定向当前页面（带 5s 后重试）。 */
-function goto(reason, detail) {
-  recordNavigationDecision("accepted", { type: EVENT_RELOAD_NOW, reason }, detail);
-  writeNavigationAudit("reload", { reason, detail });
+function goto(reason, detail, attempt = 1) {
+  const reloadEvidence = { attempt, retryDelayMs: RELOAD_RETRY_DELAY_MS, detail };
+  recordNavigationDecision("accepted", { type: EVENT_RELOAD_NOW, reason }, reloadEvidence);
+  writeNavigationAudit("reload", { reason, attempt, retryDelayMs: RELOAD_RETRY_DELAY_MS, detail });
   window.location.href = window.location;
-  setTimeout(() => goto(reason, detail), 5000);
+  setTimeout(() => goto(reason, detail, attempt + 1), RELOAD_RETRY_DELAY_MS);
 }
 
 function isReloadReasonAllowed(event) {

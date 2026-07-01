@@ -48,6 +48,9 @@ if (!owner) {
   if (!source.includes("BATTLE_API_RESPONSE")) {
     violations.push("NavigationReloadReason must include battle API response reloads");
   }
+  if (!source.includes("RELOAD_RETRY_DELAY_MS")) {
+    violations.push("reload retry delay must be a named navigation invariant");
+  }
   if (!/\bexport\s+const\s+NavigationRedirectReason\b/.test(source)) {
     violations.push("NavigationRedirectReason must be the public redirect reason vocabulary");
   }
@@ -59,6 +62,9 @@ if (!owner) {
   }
   if (!source.includes("setTimeout(() => goto(event.reason, event.detail), delayMs)")) {
     violations.push("scheduled reload must preserve reload detail in navigation audit");
+  }
+  if (!source.includes("attempt + 1") || !source.includes("retryDelayMs: RELOAD_RETRY_DELAY_MS")) {
+    violations.push("reload retry audit must record attempt and retryDelayMs");
   }
   if (!source.includes("isRedirectReasonAllowed")) {
     violations.push("openUrl must validate an allowed redirect reason");
@@ -124,6 +130,9 @@ if (!owner) {
   const navigationDecisionSource = files.find((file) => file.rel === "core/navigation-decision-evidence.js");
   const navigationRejectionTestSource = files.find((file) => file.rel === "core/navigate-rejection.test.js");
   const openWindowAuditTestSource = files.find((file) => file.rel === "core/navigate-open-window-audit.test.js");
+  const scheduledReloadDetailTestSource = files.find(
+    (file) => file.rel === "core/navigate-scheduled-reload-detail.test.js"
+  );
   if (!navigationDecisionSource) {
     violations.push("core/navigation-decision-evidence.js is missing");
   } else {
@@ -178,6 +187,24 @@ if (!owner) {
     ]) {
       if (!openWindowAuditTestText.includes(required)) {
         violations.push(`open window navigation audit test must cover ${required}`);
+      }
+    }
+  }
+  if (!scheduledReloadDetailTestSource) {
+    violations.push("core/navigate-scheduled-reload-detail.test.js must cover reload attempt evidence");
+  } else {
+    const scheduledReloadDetailTestText = stripComments(
+      readFileSync(scheduledReloadDetailTestSource.abs, "utf8")
+    );
+    for (const required of [
+      "records reload retry attempts separately from the initial reload",
+      "attempt: 1",
+      "attempt: 2",
+      "retryDelayMs: 5000",
+      "HVAA:lastNavigationDecision",
+    ]) {
+      if (!scheduledReloadDetailTestText.includes(required)) {
+        violations.push(`scheduled reload detail test must cover ${required}`);
       }
     }
   }
