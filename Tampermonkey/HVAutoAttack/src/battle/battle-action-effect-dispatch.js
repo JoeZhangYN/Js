@@ -23,6 +23,10 @@ import {
   CriticalBuffPauseExecutionEvent,
   runCriticalBuffPauseExecution,
 } from "./critical-buff-guard/execute-critical-pause.js";
+import {
+  BattleActionEffectEvidenceEvent,
+  runBattleActionEffectEvidence,
+} from "./battle-action-effect-evidence.js";
 
 const EVENT_APPLY_ACTION_RESULT = "applyActionResult";
 
@@ -52,7 +56,13 @@ const ACTION_RESULT_EXECUTORS = Object.freeze({
 });
 
 function applyActionResult(result, snap) {
-  return ACTION_RESULT_EXECUTORS[result?.kind]?.(result, snap) ?? false;
+  const acted = ACTION_RESULT_EXECUTORS[result?.kind]?.(result, snap) ?? false;
+  runBattleActionEffectEvidence({
+    type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+    result,
+    acted,
+  });
+  return acted;
 }
 
 function executeNoopResult() {

@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-action-effect-dispatch.js");
 const ownerTest = path.normalize("src/battle/battle-action-effect-dispatch.test.js");
+const evidence = path.normalize("src/battle/battle-action-effect-evidence.js");
+const evidenceTest = path.normalize("src/battle/battle-action-effect-evidence.test.js");
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
 const legacyOwner = path.normalize("src/battle/dispatch.js");
 const legacyOwnerTest = path.normalize("src/battle/dispatch.test.js");
@@ -25,6 +27,7 @@ if (
 }
 
 const ownerText = read(owner);
+const evidenceText = read(evidence);
 const actionDecisionText = read(actionDecision);
 
 for (const required of [
@@ -51,6 +54,8 @@ for (const required of [
   "runBattleItemExecution",
   "BattleChannelExecutionEvent.APPLY_PLAN",
   "runBattleChannelExecution",
+  "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
+  "runBattleActionEffectEvidence",
   "executeItemCommandResult",
   "executeSkillCommandResult",
   "executeDefendCommandResult",
@@ -131,6 +136,31 @@ if (
 
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover action effect dispatch contract`);
+}
+for (const required of [
+  "BattleActionEffectEvidenceEvent",
+  "RECORD_APPLIED",
+  "runBattleActionEffectEvidence",
+  "ACTION_EFFECT_EVIDENCE_KEY",
+  "summarizeResult",
+  "acted: Boolean(event.acted)",
+]) {
+  if (!evidenceText.includes(required)) violations.push(`${rel(evidence)} must own ${required}`);
+}
+if (!fs.existsSync(path.join(root, evidenceTest))) {
+  violations.push(`${rel(evidenceTest)} must cover action effect evidence contract`);
+} else {
+  const evidenceTestText = read(evidenceTest);
+  for (const required of [
+    "records acted action effect evidence for diagnostics",
+    "records not-acted effect evidence so empty turns are diagnosable",
+    "rejects unknown evidence events",
+    "HVAA:lastBattleActionEffect",
+  ]) {
+    if (!evidenceTestText.includes(required)) {
+      violations.push(`${rel(evidenceTest)} must cover ${required}`);
+    }
+  }
 }
 
 if (
