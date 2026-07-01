@@ -2,16 +2,27 @@ import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
 
 const EVENT_RECORD_RESULT = "recordResult";
 const BATTLE_COMMAND_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_COMMAND;
+const RESULT_ACCEPTED = "accepted";
 
 export const BattleCommandEvidenceEvent = Object.freeze({
   RECORD_RESULT: EVENT_RECORD_RESULT,
 });
 
+function commandActed(result) {
+  return result === RESULT_ACCEPTED;
+}
+
+function commandFailureReason(event) {
+  return commandActed(event.result) ? null : event.reason || "commandRejected";
+}
+
 function recordCommandResult(event, deps) {
   const evidence = {
     command: event.command,
     result: event.result,
+    acted: commandActed(event.result),
     reason: event.reason,
+    failureReason: commandFailureReason(event),
     detail: event.detail,
     at: new Date().toISOString(),
   };

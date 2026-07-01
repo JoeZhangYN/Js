@@ -25,10 +25,33 @@ describe("runBattleCommandEvidence", () => {
     expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
       command: "skill.clickReady",
       result: "rejected",
+      acted: false,
       reason: "skillNotReady",
+      failureReason: "skillNotReady",
       detail: { skillId: "213" },
     });
     expect(debug).toHaveBeenCalledWith("[HVAA] battle command", expect.any(Object));
+  });
+
+  it("records accepted commands as acted without a failure reason", () => {
+    expect(
+      runBattleCommandEvidence({
+        type: BattleCommandEvidenceEvent.RECORD_RESULT,
+        command: "target.click",
+        result: "accepted",
+        reason: "clicked",
+        detail: { targetId: 1 },
+      })
+    ).toBe(true);
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "target.click",
+      result: "accepted",
+      acted: true,
+      reason: "clicked",
+      failureReason: null,
+      detail: { targetId: 1 },
+    });
   });
 
   it("rejects unknown command evidence events", () => {

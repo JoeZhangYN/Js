@@ -55,6 +55,29 @@ for (const spec of specs) {
   }
 }
 
+const commandEvidenceText = read("src/battle/battle-command-evidence.js");
+const commandEvidenceTestText = read("src/battle/battle-command-evidence.test.js");
+for (const required of [
+  "acted: commandActed(event.result)",
+  "failureReason: commandFailureReason(event)",
+  "RESULT_ACCEPTED",
+]) {
+  if (!commandEvidenceText.includes(required)) {
+    violations.push(`src/battle/battle-command-evidence.js must normalize command evidence ${required}`);
+  }
+}
+for (const required of [
+  "records accepted commands as acted without a failure reason",
+  "acted: false",
+  "failureReason: \"skillNotReady\"",
+  "acted: true",
+  "failureReason: null",
+]) {
+  if (!commandEvidenceTestText.includes(required)) {
+    violations.push(`src/battle/battle-command-evidence.test.js must cover ${required}`);
+  }
+}
+
 if (violations.length) {
   console.error("[verify-battle-action-evidence-contract] FAIL");
   for (const violation of violations) console.error(`- ${violation}`);
