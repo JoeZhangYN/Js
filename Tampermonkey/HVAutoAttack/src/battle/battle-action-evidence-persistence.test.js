@@ -1,4 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  BattleAutomationEvidenceEvent,
+  runBattleAutomationEvidence,
+} from "./battle-automation-evidence.js";
 import {
   BattleActionDecisionEvidenceEvent,
   runBattleActionDecisionEvidence,
@@ -17,6 +21,10 @@ import {
   BattleTurnWorkflowEvidenceEvent,
   runBattleTurnWorkflowEvidence,
 } from "./battle-turn-workflow-evidence.js";
+
+beforeEach(() => {
+  window.sessionStorage.clear();
+});
 
 function failingDeps() {
   return {
@@ -150,22 +158,106 @@ describe("battle action evidence persistence failures", () => {
     );
   });
 
-  it("does not throw when evidence debug output fails", () => {
-    const deps = { sessionStorage: window.sessionStorage, debug: vi.fn(() => {
-      throw new Error("console blocked");
-    }) };
+  it("does not throw when evidence debug output fails for every action evidence entry", () => {
+    const debugFailureCases = [
+      {
+        label: "automation",
+        run: runBattleAutomationEvidence,
+        event: {
+          type: BattleAutomationEvidenceEvent.RECORD_STARTUP,
+          phase: "pageReady",
+          result: true,
+          steps: [],
+        },
+        key: "HVAA:lastBattleAutomation",
+        expected: { phase: "pageReady" },
+      },
+      {
+        label: "decision",
+        run: runBattleActionDecisionEvidence,
+        event: {
+          type: BattleActionDecisionEvidenceEvent.RECORD_TRACE,
+          steps: [{ capability: "attack", result: { kind: "noop" }, acted: false }],
+        },
+        key: "HVAA:lastBattleActionDecision",
+        expected: { steps: [expect.objectContaining({ capability: "attack" })] },
+      },
+      {
+        label: "effect",
+        run: runBattleActionEffectEvidence,
+        event: {
+          type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+          result: { kind: "noop" },
+          acted: false,
+        },
+        key: "HVAA:lastBattleActionEffect",
+        expected: { result: { kind: "noop" }, acted: false },
+      },
+      {
+        label: "command",
+        run: runBattleCommandEvidence,
+        event: {
+          type: BattleCommandEvidenceEvent.RECORD_RESULT,
+          command: "target.click",
+          result: "accepted",
+        },
+        key: "HVAA:lastBattleCommand",
+        expected: { command: "target.click", result: "accepted" },
+      },
+      {
+        label: "lifecycle",
+        run: runBattleActionLifecycleEvidence,
+        event: {
+          type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
+          phase: "actionEnded",
+          result: { outcome: "ongoing" },
+        },
+        key: "HVAA:lastBattleActionLifecycle",
+        expected: { phase: "actionEnded" },
+      },
+      {
+        label: "turn",
+        run: runBattleTurnWorkflowEvidence,
+        event: {
+          type: BattleTurnWorkflowEvidenceEvent.RECORD_STAGE,
+          stage: "decisionCompleted",
+          detail: { acted: false },
+        },
+        key: "HVAA:lastBattleTurnWorkflow",
+        expected: { stage: "decisionCompleted" },
+      },
+      {
+        label: "pause",
+        run: runBattlePauseEvidence,
+        event: {
+          type: BattlePauseEvidenceEvent.RECORD_STATE,
+          state: "paused",
+          reason: "battleApiResponseRepeated",
+        },
+        key: "HVAA:lastBattlePause",
+        expected: { state: "paused" },
+      },
+    ];
 
-    expect(() =>
-      runBattleCommandEvidence({
-        type: BattleCommandEvidenceEvent.RECORD_RESULT,
-        command: "target.click",
-        result: "accepted",
-      }, deps)
-    ).not.toThrow();
-    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
-      command: "target.click",
-      result: "accepted",
-      storageWriteOk: true,
-    });
+    for (const testCase of debugFailureCases) {
+      window.sessionStorage.clear();
+      const deps = {
+        sessionStorage: window.sessionStorage,
+        debug: vi.fn(() => {
+          throw new Error("console blocked");
+        }),
+      };
+
+      let result;
+      expect(() => {
+        result = testCase.run(testCase.event, deps);
+      }, testCase.label).not.toThrow();
+
+      expect(result, testCase.label).toBe(true);
+      expect(JSON.parse(window.sessionStorage.getItem(testCase.key))).toMatchObject({
+        ...testCase.expected,
+        storageWriteOk: true,
+      });
+    }
   });
 });
