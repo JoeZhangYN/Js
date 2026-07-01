@@ -102,6 +102,34 @@ describe("battle API response recovery event rejection", () => {
     });
   });
 
+  it("preserves API bridge rejection step evidence", () => {
+    const deps = makeDeps();
+
+    runBattleApiResponseRecovery(
+      {
+        type: BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT,
+        detail: {
+          eventType: "install",
+          reason: "apiBridgeInstallStepFailed",
+          step: "appendApiCallScript",
+          error: "head append failed",
+        },
+      },
+      deps
+    );
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
+      recoveryAction: "rejected",
+      detail: {
+        outcome: "rejected",
+        reason: "apiBridgeInstallStepFailed",
+        eventType: "install",
+        step: "appendApiCallScript",
+        error: "head append failed",
+      },
+    });
+  });
+
   it("carries recent diagnostics into rejected recovery events without nesting recovery state", () => {
     const deps = makeDeps();
     deps.readDiagnosticEvidence.mockReturnValue({

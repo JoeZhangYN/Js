@@ -68,6 +68,8 @@ function rejectApiBridgeEvent(detail, deps) {
     outcome: OUTCOME_REJECTED,
     reason: detail?.reason ?? EVENT_UNKNOWN_API_BRIDGE,
     eventType: detail?.eventType ?? null,
+    step: detail?.step,
+    error: detail?.error,
   };
   writeRecoveryState(
     deps,

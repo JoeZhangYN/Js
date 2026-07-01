@@ -82,4 +82,46 @@ describe("runBattleApiBridgeAutomation event rejection", () => {
     expect(deps.readBattleApiWorldContext).not.toHaveBeenCalled();
     expect(deps.appendHead).not.toHaveBeenCalled();
   });
+
+  it("records API bridge install step exceptions without throwing", () => {
+    const deps = makeDeps();
+    deps.readOptionField.mockImplementation(() => {
+      throw new Error("option storage failed");
+    });
+
+    expect(runBattleApiBridgeAutomation(undefined, deps)).toBe(false);
+
+    expect(deps.rejectApiBridgeEvent).toHaveBeenCalledWith({
+      type: "install",
+      reason: "apiBridgeInstallStepFailed",
+      step: "readApiBridgeDelayOption",
+      error: "option storage failed",
+    });
+    expect(deps.installApiResponseRecovery).not.toHaveBeenCalled();
+    expect(deps.appendHead).not.toHaveBeenCalled();
+  });
+
+  it("records default API bridge install step exceptions with step evidence", () => {
+    const deps = makeDefaultRejectDeps();
+    deps.readOptionField.mockReturnValue(0);
+    deps.installApiResponseRecovery.mockReturnValue(true);
+    deps.readBattleApiWorldContext.mockImplementation(() => {
+      throw new Error("world context failed");
+    });
+
+    expect(runBattleApiBridgeAutomation(undefined, deps)).toBe(false);
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
+      repeatCount: 1,
+      recoveryAction: "rejected",
+      detail: {
+        outcome: "rejected",
+        reason: "apiBridgeInstallStepFailed",
+        eventType: "install",
+        step: "readBattleApiWorldContext",
+        error: "world context failed",
+      },
+    });
+    expect(deps.appendHead).not.toHaveBeenCalled();
+  });
 });
