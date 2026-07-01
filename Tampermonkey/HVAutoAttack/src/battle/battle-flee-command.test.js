@@ -3,12 +3,17 @@ import { BattleFleeCommandEvent, runBattleFleeCommand } from "./battle-flee-comm
 
 const mocks = vi.hoisted(() => ({
   runNavigationAutomation: vi.fn(),
+  runBattleCommandEvidence: vi.fn(),
 }));
 
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({ SCHEDULE_RELOAD: "scheduleReload" }),
   NavigationReloadReason: Object.freeze({ FLEE_CONFIRMATION: "fleeConfirmation" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
+}));
+vi.mock("./battle-command-evidence.js", () => ({
+  BattleCommandEvidenceEvent: Object.freeze({ RECORD_RESULT: "recordResult" }),
+  runBattleCommandEvidence: mocks.runBattleCommandEvidence,
 }));
 
 function mkFleeButton() {
@@ -22,6 +27,7 @@ function mkFleeButton() {
 beforeEach(() => {
   document.body.innerHTML = "";
   mocks.runNavigationAutomation.mockReset();
+  mocks.runBattleCommandEvidence.mockReset();
   vi.useFakeTimers();
 });
 
@@ -43,6 +49,13 @@ describe("runBattleFleeCommand", () => {
       seconds: 3,
       detail: { source: "battleFleeCommand", command: "clickAndReload", seconds: 3 },
     });
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
+      type: "recordResult",
+      command: "flee.clickAndReload",
+      result: "accepted",
+      reason: "clicked",
+      detail: { seconds: 3 },
+    });
   });
 
   it("does not schedule reload when the flee button is missing", () => {
@@ -50,5 +63,12 @@ describe("runBattleFleeCommand", () => {
 
     expect(vi.getTimerCount()).toBe(0);
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
+      type: "recordResult",
+      command: "flee.clickAndReload",
+      result: "rejected",
+      reason: "fleeMissing",
+      detail: undefined,
+    });
   });
 });

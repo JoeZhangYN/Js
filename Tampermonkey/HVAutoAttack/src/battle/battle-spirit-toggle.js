@@ -2,6 +2,7 @@
 import { gE, isSpiritActive } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
+import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
 
 const EVENT_CLICK_AND_RECORD = "clickAndRecord";
 const EVENT_ACTIVATE_IF_INACTIVE = "activateIfInactive";
@@ -51,18 +52,40 @@ function readActive() {
 
 function clickAndRecord() {
   const el = gE("#ckey_spirit");
-  if (!el) return false;
+  if (!el) {
+    recordCommandResult("spirit.clickAndRecord", "rejected", "spiritMissing");
+    return false;
+  }
   el.click();
-  recordToggle();
+  const turn = recordToggle();
+  recordCommandResult("spirit.clickAndRecord", "accepted", "clicked", { turn });
   return true;
 }
 
 function activateIfInactive() {
   const el = gE("#ckey_spirit");
-  if (!el || isSpiritActive(el)) return false;
+  if (!el) {
+    recordCommandResult("spirit.activateIfInactive", "rejected", "spiritMissing");
+    return false;
+  }
+  if (isSpiritActive(el)) {
+    recordCommandResult("spirit.activateIfInactive", "rejected", "alreadyActive");
+    return false;
+  }
   el.click();
-  recordToggle();
+  const turn = recordToggle();
+  recordCommandResult("spirit.activateIfInactive", "accepted", "clicked", { turn });
   return true;
+}
+
+function recordCommandResult(command, result, reason, detail) {
+  runBattleCommandEvidence({
+    type: BattleCommandEvidenceEvent.RECORD_RESULT,
+    command,
+    result,
+    reason,
+    detail,
+  });
 }
 
 export function runBattleSpiritToggleAutomation(event = { type: EVENT_READ_LAST_TOGGLE }) {

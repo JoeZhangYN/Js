@@ -53,8 +53,11 @@ requireText(owner, [
   "BattleDefendCommandEvent",
   "runBattleDefendCommand",
   "battleDefendCommandEventHandlers",
+  "BattleCommandEvidenceEvent.RECORD_RESULT",
+  "runBattleCommandEvidence",
   "CLICK",
   "#ckey_defend",
+  "defend.click",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {

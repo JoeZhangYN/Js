@@ -57,10 +57,13 @@ requireText(owner, [
   "BattleFleeCommandEvent",
   "runBattleFleeCommand",
   "battleFleeCommandEventHandlers",
+  "BattleCommandEvidenceEvent.RECORD_RESULT",
+  "runBattleCommandEvidence",
   "CLICK_AND_RELOAD",
   "NavigationEvent.SCHEDULE_RELOAD",
   'source: "battleFleeCommand"',
   "command: EVENT_CLICK_AND_RELOAD",
+  "flee.clickAndReload",
   '"1001"',
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");

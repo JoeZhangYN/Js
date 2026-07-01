@@ -1,5 +1,6 @@
 // Focus command: one write entry for clicking the battle Focus button.
 import { gE } from "../dom/query.js";
+import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
 
 const EVENT_CLICK = "click";
 
@@ -9,9 +10,22 @@ export const BattleFocusCommandEvent = Object.freeze({
 
 function clickFocus() {
   const el = gE("#ckey_focus");
-  if (!el) return false;
+  if (!el) {
+    recordCommandResult("rejected", "focusMissing");
+    return false;
+  }
   el.click();
+  recordCommandResult("accepted", "clicked");
   return true;
+}
+
+function recordCommandResult(result, reason) {
+  runBattleCommandEvidence({
+    type: BattleCommandEvidenceEvent.RECORD_RESULT,
+    command: "focus.click",
+    result,
+    reason,
+  });
 }
 
 const battleFocusCommandEventHandlers = Object.freeze({

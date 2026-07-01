@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   gE: vi.fn(),
   isSpiritActive: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
+  runBattleCommandEvidence: vi.fn(),
 }));
 
 vi.mock("../dom/query.js", () => ({ gE: mocks.gE, isSpiritActive: mocks.isSpiritActive }));
@@ -16,6 +17,10 @@ vi.mock("../state/store.js", () => ({ g: mocks.g }));
 vi.mock("../state/cd-tracker.js", () => ({
   CdRuntimeEvent: Object.freeze({ READ_GLOBAL_TURN: "readGlobalTurn" }),
   runCdRuntimeAutomation: mocks.runCdRuntimeAutomation,
+}));
+vi.mock("./battle-command-evidence.js", () => ({
+  BattleCommandEvidenceEvent: Object.freeze({ RECORD_RESULT: "recordResult" }),
+  runBattleCommandEvidence: mocks.runBattleCommandEvidence,
 }));
 
 beforeEach(() => {
@@ -44,6 +49,13 @@ describe("runBattleSpiritToggleAutomation", () => {
     expect(spirit.click).toHaveBeenCalledTimes(1);
     expect(mocks.runCdRuntimeAutomation).toHaveBeenCalledWith({ type: "readGlobalTurn" });
     expect(mocks.g).toHaveBeenCalledWith("lastSpiritToggleGlobalTurn", 12);
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
+      type: "recordResult",
+      command: "spirit.clickAndRecord",
+      result: "accepted",
+      reason: "clicked",
+      detail: { turn: 12 },
+    });
   });
 
   it("does not record a toggle when the Spirit button is missing", () => {
@@ -55,6 +67,13 @@ describe("runBattleSpiritToggleAutomation", () => {
 
     expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
     expect(mocks.g).not.toHaveBeenCalledWith("lastSpiritToggleGlobalTurn", expect.anything());
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
+      type: "recordResult",
+      command: "spirit.clickAndRecord",
+      result: "rejected",
+      reason: "spiritMissing",
+      detail: undefined,
+    });
   });
 
   it("activates inactive Spirit and records cooldown through the command", () => {
@@ -71,6 +90,9 @@ describe("runBattleSpiritToggleAutomation", () => {
     expect(mocks.isSpiritActive).toHaveBeenCalledWith(spirit);
     expect(spirit.click).toHaveBeenCalledTimes(1);
     expect(mocks.g).toHaveBeenCalledWith("lastSpiritToggleGlobalTurn", 12);
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({ command: "spirit.activateIfInactive", result: "accepted" })
+    );
   });
 
   it("does not click or record when Spirit is already active", () => {
@@ -87,6 +109,9 @@ describe("runBattleSpiritToggleAutomation", () => {
     expect(spirit.click).not.toHaveBeenCalled();
     expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
     expect(mocks.g).not.toHaveBeenCalledWith("lastSpiritToggleGlobalTurn", expect.anything());
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({ command: "spirit.activateIfInactive", reason: "alreadyActive" })
+    );
   });
 
   it("records the current global turn through the CD runtime entry", () => {
