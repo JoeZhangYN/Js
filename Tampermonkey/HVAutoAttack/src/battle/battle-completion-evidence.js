@@ -1,0 +1,44 @@
+import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+
+const EVENT_RECORD_COMPLETION = "recordCompletion";
+const BATTLE_COMPLETION_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_COMPLETION;
+
+export const BattleCompletionEvidenceEvent = Object.freeze({
+  RECORD_COMPLETION: EVENT_RECORD_COMPLETION,
+});
+
+function recordCompletion(event, deps) {
+  const evidence = {
+    outcome: event.outcome,
+    context: event.context,
+    effects: event.effects,
+    reason: event.reason,
+    eventType: event.eventType,
+    at: new Date().toISOString(),
+  };
+  try {
+    deps.sessionStorage.setItem(
+      BATTLE_COMPLETION_EVIDENCE_KEY,
+      JSON.stringify({ ...evidence, storageWriteOk: true })
+    );
+    evidence.storageWriteOk = true;
+  } catch (error) {
+    evidence.storageWriteOk = false;
+    evidence.storageWriteError = error?.message || String(error);
+    deps.debug("[HVAA] battle completion", evidence);
+    return false;
+  }
+  deps.debug("[HVAA] battle completion", evidence);
+  return true;
+}
+
+const battleCompletionEvidenceEventHandlers = Object.freeze({
+  [EVENT_RECORD_COMPLETION]: recordCompletion,
+});
+
+export function runBattleCompletionEvidence(
+  event = { type: EVENT_RECORD_COMPLETION },
+  deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
+) {
+  return battleCompletionEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
+}

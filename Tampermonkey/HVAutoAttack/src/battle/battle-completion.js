@@ -12,9 +12,14 @@ import {
 } from "../monitor/battle-monitor-automation.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "./battle-runtime.js";
 import { BattleProgressEvent, runBattleProgressAutomation } from "./battle-progress.js";
+import {
+  BattleCompletionEvidenceEvent,
+  runBattleCompletionEvidence,
+} from "./battle-completion-evidence.js";
 
 const EVENT_COMPLETION_REACHED = "completionReached";
 const EVENT_READ_REACHED = "readReached";
+const EVENT_UNKNOWN_COMPLETION = "unknownCompletionEvent";
 const VICTORY_RELOAD_SECONDS = 3;
 
 export const BattleCompletionEvent = Object.freeze({
@@ -54,23 +59,43 @@ function victoryReloadDetail(outcome, context) {
   return { source: "battleCompletion", outcome, context };
 }
 
+function effectOk(result) {
+  return result !== false;
+}
+
 function handleTerminalCompletion(outcome, context, deps) {
   const alarmKind = outcome === BattleCompletionOutcome.DEFEAT ? "Defeat" : "Victory";
-  deps.triggerAlarm(alarmKind);
-  deps.clearSession();
+  const effects = {
+    alarm: effectOk(deps.triggerAlarm(alarmKind)),
+    clearSession: effectOk(deps.clearSession()),
+  };
   if (outcome === BattleCompletionOutcome.VICTORY) {
-    deps.scheduleReload(VICTORY_RELOAD_SECONDS, victoryReloadDetail(outcome, context));
+    effects.scheduleReload = effectOk(
+      deps.scheduleReload(VICTORY_RELOAD_SECONDS, victoryReloadDetail(outcome, context))
+    );
   }
+  return effects;
 }
 
 function handleCompletionReached(deps) {
-  deps.recordCompletion();
+  const effects = { recordCompletion: effectOk(deps.recordCompletion()) };
   const context = deps.readCompletionContext();
   const outcome = classifyCompletion(context);
   if (outcome === BattleCompletionOutcome.DEFEAT || outcome === BattleCompletionOutcome.VICTORY) {
-    handleTerminalCompletion(outcome, context, deps);
+    Object.assign(effects, handleTerminalCompletion(outcome, context, deps));
   }
+  deps.recordCompletionEvidence({ outcome, context, effects });
   return { outcome };
+}
+
+function rejectUnknownCompletionEvent(event, deps) {
+  const result = { outcome: BattleCompletionOutcome.ONGOING };
+  deps.recordCompletionEvidence({
+    ...result,
+    reason: EVENT_UNKNOWN_COMPLETION,
+    eventType: event?.type ?? null,
+  });
+  return result;
 }
 
 export function runBattleCompletionAutomation(
@@ -82,6 +107,11 @@ export function runBattleCompletionAutomation(
     triggerAlarm: (kind) => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind }),
     clearSession: () => runBattleRuntimeAutomation({ type: BattleRuntimeEvent.CLEAR_SESSION }),
     isCompletionReached: () => !!gE("#btcp"),
+    recordCompletionEvidence: (detail) =>
+      runBattleCompletionEvidence({
+        type: BattleCompletionEvidenceEvent.RECORD_COMPLETION,
+        ...detail,
+      }),
     scheduleReload: (sec, detail) =>
       runNavigationAutomation({
         type: NavigationEvent.SCHEDULE_RELOAD,
@@ -91,7 +121,5 @@ export function runBattleCompletionAutomation(
       }),
   }
 ) {
-  return battleCompletionEventHandlers[event?.type]?.(event, deps) ?? {
-    outcome: BattleCompletionOutcome.ONGOING,
-  };
+  return battleCompletionEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownCompletionEvent(event, deps);
 }

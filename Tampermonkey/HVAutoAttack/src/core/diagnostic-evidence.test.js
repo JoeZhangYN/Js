@@ -24,6 +24,10 @@ describe("readRecentDiagnosticEvidence", () => {
       JSON.stringify({ phase: "battleStarted", result: true })
     );
     window.sessionStorage.setItem(
+      "HVAA:lastBattleCompletion",
+      JSON.stringify({ outcome: "victory", effects: { scheduleReload: true } })
+    );
+    window.sessionStorage.setItem(
       "HVAA:lastBattleRoundStart",
       JSON.stringify({ phase: "roundStarted", result: true })
     );
@@ -74,6 +78,7 @@ describe("readRecentDiagnosticEvidence", () => {
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
       battleAutomation: { phase: "pageReady", result: true },
       battleLifecycle: { phase: "battleStarted", result: true },
+      battleCompletion: { outcome: "victory", effects: { scheduleReload: true } },
       battleRoundStart: { phase: "roundStarted", result: true },
       battleKillBugRecovery: { result: "scheduledReload", detail: { scannedRows: 1 } },
       battleMonsterStatusRepair: { result: "scheduledReload", reason: "roundStartLog" },

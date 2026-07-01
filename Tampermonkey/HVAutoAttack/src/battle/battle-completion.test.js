@@ -11,6 +11,7 @@ function deps(context = { monsterAlive: 0, roundNow: 1, roundAll: 1 }) {
     triggerAlarm: vi.fn(),
     clearSession: vi.fn(),
     isCompletionReached: vi.fn(() => true),
+    recordCompletionEvidence: vi.fn(),
     scheduleReload: vi.fn(),
   };
 }
@@ -26,6 +27,11 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.triggerAlarm).toHaveBeenCalledWith("Defeat");
     expect(d.clearSession).toHaveBeenCalled();
     expect(d.scheduleReload).not.toHaveBeenCalled();
+    expect(d.recordCompletionEvidence).toHaveBeenCalledWith({
+      outcome: "defeat",
+      context: { monsterAlive: 1, roundNow: 1, roundAll: 1 },
+      effects: { recordCompletion: true, alarm: true, clearSession: true },
+    });
   });
 
   it("returns next round without terminal side effects", () => {
@@ -38,6 +44,11 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.triggerAlarm).not.toHaveBeenCalled();
     expect(d.clearSession).not.toHaveBeenCalled();
     expect(d.scheduleReload).not.toHaveBeenCalled();
+    expect(d.recordCompletionEvidence).toHaveBeenCalledWith({
+      outcome: "nextRound",
+      context: { monsterAlive: 0, roundNow: 1, roundAll: 2 },
+      effects: { recordCompletion: true },
+    });
   });
 
   it("handles victory completion through the entry", () => {
@@ -54,6 +65,11 @@ describe("runBattleCompletionAutomation", () => {
       source: "battleCompletion",
       outcome: "victory",
       context,
+    });
+    expect(d.recordCompletionEvidence).toHaveBeenCalledWith({
+      outcome: "victory",
+      context,
+      effects: { recordCompletion: true, alarm: true, clearSession: true, scheduleReload: true },
     });
   });
 
@@ -107,6 +123,11 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.clearSession).not.toHaveBeenCalled();
     expect(d.isCompletionReached).not.toHaveBeenCalled();
     expect(d.scheduleReload).not.toHaveBeenCalled();
+    expect(d.recordCompletionEvidence).toHaveBeenCalledWith({
+      outcome: "ongoing",
+      reason: "unknownCompletionEvent",
+      eventType: "unknown",
+    });
   });
 
   it("rejects null battle completion events without side effects", () => {
@@ -122,6 +143,11 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.clearSession).not.toHaveBeenCalled();
     expect(d.isCompletionReached).not.toHaveBeenCalled();
     expect(d.scheduleReload).not.toHaveBeenCalled();
+    expect(d.recordCompletionEvidence).toHaveBeenCalledWith({
+      outcome: "ongoing",
+      reason: "unknownCompletionEvent",
+      eventType: null,
+    });
   });
 
   it("reads completion panel reachability through the completion entry", () => {

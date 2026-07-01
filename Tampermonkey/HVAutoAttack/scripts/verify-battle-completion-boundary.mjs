@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-completion.js");
 const ownerTest = path.normalize("src/battle/battle-completion.test.js");
+const evidence = path.normalize("src/battle/battle-completion-evidence.js");
+const evidenceTest = path.normalize("src/battle/battle-completion-evidence.test.js");
 const actionEventBridge = path.normalize("src/battle/battle-action-event-bridge.js");
 const violations = [];
 
@@ -50,6 +52,10 @@ function checkOwner() {
     "deps.recordCompletion",
     "deps.isCompletionReached",
     "handleTerminalCompletion",
+    "BattleCompletionEvidenceEvent.RECORD_COMPLETION",
+    "runBattleCompletionEvidence",
+    "recordCompletionEvidence",
+    "unknownCompletionEvent",
     "BattleMonitorEvent.COMPLETION_REACHED",
     "runBattleMonitorAutomation",
     "BattleProgressEvent.READ_CONTEXT",
@@ -133,6 +139,9 @@ function checkOwner() {
     if (!testText.includes("rejects unknown battle completion events without side effects")) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown completion events`);
     }
+    if (!testText.includes("unknownCompletionEvent")) {
+      violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown completion evidence`);
+    }
     if (!testText.includes("rejects null battle completion events without side effects")) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null completion events`);
     }
@@ -141,6 +150,36 @@ function checkOwner() {
     }
     if (!testText.includes('source: "battleCompletion"')) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover victory reload detail`);
+    }
+  }
+  if (!fs.existsSync(path.join(root, evidence))) {
+    violations.push(`${evidence.replaceAll("\\", "/")} must record battle completion evidence`);
+  } else {
+    const evidenceText = fs.readFileSync(path.join(root, evidence), "utf8");
+    for (const required of [
+      "BattleCompletionEvidenceEvent",
+      "runBattleCompletionEvidence",
+      "DiagnosticEvidenceKey.BATTLE_COMPLETION",
+      "storageWriteOk",
+      "storageWriteError",
+    ]) {
+      if (!evidenceText.includes(required)) {
+        violations.push(`${evidence.replaceAll("\\", "/")} must own ${required}`);
+      }
+    }
+  }
+  if (!fs.existsSync(path.join(root, evidenceTest))) {
+    violations.push(`${evidenceTest.replaceAll("\\", "/")} must cover completion evidence`);
+  } else {
+    const evidenceTestText = fs.readFileSync(path.join(root, evidenceTest), "utf8");
+    for (const required of [
+      "records completion outcome evidence for diagnostics",
+      "keeps completion evidence visible when storage is unavailable",
+      "HVAA:lastBattleCompletion",
+    ]) {
+      if (!evidenceTestText.includes(required)) {
+        violations.push(`${evidenceTest.replaceAll("\\", "/")} must cover ${required}`);
+      }
     }
   }
 }
