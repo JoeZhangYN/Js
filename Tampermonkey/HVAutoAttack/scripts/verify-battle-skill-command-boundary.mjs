@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src", "battle");
 const owner = path.normalize("src/battle/battle-skill-command.js");
 const ownerTest = path.normalize("src/battle/battle-skill-command.test.js");
+const readFailureTest = path.normalize("src/battle/battle-skill-command-read-failure.test.js");
 const query = path.normalize("src/dom/query.js");
 const targetCommand = path.normalize("src/battle/battle-target-command.js");
 const targetCommandTest = path.normalize("src/battle/battle-target-command.test.js");
@@ -74,6 +75,10 @@ requireText(owner, [
   "afterClickError",
   "recordBattleCommandResult",
   "skillNotReady",
+  "skillReadinessReadFailed",
+  "skillElementReadFailed",
+  "readSkillReadiness",
+  "readSkillElement",
   "skillElementMissing",
   "unknownSkillCommand",
   "event?.type ?? null",
@@ -89,6 +94,12 @@ requireText(ownerTest, [
   "clickFailed",
   "records missing skill command events as not acted",
   "eventType: null",
+]);
+requireText(readFailureTest, [
+  "records skill readiness read failures as not acted",
+  "records skill element read failures as not acted",
+  "skillReadinessReadFailed",
+  "skillElementReadFailed",
 ]);
 requireText("src/battle/battle-target-command.js", [
   "BattleSkillCommandEvent.CLICK_READY",

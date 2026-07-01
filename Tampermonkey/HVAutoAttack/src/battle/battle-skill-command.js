@@ -14,11 +14,27 @@ function recordCommandResult(result, reason, detail) {
 }
 
 function clickReady(skillId, afterClick) {
-  if (!isOn(skillId)) {
+  const readiness = readSkillReadiness(skillId);
+  if (readiness.error) {
+    recordCommandResult("rejected", "skillReadinessReadFailed", {
+      skillId,
+      error: readiness.error,
+    });
+    return false;
+  }
+  if (!readiness.ready) {
     recordCommandResult("rejected", "skillNotReady", { skillId });
     return false;
   }
-  const el = gE(skillId);
+  const element = readSkillElement(skillId);
+  if (element.error) {
+    recordCommandResult("rejected", "skillElementReadFailed", {
+      skillId,
+      error: element.error,
+    });
+    return false;
+  }
+  const el = element.el;
   if (!el) {
     recordCommandResult("rejected", "skillElementMissing", { skillId });
     return false;
@@ -39,6 +55,22 @@ function clickReady(skillId, afterClick) {
   }
   recordCommandResult("accepted", "clicked", { skillId });
   return true;
+}
+
+function readSkillReadiness(skillId) {
+  try {
+    return { ready: Boolean(isOn(skillId)) };
+  } catch (error) {
+    return { ready: false, error: error?.message || String(error) };
+  }
+}
+
+function readSkillElement(skillId) {
+  try {
+    return { el: gE(skillId) };
+  } catch (error) {
+    return { el: null, error: error?.message || String(error) };
+  }
 }
 
 const battleSkillCommandEventHandlers = Object.freeze({
