@@ -40,8 +40,12 @@ describe("battle action event bridge evidence failures", () => {
       throw new Error("lifecycle evidence failed");
     });
 
-    expect(() => runBattleActionEventBridgeAutomation({ type: "unknown" })).not.toThrow();
-    expect(runBattleActionEventBridgeAutomation({ type: "unknown" })).toBe(false);
+    let result;
+    expect(() => {
+      result = runBattleActionEventBridgeAutomation({ type: "unknown" });
+    }).not.toThrow();
+
+    expect(result).toBe(false);
     expect(mocks.runBattleActionLifecycleAutomation).not.toHaveBeenCalled();
   });
 
