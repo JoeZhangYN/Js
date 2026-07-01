@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-api-bridge.js");
 const ownerTest = path.normalize("src/battle/battle-api-bridge.test.js");
+const ownerRejectionTest = path.normalize("src/battle/battle-api-bridge-rejection.test.js");
 const runtimeTest = path.normalize("src/battle/battle-api-bridge-runtime.test.js");
 const responseScript = path.normalize("src/battle/battle-api-response-script.js");
 const responseScriptTest = path.normalize("src/battle/battle-api-response-script.test.js");
@@ -52,6 +53,7 @@ const ownerText = requireText(owner, [
   "BattleApiBridgeEvent",
   "battleApiBridgeEventHandlers",
   "runBattleApiBridgeAutomation",
+  "rejectUnknownApiBridgeEvent",
   "OptionEvent.READ_FIELD",
   "BattleApiResponseRecoveryEvent.INSTALL_BRIDGE",
   "runBattleApiResponseRecovery",
@@ -83,6 +85,11 @@ requireText(ownerTest, [
   "https://hentaiverse.org/isekai/json",
   "window.sessionStorage.delay * 1",
   "window.sessionStorage.delay2 * 1",
+]);
+requireText(ownerRejectionTest, [
+  "rejects unknown events through API recovery evidence",
+  "rejects null events through API recovery evidence instead of throwing",
+  "rejectApiBridgeEvent",
 ]);
 requireText(runtimeTest, [
   "battle_continue-capable target",
@@ -210,6 +217,13 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_INSTALL\]/.test(ownerText)) {
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
+if (
+  !ownerText.includes(
+    "battleApiBridgeEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownApiBridgeEvent(event, deps)"
+  )
+) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route unknown events through API recovery evidence`);
 }
 if (/document\.getElementById\(["']event(Start|End)["']\)/.test(ownerText)) {
   violations.push(

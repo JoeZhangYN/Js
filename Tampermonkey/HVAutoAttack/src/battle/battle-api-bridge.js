@@ -1,3 +1,4 @@
+/* global MAIN_URL */
 import { cE, gE } from "../dom/query.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import {
@@ -17,6 +18,10 @@ export const BattleApiBridgeEvent = Object.freeze({ INSTALL: EVENT_INSTALL });
 const battleApiBridgeEventHandlers = Object.freeze({
   [EVENT_INSTALL]: (_event, deps) => installBridge(deps),
 });
+
+function rejectUnknownApiBridgeEvent(event, deps) {
+  return deps.rejectApiBridgeEvent?.(event ?? null) ?? runBattleApiResponseRecovery(event ?? null);
+}
 
 function buildApiCallScript(apiJsonUrl, protocol) {
   return `api_call = ${function (b, a, d) {
@@ -113,5 +118,5 @@ export function runBattleApiBridgeAutomation(
       runBattleApiResponseRecovery({ type: BattleApiResponseRecoveryEvent.INSTALL_BRIDGE }),
   }
 ) {
-  return battleApiBridgeEventHandlers[event.type]?.(event, deps) ?? false;
+  return battleApiBridgeEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownApiBridgeEvent(event, deps);
 }

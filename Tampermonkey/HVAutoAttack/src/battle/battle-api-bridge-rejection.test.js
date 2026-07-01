@@ -1,0 +1,38 @@
+import { describe, expect, it, vi } from "vitest";
+import { runBattleApiBridgeAutomation } from "./battle-api-bridge.js";
+
+function makeDeps() {
+  return {
+    readOptionField: vi.fn(),
+    sessionStorage: window.sessionStorage,
+    createScript: vi.fn(),
+    appendHead: vi.fn(),
+    readBattleApiWorldContext: vi.fn(),
+    installApiResponseRecovery: vi.fn(),
+    rejectApiBridgeEvent: vi.fn(() => false),
+  };
+}
+
+describe("runBattleApiBridgeAutomation event rejection", () => {
+  it("rejects unknown events through API recovery evidence", () => {
+    const deps = makeDeps();
+
+    expect(runBattleApiBridgeAutomation({ type: "unknown" }, deps)).toBe(false);
+
+    expect(deps.rejectApiBridgeEvent).toHaveBeenCalledWith({ type: "unknown" });
+    expect(deps.installApiResponseRecovery).not.toHaveBeenCalled();
+    expect(deps.readBattleApiWorldContext).not.toHaveBeenCalled();
+    expect(deps.appendHead).not.toHaveBeenCalled();
+  });
+
+  it("rejects null events through API recovery evidence instead of throwing", () => {
+    const deps = makeDeps();
+
+    expect(runBattleApiBridgeAutomation(null, deps)).toBe(false);
+
+    expect(deps.rejectApiBridgeEvent).toHaveBeenCalledWith(null);
+    expect(deps.installApiResponseRecovery).not.toHaveBeenCalled();
+    expect(deps.readBattleApiWorldContext).not.toHaveBeenCalled();
+    expect(deps.appendHead).not.toHaveBeenCalled();
+  });
+});

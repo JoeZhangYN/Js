@@ -7,6 +7,7 @@ const owner = path.normalize("src/battle/battle-action-event-bridge.js");
 const ownerTest = path.normalize("src/battle/battle-action-event-bridge.test.js");
 const apiBridge = path.normalize("src/battle/battle-api-bridge.js");
 const apiBridgeTest = path.normalize("src/battle/battle-api-bridge.test.js");
+const apiBridgeRejectionTest = path.normalize("src/battle/battle-api-bridge-rejection.test.js");
 const apiBridgeRuntimeTest = path.normalize("src/battle/battle-api-bridge-runtime.test.js");
 const legacyReloader = path.normalize("src/battle/reloader.js");
 const legacyActionStart = path.normalize("src/battle/battle-action-start.js");
@@ -33,6 +34,7 @@ function checkFile(file) {
     relative !== ownerTest &&
     relative !== apiBridge &&
     relative !== apiBridgeTest &&
+    relative !== apiBridgeRejectionTest &&
     relative !== apiBridgeRuntimeTest &&
     /eventStart|eventEnd/.test(text)
   ) {
@@ -42,6 +44,7 @@ function checkFile(file) {
     relative !== owner &&
     relative !== apiBridge &&
     relative !== apiBridgeTest &&
+    relative !== apiBridgeRejectionTest &&
     relative !== apiBridgeRuntimeTest &&
     /from\s+["']\.\/battle-api-bridge\.js["']/.test(text)
   ) {

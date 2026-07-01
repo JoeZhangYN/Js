@@ -139,10 +139,6 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(script).toContain("action: actionDetail()");
   });
 
-  it("rejects unknown events", () => {
-    expect(runBattleApiBridgeAutomation({ type: "unknown" }, makeDeps())).toBe(false);
-  });
-
   it("reads API bridge delay options through the option entry on the default path", () => {
     mocks.runOptionAutomation.mockImplementation((event) => ({ delay: 12, delay2: 34 })[event.key]);
 
