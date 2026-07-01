@@ -73,6 +73,13 @@ const ownerEntryBody =
 if (/event\.type\s*!==|event\.type\s*===/.test(ownerEntryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (!ownerText.includes("battleRuntimeEventHandlers[event?.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must reject null runtime events without clearing session`);
+}
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+if (!ownerTestText.includes("runBattleRuntimeAutomation(null)")) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null runtime events`);
+}
 
 if (violations.length) {
   console.error("[verify-battle-runtime-boundary] FAIL");

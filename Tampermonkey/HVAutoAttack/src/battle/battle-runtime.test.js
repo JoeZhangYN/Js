@@ -30,6 +30,7 @@ describe("runBattleRuntimeAutomation", () => {
     setValue(STORAGE_KEYS.BATTLE_CODE, "code");
 
     expect(runBattleRuntimeAutomation({ type: "unknown" })).toBe(false);
+    expect(runBattleRuntimeAutomation(null)).toBe(false);
     expect(getValue(STORAGE_KEYS.BATTLE_CODE)).toBe("code");
   });
 });

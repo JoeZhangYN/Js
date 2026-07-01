@@ -17,5 +17,5 @@ const battleRuntimeEventHandlers = Object.freeze({
 });
 
 export function runBattleRuntimeAutomation(event = { type: EVENT_CLEAR_SESSION }) {
-  return battleRuntimeEventHandlers[event.type]?.(event) ?? false;
+  return battleRuntimeEventHandlers[event?.type]?.(event) ?? false;
 }
