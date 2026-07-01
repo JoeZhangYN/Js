@@ -16,6 +16,8 @@ function makeDeps() {
     cancel: vi.fn(),
     triggerAlarm: vi.fn(),
     scheduleReload: vi.fn(),
+    sessionStorage: window.sessionStorage,
+    debug: vi.fn(),
   };
 }
 
@@ -54,6 +56,22 @@ describe("runBattleActionDelayAutomation event rejection", () => {
       decision: "rejected",
       reason: "unknownActionDelayEvent",
       eventType: null,
+    });
+  });
+
+  it("keeps unknown action delay events rejected when debug output fails", () => {
+    const deps = makeDeps();
+    deps.debug.mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+
+    expect(runBattleActionDelayAutomation({ type: "unknown" }, deps)).toBe(false);
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionDelay"))).toMatchObject({
+      decision: "rejected",
+      reason: "unknownActionDelayEvent",
+      eventType: "unknown",
+      storageWriteOk: true,
     });
   });
 });

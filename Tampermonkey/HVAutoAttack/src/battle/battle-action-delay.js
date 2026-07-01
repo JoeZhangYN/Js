@@ -6,6 +6,7 @@ import {
 } from "../core/navigate.js";
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
+import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
@@ -79,7 +80,6 @@ function recordRejectedActionDelay(event, deps) {
     at: new Date().toISOString(),
   };
   const storage = deps.sessionStorage ?? window.sessionStorage;
-  const debug = deps.debug ?? ((...args) => console.debug(...args));
   try {
     storage.setItem(
       ACTION_DELAY_EVIDENCE_KEY,
@@ -89,10 +89,10 @@ function recordRejectedActionDelay(event, deps) {
   } catch (error) {
     evidence.storageWriteOk = false;
     evidence.storageWriteError = error?.message || String(error);
-    debug("[HVAA] battle action delay", evidence);
+    safeDebug(deps, "[HVAA] battle action delay", evidence);
     return false;
   }
-  debug("[HVAA] battle action delay", evidence);
+  safeDebug(deps, "[HVAA] battle action delay", evidence);
   return false;
 }
 

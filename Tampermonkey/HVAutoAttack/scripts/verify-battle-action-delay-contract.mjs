@@ -63,6 +63,7 @@ const ownerText = requireText(owner, [
   "OptionEvent.READ_FIELD",
   "NavigationEvent.SCHEDULE_RELOAD",
   "DiagnosticEvidenceKey.BATTLE_ACTION_DELAY",
+  "safeDebug",
   "unknownActionDelayEvent",
   "eventType: event?.type ?? null",
   'detail: { source: "battleActionDelay", seconds, option }',
@@ -72,7 +73,10 @@ requireText(ownerTest, ["does not track missing timer handles", "delayAlert", "d
 requireText(ownerRejectionTest, [
   "rejects unknown events without reading delay options",
   "rejects null events without reading delay options or touching timers",
+  "keeps unknown action delay events rejected when debug output fails",
   "HVAA:lastBattleActionDelay",
+  "console blocked",
+  "storageWriteOk: true",
   "eventType: null",
 ]);
 requireText(watchdogDetailTest, [
