@@ -88,6 +88,8 @@ requireText(owner, [
   "BattleActionLifecycleEvent.ACTION_ENDED",
   "runBattleActionLifecycleAutomation",
   "runBattleActionLifecycleEvidence",
+  "runLifecycleFromBridge",
+  "actionLifecycleBridgeThrew",
   "rejectUnknownActionEventBridgeEvent",
   "unknownActionEventBridgeEvent",
   "BattleApiBridgeEvent.INSTALL",
@@ -145,6 +147,8 @@ for (const required of [
   "rejects unknown events",
   "rejects null events through bridge evidence instead of throwing",
   "returns the API bridge installation result instead of claiming startup succeeded",
+  "records lifecycle bridge exceptions without throwing",
+  "actionLifecycleBridgeThrew",
   "unknownActionEventBridgeEvent",
   "runBattleActionLifecycleAutomation).not.toHaveBeenCalled",
 ]) {

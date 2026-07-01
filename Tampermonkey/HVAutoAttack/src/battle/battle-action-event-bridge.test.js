@@ -77,6 +77,20 @@ describe("runBattleActionEventBridgeAutomation", () => {
     });
   });
 
+  it("records lifecycle bridge exceptions without throwing", () => {
+    mocks.runBattleActionLifecycleAutomation.mockImplementation(() => {
+      throw new Error("lifecycle failed");
+    });
+    runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL });
+
+    for (const [nodeId, eventType] of [["eventStart", "actionStarted"], ["eventEnd", "actionEnded"]]) {
+      expect(() => document.getElementById(nodeId).click()).not.toThrow();
+      expect(mocks.runBattleActionLifecycleEvidence).toHaveBeenCalledWith(expect.objectContaining({
+        result: expect.objectContaining({ reason: "actionLifecycleBridgeThrew", eventType, nodeId, error: "lifecycle failed" }),
+      }));
+    }
+  });
+
   it("rejects unknown events", () => {
     expect(runBattleActionEventBridgeAutomation({ type: "unknown" })).toBe(false);
 

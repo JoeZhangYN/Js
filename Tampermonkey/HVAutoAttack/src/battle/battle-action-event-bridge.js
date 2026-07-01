@@ -47,18 +47,38 @@ function installActionEventBridge() {
   const eventStart = cE("a");
   eventStart.id = "eventStart";
   eventStart.onclick = function () {
-    runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_STARTED });
+    runLifecycleFromBridge("eventStart", BattleActionLifecycleEvent.ACTION_STARTED);
   };
   gE("body").appendChild(eventStart);
 
   const eventEnd = cE("a");
   eventEnd.id = "eventEnd";
   eventEnd.onclick = function () {
-    runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED });
+    runLifecycleFromBridge("eventEnd", BattleActionLifecycleEvent.ACTION_ENDED);
   };
   gE("body").appendChild(eventEnd);
 
   return Boolean(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }));
+}
+
+function runLifecycleFromBridge(nodeId, eventType) {
+  try {
+    return runBattleActionLifecycleAutomation({ type: eventType });
+  } catch (error) {
+    runBattleActionLifecycleEvidence({
+      type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
+      phase: EVENT_UNKNOWN_ACTION_EVENT_BRIDGE,
+      result: {
+        outcome: "rejected",
+        reason: "actionLifecycleBridgeThrew",
+        eventType,
+        nodeId,
+        error: error?.message || String(error),
+      },
+      steps: [{ step: "runLifecycleFromBridge", result: false, nodeId, eventType }],
+    });
+    return false;
+  }
 }
 
 export function runBattleActionEventBridgeAutomation(event = { type: EVENT_INSTALL }) {
