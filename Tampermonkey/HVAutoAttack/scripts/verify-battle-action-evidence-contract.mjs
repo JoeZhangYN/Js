@@ -77,6 +77,9 @@ const commandEvidenceText = read("src/battle/battle-command-evidence.js");
 const commandEvidenceTestText = read("src/battle/battle-command-evidence.test.js");
 const commandRecordingText = read("src/battle/battle-command-recording.js");
 const commandRecordingFailureTestText = read("src/battle/battle-command-recording-failure.test.js");
+const commandRecordingFailureExtendedTestText = read(
+  "src/battle/battle-command-recording-failure-extended.test.js"
+);
 const decisionEvidenceText = read("src/battle/battle-action-decision-evidence.js");
 const effectEvidenceText = read("src/battle/battle-action-effect-evidence.js");
 const lifecycleEvidenceText = read("src/battle/battle-action-lifecycle-evidence.js");
@@ -138,6 +141,21 @@ for (const required of [
 ]) {
   if (!commandRecordingFailureTestText.includes(required)) {
     violations.push(`src/battle/battle-command-recording-failure.test.js must cover ${required}`);
+  }
+}
+for (const required of [
+  "keeps clicked focus acted when command evidence recording throws",
+  "keeps clicked defend acted when command evidence recording throws",
+  "keeps clicked target acted when command evidence recording throws",
+  "keeps clicked flee acted when command evidence recording throws",
+  "keeps clicked spirit acted when command evidence recording throws",
+  "command evidence failed",
+  "recordingError",
+]) {
+  if (!commandRecordingFailureExtendedTestText.includes(required)) {
+    violations.push(
+      `src/battle/battle-command-recording-failure-extended.test.js must cover ${required}`
+    );
   }
 }
 for (const required of [

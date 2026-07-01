@@ -18,17 +18,22 @@ vi.mock("./battle-command-evidence.js", () => ({
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
+  mocks.isOn.mockReturnValue(true);
 });
 
 describe("battle command recording failures", () => {
-  it("keeps clicked skills acted when command evidence recording throws", () => {
-    const skill = { click: vi.fn() };
+  function makeCommandEvidenceThrow() {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    mocks.isOn.mockReturnValue(true);
-    mocks.gE.mockReturnValue(skill);
     mocks.runBattleCommandEvidence.mockImplementation(() => {
       throw new Error("command evidence failed");
     });
+    return warn;
+  }
+
+  it("keeps clicked skills acted when command evidence recording throws", () => {
+    const skill = { click: vi.fn() };
+    const warn = makeCommandEvidenceThrow();
+    mocks.gE.mockReturnValue(skill);
 
     expect(
       runBattleSkillCommand({
@@ -49,11 +54,8 @@ describe("battle command recording failures", () => {
 
   it("keeps clicked items acted when command evidence recording throws", () => {
     const item = { click: vi.fn() };
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warn = makeCommandEvidenceThrow();
     mocks.gE.mockReturnValue(item);
-    mocks.runBattleCommandEvidence.mockImplementation(() => {
-      throw new Error("command evidence failed");
-    });
 
     expect(runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_ITEM, itemId: 12101 })).toBe(
       true
