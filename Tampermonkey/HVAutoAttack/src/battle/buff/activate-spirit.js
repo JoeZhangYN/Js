@@ -7,12 +7,14 @@ import {
   BattleSpiritToggleEvent,
   runBattleSpiritToggleAutomation,
 } from "../battle-spirit-toggle.js";
+import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "../battle-command-evidence.js";
 
 function readOptionField(key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
 }
 
 const EVENT_ACTIVATE_IF_ALLOWED = "activateIfAllowed";
+const EVENT_UNKNOWN_PRE_CAST_SPIRIT = "unknownPreCastSpiritEvent";
 
 export const BattlePreCastSpiritEvent = Object.freeze({
   ACTIVATE_IF_ALLOWED: EVENT_ACTIVATE_IF_ALLOWED,
@@ -21,6 +23,17 @@ export const BattlePreCastSpiritEvent = Object.freeze({
 const battlePreCastSpiritEventHandlers = Object.freeze({
   [EVENT_ACTIVATE_IF_ALLOWED]: () => activatePreCastSpiritIfAllowed(),
 });
+
+function recordRejectedPreCastSpirit(event) {
+  runBattleCommandEvidence({
+    type: BattleCommandEvidenceEvent.RECORD_RESULT,
+    command: "preCastSpirit.unknown",
+    result: "rejected",
+    reason: EVENT_UNKNOWN_PRE_CAST_SPIRIT,
+    detail: { eventType: event?.type ?? null },
+  });
+  return false;
+}
 
 /**
  * 若开启 preCastSS 且条件满足且 Spirit 当前未激活 → click 激活。
@@ -38,5 +51,5 @@ function activatePreCastSpiritIfAllowed() {
 export function runBattlePreCastSpiritAutomation(
   event = { type: EVENT_ACTIVATE_IF_ALLOWED }
 ) {
-  return battlePreCastSpiritEventHandlers[event.type]?.(event) ?? false;
+  return battlePreCastSpiritEventHandlers[event?.type]?.(event) ?? recordRejectedPreCastSpirit(event);
 }

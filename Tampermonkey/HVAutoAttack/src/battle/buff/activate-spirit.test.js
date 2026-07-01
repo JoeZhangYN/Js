@@ -28,6 +28,7 @@ function optionReader(enabled = true, condition = "cond") {
 }
 
 beforeEach(() => {
+  window.sessionStorage.clear();
   for (const fn of Object.values(mocks)) fn.mockReset();
   mocks.runOptionAutomation.mockImplementation(optionReader());
   mocks.checkCondition.mockReturnValue(true);
@@ -93,5 +94,27 @@ describe("runBattlePreCastSpiritAutomation", () => {
     expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
     expect(mocks.checkCondition).not.toHaveBeenCalled();
     expect(mocks.runBattleSpiritToggleAutomation).not.toHaveBeenCalled();
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "preCastSpirit.unknown",
+      result: "rejected",
+      reason: "unknownPreCastSpiritEvent",
+      failureReason: "unknownPreCastSpiritEvent",
+      detail: { eventType: "unknown" },
+    });
+  });
+
+  it("rejects null pre-cast Spirit events with structured evidence", () => {
+    expect(runBattlePreCastSpiritAutomation(null)).toBe(false);
+
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
+    expect(mocks.checkCondition).not.toHaveBeenCalled();
+    expect(mocks.runBattleSpiritToggleAutomation).not.toHaveBeenCalled();
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "preCastSpirit.unknown",
+      result: "rejected",
+      reason: "unknownPreCastSpiritEvent",
+      failureReason: "unknownPreCastSpiritEvent",
+      detail: { eventType: null },
+    });
   });
 });

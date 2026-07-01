@@ -105,6 +105,12 @@ requireText("src/battle/buff/activate-spirit.js", [
   "battlePreCastSpiritEventHandlers",
   "runBattlePreCastSpiritAutomation",
   "ACTIVATE_IF_ALLOWED",
+  "unknownPreCastSpiritEvent",
+  "BattleCommandEvidenceEvent.RECORD_RESULT",
+  "runBattleCommandEvidence",
+  "preCastSpirit.unknown",
+  "event?.type ?? null",
+  "battlePreCastSpiritEventHandlers[event?.type]",
   "BattleSpiritToggleEvent.ACTIVATE_IF_INACTIVE",
   "runBattleSpiritToggleAutomation",
 ]);
@@ -117,6 +123,13 @@ if (/export function checkAndActivateSpirit\(/.test(activateSpiritText)) {
     "src/battle/buff/activate-spirit.js legacy checkAndActivateSpirit export must stay retired"
   );
 }
+requireText("src/battle/buff/activate-spirit.test.js", [
+  "rejects unknown pre-cast Spirit events without option reads",
+  "rejects null pre-cast Spirit events with structured evidence",
+  "unknownPreCastSpiritEvent",
+  "HVAA:lastBattleCommand",
+  "eventType: null",
+]);
 requireText("src/battle/attack/execute-attack.js", [
   "BattleSpiritToggleEvent.CLICK_AND_RECORD",
   "runBattleSpiritToggleAutomation",
