@@ -21,6 +21,10 @@ describe("navigation external unload audit", () => {
       JSON.stringify({ result: { kind: "noop" }, acted: false, knownResultKind: true })
     );
     sessionStorage.setItem(
+      DiagnosticEvidenceKey.BATTLE_COMPLETION,
+      JSON.stringify({ outcome: "victory", effects: { scheduleReload: false } })
+    );
+    sessionStorage.setItem(
       DiagnosticEvidenceKey.BATTLE_ACTION_DELAY,
       JSON.stringify({ decision: "rejected", reason: "unknownActionDelayEvent", eventType: null })
     );
@@ -38,6 +42,7 @@ describe("navigation external unload audit", () => {
             steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
           },
           battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
+          battleCompletion: { outcome: "victory", effects: { scheduleReload: false } },
           battleActionDelay: {
             decision: "rejected",
             reason: "unknownActionDelayEvent",
@@ -55,6 +60,7 @@ describe("navigation external unload audit", () => {
           steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
         },
         battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
+        battleCompletion: { outcome: "victory", effects: { scheduleReload: false } },
         battleActionDelay: {
           decision: "rejected",
           reason: "unknownActionDelayEvent",

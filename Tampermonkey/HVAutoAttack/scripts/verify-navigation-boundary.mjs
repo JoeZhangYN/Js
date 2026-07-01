@@ -202,6 +202,9 @@ if (!owner) {
       if (!testText.includes("knownResultKind: true")) {
         violations.push(`${testSource.rel} must preserve action result-kind diagnostic evidence`);
       }
+      if (!testText.includes("battleCompletion")) {
+        violations.push(`${testSource.rel} must preserve battle completion diagnostic evidence`);
+      }
       if (!testText.includes("unknownActionDelayEvent")) {
         violations.push(`${testSource.rel} must preserve action delay diagnostic evidence`);
       }

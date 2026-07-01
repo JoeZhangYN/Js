@@ -70,6 +70,10 @@ describe("buildApiResponseScript", () => {
       })
     );
     window.sessionStorage.setItem(
+      DiagnosticEvidenceKey.BATTLE_COMPLETION,
+      JSON.stringify({ outcome: "ongoing", reason: "unknownCompletionEvent" })
+    );
+    window.sessionStorage.setItem(
       DiagnosticEvidenceKey.BATTLE_ACTION_DELAY,
       JSON.stringify({
         decision: "rejected",
@@ -111,6 +115,7 @@ describe("buildApiResponseScript", () => {
           acted: false,
           failureReason: "actionExecutorRejected",
         },
+        battleCompletion: { outcome: "ongoing", reason: "unknownCompletionEvent" },
         battleActionDelay: {
           decision: "rejected",
           reason: "unknownActionDelayEvent",
