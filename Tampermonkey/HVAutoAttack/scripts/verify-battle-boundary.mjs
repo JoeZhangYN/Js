@@ -482,10 +482,19 @@ function checkTurnEntry() {
     'recordTurnWorkflowStage("decisionCompleted", { acted: Boolean(acted) })',
     'recordTurnWorkflowStage("failed"',
     'recordTurnWorkflowStage("rejected"',
+    "battleTurnWorkflowEventHandlers[event?.type]",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(mainLoopFile)} must record turn workflow evidence ${required}`);
     }
+  }
+  const mainLoopTestText = fs.readFileSync(path.join(root, "src/battle/main-loop.test.js"), "utf8");
+  if (
+    !mainLoopTestText.includes(
+      "rejects null turn workflow events with structured evidence instead of throwing"
+    )
+  ) {
+    violations.push("src/battle/main-loop.test.js must cover null turn workflow rejection");
   }
   const turnWorkflowEvidenceFile = path.join(
     root,

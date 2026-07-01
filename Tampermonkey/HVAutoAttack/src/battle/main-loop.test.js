@@ -111,4 +111,15 @@ describe("runBattleTurnAutomation", () => {
       detail: { eventType: "unknown" },
     });
   });
+
+  it("rejects null turn workflow events with structured evidence instead of throwing", () => {
+    expect(runBattleTurnAutomation(null)).toBe(false);
+    expect(mocks.runBattlePauseAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleTurnPrelude).not.toHaveBeenCalled();
+    expect(mocks.runBattleActionDecision).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
+      stage: "rejected",
+      detail: {},
+    });
+  });
 });

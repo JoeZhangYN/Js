@@ -64,7 +64,7 @@ function runCurrentBattleTurn() {
 }
 
 export function runBattleTurnAutomation(event = { type: EVENT_RUN_CURRENT_TURN }) {
-  const handler = battleTurnWorkflowEventHandlers[event.type];
+  const handler = battleTurnWorkflowEventHandlers[event?.type];
   if (!handler) {
     recordTurnWorkflowStage("rejected", { eventType: event?.type });
     return false;
