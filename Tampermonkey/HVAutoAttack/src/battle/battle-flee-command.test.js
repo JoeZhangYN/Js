@@ -75,6 +75,24 @@ describe("runBattleFleeCommand", () => {
     });
   });
 
+  it("records Flee click failures as not acted without scheduling reload", () => {
+    const flee = mkFleeButton();
+    flee.click.mockImplementation(() => {
+      throw new Error("blocked");
+    });
+
+    expect(runBattleFleeCommand({ type: BattleFleeCommandEvent.CLICK_AND_RELOAD })).toBe(false);
+
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleCommandEvidence).toHaveBeenCalledWith({
+      type: "recordResult",
+      command: "flee.clickAndReload",
+      result: "rejected",
+      reason: "clickFailed",
+      detail: { error: "blocked" },
+    });
+  });
+
   it("does not schedule reload when the flee button is missing", () => {
     expect(runBattleFleeCommand({ type: BattleFleeCommandEvent.CLICK_AND_RELOAD })).toBe(false);
 

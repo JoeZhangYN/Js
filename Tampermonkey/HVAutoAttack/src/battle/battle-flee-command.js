@@ -5,6 +5,7 @@ import {
   runNavigationAutomation,
 } from "../core/navigate.js";
 import { gE } from "../dom/query.js";
+import { clickBattleCommandElement } from "./battle-command-click.js";
 import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
 
 const EVENT_CLICK_AND_RELOAD = "clickAndReload";
@@ -21,7 +22,11 @@ function clickFleeAndScheduleReload() {
     recordCommandResult("rejected", "fleeMissing");
     return false;
   }
-  el.click();
+  const clickResult = clickBattleCommandElement(el);
+  if (!clickResult.clicked) {
+    recordCommandResult("rejected", clickResult.reason, { error: clickResult.error });
+    return false;
+  }
   const navigationResult = runNavigationAutomation({
     type: NavigationEvent.SCHEDULE_RELOAD,
     reason: NavigationReloadReason.FLEE_CONFIRMATION,

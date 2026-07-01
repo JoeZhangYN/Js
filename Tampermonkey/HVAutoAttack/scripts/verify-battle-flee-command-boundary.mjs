@@ -59,6 +59,9 @@ requireText(owner, [
   "battleFleeCommandEventHandlers",
   "BattleCommandEvidenceEvent.RECORD_RESULT",
   "runBattleCommandEvidence",
+  "clickBattleCommandElement",
+  "clickResult.reason",
+  "clickResult.error",
   "CLICK_AND_RELOAD",
   "NavigationEvent.SCHEDULE_RELOAD",
   "const navigationResult = runNavigationAutomation",
@@ -85,6 +88,8 @@ requireText("src/battle/escape/decide-flee.js", ['kind: "flee-command"']);
 requireText(ownerTest, [
   "keeps clicked Flee acted while recording rejected reload scheduling",
   "navigationResult: false",
+  "records Flee click failures as not acted without scheduling reload",
+  "clickFailed",
   "records unknown Flee events as not acted",
   "records null Flee events as not acted without scheduling reload",
   "unknownFleeCommand",

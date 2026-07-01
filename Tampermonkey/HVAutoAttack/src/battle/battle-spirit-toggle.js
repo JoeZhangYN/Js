@@ -2,6 +2,7 @@
 import { gE, isSpiritActive } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
+import { clickBattleCommandElement } from "./battle-command-click.js";
 import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
 
 const EVENT_CLICK_AND_RECORD = "clickAndRecord";
@@ -56,7 +57,13 @@ function clickAndRecord() {
     recordCommandResult("spirit.clickAndRecord", "rejected", "spiritMissing");
     return false;
   }
-  el.click();
+  const clickResult = clickBattleCommandElement(el);
+  if (!clickResult.clicked) {
+    recordCommandResult("spirit.clickAndRecord", "rejected", clickResult.reason, {
+      error: clickResult.error,
+    });
+    return false;
+  }
   const turn = recordToggle();
   recordCommandResult("spirit.clickAndRecord", "accepted", "clicked", { turn });
   return true;
@@ -72,7 +79,13 @@ function activateIfInactive() {
     recordCommandResult("spirit.activateIfInactive", "rejected", "alreadyActive");
     return false;
   }
-  el.click();
+  const clickResult = clickBattleCommandElement(el);
+  if (!clickResult.clicked) {
+    recordCommandResult("spirit.activateIfInactive", "rejected", clickResult.reason, {
+      error: clickResult.error,
+    });
+    return false;
+  }
   const turn = recordToggle();
   recordCommandResult("spirit.activateIfInactive", "accepted", "clicked", { turn });
   return true;

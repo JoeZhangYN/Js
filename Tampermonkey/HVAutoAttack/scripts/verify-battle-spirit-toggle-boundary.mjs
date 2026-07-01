@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/battle/battle-spirit-toggle.js");
 const ownerTest = path.normalize("src/battle/battle-spirit-toggle.test.js");
+const clickFailureTest = path.normalize("src/battle/battle-spirit-toggle-click-failure.test.js");
 const snapshotTest = path.normalize("src/battle/snapshot.test.js");
 const violations = [];
 
@@ -63,6 +64,9 @@ requireText(owner, [
   "runBattleSpiritToggleAutomation",
   "BattleCommandEvidenceEvent.RECORD_RESULT",
   "runBattleCommandEvidence",
+  "clickBattleCommandElement",
+  "clickResult.reason",
+  "clickResult.error",
   "CLICK_AND_RECORD",
   "ACTIVATE_IF_INACTIVE",
   "spirit.clickAndRecord",
@@ -94,6 +98,11 @@ requireText(ownerTest, [
   "rejects null events without touching Spirit state",
   "unknownSpiritToggleEvent",
   "eventType: null",
+]);
+requireText(clickFailureTest, [
+  "records Spirit click failures as not acted without recording cooldown",
+  "clickFailed",
+  "not.toHaveBeenCalled",
 ]);
 
 requireText("src/battle/snapshot.js", [
