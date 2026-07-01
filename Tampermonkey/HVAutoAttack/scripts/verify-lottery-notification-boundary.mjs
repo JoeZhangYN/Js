@@ -12,6 +12,8 @@ function rel(file) {
 
 const body =
   text.match(/_bottom\.load_lottery = async function \(ss\) \{[\s\S]*?\n  \};/)?.[0] || "";
+const stateBody =
+  text.match(/_bottom\.read_lottery_state = function \(ss\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const filterBody =
   text.match(/_bottom\.evaluate_lottery_filter = function \(ss, equip\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const lotteryRegion = text.match(/\/\/ LOTTERY[\s\S]*?\n\n\/\/\* \[1\] Character/)?.[0] || "";
@@ -19,11 +21,26 @@ const lotteryRegion = text.match(/\/\/ LOTTERY[\s\S]*?\n\n\/\/\* \[1\] Character
 if (!body) {
   violations.push("lottery notification loader must stay explicit");
 }
+if (!stateBody) {
+  violations.push("lottery notification state reader must stay explicit");
+}
 if (!filterBody) {
   violations.push("lottery notification filter decision must stay isolated");
 }
 if (!lotteryRegion) {
   violations.push("lottery notification region must stay explicit");
+}
+
+for (const required of [
+  "const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_') || {}",
+  "if (!json.lt || typeof json.lt !== 'object') json.lt = {}",
+  "if (!json.la || typeof json.la !== 'object') json.la = {}",
+  "if (!json[ss] || typeof json[ss] !== 'object') json[ss] = {}",
+  "return { json, lottery: json[ss] }",
+]) {
+  if (!stateBody.includes(required)) {
+    violations.push(`${rel(target)} lottery state reader must include ${required}`);
+  }
 }
 
 for (const required of [
@@ -47,6 +64,13 @@ for (const required of [
   if (!body.includes(required)) {
     violations.push(`${rel(target)} lottery loader must include ${required}`);
   }
+}
+
+if (!lotteryRegion.includes("const { lottery } = _bottom.read_lottery_state(ss)")) {
+  violations.push(`${rel(target)} lottery display must read initialized lottery state`);
+}
+if (!lotteryRegion.includes("const { json, lottery } = _bottom.read_lottery_state(ss)")) {
+  violations.push(`${rel(target)} lottery loader must read initialized lottery state`);
 }
 
 for (const required of [
@@ -77,6 +101,7 @@ for (const forbidden of [
   "lottery.check = $equip.filter.equip",
   "$equip.filter.equip($config.settings.lotteryFilters, equip)",
   "$equip.filter.test(filter, null, equip)",
+  "$equip.filter.test(",
   "filters.some((filter) =>",
   "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
   "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",

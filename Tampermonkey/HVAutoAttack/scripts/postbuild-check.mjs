@@ -55,6 +55,12 @@ for (const g of ["GM_setValue", "GM_getValue", "GM_deleteValue", "GM_notificatio
 // 7. 彩票通知必须通过隔离过滤入口。历史回退路径会让一条坏过滤器抛出 Invalid Filter，
 // 导致 bottom bar 长留“加载中...”。
 for (const required of [
+  "_bottom.read_lottery_state = function(ss)",
+  'const json = $config.get("lt_notif", { lt: {}, la: {} }, "hvut_") || {}',
+  "if (!json.lt || typeof json.lt !== \"object\") json.lt = {}",
+  "if (!json.la || typeof json.la !== \"object\") json.la = {}",
+  "if (!json[ss] || typeof json[ss] !== \"object\") json[ss] = {}",
+  "return { json, lottery: json[ss] }",
   "_bottom.evaluate_lottery_filter = function(ss, equip)",
   "const failClosed =",
   "const result = $equip.filter.match($config.settings.lotteryFilters, equip)",
@@ -72,6 +78,12 @@ for (const required of [
 ]) {
   if (!src.includes(required)) errors.push(`lottery artifact missing ${required}`);
 }
+if (!lotteryRegion.includes("const { lottery } = _bottom.read_lottery_state(ss)")) {
+  errors.push("lottery artifact display must read initialized lottery state");
+}
+if (!lotteryRegion.includes("const { json, lottery } = _bottom.read_lottery_state(ss)")) {
+  errors.push("lottery artifact loader must read initialized lottery state");
+}
 if (!lotteryRegion) {
   errors.push("lottery artifact region missing");
 }
@@ -79,6 +91,7 @@ for (const forbidden of [
   "lottery.check = $equip.filter.equip",
   "$equip.filter.equip($config.settings.lotteryFilters, equip)",
   "$equip.filter.test(filter, null, equip)",
+  "$equip.filter.test(",
   "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
   "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",
   "Array.isArray($config.settings.lotteryFilters)?$config.settings.lotteryFilters:[$config.settings.lotteryFilters]",

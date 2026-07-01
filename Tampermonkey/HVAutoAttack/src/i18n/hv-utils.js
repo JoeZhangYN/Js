@@ -2844,7 +2844,7 @@ const bindEquip = function (equip, ctx) {
     };
     $equip.namecode.rules.forEach((rule) => {
       rule.some((r, i) => {
-        if (!$equip.filter.test(r.match, eq)) {
+        if (!$equip.filter.equip(r.match, eq)) {
           if (i === 0) {
             return true; // skip the entire rule if the first fails
           } else {
@@ -10730,6 +10730,14 @@ if ($config.settings.trainingNotification) {
 
 // LOTTERY
 if ($config.settings.lotteryNotification) {
+  _bottom.read_lottery_state = function (ss) {
+    const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_') || {};
+    if (!json.lt || typeof json.lt !== 'object') json.lt = {};
+    if (!json.la || typeof json.la !== 'object') json.la = {};
+    if (!json[ss] || typeof json[ss] !== 'object') json[ss] = {};
+    return { json, lottery: json[ss] };
+  };
+
   _bottom.evaluate_lottery_filter = function (ss, equip) {
     const failClosed = (filterErrors) => {
       try {
@@ -10761,8 +10769,7 @@ if ($config.settings.lotteryNotification) {
   };
 
   _bottom.show_lottery = function (ss) {
-    const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
-    const lottery = json[ss];
+    const { lottery } = _bottom.read_lottery_state(ss);
     const now = Date.now();
     if (lottery.date > now && lottery.hide) {
       return;
@@ -10796,8 +10803,7 @@ if ($config.settings.lotteryNotification) {
         return;
       }
       const rightpaneText = $id('rightpane', doc)?.lastElementChild?.textContent || '';
-      const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
-      const lottery = json[ss];
+      const { json, lottery } = _bottom.read_lottery_state(ss);
       const now = Date.now();
       let date = Date.now();
       let margin = 0;
