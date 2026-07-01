@@ -75,5 +75,5 @@ function updateMonsterHp(facts) {
 }
 
 export function runBattleTurnPrelude(event = { type: EVENT_PREPARE_CURRENT_TURN }) {
-  return battleTurnPreludeEventHandlers[event.type]?.(event) ?? false;
+  return battleTurnPreludeEventHandlers[event?.type]?.(event) ?? false;
 }

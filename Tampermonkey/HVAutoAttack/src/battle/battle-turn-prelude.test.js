@@ -54,6 +54,7 @@ describe("runBattleTurnPrelude", () => {
 
   it("rejects unknown prelude events without running prelude effects", () => {
     expect(runBattleTurnPrelude({ type: "unknown" })).toBe(false);
+    expect(runBattleTurnPrelude(null)).toBe(false);
 
     expect(mocks.runMonsterStatusAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleTurnRuntime).not.toHaveBeenCalled();

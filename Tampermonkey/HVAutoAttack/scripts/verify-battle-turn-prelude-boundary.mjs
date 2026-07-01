@@ -58,6 +58,9 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_PREPARE_CURRENT_TURN\]/.test(ownerText)) 
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (!ownerText.includes("battleTurnPreludeEventHandlers[event?.type]")) {
+  violations.push(`${rel(owner)} must reject null turn prelude events without effects`);
+}
 if (
   !/const TURN_PRELUDE_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "monsterStatusReady"[\s\S]*capability: "turnStarted"[\s\S]*capability: "monitorHudRefresh"[\s\S]*capability: "killBugRecovery"[\s\S]*capability: "monsterHpUpdate"[\s\S]*\]\)/.test(
     ownerText
@@ -75,6 +78,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = read(ownerTest);
   if (!ownerTestText.includes("rejects unknown prelude events without running prelude effects")) {
     violations.push(`${rel(ownerTest)} must cover unknown turn prelude events`);
+  }
+  if (!ownerTestText.includes("runBattleTurnPrelude(null)")) {
+    violations.push(`${rel(ownerTest)} must cover null turn prelude events`);
   }
 }
 if (
