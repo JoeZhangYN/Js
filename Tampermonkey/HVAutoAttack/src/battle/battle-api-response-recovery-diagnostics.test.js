@@ -34,6 +34,7 @@ describe("battle API response recovery diagnostics", () => {
     const deps = makeDeps();
     const diagnosticEvidence = {
       battleTurnWorkflow: { stage: "decisionCompleted" },
+      battleActionDelay: { decision: "rejected", reason: "unknownActionDelayEvent" },
     };
     deps.readDiagnosticEvidence.mockReturnValue(diagnosticEvidence);
     const detail = rejectedDetail({ error: "reload_loop" });
@@ -58,6 +59,7 @@ describe("battle API response recovery diagnostics", () => {
     deps.readDiagnosticEvidence.mockReturnValue({
       battleApiResponseRecovery: { repeatCount: 1 },
       battleTurnWorkflow: { stage: "decisionCompleted" },
+      battleActionDelay: { decision: "rejected", reason: "unknownActionDelayEvent" },
     });
     const detail = rejectedDetail({ error: "reload_loop" });
 
@@ -69,6 +71,7 @@ describe("battle API response recovery diagnostics", () => {
     const state = JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"));
     expect(state.diagnosticEvidence).toEqual({
       battleTurnWorkflow: { stage: "decisionCompleted" },
+      battleActionDelay: { decision: "rejected", reason: "unknownActionDelayEvent" },
     });
     expect(state.diagnosticEvidence.battleApiResponseRecovery).toBeUndefined();
   });

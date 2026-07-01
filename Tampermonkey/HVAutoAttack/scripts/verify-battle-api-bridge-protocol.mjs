@@ -215,6 +215,8 @@ requireText(recoveryTest, [
   "HVAA:battleApiRecovery",
   "recoveryAction",
   "knownResultKind: true",
+  "battleActionDelay",
+  "unknownActionDelayEvent",
 ]);
 requireText(recoveryReloadDetailTest, [
   "passes recovery state into the default navigation reload detail",
@@ -254,6 +256,8 @@ requireText(recoveryDiagnosticsTest, [
   "battleApiResponseRecovery",
   "HVAA:battleApiRecovery",
   "recoveryAction: \"reload\"",
+  "battleActionDelay",
+  "unknownActionDelayEvent",
 ]);
 
 if (

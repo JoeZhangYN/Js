@@ -100,6 +100,7 @@ describe("runBattleApiResponseRecovery", () => {
         steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
       },
       battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
+      battleActionDelay: { decision: "rejected", reason: "unknownActionDelayEvent" },
     };
     deps.readDiagnosticEvidence.mockReturnValue(diagnosticEvidence);
     const detail = rejectedDetail();
