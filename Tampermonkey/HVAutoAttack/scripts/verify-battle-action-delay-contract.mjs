@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-action-delay.js");
 const ownerTest = path.normalize("src/battle/battle-action-delay.test.js");
+const ownerRejectionTest = path.normalize("src/battle/battle-action-delay-rejection.test.js");
 const watchdogDetailTest = path.normalize("src/battle/battle-action-delay-watchdog-detail.test.js");
 const srcDir = path.join(root, "src", "battle");
 const violations = [];
@@ -66,9 +67,12 @@ const ownerText = requireText(owner, [
 ]);
 requireText(ownerTest, [
   "does not track missing timer handles",
-  "rejects unknown events without reading delay options",
   "delayAlert",
   "delayReload",
+]);
+requireText(ownerRejectionTest, [
+  "rejects unknown events without reading delay options",
+  "rejects null events without reading delay options or touching timers",
 ]);
 requireText(watchdogDetailTest, [
   "passes action watchdog evidence into the navigation reload event",
@@ -90,6 +94,9 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_ACTION_STARTED\][\s\S]*\[EVENT_ACTION_END
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
+}
+if (!ownerText.includes("battleActionDelayEventHandlers[event?.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must reject null events without touching timers`);
 }
 for (const key of delayOptionKeys) {
   if (!new RegExp(`const\\s+[A-Z_]+_OPTION_KEY\\s*=\\s*"${key}"`).test(ownerText)) {

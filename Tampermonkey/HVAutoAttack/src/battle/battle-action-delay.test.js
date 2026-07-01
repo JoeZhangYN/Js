@@ -162,15 +162,4 @@ describe("runBattleActionDelayAutomation", () => {
     expect(deps.cancel).not.toHaveBeenCalled();
   });
 
-  it("rejects unknown events without reading delay options", () => {
-    const deps = makeDeps();
-
-    expect(runBattleActionDelayAutomation({ type: "unknown" }, deps)).toBe(false);
-
-    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
-    expect(deps.schedule).not.toHaveBeenCalled();
-    expect(deps.scheduleReload).not.toHaveBeenCalled();
-    expect(deps.cancel).not.toHaveBeenCalled();
-  });
-
 });

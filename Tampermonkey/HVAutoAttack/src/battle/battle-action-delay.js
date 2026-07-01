@@ -83,5 +83,5 @@ export function runBattleActionDelayAutomation(
       }),
   }
 ) {
-  return battleActionDelayEventHandlers[event.type]?.(event, deps) ?? false;
+  return battleActionDelayEventHandlers[event?.type]?.(event, deps) ?? false;
 }
