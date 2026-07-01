@@ -19,6 +19,7 @@ vi.mock("../core/navigate.js", () => ({
     RELOAD_NOW: "reloadNow",
   }),
   NavigationReloadReason: Object.freeze({ RIDDLE_POST_RESULT: "riddlePostResult" }),
+  NavigationWindowReason: Object.freeze({ RIDDLE_POPUP: "riddlePopup" }),
   runNavigationAutomation: mocks.runNavigationAutomation,
 }));
 vi.mock("./riddle.js", () => ({
@@ -43,6 +44,7 @@ describe("runRiddleAutomation", () => {
     });
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "openWindow",
+      reason: "riddlePopup",
       url: window.location.href,
       name: "riddleWindow",
       features: "resizable,scrollbars,width=1241,height=707",
@@ -77,6 +79,7 @@ describe("runRiddleAutomation", () => {
     expect(schedule).toHaveBeenNthCalledWith(1, expect.any(Function), 3000);
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "openWindow",
+      reason: "riddlePopup",
       url: window.location.href,
       name: "riddleWindow",
       features: "resizable,scrollbars,width=1241,height=707",

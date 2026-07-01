@@ -39,6 +39,9 @@ if (!owner) {
   if (!source.includes("OPEN_WINDOW")) {
     violations.push("NavigationEvent must expose OPEN_WINDOW for named popup navigation");
   }
+  if (!/\bexport\s+const\s+NavigationWindowReason\b/.test(source)) {
+    violations.push("NavigationWindowReason must be the public popup navigation reason vocabulary");
+  }
   if (!/\bexport\s+const\s+NavigationReloadReason\b/.test(source)) {
     violations.push("NavigationReloadReason must be the public reload reason vocabulary");
   }
@@ -59,6 +62,9 @@ if (!owner) {
   }
   if (!source.includes("isRedirectReasonAllowed")) {
     violations.push("openUrl must validate an allowed redirect reason");
+  }
+  if (!source.includes("isWindowReasonAllowed")) {
+    violations.push("openWindow must validate an allowed window reason");
   }
   const auditSource = files.find((file) => file.rel === "core/navigation-audit.js");
   const diagnosticEvidenceSource = files.find((file) => file.rel === "core/diagnostic-evidence.js");
@@ -113,6 +119,7 @@ if (!owner) {
     }
   }
   const navigationDecisionSource = files.find((file) => file.rel === "core/navigation-decision-evidence.js");
+  const openWindowAuditTestSource = files.find((file) => file.rel === "core/navigate-open-window-audit.test.js");
   if (!navigationDecisionSource) {
     violations.push("core/navigation-decision-evidence.js is missing");
   } else {
@@ -136,6 +143,21 @@ if (!owner) {
     ]) {
       if (!source.includes(required)) {
         violations.push(`navigation entry must record decision evidence ${required}`);
+      }
+    }
+  }
+  if (!openWindowAuditTestSource) {
+    violations.push("core/navigate-open-window-audit.test.js must cover popup audit and reason rejection");
+  } else {
+    const openWindowAuditTestText = stripComments(readFileSync(openWindowAuditTestSource.abs, "utf8"));
+    for (const required of [
+      "records named popup windows with an allowed reason",
+      "rejects named popup windows without an allowed reason",
+      "NavigationWindowReason.RIDDLE_POPUP",
+      "HVAA:lastNavigationAudit",
+    ]) {
+      if (!openWindowAuditTestText.includes(required)) {
+        violations.push(`open window navigation audit test must cover ${required}`);
       }
     }
   }
@@ -218,6 +240,13 @@ for (const file of files) {
       const eventBody = source.slice(match.index, match.index + 220);
       if (!/\breason\b/.test(eventBody)) {
         violations.push(`src/${file.rel} redirect navigation events must carry reason`);
+      }
+    }
+    const windowEvents = source.matchAll(/type\s*:\s*NavigationEvent\.OPEN_WINDOW/g);
+    for (const match of windowEvents) {
+      const eventBody = source.slice(match.index, match.index + 220);
+      if (!/\breason\b/.test(eventBody)) {
+        violations.push(`src/${file.rel} popup navigation events must carry reason`);
       }
     }
   }

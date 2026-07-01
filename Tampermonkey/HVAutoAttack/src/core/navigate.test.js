@@ -63,6 +63,7 @@ describe("runNavigationAutomation", () => {
     expect(
       runNavigationAutomation({
         type: NavigationEvent.OPEN_WINDOW,
+        reason: "riddlePopup",
         url: "https://hentaiverse.org/?s=Battle",
         name: "riddleWindow",
         features: "resizable,scrollbars,width=1241,height=707",

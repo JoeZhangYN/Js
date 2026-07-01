@@ -78,6 +78,7 @@ function checkRiddleEntry() {
     "BATTLE_POST_RESULT",
     "TEST_POPUP_PRETREAT",
     "NavigationEvent.OPEN_WINDOW",
+    "NavigationWindowReason.RIDDLE_POPUP",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(riddleFile)} must own riddle popup ${required}`);

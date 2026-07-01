@@ -3,6 +3,7 @@ import { gE } from "../dom/query.js";
 import {
   NavigationEvent,
   NavigationReloadReason,
+  NavigationWindowReason,
   runNavigationAutomation,
 } from "../core/navigate.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
@@ -29,6 +30,7 @@ const riddleEventHandlers = Object.freeze({
 function openRiddlePopup() {
   return runNavigationAutomation({
     type: NavigationEvent.OPEN_WINDOW,
+    reason: NavigationWindowReason.RIDDLE_POPUP,
     url: window.location.href,
     name: RIDDLE_WINDOW_NAME,
     features: RIDDLE_WINDOW_FEATURES,

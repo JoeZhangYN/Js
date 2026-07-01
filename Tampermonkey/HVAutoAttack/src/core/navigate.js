@@ -53,6 +53,12 @@ export const NavigationRedirectReason = Object.freeze({
 
 const REDIRECT_REASONS = new Set(Object.values(NavigationRedirectReason));
 
+export const NavigationWindowReason = Object.freeze({
+  RIDDLE_POPUP: "riddlePopup",
+});
+
+const WINDOW_REASONS = new Set(Object.values(NavigationWindowReason));
+
 reportPreviousNavigationAudit();
 installExternalUnloadAudit();
 
@@ -70,6 +76,10 @@ function isReloadReasonAllowed(event) {
 
 function isRedirectReasonAllowed(event) {
   return REDIRECT_REASONS.has(event.reason);
+}
+
+function isWindowReasonAllowed(event) {
+  return WINDOW_REASONS.has(event.reason);
 }
 
 function normalizeReloadDelayMs(event) {
@@ -110,7 +120,9 @@ function openUrl(url, newTab, reason) {
   window.open(url, newTab ? "_blank" : "_self");
 }
 
-function openWindow(url, name, features) {
+function openWindow(url, name, features, reason) {
+  recordNavigationDecision("accepted", { type: EVENT_OPEN_WINDOW, reason }, { url, name, features });
+  writeNavigationAudit("openWindow", { reason, url, name, features });
   return window.open(url, name, features);
 }
 
@@ -132,7 +144,13 @@ const navigationEventHandlers = Object.freeze({
     openUrl(event.url, event.newTab, event.reason);
     return true;
   },
-  [EVENT_OPEN_WINDOW]: (event) => openWindow(event.url, event.name, event.features),
+  [EVENT_OPEN_WINDOW]: (event) => {
+    if (!isWindowReasonAllowed(event)) {
+      recordNavigationDecision("rejected", event, { cause: "windowReasonNotAllowed", url: event.url });
+      return false;
+    }
+    return openWindow(event.url, event.name, event.features, event.reason);
+  },
 });
 
 export function runNavigationAutomation(event = { type: EVENT_RELOAD_NOW }) {
