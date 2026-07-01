@@ -1,6 +1,7 @@
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { g } from "../state/store.js";
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_ACTION_ENDED = "actionEnded";
 const EVENT_BATTLE_STARTED = "battleStarted";
@@ -57,17 +58,16 @@ function rejectUnknownActionSpeedEvent(event, deps) {
     at: new Date().toISOString(),
   };
   const storage = deps.sessionStorage ?? window.sessionStorage;
-  const debug = deps.debug ?? ((...args) => console.debug(...args));
   try {
     storage.setItem(ACTION_SPEED_EVIDENCE_KEY, JSON.stringify({ ...evidence, storageWriteOk: true }));
     evidence.storageWriteOk = true;
   } catch (error) {
     evidence.storageWriteOk = false;
     evidence.storageWriteError = error?.message || String(error);
-    debug("[HVAA] battle action speed", evidence);
+    safeDebug(deps, "[HVAA] battle action speed", evidence);
     return false;
   }
-  debug("[HVAA] battle action speed", evidence);
+  safeDebug(deps, "[HVAA] battle action speed", evidence);
   return false;
 }
 

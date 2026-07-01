@@ -89,4 +89,21 @@ describe("runBattleActionSpeedAutomation", () => {
       expect.stringContaining('"eventType":null')
     );
   });
+
+  it("keeps unknown action speed events rejected when debug output fails", () => {
+    const { deps } = makeDeps();
+    deps.debug.mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+
+    expect(runBattleActionSpeedAutomation({ type: "unknown" }, deps)).toBe(false);
+
+    expect(deps.now).not.toHaveBeenCalled();
+    expect(deps.read).not.toHaveBeenCalled();
+    expect(deps.write).not.toHaveBeenCalled();
+    expect(deps.sessionStorage.setItem).toHaveBeenCalledWith(
+      "HVAA:lastBattleActionSpeed",
+      expect.stringContaining('"storageWriteOk":true')
+    );
+  });
 });

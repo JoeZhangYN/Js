@@ -56,6 +56,7 @@ const ownerText = requireText(owner, [
   "DEFAULT_RUN_SPEED",
   "TimeEvent.EPOCH_MS",
   "DiagnosticEvidenceKey.BATTLE_ACTION_SPEED",
+  "safeDebug",
   "unknownActionSpeedEvent",
   "rejectUnknownActionSpeedEvent",
 ]);
@@ -65,7 +66,10 @@ requireText(ownerTest, [
   "normalizes invalid action speed runtime values",
   "records rejected unknown events without reading or writing runtime state",
   "records rejected null events without reading or writing runtime state",
+  "keeps unknown action speed events rejected when debug output fails",
   "HVAA:lastBattleActionSpeed",
+  "console blocked",
+  '"storageWriteOk":true',
 ]);
 
 if (
