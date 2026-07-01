@@ -54,7 +54,10 @@ for (const g of ["GM_setValue", "GM_getValue", "GM_deleteValue", "GM_notificatio
 // 导致 bottom bar 长留“加载中...”。
 for (const required of [
   "_bottom.evaluate_lottery_filter = function(ss, equip)",
+  "const failClosed =",
   "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
+  "filter: \"<lotteryFilters>\"",
+  "matched: false",
   "const filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip)",
   "lottery.filterError = filterResult.error",
 ]) {

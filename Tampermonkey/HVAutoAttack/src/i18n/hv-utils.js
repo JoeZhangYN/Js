@@ -10725,23 +10725,33 @@ if ($config.settings.trainingNotification) {
 // LOTTERY
 if ($config.settings.lotteryNotification) {
   _bottom.evaluate_lottery_filter = function (ss, equip) {
-    const filters = $equip.filter.normalize($config.settings.lotteryFilters);
-    const filterErrors = [];
-    const matched = filters.some((filter) => {
-      try {
-        return $equip.filter.test(filter, null, equip);
-      } catch (error) {
-        filterErrors.push({ filter, error: error?.message || String(error) });
-        return false;
-      }
-    });
-    if (filterErrors.length) {
+    const failClosed = (filterErrors) => {
       console.warn('[HVUT] lottery notification filter failed', { ss, equip, errors: filterErrors });
-    }
-    return {
-      matched,
-      error: filterErrors.map((e) => `${e.filter}: ${e.error}`).join('\n') || null,
+      return {
+        matched: false,
+        error: filterErrors.map((e) => `${e.filter}: ${e.error}`).join('\n') || null,
+      };
     };
+    const filterErrors = [];
+    try {
+      const filters = $equip.filter.normalize($config.settings.lotteryFilters);
+      const matched = filters.some((filter) => {
+        try {
+          return $equip.filter.test(filter, null, equip);
+        } catch (error) {
+          filterErrors.push({ filter, error: error?.message || String(error) });
+          return false;
+        }
+      });
+      if (filterErrors.length) return failClosed(filterErrors);
+      return {
+        matched,
+        error: null,
+      };
+    } catch (error) {
+      filterErrors.push({ filter: '<lotteryFilters>', error: error?.message || String(error) });
+      return failClosed(filterErrors);
+    }
   };
 
   _bottom.show_lottery = function (ss) {

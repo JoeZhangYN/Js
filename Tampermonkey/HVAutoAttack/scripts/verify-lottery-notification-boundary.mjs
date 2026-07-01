@@ -48,14 +48,18 @@ for (const required of [
 }
 
 for (const required of [
+  "const failClosed = (filterErrors) =>",
   "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
   "const filterErrors = []",
   "filters.some((filter) =>",
   "$equip.filter.test(filter, null, equip)",
   "filterErrors.push({ filter, error: error?.message || String(error) })",
+  "return failClosed(filterErrors)",
+  "filter: '<lotteryFilters>'",
   "console.warn('[HVUT] lottery notification filter failed'",
   "errors: filterErrors",
   "matched,",
+  "matched: false,",
   "error: filterErrors.map",
 ]) {
   if (!filterBody.includes(required)) {
