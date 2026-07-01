@@ -37,8 +37,12 @@ const ownerText = requireText(owner, [
 requireText(ownerTest, [
   'document.getElementById("eventStart").click()',
   'document.getElementById("eventEnd").click()',
-  "return d.apply(window.battle || this, arguments)",
-  "binds native process_action callbacks to the active battle instance",
+  "const nativeBattleContinue = battle.battle_continue",
+  "battle.battle_continue = function ()",
+  "return false",
+  "return d.apply(battle, arguments)",
+  "battle.battle_continue = nativeBattleContinue",
+  "binds native process_action callbacks to the active battle instance without native continuation",
   "does not navigate directly from generated API response handling",
   "window.sessionStorage.delay * 1",
   "window.sessionStorage.delay2 * 1",
@@ -70,9 +74,29 @@ if (/window\.sessionStorage\.(delay|delay2)\b/.test(ownerText)) {
     `${owner.replaceAll("\\", "/")} must generate delay keys through protocol constants`
   );
 }
-if (!ownerText.includes("return d.apply(window.battle || this, arguments)")) {
+if (!ownerText.includes("const battle = window.battle || this")) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must bind native process_action callbacks to window.battle`
+  );
+}
+if (!ownerText.includes("const nativeBattleContinue = battle.battle_continue")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must capture native battle_continue before process_action`
+  );
+}
+if (!/battle\.battle_continue\s*=\s*function\s*\(\)\s*\{\s*return false;\s*\};/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must suppress native battle_continue during process_action`
+  );
+}
+if (!ownerText.includes("return d.apply(battle, arguments)")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must bind native process_action callbacks to window.battle`
+  );
+}
+if (!ownerText.includes("battle.battle_continue = nativeBattleContinue")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must restore native battle_continue after process_action`
   );
 }
 if (/b\.onreadystatechange\s*=\s*d\b/.test(ownerText)) {

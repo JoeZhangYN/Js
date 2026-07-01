@@ -25,7 +25,19 @@ function buildApiCallScript(mainUrl, protocol) {
     b.setRequestHeader("Content-Type", "application/json");
     b.withCredentials = true;
     b.onreadystatechange = function () {
-      return d.apply(window.battle || this, arguments);
+      const battle = window.battle || this;
+      if (!battle || typeof battle.battle_continue !== "function") {
+        return d.apply(battle || this, arguments);
+      }
+      const nativeBattleContinue = battle.battle_continue;
+      battle.battle_continue = function () {
+        return false;
+      };
+      try {
+        return d.apply(battle, arguments);
+      } finally {
+        battle.battle_continue = nativeBattleContinue;
+      }
     };
     b.onload = function () {
       document.getElementById("__HVAA_ACTION_END_EVENT_NODE_ID__").click();
