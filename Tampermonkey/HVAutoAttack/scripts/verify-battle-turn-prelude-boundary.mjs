@@ -48,6 +48,10 @@ for (const required of [
   "runBattleKillBugRecovery",
   "MonsterStatusEvent.UPDATE_HP",
   "battleLogTelemetry",
+  "BattleTurnWorkflowEvidenceEvent.RECORD_STAGE",
+  "runBattleTurnWorkflowEvidence",
+  "unknownTurnPreludeEvent",
+  "preludeRejected",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must own ${required}`);
@@ -71,6 +75,9 @@ if (/event\.type\s*===/.test(entryBody)) {
 if (!ownerText.includes("battleTurnPreludeEventHandlers[event?.type]")) {
   violations.push(`${rel(owner)} must reject null turn prelude events without effects`);
 }
+if (!ownerText.includes("rejectUnknownTurnPreludeEvent(event)")) {
+  violations.push(`${rel(owner)} must record rejected turn prelude events`);
+}
 if (
   !/const TURN_PRELUDE_STEPS = Object\.freeze\(\[\s*\{[\s\S]*capability: "monsterStatusReady"[\s\S]*capability: "turnStarted"[\s\S]*capability: "monitorHudRefresh"[\s\S]*capability: "killBugRecovery"[\s\S]*capability: "monsterHpUpdate"[\s\S]*\]\)/.test(
     ownerText
@@ -91,6 +98,17 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   }
   if (!ownerTestText.includes("runBattleTurnPrelude(null)")) {
     violations.push(`${rel(ownerTest)} must cover null turn prelude events`);
+  }
+  for (const required of [
+    "runBattleTurnWorkflowEvidence",
+    "preludeRejected",
+    "unknownTurnPreludeEvent",
+    'eventType: "unknown"',
+    "eventType: null",
+  ]) {
+    if (!ownerTestText.includes(required)) {
+      violations.push(`${rel(ownerTest)} must cover ${required}`);
+    }
   }
 }
 if (

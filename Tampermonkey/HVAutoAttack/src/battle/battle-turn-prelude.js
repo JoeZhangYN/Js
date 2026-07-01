@@ -8,8 +8,13 @@ import {
 } from "../monitor/battle-monitor-automation.js";
 import { BattleKillBugRecoveryEvent, runBattleKillBugRecovery } from "./kill-bug.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
+import {
+  BattleTurnWorkflowEvidenceEvent,
+  runBattleTurnWorkflowEvidence,
+} from "./battle-turn-workflow-evidence.js";
 
 const EVENT_PREPARE_CURRENT_TURN = "prepareCurrentTurn";
+const EVENT_UNKNOWN_TURN_PRELUDE = "unknownTurnPreludeEvent";
 
 export const BattleTurnPreludeEvent = Object.freeze({
   PREPARE_CURRENT_TURN: EVENT_PREPARE_CURRENT_TURN,
@@ -74,6 +79,18 @@ function updateMonsterHp(facts) {
   facts.battleLogTelemetry = result?.battleLogTelemetry;
 }
 
+function rejectUnknownTurnPreludeEvent(event) {
+  runBattleTurnWorkflowEvidence({
+    type: BattleTurnWorkflowEvidenceEvent.RECORD_STAGE,
+    stage: "preludeRejected",
+    detail: {
+      reason: EVENT_UNKNOWN_TURN_PRELUDE,
+      eventType: event?.type ?? null,
+    },
+  });
+  return false;
+}
+
 export function runBattleTurnPrelude(event = { type: EVENT_PREPARE_CURRENT_TURN }) {
-  return battleTurnPreludeEventHandlers[event?.type]?.(event) ?? false;
+  return battleTurnPreludeEventHandlers[event?.type]?.(event) ?? rejectUnknownTurnPreludeEvent(event);
 }

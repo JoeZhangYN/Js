@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   runBattleKillBugRecovery: vi.fn(),
   runBattleMonitorAutomation: vi.fn(),
   runBattleTurnRuntime: vi.fn(),
+  runBattleTurnWorkflowEvidence: vi.fn(),
   runMonsterStatusAutomation: vi.fn(),
 }));
 
@@ -23,6 +24,10 @@ vi.mock("./kill-bug.js", () => ({
 vi.mock("./monster-status-automation.js", () => ({
   MonsterStatusEvent: Object.freeze({ ENSURE_READY: "ensureReady", UPDATE_HP: "updateHp" }),
   runMonsterStatusAutomation: mocks.runMonsterStatusAutomation,
+}));
+vi.mock("./battle-turn-workflow-evidence.js", () => ({
+  BattleTurnWorkflowEvidenceEvent: Object.freeze({ RECORD_STAGE: "recordStage" }),
+  runBattleTurnWorkflowEvidence: mocks.runBattleTurnWorkflowEvidence,
 }));
 
 beforeEach(() => {
@@ -60,5 +65,21 @@ describe("runBattleTurnPrelude", () => {
     expect(mocks.runBattleTurnRuntime).not.toHaveBeenCalled();
     expect(mocks.runBattleMonitorAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleKillBugRecovery).not.toHaveBeenCalled();
+    expect(mocks.runBattleTurnWorkflowEvidence).toHaveBeenNthCalledWith(1, {
+      type: "recordStage",
+      stage: "preludeRejected",
+      detail: {
+        reason: "unknownTurnPreludeEvent",
+        eventType: "unknown",
+      },
+    });
+    expect(mocks.runBattleTurnWorkflowEvidence).toHaveBeenNthCalledWith(2, {
+      type: "recordStage",
+      stage: "preludeRejected",
+      detail: {
+        reason: "unknownTurnPreludeEvent",
+        eventType: null,
+      },
+    });
   });
 });
