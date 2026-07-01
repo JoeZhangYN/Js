@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_TRACE = "recordTrace";
 const ACTION_DECISION_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_ACTION_DECISION;
@@ -61,10 +62,10 @@ function recordDecisionTrace(event, deps) {
   } catch (error) {
     evidence.storageWriteOk = false;
     evidence.storageWriteError = error?.message || String(error);
-    deps.debug("[HVAA] battle action decision", evidence);
+    safeDebug(deps, "[HVAA] battle action decision", evidence);
     return false;
   }
-  deps.debug("[HVAA] battle action decision", evidence);
+  safeDebug(deps, "[HVAA] battle action decision", evidence);
   return true;
 }
 

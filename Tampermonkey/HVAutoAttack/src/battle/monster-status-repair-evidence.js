@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_REPAIR = "recordRepair";
 const MONSTER_STATUS_REPAIR_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_MONSTER_STATUS_REPAIR;
@@ -23,10 +24,10 @@ function recordRepair(event, deps) {
   } catch (error) {
     evidence.storageWriteOk = false;
     evidence.storageWriteError = error?.message || String(error);
-    deps.debug("[HVAA] monster status repair", evidence);
+    safeDebug(deps, "[HVAA] monster status repair", evidence);
     return false;
   }
-  deps.debug("[HVAA] monster status repair", evidence);
+  safeDebug(deps, "[HVAA] monster status repair", evidence);
   return true;
 }
 

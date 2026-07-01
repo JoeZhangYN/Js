@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_STARTUP = "recordStartup";
 const BATTLE_AUTOMATION_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_AUTOMATION;
@@ -23,10 +24,10 @@ function recordBattleAutomation(event, deps) {
   } catch (error) {
     evidence.storageWriteOk = false;
     evidence.storageWriteError = error?.message || String(error);
-    deps.debug("[HVAA] battle automation", evidence);
+    safeDebug(deps, "[HVAA] battle automation", evidence);
     return false;
   }
-  deps.debug("[HVAA] battle automation", evidence);
+  safeDebug(deps, "[HVAA] battle automation", evidence);
   return true;
 }
 

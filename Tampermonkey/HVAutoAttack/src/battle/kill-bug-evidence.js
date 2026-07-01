@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_RECOVERY = "recordRecovery";
 const BATTLE_KILL_BUG_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_KILL_BUG_RECOVERY;
@@ -23,10 +24,10 @@ function recordKillBugRecovery(event, deps) {
   } catch (error) {
     evidence.storageWriteOk = false;
     evidence.storageWriteError = error?.message || String(error);
-    deps.debug("[HVAA] battle kill bug recovery", evidence);
+    safeDebug(deps, "[HVAA] battle kill bug recovery", evidence);
     return false;
   }
-  deps.debug("[HVAA] battle kill bug recovery", evidence);
+  safeDebug(deps, "[HVAA] battle kill bug recovery", evidence);
   return true;
 }
 

@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_STAGE = "recordStage";
 const BATTLE_TURN_WORKFLOW_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW;
@@ -22,10 +23,10 @@ function recordTurnWorkflowStage(event, deps) {
   } catch (error) {
     evidence.storageWriteOk = false;
     evidence.storageWriteError = error?.message || String(error);
-    deps.debug("[HVAA] battle turn workflow", evidence);
+    safeDebug(deps, "[HVAA] battle turn workflow", evidence);
     return false;
   }
-  deps.debug("[HVAA] battle turn workflow", evidence);
+  safeDebug(deps, "[HVAA] battle turn workflow", evidence);
   return true;
 }
 

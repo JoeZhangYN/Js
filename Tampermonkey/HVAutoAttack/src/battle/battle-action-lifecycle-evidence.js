@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_LIFECYCLE = "recordLifecycle";
 const ACTION_LIFECYCLE_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE;
@@ -23,10 +24,10 @@ function recordActionLifecycle(event, deps) {
   } catch (error) {
     evidence.storageWriteOk = false;
     evidence.storageWriteError = error?.message || String(error);
-    deps.debug("[HVAA] battle action lifecycle", evidence);
+    safeDebug(deps, "[HVAA] battle action lifecycle", evidence);
     return false;
   }
-  deps.debug("[HVAA] battle action lifecycle", evidence);
+  safeDebug(deps, "[HVAA] battle action lifecycle", evidence);
   return true;
 }
 

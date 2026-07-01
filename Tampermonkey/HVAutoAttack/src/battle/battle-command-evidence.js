@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_RESULT = "recordResult";
 const BATTLE_COMMAND_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_COMMAND;
@@ -35,10 +36,10 @@ function recordCommandResult(event, deps) {
   } catch (error) {
     evidence.storageWriteOk = false;
     evidence.storageWriteError = error?.message || String(error);
-    deps.debug("[HVAA] battle command", evidence);
+    safeDebug(deps, "[HVAA] battle command", evidence);
     return false;
   }
-  deps.debug("[HVAA] battle command", evidence);
+  safeDebug(deps, "[HVAA] battle command", evidence);
   return true;
 }
 

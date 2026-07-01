@@ -1,4 +1,5 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { safeDebug } from "./battle-evidence-debug.js";
 
 const EVENT_RECORD_STATE = "recordState";
 const BATTLE_PAUSE_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_PAUSE;
@@ -23,10 +24,10 @@ function recordPauseState(event, deps) {
   } catch (error) {
     evidence.storageWriteOk = false;
     evidence.storageWriteError = error?.message || String(error);
-    deps.debug("[HVAA] battle pause", evidence);
+    safeDebug(deps, "[HVAA] battle pause", evidence);
     return false;
   }
-  deps.debug("[HVAA] battle pause", evidence);
+  safeDebug(deps, "[HVAA] battle pause", evidence);
   return true;
 }
 

@@ -149,4 +149,23 @@ describe("battle action evidence persistence failures", () => {
       expect.objectContaining({ storageWriteOk: false, storageWriteError: "quota" })
     );
   });
+
+  it("does not throw when evidence debug output fails", () => {
+    const deps = { sessionStorage: window.sessionStorage, debug: vi.fn(() => {
+      throw new Error("console blocked");
+    }) };
+
+    expect(() =>
+      runBattleCommandEvidence({
+        type: BattleCommandEvidenceEvent.RECORD_RESULT,
+        command: "target.click",
+        result: "accepted",
+      }, deps)
+    ).not.toThrow();
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "target.click",
+      result: "accepted",
+      storageWriteOk: true,
+    });
+  });
 });

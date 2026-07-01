@@ -71,6 +71,10 @@ const automationEvidenceText = read("src/battle/battle-automation-evidence.js");
 const actionEvidencePersistenceTestText = read(
   "src/battle/battle-action-evidence-persistence.test.js"
 );
+const evidenceDebugText = read("src/battle/battle-evidence-debug.js");
+if (!evidenceDebugText.includes("export function safeDebug") || !evidenceDebugText.includes("deps.debug?.(label, evidence)")) {
+  violations.push("src/battle/battle-evidence-debug.js must own safe evidence debug output");
+}
 for (const required of [
   "acted: commandActed(event.result)",
   "failureReason: commandFailureReason(event)",
@@ -122,11 +126,22 @@ for (const required of [
   "keeps effect evidence visible when storage is unavailable",
   "keeps command evidence visible when storage is unavailable",
   "keeps lifecycle evidence visible when storage is unavailable",
+  "does not throw when evidence debug output fails",
   "storageWriteOk: false",
   'storageWriteError: "quota"',
+  'throw new Error("console blocked")',
 ]) {
   if (!actionEvidencePersistenceTestText.includes(required)) {
     violations.push(`src/battle/battle-action-evidence-persistence.test.js must cover ${required}`);
+  }
+}
+for (const spec of specs) {
+  const ownerText = read(spec.owner);
+  if (!ownerText.includes("safeDebug(deps,")) {
+    violations.push(`${spec.owner} must route debug output through safeDebug`);
+  }
+  if (ownerText.includes("deps.debug(")) {
+    violations.push(`${spec.owner} must not let debug output throw through evidence entry`);
   }
 }
 
