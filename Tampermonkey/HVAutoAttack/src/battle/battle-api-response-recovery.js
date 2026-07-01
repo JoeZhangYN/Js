@@ -93,32 +93,27 @@ function handleRejectedApiResponse(detail, deps) {
   return RECOVERY_ACTION_RELOAD;
 }
 
-function buildRejectedRecoveryState(detail) {
-  return {
+function buildRejectedRecoveryState(detail, deps) {
+  const diagnosticEvidence = diagnosticEvidenceWithoutApiRecovery(deps.readDiagnosticEvidence?.());
+  const state = {
     key: apiFailureKey(detail),
     repeatCount: 1,
     detail,
     recoveryAction: RECOVERY_ACTION_REJECTED,
   };
+  if (diagnosticEvidence) state.diagnosticEvidence = diagnosticEvidence;
+  return state;
 }
 
 function rejectUnknownApiRecoveryEvent(event, deps) {
-  const detail = {
-    outcome: OUTCOME_REJECTED,
-    reason: EVENT_UNKNOWN_API_RECOVERY,
-    eventType: event?.type ?? null,
-  };
-  writeRecoveryState(deps, buildRejectedRecoveryState(detail));
+  const detail = { outcome: OUTCOME_REJECTED, reason: EVENT_UNKNOWN_API_RECOVERY, eventType: event?.type ?? null };
+  writeRecoveryState(deps, buildRejectedRecoveryState(detail, deps));
   return false;
 }
 
 function rejectApiBridgeEvent(detail, deps) {
-  const rejectedDetail = {
-    outcome: OUTCOME_REJECTED,
-    reason: EVENT_UNKNOWN_API_BRIDGE,
-    eventType: detail?.eventType ?? null,
-  };
-  writeRecoveryState(deps, buildRejectedRecoveryState(rejectedDetail));
+  const rejectedDetail = { outcome: OUTCOME_REJECTED, reason: EVENT_UNKNOWN_API_BRIDGE, eventType: detail?.eventType ?? null };
+  writeRecoveryState(deps, buildRejectedRecoveryState(rejectedDetail, deps));
   return false;
 }
 

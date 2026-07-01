@@ -80,4 +80,31 @@ describe("battle API response recovery event rejection", () => {
       },
     });
   });
+
+  it("carries recent diagnostics into rejected recovery events without nesting recovery state", () => {
+    const deps = makeDeps();
+    deps.readDiagnosticEvidence.mockReturnValue({
+      battleApiResponseRecovery: { repeatCount: 9 },
+      battleActionDecision: { steps: [{ capability: "attack", acted: false }] },
+      battleActionEffect: { result: { kind: "noop" }, acted: false },
+    });
+
+    expect(runBattleApiResponseRecovery({ type: "unknown" }, deps)).toBe(false);
+
+    const state = JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"));
+    expect(state).toMatchObject({
+      repeatCount: 1,
+      recoveryAction: "rejected",
+      detail: {
+        outcome: "rejected",
+        reason: "unknownApiResponseRecoveryEvent",
+        eventType: "unknown",
+      },
+      diagnosticEvidence: {
+        battleActionDecision: { steps: [{ capability: "attack", acted: false }] },
+        battleActionEffect: { result: { kind: "noop" }, acted: false },
+      },
+    });
+    expect(state.diagnosticEvidence.battleApiResponseRecovery).toBeUndefined();
+  });
 });
