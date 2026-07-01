@@ -50,11 +50,11 @@ function runCurrentBattleTurn() {
       hasSnap: Boolean(context?.snap),
       hasActionOptions: Boolean(context?.actionOptions),
     });
-    runBattleActionDecision({
+    const acted = runBattleActionDecision({
       type: BattleActionDecisionEvent.DECIDE,
       context,
     });
-    recordTurnWorkflowStage("decisionCompleted");
+    recordTurnWorkflowStage("decisionCompleted", { acted: Boolean(acted) });
   } catch (error) {
     recordTurnWorkflowStage("failed", {
       message: error instanceof Error ? error.message : String(error),

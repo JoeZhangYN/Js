@@ -479,7 +479,7 @@ function checkTurnEntry() {
     'recordTurnWorkflowStage("paused"',
     'recordTurnWorkflowStage("preludePrepared"',
     'recordTurnWorkflowStage("contextPrepared"',
-    'recordTurnWorkflowStage("decisionCompleted")',
+    'recordTurnWorkflowStage("decisionCompleted", { acted: Boolean(acted) })',
     'recordTurnWorkflowStage("failed"',
     'recordTurnWorkflowStage("rejected"',
   ]) {
@@ -567,6 +567,8 @@ function checkTurnEntry() {
     "const steps = []",
     "steps.push({ capability: step.capability, result, acted })",
     "recordDecisionEvidence(steps)",
+    "return true",
+    "return false",
     "decideSurvivalStep",
     "BattleSurvivalActionEvent.DECIDE",
     "runBattleSurvivalAction",
@@ -602,6 +604,9 @@ function checkTurnEntry() {
     violations.push(
       `${rel(actionDecisionFile)} must not reintroduce repeated two-arg step wrappers`
     );
+  }
+  if (!actionDecisionText.includes("return battleActionDecisionEventHandlers[event.type]?.(event) ?? false")) {
+    violations.push(`${rel(actionDecisionFile)} must expose acted boolean for unknown events`);
   }
   const actionDecisionEvidenceText = fs.readFileSync(actionDecisionEvidenceFile, "utf8");
   for (const required of [

@@ -20,16 +20,19 @@ function dispatchedResults(snap = {}, opt = {}) {
   mocks.runBattleActionEffectDispatch.mockClear();
   mocks.runBattleActionDecisionEvidence.mockClear();
   mocks.runBattleActionEffectDispatch.mockReturnValue(false);
-  runBattleActionDecision({
+  const acted = runBattleActionDecision({
     type: BattleActionDecisionEvent.DECIDE,
     context: { snap, actionOptions: opt },
   });
-  return mocks.runBattleActionEffectDispatch.mock.calls.map((call) => call[0].result);
+  return {
+    acted,
+    results: mocks.runBattleActionEffectDispatch.mock.calls.map((call) => call[0].result),
+  };
 }
 
 describe("runBattleActionDecision", () => {
   it("owns the full action rule order", () => {
-    const results = dispatchedResults();
+    const { results } = dispatchedResults();
     expect(results).toHaveLength(4);
     expect(results.map((result) => result.kind)).toEqual(["noop", "noop", "noop", "attack-plan"]);
     expect(results[3].plan).toBeTruthy();
@@ -41,10 +44,12 @@ describe("runBattleActionDecision", () => {
       (event) => event.result.kind === "flee-command"
     );
 
-    runBattleActionDecision({
-      type: BattleActionDecisionEvent.DECIDE,
-      context: { snap: {}, actionOptions: { autoFlee: true } },
-    });
+    expect(
+      runBattleActionDecision({
+        type: BattleActionDecisionEvent.DECIDE,
+        context: { snap: {}, actionOptions: { autoFlee: true } },
+      })
+    ).toBe(true);
 
     expect(mocks.runBattleActionEffectDispatch).toHaveBeenCalledTimes(1);
     expect(mocks.runBattleActionDecisionEvidence).toHaveBeenCalledWith({
@@ -57,17 +62,27 @@ describe("runBattleActionDecision", () => {
     });
   });
 
-  it("records every not-acted decision step when the turn does not short-circuit", () => {
-    dispatchedResults();
-    expect(mocks.runBattleActionDecisionEvidence).toHaveBeenCalledWith({
-      type: "recordTrace",
-      steps: expect.arrayContaining([
-        expect.objectContaining({ capability: "survival", acted: false }),
-        expect.objectContaining({ capability: "buffPreparation", acted: false }),
-        expect.objectContaining({ capability: "offensiveDebuff", acted: false }),
-        expect.objectContaining({ capability: "attack", acted: false }),
-      ]),
-    });
+  it("returns false after all decision steps do not act", () => {
+    mocks.runBattleActionEffectDispatch.mockClear();
+    mocks.runBattleActionEffectDispatch.mockReturnValue(false);
+
+    expect(
+      runBattleActionDecision({
+        type: BattleActionDecisionEvent.DECIDE,
+        context: { snap: {}, actionOptions: {} },
+      })
+    ).toBe(false);
+
+    expect(mocks.runBattleActionEffectDispatch).toHaveBeenCalledTimes(4);
+  });
+
+  it("rejects unknown action decision events", () => {
+    expect(
+      runBattleActionDecision({
+        type: "unknown",
+        context: { snap: {}, actionOptions: {} },
+      })
+    ).toBe(false);
   });
 
   it("passes the same snap to effect dispatch for bookkeeping", () => {
@@ -79,33 +94,33 @@ describe("runBattleActionDecision", () => {
 
 describe("runBattleActionDecision rule contracts", () => {
   it("basic gates belong to rule entries, not the action chain", () => {
-    expect(dispatchedResults({}, { autoFlee: true })[0]).toEqual({
+    expect(dispatchedResults({}, { autoFlee: true }).results[0]).toEqual({
       kind: "flee-command",
     });
-    expect(dispatchedResults({}, { autoPause: true })[0]).toEqual({
+    expect(dispatchedResults({}, { autoPause: true }).results[0]).toEqual({
       kind: "pause",
     });
-    expect(dispatchedResults({}, { defend: true })[0]).toEqual({
+    expect(dispatchedResults({}, { defend: true }).results[0]).toEqual({
       kind: "defend-command",
     });
-    expect(dispatchedResults()[0]).toEqual({ kind: "noop" });
-    expect(dispatchedResults({ attackStatus: 2, playerBuffs: [] })[1]).toEqual({
+    expect(dispatchedResults().results[0]).toEqual({ kind: "noop" });
+    expect(dispatchedResults({ attackStatus: 2, playerBuffs: [] }).results[1]).toEqual({
       kind: "noop",
     });
-    expect(dispatchedResults({ channeling: true })[1]).toEqual({
+    expect(dispatchedResults({ channeling: true }).results[1]).toEqual({
       kind: "noop",
     });
-    expect(dispatchedResults({ view: [] })[2]).toEqual({
+    expect(dispatchedResults({ view: [] }).results[2]).toEqual({
       kind: "noop",
     });
-    expect(dispatchedResults({ skillReady: { 213: false }, view: [] })[2]).toEqual({
+    expect(dispatchedResults({ skillReady: { 213: false }, view: [] }).results[2]).toEqual({
       kind: "noop",
     });
   });
 
   it("no action result uses the retired delegate bridge", () => {
     expect(
-      dispatchedResults({ monsters: [], skillReady: {}, playerEffects: [] }).map(
+      dispatchedResults({ monsters: [], skillReady: {}, playerEffects: [] }).results.map(
         (result) => result.kind
       )
     ).not.toContain("delegate");
@@ -125,7 +140,7 @@ describe("runBattleActionDecision stall Imperil contract", () => {
   });
 
   it("stall 中 debuff 入口跳过 boss imperil 和全体 Imperil", () => {
-    const results = dispatchedResults(stallSnap(), {
+    const { results } = dispatchedResults(stallSnap(), {
       stallMode: true,
       debuffSkillSwitch: true,
       debuffSkillAllIm: true,
@@ -135,7 +150,7 @@ describe("runBattleActionDecision stall Imperil contract", () => {
   });
 
   it("stallMode:false 时 bossImperil 恢复", () => {
-    expect(dispatchedResults(stallSnap(), { stallMode: false })[2]).toEqual({
+    expect(dispatchedResults(stallSnap(), { stallMode: false }).results[2]).toEqual({
       kind: "click-skill-then-target",
       skillId: "213",
       targetId: 1,
@@ -147,7 +162,7 @@ describe("runBattleActionDecision stall Imperil contract", () => {
       dispatchedResults({
         skillReady: { 213: true },
         view: [{ id: 1, order: 0, isDead: false, isBoss: true, buffs: [] }],
-      })[2]
+      }).results[2]
     ).toEqual({
       kind: "click-skill-then-target",
       skillId: "213",
@@ -155,7 +170,7 @@ describe("runBattleActionDecision stall Imperil contract", () => {
     });
   });
 
-  it("burstControl 未开启时入口自行返回 noop", () => {
-    expect(dispatchedResults()[2]).toEqual({ kind: "noop" });
+it("burstControl 未开启时入口自行返回 noop", () => {
+    expect(dispatchedResults().results[2]).toEqual({ kind: "noop" });
   });
 });

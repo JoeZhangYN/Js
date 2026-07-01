@@ -40,6 +40,8 @@ beforeEach(() => {
 
 describe("runBattleTurnAutomation", () => {
   it("runs turn prelude before preparing and dispatching decision context", () => {
+    mocks.runBattleActionDecision.mockReturnValue(true);
+
     runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
 
     expect(mocks.runBattleTurnPrelude).toHaveBeenCalledWith({ type: "prepareCurrentTurn" });
@@ -56,6 +58,18 @@ describe("runBattleTurnAutomation", () => {
     });
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
       stage: "decisionCompleted",
+      detail: { acted: true },
+    });
+  });
+
+  it("records not-acted turn workflow completion", () => {
+    mocks.runBattleActionDecision.mockReturnValue(false);
+
+    runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN });
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleTurnWorkflow"))).toMatchObject({
+      stage: "decisionCompleted",
+      detail: { acted: false },
     });
   });
 

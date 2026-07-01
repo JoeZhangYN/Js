@@ -97,10 +97,11 @@ function decideBattleAction(turnContext = {}) {
     steps.push({ capability: step.capability, result, acted });
     if (acted) {
       recordDecisionEvidence(steps);
-      return;
+      return true;
     }
   }
   recordDecisionEvidence(steps);
+  return false;
 }
 
 function recordDecisionEvidence(steps) {
@@ -111,5 +112,5 @@ function recordDecisionEvidence(steps) {
 }
 
 export function runBattleActionDecision(event = { type: EVENT_DECIDE }) {
-  return battleActionDecisionEventHandlers[event.type]?.(event);
+  return battleActionDecisionEventHandlers[event.type]?.(event) ?? false;
 }
