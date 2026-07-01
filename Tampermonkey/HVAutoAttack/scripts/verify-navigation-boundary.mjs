@@ -476,10 +476,12 @@ if (!owner) {
     );
     for (const required of [
       "keeps URL navigation opened when navigation recording throws",
+      "keeps URL navigation opened when navigation recording and warning both throw",
       "keeps accepted scheduled reload timer when decision recording throws",
       "keeps rejected navigation events rejected when rejection recording throws",
       "decision failed",
       "audit failed",
+      "console failed",
     ]) {
       if (!recordingFailureTestText.includes(required)) {
         violations.push(`navigation recording failure test must cover ${required}`);

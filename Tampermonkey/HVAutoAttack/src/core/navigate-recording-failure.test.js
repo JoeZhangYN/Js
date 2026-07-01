@@ -51,6 +51,33 @@ describe("runNavigationAutomation recording failure tolerance", () => {
     expect(open).toHaveBeenCalledWith("https://hentaiverse.org/encounter.php", "_blank");
   });
 
+  it("keeps URL navigation opened when navigation recording and warning both throw", async () => {
+    const { NavigationEvent, NavigationRedirectReason, runNavigationAutomation } =
+      await import("./navigate.js");
+    const opened = { close: vi.fn() };
+    const open = vi.spyOn(window, "open").mockImplementation(() => opened);
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console failed");
+    });
+    mocks.recordNavigationDecision.mockImplementation(() => {
+      throw new Error("decision failed");
+    });
+    mocks.writeNavigationAudit.mockImplementation(() => {
+      throw new Error("audit failed");
+    });
+
+    expect(() =>
+      runNavigationAutomation({
+        type: NavigationEvent.OPEN_URL,
+        reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
+        url: "https://hentaiverse.org/encounter.php",
+        newTab: true,
+      })
+    ).not.toThrow();
+
+    expect(open).toHaveBeenCalledWith("https://hentaiverse.org/encounter.php", "_blank");
+  });
+
   it("keeps accepted scheduled reload timer when decision recording throws", async () => {
     vi.useFakeTimers();
     const { NavigationEvent, NavigationReloadReason, runNavigationAutomation } =
