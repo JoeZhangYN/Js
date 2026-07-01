@@ -1,10 +1,9 @@
 // 页面导航副作用：唯一对外入口 runNavigationAutomation(event)。
+import { installExternalUnloadAudit, reportPreviousNavigationAudit } from "./navigation-audit.js";
 import {
-  installExternalUnloadAudit,
-  reportPreviousNavigationAudit,
-  writeNavigationAudit,
-} from "./navigation-audit.js";
-import { recordNavigationDecision } from "./navigation-decision-evidence.js";
+  recordNavigationDecisionSafely,
+  writeNavigationAuditSafely,
+} from "./navigation-recording.js";
 
 const EVENT_RELOAD_NOW = "reloadNow";
 const EVENT_SCHEDULE_RELOAD = "scheduleReload";
@@ -54,9 +53,7 @@ export const NavigationRedirectReason = Object.freeze({
 
 const REDIRECT_REASONS = new Set(Object.values(NavigationRedirectReason));
 
-export const NavigationWindowReason = Object.freeze({
-  RIDDLE_POPUP: "riddlePopup",
-});
+export const NavigationWindowReason = Object.freeze({ RIDDLE_POPUP: "riddlePopup" });
 
 const WINDOW_REASONS = new Set(Object.values(NavigationWindowReason));
 const RELOAD_RETRY_DELAY_MS = 5000;
@@ -66,23 +63,20 @@ installExternalUnloadAudit();
 
 function goto(reason, detail, attempt = 1) {
   const reloadEvidence = { attempt, retryDelayMs: RELOAD_RETRY_DELAY_MS, detail };
-  recordNavigationDecision("accepted", { type: EVENT_RELOAD_NOW, reason }, reloadEvidence);
-  writeNavigationAudit("reload", { reason, attempt, retryDelayMs: RELOAD_RETRY_DELAY_MS, detail });
+  recordNavigationDecisionSafely("accepted", { type: EVENT_RELOAD_NOW, reason }, reloadEvidence);
+  writeNavigationAuditSafely("reload", {
+    reason,
+    attempt,
+    retryDelayMs: RELOAD_RETRY_DELAY_MS,
+    detail,
+  });
   window.location.href = window.location;
   setTimeout(() => goto(reason, detail, attempt + 1), RELOAD_RETRY_DELAY_MS);
 }
 
-function isReloadReasonAllowed(event) {
-  return RELOAD_REASONS.has(event.reason);
-}
-
-function isRedirectReasonAllowed(event) {
-  return REDIRECT_REASONS.has(event.reason);
-}
-
-function isWindowReasonAllowed(event) {
-  return WINDOW_REASONS.has(event.reason);
-}
+const isReloadReasonAllowed = (event) => RELOAD_REASONS.has(event.reason);
+const isRedirectReasonAllowed = (event) => REDIRECT_REASONS.has(event.reason);
+const isWindowReasonAllowed = (event) => WINDOW_REASONS.has(event.reason);
 
 function normalizeReloadDelayMs(event) {
   let delayMs;
@@ -99,15 +93,15 @@ function normalizeReloadDelayMs(event) {
  */
 function scheduleReload(event) {
   if (!isReloadReasonAllowed(event)) {
-    recordNavigationDecision("rejected", event, { cause: "reloadReasonNotAllowed" });
+    recordNavigationDecisionSafely("rejected", event, { cause: "reloadReasonNotAllowed" });
     return false;
   }
   const delayMs = normalizeReloadDelayMs(event);
   if (!delayMs) {
-    recordNavigationDecision("rejected", event, { cause: "invalidReloadDelay" });
+    recordNavigationDecisionSafely("rejected", event, { cause: "invalidReloadDelay" });
     return false;
   }
-  recordNavigationDecision("accepted", event, { delayMs, detail: event.detail });
+  recordNavigationDecisionSafely("accepted", event, { delayMs, detail: event.detail });
   return setTimeout(() => goto(event.reason, event.detail), delayMs);
 }
 
@@ -119,27 +113,31 @@ function scheduleReload(event) {
 function openUrl(url, newTab, reason) {
   const openedWindow = window.open(url, newTab ? "_blank" : "_self");
   const detail = { url, newTab: Boolean(newTab), opened: Boolean(openedWindow) };
-  recordNavigationDecision(
+  recordNavigationDecisionSafely(
     openedWindow ? "accepted" : "rejected",
     { type: EVENT_OPEN_URL, reason },
     openedWindow ? detail : { ...detail, cause: "windowOpenBlocked" }
   );
-  writeNavigationAudit("navigate", { reason, ...detail });
+  writeNavigationAuditSafely("navigate", { reason, ...detail });
   return Boolean(openedWindow);
 }
 
 function openWindow(url, name, features, reason) {
   const openedWindow = window.open(url, name, features);
   const detail = { url, name, features, opened: Boolean(openedWindow) };
-  recordNavigationDecision(openedWindow ? "accepted" : "rejected", { type: EVENT_OPEN_WINDOW, reason }, openedWindow ? detail : { ...detail, cause: "windowOpenBlocked" });
-  writeNavigationAudit("openWindow", { reason, ...detail });
+  recordNavigationDecisionSafely(
+    openedWindow ? "accepted" : "rejected",
+    { type: EVENT_OPEN_WINDOW, reason },
+    openedWindow ? detail : { ...detail, cause: "windowOpenBlocked" }
+  );
+  writeNavigationAuditSafely("openWindow", { reason, ...detail });
   return openedWindow;
 }
 
 const navigationEventHandlers = Object.freeze({
   [EVENT_RELOAD_NOW]: (event) => {
     if (!isReloadReasonAllowed(event)) {
-      recordNavigationDecision("rejected", event, { cause: "reloadReasonNotAllowed" });
+      recordNavigationDecisionSafely("rejected", event, { cause: "reloadReasonNotAllowed" });
       return false;
     }
     goto(event.reason, event.detail);
@@ -148,14 +146,20 @@ const navigationEventHandlers = Object.freeze({
   [EVENT_SCHEDULE_RELOAD]: (event) => scheduleReload(event),
   [EVENT_OPEN_URL]: (event) => {
     if (!isRedirectReasonAllowed(event)) {
-      recordNavigationDecision("rejected", event, { cause: "redirectReasonNotAllowed", url: event.url });
+      recordNavigationDecisionSafely("rejected", event, {
+        cause: "redirectReasonNotAllowed",
+        url: event.url,
+      });
       return false;
     }
     return openUrl(event.url, event.newTab, event.reason);
   },
   [EVENT_OPEN_WINDOW]: (event) => {
     if (!isWindowReasonAllowed(event)) {
-      recordNavigationDecision("rejected", event, { cause: "windowReasonNotAllowed", url: event.url });
+      recordNavigationDecisionSafely("rejected", event, {
+        cause: "windowReasonNotAllowed",
+        url: event.url,
+      });
       return false;
     }
     return openWindow(event.url, event.name, event.features, event.reason);
@@ -165,7 +169,7 @@ const navigationEventHandlers = Object.freeze({
 export function runNavigationAutomation(event = { type: EVENT_RELOAD_NOW }) {
   const handler = navigationEventHandlers[event?.type];
   if (!handler) {
-    recordNavigationDecision("rejected", event, { cause: "unknownNavigationEvent" });
+    recordNavigationDecisionSafely("rejected", event, { cause: "unknownNavigationEvent" });
     return false;
   }
   return handler(event);

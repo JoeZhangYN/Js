@@ -85,12 +85,36 @@ if (!owner) {
     violations.push("navigation rejected decision must record windowOpenBlocked");
   }
   const auditSource = files.find((file) => file.rel === "core/navigation-audit.js");
+  const recordingSource = files.find((file) => file.rel === "core/navigation-recording.js");
   const diagnosticEvidenceSource = files.find((file) => file.rel === "core/diagnostic-evidence.js");
+  if (!recordingSource) {
+    violations.push("core/navigation-recording.js is missing");
+  } else {
+    const recordingText = stripComments(readFileSync(recordingSource.abs, "utf8"));
+    for (const required of [
+      "recordNavigationDecisionSafely",
+      "writeNavigationAuditSafely",
+      "recordNavigationDecision",
+      "writeNavigationAudit",
+      "navigation decision failed",
+      "navigation audit failed",
+      "console.warn(`[HVAA] ${label}`",
+    ]) {
+      if (!recordingText.includes(required)) {
+        violations.push(`navigation recording boundary must own ${required}`);
+      }
+    }
+    for (const forbidden of ["throw error", "throw new Error"]) {
+      if (recordingText.includes(forbidden)) {
+        violations.push(`navigation recording boundary must not rethrow: ${forbidden}`);
+      }
+    }
+  }
   if (!auditSource) {
     violations.push("core/navigation-audit.js is missing");
   } else {
     const auditText = stripComments(readFileSync(auditSource.abs, "utf8"));
-    if (!source.includes("writeNavigationAudit")) {
+    if (!source.includes("writeNavigationAuditSafely")) {
       violations.push("navigation execution must record an audit before navigating");
     }
     if (
@@ -243,6 +267,9 @@ if (!owner) {
   const scheduledReloadDetailTestSource = files.find(
     (file) => file.rel === "core/navigate-scheduled-reload-detail.test.js"
   );
+  const recordingFailureTestSource = files.find(
+    (file) => file.rel === "core/navigate-recording-failure.test.js"
+  );
   if (!navigationDecisionSource) {
     violations.push("core/navigation-decision-evidence.js is missing");
   } else {
@@ -263,8 +290,8 @@ if (!owner) {
       }
     }
     for (const required of [
-      'recordNavigationDecision("accepted"',
-      'recordNavigationDecision("rejected"',
+      'recordNavigationDecisionSafely("accepted"',
+      'recordNavigationDecisionSafely("rejected"',
       "reloadReasonNotAllowed",
       "redirectReasonNotAllowed",
       "invalidReloadDelay",
@@ -386,6 +413,26 @@ if (!owner) {
       }
     }
   }
+  if (!recordingFailureTestSource) {
+    violations.push(
+      "core/navigate-recording-failure.test.js must cover recording failure tolerance"
+    );
+  } else {
+    const recordingFailureTestText = stripComments(
+      readFileSync(recordingFailureTestSource.abs, "utf8")
+    );
+    for (const required of [
+      "keeps URL navigation opened when navigation recording throws",
+      "keeps accepted scheduled reload timer when decision recording throws",
+      "keeps rejected navigation events rejected when rejection recording throws",
+      "decision failed",
+      "audit failed",
+    ]) {
+      if (!recordingFailureTestText.includes(required)) {
+        violations.push(`navigation recording failure test must cover ${required}`);
+      }
+    }
+  }
   const bridgeSource = files.find((file) => file.rel === "core/navigation-bridge.js");
   const bridgeTestSource = files.find((file) => file.rel === "core/navigation-bridge.test.js");
   if (!bridgeSource) {
@@ -448,7 +495,11 @@ for (const file of files) {
   if (/NavigationEvent\.SCHEDULE_RELOAD[\s\S]{0,120}\bsec\s*:/.test(source)) {
     violations.push(`src/${file.rel} uses legacy SCHEDULE_RELOAD sec field`);
   }
-  if (/\b(?:window\.)?location\.href\s*=|\bdocument\.location\s*(?:\+=|=)|\bwindow\.open\s*\(/.test(source)) {
+  if (
+    /\b(?:window\.)?location\.href\s*=|\bdocument\.location\s*(?:\+=|=)|\bwindow\.open\s*\(/.test(
+      source
+    )
+  ) {
     violations.push(
       `src/${file.rel} must route navigation effects through runNavigationAutomation(event)`
     );
