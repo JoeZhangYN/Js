@@ -570,9 +570,9 @@ function checkTurnEntry() {
     "RECORD_TRACE",
     "runBattleActionDecisionEvidence",
     "ACTION_DECISION_EVIDENCE_KEY",
+    "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
     "summarizeResult",
     "acted: Boolean(step.acted)",
-    "HVAA:lastBattleActionDecision",
     "[HVAA] battle action decision",
   ]) {
     if (!actionDecisionEvidenceText.includes(required)) {

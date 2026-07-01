@@ -88,7 +88,7 @@ for (const required of [
 for (const required of [
   "BattleActionDecisionEvidenceEvent",
   "runBattleActionDecisionEvidence",
-  "HVAA:lastBattleActionDecision",
+  "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
 ]) {
   requireText("src/battle/battle-action-decision-evidence.js", actionDecisionEvidence, required);
 }

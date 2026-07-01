@@ -1,5 +1,7 @@
+import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+
 const EVENT_RECORD_TRACE = "recordTrace";
-const ACTION_DECISION_EVIDENCE_KEY = "HVAA:lastBattleActionDecision";
+const ACTION_DECISION_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_ACTION_DECISION;
 
 export const BattleActionDecisionEvidenceEvent = Object.freeze({
   RECORD_TRACE: EVENT_RECORD_TRACE,

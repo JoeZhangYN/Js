@@ -142,6 +142,7 @@ for (const required of [
   "RECORD_APPLIED",
   "runBattleActionEffectEvidence",
   "ACTION_EFFECT_EVIDENCE_KEY",
+  "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
   "summarizeResult",
   "acted: Boolean(event.acted)",
 ]) {

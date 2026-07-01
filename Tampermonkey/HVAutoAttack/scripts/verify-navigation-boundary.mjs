@@ -71,6 +71,17 @@ if (!owner) {
     if (!auditText.includes("recordExternalUnload") || !auditText.includes("outsideNavigationEntry")) {
       violations.push("navigation audit must record unloads that bypass the navigation entry");
     }
+    for (const required of [
+      "DiagnosticEvidenceKey.NAVIGATION_AUDIT",
+      "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
+      "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
+      "readRecentDiagnosticEvidence",
+      "diagnosticEvidence",
+    ]) {
+      if (!auditText.includes(required)) {
+        violations.push(`navigation audit must carry diagnostic evidence ${required}`);
+      }
+    }
     if (!auditText.includes('console.warn(`[HVAA] ${kind}`')) {
       violations.push("navigation audit must warn before navigating");
     }
