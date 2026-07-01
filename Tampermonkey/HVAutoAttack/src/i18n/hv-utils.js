@@ -2679,11 +2679,16 @@ const bindEquip = function (equip, ctx) {
       'crude': 1, 'fair': 2, 'average': 3, 'superior': 4, 'exquisite': 5, 'magnificent': 6, 'legendary': 7, 'peerless': 8,
     },
     equip: function (filters, equip) {
-      const result = $equip.filter.match(filters, equip);
-      if (result.errors.length) {
-        console.warn('[HVUT] equipment filter failed', { equip: result.name, errors: result.errors });
+      try {
+        const result = $equip.filter.match(filters, equip);
+        if (result.errors.length) {
+          console.warn('[HVUT] equipment filter failed', { equip: result.name, errors: result.errors });
+        }
+        return result.matched;
+      } catch (error) {
+        console.warn('[HVUT] equipment filter crashed', { equip, error });
+        return false;
       }
-      return result.matched;
     },
     match: function (filters, equip) {
       filters = $equip.filter.normalize(filters);

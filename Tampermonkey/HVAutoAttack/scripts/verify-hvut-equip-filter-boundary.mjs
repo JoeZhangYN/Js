@@ -29,10 +29,14 @@ if (!normalizeBody) {
 }
 
 for (const required of [
+  "try {",
   "const result = $equip.filter.match(filters, equip)",
   "console.warn('[HVUT] equipment filter failed'",
   "errors: result.errors",
   "return result.matched",
+  "catch (error)",
+  "console.warn('[HVUT] equipment filter crashed'",
+  "return false",
 ]) {
   if (!equipBody.includes(required)) {
     violations.push(`equipment filter match entry must include ${required}`);
