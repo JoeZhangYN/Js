@@ -35,10 +35,18 @@ describe("battle API response recovery reload detail", () => {
       decision: "accepted",
       commandReason: "battleApiResponse",
       detail: {
-        repeatCount: 1,
-        recoveryAction: "reload",
-        detail,
+        detail: {
+          repeatCount: 1,
+          recoveryAction: "reload",
+          detail,
+        },
       },
+    });
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:battleApiRecovery"))).toMatchObject({
+      repeatCount: 1,
+      recoveryAction: "reload",
+      reloadResult: true,
+      detail,
     });
     warn.mockRestore();
   });

@@ -13,6 +13,9 @@ const responseScriptMalformedJsonTest = path.normalize(
 );
 const recovery = path.normalize("src/battle/battle-api-response-recovery.js");
 const recoveryTest = path.normalize("src/battle/battle-api-response-recovery.test.js");
+const recoveryEffectResultTest = path.normalize(
+  "src/battle/battle-api-response-recovery-effect-result.test.js"
+);
 const recoveryMalformedJsonTest = path.normalize(
   "src/battle/battle-api-response-recovery-malformed-json.test.js"
 );
@@ -228,6 +231,10 @@ const recoveryText = requireText(recovery, [
   "storageWriteOk",
   "storageWriteError",
   "battle API recovery state write failed",
+  "recordRecoveryEffectResult",
+  'state[resultName] = Boolean(result)',
+  '"reloadResult"',
+  '"pauseResult"',
   "world: detail?.world",
   "parseError: detail?.parseError",
   "deps.pause(state)",
@@ -250,6 +257,17 @@ requireText(recoveryTest, [
   "knownResultKind: true",
   "battleActionDelay",
   "unknownActionDelayEvent",
+]);
+requireText(recoveryEffectResultTest, [
+  "records accepted reload scheduling in recovery evidence",
+  "records rejected reload scheduling instead of claiming recovery effect success",
+  "records accepted repeated-pause execution in recovery evidence",
+  "records rejected repeated-pause execution in recovery evidence",
+  "reloadResult: true",
+  "reloadResult: false",
+  "pauseResult: true",
+  "pauseResult: false",
+  "HVAA:battleApiRecovery",
 ]);
 requireText(recoveryReloadDetailTest, [
   "passes recovery state into the default navigation reload detail",
@@ -490,6 +508,14 @@ if (!recoveryText.includes("repeatCount >= REPEAT_PAUSE_THRESHOLD")) {
 if (!recoveryText.includes("deps.pause(state)") || !recoveryText.includes("deps.reload(state)")) {
   violations.push(
     `${recovery.replaceAll("\\", "/")} must choose between pause and reload centrally`
+  );
+}
+if (
+  !recoveryText.includes('recordRecoveryEffectResult(deps, state, "pauseResult", deps.pause(state))') ||
+  !recoveryText.includes('recordRecoveryEffectResult(deps, state, "reloadResult", deps.reload(state))')
+) {
+  violations.push(
+    `${recovery.replaceAll("\\", "/")} must record API recovery effect results after pause/reload attempts`
   );
 }
 if (!recoveryText.includes("detail: state")) {

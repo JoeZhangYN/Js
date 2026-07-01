@@ -64,6 +64,11 @@ function writeRecoveryState(deps, state) {
   }
 }
 
+function recordRecoveryEffectResult(deps, state, resultName, result) {
+  state[resultName] = Boolean(result);
+  writeRecoveryState(deps, state);
+}
+
 function diagnosticEvidenceWithoutApiRecovery(diagnosticEvidence) {
   if (!diagnosticEvidence) return undefined;
   const { battleApiResponseRecovery: _self, ...rest } = diagnosticEvidence;
@@ -83,13 +88,13 @@ function handleRejectedApiResponse(detail, deps) {
   if (state.repeatCount >= REPEAT_PAUSE_THRESHOLD) {
     state.recoveryAction = RECOVERY_ACTION_PAUSE;
     writeRecoveryState(deps, state);
-    deps.pause(state);
+    recordRecoveryEffectResult(deps, state, "pauseResult", deps.pause(state));
     deps.warn("[HVAA] battle API response repeated; auto battle paused", state);
     return "paused";
   }
   state.recoveryAction = RECOVERY_ACTION_RELOAD;
   writeRecoveryState(deps, state);
-  deps.reload(state);
+  recordRecoveryEffectResult(deps, state, "reloadResult", deps.reload(state));
   return RECOVERY_ACTION_RELOAD;
 }
 
