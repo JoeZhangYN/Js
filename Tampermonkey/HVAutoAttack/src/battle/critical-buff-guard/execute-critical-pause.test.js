@@ -5,6 +5,7 @@ import {
 } from "./execute-critical-pause.js";
 
 beforeEach(() => {
+  sessionStorage.clear();
   document.title = "";
   document.body.innerHTML = '<button class="pauseChange"></button>';
   vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -35,5 +36,19 @@ describe("runCriticalBuffPauseExecution", () => {
     expect(console.warn).not.toHaveBeenCalled();
     expect(document.title).toBe("");
     expect(document.querySelector(".pauseChange").innerHTML).toBe("");
+  });
+
+  it("rejects missing critical pause plans as not acted with evidence", () => {
+    expect(
+      runCriticalBuffPauseExecution({ type: CriticalBuffPauseExecutionEvent.APPLY_PLAN })
+    ).toBe(false);
+
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(document.title).toBe("");
+    expect(document.querySelector(".pauseChange").innerHTML).toBe("");
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
+      state: "rejected",
+      reason: "invalidCriticalBuffPausePlan",
+    });
   });
 });

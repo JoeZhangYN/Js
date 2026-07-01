@@ -2539,7 +2539,9 @@ function checkCriticalBuffEntry() {
     "runCriticalBuffPauseExecution",
     "runAlarmAutomation",
     "runBattlePauseAutomation",
+    "runBattlePauseEvidence",
     "document.title",
+    "invalidCriticalBuffPausePlan",
   ]) {
     if (!executionText.includes(required)) {
       violations.push(
@@ -2566,6 +2568,9 @@ function checkCriticalBuffEntry() {
     }
     if (!executionTestText.includes("runCriticalBuffPauseExecution(null)")) {
       violations.push(`${rel(executeCriticalPauseTestFile)} must cover null critical pause events`);
+    }
+    if (!executionTestText.includes("rejects missing critical pause plans as not acted with evidence")) {
+      violations.push(`${rel(executeCriticalPauseTestFile)} must cover invalid critical pause plans`);
     }
   }
   if (!fs.readFileSync(dispatchFile, "utf8").includes("runCriticalBuffPauseExecution")) {

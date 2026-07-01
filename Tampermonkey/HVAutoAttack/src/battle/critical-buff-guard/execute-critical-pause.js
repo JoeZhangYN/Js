@@ -1,17 +1,16 @@
 import { AlarmEvent, runAlarmAutomation } from "../../alarm/alarm.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../pause-automation.js";
+import { BattlePauseEvidenceEvent, runBattlePauseEvidence } from "../battle-pause-evidence.js";
 
 const EVENT_APPLY_PLAN = "applyPlan";
+const REASON_INVALID_PLAN = "invalidCriticalBuffPausePlan";
 
 export const CriticalBuffPauseExecutionEvent = Object.freeze({
   APPLY_PLAN: EVENT_APPLY_PLAN,
 });
 
 const criticalBuffPauseExecutionEventHandlers = Object.freeze({
-  [EVENT_APPLY_PLAN]: (event) => {
-    executeCriticalPause(event.plan);
-    return true;
-  },
+  [EVENT_APPLY_PLAN]: (event) => executeCriticalPause(event.plan),
 });
 
 /**
@@ -20,12 +19,28 @@ const criticalBuffPauseExecutionEventHandlers = Object.freeze({
  * @param {{ name:string, turns:number, mp:number, mpFloor:number }} plan
  */
 function executeCriticalPause(plan) {
+  if (!isCriticalPausePlan(plan)) return rejectCriticalPausePlan(plan);
   console.warn(
     `[critical-buff-guard] "${plan.name}" 剩 ${plan.turns} 回合 + MP ${plan.mp.toFixed(0)}% < ${plan.mpFloor}% → 暂停脚本，请手动接管`
   );
   runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Error" });
   runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "criticalBuff", detail: plan });
   document.title = `hvAA 暂停: ${plan.name} 即将消失但 MP 不足`;
+  return true;
+}
+
+function isCriticalPausePlan(plan) {
+  return plan && typeof plan.name === "string" && Number.isFinite(plan.turns) && Number.isFinite(plan.mp) && Number.isFinite(plan.mpFloor);
+}
+
+function rejectCriticalPausePlan(plan) {
+  runBattlePauseEvidence({
+    type: BattlePauseEvidenceEvent.RECORD_STATE,
+    state: "rejected",
+    reason: REASON_INVALID_PLAN,
+    detail: { plan },
+  });
+  return false;
 }
 
 export function runCriticalBuffPauseExecution(event = { type: EVENT_APPLY_PLAN }) {
