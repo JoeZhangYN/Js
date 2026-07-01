@@ -58,6 +58,29 @@ describe("battle API response recovery persistence failures", () => {
     );
   });
 
+  it("pauses repeated same-cause recovery through memory fallback when persistence fails", () => {
+    const deps = makeDeps();
+    deps.reload.mockReturnValue(true);
+    deps.pause.mockReturnValue(true);
+    const event = {
+      type: BattleApiResponseRecoveryEvent.REJECTED_RESPONSE,
+      detail: rejectedDetail(),
+    };
+
+    expect(runBattleApiResponseRecovery(event, deps)).toBe("reload");
+    expect(runBattleApiResponseRecovery(event, deps)).toBe("paused");
+
+    expect(deps.reload).toHaveBeenCalledTimes(1);
+    expect(deps.pause).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repeatCount: 2,
+        recoveryAction: "pause",
+        storageWriteOk: false,
+        storageWriteError: "quota",
+      })
+    );
+  });
+
   it("rejects unknown recovery events without throwing when persistence fails", () => {
     const deps = makeDeps();
 

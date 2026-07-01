@@ -16,6 +16,7 @@ const responseScriptMalformedJsonTest = path.normalize(
   "src/battle/battle-api-response-script-malformed-json.test.js"
 );
 const recovery = path.normalize("src/battle/battle-api-response-recovery.js");
+const recoveryState = path.normalize("src/battle/battle-api-response-recovery-state.js");
 const recoveryTest = path.normalize("src/battle/battle-api-response-recovery.test.js");
 const recoveryEffectResultTest = path.normalize(
   "src/battle/battle-api-response-recovery-effect-result.test.js"
@@ -235,7 +236,6 @@ const recoveryText = requireText(recovery, [
   "BattleApiResponseRecoveryEvent",
   "battleApiResponseRecoveryEventHandlers",
   "runBattleApiResponseRecovery",
-  "DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
   "NavigationReloadReason.BATTLE_API_RESPONSE",
   "BattlePauseEvent.PAUSE",
   "readRecentDiagnosticEvidence",
@@ -254,31 +254,43 @@ const recoveryText = requireText(recovery, [
   "detail?.reason ?? EVENT_UNKNOWN_API_BRIDGE",
   "unknownApiResponseRecoveryEvent",
   "unknownApiBridgeEvent",
-  "buildRejectedRecoveryState(detail, deps)",
+  "buildRecoveryState",
+  "buildRejectedRecoveryState",
+  "handleRejectedApiResponse",
+  "recordRecoveryEffectResult",
+  '"reloadResult"',
+  '"pauseResult"',
+  '"reloadError"',
+  '"pauseError"',
+  "deps.pause(state)",
+  "recoveryAction",
+  'reason: "battleApiResponseRepeated"',
+  "detail: state",
+  "deps.reload(state)",
+  "repeatCount >= REPEAT_PAUSE_THRESHOLD",
+]);
+const recoveryStateText = requireText(recoveryState, [
+  "DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
+  "API_RECOVERY_SESSION_KEY",
+  "fallbackRecoveryStates",
+  "fallbackRecoveryStates.get(deps.sessionStorage)",
+  "fallbackRecoveryStates.set(deps.sessionStorage",
+  "fallbackRecoveryStates.delete(deps.sessionStorage)",
+  "apiFailureKey",
+  "buildRecoveryState",
+  "buildRejectedRecoveryState",
   "readRecoveryDiagnosticEvidence",
   "diagnosticEvidenceReadError",
-  "handleRejectedApiResponse",
   "diagnosticEvidenceWithoutApiRecovery",
   "storageWriteOk",
   "storageWriteError",
   "battle API recovery state write failed",
   "recordRecoveryEffectResult",
   "battle API recovery effect failed",
-  'state[resultName] = Boolean(result)',
+  "state[resultName] = Boolean(result)",
   "state[errorName] = error?.message || String(error)",
-  '"reloadResult"',
-  '"pauseResult"',
-  '"reloadError"',
-  '"pauseError"',
   "world: detail?.world",
   "parseError: detail?.parseError",
-  "deps.pause(state)",
-  "diagnosticEvidence",
-  "recoveryAction",
-  'reason: "battleApiResponseRepeated"',
-  "detail: state",
-  "deps.reload(state)",
-  "repeatCount >= REPEAT_PAUSE_THRESHOLD",
 ]);
 requireText(recoveryTest, [
   "installs one page bridge that routes rejected responses through the recovery entry",
@@ -331,6 +343,7 @@ requireText(recoveryRejectionTest, [
 ]);
 requireText(recoveryPersistenceTest, [
   "continues reload recovery when recovery state persistence fails",
+  "pauses repeated same-cause recovery through memory fallback when persistence fails",
   "rejects unknown recovery events without throwing when persistence fails",
   "storageWriteOk: false",
   'storageWriteError: "quota"',
@@ -420,13 +433,20 @@ if (
     `${apiCallScript.replaceAll("\\", "/")} must bind native process_action callbacks to a battle_continue-capable target and route fallback reloads through the navigation bridge`
   );
 }
-if (/document\.location\s*(?:\+=|=)/.test(ownerText + apiCallScriptText + read(ownerTest) + read(runtimeTest))) {
+if (
+  /document\.location\s*(?:\+=|=)/.test(
+    ownerText + apiCallScriptText + read(ownerTest) + read(runtimeTest)
+  )
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must not use document.location fallback reloads`);
 }
 if (/from\s+["']\.\.\/env\.js["']|isIsekai|ISEKAI_URL|BATTLE_API_BASE_URL/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must consume typed battle API world context`);
 }
-if (!ownerText.includes("worldContext.apiJsonUrl") || !apiCallScriptText.includes("typeof MAIN_URL")) {
+if (
+  !ownerText.includes("worldContext.apiJsonUrl") ||
+  !apiCallScriptText.includes("typeof MAIN_URL")
+) {
   violations.push(`${owner.replaceAll("\\", "/")} must use typed API JSON URL from world context`);
 }
 if (!responseScriptText.includes("world: worldContext")) {
@@ -435,8 +455,14 @@ if (!responseScriptText.includes("world: worldContext")) {
 if (!ownerText.includes("deps.installApiResponseRecovery()")) {
   violations.push(`${owner.replaceAll("\\", "/")} must install API recovery before scripts`);
 }
-if (!ownerText.includes("if (!deps.installApiResponseRecovery()) return rejectApiRecoveryBridgeInstallFailed(deps)")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must stop API script install when recovery bridge install fails`);
+if (
+  !ownerText.includes(
+    "if (!deps.installApiResponseRecovery()) return rejectApiRecoveryBridgeInstallFailed(deps)"
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must stop API script install when recovery bridge install fails`
+  );
 }
 if (
   /NavigationReloadReason|BattlePauseEvent|runNavigationAutomation|runBattlePauseAutomation/.test(
@@ -449,7 +475,9 @@ if (/b\.onreadystatechange\s*=\s*d\b/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not install bare process_action callbacks`);
 }
 if (
-  /window\.location|location\.href|window\.location\.search/.test(ownerText + apiCallScriptText + responseScriptText)
+  /window\.location|location\.href|window\.location\.search/.test(
+    ownerText + apiCallScriptText + responseScriptText
+  )
 ) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not navigate directly from API response handling`
@@ -527,9 +555,8 @@ if (!/export\s+function\s+runBattleApiResponseRecovery/.test(recoveryText)) {
   violations.push(`${recovery.replaceAll("\\", "/")} must expose one recovery entry`);
 }
 if (
-  !recoveryText.includes(
-    "battleApiResponseRecoveryEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownApiRecoveryEvent(event, deps)"
-  )
+  !recoveryText.includes("battleApiResponseRecoveryEventHandlers[event?.type]?.(event, deps)") ||
+  !recoveryText.includes("rejectUnknownApiRecoveryEvent(event, deps)")
 ) {
   violations.push(
     `${recovery.replaceAll("\\", "/")} must record recovery evidence for unknown events`
@@ -553,8 +580,12 @@ if (!recoveryText.includes("deps.pause(state)") || !recoveryText.includes("deps.
   );
 }
 if (
-  !recoveryText.includes('recordRecoveryEffectResult(deps, state, "pauseResult", () => deps.pause(state), "pauseError")') ||
-  !recoveryText.includes('recordRecoveryEffectResult(deps, state, "reloadResult", () => deps.reload(state), "reloadError")')
+  !recoveryText.includes(
+    'recordRecoveryEffectResult(deps, state, "pauseResult", () => deps.pause(state), "pauseError")'
+  ) ||
+  !recoveryText.includes(
+    'recordRecoveryEffectResult(deps, state, "reloadResult", () => deps.reload(state), "reloadError")'
+  )
 ) {
   violations.push(
     `${recovery.replaceAll("\\", "/")} must record API recovery effect results and exceptions after pause/reload attempts`
@@ -575,9 +606,9 @@ if (!recoveryText.includes("state.recoveryAction = RECOVERY_ACTION_PAUSE")) {
     `${recovery.replaceAll("\\", "/")} repeated API pause must carry recovery action state`
   );
 }
-if (!recoveryText.includes("world: detail?.world")) {
+if (!recoveryStateText.includes("world: detail?.world")) {
   violations.push(
-    `${recovery.replaceAll("\\", "/")} repeat key must include battle world identity`
+    `${recoveryState.replaceAll("\\", "/")} repeat key must include battle world identity`
   );
 }
 if (/window\.location|location\.href|window\.location\.search/.test(recoveryText)) {
