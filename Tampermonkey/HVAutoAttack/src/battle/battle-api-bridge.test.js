@@ -98,7 +98,7 @@ describe("runBattleApiBridgeAutomation", () => {
 
     const script = deps.scripts[0].textContent;
     expect(script.indexOf('clickActionEventNode("start", "eventStart")')).toBeLessThan(
-      script.indexOf("b.send(JSON.stringify(a))")
+      script.indexOf('return sendApiRequest("send")')
     );
     expect(script.indexOf('clickActionEventNode("end", "eventEnd")')).toBeGreaterThan(
       script.indexOf("b.onload = function")

@@ -12,6 +12,9 @@ const apiBridge = path.normalize("src/battle/battle-api-bridge.js");
 const apiBridgeTest = path.normalize("src/battle/battle-api-bridge.test.js");
 const apiBridgeRejectionTest = path.normalize("src/battle/battle-api-bridge-rejection.test.js");
 const apiBridgeRuntimeTest = path.normalize("src/battle/battle-api-bridge-runtime.test.js");
+const apiBridgeTransportFailureTest = path.normalize(
+  "src/battle/battle-api-bridge-transport-failure.test.js"
+);
 const legacyReloader = path.normalize("src/battle/reloader.js");
 const legacyActionStart = path.normalize("src/battle/battle-action-start.js");
 const legacyActionEnd = path.normalize("src/battle/battle-action-end.js");
@@ -40,6 +43,7 @@ function checkFile(file) {
     relative !== apiBridgeTest &&
     relative !== apiBridgeRejectionTest &&
     relative !== apiBridgeRuntimeTest &&
+    relative !== apiBridgeTransportFailureTest &&
     /eventStart|eventEnd/.test(text)
   ) {
     violations.push(`${rel(file)} eventStart/eventEnd bridge nodes belong behind ${owner}`);
@@ -50,6 +54,7 @@ function checkFile(file) {
     relative !== apiBridgeTest &&
     relative !== apiBridgeRejectionTest &&
     relative !== apiBridgeRuntimeTest &&
+    relative !== apiBridgeTransportFailureTest &&
     /from\s+["']\.\/battle-api-bridge\.js["']/.test(text)
   ) {
     violations.push(`${rel(file)} must not import battle API bridge directly`);

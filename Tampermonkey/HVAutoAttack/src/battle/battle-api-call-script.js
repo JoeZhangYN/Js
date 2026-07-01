@@ -41,9 +41,28 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
         return false;
       }
     }
+    function recordApiTransportFailure(step, error) {
+      recordApiBridgeEventNode("transport", null, "rejected", {
+        reason: "apiTransportFailed",
+        step,
+        error: error && error.message ? error.message : String(error),
+      });
+    }
+    function runApiTransportStep(step, run) {
+      try {
+        run();
+        return true;
+      } catch (error) {
+        recordApiTransportFailure(step, error);
+        return false;
+      }
+    }
+    function sendApiRequest(step) {
+      return runApiTransportStep(step, () => b.send(JSON.stringify(a)));
+    }
     window.info = a;
-    b.open("POST", apiJsonUrl);
-    b.setRequestHeader("Content-Type", "application/json");
+    if (!runApiTransportStep("open", () => b.open("POST", apiJsonUrl))) return false;
+    if (!runApiTransportStep("setRequestHeader", () => b.setRequestHeader("Content-Type", "application/json"))) return false;
     b.withCredentials = true;
     b.onreadystatechange = function () {
       const callbackTarget =
@@ -70,14 +89,16 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
     if (!clickActionEventNode("start", "__HVAA_ACTION_START_EVENT_NODE_ID__")) return false;
     if (a.mode === "magic" && a.skill >= 200) {
       if (delay <= 0) {
-        b.send(JSON.stringify(a));
+        return sendApiRequest("send");
       } else {
-        setTimeout(() => b.send(JSON.stringify(a)), (delay * (Math.random() * 50 + 50)) / 100);
+        setTimeout(() => sendApiRequest("sendDelayed"), (delay * (Math.random() * 50 + 50)) / 100);
+        return true;
       }
     } else if (delay2 <= 0) {
-      b.send(JSON.stringify(a));
+      return sendApiRequest("send");
     } else {
-      setTimeout(() => b.send(JSON.stringify(a)), (delay2 * (Math.random() * 50 + 50)) / 100);
+      setTimeout(() => sendApiRequest("sendDelayed"), (delay2 * (Math.random() * 50 + 50)) / 100);
+      return true;
     }
   }.toString()}`
     .replaceAll("__HVAA_MAIN_JSON_URL__", apiJsonUrl)

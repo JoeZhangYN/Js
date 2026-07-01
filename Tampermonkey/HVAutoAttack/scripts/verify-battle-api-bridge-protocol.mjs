@@ -6,6 +6,9 @@ const owner = path.normalize("src/battle/battle-api-bridge.js");
 const ownerTest = path.normalize("src/battle/battle-api-bridge.test.js");
 const ownerRejectionTest = path.normalize("src/battle/battle-api-bridge-rejection.test.js");
 const runtimeTest = path.normalize("src/battle/battle-api-bridge-runtime.test.js");
+const transportFailureTest = path.normalize(
+  "src/battle/battle-api-bridge-transport-failure.test.js"
+);
 const apiCallScript = path.normalize("src/battle/battle-api-call-script.js");
 const responseScript = path.normalize("src/battle/battle-api-response-script.js");
 const responseScriptTest = path.normalize("src/battle/battle-api-response-script.test.js");
@@ -86,7 +89,11 @@ const apiCallScriptText = requireText(apiCallScript, [
   "missingBattleContinue",
   "clickActionEventNode",
   "recordApiBridgeEventNode",
+  "recordApiTransportFailure",
+  "runApiTransportStep",
+  "sendApiRequest",
   "apiBridgeEvidenceKey",
+  "apiTransportFailed",
   "eventNodeMissing",
   "eventNodeClickFailed",
   "DiagnosticEvidenceKey.BATTLE_API_BRIDGE",
@@ -154,6 +161,13 @@ requireText(runtimeTest, [
   "missingBattleContinue",
   "window.MAIN_URL",
   "https://hentaiverse.org/isekai/json",
+]);
+requireText(transportFailureTest, [
+  "records transport open failures before clicking the start event",
+  "records transport send failures after the start event is clicked",
+  "apiTransportFailed",
+  "open failed",
+  "send failed",
 ]);
 const responseScriptText = requireText(responseScript, [
   "DiagnosticEvidenceKey",
