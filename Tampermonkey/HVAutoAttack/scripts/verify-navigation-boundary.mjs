@@ -172,6 +172,9 @@ for (const file of files) {
       if (!/\breason\b/.test(eventBody)) {
         violations.push(`src/${file.rel} reload navigation events must carry reason`);
       }
+      if (file.rel.startsWith("battle/") && !/\bdetail\b/.test(eventBody)) {
+        violations.push(`src/${file.rel} battle reload navigation events must carry detail evidence`);
+      }
     }
     const redirectEvents = source.matchAll(/type\s*:\s*NavigationEvent\.OPEN_URL/g);
     for (const match of redirectEvents) {
