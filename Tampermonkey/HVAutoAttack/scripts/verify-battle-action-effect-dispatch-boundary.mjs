@@ -158,6 +158,7 @@ for (const required of [
   "ACTION_EFFECT_EVIDENCE_KEY",
   "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
   "summarizeResult",
+  "result.plan?.type ?? result.plan?.kind",
   "acted: Boolean(event.acted)",
 ]) {
   if (!evidenceText.includes(required)) violations.push(`${rel(evidence)} must own ${required}`);
@@ -169,6 +170,8 @@ if (!fs.existsSync(path.join(root, evidenceTest))) {
   for (const required of [
     "records acted action effect evidence for diagnostics",
     "records not-acted effect evidence so empty turns are diagnosable",
+    "records real plan type for plan action results",
+    "keeps legacy plan kind fallback for older evidence producers",
     "rejects unknown evidence events",
     "HVAA:lastBattleActionEffect",
   ]) {

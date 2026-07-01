@@ -616,6 +616,7 @@ function checkTurnEntry() {
     "ACTION_DECISION_EVIDENCE_KEY",
     "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
     "summarizeResult",
+    "result.plan?.type ?? result.plan?.kind",
     "acted: Boolean(step.acted)",
     "[HVAA] battle action decision",
   ]) {
@@ -628,6 +629,7 @@ function checkTurnEntry() {
     : "";
   for (const required of [
     "records decision trace with acted and not-acted steps",
+    "keeps legacy plan kind fallback for older decision evidence",
     "HVAA:lastBattleActionDecision",
     "rejects unknown decision evidence events",
   ]) {

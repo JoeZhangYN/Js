@@ -49,6 +49,37 @@ describe("runBattleActionEffectEvidence", () => {
     });
   });
 
+  it("records real plan type for plan action results", () => {
+    runBattleActionEffectEvidence(
+      {
+        type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+        result: { kind: "attack-plan", plan: { type: "focus" } },
+        acted: false,
+      },
+      { sessionStorage: window.sessionStorage, debug: vi.fn() }
+    );
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
+      result: { kind: "attack-plan", planKind: "focus" },
+      acted: false,
+    });
+  });
+
+  it("keeps legacy plan kind fallback for older evidence producers", () => {
+    runBattleActionEffectEvidence(
+      {
+        type: BattleActionEffectEvidenceEvent.RECORD_APPLIED,
+        result: { kind: "attack-plan", plan: { kind: "target" } },
+        acted: true,
+      },
+      { sessionStorage: window.sessionStorage, debug: vi.fn() }
+    );
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
+      result: { kind: "attack-plan", planKind: "target" },
+    });
+  });
+
   it("rejects unknown evidence events", () => {
     expect(runBattleActionEffectEvidence({ type: "unknown" })).toBe(false);
   });
