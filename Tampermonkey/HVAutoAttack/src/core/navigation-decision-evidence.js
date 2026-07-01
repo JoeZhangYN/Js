@@ -11,8 +11,15 @@ export function recordNavigationDecision(decision, event, detail) {
     at: new Date().toISOString(),
   };
   try {
-    sessionStorage.setItem(NAVIGATION_DECISION_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+    sessionStorage.setItem(
+      NAVIGATION_DECISION_KEY,
+      JSON.stringify({ ...evidence, storageWriteOk: true })
+    );
+    evidence.storageWriteOk = true;
+  } catch (error) {
+    evidence.storageWriteOk = false;
+    evidence.storageWriteError = error?.message || String(error);
+    console.warn("[HVAA] navigation decision", evidence);
     return false;
   }
   console.warn("[HVAA] navigation decision", evidence);

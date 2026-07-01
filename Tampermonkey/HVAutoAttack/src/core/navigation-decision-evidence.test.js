@@ -123,4 +123,24 @@ describe("navigation decision evidence", () => {
       detail: { cause: "unknownNavigationEvent" },
     });
   });
+
+  it("warns with structured evidence when decision storage is unavailable", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    vi.spyOn(window.sessionStorage, "setItem").mockImplementation(() => {
+      throw new Error("write blocked");
+    });
+
+    expect(runNavigationAutomation({ type: "unknown" })).toBe(false);
+
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA] navigation decision",
+      expect.objectContaining({
+        decision: "rejected",
+        eventType: "unknown",
+        storageWriteOk: false,
+        storageWriteError: "write blocked",
+        detail: { cause: "unknownNavigationEvent" },
+      })
+    );
+  });
 });

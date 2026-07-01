@@ -173,6 +173,8 @@ if (!owner) {
       "recordNavigationDecision",
       "DiagnosticEvidenceKey.NAVIGATION_DECISION",
       "[HVAA] navigation decision",
+      "storageWriteOk",
+      "storageWriteError",
     ]) {
       if (!navigationDecisionText.includes(required)) {
         violations.push(`navigation decision evidence must own ${required}`);
@@ -188,6 +190,25 @@ if (!owner) {
     ]) {
       if (!source.includes(required)) {
         violations.push(`navigation entry must record decision evidence ${required}`);
+      }
+    }
+  }
+  const navigationDecisionTestSource = files.find(
+    (file) => file.rel === "core/navigation-decision-evidence.test.js"
+  );
+  if (!navigationDecisionTestSource) {
+    violations.push("core/navigation-decision-evidence.test.js must cover navigation decisions");
+  } else {
+    const navigationDecisionTestText = stripComments(
+      readFileSync(navigationDecisionTestSource.abs, "utf8")
+    );
+    for (const required of [
+      "warns with structured evidence when decision storage is unavailable",
+      "storageWriteOk: false",
+      'storageWriteError: "write blocked"',
+    ]) {
+      if (!navigationDecisionTestText.includes(required)) {
+        violations.push(`navigation decision test must cover ${required}`);
       }
     }
   }
