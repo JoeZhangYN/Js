@@ -30,6 +30,7 @@ describe("runCriticalBuffPauseExecution", () => {
 
   it("rejects unknown critical pause execution events", () => {
     expect(runCriticalBuffPauseExecution({ type: "unknown" })).toBe(false);
+    expect(runCriticalBuffPauseExecution(null)).toBe(false);
 
     expect(console.warn).not.toHaveBeenCalled();
     expect(document.title).toBe("");

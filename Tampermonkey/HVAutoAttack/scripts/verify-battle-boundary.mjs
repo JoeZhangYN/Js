@@ -2338,10 +2338,16 @@ function checkCriticalBuffEntry() {
   if (/event\.type\s*===/.test(executionEntryBody)) {
     violations.push(`${rel(executeCriticalPauseFile)} entry must dispatch by handler table`);
   }
+  if (!executionText.includes("criticalBuffPauseExecutionEventHandlers[event?.type]")) {
+    violations.push(`${rel(executeCriticalPauseFile)} must reject null critical pause events as not acted`);
+  }
   if (fs.existsSync(executeCriticalPauseTestFile)) {
     const executionTestText = fs.readFileSync(executeCriticalPauseTestFile, "utf8");
     if (!executionTestText.includes("rejects unknown critical pause execution events")) {
       violations.push(`${rel(executeCriticalPauseTestFile)} must cover unknown critical pause events`);
+    }
+    if (!executionTestText.includes("runCriticalBuffPauseExecution(null)")) {
+      violations.push(`${rel(executeCriticalPauseTestFile)} must cover null critical pause events`);
     }
   }
   if (!fs.readFileSync(dispatchFile, "utf8").includes("runCriticalBuffPauseExecution")) {

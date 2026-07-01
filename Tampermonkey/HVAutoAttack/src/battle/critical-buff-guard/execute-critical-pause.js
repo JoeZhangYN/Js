@@ -29,5 +29,5 @@ function executeCriticalPause(plan) {
 }
 
 export function runCriticalBuffPauseExecution(event = { type: EVENT_APPLY_PLAN }) {
-  return criticalBuffPauseExecutionEventHandlers[event.type]?.(event) ?? false;
+  return criticalBuffPauseExecutionEventHandlers[event?.type]?.(event) ?? false;
 }
