@@ -88,6 +88,32 @@ describe("runBattleSkillCommand", () => {
     });
   });
 
+  it("keeps clicked skills acted when the after-click hook fails", () => {
+    const skill = { click: vi.fn() };
+    mocks.isOn.mockReturnValue(true);
+    mocks.gE.mockReturnValue(skill);
+
+    expect(
+      runBattleSkillCommand({
+        type: BattleSkillCommandEvent.CLICK_READY,
+        skillId: "412",
+        afterClick: () => {
+          throw new Error("hook failed");
+        },
+      })
+    ).toBe(true);
+
+    expect(skill.click).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "skill.clickReady",
+      result: "accepted",
+      reason: "clicked",
+      acted: true,
+      failureReason: null,
+      detail: { skillId: "412", afterClickError: "hook failed" },
+    });
+  });
+
   it("records unknown skill command rejections", () => {
     expect(runBattleSkillCommand({ type: "unknown" })).toBe(false);
 

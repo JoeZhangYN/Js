@@ -79,6 +79,31 @@ describe("runBattleItemCommand", () => {
     });
   });
 
+  it("records before-click hook failures as not acted before clicking the item", () => {
+    const item = { click: vi.fn() };
+    mocks.gE.mockReturnValue(item);
+
+    expect(
+      runBattleItemCommand({
+        type: BattleItemCommandEvent.CLICK_ITEM,
+        itemId: 12101,
+        beforeClick: () => {
+          throw new Error("hook failed");
+        },
+      })
+    ).toBe(false);
+
+    expect(item.click).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "item.clickItem",
+      result: "rejected",
+      reason: "beforeClickFailed",
+      acted: false,
+      failureReason: "beforeClickFailed",
+      detail: { itemId: 12101, error: "hook failed" },
+    });
+  });
+
   it("does not run beforeClick when the item is missing", () => {
     const beforeClick = vi.fn();
     mocks.gE.mockReturnValue(null);

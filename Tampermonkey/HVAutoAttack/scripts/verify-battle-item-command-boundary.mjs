@@ -73,6 +73,7 @@ requireText(owner, [
   "clickBattleCommandElement",
   "clickResult.reason",
   "clickResult.error",
+  "beforeClickFailed",
   "runBattleCommandEvidence",
   "gemMissing",
   "itemMissing",
@@ -85,6 +86,8 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
 }
 requireText(ownerTest, [
   "records item click failures as not acted",
+  "records before-click hook failures as not acted before clicking the item",
+  "beforeClickFailed",
   "clickFailed",
   "records missing item command events as not acted",
   "eventType: null",

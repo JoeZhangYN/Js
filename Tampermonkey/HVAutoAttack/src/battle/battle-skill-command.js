@@ -34,7 +34,15 @@ function clickReady(skillId, afterClick) {
     recordCommandResult("rejected", clickResult.reason, { skillId, error: clickResult.error });
     return false;
   }
-  afterClick?.();
+  try {
+    afterClick?.();
+  } catch (error) {
+    recordCommandResult("accepted", "clicked", {
+      skillId,
+      afterClickError: error?.message || String(error),
+    });
+    return true;
+  }
   recordCommandResult("accepted", "clicked", { skillId });
   return true;
 }

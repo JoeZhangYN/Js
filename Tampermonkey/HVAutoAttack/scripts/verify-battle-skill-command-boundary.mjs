@@ -71,6 +71,7 @@ requireText(owner, [
   "clickBattleCommandElement",
   "clickResult.reason",
   "clickResult.error",
+  "afterClickError",
   "runBattleCommandEvidence",
   "skillNotReady",
   "skillElementMissing",
@@ -83,6 +84,8 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
 }
 requireText(ownerTest, [
   "records skill click failures as not acted",
+  "keeps clicked skills acted when the after-click hook fails",
+  "afterClickError",
   "clickFailed",
   "records missing skill command events as not acted",
   "eventType: null",

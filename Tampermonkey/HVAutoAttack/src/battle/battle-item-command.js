@@ -43,7 +43,15 @@ function clickItem(itemId, beforeClick) {
     recordCommandResult("item.clickItem", "rejected", "itemMissing", { itemId });
     return false;
   }
-  beforeClick?.();
+  try {
+    beforeClick?.();
+  } catch (error) {
+    recordCommandResult("item.clickItem", "rejected", "beforeClickFailed", {
+      itemId,
+      error: error?.message || String(error),
+    });
+    return false;
+  }
   const clickResult = clickBattleCommandElement(el);
   if (!clickResult.clicked) {
     recordCommandResult("item.clickItem", "rejected", clickResult.reason, {
