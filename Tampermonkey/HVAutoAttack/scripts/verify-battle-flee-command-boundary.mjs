@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src", "battle");
 const owner = path.normalize("src/battle/battle-flee-command.js");
 const ownerTest = path.normalize("src/battle/battle-flee-command.test.js");
+const readFailureTest = path.normalize("src/battle/battle-flee-command-read-failure.test.js");
 const snapshot = path.normalize("src/battle/snapshot.js");
 const violations = [];
 
@@ -62,6 +63,8 @@ requireText(owner, [
   "clickResult.reason",
   "clickResult.error",
   "CLICK_AND_RELOAD",
+  "readFleeElement",
+  "fleeElementReadFailed",
   "NavigationEvent.SCHEDULE_RELOAD",
   "scheduleFleeReload",
   "navigationResult: navigation.result",
@@ -97,6 +100,11 @@ requireText(ownerTest, [
   "records null Flee events as not acted without scheduling reload",
   "unknownFleeCommand",
   "eventType: null",
+]);
+requireText(readFailureTest, [
+  "records Flee button read failures as not acted without scheduling reload",
+  "fleeElementReadFailed",
+  "flee read exploded",
 ]);
 
 if (violations.length) {

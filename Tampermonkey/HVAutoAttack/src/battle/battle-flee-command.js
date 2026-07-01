@@ -17,7 +17,12 @@ export const BattleFleeCommandEvent = Object.freeze({
 });
 
 function clickFleeAndScheduleReload() {
-  const el = gE(FLEE_BUTTON_ID);
+  const flee = readFleeElement();
+  if (flee.error) {
+    recordCommandResult("rejected", "fleeElementReadFailed", { error: flee.error });
+    return false;
+  }
+  const el = flee.el;
   if (!el) {
     recordCommandResult("rejected", "fleeMissing");
     return false;
@@ -34,6 +39,14 @@ function clickFleeAndScheduleReload() {
     ...(navigation.error ? { navigationError: navigation.error } : {}),
   });
   return true;
+}
+
+function readFleeElement() {
+  try {
+    return { el: gE(FLEE_BUTTON_ID) };
+  } catch (error) {
+    return { el: null, error: error?.message || String(error) };
+  }
 }
 
 function scheduleFleeReload() {
