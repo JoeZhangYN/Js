@@ -2541,6 +2541,8 @@ function checkCriticalBuffEntry() {
     "runBattlePauseAutomation",
     "runBattlePauseEvidence",
     "document.title",
+    "const pauseResult = runBattlePauseAutomation",
+    "return Boolean(pauseResult)",
     "invalidCriticalBuffPausePlan",
     "unknownCriticalPauseExecutionEvent",
     "rejectUnknownCriticalPauseEvent",
@@ -2577,6 +2579,28 @@ function checkCriticalBuffEntry() {
     }
     if (!executionTestText.includes("rejects missing critical pause plans as not acted with evidence")) {
       violations.push(`${rel(executeCriticalPauseTestFile)} must cover invalid critical pause plans`);
+    }
+  }
+  const executeCriticalPauseResultTestFile = path.join(
+    root,
+    "src/battle/critical-buff-guard/execute-critical-pause-result.test.js"
+  );
+  if (!fs.existsSync(executeCriticalPauseResultTestFile)) {
+    violations.push(
+      "src/battle/critical-buff-guard/execute-critical-pause-result.test.js must cover critical pause acted result semantics"
+    );
+  } else {
+    const resultTestText = fs.readFileSync(executeCriticalPauseResultTestFile, "utf8");
+    for (const required of [
+      "returns not acted when the pause entry rejects the critical pause",
+      "runBattlePauseAutomation",
+      "toBe(false)",
+    ]) {
+      if (!resultTestText.includes(required)) {
+        violations.push(
+          `src/battle/critical-buff-guard/execute-critical-pause-result.test.js must cover ${required}`
+        );
+      }
     }
   }
   if (!fs.readFileSync(dispatchFile, "utf8").includes("runCriticalBuffPauseExecution")) {

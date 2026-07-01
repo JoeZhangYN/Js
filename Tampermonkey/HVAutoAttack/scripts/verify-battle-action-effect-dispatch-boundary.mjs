@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-action-effect-dispatch.js");
 const ownerTest = path.normalize("src/battle/battle-action-effect-dispatch.test.js");
+const pauseResultTest = path.normalize("src/battle/battle-action-effect-pause-result.test.js");
 const commandEvidenceTest = path.normalize(
   "src/battle/battle-action-effect-command-evidence.test.js"
 );
@@ -179,9 +180,42 @@ if (!fs.existsSync(path.join(root, commandEvidenceTest))) {
     }
   }
 }
-for (const forbidden of ["halt: executeHaltResult", "function executeHaltResult"]) {
+for (const forbidden of [
+  "halt: executeHaltResult",
+  "function executeHaltResult",
+  'runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" });\n  return true',
+]) {
   if (ownerText.includes(forbidden)) {
     violations.push(`${rel(owner)} must keep retired halt ActionResult out of dispatch`);
+  }
+}
+if (
+  !ownerText.includes(
+    'return !!runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" })'
+  )
+) {
+  violations.push(`${rel(owner)} pause effects must return the pause entry result`);
+}
+if (
+  !/function executeAlertPauseResult\(result\) \{[\s\S]*?return !!runBattlePauseAutomation\(\{[\s\S]*?reason: "alertAndPause"/.test(
+    ownerText
+  )
+) {
+  violations.push(`${rel(owner)} alert-and-pause effects must return the pause entry result`);
+}
+if (!fs.existsSync(path.join(root, pauseResultTest))) {
+  violations.push(`${rel(pauseResultTest)} must cover pause effect acted semantics`);
+} else {
+  const pauseResultTestText = read(pauseResultTest);
+  for (const required of [
+    "returns not acted when pause automation rejects a pause result",
+    "returns pause automation result for alert-and-pause effects",
+    "actionExecutorRejected",
+    "HVAA:lastBattleActionEffect",
+  ]) {
+    if (!pauseResultTestText.includes(required)) {
+      violations.push(`${rel(pauseResultTest)} must cover ${required}`);
+    }
   }
 }
 const coreTypesText = read(path.normalize("src/core/types.js"));

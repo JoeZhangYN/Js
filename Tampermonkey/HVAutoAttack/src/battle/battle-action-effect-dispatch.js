@@ -110,17 +110,15 @@ function executeFleeCommandResult() {
 
 function executeAlertPauseResult(result) {
   _alert(0, result.msg.l0, result.msg.l1, result.msg.l2);
-  runBattlePauseAutomation({
+  return !!runBattlePauseAutomation({
     type: BattlePauseEvent.PAUSE,
     reason: "alertAndPause",
     detail: { resultKind: result.kind, msg: result.msg },
   });
-  return true;
 }
 
 function executePauseResult() {
-  runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" });
-  return true;
+  return !!runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" });
 }
 
 function executeCriticalPauseResult(result) {
