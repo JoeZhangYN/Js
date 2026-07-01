@@ -2,6 +2,7 @@ import { cE, gE } from "../dom/query.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
+import { BattlePauseEvidenceEvent, runBattlePauseEvidence } from "./battle-pause-evidence.js";
 
 const EVENT_INSTALL = "install";
 const PAUSE_BUTTON_OPTION_KEY = "pauseButton";
@@ -18,7 +19,11 @@ const battlePauseControlsEventHandlers = Object.freeze({
 });
 
 function togglePause(deps) {
-  deps.runPauseToggle({ resume: deps.resume });
+  try {
+    deps.runPauseToggle({ resume: deps.resume });
+  } catch (error) {
+    deps.recordPauseControlFailure(error);
+  }
 }
 
 function installPauseButton(box, deps) {
@@ -64,6 +69,13 @@ export function runBattlePauseControlsAutomation(
     runPauseToggle: (toggleDeps) =>
       runBattlePauseAutomation({ type: BattlePauseEvent.TOGGLE }, toggleDeps),
     resume: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
+    recordPauseControlFailure: (error) =>
+      runBattlePauseEvidence({
+        type: BattlePauseEvidenceEvent.RECORD_STATE,
+        state: "rejected",
+        reason: "pauseControlToggleThrew",
+        detail: { error: error?.message || String(error) },
+      }),
   }
 ) {
   return battlePauseControlsEventHandlers[event?.type]?.(event, deps) ?? false;

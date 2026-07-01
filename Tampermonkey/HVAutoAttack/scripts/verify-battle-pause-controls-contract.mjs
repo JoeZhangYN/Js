@@ -30,12 +30,17 @@ const ownerText = requireText(owner, [
   "DEFAULT_PAUSE_HOTKEY_KEY",
   "OptionEvent.READ_FIELD",
   "BattlePauseEvent.TOGGLE",
+  "BattlePauseEvidenceEvent.RECORD_STATE",
+  "recordPauseControlFailure",
+  "pauseControlToggleThrew",
   "runBattleTurnAutomation",
 ]);
 requireText(ownerTest, [
   "pauseButton",
   "pauseHotkey",
   "pauseHotkeyKey",
+  "records button toggle failures without throwing from the click handler",
+  "records hotkey toggle failures without throwing from the key handler",
   "rejects unknown events without touching pause controls",
   "rejects null events without touching pause controls",
 ]);

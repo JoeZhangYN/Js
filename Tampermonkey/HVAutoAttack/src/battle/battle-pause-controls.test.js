@@ -26,6 +26,7 @@ function makeDeps(option) {
       readOptionField: vi.fn((key, fallback) => option[key] ?? fallback),
       runPauseToggle: vi.fn(),
       resume: vi.fn(),
+      recordPauseControlFailure: vi.fn(),
     },
   };
 }
@@ -50,6 +51,18 @@ describe("runBattlePauseControlsAutomation", () => {
     expect(deps.runPauseToggle).toHaveBeenCalledWith({ resume: deps.resume });
   });
 
+  it("records button toggle failures without throwing from the click handler", () => {
+    const { root, deps } = makeDeps({ pauseButton: true, pauseHotkey: false });
+    deps.runPauseToggle.mockImplementation(() => {
+      throw new Error("pause failed");
+    });
+    runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL }, deps);
+
+    expect(() => root.querySelector(".pauseChange").click()).not.toThrow();
+
+    expect(deps.recordPauseControlFailure).toHaveBeenCalledWith(expect.any(Error));
+  });
+
   it("installs pause hotkey without triggering while typing", () => {
     const { deps } = makeDeps({
       pauseButton: false,
@@ -63,6 +76,20 @@ describe("runBattlePauseControlsAutomation", () => {
     document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "p", bubbles: true }));
 
     expect(deps.runPauseToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("records hotkey toggle failures without throwing from the key handler", () => {
+    const { deps } = makeDeps({ pauseHotkey: true, pauseHotkeyKey: "p" });
+    deps.runPauseToggle.mockImplementation(() => {
+      throw new Error("pause failed");
+    });
+    runBattlePauseControlsAutomation({ type: BattlePauseControlsEvent.INSTALL }, deps);
+
+    expect(() =>
+      document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "p", bubbles: true }))
+    ).not.toThrow();
+
+    expect(deps.recordPauseControlFailure).toHaveBeenCalledWith(expect.any(Error));
   });
 
   it("reads pause control options through the option entry on the default path", () => {
