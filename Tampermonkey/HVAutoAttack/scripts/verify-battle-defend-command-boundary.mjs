@@ -72,9 +72,11 @@ if (!ownerText.includes("battleDefendCommandEventHandlers[event?.type]")) {
   violations.push(`${owner.replaceAll("\\", "/")} must reject null Defend events as not acted`);
 }
 if (ownerText.includes("attemptClick(")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must use battle command click evidence, not attemptClick`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must use battle command click evidence, not attemptClick`
+  );
 }
-requireText("src/battle/battle-action-effect-dispatch.js", [
+requireText("src/battle/battle-action-effect-execution.js", [
   "BattleDefendCommandEvent.CLICK",
   "runBattleDefendCommand",
 ]);

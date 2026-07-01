@@ -92,7 +92,7 @@ requireText(ownerTest, [
   "records missing item command events as not acted",
   "eventType: null",
 ]);
-requireText("src/battle/battle-action-effect-dispatch.js", [
+requireText("src/battle/battle-action-effect-execution.js", [
   "BattleItemCommandEvent.CLICK_ITEM",
   "runBattleItemCommand",
 ]);

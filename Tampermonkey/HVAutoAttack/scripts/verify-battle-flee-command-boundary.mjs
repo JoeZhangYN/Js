@@ -81,7 +81,7 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
 if (!ownerText.includes("battleFleeCommandEventHandlers[event?.type]")) {
   violations.push(`${owner.replaceAll("\\", "/")} must reject null Flee events without reload`);
 }
-requireText("src/battle/battle-action-effect-dispatch.js", [
+requireText("src/battle/battle-action-effect-execution.js", [
   "BattleFleeCommandEvent.CLICK_AND_RELOAD",
   "runBattleFleeCommand",
 ]);

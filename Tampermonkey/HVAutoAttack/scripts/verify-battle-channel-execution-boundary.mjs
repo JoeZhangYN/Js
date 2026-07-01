@@ -5,6 +5,7 @@ const root = process.cwd();
 const owner = path.normalize("src/battle/buff/execute-channel.js");
 const ownerTest = path.normalize("src/battle/buff/execute-channel.test.js");
 const actionEffect = path.normalize("src/battle/battle-action-effect-dispatch.js");
+const actionEffectExecution = path.normalize("src/battle/battle-action-effect-execution.js");
 const violations = [];
 
 function read(relative) {
@@ -17,6 +18,7 @@ function rel(relative) {
 
 const ownerText = read(owner);
 const actionEffectText = read(actionEffect);
+const actionEffectExecutionText = read(actionEffectExecution);
 
 for (const required of [
   "BattleChannelExecutionEvent",
@@ -46,8 +48,7 @@ if (
 }
 
 const entryBody =
-  ownerText.match(/export function runBattleChannelExecution\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
+  ownerText.match(/export function runBattleChannelExecution\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(ownerText)) {
   violations.push(`${rel(owner)} must route events through a frozen handler table`);
 }
@@ -99,13 +100,18 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
 }
 
 if (
-  !actionEffectText.includes("BattleChannelExecutionEvent.APPLY_PLAN") ||
-  !actionEffectText.includes("runBattleChannelExecution")
+  !actionEffectExecutionText.includes("BattleChannelExecutionEvent.APPLY_PLAN") ||
+  !actionEffectExecutionText.includes("runBattleChannelExecution")
 ) {
-  violations.push(`${rel(actionEffect)} must execute channel plans through the channel entry`);
+  violations.push(
+    `${rel(actionEffectExecution)} must execute channel plans through the channel entry`
+  );
 }
-if (/\bexecuteChannel\s*\(/.test(actionEffectText)) {
-  violations.push(`${rel(actionEffect)} must not call the retired executeChannel path`);
+if (
+  /\bexecuteChannel\s*\(/.test(actionEffectText) ||
+  /\bexecuteChannel\s*\(/.test(actionEffectExecutionText)
+) {
+  violations.push(`${rel(actionEffectExecution)} must not call the retired executeChannel path`);
 }
 
 for (const relative of ["src/battle", "src/core"]) {
@@ -116,7 +122,8 @@ for (const relative of ["src/battle", "src/core"]) {
     }
     const file = path.join(entry.parentPath, entry.name);
     const normalized = path.normalize(path.relative(root, file));
-    if (normalized === owner || normalized === actionEffect) continue;
+    if (normalized === owner || normalized === actionEffect || normalized === actionEffectExecution)
+      continue;
     const text = fs.readFileSync(file, "utf8");
     if (/from\s+["'][^"']*buff\/execute-channel\.js["']/.test(text)) {
       violations.push(

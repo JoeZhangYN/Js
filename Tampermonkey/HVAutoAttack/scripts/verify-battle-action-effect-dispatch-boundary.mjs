@@ -3,22 +3,23 @@ import path from "node:path";
 
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-action-effect-dispatch.js");
+const execution = path.normalize("src/battle/battle-action-effect-execution.js");
 const ownerTest = path.normalize("src/battle/battle-action-effect-dispatch.test.js");
-const exceptionTest = path.normalize(
-  "src/battle/battle-action-effect-dispatch-exception.test.js"
+const exceptionTest = path.normalize("src/battle/battle-action-effect-dispatch-exception.test.js");
+const evidenceFailureTest = path.normalize(
+  "src/battle/battle-action-effect-evidence-failure.test.js"
 );
 const pauseResultTest = path.normalize("src/battle/battle-action-effect-pause-result.test.js");
 const commandEvidenceTest = path.normalize(
   "src/battle/battle-action-effect-command-evidence.test.js"
 );
 const evidence = path.normalize("src/battle/battle-action-effect-evidence.js");
+const recording = path.normalize("src/battle/battle-action-effect-recording.js");
 const evidenceTest = path.normalize("src/battle/battle-action-effect-evidence.test.js");
 const evidenceExceptionTest = path.normalize(
   "src/battle/battle-action-effect-evidence-exception.test.js"
 );
-const planFailureTest = path.normalize(
-  "src/battle/battle-action-effect-plan-failure.test.js"
-);
+const planFailureTest = path.normalize("src/battle/battle-action-effect-plan-failure.test.js");
 const actionDecision = path.normalize("src/battle/battle-action-decision.js");
 const legacyOwner = path.normalize("src/battle/dispatch.js");
 const legacyOwnerTest = path.normalize("src/battle/dispatch.test.js");
@@ -40,7 +41,9 @@ if (
 }
 
 const ownerText = read(owner);
+const executionText = read(execution);
 const evidenceText = read(evidence);
+const recordingText = read(recording);
 const actionDecisionText = read(actionDecision);
 
 for (const required of [
@@ -48,6 +51,21 @@ for (const required of [
   "APPLY_ACTION_RESULT",
   "battleActionEffectDispatchEventHandlers",
   "runBattleActionEffectDispatch",
+  "executeActionResult",
+  "isKnownActionResultKind",
+  "recordActionEffectEvidence",
+  "readBattleCommandEvidence",
+  "readFreshCommandEvidence",
+  "commandEvidence: readFreshCommandEvidence(previousCommandEvidence)",
+  "rejectUnknownActionEffectEvent",
+  "unknownActionEffectDispatchEvent",
+  "knownResultKind: isKnownActionResultKind(result?.kind)",
+  "knownResultKind: false",
+]) {
+  if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
+}
+
+for (const required of [
   "ACTION_RESULT_EXECUTORS",
   "executeNoopResult",
   "BattleItemCommandEvent.CLICK_ITEM",
@@ -67,17 +85,9 @@ for (const required of [
   "runBattleItemExecution",
   "BattleChannelExecutionEvent.APPLY_PLAN",
   "runBattleChannelExecution",
-  "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
-  "runBattleActionEffectEvidence",
-  "readBattleCommandEvidence",
   "executeActionResult",
   "actionExecutorThrew",
-  "readFreshCommandEvidence",
-  "commandEvidence: readFreshCommandEvidence(previousCommandEvidence)",
-  "rejectUnknownActionEffectEvent",
-  "unknownActionEffectDispatchEvent",
-  "knownResultKind: Boolean(ACTION_RESULT_EXECUTORS[result?.kind])",
-  "knownResultKind: false",
+  "isKnownActionResultKind",
   "executeItemCommandResult",
   "executeSkillCommandResult",
   "executeDefendCommandResult",
@@ -91,12 +101,30 @@ for (const required of [
   "executeItemPlanResult",
   "executeChannelPlanResult",
 ]) {
-  if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
+  if (!executionText.includes(required)) violations.push(`${rel(execution)} must own ${required}`);
 }
 
-const applyBody = ownerText.match(/function applyActionResult\(result, snap\) \{[\s\S]*?\n\}/)?.[0] || "";
-if (/switch\s*\(\s*result\.kind\s*\)/.test(applyBody)) {
-  violations.push(`${rel(owner)} must dispatch ActionResult kinds through ACTION_RESULT_EXECUTORS`);
+for (const required of [
+  "BattleActionEffectEvidenceEvent.RECORD_APPLIED",
+  "runBattleActionEffectEvidence",
+  "actionEffectEvidenceWriteFailed",
+  "effect-evidence-event",
+  "recordActionEffectEvidenceFailure",
+]) {
+  if (!recordingText.includes(required)) {
+    violations.push(`${rel(recording)} must own action effect recording ${required}`);
+  }
+}
+
+const applyBody =
+  ownerText.match(/function applyActionResult\(result, snap\) \{[\s\S]*?\n\}/)?.[0] || "";
+const executeBody =
+  executionText.match(/export function executeActionResult\(result, snap\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (/switch\s*\(\s*result\.kind\s*\)/.test(executeBody)) {
+  violations.push(
+    `${rel(execution)} must dispatch ActionResult kinds through ACTION_RESULT_EXECUTORS`
+  );
 }
 for (const required of [
   "noop: executeNoopResult",
@@ -113,8 +141,8 @@ for (const required of [
   '"item-plan": executeItemPlanResult',
   '"channel-plan": executeChannelPlanResult',
 ]) {
-  if (!ownerText.includes(required)) {
-    violations.push(`${rel(owner)} must lock ActionResult executor ${required}`);
+  if (!executionText.includes(required)) {
+    violations.push(`${rel(execution)} must lock ActionResult executor ${required}`);
   }
 }
 for (const forbidden of [
@@ -134,7 +162,9 @@ for (const forbidden of [
   "runBattleChannelExecution",
 ]) {
   if (applyBody.includes(forbidden)) {
-    violations.push(`${rel(owner)} applyActionResult must route by result kind, not inline ${forbidden}`);
+    violations.push(
+      `${rel(owner)} applyActionResult must route by result kind, not inline ${forbidden}`
+    );
   }
 }
 
@@ -188,6 +218,22 @@ if (!fs.existsSync(path.join(root, exceptionTest))) {
     }
   }
 }
+if (!fs.existsSync(path.join(root, evidenceFailureTest))) {
+  violations.push(
+    `${rel(evidenceFailureTest)} must cover action effect evidence recording failures`
+  );
+} else {
+  const evidenceFailureTestText = read(evidenceFailureTest);
+  for (const required of [
+    "keeps acted effects acted when effect evidence recording fails once",
+    "does not throw when effect evidence recording keeps failing",
+    "actionEffectEvidenceWriteFailed",
+  ]) {
+    if (!evidenceFailureTestText.includes(required)) {
+      violations.push(`${rel(evidenceFailureTest)} must cover ${required}`);
+    }
+  }
+}
 if (!fs.existsSync(path.join(root, commandEvidenceTest))) {
   violations.push(`${rel(commandEvidenceTest)} must cover command failure evidence bridging`);
 } else {
@@ -208,23 +254,23 @@ for (const forbidden of [
   "function executeHaltResult",
   'runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" });\n  return true',
 ]) {
-  if (ownerText.includes(forbidden)) {
+  if (ownerText.includes(forbidden) || executionText.includes(forbidden)) {
     violations.push(`${rel(owner)} must keep retired halt ActionResult out of dispatch`);
   }
 }
 if (
-  !ownerText.includes(
+  !executionText.includes(
     'return !!runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" })'
   )
 ) {
-  violations.push(`${rel(owner)} pause effects must return the pause entry result`);
+  violations.push(`${rel(execution)} pause effects must return the pause entry result`);
 }
 if (
   !/function executeAlertPauseResult\(result\) \{[\s\S]*?return !!runBattlePauseAutomation\(\{[\s\S]*?reason: "alertAndPause"/.test(
-    ownerText
+    executionText
   )
 ) {
-  violations.push(`${rel(owner)} alert-and-pause effects must return the pause entry result`);
+  violations.push(`${rel(execution)} alert-and-pause effects must return the pause entry result`);
 }
 if (!fs.existsSync(path.join(root, pauseResultTest))) {
   violations.push(`${rel(pauseResultTest)} must cover pause effect acted semantics`);
@@ -349,6 +395,12 @@ for (const relative of ["src/battle", "src/core"]) {
     const text = fs.readFileSync(file, "utf8");
     if (/from\s+["'][^"']*battle-action-effect-dispatch\.js["']/.test(text)) {
       violations.push(`${rel(normalized)} must not bypass runBattleActionDecision`);
+    }
+    if (
+      normalized !== owner &&
+      /from\s+["'][^"']*battle-action-effect-execution\.js["']/.test(text)
+    ) {
+      violations.push(`${rel(normalized)} must not bypass runBattleActionEffectDispatch`);
     }
     if (/from\s+["'][^"']*dispatch\.js["']/.test(text)) {
       violations.push(`${rel(normalized)} must not import retired dispatch path`);

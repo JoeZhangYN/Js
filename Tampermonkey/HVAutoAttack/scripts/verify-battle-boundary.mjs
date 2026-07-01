@@ -94,6 +94,7 @@ const actionDecisionEvidenceTestFile = path.join(
   "src/battle/battle-action-decision-evidence.test.js"
 );
 const dispatchFile = path.join(root, "src/battle/battle-action-effect-dispatch.js");
+const actionEffectExecutionFile = path.join(root, "src/battle/battle-action-effect-execution.js");
 const legacyDispatchFile = path.join(root, "src/battle/dispatch.js");
 const legacyDispatchTestFile = path.join(root, "src/battle/dispatch.test.js");
 const attackActionSequenceFile = path.join(root, "src/battle/battle-action-attack-sequence.js");
@@ -895,6 +896,18 @@ function checkTurnEntry() {
     }
   }
   const actionEffectText = fs.readFileSync(dispatchFile, "utf8");
+  const actionEffectExecutionText = fs.readFileSync(actionEffectExecutionFile, "utf8");
+  for (const required of [
+    "executeActionResult",
+    "isKnownActionResultKind",
+    "recordActionEffectEvidence",
+    "rejectUnknownActionEffectEvent",
+    "unknownActionEffectDispatchEvent",
+  ]) {
+    if (!actionEffectText.includes(required)) {
+      violations.push(`${rel(dispatchFile)} must lock ActionResult dispatch ${required}`);
+    }
+  }
   for (const required of [
     "ACTION_RESULT_EXECUTORS",
     "noop: executeNoopResult",
@@ -910,23 +923,18 @@ function checkTurnEntry() {
     '"attack-plan": executeAttackPlanResult',
     '"item-plan": executeItemPlanResult',
     '"channel-plan": executeChannelPlanResult',
-    "rejectUnknownActionEffectEvent",
-    "unknownActionEffectDispatchEvent",
   ]) {
-    if (!actionEffectText.includes(required)) {
-      violations.push(`${rel(dispatchFile)} must lock ActionResult executor ${required}`);
+    if (!actionEffectExecutionText.includes(required)) {
+      violations.push(`${rel(actionEffectExecutionFile)} must lock ActionResult executor ${required}`);
     }
   }
   for (const forbidden of ["halt: executeHaltResult", "function executeHaltResult"]) {
-    if (actionEffectText.includes(forbidden)) {
+    if (actionEffectText.includes(forbidden) || actionEffectExecutionText.includes(forbidden)) {
       violations.push(`${rel(dispatchFile)} must keep retired halt ActionResult out of dispatch`);
     }
   }
-  const applyActionResultBody =
-    actionEffectText.match(/function applyActionResult\(result, snap\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
-  if (/switch\s*\(\s*result\.kind\s*\)/.test(applyActionResultBody)) {
-    violations.push(`${rel(dispatchFile)} must dispatch ActionResult through ACTION_RESULT_EXECUTORS`);
+  if (/switch\s*\(\s*result\.kind\s*\)/.test(actionEffectExecutionText)) {
+    violations.push(`${rel(actionEffectExecutionFile)} must dispatch ActionResult through ACTION_RESULT_EXECUTORS`);
   }
   if (fs.existsSync(actionSequenceFile)) {
     violations.push(
@@ -2713,8 +2721,8 @@ function checkCriticalBuffEntry() {
       }
     }
   }
-  if (!fs.readFileSync(dispatchFile, "utf8").includes("runCriticalBuffPauseExecution")) {
-    violations.push(`${rel(dispatchFile)} must execute critical pauses through execution entry`);
+  if (!fs.readFileSync(actionEffectExecutionFile, "utf8").includes("runCriticalBuffPauseExecution")) {
+    violations.push(`${rel(actionEffectExecutionFile)} must execute critical pauses through execution entry`);
   }
   const rulesText = readBattleActionRulesText();
   const criticalRule =

@@ -13,6 +13,7 @@ const mercifulSideEffectTest = path.normalize(
 const bookkeeping = path.normalize("src/battle/attack/physical-skill-bookkeeping.js");
 const bookkeepingTest = path.normalize("src/battle/attack/physical-skill-bookkeeping.test.js");
 const actionEffect = path.normalize("src/battle/battle-action-effect-dispatch.js");
+const actionEffectExecution = path.normalize("src/battle/battle-action-effect-execution.js");
 const violations = [];
 
 function read(relative) {
@@ -26,6 +27,7 @@ function rel(relative) {
 const ownerText = read(owner);
 const bookkeepingText = read(bookkeeping);
 const actionEffectText = read(actionEffect);
+const actionEffectExecutionText = read(actionEffectExecution);
 
 for (const required of [
   "BattleAttackExecutionEvent",
@@ -189,13 +191,18 @@ if (physicalPlanBody.includes("if (plan.mercifulTargetId != null) {\n    runBatt
 }
 
 if (
-  !actionEffectText.includes("BattleAttackExecutionEvent.APPLY_PLAN") ||
-  !actionEffectText.includes("runBattleAttackExecution")
+  !actionEffectExecutionText.includes("BattleAttackExecutionEvent.APPLY_PLAN") ||
+  !actionEffectExecutionText.includes("runBattleAttackExecution")
 ) {
-  violations.push(`${rel(actionEffect)} must execute attack plans through the attack entry`);
+  violations.push(
+    `${rel(actionEffectExecution)} must execute attack plans through the attack entry`
+  );
 }
-if (/\bexecuteAttack\s*\(/.test(actionEffectText)) {
-  violations.push(`${rel(actionEffect)} must not call the retired executeAttack path`);
+if (
+  /\bexecuteAttack\s*\(/.test(actionEffectText) ||
+  /\bexecuteAttack\s*\(/.test(actionEffectExecutionText)
+) {
+  violations.push(`${rel(actionEffectExecution)} must not call the retired executeAttack path`);
 }
 
 for (const relative of ["src/battle", "src/core"]) {
@@ -206,7 +213,8 @@ for (const relative of ["src/battle", "src/core"]) {
     }
     const file = path.join(entry.parentPath, entry.name);
     const normalized = path.normalize(path.relative(root, file));
-    if (normalized === owner || normalized === actionEffect) continue;
+    if (normalized === owner || normalized === actionEffect || normalized === actionEffectExecution)
+      continue;
     const text = fs.readFileSync(file, "utf8");
     if (/from\s+["'][^"']*attack\/execute-attack\.js["']/.test(text)) {
       violations.push(`${rel(normalized)} must not bypass action effect dispatch for attack plans`);

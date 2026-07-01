@@ -8,6 +8,7 @@ const autoTuneFailureTest = path.normalize("src/battle/item/execute-item-autotun
 const commandFailureTest = path.normalize("src/battle/item/execute-item-command-failure.test.js");
 const rejectionTest = path.normalize("src/battle/item/execute-item-rejection.test.js");
 const actionEffect = path.normalize("src/battle/battle-action-effect-dispatch.js");
+const actionEffectExecution = path.normalize("src/battle/battle-action-effect-execution.js");
 const violations = [];
 
 function read(relative) {
@@ -20,6 +21,7 @@ function rel(relative) {
 
 const ownerText = read(owner);
 const actionEffectText = read(actionEffect);
+const actionEffectExecutionText = read(actionEffectExecution);
 
 for (const required of [
   "BattleItemExecutionEvent",
@@ -52,9 +54,15 @@ for (const required of [
 }
 const recordAutoTuneBody =
   ownerText.match(/function recordAutoTunePotionUse\(\) \{[\s\S]*?\n\}/)?.[0] || "";
-for (const required of ["try {", "return { ok: true }", "return { ok: false, error: error?.message || String(error) }"]) {
+for (const required of [
+  "try {",
+  "return { ok: true }",
+  "return { ok: false, error: error?.message || String(error) }",
+]) {
   if (!recordAutoTuneBody.includes(required)) {
-    violations.push(`${rel(owner)} must keep auto-tune record failures from changing acted semantics`);
+    violations.push(
+      `${rel(owner)} must keep auto-tune record failures from changing acted semantics`
+    );
   }
 }
 
@@ -67,8 +75,7 @@ if (
 }
 
 const entryBody =
-  ownerText.match(/export function runBattleItemExecution\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
+  ownerText.match(/export function runBattleItemExecution\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(ownerText)) {
   violations.push(`${rel(owner)} must route events through a frozen handler table`);
 }
@@ -160,13 +167,16 @@ if (!fs.existsSync(path.join(root, rejectionTest))) {
 }
 
 if (
-  !actionEffectText.includes("BattleItemExecutionEvent.APPLY_PLAN") ||
-  !actionEffectText.includes("runBattleItemExecution")
+  !actionEffectExecutionText.includes("BattleItemExecutionEvent.APPLY_PLAN") ||
+  !actionEffectExecutionText.includes("runBattleItemExecution")
 ) {
-  violations.push(`${rel(actionEffect)} must execute item plans through the item entry`);
+  violations.push(`${rel(actionEffectExecution)} must execute item plans through the item entry`);
 }
-if (/\bexecuteItem\s*\(/.test(actionEffectText)) {
-  violations.push(`${rel(actionEffect)} must not call the retired executeItem path`);
+if (
+  /\bexecuteItem\s*\(/.test(actionEffectText) ||
+  /\bexecuteItem\s*\(/.test(actionEffectExecutionText)
+) {
+  violations.push(`${rel(actionEffectExecution)} must not call the retired executeItem path`);
 }
 
 for (const relative of ["src/battle", "src/core"]) {
@@ -177,7 +187,8 @@ for (const relative of ["src/battle", "src/core"]) {
     }
     const file = path.join(entry.parentPath, entry.name);
     const normalized = path.normalize(path.relative(root, file));
-    if (normalized === owner || normalized === actionEffect) continue;
+    if (normalized === owner || normalized === actionEffect || normalized === actionEffectExecution)
+      continue;
     const text = fs.readFileSync(file, "utf8");
     if (/from\s+["'][^"']*item\/execute-item\.js["']/.test(text)) {
       violations.push(`${rel(normalized)} must not bypass action effect dispatch for item plans`);
