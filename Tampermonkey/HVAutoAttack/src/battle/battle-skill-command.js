@@ -39,7 +39,7 @@ const battleSkillCommandEventHandlers = Object.freeze({
 });
 
 export function runBattleSkillCommand(event) {
-  const handler = battleSkillCommandEventHandlers[event.type];
+  const handler = battleSkillCommandEventHandlers[event?.type];
   if (!handler) {
     recordCommandResult("rejected", "unknownSkillCommand", { eventType: event?.type });
     return false;

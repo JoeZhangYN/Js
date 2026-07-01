@@ -90,4 +90,14 @@ describe("runBattleItemCommand", () => {
       detail: { eventType: "unknown" },
     });
   });
+
+  it("records missing item command events as not acted", () => {
+    expect(runBattleItemCommand()).toBe(false);
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "item.unknown",
+      result: "rejected",
+      reason: "unknownItemCommand",
+    });
+  });
 });

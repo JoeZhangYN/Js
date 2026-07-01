@@ -50,7 +50,7 @@ const battleItemCommandEventHandlers = Object.freeze({
 });
 
 export function runBattleItemCommand(event) {
-  const handler = battleItemCommandEventHandlers[event.type];
+  const handler = battleItemCommandEventHandlers[event?.type];
   if (!handler) {
     recordCommandResult("item.unknown", "rejected", "unknownItemCommand", {
       eventType: event?.type,

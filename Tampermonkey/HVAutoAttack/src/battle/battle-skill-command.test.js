@@ -71,4 +71,14 @@ describe("runBattleSkillCommand", () => {
       detail: { eventType: "unknown" },
     });
   });
+
+  it("records missing skill command events as not acted", () => {
+    expect(runBattleSkillCommand()).toBe(false);
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "skill.clickReady",
+      result: "rejected",
+      reason: "unknownSkillCommand",
+    });
+  });
 });

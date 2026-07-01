@@ -162,4 +162,14 @@ describe("runBattleTargetCommand", () => {
       detail: { eventType: "unknown" },
     });
   });
+
+  it("records missing target command events as not acted", () => {
+    expect(runBattleTargetCommand()).toBe(false);
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleCommand"))).toMatchObject({
+      command: "target.unknown",
+      result: "rejected",
+      reason: "unknownTargetCommand",
+    });
+  });
 });

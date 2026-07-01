@@ -72,11 +72,13 @@ requireText(owner, [
   "skillNotReady",
   "skillElementMissing",
   "unknownSkillCommand",
+  "event?.type",
 ]);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
+requireText(ownerTest, ["records missing skill command events as not acted"]);
 requireText("src/battle/battle-target-command.js", [
   "BattleSkillCommandEvent.CLICK_READY",
   "runBattleSkillCommand",

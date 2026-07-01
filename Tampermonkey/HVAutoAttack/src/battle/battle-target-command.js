@@ -105,7 +105,7 @@ const battleTargetCommandEventHandlers = Object.freeze({
 });
 
 export function runBattleTargetCommand(event) {
-  const handler = battleTargetCommandEventHandlers[event.type];
+  const handler = battleTargetCommandEventHandlers[event?.type];
   if (!handler) {
     recordCommandResult("target.unknown", "rejected", "unknownTargetCommand", {
       eventType: event?.type,
