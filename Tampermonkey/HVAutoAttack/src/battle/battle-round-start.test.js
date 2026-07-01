@@ -113,6 +113,18 @@ describe("runBattleRoundStartAutomation", () => {
     expect(mocks.runBattleRoundLifecycle).toHaveBeenCalledWith({ type: "roundReady" });
   });
 
+  it("routes battle hash cleanup reload with the original hash evidence", () => {
+    window.location.hash = "#battleAction";
+
+    expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(true);
+
+    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
+      type: "reloadNow",
+      reason: "battleHashCleanup",
+      detail: { source: "battleRoundStart", hash: "#battleAction" },
+    });
+  });
+
   it("stops round preparation when stamina gate pauses the round", () => {
     mocks.runBattleStaminaAutomation.mockReturnValue({ lostStamina: 99, paused: true });
 

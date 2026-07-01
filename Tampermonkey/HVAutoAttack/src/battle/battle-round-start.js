@@ -30,13 +30,18 @@ function recordRoundStartContext(initializingText) {
   return context;
 }
 
+function cleanupBattleHash() {
+  if (window.location.hash === "") return;
+  runNavigationAutomation({
+    type: NavigationEvent.RELOAD_NOW,
+    reason: NavigationReloadReason.BATTLE_HASH_CLEANUP,
+    detail: { source: "battleRoundStart", hash: window.location.hash },
+  });
+}
+
 function startRound() {
   runBattleRoundLifecycle({ type: BattleRoundLifecycleEvent.ROUND_STARTED });
-  if (window.location.hash !== "")
-    runNavigationAutomation({
-      type: NavigationEvent.RELOAD_NOW,
-      reason: NavigationReloadReason.BATTLE_HASH_CLEANUP,
-    });
+  cleanupBattleHash();
   runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS });
   const roundStartLog = runBattleRoundStartLog({ type: BattleRoundStartLogEvent.READ_CURRENT });
   const { initializingText } = roundStartLog;

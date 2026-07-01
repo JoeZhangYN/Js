@@ -34,6 +34,9 @@ const ownerText = requireText(owner, [
   "BattleRoundEvent.RECORD_START_COUNT",
   "MonsterStatusEvent.PREPARE_ROUND_START",
   "EncounterEvent.RANDOM_ENCOUNTER_STARTED",
+  "cleanupBattleHash",
+  'source: "battleRoundStart"',
+  "hash: window.location.hash",
 ]);
 if (fs.existsSync(path.join(root, "src/battle/new-round.js"))) {
   violations.push("src/battle/new-round.js legacy round start path must stay deleted");
@@ -147,6 +150,9 @@ if (
 }
 if (!ownerTestText.includes("stops round preparation when stamina gate pauses the round")) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must lock stamina pause round-start gate`);
+}
+if (!ownerTestText.includes("routes battle hash cleanup reload with the original hash evidence")) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover battle hash cleanup detail`);
 }
 
 if (violations.length) {
