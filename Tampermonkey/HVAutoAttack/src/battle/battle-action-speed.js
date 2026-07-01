@@ -54,7 +54,7 @@ export function runBattleActionSpeedAutomation(
     write: (key, value) => g(key, value),
   }
 ) {
-  return battleActionSpeedEventHandlers[event.type]?.(event, deps);
+  return battleActionSpeedEventHandlers[event?.type]?.(event, deps);
 }
 
 const battleActionSpeedEventHandlers = Object.freeze({

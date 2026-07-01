@@ -68,4 +68,14 @@ describe("runBattleActionSpeedAutomation", () => {
     expect(deps.read).not.toHaveBeenCalled();
     expect(deps.write).not.toHaveBeenCalled();
   });
+
+  it("rejects null events without reading or writing runtime state", () => {
+    const { deps } = makeDeps();
+
+    expect(runBattleActionSpeedAutomation(null, deps)).toBeUndefined();
+
+    expect(deps.now).not.toHaveBeenCalled();
+    expect(deps.read).not.toHaveBeenCalled();
+    expect(deps.write).not.toHaveBeenCalled();
+  });
 });

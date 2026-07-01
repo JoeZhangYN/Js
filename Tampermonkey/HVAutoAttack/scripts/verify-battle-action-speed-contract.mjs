@@ -61,6 +61,7 @@ requireText(ownerTest, [
   "timeNow",
   "normalizes invalid action speed runtime values",
   "rejects unknown events",
+  "rejects null events without reading or writing runtime state",
 ]);
 
 if (
@@ -72,6 +73,9 @@ if (
 }
 if (!/const battleActionSpeedEventHandlers\s*=\s*Object\.freeze\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must route events through one table`);
+}
+if (!ownerText.includes("battleActionSpeedEventHandlers[event?.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must reject null events without touching runtime state`);
 }
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not route events through an if ladder`);
