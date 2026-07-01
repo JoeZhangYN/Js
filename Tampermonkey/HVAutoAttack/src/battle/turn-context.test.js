@@ -134,6 +134,7 @@ describe("runBattleTurnContext", () => {
 
   it("rejects unknown turn context events without side effects", () => {
     expect(runBattleTurnContext({ type: "unknown" })).toBeUndefined();
+    expect(runBattleTurnContext(null)).toBeUndefined();
     expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
     expect(mocks.runBattleSnapshot).not.toHaveBeenCalled();
   });

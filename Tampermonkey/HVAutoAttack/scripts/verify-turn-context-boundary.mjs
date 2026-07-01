@@ -138,6 +138,9 @@ function checkEntry() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${entry.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
+  if (!text.includes("battleTurnContextEventHandlers[event?.type]")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must reject null turn context events`);
+  }
   if (!/return\s+\{\s*snap,\s*actionOptions\s*\}/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must return one action decision context`);
   }
@@ -174,6 +177,7 @@ function checkEntryTest() {
     "BattleTurnContextEvent",
     "runBattleTurnContext",
     "rejects unknown turn context events",
+    "runBattleTurnContext(null)",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entryTest.replaceAll("\\", "/")} must cover ${required}`);

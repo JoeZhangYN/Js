@@ -59,5 +59,5 @@ const battleTurnContextEventHandlers = Object.freeze({
 });
 
 export function runBattleTurnContext(event = { type: EVENT_PREPARE }) {
-  return battleTurnContextEventHandlers[event.type]?.(event);
+  return battleTurnContextEventHandlers[event?.type]?.(event);
 }
