@@ -10,6 +10,7 @@ const commandFailureTest = path.normalize(
 const mercifulSideEffectTest = path.normalize(
   "src/battle/attack/execute-attack-merciful-side-effect.test.js"
 );
+const mercifulFallback = path.normalize("src/battle/attack/execute-merciful-fallback.js");
 const bookkeeping = path.normalize("src/battle/attack/physical-skill-bookkeeping.js");
 const bookkeepingTest = path.normalize("src/battle/attack/physical-skill-bookkeeping.test.js");
 const actionEffect = path.normalize("src/battle/battle-action-effect-dispatch.js");
@@ -25,6 +26,7 @@ function rel(relative) {
 }
 
 const ownerText = read(owner);
+const mercifulFallbackText = read(mercifulFallback);
 const bookkeepingText = read(bookkeeping);
 const actionEffectText = read(actionEffect);
 const actionEffectExecutionText = read(actionEffectExecution);
@@ -50,6 +52,7 @@ for (const required of [
   "observedBigSkillBosses",
   "return !!runBattleTargetCommand",
   "recordAttackExecutionFailure",
+  "clickMercifulFallbackTarget",
   "attackSubCommandThrew",
   "recordActionEffectEvidence",
   "unknownAttackExecutionEvent",
@@ -163,6 +166,17 @@ if (!fs.existsSync(path.join(root, mercifulSideEffectTest))) {
       `${rel(mercifulSideEffectTest)} must cover failed merciful physical plans without side effects`
     );
   }
+  for (const required of [
+    "keeps acted merciful physical plans acted when the fallback target command throws",
+    "keeps acted merciful physical plans acted when the fallback target command rejects",
+    "mercifulFallbackTargetThrew",
+    "mercifulFallbackTargetRejected",
+    "acted: true",
+  ]) {
+    if (!mercifulSideEffectTestText.includes(required)) {
+      violations.push(`${rel(mercifulSideEffectTest)} must cover ${required}`);
+    }
+  }
 }
 if (!fs.existsSync(path.join(root, commandFailureTest))) {
   violations.push(`${rel(commandFailureTest)} must cover attack execution sub-command exceptions`);
@@ -187,6 +201,29 @@ if (!physicalPlanBody.includes("if (acted && plan.mercifulTargetId != null)")) {
 }
 if (physicalPlanBody.includes("if (plan.mercifulTargetId != null) {\n    runBattleTargetCommand")) {
   violations.push(`${rel(owner)} must not click default target after a failed merciful command`);
+}
+if (!physicalPlanBody.includes("clickMercifulFallbackTarget(plan)")) {
+  violations.push(`${rel(owner)} merciful fallback click must be isolated from acted result`);
+}
+const mercifulFallbackBody =
+  mercifulFallbackText.match(/export function clickMercifulFallbackTarget\(plan\) \{[\s\S]*?\n\}/)
+    ?.[0] || "";
+if (
+  !mercifulFallbackBody.includes("try {") ||
+  !mercifulFallbackBody.includes("recordMercifulFallbackTargetFailure") ||
+  !mercifulFallbackBody.includes("catch (error)")
+) {
+  violations.push(`${rel(mercifulFallback)} merciful fallback click must record rejected/thrown effects`);
+}
+for (const required of [
+  "recordMercifulFallbackTargetFailure",
+  "mercifulFallbackTargetThrew",
+  "mercifulFallbackTargetRejected",
+  "acted: true",
+]) {
+  if (!mercifulFallbackText.includes(required)) {
+    violations.push(`${rel(mercifulFallback)} must preserve ${required}`);
+  }
 }
 
 if (

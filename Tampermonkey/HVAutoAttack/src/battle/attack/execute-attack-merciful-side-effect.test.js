@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   runBattleTargetCommand: vi.fn(),
   runPhysicalSkillBookkeeping: vi.fn(),
   runBattleSpiritToggleAutomation: vi.fn(),
+  runBattleActionEffectEvidence: vi.fn(),
 }));
 
 vi.mock("../battle-focus-command.js", () => ({
@@ -26,6 +27,10 @@ vi.mock("./physical-skill-bookkeeping.js", () => ({
 vi.mock("../battle-spirit-toggle.js", () => ({
   BattleSpiritToggleEvent: Object.freeze({ CLICK_AND_RECORD: "clickAndRecord" }),
   runBattleSpiritToggleAutomation: mocks.runBattleSpiritToggleAutomation,
+}));
+vi.mock("../battle-action-effect-evidence.js", () => ({
+  BattleActionEffectEvidenceEvent: Object.freeze({ RECORD_APPLIED: "recordApplied" }),
+  runBattleActionEffectEvidence: mocks.runBattleActionEffectEvidence,
 }));
 
 beforeEach(() => {
@@ -57,6 +62,68 @@ describe("runBattleAttackExecution merciful physical side effects", () => {
         skillId: "1111",
         targetId: 2,
         targetRequiresSkill: true,
+      })
+    );
+  });
+
+  it("keeps acted merciful physical plans acted when the fallback target command throws", () => {
+    mocks.runBattleTargetCommand
+      .mockReturnValueOnce(true)
+      .mockImplementationOnce(() => {
+        throw new Error("default target bridge failed");
+      });
+
+    expect(
+      runBattleAttackExecution({
+        type: BattleAttackExecutionEvent.APPLY_PLAN,
+        plan: {
+          type: "physical",
+          skillId: "1111",
+          code: "OFC",
+          mercifulTargetId: 2,
+          defaultTargetId: 3,
+        },
+        snap: { globalTurn: 11 },
+      })
+    ).toBe(true);
+
+    expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith({
+      type: "recordApplied",
+      result: {
+        kind: "attack-execution-event",
+        reason: "mercifulFallbackTargetThrew",
+        planType: "physical",
+        defaultTargetId: 3,
+        mercifulTargetId: 2,
+      },
+      acted: true,
+      knownResultKind: true,
+      failureReason: "mercifulFallbackTargetThrew",
+      executionError: "default target bridge failed",
+    });
+  });
+
+  it("keeps acted merciful physical plans acted when the fallback target command rejects", () => {
+    mocks.runBattleTargetCommand.mockReturnValueOnce(true).mockReturnValueOnce(false);
+
+    expect(
+      runBattleAttackExecution({
+        type: BattleAttackExecutionEvent.APPLY_PLAN,
+        plan: {
+          type: "physical",
+          skillId: "1111",
+          code: "OFC",
+          mercifulTargetId: 2,
+          defaultTargetId: 3,
+        },
+        snap: { globalTurn: 11 },
+      })
+    ).toBe(true);
+
+    expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        acted: true,
+        failureReason: "mercifulFallbackTargetRejected",
       })
     );
   });

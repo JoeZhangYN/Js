@@ -12,6 +12,7 @@ import {
   runBattleSpiritToggleAutomation,
 } from "../battle-spirit-toggle.js";
 import { recordActionEffectEvidence } from "../battle-action-effect-recording.js";
+import { clickMercifulFallbackTarget } from "./execute-merciful-fallback.js";
 
 const EVENT_APPLY_PLAN = "applyPlan";
 const EVENT_UNKNOWN_ATTACK_EXECUTION = "unknownAttackExecutionEvent";
@@ -98,10 +99,7 @@ function executePhysicalPlan(plan, snap) {
   if (plan.mercifulTargetId != null) event.targetRequiresSkill = true;
   const acted = !!runBattleTargetCommand(event);
   if (acted && plan.mercifulTargetId != null) {
-    runBattleTargetCommand({
-      type: BattleTargetCommandEvent.CLICK_TARGET,
-      targetId: plan.defaultTargetId,
-    });
+    clickMercifulFallbackTarget(plan);
   }
   return acted;
 }
