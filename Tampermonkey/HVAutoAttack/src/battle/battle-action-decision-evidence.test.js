@@ -18,7 +18,12 @@ describe("runBattleActionDecisionEvidence", () => {
           type: BattleActionDecisionEvidenceEvent.RECORD_TRACE,
           steps: [
             { capability: "survival", result: { kind: "noop" }, acted: false },
-            { capability: "attack", result: { kind: "attack-plan", plan: { type: "default" } }, acted: true },
+            {
+              capability: "attack",
+              result: { kind: "attack-plan", plan: { type: "default" } },
+              acted: true,
+              effectEvidence: { knownResultKind: true },
+            },
           ],
         },
         { sessionStorage: window.sessionStorage, debug }
@@ -37,6 +42,7 @@ describe("runBattleActionDecisionEvidence", () => {
           capability: "attack",
           result: { kind: "attack-plan", planKind: "default" },
           acted: true,
+          effect: { knownResultKind: true },
           failureReason: null,
         },
       ],

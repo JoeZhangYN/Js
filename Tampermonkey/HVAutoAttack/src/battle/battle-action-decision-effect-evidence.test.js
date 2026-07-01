@@ -38,6 +38,7 @@ describe("battle action decision effect evidence bridge", () => {
       acted: false,
       failureReason: "targetDead",
       effect: {
+        knownResultKind: true,
         failureReason: "targetDead",
         command: {
           command: "target.clickSkillThenTarget",

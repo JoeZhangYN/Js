@@ -33,6 +33,7 @@ function summarizeEffectEvidence(effectEvidence) {
   return {
     result: effectEvidence.result,
     acted: Boolean(effectEvidence.acted),
+    knownResultKind: effectEvidence.knownResultKind,
     failureReason: effectEvidence.failureReason,
     command: effectEvidence.command,
   };

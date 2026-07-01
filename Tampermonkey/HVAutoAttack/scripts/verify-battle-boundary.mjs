@@ -661,6 +661,7 @@ function checkTurnEntry() {
     "result.plan?.type ?? result.plan?.kind",
     "acted: Boolean(step.acted)",
     "effect: summarizeEffectEvidence(step.effectEvidence)",
+    "knownResultKind: effectEvidence.knownResultKind",
     "step.effectEvidence?.failureReason",
     "failureReason: classifyDecisionStepFailure(step)",
     "missingActionResult",
@@ -681,6 +682,7 @@ function checkTurnEntry() {
     "failureReason",
     "keeps legacy plan kind fallback for older decision evidence",
     "records event type for rejected decision events",
+    "knownResultKind: true",
     "HVAA:lastBattleActionDecision",
     "rejects unknown decision evidence events",
   ]) {
