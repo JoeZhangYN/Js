@@ -1,0 +1,59 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { BattleApiBridgeEvent, runBattleApiBridgeAutomation } from "./battle-api-bridge.js";
+
+function installApiCall() {
+  const scripts = [];
+  runBattleApiBridgeAutomation(
+    { type: BattleApiBridgeEvent.INSTALL },
+    {
+      readOptionField: vi.fn(() => 0),
+      sessionStorage: window.sessionStorage,
+      createScript: vi.fn(() => ({ textContent: "" })),
+      appendHead: vi.fn((script) => scripts.push(script)),
+      installApiResponseRecovery: vi.fn(),
+      readBattleApiWorldContext: vi.fn(() => ({
+        world: "persistent",
+        apiJsonUrl: "https://fallback.test/json",
+      })),
+    }
+  );
+  Function(`${scripts[0].textContent}; window.__testApiCall = api_call;`)();
+}
+
+beforeEach(() => {
+  document.body.innerHTML = '<a id="eventStart"></a><a id="eventEnd"></a>';
+  window.sessionStorage.clear();
+  delete window.MAIN_URL;
+  delete window.battle;
+  delete window.__testApiCall;
+});
+
+describe("battle API bridge runtime protocol", () => {
+  it("binds process_action to a battle_continue-capable target when window.battle is missing", () => {
+    installApiCall();
+    const xhr = {
+      open: vi.fn(),
+      setRequestHeader: vi.fn(),
+      send: vi.fn(),
+    };
+    const callback = vi.fn(function () {
+      expect(typeof this.battle_continue).toBe("function");
+    });
+
+    window.__testApiCall(xhr, { type: "battle", method: "action" }, callback);
+    xhr.onreadystatechange();
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(xhr.open).toHaveBeenCalledWith("POST", "https://fallback.test/json");
+  });
+
+  it("uses the page MAIN_URL protocol when the current hvc runtime exposes it", () => {
+    installApiCall();
+    window.MAIN_URL = "https://hentaiverse.org/isekai/";
+    const xhr = { open: vi.fn(), setRequestHeader: vi.fn(), send: vi.fn() };
+
+    window.__testApiCall(xhr, { type: "battle", method: "action" }, vi.fn());
+
+    expect(xhr.open).toHaveBeenCalledWith("POST", "https://hentaiverse.org/isekai/json");
+  });
+});

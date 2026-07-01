@@ -22,12 +22,17 @@ function buildApiCallScript(apiJsonUrl, protocol) {
   return `api_call = ${function (b, a, d) {
     const delay = window.sessionStorage.__HVAA_MAGIC_DELAY_SESSION_KEY__ * 1;
     const delay2 = window.sessionStorage.__HVAA_ACTION_DELAY_SESSION_KEY__ * 1;
+    const apiJsonUrl = typeof MAIN_URL !== "undefined" ? MAIN_URL + "json" : "__HVAA_MAIN_JSON_URL__";
     window.info = a;
-    b.open("POST", "__HVAA_MAIN_JSON_URL__");
+    b.open("POST", apiJsonUrl);
     b.setRequestHeader("Content-Type", "application/json");
     b.withCredentials = true;
     b.onreadystatechange = function () {
-      return d.apply(window.battle || this, arguments);
+      const callbackTarget =
+        window.battle && typeof window.battle.battle_continue === "function"
+          ? window.battle
+          : { battle_continue: function () { document.location += ""; } };
+      return d.apply(callbackTarget, arguments);
     };
     b.onload = function () {
       document.getElementById("__HVAA_ACTION_END_EVENT_NODE_ID__").click();

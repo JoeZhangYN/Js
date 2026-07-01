@@ -59,12 +59,13 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(deps.createScript).toHaveBeenCalledTimes(2);
     expect(deps.appendHead).toHaveBeenCalledTimes(2);
     expect(deps.scripts[0].textContent).toContain("api_call =");
-    expect(deps.scripts[0].textContent).toContain('b.open("POST", "https://example.test/json")');
+    expect(deps.scripts[0].textContent).toContain(
+      'typeof MAIN_URL !== "undefined" ? MAIN_URL + "json" : "https://example.test/json"'
+    );
+    expect(deps.scripts[0].textContent).toContain('b.open("POST", apiJsonUrl)');
     expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay * 1");
     expect(deps.scripts[0].textContent).toContain("window.sessionStorage.delay2 * 1");
-    expect(deps.scripts[0].textContent).toContain(
-      "return d.apply(window.battle || this, arguments)"
-    );
+    for (const token of ["window.battle.battle_continue", "document.location += \"\""]) expect(deps.scripts[0].textContent).toContain(token);
     expect(deps.scripts[0].textContent).toContain('document.getElementById("eventStart").click()');
     expect(deps.scripts[0].textContent).toContain('document.getElementById("eventEnd").click()');
     expect(deps.scripts[1].textContent).toContain("api_response =");
@@ -166,9 +167,7 @@ describe("runBattleApiBridgeAutomation", () => {
     expect(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL })).toBe(true);
 
     expect(document.head.lastChild.textContent).toContain("api_response =");
-    expect(document.head.children[document.head.children.length - 2].textContent).toContain(
-      'b.open("POST", "https://hentaiverse.org/isekai/json")'
-    );
+    expect(document.head.children[document.head.children.length - 2].textContent).toContain('MAIN_URL + "json" : "https://hentaiverse.org/isekai/json"');
   });
 
   it("normalizes missing API bridge delays before writing runtime state", () => {

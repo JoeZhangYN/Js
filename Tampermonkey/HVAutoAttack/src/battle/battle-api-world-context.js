@@ -9,10 +9,14 @@ export const BattleApiWorldContextEvent = Object.freeze({ READ_CURRENT: EVENT_RE
 function readCurrentWorldContext(deps) {
   const world = deps.isIsekai ? WORLD_ISEKAI : WORLD_PERSISTENT;
   const apiBaseUrl = deps.isIsekai ? deps.isekaiUrl : deps.mainUrl;
+  const hvcScriptSrc =
+    deps.document?.querySelector('script[src*="/hvc.js"]')?.getAttribute("src") || "";
   return Object.freeze({
     world,
     apiBaseUrl,
     apiJsonUrl: `${apiBaseUrl}json`,
+    hvcAssetId: /\/z\/([^/]+)\/hvc\.js/.exec(hvcScriptSrc)?.[1] || "",
+    hvcScriptSrc,
   });
 }
 
@@ -22,7 +26,7 @@ const battleApiWorldContextEventHandlers = Object.freeze({
 
 export function runBattleApiWorldContext(
   event = { type: EVENT_READ_CURRENT },
-  deps = { isIsekai, mainUrl: MAIN_URL, isekaiUrl: ISEKAI_URL }
+  deps = { isIsekai, mainUrl: MAIN_URL, isekaiUrl: ISEKAI_URL, document }
 ) {
   return battleApiWorldContextEventHandlers[event.type]?.(event, deps);
 }

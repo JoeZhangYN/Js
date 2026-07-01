@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-api-bridge.js");
 const ownerTest = path.normalize("src/battle/battle-api-bridge.test.js");
+const runtimeTest = path.normalize("src/battle/battle-api-bridge-runtime.test.js");
 const responseScript = path.normalize("src/battle/battle-api-response-script.js");
 const responseScriptTest = path.normalize("src/battle/battle-api-response-script.test.js");
 const recovery = path.normalize("src/battle/battle-api-response-recovery.js");
@@ -48,11 +49,13 @@ const ownerText = requireText(owner, [
   "BattleApiWorldContextEvent.READ_CURRENT",
   "runBattleApiWorldContext",
   "readBattleApiWorldContext",
+  "typeof MAIN_URL",
+  "battle_continue",
 ]);
 requireText(ownerTest, [
   'document.getElementById("eventStart").click()',
   'document.getElementById("eventEnd").click()',
-  "return d.apply(window.battle || this, arguments)",
+  "window.battle.battle_continue",
   "binds native process_action callbacks to the active battle instance",
   "does not navigate directly from generated API response handling",
   "blocks native process_action for API reload and error responses",
@@ -70,6 +73,11 @@ requireText(ownerTest, [
   "https://hentaiverse.org/isekai/json",
   "window.sessionStorage.delay * 1",
   "window.sessionStorage.delay2 * 1",
+]);
+requireText(runtimeTest, [
+  "battle_continue-capable target",
+  "window.MAIN_URL",
+  "https://hentaiverse.org/isekai/json",
 ]);
 const responseScriptText = requireText(responseScript, [
   "buildApiResponseScript",
@@ -98,6 +106,8 @@ const worldContextText = requireText(worldContext, [
   "WORLD_ISEKAI",
   "WORLD_PERSISTENT",
   "apiJsonUrl",
+  "hvcAssetId",
+  "hvcScriptSrc",
   "isIsekai",
   "ISEKAI_URL",
   "MAIN_URL",
@@ -108,6 +118,7 @@ requireText(worldContextTest, [
   "rejects unknown world context events",
   "https://hentaiverse.org/json",
   "https://hentaiverse.org/isekai/json",
+  "/z/091c/hvc.js",
 ]);
 const recoveryText = requireText(recovery, [
   "BattleApiResponseRecoveryEvent",
@@ -171,15 +182,15 @@ if (/window\.sessionStorage\.(delay|delay2)\b/.test(ownerText)) {
     `${owner.replaceAll("\\", "/")} must generate delay keys through protocol constants`
   );
 }
-if (!ownerText.includes("return d.apply(window.battle || this, arguments)")) {
+if (!ownerText.includes("window.battle.battle_continue") || !ownerText.includes("document.location += \"\"")) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} must bind native process_action callbacks to window.battle`
+    `${owner.replaceAll("\\", "/")} must bind native process_action callbacks to a battle_continue-capable target`
   );
 }
-if (/from\s+["']\.\.\/env\.js["']|isIsekai|ISEKAI_URL|MAIN_URL|BATTLE_API_BASE_URL/.test(ownerText)) {
+if (/from\s+["']\.\.\/env\.js["']|isIsekai|ISEKAI_URL|BATTLE_API_BASE_URL/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must consume typed battle API world context`);
 }
-if (!ownerText.includes("worldContext.apiJsonUrl")) {
+if (!ownerText.includes("worldContext.apiJsonUrl") || !ownerText.includes("typeof MAIN_URL")) {
   violations.push(`${owner.replaceAll("\\", "/")} must use typed API JSON URL from world context`);
 }
 if (!responseScriptText.includes("world: worldContext")) {
@@ -247,6 +258,9 @@ if (!worldContextText.includes("deps.isIsekai ? deps.isekaiUrl : deps.mainUrl"))
 }
 if (!worldContextText.includes("world,") || !worldContextText.includes("WORLD_ISEKAI")) {
   violations.push(`${worldContext.replaceAll("\\", "/")} must preserve typed world identity`);
+}
+if (!worldContextText.includes("hvcAssetId") || !worldContextText.includes('script[src*="/hvc.js"]')) {
+  violations.push(`${worldContext.replaceAll("\\", "/")} must expose current hvc asset identity`);
 }
 
 if (violations.length) {
