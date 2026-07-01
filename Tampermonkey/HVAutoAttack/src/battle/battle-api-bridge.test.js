@@ -9,6 +9,11 @@ vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
+vi.mock("../env.js", () => ({
+  MAIN_URL: "https://hentaiverse.org/",
+  ISEKAI_URL: "https://hentaiverse.org/isekai/",
+  isIsekai: true,
+}));
 
 function makeDeps() {
   const scripts = [];
@@ -23,6 +28,7 @@ function makeDeps() {
 }
 
 beforeEach(() => {
+  document.head.innerHTML = "";
   window.sessionStorage.clear();
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue({});
@@ -123,6 +129,17 @@ describe("runBattleApiBridgeAutomation", () => {
     });
     expect(window.sessionStorage.delay).toBe("12");
     expect(window.sessionStorage.delay2).toBe("34");
+  });
+
+  it("uses the current battle world API endpoint on the default path", () => {
+    mocks.runOptionAutomation.mockImplementation((event) => ({ delay: 12, delay2: 34 })[event.key]);
+
+    expect(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL })).toBe(true);
+
+    expect(document.head.lastChild.textContent).toContain("api_response =");
+    expect(document.head.children[document.head.children.length - 2].textContent).toContain(
+      'b.open("POST", "https://hentaiverse.org/isekai/json")'
+    );
   });
 
   it("normalizes missing API bridge delays before writing runtime state", () => {

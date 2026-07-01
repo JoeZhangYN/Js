@@ -1,5 +1,5 @@
 import { cE, gE } from "../dom/query.js";
-import { MAIN_URL } from "../env.js";
+import { ISEKAI_URL, MAIN_URL, isIsekai } from "../env.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_INSTALL = "install";
@@ -7,6 +7,7 @@ const ACTION_START_EVENT_NODE_ID = "eventStart";
 const ACTION_END_EVENT_NODE_ID = "eventEnd";
 const MAGIC_DELAY_SESSION_KEY = "delay";
 const ACTION_DELAY_SESSION_KEY = "delay2";
+const BATTLE_API_BASE_URL = isIsekai ? ISEKAI_URL : MAIN_URL;
 
 export const BattleApiBridgeEvent = Object.freeze({
   INSTALL: EVENT_INSTALL,
@@ -129,7 +130,7 @@ export function runBattleApiBridgeAutomation(
     sessionStorage: window.sessionStorage,
     createScript: () => cE("script"),
     appendHead: (script) => gE("head").appendChild(script),
-    mainUrl: MAIN_URL,
+    mainUrl: BATTLE_API_BASE_URL,
   }
 ) {
   return battleApiBridgeEventHandlers[event.type]?.(event, deps) ?? false;

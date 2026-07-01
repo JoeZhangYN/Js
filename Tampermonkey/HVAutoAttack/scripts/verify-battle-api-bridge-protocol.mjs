@@ -33,6 +33,8 @@ const ownerText = requireText(owner, [
   "battleApiBridgeEventHandlers",
   "runBattleApiBridgeAutomation",
   "OptionEvent.READ_FIELD",
+  "BATTLE_API_BASE_URL",
+  "isIsekai ? ISEKAI_URL : MAIN_URL",
 ]);
 requireText(ownerTest, [
   'document.getElementById("eventStart").click()',
@@ -44,6 +46,8 @@ requireText(ownerTest, [
   "nav.ReloadReason.BATTLE_API_RESPONSE",
   "nav.reloadCurrentPage(reason)",
   "a.error || a.reload",
+  "uses the current battle world API endpoint on the default path",
+  "https://hentaiverse.org/isekai/json",
   "window.sessionStorage.delay * 1",
   "window.sessionStorage.delay2 * 1",
 ]);
@@ -78,6 +82,9 @@ if (!ownerText.includes("return d.apply(window.battle || this, arguments)")) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must bind native process_action callbacks to window.battle`
   );
+}
+if (!ownerText.includes("mainUrl: BATTLE_API_BASE_URL")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must use the current battle world API endpoint`);
 }
 if (/b\.onreadystatechange\s*=\s*d\b/.test(ownerText)) {
   violations.push(
