@@ -16,6 +16,9 @@ const recoveryMalformedJsonTest = path.normalize(
   "src/battle/battle-api-response-recovery-malformed-json.test.js"
 );
 const recoveryPauseTest = path.normalize("src/battle/battle-api-response-recovery-pause.test.js");
+const recoveryRejectionTest = path.normalize(
+  "src/battle/battle-api-response-recovery-rejection.test.js"
+);
 const recoveryDiagnosticsTest = path.normalize(
   "src/battle/battle-api-response-recovery-diagnostics.test.js"
 );
@@ -146,6 +149,10 @@ const recoveryText = requireText(recovery, [
   "API_RECOVERY_SESSION_KEY",
   "API_RECOVERY_BRIDGE_NAME",
   "REPEAT_PAUSE_THRESHOLD",
+  "EVENT_UNKNOWN_API_RECOVERY",
+  "OUTCOME_REJECTED",
+  "rejectUnknownApiRecoveryEvent",
+  "unknownApiResponseRecoveryEvent",
   "handleRejectedApiResponse",
   "diagnosticEvidenceWithoutApiRecovery",
   "world: detail?.world",
@@ -164,6 +171,11 @@ requireText(recoveryTest, [
   "carries recent battle diagnostic evidence into repeated API pause state",
   "does not treat different rejected response evidence as the same loop",
   "does not treat different battle worlds as the same recovery loop",
+  "HVAA:battleApiRecovery",
+]);
+requireText(recoveryRejectionTest, [
+  "rejects unknown recovery events with structured evidence",
+  "rejects null recovery events with structured evidence instead of throwing",
   "HVAA:battleApiRecovery",
 ]);
 requireText(recoveryMalformedJsonTest, [
@@ -272,6 +284,13 @@ if (
 }
 if (!/export\s+function\s+runBattleApiResponseRecovery/.test(recoveryText)) {
   violations.push(`${recovery.replaceAll("\\", "/")} must expose one recovery entry`);
+}
+if (
+  !recoveryText.includes(
+    "battleApiResponseRecoveryEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownApiRecoveryEvent(event, deps)"
+  )
+) {
+  violations.push(`${recovery.replaceAll("\\", "/")} must record recovery evidence for unknown events`);
 }
 if (!recoveryText.includes("repeatCount >= REPEAT_PAUSE_THRESHOLD")) {
   violations.push(`${recovery.replaceAll("\\", "/")} must stop repeated API reload loops`);

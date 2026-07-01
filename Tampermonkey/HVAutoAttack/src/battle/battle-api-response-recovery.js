@@ -5,9 +5,11 @@ import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.j
 
 const EVENT_INSTALL_BRIDGE = "installBridge";
 const EVENT_REJECTED_RESPONSE = "rejectedResponse";
+const EVENT_UNKNOWN_API_RECOVERY = "unknownApiResponseRecoveryEvent";
 const API_RECOVERY_SESSION_KEY = DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY;
 const API_RECOVERY_BRIDGE_NAME = "HVAA_battleApiRecovery";
 const REPEAT_PAUSE_THRESHOLD = 2;
+const OUTCOME_REJECTED = "rejected";
 
 export const BattleApiResponseRecoveryEvent = Object.freeze({
   INSTALL_BRIDGE: EVENT_INSTALL_BRIDGE,
@@ -69,6 +71,21 @@ function handleRejectedApiResponse(detail, deps) {
   return "reload";
 }
 
+function rejectUnknownApiRecoveryEvent(event, deps) {
+  const detail = {
+    outcome: OUTCOME_REJECTED,
+    reason: EVENT_UNKNOWN_API_RECOVERY,
+    eventType: event?.type ?? null,
+  };
+  const state = {
+    key: apiFailureKey(detail),
+    repeatCount: 1,
+    detail,
+  };
+  writeRecoveryState(deps, state);
+  return false;
+}
+
 function bridgeTargetFrom(event) {
   if (event.target) return event.target;
   return typeof window === "undefined" ? null : window;
@@ -106,5 +123,5 @@ export function runBattleApiResponseRecovery(
     warn: (...args) => console.warn(...args),
   }
 ) {
-  return battleApiResponseRecoveryEventHandlers[event.type]?.(event, deps) ?? false;
+  return battleApiResponseRecoveryEventHandlers[event?.type]?.(event, deps) ?? rejectUnknownApiRecoveryEvent(event, deps);
 }
