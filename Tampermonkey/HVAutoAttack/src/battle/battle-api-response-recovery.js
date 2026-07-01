@@ -1,10 +1,11 @@
 import { NavigationEvent, NavigationReloadReason, runNavigationAutomation } from "../core/navigate.js";
+import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
 import { readRecentDiagnosticEvidence } from "../core/diagnostic-evidence.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "./pause-automation.js";
 
 const EVENT_INSTALL_BRIDGE = "installBridge";
 const EVENT_REJECTED_RESPONSE = "rejectedResponse";
-const API_RECOVERY_SESSION_KEY = "HVAA:battleApiRecovery";
+const API_RECOVERY_SESSION_KEY = DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY;
 const API_RECOVERY_BRIDGE_NAME = "HVAA_battleApiRecovery";
 const REPEAT_PAUSE_THRESHOLD = 2;
 
@@ -41,11 +42,17 @@ function writeRecoveryState(deps, state) {
   deps.sessionStorage.setItem(API_RECOVERY_SESSION_KEY, JSON.stringify(state));
 }
 
+function diagnosticEvidenceWithoutApiRecovery(diagnosticEvidence) {
+  if (!diagnosticEvidence) return undefined;
+  const { battleApiResponseRecovery: _self, ...rest } = diagnosticEvidence;
+  return Object.keys(rest).length ? rest : undefined;
+}
+
 function buildRecoveryState(detail, deps) {
   const key = apiFailureKey(detail);
   const previous = readRecoveryState(deps);
   const repeatCount = previous?.key === key ? Number(previous.repeatCount || 1) + 1 : 1;
-  const diagnosticEvidence = deps.readDiagnosticEvidence?.();
+  const diagnosticEvidence = diagnosticEvidenceWithoutApiRecovery(deps.readDiagnosticEvidence?.());
   return diagnosticEvidence ? { key, repeatCount, detail, diagnosticEvidence } : { key, repeatCount, detail };
 }
 

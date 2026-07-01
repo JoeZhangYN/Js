@@ -91,6 +91,7 @@ if (!owner) {
     for (const required of [
       "DiagnosticEvidenceKey.NAVIGATION_DECISION",
       "DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW",
+      "DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
       "DiagnosticEvidenceKey.BATTLE_PAUSE",
       "DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE",
       "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
@@ -98,6 +99,7 @@ if (!owner) {
       "readRecentDiagnosticEvidence",
       "navigationDecision",
       "battleTurnWorkflow",
+      "battleApiResponseRecovery",
       "battlePause",
       "battleActionLifecycle",
       "battleActionDecision",

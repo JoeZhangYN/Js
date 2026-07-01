@@ -15,6 +15,11 @@ export function readRecentDiagnosticEvidence(storage = window.sessionStorage) {
   if (navigationDecision) evidence.navigationDecision = navigationDecision;
   const battleTurnWorkflow = readJson(storage, DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW);
   if (battleTurnWorkflow) evidence.battleTurnWorkflow = battleTurnWorkflow;
+  const battleApiResponseRecovery = readJson(
+    storage,
+    DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY
+  );
+  if (battleApiResponseRecovery) evidence.battleApiResponseRecovery = battleApiResponseRecovery;
   const battlePause = readJson(storage, DiagnosticEvidenceKey.BATTLE_PAUSE);
   if (battlePause) evidence.battlePause = battlePause;
   const battleActionLifecycle = readJson(storage, DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE);

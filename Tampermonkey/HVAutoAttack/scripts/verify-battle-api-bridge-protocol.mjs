@@ -7,6 +7,9 @@ const ownerTest = path.normalize("src/battle/battle-api-bridge.test.js");
 const responseScript = path.normalize("src/battle/battle-api-response-script.js");
 const recovery = path.normalize("src/battle/battle-api-response-recovery.js");
 const recoveryTest = path.normalize("src/battle/battle-api-response-recovery.test.js");
+const recoveryDiagnosticsTest = path.normalize(
+  "src/battle/battle-api-response-recovery-diagnostics.test.js"
+);
 const worldContext = path.normalize("src/battle/battle-api-world-context.js");
 const worldContextTest = path.normalize("src/battle/battle-api-world-context.test.js");
 const violations = [];
@@ -100,6 +103,7 @@ const recoveryText = requireText(recovery, [
   "BattleApiResponseRecoveryEvent",
   "battleApiResponseRecoveryEventHandlers",
   "runBattleApiResponseRecovery",
+  "DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
   "NavigationReloadReason.BATTLE_API_RESPONSE",
   "BattlePauseEvent.PAUSE",
   "readRecentDiagnosticEvidence",
@@ -107,6 +111,7 @@ const recoveryText = requireText(recovery, [
   "API_RECOVERY_BRIDGE_NAME",
   "REPEAT_PAUSE_THRESHOLD",
   "handleRejectedApiResponse",
+  "diagnosticEvidenceWithoutApiRecovery",
   "world: detail?.world",
   "deps.pause()",
   "diagnosticEvidence",
@@ -121,6 +126,12 @@ requireText(recoveryTest, [
   "carries recent battle diagnostic evidence into repeated API pause state",
   "does not treat different rejected response evidence as the same loop",
   "does not treat different battle worlds as the same recovery loop",
+  "HVAA:battleApiRecovery",
+]);
+requireText(recoveryDiagnosticsTest, [
+  "exposes API recovery state through recent diagnostic evidence",
+  "does not nest previous API recovery evidence inside the next recovery state",
+  "battleApiResponseRecovery",
   "HVAA:battleApiRecovery",
 ]);
 
