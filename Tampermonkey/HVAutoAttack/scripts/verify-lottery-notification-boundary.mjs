@@ -14,12 +14,16 @@ const body =
   text.match(/_bottom\.load_lottery = async function \(ss\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const filterBody =
   text.match(/_bottom\.evaluate_lottery_filter = function \(ss, equip\) \{[\s\S]*?\n  \};/)?.[0] || "";
+const lotteryRegion = text.match(/\/\/ LOTTERY[\s\S]*?\n\n\/\/\* \[1\] Character/)?.[0] || "";
 
 if (!body) {
   violations.push("lottery notification loader must stay explicit");
 }
 if (!filterBody) {
   violations.push("lottery notification filter decision must stay isolated");
+}
+if (!lotteryRegion) {
+  violations.push("lottery notification region must stay explicit");
 }
 
 for (const required of [
@@ -74,9 +78,16 @@ for (const forbidden of [
   "const filters = $equip.filter.normalize($config.settings.lotteryFilters)",
   "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",
 ]) {
-  if (body.includes(forbidden) || filterBody.includes(forbidden)) {
+  if (lotteryRegion.includes(forbidden)) {
     violations.push(`${rel(target)} lottery filter boundary must not use brittle parser path: ${forbidden}`);
   }
+}
+
+if (lotteryRegion.includes("$equip.filter.equip(")) {
+  violations.push(`${rel(target)} lottery notification must not call generic equipment filter boolean entry`);
+}
+if (!lotteryRegion.includes("$equip.filter.match($config.settings.lotteryFilters, equip)")) {
+  violations.push(`${rel(target)} lottery notification must use the match decision with structured filter errors`);
 }
 
 if (violations.length) {

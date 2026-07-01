@@ -13,10 +13,8 @@ try {
 }
 
 const errors = [];
-const lotteryLoaderBody =
-  src.match(/_bottom\.load_lottery = async function\(ss\) \{[\s\S]*?\n            \};/)?.[0] || "";
-const lotteryFilterBody =
-  src.match(/_bottom\.evaluate_lottery_filter = function\(ss, equip\) \{[\s\S]*?\n            \};/)?.[0] || "";
+const lotteryRegion =
+  src.match(/if \(\$config\.settings\.lotteryNotification\) \{[\s\S]*?\n            \$element\("div", _bottom\.node\.div, \["\.hvut-spaceholder"\]\);[\s\S]*?\n          \}/)?.[0] || "";
 
 // 1. UserScript metadata block 配对
 if (!src.includes("// ==UserScript==")) errors.push("missing `// ==UserScript==`");
@@ -72,6 +70,9 @@ for (const required of [
 ]) {
   if (!src.includes(required)) errors.push(`lottery artifact missing ${required}`);
 }
+if (!lotteryRegion) {
+  errors.push("lottery artifact region missing");
+}
 for (const forbidden of [
   "lottery.check = $equip.filter.equip",
   "$equip.filter.equip($config.settings.lotteryFilters, equip)",
@@ -80,9 +81,15 @@ for (const forbidden of [
   "Array.isArray($config.settings.lotteryFilters) ? $config.settings.lotteryFilters : [$config.settings.lotteryFilters]",
   "Array.isArray($config.settings.lotteryFilters)?$config.settings.lotteryFilters:[$config.settings.lotteryFilters]",
 ]) {
-  if (lotteryLoaderBody.includes(forbidden) || lotteryFilterBody.includes(forbidden)) {
+  if (lotteryRegion.includes(forbidden)) {
     errors.push(`lottery artifact uses old filter path: ${forbidden}`);
   }
+}
+if (lotteryRegion.includes("$equip.filter.equip(")) {
+  errors.push("lottery artifact must not call generic equipment filter boolean entry");
+}
+if (!lotteryRegion.includes("$equip.filter.match($config.settings.lotteryFilters, equip)")) {
+  errors.push("lottery artifact must use the match decision with structured filter errors");
 }
 
 if (errors.length > 0) {
