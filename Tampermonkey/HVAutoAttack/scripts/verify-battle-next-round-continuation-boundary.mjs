@@ -26,6 +26,9 @@ for (const required of [
   "RiddleEvent.BATTLE_POST_RESULT",
   "BattleRoundStartEvent.ROUND_STARTED",
   "runBattleTurnAutomation",
+  "BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE",
+  "PHASE_NEXT_ROUND_CONTINUATION",
+  "recordContinuation",
   "#pane_completion",
   "#btcp",
   "#battle_right",
@@ -50,6 +53,18 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   }
   if (!ownerTestText.includes("rejects null next-round continuation events without side effects")) {
     violations.push(`${rel(ownerTest)} must cover null next-round continuation events`);
+  }
+  for (const required of [
+    "recordContinuation",
+    "outcome: \"continued\"",
+    "outcome: \"riddle\"",
+    "replaceBattlePanels",
+    "restartBattleRuntime",
+    "handleRiddle",
+  ]) {
+    if (!ownerTestText.includes(required)) {
+      violations.push(`${rel(ownerTest)} must cover ${required}`);
+    }
   }
 }
 const entryBody =
