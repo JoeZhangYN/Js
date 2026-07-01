@@ -9,7 +9,6 @@ vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
-
 function makeDeps(schedule = () => "alert-timer", scheduleReload = () => "reload-timer") {
   return {
     schedule: vi.fn(schedule),
@@ -173,4 +172,5 @@ describe("runBattleActionDelayAutomation", () => {
     expect(deps.scheduleReload).not.toHaveBeenCalled();
     expect(deps.cancel).not.toHaveBeenCalled();
   });
+
 });

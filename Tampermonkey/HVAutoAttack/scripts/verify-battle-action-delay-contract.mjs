@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-action-delay.js");
 const ownerTest = path.normalize("src/battle/battle-action-delay.test.js");
+const watchdogDetailTest = path.normalize("src/battle/battle-action-delay-watchdog-detail.test.js");
 const srcDir = path.join(root, "src", "battle");
 const violations = [];
 const delayOptionKeys = ["delayAlert", "delayAlertTime", "delayReload", "delayReloadTime"];
@@ -60,6 +61,7 @@ const ownerText = requireText(owner, [
   "activeDelayTimers",
   "OptionEvent.READ_FIELD",
   "NavigationEvent.SCHEDULE_RELOAD",
+  "detail: { source: \"battleActionDelay\", seconds }",
   "AlarmEvent.TRIGGER",
 ]);
 requireText(ownerTest, [
@@ -67,6 +69,10 @@ requireText(ownerTest, [
   "rejects unknown events without reading delay options",
   "delayAlert",
   "delayReload",
+]);
+requireText(watchdogDetailTest, [
+  "passes action watchdog evidence into the navigation reload event",
+  "detail: { source: \"battleActionDelay\", seconds: 11 }",
 ]);
 
 if (

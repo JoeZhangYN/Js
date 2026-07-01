@@ -79,6 +79,7 @@ export function runBattleActionDelayAutomation(
         type: NavigationEvent.SCHEDULE_RELOAD,
         reason: NavigationReloadReason.ACTION_WATCHDOG,
         seconds,
+        detail: { source: "battleActionDelay", seconds },
       }),
   }
 ) {

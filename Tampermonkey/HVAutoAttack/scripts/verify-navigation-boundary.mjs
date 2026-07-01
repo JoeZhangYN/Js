@@ -54,6 +54,9 @@ if (!owner) {
   if (!source.includes("goto(event.reason, event.detail)")) {
     violations.push("reloadNow must preserve reload detail in navigation audit");
   }
+  if (!source.includes("setTimeout(() => goto(event.reason, event.detail), delayMs)")) {
+    violations.push("scheduled reload must preserve reload detail in navigation audit");
+  }
   if (!source.includes("isRedirectReasonAllowed")) {
     violations.push("openUrl must validate an allowed redirect reason");
   }

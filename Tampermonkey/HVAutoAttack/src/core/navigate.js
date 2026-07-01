@@ -87,7 +87,7 @@ function scheduleReload(event) {
   if (!isReloadReasonAllowed(event)) return false;
   const delayMs = normalizeReloadDelayMs(event);
   if (!delayMs) return false;
-  return setTimeout(() => goto(event.reason), delayMs);
+  return setTimeout(() => goto(event.reason, event.detail), delayMs);
 }
 
 /**
