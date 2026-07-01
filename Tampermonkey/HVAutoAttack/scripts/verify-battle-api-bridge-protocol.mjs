@@ -97,11 +97,15 @@ requireText(runtimeTest, [
   "https://hentaiverse.org/isekai/json",
 ]);
 const responseScriptText = requireText(responseScript, [
+  "DiagnosticEvidenceKey",
   "buildApiResponseScript",
   "window.HVAA_battleApiRecovery",
   "recovery.handleRejectedResponse",
   "window.sessionStorage.setItem",
-  "HVAA:battleApiRecovery",
+  "DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY",
+  "__HVAA_DIAGNOSTIC_EVIDENCE_KEYS__",
+  "diagnosticEvidenceKeys",
+  "readRecentDiagnosticEvidence",
   "bridgeMissing",
   "a.error || a.reload",
   "parseApiJsonResponse",
@@ -114,9 +118,14 @@ const responseScriptText = requireText(responseScript, [
 ]);
 requireText(responseScriptTest, [
   "records blocked recovery evidence when the page bridge is missing",
+  "carries recent diagnostic evidence into bridge-missing recovery state",
   "routes rejected API responses through the recovery bridge when available",
   "HVAA:battleApiRecovery",
   "bridgeMissing",
+  "DiagnosticEvidenceKey.BATTLE_ACTION_DECISION",
+  "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
+  "failureReason",
+  "battleApiResponseRecovery",
 ]);
 requireText(responseScriptMalformedJsonTest, [
   "routes malformed JSON responses through the recovery bridge instead of throwing",
@@ -274,6 +283,15 @@ if (!responseScriptText.includes("window.HVAA_battleApiRecovery")) {
 }
 if (!responseScriptText.includes("recordBlockedRecovery")) {
   violations.push(`${responseScript.replaceAll("\\", "/")} must record missing recovery bridge evidence`);
+}
+if (
+  !responseScriptText.includes("const diagnosticEvidence = readRecentDiagnosticEvidence()") ||
+  !responseScriptText.includes("state.diagnosticEvidence = diagnosticEvidence")
+) {
+  violations.push(`${responseScript.replaceAll("\\", "/")} bridge-missing recovery must carry recent diagnostics`);
+}
+if (responseScriptText.includes('name: "battleApiResponseRecovery"')) {
+  violations.push(`${responseScript.replaceAll("\\", "/")} bridge-missing diagnostics must not self-nest API recovery`);
 }
 if (!responseScriptText.includes("a.error || a.reload")) {
   violations.push(`${responseScript.replaceAll("\\", "/")} must intercept API error/reload responses`);
