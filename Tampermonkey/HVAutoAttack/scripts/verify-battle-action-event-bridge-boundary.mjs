@@ -5,6 +5,9 @@ const root = process.cwd();
 const srcDir = path.join(root, "src", "battle");
 const owner = path.normalize("src/battle/battle-action-event-bridge.js");
 const ownerTest = path.normalize("src/battle/battle-action-event-bridge.test.js");
+const evidenceFailureTest = path.normalize(
+  "src/battle/battle-action-event-bridge-evidence-failure.test.js"
+);
 const apiBridge = path.normalize("src/battle/battle-api-bridge.js");
 const apiBridgeTest = path.normalize("src/battle/battle-api-bridge.test.js");
 const apiBridgeRejectionTest = path.normalize("src/battle/battle-api-bridge-rejection.test.js");
@@ -32,6 +35,7 @@ function checkFile(file) {
   if (
     relative !== owner &&
     relative !== ownerTest &&
+    relative !== evidenceFailureTest &&
     relative !== apiBridge &&
     relative !== apiBridgeTest &&
     relative !== apiBridgeRejectionTest &&
@@ -89,6 +93,7 @@ requireText(owner, [
   "runBattleActionLifecycleAutomation",
   "runBattleActionLifecycleEvidence",
   "runLifecycleFromBridge",
+  "recordBridgeLifecycleEvidenceSafely",
   "actionLifecycleBridgeThrew",
   "rejectUnknownActionEventBridgeEvent",
   "unknownActionEventBridgeEvent",
@@ -133,7 +138,7 @@ for (const required of [
   "phase: EVENT_UNKNOWN_ACTION_EVENT_BRIDGE",
   "reason: EVENT_UNKNOWN_ACTION_EVENT_BRIDGE",
   "eventType: event?.type ?? null",
-  "runBattleActionLifecycleEvidence",
+  "recordBridgeLifecycleEvidenceSafely",
 ]) {
   if (!rejectionBody.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} bridge rejection must include ${required}`);
@@ -154,6 +159,21 @@ for (const required of [
 ]) {
   if (!ownerTestText.includes(required)) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+if (!fs.existsSync(path.join(root, evidenceFailureTest))) {
+  violations.push(`${evidenceFailureTest.replaceAll("\\", "/")} must cover bridge evidence failures`);
+} else {
+  const evidenceFailureText = fs.readFileSync(path.join(root, evidenceFailureTest), "utf8");
+  for (const required of [
+    "rejects unknown bridge events when lifecycle evidence recording fails",
+    "keeps bridge click exception handling nonthrowing when evidence recording fails",
+    "lifecycle evidence failed",
+    "actionLifecycleBridgeThrew",
+  ]) {
+    if (!evidenceFailureText.includes(required)) {
+      violations.push(`${evidenceFailureTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
   }
 }
 if (/\bapi_call\b|\bapi_response\b|sessionStorage\.delay\b|\.textContent\s*=/.test(ownerText)) {

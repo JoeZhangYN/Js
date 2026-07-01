@@ -27,7 +27,7 @@ function rejectUnknownActionEventBridgeEvent(event) {
     reason: EVENT_UNKNOWN_ACTION_EVENT_BRIDGE,
     eventType: event?.type ?? null,
   };
-  runBattleActionLifecycleEvidence({
+  recordBridgeLifecycleEvidenceSafely({
     type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
     phase: EVENT_UNKNOWN_ACTION_EVENT_BRIDGE,
     result,
@@ -65,7 +65,7 @@ function runLifecycleFromBridge(nodeId, eventType) {
   try {
     return runBattleActionLifecycleAutomation({ type: eventType });
   } catch (error) {
-    runBattleActionLifecycleEvidence({
+    recordBridgeLifecycleEvidenceSafely({
       type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
       phase: EVENT_UNKNOWN_ACTION_EVENT_BRIDGE,
       result: {
@@ -77,6 +77,14 @@ function runLifecycleFromBridge(nodeId, eventType) {
       },
       steps: [{ step: "runLifecycleFromBridge", result: false, nodeId, eventType }],
     });
+    return false;
+  }
+}
+
+function recordBridgeLifecycleEvidenceSafely(event) {
+  try {
+    return runBattleActionLifecycleEvidence(event);
+  } catch (_error) {
     return false;
   }
 }
