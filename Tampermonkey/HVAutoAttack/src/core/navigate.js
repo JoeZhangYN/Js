@@ -124,7 +124,7 @@ function openUrl(url, newTab, reason) {
 function openWindow(url, name, features, reason) {
   const openedWindow = window.open(url, name, features);
   const detail = { url, name, features, opened: Boolean(openedWindow) };
-  recordNavigationDecision("accepted", { type: EVENT_OPEN_WINDOW, reason }, detail);
+  recordNavigationDecision(openedWindow ? "accepted" : "rejected", { type: EVENT_OPEN_WINDOW, reason }, openedWindow ? detail : { ...detail, cause: "windowOpenBlocked" });
   writeNavigationAudit("openWindow", { reason, ...detail });
   return openedWindow;
 }

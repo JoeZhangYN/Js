@@ -75,6 +75,12 @@ if (!owner) {
   if (!source.includes("opened: Boolean(openedWindow)")) {
     violations.push("openWindow audit must record whether the popup was actually opened");
   }
+  if (!source.includes('openedWindow ? "accepted" : "rejected"')) {
+    violations.push("openWindow decision must reject blocked popup opens");
+  }
+  if (!source.includes('cause: "windowOpenBlocked"')) {
+    violations.push("openWindow rejected decision must record windowOpenBlocked");
+  }
   const auditSource = files.find((file) => file.rel === "core/navigation-audit.js");
   const diagnosticEvidenceSource = files.find((file) => file.rel === "core/diagnostic-evidence.js");
   if (!auditSource) {
@@ -300,10 +306,12 @@ if (!owner) {
     );
     for (const required of [
       "records named popup windows with an allowed reason",
+      "records blocked popup windows as rejected decisions without hiding the audit",
       "rejects named popup windows without an allowed reason",
       "NavigationWindowReason.RIDDLE_POPUP",
       "HVAA:lastNavigationAudit",
       "opened: false",
+      "windowOpenBlocked",
     ]) {
       if (!openWindowAuditTestText.includes(required)) {
         violations.push(`open window navigation audit test must cover ${required}`);

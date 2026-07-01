@@ -12,6 +12,38 @@ describe("open window navigation audit", () => {
   });
 
   it("records named popup windows with an allowed reason", () => {
+    const popup = { close: vi.fn() };
+    vi.spyOn(window, "open").mockImplementation(() => popup);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    expect(
+      runNavigationAutomation({
+        type: NavigationEvent.OPEN_WINDOW,
+        reason: NavigationWindowReason.RIDDLE_POPUP,
+        url: "https://hentaiverse.org/?s=Battle",
+        name: "riddleWindow",
+        features: "resizable,scrollbars,width=1241,height=707",
+      })
+    ).toBe(popup);
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastNavigationAudit"))).toMatchObject({
+      kind: "openWindow",
+      reason: NavigationWindowReason.RIDDLE_POPUP,
+      name: "riddleWindow",
+      opened: true,
+    });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastNavigationDecision"))).toMatchObject({
+      decision: "accepted",
+      eventType: NavigationEvent.OPEN_WINDOW,
+      commandReason: NavigationWindowReason.RIDDLE_POPUP,
+      detail: {
+        name: "riddleWindow",
+        opened: true,
+      },
+    });
+  });
+
+  it("records blocked popup windows as rejected decisions without hiding the audit", () => {
     vi.spyOn(window, "open").mockImplementation(() => null);
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
@@ -32,12 +64,13 @@ describe("open window navigation audit", () => {
       opened: false,
     });
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastNavigationDecision"))).toMatchObject({
-      decision: "accepted",
+      decision: "rejected",
       eventType: NavigationEvent.OPEN_WINDOW,
       commandReason: NavigationWindowReason.RIDDLE_POPUP,
       detail: {
         name: "riddleWindow",
         opened: false,
+        cause: "windowOpenBlocked",
       },
     });
   });
