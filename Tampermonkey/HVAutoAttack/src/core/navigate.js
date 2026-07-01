@@ -1,62 +1,19 @@
 // 页面导航副作用：唯一对外入口 runNavigationAutomation(event)。
 import { installExternalUnloadAudit, reportPreviousNavigationAudit } from "./navigation-audit.js";
-import {
-  recordNavigationDecisionSafely,
-  writeNavigationAuditSafely,
-} from "./navigation-recording.js";
+import { recordNavigationDecisionSafely, writeNavigationAuditSafely } from "./navigation-recording.js";
+import { NavigationRedirectReason, NavigationReloadReason, NavigationWindowReason } from "./navigation-reasons.js";
 
-const EVENT_RELOAD_NOW = "reloadNow";
-const EVENT_SCHEDULE_RELOAD = "scheduleReload";
-const EVENT_OPEN_URL = "openUrl";
-const EVENT_OPEN_WINDOW = "openWindow";
+const EVENT_RELOAD_NOW = "reloadNow", EVENT_SCHEDULE_RELOAD = "scheduleReload", EVENT_OPEN_URL = "openUrl", EVENT_OPEN_WINDOW = "openWindow";
 
-export const NavigationEvent = Object.freeze({
-  RELOAD_NOW: EVENT_RELOAD_NOW,
-  SCHEDULE_RELOAD: EVENT_SCHEDULE_RELOAD,
-  OPEN_URL: EVENT_OPEN_URL,
-  OPEN_WINDOW: EVENT_OPEN_WINDOW,
-});
-
-export const NavigationReloadReason = Object.freeze({
-  ACTION_WATCHDOG: "actionWatchdog",
-  BATTLE_API_CALLBACK_FALLBACK: "battleApiCallbackFallback",
-  BATTLE_HASH_CLEANUP: "battleHashCleanup",
-  BATTLE_API_RESPONSE: "battleApiResponse",
-  BATTLE_VICTORY: "battleVictory",
-  FLEE_CONFIRMATION: "fleeConfirmation",
-  KILL_BUG_RECOVERY: "killBugRecovery",
-  MONSTER_STATUS_REPAIR: "monsterStatusRepair",
-  PAGE_REFRESH: "pageRefresh",
-  RIDDLE_POST_RESULT: "riddlePostResult",
-  SETTINGS_CHANGE: "settingsChange",
-  STAMINA_RECOVERY: "staminaRecovery",
-  UNKNOWN_PAGE_REFRESH: "unknownPageRefresh",
-  HV_UTILS_ABILITY_UNLOCK: "hvUtilsAbilityUnlock",
-  HV_UTILS_CONFIG_SAVE: "hvUtilsConfigSave",
-  HV_UTILS_MAIL_LOG_RESET: "hvUtilsMailLogReset",
-  HV_UTILS_MONSTER_LAB_FORCE_UPDATE: "hvUtilsMonsterLabForceUpdate",
-  HV_UTILS_MONSTER_LAB_LOG_RESET: "hvUtilsMonsterLabLogReset",
-  HV_UTILS_PERSONA_DYNJS: "hvUtilsPersonaDynjs",
-  HV_UTILS_TRAINING_NOTIFICATION: "hvUtilsTrainingNotification",
-});
+export const NavigationEvent = Object.freeze({ RELOAD_NOW: EVENT_RELOAD_NOW, SCHEDULE_RELOAD: EVENT_SCHEDULE_RELOAD, OPEN_URL: EVENT_OPEN_URL, OPEN_WINDOW: EVENT_OPEN_WINDOW });
 
 const RELOAD_REASONS = new Set(Object.values(NavigationReloadReason));
 
-export const NavigationRedirectReason = Object.freeze({
-  CROSS_SITE_ENCOUNTER: "crossSiteEncounter",
-  ENCOUNTER_ENTRY: "encounterEntry",
-  HV_UTILS_CHARACTER_SETTINGS: "hvUtilsCharacterSettings",
-  HV_UTILS_DISABLE: "hvUtilsDisable",
-  HV_UTILS_EQUIP_POPUP: "hvUtilsEquipPopup",
-  HV_UTILS_MAIL_PAGE: "hvUtilsMailPage",
-});
-
 const REDIRECT_REASONS = new Set(Object.values(NavigationRedirectReason));
-
-export const NavigationWindowReason = Object.freeze({ RIDDLE_POPUP: "riddlePopup" });
 
 const WINDOW_REASONS = new Set(Object.values(NavigationWindowReason));
 const RELOAD_RETRY_DELAY_MS = 5000;
+const CAUSE_NAVIGATION_EFFECT_FAILED = "navigationEffectFailed";
 
 reportPreviousNavigationAudit();
 installExternalUnloadAudit();
@@ -70,8 +27,26 @@ function goto(reason, detail, attempt = 1) {
     retryDelayMs: RELOAD_RETRY_DELAY_MS,
     detail,
   });
-  window.location.href = window.location;
+  try {
+    window.location.href = window.location;
+  } catch (error) {
+    recordNavigationDecisionSafely("rejected", { type: EVENT_RELOAD_NOW, reason }, {
+      cause: CAUSE_NAVIGATION_EFFECT_FAILED,
+      attempt,
+      detail,
+      error: error?.message || String(error),
+    });
+    writeNavigationAuditSafely("reloadFailed", {
+      reason,
+      attempt,
+      retryDelayMs: RELOAD_RETRY_DELAY_MS,
+      detail,
+      error: error?.message || String(error),
+    });
+    return false;
+  }
   setTimeout(() => goto(reason, detail, attempt + 1), RELOAD_RETRY_DELAY_MS);
+  return true;
 }
 
 const isReloadReasonAllowed = (event) => RELOAD_REASONS.has(event.reason);
@@ -105,33 +80,55 @@ function scheduleReload(event) {
   return setTimeout(() => goto(event.reason, event.detail), delayMs);
 }
 
+function openNavigationTarget(event, openArgs, detail, auditKind, failedAuditKind) {
+  try {
+    const openedWindow = window.open(...openArgs);
+    const resultDetail = { ...detail, opened: Boolean(openedWindow) };
+    recordNavigationDecisionSafely(
+      openedWindow ? "accepted" : "rejected",
+      event,
+      openedWindow ? resultDetail : { ...resultDetail, cause: "windowOpenBlocked" }
+    );
+    writeNavigationAuditSafely(auditKind, { reason: event.reason, ...resultDetail });
+    return openedWindow;
+  } catch (error) {
+    const failureDetail = {
+      ...detail,
+      opened: false,
+      cause: CAUSE_NAVIGATION_EFFECT_FAILED,
+      error: error?.message || String(error),
+    };
+    recordNavigationDecisionSafely("rejected", event, failureDetail);
+    writeNavigationAuditSafely(failedAuditKind, { reason: event.reason, ...failureDetail });
+    return false;
+  }
+}
+
 /**
  * 打开 URL。
  * @param {string} url
  * @param {boolean=} newTab true -> 新标签
  */
 function openUrl(url, newTab, reason) {
-  const openedWindow = window.open(url, newTab ? "_blank" : "_self");
-  const detail = { url, newTab: Boolean(newTab), opened: Boolean(openedWindow) };
-  recordNavigationDecisionSafely(
-    openedWindow ? "accepted" : "rejected",
-    { type: EVENT_OPEN_URL, reason },
-    openedWindow ? detail : { ...detail, cause: "windowOpenBlocked" }
+  return Boolean(
+    openNavigationTarget(
+      { type: EVENT_OPEN_URL, reason },
+      [url, newTab ? "_blank" : "_self"],
+      { url, newTab: Boolean(newTab) },
+      "navigate",
+      "navigateFailed"
+    )
   );
-  writeNavigationAuditSafely("navigate", { reason, ...detail });
-  return Boolean(openedWindow);
 }
 
 function openWindow(url, name, features, reason) {
-  const openedWindow = window.open(url, name, features);
-  const detail = { url, name, features, opened: Boolean(openedWindow) };
-  recordNavigationDecisionSafely(
-    openedWindow ? "accepted" : "rejected",
+  return openNavigationTarget(
     { type: EVENT_OPEN_WINDOW, reason },
-    openedWindow ? detail : { ...detail, cause: "windowOpenBlocked" }
+    [url, name, features],
+    { url, name, features },
+    "openWindow",
+    "openWindowFailed"
   );
-  writeNavigationAuditSafely("openWindow", { reason, ...detail });
-  return openedWindow;
 }
 
 const navigationEventHandlers = Object.freeze({
@@ -140,8 +137,7 @@ const navigationEventHandlers = Object.freeze({
       recordNavigationDecisionSafely("rejected", event, { cause: "reloadReasonNotAllowed" });
       return false;
     }
-    goto(event.reason, event.detail);
-    return true;
+    return goto(event.reason, event.detail);
   },
   [EVENT_SCHEDULE_RELOAD]: (event) => scheduleReload(event),
   [EVENT_OPEN_URL]: (event) => {
@@ -174,3 +170,5 @@ export function runNavigationAutomation(event = { type: EVENT_RELOAD_NOW }) {
   }
   return handler(event);
 }
+
+export { NavigationRedirectReason, NavigationReloadReason, NavigationWindowReason };

@@ -40,22 +40,22 @@ if (!owner) {
     violations.push("NavigationEvent must expose OPEN_WINDOW for named popup navigation");
   }
   if (!/\bexport\s+const\s+NavigationWindowReason\b/.test(source)) {
-    violations.push("NavigationWindowReason must be the public popup navigation reason vocabulary");
+    if (!source.includes("NavigationWindowReason")) {
+      violations.push("NavigationWindowReason must be the public popup navigation reason vocabulary");
+    }
   }
   if (!/\bexport\s+const\s+NavigationReloadReason\b/.test(source)) {
-    violations.push("NavigationReloadReason must be the public reload reason vocabulary");
-  }
-  if (!source.includes("BATTLE_API_RESPONSE")) {
-    violations.push("NavigationReloadReason must include battle API response reloads");
-  }
-  if (!source.includes("BATTLE_API_CALLBACK_FALLBACK")) {
-    violations.push("NavigationReloadReason must include battle API callback fallback reloads");
+    if (!source.includes("NavigationReloadReason")) {
+      violations.push("NavigationReloadReason must be the public reload reason vocabulary");
+    }
   }
   if (!source.includes("RELOAD_RETRY_DELAY_MS")) {
     violations.push("reload retry delay must be a named navigation invariant");
   }
   if (!/\bexport\s+const\s+NavigationRedirectReason\b/.test(source)) {
-    violations.push("NavigationRedirectReason must be the public redirect reason vocabulary");
+    if (!source.includes("NavigationRedirectReason")) {
+      violations.push("NavigationRedirectReason must be the public redirect reason vocabulary");
+    }
   }
   if (!source.includes("isReloadReasonAllowed")) {
     violations.push("reloadNow/scheduleReload must validate an allowed reload reason");
@@ -84,9 +84,36 @@ if (!owner) {
   if (!source.includes('cause: "windowOpenBlocked"')) {
     violations.push("navigation rejected decision must record windowOpenBlocked");
   }
+  if (!source.includes('const CAUSE_NAVIGATION_EFFECT_FAILED = "navigationEffectFailed"')) {
+    violations.push("navigation effect failures must use a named rejection cause");
+  }
+  for (const required of ["navigateFailed", "openWindowFailed", "reloadFailed"]) {
+    if (!source.includes(required)) {
+      violations.push(`navigation effect failure audit must include ${required}`);
+    }
+  }
   const auditSource = files.find((file) => file.rel === "core/navigation-audit.js");
   const recordingSource = files.find((file) => file.rel === "core/navigation-recording.js");
+  const reasonsSource = files.find((file) => file.rel === "core/navigation-reasons.js");
   const diagnosticEvidenceSource = files.find((file) => file.rel === "core/diagnostic-evidence.js");
+  if (!reasonsSource) {
+    violations.push("core/navigation-reasons.js is missing");
+  } else {
+    const reasonsText = stripComments(readFileSync(reasonsSource.abs, "utf8"));
+    for (const required of [
+      "export const NavigationReloadReason",
+      "export const NavigationRedirectReason",
+      "export const NavigationWindowReason",
+      "BATTLE_API_RESPONSE",
+      "BATTLE_API_CALLBACK_FALLBACK",
+      "ENCOUNTER_ENTRY",
+      "RIDDLE_POPUP",
+    ]) {
+      if (!reasonsText.includes(required)) {
+        violations.push(`navigation reasons vocabulary must own ${required}`);
+      }
+    }
+  }
   if (!recordingSource) {
     violations.push("core/navigation-recording.js is missing");
   } else {
@@ -264,6 +291,9 @@ if (!owner) {
   const openWindowAuditTestSource = files.find(
     (file) => file.rel === "core/navigate-open-window-audit.test.js"
   );
+  const navigationEffectFailureTestSource = files.find(
+    (file) => file.rel === "core/navigate-effect-failure.test.js"
+  );
   const scheduledReloadDetailTestSource = files.find(
     (file) => file.rel === "core/navigate-scheduled-reload-detail.test.js"
   );
@@ -390,6 +420,23 @@ if (!owner) {
     ]) {
       if (!openWindowAuditTestText.includes(required)) {
         violations.push(`open window navigation audit test must cover ${required}`);
+      }
+    }
+  }
+  if (!navigationEffectFailureTestSource) {
+    violations.push("core/navigate-effect-failure.test.js must cover navigation effect failures");
+  } else {
+    const navigationEffectFailureTestText = stripComments(
+      readFileSync(navigationEffectFailureTestSource.abs, "utf8")
+    );
+    for (const required of [
+      "records URL navigation effect exceptions as rejected decisions",
+      "records popup navigation effect exceptions as rejected decisions",
+      "navigationEffectFailed",
+      "navigateFailed",
+    ]) {
+      if (!navigationEffectFailureTestText.includes(required)) {
+        violations.push(`navigation effect failure test must cover ${required}`);
       }
     }
   }
