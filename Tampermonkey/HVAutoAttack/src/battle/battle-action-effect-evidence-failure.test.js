@@ -49,8 +49,8 @@ describe("battle action effect evidence failures", () => {
         originalResultKind: "skill-command",
         error: "effect evidence failed",
       },
-      acted: false,
-      knownResultKind: false,
+      acted: true,
+      knownResultKind: true,
       failureReason: "actionEffectEvidenceWriteFailed",
     });
   });

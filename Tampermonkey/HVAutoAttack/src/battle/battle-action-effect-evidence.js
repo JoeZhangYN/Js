@@ -4,7 +4,15 @@ import { safeDebug } from "./battle-evidence-debug.js";
 const EVENT_RECORD_APPLIED = "recordApplied";
 const ACTION_EFFECT_EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT;
 const KNOWN_PLAN_TYPES = Object.freeze({
-  "attack-plan": new Set(["noop", "focus", "toggle-spirit", "spell", "merciful-single", "physical", "default"]),
+  "attack-plan": new Set([
+    "noop",
+    "focus",
+    "toggle-spirit",
+    "spell",
+    "merciful-single",
+    "physical",
+    "default",
+  ]),
   "item-plan": new Set(["noop", "gem", "potion", "stall", "scroll"]),
   "channel-plan": new Set(["noop", "click"]),
 });
@@ -27,6 +35,8 @@ function summarizeResult(result = {}) {
     skillId: result.skillId,
     targetId: result.targetId,
     planKind: result.plan?.type ?? result.plan?.kind,
+    originalResultKind: result.originalResultKind,
+    error: result.error,
   };
 }
 
@@ -34,8 +44,7 @@ function recordAppliedActionEffect(event, deps) {
   const evidence = {
     result: summarizeResult(event.result),
     acted: Boolean(event.acted),
-    knownResultKind:
-      typeof event.knownResultKind === "boolean" ? event.knownResultKind : null,
+    knownResultKind: typeof event.knownResultKind === "boolean" ? event.knownResultKind : null,
     failureReason: classifyActionEffectFailure(event),
     executionError: event.executionError,
     command: summarizeCommandEvidence(event.commandEvidence),
@@ -70,8 +79,8 @@ function summarizeCommandEvidence(commandEvidence) {
 }
 
 function classifyActionEffectFailure(event) {
-  if (event.acted) return null;
   if (event.failureReason) return event.failureReason;
+  if (event.acted) return null;
   if (event.commandEvidence?.failureReason) return event.commandEvidence.failureReason;
   if (!event.result?.kind) return "missingActionResult";
   if (event.knownResultKind === false) return event.result.reason || "unknownActionResultKind";

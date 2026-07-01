@@ -26,8 +26,8 @@ function recordActionEffectEvidenceFailure(event, error) {
         originalResultKind: event?.result?.kind ?? null,
         error: error?.message || String(error),
       },
-      acted: false,
-      knownResultKind: false,
+      acted: Boolean(event?.acted),
+      knownResultKind: event?.knownResultKind ?? false,
       failureReason: REASON_ACTION_EFFECT_EVIDENCE_WRITE_FAILED,
     });
   } catch (_error) {

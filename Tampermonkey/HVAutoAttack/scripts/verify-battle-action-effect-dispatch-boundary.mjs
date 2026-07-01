@@ -16,6 +16,9 @@ const commandEvidenceTest = path.normalize(
 const evidence = path.normalize("src/battle/battle-action-effect-evidence.js");
 const recording = path.normalize("src/battle/battle-action-effect-recording.js");
 const evidenceTest = path.normalize("src/battle/battle-action-effect-evidence.test.js");
+const recordingFallbackTest = path.normalize(
+  "src/battle/battle-action-effect-recording-fallback.test.js"
+);
 const evidenceExceptionTest = path.normalize(
   "src/battle/battle-action-effect-evidence-exception.test.js"
 );
@@ -110,6 +113,8 @@ for (const required of [
   "actionEffectEvidenceWriteFailed",
   "effect-evidence-event",
   "recordActionEffectEvidenceFailure",
+  "acted: Boolean(event?.acted)",
+  "knownResultKind: event?.knownResultKind ?? false",
 ]) {
   if (!recordingText.includes(required)) {
     violations.push(`${rel(recording)} must own action effect recording ${required}`);
@@ -299,6 +304,8 @@ for (const required of [
   "DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT",
   "summarizeResult",
   "eventType: result.eventType",
+  "originalResultKind: result.originalResultKind",
+  "error: result.error",
   "result.plan?.type ?? result.plan?.kind",
   "acted: Boolean(event.acted)",
   "knownResultKind:",
@@ -338,6 +345,23 @@ if (!fs.existsSync(path.join(root, evidenceTest))) {
   ]) {
     if (!evidenceTestText.includes(required)) {
       violations.push(`${rel(evidenceTest)} must cover ${required}`);
+    }
+  }
+}
+if (!fs.existsSync(path.join(root, recordingFallbackTest))) {
+  violations.push(`${rel(recordingFallbackTest)} must cover acted recording fallback evidence`);
+} else {
+  const recordingFallbackTestText = read(recordingFallbackTest);
+  for (const required of [
+    "preserves recording failure reason for acted fallback evidence",
+    "actionEffectEvidenceWriteFailed",
+    "originalResultKind",
+    "acted: true",
+    "knownResultKind: true",
+    "HVAA:lastBattleActionEffect",
+  ]) {
+    if (!recordingFallbackTestText.includes(required)) {
+      violations.push(`${rel(recordingFallbackTest)} must cover ${required}`);
     }
   }
 }

@@ -151,9 +151,9 @@ describe("runBattleActionEffectEvidence", () => {
   it("rejects null effect evidence events without writing diagnostics", () => {
     const debug = vi.fn();
 
-    expect(runBattleActionEffectEvidence(null, { sessionStorage: window.sessionStorage, debug })).toBe(
-      false
-    );
+    expect(
+      runBattleActionEffectEvidence(null, { sessionStorage: window.sessionStorage, debug })
+    ).toBe(false);
 
     expect(window.sessionStorage.getItem("HVAA:lastBattleActionEffect")).toBeNull();
     expect(debug).not.toHaveBeenCalled();
