@@ -61,7 +61,7 @@ describe("runEncounterPolicy route contract", () => {
     ).toEqual({ date: 1000, key: "abc", count: 1, clear: true });
   });
 
-  it("plans manual and automatic entry from the same activation rule", () => {
+  it("plans entry only for an uncleared encounter key", () => {
     const available = { date: 1000, key: "abc", count: 1, clear: false };
     expect(
       runEncounterPolicy({
@@ -92,9 +92,30 @@ describe("runEncounterPolicy route contract", () => {
         nowMs: 2000,
       })
     ).toMatchObject({
-      action: "enter",
-      href: "?s=Battle&ss=ba&encounter=abc",
+      action: "load",
     });
+  });
+
+  it("does not reactivate the same key after it has been attempted", () => {
+    const attempted = { date: 1000, key: "abc", count: 1, clear: true };
+
+    expect(
+      runEncounterPolicy({
+        type: EncounterPolicyEvent.MARK_KEY_AVAILABLE,
+        state: attempted,
+        key: "abc",
+        nowMs: 2000,
+      })
+    ).toEqual(attempted);
+
+    expect(
+      runEncounterPolicy({
+        type: EncounterPolicyEvent.MARK_KEY_AVAILABLE,
+        state: attempted,
+        key: "def",
+        nowMs: 3000,
+      })
+    ).toEqual({ date: 3000, key: "def", count: 2, clear: false });
   });
 
   it("ignores unknown policy events", () => {

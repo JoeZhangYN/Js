@@ -52,4 +52,35 @@ describe("encounter stale entry recovery", () => {
       clear: true,
     });
   });
+
+  it("does not let a forced widget click revive an already attempted key", () => {
+    const outcome = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_CLICKED,
+      state: { date: Date.now(), key: "abc123=", count: 1, clear: true },
+      pageType: "hv",
+      force: true,
+    });
+
+    expect(outcome).toMatchObject({
+      action: "load",
+      state: { key: "abc123=", clear: true },
+    });
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+  });
+
+  it("does not navigate when news returns the same already attempted key", () => {
+    const outcome = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_NEWS_LOADED,
+      state: { date: Date.now(), key: "xyz=", count: 1, clear: true },
+      eventpane: '<a href="?s=Battle&amp;ss=ba&amp;encounter=xyz=">RE</a>',
+      engage: true,
+      pageType: "hv",
+    });
+
+    expect(outcome).toMatchObject({
+      action: "none",
+      state: { key: "xyz=", count: 1, clear: true },
+    });
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+  });
 });

@@ -9598,9 +9598,17 @@ if (_query.s === 'Battle') {
 
   //* [18] Battle - Item World
   if (_query.ss === 'iw') {
-    $equip.list.table($qs('#equiplist > table'));
-    $id('equipaction').prepend($id('equipblurb').lastElementChild);
-    $id('equipselect_outer').appendChild($id('confirm_outer'));
+    $equip.list.table($qs('#equiplist > table') || $qs('#itemlist > table'));
+    const equipaction = $id('equipaction');
+    const equipblurbLast = $id('equipblurb')?.lastElementChild;
+    if (equipaction && equipblurbLast) {
+      equipaction.prepend(equipblurbLast);
+    }
+    const equipselectOuter = $id('equipselect_outer');
+    const confirmOuter = $id('confirm_outer');
+    if (equipselectOuter && confirmOuter) {
+      equipselectOuter.appendChild(confirmOuter);
+    }
     $battle.init($qs('#equipselect_outer'));
   } else
   // [END 18] Battle - Item World */
@@ -15719,9 +15727,17 @@ if (_query.s === 'Battle' && $id('initform')) {
   if (_query.ss === 'iw') {
     // 旧潜能体系 UI(tier/pxp/potency/重铸/latest 置顶)随能量模型死亡(新模型无潜能等级; 依赖已死 parse.extended
     // + ?s=Forge&ss=fo 端点), 2026-06-10 整体退化 → isekai [18] 形态(列表排序 + 布局重排)。
-    $equip.list.table($qs('#equiplist > table'));
-    $id('equipaction').prepend($id('equipblurb').lastElementChild);
-    $id('equipselect_outer').appendChild($id('confirm_outer'));
+    $equip.list.table($qs('#equiplist > table') || $qs('#itemlist > table'));
+    const equipaction = $id('equipaction');
+    const equipblurbLast = $id('equipblurb')?.lastElementChild;
+    if (equipaction && equipblurbLast) {
+      equipaction.prepend(equipblurbLast);
+    }
+    const equipselectOuter = $id('equipselect_outer');
+    const confirmOuter = $id('confirm_outer');
+    if (equipselectOuter && confirmOuter) {
+      equipselectOuter.appendChild(confirmOuter);
+    }
   } else
   // [END 19] Battle - Item World */
 

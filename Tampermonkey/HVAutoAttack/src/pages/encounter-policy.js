@@ -86,9 +86,9 @@ function planNextEncounterCheck(state, { nowMs = Date.now(), jitter = Math.rando
   return { delayMs, reason: clock.reason, status: clock.status, clock };
 }
 
-function planEncounterActivation(state, { force = false, nowMs = Date.now() } = {}) {
+function planEncounterActivation(state, { force: _force = false, nowMs = Date.now() } = {}) {
   const readiness = readEncounterReadiness(state, nowMs);
-  if (readiness.canEnter || (force && readiness.state.key)) {
+  if (readiness.canEnter) {
     return {
       action: "enter",
       href: `?s=Battle&ss=ba&encounter=${readiness.state.key}`,
@@ -109,6 +109,7 @@ function parseEncounterKeyFromEventpaneHtml(eventpane = "") {
 function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
   const next = normalizeEncounterState(state, nowMs);
   if (!key) return next;
+  if (next.key === key) return next;
   next.date = nowMs;
   next.key = key;
   next.count++;
