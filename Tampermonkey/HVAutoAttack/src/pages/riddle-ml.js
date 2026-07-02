@@ -105,6 +105,10 @@ function runRiddleMlAnswerFallbackDiagnostic(stage, run) {
   }
 }
 
+function warnRiddleMlAnswerConsole(method, ...args) {
+  runRiddleMlAnswerFallbackDiagnostic("answerConsole", () => console[method](...args));
+}
+
 function warnRiddleMlHealthConsole(method, ...args) {
   try {
     console[method](...args);
@@ -313,7 +317,7 @@ function ensureRiddleMlAnswerEnabled(context) {
   // defaultOn 语义：与调用侧 riddle.js OptionEvent.IS_ON 一致（缺字段=开，仅显式 false 才关）。
   // 修 H-B：原 `!opt.mlAnswer` 把老配置缺字段误判为关 → 调用侧以为开、这里立刻 bail → 必随机。
   if (context.options.mlAnswer === false) {
-    console.warn("[HVAA][RMA] mlAnswer 显式关闭，跳过 ML 识别（走随机）");
+    warnRiddleMlAnswerConsole("warn", "[HVAA][RMA] mlAnswer 显式关闭，跳过 ML 识别（走随机）");
     finishRiddleMlAnswer(context, null, { stage: "option", reason: "disabled" });
   }
 }
@@ -326,7 +330,10 @@ async function notePreviousRiddleMlHealthState(context) {
   context.isMaintenance = await gmGet("is_maintenance", false);
   context.isDown = await gmGet("is_down", false);
   if (context.isMaintenance || context.isDown) {
-    console.warn("[HVAA][RMA] 健康巡检此前标记服务异常(maintenance/down)，仍尝试本次识别");
+    warnRiddleMlAnswerConsole(
+      "warn",
+      "[HVAA][RMA] 健康巡检此前标记服务异常(maintenance/down)，仍尝试本次识别"
+    );
   }
 }
 
@@ -336,7 +343,8 @@ function normalizeRiddleMlApiKey(context) {
   // 老用户无需手动清栏；source 端 render.js 已把该 placeholder 改空防再次误存。
   context.apiKey = context.options.mlApiKey || "";
   if (context.apiKey && hasNonLatin1(context.apiKey)) {
-    console.warn(
+    warnRiddleMlAnswerConsole(
+      "warn",
       '[HVAA][RMA] ML API key 含非 ASCII 字符(疑占位符"(可选)"误存)，已忽略走匿名；如需用 key 请在设置里重输纯 ASCII。'
     );
     context.apiKey = "";
@@ -346,13 +354,13 @@ function normalizeRiddleMlApiKey(context) {
 async function prepareRiddleMlPayload(context) {
   context.payload = await runRiddleImageAutomation({ type: RiddleImageEvent.PREPARE_ML_PAYLOAD });
   if (!context.payload) {
-    console.warn("[HVAA][RMA] 找不到 riddle 图片元素/src，跳过 ML 识别（走随机）");
+    warnRiddleMlAnswerConsole("warn", "[HVAA][RMA] 找不到 riddle 图片元素/src，跳过 ML 识别（走随机）");
     reportMlOutcome("no_image");
     finishRiddleMlAnswer(context, null, { stage: "payload", reason: "no_image" });
     return;
   }
   if (!context.payload.blob || context.payload.blob.size === 0) {
-    console.warn("[HVAA][RMA] 图片 blob 为空(canvas 污染/fetch 失败)，本次走随机");
+    warnRiddleMlAnswerConsole("warn", "[HVAA][RMA] 图片 blob 为空(canvas 污染/fetch 失败)，本次走随机");
     reportMlDetail("empty_blob (canvas 污染/fetch 失败)");
     reportMlOutcome("empty_blob");
     triggerErrorAlarm();
@@ -403,7 +411,7 @@ function decideGoodRiddleMlAnswer(dict, responseHeaders) {
   const headers = parseRespHeaders(responseHeaders);
   const remaining = parseInt(headers["x-ratelimit-remaining"] || "999", 10);
   if (remaining < 3) {
-    console.warn(`[HVAA][RMA] ratelimit remaining ${remaining}`);
+    warnRiddleMlAnswerConsole("warn", `[HVAA][RMA] ratelimit remaining ${remaining}`);
   }
   return createRiddleMlResponseDecision(hits);
 }
@@ -449,7 +457,7 @@ function decideRiddleMlServiceResponse(res) {
 }
 
 function applyRiddleMlResponseDecision(decision, resolve) {
-  if (decision.warn) console.warn(...decision.warn);
+  if (decision.warn) warnRiddleMlAnswerConsole("warn", ...decision.warn);
   if (decision.detail) reportMlDetail(decision.detail);
   if (decision.alarm) triggerErrorAlarm();
   resolve(decision.result);
@@ -475,7 +483,7 @@ async function requestRiddleMlAnswer(endpoint, imgBlob, postHeaders) {
           applyRiddleMlResponseDecision(decideRiddleMlServiceResponse(res), resolve);
         } catch (e) {
           // 捕获错误兜底：多答案/异形响应等处理异常 → 落库 + resolve，绝不让错误逃逸 console 即丢或 Promise 挂死。
-          console.error("[HVAA][RMA] onload 处理异常(疑多答案/异形响应)，本次走随机:", e);
+          warnRiddleMlAnswerConsole("error", "[HVAA][RMA] onload 处理异常(疑多答案/异形响应)，本次走随机:", e);
           reportMlDetail("onload_exception " + (e && e.message));
           triggerErrorAlarm();
           resolve("exception");
@@ -495,7 +503,8 @@ async function requestRiddleMlAnswer(endpoint, imgBlob, postHeaders) {
         } else {
           cause = "服务端拒绝(status " + status + ")";
         }
-        console.warn(
+        warnRiddleMlAnswerConsole(
+          "warn",
           `[HVAA][RMA] POST onerror，本次走随机 — ${cause}`,
           "status=" + status,
           detail,
@@ -506,7 +515,7 @@ async function requestRiddleMlAnswer(endpoint, imgBlob, postHeaders) {
         resolve("onerror");
       },
       ontimeout: () => {
-        console.warn("[HVAA][RMA] POST 超时(>12s)，本次走随机");
+        warnRiddleMlAnswerConsole("warn", "[HVAA][RMA] POST 超时(>12s)，本次走随机");
         reportMlDetail("timeout (>12s)");
         triggerErrorAlarm();
         resolve("timeout");

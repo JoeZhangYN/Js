@@ -46,22 +46,19 @@ afterEach(() => {
 
 describe("riddle ML request fallback", () => {
   it("resolves to random fallback when ML onload response handling throws", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console hook failed");
-    });
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     mocks.gmXhr.mockImplementation(({ onload }) => {
       onload({
         status: 200,
         responseText: JSON.stringify({ return: "good", answer: "ts" }),
-        responseHeaders: "x-ratelimit-remaining: 1",
+        responseHeaders: {},
       });
     });
 
     await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toBeNull();
 
     expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "recordDetail", detail: "onload_exception console hook failed" })
+      expect.objectContaining({ type: "recordDetail", detail: expect.stringContaining("onload_exception") })
     );
     expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
       type: "recordOutcome",

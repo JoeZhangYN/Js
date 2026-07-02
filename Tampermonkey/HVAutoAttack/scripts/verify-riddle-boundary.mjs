@@ -602,6 +602,7 @@ function checkRiddleMlEntry() {
     : "";
   if (
     !ownerTestText.includes("rejects unknown and null ML events without starting health checks or answering") ||
+    !ownerTestText.includes("keeps disabled ML fallback when answer warning console is blocked") ||
     !ownerTestText.includes("runRiddleMlAutomation(null)") ||
     !ownerTestText.includes("readOption).not.toHaveBeenCalled()")
   ) {
@@ -620,7 +621,8 @@ function checkRiddleMlEntry() {
     "HVAA:lastRiddleMlAnswerFailure",
     'stage: "request"',
     'fallback: "random"',
-    "onload_exception console hook failed",
+    "onload_exception",
+    "responseHeaders: {}",
     "onerror status=0",
     "timeout (>12s)",
     "keeps duplicate ML requests random when fallback evidence and warning both fail",
@@ -659,6 +661,7 @@ function checkRiddleMlEntry() {
     "recordRiddleMlHealthFailure",
     "recordRiddleMlAnswerFallback",
     "runRiddleMlAnswerFallbackDiagnostic",
+    "warnRiddleMlAnswerConsole",
     "readRiddleMlHealthValue",
     "writeRiddleMlHealthValue",
     "runRiddleMlHealthCycle",
