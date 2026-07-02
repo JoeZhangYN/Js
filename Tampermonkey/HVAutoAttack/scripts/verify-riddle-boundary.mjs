@@ -480,6 +480,7 @@ function checkRiddleMlEntry() {
   }
   const ownerTest = path.normalize("src/pages/riddle-ml.test.js");
   const requestFallbackTest = path.normalize("src/pages/riddle-ml-request-fallback.test.js");
+  const healthFailureTest = path.normalize("src/pages/riddle-ml-health-failure.test.js");
   const ownerTestText = fs.existsSync(path.join(root, ownerTest))
     ? fs.readFileSync(path.join(root, ownerTest), "utf8")
     : "";
@@ -493,6 +494,9 @@ function checkRiddleMlEntry() {
   const requestFallbackTestText = fs.existsSync(path.join(root, requestFallbackTest))
     ? fs.readFileSync(path.join(root, requestFallbackTest), "utf8")
     : "";
+  const healthFailureTestText = fs.existsSync(path.join(root, healthFailureTest))
+    ? fs.readFileSync(path.join(root, healthFailureTest), "utf8")
+    : "";
   for (const required of [
     "resolves to random fallback when ML onload response handling throws",
     "classifies ML POST transport errors and resolves to random fallback",
@@ -504,6 +508,41 @@ function checkRiddleMlEntry() {
     if (!requestFallbackTestText.includes(required)) {
       violations.push(`${requestFallbackTest.replaceAll("\\", "/")} must cover ${required}`);
     }
+  }
+  for (const required of [
+    "RIDDLE_ML_HEALTH_FAILURE_KEY",
+    "records HEAD non-200 health evidence without blocking the health timer",
+    "records GM storage failures instead of letting health state writes reject",
+    "isolates console hook failures during health diagnostics",
+    "records request startup failures from the health HEAD adapter",
+    "requestStartFailed",
+    "gmSetFailed",
+    "consoleFailed",
+  ]) {
+    if (!healthFailureTestText.includes(required)) {
+      violations.push(`${healthFailureTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
+  for (const required of [
+    "RIDDLE_ML_HEALTH_FAILURE_KEY",
+    "recordRiddleMlHealthFailure",
+    "readRiddleMlHealthValue",
+    "writeRiddleMlHealthValue",
+    "runRiddleMlHealthCycle",
+    "warnRiddleMlHealthConsole",
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(riddleMlFile)} must own ${required}`);
+    }
+  }
+  if (!/globalThis\.sessionStorage\?\.setItem\(RIDDLE_ML_HEALTH_FAILURE_KEY/.test(ownerText)) {
+    violations.push(`${rel(riddleMlFile)} must persist ML health failure evidence`);
+  }
+  if (!/stayAwake\(\)\.catch\(\(error\) => \{[\s\S]*recordRiddleMlHealthFailure\("healthCycle",\s*"unhandledFailure"/.test(ownerText)) {
+    violations.push(`${rel(riddleMlFile)} must classify unhandled health cycle failures`);
+  }
+  if (!/try\s*{[\s\S]*gmXhr\(\{[\s\S]*method:\s*"HEAD"[\s\S]*}\);[\s\S]*return true;[\s\S]*}\s*catch/.test(ownerText)) {
+    violations.push(`${rel(riddleMlFile)} must classify health HEAD adapter startup failures`);
   }
   const requestBody =
     ownerText.match(/async function requestRiddleMlAnswer\([\s\S]*?\n\}/)?.[0] || "";

@@ -22,6 +22,8 @@ const ANSWER_CODES = Object.keys(ANSWER_MAP); // ["ts","ra","fs","rd","pp","aj"]
 const EVENT_START_HEALTH = "startHealth";
 const EVENT_TRY_ANSWER = "tryAnswer";
 
+export const RIDDLE_ML_HEALTH_FAILURE_KEY = "HVAA:lastRiddleMlHealthFailure";
+
 export const RiddleMlEvent = Object.freeze({
   START_HEALTH: EVENT_START_HEALTH,
   TRY_ANSWER: EVENT_TRY_ANSWER,
@@ -47,6 +49,41 @@ function reportMlOutcome(outcome) {
 
 function triggerErrorAlarm() {
   runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Error" });
+}
+
+function mlHealthErrorText(error) {
+  return error?.message || String(error);
+}
+
+function recordRiddleMlHealthFailure(stage, reason, detail = {}) {
+  const evidence = {
+    capability: "riddleMlHealth",
+    stage,
+    reason,
+    ...detail,
+  };
+  try {
+    globalThis.sessionStorage?.setItem(RIDDLE_ML_HEALTH_FAILURE_KEY, JSON.stringify(evidence));
+  } catch (_error) {
+    // Health recovery must not depend on diagnostic storage.
+  }
+  try {
+    console.warn("[HVAA][RMA] health check failed", evidence);
+  } catch (_error) {
+    // Console hooks are diagnostic only.
+  }
+  return evidence;
+}
+
+function warnRiddleMlHealthConsole(method, ...args) {
+  try {
+    console[method](...args);
+  } catch (error) {
+    recordRiddleMlHealthFailure("healthConsole", "consoleFailed", {
+      method,
+      error: mlHealthErrorText(error),
+    });
+  }
 }
 
 function readMlOptions() {
@@ -95,6 +132,25 @@ function gmSet(key, val) {
   return Promise.resolve();
 }
 
+async function readRiddleMlHealthValue(stage, key, fallback) {
+  try {
+    return await gmGet(key, fallback);
+  } catch (error) {
+    recordRiddleMlHealthFailure(stage, "gmGetFailed", { key, error: mlHealthErrorText(error) });
+    return fallback;
+  }
+}
+
+async function writeRiddleMlHealthValue(stage, key, value) {
+  try {
+    await gmSet(key, value);
+    return true;
+  } catch (error) {
+    recordRiddleMlHealthFailure(stage, "gmSetFailed", { key, error: mlHealthErrorText(error) });
+    return false;
+  }
+}
+
 // gmXhr 已抽到 src/dom/gm-xhr.js（M1 应抽未抽修复）
 
 function parseRespHeaders(headerStr) {
@@ -117,62 +173,83 @@ function parseRespHeaders(headerStr) {
 // ---------------- 30s 健康巡检 ----------------
 
 function sendHead() {
-  gmXhr({
-    method: "HEAD",
-    timeout: 30000,
-    url: STATUS_ENDPOINT,
-    onload: async (response) => {
-      const wasMaintenance = await gmGet("is_maintenance", false);
-      if (response.status !== 200) {
-        if (!wasMaintenance) console.warn("[HVAA][RMA] server maintenance");
-        await gmSet("is_maintenance", true);
-        await gmSet("check_interval", 60);
-      } else {
-        if (wasMaintenance) console.info("[HVAA][RMA] server is up");
-        await gmSet("is_maintenance", false);
-        await gmSet("is_down", false);
-        await gmSet("check_interval", 3600);
-      }
-    },
-    onerror: async () => {
-      const wasDown = await gmGet("is_down", false);
-      if (!wasDown) console.error("[HVAA][RMA] server not respond");
-      await gmSet("is_down", true);
-      await gmSet("check_interval", 60);
-    },
-    ontimeout: async () => {
-      const wasDown = await gmGet("is_down", false);
-      if (!wasDown) console.error("[HVAA][RMA] server timeout");
-      await gmSet("is_down", true);
-      await gmSet("check_interval", 60);
-    },
-  });
+  try {
+    gmXhr({
+      method: "HEAD",
+      timeout: 30000,
+      url: STATUS_ENDPOINT,
+      onload: async (response) => {
+        const wasMaintenance = await readRiddleMlHealthValue("headOnload", "is_maintenance", false);
+        if (response.status !== 200) {
+          recordRiddleMlHealthFailure("headOnload", "nonOkStatus", { status: response.status });
+          if (!wasMaintenance) warnRiddleMlHealthConsole("warn", "[HVAA][RMA] server maintenance");
+          await writeRiddleMlHealthValue("headOnload", "is_maintenance", true);
+          await writeRiddleMlHealthValue("headOnload", "check_interval", 60);
+        } else {
+          if (wasMaintenance) warnRiddleMlHealthConsole("info", "[HVAA][RMA] server is up");
+          await writeRiddleMlHealthValue("headOnload", "is_maintenance", false);
+          await writeRiddleMlHealthValue("headOnload", "is_down", false);
+          await writeRiddleMlHealthValue("headOnload", "check_interval", 3600);
+        }
+      },
+      onerror: async (error) => {
+        recordRiddleMlHealthFailure("headOnerror", "transportError", {
+          error: error?.statusText || error?.error || mlHealthErrorText(error),
+        });
+        const wasDown = await readRiddleMlHealthValue("headOnerror", "is_down", false);
+        if (!wasDown) warnRiddleMlHealthConsole("error", "[HVAA][RMA] server not respond");
+        await writeRiddleMlHealthValue("headOnerror", "is_down", true);
+        await writeRiddleMlHealthValue("headOnerror", "check_interval", 60);
+      },
+      ontimeout: async () => {
+        recordRiddleMlHealthFailure("headOntimeout", "timeout");
+        const wasDown = await readRiddleMlHealthValue("headOntimeout", "is_down", false);
+        if (!wasDown) warnRiddleMlHealthConsole("error", "[HVAA][RMA] server timeout");
+        await writeRiddleMlHealthValue("headOntimeout", "is_down", true);
+        await writeRiddleMlHealthValue("headOntimeout", "check_interval", 60);
+      },
+    });
+    return true;
+  } catch (error) {
+    recordRiddleMlHealthFailure("sendHead", "requestStartFailed", {
+      error: mlHealthErrorText(error),
+    });
+    return false;
+  }
 }
 
 async function stayAwake() {
   const today = runTimeAutomation({ type: TimeEvent.UTC_DATE_KEY });
-  const lastDay = await gmGet("last_date", "0/0/0");
+  const lastDay = await readRiddleMlHealthValue("stayAwake", "last_date", "0/0/0");
   if (today !== lastDay) {
-    await gmSet("last_date", today);
-    await gmSet("is_maintenance", false);
-    await gmSet("is_down", false);
-    await gmSet("check_interval", 3600);
+    await writeRiddleMlHealthValue("stayAwake", "last_date", today);
+    await writeRiddleMlHealthValue("stayAwake", "is_maintenance", false);
+    await writeRiddleMlHealthValue("stayAwake", "is_down", false);
+    await writeRiddleMlHealthValue("stayAwake", "check_interval", 3600);
   }
   const now = (Date.now() / 1000) | 0;
-  const lastTs = await gmGet("last_awake_ts", 0);
-  const interval = await gmGet("check_interval", 3600);
+  const lastTs = await readRiddleMlHealthValue("stayAwake", "last_awake_ts", 0);
+  const interval = await readRiddleMlHealthValue("stayAwake", "check_interval", 3600);
   if (now - lastTs >= interval) {
     sendHead();
-    await gmSet("last_awake_ts", now);
+    await writeRiddleMlHealthValue("stayAwake", "last_awake_ts", now);
   }
 }
 
 let healthStarted = false;
+function runRiddleMlHealthCycle() {
+  stayAwake().catch((error) => {
+    recordRiddleMlHealthFailure("healthCycle", "unhandledFailure", {
+      error: mlHealthErrorText(error),
+    });
+  });
+}
+
 function startRiddleMlHealthCheck() {
   if (healthStarted) return;
   healthStarted = true;
-  stayAwake();
-  setInterval(stayAwake, 30000);
+  runRiddleMlHealthCycle();
+  setInterval(runRiddleMlHealthCycle, 30000);
 }
 
 // ---------------- 主入口 tryMLAnswer ----------------
