@@ -81,18 +81,10 @@ describe("readRecentDiagnosticEvidence", () => {
       "HVAA:lastBattleActionEffect",
       JSON.stringify({ result: { kind: "noop" }, acted: false, knownResultKind: true })
     );
-    window.sessionStorage.setItem(
-      "HVAA:lastHttpRequestFailure",
-      JSON.stringify({ capability: "httpRequest", stage: "finalFailure", kind: "networkError" })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastStaminaRecoveryFailure",
-      JSON.stringify({ capability: "staminaRecovery", stage: "claimRecoveryPost" })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastRepairBackendFailure",
-      JSON.stringify({ capability: "repairBackend", stage: "requestFailure" })
-    );
+    window.sessionStorage.setItem("HVAA:lastHttpRequestFailure", JSON.stringify({ capability: "httpRequest", stage: "finalFailure", kind: "networkError" }));
+    window.sessionStorage.setItem("HVAA:lastStaminaRecoveryFailure", JSON.stringify({ capability: "staminaRecovery", stage: "claimRecoveryPost" }));
+    window.sessionStorage.setItem("HVAA:lastRepairBackendFailure", JSON.stringify({ capability: "repairBackend", stage: "requestFailure" }));
+    window.sessionStorage.setItem("HVAA:lastMonsterDbStoreFailure", JSON.stringify({ capability: "monsterDbStore", stage: "open" }));
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
@@ -115,19 +107,10 @@ describe("readRecentDiagnosticEvidence", () => {
         steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
       },
       battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
-      httpRequestFailure: {
-        capability: "httpRequest",
-        stage: "finalFailure",
-        kind: "networkError",
-      },
-      staminaRecoveryFailure: {
-        capability: "staminaRecovery",
-        stage: "claimRecoveryPost",
-      },
-      repairBackendFailure: {
-        capability: "repairBackend",
-        stage: "requestFailure",
-      },
+      httpRequestFailure: { capability: "httpRequest", stage: "finalFailure", kind: "networkError" },
+      staminaRecoveryFailure: { capability: "staminaRecovery", stage: "claimRecoveryPost" },
+      repairBackendFailure: { capability: "repairBackend", stage: "requestFailure" },
+      monsterDbStoreFailure: { capability: "monsterDbStore", stage: "open" },
     });
   });
 

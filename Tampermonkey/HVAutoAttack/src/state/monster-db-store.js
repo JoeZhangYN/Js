@@ -22,6 +22,7 @@ const EVENT_HP_READ = "hpRead";
 const EVENT_HP_WRITE = "hpWrite";
 const EVENT_META_READ = "metaRead";
 const EVENT_META_WRITE = "metaWrite";
+export const MONSTER_DB_STORE_FAILURE_KEY = "HVAA:lastMonsterDbStoreFailure";
 
 export const MonsterDbStoreEvent = Object.freeze({
   PROFILE_READ: EVENT_PROFILE_READ,
@@ -50,6 +51,7 @@ let dbPromise = null;
 
 function classifyDbError(stage, detail, error) {
   return {
+    capability: "monsterDbStore",
     source: "monsterDbStore",
     stage,
     ...detail,
@@ -59,7 +61,16 @@ function classifyDbError(stage, detail, error) {
 
 function rejectDbFailure(stage, detail, error) {
   const failure = classifyDbError(stage, detail, error);
-  console.warn("[HVAA] monster db store failed", failure);
+  try {
+    sessionStorage.setItem(MONSTER_DB_STORE_FAILURE_KEY, JSON.stringify(failure));
+  } catch (_error) {
+    // IndexedDB failure rejection must not depend on diagnostic storage.
+  }
+  try {
+    console.warn("[HVAA] monster db store failed", failure);
+  } catch (_error) {
+    // Console hooks must not replace the classified IndexedDB failure.
+  }
   const rejected = new Error(`monster db store ${stage} failed`);
   rejected.failure = failure;
   return rejected;

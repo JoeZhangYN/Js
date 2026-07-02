@@ -5,6 +5,9 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/monster-db-store.js");
 const ownerTest = path.normalize("src/state/monster-db-store.test.js");
+const failureEvidenceTest = path.normalize("src/state/monster-db-store-failure-evidence.test.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
 const legacy = [
   "getMonsterById",
@@ -79,9 +82,15 @@ for (const name of legacy) {
   }
 }
 for (const required of [
+  "MONSTER_DB_STORE_FAILURE_KEY",
+  "HVAA:lastMonsterDbStoreFailure",
   "classifyDbError",
   "rejectDbFailure",
+  "capability: \"monsterDbStore\"",
+  "sessionStorage.setItem(MONSTER_DB_STORE_FAILURE_KEY",
   "[HVAA] monster db store failed",
+  "IndexedDB failure rejection must not depend on diagnostic storage.",
+  "Console hooks must not replace the classified IndexedDB failure.",
   "transaction-start",
   "transaction-error",
   "transaction-abort",
@@ -114,6 +123,45 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
     }
+  }
+}
+if (!fs.existsSync(path.join(root, failureEvidenceTest))) {
+  violations.push(`${failureEvidenceTest.replaceAll("\\", "/")} must cover persisted failure evidence`);
+} else {
+  const failureEvidenceTestText = fs.readFileSync(path.join(root, failureEvidenceTest), "utf8");
+  for (const required of [
+    "persists classified IndexedDB failures",
+    "keeps classified IndexedDB rejection when diagnostics are blocked",
+    "MONSTER_DB_STORE_FAILURE_KEY",
+    "HVAA:lastMonsterDbStoreFailure",
+    "session blocked",
+    "console blocked",
+    "capability: \"monsterDbStore\"",
+  ]) {
+    if (!failureEvidenceTestText.includes(required)) {
+      violations.push(`${failureEvidenceTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
+}
+
+const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
+for (const required of [
+  "MONSTER_DB_STORE_FAILURE: \"HVAA:lastMonsterDbStoreFailure\"",
+  'source("monsterDbStoreFailure", DiagnosticEvidenceKey.MONSTER_DB_STORE_FAILURE)',
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+
+const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
+for (const required of [
+  "HVAA:lastMonsterDbStoreFailure",
+  "monsterDbStoreFailure",
+  "monsterDbStore",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 

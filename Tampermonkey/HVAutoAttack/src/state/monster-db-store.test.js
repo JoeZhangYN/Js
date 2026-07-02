@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadStoreWithIndexedDb, makeFakeIndexedDb } from "./monster-db-store-test-fixture.js";
 
 beforeEach(() => {
+  sessionStorage.clear();
   vi.useRealTimers();
   vi.restoreAllMocks();
 });

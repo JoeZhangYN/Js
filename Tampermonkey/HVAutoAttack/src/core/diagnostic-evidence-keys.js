@@ -21,6 +21,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   HTTP_REQUEST_FAILURE: "HVAA:lastHttpRequestFailure",
   STAMINA_RECOVERY_FAILURE: "HVAA:lastStaminaRecoveryFailure",
   REPAIR_BACKEND_FAILURE: "HVAA:lastRepairBackendFailure",
+  MONSTER_DB_STORE_FAILURE: "HVAA:lastMonsterDbStoreFailure",
 });
 
 function source(name, key) {
@@ -52,6 +53,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("httpRequestFailure", DiagnosticEvidenceKey.HTTP_REQUEST_FAILURE),
   source("staminaRecoveryFailure", DiagnosticEvidenceKey.STAMINA_RECOVERY_FAILURE),
   source("repairBackendFailure", DiagnosticEvidenceKey.REPAIR_BACKEND_FAILURE),
+  source("monsterDbStoreFailure", DiagnosticEvidenceKey.MONSTER_DB_STORE_FAILURE),
 ]);
 
 export const API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze(
