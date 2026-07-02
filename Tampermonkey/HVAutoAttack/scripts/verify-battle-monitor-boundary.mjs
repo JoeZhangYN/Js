@@ -589,6 +589,11 @@ function checkRecordArchiveEntry() {
     "src/monitor/battle-record-archive-drop-records.js"
   );
   const archiveStoreFile = path.join(root, "src/monitor/battle-record-archive-store.js");
+  const archiveFailureFile = path.join(root, "src/monitor/battle-record-archive-failure.js");
+  const archiveFailureTestFile = path.join(
+    root,
+    "src/monitor/battle-record-archive-failure.test.js"
+  );
   const dropDefaultRecordFile = path.join(root, "src/monitor/drop-default-record.js");
   const archiveUsageRecordsFile = path.join(
     root,
@@ -598,6 +603,8 @@ function checkRecordArchiveEntry() {
   const archiveText = fs.readFileSync(archiveFile, "utf8");
   const archiveDropRecordsText = fs.readFileSync(archiveDropRecordsFile, "utf8");
   const archiveStoreText = fs.readFileSync(archiveStoreFile, "utf8");
+  const archiveFailureText = fs.readFileSync(archiveFailureFile, "utf8");
+  const archiveFailureTestText = fs.readFileSync(archiveFailureTestFile, "utf8");
   const dropDefaultRecordText = fs.readFileSync(dropDefaultRecordFile, "utf8");
   const archiveUsageRecordsText = fs.readFileSync(archiveUsageRecordsFile, "utf8");
   const usageDefaultStatsText = fs.readFileSync(usageDefaultStatsFile, "utf8");
@@ -663,6 +670,54 @@ function checkRecordArchiveEntry() {
   }
   if (!/export function createBattleRecordArchiveStore\(/.test(archiveStoreText)) {
     violations.push(`${rel(archiveStoreFile)} must expose one archive record store factory`);
+  }
+  for (const required of [
+    "./battle-record-archive-failure.js",
+    "persistBattleRecordArchiveStep",
+    "start-recording",
+    "store-current",
+    "archive-history",
+    "archive-clear-current",
+    "clear-current",
+    "clear-history",
+  ]) {
+    if (!archiveStoreText.includes(required)) {
+      violations.push(`${rel(archiveStoreFile)} must route archive persistence through ${required}`);
+    }
+  }
+  if (!/if \(\s*!persistBattleRecordArchiveStep\("store-current"[\s\S]*return false;/.test(archiveStoreText)) {
+    violations.push(`${rel(archiveStoreFile)} must fail closed when current record persistence fails`);
+  }
+  if (!/if \(\s*!persistBattleRecordArchiveStep\("archive-history"[\s\S]*return false;/.test(archiveStoreText)) {
+    violations.push(`${rel(archiveStoreFile)} must fail closed when archive history persistence fails`);
+  }
+  if (!/if \(\s*!persistBattleRecordArchiveStep\("archive-clear-current"[\s\S]*return false;/.test(archiveStoreText)) {
+    violations.push(`${rel(archiveStoreFile)} must fail closed when archive current clear fails`);
+  }
+  for (const required of [
+    "BATTLE_RECORD_ARCHIVE_FAILURE_KEY",
+    "HVAA:lastBattleRecordArchiveFailure",
+    "recordBattleRecordArchiveFailure",
+    "persistBattleRecordArchiveStep",
+    "battleRecordArchive",
+    "storageWrite",
+  ]) {
+    if (!archiveFailureText.includes(required)) {
+      violations.push(`${rel(archiveFailureFile)} must own ${required}`);
+    }
+  }
+  for (const required of [
+    "does not report battle report recording success when code persistence fails",
+    "does not report current record success when current persistence fails",
+    "does not report archive success when clearing the current record fails",
+    "does not report clear success when history deletion fails",
+    "does not throw when archive failure evidence and warning both fail",
+    "BATTLE_RECORD_ARCHIVE_FAILURE_KEY",
+    "storageWrite",
+  ]) {
+    if (!archiveFailureTestText.includes(required)) {
+      violations.push(`${rel(archiveFailureTestFile)} must cover ${required}`);
+    }
   }
   for (const required of [
     "REPORT_RECORD_NAME_FIELD",

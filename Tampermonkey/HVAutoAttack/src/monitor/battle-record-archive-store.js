@@ -1,6 +1,7 @@
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
 import { getValue, setValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
+import { persistBattleRecordArchiveStep } from "./battle-record-archive-failure.js";
 
 const REPORT_RECORD_NAME_FIELD = "__name";
 
@@ -59,8 +60,9 @@ function readRecordSet(event, deps) {
 
 function startBattleReportRecording(event, deps) {
   if (!event.enabled || readCurrentBattleReportName(deps)) return false;
-  deps.setValue(STORAGE_KEYS.BATTLE_CODE, event.code);
-  return true;
+  return persistBattleRecordArchiveStep("start-recording", STORAGE_KEYS.BATTLE_CODE, () =>
+    deps.setValue(STORAGE_KEYS.BATTLE_CODE, event.code)
+  );
 }
 
 function nameArchivedBattleReportRecord(record, deps) {
@@ -72,7 +74,13 @@ function nameArchivedBattleReportRecord(record, deps) {
 
 function storeOrArchiveRecord(event, deps) {
   if (!shouldArchive(event)) {
-    deps.setValue(event.currentKey, event.record);
+    if (
+      !persistBattleRecordArchiveStep("store-current", event.currentKey, () =>
+        deps.setValue(event.currentKey, event.record)
+      )
+    ) {
+      return false;
+    }
     return { archived: false };
   }
 
@@ -80,14 +88,38 @@ function storeOrArchiveRecord(event, deps) {
   const archived = nameArchivedBattleReportRecord(event.record, deps);
   if (event.endTimeField) writePath(archived, event.endTimeField, deps.readLocalTimestampLabel());
   history.push(archived);
-  deps.setValue(event.historyKey, history);
-  deps.delValue(event.currentKey);
+  if (
+    !persistBattleRecordArchiveStep("archive-history", event.historyKey, () =>
+      deps.setValue(event.historyKey, history)
+    )
+  ) {
+    return false;
+  }
+  if (
+    !persistBattleRecordArchiveStep("archive-clear-current", event.currentKey, () =>
+      deps.delValue(event.currentKey)
+    )
+  ) {
+    return false;
+  }
   return { archived: true, record: archived };
 }
 
 function clearRecordSet(event, deps) {
-  deps.delValue(event.currentKey);
-  deps.delValue(event.historyKey);
+  if (
+    !persistBattleRecordArchiveStep("clear-current", event.currentKey, () =>
+      deps.delValue(event.currentKey)
+    )
+  ) {
+    return false;
+  }
+  if (
+    !persistBattleRecordArchiveStep("clear-history", event.historyKey, () =>
+      deps.delValue(event.historyKey)
+    )
+  ) {
+    return false;
+  }
   return true;
 }
 
