@@ -90,5 +90,5 @@ function clearMonsterCache() {
 }
 
 export function runMonsterCacheAutomation(event = { type: EVENT_READ_DB }) {
-  return monsterCacheEventHandlers[event.type]?.(event);
+  return monsterCacheEventHandlers[event?.type]?.(event);
 }

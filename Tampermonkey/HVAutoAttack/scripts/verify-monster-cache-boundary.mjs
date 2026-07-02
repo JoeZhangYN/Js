@@ -56,6 +56,12 @@ if (!/const monsterCacheEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PRI
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (entryBody.includes("event.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
+}
+if (!entryBody.includes("event?.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+}
 for (const name of legacy) {
   if (new RegExp(`export\\s+(?:async\\s+)?function\\s+${name}\\s*\\(`).test(ownerText)) {
     violations.push(
@@ -67,8 +73,12 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover monster cache entry`);
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-  if (!ownerTestText.includes("rejects unknown cache events without changing cached profiles")) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown cache events`);
+  if (
+    !ownerTestText.includes("rejects unknown and null cache events without reading or changing cached profiles") ||
+    !ownerTestText.includes("runMonsterCacheAutomation(null)") ||
+    !ownerTestText.includes("runMonsterDbStoreAutomation).not.toHaveBeenCalled()")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null cache events`);
   }
 }
 

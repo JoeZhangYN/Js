@@ -91,7 +91,7 @@ describe("monster-cache（按 MID 键）", () => {
     expect(runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_DB })[80804].fire).toBe(50);
   });
 
-  it("rejects unknown cache events without changing cached profiles", () => {
+  it("rejects unknown and null cache events without reading or changing cached profiles", () => {
     runMonsterCacheAutomation({
       type: MonsterCacheEvent.WRITE_PROFILE,
       monsterId: 80804,
@@ -105,6 +105,8 @@ describe("monster-cache（按 MID 键）", () => {
         info: { monsterId: 80804, fire: 0 },
       })
     ).toBeUndefined();
+    expect(runMonsterCacheAutomation(null)).toBeUndefined();
+    expect(mocks.runMonsterDbStoreAutomation).not.toHaveBeenCalled();
     expect(
       runMonsterCacheAutomation({ type: MonsterCacheEvent.READ_PROFILE, monsterId: 80804 })
     ).toEqual({ monsterId: 80804, fire: 50 });
