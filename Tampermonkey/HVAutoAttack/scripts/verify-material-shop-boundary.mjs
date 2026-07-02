@@ -6,6 +6,7 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/repair/material-shop.js");
 const ownerTest = path.normalize("src/repair/material-shop.test.js");
 const httpFailureTest = path.normalize("src/repair/material-shop-http-failure.test.js");
+const tokenFailureTest = path.normalize("src/repair/material-shop-token-failure.test.js");
 const violations = [];
 
 function rel(file) {
@@ -29,6 +30,7 @@ function checkFile(file) {
       relative !== owner &&
       relative !== ownerTest &&
       relative !== httpFailureTest &&
+      relative !== tokenFailureTest &&
       /from\s+["'](?:\.\/|\.\.\/repair\/)material-shop\.js["']/.test(line) &&
       (!/\bMaterialShopEvent\b/.test(line) || !/\brunMaterialShopAutomation\b/.test(line))
     ) {
@@ -38,6 +40,7 @@ function checkFile(file) {
       relative !== owner &&
       relative !== ownerTest &&
       relative !== httpFailureTest &&
+      relative !== tokenFailureTest &&
       /\b(?:parseShopPage|ensureMaterials)\b/.test(line)
     ) {
       violations.push(`${where} material shop internals must stay behind the entry`);
@@ -82,6 +85,21 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     !ownerTestText.includes("runMaterialShopAutomation(null")
   ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null material shop events`);
+  }
+}
+
+if (!fs.existsSync(path.join(root, tokenFailureTest))) {
+  violations.push(`${tokenFailureTest.replaceAll("\\", "/")} must cover material shop token failures`);
+} else {
+  const tokenFailureTestText = fs.readFileSync(path.join(root, tokenFailureTest), "utf8");
+  for (const required of [
+    "缺料但商店页缺少 storetoken → missing-storetoken，不发买请求",
+    "missing-storetoken",
+    "calls.filter((c) => c.parm !== undefined)).toHaveLength(0)",
+  ]) {
+    if (!tokenFailureTestText.includes(required)) {
+      violations.push(`${tokenFailureTest.replaceAll("\\", "/")} must lock missing storetoken as a no-buy failure`);
+    }
   }
 }
 

@@ -55,6 +55,7 @@ const BUY_FAIL_MSG = {
     "⚠ 維修缺料，無法識別所需材料，已停機",
     "⚠ Repair stopped: unknown material",
   ],
+  "missing-storetoken": ["⚠ 维修买料缺少商店凭证，已停机", "⚠ 維修買料缺少商店憑證，已停機", "⚠ Repair stopped: missing item shop token"],
   "buy-error": [
     "⚠ 维修买料请求出错，已停机",
     "⚠ 維修買料請求出錯，已停機",

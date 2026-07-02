@@ -105,6 +105,15 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   if (!ownerTestText.includes("runRepairAutomation(null")) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null repair events`);
   }
+  for (const required of [
+    "买料缺少商店凭证 → 停机 + 对应三语告警，不修不开下一场",
+    "missing-storetoken",
+    "商店凭证",
+  ]) {
+    if (!ownerTestText.includes(required)) {
+      violations.push(`${ownerTest.replaceAll("\\", "/")} must lock missing storetoken stop messaging`);
+    }
+  }
 }
 if (!fs.existsSync(path.join(root, backendFailureTest))) {
   violations.push(`${backendFailureTest.replaceAll("\\", "/")} must cover backend failure recovery`);

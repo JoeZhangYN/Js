@@ -115,6 +115,24 @@ describe("repair automation entry", () => {
     expect(document.title).toContain("单轮上限");
   });
 
+  it("买料缺少商店凭证 → 停机 + 对应三语告警，不修不开下一场", () => {
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "repairBuyMaterials", value: true });
+    const mats = [{ matId: "50000", name: "Repair Outfit", count: 3 }];
+    const { makeBackend, submitted } = fakeBackend([st([eq(1, 20, mats)])]);
+    const scheduleIdleArena = vi.fn();
+    const buyMaterials = vi.fn((event) =>
+      event.callback({ ok: false, reason: "missing-storetoken" })
+    );
+    runRepairAutomation(
+      { type: RepairEvent.START },
+      { makeBackend, buyMaterials, scheduleIdleArena }
+    );
+
+    expect(submitted).toEqual([]);
+    expect(scheduleIdleArena).not.toHaveBeenCalled();
+    expect(document.title).toContain("商店凭证");
+  });
+
   // A4 反退化：repairValue 留空/非法 → 回落 schema 默认 60%（也间接锁 schema.repairValue.default 存在——
   // 若 schema 删该条目，默认值入口返 undefined → threshold 0 → 55% 不修 → 本用例红）。
   it("repairValue 留空('') → 回落默认 60% → 耐久 55% 的件被修", () => {

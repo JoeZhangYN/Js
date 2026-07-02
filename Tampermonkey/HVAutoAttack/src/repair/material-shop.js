@@ -13,7 +13,7 @@ import { post as realPost } from "../dom/http.js";
 /** @typedef {import("./parse-repair-state.js").RepairMaterial} RepairMaterial */
 /**
  * @typedef {{ ok: true, bought: boolean, spent: number }
- *   | { ok: false, reason: "credit-cap"|"insufficient-credits"|"no-stock"|"unknown-item"|"buy-error", detail?: any }} BuyResult
+ *   | { ok: false, reason: "credit-cap"|"insufficient-credits"|"no-stock"|"unknown-item"|"missing-storetoken"|"buy-error", detail?: any }} BuyResult
  */
 
 const SHOP_URL = "?s=Bazaar&ss=is";
@@ -104,6 +104,10 @@ function ensureMaterials(required, opt, cb, deps = {}) {
 
     if (shortfall.length === 0) {
       cb({ ok: true, bought: false, spent: 0 });
+      return;
+    }
+    if (!storetoken) {
+      cb({ ok: false, reason: "missing-storetoken", detail: { shortfall } });
       return;
     }
 
