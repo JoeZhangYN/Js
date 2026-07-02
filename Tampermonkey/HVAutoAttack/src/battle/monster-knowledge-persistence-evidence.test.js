@@ -52,4 +52,33 @@ describe("recordMonsterKnowledgePersistenceFailure", () => {
       expect.objectContaining({ error: "session blocked" })
     );
   });
+
+  it("returns persistence failure evidence when storage and warning diagnostics both fail", () => {
+    const sessionStorage = {
+      setItem: () => {
+        throw new Error("quota");
+      },
+    };
+    const warn = () => {
+      throw new Error("console blocked");
+    };
+
+    expect(() =>
+      recordMonsterKnowledgePersistenceFailure(
+        { stage: "scan-cache-profile", error: new Error("cache blocked") },
+        { sessionStorage, warn }
+      )
+    ).not.toThrow();
+    expect(
+      recordMonsterKnowledgePersistenceFailure(
+        { stage: "scan-cache-profile", error: new Error("cache blocked") },
+        { sessionStorage, warn }
+      )
+    ).toMatchObject({
+      source: "monsterKnowledgePersistence",
+      result: "failed",
+      stage: "scan-cache-profile",
+      error: "cache blocked",
+    });
+  });
 });

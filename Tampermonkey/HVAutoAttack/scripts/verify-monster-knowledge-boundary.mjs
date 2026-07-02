@@ -7,6 +7,9 @@ const entry = path.normalize("src/battle/monster-knowledge-automation.js");
 const syncImpl = path.normalize("src/battle/monster-db-sync.js");
 const scanImpl = path.normalize("src/battle/monster-db-scan.js");
 const scanResultImpl = path.normalize("src/battle/monster-scan-result-learning.js");
+const persistenceEvidenceTest = path.normalize(
+  "src/battle/monster-knowledge-persistence-evidence.test.js"
+);
 const panelImpl = path.normalize("src/monitor/monster-resist-panel.js");
 const panelModelImpl = path.normalize("src/monitor/monster-resist-panel-model.js");
 const violations = [];
@@ -333,6 +336,20 @@ function checkEntry() {
   }
   if (/\bg\(\s*["']monsterStatus["']/.test(scanText + scanResultText)) {
     violations.push(`monster scan learning must not read monsterStatus directly`);
+  }
+  const persistenceEvidenceTestText = fs.existsSync(path.join(root, persistenceEvidenceTest))
+    ? fs.readFileSync(path.join(root, persistenceEvidenceTest), "utf8")
+    : "";
+  for (const required of [
+    "returns persistence failure evidence when storage and warning diagnostics both fail",
+    'throw new Error("quota")',
+    'throw new Error("console blocked")',
+    "not.toThrow()",
+    "scan-cache-profile",
+  ]) {
+    if (!persistenceEvidenceTestText.includes(required)) {
+      violations.push(`${persistenceEvidenceTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
   }
 }
 
