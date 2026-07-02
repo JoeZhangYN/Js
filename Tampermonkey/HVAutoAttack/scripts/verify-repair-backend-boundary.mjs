@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/repair/repair-backend.js");
 const ownerTest = path.normalize("src/repair/repair-backend.test.js");
+const httpFailureTest = path.normalize("src/repair/repair-backend-http-failure.test.js");
 const violations = [];
 
 function rel(file) {
@@ -63,6 +64,11 @@ if (/repairBackendEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
 if (/export\s+function\s+makeRepairBackend\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy makeRepairBackend export is forbidden`);
 }
+for (const required of ["fetchState(cb, onFailure)", "submitRepair(ids, cb, onFailure)"]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must expose backend ${required}`);
+  }
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover repair backend entry`);
 } else {
@@ -75,6 +81,22 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     !ownerTestText.includes("runRepairBackendAutomation(null")
   ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null backend events`);
+  }
+}
+if (!fs.existsSync(path.join(root, httpFailureTest))) {
+  violations.push(`${httpFailureTest.replaceAll("\\", "/")} must cover backend HTTP failures`);
+} else {
+  const httpFailureTestText = fs.readFileSync(path.join(root, httpFailureTest), "utf8");
+  for (const required of [
+    "routes isekai fetch-state HTTP failures to the failure callback",
+    "routes persistent dynjs HTTP failures to the failure callback",
+    "routes submit-repair HTTP failures to the failure callback",
+    'kind: "networkError"',
+    'kind: "httpStatus"',
+  ]) {
+    if (!httpFailureTestText.includes(required)) {
+      violations.push(`${httpFailureTest.replaceAll("\\", "/")} must lock ${required}`);
+    }
   }
 }
 

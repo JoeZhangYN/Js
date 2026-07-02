@@ -65,6 +65,11 @@ const STUCK_MSG = [
   "⚠ 裝備修理失敗，已停止自動競技場，請檢查信用點 / 裝備",
   "⚠ Repair failed — idle arena stopped; check credits / equipment",
 ];
+const BACKEND_FAIL_MSG = [
+  "⚠ 维修请求失败，已停止自动竞技场，请检查网络 / 服务器响应",
+  "⚠ 維修請求失敗，已停止自動競技場，請檢查網絡 / 伺服器響應",
+  "⚠ Repair request failed — idle arena stopped; check network / server response",
+];
 
 /** 默认 idleArena 调度（调度公式归 idle arena 业务能力所有）。 */
 function scheduleIdleArenaDefault() {
@@ -105,9 +110,13 @@ function runRepair(deps = {}) {
   function stop(msg) {
     document.title = _alert(-1, msg[0], msg[1], msg[2]);
   }
+  function stopBackendFailure(failure) {
+    console.warn("[HVAA] repair backend request failed", failure);
+    stop(BACKEND_FAIL_MSG);
+  }
   function doRepair(ids) {
     repairedIds.push(...ids);
-    backend.submitRepair(ids, scanAndRepair); // 修 → 回调重扫复验
+    backend.submitRepair(ids, scanAndRepair, stopBackendFailure); // 修 → 回调重扫复验
   }
 
   function scanAndRepair() {
@@ -146,7 +155,7 @@ function runRepair(deps = {}) {
         default:
           return;
       }
-    });
+    }, stopBackendFailure);
   }
 
   scanAndRepair();

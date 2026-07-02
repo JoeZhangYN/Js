@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/repair/repair-orchestrator.js");
 const ownerTest = path.normalize("src/repair/repair-orchestrator.test.js");
+const backendFailureTest = path.normalize("src/repair/repair-orchestrator-backend-failure.test.js");
 const violations = [];
 
 function rel(file) {
@@ -66,6 +67,15 @@ if (!entryBody.includes("repairEventHandlers[event?.type]")) {
 if (/export\s+function\s+runRepair\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy runRepair export is forbidden`);
 }
+for (const required of [
+  "stopBackendFailure",
+  "[HVAA] repair backend request failed",
+  "维修请求失败",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own backend failure recovery ${required}`);
+  }
+}
 if (!ownerText.includes("OptionEvent.READ_FIELD")) {
   violations.push(`${owner.replaceAll("\\", "/")} must read repair options through option entry`);
 }
@@ -84,6 +94,21 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   }
   if (!ownerTestText.includes("runRepairAutomation(null")) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null repair events`);
+  }
+}
+if (!fs.existsSync(path.join(root, backendFailureTest))) {
+  violations.push(`${backendFailureTest.replaceAll("\\", "/")} must cover backend failure recovery`);
+} else {
+  const backendFailureTestText = fs.readFileSync(path.join(root, backendFailureTest), "utf8");
+  for (const required of [
+    "stops idle arena when backend fetch-state fails",
+    "stops idle arena when backend submit-repair fails",
+    "[HVAA] repair backend request failed",
+    "维修请求失败",
+  ]) {
+    if (!backendFailureTestText.includes(required)) {
+      violations.push(`${backendFailureTest.replaceAll("\\", "/")} must lock ${required}`);
+    }
   }
 }
 

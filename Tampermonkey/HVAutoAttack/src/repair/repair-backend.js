@@ -5,7 +5,7 @@
 //   异世界 Isekai：    GET `?s=Bazaar&ss=am&screen=repair`（原文取 eqitems/itemdata/postoken）；
 //                      单件修 POST `postoken=${token}&eqids[]=${eid}`（postoken 由 fetchState 取，闭包内持有）。
 //
-// 统一端口形状 `{ fetchState(cb), submitRepair(ids, cb) }`——orchestrator 世界无关编排，isIsekai 仅在工厂分发一次。
+// 统一端口形状 `{ fetchState(cb, onFailure), submitRepair(ids, cb, onFailure) }`——orchestrator 世界无关编排，isIsekai 仅在工厂分发一次。
 // 逐件修（两世界都不批量）：止损/复验语义两世界同构；submitRepair 保留 ids 数组签名（不阉割批量能力），
 // 编排器只传单元素，未来批量优化改编排器一处。
 import { post as realPost } from "../dom/http.js";
@@ -26,8 +26,8 @@ const repairBackendEventHandlers = Object.freeze({
 
 /**
  * @param {boolean} isIsekai env.isIsekai
- * @param {(href:string, func:Function, parm?:string, type?:string)=>void} [_post] 测试注入（默认真实 post）
- * @returns {{ fetchState:(cb:Function)=>void, submitRepair:(ids:string[], cb:Function)=>void }}
+ * @param {(href:string, func:Function, parm?:string, type?:string, onFailure?:Function)=>void} [_post] 测试注入（默认真实 post）
+ * @returns {{ fetchState:(cb:Function,onFailure?:Function)=>void, submitRepair:(ids:string[], cb:Function,onFailure?:Function)=>void }}
  */
 function makeRepairBackend(isIsekai, deps = {}) {
   const post = deps.post || realPost;
@@ -35,7 +35,7 @@ function makeRepairBackend(isIsekai, deps = {}) {
 
   if (isIsekai) {
     return {
-      fetchState(cb) {
+      fetchState(cb, onFailure) {
         post(
           ARMORY_URL,
           (text) => {
@@ -47,18 +47,19 @@ function makeRepairBackend(isIsekai, deps = {}) {
             cb(state);
           },
           null,
-          "text"
+          "text",
+          onFailure
         );
       },
-      submitRepair(ids, cb) {
+      submitRepair(ids, cb, onFailure) {
         const id = ids[0];
-        post(ARMORY_URL, () => cb(), `postoken=${token}&eqids[]=${id}`);
+        post(ARMORY_URL, () => cb(), `postoken=${token}&eqids[]=${id}`, undefined, onFailure);
       },
     };
   }
 
   return {
-    fetchState(cb) {
+    fetchState(cb, onFailure) {
       post(FORGE_URL, (pageDoc) => {
         // dynjs 脚本：对齐 HVUT `script[src*="/dynjs/"]`（旧 `#mainpane>script[src]` 在真实维修页取不到
         // → 空耐久 → 静默不修）；保留旧选择器作 fallback。
@@ -91,12 +92,13 @@ function makeRepairBackend(isIsekai, deps = {}) {
               })
             ),
           null,
-          "text"
+          "text",
+          onFailure
         );
-      });
+      }, undefined, undefined, onFailure);
     },
-    submitRepair(ids, cb) {
-      post(FORGE_URL, () => cb(), `select_item=${ids[0]}`);
+    submitRepair(ids, cb, onFailure) {
+      post(FORGE_URL, () => cb(), `select_item=${ids[0]}`, undefined, onFailure);
     },
   };
 }
