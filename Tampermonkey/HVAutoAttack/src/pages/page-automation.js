@@ -89,5 +89,7 @@ function runPageReadyFlow(context) {
 }
 
 export function runPageAutomation(event = { type: EVENT_PAGE_READY }) {
-  return pageAutomationEventHandlers[event.type]?.(event);
+  const handler = pageAutomationEventHandlers[event?.type];
+  if (!handler) return false;
+  return handler(event);
 }

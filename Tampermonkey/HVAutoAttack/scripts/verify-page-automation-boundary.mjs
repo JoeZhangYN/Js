@@ -100,6 +100,12 @@ function checkEntry() {
   if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
     violations.push(`${rel(entryFile)} entry must dispatch by handler table`);
   }
+  if (entryBody.includes("pageAutomationEventHandlers[event.type]")) {
+    violations.push(`${rel(entryFile)} entry must reject null page automation events without throwing`);
+  }
+  if (!entryBody.includes("pageAutomationEventHandlers[event?.type]") || !entryBody.includes("return false")) {
+    violations.push(`${rel(entryFile)} entry must fail closed for unknown or null page automation events`);
+  }
   for (const forbidden of [
     "runEquipmentViewAutomation",
     "runCrossSiteEncounterNavigation",
@@ -126,6 +132,9 @@ function checkEntry() {
   const entryTestText = fs.existsSync(entryTestFile) ? fs.readFileSync(entryTestFile, "utf8") : "";
   if (!entryTestText.includes("rejects unknown page automation events without routing pages")) {
     violations.push(`${rel(entryTestFile)} must cover unknown page automation events`);
+  }
+  if (!entryTestText.includes("runPageAutomation(null)")) {
+    violations.push(`${rel(entryTestFile)} must cover null page automation events`);
   }
 }
 

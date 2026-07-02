@@ -50,7 +50,8 @@ beforeEach(() => {
 
 describe("runPageAutomation", () => {
   it("rejects unknown page automation events without routing pages", () => {
-    expect(runPageAutomation({ type: "unknown", kind: PageKind.RIDDLE })).toBeUndefined();
+    expect(runPageAutomation({ type: "unknown", kind: PageKind.RIDDLE })).toBe(false);
+    expect(runPageAutomation(null)).toBe(false);
 
     expect(mocks.runEquipmentViewAutomation).not.toHaveBeenCalled();
     expect(mocks.runAppStartup).not.toHaveBeenCalled();
