@@ -4,7 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/pages/ability-page.js");
+const failureOwner = path.normalize("src/pages/ability-aoe-failure.js");
 const ownerTest = path.normalize("src/pages/ability-page.test.js");
+const failureTest = path.normalize("src/pages/ability-aoe-failure.test.js");
 const startupFile = path.join(root, "src/pages/app-startup.js");
 const lobbyFile = path.join(root, "src/pages/lobby-automation.js");
 const violations = [];
@@ -30,12 +32,20 @@ function checkFile(file) {
     const where = `${rel(file)}:${index + 1}`;
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       /\b(?:getValue|setValue)\(\s*["']spellAoe["']/.test(line)
     ) {
       violations.push(`${where} spellAoe storage belongs in runAbilityAoeAutomation(event)`);
     }
-    if (relative !== owner && relative !== ownerTest && /\bSTORAGE_KEYS\.SPELL_AOE\b/.test(line)) {
+    if (
+      relative !== owner &&
+      relative !== failureOwner &&
+      relative !== ownerTest &&
+      relative !== failureTest &&
+      /\bSTORAGE_KEYS\.SPELL_AOE\b/.test(line)
+    ) {
       violations.push(`${where} spellAoe storage key belongs in runAbilityAoeAutomation(event)`);
     }
     if (relative !== owner && /\bparseAbilityPage\b/.test(line)) {
@@ -69,6 +79,8 @@ function checkCallers() {
 
 function checkEntry() {
   const text = fs.readFileSync(path.join(root, owner), "utf8");
+  const failureText = fs.readFileSync(path.join(root, failureOwner), "utf8");
+  const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
   if (!/export function runAbilityAoeAutomation\(/.test(text)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose runAbilityAoeAutomation(event)`);
   }
@@ -105,6 +117,28 @@ function checkEntry() {
   }
   if (/export function parseAbilityPage\(/.test(text)) {
     violations.push(`${owner.replaceAll("\\", "/")} must keep parseAbilityPage internal`);
+  }
+  for (const required of [
+    "ABILITY_AOE_FAILURE_KEY",
+    "HVAA:lastAbilityAoeFailure",
+    "persistAbilitySpellAoe",
+    "recordAbilityAoeFailure",
+    "storageWrite",
+    "abilityAoe",
+  ]) {
+    if (!failureText.includes(required)) {
+      violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
+  for (const required of [
+    "does not report capture success or sync option when spell AoE persistence fails",
+    "records option sync failure after authoritative spell AoE capture succeeds",
+    "keeps failure fallback from throwing when evidence and warning both fail",
+    "ABILITY_AOE_FAILURE_KEY",
+  ]) {
+    if (!failureTestText.includes(required)) {
+      violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
   }
   const testText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   if (

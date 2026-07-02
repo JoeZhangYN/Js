@@ -1,11 +1,12 @@
 // 解析 Ability 页 ?s=Character&ss=ab，提取法术 AoE 目标数 → spellAoe 持久化。
 import { gE } from "../dom/query.js";
-import { getValue, setValue } from "../state/storage.js";
+import { getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 import { OFFENSIVE_SPELL_LIB } from "../data/spell-lib.js";
+import { persistAbilitySpellAoe, recordAbilityAoeFailure } from "./ability-aoe-failure.js";
 
 const EVENT_LOAD_STORED_AOE = "loadStoredAoe";
 const EVENT_CAPTURE_ABILITY_PAGE = "captureAbilityPage";
@@ -20,7 +21,8 @@ export const AbilityAoeEvent = Object.freeze({
 const abilityAoeEventHandlers = Object.freeze({
   [EVENT_LOAD_STORED_AOE]: () => loadStoredAoe(),
   [EVENT_CAPTURE_ABILITY_PAGE]: () => {
-    if (isAbilityPage()) parseAbilityPage();
+    if (!isAbilityPage()) return { captured: false, reason: "notAbilityPage" };
+    return parseAbilityPage();
   },
   [EVENT_READ_SPELL_AOE]: () => readSpellAoe(),
 });
@@ -73,25 +75,37 @@ function syncSpellAoeToOption(spellAoe) {
     }
   });
 
-  runOptionAutomation({
+  const debuffWritten = runOptionAutomation({
     type: OptionEvent.WRITE_FIELD,
     key: "debuffSkillAoe",
     value: debuffSkillAoe,
   });
-  runOptionAutomation({
+  const spellWritten = runOptionAutomation({
     type: OptionEvent.WRITE_FIELD,
     key: "spellAoe",
     value: offensiveSpellAoe,
   });
+  if (debuffWritten === false || spellWritten === false) {
+    return {
+      synced: false,
+      reason: "optionPersistenceFailed",
+      debuffWritten,
+      spellWritten,
+    };
+  }
   console.log(
     "[AoE] 已同步到 option:",
     JSON.stringify({ debuffSkillAoe, spellAoe: offensiveSpellAoe })
   );
+  return { synced: true, debuffSkillAoe, spellAoe: offensiveSpellAoe };
 }
 
 function parseAbilityPage() {
   const abilityTop = gE("#ability_top");
-  if (!abilityTop) return;
+  if (!abilityTop) {
+    recordAbilityAoeFailure("capture-ability-page", { kind: "domMissing", selector: "#ability_top" });
+    return { captured: false, reason: "abilitySurfaceMissing" };
+  }
   const spellAoe = {};
   const slots = gE("[onmouseover*='overability']", "all", abilityTop);
   for (const slot of slots) {
@@ -110,9 +124,20 @@ function parseAbilityPage() {
     }
   }
   console.log("[AoE] 检测结果:", JSON.stringify(spellAoe));
-  setValue(STORAGE_KEYS.SPELL_AOE, spellAoe);
+  if (!persistAbilitySpellAoe(spellAoe)) {
+    return { captured: false, reason: "spellAoePersistenceFailed", spellAoe };
+  }
   // 同步自动检测结果到 option，使设置页面 UI 同步显示
-  syncSpellAoeToOption(spellAoe);
+  const optionSync = syncSpellAoeToOption(spellAoe);
+  if (optionSync?.synced === false) {
+    recordAbilityAoeFailure("sync-option", {
+      kind: "optionWrite",
+      reason: optionSync.reason,
+      debuffWritten: optionSync.debuffWritten,
+      spellWritten: optionSync.spellWritten,
+    });
+  }
+  return { captured: true, spellAoe, optionSync };
 }
 
 export function runAbilityAoeAutomation(event = { type: EVENT_CAPTURE_ABILITY_PAGE }) {
