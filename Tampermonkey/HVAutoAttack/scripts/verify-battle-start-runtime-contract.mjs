@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-start-runtime.js");
 const ownerTest = path.normalize("src/battle/battle-start-runtime.test.js");
+const ownerFailureTest = path.normalize("src/battle/battle-start-runtime-evidence-failure.test.js");
 const srcDir = path.join(root, "src", "battle");
 const violations = [];
 
@@ -66,6 +67,13 @@ requireText(ownerTest, [
   "rejects null events without touching start runtime state",
   "HVAA:lastBattleLifecycle",
   "unknownStartRuntimeEvent",
+]);
+requireText(ownerFailureTest, [
+  "rejects unknown events with debug evidence when lifecycle storage is unavailable",
+  "runBattleStartRuntimeAutomation",
+  "unknownStartRuntimeEvent",
+  "storageWriteOk: false",
+  'storageWriteError: "quota"',
 ]);
 
 if (
