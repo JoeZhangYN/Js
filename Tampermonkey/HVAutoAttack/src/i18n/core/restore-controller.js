@@ -15,6 +15,9 @@ import { SPELL_TYPE, EQ_CATEGORY, AB_CATEGORY } from "../../data/i18n/hvut-terms
 import { INTERFACE_WORDS } from "../../data/i18n/interface-dict.js";
 import { langPostProcess } from "./lang-post.js";
 import { g } from "../../state/store.js";
+import { I18N_RESTORE_FAILURE_KEY, recordI18nRestoreFailure } from "./restore-failure.js";
+
+export { I18N_RESTORE_FAILURE_KEY };
 
 /** @type {Array<() => void>} 各翻译引擎注册的原文/译文交换回调 */
 const restoreCallbacks = [];
@@ -44,7 +47,7 @@ function runAll() {
     try {
       fn();
     } catch (e) {
-      console.error("[HVAA][i18n] restore 回调出错:", e);
+      recordI18nRestoreFailure("restore", e);
     }
   }
   translatedState = !translatedState;
@@ -121,7 +124,7 @@ function rerenderAllI18n() {
   for (let i = i18nRenders.length - 1; i >= 0; i -= 1) {
     const { node, render } = i18nRenders[i];
     if (node && node.isConnected) {
-      try { render(); } catch (e) { console.error("[HVAA][i18n] i18nRender 出错:", e); }
+      try { render(); } catch (e) { recordI18nRestoreFailure("i18nRender", e); }
     } else {
       i18nRenders.splice(i, 1);
     }
@@ -136,7 +139,7 @@ function rerenderAllI18n() {
 export function setLang(newLang) {
   if (translatedState) {
     for (const fn of restoreCallbacks) {
-      try { fn(); } catch (e) { console.error("[HVAA][i18n] restore 回调出错:", e); }
+      try { fn(); } catch (e) { recordI18nRestoreFailure("restore", e); }
     }
     translatedState = false;
   }
@@ -146,7 +149,7 @@ export function setLang(newLang) {
     return;
   }
   for (const fn of retranslateCallbacks) {
-    try { fn(); } catch (e) { console.error("[HVAA][i18n] retranslate 回调出错:", e); }
+    try { fn(); } catch (e) { recordI18nRestoreFailure("retranslate", e); }
   }
   rerenderAllI18n(); // 声明式绑定(菜单等自渲染)即时出简/繁
   translatedState = true;

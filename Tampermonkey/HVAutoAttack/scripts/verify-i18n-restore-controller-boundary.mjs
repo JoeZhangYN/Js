@@ -3,6 +3,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const owner = path.normalize("src/i18n/core/restore-controller.js");
+const failureOwner = path.normalize("src/i18n/core/restore-failure.js");
 const ownerTest = path.normalize("src/i18n/core/restore-controller.test.js");
 const violations = [];
 
@@ -15,9 +16,13 @@ function rel(relative) {
 }
 
 const ownerText = read(owner);
+const failureText = fs.existsSync(path.join(root, failureOwner)) ? read(failureOwner) : "";
 const ownerTestText = fs.existsSync(path.join(root, ownerTest)) ? read(ownerTest) : "";
 
 for (const required of [
+  "I18N_RESTORE_FAILURE_KEY",
+  "recordI18nRestoreFailure",
+  "from \"./restore-failure.js\"",
   "registerRestore",
   "ensureRestoreButton",
   "toggleRestore",
@@ -27,12 +32,23 @@ for (const required of [
   "restoreCallbacks",
   "retranslateCallbacks",
   "i18nRenders",
-  'console.error("[HVAA][i18n] restore 回调出错:"',
-  'console.error("[HVAA][i18n] retranslate 回调出错:"',
-  'console.error("[HVAA][i18n] i18nRender 出错:"',
+  '"restore"',
+  '"retranslate"',
+  '"i18nRender"',
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must own ${required}`);
+  }
+}
+
+for (const required of [
+  "I18N_RESTORE_FAILURE_KEY",
+  "recordI18nRestoreFailure",
+  "globalThis.sessionStorage?.setItem(I18N_RESTORE_FAILURE_KEY",
+  "Console hooks are diagnostic only.",
+]) {
+  if (!failureText.includes(required)) {
+    violations.push(`${rel(failureOwner)} must own ${required}`);
   }
 }
 
@@ -43,10 +59,13 @@ for (const forbidden of ["throw e", "throw error", "throw new Error"]) {
 }
 
 for (const required of [
+  "I18N_RESTORE_FAILURE_KEY",
   "continues restore callbacks when one restore handler throws",
   "continues language switching when restore, retranslate, or render handlers throw",
+  "keeps i18n failure evidence when diagnostic console is blocked",
   "restore failed",
   "retranslate failed",
+  "restore blocked",
   "rendered",
 ]) {
   if (!ownerTestText.includes(required)) {
