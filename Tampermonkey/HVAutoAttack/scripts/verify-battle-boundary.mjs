@@ -3501,10 +3501,19 @@ function checkBattleItemDecisionEntry() {
   if (/switch\s*\(\s*event\.type\s*\)|event\.type\s*===/.test(itemEntryBody)) {
     violations.push(`${rel(decideItemFile)} entry must dispatch by handler table`);
   }
+  if (/battleItemDecisionHandlers\[event\.type\]/.test(itemEntryBody)) {
+    violations.push(`${rel(decideItemFile)} entry must fail closed for invalid item decision events`);
+  }
+  if (!/battleItemDecisionHandlers\[event\?\.type\]/.test(itemEntryBody)) {
+    violations.push(`${rel(decideItemFile)} entry must dispatch invalid item decision events through optional type`);
+  }
   const itemTestFile = path.join(root, "src/battle/item/decide-item.test.js");
   const itemTestText = fs.existsSync(itemTestFile) ? fs.readFileSync(itemTestFile, "utf8") : "";
   if (!itemTestText.includes("rejects unknown item decision events with a noop plan")) {
     violations.push(`${rel(itemTestFile)} must cover unknown item decision events`);
+  }
+  if (!/runBattleItemDecision\(null\)/.test(itemTestText)) {
+    violations.push(`${rel(itemTestFile)} must cover null item decision events`);
   }
   for (const required of ["gem: () => ({ type: \"gem\" })", "noop: () => ({ type: \"noop\" })"]) {
     if (!itemText.includes(required)) {
@@ -3535,6 +3544,15 @@ function checkBattleItemDecisionEntry() {
   }
   if (/event\.type\s*===/.test(scrollEntryBody)) {
     violations.push(`${rel(decideScrollFile)} entry must dispatch by handler table`);
+  }
+  if (/battleScrollDecisionEventHandlers\[event\.type\]/.test(scrollEntryBody)) {
+    violations.push(`${rel(decideScrollFile)} entry must fail closed for invalid scroll decision events`);
+  }
+  if (!/battleScrollDecisionEventHandlers\[event\?\.type\]/.test(scrollEntryBody)) {
+    violations.push(`${rel(decideScrollFile)} entry must dispatch invalid scroll decision events through optional type`);
+  }
+  if (!/runBattleScrollDecision\(null\)/.test(itemTestText)) {
+    violations.push(`${rel(itemTestFile)} must cover null scroll decision events`);
   }
 
   const rulesText = readBattleActionRulesText();
@@ -3661,6 +3679,19 @@ function checkItemScrollCoverageQuery() {
   ) {
     violations.push(`${rel(scrollCoverageFile)} may export only its event query entry`);
   }
+  const coverageEntryBody =
+    ownerText.match(/export function runBattleScrollCoverage\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/battleScrollCoverageEventHandlers\[event\.type\]/.test(coverageEntryBody)) {
+    violations.push(`${rel(scrollCoverageFile)} entry must fail closed for invalid scroll coverage events`);
+  }
+  if (!/battleScrollCoverageEventHandlers\[event\?\.type\]/.test(coverageEntryBody)) {
+    violations.push(`${rel(scrollCoverageFile)} entry must dispatch invalid scroll coverage events through optional type`);
+  }
+  const coverageTestText = fs.readFileSync(scrollCoverageTestFile, "utf8");
+  if (!/runBattleScrollCoverage\(null\)/.test(coverageTestText)) {
+    violations.push(`${rel(scrollCoverageTestFile)} must cover null scroll coverage events`);
+  }
 
   const scrollText = fs.readFileSync(decideScrollFile, "utf8");
   if (
@@ -3720,6 +3751,17 @@ function checkItemGemEntry() {
   }
   if (/event\.type\s*===/.test(gemEntryBody)) {
     violations.push(`${rel(decideGemFile)} entry must dispatch by handler table`);
+  }
+  if (/battleGemDecisionEventHandlers\[event\.type\]/.test(gemEntryBody)) {
+    violations.push(`${rel(decideGemFile)} entry must fail closed for invalid gem decision events`);
+  }
+  if (!/battleGemDecisionEventHandlers\[event\?\.type\]/.test(gemEntryBody)) {
+    violations.push(`${rel(decideGemFile)} entry must dispatch invalid gem decision events through optional type`);
+  }
+  const itemTestFile = path.join(root, "src/battle/item/decide-item.test.js");
+  const itemTestText = fs.existsSync(itemTestFile) ? fs.readFileSync(itemTestFile, "utf8") : "";
+  if (!/runBattleGemDecision\(null\)/.test(itemTestText)) {
+    violations.push(`${rel(itemTestFile)} must cover null gem decision events`);
   }
   if (/decideGemUse\s*\(\s*opt\s*,\s*snap\s*\)/.test(itemText)) {
     violations.push(`${rel(decideItemFile)} must not expose opt/snap gem decision input`);

@@ -96,5 +96,5 @@ const SCROLL_LIB = Object.freeze({
 });
 
 export function runBattleScrollDecision(event = { type: EVENT_DECIDE }) {
-  return battleScrollDecisionEventHandlers[event.type]?.(event) ?? emptyScrollPlan();
+  return battleScrollDecisionEventHandlers[event?.type]?.(event) ?? emptyScrollPlan();
 }

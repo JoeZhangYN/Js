@@ -45,7 +45,7 @@ const GEM_RESULT_PLAN_MAPPERS = Object.freeze({
 });
 
 export function runBattleItemDecision(event = {}) {
-  return battleItemDecisionHandlers[event.type]?.(event) || noopItemPlan;
+  return battleItemDecisionHandlers[event?.type]?.(event) || noopItemPlan;
 }
 
 function itemDecisionInput(event, factsEventType) {

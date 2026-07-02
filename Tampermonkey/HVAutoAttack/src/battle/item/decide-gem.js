@@ -29,5 +29,5 @@ function decideGem(opt, event) {
 }
 
 export function runBattleGemDecision(event = { type: EVENT_DECIDE }) {
-  return battleGemDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleGemDecisionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }

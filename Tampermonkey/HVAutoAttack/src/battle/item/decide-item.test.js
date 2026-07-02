@@ -1,7 +1,9 @@
 // item 4 step PURE decide 回归锁（纯决策，喂 mock snap 断言 ItemPlan；decide 不读 DOM）。
 // file-size-gate: exempt test-verbose（19 用例覆盖 gem/potion/stall/scroll 四 step）
 import { describe, it, expect } from "vitest";
+import { BattleGemDecisionEvent, runBattleGemDecision } from "./decide-gem.js";
 import { BattleItemDecisionEvent, runBattleItemDecision } from "./decide-item.js";
+import { BattleScrollDecisionEvent, runBattleScrollDecision } from "./decide-scroll.js";
 
 /** 最小 snap 工厂（只填 decide-item 及其纯 callee 读到的字段）。 */
 function snap(over = {}) {
@@ -94,6 +96,25 @@ describe("runBattleItemDecision", () => {
     expect(runBattleItemDecision({ type: "unknown", opt: {}, snap: snap() })).toEqual({
       kind: "item-plan",
       plan: { type: "noop" },
+    });
+    expect(runBattleItemDecision(null)).toEqual({
+      kind: "item-plan",
+      plan: { type: "noop" },
+    });
+  });
+
+  it("rejects invalid direct item sub-decision events with their fallback contracts", () => {
+    expect(runBattleGemDecision({ type: "unknown", opt: {}, gemName: "Health Gem" })).toEqual({
+      kind: "noop",
+    });
+    expect(runBattleGemDecision(null)).toEqual({ kind: "noop" });
+    expect(runBattleScrollDecision({ type: "unknown", opt: {} })).toEqual({
+      kind: "item-plan",
+      plan: { type: "scroll", candidates: [] },
+    });
+    expect(runBattleScrollDecision(null)).toEqual({
+      kind: "item-plan",
+      plan: { type: "scroll", candidates: [] },
     });
   });
 });

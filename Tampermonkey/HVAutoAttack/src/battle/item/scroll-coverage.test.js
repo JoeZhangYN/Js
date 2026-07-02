@@ -56,5 +56,6 @@ describe("runBattleScrollCoverage", () => {
 
   it("rejects unknown scroll coverage events", () => {
     expect(runBattleScrollCoverage({ type: "unknown" })).toBe(false);
+    expect(runBattleScrollCoverage(null)).toBe(false);
   });
 });

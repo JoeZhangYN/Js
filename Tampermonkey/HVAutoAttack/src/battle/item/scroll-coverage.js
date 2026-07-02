@@ -22,5 +22,5 @@ function isScrollCoveredByPlayerBuffs(event = {}, scrollSpec = {}, options = {})
 }
 
 export function runBattleScrollCoverage(event = { type: EVENT_READ_COVERAGE }) {
-  return battleScrollCoverageEventHandlers[event.type]?.(event) ?? false;
+  return battleScrollCoverageEventHandlers[event?.type]?.(event) ?? false;
 }
