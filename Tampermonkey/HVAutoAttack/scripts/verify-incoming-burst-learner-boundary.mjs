@@ -96,8 +96,12 @@ if (!ownerText.includes("const incomingBurstLearningEventHandlers")) {
 }
 const ownerEntry =
   ownerText.match(/export function runIncomingBurstLearningAutomation[\s\S]*?\n}/)?.[0] || "";
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+}
+if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null incoming burst events`);
 }
 for (const internal of ["updateBurstFromEvents(", "getLearnedBurstMap("]) {
   if (ownerEntry.includes(internal)) {
@@ -105,6 +109,9 @@ for (const internal of ["updateBurstFromEvents(", "getLearnedBurstMap("]) {
       `${owner.replaceAll("\\", "/")} entry must dispatch through incomingBurstLearningEventHandlers`
     );
   }
+}
+if (!/runIncomingBurstLearningAutomation\(null\)/.test(ownerTestText)) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null incoming burst events`);
 }
 
 if (violations.length) {

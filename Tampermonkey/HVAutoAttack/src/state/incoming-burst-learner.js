@@ -86,5 +86,5 @@ const incomingBurstLearningEventHandlers = Object.freeze({
 });
 
 export function runIncomingBurstLearningAutomation(event = { type: EVENT_READ_MAP }) {
-  return incomingBurstLearningEventHandlers[event.type]?.(event);
+  return incomingBurstLearningEventHandlers[event?.type]?.(event);
 }
