@@ -15,5 +15,5 @@ function readGemName() {
 }
 
 export function runBattleItemSurface(event = { type: EVENT_READ_GEM_NAME }) {
-  return battleItemSurfaceEventHandlers[event.type]?.() ?? null;
+  return battleItemSurfaceEventHandlers[event?.type]?.() ?? null;
 }

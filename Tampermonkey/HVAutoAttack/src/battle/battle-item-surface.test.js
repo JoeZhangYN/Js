@@ -26,8 +26,9 @@ describe("runBattleItemSurface", () => {
     expect(mocks.gE).toHaveBeenCalledWith("#ikey_p");
   });
 
-  it("rejects unknown events without reading item DOM", () => {
+  it("rejects invalid events without reading item DOM", () => {
     expect(runBattleItemSurface({ type: "unknown" })).toBeNull();
+    expect(runBattleItemSurface(null)).toBeNull();
     expect(mocks.gE).not.toHaveBeenCalled();
   });
 });

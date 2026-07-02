@@ -44,12 +44,21 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_GEM_NAME\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (/battleItemSurfaceEventHandlers\[event\.type\]/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must fail closed for invalid item surface events`);
+}
+if (!/battleItemSurfaceEventHandlers\[event\?\.type\]/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must dispatch invalid item surface events through optional type`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover item surface entry contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("rejects unknown events without reading item DOM")) {
-    violations.push(`${rel(ownerTest)} must cover unknown item surface events`);
+  if (!ownerTestText.includes("rejects invalid events without reading item DOM")) {
+    violations.push(`${rel(ownerTest)} must cover invalid item surface events`);
+  }
+  if (!/runBattleItemSurface\(null\)/.test(ownerTestText)) {
+    violations.push(`${rel(ownerTest)} must cover null item surface events`);
   }
 }
 if (!snapshotText.includes("runBattleItemSurface")) {
