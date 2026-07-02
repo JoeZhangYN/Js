@@ -179,6 +179,10 @@ requireText(path.normalize("src/battle/kill-bug-evidence.js"), [
 requireText(path.normalize("src/battle/kill-bug-evidence.test.js"), [
   "records battle kill-bug recovery evidence",
   "rejects null kill-bug evidence events without writing diagnostics",
+  "keeps kill-bug recovery evidence visible when storage is unavailable",
+  "keeps kill-bug recovery evidence stored when debug output fails",
+  'storageWriteError: "quota"',
+  "console blocked",
   "HVAA:lastBattleKillBugRecovery",
 ]);
 const diagnosticKeysText = read(path.normalize("src/core/diagnostic-evidence-keys.js"));
