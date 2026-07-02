@@ -1497,7 +1497,11 @@ const bindBattlePanel = function (battle, ctx) {
     battle.node.items.innerHTML = '';
     await $item.load();
     battle.render_supply_grid();
-    ctx.config.set('items', $item.count());
+    if (!ctx.config.set('items', $item.count())) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    return true;
   };
 };
 

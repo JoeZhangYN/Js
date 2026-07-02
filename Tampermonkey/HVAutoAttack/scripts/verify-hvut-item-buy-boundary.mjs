@@ -7,8 +7,11 @@ const text = fs.readFileSync(path.join(root, target), "utf8");
 const violations = [];
 
 const buyBody = text.match(/buy: async function \(items\) \{[\s\S]*?\n  \},\n\};/)?.[0] || "";
+const loadItemsBody =
+  text.match(/battle\.load_items = async function \(\) \{[\s\S]*?\n  \};\n\};/)?.[0] || "";
 
 if (!buyBody) violations.push(`${target} must own $item.buy entry`);
+if (!loadItemsBody) violations.push(`${target} must own battle.load_items entry`);
 
 for (const required of [
   "return false",
@@ -22,6 +25,22 @@ for (const required of [
   if (!buyBody.includes(required)) {
     violations.push(`${target} $item.buy must classify purchase failure with ${required}`);
   }
+}
+
+for (const required of [
+  "await $item.load();",
+  "battle.render_supply_grid();",
+  "if (!ctx.config.set('items', $item.count())) {",
+  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "return false;",
+  "return true;",
+]) {
+  if (!loadItemsBody.includes(required)) {
+    violations.push(`${target} battle.load_items must fail closed on inventory cache writes with ${required}`);
+  }
+}
+if (/battle\.render_supply_grid\(\);\n\s*ctx\.config\.set\('items', \$item\.count\(\)\);/.test(loadItemsBody)) {
+  violations.push(`${target} battle.load_items must not ignore inventory cache write failure`);
 }
 
 for (const forbidden of [
