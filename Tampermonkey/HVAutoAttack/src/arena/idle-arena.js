@@ -159,6 +159,5 @@ function startNextBattle() {
 }
 
 export function runIdleArenaAutomation(event = { type: EVENT_START_NEXT_BATTLE }) {
-  const handler = idleArenaEventHandlers[event.type] || idleArenaEventHandlers[EVENT_START_NEXT_BATTLE];
-  return handler(event);
+  return idleArenaEventHandlers[event?.type]?.(event) ?? false;
 }

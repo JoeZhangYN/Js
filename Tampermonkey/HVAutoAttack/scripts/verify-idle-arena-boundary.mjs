@@ -88,7 +88,9 @@ if (!ownerText.includes("delValue(STORAGE_KEYS.ARENA)")) {
   violations.push(`${owner.replaceAll("\\", "/")} must own arena reset storage deletion`);
 }
 if (!ownerText.includes("const idleArenaEventHandlers")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route idle arena events through a handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route idle arena events through a handler table`
+  );
 }
 const entryMatch = ownerText.match(/export function runIdleArenaAutomation[\s\S]*?\n}/);
 if (!entryMatch) {
@@ -96,11 +98,38 @@ if (!entryMatch) {
 } else {
   const entryBody = entryMatch[0];
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+    );
   }
   for (const internal of ["scheduleNextBattle(", "resetProgress(", "startNextBattle("]) {
     if (entryBody.includes(internal)) {
-      violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through idleArenaEventHandlers`);
+      violations.push(
+        `${owner.replaceAll("\\", "/")} entry must dispatch through idleArenaEventHandlers`
+      );
+    }
+  }
+  if (/\|\|\s*idleArenaEventHandlers\[EVENT_START_NEXT_BATTLE\]/.test(entryBody)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} explicit unknown idle arena events must not start battles`
+    );
+  }
+  if (!entryBody.includes("?? false")) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} unknown idle arena events must reject as false`
+    );
+  }
+}
+if (!fs.existsSync(path.join(root, ownerTest))) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover idle arena entry behavior`);
+} else {
+  const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+  for (const required of [
+    "rejects unknown idle arena events without starting a battle",
+    "expect(mocks.post).not.toHaveBeenCalled()",
+  ]) {
+    if (!ownerTestText.includes(required)) {
+      violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
     }
   }
 }

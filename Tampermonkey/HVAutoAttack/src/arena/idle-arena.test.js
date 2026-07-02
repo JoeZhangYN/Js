@@ -57,7 +57,7 @@ describe("runIdleArenaAutomation", () => {
     expect(getValue(STORAGE_KEYS.ARENA, true)).toBeNull();
   });
 
-  it("falls back to starting the next battle for unknown events", () => {
+  it("rejects unknown idle arena events without starting a battle", () => {
     vi.useFakeTimers();
     mocks.runOptionAutomation.mockImplementation((event) => {
       if (event.key === "idleArenaGrTime") return 0;
@@ -65,13 +65,9 @@ describe("runIdleArenaAutomation", () => {
       return event.fallback;
     });
 
-    runIdleArenaAutomation({ type: "unknown" });
+    expect(runIdleArenaAutomation({ type: "unknown" })).toBe(false);
 
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
-      type: "readField",
-      key: "idleArenaGrTime",
-      fallback: 0,
-    });
-    expect(mocks.post).toHaveBeenCalledTimes(4);
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
+    expect(mocks.post).not.toHaveBeenCalled();
   });
 });
