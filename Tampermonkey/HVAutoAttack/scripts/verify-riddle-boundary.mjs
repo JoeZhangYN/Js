@@ -289,6 +289,12 @@ function checkRiddleSubmissionTiming() {
   if (/if\s*\(\s*event\.type\s*===/.test(timingEntryBody)) {
     violations.push(`${rel(riddleTimingFile)} entry must route events through handler table`);
   }
+  if (timingEntryBody.includes("event.type")) {
+    violations.push(`${rel(riddleTimingFile)} entry must reject null events without throwing`);
+  }
+  if (!timingEntryBody.includes("event?.type")) {
+    violations.push(`${rel(riddleTimingFile)} entry must fail closed for unknown or null events`);
+  }
   for (const forbidden of [
     "readRemainingSeconds",
     "startSubmissionTiming",
@@ -298,6 +304,15 @@ function checkRiddleSubmissionTiming() {
     if (timingEntryBody.includes(forbidden)) {
       violations.push(`${rel(riddleTimingFile)} entry must route timing work through event handlers`);
     }
+  }
+  const timingTestFile = path.normalize("src/pages/riddle-submission-timing.test.js");
+  const timingTestText = fs.readFileSync(path.join(root, timingTestFile), "utf8");
+  if (
+    !timingTestText.includes("rejects unknown and null timing events without reading countdown state") ||
+    !timingTestText.includes("runRiddleSubmissionTiming(null)") ||
+    !timingTestText.includes("querySelector).not.toHaveBeenCalled()")
+  ) {
+    violations.push(`${timingTestFile.replaceAll("\\", "/")} must cover unknown and null timing events`);
   }
   for (const required of ["EXTERNAL_SUBMITTED", "ML_ANSWERS_READY"]) {
     if (!timingText.includes(required)) {

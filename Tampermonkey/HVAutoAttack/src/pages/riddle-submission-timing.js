@@ -129,6 +129,6 @@ function scheduleActiveMlSubmission(event) {
 }
 
 export function runRiddleSubmissionTiming(event = { type: EVENT_READ_REMAINING }) {
-  const handler = riddleSubmissionTimingEventHandlers[event.type];
+  const handler = riddleSubmissionTimingEventHandlers[event?.type];
   return handler ? handler(event) : undefined;
 }

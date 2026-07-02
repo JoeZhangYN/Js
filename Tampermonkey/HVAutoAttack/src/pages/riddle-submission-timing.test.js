@@ -14,8 +14,12 @@ afterEach(() => {
 });
 
 describe("riddle submission timing", () => {
-  it("ignores unknown timing events at the entry", () => {
+  it("rejects unknown and null timing events without reading countdown state", () => {
+    const querySelector = vi.spyOn(document, "querySelector");
+
     expect(runRiddleSubmissionTiming({ type: "unknown" })).toBeUndefined();
+    expect(runRiddleSubmissionTiming(null)).toBeUndefined();
+    expect(querySelector).not.toHaveBeenCalled();
   });
 
   it("reads M:SS countdown text", () => {
