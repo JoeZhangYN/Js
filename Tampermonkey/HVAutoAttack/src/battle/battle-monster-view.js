@@ -101,5 +101,5 @@ function monsterHpVars(view) {
 }
 
 export function runBattleMonsterView(event = { type: EVENT_READ_VIEW }) {
-  return battleMonsterViewEventHandlers[event.type]?.(event) ?? EMPTY_MONSTER_VIEW;
+  return battleMonsterViewEventHandlers[event?.type]?.(event) ?? EMPTY_MONSTER_VIEW;
 }

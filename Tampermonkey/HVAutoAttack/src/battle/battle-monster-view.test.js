@@ -61,8 +61,16 @@ describe("battle monster view", () => {
     expect(mocks.runMonsterCacheAutomation).toHaveBeenCalledWith({ type: "readDb" });
   });
 
-  it("rejects unknown events without reading status, cache, or deriving view", () => {
+  it("rejects invalid events without reading status, cache, or deriving view", () => {
     expect(runBattleMonsterView({ type: "unknown", monsters: [{ order: 0 }] })).toEqual({
+      view: [],
+      monsterIdentities: [],
+      aliveCount: 0,
+      soloMonsterHpPercent: 100,
+      lowestMonsterHpPercent: 100,
+      firstMonsterHpPercent: 100,
+    });
+    expect(runBattleMonsterView(null)).toEqual({
       view: [],
       monsterIdentities: [],
       aliveCount: 0,
