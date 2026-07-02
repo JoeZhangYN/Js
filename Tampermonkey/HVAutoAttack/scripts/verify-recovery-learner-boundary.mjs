@@ -4,7 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/recovery-learner.js");
+const failureOwner = path.normalize("src/state/recovery-learner-failure.js");
 const ownerTest = path.normalize("src/state/recovery-learner.test.js");
+const failureTest = path.normalize("src/state/recovery-learner-failure.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const potionEconomy = path.normalize("src/battle/potion-economy.js");
 const violations = [];
@@ -29,7 +31,9 @@ function checkFile(file) {
     const where = `${rel(file)}:${index + 1}`;
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       /from\s+["'](?:\.\/|\.\.\/\.\.\/state\/|\.\.\/state\/)recovery-learner\.js["']/.test(line) &&
       /\b(?:recordPreDrink|finalizePending|getLearnedRecovery)\b/.test(line)
     ) {
@@ -37,7 +41,9 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.LEARNED_RECOVERY\b/.test(line)
     ) {
@@ -129,6 +135,7 @@ for (const required of [
   "normalizeRecoveryAbs",
   "normalizeLearnedRecoveryRecord",
   "readLearnedRecoveryMap",
+  "persistLearnedRecovery",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -194,6 +201,8 @@ if (!ownerText.includes("const recoveryLearningEventHandlers")) {
 const ownerEntry =
   ownerText.match(/export function runRecoveryLearningAutomation[\s\S]*?\n}/)?.[0] || "";
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
+const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
 }
@@ -209,6 +218,35 @@ for (const internal of ["recordPreDrink(", "finalizePending(", "getLearnedRecove
 }
 if (!/runRecoveryLearningAutomation\(null\)/.test(ownerTestText)) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null recovery learning events`);
+}
+
+if (!/function persistLearnedRecovery\(learned\) \{[\s\S]*setValue\(STORAGE_KEYS\.LEARNED_RECOVERY,\s*learned\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordRecoveryLearningFailure\("update-learned",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
+  violations.push(`${failureOwner.replaceAll("\\", "/")} must classify learned recovery storage write failures`);
+}
+if ((ownerText.match(/\bsetValue\(/g) || []).length !== 0) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not write learned recovery storage directly`);
+}
+for (const required of [
+  "RECOVERY_LEARNING_FAILURE_KEY",
+  "HVAA:lastRecoveryLearningFailure",
+  "recordRecoveryLearningFailure",
+  "recoveryLearning",
+  "persistLearnedRecovery",
+  "STORAGE_KEYS.LEARNED_RECOVERY",
+]) {
+  if (!failureOwnerText.includes(required)) {
+    violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of [
+  "RECOVERY_LEARNING_FAILURE_KEY",
+  "update-learned",
+  "storageWrite",
+  "recovery learning write blocked",
+]) {
+  if (!failureTestText.includes(required)) {
+    violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
 }
 
 if (violations.length) {

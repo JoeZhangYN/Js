@@ -1,24 +1,17 @@
-// T1：药品恢复量自学。
-// 喝药前记录 HP/MP/SP 绝对值 → 下回合 snapshot 入口取 recoveryAbs delta → EWMA 更新该 potion ID 的实际恢复量。
-// 抗扰动：负 delta 丢弃（怪物攻击/regen 干扰）；EWMA alpha 自适应保收敛。
-//
-// 数据流：
-//   turn N 喝药 → recordPreDrink(potionId, recoveryAbs)  [写 g("learnPending")]
-//   turn N+1 snapshot → finalizePending(recoveryAbs)      [读 pending → 计算 delta → 更新 learned]
-//   后续决策 getLearnedRecovery(potionId) 优先返学到值，缺省 fallback RECOVERY_PRIOR
+// 药品恢复量自学：喝药前记录 recoveryAbs，下回合用 delta 更新 learned recovery。
 import { g } from "./store.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
-import { setValue, getValue } from "./storage.js";
+import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "./battle-turn.js";
+import { persistLearnedRecovery } from "./recovery-learner-failure.js";
 
 const EVENT_RECORD_PRE_DRINK = "recordPreDrink";
 const EVENT_FINALIZE_PENDING = "finalizePending";
 const EVENT_READ_RECOVERY = "readRecovery";
 
 export const RecoveryLearningEvent = Object.freeze({
-  RECORD_PRE_DRINK: EVENT_RECORD_PRE_DRINK,
-  FINALIZE_PENDING: EVENT_FINALIZE_PENDING,
+  RECORD_PRE_DRINK: EVENT_RECORD_PRE_DRINK, FINALIZE_PENDING: EVENT_FINALIZE_PENDING,
   READ_RECOVERY: EVENT_READ_RECOVERY,
 });
 
@@ -85,10 +78,7 @@ function normalizeLearnedRecoveryRecord(value) {
   const amount = Number(value?.amount);
   const n = Number(value?.n);
   if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(n) || n <= 0) return null;
-  return {
-    amount,
-    n: Math.trunc(n),
-  };
+  return { amount, n: Math.trunc(n) };
 }
 
 function readLearnedRecoveryMap() {
@@ -102,10 +92,6 @@ function readLearnedRecoveryMap() {
   return learned;
 }
 
-/**
- * 喝药前调用：保存 pending 观测点。
- * @param {number|string} potionId
- */
 function recordPreDrink(potionId, recoveryAbs) {
   const id = normalizePotionId(potionId);
   const info = RECOVERY_PRIOR[id];
@@ -120,11 +106,6 @@ function recordPreDrink(potionId, recoveryAbs) {
   );
 }
 
-/**
- * snapshot 入口调用：若有 pending 且非同回合 → 取 delta 更新 learned。
- * 同回合 click 后立刻 collect snapshot 也 OK（pending.turn === current turn 视为未结算，跳过）。
- * @param {{recoveryAbs?:{hp?:number,mp?:number,sp?:number}}} event
- */
 function finalizePending(event) {
   const rawPending = g("learnPending");
   const pending = normalizePending(rawPending);
@@ -149,7 +130,7 @@ function finalizePending(event) {
     }
     return;
   }
-  updateLearned(pending.potionId, delta);
+  return updateLearned(pending.potionId, delta);
 }
 
 function updateLearned(potionId, observedDelta) {
@@ -157,23 +138,18 @@ function updateLearned(potionId, observedDelta) {
   const prior = learned[potionId];
   const n = (prior?.n ?? 0) + 1;
   const priorAmt = prior?.amount ?? RECOVERY_PRIOR[potionId]?.amount ?? observedDelta;
-  // EWMA：n 越大 alpha 越小（趋稳），但下限 0.1 保对装备变化敏感
   const alpha = Math.max(0.1, 1 / n);
   const newAmt = priorAmt * (1 - alpha) + observedDelta * alpha;
   learned[potionId] = { amount: newAmt, n };
-  setValue(STORAGE_KEYS.LEARNED_RECOVERY, learned);
+  const persisted = persistLearnedRecovery(learned);
   if (isDynamicHealLogEnabled()) {
     console.log(
       `[recovery-learn] ${potionId}: delta=${observedDelta.toFixed(0)} → learned=${newAmt.toFixed(0)} (n=${n})`
     );
   }
+  return persisted;
 }
 
-/**
- * 获取该 potion ID 的实际恢复量（学到的优先；未学到 fallback hardcoded prior）。
- * @param {number|string} potionId
- * @returns {{stat:string, amount:number}|null}
- */
 function getLearnedRecovery(potionId) {
   const id = normalizePotionId(potionId);
   const fallback = RECOVERY_PRIOR[id];
