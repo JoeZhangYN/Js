@@ -60,7 +60,7 @@ describe("readRecentDiagnosticEvidence", () => {
       "HVAA:lastRiddleMlAnswerFailure": { capability: "riddleMlAnswer", stage: "request", fallback: "random" },
       "HVAA:lastEquipmentPercentileFailure": { capability: "equipmentPercentile", stage: "persist-preference" },
       "HVAA:lastEquipmentFilterFailure": { capability: "equipmentFilter", stage: "match" },
-      "HVAA:lastHvutNavigationBridgeFailure": { capability: "hvutNavigationBridge", stage: "reloadBlocked" }, "HVAA:lastHvutConfigStorageFailure": { capability: "hvutConfigStorage", stage: "set" }, "HVAA:lastHvutAbilityParseFailure": { capability: "hvutAbilityParse", stage: "abilityButtonType" }, "HVAA:lastHvutTrainingNotificationFailure": { capability: "hvutTrainingNotification", stage: "bottomTrainingHtmlEndTime" },
+      "HVAA:lastHvutNavigationBridgeFailure": { capability: "hvutNavigationBridge", stage: "reloadBlocked" }, "HVAA:lastHvutConfigStorageFailure": { capability: "hvutConfigStorage", stage: "set" }, "HVAA:lastHvutAbilityParseFailure": { capability: "hvutAbilityParse", stage: "abilityButtonType" }, "HVAA:lastHvutTrainingNotificationFailure": { capability: "hvutTrainingNotification", stage: "bottomTrainingHtmlEndTime" }, "HVAA:lastHvutMoogleMailParseFailure": { capability: "hvutMoogleMailParse", stage: "viewCurrentCod" },
       "HVAA:lastLotteryNotificationFailure": { capability: "lotteryNotification", stage: "load" },
     };
     for (const [key, evidence] of Object.entries(evidenceByKey)) {
@@ -123,7 +123,7 @@ describe("readRecentDiagnosticEvidence", () => {
       riddleMlAnswerFailure: { capability: "riddleMlAnswer", stage: "request", fallback: "random" },
       equipmentPercentileFailure: { capability: "equipmentPercentile", stage: "persist-preference" },
       equipmentFilterFailure: { capability: "equipmentFilter", stage: "match" },
-      hvutNavigationBridgeFailure: { capability: "hvutNavigationBridge", stage: "reloadBlocked" }, hvutConfigStorageFailure: { capability: "hvutConfigStorage", stage: "set" }, hvutAbilityParseFailure: { capability: "hvutAbilityParse", stage: "abilityButtonType" }, hvutTrainingNotificationFailure: { capability: "hvutTrainingNotification", stage: "bottomTrainingHtmlEndTime" },
+      hvutNavigationBridgeFailure: { capability: "hvutNavigationBridge", stage: "reloadBlocked" }, hvutConfigStorageFailure: { capability: "hvutConfigStorage", stage: "set" }, hvutAbilityParseFailure: { capability: "hvutAbilityParse", stage: "abilityButtonType" }, hvutTrainingNotificationFailure: { capability: "hvutTrainingNotification", stage: "bottomTrainingHtmlEndTime" }, hvutMoogleMailParseFailure: { capability: "hvutMoogleMailParse", stage: "viewCurrentCod" },
       lotteryNotificationFailure: { capability: "lotteryNotification", stage: "load" },
     });
   });

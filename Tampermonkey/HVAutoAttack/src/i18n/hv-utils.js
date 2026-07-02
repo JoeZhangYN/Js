@@ -107,6 +107,24 @@ try {
       ? seconds * 1000
       : record_hvut_training_notification_failure(stage, { sourceType: typeof source });
   };
+  var record_hvut_mooglemail_parse_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutMoogleMailParse', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutMoogleMailParseFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // MoogleMail parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] MoogleMail parse failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT MoogleMail parse fallback.
+    }
+    return null;
+  };
+  var parse_hvut_mooglemail_count = function (text, pattern, stage) {
+    var match = pattern.exec(text || '');
+    return match ? parseInt(match[1].replace(/,/g, '')) || 0 : record_hvut_mooglemail_parse_failure(stage, { text: text || '' });
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -8845,10 +8863,12 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const credits = { info: { name: 'Credits' }, data: { pane: 'credits', id: 0, name: 'Credits', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
         const hath = { info: { name: 'Hath' }, data: { pane: 'hath', id: 0, name: 'Hath', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
         if ($id('mmail_attachcredits')) {
-          credits.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Credits/.exec($id('mmail_attachcredits').textContent)[1]);
+          credits.data.stock = parse_hvut_mooglemail_count($id('mmail_attachcredits').textContent, /Current Funds: ([0-9,]+) Credits/, 'writeCreditsStock');
+          if (credits.data.stock === null) return false;
         }
         if ($id('mmail_attachhath')) {
-          hath.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Hath/.exec($id('mmail_attachhath').textContent)[1]);
+          hath.data.stock = parse_hvut_mooglemail_count($id('mmail_attachhath').textContent, /Current Funds: ([0-9,]+) Hath/, 'writeHathStock');
+          if (hath.data.stock === null) return false;
         }
 
         _mm.credits.node.div = $element('div', null, ['.hvut-none']);
@@ -8971,7 +8991,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       },
     };
 
-    _mm.credits.init();
+    if (_mm.credits.init() === false) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
 
     if (!['item', 'equip', 'credits'].some((panel) => { if (_mm[panel].node.div.parentNode) { _mm.write.toggle(panel); return true; } })) {
       $element('div', _mm.write.node.right, ['/' + $id('mmail_right').innerHTML, '.hvut-mm-disabled']);
@@ -9469,7 +9492,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
               }
             });
             if ($id('mmail_currentcod', doc)) {
-              view.cod = _mm.parse_count(/Requested Payment on Delivery: ([0-9,]+) credits/.exec($id('mmail_currentcod', doc).textContent)[1]);
+              view.cod = parse_hvut_mooglemail_count($id('mmail_currentcod', doc).textContent, /Requested Payment on Delivery: ([0-9,]+) credits/, 'viewCurrentCod');
+              if (view.cod === null) {
+                view.error = '解析货到付款失败';
+                view.cod = 0;
+              }
             }
           } else {
             const split = view.text.split('\n\n').reverse();
@@ -15121,10 +15148,18 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
     const credits = { info: { name: 'Credits' }, data: { pane: 'credits', id: 0, name: 'Credits', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
     const hath = { info: { name: 'Hath' }, data: { pane: 'hath', id: 0, name: 'Hath', stock: 0, count: 0, price: 0, cod: 0 }, node: {} };
     if ($id('mmail_attachcredits')) {
-      credits.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Credits/.exec($id('mmail_attachcredits').textContent)[1]);
+      credits.data.stock = parse_hvut_mooglemail_count($id('mmail_attachcredits').textContent, /Current Funds: ([0-9,]+) Credits/, 'legacyWriteCreditsStock');
+      if (credits.data.stock === null) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
     }
     if ($id('mmail_attachhath')) {
-      hath.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Hath/.exec($id('mmail_attachhath').textContent)[1]);
+      hath.data.stock = parse_hvut_mooglemail_count($id('mmail_attachhath').textContent, /Current Funds: ([0-9,]+) Hath/, 'legacyWriteHathStock');
+      if (hath.data.stock === null) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
     }
 
     _mm.node.credits_div = $element('div', null, ['.hvut-none']);
@@ -15680,7 +15715,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             }
           });
           if ($id('mmail_currentcod', doc)) {
-            view.cod = _mm.parse_count(/Requested Payment on Delivery: ([0-9,]+) credits/.exec($id('mmail_currentcod', doc).textContent)[1]);
+            view.cod = parse_hvut_mooglemail_count($id('mmail_currentcod', doc).textContent, /Requested Payment on Delivery: ([0-9,]+) credits/, 'legacyViewCurrentCod');
+            if (view.cod === null) {
+              view.error = '解析货到付款失败';
+              view.cod = 0;
+            }
           }
         } else {
           const split = view.text.split('\n\n').reverse();
