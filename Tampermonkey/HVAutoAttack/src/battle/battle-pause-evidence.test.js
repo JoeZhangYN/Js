@@ -33,4 +33,28 @@ describe("runBattlePauseEvidence", () => {
     expect(runBattlePauseEvidence({ type: "unknown" })).toBe(false);
     expect(runBattlePauseEvidence(null)).toBe(false);
   });
+
+  it("keeps pause evidence stored when debug output fails", () => {
+    expect(() =>
+      runBattlePauseEvidence(
+        {
+          type: BattlePauseEvidenceEvent.RECORD_STATE,
+          state: "paused",
+          reason: "battleApiResponseRepeated",
+        },
+        {
+          sessionStorage: window.sessionStorage,
+          debug: () => {
+            throw new Error("console blocked");
+          },
+        }
+      )
+    ).not.toThrow();
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
+      state: "paused",
+      reason: "battleApiResponseRepeated",
+      storageWriteOk: true,
+    });
+  });
 });

@@ -84,6 +84,15 @@ function checkEntry() {
   if (!evidenceTestText.includes("runBattlePauseEvidence(null)")) {
     violations.push(`${evidenceTest.replaceAll("\\", "/")} must cover null pause evidence events`);
   }
+  for (const required of [
+    "keeps pause evidence stored when debug output fails",
+    'throw new Error("console blocked")',
+    "not.toThrow()",
+  ]) {
+    if (!evidenceTestText.includes(required)) {
+      violations.push(`${evidenceTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
   const persistenceTest = path.normalize("src/battle/battle-action-evidence-persistence.test.js");
   const persistenceTestText = fs.readFileSync(path.join(root, persistenceTest), "utf8");
   for (const required of [
