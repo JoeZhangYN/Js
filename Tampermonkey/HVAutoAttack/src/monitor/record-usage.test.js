@@ -18,6 +18,16 @@ beforeEach(() => {
 });
 
 describe("runBattleUsageAutomation", () => {
+  it("rejects unknown and null usage events without changing usage records", () => {
+    setValue(STORAGE_KEYS.STATS, { self: { _monster: 2, _boss: 1 } });
+
+    expect(runBattleUsageAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runBattleUsageAutomation(null)).toBeUndefined();
+
+    expect(getValue(STORAGE_KEYS.STATS, true)).toEqual({ self: { _monster: 2, _boss: 1 } });
+    expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toBeNull();
+  });
+
   it("does not archive completion usage when record usage is disabled", () => {
     setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
 

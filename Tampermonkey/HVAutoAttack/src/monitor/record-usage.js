@@ -41,6 +41,6 @@ const usageEventHandlers = Object.freeze({
 });
 
 export function runBattleUsageAutomation(event) {
-  usageEventHandlers[event.type]?.(event);
+  usageEventHandlers[event?.type]?.(event);
   return undefined;
 }

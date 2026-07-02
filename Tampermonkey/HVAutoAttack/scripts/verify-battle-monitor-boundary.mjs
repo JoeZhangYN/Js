@@ -434,6 +434,19 @@ function checkUsageImplementation() {
   if (/if\s*\(\s*event\.type\s*===\s*EVENT_RECORD_/.test(text)) {
     violations.push(`${rel(usageFile)} must not route usage events through an if ladder`);
   }
+  if (text.includes("usageEventHandlers[event.type]")) {
+    violations.push(`${rel(usageFile)} must fail closed for null usage events`);
+  }
+  if (!text.includes("usageEventHandlers[event?.type]")) {
+    violations.push(`${rel(usageFile)} must dispatch usage events with nullable event semantics`);
+  }
+  const usageTestText = fs.readFileSync(path.join(root, "src/monitor/record-usage.test.js"), "utf8");
+  if (
+    !usageTestText.includes("rejects unknown and null usage events without changing usage records") ||
+    !usageTestText.includes("runBattleUsageAutomation(null")
+  ) {
+    violations.push(`${rel(usageFile)} tests must cover unknown and null usage events`);
+  }
   for (const required of ["RECORD_ACTION_USAGE", "RECORD_COMPLETED_USAGE"]) {
     if (!text.includes(required)) {
       violations.push(`${rel(usageFile)} must own ${required}`);
