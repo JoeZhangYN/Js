@@ -101,7 +101,10 @@ function planWidgetNewsLoaded(event) {
       action: "reset",
     };
   }
-  return { ...readWidgetState(event.state), action: "unavailable" };
+  const unavailableReason = /Your equipment inventory is full/i.test(eventpane)
+    ? "equipmentInventoryFull"
+    : "encounterKeyMissing";
+  return { ...readWidgetState(event.state), action: "unavailable", unavailableReason };
 }
 
 function planWidgetEngage(event) {

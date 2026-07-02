@@ -814,7 +814,7 @@ const bindRe = function (re, ctx) {
     }
     if (outcome?.action === 'reset') {
       popup(eventpane);
-    } else if (outcome?.action === 'unavailable') {
+    } else if (outcome?.action === 'unavailable' && outcome.unavailableReason === 'equipmentInventoryFull') {
       popup('<p style="color: #f00; font-weight: bold;">你的装备仓库快要满了.<br>\n该去整理一下了.</p>');
     }
     re.start();

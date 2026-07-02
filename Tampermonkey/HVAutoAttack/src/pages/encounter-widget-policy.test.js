@@ -23,4 +23,34 @@ describe("planEncounterWidgetEvent", () => {
   it("ignores unknown widget policy events", () => {
     expect(planEncounterWidgetEvent({ type: "unknown" })).toBeUndefined();
   });
+
+  it("classifies missing news encounter key without claiming equipment capacity failure", () => {
+    expect(
+      planEncounterWidgetEvent({
+        type: "widgetNewsLoaded",
+        state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true },
+        eventpane: "<p>No random encounter is currently available.</p>",
+        engage: true,
+        pageType: "hv",
+      })
+    ).toMatchObject({
+      action: "unavailable",
+      unavailableReason: "encounterKeyMissing",
+    });
+  });
+
+  it("classifies explicit equipment inventory full news as the only equipment prompt reason", () => {
+    expect(
+      planEncounterWidgetEvent({
+        type: "widgetNewsLoaded",
+        state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true },
+        eventpane: '<p class="messagebox_error">Your equipment inventory is full</p>',
+        engage: true,
+        pageType: "hv",
+      })
+    ).toMatchObject({
+      action: "unavailable",
+      unavailableReason: "equipmentInventoryFull",
+    });
+  });
 });

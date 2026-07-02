@@ -162,5 +162,4 @@ describe("runEncounterAutomation", () => {
       newTab: true,
     });
   });
-
 });
