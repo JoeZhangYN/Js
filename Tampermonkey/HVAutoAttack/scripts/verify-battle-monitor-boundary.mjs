@@ -1209,6 +1209,22 @@ function checkBattleReportEntry() {
   if (!/const reportModelEventHandlers\s*=\s*Object\.freeze\(/.test(modelText)) {
     violations.push(`${rel(reportModelFile)} must route report model queries through one table`);
   }
+  if (modelText.includes("reportModelEventHandlers[event.type]")) {
+    violations.push(`${rel(reportModelFile)} must fail closed for null report model events`);
+  }
+  if (!modelText.includes("reportModelEventHandlers[event?.type]")) {
+    violations.push(`${rel(reportModelFile)} must dispatch report model events with nullable event semantics`);
+  }
+  const reportModelTestText = fs.readFileSync(
+    path.join(root, "src/monitor/battle-report-model.test.js"),
+    "utf8"
+  );
+  if (
+    !reportModelTestText.includes("rejects unknown and null model events without reading report sources") ||
+    !reportModelTestText.includes("runBattleReportModel(null")
+  ) {
+    violations.push(`${rel(reportModelFile)} tests must cover unknown and null model events`);
+  }
   if (!/\bfunction readReportSource\b/.test(modelText)) {
     violations.push(`${rel(reportModelFile)} must own current/history report model decision`);
   }
@@ -1299,8 +1315,9 @@ function checkBattleReportEntry() {
   const reportModelImports = [];
   walkImportUsers(srcDir, "battle-report-model.js", reportModelImports);
   const allowedImport = path.normalize("src/monitor/battle-report.js");
+  const allowedTestImport = path.normalize("src/monitor/battle-report-model.test.js");
   for (const user of reportModelImports) {
-    if (user !== allowedImport) {
+    if (user !== allowedImport && user !== allowedTestImport) {
       violations.push(`${user.replaceAll("\\", "/")} must not import battle-report-model directly`);
     }
   }

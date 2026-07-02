@@ -89,5 +89,5 @@ const reportModelEventHandlers = Object.freeze({
 });
 
 export function runBattleReportModel(event) {
-  return reportModelEventHandlers[event.type]?.(event);
+  return reportModelEventHandlers[event?.type]?.(event);
 }
