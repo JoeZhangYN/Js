@@ -77,6 +77,7 @@ describe("runPageRefreshAutomation", () => {
     const scheduleReload = vi.fn();
 
     expect(runPageRefreshAutomation({ type: "unknown" }, { scheduleReload })).toBe(false);
+    expect(runPageRefreshAutomation(null, { scheduleReload })).toBe(false);
     expect(scheduleReload).not.toHaveBeenCalled();
   });
 });

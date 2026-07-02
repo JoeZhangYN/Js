@@ -82,5 +82,5 @@ const pageRefreshEventHandlers = Object.freeze({
 });
 
 export function runPageRefreshAutomation(event = { type: EVENT_GAME_PAGE_READY }, deps = {}) {
-  return pageRefreshEventHandlers[event.type]?.(event, deps) ?? false;
+  return pageRefreshEventHandlers[event?.type]?.(event, deps) ?? false;
 }

@@ -104,10 +104,21 @@ const ownerEntry = ownerText.match(/export function runPageRefreshAutomation[\s\
 if (/if\s*\(\s*event\.type\s*(?:===|!==)/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce event.type branching`);
 }
+if (ownerEntry.includes("pageRefreshEventHandlers[event.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null page refresh events without throwing`);
+}
+if (!ownerEntry.includes("pageRefreshEventHandlers[event?.type]") || !ownerEntry.includes("?? false")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null page refresh events`);
+}
 for (const internal of ["scheduleUnknownPageRefresh(", "scheduleGamePageRefresh("]) {
   if (ownerEntry.includes(internal)) {
     violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through pageRefreshEventHandlers`);
   }
+}
+
+const testText = fs.readFileSync(path.join(root, testFile), "utf8");
+if (!testText.includes("runPageRefreshAutomation(null")) {
+  violations.push(`${testFile.replaceAll("\\", "/")} must cover null page refresh events`);
 }
 
 if (violations.length) {
