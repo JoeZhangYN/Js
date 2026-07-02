@@ -56,8 +56,15 @@ describe("stamina loss log entry", () => {
     expect(message).toContain("是否重置 (Whether to reset)?");
   });
 
-  it("ignores unknown stamina loss log events", () => {
+  it("ignores invalid stamina loss log events without changing stored logs", () => {
+    runStaminaLossLogAutomation({
+      type: StaminaLossLogEvent.RECORD,
+      amount: 4,
+      stamp: "kept",
+    });
+
     expect(runStaminaLossLogAutomation({ type: "unknown" })).toBeUndefined();
-    expect(getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true)).toBeNull();
+    expect(runStaminaLossLogAutomation(null)).toBeUndefined();
+    expect(getValue(STORAGE_KEYS.STAMINA_LOST_LOG, true)).toEqual({ kept: 4 });
   });
 });

@@ -52,6 +52,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 for (const required of [
   "runStaminaLossLogAutomation",
   "StaminaLossLogEvent",
@@ -88,6 +89,9 @@ const ownerEntry =
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
 }
+if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null stamina loss log events`);
+}
 for (const internal of [
   "readStaminaLossLog(",
   "recordStaminaLoss(",
@@ -99,6 +103,9 @@ for (const internal of [
       `${owner.replaceAll("\\", "/")} entry must dispatch through staminaLossLogEventHandlers`
     );
   }
+}
+if (!/runStaminaLossLogAutomation\(null\)/.test(ownerTestText)) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null stamina loss log events`);
 }
 
 if (violations.length) {

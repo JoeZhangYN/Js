@@ -51,5 +51,5 @@ const staminaLossLogEventHandlers = Object.freeze({
 });
 
 export function runStaminaLossLogAutomation(event = { type: EVENT_READ }) {
-  return staminaLossLogEventHandlers[event.type]?.(event);
+  return staminaLossLogEventHandlers[event?.type]?.(event);
 }
