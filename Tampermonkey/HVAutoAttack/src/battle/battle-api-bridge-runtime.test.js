@@ -105,6 +105,16 @@ describe("battle API bridge runtime protocol", () => {
     expect(warn).toHaveBeenCalledWith(
       "[HVAA] battle API callback fallback reload blocked; navigation bridge missing"
     );
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleApiBridge"))).toMatchObject({
+      phase: "callbackFallback",
+      nodeId: null,
+      result: "rejected",
+      reason: "navigationBridgeMissing",
+      detail: {
+        reason: "navigationBridgeMissing",
+        callbackReason: "missingBattleContinue",
+      },
+    });
   });
 
   it("uses the page MAIN_URL protocol when the current hvc runtime exposes it", () => {

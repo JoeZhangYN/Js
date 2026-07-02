@@ -77,6 +77,10 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
                     { source: "battleApiBridge", reason: "missingBattleContinue" }
                   );
                 }
+                recordApiBridgeEventNode("callbackFallback", null, "rejected", {
+                  reason: "navigationBridgeMissing",
+                  callbackReason: "missingBattleContinue",
+                });
                 console.warn("[HVAA] battle API callback fallback reload blocked; navigation bridge missing");
                 return false;
               },

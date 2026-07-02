@@ -98,6 +98,8 @@ const apiCallScriptText = requireText(apiCallScript, [
   "window.HVAA_navigation",
   "BATTLE_API_CALLBACK_FALLBACK",
   "missingBattleContinue",
+  "callbackFallback",
+  "navigationBridgeMissing",
   "clickActionEventNode",
   "recordApiBridgeEventNode",
   "recordApiTransportFailure",
@@ -169,6 +171,8 @@ requireText(runtimeTest, [
   "battle_continue-capable target",
   "non-capable window.battle object",
   "blocks fallback callback reload when the navigation bridge is missing",
+  "callbackFallback",
+  "navigationBridgeMissing",
   "records missing action start event nodes and blocks API send",
   "records action end event node click failures",
   "eventNodeMissing",
@@ -516,6 +520,14 @@ if (
 ) {
   violations.push(
     `${apiCallScript.replaceAll("\\", "/")} must bind native process_action callbacks to a battle_continue-capable target and route fallback reloads through the navigation bridge`
+  );
+}
+if (
+  !apiCallScriptText.includes('recordApiBridgeEventNode("callbackFallback", null, "rejected"') ||
+  !apiCallScriptText.includes('reason: "navigationBridgeMissing"')
+) {
+  violations.push(
+    `${apiCallScript.replaceAll("\\", "/")} must record callback fallback reload blocks as API bridge evidence`
   );
 }
 if (
