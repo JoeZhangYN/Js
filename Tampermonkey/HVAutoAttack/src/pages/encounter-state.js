@@ -1,5 +1,6 @@
 import { gmXhr } from "../dom/gm-xhr.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
+import { recordEncounterStateFailure } from "./encounter-state-failure.js";
 
 const HVUT_RE_KEY = "hvut_re";
 const EVENT_READ_CURRENT = "readCurrent";
@@ -19,7 +20,7 @@ function defaultReState() {
 }
 
 function warnEncounterStateFailure(stage, detail) {
-  console.warn("[HVAA] encounter state failed", { stage, detail });
+  recordEncounterStateFailure(stage, detail);
 }
 
 function parseStoredReState(raw) {

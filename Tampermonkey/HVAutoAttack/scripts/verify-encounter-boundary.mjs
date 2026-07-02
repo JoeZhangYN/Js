@@ -7,6 +7,9 @@ const owner = path.normalize("src/pages/encounter.js");
 const entryExecutionFile = path.normalize("src/pages/encounter-entry-execution.js");
 const stateHelper = path.normalize("src/pages/encounter-state.js");
 const stateTest = path.normalize("src/pages/encounter-state.test.js");
+const stateEvidenceTest = path.normalize("src/pages/encounter-state-evidence.test.js");
+const stateFailureFile = path.normalize("src/pages/encounter-state-failure.js");
+const stateFailureTest = path.normalize("src/pages/encounter-state-failure.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const policyTest = path.normalize("src/pages/encounter-policy.test.js");
 const routingTest = path.normalize("src/pages/encounter-routing.test.js");
@@ -60,6 +63,8 @@ function checkFile(file) {
       relative !== owner &&
       relative !== stateHelper &&
       relative !== stateTest &&
+      relative !== stateEvidenceTest &&
+      relative !== stateFailureTest &&
       relative !== policyFile &&
       relative !== bridgeFile &&
       /\bhvut_re\b/.test(line)
@@ -70,6 +75,7 @@ function checkFile(file) {
       relative !== owner &&
       relative !== entryExecutionFile &&
       relative !== stateTest &&
+      relative !== stateEvidenceTest &&
       relative !== bridgeFile &&
       /from\s+["']\.\/encounter-state\.js["']/.test(line)
     ) {
@@ -241,6 +247,9 @@ walk(srcDir);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const entryExecutionText = fs.readFileSync(path.join(root, entryExecutionFile), "utf8");
 const stateHelperText = fs.readFileSync(path.join(root, stateHelper), "utf8");
+const stateFailureText = fs.readFileSync(path.join(root, stateFailureFile), "utf8");
+const stateFailureTestText = fs.readFileSync(path.join(root, stateFailureTest), "utf8");
+const stateEvidenceTestText = fs.readFileSync(path.join(root, stateEvidenceTest), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const policyTestText = fs.readFileSync(path.join(root, policyTest), "utf8");
 const rejectionText = fs.readFileSync(path.join(root, rejectionFile), "utf8");
@@ -382,7 +391,7 @@ for (const required of [
 }
 for (const required of [
   "warnEncounterStateFailure",
-  "[HVAA] encounter state failed",
+  "recordEncounterStateFailure",
   "parseStoredReState",
   "read-local-json",
   "read-gm",
@@ -393,6 +402,34 @@ for (const required of [
 ]) {
   if (!stateHelperText.includes(required)) {
     violations.push(`${stateHelper.replaceAll("\\", "/")} must own encounter state failure ${required}`);
+  }
+}
+for (const required of [
+  "ENCOUNTER_STATE_FAILURE_KEY",
+  "HVAA:lastEncounterStateFailure",
+  "source: \"encounterState\"",
+  "storage?.setItem",
+  "warn(\"[HVAA] encounter state failed\"",
+]) {
+  if (!stateFailureText.includes(required)) {
+    violations.push(`${stateFailureFile.replaceAll("\\", "/")} must own encounter failure evidence ${required}`);
+  }
+}
+for (const required of [
+  "records encounter state failures as structured evidence",
+  "does not throw when evidence storage and console warning both fail",
+]) {
+  if (!stateFailureTestText.includes(required)) {
+    violations.push(`${stateFailureTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+for (const required of [
+  "persists corrupted encounter state evidence while failing closed",
+  "keeps encounter state fallback working when console warning throws",
+  "HVAA:lastEncounterStateFailure",
+]) {
+  if (!stateEvidenceTestText.includes(required)) {
+    violations.push(`${stateEvidenceTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 const optionGateText = fs.readFileSync(path.join(root, optionGateFile), "utf8");
