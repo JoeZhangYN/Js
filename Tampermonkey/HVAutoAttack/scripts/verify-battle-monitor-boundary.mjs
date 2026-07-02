@@ -1414,6 +1414,12 @@ function checkMonsterResistPanelEntry() {
       `${rel(panelModelFile)} must not route resist panel model queries through an if ladder`
     );
   }
+  if (modelText.includes("resistPanelModelEventHandlers[event.type]")) {
+    violations.push(`${rel(panelModelFile)} must fail closed for null resist panel model events`);
+  }
+  if (!modelText.includes("resistPanelModelEventHandlers[event?.type]") || !modelText.includes("|| []")) {
+    violations.push(`${rel(panelModelFile)} must dispatch resist panel model events with nullable empty-row semantics`);
+  }
   if (!modelText.includes("MonsterStatusEvent.READ_IDS_BY_ORDER")) {
     violations.push(
       `${rel(panelModelFile)} must read monster identities through monster-status entry`
@@ -1432,6 +1438,16 @@ function checkMonsterResistPanelEntry() {
     path.join(root, "src/monitor/monster-resist-panel.test.js"),
     "utf8"
   );
+  const panelModelTestText = fs.readFileSync(
+    path.join(root, "src/monitor/monster-resist-panel-model.test.js"),
+    "utf8"
+  );
+  if (
+    !panelModelTestText.includes("rejects unknown and null model events without reading monster identities or cache") ||
+    !panelModelTestText.includes("runMonsterResistPanelModel(null")
+  ) {
+    violations.push(`${rel(panelModelFile)} tests must cover unknown and null resist panel model events`);
+  }
   if (
     !panelTestText.includes("rejects unknown events without rendering the resist panel") ||
     !panelTestText.includes("runMonsterResistPanelAutomation(null)")

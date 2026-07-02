@@ -5,6 +5,34 @@ import {
 } from "./monster-resist-panel-model.js";
 
 describe("monster resist panel model", () => {
+  it("rejects unknown and null model events without reading monster identities or cache", async () => {
+    const primeProfiles = vi.fn(async () => {});
+    const readProfile = vi.fn();
+    const readMonsterIdByOrder = vi.fn();
+
+    expect(
+      runMonsterResistPanelModel({ type: "unknown" }, { primeProfiles, readProfile, readMonsterIdByOrder })
+    ).toEqual([]);
+    expect(runMonsterResistPanelModel(null, { primeProfiles, readProfile, readMonsterIdByOrder })).toEqual([]);
+
+    expect(primeProfiles).not.toHaveBeenCalled();
+    expect(readProfile).not.toHaveBeenCalled();
+    expect(readMonsterIdByOrder).not.toHaveBeenCalled();
+  });
+
+  it("defaults to building no rows when no event is provided", async () => {
+    const primeProfiles = vi.fn(async () => {});
+
+    await expect(
+      runMonsterResistPanelModel(undefined, {
+        primeProfiles,
+        readProfile: () => null,
+        readMonsterIdByOrder: () => () => null,
+      })
+    ).resolves.toEqual([]);
+    expect(primeProfiles).toHaveBeenCalledWith([]);
+  });
+
   it("builds display rows by monster order identity and cached profiles", async () => {
     const primeProfiles = vi.fn(async () => {});
     const readProfile = vi.fn((id) => (id === 101 ? { attack: "piercing" } : null));

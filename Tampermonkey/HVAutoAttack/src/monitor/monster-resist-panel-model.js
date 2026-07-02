@@ -44,5 +44,5 @@ const resistPanelModelEventHandlers = Object.freeze({
 });
 
 export function runMonsterResistPanelModel(event = { type: EVENT_BUILD_ROWS }, deps = {}) {
-  return resistPanelModelEventHandlers[event.type]?.(event, deps) || [];
+  return resistPanelModelEventHandlers[event?.type]?.(event, deps) || [];
 }
