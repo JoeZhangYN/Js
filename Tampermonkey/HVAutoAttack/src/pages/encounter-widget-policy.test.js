@@ -20,8 +20,9 @@ describe("planEncounterWidgetEvent", () => {
     });
   });
 
-  it("ignores unknown widget policy events", () => {
+  it("ignores invalid widget policy events", () => {
     expect(planEncounterWidgetEvent({ type: "unknown" })).toBeUndefined();
+    expect(planEncounterWidgetEvent(null)).toBeUndefined();
   });
 
   it("classifies missing news encounter key without claiming equipment capacity failure", () => {

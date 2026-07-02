@@ -148,5 +148,5 @@ const encounterWidgetPolicyEventHandlers = Object.freeze({
 });
 
 export function planEncounterWidgetEvent(event) {
-  return encounterWidgetPolicyEventHandlers[event.type]?.(event);
+  return encounterWidgetPolicyEventHandlers[event?.type]?.(event);
 }

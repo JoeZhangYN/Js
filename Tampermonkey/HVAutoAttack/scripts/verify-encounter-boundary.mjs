@@ -561,6 +561,11 @@ if (!widgetPolicyEntryMatch) {
       `${widgetPolicyFile.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
     );
   }
+  if (entryBody.includes("event.type") || !entryBody.includes("event?.type")) {
+    violations.push(
+      `${widgetPolicyFile.replaceAll("\\", "/")} entry must fail closed for unknown or null widget policy events`
+    );
+  }
   for (const internal of [
     "readWidgetState(",
     "runWidgetLinkFound(",
@@ -576,6 +581,14 @@ if (!widgetPolicyEntryMatch) {
       );
     }
   }
+}
+if (
+  !widgetPolicyTestText.includes("ignores invalid widget policy events") ||
+  !widgetPolicyTestText.includes("planEncounterWidgetEvent(null)")
+) {
+  violations.push(
+    `${widgetPolicyTest.replaceAll("\\", "/")} must cover unknown and null widget policy events`
+  );
 }
 if (!/\bWIDGET_TIMER_ELAPSED\b/.test(ownerText)) {
   violations.push(
