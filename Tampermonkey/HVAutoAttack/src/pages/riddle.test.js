@@ -118,6 +118,28 @@ describe("runRiddleAutomation answering session", () => {
     expect(actualOrder).toEqual([...actualOrder].sort((a, b) => a - b));
   });
 
+  it("records ML answer failures while keeping random timing fallback active", async () => {
+    mocks.runOptionAutomation.mockImplementation((event) => {
+      if (event.type === "isOn" && event.key === "mlAnswer") return true;
+      if (event.type === "readField" && event.key === "riddleAnswerTime") return 7;
+      return false;
+    });
+    mocks.runRiddleMlAutomation.mockImplementation((event) =>
+      event.type === "tryAnswer" ? Promise.reject(new Error("ml blocked")) : true
+    );
+
+    runRiddleAutomation({ type: RiddleEvent.RIDDLE_PAGE });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mocks.runRiddleSubmissionTiming).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "start", beforeEnd: 7 })
+    );
+    expect(mocks.runRiddleLogAutomation).toHaveBeenCalledWith({
+      type: "push", message: "ml answer failed error=ml blocked fallback=random",
+    });
+  });
+
   it("records a manual training sample through the submit hook when backup is enabled", () => {
     document.body.innerHTML = '<button id="riddlesubmit"></button>';
     mocks.runOptionAutomation.mockImplementation((event) => {

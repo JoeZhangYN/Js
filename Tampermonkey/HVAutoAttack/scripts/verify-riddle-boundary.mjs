@@ -9,6 +9,7 @@ const riddleAnswerFile = path.join(root, "src/pages/riddle.js");
 const riddleTimingFile = path.join(root, "src/pages/riddle-submission-timing.js");
 const riddleImageFile = path.join(root, "src/pages/riddle-image.js");
 const riddleMlFile = path.join(root, "src/pages/riddle-ml.js");
+const riddleMlAnswerFailureFile = path.join(root, "src/pages/riddle-ml-answer-failure.js");
 const settingsFile = path.join(root, "src/settings/render.js");
 const srcDir = path.join(root, "src");
 const battleDir = path.join(root, "src/battle");
@@ -238,10 +239,27 @@ function checkRiddleSubmissionTiming() {
     "RiddleSubmissionTimingEvent.START",
     "RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED",
     "RiddleSubmissionTimingEvent.ML_ANSWERS_READY",
+    "recordRiddleMlAnswerFailure",
   ]) {
     if (!answerText.includes(required)) {
       violations.push(`${rel(riddleAnswerFile)} must report ${required} to the timing entry`);
     }
+  }
+  const answerFailureText = fs.readFileSync(riddleMlAnswerFailureFile, "utf8");
+  for (const required of ["recordRiddleMlAnswerFailure", "ml answer failed error=", "fallback=random"]) {
+    if (!answerFailureText.includes(required)) {
+      violations.push(`${rel(riddleMlAnswerFailureFile)} must own ${required}`);
+    }
+  }
+  if (/\.catch\(\(\) => \{\}\)/.test(answerText)) {
+    violations.push(`${rel(riddleAnswerFile)} must not swallow riddle answer promise failures`);
+  }
+  const answerTestText = fs.readFileSync(path.join(root, "src/pages/riddle.test.js"), "utf8");
+  if (
+    !answerTestText.includes("records ML answer failures while keeping random timing fallback active") ||
+    !answerTestText.includes("ml answer failed error=ml blocked fallback=random")
+  ) {
+    violations.push("src/pages/riddle.test.js must cover ML answer failure logging fallback");
   }
   if (/=\s*runRiddleSubmissionTiming\s*\(/.test(answerText)) {
     violations.push(

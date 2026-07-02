@@ -25,6 +25,7 @@ import {
   RiddleSubmissionTimingEvent,
   runRiddleSubmissionTiming,
 } from "./riddle-submission-timing.js";
+import { recordRiddleMlAnswerFailure } from "./riddle-ml-answer-failure.js";
 
 // 答案码 SSOT 见 data/riddle-answers.js（提取到叶子层打破与 riddle-ml.js 的循环依赖 TDZ）
 const ANSWER_KEYS = Object.keys(ANSWER_MAP);
@@ -89,9 +90,7 @@ function submittedCodes() {
   return hits.join(",");
 }
 
-function createRiddleAnsweringContext() {
-  return { mlAnswer: null, pendingSource: null, sampled: false };
-}
+const createRiddleAnsweringContext = () => ({ mlAnswer: null, pendingSource: null, sampled: false });
 
 function recordRiddleAppearance() {
   runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Riddle" });
@@ -194,7 +193,7 @@ function startOptionalRiddleMlAnswer(context) {
           });
         }
       })
-      .catch(() => {});
+      .catch((error) => recordRiddleMlAnswerFailure(error));
   }
 }
 
