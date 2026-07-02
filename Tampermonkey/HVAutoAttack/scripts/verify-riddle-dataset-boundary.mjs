@@ -164,7 +164,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     : "";
   for (const required of [
     "does not throw when sample write failure evidence and warning both fail",
+    "does not throw when export list failure evidence and warning both fail",
     "RIDDLE_DATASET_FAILURE_KEY",
+    'throw new Error("list blocked")',
     'throw new Error("quota")',
     'throw new Error("console blocked")',
     "expect(setValue).toHaveBeenCalledTimes(1)",

@@ -32,4 +32,19 @@ describe("riddle dataset failure fallback", () => {
 
     expect(setValue).toHaveBeenCalledTimes(1);
   });
+
+  it("does not throw when export list failure evidence and warning both fail", () => {
+    vi.stubGlobal("GM_listValues", () => {
+      throw new Error("list blocked");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
+      if (key === RIDDLE_DATASET_FAILURE_KEY) throw new Error("quota");
+      return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+
+    expect(() => runRiddleDatasetAutomation({ type: RiddleDatasetEvent.EXPORT })).not.toThrow();
+  });
 });
