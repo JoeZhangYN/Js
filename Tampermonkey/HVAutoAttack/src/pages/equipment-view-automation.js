@@ -33,7 +33,7 @@ function readEquipPercentileMode(deps) {
 }
 
 export function runEquipmentViewAutomation(event = { type: EVENT_PAGE_READY }, deps = {}) {
-  if (event.type !== EVENT_PAGE_READY) return false;
+  if (event?.type !== EVENT_PAGE_READY) return false;
   const runtime = makeDeps(deps);
   const { kind } = event;
   let ran = false;

@@ -7,6 +7,38 @@ function pageReady(kind) {
 }
 
 describe("runEquipmentViewAutomation", () => {
+  it("rejects unknown and null events without reading options or running enhancements", () => {
+    const readOptionField = vi.fn();
+    const readOptionEnabled = vi.fn();
+    const runForgeCostEnhancement = vi.fn();
+    const runEquipPercentileEnhancement = vi.fn();
+
+    expect(
+      runEquipmentViewAutomation(
+        { type: "unknown" },
+        {
+          readOptionField,
+          readOptionEnabled,
+          runEquipPercentileEnhancement,
+          runForgeCostEnhancement,
+        }
+      )
+    ).toBe(false);
+    expect(
+      runEquipmentViewAutomation(null, {
+        readOptionField,
+        readOptionEnabled,
+        runEquipPercentileEnhancement,
+        runForgeCostEnhancement,
+      })
+    ).toBe(false);
+
+    expect(readOptionField).not.toHaveBeenCalled();
+    expect(readOptionEnabled).not.toHaveBeenCalled();
+    expect(runForgeCostEnhancement).not.toHaveBeenCalled();
+    expect(runEquipPercentileEnhancement).not.toHaveBeenCalled();
+  });
+
   it("runs forge cost only for showequip pages with the option enabled", () => {
     const runForgeCostEnhancement = vi.fn();
     const runEquipPercentileEnhancement = vi.fn();

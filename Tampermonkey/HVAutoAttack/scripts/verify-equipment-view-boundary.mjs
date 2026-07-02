@@ -45,6 +45,12 @@ function checkEntry() {
   if (/export function runEquipmentViewAutomation\(\s*kind\s*\)/.test(text)) {
     violations.push(`${rel(entryFile)} must not expose raw kind-based equipment entry`);
   }
+  if (text.includes("event.type !== EVENT_PAGE_READY")) {
+    violations.push(`${rel(entryFile)} must reject null equipment view events without throwing`);
+  }
+  if (!text.includes("event?.type !== EVENT_PAGE_READY")) {
+    violations.push(`${rel(entryFile)} must fail closed for unknown or null equipment view events`);
+  }
   for (const required of [
     "EquipmentViewEvent",
     "EVENT_PAGE_READY",
@@ -55,6 +61,13 @@ function checkEntry() {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} equipment workflow wiring`);
     }
+  }
+  const testText = fs.readFileSync(path.join(root, "src/pages/equipment-view-automation.test.js"), "utf8");
+  if (
+    !testText.includes("rejects unknown and null events without reading options or running enhancements") ||
+    !testText.includes("runEquipmentViewAutomation(null")
+  ) {
+    violations.push(`${rel(entryFile)} tests must cover unknown and null equipment view events`);
   }
 }
 
