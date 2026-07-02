@@ -28,5 +28,5 @@ function shouldRecastPlayerBuff(event = {}, img) {
 }
 
 export function runBattlePlayerBuffState(event = { type: EVENT_READ_ACTIVE }) {
-  return battlePlayerBuffStateEventHandlers[event.type]?.(event) ?? false;
+  return battlePlayerBuffStateEventHandlers[event?.type]?.(event) ?? false;
 }

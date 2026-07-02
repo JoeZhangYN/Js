@@ -105,6 +105,19 @@ if (
 ) {
   violations.push(`${potionEconomy.replaceAll("\\", "/")} may export only its event query entry`);
 }
+if (/battlePotionEconomyEventHandlers\[event\.type\]/.test(potionEconomyText)) {
+  violations.push(`${potionEconomy.replaceAll("\\", "/")} must reject null potion economy events`);
+}
+if (!/battlePotionEconomyEventHandlers\[event\?\.type\]/.test(potionEconomyText)) {
+  violations.push(
+    `${potionEconomy.replaceAll("\\", "/")} must dispatch invalid potion economy events through optional type`
+  );
+}
+const potionEconomyTest = path.normalize("src/battle/potion-economy.test.js");
+const potionEconomyTestText = fs.readFileSync(path.join(root, potionEconomyTest), "utf8");
+if (!/runBattlePotionEconomy\(null\)/.test(potionEconomyTestText)) {
+  violations.push(`${potionEconomyTest.replaceAll("\\", "/")} must cover null potion economy events`);
+}
 for (const required of [
   "runRecoveryLearningAutomation",
   "RecoveryLearningEvent",

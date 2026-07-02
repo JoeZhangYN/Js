@@ -31,5 +31,6 @@ describe("potion economy", () => {
 
   it("rejects unknown potion economy events", () => {
     expect(runBattlePotionEconomy({ type: "unknown" })).toBe(false);
+    expect(runBattlePotionEconomy(null)).toBe(false);
   });
 });

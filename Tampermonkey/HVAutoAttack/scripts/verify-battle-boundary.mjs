@@ -3299,6 +3299,21 @@ function checkPlayerBuffStateQuery() {
   ) {
     violations.push(`${rel(playerBuffStateFile)} may export only its event query entry`);
   }
+  const playerBuffEntryBody =
+    ownerText.match(/export function runBattlePlayerBuffState\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/battlePlayerBuffStateEventHandlers\[event\.type\]/.test(playerBuffEntryBody)) {
+    violations.push(`${rel(playerBuffStateFile)} entry must fail closed for invalid player buff state events`);
+  }
+  if (!/battlePlayerBuffStateEventHandlers\[event\?\.type\]/.test(playerBuffEntryBody)) {
+    violations.push(`${rel(playerBuffStateFile)} entry must dispatch invalid player buff state events through optional type`);
+  }
+  const playerBuffTestText = fs.existsSync(playerBuffStateTestFile)
+    ? fs.readFileSync(playerBuffStateTestFile, "utf8")
+    : "";
+  if (!/runBattlePlayerBuffState\(null\)/.test(playerBuffTestText)) {
+    violations.push(`${rel(playerBuffStateTestFile)} must cover null player buff state events`);
+  }
   if (fs.existsSync(path.join(root, "src/battle/buff/player-buff-state.js"))) {
     violations.push(
       "src/battle/buff/player-buff-state.js must be promoted to battle player-buff-state"
@@ -5045,6 +5060,22 @@ function checkBattleStallMode() {
     )
   ) {
     violations.push(`${rel(potionEconomyFile)} may export only its event query entry`);
+  }
+  const economyEntryBody =
+    economyText.match(/export function runBattlePotionEconomy\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/battlePotionEconomyEventHandlers\[event\.type\]/.test(economyEntryBody)) {
+    violations.push(`${rel(potionEconomyFile)} entry must fail closed for invalid potion economy events`);
+  }
+  if (!/battlePotionEconomyEventHandlers\[event\?\.type\]/.test(economyEntryBody)) {
+    violations.push(`${rel(potionEconomyFile)} entry must dispatch invalid potion economy events through optional type`);
+  }
+  const economyTestFile = path.join(root, "src/battle/potion-economy.test.js");
+  const economyTestText = fs.existsSync(economyTestFile)
+    ? fs.readFileSync(economyTestFile, "utf8")
+    : "";
+  if (!/runBattlePotionEconomy\(null\)/.test(economyTestText)) {
+    violations.push(`${rel(economyTestFile)} must cover null potion economy events`);
   }
   for (const legacy of ["isStallMode", "stallTopupCandidates"]) {
     if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(economyText)) {

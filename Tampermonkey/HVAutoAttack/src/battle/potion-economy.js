@@ -31,5 +31,5 @@ function isPotionWasteful(potionId, snap, tolerance = 0.7, getRecovery) {
 }
 
 export function runBattlePotionEconomy(event = { type: EVENT_IS_WASTEFUL }) {
-  return battlePotionEconomyEventHandlers[event.type]?.(event) ?? false;
+  return battlePotionEconomyEventHandlers[event?.type]?.(event) ?? false;
 }

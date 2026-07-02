@@ -86,5 +86,6 @@ describe("runBattlePlayerBuffState SHOULD_RECAST", () => {
 
   it("rejects unknown player buff state events", () => {
     expect(runBattlePlayerBuffState({ type: "unknown" })).toBe(false);
+    expect(runBattlePlayerBuffState(null)).toBe(false);
   });
 });
