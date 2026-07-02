@@ -3,7 +3,11 @@ import path from "node:path";
 
 const root = process.cwd();
 const target = path.join(root, "src/i18n/hv-utils.js");
+const diagnosticKeys = path.join(root, "src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.join(root, "src/core/diagnostic-evidence.test.js");
 const text = fs.readFileSync(target, "utf8");
+const diagnosticKeysText = fs.readFileSync(diagnosticKeys, "utf8");
+const diagnosticTestText = fs.readFileSync(diagnosticTest, "utf8");
 const violations = [];
 
 function rel(file) {
@@ -140,6 +144,23 @@ for (const required of [
 ]) {
   if (!failureBody.includes(required)) {
     violations.push(`${rel(target)} lottery failure recorder must include ${required}`);
+  }
+}
+
+for (const required of [
+  "LOTTERY_NOTIFICATION_FAILURE: \"HVAA:lastLotteryNotificationFailure\"",
+  "source(\"lotteryNotificationFailure\", DiagnosticEvidenceKey.LOTTERY_NOTIFICATION_FAILURE)",
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${rel(diagnosticKeys)} must expose ${required}`);
+  }
+}
+for (const required of [
+  "HVAA:lastLotteryNotificationFailure",
+  "lotteryNotificationFailure: { capability: \"lotteryNotification\", stage: \"load\" }",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${rel(diagnosticTest)} must cover ${required}`);
   }
 }
 

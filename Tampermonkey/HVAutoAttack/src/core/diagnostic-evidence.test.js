@@ -5,96 +5,48 @@ beforeEach(() => window.sessionStorage.clear());
 
 describe("readRecentDiagnosticEvidence", () => {
   it("returns lifecycle, decision, and effect evidence together", () => {
-    window.sessionStorage.setItem(
-      "HVAA:lastNavigationDecision",
-      JSON.stringify({ decision: "rejected", detail: { cause: "invalidReloadDelay" } })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleTurnWorkflow",
-      JSON.stringify({ stage: "contextPrepared", detail: { hasContext: true } })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleApiBridge",
-      JSON.stringify({ phase: "start", result: "rejected", reason: "eventNodeMissing" })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleAutomation",
-      JSON.stringify({ phase: "pageReady", result: true })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleLifecycle",
-      JSON.stringify({ phase: "battleStarted", result: true })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleCompletion",
-      JSON.stringify({ outcome: "victory", effects: { scheduleReload: true } })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleRoundStart",
-      JSON.stringify({ phase: "roundStarted", result: true })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleKillBugRecovery",
-      JSON.stringify({ result: "scheduledReload", detail: { scannedRows: 1 } })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleMonsterStatusRepair",
-      JSON.stringify({ result: "scheduledReload", reason: "roundStartLog" })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleMonsterKnowledgePersistence",
-      JSON.stringify({ result: "failed", stage: "scan-store-profile" })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:battleApiRecovery",
-      JSON.stringify({ repeatCount: 2, detail: { responseKind: "jsonReload" } })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleCommand",
-      JSON.stringify({ command: "skill.clickReady", result: "rejected", reason: "skillNotReady" })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattlePause",
-      JSON.stringify({ state: "paused", reason: "autoPause" })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleActionDelay",
-      JSON.stringify({ decision: "rejected", reason: "unknownActionDelayEvent" })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleActionSpeed",
-      JSON.stringify({ decision: "rejected", reason: "unknownActionSpeedEvent" })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleActionLifecycle",
-      JSON.stringify({ phase: "actionStarted", result: true })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleActionDecision",
-      JSON.stringify({
-        steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
-      })
-    );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleActionEffect",
-      JSON.stringify({ result: { kind: "noop" }, acted: false, knownResultKind: true })
-    );
-    window.sessionStorage.setItem("HVAA:lastHttpRequestFailure", JSON.stringify({ capability: "httpRequest", stage: "finalFailure", kind: "networkError" }));
-    window.sessionStorage.setItem("HVAA:lastStaminaRecoveryFailure", JSON.stringify({ capability: "staminaRecovery", stage: "claimRecoveryPost" }));
-    window.sessionStorage.setItem("HVAA:lastRepairBackendFailure", JSON.stringify({ capability: "repairBackend", stage: "requestFailure" }));
-    window.sessionStorage.setItem("HVAA:lastMonsterDbStoreFailure", JSON.stringify({ capability: "monsterDbStore", stage: "open" }));
-    window.sessionStorage.setItem("HVAA:lastAppStartupFailure", JSON.stringify({ capability: "appStartup", stage: "loadCdRuntimeState" }));
-    window.sessionStorage.setItem("HVAA:lastPageAutomationFailure", JSON.stringify({ capability: "pageAutomation", stage: "runGamePageReadyAutomation" }));
-    window.sessionStorage.setItem("HVAA:lastPageRefreshFailure", JSON.stringify({ capability: "pageRefresh", stage: "scheduleReload" }));
-    window.sessionStorage.setItem("HVAA:lastIdleArenaFailure", JSON.stringify({ capability: "idleArena", stage: "battle-start" }));
-    window.sessionStorage.setItem("HVAA:lastStorageReadFailure", JSON.stringify({ capability: "storageRead", source: "GM_getValue" }));
-    window.sessionStorage.setItem("HVAA:lastOptionBackupFailure", JSON.stringify({ capability: "optionBackup", action: "restore", reason: "restoreFailed" }));
-    window.sessionStorage.setItem("HVAA:lastRiddleDatasetFailure", JSON.stringify({ capability: "riddleDataset", stage: "export-list" }));
-    window.sessionStorage.setItem("HVAA:lastI18nInitFailure", JSON.stringify({ capability: "i18nInit", entry: "interface" }));
-    window.sessionStorage.setItem("HVAA:lastI18nRestoreFailure", JSON.stringify({ capability: "i18nRestore", stage: "restore" }));
-    window.sessionStorage.setItem("HVAA:lastEncounterStateFailure", JSON.stringify({ capability: "encounterState", stage: "read-local-json" }));
-    window.sessionStorage.setItem("HVAA:lastRiddleMlHealthFailure", JSON.stringify({ capability: "riddleMlHealth", stage: "healthCycle" }));
-    window.sessionStorage.setItem("HVAA:lastRiddleMlAnswerFailure", JSON.stringify({ capability: "riddleMlAnswer", stage: "request", fallback: "random" }));
+    const evidenceByKey = {
+      "HVAA:lastNavigationDecision": { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
+      "HVAA:lastBattleTurnWorkflow": { stage: "contextPrepared", detail: { hasContext: true } },
+      "HVAA:lastBattleApiBridge": { phase: "start", result: "rejected", reason: "eventNodeMissing" },
+      "HVAA:lastBattleAutomation": { phase: "pageReady", result: true },
+      "HVAA:lastBattleLifecycle": { phase: "battleStarted", result: true },
+      "HVAA:lastBattleCompletion": { outcome: "victory", effects: { scheduleReload: true } },
+      "HVAA:lastBattleRoundStart": { phase: "roundStarted", result: true },
+      "HVAA:lastBattleKillBugRecovery": { result: "scheduledReload", detail: { scannedRows: 1 } },
+      "HVAA:lastBattleMonsterStatusRepair": { result: "scheduledReload", reason: "roundStartLog" },
+      "HVAA:lastBattleMonsterKnowledgePersistence": { result: "failed", stage: "scan-store-profile" },
+      "HVAA:battleApiRecovery": { repeatCount: 2, detail: { responseKind: "jsonReload" } },
+      "HVAA:lastBattleCommand": { command: "skill.clickReady", result: "rejected", reason: "skillNotReady" },
+      "HVAA:lastBattlePause": { state: "paused", reason: "autoPause" },
+      "HVAA:lastBattleActionDelay": { decision: "rejected", reason: "unknownActionDelayEvent" },
+      "HVAA:lastBattleActionSpeed": { decision: "rejected", reason: "unknownActionSpeedEvent" },
+      "HVAA:lastBattleActionLifecycle": { phase: "actionStarted", result: true },
+      "HVAA:lastBattleActionDecision": { steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }] },
+      "HVAA:lastBattleActionEffect": { result: { kind: "noop" }, acted: false, knownResultKind: true },
+      "HVAA:lastHttpRequestFailure": { capability: "httpRequest", stage: "finalFailure", kind: "networkError" },
+      "HVAA:lastStaminaRecoveryFailure": { capability: "staminaRecovery", stage: "claimRecoveryPost" },
+      "HVAA:lastRepairBackendFailure": { capability: "repairBackend", stage: "requestFailure" },
+      "HVAA:lastMonsterDbStoreFailure": { capability: "monsterDbStore", stage: "open" },
+      "HVAA:lastAppStartupFailure": { capability: "appStartup", stage: "loadCdRuntimeState" },
+      "HVAA:lastPageAutomationFailure": { capability: "pageAutomation", stage: "runGamePageReadyAutomation" },
+      "HVAA:lastPageRefreshFailure": { capability: "pageRefresh", stage: "scheduleReload" },
+      "HVAA:lastIdleArenaFailure": { capability: "idleArena", stage: "battle-start" },
+      "HVAA:lastStorageReadFailure": { capability: "storageRead", source: "GM_getValue" },
+      "HVAA:lastOptionBackupFailure": { capability: "optionBackup", action: "restore", reason: "restoreFailed" },
+      "HVAA:lastRiddleDatasetFailure": { capability: "riddleDataset", stage: "export-list" },
+      "HVAA:lastI18nInitFailure": { capability: "i18nInit", entry: "interface" },
+      "HVAA:lastI18nRestoreFailure": { capability: "i18nRestore", stage: "restore" },
+      "HVAA:lastEncounterStateFailure": { capability: "encounterState", stage: "read-local-json" },
+      "HVAA:lastRiddleMlHealthFailure": { capability: "riddleMlHealth", stage: "healthCycle" },
+      "HVAA:lastRiddleMlAnswerFailure": { capability: "riddleMlAnswer", stage: "request", fallback: "random" },
+      "HVAA:lastEquipmentFilterFailure": { capability: "equipmentFilter", stage: "match" },
+      "HVAA:lastHvutNavigationBridgeFailure": { capability: "hvutNavigationBridge", stage: "reloadBlocked" },
+      "HVAA:lastLotteryNotificationFailure": { capability: "lotteryNotification", stage: "load" },
+    };
+    for (const [key, evidence] of Object.entries(evidenceByKey)) {
+      window.sessionStorage.setItem(key, JSON.stringify(evidence));
+    }
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
@@ -131,6 +83,9 @@ describe("readRecentDiagnosticEvidence", () => {
       encounterStateFailure: { capability: "encounterState", stage: "read-local-json" },
       riddleMlHealthFailure: { capability: "riddleMlHealth", stage: "healthCycle" },
       riddleMlAnswerFailure: { capability: "riddleMlAnswer", stage: "request", fallback: "random" },
+      equipmentFilterFailure: { capability: "equipmentFilter", stage: "match" },
+      hvutNavigationBridgeFailure: { capability: "hvutNavigationBridge", stage: "reloadBlocked" },
+      lotteryNotificationFailure: { capability: "lotteryNotification", stage: "load" },
     });
   });
 

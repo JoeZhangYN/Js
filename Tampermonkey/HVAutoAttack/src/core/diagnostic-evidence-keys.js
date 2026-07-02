@@ -34,6 +34,9 @@ export const DiagnosticEvidenceKey = Object.freeze({
   ENCOUNTER_STATE_FAILURE: "HVAA:lastEncounterStateFailure",
   RIDDLE_ML_HEALTH_FAILURE: "HVAA:lastRiddleMlHealthFailure",
   RIDDLE_ML_ANSWER_FAILURE: "HVAA:lastRiddleMlAnswerFailure",
+  EQUIPMENT_FILTER_FAILURE: "HVAA:lastEquipmentFilterFailure",
+  HVUT_NAVIGATION_BRIDGE_FAILURE: "HVAA:lastHvutNavigationBridgeFailure",
+  LOTTERY_NOTIFICATION_FAILURE: "HVAA:lastLotteryNotificationFailure",
 });
 
 function source(name, key) {
@@ -78,6 +81,9 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("encounterStateFailure", DiagnosticEvidenceKey.ENCOUNTER_STATE_FAILURE),
   source("riddleMlHealthFailure", DiagnosticEvidenceKey.RIDDLE_ML_HEALTH_FAILURE),
   source("riddleMlAnswerFailure", DiagnosticEvidenceKey.RIDDLE_ML_ANSWER_FAILURE),
+  source("equipmentFilterFailure", DiagnosticEvidenceKey.EQUIPMENT_FILTER_FAILURE),
+  source("hvutNavigationBridgeFailure", DiagnosticEvidenceKey.HVUT_NAVIGATION_BRIDGE_FAILURE),
+  source("lotteryNotificationFailure", DiagnosticEvidenceKey.LOTTERY_NOTIFICATION_FAILURE),
 ]);
 
 export const API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze(

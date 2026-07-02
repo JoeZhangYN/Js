@@ -3,7 +3,11 @@ import path from "node:path";
 
 const root = process.cwd();
 const target = path.join(root, "src/i18n/hv-utils.js");
+const diagnosticKeys = path.join(root, "src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.join(root, "src/core/diagnostic-evidence.test.js");
 const text = fs.readFileSync(target, "utf8");
+const diagnosticKeysText = fs.readFileSync(diagnosticKeys, "utf8");
+const diagnosticTestText = fs.readFileSync(diagnosticTest, "utf8");
 const violations = [];
 
 const equipBody =
@@ -104,6 +108,23 @@ for (const forbidden of [
 ]) {
   if (equipBody.includes(forbidden) || matchBody.includes(forbidden)) {
     violations.push(`equipment filter match entry must not throw from first invalid filter: ${forbidden}`);
+  }
+}
+
+for (const required of [
+  "EQUIPMENT_FILTER_FAILURE: \"HVAA:lastEquipmentFilterFailure\"",
+  "source(\"equipmentFilterFailure\", DiagnosticEvidenceKey.EQUIPMENT_FILTER_FAILURE)",
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`diagnostic evidence keys must expose ${required}`);
+  }
+}
+for (const required of [
+  "HVAA:lastEquipmentFilterFailure",
+  "equipmentFilterFailure: { capability: \"equipmentFilter\", stage: \"match\" }",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`diagnostic evidence test must cover ${required}`);
   }
 }
 
