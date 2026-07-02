@@ -68,6 +68,20 @@ if (
 ) {
   violations.push(`${rel(effectParse)} may export only its event query entry`);
 }
+const effectParseEntryBody =
+  effectParseText.match(/export function runBattleEffectParse\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (/battleEffectParseEventHandlers\[event\.type\]/.test(effectParseEntryBody)) {
+  violations.push(`${rel(effectParse)} entry must fail closed for invalid effect parse events`);
+}
+if (!/battleEffectParseEventHandlers\[event\?\.type\]/.test(effectParseEntryBody)) {
+  violations.push(`${rel(effectParse)} entry must dispatch invalid effect parse events through optional type`);
+}
+const effectParseTest = path.normalize("src/battle/effect-parse.test.js");
+const effectParseTestText = read(effectParseTest);
+if (!/runBattleEffectParse\(null\)/.test(effectParseTestText)) {
+  violations.push(`${rel(effectParseTest)} must cover null effect parse events`);
+}
 if (
   /\bexport\s+(?:function|const)\s+(?!BattlePlayerEffectsEvent\b|runBattlePlayerEffects\b)/.test(
     ownerText

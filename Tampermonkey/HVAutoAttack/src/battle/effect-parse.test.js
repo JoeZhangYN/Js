@@ -34,5 +34,6 @@ describe("runBattleEffectParse", () => {
 
   it("rejects unknown effect parse events", () => {
     expect(runBattleEffectParse({ type: "unknown", img: effect() })).toBeUndefined();
+    expect(runBattleEffectParse(null)).toBeUndefined();
   });
 });

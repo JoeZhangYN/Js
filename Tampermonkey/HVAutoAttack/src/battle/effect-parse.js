@@ -60,5 +60,5 @@ function parseEffectName(img) {
 }
 
 export function runBattleEffectParse(event = { type: EVENT_READ_EFFECT }) {
-  return battleEffectParseEventHandlers[event.type]?.(event);
+  return battleEffectParseEventHandlers[event?.type]?.(event);
 }
