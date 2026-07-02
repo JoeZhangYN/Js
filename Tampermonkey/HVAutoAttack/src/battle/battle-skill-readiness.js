@@ -72,5 +72,5 @@ function readReadyMap() {
 }
 
 export function runBattleSkillReadiness(event = { type: EVENT_READ_READY_MAP }) {
-  return battleSkillReadinessEventHandlers[event.type]?.() ?? {};
+  return battleSkillReadinessEventHandlers[event?.type]?.() ?? {};
 }

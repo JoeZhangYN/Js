@@ -50,12 +50,23 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_READY_MAP\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (/battleSkillReadinessEventHandlers\[event\.type\]/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must fail closed for invalid skill readiness events`);
+}
+if (!/battleSkillReadinessEventHandlers\[event\?\.type\]/.test(entryBody)) {
+  violations.push(
+    `${rel(owner)} entry must dispatch invalid skill readiness events through optional type`
+  );
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover skill readiness entry contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("rejects unknown events without reading skill button DOM")) {
-    violations.push(`${rel(ownerTest)} must cover unknown skill readiness events`);
+  if (!ownerTestText.includes("rejects invalid events without reading skill button DOM")) {
+    violations.push(`${rel(ownerTest)} must cover invalid skill readiness events`);
+  }
+  if (!/runBattleSkillReadiness\(null\)/.test(ownerTestText)) {
+    violations.push(`${rel(ownerTest)} must cover null skill readiness events`);
   }
 }
 if (!snapshotText.includes("runBattleSkillReadiness")) {

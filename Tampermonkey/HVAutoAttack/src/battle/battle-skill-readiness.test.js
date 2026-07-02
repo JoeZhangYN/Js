@@ -26,10 +26,11 @@ describe("runBattleSkillReadiness", () => {
     ).not.toHaveProperty("not-a-skill");
   });
 
-  it("rejects unknown events without reading skill button DOM", () => {
+  it("rejects invalid events without reading skill button DOM", () => {
     const getElementById = vi.spyOn(document, "getElementById");
 
     expect(runBattleSkillReadiness({ type: "unknown" })).toEqual({});
+    expect(runBattleSkillReadiness(null)).toEqual({});
 
     expect(getElementById).not.toHaveBeenCalled();
     getElementById.mockRestore();
