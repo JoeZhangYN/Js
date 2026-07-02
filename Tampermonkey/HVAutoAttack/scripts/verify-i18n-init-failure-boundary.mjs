@@ -11,6 +11,8 @@ const entries = [
 ];
 const hvUtilsEntry = path.normalize("src/i18n/hv-utils.js");
 const bridge = path.normalize("src/i18n/core/restore-controller.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
 
 function read(relative) {
@@ -71,6 +73,22 @@ for (const required of [
   "I18N_INIT_FAILURE_KEY",
 ]) {
   if (!helperTestText.includes(required)) violations.push(`${rel(helperTest)} must cover ${required}`);
+}
+
+const diagnosticKeysText = read(diagnosticKeys);
+for (const required of [
+  "I18N_INIT_FAILURE: \"HVAA:lastI18nInitFailure\"",
+  "source(\"i18nInitFailure\", DiagnosticEvidenceKey.I18N_INIT_FAILURE)",
+]) {
+  if (!diagnosticKeysText.includes(required)) violations.push(`${rel(diagnosticKeys)} must expose ${required}`);
+}
+
+const diagnosticTestText = read(diagnosticTest);
+for (const required of [
+  "HVAA:lastI18nInitFailure",
+  "i18nInitFailure: { capability: \"i18nInit\", entry: \"interface\" }",
+]) {
+  if (!diagnosticTestText.includes(required)) violations.push(`${rel(diagnosticTest)} must cover ${required}`);
 }
 
 if (violations.length) {

@@ -5,6 +5,8 @@ const root = process.cwd();
 const owner = path.normalize("src/i18n/core/restore-controller.js");
 const failureOwner = path.normalize("src/i18n/core/restore-failure.js");
 const ownerTest = path.normalize("src/i18n/core/restore-controller.test.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
 
 function read(relative) {
@@ -70,6 +72,26 @@ for (const required of [
 ]) {
   if (!ownerTestText.includes(required)) {
     violations.push(`${rel(ownerTest)} must cover ${required}`);
+  }
+}
+
+const diagnosticKeysText = read(diagnosticKeys);
+for (const required of [
+  "I18N_RESTORE_FAILURE: \"HVAA:lastI18nRestoreFailure\"",
+  "source(\"i18nRestoreFailure\", DiagnosticEvidenceKey.I18N_RESTORE_FAILURE)",
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${rel(diagnosticKeys)} must expose ${required}`);
+  }
+}
+
+const diagnosticTestText = read(diagnosticTest);
+for (const required of [
+  "HVAA:lastI18nRestoreFailure",
+  "i18nRestoreFailure: { capability: \"i18nRestore\", stage: \"restore\" }",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${rel(diagnosticTest)} must cover ${required}`);
   }
 }
 
