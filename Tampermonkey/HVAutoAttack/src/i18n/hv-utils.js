@@ -995,6 +995,11 @@ const bindPrice = function (price, ctx) {
     async function market(p, key) {
       p.textarea.disabled = true;
       const new_prices = await price.update_market(filter, key);
+      if (!new_prices) {
+        p.textarea.disabled = false;
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return;
+      }
       p.textarea.value = ctx.config.obj2text(new_prices, ['\n', '@']);
       p.textarea.disabled = false;
       save(p);
@@ -1042,10 +1047,18 @@ const bindPrice = function (price, ctx) {
     if (all && !price.market_all) {
       const filters = Object.keys(price.filters);
       const requests = filters.map((filter) => update(filter));
-      await Promise.all(requests);
+      try {
+        await Promise.all(requests);
+      } catch (_error) {
+        return null;
+      }
       price.market_all = true;
     } else if (!all && !price.market) {
-      await update(filter);
+      try {
+        await update(filter);
+      } catch (_error) {
+        return null;
+      }
     }
     const items = price.items(filter);
     const prices = price.get(items);
