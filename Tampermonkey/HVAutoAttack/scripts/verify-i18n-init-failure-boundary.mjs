@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const helper = path.normalize("src/i18n/core/init-failure.js");
 const helperTest = path.normalize("src/i18n/core/init-failure.test.js");
+const fallbackTest = path.normalize("src/i18n/core/init-failure-fallback.test.js");
 const entries = [
   [path.normalize("src/i18n/jpx-lang.js"), "jpx"],
   [path.normalize("src/i18n/interface-translate.js"), "interface"],
@@ -73,6 +74,17 @@ for (const required of [
   "I18N_INIT_FAILURE_KEY",
 ]) {
   if (!helperTestText.includes(required)) violations.push(`${rel(helperTest)} must cover ${required}`);
+}
+
+const fallbackTestText = read(fallbackTest);
+for (const required of [
+  "returns init failure evidence when storage and console diagnostics both fail",
+  "I18N_INIT_FAILURE_KEY",
+  'throw new Error("quota")',
+  'throw new Error("console blocked")',
+  "not.toThrow()",
+]) {
+  if (!fallbackTestText.includes(required)) violations.push(`${rel(fallbackTest)} must cover ${required}`);
 }
 
 const diagnosticKeysText = read(diagnosticKeys);
