@@ -45,6 +45,12 @@ function checkEntry() {
   if (/export function runCrossSiteEncounterNavigation\(\s*kind\s*\)/.test(text)) {
     violations.push(`${rel(entryFile)} must not expose raw kind-based navigation entry`);
   }
+  if (text.includes("event.type !== EVENT_PAGE_READY")) {
+    violations.push(`${rel(entryFile)} must reject null cross-site navigation events without throwing`);
+  }
+  if (!text.includes("event?.type !== EVENT_PAGE_READY")) {
+    violations.push(`${rel(entryFile)} must fail closed for unknown or null cross-site navigation events`);
+  }
   if (/\b(?:getValue|setValue)\(\s*["']url["']/.test(text)) {
     violations.push(`${rel(entryFile)} must use STORAGE_KEYS.URL for return-origin storage`);
   }
@@ -58,6 +64,13 @@ function checkEntry() {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} cross-site navigation wiring`);
     }
+  }
+  const testText = fs.readFileSync(entryTestFile, "utf8");
+  if (
+    !testText.includes("rejects unknown and null events without storing or navigating") ||
+    !testText.includes("runCrossSiteEncounterNavigation(null")
+  ) {
+    violations.push(`${rel(entryTestFile)} must cover unknown and null cross-site navigation events`);
   }
 }
 

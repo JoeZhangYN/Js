@@ -11,6 +11,17 @@ function pageReady(kind) {
 }
 
 describe("runCrossSiteEncounterNavigation", () => {
+  it("rejects unknown and null events without storing or navigating", () => {
+    const openUrl = vi.fn();
+    const setValue = vi.fn();
+
+    expect(runCrossSiteEncounterNavigation({ type: "unknown" }, { openUrl, setValue })).toBe(false);
+    expect(runCrossSiteEncounterNavigation(null, { openUrl, setValue })).toBe(false);
+
+    expect(openUrl).not.toHaveBeenCalled();
+    expect(setValue).not.toHaveBeenCalled();
+  });
+
   it("records the current HV origin through the event entry", () => {
     const setValue = vi.fn();
 
