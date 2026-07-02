@@ -32,5 +32,5 @@ function isEnabled(opt, code) {
 }
 
 export function runBigSkillCatalog(event = { type: EVENT_READ_CODES }) {
-  return bigSkillCatalogEventHandlers[event.type]?.(event);
+  return bigSkillCatalogEventHandlers[event?.type]?.(event);
 }

@@ -34,7 +34,8 @@ describe("big skill catalog", () => {
     ).toBe(false);
   });
 
-  it("rejects unknown catalog events", () => {
+  it("rejects invalid catalog events", () => {
     expect(runBigSkillCatalog({ type: "unknown" })).toBeUndefined();
+    expect(runBigSkillCatalog(null)).toBeUndefined();
   });
 });

@@ -2375,6 +2375,20 @@ function checkBigSkillDebuffEntry() {
       violations.push(`${rel(bigSkillCatalogFile)} legacy ${legacy} export must stay retired`);
     }
   }
+  if (/bigSkillCatalogEventHandlers\[event\.type\]/.test(catalogText)) {
+    violations.push(`${rel(bigSkillCatalogFile)} entry must fail closed for invalid catalog events`);
+  }
+  if (!/bigSkillCatalogEventHandlers\[event\?\.type\]/.test(catalogText)) {
+    violations.push(`${rel(bigSkillCatalogFile)} entry must dispatch invalid catalog events through optional type`);
+  }
+  const catalogTest = path.join(root, "src/battle/big-skill-catalog.test.js");
+  const catalogTestText = fs.readFileSync(catalogTest, "utf8");
+  if (!catalogTestText.includes("rejects invalid catalog events")) {
+    violations.push(`${rel(catalogTest)} must cover invalid catalog events`);
+  }
+  if (!/runBigSkillCatalog\(null\)/.test(catalogTestText)) {
+    violations.push(`${rel(catalogTest)} must cover null catalog events`);
+  }
   for (const required of [
     "BigSkillCatalogEvent.READ_CODES",
     "BigSkillCatalogEvent.READ_SPEC",
