@@ -524,9 +524,13 @@ function checkRiddleMlEntry() {
     "records GM storage failures instead of letting health state writes reject",
     "isolates console hook failures during health diagnostics",
     "records request startup failures from the health HEAD adapter",
+    "keeps health timer running when failure evidence and warning both fail",
     "requestStartFailed",
     "gmSetFailed",
     "consoleFailed",
+    'throw new Error("quota")',
+    'throw new Error("console blocked")',
+    "not.toThrow()",
   ]) {
     if (!healthFailureTestText.includes(required)) {
       violations.push(`${healthFailureTest.replaceAll("\\", "/")} must cover ${required}`);

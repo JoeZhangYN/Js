@@ -137,4 +137,22 @@ describe("riddle ML health failure evidence", () => {
       error: "adapter missing",
     });
   });
+
+  it("keeps health timer running when failure evidence and warning both fail", async () => {
+    const { RIDDLE_ML_HEALTH_FAILURE_KEY, RiddleMlEvent, runRiddleMlAutomation } =
+      await loadSubject();
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
+      if (key === RIDDLE_ML_HEALTH_FAILURE_KEY) throw new Error("quota");
+      return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+    mocks.gmXhr.mockImplementation(({ onload }) => onload({ status: 503 }));
+
+    expect(() => runRiddleMlAutomation({ type: RiddleMlEvent.START_HEALTH })).not.toThrow();
+    await flushHealthCycle();
+
+    expect(vi.getTimerCount()).toBe(1);
+  });
 });
