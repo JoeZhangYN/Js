@@ -60,7 +60,8 @@ describe("runBattleTargetStrategy", () => {
     expect(result.id).toBe(2);
   });
 
-  it("rejects unknown target strategy events", () => {
+  it("rejects invalid target strategy events", () => {
     expect(runBattleTargetStrategy({ type: "unknown" })).toBeUndefined();
+    expect(runBattleTargetStrategy(null)).toBeUndefined();
   });
 });

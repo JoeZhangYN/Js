@@ -56,6 +56,41 @@ if (existsSync(LEGACY_TARGET_STRATEGY)) {
   });
 }
 
+const targetStrategyFile = `${SRC_DIR}/battle/battle-target-strategy.js`;
+const targetStrategyText = readFileSync(targetStrategyFile, "utf8");
+const targetStrategyEntry =
+  targetStrategyText.match(/export function runBattleTargetStrategy\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (/battleTargetStrategyEventHandlers\[event\.type\]/.test(targetStrategyEntry)) {
+  violations.push({
+    rel: "battle/battle-target-strategy.js",
+    line: 1,
+    msg: "target strategy entry must fail closed for invalid events",
+  });
+}
+if (!/battleTargetStrategyEventHandlers\[event\?\.type\]/.test(targetStrategyEntry)) {
+  violations.push({
+    rel: "battle/battle-target-strategy.js",
+    line: 1,
+    msg: "target strategy entry must dispatch invalid events through optional type",
+  });
+}
+const targetStrategyTestText = readFileSync(`${SRC_DIR}/battle/battle-target-strategy.test.js`, "utf8");
+if (!targetStrategyTestText.includes("rejects invalid target strategy events")) {
+  violations.push({
+    rel: "battle/battle-target-strategy.test.js",
+    line: 1,
+    msg: "target strategy tests must cover invalid events",
+  });
+}
+if (!/runBattleTargetStrategy\(null\)/.test(targetStrategyTestText)) {
+  violations.push({
+    rel: "battle/battle-target-strategy.test.js",
+    line: 1,
+    msg: "target strategy tests must cover null events",
+  });
+}
+
 for (const { abs, rel } of collectJs(SRC_DIR)) {
   if (!isDecideFile(rel)) continue;
   const codeLines = stripComments(readFileSync(abs, "utf8")).split(/\r?\n/);

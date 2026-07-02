@@ -71,5 +71,5 @@ function bossCoverageWindow(alive, aoe, isNeedy) {
 }
 
 export function runBattleTargetStrategy(event = { type: EVENT_FIRST_BY_ORDER }) {
-  return battleTargetStrategyEventHandlers[event.type]?.(event);
+  return battleTargetStrategyEventHandlers[event?.type]?.(event);
 }
