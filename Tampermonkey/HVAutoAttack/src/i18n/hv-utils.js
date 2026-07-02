@@ -4923,6 +4923,11 @@ _bottom.show_equip = async function () {
   _bottom.node.equip = $element('div', _bottom.node.div, '加载中...');
   const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
   const exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html);
+  if (!exec) {
+    _bottom.node.equip.textContent = 'Inventory Capacity: unavailable';
+    _bottom.node.equip.classList.add('hvut-warn');
+    return;
+  }
   const usage = parseInt(exec[1]) + parseInt(exec[2] || 0);
   const capacity = parseInt(exec[3]);
   const free = capacity - usage;
