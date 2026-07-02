@@ -72,5 +72,5 @@ function readTopupCandidates(event) {
 }
 
 export function runBattleStallModeAutomation(event = { type: EVENT_READ_ACTIVE }) {
-  return battleStallModeEventHandlers[event.type]?.(event);
+  return battleStallModeEventHandlers[event?.type]?.(event);
 }

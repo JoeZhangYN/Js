@@ -4792,10 +4792,19 @@ function checkBattleStallMode() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(stallModeFile)} entry must dispatch by handler table`);
   }
+  if (/battleStallModeEventHandlers\[event\.type\]/.test(entryBody)) {
+    violations.push(`${rel(stallModeFile)} entry must fail closed for invalid stall mode events`);
+  }
+  if (!/battleStallModeEventHandlers\[event\?\.type\]/.test(entryBody)) {
+    violations.push(`${rel(stallModeFile)} entry must dispatch invalid stall mode events through optional type`);
+  }
   const stallModeTest = path.join(root, "src/battle/battle-stall-mode.test.js");
   const stallModeTestText = fs.readFileSync(stallModeTest, "utf8");
-  if (!stallModeTestText.includes("rejects unknown stall mode events")) {
-    violations.push(`${rel(stallModeTest)} must cover unknown stall mode events`);
+  if (!stallModeTestText.includes("rejects invalid stall mode events without reading player buff state")) {
+    violations.push(`${rel(stallModeTest)} must cover invalid stall mode events`);
+  }
+  if (!/runBattleStallModeAutomation\(null\)/.test(stallModeTestText)) {
+    violations.push(`${rel(stallModeTest)} must cover null stall mode events`);
   }
   const allowedAliveHpFiles = new Set([
     itemFactsFile,

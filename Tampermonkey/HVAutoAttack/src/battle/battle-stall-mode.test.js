@@ -1,5 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleStallModeEvent, runBattleStallModeAutomation } from "./battle-stall-mode.js";
+
+const mocks = vi.hoisted(() => ({
+  runBattlePlayerBuffState: vi.fn((event) => event.state?.playerBuffs?.includes(event.img) || false),
+}));
+
+vi.mock("./player-buff-state.js", () => ({
+  BattlePlayerBuffStateEvent: Object.freeze({ READ_ACTIVE: "readActive" }),
+  runBattlePlayerBuffState: mocks.runBattlePlayerBuffState,
+}));
+
+beforeEach(() => {
+  mocks.runBattlePlayerBuffState.mockClear();
+});
 
 function snap(over = {}) {
   return {
@@ -71,7 +84,7 @@ describe("battle stall mode", () => {
     ).toEqual([11291]);
   });
 
-  it("rejects unknown stall mode events", () => {
+  it("rejects invalid stall mode events without reading player buff state", () => {
     expect(
       runBattleStallModeAutomation({
         type: "unknown",
@@ -79,5 +92,7 @@ describe("battle stall mode", () => {
         ...activeFacts(snap()),
       })
     ).toBeUndefined();
+    expect(runBattleStallModeAutomation(null)).toBeUndefined();
+    expect(mocks.runBattlePlayerBuffState).not.toHaveBeenCalled();
   });
 });
