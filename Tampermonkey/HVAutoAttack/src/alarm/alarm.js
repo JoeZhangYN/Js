@@ -82,30 +82,50 @@ function setNotification(e) {
   };
 
   if (typeof GM_notification !== "undefined") {
-    GM_notification({
-      text: notification.text,
-      title: "HentaiVerse Notification",
-      image: options.icon,
-      highlight: true,
-      timeout: notification.time * 1000,
-    });
+    try {
+      GM_notification({
+        text: notification.text,
+        title: "HentaiVerse Notification",
+        image: options.icon,
+        highlight: true,
+        timeout: notification.time * 1000,
+      });
+    } catch (_error) {
+      // Notification side effects must not block alarm fallback actions.
+    }
   }
 
   if ("Notification" in window && Notification.permission !== "denied") {
-    Notification.requestPermission().then((permission) => {
-      if (permission === "granted") {
-        const n = new Notification("HentaiVerse Notification", options);
+    try {
+      Notification.requestPermission()
+        .then((permission) => {
+          if (permission === "granted") {
+            const n = new Notification("HentaiVerse Notification", options);
 
-        setTimeout(() => n.close(), notification.time * 1000);
+            setTimeout(() => {
+              try {
+                n.close();
+              } catch (_error) {
+                // Notification close hooks are diagnostic only.
+              }
+            }, notification.time * 1000);
 
-        const closeNotification = () => {
-          n.close();
-          document.removeEventListener("mousemove", closeNotification);
-        };
+            const closeNotification = () => {
+              try {
+                n.close();
+              } catch (_error) {
+                // Notification close hooks are diagnostic only.
+              }
+              document.removeEventListener("mousemove", closeNotification);
+            };
 
-        document.addEventListener("mousemove", closeNotification);
-      }
-    });
+            document.addEventListener("mousemove", closeNotification);
+          }
+        })
+        .catch(() => {});
+    } catch (_error) {
+      // Notification permission hooks must not block alarm fallback actions.
+    }
   }
 }
 

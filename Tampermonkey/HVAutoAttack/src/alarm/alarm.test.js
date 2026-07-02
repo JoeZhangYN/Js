@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AlarmEvent, runAlarmAutomation } from "./alarm.js";
 import { g } from "../state/store.js";
 
@@ -28,6 +28,11 @@ beforeEach(() => {
   );
   vi.spyOn(window.HTMLMediaElement.prototype, "play").mockImplementation(() => {});
   vi.spyOn(window.HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe("alarm entry", () => {
@@ -84,7 +89,6 @@ describe("alarm entry", () => {
         timeout: 3000,
       })
     );
-    vi.unstubAllGlobals();
   });
 
   it("normalizes unknown alarm kinds to the common alarm contract", () => {
@@ -99,7 +103,35 @@ describe("alarm entry", () => {
         timeout: 5000,
       })
     );
-    vi.unstubAllGlobals();
+  });
+
+  it("isolates GM notification failures from notification-only alarms", () => {
+    vi.stubGlobal("GM_notification", () => {
+      throw new Error("notification blocked");
+    });
+
+    expect(() => runAlarmAutomation({ type: AlarmEvent.NOTIFICATION, kind: "Test" })).not.toThrow();
+  });
+
+  it("keeps audio alarm running when notification delivery fails", () => {
+    mocks.runOptionAutomation.mockImplementation((event) => {
+      const option = {
+        alert: true,
+        notification: true,
+        audioEnable: { Error: true },
+        audio: {},
+      };
+      return event.type === "readField" ? (option[event.key] ?? event.fallback) : undefined;
+    });
+    vi.stubGlobal("GM_notification", () => {
+      throw new Error("notification blocked");
+    });
+
+    expect(() => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Error" })).not.toThrow();
+
+    const audio = document.getElementById("hvAAAlert-Error");
+    expect(audio).toBeTruthy();
+    expect(audio.play).toHaveBeenCalled();
   });
 
   it("previews configured audio URLs through the alarm entry", () => {

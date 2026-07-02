@@ -73,6 +73,17 @@ if (!ownerText.includes("OptionEvent.READ_FIELD")) {
 if (!ownerText.includes("getAlarmNotification")) {
   violations.push(`${owner.replaceAll("\\", "/")} must delegate notification copy lookup`);
 }
+for (const required of [
+  "Notification side effects must not block alarm fallback actions.",
+  "Notification permission hooks must not block alarm fallback actions.",
+  "Notification close hooks are diagnostic only.",
+  "GM_notification({",
+  ".catch(() => {})",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must isolate notification failure ${required}`);
+  }
+}
 if (!notificationCatalogText.includes("getAlarmNotification")) {
   violations.push(
     `${notificationCatalog.replaceAll("\\", "/")} must own alarm notification catalog lookup`
@@ -139,9 +150,13 @@ for (const internal of [
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 if (
   !ownerTestText.includes("rejects unknown alarm events without user-visible side effects") ||
-  !ownerTestText.includes("runAlarmAutomation(null)")
+  !ownerTestText.includes("runAlarmAutomation(null)") ||
+  !ownerTestText.includes("isolates GM notification failures from notification-only alarms") ||
+  !ownerTestText.includes("keeps audio alarm running when notification delivery fails") ||
+  !ownerTestText.includes('throw new Error("notification blocked")') ||
+  !ownerTestText.includes("not.toThrow()")
 ) {
-  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null alarm events`);
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover alarm failure fallback events`);
 }
 
 if (violations.length) {
