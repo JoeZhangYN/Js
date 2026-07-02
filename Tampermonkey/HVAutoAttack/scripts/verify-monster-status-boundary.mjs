@@ -209,6 +209,8 @@ function checkEntry() {
 
 function checkParser() {
   const entryText = fs.readFileSync(path.join(root, parserEntry), "utf8");
+  const entryBody =
+    entryText.match(/export function runBattleLogParser\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   for (const required of [
     "BattleLogParserEvent",
     "battleLogParserEventHandlers",
@@ -231,12 +233,23 @@ function checkParser() {
   ) {
     violations.push(`${parserEntry.replaceAll("\\", "/")} may export only its event entry`);
   }
+  if (/battleLogParserEventHandlers\[event\.type\]/.test(entryBody)) {
+    violations.push(`${parserEntry.replaceAll("\\", "/")} must fail closed for invalid parser events`);
+  }
+  if (!/battleLogParserEventHandlers\[event\?\.type\]/.test(entryBody)) {
+    violations.push(
+      `${parserEntry.replaceAll("\\", "/")} must dispatch invalid parser events through optional type`
+    );
+  }
   if (!fs.existsSync(path.join(root, parserEntryTest))) {
     violations.push(`${parserEntryTest.replaceAll("\\", "/")} must cover battle log parser entry`);
   } else {
     const testText = fs.readFileSync(path.join(root, parserEntryTest), "utf8");
-    if (!testText.includes("rejects unknown battle log parser events")) {
-      violations.push(`${parserEntryTest.replaceAll("\\", "/")} must cover unknown parser events`);
+    if (!testText.includes("rejects invalid battle log parser events without reading log DOM")) {
+      violations.push(`${parserEntryTest.replaceAll("\\", "/")} must cover invalid parser events`);
+    }
+    if (!/runBattleLogParser\(null\)/.test(testText)) {
+      violations.push(`${parserEntryTest.replaceAll("\\", "/")} must cover null parser events`);
     }
   }
   const parserImpl = path.normalize("src/battle/log-parser.js");

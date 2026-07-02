@@ -29,7 +29,7 @@ const battleLogParserEventHandlers = Object.freeze({
 });
 
 export function runBattleLogParser(event = { type: EVENT_PARSE_CURRENT_LOG }) {
-  return battleLogParserEventHandlers[event.type]?.(event);
+  return battleLogParserEventHandlers[event?.type]?.(event);
 }
 
 function parseBattleLog() {

@@ -1,8 +1,17 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js";
+
+const mocks = vi.hoisted(() => ({
+  gE: vi.fn((selector, mode) =>
+    mode === "all" ? document.querySelectorAll(selector) : document.querySelector(selector)
+  ),
+}));
+
+vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
 
 beforeEach(() => {
   document.body.innerHTML = "";
+  mocks.gE.mockClear();
 });
 
 describe("runBattleLogParser", () => {
@@ -88,7 +97,9 @@ describe("runBattleLogParser", () => {
     ]);
   });
 
-  it("rejects unknown battle log parser events", () => {
+  it("rejects invalid battle log parser events without reading log DOM", () => {
     expect(runBattleLogParser({ type: "unknown" })).toBeUndefined();
+    expect(runBattleLogParser(null)).toBeUndefined();
+    expect(mocks.gE).not.toHaveBeenCalled();
   });
 });
