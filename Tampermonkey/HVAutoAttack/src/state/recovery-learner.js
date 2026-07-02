@@ -190,5 +190,5 @@ const recoveryLearningEventHandlers = Object.freeze({
 });
 
 export function runRecoveryLearningAutomation(event = { type: EVENT_READ_RECOVERY }) {
-  return recoveryLearningEventHandlers[event.type]?.(event);
+  return recoveryLearningEventHandlers[event?.type]?.(event);
 }

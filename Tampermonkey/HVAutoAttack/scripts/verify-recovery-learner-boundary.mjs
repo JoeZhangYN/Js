@@ -180,8 +180,12 @@ if (!ownerText.includes("const recoveryLearningEventHandlers")) {
 }
 const ownerEntry =
   ownerText.match(/export function runRecoveryLearningAutomation[\s\S]*?\n}/)?.[0] || "";
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+}
+if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null recovery events`);
 }
 for (const internal of ["recordPreDrink(", "finalizePending(", "getLearnedRecovery("]) {
   if (ownerEntry.includes(internal)) {
@@ -189,6 +193,9 @@ for (const internal of ["recordPreDrink(", "finalizePending(", "getLearnedRecove
       `${owner.replaceAll("\\", "/")} entry must dispatch through recoveryLearningEventHandlers`
     );
   }
+}
+if (!/runRecoveryLearningAutomation\(null\)/.test(ownerTestText)) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null recovery learning events`);
 }
 
 if (violations.length) {

@@ -130,10 +130,11 @@ describe("recovery learner", () => {
     ).toEqual({ stat: "mp", amount: 125 });
   });
 
-  it("ignores unknown recovery learning events without changing pending or learned state", () => {
+  it("ignores invalid recovery learning events without changing pending or learned state", () => {
     g("learnPending", { potionId: 11195, stat: "hp", pre: 1000, turn: 1 });
 
     expect(runRecoveryLearningAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runRecoveryLearningAutomation(null)).toBeUndefined();
     expect(g("learnPending")).toEqual({ potionId: 11195, stat: "hp", pre: 1000, turn: 1 });
     expect(getValue(STORAGE_KEYS.LEARNED_RECOVERY, true)).toBeNull();
     expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
