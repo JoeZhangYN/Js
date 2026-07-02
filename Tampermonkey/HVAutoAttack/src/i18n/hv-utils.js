@@ -5502,12 +5502,16 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
 
   _ab.init = function () {
     _ab.parse_slotbar();
-    $config.set('ab_level', _ab.level);
+    if (!$config.set('ab_level', _ab.level)) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
 
     _ab.parse_treepane();
     $id('ability_treepane').addEventListener('click', _ab.click, true);
 
     $input(['button', '技能模拟器'], $id('ability_outer'), ['!position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;'], () => { _ab.calc.toggle(); });
+    return true;
   };
 
   _ab.parse_slotbar = function () {
@@ -5833,8 +5837,9 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
 
     $id('train_table').addEventListener('click', _tr.click);
 
-    _tr.parse_table();
-    _tr.parse_progress();
+    if (_tr.parse_table() === false) return false;
+    if (_tr.parse_progress() === false) return false;
+    return true;
   };
 
   _tr.parse_table = function () {
@@ -5874,7 +5879,11 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
       $element('td', tr, [`/<div class="fc4 far fcb"><div>${spent.toLocaleString()}</div></div>`]);
     });
     $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>Total ${total_spent.toLocaleString()}</div></div></td>`]);
-    $config.set('tr_level', _tr.level);
+    if (!$config.set('tr_level', _tr.level)) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    return true;
   };
 
   _tr.parse_progress = function () {
@@ -12176,7 +12185,10 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       $qsa('#ability_treelist > div')[index].classList.add('hvut-ab-tree');
     }
   });
-  $config.set('ab_level', _ab.level);
+  if (!$config.set('ab_level', _ab.level)) {
+    alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+    return false;
+  }
 
   $id('ability_treepane').addEventListener('click', _ab.click, true);
   $qsa('#ability_treepane > div').forEach((div) => {
@@ -12310,7 +12322,10 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
   });
   $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>累计花费 ${_tr.spent.toLocaleString()}</div></div></td>`]);
 
-  $config.set('tr_level', _tr.level);
+  if (!$config.set('tr_level', _tr.level)) {
+    alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+    return false;
+  }
 
   if (_tr.current && _tr.data[_tr.current]) {
     _tr.json.current_name = _tr.current;
