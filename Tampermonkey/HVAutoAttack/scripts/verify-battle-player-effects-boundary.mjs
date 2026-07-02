@@ -83,12 +83,18 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (entryBody.includes("event.type") || !entryBody.includes("event?.type")) {
+  violations.push(`${rel(owner)} entry must fail closed for unknown or null player effects events`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover player effects entry contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("rejects unknown events without touching DOM or parsers")) {
-    violations.push(`${rel(ownerTest)} must cover unknown player effects events`);
+  if (
+    !ownerTestText.includes("rejects invalid events without touching DOM or parsers") ||
+    !ownerTestText.includes("runBattlePlayerEffects(null)")
+  ) {
+    violations.push(`${rel(ownerTest)} must cover unknown and null player effects events`);
   }
 }
 if (!snapshotText.includes("runBattlePlayerEffects")) {

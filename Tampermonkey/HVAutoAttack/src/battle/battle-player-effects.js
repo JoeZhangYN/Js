@@ -43,5 +43,5 @@ function readCurrentPlayerEffects() {
 }
 
 export function runBattlePlayerEffects(event = { type: EVENT_READ_CURRENT }) {
-  return battlePlayerEffectsEventHandlers[event.type]?.() ?? EMPTY_PLAYER_EFFECT_FACTS;
+  return battlePlayerEffectsEventHandlers[event?.type]?.() ?? EMPTY_PLAYER_EFFECT_FACTS;
 }

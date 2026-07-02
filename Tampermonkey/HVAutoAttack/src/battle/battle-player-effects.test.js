@@ -53,8 +53,16 @@ describe("runBattlePlayerEffects", () => {
     });
   });
 
-  it("rejects unknown events without touching DOM or parsers", () => {
+  it("rejects invalid events without touching DOM or parsers", () => {
     expect(runBattlePlayerEffects({ type: "unknown" })).toEqual({
+      channeling: false,
+      etherTapActiveX2: false,
+      etherTapExpiring: false,
+      playerBuffs: [],
+      playerEffects: [],
+      playerEffectTurns: {},
+    });
+    expect(runBattlePlayerEffects(null)).toEqual({
       channeling: false,
       etherTapActiveX2: false,
       etherTapExpiring: false,
