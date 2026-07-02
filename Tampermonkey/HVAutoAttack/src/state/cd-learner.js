@@ -12,9 +12,10 @@
 // 不持久——重载丢一个在途样本可接受。learned 表持久（按需 getValue / 即时 setValue）。
 import { g } from "./store.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
-import { setValue, getValue } from "./storage.js";
+import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { SKILL_REGISTRY } from "./skill-registry.js";
+import { persistLearnedCd } from "./cd-learner-failure.js";
 
 const EVENT_RECORD_FIRE = "recordFire";
 const EVENT_FINALIZE_PENDING = "finalizePending";
@@ -104,6 +105,7 @@ function finalizeCdPending(event) {
   const now = normalizeTurn(event?.globalTurn);
   const readySkillIds = normalizeReadySkillIds(event?.readySkillIds);
   let changed = false;
+  let persisted = true;
   for (const code of Object.keys(pending)) {
     const p = pending[code];
     const gap = now - p.firedTurn;
@@ -116,9 +118,10 @@ function finalizeCdPending(event) {
     if (gap > entry.cdBase * 3) continue; // 陈旧/异常测量（早就该好却 3× 未结算）→ 弃
     // 夹①：拒学膨胀 —— gap 只可能因 OC 饿/迟放被拉长，真 CD 不会超过保守 cdBase。
     const sample = Math.min(gap, entry.cdBase);
-    updateLearnedCd(code, sample, entry.cdBase);
+    if (!updateLearnedCd(code, sample, entry.cdBase)) persisted = false;
   }
   if (changed) g("cdLearnPending", pending);
+  return changed ? persisted : undefined;
 }
 
 /** EWMA 更新并即时持久化（数学复刻 recovery-learner.updateLearned）。 */
@@ -130,10 +133,11 @@ function updateLearnedCd(code, sample, cdBase) {
   const alpha = Math.max(0.1, 1 / n); // n 大趋稳；下限 0.1 保对装备/等级漂移敏感
   const newCd = priorCd * (1 - alpha) + sample * alpha;
   learned[code] = { cd: newCd, n };
-  setValue(STORAGE_KEYS.LEARNED_CD, learned);
+  const persisted = persistLearnedCd(learned);
   if (isDynamicHealLogEnabled()) {
     console.log(`[cd-learn] ${code}: gap→${sample} → cd=${newCd.toFixed(1)} (n=${n})`);
   }
+  return persisted;
 }
 
 /**
