@@ -16,7 +16,12 @@ function safeDetail(detail) {
 export function recordEncounterStateFailure(stage, detail, deps = {}) {
   const storage = deps.sessionStorage || globalThis.sessionStorage;
   const warn = deps.warn || ((...args) => console.warn(...args));
-  const evidence = { source: "encounterState", stage, detail: safeDetail(detail) };
+  const evidence = {
+    capability: "encounterState",
+    source: "encounterState",
+    stage,
+    detail: safeDetail(detail),
+  };
   try {
     storage?.setItem(ENCOUNTER_STATE_FAILURE_KEY, JSON.stringify(evidence));
   } catch (_error) {

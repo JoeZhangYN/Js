@@ -24,6 +24,8 @@ const lobbyScheduleTest = path.normalize("src/pages/encounter-lobby-schedule.tes
 const optionGateFile = path.normalize("src/pages/encounter-option-gate.js");
 const dayRecordFile = path.normalize("src/state/day-record.js");
 const timeFile = path.normalize("src/core/time.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
 
 function walk(dir) {
@@ -250,6 +252,8 @@ const stateHelperText = fs.readFileSync(path.join(root, stateHelper), "utf8");
 const stateFailureText = fs.readFileSync(path.join(root, stateFailureFile), "utf8");
 const stateFailureTestText = fs.readFileSync(path.join(root, stateFailureTest), "utf8");
 const stateEvidenceTestText = fs.readFileSync(path.join(root, stateEvidenceTest), "utf8");
+const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
+const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const policyTestText = fs.readFileSync(path.join(root, policyTest), "utf8");
 const rejectionText = fs.readFileSync(path.join(root, rejectionFile), "utf8");
@@ -407,6 +411,7 @@ for (const required of [
 for (const required of [
   "ENCOUNTER_STATE_FAILURE_KEY",
   "HVAA:lastEncounterStateFailure",
+  "capability: \"encounterState\"",
   "source: \"encounterState\"",
   "storage?.setItem",
   "warn(\"[HVAA] encounter state failed\"",
@@ -427,9 +432,26 @@ for (const required of [
   "persists corrupted encounter state evidence while failing closed",
   "keeps encounter state fallback working when console warning throws",
   "HVAA:lastEncounterStateFailure",
+  "capability: \"encounterState\"",
 ]) {
   if (!stateEvidenceTestText.includes(required)) {
     violations.push(`${stateEvidenceTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+for (const required of [
+  "ENCOUNTER_STATE_FAILURE: \"HVAA:lastEncounterStateFailure\"",
+  "source(\"encounterStateFailure\", DiagnosticEvidenceKey.ENCOUNTER_STATE_FAILURE)",
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+for (const required of [
+  "HVAA:lastEncounterStateFailure",
+  "encounterStateFailure: { capability: \"encounterState\", stage: \"read-local-json\" }",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 const optionGateText = fs.readFileSync(path.join(root, optionGateFile), "utf8");

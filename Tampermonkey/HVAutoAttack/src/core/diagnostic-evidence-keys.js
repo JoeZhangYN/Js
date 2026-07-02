@@ -31,6 +31,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   RIDDLE_DATASET_FAILURE: "HVAA:lastRiddleDatasetFailure",
   I18N_INIT_FAILURE: "HVAA:lastI18nInitFailure",
   I18N_RESTORE_FAILURE: "HVAA:lastI18nRestoreFailure",
+  ENCOUNTER_STATE_FAILURE: "HVAA:lastEncounterStateFailure",
 });
 
 function source(name, key) {
@@ -72,6 +73,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("riddleDatasetFailure", DiagnosticEvidenceKey.RIDDLE_DATASET_FAILURE),
   source("i18nInitFailure", DiagnosticEvidenceKey.I18N_INIT_FAILURE),
   source("i18nRestoreFailure", DiagnosticEvidenceKey.I18N_RESTORE_FAILURE),
+  source("encounterStateFailure", DiagnosticEvidenceKey.ENCOUNTER_STATE_FAILURE),
 ]);
 
 export const API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze(

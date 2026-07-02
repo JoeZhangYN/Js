@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { readRecentDiagnosticEvidence } from "./diagnostic-evidence.js";
 
-beforeEach(() => {
-  window.sessionStorage.clear();
-});
+beforeEach(() => window.sessionStorage.clear());
 
 describe("readRecentDiagnosticEvidence", () => {
   it("returns lifecycle, decision, and effect evidence together", () => {
@@ -94,6 +92,7 @@ describe("readRecentDiagnosticEvidence", () => {
     window.sessionStorage.setItem("HVAA:lastRiddleDatasetFailure", JSON.stringify({ capability: "riddleDataset", stage: "export-list" }));
     window.sessionStorage.setItem("HVAA:lastI18nInitFailure", JSON.stringify({ capability: "i18nInit", entry: "interface" }));
     window.sessionStorage.setItem("HVAA:lastI18nRestoreFailure", JSON.stringify({ capability: "i18nRestore", stage: "restore" }));
+    window.sessionStorage.setItem("HVAA:lastEncounterStateFailure", JSON.stringify({ capability: "encounterState", stage: "read-local-json" }));
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
@@ -129,15 +128,13 @@ describe("readRecentDiagnosticEvidence", () => {
       riddleDatasetFailure: { capability: "riddleDataset", stage: "export-list" },
       i18nInitFailure: { capability: "i18nInit", entry: "interface" },
       i18nRestoreFailure: { capability: "i18nRestore", stage: "restore" },
+      encounterStateFailure: { capability: "encounterState", stage: "read-local-json" },
     });
   });
 
   it("skips malformed or unreadable evidence sources without dropping later evidence", () => {
     window.sessionStorage.setItem("HVAA:lastNavigationDecision", "{not-json");
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleCompletion",
-      JSON.stringify({ outcome: "victory", effects: { scheduleReload: false } })
-    );
+    window.sessionStorage.setItem("HVAA:lastBattleCompletion", JSON.stringify({ outcome: "victory", effects: { scheduleReload: false } }));
     const blockedKeys = new Set(["HVAA:lastBattleApiBridge"]);
     const storage = {
       getItem(key) {

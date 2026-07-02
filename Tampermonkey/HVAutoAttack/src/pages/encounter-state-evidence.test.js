@@ -20,6 +20,7 @@ describe("encounter state failure evidence", () => {
 
     expect(state).toEqual({ date: 0, key: "", count: 0, clear: true });
     expect(JSON.parse(sessionStorage.getItem(ENCOUNTER_STATE_FAILURE_KEY))).toMatchObject({
+      capability: "encounterState",
       source: "encounterState",
       stage: "read-local-json",
       detail: { key: HVUT_RE_KEY },
