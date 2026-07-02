@@ -87,6 +87,35 @@ if (!ownerText.includes("RESET_PROGRESS")) {
 if (!ownerText.includes("delValue(STORAGE_KEYS.ARENA)")) {
   violations.push(`${owner.replaceAll("\\", "/")} must own arena reset storage deletion`);
 }
+for (const required of [
+  "recordIdleArenaRequestFailure",
+  "[HVAA] idle arena request failed",
+  "IDLE_ARENA_TOKEN_URLS",
+  "token-fetch",
+  "battle-start",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own idle arena HTTP failure ${required}`);
+  }
+}
+const tokenFetchStart = ownerText.indexOf("IDLE_ARENA_TOKEN_URLS.forEach");
+const tokenFetchEnd = ownerText.indexOf("// 轮询", tokenFetchStart);
+const tokenFetchBlock =
+  tokenFetchStart >= 0 && tokenFetchEnd > tokenFetchStart
+    ? ownerText.slice(tokenFetchStart, tokenFetchEnd)
+    : "";
+if (
+  !tokenFetchBlock.includes("post(") ||
+  !tokenFetchBlock.includes("href") ||
+  !tokenFetchBlock.includes("failTokenFetch")
+) {
+  violations.push(`${owner.replaceAll("\\", "/")} token fetch requests must pass failure callbacks`);
+}
+if (!/recordIdleArenaRequestFailure\("battle-start",\s*arenaBeforeStart,\s*failure\)/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} battle start failures must preserve pre-start progress`
+  );
+}
 if (!ownerText.includes("const idleArenaEventHandlers")) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must route idle arena events through a handler table`
@@ -129,6 +158,11 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "runIdleArenaAutomation(null)",
     "expect(mocks.post).not.toHaveBeenCalled()",
     "expect(vi.getTimerCount()).toBe(0)",
+    "records token fetch request failures and stops waiting for all token pages",
+    "records battle start request failures without advancing arena progress",
+    "[HVAA] idle arena request failed",
+    "stage: \"token-fetch\"",
+    "stage: \"battle-start\"",
   ]) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);

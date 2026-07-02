@@ -1,19 +1,15 @@
 // 闲置自动挑战 Arena/RoB/GrindFest：唯一入口 runIdleArenaAutomation(event)。
-import { gE } from "../dom/query.js";
 import { setValue, getValue, delValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { _alert } from "../core/lang.js";
 import { post } from "../dom/http.js";
-import {
-  NavigationEvent,
-  NavigationReloadReason,
-  runNavigationAutomation,
-} from "../core/navigate.js";
+import { NavigationEvent, NavigationReloadReason, runNavigationAutomation } from "../core/navigate.js";
 import { pollUntil } from "../core/poll.js";
 import { isIsekai } from "../env.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
+import { IDLE_ARENA_TOKEN_URLS, collectIdleArenaToken } from "./idle-arena-token.js";
 
 const EVENT_SCHEDULE_NEXT_BATTLE = "scheduleNextBattle";
 const EVENT_START_NEXT_BATTLE = "startNextBattle";
@@ -54,6 +50,12 @@ function resetProgress() {
   delValue(STORAGE_KEYS.ARENA);
 }
 
+function recordIdleArenaRequestFailure(stage, arena, failure) {
+  const evidence = { source: "idleArena", stage, failure };
+  console.warn("[HVAA] idle arena request failed", evidence);
+  setValue(STORAGE_KEYS.ARENA, { ...arena, requestFailure: evidence });
+}
+
 function startNextBattle() {
   let arena = getValue(STORAGE_KEYS.ARENA, true) || {};
   const dateNow = runDayRecordAutomation({ type: DayRecordEvent.SYNC_UTC_DATE });
@@ -66,35 +68,23 @@ function startNextBattle() {
         length: 0,
       },
     };
-    // iframe打开四个网站，设定四个判断值，同时true才继续
-    const getToken = function (data, e) {
-      {
-        // postoken: both main-world and isekai read it (HV main-world arena uses postoken, verified 2026-06-09)
-        const postokenInput = gE('input[name="postoken"]', data);
-        if (postokenInput) arena.token.postoken = postokenInput.value;
-      }
-      if (e.target.responseURL.match(/ss=gr$/)) {
-        const grImg = gE('img[src*="startgrindfest.png"]', data);
-        if (grImg) {
-          const match = grImg.getAttribute("onclick")?.match(/init_battle\(\d+,\s*'(.*?)'\)/);
-          arena.token.gr = match ? match[1] : true;
-        }
-      } else {
-        gE('img[src*="startchallenge.png"]', "all", data).forEach((_) => {
-          const match = _.getAttribute("onclick")?.match(
-            /init_battle\((\d+)(?:,\s*\d+(?:,\s*'(.*?)')?)?\)/
-          );
-          if (match) arena.token[match[1]] = match[2] || true;
-        });
-      }
-      arena.token.length++;
+    let tokenFailed = false;
+    const failTokenFetch = (failure) => {
+      tokenFailed = true;
+      recordIdleArenaRequestFailure("token-fetch", arena, failure);
     };
-    post("?s=Battle&ss=gr", getToken);
-    post("?s=Battle&ss=ar", getToken);
-    post("?s=Battle&ss=ar&page=2", getToken);
-    post("?s=Battle&ss=rb", getToken);
+    IDLE_ARENA_TOKEN_URLS.forEach((href) =>
+      post(
+        href,
+        (data, e) => collectIdleArenaToken(arena, data, e),
+        undefined,
+        undefined,
+        failTokenFetch
+      )
+    );
     // 轮询至 4 个 token POST 全部返回 → 存档 + 重入 idleArena
-    pollUntil(() => arena.token.length >= 4).then(() => {
+    pollUntil(() => arena.token.length >= 4 || tokenFailed).then(() => {
+      if (tokenFailed) return;
       setValue(STORAGE_KEYS.ARENA, arena);
       setTimeout(startNextBattle, 200);
     });
@@ -140,21 +130,29 @@ function startNextBattle() {
     startNextBattle();
     return;
   }
+  const arenaBeforeStart = arena;
   if (arena.array[0] === "gr" && arena.gr > 0) {
-    arena.gr--;
+    arena = { ...arena, gr: arena.gr - 1 };
   } else {
-    arena.done.push(arena.array[0]);
-    arena.array.splice(0, 1);
+    arena = {
+      ...arena,
+      done: [...arena.done, arena.array[0]],
+      array: arena.array.slice(1),
+    };
   }
-  setValue(STORAGE_KEYS.ARENA, arena);
   // token deprecated: main-world unified to postoken (same as isekai)
   if (id === "gr") id = 1;
   post(
     `?s=Battle&ss=${href}`,
-    reloadCurrentPage,
+    () => {
+      setValue(STORAGE_KEYS.ARENA, arena);
+      reloadCurrentPage();
+    },
     isIsekai
       ? `initid=${String(id)}&postoken=${arena.token.postoken}`
-      : `initid=${String(id)}&postoken=${arena.token.postoken}`
+      : `initid=${String(id)}&postoken=${arena.token.postoken}`,
+    undefined,
+    (failure) => recordIdleArenaRequestFailure("battle-start", arenaBeforeStart, failure)
   );
 }
 

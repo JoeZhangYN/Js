@@ -29,6 +29,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+function currentUtcDateKey() {
+  const date = new Date();
+  return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
+}
+
 describe("runIdleArenaAutomation", () => {
   it("schedules the next battle from the option entry", () => {
     vi.useFakeTimers();
@@ -71,5 +76,60 @@ describe("runIdleArenaAutomation", () => {
     expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
     expect(mocks.post).not.toHaveBeenCalled();
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("records token fetch request failures and stops waiting for all token pages", async () => {
+    vi.useFakeTimers();
+    const failure = { kind: "networkError", href: "?s=Battle&ss=gr", retries: 4 };
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mocks.runOptionAutomation.mockImplementation((event) => {
+      if (event.key === "idleArenaGrTime") return 0;
+      return event.fallback;
+    });
+    mocks.post.mockImplementation((href, _success, _parm, _type, onFailure) => {
+      if (href === "?s=Battle&ss=gr") onFailure(failure);
+    });
+
+    runIdleArenaAutomation({ type: IdleArenaEvent.START_NEXT_BATTLE });
+    await vi.advanceTimersByTimeAsync(200);
+
+    const arena = getValue(STORAGE_KEYS.ARENA, true);
+    expect(arena.requestFailure).toEqual({
+      source: "idleArena",
+      stage: "token-fetch",
+      failure,
+    });
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA] idle arena request failed",
+      expect.objectContaining({ stage: "token-fetch", failure })
+    );
+  });
+
+  it("records battle start request failures without advancing arena progress", () => {
+    const failure = { kind: "httpStatus", href: "?s=Battle&ss=ar", status: 500 };
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    setValue(STORAGE_KEYS.ARENA, {
+      date: currentUtcDateKey(),
+      gr: 0,
+      done: [],
+      token: { length: 4, postoken: "pt", 1: true },
+    });
+    mocks.runOptionAutomation.mockImplementation((event) => {
+      if (event.key === "idleArenaValue") return "1";
+      return event.fallback;
+    });
+    mocks.post.mockImplementation((_href, _success, _parm, _type, onFailure) =>
+      onFailure(failure)
+    );
+
+    runIdleArenaAutomation({ type: IdleArenaEvent.START_NEXT_BATTLE });
+
+    const arena = getValue(STORAGE_KEYS.ARENA, true);
+    expect(arena.done).toEqual([]);
+    expect(arena.requestFailure).toEqual({
+      source: "idleArena",
+      stage: "battle-start",
+      failure,
+    });
   });
 });
