@@ -60,7 +60,7 @@ vi.mock("./riddle-submission-timing.js", () => ({
 vi.mock("./riddle-helper.js", () => ({ runRiddleVisualAid: mocks.runRiddleVisualAid }));
 
 beforeEach(() => {
-  document.body.innerHTML = "";
+  document.body.innerHTML = ""; sessionStorage.clear();
   for (const fn of Object.values(mocks)) fn.mockClear();
   mocks.runOptionAutomation.mockImplementation((event) => {
     if (event.type === "isOn") return false;
@@ -163,4 +163,5 @@ describe("runRiddleAutomation answering session", () => {
       })
     );
   });
+
 });

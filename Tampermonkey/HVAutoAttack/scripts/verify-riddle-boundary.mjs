@@ -10,6 +10,8 @@ const riddleTimingFile = path.join(root, "src/pages/riddle-submission-timing.js"
 const riddleImageFile = path.join(root, "src/pages/riddle-image.js");
 const riddleMlFile = path.join(root, "src/pages/riddle-ml.js");
 const riddleMlAnswerFailureFile = path.join(root, "src/pages/riddle-ml-answer-failure.js");
+const riddleSubmitCommandFile = path.join(root, "src/pages/riddle-submit-command.js");
+const riddleSubmitFailureFile = path.join(root, "src/pages/riddle-submit-failure.js");
 const diagnosticKeysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
 const diagnosticTestFile = path.join(root, "src/core/diagnostic-evidence.test.js");
 const settingsFile = path.join(root, "src/settings/render.js");
@@ -146,6 +148,7 @@ function checkRiddleAnswerImplementationConsumers() {
     path.normalize("src/pages/riddle-automation.js"),
     path.normalize("src/pages/riddle-automation.test.js"),
     path.normalize("src/pages/riddle.js"),
+    path.normalize("src/pages/riddle-submit-flow.test.js"),
   ]);
   function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -242,10 +245,45 @@ function checkRiddleSubmissionTiming() {
     "RiddleSubmissionTimingEvent.EXTERNAL_SUBMITTED",
     "RiddleSubmissionTimingEvent.ML_ANSWERS_READY",
     "recordRiddleMlAnswerFailure",
+    "submitRiddleAnswerCommand",
   ]) {
     if (!answerText.includes(required)) {
       violations.push(`${rel(riddleAnswerFile)} must report ${required} to the timing entry`);
     }
+  }
+  if (!answerText.includes("if (!submitRiddleAnswerCommand(answers)) context.pendingSource = null;")) {
+    violations.push(`${rel(riddleAnswerFile)} must clear pending source when submit command fails`);
+  }
+  if (/submit\.click\(\)/.test(answerText)) {
+    violations.push(`${rel(riddleAnswerFile)} must route riddle submit clicks through submitRiddleAnswerCommand`);
+  }
+  const submitCommandText = fs.readFileSync(riddleSubmitCommandFile, "utf8");
+  for (const required of [
+    "submitRiddleAnswerCommand",
+    "recordRiddleSubmitFailure",
+    "missing-riddler",
+    "missing-checkbox",
+    "no-answer-selected",
+    "missing-submit",
+    "click-submit",
+  ]) {
+    if (!submitCommandText.includes(required)) {
+      violations.push(`${rel(riddleSubmitCommandFile)} must own ${required}`);
+    }
+  }
+  const submitFailureText = fs.readFileSync(riddleSubmitFailureFile, "utf8");
+  for (const required of [
+    "RIDDLE_SUBMIT_FAILURE_KEY",
+    "HVAA:lastRiddleSubmitFailure",
+    "recordRiddleSubmitFailure",
+    "[HVAA][riddle] submit failed",
+  ]) {
+    if (!submitFailureText.includes(required)) {
+      violations.push(`${rel(riddleSubmitFailureFile)} must own ${required}`);
+    }
+  }
+  if (!/globalThis\.sessionStorage\?\.setItem\(RIDDLE_SUBMIT_FAILURE_KEY/.test(submitFailureText)) {
+    violations.push(`${rel(riddleSubmitFailureFile)} must persist riddle submit failures`);
   }
   const answerFailureText = fs.readFileSync(riddleMlAnswerFailureFile, "utf8");
   for (const required of [
@@ -271,7 +309,29 @@ function checkRiddleSubmissionTiming() {
     !answerTestText.includes("records ML answer failures while keeping random timing fallback active") ||
     !answerTestText.includes("ml answer failed error=ml blocked fallback=random")
   ) {
-    violations.push("src/pages/riddle.test.js must cover ML answer failure logging fallback");
+    violations.push("src/pages/riddle.test.js must cover ML answer failure and submit failure fallback");
+  }
+  const submitFlowTestText = fs.readFileSync(
+    path.join(root, "src/pages/riddle-submit-flow.test.js"),
+    "utf8"
+  );
+  if (!submitFlowTestText.includes("clears pending automated source when submit command fails before a manual click")) {
+    violations.push("src/pages/riddle-submit-flow.test.js must cover stale submit source cleanup");
+  }
+  const submitCommandTestText = fs.readFileSync(
+    path.join(root, "src/pages/riddle-submit-command.test.js"),
+    "utf8"
+  );
+  for (const required of [
+    "selects answer checkboxes and clicks the enabled submit button",
+    "records missing riddle form without claiming a submitted action",
+    "records click failures without throwing",
+    "HVAA:lastRiddleSubmitFailure",
+    "click-submit",
+  ]) {
+    if (!submitCommandTestText.includes(required)) {
+      violations.push(`src/pages/riddle-submit-command.test.js must cover ${required}`);
+    }
   }
   const answerFailureTestText = fs.readFileSync(
     path.join(root, "src/pages/riddle-ml-answer-failure.test.js"),
@@ -593,8 +653,10 @@ function checkRiddleMlEntry() {
   for (const required of [
     "RIDDLE_ML_HEALTH_FAILURE: \"HVAA:lastRiddleMlHealthFailure\"",
     "RIDDLE_ML_ANSWER_FAILURE: \"HVAA:lastRiddleMlAnswerFailure\"",
+    "RIDDLE_SUBMIT_FAILURE: \"HVAA:lastRiddleSubmitFailure\"",
     "source(\"riddleMlHealthFailure\", DiagnosticEvidenceKey.RIDDLE_ML_HEALTH_FAILURE)",
     "source(\"riddleMlAnswerFailure\", DiagnosticEvidenceKey.RIDDLE_ML_ANSWER_FAILURE)",
+    "source(\"riddleSubmitFailure\", DiagnosticEvidenceKey.RIDDLE_SUBMIT_FAILURE)",
   ]) {
     if (!diagnosticKeysText.includes(required)) {
       violations.push(`${rel(diagnosticKeysFile)} must expose ${required}`);
@@ -604,8 +666,10 @@ function checkRiddleMlEntry() {
   for (const required of [
     "HVAA:lastRiddleMlHealthFailure",
     "HVAA:lastRiddleMlAnswerFailure",
+    "HVAA:lastRiddleSubmitFailure",
     "riddleMlHealthFailure: { capability: \"riddleMlHealth\", stage: \"healthCycle\" }",
     "riddleMlAnswerFailure: { capability: \"riddleMlAnswer\", stage: \"request\", fallback: \"random\" }",
+    "riddleSubmitFailure: { capability: \"riddleSubmit\", stage: \"click-submit\" }",
   ]) {
     if (!diagnosticTestText.includes(required)) {
       violations.push(`${rel(diagnosticTestFile)} must cover ${required}`);

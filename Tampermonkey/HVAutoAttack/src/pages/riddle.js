@@ -26,6 +26,7 @@ import {
   runRiddleSubmissionTiming,
 } from "./riddle-submission-timing.js";
 import { recordRiddleMlAnswerFailure } from "./riddle-ml-answer-failure.js";
+import { submitRiddleAnswerCommand } from "./riddle-submit-command.js";
 
 // 答案码 SSOT 见 data/riddle-answers.js（提取到叶子层打破与 riddle-ml.js 的循环依赖 TDZ）
 const ANSWER_KEYS = Object.keys(ANSWER_MAP);
@@ -44,34 +45,6 @@ function readOptionEnabled(key) {
 
 function readOptionField(key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
-}
-
-/**
- * 勾选答案 checkbox 并提交。HV 答题常多只小马同现（多答案不少见）→ 收数组、勾选全部命中 box 后单次提交。
- * @param {string[]} answers ANSWER_MAP key 数组 (ts/ra/fs/rd/pp/aj)
- */
-function riddleSubmit(answers) {
-  const riddler1 = document.getElementById("riddler1");
-  if (!riddler1) return;
-  let any = false;
-  for (const answer of answers) {
-    const idx = ANSWER_MAP[answer];
-    if (idx === undefined) continue;
-    const checkbox = riddler1.children?.[idx]?.children?.[0]?.children?.[0];
-    if (!checkbox) continue;
-    checkbox.checked = true;
-    any = true;
-  }
-  if (!any) return;
-  const submit = document.getElementById("riddlesubmit");
-  if (!submit) return;
-  // ★ 必须先解除 disabled 再 click：HV 答题页 #riddlesubmit 初始 disabled="disabled"，
-  //   仅当用户**真实点击** checkbox 触发其 onclick 时 HV 原生脚本才移除 disabled。
-  //   脚本 `checkbox.checked = true` 只改属性、不派发 onclick → 按钮恒灰 → click() 是 no-op（提交无反应）。
-  //   对齐 SOT 原版 Riddle Master Assistant Reborn.user.js v0.5.2（btn.disabled=false 后 btn.click()，
-  //   见其 L302-305 随机兜底 / L446-456 ML 命中两处）。移植曾漏此行 → ML 识别了却提交不出去（本次修复）。
-  submit.disabled = false;
-  submit.click();
 }
 
 /**
@@ -124,7 +97,7 @@ function submitRiddleAnswers(context, answers, via) {
     message: `submit via=${via} answers=${Array.isArray(answers) ? answers.join(",") : answers}`,
   });
   context.pendingSource = via; // 供提交 hook 判 confidence（须在 riddleSubmit 触发 click 之前设好）
-  riddleSubmit(answers);
+  if (!submitRiddleAnswerCommand(answers)) context.pendingSource = null;
 }
 
 function startRiddleSubmissionTiming(context) {
