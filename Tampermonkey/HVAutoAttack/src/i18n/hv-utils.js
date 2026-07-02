@@ -5892,7 +5892,11 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
         _tr.json.next_id = 0;
       }
     }
-    $config.set('tr_notif', _tr.json, 'hvut_');
+    if (!$config.set('tr_notif', _tr.json, 'hvut_')) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    return true;
   };
 
   GM_addStyle(/*css*/`
@@ -9819,8 +9823,14 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
   if ($config.settings.lotteryNotification && $qs('img[src$="lottery_next_d.png"]')) {
     _lt.toggle = function (show) {
+      const previous = _lt.json[_query.ss].hide;
       _lt.json[_query.ss].hide = !show;
-      $config.set('lt_notif', _lt.json, 'hvut_');
+      if (!$config.set('lt_notif', _lt.json, 'hvut_')) {
+        _lt.json[_query.ss].hide = previous;
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
+      return true;
     };
     _lt.json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
 
@@ -11017,7 +11027,12 @@ if ($config.settings.trainingNotification) {
       } else {
         _bottom.tr.node.link.textContent = '训练完成!';
       }
-      $config.set('tr_notif', json, 'hvut_');
+      if (!$config.set('tr_notif', json, 'hvut_')) {
+        json.error = '保存训练通知失败';
+        _bottom.tr.node.link.textContent = json.error;
+        return false;
+      }
+      return true;
     },
   };
 
@@ -11173,10 +11188,15 @@ if ($config.settings.lotteryNotification) {
       _bottom.node[ss].equip.textContent = lotteryEquipText;
       _bottom.node[ss].time.textContent = drawTime.known ? time_format(lottery.date - now, 1) : '--:--';
       try {
-        $config.set('lt_notif', json, 'hvut_');
+        if (!$config.set('lt_notif', json, 'hvut_')) {
+          lottery.persistenceError = 'configWriteFailed';
+          _bottom.record_lottery_notification_failure('persistence', ss, { error: lottery.persistenceError });
+          return false;
+        }
       } catch (error) {
         lottery.persistenceError = error?.message || String(error);
         _bottom.record_lottery_notification_failure('persistence', ss, { error: lottery.persistenceError });
+        return false;
       }
       if (shouldPopup) {
         try {
@@ -12305,7 +12325,10 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
     }
   }
   _tr.json.error = '';
-  $config.set('tr_notif', _tr.json, 'hvut_');
+  if (!$config.set('tr_notif', _tr.json, 'hvut_')) {
+    alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+    return false;
+  }
 } else
 // [END 4] Character - Training */
 
@@ -16174,8 +16197,14 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
   if ($config.settings.lotteryNotification && $qs('img[src$="lottery_next_d.png"]')) {
     _lt.toggle = function (show) {
+      const previous = _lt.json[_query.ss].hide;
       _lt.json[_query.ss].hide = !show;
-      $config.set('lt_notif', _lt.json, 'hvut_');
+      if (!$config.set('lt_notif', _lt.json, 'hvut_')) {
+        _lt.json[_query.ss].hide = previous;
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
+      return true;
     };
     _lt.json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
 
