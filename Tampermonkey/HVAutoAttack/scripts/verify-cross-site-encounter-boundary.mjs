@@ -4,7 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const entryFile = path.join(root, "src/pages/cross-site-encounter-navigation.js");
+const failureFile = path.join(root, "src/pages/cross-site-encounter-failure.js");
 const entryTestFile = path.join(root, "src/pages/cross-site-encounter-navigation.test.js");
+const failureTestFile = path.join(root, "src/pages/cross-site-encounter-failure.test.js");
 const srcDir = path.join(root, "src");
 const violations = [];
 
@@ -36,6 +38,7 @@ function checkInit() {
 
 function checkEntry() {
   const text = fs.readFileSync(entryFile, "utf8");
+  const failureText = fs.readFileSync(failureFile, "utf8");
   if (!/export const CrossSiteEncounterEvent\s*=\s*Object\.freeze\(/.test(text)) {
     violations.push(`${rel(entryFile)} must expose CrossSiteEncounterEvent`);
   }
@@ -60,9 +63,22 @@ function checkEntry() {
     "PageKind.EHENTAI",
     "news.php?encounter",
     "STORAGE_KEYS.URL",
+    "persistCrossSiteReturnOrigin",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} cross-site navigation wiring`);
+    }
+  }
+  for (const required of [
+    "CROSS_SITE_ENCOUNTER_FAILURE_KEY",
+    "HVAA:lastCrossSiteEncounterFailure",
+    "persistCrossSiteReturnOrigin",
+    "recordCrossSiteEncounterFailure",
+    "storageWrite",
+    "crossSiteEncounter",
+  ]) {
+    if (!failureText.includes(required)) {
+      violations.push(`${rel(failureFile)} must own ${required}`);
     }
   }
   const testText = fs.readFileSync(entryTestFile, "utf8");
@@ -71,6 +87,18 @@ function checkEntry() {
     !testText.includes("runCrossSiteEncounterNavigation(null")
   ) {
     violations.push(`${rel(entryTestFile)} must cover unknown and null cross-site navigation events`);
+  }
+  const failureTestText = fs.readFileSync(failureTestFile, "utf8");
+  for (const required of [
+    "records return-origin persistence failures without blocking game-page flow",
+    "does not throw when return-origin failure evidence and warning both fail",
+    "CROSS_SITE_ENCOUNTER_FAILURE_KEY",
+    "return origin write blocked",
+    "storageWrite",
+  ]) {
+    if (!failureTestText.includes(required)) {
+      violations.push(`${rel(failureTestFile)} must cover ${required}`);
+    }
   }
 }
 
@@ -93,7 +121,9 @@ function walk(dir, visitor) {
 }
 
 function checkReturnOriginStorageOwner() {
-  const allowed = new Set([entryFile, entryTestFile].map((file) => path.normalize(file)));
+  const allowed = new Set(
+    [entryFile, failureFile, entryTestFile, failureTestFile].map((file) => path.normalize(file))
+  );
   walk(srcDir, (file) => {
     if (allowed.has(path.normalize(file))) return;
     const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);

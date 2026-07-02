@@ -23,16 +23,16 @@ describe("runCrossSiteEncounterNavigation", () => {
   });
 
   it("records the current HV origin through the event entry", () => {
-    const setValue = vi.fn();
+    const persistReturnOrigin = vi.fn(() => true);
 
     expect(
       runCrossSiteEncounterNavigation(pageReady(PageKind.LOBBY), {
         origin: () => "https://alt.hentaiverse.org",
-        setValue,
+        persistReturnOrigin,
       })
     ).toBe(false);
 
-    expect(setValue).toHaveBeenCalledWith(STORAGE_KEYS.URL, "https://alt.hentaiverse.org");
+    expect(persistReturnOrigin).toHaveBeenCalledWith("https://alt.hentaiverse.org");
   });
 
   it("redirects an e-hentai encounter page back to the stored HV origin", () => {

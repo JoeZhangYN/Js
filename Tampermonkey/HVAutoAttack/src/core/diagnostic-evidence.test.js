@@ -36,6 +36,7 @@ describe("readRecentDiagnosticEvidence", () => {
       "HVAA:lastPageAutomationFailure": { capability: "pageAutomation", stage: "runGamePageReadyAutomation" },
       "HVAA:lastPageRefreshFailure": { capability: "pageRefresh", stage: "scheduleReload" },
       "HVAA:lastAbilityAoeFailure": { capability: "abilityAoe", stage: "persist-spell-aoe" },
+      "HVAA:lastCrossSiteEncounterFailure": { capability: "crossSiteEncounter", stage: "persist-return-origin" },
       "HVAA:lastIdleArenaFailure": { capability: "idleArena", stage: "battle-start" },
       "HVAA:lastCdRuntimeFailure": { capability: "cdRuntime", stage: "persist" },
       "HVAA:lastAutoTuneFailure": { capability: "autoTune", stage: "record-history" },
@@ -95,6 +96,7 @@ describe("readRecentDiagnosticEvidence", () => {
       pageAutomationFailure: { capability: "pageAutomation", stage: "runGamePageReadyAutomation" },
       pageRefreshFailure: { capability: "pageRefresh", stage: "scheduleReload" },
       abilityAoeFailure: { capability: "abilityAoe", stage: "persist-spell-aoe" },
+      crossSiteEncounterFailure: { capability: "crossSiteEncounter", stage: "persist-return-origin" },
       idleArenaFailure: { capability: "idleArena", stage: "battle-start" },
       cdRuntimeFailure: { capability: "cdRuntime", stage: "persist" },
       autoTuneFailure: { capability: "autoTune", stage: "record-history" },
@@ -140,17 +142,10 @@ describe("readRecentDiagnosticEvidence", () => {
   });
 
   it("can exclude a diagnostic source for self-recording evidence", () => {
-    window.sessionStorage.setItem(
-      "HVAA:lastNavigationAudit",
-      JSON.stringify({ kind: "previousReload" })
-    );
+    window.sessionStorage.setItem("HVAA:lastNavigationAudit", JSON.stringify({ kind: "previousReload" }));
     window.sessionStorage.setItem("HVAA:lastBattleCompletion", JSON.stringify({ outcome: "victory" }));
 
-    expect(
-      readRecentDiagnosticEvidence(window.sessionStorage, {
-        excludeKeys: ["HVAA:lastNavigationAudit"],
-      })
-    ).toEqual({
+    expect(readRecentDiagnosticEvidence(window.sessionStorage, { excludeKeys: ["HVAA:lastNavigationAudit"] })).toEqual({
       battleCompletion: { outcome: "victory" },
     });
   });
