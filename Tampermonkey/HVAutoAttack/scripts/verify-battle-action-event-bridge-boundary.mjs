@@ -12,6 +12,9 @@ const apiBridge = path.normalize("src/battle/battle-api-bridge.js");
 const apiBridgeTest = path.normalize("src/battle/battle-api-bridge.test.js");
 const apiBridgeRejectionTest = path.normalize("src/battle/battle-api-bridge-rejection.test.js");
 const apiBridgeRuntimeTest = path.normalize("src/battle/battle-api-bridge-runtime.test.js");
+const apiBridgeEvidenceWarningFailureTest = path.normalize(
+  "src/battle/battle-api-bridge-evidence-warning-failure.test.js"
+);
 const apiBridgeTransportFailureTest = path.normalize(
   "src/battle/battle-api-bridge-transport-failure.test.js"
 );
@@ -43,6 +46,7 @@ function checkFile(file) {
     relative !== apiBridgeTest &&
     relative !== apiBridgeRejectionTest &&
     relative !== apiBridgeRuntimeTest &&
+    relative !== apiBridgeEvidenceWarningFailureTest &&
     relative !== apiBridgeTransportFailureTest &&
     /eventStart|eventEnd/.test(text)
   ) {
@@ -54,6 +58,7 @@ function checkFile(file) {
     relative !== apiBridgeTest &&
     relative !== apiBridgeRejectionTest &&
     relative !== apiBridgeRuntimeTest &&
+    relative !== apiBridgeEvidenceWarningFailureTest &&
     relative !== apiBridgeTransportFailureTest &&
     /from\s+["']\.\/battle-api-bridge\.js["']/.test(text)
   ) {

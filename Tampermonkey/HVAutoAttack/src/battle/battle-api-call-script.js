@@ -6,6 +6,13 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
     const delay2 = window.sessionStorage.__HVAA_ACTION_DELAY_SESSION_KEY__ * 1;
     const apiJsonUrl = typeof MAIN_URL !== "undefined" ? MAIN_URL + "json" : "__HVAA_MAIN_JSON_URL__";
     const apiBridgeEvidenceKey = "__HVAA_BATTLE_API_BRIDGE_EVIDENCE_KEY__";
+    function warnApiBridgeEvidence(evidence) {
+      try {
+        console.warn("[HVAA] battle API bridge event node", evidence);
+      } catch (_error) {
+        // API bridge behavior must not depend on diagnostic console hooks.
+      }
+    }
     function recordApiBridgeEventNode(phase, nodeId, result, detail) {
       const evidence = {
         phase,
@@ -20,7 +27,7 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
       } catch (error) {
         evidence.storageWriteOk = false;
         evidence.storageWriteError = error && error.message ? error.message : String(error);
-        console.warn("[HVAA] battle API bridge event node", evidence);
+        warnApiBridgeEvidence(evidence);
       }
     }
     function clickActionEventNode(phase, nodeId) {

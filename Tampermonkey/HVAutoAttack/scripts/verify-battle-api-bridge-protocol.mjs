@@ -6,6 +6,9 @@ const owner = path.normalize("src/battle/battle-api-bridge.js");
 const ownerTest = path.normalize("src/battle/battle-api-bridge.test.js");
 const ownerRejectionTest = path.normalize("src/battle/battle-api-bridge-rejection.test.js");
 const runtimeTest = path.normalize("src/battle/battle-api-bridge-runtime.test.js");
+const evidenceWarningFailureTest = path.normalize(
+  "src/battle/battle-api-bridge-evidence-warning-failure.test.js"
+);
 const transportFailureTest = path.normalize(
   "src/battle/battle-api-bridge-transport-failure.test.js"
 );
@@ -102,6 +105,8 @@ const apiCallScriptText = requireText(apiCallScript, [
   "navigationBridgeMissing",
   "clickActionEventNode",
   "recordApiBridgeEventNode",
+  "warnApiBridgeEvidence",
+  "API bridge behavior must not depend on diagnostic console hooks.",
   "recordApiTransportFailure",
   "runApiTransportStep",
   "sendApiRequest",
@@ -181,6 +186,11 @@ requireText(runtimeTest, [
   "missingBattleContinue",
   "window.MAIN_URL",
   "https://hentaiverse.org/isekai/json",
+]);
+requireText(evidenceWarningFailureTest, [
+  "keeps API send blocked when bridge evidence storage and warning both fail",
+  "quota",
+  "console blocked",
 ]);
 requireText(transportFailureTest, [
   "records transport open failures before clicking the start event",
@@ -528,6 +538,15 @@ if (
 ) {
   violations.push(
     `${apiCallScript.replaceAll("\\", "/")} must record callback fallback reload blocks as API bridge evidence`
+  );
+}
+if (
+  !apiCallScriptText.includes("function warnApiBridgeEvidence") ||
+  !apiCallScriptText.includes("API bridge behavior must not depend on diagnostic console hooks.") ||
+  !read(evidenceWarningFailureTest).includes("bridge evidence storage and warning both fail")
+) {
+  violations.push(
+    `${apiCallScript.replaceAll("\\", "/")} must isolate API bridge evidence storage and warning failures`
   );
 }
 if (
