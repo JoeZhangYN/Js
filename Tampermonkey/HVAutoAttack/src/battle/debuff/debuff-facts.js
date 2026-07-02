@@ -60,5 +60,5 @@ function debuffActionFacts(snap) {
 }
 
 export function runBattleDebuffFacts(event = { type: EVENT_READ_DEBUFF_ACTION }) {
-  return battleDebuffFactsEventHandlers[event.type]?.(event);
+  return battleDebuffFactsEventHandlers[event?.type]?.(event);
 }

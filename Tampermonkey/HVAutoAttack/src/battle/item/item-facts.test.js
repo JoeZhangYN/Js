@@ -71,5 +71,6 @@ describe("runBattleItemFacts", () => {
 
   it("rejects unknown item facts events", () => {
     expect(runBattleItemFacts({ type: "unknown", snap })).toBeUndefined();
+    expect(runBattleItemFacts(null)).toBeUndefined();
   });
 });

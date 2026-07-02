@@ -67,5 +67,5 @@ function potionFacts(snap) {
 }
 
 export function runBattleItemFacts(event = { type: EVENT_READ_GEM }) {
-  return battleItemFactsEventHandlers[event.type]?.(event);
+  return battleItemFactsEventHandlers[event?.type]?.(event);
 }

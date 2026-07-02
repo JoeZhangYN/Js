@@ -4464,8 +4464,17 @@ function checkBattleRuleFactMappers() {
   const itemFactsTestText = fs.existsSync(itemFactsTestFile)
     ? fs.readFileSync(itemFactsTestFile, "utf8")
     : "";
+  if (/battleItemFactsEventHandlers\[event\.type\]/.test(itemFactsText)) {
+    violations.push(`${rel(itemFactsFile)} entry must fail closed for invalid item facts events`);
+  }
+  if (!/battleItemFactsEventHandlers\[event\?\.type\]/.test(itemFactsText)) {
+    violations.push(`${rel(itemFactsFile)} entry must dispatch invalid item facts events through optional type`);
+  }
   if (!itemFactsTestText.includes("rejects unknown item facts events")) {
     violations.push(`${rel(itemFactsTestFile)} must cover unknown item facts events`);
+  }
+  if (!/runBattleItemFacts\(null\)/.test(itemFactsTestText)) {
+    violations.push(`${rel(itemFactsTestFile)} must cover null item facts events`);
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(itemFactsText)) {
     violations.push(`${rel(itemFactsFile)} must not depend on generic rule fact mappers`);
@@ -4500,8 +4509,17 @@ function checkBattleRuleFactMappers() {
   const buffFactsTestText = fs.existsSync(buffFactsTestFile)
     ? fs.readFileSync(buffFactsTestFile, "utf8")
     : "";
+  if (/battleBuffFactsEventHandlers\[event\.type\]/.test(buffFactsText)) {
+    violations.push(`${rel(buffFactsFile)} entry must fail closed for invalid buff facts events`);
+  }
+  if (!/battleBuffFactsEventHandlers\[event\?\.type\]/.test(buffFactsText)) {
+    violations.push(`${rel(buffFactsFile)} entry must dispatch invalid buff facts events through optional type`);
+  }
   if (!buffFactsTestText.includes("rejects unknown buff facts events")) {
     violations.push(`${rel(buffFactsTestFile)} must cover unknown buff facts events`);
+  }
+  if (!/runBattleBuffFacts\(null\)/.test(buffFactsTestText)) {
+    violations.push(`${rel(buffFactsTestFile)} must cover null buff facts events`);
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(buffFactsText)) {
     violations.push(`${rel(buffFactsFile)} must not depend on generic rule fact mappers`);
@@ -4542,8 +4560,17 @@ function checkBattleRuleFactMappers() {
   const debuffFactsTestText = fs.existsSync(debuffFactsTestFile)
     ? fs.readFileSync(debuffFactsTestFile, "utf8")
     : "";
+  if (/battleDebuffFactsEventHandlers\[event\.type\]/.test(debuffFactsText)) {
+    violations.push(`${rel(debuffFactsFile)} entry must fail closed for invalid debuff facts events`);
+  }
+  if (!/battleDebuffFactsEventHandlers\[event\?\.type\]/.test(debuffFactsText)) {
+    violations.push(`${rel(debuffFactsFile)} entry must dispatch invalid debuff facts events through optional type`);
+  }
   if (!debuffFactsTestText.includes("rejects unknown debuff facts events")) {
     violations.push(`${rel(debuffFactsTestFile)} must cover unknown debuff facts events`);
+  }
+  if (!/runBattleDebuffFacts\(null\)/.test(debuffFactsTestText)) {
+    violations.push(`${rel(debuffFactsTestFile)} must cover null debuff facts events`);
   }
   if (/from\s+["'][^"']*rule-facts\.js["']/.test(debuffFactsText)) {
     violations.push(`${rel(debuffFactsFile)} must not depend on generic rule fact mappers`);

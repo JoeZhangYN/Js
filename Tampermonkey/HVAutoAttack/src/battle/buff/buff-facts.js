@@ -22,5 +22,5 @@ function buffPreparationFacts(snap) {
 }
 
 export function runBattleBuffFacts(event = { type: EVENT_READ_PREPARATION }) {
-  return battleBuffFactsEventHandlers[event.type]?.(event) ?? {};
+  return battleBuffFactsEventHandlers[event?.type]?.(event) ?? {};
 }

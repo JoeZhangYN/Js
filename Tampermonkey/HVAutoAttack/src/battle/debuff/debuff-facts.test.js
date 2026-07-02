@@ -75,5 +75,6 @@ describe("runBattleDebuffFacts", () => {
 
   it("rejects unknown debuff facts events", () => {
     expect(runBattleDebuffFacts({ type: "unknown", snap })).toBeUndefined();
+    expect(runBattleDebuffFacts(null)).toBeUndefined();
   });
 });

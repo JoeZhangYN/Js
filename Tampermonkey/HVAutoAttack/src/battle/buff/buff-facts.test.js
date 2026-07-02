@@ -27,5 +27,6 @@ describe("runBattleBuffFacts", () => {
 
   it("rejects unknown buff facts events as empty facts", () => {
     expect(runBattleBuffFacts({ type: "unknown", snap })).toEqual({});
+    expect(runBattleBuffFacts(null)).toEqual({});
   });
 });
