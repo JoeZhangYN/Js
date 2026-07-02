@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const entryFile = path.join(root, "src/pages/page-automation.js");
+const failureTestFile = path.join(root, "src/pages/page-automation-failure.test.js");
 const diagnosticKeysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
 const diagnosticTestFile = path.join(root, "src/core/diagnostic-evidence.test.js");
 const violations = [];
@@ -157,6 +158,20 @@ function checkEntry() {
   ]) {
     if (!entryTestText.includes(required)) {
       violations.push(`${rel(entryTestFile)} must cover ${required}`);
+    }
+  }
+  const failureTestText = fs.existsSync(failureTestFile)
+    ? fs.readFileSync(failureTestFile, "utf8")
+    : "";
+  for (const required of [
+    "does not continue page routing when failure evidence and warning both fail",
+    "PAGE_AUTOMATION_FAILURE_KEY",
+    'throw new Error("quota")',
+    'throw new Error("console blocked")',
+    "expect(mocks.runBattleAutomation).not.toHaveBeenCalled()",
+  ]) {
+    if (!failureTestText.includes(required)) {
+      violations.push(`${rel(failureTestFile)} must cover ${required}`);
     }
   }
   const diagnosticKeysText = fs.readFileSync(diagnosticKeysFile, "utf8");
