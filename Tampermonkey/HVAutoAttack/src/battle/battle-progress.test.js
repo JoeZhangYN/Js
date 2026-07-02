@@ -35,6 +35,13 @@ beforeEach(() => {
 });
 
 describe("runBattleProgressAutomation", () => {
+  it("rejects invalid progress events without reading battle facts", () => {
+    expect(runBattleProgressAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runBattleProgressAutomation(null)).toBeUndefined();
+    expect(mocks.runBattleRoundAutomation).not.toHaveBeenCalled();
+    expect(mocks.runMonsterStatusAutomation).not.toHaveBeenCalled();
+  });
+
   it("combines round and combatant facts behind one progress query", () => {
     expect(runBattleProgressAutomation({ type: BattleProgressEvent.READ_CONTEXT })).toEqual({
       bossAlive: 1,

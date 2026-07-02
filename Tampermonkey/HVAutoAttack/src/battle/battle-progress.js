@@ -29,5 +29,5 @@ const battleProgressHandlers = Object.freeze({
 });
 
 export function runBattleProgressAutomation(event = { type: EVENT_READ_CONTEXT }) {
-  return battleProgressHandlers[event.type]?.();
+  return battleProgressHandlers[event?.type]?.();
 }
