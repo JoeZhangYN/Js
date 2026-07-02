@@ -147,7 +147,9 @@ const failureTestText = fs.existsSync(path.join(root, failureTest))
   : "";
 for (const required of [
   "does not report restore success when failure evidence and warning both fail",
+  "does not report delete success when failure evidence and warning both fail",
   'throw new Error("option write blocked")',
+  'throw new Error("backup write blocked")',
   'throw new Error("evidence blocked")',
   'throw new Error("console blocked")',
   "not.toThrow()",

@@ -40,4 +40,25 @@ describe("option backup failure fallback", () => {
     }).not.toThrow();
     expect(result).toBe(false);
   });
+
+  it("does not report delete success when failure evidence and warning both fail", () => {
+    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", lang: "1" } });
+    runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "saved" });
+    globalThis.GM_setValue = () => {
+      throw new Error("backup write blocked");
+    };
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
+      if (key === OPTION_BACKUP_FAILURE_KEY) throw new Error("evidence blocked");
+      return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+
+    let result;
+    expect(() => {
+      result = runOptionBackupAutomation({ type: OptionBackupEvent.DELETE, code: "saved" });
+    }).not.toThrow();
+    expect(result).toBe(false);
+  });
 });
