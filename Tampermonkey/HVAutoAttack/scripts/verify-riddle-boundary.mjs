@@ -8,6 +8,7 @@ const riddleTestFile = path.join(root, "src/pages/riddle-automation.test.js");
 const riddleAnswerFile = path.join(root, "src/pages/riddle.js");
 const riddleTimingFile = path.join(root, "src/pages/riddle-submission-timing.js");
 const riddleImageFile = path.join(root, "src/pages/riddle-image.js");
+const riddleImageFailureFile = path.join(root, "src/pages/riddle-image-failure.js");
 const riddleMlFile = path.join(root, "src/pages/riddle-ml.js");
 const riddleMlAnswerFailureFile = path.join(root, "src/pages/riddle-ml-answer-failure.js");
 const riddleSubmitCommandFile = path.join(root, "src/pages/riddle-submit-command.js");
@@ -437,6 +438,7 @@ function checkRiddleImageEntry() {
   const owner = path.normalize("src/pages/riddle-image.js");
   const ownerTest = path.normalize("src/pages/riddle-image.test.js");
   const ownerText = fs.readFileSync(riddleImageFile, "utf8");
+  const failureText = fs.readFileSync(riddleImageFailureFile, "utf8");
   for (const required of ["runRiddleImageAutomation", "RiddleImageEvent"]) {
     if (!ownerText.includes(required)) {
       violations.push(`${rel(riddleImageFile)} must own ${required}`);
@@ -469,12 +471,37 @@ function checkRiddleImageEntry() {
   }
   for (const required of [
     "returns null ML payload when canvas and fetch fallbacks all fail",
+    "records sample data-url capture failures while keeping metadata",
     "tainted canvas",
     "network failed",
     "toHaveBeenCalledTimes(3)",
+    "HVAA:lastRiddleImageFailure",
+    "expectImageFailure(\"capture-data-url\")",
+    "expectImageFailure(\"prepare-ml-payload\")",
   ]) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover riddle image fallback exhaustion`);
+    }
+  }
+  for (const required of [
+    "RIDDLE_IMAGE_FAILURE_KEY",
+    "HVAA:lastRiddleImageFailure",
+    "recordRiddleImageFailure",
+    "[HVAA][RMA] riddle image failed",
+  ]) {
+    if (!failureText.includes(required)) {
+      violations.push(`${rel(riddleImageFailureFile)} must own ${required}`);
+    }
+  }
+  if (!/globalThis\.sessionStorage\?\.setItem\(RIDDLE_IMAGE_FAILURE_KEY/.test(failureText)) {
+    violations.push(`${rel(riddleImageFailureFile)} must persist riddle image failures`);
+  }
+  for (const required of [
+    'recordRiddleImageFailure("capture-data-url"',
+    'recordRiddleImageFailure("prepare-ml-payload"',
+  ]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(riddleImageFile)} must record ${required}`);
     }
   }
   for (const legacy of [
@@ -654,9 +681,11 @@ function checkRiddleMlEntry() {
     "RIDDLE_ML_HEALTH_FAILURE: \"HVAA:lastRiddleMlHealthFailure\"",
     "RIDDLE_ML_ANSWER_FAILURE: \"HVAA:lastRiddleMlAnswerFailure\"",
     "RIDDLE_SUBMIT_FAILURE: \"HVAA:lastRiddleSubmitFailure\"",
+    "RIDDLE_IMAGE_FAILURE: \"HVAA:lastRiddleImageFailure\"",
     "source(\"riddleMlHealthFailure\", DiagnosticEvidenceKey.RIDDLE_ML_HEALTH_FAILURE)",
     "source(\"riddleMlAnswerFailure\", DiagnosticEvidenceKey.RIDDLE_ML_ANSWER_FAILURE)",
     "source(\"riddleSubmitFailure\", DiagnosticEvidenceKey.RIDDLE_SUBMIT_FAILURE)",
+    "source(\"riddleImageFailure\", DiagnosticEvidenceKey.RIDDLE_IMAGE_FAILURE)",
   ]) {
     if (!diagnosticKeysText.includes(required)) {
       violations.push(`${rel(diagnosticKeysFile)} must expose ${required}`);
@@ -667,9 +696,11 @@ function checkRiddleMlEntry() {
     "HVAA:lastRiddleMlHealthFailure",
     "HVAA:lastRiddleMlAnswerFailure",
     "HVAA:lastRiddleSubmitFailure",
+    "HVAA:lastRiddleImageFailure",
     "riddleMlHealthFailure: { capability: \"riddleMlHealth\", stage: \"healthCycle\" }",
     "riddleMlAnswerFailure: { capability: \"riddleMlAnswer\", stage: \"request\", fallback: \"random\" }",
     "riddleSubmitFailure: { capability: \"riddleSubmit\", stage: \"click-submit\" }",
+    "riddleImageFailure: { capability: \"riddleImage\", stage: \"prepare-ml-payload\" }",
   ]) {
     if (!diagnosticTestText.includes(required)) {
       violations.push(`${rel(diagnosticTestFile)} must cover ${required}`);

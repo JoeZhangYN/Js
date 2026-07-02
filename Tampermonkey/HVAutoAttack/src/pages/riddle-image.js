@@ -2,6 +2,7 @@
 // 业务概念：从 #riddleimage 拿到答题图——既供 ML 识别(需 Blob 作 POST body)，也供训练样本采集(需同步 dataUrl)。
 // 两个消费方：pages/riddle-ml.js(ML POST) + state/riddle-dataset.js←pages/riddle.js(提交时采样)。
 // 三级 fallback（参 RMA L79-166）：canvas → fetch(only-if-cached) → fetch(force-cache) → fetch(network)。
+import { recordRiddleImageFailure } from "./riddle-image-failure.js";
 
 const EVENT_CAPTURE_SAMPLE = "captureSample";
 const EVENT_PREPARE_ML_PAYLOAD = "prepareMlPayload";
@@ -124,7 +125,8 @@ function captureRiddleDataUrl() {
     canvas.height = imgEl.naturalHeight;
     canvas.getContext("2d").drawImage(imgEl, 0, 0);
     return canvas.toDataURL("image/webp", 0.95);
-  } catch {
+  } catch (error) {
+    recordRiddleImageFailure("capture-data-url", { error: error?.message || String(error) });
     return null; // tainted canvas / 同步取不到
   }
 }
@@ -145,7 +147,12 @@ async function prepareMlPayload() {
   let blob = null;
   try {
     blob = await getImageBlob(imageUrl);
-  } catch {
+  } catch (error) {
+    recordRiddleImageFailure("prepare-ml-payload", {
+      reason: "blobUnavailable",
+      imageUrl,
+      error: error?.message || String(error),
+    });
     return null;
   }
   return { imageUrl, blob };
