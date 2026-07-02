@@ -57,11 +57,7 @@ function checkFile(file) {
     if (/\bcountMonsterHP\b/.test(line)) {
       violations.push(`${where} legacy countMonsterHP path is forbidden`);
     }
-    if (
-      relative !== entry &&
-      relative !== hpImpl &&
-      /\bupdateMonsterHpRuntime\b/.test(line)
-    ) {
+    if (relative !== entry && relative !== hpImpl && /\bupdateMonsterHpRuntime\b/.test(line)) {
       violations.push(
         `${where} monster HP updates belong behind runMonsterStatusAutomation(event)`
       );
@@ -160,7 +156,9 @@ function checkEntry() {
   const entryBody =
     text.match(/export function runMonsterStatusAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_ENSURE_READY\]/.test(text)) {
-    violations.push(`${entry.replaceAll("\\", "/")} must route events through a frozen handler table`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${entry.replaceAll("\\", "/")} entry must dispatch by handler table`);
@@ -170,13 +168,17 @@ function checkEntry() {
   } else {
     const testText = fs.readFileSync(path.join(root, entryTest), "utf8");
     if (!testText.includes("rejects unknown monster status events without side effects")) {
-      violations.push(`${entryTest.replaceAll("\\", "/")} must cover unknown monster status events`);
+      violations.push(
+        `${entryTest.replaceAll("\\", "/")} must cover unknown monster status events`
+      );
     }
     if (!testText.includes("rejects null monster status events without side effects")) {
       violations.push(`${entryTest.replaceAll("\\", "/")} must cover null monster status events`);
     }
     if (!testText.includes("HVAA:lastBattleMonsterStatusRepair")) {
-      violations.push(`${entryTest.replaceAll("\\", "/")} must assert monster status repair evidence`);
+      violations.push(
+        `${entryTest.replaceAll("\\", "/")} must assert monster status repair evidence`
+      );
     }
   }
   const repairLogTest = path.normalize("src/battle/monster-status-repair-log.test.js");
@@ -204,11 +206,23 @@ function checkEntry() {
     ? fs.readFileSync(path.join(root, evidenceTest), "utf8")
     : "";
   if (
-    !evidenceTestText.includes("rejects unknown and null evidence events without writing diagnostics") ||
+    !evidenceTestText.includes(
+      "rejects unknown and null evidence events without writing diagnostics"
+    ) ||
+    !evidenceTestText.includes(
+      "keeps monster status repair evidence visible when storage is unavailable"
+    ) ||
+    !evidenceTestText.includes(
+      "keeps monster status repair evidence stored when debug output fails"
+    ) ||
+    !evidenceTestText.includes('storageWriteError: "quota"') ||
+    !evidenceTestText.includes("console blocked") ||
     !evidenceTestText.includes("runMonsterStatusRepairEvidence(null") ||
     !evidenceTestText.includes("HVAA:lastBattleMonsterStatusRepair")
   ) {
-    violations.push(`${evidenceTest.replaceAll("\\", "/")} must cover invalid repair evidence events`);
+    violations.push(
+      `${evidenceTest.replaceAll("\\", "/")} must cover invalid repair evidence events`
+    );
   }
   const diagnosticText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
   for (const required of [
@@ -248,7 +262,9 @@ function checkParser() {
     violations.push(`${parserEntry.replaceAll("\\", "/")} may export only its event entry`);
   }
   if (/battleLogParserEventHandlers\[event\.type\]/.test(entryBody)) {
-    violations.push(`${parserEntry.replaceAll("\\", "/")} must fail closed for invalid parser events`);
+    violations.push(
+      `${parserEntry.replaceAll("\\", "/")} must fail closed for invalid parser events`
+    );
   }
   if (!/battleLogParserEventHandlers\[event\?\.type\]/.test(entryBody)) {
     violations.push(
@@ -313,13 +329,17 @@ function checkStatusView() {
   const entryBody =
     text.match(/export function runMonsterStatusView\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_COMBATANT_COUNTS\]/.test(text)) {
-    violations.push(`${statusView.replaceAll("\\", "/")} must route events through a frozen handler table`);
+    violations.push(
+      `${statusView.replaceAll("\\", "/")} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${statusView.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
   if (/monsterStatusViewEventHandlers\[event\.type\]/.test(entryBody)) {
-    violations.push(`${statusView.replaceAll("\\", "/")} entry must fail closed for invalid status view events`);
+    violations.push(
+      `${statusView.replaceAll("\\", "/")} entry must fail closed for invalid status view events`
+    );
   }
   if (!/monsterStatusViewEventHandlers\[event\?\.type\]/.test(entryBody)) {
     violations.push(
@@ -330,8 +350,12 @@ function checkStatusView() {
     violations.push(`${statusViewTest.replaceAll("\\", "/")} must cover monster status view entry`);
   } else {
     const testText = fs.readFileSync(path.join(root, statusViewTest), "utf8");
-    if (!testText.includes("rejects unknown monster status view events without reading rendered DOM")) {
-      violations.push(`${statusViewTest.replaceAll("\\", "/")} must cover unknown status view events`);
+    if (
+      !testText.includes("rejects unknown monster status view events without reading rendered DOM")
+    ) {
+      violations.push(
+        `${statusViewTest.replaceAll("\\", "/")} must cover unknown status view events`
+      );
     }
     if (!/runMonsterStatusView\(null\)/.test(testText)) {
       violations.push(`${statusViewTest.replaceAll("\\", "/")} must cover null status view events`);
@@ -377,13 +401,17 @@ function checkHpImpl() {
   const entryBody =
     text.match(/export function runMonsterStatusHpRuntime\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_UPDATE\]/.test(text)) {
-    violations.push(`${hpImpl.replaceAll("\\", "/")} must route events through a frozen handler table`);
+    violations.push(
+      `${hpImpl.replaceAll("\\", "/")} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${hpImpl.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
   if (/monsterStatusHpRuntimeEventHandlers\[event\.type\]/.test(entryBody)) {
-    violations.push(`${hpImpl.replaceAll("\\", "/")} entry must fail closed for invalid HP runtime events`);
+    violations.push(
+      `${hpImpl.replaceAll("\\", "/")} entry must fail closed for invalid HP runtime events`
+    );
   }
   if (!/monsterStatusHpRuntimeEventHandlers\[event\?\.type\]/.test(entryBody)) {
     violations.push(
@@ -394,7 +422,9 @@ function checkHpImpl() {
     violations.push(`${hpImplTest.replaceAll("\\", "/")} must cover HP runtime entry`);
   } else {
     const testText = fs.readFileSync(path.join(root, hpImplTest), "utf8");
-    if (!testText.includes("rejects unknown monster status HP runtime events without side effects")) {
+    if (
+      !testText.includes("rejects unknown monster status HP runtime events without side effects")
+    ) {
       violations.push(`${hpImplTest.replaceAll("\\", "/")} must cover unknown HP runtime events`);
     }
     if (!/runMonsterStatusHpRuntime\(null\)/.test(testText)) {
@@ -451,13 +481,17 @@ function checkMaxHpInference() {
   const entryBody =
     text.match(/export function runMonsterMaxHpInference\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_DEATHS\]/.test(text)) {
-    violations.push(`${maxHpInference.replaceAll("\\", "/")} must route events through a frozen handler table`);
+    violations.push(
+      `${maxHpInference.replaceAll("\\", "/")} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${maxHpInference.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
   if (/monsterMaxHpInferenceEventHandlers\[event\.type\]/.test(entryBody)) {
-    violations.push(`${maxHpInference.replaceAll("\\", "/")} entry must fail closed for invalid max HP inference events`);
+    violations.push(
+      `${maxHpInference.replaceAll("\\", "/")} entry must fail closed for invalid max HP inference events`
+    );
   }
   if (!/monsterMaxHpInferenceEventHandlers\[event\?\.type\]/.test(entryBody)) {
     violations.push(
@@ -465,14 +499,24 @@ function checkMaxHpInference() {
     );
   }
   if (!fs.existsSync(path.join(root, maxHpInferenceTest))) {
-    violations.push(`${maxHpInferenceTest.replaceAll("\\", "/")} must cover max HP inference entry`);
+    violations.push(
+      `${maxHpInferenceTest.replaceAll("\\", "/")} must cover max HP inference entry`
+    );
   } else {
     const testText = fs.readFileSync(path.join(root, maxHpInferenceTest), "utf8");
-    if (!testText.includes("rejects unknown monster max HP inference events without reading or writing")) {
-      violations.push(`${maxHpInferenceTest.replaceAll("\\", "/")} must cover unknown max HP inference events`);
+    if (
+      !testText.includes(
+        "rejects unknown monster max HP inference events without reading or writing"
+      )
+    ) {
+      violations.push(
+        `${maxHpInferenceTest.replaceAll("\\", "/")} must cover unknown max HP inference events`
+      );
     }
     if (!/runMonsterMaxHpInference\(null/.test(testText)) {
-      violations.push(`${maxHpInferenceTest.replaceAll("\\", "/")} must cover null max HP inference events`);
+      violations.push(
+        `${maxHpInferenceTest.replaceAll("\\", "/")} must cover null max HP inference events`
+      );
     }
   }
   const failureTest = path.normalize("src/battle/monster-max-hp-inference-failure.test.js");
@@ -517,13 +561,17 @@ function checkTargetWeight() {
   const entryBody =
     text.match(/export function runMonsterTargetWeight\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY\]/.test(text)) {
-    violations.push(`${targetWeight.replaceAll("\\", "/")} must route events through a frozen handler table`);
+    violations.push(
+      `${targetWeight.replaceAll("\\", "/")} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${targetWeight.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
   if (/monsterTargetWeightEventHandlers\[event\.type\]/.test(entryBody)) {
-    violations.push(`${targetWeight.replaceAll("\\", "/")} entry must fail closed for invalid target weight events`);
+    violations.push(
+      `${targetWeight.replaceAll("\\", "/")} entry must fail closed for invalid target weight events`
+    );
   }
   if (!/monsterTargetWeightEventHandlers\[event\?\.type\]/.test(entryBody)) {
     violations.push(
@@ -535,10 +583,14 @@ function checkTargetWeight() {
   } else {
     const testText = fs.readFileSync(path.join(root, targetWeightTest), "utf8");
     if (!testText.includes("rejects unknown monster target weight events")) {
-      violations.push(`${targetWeightTest.replaceAll("\\", "/")} must cover unknown target weight events`);
+      violations.push(
+        `${targetWeightTest.replaceAll("\\", "/")} must cover unknown target weight events`
+      );
     }
     if (!/runMonsterTargetWeight\(null\)/.test(testText)) {
-      violations.push(`${targetWeightTest.replaceAll("\\", "/")} must cover null target weight events`);
+      violations.push(
+        `${targetWeightTest.replaceAll("\\", "/")} must cover null target weight events`
+      );
     }
   }
 }
