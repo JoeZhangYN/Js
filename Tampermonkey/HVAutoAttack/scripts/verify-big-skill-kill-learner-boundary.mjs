@@ -4,7 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/big-skill-kill-learner.js");
+const failureOwner = path.normalize("src/state/big-skill-kill-learner-failure.js");
 const ownerTest = path.normalize("src/state/big-skill-kill-learner.test.js");
+const failureTest = path.normalize("src/state/big-skill-kill-learner-failure.test.js");
 const ownerNormalizationTest = path.normalize(
   "src/state/big-skill-kill-learner-normalization.test.js"
 );
@@ -33,7 +35,9 @@ function checkFile(file) {
     const where = `${rel(file)}:${index + 1}`;
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       /from\s+["'](?:\.\/|\.\.\/\.\.\/state\/|\.\.\/state\/)big-skill-kill-learner\.js["']/.test(
         line
       ) &&
@@ -43,7 +47,9 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       relative !== ownerNormalizationTest &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.LEARNED_BIG_KILL\b/.test(line)
@@ -104,6 +110,7 @@ for (const required of [
   "normalizeBossHpMax",
   "normalizeLearnedSkill",
   "readLearnedBigKillMap",
+  "persistLearnedBigKill",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -200,6 +207,8 @@ if (!ownerText.includes("const bigSkillKillLearningEventHandlers")) {
 const ownerEntry =
   ownerText.match(/export function runBigSkillKillLearningAutomation[\s\S]*?\n}/)?.[0] || "";
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
+const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
 }
@@ -215,6 +224,38 @@ for (const internal of ["recordBigSkillCast(", "finalizeBigSkillPending(", "ofcW
 }
 if (!/runBigSkillKillLearningAutomation\(null\)/.test(ownerTestText)) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null big-skill kill events`);
+}
+
+if ((ownerText.match(/\bsetValue\(/g) || []).length !== 0) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not write learned big-kill storage directly`);
+}
+if (!/function persistLearnedBigKill\(learned\) \{[\s\S]*setValue\(STORAGE_KEYS\.LEARNED_BIG_KILL,\s*learned\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordBigSkillKillLearningFailure\("update-learned",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
+  violations.push(`${failureOwner.replaceAll("\\", "/")} must classify learned big-kill storage write failures`);
+}
+for (const required of [
+  "BIG_SKILL_KILL_LEARNING_FAILURE_KEY",
+  "HVAA:lastBigSkillKillLearningFailure",
+  "recordBigSkillKillLearningFailure",
+  "bigSkillKillLearning",
+  "persistLearnedBigKill",
+  "STORAGE_KEYS.LEARNED_BIG_KILL",
+]) {
+  if (!failureOwnerText.includes(required)) {
+    violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of [
+  "BIG_SKILL_KILL_LEARNING_FAILURE_KEY",
+  "update-learned",
+  "storageWrite",
+  "big-kill learning write blocked",
+]) {
+  if (!failureTestText.includes(required)) {
+    violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+if (!ownerText.includes("if (!persistLearnedBigKill(learned)) return false")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must keep pending when learned big-kill persistence fails`);
 }
 
 if (violations.length) {

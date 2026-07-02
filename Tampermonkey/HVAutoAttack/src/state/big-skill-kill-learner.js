@@ -13,8 +13,9 @@
 // 任一缺失 → 保留 Imperil（默认）。MID 未知 → 保留。
 import { g } from "./store.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
-import { setValue, getValue } from "./storage.js";
+import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
+import { persistLearnedBigKill } from "./big-skill-kill-learner-failure.js";
 import {
   normalizeLearnedMid,
   normalizeLearnedSkill,
@@ -119,11 +120,12 @@ function finalizeBigSkillPending(event) {
     }
     sk.lastHpMax = b.hpMax; // 本次观测的 boss 满血（scale-drift 参照）
   }
+  if (!persistLearnedBigKill(learned)) return false;
   g("bigKillPending", null);
-  setValue(STORAGE_KEYS.LEARNED_BIG_KILL, learned);
   if (isDynamicBigKillLogEnabled()) {
     console.log(`[big-kill] settle ${pending.skill}:`, JSON.stringify(learned));
   }
+  return true;
 }
 
 /**
