@@ -5,6 +5,7 @@ const root = process.cwd();
 const owner = path.normalize("src/i18n/core/restore-controller.js");
 const failureOwner = path.normalize("src/i18n/core/restore-failure.js");
 const ownerTest = path.normalize("src/i18n/core/restore-controller.test.js");
+const fallbackTest = path.normalize("src/i18n/core/restore-failure-fallback.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
@@ -72,6 +73,19 @@ for (const required of [
 ]) {
   if (!ownerTestText.includes(required)) {
     violations.push(`${rel(ownerTest)} must cover ${required}`);
+  }
+}
+
+const fallbackTestText = fs.existsSync(path.join(root, fallbackTest)) ? read(fallbackTest) : "";
+for (const required of [
+  "returns restore failure evidence when storage and console diagnostics both fail",
+  "I18N_RESTORE_FAILURE_KEY",
+  'throw new Error("quota")',
+  'throw new Error("console blocked")',
+  "not.toThrow()",
+]) {
+  if (!fallbackTestText.includes(required)) {
+    violations.push(`${rel(fallbackTest)} must cover ${required}`);
   }
 }
 
