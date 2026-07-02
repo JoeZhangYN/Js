@@ -25,6 +25,24 @@ export function setValue(item, value) {
   }
 }
 
+function warnStorageReadFailure(item, key, source, error) {
+  console.warn("[HVAA] storage read failed", {
+    item,
+    key,
+    source,
+    error: error?.message || String(error),
+  });
+}
+
+function parseLocalStorageValue(item, key, raw) {
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    warnStorageReadFailure(item, key, "localStorageJson", error);
+    return null;
+  }
+}
+
 /**
  * 读取持久化数据。
  * @param {string} item key（不含 prefix）
@@ -33,14 +51,22 @@ export function setValue(item, value) {
  */
 export function getValue(item, toJSON) {
   const key = storagePrefix + item;
-  if (typeof GM_getValue === "undefined" || !GM_getValue(key, null)) {
-    return key in window.localStorage
-      ? toJSON
-        ? JSON.parse(window.localStorage[key])
-        : window.localStorage[key]
-      : null;
+  if (typeof GM_getValue !== "undefined") {
+    try {
+      const gmValue = GM_getValue(key, null);
+      if (gmValue) return gmValue;
+    } catch (error) {
+      warnStorageReadFailure(item, key, "GM_getValue", error);
+    }
   }
-  return GM_getValue(key, null);
+  try {
+    if (!(key in window.localStorage)) return null;
+    const raw = window.localStorage[key];
+    return toJSON ? parseLocalStorageValue(item, key, raw) : raw;
+  } catch (error) {
+    warnStorageReadFailure(item, key, "localStorage", error);
+    return null;
+  }
 }
 
 /**
