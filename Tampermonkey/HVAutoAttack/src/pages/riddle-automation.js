@@ -90,7 +90,7 @@ function rejectUnknownRiddleEvent(event) {
 }
 
 export function runRiddleAutomation(event = { type: EVENT_RIDDLE_PAGE }) {
-  const handler = riddleEventHandlers[event.type];
+  const handler = riddleEventHandlers[event?.type];
   if (!handler) return rejectUnknownRiddleEvent(event);
   return handler(event);
 }

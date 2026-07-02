@@ -101,6 +101,9 @@ function checkRiddleEntry() {
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(riddleFile)} entry must route events through handler table`);
   }
+  if (/riddleEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
+    violations.push(`${rel(riddleFile)} entry must reject null riddle events instead of reading event.type directly`);
+  }
   if (/\|\|\s*runCurrentRiddlePage/.test(entryBody)) {
     violations.push(`${rel(riddleFile)} must reject unknown riddle events instead of falling back to page automation`);
   }
@@ -125,6 +128,8 @@ function checkRiddleEntry() {
   for (const required of [
     "runs the current riddle page when no event is provided",
     "rejects unknown riddle events without answering or navigating",
+    "rejects null riddle events without answering or navigating",
+    "runRiddleAutomation(null)",
     "unknownRiddleEvent",
   ]) {
     if (!testText.includes(required)) {

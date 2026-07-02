@@ -126,4 +126,16 @@ describe("runRiddleAutomation", () => {
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
     expect(mocks.runRiddleAnsweringSession).not.toHaveBeenCalled();
   });
+
+  it("rejects null riddle events without answering or navigating", () => {
+    expect(runRiddleAutomation(null)).toEqual({
+      rejected: true,
+      reason: "unknownRiddleEvent",
+      eventType: undefined,
+    });
+
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(mocks.runRiddleAnsweringSession).not.toHaveBeenCalled();
+  });
 });
