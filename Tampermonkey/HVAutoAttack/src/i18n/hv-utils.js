@@ -7685,7 +7685,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         if (total === 0) {
           return;
         }
-        $config.set('ml_log', _ml.log);
+        if (!$config.set('ml_log', _ml.log)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         _ml.upgrade.node.run.disabled = true;
         _ml.upgrade.node.update.disabled = true;
 
@@ -7721,7 +7724,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           });
         });
 
-        $config.set('ml_log', _ml.log);
+        if (!$config.set('ml_log', _ml.log)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
+        return true;
       },
       load: function () {
         _ml.mobs.forEach((mob) => {
@@ -13840,7 +13847,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         if (total === 0) {
           return;
         }
-        $config.set('ml_log', _ml.log);
+        if (!$config.set('ml_log', _ml.log)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         _ml.upgrade.node.run.disabled = true;
         _ml.upgrade.node.update.disabled = true;
 
@@ -13877,7 +13887,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           });
         });
 
-        $config.set('ml_log', _ml.log);
+        if (!$config.set('ml_log', _ml.log)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
+        return true;
       },
       load: function () {
         _ml.mobs.forEach((mob) => {

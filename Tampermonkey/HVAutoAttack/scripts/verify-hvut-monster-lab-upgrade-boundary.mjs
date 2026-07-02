@@ -10,6 +10,9 @@ const updateBodies = [...text.matchAll(/update: async function \(\) \{[\s\S]*?\n
 const runBodies = [...text.matchAll(/run: async function \(\) \{[\s\S]*?\n      \},\n      save:/g)].map(
   (match) => match[0]
 );
+const saveBodies = [...text.matchAll(/save: function \(\) \{\n        _ml\.mobs\.forEach[\s\S]*?\n      \},\n      load:/g)].map(
+  (match) => match[0]
+);
 
 if (updateBodies.length !== 2) {
   violations.push(`${target} must keep both Monster Lab update segment entries visible`);
@@ -17,6 +20,10 @@ if (updateBodies.length !== 2) {
 
 if (runBodies.length !== 2) {
   violations.push(`${target} must keep both Monster Lab run segment entries visible`);
+}
+
+if (saveBodies.length !== 2) {
+  violations.push(`${target} must keep both Monster Lab save segment entries visible`);
 }
 
 for (const [index, body] of updateBodies.entries()) {
@@ -47,6 +54,7 @@ for (const [index, body] of runBodies.entries()) {
     "_ml.upgrade.node.run.value = '失败';",
     "return false;",
     "return _ml.upgrade.update();",
+    "if (!$config.set('ml_log', _ml.log)) {\n          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n          return false;",
   ]) {
     if (!body.includes(required)) {
       violations.push(`${target} Monster Lab run[${index}] must guard failure with ${required}`);
@@ -54,6 +62,23 @@ for (const [index, body] of runBodies.entries()) {
   }
   if (/await Promise\.all\(requests\);\n\s*_ml\.upgrade\.update\(\);/.test(body)) {
     violations.push(`${target} Monster Lab run[${index}] must not fire update after unchecked Promise.all`);
+  }
+  if (/\$config\.set\('ml_log', _ml\.log\);\n\s*_ml\.upgrade\.node\.run\.disabled = true;/.test(body)) {
+    violations.push(`${target} Monster Lab run[${index}] must not execute upgrades after unchecked ml_log write`);
+  }
+}
+
+for (const [index, body] of saveBodies.entries()) {
+  for (const required of [
+    "if (!$config.set('ml_log', _ml.log)) {\n          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n          return false;",
+    "return true;",
+  ]) {
+    if (!body.includes(required)) {
+      violations.push(`${target} Monster Lab save[${index}] must guard persistence with ${required}`);
+    }
+  }
+  if (/\$config\.set\('ml_log', _ml\.log\);\n\s*\}/.test(body)) {
+    violations.push(`${target} Monster Lab save[${index}] must not ignore ml_log write result`);
   }
 }
 
