@@ -78,6 +78,19 @@ for (const name of legacy) {
     );
   }
 }
+for (const required of [
+  "classifyDbError",
+  "rejectDbFailure",
+  "[HVAA] monster db store failed",
+  "transaction-start",
+  "transaction-error",
+  "transaction-abort",
+  "dbPromise = null",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own IndexedDB failure ${required}`);
+  }
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover monster db store entry`);
 } else {
@@ -88,6 +101,19 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     !ownerTestText.includes("does not open IndexedDB for unknown or null store events")
   ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null store events`);
+  }
+  for (const required of [
+    "classifies IndexedDB open failures and allows a later open retry",
+    "classifies transaction start failures",
+    "classifies transaction abort failures",
+    "[HVAA] monster db store failed",
+    "transaction-start",
+    "transaction-abort",
+    "source: \"monsterDbStore\"",
+  ]) {
+    if (!ownerTestText.includes(required)) {
+      violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
   }
 }
 

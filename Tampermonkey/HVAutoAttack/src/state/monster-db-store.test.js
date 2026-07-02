@@ -1,143 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-function makeFakeIndexedDb() {
-  const stores = new Map();
-  const objectStoreNames = {
-    contains: (name) => stores.has(name),
-  };
-  const ensureStore = (name) => {
-    if (!stores.has(name)) stores.set(name, new Map());
-    return stores.get(name);
-  };
-  const db = {
-    objectStoreNames,
-    createObjectStore: (name) => ensureStore(name),
-    deleteObjectStore: (name) => stores.delete(name),
-    transaction: (storeName) => {
-      const tx = {
-        oncomplete: null,
-        onerror: null,
-        onabort: null,
-        objectStore: () => {
-          const store = ensureStore(storeName);
-          return {
-            get: (key) => ({ result: store.get(key) }),
-            put: (value, key) => {
-              store.set(key, value);
-              return { result: undefined };
-            },
-            count: () => ({ result: store.size }),
-          };
-        },
-      };
-      setTimeout(() => tx.oncomplete?.(), 0);
-      return tx;
-    },
-  };
-  return {
-    open: () => {
-      const req = { result: db, error: null, onupgradeneeded: null, onsuccess: null, onerror: null };
-      setTimeout(() => {
-        req.onupgradeneeded?.();
-        req.onsuccess?.();
-      }, 0);
-      return req;
-    },
-  };
-}
-
-async function loadStore() {
-  vi.resetModules();
-  globalThis.indexedDB = makeFakeIndexedDb();
-  return import("./monster-db-store.js");
-}
+import { loadStoreWithIndexedDb, makeFakeIndexedDb } from "./monster-db-store-test-fixture.js";
 
 beforeEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
-describe("runMonsterDbStoreAutomation", () => {
-  it("reads and writes monster profiles through one event entry", async () => {
-    const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } = await loadStore();
-
-    expect(
-      await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_IS_EMPTY })
-    ).toBe(true);
-    await runMonsterDbStoreAutomation({
-      type: MonsterDbStoreEvent.PROFILE_WRITE,
-      info: { monsterId: 84361, monsterName: "Ariel", fire: 50 },
-    });
-
-    expect(
-      await runMonsterDbStoreAutomation({
-        type: MonsterDbStoreEvent.PROFILE_READ,
-        monsterId: 84361,
-      })
-    ).toMatchObject({ monsterId: 84361, fire: 50 });
-    expect(
-      await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_IS_EMPTY })
-    ).toBe(false);
-  });
-
-  it("bulk writes only keyed monster profiles", async () => {
-    const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } = await loadStore();
-
-    await runMonsterDbStoreAutomation({
-      type: MonsterDbStoreEvent.PROFILE_BULK_WRITE,
-      infos: [{ monsterId: 1, fire: 10 }, { monsterName: "missing-mid" }, { monsterId: 2 }],
-    });
-
-    expect(
-      await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_READ, monsterId: 1 })
-    ).toEqual({ monsterId: 1, fire: 10 });
-    expect(
-      await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_READ, monsterId: 2 })
-    ).toEqual({ monsterId: 2 });
-  });
-
-  it("keeps hp records keyed by monster id and level", async () => {
-    const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } = await loadStore();
-
-    await runMonsterDbStoreAutomation({
-      type: MonsterDbStoreEvent.HP_WRITE,
-      monsterId: 7,
-      level: 500,
-      maxHP: 123456,
-      lastUpdate: "2026-06-27",
-    });
-
-    expect(
-      await runMonsterDbStoreAutomation({
-        type: MonsterDbStoreEvent.HP_READ,
-        monsterId: 7,
-        level: 500,
-      })
-    ).toEqual({ monsterId: 7, level: 500, maxHP: 123456, lastUpdate: "2026-06-27" });
-    expect(
-      await runMonsterDbStoreAutomation({
-        type: MonsterDbStoreEvent.HP_READ,
-        monsterId: 7,
-        level: 501,
-      })
-    ).toBeNull();
-  });
-
-  it("reads and writes sync metadata through the same entry", async () => {
-    const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } = await loadStore();
-
-    await runMonsterDbStoreAutomation({
-      type: MonsterDbStoreEvent.META_WRITE,
-      key: "lastSync",
-      value: "2026-06-27",
-    });
-
-    expect(
-      await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.META_READ, key: "lastSync" })
-    ).toBe("2026-06-27");
-  });
-
+describe("runMonsterDbStoreAutomation failure boundary", () => {
   it("rejects unknown and null store events without reading or changing persisted profiles", async () => {
-    const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } = await loadStore();
+    const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } =
+      await loadStoreWithIndexedDb(makeFakeIndexedDb());
 
     await runMonsterDbStoreAutomation({
       type: MonsterDbStoreEvent.PROFILE_WRITE,
@@ -145,10 +17,7 @@ describe("runMonsterDbStoreAutomation", () => {
     });
 
     expect(
-      await runMonsterDbStoreAutomation({
-        type: "unknown",
-        info: { monsterId: 99, fire: 0 },
-      })
+      await runMonsterDbStoreAutomation({ type: "unknown", info: { monsterId: 99, fire: 0 } })
     ).toBeUndefined();
     expect(await runMonsterDbStoreAutomation(null)).toBeUndefined();
     expect(
@@ -166,5 +35,121 @@ describe("runMonsterDbStoreAutomation", () => {
     expect(await runMonsterDbStoreAutomation({ type: "unknown" })).toBeUndefined();
     expect(await runMonsterDbStoreAutomation(null)).toBeUndefined();
     expect(open).not.toHaveBeenCalled();
+  });
+
+  it("classifies IndexedDB open failures and allows a later open retry", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const open = vi.fn();
+    const failingIndexedDb = {
+      open: () => {
+        open();
+        const req = { result: null, error: new Error("open blocked"), onerror: null };
+        setTimeout(() => req.onerror?.(), 0);
+        return req;
+      },
+    };
+    const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } =
+      await loadStoreWithIndexedDb(failingIndexedDb);
+
+    await expect(
+      runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_IS_EMPTY })
+    ).rejects.toMatchObject({
+      failure: expect.objectContaining({
+        source: "monsterDbStore",
+        stage: "open",
+        dbName: expect.any(String),
+        dbVersion: expect.any(Number),
+        error: "open blocked",
+      }),
+    });
+    await expect(
+      runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_IS_EMPTY })
+    ).rejects.toMatchObject({ failure: expect.objectContaining({ stage: "open" }) });
+    expect(open).toHaveBeenCalledTimes(2);
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA] monster db store failed",
+      expect.objectContaining({ stage: "open" })
+    );
+  });
+
+  it("classifies transaction start failures", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fakeIndexedDb = {
+      open: () => {
+        const req = {
+          result: {
+            transaction: () => {
+              throw new Error("transaction blocked");
+            },
+          },
+          onupgradeneeded: null,
+          onsuccess: null,
+          onerror: null,
+        };
+        setTimeout(() => req.onsuccess?.(), 0);
+        return req;
+      },
+    };
+    const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } =
+      await loadStoreWithIndexedDb(fakeIndexedDb);
+
+    await expect(
+      runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_READ, monsterId: 1 })
+    ).rejects.toMatchObject({
+      failure: expect.objectContaining({
+        source: "monsterDbStore",
+        stage: "transaction-start",
+        storeName: "monsterProfile",
+        mode: "readonly",
+        error: "transaction blocked",
+      }),
+    });
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA] monster db store failed",
+      expect.objectContaining({ stage: "transaction-start" })
+    );
+  });
+
+  it("classifies transaction abort failures", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const abortingIndexedDb = {
+      open: () => {
+        const db = {
+          objectStoreNames: { contains: () => true },
+          transaction: () => {
+            const tx = {
+              error: new Error("abort blocked"),
+              oncomplete: null,
+              onerror: null,
+              onabort: null,
+              objectStore: () => ({ get: () => ({ result: null }) }),
+            };
+            setTimeout(() => tx.onabort?.(), 0);
+            return tx;
+          },
+        };
+        const req = { result: db, onupgradeneeded: null, onsuccess: null, onerror: null };
+        setTimeout(() => req.onsuccess?.(), 0);
+        return req;
+      },
+    };
+    const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } =
+      await loadStoreWithIndexedDb(abortingIndexedDb);
+
+    await expect(
+      runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_READ, monsterId: 1 })
+    ).rejects.toMatchObject({
+      failure: expect.objectContaining({
+        source: "monsterDbStore",
+        stage: "transaction-abort",
+        storeName: "monsterProfile",
+        mode: "readonly",
+        error: "abort blocked",
+      }),
+    });
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA] monster db store failed",
+      expect.objectContaining({ stage: "transaction-abort" })
+    );
   });
 });

@@ -48,6 +48,23 @@ const monsterDbStoreEventHandlers = Object.freeze({
 /** @type {Promise<IDBDatabase>|null} */
 let dbPromise = null;
 
+function classifyDbError(stage, detail, error) {
+  return {
+    source: "monsterDbStore",
+    stage,
+    ...detail,
+    error: error?.message || error?.name || String(error || "unknown"),
+  };
+}
+
+function rejectDbFailure(stage, detail, error) {
+  const failure = classifyDbError(stage, detail, error);
+  console.warn("[HVAA] monster db store failed", failure);
+  const rejected = new Error(`monster db store ${stage} failed`);
+  rejected.failure = failure;
+  return rejected;
+}
+
 /** 打开（或建/升级）库，单例 Promise。 */
 function openDb() {
   if (dbPromise) return dbPromise;
@@ -62,7 +79,10 @@ function openDb() {
       if (!db.objectStoreNames.contains(STORE_META)) db.createObjectStore(STORE_META);
     };
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => {
+      dbPromise = null;
+      reject(rejectDbFailure("open", { dbName: DB_NAME, dbVersion: DB_VERSION }, req.error));
+    };
   });
   return dbPromise;
 }
@@ -79,11 +99,20 @@ function withStore(storeName, mode, fn) {
   return openDb().then(
     (db) =>
       new Promise((resolve, reject) => {
-        const t = db.transaction(storeName, mode);
-        const r = fn(t.objectStore(storeName));
+        let t;
+        let r;
+        try {
+          t = db.transaction(storeName, mode);
+          r = fn(t.objectStore(storeName));
+        } catch (error) {
+          reject(rejectDbFailure("transaction-start", { storeName, mode }, error));
+          return;
+        }
         t.oncomplete = () => resolve(r ? r.result : undefined);
-        t.onerror = () => reject(t.error);
-        t.onabort = () => reject(t.error);
+        t.onerror = () =>
+          reject(rejectDbFailure("transaction-error", { storeName, mode }, t.error));
+        t.onabort = () =>
+          reject(rejectDbFailure("transaction-abort", { storeName, mode }, t.error));
       })
   );
 }
