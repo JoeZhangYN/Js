@@ -6431,8 +6431,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       }
 
       if (item.total % 10 === 0 || item.total === item.requests || _ss.error) {
-        _ss.log.save();
+        if (_ss.log.save() === false) return false;
       }
+      return true;
     },
     toggle: function () {
       _ss.node.results.classList.toggle('hvut-none');
@@ -6502,7 +6503,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       }
     },
     save: function () {
-      $config.set('ss_log', _ss.log.json);
+      if (!$config.set('ss_log', _ss.log.json)) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
+      return true;
     },
     reset: function () {
       if (confirm('此浏览器中的当前赛季的邮件记录将被删除.\nAre you sure?')) {
@@ -12583,8 +12588,12 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     });
 
     if (item.recieved % 10 === 0 || item.recieved === item.requests || _ss.error) {
-      $config.set('ss_log', _ss.log);
+      if (!$config.set('ss_log', _ss.log)) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
     }
+    return true;
   };
 
   _ss.toggle_results = function () {
