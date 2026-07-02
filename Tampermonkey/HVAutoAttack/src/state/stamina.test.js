@@ -111,8 +111,12 @@ describe("stamina entry", () => {
     });
   });
 
-  it("ignores unknown stamina events", () => {
+  it("rejects unknown and null stamina events without reading or writing state", () => {
+    const querySelector = vi.spyOn(document, "querySelector");
+
     expect(runStaminaAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runStaminaAutomation(null)).toBeUndefined();
+    expect(querySelector).not.toHaveBeenCalled();
     expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
     expect(mocks.post).not.toHaveBeenCalled();
   });

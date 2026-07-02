@@ -88,5 +88,5 @@ const staminaEventHandlers = Object.freeze({
 });
 
 export function runStaminaAutomation(event = { type: EVENT_READ_VALUE }) {
-  return staminaEventHandlers[event.type]?.(event);
+  return staminaEventHandlers[event?.type]?.(event);
 }

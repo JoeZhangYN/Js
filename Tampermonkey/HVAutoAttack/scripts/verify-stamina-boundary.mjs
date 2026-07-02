@@ -84,6 +84,12 @@ const ownerEntry = ownerText.match(/export function runStaminaAutomation[\s\S]*?
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
 }
+if (ownerEntry.includes("event.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
+}
+if (!ownerEntry.includes("event?.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+}
 for (const internal of [
   "readStaminaValue(",
   "shouldRestoreForBattle(",
@@ -94,6 +100,14 @@ for (const internal of [
   if (ownerEntry.includes(internal)) {
     violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through staminaEventHandlers`);
   }
+}
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+if (
+  !ownerTestText.includes("rejects unknown and null stamina events without reading or writing state") ||
+  !ownerTestText.includes("runStaminaAutomation(null)") ||
+  !ownerTestText.includes("querySelector).not.toHaveBeenCalled()")
+) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null stamina events`);
 }
 
 if (violations.length) {
