@@ -66,5 +66,5 @@ const battleObservationLearningEventHandlers = Object.freeze({
 });
 
 export function runBattleObservationLearning(event = { type: EVENT_FINALIZE_TURN_OBSERVATIONS }) {
-  return battleObservationLearningEventHandlers[event.type]?.(event) || { learnedBurstByMid: {} };
+  return battleObservationLearningEventHandlers[event?.type]?.(event) || { learnedBurstByMid: {} };
 }

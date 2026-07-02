@@ -70,8 +70,21 @@ const ownerEntry =
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${rel(owner)} entry must not reintroduce an event.type if-chain`);
 }
+if (/battleObservationLearningEventHandlers\[event\.type\]/.test(ownerEntry)) {
+  violations.push(`${rel(owner)} entry must fail closed for invalid observation learning events`);
+}
+if (!/battleObservationLearningEventHandlers\[event\?\.type\]/.test(ownerEntry)) {
+  violations.push(`${rel(owner)} entry must dispatch invalid observation learning events through optional type`);
+}
 if (ownerEntry.includes("finalizeTurnObservations(")) {
   violations.push(`${rel(owner)} entry must dispatch through battleObservationLearningEventHandlers`);
+}
+const ownerTestText = fs.existsSync(path.join(root, ownerTest)) ? read(ownerTest) : "";
+if (!ownerTestText.includes("ignores invalid observation learning events without touching downstream learners")) {
+  violations.push(`${rel(ownerTest)} must cover invalid observation learning events`);
+}
+if (!/runBattleObservationLearning\(null\)/.test(ownerTestText)) {
+  violations.push(`${rel(ownerTest)} must cover null observation learning events`);
 }
 
 if (violations.length) {
