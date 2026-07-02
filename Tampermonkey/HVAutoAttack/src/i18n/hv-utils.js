@@ -3944,14 +3944,20 @@ const bindArmory = function (armory, ctx) {
 
     equipcode: {
       save: function () {
+        let nextEquipdata = JSON.parse(JSON.stringify($armory.equipdata || { version: 1 }));
         if (_query.filter === 'all') {
-          $armory.equipdata = { version: $armory.equipdata.version };
+          nextEquipdata = { version: $armory.equipdata.version };
         }
         $armory.equiplist.forEach((eq) => {
           const data = $armory.equipcode.parse(eq.node.note.value);
-          $armory.equipdata[eq.info.eid] = { checked: eq.node.check.checked, ...data };
+          nextEquipdata[eq.info.eid] = { checked: eq.node.check.checked, ...data };
         });
-        $config.set('equipdata', $armory.equipdata);
+        if (!$config.set('equipdata', nextEquipdata)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
+        $armory.equipdata = nextEquipdata;
+        return true;
       },
       load: function () {
         $armory.equiplist.forEach((eq) => {
