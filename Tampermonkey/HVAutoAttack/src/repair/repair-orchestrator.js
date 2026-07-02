@@ -153,5 +153,5 @@ function runRepair(deps = {}) {
 }
 
 export function runRepairAutomation(event = { type: EVENT_START }, deps = {}) {
-  return repairEventHandlers[event.type]?.(event, deps) || false;
+  return repairEventHandlers[event?.type]?.(event, deps) || false;
 }

@@ -57,6 +57,12 @@ if (!/const repairEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_START\]/.
 if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (entryBody.includes("repairEventHandlers[event.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null repair events without throwing`);
+}
+if (!entryBody.includes("repairEventHandlers[event?.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null repair events`);
+}
 if (/export\s+function\s+runRepair\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy runRepair export is forbidden`);
 }
@@ -75,6 +81,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   if (!ownerTestText.includes("rejects unknown repair automation events without scanning or scheduling")) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown repair events`);
+  }
+  if (!ownerTestText.includes("runRepairAutomation(null")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null repair events`);
   }
 }
 
