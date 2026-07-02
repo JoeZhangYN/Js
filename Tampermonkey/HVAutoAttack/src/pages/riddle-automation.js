@@ -14,6 +14,7 @@ const EVENT_BATTLE_POST_RESULT = "battlePostResult";
 const EVENT_TEST_POPUP_PRETREAT = "testPopupPretreat";
 const RIDDLE_WINDOW_NAME = "riddleWindow";
 const RIDDLE_WINDOW_FEATURES = "resizable,scrollbars,width=1241,height=707";
+const REASON_UNKNOWN_EVENT = "unknownRiddleEvent";
 
 export const RiddleEvent = Object.freeze({
   RIDDLE_PAGE: EVENT_RIDDLE_PAGE,
@@ -80,6 +81,16 @@ function runBattlePostResult(event) {
   return true;
 }
 
+function rejectUnknownRiddleEvent(event) {
+  return {
+    rejected: true,
+    reason: REASON_UNKNOWN_EVENT,
+    eventType: event?.type,
+  };
+}
+
 export function runRiddleAutomation(event = { type: EVENT_RIDDLE_PAGE }) {
-  return (riddleEventHandlers[event.type] || runCurrentRiddlePage)(event);
+  const handler = riddleEventHandlers[event.type];
+  if (!handler) return rejectUnknownRiddleEvent(event);
+  return handler(event);
 }

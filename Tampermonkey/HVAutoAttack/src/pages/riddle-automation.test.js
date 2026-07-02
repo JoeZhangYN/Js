@@ -109,9 +109,21 @@ describe("runRiddleAutomation", () => {
     expect(mocks.runRiddleAnsweringSession).not.toHaveBeenCalled();
   });
 
-  it("treats unknown events as current riddle page automation", () => {
-    expect(runRiddleAutomation({ type: "unknown" })).toBe(true);
+  it("runs the current riddle page when no event is provided", () => {
+    expect(runRiddleAutomation()).toBe(true);
 
     expect(mocks.runRiddleAnsweringSession).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects unknown riddle events without answering or navigating", () => {
+    expect(runRiddleAutomation({ type: "unknown" })).toEqual({
+      rejected: true,
+      reason: "unknownRiddleEvent",
+      eventType: "unknown",
+    });
+
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(mocks.runRiddleAnsweringSession).not.toHaveBeenCalled();
   });
 });

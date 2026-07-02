@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const riddleFile = path.join(root, "src/pages/riddle-automation.js");
+const riddleTestFile = path.join(root, "src/pages/riddle-automation.test.js");
 const riddleAnswerFile = path.join(root, "src/pages/riddle.js");
 const riddleTimingFile = path.join(root, "src/pages/riddle-submission-timing.js");
 const riddleImageFile = path.join(root, "src/pages/riddle-image.js");
@@ -75,6 +76,9 @@ function checkRiddleEntry() {
     "runCurrentRiddlePage",
     "runBattlePostResult",
     "runTestPopupPretreat",
+    "rejectUnknownRiddleEvent",
+    "unknownRiddleEvent",
+    "rejected: true",
     "BATTLE_POST_RESULT",
     "TEST_POPUP_PRETREAT",
     "NavigationEvent.OPEN_WINDOW",
@@ -97,6 +101,9 @@ function checkRiddleEntry() {
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(riddleFile)} entry must route events through handler table`);
   }
+  if (/\|\|\s*runCurrentRiddlePage/.test(entryBody)) {
+    violations.push(`${rel(riddleFile)} must reject unknown riddle events instead of falling back to page automation`);
+  }
   for (const forbidden of ["runRiddleAnsweringSession", "runNavigationAutomation", "openRiddlePopup"]) {
     if (entryBody.includes(forbidden)) {
       violations.push(`${rel(riddleFile)} entry must route riddle work through event handlers`);
@@ -113,6 +120,16 @@ function checkRiddleEntry() {
   }
   if (/\bwindow\.open\b/.test(text)) {
     violations.push(`${rel(riddleFile)} must open riddle popup through navigation entry`);
+  }
+  const testText = fs.readFileSync(riddleTestFile, "utf8");
+  for (const required of [
+    "runs the current riddle page when no event is provided",
+    "rejects unknown riddle events without answering or navigating",
+    "unknownRiddleEvent",
+  ]) {
+    if (!testText.includes(required)) {
+      violations.push(`${rel(riddleTestFile)} must cover riddle default and unknown-event entry semantics`);
+    }
   }
 }
 
