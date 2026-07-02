@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { delValue, getValue, setValue } from "./storage.js";
+import { delValue, getValue, setValue, STORAGE_READ_FAILURE_KEY } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 
 const STORAGE_FAILURE_FIXTURE_KEY = "storageFailureFixture";
 
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -36,6 +37,7 @@ describe("storage read failures", () => {
     localStorage.setItem("hvAA_storageFailureFixture", "{bad-json");
 
     expect(getValue(STORAGE_FAILURE_FIXTURE_KEY, true)).toBeNull();
+    expect(STORAGE_READ_FAILURE_KEY).toBe("HVAA:lastStorageReadFailure");
     expect(warn).toHaveBeenCalledWith(
       "[HVAA] storage read failed",
       expect.objectContaining({
@@ -44,6 +46,11 @@ describe("storage read failures", () => {
         source: "localStorageJson",
       })
     );
+    expect(JSON.parse(sessionStorage.getItem(STORAGE_READ_FAILURE_KEY))).toMatchObject({
+      item: STORAGE_FAILURE_FIXTURE_KEY,
+      key: "hvAA_storageFailureFixture",
+      source: "localStorageJson",
+    });
   });
 
   it("falls back to localStorage when GM_getValue throws", () => {
@@ -63,5 +70,19 @@ describe("storage read failures", () => {
         error: "GM read blocked",
       })
     );
+  });
+
+  it("fails closed when storage read diagnostics cannot be written or warned", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+    const originalSetItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
+      if (key === STORAGE_READ_FAILURE_KEY) throw new Error("session blocked");
+      return Reflect.apply(originalSetItem, this, [key, value]);
+    });
+    localStorage.setItem("hvAA_storageFailureFixture", "{bad-json");
+
+    expect(getValue(STORAGE_FAILURE_FIXTURE_KEY, true)).toBeNull();
   });
 });

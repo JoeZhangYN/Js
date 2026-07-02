@@ -13,10 +13,13 @@ function rel(file) {
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "warnStorageReadFailure",
+  "STORAGE_READ_FAILURE_KEY",
+  "HVAA:lastStorageReadFailure",
   "[HVAA] storage read failed",
   "parseLocalStorageValue",
   "localStorageJson",
   "GM_getValue",
+  "sessionStorage?.setItem",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must own storage read failure ${required}`);
@@ -36,6 +39,11 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   for (const required of [
     "fails closed and records evidence for corrupted localStorage JSON",
     "falls back to localStorage when GM_getValue throws",
+    "fails closed when storage read diagnostics cannot be written or warned",
+    "STORAGE_READ_FAILURE_KEY",
+    "HVAA:lastStorageReadFailure",
+    "console blocked",
+    "session blocked",
     "[HVAA] storage read failed",
     "localStorageJson",
     "GM_getValue",

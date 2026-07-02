@@ -3,6 +3,12 @@
 import { storagePrefix } from "../env.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 
+export const STORAGE_READ_FAILURE_KEY = "HVAA:lastStorageReadFailure";
+
+function errorText(error) {
+  return error?.message || String(error);
+}
+
 /**
  * 写入持久化数据。
  * @param {string} item key（不含 prefix）
@@ -26,12 +32,22 @@ export function setValue(item, value) {
 }
 
 function warnStorageReadFailure(item, key, source, error) {
-  console.warn("[HVAA] storage read failed", {
+  const evidence = {
     item,
     key,
     source,
-    error: error?.message || String(error),
-  });
+    error: errorText(error),
+  };
+  try {
+    globalThis.sessionStorage?.setItem(STORAGE_READ_FAILURE_KEY, JSON.stringify(evidence));
+  } catch (_error) {
+    // Read fallback must not depend on diagnostic storage.
+  }
+  try {
+    console.warn("[HVAA] storage read failed", evidence);
+  } catch (_error) {
+    // Console hooks are diagnostic only.
+  }
 }
 
 function parseLocalStorageValue(item, key, raw) {
