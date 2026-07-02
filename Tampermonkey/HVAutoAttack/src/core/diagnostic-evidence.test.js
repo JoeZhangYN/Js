@@ -108,4 +108,23 @@ describe("readRecentDiagnosticEvidence", () => {
     expect(readRecentDiagnosticEvidence(storage)).not.toHaveProperty("navigationDecision");
     expect(readRecentDiagnosticEvidence(storage)).not.toHaveProperty("battleApiBridge");
   });
+
+  it("can exclude a diagnostic source for self-recording evidence", () => {
+    window.sessionStorage.setItem(
+      "HVAA:lastNavigationAudit",
+      JSON.stringify({ kind: "previousReload" })
+    );
+    window.sessionStorage.setItem(
+      "HVAA:lastBattleCompletion",
+      JSON.stringify({ outcome: "victory" })
+    );
+
+    expect(
+      readRecentDiagnosticEvidence(window.sessionStorage, {
+        excludeKeys: ["HVAA:lastNavigationAudit"],
+      })
+    ).toEqual({
+      battleCompletion: { outcome: "victory" },
+    });
+  });
 });

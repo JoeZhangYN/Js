@@ -28,7 +28,9 @@ export function writeNavigationAudit(kind, payload) {
     at: new Date().toISOString(),
     from: window.location.href,
   };
-  const diagnosticEvidence = readRecentDiagnosticEvidence(sessionStorage);
+  const diagnosticEvidence = readRecentDiagnosticEvidence(sessionStorage, {
+    excludeKeys: [NAVIGATION_AUDIT_KEY],
+  });
   if (diagnosticEvidence) audit.diagnosticEvidence = diagnosticEvidence;
   Object.assign(audit, writeJson(NAVIGATION_AUDIT_KEY, audit));
   warnNavigationAudit(kind, audit);

@@ -3,8 +3,12 @@ import path from "node:path";
 
 const root = process.cwd();
 const keysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
+const readerFile = path.join(root, "src/core/diagnostic-evidence.js");
+const navigationAuditFile = path.join(root, "src/core/navigation-audit.js");
 const testFile = path.join(root, "src/core/diagnostic-evidence.test.js");
 const keysText = fs.readFileSync(keysFile, "utf8");
+const readerText = fs.readFileSync(readerFile, "utf8");
+const navigationAuditText = fs.readFileSync(navigationAuditFile, "utf8");
 const testText = fs.readFileSync(testFile, "utf8");
 const violations = [];
 
@@ -37,6 +41,17 @@ if (duplicateSources.length) {
 
 if (!keysText.includes("item.key !== DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY")) {
   violations.push("API response script diagnostics must exclude self-nesting recovery state");
+}
+
+if (!readerText.includes("excludeKeys") || !readerText.includes("excludedKeys.has(item.key)")) {
+  violations.push("diagnostic evidence reader must support source exclusion");
+}
+
+if (
+  !navigationAuditText.includes("excludeKeys: [NAVIGATION_AUDIT_KEY]") ||
+  !testText.includes("can exclude a diagnostic source for self-recording evidence")
+) {
+  violations.push("navigation audit diagnostics must exclude self-nesting audit evidence");
 }
 
 if (violations.length) {

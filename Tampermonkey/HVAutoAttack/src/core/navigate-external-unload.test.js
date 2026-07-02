@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DiagnosticEvidenceKey } from "./diagnostic-evidence-keys.js";
+import { writeNavigationAudit } from "./navigation-audit.js";
 import "./navigate.js";
 
 describe("navigation external unload audit", () => {
@@ -116,5 +117,24 @@ describe("navigation external unload audit", () => {
       eventType: "pagehide",
       storageWriteOk: true,
     });
+  });
+
+  it("does not nest previous navigation audit into a new navigation audit", () => {
+    sessionStorage.setItem(
+      DiagnosticEvidenceKey.NAVIGATION_AUDIT,
+      JSON.stringify({ kind: "previousReload" })
+    );
+    sessionStorage.setItem(
+      DiagnosticEvidenceKey.BATTLE_COMPLETION,
+      JSON.stringify({ outcome: "victory" })
+    );
+
+    writeNavigationAudit("reload", { reason: "battleApiResponse" });
+
+    const audit = JSON.parse(sessionStorage.getItem(DiagnosticEvidenceKey.NAVIGATION_AUDIT));
+    expect(audit.diagnosticEvidence).toMatchObject({
+      battleCompletion: { outcome: "victory" },
+    });
+    expect(audit.diagnosticEvidence).not.toHaveProperty("navigationAudit");
   });
 });

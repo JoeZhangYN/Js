@@ -9,9 +9,11 @@ function readJson(storage, key) {
   }
 }
 
-export function readRecentDiagnosticEvidence(storage = window.sessionStorage) {
+export function readRecentDiagnosticEvidence(storage = window.sessionStorage, options = {}) {
+  const excludedKeys = new Set(options.excludeKeys || []);
   const evidence = {};
   for (const item of DIAGNOSTIC_EVIDENCE_SOURCES) {
+    if (excludedKeys.has(item.key)) continue;
     const value = readJson(storage, item.key);
     if (value) evidence[item.name] = value;
   }
