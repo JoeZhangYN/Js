@@ -5,6 +5,7 @@ import { AttackPlanDecisionEvent, runAttackPlanDecision } from "./attack-plan.js
 
 const EVENT_DECIDE_PLAN = "decidePlan";
 const EVENT_WILL_CLEAR_WITH_BIG_SKILL = "willClearWithBigSkill";
+const REASON_UNKNOWN_EVENT = "unknownAttackDecisionEvent";
 
 export const AttackDecisionEvent = Object.freeze({
   DECIDE_PLAN: EVENT_DECIDE_PLAN,
@@ -30,9 +31,18 @@ const ATTACK_PLAN_CLEAR_PREDICATES = Object.freeze({
  */
 function decideAttack(event = {}) {
   const decisionEvent = event ?? {};
-  return (attackDecisionEventHandlers[decisionEvent.type] || attackDecisionEventHandlers[EVENT_DECIDE_PLAN])(
-    decisionEvent
-  );
+  const handler =
+    decisionEvent.type == null
+      ? attackDecisionEventHandlers[EVENT_DECIDE_PLAN]
+      : attackDecisionEventHandlers[decisionEvent.type];
+  if (!handler) {
+    return {
+      kind: "noop",
+      reason: REASON_UNKNOWN_EVENT,
+      eventType: decisionEvent.type,
+    };
+  }
+  return handler(decisionEvent);
 }
 
 function willClearWithBigSkill(event) {

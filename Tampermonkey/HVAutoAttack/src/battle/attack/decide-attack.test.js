@@ -93,14 +93,18 @@ describe("runAttackDecision 返 {kind:'attack-plan'}", () => {
     expect(r.plan).toBeTruthy();
   });
 
-  it("unknown attack decision events use the attack-plan default path", () => {
+  it("rejects unknown attack decision events without choosing an attack plan", () => {
     const r = runAttackDecision({
       type: "unknown",
       opt: {},
       ...attackFacts(snap({ view: [vmon({ id: 4, order: 0 })] })),
     });
 
-    expect(r).toEqual({ kind: "attack-plan", plan: { type: "default", targetId: 4 } });
+    expect(r).toEqual({
+      kind: "noop",
+      reason: "unknownAttackDecisionEvent",
+      eventType: "unknown",
+    });
   });
 
   it("null attack decision events use the attack-plan default path", () => {

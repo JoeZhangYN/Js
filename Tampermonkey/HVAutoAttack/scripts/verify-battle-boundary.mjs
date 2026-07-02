@@ -4078,14 +4078,28 @@ function checkAttackEntry() {
   if (!ownerText.includes("const decisionEvent = event ?? {}")) {
     violations.push(`${rel(decideAttackFile)} must route null attack decision events through the default attack-plan path`);
   }
+  if (/\|\|\s*attackDecisionEventHandlers\[EVENT_DECIDE_PLAN\]/.test(ownerText)) {
+    violations.push(`${rel(decideAttackFile)} must reject unknown attack decision events instead of falling back to DECIDE_PLAN`);
+  }
+  for (const required of ["unknownAttackDecisionEvent", "kind: \"noop\"", "eventType: decisionEvent.type"]) {
+    if (!ownerText.includes(required)) {
+      violations.push(`${rel(decideAttackFile)} must preserve typed evidence for unknown attack decision events`);
+    }
+  }
   const attackDecisionTestText = fs.readFileSync(
     path.join(root, "src/battle/attack/decide-attack.test.js"),
     "utf8"
   );
   if (
-    !attackDecisionTestText.includes("unknown attack decision events use the attack-plan default path")
+    attackDecisionTestText.includes("unknown attack decision events use the attack-plan default path")
   ) {
-    violations.push(`${rel(decideAttackFile)} tests must cover unknown attack decision events`);
+    violations.push(`${rel(decideAttackFile)} tests must not lock unknown attack decision fallback to DECIDE_PLAN`);
+  }
+  if (
+    !attackDecisionTestText.includes("rejects unknown attack decision events without choosing an attack plan") ||
+    !attackDecisionTestText.includes("unknownAttackDecisionEvent")
+  ) {
+    violations.push(`${rel(decideAttackFile)} tests must cover rejected unknown attack decision events`);
   }
   if (
     !attackDecisionTestText.includes("null attack decision events use the attack-plan default path")
