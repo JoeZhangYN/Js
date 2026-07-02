@@ -4475,8 +4475,12 @@ const $config = {
     $config.default = settings;
     $config.settings = $config.get('settings', {});
     if ($config.settings.version !== $config.version) {
-      $config.migration();
+      if ($config.migration() === false) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
     }
+    return true;
   },
   migration: function () {
     if (!$config.settings.version) {
@@ -4486,7 +4490,7 @@ const $config = {
       if (in_equipdata || in_json) {
         const equipdata = { version: 1 };
         Object.assign(equipdata, in_equipdata, in_json);
-        $config.set('equipdata', equipdata);
+        if (!$config.set('equipdata', equipdata)) return false;
       }
       const in_equipcode = $config.ls_get('in_equipcode');
       if (in_equipcode) {
@@ -4537,22 +4541,22 @@ const $config = {
           delete log.gift;
           delete log.selected;
         });
-        $config.set('ml_log', ml_log);
-        $config.ls_del('ml_log');
+        if (!$config.set('ml_log', ml_log)) return false;
+        if (!$config.ls_del('ml_log')) return false;
       }
 
       const ls_list = ['equipset', 'ch_style', 'se_settings', 'ss_log', 'ml_log'];
-      ls_list.forEach((key) => {
+      for (const key of ls_list) {
         const value = $config.ls_get(key);
         if (value) {
-          $config.set(key, value);
+          if (!$config.set(key, value)) return false;
         }
-      });
+      }
 
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i);
         if (key.startsWith($config.prefix)) {
-          localStorage.removeItem(key);
+          if (!$config.ls_del(key.slice($config.prefix.length))) return false;
         }
       }
     }
@@ -4565,7 +4569,7 @@ const $config = {
     Object.values(ss_log).forEach((list) => {
       delete list['1x'];
     });
-    $config.set('ss_log', ss_log);
+    if (!$config.set('ss_log', ss_log)) return false;
 
     const equipcode = $config.settings.equipCode;
     if (typeof equipcode === 'string') {
@@ -4584,7 +4588,8 @@ const $config = {
       }
     });
 
-    $config.save();
+    if ($config.save() === false) return false;
+    return true;
   },
   // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
   create: function () {
@@ -10243,8 +10248,12 @@ const $config = {
     $config.default = settings;
     $config.settings = $config.get('settings', {});
     if ($config.settings.version !== $config.version) {
-      $config.migration();
+      if ($config.migration() === false) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
     }
+    return true;
   },
   migration: function () {
     if (!$config.settings.version) {
@@ -10254,7 +10263,7 @@ const $config = {
       if (in_equipdata || in_json) {
         const equipdata = { version: 1 };
         Object.assign(equipdata, in_equipdata, in_json);
-        $config.set('equipdata', equipdata);
+        if (!$config.set('equipdata', equipdata)) return false;
       }
       const in_equipcode = $config.ls_get('in_equipcode');
       if (in_equipcode) {
@@ -10305,22 +10314,22 @@ const $config = {
           delete log.gift;
           delete log.selected;
         });
-        $config.set('ml_log', ml_log);
-        $config.ls_del('ml_log');
+        if (!$config.set('ml_log', ml_log)) return false;
+        if (!$config.ls_del('ml_log')) return false;
       }
 
       const ls_list = ['equipnames', 'equipset', 'ch_style', 'se_settings', 'ss_log', 'ml_log'];
-      ls_list.forEach((key) => {
+      for (const key of ls_list) {
         const value = $config.ls_get(key);
         if (value) {
-          $config.set(key, value);
+          if (!$config.set(key, value)) return false;
         }
-      });
+      }
 
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i);
         if (key.startsWith($config.prefix)) {
-          localStorage.removeItem(key);
+          if (!$config.ls_del(key.slice($config.prefix.length))) return false;
         }
       }
     }
@@ -10343,7 +10352,8 @@ const $config = {
       }
     });
 
-    $config.save();
+    if ($config.save() === false) return false;
+    return true;
   },
   // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
   create: function () {
