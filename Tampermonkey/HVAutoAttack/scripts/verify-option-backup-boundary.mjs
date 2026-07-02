@@ -7,6 +7,8 @@ const owner = path.normalize("src/state/option-backup.js");
 const ownerTest = path.normalize("src/state/option-backup.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const settingsRender = path.normalize("src/settings/render.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
 
 function rel(file) {
@@ -61,6 +63,7 @@ for (const required of [
   "OptionBackupEvent",
   "OPTION_BACKUP_FAILURE_KEY",
   "STORAGE_KEYS.BACKUP",
+  "capability: \"optionBackup\"",
   "HAS_CODE",
   "RENDER_LIST_ITEMS",
   "persistOptionBackups",
@@ -126,6 +129,7 @@ for (const required of [
   "does not report delete success when backup persistence fails",
   "does not report restore success when option write fails",
   "fails closed and records evidence for malformed backup storage",
+  "capability: \"optionBackup\"",
   "OPTION_BACKUP_FAILURE_KEY",
 ]) {
   if (!ownerTestText.includes(required)) {
@@ -147,6 +151,25 @@ if (!/globalThis\.sessionStorage\?\.setItem\(OPTION_BACKUP_FAILURE_KEY/.test(own
 }
 if (!/normalizeOptionBackups\(EVENT_READ,\s*getValue\(STORAGE_KEYS\.BACKUP,\s*true\) \|\| {}\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize malformed backup storage at read entry`);
+}
+
+const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
+for (const required of [
+  "OPTION_BACKUP_FAILURE: \"HVAA:lastOptionBackupFailure\"",
+  "source(\"optionBackupFailure\", DiagnosticEvidenceKey.OPTION_BACKUP_FAILURE)",
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
+for (const required of [
+  "HVAA:lastOptionBackupFailure",
+  "optionBackupFailure: { capability: \"optionBackup\", action: \"restore\", reason: \"restoreFailed\" }",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
 }
 
 if (violations.length) {

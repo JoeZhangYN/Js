@@ -90,6 +90,7 @@ describe("readRecentDiagnosticEvidence", () => {
     window.sessionStorage.setItem("HVAA:lastPageRefreshFailure", JSON.stringify({ capability: "pageRefresh", stage: "scheduleReload" }));
     window.sessionStorage.setItem("HVAA:lastIdleArenaFailure", JSON.stringify({ capability: "idleArena", stage: "battle-start" }));
     window.sessionStorage.setItem("HVAA:lastStorageReadFailure", JSON.stringify({ capability: "storageRead", source: "GM_getValue" }));
+    window.sessionStorage.setItem("HVAA:lastOptionBackupFailure", JSON.stringify({ capability: "optionBackup", action: "restore", reason: "restoreFailed" }));
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
@@ -121,6 +122,7 @@ describe("readRecentDiagnosticEvidence", () => {
       pageRefreshFailure: { capability: "pageRefresh", stage: "scheduleReload" },
       idleArenaFailure: { capability: "idleArena", stage: "battle-start" },
       storageReadFailure: { capability: "storageRead", source: "GM_getValue" },
+      optionBackupFailure: { capability: "optionBackup", action: "restore", reason: "restoreFailed" },
     });
   });
 
