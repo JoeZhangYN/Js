@@ -4,7 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/battle/battle-runtime.js");
+const failureOwner = path.normalize("src/battle/battle-runtime-failure.js");
 const ownerTest = path.normalize("src/battle/battle-runtime.test.js");
+const failureTest = path.normalize("src/battle/battle-runtime-failure.test.js");
 const storage = path.normalize("src/state/storage.js");
 const storageTest = path.normalize("src/state/storage.test.js");
 const violations = [];
@@ -30,7 +32,9 @@ function checkFile(file) {
     const where = `${rel(file)}:${index + 1}`;
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       relative !== storage &&
       relative !== storageTest &&
       /\bdelValue\(\s*2\s*\)/.test(line)
@@ -56,14 +60,41 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
+const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
 if (!/export function runBattleRuntimeAutomation\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose runBattleRuntimeAutomation()`);
 }
 if (!ownerText.includes("CLEAR_SESSION")) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose CLEAR_SESSION event`);
 }
-if (!ownerText.includes("delValue(2)")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must own legacy delValue(2) bridge`);
+if (!ownerText.includes("clearPersistedBattleSession")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must clear persisted session through failure-aware owner`);
+}
+if (!failureOwnerText.includes("delValue(2)")) {
+  violations.push(`${failureOwner.replaceAll("\\", "/")} must own legacy delValue(2) bridge`);
+}
+for (const required of [
+  "BATTLE_RUNTIME_FAILURE_KEY",
+  "HVAA:lastBattleRuntimeFailure",
+  "recordBattleRuntimeFailure",
+  "clearPersistedBattleSession",
+  "battleRuntime",
+  "storageDelete",
+]) {
+  if (!failureOwnerText.includes(required)) {
+    violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of [
+  "does not report session clear success when persisted clear fails",
+  "does not throw when runtime failure evidence and warning both fail",
+  "BATTLE_RUNTIME_FAILURE_KEY",
+  "storageDelete",
+]) {
+  if (!failureTestText.includes(required)) {
+    violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
 }
 if (!/const battleRuntimeEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CLEAR_SESSION\]: clearSession/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must route runtime events through battleRuntimeEventHandlers`);

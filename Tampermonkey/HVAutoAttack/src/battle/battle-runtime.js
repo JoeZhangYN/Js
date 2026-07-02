@@ -1,5 +1,5 @@
 // 战斗会话运行态：唯一入口 runBattleRuntimeAutomation(event)。
-import { delValue } from "../state/storage.js";
+import { clearPersistedBattleSession } from "./battle-runtime-failure.js";
 
 const EVENT_CLEAR_SESSION = "clearSession";
 
@@ -8,8 +8,7 @@ export const BattleRuntimeEvent = Object.freeze({
 });
 
 function clearSession() {
-  delValue(2);
-  return true;
+  return clearPersistedBattleSession();
 }
 
 const battleRuntimeEventHandlers = Object.freeze({

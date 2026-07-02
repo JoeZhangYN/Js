@@ -21,6 +21,7 @@ describe("readRecentDiagnosticEvidence", () => {
       "HVAA:lastBattleMonsterKnowledgePersistence": { result: "failed", stage: "scan-store-profile" },
       "HVAA:battleApiRecovery": { repeatCount: 2, detail: { responseKind: "jsonReload" } },
       "HVAA:lastBattleCommand": { command: "skill.clickReady", result: "rejected", reason: "skillNotReady" },
+      "HVAA:lastBattleRuntimeFailure": { capability: "battleRuntime", stage: "clear-session" },
       "HVAA:lastBattlePause": { state: "paused", reason: "autoPause" },
       "HVAA:lastBattleActionDelay": { decision: "rejected", reason: "unknownActionDelayEvent" },
       "HVAA:lastBattleActionSpeed": { decision: "rejected", reason: "unknownActionSpeedEvent" },
@@ -78,6 +79,7 @@ describe("readRecentDiagnosticEvidence", () => {
       battleApiBridge: { phase: "start", result: "rejected", reason: "eventNodeMissing" },
       battleApiResponseRecovery: { repeatCount: 2, detail: { responseKind: "jsonReload" } },
       battleCommand: { command: "skill.clickReady", result: "rejected", reason: "skillNotReady" },
+      battleRuntimeFailure: { capability: "battleRuntime", stage: "clear-session" },
       battlePause: { state: "paused", reason: "autoPause" },
       battleActionDelay: { decision: "rejected", reason: "unknownActionDelayEvent" },
       battleActionSpeed: { decision: "rejected", reason: "unknownActionSpeedEvent" },
@@ -140,10 +142,7 @@ describe("readRecentDiagnosticEvidence", () => {
       "HVAA:lastNavigationAudit",
       JSON.stringify({ kind: "previousReload" })
     );
-    window.sessionStorage.setItem(
-      "HVAA:lastBattleCompletion",
-      JSON.stringify({ outcome: "victory" })
-    );
+    window.sessionStorage.setItem("HVAA:lastBattleCompletion", JSON.stringify({ outcome: "victory" }));
 
     expect(
       readRecentDiagnosticEvidence(window.sessionStorage, {
