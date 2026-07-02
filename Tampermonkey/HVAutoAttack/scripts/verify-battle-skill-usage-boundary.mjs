@@ -83,9 +83,20 @@ if (/event\.type\s*===/.test(entryBody)) {
     `${owner.replaceAll("\\", "/")} must dispatch battle skill usage events through skillUsageEventHandlers`
   );
 }
+if (/skillUsageEventHandlers\[event\.type\]/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must fail closed for invalid skill usage events`);
+}
+if (!/skillUsageEventHandlers\[event\?\.type\]/.test(entryBody)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must dispatch invalid skill usage events through optional type`
+  );
+}
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-if (!ownerTestText.includes("rejects unknown events without changing skill usage")) {
-  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown skill usage events`);
+if (!ownerTestText.includes("rejects invalid events without changing skill usage")) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover invalid skill usage events`);
+}
+if (!/runBattleSkillUsageAutomation\(null\)/.test(ownerTestText)) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null skill usage events`);
 }
 requireText(roundLifecycle, ["BattleSkillUsageEvent.RESET_ROUND", "runBattleSkillUsageAutomation"]);
 requireText(executeAttack, [

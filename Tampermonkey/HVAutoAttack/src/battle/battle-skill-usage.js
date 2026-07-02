@@ -57,5 +57,5 @@ const skillUsageEventHandlers = Object.freeze({
 });
 
 export function runBattleSkillUsageAutomation(event = { type: EVENT_READ_USAGE }) {
-  return skillUsageEventHandlers[event.type]?.(event) ?? null;
+  return skillUsageEventHandlers[event?.type]?.(event) ?? null;
 }

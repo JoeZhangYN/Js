@@ -54,10 +54,11 @@ describe("runBattleSkillUsageAutomation", () => {
     expect(g("skillOTOS")).toEqual({ OFC: 1 });
   });
 
-  it("rejects unknown events without changing skill usage", () => {
+  it("rejects invalid events without changing skill usage", () => {
     g("skillOTOS", { OFC: 2 });
 
     expect(runBattleSkillUsageAutomation({ type: "unknown", code: "OFC" })).toBeNull();
+    expect(runBattleSkillUsageAutomation(null)).toBeNull();
     expect(g("skillOTOS")).toEqual({ OFC: 2 });
   });
 });
