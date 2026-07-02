@@ -131,6 +131,32 @@ function checkEntry() {
   if (!/runMonsterDbSyncAutomation\(null/.test(syncTestText)) {
     violations.push(`${syncTest.replaceAll("\\", "/")} must cover null sync events`);
   }
+  for (const required of [
+    "classifySyncFailure",
+    "syncRejected",
+    "store-profiles",
+    "write-meta",
+    "request-start",
+    "failure.cause",
+  ]) {
+    if (!syncText.includes(required)) {
+      violations.push(`${syncImpl.replaceAll("\\", "/")} must preserve sync failure ${required}`);
+    }
+  }
+  const syncFailureTest = path.normalize("src/battle/monster-db-sync-failure.test.js");
+  const syncFailureText = fs.existsSync(path.join(root, syncFailureTest))
+    ? fs.readFileSync(path.join(root, syncFailureTest), "utf8")
+    : "";
+  for (const required of [
+    "classifies malformed upstream data as parse failure",
+    "classifies profile store failures with downstream cause evidence",
+    "classifies meta write failures separately from profile writes",
+    "classifies request start failures without throwing from sync entry",
+  ]) {
+    if (!syncFailureText.includes(required)) {
+      violations.push(`${syncFailureTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
   if (/export\s+async\s+function\s+syncMonsterDb\(/.test(syncText)) {
     violations.push(
       `${syncImpl.replaceAll("\\", "/")} must keep syncMonsterDb private behind runMonsterDbSyncAutomation(event)`

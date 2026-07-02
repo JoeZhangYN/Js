@@ -63,6 +63,21 @@ function normalize(m) {
   };
 }
 
+function errorText(error) {
+  return error?.message || error?.name || String(error || "unknown");
+}
+
+function classifySyncFailure(stage, reason, detail = {}, error) {
+  const failure = { source: "monsterDbSync", stage, reason, url: DATA_URL, ...detail };
+  if (error?.failure) failure.cause = error.failure;
+  if (error) failure.error = errorText(error);
+  return failure;
+}
+
+function syncRejected(stage, reason, detail, error) {
+  return { synced: false, reason, failure: classifySyncFailure(stage, reason, detail, error) };
+}
+
 /**
  * 下载全量九抗库写入本地（每日最多一次）。失败保留旧库，永不抛。
  * @param {boolean} [force=false] 跳过每日 gate 强制刷新
@@ -78,33 +93,48 @@ async function syncMonsterDb({ force = false, deps }) {
     }
   }
   return new Promise((resolve) => {
-    deps.gmXhr({
-      method: "GET",
-      url: DATA_URL,
-      responseType: "json",
-      timeout: 30000,
-      onload: (resp) => {
-        let list = resp.response;
-        if (!Array.isArray(list)) {
-          try {
-            list = JSON.parse(resp.responseText || "[]");
-          } catch {
-            resolve({ synced: false, reason: "parse-error" });
+    try {
+      deps.gmXhr({
+        method: "GET",
+        url: DATA_URL,
+        responseType: "json",
+        timeout: 30000,
+        onload: async (resp) => {
+          let list = resp.response;
+          if (!Array.isArray(list)) {
+            try {
+              list = JSON.parse(resp.responseText || "[]");
+            } catch (error) {
+              resolve(syncRejected("parse", "parse-error", {}, error));
+              return;
+            }
+          }
+          if (!Array.isArray(list) || list.length === 0) {
+            resolve(
+              syncRejected("validate", "empty", { length: Array.isArray(list) ? list.length : null })
+            );
             return;
           }
-        }
-        if (!Array.isArray(list) || list.length === 0) {
-          resolve({ synced: false, reason: "empty" });
-          return;
-        }
-        Promise.resolve(deps.storeProfiles(list.map(normalize)))
-          .then(() => deps.writeMeta(META_LAST_SYNC, deps.readUtcDateKey()))
-          .then(() => resolve({ synced: true, count: list.length }))
-          .catch(() => resolve({ synced: false, reason: "store-error" }));
-      },
-      onerror: () => resolve({ synced: false, reason: "network-error" }),
-      ontimeout: () => resolve({ synced: false, reason: "timeout" }),
-    });
+          try {
+            await deps.storeProfiles(list.map(normalize));
+          } catch (error) {
+            resolve(syncRejected("store-profiles", "store-error", { count: list.length }, error));
+            return;
+          }
+          try {
+            await deps.writeMeta(META_LAST_SYNC, deps.readUtcDateKey());
+          } catch (error) {
+            resolve(syncRejected("write-meta", "store-error", { key: META_LAST_SYNC }, error));
+            return;
+          }
+          resolve({ synced: true, count: list.length });
+        },
+        onerror: (error) => resolve(syncRejected("network", "network-error", {}, error)),
+        ontimeout: (error) => resolve(syncRejected("timeout", "timeout", {}, error)),
+      });
+    } catch (error) {
+      resolve(syncRejected("request-start", "network-error", {}, error));
+    }
   });
 }
 
