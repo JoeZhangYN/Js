@@ -73,8 +73,9 @@ describe("runEncounterStateAutomation", () => {
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject(state);
   });
 
-  it("ignores unknown state events", () => {
+  it("rejects unknown and null state events without reading or writing encounter state", () => {
     expect(runEncounterStateAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runEncounterStateAutomation(null)).toBeUndefined();
     expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
     expect(mocks.gmXhr).not.toHaveBeenCalled();
   });

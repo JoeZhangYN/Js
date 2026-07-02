@@ -114,5 +114,5 @@ const encounterStateEventHandlers = Object.freeze({
 });
 
 export function runEncounterStateAutomation(event = { type: EVENT_READ_CURRENT }) {
-  return encounterStateEventHandlers[event.type]?.(event);
+  return encounterStateEventHandlers[event?.type]?.(event);
 }

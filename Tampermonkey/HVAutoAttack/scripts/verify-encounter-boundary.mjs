@@ -331,6 +331,12 @@ if (!stateEntryMatch) {
   );
 } else {
   const entryBody = stateEntryMatch[0];
+  if (entryBody.includes("event.type")) {
+    violations.push(`${stateHelper.replaceAll("\\", "/")} entry must reject null events without throwing`);
+  }
+  if (!entryBody.includes("event?.type")) {
+    violations.push(`${stateHelper.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+  }
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(
       `${stateHelper.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
@@ -347,6 +353,13 @@ if (!stateEntryMatch) {
       );
     }
   }
+}
+const stateTestText = fs.readFileSync(path.join(root, stateTest), "utf8");
+if (
+  !stateTestText.includes("rejects unknown and null state events without reading or writing encounter state") ||
+  !stateTestText.includes("runEncounterStateAutomation(null)")
+) {
+  violations.push(`${stateTest.replaceAll("\\", "/")} must cover unknown and null state events`);
 }
 const optionGateText = fs.readFileSync(path.join(root, optionGateFile), "utf8");
 for (const required of ["ENCOUNTER_OPTION_KEY", "OptionEvent.READ_FIELD"]) {
