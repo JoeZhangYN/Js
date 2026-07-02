@@ -63,6 +63,32 @@ if (
   errors.push("equipment filter artifact missing runtime failure evidence");
 }
 
+// 5c. HVUT navigation bridge 缺失时仍阻止跳转，但失败证据必须在页面卸载前持久化。
+for (const required of [
+  "record_hvut_navigation_bridge_failure = function(stage, detail)",
+  "capability: \"hvutNavigationBridge\"",
+  'sessionStorage.setItem("HVAA:lastHvutNavigationBridgeFailure"',
+  'console.warn("[HVAA] navigation bridge missing", evidence)',
+]) {
+  if (!src.includes(required)) errors.push(`hvut navigation bridge artifact missing ${required}`);
+}
+if (!/record_hvut_navigation_bridge_failure\("reloadBlocked", \{ reason(?:: reason)? \}\)/.test(src)) {
+  errors.push("hvut navigation bridge artifact missing reload blocked evidence");
+}
+if (
+  !/record_hvut_navigation_bridge_failure\("navigationBlocked", \{ reason(?:: reason)?, url(?:: url)?, newTab: !!newTab \}\)/.test(src)
+) {
+  errors.push("hvut navigation bridge artifact missing navigation blocked evidence");
+}
+for (const forbidden of [
+  "navigation bridge missing; reload blocked",
+  "navigation bridge missing; navigation blocked",
+]) {
+  if (src.includes(forbidden)) {
+    errors.push(`hvut navigation bridge artifact uses console-only fallback: ${forbidden}`);
+  }
+}
+
 // 6. @grant 必须列全 5 项
 for (const g of ["GM_setValue", "GM_getValue", "GM_deleteValue", "GM_notification", "unsafeWindow"]) {
   if (!new RegExp(`@grant\\s+${g}\\b`).test(src)) errors.push(`@grant missing ${g}`);

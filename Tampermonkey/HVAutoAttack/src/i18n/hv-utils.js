@@ -33,14 +33,28 @@ try {
   var hvutRedirectReason = function (key) {
     return window.HVAA_navigation && window.HVAA_navigation.RedirectReason ? window.HVAA_navigation.RedirectReason[key] : undefined;
   };
+  var record_hvut_navigation_bridge_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutNavigationBridge', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutNavigationBridgeFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // HVUT navigation fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVAA] navigation bridge missing', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT navigation fallback.
+    }
+    return evidence;
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
-    console.warn('[HVAA] navigation bridge missing; reload blocked', { reason: reason });
+    record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
     return false;
   };
   var openUrl = function (url, reason, newTab) {
     if (window.HVAA_navigation && window.HVAA_navigation.openUrl) return window.HVAA_navigation.openUrl(url, reason, !!newTab);
-    console.warn('[HVAA] navigation bridge missing; navigation blocked', { reason: reason, url: url, newTab: !!newTab });
+    record_hvut_navigation_bridge_failure('navigationBlocked', { reason: reason, url: url, newTab: !!newTab });
     return false;
   };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
