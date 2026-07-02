@@ -84,6 +84,19 @@ for (const required of ["TimeEvent.LOCAL_FILE_TIMESTAMP", "TimeEvent.ISO_TIMESTA
     );
   }
 }
+for (const required of [
+  "warnRiddleDatasetFailure",
+  "[HVAA][RMA] riddle dataset failed",
+  "record-missing-gm-set",
+  "record-write",
+  "export-list",
+  "export-read",
+  "export-delete",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must own riddle dataset failure ${required}`);
+  }
+}
 if (/\bnew Date\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not build dataset timestamps directly`);
 }
@@ -110,6 +123,22 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     !ownerTestText.includes("runRiddleDatasetAutomation(null)")
   ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null dataset events`);
+  }
+  for (const required of [
+    "records missing GM_setValue as dataset failure evidence",
+    "records GM_setValue write failures without throwing",
+    "continues dataset export when one stored sample cannot be read or deleted",
+    "records GM_listValues failures without throwing from dataset export",
+    "[HVAA][RMA] riddle dataset failed",
+    "record-missing-gm-set",
+    "record-write",
+    "export-list",
+    "export-read",
+    "export-delete",
+  ]) {
+    if (!ownerTestText.includes(required)) {
+      violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
   }
 }
 

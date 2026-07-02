@@ -8,6 +8,13 @@
 // 导出：core/zip 打成真 pony_<ts>.webp + pony_<ts>.json 包；**导出后默认清除原始记录防重复导出**（用户定 2026-06-06）。
 import { makeStoreZip } from "../core/zip.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
+import {
+  dataUrlToBytes,
+  imgExt,
+  sampleBaseName,
+  strBytes,
+  toCanonicalSampleJson,
+} from "./riddle-dataset-export-format.js";
 
 const SAVE_PREFIX = "pony_";
 
@@ -39,6 +46,10 @@ function tsStr() {
   return runTimeAutomation({ type: TimeEvent.LOCAL_FILE_TIMESTAMP });
 }
 
+function warnRiddleDatasetFailure(stage, detail) {
+  console.warn("[HVAA][RMA] riddle dataset failed", { stage, detail });
+}
+
 /**
  * 采集一条训练样本（无论 ML/随机/人工，只要提交答案就调）。
  * confidence 由 source 派生（规则内化）；imageDataUrl 为空仍存(仅 json，便于后期补图/统计)。
@@ -46,89 +57,30 @@ function tsStr() {
  * @param {{imageDataUrl:string|null, answers:string, source:string, imageSrc?:string}} sample
  */
 function recordRiddleSample({ imageDataUrl, answers, source, imageSrc }) {
-  if (typeof GM_setValue === "undefined") return; // 同步样本写依赖 GM_setValue(TM)；GM.* 异步过不了跳转
+  if (typeof GM_setValue === "undefined") {
+    warnRiddleDatasetFailure("record-missing-gm-set", { answers: answers || "" });
+    return;
+  }
   const src = source || RiddleSampleSource.MANUAL;
-  GM_setValue(`saved_${SAVE_PREFIX}${tsStr()}`, {
-    json: {
-      saved_at: runTimeAutomation({ type: TimeEvent.ISO_TIMESTAMP }),
-      source: src,
-      confidence: confidenceOf(src),
-      answers: answers || "",
-      image_src: imageSrc || "unknown",
-    },
-    imageBase64: imageDataUrl || "",
-    timestamp: Date.now(),
-  });
+  const key = `saved_${SAVE_PREFIX}${tsStr()}`;
+  try {
+    GM_setValue(key, {
+      json: {
+        saved_at: runTimeAutomation({ type: TimeEvent.ISO_TIMESTAMP }),
+        source: src,
+        confidence: confidenceOf(src),
+        answers: answers || "",
+        image_src: imageSrc || "unknown",
+      },
+      imageBase64: imageDataUrl || "",
+      timestamp: Date.now(),
+    });
+  } catch (error) {
+    warnRiddleDatasetFailure("record-write", { key, error: error.message });
+  }
 }
 
 // ---------------- 导出：saved_* → 真 .jpg + .json 的 zip ----------------
-
-/** dataURL → 字节（解 base64）。非法/空返 null。 */
-function dataUrlToBytes(dataUrl) {
-  if (!dataUrl || typeof dataUrl !== "string") return null;
-  const comma = dataUrl.indexOf(",");
-  if (comma < 0) return null;
-  try {
-    const bin = atob(dataUrl.slice(comma + 1));
-    const u = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-    return u;
-  } catch {
-    return null;
-  }
-}
-
-function strBytes(str) {
-  return new TextEncoder().encode(str);
-}
-
-/**
- * 把一条存储记录的 json 归一成**新 schema**（导出时统一，旧记录无损「重建」、幂等）。
- * - 新记录（已有 source）：原样返回。
- * - 旧记录（is_failed/return/answer 数组）：迁移 →
- *     answer:["ra","aj"] → answers:"ra,aj"；is_failed=false→confidence high、true→low；
- *     source 统一 "ml"（旧批均 ML 诊断保存）；原始 return/is_failed/expire 收进 legacy 保留可追溯。
- * @param {{json?:object, timestamp?:number}} entry
- */
-function toCanonicalSampleJson(entry) {
-  const j = (entry && entry.json) || {};
-  if (j.source) return j; // 已是新 schema
-  const answers = Array.isArray(j.answer) ? j.answer.join(",") : j.answer || j.answers || "";
-  const failed = j.is_failed === true;
-  return {
-    saved_at:
-      j.saved_at ||
-      (entry && entry.timestamp
-        ? runTimeAutomation({ type: TimeEvent.ISO_TIMESTAMP, stamp: entry.timestamp })
-        : ""),
-    source: "ml", // 旧批均为 ML 远程识别的诊断保存
-    confidence: failed ? "low" : "high", // is_failed 真→低可信(ML 失败)，假→高可信(ML 命中)
-    answers,
-    image_src: j.image_src || "unknown",
-    legacy: { return: j.return, is_failed: j.is_failed, expire: j.expire }, // 原始诊断字段留痕
-  };
-}
-
-/** 从 dataURL 的 mime 推扩展名（image/webp→webp, image/jpeg→jpg, 其它原样；缺省 webp）。 */
-function imgExt(dataUrl) {
-  const m = /^data:image\/(\w+)/.exec(dataUrl || "");
-  if (!m) return "webp";
-  return m[1] === "jpeg" ? "jpg" : m[1];
-}
-
-/**
- * 导出文件名归一：不论存储 key 是旧 saved_riddle_20260528_023853（无短横）还是新
- * saved_pony_2026-06-06_03-28-40，一律输出 pony_YYYY-MM-DD_HH-MM-SS，zip 内格式一致。
- * 拿不到 14 位时间戳时兜底原样加 pony_ 前缀。
- */
-function sampleBaseName(key) {
-  const raw = key.replace(/^saved_/, "").replace(/^(pony_|riddle_)/, "");
-  const d = raw.replace(/\D/g, ""); // YYYYMMDDHHMMSS
-  if (d.length >= 14) {
-    return `pony_${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}_${d.slice(8, 10)}-${d.slice(10, 12)}-${d.slice(12, 14)}`;
-  }
-  return `pony_${raw}`;
-}
 
 /**
  * 把 GM 存储里所有 saved_pony_* 样本打包成单个 zip 下载（每条 → pony_<ts>.webp + pony_<ts>.json）。
@@ -140,16 +92,30 @@ function exportRiddleDataset() {
     console.warn("[HVAA][RMA] GM_listValues 不可用，无法导出");
     return;
   }
-  const keys = GM_listValues().filter((k) => k.startsWith("saved_"));
+  let keys = [];
+  try {
+    keys = GM_listValues().filter((k) => k.startsWith("saved_"));
+  } catch (error) {
+    warnRiddleDatasetFailure("export-list", { error: error.message });
+    return;
+  }
   if (!keys.length) {
     console.info("[HVAA][RMA] 无答题样本可导出");
     return;
   }
   const files = [];
+  const exportedKeys = [];
   const used = new Set(); // 防同秒时间戳归一后撞名（zip 内同名会覆盖）
   for (const k of keys) {
-    const entry = GM_getValue(k);
+    let entry;
+    try {
+      entry = GM_getValue(k);
+    } catch (error) {
+      warnRiddleDatasetFailure("export-read", { key: k, error: error.message });
+      continue;
+    }
     if (!entry) continue;
+    exportedKeys.push(k);
     let base = sampleBaseName(k);
     if (used.has(base)) {
       let n = 2;
@@ -163,6 +129,10 @@ function exportRiddleDataset() {
     });
     const imgBytes = dataUrlToBytes(entry.imageBase64);
     if (imgBytes) files.push({ name: `${base}.${imgExt(entry.imageBase64)}`, bytes: imgBytes });
+  }
+  if (!exportedKeys.length) {
+    console.info("[HVAA][RMA] 无可导出的答题样本");
+    return;
   }
   const blob = makeStoreZip(files);
   const url = URL.createObjectURL(blob);
@@ -178,10 +148,16 @@ function exportRiddleDataset() {
   }, 200);
   // 默认清除原始记录（防重复导出）。GM_deleteValue 不可用则跳过，不阻断下载。
   if (typeof GM_deleteValue !== "undefined") {
-    for (const k of keys) GM_deleteValue(k);
+    for (const k of exportedKeys) {
+      try {
+        GM_deleteValue(k);
+      } catch (error) {
+        warnRiddleDatasetFailure("export-delete", { key: k, error: error.message });
+      }
+    }
   }
   console.info(
-    `[HVAA][RMA] 已导出 ${keys.length} 条答题样本(zip: webp+json)，并清除原始记录(防重复导出)`
+    `[HVAA][RMA] 已导出 ${exportedKeys.length} 条答题样本(zip: webp+json)，并清除原始记录(防重复导出)`
   );
 }
 
