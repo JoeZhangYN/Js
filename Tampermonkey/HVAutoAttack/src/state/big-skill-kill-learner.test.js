@@ -3,14 +3,9 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { g } from "./store.js";
 import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
-import {
-  BigSkillKillLearningEvent,
-  runBigSkillKillLearningAutomation,
-} from "./big-skill-kill-learner.js";
+import { BigSkillKillLearningEvent, runBigSkillKillLearningAutomation } from "./big-skill-kill-learner.js";
 
-const mocks = vi.hoisted(() => ({
-  runOptionAutomation: vi.fn(),
-}));
+const mocks = vi.hoisted(() => ({ runOptionAutomation: vi.fn() }));
 
 vi.mock("./option.js", () => ({
   OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
@@ -138,8 +133,11 @@ describe("finalize 学击杀率 + ofcWillKillBoss 守卫", () => {
     expect(willKill(999, ready, { skipImperilWhenOfcKills: true }).skip).toBe(false);
     const learned = getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true);
     g("bigKillPending", { globalTurn: 1, skill: "OFC", bosses: [observedBoss] });
+    mocks.runOptionAutomation.mockReset();
     expect(runBigSkillKillLearningAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runBigSkillKillLearningAutomation(null)).toBeUndefined();
     expect([g("bigKillPending"), getValue(STORAGE_KEYS.LEARNED_BIG_KILL, true)]).toEqual([{ globalTurn: 1, skill: "OFC", bosses: [observedBoss] }, learned]);
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
   });
 
   it("日志开关通过 option entry 读取", () => {

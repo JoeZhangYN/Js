@@ -163,5 +163,5 @@ const bigSkillKillLearningEventHandlers = Object.freeze({
 });
 
 export function runBigSkillKillLearningAutomation(event = { type: EVENT_WILL_KILL_BOSS }) {
-  return bigSkillKillLearningEventHandlers[event.type]?.(event);
+  return bigSkillKillLearningEventHandlers[event?.type]?.(event);
 }
