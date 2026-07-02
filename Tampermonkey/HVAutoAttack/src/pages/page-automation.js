@@ -13,6 +13,8 @@ import { PageKind } from "./page-kind.js";
 
 const EVENT_PAGE_READY = "pageReady";
 
+export const PAGE_AUTOMATION_FAILURE_KEY = "HVAA:lastPageAutomationFailure";
+
 export const PageAutomationEvent = Object.freeze({
   PAGE_READY: EVENT_PAGE_READY,
 });
@@ -28,11 +30,42 @@ const GAME_PAGE_AUTOMATION = Object.freeze({
 });
 
 const PAGE_READY_FLOW_STEPS = [
-  reportEquipmentViewPageReady,
-  handleCrossSiteEncounterPageReady,
-  handleUnknownPageReady,
-  runGamePageReadyAutomation,
+  ["reportEquipmentViewPageReady", reportEquipmentViewPageReady],
+  ["handleCrossSiteEncounterPageReady", handleCrossSiteEncounterPageReady],
+  ["handleUnknownPageReady", handleUnknownPageReady],
+  ["runGamePageReadyAutomation", runGamePageReadyAutomation],
 ];
+
+function pageAutomationErrorText(error) {
+  return error?.message || String(error);
+}
+
+function recordPageAutomationFailure(stage, reason, detail = {}) {
+  const evidence = { capability: "pageAutomation", stage, reason, ...detail };
+  try {
+    globalThis.sessionStorage?.setItem(PAGE_AUTOMATION_FAILURE_KEY, JSON.stringify(evidence));
+  } catch (_error) {
+    // Page routing failure handling must not depend on diagnostic storage.
+  }
+  try {
+    console.warn("[HVAA] page automation failed", evidence);
+  } catch (_error) {
+    // Console hooks are diagnostic only.
+  }
+  return evidence;
+}
+
+function runPageReadyStep(stage, step, context) {
+  try {
+    return step(context);
+  } catch (error) {
+    recordPageAutomationFailure(stage, "stepException", {
+      kind: context.kind,
+      error: pageAutomationErrorText(error),
+    });
+    return true;
+  }
+}
 
 function isGameAutomationPage(kind) {
   return Boolean(GAME_PAGE_AUTOMATION[kind]);
@@ -83,9 +116,10 @@ function runGamePageReadyAutomation(context) {
 }
 
 function runPageReadyFlow(context) {
-  for (const step of PAGE_READY_FLOW_STEPS) {
-    if (step(context)) return;
+  for (const [stage, step] of PAGE_READY_FLOW_STEPS) {
+    if (runPageReadyStep(stage, step, context)) return false;
   }
+  return true;
 }
 
 export function runPageAutomation(event = { type: EVENT_PAGE_READY }) {

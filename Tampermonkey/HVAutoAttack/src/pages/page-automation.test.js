@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PageKind } from "./page-kind.js";
-import { PageAutomationEvent, runPageAutomation } from "./page-automation.js";
+import { PAGE_AUTOMATION_FAILURE_KEY, PageAutomationEvent, runPageAutomation } from "./page-automation.js";
 
 const mocks = vi.hoisted(() => ({
   runAppStartup: vi.fn(() => true),
@@ -42,11 +42,20 @@ vi.mock("../battle/battle-automation.js", () => ({
 }));
 
 beforeEach(() => {
-  for (const fn of Object.values(mocks)) fn.mockClear();
+  sessionStorage.clear();
+  for (const fn of Object.values(mocks)) fn.mockReset();
   mocks.runAppStartup.mockReturnValue(true);
   mocks.runCrossSiteEncounterNavigation.mockReturnValue(false);
   mocks.runPageRefreshAutomation.mockReturnValue(false);
 });
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+function lastPageAutomationFailure() {
+  return JSON.parse(sessionStorage.getItem(PAGE_AUTOMATION_FAILURE_KEY));
+}
 
 describe("runPageAutomation", () => {
   it("rejects unknown page automation events without routing pages", () => {
@@ -109,5 +118,54 @@ describe("runPageAutomation", () => {
 
     expect(mocks.runPageRefreshAutomation).not.toHaveBeenCalledWith({ type: "gamePageReady" });
     expect(mocks.runBattleAutomation).not.toHaveBeenCalled();
+  });
+
+  it("records page routing step failures and stops later routing", () => {
+    mocks.runEquipmentViewAutomation.mockImplementation(() => {
+      throw new Error("equipment blocked");
+    });
+
+    expect(runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.BATTLE })).toBe(false);
+
+    expect(lastPageAutomationFailure()).toMatchObject({
+      capability: "pageAutomation",
+      stage: "reportEquipmentViewPageReady",
+      reason: "stepException",
+      kind: PageKind.BATTLE,
+      error: "equipment blocked",
+    });
+    expect(mocks.runBattleAutomation).not.toHaveBeenCalled();
+  });
+
+  it("records game-page child automation failures at the page routing boundary", () => {
+    mocks.runRiddleAutomation.mockImplementation(() => {
+      throw new Error("riddle blocked");
+    });
+
+    expect(runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.RIDDLE })).toBe(false);
+
+    expect(lastPageAutomationFailure()).toMatchObject({
+      capability: "pageAutomation",
+      stage: "runGamePageReadyAutomation",
+      reason: "stepException",
+      kind: PageKind.RIDDLE,
+      error: "riddle blocked",
+    });
+  });
+
+  it("keeps page routing failure evidence when diagnostic console is blocked", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+    mocks.runCrossSiteEncounterNavigation.mockImplementation(() => {
+      throw new Error("navigation blocked");
+    });
+
+    expect(runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.EHENTAI })).toBe(false);
+    expect(lastPageAutomationFailure()).toMatchObject({
+      stage: "handleCrossSiteEncounterPageReady",
+      reason: "stepException",
+      error: "navigation blocked",
+    });
   });
 });

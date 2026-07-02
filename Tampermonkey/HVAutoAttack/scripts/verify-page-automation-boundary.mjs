@@ -55,8 +55,11 @@ function checkEntry() {
   }
   for (const required of [
     "PageAutomationEvent",
+    "PAGE_AUTOMATION_FAILURE_KEY",
     "EVENT_PAGE_READY",
     "pageAutomationEventHandlers",
+    "recordPageAutomationFailure",
+    "runPageReadyStep",
     "runEquipmentViewAutomation",
     "runCrossSiteEncounterNavigation",
     "AppStartupEvent.GAME_PAGE_READY",
@@ -78,7 +81,7 @@ function checkEntry() {
     }
   }
   if (
-    !/const PAGE_READY_FLOW_STEPS = \[\s*reportEquipmentViewPageReady,\s*handleCrossSiteEncounterPageReady,\s*handleUnknownPageReady,\s*runGamePageReadyAutomation,\s*\]/.test(
+    !/const PAGE_READY_FLOW_STEPS = \[\s*\["reportEquipmentViewPageReady",\s*reportEquipmentViewPageReady\],[\s\S]*\["handleCrossSiteEncounterPageReady",\s*handleCrossSiteEncounterPageReady\],[\s\S]*\["handleUnknownPageReady",\s*handleUnknownPageReady\],[\s\S]*\["runGamePageReadyAutomation",\s*runGamePageReadyAutomation\],\s*\]/.test(
       text
     )
   ) {
@@ -128,6 +131,12 @@ function checkEntry() {
   if (/from\s+["']\.\.\/state\/store\.js["']/.test(text) || /\boption:\s*g\(/.test(text)) {
     violations.push(`${rel(entryFile)} must not compose page refresh option fields`);
   }
+  if (!/globalThis\.sessionStorage\?\.setItem\(PAGE_AUTOMATION_FAILURE_KEY/.test(text)) {
+    violations.push(`${rel(entryFile)} must persist page automation failure evidence`);
+  }
+  if (!/catch\s*\(error\)\s*{[\s\S]*recordPageAutomationFailure\(stage,\s*"stepException"/.test(text)) {
+    violations.push(`${rel(entryFile)} must classify page-ready step exceptions`);
+  }
   const entryTestFile = path.join(root, "src/pages/page-automation.test.js");
   const entryTestText = fs.existsSync(entryTestFile) ? fs.readFileSync(entryTestFile, "utf8") : "";
   if (!entryTestText.includes("rejects unknown page automation events without routing pages")) {
@@ -135,6 +144,17 @@ function checkEntry() {
   }
   if (!entryTestText.includes("runPageAutomation(null)")) {
     violations.push(`${rel(entryTestFile)} must cover null page automation events`);
+  }
+  for (const required of [
+    "PAGE_AUTOMATION_FAILURE_KEY",
+    "records page routing step failures and stops later routing",
+    "records game-page child automation failures at the page routing boundary",
+    "keeps page routing failure evidence when diagnostic console is blocked",
+    "stepException",
+  ]) {
+    if (!entryTestText.includes(required)) {
+      violations.push(`${rel(entryTestFile)} must cover ${required}`);
+    }
   }
 }
 
