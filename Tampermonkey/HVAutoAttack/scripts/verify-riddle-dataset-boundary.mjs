@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/riddle-dataset.js");
+const failureOwner = path.normalize("src/state/riddle-dataset-failure.js");
 const ownerTest = path.normalize("src/state/riddle-dataset.test.js");
 const violations = [];
 
@@ -61,6 +62,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
 for (const required of ["runRiddleDatasetAutomation", "RiddleDatasetEvent", "RiddleSampleSource"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -85,16 +87,27 @@ for (const required of ["TimeEvent.LOCAL_FILE_TIMESTAMP", "TimeEvent.ISO_TIMESTA
   }
 }
 for (const required of [
-  "warnRiddleDatasetFailure",
+  "recordRiddleDatasetFailure",
   "[HVAA][RMA] riddle dataset failed",
+  "HVAA:lastRiddleDatasetFailure",
   "record-missing-gm-set",
   "record-write",
+  "export-missing-gm-list",
   "export-list",
   "export-read",
   "export-delete",
 ]) {
-  if (!ownerText.includes(required)) {
+  if (!(ownerText + failureOwnerText).includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own riddle dataset failure ${required}`);
+  }
+}
+for (const required of [
+  "RIDDLE_DATASET_FAILURE_KEY",
+  "globalThis.sessionStorage?.setItem(RIDDLE_DATASET_FAILURE_KEY",
+  "Dataset fallback must not depend on diagnostic storage.",
+]) {
+  if (!failureOwnerText.includes(required)) {
+    violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
 if (/\bnew Date\s*\(/.test(ownerText)) {
@@ -128,10 +141,13 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "records missing GM_setValue as dataset failure evidence",
     "records GM_setValue write failures without throwing",
     "continues dataset export when one stored sample cannot be read or deleted",
+    "records missing GM_listValues as export failure evidence",
     "records GM_listValues failures without throwing from dataset export",
+    "HVAA:lastRiddleDatasetFailure",
     "[HVAA][RMA] riddle dataset failed",
     "record-missing-gm-set",
     "record-write",
+    "export-missing-gm-list",
     "export-list",
     "export-read",
     "export-delete",

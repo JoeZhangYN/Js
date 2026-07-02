@@ -15,6 +15,7 @@ import {
   strBytes,
   toCanonicalSampleJson,
 } from "./riddle-dataset-export-format.js";
+import { recordRiddleDatasetFailure } from "./riddle-dataset-failure.js";
 
 const SAVE_PREFIX = "pony_";
 
@@ -46,10 +47,6 @@ function tsStr() {
   return runTimeAutomation({ type: TimeEvent.LOCAL_FILE_TIMESTAMP });
 }
 
-function warnRiddleDatasetFailure(stage, detail) {
-  console.warn("[HVAA][RMA] riddle dataset failed", { stage, detail });
-}
-
 /**
  * 采集一条训练样本（无论 ML/随机/人工，只要提交答案就调）。
  * confidence 由 source 派生（规则内化）；imageDataUrl 为空仍存(仅 json，便于后期补图/统计)。
@@ -58,7 +55,7 @@ function warnRiddleDatasetFailure(stage, detail) {
  */
 function recordRiddleSample({ imageDataUrl, answers, source, imageSrc }) {
   if (typeof GM_setValue === "undefined") {
-    warnRiddleDatasetFailure("record-missing-gm-set", { answers: answers || "" });
+    recordRiddleDatasetFailure("record-missing-gm-set", { answers: answers || "" });
     return;
   }
   const src = source || RiddleSampleSource.MANUAL;
@@ -76,7 +73,7 @@ function recordRiddleSample({ imageDataUrl, answers, source, imageSrc }) {
       timestamp: Date.now(),
     });
   } catch (error) {
-    warnRiddleDatasetFailure("record-write", { key, error: error.message });
+    recordRiddleDatasetFailure("record-write", { key, error: error.message });
   }
 }
 
@@ -89,14 +86,14 @@ function recordRiddleSample({ imageDataUrl, answers, source, imageSrc }) {
  */
 function exportRiddleDataset() {
   if (typeof GM_listValues === "undefined") {
-    console.warn("[HVAA][RMA] GM_listValues 不可用，无法导出");
+    recordRiddleDatasetFailure("export-missing-gm-list", { reason: "GM_listValues unavailable" });
     return;
   }
   let keys = [];
   try {
     keys = GM_listValues().filter((k) => k.startsWith("saved_"));
   } catch (error) {
-    warnRiddleDatasetFailure("export-list", { error: error.message });
+    recordRiddleDatasetFailure("export-list", { error: error.message });
     return;
   }
   if (!keys.length) {
@@ -111,7 +108,7 @@ function exportRiddleDataset() {
     try {
       entry = GM_getValue(k);
     } catch (error) {
-      warnRiddleDatasetFailure("export-read", { key: k, error: error.message });
+      recordRiddleDatasetFailure("export-read", { key: k, error: error.message });
       continue;
     }
     if (!entry) continue;
@@ -152,9 +149,11 @@ function exportRiddleDataset() {
       try {
         GM_deleteValue(k);
       } catch (error) {
-        warnRiddleDatasetFailure("export-delete", { key: k, error: error.message });
+        recordRiddleDatasetFailure("export-delete", { key: k, error: error.message });
       }
     }
+  } else {
+    recordRiddleDatasetFailure("export-missing-gm-delete", { exported: exportedKeys.length });
   }
   console.info(
     `[HVAA][RMA] 已导出 ${exportedKeys.length} 条答题样本(zip: webp+json)，并清除原始记录(防重复导出)`

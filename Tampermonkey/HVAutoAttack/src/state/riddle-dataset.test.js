@@ -1,14 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  RiddleDatasetEvent,
-  RiddleSampleSource,
-  runRiddleDatasetAutomation,
-} from "./riddle-dataset.js";
+import { RiddleDatasetEvent, RiddleSampleSource, runRiddleDatasetAutomation } from "./riddle-dataset.js";
 
 afterEach(() => {
-  vi.useRealTimers();
-  vi.unstubAllGlobals();
+  vi.useRealTimers(); vi.unstubAllGlobals();
 });
+
+function expectDatasetFailure(stage) {
+  expect(JSON.parse(sessionStorage.getItem("HVAA:lastRiddleDatasetFailure"))).toMatchObject({
+    capability: "riddleDataset",
+    stage,
+  });
+}
 
 describe("riddle dataset entry", () => {
   it("rejects invalid dataset events without writing samples or registering menus", () => {
@@ -17,14 +19,12 @@ describe("riddle dataset entry", () => {
     vi.stubGlobal("GM_setValue", setValue);
     vi.stubGlobal("GM_registerMenuCommand", registerMenu);
 
-    expect(
-      runRiddleDatasetAutomation({
+    expect(runRiddleDatasetAutomation({
         type: "unknown",
         imageDataUrl: "data:image/webp;base64,AAAA",
         answers: "ra",
         source: RiddleSampleSource.ML,
-      })
-    ).toBeUndefined();
+      })).toBeUndefined();
     expect(runRiddleDatasetAutomation(null)).toBeUndefined();
 
     expect(setValue).not.toHaveBeenCalled();
@@ -73,6 +73,7 @@ describe("riddle dataset entry", () => {
       "[HVAA][RMA] riddle dataset failed",
       expect.objectContaining({ stage: "record-missing-gm-set" })
     );
+    expectDatasetFailure("record-missing-gm-set");
   });
 
   it("records GM_setValue write failures without throwing", () => {
@@ -92,6 +93,7 @@ describe("riddle dataset entry", () => {
       "[HVAA][RMA] riddle dataset failed",
       expect.objectContaining({ stage: "record-write" })
     );
+    expectDatasetFailure("record-write");
   });
 
   it("continues dataset export when one stored sample cannot be read or deleted", () => {
@@ -130,6 +132,19 @@ describe("riddle dataset entry", () => {
     expect(info).toHaveBeenCalledWith(expect.stringContaining("已导出 1 条答题样本"));
   });
 
+  it("records missing GM_listValues as export failure evidence", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubGlobal("GM_listValues", undefined);
+
+    runRiddleDatasetAutomation({ type: RiddleDatasetEvent.EXPORT });
+
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA][RMA] riddle dataset failed",
+      expect.objectContaining({ stage: "export-missing-gm-list" })
+    );
+    expectDatasetFailure("export-missing-gm-list");
+  });
+
   it("records GM_listValues failures without throwing from dataset export", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubGlobal("GM_listValues", () => {
@@ -141,6 +156,7 @@ describe("riddle dataset entry", () => {
       "[HVAA][RMA] riddle dataset failed",
       expect.objectContaining({ stage: "export-list" })
     );
+    expectDatasetFailure("export-list");
   });
 
   it("registers the export menu once through the entry", () => {
