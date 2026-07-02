@@ -57,7 +57,10 @@ describe("runMonsterResistPanelAutomation", () => {
     expect(document.querySelector("#hvAAResist").textContent).toContain("待 scan");
   });
 
-  it("ignores unknown events", () => {
-    expect(runMonsterResistPanelAutomation({ type: "unknown" })).toBeUndefined();
+  it("rejects unknown events without rendering the resist panel", () => {
+    expect(runMonsterResistPanelAutomation({ type: "unknown" })).toBe(false);
+    expect(runMonsterResistPanelAutomation(null)).toBe(false);
+    expect(document.querySelector("#hvAAResist")).toBeNull();
+    expect(document.head.querySelector("style")).toBeNull();
   });
 });

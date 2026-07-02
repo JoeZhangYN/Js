@@ -1253,6 +1253,12 @@ function checkMonsterResistPanelEntry() {
   if (/if\s*\(\s*event\.type\s*!==\s*EVENT_REFRESH/.test(text)) {
     violations.push(`${rel(panelFile)} must not route resist panel refresh through an if ladder`);
   }
+  if (text.includes("resistPanelEventHandlers[event.type]")) {
+    violations.push(`${rel(panelFile)} must reject null resist panel events without throwing`);
+  }
+  if (!text.includes("resistPanelEventHandlers[event?.type]") || !text.includes("?? false")) {
+    violations.push(`${rel(panelFile)} must fail closed for unknown or null resist panel events`);
+  }
   if (!text.includes("runMonsterResistPanelModel")) {
     violations.push(`${rel(panelFile)} must render resist rows from monster resist panel model`);
   }
@@ -1285,6 +1291,16 @@ function checkMonsterResistPanelEntry() {
   }
   if (/\bnew Map\(\s*\(.*monsterStatus/s.test(text + modelText)) {
     violations.push(`${rel(panelFile)} must not build monsterStatus identity maps directly`);
+  }
+  const panelTestText = fs.readFileSync(
+    path.join(root, "src/monitor/monster-resist-panel.test.js"),
+    "utf8"
+  );
+  if (
+    !panelTestText.includes("rejects unknown events without rendering the resist panel") ||
+    !panelTestText.includes("runMonsterResistPanelAutomation(null)")
+  ) {
+    violations.push(`${rel(panelFile)} tests must cover unknown and null resist panel events`);
   }
 }
 

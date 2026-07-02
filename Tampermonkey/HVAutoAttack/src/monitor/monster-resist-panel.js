@@ -96,5 +96,5 @@ const resistPanelEventHandlers = Object.freeze({
 });
 
 export function runMonsterResistPanelAutomation(event = { type: EVENT_REFRESH }, deps = {}) {
-  return resistPanelEventHandlers[event.type]?.(event, deps);
+  return resistPanelEventHandlers[event?.type]?.(event, deps) ?? false;
 }
