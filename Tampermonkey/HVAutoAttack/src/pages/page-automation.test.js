@@ -127,6 +127,7 @@ describe("runPageAutomation", () => {
 
     expect(runPageAutomation({ type: PageAutomationEvent.PAGE_READY, kind: PageKind.BATTLE })).toBe(false);
 
+    expect(PAGE_AUTOMATION_FAILURE_KEY).toBe("HVAA:lastPageAutomationFailure");
     expect(lastPageAutomationFailure()).toMatchObject({
       capability: "pageAutomation",
       stage: "reportEquipmentViewPageReady",

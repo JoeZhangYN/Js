@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const entryFile = path.join(root, "src/pages/page-automation.js");
+const diagnosticKeysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
+const diagnosticTestFile = path.join(root, "src/core/diagnostic-evidence.test.js");
 const violations = [];
 
 function rel(file) {
@@ -147,6 +149,7 @@ function checkEntry() {
   }
   for (const required of [
     "PAGE_AUTOMATION_FAILURE_KEY",
+    "HVAA:lastPageAutomationFailure",
     "records page routing step failures and stops later routing",
     "records game-page child automation failures at the page routing boundary",
     "keeps page routing failure evidence when diagnostic console is blocked",
@@ -154,6 +157,25 @@ function checkEntry() {
   ]) {
     if (!entryTestText.includes(required)) {
       violations.push(`${rel(entryTestFile)} must cover ${required}`);
+    }
+  }
+  const diagnosticKeysText = fs.readFileSync(diagnosticKeysFile, "utf8");
+  for (const required of [
+    "PAGE_AUTOMATION_FAILURE: \"HVAA:lastPageAutomationFailure\"",
+    'source("pageAutomationFailure", DiagnosticEvidenceKey.PAGE_AUTOMATION_FAILURE)',
+  ]) {
+    if (!diagnosticKeysText.includes(required)) {
+      violations.push(`${rel(diagnosticKeysFile)} must expose ${required}`);
+    }
+  }
+  const diagnosticTestText = fs.readFileSync(diagnosticTestFile, "utf8");
+  for (const required of [
+    "HVAA:lastPageAutomationFailure",
+    "pageAutomationFailure",
+    "pageAutomation",
+  ]) {
+    if (!diagnosticTestText.includes(required)) {
+      violations.push(`${rel(diagnosticTestFile)} must cover ${required}`);
     }
   }
 }

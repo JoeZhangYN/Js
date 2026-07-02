@@ -23,6 +23,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   REPAIR_BACKEND_FAILURE: "HVAA:lastRepairBackendFailure",
   MONSTER_DB_STORE_FAILURE: "HVAA:lastMonsterDbStoreFailure",
   APP_STARTUP_FAILURE: "HVAA:lastAppStartupFailure",
+  PAGE_AUTOMATION_FAILURE: "HVAA:lastPageAutomationFailure",
 });
 
 function source(name, key) {
@@ -56,6 +57,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("repairBackendFailure", DiagnosticEvidenceKey.REPAIR_BACKEND_FAILURE),
   source("monsterDbStoreFailure", DiagnosticEvidenceKey.MONSTER_DB_STORE_FAILURE),
   source("appStartupFailure", DiagnosticEvidenceKey.APP_STARTUP_FAILURE),
+  source("pageAutomationFailure", DiagnosticEvidenceKey.PAGE_AUTOMATION_FAILURE),
 ]);
 
 export const API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze(
