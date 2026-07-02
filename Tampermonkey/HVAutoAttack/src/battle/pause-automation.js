@@ -35,8 +35,13 @@ function renderPaused() {
 }
 
 function pauseBattle() {
+  try {
+    setValue(STORAGE_KEYS.DISABLED, true);
+  } catch (error) {
+    return { ok: false, error: error?.message || String(error) };
+  }
   setPauseButtonText("<l0>继续</l0><l1>繼續</l1><l2>Continue</l2>");
-  setValue(STORAGE_KEYS.DISABLED, true);
+  return { ok: true };
 }
 
 function recordPauseState(state, reason, detail) {
@@ -70,14 +75,25 @@ function handleToggle(deps) {
   if (getValue(STORAGE_KEYS.DISABLED)) {
     resumeBattle(deps.resume);
   } else {
-    pauseBattle();
+    const pause = pauseBattle();
+    if (!pause.ok) {
+      recordPauseState("failed", "pausePersistenceFailed", pause);
+      return false;
+    }
     recordPauseState("paused", "toggle");
   }
   return true;
 }
 
 function handlePause(event) {
-  pauseBattle();
+  const pause = pauseBattle();
+  if (!pause.ok) {
+    recordPauseState("failed", "pausePersistenceFailed", {
+      requestedReason: event.reason || EVENT_PAUSE,
+      ...pause,
+    });
+    return false;
+  }
   recordPauseState("paused", event.reason || EVENT_PAUSE, event.detail);
   return true;
 }

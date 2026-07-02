@@ -113,6 +113,7 @@ function checkEntry() {
   }
   for (const required of [
     "unknownPauseEvent",
+    "pausePersistenceFailed",
     "battlePauseEventHandlers[event?.type]",
     'recordPauseState("rejected", EVENT_UNKNOWN_PAUSE, { eventType: event?.type ?? null })',
   ]) {
@@ -125,6 +126,10 @@ function checkEntry() {
   for (const required of [
     "rejects unknown events without touching pause state",
     "rejects null events with pause evidence instead of throwing",
+    "does not report pause success when disabled persistence fails",
+    "does not report toggle pause success when disabled persistence fails",
+    "disabled write blocked",
+    "pausePersistenceFailed",
     "unknownPauseEvent",
     "eventType: null",
   ]) {
