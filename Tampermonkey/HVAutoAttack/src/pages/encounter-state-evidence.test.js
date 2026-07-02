@@ -41,4 +41,22 @@ describe("encounter state failure evidence", () => {
       stage: "read-local-json",
     });
   });
+
+  it("keeps encounter state fallback working when failure evidence storage and warning fail", () => {
+    vi.spyOn(window.sessionStorage, "setItem").mockImplementation(() => {
+      throw new Error("quota");
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("warn blocked");
+    });
+    localStorage.setItem(HVUT_RE_KEY, "{bad-json");
+
+    let state;
+    expect(() => {
+      state = runEncounterStateAutomation({ type: EncounterStateEvent.READ_CURRENT });
+    }).not.toThrow();
+
+    expect(state).toEqual({ date: 0, key: "", count: 0, clear: true });
+    expect(window.sessionStorage.getItem(ENCOUNTER_STATE_FAILURE_KEY)).toBeNull();
+  });
 });

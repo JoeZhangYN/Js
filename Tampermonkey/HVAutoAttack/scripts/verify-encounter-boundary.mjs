@@ -431,8 +431,12 @@ for (const required of [
 for (const required of [
   "persists corrupted encounter state evidence while failing closed",
   "keeps encounter state fallback working when console warning throws",
+  "keeps encounter state fallback working when failure evidence storage and warning fail",
   "HVAA:lastEncounterStateFailure",
   "capability: \"encounterState\"",
+  'throw new Error("quota")',
+  'throw new Error("warn blocked")',
+  "not.toThrow()",
 ]) {
   if (!stateEvidenceTestText.includes(required)) {
     violations.push(`${stateEvidenceTest.replaceAll("\\", "/")} must cover ${required}`);
