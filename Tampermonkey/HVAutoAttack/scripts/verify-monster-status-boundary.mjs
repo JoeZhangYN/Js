@@ -436,6 +436,8 @@ function checkMaxHpInference() {
     "MonsterDbStoreEvent.HP_WRITE",
     "inferredThisPage",
     "event.battleLog",
+    "recordMonsterKnowledgePersistenceFailure",
+    "death-inference-store-hp",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${maxHpInference.replaceAll("\\", "/")} must own ${required}`);
@@ -471,6 +473,18 @@ function checkMaxHpInference() {
     }
     if (!/runMonsterMaxHpInference\(null/.test(testText)) {
       violations.push(`${maxHpInferenceTest.replaceAll("\\", "/")} must cover null max HP inference events`);
+    }
+  }
+  const failureTest = path.normalize("src/battle/monster-max-hp-inference-failure.test.js");
+  const failureTestText = fs.existsSync(path.join(root, failureTest))
+    ? fs.readFileSync(path.join(root, failureTest), "utf8")
+    : "";
+  for (const required of [
+    "records stored HP read failures without throwing from inference",
+    "records stored HP write failures without throwing from inference",
+  ]) {
+    if (!failureTestText.includes(required)) {
+      violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
     }
   }
 }

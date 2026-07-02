@@ -44,6 +44,10 @@ describe("readRecentDiagnosticEvidence", () => {
       JSON.stringify({ result: "scheduledReload", reason: "roundStartLog" })
     );
     window.sessionStorage.setItem(
+      "HVAA:lastBattleMonsterKnowledgePersistence",
+      JSON.stringify({ result: "failed", stage: "scan-store-profile" })
+    );
+    window.sessionStorage.setItem(
       "HVAA:battleApiRecovery",
       JSON.stringify({ repeatCount: 2, detail: { responseKind: "jsonReload" } })
     );
@@ -86,6 +90,7 @@ describe("readRecentDiagnosticEvidence", () => {
       battleRoundStart: { phase: "roundStarted", result: true },
       battleKillBugRecovery: { result: "scheduledReload", detail: { scannedRows: 1 } },
       battleMonsterStatusRepair: { result: "scheduledReload", reason: "roundStartLog" },
+      battleMonsterKnowledgePersistence: { result: "failed", stage: "scan-store-profile" },
       battleTurnWorkflow: { stage: "contextPrepared", detail: { hasContext: true } },
       battleApiBridge: { phase: "start", result: "rejected", reason: "eventNodeMissing" },
       battleApiResponseRecovery: { repeatCount: 2, detail: { responseKind: "jsonReload" } },

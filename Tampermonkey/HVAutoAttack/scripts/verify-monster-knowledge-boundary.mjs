@@ -305,9 +305,25 @@ function checkEntry() {
     "MonsterDbStoreEvent.PROFILE_WRITE",
     "MonsterDbStoreEvent.HP_WRITE",
     "MonsterCacheEvent.WRITE_PROFILE",
+    "recordMonsterKnowledgePersistenceFailure",
+    "scan-store-profile",
+    "scan-cache-profile",
+    "scan-store-hp",
   ]) {
     if (!scanResultText.includes(required)) {
       violations.push(`${scanResultImpl.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
+  const scanResultFailureTest = path.normalize("src/battle/monster-scan-result-learning-failure.test.js");
+  const scanResultFailureText = fs.existsSync(path.join(root, scanResultFailureTest))
+    ? fs.readFileSync(path.join(root, scanResultFailureTest), "utf8")
+    : "";
+  for (const required of [
+    "records profile store failures without claiming scan stored",
+    "records cache and HP store failures after profile storage succeeds",
+  ]) {
+    if (!scanResultFailureText.includes(required)) {
+      violations.push(`${scanResultFailureTest.replaceAll("\\", "/")} must cover ${required}`);
     }
   }
   if (!scanResultText.includes("MonsterStatusEvent.READ_STATUS")) {

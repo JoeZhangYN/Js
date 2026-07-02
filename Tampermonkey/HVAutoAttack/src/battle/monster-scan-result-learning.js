@@ -3,6 +3,7 @@ import { parseScanResult, checkScanResultValidity } from "../data/monster-db.js"
 import { MonsterCacheEvent, runMonsterCacheAutomation } from "../state/monster-cache.js";
 import { MonsterDbStoreEvent, runMonsterDbStoreAutomation } from "../state/monster-db-store.js";
 import { MonsterStatusEvent, runMonsterStatusAutomation } from "./monster-status-automation.js";
+import { recordMonsterKnowledgePersistenceFailure } from "./monster-knowledge-persistence-evidence.js";
 
 const EVENT_RECORD_LOG_ROW = "recordLogRow";
 
@@ -40,6 +41,8 @@ function makeDeps(deps) {
     readMonsterStatus:
       deps.readMonsterStatus ||
       (() => runMonsterStatusAutomation({ type: MonsterStatusEvent.READ_STATUS })),
+    recordPersistenceFailure:
+      deps.recordPersistenceFailure || recordMonsterKnowledgePersistenceFailure,
   };
 }
 
@@ -51,13 +54,38 @@ function persistScanProfile(info, status, onStored, deps) {
   const profile = { ...info, monsterId: status.monsterId };
   Promise.resolve(deps.storeProfile(profile))
     .then(() => {
-      deps.writeCachedProfile(profile.monsterId, profile);
+      try {
+        deps.writeCachedProfile(profile.monsterId, profile);
+      } catch (error) {
+        deps.recordPersistenceFailure({
+          stage: "scan-cache-profile",
+          monsterId: profile.monsterId,
+          monsterName: profile.monsterName,
+          error,
+        });
+      }
       if (status.level != null && profile.maxHP > 0) {
-        deps.storeHp(profile.monsterId, status.level, profile.maxHP, profile.lastUpdate);
+        Promise.resolve(deps.storeHp(profile.monsterId, status.level, profile.maxHP, profile.lastUpdate))
+          .catch((error) =>
+            deps.recordPersistenceFailure({
+              stage: "scan-store-hp",
+              monsterId: profile.monsterId,
+              level: status.level,
+              maxHP: profile.maxHP,
+              error,
+            })
+          );
       }
       onStored?.();
     })
-    .catch(() => {});
+    .catch((error) =>
+      deps.recordPersistenceFailure({
+        stage: "scan-store-profile",
+        monsterId: profile.monsterId,
+        monsterName: profile.monsterName,
+        error,
+      })
+    );
 }
 
 function recordLogRow(event, deps) {

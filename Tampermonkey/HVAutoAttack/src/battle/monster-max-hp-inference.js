@@ -1,6 +1,7 @@
 import { MonsterDbStoreEvent, runMonsterDbStoreAutomation } from "../state/monster-db-store.js";
 import { normalizeMonsterName } from "../monster/monster-identity.js";
 import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js";
+import { recordMonsterKnowledgePersistenceFailure } from "./monster-knowledge-persistence-evidence.js";
 
 const EVENT_APPLY_DEATHS = "applyDeaths";
 
@@ -46,6 +47,8 @@ function makeDeps(deps) {
           level,
           maxHP,
         })),
+    recordPersistenceFailure:
+      deps.recordPersistenceFailure || recordMonsterKnowledgePersistenceFailure,
   };
 }
 
@@ -56,7 +59,15 @@ function storeIfMissing(monsterId, level, inferredMaxHP, deps) {
       if (existing && existing.maxHP != null) return undefined;
       return deps.writeStoredMaxHp(monsterId, level, inferredMaxHP);
     })
-    .catch(() => {});
+    .catch((error) =>
+      deps.recordPersistenceFailure({
+        stage: "death-inference-store-hp",
+        monsterId,
+        level,
+        maxHP: inferredMaxHP,
+        error,
+      })
+    );
 }
 
 function applyDeathInferences(event, deps) {
