@@ -723,16 +723,20 @@ const bindTr = function (tr, ctx) {
       tr.json.next_level = 0;
       tr.json.next_id = 0;
     }
-    ctx.config.set('tr_notif', tr.json, 'hvut_');
+    if (!ctx.config.set('tr_notif', tr.json, 'hvut_')) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
 
     if (reload) {
       reloadCurrentPage(hvutReloadReason('HV_UTILS_TRAINING_NOTIFICATION'));
     }
+    return true;
   };
 
   tr.cancel = function (reload) {
     tr.node.select.value = '';
-    tr.set(reload);
+    return tr.set(reload);
   };
 };
 
