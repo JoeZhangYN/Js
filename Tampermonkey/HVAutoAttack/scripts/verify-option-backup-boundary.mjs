@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/option-backup.js");
 const ownerTest = path.normalize("src/state/option-backup.test.js");
+const failureTest = path.normalize("src/state/option-backup-failure.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const settingsRender = path.normalize("src/settings/render.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
@@ -139,6 +140,21 @@ for (const required of [
 ]) {
   if (!ownerTestText.includes(required)) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+const failureTestText = fs.existsSync(path.join(root, failureTest))
+  ? fs.readFileSync(path.join(root, failureTest), "utf8")
+  : "";
+for (const required of [
+  "does not report restore success when failure evidence and warning both fail",
+  'throw new Error("option write blocked")',
+  'throw new Error("evidence blocked")',
+  'throw new Error("console blocked")',
+  "not.toThrow()",
+  "toBe(false)",
+]) {
+  if (!failureTestText.includes(required)) {
+    violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 if (!/try\s*{[\s\S]*setValue\(STORAGE_KEYS\.BACKUP,\s*backups\);[\s\S]*return true;[\s\S]*}\s*catch/.test(ownerText)) {
