@@ -6,6 +6,7 @@ beforeEach(() => window.sessionStorage.clear());
 describe("readRecentDiagnosticEvidence", () => {
   it("returns lifecycle, decision, and effect evidence together", () => {
     const evidenceByKey = {
+      "HVAA:lastNavigationAudit": { kind: "reloadNow", reason: "battleApiResponse" },
       "HVAA:lastNavigationDecision": { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
       "HVAA:lastBattleTurnWorkflow": { stage: "contextPrepared", detail: { hasContext: true } },
       "HVAA:lastBattleApiBridge": { phase: "start", result: "rejected", reason: "eventNodeMissing" },
@@ -49,6 +50,7 @@ describe("readRecentDiagnosticEvidence", () => {
     }
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
+      navigationAudit: { kind: "reloadNow", reason: "battleApiResponse" },
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
       battleAutomation: { phase: "pageReady", result: true },
       battleLifecycle: { phase: "battleStarted", result: true },

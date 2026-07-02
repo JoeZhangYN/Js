@@ -44,6 +44,7 @@ function source(name, key) {
 }
 
 export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
+  source("navigationAudit", DiagnosticEvidenceKey.NAVIGATION_AUDIT),
   source("navigationDecision", DiagnosticEvidenceKey.NAVIGATION_DECISION),
   source("battleAutomation", DiagnosticEvidenceKey.BATTLE_AUTOMATION),
   source("battleLifecycle", DiagnosticEvidenceKey.BATTLE_LIFECYCLE),
