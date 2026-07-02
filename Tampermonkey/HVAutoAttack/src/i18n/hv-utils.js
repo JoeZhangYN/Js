@@ -5968,10 +5968,16 @@ if (_query.s === 'Character' && _query.ss === 'se') {
   };
 
   _se.remove = function (name) {
+    const removed = _se.json[name];
     delete _se.json[name];
-    $config.set('se_settings', _se.json);
+    if (!$config.set('se_settings', _se.json)) {
+      _se.json[name] = removed;
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     _se.node.buttons[name].nextElementSibling.remove();
     _se.node.buttons[name].remove();
+    return true;
   };
 
   _se.save = function () {
@@ -5979,13 +5985,24 @@ if (_query.s === 'Character' && _query.ss === 'se') {
     if (!name) {
       return;
     }
-    if (!_se.json[name]) {
-      _se.add(name);
-    }
     const form = new FormData(_se.form);
     const json = Object.fromEntries(form.entries());
+    const exists = Object.prototype.hasOwnProperty.call(_se.json, name);
+    const previous = _se.json[name];
     _se.json[name] = json;
-    $config.set('se_settings', _se.json);
+    if (!$config.set('se_settings', _se.json)) {
+      if (exists) {
+        _se.json[name] = previous;
+      } else {
+        delete _se.json[name];
+      }
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    if (!exists) {
+      _se.add(name);
+    }
+    return true;
   };
 
   _se.load = function (name) {
@@ -12321,13 +12338,24 @@ if (_query.s === 'Character' && _query.ss === 'se') {
     if (!name) {
       return;
     }
-    if (!_se.json[name]) {
-      _se.add(name);
-    }
     const form = new FormData(_se.form);
     const json = Object.fromEntries(form.entries());
+    const exists = Object.prototype.hasOwnProperty.call(_se.json, name);
+    const previous = _se.json[name];
     _se.json[name] = json;
-    $config.set('se_settings', _se.json);
+    if (!$config.set('se_settings', _se.json)) {
+      if (exists) {
+        _se.json[name] = previous;
+      } else {
+        delete _se.json[name];
+      }
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    if (!exists) {
+      _se.add(name);
+    }
+    return true;
   };
   _se.load = function (name) {
     const json = _se.json[name];
@@ -12345,10 +12373,16 @@ if (_query.s === 'Character' && _query.ss === 'se') {
     });
   };
   _se.remove = function (name) {
+    const removed = _se.json[name];
     delete _se.json[name];
-    $config.set('se_settings', _se.json);
+    if (!$config.set('se_settings', _se.json)) {
+      _se.json[name] = removed;
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     _se.node[name].nextElementSibling.remove();
     _se.node[name].remove();
+    return true;
   };
 
   GM_addStyle(/*css*/`
