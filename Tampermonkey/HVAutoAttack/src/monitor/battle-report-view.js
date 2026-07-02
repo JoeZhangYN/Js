@@ -64,5 +64,5 @@ const reportViewRenderHandlers = Object.freeze({
 });
 
 export function runBattleReportViewAutomation(event) {
-  return reportViewRenderHandlers[event.type]?.(event) || "";
+  return reportViewRenderHandlers[event?.type]?.(event) || "";
 }

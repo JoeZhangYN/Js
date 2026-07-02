@@ -1338,6 +1338,22 @@ function checkBattleReportViewEntry() {
   if (/if\s*\(\s*event\.type\s*===\s*EVENT_RENDER_/.test(text)) {
     violations.push(`${rel(viewFile)} must not route report view rendering through an if ladder`);
   }
+  if (text.includes("reportViewRenderHandlers[event.type]")) {
+    violations.push(`${rel(viewFile)} must fail closed for null report view events`);
+  }
+  if (!text.includes("reportViewRenderHandlers[event?.type]") || !text.includes('|| ""')) {
+    violations.push(`${rel(viewFile)} must dispatch report view events with nullable empty-render semantics`);
+  }
+  const viewTestText = fs.readFileSync(
+    path.join(root, "src/monitor/battle-report-view.test.js"),
+    "utf8"
+  );
+  if (
+    !viewTestText.includes("rejects unknown and null view events without rendering report markup") ||
+    !viewTestText.includes("runBattleReportViewAutomation(null")
+  ) {
+    violations.push(`${rel(viewFile)} tests must cover unknown and null report view events`);
+  }
 }
 
 function checkMonsterResistPanelEntry() {

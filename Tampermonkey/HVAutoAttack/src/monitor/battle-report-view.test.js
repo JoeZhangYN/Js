@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { BattleReportViewEvent, runBattleReportViewAutomation } from "./battle-report-view.js";
 
 describe("runBattleReportViewAutomation", () => {
+  it("rejects unknown and null view events without rendering report markup", () => {
+    expect(runBattleReportViewAutomation({ type: "unknown" })).toBe("");
+    expect(runBattleReportViewAutomation(null)).toBe("");
+  });
+
   it("renders a single drop report table body", () => {
     expect(
       runBattleReportViewAutomation({
