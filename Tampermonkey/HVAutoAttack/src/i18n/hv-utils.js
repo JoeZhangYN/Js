@@ -7329,7 +7329,18 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
         let done = 0;
         const requests = mobs.map((mob) => update(mob));
-        await Promise.all(requests);
+        try {
+          await Promise.all(requests);
+        } catch (_error) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          _ml.upgrade.node.button.disabled = false;
+          _ml.upgrade.node.button.value = '怪物升级器';
+          if (_ml.upgrade.node.run) {
+            _ml.upgrade.node.run.disabled = false;
+            _ml.upgrade.node.run.value = '失败';
+          }
+          return false;
+        }
 
         $config.set('ml_log', _ml.log);
         _ml.upgrade.node.button.disabled = false;
@@ -7337,6 +7348,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         if (_ml.upgrade.node.run) {
           _ml.upgrade.node.run.value = '完成';
         }
+        return true;
       },
       force_update: function () {
         _ml.mobs.forEach((mob) => {
@@ -7593,8 +7605,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
         let done = 0;
         const requests = urls.map(([url, post]) => upgrade(url, post));
-        await Promise.all(requests);
-        _ml.upgrade.update();
+        try {
+          await Promise.all(requests);
+        } catch (_error) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          _ml.upgrade.node.run.disabled = false;
+          _ml.upgrade.node.update.disabled = false;
+          _ml.upgrade.node.run.value = '失败';
+          return false;
+        }
+        return _ml.upgrade.update();
       },
       save: function () {
         _ml.mobs.forEach((mob) => {
@@ -13454,7 +13474,18 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
         let done = 0;
         const requests = mobs.map((mob) => update(mob));
-        await Promise.all(requests);
+        try {
+          await Promise.all(requests);
+        } catch (_error) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          _ml.upgrade.node.button.disabled = false;
+          _ml.upgrade.node.button.value = '怪物升级器';
+          if (_ml.upgrade.node.run) {
+            _ml.upgrade.node.run.disabled = false;
+            _ml.upgrade.node.run.value = '失败';
+          }
+          return false;
+        }
 
         $config.set('ml_log', _ml.log);
         _ml.upgrade.node.button.disabled = false;
@@ -13462,6 +13493,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         if (_ml.upgrade.node.run) {
           _ml.upgrade.node.run.value = '完成';
         }
+        return true;
       },
 
       force_update: function () {
@@ -13725,8 +13757,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
         let done = 0;
         const requests = urls.map(([url, post]) => upgrade(url, post));
-        await Promise.all(requests);
-        _ml.upgrade.update();
+        try {
+          await Promise.all(requests);
+        } catch (_error) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          _ml.upgrade.node.run.disabled = false;
+          _ml.upgrade.node.update.disabled = false;
+          _ml.upgrade.node.run.value = '失败';
+          return false;
+        }
+        return _ml.upgrade.update();
       },
 
       save: function () {
