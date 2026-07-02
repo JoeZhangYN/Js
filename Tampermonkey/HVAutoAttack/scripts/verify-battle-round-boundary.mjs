@@ -4,7 +4,10 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/battle/battle-round.js");
+const failureOwner = path.normalize("src/battle/battle-round-failure.js");
+const runtimeOwner = path.normalize("src/battle/battle-round-runtime.js");
 const ownerTest = path.normalize("src/battle/battle-round.test.js");
+const failureTest = path.normalize("src/battle/battle-round-failure.test.js");
 const ownerRejectionTest = path.normalize("src/battle/battle-round-rejection.test.js");
 const ownerRuntimeTest = path.normalize("src/battle/battle-round-runtime.test.js");
 const storage = path.normalize("src/state/storage.js");
@@ -33,7 +36,9 @@ function checkFile(file) {
     const where = `${rel(file)}:${index + 1}`;
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       relative !== ownerRejectionTest &&
       relative !== ownerRuntimeTest &&
       relative !== storage &&
@@ -53,6 +58,9 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
+const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
+const runtimeOwnerText = fs.readFileSync(path.join(root, runtimeOwner), "utf8");
 if (!/export function runBattleRoundAutomation\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose runBattleRoundAutomation()`);
 }
@@ -72,9 +80,58 @@ for (const required of [
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required} event`);
   }
 }
+if (!ownerText.includes("./battle-round-runtime.js")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must use battle round runtime invariants`);
+}
 for (const required of ["DEFAULT_ROUND_COUNT", "normalizeRoundCount", "roundRuntime"]) {
+  if (!runtimeOwnerText.includes(required)) {
+    violations.push(`${runtimeOwner.replaceAll("\\", "/")} must internalize round count invariants`);
+  }
+}
+for (const required of [
+  "./battle-round-failure.js",
+  "persistBattleRoundValue",
+  "record-type",
+  "record-count-now",
+  "record-count-all",
+  "roundPersistenceFailed",
+]) {
   if (!ownerText.includes(required)) {
-    violations.push(`${owner.replaceAll("\\", "/")} must internalize round count invariants`);
+    violations.push(`${owner.replaceAll("\\", "/")} must route round persistence through ${required}`);
+  }
+}
+if (!/if \(!persistBattleRoundValue\("record-type"[\s\S]*return false;/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must fail closed when round type persistence fails`);
+}
+if (!/if \(!persistBattleRoundValue\("record-count-now"[\s\S]*return false;/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must fail closed when round-now persistence fails`);
+}
+if (!/if \(!persistBattleRoundValue\("record-count-all"[\s\S]*return false;/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must fail closed when round-all persistence fails`);
+}
+for (const required of [
+  "BATTLE_ROUND_FAILURE_KEY",
+  "HVAA:lastBattleRoundFailure",
+  "recordBattleRoundFailure",
+  "persistBattleRoundValue",
+  "battleRound",
+  "storageWrite",
+]) {
+  if (!failureOwnerText.includes(required)) {
+    violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of [
+  "does not report round type success when type persistence fails",
+  "does not report round count success when round-all persistence fails",
+  "does not report debug field success when count persistence fails",
+  "classifies startup context as unstarted when round type persistence fails",
+  "does not throw when round failure evidence and warning both fail",
+  "BATTLE_ROUND_FAILURE_KEY",
+  "storageWrite",
+]) {
+  if (!failureTestText.includes(required)) {
+    violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 if (!ownerText.includes("battleRoundEventHandlers")) {
@@ -98,7 +155,7 @@ if (!/battleRoundEventHandlers\[event\?\.type\]/.test(entryBody)) {
     `${owner.replaceAll("\\", "/")} must dispatch invalid round events through optional type`
   );
 }
-if ((ownerText.match(/roundRuntime\(/g) || []).length < 4) {
+if ((ownerText.match(/roundRuntime\(/g) || []).length < 3) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize round count writes and reads`);
 }
 if (/getValue\([^)]*\)\s*\*\s*1/.test(ownerText)) {

@@ -5,6 +5,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   BATTLE_LIFECYCLE: "HVAA:lastBattleLifecycle",
   BATTLE_COMPLETION: "HVAA:lastBattleCompletion",
   BATTLE_ROUND_START: "HVAA:lastBattleRoundStart",
+  BATTLE_ROUND_FAILURE: "HVAA:lastBattleRoundFailure",
   BATTLE_KILL_BUG_RECOVERY: "HVAA:lastBattleKillBugRecovery",
   BATTLE_MONSTER_STATUS_REPAIR: "HVAA:lastBattleMonsterStatusRepair",
   BATTLE_MONSTER_KNOWLEDGE_PERSISTENCE: "HVAA:lastBattleMonsterKnowledgePersistence",
@@ -61,6 +62,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("battleLifecycle", DiagnosticEvidenceKey.BATTLE_LIFECYCLE),
   source("battleCompletion", DiagnosticEvidenceKey.BATTLE_COMPLETION),
   source("battleRoundStart", DiagnosticEvidenceKey.BATTLE_ROUND_START),
+  source("battleRoundFailure", DiagnosticEvidenceKey.BATTLE_ROUND_FAILURE),
   source("battleKillBugRecovery", DiagnosticEvidenceKey.BATTLE_KILL_BUG_RECOVERY),
   source("battleMonsterStatusRepair", DiagnosticEvidenceKey.BATTLE_MONSTER_STATUS_REPAIR),
   source(

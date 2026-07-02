@@ -1,7 +1,9 @@
 // 战斗轮次状态：唯一入口 runBattleRoundAutomation(event)。
-import { getValue, setValue } from "../state/storage.js";
+import { getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
+import { persistBattleRoundValue } from "./battle-round-failure.js";
+import { roundRuntime } from "./battle-round-runtime.js";
 
 const EVENT_READ_TYPE = "readType";
 const EVENT_RECORD_TYPE = "recordType";
@@ -15,7 +17,6 @@ const EVENT_RECORD_START_CONTEXT = "recordStartContext";
 const EVENT_RECORD_DEBUG_FIELDS = "recordDebugFields";
 const EVENT_READ_DEBUG_FIELDS = "readDebugFields";
 const EVENT_READ_RUNTIME = "readRuntime";
-const DEFAULT_ROUND_COUNT = 1;
 
 export const BattleRoundEvent = Object.freeze({
   READ_TYPE: EVENT_READ_TYPE,
@@ -54,7 +55,7 @@ function isInitializationText(initializingText = "") {
 }
 
 function recordType(roundType) {
-  setValue(STORAGE_KEYS.ROUND_TYPE, roundType);
+  if (!persistBattleRoundValue("record-type", STORAGE_KEYS.ROUND_TYPE, roundType)) return false;
   return roundType;
 }
 
@@ -68,6 +69,14 @@ function recordStartContext(initializingText = "") {
     };
   }
   const roundType = recordType(classifyType(initializingText));
+  if (roundType === false) {
+    return {
+      initialized: isInitializationText(initializingText),
+      roundType: "",
+      randomEncounterStarted: false,
+      reason: "roundPersistenceFailed",
+    };
+  }
   return {
     initialized: isInitializationText(initializingText),
     roundType,
@@ -75,25 +84,14 @@ function recordStartContext(initializingText = "") {
   };
 }
 
-function normalizeRoundCount(value) {
-  const count = Number(value);
-  return Number.isFinite(count) && count > 0 ? Math.trunc(count) : DEFAULT_ROUND_COUNT;
-}
-
-function roundRuntime(roundNow, roundAll) {
-  const normalizedRoundNow = normalizeRoundCount(roundNow);
-  const normalizedRoundAll = normalizeRoundCount(roundAll);
-  return {
-    roundNow: normalizedRoundNow,
-    roundAll: normalizedRoundAll,
-    roundLeft: normalizedRoundAll - normalizedRoundNow,
-  };
-}
-
 function recordCount(roundNow, roundAll) {
   const runtime = roundRuntime(roundNow, roundAll);
-  setValue(STORAGE_KEYS.ROUND_NOW, runtime.roundNow);
-  setValue(STORAGE_KEYS.ROUND_ALL, runtime.roundAll);
+  if (!persistBattleRoundValue("record-count-now", STORAGE_KEYS.ROUND_NOW, runtime.roundNow)) {
+    return false;
+  }
+  if (!persistBattleRoundValue("record-count-all", STORAGE_KEYS.ROUND_ALL, runtime.roundAll)) {
+    return false;
+  }
   return { roundNow: runtime.roundNow, roundAll: runtime.roundAll };
 }
 
@@ -129,9 +127,9 @@ function recordDebugFields(fields = []) {
   const values = Object.fromEntries(
     fields.map((field) => [field.name, field.value || field.placeholder])
   );
-  if (values.roundType !== undefined) recordType(values.roundType);
+  if (values.roundType !== undefined && recordType(values.roundType) === false) return false;
   if (values.roundNow !== undefined || values.roundAll !== undefined) {
-    recordCount(values.roundNow, values.roundAll);
+    if (recordCount(values.roundNow, values.roundAll) === false) return false;
   }
   return values;
 }
