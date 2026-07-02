@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/arena/idle-arena.js");
+const failureOwner = path.normalize("src/arena/idle-arena-failure.js");
 const ownerTest = path.normalize("src/arena/idle-arena.test.js");
 const settings = path.normalize("src/settings/render.js");
 const storageKeys = path.normalize("src/state/persist-keys.js");
@@ -67,6 +68,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
 if (!ownerText.includes("STORAGE_KEYS.ARENA")) {
   violations.push(`${owner.replaceAll("\\", "/")} must use STORAGE_KEYS.ARENA`);
 }
@@ -89,13 +91,24 @@ if (!ownerText.includes("delValue(STORAGE_KEYS.ARENA)")) {
 }
 for (const required of [
   "recordIdleArenaRequestFailure",
+  "recordIdleArenaFailure",
+  "HVAA:lastIdleArenaFailure",
   "[HVAA] idle arena request failed",
   "IDLE_ARENA_TOKEN_URLS",
   "token-fetch",
   "battle-start",
 ]) {
-  if (!ownerText.includes(required)) {
+  if (!(ownerText + failureOwnerText).includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own idle arena HTTP failure ${required}`);
+  }
+}
+for (const required of [
+  "IDLE_ARENA_FAILURE_KEY",
+  "globalThis.sessionStorage?.setItem(IDLE_ARENA_FAILURE_KEY",
+  "Idle arena recovery must not depend on diagnostic storage.",
+]) {
+  if (!failureOwnerText.includes(required)) {
+    violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
 const tokenFetchStart = ownerText.indexOf("IDLE_ARENA_TOKEN_URLS.forEach");
@@ -160,6 +173,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "expect(vi.getTimerCount()).toBe(0)",
     "records token fetch request failures and stops waiting for all token pages",
     "records battle start request failures without advancing arena progress",
+    "HVAA:lastIdleArenaFailure",
     "[HVAA] idle arena request failed",
     "stage: \"token-fetch\"",
     "stage: \"battle-start\"",

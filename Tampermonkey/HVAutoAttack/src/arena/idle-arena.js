@@ -10,6 +10,7 @@ import { isIsekai } from "../env.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
 import { IDLE_ARENA_TOKEN_URLS, collectIdleArenaToken } from "./idle-arena-token.js";
+import { recordIdleArenaFailure } from "./idle-arena-failure.js";
 
 const EVENT_SCHEDULE_NEXT_BATTLE = "scheduleNextBattle";
 const EVENT_START_NEXT_BATTLE = "startNextBattle";
@@ -52,7 +53,7 @@ function resetProgress() {
 
 function recordIdleArenaRequestFailure(stage, arena, failure) {
   const evidence = { source: "idleArena", stage, failure };
-  console.warn("[HVAA] idle arena request failed", evidence);
+  recordIdleArenaFailure(evidence);
   setValue(STORAGE_KEYS.ARENA, { ...arena, requestFailure: evidence });
 }
 

@@ -99,6 +99,11 @@ describe("runIdleArenaAutomation", () => {
       stage: "token-fetch",
       failure,
     });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastIdleArenaFailure"))).toMatchObject({
+      source: "idleArena",
+      stage: "token-fetch",
+      failure,
+    });
     expect(warn).toHaveBeenCalledWith(
       "[HVAA] idle arena request failed",
       expect.objectContaining({ stage: "token-fetch", failure })
@@ -127,6 +132,11 @@ describe("runIdleArenaAutomation", () => {
     const arena = getValue(STORAGE_KEYS.ARENA, true);
     expect(arena.done).toEqual([]);
     expect(arena.requestFailure).toEqual({
+      source: "idleArena",
+      stage: "battle-start",
+      failure,
+    });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastIdleArenaFailure"))).toMatchObject({
       source: "idleArena",
       stage: "battle-start",
       failure,
