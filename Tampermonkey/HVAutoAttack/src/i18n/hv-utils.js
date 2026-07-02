@@ -5487,15 +5487,24 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       const error = get_message(doc);
       if (error) {
         popup(error);
+        return false;
       } else {
         const button = $qs('div[style*="u.png"]', ab.div.children[2]);
         button.style.opacity = 0.5;
         button.style.backgroundImage = button.style.backgroundImage.replace('u.png', 'f.png');
       }
+      return true;
     }
 
     const requests = $ajax.repeat(count, unlock, ab);
-    await Promise.all(requests);
+    let results;
+    try {
+      results = await Promise.all(requests);
+    } catch (_error) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return;
+    }
+    if (!results.every((r) => r)) return;
     reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'));
   };
 
@@ -11694,15 +11703,24 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       const error = get_message(doc);
       if (error) {
         popup(error);
+        return false;
       } else {
         const button = $qs('div[style*="u.png"]', ab.div.children[2]);
         button.style.opacity = 0.5;
         button.style.backgroundImage = button.style.backgroundImage.replace('u.png', 'f.png');
       }
+      return true;
     }
 
     const requests = $ajax.repeat(count, unlock, ab);
-    await Promise.all(requests);
+    let results;
+    try {
+      results = await Promise.all(requests);
+    } catch (_error) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return;
+    }
+    if (!results.every((r) => r)) return;
     reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'));
   };
 
