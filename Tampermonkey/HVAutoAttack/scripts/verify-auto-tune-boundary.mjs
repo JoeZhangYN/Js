@@ -68,6 +68,7 @@ walk(srcDir);
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const roundStartText = fs.readFileSync(path.join(root, roundStart), "utf8");
 const roundLifecycleText = fs.readFileSync(path.join(root, roundLifecycle), "utf8");
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 for (const required of [
   "runAutoTuneAutomation",
   "AutoTuneEvent",
@@ -92,6 +93,13 @@ if (!roundLifecycleText.includes("AutoTuneEvent.ROUND_STARTED")) {
 
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
+}
+const ownerEntry = ownerText.match(/export function runAutoTuneAutomation[\s\S]*?\n}/)?.[0] || "";
+if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null auto-tune events`);
+}
+if (!/runAutoTuneAutomation\(null\)/.test(ownerTestText)) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null auto-tune events`);
 }
 
 for (const legacy of ["getCurrentPad", "resetAutoTune", "getAutoTuneStatus", "observeBattle"]) {

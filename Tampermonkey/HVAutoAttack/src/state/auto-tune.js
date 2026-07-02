@@ -150,5 +150,5 @@ const autoTuneEventHandlers = Object.freeze({
 });
 
 export function runAutoTuneAutomation(event = { type: EVENT_READ_PAD }) {
-  return autoTuneEventHandlers[event.type]?.(event);
+  return autoTuneEventHandlers[event?.type]?.(event);
 }

@@ -72,4 +72,12 @@ describe("auto-tune safetyPad entry", () => {
     expect(g("autoTunePotionCount")).toBe(0);
     expect(getValue(STORAGE_KEYS.AUTO_TUNE_HISTORY, true)).toBeNull();
   });
+
+  it("ignores invalid auto-tune events without changing pad, history, or counter", () => {
+    setValue(STORAGE_KEYS.AUTO_TUNE_PAD, 1.6);
+    setValue(STORAGE_KEYS.AUTO_TUNE_HISTORY, { "1.60": { n: 2, sumPotions: 4 } });
+    g("autoTunePotionCount", 3);
+    expect([runAutoTuneAutomation({ type: "unknown" }), runAutoTuneAutomation(null)]).toEqual([undefined, undefined]);
+    expect([getValue(STORAGE_KEYS.AUTO_TUNE_PAD, true), getValue(STORAGE_KEYS.AUTO_TUNE_HISTORY, true), g("autoTunePotionCount")]).toEqual([1.6, { "1.60": { n: 2, sumPotions: 4 } }, 3]);
+  });
 });
