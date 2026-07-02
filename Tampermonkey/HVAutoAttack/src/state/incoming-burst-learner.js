@@ -4,9 +4,10 @@
 // 运行 max（非 EWMA）：战斗日志累积无回合界，单发 max 由全量日志重算即幂等；persist 跨战斗 → 固定竞技场
 // 同 MID 复现直接命中。随等级提升怪变强 → max 自然上涨（保守 over-protect 是防守安全方向）。
 // 类型决定控制选择：Silence 只挡施法(对物理无效)，故法术爆发→Silence、物理→Sleep（整回合禁用）。
-import { setValue, getValue } from "./storage.js";
+import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { normalizeMonsterName } from "../monster/monster-identity.js";
+import { persistLearnedIncomingBurst } from "./incoming-burst-learner-failure.js";
 
 const EVENT_RECORD_EVENTS = "recordEvents";
 const EVENT_READ_MAP = "readMap";
@@ -72,7 +73,8 @@ function updateBurstFromEvents(events, monsterIdentities) {
       changed = true;
     }
   }
-  if (changed) setValue(STORAGE_KEYS.LEARNED_INCOMING_BURST, learned);
+  if (changed) return persistLearnedIncomingBurst(learned);
+  return undefined;
 }
 
 /** 取全量学习表（snapshot attach 给 decide，保 decide PURE 不读 storage）。 */

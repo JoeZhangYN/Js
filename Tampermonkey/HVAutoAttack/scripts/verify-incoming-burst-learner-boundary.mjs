@@ -4,7 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/incoming-burst-learner.js");
+const failureOwner = path.normalize("src/state/incoming-burst-learner-failure.js");
 const ownerTest = path.normalize("src/state/incoming-burst-learner.test.js");
+const failureTest = path.normalize("src/state/incoming-burst-learner-failure.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const monsterIdentity = path.normalize("src/monster/monster-identity.js");
 const violations = [];
@@ -28,7 +30,9 @@ function checkFile(file) {
     const where = `${rel(file)}:${index + 1}`;
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       /from\s+["'](?:\.\/|\.\.\/\.\.\/state\/|\.\.\/state\/)incoming-burst-learner\.js["']/.test(
         line
       ) &&
@@ -38,7 +42,9 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       relative !== monsterIdentity &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.LEARNED_INCOMING_BURST\b/.test(line)
@@ -65,6 +71,7 @@ for (const required of [
   "../monster/monster-identity.js",
   "normalizeLearnedBurstRecord",
   "readLearnedBurstMap",
+  "persistLearnedIncomingBurst",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -97,6 +104,8 @@ if (!ownerText.includes("const incomingBurstLearningEventHandlers")) {
 const ownerEntry =
   ownerText.match(/export function runIncomingBurstLearningAutomation[\s\S]*?\n}/)?.[0] || "";
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
+const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
 }
@@ -112,6 +121,35 @@ for (const internal of ["updateBurstFromEvents(", "getLearnedBurstMap("]) {
 }
 if (!/runIncomingBurstLearningAutomation\(null\)/.test(ownerTestText)) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null incoming burst events`);
+}
+
+if ((ownerText.match(/\bsetValue\(/g) || []).length !== 0) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not write learned incoming-burst storage directly`);
+}
+if (!/function persistLearnedIncomingBurst\(learned\) \{[\s\S]*setValue\(STORAGE_KEYS\.LEARNED_INCOMING_BURST,\s*learned\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordIncomingBurstLearningFailure\("update-learned",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
+  violations.push(`${failureOwner.replaceAll("\\", "/")} must classify learned incoming-burst storage write failures`);
+}
+for (const required of [
+  "INCOMING_BURST_LEARNING_FAILURE_KEY",
+  "HVAA:lastIncomingBurstLearningFailure",
+  "recordIncomingBurstLearningFailure",
+  "incomingBurstLearning",
+  "persistLearnedIncomingBurst",
+  "STORAGE_KEYS.LEARNED_INCOMING_BURST",
+]) {
+  if (!failureOwnerText.includes(required)) {
+    violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of [
+  "INCOMING_BURST_LEARNING_FAILURE_KEY",
+  "update-learned",
+  "storageWrite",
+  "incoming burst learning write blocked",
+]) {
+  if (!failureTestText.includes(required)) {
+    violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
 }
 
 if (violations.length) {
