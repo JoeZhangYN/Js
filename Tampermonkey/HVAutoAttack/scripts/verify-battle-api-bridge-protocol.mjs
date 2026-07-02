@@ -110,6 +110,8 @@ const apiCallScriptText = requireText(apiCallScript, [
   "recordApiBridgeEventNode",
   "warnApiBridgeEvidence",
   "API bridge behavior must not depend on diagnostic console hooks.",
+  "warnCallbackFallbackBlocked",
+  "Callback fallback behavior must not depend on diagnostic console hooks.",
   "recordApiTransportFailure",
   "runApiTransportStep",
   "sendApiRequest",
@@ -192,6 +194,7 @@ requireText(runtimeTest, [
 ]);
 requireText(evidenceWarningFailureTest, [
   "keeps API send blocked when bridge evidence storage and warning both fail",
+  "keeps callback fallback rejected when warning hooks fail",
   "quota",
   "console blocked",
 ]);
@@ -557,6 +560,15 @@ if (
 ) {
   violations.push(
     `${apiCallScript.replaceAll("\\", "/")} must isolate API bridge evidence storage and warning failures`
+  );
+}
+if (
+  !apiCallScriptText.includes("function warnCallbackFallbackBlocked") ||
+  !apiCallScriptText.includes("Callback fallback behavior must not depend on diagnostic console hooks.") ||
+  !read(evidenceWarningFailureTest).includes("callback fallback rejected when warning hooks fail")
+) {
+  violations.push(
+    `${apiCallScript.replaceAll("\\", "/")} must isolate callback fallback warning failures`
   );
 }
 if (

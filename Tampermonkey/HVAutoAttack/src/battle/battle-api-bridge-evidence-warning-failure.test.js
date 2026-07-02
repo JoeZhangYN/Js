@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleApiBridgeEvent, runBattleApiBridgeAutomation } from "./battle-api-bridge.js";
 
 function installApiCall() {
@@ -21,14 +21,45 @@ function installApiCall() {
 }
 
 beforeEach(() => {
-  document.body.innerHTML = '<a id="eventEnd"></a>';
+  vi.restoreAllMocks();
+  document.body.innerHTML = '<a id="eventStart"></a><a id="eventEnd"></a>';
   window.sessionStorage.clear();
   delete window.__testApiCall;
+  window.HVAA_navigation = undefined;
+  window.battle = undefined;
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("battle API bridge evidence warning failures", () => {
+  it("keeps callback fallback rejected when warning hooks fail", () => {
+    installApiCall();
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+    const xhr = { open: vi.fn(), setRequestHeader: vi.fn(), send: vi.fn() };
+    const callback = vi.fn(function () {
+      expect(this.battle_continue()).toBe(false);
+    });
+
+    expect(() => {
+      window.__testApiCall(xhr, { type: "battle", method: "action" }, callback);
+      xhr.onreadystatechange();
+    }).not.toThrow();
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleApiBridge"))).toMatchObject({
+      phase: "callbackFallback",
+      reason: "navigationBridgeMissing",
+      result: "rejected",
+    });
+  });
+
   it("keeps API send blocked when bridge evidence storage and warning both fail", () => {
     installApiCall();
+    document.getElementById("eventStart").remove();
     vi.spyOn(window.sessionStorage, "setItem").mockImplementation(() => {
       throw new Error("quota");
     });

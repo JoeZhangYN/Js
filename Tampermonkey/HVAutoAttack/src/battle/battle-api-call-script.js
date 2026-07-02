@@ -13,6 +13,13 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
         // API bridge behavior must not depend on diagnostic console hooks.
       }
     }
+    function warnCallbackFallbackBlocked() {
+      try {
+        console.warn("[HVAA] battle API callback fallback reload blocked; navigation bridge missing");
+      } catch (_error) {
+        // Callback fallback behavior must not depend on diagnostic console hooks.
+      }
+    }
     function recordApiBridgeEventNode(phase, nodeId, result, detail) {
       const evidence = {
         phase,
@@ -88,7 +95,7 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
                   reason: "navigationBridgeMissing",
                   callbackReason: "missingBattleContinue",
                 });
-                console.warn("[HVAA] battle API callback fallback reload blocked; navigation bridge missing");
+                warnCallbackFallbackBlocked();
                 return false;
               },
             };
