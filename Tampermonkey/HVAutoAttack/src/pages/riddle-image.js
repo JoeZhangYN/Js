@@ -142,7 +142,12 @@ async function prepareMlPayload() {
   const imageUrl = imgEl?.src;
   if (!imageUrl) return null;
   await waitImageLoaded(imgEl);
-  const blob = await getImageBlob(imageUrl);
+  let blob = null;
+  try {
+    blob = await getImageBlob(imageUrl);
+  } catch {
+    return null;
+  }
   return { imageUrl, blob };
 }
 

@@ -31,4 +31,26 @@ describe("riddle image entry", () => {
       runRiddleImageAutomation({ type: RiddleImageEvent.PREPARE_ML_PAYLOAD })
     ).resolves.toBeNull();
   });
+
+  it("returns null ML payload when canvas and fetch fallbacks all fail", async () => {
+    document.body.innerHTML = '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
+    const img = document.querySelector("img");
+    Object.defineProperty(img, "complete", { configurable: true, value: true });
+    Object.defineProperty(img, "naturalWidth", { configurable: true, value: 100 });
+    Object.defineProperty(img, "naturalHeight", { configurable: true, value: 100 });
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      drawImage: () => {
+        throw new Error("tainted canvas");
+      },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.reject(new Error("network failed")))
+    );
+
+    await expect(
+      runRiddleImageAutomation({ type: RiddleImageEvent.PREPARE_ML_PAYLOAD })
+    ).resolves.toBeNull();
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
 });

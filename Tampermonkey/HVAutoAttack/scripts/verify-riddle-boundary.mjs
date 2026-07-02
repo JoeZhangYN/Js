@@ -360,6 +360,16 @@ function checkRiddleImageEntry() {
   ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null image events`);
   }
+  for (const required of [
+    "returns null ML payload when canvas and fetch fallbacks all fail",
+    "tainted canvas",
+    "network failed",
+    "toHaveBeenCalledTimes(3)",
+  ]) {
+    if (!ownerTestText.includes(required)) {
+      violations.push(`${ownerTest.replaceAll("\\", "/")} must cover riddle image fallback exhaustion`);
+    }
+  }
   for (const legacy of [
     "getRiddleImgEl",
     "waitImageLoaded",
