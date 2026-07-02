@@ -33,6 +33,10 @@ describe("repair decision entry — event routing", () => {
       })
     ).toBeUndefined();
   });
+
+  it("rejects null repair decision events without choosing a plan", () => {
+    expect(runRepairDecision(null)).toBeUndefined();
+  });
 });
 
 describe("repair decision entry — 选件 + 阈值", () => {

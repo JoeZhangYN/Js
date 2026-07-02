@@ -68,5 +68,5 @@ function decideRepair(opt, state, repairedIds) {
 }
 
 export function runRepairDecision(event) {
-  return repairDecisionEventHandlers[event.type]?.(event);
+  return repairDecisionEventHandlers[event?.type]?.(event);
 }

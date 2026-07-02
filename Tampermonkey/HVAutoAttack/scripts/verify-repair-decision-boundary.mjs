@@ -54,6 +54,9 @@ if (!/const repairDecisionEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_P
 if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (/repairDecisionEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null repair decision events instead of reading event.type directly`);
+}
 if (/export\s+function\s+decideRepair\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy decideRepair export is forbidden`);
 }
@@ -68,6 +71,12 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   if (!ownerTestText.includes("rejects unknown repair decision events without choosing a plan")) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown repair decision events`);
+  }
+  if (
+    !ownerTestText.includes("rejects null repair decision events without choosing a plan") ||
+    !ownerTestText.includes("runRepairDecision(null")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null repair decision events`);
   }
 }
 
