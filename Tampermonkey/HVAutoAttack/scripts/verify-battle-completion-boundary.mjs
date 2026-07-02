@@ -80,7 +80,9 @@ function checkOwner() {
     );
   }
   if ((text.match(/#btcp/g) || []).length !== 1) {
-    violations.push(`${owner.replaceAll("\\", "/")} must own the completion panel reachability read`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must own the completion panel reachability read`
+    );
   }
   if (/\bg\(\s*["'](?:monsterAlive|roundNow|roundAll)["']\s*\)/.test(text)) {
     violations.push(
@@ -126,13 +128,17 @@ function checkOwner() {
   const entryBody =
     text.match(/export function runBattleCompletionAutomation\([^)]*\)[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_COMPLETION_REACHED\]/.test(text)) {
-    violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
   if (!text.includes("battleCompletionEventHandlers[event?.type]")) {
-    violations.push(`${owner.replaceAll("\\", "/")} must reject null events through the completion entry`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must reject null events through the completion entry`
+    );
   }
   if (fs.existsSync(path.join(root, ownerTest))) {
     const testText = fs.readFileSync(path.join(root, ownerTest), "utf8");
@@ -175,6 +181,8 @@ function checkOwner() {
     for (const required of [
       "records completion outcome evidence for diagnostics",
       "keeps completion evidence visible when storage is unavailable",
+      "keeps completion evidence stored when debug output fails",
+      "console blocked",
       "HVAA:lastBattleCompletion",
     ]) {
       if (!evidenceTestText.includes(required)) {

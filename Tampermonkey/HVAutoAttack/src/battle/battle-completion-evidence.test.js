@@ -35,9 +35,9 @@ describe("runBattleCompletionEvidence", () => {
   it("rejects null completion evidence events without writing diagnostics", () => {
     const debug = vi.fn();
 
-    expect(runBattleCompletionEvidence(null, { sessionStorage: window.sessionStorage, debug })).toBe(
-      false
-    );
+    expect(
+      runBattleCompletionEvidence(null, { sessionStorage: window.sessionStorage, debug })
+    ).toBe(false);
 
     expect(window.sessionStorage.getItem("HVAA:lastBattleCompletion")).toBeNull();
     expect(debug).not.toHaveBeenCalled();
@@ -45,7 +45,11 @@ describe("runBattleCompletionEvidence", () => {
 
   it("keeps completion evidence visible when storage is unavailable", () => {
     const debug = vi.fn();
-    const blockedStorage = { setItem: () => { throw new Error("quota"); } };
+    const blockedStorage = {
+      setItem: () => {
+        throw new Error("quota");
+      },
+    };
 
     expect(
       runBattleCompletionEvidence(
@@ -63,5 +67,35 @@ describe("runBattleCompletionEvidence", () => {
       "[HVAA] battle completion",
       expect.objectContaining({ storageWriteOk: false, storageWriteError: "quota" })
     );
+  });
+
+  it("keeps completion evidence stored when debug output fails", () => {
+    expect(() =>
+      runBattleCompletionEvidence(
+        {
+          type: BattleCompletionEvidenceEvent.RECORD_COMPLETION,
+          outcome: "victory",
+          context: { monsterAlive: 0, roundNow: 2, roundAll: 2 },
+          effects: {
+            recordCompletion: true,
+            alarm: true,
+            clearSession: true,
+            scheduleReload: true,
+          },
+        },
+        {
+          sessionStorage: window.sessionStorage,
+          debug: () => {
+            throw new Error("console blocked");
+          },
+        }
+      )
+    ).not.toThrow();
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleCompletion"))).toMatchObject({
+      outcome: "victory",
+      context: { monsterAlive: 0, roundNow: 2, roundAll: 2 },
+      storageWriteOk: true,
+    });
   });
 });
