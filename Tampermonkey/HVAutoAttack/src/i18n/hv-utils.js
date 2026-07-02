@@ -11670,13 +11670,18 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     },
     save: function (key = _eq.prof.current) {
       const data = _eq.prof.get(key);
+      const json = JSON.parse(JSON.stringify(data.values));
+      const persisted = _eq.prof.list.filter((entry) => entry === data || !entry.new).map((entry) => (entry === data ? json : entry.json));
+      if (!$config.set('eq_prof', persisted)) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
+      data.json = json;
       if (data.new) {
         data.node.button.classList.remove('hvut-eq-new');
         data.new = false;
       }
-      data.json = JSON.parse(JSON.stringify(data.values));
-      const json = _eq.prof.list.filter((data) => !data.new).map((data) => data.json);
-      $config.set('eq_prof', json);
+      return true;
     },
     name: function (key = _eq.prof.current) {
       const data = _eq.prof.get(key);
@@ -11690,15 +11695,19 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     },
     delete: function (key = _eq.prof.current) {
       const data = _eq.prof.get(key);
-      data.node.button.remove();
       const index = _eq.prof.list.findIndex((data) => data.key === key);
+      const json = _eq.prof.list.filter((entry) => entry !== data && !entry.new).map((data) => data.json);
+      if (!$config.set('eq_prof', json)) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
+      data.node.button.remove();
       _eq.prof.list.splice(index, 1);
       if (key == _eq.prof.current) {
         _eq.prof.current = null;
       }
-      const json = _eq.prof.list.filter((data) => !data.new).map((data) => data.json);
-      $config.set('eq_prof', json);
       _eq.prof.load();
+      return true;
     },
     toggle: function () {
       _eq.prof.node.div?.classList.toggle('hvut-none');
