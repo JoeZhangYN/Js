@@ -6,6 +6,8 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/riddle-dataset.js");
 const failureOwner = path.normalize("src/state/riddle-dataset-failure.js");
 const ownerTest = path.normalize("src/state/riddle-dataset.test.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
 
 function rel(file) {
@@ -155,6 +157,25 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
     }
+  }
+}
+
+const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
+for (const required of [
+  "RIDDLE_DATASET_FAILURE: \"HVAA:lastRiddleDatasetFailure\"",
+  "source(\"riddleDatasetFailure\", DiagnosticEvidenceKey.RIDDLE_DATASET_FAILURE)",
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
+for (const required of [
+  "HVAA:lastRiddleDatasetFailure",
+  "riddleDatasetFailure: { capability: \"riddleDataset\", stage: \"export-list\" }",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 

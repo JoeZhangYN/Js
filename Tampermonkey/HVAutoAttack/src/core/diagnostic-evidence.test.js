@@ -91,6 +91,7 @@ describe("readRecentDiagnosticEvidence", () => {
     window.sessionStorage.setItem("HVAA:lastIdleArenaFailure", JSON.stringify({ capability: "idleArena", stage: "battle-start" }));
     window.sessionStorage.setItem("HVAA:lastStorageReadFailure", JSON.stringify({ capability: "storageRead", source: "GM_getValue" }));
     window.sessionStorage.setItem("HVAA:lastOptionBackupFailure", JSON.stringify({ capability: "optionBackup", action: "restore", reason: "restoreFailed" }));
+    window.sessionStorage.setItem("HVAA:lastRiddleDatasetFailure", JSON.stringify({ capability: "riddleDataset", stage: "export-list" }));
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
@@ -123,6 +124,7 @@ describe("readRecentDiagnosticEvidence", () => {
       idleArenaFailure: { capability: "idleArena", stage: "battle-start" },
       storageReadFailure: { capability: "storageRead", source: "GM_getValue" },
       optionBackupFailure: { capability: "optionBackup", action: "restore", reason: "restoreFailed" },
+      riddleDatasetFailure: { capability: "riddleDataset", stage: "export-list" },
     });
   });
 

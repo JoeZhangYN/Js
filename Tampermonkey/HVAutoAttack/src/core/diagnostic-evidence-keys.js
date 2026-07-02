@@ -28,6 +28,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   IDLE_ARENA_FAILURE: "HVAA:lastIdleArenaFailure",
   STORAGE_READ_FAILURE: "HVAA:lastStorageReadFailure",
   OPTION_BACKUP_FAILURE: "HVAA:lastOptionBackupFailure",
+  RIDDLE_DATASET_FAILURE: "HVAA:lastRiddleDatasetFailure",
 });
 
 function source(name, key) {
@@ -66,6 +67,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("idleArenaFailure", DiagnosticEvidenceKey.IDLE_ARENA_FAILURE),
   source("storageReadFailure", DiagnosticEvidenceKey.STORAGE_READ_FAILURE),
   source("optionBackupFailure", DiagnosticEvidenceKey.OPTION_BACKUP_FAILURE),
+  source("riddleDatasetFailure", DiagnosticEvidenceKey.RIDDLE_DATASET_FAILURE),
 ]);
 
 export const API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze(
