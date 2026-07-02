@@ -15913,7 +15913,15 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && _query.screen === 'modify') {
 // ===== 原文结束 =====
   }
 } catch (e) {
-  console.error("[HVAA][i18n] HV Utils 汉化执行出错:", e);
+  try {
+    if (window.HVAA_i18n && window.HVAA_i18n.recordI18nInitFailure) {
+      window.HVAA_i18n.recordI18nInitFailure('hv-utils', e);
+    } else {
+      console.error("[HVAA][i18n] HV Utils 汉化执行出错:", e);
+    }
+  } catch (_) {
+    console.error("[HVAA][i18n] HV Utils 汉化执行出错:", e);
+  }
   // [临时诊断 v10.0.1] 用户要求:汉化崩溃时直接在页面弹 textarea 显示日志,便于复制反馈。
   // 定位修复后移除本块。诊断自身再包 try,绝不二次抛错打断页面。
   try {

@@ -16,6 +16,7 @@ import { INTERFACE_WORDS } from "../../data/i18n/interface-dict.js";
 import { langPostProcess } from "./lang-post.js";
 import { g } from "../../state/store.js";
 import { I18N_RESTORE_FAILURE_KEY, recordI18nRestoreFailure } from "./restore-failure.js";
+import { recordI18nInitFailure } from "./init-failure.js";
 
 export { I18N_RESTORE_FAILURE_KEY };
 
@@ -267,5 +268,5 @@ export function t(value, group) {
 // hv-utils.js 是非 ESM sloppy-mode 第三方脚本（加 import 会触发 strict mode 撞 `protected` 等保留字标识符，
 // 无法 import 本模块），经全局桥暴露协调器读出口供其 IIFE 消费（Stage C/D/G 读源归一）。
 if (typeof window !== "undefined") {
-  window.HVAA_i18n = { resolveEn, t, registerTranslation, isSkipped, SKIP_ATTR, registerI18nRender };
+  window.HVAA_i18n = { resolveEn, t, registerTranslation, isSkipped, SKIP_ATTR, registerI18nRender, recordI18nInitFailure };
 }
