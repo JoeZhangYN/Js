@@ -6,6 +6,7 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/arena/idle-arena.js");
 const failureOwner = path.normalize("src/arena/idle-arena-failure.js");
 const ownerTest = path.normalize("src/arena/idle-arena.test.js");
+const failureTest = path.normalize("src/arena/idle-arena-failure.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const settings = path.normalize("src/settings/render.js");
@@ -59,6 +60,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       relative !== storageKeys &&
       /\bSTORAGE_KEYS\.ARENA\b/.test(line)
     ) {
@@ -202,6 +204,21 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   ]) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
+  const failureTestText = fs.existsSync(path.join(root, failureTest))
+    ? fs.readFileSync(path.join(root, failureTest), "utf8")
+    : "";
+  for (const required of [
+    "records token fetch failure without continuing when diagnostics are blocked",
+    "IDLE_ARENA_FAILURE_KEY",
+    'throw new Error("quota")',
+    'throw new Error("console blocked")',
+    "expect(vi.getTimerCount()).toBe(0)",
+    "stage: \"token-fetch\"",
+  ]) {
+    if (!failureTestText.includes(required)) {
+      violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
     }
   }
 }
