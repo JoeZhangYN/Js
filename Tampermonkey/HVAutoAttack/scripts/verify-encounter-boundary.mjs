@@ -364,11 +364,35 @@ if (
 for (const required of [
   "returns null without writing encounter state when news key loading fails",
   "returns null without writing encounter state when news key loading times out",
+  "fails closed to default state when stored encounter JSON is corrupted",
+  "falls back to localStorage when GM encounter state read fails",
+  "falls back to localStorage when GM encounter state write fails",
+  "records encounter local state write failures without throwing",
+  "[HVAA] encounter state failed",
+  "read-local-json",
+  "read-gm",
+  "write-gm",
+  "write-local",
+  "load-key-error",
+  "load-key-timeout",
   "onerror({ status: 0 })",
   "ontimeout()",
 ]) {
-  if (!stateTestText.includes(required)) {
-    violations.push(`${stateTest.replaceAll("\\", "/")} must cover load-key transport failures`);
+  if (!stateTestText.includes(required)) violations.push(`${stateTest.replaceAll("\\", "/")} must cover ${required}`);
+}
+for (const required of [
+  "warnEncounterStateFailure",
+  "[HVAA] encounter state failed",
+  "parseStoredReState",
+  "read-local-json",
+  "read-gm",
+  "write-gm",
+  "write-local",
+  "load-key-error",
+  "load-key-timeout",
+]) {
+  if (!stateHelperText.includes(required)) {
+    violations.push(`${stateHelper.replaceAll("\\", "/")} must own encounter state failure ${required}`);
   }
 }
 const optionGateText = fs.readFileSync(path.join(root, optionGateFile), "utf8");

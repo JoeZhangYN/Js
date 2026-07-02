@@ -14,23 +14,56 @@ export const EncounterStateEvent = Object.freeze({
   LOAD_KEY: EVENT_LOAD_KEY,
 });
 
+function defaultReState() {
+  return runEncounterPolicy({ type: EncounterPolicyEvent.DEFAULT_STATE });
+}
+
+function warnEncounterStateFailure(stage, detail) {
+  console.warn("[HVAA] encounter state failed", { stage, detail });
+}
+
+function parseStoredReState(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    warnEncounterStateFailure("read-local-json", { key: HVUT_RE_KEY, error: error.message });
+    return defaultReState();
+  }
+}
+
 function readRawReState() {
   if (typeof GM_getValue !== "undefined") {
-    return GM_getValue(
-      HVUT_RE_KEY,
-      runEncounterPolicy({ type: EncounterPolicyEvent.DEFAULT_STATE })
-    );
+    try {
+      return GM_getValue(HVUT_RE_KEY, defaultReState());
+    } catch (error) {
+      warnEncounterStateFailure("read-gm", { key: HVUT_RE_KEY, error: error.message });
+    }
   }
-  const raw = localStorage.getItem(HVUT_RE_KEY);
-  return raw ? JSON.parse(raw) : runEncounterPolicy({ type: EncounterPolicyEvent.DEFAULT_STATE });
+  try {
+    const raw = localStorage.getItem(HVUT_RE_KEY);
+    return raw ? parseStoredReState(raw) : defaultReState();
+  } catch (error) {
+    warnEncounterStateFailure("read-local", { key: HVUT_RE_KEY, error: error.message });
+    return defaultReState();
+  }
 }
 
 function writeReState(state) {
   if (typeof GM_setValue !== "undefined") {
-    GM_setValue(HVUT_RE_KEY, state);
-    return;
+    try {
+      GM_setValue(HVUT_RE_KEY, state);
+      return true;
+    } catch (error) {
+      warnEncounterStateFailure("write-gm", { key: HVUT_RE_KEY, state, error: error.message });
+    }
   }
-  localStorage.setItem(HVUT_RE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(HVUT_RE_KEY, JSON.stringify(state));
+    return true;
+  } catch (error) {
+    warnEncounterStateFailure("write-local", { key: HVUT_RE_KEY, state, error: error.message });
+    return false;
+  }
 }
 
 function readCurrentReState() {
@@ -97,8 +130,14 @@ function loadEncounterKey() {
         }
         resolve(parsed.key ? readCurrentReState() : null);
       },
-      onerror: () => resolve(null),
-      ontimeout: () => resolve(null),
+      onerror: (failure) => {
+        warnEncounterStateFailure("load-key-error", failure);
+        resolve(null);
+      },
+      ontimeout: () => {
+        warnEncounterStateFailure("load-key-timeout", { url: "https://e-hentai.org/news.php" });
+        resolve(null);
+      },
     });
   });
 }
