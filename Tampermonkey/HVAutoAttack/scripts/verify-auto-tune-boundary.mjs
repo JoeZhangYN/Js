@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/auto-tune.js");
 const ownerTest = path.normalize("src/state/auto-tune.test.js");
+const failureTest = path.normalize("src/state/auto-tune-failure.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const roundStart = path.normalize("src/battle/battle-round-start.js");
 const roundLifecycle = path.normalize("src/battle/round-lifecycle.js");
@@ -30,6 +31,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       /from\s+["'](?:\.\/|\.\.\/state\/|\.\.\/\.\.\/state\/)auto-tune\.js["']/.test(line) &&
       /\b(?:getCurrentPad|resetAutoTune|getAutoTuneStatus|observeBattle)\b/.test(line)
     ) {
@@ -38,6 +40,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.AUTO_TUNE_(?:PAD|HISTORY)\b/.test(line)
     ) {
@@ -51,6 +54,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       /\bg\(\s*["']autoTunePotionCount["']/.test(line)
     ) {
       violations.push(`${where} auto-tune potion-use counter belongs in auto-tune`);
@@ -69,10 +73,14 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const roundStartText = fs.readFileSync(path.join(root, roundStart), "utf8");
 const roundLifecycleText = fs.readFileSync(path.join(root, roundLifecycle), "utf8");
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
 for (const required of [
   "runAutoTuneAutomation",
   "AutoTuneEvent",
   "autoTuneEventHandlers",
+  "AUTO_TUNE_FAILURE_KEY",
+  "recordAutoTuneFailure",
+  "persistAutoTuneValue",
   "STORAGE_KEYS.AUTO_TUNE_PAD",
   "STORAGE_KEYS.AUTO_TUNE_HISTORY",
   "RECORD_POTION_USE",
@@ -100,6 +108,23 @@ if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry))
 }
 if (!/runAutoTuneAutomation\(null\)/.test(ownerTestText)) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null auto-tune events`);
+}
+
+if (!/function persistAutoTuneValue[\s\S]*setValue\(storageKey,\s*value\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordAutoTuneFailure\(stage,\s*storageKey,\s*error\);[\s\S]*return false;/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must classify auto-tune storage write failures`);
+}
+if ((ownerText.match(/\bsetValue\(/g) || []).length !== 1) {
+  violations.push(`${owner.replaceAll("\\", "/")} must route auto-tune writes through persistAutoTuneValue`);
+}
+for (const required of [
+  "AUTO_TUNE_FAILURE_KEY",
+  "record-history",
+  "storageWrite",
+  "auto-tune write blocked",
+]) {
+  if (!failureTestText.includes(required)) {
+    violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
 }
 
 for (const legacy of ["getCurrentPad", "resetAutoTune", "getAutoTuneStatus", "observeBattle"]) {

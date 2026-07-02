@@ -20,6 +20,8 @@ const EVENT_ROUND_STARTED = "roundStarted";
 const EVENT_RESET = "reset";
 const EVENT_READ_STATUS = "readStatus";
 
+export const AUTO_TUNE_FAILURE_KEY = "HVAA:lastAutoTuneFailure";
+
 export const AutoTuneEvent = Object.freeze({
   READ_PAD: EVENT_READ_PAD,
   RECORD_BATTLE: EVENT_RECORD_BATTLE,
@@ -35,6 +37,34 @@ function isAutoTuneEnabled() {
   );
 }
 
+function recordAutoTuneFailure(stage, storageKey, error) {
+  const evidence = {
+    capability: "autoTune", stage, storageKey,
+    failure: { kind: "storageWrite", error: error?.message || String(error) },
+  };
+  try {
+    sessionStorage.setItem(AUTO_TUNE_FAILURE_KEY, JSON.stringify(evidence));
+  } catch (_error) {
+    // Auto-tune evidence is diagnostic only; battle flow must keep running.
+  }
+  try {
+    console.warn("[HVAA] auto-tune persistence failed", evidence);
+  } catch (_error) {
+    // Console hooks are diagnostic only.
+  }
+  return evidence;
+}
+
+function persistAutoTuneValue(stage, storageKey, value) {
+  try {
+    setValue(storageKey, value);
+    return true;
+  } catch (error) {
+    recordAutoTuneFailure(stage, storageKey, error);
+    return false;
+  }
+}
+
 /** 当前 safetyPad 值（持久化）。默认 1.3 = grid 中心。 */
 function getCurrentPad() {
   const p = parseFloat(getValue(STORAGE_KEYS.AUTO_TUNE_PAD));
@@ -43,8 +73,9 @@ function getCurrentPad() {
 
 /** UI 重置按钮调用：清掉历史 + 复位 1.3。 */
 function resetAutoTune() {
-  setValue(STORAGE_KEYS.AUTO_TUNE_PAD, 1.3);
-  setValue(STORAGE_KEYS.AUTO_TUNE_HISTORY, {});
+  const padPersisted = persistAutoTuneValue("reset-pad", STORAGE_KEYS.AUTO_TUNE_PAD, 1.3);
+  const historyPersisted = persistAutoTuneValue("reset-history", STORAGE_KEYS.AUTO_TUNE_HISTORY, {});
+  return padPersisted && historyPersisted;
 }
 
 /** UI 显示用：返回当前 history 摘要 + 当前 pad。 */
@@ -73,8 +104,11 @@ function observeBattle(potionsUsed) {
   if (!history[key]) history[key] = { n: 0, sumPotions: 0 };
   history[key].n += 1;
   history[key].sumPotions += potionsUsed;
-  setValue(STORAGE_KEYS.AUTO_TUNE_HISTORY, history);
+  if (!persistAutoTuneValue("record-history", STORAGE_KEYS.AUTO_TUNE_HISTORY, history)) {
+    return false;
+  }
   maybeStep(history, pad, key);
+  return true;
 }
 
 function recordPotionUse() {
@@ -97,7 +131,7 @@ function maybeStep(history, pad, key) {
   const padNum = parseFloat(pad.toFixed(2));
   const idx = PAD_GRID.indexOf(padNum);
   if (idx < 0) {
-    setValue(STORAGE_KEYS.AUTO_TUNE_PAD, 1.3); // grid 漂移恢复
+    persistAutoTuneValue("restore-grid-pad", STORAGE_KEYS.AUTO_TUNE_PAD, 1.3);
     return;
   }
 
@@ -106,12 +140,12 @@ function maybeStep(history, pad, key) {
 
   // 探索：未访问的邻居优先（确保 line search 覆盖）
   if (lowerKey && !history[lowerKey]) {
-    setValue(STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(lowerKey));
+    persistAutoTuneValue("explore-lower-pad", STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(lowerKey));
     console.log(`[auto-tune] explore ${pad} → ${lowerKey}`);
     return;
   }
   if (upperKey && !history[upperKey]) {
-    setValue(STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(upperKey));
+    persistAutoTuneValue("explore-upper-pad", STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(upperKey));
     console.log(`[auto-tune] explore ${pad} → ${upperKey}`);
     return;
   }
@@ -133,7 +167,7 @@ function maybeStep(history, pad, key) {
   else if (meanU < meanCur * 0.95 && meanU <= meanL) next = parseFloat(upperKey);
 
   if (next !== padNum) {
-    setValue(STORAGE_KEYS.AUTO_TUNE_PAD, next);
+    persistAutoTuneValue("step-pad", STORAGE_KEYS.AUTO_TUNE_PAD, next);
     console.log(
       `[auto-tune] safetyPad ${padNum} → ${next} (mean potions: cur=${meanCur.toFixed(1)}, L=${meanL.toFixed(1)}, U=${meanU.toFixed(1)})`
     );
