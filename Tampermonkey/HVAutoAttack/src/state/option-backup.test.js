@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   OPTION_BACKUP_FAILURE_KEY,
   OptionBackupEvent,
@@ -10,6 +10,7 @@ import { STORAGE_KEYS } from "./persist-keys.js";
 import { g } from "./store.js";
 
 beforeEach(() => {
+  vi.restoreAllMocks();
   localStorage.clear();
   sessionStorage.clear();
   delete globalThis.GM_setValue;
@@ -147,5 +148,26 @@ describe("option backup entry", () => {
       reason: "malformedBackupStore",
       storeType: "string",
     });
+  });
+
+  it("does not report save success when failure evidence and warning both fail", () => {
+    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", lang: "1" } });
+    globalThis.GM_setValue = () => {
+      throw new Error("quota");
+    };
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
+      if (key === OPTION_BACKUP_FAILURE_KEY) throw new Error("evidence blocked");
+      return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+
+    expect(() =>
+      runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "broken" })
+    ).not.toThrow();
+    expect(runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "broken" })).toBe(
+      false
+    );
   });
 });

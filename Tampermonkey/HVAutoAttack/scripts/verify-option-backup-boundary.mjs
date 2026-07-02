@@ -129,6 +129,11 @@ for (const required of [
   "does not report delete success when backup persistence fails",
   "does not report restore success when option write fails",
   "fails closed and records evidence for malformed backup storage",
+  "does not report save success when failure evidence and warning both fail",
+  'throw new Error("quota")',
+  'throw new Error("evidence blocked")',
+  'throw new Error("console blocked")',
+  "not.toThrow()",
   "capability: \"optionBackup\"",
   "OPTION_BACKUP_FAILURE_KEY",
 ]) {
