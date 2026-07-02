@@ -7052,7 +7052,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           mob.node.gifts.textContent = mob.gifts;
         });
 
-        $config.set('ml_log', _ml.log);
+        if (!$config.set('ml_log', _ml.log)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
+        return true;
       },
       sort: function (key) {
         if (!['index', '姓名', '类型', '战力', 'wins', 'kills', 'gains', 'gifts', '士气', 'hunger'].includes(key)) {
@@ -7230,7 +7234,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
     };
 
     _ml.main.init();
-    _ml.main.parse();
+    if (_ml.main.parse() === false) {
+      return false;
+    }
     _ml.main.make_summary();
 
     // Monster Upgrader
@@ -13362,7 +13368,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       mob.node.gifts.textContent = mob.gifts;
     });
 
-    $config.set('ml_log', _ml.log);
+    if (!$config.set('ml_log', _ml.log)) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
 
     $id('monster_list').addEventListener('click', _ml.main.click, true);
     $id('monster_list').addEventListener('mouseover', _ml.main.mouseover);
