@@ -71,7 +71,7 @@ const hudEventHandlers = Object.freeze({
 });
 
 export function runBattleHudAutomation(event = { type: EVENT_REFRESH }, deps = {}) {
-  const handler = hudEventHandlers[event.type];
+  const handler = hudEventHandlers[event?.type];
   if (!handler) return false;
   return handler(event, deps);
 }

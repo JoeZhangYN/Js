@@ -1027,6 +1027,12 @@ function checkDeletedBattleInfoEntrypoint() {
   if (/if\s*\(\s*event\.type\s*!==\s*EVENT_REFRESH/.test(hudText)) {
     violations.push(`${rel(hudFile)} must not route HUD refresh through an if ladder`);
   }
+  if (hudText.includes("hudEventHandlers[event.type]")) {
+    violations.push(`${rel(hudFile)} must reject null HUD events without throwing`);
+  }
+  if (!hudText.includes("hudEventHandlers[event?.type]")) {
+    violations.push(`${rel(hudFile)} must fail closed for unknown or null HUD events`);
+  }
   if (/export function refreshBattleHud\(/.test(hudText)) {
     violations.push(
       `${rel(hudFile)} must keep refreshBattleHud private behind runBattleHudAutomation(event)`
@@ -1044,6 +1050,10 @@ function checkDeletedBattleInfoEntrypoint() {
     )
   ) {
     violations.push(`${rel(hudFile)} must not assemble HUD context from raw store fields`);
+  }
+  const hudTestText = fs.readFileSync(path.join(root, "src/monitor/battle-info.test.js"), "utf8");
+  if (!hudTestText.includes("runBattleHudAutomation(null)")) {
+    violations.push(`${rel(hudFile)} tests must cover null HUD events`);
   }
 }
 

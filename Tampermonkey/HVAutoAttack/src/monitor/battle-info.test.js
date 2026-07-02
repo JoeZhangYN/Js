@@ -40,5 +40,8 @@ describe("runBattleHudAutomation", () => {
 
   it("ignores unknown events", () => {
     expect(runBattleHudAutomation({ type: "unknown" })).toBe(false);
+    expect(runBattleHudAutomation(null)).toBe(false);
+    expect(document.querySelector(".hvAALog")).toBeNull();
+    expect(document.title).toBe("");
   });
 });
