@@ -74,6 +74,9 @@ if (!/const riddleDatasetEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_RE
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (/\bevent\.type\b/.test(entryBody) || !/\bevent\?\.type\b/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null dataset events`);
+}
 for (const required of ["TimeEvent.LOCAL_FILE_TIMESTAMP", "TimeEvent.ISO_TIMESTAMP"]) {
   if (!ownerText.includes(required)) {
     violations.push(
@@ -102,8 +105,11 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover riddle dataset entry`);
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-  if (!ownerTestText.includes("rejects unknown dataset events without writing samples or registering menus")) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown dataset events`);
+  if (
+    !ownerTestText.includes("rejects invalid dataset events without writing samples or registering menus") ||
+    !ownerTestText.includes("runRiddleDatasetAutomation(null)")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null dataset events`);
   }
 }
 

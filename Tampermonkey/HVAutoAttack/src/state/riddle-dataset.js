@@ -195,5 +195,5 @@ function registerExportMenu() {
 }
 
 export function runRiddleDatasetAutomation(event) {
-  return event ? riddleDatasetEventHandlers[event.type]?.(event) : undefined;
+  return riddleDatasetEventHandlers[event?.type]?.(event);
 }

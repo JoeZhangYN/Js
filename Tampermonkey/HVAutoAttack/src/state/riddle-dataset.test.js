@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 describe("riddle dataset entry", () => {
-  it("rejects unknown dataset events without writing samples or registering menus", () => {
+  it("rejects invalid dataset events without writing samples or registering menus", () => {
     const setValue = vi.fn();
     const registerMenu = vi.fn();
     vi.stubGlobal("GM_setValue", setValue);
@@ -25,6 +25,7 @@ describe("riddle dataset entry", () => {
         source: RiddleSampleSource.ML,
       })
     ).toBeUndefined();
+    expect(runRiddleDatasetAutomation(null)).toBeUndefined();
 
     expect(setValue).not.toHaveBeenCalled();
     expect(registerMenu).not.toHaveBeenCalled();
