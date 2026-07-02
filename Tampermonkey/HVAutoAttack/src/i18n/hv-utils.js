@@ -2141,10 +2141,25 @@ const $mail = {
       const total = attach.length;
       let done = 0;
       const requests = attach.map((e) => attach_add(e));
-      const results = await Promise.all(requests);
+      let results;
+      try {
+        results = await Promise.all(requests);
+      } catch (_error) {
+        $mail.log(`#${index}: !!! Error: Attachment request failed`);
+        try {
+          await $mail.discard();
+        } catch (_discardError) {
+          $mail.log(`#${index}: !!! Error: Unable to discard attachments`);
+        }
+        return false;
+      }
       if (!results.every((r) => r)) {
-        $mail.discard();
-        return;
+        try {
+          await $mail.discard();
+        } catch (_discardError) {
+          $mail.log(`#${index}: !!! Error: Unable to discard attachments`);
+        }
+        return false;
       }
     }
 
