@@ -96,6 +96,6 @@ function collectSettingsInputs(option, inputs) {
 }
 
 export function runQuickSiteAutomation(event = { type: EVENT_LOBBY_READY }) {
-  const handler = quickSiteEventHandlers[event.type];
+  const handler = quickSiteEventHandlers[event?.type];
   return handler ? handler(event) : false;
 }

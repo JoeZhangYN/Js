@@ -115,6 +115,7 @@ describe("quick site entry", () => {
 
   it("ignores unknown quick site events at the entry", () => {
     expect(runQuickSiteAutomation({ type: "unknown" })).toBe(false);
+    expect(runQuickSiteAutomation(null)).toBe(false);
     expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
     expect(document.querySelector(".quickSiteBar")).toBeNull();
   });

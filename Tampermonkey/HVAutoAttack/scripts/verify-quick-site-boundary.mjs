@@ -89,6 +89,12 @@ if (!entryMatch) {
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
   }
+  if (entryBody.includes("quickSiteEventHandlers[event.type]")) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must reject null quick site events without throwing`);
+  }
+  if (!entryBody.includes("quickSiteEventHandlers[event?.type]")) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null quick site events`);
+  }
   for (const internal of [
     "renderQuickSite(",
     "renderSettingsTableBody(",
@@ -99,6 +105,10 @@ if (!entryMatch) {
       violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through quickSiteEventHandlers`);
     }
   }
+}
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+if (!ownerTestText.includes("runQuickSiteAutomation(null)")) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null quick site events`);
 }
 const settingsText = fs.readFileSync(path.join(root, settings), "utf8");
 if (!settingsText.includes("QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY")) {
