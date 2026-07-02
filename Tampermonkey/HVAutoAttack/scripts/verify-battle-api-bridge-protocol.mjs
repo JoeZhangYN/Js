@@ -18,6 +18,9 @@ const responseScriptTest = path.normalize("src/battle/battle-api-response-script
 const responseScriptDiagnosticsTest = path.normalize(
   "src/battle/battle-api-response-script-diagnostics.test.js"
 );
+const responseScriptWarningFailureTest = path.normalize(
+  "src/battle/battle-api-response-script-warning-failure.test.js"
+);
 const responseScriptMalformedJsonTest = path.normalize(
   "src/battle/battle-api-response-script-malformed-json.test.js"
 );
@@ -210,6 +213,8 @@ const responseScriptText = requireText(responseScript, [
   "__HVAA_DIAGNOSTIC_EVIDENCE_KEYS__",
   "diagnosticEvidenceKeys",
   "readRecentDiagnosticEvidence",
+  "warnBlockedRecovery",
+  "API response recovery must not depend on diagnostic console hooks.",
   "bridgeMissing",
   "bridgeThrew",
   "bridgeError",
@@ -262,6 +267,11 @@ requireText(responseScriptDiagnosticsTest, [
   "battleActionSpeed",
   "unknownActionSpeedEvent",
   "battleApiResponseRecovery",
+]);
+requireText(responseScriptWarningFailureTest, [
+  "keeps rejected API responses blocked when recovery storage and warning both fail",
+  "quota",
+  "console blocked",
 ]);
 requireText(responseScriptMalformedJsonTest, [
   "routes malformed JSON responses through the recovery bridge instead of throwing",
@@ -612,6 +622,15 @@ if (!responseScriptText.includes("window.HVAA_battleApiRecovery")) {
 if (!responseScriptText.includes("recordBlockedRecovery")) {
   violations.push(
     `${responseScript.replaceAll("\\", "/")} must record missing recovery bridge evidence`
+  );
+}
+if (
+  !responseScriptText.includes("function warnBlockedRecovery") ||
+  !responseScriptText.includes("API response recovery must not depend on diagnostic console hooks.") ||
+  !read(responseScriptWarningFailureTest).includes("recovery storage and warning both fail")
+) {
+  violations.push(
+    `${responseScript.replaceAll("\\", "/")} must isolate blocked recovery storage and warning failures`
   );
 }
 if (

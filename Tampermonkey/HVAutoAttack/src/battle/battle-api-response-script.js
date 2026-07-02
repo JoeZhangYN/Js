@@ -24,6 +24,13 @@ export function buildApiResponseScript(worldContext) {
         // Diagnostic write failure must not resume native API processing.
       }
     }
+    function warnBlockedRecovery(warning, detail) {
+      try {
+        console.warn(warning, detail);
+      } catch (_error) {
+        // API response recovery must not depend on diagnostic console hooks.
+      }
+    }
     function readJson(key) {
       try {
         const raw = window.sessionStorage.getItem(key);
@@ -59,7 +66,7 @@ export function buildApiResponseScript(worldContext) {
       const diagnosticEvidence = readRecentDiagnosticEvidence();
       if (diagnosticEvidence) state.diagnosticEvidence = diagnosticEvidence;
       writeRecoveryState(state);
-      console.warn(warning, blockedDetail);
+      warnBlockedRecovery(warning, blockedDetail);
     }
     function reloadFromApiResponse(detail) {
       const recovery = window.HVAA_battleApiRecovery;
