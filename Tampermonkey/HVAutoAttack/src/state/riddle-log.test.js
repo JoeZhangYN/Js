@@ -27,8 +27,12 @@ describe("riddle log entry", () => {
     expect(runRiddleLogAutomation({ type: RiddleLogEvent.READ })).toEqual([]);
   });
 
-  it("ignores unknown log events at the entry", () => {
+  it("ignores invalid log events at the entry without changing log entries", () => {
+    runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message: "kept" });
+
     expect(runRiddleLogAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runRiddleLogAutomation(null)).toBeUndefined();
+    expect(runRiddleLogAutomation({ type: RiddleLogEvent.READ })[0].m).toBe("kept");
   });
 
   it("renders report rows newest first and escapes log text", () => {

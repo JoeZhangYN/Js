@@ -72,6 +72,6 @@ function renderRiddleLogReportRows() {
 }
 
 export function runRiddleLogAutomation(event = { type: EVENT_READ }) {
-  const handler = riddleLogEventHandlers[event.type];
+  const handler = riddleLogEventHandlers[event?.type];
   return handler ? handler(event) : undefined;
 }

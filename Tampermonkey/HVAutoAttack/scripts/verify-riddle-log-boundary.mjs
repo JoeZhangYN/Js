@@ -52,6 +52,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 for (const required of ["runRiddleLogAutomation", "RiddleLogEvent", "RENDER_REPORT_ROWS"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -70,6 +71,9 @@ if (!entryMatch) {
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
   }
+  if (/\bevent\.type\b/.test(entryBody) || !/\bevent\?\.type\b/.test(entryBody)) {
+    violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null riddle log events`);
+  }
   for (const internal of [
     "pushRiddleLog(",
     "getRiddleLog(",
@@ -80,6 +84,9 @@ if (!entryMatch) {
       violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through riddleLogEventHandlers`);
     }
   }
+}
+if (!/runRiddleLogAutomation\(null\)/.test(ownerTestText)) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null riddle log events`);
 }
 
 const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
