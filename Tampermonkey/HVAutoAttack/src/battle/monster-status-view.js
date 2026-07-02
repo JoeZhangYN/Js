@@ -70,7 +70,7 @@ function readHpRuntimeSnapshot() {
 }
 
 export function runMonsterStatusView(event = { type: EVENT_READ_COMBATANT_COUNTS }) {
-  return monsterStatusViewEventHandlers[event.type]?.(event) ?? {
+  return monsterStatusViewEventHandlers[event?.type]?.(event) ?? {
     monsterAll: 0,
     monsterDead: 0,
     bossAll: 0,

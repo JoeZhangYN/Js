@@ -93,5 +93,5 @@ function updateMonsterHpRuntime(event = {}) {
 }
 
 export function runMonsterStatusHpRuntime(event = { type: EVENT_UPDATE }) {
-  return monsterStatusHpRuntimeEventHandlers[event.type]?.(event) ?? false;
+  return monsterStatusHpRuntimeEventHandlers[event?.type]?.(event) ?? false;
 }

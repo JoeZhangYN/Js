@@ -58,5 +58,5 @@ function applyTargetWeights(monsterStatus, runtimeSnapshot, options) {
 }
 
 export function runMonsterTargetWeight(event = { type: EVENT_APPLY }) {
-  return monsterTargetWeightEventHandlers[event.type]?.(event) ?? [];
+  return monsterTargetWeightEventHandlers[event?.type]?.(event) ?? [];
 }

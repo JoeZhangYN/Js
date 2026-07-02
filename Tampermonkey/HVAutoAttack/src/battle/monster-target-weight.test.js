@@ -66,5 +66,6 @@ describe("monster target weight", () => {
         monsterStatus: [{ order: 0, currentHp: 500, isDead: false }],
       })
     ).toEqual([]);
+    expect(runMonsterTargetWeight(null)).toEqual([]);
   });
 });

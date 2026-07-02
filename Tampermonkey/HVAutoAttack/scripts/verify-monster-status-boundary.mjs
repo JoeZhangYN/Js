@@ -304,12 +304,23 @@ function checkStatusView() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${statusView.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
+  if (/monsterStatusViewEventHandlers\[event\.type\]/.test(entryBody)) {
+    violations.push(`${statusView.replaceAll("\\", "/")} entry must fail closed for invalid status view events`);
+  }
+  if (!/monsterStatusViewEventHandlers\[event\?\.type\]/.test(entryBody)) {
+    violations.push(
+      `${statusView.replaceAll("\\", "/")} entry must dispatch invalid status view events through optional type`
+    );
+  }
   if (!fs.existsSync(path.join(root, statusViewTest))) {
     violations.push(`${statusViewTest.replaceAll("\\", "/")} must cover monster status view entry`);
   } else {
     const testText = fs.readFileSync(path.join(root, statusViewTest), "utf8");
     if (!testText.includes("rejects unknown monster status view events without reading rendered DOM")) {
       violations.push(`${statusViewTest.replaceAll("\\", "/")} must cover unknown status view events`);
+    }
+    if (!/runMonsterStatusView\(null\)/.test(testText)) {
+      violations.push(`${statusViewTest.replaceAll("\\", "/")} must cover null status view events`);
     }
   }
 }
@@ -357,12 +368,23 @@ function checkHpImpl() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${hpImpl.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
+  if (/monsterStatusHpRuntimeEventHandlers\[event\.type\]/.test(entryBody)) {
+    violations.push(`${hpImpl.replaceAll("\\", "/")} entry must fail closed for invalid HP runtime events`);
+  }
+  if (!/monsterStatusHpRuntimeEventHandlers\[event\?\.type\]/.test(entryBody)) {
+    violations.push(
+      `${hpImpl.replaceAll("\\", "/")} entry must dispatch invalid HP runtime events through optional type`
+    );
+  }
   if (!fs.existsSync(path.join(root, hpImplTest))) {
     violations.push(`${hpImplTest.replaceAll("\\", "/")} must cover HP runtime entry`);
   } else {
     const testText = fs.readFileSync(path.join(root, hpImplTest), "utf8");
     if (!testText.includes("rejects unknown monster status HP runtime events without side effects")) {
       violations.push(`${hpImplTest.replaceAll("\\", "/")} must cover unknown HP runtime events`);
+    }
+    if (!/runMonsterStatusHpRuntime\(null\)/.test(testText)) {
+      violations.push(`${hpImplTest.replaceAll("\\", "/")} must cover null HP runtime events`);
     }
   }
   for (const forbidden of ["gE(", "btm1", "btm4", "btm5", "btm6", "nbardead"]) {
@@ -461,12 +483,23 @@ function checkTargetWeight() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${targetWeight.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
+  if (/monsterTargetWeightEventHandlers\[event\.type\]/.test(entryBody)) {
+    violations.push(`${targetWeight.replaceAll("\\", "/")} entry must fail closed for invalid target weight events`);
+  }
+  if (!/monsterTargetWeightEventHandlers\[event\?\.type\]/.test(entryBody)) {
+    violations.push(
+      `${targetWeight.replaceAll("\\", "/")} entry must dispatch invalid target weight events through optional type`
+    );
+  }
   if (!fs.existsSync(path.join(root, targetWeightTest))) {
     violations.push(`${targetWeightTest.replaceAll("\\", "/")} must cover target weight entry`);
   } else {
     const testText = fs.readFileSync(path.join(root, targetWeightTest), "utf8");
     if (!testText.includes("rejects unknown monster target weight events")) {
       violations.push(`${targetWeightTest.replaceAll("\\", "/")} must cover unknown target weight events`);
+    }
+    if (!/runMonsterTargetWeight\(null\)/.test(testText)) {
+      violations.push(`${targetWeightTest.replaceAll("\\", "/")} must cover null target weight events`);
     }
   }
 }

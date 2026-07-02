@@ -80,6 +80,12 @@ describe("monster status view", () => {
       bossAll: 0,
       bossDead: 0,
     });
+    expect(runMonsterStatusView(null)).toEqual({
+      monsterAll: 0,
+      monsterDead: 0,
+      bossAll: 0,
+      bossDead: 0,
+    });
 
     expect(querySelector).not.toHaveBeenCalled();
     expect(querySelectorAll).not.toHaveBeenCalled();

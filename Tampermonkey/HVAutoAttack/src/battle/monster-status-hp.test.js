@@ -33,6 +33,7 @@ describe("runMonsterStatusHpRuntime", () => {
     g("monsterStatus", status);
 
     expect(runMonsterStatusHpRuntime({ type: "unknown" })).toBe(false);
+    expect(runMonsterStatusHpRuntime(null)).toBe(false);
 
     expect(g("monsterStatus")).toBe(status);
   });
