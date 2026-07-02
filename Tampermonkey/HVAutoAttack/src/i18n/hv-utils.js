@@ -61,6 +61,28 @@ try {
     }
     return evidence;
   };
+  var record_hvut_ability_parse_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutAbilityParse', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutAbilityParseFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Ability parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] ability parse failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT ability parse fallback.
+    }
+    return null;
+  };
+  var parse_hvut_ability_points = function (text) {
+    var match = /Ability Points: (\d+)/.exec(text || '');
+    return match ? parseInt(match[1]) : record_hvut_ability_parse_failure('abilityPoints', { text: text || '' });
+  };
+  var parse_hvut_ability_button_type = function (backgroundImage) {
+    var match = /(.)\.png/.exec(backgroundImage || '');
+    return match ? match[1] : record_hvut_ability_parse_failure('abilityButtonType', { backgroundImage: backgroundImage || '' });
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -5497,17 +5519,27 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     'Holy mage': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Smite', 'Better Banish', 'Better Paradise', 'Soul Fire', 'Holy Imperil'],
   };
 
-  _ab.point = parseInt(/Ability Points: (\d+)/.exec($id('ability_top').children[3].textContent)[1]);
+  _ab.point = parse_hvut_ability_points($id('ability_top').children[3].textContent);
   _ab.level = {};
 
   _ab.init = function () {
-    _ab.parse_slotbar();
+    if (_ab.point === null) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    if (_ab.parse_slotbar() === false) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     if (!$config.set('ab_level', _ab.level)) {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
     }
 
-    _ab.parse_treepane();
+    if (_ab.parse_treepane() === false) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     $id('ability_treepane').addEventListener('click', _ab.click, true);
 
     $input(['button', '技能模拟器'], $id('ability_outer'), ['!position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;'], () => { _ab.calc.toggle(); });
@@ -5515,14 +5547,18 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
   };
 
   _ab.parse_slotbar = function () {
-    $qsa('#ability_top div[onmouseover*="overability"]').forEach((div) => {
+    for (const div of $qsa('#ability_top div[onmouseover*="overability"]')) {
       const exec = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(div.getAttribute('onmouseover'));
+      if (!exec) {
+        record_hvut_ability_parse_failure('abilitySlotbar', { onmouseover: div.getAttribute('onmouseover') || '' });
+        return false;
+      }
       const name = exec[1];
       const ab = _ab.abilities[name];
       // 同 parse_treepane: HV 新增/改名技能时跳过该槽位, 不让一项未知技能崩掉整段汉化。
       if (!ab) {
         console.warn('[HVAA][i18n] 技能表缺少此项(槽位), 已跳过:', JSON.stringify(name));
-        return;
+        continue;
       }
 
       ab.slotted = true;
@@ -5552,17 +5588,18 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
         const index = categories.indexOf(ab.category);
         $qsa('#ability_treelist > div')[index].classList.add('hvut-ab-tree');
       }
-    });
+    }
+    return true;
   };
 
   _ab.parse_treepane = function () {
-    $qsa('#ability_treepane > div').forEach((div) => {
+    for (const div of $qsa('#ability_treepane > div')) {
       const name = div.firstElementChild.textContent;
       const ab = _ab.abilities[name];
       // HV 新增/改名技能时 _ab.abilities 无此键 → 跳过该项, 避免整段汉化崩溃。
       if (!ab) {
         console.warn('[HVAA][i18n] 技能表缺少此项, 已跳过:', JSON.stringify(name));
-        return;
+        continue;
       }
       let point = _ab.point;
 
@@ -5570,8 +5607,9 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       ab.id = /do_unlock_ability\((\d+)\)/.exec(div.children[2].getAttribute('onclick'))?.[1] || '';
       ab.level = 0;
 
-      Array.from(div.children[2].children).forEach((button, i) => {
-        const type = /(.)\.png/.exec(button.style.backgroundImage)[1];
+      for (const [i, button] of Array.from(div.children[2].children).entries()) {
+        const type = parse_hvut_ability_button_type(button.style.backgroundImage);
+        if (type === null) return false;
         button.classList.add('hvut-ab-bar');
 
         if (type === 'f') {
@@ -5586,7 +5624,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
         } else if (type === 'x') {
           $element('span', button, [`${ab.point[i]} (${ab.unlock[i]})`, '.hvut-ab-bx']);
         }
-      });
+      }
 
       if (ab.level) {
         if (!ab.slotted) {
@@ -5597,7 +5635,8 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
           div.firstElementChild.firstElementChild.dataset.warn = '可升级';
         }
       }
-    });
+    }
+    return true;
   };
 
   _ab.click = function (e) {
@@ -11942,8 +11981,12 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     'Holy mage': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Smite', 'Better Banish', 'Better Paradise', 'Soul Fire', 'Holy Imperil'],
   };
 
-  _ab.point = parseInt(/Ability Points: (\d+)/.exec($id('ability_top').children[3].textContent)[1]);
+  _ab.point = parse_hvut_ability_points($id('ability_top').children[3].textContent);
   _ab.level = {};
+  if (_ab.point === null) {
+    alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+    return false;
+  }
 
   _ab.click = function (e) {
     const target = e.target.closest('[data-action]');
@@ -12147,14 +12190,19 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     .hvut-ab-noab > span { color: #999; }
   `);
 
-  $qsa('#ability_top div[onmouseover*="overability"]').forEach((div) => {
+  for (const div of $qsa('#ability_top div[onmouseover*="overability"]')) {
     const exec = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(div.getAttribute('onmouseover'));
+    if (!exec) {
+      record_hvut_ability_parse_failure('abilitySlotbar', { onmouseover: div.getAttribute('onmouseover') || '' });
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     const name = exec[1];
     const ab = _ab.ability[name];
     // HV 新增/改名技能时 _ab.ability 无此键 → 跳过该槽位, 不让一项未知技能崩掉整段汉化。
     if (!ab) {
       console.warn('[HVAA][i18n] 技能表缺少此项(槽位), 已跳过:', JSON.stringify(name));
-      return;
+      continue;
     }
 
     ab.slotted = true;
@@ -12184,20 +12232,20 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       const index = categories.indexOf(ab.category);
       $qsa('#ability_treelist > div')[index].classList.add('hvut-ab-tree');
     }
-  });
+  }
   if (!$config.set('ab_level', _ab.level)) {
     alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
     return false;
   }
 
   $id('ability_treepane').addEventListener('click', _ab.click, true);
-  $qsa('#ability_treepane > div').forEach((div) => {
+  for (const div of $qsa('#ability_treepane > div')) {
     const name = div.firstElementChild.textContent;
     const ab = _ab.ability[name];
     // HV 新增/改名技能时 _ab.ability 无此键 → 跳过该项, 避免整段汉化崩溃。
     if (!ab) {
       console.warn('[HVAA][i18n] 技能表缺少此项, 已跳过:', JSON.stringify(name));
-      return;
+      continue;
     }
     let point = _ab.point;
 
@@ -12205,8 +12253,12 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     ab.id = /do_unlock_ability\((\d+)\)/.exec(div.children[2].getAttribute('onclick'))?.[1] || '';
     ab.level = 0;
 
-    Array.from(div.children[2].children).forEach((button, i) => {
-      const type = /(.)\.png/.exec(button.style.backgroundImage)[1];
+    for (const [i, button] of Array.from(div.children[2].children).entries()) {
+      const type = parse_hvut_ability_button_type(button.style.backgroundImage);
+      if (type === null) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
       button.classList.add('hvut-ab-bar');
 
       if (type === 'f') {
@@ -12221,7 +12273,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       } else if (type === 'x') {
         $element('span', button, [`${ab.point[i]} (${ab.unlock[i]})`, '.hvut-ab-bx']);
       }
-    });
+    }
 
     if (ab.level) {
       if (!ab.slotted) {
@@ -12232,7 +12284,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
         div.firstElementChild.firstElementChild.dataset.warn = '可升级';
       }
     }
-  });
+  }
 
   $input(['button', '能力点计算器'], $id('ability_outer'), { style: 'position: absolute; top: 20px; left: -80px; width: 90px; white-space: normal;' }, () => { _ab.calc.toggle(); });
 } else
