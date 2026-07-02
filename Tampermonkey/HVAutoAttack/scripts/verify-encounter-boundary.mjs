@@ -361,6 +361,16 @@ if (
 ) {
   violations.push(`${stateTest.replaceAll("\\", "/")} must cover unknown and null state events`);
 }
+for (const required of [
+  "returns null without writing encounter state when news key loading fails",
+  "returns null without writing encounter state when news key loading times out",
+  "onerror({ status: 0 })",
+  "ontimeout()",
+]) {
+  if (!stateTestText.includes(required)) {
+    violations.push(`${stateTest.replaceAll("\\", "/")} must cover load-key transport failures`);
+  }
+}
 const optionGateText = fs.readFileSync(path.join(root, optionGateFile), "utf8");
 for (const required of ["ENCOUNTER_OPTION_KEY", "OptionEvent.READ_FIELD"]) {
   if (!optionGateText.includes(required)) {

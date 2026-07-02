@@ -73,6 +73,24 @@ describe("runEncounterStateAutomation", () => {
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject(state);
   });
 
+  it("returns null without writing encounter state when news key loading fails", async () => {
+    mocks.gmXhr.mockImplementation(({ onerror }) => onerror({ status: 0 }));
+
+    const state = await runEncounterStateAutomation({ type: EncounterStateEvent.LOAD_KEY });
+
+    expect(state).toBeNull();
+    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
+  });
+
+  it("returns null without writing encounter state when news key loading times out", async () => {
+    mocks.gmXhr.mockImplementation(({ ontimeout }) => ontimeout());
+
+    const state = await runEncounterStateAutomation({ type: EncounterStateEvent.LOAD_KEY });
+
+    expect(state).toBeNull();
+    expect(localStorage.getItem(HVUT_RE_KEY)).toBeNull();
+  });
+
   it("rejects unknown and null state events without reading or writing encounter state", () => {
     expect(runEncounterStateAutomation({ type: "unknown" })).toBeUndefined();
     expect(runEncounterStateAutomation(null)).toBeUndefined();
