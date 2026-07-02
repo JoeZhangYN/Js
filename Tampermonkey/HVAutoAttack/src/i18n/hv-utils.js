@@ -47,6 +47,20 @@ try {
     }
     return evidence;
   };
+  var record_hvut_config_storage_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutConfigStorage', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutConfigStorageFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // HVUT config storage fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVAA] HVUT config storage failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT config storage fallback.
+    }
+    return evidence;
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -434,20 +448,38 @@ const bindConfig = function (config, ctx) {
     return value;
   };
   config.set = function (key, value, prefix = config.prefix) {
-    GM_setValue(prefix + key, value);
-    if (config.ls_savelist.includes(key)) {
-      config.ls_set(key, value, prefix);
+    try {
+      GM_setValue(prefix + key, value);
+      if (config.ls_savelist.includes(key) && !config.ls_set(key, value, prefix)) {
+        return false;
+      }
+      return true;
+    } catch (error) {
+      record_hvut_config_storage_failure('set', { key: prefix + key, error: error?.message || String(error) });
+      return false;
     }
   };
   config.del = function (key, prefix = config.prefix) {
-    GM_deleteValue(prefix + key);
+    try {
+      GM_deleteValue(prefix + key);
+      return true;
+    } catch (error) {
+      record_hvut_config_storage_failure('delete', { key: prefix + key, error: error?.message || String(error) });
+      return false;
+    }
   };
   config.ls_get = function (key, dvalue, prefix = config.prefix) {
     const value = localStorage.getItem(prefix + key);
     return value === null ? dvalue : JSON.parse(value);
   };
   config.ls_set = function (key, value, prefix = config.prefix) {
-    localStorage.setItem(prefix + key, JSON.stringify(value));
+    try {
+      localStorage.setItem(prefix + key, JSON.stringify(value));
+      return true;
+    } catch (error) {
+      record_hvut_config_storage_failure('localStorageSet', { key: prefix + key, error: error?.message || String(error) });
+      return false;
+    }
   };
   config.ls_del = function (key, prefix = config.prefix) {
     localStorage.removeItem(prefix + key);
@@ -545,10 +577,14 @@ const bindConfig = function (config, ctx) {
       config.settings = obj;
     }
     config.settings.version = config.version;
-    config.set('settings', config.settings);
+    if (!config.set('settings', config.settings)) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     if (panel) {
       reloadCurrentPage(hvutReloadReason('HV_UTILS_CONFIG_SAVE'));
     }
+    return true;
   };
   config.text2obj = function (text, sep = ['\n', ':'], type) {
     const obj = {};
@@ -6408,7 +6444,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     },
     reset: function () {
       if (confirm('此浏览器中的当前赛季的邮件记录将被删除.\nAre you sure?')) {
-        $config.del('ss_log');
+        if (!$config.del('ss_log')) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         reloadCurrentPage(hvutReloadReason('HV_UTILS_MAIL_LOG_RESET'));
       }
     },
@@ -7117,7 +7156,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       },
       reset_log: function () {
         if (confirm('本浏览器中的怪物实验室日志将被删除。\n确定吗？')) {
-          $config.del('ml_log');
+          if (!$config.del('ml_log')) {
+            alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+            return false;
+          }
           reloadCurrentPage(hvutReloadReason('HV_UTILS_MONSTER_LAB_LOG_RESET'));
         }
       },
@@ -7381,7 +7423,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.mobs.forEach((mob) => {
           mob.log.pl = -1;
         });
-        $config.set('ml_log', _ml.log);
+        if (!$config.set('ml_log', _ml.log)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         reloadCurrentPage(hvutReloadReason('HV_UTILS_MONSTER_LAB_FORCE_UPDATE'));
       },
       sort: function (key) {
@@ -13527,7 +13572,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.mobs.forEach((mob) => {
           mob.log.pl = -1;
         });
-        $config.set('ml_log', _ml.log);
+        if (!$config.set('ml_log', _ml.log)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         reloadCurrentPage(hvutReloadReason('HV_UTILS_MONSTER_LAB_FORCE_UPDATE'));
       },
 

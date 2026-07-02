@@ -56,6 +56,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   EQUIPMENT_PERCENTILE_FAILURE: "HVAA:lastEquipmentPercentileFailure",
   EQUIPMENT_FILTER_FAILURE: "HVAA:lastEquipmentFilterFailure",
   HVUT_NAVIGATION_BRIDGE_FAILURE: "HVAA:lastHvutNavigationBridgeFailure",
+  HVUT_CONFIG_STORAGE_FAILURE: "HVAA:lastHvutConfigStorageFailure",
   LOTTERY_NOTIFICATION_FAILURE: "HVAA:lastLotteryNotificationFailure",
 });
 
@@ -127,6 +128,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("equipmentPercentileFailure", DiagnosticEvidenceKey.EQUIPMENT_PERCENTILE_FAILURE),
   source("equipmentFilterFailure", DiagnosticEvidenceKey.EQUIPMENT_FILTER_FAILURE),
   source("hvutNavigationBridgeFailure", DiagnosticEvidenceKey.HVUT_NAVIGATION_BRIDGE_FAILURE),
+  source("hvutConfigStorageFailure", DiagnosticEvidenceKey.HVUT_CONFIG_STORAGE_FAILURE),
   source("lotteryNotificationFailure", DiagnosticEvidenceKey.LOTTERY_NOTIFICATION_FAILURE),
 ]);
 
