@@ -3332,17 +3332,28 @@ const bindArmory = function (armory, ctx) {
         $armory.node.table.tBodies[0].remove();
         $armory.equiplist = [];
         // Promise.all 收集并发 load（行为同原 forEach 并发，仅多一个"全部注入完成"汇合点）。
-        await Promise.all($armory.filters.map((filter) => $armory.integrate.load(screen, filter)));
+        const results = await Promise.all($armory.filters.map((filter) => $armory.integrate.load(screen, filter)));
         // filter=all 聚合: 各分类装备由 fetch 异步 replaceWith 注入 #equiplist, 晚于界面汉化 start(),
         // #equiplist 是静态字典(observer 不监听 childList) → 装备名/分类标签漏翻成英文。注入全部完成后
         // 经 window.HVAA_i18n 桥回调界面汉化重翻 #equiplist, 修"切到所有翻译失效"(异世界独有路径)。
         if (window.HVAA_i18n && window.HVAA_i18n.retranslateEquiplist) {
           window.HVAA_i18n.retranslateEquiplist();
         }
+        if (!results.every((r) => r)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
+        return true;
       },
       load: async function (screen, filter) {
         const holder = $element('tbody', $armory.node.table, [`/<tr class="hvut-eqp-category"><td colspan="10">Loading... [${filter}]</td></tr>`]);
-        const table = await $armory.page.load(screen, filter, true);
+        let table;
+        try {
+          table = await $armory.page.load(screen, filter, true);
+        } catch (_error) {
+          holder.remove();
+          return false;
+        }
         const equiplist = $equip.list.table(table);
         if (equiplist.length) {
           $armory.equiplist = $armory.equiplist.concat(equiplist);
@@ -3355,6 +3366,7 @@ const bindArmory = function (armory, ctx) {
           holder.remove();
         }
         $armory.filter.update();
+        return true;
       },
       tab: function () {
         const a = $element('a', [$id('filterbar'), 1], { href: `?s=Bazaar&ss=am&screen=${_query.screen}&filter=all` });
