@@ -91,6 +91,9 @@ function checkEntry() {
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(entryFile)} entry must route events through handler table`);
   }
+  if (/\?\?\s*true/.test(entryBody)) {
+    violations.push(`${rel(entryFile)} must reject unknown startup events instead of reporting success`);
+  }
   for (const forbidden of [
     "runCdRuntimeAutomation",
     "runRiddleDatasetAutomation",
@@ -108,6 +111,13 @@ function checkEntry() {
   }
   if (/\bOptionEvent\.READ\b|\bOptionEvent\.WRITE\b/.test(text)) {
     violations.push(`${rel(entryFile)} must sync startup option through named option command`);
+  }
+  const testText = fs.readFileSync(path.join(root, "src/pages/app-startup.test.js"), "utf8");
+  if (
+    !testText.includes("rejects unknown startup events as no-op") ||
+    testText.includes("accepts unknown startup events as no-op")
+  ) {
+    violations.push(`${rel(entryFile)} tests must lock unknown startup events as rejected no-ops`);
   }
 }
 

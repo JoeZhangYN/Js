@@ -115,9 +115,10 @@ describe("runAppStartup", () => {
     expect(mocks.runAbilityAoeAutomation).not.toHaveBeenCalled();
   });
 
-  it("accepts unknown startup events as no-op", () => {
-    expect(runAppStartup({ type: "unknown" })).toBe(true);
+  it("rejects unknown startup events as no-op", () => {
+    expect(runAppStartup({ type: "unknown" })).toBe(false);
     expect(mocks.runCdRuntimeAutomation).not.toHaveBeenCalled();
     expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
+    expect(mocks.runAbilityAoeAutomation).not.toHaveBeenCalled();
   });
 });
