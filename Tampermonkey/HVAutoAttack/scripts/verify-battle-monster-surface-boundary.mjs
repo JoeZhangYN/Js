@@ -73,12 +73,23 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (/battleMonsterSurfaceEventHandlers\[event\.type\]/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must fail closed for invalid monster surface events`);
+}
+if (!/battleMonsterSurfaceEventHandlers\[event\?\.type\]/.test(entryBody)) {
+  violations.push(
+    `${rel(owner)} entry must dispatch invalid monster surface events through optional type`
+  );
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover monster surface entry contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("rejects unknown events without touching DOM")) {
-    violations.push(`${rel(ownerTest)} must cover unknown monster surface events`);
+  if (!ownerTestText.includes("rejects invalid events without touching DOM")) {
+    violations.push(`${rel(ownerTest)} must cover invalid monster surface events`);
+  }
+  if (!/runBattleMonsterSurface\(null\)/.test(ownerTestText)) {
+    violations.push(`${rel(ownerTest)} must cover null monster surface events`);
   }
 }
 if (

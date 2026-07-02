@@ -47,5 +47,5 @@ function readCurrentMonsters() {
 }
 
 export function runBattleMonsterSurface(event = { type: EVENT_READ_CURRENT }) {
-  return battleMonsterSurfaceEventHandlers[event.type]?.() ?? [];
+  return battleMonsterSurfaceEventHandlers[event?.type]?.() ?? [];
 }

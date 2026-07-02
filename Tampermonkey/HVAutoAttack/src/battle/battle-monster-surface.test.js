@@ -65,8 +65,9 @@ describe("runBattleMonsterSurface", () => {
     expect(runBattleMonsterSurface().at(-1)).toMatchObject({ id: 0, order: 9, hpRatio: 1 });
   });
 
-  it("rejects unknown events without touching DOM", () => {
+  it("rejects invalid events without touching DOM", () => {
     expect(runBattleMonsterSurface({ type: "unknown" })).toEqual([]);
+    expect(runBattleMonsterSurface(null)).toEqual([]);
 
     expect(mocks.gE).not.toHaveBeenCalled();
   });
