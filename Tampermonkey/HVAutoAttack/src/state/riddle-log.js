@@ -2,10 +2,14 @@
 // 动机（用户诉求 2026-06-06）：riddle 提交即重定向、console 日志即丢；单槽 lastError 只存最后一条、
 // 翻不了历史。本模块在 GM 存储里维护一个环形缓冲（最近 CAP 条, 带时间戳），过页面跳转不丢、
 // 面板可翻可清。日志文本建议英文/码键，跨语言稳定、便于事后比对。
-// 叶子模块：只依赖 storage.js（无环，可被 riddle-stats.js / riddle.js 同时 import）。
-import { getValue, setValue, delValue } from "./storage.js";
+// 叶子模块：只依赖 storage/failure（无环，可被 riddle-stats.js / riddle.js 同时 import）。
+import { getValue } from "./storage.js";
+import {
+  RIDDLE_LOG_KEY,
+  clearPersistedRiddleLog,
+  persistRiddleLog,
+} from "./riddle-log-failure.js";
 
-const KEY = "riddleLog";
 const CAP = 80; // 环形上限：超出从头截断，恒只留最近 CAP 条。
 
 const EVENT_PUSH = "push";
@@ -33,10 +37,10 @@ const riddleLogEventHandlers = {
  */
 function pushRiddleLog(msg) {
   if (!msg) return;
-  const arr = getValue(KEY, true) || [];
+  const arr = getValue(RIDDLE_LOG_KEY, true) || [];
   arr.push({ t: new Date().toLocaleTimeString(), m: String(msg).slice(0, 300) });
   if (arr.length > CAP) arr.splice(0, arr.length - CAP);
-  setValue(KEY, arr);
+  return persistRiddleLog(arr);
 }
 
 /**
@@ -44,12 +48,12 @@ function pushRiddleLog(msg) {
  * @returns {{t:string, m:string}[]}
  */
 function getRiddleLog() {
-  return getValue(KEY, true) || [];
+  return getValue(RIDDLE_LOG_KEY, true) || [];
 }
 
 /** 清空日志。 */
 function clearRiddleLog() {
-  delValue(KEY);
+  if (!clearPersistedRiddleLog()) return false;
   return getRiddleLog();
 }
 
