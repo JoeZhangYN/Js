@@ -329,11 +329,21 @@ function checkRiddleImageEntry() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(riddleImageFile)} entry must dispatch by handler table`);
   }
+  if (entryBody.includes("event.type")) {
+    violations.push(`${rel(riddleImageFile)} entry must reject null events without throwing`);
+  }
+  if (!entryBody.includes("event?.type")) {
+    violations.push(`${rel(riddleImageFile)} entry must fail closed for unknown or null events`);
+  }
   const ownerTestText = fs.existsSync(path.join(root, ownerTest))
     ? fs.readFileSync(path.join(root, ownerTest), "utf8")
     : "";
-  if (!ownerTestText.includes("rejects unknown image events without reading image state")) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown image events`);
+  if (
+    !ownerTestText.includes("rejects unknown and null image events without reading image state") ||
+    !ownerTestText.includes("runRiddleImageAutomation(null)") ||
+    !ownerTestText.includes("not.toHaveBeenCalled()")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null image events`);
   }
   for (const legacy of [
     "getRiddleImgEl",

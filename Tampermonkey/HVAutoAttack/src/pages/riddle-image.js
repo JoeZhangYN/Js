@@ -147,5 +147,5 @@ async function prepareMlPayload() {
 }
 
 export function runRiddleImageAutomation(event = { type: EVENT_CAPTURE_SAMPLE }) {
-  return riddleImageEventHandlers[event.type]?.(event);
+  return riddleImageEventHandlers[event?.type]?.(event);
 }

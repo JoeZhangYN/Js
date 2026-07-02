@@ -1,11 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { RiddleImageEvent, runRiddleImageAutomation } from "./riddle-image.js";
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("riddle image entry", () => {
-  it("rejects unknown image events without reading image state", () => {
+  it("rejects unknown and null image events without reading image state", () => {
     document.body.innerHTML = '<div id="riddleimage"><img src="https://example.test/riddle.webp"></div>';
+    const getElementById = vi.spyOn(document, "getElementById");
 
     expect(runRiddleImageAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runRiddleImageAutomation(null)).toBeUndefined();
+    expect(getElementById).not.toHaveBeenCalled();
   });
 
   it("captures sample image metadata through the entry", () => {
