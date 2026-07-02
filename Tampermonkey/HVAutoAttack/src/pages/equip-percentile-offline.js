@@ -2,6 +2,10 @@
 // 离线装备百分位（移植自 Percentage Ranges.js, 1.1.9, 仅保留 Isekai 装备 popup hook）
 // 改写：ES6 module / 无 jQuery / 无论坛 hover / 无 GM_setValue（state.showPercent 走 localStorage）
 import { QUALITY_CONFIG, QUALITY_CN_MAP, QUALITY_EN_TO_CN } from "../data/equip-quality-ranges.js";
+import {
+  persistEquipmentPercentilePreference,
+  recordEquipmentPercentilePreferenceReadFailure,
+} from "./equip-percentile-failure.js";
 
 const STORAGE_KEY_SHOW_PERCENT = "hvAA_equipPercentile_offline_showPercent";
 
@@ -268,11 +272,7 @@ function renderAll() {
 function actionTogglePercent() {
   if (state.showMaxForge) state.showMaxForge = false;
   state.showPercent = !state.showPercent;
-  try {
-    window.localStorage.setItem(STORAGE_KEY_SHOW_PERCENT, JSON.stringify(state.showPercent));
-  } catch {
-    /* ignore */
-  }
+  persistEquipmentPercentilePreference(STORAGE_KEY_SHOW_PERCENT, state.showPercent);
   renderAll();
 }
 
@@ -312,8 +312,8 @@ export function runOfflineEquipPercentileEnhancement() {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY_SHOW_PERCENT);
     if (stored !== null) state.showPercent = JSON.parse(stored);
-  } catch {
-    /* ignore */
+  } catch (error) {
+    recordEquipmentPercentilePreferenceReadFailure(STORAGE_KEY_SHOW_PERCENT, error);
   }
 
   injectStyle();

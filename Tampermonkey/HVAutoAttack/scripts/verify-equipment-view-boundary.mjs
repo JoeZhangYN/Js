@@ -4,6 +4,12 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const entryFile = path.join(root, "src/pages/equipment-view-automation.js");
+const percentileFile = path.join(root, "src/pages/equip-percentile-offline.js");
+const percentileFailureFile = path.join(root, "src/pages/equip-percentile-failure.js");
+const percentileFailureTest = path.join(root, "src/pages/equip-percentile-failure.test.js");
+const percentileOfflineFailureTest = path.join(root, "src/pages/equip-percentile-offline-failure.test.js");
+const diagnosticKeysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
+const diagnosticTestFile = path.join(root, "src/core/diagnostic-evidence.test.js");
 const deletedLiveFile = path.join(root, "src/pages/equip-percentile-live.js");
 const violations = [];
 
@@ -138,12 +144,83 @@ function checkPercentileModeDecisionPoint() {
   }
 }
 
+function checkPercentileFailureBoundary() {
+  const percentileText = fs.readFileSync(percentileFile, "utf8");
+  const failureText = fs.readFileSync(percentileFailureFile, "utf8");
+  const failureTestText = fs.readFileSync(percentileFailureTest, "utf8");
+  const offlineFailureTestText = fs.readFileSync(percentileOfflineFailureTest, "utf8");
+  const diagnosticKeysText = fs.readFileSync(diagnosticKeysFile, "utf8");
+  const diagnosticTestText = fs.readFileSync(diagnosticTestFile, "utf8");
+  if (/catch\s*\{\s*\/\* ignore \*\/\s*\}/.test(percentileText)) {
+    violations.push(`${rel(percentileFile)} must not silently ignore percentile preference IO failures`);
+  }
+  for (const required of [
+    "persistEquipmentPercentilePreference",
+    "recordEquipmentPercentilePreferenceReadFailure",
+  ]) {
+    if (!percentileText.includes(required)) {
+      violations.push(`${rel(percentileFile)} must route preference IO through ${required}`);
+    }
+  }
+  for (const required of [
+    "EQUIPMENT_PERCENTILE_FAILURE_KEY",
+    "HVAA:lastEquipmentPercentileFailure",
+    "persistEquipmentPercentilePreference",
+    "recordEquipmentPercentilePreferenceReadFailure",
+    "globalThis.sessionStorage?.setItem",
+    "equipmentPercentile",
+    "persist-preference",
+    "read-preference",
+  ]) {
+    if (!failureText.includes(required)) {
+      violations.push(`${rel(percentileFailureFile)} must own ${required}`);
+    }
+  }
+  for (const required of [
+    "records preference persistence failures without throwing",
+    "records preference read failures as project diagnostics",
+    "keeps preference fallback when evidence and warning diagnostics fail",
+    "EQUIPMENT_PERCENTILE_FAILURE_KEY",
+    "preference write blocked",
+  ]) {
+    if (!failureTestText.includes(required)) {
+      violations.push(`${rel(percentileFailureTest)} must cover ${required}`);
+    }
+  }
+  for (const required of [
+    "records persisted display preference failures when the hotkey toggles percent mode",
+    "HVAA:lastEquipmentPercentileFailure",
+    "preference write blocked",
+  ]) {
+    if (!offlineFailureTestText.includes(required)) {
+      violations.push(`${rel(percentileOfflineFailureTest)} must cover ${required}`);
+    }
+  }
+  for (const required of [
+    "EQUIPMENT_PERCENTILE_FAILURE: \"HVAA:lastEquipmentPercentileFailure\"",
+    "source(\"equipmentPercentileFailure\", DiagnosticEvidenceKey.EQUIPMENT_PERCENTILE_FAILURE)",
+  ]) {
+    if (!diagnosticKeysText.includes(required)) {
+      violations.push(`${rel(diagnosticKeysFile)} must expose ${required}`);
+    }
+  }
+  for (const required of [
+    "HVAA:lastEquipmentPercentileFailure",
+    "equipmentPercentileFailure: { capability: \"equipmentPercentile\", stage: \"persist-preference\" }",
+  ]) {
+    if (!diagnosticTestText.includes(required)) {
+      violations.push(`${rel(diagnosticTestFile)} must cover ${required}`);
+    }
+  }
+}
+
 checkInit();
 checkEntry();
 checkPageAutomation();
 checkDeletedLivePath();
 checkDeletedSetupEntrypoints();
 checkPercentileModeDecisionPoint();
+checkPercentileFailureBoundary();
 
 if (violations.length) {
   console.error("[verify-equipment-view-boundary] FAIL");
