@@ -125,5 +125,5 @@ const cdRuntimeEventHandlers = Object.freeze({
 });
 
 export function runCdRuntimeAutomation(event = { type: EVENT_READ_MAP }) {
-  return cdRuntimeEventHandlers[event.type]?.(event);
+  return cdRuntimeEventHandlers[event?.type]?.(event);
 }
