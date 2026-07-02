@@ -5,6 +5,13 @@ const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000;
 const ENCOUNTER_MIDNIGHT_GRACE_MS = 5000;
 
 describe("runEncounterPolicy time contract", () => {
+  it("rejects unknown and null policy events without deriving a decision", () => {
+    expect(
+      runEncounterPolicy({ type: "unknown", state: { key: "abc", clear: false } })
+    ).toBeUndefined();
+    expect(runEncounterPolicy(null)).toBeUndefined();
+  });
+
   it("resets stored random encounter state across UTC days", () => {
     const state = { date: Date.UTC(2026, 5, 26, 23, 59), key: "abc", count: 7, clear: false };
 

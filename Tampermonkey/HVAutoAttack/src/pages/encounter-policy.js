@@ -163,5 +163,5 @@ const encounterPolicyEventHandlers = Object.freeze({
 });
 
 export function runEncounterPolicy(event = { type: EncounterPolicyEvent.READ_CLOCK }) {
-  return encounterPolicyEventHandlers[event.type]?.(event);
+  return encounterPolicyEventHandlers[event?.type]?.(event);
 }

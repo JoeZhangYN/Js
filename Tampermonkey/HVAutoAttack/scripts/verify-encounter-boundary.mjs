@@ -413,6 +413,12 @@ if (!policyEntryMatch) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose runEncounterPolicy(event)`);
 } else {
   const entryBody = policyEntryMatch[0];
+  if (entryBody.includes("event.type")) {
+    violations.push(`${policyFile.replaceAll("\\", "/")} entry must reject null events without throwing`);
+  }
+  if (!entryBody.includes("event?.type")) {
+    violations.push(`${policyFile.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+  }
   if (
     /switch\s*\(\s*event\.type\s*\)/.test(entryBody) ||
     /if\s*\(\s*event\.type\s*===/.test(entryBody)
@@ -439,6 +445,12 @@ if (!policyEntryMatch) {
       );
     }
   }
+}
+if (
+  !policyTestText.includes("rejects unknown and null policy events without deriving a decision") ||
+  !policyTestText.includes("runEncounterPolicy(null)")
+) {
+  violations.push(`${policyTest.replaceAll("\\", "/")} must cover unknown and null policy events`);
 }
 if (!/TimeEvent\.MS_UNTIL_NEXT_UTC_DAY/.test(policyText)) {
   violations.push(
