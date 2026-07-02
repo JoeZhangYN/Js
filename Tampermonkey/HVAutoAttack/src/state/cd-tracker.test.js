@@ -26,7 +26,7 @@ describe("cd tracker runtime persistence", () => {
     runCdRuntimeAutomation({ type: CdRuntimeEvent.INCREMENT_TURN });
     runCdRuntimeAutomation({ type: CdRuntimeEvent.RECORD_FIRE, code: "OFC" });
 
-    runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST });
+    expect(runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST })).toBe(true);
 
     expect(getValue(STORAGE_KEYS.GLOBAL_TURN, true)).toBe(2);
     expect(getValue(STORAGE_KEYS.SKILL_LAST_USED, true)).toEqual({ OFC: 2 });

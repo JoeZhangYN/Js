@@ -15,6 +15,8 @@ import { CdLearningEvent, runCdLearningAutomation } from "./cd-learner.js";
 // 为兼容既有 import 路径（如有），此处转出口。
 export { SKILL_REGISTRY, effectiveSkillId };
 
+export const CD_RUNTIME_FAILURE_KEY = "HVAA:lastCdRuntimeFailure";
+
 const EVENT_LOAD = "load";
 const EVENT_PERSIST = "persist";
 const EVENT_INCREMENT_TURN = "incrementTurn";
@@ -56,6 +58,25 @@ function readSkillLastUsed() {
   return normalizeSkillLastUsed(g("skillLastUsed"));
 }
 
+function recordCdRuntimeFailure(stage, error) {
+  const evidence = {
+    capability: "cdRuntime",
+    stage,
+    failure: { kind: "storageWrite", error: error?.message || String(error) },
+  };
+  try {
+    sessionStorage.setItem(CD_RUNTIME_FAILURE_KEY, JSON.stringify(evidence));
+  } catch (_error) {
+    // CD runtime persistence failure evidence must not block battle flow.
+  }
+  try {
+    console.warn("[HVAA] CD runtime failed", evidence);
+  } catch (_error) {
+    // Console hooks are diagnostic only.
+  }
+  return evidence;
+}
+
 /** 启动时把持久化的 globalTurn / skillLastUsed 灌进 g() runtime。Phase 5b-1 由 init.js 调用一次。 */
 function loadCdState() {
   g("globalTurn", normalizeGlobalTurn(getValue(STORAGE_KEYS.GLOBAL_TURN)));
@@ -64,8 +85,14 @@ function loadCdState() {
 
 /** round-start 入口末尾调用，原子持久化避免 GM_* 写抖动。 */
 function persistCdState() {
-  setValue(STORAGE_KEYS.GLOBAL_TURN, readGlobalTurn());
-  setValue(STORAGE_KEYS.SKILL_LAST_USED, readSkillLastUsed());
+  try {
+    setValue(STORAGE_KEYS.GLOBAL_TURN, readGlobalTurn());
+    setValue(STORAGE_KEYS.SKILL_LAST_USED, readSkillLastUsed());
+    return true;
+  } catch (error) {
+    recordCdRuntimeFailure("persist", error);
+    return false;
+  }
 }
 
 /** runBattleTurnAutomation() 每 turn 入口调用一次。 */

@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/cd-tracker.js");
 const ownerTest = path.normalize("src/state/cd-tracker.test.js");
+const failureTest = path.normalize("src/state/cd-tracker-failure.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const violations = [];
 
@@ -59,6 +60,9 @@ for (const required of [
   "readGlobalTurn",
   "readSkillLastUsed",
   "READ_GLOBAL_TURN",
+  "CD_RUNTIME_FAILURE_KEY",
+  "recordCdRuntimeFailure",
+  "storageWrite",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -126,11 +130,32 @@ for (const internal of [
   }
 }
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+if (!ownerTestText.includes("expect(runCdRuntimeAutomation({ type: CdRuntimeEvent.PERSIST })).toBe(true)")) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover successful CD persistence result`);
+}
 if (
   !ownerTestText.includes("rejects unknown and null cd runtime events without changing runtime or persisted state") ||
   !ownerTestText.includes("runCdRuntimeAutomation(null)")
 ) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null CD runtime events`);
+}
+if (!fs.existsSync(path.join(root, failureTest))) {
+  violations.push(`${failureTest.replaceAll("\\", "/")} must cover CD runtime persistence failures`);
+} else {
+  const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
+  for (const required of [
+    "does not report CD runtime persistence success when storage writes fail",
+    "does not throw when CD runtime failure evidence and warning both fail",
+    "CD_RUNTIME_FAILURE_KEY",
+    "cd runtime write blocked",
+    "session blocked",
+    "console blocked",
+    "storageWrite",
+  ]) {
+    if (!failureTestText.includes(required)) {
+      violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
 }
 
 if (violations.length) {
