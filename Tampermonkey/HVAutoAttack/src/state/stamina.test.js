@@ -100,7 +100,9 @@ describe("stamina entry", () => {
     expect(mocks.post).toHaveBeenCalledWith(
       "http://localhost:3000/battle",
       expect.any(Function),
-      "recover=stamina"
+      "recover=stamina",
+      undefined,
+      expect.any(Function)
     );
 
     const reload = mocks.post.mock.calls[0][1];
@@ -108,6 +110,22 @@ describe("stamina entry", () => {
     expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
       type: "reloadNow",
       reason: "staminaRecovery",
+    });
+  });
+
+  it("records stamina recovery POST failures without claiming reload success", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    expect(runStaminaAutomation({ type: StaminaEvent.CLAIM_RECOVERY })).toBe(true);
+
+    const failure = mocks.post.mock.calls[0][4];
+    failure({ kind: "networkError", href: "/battle", retries: 4 });
+
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith("[HVAA] stamina recovery request failed", {
+      kind: "networkError",
+      href: "/battle",
+      retries: 4,
     });
   });
 

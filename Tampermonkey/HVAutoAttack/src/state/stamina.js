@@ -74,8 +74,12 @@ function reloadCurrentPage() {
   });
 }
 
+function recordStaminaRecoveryFailure(failure) {
+  console.warn("[HVAA] stamina recovery request failed", failure);
+}
+
 function claimStaminaRecovery() {
-  post(window.location.href, reloadCurrentPage, STAMINA_RECOVERY_POST_BODY);
+  post(window.location.href, reloadCurrentPage, STAMINA_RECOVERY_POST_BODY, undefined, recordStaminaRecoveryFailure);
   return true;
 }
 

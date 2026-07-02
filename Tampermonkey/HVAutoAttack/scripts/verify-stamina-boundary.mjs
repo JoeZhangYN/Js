@@ -60,6 +60,8 @@ for (const required of [
   "OptionEvent.READ_FIELD",
   "CLAIM_RECOVERY",
   "STAMINA_RECOVERY_POST_BODY",
+  "recordStaminaRecoveryFailure",
+  "[HVAA] stamina recovery request failed",
   "NavigationEvent.RELOAD_NOW",
 ]) {
   if (!ownerText.includes(required)) {
@@ -108,6 +110,16 @@ if (
   !ownerTestText.includes("querySelector).not.toHaveBeenCalled()")
 ) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null stamina events`);
+}
+for (const required of [
+  "records stamina recovery POST failures without claiming reload success",
+  "kind: \"networkError\"",
+  "runNavigationAutomation).not.toHaveBeenCalled()",
+  "[HVAA] stamina recovery request failed",
+]) {
+  if (!ownerTestText.includes(required)) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover stamina recovery request failures`);
+  }
 }
 
 if (violations.length) {
