@@ -6,6 +6,8 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/repair/repair-orchestrator.js");
 const ownerTest = path.normalize("src/repair/repair-orchestrator.test.js");
 const backendFailureTest = path.normalize("src/repair/repair-orchestrator-backend-failure.test.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
 
 function rel(file) {
@@ -28,6 +30,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== backendFailureTest &&
       /from\s+["'](?:\.\/|\.\.\/repair\/)repair-orchestrator\.js["']/.test(line) &&
       (!/\bRepairEvent\b/.test(line) || !/\brunRepairAutomation\b/.test(line))
     ) {
@@ -69,7 +72,14 @@ if (/export\s+function\s+runRepair\s*\(/.test(ownerText)) {
 }
 for (const required of [
   "stopBackendFailure",
+  "REPAIR_BACKEND_FAILURE_KEY",
+  "HVAA:lastRepairBackendFailure",
+  "capability: \"repairBackend\"",
+  "stage: \"requestFailure\"",
+  "sessionStorage.setItem(REPAIR_BACKEND_FAILURE_KEY",
   "[HVAA] repair backend request failed",
+  "Repair stop recovery must not depend on diagnostic storage.",
+  "Console hooks must not block repair stop recovery.",
   "维修请求失败",
 ]) {
   if (!ownerText.includes(required)) {
@@ -103,12 +113,39 @@ if (!fs.existsSync(path.join(root, backendFailureTest))) {
   for (const required of [
     "stops idle arena when backend fetch-state fails",
     "stops idle arena when backend submit-repair fails",
+    "still stops idle arena when backend failure diagnostics are blocked",
+    "REPAIR_BACKEND_FAILURE_KEY",
+    "HVAA:lastRepairBackendFailure",
+    "session blocked",
+    "console blocked",
+    "requestFailure",
     "[HVAA] repair backend request failed",
     "维修请求失败",
   ]) {
     if (!backendFailureTestText.includes(required)) {
       violations.push(`${backendFailureTest.replaceAll("\\", "/")} must lock ${required}`);
     }
+  }
+}
+
+const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
+for (const required of [
+  "REPAIR_BACKEND_FAILURE: \"HVAA:lastRepairBackendFailure\"",
+  'source("repairBackendFailure", DiagnosticEvidenceKey.REPAIR_BACKEND_FAILURE)',
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+
+const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
+for (const required of [
+  "HVAA:lastRepairBackendFailure",
+  "repairBackendFailure",
+  "requestFailure",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 

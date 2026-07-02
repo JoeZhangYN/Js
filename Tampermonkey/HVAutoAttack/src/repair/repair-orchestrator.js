@@ -20,6 +20,7 @@ import { MaterialShopEvent, runMaterialShopAutomation } from "./material-shop.js
 import { OptionSchemaEvent, runOptionSchema } from "../settings/schema.js";
 
 const EVENT_START = "start";
+export const REPAIR_BACKEND_FAILURE_KEY = "HVAA:lastRepairBackendFailure";
 
 export const RepairEvent = Object.freeze({
   START: EVENT_START,
@@ -111,8 +112,23 @@ function runRepair(deps = {}) {
     document.title = _alert(-1, msg[0], msg[1], msg[2]);
   }
   function stopBackendFailure(failure) {
-    console.warn("[HVAA] repair backend request failed", failure);
+    const evidence = {
+      capability: "repairBackend",
+      stage: "requestFailure",
+      failure,
+    };
+    try {
+      sessionStorage.setItem(REPAIR_BACKEND_FAILURE_KEY, JSON.stringify(evidence));
+    } catch (_error) {
+      // Repair stop recovery must not depend on diagnostic storage.
+    }
+    try {
+      console.warn("[HVAA] repair backend request failed", evidence);
+    } catch (_error) {
+      // Console hooks must not block repair stop recovery.
+    }
     stop(BACKEND_FAIL_MSG);
+    return evidence;
   }
   function doRepair(ids) {
     repairedIds.push(...ids);

@@ -20,6 +20,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   BATTLE_ACTION_EFFECT: "HVAA:lastBattleActionEffect",
   HTTP_REQUEST_FAILURE: "HVAA:lastHttpRequestFailure",
   STAMINA_RECOVERY_FAILURE: "HVAA:lastStaminaRecoveryFailure",
+  REPAIR_BACKEND_FAILURE: "HVAA:lastRepairBackendFailure",
 });
 
 function source(name, key) {
@@ -50,6 +51,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("battleActionEffect", DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT),
   source("httpRequestFailure", DiagnosticEvidenceKey.HTTP_REQUEST_FAILURE),
   source("staminaRecoveryFailure", DiagnosticEvidenceKey.STAMINA_RECOVERY_FAILURE),
+  source("repairBackendFailure", DiagnosticEvidenceKey.REPAIR_BACKEND_FAILURE),
 ]);
 
 export const API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze(

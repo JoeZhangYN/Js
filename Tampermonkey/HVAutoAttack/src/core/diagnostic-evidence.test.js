@@ -89,6 +89,10 @@ describe("readRecentDiagnosticEvidence", () => {
       "HVAA:lastStaminaRecoveryFailure",
       JSON.stringify({ capability: "staminaRecovery", stage: "claimRecoveryPost" })
     );
+    window.sessionStorage.setItem(
+      "HVAA:lastRepairBackendFailure",
+      JSON.stringify({ capability: "repairBackend", stage: "requestFailure" })
+    );
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
@@ -119,6 +123,10 @@ describe("readRecentDiagnosticEvidence", () => {
       staminaRecoveryFailure: {
         capability: "staminaRecovery",
         stage: "claimRecoveryPost",
+      },
+      repairBackendFailure: {
+        capability: "repairBackend",
+        stage: "requestFailure",
       },
     });
   });
