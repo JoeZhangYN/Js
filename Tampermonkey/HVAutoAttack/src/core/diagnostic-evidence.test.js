@@ -85,6 +85,7 @@ describe("readRecentDiagnosticEvidence", () => {
     window.sessionStorage.setItem("HVAA:lastStaminaRecoveryFailure", JSON.stringify({ capability: "staminaRecovery", stage: "claimRecoveryPost" }));
     window.sessionStorage.setItem("HVAA:lastRepairBackendFailure", JSON.stringify({ capability: "repairBackend", stage: "requestFailure" }));
     window.sessionStorage.setItem("HVAA:lastMonsterDbStoreFailure", JSON.stringify({ capability: "monsterDbStore", stage: "open" }));
+    window.sessionStorage.setItem("HVAA:lastAppStartupFailure", JSON.stringify({ capability: "appStartup", stage: "loadCdRuntimeState" }));
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
@@ -111,6 +112,7 @@ describe("readRecentDiagnosticEvidence", () => {
       staminaRecoveryFailure: { capability: "staminaRecovery", stage: "claimRecoveryPost" },
       repairBackendFailure: { capability: "repairBackend", stage: "requestFailure" },
       monsterDbStoreFailure: { capability: "monsterDbStore", stage: "open" },
+      appStartupFailure: { capability: "appStartup", stage: "loadCdRuntimeState" },
     });
   });
 

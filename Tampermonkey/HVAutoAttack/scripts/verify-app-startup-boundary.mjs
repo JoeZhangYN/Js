@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const entryFile = path.join(root, "src/pages/app-startup.js");
+const diagnosticKeysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
+const diagnosticTestFile = path.join(root, "src/core/diagnostic-evidence.test.js");
 const violations = [];
 
 function rel(file) {
@@ -145,6 +147,7 @@ function checkEntry() {
   }
   for (const required of [
     "APP_STARTUP_FAILURE_KEY",
+    "HVAA:lastAppStartupFailure",
     "does not report userscript startup success when a startup step throws",
     "records missing config button evidence when initial config cannot open settings",
     "isolates default-font warning failures and continues startup",
@@ -155,6 +158,25 @@ function checkEntry() {
   ]) {
     if (!testText.includes(required)) {
       violations.push(`${rel(entryFile)} tests must cover ${required}`);
+    }
+  }
+  const diagnosticKeysText = fs.readFileSync(diagnosticKeysFile, "utf8");
+  for (const required of [
+    "APP_STARTUP_FAILURE: \"HVAA:lastAppStartupFailure\"",
+    'source("appStartupFailure", DiagnosticEvidenceKey.APP_STARTUP_FAILURE)',
+  ]) {
+    if (!diagnosticKeysText.includes(required)) {
+      violations.push(`${rel(diagnosticKeysFile)} must expose ${required}`);
+    }
+  }
+  const diagnosticTestText = fs.readFileSync(diagnosticTestFile, "utf8");
+  for (const required of [
+    "HVAA:lastAppStartupFailure",
+    "appStartupFailure",
+    "appStartup",
+  ]) {
+    if (!diagnosticTestText.includes(required)) {
+      violations.push(`${rel(diagnosticTestFile)} must cover ${required}`);
     }
   }
 }

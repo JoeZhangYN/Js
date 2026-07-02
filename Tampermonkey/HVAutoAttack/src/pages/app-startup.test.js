@@ -109,6 +109,7 @@ describe("runAppStartup", () => {
 
     expect(runAppStartup({ type: AppStartupEvent.USERSCRIPT_START })).toBe(false);
 
+    expect(APP_STARTUP_FAILURE_KEY).toBe("HVAA:lastAppStartupFailure");
     expect(lastStartupFailure()).toMatchObject({
       capability: "appStartup",
       stage: "loadCdRuntimeState",
