@@ -125,6 +125,24 @@ try {
     var match = pattern.exec(text || '');
     return match ? parseInt(match[1].replace(/,/g, '')) || 0 : record_hvut_mooglemail_parse_failure(stage, { text: text || '' });
   };
+  var record_hvut_monster_lab_parse_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutMonsterLabParse', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutMonsterLabParseFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Monster Lab parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] Monster Lab parse failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT Monster Lab parse fallback.
+    }
+    return null;
+  };
+  var parse_hvut_monster_lab_chaos_token_cost = function (text, stage) {
+    var match = /Cost: (\d+) Chaos Token/.exec(text || '');
+    return match ? parseInt(match[1]) : record_hvut_monster_lab_parse_failure(stage, { text: text || '' });
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -7494,7 +7512,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         });
 
         let ct_slot = $qsa('#slot_pane > div.msl').length;
-        const ct_next = parseInt(/Cost: (\d+) Chaos Token/.exec($id('monster_actions').textContent)[1]);
+        const ct_next = parse_hvut_monster_lab_chaos_token_cost($id('monster_actions').textContent, 'upgradeChaosTokenCost');
+        if (ct_next === null) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          _ml.upgrade.node.button.disabled = false;
+          _ml.upgrade.inited = false;
+          return false;
+        }
         if (ct_next === Math.ceil(1 + Math.pow(ct_slot, 1.2))) {
         } else if (ct_next === Math.ceil(1 + Math.pow(ct_slot / 2, 1.2))) {
           ct_slot = ct_slot / 2;
@@ -13792,7 +13816,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         });
 
         let ct_slot = $qsa('#slot_pane > div.msl').length;
-        const ct_next = parseInt(/Cost: (\d+) Chaos Token/.exec($id('monster_actions').textContent)[1]);
+        const ct_next = parse_hvut_monster_lab_chaos_token_cost($id('monster_actions').textContent, 'legacyUpgradeChaosTokenCost');
+        if (ct_next === null) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          _ml.upgrade.node.button.disabled = false;
+          _ml.upgrade.inited = false;
+          return false;
+        }
         if (ct_next === Math.ceil(1 + Math.pow(ct_slot, 1.2))) {
         } else if (ct_next === Math.ceil(1 + Math.pow(ct_slot / 2, 1.2))) {
           ct_slot = ct_slot / 2;
