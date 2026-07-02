@@ -94,5 +94,6 @@ describe("decideBuff", () => {
 
   it("rejects unknown buff decision events", () => {
     expect(runBattleBuffDecision({ type: "unknown", ...snap() })).toEqual({ kind: "noop" });
+    expect(runBattleBuffDecision(null)).toEqual({ kind: "noop" });
   });
 });

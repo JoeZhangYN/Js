@@ -105,7 +105,7 @@ function decidePlan(event) {
 }
 
 export function runBattleChannelDecision(event = { type: EVENT_DECIDE }) {
-  return battleChannelDecisionEventHandlers[event.type]?.(event) ?? {
+  return battleChannelDecisionEventHandlers[event?.type]?.(event) ?? {
     kind: "channel-plan",
     plan: { type: "noop" },
   };

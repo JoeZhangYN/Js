@@ -3066,6 +3066,19 @@ function checkInfusionEntry() {
   if (/event\.type\s*===/.test(infusionEntryBody)) {
     violations.push(`${rel(decideInfusionFile)} entry must dispatch by handler table`);
   }
+  if (/battleInfusionDecisionEventHandlers\[event\.type\]/.test(infusionEntryBody)) {
+    violations.push(`${rel(decideInfusionFile)} entry must fail closed for invalid infusion decision events`);
+  }
+  if (!/battleInfusionDecisionEventHandlers\[event\?\.type\]/.test(infusionEntryBody)) {
+    violations.push(`${rel(decideInfusionFile)} entry must dispatch invalid infusion decision events through optional type`);
+  }
+  const infusionTestFile = path.join(root, "src/battle/buff/decide-infusion.test.js");
+  const infusionTestText = fs.existsSync(infusionTestFile)
+    ? fs.readFileSync(infusionTestFile, "utf8")
+    : "";
+  if (!/runBattleInfusionDecision\(null\)/.test(infusionTestText)) {
+    violations.push(`${rel(infusionTestFile)} must cover null infusion decision events`);
+  }
   if (!/const INFUSION_LIB = Object\.freeze\(\[/.test(ownerText)) {
     violations.push(`${rel(decideInfusionFile)} must own frozen infusion item table`);
   }
@@ -3121,6 +3134,19 @@ function checkChannelEntry() {
   }
   if (/event\.type\s*===/.test(channelEntryBody)) {
     violations.push(`${rel(decideChannelFile)} entry must dispatch by handler table`);
+  }
+  if (/battleChannelDecisionEventHandlers\[event\.type\]/.test(channelEntryBody)) {
+    violations.push(`${rel(decideChannelFile)} entry must fail closed for invalid channel decision events`);
+  }
+  if (!/battleChannelDecisionEventHandlers\[event\?\.type\]/.test(channelEntryBody)) {
+    violations.push(`${rel(decideChannelFile)} entry must dispatch invalid channel decision events through optional type`);
+  }
+  const channelTestFile = path.join(root, "src/battle/buff/decide-channel.test.js");
+  const channelTestText = fs.existsSync(channelTestFile)
+    ? fs.readFileSync(channelTestFile, "utf8")
+    : "";
+  if (!/runBattleChannelDecision\(null\)/.test(channelTestText)) {
+    violations.push(`${rel(channelTestFile)} must cover null channel decision events`);
   }
   if (/decideChannel\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideChannelFile)} must not expose opt/snap decision input`);
@@ -3186,6 +3212,17 @@ function checkBuffEntry() {
   }
   if (/event\.type\s*===/.test(buffEntryBody)) {
     violations.push(`${rel(decideBuffFile)} entry must dispatch by handler table`);
+  }
+  if (/battleBuffDecisionEventHandlers\[event\.type\]/.test(buffEntryBody)) {
+    violations.push(`${rel(decideBuffFile)} entry must fail closed for invalid buff decision events`);
+  }
+  if (!/battleBuffDecisionEventHandlers\[event\?\.type\]/.test(buffEntryBody)) {
+    violations.push(`${rel(decideBuffFile)} entry must dispatch invalid buff decision events through optional type`);
+  }
+  const buffTestFile = path.join(root, "src/battle/buff/decide-buff.test.js");
+  const buffTestText = fs.existsSync(buffTestFile) ? fs.readFileSync(buffTestFile, "utf8") : "";
+  if (!/runBattleBuffDecision\(null\)/.test(buffTestText)) {
+    violations.push(`${rel(buffTestFile)} must cover null buff decision events`);
   }
   if (!/const DRAUGHT_PACK = Object\.freeze\(\[/.test(ownerText)) {
     violations.push(`${rel(decideBuffFile)} must own frozen draught decision table`);

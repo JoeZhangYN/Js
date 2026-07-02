@@ -48,5 +48,6 @@ describe("decideInfusion", () => {
 
   it("rejects unknown infusion decision events", () => {
     expect(runBattleInfusionDecision({ type: "unknown", ...snap() })).toEqual({ kind: "noop" });
+    expect(runBattleInfusionDecision(null)).toEqual({ kind: "noop" });
   });
 });

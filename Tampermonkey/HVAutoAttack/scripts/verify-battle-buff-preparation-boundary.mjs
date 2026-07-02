@@ -72,6 +72,16 @@ if (
 ) {
   violations.push("src/battle/buff/decide-infusion.js may export only its event entry");
 }
+if (/battleInfusionDecisionEventHandlers\[event\.type\]/.test(infusionText)) {
+  violations.push("src/battle/buff/decide-infusion.js must reject null infusion events");
+}
+if (!/battleInfusionDecisionEventHandlers\[event\?\.type\]/.test(infusionText)) {
+  violations.push("src/battle/buff/decide-infusion.js must dispatch invalid infusion events through optional type");
+}
+const infusionTestText = read(path.normalize("src/battle/buff/decide-infusion.test.js"));
+if (!/runBattleInfusionDecision\(null\)/.test(infusionTestText)) {
+  violations.push("src/battle/buff/decide-infusion.test.js must cover null infusion events");
+}
 if (!/const DRAUGHT_PACK = Object\.freeze\(\[/.test(buffText)) {
   violations.push("src/battle/buff/decide-buff.js must own frozen draught decision table");
 }
@@ -82,6 +92,16 @@ if (
 ) {
   violations.push("src/battle/buff/decide-buff.js may export only its event entry");
 }
+if (/battleBuffDecisionEventHandlers\[event\.type\]/.test(buffText)) {
+  violations.push("src/battle/buff/decide-buff.js must reject null buff events");
+}
+if (!/battleBuffDecisionEventHandlers\[event\?\.type\]/.test(buffText)) {
+  violations.push("src/battle/buff/decide-buff.js must dispatch invalid buff events through optional type");
+}
+const buffTestText = read(path.normalize("src/battle/buff/decide-buff.test.js"));
+if (!/runBattleBuffDecision\(null\)/.test(buffTestText)) {
+  violations.push("src/battle/buff/decide-buff.test.js must cover null buff events");
+}
 const channelText = read(path.normalize("src/battle/buff/decide-channel.js"));
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleChannelDecisionEvent\b|runBattleChannelDecision\b)/.test(
@@ -89,6 +109,16 @@ if (
   )
 ) {
   violations.push("src/battle/buff/decide-channel.js may export only its event entry");
+}
+if (/battleChannelDecisionEventHandlers\[event\.type\]/.test(channelText)) {
+  violations.push("src/battle/buff/decide-channel.js must reject null channel events");
+}
+if (!/battleChannelDecisionEventHandlers\[event\?\.type\]/.test(channelText)) {
+  violations.push("src/battle/buff/decide-channel.js must dispatch invalid channel events through optional type");
+}
+const channelTestText = read(path.normalize("src/battle/buff/decide-channel.test.js"));
+if (!/runBattleChannelDecision\(null\)/.test(channelTestText)) {
+  violations.push("src/battle/buff/decide-channel.test.js must cover null channel events");
 }
 for (const required of [
   "noop: () => true",

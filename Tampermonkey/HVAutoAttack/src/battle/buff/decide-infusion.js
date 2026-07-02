@@ -51,5 +51,5 @@ function decideInfusion(event = {}) {
 }
 
 export function runBattleInfusionDecision(event = { type: EVENT_DECIDE }) {
-  return battleInfusionDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleInfusionDecisionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }

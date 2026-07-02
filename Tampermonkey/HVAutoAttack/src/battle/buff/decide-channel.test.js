@@ -264,5 +264,9 @@ describe("全段未命中 → noop", () => {
       kind: "channel-plan",
       plan: { type: "noop" },
     });
+    expect(runBattleChannelDecision(null)).toEqual({
+      kind: "channel-plan",
+      plan: { type: "noop" },
+    });
   });
 });

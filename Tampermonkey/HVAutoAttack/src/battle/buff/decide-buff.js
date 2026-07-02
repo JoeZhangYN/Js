@@ -88,5 +88,5 @@ function decideBuff(event = {}) {
 }
 
 export function runBattleBuffDecision(event = { type: EVENT_DECIDE }) {
-  return battleBuffDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleBuffDecisionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }
