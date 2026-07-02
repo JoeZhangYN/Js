@@ -451,6 +451,7 @@ function checkRiddleMlEntry() {
     }
   }
   const ownerTest = path.normalize("src/pages/riddle-ml.test.js");
+  const requestFallbackTest = path.normalize("src/pages/riddle-ml-request-fallback.test.js");
   const ownerTestText = fs.existsSync(path.join(root, ownerTest))
     ? fs.readFileSync(path.join(root, ownerTest), "utf8")
     : "";
@@ -460,6 +461,21 @@ function checkRiddleMlEntry() {
     !ownerTestText.includes("readOption).not.toHaveBeenCalled()")
   ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null ML events`);
+  }
+  const requestFallbackTestText = fs.existsSync(path.join(root, requestFallbackTest))
+    ? fs.readFileSync(path.join(root, requestFallbackTest), "utf8")
+    : "";
+  for (const required of [
+    "resolves to random fallback when ML onload response handling throws",
+    "classifies ML POST transport errors and resolves to random fallback",
+    "classifies ML POST timeouts and resolves to random fallback",
+    "onload_exception console hook failed",
+    "onerror status=0",
+    "timeout (>12s)",
+  ]) {
+    if (!requestFallbackTestText.includes(required)) {
+      violations.push(`${requestFallbackTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
   }
   const requestBody =
     ownerText.match(/async function requestRiddleMlAnswer\([\s\S]*?\n\}/)?.[0] || "";
