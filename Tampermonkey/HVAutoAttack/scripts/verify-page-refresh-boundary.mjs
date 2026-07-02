@@ -6,6 +6,8 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/alarm/page-refresh.js");
 const testFile = path.normalize("src/alarm/page-refresh.test.js");
 const pageAutomation = path.normalize("src/pages/page-automation.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
 
 function rel(file) {
@@ -137,12 +139,34 @@ if (!testText.includes("runPageRefreshAutomation(null")) {
 }
 for (const required of [
   "PAGE_REFRESH_FAILURE_KEY",
+  "HVAA:lastPageRefreshFailure",
   "does not report scheduled reload success when the reload adapter fails",
   "keeps reload scheduling failure evidence when diagnostic console is blocked",
   "scheduleFailed",
 ]) {
   if (!testText.includes(required)) {
     violations.push(`${testFile.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+
+const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
+for (const required of [
+  "PAGE_REFRESH_FAILURE: \"HVAA:lastPageRefreshFailure\"",
+  'source("pageRefreshFailure", DiagnosticEvidenceKey.PAGE_REFRESH_FAILURE)',
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+
+const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
+for (const required of [
+  "HVAA:lastPageRefreshFailure",
+  "pageRefreshFailure",
+  "pageRefresh",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 

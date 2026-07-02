@@ -106,6 +106,7 @@ describe("runPageRefreshAutomation", () => {
       )
     ).toBe(false);
 
+    expect(PAGE_REFRESH_FAILURE_KEY).toBe("HVAA:lastPageRefreshFailure");
     expect(lastPageRefreshFailure()).toMatchObject({
       capability: "pageRefresh",
       stage: "scheduleReload",
