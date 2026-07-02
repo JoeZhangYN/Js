@@ -33,6 +33,10 @@ describe("repair state parser entry — persistent", () => {
     ).toBeUndefined();
   });
 
+  it("rejects null parser events without choosing a world parser", () => {
+    expect(runRepairStateParser(null)).toBeUndefined();
+  });
+
   it("解析耐久% + set_forge_cost 材料（枚举来自 dynjs JSON keys）", () => {
     // 真实维修页装备数据在 dynjs；set_forge_cost 提供每件材料（在页 HTML 里，容器无关）。
     const html = `<div class="equiplist">

@@ -57,6 +57,9 @@ if (!/const repairStateParseEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (/repairStateParseEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null parser events instead of reading event.type directly`);
+}
 for (const legacy of ["parsePersistentRepairState", "parseIsekaiRepairState"]) {
   if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {
     violations.push(`${owner.replaceAll("\\", "/")} legacy ${legacy} export is forbidden`);
@@ -68,6 +71,12 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   if (!ownerTestText.includes("rejects unknown parser events without choosing a world parser")) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown parser events`);
+  }
+  if (
+    !ownerTestText.includes("rejects null parser events without choosing a world parser") ||
+    !ownerTestText.includes("runRepairStateParser(null")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null parser events`);
   }
 }
 

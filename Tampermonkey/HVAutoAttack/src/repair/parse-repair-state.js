@@ -144,5 +144,5 @@ function parseIsekaiRepairState(pageText) {
 }
 
 export function runRepairStateParser(event) {
-  return repairStateParseEventHandlers[event.type]?.(event);
+  return repairStateParseEventHandlers[event?.type]?.(event);
 }
