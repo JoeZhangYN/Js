@@ -7468,7 +7468,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           return false;
         }
 
-        $config.set('ml_log', _ml.log);
+        if (!$config.set('ml_log', _ml.log)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          _ml.upgrade.node.button.disabled = false;
+          _ml.upgrade.node.button.value = '怪物升级器';
+          if (_ml.upgrade.node.run) {
+            _ml.upgrade.node.run.disabled = false;
+            _ml.upgrade.node.run.value = '失败';
+          }
+          return false;
+        }
         _ml.upgrade.node.button.disabled = false;
         _ml.upgrade.node.button.value = '怪物升级器';
         if (_ml.upgrade.node.run) {
@@ -13623,7 +13632,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           return false;
         }
 
-        $config.set('ml_log', _ml.log);
+        if (!$config.set('ml_log', _ml.log)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          _ml.upgrade.node.button.disabled = false;
+          _ml.upgrade.node.button.value = '怪物升级器';
+          if (_ml.upgrade.node.run) {
+            _ml.upgrade.node.run.disabled = false;
+            _ml.upgrade.node.run.value = '失败';
+          }
+          return false;
+        }
         _ml.upgrade.node.button.disabled = false;
         _ml.upgrade.node.button.value = '怪物升级器';
         if (_ml.upgrade.node.run) {

@@ -34,14 +34,18 @@ for (const [index, body] of updateBodies.entries()) {
     "_ml.upgrade.node.run.disabled = false;",
     "_ml.upgrade.node.run.value = '失败';",
     "return false;",
+    "if (!$config.set('ml_log', _ml.log)) {\n          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n          _ml.upgrade.node.button.disabled = false;",
     "return true;",
   ]) {
     if (!body.includes(required)) {
       violations.push(`${target} Monster Lab update[${index}] must guard failure with ${required}`);
     }
   }
-  if (/await Promise\.all\(requests\);\n\s*\$config\.set\('ml_log'/.test(body)) {
+  if (/await Promise\.all\(requests\);[\s\S]*?\n\s*\$config\.set\('ml_log'/.test(body)) {
     violations.push(`${target} Monster Lab update[${index}] must not save success after unchecked Promise.all`);
+  }
+  if (/\$config\.set\('ml_log', _ml\.log\);\n\s*_ml\.upgrade\.node\.button\.disabled = false;/.test(body)) {
+    violations.push(`${target} Monster Lab update[${index}] must not complete UI after unchecked ml_log write`);
   }
 }
 
