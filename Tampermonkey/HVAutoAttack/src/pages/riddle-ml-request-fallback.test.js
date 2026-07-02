@@ -66,6 +66,12 @@ describe("riddle ML request fallback", () => {
       type: "recordOutcome",
       outcome: "exception",
     });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastRiddleMlAnswerFailure"))).toMatchObject({
+      capability: "riddleMlAnswer",
+      stage: "request",
+      reason: "exception",
+      fallback: "random",
+    });
     expect(mocks.runAlarmAutomation).toHaveBeenCalledWith({ type: "trigger", kind: "Error" });
   });
 
@@ -87,6 +93,12 @@ describe("riddle ML request fallback", () => {
       type: "recordOutcome",
       outcome: "onerror",
     });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastRiddleMlAnswerFailure"))).toMatchObject({
+      capability: "riddleMlAnswer",
+      stage: "request",
+      reason: "onerror",
+      fallback: "random",
+    });
     expect(mocks.runAlarmAutomation).toHaveBeenCalledWith({ type: "trigger", kind: "Error" });
   });
 
@@ -105,6 +117,12 @@ describe("riddle ML request fallback", () => {
     expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
       type: "recordOutcome",
       outcome: "timeout",
+    });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastRiddleMlAnswerFailure"))).toMatchObject({
+      capability: "riddleMlAnswer",
+      stage: "request",
+      reason: "timeout",
+      fallback: "random",
     });
     expect(mocks.runAlarmAutomation).toHaveBeenCalledWith({ type: "trigger", kind: "Error" });
   });

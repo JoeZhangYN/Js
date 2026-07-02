@@ -501,6 +501,9 @@ function checkRiddleMlEntry() {
     "resolves to random fallback when ML onload response handling throws",
     "classifies ML POST transport errors and resolves to random fallback",
     "classifies ML POST timeouts and resolves to random fallback",
+    "HVAA:lastRiddleMlAnswerFailure",
+    'stage: "request"',
+    'fallback: "random"',
     "onload_exception console hook failed",
     "onerror status=0",
     "timeout (>12s)",
@@ -525,7 +528,9 @@ function checkRiddleMlEntry() {
   }
   for (const required of [
     "RIDDLE_ML_HEALTH_FAILURE_KEY",
+    "RIDDLE_ML_ANSWER_FAILURE_KEY",
     "recordRiddleMlHealthFailure",
+    "recordRiddleMlAnswerFallback",
     "readRiddleMlHealthValue",
     "writeRiddleMlHealthValue",
     "runRiddleMlHealthCycle",
@@ -537,6 +542,9 @@ function checkRiddleMlEntry() {
   }
   if (!/globalThis\.sessionStorage\?\.setItem\(RIDDLE_ML_HEALTH_FAILURE_KEY/.test(ownerText)) {
     violations.push(`${rel(riddleMlFile)} must persist ML health failure evidence`);
+  }
+  if (!/globalThis\.sessionStorage\?\.setItem\(RIDDLE_ML_ANSWER_FAILURE_KEY/.test(ownerText)) {
+    violations.push(`${rel(riddleMlFile)} must persist ML answer fallback evidence`);
   }
   if (!/stayAwake\(\)\.catch\(\(error\) => \{[\s\S]*recordRiddleMlHealthFailure\("healthCycle",\s*"unhandledFailure"/.test(ownerText)) {
     violations.push(`${rel(riddleMlFile)} must classify unhandled health cycle failures`);

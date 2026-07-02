@@ -23,6 +23,7 @@ const EVENT_START_HEALTH = "startHealth";
 const EVENT_TRY_ANSWER = "tryAnswer";
 
 export const RIDDLE_ML_HEALTH_FAILURE_KEY = "HVAA:lastRiddleMlHealthFailure";
+export const RIDDLE_ML_ANSWER_FAILURE_KEY = "HVAA:lastRiddleMlAnswerFailure";
 
 export const RiddleMlEvent = Object.freeze({
   START_HEALTH: EVENT_START_HEALTH,
@@ -69,6 +70,27 @@ function recordRiddleMlHealthFailure(stage, reason, detail = {}) {
   }
   try {
     console.warn("[HVAA][RMA] health check failed", evidence);
+  } catch (_error) {
+    // Console hooks are diagnostic only.
+  }
+  return evidence;
+}
+
+function recordRiddleMlAnswerFallback(stage, reason, detail = {}) {
+  const evidence = {
+    capability: "riddleMlAnswer",
+    stage,
+    reason,
+    fallback: "random",
+    ...detail,
+  };
+  try {
+    globalThis.sessionStorage?.setItem(RIDDLE_ML_ANSWER_FAILURE_KEY, JSON.stringify(evidence));
+  } catch (_error) {
+    // Random answer fallback must not depend on diagnostic storage.
+  }
+  try {
+    console.warn("[HVAA][RMA] ML answer fallback", evidence);
   } catch (_error) {
     // Console hooks are diagnostic only.
   }
@@ -267,9 +289,12 @@ function createRiddleMlAnswerContext() {
   };
 }
 
-function finishRiddleMlAnswer(context, answer) {
+function finishRiddleMlAnswer(context, answer, failure = null) {
   context.answer = answer;
   context.done = true;
+  if (!answer && failure) {
+    recordRiddleMlAnswerFallback(failure.stage, failure.reason, failure.detail);
+  }
 }
 
 function readRiddleMlAnswerOptions(context) {
@@ -281,7 +306,7 @@ function ensureRiddleMlAnswerEnabled(context) {
   // 修 H-B：原 `!opt.mlAnswer` 把老配置缺字段误判为关 → 调用侧以为开、这里立刻 bail → 必随机。
   if (context.options.mlAnswer === false) {
     console.warn("[HVAA][RMA] mlAnswer 显式关闭，跳过 ML 识别（走随机）");
-    finishRiddleMlAnswer(context, null);
+    finishRiddleMlAnswer(context, null, { stage: "option", reason: "disabled" });
   }
 }
 
@@ -315,7 +340,7 @@ async function prepareRiddleMlPayload(context) {
   if (!context.payload) {
     console.warn("[HVAA][RMA] 找不到 riddle 图片元素/src，跳过 ML 识别（走随机）");
     reportMlOutcome("no_image");
-    finishRiddleMlAnswer(context, null);
+    finishRiddleMlAnswer(context, null, { stage: "payload", reason: "no_image" });
     return;
   }
   if (!context.payload.blob || context.payload.blob.size === 0) {
@@ -323,7 +348,7 @@ async function prepareRiddleMlPayload(context) {
     reportMlDetail("empty_blob (canvas 污染/fetch 失败)");
     reportMlOutcome("empty_blob");
     triggerErrorAlarm();
-    finishRiddleMlAnswer(context, null);
+    finishRiddleMlAnswer(context, null, { stage: "payload", reason: "empty_blob" });
   }
 }
 
@@ -344,7 +369,10 @@ function resolveRiddleMlAnswerResult(context) {
     return;
   }
   reportMlOutcome(typeof context.requestResult === "string" ? context.requestResult : "unknown");
-  finishRiddleMlAnswer(context, null);
+  finishRiddleMlAnswer(context, null, {
+    stage: "request",
+    reason: typeof context.requestResult === "string" ? context.requestResult : "unknown",
+  });
 }
 
 function createRiddleMlResponseDecision(result, { detail = null, alarm = false, warn = null } = {}) {
@@ -488,7 +516,10 @@ async function requestRiddleMlAnswer(endpoint, imgBlob, postHeaders) {
  */
 let inFlight = false;
 async function tryMLAnswer() {
-  if (inFlight) return null; // 防同 tick 重入
+  if (inFlight) {
+    recordRiddleMlAnswerFallback("answerFlow", "duplicateRequest");
+    return null; // 防同 tick 重入
+  }
   inFlight = true;
   try {
     const context = createRiddleMlAnswerContext();
@@ -501,6 +532,7 @@ async function tryMLAnswer() {
     console.error("[HVAA][RMA] tryMLAnswer error", err);
     reportMlDetail("exception " + (err && err.message));
     reportMlOutcome("exception");
+    recordRiddleMlAnswerFallback("answerFlow", "exception", { error: mlHealthErrorText(err) });
     triggerErrorAlarm();
     return null;
   } finally {

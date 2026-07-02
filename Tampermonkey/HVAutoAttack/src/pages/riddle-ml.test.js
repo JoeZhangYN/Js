@@ -43,6 +43,15 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+function expectAnswerFailure(reason) {
+  expect(JSON.parse(sessionStorage.getItem("HVAA:lastRiddleMlAnswerFailure"))).toMatchObject({
+    capability: "riddleMlAnswer",
+    stage: reason === "disabled" ? "option" : "request",
+    reason,
+    fallback: "random",
+  });
+}
+
 describe("riddle ML entry", () => {
   it("rejects unknown and null ML events without starting health checks or answering", () => {
     const readOption = vi.spyOn(Storage.prototype, "getItem");
@@ -64,12 +73,10 @@ describe("riddle ML entry", () => {
   });
 
   it("skips ML answering when the option entry reports mlAnswer disabled", async () => {
-    runOptionAutomation({
-      type: OptionEvent.WRITE,
-      option: { version: "10.0", mlAnswer: false },
-    });
+    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", mlAnswer: false } });
 
     await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toBeNull();
+    expectAnswerFailure("disabled");
     expect(mocks.runRiddleImageAutomation).not.toHaveBeenCalled();
     expect(mocks.gmXhr).not.toHaveBeenCalled();
   });
@@ -79,9 +86,7 @@ describe("riddle ML entry", () => {
       type: OptionEvent.WRITE,
       option: { version: "10.0", mlEndpoint: "https://ml.example/answer", mlApiKey: "key" },
     });
-    mocks.runRiddleImageAutomation.mockResolvedValue({
-      blob: { size: 12 },
-    });
+    mocks.runRiddleImageAutomation.mockResolvedValue({ blob: { size: 12 } });
     mocks.gmXhr.mockImplementation(({ onload }) => {
       onload({
         status: 200,
@@ -90,10 +95,7 @@ describe("riddle ML entry", () => {
       });
     });
 
-    await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toEqual([
-      "ts",
-      "ra",
-    ]);
+    await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toEqual(["ts", "ra"]);
 
     expect(mocks.runRiddleImageAutomation).toHaveBeenCalledWith({ type: "prepareMlPayload" });
     expect(mocks.gmXhr).toHaveBeenCalledWith(
@@ -104,10 +106,7 @@ describe("riddle ML entry", () => {
         headers: { "Content-Type": "image/jpeg", apikey: "key" },
       })
     );
-    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
-      type: "recordOutcome",
-      outcome: "ok",
-    });
+    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({ type: "recordOutcome", outcome: "ok" });
     const actualOrder = [
       mocks.runRiddleImageAutomation.mock.invocationCallOrder[0],
       mocks.gmXhr.mock.invocationCallOrder[0],
@@ -134,10 +133,8 @@ describe("riddle ML entry", () => {
         detail: expect.stringContaining("non_json status=200"),
       })
     );
-    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
-      type: "recordOutcome",
-      outcome: "non_json",
-    });
+    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({ type: "recordOutcome", outcome: "non_json" });
+    expectAnswerFailure("non_json");
     expect(mocks.runAlarmAutomation).toHaveBeenCalledWith({ type: "trigger", kind: "Error" });
   });
 
@@ -159,10 +156,8 @@ describe("riddle ML entry", () => {
         detail: 'no_answer_code answer="??"',
       })
     );
-    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({
-      type: "recordOutcome",
-      outcome: "no_answer_code",
-    });
+    expect(mocks.runRiddleStatsAutomation).toHaveBeenCalledWith({ type: "recordOutcome", outcome: "no_answer_code" });
+    expectAnswerFailure("no_answer_code");
     expect(mocks.runAlarmAutomation).toHaveBeenCalledWith({ type: "trigger", kind: "Error" });
   });
 });
