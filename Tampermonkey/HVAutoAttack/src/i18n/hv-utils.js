@@ -2001,8 +2001,9 @@ const bindPersona = function (persona, ctx) {
       persona.selector_e.disabled = false;
     }
     persona.set_button();
-    persona.load_dynjs(doc);
+    if ((await persona.load_dynjs(doc)) === false) return false;
     persona.check_warning(doc);
+    return true;
   };
   persona.set_button = function () {
     const pname = persona.json.pname || `Persona ${persona.json.pset}`;
@@ -2012,13 +2013,14 @@ const bindPersona = function (persona, ctx) {
     const src = $qs('script[src*="/dynjs/"]', doc).src;
     const html = await $ajax.fetch(`${src}?t=${Date.now()}`);
     ctx.applyDynjs(html);
-    persona.save_equipset(doc);
-    persona.parse_stats_pane(doc);
+    if (persona.save_equipset(doc) === false) return false;
+    if (persona.parse_stats_pane(doc) === false) return false;
     if (_query.s === 'Battle') {
       ctx.battle?.create();
     } else if (['eq', 'ab', 'it', 'se'].includes(_query.ss)) {
       reloadCurrentPage(hvutReloadReason('HV_UTILS_PERSONA_DYNJS'));
     }
+    return true;
   };
   // [2026-06-10 续收] 原「parse_stats_pane 解析模型大分叉留各 IIFE」: 主世界旧版解析 .spn + #stats_pane
   // .st1/.st2(旧页面), 能量模型后主世界属性页已同构 isekai 的 #stats_scrollable > table(实站报错证实:
@@ -2084,7 +2086,10 @@ const bindPersona = function (persona, ctx) {
     } else {
       ch_style['Attack Base Damage'] = stats_pane['Mainhand Damage'];
     }
-    ctx.config.set('ch_style', ch_style);
+    if (!ctx.config.set('ch_style', ch_style)) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     return stats_pane;
   };
   persona.set_value = function (name, value) {
@@ -2096,7 +2101,11 @@ const bindPersona = function (persona, ctx) {
       json.ename = value;
       persona.set_button();
     }
-    ctx.config.set('persona', json);
+    if (!ctx.config.set('persona', json)) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    return true;
   };
   persona.get_value = function (name) {
     const json = persona.json;
@@ -2113,7 +2122,11 @@ const bindPersona = function (persona, ctx) {
         return { slot };
       }
     });
-    ctx.config.set('equipset', equipset);
+    if (!ctx.config.set('equipset', equipset)) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    return true;
   };
   persona.check_warning = function (doc) {
     const top = ctx.top;
