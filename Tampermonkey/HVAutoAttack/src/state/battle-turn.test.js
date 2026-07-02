@@ -20,4 +20,12 @@ describe("runBattleTurnAutomation", () => {
 
     expect(runBattleTurnAutomation({ type: BattleTurnEvent.READ_CURRENT })).toBe(2);
   });
+
+  it("rejects unknown and null battle turn events without changing turn state", () => {
+    g("turn", 5);
+
+    expect(runBattleTurnAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runBattleTurnAutomation(null)).toBeUndefined();
+    expect(g("turn")).toBe(5);
+  });
 });

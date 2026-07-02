@@ -54,6 +54,20 @@ for (const required of [
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
+const ownerEntry = ownerText.match(/export function runBattleTurnAutomation[\s\S]*?\n}/)?.[0] || "";
+if (ownerEntry.includes("event.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
+}
+if (!ownerEntry.includes("event?.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+}
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+if (
+  !ownerTestText.includes("rejects unknown and null battle turn events without changing turn state") ||
+  !ownerTestText.includes("runBattleTurnAutomation(null)")
+) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null battle turn events`);
+}
 
 for (const legacy of ["resetTurn", "advanceTurn", "readCurrentTurn"]) {
   if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {

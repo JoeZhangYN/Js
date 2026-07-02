@@ -33,5 +33,5 @@ const battleTurnEventHandlers = Object.freeze({
 });
 
 export function runBattleTurnAutomation(event = { type: EVENT_READ_CURRENT }) {
-  return battleTurnEventHandlers[event.type]?.(event);
+  return battleTurnEventHandlers[event?.type]?.(event);
 }
