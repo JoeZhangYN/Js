@@ -752,44 +752,49 @@ const bindRe = function (re, ctx) {
   const runEncounter = (event) => window.HVAA_encounter?.run(event);
   const applyEncounterState = function (outcome) {
     if (!outcome?.state) {
-      return;
+      return true;
+    }
+    if (!ctx.config.set('re', outcome.state, 'hvut_')) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
     }
     re.json = outcome.state;
-    ctx.config.set('re', re.json, 'hvut_');
+    return true;
   };
   re.init = function () {
     if (re.inited) {
-      return;
+      return true;
     }
     re.inited = true;
     re.type = (!location.hostname.includes('hentaiverse.org') || IS_ISEKAI) ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
-    re.get();
+    return re.get();
   };
   re.clock = function (button) {
-    re.init();
+    if (re.init() === false) return false;
     re.button = button;
     re.button.addEventListener('click', (e) => { re.run(e.ctrlKey || e.shiftKey); });
     const dayState = runEncounter({ type: encounterEvent().WIDGET_TICK, state: re.json });
-    applyEncounterState(dayState);
+    if (applyEncounterState(dayState) === false) return false;
     if (re.json.date === 0) re.load();
     re.start();
+    return true;
   };
   re.hv = function () {
-    re.init();
-    re.check();
+    if (re.init() === false) return false;
+    if (re.check() === false) return false;
     const button = $element('div', ctx.top.node.div, ['!width: 80px; cursor: pointer;']);
-    re.clock(button);
+    return re.clock(button);
   };
   re.ba = function () {
     if (!ctx.config.settings.reBattle) {
       return;
     }
-    re.init();
+    if (re.init() === false) return false;
     if ($id('textlog').tBodies[0].lastElementChild.textContent === 'Initializing random encounter ...') {
-      re.check();
+      if (re.check() === false) return false;
     }
     const button = $element('div', $id('csp'), ['RE', '!position: absolute; top: 10px; left: 600px; cursor: pointer; font-size: 10pt; font-weight: bold;']);
-    re.clock(button);
+    if (re.clock(button) === false) return false;
 
     // support monsterbation that clears all timer id when a round starts
     const target = document.body;
@@ -804,13 +809,13 @@ const bindRe = function (re, ctx) {
     observer.observe(target, options);
   };
   re.eh = function () {
-    re.init();
+    if (re.init() === false) return false;
     const link = $qs('#eventpane a');
     const onclick = link?.getAttribute('onclick');
     if (onclick) {
       const linkState = runEncounter({ type: encounterEvent().WIDGET_LINK_FOUND, state: re.json, search: onclick });
       if (linkState?.state?.key) {
-        applyEncounterState(linkState);
+        if (applyEncounterState(linkState) === false) return false;
         if (ctx.config.settings.reGalleryAlt) {
           link.setAttribute('onclick', onclick.replace('https://hentaiverse.org/', 'http://alt.hentaiverse.org/'));
         }
@@ -819,26 +824,28 @@ const bindRe = function (re, ctx) {
     if (ctx.config.settings.reGallery && $id('nb')) {
       $id('nb').style.maxWidth = '1080px';
       const button = $element('a', $element('div', $id('nb')), ['!display: inline-block; width: 70px; text-align: left; cursor: pointer;']);
-      re.clock(button);
+      return re.clock(button);
     }
+    return true;
   };
   re.get = function () {
     re.json = ctx.config.get('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
-    applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_TICK, state: re.json }));
+    return applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_TICK, state: re.json }));
   };
   re.set = function (key) {
-    applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_LINK_FOUND, state: re.json, key }));
+    return applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_LINK_FOUND, state: re.json, key }));
   };
   re.reset = function () {
-    applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_RESET_DAY }));
+    if (applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_RESET_DAY })) === false) return false;
     re.start();
+    return true;
   };
   re.check = function () {
-    applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_STARTED_ENCOUNTER, state: re.json, search: location.search }));
+    return applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_STARTED_ENCOUNTER, state: re.json, search: location.search }));
   };
   re.refresh = function () {
     const readiness = runEncounter({ type: encounterEvent().WIDGET_TICK, state: re.json }) ?? { state: re.json, remainingMs: 0 };
-    applyEncounterState(readiness);
+    if (applyEncounterState(readiness) === false) return false;
     if (readiness.status === 'countdown') {
       re.button.textContent = time_format(readiness.remainingMs, 2) + ` [${readiness.count}]`;
       re.beep = true;
@@ -851,7 +858,7 @@ const bindRe = function (re, ctx) {
       }
       re.stop();
       const outcome = runEncounter({ type: encounterEvent().WIDGET_TIMER_ELAPSED, state: re.json, pageType: re.type, lastAttemptKey: re.readyAttemptKey, galleryAlt: ctx.config.settings.reGalleryAlt });
-      applyEncounterState(outcome);
+      if (applyEncounterState(outcome) === false) return false;
       if (outcome?.attemptKey) re.readyAttemptKey = outcome.attemptKey;
       if (outcome?.handled) return;
       if (outcome?.action === 'load') return re.load(outcome.engage);
@@ -860,35 +867,35 @@ const bindRe = function (re, ctx) {
   };
   re.run = async function (engage) {
     if (re.type === 'ba') {
-      re.load();
+      return re.load();
     } else if (re.type === 'hv') {
       const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage });
-      applyEncounterState(outcome);
+      if (applyEncounterState(outcome) === false) return false;
       if (outcome?.handled) return;
-      re.load(true);
+      return re.load(true);
     } else if (re.type === 'eh') {
       re.stop();
       re.button.textContent = '检查中...';
       const html = await $ajax.fetch('https://hentaiverse.org/');
       if (html.includes('<div id="navbar">')) {
         const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage, hvAvailable: true });
-        applyEncounterState(outcome);
+        if (applyEncounterState(outcome) === false) return false;
         if (outcome?.handled) return;
-        re.load(true);
+        return re.load(true);
       } else {
-        re.load();
+        return re.load();
       }
     }
   };
   re.load = async function (engage) {
     re.stop();
-    re.get();
+    if (re.get() === false) return false;
     re.button.textContent = '加载中...';
     const html = await $ajax.fetch('https://e-hentai.org/news.php');
     const doc = $doc(html);
     const eventpane = $id('eventpane', doc)?.innerHTML;
     const outcome = runEncounter({ type: encounterEvent().WIDGET_NEWS_LOADED, state: re.json, eventpane, engage, pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
-    applyEncounterState(outcome);
+    if (applyEncounterState(outcome) === false) return false;
     if (outcome?.handled) {
       return;
     }
@@ -898,6 +905,7 @@ const bindRe = function (re, ctx) {
       popup('<p style="color: #f00; font-weight: bold;">你的装备仓库快要满了.<br>\n该去整理一下了.</p>');
     }
     re.start();
+    return true;
   };
   re.start = function () {
     re.stop();
