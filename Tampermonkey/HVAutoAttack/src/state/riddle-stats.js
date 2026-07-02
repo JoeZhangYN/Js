@@ -3,11 +3,15 @@
 // ML 调用次数 = outcomes 各项之和；ML 成功次数 = outcomes.ok；成功率 = ok / 调用次数。
 // 把"为什么失败"也量化进面板（统计的意义）：超时/限流/网络/无答案码… 各自单列。
 // 存储走 state/storage.js（带 prefix），与掉落/数据记录面板同机制；面板在 settings/render.js「小马验证」tab 展示。
-// 叶子模块：只依赖 storage.js + riddle-log.js（皆叶子，无环，可被 riddle.js / riddle-ml.js 同时 import）。
-import { getValue, setValue, delValue } from "./storage.js";
+// 叶子模块：只依赖 storage/failure + riddle-log.js（皆叶子，无环）。
+import { getValue } from "./storage.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "./riddle-log.js";
+import {
+  RIDDLE_STATS_KEY,
+  clearPersistedRiddleStats,
+  persistRiddleStats,
+} from "./riddle-stats-failure.js";
 
-const KEY = "riddleStats";
 const EVENT_READ = "read";
 const EVENT_RECORD_DETAIL = "recordDetail";
 const EVENT_RECORD_APPEAR = "recordAppear";
@@ -57,7 +61,7 @@ const riddleStatsEventHandlers = {
  * @returns {{appear:number, mlCall:number, ok:number, outcomes:Record<string,number>}}
  */
 function getRiddleStats() {
-  const s = getValue(KEY, true) || {};
+  const s = getValue(RIDDLE_STATS_KEY, true) || {};
   const outcomes = {};
   for (const k of Object.keys(ML_OUTCOMES)) {
     outcomes[k] = (s.outcomes && s.outcomes[k]) || 0;
@@ -73,18 +77,20 @@ function getRiddleStats() {
  */
 function recordMLDetail(detail) {
   if (!detail) return;
-  const s = getValue(KEY, true) || {};
+  const s = getValue(RIDDLE_STATS_KEY, true) || {};
   s.lastError = String(detail).slice(0, 300);
-  setValue(KEY, s);
-  runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message: "detail: " + detail }); // 同步进滚动日志（半持久化, 可翻历史）
+  if (!persistRiddleStats(s, "record-detail")) return false;
+  runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message: "detail: " + detail });
+  return true;
 }
 
 /** 小马图出现一次（riddle answer session 调用，与 ML 是否开启/成功无关）。 */
 function recordRiddleAppear() {
-  const s = getValue(KEY, true) || {};
+  const s = getValue(RIDDLE_STATS_KEY, true) || {};
   s.appear = (s.appear || 0) + 1;
-  setValue(KEY, s);
-  runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message: "riddle appeared" }); // 每次小马图出现落一条，作时间线锚点
+  if (!persistRiddleStats(s, "record-appear")) return false;
+  runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message: "riddle appeared" });
+  return true;
 }
 
 /**
@@ -93,16 +99,17 @@ function recordRiddleAppear() {
  */
 function recordMLOutcome(outcome) {
   const key = outcome in ML_OUTCOMES ? outcome : "unknown";
-  const s = getValue(KEY, true) || {};
+  const s = getValue(RIDDLE_STATS_KEY, true) || {};
   if (!s.outcomes) s.outcomes = {};
   s.outcomes[key] = (s.outcomes[key] || 0) + 1;
-  setValue(KEY, s);
-  runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message: "ml outcome=" + key }); // 每次 ML 结局落一条
+  if (!persistRiddleStats(s, "record-outcome")) return false;
+  runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message: "ml outcome=" + key });
+  return true;
 }
 
 /** 重置全部统计。 */
 function resetRiddleStats() {
-  delValue(KEY);
+  if (!clearPersistedRiddleStats()) return false;
   return getRiddleStats();
 }
 
