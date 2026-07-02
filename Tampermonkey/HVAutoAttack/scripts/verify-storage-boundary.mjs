@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/state/storage.js");
 const ownerTest = path.normalize("src/state/storage.test.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
 
 function rel(file) {
@@ -13,6 +15,7 @@ function rel(file) {
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "warnStorageReadFailure",
+  "capability: \"storageRead\"",
   "STORAGE_READ_FAILURE_KEY",
   "HVAA:lastStorageReadFailure",
   "[HVAA] storage read failed",
@@ -40,6 +43,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "fails closed and records evidence for corrupted localStorage JSON",
     "falls back to localStorage when GM_getValue throws",
     "fails closed when storage read diagnostics cannot be written or warned",
+    "capability: \"storageRead\"",
     "STORAGE_READ_FAILURE_KEY",
     "HVAA:lastStorageReadFailure",
     "console blocked",
@@ -51,6 +55,25 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${rel(ownerTest)} must cover ${required}`);
     }
+  }
+}
+
+const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
+for (const required of [
+  "STORAGE_READ_FAILURE: \"HVAA:lastStorageReadFailure\"",
+  "source(\"storageReadFailure\", DiagnosticEvidenceKey.STORAGE_READ_FAILURE)",
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${rel(diagnosticKeys)} must expose ${required}`);
+  }
+}
+const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
+for (const required of [
+  "HVAA:lastStorageReadFailure",
+  "storageReadFailure: { capability: \"storageRead\", source: \"GM_getValue\" }",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${rel(diagnosticTest)} must cover ${required}`);
   }
 }
 

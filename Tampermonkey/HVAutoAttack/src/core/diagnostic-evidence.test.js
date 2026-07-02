@@ -89,6 +89,7 @@ describe("readRecentDiagnosticEvidence", () => {
     window.sessionStorage.setItem("HVAA:lastPageAutomationFailure", JSON.stringify({ capability: "pageAutomation", stage: "runGamePageReadyAutomation" }));
     window.sessionStorage.setItem("HVAA:lastPageRefreshFailure", JSON.stringify({ capability: "pageRefresh", stage: "scheduleReload" }));
     window.sessionStorage.setItem("HVAA:lastIdleArenaFailure", JSON.stringify({ capability: "idleArena", stage: "battle-start" }));
+    window.sessionStorage.setItem("HVAA:lastStorageReadFailure", JSON.stringify({ capability: "storageRead", source: "GM_getValue" }));
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
@@ -119,6 +120,7 @@ describe("readRecentDiagnosticEvidence", () => {
       pageAutomationFailure: { capability: "pageAutomation", stage: "runGamePageReadyAutomation" },
       pageRefreshFailure: { capability: "pageRefresh", stage: "scheduleReload" },
       idleArenaFailure: { capability: "idleArena", stage: "battle-start" },
+      storageReadFailure: { capability: "storageRead", source: "GM_getValue" },
     });
   });
 

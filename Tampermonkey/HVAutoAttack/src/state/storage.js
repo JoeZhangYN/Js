@@ -33,6 +33,7 @@ export function setValue(item, value) {
 
 function warnStorageReadFailure(item, key, source, error) {
   const evidence = {
+    capability: "storageRead",
     item,
     key,
     source,

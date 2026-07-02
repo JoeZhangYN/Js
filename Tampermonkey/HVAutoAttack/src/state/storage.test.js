@@ -41,12 +41,14 @@ describe("storage read failures", () => {
     expect(warn).toHaveBeenCalledWith(
       "[HVAA] storage read failed",
       expect.objectContaining({
+        capability: "storageRead",
         item: STORAGE_FAILURE_FIXTURE_KEY,
         key: "hvAA_storageFailureFixture",
         source: "localStorageJson",
       })
     );
     expect(JSON.parse(sessionStorage.getItem(STORAGE_READ_FAILURE_KEY))).toMatchObject({
+      capability: "storageRead",
       item: STORAGE_FAILURE_FIXTURE_KEY,
       key: "hvAA_storageFailureFixture",
       source: "localStorageJson",
@@ -64,6 +66,7 @@ describe("storage read failures", () => {
     expect(warn).toHaveBeenCalledWith(
       "[HVAA] storage read failed",
       expect.objectContaining({
+        capability: "storageRead",
         item: STORAGE_FAILURE_FIXTURE_KEY,
         key: "hvAA_storageFailureFixture",
         source: "GM_getValue",
