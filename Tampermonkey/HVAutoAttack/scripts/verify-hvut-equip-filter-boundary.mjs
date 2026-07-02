@@ -8,6 +8,8 @@ const violations = [];
 
 const equipBody =
   text.match(/equip: function \(filters, equip\) \{[\s\S]*?\n    \},\n    match:/)?.[0] || "";
+const failureBody =
+  text.match(/recordFailure: function \(stage, detail\) \{[\s\S]*?\n    \},\n    equip:/)?.[0] || "";
 const matchBody =
   text.match(/match: function \(filters, equip\) \{[\s\S]*?\n    \},\n    normalize:/)?.[0] || "";
 const normalizeBody =
@@ -17,6 +19,9 @@ const validateBody =
 
 if (!equipBody) {
   violations.push("equipment filter match entry must stay explicit");
+}
+if (!failureBody) {
+  violations.push("equipment filter failure recorder must stay explicit");
 }
 if (!matchBody) {
   violations.push("equipment filter structured match result must stay explicit");
@@ -31,15 +36,27 @@ if (!normalizeBody) {
 for (const required of [
   "try {",
   "const result = $equip.filter.match(filters, equip)",
-  "console.warn('[HVUT] equipment filter failed'",
+  "$equip.filter.recordFailure('match', { equip: result.name, errors: result.errors })",
   "errors: result.errors",
   "return result.matched",
   "catch (error)",
-  "console.warn('[HVUT] equipment filter crashed'",
+  "$equip.filter.recordFailure('runtime', { equip, error: error?.message || String(error) })",
   "return false",
 ]) {
   if (!equipBody.includes(required)) {
     violations.push(`equipment filter match entry must include ${required}`);
+  }
+}
+
+for (const required of [
+  "capability: 'equipmentFilter'",
+  "sessionStorage.setItem('HVAA:lastEquipmentFilterFailure'",
+  "console.warn('[HVUT] equipment filter failed', evidence)",
+  "Equipment filtering must fail closed even when diagnostic storage is blocked.",
+  "Console hooks must not block equipment filtering fallback.",
+]) {
+  if (!failureBody.includes(required)) {
+    violations.push(`equipment filter failure recorder must include ${required}`);
   }
 }
 

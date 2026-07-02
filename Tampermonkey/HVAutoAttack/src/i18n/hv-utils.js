@@ -2678,15 +2678,29 @@ const bindEquip = function (equip, ctx) {
     quality: {
       'crude': 1, 'fair': 2, 'average': 3, 'superior': 4, 'exquisite': 5, 'magnificent': 6, 'legendary': 7, 'peerless': 8,
     },
+    recordFailure: function (stage, detail) {
+      const evidence = { capability: 'equipmentFilter', stage, ...(detail || {}) };
+      try {
+        sessionStorage.setItem('HVAA:lastEquipmentFilterFailure', JSON.stringify(evidence));
+      } catch (_error) {
+        // Equipment filtering must fail closed even when diagnostic storage is blocked.
+      }
+      try {
+        console.warn('[HVUT] equipment filter failed', evidence);
+      } catch (_error) {
+        // Console hooks must not block equipment filtering fallback.
+      }
+      return evidence;
+    },
     equip: function (filters, equip) {
       try {
         const result = $equip.filter.match(filters, equip);
         if (result.errors.length) {
-          console.warn('[HVUT] equipment filter failed', { equip: result.name, errors: result.errors });
+          $equip.filter.recordFailure('match', { equip: result.name, errors: result.errors });
         }
         return result.matched;
       } catch (error) {
-        console.warn('[HVUT] equipment filter crashed', { equip, error });
+        $equip.filter.recordFailure('runtime', { equip, error: error?.message || String(error) });
         return false;
       }
     },

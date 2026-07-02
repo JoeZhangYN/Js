@@ -47,6 +47,22 @@ if (/\bnew\s+Function\s*\(/.test(src)) {
   errors.push("contains `new Function(`; route dynamic rules through typed parsers");
 }
 
+// 5b. 通用 HVUT 装备过滤必须保留结构化失败证据。调用方仍拿布尔结果，
+// 但过滤器错误和运行时崩溃不能退回 console-only。
+for (const required of [
+  "recordFailure: function(stage, detail)",
+  "capability: \"equipmentFilter\"",
+  'sessionStorage.setItem("HVAA:lastEquipmentFilterFailure"',
+  '$equip.filter.recordFailure("match", { equip: result.name, errors: result.errors })',
+]) {
+  if (!src.includes(required)) errors.push(`equipment filter artifact missing ${required}`);
+}
+if (
+  !/\$equip\.filter\.recordFailure\("runtime", \{ equip: equip\d*, error: error\?\.message \|\| String\(error\) \}\)/.test(src)
+) {
+  errors.push("equipment filter artifact missing runtime failure evidence");
+}
+
 // 6. @grant 必须列全 5 项
 for (const g of ["GM_setValue", "GM_getValue", "GM_deleteValue", "GM_notification", "unsafeWindow"]) {
   if (!new RegExp(`@grant\\s+${g}\\b`).test(src)) errors.push(`@grant missing ${g}`);
