@@ -97,6 +97,14 @@ function recordRiddleMlAnswerFallback(stage, reason, detail = {}) {
   return evidence;
 }
 
+function runRiddleMlAnswerFallbackDiagnostic(stage, run) {
+  try {
+    run();
+  } catch (error) {
+    recordRiddleMlAnswerFallback(stage, "diagnosticFailed", { error: mlHealthErrorText(error) });
+  }
+}
+
 function warnRiddleMlHealthConsole(method, ...args) {
   try {
     console[method](...args);
@@ -529,11 +537,15 @@ async function tryMLAnswer() {
     }
     return context.answer;
   } catch (err) {
-    console.error("[HVAA][RMA] tryMLAnswer error", err);
-    reportMlDetail("exception " + (err && err.message));
-    reportMlOutcome("exception");
     recordRiddleMlAnswerFallback("answerFlow", "exception", { error: mlHealthErrorText(err) });
-    triggerErrorAlarm();
+    runRiddleMlAnswerFallbackDiagnostic("answerFlowConsole", () =>
+      console.error("[HVAA][RMA] tryMLAnswer error", err)
+    );
+    runRiddleMlAnswerFallbackDiagnostic("answerFlowStats", () => {
+      reportMlDetail("exception " + mlHealthErrorText(err));
+      reportMlOutcome("exception");
+    });
+    runRiddleMlAnswerFallbackDiagnostic("answerFlowAlarm", triggerErrorAlarm);
     return null;
   } finally {
     inFlight = false;

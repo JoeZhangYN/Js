@@ -143,4 +143,25 @@ describe("riddle ML request fallback", () => {
 
     await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toBeNull();
   });
+
+  it("keeps unhandled answer flow exceptions random when diagnostics fail", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+    mocks.runRiddleImageAutomation.mockRejectedValue(new Error("image pipeline blocked"));
+    mocks.runRiddleStatsAutomation.mockImplementation(() => {
+      throw new Error("stats blocked");
+    });
+    mocks.runAlarmAutomation.mockImplementation(() => {
+      throw new Error("alarm blocked");
+    });
+
+    await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toBeNull();
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastRiddleMlAnswerFailure"))).toMatchObject({
+      capability: "riddleMlAnswer",
+      fallback: "random",
+    });
+    expect(mocks.gmXhr).not.toHaveBeenCalled();
+  });
 });

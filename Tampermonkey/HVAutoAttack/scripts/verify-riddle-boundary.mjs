@@ -624,8 +624,11 @@ function checkRiddleMlEntry() {
     "onerror status=0",
     "timeout (>12s)",
     "keeps duplicate ML requests random when fallback evidence and warning both fail",
+    "keeps unhandled answer flow exceptions random when diagnostics fail",
     'throw new Error("quota")',
     'throw new Error("console blocked")',
+    'throw new Error("stats blocked")',
+    'throw new Error("alarm blocked")',
     "resolves.toBeNull()",
   ]) {
     if (!requestFallbackTestText.includes(required)) {
@@ -655,6 +658,7 @@ function checkRiddleMlEntry() {
     "RIDDLE_ML_ANSWER_FAILURE_KEY",
     "recordRiddleMlHealthFailure",
     "recordRiddleMlAnswerFallback",
+    "runRiddleMlAnswerFallbackDiagnostic",
     "readRiddleMlHealthValue",
     "writeRiddleMlHealthValue",
     "runRiddleMlHealthCycle",
@@ -675,6 +679,12 @@ function checkRiddleMlEntry() {
   }
   if (!/try\s*{[\s\S]*gmXhr\(\{[\s\S]*method:\s*"HEAD"[\s\S]*}\);[\s\S]*return true;[\s\S]*}\s*catch/.test(ownerText)) {
     violations.push(`${rel(riddleMlFile)} must classify health HEAD adapter startup failures`);
+  }
+  if (!/catch \(err\) \{[\s\S]*recordRiddleMlAnswerFallback\("answerFlow",\s*"exception"/.test(ownerText)) {
+    violations.push(`${rel(riddleMlFile)} must persist unhandled answer flow exceptions before diagnostics`);
+  }
+  if (!/runRiddleMlAnswerFallbackDiagnostic\("answerFlowConsole"[\s\S]*runRiddleMlAnswerFallbackDiagnostic\("answerFlowStats"[\s\S]*runRiddleMlAnswerFallbackDiagnostic\("answerFlowAlarm"/.test(ownerText)) {
+    violations.push(`${rel(riddleMlFile)} must isolate answer flow exception diagnostics`);
   }
   const diagnosticKeysText = fs.readFileSync(diagnosticKeysFile, "utf8");
   for (const required of [
