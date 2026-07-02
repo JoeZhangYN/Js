@@ -1,6 +1,7 @@
 // 战斗动作使用采集：动作开始读取用户动作意图，动作结束绑定战斗日志。
 import { gE } from "../dom/query.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
+import { recordBattleActionUsageCaptureFailure } from "./battle-action-usage-capture-failure.js";
 
 const EVENT_ACTION_STARTED = "actionStarted";
 const EVENT_ACTION_ENDED = "actionEnded";
@@ -18,23 +19,54 @@ function runtimeDeps(deps = {}) {
     readOptionField:
       deps.readOptionField ||
       ((key, fallback) => runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback })),
-    unsafeWindow: deps.unsafeWindow || unsafeWindow,
+    unsafeWindow: deps.unsafeWindow || globalThis.unsafeWindow,
   };
 }
 
+function failureError(error) {
+  return error?.message || String(error);
+}
+
+function readRecordUsageEnabled(deps, stage) {
+  try {
+    return deps.readOptionField("recordUsage", false);
+  } catch (error) {
+    recordBattleActionUsageCaptureFailure(stage, { reason: "optionReadFailed", error: failureError(error) });
+    return false;
+  }
+}
+
+function queryUsageElement(deps, stage, selector, mode) {
+  try {
+    return deps.gE(selector, mode);
+  } catch (error) {
+    recordBattleActionUsageCaptureFailure(stage, { selector, error: failureError(error) });
+    return mode === "all" ? [] : null;
+  }
+}
+
 function readActionUsage(deps) {
-  if (!deps.readOptionField("recordUsage", false)) {
+  if (!readRecordUsageEnabled(deps, "action-start-option")) {
     pendingUsage = undefined;
     return undefined;
   }
 
-  const action = deps.unsafeWindow.info;
+  const action = deps.unsafeWindow?.info;
+  if (!action?.mode) {
+    pendingUsage = undefined;
+    recordBattleActionUsageCaptureFailure("action-start-info", { reason: "missingActionInfo" });
+    return undefined;
+  }
   pendingUsage = { mode: action.mode };
   if (action.mode === "items") {
-    const itemEl = deps.gE(`#pane_item div[id^="ikey"][onclick*="skill('${action.skill}')"]`);
+    const itemEl = queryUsageElement(
+      deps,
+      "action-start-item",
+      `#pane_item div[id^="ikey"][onclick*="skill('${action.skill}')"]`
+    );
     pendingUsage.item = itemEl ? itemEl.textContent : action.skill;
   } else if (action.mode === "magic") {
-    const magicEl = deps.gE(action.skill);
+    const magicEl = queryUsageElement(deps, "action-start-magic", action.skill);
     pendingUsage.magic = magicEl ? magicEl.textContent : action.skill;
     const onmouseover = magicEl ? magicEl.getAttribute("onmouseover") : null;
     const cost = onmouseover ? onmouseover.match(/\('.*', '.*', '.*', (\d+), (\d+), \d+\)/) : null;
@@ -45,9 +77,12 @@ function readActionUsage(deps) {
 }
 
 function completeActionUsage(deps) {
-  if (!deps.readOptionField("recordUsage", false) || !pendingUsage) return undefined;
+  if (!readRecordUsageEnabled(deps, "action-end-option") || !pendingUsage) return undefined;
 
-  const usage = { ...pendingUsage, log: deps.gE("#textlog>tbody>tr>td", "all") };
+  const usage = {
+    ...pendingUsage,
+    log: queryUsageElement(deps, "action-end-log", "#textlog>tbody>tr>td", "all"),
+  };
   pendingUsage = undefined;
   return usage;
 }

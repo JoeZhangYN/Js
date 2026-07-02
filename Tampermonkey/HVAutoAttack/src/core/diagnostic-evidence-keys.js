@@ -21,6 +21,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   BATTLE_ACTION_LIFECYCLE: "HVAA:lastBattleActionLifecycle",
   BATTLE_ACTION_DECISION: "HVAA:lastBattleActionDecision",
   BATTLE_ACTION_EFFECT: "HVAA:lastBattleActionEffect",
+  BATTLE_ACTION_USAGE_CAPTURE_FAILURE: "HVAA:lastBattleActionUsageCaptureFailure",
   HTTP_REQUEST_FAILURE: "HVAA:lastHttpRequestFailure",
   STAMINA_RECOVERY_FAILURE: "HVAA:lastStaminaRecoveryFailure",
   REPAIR_BACKEND_FAILURE: "HVAA:lastRepairBackendFailure",
@@ -88,6 +89,10 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("battleActionLifecycle", DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE),
   source("battleActionDecision", DiagnosticEvidenceKey.BATTLE_ACTION_DECISION),
   source("battleActionEffect", DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT),
+  source(
+    "battleActionUsageCaptureFailure",
+    DiagnosticEvidenceKey.BATTLE_ACTION_USAGE_CAPTURE_FAILURE
+  ),
   source("httpRequestFailure", DiagnosticEvidenceKey.HTTP_REQUEST_FAILURE),
   source("staminaRecoveryFailure", DiagnosticEvidenceKey.STAMINA_RECOVERY_FAILURE),
   source("repairBackendFailure", DiagnosticEvidenceKey.REPAIR_BACKEND_FAILURE),

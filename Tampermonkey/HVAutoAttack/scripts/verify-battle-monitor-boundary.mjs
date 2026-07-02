@@ -380,6 +380,14 @@ function checkActionUsageCaptureEntry() {
     path.join(root, "src/monitor/battle-action-usage-capture.test.js"),
     "utf8"
   );
+  const captureFailureTestText = fs.existsSync(
+    path.join(root, "src/monitor/battle-action-usage-capture-failure.test.js")
+  )
+    ? fs.readFileSync(
+        path.join(root, "src/monitor/battle-action-usage-capture-failure.test.js"),
+        "utf8"
+      )
+    : "";
   if (
     !captureTestText.includes("rejects unknown and null events without reading runtime state") ||
     !captureTestText.includes("runBattleActionUsageCapture(null")
@@ -393,13 +401,36 @@ function checkActionUsageCaptureEntry() {
   ) {
     violations.push(`${rel(captureFile)} may export only its event entry`);
   }
-  for (const required of ["unsafeWindow.info", "#pane_item", "#textlog>tbody>tr>td"]) {
+  for (const required of ["unsafeWindow?.info", "#pane_item", "#textlog>tbody>tr>td"]) {
     if (!text.includes(required)) {
       violations.push(`${rel(captureFile)} must own action usage ${required} collection`);
     }
   }
   if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(`${rel(captureFile)} must read recordUsage through option entry`);
+  }
+  for (const required of [
+    "recordBattleActionUsageCaptureFailure",
+    "action-start-option",
+    "action-start-info",
+    "action-start-item",
+    "action-start-magic",
+    "action-end-log",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(captureFile)} must classify usage capture failure ${required}`);
+    }
+  }
+  for (const required of [
+    "records missing action info without leaving pending usage",
+    "falls back to skill labels when action element lookup fails",
+    "records battle log lookup failures while completing pending usage",
+    "fails closed when recordUsage option reads throw",
+    "HVAA:lastBattleActionUsageCaptureFailure",
+  ]) {
+    if (!captureFailureTestText.includes(required)) {
+      violations.push(`src/monitor/battle-action-usage-capture-failure.test.js must cover ${required}`);
+    }
   }
   if (/from\s+["']\.\.\/state\/store\.js["']/.test(text)) {
     violations.push(`${rel(captureFile)} must not import store for recordUsage option reads`);
