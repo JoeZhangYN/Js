@@ -83,6 +83,30 @@ try {
     var match = /(.)\.png/.exec(backgroundImage || '');
     return match ? match[1] : record_hvut_ability_parse_failure('abilityButtonType', { backgroundImage: backgroundImage || '' });
   };
+  var record_hvut_training_notification_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutTrainingNotification', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutTrainingNotificationFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Training notification fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] training notification failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT training notification fallback.
+    }
+    return null;
+  };
+  var parse_hvut_training_end_time = function (source, stage) {
+    var seconds = typeof source === 'number' ? source : undefined;
+    if (seconds === undefined) {
+      var match = /var end_time = (\d+);/.exec(source || '');
+      seconds = match ? parseInt(match[1]) : NaN;
+    }
+    return Number.isFinite(seconds) && seconds > 0
+      ? seconds * 1000
+      : record_hvut_training_notification_failure(stage, { sourceType: typeof source });
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -5929,9 +5953,14 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
     const _curEl = $qs('#train_progress > div:nth-child(2) > :first-child');
     _tr.current = _curEl ? (resolveEn(_curEl, 'trains') ?? _curEl.textContent) : undefined; // 英文逻辑 key(与 _tr.data 一致)
     if (_tr.current && _tr.data[_tr.current]) {
+      const current_end = parse_hvut_training_end_time(_window.end_time, 'trainingPageWindowEndTime');
+      if (current_end === null) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
       _tr.json.current_name = _tr.current;
       _tr.json.current_level = _tr.data[_tr.current].level;
-      _tr.json.current_end = _window.end_time * 1000;
+      _tr.json.current_end = current_end;
     } else {
       _tr.json.current_name = '';
       _tr.json.current_level = 0;
@@ -11056,9 +11085,19 @@ if ($config.settings.trainingNotification) {
       });
       json.error = '';
       if ($id('train_progress', doc)) {
+        const current_end = parse_hvut_training_end_time(html, 'bottomTrainingHtmlEndTime');
+        if (current_end === null) {
+          json.error = '解析训练倒计时失败';
+          _bottom.tr.node.link.textContent = json.error;
+          if (!$config.set('tr_notif', json, 'hvut_')) {
+            json.error = '保存训练通知失败';
+            _bottom.tr.node.link.textContent = json.error;
+          }
+          return false;
+        }
         json.current_name = $id('train_progcnt', doc).previousElementSibling.textContent;
         json.current_level = level[json.current_name];
-        json.current_end = /var end_time = (\d+);/.exec(html)[1] * 1000;
+        json.current_end = current_end;
         _bottom.tr.node.link.textContent = `${hvaaT(json.current_name, 'trains')} [${json.current_level + 1}]`;
         _bottom.tr.clock();
       } else if (json.next_name) {
@@ -12380,9 +12419,14 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
   }
 
   if (_tr.current && _tr.data[_tr.current]) {
+    const current_end = parse_hvut_training_end_time(_window.end_time, 'legacyTrainingPageWindowEndTime');
+    if (current_end === null) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     _tr.json.current_name = _tr.current;
     _tr.json.current_level = _tr.data[_tr.current].level;
-    _tr.json.current_end = _window.end_time * 1000;
+    _tr.json.current_end = current_end;
   } else {
     _tr.json.current_name = '';
     _tr.json.current_level = 0;
