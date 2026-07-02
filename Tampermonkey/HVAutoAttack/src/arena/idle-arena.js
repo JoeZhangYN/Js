@@ -146,7 +146,7 @@ function startNextBattle() {
   post(
     `?s=Battle&ss=${href}`,
     () => {
-      persistIdleArenaProgress("battle-start-persist", arena);
+      if (!persistIdleArenaProgress("battle-start-persist", arena)) return;
       reloadCurrentPage();
     },
     isIsekai

@@ -156,6 +156,11 @@ if (!/recordIdleArenaRequestFailure\("battle-start",\s*arenaBeforeStart,\s*failu
     `${owner.replaceAll("\\", "/")} battle start failures must preserve pre-start progress`
   );
 }
+if (!ownerText.includes('if (!persistIdleArenaProgress("battle-start-persist", arena)) return;')) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} battle start must not reload after failed progress persistence`
+  );
+}
 if (!ownerText.includes("const idleArenaEventHandlers")) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must route idle arena events through a handler table`
@@ -217,6 +222,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "records token fetch failure without continuing when diagnostics are blocked",
     "records token persistence failure without scheduling a battle retry",
     "records battle-start progress persistence failure without throwing from callback",
+    "expect(mocks.runNavigationAutomation).not.toHaveBeenCalled()",
     "IDLE_ARENA_FAILURE_KEY",
     'throw new Error("quota")',
     'throw new Error("arena write blocked")',

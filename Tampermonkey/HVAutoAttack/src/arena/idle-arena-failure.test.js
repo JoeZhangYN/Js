@@ -7,10 +7,16 @@ import { IDLE_ARENA_FAILURE_KEY } from "./idle-arena-failure.js";
 const mocks = vi.hoisted(() => ({
   post: vi.fn(),
   runOptionAutomation: vi.fn(),
+  runNavigationAutomation: vi.fn(),
   setValue: vi.fn(),
 }));
 
 vi.mock("../dom/http.js", () => ({ post: mocks.post }));
+vi.mock("../core/navigate.js", () => ({
+  NavigationEvent: Object.freeze({ RELOAD_NOW: "reloadNow" }),
+  NavigationReloadReason: Object.freeze({ PAGE_REFRESH: "pageRefresh" }),
+  runNavigationAutomation: mocks.runNavigationAutomation,
+}));
 vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
@@ -28,6 +34,7 @@ beforeEach(() => {
   vi.restoreAllMocks();
   mocks.post.mockReset();
   mocks.runOptionAutomation.mockReset();
+  mocks.runNavigationAutomation.mockReset();
   mocks.setValue.mockReset();
   mocks.setValue.mockImplementation((item, value) => {
     window.localStorage[`hvAA_${item}`] =
@@ -139,5 +146,6 @@ describe("runIdleArenaAutomation failure fallback", () => {
       "[HVAA] idle arena request failed",
       expect.objectContaining({ stage: "battle-start-persist" })
     );
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });
 });
