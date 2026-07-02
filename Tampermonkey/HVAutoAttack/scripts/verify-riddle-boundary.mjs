@@ -248,10 +248,20 @@ function checkRiddleSubmissionTiming() {
     }
   }
   const answerFailureText = fs.readFileSync(riddleMlAnswerFailureFile, "utf8");
-  for (const required of ["recordRiddleMlAnswerFailure", "ml answer failed error=", "fallback=random"]) {
+  for (const required of [
+    "RIDDLE_ML_ANSWER_FAILURE_KEY",
+    "HVAA:lastRiddleMlAnswerFailure",
+    "recordRiddleMlAnswerFailure",
+    "promiseRejected",
+    "ml answer failed error=",
+    "fallback=random",
+  ]) {
     if (!answerFailureText.includes(required)) {
       violations.push(`${rel(riddleMlAnswerFailureFile)} must own ${required}`);
     }
+  }
+  if (!/globalThis\.sessionStorage\?\.setItem\(RIDDLE_ML_ANSWER_FAILURE_KEY/.test(answerFailureText)) {
+    violations.push(`${rel(riddleMlAnswerFailureFile)} must persist top-level ML answer failures`);
   }
   if (/\.catch\(\(\) => \{\}\)/.test(answerText)) {
     violations.push(`${rel(riddleAnswerFile)} must not swallow riddle answer promise failures`);
@@ -262,6 +272,23 @@ function checkRiddleSubmissionTiming() {
     !answerTestText.includes("ml answer failed error=ml blocked fallback=random")
   ) {
     violations.push("src/pages/riddle.test.js must cover ML answer failure logging fallback");
+  }
+  const answerFailureTestText = fs.readFileSync(
+    path.join(root, "src/pages/riddle-ml-answer-failure.test.js"),
+    "utf8"
+  );
+  for (const required of [
+    "records top-level ML answer rejection as project diagnostic evidence",
+    "keeps random fallback when evidence, log, and warning diagnostics fail",
+    "RIDDLE_ML_ANSWER_FAILURE_KEY",
+    "promiseRejected",
+    "session blocked",
+    "log blocked",
+    "console blocked",
+  ]) {
+    if (!answerFailureTestText.includes(required)) {
+      violations.push(`src/pages/riddle-ml-answer-failure.test.js must cover ${required}`);
+    }
   }
   if (/=\s*runRiddleSubmissionTiming\s*\(/.test(answerText)) {
     violations.push(
