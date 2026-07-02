@@ -1841,9 +1841,13 @@ const bindDfct = function (dfct, ctx) {
     const ch_style = ctx.config.get('ch_style', {});
     if (ch_style.difficulty !== ctx.player.difficulty) {
       ch_style.difficulty = ctx.player.difficulty;
-      ctx.config.set('ch_style', ch_style);
+      if (!ctx.config.set('ch_style', ch_style)) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
     }
     dfct.node.div.addEventListener('mouseenter', dfct.create);
+    return true;
   };
   dfct.create = function () {
     if (dfct.sub) {
@@ -1867,7 +1871,7 @@ const bindDfct = function (dfct, ctx) {
     data.set('submit', 'Apply Changes');
     html = await $ajax.fetch('?s=Character&ss=se', data, 'FORM');
     doc = $doc(html);
-    dfct.set_button(doc);
+    return dfct.set_button(doc);
   };
   dfct.set_button = function (doc) {
     const value = /^(.+) Lv\.(\d+)/.exec($id('level_readout', doc).textContent.trim())[1];
@@ -1883,7 +1887,11 @@ const bindDfct = function (dfct, ctx) {
     }
     const ch_style = ctx.config.get('ch_style', {});
     ch_style.difficulty = value;
-    ctx.config.set('ch_style', ch_style);
+    if (!ctx.config.set('ch_style', ch_style)) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    return true;
   };
 };
 
