@@ -52,7 +52,7 @@ function resetProgress() {
 }
 
 function recordIdleArenaRequestFailure(stage, arena, failure) {
-  const evidence = { source: "idleArena", stage, failure };
+  const evidence = { capability: "idleArena", source: "idleArena", stage, failure };
   recordIdleArenaFailure(evidence);
   setValue(STORAGE_KEYS.ARENA, { ...arena, requestFailure: evidence });
 }

@@ -95,6 +95,7 @@ describe("runIdleArenaAutomation", () => {
 
     const arena = getValue(STORAGE_KEYS.ARENA, true);
     expect(arena.requestFailure).toEqual({
+      capability: "idleArena",
       source: "idleArena",
       stage: "token-fetch",
       failure,
@@ -132,6 +133,7 @@ describe("runIdleArenaAutomation", () => {
     const arena = getValue(STORAGE_KEYS.ARENA, true);
     expect(arena.done).toEqual([]);
     expect(arena.requestFailure).toEqual({
+      capability: "idleArena",
       source: "idleArena",
       stage: "battle-start",
       failure,

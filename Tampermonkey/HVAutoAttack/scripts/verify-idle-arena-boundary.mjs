@@ -6,6 +6,8 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/arena/idle-arena.js");
 const failureOwner = path.normalize("src/arena/idle-arena-failure.js");
 const ownerTest = path.normalize("src/arena/idle-arena.test.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const settings = path.normalize("src/settings/render.js");
 const storageKeys = path.normalize("src/state/persist-keys.js");
 const violations = [];
@@ -69,6 +71,8 @@ walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
+const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
+const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 if (!ownerText.includes("STORAGE_KEYS.ARENA")) {
   violations.push(`${owner.replaceAll("\\", "/")} must use STORAGE_KEYS.ARENA`);
 }
@@ -92,6 +96,7 @@ if (!ownerText.includes("delValue(STORAGE_KEYS.ARENA)")) {
 for (const required of [
   "recordIdleArenaRequestFailure",
   "recordIdleArenaFailure",
+  "capability: \"idleArena\"",
   "HVAA:lastIdleArenaFailure",
   "[HVAA] idle arena request failed",
   "IDLE_ARENA_TOKEN_URLS",
@@ -109,6 +114,22 @@ for (const required of [
 ]) {
   if (!failureOwnerText.includes(required)) {
     violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of [
+  "IDLE_ARENA_FAILURE: \"HVAA:lastIdleArenaFailure\"",
+  "source(\"idleArenaFailure\", DiagnosticEvidenceKey.IDLE_ARENA_FAILURE)",
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+for (const required of [
+  "HVAA:lastIdleArenaFailure",
+  "idleArenaFailure: { capability: \"idleArena\", stage: \"battle-start\" }",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 const tokenFetchStart = ownerText.indexOf("IDLE_ARENA_TOKEN_URLS.forEach");
@@ -175,6 +196,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "records battle start request failures without advancing arena progress",
     "HVAA:lastIdleArenaFailure",
     "[HVAA] idle arena request failed",
+    "capability: \"idleArena\"",
     "stage: \"token-fetch\"",
     "stage: \"battle-start\"",
   ]) {
