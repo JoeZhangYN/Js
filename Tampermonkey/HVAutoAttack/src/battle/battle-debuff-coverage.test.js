@@ -25,7 +25,7 @@ describe("battle debuff coverage", () => {
     expect(hasMissing([["imperil"]], "imperil", 2)).toBe(true);
   });
 
-  it("rejects unknown debuff coverage events", () => {
+  it("rejects invalid debuff coverage events", () => {
     expect(
       runBattleDebuffCoverageAutomation({
         type: "unknown",
@@ -34,5 +34,6 @@ describe("battle debuff coverage", () => {
         monsterAlive: 2,
       })
     ).toBeUndefined();
+    expect(runBattleDebuffCoverageAutomation(null)).toBeUndefined();
   });
 });

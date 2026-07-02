@@ -18,5 +18,5 @@ function hasMissingDebuffCoverage(monsterBuffs, debuffName, monsterAlive) {
 }
 
 export function runBattleDebuffCoverageAutomation(event = { type: EVENT_HAS_MISSING_DEBUFF }) {
-  return battleDebuffCoverageEventHandlers[event.type]?.(event);
+  return battleDebuffCoverageEventHandlers[event?.type]?.(event);
 }

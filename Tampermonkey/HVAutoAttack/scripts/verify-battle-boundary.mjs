@@ -2247,10 +2247,19 @@ function checkBattleDebuffCoverage() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(debuffCoverageFile)} entry must dispatch by handler table`);
   }
+  if (/battleDebuffCoverageEventHandlers\[event\.type\]/.test(entryBody)) {
+    violations.push(`${rel(debuffCoverageFile)} entry must fail closed for invalid debuff coverage events`);
+  }
+  if (!/battleDebuffCoverageEventHandlers\[event\?\.type\]/.test(entryBody)) {
+    violations.push(`${rel(debuffCoverageFile)} entry must dispatch invalid debuff coverage events through optional type`);
+  }
   const debuffCoverageTest = path.join(root, "src/battle/battle-debuff-coverage.test.js");
   const testText = fs.readFileSync(debuffCoverageTest, "utf8");
-  if (!testText.includes("rejects unknown debuff coverage events")) {
-    violations.push(`${rel(debuffCoverageTest)} must cover unknown debuff coverage events`);
+  if (!testText.includes("rejects invalid debuff coverage events")) {
+    violations.push(`${rel(debuffCoverageTest)} must cover invalid debuff coverage events`);
+  }
+  if (!/runBattleDebuffCoverageAutomation\(null\)/.test(testText)) {
+    violations.push(`${rel(debuffCoverageTest)} must cover null debuff coverage events`);
   }
   const castAllText = fs.readFileSync(decideCastAllFile, "utf8");
   for (const call of castAllText.matchAll(
