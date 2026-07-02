@@ -57,5 +57,5 @@ function dynamicHpThreshold(event, opt = {}) {
 }
 
 export function runBattleDynamicThreshold(event = { type: EVENT_READ_HP_THRESHOLD }) {
-  return battleDynamicThresholdEventHandlers[event.type]?.(event);
+  return battleDynamicThresholdEventHandlers[event?.type]?.(event);
 }

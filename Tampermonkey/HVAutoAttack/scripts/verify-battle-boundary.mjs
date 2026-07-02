@@ -4869,6 +4869,25 @@ function checkBattleStallMode() {
   ) {
     violations.push(`${rel(dynamicThresholdFile)} may export only its event query entry`);
   }
+  const dynamicThresholdEntry =
+    dynamicThresholdText.match(/export function runBattleDynamicThreshold\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/battleDynamicThresholdEventHandlers\[event\.type\]/.test(dynamicThresholdEntry)) {
+    violations.push(`${rel(dynamicThresholdFile)} must fail closed for invalid threshold events`);
+  }
+  if (!/battleDynamicThresholdEventHandlers\[event\?\.type\]/.test(dynamicThresholdEntry)) {
+    violations.push(`${rel(dynamicThresholdFile)} must dispatch invalid threshold events through optional type`);
+  }
+  const dynamicThresholdTestText = fs.readFileSync(
+    path.join(root, "src/battle/dynamic-threshold.test.js"),
+    "utf8"
+  );
+  if (!dynamicThresholdTestText.includes("rejects invalid dynamic threshold events without reading auto-tune")) {
+    violations.push("src/battle/dynamic-threshold.test.js must cover invalid threshold events");
+  }
+  if (!/runBattleDynamicThreshold\(null\)/.test(dynamicThresholdTestText)) {
+    violations.push("src/battle/dynamic-threshold.test.js must cover null threshold events");
+  }
   const itemDecisionText = fs.readFileSync(decideItemFile, "utf8");
   for (const required of [
     "BattleDynamicThresholdEvent.READ_HP_THRESHOLD",

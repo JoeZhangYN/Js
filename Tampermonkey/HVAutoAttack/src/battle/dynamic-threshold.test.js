@@ -1,5 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleDynamicThresholdEvent, runBattleDynamicThreshold } from "./dynamic-threshold.js";
+
+const mocks = vi.hoisted(() => ({
+  runAutoTuneAutomation: vi.fn(() => 1.3),
+}));
+
+vi.mock("../state/auto-tune.js", () => ({
+  AutoTuneEvent: Object.freeze({ READ_PAD: "readPad" }),
+  runAutoTuneAutomation: mocks.runAutoTuneAutomation,
+}));
+
+beforeEach(() => {
+  mocks.runAutoTuneAutomation.mockClear();
+});
 
 function readHpThreshold(facts, opt) {
   return runBattleDynamicThreshold({
@@ -41,7 +54,9 @@ describe("runBattleDynamicThreshold", () => {
     ).toBe(80);
   });
 
-  it("rejects unknown dynamic threshold events", () => {
+  it("rejects invalid dynamic threshold events without reading auto-tune", () => {
     expect(runBattleDynamicThreshold({ type: "unknown" })).toBeUndefined();
+    expect(runBattleDynamicThreshold(null)).toBeUndefined();
+    expect(mocks.runAutoTuneAutomation).not.toHaveBeenCalled();
   });
 });
