@@ -4,10 +4,13 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/pages/encounter.js");
+const entryExecutionFile = path.normalize("src/pages/encounter-entry-execution.js");
 const stateHelper = path.normalize("src/pages/encounter-state.js");
 const stateTest = path.normalize("src/pages/encounter-state.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const policyTest = path.normalize("src/pages/encounter-policy.test.js");
+const routingTest = path.normalize("src/pages/encounter-routing.test.js");
+const rejectionFile = path.normalize("src/pages/encounter-rejection.js");
 const bridgeFile = path.normalize("src/pages/encounter-bridge.js");
 const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
 const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
@@ -65,6 +68,7 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== entryExecutionFile &&
       relative !== stateTest &&
       relative !== bridgeFile &&
       /from\s+["']\.\/encounter-state\.js["']/.test(line)
@@ -235,25 +239,27 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const entryExecutionText = fs.readFileSync(path.join(root, entryExecutionFile), "utf8");
 const stateHelperText = fs.readFileSync(path.join(root, stateHelper), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const policyTestText = fs.readFileSync(path.join(root, policyTest), "utf8");
+const rejectionText = fs.readFileSync(path.join(root, rejectionFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
 const widgetPolicyTestText = fs.readFileSync(path.join(root, widgetPolicyTest), "utf8");
-if (!/\bfunction executeEncounterEntry\b/.test(ownerText)) {
+if (!/\bfunction executeEncounterEntry\b/.test(entryExecutionText)) {
   violations.push(
-    `${owner.replaceAll("\\", "/")} must execute manual and automatic encounter entry through one function`
+    `${entryExecutionFile.replaceAll("\\", "/")} must execute manual and automatic encounter entry through one function`
   );
 }
-for (const required of [
-  "isAutomaticEncounterEnabled",
-  "EVENT_RANDOM_ENCOUNTER_STARTED",
-  "EncounterStateEvent.MARK_ATTEMPTED",
-  "markEncounterAttempted",
-]) {
+for (const required of ["isAutomaticEncounterEnabled", "EVENT_RANDOM_ENCOUNTER_STARTED"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of ["EncounterStateEvent.MARK_ATTEMPTED", "markEncounterAttempted"]) {
+  if (!entryExecutionText.includes(required)) {
+    violations.push(`${entryExecutionFile.replaceAll("\\", "/")} must own ${required}`);
   }
 }
 if (!ownerText.includes("const encounterEventHandlers")) {
@@ -279,6 +285,35 @@ if (!ownerEntryMatch) {
       violations.push(
         `${owner.replaceAll("\\", "/")} entry must dispatch through encounterEventHandlers`
       );
+    }
+  }
+  if (/\|\|\s*encounterEventHandlers\[EVENT_LOBBY_TICK\]/.test(entryBody)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} explicit unknown encounter events must not run lobby tick`
+    );
+  }
+  if (!entryBody.includes("rejectUnknownEncounterEvent")) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} unknown encounter events must use typed rejection`
+    );
+  }
+}
+for (const required of ["rejectUnknownEncounterEvent", "unknownEncounterEvent", "rejected: true"]) {
+  if (!rejectionText.includes(required)) {
+    violations.push(`${rejectionFile.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+if (!fs.existsSync(path.join(root, routingTest))) {
+  violations.push(`${routingTest.replaceAll("\\", "/")} must cover encounter event routing`);
+} else {
+  const routingTestText = fs.readFileSync(path.join(root, routingTest), "utf8");
+  for (const required of [
+    "rejects unknown encounter events without scheduling lobby checks",
+    "unknownEncounterEvent",
+    "expect(vi.getTimerCount()).toBe(0)",
+  ]) {
+    if (!routingTestText.includes(required)) {
+      violations.push(`${routingTest.replaceAll("\\", "/")} must cover ${required}`);
     }
   }
 }

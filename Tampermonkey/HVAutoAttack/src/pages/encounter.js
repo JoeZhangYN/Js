@@ -1,9 +1,13 @@
 // 自动遭遇战业务能力：唯一入口 runEncounterAutomation(event)。
-import { NavigationEvent, NavigationRedirectReason, runNavigationAutomation } from "../core/navigate.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
-import { EncounterLobbyScheduleEvent, runEncounterLobbySchedule } from "./encounter-lobby-schedule.js";
+import { executeEncounterEntry } from "./encounter-entry-execution.js";
+import {
+  EncounterLobbyScheduleEvent,
+  runEncounterLobbySchedule,
+} from "./encounter-lobby-schedule.js";
 import { isAutomaticEncounterEnabled } from "./encounter-option-gate.js";
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
+import { rejectUnknownEncounterEvent } from "./encounter-rejection.js";
 import { EncounterStateEvent, runEncounterStateAutomation } from "./encounter-state.js";
 import { planEncounterWidgetEvent } from "./encounter-widget-policy.js";
 
@@ -41,39 +45,6 @@ function waitForNextCheck(state, event) {
     rerun: event.rerun,
   });
   return { claimed: false };
-}
-
-function executeEncounterEntry(outcome) {
-  if (outcome?.action === "enter" || outcome?.action === "navigate") {
-    const attemptedState = markEncounterAttempted(outcome);
-    runNavigationAutomation({
-      type: NavigationEvent.OPEN_URL,
-      reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
-      url: outcome.href,
-    });
-    return { ...outcome, action: "navigated", handled: true, state: attemptedState || outcome.state };
-  }
-  if (outcome?.action === "open") {
-    const attemptedState = markEncounterAttempted(outcome);
-    runNavigationAutomation({
-      type: NavigationEvent.OPEN_URL,
-      reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
-      url: outcome.href,
-      newTab: true,
-    });
-    return { ...outcome, action: "opened", handled: true, state: attemptedState || outcome.state };
-  }
-  return outcome;
-}
-
-function markEncounterAttempted(outcome) {
-  const key = outcome?.state?.key;
-  if (!key) return outcome?.state;
-  return runEncounterStateAutomation({
-    type: EncounterStateEvent.MARK_ATTEMPTED,
-    key,
-    state: outcome.state,
-  });
 }
 
 function planStoredEncounterEntry(state) {
@@ -155,6 +126,9 @@ const encounterEventHandlers = Object.freeze({
 });
 
 export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
-  const handler = encounterEventHandlers[event.type] || encounterEventHandlers[EVENT_LOBBY_TICK];
+  const handler = encounterEventHandlers[event?.type];
+  if (!handler) {
+    return rejectUnknownEncounterEvent(event);
+  }
   return handler(event);
 }

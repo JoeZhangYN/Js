@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 describe("runEncounterAutomation routing", () => {
-  it("treats unknown encounter events as the lobby tick entry", async () => {
+  it("rejects unknown encounter events without scheduling lobby checks", async () => {
     const rerun = vi.fn();
     localStorage.setItem(
       HVUT_RE_KEY,
@@ -31,7 +31,13 @@ describe("runEncounterAutomation routing", () => {
       rerun,
     });
 
-    expect(outcome.claimed).toBe(false);
-    expect(vi.getTimerCount()).toBe(1);
+    expect(outcome).toEqual({
+      claimed: false,
+      rejected: true,
+      reason: "unknownEncounterEvent",
+      eventType: "unknown",
+    });
+    expect(vi.getTimerCount()).toBe(0);
+    expect(rerun).not.toHaveBeenCalled();
   });
 });
