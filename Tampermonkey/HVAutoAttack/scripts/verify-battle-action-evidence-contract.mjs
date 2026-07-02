@@ -196,6 +196,7 @@ for (const required of ["storageWriteOk", "storageWriteError"]) {
   }
 }
 for (const required of [
+  "keeps automation evidence visible when storage is unavailable",
   "keeps decision evidence visible when storage is unavailable",
   "keeps effect evidence visible when storage is unavailable",
   "keeps command evidence visible when storage is unavailable",

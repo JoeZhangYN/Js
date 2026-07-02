@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  BattleAutomationEvidenceEvent,
+  runBattleAutomationEvidence,
+} from "./battle-automation-evidence.js";
+import {
   BattleActionDecisionEvidenceEvent,
   runBattleActionDecisionEvidence,
 } from "./battle-action-decision-evidence.js";
@@ -21,6 +25,17 @@ import {
 beforeEach(() => window.sessionStorage.clear());
 
 const storageFailureCases = [
+  [
+    "keeps automation evidence visible when storage is unavailable",
+    runBattleAutomationEvidence,
+    {
+      type: BattleAutomationEvidenceEvent.RECORD_STARTUP,
+      phase: "pageReady",
+      result: true,
+      steps: [],
+    },
+    "[HVAA] battle automation",
+  ],
   [
     "keeps decision evidence visible when storage is unavailable",
     runBattleActionDecisionEvidence,
