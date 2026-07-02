@@ -444,8 +444,12 @@ const bindConfig = function (config, ctx) {
     config.settings = JSON.parse(JSON.stringify(config.default));
   };
   config.get = function (key, dvalue, prefix = config.prefix) {
-    const value = GM_getValue(prefix + key, dvalue);
-    return value;
+    try {
+      return GM_getValue(prefix + key, dvalue);
+    } catch (error) {
+      record_hvut_config_storage_failure('get', { key: prefix + key, error: error?.message || String(error) });
+      return dvalue;
+    }
   };
   config.set = function (key, value, prefix = config.prefix) {
     try {
@@ -469,8 +473,13 @@ const bindConfig = function (config, ctx) {
     }
   };
   config.ls_get = function (key, dvalue, prefix = config.prefix) {
-    const value = localStorage.getItem(prefix + key);
-    return value === null ? dvalue : JSON.parse(value);
+    try {
+      const value = localStorage.getItem(prefix + key);
+      return value === null ? dvalue : JSON.parse(value);
+    } catch (error) {
+      record_hvut_config_storage_failure('localStorageGet', { key: prefix + key, error: error?.message || String(error) });
+      return dvalue;
+    }
   };
   config.ls_set = function (key, value, prefix = config.prefix) {
     try {
@@ -482,7 +491,13 @@ const bindConfig = function (config, ctx) {
     }
   };
   config.ls_del = function (key, prefix = config.prefix) {
-    localStorage.removeItem(prefix + key);
+    try {
+      localStorage.removeItem(prefix + key);
+      return true;
+    } catch (error) {
+      record_hvut_config_storage_failure('localStorageDelete', { key: prefix + key, error: error?.message || String(error) });
+      return false;
+    }
   };
   config.open = function (key) {
     if (!config.node) {

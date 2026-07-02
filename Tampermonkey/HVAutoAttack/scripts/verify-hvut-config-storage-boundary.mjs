@@ -21,9 +21,22 @@ requireIncludes(text, "config storage failure recorder", [
 ]);
 
 const setMatch = /config\.set = function \(key, value[\s\S]*?\n  \};\n  config\.del/.exec(text);
+const getMatch = /config\.get = function \(key[\s\S]*?\n  \};\n  config\.set/.exec(text);
 const delMatch = /config\.del = function \(key[\s\S]*?\n  \};\n  config\.ls_get/.exec(text);
+const lsGetMatch = /config\.ls_get = function \(key[\s\S]*?\n  \};\n  config\.ls_set/.exec(text);
 const lsSetMatch = /config\.ls_set = function \(key[\s\S]*?\n  \};\n  config\.ls_del/.exec(text);
+const lsDelMatch = /config\.ls_del = function \(key[\s\S]*?\n  \};\n  config\.open/.exec(text);
 const saveMatch = /config\.save = function \(panel\) \{[\s\S]*?\n  \};\n  config\.text2obj/.exec(text);
+
+if (!getMatch) violations.push(`${target} config.get entry must stay visible`);
+else {
+  requireIncludes(getMatch[0], "config.get", [
+    "try {",
+    "return GM_getValue(prefix + key, dvalue);",
+    "record_hvut_config_storage_failure('get'",
+    "return dvalue;",
+  ]);
+}
 
 if (!setMatch) violations.push(`${target} config.set entry must stay visible`);
 else {
@@ -47,6 +60,17 @@ else {
   ]);
 }
 
+if (!lsGetMatch) violations.push(`${target} config.ls_get entry must stay visible`);
+else {
+  requireIncludes(lsGetMatch[0], "config.ls_get", [
+    "try {",
+    "localStorage.getItem(prefix + key)",
+    "return value === null ? dvalue : JSON.parse(value);",
+    "record_hvut_config_storage_failure('localStorageGet'",
+    "return dvalue;",
+  ]);
+}
+
 if (!lsSetMatch) violations.push(`${target} config.ls_set entry must stay visible`);
 else {
   requireIncludes(lsSetMatch[0], "config.ls_set", [
@@ -54,6 +78,17 @@ else {
     "localStorage.setItem(prefix + key, JSON.stringify(value));",
     "return true;",
     "record_hvut_config_storage_failure('localStorageSet'",
+    "return false;",
+  ]);
+}
+
+if (!lsDelMatch) violations.push(`${target} config.ls_del entry must stay visible`);
+else {
+  requireIncludes(lsDelMatch[0], "config.ls_del", [
+    "try {",
+    "localStorage.removeItem(prefix + key);",
+    "return true;",
+    "record_hvut_config_storage_failure('localStorageDelete'",
     "return false;",
   ]);
 }
