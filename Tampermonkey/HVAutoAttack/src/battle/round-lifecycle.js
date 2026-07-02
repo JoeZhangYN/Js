@@ -31,5 +31,5 @@ const battleRoundLifecycleEventHandlers = Object.freeze({
 });
 
 export function runBattleRoundLifecycle(event = { type: EVENT_ROUND_STARTED }) {
-  return battleRoundLifecycleEventHandlers[event.type]?.(event);
+  return battleRoundLifecycleEventHandlers[event?.type]?.(event);
 }

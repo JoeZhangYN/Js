@@ -49,5 +49,11 @@ describe("runBattleRoundLifecycle", () => {
 
   it("ignores unknown lifecycle events", () => {
     expect(runBattleRoundLifecycle({ type: "unknown" })).toBeUndefined();
+    expect(runBattleRoundLifecycle(null)).toBeUndefined();
+
+    expect(mocks.runAutoTuneAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleTurnAutomation).not.toHaveBeenCalled();
+    expect(mocks.runBattleSkillUsageAutomation).not.toHaveBeenCalled();
+    expect(mocks.runMonsterKnowledgeAutomation).not.toHaveBeenCalled();
   });
 });

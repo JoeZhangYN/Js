@@ -102,5 +102,5 @@ const battleSnapshotEventHandlers = Object.freeze({
 });
 
 export function runBattleSnapshot(event = { type: EVENT_READ_CURRENT }) {
-  return battleSnapshotEventHandlers[event.type]?.(event);
+  return battleSnapshotEventHandlers[event?.type]?.(event);
 }

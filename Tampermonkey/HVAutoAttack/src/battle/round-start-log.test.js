@@ -32,5 +32,12 @@ describe("runBattleRoundStartLog", () => {
       firstText: "",
       initializingText: "",
     });
+    expect(runBattleRoundStartLog(null)).toEqual({
+      rows: [],
+      firstText: "",
+      initializingText: "",
+    });
+
+    expect(mocks.gE).not.toHaveBeenCalled();
   });
 });

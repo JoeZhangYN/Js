@@ -57,6 +57,7 @@ const roundLifecycleText = requireText(path.normalize("src/battle/round-lifecycl
   "BattleSkillUsageEvent.RESET_ROUND",
   "MonsterKnowledgeEvent.ROUND_STARTED",
 ]);
+const roundLifecycleTestText = read(path.normalize("src/battle/round-lifecycle.test.js"));
 const roundStartLogText = requireText(path.normalize("src/battle/round-start-log.js"), [
   "BattleRoundStartLogEvent",
   "runBattleRoundStartLog",
@@ -64,6 +65,7 @@ const roundStartLogText = requireText(path.normalize("src/battle/round-start-log
   "BATTLE_LOG_SELECTOR",
   "emptyRoundStartLog",
 ]);
+const roundStartLogTestText = read(path.normalize("src/battle/round-start-log.test.js"));
 const ownerTestText = requireText(ownerTest, [
   "recordStartContext",
   "recordStartCount",
@@ -143,6 +145,24 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(roundLifecycleText)) {
 }
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(roundStartLogText)) {
   violations.push("src/battle/round-start-log.js must dispatch events through handler table");
+}
+if (/battleRoundLifecycleEventHandlers\[event\.type\]/.test(roundLifecycleText)) {
+  violations.push("src/battle/round-lifecycle.js must fail closed before handler dispatch");
+}
+if (!/battleRoundLifecycleEventHandlers\[event\?\.type\]/.test(roundLifecycleText)) {
+  violations.push("src/battle/round-lifecycle.js must dispatch with optional event type");
+}
+if (/battleRoundStartLogEventHandlers\[event\.type\]/.test(roundStartLogText)) {
+  violations.push("src/battle/round-start-log.js must fail closed before handler dispatch");
+}
+if (!/battleRoundStartLogEventHandlers\[event\?\.type\]/.test(roundStartLogText)) {
+  violations.push("src/battle/round-start-log.js must dispatch with optional event type");
+}
+if (!/runBattleRoundLifecycle\(null\)/.test(roundLifecycleTestText)) {
+  violations.push("src/battle/round-lifecycle.test.js must lock invalid lifecycle events");
+}
+if (!/runBattleRoundStartLog\(null\)/.test(roundStartLogTestText)) {
+  violations.push("src/battle/round-start-log.test.js must lock invalid round-start log events");
 }
 const startRoundLifecycleBody =
   roundLifecycleText.match(/function startRoundLifecycle\(\) \{[\s\S]*?\n\}/)?.[0] || "";

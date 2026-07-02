@@ -144,6 +144,8 @@ describe("runBattleSnapshot", () => {
 
   it("rejects unknown snapshot events without side effects", () => {
     expect(runBattleSnapshot({ type: "unknown" })).toBeUndefined();
+    expect(runBattleSnapshot(null)).toBeUndefined();
+
     expect(mocks.runBattleMonsterSurface).not.toHaveBeenCalled();
     expect(mocks.runBattleObservationLearning).not.toHaveBeenCalled();
   });

@@ -25,5 +25,5 @@ const battleRoundStartLogEventHandlers = Object.freeze({
 });
 
 export function runBattleRoundStartLog(event = { type: EVENT_READ_CURRENT }) {
-  return battleRoundStartLogEventHandlers[event.type]?.(event) ?? emptyRoundStartLog();
+  return battleRoundStartLogEventHandlers[event?.type]?.(event) ?? emptyRoundStartLog();
 }
