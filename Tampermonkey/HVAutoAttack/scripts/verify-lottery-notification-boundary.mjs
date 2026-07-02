@@ -18,6 +18,8 @@ const filterBody =
   text.match(/_bottom\.evaluate_lottery_filter = function \(ss, equip\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const renderBody =
   text.match(/_bottom\.render_lottery_equip_text = function \(ss, equip, lottery\) \{[\s\S]*?\n  \};/)?.[0] || "";
+const failureBody =
+  text.match(/_bottom\.record_lottery_notification_failure = function \(stage, ss, detail\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const lotteryRegion = text.match(/\/\/ LOTTERY[\s\S]*?\n\n\/\/\* \[1\] Character/)?.[0] || "";
 
 if (!body) {
@@ -31,6 +33,9 @@ if (!filterBody) {
 }
 if (!renderBody) {
   violations.push("lottery notification equip rendering must stay isolated");
+}
+if (!failureBody) {
+  violations.push("lottery notification failure recorder must stay explicit");
 }
 if (!lotteryRegion) {
   violations.push("lottery notification region must stay explicit");
@@ -52,20 +57,21 @@ for (const required of [
   "try {",
   "catch (error)",
   "加载失败",
-  "console.warn('[HVUT] lottery notification failed'",
+  "_bottom.record_lottery_notification_failure('load', ss, { error: 'missingEquipName' })",
   "const drawTime = _bottom.read_lottery_draw_time(rightpaneText, now)",
   "const prevMatch =",
   "prevMatch?.[1]",
   "eqname.previousElementSibling?.textContent",
   "let filterResult = { matched: false, error: null }",
   "filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip) || filterResult",
-  "console.warn('[HVUT] lottery notification filter decision failed'",
+  "_bottom.record_lottery_notification_failure('filterDecision', ss",
   "lottery.filterError = filterResult.error",
   "const lotteryEquipText = _bottom.render_lottery_equip_text(ss, lottery.equip, lottery)",
   "_bottom.node[ss].equip.textContent = lotteryEquipText",
   "$config.set('lt_notif', json, 'hvut_')",
-  "console.warn('[HVUT] lottery notification persistence failed'",
-  "console.warn('[HVUT] lottery notification popup failed'",
+  "_bottom.record_lottery_notification_failure('persistence', ss",
+  "_bottom.record_lottery_notification_failure('popup', ss",
+  "_bottom.record_lottery_notification_failure('load', ss, { error: error?.message || String(error) })",
 ]) {
   if (!body.includes(required)) {
     violations.push(`${rel(target)} lottery loader must include ${required}`);
@@ -84,14 +90,13 @@ if (!lotteryRegion.includes("_bottom.node[ss].equip.textContent = _bottom.render
 
 for (const required of [
   "const reportErrors = (filterErrors, matched = false) =>",
-  "Console hooks must not block lottery equipment display.",
+  "_bottom.record_lottery_notification_failure('filter', ss",
   "const filterErrors = []",
   "const result = $equip.filter.match($config.settings.lotteryFilters, equip)",
   "const matched = result.matched",
   "filterErrors.push(...result.errors)",
   "return reportErrors(filterErrors, matched)",
   "filter: '<lotteryFilters>'",
-  "console.warn('[HVUT] lottery notification filter failed'",
   "errors: filterErrors",
   "matched,",
   "return reportErrors(filterErrors, false)",
@@ -119,11 +124,22 @@ for (const required of [
   "catch (error)",
   "const renderError = error?.message || String(error)",
   "lottery.renderError = renderError",
-  "console.warn('[HVUT] lottery notification equip render failed'",
+  "_bottom.record_lottery_notification_failure('equipRender', ss",
   "return String(equip ?? '')",
 ]) {
   if (!renderBody.includes(required)) {
     violations.push(`${rel(target)} lottery equip renderer must include ${required}`);
+  }
+}
+
+for (const required of [
+  "capability: 'lotteryNotification'",
+  "sessionStorage.setItem('HVAA:lastLotteryNotificationFailure'",
+  "console.warn('[HVUT] lottery notification failed', evidence)",
+  "Console hooks must not block lottery notification fallback.",
+]) {
+  if (!failureBody.includes(required)) {
+    violations.push(`${rel(target)} lottery failure recorder must include ${required}`);
   }
 }
 

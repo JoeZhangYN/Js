@@ -10735,6 +10735,21 @@ if ($config.settings.trainingNotification) {
 
 // LOTTERY
 if ($config.settings.lotteryNotification) {
+  _bottom.record_lottery_notification_failure = function (stage, ss, detail) {
+    const evidence = { capability: 'lotteryNotification', stage, ss, ...(detail || {}) };
+    try {
+      sessionStorage.setItem('HVAA:lastLotteryNotificationFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Lottery notification fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] lottery notification failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block lottery notification fallback.
+    }
+    return evidence;
+  };
+
   _bottom.read_lottery_state = function (ss) {
     const json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_') || {};
     if (!json.lt || typeof json.lt !== 'object') json.lt = {};
@@ -10745,11 +10760,7 @@ if ($config.settings.lotteryNotification) {
 
   _bottom.evaluate_lottery_filter = function (ss, equip) {
     const reportErrors = (filterErrors, matched = false) => {
-      try {
-        console.warn('[HVUT] lottery notification filter failed', { ss, equip, errors: filterErrors });
-      } catch (_error) {
-        // Console hooks must not block lottery equipment display.
-      }
+      _bottom.record_lottery_notification_failure('filter', ss, { equip, errors: filterErrors });
       return {
         matched,
         error: (Array.isArray(filterErrors) ? filterErrors : [])
@@ -10794,7 +10805,7 @@ if ($config.settings.lotteryNotification) {
     } catch (error) {
       const renderError = error?.message || String(error);
       if (lottery && typeof lottery === 'object') lottery.renderError = renderError;
-      console.warn('[HVUT] lottery notification equip render failed', { ss, equip, error });
+      _bottom.record_lottery_notification_failure('equipRender', ss, { equip, error: renderError });
       return String(equip ?? '');
     }
   };
@@ -10831,6 +10842,7 @@ if ($config.settings.lotteryNotification) {
       const eqname = $id('lottery_eqname', doc);
       if (!eqname) {
         _bottom.node[ss].equip.textContent = '加载失败';
+        _bottom.record_lottery_notification_failure('load', ss, { error: 'missingEquipName' });
         return;
       }
       const rightpaneText = $id('rightpane', doc)?.textContent || '';
@@ -10853,8 +10865,9 @@ if ($config.settings.lotteryNotification) {
       try {
         filterResult = _bottom.evaluate_lottery_filter(ss, lottery.equip) || filterResult;
       } catch (error) {
-        filterResult = { matched: false, error: error?.message || String(error) };
-        console.warn('[HVUT] lottery notification filter decision failed', { ss, equip: lottery.equip, error });
+        const filterError = error?.message || String(error);
+        filterResult = { matched: false, error: filterError };
+        _bottom.record_lottery_notification_failure('filterDecision', ss, { equip: lottery.equip, error: filterError });
       }
       lottery.check = filterResult.matched;
       lottery.filterError = filterResult.error;
@@ -10872,7 +10885,7 @@ if ($config.settings.lotteryNotification) {
         $config.set('lt_notif', json, 'hvut_');
       } catch (error) {
         lottery.persistenceError = error?.message || String(error);
-        console.warn('[HVUT] lottery notification persistence failed', { ss, error });
+        _bottom.record_lottery_notification_failure('persistence', ss, { error: lottery.persistenceError });
       }
       if (shouldPopup) {
         try {
@@ -10880,13 +10893,13 @@ if ($config.settings.lotteryNotification) {
           popup(`<p>${date_text}</p><p style="color: #f00; font-weight: bold;">${lotteryEquipText}</p>`);
         } catch (error) {
           lottery.popupError = error?.message || String(error);
-          console.warn('[HVUT] lottery notification popup failed', { ss, error });
+          _bottom.record_lottery_notification_failure('popup', ss, { error: lottery.popupError });
         }
       }
     } catch (error) {
       _bottom.node[ss].equip.textContent = '加载失败';
       _bottom.node[ss].time.textContent = '--:--';
-      console.warn('[HVUT] lottery notification failed', { ss, error });
+      _bottom.record_lottery_notification_failure('load', ss, { error: error?.message || String(error) });
     }
   };
 
