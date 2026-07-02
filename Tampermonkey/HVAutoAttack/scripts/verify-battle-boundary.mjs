@@ -16,7 +16,10 @@ const actionSpeedFile = path.join(root, "src/battle/battle-action-speed.js");
 const actionSpeedTest = path.join(root, "src/battle/battle-action-speed.test.js");
 const actionLifecycleFile = path.join(root, "src/battle/battle-action-lifecycle.js");
 const actionLifecycleTest = path.join(root, "src/battle/battle-action-lifecycle.test.js");
-const actionLifecycleRecordingFile = path.join(root, "src/battle/battle-action-lifecycle-recording.js");
+const actionLifecycleRecordingFile = path.join(
+  root,
+  "src/battle/battle-action-lifecycle-recording.js"
+);
 const actionLifecycleEvidenceFile = path.join(
   root,
   "src/battle/battle-action-lifecycle-evidence.js"
@@ -87,12 +90,12 @@ const mainLoopFile = path.join(root, "src/battle/main-loop.js");
 const turnPreludeFile = path.join(root, "src/battle/battle-turn-prelude.js");
 const turnPreludeTest = path.join(root, "src/battle/battle-turn-prelude.test.js");
 const actionDecisionFile = path.join(root, "src/battle/battle-action-decision.js");
-const actionDecisionDispatchFile = path.join(
-  root,
-  "src/battle/battle-action-decision-dispatch.js"
-);
+const actionDecisionDispatchFile = path.join(root, "src/battle/battle-action-decision-dispatch.js");
 const actionDecisionEvidenceFile = path.join(root, "src/battle/battle-action-decision-evidence.js");
-const actionDecisionRecordingFile = path.join(root, "src/battle/battle-action-decision-recording.js");
+const actionDecisionRecordingFile = path.join(
+  root,
+  "src/battle/battle-action-decision-recording.js"
+);
 const actionDecisionEvidenceTestFile = path.join(
   root,
   "src/battle/battle-action-decision-evidence.test.js"
@@ -208,7 +211,9 @@ function checkBattleEntry() {
     violations.push(`${rel(battleFile)} must run turns through runBattleTurnAutomation()`);
   }
   if (!text.includes("BattleTurnWorkflowEvent.RUN_CURRENT_TURN")) {
-    violations.push(`${rel(battleFile)} must run turns through BattleTurnWorkflowEvent.RUN_CURRENT_TURN`);
+    violations.push(
+      `${rel(battleFile)} must run turns through BattleTurnWorkflowEvent.RUN_CURRENT_TURN`
+    );
   }
   if (!text.includes("runBattleActionEventBridgeAutomation")) {
     violations.push(
@@ -266,8 +271,14 @@ function checkBattleEntry() {
   ) {
     violations.push(`${rel(battleFile)} must own frozen explicit page-ready startup order`);
   }
-  if (!/function runPageReadyStartup\(deps\)[\s\S]*for\s*\(\s*const\s+step\s+of\s+PAGE_READY_STARTUP_STEPS\s*\)/.test(text)) {
-    violations.push(`${rel(battleFile)} must run page-ready startup through PAGE_READY_STARTUP_STEPS`);
+  if (
+    !/function runPageReadyStartup\(deps\)[\s\S]*for\s*\(\s*const\s+step\s+of\s+PAGE_READY_STARTUP_STEPS\s*\)/.test(
+      text
+    )
+  ) {
+    violations.push(
+      `${rel(battleFile)} must run page-ready startup through PAGE_READY_STARTUP_STEPS`
+    );
   }
   if (
     !/const battleEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_PAGE_READY\]: \(event, deps\) => runPageReadyStartup\(deps\)/.test(
@@ -277,20 +288,25 @@ function checkBattleEntry() {
     violations.push(`${rel(battleFile)} must route battle events through battleEventHandlers`);
   }
   if (!text.includes("battleEventHandlers[event?.type]")) {
-    violations.push(`${rel(battleFile)} must reject null battle page events without startup side effects`);
+    violations.push(
+      `${rel(battleFile)} must reject null battle page events without startup side effects`
+    );
   }
   if (!text.includes("const startupSucceeded = steps.every((step) => step.result)")) {
     violations.push(`${rel(battleFile)} must derive page-ready success from startup step results`);
   }
   if (!text.includes("recordStartup(EVENT_PAGE_READY, startupSucceeded, steps)")) {
-    violations.push(`${rel(battleFile)} must not claim page-ready succeeded when a startup step failed`);
+    violations.push(
+      `${rel(battleFile)} must not claim page-ready succeeded when a startup step failed`
+    );
   }
   if (!text.includes("rejectUnknownBattleAutomationEvent(event, deps)")) {
     violations.push(`${rel(battleFile)} must record rejected battle automation evidence`);
   }
   const entryBody =
-    text.match(/export function runBattleAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    text.match(
+      /export function runBattleAutomation\(event = \{ type: EVENT_PAGE_READY \}\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
   if (/event\.type\s*!==|event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(battleFile)} entry must dispatch by handler table`);
   }
@@ -324,7 +340,10 @@ function checkBattleEntry() {
   if (/runBattleAutomation\(\s*\)/.test(pageText)) {
     violations.push("src/pages/page-automation.js must not call no-arg battle entry");
   }
-  const battleTestText = fs.readFileSync(path.join(root, "src/battle/battle-automation.test.js"), "utf8");
+  const battleTestText = fs.readFileSync(
+    path.join(root, "src/battle/battle-automation.test.js"),
+    "utf8"
+  );
   for (const required of [
     "rejects null events without starting battle page capabilities",
     "rejects unknown events with structured startup evidence",
@@ -416,6 +435,10 @@ function checkBattleLifecycleEntry() {
   for (const required of [
     "records battle lifecycle evidence",
     "rejects null lifecycle evidence events without writing diagnostics",
+    "keeps lifecycle evidence visible when storage is unavailable",
+    "keeps lifecycle evidence stored when debug output fails",
+    'storageWriteError: "quota"',
+    "console blocked",
     "HVAA:lastBattleLifecycle",
   ]) {
     if (!evidenceTestText.includes(required)) {
@@ -495,7 +518,9 @@ function checkRoundStartEntry() {
     startRoundLifecycleBody.indexOf("AutoTuneEvent.ROUND_STARTED") >
       startRoundLifecycleBody.indexOf("BattleTurnEvent.ROUND_STARTED")
   ) {
-    violations.push(`${rel(roundLifecycleFile)} must start auto-tune before battle-turn round runtime`);
+    violations.push(
+      `${rel(roundLifecycleFile)} must start auto-tune before battle-turn round runtime`
+    );
   }
   if (
     readyRoundLifecycleBody.indexOf("BattleSkillUsageEvent.RESET_ROUND") === -1 ||
@@ -503,7 +528,9 @@ function checkRoundStartEntry() {
     readyRoundLifecycleBody.indexOf("BattleSkillUsageEvent.RESET_ROUND") >
       readyRoundLifecycleBody.indexOf("MonsterKnowledgeEvent.ROUND_STARTED")
   ) {
-    violations.push(`${rel(roundLifecycleFile)} must reset skill usage before monster knowledge round start`);
+    violations.push(
+      `${rel(roundLifecycleFile)} must reset skill usage before monster knowledge round start`
+    );
   }
   if (!/const BATTLE_LOG_SELECTOR = ["']#textlog>tbody>tr>td["']/.test(roundStartLogText)) {
     violations.push(`${rel(roundStartLogFile)} must own the battle log selector constant`);
@@ -546,8 +573,12 @@ function checkTurnEntry() {
     violations.push(`${rel(mainLoopFile)} must not assemble turn prelude directly`);
   }
   if (
-    !/runBattleTurnContext\(\{\s*type:\s*BattleTurnContextEvent\.PREPARE,\s*logTelemetry:\s*prelude\?\.battleLogTelemetry,\s*\}\)/.test(text) ||
-    !/runBattleActionDecision\(\{\s*type:\s*BattleActionDecisionEvent\.DECIDE,\s*context,\s*\}\)/.test(text)
+    !/runBattleTurnContext\(\{\s*type:\s*BattleTurnContextEvent\.PREPARE,\s*logTelemetry:\s*prelude\?\.battleLogTelemetry,\s*\}\)/.test(
+      text
+    ) ||
+    !/runBattleActionDecision\(\{\s*type:\s*BattleActionDecisionEvent\.DECIDE,\s*context,\s*\}\)/.test(
+      text
+    )
   ) {
     violations.push(
       `${rel(mainLoopFile)} must pass prelude battle log telemetry into prepared turn context before action decision`
@@ -560,7 +591,9 @@ function checkTurnEntry() {
     violations.push(`${rel(mainLoopFile)} must not call action decision through old two-arg path`);
   }
   if (!text.includes("BattleActionDecisionEvent.DECIDE")) {
-    violations.push(`${rel(mainLoopFile)} must call action decision through BattleActionDecisionEvent.DECIDE`);
+    violations.push(
+      `${rel(mainLoopFile)} must call action decision through BattleActionDecisionEvent.DECIDE`
+    );
   }
   if (/\bBATTLE_RULES\b|\bBattleRule\b|\brunRules\b/.test(text)) {
     violations.push(`${rel(mainLoopFile)} must not assemble battle action rule chains directly`);
@@ -594,9 +627,7 @@ function checkTurnEntry() {
     violations.push("src/battle/main-loop.test.js must cover null turn workflow rejection");
   }
   if (
-    !mainLoopTestText.includes(
-      "records failed turn workflow stage as not acted without rethrowing"
-    )
+    !mainLoopTestText.includes("records failed turn workflow stage as not acted without rethrowing")
   ) {
     violations.push("src/battle/main-loop.test.js must cover failed turn workflow as not acted");
   }
@@ -619,10 +650,7 @@ function checkTurnEntry() {
       violations.push(`${rel(mainLoopEvidenceFailureTestFile)} must cover ${required}`);
     }
   }
-  const turnWorkflowEvidenceFile = path.join(
-    root,
-    "src/battle/battle-turn-workflow-evidence.js"
-  );
+  const turnWorkflowEvidenceFile = path.join(root, "src/battle/battle-turn-workflow-evidence.js");
   const turnWorkflowEvidenceText = fs.existsSync(turnWorkflowEvidenceFile)
     ? fs.readFileSync(turnWorkflowEvidenceFile, "utf8")
     : "";
@@ -639,7 +667,9 @@ function checkTurnEntry() {
     }
   }
   if (!turnWorkflowEvidenceText.includes("battleTurnWorkflowEvidenceEventHandlers[event?.type]")) {
-    violations.push(`${rel(turnWorkflowEvidenceFile)} must reject null turn workflow evidence events`);
+    violations.push(
+      `${rel(turnWorkflowEvidenceFile)} must reject null turn workflow evidence events`
+    );
   }
   const turnWorkflowEvidenceTestFile = path.join(
     root,
@@ -649,7 +679,9 @@ function checkTurnEntry() {
     ? fs.readFileSync(turnWorkflowEvidenceTestFile, "utf8")
     : "";
   if (!turnWorkflowEvidenceTestText.includes("runBattleTurnWorkflowEvidence(null)")) {
-    violations.push(`${rel(turnWorkflowEvidenceTestFile)} must cover null turn workflow evidence events`);
+    violations.push(
+      `${rel(turnWorkflowEvidenceTestFile)} must cover null turn workflow evidence events`
+    );
   }
   for (const required of [
     "keeps turn workflow evidence stored when debug output fails",
@@ -669,7 +701,7 @@ function checkTurnEntry() {
     : "";
   for (const required of [
     "keeps turn workflow evidence visible when storage is unavailable",
-    "storageWriteError: \"quota\"",
+    'storageWriteError: "quota"',
   ]) {
     if (!actionEvidencePersistenceTestText.includes(required)) {
       violations.push(`${rel(actionEvidencePersistenceTestFile)} must cover ${required}`);
@@ -715,7 +747,9 @@ function checkTurnEntry() {
   const prepareCurrentTurnBody =
     turnPreludeText.match(/function prepareCurrentTurn\(\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/for\s*\(\s*const\s+step\s+of\s+TURN_PRELUDE_STEPS\s*\)/.test(prepareCurrentTurnBody)) {
-    violations.push(`${rel(turnPreludeFile)} must run current-turn prelude through TURN_PRELUDE_STEPS`);
+    violations.push(
+      `${rel(turnPreludeFile)} must run current-turn prelude through TURN_PRELUDE_STEPS`
+    );
   }
   if (fs.existsSync(legacyBattleRulesFile)) {
     violations.push(
@@ -810,7 +844,9 @@ function checkTurnEntry() {
     "recordDecisionEvidenceFailure",
   ]) {
     if (!actionDecisionRecordingText.includes(required)) {
-      violations.push(`${rel(actionDecisionRecordingFile)} must own action decision recording ${required}`);
+      violations.push(
+        `${rel(actionDecisionRecordingFile)} must own action decision recording ${required}`
+      );
     }
   }
   const actionDecisionTestFile = path.join(root, "src/battle/battle-action-decision.test.js");
@@ -932,14 +968,16 @@ function checkTurnEntry() {
     "src/battle/battle-action-decision-effect-evidence.test.js"
   );
   if (!fs.existsSync(actionDecisionEffectEvidenceTestFile)) {
-    violations.push(`${rel(actionDecisionEffectEvidenceTestFile)} must cover decision/effect evidence bridging`);
+    violations.push(
+      `${rel(actionDecisionEffectEvidenceTestFile)} must cover decision/effect evidence bridging`
+    );
   } else {
     const testText = fs.readFileSync(actionDecisionEffectEvidenceTestFile, "utf8");
     for (const required of [
       "carries fresh effect command failure evidence into the decision step",
       "targetDead",
       "HVAA:lastBattleActionDecision",
-      "command: \"target.clickSkillThenTarget\"",
+      'command: "target.clickSkillThenTarget"',
     ]) {
       if (!testText.includes(required)) {
         violations.push(`${rel(actionDecisionEffectEvidenceTestFile)} must cover ${required}`);
@@ -976,7 +1014,9 @@ function checkTurnEntry() {
     '"channel-plan": executeChannelPlanResult',
   ]) {
     if (!actionEffectExecutionText.includes(required)) {
-      violations.push(`${rel(actionEffectExecutionFile)} must lock ActionResult executor ${required}`);
+      violations.push(
+        `${rel(actionEffectExecutionFile)} must lock ActionResult executor ${required}`
+      );
     }
   }
   for (const forbidden of ["halt: executeHaltResult", "function executeHaltResult"]) {
@@ -985,7 +1025,9 @@ function checkTurnEntry() {
     }
   }
   if (/switch\s*\(\s*result\.kind\s*\)/.test(actionEffectExecutionText)) {
-    violations.push(`${rel(actionEffectExecutionFile)} must dispatch ActionResult through ACTION_RESULT_EXECUTORS`);
+    violations.push(
+      `${rel(actionEffectExecutionFile)} must dispatch ActionResult through ACTION_RESULT_EXECUTORS`
+    );
   }
   if (fs.existsSync(actionSequenceFile)) {
     violations.push(
@@ -1132,14 +1174,18 @@ function checkActionEventBridgeEntry() {
     );
   }
   if (!text.includes("rejectUnknownActionEventBridgeEvent")) {
-    violations.push(`${rel(actionEventBridgeFile)} must route unknown bridge events to lifecycle evidence`);
+    violations.push(
+      `${rel(actionEventBridgeFile)} must route unknown bridge events to lifecycle evidence`
+    );
   }
   if (
     !text.includes(
       "battleActionEventBridgeEventHandlers[event?.type]?.(event) ?? rejectUnknownActionEventBridgeEvent(event)"
     )
   ) {
-    violations.push(`${rel(actionEventBridgeFile)} must reject null bridge events without throwing`);
+    violations.push(
+      `${rel(actionEventBridgeFile)} must reject null bridge events without throwing`
+    );
   }
   if (/\brunSpeed\b|\btimeNow\b|TimeEvent\.EPOCH_MS/.test(text)) {
     violations.push(
@@ -1421,21 +1467,21 @@ function checkActionLifecycleEntry() {
     "unknownActionLifecycleEvent",
     "recordLifecycleSafely",
     'step: "routeEvent"',
-    "recordStep(steps, \"startDelay\", deps.startDelay)",
-    "recordStep(steps, \"monitorActionStarted\", deps.monitorActionStarted)",
-    "recordStep(steps, \"recordSpeed\", deps.recordSpeed)",
-    "recordStep(steps, \"endDelay\", deps.endDelay)",
-    "recordStep(steps, \"refreshCombatants\", deps.refreshCombatants)",
-    "recordStep(steps, \"monitorActionEnded\", deps.monitorActionEnded)",
+    'recordStep(steps, "startDelay", deps.startDelay)',
+    'recordStep(steps, "monitorActionStarted", deps.monitorActionStarted)',
+    'recordStep(steps, "recordSpeed", deps.recordSpeed)',
+    'recordStep(steps, "endDelay", deps.endDelay)',
+    'recordStep(steps, "refreshCombatants", deps.refreshCombatants)',
+    'recordStep(steps, "monitorActionEnded", deps.monitorActionEnded)',
     "REASON_ACTION_LIFECYCLE_STEP_THROW",
     "rejectedLifecycleResult",
     "completeBattleStep",
     "result === undefined ? true : result",
     "const started = steps.every((step) => step.result)",
-    "recordStep(steps, \"isCompletionReached\", deps.isCompletionReached)",
+    'recordStep(steps, "isCompletionReached", deps.isCompletionReached)',
     "steps[steps.length - 1].continued = continued",
-    "recordStep(steps, \"runTurn\", deps.runTurn)",
-    "const turnStarted = Boolean(recordStep(steps, \"runTurn\", deps.runTurn))",
+    'recordStep(steps, "runTurn", deps.runTurn)',
+    'const turnStarted = Boolean(recordStep(steps, "runTurn", deps.runTurn))',
     "continuationStarted: turnStarted",
     "recordLifecycleSafely(deps, EVENT_ACTION_STARTED, started, steps)",
     "recordLifecycleSafely(deps, EVENT_ACTION_ENDED, result, steps)",
@@ -1447,14 +1493,12 @@ function checkActionLifecycleEntry() {
     }
   }
   const entryBody =
-    text.match(/export function runBattleActionLifecycleAutomation\([^)]*\) \{[\s\S]*?\n\}/)
-      ?.[0] || "";
+    text.match(/export function runBattleActionLifecycleAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
   if (
     !/Object\.freeze\(\{[\s\S]*\[EVENT_ACTION_STARTED\][\s\S]*\[EVENT_ACTION_ENDED\]/.test(text)
   ) {
-    violations.push(
-      `${rel(actionLifecycleFile)} must route events through a frozen handler table`
-    );
+    violations.push(`${rel(actionLifecycleFile)} must route events through a frozen handler table`);
   }
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(actionLifecycleFile)} entry must dispatch by handler table`);
@@ -1464,7 +1508,9 @@ function checkActionLifecycleEntry() {
       "battleActionLifecycleEventHandlers[event?.type]?.(deps) ?? rejectUnknownActionLifecycleEvent(event, deps)"
     )
   ) {
-    violations.push(`${rel(actionLifecycleFile)} must record lifecycle evidence for unknown events`);
+    violations.push(
+      `${rel(actionLifecycleFile)} must record lifecycle evidence for unknown events`
+    );
   }
   const recordingText = fs.readFileSync(actionLifecycleRecordingFile, "utf8");
   for (const required of [
@@ -1475,7 +1521,9 @@ function checkActionLifecycleEntry() {
     "deps.recordLifecycle?.(phase, result, steps)",
   ]) {
     if (!recordingText.includes(required)) {
-      violations.push(`${rel(actionLifecycleRecordingFile)} must own safe lifecycle recording ${required}`);
+      violations.push(
+        `${rel(actionLifecycleRecordingFile)} must own safe lifecycle recording ${required}`
+      );
     }
   }
   const lifecycleTestText = fs.readFileSync(actionLifecycleTest, "utf8");
@@ -1492,7 +1540,9 @@ function checkActionLifecycleEntry() {
     "utf8"
   );
   if (!lifecycleStepResultTestText.includes("continuationStarted: false")) {
-    violations.push("src/battle/battle-action-lifecycle-step-result.test.js must cover continuationStarted: false");
+    violations.push(
+      "src/battle/battle-action-lifecycle-step-result.test.js must cover continuationStarted: false"
+    );
   }
   const lifecycleExceptionTestText = fs.readFileSync(
     path.join(root, "src/battle/battle-action-lifecycle-exception.test.js"),
@@ -1509,7 +1559,9 @@ function checkActionLifecycleEntry() {
     "lifecycleEvidenceWriteFailed",
   ]) {
     if (!lifecycleExceptionTestText.includes(required)) {
-      violations.push("src/battle/battle-action-lifecycle-exception.test.js must cover " + required);
+      violations.push(
+        "src/battle/battle-action-lifecycle-exception.test.js must cover " + required
+      );
     }
   }
   const evidenceText = fs.readFileSync(actionLifecycleEvidenceFile, "utf8");
@@ -1523,7 +1575,9 @@ function checkActionLifecycleEntry() {
     "[HVAA] battle action lifecycle",
   ]) {
     if (!evidenceText.includes(required)) {
-      violations.push(`${rel(actionLifecycleEvidenceFile)} must own lifecycle evidence ${required}`);
+      violations.push(
+        `${rel(actionLifecycleEvidenceFile)} must own lifecycle evidence ${required}`
+      );
     }
   }
   const evidenceTestText = fs.existsSync(actionLifecycleEvidenceTestFile)
@@ -1595,7 +1649,7 @@ function checkActionLifecycleEntry() {
     "records failed next-round continuation start without claiming it succeeded",
     "continuationStarted: true",
     "continuationStarted: false",
-    "result: false, continued: \"nextRound\"",
+    'result: false, continued: "nextRound"',
   ]) {
     if (!actionLifecycleContinuationTestText.includes(required)) {
       violations.push(`${rel(actionLifecycleContinuationTest)} must cover ${required}`);
@@ -1671,8 +1725,8 @@ function checkPauseControlsEntry() {
     }
   }
   const entryBody =
-    text.match(/export function runBattlePauseControlsAutomation\([^)]*\) \{[\s\S]*?\n\}/)
-      ?.[0] || "";
+    text.match(/export function runBattlePauseControlsAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_INSTALL\]/.test(text)) {
     violations.push(`${rel(pauseControlsFile)} must route events through a frozen handler table`);
   }
@@ -1849,10 +1903,14 @@ function checkPhysicalSkillBookkeeping() {
     violations.push(`${rel(physicalSkillBookkeepingFile)} entry must dispatch by handler table`);
   }
   if (!text.includes("physicalSkillBookkeepingEventHandlers[event?.type]")) {
-    violations.push(`${rel(physicalSkillBookkeepingFile)} must reject null physical fire bookkeeping events`);
+    violations.push(
+      `${rel(physicalSkillBookkeepingFile)} must reject null physical fire bookkeeping events`
+    );
   }
   if (!text.includes("return true;") || !bookkeepingEntryBody.includes("?? false")) {
-    violations.push(`${rel(physicalSkillBookkeepingFile)} must report whether physical fire bookkeeping was recorded`);
+    violations.push(
+      `${rel(physicalSkillBookkeepingFile)} must report whether physical fire bookkeeping was recorded`
+    );
   }
   const bookkeepingTestText = fs.readFileSync(
     path.join(root, "src/battle/attack/physical-skill-bookkeeping.test.js"),
@@ -1863,10 +1921,14 @@ function checkPhysicalSkillBookkeeping() {
       "rejects unknown physical skill bookkeeping events without side effects"
     )
   ) {
-    violations.push(`${rel(physicalSkillBookkeepingFile)} tests must cover unknown bookkeeping events`);
+    violations.push(
+      `${rel(physicalSkillBookkeepingFile)} tests must cover unknown bookkeeping events`
+    );
   }
   if (!bookkeepingTestText.includes("runPhysicalSkillBookkeeping(null)")) {
-    violations.push(`${rel(physicalSkillBookkeepingFile)} tests must cover null bookkeeping events`);
+    violations.push(
+      `${rel(physicalSkillBookkeepingFile)} tests must cover null bookkeeping events`
+    );
   }
   if (/\bevent\.snap\b/.test(text)) {
     violations.push(
@@ -1940,7 +2002,9 @@ function checkActivateSpirit() {
     violations.push(`${rel(activateSpiritFile)} must not read pre-cast Spirit options directly`);
   }
   if (/export function checkAndActivateSpirit\(/.test(text)) {
-    violations.push(`${rel(activateSpiritFile)} legacy checkAndActivateSpirit export must stay retired`);
+    violations.push(
+      `${rel(activateSpiritFile)} legacy checkAndActivateSpirit export must stay retired`
+    );
   }
 }
 
@@ -2248,10 +2312,14 @@ function checkBattleDebuffCoverage() {
     violations.push(`${rel(debuffCoverageFile)} entry must dispatch by handler table`);
   }
   if (/battleDebuffCoverageEventHandlers\[event\.type\]/.test(entryBody)) {
-    violations.push(`${rel(debuffCoverageFile)} entry must fail closed for invalid debuff coverage events`);
+    violations.push(
+      `${rel(debuffCoverageFile)} entry must fail closed for invalid debuff coverage events`
+    );
   }
   if (!/battleDebuffCoverageEventHandlers\[event\?\.type\]/.test(entryBody)) {
-    violations.push(`${rel(debuffCoverageFile)} entry must dispatch invalid debuff coverage events through optional type`);
+    violations.push(
+      `${rel(debuffCoverageFile)} entry must dispatch invalid debuff coverage events through optional type`
+    );
   }
   const debuffCoverageTest = path.join(root, "src/battle/battle-debuff-coverage.test.js");
   const testText = fs.readFileSync(debuffCoverageTest, "utf8");
@@ -2376,10 +2444,14 @@ function checkBigSkillDebuffEntry() {
     }
   }
   if (/bigSkillCatalogEventHandlers\[event\.type\]/.test(catalogText)) {
-    violations.push(`${rel(bigSkillCatalogFile)} entry must fail closed for invalid catalog events`);
+    violations.push(
+      `${rel(bigSkillCatalogFile)} entry must fail closed for invalid catalog events`
+    );
   }
   if (!/bigSkillCatalogEventHandlers\[event\?\.type\]/.test(catalogText)) {
-    violations.push(`${rel(bigSkillCatalogFile)} entry must dispatch invalid catalog events through optional type`);
+    violations.push(
+      `${rel(bigSkillCatalogFile)} entry must dispatch invalid catalog events through optional type`
+    );
   }
   const catalogTest = path.join(root, "src/battle/big-skill-catalog.test.js");
   const catalogTestText = fs.readFileSync(catalogTest, "utf8");
@@ -2441,10 +2513,14 @@ function checkBigSkillDebuffEntry() {
     violations.push(`${rel(bigSkillFile)} entry must dispatch by handler table`);
   }
   if (/bigSkillDebuffEventHandlers\[event\.type\]/.test(entryBody)) {
-    violations.push(`${rel(bigSkillFile)} entry must fail closed for invalid big-skill debuff events`);
+    violations.push(
+      `${rel(bigSkillFile)} entry must fail closed for invalid big-skill debuff events`
+    );
   }
   if (!/bigSkillDebuffEventHandlers\[event\?\.type\]/.test(entryBody)) {
-    violations.push(`${rel(bigSkillFile)} entry must dispatch invalid big-skill debuff events through optional type`);
+    violations.push(
+      `${rel(bigSkillFile)} entry must dispatch invalid big-skill debuff events through optional type`
+    );
   }
   const bigSkillTestFile = path.join(root, "src/battle/debuff/big-skill-debuff.test.js");
   if (!fs.existsSync(bigSkillTestFile)) {
@@ -2527,10 +2603,14 @@ function checkBurstControlEntry() {
     violations.push(`${rel(burstControlFile)} entry must dispatch by handler table`);
   }
   if (/battleBurstControlDecisionEventHandlers\[event\.type\]/.test(burstControlEntryBody)) {
-    violations.push(`${rel(burstControlFile)} entry must fail closed for invalid burst-control events`);
+    violations.push(
+      `${rel(burstControlFile)} entry must fail closed for invalid burst-control events`
+    );
   }
   if (!/battleBurstControlDecisionEventHandlers\[event\?\.type\]/.test(burstControlEntryBody)) {
-    violations.push(`${rel(burstControlFile)} entry must dispatch invalid burst-control events through optional type`);
+    violations.push(
+      `${rel(burstControlFile)} entry must dispatch invalid burst-control events through optional type`
+    );
   }
   const burstControlTestFile = path.join(root, "src/battle/debuff/decide-burst-control.test.js");
   const burstControlTestText = fs.existsSync(burstControlTestFile)
@@ -2626,13 +2706,17 @@ function checkOffensiveDebuffEntry() {
   }
   for (const required of ["noop: () => true"]) {
     if (!ownerText.includes(required)) {
-      violations.push(`${rel(decideOffensiveDebuffFile)} must lock empty offensive debuff decision ${required}`);
+      violations.push(
+        `${rel(decideOffensiveDebuffFile)} must lock empty offensive debuff decision ${required}`
+      );
     }
   }
   const emptyDecisionBody =
     ownerText.match(/function isEmptyDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/result\.kind\s*===|result\.kind\s*!==/.test(emptyDecisionBody)) {
-    violations.push(`${rel(decideOffensiveDebuffFile)} must route empty offensive debuff decisions through predicate tables`);
+    violations.push(
+      `${rel(decideOffensiveDebuffFile)} must route empty offensive debuff decisions through predicate tables`
+    );
   }
 
   const rulesText = readBattleActionRulesText();
@@ -2715,10 +2799,11 @@ function checkCriticalBuffEntry() {
     violations.push(`${rel(decideCriticalBuffFile)} may export only its event entry`);
   }
   const criticalBuffEntryBody =
-    ownerText.match(/export function runCriticalBuffDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    ownerText.match(/export function runCriticalBuffDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
-    violations.push(`${rel(decideCriticalBuffFile)} must route events through a frozen handler table`);
+    violations.push(
+      `${rel(decideCriticalBuffFile)} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(criticalBuffEntryBody)) {
     violations.push(`${rel(decideCriticalBuffFile)} entry must dispatch by handler table`);
@@ -2767,30 +2852,43 @@ function checkCriticalBuffEntry() {
     }
   }
   const executionEntryBody =
-    executionText.match(/export function runCriticalBuffPauseExecution\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    executionText.match(
+      /export function runCriticalBuffPauseExecution\([^)]*\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_APPLY_PLAN\]/.test(executionText)) {
-    violations.push(`${rel(executeCriticalPauseFile)} must route events through a frozen handler table`);
+    violations.push(
+      `${rel(executeCriticalPauseFile)} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(executionEntryBody)) {
     violations.push(`${rel(executeCriticalPauseFile)} entry must dispatch by handler table`);
   }
   if (!executionText.includes("criticalBuffPauseExecutionEventHandlers[event?.type]")) {
-    violations.push(`${rel(executeCriticalPauseFile)} must reject null critical pause events as not acted`);
+    violations.push(
+      `${rel(executeCriticalPauseFile)} must reject null critical pause events as not acted`
+    );
   }
   if (fs.existsSync(executeCriticalPauseTestFile)) {
     const executionTestText = fs.readFileSync(executeCriticalPauseTestFile, "utf8");
     if (!executionTestText.includes("rejects unknown critical pause execution events")) {
-      violations.push(`${rel(executeCriticalPauseTestFile)} must cover unknown critical pause events`);
+      violations.push(
+        `${rel(executeCriticalPauseTestFile)} must cover unknown critical pause events`
+      );
     }
     if (!executionTestText.includes("unknownCriticalPauseExecutionEvent")) {
-      violations.push(`${rel(executeCriticalPauseTestFile)} must cover unknown critical pause evidence`);
+      violations.push(
+        `${rel(executeCriticalPauseTestFile)} must cover unknown critical pause evidence`
+      );
     }
     if (!executionTestText.includes("runCriticalBuffPauseExecution(null)")) {
       violations.push(`${rel(executeCriticalPauseTestFile)} must cover null critical pause events`);
     }
-    if (!executionTestText.includes("rejects missing critical pause plans as not acted with evidence")) {
-      violations.push(`${rel(executeCriticalPauseTestFile)} must cover invalid critical pause plans`);
+    if (
+      !executionTestText.includes("rejects missing critical pause plans as not acted with evidence")
+    ) {
+      violations.push(
+        `${rel(executeCriticalPauseTestFile)} must cover invalid critical pause plans`
+      );
     }
   }
   const executeCriticalPauseResultTestFile = path.join(
@@ -2818,8 +2916,12 @@ function checkCriticalBuffEntry() {
       }
     }
   }
-  if (!fs.readFileSync(actionEffectExecutionFile, "utf8").includes("runCriticalBuffPauseExecution")) {
-    violations.push(`${rel(actionEffectExecutionFile)} must execute critical pauses through execution entry`);
+  if (
+    !fs.readFileSync(actionEffectExecutionFile, "utf8").includes("runCriticalBuffPauseExecution")
+  ) {
+    violations.push(
+      `${rel(actionEffectExecutionFile)} must execute critical pauses through execution entry`
+    );
   }
   const rulesText = readBattleActionRulesText();
   const criticalRule =
@@ -2873,7 +2975,9 @@ function checkSurvivalActionEntry() {
       ownerText
     )
   ) {
-    violations.push(`${rel(decideSurvivalActionFile)} must own frozen survival action priority order`);
+    violations.push(
+      `${rel(decideSurvivalActionFile)} must own frozen survival action priority order`
+    );
   }
   for (const required of [
     "noop: () => true",
@@ -2883,13 +2987,17 @@ function checkSurvivalActionEntry() {
     "scroll: (plan) => !plan.candidates?.length",
   ]) {
     if (!ownerText.includes(required)) {
-      violations.push(`${rel(decideSurvivalActionFile)} must lock empty survival decision ${required}`);
+      violations.push(
+        `${rel(decideSurvivalActionFile)} must lock empty survival decision ${required}`
+      );
     }
   }
   const emptyDecisionBody =
     ownerText.match(/function isEmptyDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/result\.kind\s*===|plan\.type\s*===/.test(emptyDecisionBody)) {
-    violations.push(`${rel(decideSurvivalActionFile)} must route empty survival decisions through predicate tables`);
+    violations.push(
+      `${rel(decideSurvivalActionFile)} must route empty survival decisions through predicate tables`
+    );
   }
   if (
     /from\s+["'][^"']*(?:critical-buff-facts|flee-facts|auto-pause-facts|defend-facts)\.js["']/.test(
@@ -2996,18 +3104,19 @@ function checkBuffPreparationEntry() {
   ) {
     violations.push(`${rel(decideBuffPreparationFile)} must own frozen buff preparation order`);
   }
-  for (const required of [
-    "noop: () => true",
-    '"channel-plan": isEmptyChannelPlanDecision',
-  ]) {
+  for (const required of ["noop: () => true", '"channel-plan": isEmptyChannelPlanDecision']) {
     if (!ownerText.includes(required)) {
-      violations.push(`${rel(decideBuffPreparationFile)} must lock empty buff preparation decision ${required}`);
+      violations.push(
+        `${rel(decideBuffPreparationFile)} must lock empty buff preparation decision ${required}`
+      );
     }
   }
   const emptyDecisionBody =
     ownerText.match(/function isEmptyDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/result\.kind\s*===|plan\.type\s*===/.test(emptyDecisionBody)) {
-    violations.push(`${rel(decideBuffPreparationFile)} must route empty buff preparation decisions through predicate tables`);
+    violations.push(
+      `${rel(decideBuffPreparationFile)} must route empty buff preparation decisions through predicate tables`
+    );
   }
 
   const rulesText = readBattleActionRulesText();
@@ -3080,8 +3189,7 @@ function checkInfusionEntry() {
     violations.push(`${rel(decideInfusionFile)} may export only its event entry`);
   }
   const infusionEntryBody =
-    ownerText.match(/export function runBattleInfusionDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    ownerText.match(/export function runBattleInfusionDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
     violations.push(`${rel(decideInfusionFile)} must route events through a frozen handler table`);
   }
@@ -3089,10 +3197,14 @@ function checkInfusionEntry() {
     violations.push(`${rel(decideInfusionFile)} entry must dispatch by handler table`);
   }
   if (/battleInfusionDecisionEventHandlers\[event\.type\]/.test(infusionEntryBody)) {
-    violations.push(`${rel(decideInfusionFile)} entry must fail closed for invalid infusion decision events`);
+    violations.push(
+      `${rel(decideInfusionFile)} entry must fail closed for invalid infusion decision events`
+    );
   }
   if (!/battleInfusionDecisionEventHandlers\[event\?\.type\]/.test(infusionEntryBody)) {
-    violations.push(`${rel(decideInfusionFile)} entry must dispatch invalid infusion decision events through optional type`);
+    violations.push(
+      `${rel(decideInfusionFile)} entry must dispatch invalid infusion decision events through optional type`
+    );
   }
   const infusionTestFile = path.join(root, "src/battle/buff/decide-infusion.test.js");
   const infusionTestText = fs.existsSync(infusionTestFile)
@@ -3149,8 +3261,7 @@ function checkChannelEntry() {
     violations.push(`${rel(decideChannelFile)} may export only its event entry`);
   }
   const channelEntryBody =
-    ownerText.match(/export function runBattleChannelDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    ownerText.match(/export function runBattleChannelDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
     violations.push(`${rel(decideChannelFile)} must route events through a frozen handler table`);
   }
@@ -3158,10 +3269,14 @@ function checkChannelEntry() {
     violations.push(`${rel(decideChannelFile)} entry must dispatch by handler table`);
   }
   if (/battleChannelDecisionEventHandlers\[event\.type\]/.test(channelEntryBody)) {
-    violations.push(`${rel(decideChannelFile)} entry must fail closed for invalid channel decision events`);
+    violations.push(
+      `${rel(decideChannelFile)} entry must fail closed for invalid channel decision events`
+    );
   }
   if (!/battleChannelDecisionEventHandlers\[event\?\.type\]/.test(channelEntryBody)) {
-    violations.push(`${rel(decideChannelFile)} entry must dispatch invalid channel decision events through optional type`);
+    violations.push(
+      `${rel(decideChannelFile)} entry must dispatch invalid channel decision events through optional type`
+    );
   }
   const channelTestFile = path.join(root, "src/battle/buff/decide-channel.test.js");
   const channelTestText = fs.existsSync(channelTestFile)
@@ -3193,7 +3308,9 @@ function checkChannelEntry() {
   const applyPlanBody =
     executeText.match(/function applyChannelPlan\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/plan\.type\s*===/.test(applyPlanBody)) {
-    violations.push(`${rel(executeChannelFile)} must dispatch channel plans by CHANNEL_PLAN_EXECUTORS`);
+    violations.push(
+      `${rel(executeChannelFile)} must dispatch channel plans by CHANNEL_PLAN_EXECUTORS`
+    );
   }
 }
 
@@ -3227,8 +3344,7 @@ function checkBuffEntry() {
     violations.push(`${rel(decideBuffFile)} may export only its event entry`);
   }
   const buffEntryBody =
-    ownerText.match(/export function runBattleBuffDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    ownerText.match(/export function runBattleBuffDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
     violations.push(`${rel(decideBuffFile)} must route events through a frozen handler table`);
   }
@@ -3236,10 +3352,14 @@ function checkBuffEntry() {
     violations.push(`${rel(decideBuffFile)} entry must dispatch by handler table`);
   }
   if (/battleBuffDecisionEventHandlers\[event\.type\]/.test(buffEntryBody)) {
-    violations.push(`${rel(decideBuffFile)} entry must fail closed for invalid buff decision events`);
+    violations.push(
+      `${rel(decideBuffFile)} entry must fail closed for invalid buff decision events`
+    );
   }
   if (!/battleBuffDecisionEventHandlers\[event\?\.type\]/.test(buffEntryBody)) {
-    violations.push(`${rel(decideBuffFile)} entry must dispatch invalid buff decision events through optional type`);
+    violations.push(
+      `${rel(decideBuffFile)} entry must dispatch invalid buff decision events through optional type`
+    );
   }
   const buffTestFile = path.join(root, "src/battle/buff/decide-buff.test.js");
   const buffTestText = fs.existsSync(buffTestFile) ? fs.readFileSync(buffTestFile, "utf8") : "";
@@ -3300,13 +3420,16 @@ function checkPlayerBuffStateQuery() {
     violations.push(`${rel(playerBuffStateFile)} may export only its event query entry`);
   }
   const playerBuffEntryBody =
-    ownerText.match(/export function runBattlePlayerBuffState\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    ownerText.match(/export function runBattlePlayerBuffState\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/battlePlayerBuffStateEventHandlers\[event\.type\]/.test(playerBuffEntryBody)) {
-    violations.push(`${rel(playerBuffStateFile)} entry must fail closed for invalid player buff state events`);
+    violations.push(
+      `${rel(playerBuffStateFile)} entry must fail closed for invalid player buff state events`
+    );
   }
   if (!/battlePlayerBuffStateEventHandlers\[event\?\.type\]/.test(playerBuffEntryBody)) {
-    violations.push(`${rel(playerBuffStateFile)} entry must dispatch invalid player buff state events through optional type`);
+    violations.push(
+      `${rel(playerBuffStateFile)} entry must dispatch invalid player buff state events through optional type`
+    );
   }
   const playerBuffTestText = fs.existsSync(playerBuffStateTestFile)
     ? fs.readFileSync(playerBuffStateTestFile, "utf8")
@@ -3408,8 +3531,7 @@ function checkSingleDebuffEntry() {
     violations.push(`${rel(decideDeSkillFile)} may export only its event entry`);
   }
   const deSkillEntryBody =
-    ownerText.match(/export function runBattleDeSkillDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    ownerText.match(/export function runBattleDeSkillDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
     violations.push(`${rel(decideDeSkillFile)} must route events through a frozen handler table`);
   }
@@ -3420,7 +3542,9 @@ function checkSingleDebuffEntry() {
     violations.push(`${rel(decideDeSkillFile)} entry must fail closed for invalid de-skill events`);
   }
   if (!/battleDeSkillDecisionEventHandlers\[event\?\.type\]/.test(deSkillEntryBody)) {
-    violations.push(`${rel(decideDeSkillFile)} entry must dispatch invalid de-skill events through optional type`);
+    violations.push(
+      `${rel(decideDeSkillFile)} entry must dispatch invalid de-skill events through optional type`
+    );
   }
   const deSkillTestFile = path.join(root, "src/battle/debuff/decide-de-skill.test.js");
   const deSkillTestText = fs.existsSync(deSkillTestFile)
@@ -3433,7 +3557,9 @@ function checkSingleDebuffEntry() {
     violations.push(`${rel(decideDeSkillFile)} must not expose opt/snap single-debuff input`);
   }
   if (/import\s*\{[^}]*\bcanApplyDebuffPure\b/.test(ownerText)) {
-    violations.push(`${rel(decideDeSkillFile)} must consume debuff applicability through one entry`);
+    violations.push(
+      `${rel(decideDeSkillFile)} must consume debuff applicability through one entry`
+    );
   }
   const rulesText = readBattleActionRulesText();
   const useDeSkillRule =
@@ -3495,10 +3621,14 @@ function checkAllDebuffEntry() {
     violations.push(`${rel(decideCastAllFile)} entry must dispatch by handler table`);
   }
   if (/battleAllDebuffDecisionEventHandlers\[event\.type\]/.test(castAllEntryBody)) {
-    violations.push(`${rel(decideCastAllFile)} entry must fail closed for invalid all-debuff events`);
+    violations.push(
+      `${rel(decideCastAllFile)} entry must fail closed for invalid all-debuff events`
+    );
   }
   if (!/battleAllDebuffDecisionEventHandlers\[event\?\.type\]/.test(castAllEntryBody)) {
-    violations.push(`${rel(decideCastAllFile)} entry must dispatch invalid all-debuff events through optional type`);
+    violations.push(
+      `${rel(decideCastAllFile)} entry must dispatch invalid all-debuff events through optional type`
+    );
   }
   const castAllTestFile = path.join(root, "src/battle/debuff/decide-cast-all.test.js");
   const castAllTestText = fs.existsSync(castAllTestFile)
@@ -3511,7 +3641,9 @@ function checkAllDebuffEntry() {
     violations.push(`${rel(decideCastAllFile)} must not expose opt/snap all-debuff input`);
   }
   if (/import\s*\{[^}]*\bcanApplyDebuffPure\b/.test(ownerText)) {
-    violations.push(`${rel(decideCastAllFile)} must consume debuff applicability through one entry`);
+    violations.push(
+      `${rel(decideCastAllFile)} must consume debuff applicability through one entry`
+    );
   }
   const canApplyText = fs.readFileSync(path.join(root, "src/battle/debuff/can-apply.js"), "utf8");
   for (const required of [
@@ -3522,7 +3654,9 @@ function checkAllDebuffEntry() {
     "canApplyDebuffPure",
   ]) {
     if (!canApplyText.includes(required)) {
-      violations.push(`src/battle/debuff/can-apply.js must own debuff applicability query ${required}`);
+      violations.push(
+        `src/battle/debuff/can-apply.js must own debuff applicability query ${required}`
+      );
     }
   }
   if (
@@ -3533,13 +3667,18 @@ function checkAllDebuffEntry() {
     violations.push("src/battle/debuff/can-apply.js may export only its event query entry");
   }
   const canApplyEntryBody =
-    canApplyText.match(/export function runBattleDebuffApplicability\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    canApplyText.match(
+      /export function runBattleDebuffApplicability\([^)]*\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
   if (/battleDebuffApplicabilityEventHandlers\[event\.type\]/.test(canApplyEntryBody)) {
-    violations.push("src/battle/debuff/can-apply.js entry must fail closed for invalid debuff applicability events");
+    violations.push(
+      "src/battle/debuff/can-apply.js entry must fail closed for invalid debuff applicability events"
+    );
   }
   if (!/battleDebuffApplicabilityEventHandlers\[event\?\.type\]/.test(canApplyEntryBody)) {
-    violations.push("src/battle/debuff/can-apply.js entry must dispatch invalid debuff applicability events through optional type");
+    violations.push(
+      "src/battle/debuff/can-apply.js entry must dispatch invalid debuff applicability events through optional type"
+    );
   }
   const canApplyTestFile = path.join(root, "src/battle/debuff/can-apply.test.js");
   const canApplyTestText = fs.existsSync(canApplyTestFile)
@@ -3611,17 +3750,25 @@ function checkBattleItemDecisionEntry() {
   }
   const itemEntryBody =
     itemText.match(/export function runBattleItemDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
-  if (!/const battleItemDecisionHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[DECIDE_GEM\]/.test(itemText)) {
-    violations.push(`${rel(decideItemFile)} must route item decisions through a frozen handler table`);
+  if (
+    !/const battleItemDecisionHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[DECIDE_GEM\]/.test(itemText)
+  ) {
+    violations.push(
+      `${rel(decideItemFile)} must route item decisions through a frozen handler table`
+    );
   }
   if (/switch\s*\(\s*event\.type\s*\)|event\.type\s*===/.test(itemEntryBody)) {
     violations.push(`${rel(decideItemFile)} entry must dispatch by handler table`);
   }
   if (/battleItemDecisionHandlers\[event\.type\]/.test(itemEntryBody)) {
-    violations.push(`${rel(decideItemFile)} entry must fail closed for invalid item decision events`);
+    violations.push(
+      `${rel(decideItemFile)} entry must fail closed for invalid item decision events`
+    );
   }
   if (!/battleItemDecisionHandlers\[event\?\.type\]/.test(itemEntryBody)) {
-    violations.push(`${rel(decideItemFile)} entry must dispatch invalid item decision events through optional type`);
+    violations.push(
+      `${rel(decideItemFile)} entry must dispatch invalid item decision events through optional type`
+    );
   }
   const itemTestFile = path.join(root, "src/battle/item/decide-item.test.js");
   const itemTestText = fs.existsSync(itemTestFile) ? fs.readFileSync(itemTestFile, "utf8") : "";
@@ -3631,7 +3778,7 @@ function checkBattleItemDecisionEntry() {
   if (!/runBattleItemDecision\(null\)/.test(itemTestText)) {
     violations.push(`${rel(itemTestFile)} must cover null item decision events`);
   }
-  for (const required of ["gem: () => ({ type: \"gem\" })", "noop: () => ({ type: \"noop\" })"]) {
+  for (const required of ['gem: () => ({ type: "gem" })', 'noop: () => ({ type: "noop" })']) {
     if (!itemText.includes(required)) {
       violations.push(`${rel(decideItemFile)} must lock gem result plan mapper ${required}`);
     }
@@ -3639,7 +3786,9 @@ function checkBattleItemDecisionEntry() {
   const decideGemUseBody =
     itemText.match(/function decideGemUse\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/result\.kind\s*===/.test(decideGemUseBody)) {
-    violations.push(`${rel(decideItemFile)} must map gem result kinds through GEM_RESULT_PLAN_MAPPERS`);
+    violations.push(
+      `${rel(decideItemFile)} must map gem result kinds through GEM_RESULT_PLAN_MAPPERS`
+    );
   }
   const scrollText = fs.readFileSync(decideScrollFile, "utf8");
   if (!/const SCROLL_LIB = Object\.freeze\(\{/.test(scrollText)) {
@@ -3653,8 +3802,7 @@ function checkBattleItemDecisionEntry() {
     violations.push(`${rel(decideScrollFile)} may export only its event entry`);
   }
   const scrollEntryBody =
-    scrollText.match(/export function runBattleScrollDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    scrollText.match(/export function runBattleScrollDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(scrollText)) {
     violations.push(`${rel(decideScrollFile)} must route events through a frozen handler table`);
   }
@@ -3662,10 +3810,14 @@ function checkBattleItemDecisionEntry() {
     violations.push(`${rel(decideScrollFile)} entry must dispatch by handler table`);
   }
   if (/battleScrollDecisionEventHandlers\[event\.type\]/.test(scrollEntryBody)) {
-    violations.push(`${rel(decideScrollFile)} entry must fail closed for invalid scroll decision events`);
+    violations.push(
+      `${rel(decideScrollFile)} entry must fail closed for invalid scroll decision events`
+    );
   }
   if (!/battleScrollDecisionEventHandlers\[event\?\.type\]/.test(scrollEntryBody)) {
-    violations.push(`${rel(decideScrollFile)} entry must dispatch invalid scroll decision events through optional type`);
+    violations.push(
+      `${rel(decideScrollFile)} entry must dispatch invalid scroll decision events through optional type`
+    );
   }
   if (!/runBattleScrollDecision\(null\)/.test(itemTestText)) {
     violations.push(`${rel(itemTestFile)} must cover null scroll decision events`);
@@ -3796,13 +3948,16 @@ function checkItemScrollCoverageQuery() {
     violations.push(`${rel(scrollCoverageFile)} may export only its event query entry`);
   }
   const coverageEntryBody =
-    ownerText.match(/export function runBattleScrollCoverage\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    ownerText.match(/export function runBattleScrollCoverage\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/battleScrollCoverageEventHandlers\[event\.type\]/.test(coverageEntryBody)) {
-    violations.push(`${rel(scrollCoverageFile)} entry must fail closed for invalid scroll coverage events`);
+    violations.push(
+      `${rel(scrollCoverageFile)} entry must fail closed for invalid scroll coverage events`
+    );
   }
   if (!/battleScrollCoverageEventHandlers\[event\?\.type\]/.test(coverageEntryBody)) {
-    violations.push(`${rel(scrollCoverageFile)} entry must dispatch invalid scroll coverage events through optional type`);
+    violations.push(
+      `${rel(scrollCoverageFile)} entry must dispatch invalid scroll coverage events through optional type`
+    );
   }
   const coverageTestText = fs.readFileSync(scrollCoverageTestFile, "utf8");
   if (!/runBattleScrollCoverage\(null\)/.test(coverageTestText)) {
@@ -3872,7 +4027,9 @@ function checkItemGemEntry() {
     violations.push(`${rel(decideGemFile)} entry must fail closed for invalid gem decision events`);
   }
   if (!/battleGemDecisionEventHandlers\[event\?\.type\]/.test(gemEntryBody)) {
-    violations.push(`${rel(decideGemFile)} entry must dispatch invalid gem decision events through optional type`);
+    violations.push(
+      `${rel(decideGemFile)} entry must dispatch invalid gem decision events through optional type`
+    );
   }
   const itemTestFile = path.join(root, "src/battle/item/decide-item.test.js");
   const itemTestText = fs.existsSync(itemTestFile) ? fs.readFileSync(itemTestFile, "utf8") : "";
@@ -3980,8 +4137,7 @@ function checkDefendEntry() {
     violations.push(`${rel(decideDefendFile)} may export only its event entry`);
   }
   const defendEntryBody =
-    ownerText.match(/export function runBattleDefendDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    ownerText.match(/export function runBattleDefendDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
     violations.push(`${rel(decideDefendFile)} must route events through a frozen handler table`);
   }
@@ -4083,8 +4239,7 @@ function checkFleeEntry() {
     violations.push(`${rel(decideFleeFile)} may export only its event entry`);
   }
   const fleeEntryBody =
-    ownerText.match(/export function runBattleFleeDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    ownerText.match(/export function runBattleFleeDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_DECIDE\]/.test(ownerText)) {
     violations.push(`${rel(decideFleeFile)} must route events through a frozen handler table`);
   }
@@ -4208,7 +4363,9 @@ function checkAttackEntry() {
     "event.attackStatus",
   ]) {
     if (!spellAttackPlanText.includes(required)) {
-      violations.push(`${rel(spellAttackPlanFile)} must own attack spell-tier decision ${required}`);
+      violations.push(
+        `${rel(spellAttackPlanFile)} must own attack spell-tier decision ${required}`
+      );
     }
   }
   if (
@@ -4245,26 +4402,40 @@ function checkAttackEntry() {
   }
   for (const required of ["ATTACK_PLAN_CLEAR_PREDICATES", "attackPlanWillClearWithBigSkill"]) {
     if (!ownerText.includes(required)) {
-      violations.push(`${rel(decideAttackFile)} must route attack clear queries through ${required}`);
+      violations.push(
+        `${rel(decideAttackFile)} must route attack clear queries through ${required}`
+      );
     }
   }
   const willClearBody =
     ownerText.match(/function willClearWithBigSkill\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/plan\.type\s*===/.test(willClearBody)) {
-    violations.push(`${rel(decideAttackFile)} must not re-interpret plan type inside willClearWithBigSkill`);
+    violations.push(
+      `${rel(decideAttackFile)} must not re-interpret plan type inside willClearWithBigSkill`
+    );
   }
   if (/event\.type\s*===/.test(attackDecisionEntryBody)) {
     violations.push(`${rel(decideAttackFile)} entry must dispatch by handler table`);
   }
   if (!ownerText.includes("const decisionEvent = event ?? {}")) {
-    violations.push(`${rel(decideAttackFile)} must route null attack decision events through the default attack-plan path`);
+    violations.push(
+      `${rel(decideAttackFile)} must route null attack decision events through the default attack-plan path`
+    );
   }
   if (/\|\|\s*attackDecisionEventHandlers\[EVENT_DECIDE_PLAN\]/.test(ownerText)) {
-    violations.push(`${rel(decideAttackFile)} must reject unknown attack decision events instead of falling back to DECIDE_PLAN`);
+    violations.push(
+      `${rel(decideAttackFile)} must reject unknown attack decision events instead of falling back to DECIDE_PLAN`
+    );
   }
-  for (const required of ["unknownAttackDecisionEvent", "kind: \"noop\"", "eventType: decisionEvent.type"]) {
+  for (const required of [
+    "unknownAttackDecisionEvent",
+    'kind: "noop"',
+    "eventType: decisionEvent.type",
+  ]) {
     if (!ownerText.includes(required)) {
-      violations.push(`${rel(decideAttackFile)} must preserve typed evidence for unknown attack decision events`);
+      violations.push(
+        `${rel(decideAttackFile)} must preserve typed evidence for unknown attack decision events`
+      );
     }
   }
   const attackDecisionTestText = fs.readFileSync(
@@ -4272,15 +4443,23 @@ function checkAttackEntry() {
     "utf8"
   );
   if (
-    attackDecisionTestText.includes("unknown attack decision events use the attack-plan default path")
+    attackDecisionTestText.includes(
+      "unknown attack decision events use the attack-plan default path"
+    )
   ) {
-    violations.push(`${rel(decideAttackFile)} tests must not lock unknown attack decision fallback to DECIDE_PLAN`);
+    violations.push(
+      `${rel(decideAttackFile)} tests must not lock unknown attack decision fallback to DECIDE_PLAN`
+    );
   }
   if (
-    !attackDecisionTestText.includes("rejects unknown attack decision events without choosing an attack plan") ||
+    !attackDecisionTestText.includes(
+      "rejects unknown attack decision events without choosing an attack plan"
+    ) ||
     !attackDecisionTestText.includes("unknownAttackDecisionEvent")
   ) {
-    violations.push(`${rel(decideAttackFile)} tests must cover rejected unknown attack decision events`);
+    violations.push(
+      `${rel(decideAttackFile)} tests must cover rejected unknown attack decision events`
+    );
   }
   if (
     !attackDecisionTestText.includes("null attack decision events use the attack-plan default path")
@@ -4293,14 +4472,24 @@ function checkAttackEntry() {
   if (!attackDecisionTestText.includes("runAttackPlanDecision(null)")) {
     violations.push(`${rel(attackPlanFile)} tests must cover null attack plan events`);
   }
-  if (!attackDecisionTestText.includes("rejects unknown spell attack plan events as empty spell plans")) {
-    violations.push(`${rel(spellAttackPlanFile)} tests must cover unknown spell attack plan events`);
+  if (
+    !attackDecisionTestText.includes(
+      "rejects unknown spell attack plan events as empty spell plans"
+    )
+  ) {
+    violations.push(
+      `${rel(spellAttackPlanFile)} tests must cover unknown spell attack plan events`
+    );
   }
   if (!attackDecisionTestText.includes("runSpellAttackPlan(null)")) {
     violations.push(`${rel(spellAttackPlanFile)} tests must cover null spell attack plan events`);
   }
-  if (!attackDecisionTestText.includes("rejects unknown auto-element events as no selected element")) {
-    violations.push(`${rel(autoElementSelectionFile)} tests must cover unknown auto-element events`);
+  if (
+    !attackDecisionTestText.includes("rejects unknown auto-element events as no selected element")
+  ) {
+    violations.push(
+      `${rel(autoElementSelectionFile)} tests must cover unknown auto-element events`
+    );
   }
   if (!attackDecisionTestText.includes("runAutoElementSelection(null)")) {
     violations.push(`${rel(autoElementSelectionFile)} tests must cover null auto-element events`);
@@ -4366,23 +4555,28 @@ function checkAttackEntry() {
     violations.push(`${rel(physicalSkillScoringFile)} may export only its event entry`);
   }
   const scoringEntryBody =
-    scoringText.match(/export function runPhysicalSkillScoring\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    scoringText.match(/export function runPhysicalSkillScoring\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_SCORE_CANDIDATES\]/.test(scoringText)) {
-    violations.push(`${rel(physicalSkillScoringFile)} must route events through a frozen handler table`);
+    violations.push(
+      `${rel(physicalSkillScoringFile)} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(scoringEntryBody)) {
     violations.push(`${rel(physicalSkillScoringFile)} entry must dispatch by handler table`);
   }
   if (!scoringText.includes("physicalSkillScoringEventHandlers[event?.type]")) {
-    violations.push(`${rel(physicalSkillScoringFile)} must reject null physical skill scoring events`);
+    violations.push(
+      `${rel(physicalSkillScoringFile)} must reject null physical skill scoring events`
+    );
   }
   const scoringTestText = fs.readFileSync(
     path.join(root, "src/battle/attack/physical-skill-scoring.test.js"),
     "utf8"
   );
   if (!scoringTestText.includes("runPhysicalSkillScoring(null)")) {
-    violations.push(`${rel(physicalSkillScoringFile)} tests must cover null physical skill scoring events`);
+    violations.push(
+      `${rel(physicalSkillScoringFile)} tests must cover null physical skill scoring events`
+    );
   }
   const rankingText = fs.readFileSync(physicalSkillRankingFile, "utf8");
   for (const required of [
@@ -4395,7 +4589,9 @@ function checkAttackEntry() {
     "aoeScore",
   ]) {
     if (!rankingText.includes(required)) {
-      violations.push(`${rel(physicalSkillRankingFile)} must own physical skill ranking ${required}`);
+      violations.push(
+        `${rel(physicalSkillRankingFile)} must own physical skill ranking ${required}`
+      );
     }
   }
   if (
@@ -4406,35 +4602,44 @@ function checkAttackEntry() {
     violations.push(`${rel(physicalSkillRankingFile)} may export only its event entry`);
   }
   const rankingEntryBody =
-    rankingText.match(/export function runPhysicalSkillRanking\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    rankingText.match(/export function runPhysicalSkillRanking\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (
     !/Object\.freeze\(\{[\s\S]*\[EVENT_PICK_BY_UTILITY\][\s\S]*\[EVENT_AOE_SCORE\]/.test(
       rankingText
     )
   ) {
-    violations.push(`${rel(physicalSkillRankingFile)} must route events through a frozen handler table`);
+    violations.push(
+      `${rel(physicalSkillRankingFile)} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(rankingEntryBody)) {
     violations.push(`${rel(physicalSkillRankingFile)} entry must dispatch by handler table`);
   }
   if (!rankingText.includes("physicalSkillRankingEventHandlers[event?.type]")) {
-    violations.push(`${rel(physicalSkillRankingFile)} must reject null physical skill ranking events`);
+    violations.push(
+      `${rel(physicalSkillRankingFile)} must reject null physical skill ranking events`
+    );
   }
   const rankingTestText = fs.readFileSync(
     path.join(root, "src/battle/attack/physical-skill-ranking.test.js"),
     "utf8"
   );
   if (!rankingTestText.includes("runPhysicalSkillRanking(null)")) {
-    violations.push(`${rel(physicalSkillRankingFile)} tests must cover null physical skill ranking events`);
+    violations.push(
+      `${rel(physicalSkillRankingFile)} tests must cover null physical skill ranking events`
+    );
   }
   const scoreContextBody =
     scoringText.match(/function scoreSkillContextual\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/switch\s*\(\s*skill\s*\)/.test(scoreContextBody)) {
-    violations.push(`${rel(physicalSkillScoringFile)} must dispatch physical skill scoring through PHYSICAL_SKILL_SCORERS`);
+    violations.push(
+      `${rel(physicalSkillScoringFile)} must dispatch physical skill scoring through PHYSICAL_SKILL_SCORERS`
+    );
   }
   if (/skill\s*===/.test(scoringText)) {
-    violations.push(`${rel(physicalSkillScoringFile)} must route physical skill-specific rulings through tables`);
+    violations.push(
+      `${rel(physicalSkillScoringFile)} must route physical skill-specific rulings through tables`
+    );
   }
   if (
     !scoringText.includes("BigSkillCatalogEvent.READ_SPEC") ||
@@ -4474,7 +4679,9 @@ function checkAttackEntry() {
     autoElementText.match(/export function runAutoElementSelection\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
     "";
   if (!/Object\.freeze\(\{[\s\S]*\[EVENT_SELECT\]/.test(autoElementText)) {
-    violations.push(`${rel(autoElementSelectionFile)} must route events through a frozen handler table`);
+    violations.push(
+      `${rel(autoElementSelectionFile)} must route events through a frozen handler table`
+    );
   }
   if (/event\.type\s*===/.test(autoElementEntryBody)) {
     violations.push(`${rel(autoElementSelectionFile)} entry must dispatch by handler table`);
@@ -4486,7 +4693,9 @@ function checkAttackEntry() {
     !/const ELEMENT_TO_STATUS = Object\.freeze\(\{/.test(autoElementText) ||
     !/const DEFAULT_POOL = Object\.freeze\(\[/.test(autoElementText)
   ) {
-    violations.push(`${rel(autoElementSelectionFile)} must own frozen auto-element decision tables`);
+    violations.push(
+      `${rel(autoElementSelectionFile)} must own frozen auto-element decision tables`
+    );
   }
   const rulesText = readBattleActionRulesText();
   const attackRule =
@@ -4519,24 +4728,27 @@ function checkAttackEntry() {
       if (/from\s+["'][^"']*pick-element\.js["']/.test(text)) {
         violations.push(`${rel(file)} must not import legacy pick-element.js`);
       }
-      if (
-        file !== attackPlanFile &&
-        /from\s+["'][^"']*physical-skill-scoring\.js["']/.test(text)
-      ) {
-        violations.push(`${rel(file)} must not bypass runAttackDecision for physical skill scoring`);
+      if (file !== attackPlanFile && /from\s+["'][^"']*physical-skill-scoring\.js["']/.test(text)) {
+        violations.push(
+          `${rel(file)} must not bypass runAttackDecision for physical skill scoring`
+        );
       }
       if (
         file !== attackPlanFile &&
         file !== physicalSkillScoringFile &&
         /from\s+["'][^"']*physical-skill-ranking\.js["']/.test(text)
       ) {
-        violations.push(`${rel(file)} must not bypass runAttackDecision for physical skill ranking`);
+        violations.push(
+          `${rel(file)} must not bypass runAttackDecision for physical skill ranking`
+        );
       }
       if (
         file !== spellAttackPlanFile &&
         /from\s+["'][^"']*auto-element-selection\.js["']/.test(text)
       ) {
-        violations.push(`${rel(file)} must not bypass runAttackDecision for auto element selection`);
+        violations.push(
+          `${rel(file)} must not bypass runAttackDecision for auto element selection`
+        );
       }
     }
   }
@@ -4626,7 +4838,9 @@ function checkBattleRuleFactMappers() {
     violations.push(`${rel(itemFactsFile)} entry must fail closed for invalid item facts events`);
   }
   if (!/battleItemFactsEventHandlers\[event\?\.type\]/.test(itemFactsText)) {
-    violations.push(`${rel(itemFactsFile)} entry must dispatch invalid item facts events through optional type`);
+    violations.push(
+      `${rel(itemFactsFile)} entry must dispatch invalid item facts events through optional type`
+    );
   }
   if (!itemFactsTestText.includes("rejects unknown item facts events")) {
     violations.push(`${rel(itemFactsTestFile)} must cover unknown item facts events`);
@@ -4671,7 +4885,9 @@ function checkBattleRuleFactMappers() {
     violations.push(`${rel(buffFactsFile)} entry must fail closed for invalid buff facts events`);
   }
   if (!/battleBuffFactsEventHandlers\[event\?\.type\]/.test(buffFactsText)) {
-    violations.push(`${rel(buffFactsFile)} entry must dispatch invalid buff facts events through optional type`);
+    violations.push(
+      `${rel(buffFactsFile)} entry must dispatch invalid buff facts events through optional type`
+    );
   }
   if (!buffFactsTestText.includes("rejects unknown buff facts events")) {
     violations.push(`${rel(buffFactsTestFile)} must cover unknown buff facts events`);
@@ -4704,7 +4920,9 @@ function checkBattleRuleFactMappers() {
   }
   for (const legacy of ["debuffActionFacts", "burstControlFacts", "bossImperilFacts"]) {
     if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(debuffFactsText)) {
-      violations.push(`${rel(debuffFactsFile)} must not export legacy debuff fact mapper ${legacy}`);
+      violations.push(
+        `${rel(debuffFactsFile)} must not export legacy debuff fact mapper ${legacy}`
+      );
     }
   }
   if (
@@ -4719,10 +4937,14 @@ function checkBattleRuleFactMappers() {
     ? fs.readFileSync(debuffFactsTestFile, "utf8")
     : "";
   if (/battleDebuffFactsEventHandlers\[event\.type\]/.test(debuffFactsText)) {
-    violations.push(`${rel(debuffFactsFile)} entry must fail closed for invalid debuff facts events`);
+    violations.push(
+      `${rel(debuffFactsFile)} entry must fail closed for invalid debuff facts events`
+    );
   }
   if (!/battleDebuffFactsEventHandlers\[event\?\.type\]/.test(debuffFactsText)) {
-    violations.push(`${rel(debuffFactsFile)} entry must dispatch invalid debuff facts events through optional type`);
+    violations.push(
+      `${rel(debuffFactsFile)} entry must dispatch invalid debuff facts events through optional type`
+    );
   }
   if (!debuffFactsTestText.includes("rejects unknown debuff facts events")) {
     violations.push(`${rel(debuffFactsTestFile)} must cover unknown debuff facts events`);
@@ -4805,8 +5027,7 @@ function checkBattleRuleFactMappers() {
     const entryBody =
       spec.text.match(
         new RegExp(`export function ${spec.runName}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`)
-      )?.[0] ||
-      "";
+      )?.[0] || "";
     if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_DECISION\]/.test(spec.text)) {
       violations.push(`${rel(spec.file)} must route events through a frozen handler table`);
     }
@@ -4817,11 +5038,11 @@ function checkBattleRuleFactMappers() {
       violations.push(`${rel(spec.file)} entry must fail closed for invalid facts events`);
     }
     if (!new RegExp(`${spec.handlerName}\\[event\\?\\.type\\]`).test(entryBody)) {
-      violations.push(`${rel(spec.file)} entry must dispatch invalid facts events through optional type`);
+      violations.push(
+        `${rel(spec.file)} entry must dispatch invalid facts events through optional type`
+      );
     }
-    const testText = fs.existsSync(spec.testFile)
-      ? fs.readFileSync(spec.testFile, "utf8")
-      : "";
+    const testText = fs.existsSync(spec.testFile) ? fs.readFileSync(spec.testFile, "utf8") : "";
     if (!testText.includes(spec.unknownEventText)) {
       violations.push(`${rel(spec.testFile)} must cover unknown facts events`);
     }
@@ -4885,8 +5106,7 @@ function checkBattleRuleFactMappers() {
   }
   const debuffFactsOwnerText = fs.readFileSync(debuffFactsFile, "utf8");
   const burstFacts =
-    debuffFactsOwnerText.match(/function burstControlFacts\(snap\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    debuffFactsOwnerText.match(/function burstControlFacts\(snap\) \{[\s\S]*?\n\}/)?.[0] || "";
   for (const retired of [
     "conditionFacts",
     "attackStatus",
@@ -5003,7 +5223,11 @@ function checkBattleStallMode() {
   const entryBody =
     ownerText.match(/export function runBattleStallModeAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
     "";
-  if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_ACTIVE\][\s\S]*\[EVENT_READ_TOPUP_CANDIDATES\]/.test(ownerText)) {
+  if (
+    !/Object\.freeze\(\{[\s\S]*\[EVENT_READ_ACTIVE\][\s\S]*\[EVENT_READ_TOPUP_CANDIDATES\]/.test(
+      ownerText
+    )
+  ) {
     violations.push(`${rel(stallModeFile)} must route events through a frozen handler table`);
   }
   if (/event\.type\s*===/.test(entryBody)) {
@@ -5013,21 +5237,23 @@ function checkBattleStallMode() {
     violations.push(`${rel(stallModeFile)} entry must fail closed for invalid stall mode events`);
   }
   if (!/battleStallModeEventHandlers\[event\?\.type\]/.test(entryBody)) {
-    violations.push(`${rel(stallModeFile)} entry must dispatch invalid stall mode events through optional type`);
+    violations.push(
+      `${rel(stallModeFile)} entry must dispatch invalid stall mode events through optional type`
+    );
   }
   const stallModeTest = path.join(root, "src/battle/battle-stall-mode.test.js");
   const stallModeTestText = fs.readFileSync(stallModeTest, "utf8");
-  if (!stallModeTestText.includes("rejects invalid stall mode events without reading player buff state")) {
+  if (
+    !stallModeTestText.includes(
+      "rejects invalid stall mode events without reading player buff state"
+    )
+  ) {
     violations.push(`${rel(stallModeTest)} must cover invalid stall mode events`);
   }
   if (!/runBattleStallModeAutomation\(null\)/.test(stallModeTestText)) {
     violations.push(`${rel(stallModeTest)} must cover null stall mode events`);
   }
-  const allowedAliveHpFiles = new Set([
-    itemFactsFile,
-    decideGemFile,
-    dynamicThresholdFile,
-  ]);
+  const allowedAliveHpFiles = new Set([itemFactsFile, decideGemFile, dynamicThresholdFile]);
   const battleDir = path.join(root, "src/battle");
   for (const entry of fs.readdirSync(battleDir, { recursive: true, withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith(".js") || entry.name.endsWith(".test.js")) {
@@ -5062,13 +5288,16 @@ function checkBattleStallMode() {
     violations.push(`${rel(potionEconomyFile)} may export only its event query entry`);
   }
   const economyEntryBody =
-    economyText.match(/export function runBattlePotionEconomy\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    economyText.match(/export function runBattlePotionEconomy\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
   if (/battlePotionEconomyEventHandlers\[event\.type\]/.test(economyEntryBody)) {
-    violations.push(`${rel(potionEconomyFile)} entry must fail closed for invalid potion economy events`);
+    violations.push(
+      `${rel(potionEconomyFile)} entry must fail closed for invalid potion economy events`
+    );
   }
   if (!/battlePotionEconomyEventHandlers\[event\?\.type\]/.test(economyEntryBody)) {
-    violations.push(`${rel(potionEconomyFile)} entry must dispatch invalid potion economy events through optional type`);
+    violations.push(
+      `${rel(potionEconomyFile)} entry must dispatch invalid potion economy events through optional type`
+    );
   }
   const economyTestFile = path.join(root, "src/battle/potion-economy.test.js");
   const economyTestText = fs.existsSync(economyTestFile)
@@ -5103,19 +5332,26 @@ function checkBattleStallMode() {
     violations.push(`${rel(dynamicThresholdFile)} may export only its event query entry`);
   }
   const dynamicThresholdEntry =
-    dynamicThresholdText.match(/export function runBattleDynamicThreshold\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
-    "";
+    dynamicThresholdText.match(
+      /export function runBattleDynamicThreshold\([^)]*\) \{[\s\S]*?\n\}/
+    )?.[0] || "";
   if (/battleDynamicThresholdEventHandlers\[event\.type\]/.test(dynamicThresholdEntry)) {
     violations.push(`${rel(dynamicThresholdFile)} must fail closed for invalid threshold events`);
   }
   if (!/battleDynamicThresholdEventHandlers\[event\?\.type\]/.test(dynamicThresholdEntry)) {
-    violations.push(`${rel(dynamicThresholdFile)} must dispatch invalid threshold events through optional type`);
+    violations.push(
+      `${rel(dynamicThresholdFile)} must dispatch invalid threshold events through optional type`
+    );
   }
   const dynamicThresholdTestText = fs.readFileSync(
     path.join(root, "src/battle/dynamic-threshold.test.js"),
     "utf8"
   );
-  if (!dynamicThresholdTestText.includes("rejects invalid dynamic threshold events without reading auto-tune")) {
+  if (
+    !dynamicThresholdTestText.includes(
+      "rejects invalid dynamic threshold events without reading auto-tune"
+    )
+  ) {
     violations.push("src/battle/dynamic-threshold.test.js must cover invalid threshold events");
   }
   if (!/runBattleDynamicThreshold\(null\)/.test(dynamicThresholdTestText)) {
