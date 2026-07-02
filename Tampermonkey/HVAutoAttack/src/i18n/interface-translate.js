@@ -30,6 +30,7 @@
 
 import { INTERFACE_DICTS_MAP, INTERFACE_WORDS } from "../data/i18n/interface-dict.js";
 import { registerRestore, ensureRestoreButton, toggleRestore, isTranslated, isButtonVisible, hideButton, registerRetranslate, registerTranslation, isSkipped } from "./core/restore-controller.js";
+import { recordI18nInitFailure } from "./core/init-failure.js";
 import { langPostProcess } from "./core/lang-post.js";
 
 //原文切换功能所需变量（changer 按钮归 RestoreController 单例；translated 仍本模块持有供动态 observer / alert hook 读）
@@ -310,6 +311,6 @@ export function initInterfaceTranslate() {
 
         start();
     } catch (e) {
-        console.error("[HVAA][ui-i18n] 出错:", e);
+        recordI18nInitFailure("interface", e);
     }
 }

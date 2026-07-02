@@ -18,6 +18,7 @@
 // ============================================================================
 
 import { JPX_DICT } from "../data/i18n/jpx-dict.js";
+import { recordI18nInitFailure } from "./core/init-failure.js";
 
 function decodeI18N(value) {
 	if (typeof value === 'number' || typeof value === 'boolean' || value == null) return value;
@@ -41,6 +42,6 @@ export function initJpxLang() {
 		// 供 jpx 战斗/统计主脚本读取(本脚本不直接改 DOM)。
 		window.jpxI18N = { ...window.jpxI18N, ...decodeI18N(JPX_DICT) };
 	} catch (e) {
-		console.error("[HVAA][jpx-i18n] 执行出错:", e);
+		recordI18nInitFailure("jpx", e);
 	}
 }

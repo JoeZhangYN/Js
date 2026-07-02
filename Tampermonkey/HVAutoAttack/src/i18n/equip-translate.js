@@ -7,6 +7,7 @@
 // 切换原文使用的变量
 import { EQUIP_ITEMS, EQUIP_EQUIPS, EQUIP_INFO, EQUIP_EXTRA } from "../data/i18n/equip-dict.js";
 import { registerRestore, ensureRestoreButton, registerRetranslate, isTranslated, isSkipped } from "./core/restore-controller.js";
+import { recordI18nInitFailure } from "./core/init-failure.js";
 import { langPostProcess } from "./core/lang-post.js";
 import { g } from "../state/store.js";
 
@@ -440,7 +441,7 @@ export function initEquipTranslate() {
     if (document.getElementById('riddlemaster') || document.getElementById('textlog')) return;
     registerRetranslate(retranslateEquip); // 注册 lang 切换重翻回调（去重）
     main();
-  } catch (e) { console.error("[HVAA][equip-i18n] 执行出错:", e); }
+  } catch (e) { recordI18nInitFailure("equip", e); }
 }
 
 // Stage G: 整名装备翻译（字符串路径），经全局桥暴露给 hv-utils 自渲染（lpr/弹窗/inv_eqstor/彩票）。
