@@ -6382,6 +6382,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       _ss.equip.usage = usage;
       _ss.equip.capacity = capacity;
       _ss.node.results_equip.value = `Inventory Capacity: ${_ss.equip.usage} / ${_ss.equip.capacity}`;
+    }).catch(() => {
+      _ss.node.results_equip.value = 'Inventory Capacity: unavailable';
     });
   };
 
@@ -12493,6 +12495,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     _ss.equip.current = parseInt(exec[1]) + parseInt(exec[2] || 0);
     _ss.equip.capacity = parseInt(exec[3]);
     _ss.node.results_equip.value = `装备库存量: ${_ss.equip.current} / ${_ss.equip.capacity}`;
+  }).catch(() => {
+    _ss.node.results_equip.value = '装备库存量: unavailable';
   });
 
   _ss.trophies_value = 0;

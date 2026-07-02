@@ -70,6 +70,14 @@ for (const [index, match] of [...text.matchAll(/const exec = \/<td>Inventory Cap
   }
 }
 
+for (const [index, match] of [
+  ...text.matchAll(/\$ajax\.fetch\('\?s=Bazaar&ss=am&screen=organize'\)\.then\(\(html\) => \{[\s\S]*?\n\s*\}\);/g),
+].entries()) {
+  if (!match[0].includes(".catch(() => {")) {
+    violations.push(`${rel(hvUtilsFile)} capacity fetch[${index}] must expose unavailable capacity on request failure`);
+  }
+}
+
 if (!text.includes(capacityPattern)) {
   violations.push(`${rel(hvUtilsFile)} must keep the Inventory Capacity parser visible to guards`);
 }
