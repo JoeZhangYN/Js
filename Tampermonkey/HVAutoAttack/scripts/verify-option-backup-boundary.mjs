@@ -55,6 +55,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 for (const required of [
   "runOptionBackupAutomation",
   "OptionBackupEvent",
@@ -97,6 +98,9 @@ const ownerEntry =
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
 }
+if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null option backup events`);
+}
 for (const internal of [
   "readOptionBackups(",
   "saveCurrentOptionBackup(",
@@ -110,6 +114,9 @@ for (const internal of [
       `${owner.replaceAll("\\", "/")} entry must dispatch through optionBackupEventHandlers`
     );
   }
+}
+if (!/runOptionBackupAutomation\(null\)/.test(ownerTestText)) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null option backup events`);
 }
 
 if (violations.length) {

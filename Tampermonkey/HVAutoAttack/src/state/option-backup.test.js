@@ -62,8 +62,12 @@ describe("option backup entry", () => {
     );
   });
 
-  it("ignores unknown option backup events", () => {
+  it("ignores invalid option backup events without changing stored backups", () => {
+    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", lang: "1" } });
+    runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "a" });
+
     expect(runOptionBackupAutomation({ type: "unknown" })).toBeUndefined();
-    expect(getValue(STORAGE_KEYS.BACKUP, true)).toBeNull();
+    expect(runOptionBackupAutomation(null)).toBeUndefined();
+    expect(getValue(STORAGE_KEYS.BACKUP, true)).toEqual({ a: { version: "10.0", lang: "1" } });
   });
 });

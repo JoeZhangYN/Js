@@ -65,5 +65,5 @@ const optionBackupEventHandlers = Object.freeze({
 });
 
 export function runOptionBackupAutomation(event = { type: EVENT_READ }) {
-  return optionBackupEventHandlers[event.type]?.(event);
+  return optionBackupEventHandlers[event?.type]?.(event);
 }
