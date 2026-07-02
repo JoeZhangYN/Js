@@ -1,6 +1,7 @@
-import { getValue, setValue } from "./storage.js";
+import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
+import { persistStaminaLossLog } from "./stamina-loss-log-failure.js";
 
 const EVENT_READ = "read";
 const EVENT_RECORD = "record";
@@ -24,12 +25,12 @@ function recordStaminaLoss(
 ) {
   const log = readStaminaLossLog();
   log[stamp] = Number(amount) || 0;
-  setValue(STORAGE_KEYS.STAMINA_LOST_LOG, log);
+  if (!persistStaminaLossLog(log, "record")) return false;
   return log;
 }
 
 function clearStaminaLossLog() {
-  setValue(STORAGE_KEYS.STAMINA_LOST_LOG, {});
+  if (!persistStaminaLossLog({}, "clear")) return false;
   return readStaminaLossLog();
 }
 

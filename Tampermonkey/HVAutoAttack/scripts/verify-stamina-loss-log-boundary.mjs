@@ -4,7 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/stamina-loss-log.js");
+const failureOwner = path.normalize("src/state/stamina-loss-log-failure.js");
 const ownerTest = path.normalize("src/state/stamina-loss-log.test.js");
+const failureTest = path.normalize("src/state/stamina-loss-log-failure.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
@@ -28,7 +30,9 @@ function checkFile(file) {
     const where = `${rel(file)}:${index + 1}`;
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.STAMINA_LOST_LOG\b/.test(line)
     ) {
@@ -36,6 +40,7 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       /\b(?:getValue|setValue|delValue)\(\s*["']staminaLostLog["']/.test(line)
     ) {
       violations.push(`${where} stamina loss log storage must use stamina loss log entry`);
@@ -53,11 +58,14 @@ walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
+const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
 for (const required of [
   "runStaminaLossLogAutomation",
   "StaminaLossLogEvent",
   "STORAGE_KEYS.STAMINA_LOST_LOG",
   "CLEAR_CONFIRMATION_MESSAGE",
+  "persistStaminaLossLog",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -106,6 +114,35 @@ for (const internal of [
 }
 if (!/runStaminaLossLogAutomation\(null\)/.test(ownerTestText)) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null stamina loss log events`);
+}
+
+if (/\bsetValue\(/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not write stamina loss log storage directly`);
+}
+if (!/function persistStaminaLossLog\(log,\s*stage\) \{[\s\S]*setValue\(STORAGE_KEYS\.STAMINA_LOST_LOG,\s*log\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordStaminaLossLogFailure\(stage,\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
+  violations.push(`${failureOwner.replaceAll("\\", "/")} must classify stamina loss log storage write failures`);
+}
+for (const required of [
+  "STAMINA_LOSS_LOG_FAILURE_KEY",
+  "HVAA:lastStaminaLossLogFailure",
+  "recordStaminaLossLogFailure",
+  "staminaLossLog",
+  "persistStaminaLossLog",
+  "STORAGE_KEYS.STAMINA_LOST_LOG",
+]) {
+  if (!failureOwnerText.includes(required)) {
+    violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of [
+  "STAMINA_LOSS_LOG_FAILURE_KEY",
+  "stamina loss log write blocked",
+  "stamina loss log clear blocked",
+  "storageWrite",
+]) {
+  if (!failureTestText.includes(required)) {
+    violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
 }
 
 if (violations.length) {
