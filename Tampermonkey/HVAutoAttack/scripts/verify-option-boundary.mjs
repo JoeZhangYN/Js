@@ -142,12 +142,22 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (entryBody.includes("event.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
+}
+if (!entryBody.includes("event?.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover option entry`);
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-  if (!ownerTestText.includes("rejects unknown option events without changing runtime or persisted option")) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown option events`);
+  if (
+    !ownerTestText.includes("rejects unknown and null option events without reading or changing option state") ||
+    !ownerTestText.includes("runOptionAutomation(null)") ||
+    !ownerTestText.includes("getItem).not.toHaveBeenCalled()")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null option events`);
   }
 }
 

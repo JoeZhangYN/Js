@@ -138,5 +138,5 @@ function parseOptionImportText(text) {
 }
 
 export function runOptionAutomation(event = { type: EVENT_READ }) {
-  return optionEventHandlers[event.type]?.(event);
+  return optionEventHandlers[event?.type]?.(event);
 }

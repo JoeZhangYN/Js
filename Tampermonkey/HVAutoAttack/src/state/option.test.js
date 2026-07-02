@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OptionEvent, runOptionAutomation } from "./option.js";
 import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
@@ -129,12 +129,15 @@ describe("option persistence entry", () => {
     });
   });
 
-  it("rejects unknown option events without changing runtime or persisted option", () => {
+  it("rejects unknown and null option events without reading or changing option state", () => {
     const option = { version: "10.0", lang: "2" };
     runOptionAutomation({ type: OptionEvent.WRITE, option });
+    const getItem = vi.spyOn(Storage.prototype, "getItem");
 
     expect(runOptionAutomation({ type: "unknown", option: { version: "bad" } })).toBeUndefined();
+    expect(runOptionAutomation(null)).toBeUndefined();
 
+    expect(getItem).not.toHaveBeenCalled();
     expect(g("option")).toBe(option);
     expect(getValue(STORAGE_KEYS.OPTION, true)).toEqual(option);
   });
