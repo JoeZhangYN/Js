@@ -100,4 +100,25 @@ describe("readRecentDiagnosticEvidence", () => {
       battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
     });
   });
+
+  it("skips malformed or unreadable evidence sources without dropping later evidence", () => {
+    window.sessionStorage.setItem("HVAA:lastNavigationDecision", "{not-json");
+    window.sessionStorage.setItem(
+      "HVAA:lastBattleCompletion",
+      JSON.stringify({ outcome: "victory", effects: { scheduleReload: false } })
+    );
+    const blockedKeys = new Set(["HVAA:lastBattleApiBridge"]);
+    const storage = {
+      getItem(key) {
+        if (blockedKeys.has(key)) throw new Error("read blocked");
+        return window.sessionStorage.getItem(key);
+      },
+    };
+
+    expect(readRecentDiagnosticEvidence(storage)).toMatchObject({
+      battleCompletion: { outcome: "victory", effects: { scheduleReload: false } },
+    });
+    expect(readRecentDiagnosticEvidence(storage)).not.toHaveProperty("navigationDecision");
+    expect(readRecentDiagnosticEvidence(storage)).not.toHaveProperty("battleApiBridge");
+  });
 });

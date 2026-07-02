@@ -274,6 +274,19 @@ if (!owner) {
         violations.push(`${testSource.rel} must preserve action delay diagnostic evidence`);
       }
     }
+    const diagnosticEvidenceTestText = diagnosticEvidenceTest
+      ? stripComments(readFileSync(diagnosticEvidenceTest.abs, "utf8"))
+      : "";
+    for (const required of [
+      "skips malformed or unreadable evidence sources without dropping later evidence",
+      "{not-json",
+      "read blocked",
+      "battleCompletion",
+    ]) {
+      if (!diagnosticEvidenceTestText.includes(required)) {
+        violations.push(`core/diagnostic-evidence.test.js must cover ${required}`);
+      }
+    }
     const externalUnloadText = externalUnloadTest
       ? stripComments(readFileSync(externalUnloadTest.abs, "utf8"))
       : "";
