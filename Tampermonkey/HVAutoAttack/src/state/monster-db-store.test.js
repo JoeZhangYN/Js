@@ -136,7 +136,7 @@ describe("runMonsterDbStoreAutomation", () => {
     ).toBe("2026-06-27");
   });
 
-  it("rejects unknown store events without changing persisted profiles", async () => {
+  it("rejects unknown and null store events without reading or changing persisted profiles", async () => {
     const { MonsterDbStoreEvent, runMonsterDbStoreAutomation } = await loadStore();
 
     await runMonsterDbStoreAutomation({
@@ -150,8 +150,21 @@ describe("runMonsterDbStoreAutomation", () => {
         info: { monsterId: 99, fire: 0 },
       })
     ).toBeUndefined();
+    expect(await runMonsterDbStoreAutomation(null)).toBeUndefined();
     expect(
       await runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_READ, monsterId: 99 })
     ).toEqual({ monsterId: 99, fire: 50 });
+  });
+
+  it("does not open IndexedDB for unknown or null store events", async () => {
+    vi.resetModules();
+    const fakeIndexedDb = makeFakeIndexedDb();
+    const open = vi.spyOn(fakeIndexedDb, "open");
+    globalThis.indexedDB = fakeIndexedDb;
+    const { runMonsterDbStoreAutomation } = await import("./monster-db-store.js");
+
+    expect(await runMonsterDbStoreAutomation({ type: "unknown" })).toBeUndefined();
+    expect(await runMonsterDbStoreAutomation(null)).toBeUndefined();
+    expect(open).not.toHaveBeenCalled();
   });
 });

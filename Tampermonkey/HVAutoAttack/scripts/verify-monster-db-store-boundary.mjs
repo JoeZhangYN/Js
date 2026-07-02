@@ -65,6 +65,12 @@ if (!/const monsterDbStoreEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_P
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (entryBody.includes("event.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
+}
+if (!entryBody.includes("event?.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+}
 for (const name of legacy) {
   if (new RegExp(`export\\s+function\\s+${name}\\s*\\(`).test(ownerText)) {
     violations.push(
@@ -76,8 +82,12 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover monster db store entry`);
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-  if (!ownerTestText.includes("rejects unknown store events without changing persisted profiles")) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown store events`);
+  if (
+    !ownerTestText.includes("rejects unknown and null store events without reading or changing persisted profiles") ||
+    !ownerTestText.includes("runMonsterDbStoreAutomation(null)") ||
+    !ownerTestText.includes("does not open IndexedDB for unknown or null store events")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null store events`);
   }
 }
 

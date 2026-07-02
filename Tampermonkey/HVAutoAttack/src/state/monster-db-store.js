@@ -160,5 +160,5 @@ function setMeta(key, value) {
 }
 
 export function runMonsterDbStoreAutomation(event = { type: EVENT_PROFILE_READ }) {
-  return monsterDbStoreEventHandlers[event.type]?.(event);
+  return monsterDbStoreEventHandlers[event?.type]?.(event);
 }
