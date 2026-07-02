@@ -62,5 +62,5 @@ function mirrorRuntime(vitals = {}) {
 }
 
 export function runBattlePlayerVitals(event = { type: EVENT_READ_CURRENT }) {
-  return battlePlayerVitalsEventHandlers[event.type]?.(event) ?? {};
+  return battlePlayerVitalsEventHandlers[event?.type]?.(event) ?? {};
 }

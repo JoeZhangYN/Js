@@ -55,12 +55,18 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\][\s\S]*\[EVENT_MIRROR_RUNTI
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (entryBody.includes("event.type") || !entryBody.includes("event?.type")) {
+  violations.push(`${rel(owner)} entry must fail closed for unknown or null player vitals events`);
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover player vitals entry contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("rejects unknown events without touching DOM or runtime state")) {
-    violations.push(`${rel(ownerTest)} must cover unknown player vitals events`);
+  if (
+    !ownerTestText.includes("rejects invalid events without touching DOM or runtime state") ||
+    !ownerTestText.includes("runBattlePlayerVitals(null)")
+  ) {
+    violations.push(`${rel(ownerTest)} must cover unknown and null player vitals events`);
   }
 }
 if (!snapshotText.includes("runBattlePlayerVitals")) {
