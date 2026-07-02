@@ -44,10 +44,14 @@ afterEach(() => {
 });
 
 describe("riddle ML entry", () => {
-  it("rejects unknown ML events without starting health checks or answering", () => {
+  it("rejects unknown and null ML events without starting health checks or answering", () => {
+    const readOption = vi.spyOn(Storage.prototype, "getItem");
+
     expect(runRiddleMlAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runRiddleMlAutomation(null)).toBeUndefined();
 
     expect(vi.getTimerCount()).toBe(0);
+    expect(readOption).not.toHaveBeenCalled();
     expect(mocks.runRiddleImageAutomation).not.toHaveBeenCalled();
     expect(mocks.gmXhr).not.toHaveBeenCalled();
   });

@@ -440,5 +440,5 @@ const riddleMlEventHandlers = Object.freeze({
 });
 
 export function runRiddleMlAutomation(event = { type: EVENT_TRY_ANSWER }) {
-  return riddleMlEventHandlers[event.type]?.(event);
+  return riddleMlEventHandlers[event?.type]?.(event);
 }

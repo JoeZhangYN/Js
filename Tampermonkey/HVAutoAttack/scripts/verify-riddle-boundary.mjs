@@ -424,6 +424,12 @@ function checkRiddleMlEntry() {
   if (/if\s*\(\s*event\.type\s*===/.test(mlEntryBody)) {
     violations.push(`${rel(riddleMlFile)} entry must route events through handler table`);
   }
+  if (mlEntryBody.includes("event.type")) {
+    violations.push(`${rel(riddleMlFile)} entry must reject null events without throwing`);
+  }
+  if (!mlEntryBody.includes("event?.type")) {
+    violations.push(`${rel(riddleMlFile)} entry must fail closed for unknown or null events`);
+  }
   for (const forbidden of ["startRiddleMlHealthCheck", "tryMLAnswer"]) {
     if (mlEntryBody.includes(forbidden)) {
       violations.push(`${rel(riddleMlFile)} entry must route ML work through event handlers`);
@@ -433,8 +439,12 @@ function checkRiddleMlEntry() {
   const ownerTestText = fs.existsSync(path.join(root, ownerTest))
     ? fs.readFileSync(path.join(root, ownerTest), "utf8")
     : "";
-  if (!ownerTestText.includes("rejects unknown ML events without starting health checks or answering")) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown ML events`);
+  if (
+    !ownerTestText.includes("rejects unknown and null ML events without starting health checks or answering") ||
+    !ownerTestText.includes("runRiddleMlAutomation(null)") ||
+    !ownerTestText.includes("readOption).not.toHaveBeenCalled()")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null ML events`);
   }
   const requestBody =
     ownerText.match(/async function requestRiddleMlAnswer\([\s\S]*?\n\}/)?.[0] || "";
