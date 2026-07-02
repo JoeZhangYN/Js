@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/battle/battle-round.js");
 const ownerTest = path.normalize("src/battle/battle-round.test.js");
+const ownerRejectionTest = path.normalize("src/battle/battle-round-rejection.test.js");
 const ownerRuntimeTest = path.normalize("src/battle/battle-round-runtime.test.js");
 const storage = path.normalize("src/state/storage.js");
 const storageTest = path.normalize("src/state/storage.test.js");
@@ -33,6 +34,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== ownerRejectionTest &&
       relative !== ownerRuntimeTest &&
       relative !== storage &&
       relative !== storageTest &&
@@ -85,6 +87,17 @@ if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
     `${owner.replaceAll("\\", "/")} must not branch directly on battle round event types`
   );
 }
+const entryBody =
+  ownerText.match(/export function runBattleRoundAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+  "";
+if (/battleRoundEventHandlers\[event\.type\]/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must fail closed for invalid round events`);
+}
+if (!/battleRoundEventHandlers\[event\?\.type\]/.test(entryBody)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must dispatch invalid round events through optional type`
+  );
+}
 if ((ownerText.match(/roundRuntime\(/g) || []).length < 4) {
   violations.push(`${owner.replaceAll("\\", "/")} must normalize round count writes and reads`);
 }
@@ -103,6 +116,15 @@ if (!ownerText.includes("CLASSIFY_TYPE")) {
 }
 if (!ownerText.includes("randomEncounterStarted")) {
   violations.push(`${owner.replaceAll("\\", "/")} must decide random encounter start context`);
+}
+const ownerRejectionTestText = fs.existsSync(path.join(root, ownerRejectionTest))
+  ? fs.readFileSync(path.join(root, ownerRejectionTest), "utf8")
+  : "";
+if (!ownerRejectionTestText.includes("rejects invalid events without changing round state")) {
+  violations.push(`${ownerRejectionTest.replaceAll("\\", "/")} must cover invalid round events`);
+}
+if (!/runBattleRoundAutomation\(null\)/.test(ownerRejectionTestText)) {
+  violations.push(`${ownerRejectionTest.replaceAll("\\", "/")} must cover null round events`);
 }
 
 const roundStartText = fs.readFileSync(path.join(root, "src/battle/battle-round-start.js"), "utf8");

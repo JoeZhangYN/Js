@@ -161,5 +161,5 @@ const battleRoundEventHandlers = Object.freeze({
 });
 
 export function runBattleRoundAutomation(event = { type: EVENT_SYNC_RUNTIME }) {
-  return battleRoundEventHandlers[event.type]?.(event) ?? null;
+  return battleRoundEventHandlers[event?.type]?.(event) ?? null;
 }
