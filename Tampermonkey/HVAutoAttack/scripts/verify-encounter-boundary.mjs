@@ -631,6 +631,18 @@ for (const required of [
     );
   }
 }
+for (const required of [
+  "does not classify low equipment capacity text as encounter equipment-full failure",
+  "Inventory Capacity:",
+  "54",
+  "500",
+]) {
+  if (!widgetPolicyTestText.includes(required)) {
+    violations.push(
+      `${widgetPolicyTest.replaceAll("\\", "/")} must lock low-capacity text as non equipment-full encounter failure`
+    );
+  }
+}
 
 if (violations.length) {
   console.error("[verify-encounter-boundary] FAIL");
