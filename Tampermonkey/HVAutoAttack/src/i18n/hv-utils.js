@@ -10664,7 +10664,8 @@ if ($config.settings.showEquipSlots === 2 || $config.settings.showEquipSlots ===
     const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
     const exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html);
     if (!exec) {
-      _bottom.node.equip.textContent = '装备库存量: ?';
+      _bottom.node.equip.textContent = '装备库存量: unavailable';
+      _bottom.node.equip.classList.add('hvut-bottom-warn');
       return;
     }
     const usage = parseInt(exec[1]) + parseInt(exec[2] || 0);
