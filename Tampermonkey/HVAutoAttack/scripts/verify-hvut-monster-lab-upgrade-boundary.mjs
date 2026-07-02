@@ -10,6 +10,12 @@ const updateBodies = [...text.matchAll(/update: async function \(\) \{[\s\S]*?\n
 const runBodies = [...text.matchAll(/run: async function \(\) \{[\s\S]*?\n      \},\n      save:/g)].map(
   (match) => match[0]
 );
+const parseBodies = [...text.matchAll(/_ml\.parse = function \(mob, doc\) \{[\s\S]*?\n    \};/g)].map(
+  (match) => match[0]
+);
+const onsuccessBodies = [...text.matchAll(/onsuccess: function \(index, doc\) \{[\s\S]*?\n      \},\n      onerror:/g)].map(
+  (match) => match[0]
+);
 const saveBodies = [...text.matchAll(/save: function \(\) \{\n        _ml\.mobs\.forEach[\s\S]*?\n      \},\n      load:/g)].map(
   (match) => match[0]
 );
@@ -22,8 +28,46 @@ if (runBodies.length !== 2) {
   violations.push(`${target} must keep both Monster Lab run segment entries visible`);
 }
 
+if (parseBodies.length !== 2) {
+  violations.push(`${target} must keep both Monster Lab parse segment entries visible`);
+}
+
+if (onsuccessBodies.length !== 2) {
+  violations.push(`${target} must keep both Monster Lab onsuccess segment entries visible`);
+}
+
 if (saveBodies.length !== 2) {
   violations.push(`${target} must keep both Monster Lab save segment entries visible`);
+}
+
+for (const [index, body] of parseBodies.entries()) {
+  for (const required of [
+    "if (!$config.set('ml_log', _ml.log)) {\n        return false;",
+    "return true;",
+  ]) {
+    if (!body.includes(required)) {
+      violations.push(`${target} Monster Lab parse[${index}] must guard persistence with ${required}`);
+    }
+  }
+  if (/\$config\.set\('ml_log', _ml\.log\);\n\s*\};/.test(body)) {
+    violations.push(`${target} Monster Lab parse[${index}] must not ignore ml_log write result`);
+  }
+}
+
+for (const [index, body] of onsuccessBodies.entries()) {
+  for (const required of [
+    "if (_ml.parse(mob, doc) === false) {",
+    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "_ml.main.onerror(index);",
+    "return false;",
+  ]) {
+    if (!body.includes(required)) {
+      violations.push(`${target} Monster Lab onsuccess[${index}] must guard parse persistence with ${required}`);
+    }
+  }
+  if (/\n\s*_ml\.parse\(mob, doc\);\n\s*mob\.status = 1;/.test(body)) {
+    violations.push(`${target} Monster Lab onsuccess[${index}] must not mark success after unchecked parse`);
+  }
 }
 
 for (const [index, body] of updateBodies.entries()) {
@@ -36,6 +80,7 @@ for (const [index, body] of updateBodies.entries()) {
     "return false;",
     "if (!$config.set('ml_log', _ml.log)) {\n          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n          _ml.upgrade.node.button.disabled = false;",
     "return true;",
+    "if (_ml.parse(mob, doc) === false) {\n            throw new Error('ml_log persistence failed');",
   ]) {
     if (!body.includes(required)) {
       violations.push(`${target} Monster Lab update[${index}] must guard failure with ${required}`);

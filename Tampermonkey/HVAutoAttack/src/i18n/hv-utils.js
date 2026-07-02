@@ -6854,7 +6854,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         mob.log.ct[i][2] = mob.ct[i].max;
       });
 
-      $config.set('ml_log', _ml.log);
+      if (!$config.set('ml_log', _ml.log)) {
+        return false;
+      }
+      return true;
     };
 
     _ml.price2str = function (price) {
@@ -7089,7 +7092,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       },
       onsuccess: function (index, doc) {
         const mob = _ml.mobs[index];
-        _ml.parse(mob, doc);
+        if (_ml.parse(mob, doc) === false) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          _ml.main.onerror(index);
+          return false;
+        }
         mob.status = 1;
         mob.node.wins.dataset.update = new Date(mob.log.update).toLocaleDateString();
         mob.node.wins.classList.remove('hvut-ml-outdated');
@@ -7446,7 +7453,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           const doc = $doc(html);
           done++;
           mob.update_needed = false;
-          _ml.parse(mob, doc);
+          if (_ml.parse(mob, doc) === false) {
+            throw new Error('ml_log persistence failed');
+          }
           _ml.upgrade.node.button.value = `Updating... (${done}/${total})`;
           if (_ml.upgrade.node.run) {
             _ml.upgrade.node.run.value = `${done}/${total}`;
@@ -13026,7 +13035,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         mob.log.ct[i][2] = mob.ct[i].max;
       });
 
-      $config.set('ml_log', _ml.log);
+      if (!$config.set('ml_log', _ml.log)) {
+        return false;
+      }
+      return true;
     };
 
     _ml.price2str = function (price) {
@@ -13124,7 +13136,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       },
       onsuccess: function (index, doc) {
         const mob = _ml.mobs[index];
-        _ml.parse(mob, doc);
+        if (_ml.parse(mob, doc) === false) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          _ml.main.onerror(index);
+          return false;
+        }
         mob.status = 1;
         mob.node.wins.dataset.update = new Date(mob.log.update).toLocaleDateString();
         mob.node.wins.classList.remove('hvut-ml-outdated');
@@ -13610,7 +13626,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           const doc = $doc(html);
           done++;
           mob.update_needed = false;
-          _ml.parse(mob, doc);
+          if (_ml.parse(mob, doc) === false) {
+            throw new Error('ml_log persistence failed');
+          }
           _ml.upgrade.node.button.value = `更新中... (${done}/${total})`;
           if (_ml.upgrade.node.run) {
             _ml.upgrade.node.run.value = `${done}/${total}`;
