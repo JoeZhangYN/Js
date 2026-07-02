@@ -18,6 +18,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   BATTLE_ACTION_LIFECYCLE: "HVAA:lastBattleActionLifecycle",
   BATTLE_ACTION_DECISION: "HVAA:lastBattleActionDecision",
   BATTLE_ACTION_EFFECT: "HVAA:lastBattleActionEffect",
+  HTTP_REQUEST_FAILURE: "HVAA:lastHttpRequestFailure",
 });
 
 function source(name, key) {
@@ -46,6 +47,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("battleActionLifecycle", DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE),
   source("battleActionDecision", DiagnosticEvidenceKey.BATTLE_ACTION_DECISION),
   source("battleActionEffect", DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT),
+  source("httpRequestFailure", DiagnosticEvidenceKey.HTTP_REQUEST_FAILURE),
 ]);
 
 export const API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze(

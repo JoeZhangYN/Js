@@ -2,6 +2,25 @@
 // HV 战斗页面用此回拉下一回合数据。
 import { gE } from "./query.js";
 
+export const HTTP_REQUEST_FAILURE_KEY = "HVAA:lastHttpRequestFailure";
+const HTTP_CAPABILITY = "httpRequest";
+const MAX_RETRIES = 3;
+
+function recordHttpRequestFailure(stage, failure) {
+  const evidence = { capability: HTTP_CAPABILITY, stage, ...failure };
+  try {
+    sessionStorage.setItem(HTTP_REQUEST_FAILURE_KEY, JSON.stringify(evidence));
+  } catch (_error) {
+    // HTTP retry/failure handling must not depend on diagnostic storage.
+  }
+  try {
+    console.warn("[HVAA] HTTP request failed", evidence);
+  } catch (_error) {
+    // Console hooks must not block HTTP failure callbacks.
+  }
+  return evidence;
+}
+
 /**
  * 发起 HTTP 请求。parm 给则 POST，否则 GET。
  * 失败重试最多 3 次。response 类型默认 "document"，自动接管 #messagebox 替换。
@@ -18,16 +37,46 @@ export function post(href, func, parm, type, onFailure, _retries) {
     onFailure = undefined;
   }
   const retries = _retries || 0;
+  const method = parm ? "POST" : "GET";
+  const responseType = type || "document";
   let xhr = new window.XMLHttpRequest();
-  xhr.open(parm ? "POST" : "GET", href);
+  xhr.open(method, href);
   xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-  xhr.responseType = type || "document";
+  xhr.responseType = responseType;
   xhr.onerror = function () {
     xhr = null;
-    if (retries < 3) {
-      setTimeout(() => post(href, func, parm, type, onFailure, retries + 1), 1000 * (retries + 1));
+    if (retries < MAX_RETRIES) {
+      const retryDelayMs = 1000 * (retries + 1);
+      recordHttpRequestFailure("retryScheduled", {
+        kind: "networkError",
+        href,
+        method,
+        responseType,
+        attempts: retries + 1,
+        maxAttempts: MAX_RETRIES + 1,
+        retryDelayMs,
+      });
+      setTimeout(() => post(href, func, parm, type, onFailure, retries + 1), retryDelayMs);
     } else if (typeof onFailure === "function") {
-      onFailure({ kind: "networkError", href, retries: retries + 1 });
+      onFailure(
+        recordHttpRequestFailure("finalFailure", {
+          kind: "networkError",
+          href,
+          method,
+          responseType,
+          attempts: retries + 1,
+          maxAttempts: MAX_RETRIES + 1,
+        })
+      );
+    } else {
+      recordHttpRequestFailure("finalFailure", {
+        kind: "networkError",
+        href,
+        method,
+        responseType,
+        attempts: retries + 1,
+        maxAttempts: MAX_RETRIES + 1,
+      });
     }
   };
   xhr.onload = function (e) {
@@ -41,13 +90,16 @@ export function post(href, func, parm, type, onFailure, _retries) {
         }
       }
       func(data, e);
-    } else if (typeof onFailure === "function") {
-      onFailure({
+    } else {
+      const failure = recordHttpRequestFailure("finalFailure", {
         kind: "httpStatus",
         href,
+        method,
+        responseType,
         status: e.target.status,
         response: e.target.response,
       });
+      if (typeof onFailure === "function") onFailure(failure);
     }
     xhr = null;
   };

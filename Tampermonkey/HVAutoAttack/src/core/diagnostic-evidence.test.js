@@ -81,6 +81,10 @@ describe("readRecentDiagnosticEvidence", () => {
       "HVAA:lastBattleActionEffect",
       JSON.stringify({ result: { kind: "noop" }, acted: false, knownResultKind: true })
     );
+    window.sessionStorage.setItem(
+      "HVAA:lastHttpRequestFailure",
+      JSON.stringify({ capability: "httpRequest", stage: "finalFailure", kind: "networkError" })
+    );
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
@@ -103,6 +107,11 @@ describe("readRecentDiagnosticEvidence", () => {
         steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
       },
       battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
+      httpRequestFailure: {
+        capability: "httpRequest",
+        stage: "finalFailure",
+        kind: "networkError",
+      },
     });
   });
 
