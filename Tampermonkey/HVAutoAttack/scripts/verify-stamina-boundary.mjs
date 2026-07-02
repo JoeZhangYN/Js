@@ -5,6 +5,8 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/stamina.js");
 const ownerTest = path.normalize("src/state/stamina.test.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
 
 function rel(file) {
@@ -60,8 +62,15 @@ for (const required of [
   "OptionEvent.READ_FIELD",
   "CLAIM_RECOVERY",
   "STAMINA_RECOVERY_POST_BODY",
+  "STAMINA_RECOVERY_FAILURE_KEY",
+  "HVAA:lastStaminaRecoveryFailure",
   "recordStaminaRecoveryFailure",
+  "capability: \"staminaRecovery\"",
+  "stage: \"claimRecoveryPost\"",
+  "sessionStorage.setItem(STAMINA_RECOVERY_FAILURE_KEY",
   "[HVAA] stamina recovery request failed",
+  "Stamina recovery fallback must not depend on diagnostic storage.",
+  "Console hooks must not block stamina recovery failure handling.",
   "NavigationEvent.RELOAD_NOW",
 ]) {
   if (!ownerText.includes(required)) {
@@ -113,12 +122,39 @@ if (
 }
 for (const required of [
   "records stamina recovery POST failures without claiming reload success",
+  "keeps stamina recovery failure handling when diagnostics are blocked",
+  "STAMINA_RECOVERY_FAILURE_KEY",
+  "HVAA:lastStaminaRecoveryFailure",
+  "session blocked",
+  "console blocked",
+  "claimRecoveryPost",
   "kind: \"networkError\"",
   "runNavigationAutomation).not.toHaveBeenCalled()",
   "[HVAA] stamina recovery request failed",
 ]) {
   if (!ownerTestText.includes(required)) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover stamina recovery request failures`);
+  }
+}
+
+const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
+for (const required of [
+  "STAMINA_RECOVERY_FAILURE: \"HVAA:lastStaminaRecoveryFailure\"",
+  'source("staminaRecoveryFailure", DiagnosticEvidenceKey.STAMINA_RECOVERY_FAILURE)',
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+
+const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
+for (const required of [
+  "HVAA:lastStaminaRecoveryFailure",
+  "staminaRecoveryFailure",
+  "claimRecoveryPost",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 

@@ -17,6 +17,7 @@ const EVENT_SHOULD_STOP_LOBBY = "shouldStopLobby";
 const EVENT_SHOULD_RESTORE_FOR_IDLE_ARENA = "shouldRestoreForIdleArena";
 const EVENT_CLAIM_RECOVERY = "claimRecovery";
 const STAMINA_RECOVERY_POST_BODY = "recover=stamina";
+export const STAMINA_RECOVERY_FAILURE_KEY = "HVAA:lastStaminaRecoveryFailure";
 
 export const StaminaEvent = Object.freeze({
   READ_VALUE: EVENT_READ_VALUE,
@@ -75,7 +76,22 @@ function reloadCurrentPage() {
 }
 
 function recordStaminaRecoveryFailure(failure) {
-  console.warn("[HVAA] stamina recovery request failed", failure);
+  const evidence = {
+    capability: "staminaRecovery",
+    stage: "claimRecoveryPost",
+    failure,
+  };
+  try {
+    sessionStorage.setItem(STAMINA_RECOVERY_FAILURE_KEY, JSON.stringify(evidence));
+  } catch (_error) {
+    // Stamina recovery fallback must not depend on diagnostic storage.
+  }
+  try {
+    console.warn("[HVAA] stamina recovery request failed", evidence);
+  } catch (_error) {
+    // Console hooks must not block stamina recovery failure handling.
+  }
+  return evidence;
 }
 
 function claimStaminaRecovery() {

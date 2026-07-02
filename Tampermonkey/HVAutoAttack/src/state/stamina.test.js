@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { StaminaEvent, runStaminaAutomation } from "./stamina.js";
+import {
+  STAMINA_RECOVERY_FAILURE_KEY,
+  StaminaEvent,
+  runStaminaAutomation,
+} from "./stamina.js";
 
 const mocks = vi.hoisted(() => ({
   post: vi.fn(),
@@ -26,10 +30,12 @@ function mockOptions(option = {}) {
 
 beforeEach(() => {
   document.body.innerHTML = "";
+  sessionStorage.clear();
   window.history.replaceState(null, "", "/battle");
   mocks.post.mockReset();
   mocks.runNavigationAutomation.mockReset();
   mocks.runOptionAutomation.mockReset();
+  vi.restoreAllMocks();
   mockOptions();
 });
 
@@ -119,14 +125,39 @@ describe("stamina entry", () => {
     expect(runStaminaAutomation({ type: StaminaEvent.CLAIM_RECOVERY })).toBe(true);
 
     const failure = mocks.post.mock.calls[0][4];
-    failure({ kind: "networkError", href: "/battle", retries: 4 });
+    failure({ kind: "networkError", href: "/battle", attempts: 4 });
 
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledWith("[HVAA] stamina recovery request failed", {
-      kind: "networkError",
-      href: "/battle",
-      retries: 4,
+    expect(STAMINA_RECOVERY_FAILURE_KEY).toBe("HVAA:lastStaminaRecoveryFailure");
+    expect(JSON.parse(sessionStorage.getItem(STAMINA_RECOVERY_FAILURE_KEY))).toMatchObject({
+      capability: "staminaRecovery",
+      stage: "claimRecoveryPost",
+      failure: { kind: "networkError", href: "/battle", attempts: 4 },
     });
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA] stamina recovery request failed",
+      expect.objectContaining({
+        capability: "staminaRecovery",
+        stage: "claimRecoveryPost",
+      })
+    );
+  });
+
+  it("keeps stamina recovery failure handling when diagnostics are blocked", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+    const originalSetItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
+      if (key === STAMINA_RECOVERY_FAILURE_KEY) throw new Error("session blocked");
+      return Reflect.apply(originalSetItem, this, [key, value]);
+    });
+
+    expect(runStaminaAutomation({ type: StaminaEvent.CLAIM_RECOVERY })).toBe(true);
+    const failure = mocks.post.mock.calls[0][4];
+
+    expect(() => failure({ kind: "networkError", href: "/battle" })).not.toThrow();
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });
 
   it("rejects unknown and null stamina events without reading or writing state", () => {
