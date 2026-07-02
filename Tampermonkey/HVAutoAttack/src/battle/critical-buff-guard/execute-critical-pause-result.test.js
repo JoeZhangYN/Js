@@ -74,4 +74,31 @@ describe("critical buff pause execution result semantics", () => {
       }),
     });
   });
+
+  it("still pauses when the warning side effect fails", () => {
+    const plan = { name: "Spark of Life", turns: 1, mp: 10, mpFloor: 30 };
+    console.warn.mockImplementation(() => {
+      throw new Error("warning failed");
+    });
+    mocks.runAlarmAutomation.mockReturnValue(true);
+    mocks.runBattlePauseAutomation.mockReturnValue(true);
+
+    expect(
+      runCriticalBuffPauseExecution({
+        type: CriticalBuffPauseExecutionEvent.APPLY_PLAN,
+        plan,
+      })
+    ).toBe(true);
+
+    expect(mocks.runBattlePauseAutomation).toHaveBeenCalledWith({
+      type: "pause",
+      reason: "criticalBuff",
+      detail: expect.objectContaining({
+        ...plan,
+        warningOk: false,
+        warningError: "warning failed",
+        alarmResult: true,
+      }),
+    });
+  });
 });

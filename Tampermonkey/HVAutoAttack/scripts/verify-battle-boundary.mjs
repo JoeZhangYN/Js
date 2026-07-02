@@ -2904,8 +2904,11 @@ function checkCriticalBuffEntry() {
     for (const required of [
       "returns not acted when the pause entry rejects the critical pause",
       "still pauses when the alarm side effect fails",
+      "still pauses when the warning side effect fails",
       "alarm failed",
       "alarmError",
+      "warning failed",
+      "warningError",
       "runBattlePauseAutomation",
       "toBe(false)",
     ]) {
