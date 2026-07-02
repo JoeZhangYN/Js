@@ -41,7 +41,13 @@ describe("runBattleNextRoundContinuation", () => {
     ).toBe(true);
 
     expect(nodes["#pane_completion"].removeChild).toHaveBeenCalledWith(nodes["#btcp"]);
-    expect(deps.post).toHaveBeenCalledWith("https://example.test/battle", expect.any(Function));
+    expect(deps.post).toHaveBeenCalledWith(
+      "https://example.test/battle",
+      expect.any(Function),
+      undefined,
+      undefined,
+      expect.any(Function)
+    );
     expect(nodes["#battle_main"].replaceChild).toHaveBeenCalledTimes(2);
     expect(deps.unsafeWindow.Battle).toHaveBeenCalledTimes(1);
     expect(deps.startRound).toHaveBeenCalledTimes(1);
@@ -84,7 +90,12 @@ describe("runBattleNextRoundContinuation", () => {
     expect(deps.startRound).not.toHaveBeenCalled();
     expect(deps.runTurn).not.toHaveBeenCalled();
     expect(deps.recordContinuation).toHaveBeenCalledWith(
-      { outcome: "rejected", continued: false, reason: "unknownNextRoundContinuationEvent", detail: { eventType: "unknown" } },
+      {
+        outcome: "rejected",
+        continued: false,
+        reason: "unknownNextRoundContinuationEvent",
+        detail: { eventType: "unknown" },
+      },
       []
     );
   });
@@ -100,14 +111,21 @@ describe("runBattleNextRoundContinuation", () => {
     expect(deps.startRound).not.toHaveBeenCalled();
     expect(deps.runTurn).not.toHaveBeenCalled();
     expect(deps.recordContinuation).toHaveBeenCalledWith(
-      { outcome: "rejected", continued: false, reason: "unknownNextRoundContinuationEvent", detail: { eventType: null } },
+      {
+        outcome: "rejected",
+        continued: false,
+        reason: "unknownNextRoundContinuationEvent",
+        detail: { eventType: null },
+      },
       []
     );
   });
 
   it("rejects missing next-round completion controls with lifecycle evidence", () => {
     const { deps } = makeDeps();
-    deps.gE.mockImplementation((selector) => (selector === "#pane_completion" ? null : { id: "btcp" }));
+    deps.gE.mockImplementation((selector) =>
+      selector === "#pane_completion" ? null : { id: "btcp" }
+    );
 
     expect(
       runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }, deps)
@@ -117,7 +135,12 @@ describe("runBattleNextRoundContinuation", () => {
     expect(deps.startRound).not.toHaveBeenCalled();
     expect(deps.runTurn).not.toHaveBeenCalled();
     expect(deps.recordContinuation).toHaveBeenCalledWith(
-      { outcome: "rejected", continued: false, reason: "missingCompletionControl", detail: { hasPane: false, hasButton: true } },
+      {
+        outcome: "rejected",
+        continued: false,
+        reason: "missingCompletionControl",
+        detail: { hasPane: false, hasButton: true },
+      },
       []
     );
   });

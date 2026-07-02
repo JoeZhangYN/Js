@@ -8,6 +8,10 @@ import {
   runBattleActionLifecycleEvidence,
 } from "./battle-action-lifecycle-evidence.js";
 import { recordContinuationSafely } from "./battle-next-round-continuation-recording.js";
+import {
+  recordCallbackRejection,
+  recordPostFailure,
+} from "./battle-next-round-continuation-result.js";
 
 const EVENT_CONTINUE = "continue";
 const PHASE_NEXT_ROUND_CONTINUATION = "nextRoundContinuation";
@@ -16,6 +20,7 @@ const REASON_MISSING_COMPLETION_CONTROL = "missingCompletionControl";
 const REASON_COMPLETION_CONTROL_READ_FAILED = "nextRoundCompletionControlReadFailed";
 const REASON_CONTINUATION_STEP_THROW = "nextRoundContinuationStepThrew";
 const REASON_RESTART_REJECTED = "nextRoundRestartRejected";
+const REASON_POST_FAILED = "nextRoundPostFailed";
 
 export const BattleNextRoundContinuationEvent = Object.freeze({
   CONTINUE: EVENT_CONTINUE,
@@ -68,10 +73,6 @@ function restartBattleRuntime(deps, steps) {
   return turnStarted;
 }
 
-function recordCallbackRejection(deps, reason, steps) {
-  recordContinuationSafely(deps, { outcome: "rejected", continued: false, reason }, steps);
-}
-
 function continueNextRound(deps) {
   const steps = [];
   const { pane, button, error } = readCompletionControls(deps);
@@ -95,23 +96,29 @@ function continueNextRound(deps) {
     );
   }
   const postAccepted = recordStep(steps, "post", () =>
-    deps.post(deps.href(), (data) => {
-      if (!recordStep(steps, "postCallback", () => true)) return;
-      if (recordStep(steps, "handleRiddle", () => deps.handleRiddle(data))) {
-        recordContinuationSafely(deps, { outcome: "riddle", continued: false }, steps);
-        return;
-      }
-      if (!recordStep(steps, "replaceBattlePanels", () => replaceBattlePanels(data, deps))) {
-        recordCallbackRejection(deps, REASON_CONTINUATION_STEP_THROW, steps);
-        return;
-      }
-      const turnStarted = restartBattleRuntime(deps, steps);
-      if (!turnStarted) {
-        recordCallbackRejection(deps, REASON_RESTART_REJECTED, steps);
-        return;
-      }
-      recordContinuationSafely(deps, { outcome: "continued", continued: "turn" }, steps);
-    })
+    deps.post(
+      deps.href(),
+      (data) => {
+        if (!recordStep(steps, "postCallback", () => true)) return;
+        if (recordStep(steps, "handleRiddle", () => deps.handleRiddle(data))) {
+          recordContinuationSafely(deps, { outcome: "riddle", continued: false }, steps);
+          return;
+        }
+        if (!recordStep(steps, "replaceBattlePanels", () => replaceBattlePanels(data, deps))) {
+          recordCallbackRejection(deps, REASON_CONTINUATION_STEP_THROW, steps);
+          return;
+        }
+        const turnStarted = restartBattleRuntime(deps, steps);
+        if (!turnStarted) {
+          recordCallbackRejection(deps, REASON_RESTART_REJECTED, steps);
+          return;
+        }
+        recordContinuationSafely(deps, { outcome: "continued", continued: "turn" }, steps);
+      },
+      undefined,
+      undefined,
+      (failure) => recordPostFailure(deps, REASON_POST_FAILED, steps, failure)
+    )
   );
   if (!postAccepted) {
     return rejectContinuation(deps, REASON_CONTINUATION_STEP_THROW, { step: "post" }, steps);

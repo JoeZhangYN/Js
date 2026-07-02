@@ -9,7 +9,10 @@ const evidenceFailureTest = path.normalize(
   "src/battle/battle-next-round-continuation-evidence-failure.test.js"
 );
 const recording = path.normalize("src/battle/battle-next-round-continuation-recording.js");
+const resultRecording = path.normalize("src/battle/battle-next-round-continuation-result.js");
 const actionLifecycle = path.normalize("src/battle/battle-action-lifecycle.js");
+const httpFile = path.normalize("src/dom/http.js");
+const httpTest = path.normalize("src/dom/http.test.js");
 const violations = [];
 
 function read(relative) {
@@ -22,7 +25,9 @@ function rel(relative) {
 
 const ownerText = read(owner);
 const recordingText = read(recording);
+const resultRecordingText = read(resultRecording);
 const actionLifecycleText = read(actionLifecycle);
+const httpText = read(httpFile);
 
 for (const required of [
   "BattleNextRoundContinuationEvent",
@@ -40,6 +45,7 @@ for (const required of [
   "nextRoundCompletionControlReadFailed",
   "nextRoundContinuationStepThrew",
   "nextRoundRestartRejected",
+  "nextRoundPostFailed",
   "readCompletionControls",
   "recordStep",
   "recordContinuationSafely",
@@ -51,6 +57,16 @@ for (const required of [
   "unsafeWindow.battle",
 ]) {
   if (!ownerText.includes(required)) violations.push(`${rel(owner)} must own ${required}`);
+}
+for (const required of [
+  "recordCallbackRejection",
+  "recordPostFailure",
+  "postFailure",
+  "recordContinuationSafely",
+]) {
+  if (!resultRecordingText.includes(required)) {
+    violations.push(`${rel(resultRecording)} must own ${required}`);
+  }
 }
 for (const required of [
   "recordContinuationSafely",
@@ -110,9 +126,11 @@ if (!fs.existsSync(path.join(root, rejectionTest))) {
     "records rejected continuation when restarted turn does not act",
     "records callback step exceptions without throwing",
     "records completion control read failures before posting",
+    "records rejected continuation when next-round post fails",
     "nextRoundCompletionControlReadFailed",
     "nextRoundRestartRejected",
     "nextRoundContinuationStepThrew",
+    "nextRoundPostFailed",
   ]) {
     if (!rejectionTestText.includes(required)) {
       violations.push(`${rel(rejectionTest)} must cover ${required}`);
@@ -159,6 +177,26 @@ if (
   )
 ) {
   violations.push(`${rel(actionLifecycle)} must not own next-round continuation IO`);
+}
+for (const required of ["onFailure", "httpStatus", "networkError"]) {
+  if (!httpText.includes(required)) {
+    violations.push(`${rel(httpFile)} must classify transport failures with ${required}`);
+  }
+}
+if (!fs.existsSync(path.join(root, httpTest))) {
+  violations.push(`${rel(httpTest)} must cover HTTP transport failure classification`);
+} else {
+  const httpTestText = read(httpTest);
+  for (const required of [
+    "reports non-success HTTP status instead of silently dropping the request",
+    "reports final network failure after retry attempts are exhausted",
+    "httpStatus",
+    "networkError",
+  ]) {
+    if (!httpTestText.includes(required)) {
+      violations.push(`${rel(httpTest)} must cover ${required}`);
+    }
+  }
 }
 
 if (violations.length) {

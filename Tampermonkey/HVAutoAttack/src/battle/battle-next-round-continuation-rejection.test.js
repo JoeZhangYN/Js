@@ -53,11 +53,13 @@ describe("runBattleNextRoundContinuation rejection evidence", () => {
     const deps = makeDeps();
     deps.gE.mockImplementation((selector, data) => {
       if (selector === "#battle_right" && data) throw new Error("panel exploded");
-      return data?.[selector] || {
-        id: selector,
-        removeChild: vi.fn(),
-        replaceChild: vi.fn(),
-      };
+      return (
+        data?.[selector] || {
+          id: selector,
+          removeChild: vi.fn(),
+          replaceChild: vi.fn(),
+        }
+      );
     });
 
     expect(
@@ -98,5 +100,33 @@ describe("runBattleNextRoundContinuation rejection evidence", () => {
       },
       []
     );
+  });
+
+  it("records rejected continuation when next-round post fails", () => {
+    const deps = makeDeps();
+    deps.post.mockImplementation((href, _success, _parm, _type, failure) => {
+      failure({ kind: "httpStatus", href, status: 500 });
+    });
+
+    expect(
+      runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }, deps)
+    ).toBe(true);
+
+    expect(deps.recordContinuation).toHaveBeenCalledWith(
+      {
+        outcome: "rejected",
+        continued: false,
+        reason: "nextRoundPostFailed",
+        detail: { kind: "httpStatus", href: "https://example.test/battle", status: 500 },
+      },
+      expect.arrayContaining([
+        {
+          step: "postFailure",
+          result: false,
+          failure: { kind: "httpStatus", href: "https://example.test/battle", status: 500 },
+        },
+      ])
+    );
+    expect(deps.runTurn).not.toHaveBeenCalled();
   });
 });

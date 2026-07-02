@@ -9,29 +9,29 @@ import { gE } from "./query.js";
  * @param {(data: any, e: ProgressEvent) => void=} func 成功回调
  * @param {string|FormData=} parm POST 体（若给则触发 POST）
  * @param {XMLHttpRequestResponseType=} type 默认 "document"
+ * @param {(failure: object) => void=} onFailure 最终失败回调
  * @param {number=} _retries 内部重试计数
  */
-export function post(href, func, parm, type, _retries) {
+export function post(href, func, parm, type, onFailure, _retries) {
+  if (typeof onFailure === "number" && _retries === undefined) {
+    _retries = onFailure;
+    onFailure = undefined;
+  }
   const retries = _retries || 0;
   let xhr = new window.XMLHttpRequest();
   xhr.open(parm ? "POST" : "GET", href);
-  xhr.setRequestHeader(
-    "Content-Type",
-    "application/x-www-form-urlencoded; charset=UTF-8"
-  );
+  xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
   xhr.responseType = type || "document";
   xhr.onerror = function () {
     xhr = null;
     if (retries < 3) {
-      setTimeout(() => post(href, func, parm, type, retries + 1), 1000 * (retries + 1));
+      setTimeout(() => post(href, func, parm, type, onFailure, retries + 1), 1000 * (retries + 1));
+    } else if (typeof onFailure === "function") {
+      onFailure({ kind: "networkError", href, retries: retries + 1 });
     }
   };
   xhr.onload = function (e) {
-    if (
-      e.target.status >= 200 &&
-      e.target.status < 400 &&
-      typeof func === "function"
-    ) {
+    if (e.target.status >= 200 && e.target.status < 400 && typeof func === "function") {
       const data = e.target.response;
       if (xhr.responseType === "document" && gE("#messagebox", data)) {
         if (gE("#messagebox")) {
@@ -41,6 +41,13 @@ export function post(href, func, parm, type, _retries) {
         }
       }
       func(data, e);
+    } else if (typeof onFailure === "function") {
+      onFailure({
+        kind: "httpStatus",
+        href,
+        status: e.target.status,
+        response: e.target.response,
+      });
     }
     xhr = null;
   };
