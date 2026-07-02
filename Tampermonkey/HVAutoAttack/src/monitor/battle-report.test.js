@@ -23,6 +23,15 @@ function setRoundContext(roundType, roundNow, roundAll) {
 }
 
 describe("battle report query", () => {
+  it("rejects unknown monitor events without writing report storage", () => {
+    expect(runBattleMonitorAutomation({ type: "unknown" })).toBe(false);
+    expect(runBattleMonitorAutomation(null)).toBe(false);
+
+    expect(getValue(STORAGE_KEYS.BATTLE_CODE, true)).toBeNull();
+    expect(getValue(STORAGE_KEYS.DROP, true)).toBeNull();
+    expect(getValue(STORAGE_KEYS.STATS, true)).toBeNull();
+  });
+
   it("records battle report code once when per-battle records are enabled", () => {
     runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", recordEach: true } });
     setRoundContext("ar", 1, 5);

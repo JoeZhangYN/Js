@@ -49,6 +49,7 @@ const monitorEventHandlers = Object.freeze({
 });
 
 export function runBattleMonitorAutomation(event = { type: BattleHudEvent.REFRESH }) {
-  const handler = monitorEventHandlers[event.type];
-  return handler?.(event);
+  const handler = monitorEventHandlers[event?.type];
+  if (!handler) return false;
+  return handler(event);
 }

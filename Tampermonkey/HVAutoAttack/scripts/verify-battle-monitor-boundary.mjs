@@ -113,6 +113,12 @@ function checkEntry() {
       `${entry.replaceAll("\\", "/")} must not route monitor commands through an if ladder`
     );
   }
+  if (text.includes("monitorEventHandlers[event.type]")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must reject null monitor events without throwing`);
+  }
+  if (!text.includes("monitorEventHandlers[event?.type]") || !text.includes("return false")) {
+    violations.push(`${entry.replaceAll("\\", "/")} must fail closed for unknown or null monitor events`);
+  }
   if (!text.includes("runBattleHudAutomation") || !text.includes("BattleHudEvent.REFRESH")) {
     violations.push(
       `${entry.replaceAll("\\", "/")} must route HUD refresh through runBattleHudAutomation(event)`
@@ -319,6 +325,16 @@ function checkEntry() {
     violations.push(
       `${entry.replaceAll("\\", "/")} must not expose raw battle report reads; use rendered report events`
     );
+  }
+  const monitorTestText = fs.readFileSync(
+    path.join(root, "src/monitor/battle-report.test.js"),
+    "utf8"
+  );
+  if (
+    !monitorTestText.includes("rejects unknown monitor events without writing report storage") ||
+    !monitorTestText.includes("runBattleMonitorAutomation(null)")
+  ) {
+    violations.push(`${entry.replaceAll("\\", "/")} tests must cover unknown and null monitor events`);
   }
 }
 
