@@ -50,6 +50,11 @@ describe("decideBossImperil", () => {
     expect(decideBossImperil({}, s)).toEqual({ kind: "noop" });
   });
 
+  it("invalid boss Imperil events fail closed as no action", () => {
+    expect(runBossImperilAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runBossImperilAutomation(null)).toEqual({ kind: "noop" });
+  });
+
   it("单个 needy boss → click-skill-then-target 命中该 boss", () => {
     const s = snap({
       view: [mon({ id: 7, order: 0, isBoss: true, buffs: [] })],

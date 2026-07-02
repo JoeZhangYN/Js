@@ -10,6 +10,7 @@ const read = (rel) => readFileSync(`${SRC}/${rel}`, "utf8");
 const learner = read("state/big-skill-kill-learner.js");
 const bigSkill = read("battle/debuff/big-skill-debuff.js");
 const bossImperil = read("battle/debuff/decide-boss-imperil.js");
+const bossImperilTest = read("battle/debuff/decide-boss-imperil.test.js");
 const debuffFacts = read("battle/debuff/debuff-facts.js");
 
 const fails = [];
@@ -45,6 +46,15 @@ need(
 need(
   /event\?\.imperilSkillReady/.test(bossImperil),
   "boss Imperil 入口丢失 imperilSkillReady 就绪事实门控"
+);
+need(
+  !/event\.type\s*\|\|\s*EVENT_DECIDE/.test(bossImperil) &&
+    /event\?\.type\s*\|\|\s*EVENT_DECIDE/.test(bossImperil),
+  "boss Imperil 入口必须在事件类型归一化前 fail closed"
+);
+need(
+  /runBossImperilAutomation\(null\)/.test(bossImperilTest),
+  "boss Imperil 测试必须锁住 null event fail-closed"
 );
 
 if (fails.length) {

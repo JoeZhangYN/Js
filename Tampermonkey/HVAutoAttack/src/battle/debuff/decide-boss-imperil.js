@@ -55,7 +55,7 @@ function decideBossImperil(event) {
 }
 
 export function runBossImperilAutomation(event = { type: EVENT_DECIDE }) {
-  const type = event.type || EVENT_DECIDE;
+  const type = event?.type || EVENT_DECIDE;
   if (type === EVENT_CAN_CAST) return canCastBossImperil(event);
   if (type === EVENT_DECIDE) return decideBossImperil(event);
   return undefined;
