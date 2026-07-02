@@ -11,18 +11,60 @@ import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 const EVENT_USERSCRIPT_START = "userscriptStart";
 const EVENT_GAME_PAGE_READY = "gamePageReady";
 
+export const APP_STARTUP_FAILURE_KEY = "HVAA:lastAppStartupFailure";
+
 export const AppStartupEvent = Object.freeze({
   USERSCRIPT_START: EVENT_USERSCRIPT_START,
   GAME_PAGE_READY: EVENT_GAME_PAGE_READY,
 });
 
-const USERSCRIPT_STARTUP_STEPS = [loadCdRuntimeState, registerRiddleDatasetExportMenu];
-const GAME_PAGE_STARTUP_STEPS = [syncConfiguredStartupOption, warnDefaultFont, loadBattleLearningState];
+const USERSCRIPT_STARTUP_STEPS = [
+  ["loadCdRuntimeState", loadCdRuntimeState],
+  ["registerRiddleDatasetExportMenu", registerRiddleDatasetExportMenu],
+];
+const GAME_PAGE_STARTUP_STEPS = [
+  ["syncConfiguredStartupOption", syncConfiguredStartupOption],
+  ["warnDefaultFont", warnDefaultFont],
+  ["loadBattleLearningState", loadBattleLearningState],
+];
 
 const appStartupEventHandlers = Object.freeze({
   [EVENT_USERSCRIPT_START]: runUserscriptStartup,
   [EVENT_GAME_PAGE_READY]: runGamePageStartup,
 });
+
+function startupErrorText(error) {
+  return error?.message || String(error);
+}
+
+function recordAppStartupFailure(stage, reason, detail = {}) {
+  const evidence = {
+    capability: "appStartup",
+    stage,
+    reason,
+    ...detail,
+  };
+  try {
+    globalThis.sessionStorage?.setItem(APP_STARTUP_FAILURE_KEY, JSON.stringify(evidence));
+  } catch (_error) {
+    // Startup failure handling must not depend on diagnostic storage.
+  }
+  try {
+    console.warn("[HVAA] app startup failed", evidence);
+  } catch (_error) {
+    // Console hooks are diagnostic only.
+  }
+  return evidence;
+}
+
+function runStartupStep(stage, step) {
+  try {
+    return step();
+  } catch (error) {
+    recordAppStartupFailure(stage, "stepException", { error: startupErrorText(error) });
+    return false;
+  }
+}
 
 function loadCdRuntimeState() {
   runCdRuntimeAutomation({ type: CdRuntimeEvent.LOAD });
@@ -35,12 +77,16 @@ function registerRiddleDatasetExportMenu() {
 }
 
 function runUserscriptStartup() {
-  for (const step of USERSCRIPT_STARTUP_STEPS) step();
+  for (const [stage, step] of USERSCRIPT_STARTUP_STEPS) {
+    if (!runStartupStep(stage, step)) return false;
+  }
   return true;
 }
 
 function syncOptionVersion() {
-  g("version", GM_info ? GM_info.script.version.slice(0, 4) : "2.89");
+  const scriptVersion =
+    typeof GM_info !== "undefined" && GM_info ? GM_info.script.version.slice(0, 4) : "2.89";
+  g("version", scriptVersion);
   const startupOption = runOptionAutomation({
     type: OptionEvent.SYNC_STARTUP_OPTION,
     currentVersion: g("version"),
@@ -49,9 +95,13 @@ function syncOptionVersion() {
 
   addStyle(startupOption.lang);
   if (startupOption.versionUpdated) {
-    console.log(
-      `[HVAA] 版本号 ${startupOption.previousVersion} → ${startupOption.currentVersion}（已静默对齐，未弹窗）`
-    );
+    try {
+      console.log(
+        `[HVAA] 版本号 ${startupOption.previousVersion} → ${startupOption.currentVersion}（已静默对齐，未弹窗）`
+      );
+    } catch (_error) {
+      // Console hooks are diagnostic only.
+    }
   }
   return true;
 }
@@ -72,17 +122,27 @@ function requestInitialConfig() {
   );
   addStyle(g("lang"));
   _alert(0, "请设置hvAutoAttack", "請設置hvAutoAttack", "Please config this script");
-  gE(".hvAAButton").click();
+  const button = gE(".hvAAButton");
+  if (!button || typeof button.click !== "function") {
+    recordAppStartupFailure("requestInitialConfig", "missingConfigButton");
+    return false;
+  }
+  button.click();
+  return false;
 }
 
 function warnDefaultFont() {
   if (!gE('[class^="c5"],[class^="c4"]')) return true;
-  _alert(
-    0,
-    "请设置字体：使用默认字体可能使某些功能失效。\n请在 HV 设置(Settings) → Style 里把界面字体设为非默认(如 Verdana / Arial)。",
-    "請設置字體：使用默認字體可能使某些功能失效。\n請在 HV 設置(Settings) → Style 裡把界面字體設為非默認(如 Verdana / Arial)。",
-    "Please set a font: the default font may break some features.\nIn HV Settings → Style, set the UI font to a non-default one (e.g. Verdana / Arial)."
-  );
+  try {
+    _alert(
+      0,
+      "请设置字体：使用默认字体可能使某些功能失效。\n请在 HV 设置(Settings) → Style 里把界面字体设为非默认(如 Verdana / Arial)。",
+      "請設置字體：使用默認字體可能使某些功能失效。\n請在 HV 設置(Settings) → Style 裡把界面字體設為非默認(如 Verdana / Arial)。",
+      "Please set a font: the default font may break some features.\nIn HV Settings → Style, set the UI font to a non-default one (e.g. Verdana / Arial)."
+    );
+  } catch (error) {
+    recordAppStartupFailure("warnDefaultFont", "warningFailed", { error: startupErrorText(error) });
+  }
   return true;
 }
 
@@ -93,8 +153,8 @@ function loadBattleLearningState() {
 }
 
 function runGamePageStartup() {
-  for (const step of GAME_PAGE_STARTUP_STEPS) {
-    if (!step()) return false;
+  for (const [stage, step] of GAME_PAGE_STARTUP_STEPS) {
+    if (!runStartupStep(stage, step)) return false;
   }
   return true;
 }

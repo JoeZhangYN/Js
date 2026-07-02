@@ -45,8 +45,11 @@ function checkEntry() {
   }
   for (const required of [
     "appStartupEventHandlers",
+    "APP_STARTUP_FAILURE_KEY",
     "USERSCRIPT_STARTUP_STEPS",
     "GAME_PAGE_STARTUP_STEPS",
+    "recordAppStartupFailure",
+    "runStartupStep",
     "runUserscriptStartup",
     "runGamePageStartup",
     "loadCdRuntimeState",
@@ -65,14 +68,14 @@ function checkEntry() {
     }
   }
   if (
-    !/const USERSCRIPT_STARTUP_STEPS = \[\s*loadCdRuntimeState,\s*registerRiddleDatasetExportMenu\s*\]/.test(
+    !/const USERSCRIPT_STARTUP_STEPS = \[\s*\["loadCdRuntimeState",\s*loadCdRuntimeState\],[\s\S]*\["registerRiddleDatasetExportMenu",\s*registerRiddleDatasetExportMenu\],\s*\]/.test(
       text
     )
   ) {
     violations.push(`${rel(entryFile)} must own explicit userscript startup order`);
   }
   if (
-    !/const GAME_PAGE_STARTUP_STEPS = \[\s*syncConfiguredStartupOption,\s*warnDefaultFont,\s*loadBattleLearningState\s*\]/.test(
+    !/const GAME_PAGE_STARTUP_STEPS = \[\s*\["syncConfiguredStartupOption",\s*syncConfiguredStartupOption\],[\s\S]*\["warnDefaultFont",\s*warnDefaultFont\],[\s\S]*\["loadBattleLearningState",\s*loadBattleLearningState\],\s*\]/.test(
       text
     )
   ) {
@@ -115,6 +118,18 @@ function checkEntry() {
   if (/\bg\(\s*["']option["']/.test(text)) {
     violations.push(`${rel(entryFile)} must not install raw option state directly`);
   }
+  if (!/globalThis\.sessionStorage\?\.setItem\(APP_STARTUP_FAILURE_KEY/.test(text)) {
+    violations.push(`${rel(entryFile)} must persist startup failure evidence`);
+  }
+  if (!/catch\s*\(error\)\s*{[\s\S]*recordAppStartupFailure\(stage,\s*"stepException"/.test(text)) {
+    violations.push(`${rel(entryFile)} must classify startup step exceptions`);
+  }
+  if (!/recordAppStartupFailure\("requestInitialConfig",\s*"missingConfigButton"/.test(text)) {
+    violations.push(`${rel(entryFile)} must classify missing initial config button failures`);
+  }
+  if (!/recordAppStartupFailure\("warnDefaultFont",\s*"warningFailed"/.test(text)) {
+    violations.push(`${rel(entryFile)} must isolate default font warning failures`);
+  }
   if (/\bOptionEvent\.READ\b|\bOptionEvent\.WRITE\b/.test(text)) {
     violations.push(`${rel(entryFile)} must sync startup option through named option command`);
   }
@@ -127,6 +142,20 @@ function checkEntry() {
   }
   if (!testText.includes("runAppStartup(null)")) {
     violations.push(`${rel(entryFile)} tests must cover null startup events`);
+  }
+  for (const required of [
+    "APP_STARTUP_FAILURE_KEY",
+    "does not report userscript startup success when a startup step throws",
+    "records missing config button evidence when initial config cannot open settings",
+    "isolates default-font warning failures and continues startup",
+    "keeps startup failure evidence when diagnostic console is blocked",
+    "stepException",
+    "missingConfigButton",
+    "warningFailed",
+  ]) {
+    if (!testText.includes(required)) {
+      violations.push(`${rel(entryFile)} tests must cover ${required}`);
+    }
   }
 }
 
