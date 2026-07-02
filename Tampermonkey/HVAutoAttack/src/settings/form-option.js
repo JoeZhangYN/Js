@@ -54,5 +54,5 @@ function collectOption({ version, inputs = [] }) {
 }
 
 export function runSettingsFormOptionAutomation(event = { type: EVENT_COLLECT_OPTION }) {
-  return settingsFormOptionEventHandlers[event.type]?.(event);
+  return settingsFormOptionEventHandlers[event?.type]?.(event);
 }

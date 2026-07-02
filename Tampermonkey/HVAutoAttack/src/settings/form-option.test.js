@@ -14,7 +14,7 @@ const input = (overrides) => ({
 });
 
 describe("runSettingsFormOptionAutomation", () => {
-  it("rejects unknown form option events without collecting fields", () => {
+  it("rejects invalid form option events without collecting fields", () => {
     expect(
       runSettingsFormOptionAutomation({
         type: "unknown",
@@ -24,6 +24,7 @@ describe("runSettingsFormOptionAutomation", () => {
         ],
       })
     ).toBeUndefined();
+    expect(runSettingsFormOptionAutomation(null)).toBeUndefined();
   });
 
   it("collects scalar settings fields into an option object", () => {

@@ -25,13 +25,19 @@ if (!/const settingsFormOptionEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVE
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (entryBody.includes("event.type") || !entryBody.includes("event?.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null form option events`);
+}
 const ownerTest = path.normalize("src/settings/form-option.test.js");
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover settings form option entry`);
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-  if (!ownerTestText.includes("rejects unknown form option events without collecting fields")) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown form option events`);
+  if (
+    !ownerTestText.includes("rejects invalid form option events without collecting fields") ||
+    !ownerTestText.includes("runSettingsFormOptionAutomation(null)")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null form option events`);
   }
 }
 
