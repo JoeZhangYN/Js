@@ -22,6 +22,29 @@ const deps = (values) => ({
 });
 
 describe("runBattleMonitorRuntime", () => {
+  it("rejects unknown and null runtime events without reading runtime context", () => {
+    const runtime = deps({ option: { recordEach: true }, roundNow: 1, roundAll: 2 });
+
+    expect(runBattleMonitorRuntime({ type: "unknown" }, runtime)).toBeUndefined();
+    expect(runBattleMonitorRuntime(null, runtime)).toBeUndefined();
+
+    expect(runtime.readOptionField).not.toHaveBeenCalled();
+    expect(runtime.readBattleProgress).not.toHaveBeenCalled();
+    expect(runtime.readAttackStatus).not.toHaveBeenCalled();
+    expect(runtime.readRunSpeed).not.toHaveBeenCalled();
+    expect(runtime.readTurn).not.toHaveBeenCalled();
+  });
+
+  it("defaults to archive context when no event is provided", () => {
+    const runtime = deps({ option: { recordEach: true }, roundNow: 1, roundAll: 2 });
+
+    expect(runBattleMonitorRuntime(undefined, runtime)).toEqual({
+      recordEach: true,
+      roundNow: 1,
+      roundAll: 2,
+    });
+  });
+
   it("reads report start context from one monitor runtime query", () => {
     const runtime = deps({ option: { recordEach: true }, roundType: "ar", roundAll: 5 });
 

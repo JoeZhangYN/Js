@@ -1010,6 +1010,22 @@ function checkBattleMonitorRuntimeEntry() {
       `${rel(runtimeFile)} must not route runtime context queries through an if ladder`
     );
   }
+  if (text.includes("runtimeContextHandlers[event.type]")) {
+    violations.push(`${rel(runtimeFile)} must fail closed for null runtime events`);
+  }
+  if (!text.includes("runtimeContextHandlers[event?.type]")) {
+    violations.push(`${rel(runtimeFile)} must dispatch runtime events with nullable event semantics`);
+  }
+  const runtimeTestText = fs.readFileSync(
+    path.join(root, "src/monitor/battle-monitor-runtime.test.js"),
+    "utf8"
+  );
+  if (
+    !runtimeTestText.includes("rejects unknown and null runtime events without reading runtime context") ||
+    !runtimeTestText.includes("runBattleMonitorRuntime(null")
+  ) {
+    violations.push(`${rel(runtimeFile)} tests must cover unknown and null runtime events`);
+  }
   if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(`${rel(runtimeFile)} must read monitor option context through option entry`);
   }

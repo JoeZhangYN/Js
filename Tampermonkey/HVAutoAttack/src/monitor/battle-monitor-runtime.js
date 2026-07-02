@@ -111,5 +111,5 @@ const runtimeContextHandlers = Object.freeze({
 });
 
 export function runBattleMonitorRuntime(event = { type: EVENT_ARCHIVE_CONTEXT }, deps = { g }) {
-  return runtimeContextHandlers[event.type]?.(deps);
+  return runtimeContextHandlers[event?.type]?.(deps);
 }
