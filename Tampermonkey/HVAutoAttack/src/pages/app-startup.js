@@ -100,5 +100,5 @@ function runGamePageStartup() {
 }
 
 export function runAppStartup(event = { type: EVENT_USERSCRIPT_START }) {
-  return appStartupEventHandlers[event.type]?.(event) ?? false;
+  return appStartupEventHandlers[event?.type]?.(event) ?? false;
 }

@@ -91,6 +91,12 @@ function checkEntry() {
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(entryFile)} entry must route events through handler table`);
   }
+  if (entryBody.includes("appStartupEventHandlers[event.type]")) {
+    violations.push(`${rel(entryFile)} entry must reject null startup events without throwing`);
+  }
+  if (!entryBody.includes("appStartupEventHandlers[event?.type]")) {
+    violations.push(`${rel(entryFile)} entry must fail closed for unknown or null startup events`);
+  }
   if (/\?\?\s*true/.test(entryBody)) {
     violations.push(`${rel(entryFile)} must reject unknown startup events instead of reporting success`);
   }
@@ -118,6 +124,9 @@ function checkEntry() {
     testText.includes("accepts unknown startup events as no-op")
   ) {
     violations.push(`${rel(entryFile)} tests must lock unknown startup events as rejected no-ops`);
+  }
+  if (!testText.includes("runAppStartup(null)")) {
+    violations.push(`${rel(entryFile)} tests must cover null startup events`);
   }
 }
 
