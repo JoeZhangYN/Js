@@ -7942,8 +7942,12 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         }
       },
       save: function () {
-        $config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json));
+        if (!$config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json))) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         _ml.plc.load();
+        return true;
       },
       load: function () {
         _ml.plc.list.forEach((m) => { m?.node.div.remove(); });
@@ -8327,16 +8331,20 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       },
       save: function () {
         _mm.userlist.list = _mm.userlist.list.filter((e, i, a) => e && a.indexOf(e) === i);
-        $config.set('mm_userlist', _mm.userlist.list);
+        if (!$config.set('mm_userlist', _mm.userlist.list)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         if (_mm.write.node.userlist) {
           _mm.userlist.create();
         }
+        return true;
       },
       popup: function () {
         popup_text(_mm.userlist.list.join('\n'), 300, 300, [
           { text: '保存', click: (p) => {
             _mm.userlist.list = p.textarea.value.split('\n');
-            _mm.userlist.save();
+            if (_mm.userlist.save() === false) return;
             p.close();
           } },
         ]);
@@ -14137,8 +14145,12 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.plc.load();
       },
       save: function () {
-        $config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json));
+        if (!$config.set('ml_plc', _ml.plc.list.filter((m) => m).map((m) => m.json))) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         _ml.plc.load();
+        return true;
       },
       load: function () {
         _ml.plc.list.forEach((m) => { m?.node.div.remove(); });
@@ -14475,16 +14487,20 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       },
       save: function () {
         _mm.userlist.list = _mm.userlist.list.filter((e, i, a) => e && a.indexOf(e) === i);
-        $config.set('mm_userlist', _mm.userlist.list);
+        if (!$config.set('mm_userlist', _mm.userlist.list)) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         if (_mm.node.write_userlist) {
           _mm.userlist.create();
         }
+        return true;
       },
       popup: function () {
         popup_text(_mm.userlist.list.join('\n'), 300, 300, [
           { text: '保存', click: (p) => {
             _mm.userlist.list = p.textarea.value.split('\n');
-            _mm.userlist.save();
+            if (_mm.userlist.save() === false) return;
             p.close();
           } },
         ]);
