@@ -353,18 +353,23 @@ const $item = {
   buy: async function (items) { //items = [{ name, count }];
     if (!items.length) {
       alert(IS_ISEKAI ? 'The purchase request list is empty.' : '购买请求列表为空.');
-      return;
+      return false;
     }
-    await $item.load_shop();
+    try {
+      await $item.load_shop();
+    } catch (_error) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     const cost = $item.cost(items);
     if (cost > $item.networth) {
       alert('你没有足够的credits.');
-      return;
+      return false;
     }
     const nostock = items.find((item) => item.count > ($item.shop[item.name]?.shop_stock || 0));
     if (nostock) {
       alert(IS_ISEKAI ? 'Insufficient number of items in the Item Shop.' : '系统商店中的物品数量不足.');
-      return;
+      return false;
     }
     items.forEach((item) => {
       item.id = $item.shop[item.name].id;
@@ -381,10 +386,16 @@ const $item = {
     }
 
     const requests = items.map((item) => buy(item.id, item.count));
-    const results = await Promise.all(requests);
+    let results;
+    try {
+      results = await Promise.all(requests);
+    } catch (_error) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     if (!results.every((r) => r)) {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return;
+      return false;
     }
     return true;
   },
@@ -1174,7 +1185,7 @@ const bindBattlePanel = function (battle, ctx) {
       return;
     }
     const items = [{ name, count }];
-    await $item.buy(items);
+    if ((await $item.buy(items)) === false) return;
     battle.load_items(); // 数据层已收口本 bind, 原 ctx.reloadItems 注入点撤销
   };
   // 库存网格: 行高自适应 + 三列 dummy 补位(不足 9 格补满, 超出补齐行尾) + render_supply_li 循环
@@ -1318,7 +1329,10 @@ const bindBattlePanel = function (battle, ctx) {
         eq.node.condition.innerHTML = '<span>...</span>';
         eq.node.link.innerHTML = '';
       });
-      await $item.buy(buy_items);
+      if ((await $item.buy(buy_items)) === false) {
+        battle.load_repair(equips);
+        return;
+      }
     }
 
     battle.load_repair(equips);
@@ -15615,7 +15629,12 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         alert('无效的请求');
         return;
       }
-      await $item.load_shop();
+      try {
+        await $item.load_shop();
+      } catch (_error) {
+        alert('发生了一个错误.');
+        return;
+      }
       const cost = $item.cost(items);
       const credits = mail.db.attach.filter((e) => e.n === 'Credits').reduce((s, e) => (s + e.c), 0);
       if (cost !== credits) {
