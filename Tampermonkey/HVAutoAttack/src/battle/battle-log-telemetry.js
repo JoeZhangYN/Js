@@ -42,5 +42,5 @@ function readCurrentTelemetry(turn) {
 }
 
 export function runBattleLogTelemetry(event = { type: EVENT_READ_CURRENT }) {
-  return battleLogTelemetryEventHandlers[event.type]?.(event) ?? EMPTY_BATTLE_LOG_TELEMETRY;
+  return battleLogTelemetryEventHandlers[event?.type]?.(event) ?? EMPTY_BATTLE_LOG_TELEMETRY;
 }

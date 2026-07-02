@@ -47,12 +47,23 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ_CURRENT\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${rel(owner)} entry must dispatch by handler table`);
 }
+if (/battleLogTelemetryEventHandlers\[event\.type\]/.test(entryBody)) {
+  violations.push(`${rel(owner)} entry must fail closed for invalid battle log telemetry events`);
+}
+if (!/battleLogTelemetryEventHandlers\[event\?\.type\]/.test(entryBody)) {
+  violations.push(
+    `${rel(owner)} entry must dispatch invalid battle log telemetry events through optional type`
+  );
+}
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${rel(ownerTest)} must cover battle log telemetry entry contract`);
 } else {
   const ownerTestText = read(ownerTest);
-  if (!ownerTestText.includes("rejects unknown events without parsing or estimating telemetry")) {
-    violations.push(`${rel(ownerTest)} must cover unknown battle log telemetry events`);
+  if (!ownerTestText.includes("rejects invalid events without parsing or estimating telemetry")) {
+    violations.push(`${rel(ownerTest)} must cover invalid battle log telemetry events`);
+  }
+  if (!/runBattleLogTelemetry\(null\)/.test(ownerTestText)) {
+    violations.push(`${rel(ownerTest)} must cover null battle log telemetry events`);
   }
 }
 if (

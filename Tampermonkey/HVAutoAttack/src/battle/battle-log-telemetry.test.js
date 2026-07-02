@@ -51,8 +51,21 @@ describe("runBattleLogTelemetry", () => {
     });
   });
 
-  it("rejects unknown events without parsing or estimating telemetry", () => {
+  it("rejects invalid events without parsing or estimating telemetry", () => {
     expect(runBattleLogTelemetry({ type: "unknown", turn: 3 })).toEqual({
+      battleLog: [],
+      playerIncomingDps: {
+        total: 0,
+        perTurn: 0,
+        p50: 0,
+        p95: 0,
+        hitsPerTurn: 0,
+        perTurnP95: 0,
+        sampleCount: 0,
+      },
+      monsterDpsByName: {},
+    });
+    expect(runBattleLogTelemetry(null)).toEqual({
       battleLog: [],
       playerIncomingDps: {
         total: 0,
