@@ -16,5 +16,5 @@ function criticalBuffFacts(snap) {
 }
 
 export function runCriticalBuffFacts(event = { type: EVENT_READ_DECISION }) {
-  return criticalBuffFactsEventHandlers[event.type]?.(event) ?? {};
+  return criticalBuffFactsEventHandlers[event?.type]?.(event) ?? {};
 }

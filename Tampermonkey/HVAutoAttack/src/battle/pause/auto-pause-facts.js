@@ -13,5 +13,5 @@ function autoPauseFacts(snap) {
 }
 
 export function runBattleAutoPauseFacts(event = { type: EVENT_READ_DECISION }) {
-  return battleAutoPauseFactsEventHandlers[event.type]?.(event) ?? {};
+  return battleAutoPauseFactsEventHandlers[event?.type]?.(event) ?? {};
 }

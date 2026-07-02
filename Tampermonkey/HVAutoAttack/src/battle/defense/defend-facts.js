@@ -13,5 +13,5 @@ function defendFacts(snap) {
 }
 
 export function runBattleDefendFacts(event = { type: EVENT_READ_DECISION }) {
-  return battleDefendFactsEventHandlers[event.type]?.(event) ?? {};
+  return battleDefendFactsEventHandlers[event?.type]?.(event) ?? {};
 }

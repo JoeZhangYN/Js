@@ -12,5 +12,6 @@ describe("runBattleDefendFacts", () => {
 
   it("rejects unknown defend facts events as empty facts", () => {
     expect(runBattleDefendFacts({ type: "unknown", snap })).toEqual({});
+    expect(runBattleDefendFacts(null)).toEqual({});
   });
 });

@@ -12,5 +12,6 @@ describe("runBattleFleeFacts", () => {
 
   it("rejects unknown flee facts events as empty facts", () => {
     expect(runBattleFleeFacts({ type: "unknown", snap })).toEqual({});
+    expect(runBattleFleeFacts(null)).toEqual({});
   });
 });

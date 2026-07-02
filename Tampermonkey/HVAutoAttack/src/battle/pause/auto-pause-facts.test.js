@@ -14,5 +14,6 @@ describe("runBattleAutoPauseFacts", () => {
 
   it("rejects unknown auto-pause facts events as empty facts", () => {
     expect(runBattleAutoPauseFacts({ type: "unknown", snap })).toEqual({});
+    expect(runBattleAutoPauseFacts(null)).toEqual({});
   });
 });

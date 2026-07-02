@@ -4628,11 +4628,20 @@ function checkBattleRuleFactMappers() {
     if (/event\.type\s*===/.test(entryBody)) {
       violations.push(`${rel(spec.file)} entry must dispatch by handler table`);
     }
+    if (new RegExp(`${spec.handlerName}\\[event\\.type\\]`).test(entryBody)) {
+      violations.push(`${rel(spec.file)} entry must fail closed for invalid facts events`);
+    }
+    if (!new RegExp(`${spec.handlerName}\\[event\\?\\.type\\]`).test(entryBody)) {
+      violations.push(`${rel(spec.file)} entry must dispatch invalid facts events through optional type`);
+    }
     const testText = fs.existsSync(spec.testFile)
       ? fs.readFileSync(spec.testFile, "utf8")
       : "";
     if (!testText.includes(spec.unknownEventText)) {
       violations.push(`${rel(spec.testFile)} must cover unknown facts events`);
+    }
+    if (!new RegExp(`${spec.runName}\\(null\\)`).test(testText)) {
+      violations.push(`${rel(spec.testFile)} must cover null facts events`);
     }
     if (/from\s+["'][^"']*rule-facts\.js["']/.test(spec.text)) {
       violations.push(`${rel(spec.file)} must not depend on generic rule fact mappers`);

@@ -16,5 +16,6 @@ describe("runCriticalBuffFacts", () => {
 
   it("rejects unknown critical buff facts events as empty facts", () => {
     expect(runCriticalBuffFacts({ type: "unknown", snap })).toEqual({});
+    expect(runCriticalBuffFacts(null)).toEqual({});
   });
 });

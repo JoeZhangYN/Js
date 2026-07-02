@@ -13,5 +13,5 @@ function fleeFacts(snap) {
 }
 
 export function runBattleFleeFacts(event = { type: EVENT_READ_DECISION }) {
-  return battleFleeFactsEventHandlers[event.type]?.(event) ?? {};
+  return battleFleeFactsEventHandlers[event?.type]?.(event) ?? {};
 }
