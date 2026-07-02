@@ -138,4 +138,25 @@ describe("runPageRefreshAutomation", () => {
       error: "navigation blocked",
     });
   });
+
+  it("does not report scheduled reload success when failure evidence and warning both fail", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
+      if (key === PAGE_REFRESH_FAILURE_KEY) throw new Error("quota");
+      return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+
+    expect(
+      runPageRefreshAutomation(
+        { type: PageRefreshEvent.UNKNOWN_PAGE_READY },
+        {
+          scheduleReload: () => {
+            throw new Error("navigation blocked");
+          },
+        }
+      )
+    ).toBe(false);
+  });
 });

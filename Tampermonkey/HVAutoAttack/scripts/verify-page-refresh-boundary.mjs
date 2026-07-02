@@ -142,6 +142,9 @@ for (const required of [
   "HVAA:lastPageRefreshFailure",
   "does not report scheduled reload success when the reload adapter fails",
   "keeps reload scheduling failure evidence when diagnostic console is blocked",
+  "does not report scheduled reload success when failure evidence and warning both fail",
+  'throw new Error("quota")',
+  'throw new Error("console blocked")',
   "scheduleFailed",
 ]) {
   if (!testText.includes(required)) {
