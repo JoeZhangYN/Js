@@ -88,10 +88,21 @@ if (!/Object\.freeze\(\{[\s\S]*\[EVENT_ROUND_LOG_READY\]/.test(ownerText)) {
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (/battleStaminaEventHandlers\[event\.type\]/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for invalid stamina events`);
+}
+if (!/battleStaminaEventHandlers\[event\?\.type\]/.test(entryBody)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must dispatch invalid stamina events through optional type`
+  );
+}
 if (fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
-  if (!ownerTestText.includes("rejects unknown battle stamina events without side effects")) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown battle stamina events`);
+  if (!ownerTestText.includes("rejects invalid battle stamina events without side effects")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover invalid battle stamina events`);
+  }
+  if (!/runBattleStaminaAutomation\(null/.test(ownerTestText)) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null battle stamina events`);
   }
 }
 
