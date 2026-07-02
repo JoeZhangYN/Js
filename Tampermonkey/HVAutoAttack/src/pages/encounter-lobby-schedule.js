@@ -42,5 +42,5 @@ const encounterLobbyScheduleEventHandlers = Object.freeze({
 });
 
 export function runEncounterLobbySchedule(event = { type: EVENT_CANCEL_NEXT_CHECK }) {
-  return encounterLobbyScheduleEventHandlers[event.type]?.(event) ?? false;
+  return encounterLobbyScheduleEventHandlers[event?.type]?.(event) ?? false;
 }

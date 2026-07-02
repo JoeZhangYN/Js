@@ -477,6 +477,16 @@ if (!lobbyScheduleEntryMatch) {
   );
 } else {
   const entryBody = lobbyScheduleEntryMatch[0];
+  if (entryBody.includes("event.type")) {
+    violations.push(
+      `${lobbyScheduleFile.replaceAll("\\", "/")} entry must reject null events without throwing`
+    );
+  }
+  if (!entryBody.includes("event?.type")) {
+    violations.push(
+      `${lobbyScheduleFile.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+    );
+  }
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(
       `${lobbyScheduleFile.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
@@ -489,6 +499,15 @@ if (!lobbyScheduleEntryMatch) {
       );
     }
   }
+}
+const lobbyScheduleTestText = fs.readFileSync(path.join(root, lobbyScheduleTest), "utf8");
+if (
+  !lobbyScheduleTestText.includes("rejects unknown and null schedule events without creating a timer") ||
+  !lobbyScheduleTestText.includes("runEncounterLobbySchedule(null)")
+) {
+  violations.push(
+    `${lobbyScheduleTest.replaceAll("\\", "/")} must cover unknown and null schedule events`
+  );
 }
 if (/\bNEXT_CHECK_DELAY\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must not expose raw next-check delay`);
