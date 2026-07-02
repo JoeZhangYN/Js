@@ -10,6 +10,8 @@ const riddleTimingFile = path.join(root, "src/pages/riddle-submission-timing.js"
 const riddleImageFile = path.join(root, "src/pages/riddle-image.js");
 const riddleMlFile = path.join(root, "src/pages/riddle-ml.js");
 const riddleMlAnswerFailureFile = path.join(root, "src/pages/riddle-ml-answer-failure.js");
+const diagnosticKeysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
+const diagnosticTestFile = path.join(root, "src/core/diagnostic-evidence.test.js");
 const settingsFile = path.join(root, "src/settings/render.js");
 const srcDir = path.join(root, "src");
 const battleDir = path.join(root, "src/battle");
@@ -551,6 +553,28 @@ function checkRiddleMlEntry() {
   }
   if (!/try\s*{[\s\S]*gmXhr\(\{[\s\S]*method:\s*"HEAD"[\s\S]*}\);[\s\S]*return true;[\s\S]*}\s*catch/.test(ownerText)) {
     violations.push(`${rel(riddleMlFile)} must classify health HEAD adapter startup failures`);
+  }
+  const diagnosticKeysText = fs.readFileSync(diagnosticKeysFile, "utf8");
+  for (const required of [
+    "RIDDLE_ML_HEALTH_FAILURE: \"HVAA:lastRiddleMlHealthFailure\"",
+    "RIDDLE_ML_ANSWER_FAILURE: \"HVAA:lastRiddleMlAnswerFailure\"",
+    "source(\"riddleMlHealthFailure\", DiagnosticEvidenceKey.RIDDLE_ML_HEALTH_FAILURE)",
+    "source(\"riddleMlAnswerFailure\", DiagnosticEvidenceKey.RIDDLE_ML_ANSWER_FAILURE)",
+  ]) {
+    if (!diagnosticKeysText.includes(required)) {
+      violations.push(`${rel(diagnosticKeysFile)} must expose ${required}`);
+    }
+  }
+  const diagnosticTestText = fs.readFileSync(diagnosticTestFile, "utf8");
+  for (const required of [
+    "HVAA:lastRiddleMlHealthFailure",
+    "HVAA:lastRiddleMlAnswerFailure",
+    "riddleMlHealthFailure: { capability: \"riddleMlHealth\", stage: \"healthCycle\" }",
+    "riddleMlAnswerFailure: { capability: \"riddleMlAnswer\", stage: \"request\", fallback: \"random\" }",
+  ]) {
+    if (!diagnosticTestText.includes(required)) {
+      violations.push(`${rel(diagnosticTestFile)} must cover ${required}`);
+    }
   }
   const requestBody =
     ownerText.match(/async function requestRiddleMlAnswer\([\s\S]*?\n\}/)?.[0] || "";

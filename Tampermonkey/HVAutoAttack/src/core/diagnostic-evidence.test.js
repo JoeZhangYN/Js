@@ -93,6 +93,8 @@ describe("readRecentDiagnosticEvidence", () => {
     window.sessionStorage.setItem("HVAA:lastI18nInitFailure", JSON.stringify({ capability: "i18nInit", entry: "interface" }));
     window.sessionStorage.setItem("HVAA:lastI18nRestoreFailure", JSON.stringify({ capability: "i18nRestore", stage: "restore" }));
     window.sessionStorage.setItem("HVAA:lastEncounterStateFailure", JSON.stringify({ capability: "encounterState", stage: "read-local-json" }));
+    window.sessionStorage.setItem("HVAA:lastRiddleMlHealthFailure", JSON.stringify({ capability: "riddleMlHealth", stage: "healthCycle" }));
+    window.sessionStorage.setItem("HVAA:lastRiddleMlAnswerFailure", JSON.stringify({ capability: "riddleMlAnswer", stage: "request", fallback: "random" }));
 
     expect(readRecentDiagnosticEvidence(window.sessionStorage)).toMatchObject({
       navigationDecision: { decision: "rejected", detail: { cause: "invalidReloadDelay" } },
@@ -111,9 +113,7 @@ describe("readRecentDiagnosticEvidence", () => {
       battleActionDelay: { decision: "rejected", reason: "unknownActionDelayEvent" },
       battleActionSpeed: { decision: "rejected", reason: "unknownActionSpeedEvent" },
       battleActionLifecycle: { phase: "actionStarted", result: true },
-      battleActionDecision: {
-        steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }],
-      },
+      battleActionDecision: { steps: [{ capability: "attack", acted: false, effect: { knownResultKind: true } }] },
       battleActionEffect: { result: { kind: "noop" }, acted: false, knownResultKind: true },
       httpRequestFailure: { capability: "httpRequest", stage: "finalFailure", kind: "networkError" },
       staminaRecoveryFailure: { capability: "staminaRecovery", stage: "claimRecoveryPost" },
@@ -129,6 +129,8 @@ describe("readRecentDiagnosticEvidence", () => {
       i18nInitFailure: { capability: "i18nInit", entry: "interface" },
       i18nRestoreFailure: { capability: "i18nRestore", stage: "restore" },
       encounterStateFailure: { capability: "encounterState", stage: "read-local-json" },
+      riddleMlHealthFailure: { capability: "riddleMlHealth", stage: "healthCycle" },
+      riddleMlAnswerFailure: { capability: "riddleMlAnswer", stage: "request", fallback: "random" },
     });
   });
 
