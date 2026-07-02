@@ -90,6 +90,10 @@ requireText(path.normalize("src/battle/battle-round-start-evidence.js"), [
 requireText(path.normalize("src/battle/battle-round-start-evidence.test.js"), [
   "records battle round-start evidence",
   "rejects null round-start evidence events without writing diagnostics",
+  "keeps round-start evidence visible when storage is unavailable",
+  "keeps round-start evidence stored when debug output fails",
+  'storageWriteError: "quota"',
+  "console blocked",
   "HVAA:lastBattleRoundStart",
 ]);
 const diagnosticKeysText = read(path.normalize("src/core/diagnostic-evidence-keys.js"));
@@ -174,7 +178,9 @@ if (
   startRoundLifecycleBody.indexOf("AutoTuneEvent.ROUND_STARTED") >
     startRoundLifecycleBody.indexOf("BattleTurnEvent.ROUND_STARTED")
 ) {
-  violations.push("src/battle/round-lifecycle.js must start auto-tune before battle-turn round runtime");
+  violations.push(
+    "src/battle/round-lifecycle.js must start auto-tune before battle-turn round runtime"
+  );
 }
 if (
   readyRoundLifecycleBody.indexOf("BattleSkillUsageEvent.RESET_ROUND") === -1 ||
@@ -182,7 +188,9 @@ if (
   readyRoundLifecycleBody.indexOf("BattleSkillUsageEvent.RESET_ROUND") >
     readyRoundLifecycleBody.indexOf("MonsterKnowledgeEvent.ROUND_STARTED")
 ) {
-  violations.push("src/battle/round-lifecycle.js must reset skill usage before monster knowledge round start");
+  violations.push(
+    "src/battle/round-lifecycle.js must reset skill usage before monster knowledge round start"
+  );
 }
 if (!/const BATTLE_LOG_SELECTOR = ["']#textlog>tbody>tr>td["']/.test(roundStartLogText)) {
   violations.push("src/battle/round-start-log.js must own the battle log selector constant");
