@@ -39,8 +39,8 @@ const timeEventHandlers = Object.freeze({
 });
 
 export function runTimeAutomation(event = { type: EVENT_EPOCH_MS }) {
-  const stamp = event.stamp;
+  const stamp = event?.stamp;
   const date = stamp !== undefined ? new Date(stamp) : new Date();
   const pad = (n) => String(n).padStart(2, "0");
-  return timeEventHandlers[event.type]?.({ date, pad });
+  return timeEventHandlers[event?.type]?.({ date, pad });
 }

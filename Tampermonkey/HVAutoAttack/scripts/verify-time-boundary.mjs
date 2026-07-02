@@ -48,6 +48,9 @@ if (!owner) {
   if (/if\s*\(\s*event\.type\s*===/.test(entry)) {
     violations.push("runTimeAutomation(event) must not reintroduce an event.type if-chain");
   }
+  if (/\bevent\.type\b/.test(entry) || !/\bevent\?\.type\b/.test(entry)) {
+    violations.push("runTimeAutomation(event) must fail closed for null time events");
+  }
   for (const internal of [
     "date.getTime(",
     "msUntilNextUtcDay(",
@@ -59,6 +62,11 @@ if (!owner) {
       violations.push("runTimeAutomation(event) must dispatch through timeEventHandlers");
     }
   }
+}
+
+const ownerTest = files.find((file) => file.rel === OWNER_TEST);
+if (!ownerTest || !readFileSync(ownerTest.abs, "utf8").includes("runTimeAutomation(null)")) {
+  violations.push("core/time.test.js must cover null time events");
 }
 
 for (const file of files) {

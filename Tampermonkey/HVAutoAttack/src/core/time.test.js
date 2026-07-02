@@ -28,8 +28,9 @@ describe("runTimeAutomation", () => {
     ).toBe("2026/6/27");
   });
 
-  it("returns undefined for unknown time events", () => {
+  it("returns undefined for invalid time events", () => {
     expect(runTimeAutomation({ type: "unknown", stamp: 0 })).toBeUndefined();
+    expect(runTimeAutomation(null)).toBeUndefined();
   });
 
   it("owns file-safe and ISO timestamp labels", () => {
