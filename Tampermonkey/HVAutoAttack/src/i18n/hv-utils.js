@@ -6373,6 +6373,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
   _ss.load_inventory = function () {
     $ajax.fetch('?s=Bazaar&ss=am&screen=organize').then((html) => {
       const exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html);
+      if (!exec) {
+        _ss.node.results_equip.value = 'Inventory Capacity: unavailable';
+        return;
+      }
       const usage = parseInt(exec[1]) + parseInt(exec[2] || 0);
       const capacity = parseInt(exec[3]);
       _ss.equip.usage = usage;
@@ -12482,6 +12486,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
   // 旧 ?s=Character&ss=in 'Equip Slots' 行随能量模型死亡(exec null, 实站报错证实) → isekai 形态: am organize 屏 Inventory Capacity
   $ajax.fetch('?s=Bazaar&ss=am&screen=organize').then((html) => {
     const exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html);
+    if (!exec) {
+      _ss.node.results_equip.value = '装备库存量: unavailable';
+      return;
+    }
     _ss.equip.current = parseInt(exec[1]) + parseInt(exec[2] || 0);
     _ss.equip.capacity = parseInt(exec[3]);
     _ss.node.results_equip.value = `装备库存量: ${_ss.equip.current} / ${_ss.equip.capacity}`;

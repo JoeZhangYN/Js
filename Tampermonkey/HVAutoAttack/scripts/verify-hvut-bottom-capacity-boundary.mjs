@@ -5,6 +5,8 @@ const root = process.cwd();
 const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
 const text = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const violations = [];
+const capacityPattern =
+  "const exec = /<td>Inventory Capacity:<\\/td><td>(\\d+)(?: \\+ (\\d+))?<\\/td><td>\\/<\\/td><td>(\\d+)<\\/td>/.exec(html);";
 
 function rel(file) {
   return file.replaceAll("\\", "/");
@@ -46,6 +48,30 @@ for (const [index, showEquipBody] of showEquipBodies.entries()) {
       `${rel(hvUtilsFile)} show_equip[${index}] must not show equipment-full popup for parse failures`
     );
   }
+}
+
+for (const [index, match] of [...text.matchAll(/const exec = \/<td>Inventory Capacity:[^\n]+\.exec\(html\);/g)].entries()) {
+  const body = text.slice(match.index, match.index + 600);
+  const guardIndex = body.indexOf("if (!exec)");
+  const firstUseIndex = body.search(/exec\[[123]\]/);
+  if (guardIndex < 0) {
+    violations.push(`${rel(hvUtilsFile)} capacity parser[${index}] must guard missing Inventory Capacity`);
+    continue;
+  }
+  if (firstUseIndex >= 0 && firstUseIndex < guardIndex) {
+    violations.push(`${rel(hvUtilsFile)} capacity parser[${index}] must guard before reading capture groups`);
+  }
+  const guardBody = body.match(/if \(!exec\) \{[\s\S]*?\n\s*\}/)?.[0] || "";
+  if (!guardBody.includes("unavailable")) {
+    violations.push(`${rel(hvUtilsFile)} capacity parser[${index}] must expose unavailable capacity`);
+  }
+  if (/popup\(/.test(guardBody)) {
+    violations.push(`${rel(hvUtilsFile)} capacity parser[${index}] must not popup on parse failures`);
+  }
+}
+
+if (!text.includes(capacityPattern)) {
+  violations.push(`${rel(hvUtilsFile)} must keep the Inventory Capacity parser visible to guards`);
 }
 
 if (violations.length) {
