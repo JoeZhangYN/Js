@@ -59,9 +59,12 @@ const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 for (const required of [
   "runOptionBackupAutomation",
   "OptionBackupEvent",
+  "OPTION_BACKUP_FAILURE_KEY",
   "STORAGE_KEYS.BACKUP",
   "HAS_CODE",
   "RENDER_LIST_ITEMS",
+  "persistOptionBackups",
+  "recordOptionBackupFailure",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required}`);
@@ -117,6 +120,33 @@ for (const internal of [
 }
 if (!/runOptionBackupAutomation\(null\)/.test(ownerTestText)) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null option backup events`);
+}
+for (const required of [
+  "does not report save success when backup persistence fails",
+  "does not report delete success when backup persistence fails",
+  "does not report restore success when option write fails",
+  "fails closed and records evidence for malformed backup storage",
+  "OPTION_BACKUP_FAILURE_KEY",
+]) {
+  if (!ownerTestText.includes(required)) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+if (!/try\s*{[\s\S]*setValue\(STORAGE_KEYS\.BACKUP,\s*backups\);[\s\S]*return true;[\s\S]*}\s*catch/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must classify backup persistence failures before reporting success`
+  );
+}
+if (!/catch\s*\(error\)\s*{[\s\S]*recordOptionBackupFailure\(EVENT_RESTORE,\s*"restoreFailed"/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must classify restore write failures before reporting success`
+  );
+}
+if (!/globalThis\.sessionStorage\?\.setItem\(OPTION_BACKUP_FAILURE_KEY/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must persist option backup failure evidence`);
+}
+if (!/normalizeOptionBackups\(EVENT_READ,\s*getValue\(STORAGE_KEYS\.BACKUP,\s*true\) \|\| {}\)/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must normalize malformed backup storage at read entry`);
 }
 
 if (violations.length) {

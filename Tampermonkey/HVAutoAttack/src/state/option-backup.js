@@ -9,6 +9,8 @@ const EVENT_DELETE = "delete";
 const EVENT_HAS_CODE = "hasCode";
 const EVENT_RENDER_LIST_ITEMS = "renderListItems";
 
+export const OPTION_BACKUP_FAILURE_KEY = "HVAA:lastOptionBackupFailure";
+
 export const OptionBackupEvent = Object.freeze({
   READ: EVENT_READ,
   SAVE_CURRENT: EVENT_SAVE_CURRENT,
@@ -18,31 +20,83 @@ export const OptionBackupEvent = Object.freeze({
   RENDER_LIST_ITEMS: EVENT_RENDER_LIST_ITEMS,
 });
 
+function failureErrorText(error) {
+  return error?.message || String(error);
+}
+
+function recordOptionBackupFailure(action, reason, detail = {}) {
+  const evidence = {
+    capability: "optionBackup",
+    action,
+    reason,
+    ...detail,
+  };
+  try {
+    globalThis.sessionStorage?.setItem(OPTION_BACKUP_FAILURE_KEY, JSON.stringify(evidence));
+  } catch (_error) {
+    // Backup failure handling must not depend on diagnostic storage.
+  }
+  try {
+    console.warn("[HVAA] option backup failed", evidence);
+  } catch (_error) {
+    // Console hooks are diagnostic only.
+  }
+  return evidence;
+}
+
+function normalizeOptionBackups(action, backups) {
+  if (backups && typeof backups === "object" && !Array.isArray(backups)) return backups;
+  recordOptionBackupFailure(action, "malformedBackupStore", {
+    storeType: Array.isArray(backups) ? "array" : typeof backups,
+  });
+  return {};
+}
+
 function readOptionBackups() {
-  return getValue(STORAGE_KEYS.BACKUP, true) || {};
+  return normalizeOptionBackups(EVENT_READ, getValue(STORAGE_KEYS.BACKUP, true) || {});
+}
+
+function persistOptionBackups(action, backups, code) {
+  try {
+    setValue(STORAGE_KEYS.BACKUP, backups);
+    return true;
+  } catch (error) {
+    recordOptionBackupFailure(action, "writeFailed", {
+      code,
+      error: failureErrorText(error),
+    });
+    return false;
+  }
 }
 
 function saveCurrentOptionBackup(code) {
   if (!code) return readOptionBackups();
   const backups = readOptionBackups();
   backups[code] = runOptionAutomation({ type: OptionEvent.READ });
-  setValue(STORAGE_KEYS.BACKUP, backups);
+  if (!persistOptionBackups(EVENT_SAVE_CURRENT, backups, code)) return false;
   return backups;
 }
 
 function restoreOptionBackup(code) {
   const backups = readOptionBackups();
   if (!code || !(code in backups)) return false;
-  runOptionAutomation({ type: OptionEvent.WRITE, option: backups[code] });
-  return true;
+  try {
+    runOptionAutomation({ type: OptionEvent.WRITE, option: backups[code] });
+    return true;
+  } catch (error) {
+    recordOptionBackupFailure(EVENT_RESTORE, "restoreFailed", {
+      code,
+      error: failureErrorText(error),
+    });
+    return false;
+  }
 }
 
 function deleteOptionBackup(code) {
   const backups = readOptionBackups();
   if (!code || !(code in backups)) return false;
   delete backups[code];
-  setValue(STORAGE_KEYS.BACKUP, backups);
-  return true;
+  return persistOptionBackups(EVENT_DELETE, backups, code);
 }
 
 function hasOptionBackupCode(code) {

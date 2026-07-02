@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { OptionBackupEvent, runOptionBackupAutomation } from "./option-backup.js";
+import {
+  OPTION_BACKUP_FAILURE_KEY,
+  OptionBackupEvent,
+  runOptionBackupAutomation,
+} from "./option-backup.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
 import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
@@ -7,6 +11,8 @@ import { g } from "./store.js";
 
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
+  delete globalThis.GM_setValue;
   g("option", null);
 });
 
@@ -69,5 +75,77 @@ describe("option backup entry", () => {
     expect(runOptionBackupAutomation({ type: "unknown" })).toBeUndefined();
     expect(runOptionBackupAutomation(null)).toBeUndefined();
     expect(getValue(STORAGE_KEYS.BACKUP, true)).toEqual({ a: { version: "10.0", lang: "1" } });
+  });
+
+  it("does not report save success when backup persistence fails", () => {
+    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", lang: "1" } });
+    globalThis.GM_setValue = () => {
+      throw new Error("quota exceeded");
+    };
+
+    expect(runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "broken" })).toBe(
+      false
+    );
+
+    expect(JSON.parse(sessionStorage.getItem(OPTION_BACKUP_FAILURE_KEY))).toMatchObject({
+      capability: "optionBackup",
+      action: OptionBackupEvent.SAVE_CURRENT,
+      reason: "writeFailed",
+      code: "broken",
+      error: "quota exceeded",
+    });
+  });
+
+  it("does not report delete success when backup persistence fails", () => {
+    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", lang: "1" } });
+    runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "saved" });
+    globalThis.GM_setValue = () => {
+      throw new Error("write blocked");
+    };
+
+    expect(runOptionBackupAutomation({ type: OptionBackupEvent.DELETE, code: "saved" })).toBe(false);
+
+    expect(JSON.parse(sessionStorage.getItem(OPTION_BACKUP_FAILURE_KEY))).toMatchObject({
+      capability: "optionBackup",
+      action: OptionBackupEvent.DELETE,
+      reason: "writeFailed",
+      code: "saved",
+      error: "write blocked",
+    });
+  });
+
+  it("does not report restore success when option write fails", () => {
+    runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", lang: "1" } });
+    runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code: "saved" });
+    globalThis.GM_setValue = () => {
+      throw new Error("option write blocked");
+    };
+
+    expect(runOptionBackupAutomation({ type: OptionBackupEvent.RESTORE, code: "saved" })).toBe(
+      false
+    );
+
+    expect(JSON.parse(sessionStorage.getItem(OPTION_BACKUP_FAILURE_KEY))).toMatchObject({
+      capability: "optionBackup",
+      action: OptionBackupEvent.RESTORE,
+      reason: "restoreFailed",
+      code: "saved",
+      error: "option write blocked",
+    });
+  });
+
+  it("fails closed and records evidence for malformed backup storage", () => {
+    localStorage.hvAA_backup = JSON.stringify("not-an-object");
+
+    expect(runOptionBackupAutomation({ type: OptionBackupEvent.READ })).toEqual({});
+    expect(runOptionBackupAutomation({ type: OptionBackupEvent.HAS_CODE, code: "anything" })).toBe(
+      false
+    );
+    expect(JSON.parse(sessionStorage.getItem(OPTION_BACKUP_FAILURE_KEY))).toMatchObject({
+      capability: "optionBackup",
+      action: OptionBackupEvent.READ,
+      reason: "malformedBackupStore",
+      storeType: "string",
+    });
   });
 });
