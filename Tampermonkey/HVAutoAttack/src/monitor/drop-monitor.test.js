@@ -43,6 +43,19 @@ function deps({ rows, values = {}, option = {}, roundNow = 1, roundAll = 2 }) {
 }
 
 describe("runBattleDropAutomation", () => {
+  it("rejects unknown drop events without reading logs or writing drops", () => {
+    const runtime = deps({
+      option: { dropMonitor: true, dropQuality: 0, recordEach: false },
+      rows: [logLine("You gain 12 EXP")],
+    });
+
+    expect(runBattleDropAutomation({ type: "unknown" }, runtime)).toBe(false);
+    expect(runBattleDropAutomation(null, runtime)).toBe(false);
+
+    expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
+    expect(runtime.setValue).not.toHaveBeenCalled();
+  });
+
   it("does not record drops when the drop monitor option is disabled", () => {
     const runtime = deps({
       option: { dropMonitor: false, dropQuality: 0, recordEach: false },

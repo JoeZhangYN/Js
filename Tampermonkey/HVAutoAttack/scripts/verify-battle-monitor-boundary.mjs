@@ -871,6 +871,12 @@ function checkDeletedDropMonitorEntrypoint() {
   if (/if\s*\(\s*event\.type\s*!==\s*EVENT_RECORD_BATTLE_DROPS/.test(dropText)) {
     violations.push(`${rel(dropFile)} must not route drop commands through an if ladder`);
   }
+  if (dropText.includes("dropEventHandlers[event.type]")) {
+    violations.push(`${rel(dropFile)} must reject null drop events without throwing`);
+  }
+  if (!dropText.includes("dropEventHandlers[event?.type]")) {
+    violations.push(`${rel(dropFile)} must fail closed for unknown or null drop events`);
+  }
   if (/export function recordBattleDrops\(/.test(dropText)) {
     violations.push(
       `${rel(dropFile)} must keep recordBattleDrops private behind runBattleDropAutomation(event)`
@@ -887,6 +893,13 @@ function checkDeletedDropMonitorEntrypoint() {
   }
   if (!includesAll(dropText, ["applyBattleDropLog(drop, battleLog", "readItem"])) {
     violations.push(`${rel(dropFile)} must compose drop log mutation with DOM item reads`);
+  }
+  const dropTestText = fs.readFileSync(path.join(root, "src/monitor/drop-monitor.test.js"), "utf8");
+  if (
+    !dropTestText.includes("rejects unknown drop events without reading logs or writing drops") ||
+    !dropTestText.includes("runBattleDropAutomation(null")
+  ) {
+    violations.push(`${rel(dropFile)} tests must cover unknown and null drop events`);
   }
   for (const classifier of [
     /You gain \\d\+ \(EXP\|Credit\)/,

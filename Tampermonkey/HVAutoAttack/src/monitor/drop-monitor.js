@@ -71,7 +71,7 @@ const dropEventHandlers = Object.freeze({
 });
 
 export function runBattleDropAutomation(event = { type: EVENT_RECORD_BATTLE_DROPS }, deps = {}) {
-  const handler = dropEventHandlers[event.type];
+  const handler = dropEventHandlers[event?.type];
   if (!handler) return false;
   return handler(event, deps);
 }
