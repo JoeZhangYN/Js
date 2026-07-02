@@ -97,6 +97,20 @@ if (!ownerText.includes("const pageKindEventHandlers")) {
   });
 }
 const ownerEntry = ownerText.match(/export function runPageKindAutomation[\s\S]*?\n}/)?.[0] || "";
+if (ownerEntry.includes("event.type")) {
+  violations.push({
+    rel: "pages/page-kind.js",
+    line: 1,
+    hint: "runPageKindAutomation(event) must reject null events without throwing",
+  });
+}
+if (!ownerEntry.includes("event?.type")) {
+  violations.push({
+    rel: "pages/page-kind.js",
+    line: 1,
+    hint: "runPageKindAutomation(event) must fail closed for unknown or null events",
+  });
+}
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push({
     rel: "pages/page-kind.js",
@@ -109,6 +123,17 @@ if (ownerEntry.includes("detectPageKind(")) {
     rel: "pages/page-kind.js",
     line: 1,
     hint: "runPageKindAutomation(event) must dispatch through pageKindEventHandlers",
+  });
+}
+const ownerTest = readFileSync(`${SRC_DIR}/pages/page-kind.test.js`, "utf8");
+if (
+  !ownerTest.includes("rejects unknown and null page kind events without detecting a page") ||
+  !ownerTest.includes("runPageKindAutomation(null)")
+) {
+  violations.push({
+    rel: "pages/page-kind.test.js",
+    line: 1,
+    hint: "must cover unknown and null page-kind events",
   });
 }
 

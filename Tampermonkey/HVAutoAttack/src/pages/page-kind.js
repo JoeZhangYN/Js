@@ -46,5 +46,5 @@ const pageKindEventHandlers = Object.freeze({
 });
 
 export function runPageKindAutomation(event = { type: EVENT_DETECT_CURRENT }) {
-  return pageKindEventHandlers[event.type]?.(event);
+  return pageKindEventHandlers[event?.type]?.(event);
 }
