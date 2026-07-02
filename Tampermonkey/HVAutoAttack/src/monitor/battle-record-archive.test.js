@@ -22,6 +22,16 @@ function deps(values = {}) {
 }
 
 describe("runBattleRecordArchiveAutomation", () => {
+  it("rejects unknown and null archive events without reading or writing records", () => {
+    const runtime = deps({ [STORAGE_KEYS.DROP]: { "#Credit": 5 } });
+
+    expect(runBattleRecordArchiveAutomation({ type: "unknown" }, runtime)).toBeUndefined();
+    expect(runBattleRecordArchiveAutomation(null, runtime)).toBeUndefined();
+
+    expect(runtime.setValue).not.toHaveBeenCalled();
+    expect(runtime.delValue).not.toHaveBeenCalled();
+  });
+
   it("stores the current battle record before the final round", () => {
     const runtime = deps();
 

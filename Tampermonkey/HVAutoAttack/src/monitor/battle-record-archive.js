@@ -42,6 +42,8 @@ const archiveEventHandlers = Object.freeze({
 });
 
 export function runBattleRecordArchiveAutomation(event, deps = {}) {
+  const handler = archiveEventHandlers[event?.type];
+  if (!handler) return undefined;
   const recordStore = createBattleRecordArchiveStore(deps);
-  return archiveEventHandlers[event.type]?.(event, recordStore);
+  return handler(event, recordStore);
 }

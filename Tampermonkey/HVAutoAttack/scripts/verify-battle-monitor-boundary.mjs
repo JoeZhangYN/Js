@@ -606,6 +606,22 @@ function checkRecordArchiveEntry() {
   if (/if\s*\(\s*event\.type\s*===\s*BattleRecordArchiveEvent\./.test(archiveText)) {
     violations.push(`${rel(archiveFile)} must not route archive events through an if ladder`);
   }
+  if (archiveText.includes("archiveEventHandlers[event.type]")) {
+    violations.push(`${rel(archiveFile)} must fail closed for null archive events`);
+  }
+  if (!archiveText.includes("archiveEventHandlers[event?.type]")) {
+    violations.push(`${rel(archiveFile)} must dispatch archive events with nullable event semantics`);
+  }
+  const archiveTestText = fs.readFileSync(
+    path.join(root, "src/monitor/battle-record-archive.test.js"),
+    "utf8"
+  );
+  if (
+    !archiveTestText.includes("rejects unknown and null archive events without reading or writing records") ||
+    !archiveTestText.includes("runBattleRecordArchiveAutomation(null")
+  ) {
+    violations.push(`${rel(archiveFile)} tests must cover unknown and null archive events`);
+  }
   if (
     !archiveText.includes("START_BATTLE_REPORT_RECORDING") ||
     !archiveText.includes("READ_OR_CREATE_DROP_RECORD") ||
