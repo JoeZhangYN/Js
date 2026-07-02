@@ -38,5 +38,5 @@ function canApplyDebuffPure(mEffects = [], debuffKey, opt = {}, skillIsReady) {
 }
 
 export function runBattleDebuffApplicability(event = { type: EVENT_READ_VERDICT }) {
-  return battleDebuffApplicabilityEventHandlers[event.type]?.(event) ?? "skip";
+  return battleDebuffApplicabilityEventHandlers[event?.type]?.(event) ?? "skip";
 }

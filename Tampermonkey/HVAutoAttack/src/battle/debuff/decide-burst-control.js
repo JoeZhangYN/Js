@@ -68,5 +68,5 @@ function decideBurstControl(event = {}) {
 }
 
 export function runBattleBurstControlDecision(event = { type: EVENT_DECIDE }) {
-  return battleBurstControlDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleBurstControlDecisionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }

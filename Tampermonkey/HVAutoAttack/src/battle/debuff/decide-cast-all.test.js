@@ -142,5 +142,6 @@ describe("decideCastDebuffOnAll", () => {
 
   it("rejects unknown all-debuff decision events", () => {
     expect(runBattleAllDebuffDecision({ type: "unknown" })).toEqual({ kind: "noop" });
+    expect(runBattleAllDebuffDecision(null)).toEqual({ kind: "noop" });
   });
 });

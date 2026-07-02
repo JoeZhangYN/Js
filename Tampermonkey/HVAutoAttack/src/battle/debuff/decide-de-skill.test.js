@@ -154,5 +154,6 @@ describe("decideDeSkill — Drain 目标策略", () => {
 
   it("rejects unknown de-skill decision events", () => {
     expect(runBattleDeSkillDecision({ type: "unknown" })).toEqual({ kind: "noop" });
+    expect(runBattleDeSkillDecision(null)).toEqual({ kind: "noop" });
   });
 });

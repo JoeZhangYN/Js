@@ -143,5 +143,6 @@ describe("big skill debuff entry", () => {
         monsterFacts: [{ monsterId: 100, isBoss: true, isDead: false, hpMax: 5000 }],
       })
     ).toBeUndefined();
+    expect(runBigSkillDebuffAutomation(null)).toBeUndefined();
   });
 });

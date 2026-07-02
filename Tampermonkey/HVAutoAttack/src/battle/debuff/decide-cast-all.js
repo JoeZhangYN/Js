@@ -123,5 +123,5 @@ function hasMissingDebuff(event, debuffName) {
 }
 
 export function runBattleAllDebuffDecision(event = { type: EVENT_DECIDE }) {
-  return battleAllDebuffDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleAllDebuffDecisionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }

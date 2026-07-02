@@ -108,5 +108,5 @@ function isCatalogSkillEnabled(opt, code) {
 }
 
 export function runBigSkillDebuffAutomation(event = { type: EVENT_SHOULD_SKIP_DEBUFF }) {
-  return bigSkillDebuffEventHandlers[event.type]?.(event);
+  return bigSkillDebuffEventHandlers[event?.type]?.(event);
 }

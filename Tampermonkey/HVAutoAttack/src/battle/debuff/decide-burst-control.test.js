@@ -113,5 +113,6 @@ describe("decideBurstControl", () => {
 
   it("rejects unknown burst control decision events", () => {
     expect(runBattleBurstControlDecision({ type: "unknown" })).toEqual({ kind: "noop" });
+    expect(runBattleBurstControlDecision(null)).toEqual({ kind: "noop" });
   });
 });

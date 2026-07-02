@@ -36,5 +36,6 @@ describe("runBattleDebuffApplicability", () => {
 
   it("rejects unknown events as skip", () => {
     expect(runBattleDebuffApplicability({ type: "unknown" })).toBe("skip");
+    expect(runBattleDebuffApplicability(null)).toBe("skip");
   });
 });

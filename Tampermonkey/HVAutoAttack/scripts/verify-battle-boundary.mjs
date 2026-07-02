@@ -2440,6 +2440,12 @@ function checkBigSkillDebuffEntry() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${rel(bigSkillFile)} entry must dispatch by handler table`);
   }
+  if (/bigSkillDebuffEventHandlers\[event\.type\]/.test(entryBody)) {
+    violations.push(`${rel(bigSkillFile)} entry must fail closed for invalid big-skill debuff events`);
+  }
+  if (!/bigSkillDebuffEventHandlers\[event\?\.type\]/.test(entryBody)) {
+    violations.push(`${rel(bigSkillFile)} entry must dispatch invalid big-skill debuff events through optional type`);
+  }
   const bigSkillTestFile = path.join(root, "src/battle/debuff/big-skill-debuff.test.js");
   if (!fs.existsSync(bigSkillTestFile)) {
     violations.push(`${rel(bigSkillTestFile)} must cover big-skill debuff entry`);
@@ -2447,6 +2453,9 @@ function checkBigSkillDebuffEntry() {
     const testText = fs.readFileSync(bigSkillTestFile, "utf8");
     if (!testText.includes("rejects unknown big skill debuff events")) {
       violations.push(`${rel(bigSkillTestFile)} must cover unknown big-skill debuff events`);
+    }
+    if (!/runBigSkillDebuffAutomation\(null\)/.test(testText)) {
+      violations.push(`${rel(bigSkillTestFile)} must cover null big-skill debuff events`);
     }
   }
   const offensiveDebuffText = fs.readFileSync(decideOffensiveDebuffFile, "utf8");
@@ -2516,6 +2525,19 @@ function checkBurstControlEntry() {
   }
   if (/event\.type\s*===/.test(burstControlEntryBody)) {
     violations.push(`${rel(burstControlFile)} entry must dispatch by handler table`);
+  }
+  if (/battleBurstControlDecisionEventHandlers\[event\.type\]/.test(burstControlEntryBody)) {
+    violations.push(`${rel(burstControlFile)} entry must fail closed for invalid burst-control events`);
+  }
+  if (!/battleBurstControlDecisionEventHandlers\[event\?\.type\]/.test(burstControlEntryBody)) {
+    violations.push(`${rel(burstControlFile)} entry must dispatch invalid burst-control events through optional type`);
+  }
+  const burstControlTestFile = path.join(root, "src/battle/debuff/decide-burst-control.test.js");
+  const burstControlTestText = fs.existsSync(burstControlTestFile)
+    ? fs.readFileSync(burstControlTestFile, "utf8")
+    : "";
+  if (!/runBattleBurstControlDecision\(null\)/.test(burstControlTestText)) {
+    violations.push(`${rel(burstControlTestFile)} must cover null burst-control events`);
   }
   if (
     !/const PHYSICAL_TYPES = Object\.freeze\(\{/.test(ownerText) ||
@@ -3379,6 +3401,19 @@ function checkSingleDebuffEntry() {
   if (/event\.type\s*===/.test(deSkillEntryBody)) {
     violations.push(`${rel(decideDeSkillFile)} entry must dispatch by handler table`);
   }
+  if (/battleDeSkillDecisionEventHandlers\[event\.type\]/.test(deSkillEntryBody)) {
+    violations.push(`${rel(decideDeSkillFile)} entry must fail closed for invalid de-skill events`);
+  }
+  if (!/battleDeSkillDecisionEventHandlers\[event\?\.type\]/.test(deSkillEntryBody)) {
+    violations.push(`${rel(decideDeSkillFile)} entry must dispatch invalid de-skill events through optional type`);
+  }
+  const deSkillTestFile = path.join(root, "src/battle/debuff/decide-de-skill.test.js");
+  const deSkillTestText = fs.existsSync(deSkillTestFile)
+    ? fs.readFileSync(deSkillTestFile, "utf8")
+    : "";
+  if (!/runBattleDeSkillDecision\(null\)/.test(deSkillTestText)) {
+    violations.push(`${rel(deSkillTestFile)} must cover null de-skill events`);
+  }
   if (/decideDeSkill\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideDeSkillFile)} must not expose opt/snap single-debuff input`);
   }
@@ -3444,6 +3479,19 @@ function checkAllDebuffEntry() {
   if (/event\.type\s*===/.test(castAllEntryBody)) {
     violations.push(`${rel(decideCastAllFile)} entry must dispatch by handler table`);
   }
+  if (/battleAllDebuffDecisionEventHandlers\[event\.type\]/.test(castAllEntryBody)) {
+    violations.push(`${rel(decideCastAllFile)} entry must fail closed for invalid all-debuff events`);
+  }
+  if (!/battleAllDebuffDecisionEventHandlers\[event\?\.type\]/.test(castAllEntryBody)) {
+    violations.push(`${rel(decideCastAllFile)} entry must dispatch invalid all-debuff events through optional type`);
+  }
+  const castAllTestFile = path.join(root, "src/battle/debuff/decide-cast-all.test.js");
+  const castAllTestText = fs.existsSync(castAllTestFile)
+    ? fs.readFileSync(castAllTestFile, "utf8")
+    : "";
+  if (!/runBattleAllDebuffDecision\(null\)/.test(castAllTestText)) {
+    violations.push(`${rel(castAllTestFile)} must cover null all-debuff events`);
+  }
   if (/decideCastDebuffOnAll\s*\(\s*opt\s*,\s*snap\s*,/.test(ownerText)) {
     violations.push(`${rel(decideCastAllFile)} must not expose opt/snap all-debuff input`);
   }
@@ -3468,6 +3516,22 @@ function checkAllDebuffEntry() {
     )
   ) {
     violations.push("src/battle/debuff/can-apply.js may export only its event query entry");
+  }
+  const canApplyEntryBody =
+    canApplyText.match(/export function runBattleDebuffApplicability\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/battleDebuffApplicabilityEventHandlers\[event\.type\]/.test(canApplyEntryBody)) {
+    violations.push("src/battle/debuff/can-apply.js entry must fail closed for invalid debuff applicability events");
+  }
+  if (!/battleDebuffApplicabilityEventHandlers\[event\?\.type\]/.test(canApplyEntryBody)) {
+    violations.push("src/battle/debuff/can-apply.js entry must dispatch invalid debuff applicability events through optional type");
+  }
+  const canApplyTestFile = path.join(root, "src/battle/debuff/can-apply.test.js");
+  const canApplyTestText = fs.existsSync(canApplyTestFile)
+    ? fs.readFileSync(canApplyTestFile, "utf8")
+    : "";
+  if (!/runBattleDebuffApplicability\(null\)/.test(canApplyTestText)) {
+    violations.push(`${rel(canApplyTestFile)} must cover null debuff applicability events`);
   }
   const rulesText = readBattleActionRulesText();
   for (const ruleName of ["castWeakenAll", "castImperilAll"]) {

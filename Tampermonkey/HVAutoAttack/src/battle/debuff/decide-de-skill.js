@@ -98,5 +98,5 @@ function decideDeSkill(event = {}) {
 }
 
 export function runBattleDeSkillDecision(event = { type: EVENT_DECIDE }) {
-  return battleDeSkillDecisionEventHandlers[event.type]?.(event) ?? { kind: "noop" };
+  return battleDeSkillDecisionEventHandlers[event?.type]?.(event) ?? { kind: "noop" };
 }
