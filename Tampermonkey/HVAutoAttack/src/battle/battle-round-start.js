@@ -90,8 +90,13 @@ function startRound() {
     battleLogRows: roundStartLog.rows,
     initialized: roundStartContext.initialized,
   });
-  recordStep(steps, "prepareMonsterStatus", !monsterStatusOutcome.repaired, monsterStatusOutcome);
-  if (monsterStatusOutcome.repaired) {
+  recordStep(
+    steps,
+    "prepareMonsterStatus",
+    !monsterStatusOutcome.repaired && !monsterStatusOutcome.failed,
+    monsterStatusOutcome
+  );
+  if (monsterStatusOutcome.repaired || monsterStatusOutcome.failed) {
     recordRoundStart(EVENT_ROUND_STARTED, false, steps);
     return false;
   }

@@ -5,6 +5,8 @@ const root = process.cwd();
 const srcDir = path.join(root, "src/battle");
 const entry = path.normalize("src/battle/monster-status-automation.js");
 const entryTest = path.normalize("src/battle/monster-status-automation.test.js");
+const failureOwner = path.normalize("src/battle/monster-status-failure.js");
+const failureTest = path.normalize("src/battle/monster-status-failure.test.js");
 const statusView = path.normalize("src/battle/monster-status-view.js");
 const statusViewTest = path.normalize("src/battle/monster-status-view.test.js");
 const hpImpl = path.normalize("src/battle/monster-status-hp.js");
@@ -62,7 +64,7 @@ function checkFile(file) {
         `${where} monster HP updates belong behind runMonsterStatusAutomation(event)`
       );
     }
-    if (/\b(?:getValue|setValue)\(\s*["']monsterStatus["']/.test(line)) {
+    if (relative !== failureOwner && /\b(?:getValue|setValue)\(\s*["']monsterStatus["']/.test(line)) {
       violations.push(
         `${where} monsterStatus persistence belongs in runMonsterStatusAutomation(event)`
       );
@@ -75,6 +77,8 @@ function checkFile(file) {
 
 function checkEntry() {
   const text = fs.readFileSync(path.join(root, entry), "utf8");
+  const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
+  const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
   if (!/export function runMonsterStatusAutomation\(/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must expose runMonsterStatusAutomation(event)`);
   }
@@ -106,9 +110,36 @@ function checkEntry() {
     "navigationResult: false",
     "navigationError",
     "unknownMonsterStatusEvent",
+    "persistMonsterStatus",
+    "monsterStatusPersistenceFailed",
+    "failed: true",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${entry.replaceAll("\\", "/")} must own ${required} wiring`);
+    }
+  }
+  for (const required of [
+    "MONSTER_STATUS_FAILURE_KEY",
+    "HVAA:lastMonsterStatusFailure",
+    "recordMonsterStatusFailure",
+    "persistMonsterStatus",
+    "monsterStatus",
+    "storageWrite",
+  ]) {
+    if (!failureOwnerText.includes(required)) {
+      violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
+  for (const required of [
+    "does not publish spawn roster when monster status persistence fails",
+    "does not report repair success when round-start-log repair persistence fails",
+    "does not throw when monster status failure evidence and warning both fail",
+    "uses the monster status storage key for failure-path persistence",
+    "MONSTER_STATUS_FAILURE_KEY",
+    "storageWrite",
+  ]) {
+    if (!failureTestText.includes(required)) {
+      violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
     }
   }
   if ((text.match(/combatantCounts\(/g) || []).length < 3) {
@@ -228,6 +259,8 @@ function checkEntry() {
   for (const required of [
     'BATTLE_MONSTER_STATUS_REPAIR: "HVAA:lastBattleMonsterStatusRepair"',
     'source("battleMonsterStatusRepair", DiagnosticEvidenceKey.BATTLE_MONSTER_STATUS_REPAIR)',
+    'MONSTER_STATUS_FAILURE: "HVAA:lastMonsterStatusFailure"',
+    'source("monsterStatusFailure", DiagnosticEvidenceKey.MONSTER_STATUS_FAILURE)',
   ]) {
     if (!diagnosticText.includes(required)) {
       violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must include ${required}`);

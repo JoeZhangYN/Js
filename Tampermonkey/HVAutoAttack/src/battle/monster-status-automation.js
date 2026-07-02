@@ -1,5 +1,5 @@
 // 怪物状态生命周期入口：持久态恢复、异常修复、每 turn HP/权重更新统一从这里进入。
-import { setValue, getValue } from "../state/storage.js";
+import { getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { g } from "../state/store.js";
 import { _alert } from "../core/lang.js";
@@ -7,6 +7,7 @@ import { NavigationEvent, NavigationReloadReason, runNavigationAutomation } from
 import { BattleLogParserEvent, runBattleLogParser } from "./battle-log-parser.js"; import { MonsterStatusHpRuntimeEvent, runMonsterStatusHpRuntime } from "./monster-status-hp.js";
 import { MonsterStatusViewEvent, runMonsterStatusView } from "./monster-status-view.js"; import { BattleRoundStartLogEvent, runBattleRoundStartLog } from "./round-start-log.js";
 import { MonsterStatusRepairEvidenceEvent, runMonsterStatusRepairEvidence } from "./monster-status-repair-evidence.js";
+import { persistMonsterStatus } from "./monster-status-failure.js";
 
 const EVENT_ENSURE_READY = "ensureReady";
 const EVENT_REPAIR = "repair";
@@ -16,8 +17,7 @@ const EVENT_REFRESH_COMBATANT_COUNTS = "refreshCombatantCounts";
 const EVENT_READ_COMBATANT_COUNTS = "readCombatantCounts";
 const EVENT_READ_IDS_BY_ORDER = "readIdsByOrder";
 const EVENT_READ_STATUS = "readStatus";
-const EVENT_UNKNOWN_MONSTER_STATUS = "unknownMonsterStatusEvent";
-const DEFAULT_COMBATANT_COUNT = 0, REPAIR_SOURCE_ROUND_START_LOG = "roundStartLog", REPAIR_SOURCE_RENDERED_SNAPSHOT = "renderedSnapshot";
+const EVENT_UNKNOWN_MONSTER_STATUS = "unknownMonsterStatusEvent", DEFAULT_COMBATANT_COUNT = 0, REPAIR_SOURCE_ROUND_START_LOG = "roundStartLog", REPAIR_SOURCE_RENDERED_SNAPSHOT = "renderedSnapshot";
 
 export const MonsterStatusEvent = Object.freeze({
   ENSURE_READY: EVENT_ENSURE_READY,
@@ -96,13 +96,16 @@ function recordSpawnRoster(event) {
     type: BattleLogParserEvent.BUILD_MONSTER_STATUS,
     roster,
   });
-  setValue(STORAGE_KEYS.MONSTER_STATUS, monsterStatus);
+  if (!persistMonsterStatus("spawn-roster", monsterStatus)) return false;
   g("monsterStatus", monsterStatus);
+  return true;
 }
 
 function prepareRoundStart(event) {
   const initialized = Boolean(event?.initialized);
-  if (initialized) recordSpawnRoster(event);
+  if (initialized && !recordSpawnRoster(event)) {
+    return { initialized, repaired: false, failed: true, reason: "monsterStatusPersistenceFailed" };
+  }
   return {
     initialized,
     repaired: !initialized && ensureMonsterStatusReady(),
@@ -122,10 +125,8 @@ function repairMonsterStatus() {
       battleLogRows: battleLog.rows,
       monsterAll: repairSnapshot.monsterAll,
     });
-    setValue(
-      STORAGE_KEYS.MONSTER_STATUS,
-      runBattleLogParser({ type: BattleLogParserEvent.BUILD_MONSTER_STATUS, roster })
-    );
+    const monsterStatus = runBattleLogParser({ type: BattleLogParserEvent.BUILD_MONSTER_STATUS, roster });
+    if (!persistMonsterStatus("repair-round-start-log", monsterStatus)) return false;
     const detail = repairReloadDetail(REPAIR_SOURCE_ROUND_START_LOG, repairSnapshot);
     recordRepair("scheduledReload", REPAIR_SOURCE_ROUND_START_LOG, reloadRepairDetail(detail));
     return true;
@@ -137,7 +138,7 @@ function repairMonsterStatus() {
     "monsterStatus錯誤，正在嘗試修復",
     "monsterStatus Error, trying to fix"
   );
-  setValue(STORAGE_KEYS.MONSTER_STATUS, repairSnapshot.inferredStatus);
+  if (!persistMonsterStatus("repair-rendered-snapshot", repairSnapshot.inferredStatus)) return false;
   const detail = repairReloadDetail(REPAIR_SOURCE_RENDERED_SNAPSHOT, repairSnapshot);
   recordRepair("scheduledReload", REPAIR_SOURCE_RENDERED_SNAPSHOT, reloadRepairDetail(detail));
   return true;
@@ -149,8 +150,7 @@ function ensureMonsterStatusReady() {
     g("monsterStatus", persisted);
     return false;
   }
-  repairMonsterStatus();
-  return true;
+  return repairMonsterStatus();
 }
 
 function readMonsterIdsByOrder() {
