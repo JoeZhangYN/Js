@@ -49,6 +49,13 @@ describe("material shop entry", () => {
     expect(calls).toHaveLength(0);
   });
 
+  it("rejects null material shop events without reading the shop page", () => {
+    const { post, calls } = makePost(shopDoc({}));
+
+    expect(runMaterialShopAutomation(null, { post })).toBe(false);
+    expect(calls).toHaveLength(0);
+  });
+
   it("持有充足 → 不买，ok bought:false", () => {
     const { post, calls } = makePost(
       shopDoc({

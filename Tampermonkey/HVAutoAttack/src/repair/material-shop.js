@@ -159,5 +159,5 @@ function ensureMaterials(required, opt, cb, deps = {}) {
 }
 
 export function runMaterialShopAutomation(event, deps = {}) {
-  return materialShopEventHandlers[event.type]?.(event, deps) || false;
+  return materialShopEventHandlers[event?.type]?.(event, deps) || false;
 }

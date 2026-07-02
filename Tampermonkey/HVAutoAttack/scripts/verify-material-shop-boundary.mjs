@@ -59,6 +59,9 @@ if (!/const materialShopEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_ENS
 if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (/materialShopEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null material shop events instead of reading event.type directly`);
+}
 for (const legacy of ["parseShopPage", "ensureMaterials"]) {
   if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {
     violations.push(`${owner.replaceAll("\\", "/")} legacy ${legacy} export is forbidden`);
@@ -70,6 +73,12 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   if (!ownerTestText.includes("rejects unknown material shop events without reading the shop page")) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown material shop events`);
+  }
+  if (
+    !ownerTestText.includes("rejects null material shop events without reading the shop page") ||
+    !ownerTestText.includes("runMaterialShopAutomation(null")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null material shop events`);
   }
 }
 
