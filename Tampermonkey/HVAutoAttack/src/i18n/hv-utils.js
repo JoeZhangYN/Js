@@ -974,7 +974,7 @@ const bindPrice = function (price, ctx) {
     });
     Object.assign(json, price.default);
     price.json = json;
-    ctx.config.set('prices', price.json);
+    return ctx.config.set('prices', price.json);
   };
   price.items = function (i) {
     let items;
@@ -1011,7 +1011,7 @@ const bindPrice = function (price, ctx) {
     } else {
       Object.assign(price.json, json);
     }
-    ctx.config.set('prices', price.json);
+    return ctx.config.set('prices', price.json);
   };
   price.edit = function (i, filter, callback) {
     price.init();
@@ -1032,11 +1032,16 @@ const bindPrice = function (price, ctx) {
         alert(`错误: 价格必须是数字\n\n${error}`);
         return;
       }
+      let saved;
       if (all && p.textarea.value.trim() === '') {
-        price.reset();
+        saved = price.reset();
       } else {
         const replace = all;
-        price.set(new_prices, replace);
+        saved = price.set(new_prices, replace);
+      }
+      if (!saved) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
       }
       p.close();
       if (JSON.stringify(prices) !== JSON.stringify(new_prices)) {
@@ -1116,7 +1121,7 @@ const bindPrice = function (price, ctx) {
     const market_prices = price.get_market(items, key);
     const new_prices = { ...prices, ...market_prices };
     if (save) {
-      price.set(new_prices);
+      if (!price.set(new_prices)) return null;
     }
     return new_prices;
 
