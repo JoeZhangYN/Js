@@ -103,4 +103,14 @@ describe("runBattleActionUsageCapture", () => {
 
     expect(runtime.readOptionField).toHaveBeenCalledWith("recordUsage", false);
   });
+
+  it("rejects unknown and null events without reading runtime state", () => {
+    const runtime = deps({ info: { mode: "attack", skill: "attack" } });
+
+    expect(runBattleActionUsageCapture({ type: "unknown" }, runtime)).toBeUndefined();
+    expect(runBattleActionUsageCapture(null, runtime)).toBeUndefined();
+
+    expect(runtime.readOptionField).not.toHaveBeenCalled();
+    expect(runtime.gE).not.toHaveBeenCalled();
+  });
 });

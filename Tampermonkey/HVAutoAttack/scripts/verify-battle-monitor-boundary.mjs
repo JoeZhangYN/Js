@@ -370,6 +370,22 @@ function checkActionUsageCaptureEntry() {
       `${rel(captureFile)} must not route action usage lifecycle through an if ladder`
     );
   }
+  if (text.includes("actionUsageCaptureHandlers[event.type]")) {
+    violations.push(`${rel(captureFile)} must fail closed for null action usage capture events`);
+  }
+  if (!text.includes("actionUsageCaptureHandlers[event?.type]")) {
+    violations.push(`${rel(captureFile)} must dispatch action usage capture with nullable event semantics`);
+  }
+  const captureTestText = fs.readFileSync(
+    path.join(root, "src/monitor/battle-action-usage-capture.test.js"),
+    "utf8"
+  );
+  if (
+    !captureTestText.includes("rejects unknown and null events without reading runtime state") ||
+    !captureTestText.includes("runBattleActionUsageCapture(null")
+  ) {
+    violations.push(`${rel(captureFile)} tests must cover unknown and null action usage capture events`);
+  }
   if (
     /\bexport\s+(?:function|const)\s+(?!BattleActionUsageCaptureEvent\b|runBattleActionUsageCapture\b)/.test(
       text

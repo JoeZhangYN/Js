@@ -58,6 +58,8 @@ const actionUsageCaptureHandlers = Object.freeze({
 });
 
 export function runBattleActionUsageCapture(event, deps) {
+  const handler = actionUsageCaptureHandlers[event?.type];
+  if (!handler) return undefined;
   const runtime = runtimeDeps(deps);
-  return actionUsageCaptureHandlers[event.type]?.(event, runtime);
+  return handler(event, runtime);
 }
