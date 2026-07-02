@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/alarm/alarm.js");
 const ownerTest = path.normalize("src/alarm/alarm.test.js");
+const notificationFailureTest = path.normalize("src/alarm/alarm-notification-failure.test.js");
 const notificationCatalog = path.normalize("src/alarm/notification-catalog.js");
 const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
@@ -157,6 +158,20 @@ if (
   !ownerTestText.includes("not.toThrow()")
 ) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover alarm failure fallback events`);
+}
+const notificationFailureTestText = fs.readFileSync(path.join(root, notificationFailureTest), "utf8");
+for (const required of [
+  "isolates synchronous browser notification permission failures",
+  "isolates rejected browser notification permission requests",
+  'throw new Error("permission blocked")',
+  'Promise.reject(new Error("permission rejected"))',
+  "not.toThrow()",
+]) {
+  if (!notificationFailureTestText.includes(required)) {
+    violations.push(
+      `${notificationFailureTest.replaceAll("\\", "/")} must cover browser notification fallback ${required}`
+    );
+  }
 }
 
 if (violations.length) {
