@@ -1,5 +1,18 @@
-import { describe, expect, it, vi } from "vitest";
-import { PageRefreshEvent, runPageRefreshAutomation } from "./page-refresh.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  PAGE_REFRESH_FAILURE_KEY,
+  PageRefreshEvent,
+  runPageRefreshAutomation,
+} from "./page-refresh.js";
+
+beforeEach(() => {
+  sessionStorage.clear();
+  vi.restoreAllMocks();
+});
+
+function lastPageRefreshFailure() {
+  return JSON.parse(sessionStorage.getItem(PAGE_REFRESH_FAILURE_KEY));
+}
 
 describe("runPageRefreshAutomation", () => {
   it("does not schedule reload when periodic page refresh is disabled", () => {
@@ -79,5 +92,49 @@ describe("runPageRefreshAutomation", () => {
     expect(runPageRefreshAutomation({ type: "unknown" }, { scheduleReload })).toBe(false);
     expect(runPageRefreshAutomation(null, { scheduleReload })).toBe(false);
     expect(scheduleReload).not.toHaveBeenCalled();
+  });
+
+  it("does not report scheduled reload success when the reload adapter fails", () => {
+    const scheduleReload = vi.fn(() => {
+      throw new Error("timer blocked");
+    });
+
+    expect(
+      runPageRefreshAutomation(
+        { type: PageRefreshEvent.UNKNOWN_PAGE_READY },
+        { scheduleReload }
+      )
+    ).toBe(false);
+
+    expect(lastPageRefreshFailure()).toMatchObject({
+      capability: "pageRefresh",
+      stage: "scheduleReload",
+      reason: "scheduleFailed",
+      minutes: 5,
+      error: "timer blocked",
+    });
+  });
+
+  it("keeps reload scheduling failure evidence when diagnostic console is blocked", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+
+    expect(
+      runPageRefreshAutomation(
+        { type: PageRefreshEvent.UNKNOWN_PAGE_READY },
+        {
+          scheduleReload: () => {
+            throw new Error("navigation blocked");
+          },
+        }
+      )
+    ).toBe(false);
+
+    expect(lastPageRefreshFailure()).toMatchObject({
+      stage: "scheduleReload",
+      reason: "scheduleFailed",
+      error: "navigation blocked",
+    });
   });
 });

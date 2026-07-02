@@ -70,7 +70,13 @@ if ((ownerText.match(/NavigationEvent\.SCHEDULE_RELOAD/g) || []).length !== 1) {
     `${owner.replaceAll("\\", "/")} must have one page refresh navigation command construction`
   );
 }
-for (const required of ["PageRefreshEvent", "UNKNOWN_PAGE_READY", "UNKNOWN_PAGE_RELOAD_MINUTES"]) {
+for (const required of [
+  "PageRefreshEvent",
+  "PAGE_REFRESH_FAILURE_KEY",
+  "UNKNOWN_PAGE_READY",
+  "UNKNOWN_PAGE_RELOAD_MINUTES",
+  "recordPageRefreshFailure",
+]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required} page refresh policy`);
   }
@@ -115,10 +121,29 @@ for (const internal of ["scheduleUnknownPageRefresh(", "scheduleGamePageRefresh(
     violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through pageRefreshEventHandlers`);
   }
 }
+if (!/globalThis\.sessionStorage\?\.setItem\(PAGE_REFRESH_FAILURE_KEY/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must persist page refresh failure evidence`);
+}
+if (!/catch\s*\(error\)\s*{[\s\S]*recordPageRefreshFailure\("scheduleReload",\s*"scheduleFailed"/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must classify reload scheduling failures`);
+}
+if (!/reloadReason:\s*reason/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must preserve reload reason separately from failure reason`);
+}
 
 const testText = fs.readFileSync(path.join(root, testFile), "utf8");
 if (!testText.includes("runPageRefreshAutomation(null")) {
   violations.push(`${testFile.replaceAll("\\", "/")} must cover null page refresh events`);
+}
+for (const required of [
+  "PAGE_REFRESH_FAILURE_KEY",
+  "does not report scheduled reload success when the reload adapter fails",
+  "keeps reload scheduling failure evidence when diagnostic console is blocked",
+  "scheduleFailed",
+]) {
+  if (!testText.includes(required)) {
+    violations.push(`${testFile.replaceAll("\\", "/")} must cover ${required}`);
+  }
 }
 
 if (violations.length) {

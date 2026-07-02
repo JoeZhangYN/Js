@@ -20,10 +20,31 @@ const EVENT_GAME_PAGE_READY = "gamePageReady";
 const EVENT_UNKNOWN_PAGE_READY = "unknownPageReady";
 const UNKNOWN_PAGE_RELOAD_MINUTES = 5;
 
+export const PAGE_REFRESH_FAILURE_KEY = "HVAA:lastPageRefreshFailure";
+
 export const PageRefreshEvent = Object.freeze({
   GAME_PAGE_READY: EVENT_GAME_PAGE_READY,
   UNKNOWN_PAGE_READY: EVENT_UNKNOWN_PAGE_READY,
 });
+
+function pageRefreshErrorText(error) {
+  return error?.message || String(error);
+}
+
+function recordPageRefreshFailure(stage, reason, detail = {}) {
+  const evidence = { capability: "pageRefresh", stage, reason, ...detail };
+  try {
+    globalThis.sessionStorage?.setItem(PAGE_REFRESH_FAILURE_KEY, JSON.stringify(evidence));
+  } catch (_error) {
+    // Reload scheduling failure handling must not depend on diagnostic storage.
+  }
+  try {
+    console.warn("[HVAA] page refresh failed", evidence);
+  } catch (_error) {
+    // Console hooks are diagnostic only.
+  }
+  return evidence;
+}
 
 function readPageRefreshOption(deps) {
   const readField =
@@ -57,23 +78,31 @@ function schedulePageRefreshReload(minutes, deps) {
         reason,
         minutes,
       }));
-  reload(minutes);
+  try {
+    reload(minutes);
+    return true;
+  } catch (error) {
+    recordPageRefreshFailure("scheduleReload", "scheduleFailed", {
+      minutes,
+      reloadReason: reason,
+      error: pageRefreshErrorText(error),
+    });
+    return false;
+  }
 }
 
 function scheduleUnknownPageRefresh(_event, deps) {
-  schedulePageRefreshReload(UNKNOWN_PAGE_RELOAD_MINUTES, {
+  return schedulePageRefreshReload(UNKNOWN_PAGE_RELOAD_MINUTES, {
     ...deps,
     reason: NavigationReloadReason.UNKNOWN_PAGE_REFRESH,
   });
-  return true;
 }
 
 function scheduleGamePageRefresh(_event, deps) {
   const option = readPageRefreshOption(deps);
   const delayMinutes = planPageRefreshDelayMinutes(option, deps);
   if (!delayMinutes) return false;
-  schedulePageRefreshReload(delayMinutes, deps);
-  return true;
+  return schedulePageRefreshReload(delayMinutes, deps);
 }
 
 const pageRefreshEventHandlers = Object.freeze({
