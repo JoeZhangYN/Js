@@ -81,6 +81,9 @@ function checkLobbyEntry() {
   if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
     violations.push(`${rel(lobbyFile)} entry must dispatch by handler table`);
   }
+  if (entryBody.includes("event.type") || !entryBody.includes("event?.type")) {
+    violations.push(`${rel(lobbyFile)} entry must fail closed for unknown or null lobby events`);
+  }
   for (const forbidden of [
     "runBattleRuntimeAutomation",
     "runDayRecordAutomation",
@@ -117,8 +120,11 @@ function checkLobbyEntry() {
   }
   const lobbyTestFile = path.join(root, "src/pages/lobby-automation.test.js");
   const lobbyTestText = fs.existsSync(lobbyTestFile) ? fs.readFileSync(lobbyTestFile, "utf8") : "";
-  if (!lobbyTestText.includes("rejects unknown lobby events without running lobby flow")) {
-    violations.push(`${rel(lobbyTestFile)} must cover unknown lobby events`);
+  if (
+    !lobbyTestText.includes("rejects invalid lobby events without running lobby flow") ||
+    !lobbyTestText.includes("runLobbyAutomation(null)")
+  ) {
+    violations.push(`${rel(lobbyTestFile)} must cover unknown and null lobby events`);
   }
   const pageText = fs.readFileSync(path.join(root, "src/pages/page-automation.js"), "utf8");
   if (!pageText.includes("LobbyEvent.PAGE_READY")) {

@@ -92,5 +92,5 @@ async function runLobbyReadyFlow() {
 }
 
 export async function runLobbyAutomation(event = { type: EVENT_PAGE_READY }) {
-  return lobbyEventHandlers[event.type]?.(event);
+  return lobbyEventHandlers[event?.type]?.(event);
 }

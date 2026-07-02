@@ -71,8 +71,9 @@ beforeEach(() => {
 });
 
 describe("runLobbyAutomation", () => {
-  it("rejects unknown lobby events without running lobby flow", async () => {
+  it("rejects invalid lobby events without running lobby flow", async () => {
     await expect(runLobbyAutomation({ type: "unknown" })).resolves.toBeUndefined();
+    await expect(runLobbyAutomation(null)).resolves.toBeUndefined();
 
     expect(mocks.runBattleRuntimeAutomation).not.toHaveBeenCalled();
     expect(mocks.runDayRecordAutomation).not.toHaveBeenCalled();
