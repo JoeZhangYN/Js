@@ -139,12 +139,26 @@ const ownerEntry = ownerText.match(/export function runCdLearningAutomation[\s\S
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
 }
+if (ownerEntry.includes("event.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
+}
+if (!ownerEntry.includes("event?.type")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+}
 for (const internal of ["recordCdFire(", "finalizeCdPending(", "getLearnedCd("]) {
   if (ownerEntry.includes(internal)) {
     violations.push(
       `${owner.replaceAll("\\", "/")} entry must dispatch through cdLearningEventHandlers`
     );
   }
+}
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+if (
+  !ownerTestText.includes("rejects unknown and null CD learning events without reading or changing learning state") ||
+  !ownerTestText.includes("runCdLearningAutomation(null)") ||
+  !ownerTestText.includes("getItem.mock.calls.length")
+) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null CD learning events`);
 }
 
 if (violations.length) {

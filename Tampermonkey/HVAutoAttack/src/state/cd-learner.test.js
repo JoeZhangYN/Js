@@ -19,12 +19,7 @@ vi.mock("./option.js", () => ({
 
 const fire = (code, id, globalTurn) =>
   runCdLearningAutomation({ type: CdLearningEvent.RECORD_FIRE, code, id, globalTurn });
-const settle = (globalTurn, readyId) =>
-  runCdLearningAutomation({
-    type: CdLearningEvent.FINALIZE_PENDING,
-    globalTurn,
-    readySkillIds: readyId ? [readyId] : [],
-  });
+const settle = (globalTurn, readyId) => runCdLearningAutomation({ type: CdLearningEvent.FINALIZE_PENDING, globalTurn, readySkillIds: readyId ? [readyId] : [] });
 const readCd = (code) => runCdLearningAutomation({ type: CdLearningEvent.READ_CD, code });
 
 beforeEach(() => {
@@ -87,10 +82,12 @@ describe("cd-learner 学习与守卫", () => {
     expect(readCd("T2")).toBeCloseTo(2.5, 5);
   });
 
-  it("未知 code → 0（无 entry）", () => {
+  it("rejects unknown and null CD learning events without reading or changing learning state", () => {
     expect(readCd("NOPE")).toBe(0);
     g("cdLearnPending", { OFC: { firedTurn: 10, id: "1111" } });
-    expect([runCdLearningAutomation({ type: "unknown" }), g("cdLearnPending"), getValue(STORAGE_KEYS.LEARNED_CD, true)]).toEqual([undefined, { OFC: { firedTurn: 10, id: "1111" } }, null]);
+    const getItem = vi.spyOn(Storage.prototype, "getItem");
+
+    expect([runCdLearningAutomation({ type: "unknown", code: "OFC" }), runCdLearningAutomation(null), g("cdLearnPending"), getItem.mock.calls.length, mocks.runOptionAutomation.mock.calls.length]).toEqual([undefined, undefined, { OFC: { firedTurn: 10, id: "1111" } }, 0, 0]);
   });
 
   it("缺失 globalTurn 不回退 ambient runtime turn", () => {

@@ -157,5 +157,5 @@ const cdLearningEventHandlers = Object.freeze({
 });
 
 export function runCdLearningAutomation(event = { type: EVENT_READ_CD }) {
-  return cdLearningEventHandlers[event.type]?.(event);
+  return cdLearningEventHandlers[event?.type]?.(event);
 }
