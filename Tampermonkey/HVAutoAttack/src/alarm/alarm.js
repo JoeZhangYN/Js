@@ -129,5 +129,7 @@ const alarmEventHandlers = Object.freeze({
 });
 
 export function runAlarmAutomation(event = { type: EVENT_TRIGGER }) {
-  return alarmEventHandlers[event.type]?.(event);
+  const handler = alarmEventHandlers[event?.type];
+  if (!handler) return false;
+  return handler(event);
 }

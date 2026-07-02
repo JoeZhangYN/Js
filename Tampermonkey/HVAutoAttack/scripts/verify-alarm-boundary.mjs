@@ -119,6 +119,12 @@ const ownerEntry = ownerText.match(/export function runAlarmAutomation[\s\S]*?\n
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
 }
+if (ownerEntry.includes("alarmEventHandlers[event.type]")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null alarm events without throwing`);
+}
+if (!ownerEntry.includes("alarmEventHandlers[event?.type]") || !ownerEntry.includes("return false")) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null alarm events`);
+}
 for (const internal of [
   "setAlarm(",
   "setAudioAlarm(",
@@ -128,6 +134,14 @@ for (const internal of [
   if (ownerEntry.includes(internal)) {
     violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through alarmEventHandlers`);
   }
+}
+
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+if (
+  !ownerTestText.includes("rejects unknown alarm events without user-visible side effects") ||
+  !ownerTestText.includes("runAlarmAutomation(null)")
+) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null alarm events`);
 }
 
 if (violations.length) {

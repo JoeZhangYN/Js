@@ -131,8 +131,9 @@ describe("alarm entry", () => {
     expect(document.querySelector("#hvAATab-Alarm audio")).toBeNull();
   });
 
-  it("ignores unknown alarm events", () => {
-    expect(runAlarmAutomation({ type: "unknown", kind: "Error" })).toBeUndefined();
+  it("rejects unknown alarm events without user-visible side effects", () => {
+    expect(runAlarmAutomation({ type: "unknown", kind: "Error" })).toBe(false);
+    expect(runAlarmAutomation(null)).toBe(false);
     expect(document.querySelector("audio")).toBeNull();
     expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
   });
