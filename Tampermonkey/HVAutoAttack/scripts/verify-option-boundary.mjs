@@ -4,7 +4,9 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/option.js");
+const failureOwner = path.normalize("src/state/option-failure.js");
 const ownerTest = path.normalize("src/state/option.test.js");
+const failureTest = path.normalize("src/state/option-failure.test.js");
 const backup = path.normalize("src/state/option-backup.js");
 const backupTest = path.normalize("src/state/option-backup.test.js");
 const battleMainLoop = path.normalize("src/battle/main-loop.js");
@@ -33,7 +35,9 @@ function checkFile(file) {
     const where = `${rel(file)}:${index + 1}`;
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       relative !== backupTest &&
       relative !== storage &&
       /\b(?:getValue|setValue|delValue)\(\s*["']option["']/.test(line)
@@ -42,7 +46,9 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== failureTest &&
       relative !== backupTest &&
       relative !== storage &&
       relative !== persistKeys &&
@@ -84,6 +90,8 @@ for (const required of [
   "PARSE_IMPORT_TEXT",
   "READ_BATTLE_ACTION_OPTIONS",
   "SYNC_STARTUP_OPTION",
+  "persistOption",
+  "clearPersistedOption",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required}`);
@@ -159,6 +167,58 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null option events`);
   }
+}
+
+const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
+const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
+if (/\b(?:setValue|delValue)\(/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not write or delete option storage directly`);
+}
+if (!/function persistOption\(option\) \{[\s\S]*setValue\(STORAGE_KEYS\.OPTION,\s*option\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordOptionFailure\("write",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
+  violations.push(`${failureOwner.replaceAll("\\", "/")} must classify option write failures`);
+}
+if (!/function clearPersistedOption\(\) \{[\s\S]*delValue\(STORAGE_KEYS\.OPTION\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordOptionFailure\("clear",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
+  violations.push(`${failureOwner.replaceAll("\\", "/")} must classify option clear failures`);
+}
+for (const required of [
+  "OPTION_FAILURE_KEY",
+  "HVAA:lastOptionFailure",
+  "recordOptionFailure",
+  "option",
+  "persistOption",
+  "clearPersistedOption",
+  "STORAGE_KEYS.OPTION",
+]) {
+  if (!failureOwnerText.includes(required)) {
+    violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const required of [
+  "OPTION_FAILURE_KEY",
+  "does not update runtime option when option write fails",
+  "does not mutate existing runtime option when single field write fails",
+  "does not mutate runtime option when startup version persistence fails",
+  "does not clear runtime option when option delete fails",
+  "option write blocked",
+  "option delete blocked",
+  "storageWrite",
+]) {
+  if (!failureTestText.includes(required)) {
+    violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+if (!/function writeOption\(option\) \{[\s\S]*if \(!persistOption\(option\)\) return false;[\s\S]*g\("option",\s*option\);/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must update runtime option only after persistence succeeds`);
+}
+if (!/const opt = \{ \.\.\.\(readOption\(\) \|\| \{\}\) \};/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must avoid mutating current runtime option before field persistence succeeds`);
+}
+if (
+  !/const nextOption = \{ \.\.\.option,\s*version: currentVersion \};[\s\S]*if \(!writeOption\(nextOption\)\)/.test(
+    ownerText
+  )
+) {
+  violations.push(`${owner.replaceAll("\\", "/")} must avoid mutating current runtime option before startup persistence succeeds`);
 }
 
 if (violations.length) {

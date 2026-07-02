@@ -69,6 +69,8 @@ for (const required of [
   "RENDER_LIST_ITEMS",
   "persistOptionBackups",
   "recordOptionBackupFailure",
+  "OPTION_FAILURE_KEY",
+  "readLatestOptionFailureError",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required}`);
@@ -167,6 +169,15 @@ if (!/try\s*{[\s\S]*setValue\(STORAGE_KEYS\.BACKUP,\s*backups\);[\s\S]*return tr
 if (!/catch\s*\(error\)\s*{[\s\S]*recordOptionBackupFailure\(EVENT_RESTORE,\s*"restoreFailed"/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must classify restore write failures before reporting success`
+  );
+}
+if (
+  !/if \(runOptionAutomation\(\{ type: OptionEvent\.WRITE,\s*option: backups\[code\] \}\) !== false\)[\s\S]*return true;[\s\S]*recordOptionBackupFailure\(EVENT_RESTORE,\s*"restoreFailed",\s*\{[\s\S]*error: readLatestOptionFailureError\(\)/.test(
+    ownerText
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must classify false option restore results before reporting success`
   );
 }
 if (!/globalThis\.sessionStorage\?\.setItem\(OPTION_BACKUP_FAILURE_KEY/.test(ownerText)) {

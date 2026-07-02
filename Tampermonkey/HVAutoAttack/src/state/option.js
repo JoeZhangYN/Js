@@ -8,8 +8,9 @@
 //
 // 同形态同失败模式 → 抽 helper 防退化。
 import { g } from "./store.js";
-import { delValue, getValue, setValue } from "./storage.js";
+import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
+import { clearPersistedOption, persistOption } from "./option-failure.js";
 
 const EVENT_READ = "read";
 const EVENT_WRITE = "write";
@@ -61,9 +62,17 @@ function syncStartupOption(currentVersion) {
   if (!option) return { configured: false };
   const previousVersion = option.version;
   const lang = option.lang || "0";
-  if (option.version !== currentVersion) {
-    option.version = currentVersion;
-    writeOption(option);
+  const versionUpdated = option.version !== currentVersion;
+  if (versionUpdated) {
+    const nextOption = { ...option, version: currentVersion };
+    if (!writeOption(nextOption)) {
+      return {
+        configured: false,
+        reason: "optionPersistenceFailed",
+        previousVersion,
+        currentVersion,
+      };
+    }
   } else {
     g("option", option);
   }
@@ -73,18 +82,20 @@ function syncStartupOption(currentVersion) {
     lang,
     previousVersion,
     currentVersion,
-    versionUpdated: previousVersion !== currentVersion,
+    versionUpdated,
   };
 }
 
 function writeOption(option) {
+  if (!persistOption(option)) return false;
   g("option", option);
-  setValue(STORAGE_KEYS.OPTION, option);
+  return true;
 }
 
 function clearOption() {
+  if (!clearPersistedOption()) return false;
   g("option", null);
-  delValue(STORAGE_KEYS.OPTION);
+  return true;
 }
 
 /**
@@ -118,9 +129,9 @@ function isOptionOn(key) {
  * @param {*} val 新值
  */
 function setOption(key, val) {
-  const opt = readOption() || {};
+  const opt = { ...(readOption() || {}) };
   opt[key] = val;
-  writeOption(opt);
+  return writeOption(opt);
 }
 
 function exportOptionText() {

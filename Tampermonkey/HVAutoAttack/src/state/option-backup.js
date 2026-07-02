@@ -1,6 +1,7 @@
 import { getValue, setValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
+import { OPTION_FAILURE_KEY } from "./option-failure.js";
 
 const EVENT_READ = "read";
 const EVENT_SAVE_CURRENT = "saveCurrent";
@@ -69,6 +70,15 @@ function persistOptionBackups(action, backups, code) {
   }
 }
 
+function readLatestOptionFailureError() {
+  try {
+    const evidence = JSON.parse(globalThis.sessionStorage?.getItem(OPTION_FAILURE_KEY) || "null");
+    return evidence?.failure?.error || "option write failed";
+  } catch (_error) {
+    return "option write failed";
+  }
+}
+
 function saveCurrentOptionBackup(code) {
   if (!code) return readOptionBackups();
   const backups = readOptionBackups();
@@ -81,8 +91,14 @@ function restoreOptionBackup(code) {
   const backups = readOptionBackups();
   if (!code || !(code in backups)) return false;
   try {
-    runOptionAutomation({ type: OptionEvent.WRITE, option: backups[code] });
-    return true;
+    if (runOptionAutomation({ type: OptionEvent.WRITE, option: backups[code] }) !== false) {
+      return true;
+    }
+    recordOptionBackupFailure(EVENT_RESTORE, "restoreFailed", {
+      code,
+      error: readLatestOptionFailureError(),
+    });
+    return false;
   } catch (error) {
     recordOptionBackupFailure(EVENT_RESTORE, "restoreFailed", {
       code,
