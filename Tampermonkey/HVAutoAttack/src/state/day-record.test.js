@@ -98,8 +98,9 @@ describe("runDayRecordAutomation", () => {
     expect(schedule).toHaveBeenCalledTimes(2);
   });
 
-  it("ignores unknown day-record events", () => {
+  it("ignores invalid day-record events", () => {
     expect(runDayRecordAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runDayRecordAutomation(null)).toBeUndefined();
     expect(mocks.runTimeAutomation).not.toHaveBeenCalled();
     expect(mocks.g).not.toHaveBeenCalled();
   });

@@ -40,6 +40,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 for (const required of [
   "DayRecordEvent",
   "runDayRecordAutomation",
@@ -64,10 +65,16 @@ const ownerEntry = ownerText.match(/export function runDayRecordAutomation[\s\S]
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
 }
+if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null day-record events`);
+}
 for (const internal of ["syncUtcDate(", "refreshAndScheduleNextUtcDay("]) {
   if (ownerEntry.includes(internal)) {
     violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through dayRecordEventHandlers`);
   }
+}
+if (!/runDayRecordAutomation\(null\)/.test(ownerTestText)) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null day-record events`);
 }
 
 const lobbyText = fs.readFileSync(path.join(root, lobby), "utf8");

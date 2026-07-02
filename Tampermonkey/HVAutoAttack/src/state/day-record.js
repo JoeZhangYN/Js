@@ -52,5 +52,5 @@ const dayRecordEventHandlers = Object.freeze({
 });
 
 export function runDayRecordAutomation(event = { type: EVENT_SYNC_UTC_DATE }) {
-  return dayRecordEventHandlers[event.type]?.(event);
+  return dayRecordEventHandlers[event?.type]?.(event);
 }
