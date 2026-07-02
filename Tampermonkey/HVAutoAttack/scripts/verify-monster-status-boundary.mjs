@@ -18,6 +18,7 @@ const parserEntryTest = path.normalize("src/battle/battle-log-parser.test.js");
 const roundStart = path.normalize("src/battle/battle-round-start.js");
 const actionEventBridge = path.normalize("src/battle/battle-action-event-bridge.js");
 const evidence = path.normalize("src/battle/monster-status-repair-evidence.js");
+const evidenceTest = path.normalize("src/battle/monster-status-repair-evidence.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const violations = [];
 
@@ -195,6 +196,19 @@ function checkEntry() {
     : "";
   if (!evidenceText.includes("DiagnosticEvidenceKey.BATTLE_MONSTER_STATUS_REPAIR")) {
     violations.push(`${evidence.replaceAll("\\", "/")} must write diagnostic evidence`);
+  }
+  if (!evidenceText.includes("monsterStatusRepairEvidenceEventHandlers[event?.type]")) {
+    violations.push(`${evidence.replaceAll("\\", "/")} must reject null evidence events`);
+  }
+  const evidenceTestText = fs.existsSync(path.join(root, evidenceTest))
+    ? fs.readFileSync(path.join(root, evidenceTest), "utf8")
+    : "";
+  if (
+    !evidenceTestText.includes("rejects unknown and null evidence events without writing diagnostics") ||
+    !evidenceTestText.includes("runMonsterStatusRepairEvidence(null") ||
+    !evidenceTestText.includes("HVAA:lastBattleMonsterStatusRepair")
+  ) {
+    violations.push(`${evidenceTest.replaceAll("\\", "/")} must cover invalid repair evidence events`);
   }
   const diagnosticText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
   for (const required of [
