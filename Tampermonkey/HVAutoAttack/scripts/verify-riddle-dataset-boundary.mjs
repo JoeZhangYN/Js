@@ -4,8 +4,10 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/riddle-dataset.js");
+const downloadOwner = path.normalize("src/state/riddle-dataset-download.js");
 const failureOwner = path.normalize("src/state/riddle-dataset-failure.js");
 const ownerTest = path.normalize("src/state/riddle-dataset.test.js");
+const downloadTest = path.normalize("src/state/riddle-dataset-download.test.js");
 const failureTest = path.normalize("src/state/riddle-dataset-failure.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
@@ -26,7 +28,7 @@ function walk(dir) {
 function checkFile(file) {
   const relative = path.normalize(path.relative(root, file));
   const text = fs.readFileSync(file, "utf8");
-  if (relative === owner || relative === ownerTest) return;
+  if (relative === owner || relative === ownerTest || relative === downloadTest) return;
 
   const importRe =
     /import\s+\{([^}]+)\}\s+from\s+["'](?:\.\/|\.\.\/state\/)riddle-dataset\.js["']/g;
@@ -65,6 +67,9 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const downloadOwnerText = fs.existsSync(path.join(root, downloadOwner))
+  ? fs.readFileSync(path.join(root, downloadOwner), "utf8")
+  : "";
 const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
 for (const required of ["runRiddleDatasetAutomation", "RiddleDatasetEvent", "RiddleSampleSource"]) {
   if (!ownerText.includes(required)) {
@@ -98,11 +103,29 @@ for (const required of [
   "export-missing-gm-list",
   "export-list",
   "export-read",
+  "export-download",
+  "export-download-cleanup",
+  "export-revoke",
   "export-delete",
 ]) {
-  if (!(ownerText + failureOwnerText).includes(required)) {
+  if (!(ownerText + downloadOwnerText + failureOwnerText).includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own riddle dataset failure ${required}`);
   }
+}
+if (!downloadOwnerText.includes("export function triggerRiddleDatasetDownload(blob)")) {
+  violations.push(
+    `${downloadOwner.replaceAll("\\", "/")} must own triggerRiddleDatasetDownload(blob)`
+  );
+}
+if (!ownerText.includes("if (!triggerRiddleDatasetDownload(blob)) return;")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not clear exported samples unless download was triggered`
+  );
+}
+if (!/catch \(error\) \{[\s\S]*recordRiddleDatasetFailure\("export-download"/.test(downloadOwnerText)) {
+  violations.push(
+    `${downloadOwner.replaceAll("\\", "/")} must record dataset download side-effect failures`
+  );
 }
 for (const required of [
   "RIDDLE_DATASET_FAILURE_KEY",
@@ -157,6 +180,20 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   ]) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
+  const downloadTestText = fs.existsSync(path.join(root, downloadTest))
+    ? fs.readFileSync(path.join(root, downloadTest), "utf8")
+    : "";
+  for (const required of [
+    "records download click failures without clearing exported samples or reporting success",
+    "records download cleanup revoke failures after a successful export trigger",
+    "expect(deleteValue).not.toHaveBeenCalled()",
+    "expectDatasetFailure(\"export-download\")",
+    "expectDatasetFailure(\"export-revoke\")",
+  ]) {
+    if (!downloadTestText.includes(required)) {
+      violations.push(`${downloadTest.replaceAll("\\", "/")} must cover ${required}`);
     }
   }
   const failureTestText = fs.existsSync(path.join(root, failureTest))

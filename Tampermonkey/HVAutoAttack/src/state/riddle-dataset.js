@@ -15,6 +15,7 @@ import {
   strBytes,
   toCanonicalSampleJson,
 } from "./riddle-dataset-export-format.js";
+import { triggerRiddleDatasetDownload } from "./riddle-dataset-download.js";
 import { recordRiddleDatasetFailure } from "./riddle-dataset-failure.js";
 
 const SAVE_PREFIX = "pony_";
@@ -132,17 +133,7 @@ function exportRiddleDataset() {
     return;
   }
   const blob = makeStoreZip(files);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.style.display = "none";
-  a.href = url;
-  a.download = `pony_dataset_${tsStr()}.zip`;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 200);
+  if (!triggerRiddleDatasetDownload(blob)) return;
   // 默认清除原始记录（防重复导出）。GM_deleteValue 不可用则跳过，不阻断下载。
   if (typeof GM_deleteValue !== "undefined") {
     for (const k of exportedKeys) {
