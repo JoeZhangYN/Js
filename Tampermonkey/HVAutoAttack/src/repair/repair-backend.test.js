@@ -26,6 +26,13 @@ describe("repair backend entry", () => {
 
     expect(runRepairBackendAutomation({ type: "unknown", isIsekai: false }, { post })).toBeUndefined();
   });
+
+  it("rejects null backend events without creating a backend", () => {
+    const { post, calls } = fakePost([]);
+
+    expect(runRepairBackendAutomation(null, { post })).toBeUndefined();
+    expect(calls).toEqual([]);
+  });
 });
 
 describe("makeRepairBackend 主世界 fetchState（dynjs 选择器 + cache-buster 反退化）", () => {

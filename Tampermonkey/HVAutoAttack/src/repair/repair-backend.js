@@ -102,5 +102,5 @@ function makeRepairBackend(isIsekai, deps = {}) {
 }
 
 export function runRepairBackendAutomation(event, deps = {}) {
-  return repairBackendEventHandlers[event.type]?.(event, deps);
+  return repairBackendEventHandlers[event?.type]?.(event, deps);
 }

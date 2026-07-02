@@ -57,6 +57,9 @@ if (!/const repairBackendEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CR
 if (/event\.type\s*(?:!==|===)|switch\s*\(\s*event\.type\s*\)/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
+if (/repairBackendEventHandlers\s*\[\s*event\.type\s*\]/.test(entryBody)) {
+  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null backend events instead of reading event.type directly`);
+}
 if (/export\s+function\s+makeRepairBackend\s*\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} legacy makeRepairBackend export is forbidden`);
 }
@@ -66,6 +69,12 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   if (!ownerTestText.includes("rejects unknown backend events without creating a backend")) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown backend events`);
+  }
+  if (
+    !ownerTestText.includes("rejects null backend events without creating a backend") ||
+    !ownerTestText.includes("runRepairBackendAutomation(null")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null backend events`);
   }
 }
 
