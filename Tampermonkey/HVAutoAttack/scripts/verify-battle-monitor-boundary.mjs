@@ -1148,6 +1148,19 @@ function checkBattleReportEntry() {
   if (/if\s*\(\s*event\.type\s*===\s*BattleReportEvent\./.test(text)) {
     violations.push(`${rel(reportFile)} must not route report commands through an if ladder`);
   }
+  if (text.includes("reportEventHandlers[event.type]")) {
+    violations.push(`${rel(reportFile)} must fail closed for null report events`);
+  }
+  if (!text.includes("reportEventHandlers[event?.type]")) {
+    violations.push(`${rel(reportFile)} must dispatch report events with nullable event semantics`);
+  }
+  const reportTestText = fs.readFileSync(path.join(root, "src/monitor/battle-report.test.js"), "utf8");
+  if (
+    !reportTestText.includes("rejects unknown and null report events without writing report storage") ||
+    !reportTestText.includes("runBattleReportAutomation(null")
+  ) {
+    violations.push(`${rel(reportFile)} tests must cover unknown and null report events`);
+  }
   if (!/\bUTC_MONTH_DAY_LABEL\b/.test(text)) {
     violations.push(`${rel(reportFile)} must own battle report date label format`);
   }

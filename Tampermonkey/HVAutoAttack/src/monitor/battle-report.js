@@ -75,5 +75,5 @@ const reportEventHandlers = Object.freeze({
 });
 
 export function runBattleReportAutomation(event, deps = {}) {
-  return reportEventHandlers[event.type]?.(event, deps);
+  return reportEventHandlers[event?.type]?.(event, deps);
 }

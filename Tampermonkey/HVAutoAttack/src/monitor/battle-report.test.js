@@ -32,6 +32,15 @@ describe("battle report query", () => {
     expect(getValue(STORAGE_KEYS.STATS, true)).toBeNull();
   });
 
+  it("rejects unknown and null report events without writing report storage", () => {
+    expect(runBattleReportAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runBattleReportAutomation(null)).toBeUndefined();
+
+    expect(getValue(STORAGE_KEYS.BATTLE_CODE, true)).toBeNull();
+    expect(getValue(STORAGE_KEYS.DROP, true)).toBeNull();
+    expect(getValue(STORAGE_KEYS.STATS, true)).toBeNull();
+  });
+
   it("records battle report code once when per-battle records are enabled", () => {
     runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", recordEach: true } });
     setRoundContext("ar", 1, 5);
