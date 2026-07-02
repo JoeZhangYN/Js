@@ -106,4 +106,27 @@ describe("runBattleActionSpeedAutomation", () => {
       expect.stringContaining('"storageWriteOk":true')
     );
   });
+
+  it("keeps unknown action speed events rejected when evidence storage is unavailable", () => {
+    const { deps } = makeDeps();
+    deps.sessionStorage.setItem.mockImplementation(() => {
+      throw new Error("quota");
+    });
+
+    expect(runBattleActionSpeedAutomation({ type: "unknown" }, deps)).toBe(false);
+
+    expect(deps.now).not.toHaveBeenCalled();
+    expect(deps.read).not.toHaveBeenCalled();
+    expect(deps.write).not.toHaveBeenCalled();
+    expect(deps.debug).toHaveBeenCalledWith(
+      "[HVAA] battle action speed",
+      expect.objectContaining({
+        decision: "rejected",
+        reason: "unknownActionSpeedEvent",
+        eventType: "unknown",
+        storageWriteOk: false,
+        storageWriteError: "quota",
+      })
+    );
+  });
 });

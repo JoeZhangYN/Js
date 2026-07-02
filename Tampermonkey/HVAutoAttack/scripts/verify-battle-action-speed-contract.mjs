@@ -67,9 +67,11 @@ requireText(ownerTest, [
   "records rejected unknown events without reading or writing runtime state",
   "records rejected null events without reading or writing runtime state",
   "keeps unknown action speed events rejected when debug output fails",
+  "keeps unknown action speed events rejected when evidence storage is unavailable",
   "HVAA:lastBattleActionSpeed",
   "console blocked",
   '"storageWriteOk":true',
+  'storageWriteError: "quota"',
 ]);
 
 if (
@@ -83,7 +85,9 @@ if (!/const battleActionSpeedEventHandlers\s*=\s*Object\.freeze\(/.test(ownerTex
   violations.push(`${owner.replaceAll("\\", "/")} must route events through one table`);
 }
 if (!ownerText.includes("battleActionSpeedEventHandlers[event?.type]")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must reject null events without touching runtime state`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must reject null events without touching runtime state`
+  );
 }
 if (!ownerText.includes("?? rejectUnknownActionSpeedEvent(event, deps)")) {
   violations.push(`${owner.replaceAll("\\", "/")} must record rejected action speed events`);
