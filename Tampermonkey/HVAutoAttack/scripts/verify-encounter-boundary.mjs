@@ -240,6 +240,7 @@ const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const policyTestText = fs.readFileSync(path.join(root, policyTest), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
+const widgetPolicyTestText = fs.readFileSync(path.join(root, widgetPolicyTest), "utf8");
 if (!/\bfunction executeEncounterEntry\b/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must execute manual and automatic encounter entry through one function`
@@ -256,19 +257,28 @@ for (const required of [
   }
 }
 if (!ownerText.includes("const encounterEventHandlers")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route encounter events through a handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route encounter events through a handler table`
+  );
 }
 const ownerEntryMatch = ownerText.match(/export function runEncounterAutomation[\s\S]*?\n}/);
 if (!ownerEntryMatch) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose runEncounterAutomation(event)`);
 } else {
   const entryBody = ownerEntryMatch[0];
-  if (/if\s*\(\s*event\.type\s*===/.test(entryBody) || /event\.type\?\.startsWith/.test(entryBody)) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce event.type branching`);
+  if (
+    /if\s*\(\s*event\.type\s*===/.test(entryBody) ||
+    /event\.type\?\.startsWith/.test(entryBody)
+  ) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must not reintroduce event.type branching`
+    );
   }
   for (const internal of ["runLobbyTick(", "markRandomEncounterStarted(", "executeWidgetEvent("]) {
     if (entryBody.includes(internal)) {
-      violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through encounterEventHandlers`);
+      violations.push(
+        `${owner.replaceAll("\\", "/")} entry must dispatch through encounterEventHandlers`
+      );
     }
   }
 }
@@ -291,7 +301,11 @@ if (!stateEntryMatch) {
       `${stateHelper.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
     );
   }
-  for (const internal of ["readCurrentReState(", "markRandomEncounterStarted(", "loadEncounterKey("]) {
+  for (const internal of [
+    "readCurrentReState(",
+    "markRandomEncounterStarted(",
+    "loadEncounterKey(",
+  ]) {
     if (entryBody.includes(internal)) {
       violations.push(
         `${stateHelper.replaceAll("\\", "/")} entry must dispatch through encounterStateEventHandlers`
@@ -327,7 +341,9 @@ if (!/\bREAD_CLOCK\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose one encounter clock query`);
 }
 if (!/\bMARK_ATTEMPTED\b/.test(policyText)) {
-  violations.push(`${policyFile.replaceAll("\\", "/")} must expose attempted encounter entry state`);
+  violations.push(
+    `${policyFile.replaceAll("\\", "/")} must expose attempted encounter entry state`
+  );
 }
 if (/\bREADINESS\b/.test(policyText)) {
   violations.push(
@@ -336,16 +352,16 @@ if (/\bREADINESS\b/.test(policyText)) {
 }
 const clockBody = policyText.match(/function readEncounterClock[\s\S]*?\n}/)?.[0] || "";
 if (!clockBody.includes("if (readiness.canEnter)")) {
-  violations.push(`${policyFile.replaceAll("\\", "/")} must let available encounter keys bypass cooldown countdown`);
+  violations.push(
+    `${policyFile.replaceAll("\\", "/")} must let available encounter keys bypass cooldown countdown`
+  );
 }
-if (
-  clockBody.indexOf("if (readiness.canEnter)") > clockBody.indexOf("readiness.remainingMs > 0")
-) {
+if (clockBody.indexOf("if (readiness.canEnter)") > clockBody.indexOf("readiness.remainingMs > 0")) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must check keyAvailable before cooldown`);
 }
 for (const required of [
   "treats an available encounter key as ready instead of counting another cooldown",
-  "reason: \"keyAvailable\"",
+  'reason: "keyAvailable"',
   "countdownMs: 0",
 ]) {
   if (!policyTestText.includes(required)) {
@@ -362,7 +378,10 @@ if (!policyEntryMatch) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose runEncounterPolicy(event)`);
 } else {
   const entryBody = policyEntryMatch[0];
-  if (/switch\s*\(\s*event\.type\s*\)/.test(entryBody) || /if\s*\(\s*event\.type\s*===/.test(entryBody)) {
+  if (
+    /switch\s*\(\s*event\.type\s*\)/.test(entryBody) ||
+    /if\s*\(\s*event\.type\s*===/.test(entryBody)
+  ) {
     violations.push(
       `${policyFile.replaceAll("\\", "/")} entry must not reintroduce event.type branching`
     );
@@ -488,6 +507,37 @@ if (!/\bWIDGET_TIMER_ELAPSED\b/.test(hvUtilsText)) {
   violations.push(
     `${hvUtilsFile.replaceAll("\\", "/")} widget countdown expiry must report WIDGET_TIMER_ELAPSED`
   );
+}
+if (!/unavailableReason\s*=== ['"]equipmentInventoryFull['"]/.test(hvUtilsText)) {
+  violations.push(
+    `${hvUtilsFile.replaceAll("\\", "/")} equipment inventory prompt must require typed unavailableReason`
+  );
+}
+if (
+  /outcome\?\.action === ['"]unavailable['"][\s\S]{0,180}你的装备仓库快要满了/.test(hvUtilsText) &&
+  !/outcome\?\.action === ['"]unavailable['"][^\n]+unavailableReason\s*=== ['"]equipmentInventoryFull['"]/.test(
+    hvUtilsText
+  )
+) {
+  violations.push(
+    `${hvUtilsFile.replaceAll("\\", "/")} must not map generic encounter unavailable to equipment inventory prompt`
+  );
+}
+for (const required of [
+  "equipmentInventoryFull",
+  "encounterKeyMissing",
+  "Your equipment inventory is full",
+]) {
+  if (!widgetPolicyText.includes(required)) {
+    violations.push(
+      `${widgetPolicyFile.replaceAll("\\", "/")} must classify widget unavailable reason ${required}`
+    );
+  }
+  if (!widgetPolicyTestText.includes(required)) {
+    violations.push(
+      `${widgetPolicyTest.replaceAll("\\", "/")} must lock widget unavailable reason ${required}`
+    );
+  }
 }
 
 if (violations.length) {
