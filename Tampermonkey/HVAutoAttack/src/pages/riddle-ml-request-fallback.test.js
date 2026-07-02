@@ -34,6 +34,7 @@ vi.mock("./riddle-image.js", () => ({
 
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
   runOptionAutomation({ type: OptionEvent.CLEAR });
   vi.clearAllMocks();
   mocks.runRiddleImageAutomation.mockResolvedValue({ blob: { size: 12 } });
@@ -125,5 +126,21 @@ describe("riddle ML request fallback", () => {
       fallback: "random",
     });
     expect(mocks.runAlarmAutomation).toHaveBeenCalledWith({ type: "trigger", kind: "Error" });
+  });
+
+  it("keeps duplicate ML requests random when fallback evidence and warning both fail", async () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
+      if (key === "HVAA:lastRiddleMlAnswerFailure") throw new Error("quota");
+      return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {
+      throw new Error("console blocked");
+    });
+    mocks.gmXhr.mockImplementation(() => {});
+
+    runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER });
+    await Promise.resolve();
+
+    await expect(runRiddleMlAutomation({ type: RiddleMlEvent.TRY_ANSWER })).resolves.toBeNull();
   });
 });

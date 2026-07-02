@@ -509,6 +509,10 @@ function checkRiddleMlEntry() {
     "onload_exception console hook failed",
     "onerror status=0",
     "timeout (>12s)",
+    "keeps duplicate ML requests random when fallback evidence and warning both fail",
+    'throw new Error("quota")',
+    'throw new Error("console blocked")',
+    "resolves.toBeNull()",
   ]) {
     if (!requestFallbackTestText.includes(required)) {
       violations.push(`${requestFallbackTest.replaceAll("\\", "/")} must cover ${required}`);
