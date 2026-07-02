@@ -132,6 +132,6 @@ function renderRiddleStatsReportRows() {
 }
 
 export function runRiddleStatsAutomation(event = { type: EVENT_READ }) {
-  const handler = riddleStatsEventHandlers[event.type];
+  const handler = riddleStatsEventHandlers[event?.type];
   return handler ? handler(event) : undefined;
 }
