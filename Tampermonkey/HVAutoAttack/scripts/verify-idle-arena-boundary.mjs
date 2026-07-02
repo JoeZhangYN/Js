@@ -126,7 +126,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   for (const required of [
     "rejects unknown idle arena events without starting a battle",
+    "runIdleArenaAutomation(null)",
     "expect(mocks.post).not.toHaveBeenCalled()",
+    "expect(vi.getTimerCount()).toBe(0)",
   ]) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);

@@ -66,8 +66,10 @@ describe("runIdleArenaAutomation", () => {
     });
 
     expect(runIdleArenaAutomation({ type: "unknown" })).toBe(false);
+    expect(runIdleArenaAutomation(null)).toBe(false);
 
     expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
     expect(mocks.post).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

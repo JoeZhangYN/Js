@@ -21,6 +21,9 @@ const responseScriptMalformedJsonTest = path.normalize(
 const recovery = path.normalize("src/battle/battle-api-response-recovery.js");
 const recoveryState = path.normalize("src/battle/battle-api-response-recovery-state.js");
 const recoveryTest = path.normalize("src/battle/battle-api-response-recovery.test.js");
+const recoveryNullEventTest = path.normalize(
+  "src/battle/battle-api-response-recovery-null-event.test.js"
+);
 const recoveryEffectResultTest = path.normalize(
   "src/battle/battle-api-response-recovery-effect-result.test.js"
 );
@@ -650,6 +653,17 @@ if (
 ) {
   violations.push(
     `${recovery.replaceAll("\\", "/")} must record recovery evidence for unknown events`
+  );
+}
+if (
+  !read(recoveryNullEventTest).includes(
+    "rejects null recovery events with structured evidence instead of reloading"
+  ) ||
+  !read(recoveryNullEventTest).includes("runBattleApiResponseRecovery(null, deps)") ||
+  !read(recoveryNullEventTest).includes('reason: "unknownApiResponseRecoveryEvent"')
+) {
+  violations.push(
+    `${recoveryNullEventTest.replaceAll("\\", "/")} must lock null recovery event evidence`
   );
 }
 if (
