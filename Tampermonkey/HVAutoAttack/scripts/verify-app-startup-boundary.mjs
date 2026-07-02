@@ -130,6 +130,9 @@ function checkEntry() {
   if (!/recordAppStartupFailure\("requestInitialConfig",\s*"missingConfigButton"/.test(text)) {
     violations.push(`${rel(entryFile)} must classify missing initial config button failures`);
   }
+  if (!/recordAppStartupFailure\("requestInitialConfig",\s*"configButtonClickFailed"/.test(text)) {
+    violations.push(`${rel(entryFile)} must classify initial config button click failures`);
+  }
   if (!/recordAppStartupFailure\("warnDefaultFont",\s*"warningFailed"/.test(text)) {
     violations.push(`${rel(entryFile)} must isolate default font warning failures`);
   }
@@ -166,10 +169,14 @@ function checkEntry() {
     : "";
   for (const required of [
     "does not report startup success when failure evidence and warning both fail",
+    "records config button click failures without continuing game-page startup",
     "APP_STARTUP_FAILURE_KEY",
     'throw new Error("quota")',
+    'throw new Error("settings blocked")',
     'throw new Error("console blocked")',
+    "configButtonClickFailed",
     "expect(mocks.runRiddleDatasetAutomation).not.toHaveBeenCalled()",
+    "expect(mocks.runAbilityAoeAutomation).not.toHaveBeenCalled()",
   ]) {
     if (!failureTestText.includes(required)) {
       violations.push(`${rel(failureTestFile)} must cover ${required}`);

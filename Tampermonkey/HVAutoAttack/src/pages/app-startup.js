@@ -127,7 +127,13 @@ function requestInitialConfig() {
     recordAppStartupFailure("requestInitialConfig", "missingConfigButton");
     return false;
   }
-  button.click();
+  try {
+    button.click();
+  } catch (error) {
+    recordAppStartupFailure("requestInitialConfig", "configButtonClickFailed", {
+      error: startupErrorText(error),
+    });
+  }
   return false;
 }
 
