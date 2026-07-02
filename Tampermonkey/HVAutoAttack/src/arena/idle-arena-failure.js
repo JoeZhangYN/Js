@@ -1,3 +1,6 @@
+import { setValue } from "../state/storage.js";
+import { STORAGE_KEYS } from "../state/persist-keys.js";
+
 export const IDLE_ARENA_FAILURE_KEY = "HVAA:lastIdleArenaFailure";
 
 export function recordIdleArenaFailure(evidence) {
@@ -12,4 +15,19 @@ export function recordIdleArenaFailure(evidence) {
     // Console hooks are diagnostic only.
   }
   return evidence;
+}
+
+export function persistIdleArenaProgress(stage, arena) {
+  try {
+    setValue(STORAGE_KEYS.ARENA, arena);
+    return true;
+  } catch (error) {
+    recordIdleArenaFailure({
+      capability: "idleArena",
+      source: "idleArena",
+      stage,
+      failure: { kind: "storageWrite", error: error?.message || String(error) },
+    });
+    return false;
+  }
 }

@@ -10,7 +10,7 @@ import { isIsekai } from "../env.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
 import { IDLE_ARENA_TOKEN_URLS, collectIdleArenaToken } from "./idle-arena-token.js";
-import { recordIdleArenaFailure } from "./idle-arena-failure.js";
+import { recordIdleArenaFailure, persistIdleArenaProgress } from "./idle-arena-failure.js";
 
 const EVENT_SCHEDULE_NEXT_BATTLE = "scheduleNextBattle";
 const EVENT_START_NEXT_BATTLE = "startNextBattle";
@@ -54,7 +54,7 @@ function resetProgress() {
 function recordIdleArenaRequestFailure(stage, arena, failure) {
   const evidence = { capability: "idleArena", source: "idleArena", stage, failure };
   recordIdleArenaFailure(evidence);
-  setValue(STORAGE_KEYS.ARENA, { ...arena, requestFailure: evidence });
+  persistIdleArenaProgress("request-failure", { ...arena, requestFailure: evidence });
 }
 
 function startNextBattle() {
@@ -86,7 +86,7 @@ function startNextBattle() {
     // 轮询至 4 个 token POST 全部返回 → 存档 + 重入 idleArena
     pollUntil(() => arena.token.length >= 4 || tokenFailed).then(() => {
       if (tokenFailed) return;
-      setValue(STORAGE_KEYS.ARENA, arena);
+      if (!persistIdleArenaProgress("token-persist", arena)) return;
       setTimeout(startNextBattle, 200);
     });
     return;
@@ -121,13 +121,13 @@ function startNextBattle() {
     }
   }
   if (arena.array.length === 0) {
-    setValue(STORAGE_KEYS.ARENA, arena);
+    persistIdleArenaProgress("progress-persist", arena);
     return;
   }
   document.title = _alert(-1, "闲置竞技场", "閒置競技場開始", "Idle Arena start");
   if (arena.array[0] === "gr" && arena.gr <= 0) {
     arena.array.splice(0, 1);
-    setValue(STORAGE_KEYS.ARENA, arena);
+    if (!persistIdleArenaProgress("progress-persist", arena)) return;
     startNextBattle();
     return;
   }
@@ -146,7 +146,7 @@ function startNextBattle() {
   post(
     `?s=Battle&ss=${href}`,
     () => {
-      setValue(STORAGE_KEYS.ARENA, arena);
+      persistIdleArenaProgress("battle-start-persist", arena);
       reloadCurrentPage();
     },
     isIsekai

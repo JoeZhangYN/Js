@@ -59,6 +59,7 @@ function checkFile(file) {
     }
     if (
       relative !== owner &&
+      relative !== failureOwner &&
       relative !== ownerTest &&
       relative !== failureTest &&
       relative !== storageKeys &&
@@ -111,6 +112,9 @@ for (const required of [
 }
 for (const required of [
   "IDLE_ARENA_FAILURE_KEY",
+  "persistIdleArenaProgress",
+  "stage",
+  "storageWrite",
   "globalThis.sessionStorage?.setItem(IDLE_ARENA_FAILURE_KEY",
   "Idle arena recovery must not depend on diagnostic storage.",
 ]) {
@@ -211,11 +215,16 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     : "";
   for (const required of [
     "records token fetch failure without continuing when diagnostics are blocked",
+    "records token persistence failure without scheduling a battle retry",
+    "records battle-start progress persistence failure without throwing from callback",
     "IDLE_ARENA_FAILURE_KEY",
     'throw new Error("quota")',
+    'throw new Error("arena write blocked")',
     'throw new Error("console blocked")',
     "expect(vi.getTimerCount()).toBe(0)",
     "stage: \"token-fetch\"",
+    "stage: \"token-persist\"",
+    "stage: \"battle-start-persist\"",
   ]) {
     if (!failureTestText.includes(required)) {
       violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
