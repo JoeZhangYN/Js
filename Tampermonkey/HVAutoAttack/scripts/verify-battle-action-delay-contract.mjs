@@ -74,9 +74,11 @@ requireText(ownerRejectionTest, [
   "rejects unknown events without reading delay options",
   "rejects null events without reading delay options or touching timers",
   "keeps unknown action delay events rejected when debug output fails",
+  "keeps unknown action delay events rejected when evidence storage is unavailable",
   "HVAA:lastBattleActionDelay",
   "console blocked",
   "storageWriteOk: true",
+  'storageWriteError: "quota"',
   "eventType: null",
 ]);
 requireText(watchdogDetailTest, [

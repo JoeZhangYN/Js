@@ -74,4 +74,30 @@ describe("runBattleActionDelayAutomation event rejection", () => {
       storageWriteOk: true,
     });
   });
+
+  it("keeps unknown action delay events rejected when evidence storage is unavailable", () => {
+    const deps = makeDeps();
+    deps.sessionStorage = {
+      setItem: vi.fn(() => {
+        throw new Error("quota");
+      }),
+    };
+
+    expect(runBattleActionDelayAutomation({ type: "unknown" }, deps)).toBe(false);
+
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
+    expect(deps.schedule).not.toHaveBeenCalled();
+    expect(deps.scheduleReload).not.toHaveBeenCalled();
+    expect(deps.cancel).not.toHaveBeenCalled();
+    expect(deps.debug).toHaveBeenCalledWith(
+      "[HVAA] battle action delay",
+      expect.objectContaining({
+        decision: "rejected",
+        reason: "unknownActionDelayEvent",
+        eventType: "unknown",
+        storageWriteOk: false,
+        storageWriteError: "quota",
+      })
+    );
+  });
 });
