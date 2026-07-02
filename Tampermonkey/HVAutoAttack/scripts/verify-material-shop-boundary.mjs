@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/repair/material-shop.js");
 const ownerTest = path.normalize("src/repair/material-shop.test.js");
+const httpFailureTest = path.normalize("src/repair/material-shop-http-failure.test.js");
 const violations = [];
 
 function rel(file) {
@@ -27,6 +28,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== httpFailureTest &&
       /from\s+["'](?:\.\/|\.\.\/repair\/)material-shop\.js["']/.test(line) &&
       (!/\bMaterialShopEvent\b/.test(line) || !/\brunMaterialShopAutomation\b/.test(line))
     ) {
@@ -35,6 +37,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== ownerTest &&
+      relative !== httpFailureTest &&
       /\b(?:parseShopPage|ensureMaterials)\b/.test(line)
     ) {
       violations.push(`${where} material shop internals must stay behind the entry`);
@@ -79,6 +82,22 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     !ownerTestText.includes("runMaterialShopAutomation(null")
   ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null material shop events`);
+  }
+}
+
+if (!fs.existsSync(path.join(root, httpFailureTest))) {
+  violations.push(`${httpFailureTest.replaceAll("\\", "/")} must cover material shop HTTP failures`);
+} else {
+  const httpFailureTestText = fs.readFileSync(path.join(root, httpFailureTest), "utf8");
+  for (const required of [
+    "初始商店页读取失败 → buy-error with failure detail",
+    "买请求 POST 失败 → buy-error with failure detail",
+    "kind: \"networkError\"",
+    "kind: \"httpStatus\"",
+  ]) {
+    if (!httpFailureTestText.includes(required)) {
+      violations.push(`${httpFailureTest.replaceAll("\\", "/")} must cover material shop HTTP failures`);
+    }
   }
 }
 

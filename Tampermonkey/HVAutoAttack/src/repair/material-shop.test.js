@@ -25,8 +25,8 @@ function shopDoc({ networth = 10000, itemPane = [], shopPane = [] }) {
 /** 注入式 post：GET(parm 为空) 返 shop 页；POST 返 buyDoc（默认无 messagebox=成功）。记录调用。 */
 function makePost(shop, buyDoc) {
   const calls = [];
-  const post = (href, func, parm) => {
-    calls.push({ href, parm });
+  const post = (href, func, parm, type, onFailure) => {
+    calls.push({ href, parm, type, onFailure });
     func(parm === undefined ? shop : buyDoc || doc("<div></div>"));
   };
   return { post, calls };

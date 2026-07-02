@@ -97,6 +97,7 @@ function buyError(doc) {
  */
 function ensureMaterials(required, opt, cb, deps = {}) {
   const post = deps.post || realPost;
+  const failBuy = (failure) => cb({ ok: false, reason: "buy-error", detail: failure });
   post(SHOP_URL, (doc) => {
     const { storetoken, networth, held, shop } = parseShopPage(doc);
     const shortfall = computeShortfall(required, held);
@@ -151,11 +152,13 @@ function ensureMaterials(required, opt, cb, deps = {}) {
           }
           buyNext();
         },
-        `storetoken=${storetoken}&select_mode=shop_pane&select_item=${item.id}&select_count=${item.count}`
+        `storetoken=${storetoken}&select_mode=shop_pane&select_item=${item.id}&select_count=${item.count}`,
+        undefined,
+        failBuy
       );
     };
     buyNext();
-  });
+  }, undefined, undefined, failBuy);
 }
 
 export function runMaterialShopAutomation(event, deps = {}) {
