@@ -116,6 +116,6 @@ function parseAbilityPage() {
 }
 
 export function runAbilityAoeAutomation(event = { type: EVENT_CAPTURE_ABILITY_PAGE }) {
-  const handler = abilityAoeEventHandlers[event.type];
+  const handler = abilityAoeEventHandlers[event?.type];
   return handler ? handler(event) : undefined;
 }

@@ -83,6 +83,12 @@ function checkEntry() {
     violations.push(`${owner.replaceAll("\\", "/")} must expose runAbilityAoeAutomation(event)`);
   } else {
     const entryBody = entryMatch[0];
+    if (entryBody.includes("event.type")) {
+      violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
+    }
+    if (!entryBody.includes("event?.type")) {
+      violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+    }
     if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
       violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
     }
@@ -99,6 +105,13 @@ function checkEntry() {
   }
   if (/export function parseAbilityPage\(/.test(text)) {
     violations.push(`${owner.replaceAll("\\", "/")} must keep parseAbilityPage internal`);
+  }
+  const testText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+  if (
+    !testText.includes("rejects unknown and null ability AoE events without reading or writing state") ||
+    !testText.includes("runAbilityAoeAutomation(null)")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null ability AoE events`);
   }
 }
 

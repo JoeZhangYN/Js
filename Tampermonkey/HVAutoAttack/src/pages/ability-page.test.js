@@ -46,9 +46,13 @@ describe("runAbilityAoeAutomation", () => {
     });
   });
 
-  it("ignores unknown ability AoE events at the entry", () => {
+  it("rejects unknown and null ability AoE events without reading or writing state", () => {
     expect(runAbilityAoeAutomation({ type: "unknown" })).toBeUndefined();
+    expect(runAbilityAoeAutomation(null)).toBeUndefined();
     expect(mocks.gE).not.toHaveBeenCalled();
+    expect(mocks.getValue).not.toHaveBeenCalled();
+    expect(mocks.g).not.toHaveBeenCalled();
+    expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
     expect(mocks.setValue).not.toHaveBeenCalled();
   });
 
