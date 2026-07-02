@@ -114,5 +114,5 @@ const monsterDbSyncEventHandlers = Object.freeze({
 });
 
 export function runMonsterDbSyncAutomation(event = { type: EVENT_SYNC_REQUESTED }, deps = {}) {
-  return monsterDbSyncEventHandlers[event.type]?.(event, deps);
+  return monsterDbSyncEventHandlers[event?.type]?.(event, deps);
 }

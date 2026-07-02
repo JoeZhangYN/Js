@@ -53,6 +53,24 @@ function checkEntry() {
   if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(text)) {
     violations.push(`${entry.replaceAll("\\", "/")} must not route events through an if ladder`);
   }
+  const entryBody =
+    text.match(/export function runMonsterKnowledgeAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/monsterKnowledgeEventHandlers\[event\.type\]/.test(entryBody)) {
+    violations.push(`${entry.replaceAll("\\", "/")} entry must fail closed for invalid knowledge events`);
+  }
+  if (!/monsterKnowledgeEventHandlers\[event\?\.type\]/.test(entryBody)) {
+    violations.push(
+      `${entry.replaceAll("\\", "/")} entry must dispatch invalid knowledge events through optional type`
+    );
+  }
+  const entryTest = path.normalize("src/battle/monster-knowledge-automation.test.js");
+  const entryTestText = fs.existsSync(path.join(root, entryTest))
+    ? fs.readFileSync(path.join(root, entryTest), "utf8")
+    : "";
+  if (!/runMonsterKnowledgeAutomation\(null\)/.test(entryTestText)) {
+    violations.push(`${entryTest.replaceAll("\\", "/")} must cover null knowledge events`);
+  }
   for (const required of [
     "runMonsterDbSyncAutomation",
     "MonsterDbSyncEvent.SYNC_REQUESTED",
@@ -96,6 +114,22 @@ function checkEntry() {
     violations.push(
       `${syncImpl.replaceAll("\\", "/")} must not route sync events through an if ladder`
     );
+  }
+  const syncEntryBody =
+    syncText.match(/export function runMonsterDbSyncAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/monsterDbSyncEventHandlers\[event\.type\]/.test(syncEntryBody)) {
+    violations.push(`${syncImpl.replaceAll("\\", "/")} entry must fail closed for invalid sync events`);
+  }
+  if (!/monsterDbSyncEventHandlers\[event\?\.type\]/.test(syncEntryBody)) {
+    violations.push(
+      `${syncImpl.replaceAll("\\", "/")} entry must dispatch invalid sync events through optional type`
+    );
+  }
+  const syncTest = path.normalize("src/battle/monster-db-sync.test.js");
+  const syncTestText = fs.readFileSync(path.join(root, syncTest), "utf8");
+  if (!/runMonsterDbSyncAutomation\(null/.test(syncTestText)) {
+    violations.push(`${syncTest.replaceAll("\\", "/")} must cover null sync events`);
   }
   if (/export\s+async\s+function\s+syncMonsterDb\(/.test(syncText)) {
     violations.push(
@@ -164,6 +198,22 @@ function checkEntry() {
       `${scanImpl.replaceAll("\\", "/")} must not route scan events through an if ladder`
     );
   }
+  const scanEntryBody =
+    scanText.match(/export function runMonsterScanLearningAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/monsterScanLearningEventHandlers\[event\.type\]/.test(scanEntryBody)) {
+    violations.push(`${scanImpl.replaceAll("\\", "/")} entry must fail closed for invalid scan learning events`);
+  }
+  if (!/monsterScanLearningEventHandlers\[event\?\.type\]/.test(scanEntryBody)) {
+    violations.push(
+      `${scanImpl.replaceAll("\\", "/")} entry must dispatch invalid scan learning events through optional type`
+    );
+  }
+  const scanTest = path.normalize("src/battle/monster-db-scan.test.js");
+  const scanTestText = fs.readFileSync(path.join(root, scanTest), "utf8");
+  if (!/runMonsterScanLearningAutomation\(null/.test(scanTestText)) {
+    violations.push(`${scanTest.replaceAll("\\", "/")} must cover null scan learning events`);
+  }
   if (/export\s+function\s+startMonsterScanLearning\(/.test(scanText)) {
     violations.push(
       `${scanImpl.replaceAll("\\", "/")} must keep startMonsterScanLearning private behind runMonsterScanLearningAutomation(event)`
@@ -205,6 +255,22 @@ function checkEntry() {
     violations.push(
       `${scanResultImpl.replaceAll("\\", "/")} must not route scan result events through an if ladder`
     );
+  }
+  const scanResultEntryBody =
+    scanResultText.match(/export function runMonsterScanResultLearning\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
+    "";
+  if (/monsterScanResultEventHandlers\[event\.type\]/.test(scanResultEntryBody)) {
+    violations.push(`${scanResultImpl.replaceAll("\\", "/")} entry must fail closed for invalid scan result events`);
+  }
+  if (!/monsterScanResultEventHandlers\[event\?\.type\]/.test(scanResultEntryBody)) {
+    violations.push(
+      `${scanResultImpl.replaceAll("\\", "/")} entry must dispatch invalid scan result events through optional type`
+    );
+  }
+  const scanResultTest = path.normalize("src/battle/monster-scan-result-learning.test.js");
+  const scanResultTestText = fs.readFileSync(path.join(root, scanResultTest), "utf8");
+  if (!/runMonsterScanResultLearning\(null/.test(scanResultTestText)) {
+    violations.push(`${scanResultTest.replaceAll("\\", "/")} must cover null scan result events`);
   }
   for (const required of [
     "parseScanResult",

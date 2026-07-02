@@ -58,5 +58,5 @@ const monsterScanLearningEventHandlers = Object.freeze({
 });
 
 export function runMonsterScanLearningAutomation(event = { type: EVENT_START }, deps = {}) {
-  return monsterScanLearningEventHandlers[event.type]?.(event, deps) || false;
+  return monsterScanLearningEventHandlers[event?.type]?.(event, deps) || false;
 }

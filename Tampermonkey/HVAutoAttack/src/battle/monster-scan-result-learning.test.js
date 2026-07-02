@@ -86,4 +86,11 @@ describe("monster scan result learning", () => {
     ).toBe(false);
     expect(storeProfile).not.toHaveBeenCalled();
   });
+
+  it("rejects unknown and null scan result events without writing", () => {
+    const storeProfile = vi.fn();
+    expect(runMonsterScanResultLearning({ type: "unknown" }, { storeProfile })).toBe(false);
+    expect(runMonsterScanResultLearning(null, { storeProfile })).toBe(false);
+    expect(storeProfile).not.toHaveBeenCalled();
+  });
 });

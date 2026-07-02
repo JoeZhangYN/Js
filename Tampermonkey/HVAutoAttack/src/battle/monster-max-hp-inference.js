@@ -93,5 +93,5 @@ function applyDeathInferences(event, deps) {
 }
 
 export function runMonsterMaxHpInference(event = { type: EVENT_APPLY_DEATHS }, deps = {}) {
-  return monsterMaxHpInferenceEventHandlers[event.type]?.(event, deps) ?? [];
+  return monsterMaxHpInferenceEventHandlers[event?.type]?.(event, deps) ?? [];
 }

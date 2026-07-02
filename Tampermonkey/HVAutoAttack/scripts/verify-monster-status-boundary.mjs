@@ -440,12 +440,23 @@ function checkMaxHpInference() {
   if (/event\.type\s*===/.test(entryBody)) {
     violations.push(`${maxHpInference.replaceAll("\\", "/")} entry must dispatch by handler table`);
   }
+  if (/monsterMaxHpInferenceEventHandlers\[event\.type\]/.test(entryBody)) {
+    violations.push(`${maxHpInference.replaceAll("\\", "/")} entry must fail closed for invalid max HP inference events`);
+  }
+  if (!/monsterMaxHpInferenceEventHandlers\[event\?\.type\]/.test(entryBody)) {
+    violations.push(
+      `${maxHpInference.replaceAll("\\", "/")} entry must dispatch invalid max HP inference events through optional type`
+    );
+  }
   if (!fs.existsSync(path.join(root, maxHpInferenceTest))) {
     violations.push(`${maxHpInferenceTest.replaceAll("\\", "/")} must cover max HP inference entry`);
   } else {
     const testText = fs.readFileSync(path.join(root, maxHpInferenceTest), "utf8");
     if (!testText.includes("rejects unknown monster max HP inference events without reading or writing")) {
       violations.push(`${maxHpInferenceTest.replaceAll("\\", "/")} must cover unknown max HP inference events`);
+    }
+    if (!/runMonsterMaxHpInference\(null/.test(testText)) {
+      violations.push(`${maxHpInferenceTest.replaceAll("\\", "/")} must cover null max HP inference events`);
     }
   }
 }

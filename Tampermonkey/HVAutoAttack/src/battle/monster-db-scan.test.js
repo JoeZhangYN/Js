@@ -83,4 +83,11 @@ describe("runMonsterScanLearningAutomation", () => {
       )
     ).toBe(false);
   });
+
+  it("rejects unknown and null scan learning events without observing", () => {
+    const MutationObserver = vi.fn();
+    expect(runMonsterScanLearningAutomation({ type: "unknown" }, { MutationObserver })).toBe(false);
+    expect(runMonsterScanLearningAutomation(null, { MutationObserver })).toBe(false);
+    expect(MutationObserver).not.toHaveBeenCalled();
+  });
 });

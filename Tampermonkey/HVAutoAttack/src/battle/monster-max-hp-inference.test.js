@@ -77,6 +77,7 @@ describe("monster max HP inference", () => {
     expect(readStoredMaxHp).not.toHaveBeenCalled();
     expect(writeStoredMaxHp).not.toHaveBeenCalled();
     expect(monsterStatus[0].inferredMaxHP).toBeUndefined();
+    expect(runMonsterMaxHpInference(null, { readStoredMaxHp, writeStoredMaxHp })).toEqual([]);
   });
 
   it("uses the event battle log instead of reading battle log itself", () => {

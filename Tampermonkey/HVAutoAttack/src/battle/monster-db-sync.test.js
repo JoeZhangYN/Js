@@ -6,6 +6,13 @@ function syncRequested(extra = {}) {
 }
 
 describe("runMonsterDbSyncAutomation", () => {
+  it("rejects unknown and null sync events without network calls", () => {
+    const gmXhr = vi.fn();
+    expect(runMonsterDbSyncAutomation({ type: "unknown" }, { gmXhr })).toBeUndefined();
+    expect(runMonsterDbSyncAutomation(null, { gmXhr })).toBeUndefined();
+    expect(gmXhr).not.toHaveBeenCalled();
+  });
+
   it("skips the daily sync when the profile store is already populated", async () => {
     const gmXhr = vi.fn();
 

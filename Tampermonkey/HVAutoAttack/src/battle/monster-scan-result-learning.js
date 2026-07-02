@@ -82,5 +82,5 @@ const monsterScanResultEventHandlers = Object.freeze({
 });
 
 export function runMonsterScanResultLearning(event = { type: EVENT_RECORD_LOG_ROW }, deps = {}) {
-  return monsterScanResultEventHandlers[event.type]?.(event, deps) || false;
+  return monsterScanResultEventHandlers[event?.type]?.(event, deps) || false;
 }

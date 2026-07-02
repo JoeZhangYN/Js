@@ -35,5 +35,5 @@ const monsterKnowledgeEventHandlers = Object.freeze({
 });
 
 export function runMonsterKnowledgeAutomation(event = { type: EVENT_ROUND_STARTED }) {
-  return monsterKnowledgeEventHandlers[event.type]?.(event);
+  return monsterKnowledgeEventHandlers[event?.type]?.(event);
 }
