@@ -186,6 +186,41 @@ try {
       warn: [],
     };
   };
+  var record_hvut_shrine_capacity_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutShrineCapacity', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutShrineCapacityFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Shrine capacity fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] Shrine capacity unavailable', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT Shrine capacity fallback.
+    }
+    return null;
+  };
+  var parse_hvut_inventory_capacity = function (html, stage) {
+    var exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html || '');
+    if (!exec) {
+      return record_hvut_shrine_capacity_failure(stage, { reason: 'inventoryCapacityMissing' });
+    }
+    return {
+      usage: parseInt(exec[1]) + parseInt(exec[2] || 0),
+      capacity: parseInt(exec[3]),
+    };
+  };
+  var update_hvut_shrine_equip_total = function (equip, baseKey) {
+    if (!Number.isFinite(equip[baseKey]) || !Number.isFinite(equip.capacity) || equip.capacity <= 0) {
+      equip.total = null;
+      return null;
+    }
+    equip.total = equip[baseKey] + equip.received - equip.sold - equip.salvaged;
+    return equip.total;
+  };
+  var is_hvut_shrine_equip_capacity_full = function (equip) {
+    return Number.isFinite(equip.total) && Number.isFinite(equip.capacity) && equip.capacity > 0 && equip.total >= equip.capacity;
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -6222,7 +6257,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'is') {
 //* [8] Bazaar - The Shrine
 if (_query.s === 'Bazaar' && _query.ss === 'ss') {
   _ss.node = {};
-  _ss.equip = { capacity: 0, usage: 0, requests: 0, received: 0, sold: 0, salvaged: 0, total: 0 };
+  _ss.equip = { capacity: null, usage: null, requests: 0, received: 0, sold: 0, salvaged: 0, total: null };
 
   _ss.data = {
     trophy: {
@@ -6594,9 +6629,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       });
 
       if (item.type === 'Trophy') {
-        _ss.equip.total = _ss.equip.usage + _ss.equip.received - _ss.equip.sold - _ss.equip.salvaged;
-        _ss.node.results_equip.value = `Inventory Capacity: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, Sold: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, Salvaged: ${_ss.equip.salvaged}` : '');
-        if (_ss.equip.total >= _ss.equip.capacity) {
+        const total = update_hvut_shrine_equip_total(_ss.equip, 'usage');
+        _ss.node.results_equip.value = total === null
+          ? 'Inventory Capacity: unavailable'
+          : `Inventory Capacity: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, Sold: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, Salvaged: ${_ss.equip.salvaged}` : '');
+        if (is_hvut_shrine_equip_capacity_full(_ss.equip)) {
           if (!_ss.error) {
             _ss.error = '你的装备库存已满';
             popup(_ss.error);
@@ -6718,17 +6755,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
   _ss.load_inventory = function () {
     $ajax.fetch('?s=Bazaar&ss=am&screen=organize').then((html) => {
-      const exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html);
-      if (!exec) {
+      const capacity = parse_hvut_inventory_capacity(html, 'shrineInventoryCapacity');
+      if (capacity === null) {
         _ss.node.results_equip.value = 'Inventory Capacity: unavailable';
         return;
       }
-      const usage = parseInt(exec[1]) + parseInt(exec[2] || 0);
-      const capacity = parseInt(exec[3]);
-      _ss.equip.usage = usage;
-      _ss.equip.capacity = capacity;
+      _ss.equip.usage = capacity.usage;
+      _ss.equip.capacity = capacity.capacity;
       _ss.node.results_equip.value = `Inventory Capacity: ${_ss.equip.usage} / ${_ss.equip.capacity}`;
     }).catch(() => {
+      record_hvut_shrine_capacity_failure('shrineInventoryCapacityFetch', { reason: 'requestFailed' });
       _ss.node.results_equip.value = 'Inventory Capacity: unavailable';
     });
   };
@@ -12675,7 +12711,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'is') {
 if (_query.s === 'Bazaar' && _query.ss === 'ss') {
   _ss.log = $config.get('ss_log', {});
   _ss.node = {};
-  _ss.equip = { capacity: 0, current: 0, requests: 0, received: 0, sold: 0, salvaged: 0, total: 0 };
+  _ss.equip = { capacity: null, current: null, requests: 0, received: 0, sold: 0, salvaged: 0, total: null };
   _ss.items = {};
   _ss.trophy = {
     'ManBearPig Tail': { tier: 2, value: 1000 },
@@ -12849,9 +12885,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
           $element('li', [results[r].li, 'afterend'], [n, '.hvut-ss-equip']);
         }
         _ss.equip.received++;
-        _ss.equip.total = _ss.equip.current + _ss.equip.received - _ss.equip.sold - _ss.equip.salvaged;
-        _ss.node.results_equip.value = `装备库存量: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, 已出售: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, 已分解: ${_ss.equip.salvaged}` : '');
-        if (_ss.equip.total >= _ss.equip.capacity) {
+        const total = update_hvut_shrine_equip_total(_ss.equip, 'current');
+        _ss.node.results_equip.value = total === null
+          ? '装备库存量: unavailable'
+          : `装备库存量: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, 已出售: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, 已分解: ${_ss.equip.salvaged}` : '');
+        if (is_hvut_shrine_equip_capacity_full(_ss.equip)) {
           if (!_ss.error) {
             _ss.error = '你的装备库存已满';
             popup(_ss.error);
@@ -13004,15 +13042,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
   // 旧 ?s=Character&ss=in 'Equip Slots' 行随能量模型死亡(exec null, 实站报错证实) → isekai 形态: am organize 屏 Inventory Capacity
   $ajax.fetch('?s=Bazaar&ss=am&screen=organize').then((html) => {
-    const exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html);
-    if (!exec) {
+    const capacity = parse_hvut_inventory_capacity(html, 'legacyShrineInventoryCapacity');
+    if (capacity === null) {
       _ss.node.results_equip.value = '装备库存量: unavailable';
       return;
     }
-    _ss.equip.current = parseInt(exec[1]) + parseInt(exec[2] || 0);
-    _ss.equip.capacity = parseInt(exec[3]);
+    _ss.equip.current = capacity.usage;
+    _ss.equip.capacity = capacity.capacity;
     _ss.node.results_equip.value = `装备库存量: ${_ss.equip.current} / ${_ss.equip.capacity}`;
   }).catch(() => {
+    record_hvut_shrine_capacity_failure('legacyShrineInventoryCapacityFetch', { reason: 'requestFailed' });
     _ss.node.results_equip.value = '装备库存量: unavailable';
   });
 
