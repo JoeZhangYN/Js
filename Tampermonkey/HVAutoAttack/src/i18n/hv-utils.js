@@ -214,6 +214,50 @@ try {
     }
     return false;
   };
+  var record_hvut_character_parse_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutCharacterParse', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutCharacterParseFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Character parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] character parse failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT character parse fallback.
+    }
+    return null;
+  };
+  var parse_hvut_difficulty_from_level_readout = function (doc, stage) {
+    var text = $id('level_readout', doc)?.textContent?.trim() || '';
+    var match = /^(.+) Lv\.(\d+)/.exec(text);
+    return match ? match[1] : record_hvut_character_parse_failure(stage, { text: text });
+  };
+  var parse_hvut_persona_form_state = function (doc, stage) {
+    var form = $id('persona_form', doc);
+    var selector = form?.elements?.persona_set;
+    if (!selector) {
+      return record_hvut_character_parse_failure(stage, { reason: 'personaFormMissing' });
+    }
+    return {
+      pset: parseInt(selector.value),
+      plen: selector.options.length,
+      options: Array.from(selector.options),
+    };
+  };
+  var parse_hvut_equip_set_state = function (doc, stage) {
+    var active = $qs('img[src$="_on.png"]', doc);
+    var eqsl = $id('eqsl', doc);
+    var match = /set(\d+)_on/.exec(active?.src || '');
+    if (!match || !eqsl) {
+      return record_hvut_character_parse_failure(stage, {
+        reason: 'equipSetStateMissing',
+        hasActive: !!active,
+        hasEqsl: !!eqsl,
+      });
+    }
+    return { eset: parseInt(match[1]), elen: eqsl.childElementCount };
+  };
   var parse_hvut_inventory_capacity = function (html, stage) {
     var exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html || '');
     if (!exec) {
@@ -2057,10 +2101,13 @@ const bindDfct = function (dfct, ctx) {
     return dfct.set_button(doc);
   };
   dfct.set_button = function (doc) {
-    const value = /^(.+) Lv\.(\d+)/.exec($id('level_readout', doc).textContent.trim())[1];
-    if (!value) {
+    const value = parse_hvut_difficulty_from_level_readout(doc, 'difficultyLevelReadout');
+    if (value === null) {
       dfct.node.button.textContent = '(属性日: 错误)';
-      return;
+      if (dfct.selector) {
+        dfct.selector.disabled = false;
+      }
+      return false;
     }
     ctx.player.difficulty = value;
     dfct.node.button.textContent = value;
@@ -2097,7 +2144,11 @@ const bindPersona = function (persona, ctx) {
 
   persona.init = function () {
     if ($id('persona_form')) {
-      if (!persona.check_p()) {
+      const personaCheck = persona.check_p();
+      if (personaCheck === null) {
+        return false;
+      }
+      if (!personaCheck) {
         persona.change_e();
       } else {
         persona.set_button();
@@ -2140,11 +2191,15 @@ const bindPersona = function (persona, ctx) {
   };
   persona.check_p = function (doc) {
     const json = persona.json;
-    const pset = parseInt($id('persona_form', doc).elements.persona_set.value);
-    const plen = $id('persona_form', doc).elements.persona_set.options.length;
+    const state = parse_hvut_persona_form_state(doc, 'personaFormState');
+    if (state === null) {
+      return null;
+    }
+    const pset = state.pset;
+    const plen = state.plen;
     const checked = pset === json.pset;
 
-    Array.from($id('persona_form', doc).elements.persona_set.options).forEach((o) => {
+    state.options.forEach((o) => {
       const pset = parseInt(o.value);
       const pname = o.text;
       if (!json[pset]) {
@@ -2156,14 +2211,18 @@ const bindPersona = function (persona, ctx) {
     json.pset = pset;
     json.plen = plen;
     json.pname = json[pset].name;
-    persona.set_value();
+    if (persona.set_value() === false) return null;
     return checked;
   };
   persona.check_e = function (doc) {
     const json = persona.json;
     const pset = json.pset;
-    const eset = parseInt($qs('img[src$="_on.png"]', doc).src.match(/set(\d+)_on/)[1]);
-    const elen = $id('eqsl', doc).childElementCount;
+    const state = parse_hvut_equip_set_state(doc, 'personaEquipSetState');
+    if (state === null) {
+      return false;
+    }
+    const eset = state.eset;
+    const elen = state.elen;
 
     for (let i = 1; i <= elen; i++) {
       if (!json[pset][i]) {
@@ -2174,26 +2233,34 @@ const bindPersona = function (persona, ctx) {
     json.eset = eset;
     json.elen = elen;
     json.ename = json[pset][eset].name;
-    persona.set_value();
+    return persona.set_value();
   };
   persona.change_p = async function (pset) {
     persona.node.button.textContent = '(P...)';
     ctx.dfct.node.button.textContent = '(D...)';
     const html = await $ajax.fetch('?s=Character&ss=ch', pset ? `persona_set=${pset}` : null);
     const doc = $doc(html);
-    persona.check_p(doc);
+    if (persona.check_p(doc) === null) {
+      if (persona.selector_p) persona.selector_p.disabled = false;
+      return false;
+    }
     if (persona.selector_p) {
       persona.selector_p.value = persona.json.pset;
       persona.selector_p.disabled = false;
     }
-    persona.change_e();
-    ctx.dfct.set_button(doc);
+    if ((await persona.change_e()) === false) return false;
+    if (ctx.dfct.set_button(doc) === false) return false;
+    return true;
   };
   persona.change_e = async function (eset) {
     persona.node.button.textContent = '(E...)';
     const html = await $ajax.fetch('?s=Character&ss=eq', eset ? `equip_set=${eset}` : null);
     const doc = $doc(html);
-    persona.check_e(doc);
+    if (persona.check_e(doc) === false) {
+      if (persona.selector_e) persona.selector_e.disabled = false;
+      persona.set_button();
+      return false;
+    }
     const json = persona.json;
     if (persona.selector_e) {
       for (let i = 1; i <= json.elen; i++) {
@@ -5566,7 +5633,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
       .hvut-eq-popups iframe { width: 100%; height: 100%; border: 0; }
     `);
 
-    $persona.check_e();
+    if ($persona.check_e() === false) return;
     $persona.set_button();
     $persona.save_equipset();
 
@@ -12036,7 +12103,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
 
     $id('popup_box').classList.add('hvut-eq-popupbox');
 
-    $persona.check_e();
+    if ($persona.check_e() === false) return;
     $persona.set_button();
     $persona.save_equipset();
 

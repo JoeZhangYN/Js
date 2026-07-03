@@ -64,6 +64,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   HVUT_PLAYER_STATE_PARSE_FAILURE: "HVAA:lastHvutPlayerStateParseFailure",
   HVUT_SHRINE_CAPACITY_FAILURE: "HVAA:lastHvutShrineCapacityFailure",
   HVUT_PRICE_MARKET_PARSE_FAILURE: "HVAA:lastHvutPriceMarketParseFailure",
+  HVUT_CHARACTER_PARSE_FAILURE: "HVAA:lastHvutCharacterParseFailure",
   LOTTERY_NOTIFICATION_FAILURE: "HVAA:lastLotteryNotificationFailure",
 });
 
@@ -82,10 +83,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("battleKillBugRecovery", DiagnosticEvidenceKey.BATTLE_KILL_BUG_RECOVERY),
   source("battleMonsterStatusRepair", DiagnosticEvidenceKey.BATTLE_MONSTER_STATUS_REPAIR),
   source("monsterStatusFailure", DiagnosticEvidenceKey.MONSTER_STATUS_FAILURE),
-  source(
-    "battleMonsterKnowledgePersistence",
-    DiagnosticEvidenceKey.BATTLE_MONSTER_KNOWLEDGE_PERSISTENCE
-  ),
+  source("battleMonsterKnowledgePersistence", DiagnosticEvidenceKey.BATTLE_MONSTER_KNOWLEDGE_PERSISTENCE),
   source("battleTurnWorkflow", DiagnosticEvidenceKey.BATTLE_TURN_WORKFLOW),
   source("battleApiBridge", DiagnosticEvidenceKey.BATTLE_API_BRIDGE),
   source("battleApiResponseRecovery", DiagnosticEvidenceKey.BATTLE_API_RESPONSE_RECOVERY),
@@ -97,10 +95,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("battleActionLifecycle", DiagnosticEvidenceKey.BATTLE_ACTION_LIFECYCLE),
   source("battleActionDecision", DiagnosticEvidenceKey.BATTLE_ACTION_DECISION),
   source("battleActionEffect", DiagnosticEvidenceKey.BATTLE_ACTION_EFFECT),
-  source(
-    "battleActionUsageCaptureFailure",
-    DiagnosticEvidenceKey.BATTLE_ACTION_USAGE_CAPTURE_FAILURE
-  ),
+  source("battleActionUsageCaptureFailure", DiagnosticEvidenceKey.BATTLE_ACTION_USAGE_CAPTURE_FAILURE),
   source("httpRequestFailure", DiagnosticEvidenceKey.HTTP_REQUEST_FAILURE),
   source("staminaRecoveryFailure", DiagnosticEvidenceKey.STAMINA_RECOVERY_FAILURE),
   source("repairBackendFailure", DiagnosticEvidenceKey.REPAIR_BACKEND_FAILURE),
@@ -143,6 +138,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("hvutPlayerStateParseFailure", DiagnosticEvidenceKey.HVUT_PLAYER_STATE_PARSE_FAILURE),
   source("hvutShrineCapacityFailure", DiagnosticEvidenceKey.HVUT_SHRINE_CAPACITY_FAILURE),
   source("hvutPriceMarketParseFailure", DiagnosticEvidenceKey.HVUT_PRICE_MARKET_PARSE_FAILURE),
+  source("hvutCharacterParseFailure", DiagnosticEvidenceKey.HVUT_CHARACTER_PARSE_FAILURE),
   source("lotteryNotificationFailure", DiagnosticEvidenceKey.LOTTERY_NOTIFICATION_FAILURE),
 ]);
 
