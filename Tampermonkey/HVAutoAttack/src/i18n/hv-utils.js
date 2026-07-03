@@ -766,7 +766,7 @@ try {
       return window.HVAA_shrineOfferMessage.classify(msg);
     }
     record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing', { message: msg });
-    return { kind: 'stop', message: 'Shrine offer classifier bridge unavailable.' };
+    return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.' };
   };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
@@ -7060,7 +7060,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
           _ss.equip.sold++;
         } else if (offerMessage.kind === 'salvaged') {
           _ss.equip.salvaged++;
-        } else { //Your equipment inventory is full
+        } else {
+          if (offerMessage.reason === 'unknownShrineResponse') {
+            record_hvut_shrine_offer_failure('unknownOfferMessage', { message: offerMessage.message || msg });
+          }
           set_hvut_shrine_stop_error(_ss, offerMessage.message || msg);
           offerStopped = true;
         }
@@ -13163,6 +13166,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       } else if (offerMessage.kind === 'equip' || offerMessage.kind === 'reward') {
         rewards.push(offerMessage.reward);
       } else {
+        if (offerMessage.reason === 'unknownShrineResponse') {
+          record_hvut_shrine_offer_failure('unknownOfferMessage', { message: offerMessage.message || msg });
+        }
         set_hvut_shrine_stop_error(_ss, offerMessage.message || msg);
         offerStopped = true;
       }

@@ -30,7 +30,13 @@ describe("classifyShrineOfferMessage", () => {
     expect(classifyShrineOfferMessage("Salvaged it for 3x Low-Grade Metals")).toEqual({ kind: "salvaged" });
     expect(classifyShrineOfferMessage("Your equipment inventory is full")).toEqual({
       kind: "stop",
+      reason: "equipmentInventoryFull",
       message: "Your equipment inventory is full",
+    });
+    expect(classifyShrineOfferMessage("Snowflake looks confused")).toEqual({
+      kind: "stop",
+      reason: "unknownShrineResponse",
+      message: "Snowflake looks confused",
     });
   });
 });

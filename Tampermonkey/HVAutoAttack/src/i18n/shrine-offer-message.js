@@ -12,5 +12,8 @@ export function classifyShrineOfferMessage(message) {
   if (msg.includes("Sold it for")) return { kind: "sold" };
   if (msg.includes("Salvaged it for")) return { kind: "salvaged" };
   if (msg.includes("Sold the remains for")) return { kind: "ignore" };
-  return { kind: "stop", message: msg };
+  if (msg.includes("Your equipment inventory is full")) {
+    return { kind: "stop", reason: "equipmentInventoryFull", message: msg };
+  }
+  return { kind: "stop", reason: "unknownShrineResponse", message: msg };
 }

@@ -130,7 +130,8 @@ for (const required of [
   "record_hvut_shrine_offer_failure('offerReservationBridgeRollback'",
   "window.HVAA_shrineOfferMessage.classify(msg)",
   "record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing'",
-  "return { kind: 'stop', message: 'Shrine offer classifier bridge unavailable.' };",
+  "return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.' };",
+  "record_hvut_shrine_offer_failure('unknownOfferMessage'",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must centralize Shrine offer reservation with ${required}`);
@@ -140,7 +141,8 @@ for (const required of [
 for (const required of [
   "export function classifyShrineOfferMessage(message) {",
   "if (msg.includes(\"Sold the remains for\")) return { kind: \"ignore\" };",
-  "return { kind: \"stop\", message: msg };",
+  "return { kind: \"stop\", reason: \"equipmentInventoryFull\", message: msg };",
+  "return { kind: \"stop\", reason: \"unknownShrineResponse\", message: msg };",
 ]) {
   if (!classifierText.includes(required)) {
     violations.push(`${classifierTarget} must own Shrine offer message classification with ${required}`);
@@ -158,7 +160,11 @@ for (const required of [
 if (!mainText.includes("import \"./i18n/shrine-offer-message-bridge.js\";")) {
   violations.push(`${mainTarget} must load Shrine offer classifier bridge before hv-utils`);
 }
-if (!classifierTestText.includes("Sold the remains for 8 credits") || !classifierTestText.includes("Your equipment inventory is full")) {
+if (
+  !classifierTestText.includes("Sold the remains for 8 credits") ||
+  !classifierTestText.includes("Your equipment inventory is full") ||
+  !classifierTestText.includes("unknownShrineResponse")
+) {
   violations.push(`${classifierTestTarget} must cover ignored sold-remains and stop messages`);
 }
 for (const required of [
