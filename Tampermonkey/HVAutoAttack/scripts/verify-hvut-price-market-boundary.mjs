@@ -78,10 +78,11 @@ for (const required of [
 
 for (const required of [
   "try {\n        await Promise.all(requests);",
-  "catch (_error) {\n        return null;",
+  "catch (error) {\n        record_hvut_price_market_parse_failure('marketBulkUpdateRequest'",
+  "record_hvut_price_market_parse_failure('marketUpdateRequest'",
   "try {\n        await update(filter);",
   "if (price.parse_market(filter, doc) === false) throw new Error('price market parse failed');",
-  "if (!price.set(new_prices)) return null;",
+  "record_hvut_price_market_parse_failure('marketPriceSet'",
   "return new_prices",
 ]) {
   if (!updateBody.includes(required)) {
@@ -91,6 +92,12 @@ for (const required of [
 
 if (/await Promise\.all\(requests\);\n\s*price\.market_all = true;/.test(updateBody)) {
   violations.push(`${target} price update must not let bulk market request failures escape`);
+}
+if (/catch \(_error\) \{\n\s*return null;/.test(updateBody)) {
+  violations.push(`${target} price update must not keep untyped request failure`);
+}
+if (/if \(!price\.set\(new_prices\)\) return null;/.test(updateBody)) {
+  violations.push(`${target} price update must not keep untyped price persistence failure`);
 }
 if (/const itemid = \/itemid=\(\\d\+\)\/\.exec\(tr\.getAttribute\('onclick'\)\)\[1\];/.test(parseBody)) {
   violations.push(`${target} price parse must not keep unchecked itemid parse`);

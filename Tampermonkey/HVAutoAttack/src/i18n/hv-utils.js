@@ -1903,14 +1903,16 @@ const bindPrice = function (price, ctx) {
       const requests = filters.map((filter) => update(filter));
       try {
         await Promise.all(requests);
-      } catch (_error) {
+      } catch (error) {
+        record_hvut_price_market_parse_failure('marketBulkUpdateRequest', { filters: filters, error: error?.message || String(error) });
         return null;
       }
       price.market_all = true;
     } else if (!all && !price.market) {
       try {
         await update(filter);
-      } catch (_error) {
+      } catch (error) {
+        record_hvut_price_market_parse_failure('marketUpdateRequest', { filter: filter || '', error: error?.message || String(error) });
         return null;
       }
     }
@@ -1919,7 +1921,10 @@ const bindPrice = function (price, ctx) {
     const market_prices = price.get_market(items, key);
     const new_prices = { ...prices, ...market_prices };
     if (save) {
-      if (!price.set(new_prices)) return null;
+      if (!price.set(new_prices)) {
+        record_hvut_price_market_parse_failure('marketPriceSet', { filter: filter || '', key: key || '' });
+        return null;
+      }
     }
     return new_prices;
 
