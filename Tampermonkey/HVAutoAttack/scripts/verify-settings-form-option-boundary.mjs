@@ -56,6 +56,27 @@ if (!renderText.includes("OptionEvent.READ_FIELD")) {
 if (/\bg\(\s*["']option["']/.test(renderText)) {
   violations.push(`${settingsRender.replaceAll("\\", "/")} must not read raw option state`);
 }
+if (!renderText.includes("export function readSingleOrderItemName(target)")) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} must expose one single-order target parser`);
+}
+if (!renderText.includes("const name = readSingleOrderItemName(e.target);")) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} must route single-order handlers through readSingleOrderItemName`);
+}
+if (!renderText.includes("if (!name) return;")) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} must ignore malformed single-order targets`);
+}
+if (/id\.match\([^;\n]+\)\[1\]/.test(renderText)) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} must not index raw id.match() results`);
+}
+const orderTargetTest = path.normalize("src/settings/render-order-target.test.js");
+if (!fs.existsSync(path.join(root, orderTargetTest))) {
+  violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover single-order target parsing`);
+} else {
+  const orderTargetTestText = fs.readFileSync(path.join(root, orderTargetTest), "utf8");
+  if (!orderTargetTestText.includes("fails closed for malformed order event targets")) {
+    violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover malformed single-order targets`);
+  }
+}
 const customizeText = fs.readFileSync(path.join(root, customizeInspect), "utf8");
 if (!customizeText.includes("export function readCustomizeInspectTarget(target)")) {
   violations.push(`${customizeInspect.replaceAll("\\", "/")} must expose one customize inspect read entry`);

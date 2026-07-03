@@ -30,6 +30,11 @@ import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-rou
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
 
+export function readSingleOrderItemName(target) {
+  const match = target?.id?.match(/_(.*)/);
+  return match ? match[1] : null;
+}
+
 /**
  * 从 option schema 渲染 "checkbox + number + 单位文本" 这类成对字段。
  * Phase 5 渐进迁入示例：新加的 pageRefresh / criticalBuff 等用此 helper 直接消费 schema，
@@ -817,7 +822,8 @@ export function optionBox() {
   function makeSingleOrderHandler(valueInput) {
     return function (e) {
       if (e.target.tagName !== "INPUT" && e.target.type !== "checkbox") return;
-      const name = e.target.id.match(/_(.*)/)[1];
+      const name = readSingleOrderItemName(e.target);
+      if (!name) return;
       toggleOrderItem(valueInput, name, e.target.checked);
     };
   }
