@@ -6861,15 +6861,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       if (!count || count < 0) {
         return;
       }
-      item.requests += count;
-      item.stock -= count * item.bulk;
-      item.max -= count;
-      item.node.stock.textContent = item.stock;
-      item.node.max.textContent = item.max;
-      if (item.type === 'Trophy') {
-        _ss.equip.requests += count;
-      }
-
       if (!_ss.log.json[item.logname]) {
         _ss.log.json[item.logname] = {};
       }
@@ -6884,6 +6875,14 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
       for (let i = 0; i < count; i++) {
         if (_ss.error) break;
+        item.requests++;
+        item.stock -= item.bulk;
+        item.max--;
+        item.node.stock.textContent = item.stock;
+        item.node.max.textContent = item.max;
+        if (item.type === 'Trophy') {
+          _ss.equip.requests++;
+        }
         const offered = await _ss.offer.load(iid, reward_type, reward_slot);
         if (offered === false || _ss.error) break;
       }
@@ -13172,7 +13171,6 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
         alert('选择要获得的装备类型.');
         return;
       }
-      _ss.equip.requests += count;
     } else { // Artifact, Collectable
       select_reward_type = '';
       select_reward_slot = '';
@@ -13190,14 +13188,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     }
     _ss.node.results.classList.remove('hvut-none');
 
-    item.requests += count;
-    item.stock -= count * item.bulk;
-    item.max -= count;
-    item.node.stock.textContent = item.stock;
-    item.node.max.textContent = item.max;
-
     for (let i = 0; i < count; i++) {
       if (_ss.error) break;
+      item.requests++;
+      item.stock -= item.bulk;
+      item.max--;
+      item.node.stock.textContent = item.stock;
+      item.node.max.textContent = item.max;
+      if (item.type === 'Trophy') {
+        _ss.equip.requests++;
+      }
       const offered = await _ss.request(iid, select_reward_type, select_reward_slot);
       if (offered === false || _ss.error) break;
     }

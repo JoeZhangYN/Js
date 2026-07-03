@@ -48,6 +48,9 @@ for (const part of [
 for (const part of [
   "request: async function (iid, count, reward_type, reward_slot)",
   "if (_ss.error) break;",
+  "item.requests++;",
+  "item.stock -= item.bulk;",
+  "item.max--;",
   "const offered = await _ss.offer.load(iid, reward_type, reward_slot);",
   "if (offered === false || _ss.error) break;",
 ]) {
@@ -82,6 +85,9 @@ for (const part of [
 for (const part of [
   "_ss.offer = async function (iid, count)",
   "if (_ss.error) break;",
+  "item.requests++;",
+  "item.stock -= item.bulk;",
+  "item.max--;",
   "const offered = await _ss.request(iid, select_reward_type, select_reward_slot);",
   "if (offered === false || _ss.error) break;",
 ]) {
@@ -101,9 +107,17 @@ for (const [label, body, counter] of [
 
 for (const [label, body, forbidden] of [
   ["Shrine offer request", offerRequest, /(^|\n)\s*_ss\.offer\.load\(iid, reward_type, reward_slot\);/],
+  ["Shrine offer request", offerRequest, "item.requests += count;"],
+  ["Shrine offer request", offerRequest, "item.stock -= count * item.bulk;"],
+  ["Shrine offer request", offerRequest, "item.max -= count;"],
+  ["Shrine offer request", offerRequest, "_ss.equip.requests += count;"],
   ["Shrine offer load", offerLoad, "_ss.log.save();"],
   ["Shrine log save", logSave, "$config.set('ss_log', _ss.log.json);"],
   ["legacy Shrine offer", legacyOffer, /(^|\n)\s*_ss\.request\(iid, select_reward_type, select_reward_slot\);/],
+  ["legacy Shrine offer", legacyOffer, "item.requests += count;"],
+  ["legacy Shrine offer", legacyOffer, "item.stock -= count * item.bulk;"],
+  ["legacy Shrine offer", legacyOffer, "item.max -= count;"],
+  ["legacy Shrine offer", legacyOffer, "_ss.equip.requests += count;"],
   ["legacy Shrine request", legacyRequest, "$config.set('ss_log', _ss.log);"],
 ]) {
   if (typeof forbidden === "string" ? body.includes(forbidden) : forbidden.test(body)) {
