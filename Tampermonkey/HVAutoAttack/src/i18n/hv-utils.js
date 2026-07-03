@@ -697,9 +697,11 @@ try {
       capacity: parseInt(exec[3]),
     };
   };
-  var normalize_hvut_bottom_warn_capacity = function (settings) {
+  var normalize_hvut_bottom_warn_capacity = function (settings, capacity) {
     var threshold = Number(settings?.warnEquipCapacity);
-    return Number.isFinite(threshold) && threshold >= 0 ? threshold : 50;
+    var configured = Number.isFinite(threshold) && threshold >= 0 ? threshold : 50;
+    var capacityLimit = Number.isFinite(capacity) && capacity > 0 ? capacity / 2 : configured;
+    return Math.min(configured, capacityLimit);
   };
   var parse_hvut_shrine_reward_selection = function (button, stage) {
     var onclick = button?.getAttribute('onclick') || '';
@@ -5700,7 +5702,7 @@ _bottom.show_equip = async function () {
   }
   const { usage } = capacity;
   const free = capacity.capacity - usage;
-  const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings);
+  const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings, capacity.capacity);
   _bottom.node.equip.textContent = `Inventory Capacity: ${usage} / ${capacity.capacity}`;
   if (free < warnCapacity) {
     popup('<p style="color: #e00; font-weight: bold;">Your inventory is almost full.<br>\nPlease manage your equipment to increase available capacity.</p>');
@@ -11437,7 +11439,7 @@ if ($config.settings.showEquipSlots === 2 || $config.settings.showEquipSlots ===
     }
     const { usage } = capacity;
     const free = capacity.capacity - usage;
-    const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings);
+    const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings, capacity.capacity);
     _bottom.node.equip.textContent = `装备库存量: ${usage} / ${capacity.capacity}`;
     if (free < warnCapacity) {
       _bottom.node.equip.classList.add('hvut-bottom-warn');

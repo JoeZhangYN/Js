@@ -58,7 +58,7 @@ const capacityWarningBodies = showEquipBodies.filter((body) =>
   body.includes("Your inventory is almost full") || body.includes("装备库存量:")
 );
 for (const [index, body] of capacityWarningBodies.entries()) {
-  if (!body.includes("const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings);")) {
+  if (!body.includes("const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings, capacity.capacity);")) {
     violations.push(`${rel(hvUtilsFile)} bottom capacity warning[${index}] must use typed threshold evidence`);
   }
   if (/free < capacity\.capacity \/ 10/.test(body)) {
@@ -69,11 +69,17 @@ const legacyBottom = showEquipBodies.find((body) => body.includes("装备库存�
 if (legacyBottom && /popup\(/.test(legacyBottom)) {
   violations.push(`${rel(hvUtilsFile)} legacy bottom capacity monitor must not show equipment-full popup`);
 }
-if (!text.includes("var normalize_hvut_bottom_warn_capacity = function (settings) {")) {
+if (!text.includes("var normalize_hvut_bottom_warn_capacity = function (settings, capacity) {")) {
   violations.push(`${rel(hvUtilsFile)} must own bottom capacity warning threshold normalization`);
 }
-if (!text.includes("return Number.isFinite(threshold) && threshold >= 0 ? threshold : 50;")) {
+if (!text.includes("var configured = Number.isFinite(threshold) && threshold >= 0 ? threshold : 50;")) {
   violations.push(`${rel(hvUtilsFile)} bottom capacity warning threshold must fail closed to default`);
+}
+if (
+  !text.includes("var capacityLimit = Number.isFinite(capacity) && capacity > 0 ? capacity / 2 : configured;") ||
+  !text.includes("return Math.min(configured, capacityLimit);")
+) {
+  violations.push(`${rel(hvUtilsFile)} bottom capacity warning threshold must not treat low usage as almost full`);
 }
 
 for (const [index, match] of [...text.matchAll(/const exec = \/<td>Inventory Capacity:[^\n]+\.exec\(html\);/g)].entries()) {
