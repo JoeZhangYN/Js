@@ -204,6 +204,14 @@ try {
     var match = /mid=(\d+)/.exec(onclick || '');
     return match ? parseInt(match[1]) : record_hvut_mooglemail_parse_failure(stage, { onclick: onclick || '' });
   };
+  var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {
+    var match = /equips\.set\((\d+)/.exec(onmouseover || '');
+    if (!match) return false;
+    var eid = parseInt(match[1]);
+    var equip = store?.[eid];
+    if (!equip) return record_hvut_mooglemail_parse_failure(stage, { eid: eid, onmouseover: onmouseover || '' });
+    return { t: 'e', n: equip.t, e: eid, k: equip.k };
+  };
   var record_hvut_monster_lab_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutMonsterLabParse', stage: stage, detail: detail || {} };
     try {
@@ -9787,12 +9795,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
               let exec;
               const onmouseover = div.firstElementChild.firstElementChild?.getAttribute('onmouseover');
-              if (onmouseover && (exec = /equips\.set\((\d+)/.exec(onmouseover))) {
-                const eid = parseInt(exec[1]);
-                const key = $equip.dynjs_eqstore[eid].k;
-                const name = $equip.dynjs_eqstore[eid].t;
-                const type = 'e';
-                view.attach.push({ t: type, n: name, e: eid, k: key });
+              const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, 'viewEquipAttach');
+              if (equipAttach) {
+                view.attach.push(equipAttach);
+              } else if (equipAttach === null) {
+                view.error = '解析装备附件失败';
               } else if ((exec = /^([0-9,]+)x? (.+)$/.exec(div.textContent))) {
                 const count = _mm.parse_count(exec[1]);
                 const name = exec[2];
@@ -16023,12 +16030,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
             let exec;
             const onmouseover = div.firstElementChild.firstElementChild?.getAttribute('onmouseover');
-            if (onmouseover && (exec = /equips\.set\((\d+)/.exec(onmouseover))) {
-              const eid = parseInt(exec[1]);
-              const key = $equip.dynjs_eqstore[eid].k;
-              const name = $equip.dynjs_eqstore[eid].t;
-              const type = 'e';
-              view.attach.push({ t: type, n: name, e: eid, k: key });
+            const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, 'legacyViewEquipAttach');
+            if (equipAttach) {
+              view.attach.push(equipAttach);
+            } else if (equipAttach === null) {
+              view.error = '解析装备附件失败';
             } else if ((exec = /^([0-9,]+)x? (.+)$/.exec(div.textContent))) {
               const count = _mm.parse_count(exec[1]);
               const name = exec[2];

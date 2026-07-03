@@ -57,6 +57,8 @@ for (const required of [
   "record_hvut_mooglemail_parse_failure(stage, { href: href });",
   "var parse_hvut_mooglemail_mid = function (onclick, stage) {",
   "record_hvut_mooglemail_parse_failure(stage, { onclick: onclick || '' });",
+  "var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {",
+  "return record_hvut_mooglemail_parse_failure(stage, { eid: eid, onmouseover: onmouseover || '' });",
 ]) {
   requirePart("MoogleMail parse helper", helperRegion, required);
 }
@@ -92,6 +94,17 @@ for (const [label, body, stage] of [
   requirePart(label, body, "view.cod = 0;");
 }
 
+for (const [label, body, stage] of [
+  ["modern MoogleMail parser", modernMailParse, "viewEquipAttach"],
+  ["legacy MoogleMail parser", legacyMailParse, "legacyViewEquipAttach"],
+]) {
+  requirePart(label, body, `const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, '${stage}');`);
+  requirePart(label, body, "if (equipAttach) {");
+  requirePart(label, body, "view.attach.push(equipAttach);");
+  requirePart(label, body, "} else if (equipAttach === null) {");
+  requirePart(label, body, "view.error = '解析装备附件失败';");
+}
+
 for (const [label, body, prevStage, nextStage] of [
   ["modern MoogleMail page pager", modernPagePager, "pagePrevHref", "pageNextHref"],
   ["legacy MoogleMail page pager", legacyPagePager, "legacyPagePrevHref", "legacyPageNextHref"],
@@ -118,6 +131,8 @@ for (const forbidden of [
   "parseInt(pager.children[1].firstElementChild.href?.match(/&page=(\\d+)/)[1])",
   "parseInt(/mid=(\\d+)/.exec(tr.getAttribute('onclick'))[1])",
   "parseInt(/mid=(\\d+)/.exec(row.getAttribute('onclick'))[1])",
+  "$equip.dynjs_eqstore[eid].k",
+  "$equip.dynjs_eqstore[eid].t",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked MoogleMail parse path: ${forbidden}`);
