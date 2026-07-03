@@ -824,9 +824,10 @@ try {
 //    b) 真重复(byte-identical / 表层漂移)收口共享区, ctx 注入版本差异: bindTr / bindRe / bindPrice /
 //       bindDfct / bindPersona(真分叉经 ctx 倒置: warnSelector/parseEquipElem/applyDynjs; parse_stats_pane
 //       留各版) / bindBattlePanel(渲染内核, 数据层留各版) / bindConfig(配置体系 18 小方法; ctx.skipField 注入字段门控谓词;
-//       init·migration·create·set_panel·set_input 真分叉留各版) / render_supply_li / equip-name-render /
+//       init/migration/create 共享业务与面板骨架, CSS·set_panel·set_input 段差异留各版) / render_supply_li / equip-name-render /
 //       .hvut-warn·.hvut-bonus 归一。反退化: scripts/verify-no-iife-dup.mjs 锁回潮; 召回: scripts/dup-probe.mjs(手动)。
-//       留置候选(2026-06-10 refuter 复核): $config.migration(版本史 4.2≠2 不可逆迁移, homonym) / $config.create(面板渲染 mixed: CSS·checkbox 签名·门控谓词·textarea 按钮四分叉, 内核过薄留置) / $equip.namecode(已收口一处 caller 留各版; 实测两版同 8 级, 原"8/10 级"描述过时)。
+//       留置候选(2026-07-03 refuter 复核): $config.create 剩余 CSS 段皮肤(规则名相似、值不同; 骨架/字段行已收口) /
+//       $config.init 薄入口段参数 / $equip.namecode(已收口一处 caller 留各版; 实测两版同 8 级, 原"8/10 级"描述过时)。
 // 5. 迁移基线: 主世界 sleazyfork #533796 英文 4.0.0; Isekai 论坛 211883 英文 4.2.0
 // 6. 汉化策略: 显示层翻译走 canonical SSOT(src/data/i18n) 经 window.HVAA_i18n 桥
 //    (hvaaT/hvaaTEquip/resolveEn); 逻辑值/比较/键/POST 参数一律英文。i18n SSOT epic G0-G3
@@ -1148,7 +1149,8 @@ const render_supply_li = function (parent, name, count) {
 
 // $config 配置体系内核(两 IIFE 18 方法 byte-identical/表层漂移收口一处; 铁律1e 应抽尽抽 / 铁律4 抽象即反退化)。
 // 留各 IIFE 字面量(机制分叉, 见设计要点4 + dup-probe 留置裁定): 数据属性 version/ls_savelist/data/text/desc/validator
-//   + init(ns hvut/hvuti·season wiring) + migration(版本史 4.2≠2 不可逆迁移: version-gated 清理 + 键集 equipnames 分叉)
+//   + init(ns hvut/hvuti·season wiring) + migration legacy carry flow + create panel skeleton/field row
+//     (版本史 4.2≠2 的 Isekai 清理与 CSS/set_panel/set_input 段差异留各 IIFE)
 //   + create(面板 CSS var↔硬编 / checkbox $input 3槽↔2槽 / textarea 恢复默认按钮) + set_panel·set_input(设值流分叉; 主世界无独立 set_input 内联于 set_panel)。
 // ctx.skipField(o): 面板字段适用谓词分叉 —— isekai 按 HV server(o.server!==_server.name) / 主世界按 持久区·isekai(o.disabled)。
 // validate 错误头归一中文 '校验错误'(isekai 原 'Validation Error' 漏翻; 汉化脚本统一中文)。
