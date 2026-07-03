@@ -151,6 +151,26 @@ try {
     var match = /(.)\.png/.exec(backgroundImage || '');
     return match ? match[1] : record_hvut_ability_parse_failure('abilityButtonType', { backgroundImage: backgroundImage || '' });
   };
+  var parse_hvut_ability_points_from_top = function (top, stage) {
+    var text = top?.children?.[3]?.textContent;
+    return text === undefined ? record_hvut_ability_parse_failure(stage, { reason: 'abilityPointNodeMissing' }) : parse_hvut_ability_points(text);
+  };
+  var parse_hvut_ability_button_panel = function (div, stage) {
+    var panel = div?.children?.[2];
+    return panel || record_hvut_ability_parse_failure(stage, { reason: 'abilityButtonPanelMissing', text: div?.textContent || '' });
+  };
+  var parse_hvut_ability_unlock_id = function (panel, stage) {
+    var onclick = panel?.getAttribute('onclick') || '';
+    var match = /do_unlock_ability\((\d+)\)/.exec(onclick);
+    return match ? match[1] : record_hvut_ability_parse_failure(stage, { onclick: onclick });
+  };
+  var mark_hvut_ability_warning = function (div, warn, stage) {
+    var node = div?.firstElementChild?.firstElementChild;
+    if (!node) return record_hvut_ability_parse_failure(stage, { reason: 'abilityWarningNodeMissing', warn: warn });
+    node.classList.add('hvut-ab-warn');
+    node.dataset.warn = warn;
+    return true;
+  };
   var record_hvut_training_notification_failure = function (stage, detail) {
     var evidence = { capability: 'hvutTrainingNotification', stage: stage, detail: detail || {} };
     try {
@@ -5912,7 +5932,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     'Holy mage': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Smite', 'Better Banish', 'Better Paradise', 'Soul Fire', 'Holy Imperil'],
   };
 
-  _ab.point = parse_hvut_ability_points($id('ability_top').children[3].textContent);
+  _ab.point = parse_hvut_ability_points_from_top($id('ability_top'), 'abilityPointsNode');
   _ab.level = {};
 
   _ab.init = function () {
@@ -5997,10 +6017,13 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
       let point = _ab.point;
 
       ab.div = div;
-      ab.id = /do_unlock_ability\((\d+)\)/.exec(div.children[2].getAttribute('onclick'))?.[1] || '';
+      const buttonPanel = parse_hvut_ability_button_panel(div, 'abilityButtonPanel');
+      if (buttonPanel === null) return false;
+      ab.id = parse_hvut_ability_unlock_id(buttonPanel, 'abilityUnlockId');
+      if (ab.id === null) return false;
       ab.level = 0;
 
-      for (const [i, button] of Array.from(div.children[2].children).entries()) {
+      for (const [i, button] of Array.from(buttonPanel.children).entries()) {
         const type = parse_hvut_ability_button_type(button.style.backgroundImage);
         if (type === null) return false;
         button.classList.add('hvut-ab-bar');
@@ -6021,11 +6044,9 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
 
       if (ab.level) {
         if (!ab.slotted) {
-          div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
-          div.firstElementChild.firstElementChild.dataset.warn = '未激活';
+          if (mark_hvut_ability_warning(div, '未激活', 'abilityWarningNode') === null) return false;
         } else if (ab.level !== ab.cap) {
-          div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
-          div.firstElementChild.firstElementChild.dataset.warn = '可升级';
+          if (mark_hvut_ability_warning(div, '可升级', 'abilityWarningNode') === null) return false;
         }
       }
     }
@@ -12417,7 +12438,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     'Holy mage': ['HP Tank', 'MP Tank', 'SP Tank', 'Better Health Pots', 'Better Mana Pots', 'Better Spirit Pots', 'Staff Spell Damage', 'Staff Accuracy', 'Cloth Spellacc', 'Cloth Spellcrit', 'Cloth Castspeed', 'Cloth MP', 'Better Imperil', 'Faster Imperil', 'Better Haste', 'Better Shadow Veil', 'Stronger Spirit', 'Better Arcane Focus', 'Better Regen', 'Better Cure', 'Better Spark', 'Better Protection', 'Flame Spike Shield', 'Better Smite', 'Better Banish', 'Better Paradise', 'Soul Fire', 'Holy Imperil'],
   };
 
-  _ab.point = parse_hvut_ability_points($id('ability_top').children[3].textContent);
+  _ab.point = parse_hvut_ability_points_from_top($id('ability_top'), 'legacyAbilityPointsNode');
   _ab.level = {};
   if (_ab.point === null) {
     alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
@@ -12686,10 +12707,19 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     let point = _ab.point;
 
     ab.div = div;
-    ab.id = /do_unlock_ability\((\d+)\)/.exec(div.children[2].getAttribute('onclick'))?.[1] || '';
+    const buttonPanel = parse_hvut_ability_button_panel(div, 'legacyAbilityButtonPanel');
+    if (buttonPanel === null) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    ab.id = parse_hvut_ability_unlock_id(buttonPanel, 'legacyAbilityUnlockId');
+    if (ab.id === null) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     ab.level = 0;
 
-    for (const [i, button] of Array.from(div.children[2].children).entries()) {
+    for (const [i, button] of Array.from(buttonPanel.children).entries()) {
       const type = parse_hvut_ability_button_type(button.style.backgroundImage);
       if (type === null) {
         alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
@@ -12713,11 +12743,15 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
 
     if (ab.level) {
       if (!ab.slotted) {
-        div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
-        div.firstElementChild.firstElementChild.dataset.warn = '未激活';
+        if (mark_hvut_ability_warning(div, '未激活', 'legacyAbilityWarningNode') === null) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
       } else if (ab.level !== ab.limit) {
-        div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn');
-        div.firstElementChild.firstElementChild.dataset.warn = '可升级';
+        if (mark_hvut_ability_warning(div, '可升级', 'legacyAbilityWarningNode') === null) {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
       }
     }
   }

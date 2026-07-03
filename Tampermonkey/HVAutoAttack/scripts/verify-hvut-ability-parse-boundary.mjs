@@ -19,7 +19,7 @@ const modernSlotbar =
 const modernTreepane =
   /_ab\.parse_treepane = function \(\) \{[\s\S]*?\n  \};\n\n  _ab\.click/.exec(text)?.[0] || "";
 const abilityRegions = [
-  ...text.matchAll(/_ab\.point = parse_hvut_ability_points\(\$id\('ability_top'\)[\s\S]*?\n\} else\n\/\/ \[END 3\] Character - Abilities/g),
+  ...text.matchAll(/_ab\.point = parse_hvut_ability_points_from_top\(\$id\('ability_top'\)[\s\S]*?\n\} else\n\/\/ \[END 3\] Character - Abilities/g),
 ].map((match) => match[0]);
 const legacyRegion = abilityRegions[1] || "";
 
@@ -41,6 +41,14 @@ for (const required of [
   "sessionStorage.setItem('HVAA:lastHvutAbilityParseFailure', JSON.stringify(evidence));",
   "var parse_hvut_ability_points = function (text) {",
   "var parse_hvut_ability_button_type = function (backgroundImage) {",
+  "var parse_hvut_ability_points_from_top = function (top, stage) {",
+  "record_hvut_ability_parse_failure(stage, { reason: 'abilityPointNodeMissing' })",
+  "var parse_hvut_ability_button_panel = function (div, stage) {",
+  "record_hvut_ability_parse_failure(stage, { reason: 'abilityButtonPanelMissing'",
+  "var parse_hvut_ability_unlock_id = function (panel, stage) {",
+  "record_hvut_ability_parse_failure(stage, { onclick: onclick });",
+  "var mark_hvut_ability_warning = function (div, warn, stage) {",
+  "record_hvut_ability_parse_failure(stage, { reason: 'abilityWarningNodeMissing'",
   "return match ? parseInt(match[1]) : record_hvut_ability_parse_failure('abilityPoints'",
   "return match ? match[1] : record_hvut_ability_parse_failure('abilityButtonType'",
 ]) {
@@ -69,8 +77,13 @@ for (const required of [
 
 for (const required of [
   "for (const div of $qsa('#ability_treepane > div')) {",
+  "const buttonPanel = parse_hvut_ability_button_panel(div, 'abilityButtonPanel');",
+  "ab.id = parse_hvut_ability_unlock_id(buttonPanel, 'abilityUnlockId');",
+  "for (const [i, button] of Array.from(buttonPanel.children).entries()) {",
   "const type = parse_hvut_ability_button_type(button.style.backgroundImage);",
   "if (type === null) return false;",
+  "mark_hvut_ability_warning(div, '未激活', 'abilityWarningNode')",
+  "mark_hvut_ability_warning(div, '可升级', 'abilityWarningNode')",
   "continue;",
   "return true;",
 ]) {
@@ -78,12 +91,17 @@ for (const required of [
 }
 
 for (const required of [
-  "_ab.point = parse_hvut_ability_points($id('ability_top').children[3].textContent);",
+  "_ab.point = parse_hvut_ability_points_from_top($id('ability_top'), 'legacyAbilityPointsNode');",
   "if (_ab.point === null) {",
   "for (const div of $qsa('#ability_top div[onmouseover*=\"overability\"]')) {",
   "record_hvut_ability_parse_failure('abilitySlotbar'",
+  "const buttonPanel = parse_hvut_ability_button_panel(div, 'legacyAbilityButtonPanel');",
+  "ab.id = parse_hvut_ability_unlock_id(buttonPanel, 'legacyAbilityUnlockId');",
+  "for (const [i, button] of Array.from(buttonPanel.children).entries()) {",
   "const type = parse_hvut_ability_button_type(button.style.backgroundImage);",
   "if (type === null) {",
+  "mark_hvut_ability_warning(div, '未激活', 'legacyAbilityWarningNode')",
+  "mark_hvut_ability_warning(div, '可升级', 'legacyAbilityWarningNode')",
 ]) {
   requirePart("legacy ability region", legacyRegion, required);
 }
@@ -93,6 +111,11 @@ for (const forbidden of [
   "const type = /(.)\\.png/.exec(button.style.backgroundImage)[1];",
   "$qsa('#ability_top div[onmouseover*=\"overability\"]').forEach((div) => {",
   "$qsa('#ability_treepane > div').forEach((div) => {",
+  "$id('ability_top').children[3].textContent",
+  "div.children[2].getAttribute('onclick')",
+  "Array.from(div.children[2].children)",
+  "div.firstElementChild.firstElementChild.classList.add('hvut-ab-warn')",
+  "div.firstElementChild.firstElementChild.dataset.warn",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked ability parse path: ${forbidden}`);
