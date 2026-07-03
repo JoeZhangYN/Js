@@ -32,12 +32,15 @@ const legacyOffer =
   /_ss\.offer = async function \(iid, count\) \{[\s\S]*?\n  \};\n\n  _ss\.request = async function/.exec(text)?.[0] || "";
 const legacyRequest =
   /_ss\.request = async function \(iid, select_reward_type, select_reward_slot\) \{[\s\S]*?\n  \};\n\n  _ss\.toggle_results/.exec(text)?.[0] || "";
+const localClassifier =
+  /var classify_hvut_shrine_offer_message = function \(msg\) \{[\s\S]*?\n  \};\n  var reloadCurrentPage/.exec(text)?.[0] || "";
 
 if (!offerLoad) violations.push(`${target} must keep Shrine offer load entry visible`);
 if (!offerRequest) violations.push(`${target} must keep Shrine offer request entry visible`);
 if (!logSave) violations.push(`${target} must keep Shrine log save entry visible`);
 if (!legacyOffer) violations.push(`${target} must keep legacy Shrine offer entry visible`);
 if (!legacyRequest) violations.push(`${target} must keep legacy Shrine request entry visible`);
+if (!localClassifier) violations.push(`${target} must keep local Shrine classifier bridge visible`);
 
 for (const part of [
   "record_hvut_shrine_offer_failure('offerLoadFetch'",
@@ -109,9 +112,10 @@ for (const required of [
   "var rollback_hvut_shrine_offer_reservation = function (state, item) {",
   "var classify_hvut_shrine_offer_message = function (msg) {",
   "window.HVAA_shrineOfferMessage.classify(msg)",
+  "record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing'",
+  "return { kind: 'stop', message: 'Shrine offer classifier bridge unavailable.' };",
   "state.equip.requests++;",
   "state.equip.requests--;",
-  "if (msg.includes('Sold the remains for')) return { kind: 'ignore' };",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must centralize Shrine offer reservation with ${required}`);
@@ -155,6 +159,15 @@ for (const [label, body, counter] of [
 }
 
 for (const [label, body, forbidden] of [
+  ["local Shrine classifier bridge", localClassifier, "Snowflake has blessed you"],
+  ["local Shrine classifier bridge", localClassifier, "Hit Space Bar to offer"],
+  ["local Shrine classifier bridge", localClassifier, "Peerless Voucher"],
+  ["local Shrine classifier bridge", localClassifier, "Crude|Fair|Average"],
+  ["local Shrine classifier bridge", localClassifier, "Received (.*?)"],
+  ["local Shrine classifier bridge", localClassifier, "was increased by 1"],
+  ["local Shrine classifier bridge", localClassifier, "Sold it for"],
+  ["local Shrine classifier bridge", localClassifier, "Salvaged it for"],
+  ["local Shrine classifier bridge", localClassifier, "Sold the remains for"],
   ["Shrine offer request", offerRequest, /(^|\n)\s*_ss\.offer\.load\(iid, reward_type, reward_slot\);/],
   ["Shrine offer request", offerRequest, "item.requests += count;"],
   ["Shrine offer request", offerRequest, "item.stock -= count * item.bulk;"],
@@ -176,6 +189,7 @@ for (const [label, body, forbidden] of [
   ["Shrine offer load", offerLoad, "const reg_pab ="],
   ["Shrine offer load", offerLoad, "msg.includes('Sold the remains for')"],
   ["Shrine offer load", offerLoad, "RegExp.$"],
+  ["Shrine offer load", offerLoad, "set_hvut_shrine_stop_error(_ss, msg);"],
   ["Shrine log save", logSave, "$config.set('ss_log', _ss.log.json);"],
   ["legacy Shrine offer", legacyOffer, /(^|\n)\s*_ss\.request\(iid, select_reward_type, select_reward_slot\);/],
   ["legacy Shrine offer", legacyOffer, "item.requests += count;"],
@@ -197,6 +211,7 @@ for (const [label, body, forbidden] of [
   ["legacy Shrine request", legacyRequest, "msg.includes('Sold it for')"],
   ["legacy Shrine request", legacyRequest, "msg.includes('Salvaged it for')"],
   ["legacy Shrine request", legacyRequest, "RegExp.$"],
+  ["legacy Shrine request", legacyRequest, "set_hvut_shrine_stop_error(_ss, msg);"],
 ]) {
   if (typeof forbidden === "string" ? body.includes(forbidden) : forbidden.test(body)) {
     violations.push(`${target} ${label} must not ignore Shrine log persistence: ${forbidden}`);
