@@ -89,23 +89,7 @@ for (const required of [
 
 for (const [index, body] of migrationBodies.entries()) {
   for (const part of [
-    "const equipdata = build_hvut_legacy_equipdata(in_equipdata, in_json);",
-    "if (!$config.set('equipdata', equipdata)) return false;",
-    "const equipCode = normalize_hvut_legacy_equip_code(in_equipcode);",
-    "if (!equipCode) return false;",
-    "$config.settings.equipCode = equipCode;",
-    "const normalizedPrices = normalize_hvut_legacy_prices(prices);",
-    "if (!normalizedPrices) return false;",
-    "$price.set(normalizedPrices);",
-    "const migrated_ml_log = migrate_hvut_monster_lab_log(ml_log);",
-    "if (migrated_ml_log) {",
-    "if (!$config.set('ml_log', migrated_ml_log)) return false;",
-    "if (!$config.ls_del('ml_log')) return false;",
-    "const ls_list = get_hvut_config_carry_keys(IS_ISEKAI);",
-    "if (!ls_list) return false;",
-    "for (const key of ls_list) {",
-    "if (!$config.set(key, value)) return false;",
-    "if (!$config.ls_del(key.slice($config.prefix.length))) return false;",
+    "if (run_hvut_config_legacy_migration($config, $price, { isIsekai: IS_ISEKAI }) === false) return false;",
     "const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);",
     "if (!normalizedSettings) return false;",
     "$config.settings = normalizedSettings;",
@@ -113,6 +97,18 @@ for (const [index, body] of migrationBodies.entries()) {
     "return true;",
   ]) {
     requirePart(`config migration[${index}]`, body, part);
+  }
+  for (const forbidden of [
+    "const in_equipdata = $config.ls_get('in_equipdata');",
+    "const in_json = $config.ls_get('in_json');",
+    "const prices = $config.ls_get('prices');",
+    "const ml_log = $config.ls_get('ml_log');",
+    "const ls_list = get_hvut_config_carry_keys(IS_ISEKAI);",
+    "for (let i = localStorage.length - 1; i >= 0; i--)",
+  ]) {
+    if (body.includes(forbidden)) {
+      violations.push(`${target} config migration[${index}] must delegate legacy carry flow: ${forbidden}`);
+    }
   }
 }
 
@@ -145,6 +141,33 @@ for (const forbidden of [
 ]) {
   if (migrationBodies.some((body) => body.includes(forbidden))) {
     violations.push(`${target} config migration must not keep unchecked path: ${forbidden}`);
+  }
+}
+
+for (const required of [
+  "var run_hvut_config_legacy_migration = function (config, price, context) {",
+  "if (config.settings.version) return true;",
+  "config.reset();",
+  "const in_equipdata = config.ls_get('in_equipdata');",
+  "const in_json = config.ls_get('in_json');",
+  "const equipdata = build_hvut_legacy_equipdata(in_equipdata, in_json);",
+  "if (!config.set('equipdata', equipdata)) return false;",
+  "const equipCode = normalize_hvut_legacy_equip_code(in_equipcode);",
+  "config.settings.equipCode = equipCode;",
+  "const normalizedPrices = normalize_hvut_legacy_prices(prices);",
+  "price.set(normalizedPrices);",
+  "const migrated_ml_log = migrate_hvut_monster_lab_log(ml_log);",
+  "if (!config.set('ml_log', migrated_ml_log)) return false;",
+  "if (!config.ls_del('ml_log')) return false;",
+  "const ls_list = get_hvut_config_carry_keys(isIsekai);",
+  "if (!ls_list) return false;",
+  "for (const key of ls_list) {",
+  "if (!config.set(key, value)) return false;",
+  "if (!config.ls_del(key.slice(config.prefix.length))) return false;",
+  "return true;",
+]) {
+  if (!text.includes(required)) {
+    violations.push(`${target} must keep shared legacy config migration step: ${required}`);
   }
 }
 

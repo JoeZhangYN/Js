@@ -180,6 +180,72 @@ try {
     }
     return true;
   };
+  var run_hvut_config_legacy_migration = function (config, price, context) {
+    var isIsekai = !!context?.isIsekai;
+    if (config.settings.version) return true;
+    config.reset();
+    const in_equipdata = config.ls_get('in_equipdata');
+    const in_json = config.ls_get('in_json');
+    const equipdata = build_hvut_legacy_equipdata(in_equipdata, in_json);
+    if (equipdata) {
+      if (!config.set('equipdata', equipdata)) return false;
+    }
+    const in_equipcode = config.ls_get('in_equipcode');
+    if (in_equipcode) {
+      const equipCode = normalize_hvut_legacy_equip_code(in_equipcode);
+      if (!equipCode) return false;
+      config.settings.equipCode = equipCode;
+    }
+    const in_namecode = config.ls_get('in_namecode');
+    if (in_namecode) {
+      config.settings.equipNameCode = in_namecode;
+    }
+
+    const prices = config.ls_get('prices');
+    if (prices) {
+      const normalizedPrices = normalize_hvut_legacy_prices(prices);
+      if (!normalizedPrices) return false;
+      setTimeout(() => { // $price is not defined yet
+        price.json = null;
+        price.init();
+        price.reset();
+        price.set(normalizedPrices);
+      }, 1000);
+    }
+
+    const es_protect = config.ls_get('es_protect');
+    if (es_protect) {
+      config.settings.equipmentShopProtectFilters = es_protect;
+    }
+    const es_bazaar = config.ls_get('es_bazaar');
+    if (es_bazaar) {
+      config.settings.equipmentShopBazaarFilters = es_bazaar;
+    }
+
+    const ml_log = config.ls_get('ml_log');
+    const migrated_ml_log = migrate_hvut_monster_lab_log(ml_log);
+    if (migrated_ml_log) {
+      if (!config.set('ml_log', migrated_ml_log)) return false;
+      if (!config.ls_del('ml_log')) return false;
+    }
+
+    const ls_list = get_hvut_config_carry_keys(isIsekai);
+    if (!ls_list) return false;
+    for (const key of ls_list) {
+      const value = config.ls_get(key);
+      if (value) {
+        if (!config.set(key, value)) return false;
+      }
+    }
+
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key.startsWith(config.prefix)) {
+        if (!config.ls_del(key.slice(config.prefix.length))) return false;
+      }
+    }
+    return true;
+  };
   var record_hvut_item_shop_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutItemShopParse', stage: stage, detail: detail || {} };
     try {
@@ -5083,69 +5149,7 @@ const $config = {
     return run_hvut_config_init($config, settings, { isIsekai: IS_ISEKAI });
   },
   migration: function () {
-    if (!$config.settings.version) {
-      $config.reset();
-      const in_equipdata = $config.ls_get('in_equipdata');
-      const in_json = $config.ls_get('in_json');
-      const equipdata = build_hvut_legacy_equipdata(in_equipdata, in_json);
-      if (equipdata) {
-        if (!$config.set('equipdata', equipdata)) return false;
-      }
-      const in_equipcode = $config.ls_get('in_equipcode');
-      if (in_equipcode) {
-        const equipCode = normalize_hvut_legacy_equip_code(in_equipcode);
-        if (!equipCode) return false;
-        $config.settings.equipCode = equipCode;
-      }
-      const in_namecode = $config.ls_get('in_namecode');
-      if (in_namecode) {
-        $config.settings.equipNameCode = in_namecode;
-      }
-
-      const prices = $config.ls_get('prices');
-      if (prices) {
-        const normalizedPrices = normalize_hvut_legacy_prices(prices);
-        if (!normalizedPrices) return false;
-        setTimeout(() => { // $price is not defined yet
-          $price.json = null;
-          $price.init();
-          $price.reset();
-          $price.set(normalizedPrices);
-        }, 1000);
-      }
-
-      const es_protect = $config.ls_get('es_protect');
-      if (es_protect) {
-        $config.settings.equipmentShopProtectFilters = es_protect;
-      }
-      const es_bazaar = $config.ls_get('es_bazaar');
-      if (es_bazaar) {
-        $config.settings.equipmentShopBazaarFilters = es_bazaar;
-      }
-
-      const ml_log = $config.ls_get('ml_log');
-      const migrated_ml_log = migrate_hvut_monster_lab_log(ml_log);
-      if (migrated_ml_log) {
-        if (!$config.set('ml_log', migrated_ml_log)) return false;
-        if (!$config.ls_del('ml_log')) return false;
-      }
-
-      const ls_list = get_hvut_config_carry_keys(IS_ISEKAI);
-      if (!ls_list) return false;
-      for (const key of ls_list) {
-        const value = $config.ls_get(key);
-        if (value) {
-          if (!$config.set(key, value)) return false;
-        }
-      }
-
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i);
-        if (key.startsWith($config.prefix)) {
-          if (!$config.ls_del(key.slice($config.prefix.length))) return false;
-        }
-      }
-    }
+    if (run_hvut_config_legacy_migration($config, $price, { isIsekai: IS_ISEKAI }) === false) return false;
 
     if ($config.settings.version < 4.2) {
       delete $config.settings.equipmentShopAutoProtect;
@@ -10931,69 +10935,7 @@ const $config = {
     return run_hvut_config_init($config, settings, { assignSeason: true, isIsekai: IS_ISEKAI });
   },
   migration: function () {
-    if (!$config.settings.version) {
-      $config.reset();
-      const in_equipdata = $config.ls_get('in_equipdata');
-      const in_json = $config.ls_get('in_json');
-      const equipdata = build_hvut_legacy_equipdata(in_equipdata, in_json);
-      if (equipdata) {
-        if (!$config.set('equipdata', equipdata)) return false;
-      }
-      const in_equipcode = $config.ls_get('in_equipcode');
-      if (in_equipcode) {
-        const equipCode = normalize_hvut_legacy_equip_code(in_equipcode);
-        if (!equipCode) return false;
-        $config.settings.equipCode = equipCode;
-      }
-      const in_namecode = $config.ls_get('in_namecode');
-      if (in_namecode) {
-        $config.settings.equipNameCode = in_namecode;
-      }
-
-      const prices = $config.ls_get('prices');
-      if (prices) {
-        const normalizedPrices = normalize_hvut_legacy_prices(prices);
-        if (!normalizedPrices) return false;
-        setTimeout(() => { // $price is not defined yet
-          $price.json = null;
-          $price.init();
-          $price.reset();
-          $price.set(normalizedPrices);
-        }, 1000);
-      }
-
-      const es_protect = $config.ls_get('es_protect');
-      if (es_protect) {
-        $config.settings.equipmentShopProtectFilters = es_protect;
-      }
-      const es_bazaar = $config.ls_get('es_bazaar');
-      if (es_bazaar) {
-        $config.settings.equipmentShopBazaarFilters = es_bazaar;
-      }
-
-      const ml_log = $config.ls_get('ml_log');
-      const migrated_ml_log = migrate_hvut_monster_lab_log(ml_log);
-      if (migrated_ml_log) {
-        if (!$config.set('ml_log', migrated_ml_log)) return false;
-        if (!$config.ls_del('ml_log')) return false;
-      }
-
-      const ls_list = get_hvut_config_carry_keys(IS_ISEKAI);
-      if (!ls_list) return false;
-      for (const key of ls_list) {
-        const value = $config.ls_get(key);
-        if (value) {
-          if (!$config.set(key, value)) return false;
-        }
-      }
-
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i);
-        if (key.startsWith($config.prefix)) {
-          if (!$config.ls_del(key.slice($config.prefix.length))) return false;
-        }
-      }
-    }
+    if (run_hvut_config_legacy_migration($config, $price, { isIsekai: IS_ISEKAI }) === false) return false;
 
     const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);
     if (!normalizedSettings) return false;
