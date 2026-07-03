@@ -37,6 +37,7 @@ for (const required of [
   "equip.total = null;",
   "var is_hvut_shrine_equip_capacity_full = function (equip) {",
   "equip.capacity > 0 && equip.total >= equip.capacity",
+  "var set_hvut_shrine_stop_error = function (state, message) {",
 ]) {
   requirePart("Shrine capacity helper", helperRegion, required);
 }
@@ -50,6 +51,7 @@ for (const [label, body, baseKey, stage] of [
   requirePart(label, body, `const capacity = parse_hvut_inventory_capacity(html, '${stage}');`);
   requirePart(label, body, `const total = update_hvut_shrine_equip_total(_ss.equip, '${baseKey}');`);
   requirePart(label, body, "if (is_hvut_shrine_equip_capacity_full(_ss.equip)) {");
+  requirePart(label, body, "set_hvut_shrine_stop_error(_ss,");
   requirePart(label, body, "unavailable");
 }
 
@@ -58,6 +60,8 @@ for (const forbidden of [
   "_ss.equip.total = _ss.equip.usage + _ss.equip.received - _ss.equip.sold - _ss.equip.salvaged;",
   "_ss.equip.total = _ss.equip.current + _ss.equip.received - _ss.equip.sold - _ss.equip.salvaged;",
   "if (_ss.equip.total >= _ss.equip.capacity) {",
+  "_ss.error = msg;",
+  "_ss.error = '你的装备库存已满';",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unsafe Shrine capacity path: ${forbidden}`);

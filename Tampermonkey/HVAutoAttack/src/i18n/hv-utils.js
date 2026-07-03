@@ -470,6 +470,13 @@ try {
   var is_hvut_shrine_equip_capacity_full = function (equip) {
     return Number.isFinite(equip.total) && Number.isFinite(equip.capacity) && equip.capacity > 0 && equip.total >= equip.capacity;
   };
+  var set_hvut_shrine_stop_error = function (state, message) {
+    if (!state.error) {
+      state.error = message;
+      popup(message);
+    }
+    return state.error;
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -6927,8 +6934,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
           _ss.equip.salvaged++;
         } else if (msg.includes('Sold the remains for')) {
         } else { //Your equipment inventory is full
-          _ss.error = msg;
-          popup(msg);
+          set_hvut_shrine_stop_error(_ss, msg);
         }
       });
 
@@ -6948,10 +6954,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
           ? 'Inventory Capacity: unavailable'
           : `Inventory Capacity: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, Sold: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, Salvaged: ${_ss.equip.salvaged}` : '');
         if (is_hvut_shrine_equip_capacity_full(_ss.equip)) {
-          if (!_ss.error) {
-            _ss.error = '你的装备库存已满';
-            popup(_ss.error);
-          }
+          set_hvut_shrine_stop_error(_ss, '你的装备库存已满');
         }
         equips.forEach((equip) => {
           _ss.list.equip(item, equip);
@@ -13190,8 +13193,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       } else if (reg.test(msg)) {
         rewards.push(RegExp.$1 || RegExp.$2 || RegExp.$3);
       } else {
-        _ss.error = msg;
-        popup(msg);
+        set_hvut_shrine_stop_error(_ss, msg);
       }
     });
 
@@ -13235,10 +13237,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
           ? '装备库存量: unavailable'
           : `装备库存量: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, 已出售: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, 已分解: ${_ss.equip.salvaged}` : '');
         if (is_hvut_shrine_equip_capacity_full(_ss.equip)) {
-          if (!_ss.error) {
-            _ss.error = '你的装备库存已满';
-            popup(_ss.error);
-          }
+          set_hvut_shrine_stop_error(_ss, '你的装备库存已满');
         }
       }
     });
