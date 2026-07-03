@@ -9622,6 +9622,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         }
         _mm.credits.multi.current = true;
         _mm.write.node.field.disabled = true;
+        const stop = function () {
+          _mm.credits.multi.current = false;
+          _mm.write.node.field.disabled = false;
+          return false;
+        };
 
         const queue = [];
         const errors = [];
@@ -9662,18 +9667,19 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         });
         if (errors.length) {
           alert(errors.join('\n'));
-          return;
+          return stop();
         }
         if (credits_funds < 0) {
           alert('Credits不足');
-          return;
+          return stop();
         }
         if (hath_funds < 0) {
           alert('Hath不足');
-          return;
+          return stop();
         }
 
-        queue.map((mail) => $mail.request(mail));
+        queue.forEach((mail) => $mail.request(mail));
+        return stop();
       },
     };
 
@@ -15787,6 +15793,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       }
       _mm.credits_multi.current = true;
       _mm.node.write_field.disabled = true;
+      const stop = function () {
+        _mm.credits_multi.current = false;
+        _mm.node.write_field.disabled = false;
+        return false;
+      };
 
       const queue = [];
       const errors = [];
@@ -15827,18 +15838,19 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       });
       if (errors.length) {
         alert(errors.join('\n'));
-        return;
+        return stop();
       }
       if (credits_funds < 0) {
         alert('Credits不足');
-        return;
+        return stop();
       }
       if (hath_funds < 0) {
         alert('Hath不足');
-        return;
+        return stop();
       }
 
-      queue.map((mail) => $mail.request(mail));
+      queue.forEach((mail) => $mail.request(mail));
+      return stop();
     };
 
     const multi_div = $element('div', _mm.node.credits_attach, ['!margin-top: 50px;']);
