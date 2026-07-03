@@ -13,12 +13,16 @@ function requirePart(label, body, part) {
 const exportBlocks = [...text.matchAll(/export: function \(\) \{[\s\S]*?\n      \},\n      import: function/g)].map((match) => match[0]);
 const importBlocks = [...text.matchAll(/import: function \(\) \{[\s\S]*?\n      \},\n      clear: async function/g)].map((match) => match[0]);
 const clearBlocks = [...text.matchAll(/clear: async function \(\) \{[\s\S]*?\n      \},\n      toggle: function/g)].map((match) => match[0]);
+const searchBlocks = [...text.matchAll(/search: function \((?:param|query)\) \{[\s\S]*?\n      \},\n      export: function/g)].map((match) => match[0]);
 
 const [modernExport, legacyExport] = exportBlocks;
 const [modernImport, legacyImport] = importBlocks;
 const [modernClear, legacyClear] = clearBlocks;
+const [modernSearch, legacySearch] = searchBlocks;
 
 for (const [label, body] of [
+  ["modern db search", modernSearch],
+  ["legacy db search", legacySearch],
   ["modern db export", modernExport],
   ["modern db import", modernImport],
   ["modern db clear", modernClear],
@@ -27,6 +31,39 @@ for (const [label, body] of [
   ["legacy db clear", legacyClear],
 ]) {
   if (!body) violations.push(`${target} must keep ${label} visible`);
+}
+
+for (const [label, body, stage] of [
+  ["modern db search", modernSearch, "dbSearchReadFailed"],
+  ["legacy db search", legacySearch, "legacyDbSearchReadFailed"],
+]) {
+  for (const required of [
+    "const searchState = { settled: false };",
+    `const fail = create_hvut_mooglemail_db_search_failure('${stage}', season, searchState, resolve);`,
+    "conn.tx.onerror = fail;",
+    "conn.tx.onabort = fail;",
+    "const request = conn.os.openCursor();",
+    "request.onsuccess = function (e) {",
+    "if (searchState.settled) {",
+    "searchState.settled = true;",
+    "resolve(results);",
+    "request.onerror = fail;",
+  ]) {
+    requirePart(label, body, required);
+  }
+  if ((body.match(/openCursor\(\)/g) || []).length !== 1) {
+    violations.push(`${target} ${label} must use exactly one cursor request`);
+  }
+}
+
+for (const required of [
+  "var create_hvut_mooglemail_db_search_failure = function (stage, season, state, resolve) {",
+  "if (state.settled) {",
+  "state.settled = true;",
+  "record_hvut_mooglemail_action_failure(stage, { season: season, error: event?.target?.error?.message || 'search transaction error' });",
+  "resolve([]);",
+]) {
+  if (!text.includes(required)) violations.push(`${target} must define shared MoogleMail DB search failure helper with ${required}`);
 }
 
 for (const required of [
@@ -131,4 +168,4 @@ if (violations.length) {
   process.exit(1);
 }
 
-console.log("[verify-hvut-mooglemail-db-boundary] OK - MoogleMail DB import/export/clear handles failures");
+console.log("[verify-hvut-mooglemail-db-boundary] OK - MoogleMail DB search/import/export/clear handles failures");

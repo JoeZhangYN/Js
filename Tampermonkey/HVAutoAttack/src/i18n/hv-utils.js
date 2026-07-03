@@ -515,6 +515,16 @@ try {
       }
     });
   };
+  var create_hvut_mooglemail_db_search_failure = function (stage, season, state, resolve) {
+    return function (event) {
+      if (state.settled) {
+        return;
+      }
+      state.settled = true;
+      record_hvut_mooglemail_action_failure(stage, { season: season, error: event?.target?.error?.message || 'search transaction error' });
+      resolve([]);
+    };
+  };
   var stop_hvut_mooglemail_send_failure = async function (stage, detail, message, discardStage) {
     record_hvut_mooglemail_send_failure(stage, detail);
     if (message) {
@@ -9814,7 +9824,15 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const results = [];
         return new Promise((resolve) => {
           const conn = _mm.db.conn('readonly', season);
-          conn.os.openCursor().onsuccess = function (e) {
+          const searchState = { settled: false };
+          const fail = create_hvut_mooglemail_db_search_failure('dbSearchReadFailed', season, searchState, resolve);
+          conn.tx.onerror = fail;
+          conn.tx.onabort = fail;
+          const request = conn.os.openCursor();
+          request.onsuccess = function (e) {
+            if (searchState.settled) {
+              return;
+            }
             const cursor = e.target.result;
             if (cursor) {
               const db = cursor.value;
@@ -9832,9 +9850,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
               }
               cursor.continue();
             } else {
+              searchState.settled = true;
               resolve(results);
             }
           };
+          request.onerror = fail;
         });
       },
       export: function () {
@@ -16044,7 +16064,15 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const results = [];
         return new Promise((resolve) => {
           const conn = _mm.db.conn('readonly', season);
-          conn.os.openCursor().onsuccess = function (e) {
+          const searchState = { settled: false };
+          const fail = create_hvut_mooglemail_db_search_failure('legacyDbSearchReadFailed', season, searchState, resolve);
+          conn.tx.onerror = fail;
+          conn.tx.onabort = fail;
+          const request = conn.os.openCursor();
+          request.onsuccess = function (e) {
+            if (searchState.settled) {
+              return;
+            }
             const cursor = e.target.result;
             if (cursor) {
               const db = cursor.value;
@@ -16062,9 +16090,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
               }
               cursor.continue();
             } else {
+              searchState.settled = true;
               resolve(results);
             }
           };
+          request.onerror = fail;
         });
       },
       export: function () {
