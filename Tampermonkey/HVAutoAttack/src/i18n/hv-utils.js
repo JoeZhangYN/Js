@@ -491,6 +491,26 @@ try {
     }
     return state.error;
   };
+  var reserve_hvut_shrine_offer = function (state, item) {
+    item.requests++;
+    item.stock -= item.bulk;
+    item.max--;
+    item.node.stock.textContent = item.stock;
+    item.node.max.textContent = item.max;
+    if (item.type === 'Trophy') {
+      state.equip.requests++;
+    }
+  };
+  var rollback_hvut_shrine_offer_reservation = function (state, item) {
+    item.requests--;
+    item.stock += item.bulk;
+    item.max++;
+    item.node.stock.textContent = item.stock;
+    item.node.max.textContent = item.max;
+    if (item.type === 'Trophy') {
+      state.equip.requests--;
+    }
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -6875,24 +6895,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
       for (let i = 0; i < count; i++) {
         if (_ss.error) break;
-        item.requests++;
-        item.stock -= item.bulk;
-        item.max--;
-        item.node.stock.textContent = item.stock;
-        item.node.max.textContent = item.max;
-        if (item.type === 'Trophy') {
-          _ss.equip.requests++;
-        }
+        reserve_hvut_shrine_offer(_ss, item);
         const offered = await _ss.offer.load(iid, reward_type, reward_slot);
         if (offered === false) {
-          item.requests--;
-          item.stock += item.bulk;
-          item.max++;
-          item.node.stock.textContent = item.stock;
-          item.node.max.textContent = item.max;
-          if (item.type === 'Trophy') {
-            _ss.equip.requests--;
-          }
+          rollback_hvut_shrine_offer_reservation(_ss, item);
           break;
         }
         if (_ss.error) break;
@@ -13201,24 +13207,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
     for (let i = 0; i < count; i++) {
       if (_ss.error) break;
-      item.requests++;
-      item.stock -= item.bulk;
-      item.max--;
-      item.node.stock.textContent = item.stock;
-      item.node.max.textContent = item.max;
-      if (item.type === 'Trophy') {
-        _ss.equip.requests++;
-      }
+      reserve_hvut_shrine_offer(_ss, item);
       const offered = await _ss.request(iid, select_reward_type, select_reward_slot);
       if (offered === false) {
-        item.requests--;
-        item.stock += item.bulk;
-        item.max++;
-        item.node.stock.textContent = item.stock;
-        item.node.max.textContent = item.max;
-        if (item.type === 'Trophy') {
-          _ss.equip.requests--;
-        }
+        rollback_hvut_shrine_offer_reservation(_ss, item);
         break;
       }
       if (_ss.error) break;

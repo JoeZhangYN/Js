@@ -48,15 +48,10 @@ for (const part of [
 for (const part of [
   "request: async function (iid, count, reward_type, reward_slot)",
   "if (_ss.error) break;",
-  "item.requests++;",
-  "item.stock -= item.bulk;",
-  "item.max--;",
+  "reserve_hvut_shrine_offer(_ss, item);",
   "const offered = await _ss.offer.load(iid, reward_type, reward_slot);",
   "if (offered === false) {",
-  "item.requests--;",
-  "item.stock += item.bulk;",
-  "item.max++;",
-  "_ss.equip.requests--;",
+  "rollback_hvut_shrine_offer_reservation(_ss, item);",
   "if (_ss.error) break;",
 ]) {
   requirePart("Shrine offer request", offerRequest, part);
@@ -90,18 +85,24 @@ for (const part of [
 for (const part of [
   "_ss.offer = async function (iid, count)",
   "if (_ss.error) break;",
-  "item.requests++;",
-  "item.stock -= item.bulk;",
-  "item.max--;",
+  "reserve_hvut_shrine_offer(_ss, item);",
   "const offered = await _ss.request(iid, select_reward_type, select_reward_slot);",
   "if (offered === false) {",
-  "item.requests--;",
-  "item.stock += item.bulk;",
-  "item.max++;",
-  "_ss.equip.requests--;",
+  "rollback_hvut_shrine_offer_reservation(_ss, item);",
   "if (_ss.error) break;",
 ]) {
   requirePart("legacy Shrine offer", legacyOffer, part);
+}
+
+for (const required of [
+  "var reserve_hvut_shrine_offer = function (state, item) {",
+  "var rollback_hvut_shrine_offer_reservation = function (state, item) {",
+  "state.equip.requests++;",
+  "state.equip.requests--;",
+]) {
+  if (!text.includes(required)) {
+    violations.push(`${target} must centralize Shrine offer reservation with ${required}`);
+  }
 }
 
 for (const [label, body, counter] of [
@@ -121,6 +122,14 @@ for (const [label, body, forbidden] of [
   ["Shrine offer request", offerRequest, "item.stock -= count * item.bulk;"],
   ["Shrine offer request", offerRequest, "item.max -= count;"],
   ["Shrine offer request", offerRequest, "_ss.equip.requests += count;"],
+  ["Shrine offer request", offerRequest, "item.requests++;"],
+  ["Shrine offer request", offerRequest, "item.requests--;"],
+  ["Shrine offer request", offerRequest, "item.stock -= item.bulk;"],
+  ["Shrine offer request", offerRequest, "item.stock += item.bulk;"],
+  ["Shrine offer request", offerRequest, "item.max--;"],
+  ["Shrine offer request", offerRequest, "item.max++;"],
+  ["Shrine offer request", offerRequest, "_ss.equip.requests++;"],
+  ["Shrine offer request", offerRequest, "_ss.equip.requests--;"],
   ["Shrine offer load", offerLoad, "_ss.log.save();"],
   ["Shrine log save", logSave, "$config.set('ss_log', _ss.log.json);"],
   ["legacy Shrine offer", legacyOffer, /(^|\n)\s*_ss\.request\(iid, select_reward_type, select_reward_slot\);/],
@@ -128,6 +137,14 @@ for (const [label, body, forbidden] of [
   ["legacy Shrine offer", legacyOffer, "item.stock -= count * item.bulk;"],
   ["legacy Shrine offer", legacyOffer, "item.max -= count;"],
   ["legacy Shrine offer", legacyOffer, "_ss.equip.requests += count;"],
+  ["legacy Shrine offer", legacyOffer, "item.requests++;"],
+  ["legacy Shrine offer", legacyOffer, "item.requests--;"],
+  ["legacy Shrine offer", legacyOffer, "item.stock -= item.bulk;"],
+  ["legacy Shrine offer", legacyOffer, "item.stock += item.bulk;"],
+  ["legacy Shrine offer", legacyOffer, "item.max--;"],
+  ["legacy Shrine offer", legacyOffer, "item.max++;"],
+  ["legacy Shrine offer", legacyOffer, "_ss.equip.requests++;"],
+  ["legacy Shrine offer", legacyOffer, "_ss.equip.requests--;"],
   ["legacy Shrine request", legacyRequest, "$config.set('ss_log', _ss.log);"],
 ]) {
   if (typeof forbidden === "string" ? body.includes(forbidden) : forbidden.test(body)) {
