@@ -481,6 +481,20 @@ try {
     }
     return evidence;
   };
+  var record_hvut_mooglemail_action_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutMoogleMailAction', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutMoogleMailActionFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // MoogleMail action fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] MoogleMail action failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT MoogleMail action fallback.
+    }
+    return evidence;
+  };
   var stop_hvut_mooglemail_send_failure = async function (stage, detail, message, discardStage) {
     record_hvut_mooglemail_send_failure(stage, detail);
     if (message) {
@@ -10101,16 +10115,30 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         mail.node.search?.classList.add('hvut-mm-current');
 
         if (season === _mm.db.season) {
-          await _mm.mail.load(mid, post);
+          if (!await _mm.mail.load(mid, post)) {
+            _mm.mail.view(mail);
+            return false;
+          }
         }
         _mm.mail.view(mail);
       },
       load: async function (mid, post) {
         const mail = _mm.mail.get(mid);
-        const html = await $ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post);
+        let html;
+        try {
+          html = await $ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post);
+        } catch (error) {
+          const stage = post ? 'viewActionRequest' : 'viewLoadRequest';
+          record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
+          mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };
+          return false;
+        }
         mail.view = _mm.mail.parse(html);
+        if (mail.view?.error) {
+          record_hvut_mooglemail_action_failure(post ? 'viewActionRejected' : 'viewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
+        }
         _mm.mail.update(mail);
-        return true;
+        return !mail.view?.error;
       },
       parse: function (html) {
         const doc = $doc(html);
@@ -16203,17 +16231,31 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       mail.node.search?.classList.add('hvut-mm-current');
 
       if (season === _mm.db.season) {
-        await _mm.mail_load(mid, post);
+        if (!await _mm.mail_load(mid, post)) {
+          _mm.mail_view(mail);
+          return false;
+        }
       }
       _mm.mail_view(mail);
     };
 
     _mm.mail_load = async function (mid, post) {
       const mail = _mm.mail_get(mid);
-      const html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);
+      let html;
+      try {
+        html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);
+      } catch (error) {
+        const stage = post ? 'legacyViewActionRequest' : 'legacyViewLoadRequest';
+        record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
+        mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };
+        return false;
+      }
       mail.view = _mm.mail_parse(html);
+      if (mail.view?.error) {
+        record_hvut_mooglemail_action_failure(post ? 'legacyViewActionRejected' : 'legacyViewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
+      }
       _mm.mail_update(mail);
-      return true;
+      return !mail.view?.error;
     };
 
     _mm.mail_parse = function (arg) {
