@@ -45,10 +45,19 @@ function warnCriticalPause(plan) {
 
 function triggerCriticalAlarm() {
   try {
-    return { alarmResult: Boolean(runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Error" })) };
+    return {
+      alarmResult: criticalAlarmTriggered(
+        runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind: "Error" })
+      ),
+    };
   } catch (error) {
     return { alarmResult: false, alarmError: error?.message || String(error) };
   }
+}
+
+function criticalAlarmTriggered(result) {
+  if (result && typeof result === "object" && result.kind === "failed") return false;
+  return Boolean(result);
 }
 
 function isCriticalPausePlan(plan) {

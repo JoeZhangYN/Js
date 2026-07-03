@@ -2862,6 +2862,8 @@ function checkCriticalBuffEntry() {
     "APPLY_PLAN",
     "runCriticalBuffPauseExecution",
     "runAlarmAutomation",
+    "criticalAlarmTriggered",
+    "result.kind === \"failed\"",
     "runBattlePauseAutomation",
     "runBattlePauseEvidence",
     "document.title",
@@ -2931,7 +2933,9 @@ function checkCriticalBuffEntry() {
     for (const required of [
       "returns not acted when the pause entry rejects the critical pause",
       "still pauses when the alarm side effect fails",
+      "records typed alarm failures as not triggered while still pausing",
       "still pauses when the warning side effect fails",
+      "alarmTriggerRejected",
       "alarm failed",
       "alarmError",
       "warning failed",
