@@ -127,4 +127,32 @@ describe("runBattleAttackExecution merciful physical side effects", () => {
       })
     );
   });
+
+  it("keeps acted merciful physical plans acted when fallback target returns typed failure", () => {
+    mocks.runBattleTargetCommand.mockReturnValueOnce(true).mockReturnValueOnce({
+      kind: "failed",
+      reason: "targetReadFailed",
+    });
+
+    expect(
+      runBattleAttackExecution({
+        type: BattleAttackExecutionEvent.APPLY_PLAN,
+        plan: {
+          type: "physical",
+          skillId: "1111",
+          code: "OFC",
+          mercifulTargetId: 2,
+          defaultTargetId: 3,
+        },
+        snap: { globalTurn: 11 },
+      })
+    ).toBe(true);
+
+    expect(mocks.runBattleActionEffectEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        acted: true,
+        failureReason: "mercifulFallbackTargetRejected",
+      })
+    );
+  });
 });

@@ -3,14 +3,19 @@ import { recordActionEffectEvidence } from "../battle-action-effect-recording.js
 
 export function clickMercifulFallbackTarget(plan) {
   try {
-    const clicked = !!runBattleTargetCommand({
+    const clicked = mercifulFallbackTargetClicked(runBattleTargetCommand({
       type: BattleTargetCommandEvent.CLICK_TARGET,
       targetId: plan.defaultTargetId,
-    });
+    }));
     if (!clicked) recordMercifulFallbackTargetFailure(plan, "mercifulFallbackTargetRejected");
   } catch (error) {
     recordMercifulFallbackTargetFailure(plan, "mercifulFallbackTargetThrew", error);
   }
+}
+
+function mercifulFallbackTargetClicked(result) {
+  if (result?.kind === "failed") return false;
+  return Boolean(result);
 }
 
 function recordMercifulFallbackTargetFailure(plan, reason, error) {

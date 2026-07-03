@@ -189,8 +189,10 @@ if (!fs.existsSync(path.join(root, mercifulSideEffectTest))) {
   for (const required of [
     "keeps acted merciful physical plans acted when the fallback target command throws",
     "keeps acted merciful physical plans acted when the fallback target command rejects",
+    "keeps acted merciful physical plans acted when fallback target returns typed failure",
     "mercifulFallbackTargetThrew",
     "mercifulFallbackTargetRejected",
+    'kind: "failed"',
     "acted: true",
   ]) {
     if (!mercifulSideEffectTestText.includes(required)) {
@@ -237,6 +239,8 @@ if (
 }
 for (const required of [
   "recordMercifulFallbackTargetFailure",
+  "mercifulFallbackTargetClicked",
+  'result?.kind === "failed"',
   "mercifulFallbackTargetThrew",
   "mercifulFallbackTargetRejected",
   "acted: true",
