@@ -21,12 +21,24 @@ const legacyCredits =
 const mailParseBodies = [...text.matchAll(/parse: function \(html\) \{[\s\S]*?\n      \},\n      update: function/g)].map((m) => m[0]);
 const legacyMailParse =
   /_mm\.mail_parse = function \(arg\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_update/.exec(text)?.[0] || "";
+const modernPagePager =
+  /pager: function \(pager, p\) \{[\s\S]*?\n      \},\n      create: function/.exec(text)?.[0] || "";
+const modernPageCreate =
+  /create: function \(list, p\) \{[\s\S]*?\n      \},\n      modify: function/.exec(text)?.[0] || "";
+const legacyPagePager =
+  /_mm\.page_pager = function \(pager, p\) \{[\s\S]*?\n    \};\n\n    _mm\.page_create/.exec(text)?.[0] || "";
+const legacyPageCreate =
+  /_mm\.page_create = function \(list, p\) \{[\s\S]*?\n    \};\n\n    _mm\.page_modify/.exec(text)?.[0] || "";
 
 for (const [label, body] of [
   ["MoogleMail parse helper", helperRegion],
   ["modern MoogleMail credits", modernCredits],
   ["legacy MoogleMail credits", legacyCredits],
   ["legacy MoogleMail parser", legacyMailParse],
+  ["modern MoogleMail page pager", modernPagePager],
+  ["modern MoogleMail page create", modernPageCreate],
+  ["legacy MoogleMail page pager", legacyPagePager],
+  ["legacy MoogleMail page create", legacyPageCreate],
 ]) {
   if (!body) violations.push(`${target} must keep ${label} visible`);
 }
@@ -40,6 +52,11 @@ for (const required of [
   "sessionStorage.setItem('HVAA:lastHvutMoogleMailParseFailure', JSON.stringify(evidence));",
   "var parse_hvut_mooglemail_count = function (text, pattern, stage) {",
   "record_hvut_mooglemail_parse_failure(stage, { text: text || '' });",
+  "var parse_hvut_mooglemail_page_href = function (link, stage) {",
+  "if (!link) return null;",
+  "record_hvut_mooglemail_parse_failure(stage, { href: href });",
+  "var parse_hvut_mooglemail_mid = function (onclick, stage) {",
+  "record_hvut_mooglemail_parse_failure(stage, { onclick: onclick || '' });",
 ]) {
   requirePart("MoogleMail parse helper", helperRegion, required);
 }
@@ -75,10 +92,32 @@ for (const [label, body, stage] of [
   requirePart(label, body, "view.cod = 0;");
 }
 
+for (const [label, body, prevStage, nextStage] of [
+  ["modern MoogleMail page pager", modernPagePager, "pagePrevHref", "pageNextHref"],
+  ["legacy MoogleMail page pager", legacyPagePager, "legacyPagePrevHref", "legacyPageNextHref"],
+]) {
+  requirePart(label, body, `parse_hvut_mooglemail_page_href(pager?.children?.[0]?.firstElementChild, '${prevStage}')`);
+  requirePart(label, body, `parse_hvut_mooglemail_page_href(pager?.children?.[1]?.firstElementChild, '${nextStage}')`);
+}
+
+for (const [label, body, rowName, stage] of [
+  ["modern MoogleMail page create", modernPageCreate, "tr", "pageRowMid"],
+  ["legacy MoogleMail page create", legacyPageCreate, "row", "legacyPageRowMid"],
+]) {
+  requirePart(label, body, `const mid = parse_hvut_mooglemail_mid(${rowName}.getAttribute('onclick'), '${stage}');`);
+  requirePart(label, body, "if (mid === null) {");
+  requirePart(label, body, "if (!--count) scrollIntoView(table);");
+  requirePart(label, body, "return;");
+}
+
 for (const forbidden of [
   "credits.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Credits/.exec($id('mmail_attachcredits').textContent)[1]);",
   "hath.data.stock = _mm.parse_count(/Current Funds: ([0-9,]+) Hath/.exec($id('mmail_attachhath').textContent)[1]);",
   "view.cod = _mm.parse_count(/Requested Payment on Delivery: ([0-9,]+) credits/.exec($id('mmail_currentcod', doc).textContent)[1]);",
+  "parseInt(pager.children[0].firstElementChild.href?.match(/&page=(\\d+)/)[1])",
+  "parseInt(pager.children[1].firstElementChild.href?.match(/&page=(\\d+)/)[1])",
+  "parseInt(/mid=(\\d+)/.exec(tr.getAttribute('onclick'))[1])",
+  "parseInt(/mid=(\\d+)/.exec(row.getAttribute('onclick'))[1])",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked MoogleMail parse path: ${forbidden}`);

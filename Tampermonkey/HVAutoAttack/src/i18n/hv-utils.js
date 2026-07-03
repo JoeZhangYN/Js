@@ -125,6 +125,17 @@ try {
     var match = pattern.exec(text || '');
     return match ? parseInt(match[1].replace(/,/g, '')) || 0 : record_hvut_mooglemail_parse_failure(stage, { text: text || '' });
   };
+  var parse_hvut_mooglemail_page_href = function (link, stage) {
+    if (!link) return null;
+    var href = link.href || '';
+    if (!href) return null;
+    var match = /&page=(\d+)/.exec(href);
+    return match ? parseInt(match[1]) : record_hvut_mooglemail_parse_failure(stage, { href: href });
+  };
+  var parse_hvut_mooglemail_mid = function (onclick, stage) {
+    var match = /mid=(\d+)/.exec(onclick || '');
+    return match ? parseInt(match[1]) : record_hvut_mooglemail_parse_failure(stage, { onclick: onclick || '' });
+  };
   var record_hvut_monster_lab_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutMonsterLabParse', stage: stage, detail: detail || {} };
     try {
@@ -9457,8 +9468,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         return doc;
       },
       pager: function (pager, p) {
-        const prev = parseInt(pager.children[0].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
-        const next = parseInt(pager.children[1].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
+        const prev = parse_hvut_mooglemail_page_href(pager?.children?.[0]?.firstElementChild, 'pagePrevHref');
+        const next = parse_hvut_mooglemail_page_href(pager?.children?.[1]?.firstElementChild, 'pageNextHref');
         if (_mm.page.prev !== null && p <= _mm.page.prev) {
           _mm.page.prev = prev;
         }
@@ -9481,7 +9492,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             $element('tr', tbody, ['/<td colspan="6">No New Mail</td>']);
             return;
           }
-          const mid = parseInt(/mid=(\d+)/.exec(tr.getAttribute('onclick'))[1]);
+          const mid = parse_hvut_mooglemail_mid(tr.getAttribute('onclick'), 'pageRowMid');
+          if (mid === null) {
+            if (!--count) scrollIntoView(table);
+            return;
+          }
           const user = tr.cells[0].textContent;
           const returned = user === 'MoogleMail';
           const subject = tr.cells[1].textContent;
@@ -15698,8 +15713,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
     };
 
     _mm.page_pager = function (pager, p) {
-      const prev = parseInt(pager.children[0].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
-      const next = parseInt(pager.children[1].firstElementChild.href?.match(/&page=(\d+)/)[1]) || null;
+      const prev = parse_hvut_mooglemail_page_href(pager?.children?.[0]?.firstElementChild, 'legacyPagePrevHref');
+      const next = parse_hvut_mooglemail_page_href(pager?.children?.[1]?.firstElementChild, 'legacyPageNextHref');
       if (_mm.page_prev !== null && p <= _mm.page_prev) {
         _mm.page_prev = prev;
       }
@@ -15723,7 +15738,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           $element('tr', tbody, ['/<td colspan="6">没有新邮件</td>']);
           return;
         }
-        const mid = parseInt(/mid=(\d+)/.exec(row.getAttribute('onclick'))[1]);
+        const mid = parse_hvut_mooglemail_mid(row.getAttribute('onclick'), 'legacyPageRowMid');
+        if (mid === null) {
+          if (!--count) scrollIntoView(table);
+          return;
+        }
         const user = row.cells[0].textContent;
         const returned = user === 'MoogleMail';
         const subject = row.cells[1].textContent;
