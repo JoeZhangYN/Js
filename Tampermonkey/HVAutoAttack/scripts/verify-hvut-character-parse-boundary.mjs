@@ -22,6 +22,8 @@ const personaCheckP = /persona\.check_p = function \(doc\) \{[\s\S]*?\n  \};\n  
 const personaCheckE = /persona\.check_e = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.change_p/.exec(text)?.[0] || "";
 const personaChangeP = /persona\.change_p = async function \(pset\) \{[\s\S]*?\n  \};\n  persona\.change_e/.exec(text)?.[0] || "";
 const personaChangeE = /persona\.change_e = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.set_button/.exec(text)?.[0] || "";
+const equipPopupLoad = /_eq\.popup_load = function \(eq\) \{[\s\S]*?\n  \};\n\n  _eq\.charm_load/.exec(text)?.[0] || "";
+const equipCharmAppend = /_eq\.charm_append = function \(eq\) \{[\s\S]*?\n  \};\n\n  if \(_query\.equip_slot\)/.exec(text)?.[0] || "";
 
 for (const [label, body] of [
   ["character parse helper", helperRegion],
@@ -31,6 +33,8 @@ for (const [label, body] of [
   ["persona.check_e", personaCheckE],
   ["persona.change_p", personaChangeP],
   ["persona.change_e", personaChangeE],
+  ["_eq.popup_load", equipPopupLoad],
+  ["_eq.charm_append", equipCharmAppend],
 ]) {
   if (!body) violations.push(`${target} must keep ${label} visible`);
 }
@@ -43,6 +47,10 @@ for (const required of [
   "return record_hvut_character_parse_failure(stage, { reason: 'personaFormMissing' });",
   "var parse_hvut_equip_set_state = function (doc, stage) {",
   "return record_hvut_character_parse_failure(stage, {",
+  "var clear_hvut_equip_popup_drop_info = function (doc, stage) {",
+  "return record_hvut_character_parse_failure(stage, { reason: 'equipPopupDropInfoMissing' });",
+  "var append_hvut_equip_popup_charms = function (doc, div, stage) {",
+  "return record_hvut_character_parse_failure(stage, { reason: 'equipPopupBodyMissing' });",
 ]) {
   requirePart("character parse helper", helperRegion, required);
 }
@@ -65,6 +73,9 @@ requirePart("persona.change_p", personaChangeP, "if ((await persona.change_e()) 
 requirePart("persona.change_p", personaChangeP, "if (ctx.dfct.set_button(doc) === false) return false;");
 requirePart("persona.change_e", personaChangeE, "if (persona.check_e(doc) === false) {");
 requirePart("persona.change_e", personaChangeE, "if (persona.selector_e) persona.selector_e.disabled = false;");
+requirePart("_eq.popup_load", equipPopupLoad, "clear_hvut_equip_popup_drop_info(doc, 'equipPopupDropInfo');");
+requirePart("_eq.charm_append", equipCharmAppend, "record_hvut_character_parse_failure('equipPopupCharmText', { charm: charm });");
+requirePart("_eq.charm_append", equipCharmAppend, "if (append_hvut_equip_popup_charms(doc, div, 'equipPopupCharmAppend') === false) {");
 
 for (const required of [
   "if ($persona.check_e() === false) return;",
@@ -79,6 +90,9 @@ for (const forbidden of [
   "persona.check_p(doc);\n    if (persona.selector_p)",
   "persona.check_e(doc);\n    const json = persona.json;",
   "ctx.dfct.set_button(doc);\n  };",
+  "doc.querySelector('.showequip').children[2]",
+  "doc.querySelector('.eq').appendChild(div)",
+  "const [, type, tier] = reg_charm.exec(charm);",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unsafe character parse path: ${forbidden}`);

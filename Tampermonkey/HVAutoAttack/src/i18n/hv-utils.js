@@ -377,6 +377,22 @@ try {
     }
     return { eset: parseInt(match[1]), elen: eqsl.childElementCount };
   };
+  var clear_hvut_equip_popup_drop_info = function (doc, stage) {
+    var div = doc?.querySelector('.showequip')?.children?.[2];
+    if (!div) {
+      return record_hvut_character_parse_failure(stage, { reason: 'equipPopupDropInfoMissing' });
+    }
+    div.innerHTML = '';
+    return true;
+  };
+  var append_hvut_equip_popup_charms = function (doc, div, stage) {
+    var parent = doc?.querySelector('.eq');
+    if (!parent) {
+      return record_hvut_character_parse_failure(stage, { reason: 'equipPopupBodyMissing' });
+    }
+    parent.appendChild(div);
+    return true;
+  };
   var parse_hvut_inventory_capacity = function (html, stage) {
     var exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html || '');
     if (!exec) {
@@ -5706,8 +5722,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     eq.node.popup.dataset.loaded = '1';
     if ($config.settings.equipHideDropInfo) {
       const doc = eq.node.popup.contentDocument;
-      const div = doc.querySelector('.showequip').children[2];
-      div.innerHTML = '';
+      clear_hvut_equip_popup_drop_info(doc, 'equipPopupDropInfo');
     }
     if ($config.settings.equipShowCharms && eq.info.upgrade_cap) {
       _eq.charm_append(eq);
@@ -5735,10 +5750,10 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     `;
     doc.head.appendChild(style);
     const div = doc.createElement('div');
-    eq.node.charms = div;
     div.classList.add('ep', 'chm');
     switch (eq.data.charms.length) {
       case 0:
+        eq.node.charms = div;
         return;
       case 1:
         div.classList.add('ep1');
@@ -5752,11 +5767,19 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     }
     div.insertAdjacentHTML('beforeend', '<div>Charms</div>');
     const reg_charm = /(.+) \((Greater|Lesser)\)/;
-    eq.data.charms.forEach((charm) => {
-      const [, type, tier] = reg_charm.exec(charm);
+    for (const charm of eq.data.charms) {
+      const match = reg_charm.exec(charm);
+      if (!match) {
+        record_hvut_character_parse_failure('equipPopupCharmText', { charm: charm });
+        return;
+      }
+      const [, type, tier] = match;
       div.insertAdjacentHTML('beforeend', `<div>${type} (${tier[0]})</div>`);
-    });
-    doc.querySelector('.eq').appendChild(div);
+    }
+    if (append_hvut_equip_popup_charms(doc, div, 'equipPopupCharmAppend') === false) {
+      return;
+    }
+    eq.node.charms = div;
   };
 
   if (_query.equip_slot) {
