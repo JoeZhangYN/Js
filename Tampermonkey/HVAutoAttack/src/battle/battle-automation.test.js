@@ -92,6 +92,19 @@ describe("runBattleAutomation", () => {
     });
   });
 
+  it("does not treat typed failed startup steps as successful", () => {
+    const detail = { kind: "failed", reason: "battleStartFailed" };
+    mocks.runBattleLifecycleAutomation.mockReturnValue(detail);
+
+    expect(runBattleAutomation({ type: BattleEvent.PAGE_READY })).toBe(false);
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleAutomation"))).toMatchObject({
+      phase: "pageReady",
+      result: false,
+      steps: expect.arrayContaining([{ capability: "battleStarted", result: false, detail }]),
+    });
+  });
+
   it("rejects unknown events with structured startup evidence", () => {
     expect(runBattleAutomation({ type: "unknown" })).toBe(false);
     expect(mocks.runBattleActionEventBridgeAutomation).not.toHaveBeenCalled();

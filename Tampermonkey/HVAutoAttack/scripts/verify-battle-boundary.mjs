@@ -295,6 +295,15 @@ function checkBattleEntry() {
   if (!text.includes("const startupSucceeded = steps.every((step) => step.result)")) {
     violations.push(`${rel(battleFile)} must derive page-ready success from startup step results`);
   }
+  for (const required of [
+    "normalizeStartupResult",
+    'rawResult?.kind === "failed"',
+    "return { result: false, detail: rawResult }",
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(battleFile)} must normalize startup result through ${required}`);
+    }
+  }
   if (!text.includes("recordStartup(EVENT_PAGE_READY, startupSucceeded, steps)")) {
     violations.push(
       `${rel(battleFile)} must not claim page-ready succeeded when a startup step failed`
@@ -348,6 +357,7 @@ function checkBattleEntry() {
     "rejects null events without starting battle page capabilities",
     "rejects unknown events with structured startup evidence",
     "records failed startup steps without claiming page startup succeeded",
+    "does not treat typed failed startup steps as successful",
     "HVAA:lastBattleAutomation",
     "unknownBattleAutomationEvent",
   ]) {

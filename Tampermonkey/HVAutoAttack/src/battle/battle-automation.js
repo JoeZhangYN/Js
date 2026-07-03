@@ -69,12 +69,20 @@ function runInitialBattleTurn() {
 function runPageReadyStartup(deps) {
   const steps = [];
   for (const step of PAGE_READY_STARTUP_STEPS) {
-    const result = step.run();
-    steps.push({ capability: step.capability, result: result === undefined ? true : Boolean(result) });
+    steps.push({ capability: step.capability, ...normalizeStartupResult(step.run()) });
   }
   const startupSucceeded = steps.every((step) => step.result);
   deps.recordStartup(EVENT_PAGE_READY, startupSucceeded, steps);
   return startupSucceeded;
+}
+
+function normalizeStartupResult(rawResult) {
+  if (rawResult === undefined) return { result: true };
+  if (rawResult?.kind === "failed") return { result: false, detail: rawResult };
+  if (rawResult && typeof rawResult === "object" && "kind" in rawResult) {
+    return { result: true, detail: rawResult };
+  }
+  return { result: Boolean(rawResult) };
 }
 
 const battleEventHandlers = Object.freeze({
