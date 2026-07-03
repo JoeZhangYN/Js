@@ -567,6 +567,8 @@ function checkUsageImplementation() {
     violations.push(`${rel(usageActionStatsFile)} must not index raw text.match() results`);
   }
   for (const required of [
+    "function hasUsageLogClass(line, className)",
+    'return hasUsageLogClass(line, "tls");',
     "if (!match) return false;",
     "if (!amountMatch) return false;",
     "if (!magic) return false;",
@@ -578,6 +580,19 @@ function checkUsageImplementation() {
     if (!actionStatsText.includes(required)) {
       violations.push(`${rel(usageActionStatsFile)} must fail closed through ${required}`);
     }
+  }
+  if (/className === ["']tls["']/.test(actionStatsText)) {
+    violations.push(`${rel(usageActionStatsFile)} must classify usage log cutoff by class token`);
+  }
+  const usageActionStatsTestText = fs.readFileSync(
+    path.join(root, "src/monitor/record-usage-action-stats.test.js"),
+    "utf8"
+  );
+  if (
+    !usageActionStatsTestText.includes("stops reading battle log lines at the tls marker token") ||
+    !usageActionStatsTestText.includes('"tls extra"')
+  ) {
+    violations.push("src/monitor/record-usage-action-stats.test.js must cover multi-class tls cutoff markers");
   }
   if (!text.includes("./record-usage-completion.js")) {
     violations.push(`${rel(usageFile)} must route completion aggregation through private helper`);

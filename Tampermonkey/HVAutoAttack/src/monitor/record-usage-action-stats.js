@@ -2,6 +2,15 @@ function addCount(group, key, amount = 1) {
   group[key] = key in group ? group[key] + amount : amount;
 }
 
+function hasUsageLogClass(line, className) {
+  if (line?.classList?.contains?.(className)) return true;
+  return String(line?.className || "").split(/\s+/).includes(className);
+}
+
+function isUsageLogCutoff(line) {
+  return hasUsageLogClass(line, "tls");
+}
+
 function recordRoundProgress(stats, context) {
   if (context.monsterAlive !== 0) return;
   stats.self._turn += context.turn;
@@ -147,7 +156,7 @@ export function applyBattleActionUsageStats(stats, usage, context) {
   recordRoundProgress(stats, context);
   recordSelectedAction(stats, usage);
   for (let i = 0; i < usage.log.length; i++) {
-    if (usage.log[i].className === "tls") break;
+    if (isUsageLogCutoff(usage.log[i])) break;
     recordBattleLogLine(stats, usage, usage.log, i);
   }
   return stats;

@@ -42,7 +42,7 @@ describe("applyBattleActionUsageStats", () => {
     });
   });
 
-  it("stops reading battle log lines at the tls marker", () => {
+  it("stops reading battle log lines at the tls marker token", () => {
     const stats = createDefaultUsageStats();
 
     applyBattleActionUsageStats(
@@ -51,7 +51,7 @@ describe("applyBattleActionUsageStats", () => {
         mode: "attack",
         log: [
           line("You evade the attack"),
-          line("ignored", "tls"),
+          line("ignored", "tls extra"),
           line("You gain the effect Focusing"),
         ],
       },
