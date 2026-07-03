@@ -70,8 +70,20 @@ requireIncludes(target, text, [
   "record_hvut_config_parse_failure('configFieldHelpTextBridgeMissing'",
   "record_hvut_config_parse_failure('configFieldDescriptionBridgeMissing'",
   "return true;",
-  "const inputKind = get_hvut_config_field_input_kind(o);",
-  "if (is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })) {",
+  "var render_hvut_config_field_row = function (config, field, context) {",
+  "const inputKind = get_hvut_config_field_input_kind(field);",
+  "field.node.div = $element('div', config.node.div);",
+  "field.node.input = context?.checkboxWithNullLabel",
+  "? $input(['checkbox', null, field.label], field.node.div)",
+  ": $input(['checkbox', field.label], field.node.div);",
+  "if (inputKind === 'textarea' && context?.showTextareaDefaultButton) {",
+  "$input(['button', '恢复默认'], field.node.div, null, () => { config.set_input(field); });",
+  "text = format_hvut_config_field_help_text(text);",
+  "desc = format_hvut_config_field_description(desc);",
+  "$input(['button', desc.button], field.node.div",
+  "field.node.desc = $element('p', field.node.div, ['/' + desc.html, '.hvut-none']);",
+  "field.node.input.dataset.key = field.key;",
+  "if (is_hvut_config_field_disabled(field, { isIsekai: isIsekai, serverName: _server.name })) {",
   "skipField: (o) => is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })",
 ]);
 
@@ -89,18 +101,19 @@ const createBodies = [...text.matchAll(/create: function \(\) \{[\s\S]*?\n  \},\
 );
 if (createBodies.length !== 2) violations.push(`${target} must keep both config create entries visible`);
 for (const [index, body] of createBodies.entries()) {
-  requireIncludes(target, body, [
+  const expectedCall =
+    index === 0
+      ? "render_hvut_config_field_row($config, o, {\n        checkboxWithNullLabel: true,\n        isIsekai: IS_ISEKAI,\n        showTextareaDefaultButton: true,\n      });"
+      : "render_hvut_config_field_row($config, o, { isIsekai: IS_ISEKAI });";
+  requireIncludes(target, body, [expectedCall]);
+  for (const forbidden of [
     "const inputKind = get_hvut_config_field_input_kind(o);",
     "if (inputKind === 'textarea')",
     "else if (inputKind === 'select')",
     "else if (inputKind === 'checkbox')",
     "else if (inputKind === 'number')",
-    "text = format_hvut_config_field_help_text(text);",
-    "desc = format_hvut_config_field_description(desc);",
-    "$input(['button', desc.button]",
-    "['/' + desc.html, '.hvut-none']",
-  ]);
-  for (const forbidden of [
+    "o.node.input.dataset.key = o.key;",
+    "if (is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })) {",
     "if (o.input === 'textarea')",
     "else if (o.input === 'select')",
     "else if (o.type === 'boolean')",

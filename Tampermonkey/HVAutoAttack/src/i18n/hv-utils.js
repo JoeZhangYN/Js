@@ -246,6 +246,64 @@ try {
     }
     return true;
   };
+  var render_hvut_config_field_row = function (config, field, context) {
+    var isIsekai = !!context?.isIsekai;
+    field.node = {};
+    field.node.div = $element('div', config.node.div);
+    $element('h2', field.node.div, field.key);
+    const inputKind = get_hvut_config_field_input_kind(field);
+
+    if (inputKind === 'textarea') {
+      // field.node.input is appended after help and description to preserve layout.
+    } else if (inputKind === 'select') {
+      field.node.input = $input(['select', field.options], field.node.div);
+      if (field.label) {
+        $element('span', field.node.div, field.label);
+      }
+    } else if (inputKind === 'checkbox') {
+      field.node.input = context?.checkboxWithNullLabel
+        ? $input(['checkbox', null, field.label], field.node.div)
+        : $input(['checkbox', field.label], field.node.div);
+    } else if (inputKind === 'number') {
+      field.node.input = $input(['number'], field.node.div);
+      if (field.label) {
+        $element('span', field.node.div, field.label);
+      }
+    } else {
+      field.node.input = $input(['text'], field.node.div);
+    }
+
+    let text = config.text[field.text || field.key] || field.text;
+    if (text) {
+      text = format_hvut_config_field_help_text(text);
+      field.node.text = $element('p', field.node.div, ['/' + text]);
+    }
+    if (inputKind === 'textarea' && context?.showTextareaDefaultButton) {
+      $input(['button', '恢复默认'], field.node.div, null, () => { config.set_input(field); });
+    }
+    let desc = config.desc[field.desc || field.key];
+    if (desc) {
+      desc = format_hvut_config_field_description(desc);
+      $input(['button', desc.button], field.node.div, null, () => { field.node.desc.classList.toggle('hvut-none'); });
+      //$element('br', field.node.div);
+      field.node.desc = $element('p', field.node.div, ['/' + desc.html, '.hvut-none']);
+    }
+
+    if (inputKind === 'textarea') { // append here
+      field.node.input = $element('textarea', field.node.div, { spellcheck: false });
+    }
+    field.node.input.dataset.key = field.key;
+    if (field.style) {
+      field.node.input.style.cssText = field.style;
+    }
+    if (is_hvut_config_field_disabled(field, { isIsekai: isIsekai, serverName: _server.name })) {
+      field.node.div.classList.add('hvut-cfg-disabled');
+      field.node.input.disabled = true;
+    }
+    if (field.oncreate) {
+      field.oncreate(field);
+    }
+  };
   var record_hvut_item_shop_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutItemShopParse', stage: stage, detail: detail || {} };
     try {
@@ -5199,59 +5257,11 @@ const $config = {
         //$element('li', $config.node.ul, o.text, () => { scrollIntoView(h); });
         return;
       }
-      o.node = {};
-      o.node.div = $element('div', $config.node.div);
-      $element('h2', o.node.div, o.key);
-      const inputKind = get_hvut_config_field_input_kind(o);
-
-      if (inputKind === 'textarea') {
-        //o.node.input = $element('textarea', o.node.div, { spellcheck: false });
-      } else if (inputKind === 'select') {
-        o.node.input = $input(['select', o.options], o.node.div);
-        if (o.label) {
-          $element('span', o.node.div, o.label);
-        }
-      } else if (inputKind === 'checkbox') {
-        o.node.input = $input(['checkbox', null, o.label], o.node.div);
-      } else if (inputKind === 'number') {
-        o.node.input = $input(['number'], o.node.div);
-        if (o.label) {
-          $element('span', o.node.div, o.label);
-        }
-      } else {
-        o.node.input = $input(['text'], o.node.div);
-      }
-
-      let text = $config.text[o.text || o.key] || o.text;
-      if (text) {
-        text = format_hvut_config_field_help_text(text);
-        o.node.text = $element('p', o.node.div, ['/' + text]);
-      }
-      if (inputKind === 'textarea') {
-        $input(['button', '恢复默认'], o.node.div, null, () => { $config.set_input(o); });
-      }
-      let desc = $config.desc[o.desc || o.key];
-      if (desc) {
-        desc = format_hvut_config_field_description(desc);
-        $input(['button', desc.button], o.node.div, null, () => { o.node.desc.classList.toggle('hvut-none'); });
-        //$element('br', o.node.div);
-        o.node.desc = $element('p', o.node.div, ['/' + desc.html, '.hvut-none']);
-      }
-
-      if (inputKind === 'textarea') { // append here
-        o.node.input = $element('textarea', o.node.div, { spellcheck: false });
-      }
-      o.node.input.dataset.key = o.key;
-      if (o.style) {
-        o.node.input.style.cssText = o.style;
-      }
-      if (is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })) {
-        o.node.div.classList.add('hvut-cfg-disabled');
-        o.node.input.disabled = true;
-      }
-      if (o.oncreate) {
-        o.oncreate(o);
-      }
+      render_hvut_config_field_row($config, o, {
+        checkboxWithNullLabel: true,
+        isIsekai: IS_ISEKAI,
+        showTextareaDefaultButton: true,
+      });
     });
 
     const bottom = $element('footer', $config.node.div);
@@ -10976,56 +10986,7 @@ const $config = {
         //$element('li', $config.node.ul, o.text, () => { scrollIntoView(h); });
         return;
       }
-      o.node = {};
-      o.node.div = $element('div', $config.node.div);
-      $element('h2', o.node.div, o.key);
-      const inputKind = get_hvut_config_field_input_kind(o);
-
-      if (inputKind === 'textarea') {
-        //o.node.input = $element('textarea', o.node.div, { spellcheck: false });
-      } else if (inputKind === 'select') {
-        o.node.input = $input(['select', o.options], o.node.div);
-        if (o.label) {
-          $element('span', o.node.div, o.label);
-        }
-      } else if (inputKind === 'checkbox') {
-        o.node.input = $input(['checkbox', o.label], o.node.div);
-      } else if (inputKind === 'number') {
-        o.node.input = $input(['number'], o.node.div);
-        if (o.label) {
-          $element('span', o.node.div, o.label);
-        }
-      } else {
-        o.node.input = $input(['text'], o.node.div);
-      }
-
-      let text = $config.text[o.text || o.key] || o.text;
-      if (text) {
-        text = format_hvut_config_field_help_text(text);
-        o.node.text = $element('p', o.node.div, ['/' + text]);
-      }
-      let desc = $config.desc[o.desc || o.key];
-      if (desc) {
-        desc = format_hvut_config_field_description(desc);
-        $input(['button', desc.button], o.node.div, null, () => { o.node.desc.classList.toggle('hvut-none'); });
-        //$element('br', o.node.div);
-        o.node.desc = $element('p', o.node.div, ['/' + desc.html, '.hvut-none']);
-      }
-
-      if (inputKind === 'textarea') { // append here
-        o.node.input = $element('textarea', o.node.div, { spellcheck: false });
-      }
-      o.node.input.dataset.key = o.key;
-      if (o.style) {
-        o.node.input.style.cssText = o.style;
-      }
-      if (is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })) {
-        o.node.div.classList.add('hvut-cfg-disabled');
-        o.node.input.disabled = true;
-      }
-      if (o.oncreate) {
-        o.oncreate(o);
-      }
+      render_hvut_config_field_row($config, o, { isIsekai: IS_ISEKAI });
     });
 
     const bottom = $element('footer', $config.node.div);
