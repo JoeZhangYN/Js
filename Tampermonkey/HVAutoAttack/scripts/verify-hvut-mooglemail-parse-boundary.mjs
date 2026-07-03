@@ -98,6 +98,7 @@ for (const [label, body, stage] of [
   ["modern MoogleMail parser", modernMailParse, "viewEquipAttach"],
   ["legacy MoogleMail parser", legacyMailParse, "legacyViewEquipAttach"],
 ]) {
+  requirePart(label, body, "const onmouseover = div.firstElementChild?.firstElementChild?.getAttribute('onmouseover');");
   requirePart(label, body, `const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, '${stage}');`);
   requirePart(label, body, "if (equipAttach) {");
   requirePart(label, body, "view.attach.push(equipAttach);");
@@ -133,6 +134,7 @@ for (const forbidden of [
   "parseInt(/mid=(\\d+)/.exec(row.getAttribute('onclick'))[1])",
   "$equip.dynjs_eqstore[eid].k",
   "$equip.dynjs_eqstore[eid].t",
+  "div.firstElementChild.firstElementChild?.getAttribute('onmouseover')",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked MoogleMail parse path: ${forbidden}`);

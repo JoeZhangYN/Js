@@ -9821,7 +9821,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));
             Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
               let exec;
-              const onmouseover = div.firstElementChild.firstElementChild?.getAttribute('onmouseover');
+              const onmouseover = div.firstElementChild?.firstElementChild?.getAttribute('onmouseover');
               const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, 'viewEquipAttach');
               if (equipAttach) {
                 view.attach.push(equipAttach);
@@ -16061,7 +16061,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));
           Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
             let exec;
-            const onmouseover = div.firstElementChild.firstElementChild?.getAttribute('onmouseover');
+            const onmouseover = div.firstElementChild?.firstElementChild?.getAttribute('onmouseover');
             const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, 'legacyViewEquipAttach');
             if (equipAttach) {
               view.attach.push(equipAttach);
