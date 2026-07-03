@@ -1696,7 +1696,7 @@ const bindRe = function (re, ctx) {
     const target = document.body;
     const options = { childList: true };
     const callback = function () {
-      if (!button.parentNode.parentNode && $id('csp')) {
+      if (!button.isConnected && $id('csp')) {
         $id('csp').appendChild(button);
       }
       re.start();

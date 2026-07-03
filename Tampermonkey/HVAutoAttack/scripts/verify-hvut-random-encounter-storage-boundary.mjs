@@ -52,6 +52,7 @@ requireParts("re.ba", ba, [
   "if (re.init() === false) return false;",
   "if (re.check() === false) return false;",
   "if (re.clock(button) === false) return false;",
+  "if (!button.isConnected && $id('csp')) {",
 ]);
 requireParts("re.eh", eh, [
   "if (re.init() === false) return false;",
@@ -93,6 +94,7 @@ for (const forbidden of [
   "re.check();",
   "re.get();\n    re.button.textContent = '加载中...';",
   "re.button.textContent = '检查中...';\n      const html = await $ajax.fetch('https://hentaiverse.org/');",
+  "button.parentNode.parentNode",
 ]) {
   if (bindRe.includes(forbidden)) {
     violations.push(`${target} bindRe must not ignore random encounter state persistence: ${forbidden}`);
