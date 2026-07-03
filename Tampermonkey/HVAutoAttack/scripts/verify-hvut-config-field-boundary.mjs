@@ -84,6 +84,16 @@ requireIncludes(target, text, [
   "field.node.desc = $element('p', field.node.div, ['/' + desc.html, '.hvut-none']);",
   "field.node.input.dataset.key = field.key;",
   "if (is_hvut_config_field_disabled(field, { isIsekai: isIsekai, serverName: _server.name })) {",
+  "var render_hvut_config_panel = function (config, context) {",
+  "config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: config.validate_panel });",
+  "$element('header', config.node.div, 'HV Utils 设置');",
+  "config.data.forEach((field) => {",
+  "render_hvut_config_field_row(config, field, context);",
+  "const bottom = $element('footer', config.node.div);",
+  "$input(['button', '保存'], bottom, null, () => { config.save(true); });",
+  "$input(['button', '关闭'], bottom, null, () => { config.close(); });",
+  "$input(['button', '恢复'], bottom, null, () => { config.load(config.settings); });",
+  "$input(['button', '恢复默认'], bottom, null, () => { config.load(config.default); });",
   "skipField: (o) => is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })",
 ]);
 
@@ -103,10 +113,17 @@ if (createBodies.length !== 2) violations.push(`${target} must keep both config 
 for (const [index, body] of createBodies.entries()) {
   const expectedCall =
     index === 0
-      ? "render_hvut_config_field_row($config, o, {\n        checkboxWithNullLabel: true,\n        isIsekai: IS_ISEKAI,\n        showTextareaDefaultButton: true,\n      });"
-      : "render_hvut_config_field_row($config, o, { isIsekai: IS_ISEKAI });";
+      ? "render_hvut_config_panel($config, {\n      checkboxWithNullLabel: true,\n      isIsekai: IS_ISEKAI,\n      showTextareaDefaultButton: true,\n    });"
+      : "render_hvut_config_panel($config, { isIsekai: IS_ISEKAI });";
   requireIncludes(target, body, [expectedCall]);
   for (const forbidden of [
+    "$config.node = {};",
+    "$config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: $config.validate_panel });",
+    "$element('header', $config.node.div, 'HV Utils 设置');",
+    "$config.data.forEach((o) => {",
+    "render_hvut_config_field_row($config, o",
+    "const bottom = $element('footer', $config.node.div);",
+    "$input(['button', '保存'], bottom, null, () => { $config.save(true); });",
     "const inputKind = get_hvut_config_field_input_kind(o);",
     "if (inputKind === 'textarea')",
     "else if (inputKind === 'select')",

@@ -304,6 +304,27 @@ try {
       field.oncreate(field);
     }
   };
+  var render_hvut_config_panel = function (config, context) {
+    config.node = {};
+    config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: config.validate_panel });
+    //$config.node.ul = $element('ul', config.node.div);
+    $element('header', config.node.div, 'HV Utils 设置');
+
+    config.data.forEach((field) => {
+      if (field.tag) {
+        $element(field.tag, config.node.div, field.text);
+        //$element('li', $config.node.ul, field.text, () => { scrollIntoView(h); });
+        return;
+      }
+      render_hvut_config_field_row(config, field, context);
+    });
+
+    const bottom = $element('footer', config.node.div);
+    $input(['button', '保存'], bottom, null, () => { config.save(true); });
+    $input(['button', '关闭'], bottom, null, () => { config.close(); });
+    $input(['button', '恢复'], bottom, null, () => { config.load(config.settings); });
+    $input(['button', '恢复默认'], bottom, null, () => { config.load(config.default); });
+  };
   var record_hvut_item_shop_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutItemShopParse', stage: stage, detail: detail || {} };
     try {
@@ -5246,29 +5267,11 @@ const $config = {
       .hvut-cfg-div textarea { width: 95%; min-height: 200px; white-space: nowrap; }
     `);
 
-    $config.node = {};
-    $config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: $config.validate_panel });
-    //$config.node.ul = $element('ul', $config.node.div);
-    $element('header', $config.node.div, 'HV Utils 设置');
-
-    $config.data.forEach((o) => {
-      if (o.tag) {
-        $element(o.tag, $config.node.div, o.text);
-        //$element('li', $config.node.ul, o.text, () => { scrollIntoView(h); });
-        return;
-      }
-      render_hvut_config_field_row($config, o, {
-        checkboxWithNullLabel: true,
-        isIsekai: IS_ISEKAI,
-        showTextareaDefaultButton: true,
-      });
+    render_hvut_config_panel($config, {
+      checkboxWithNullLabel: true,
+      isIsekai: IS_ISEKAI,
+      showTextareaDefaultButton: true,
     });
-
-    const bottom = $element('footer', $config.node.div);
-    $input(['button', '保存'], bottom, null, () => { $config.save(true); });
-    $input(['button', '关闭'], bottom, null, () => { $config.close(); });
-    $input(['button', '恢复'], bottom, null, () => { $config.load($config.settings); });
-    $input(['button', '恢复默认'], bottom, null, () => { $config.load($config.default); });
   },
   // open/close: 收口 bindConfig(L1)
   set_panel: function (obj = $config.settings) {
@@ -10975,25 +10978,7 @@ const $config = {
       .hvut-cfg-div textarea { width: 95%; height: 200px; white-space: nowrap; }
     `);
 
-    $config.node = {};
-    $config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: $config.validate_panel });
-    //$config.node.ul = $element('ul', $config.node.div);
-    $element('header', $config.node.div, 'HV Utils 设置');
-
-    $config.data.forEach((o) => {
-      if (o.tag) {
-        $element(o.tag, $config.node.div, o.text);
-        //$element('li', $config.node.ul, o.text, () => { scrollIntoView(h); });
-        return;
-      }
-      render_hvut_config_field_row($config, o, { isIsekai: IS_ISEKAI });
-    });
-
-    const bottom = $element('footer', $config.node.div);
-    $input(['button', '保存'], bottom, null, () => { $config.save(true); });
-    $input(['button', '关闭'], bottom, null, () => { $config.close(); });
-    $input(['button', '恢复'], bottom, null, () => { $config.load($config.settings); });
-    $input(['button', '恢复默认'], bottom, null, () => { $config.load($config.default); });
+    render_hvut_config_panel($config, { isIsekai: IS_ISEKAI });
   },
   // open/close: 收口 bindConfig(L1)
   set_panel: function (obj = $config.settings) {
