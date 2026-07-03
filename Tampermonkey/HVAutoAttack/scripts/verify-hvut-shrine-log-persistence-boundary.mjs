@@ -3,7 +3,11 @@ import path from "node:path";
 
 const root = process.cwd();
 const target = path.normalize("src/i18n/hv-utils.js");
+const diagnosticTarget = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
+const diagnosticText = fs.readFileSync(path.join(root, diagnosticTarget), "utf8");
+const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 const violations = [];
 
 function requirePart(label, body, part) {
@@ -22,6 +26,9 @@ if (!logSave) violations.push(`${target} must keep Shrine log save entry visible
 if (!legacyRequest) violations.push(`${target} must keep legacy Shrine request entry visible`);
 
 for (const part of [
+  "record_hvut_shrine_offer_failure('offerLoadFetch'",
+  "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
+  "return false;",
   "if (_ss.log.save() === false) return false;",
   "return true;",
 ]) {
@@ -38,6 +45,9 @@ for (const part of [
 }
 
 for (const part of [
+  "record_hvut_shrine_offer_failure('legacyOfferFetch'",
+  "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
+  "return false;",
   "if (!$config.set('ss_log', _ss.log)) {",
   "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
   "return false;",
@@ -54,6 +64,27 @@ for (const [label, body, forbidden] of [
   if (body.includes(forbidden)) {
     violations.push(`${target} ${label} must not ignore Shrine log persistence: ${forbidden}`);
   }
+}
+
+for (const required of [
+  "record_hvut_shrine_offer_failure",
+  "HVAA:lastHvutShrineOfferFailure",
+  "capability: 'hvutShrineOffer'",
+]) {
+  if (!text.includes(required)) {
+    violations.push(`${target} must record Shrine offer failures with ${required}`);
+  }
+}
+for (const required of [
+  'HVUT_SHRINE_OFFER_FAILURE: "HVAA:lastHvutShrineOfferFailure"',
+  'source("hvutShrineOfferFailure", DiagnosticEvidenceKey.HVUT_SHRINE_OFFER_FAILURE)',
+]) {
+  if (!diagnosticText.includes(required)) {
+    violations.push(`${diagnosticTarget} must include ${required}`);
+  }
+}
+if (!diagnosticTestText.includes("HVAA:lastHvutShrineOfferFailure")) {
+  violations.push(`${diagnosticTest} must cover Shrine offer diagnostic evidence`);
 }
 
 if (violations.length) {
