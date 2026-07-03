@@ -301,6 +301,20 @@ try {
     }
     return null;
   };
+  var record_hvut_shrine_item_parse_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutShrineItemParse', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutShrineItemParseFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Shrine item parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] Shrine item identity unavailable', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT Shrine item fallback.
+    }
+    return null;
+  };
   var record_hvut_price_market_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutPriceMarketParse', stage: stage, detail: detail || {} };
     try {
@@ -380,6 +394,14 @@ try {
       return record_hvut_shrine_reward_parse_failure(stage, { onclick: onclick });
     }
     return { type: exec[1], slot: exec[2] };
+  };
+  var parse_hvut_shrine_offer_item = function (div, stage) {
+    var onclick = div?.getAttribute('onclick') || '';
+    var item = $item.get_data(onclick);
+    if (!item.iid || !Number.isFinite(item.stock) || !Number.isFinite(item.bulk) || item.bulk <= 0) {
+      return record_hvut_shrine_item_parse_failure(stage, { onclick: onclick, text: div?.textContent || '' });
+    }
+    return item;
   };
   var update_hvut_shrine_equip_total = function (equip, baseKey) {
     if (!Number.isFinite(equip[baseKey]) || !Number.isFinite(equip.capacity) || equip.capacity <= 0) {
@@ -6674,7 +6696,12 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
         const div = tr.cells[0].firstElementChild;
         const name = div.textContent;
         const type = $item.get_type(div.getAttribute('onmouseover'));
-        const { iid, stock, bulk } = $item.get_data(div.getAttribute('onclick'));
+        const itemData = parse_hvut_shrine_offer_item(div, 'offerItemRow');
+        if (itemData === null) {
+          tr.classList.add('hvut-warn');
+          return;
+        }
+        const { iid, stock, bulk } = itemData;
         const max = Math.floor(stock / bulk);
         const item = { logname: name, name, type, iid, stock, bulk, max, requests: 0, total: 0, rewards: {}, node: {} };
         _ss.offer.items[iid] = item;
@@ -13283,7 +13310,12 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     const div = tr.cells[0].firstElementChild;
     const name = div.textContent;
     const type = $item.get_type(div.getAttribute('onmouseover'));
-    const { iid, stock, bulk } = $item.get_data(div.getAttribute('onclick'));
+    const itemData = parse_hvut_shrine_offer_item(div, 'legacyOfferItemRow');
+    if (itemData === null) {
+      tr.classList.add('hvut-warn');
+      return;
+    }
+    const { iid, stock, bulk } = itemData;
     const max = Math.floor(stock / bulk);
     const item = { log: name, name, type, iid, stock, bulk, max, requests: 0, recieved: 0, node: {} };
     _ss.items[iid] = item;
