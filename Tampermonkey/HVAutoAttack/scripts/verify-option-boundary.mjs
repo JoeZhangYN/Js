@@ -125,9 +125,12 @@ for (const required of ["OptionEvent.EXPORT_TEXT", "OptionEvent.PARSE_IMPORT_TEX
 for (const required of [
   "function writeSettingsOption(option) {",
   "const written = runOptionAutomation({ type: OptionEvent.WRITE, option });",
+  "function clearSettingsOption() {",
+  "const cleared = runOptionAutomation({ type: OptionEvent.CLEAR });",
   'if (!writeSettingsOption(parsed.option)) return;',
   "if (!writeSettingsOption(_option)) return;",
   'Failed to save configuration',
+  'Failed to reset configuration',
 ]) {
   if (!settingsText.includes(required)) {
     violations.push(`${settingsRender.replaceAll("\\", "/")} must stop settings success flow when option write fails`);
@@ -137,6 +140,8 @@ const settingsImportBlock =
   /gE\(["']\.hvAAImport["'][\s\S]*?gE\(["']\.hvAAReset["']/.exec(settingsText)?.[0] || "";
 const settingsApplyBlock =
   /gE\(["']\.hvAAApply["'][\s\S]*?gE\(["']\.hvAACancel["']/.exec(settingsText)?.[0] || "";
+const settingsResetBlock =
+  /gE\(["']\.hvAAReset["'][\s\S]*?gE\(["']\.hvAAApply["']/.exec(settingsText)?.[0] || "";
 for (const [label, block] of [
   ["import", settingsImportBlock],
   ["apply", settingsApplyBlock],
@@ -147,6 +152,12 @@ for (const [label, block] of [
   if (/runOptionAutomation\(\{\s*type:\s*OptionEvent\.WRITE\b/.test(block)) {
     violations.push(`${settingsRender.replaceAll("\\", "/")} settings ${label} must not bypass writeSettingsOption`);
   }
+}
+if (!settingsResetBlock.includes("clearSettingsOption();")) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} settings reset must clear through clearSettingsOption`);
+}
+if (/runOptionAutomation\(\{\s*type:\s*OptionEvent\.CLEAR\b/.test(settingsResetBlock)) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} settings reset must not bypass clearSettingsOption`);
 }
 for (const legacy of [
   "readOption",

@@ -288,6 +288,13 @@ function writeSettingsOption(option) {
   return false;
 }
 
+function clearSettingsOption() {
+  const cleared = runOptionAutomation({ type: OptionEvent.CLEAR });
+  if (cleared) return true;
+  _alert(0, "配置重置失败", "配置重置失敗", "Failed to reset configuration");
+  return false;
+}
+
 function readSettingsInputValue(name, className) {
   const directValue = readOptionField(name, undefined);
   if (directValue !== undefined) return directValue;
@@ -979,7 +986,7 @@ export function optionBox() {
   //
   gE(".hvAAReset", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      runOptionAutomation({ type: OptionEvent.CLEAR });
+      clearSettingsOption();
     }
   };
   gE(".hvAAApply", optionBox).onclick = function () {
