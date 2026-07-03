@@ -467,6 +467,20 @@ try {
     }
     return null;
   };
+  var record_hvut_mooglemail_send_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutMoogleMailSend', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutMoogleMailSendFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // MoogleMail send fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] MoogleMail send failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT MoogleMail send fallback.
+    }
+    return evidence;
+  };
   var parse_hvut_mooglemail_count = function (text, pattern, stage) {
     var match = pattern.exec(text || '');
     return match ? parseInt(match[1].replace(/,/g, '')) || 0 : record_hvut_mooglemail_parse_failure(stage, { text: text || '' });
@@ -3054,19 +3068,23 @@ const $mail = {
       let results;
       try {
         results = await Promise.all(requests);
-      } catch (_error) {
+      } catch (error) {
+        record_hvut_mooglemail_send_failure('attachRequest', { index: index, total: total, done: done, error: error?.message || String(error) });
         $mail.log(`#${index}: !!! Error: Attachment request failed`);
         try {
           await $mail.discard();
-        } catch (_discardError) {
+        } catch (discardError) {
+          record_hvut_mooglemail_send_failure('attachRequestDiscard', { index: index, error: discardError?.message || String(discardError) });
           $mail.log(`#${index}: !!! Error: Unable to discard attachments`);
         }
         return false;
       }
       if (!results.every((r) => r)) {
+        record_hvut_mooglemail_send_failure('attachRejected', { index: index, total: total, done: done, results: results });
         try {
           await $mail.discard();
-        } catch (_discardError) {
+        } catch (discardError) {
+          record_hvut_mooglemail_send_failure('attachRejectedDiscard', { index: index, error: discardError?.message || String(discardError) });
           $mail.log(`#${index}: !!! Error: Unable to discard attachments`);
         }
         return false;
