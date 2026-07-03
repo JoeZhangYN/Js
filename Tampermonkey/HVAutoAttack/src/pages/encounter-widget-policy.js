@@ -121,13 +121,8 @@ function planWidgetEngage(event) {
     return { ...readWidgetState(plan.state), action: "none" };
   }
   if (event.pageType === "eh") {
-    const state = runEncounterPolicy({
-      type: EncounterPolicyEvent.MARK_STARTED,
-      state: plan.state,
-      search: plan.href,
-    });
     return {
-      ...readWidgetState(state),
+      ...readWidgetState(plan.state),
       action: "open",
       href: `${event.galleryAlt ? "http://alt.hentaiverse.org/" : "https://hentaiverse.org/"}${
         plan.href

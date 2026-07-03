@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/pages/encounter.js");
 const entryExecutionFile = path.normalize("src/pages/encounter-entry-execution.js");
+const entryExecutionFailureTest = path.normalize("src/pages/encounter-entry-execution-failure.test.js");
 const stateHelper = path.normalize("src/pages/encounter-state.js");
 const stateTest = path.normalize("src/pages/encounter-state.test.js");
 const stateEvidenceTest = path.normalize("src/pages/encounter-state-evidence.test.js");
@@ -260,10 +261,44 @@ const rejectionText = fs.readFileSync(path.join(root, rejectionFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
 const widgetPolicyTestText = fs.readFileSync(path.join(root, widgetPolicyTest), "utf8");
+const entryExecutionFailureTestText = fs.readFileSync(path.join(root, entryExecutionFailureTest), "utf8");
 if (!/\bfunction executeEncounterEntry\b/.test(entryExecutionText)) {
   violations.push(
     `${entryExecutionFile.replaceAll("\\", "/")} must execute manual and automatic encounter entry through one function`
   );
+}
+if (
+  !entryExecutionText.includes("navigationFailed") ||
+  !entryExecutionText.includes("handled: false")
+) {
+  violations.push(
+    `${entryExecutionFile.replaceAll("\\", "/")} must not claim handled encounter entry when navigation fails`
+  );
+}
+for (const required of [
+  "does not claim a widget encounter when navigation is blocked",
+  "does not claim a gallery encounter when opening the battle tab is blocked",
+  "navigationFailed",
+  "handled: false",
+  "clear: false",
+]) {
+  if (!entryExecutionFailureTestText.includes(required)) {
+    violations.push(
+      `${entryExecutionFailureTest.replaceAll("\\", "/")} must cover failed encounter navigation without claiming success: ${required}`
+    );
+  }
+}
+for (const [label, action] of [
+  ["navigate", "const navigated = runNavigationAutomation"],
+  ["open", "const opened = runNavigationAutomation"],
+]) {
+  const actionIndex = entryExecutionText.indexOf(action);
+  const markIndex = entryExecutionText.indexOf("markEncounterAttempted", actionIndex);
+  if (actionIndex < 0 || markIndex < 0 || markIndex < actionIndex) {
+    violations.push(
+      `${entryExecutionFile.replaceAll("\\", "/")} must mark encounter attempted only after ${label} navigation succeeds`
+    );
+  }
 }
 for (const required of ["isAutomaticEncounterEnabled", "EVENT_RANDOM_ENCOUNTER_STARTED"]) {
   if (!ownerText.includes(required)) {
@@ -274,6 +309,12 @@ for (const required of ["EncounterStateEvent.MARK_ATTEMPTED", "markEncounterAtte
   if (!entryExecutionText.includes(required)) {
     violations.push(`${entryExecutionFile.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+const widgetEngageBody = widgetPolicyText.match(/function planWidgetEngage\(event\) \{[\s\S]*?\n\}/)?.[0] || "";
+if (widgetEngageBody.includes("MARK_STARTED")) {
+  violations.push(
+    `${widgetPolicyFile.replaceAll("\\", "/")} widget open planning must not mark an encounter attempted before navigation succeeds`
+  );
 }
 if (!ownerText.includes("const encounterEventHandlers")) {
   violations.push(

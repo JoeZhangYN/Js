@@ -17,12 +17,13 @@ function markEncounterAttempted(outcome) {
 
 export function executeEncounterEntry(outcome) {
   if (outcome?.action === "enter" || outcome?.action === "navigate") {
-    const attemptedState = markEncounterAttempted(outcome);
-    runNavigationAutomation({
+    const navigated = runNavigationAutomation({
       type: NavigationEvent.OPEN_URL,
       reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
       url: outcome.href,
     });
+    if (!navigated) return { ...outcome, action: "navigationFailed", handled: false };
+    const attemptedState = markEncounterAttempted(outcome);
     return {
       ...outcome,
       action: "navigated",
@@ -31,13 +32,14 @@ export function executeEncounterEntry(outcome) {
     };
   }
   if (outcome?.action === "open") {
-    const attemptedState = markEncounterAttempted(outcome);
-    runNavigationAutomation({
+    const opened = runNavigationAutomation({
       type: NavigationEvent.OPEN_URL,
       reason: NavigationRedirectReason.ENCOUNTER_ENTRY,
       url: outcome.href,
       newTab: true,
     });
+    if (!opened) return { ...outcome, action: "navigationFailed", handled: false };
+    const attemptedState = markEncounterAttempted(outcome);
     return { ...outcome, action: "opened", handled: true, state: attemptedState || outcome.state };
   }
   return outcome;

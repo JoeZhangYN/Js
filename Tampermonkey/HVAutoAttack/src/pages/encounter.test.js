@@ -20,6 +20,7 @@ const HVUT_RE_KEY = ["hvut", "re"].join("_");
 beforeEach(() => {
   localStorage.clear();
   mocks.runNavigationAutomation.mockReset();
+  mocks.runNavigationAutomation.mockReturnValue(true);
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-06-27T23:59:55.000Z"));
 });
