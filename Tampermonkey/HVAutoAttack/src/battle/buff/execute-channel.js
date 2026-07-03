@@ -24,16 +24,21 @@ const CHANNEL_PLAN_EXECUTORS = Object.freeze({
  */
 function applyChannelPlan(plan) {
   try {
-    return CHANNEL_PLAN_EXECUTORS[plan?.type]?.(plan) ?? false;
+    return channelExecutionActed(CHANNEL_PLAN_EXECUTORS[plan?.type]?.(plan));
   } catch (error) {
     recordChannelExecutionFailure(plan, "channelSkillCommandThrew", error);
     return false;
   }
 }
 
+function channelExecutionActed(result) {
+  if (result?.kind === "failed") return false;
+  return Boolean(result);
+}
+
 function executeClickPlan(plan) {
   // 原 useChannelSkill 三段均在 isOn 通过后 click；探活与 turn 入口快照一致。
-  return !!runBattleSkillCommand({
+  return runBattleSkillCommand({
     type: BattleSkillCommandEvent.CLICK_READY,
     skillId: plan.skillId,
   });

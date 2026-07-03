@@ -29,6 +29,8 @@ for (const required of [
   "click: executeClickPlan",
   "BattleSkillCommandEvent.CLICK_READY",
   "runBattleSkillCommand",
+  "channelExecutionActed",
+  'result?.kind === "failed"',
   "recordChannelExecutionFailure",
   "channelSkillCommandThrew",
   "recordActionEffectEvidence",
@@ -88,6 +90,14 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   if (!ownerTestText.includes("returns the command result")) {
     violations.push(`${rel(ownerTest)} must cover channel command acted semantics`);
   }
+  for (const required of [
+    "does not claim typed failed channel skill commands as acted",
+    'kind: "failed"',
+  ]) {
+    if (!ownerTestText.includes(required)) {
+      violations.push(`${rel(ownerTest)} must cover ${required}`);
+    }
+  }
   if (
     !ownerTestText.includes(
       "records skill command exceptions as not acted channel execution evidence"
@@ -96,6 +106,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   ) {
     violations.push(`${rel(ownerTest)} must cover thrown channel skill command evidence`);
   }
+}
+if (/return !!runBattle/.test(ownerText)) {
+  violations.push(`${rel(owner)} must not booleanize channel command entry results before typed failure normalization`);
 }
 
 if (

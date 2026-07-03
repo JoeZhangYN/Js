@@ -41,6 +41,15 @@ describe("runBattleChannelExecution", () => {
     expect(applyPlan({ type: "click", skillId: "412" })).toBe(true);
   });
 
+  it("does not claim typed failed channel skill commands as acted", () => {
+    mocks.runBattleSkillCommand.mockReturnValue({
+      kind: "failed",
+      reason: "skillElementReadFailed",
+    });
+
+    expect(applyPlan({ type: "click", skillId: "412" })).toBe(false);
+  });
+
   it("records skill command exceptions as not acted channel execution evidence", () => {
     mocks.runBattleSkillCommand.mockImplementation(() => {
       throw new Error("skill bridge failed");
