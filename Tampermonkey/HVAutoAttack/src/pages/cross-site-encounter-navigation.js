@@ -33,8 +33,13 @@ function readEncounterPath(deps) {
 }
 
 function redirectToEncounterOrigin(deps) {
-  if (deps.href() !== EHENTAI_ENCOUNTER_URL) return;
-  deps.openUrl(`${readReturnOrigin(deps)}${readEncounterPath(deps)}`, NavigationRedirectReason.CROSS_SITE_ENCOUNTER);
+  if (deps.href() !== EHENTAI_ENCOUNTER_URL) return true;
+  return Boolean(
+    deps.openUrl(
+      `${readReturnOrigin(deps)}${readEncounterPath(deps)}`,
+      NavigationRedirectReason.CROSS_SITE_ENCOUNTER
+    )
+  );
 }
 
 function makeDeps(deps) {
@@ -61,8 +66,7 @@ export function runCrossSiteEncounterNavigation(event = { type: EVENT_PAGE_READY
   const runtime = makeDeps(deps);
   const { kind } = event;
   if (kind === PageKind.EHENTAI) {
-    redirectToEncounterOrigin(runtime);
-    return true;
+    return redirectToEncounterOrigin(runtime);
   }
   runtime.persistReturnOrigin(runtime.origin());
   return false;

@@ -64,6 +64,7 @@ function checkEntry() {
     "news.php?encounter",
     "STORAGE_KEYS.URL",
     "persistCrossSiteReturnOrigin",
+    "return Boolean(",
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(entryFile)} must own ${required} cross-site navigation wiring`);
@@ -84,9 +85,10 @@ function checkEntry() {
   const testText = fs.readFileSync(entryTestFile, "utf8");
   if (
     !testText.includes("rejects unknown and null events without storing or navigating") ||
-    !testText.includes("runCrossSiteEncounterNavigation(null")
+    !testText.includes("runCrossSiteEncounterNavigation(null") ||
+    !testText.includes("does not report encounter redirect success when URL navigation is blocked")
   ) {
-    violations.push(`${rel(entryTestFile)} must cover unknown and null cross-site navigation events`);
+    violations.push(`${rel(entryTestFile)} must cover cross-site navigation rejection events`);
   }
   const failureTestText = fs.readFileSync(failureTestFile, "utf8");
   for (const required of [

@@ -36,7 +36,7 @@ describe("runCrossSiteEncounterNavigation", () => {
   });
 
   it("redirects an e-hentai encounter page back to the stored HV origin", () => {
-    const openUrl = vi.fn();
+    const openUrl = vi.fn(() => true);
     const document = window.document.implementation.createHTMLDocument("");
     document.body.innerHTML = '<div id="eventpane"><div><a href="https://e-hentai.org/encounter.php">fight</a></div></div>';
 
@@ -49,6 +49,27 @@ describe("runCrossSiteEncounterNavigation", () => {
         referrer: () => "",
       })
     ).toBe(true);
+
+    expect(openUrl).toHaveBeenCalledWith(
+      "https://hentaiverse.org/encounter.php",
+      "crossSiteEncounter"
+    );
+  });
+
+  it("does not report encounter redirect success when URL navigation is blocked", () => {
+    const openUrl = vi.fn(() => false);
+    const document = window.document.implementation.createHTMLDocument("");
+    document.body.innerHTML = '<div id="eventpane"><div><a href="https://e-hentai.org/encounter.php">fight</a></div></div>';
+
+    expect(
+      runCrossSiteEncounterNavigation(pageReady(PageKind.EHENTAI), {
+        document: () => document,
+        getValue: () => "https://hentaiverse.org",
+        href: () => "https://e-hentai.org/news.php?encounter",
+        openUrl,
+        referrer: () => "",
+      })
+    ).toBe(false);
 
     expect(openUrl).toHaveBeenCalledWith(
       "https://hentaiverse.org/encounter.php",
