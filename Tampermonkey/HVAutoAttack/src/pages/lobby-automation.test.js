@@ -14,15 +14,11 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../state/option.js", () => ({
-  OptionEvent: Object.freeze({
-    READ_FIELD: "readField",
-  }),
+  OptionEvent: Object.freeze({ READ_FIELD: "readField" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
 vi.mock("../state/day-record.js", () => ({
-  DayRecordEvent: Object.freeze({
-    REFRESH_AND_SCHEDULE_NEXT_UTC_DAY: "refreshAndScheduleNextUtcDay",
-  }),
+  DayRecordEvent: Object.freeze({ REFRESH_AND_SCHEDULE_NEXT_UTC_DAY: "refreshAndScheduleNextUtcDay" }),
   runDayRecordAutomation: mocks.runDayRecordAutomation,
 }));
 vi.mock("../state/stamina.js", () => ({
@@ -56,9 +52,7 @@ vi.mock("../battle/battle-runtime.js", () => ({
 
 function setLobbyOption(option) {
   mocks.runOptionAutomation.mockImplementation((event) => {
-    if (event.type === "readField") {
-      return option[event.key] !== undefined ? option[event.key] : event.fallback;
-    }
+    if (event.type === "readField") return option[event.key] !== undefined ? option[event.key] : event.fallback;
     return undefined;
   });
 }
@@ -86,24 +80,11 @@ describe("runLobbyAutomation", () => {
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
 
     expect(mocks.runBattleRuntimeAutomation).toHaveBeenCalledWith({ type: "clearSession" });
-    expect(mocks.runDayRecordAutomation).toHaveBeenCalledWith({
-      type: "refreshAndScheduleNextUtcDay",
-      rerun: expect.any(Function),
-    });
+    expect(mocks.runDayRecordAutomation).toHaveBeenCalledWith({ type: "refreshAndScheduleNextUtcDay", rerun: expect.any(Function) });
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "captureAbilityPage" });
-    expect(mocks.runQuickSiteAutomation).toHaveBeenCalledWith({
-      type: "lobbyReady",
-    });
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
-      type: "readField",
-      key: "encounter",
-      fallback: false,
-    });
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
-      type: "readField",
-      key: "repair",
-      fallback: false,
-    });
+    expect(mocks.runQuickSiteAutomation).toHaveBeenCalledWith({ type: "lobbyReady" });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readField", key: "encounter", fallback: false });
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readField", key: "repair", fallback: false });
     expect(mocks.runRepairAutomation).toHaveBeenCalledWith({ type: "start" });
   });
 
@@ -129,12 +110,20 @@ describe("runLobbyAutomation", () => {
 
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
 
-    expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
-      type: "lobbyTick",
-      rerun: expect.any(Function),
-    });
+    expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({ type: "lobbyTick", rerun: expect.any(Function) });
     expect(mocks.runStaminaAutomation).not.toHaveBeenCalled();
     expect(mocks.runIdleArenaAutomation).not.toHaveBeenCalled();
+  });
+
+  it("continues lobby automation when encounter returns malformed claim evidence", async () => {
+    setLobbyOption({ encounter: true, idleArena: true, repair: false });
+    mocks.runEncounterAutomation.mockResolvedValue({ claimed: { kind: "failed" } });
+
+    await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
+
+    expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({ type: "lobbyTick", rerun: expect.any(Function) });
+    expect(mocks.runStaminaAutomation).toHaveBeenCalled();
+    expect(mocks.runIdleArenaAutomation).toHaveBeenCalledWith({ type: "scheduleNextBattle" });
   });
 
   it("stops next battle automation when stamina requires a stop", async () => {
@@ -143,6 +132,16 @@ describe("runLobbyAutomation", () => {
 
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
 
+    expect(mocks.runRepairAutomation).not.toHaveBeenCalled();
+    expect(mocks.runIdleArenaAutomation).not.toHaveBeenCalled();
+  });
+
+  it("treats malformed lobby option switches as disabled", async () => {
+    setLobbyOption({ encounter: { kind: "failed" }, idleArena: "true", repair: 1 });
+
+    await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
+
+    expect(mocks.runEncounterAutomation).not.toHaveBeenCalled();
     expect(mocks.runRepairAutomation).not.toHaveBeenCalled();
     expect(mocks.runIdleArenaAutomation).not.toHaveBeenCalled();
   });

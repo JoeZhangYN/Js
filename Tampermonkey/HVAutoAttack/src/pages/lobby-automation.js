@@ -34,7 +34,7 @@ function shouldStopForStamina() {
 }
 
 function isLobbyOptionEnabled(key) {
-  return Boolean(runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback: false }));
+  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback: false }) === true;
 }
 
 function runNextBattleAutomation() {
@@ -78,7 +78,7 @@ async function handleLobbyEncounter() {
     type: EncounterEvent.LOBBY_TICK,
     rerun: rerunLobbyPageReady,
   });
-  return Boolean(encounterOutcome.claimed);
+  return encounterOutcome?.claimed === true;
 }
 
 function stopWhenStaminaRequires() {
