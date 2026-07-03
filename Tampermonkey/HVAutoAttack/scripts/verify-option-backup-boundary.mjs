@@ -83,6 +83,30 @@ for (const required of ["OptionBackupEvent.HAS_CODE", "OptionBackupEvent.RENDER_
     violations.push(`${settingsRender.replaceAll("\\", "/")} must request ${required}`);
   }
 }
+for (const required of [
+  "function saveSettingsBackup(code) {",
+  "function deleteSettingsBackup(code) {",
+  "const saved = runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code });",
+  "const deleted = runOptionBackupAutomation({ type: OptionBackupEvent.DELETE, code });",
+  "if (!deleteSettingsBackup(code)) return;",
+  "if (!saveSettingsBackup(code)) return;",
+  "Failed to backup configuration",
+  "Failed to delete backup",
+]) {
+  if (!settingsText.includes(required)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} must keep backup UI updates behind checked backup commands`);
+  }
+}
+const settingsBackupBlock =
+  /gE\(["']\.hvAABackup["'][\s\S]*?gE\(["']\.hvAARestore["']/.exec(settingsText)?.[0] || "";
+const settingsDeleteBlock =
+  /gE\(["']\.hvAADelete["'][\s\S]*?gE\(["']\.hvAAExport["']/.exec(settingsText)?.[0] || "";
+if (/runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.(?:SAVE_CURRENT|DELETE)\b/.test(settingsBackupBlock)) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} backup button must not bypass checked backup commands`);
+}
+if (/runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.DELETE\b/.test(settingsDeleteBlock)) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} delete button must not bypass checked backup commands`);
+}
 
 for (const legacy of [
   "readOptionBackups",
