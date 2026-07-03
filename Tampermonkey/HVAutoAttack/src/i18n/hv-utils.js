@@ -200,6 +200,20 @@ try {
     }
     return null;
   };
+  var record_hvut_price_market_parse_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutPriceMarketParse', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutPriceMarketParseFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Price market parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] price market parse failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT price market parse fallback.
+    }
+    return false;
+  };
   var parse_hvut_inventory_capacity = function (html, stage) {
     var exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html || '');
     if (!exec) {
@@ -1256,9 +1270,17 @@ const bindPrice = function (price, ctx) {
       price.market = {};
     }
     price.filters[filter] = [];
-    Array.from($qs('#market_itemlist table', doc).rows).slice(1).forEach((tr) => {
+    const table = $qs('#market_itemlist table', doc);
+    if (!table) {
+      return record_hvut_price_market_parse_failure('marketTable', { filter: filter || '' });
+    }
+    for (const tr of Array.from(table.rows).slice(1)) {
       const name = tr.cells[0].textContent;
-      const itemid = /itemid=(\d+)/.exec(tr.getAttribute('onclick'))[1];
+      const itemidMatch = /itemid=(\d+)/.exec(tr.getAttribute('onclick') || '');
+      if (!itemidMatch) {
+        return record_hvut_price_market_parse_failure('marketItemId', { filter: filter || '', name });
+      }
+      const itemid = itemidMatch[1];
       const stock = parseInt(tr.cells[1].textContent);
       const bid = parseFloat(tr.cells[2].textContent.slice(0, -2)) || 0;
       const ask = parseFloat(tr.cells[3].textContent.slice(0, -2)) || 0;
@@ -1268,7 +1290,8 @@ const bindPrice = function (price, ctx) {
       }
       Object.assign(price.market[name], { itemid, stock, bid, ask, market_stock });
       price.filters[filter].push(name);
-    });
+    }
+    return true;
   };
   price.update_market = async function (filter, key, save) {
     const all = !filter;
@@ -1300,7 +1323,7 @@ const bindPrice = function (price, ctx) {
     async function update(filter) {
       const html = await $ajax.fetch(`?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`);
       const doc = $doc(html);
-      price.parse_market(filter, doc);
+      if (price.parse_market(filter, doc) === false) throw new Error('price market parse failed');
     }
   };
   price.get_market = function (items, key, alt = true) {
@@ -6836,7 +6859,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
     if (!$qs('#market_itemlist table')) {
       return;
     }
-    $price.parse_market(_query.filter);
+    if ($price.parse_market(_query.filter) === false) return;
     Array.from($qs('#market_itemlist table').rows).forEach((tr, i) => {
       if (i === 0) {
         $element('th', tr, '插件参考价');
@@ -13138,7 +13161,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
     if (!$qs('#market_itemlist table')) {
       return;
     }
-    $price.parse_market(_query.filter);
+    if ($price.parse_market(_query.filter) === false) return;
     _mk.items = Object.keys($price.market);
     Array.from($qs('#market_itemlist table').rows).forEach((tr, i) => {
       if (i === 0) {
