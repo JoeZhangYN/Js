@@ -5,9 +5,14 @@
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 
+function hasCustomizeInspectClass(target, className) {
+  if (target?.classList?.contains?.(className)) return true;
+  return String(target?.className || "").split(/\s+/).includes(className);
+}
+
 export function readCustomizeInspectTarget(target) {
   const onmouseover = target?.getAttribute?.("onmouseover");
-  if (target?.className === "btsd") return `Skill Id: ${target.id}`;
+  if (hasCustomizeInspectClass(target, "btsd")) return `Skill Id: ${target.id}`;
   if (onmouseover && onmouseover.match("common.show_itemc_box")) {
     const match = onmouseover.match(/(\d+)\)/);
     return match ? `Item Id: ${match[1]}` : undefined;

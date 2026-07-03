@@ -164,6 +164,15 @@ const customizeText = fs.readFileSync(path.join(root, customizeInspect), "utf8")
 if (!customizeText.includes("export function readCustomizeInspectTarget(target)")) {
   violations.push(`${customizeInspect.replaceAll("\\", "/")} must expose one customize inspect read entry`);
 }
+if (
+  !customizeText.includes("function hasCustomizeInspectClass(target, className)") ||
+  !customizeText.includes('hasCustomizeInspectClass(target, "btsd")')
+) {
+  violations.push(`${customizeInspect.replaceAll("\\", "/")} must classify inspect target classes by token`);
+}
+if (/className === ["']btsd["']/.test(customizeText)) {
+  violations.push(`${customizeInspect.replaceAll("\\", "/")} must not classify inspect targets by whole className`);
+}
 if (!customizeText.includes("let find = readCustomizeInspectTarget(target)")) {
   violations.push(`${customizeInspect.replaceAll("\\", "/")} must route inspect mousemove through readCustomizeInspectTarget`);
 }
@@ -186,6 +195,9 @@ if (!fs.existsSync(path.join(root, customizeTest))) {
   const customizeTestText = fs.readFileSync(path.join(root, customizeTest), "utf8");
   if (!customizeTestText.includes("fails closed for malformed inspect attributes")) {
     violations.push(`${customizeTest.replaceAll("\\", "/")} must cover malformed inspect attributes`);
+  }
+  if (!customizeTestText.includes("btsd active")) {
+    violations.push(`${customizeTest.replaceAll("\\", "/")} must cover multi-class inspect skill targets`);
   }
 }
 const applyBlock =

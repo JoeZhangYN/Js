@@ -12,7 +12,7 @@ function target({ className = "", id = "", onmouseover = null, src = "" } = {}) 
 
 describe("readCustomizeInspectTarget", () => {
   it("reads inspect labels from supported battle targets", () => {
-    expect(readCustomizeInspectTarget(target({ className: "btsd", id: "101" }))).toBe("Skill Id: 101");
+    expect(readCustomizeInspectTarget(target({ className: "btsd active", id: "101" }))).toBe("Skill Id: 101");
     expect(readCustomizeInspectTarget(target({ onmouseover: "common.show_itemc_box(222)" }))).toBe("Item Id: 222");
     expect(readCustomizeInspectTarget(target({ onmouseover: "equips.set(333)" }))).toBe("Equip Id: 333");
     expect(
