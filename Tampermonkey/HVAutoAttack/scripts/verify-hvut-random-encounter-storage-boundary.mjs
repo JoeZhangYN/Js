@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const target = path.normalize("src/i18n/hv-utils.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
+const keysText = fs.readFileSync(path.join(root, "src/core/diagnostic-evidence-keys.js"), "utf8");
 const violations = [];
 
 function body(pattern, label) {
@@ -59,8 +60,22 @@ requireParts("re.eh", eh, [
 ]);
 requireParts("re.load", load, [
   "if (re.get() === false) return false;",
+  "record_hvut_random_encounter_failure('widgetNewsLoadFetch'",
+  "re.start();",
+  "return false;",
   "if (applyEncounterState(outcome) === false) return false;",
   "return true;",
+]);
+
+requireParts("random encounter failure recorder", text, [
+  "var record_hvut_random_encounter_failure = function (stage, detail) {",
+  "capability: 'hvutRandomEncounter'",
+  "sessionStorage.setItem('HVAA:lastHvutRandomEncounterFailure'",
+]);
+
+requireParts("diagnostic evidence keys", keysText, [
+  'HVUT_RANDOM_ENCOUNTER_FAILURE: "HVAA:lastHvutRandomEncounterFailure"',
+  'source("hvutRandomEncounterFailure", DiagnosticEvidenceKey.HVUT_RANDOM_ENCOUNTER_FAILURE)',
 ]);
 
 for (const forbidden of [

@@ -609,6 +609,20 @@ try {
     }
     return evidence;
   };
+  var record_hvut_random_encounter_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutRandomEncounter', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutRandomEncounterFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // HVUT random encounter fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVAA] HVUT random encounter failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT random encounter fallback.
+    }
+    return evidence;
+  };
   var record_hvut_price_market_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutPriceMarketParse', stage: stage, detail: detail || {} };
     try {
@@ -1612,7 +1626,14 @@ const bindRe = function (re, ctx) {
     re.stop();
     if (re.get() === false) return false;
     re.button.textContent = '加载中...';
-    const html = await $ajax.fetch('https://e-hentai.org/news.php');
+    let html;
+    try {
+      html = await $ajax.fetch('https://e-hentai.org/news.php');
+    } catch (error) {
+      record_hvut_random_encounter_failure('widgetNewsLoadFetch', { reason: 'requestFailed', error: error?.message || String(error) });
+      re.start();
+      return false;
+    }
     const doc = $doc(html);
     const eventpane = $id('eventpane', doc)?.innerHTML;
     const outcome = runEncounter({ type: encounterEvent().WIDGET_NEWS_LOADED, state: re.json, eventpane, engage, pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
