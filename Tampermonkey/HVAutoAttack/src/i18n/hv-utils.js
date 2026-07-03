@@ -144,6 +144,20 @@ try {
     record_hvut_config_parse_failure('configFieldInputKindBridgeMissing', { key: field?.key || '' });
     return 'text';
   };
+  var format_hvut_config_field_help_text = function (text) {
+    if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.formatHelpText) {
+      return window.HVAA_hvutConfigField.formatHelpText(text);
+    }
+    record_hvut_config_parse_failure('configFieldHelpTextBridgeMissing', {});
+    return text ? String(text) : null;
+  };
+  var format_hvut_config_field_description = function (desc) {
+    if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.formatDescription) {
+      return window.HVAA_hvutConfigField.formatDescription(desc);
+    }
+    record_hvut_config_parse_failure('configFieldDescriptionBridgeMissing', {});
+    return desc ? { button: String(desc).split('\n')[0], html: String(desc).split('\n').slice(1).join('<br>') } : null;
+  };
   var record_hvut_item_shop_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutItemShopParse', stage: stage, detail: detail || {} };
     try {
@@ -5199,7 +5213,7 @@ const $config = {
 
       let text = $config.text[o.text || o.key] || o.text;
       if (text) {
-        text = text.trim().replace(/^ +/gm, '').replace(/\n/g, '<br>');
+        text = format_hvut_config_field_help_text(text);
         o.node.text = $element('p', o.node.div, ['/' + text]);
       }
       if (inputKind === 'textarea') {
@@ -5207,12 +5221,10 @@ const $config = {
       }
       let desc = $config.desc[o.desc || o.key];
       if (desc) {
-        desc = desc.trim().replace(/^ +/gm, '').split('\n');
-        const button = desc[0];
-        desc = desc.slice(1).join('<br>');
-        $input(['button', button], o.node.div, null, () => { o.node.desc.classList.toggle('hvut-none'); });
+        desc = format_hvut_config_field_description(desc);
+        $input(['button', desc.button], o.node.div, null, () => { o.node.desc.classList.toggle('hvut-none'); });
         //$element('br', o.node.div);
-        o.node.desc = $element('p', o.node.div, ['/' + desc, '.hvut-none']);
+        o.node.desc = $element('p', o.node.div, ['/' + desc.html, '.hvut-none']);
       }
 
       if (inputKind === 'textarea') { // append here
@@ -11056,17 +11068,15 @@ const $config = {
 
       let text = $config.text[o.text || o.key] || o.text;
       if (text) {
-        text = text.trim().replace(/^ +/gm, '').replace(/\n/g, '<br>');
+        text = format_hvut_config_field_help_text(text);
         o.node.text = $element('p', o.node.div, ['/' + text]);
       }
       let desc = $config.desc[o.desc || o.key];
       if (desc) {
-        desc = desc.trim().replace(/^ +/gm, '').split('\n');
-        const button = desc[0];
-        desc = desc.slice(1).join('<br>');
-        $input(['button', button], o.node.div, null, () => { o.node.desc.classList.toggle('hvut-none'); });
+        desc = format_hvut_config_field_description(desc);
+        $input(['button', desc.button], o.node.div, null, () => { o.node.desc.classList.toggle('hvut-none'); });
         //$element('br', o.node.div);
-        o.node.desc = $element('p', o.node.div, ['/' + desc, '.hvut-none']);
+        o.node.desc = $element('p', o.node.div, ['/' + desc.html, '.hvut-none']);
       }
 
       if (inputKind === 'textarea') { // append here

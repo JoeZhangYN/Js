@@ -15,3 +15,17 @@ export function getHvutConfigFieldInputKind(field) {
   if (field?.type === "number") return "number";
   return "text";
 }
+
+export function formatHvutConfigFieldHelpText(text) {
+  if (!text) return null;
+  return text.trim().replace(/^ +/gm, "").replace(/\n/g, "<br>");
+}
+
+export function formatHvutConfigFieldDescription(description) {
+  if (!description) return null;
+  const lines = description.trim().replace(/^ +/gm, "").split("\n");
+  return {
+    button: lines[0],
+    html: lines.slice(1).join("<br>"),
+  };
+}

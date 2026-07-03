@@ -32,13 +32,22 @@ requireIncludes(fieldTarget, fieldText, [
   "if (field?.type === \"boolean\") return \"checkbox\";",
   "if (field?.type === \"number\") return \"number\";",
   "return \"text\";",
+  "export function formatHvutConfigFieldHelpText(text) {",
+  "return text.trim().replace(/^ +/gm, \"\").replace(/\\n/g, \"<br>\");",
+  "export function formatHvutConfigFieldDescription(description) {",
+  "button: lines[0]",
+  "html: lines.slice(1).join(\"<br>\")",
 ]);
 
 requireIncludes(fieldBridgeTarget, fieldBridgeText, [
+  "formatHvutConfigFieldDescription",
+  "formatHvutConfigFieldHelpText",
   "getHvutConfigFieldInputKind",
   "isHvutConfigFieldDisabled",
   "from \"./hvut-config-field.js\";",
   "window.HVAA_hvutConfigField = Object.freeze({",
+  "formatDescription: formatHvutConfigFieldDescription",
+  "formatHelpText: formatHvutConfigFieldHelpText",
   "inputKind: getHvutConfigFieldInputKind",
   "isDisabled: isHvutConfigFieldDisabled",
 ]);
@@ -50,10 +59,16 @@ if (!mainText.includes("import \"./i18n/hvut-config-field-bridge.js\";")) {
 requireIncludes(target, text, [
   "var is_hvut_config_field_disabled = function (field, context) {",
   "var get_hvut_config_field_input_kind = function (field) {",
+  "var format_hvut_config_field_help_text = function (text) {",
+  "var format_hvut_config_field_description = function (desc) {",
   "window.HVAA_hvutConfigField.isDisabled(field, context)",
   "window.HVAA_hvutConfigField.inputKind(field)",
+  "window.HVAA_hvutConfigField.formatHelpText(text)",
+  "window.HVAA_hvutConfigField.formatDescription(desc)",
   "record_hvut_config_parse_failure('configFieldBridgeMissing'",
   "record_hvut_config_parse_failure('configFieldInputKindBridgeMissing'",
+  "record_hvut_config_parse_failure('configFieldHelpTextBridgeMissing'",
+  "record_hvut_config_parse_failure('configFieldDescriptionBridgeMissing'",
   "return true;",
   "const inputKind = get_hvut_config_field_input_kind(o);",
   "if (is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })) {",
@@ -80,12 +95,19 @@ for (const [index, body] of createBodies.entries()) {
     "else if (inputKind === 'select')",
     "else if (inputKind === 'checkbox')",
     "else if (inputKind === 'number')",
+    "text = format_hvut_config_field_help_text(text);",
+    "desc = format_hvut_config_field_description(desc);",
+    "$input(['button', desc.button]",
+    "['/' + desc.html, '.hvut-none']",
   ]);
   for (const forbidden of [
     "if (o.input === 'textarea')",
     "else if (o.input === 'select')",
     "else if (o.type === 'boolean')",
     "else if (o.type === 'number')",
+    "text.trim().replace(/^ +/gm, '').replace(/\\n/g, '<br>')",
+    "desc.trim().replace(/^ +/gm, '').split('\\n')",
+    "desc.slice(1).join('<br>')",
   ]) {
     if (body.includes(forbidden)) {
       violations.push(`${target} config create[${index}] must not reimplement input kind with ${forbidden}`);
@@ -96,7 +118,9 @@ for (const [index, body] of createBodies.entries()) {
 if (
   !fieldTestText.includes("uses server ownership for Isekai config fields") ||
   !fieldTestText.includes("uses disabled flags for persistent config fields") ||
-  !fieldTestText.includes("classifies config field input kind once")
+  !fieldTestText.includes("classifies config field input kind once") ||
+  !fieldTestText.includes("formats field help text once") ||
+  !fieldTestText.includes("formats field descriptions into button and html once")
 ) {
   violations.push(`${fieldTestTarget} must cover Isekai and persistent config field applicability`);
 }

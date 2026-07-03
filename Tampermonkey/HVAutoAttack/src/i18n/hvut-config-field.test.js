@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getHvutConfigFieldInputKind, isHvutConfigFieldDisabled } from "./hvut-config-field.js";
+import {
+  formatHvutConfigFieldDescription,
+  formatHvutConfigFieldHelpText,
+  getHvutConfigFieldInputKind,
+  isHvutConfigFieldDisabled,
+} from "./hvut-config-field.js";
 
 describe("HVUT config field applicability", () => {
   it("uses server ownership for Isekai config fields", () => {
@@ -18,5 +23,18 @@ describe("HVUT config field applicability", () => {
     expect(getHvutConfigFieldInputKind({ type: "boolean" })).toBe("checkbox");
     expect(getHvutConfigFieldInputKind({ type: "number" })).toBe("number");
     expect(getHvutConfigFieldInputKind({ type: "string" })).toBe("text");
+  });
+
+  it("formats field help text once", () => {
+    expect(formatHvutConfigFieldHelpText("  first\n    second")).toBe("first<br>second");
+    expect(formatHvutConfigFieldHelpText("")).toBeNull();
+  });
+
+  it("formats field descriptions into button and html once", () => {
+    expect(formatHvutConfigFieldDescription("  Syntax\n    line one\n    line two")).toEqual({
+      button: "Syntax",
+      html: "line one<br>line two",
+    });
+    expect(formatHvutConfigFieldDescription(null)).toBeNull();
   });
 });
