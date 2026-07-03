@@ -1611,7 +1611,14 @@ const bindRe = function (re, ctx) {
     } else if (re.type === 'eh') {
       re.stop();
       re.button.textContent = '检查中...';
-      const html = await $ajax.fetch('https://hentaiverse.org/');
+      let html;
+      try {
+        html = await $ajax.fetch('https://hentaiverse.org/');
+      } catch (error) {
+        record_hvut_random_encounter_failure('widgetHvAvailabilityFetch', { reason: 'requestFailed', error: error?.message || String(error) });
+        re.start();
+        return false;
+      }
       if (html.includes('<div id="navbar">')) {
         const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage, hvAvailable: true });
         if (applyEncounterState(outcome) === false) return false;

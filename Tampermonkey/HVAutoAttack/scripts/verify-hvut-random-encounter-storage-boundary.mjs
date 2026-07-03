@@ -26,6 +26,7 @@ const clock = body(/re\.clock = function \(button\) \{[\s\S]*?\n  \};\n  re\.hv/
 const hv = body(/re\.hv = function \(\) \{[\s\S]*?\n  \};\n  re\.ba/, "re.hv");
 const ba = body(/re\.ba = function \(\) \{[\s\S]*?\n  \};\n  re\.eh/, "re.ba");
 const eh = body(/re\.eh = function \(\) \{[\s\S]*?\n  \};\n  re\.get/, "re.eh");
+const run = body(/re\.run = async function \(engage\) \{[\s\S]*?\n  \};\n  re\.load/, "re.run");
 const load = body(/re\.load = async function \(engage\) \{[\s\S]*?\n  \};\n  re\.start/, "re.load");
 
 requireParts("applyEncounterState", applyState, [
@@ -58,6 +59,13 @@ requireParts("re.eh", eh, [
   "return re.clock(button);",
   "return true;",
 ]);
+requireParts("re.run", run, [
+  "html = await $ajax.fetch('https://hentaiverse.org/');",
+  "record_hvut_random_encounter_failure('widgetHvAvailabilityFetch'",
+  "re.start();",
+  "return false;",
+  "hvAvailable: true",
+]);
 requireParts("re.load", load, [
   "if (re.get() === false) return false;",
   "record_hvut_random_encounter_failure('widgetNewsLoadFetch'",
@@ -84,6 +92,7 @@ for (const forbidden of [
   "ctx.config.set('re', outcome.state, 'hvut_');\n    re.json = outcome.state;",
   "re.check();",
   "re.get();\n    re.button.textContent = '加载中...';",
+  "re.button.textContent = '检查中...';\n      const html = await $ajax.fetch('https://hentaiverse.org/');",
 ]) {
   if (bindRe.includes(forbidden)) {
     violations.push(`${target} bindRe must not ignore random encounter state persistence: ${forbidden}`);
