@@ -225,6 +225,10 @@ try {
     }
     return false;
   };
+  var parse_hvut_price_market_click_href = function (onclick, stage) {
+    var match = /document\.location='([^']+)'/.exec(onclick || '');
+    return match ? match[1] : record_hvut_price_market_parse_failure(stage, { onclick: onclick || '' });
+  };
   var record_hvut_character_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutCharacterParse', stage: stage, detail: detail || {} };
     try {
@@ -6985,7 +6989,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
       if (!onclick) {
         return;
       }
-      const href = /document\.location='([^']+)'/.exec(onclick)[1];
+      const href = parse_hvut_price_market_click_href(onclick, 'marketClickHref');
+      if (href === false) {
+        return;
+      }
       $element('a', tr.cells[0], { href });
       tr.removeAttribute('onclick');
     });
@@ -13298,7 +13305,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
       if (!onclick) {
         return;
       }
-      const href = /document\.location='([^']+)'/.exec(onclick)[1];
+      const href = parse_hvut_price_market_click_href(onclick, 'legacyMarketClickHref');
+      if (href === false) {
+        return;
+      }
       $element('a', tr.cells[0], { href });
       tr.removeAttribute('onclick');
     });

@@ -15,6 +15,8 @@ const updateBody =
   "";
 const modernMarketBody = text.match(/_mk\.table_init = function \(\) \{[\s\S]*?\n  \};\n\n  _mk\.price_update/)?.[0] || "";
 const legacyMarketBody = text.match(/_mk\.init_list = function \(\) \{[\s\S]*?\n  \};\n\n  _mk\.edit/)?.[0] || "";
+const modernClickBody = text.match(/_mk\.click_linkify = function \(\) \{[\s\S]*?\n  \};\n\n  _mk\.add_crystalpack/)?.[0] || "";
+const legacyClickBody = text.match(/_mk\.click2link = function \(\) \{[\s\S]*?\n  \};\n\n  GM_addStyle/)?.[0] || "";
 
 if (!editBody) violations.push(`${target} must own price.edit entry`);
 if (!resetBody) violations.push(`${target} must own price.reset entry`);
@@ -23,6 +25,8 @@ if (!parseBody) violations.push(`${target} must own price.parse_market entry`);
 if (!updateBody) violations.push(`${target} must own price.update_market entry`);
 if (!modernMarketBody) violations.push(`${target} must own modern market table init entry`);
 if (!legacyMarketBody) violations.push(`${target} must own legacy market list init entry`);
+if (!modernClickBody) violations.push(`${target} must own modern market click linkify entry`);
+if (!legacyClickBody) violations.push(`${target} must own legacy market click linkify entry`);
 
 for (const [label, body] of [
   ["price.reset", resetBody],
@@ -63,6 +67,16 @@ for (const required of [
 }
 
 for (const required of [
+  "var parse_hvut_price_market_click_href = function (onclick, stage) {",
+  "var match = /document\\.location='([^']+)'/.exec(onclick || '');",
+  "return match ? match[1] : record_hvut_price_market_parse_failure(stage, { onclick: onclick || '' });",
+]) {
+  if (!text.includes(required)) {
+    violations.push(`${target} must own price market click href parser with ${required}`);
+  }
+}
+
+for (const required of [
   "try {\n        await Promise.all(requests);",
   "catch (_error) {\n        return null;",
   "try {\n        await update(filter);",
@@ -80,6 +94,20 @@ if (/await Promise\.all\(requests\);\n\s*price\.market_all = true;/.test(updateB
 }
 if (/const itemid = \/itemid=\(\\d\+\)\/\.exec\(tr\.getAttribute\('onclick'\)\)\[1\];/.test(parseBody)) {
   violations.push(`${target} price parse must not keep unchecked itemid parse`);
+}
+for (const [label, body, stage] of [
+  ["modern market click linkify", modernClickBody, "marketClickHref"],
+  ["legacy market click linkify", legacyClickBody, "legacyMarketClickHref"],
+]) {
+  if (!body.includes(`const href = parse_hvut_price_market_click_href(onclick, '${stage}');`)) {
+    violations.push(`${target} ${label} must parse href through price market parser`);
+  }
+  if (!body.includes("if (href === false) {\n        return;\n      }")) {
+    violations.push(`${target} ${label} must skip malformed onclick href`);
+  }
+}
+if (/\/document\\\.location='\(\[\^'\]\+\)'\/\.exec\(onclick\)\[1\]/.test(text)) {
+  violations.push(`${target} must not keep unchecked market onclick href parse`);
 }
 if (!modernMarketBody.includes("if ($price.parse_market(_query.filter) === false) return;")) {
   violations.push(`${target} modern market init must stop after parse failure`);
