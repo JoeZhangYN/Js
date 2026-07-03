@@ -49,6 +49,24 @@ describe("runBattleNextRoundContinuation rejection evidence", () => {
     );
   });
 
+  it("does not treat typed failed restarted turns as successful", () => {
+    const deps = makeDeps();
+    const detail = { kind: "failed", reason: "turnWorkflowFailed" };
+    deps.runTurn.mockReturnValue(detail);
+
+    expect(
+      runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }, deps)
+    ).toBe(true);
+
+    expect(deps.recordContinuation).toHaveBeenCalledWith(
+      { outcome: "rejected", continued: false, reason: "nextRoundRestartRejected" },
+      expect.arrayContaining([
+        { step: "runTurn", result: false, detail },
+        { step: "restartBattleRuntime", result: false },
+      ])
+    );
+  });
+
   it("records callback step exceptions without throwing", () => {
     const deps = makeDeps();
     deps.gE.mockImplementation((selector, data) => {

@@ -48,6 +48,9 @@ for (const required of [
   "nextRoundPostFailed",
   "readCompletionControls",
   "recordStep",
+  "normalizeStepResult",
+  'rawResult?.kind === "failed"',
+  "return { result: false, detail: rawResult }",
   "recordContinuationSafely",
   "recordCallbackRejection",
   "#pane_completion",
@@ -124,6 +127,7 @@ if (!fs.existsSync(path.join(root, rejectionTest))) {
   const rejectionTestText = read(rejectionTest);
   for (const required of [
     "records rejected continuation when restarted turn does not act",
+    "does not treat typed failed restarted turns as successful",
     "records callback step exceptions without throwing",
     "records completion control read failures before posting",
     "records rejected continuation when next-round post fails",

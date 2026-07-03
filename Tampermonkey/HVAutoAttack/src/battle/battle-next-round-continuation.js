@@ -3,15 +3,9 @@ import { post } from "../dom/http.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
 import { BattleTurnWorkflowEvent, runBattleTurnAutomation } from "./main-loop.js";
 import { BattleRoundStartEvent, runBattleRoundStartAutomation } from "./battle-round-start.js";
-import {
-  BattleActionLifecycleEvidenceEvent,
-  runBattleActionLifecycleEvidence,
-} from "./battle-action-lifecycle-evidence.js";
+import { BattleActionLifecycleEvidenceEvent, runBattleActionLifecycleEvidence } from "./battle-action-lifecycle-evidence.js";
 import { recordContinuationSafely } from "./battle-next-round-continuation-recording.js";
-import {
-  recordCallbackRejection,
-  recordPostFailure,
-} from "./battle-next-round-continuation-result.js";
+import { recordCallbackRejection, recordPostFailure } from "./battle-next-round-continuation-result.js";
 
 const EVENT_CONTINUE = "continue";
 const PHASE_NEXT_ROUND_CONTINUATION = "nextRoundContinuation";
@@ -48,9 +42,9 @@ function readCompletionControls(deps) {
 
 function recordStep(steps, step, run) {
   try {
-    const result = run();
-    steps.push({ step, result: result === undefined ? true : result });
-    return result === undefined ? true : result;
+    const stepResult = normalizeStepResult(run());
+    steps.push({ step, ...stepResult });
+    return stepResult.result;
   } catch (error) {
     steps.push({
       step,
@@ -60,6 +54,15 @@ function recordStep(steps, step, run) {
     });
     return false;
   }
+}
+
+function normalizeStepResult(rawResult) {
+  if (rawResult === undefined) return { result: true };
+  if (rawResult?.kind === "failed") return { result: false, detail: rawResult };
+  if (rawResult && typeof rawResult === "object" && "kind" in rawResult) {
+    return { result: true, detail: rawResult };
+  }
+  return { result: rawResult };
 }
 
 function restartBattleRuntime(deps, steps) {
@@ -141,13 +144,12 @@ export function runBattleNextRoundContinuation(
     handleRiddle: (data) => runRiddleAutomation({ type: RiddleEvent.BATTLE_POST_RESULT, data }),
     startRound: () => runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED }),
     runTurn: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
-    recordContinuation: (result, steps) =>
-      runBattleActionLifecycleEvidence({
-        type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
-        phase: PHASE_NEXT_ROUND_CONTINUATION,
-        result,
-        steps,
-      }),
+    recordContinuation: (result, steps) => runBattleActionLifecycleEvidence({
+      type: BattleActionLifecycleEvidenceEvent.RECORD_LIFECYCLE,
+      phase: PHASE_NEXT_ROUND_CONTINUATION,
+      result,
+      steps,
+    }),
   }
 ) {
   return (
