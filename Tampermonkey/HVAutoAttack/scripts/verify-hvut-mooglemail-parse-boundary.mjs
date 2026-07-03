@@ -18,7 +18,7 @@ const modernCredits =
   /_mm\.credits = \{[\s\S]*?\n    if \(_mm\.credits\.init\(\) === false\) \{[\s\S]*?\n    \}/.exec(text)?.[0] || "";
 const legacyCredits =
   /_mm\.credits_list = \[\];[\s\S]*?\n    _mm\.credits_multi = function/.exec(text)?.[0] || "";
-const mailParseBodies = [...text.matchAll(/parse: function \(html\) \{[\s\S]*?\n      \},\n      update: function/g)].map((m) => m[0]);
+const mailParseBodies = [...text.matchAll(/parse: function \(html\) \{[\s\S]*?\n      \},\n      update: async function/g)].map((m) => m[0]);
 const legacyMailParse =
   /_mm\.mail_parse = function \(arg\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_update/.exec(text)?.[0] || "";
 const modernPagePager =

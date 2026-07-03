@@ -495,6 +495,26 @@ try {
     }
     return evidence;
   };
+  var wait_hvut_mooglemail_db_write = function (stage, detail, conn) {
+    return new Promise((resolve) => {
+      try {
+        conn.tx.oncomplete = function () {
+          resolve(true);
+        };
+        conn.tx.onerror = function (event) {
+          record_hvut_mooglemail_action_failure(stage, { ...detail, error: event?.target?.error?.message || 'transaction error' });
+          resolve(false);
+        };
+        conn.tx.onabort = function (event) {
+          record_hvut_mooglemail_action_failure(stage, { ...detail, error: event?.target?.error?.message || 'transaction aborted' });
+          resolve(false);
+        };
+      } catch (error) {
+        record_hvut_mooglemail_action_failure(stage, { ...detail, error: error?.message || String(error) });
+        resolve(false);
+      }
+    });
+  };
   var stop_hvut_mooglemail_send_failure = async function (stage, detail, message, discardStage) {
     record_hvut_mooglemail_send_failure(stage, detail);
     if (message) {
@@ -10174,7 +10194,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         if (mail.view?.error) {
           record_hvut_mooglemail_action_failure(post ? 'viewActionRejected' : 'viewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
         }
-        _mm.mail.update(mail);
+        if (!mail.view?.error && !await _mm.mail.update(mail, post)) {
+          mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };
+          return false;
+        }
         return !mail.view?.error;
       },
       parse: function (html) {
@@ -10283,10 +10306,14 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
         return view;
       },
-      update: function (mail) {
+      update: async function (mail, post) {
         const mid = mail.mid;
         const page = mail.page;
         const view = mail.view;
+        let conn = null;
+        let writeStage = '';
+        let writeDetail = null;
+        let applyWrite = null;
 
         if (view.error) {
         } else if (mail.db) {
@@ -10297,22 +10324,26 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             read = -1;
           }
           if (db.filter !== view.filter || db.user !== view.user || db.subject !== view.subject || db.text !== view.text || db.sent !== sent || db.read !== read) {
-            db.filter = view.filter;
-            db.user = view.user;
-            db.subject = view.subject;
-            db.text = view.text;
-            db.sent = sent;
-            db.read = read;
+            const nextDb = { ...db, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: sent, read: read };
             if (view.returned) {
-              db.returned = 1;
-              delete db.cod;
+              nextDb.returned = 1;
+              delete nextDb.cod;
             }
-            const conn = _mm.db.conn('readwrite');
-            conn.os.put(db);
+            conn = _mm.db.conn('readwrite');
+            writeStage = post ? 'viewActionDbUpdate' : 'viewLoadDbUpdate';
+            writeDetail = { mid: mid, post: post || '', operation: 'put' };
+            try {
+              conn.os.put(nextDb);
+            } catch (error) {
+              record_hvut_mooglemail_action_failure(writeStage, { ...writeDetail, error: error?.message || String(error) });
+              return false;
+            }
+            applyWrite = function () {
+              Object.assign(db, nextDb);
+            };
           }
         } else if (page) {
-          mail.db = { mid: mid, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: page.sent, read: page.read };
-          const db = mail.db;
+          const db = { mid: mid, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: page.sent, read: page.read };
           if (view.returned) {
             db.returned = 1;
           }
@@ -10322,11 +10353,28 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           if (view.cod) {
             db.cod = view.cod;
           }
-          const conn = _mm.db.conn('readwrite');
-          conn.os.add(db);
+          conn = _mm.db.conn('readwrite');
+          writeStage = post ? 'viewActionDbInsert' : 'viewLoadDbInsert';
+          writeDetail = { mid: mid, post: post || '', operation: 'add' };
+          try {
+            conn.os.add(db);
+          } catch (error) {
+            record_hvut_mooglemail_action_failure(writeStage, { ...writeDetail, error: error?.message || String(error) });
+            return false;
+          }
+          applyWrite = function () {
+            mail.db = db;
+          };
         }
 
+        if (conn && !await wait_hvut_mooglemail_db_write(writeStage, writeDetail, conn)) {
+          return false;
+        }
+        if (applyWrite) {
+          applyWrite();
+        }
         _mm.mail.modify(mail);
+        return true;
       },
       modify: function (mail) {
         if (mail.node.page) {
@@ -16324,7 +16372,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       if (mail.view?.error) {
         record_hvut_mooglemail_action_failure(post ? 'legacyViewActionRejected' : 'legacyViewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
       }
-      _mm.mail_update(mail);
+      if (!mail.view?.error && !await _mm.mail_update(mail, post)) {
+        mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };
+        return false;
+      }
       return !mail.view?.error;
     };
 
@@ -16444,10 +16495,14 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       return view;
     };
 
-    _mm.mail_update = function (mail) {
+    _mm.mail_update = async function (mail, post) {
       const mid = mail.mid;
       const page = mail.page;
       const view = mail.view;
+      let conn = null;
+      let writeStage = '';
+      let writeDetail = null;
+      let applyWrite = null;
 
       if (view.error) {
       } else if (mail.db) {
@@ -16458,22 +16513,26 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           read = -1;
         }
         if (db.filter !== view.filter || db.user !== view.user || db.subject !== view.subject || db.text !== view.text || db.sent !== sent || db.read !== read) {
-          db.filter = view.filter;
-          db.user = view.user;
-          db.subject = view.subject;
-          db.text = view.text;
-          db.sent = sent;
-          db.read = read;
+          const nextDb = { ...db, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: sent, read: read };
           if (view.returned) {
-            db.returned = 1;
-            delete db.cod;
+            nextDb.returned = 1;
+            delete nextDb.cod;
           }
-          const conn = _mm.db.conn('readwrite');
-          conn.os.put(db);
+          conn = _mm.db.conn('readwrite');
+          writeStage = post ? 'legacyViewActionDbUpdate' : 'legacyViewLoadDbUpdate';
+          writeDetail = { mid: mid, post: post || '', operation: 'put' };
+          try {
+            conn.os.put(nextDb);
+          } catch (error) {
+            record_hvut_mooglemail_action_failure(writeStage, { ...writeDetail, error: error?.message || String(error) });
+            return false;
+          }
+          applyWrite = function () {
+            Object.assign(db, nextDb);
+          };
         }
       } else if (page) {
-        mail.db = { mid: mid, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: page.sent, read: page.read };
-        const db = mail.db;
+        const db = { mid: mid, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: page.sent, read: page.read };
         if (view.returned) {
           db.returned = 1;
         }
@@ -16483,11 +16542,28 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         if (view.cod) {
           db.cod = view.cod;
         }
-        const conn = _mm.db.conn('readwrite');
-        conn.os.add(db);
+        conn = _mm.db.conn('readwrite');
+        writeStage = post ? 'legacyViewActionDbInsert' : 'legacyViewLoadDbInsert';
+        writeDetail = { mid: mid, post: post || '', operation: 'add' };
+        try {
+          conn.os.add(db);
+        } catch (error) {
+          record_hvut_mooglemail_action_failure(writeStage, { ...writeDetail, error: error?.message || String(error) });
+          return false;
+        }
+        applyWrite = function () {
+          mail.db = db;
+        };
       }
 
+      if (conn && !await wait_hvut_mooglemail_db_write(writeStage, writeDetail, conn)) {
+        return false;
+      }
+      if (applyWrite) {
+        applyWrite();
+      }
       _mm.mail_modify(mail);
+      return true;
     };
 
     _mm.mail_modify = function (mail) {
