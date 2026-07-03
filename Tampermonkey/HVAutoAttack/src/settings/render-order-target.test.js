@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   hasSettingsInputClass,
+  readCustomizeHoverTarget,
   readSingleOrderItemName,
   shouldHydrateSettingsInput,
 } from "./render.js";
@@ -22,5 +23,16 @@ describe("settings input class classification", () => {
     expect(shouldHydrateSettingsInput({ className: "hvAADebug hvAANumber" })).toBe(false);
     expect(shouldHydrateSettingsInput({ className: "hvAANumber extra" })).toBe(true);
     expect(hasSettingsInputClass("hvAACustomize active", "hvAACustomize")).toBe(true);
+  });
+
+  it("reads customize hover targets without assuming parent depth", () => {
+    const root = { className: "customize active", parentNode: null };
+    const child = { className: "customizeGroup", parentNode: root };
+    const leaf = { className: "", parentNode: child };
+
+    expect(readCustomizeHoverTarget(root)).toBe(root);
+    expect(readCustomizeHoverTarget(leaf)).toBe(root);
+    expect(readCustomizeHoverTarget({ className: "", parentNode: null })).toBeNull();
+    expect(readCustomizeHoverTarget(null)).toBeNull();
   });
 });

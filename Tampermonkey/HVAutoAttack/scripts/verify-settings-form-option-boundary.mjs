@@ -80,9 +80,12 @@ if (!renderText.includes("OptionEvent.READ_FIELD")) {
 }
 for (const required of [
   "export function hasSettingsInputClass(inputOrClassName, className)",
+  "export function readCustomizeHoverTarget(target)",
   'hasSettingsInputClass(input, "hvAADebug")',
+  'hasSettingsInputClass(node, "customize")',
   'hasSettingsInputClass(className, "hvAACustomize")',
   "if (!shouldHydrateSettingsInput(inputs[i])) continue;",
+  "const target = readCustomizeHoverTarget(e.target);",
 ]) {
   if (!renderText.includes(required)) {
     violations.push(`${settingsRender.replaceAll("\\", "/")} must classify hydration input classes by token`);
@@ -94,6 +97,16 @@ for (const forbidden of [
 ]) {
   if (renderText.includes(forbidden)) {
     violations.push(`${settingsRender.replaceAll("\\", "/")} must not classify hydration inputs by whole className`);
+  }
+}
+const customizeHoverBlock = /optionBox\.onmousemove = function \(e\) \{[\s\S]*?\n  \};/.exec(renderText)?.[0] || "";
+for (const forbidden of [
+  /className === ["']customize["']/,
+  /parentNode\.parentNode/,
+  /className\.match\(["']customize["']\)/,
+]) {
+  if (forbidden.test(customizeHoverBlock)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} must route customize hover target parsing through readCustomizeHoverTarget`);
   }
 }
 if (/\bg\(\s*["']option["']/.test(renderText)) {
@@ -125,6 +138,13 @@ if (!fs.existsSync(path.join(root, orderTargetTest))) {
     !orderTargetTestText.includes("hvAACustomize active")
   ) {
     violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover multi-class hydration inputs`);
+  }
+  if (
+    !orderTargetTestText.includes("reads customize hover targets without assuming parent depth") ||
+    !orderTargetTestText.includes("readCustomizeHoverTarget(null)") ||
+    !orderTargetTestText.includes("customize active")
+  ) {
+    violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover customize hover target parsing`);
   }
 }
 const customizeText = fs.readFileSync(path.join(root, customizeInspect), "utf8");

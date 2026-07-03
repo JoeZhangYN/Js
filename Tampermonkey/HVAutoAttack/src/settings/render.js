@@ -290,6 +290,15 @@ export function shouldHydrateSettingsInput(input) {
   return !hasSettingsInputClass(input, "hvAADebug");
 }
 
+export function readCustomizeHoverTarget(target) {
+  let node = target;
+  while (node) {
+    if (hasSettingsInputClass(node, "customize")) return node;
+    node = node.parentNode;
+  }
+  return null;
+}
+
 function hasStoredOption() {
   return readOptionField("version", undefined) !== undefined;
 }
@@ -797,16 +806,11 @@ export function optionBox() {
   }
   optionBox.onmousemove = function (e) {
     // 自定义条件相关事件
-    const target =
-      e.target.className === "customize"
-        ? e.target
-        : e.target.parentNode.className === "customize"
-          ? e.target.parentNode
-          : e.target.parentNode.parentNode;
+    const target = readCustomizeHoverTarget(e.target);
     if (!gE(".customizeBox")) customizeBox();
     updateGroup();
-    if (target.className !== "customize" && target.parentNode.className !== "customize") {
-      if (!target.className.match("customize")) gE(".customizeBox").style.zIndex = -1;
+    if (!target) {
+      gE(".customizeBox").style.zIndex = -1;
       return;
     }
     g("customizeTarget", target);
