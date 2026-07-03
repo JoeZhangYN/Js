@@ -11,6 +11,7 @@ vi.mock("./storage.js", async () => {
 });
 
 import { RiddleLogEvent, runRiddleLogAutomation } from "./riddle-log.js";
+import { RIDDLE_LOG_FAILURE_KEY } from "./riddle-log-failure.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "./riddle-stats.js";
 import { RIDDLE_STATS_FAILURE_KEY } from "./riddle-stats-failure.js";
 
@@ -60,6 +61,24 @@ describe("riddle stats persistence failures", () => {
       capability: "riddleStats",
       stage: "reset",
       failure: { kind: "storageWrite", error: "riddle stats delete blocked" },
+    });
+  });
+
+  it("does not report riddle stats record success when evidence log write fails", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    mocks.setValue.mockImplementation((item, value) => {
+      if (item === "riddleLog") throw new Error("riddle log write blocked");
+      window.localStorage[`hvAA_${item}`] =
+        typeof value === "string" ? value : JSON.stringify(value);
+    });
+
+    expect(runRiddleStatsAutomation({ type: RiddleStatsEvent.RECORD_APPEAR })).toBe(false);
+
+    expect(runRiddleStatsAutomation({ type: RiddleStatsEvent.READ }).appear).toBe(1);
+    expect(JSON.parse(window.sessionStorage.getItem(RIDDLE_LOG_FAILURE_KEY))).toMatchObject({
+      capability: "riddleLog",
+      stage: "persist",
+      failure: { kind: "storageWrite", error: "riddle log write blocked" },
     });
   });
 

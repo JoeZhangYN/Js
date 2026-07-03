@@ -80,8 +80,7 @@ function recordMLDetail(detail) {
   const s = getValue(RIDDLE_STATS_KEY, true) || {};
   s.lastError = String(detail).slice(0, 300);
   if (!persistRiddleStats(s, "record-detail")) return false;
-  runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message: "detail: " + detail });
-  return true;
+  return appendRiddleStatsLog("detail: " + detail);
 }
 
 /** 小马图出现一次（riddle answer session 调用，与 ML 是否开启/成功无关）。 */
@@ -89,8 +88,7 @@ function recordRiddleAppear() {
   const s = getValue(RIDDLE_STATS_KEY, true) || {};
   s.appear = (s.appear || 0) + 1;
   if (!persistRiddleStats(s, "record-appear")) return false;
-  runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message: "riddle appeared" });
-  return true;
+  return appendRiddleStatsLog("riddle appeared");
 }
 
 /**
@@ -103,8 +101,11 @@ function recordMLOutcome(outcome) {
   if (!s.outcomes) s.outcomes = {};
   s.outcomes[key] = (s.outcomes[key] || 0) + 1;
   if (!persistRiddleStats(s, "record-outcome")) return false;
-  runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message: "ml outcome=" + key });
-  return true;
+  return appendRiddleStatsLog("ml outcome=" + key);
+}
+
+function appendRiddleStatsLog(message) {
+  return runRiddleLogAutomation({ type: RiddleLogEvent.PUSH, message }) !== false;
 }
 
 /** 重置全部统计。 */

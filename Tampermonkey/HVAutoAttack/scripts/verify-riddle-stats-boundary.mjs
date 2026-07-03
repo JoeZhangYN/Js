@@ -144,7 +144,9 @@ for (const required of [
 }
 for (const required of [
   "RIDDLE_STATS_FAILURE_KEY",
+  "RIDDLE_LOG_FAILURE_KEY",
   "riddle stats write blocked",
+  "riddle log write blocked",
   "riddle stats delete blocked",
   "storageWrite",
   "RiddleLogEvent.READ",
@@ -155,6 +157,13 @@ for (const required of [
 }
 if (!/if \(!persistRiddleStats\(s,\s*"record-detail"\)\) return false;[\s\S]*runRiddleLogAutomation/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must append riddle detail log only after stats persistence succeeds`);
+}
+if (
+  !/function appendRiddleStatsLog\(message\) \{[\s\S]*return runRiddleLogAutomation\(\{ type: RiddleLogEvent\.PUSH, message \}\) !== false;[\s\S]*\}/.test(
+    ownerText
+  )
+) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not claim stats record success when riddle log evidence fails`);
 }
 
 const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
