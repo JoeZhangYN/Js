@@ -58,7 +58,14 @@ function installActionEventBridge() {
   };
   gE("body").appendChild(eventEnd);
 
-  return Boolean(runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL }));
+  return actionEventBridgeInstalled(
+    runBattleApiBridgeAutomation({ type: BattleApiBridgeEvent.INSTALL })
+  );
+}
+
+function actionEventBridgeInstalled(result) {
+  if (result && typeof result === "object" && result.kind === "failed") return false;
+  return Boolean(result);
 }
 
 function runLifecycleFromBridge(nodeId, eventType) {

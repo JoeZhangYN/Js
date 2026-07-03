@@ -63,6 +63,20 @@ describe("runBattleActionEventBridgeAutomation", () => {
     expect(document.getElementById("eventEnd")).toBeTruthy();
   });
 
+  it("rejects typed API bridge installation failures instead of treating the object as success", () => {
+    mocks.runBattleApiBridgeAutomation.mockReturnValue({
+      kind: "failed",
+      reason: "apiBridgeInstallStepFailed",
+    });
+
+    expect(
+      runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL })
+    ).toBe(false);
+
+    expect(document.getElementById("eventStart")).toBeTruthy();
+    expect(document.getElementById("eventEnd")).toBeTruthy();
+  });
+
   it("routes action start and end node clicks to the lifecycle entry", () => {
     runBattleActionEventBridgeAutomation({ type: BattleActionEventBridgeEvent.INSTALL });
 
