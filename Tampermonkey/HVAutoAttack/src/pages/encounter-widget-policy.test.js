@@ -55,6 +55,21 @@ describe("planEncounterWidgetEvent", () => {
     });
   });
 
+  it("does not classify untyped equipment full text outside the news error box", () => {
+    expect(
+      planEncounterWidgetEvent({
+        type: "widgetNewsLoaded",
+        state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true },
+        eventpane: "<div>Inventory Capacity: 54 / 500. Your equipment inventory is full?</div>",
+        engage: true,
+        pageType: "hv",
+      })
+    ).toMatchObject({
+      action: "unavailable",
+      unavailableReason: "encounterKeyMissing",
+    });
+  });
+
   it("classifies explicit equipment inventory full news as the only equipment prompt reason", () => {
     expect(
       planEncounterWidgetEvent({

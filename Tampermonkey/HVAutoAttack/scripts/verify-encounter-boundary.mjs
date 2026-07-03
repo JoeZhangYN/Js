@@ -765,6 +765,7 @@ if (
 for (const required of [
   "equipmentInventoryFull",
   "encounterKeyMissing",
+  "messagebox_error",
   "Your equipment inventory is full",
 ]) {
   if (!widgetPolicyText.includes(required)) {
@@ -778,8 +779,14 @@ for (const required of [
     );
   }
 }
+if (!widgetPolicyText.includes("classifyWidgetUnavailableReason")) {
+  violations.push(
+    `${widgetPolicyFile.replaceAll("\\", "/")} must classify widget unavailable reasons through one function`
+  );
+}
 for (const required of [
   "does not classify low equipment capacity text as encounter equipment-full failure",
+  "does not classify untyped equipment full text outside the news error box",
   "handles plain battle-page countdown clicks without requesting a news load",
   "Inventory Capacity:",
   "54",
@@ -790,6 +797,11 @@ for (const required of [
       `${widgetPolicyTest.replaceAll("\\", "/")} must lock low-capacity text as non equipment-full encounter failure`
     );
   }
+}
+if (/Inventory Capacity:[\s\S]{0,180}equipmentInventoryFull/.test(widgetPolicyText)) {
+  violations.push(
+    `${widgetPolicyFile.replaceAll("\\", "/")} must not derive equipment-full reason from capacity text`
+  );
 }
 
 if (violations.length) {

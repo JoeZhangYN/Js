@@ -105,10 +105,15 @@ function planWidgetNewsLoaded(event) {
       action: "reset",
     };
   }
-  const unavailableReason = /Your equipment inventory is full/i.test(eventpane)
-    ? "equipmentInventoryFull"
-    : "encounterKeyMissing";
+  const unavailableReason = classifyWidgetUnavailableReason(eventpane);
   return { ...readWidgetState(event.state), action: "unavailable", unavailableReason };
+}
+
+function classifyWidgetUnavailableReason(eventpane) {
+  if (/<p[^>]*class=["'][^"']*\bmessagebox_error\b[^"']*["'][^>]*>\s*Your equipment inventory is full\s*<\/p>/i.test(eventpane)) {
+    return "equipmentInventoryFull";
+  }
+  return "encounterKeyMissing";
 }
 
 function planWidgetEngage(event) {
