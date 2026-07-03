@@ -2,6 +2,7 @@
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
+import { recordAlarmNotificationFailure } from "./alarm-notification-failure.js";
 import { getAlarmNotification } from "./notification-catalog.js";
 
 const EVENT_TRIGGER = "trigger";
@@ -90,7 +91,8 @@ function setNotification(e) {
         highlight: true,
         timeout: notification.time * 1000,
       });
-    } catch (_error) {
+    } catch (error) {
+      recordAlarmNotificationFailure("gmNotification", error);
       // Notification side effects must not block alarm fallback actions.
     }
   }
@@ -105,7 +107,8 @@ function setNotification(e) {
             setTimeout(() => {
               try {
                 n.close();
-              } catch (_error) {
+              } catch (error) {
+                recordAlarmNotificationFailure("browserNotificationTimeoutClose", error);
                 // Notification close hooks are diagnostic only.
               }
             }, notification.time * 1000);
@@ -113,7 +116,8 @@ function setNotification(e) {
             const closeNotification = () => {
               try {
                 n.close();
-              } catch (_error) {
+              } catch (error) {
+                recordAlarmNotificationFailure("browserNotificationMouseClose", error);
                 // Notification close hooks are diagnostic only.
               }
               document.removeEventListener("mousemove", closeNotification);
@@ -122,8 +126,11 @@ function setNotification(e) {
             document.addEventListener("mousemove", closeNotification);
           }
         })
-        .catch(() => {});
-    } catch (_error) {
+        .catch((error) => {
+          recordAlarmNotificationFailure("browserNotificationPermissionRejected", error);
+        });
+    } catch (error) {
+      recordAlarmNotificationFailure("browserNotificationPermission", error);
       // Notification permission hooks must not block alarm fallback actions.
     }
   }

@@ -67,7 +67,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   HVUT_SHRINE_CAPACITY_FAILURE: "HVAA:lastHvutShrineCapacityFailure",
   HVUT_SHRINE_REWARD_PARSE_FAILURE: "HVAA:lastHvutShrineRewardParseFailure", HVUT_SHRINE_ITEM_PARSE_FAILURE: "HVAA:lastHvutShrineItemParseFailure", HVUT_SHRINE_OFFER_FAILURE: "HVAA:lastHvutShrineOfferFailure", HVUT_RANDOM_ENCOUNTER_FAILURE: "HVAA:lastHvutRandomEncounterFailure",
   HVUT_PRICE_MARKET_PARSE_FAILURE: "HVAA:lastHvutPriceMarketParseFailure",
-  HVUT_CHARACTER_PARSE_FAILURE: "HVAA:lastHvutCharacterParseFailure", HVUT_ARMORY_SUBMIT_FAILURE: "HVAA:lastHvutArmorySubmitFailure",
+  HVUT_CHARACTER_PARSE_FAILURE: "HVAA:lastHvutCharacterParseFailure", HVUT_ARMORY_SUBMIT_FAILURE: "HVAA:lastHvutArmorySubmitFailure", ALARM_NOTIFICATION_FAILURE: "HVAA:lastAlarmNotificationFailure",
   LOTTERY_NOTIFICATION_FAILURE: "HVAA:lastLotteryNotificationFailure",
 });
 
@@ -142,7 +142,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("hvutShrineCapacityFailure", DiagnosticEvidenceKey.HVUT_SHRINE_CAPACITY_FAILURE),
   source("hvutShrineRewardParseFailure", DiagnosticEvidenceKey.HVUT_SHRINE_REWARD_PARSE_FAILURE), source("hvutShrineItemParseFailure", DiagnosticEvidenceKey.HVUT_SHRINE_ITEM_PARSE_FAILURE), source("hvutShrineOfferFailure", DiagnosticEvidenceKey.HVUT_SHRINE_OFFER_FAILURE), source("hvutRandomEncounterFailure", DiagnosticEvidenceKey.HVUT_RANDOM_ENCOUNTER_FAILURE),
   source("hvutPriceMarketParseFailure", DiagnosticEvidenceKey.HVUT_PRICE_MARKET_PARSE_FAILURE),
-  source("hvutCharacterParseFailure", DiagnosticEvidenceKey.HVUT_CHARACTER_PARSE_FAILURE), source("hvutArmorySubmitFailure", DiagnosticEvidenceKey.HVUT_ARMORY_SUBMIT_FAILURE),
+  source("hvutCharacterParseFailure", DiagnosticEvidenceKey.HVUT_CHARACTER_PARSE_FAILURE), source("hvutArmorySubmitFailure", DiagnosticEvidenceKey.HVUT_ARMORY_SUBMIT_FAILURE), source("alarmNotificationFailure", DiagnosticEvidenceKey.ALARM_NOTIFICATION_FAILURE),
   source("lotteryNotificationFailure", DiagnosticEvidenceKey.LOTTERY_NOTIFICATION_FAILURE),
 ]);
 

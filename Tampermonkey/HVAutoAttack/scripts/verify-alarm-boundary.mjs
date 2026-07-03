@@ -7,6 +7,9 @@ const owner = path.normalize("src/alarm/alarm.js");
 const ownerTest = path.normalize("src/alarm/alarm.test.js");
 const notificationFailureTest = path.normalize("src/alarm/alarm-notification-failure.test.js");
 const notificationCatalog = path.normalize("src/alarm/notification-catalog.js");
+const notificationFailure = path.normalize("src/alarm/alarm-notification-failure.js");
+const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
+const diagnosticEvidenceTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
 
@@ -59,6 +62,9 @@ walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 const notificationCatalogText = fs.readFileSync(path.join(root, notificationCatalog), "utf8");
+const notificationFailureText = fs.readFileSync(path.join(root, notificationFailure), "utf8");
+const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
+const diagnosticEvidenceTestText = fs.readFileSync(path.join(root, diagnosticEvidenceTest), "utf8");
 for (const required of ["runAlarmAutomation", "AlarmEvent", "PREVIEW_AUDIO_URL"]) {
   if (!ownerText.includes(required))
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -79,10 +85,39 @@ for (const required of [
   "Notification permission hooks must not block alarm fallback actions.",
   "Notification close hooks are diagnostic only.",
   "GM_notification({",
-  ".catch(() => {})",
+  "recordAlarmNotificationFailure",
+  "browserNotificationPermissionRejected",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must isolate notification failure ${required}`);
+  }
+}
+if (ownerText.includes(".catch(() => {})")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not swallow notification permission failures`);
+}
+for (const required of [
+  'ALARM_NOTIFICATION_FAILURE_KEY = "HVAA:lastAlarmNotificationFailure"',
+  'capability: "alarmNotification"',
+  "sessionStorage.setItem(ALARM_NOTIFICATION_FAILURE_KEY",
+]) {
+  if (!notificationFailureText.includes(required)) {
+    violations.push(`${notificationFailure.replaceAll("\\", "/")} must persist ${required}`);
+  }
+}
+for (const required of [
+  'ALARM_NOTIFICATION_FAILURE: "HVAA:lastAlarmNotificationFailure"',
+  'source("alarmNotificationFailure", DiagnosticEvidenceKey.ALARM_NOTIFICATION_FAILURE)',
+]) {
+  if (!diagnosticKeysText.includes(required)) {
+    violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+for (const required of [
+  "HVAA:lastAlarmNotificationFailure",
+  "alarmNotificationFailure: { capability: \"alarmNotification\", stage: \"gmNotification\" }",
+]) {
+  if (!diagnosticEvidenceTestText.includes(required)) {
+    violations.push(`${diagnosticEvidenceTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 if (!notificationCatalogText.includes("getAlarmNotification")) {
@@ -155,6 +190,8 @@ if (
   !ownerTestText.includes("isolates GM notification failures from notification-only alarms") ||
   !ownerTestText.includes("keeps audio alarm running when notification delivery fails") ||
   !ownerTestText.includes('throw new Error("notification blocked")') ||
+  !ownerTestText.includes("HVAA:lastAlarmNotificationFailure") ||
+  !ownerTestText.includes("gmNotification") ||
   !ownerTestText.includes("not.toThrow()")
 ) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover alarm failure fallback events`);
@@ -165,6 +202,9 @@ for (const required of [
   "isolates rejected browser notification permission requests",
   'throw new Error("permission blocked")',
   'Promise.reject(new Error("permission rejected"))',
+  "HVAA:lastAlarmNotificationFailure",
+  "browserNotificationPermission",
+  "browserNotificationPermissionRejected",
   "not.toThrow()",
 ]) {
   if (!notificationFailureTestText.includes(required)) {

@@ -8,6 +8,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  sessionStorage.clear();
 });
 
 describe("alarm browser notification failures", () => {
@@ -20,6 +21,11 @@ describe("alarm browser notification failures", () => {
     vi.stubGlobal("Notification", BlockedNotification);
 
     expect(() => runAlarmAutomation({ type: AlarmEvent.NOTIFICATION, kind: "Test" })).not.toThrow();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastAlarmNotificationFailure"))).toMatchObject({
+      capability: "alarmNotification",
+      stage: "browserNotificationPermission",
+      error: "permission blocked",
+    });
   });
 
   it("isolates rejected browser notification permission requests", async () => {
@@ -31,5 +37,11 @@ describe("alarm browser notification failures", () => {
     expect(() => runAlarmAutomation({ type: AlarmEvent.NOTIFICATION, kind: "Test" })).not.toThrow();
 
     await Promise.resolve();
+    await Promise.resolve();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastAlarmNotificationFailure"))).toMatchObject({
+      capability: "alarmNotification",
+      stage: "browserNotificationPermissionRejected",
+      error: "permission rejected",
+    });
   });
 });

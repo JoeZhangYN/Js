@@ -33,6 +33,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  sessionStorage.clear();
 });
 
 describe("alarm entry", () => {
@@ -111,6 +112,11 @@ describe("alarm entry", () => {
     });
 
     expect(() => runAlarmAutomation({ type: AlarmEvent.NOTIFICATION, kind: "Test" })).not.toThrow();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastAlarmNotificationFailure"))).toMatchObject({
+      capability: "alarmNotification",
+      stage: "gmNotification",
+      error: "notification blocked",
+    });
   });
 
   it("keeps audio alarm running when notification delivery fails", () => {
