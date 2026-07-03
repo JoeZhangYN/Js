@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getHvutConfigCarryKeys,
   getHvutConfigNamespace,
+  migrateLegacyHvutMonsterLabLog,
   normalizeHvutConfigSettings,
 } from "./hvut-config-migration.js";
 
@@ -53,5 +54,33 @@ describe("HVUT config migration", () => {
       keep: false,
       nested: { value: 1 },
     });
+  });
+
+  it("migrates legacy Monster Lab logs without mutating the original", () => {
+    const gift = Array.from({ length: 46 }, (_, index) => `gift-${index}`);
+    const legacy = [
+      null,
+      {
+        pa: [{ value: 1, to: 2 }],
+        er: [{ value: 3, to: 4 }],
+        ct: [{ value: 5, to: 6, max: 7 }],
+        gift,
+        selected: "old",
+      },
+    ];
+
+    const migrated = migrateLegacyHvutMonsterLabLog(legacy);
+
+    expect(migrated[0]).toEqual({ version: 1 });
+    expect(migrated[1]).toMatchObject({
+      pa: [[1, 2]],
+      er: [[3, 4]],
+      ct: [[5, 6, 7]],
+    });
+    expect(migrated[1].gift).toBeUndefined();
+    expect(migrated[1].selected).toBeUndefined();
+    expect(migrated[1].gifts.slice(28, 33)).toEqual(["gift-40", "gift-41", "gift-42", "gift-43", "gift-44"]);
+    expect(legacy[0]).toBeNull();
+    expect(legacy[1].gift).toBe(gift);
   });
 });

@@ -102,6 +102,13 @@ try {
     record_hvut_config_parse_failure('configSettingsBridgeMissing', {});
     return null;
   };
+  var migrate_hvut_monster_lab_log = function (mlLog) {
+    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.migrateMonsterLabLog) {
+      return window.HVAA_hvutConfigMigration.migrateMonsterLabLog(mlLog);
+    }
+    record_hvut_config_parse_failure('configMonsterLabLogBridgeMissing', {});
+    return null;
+  };
   var is_hvut_config_field_disabled = function (field, context) {
     if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.isDisabled) {
       return window.HVAA_hvutConfigField.isDisabled(field, context);
@@ -5071,21 +5078,9 @@ const $config = {
       }
 
       const ml_log = $config.ls_get('ml_log');
-      if (ml_log && !ml_log[0]) {
-        ml_log[0] = { version: 1 };
-        ml_log.forEach((log, i) => {
-          if (!log || i === 0) {
-            return;
-          }
-          log.pa = log.pa.map((e) => [e.value, e.to]);
-          log.er = log.er.map((e) => [e.value, e.to]);
-          log.ct = log.ct.map((e) => [e.value, e.to, e.max]);
-          log.gifts = log.gift;
-          log.gifts.push(...log.gifts.splice(28, 6, ...log.gifts.splice(40, 5)));
-          delete log.gift;
-          delete log.selected;
-        });
-        if (!$config.set('ml_log', ml_log)) return false;
+      const migrated_ml_log = migrate_hvut_monster_lab_log(ml_log);
+      if (migrated_ml_log) {
+        if (!$config.set('ml_log', migrated_ml_log)) return false;
         if (!$config.ls_del('ml_log')) return false;
       }
 
@@ -10951,21 +10946,9 @@ const $config = {
       }
 
       const ml_log = $config.ls_get('ml_log');
-      if (ml_log && !ml_log[0]) {
-        ml_log[0] = { version: 1 };
-        ml_log.forEach((log, i) => {
-          if (!log || i === 0) {
-            return;
-          }
-          log.pa = log.pa.map((e) => [e.value, e.to]);
-          log.er = log.er.map((e) => [e.value, e.to]);
-          log.ct = log.ct.map((e) => [e.value, e.to, e.max]);
-          log.gifts = log.gift;
-          log.gifts.push(...log.gifts.splice(28, 6, ...log.gifts.splice(40, 5)));
-          delete log.gift;
-          delete log.selected;
-        });
-        if (!$config.set('ml_log', ml_log)) return false;
+      const migrated_ml_log = migrate_hvut_monster_lab_log(ml_log);
+      if (migrated_ml_log) {
+        if (!$config.set('ml_log', migrated_ml_log)) return false;
         if (!$config.ls_del('ml_log')) return false;
       }
 

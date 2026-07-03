@@ -13,6 +13,23 @@ export function getHvutConfigCarryKeys(segment) {
   return segment?.isIsekai ? [...COMMON_CARRY_KEYS] : [...PERSISTENT_CARRY_KEYS];
 }
 
+export function migrateLegacyHvutMonsterLabLog(mlLog) {
+  if (!mlLog || mlLog[0]) return null;
+  const migrated = cloneConfigValue(mlLog);
+  migrated[0] = { version: 1 };
+  migrated.forEach((log, index) => {
+    if (!log || index === 0) return;
+    log.pa = log.pa.map((entry) => [entry.value, entry.to]);
+    log.er = log.er.map((entry) => [entry.value, entry.to]);
+    log.ct = log.ct.map((entry) => [entry.value, entry.to, entry.max]);
+    log.gifts = log.gift;
+    log.gifts.push(...log.gifts.splice(28, 6, ...log.gifts.splice(40, 5)));
+    delete log.gift;
+    delete log.selected;
+  });
+  return migrated;
+}
+
 export function normalizeHvutConfigSettings(settings, defaults) {
   const normalized = { ...(settings || {}) };
   const defaultSettings = defaults || {};
