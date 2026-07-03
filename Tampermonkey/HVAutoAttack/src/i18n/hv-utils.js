@@ -690,6 +690,12 @@ try {
     }
     return { name: nameNode.textContent, className: classNode.textContent, pl: pl, plNode: plNode, hungerdiv: hungerdiv, moralediv: moralediv, hungerbar: hungerbar, moralebar: moralebar, hunger: hunger, morale: morale };
   };
+  var parse_hvut_monster_lab_empty_slot = function (div, stage) {
+    var index = parseInt(div?.firstElementChild?.textContent);
+    return Number.isFinite(index)
+      ? { node: { div: div }, index: index }
+      : record_hvut_monster_lab_parse_failure(stage, { reason: 'emptyMonsterSlotMissing', text: div?.textContent || '' });
+  };
   var record_hvut_player_state_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutPlayerStateParse', stage: stage, detail: detail || {} };
     try {
@@ -8060,7 +8066,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.main.sort.key = key;
         _ml.main.sort.order = order;
         if (!_ml.main.sort.list) {
-          const empty = $qsa('#slot_pane > div[onclick*="&create=new"]').map((div) => ({ node: { div }, index: parseInt(div.firstElementChild.textContent) }));
+          const empty = $qsa('#slot_pane > div[onclick*="&create=new"]')
+            .map((div) => parse_hvut_monster_lab_empty_slot(div, 'emptyMonsterSlot'))
+            .filter((slot) => slot !== null);
           _ml.main.sort.list = _ml.mobs.filter((mob) => mob).concat(empty);
         }
         _ml.main.sort.list.sort((a, b) => ((a[key] == b[key]) ? 0 : (a[key] == undefined) ? 1 : (b[key] == undefined) ? -1 : (a[key] > b[key] ? 1 : -1) * order));
@@ -14180,7 +14188,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.main.sort.key = key;
         _ml.main.sort.order = order;
         if (!_ml.main.sort.list) {
-          const empty = $qsa('#slot_pane > div[onclick*="&create=new"]').map((div) => ({ node: { div }, index: parseInt(div.firstElementChild.textContent) }));
+          const empty = $qsa('#slot_pane > div[onclick*="&create=new"]')
+            .map((div) => parse_hvut_monster_lab_empty_slot(div, 'legacyEmptyMonsterSlot'))
+            .filter((slot) => slot !== null);
           _ml.main.sort.list = _ml.mobs.filter((mob) => mob).concat(empty);
         }
         _ml.main.sort.list.sort((a, b) => (a[key] == b[key] ? 0 : a[key] == undefined ? 1 : b[key] == undefined ? -1 : (a[key] > b[key] ? 1 : -1) * order));

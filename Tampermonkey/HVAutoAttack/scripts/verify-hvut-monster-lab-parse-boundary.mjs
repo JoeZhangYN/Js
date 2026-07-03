@@ -25,10 +25,14 @@ const initBodies = [
   initBodyFor("upgradeChaosTokenCost"),
   initBodyFor("legacyUpgradeChaosTokenCost"),
 ].filter(Boolean);
+const sortBodies = [...text.matchAll(/sort: function \(key\) \{[\s\S]*?\n      \},\n      feed:/g)].map((match) => match[0]);
 
 if (!helperRegion) violations.push(`${target} must keep Monster Lab parse helper visible`);
 if (initBodies.length !== 2) {
   violations.push(`${target} must keep both Monster Lab upgrader init entries visible, found ${initBodies.length}`);
+}
+if (sortBodies.length !== 2) {
+  violations.push(`${target} must keep both Monster Lab sort entries visible, found ${sortBodies.length}`);
 }
 
 for (const required of [
@@ -38,6 +42,8 @@ for (const required of [
   "var parse_hvut_monster_lab_main_surface = function (div, stage) {",
   "record_hvut_monster_lab_parse_failure(stage, { reason: 'monsterMainSurfaceMissing'",
   "return { name: nameNode.textContent, className: classNode.textContent, pl: pl, plNode: plNode",
+  "var parse_hvut_monster_lab_empty_slot = function (div, stage) {",
+  "record_hvut_monster_lab_parse_failure(stage, { reason: 'emptyMonsterSlotMissing'",
 ]) {
   requirePart("Monster Lab parse helper", helperRegion, required);
 }
@@ -56,6 +62,17 @@ for (const [index, body] of initBodies.entries()) {
   }
 }
 
+for (const [index, body] of sortBodies.entries()) {
+  const stage = index === 0 ? "emptyMonsterSlot" : "legacyEmptyMonsterSlot";
+  for (const required of [
+    `.map((div) => parse_hvut_monster_lab_empty_slot(div, '${stage}'))`,
+    ".filter((slot) => slot !== null)",
+    "_ml.main.sort.list = _ml.mobs.filter((mob) => mob).concat(empty);",
+  ]) {
+    requirePart(`Monster Lab sort[${index}]`, body, required);
+  }
+}
+
 for (const forbidden of [
   "const ct_next = parseInt(/Cost: (\\d+) Chaos Token/.exec($id('monster_actions').textContent)[1]);",
   "mob.name = div.children[1].textContent;",
@@ -66,6 +83,7 @@ for (const forbidden of [
   "const moralediv = div.children[5];",
   "hungerdiv.firstElementChild.firstElementChild",
   "moralediv.firstElementChild.firstElementChild",
+  "index: parseInt(div.firstElementChild.textContent)",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked Monster Lab parse path: ${forbidden}`);
