@@ -304,6 +304,46 @@ try {
       field.oncreate(field);
     }
   };
+  var inject_hvut_config_panel_style = function (context) {
+    if (context?.isIsekai) {
+      GM_addStyle(/*css*/`
+        .hvut-cfg-div { position: absolute; top: 0; left: 0; width: 60%; height: 100%; padding: 0 20%; overflow: auto; font-size: 10pt; text-align: left; background-color: var(--color-bg-default); z-index: 10; }
+        .hvut-cfg-div header { margin-bottom: 20px; padding: 10px; font-size: 15pt; font-weight: bold; border-bottom: 2px solid var(--color-border-default); }
+        .hvut-cfg-div h1 { margin: 20px 0 10px; padding: 10px; font-size: 11pt; font-weight: bold; background-color: var(--color-bg-alpha); }
+        .hvut-cfg-div h2 { margin: 0; font-size: 10pt; font-weight: bold; }
+        .hvut-cfg-div h3 { margin: 0; font-size: 10pt; font-weight: bold; text-decoration: underline; }
+        .hvut-cfg-div div { margin-left: 10px; padding: 10px; line-height: 24px; }
+        .hvut-cfg-div div:hover { background-color: var(--color-bg-alpha); }
+        .hvut-cfg-div p { margin: 0; }
+        .hvut-cfg-disabled { color: var(--color-font-invalid); }
+        .hvut-cfg-error { box-shadow: 0 0 0 2px var(--color-font-warn) inset; }
+        .hvut-cfg-error p:last-child { padding: 10px; background-color: var(--color-bg-alpha); color: var(--color-font-warn); }
+        .hvut-cfg-div footer { position: sticky; bottom: 0; margin-top: 20px; padding: 10px; border-top: 2px solid var(--color-border-default); text-align: center; background-color: inherit; }
+        .hvut-cfg-div input[type='text'] { width: 95%; }
+        .hvut-cfg-div input[type='number'] { width: 50px; text-align: right; }
+        .hvut-cfg-div textarea { width: 95%; min-height: 200px; white-space: nowrap; }
+      `);
+      return;
+    }
+    GM_addStyle(/*css*/`
+      .hvut-cfg-div { position: absolute; top: 27px; left: 0; width: 60%; height: calc(100% - 27px); padding: 0 20%; overflow: auto; font-size: 10pt; text-align: left; background-color:#EDEBDF; z-index: 9; }
+      .hvut-cfg-div header { margin-bottom: 20px; padding: 10px; font-size: 15pt; font-weight: bold; border-bottom: 2px solid; }
+      .hvut-cfg-div h1 { margin: 20px 0 10px; padding: 10px; font-size: 12pt; font-weight: bold; background-color: #fff9; }
+      .hvut-cfg-div h2 { margin: 0; font-size: 10pt; font-weight: bold; }
+      .hvut-cfg-div h3 { margin: 0; font-size: 10pt; font-weight: bold; text-decoration: underline; }
+      .hvut-cfg-div div { margin-left: 10px; padding: 10px; line-height: 24px; }
+      .hvut-cfg-div div:hover { background-color: #fff9; }
+      .hvut-cfg-div p { margin: 0; }
+      .hvut-cfg-disabled { color: #999; }
+      .hvut-cfg-error { box-shadow: 0 0 0 2px #c00 inset; }
+      .hvut-cfg-error p:last-child { padding: 10px; background-color: #fff9; color: #c00; }
+      .hvut-cfg-div footer { position: sticky; bottom: 0; margin-top: 20px; padding: 10px; border-top: 2px solid; text-align: center; background-color: inherit; }
+      .hvut-cfg-div input { vertical-align: middle; }
+      .hvut-cfg-div input[type='text'] { width: 95%; }
+      .hvut-cfg-div input[type='number'] { width: 50px; text-align: right; }
+      .hvut-cfg-div textarea { width: 95%; height: 200px; white-space: nowrap; }
+    `);
+  };
   var render_hvut_config_panel = function (config, context) {
     config.node = {};
     config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: config.validate_panel });
@@ -5449,23 +5489,7 @@ const $config = {
   },
   // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
   create: function () {
-    GM_addStyle(/*css*/`
-      .hvut-cfg-div { position: absolute; top: 0; left: 0; width: 60%; height: 100%; padding: 0 20%; overflow: auto; font-size: 10pt; text-align: left; background-color: var(--color-bg-default); z-index: 10; }
-      .hvut-cfg-div header { margin-bottom: 20px; padding: 10px; font-size: 15pt; font-weight: bold; border-bottom: 2px solid var(--color-border-default); }
-      .hvut-cfg-div h1 { margin: 20px 0 10px; padding: 10px; font-size: 11pt; font-weight: bold; background-color: var(--color-bg-alpha); }
-      .hvut-cfg-div h2 { margin: 0; font-size: 10pt; font-weight: bold; }
-      .hvut-cfg-div h3 { margin: 0; font-size: 10pt; font-weight: bold; text-decoration: underline; }
-      .hvut-cfg-div div { margin-left: 10px; padding: 10px; line-height: 24px; }
-      .hvut-cfg-div div:hover { background-color: var(--color-bg-alpha); }
-      .hvut-cfg-div p { margin: 0; }
-      .hvut-cfg-disabled { color: var(--color-font-invalid); }
-      .hvut-cfg-error { box-shadow: 0 0 0 2px var(--color-font-warn) inset; }
-      .hvut-cfg-error p:last-child { padding: 10px; background-color: var(--color-bg-alpha); color: var(--color-font-warn); }
-      .hvut-cfg-div footer { position: sticky; bottom: 0; margin-top: 20px; padding: 10px; border-top: 2px solid var(--color-border-default); text-align: center; background-color: inherit; }
-      .hvut-cfg-div input[type='text'] { width: 95%; }
-      .hvut-cfg-div input[type='number'] { width: 50px; text-align: right; }
-      .hvut-cfg-div textarea { width: 95%; min-height: 200px; white-space: nowrap; }
-    `);
+    inject_hvut_config_panel_style({ isIsekai: IS_ISEKAI });
 
     render_hvut_config_panel($config, {
       checkboxWithNullLabel: true,
@@ -11268,24 +11292,7 @@ const $config = {
   },
   // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
   create: function () {
-    GM_addStyle(/*css*/`
-      .hvut-cfg-div { position: absolute; top: 27px; left: 0; width: 60%; height: calc(100% - 27px); padding: 0 20%; overflow: auto; font-size: 10pt; text-align: left; background-color:#EDEBDF; z-index: 9; }
-      .hvut-cfg-div header { margin-bottom: 20px; padding: 10px; font-size: 15pt; font-weight: bold; border-bottom: 2px solid; }
-      .hvut-cfg-div h1 { margin: 20px 0 10px; padding: 10px; font-size: 12pt; font-weight: bold; background-color: #fff9; }
-      .hvut-cfg-div h2 { margin: 0; font-size: 10pt; font-weight: bold; }
-      .hvut-cfg-div h3 { margin: 0; font-size: 10pt; font-weight: bold; text-decoration: underline; }
-      .hvut-cfg-div div { margin-left: 10px; padding: 10px; line-height: 24px; }
-      .hvut-cfg-div div:hover { background-color: #fff9; }
-      .hvut-cfg-div p { margin: 0; }
-      .hvut-cfg-disabled { color: #999; }
-      .hvut-cfg-error { box-shadow: 0 0 0 2px #c00 inset; }
-      .hvut-cfg-error p:last-child { padding: 10px; background-color: #fff9; color: #c00; }
-      .hvut-cfg-div footer { position: sticky; bottom: 0; margin-top: 20px; padding: 10px; border-top: 2px solid; text-align: center; background-color: inherit; }
-      .hvut-cfg-div input { vertical-align: middle; }
-      .hvut-cfg-div input[type='text'] { width: 95%; }
-      .hvut-cfg-div input[type='number'] { width: 50px; text-align: right; }
-      .hvut-cfg-div textarea { width: 95%; height: 200px; white-space: nowrap; }
-    `);
+    inject_hvut_config_panel_style({ isIsekai: IS_ISEKAI });
 
     render_hvut_config_panel($config, { isIsekai: IS_ISEKAI });
   },

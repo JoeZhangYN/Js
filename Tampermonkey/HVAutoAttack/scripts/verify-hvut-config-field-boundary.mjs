@@ -84,6 +84,11 @@ requireIncludes(target, text, [
   "field.node.desc = $element('p', field.node.div, ['/' + desc.html, '.hvut-none']);",
   "field.node.input.dataset.key = field.key;",
   "if (is_hvut_config_field_disabled(field, { isIsekai: isIsekai, serverName: _server.name })) {",
+  "var inject_hvut_config_panel_style = function (context) {",
+  "if (context?.isIsekai) {",
+  "GM_addStyle(/*css*/`",
+  ".hvut-cfg-div { position: absolute; top: 0;",
+  ".hvut-cfg-div { position: absolute; top: 27px;",
   "var render_hvut_config_panel = function (config, context) {",
   "config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: config.validate_panel });",
   "$element('header', config.node.div, 'HV Utils 设置');",
@@ -106,17 +111,35 @@ for (const forbidden of [
   }
 }
 
-const createBodies = [...text.matchAll(/create: function \(\) \{[\s\S]*?\n  \},\n  \/\/ open\/close/g)].map(
-  (match) => match[0]
-);
-if (createBodies.length !== 2) violations.push(`${target} must keep both config create entries visible`);
+const expectedCreateCalls = [
+  "render_hvut_config_panel($config, {\n      checkboxWithNullLabel: true,\n      isIsekai: IS_ISEKAI,\n      showTextareaDefaultButton: true,\n    });",
+  "render_hvut_config_panel($config, { isIsekai: IS_ISEKAI });",
+];
+
+function findConfigCreateBody(expectedCall) {
+  const callIndex = text.indexOf(expectedCall);
+  if (callIndex < 0) return null;
+  const start = text.lastIndexOf("create: function () {", callIndex);
+  const endMarker = "\n  },\n  // open/close";
+  const end = text.indexOf(endMarker, callIndex);
+  if (start < 0 || end < 0) return null;
+  return text.slice(start, end + endMarker.length);
+}
+
+const createBodies = expectedCreateCalls.map(findConfigCreateBody);
+if (createBodies.some((body) => body === null)) {
+  violations.push(`${target} must keep both config create entries visible`);
+}
 for (const [index, body] of createBodies.entries()) {
-  const expectedCall =
-    index === 0
-      ? "render_hvut_config_panel($config, {\n      checkboxWithNullLabel: true,\n      isIsekai: IS_ISEKAI,\n      showTextareaDefaultButton: true,\n    });"
-      : "render_hvut_config_panel($config, { isIsekai: IS_ISEKAI });";
-  requireIncludes(target, body, [expectedCall]);
+  if (!body) continue;
+  const expectedCall = expectedCreateCalls[index];
+  requireIncludes(target, body, [
+    "inject_hvut_config_panel_style({ isIsekai: IS_ISEKAI });",
+    expectedCall,
+  ]);
   for (const forbidden of [
+    "GM_addStyle(/*css*/`",
+    ".hvut-cfg-div { position: absolute;",
     "$config.node = {};",
     "$config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: $config.validate_panel });",
     "$element('header', $config.node.div, 'HV Utils 设置');",
