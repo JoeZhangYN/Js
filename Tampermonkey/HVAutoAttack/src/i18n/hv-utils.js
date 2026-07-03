@@ -512,6 +512,9 @@ try {
     }
   };
   var classify_hvut_shrine_offer_message = function (msg) {
+    if (window.HVAA_shrineOfferMessage && window.HVAA_shrineOfferMessage.classify) {
+      return window.HVAA_shrineOfferMessage.classify(msg);
+    }
     if (!msg || /Snowflake has blessed you|Hit Space Bar to offer/.test(msg) || msg === 'Received:') return { kind: 'ignore' };
     if (msg.includes('Peerless Voucher')) return { kind: 'voucher', message: msg };
     var equip = /^(Crude|Fair|Average|Superior|Exquisite|Magnificent|Legendary|Peerless) .+/.exec(msg);
