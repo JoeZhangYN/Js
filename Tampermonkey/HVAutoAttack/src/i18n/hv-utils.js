@@ -494,6 +494,7 @@ try {
         $mail.log('!!! Error: Unable to discard attachments');
       }
     }
+    $mail.ready = true;
     return false;
   };
   var parse_hvut_mooglemail_count = function (text, pattern, stage) {
@@ -3097,25 +3098,10 @@ const $mail = {
       try {
         results = await Promise.all(requests);
       } catch (error) {
-        record_hvut_mooglemail_send_failure('attachRequest', { index: index, total: total, done: done, error: error?.message || String(error) });
-        $mail.log(`#${index}: !!! Error: Attachment request failed`);
-        try {
-          await $mail.discard();
-        } catch (discardError) {
-          record_hvut_mooglemail_send_failure('attachRequestDiscard', { index: index, error: discardError?.message || String(discardError) });
-          $mail.log(`#${index}: !!! Error: Unable to discard attachments`);
-        }
-        return false;
+        return stop_hvut_mooglemail_send_failure('attachRequest', { index: index, total: total, done: done, error: error?.message || String(error) }, `#${index}: !!! Error: Attachment request failed`, 'attachRequestDiscard');
       }
       if (!results.every((r) => r)) {
-        record_hvut_mooglemail_send_failure('attachRejected', { index: index, total: total, done: done, results: results });
-        try {
-          await $mail.discard();
-        } catch (discardError) {
-          record_hvut_mooglemail_send_failure('attachRejectedDiscard', { index: index, error: discardError?.message || String(discardError) });
-          $mail.log(`#${index}: !!! Error: Unable to discard attachments`);
-        }
-        return false;
+        return stop_hvut_mooglemail_send_failure('attachRejected', { index: index, total: total, done: done, results: results }, null, 'attachRejectedDiscard');
       }
     }
 

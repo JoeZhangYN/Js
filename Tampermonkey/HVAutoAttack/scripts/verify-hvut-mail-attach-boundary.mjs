@@ -24,6 +24,22 @@ if (!sendMatch) {
   violations.push(`${target} must keep the MoogleMail send entry visible`);
 } else {
   const body = sendMatch[0];
+  const stopHelperMatch = /var stop_hvut_mooglemail_send_failure = async function \(stage, detail, message, discardStage\) \{[\s\S]*?\n  \};/.exec(text);
+  const stopHelperBody = stopHelperMatch?.[0] || "";
+  for (const required of [
+    "record_hvut_mooglemail_send_failure(stage, detail);",
+    "await $mail.discard();",
+    "record_hvut_mooglemail_send_failure(discardStage",
+    "$mail.ready = true;",
+    "return false;",
+  ]) {
+    if (!stopHelperBody.includes(required)) {
+      violations.push(`${target} MoogleMail stop helper must preserve failure semantics with ${required}`);
+    }
+  }
+  if (/return (?:false|undefined|null);[\s\S]{0,80}\n\s*\};/.test(stopHelperBody) && !stopHelperBody.includes("$mail.ready = true;")) {
+    violations.push(`${target} MoogleMail stop helper must release ready before returning`);
+  }
   for (const required of [
     "return stop_hvut_mooglemail_send_failure('mailboxLoadRequest'",
     "return stop_hvut_mooglemail_send_failure('mailboxToken'",
@@ -58,13 +74,12 @@ if (!sendMatch) {
   for (const required of [
     "let results;",
     "try {\n        results = await Promise.all(requests);",
-    "catch (error) {\n        record_hvut_mooglemail_send_failure('attachRequest'",
-    "await $mail.discard();",
-    "catch (discardError) {\n          record_hvut_mooglemail_send_failure('attachRequestDiscard'",
+    "catch (error) {\n        return stop_hvut_mooglemail_send_failure('attachRequest'",
+    "'attachRequestDiscard'",
     "return false;",
     "if (!results.every((r) => r)) {",
-    "record_hvut_mooglemail_send_failure('attachRejected'",
-    "record_hvut_mooglemail_send_failure('attachRejectedDiscard'",
+    "return stop_hvut_mooglemail_send_failure('attachRejected'",
+    "'attachRejectedDiscard'",
   ]) {
     if (!attachBody.includes(required)) {
       violations.push(`${target} mail attach must guard failure with ${required}`);
@@ -78,6 +93,9 @@ if (!sendMatch) {
   }
   if (/catch \(_error\) \{\n\s*\$mail\.log\(`#\$\{index\}: !!! Error: Attachment request failed`\);/.test(attachBody)) {
     violations.push(`${target} mail attach must not keep untyped attach request failure`);
+  }
+  if (/record_hvut_mooglemail_send_failure\('attach(?:Request|Rejected)'/.test(attachBody)) {
+    violations.push(`${target} mail attach failures must route through stop_hvut_mooglemail_send_failure`);
   }
 }
 
