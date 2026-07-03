@@ -1130,7 +1130,8 @@ const $item = {
         alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
         return false;
       }
-    } catch (_error) {
+    } catch (error) {
+      record_hvut_item_shop_parse_failure('shopLoadRequest', { error: error?.message || String(error) });
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
     }
@@ -1162,11 +1163,13 @@ const $item = {
     let results;
     try {
       results = await Promise.all(requests);
-    } catch (_error) {
+    } catch (error) {
+      record_hvut_item_shop_parse_failure('shopBuyRequest', { items: items.map((item) => ({ name: item.name, id: item.id, count: item.count })), error: error?.message || String(error) });
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
     }
     if (!results.every((r) => r)) {
+      record_hvut_item_shop_parse_failure('shopBuyRejected', { items: items.map((item) => ({ name: item.name, id: item.id, count: item.count })), results: results });
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
     }

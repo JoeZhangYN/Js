@@ -44,10 +44,12 @@ for (const required of [
 for (const required of [
   "return false",
   "try {\n      if ((await $item.load_shop()) === false) {",
-  "catch (_error) {\n      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n      return false;",
+  "catch (error) {\n      record_hvut_item_shop_parse_failure('shopLoadRequest'",
+  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n      return false;",
   "try {\n      results = await Promise.all(requests);",
-  "catch (_error) {\n      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n      return false;",
+  "catch (error) {\n      record_hvut_item_shop_parse_failure('shopBuyRequest'",
   "if (!results.every((r) => r))",
+  "record_hvut_item_shop_parse_failure('shopBuyRejected'",
   "return true",
 ]) {
   if (!buyBody.includes(required)) {
@@ -107,6 +109,7 @@ for (const forbidden of [
 for (const forbidden of [
   "await $item.load_shop();\n    } catch",
   "await $item.load_shop();\n      } catch",
+  "catch (_error) {\n      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n      return false;",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked item shop load path: ${forbidden}`);
