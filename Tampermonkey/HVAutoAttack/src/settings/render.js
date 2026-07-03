@@ -281,6 +281,13 @@ function hasStoredOption() {
   return readOptionField("version", undefined) !== undefined;
 }
 
+function writeSettingsOption(option) {
+  const written = runOptionAutomation({ type: OptionEvent.WRITE, option });
+  if (written) return true;
+  _alert(0, "配置保存失败", "配置保存失敗", "Failed to save configuration");
+  return false;
+}
+
 function readSettingsInputValue(name, className) {
   const directValue = readOptionField(name, undefined);
   if (directValue !== undefined) return directValue;
@@ -962,7 +969,7 @@ export function optionBox() {
       return;
     }
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      runOptionAutomation({ type: OptionEvent.WRITE, option: parsed.option });
+      if (!writeSettingsOption(parsed.option)) return;
       runNavigationAutomation({
         type: NavigationEvent.RELOAD_NOW,
         reason: NavigationReloadReason.SETTINGS_CHANGE,
@@ -995,7 +1002,7 @@ export function optionBox() {
       option: _option,
       inputs: gE('.hvAAQuickSite input[type="text"]', "all", optionBox),
     });
-    runOptionAutomation({ type: OptionEvent.WRITE, option: _option });
+    if (!writeSettingsOption(_option)) return;
     optionBox.style.display = "none";
     runNavigationAutomation({
       type: NavigationEvent.RELOAD_NOW,

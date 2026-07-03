@@ -122,6 +122,32 @@ for (const required of ["OptionEvent.EXPORT_TEXT", "OptionEvent.PARSE_IMPORT_TEX
     violations.push(`${settingsRender.replaceAll("\\", "/")} must request ${required}`);
   }
 }
+for (const required of [
+  "function writeSettingsOption(option) {",
+  "const written = runOptionAutomation({ type: OptionEvent.WRITE, option });",
+  'if (!writeSettingsOption(parsed.option)) return;',
+  "if (!writeSettingsOption(_option)) return;",
+  'Failed to save configuration',
+]) {
+  if (!settingsText.includes(required)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} must stop settings success flow when option write fails`);
+  }
+}
+const settingsImportBlock =
+  /gE\(["']\.hvAAImport["'][\s\S]*?gE\(["']\.hvAAReset["']/.exec(settingsText)?.[0] || "";
+const settingsApplyBlock =
+  /gE\(["']\.hvAAApply["'][\s\S]*?gE\(["']\.hvAACancel["']/.exec(settingsText)?.[0] || "";
+for (const [label, block] of [
+  ["import", settingsImportBlock],
+  ["apply", settingsApplyBlock],
+]) {
+  if (!block.includes("writeSettingsOption(")) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} settings ${label} must write through writeSettingsOption`);
+  }
+  if (/runOptionAutomation\(\{\s*type:\s*OptionEvent\.WRITE\b/.test(block)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} settings ${label} must not bypass writeSettingsOption`);
+  }
+}
 for (const legacy of [
   "readOption",
   "writeOption",
