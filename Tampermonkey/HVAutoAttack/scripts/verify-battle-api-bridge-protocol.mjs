@@ -33,6 +33,9 @@ const recoveryNullEventTest = path.normalize(
 const recoveryEffectResultTest = path.normalize(
   "src/battle/battle-api-response-recovery-effect-result.test.js"
 );
+const recoveryTypedEffectResultTest = path.normalize(
+  "src/battle/battle-api-response-recovery-typed-effect-result.test.js"
+);
 const recoveryMalformedJsonTest = path.normalize(
   "src/battle/battle-api-response-recovery-malformed-json.test.js"
 );
@@ -371,7 +374,9 @@ const recoveryStateText = requireText(recoveryState, [
   "recordRecoveryEffectResult",
   "warnRecoveryStateSafely",
   "battle API recovery effect failed",
-  "state[resultName] = Boolean(result)",
+  "state[resultName] = recoveryEffectSucceeded(result)",
+  "function recoveryEffectSucceeded(result)",
+  'result?.kind === "failed"',
   "state[errorName] = error?.message || String(error)",
   "world: detail?.world",
   "parseError: detail?.parseError",
@@ -403,6 +408,14 @@ requireText(recoveryEffectResultTest, [
   "pauseResult: true",
   "pauseResult: false",
   'pauseError: "pause bridge failed"',
+  "HVAA:battleApiRecovery",
+]);
+requireText(recoveryTypedEffectResultTest, [
+  "records typed failed reload scheduling as failed recovery evidence",
+  "records typed failed repeated-pause execution as failed recovery evidence",
+  'kind: "failed"',
+  "reloadResult: false",
+  "pauseResult: false",
   "HVAA:battleApiRecovery",
 ]);
 requireText(recoveryReloadDetailTest, [

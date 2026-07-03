@@ -80,13 +80,18 @@ export function writeRecoveryState(deps, state) {
 export function recordRecoveryEffectResult(deps, state, resultName, runEffect, errorName) {
   try {
     const result = runEffect();
-    state[resultName] = Boolean(result);
+    state[resultName] = recoveryEffectSucceeded(result);
   } catch (error) {
     state[resultName] = false;
     state[errorName] = error?.message || String(error);
     warnRecoveryStateSafely(deps, "[HVAA] battle API recovery effect failed", state);
   }
   writeRecoveryState(deps, state);
+}
+
+function recoveryEffectSucceeded(result) {
+  if (result?.kind === "failed") return false;
+  return Boolean(result);
 }
 
 export function warnRecoveryStateSafely(deps, message, state) {
