@@ -5,6 +5,24 @@
 import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 
+export function readCustomizeInspectTarget(target) {
+  const onmouseover = target?.getAttribute?.("onmouseover");
+  if (target?.className === "btsd") return `Skill Id: ${target.id}`;
+  if (onmouseover && onmouseover.match("common.show_itemc_box")) {
+    const match = onmouseover.match(/(\d+)\)/);
+    return match ? `Item Id: ${match[1]}` : undefined;
+  }
+  if (onmouseover && onmouseover.match("equips.set")) {
+    const match = onmouseover.match(/(\d+)/);
+    return match ? `Equip Id: ${match[1]}` : undefined;
+  }
+  if (onmouseover && onmouseover.match("battle.set_infopane_effect")) {
+    const match = target.src?.match(/\/e\/(.*?).png/);
+    return match ? `Buff Img: ${match[1]}` : undefined;
+  }
+  return undefined;
+}
+
 export function customizeBox() {
   const customizeBox = gE("body").appendChild(cE("div"));
   customizeBox.className = "customizeBox";
@@ -69,14 +87,14 @@ export function customizeBox() {
       box.id = "hvAAInspectBox";
     }
     let { target } = e;
-    let find = attr(target);
+    let find = readCustomizeInspectTarget(target);
     while (!find) {
       target = target.parentNode;
       if (target.id === "csp" || target.tagName === "BODY") {
         box.style.display = "none";
         return;
       }
-      find = attr(target);
+      find = readCustomizeInspectTarget(target);
     }
     box.textContent = find;
     box.style.display = "block";
@@ -132,19 +150,4 @@ export function customizeBox() {
     input.name = inputName;
   };
 
-  function attr(target) {
-    const onmouseover = target.getAttribute("onmouseover");
-    if (target.className === "btsd") {
-      return `Skill Id: ${target.id}`;
-    }
-    if (onmouseover && onmouseover.match("common.show_itemc_box")) {
-      return `Item Id: ${onmouseover.match(/(\d+)\)/)[1]}`;
-    }
-    if (onmouseover && onmouseover.match("equips.set")) {
-      return `Equip Id: ${onmouseover.match(/(\d+)/)[1]}`;
-    }
-    if (onmouseover && onmouseover.match("battle.set_infopane_effect")) {
-      return `Buff Img: ${target.src.match(/\/e\/(.*?).png/)[1]}`;
-    }
-  }
 }

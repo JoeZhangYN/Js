@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/settings/form-option.js");
 const settingsRender = path.normalize("src/settings/render.js");
+const customizeInspect = path.normalize("src/settings/customize.js");
 const violations = [];
 
 function rel(file) {
@@ -54,6 +55,34 @@ if (!renderText.includes("OptionEvent.READ_FIELD")) {
 }
 if (/\bg\(\s*["']option["']/.test(renderText)) {
   violations.push(`${settingsRender.replaceAll("\\", "/")} must not read raw option state`);
+}
+const customizeText = fs.readFileSync(path.join(root, customizeInspect), "utf8");
+if (!customizeText.includes("export function readCustomizeInspectTarget(target)")) {
+  violations.push(`${customizeInspect.replaceAll("\\", "/")} must expose one customize inspect read entry`);
+}
+if (!customizeText.includes("let find = readCustomizeInspectTarget(target)")) {
+  violations.push(`${customizeInspect.replaceAll("\\", "/")} must route inspect mousemove through readCustomizeInspectTarget`);
+}
+if (/match\([^;\n]+\)\[1\]/.test(customizeText)) {
+  violations.push(`${customizeInspect.replaceAll("\\", "/")} must not index raw match() results`);
+}
+for (const required of [
+  "return match ? `Item Id: ${match[1]}` : undefined;",
+  "return match ? `Equip Id: ${match[1]}` : undefined;",
+  "return match ? `Buff Img: ${match[1]}` : undefined;",
+]) {
+  if (!customizeText.includes(required)) {
+    violations.push(`${customizeInspect.replaceAll("\\", "/")} must fail closed through ${required}`);
+  }
+}
+const customizeTest = path.normalize("src/settings/customize.test.js");
+if (!fs.existsSync(path.join(root, customizeTest))) {
+  violations.push(`${customizeTest.replaceAll("\\", "/")} must cover customize inspect parsing`);
+} else {
+  const customizeTestText = fs.readFileSync(path.join(root, customizeTest), "utf8");
+  if (!customizeTestText.includes("fails closed for malformed inspect attributes")) {
+    violations.push(`${customizeTest.replaceAll("\\", "/")} must cover malformed inspect attributes`);
+  }
 }
 const applyBlock =
   /gE\(["']\.hvAAApply["'][\s\S]*?gE\(["']\.hvAACancel["']/.exec(renderText)?.[0] || "";
