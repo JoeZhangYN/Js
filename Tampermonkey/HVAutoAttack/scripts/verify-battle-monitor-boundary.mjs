@@ -554,6 +554,22 @@ function checkUsageImplementation() {
       violations.push(`${rel(usageActionStatsFile)} must own action usage log classification`);
     }
   }
+  if (/text\.match\([^;\n]+\)\[[01]\]/.test(actionStatsText)) {
+    violations.push(`${rel(usageActionStatsFile)} must not index raw text.match() results`);
+  }
+  for (const required of [
+    "if (!match) return false;",
+    "if (!amountMatch) return false;",
+    "if (!magic) return false;",
+    "return recordIncomingDamage(stats, text);",
+    "return recordOutgoingDamage(stats, text);",
+    "return recordExternalRestore(stats, text);",
+    "return recordProficiency(stats, text);",
+  ]) {
+    if (!actionStatsText.includes(required)) {
+      violations.push(`${rel(usageActionStatsFile)} must fail closed through ${required}`);
+    }
+  }
   if (!text.includes("./record-usage-completion.js")) {
     violations.push(`${rel(usageFile)} must route completion aggregation through private helper`);
   }

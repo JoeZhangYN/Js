@@ -24,7 +24,9 @@ function recordSelectedAction(stats, usage) {
 }
 
 function recordIncomingDamage(stats, text) {
-  const [, amount, kind] = text.match(/you for (\d+) (\w+) damage/);
+  const match = text.match(/you for (\d+) (\w+) damage/);
+  if (!match) return false;
+  const [, amount, kind] = match;
   const magic = kind.replace("ing", "");
   const point = Number(amount);
   addCount(stats.hurt, magic, point);
@@ -40,87 +42,91 @@ function recordIncomingDamage(stats, text) {
     stats.hurt._mtotal += point;
     stats.hurt._mavg = Math.round(stats.hurt._mtotal / stats.hurt._mcount);
   }
+  return true;
 }
 
 function recordOutgoingDamage(stats, text) {
-  const [, amount] = text.match(/for (\d+)( .*)? damage/);
-  const magic = text.match(/^[\w ]+ [a-z]+s [\w+ -]+ for/)
-    ? text.match(/^([\w ]+) [a-z]+s [\w+ -]+ for/)[1].replace(/^Your /, "")
-    : text.match(/^You (\w+)/)[1];
+  const amountMatch = text.match(/for (\d+)( .*)? damage/);
+  if (!amountMatch) return false;
+  const actorMatch = text.match(/^([\w ]+) [a-z]+s [\w+ -]+ for/);
+  const selfMatch = text.match(/^You (\w+)/);
+  const magic = actorMatch ? actorMatch[1].replace(/^Your /, "") : selfMatch?.[1];
+  if (!magic) return false;
+  const [, amount] = amountMatch;
   addCount(stats.damage, magic, Number(amount));
+  return true;
 }
 
 function recordVitalTheftDamage(stats, text) {
-  const point = Number(text.match(/Vital Theft hits .*? for (\d+) damage/)[1]);
+  const match = text.match(/Vital Theft hits .*? for (\d+) damage/);
+  if (!match) return false;
+  const point = Number(match[1]);
   addCount(stats.damage, "Vital Theft", point);
+  return true;
 }
 
 function recordRestore(stats, usage, text) {
+  const pointMatch = text.match(/\d+/);
+  if (!pointMatch) return false;
   const magic =
     usage.mode === "defend"
       ? "defend"
       : text.match(/You drain \d+ HP from/)
         ? "drain"
         : usage.magic || usage.item;
-  addCount(stats.restore, magic, Number(text.match(/\d+/)[0]));
+  addCount(stats.restore, magic, Number(pointMatch[0]));
+  return true;
 }
 
 function recordExternalRestore(stats, text) {
   const match =
     text.match(/^(.*) restores (\d+) points of (\w+)/) ||
     text.match(/^You (drain) (\d+) points of (\w+)/);
+  if (!match) return false;
   addCount(stats.restore, match[1], Number(match[2]));
+  return true;
 }
 
 function recordAbsorbedDamage(stats, log, index, text) {
-  const match = text.match(
-    /(.*) absorbs (\d+) points of damage from the attack into (\d+) points of (\w+) damage/
-  );
+  const match = text.match(/(.*) absorbs (\d+) points of damage from the attack into (\d+) points of (\w+) damage/);
+  if (!match) return false;
   const prevText = log[index - 1]?.textContent || "";
   const prevMatch = prevText.match(/you for (\d+) (\w+) damage/);
   const hurtKind = prevMatch ? prevMatch[2].replace("ing", "") : "unknown";
   addCount(stats.hurt, hurtKind, Number(match[2]));
   addCount(stats.hurt, `${match[1].replace("Your ", "")}_${match[4]}`, Number(match[3]));
+  return true;
 }
 
 function recordProficiency(stats, text) {
-  const [, amount, kind] = text.match(/You gain ([\d.]+) points of (.*?) proficiency/);
+  const match = text.match(/You gain ([\d.]+) points of (.*?) proficiency/);
+  if (!match) return false;
+  const [, amount, kind] = match;
   addCount(stats.proficiency, kind, Number(amount));
   stats.proficiency[kind] = stats.proficiency[kind].toFixed(3) * 1;
+  return true;
 }
 
 function isIgnoredBattleLog(text) {
   return (
     text.trim() === "" ||
-    text.match(
-      /You (gain |cast |use |are Victorious|have reached Level|have obtained the title|do not have enough MP)/
-    ) ||
-    text.match(
-      /Cooldown|has expired|Spirit Stance|gains the effect|insufficient Spirit|Stop beating dead ponies| defeat |Clear Bonus|brink of defeat|Stop \w+ing|Spawned Monster| drop(ped|s) |defeated/
-    )
+    text.match(/You (gain |cast |use |are Victorious|have reached Level|have obtained the title|do not have enough MP)/) ||
+    text.match(/Cooldown|has expired|Spirit Stance|gains the effect|insufficient Spirit|Stop beating dead ponies| defeat |Clear Bonus|brink of defeat|Stop \w+ing|Spawned Monster| drop(ped|s) |defeated/)
   );
 }
 
 function recordBattleLogLine(stats, usage, log, index) {
   const text = log[index].textContent;
-  if (text.match(/you for \d+ \w+ damage/)) recordIncomingDamage(stats, text);
+  if (text.match(/you for \d+ \w+ damage/)) return recordIncomingDamage(stats, text);
   else if (
     text.match(/^[\w ]+ [a-z]+s [\w+ -]+ for \d+( .*)? damage/) ||
     text.match(/^You .* for \d+ .* damage/)
   )
-    recordOutgoingDamage(stats, text);
-  else if (text.match(/Vital Theft hits .*? for \d+ damage/)) recordVitalTheftDamage(stats, text);
-  else if (
-    text.match(
-      /You (evade|parry|block) the attack|misses the attack against you|(casts|uses) .* misses the attack/
-    )
-  )
+    return recordOutgoingDamage(stats, text);
+  else if (text.match(/Vital Theft hits .*? for \d+ damage/)) return recordVitalTheftDamage(stats, text);
+  else if (text.match(/You (evade|parry|block) the attack|misses the attack against you|(casts|uses) .* misses the attack/))
     stats.self.evade++;
-  else if (
-    text.match(
-      /(resists your spell|Your spell is absorbed|(evades|parries) your (attack|spell))|Your attack misses its mark|Your spell fails to connect/
-    )
-  )
+  else if (text.match(/(resists your spell|Your spell is absorbed|(evades|parries) your (attack|spell))|Your attack misses its mark|Your spell fails to connect/))
     stats.self.miss++;
   else if (text.match(/You gain the effect Focusing/)) stats.self.focus++;
   else if (
@@ -128,11 +134,11 @@ function recordBattleLogLine(stats, usage, log, index) {
     text.match(/You are healed for \d+ Health Points/) ||
     text.match(/You drain \d+ HP from/)
   )
-    recordRestore(stats, usage, text);
-  else if (text.match(/(restores|drain) \d+ points of/)) recordExternalRestore(stats, text);
+    return recordRestore(stats, usage, text);
+  else if (text.match(/(restores|drain) \d+ points of/)) return recordExternalRestore(stats, text);
   else if (text.match(/absorbs \d+ points of damage from the attack into \d+ points of \w+ damage/))
-    recordAbsorbedDamage(stats, log, index, text);
-  else if (text.match(/You gain .* proficiency/)) recordProficiency(stats, text);
+    return recordAbsorbedDamage(stats, log, index, text);
+  else if (text.match(/You gain .* proficiency/)) return recordProficiency(stats, text);
   else if (!isIgnoredBattleLog(text)) return false;
   return true;
 }

@@ -62,4 +62,26 @@ describe("applyBattleActionUsageStats", () => {
     expect(stats.self.evade).toBe(1);
     expect(stats.self.focus).toBe(0);
   });
+
+  it("fails closed for malformed broad-match usage log lines", () => {
+    const stats = createDefaultUsageStats();
+
+    expect(() =>
+      applyBattleActionUsageStats(
+        stats,
+        {
+          mode: "attack",
+          log: [
+            line("Something drain 10 points of Spirit"),
+            line("You gain Elemental proficiency"),
+          ],
+        },
+        { monsterAlive: 1, roundAll: 3, roundNow: 2, turn: 4 }
+      )
+    ).not.toThrow();
+
+    expect(stats.self.attack).toBe(1);
+    expect(stats.restore).toEqual({});
+    expect(stats.proficiency).toEqual({});
+  });
 });
