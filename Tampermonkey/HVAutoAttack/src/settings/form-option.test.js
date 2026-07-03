@@ -73,4 +73,28 @@ describe("runSettingsFormOptionAutomation", () => {
       audio: { Common: "https://example.test/a.ogg" },
     });
   });
+
+  it("classifies settings input classes by token", () => {
+    expect(
+      runSettingsFormOptionAutomation({
+        type: SettingsFormOptionEvent.COLLECT_OPTION,
+        version: "10.0",
+        inputs: [
+          input({
+            className: "hvAADebug hvAANumber",
+            name: "roundNow",
+            value: "7",
+            placeholder: "1",
+          }),
+          input({ className: "hvAANumber extra", name: "delay", value: "", placeholder: "200" }),
+          input({ className: "customizeInput active", name: "healCondition_0", value: "hp,4,55" }),
+          input({ className: "customizeInput active", name: "healCondition_0", value: "mp,4,35" }),
+        ],
+      })
+    ).toEqual({
+      version: "10.0",
+      delay: 200,
+      healCondition: { 0: ["hp,4,55", "mp,4,35"] },
+    });
+  });
 });

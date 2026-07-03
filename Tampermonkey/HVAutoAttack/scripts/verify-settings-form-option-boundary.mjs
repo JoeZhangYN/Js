@@ -29,6 +29,24 @@ if (/event\.type\s*===/.test(entryBody)) {
 if (entryBody.includes("event.type") || !entryBody.includes("event?.type")) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null form option events`);
 }
+for (const required of [
+  "function hasInputClass(input, className) {",
+  'hasInputClass(input, "hvAADebug")',
+  'hasInputClass(input, "hvAANumber")',
+  'hasInputClass(input, "customizeInput") ? "customizeInput" : input.className',
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must classify form input classes by token`);
+  }
+}
+for (const forbidden of [
+  'input.className === "hvAADebug"',
+  'input.className === "hvAANumber"',
+]) {
+  if (ownerText.includes(forbidden)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must not classify form inputs by whole className`);
+  }
+}
 const ownerTest = path.normalize("src/settings/form-option.test.js");
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover settings form option entry`);
@@ -39,6 +57,13 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     !ownerTestText.includes("runSettingsFormOptionAutomation(null)")
   ) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null form option events`);
+  }
+  if (
+    !ownerTestText.includes("classifies settings input classes by token") ||
+    !ownerTestText.includes("hvAADebug hvAANumber") ||
+    !ownerTestText.includes("customizeInput active")
+  ) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover multi-class debug/customize inputs`);
   }
 }
 

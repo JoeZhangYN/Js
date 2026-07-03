@@ -25,9 +25,16 @@ function writeNestedOption(option, name, value, className) {
   }
 }
 
+function hasInputClass(input, className) {
+  if (input?.classList?.contains?.(className)) return true;
+  return String(input?.className || "")
+    .split(/\s+/)
+    .includes(className);
+}
+
 function readInputValue(input) {
-  if (input.className === "hvAADebug") return undefined;
-  if (input.className === "hvAANumber") {
+  if (hasInputClass(input, "hvAADebug")) return undefined;
+  if (hasInputClass(input, "hvAANumber")) {
     const value = Number(input.value || input.placeholder);
     return Number.isNaN(value) ? undefined : { name: input.name, value };
   }
@@ -48,7 +55,12 @@ function collectOption({ version, inputs = [] }) {
   for (const input of inputs) {
     const field = readInputValue(input);
     if (!field) continue;
-    writeNestedOption(option, field.name, field.value, input.className);
+    writeNestedOption(
+      option,
+      field.name,
+      field.value,
+      hasInputClass(input, "customizeInput") ? "customizeInput" : input.className
+    );
   }
   return option;
 }
