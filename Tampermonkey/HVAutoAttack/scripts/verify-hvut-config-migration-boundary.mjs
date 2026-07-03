@@ -60,12 +60,15 @@ for (const required of [
   "var get_hvut_config_namespace = function (isIsekai) {",
   "var normalize_hvut_config_settings = function (settings, defaults) {",
   "var migrate_hvut_monster_lab_log = function (mlLog) {",
+  "var normalize_hvut_legacy_prices = function (prices) {",
   "window.HVAA_hvutConfigMigration.namespace({ isIsekai: !!isIsekai })",
   "window.HVAA_hvutConfigMigration.normalizeSettings(settings, defaults)",
   "window.HVAA_hvutConfigMigration.migrateMonsterLabLog(mlLog)",
+  "window.HVAA_hvutConfigMigration.normalizePrices(prices)",
   "record_hvut_config_parse_failure('configNamespaceBridgeMissing'",
   "record_hvut_config_parse_failure('configSettingsBridgeMissing'",
   "record_hvut_config_parse_failure('configMonsterLabLogBridgeMissing'",
+  "record_hvut_config_parse_failure('configPricesBridgeMissing'",
   "window.HVAA_hvutConfigMigration.carryKeys({ isIsekai: !!isIsekai })",
   "record_hvut_config_parse_failure('configCarryKeysBridgeMissing'",
   "if (!isIsekai) return false;",
@@ -80,6 +83,9 @@ for (const required of [
 for (const [index, body] of migrationBodies.entries()) {
   for (const part of [
     "if (!$config.set('equipdata', equipdata)) return false;",
+    "const normalizedPrices = normalize_hvut_legacy_prices(prices);",
+    "if (!normalizedPrices) return false;",
+    "$price.set(normalizedPrices);",
     "const migrated_ml_log = migrate_hvut_monster_lab_log(ml_log);",
     "if (migrated_ml_log) {",
     "if (!$config.set('ml_log', migrated_ml_log)) return false;",
@@ -114,6 +120,9 @@ for (const forbidden of [
   "$config.settings.equipCode = JSON.parse(JSON.stringify($config.default.equipCode));",
   "Object.keys($config.settings).forEach((key) => {",
   "Object.entries($config.default).forEach(([key, value]) => {",
+  "Object.entries(prices).forEach(([key, value]) => {",
+  "Object.assign(prices, value);",
+  "delete prices[key];",
   "log.pa = log.pa.map((e) => [e.value, e.to]);",
   "log.er = log.er.map((e) => [e.value, e.to]);",
   "log.ct = log.ct.map((e) => [e.value, e.to, e.max]);",
@@ -136,6 +145,10 @@ for (const required of [
   "if (!mlLog || mlLog[0]) return null;",
   "migrated[0] = { version: 1 };",
   "log.gifts.push(...log.gifts.splice(28, 6, ...log.gifts.splice(40, 5)));",
+  "export function normalizeLegacyHvutPrices(prices) {",
+  "if (!prices) return null;",
+  "Object.assign(normalized, value);",
+  "delete normalized[key];",
   "export function normalizeHvutConfigSettings(settings, defaults) {",
   "normalized.equipCode = cloneConfigValue(defaultSettings.equipCode);",
   "delete normalized[key];",
@@ -150,12 +163,14 @@ for (const required of [
   "getHvutConfigCarryKeys",
   "getHvutConfigNamespace",
   "migrateLegacyHvutMonsterLabLog",
+  "normalizeLegacyHvutPrices",
   "normalizeHvutConfigSettings",
   "from \"./hvut-config-migration.js\";",
   "window.HVAA_hvutConfigMigration = Object.freeze({",
   "carryKeys: getHvutConfigCarryKeys",
   "migrateMonsterLabLog: migrateLegacyHvutMonsterLabLog",
   "namespace: getHvutConfigNamespace",
+  "normalizePrices: normalizeLegacyHvutPrices",
   "normalizeSettings: normalizeHvutConfigSettings",
 ]) {
   if (!migrationBridgeText.includes(required)) {
@@ -172,7 +187,8 @@ if (
   !migrationTestText.includes("keeps persistent-only legacy equipment names") ||
   !migrationTestText.includes("does not carry persistent-only legacy equipment names") ||
   !migrationTestText.includes("upgrades legacy equipCode string and aligns settings with defaults") ||
-  !migrationTestText.includes("migrates legacy Monster Lab logs without mutating the original")
+  !migrationTestText.includes("migrates legacy Monster Lab logs without mutating the original") ||
+  !migrationTestText.includes("flattens legacy nested price groups without mutating the original")
 ) {
   violations.push(`${migrationTestTarget} must cover persistent and Isekai carry key segmentation`);
 }

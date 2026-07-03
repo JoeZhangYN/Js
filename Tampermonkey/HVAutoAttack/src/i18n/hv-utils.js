@@ -109,6 +109,13 @@ try {
     record_hvut_config_parse_failure('configMonsterLabLogBridgeMissing', {});
     return null;
   };
+  var normalize_hvut_legacy_prices = function (prices) {
+    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.normalizePrices) {
+      return window.HVAA_hvutConfigMigration.normalizePrices(prices);
+    }
+    record_hvut_config_parse_failure('configPricesBridgeMissing', {});
+    return null;
+  };
   var is_hvut_config_field_disabled = function (field, context) {
     if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.isDisabled) {
       return window.HVAA_hvutConfigField.isDisabled(field, context);
@@ -5054,17 +5061,13 @@ const $config = {
 
       const prices = $config.ls_get('prices');
       if (prices) {
-        Object.entries(prices).forEach(([key, value]) => {
-          if (typeof value === 'object') {
-            Object.assign(prices, value);
-            delete prices[key];
-          }
-        });
+        const normalizedPrices = normalize_hvut_legacy_prices(prices);
+        if (!normalizedPrices) return false;
         setTimeout(() => { // $price is not defined yet
           $price.json = null;
           $price.init();
           $price.reset();
-          $price.set(prices);
+          $price.set(normalizedPrices);
         }, 1000);
       }
 
@@ -10922,17 +10925,13 @@ const $config = {
 
       const prices = $config.ls_get('prices');
       if (prices) {
-        Object.entries(prices).forEach(([key, value]) => {
-          if (typeof value === 'object') {
-            Object.assign(prices, value);
-            delete prices[key];
-          }
-        });
+        const normalizedPrices = normalize_hvut_legacy_prices(prices);
+        if (!normalizedPrices) return false;
         setTimeout(() => { // $price is not defined yet
           $price.json = null;
           $price.init();
           $price.reset();
-          $price.set(prices);
+          $price.set(normalizedPrices);
         }, 1000);
       }
 

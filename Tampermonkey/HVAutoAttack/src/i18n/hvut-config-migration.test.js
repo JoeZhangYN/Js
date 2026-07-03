@@ -3,6 +3,7 @@ import {
   getHvutConfigCarryKeys,
   getHvutConfigNamespace,
   migrateLegacyHvutMonsterLabLog,
+  normalizeLegacyHvutPrices,
   normalizeHvutConfigSettings,
 } from "./hvut-config-migration.js";
 
@@ -82,5 +83,21 @@ describe("HVUT config migration", () => {
     expect(migrated[1].gifts.slice(28, 33)).toEqual(["gift-40", "gift-41", "gift-42", "gift-43", "gift-44"]);
     expect(legacy[0]).toBeNull();
     expect(legacy[1].gift).toBe(gift);
+  });
+
+  it("flattens legacy nested price groups without mutating the original", () => {
+    const prices = {
+      Materials: { "Crystal of Vigor": 12 },
+      "Health Potion": 20,
+    };
+
+    expect(normalizeLegacyHvutPrices(prices)).toEqual({
+      "Crystal of Vigor": 12,
+      "Health Potion": 20,
+    });
+    expect(prices).toEqual({
+      Materials: { "Crystal of Vigor": 12 },
+      "Health Potion": 20,
+    });
   });
 });

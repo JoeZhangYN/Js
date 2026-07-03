@@ -30,6 +30,18 @@ export function migrateLegacyHvutMonsterLabLog(mlLog) {
   return migrated;
 }
 
+export function normalizeLegacyHvutPrices(prices) {
+  if (!prices) return null;
+  const normalized = cloneConfigValue(prices);
+  for (const [key, value] of Object.entries(normalized)) {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      Object.assign(normalized, value);
+      delete normalized[key];
+    }
+  }
+  return normalized;
+}
+
 export function normalizeHvutConfigSettings(settings, defaults) {
   const normalized = { ...(settings || {}) };
   const defaultSettings = defaults || {};
