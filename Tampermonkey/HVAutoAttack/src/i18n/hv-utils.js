@@ -143,6 +143,49 @@ try {
     var match = /Cost: (\d+) Chaos Token/.exec(text || '');
     return match ? parseInt(match[1]) : record_hvut_monster_lab_parse_failure(stage, { text: text || '' });
   };
+  var record_hvut_player_state_parse_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutPlayerStateParse', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutPlayerStateParseFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Player state parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] player state parse failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT player state parse fallback.
+    }
+    return null;
+  };
+  var parse_hvut_player_state = function (levelExec, staminaReadout, stage) {
+    if (!levelExec) {
+      return record_hvut_player_state_parse_failure(stage, { reason: 'levelReadoutMissing' });
+    }
+    if (!staminaReadout) {
+      return record_hvut_player_state_parse_failure(stage, { reason: 'staminaReadoutMissing' });
+    }
+    var staminaMatch = /Stamina: (\d+)/.exec(staminaReadout.textContent || '');
+    if (!staminaMatch) {
+      return record_hvut_player_state_parse_failure(stage, { reason: 'staminaValueMissing', text: staminaReadout.textContent || '' });
+    }
+    var accuracyNode = staminaReadout.querySelector('div:nth-child(2)');
+    var conditionNode = staminaReadout.querySelector('img[title^="Stamina"]');
+    if (!accuracyNode || !conditionNode) {
+      return record_hvut_player_state_parse_failure(stage, {
+        reason: 'staminaTooltipMissing',
+        hasAccuracy: !!accuracyNode,
+        hasCondition: !!conditionNode,
+      });
+    }
+    return {
+      difficulty: levelExec[1],
+      level: parseInt(levelExec[2]),
+      stamina: parseInt(staminaMatch[1]),
+      accuracy: accuracyNode.title,
+      condition: conditionNode.title,
+      warn: [],
+    };
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -4861,14 +4904,8 @@ if (!level_exec) {
 }
 
 // PLAYER DATA
-const _player = {
-  difficulty: level_exec[1],
-  level: parseInt(level_exec[2]),
-  stamina: parseInt(/Stamina: (\d+)/.exec($id('stamina_readout').textContent)[1]),
-  accuracy: $qs('#stamina_readout > div:nth-child(2)').title,
-  condition: $qs('#stamina_readout img[title^="Stamina"]').title,
-  warn: [],
-};
+const _player = parse_hvut_player_state(level_exec, $id('stamina_readout'), 'mainPlayerState');
+if (_player === null) return;
 
 /* START */
 
@@ -10725,14 +10762,8 @@ if (!level_exec) {
 }
 
 // PLAYER DATA
-const _player = {
-  difficulty: level_exec[1],
-  level: parseInt(level_exec[2]),
-  stamina: parseInt(/Stamina: (\d+)/.exec($id('stamina_readout').textContent)[1]),
-  accuracy: $qs('#stamina_readout > div:nth-child(2)').title,
-  condition: $qs('#stamina_readout img[title^="Stamina"]').title,
-  warn: [],
-};
+const _player = parse_hvut_player_state(level_exec, $id('stamina_readout'), 'isekaiPlayerState');
+if (_player === null) return;
 
 /* START */
 

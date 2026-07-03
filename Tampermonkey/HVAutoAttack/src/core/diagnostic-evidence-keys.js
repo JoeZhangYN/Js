@@ -61,6 +61,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   HVUT_TRAINING_NOTIFICATION_FAILURE: "HVAA:lastHvutTrainingNotificationFailure",
   HVUT_MOOGLEMAIL_PARSE_FAILURE: "HVAA:lastHvutMoogleMailParseFailure",
   HVUT_MONSTER_LAB_PARSE_FAILURE: "HVAA:lastHvutMonsterLabParseFailure",
+  HVUT_PLAYER_STATE_PARSE_FAILURE: "HVAA:lastHvutPlayerStateParseFailure",
   LOTTERY_NOTIFICATION_FAILURE: "HVAA:lastLotteryNotificationFailure",
 });
 
@@ -137,6 +138,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("hvutTrainingNotificationFailure", DiagnosticEvidenceKey.HVUT_TRAINING_NOTIFICATION_FAILURE),
   source("hvutMoogleMailParseFailure", DiagnosticEvidenceKey.HVUT_MOOGLEMAIL_PARSE_FAILURE),
   source("hvutMonsterLabParseFailure", DiagnosticEvidenceKey.HVUT_MONSTER_LAB_PARSE_FAILURE),
+  source("hvutPlayerStateParseFailure", DiagnosticEvidenceKey.HVUT_PLAYER_STATE_PARSE_FAILURE),
   source("lotteryNotificationFailure", DiagnosticEvidenceKey.LOTTERY_NOTIFICATION_FAILURE),
 ]);
 
