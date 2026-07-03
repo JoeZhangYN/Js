@@ -14,13 +14,13 @@ export function recordCompletedUsage() {
   const context = runBattleMonitorRuntime({
     type: BattleMonitorRuntimeEvent.USAGE_COMPLETION_CONTEXT,
   });
-  if (!context.recordUsage) return;
+  if (!context.recordUsage) return false;
   const stats = readExistingUsageStats();
-  if (!stats) return;
+  if (!stats) return false;
   stats.self._monster += context.monsterAll;
   stats.self._boss += context.bossAll;
 
-  runBattleRecordArchiveAutomation({
+  return runBattleRecordArchiveAutomation({
     type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE_USAGE_STATS,
     record: stats,
     recordEach: context.recordEach,

@@ -471,6 +471,14 @@ function checkUsageImplementation() {
   if (!text.includes("usageEventHandlers[event?.type]")) {
     violations.push(`${rel(usageFile)} must dispatch usage events with nullable event semantics`);
   }
+  if (
+    !/return storeCurrentUsageStats\(stats\) !== false;/.test(text) ||
+    !/const handler = usageEventHandlers\[event\?\.type\];[\s\S]*return handler \? handler\(event\) : undefined;/.test(
+      text
+    )
+  ) {
+    violations.push(`${rel(usageFile)} must return usage archive write results for known commands`);
+  }
   const usageTestText = fs.readFileSync(path.join(root, "src/monitor/record-usage.test.js"), "utf8");
   if (
     !usageTestText.includes("rejects unknown and null usage events without changing usage records") ||
@@ -591,6 +599,21 @@ function checkUsageImplementation() {
     violations.push(
       `${rel(usageCompletionFile)} must consume recordUsage from battle-monitor-runtime`
     );
+  }
+  if (
+    !/if \(!context\.recordUsage\) return false;/.test(completionText) ||
+    !/if \(!stats\) return false;/.test(completionText) ||
+    !/return runBattleRecordArchiveAutomation\([\s\S]*BattleRecordArchiveEvent\.STORE_OR_ARCHIVE_USAGE_STATS/.test(
+      completionText
+    )
+  ) {
+    violations.push(`${rel(usageCompletionFile)} must return completion archive result without claiming no-op success`);
+  }
+  if (
+    !usageTestText.includes("does not report completion usage success when archive persistence fails") ||
+    !usageTestText.includes("BATTLE_RECORD_ARCHIVE_FAILURE_KEY")
+  ) {
+    violations.push(`${rel(usageFile)} tests must cover completion usage archive failure propagation`);
   }
   if (/\bg\(\s*["']option["']\s*\)\.recordUsage/.test(text + completionText)) {
     violations.push(`${rel(usageFile)} must not read recordUsage option directly`);

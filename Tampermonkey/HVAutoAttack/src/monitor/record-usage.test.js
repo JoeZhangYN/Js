@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { g } from "../state/store.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { getValue, setValue } from "../state/storage.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
+import { BATTLE_RECORD_ARCHIVE_FAILURE_KEY } from "./battle-record-archive-failure.js";
 import { BattleUsageEvent, runBattleUsageAutomation } from "./record-usage.js";
 
 beforeEach(() => {
@@ -15,6 +16,10 @@ beforeEach(() => {
   g("roundAll", 1);
   g("monsterAll", 3);
   g("bossAll", 1);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe("runBattleUsageAutomation", () => {
@@ -31,7 +36,9 @@ describe("runBattleUsageAutomation", () => {
   it("does not archive completion usage when record usage is disabled", () => {
     setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
 
-    runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE });
+    expect(runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE })).toBe(
+      false
+    );
 
     expect(getValue(STORAGE_KEYS.STATS, true)).toEqual({ self: { _monster: 0, _boss: 0 } });
     expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toBeNull();
@@ -43,7 +50,10 @@ describe("runBattleUsageAutomation", () => {
     setValue(STORAGE_KEYS.BATTLE_CODE, "AR-1");
     setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
 
-    runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE });
+    expect(runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE })).toEqual({
+      archived: true,
+      record: expect.objectContaining({ __name: "AR-1" }),
+    });
 
     expect(getValue(STORAGE_KEYS.STATS, true)).toBeNull();
     expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toEqual([
@@ -56,5 +66,26 @@ describe("runBattleUsageAutomation", () => {
         },
       },
     ]);
+  });
+
+  it("does not report completion usage success when archive persistence fails", () => {
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "recordUsage", value: true });
+    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "recordEach", value: true });
+    setValue(STORAGE_KEYS.BATTLE_CODE, "AR-1");
+    setValue(STORAGE_KEYS.STATS, { self: { _monster: 0, _boss: 0 } });
+    vi.stubGlobal("GM_setValue", () => {
+      throw new Error("usage archive blocked");
+    });
+
+    expect(runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE })).toBe(
+      false
+    );
+
+    expect(JSON.parse(sessionStorage.getItem(BATTLE_RECORD_ARCHIVE_FAILURE_KEY))).toMatchObject({
+      capability: "battleRecordArchive",
+      stage: "archive-history",
+      key: STORAGE_KEYS.STATS_OLD,
+      failure: { kind: "storageWrite", error: "usage archive blocked" },
+    });
   });
 });

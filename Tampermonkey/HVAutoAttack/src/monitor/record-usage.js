@@ -22,7 +22,7 @@ function readCurrentUsageStats() {
 }
 
 function storeCurrentUsageStats(stats) {
-  runBattleRecordArchiveAutomation({
+  return runBattleRecordArchiveAutomation({
     type: BattleRecordArchiveEvent.STORE_USAGE_STATS,
     record: stats,
   });
@@ -32,7 +32,7 @@ function recordActionUsage(parm) {
   const stats = readCurrentUsageStats();
   const context = runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.USAGE_ACTION_CONTEXT });
   applyBattleActionUsageStats(stats, parm, context);
-  storeCurrentUsageStats(stats);
+  return storeCurrentUsageStats(stats) !== false;
 }
 
 const usageEventHandlers = Object.freeze({
@@ -41,6 +41,6 @@ const usageEventHandlers = Object.freeze({
 });
 
 export function runBattleUsageAutomation(event) {
-  usageEventHandlers[event?.type]?.(event);
-  return undefined;
+  const handler = usageEventHandlers[event?.type];
+  return handler ? handler(event) : undefined;
 }
