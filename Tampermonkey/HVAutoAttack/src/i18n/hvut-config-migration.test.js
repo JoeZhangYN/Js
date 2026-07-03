@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { getHvutConfigCarryKeys, getHvutConfigNamespace } from "./hvut-config-migration.js";
+import {
+  getHvutConfigCarryKeys,
+  getHvutConfigNamespace,
+  normalizeHvutConfigSettings,
+} from "./hvut-config-migration.js";
 
 describe("HVUT config migration", () => {
   it("selects the storage namespace from segment identity", () => {
@@ -26,5 +30,28 @@ describe("HVUT config migration", () => {
       "ss_log",
       "ml_log",
     ]);
+  });
+
+  it("upgrades legacy equipCode string and aligns settings with defaults", () => {
+    const defaults = {
+      equipCode: { EQUIP: "default", CATEGORY: "category" },
+      keep: true,
+      nested: { value: 1 },
+    };
+
+    expect(
+      normalizeHvutConfigSettings(
+        {
+          equipCode: "{$name}",
+          keep: false,
+          orphan: "remove",
+        },
+        defaults
+      )
+    ).toEqual({
+      equipCode: { EQUIP: "{$name}", CATEGORY: "category" },
+      keep: false,
+      nested: { value: 1 },
+    });
   });
 });

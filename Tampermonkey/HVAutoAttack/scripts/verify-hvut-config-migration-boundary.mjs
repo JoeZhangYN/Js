@@ -58,8 +58,11 @@ for (const required of [
   "var parse_hvut_world_season = function (isIsekai, stage) {",
   "var get_hvut_config_carry_keys = function (isIsekai) {",
   "var get_hvut_config_namespace = function (isIsekai) {",
+  "var normalize_hvut_config_settings = function (settings, defaults) {",
   "window.HVAA_hvutConfigMigration.namespace({ isIsekai: !!isIsekai })",
+  "window.HVAA_hvutConfigMigration.normalizeSettings(settings, defaults)",
   "record_hvut_config_parse_failure('configNamespaceBridgeMissing'",
+  "record_hvut_config_parse_failure('configSettingsBridgeMissing'",
   "window.HVAA_hvutConfigMigration.carryKeys({ isIsekai: !!isIsekai })",
   "record_hvut_config_parse_failure('configCarryKeysBridgeMissing'",
   "if (!isIsekai) return false;",
@@ -81,6 +84,9 @@ for (const [index, body] of migrationBodies.entries()) {
     "for (const key of ls_list) {",
     "if (!$config.set(key, value)) return false;",
     "if (!$config.ls_del(key.slice($config.prefix.length))) return false;",
+    "const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);",
+    "if (!normalizedSettings) return false;",
+    "$config.settings = normalizedSettings;",
     "if ($config.save() === false) return false;",
     "return true;",
   ]) {
@@ -99,6 +105,10 @@ for (const forbidden of [
   "const ls_list = ['equipnames', 'equipset', 'ch_style', 'se_settings', 'ss_log', 'ml_log'];",
   "$config.ns = !IS_ISEKAI ? 'hvut' : 'hvuti';",
   "$config.ns = IS_ISEKAI ? 'hvuti' : 'hvut';",
+  "const equipcode = $config.settings.equipCode;",
+  "$config.settings.equipCode = JSON.parse(JSON.stringify($config.default.equipCode));",
+  "Object.keys($config.settings).forEach((key) => {",
+  "Object.entries($config.default).forEach(([key, value]) => {",
 ]) {
   if (migrationBodies.some((body) => body.includes(forbidden))) {
     violations.push(`${target} config migration must not keep unchecked path: ${forbidden}`);
@@ -112,6 +122,10 @@ for (const required of [
   "return segment?.isIsekai ? \"hvuti\" : \"hvut\";",
   "export function getHvutConfigCarryKeys(segment) {",
   "return segment?.isIsekai ? [...COMMON_CARRY_KEYS] : [...PERSISTENT_CARRY_KEYS];",
+  "export function normalizeHvutConfigSettings(settings, defaults) {",
+  "normalized.equipCode = cloneConfigValue(defaultSettings.equipCode);",
+  "delete normalized[key];",
+  "normalized[key] = cloneConfigValue(value);",
 ]) {
   if (!migrationText.includes(required)) {
     violations.push(`${migrationTarget} must own HVUT config carry key segmentation with ${required}`);
@@ -119,10 +133,14 @@ for (const required of [
 }
 
 for (const required of [
-  "import { getHvutConfigCarryKeys, getHvutConfigNamespace } from \"./hvut-config-migration.js\";",
+  "getHvutConfigCarryKeys",
+  "getHvutConfigNamespace",
+  "normalizeHvutConfigSettings",
+  "from \"./hvut-config-migration.js\";",
   "window.HVAA_hvutConfigMigration = Object.freeze({",
   "carryKeys: getHvutConfigCarryKeys",
   "namespace: getHvutConfigNamespace",
+  "normalizeSettings: normalizeHvutConfigSettings",
 ]) {
   if (!migrationBridgeText.includes(required)) {
     violations.push(`${migrationBridgeTarget} must expose HVUT config migration bridge with ${required}`);
@@ -136,7 +154,8 @@ if (!mainText.includes("import \"./i18n/hvut-config-migration-bridge.js\";")) {
 if (
   !migrationTestText.includes("selects the storage namespace from segment identity") ||
   !migrationTestText.includes("keeps persistent-only legacy equipment names") ||
-  !migrationTestText.includes("does not carry persistent-only legacy equipment names")
+  !migrationTestText.includes("does not carry persistent-only legacy equipment names") ||
+  !migrationTestText.includes("upgrades legacy equipCode string and aligns settings with defaults")
 ) {
   violations.push(`${migrationTestTarget} must cover persistent and Isekai carry key segmentation`);
 }

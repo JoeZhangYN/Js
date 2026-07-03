@@ -95,6 +95,13 @@ try {
     record_hvut_config_parse_failure('configNamespaceBridgeMissing', { isIsekai: !!isIsekai });
     return null;
   };
+  var normalize_hvut_config_settings = function (settings, defaults) {
+    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.normalizeSettings) {
+      return window.HVAA_hvutConfigMigration.normalizeSettings(settings, defaults);
+    }
+    record_hvut_config_parse_failure('configSettingsBridgeMissing', {});
+    return null;
+  };
   var is_hvut_config_field_disabled = function (field, context) {
     if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.isDisabled) {
       return window.HVAA_hvutConfigField.isDisabled(field, context);
@@ -5109,22 +5116,9 @@ const $config = {
     });
     if (!$config.set('ss_log', ss_log)) return false;
 
-    const equipcode = $config.settings.equipCode;
-    if (typeof equipcode === 'string') {
-      $config.settings.equipCode = JSON.parse(JSON.stringify($config.default.equipCode));
-      $config.settings.equipCode.EQUIP = equipcode;
-    }
-
-    Object.keys($config.settings).forEach((key) => {
-      if (!(key in $config.default)) {
-        delete $config.settings[key];
-      }
-    });
-    Object.entries($config.default).forEach(([key, value]) => {
-      if (!(key in $config.settings)) {
-        $config.settings[key] = JSON.parse(JSON.stringify(value));
-      }
-    });
+    const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);
+    if (!normalizedSettings) return false;
+    $config.settings = normalizedSettings;
 
     if ($config.save() === false) return false;
     return true;
@@ -10992,23 +10986,9 @@ const $config = {
       }
     }
 
-    // [v2 能量模型迁移 2026-06-10] equipCode 旧 string 单模板 → object(EQUIP/CATEGORY/TYPE; bindArmory equipcode 按键读取, isekai 4.2.0 基准)
-    const equipcode = $config.settings.equipCode;
-    if (typeof equipcode === 'string') {
-      $config.settings.equipCode = JSON.parse(JSON.stringify($config.default.equipCode));
-      $config.settings.equipCode.EQUIP = equipcode;
-    }
-    // 双向键合并(isekai migration 同款, 幂等): 删孤儿键(死段设置 equipInventoryIntegration/equipmentShop{Integration,ShowLevel,ShowPAB,AutoLock}/equipEnchant 已亡者等) + 补新键(bindEquip/bindArmory 所需默认)
-    Object.keys($config.settings).forEach((key) => {
-      if (!(key in $config.default)) {
-        delete $config.settings[key];
-      }
-    });
-    Object.entries($config.default).forEach(([key, value]) => {
-      if (!(key in $config.settings)) {
-        $config.settings[key] = JSON.parse(JSON.stringify(value));
-      }
-    });
+    const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);
+    if (!normalizedSettings) return false;
+    $config.settings = normalizedSettings;
 
     if ($config.save() === false) return false;
     return true;
