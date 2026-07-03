@@ -53,8 +53,8 @@ describe("runBattleDropAutomation", () => {
       throw new Error("drop write blocked");
     });
 
-    expect(runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime)).toBe(
-      false
+    expect(runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime)).toEqual(
+      { kind: "failed", reason: "dropArchiveFailed" }
     );
 
     expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
@@ -85,8 +85,8 @@ describe("runBattleDropAutomation", () => {
       rows: [logLine("You gain 12 EXP")],
     });
 
-    expect(runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime)).toBe(
-      false
+    expect(runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime)).toEqual(
+      { kind: "skipped", reason: "dropMonitorDisabled" }
     );
     expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
   });
@@ -101,8 +101,8 @@ describe("runBattleDropAutomation", () => {
       ],
     });
 
-    expect(runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime)).toBe(
-      true
+    expect(runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime)).toEqual(
+      { kind: "recorded", archive: { archived: false } }
     );
 
     expect(runtime.values[STORAGE_KEYS.DROP]).toMatchObject({

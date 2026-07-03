@@ -24,12 +24,18 @@ export const BattleMonitorEvent = Object.freeze({
 
 function recordActionEnd(event) {
   const usage = runBattleActionUsageCapture(event);
-  if (usage) runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_ACTION_USAGE, usage });
+  if (!usage) return { kind: "skipped", reason: "usageCaptureMissing" };
+  return runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_ACTION_USAGE, usage });
 }
 
 function recordCompletion() {
-  runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS });
-  runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE });
+  const drop = runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS });
+  const usage = runBattleUsageAutomation({ type: BattleUsageEvent.RECORD_COMPLETED_USAGE });
+  return {
+    kind: drop?.kind === "failed" || usage?.kind === "failed" ? "failed" : "recorded",
+    drop,
+    usage,
+  };
 }
 
 const monitorEventHandlers = Object.freeze({

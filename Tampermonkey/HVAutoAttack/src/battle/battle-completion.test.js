@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  BattleCompletionEvent,
-  runBattleCompletionAutomation,
-} from "./battle-completion.js";
+import { BattleCompletionEvent, runBattleCompletionAutomation } from "./battle-completion.js";
 
 function deps(context = { monsterAlive: 0, roundNow: 1, roundAll: 1 }) {
   return {
@@ -19,6 +16,7 @@ function deps(context = { monsterAlive: 0, roundNow: 1, roundAll: 1 }) {
 describe("runBattleCompletionAutomation", () => {
   it("handles defeat completion through the entry", () => {
     const d = deps({ monsterAlive: 1, roundNow: 1, roundAll: 1 });
+    d.recordCompletion.mockReturnValue({ kind: "recorded" });
 
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
@@ -30,12 +28,18 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.recordCompletionEvidence).toHaveBeenCalledWith({
       outcome: "defeat",
       context: { monsterAlive: 1, roundNow: 1, roundAll: 1 },
-      effects: { recordCompletion: true, alarm: true, clearSession: true },
+      effects: {
+        recordCompletion: true,
+        recordCompletionResult: { kind: "recorded" },
+        alarm: true,
+        clearSession: true,
+      },
     });
   });
 
   it("returns next round without terminal side effects", () => {
     const d = deps({ monsterAlive: 0, roundNow: 1, roundAll: 2 });
+    d.recordCompletion.mockReturnValue({ kind: "recorded" });
 
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
@@ -47,13 +51,14 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.recordCompletionEvidence).toHaveBeenCalledWith({
       outcome: "nextRound",
       context: { monsterAlive: 0, roundNow: 1, roundAll: 2 },
-      effects: { recordCompletion: true },
+      effects: { recordCompletion: true, recordCompletionResult: { kind: "recorded" } },
     });
   });
 
   it("handles victory completion through the entry", () => {
     const context = { monsterAlive: 0, roundNow: 2, roundAll: 2 };
     const d = deps(context);
+    d.recordCompletion.mockReturnValue({ kind: "recorded" });
 
     expect(
       runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }, d)
@@ -69,7 +74,13 @@ describe("runBattleCompletionAutomation", () => {
     expect(d.recordCompletionEvidence).toHaveBeenCalledWith({
       outcome: "victory",
       context,
-      effects: { recordCompletion: true, alarm: true, clearSession: true, scheduleReload: true },
+      effects: {
+        recordCompletion: true,
+        recordCompletionResult: { kind: "recorded" },
+        alarm: true,
+        clearSession: true,
+        scheduleReload: true,
+      },
     });
   });
 
@@ -113,9 +124,7 @@ describe("runBattleCompletionAutomation", () => {
   it("rejects unknown battle completion events without side effects", () => {
     const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
 
-    expect(runBattleCompletionAutomation({ type: "unknown" }, d)).toEqual({
-      outcome: "ongoing",
-    });
+    expect(runBattleCompletionAutomation({ type: "unknown" }, d)).toEqual({ outcome: "ongoing" });
 
     expect(d.recordCompletion).not.toHaveBeenCalled();
     expect(d.readCompletionContext).not.toHaveBeenCalled();
@@ -133,9 +142,7 @@ describe("runBattleCompletionAutomation", () => {
   it("rejects null battle completion events without side effects", () => {
     const d = deps({ monsterAlive: 0, roundNow: 2, roundAll: 2 });
 
-    expect(runBattleCompletionAutomation(null, d)).toEqual({
-      outcome: "ongoing",
-    });
+    expect(runBattleCompletionAutomation(null, d)).toEqual({ outcome: "ongoing" });
 
     expect(d.recordCompletion).not.toHaveBeenCalled();
     expect(d.readCompletionContext).not.toHaveBeenCalled();
@@ -154,9 +161,7 @@ describe("runBattleCompletionAutomation", () => {
     const d = deps();
     d.isCompletionReached.mockReturnValue(false);
 
-    expect(runBattleCompletionAutomation({ type: BattleCompletionEvent.READ_REACHED }, d)).toBe(
-      false
-    );
+    expect(runBattleCompletionAutomation({ type: BattleCompletionEvent.READ_REACHED }, d)).toBe(false);
 
     expect(d.isCompletionReached).toHaveBeenCalledTimes(1);
     expect(d.recordCompletion).not.toHaveBeenCalled();

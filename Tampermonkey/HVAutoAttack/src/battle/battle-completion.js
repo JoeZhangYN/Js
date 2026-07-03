@@ -60,6 +60,7 @@ function victoryReloadDetail(outcome, context) {
 }
 
 function effectOk(result) {
+  if (result?.kind === "failed") return false;
   return result !== false;
 }
 
@@ -78,7 +79,11 @@ function handleTerminalCompletion(outcome, context, deps) {
 }
 
 function handleCompletionReached(deps) {
-  const effects = { recordCompletion: effectOk(deps.recordCompletion()) };
+  const recordCompletion = deps.recordCompletion();
+  const effects = {
+    recordCompletion: effectOk(recordCompletion),
+    recordCompletionResult: recordCompletion,
+  };
   const context = deps.readCompletionContext();
   const outcome = classifyCompletion(context);
   if (outcome === BattleCompletionOutcome.DEFEAT || outcome === BattleCompletionOutcome.VICTORY) {

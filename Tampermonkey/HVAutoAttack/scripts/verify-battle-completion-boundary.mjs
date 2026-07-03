@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const owner = path.normalize("src/battle/battle-completion.js");
 const ownerTest = path.normalize("src/battle/battle-completion.test.js");
+const monitorResultTest = path.normalize("src/battle/battle-completion-monitor-result.test.js");
 const evidence = path.normalize("src/battle/battle-completion-evidence.js");
 const evidenceTest = path.normalize("src/battle/battle-completion-evidence.test.js");
 const actionEventBridge = path.normalize("src/battle/battle-action-event-bridge.js");
@@ -50,6 +51,7 @@ function checkOwner() {
     "readCompletionContext",
     "deps.readCompletionContext",
     "deps.recordCompletion",
+    "recordCompletionResult",
     "deps.isCompletionReached",
     "handleTerminalCompletion",
     "BattleCompletionEvidenceEvent.RECORD_COMPLETION",
@@ -156,6 +158,14 @@ function checkOwner() {
     }
     if (!testText.includes('source: "battleCompletion"')) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover victory reload detail`);
+    }
+  }
+  if (!fs.existsSync(path.join(root, monitorResultTest))) {
+    violations.push(`${monitorResultTest.replaceAll("\\", "/")} must cover failed monitor completion evidence`);
+  } else {
+    const monitorResultTestText = fs.readFileSync(path.join(root, monitorResultTest), "utf8");
+    if (!monitorResultTestText.includes("records failed completion monitor results as failed evidence")) {
+      violations.push(`${monitorResultTest.replaceAll("\\", "/")} must cover failed monitor completion evidence`);
     }
   }
   if (!fs.existsSync(path.join(root, evidence))) {

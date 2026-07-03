@@ -48,7 +48,7 @@ function recordBattleDrops(deps, context) {
     readItem: (log) => deps.gE("span", log),
   });
 
-  return runBattleRecordArchiveAutomation(
+  const archiveResult = runBattleRecordArchiveAutomation(
     {
       type: BattleRecordArchiveEvent.STORE_OR_ARCHIVE_DROP_RECORD,
       record: drop,
@@ -58,14 +58,16 @@ function recordBattleDrops(deps, context) {
     },
     deps
   );
+  if (archiveResult === false) return { kind: "failed", reason: "dropArchiveFailed" };
+  return { kind: "recorded", archive: archiveResult };
 }
 
 const dropEventHandlers = Object.freeze({
   [EVENT_RECORD_BATTLE_DROPS]: (_event, deps) => {
     const runtime = makeDeps(deps);
     const context = runtime.readDropCompletionContext();
-    if (!context.dropMonitor) return false;
-    return recordBattleDrops(runtime, context) !== false;
+    if (!context.dropMonitor) return { kind: "skipped", reason: "dropMonitorDisabled" };
+    return recordBattleDrops(runtime, context);
   },
 });
 

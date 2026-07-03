@@ -144,4 +144,17 @@ describe("battle report query", () => {
     expect(getValue(STORAGE_KEYS.STATS, true)).toBeNull();
     expect(getValue(STORAGE_KEYS.STATS_OLD, true)).toBeNull();
   });
+
+  it("returns typed completion recording results without treating disabled reports as failures", () => {
+    runOptionAutomation({
+      type: OptionEvent.WRITE,
+      option: { version: "10.0", dropMonitor: false, recordUsage: false },
+    });
+
+    expect(runBattleMonitorAutomation({ type: BattleMonitorEvent.COMPLETION_REACHED })).toEqual({
+      kind: "recorded",
+      drop: { kind: "skipped", reason: "dropMonitorDisabled" },
+      usage: { kind: "skipped", reason: "recordUsageDisabled" },
+    });
+  });
 });

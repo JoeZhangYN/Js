@@ -32,7 +32,9 @@ function recordActionUsage(parm) {
   const stats = readCurrentUsageStats();
   const context = runBattleMonitorRuntime({ type: BattleMonitorRuntimeEvent.USAGE_ACTION_CONTEXT });
   applyBattleActionUsageStats(stats, parm, context);
-  return storeCurrentUsageStats(stats) !== false;
+  const archiveResult = storeCurrentUsageStats(stats);
+  if (archiveResult === false) return { kind: "failed", reason: "usageArchiveFailed" };
+  return { kind: "recorded", archive: archiveResult };
 }
 
 const usageEventHandlers = Object.freeze({

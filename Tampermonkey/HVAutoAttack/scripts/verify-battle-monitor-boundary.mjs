@@ -472,12 +472,13 @@ function checkUsageImplementation() {
     violations.push(`${rel(usageFile)} must dispatch usage events with nullable event semantics`);
   }
   if (
-    !/return storeCurrentUsageStats\(stats\) !== false;/.test(text) ||
+    !text.includes('return { kind: "failed", reason: "usageArchiveFailed" };') ||
+    !text.includes('return { kind: "recorded", archive: archiveResult };') ||
     !/const handler = usageEventHandlers\[event\?\.type\];[\s\S]*return handler \? handler\(event\) : undefined;/.test(
       text
     )
   ) {
-    violations.push(`${rel(usageFile)} must return usage archive write results for known commands`);
+    violations.push(`${rel(usageFile)} must return typed usage archive results for known commands`);
   }
   const usageTestText = fs.readFileSync(path.join(root, "src/monitor/record-usage.test.js"), "utf8");
   if (
@@ -601,13 +602,14 @@ function checkUsageImplementation() {
     );
   }
   if (
-    !/if \(!context\.recordUsage\) return false;/.test(completionText) ||
-    !/if \(!stats\) return false;/.test(completionText) ||
-    !/return runBattleRecordArchiveAutomation\([\s\S]*BattleRecordArchiveEvent\.STORE_OR_ARCHIVE_USAGE_STATS/.test(
+    !/if \(!context\.recordUsage\) return \{ kind: "skipped", reason: "recordUsageDisabled" \};/.test(completionText) ||
+    !/if \(!stats\) return \{ kind: "skipped", reason: "usageStatsMissing" \};/.test(completionText) ||
+    !/const archiveResult = runBattleRecordArchiveAutomation\([\s\S]*BattleRecordArchiveEvent\.STORE_OR_ARCHIVE_USAGE_STATS/.test(
       completionText
-    )
+    ) ||
+    !completionText.includes('return { kind: "failed", reason: "usageArchiveFailed" };')
   ) {
-    violations.push(`${rel(usageCompletionFile)} must return completion archive result without claiming no-op success`);
+    violations.push(`${rel(usageCompletionFile)} must return typed completion archive results without claiming no-op success`);
   }
   if (
     !usageTestText.includes("does not report completion usage success when archive persistence fails") ||
@@ -1072,10 +1074,11 @@ function checkDeletedDropMonitorEntrypoint() {
     violations.push(`${rel(dropFile)} tests must cover unknown and null drop events`);
   }
   if (
-    !/return runBattleRecordArchiveAutomation\([\s\S]*BattleRecordArchiveEvent\.STORE_OR_ARCHIVE_DROP_RECORD/.test(
+    !/const archiveResult = runBattleRecordArchiveAutomation\([\s\S]*BattleRecordArchiveEvent\.STORE_OR_ARCHIVE_DROP_RECORD/.test(
       dropText
     ) ||
-    !/return recordBattleDrops\(runtime,\s*context\) !== false;/.test(dropText)
+    !dropText.includes('return { kind: "failed", reason: "dropArchiveFailed" };') ||
+    !dropText.includes('return { kind: "recorded", archive: archiveResult };')
   ) {
     violations.push(`${rel(dropFile)} must not report drop recording success when archive storage fails`);
   }
