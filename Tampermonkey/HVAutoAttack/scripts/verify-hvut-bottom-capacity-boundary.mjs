@@ -54,15 +54,18 @@ for (const [index, showEquipBody] of showEquipBodies.entries()) {
   }
 }
 
-const modernBottom =
-  showEquipBodies.find((body) => body.includes("Your inventory is almost full")) || "";
+const capacityWarningBodies = showEquipBodies.filter((body) =>
+  body.includes("Your inventory is almost full") || body.includes("装备库存量:")
+);
+for (const [index, body] of capacityWarningBodies.entries()) {
+  if (!body.includes("const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings);")) {
+    violations.push(`${rel(hvUtilsFile)} bottom capacity warning[${index}] must use typed threshold evidence`);
+  }
+  if (/free < capacity\.capacity \/ 10/.test(body)) {
+    violations.push(`${rel(hvUtilsFile)} bottom capacity warning[${index}] must not keep a parallel hardcoded threshold`);
+  }
+}
 const legacyBottom = showEquipBodies.find((body) => body.includes("装备库存量:")) || "";
-if (!modernBottom.includes("normalize_hvut_bottom_warn_capacity($config.settings)")) {
-  violations.push(`${rel(hvUtilsFile)} modern bottom capacity warning must normalize threshold`);
-}
-if (!modernBottom.includes("const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings);")) {
-  violations.push(`${rel(hvUtilsFile)} modern bottom capacity warning must use typed threshold evidence`);
-}
 if (legacyBottom && /popup\(/.test(legacyBottom)) {
   violations.push(`${rel(hvUtilsFile)} legacy bottom capacity monitor must not show equipment-full popup`);
 }

@@ -11500,8 +11500,9 @@ if ($config.settings.showEquipSlots === 2 || $config.settings.showEquipSlots ===
     }
     const { usage } = capacity;
     const free = capacity.capacity - usage;
+    const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings);
     _bottom.node.equip.textContent = `装备库存量: ${usage} / ${capacity.capacity}`;
-    if (free < capacity.capacity / 10) {
+    if (free < warnCapacity) {
       _bottom.node.equip.classList.add('hvut-bottom-warn');
     } else if (free < capacity.capacity / 2) {
       _bottom.node.equip.style.color = '#c00';
