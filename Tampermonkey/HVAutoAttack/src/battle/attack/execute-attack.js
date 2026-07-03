@@ -51,11 +51,16 @@ function observedBigSkillBosses(snap) {
  */
 function applyAttackPlan(plan, snap) {
   try {
-    return ATTACK_PLAN_EXECUTORS[plan?.type]?.(plan, snap) ?? false;
+    return attackExecutionActed(ATTACK_PLAN_EXECUTORS[plan?.type]?.(plan, snap));
   } catch (error) {
     recordAttackExecutionFailure(plan, "attackSubCommandThrew", error);
     return false;
   }
+}
+
+function attackExecutionActed(result) {
+  if (result?.kind === "failed") return false;
+  return Boolean(result);
 }
 
 function executeNoopPlan() {
@@ -63,17 +68,17 @@ function executeNoopPlan() {
 }
 
 function executeFocusPlan() {
-  return !!runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK });
+  return runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK });
 }
 
 function executeToggleSpiritPlan() {
-  return !!runBattleSpiritToggleAutomation({
+  return runBattleSpiritToggleAutomation({
     type: BattleSpiritToggleEvent.CLICK_AND_RECORD,
   });
 }
 
 function executeSpellPlan(plan) {
-  return !!runBattleTargetCommand({
+  return runBattleTargetCommand({
     type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
     skillId: plan.spellId,
     targetId: plan.targetId,
@@ -81,7 +86,7 @@ function executeSpellPlan(plan) {
 }
 
 function executeMercifulSinglePlan(plan) {
-  return !!runBattleTargetCommand({
+  return runBattleTargetCommand({
     type: BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET,
     skillId: plan.skillId,
     targetId: plan.targetId,
@@ -97,7 +102,7 @@ function executePhysicalPlan(plan, snap) {
     afterSkillClick: () => recordPhysicalSkillFire(plan, snap),
   };
   if (plan.mercifulTargetId != null) event.targetRequiresSkill = true;
-  const acted = !!runBattleTargetCommand(event);
+  const acted = attackExecutionActed(runBattleTargetCommand(event));
   if (acted && plan.mercifulTargetId != null) {
     clickMercifulFallbackTarget(plan);
   }
@@ -115,7 +120,7 @@ function recordPhysicalSkillFire(plan, snap) {
 }
 
 function executeDefaultPlan(plan) {
-  return !!runBattleTargetCommand({
+  return runBattleTargetCommand({
     type: BattleTargetCommandEvent.CLICK_TARGET,
     targetId: plan.targetId,
   });

@@ -7,6 +7,9 @@ const ownerTest = path.normalize("src/battle/attack/execute-attack.test.js");
 const commandFailureTest = path.normalize(
   "src/battle/attack/execute-attack-command-failure.test.js"
 );
+const typedFailureTest = path.normalize(
+  "src/battle/attack/execute-attack-typed-failure.test.js"
+);
 const mercifulSideEffectTest = path.normalize(
   "src/battle/attack/execute-attack-merciful-side-effect.test.js"
 );
@@ -44,13 +47,13 @@ for (const required of [
   "executePhysicalPlan",
   "executeDefaultPlan",
   "BattleFocusCommandEvent.CLICK",
-  "return !!runBattleFocusCommand",
+  "attackExecutionActed",
+  'result?.kind === "failed"',
   "BattleSpiritToggleEvent.CLICK_AND_RECORD",
   "BattleTargetCommandEvent.TRY_SKILL_THEN_TARGET",
   "BattleTargetCommandEvent.CLICK_TARGET",
   "PhysicalSkillBookkeepingEvent.RECORD_FIRE",
   "observedBigSkillBosses",
-  "return !!runBattleTargetCommand",
   "recordAttackExecutionFailure",
   "clickMercifulFallbackTarget",
   "attackSubCommandThrew",
@@ -152,6 +155,23 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   ) {
     violations.push(`${rel(ownerTest)} must cover failed Focus commands as not acted`);
   }
+}
+if (!fs.existsSync(path.join(root, typedFailureTest))) {
+  violations.push(`${rel(typedFailureTest)} must cover typed failed attack commands`);
+} else {
+  const typedFailureTestText = read(typedFailureTest);
+  for (const required of [
+    "does not claim typed failed attack commands as acted",
+    "does not click the merciful fallback target after a typed failed skill-target command",
+    'kind: "failed"',
+  ]) {
+    if (!typedFailureTestText.includes(required)) {
+      violations.push(`${rel(typedFailureTest)} must cover ${required}`);
+    }
+  }
+}
+if (/return !!runBattle/.test(ownerText)) {
+  violations.push(`${rel(owner)} must not booleanize attack command entry results before typed failure normalization`);
 }
 if (!fs.existsSync(path.join(root, mercifulSideEffectTest))) {
   violations.push(`${rel(mercifulSideEffectTest)} must cover failed merciful physical plans`);
