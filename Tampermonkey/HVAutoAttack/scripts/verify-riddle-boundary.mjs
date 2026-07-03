@@ -571,7 +571,7 @@ function checkRiddleMlEntry() {
     violations.push(`${rel(riddleMlFile)} must own explicit ML answer attempt flow order`);
   }
   if (
-    !/const riddleMlEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_START_HEALTH\]:\s*\(\)\s*=>\s*\{[\s\S]*startRiddleMlHealthCheck\(\);[\s\S]*return true;[\s\S]*\[EVENT_TRY_ANSWER\]: tryMLAnswer/.test(
+    !/const riddleMlEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_START_HEALTH\]:\s*startRiddleMlHealthCheck,[\s\S]*\[EVENT_TRY_ANSWER\]: tryMLAnswer/.test(
       ownerText
     )
   ) {
@@ -643,10 +643,13 @@ function checkRiddleMlEntry() {
     "records GM storage failures instead of letting health state writes reject",
     "isolates console hook failures during health diagnostics",
     "records request startup failures from the health HEAD adapter",
+    "records health timer scheduling failures and allows a retry",
     "keeps health timer running when failure evidence and warning both fail",
     "requestStartFailed",
+    "timerScheduleFailed",
     "gmSetFailed",
     "consoleFailed",
+    'throw new Error("timer blocked")',
     'throw new Error("quota")',
     'throw new Error("console blocked")',
     "not.toThrow()",
@@ -679,6 +682,9 @@ function checkRiddleMlEntry() {
   }
   if (!/stayAwake\(\)\.catch\(\(error\) => \{[\s\S]*recordRiddleMlHealthFailure\("healthCycle",\s*"unhandledFailure"/.test(ownerText)) {
     violations.push(`${rel(riddleMlFile)} must classify unhandled health cycle failures`);
+  }
+  if (!/catch \(error\) \{[\s\S]*healthStarted = false;[\s\S]*recordRiddleMlHealthFailure\("startHealth",\s*"timerScheduleFailed"/.test(ownerText)) {
+    violations.push(`${rel(riddleMlFile)} must classify health timer scheduling failures and allow retry`);
   }
   if (!/try\s*{[\s\S]*gmXhr\(\{[\s\S]*method:\s*"HEAD"[\s\S]*}\);[\s\S]*return true;[\s\S]*}\s*catch/.test(ownerText)) {
     violations.push(`${rel(riddleMlFile)} must classify health HEAD adapter startup failures`);

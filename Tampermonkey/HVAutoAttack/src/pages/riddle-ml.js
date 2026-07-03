@@ -280,10 +280,19 @@ function runRiddleMlHealthCycle() {
 }
 
 function startRiddleMlHealthCheck() {
-  if (healthStarted) return;
-  healthStarted = true;
-  runRiddleMlHealthCycle();
-  setInterval(runRiddleMlHealthCycle, 30000);
+  if (healthStarted) return true;
+  try {
+    runRiddleMlHealthCycle();
+    setInterval(runRiddleMlHealthCycle, 30000);
+    healthStarted = true;
+    return true;
+  } catch (error) {
+    healthStarted = false;
+    recordRiddleMlHealthFailure("startHealth", "timerScheduleFailed", {
+      error: mlHealthErrorText(error),
+    });
+    return false;
+  }
 }
 
 // ---------------- 主入口 tryMLAnswer ----------------
@@ -562,10 +571,7 @@ async function tryMLAnswer() {
 }
 
 const riddleMlEventHandlers = Object.freeze({
-  [EVENT_START_HEALTH]: () => {
-    startRiddleMlHealthCheck();
-    return true;
-  },
+  [EVENT_START_HEALTH]: startRiddleMlHealthCheck,
   [EVENT_TRY_ANSWER]: tryMLAnswer,
 });
 

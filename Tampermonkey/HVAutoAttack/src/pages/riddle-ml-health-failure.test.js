@@ -138,6 +138,26 @@ describe("riddle ML health failure evidence", () => {
     });
   });
 
+  it("records health timer scheduling failures and allows a retry", async () => {
+    const { RIDDLE_ML_HEALTH_FAILURE_KEY, RiddleMlEvent, runRiddleMlAutomation } =
+      await loadSubject();
+    const setIntervalSpy = vi.spyOn(globalThis, "setInterval").mockImplementation(() => {
+      throw new Error("timer blocked");
+    });
+
+    expect(runRiddleMlAutomation({ type: RiddleMlEvent.START_HEALTH })).toBe(false);
+    expect(JSON.parse(sessionStorage.getItem(RIDDLE_ML_HEALTH_FAILURE_KEY))).toMatchObject({
+      capability: "riddleMlHealth",
+      stage: "startHealth",
+      reason: "timerScheduleFailed",
+      error: "timer blocked",
+    });
+
+    setIntervalSpy.mockRestore();
+    expect(runRiddleMlAutomation({ type: RiddleMlEvent.START_HEALTH })).toBe(true);
+    expect(vi.getTimerCount()).toBe(1);
+  });
+
   it("keeps health timer running when failure evidence and warning both fail", async () => {
     const { RIDDLE_ML_HEALTH_FAILURE_KEY, RiddleMlEvent, runRiddleMlAutomation } =
       await loadSubject();
