@@ -16839,15 +16839,22 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         return;
       }
       _mm.itemshop.current = mid;
+      const stop = function () {
+        _mm.itemshop.current = null;
+        return false;
+      };
 
       _mm.mail_log('[系统店代购]', true);
       _mm.mail_log('接收');
-      await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
+      if (!await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`)) {
+        _mm.mail_log('!!! Error: 接收失败');
+        return stop();
+      }
       _mm.mail_log('购买');
 
       const result = await $item.buy(items);
       if (!result) {
-        return;
+        return stop();
       }
       _mm.mail_log('...');
 
@@ -16863,7 +16870,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         body: '[系统店代购]',
         attach,
       };
-      $mail.request(mail);
+      await $mail.request(mail);
+      return stop();
     };
 
     // 代重铸服务(Dark Descent)整链 2026-06-10 退化删除: 依赖死端点 ?s=Forge&ss=fo + ?s=Character&ss=in(取token)
