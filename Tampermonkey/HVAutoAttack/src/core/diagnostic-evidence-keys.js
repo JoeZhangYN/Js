@@ -59,6 +59,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   HVUT_CONFIG_STORAGE_FAILURE: "HVAA:lastHvutConfigStorageFailure",
   HVUT_CONFIG_PARSE_FAILURE: "HVAA:lastHvutConfigParseFailure",
   HVUT_ITEM_SHOP_PARSE_FAILURE: "HVAA:lastHvutItemShopParseFailure",
+  HVUT_TOP_LEVEL_PARSE_FAILURE: "HVAA:lastHvutTopLevelParseFailure",
   HVUT_ABILITY_PARSE_FAILURE: "HVAA:lastHvutAbilityParseFailure",
   HVUT_TRAINING_NOTIFICATION_FAILURE: "HVAA:lastHvutTrainingNotificationFailure",
   HVUT_MOOGLEMAIL_PARSE_FAILURE: "HVAA:lastHvutMoogleMailParseFailure",
@@ -70,9 +71,7 @@ export const DiagnosticEvidenceKey = Object.freeze({
   LOTTERY_NOTIFICATION_FAILURE: "HVAA:lastLotteryNotificationFailure",
 });
 
-function source(name, key) {
-  return Object.freeze({ name, key });
-}
+function source(name, key) { return Object.freeze({ name, key }); }
 
 export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("navigationAudit", DiagnosticEvidenceKey.NAVIGATION_AUDIT),
@@ -135,6 +134,7 @@ export const DIAGNOSTIC_EVIDENCE_SOURCES = Object.freeze([
   source("hvutConfigStorageFailure", DiagnosticEvidenceKey.HVUT_CONFIG_STORAGE_FAILURE),
   source("hvutConfigParseFailure", DiagnosticEvidenceKey.HVUT_CONFIG_PARSE_FAILURE),
   source("hvutItemShopParseFailure", DiagnosticEvidenceKey.HVUT_ITEM_SHOP_PARSE_FAILURE),
+  source("hvutTopLevelParseFailure", DiagnosticEvidenceKey.HVUT_TOP_LEVEL_PARSE_FAILURE),
   source("hvutAbilityParseFailure", DiagnosticEvidenceKey.HVUT_ABILITY_PARSE_FAILURE),
   source("hvutTrainingNotificationFailure", DiagnosticEvidenceKey.HVUT_TRAINING_NOTIFICATION_FAILURE),
   source("hvutMoogleMailParseFailure", DiagnosticEvidenceKey.HVUT_MOOGLEMAIL_PARSE_FAILURE),

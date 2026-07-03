@@ -39,6 +39,24 @@ try {
 const codeLines = stripComments(src).split(/\r?\n/);
 
 const violations = [];
+if (!src.includes("var record_hvut_top_level_parse_failure = function (stage, detail) {")) {
+  violations.push({ line: 1, what: "缺少 HVUT 顶部等级解析失败证据入口" });
+}
+if (!src.includes("sessionStorage.setItem('HVAA:lastHvutTopLevelParseFailure', JSON.stringify(evidence));")) {
+  violations.push({ line: 1, what: "顶部等级解析失败证据未持久化" });
+}
+if (!src.includes("var parse_hvut_top_level_progress = function (text, stage) {")) {
+  violations.push({ line: 1, what: "缺少顶部等级进度解析入口" });
+}
+if (!src.includes("const progress = parse_hvut_top_level_progress($id('level_details')?.textContent, 'topLevelDetails');")) {
+  violations.push({ line: 1, what: "level_details 未走顶部等级进度解析入口" });
+}
+if (!src.includes("if (progress !== null) {")) {
+  violations.push({ line: 1, what: "顶部等级进度解析失败时必须跳过子菜单渲染" });
+}
+if (/level_details'\)\.textContent\);\n\s*const exp = parseInt\(exec\[1\]/.test(src)) {
+  violations.push({ line: 1, what: "顶部等级进度不得保留裸 exec[1] 解析路径" });
+}
 // 单一来源清单：TOP_MENU_DEFAULT_LINKS = [ … ] 单行字面量（topMenuLinks 用户设置 2026-06-10 退化, 清单收敛 L1 常量）。
 const ARR_RE = /TOP_MENU_DEFAULT_LINKS\s*=\s*\[([^\]]*)\]/;
 // 渲染兜底 push：links.push('…') 字符串实参（topMenu 渲染唯一的 links 变量，全文件仅两处）。

@@ -104,6 +104,31 @@ try {
     }
     return { name: name, id: parseInt(match[1]), stock: parseInt(match[2]), price: parseInt(match[3]) };
   };
+  var record_hvut_top_level_parse_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutTopLevelParse', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutTopLevelParseFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // HVUT top level parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVAA] HVUT top level parse failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT top level parse fallback.
+    }
+    return null;
+  };
+  var parse_hvut_top_level_progress = function (text, stage) {
+    var match = /([0-9,]+) \/ ([0-9,]+)\s*Next: ([0-9,]+)/.exec(text || '');
+    if (!match) {
+      return record_hvut_top_level_parse_failure(stage, { text: text || '' });
+    }
+    return {
+      exp: parseInt(match[1].replace(/,/g, '')),
+      up: parseInt(match[2].replace(/,/g, '')),
+      next: parseInt(match[3].replace(/,/g, '')),
+    };
+  };
   var record_hvut_ability_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutAbilityParse', stage: stage, detail: detail || {} };
     try {
@@ -2018,19 +2043,19 @@ const bindTop = function (top, ctx) {
     }
 
     if (ctx.player().level !== 500) {
-      const exec = /([0-9,]+) \/ ([0-9,]+)\s*Next: ([0-9,]+)/.exec($id('level_details').textContent);
-      const exp = parseInt(exec[1].replace(/,/g, ''));
-      const up = parseInt(exec[2].replace(/,/g, ''));
-      const next = parseInt(exec[3].replace(/,/g, ''));
-      const level_start = Math.round(Math.pow(ctx.player().level + 3, Math.pow(2.850263212287058, 1 + ctx.player().level / 1000)));
-      const level_exp = exp - level_start;
-      const level_up = up - level_start;
-      const pct = ((level_exp / level_up) * 100).toFixed(2);
-      const level_sub = $element('div', top.node.level, ['.hvut-top-sub']);
-      $element('p', level_sub, `累计经验: ${exp.toLocaleString()} / ${up.toLocaleString()}`);
-      $element('p', level_sub, `升级还需: ${next.toLocaleString()}`);
-      $element('p', level_sub, `当前等级: ${level_exp.toLocaleString()} / ${level_up.toLocaleString()} (${pct}%)`);
-      $element('div', level_sub, ['.hvut-top-exp', `/<div style="width: ${pct}%;"></div>`]);
+      const progress = parse_hvut_top_level_progress($id('level_details')?.textContent, 'topLevelDetails');
+      if (progress !== null) {
+        const { exp, up, next } = progress;
+        const level_start = Math.round(Math.pow(ctx.player().level + 3, Math.pow(2.850263212287058, 1 + ctx.player().level / 1000)));
+        const level_exp = exp - level_start;
+        const level_up = up - level_start;
+        const pct = ((level_exp / level_up) * 100).toFixed(2);
+        const level_sub = $element('div', top.node.level, ['.hvut-top-sub']);
+        $element('p', level_sub, `累计经验: ${exp.toLocaleString()} / ${up.toLocaleString()}`);
+        $element('p', level_sub, `升级还需: ${next.toLocaleString()}`);
+        $element('p', level_sub, `当前等级: ${level_exp.toLocaleString()} / ${level_up.toLocaleString()} (${pct}%)`);
+        $element('div', level_sub, ['.hvut-top-exp', `/<div style="width: ${pct}%;"></div>`]);
+      }
     }
 
     const server_sub = $element('div', top.node.server, ['.hvut-top-sub hvut-top-server']);
