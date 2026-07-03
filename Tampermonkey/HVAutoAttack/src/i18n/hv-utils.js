@@ -250,6 +250,22 @@ try {
     var match = /Cost: (\d+) Chaos Token/.exec(text || '');
     return match ? parseInt(match[1]) : record_hvut_monster_lab_parse_failure(stage, { text: text || '' });
   };
+  var parse_hvut_monster_lab_main_surface = function (div, stage) {
+    var nameNode = div?.children?.[1];
+    var plNode = div?.children?.[2];
+    var classNode = div?.children?.[3];
+    var hungerdiv = div?.children?.[4];
+    var moralediv = div?.children?.[5];
+    var hungerbar = hungerdiv?.firstElementChild?.firstElementChild;
+    var moralebar = moralediv?.firstElementChild?.firstElementChild;
+    var pl = parseInt((plNode?.textContent || '').slice(4));
+    var hunger = parseInt(hungerbar?.style?.width) * 200;
+    var morale = parseInt(moralebar?.style?.width) * 200;
+    if (!nameNode || !plNode || !classNode || !hungerdiv || !moralediv || !hungerbar || !moralebar || !Number.isFinite(pl) || !Number.isFinite(hunger) || !Number.isFinite(morale)) {
+      return record_hvut_monster_lab_parse_failure(stage, { reason: 'monsterMainSurfaceMissing', text: div?.textContent || '' });
+    }
+    return { name: nameNode.textContent, className: classNode.textContent, pl: pl, plNode: plNode, hungerdiv: hungerdiv, moralediv: moralediv, hungerbar: hungerbar, moralebar: moralebar, hunger: hunger, morale: morale };
+  };
   var record_hvut_player_state_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutPlayerStateParse', stage: stage, detail: detail || {} };
     try {
@@ -7474,9 +7490,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       },
       parse: function () {
         const now = Date.now();
+        let parseFailed = false;
         _ml.mobs[-1] = { log: { date: now, gifts: (new Array(54)).fill(0) }, node: {} };
 
         $qsa('#slot_pane > div').forEach((div, i) => {
+          if (parseFailed) return;
           const index = i + 1;
           if (div.getAttribute('onclick').includes('&create=new')) {
             _ml.log[index] = null;
@@ -7505,10 +7523,15 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           const mob = { index, log, status: -1, pa: [], er: [], ct: [], node: { div: div } };
           _ml.mobs[mob.index] = mob;
 
-          mob.name = div.children[1].textContent;
-          mob.class = div.children[3].textContent;
-          mob.pl = parseInt(div.children[2].textContent.slice(4));
-          div.children[2].textContent = mob.pl;
+          const surface = parse_hvut_monster_lab_main_surface(div, 'mainMonsterSurface');
+          if (surface === null) {
+            parseFailed = true;
+            return;
+          }
+          mob.name = surface.name;
+          mob.class = surface.className;
+          mob.pl = surface.pl;
+          surface.plNode.textContent = mob.pl;
           if (mob.pl !== mob.log.pl) {
             mob.update_needed = true;
           }
@@ -7522,17 +7545,17 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
             mob.ct[i] = { value: log.ct[i][0], to: 0, max: log.ct[i][2] };
           }
 
-          const hungerdiv = div.children[4];
-          const moralediv = div.children[5];
+          const hungerdiv = surface.hungerdiv;
+          const moralediv = surface.moralediv;
           hungerdiv.dataset.action = 'hunger';
           hungerdiv.dataset.index = index;
           moralediv.dataset.action = 'morale';
           moralediv.dataset.index = index;
 
-          mob.node.hungerbar = hungerdiv.firstElementChild.firstElementChild;
-          mob.node.moralebar = moralediv.firstElementChild.firstElementChild;
-          mob.hunger = parseInt(mob.node.hungerbar.style.width) * 200;
-          mob.morale = parseInt(mob.node.moralebar.style.width) * 200;
+          mob.node.hungerbar = surface.hungerbar;
+          mob.node.moralebar = surface.moralebar;
+          mob.hunger = surface.hunger;
+          mob.morale = surface.morale;
           mob.node.hunger = $element('div', hungerdiv.firstElementChild, [mob.hunger, '.hvut-ml-feed']);
           mob.node.morale = $element('div', moralediv.firstElementChild, [mob.morale, '.hvut-ml-feed']);
           mob.node.wins = $element('div', div, ['.hvut-ml-wins', { dataset: { action: 'update', index } }]);
@@ -7567,6 +7590,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
           mob.gifts = mob.log.gifts.reduce((s, e) => (s + e), 0);
           mob.node.gifts.textContent = mob.gifts;
         });
+        if (parseFailed) return false;
 
         if (!$config.set('ml_log', _ml.log)) {
           alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
@@ -13931,10 +13955,12 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
     _ml.mobs[-1] = { log: { date: _ml.now, gifts: (new Array(54)).fill(0) }, node: {} };
 
-    $qsa('#slot_pane > div').forEach((div, i) => {
-      const index = i + 1;
-      if (div.getAttribute('onclick').includes('&create=new')) {
-        _ml.log[index] = null;
+  let parseFailed = false;
+  $qsa('#slot_pane > div').forEach((div, i) => {
+    if (parseFailed) return;
+    const index = i + 1;
+    if (div.getAttribute('onclick').includes('&create=new')) {
+      _ml.log[index] = null;
         return;
       }
 
@@ -13957,13 +13983,18 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.mobs[-1].log.date = log.date;
       }
 
-      const mob = { index, log, status: -1, pa: [], er: [], ct: [], node: { div: div } };
-      _ml.mobs[mob.index] = mob;
+    const mob = { index, log, status: -1, pa: [], er: [], ct: [], node: { div: div } };
+    _ml.mobs[mob.index] = mob;
 
-      mob.name = div.children[1].textContent;
-      mob.class = div.children[3].textContent;
-      mob.pl = parseInt(div.children[2].textContent.slice(4));
-      div.children[2].textContent = mob.pl;
+    const surface = parse_hvut_monster_lab_main_surface(div, 'legacyMainMonsterSurface');
+    if (surface === null) {
+      parseFailed = true;
+      return;
+    }
+    mob.name = surface.name;
+    mob.class = surface.className;
+    mob.pl = surface.pl;
+    surface.plNode.textContent = mob.pl;
       if (mob.pl !== mob.log.pl) {
         mob.update_needed = true;
       }
@@ -13977,17 +14008,17 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         mob.ct[i] = { value: log.ct[i][0], to: 0, max: log.ct[i][2] };
       }
 
-      const hungerdiv = div.children[4];
-      const moralediv = div.children[5];
-      hungerdiv.dataset.action = 'hunger';
-      hungerdiv.dataset.index = index;
-      moralediv.dataset.action = '士气';
-      moralediv.dataset.index = index;
+    const hungerdiv = surface.hungerdiv;
+    const moralediv = surface.moralediv;
+    hungerdiv.dataset.action = 'hunger';
+    hungerdiv.dataset.index = index;
+    moralediv.dataset.action = '士气';
+    moralediv.dataset.index = index;
 
-      mob.node.hungerbar = hungerdiv.firstElementChild.firstElementChild;
-      mob.node.moralebar = moralediv.firstElementChild.firstElementChild;
-      mob.hunger = parseInt(mob.node.hungerbar.style.width) * 200;
-      mob.morale = parseInt(mob.node.moralebar.style.width) * 200;
+    mob.node.hungerbar = surface.hungerbar;
+    mob.node.moralebar = surface.moralebar;
+    mob.hunger = surface.hunger;
+    mob.morale = surface.morale;
       mob.node.hunger = $element('div', hungerdiv.firstElementChild, [mob.hunger, '.hvut-ml-feed']);
       mob.node.morale = $element('div', moralediv.firstElementChild, [mob.morale, '.hvut-ml-feed']);
       mob.node.wins = $element('div', div, ['.hvut-ml-wins', { dataset: { action: 'update', index } }]);
@@ -14019,11 +14050,15 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
       for (let i = 0; i < 54; i++) {
         _ml.mobs[-1].log.gifts[i] += mob.log.gifts[i];
       }
-      mob.gifts = mob.log.gifts.reduce((s, e) => (s + e), 0);
-      mob.node.gifts.textContent = mob.gifts;
-    });
+    mob.gifts = mob.log.gifts.reduce((s, e) => (s + e), 0);
+    mob.node.gifts.textContent = mob.gifts;
+  });
+  if (parseFailed) {
+    alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+    return false;
+  }
 
-    if (!$config.set('ml_log', _ml.log)) {
+  if (!$config.set('ml_log', _ml.log)) {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
     }

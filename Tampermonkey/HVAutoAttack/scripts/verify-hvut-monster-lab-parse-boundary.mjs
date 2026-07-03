@@ -35,6 +35,9 @@ for (const required of [
   "sessionStorage.setItem('HVAA:lastHvutMonsterLabParseFailure', JSON.stringify(evidence));",
   "var parse_hvut_monster_lab_chaos_token_cost = function (text, stage) {",
   "record_hvut_monster_lab_parse_failure(stage, { text: text || '' });",
+  "var parse_hvut_monster_lab_main_surface = function (div, stage) {",
+  "record_hvut_monster_lab_parse_failure(stage, { reason: 'monsterMainSurfaceMissing'",
+  "return { name: nameNode.textContent, className: classNode.textContent, pl: pl, plNode: plNode",
 ]) {
   requirePart("Monster Lab parse helper", helperRegion, required);
 }
@@ -55,6 +58,14 @@ for (const [index, body] of initBodies.entries()) {
 
 for (const forbidden of [
   "const ct_next = parseInt(/Cost: (\\d+) Chaos Token/.exec($id('monster_actions').textContent)[1]);",
+  "mob.name = div.children[1].textContent;",
+  "mob.class = div.children[3].textContent;",
+  "mob.pl = parseInt(div.children[2].textContent.slice(4));",
+  "div.children[2].textContent = mob.pl;",
+  "const hungerdiv = div.children[4];",
+  "const moralediv = div.children[5];",
+  "hungerdiv.firstElementChild.firstElementChild",
+  "moralediv.firstElementChild.firstElementChild",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked Monster Lab parse path: ${forbidden}`);

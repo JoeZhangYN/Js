@@ -22,6 +22,11 @@ if (!initTail) violations.push(`${target} must keep Monster Lab main parse calle
 if (!inlineInit) violations.push(`${target} must keep Monster Lab inline main initialization visible`);
 
 for (const part of [
+  "let parseFailed = false;",
+  "const surface = parse_hvut_monster_lab_main_surface(div, 'mainMonsterSurface');",
+  "if (surface === null) {",
+  "parseFailed = true;",
+  "if (parseFailed) return false;",
   "if (!$config.set('ml_log', _ml.log)) {",
   "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
   "return false;",
@@ -39,6 +44,11 @@ for (const part of [
 }
 
 for (const part of [
+  "let parseFailed = false;",
+  "const surface = parse_hvut_monster_lab_main_surface(div, 'legacyMainMonsterSurface');",
+  "if (surface === null) {",
+  "parseFailed = true;",
+  "if (parseFailed) {",
   "if (!$config.set('ml_log', _ml.log)) {",
   "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
   "return false;",
@@ -54,6 +64,9 @@ for (const [label, value] of [
 ]) {
   if (/\$config\.set\('ml_log', _ml\.log\);\n\s*(?:\}|(?:\$id\('monster_list'\)))/.test(value)) {
     violations.push(`${target} ${label} must not continue after unchecked ml_log write`);
+  }
+  if (/mob\.name = div\.children\[1\]\.textContent|hungerdiv\.firstElementChild\.firstElementChild/.test(value)) {
+    violations.push(`${target} ${label} must not read Monster Lab roster DOM outside shared parser`);
   }
 }
 
