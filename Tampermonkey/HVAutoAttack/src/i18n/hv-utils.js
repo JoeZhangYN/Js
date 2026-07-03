@@ -519,6 +519,18 @@ try {
       ? seconds * 1000
       : record_hvut_training_notification_failure(stage, { sourceType: typeof source });
   };
+  var parse_hvut_training_row = function (row, stage) {
+    var nameCell = row?.cells?.[0];
+    var name = nameCell?.textContent?.trim() || '';
+    var enName = nameCell ? (resolveEn(nameCell, 'trains') ?? name) : '';
+    var time = parseFloat(row?.cells?.[3]?.textContent);
+    var level = parseInt(row?.cells?.[4]?.textContent);
+    var max = parseInt(row?.cells?.[6]?.textContent);
+    if (!enName || !Number.isFinite(time) || !Number.isFinite(level) || !Number.isFinite(max)) {
+      return record_hvut_training_notification_failure(stage, { name: name, text: row?.textContent || '' });
+    }
+    return { name: name, enName: enName, time: time, level: level, max: max };
+  };
   var record_hvut_mooglemail_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutMoogleMailParse', stage: stage, detail: detail || {} };
     try {
@@ -6744,17 +6756,19 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
 
   _tr.parse_table = function () {
     let total_spent = 0;
+    let parseFailed = false;
     Array.from($id('train_table').rows).forEach((tr, i) => {
       if (i === 0) {
         $element('th', tr);
         $element('th', tr, ['/<div class="fc2 fac fcb"><div>Spent Credits</div></div>']);
         return;
       }
-      const name = tr.cells[0].textContent.trim();
-      const enName = resolveEn(tr.cells[0], 'trains') ?? name; // 英文逻辑 key(i18n 翻中文后); name 仅作显示
-      const time = parseFloat(tr.cells[3].textContent);
-      const level = parseInt(tr.cells[4].textContent);
-      const max = parseInt(tr.cells[6].textContent);
+      const row = parse_hvut_training_row(tr, 'trainingTableRow');
+      if (row === null) {
+        parseFailed = true;
+        return;
+      }
+      const { name, enName, time, level, max } = row;
       _tr.level[enName] = level; // tr_level 键英文(消费侧 $config.get('tr_level')['Assimilator'] 用英文读)
 
       const training = _tr.data[enName];
@@ -6778,6 +6792,7 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
       total_spent += spent;
       $element('td', tr, [`/<div class="fc4 far fcb"><div>${spent.toLocaleString()}</div></div>`]);
     });
+    if (parseFailed) return false;
     $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>Total ${total_spent.toLocaleString()}</div></div></td>`]);
     if (!$config.set('tr_level', _tr.level)) {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
@@ -13185,17 +13200,19 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
   }
 
   $id('train_table').addEventListener('click', _tr.click);
+  let parseFailed = false;
   Array.from($id('train_table').rows).forEach((tr, i) => {
     if (!i) {
       $element('th', tr);
       $element('th', tr, ['/<div class="fc2 fac fcb"><div>单项累计花费</div></div>']);
       return;
     }
-    const name = tr.cells[0].textContent.trim();
-    const enName = resolveEn(tr.cells[0], 'trains') ?? name; // 英文逻辑 key(i18n 翻中文后); name 仅作显示
-    const time = parseFloat(tr.cells[3].textContent);
-    const level = parseInt(tr.cells[4].textContent);
-    const max = parseInt(tr.cells[6].textContent);
+    const row = parse_hvut_training_row(tr, 'legacyTrainingTableRow');
+    if (row === null) {
+      parseFailed = true;
+      return;
+    }
+    const { name, enName, time, level, max } = row;
 
     _tr.level[enName] = level; // tr_level 键英文(消费侧 $config.get('tr_level')['Assimilator'] 用英文读)
 
@@ -13220,6 +13237,7 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
     _tr.spent += spent;
     $element('td', tr, [`/<div class="fc4 far fcb"><div>${spent.toLocaleString()}</div></div>`]);
   });
+  if (parseFailed) return false;
   $element('tr', $id('train_table').tBodies[0], [`/<td colspan="9"><div class="fc4 far fcb"><div>累计花费 ${_tr.spent.toLocaleString()}</div></div></td>`]);
 
   if (!$config.set('tr_level', _tr.level)) {

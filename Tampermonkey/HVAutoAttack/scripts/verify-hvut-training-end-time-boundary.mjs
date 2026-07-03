@@ -14,6 +14,8 @@ function requirePart(label, body, part) {
 
 const helperRegion =
   /var record_hvut_training_notification_failure = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(text)?.[0] || "";
+const modernTable =
+  /_tr\.parse_table = function \(\) \{[\s\S]*?\n  \};\n\n  _tr\.parse_progress/.exec(text)?.[0] || "";
 const modernProgress =
   /_tr\.parse_progress = function \(\) \{[\s\S]*?\n  \};\n\n  GM_addStyle/.exec(text)?.[0] || "";
 const bottomTraining =
@@ -23,6 +25,7 @@ const legacyTraining =
 
 for (const [label, body] of [
   ["training notification helper", helperRegion],
+  ["modern training table", modernTable],
   ["modern training progress", modernProgress],
   ["bottom training notification", bottomTraining],
   ["legacy training notification", legacyTraining],
@@ -34,8 +37,20 @@ for (const required of [
   "sessionStorage.setItem('HVAA:lastHvutTrainingNotificationFailure', JSON.stringify(evidence));",
   "var parse_hvut_training_end_time = function (source, stage) {",
   "record_hvut_training_notification_failure(stage, { sourceType: typeof source });",
+  "var parse_hvut_training_row = function (row, stage) {",
+  "return record_hvut_training_notification_failure(stage, { name: name, text: row?.textContent || '' });",
 ]) {
   requirePart("training notification helper", helperRegion, required);
+}
+
+for (const required of [
+  "let parseFailed = false;",
+  "const row = parse_hvut_training_row(tr, 'trainingTableRow');",
+  "parseFailed = true;",
+  "const { name, enName, time, level, max } = row;",
+  "if (parseFailed) return false;",
+]) {
+  requirePart("modern training table", modernTable, required);
 }
 
 for (const required of [
@@ -68,10 +83,24 @@ for (const required of [
 ]) {
   requirePart("legacy training notification", legacyTraining, required);
 }
+for (const required of [
+  "let parseFailed = false;",
+  "const row = parse_hvut_training_row(tr, 'legacyTrainingTableRow');",
+  "parseFailed = true;",
+  "const { name, enName, time, level, max } = row;",
+  "if (parseFailed) return false;",
+]) {
+  requirePart("legacy training notification", legacyTraining, required);
+}
 
 for (const forbidden of [
   "json.current_end = /var end_time = (\\d+);/.exec(html)[1] * 1000;",
   "_tr.json.current_end = _window.end_time * 1000;",
+  "const name = tr.cells[0].textContent.trim();",
+  "const enName = resolveEn(tr.cells[0], 'trains') ?? name;",
+  "const time = parseFloat(tr.cells[3].textContent);",
+  "const level = parseInt(tr.cells[4].textContent);",
+  "const max = parseInt(tr.cells[6].textContent);",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked training end-time path: ${forbidden}`);
