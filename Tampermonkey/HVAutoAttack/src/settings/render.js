@@ -295,6 +295,25 @@ function clearSettingsOption() {
   return false;
 }
 
+function applySettingsLanguage(value) {
+  gE(".hvAA-LangStyle").textContent = `l${value}{display:inline!important;}`;
+  if (/^[01]$/.test(value)) gE(".hvAA-LangStyle").textContent += "l01{display:inline!important;}";
+  g("lang", value);
+  setLang(value);
+}
+
+function writeSettingsLanguage(value, select) {
+  const previous = String(g("lang") ?? readOptionField("lang", "0") ?? "0");
+  const written = runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "lang", value });
+  if (!written) {
+    if (select) select.value = previous;
+    _alert(0, "语言保存失败", "語言保存失敗", "Failed to save language");
+    return false;
+  }
+  applySettingsLanguage(value);
+  return true;
+}
+
 function readSettingsInputValue(name, className) {
   const directValue = readOptionField(name, undefined);
   if (directValue !== undefined) return directValue;
@@ -658,16 +677,10 @@ export function optionBox() {
     .replace(/{{(.*?)}}/g, '<div class="customize" name="$1"></div>');
   // 绑定事件
   gE('select[name="lang"]', optionBox).onchange = function () {
-    // 选择语言
-    gE(".hvAA-LangStyle").textContent = `l${this.value}{display:inline!important;}`;
-    if (/^[01]$/.test(this.value))
-      gE(".hvAA-LangStyle").textContent += "l01{display:inline!important;}";
-    g("lang", this.value);
     // 持久化 lang 到 option：统一 option 事件入口（内部 getValue fallback 取完整 option），
     // 避免在 option 未装填的页残缺 {lang} 落盘覆盖完整配置（现象①持久化失效根因）。
-    runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "lang", value: this.value });
     // HV 原生汉化(equip/interface) 即时按新 lang 重渲染显示态（0简/1繁/2英），无需重载
-    setLang(this.value);
+    writeSettingsLanguage(this.value, this);
   };
   // UI 入口整合：HVAA 面板内入口打开 hv-utils config 面板。?. 兜底：桥未就绪/非 HV 页时静默不崩。
   const openHVUT = gE(".hvAAOpenHVUT", optionBox);

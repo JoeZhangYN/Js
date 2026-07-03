@@ -127,21 +127,40 @@ for (const required of [
   "const written = runOptionAutomation({ type: OptionEvent.WRITE, option });",
   "function clearSettingsOption() {",
   "const cleared = runOptionAutomation({ type: OptionEvent.CLEAR });",
+  "function writeSettingsLanguage(value, select) {",
+  'const written = runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "lang", value });',
   'if (!writeSettingsOption(parsed.option)) return;',
   "if (!writeSettingsOption(_option)) return;",
   'Failed to save configuration',
   'Failed to reset configuration',
+  'Failed to save language',
 ]) {
   if (!settingsText.includes(required)) {
     violations.push(`${settingsRender.replaceAll("\\", "/")} must stop settings success flow when option write fails`);
   }
 }
+const settingsLanguageBlock =
+  /\/\/ 绑定事件[\s\S]*?gE\(["']select\[name="lang"\]["'][\s\S]*?const openHVUT =/.exec(
+    settingsText
+  )?.[0] || "";
 const settingsImportBlock =
   /gE\(["']\.hvAAImport["'][\s\S]*?gE\(["']\.hvAAReset["']/.exec(settingsText)?.[0] || "";
 const settingsApplyBlock =
   /gE\(["']\.hvAAApply["'][\s\S]*?gE\(["']\.hvAACancel["']/.exec(settingsText)?.[0] || "";
 const settingsResetBlock =
   /gE\(["']\.hvAAReset["'][\s\S]*?gE\(["']\.hvAAApply["']/.exec(settingsText)?.[0] || "";
+if (!settingsLanguageBlock.includes("writeSettingsLanguage(this.value, this);")) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} settings language must write through writeSettingsLanguage`);
+}
+for (const forbidden of [
+  /runOptionAutomation\(\{\s*type:\s*OptionEvent\.WRITE_FIELD\b/,
+  /\bg\(["']lang["'],\s*this\.value\)/,
+  /\bsetLang\(this\.value\)/,
+]) {
+  if (forbidden.test(settingsLanguageBlock)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} settings language must not change display state before persistence succeeds`);
+  }
+}
 for (const [label, block] of [
   ["import", settingsImportBlock],
   ["apply", settingsApplyBlock],
