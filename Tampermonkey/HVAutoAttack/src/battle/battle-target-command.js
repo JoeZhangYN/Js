@@ -73,7 +73,7 @@ function clickSkillThenTarget(skillId, targetId) {
 
 function runSkillCommand(command, skillId, targetId, event) {
   try {
-    return { acted: Boolean(runBattleSkillCommand(event)), threw: false };
+    return { acted: targetSkillCommandActed(runBattleSkillCommand(event)), threw: false };
   } catch (error) {
     recordCommandResult(command, "rejected", "skillCommandThrew", {
       type: BattleSkillCommandEvent.CLICK_READY,
@@ -83,6 +83,11 @@ function runSkillCommand(command, skillId, targetId, event) {
     });
     return { acted: false, threw: true };
   }
+}
+
+function targetSkillCommandActed(result) {
+  if (result?.kind === "failed") return false;
+  return Boolean(result);
 }
 
 function trySkillThenTarget(skillId, targetId, afterSkillClick, targetRequiresSkill = false) {

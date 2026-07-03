@@ -10,6 +10,9 @@ const liveTargetTest = path.normalize("src/battle/battle-target-command-live-tar
 const clickFailureTest = path.normalize("src/battle/battle-target-command-click-failure.test.js");
 const readFailureTest = path.normalize("src/battle/battle-target-command-read-failure.test.js");
 const skillFailureTest = path.normalize("src/battle/battle-target-command-skill-failure.test.js");
+const typedSkillFailureTest = path.normalize(
+  "src/battle/battle-target-command-typed-skill-failure.test.js"
+);
 const violations = [];
 
 function rel(file) {
@@ -69,6 +72,8 @@ requireText(owner, [
   "readLiveTarget",
   "targetReadDetail",
   "runSkillCommand",
+  "targetSkillCommandActed",
+  'result?.kind === "failed"',
   "targetCommandRejected",
   "unknownTargetCommand",
   "event?.type ?? null",
@@ -103,7 +108,16 @@ if (/gE\(targetSelector\(targetId\)\)/.test(clickTargetBody)) {
 if (/if\s*\(\s*event\.type\s*===\s*EVENT_/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must dispatch events through handler table`);
 }
-requireText(ownerTest, ["records missing target command events as not acted", "eventType: null"]);
+requireText(ownerTest, [
+  "records missing target command events as not acted",
+  "eventType: null",
+]);
+requireText(typedSkillFailureTest, [
+  "does not click target when required skill command returns typed failure",
+  "records typed failed optional skill commands without claiming the skill clicked",
+  'kind: "failed"',
+  "clickedSkill: false",
+]);
 requireText(clickFailureTest, ["records target click failures as not acted", "clickFailed"]);
 requireText(readFailureTest, [
   "records target selector read failures as not acted",
