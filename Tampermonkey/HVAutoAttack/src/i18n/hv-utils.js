@@ -3081,17 +3081,17 @@ const bindPersona = function (persona, ctx) {
     const json = persona.json;
     return json[json.pset][json.eset][name];
   };
+  persona.read_equipset_row = function (row) {
+    const slot = row.children?.[0]?.textContent || '';
+    const equipNode = row.children?.[1];
+    if (!equipNode) return { slot };
+    const eq = ctx.parseEquipElem(equipNode);
+    if (!eq.info) return { slot };
+    const { category, name, customname, eid, key } = eq.info;
+    return { slot, category, name, customname, eid, key };
+  };
   persona.save_equipset = function (doc) {
-    const equipset = $qsa('.eqb', doc).map((d) => {
-      const eq = ctx.parseEquipElem(d.children[1]);
-      const slot = d.children[0].textContent;
-      if (eq.info) {
-        const { category, name, customname, eid, key } = eq.info;
-        return { slot, category, name, customname, eid, key };
-      } else {
-        return { slot };
-      }
-    });
+    const equipset = $qsa('.eqb', doc).map((d) => persona.read_equipset_row(d));
     if (!ctx.config.set('equipset', equipset)) {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;

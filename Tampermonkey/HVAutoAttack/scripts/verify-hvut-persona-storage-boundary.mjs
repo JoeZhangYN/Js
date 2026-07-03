@@ -22,6 +22,7 @@ const changeE = body(/persona\.change_e = async function \(eset\) \{[\s\S]*?\n  
 const loadDynjs = body(/persona\.load_dynjs = async function \(doc\) \{[\s\S]*?\n  \};\n  \/\//, "persona.load_dynjs");
 const parseStats = body(/persona\.parse_stats_pane = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.set_value/, "persona.parse_stats_pane");
 const setValue = body(/persona\.set_value = function \(name, value\) \{[\s\S]*?\n  \};\n  persona\.get_value/, "persona.set_value");
+const readEquipsetRow = body(/persona\.read_equipset_row = function \(row\) \{[\s\S]*?\n  \};\n  persona\.save_equipset/, "persona.read_equipset_row");
 const saveEquipset = body(/persona\.save_equipset = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_warning/, "persona.save_equipset");
 
 requireParts("persona.change_e", changeE, [
@@ -50,6 +51,12 @@ for (const [label, value, key] of [
 }
 
 requireParts("persona.set_value", setValue, ["return true;"]);
+requireParts("persona.read_equipset_row", readEquipsetRow, [
+  "const slot = row.children?.[0]?.textContent || '';",
+  "const equipNode = row.children?.[1];",
+  "if (!equipNode) return { slot };",
+  "return { slot, category, name, customname, eid, key };",
+]);
 requireParts("persona.save_equipset", saveEquipset, ["return true;"]);
 
 if (parseStats.includes("ctx.config.set('ch_style', ch_style);\n    return stats_pane;")) {
@@ -60,6 +67,14 @@ if (setValue.includes("ctx.config.set('persona', json);\n  };")) {
 }
 if (saveEquipset.includes("ctx.config.set('equipset', equipset);\n  };")) {
   violations.push(`${target} persona.save_equipset must not ignore equipset write result`);
+}
+for (const forbidden of [
+  "ctx.parseEquipElem(d.children[1])",
+  "d.children[0].textContent",
+]) {
+  if (saveEquipset.includes(forbidden)) {
+    violations.push(`${target} persona.save_equipset must not parse raw equipset row children: ${forbidden}`);
+  }
 }
 
 if (violations.length) {
