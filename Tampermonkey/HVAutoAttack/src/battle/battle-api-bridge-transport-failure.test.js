@@ -73,4 +73,43 @@ describe("battle API bridge transport failure evidence", () => {
       detail: { reason: "apiTransportFailed", step: "send", error: "send failed" },
     });
   });
+
+  it("records delayed send scheduling failures after the start event is clicked", () => {
+    installApiCall();
+    window.sessionStorage.delay2 = "10";
+    document.getElementById("eventStart").click = vi.fn();
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(() => {
+      throw new Error("timer blocked");
+    });
+    const xhr = { open: vi.fn(), setRequestHeader: vi.fn(), send: vi.fn() };
+
+    expect(window.__testApiCall(xhr, { type: "battle", method: "attack" }, vi.fn())).toBe(false);
+
+    expect(document.getElementById("eventStart").click).toHaveBeenCalledTimes(1);
+    expect(xhr.send).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleApiBridge"))).toMatchObject({
+      phase: "transport",
+      result: "rejected",
+      reason: "apiTransportFailed",
+      detail: { reason: "apiTransportFailed", step: "scheduleDelayedSend", error: "timer blocked" },
+    });
+    setTimeoutSpy.mockRestore();
+  });
+
+  it("sends delayed API requests after successful scheduling", () => {
+    vi.useFakeTimers();
+    installApiCall();
+    window.sessionStorage.delay2 = "10";
+    document.getElementById("eventStart").click = vi.fn();
+    const xhr = { open: vi.fn(), setRequestHeader: vi.fn(), send: vi.fn() };
+
+    expect(window.__testApiCall(xhr, { type: "battle", method: "attack" }, vi.fn())).toBe(true);
+    expect(xhr.send).not.toHaveBeenCalled();
+
+    vi.runOnlyPendingTimers();
+
+    expect(document.getElementById("eventStart").click).toHaveBeenCalledTimes(1);
+    expect(xhr.send).toHaveBeenCalledWith(JSON.stringify({ type: "battle", method: "attack" }));
+    vi.useRealTimers();
+  });
 });

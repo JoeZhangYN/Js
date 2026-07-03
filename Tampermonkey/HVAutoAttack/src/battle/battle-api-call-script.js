@@ -4,7 +4,8 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
   return `api_call = ${function (b, a, d) {
     const delay = window.sessionStorage.__HVAA_MAGIC_DELAY_SESSION_KEY__ * 1;
     const delay2 = window.sessionStorage.__HVAA_ACTION_DELAY_SESSION_KEY__ * 1;
-    const apiJsonUrl = typeof MAIN_URL !== "undefined" ? MAIN_URL + "json" : "__HVAA_MAIN_JSON_URL__";
+    const apiJsonUrl =
+      typeof MAIN_URL !== "undefined" ? MAIN_URL + "json" : "__HVAA_MAIN_JSON_URL__";
     const apiBridgeEvidenceKey = "__HVAA_BATTLE_API_BRIDGE_EVIDENCE_KEY__";
     function warnApiBridgeEvidence(evidence) {
       try {
@@ -15,7 +16,9 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
     }
     function warnCallbackFallbackBlocked() {
       try {
-        console.warn("[HVAA] battle API callback fallback reload blocked; navigation bridge missing");
+        console.warn(
+          "[HVAA] battle API callback fallback reload blocked; navigation bridge missing"
+        );
       } catch (_error) {
         // Callback fallback behavior must not depend on diagnostic console hooks.
       }
@@ -30,7 +33,10 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
         at: new Date().toISOString(),
       };
       try {
-        window.sessionStorage.setItem(apiBridgeEvidenceKey, JSON.stringify({ ...evidence, storageWriteOk: true }));
+        window.sessionStorage.setItem(
+          apiBridgeEvidenceKey,
+          JSON.stringify({ ...evidence, storageWriteOk: true })
+        );
       } catch (error) {
         evidence.storageWriteOk = false;
         evidence.storageWriteError = error && error.message ? error.message : String(error);
@@ -74,9 +80,19 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
     function sendApiRequest(step) {
       return runApiTransportStep(step, () => b.send(JSON.stringify(a)));
     }
+    function scheduleApiRequest(step, delayMs) {
+      return runApiTransportStep("scheduleDelayedSend", () => {
+        setTimeout(() => sendApiRequest(step), delayMs);
+      });
+    }
     window.info = a;
     if (!runApiTransportStep("open", () => b.open("POST", apiJsonUrl))) return false;
-    if (!runApiTransportStep("setRequestHeader", () => b.setRequestHeader("Content-Type", "application/json"))) return false;
+    if (
+      !runApiTransportStep("setRequestHeader", () =>
+        b.setRequestHeader("Content-Type", "application/json")
+      )
+    )
+      return false;
     b.withCredentials = true;
     b.onreadystatechange = function () {
       const callbackTarget =
@@ -109,14 +125,12 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
       if (delay <= 0) {
         return sendApiRequest("send");
       } else {
-        setTimeout(() => sendApiRequest("sendDelayed"), (delay * (Math.random() * 50 + 50)) / 100);
-        return true;
+        return scheduleApiRequest("sendDelayed", (delay * (Math.random() * 50 + 50)) / 100);
       }
     } else if (delay2 <= 0) {
       return sendApiRequest("send");
     } else {
-      setTimeout(() => sendApiRequest("sendDelayed"), (delay2 * (Math.random() * 50 + 50)) / 100);
-      return true;
+      return scheduleApiRequest("sendDelayed", (delay2 * (Math.random() * 50 + 50)) / 100);
     }
   }.toString()}`
     .replaceAll("__HVAA_MAIN_JSON_URL__", apiJsonUrl)

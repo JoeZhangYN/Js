@@ -118,6 +118,8 @@ const apiCallScriptText = requireText(apiCallScript, [
   "recordApiTransportFailure",
   "runApiTransportStep",
   "sendApiRequest",
+  "scheduleApiRequest",
+  "scheduleDelayedSend",
   "apiBridgeEvidenceKey",
   "apiTransportFailed",
   "eventNodeMissing",
@@ -204,9 +206,12 @@ requireText(evidenceWarningFailureTest, [
 requireText(transportFailureTest, [
   "records transport open failures before clicking the start event",
   "records transport send failures after the start event is clicked",
+  "records delayed send scheduling failures after the start event is clicked",
   "apiTransportFailed",
   "open failed",
   "send failed",
+  "timer blocked",
+  "scheduleDelayedSend",
 ]);
 const responseScriptText = requireText(responseScript, [
   "DiagnosticEvidenceKey",
@@ -359,10 +364,10 @@ const recoveryStateText = requireText(recoveryState, [
   "apiFailureKey",
   "apiFailureKeyParts",
   "apiFailureKeyError",
-  "keyFallback: \"unserializableApiFailure\"",
+  'keyFallback: "unserializableApiFailure"',
   "jsonSafeRecoveryState",
-  "\"[Circular]\"",
-  "typeof value === \"bigint\"",
+  '"[Circular]"',
+  'typeof value === "bigint"',
   "buildRecoveryState",
   "buildRejectedRecoveryState",
   "readRecoveryDiagnosticEvidence",
@@ -523,8 +528,9 @@ if (
 const apiBridgeRejectionBody =
   ownerText.match(/function rejectUnknownApiBridgeEvent\(event, deps\) \{[\s\S]*?\n\}/)?.[0] || "";
 const apiBridgeRejectionHelperBody =
-  ownerText.match(/function rejectApiBridgeEventSafely\(deps, injectedDetail, recoveryDetail\) \{[\s\S]*?\n\}/)?.[0] ||
-  "";
+  ownerText.match(
+    /function rejectApiBridgeEventSafely\(deps, injectedDetail, recoveryDetail\) \{[\s\S]*?\n\}/
+  )?.[0] || "";
 for (const required of [
   "rejectApiBridgeEventSafely(deps, event ?? null, { eventType: event?.type ?? null })",
   "BattleApiResponseRecoveryEvent.REJECTED_API_BRIDGE_EVENT",
@@ -577,7 +583,9 @@ if (
 }
 if (
   !apiCallScriptText.includes("function warnCallbackFallbackBlocked") ||
-  !apiCallScriptText.includes("Callback fallback behavior must not depend on diagnostic console hooks.") ||
+  !apiCallScriptText.includes(
+    "Callback fallback behavior must not depend on diagnostic console hooks."
+  ) ||
   !read(evidenceWarningFailureTest).includes("callback fallback rejected when warning hooks fail")
 ) {
   violations.push(
@@ -651,7 +659,9 @@ if (!responseScriptText.includes("recordBlockedRecovery")) {
 }
 if (
   !responseScriptText.includes("function warnBlockedRecovery") ||
-  !responseScriptText.includes("API response recovery must not depend on diagnostic console hooks.") ||
+  !responseScriptText.includes(
+    "API response recovery must not depend on diagnostic console hooks."
+  ) ||
   !read(responseScriptWarningFailureTest).includes("recovery storage and warning both fail")
 ) {
   violations.push(
