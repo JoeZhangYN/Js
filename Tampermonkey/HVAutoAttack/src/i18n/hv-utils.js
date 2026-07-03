@@ -747,6 +747,20 @@ try {
     }
     return null;
   };
+  var record_hvut_armory_submit_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutArmorySubmit', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutArmorySubmitFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Armory submit fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] Armory submit failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT Armory submit fallback.
+    }
+    return evidence;
+  };
   var parse_hvut_difficulty_from_level_readout = function (doc, stage) {
     var text = $id('level_readout', doc)?.textContent?.trim() || '';
     var match = /^(.+) Lv\.(\d+)/.exec(text);
@@ -4630,36 +4644,62 @@ const bindArmory = function (armory, ctx) {
       purchase: async function (equips) {
         const data = $armory.submit.data(equips);
         if (!data) {
-          return;
+          return false;
         }
-        const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=purchase', data);
+        let html;
+        try {
+          html = await $ajax.fetch('?s=Bazaar&ss=am&screen=purchase', data);
+        } catch (error) {
+          record_hvut_armory_submit_failure('purchaseRequest', { count: equips.length, error: error?.message || String(error) });
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         const doc = $doc(html);
         $armory.submit.message(doc);
         $armory.submit.remove(equips);
+        return true;
       },
       sell: async function (equips) {
         const data = $armory.submit.data(equips);
         if (!data) {
-          return;
+          return false;
         }
-        const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=sell', data);
+        let html;
+        try {
+          html = await $ajax.fetch('?s=Bazaar&ss=am&screen=sell', data);
+        } catch (error) {
+          record_hvut_armory_submit_failure('sellRequest', { count: equips.length, error: error?.message || String(error) });
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         const doc = $doc(html);
         $armory.submit.message(doc);
         $armory.submit.remove(equips);
+        return true;
       },
       salvage: async function (equips) {
         const data = $armory.submit.data(equips);
         if (!data) {
-          return;
+          return false;
         }
-        const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=salvage', data + '&sell_salvage=on');
+        let html;
+        try {
+          html = await $ajax.fetch('?s=Bazaar&ss=am&screen=salvage', data + '&sell_salvage=on');
+        } catch (error) {
+          record_hvut_armory_submit_failure('salvageRequest', { count: equips.length, error: error?.message || String(error) });
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         const doc = $doc(html);
         $armory.submit.message(doc);
         $armory.submit.remove(equips);
+        return true;
       },
       purchase_salvage: async function (equips) {
-        await $armory.submit.purchase(equips);
-        await $armory.submit.salvage(equips);
+        if (!await $armory.submit.purchase(equips)) {
+          return false;
+        }
+        return $armory.submit.salvage(equips);
       },
       selected: function (equips) {
         if (!equips) {

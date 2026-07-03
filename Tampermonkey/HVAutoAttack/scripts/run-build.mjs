@@ -36,6 +36,7 @@ const commands = [
   "node scripts/verify-hvut-shrine-reward-boundary.mjs",
   "node scripts/verify-hvut-shrine-item-boundary.mjs",
   "node scripts/verify-hvut-armory-integrate-boundary.mjs",
+  "node scripts/verify-hvut-armory-submit-boundary.mjs",
   "node scripts/verify-hvut-config-storage-boundary.mjs",
   "node scripts/verify-hvut-config-migration-boundary.mjs",
   "node scripts/verify-hvut-config-field-boundary.mjs",
