@@ -58,6 +58,10 @@ function recordRoundStart(phase, result, steps) {
   });
 }
 
+function isRoundStartContextReady(context) {
+  return Boolean(context) && !context.reason;
+}
+
 function startRound() {
   const steps = [];
   recordStep(
@@ -75,7 +79,12 @@ function startRound() {
   recordStep(steps, "readRoundStartLog", Boolean(roundStartLog));
   const { initializingText } = roundStartLog;
   const roundStartContext = recordRoundStartContext(initializingText);
-  recordStep(steps, "recordStartContext", Boolean(roundStartContext), roundStartContext);
+  const contextReady = isRoundStartContextReady(roundStartContext);
+  recordStep(steps, "recordStartContext", contextReady, roundStartContext);
+  if (!contextReady) {
+    recordRoundStart(EVENT_ROUND_STARTED, false, steps);
+    return false;
+  }
   const staminaOutcome = runBattleStaminaAutomation({
     type: BattleStaminaEvent.ROUND_LOG_READY,
     text: roundStartLog.firstText,

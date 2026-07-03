@@ -31,6 +31,8 @@ const ownerText = requireText(owner, [
   "battleRoundStartEventHandlers[event?.type]",
   "recordRoundStart(EVENT_ROUND_STARTED, ready, steps)",
   "recordRoundStartContext",
+  "isRoundStartContextReady",
+  "!context.reason",
   "BattleRoundLifecycleEvent.ROUND_STARTED",
   "BattleRoundLifecycleEvent.ROUND_READY",
   "runBattleRoundLifecycle",
@@ -76,6 +78,7 @@ const rejectionTestText = requireText(rejectionTest, [
   "rejects unknown events with round-start evidence",
   "rejects null events with round-start evidence instead of throwing",
   "returns false when monster status repair schedules recovery before round ready",
+  "returns false when round start context records persistence failure",
   "HVAA:lastBattleRoundStart",
 ]);
 requireText(path.normalize("src/battle/battle-round-start-evidence.js"), [
@@ -214,6 +217,12 @@ if (
 }
 if (!ownerTestText.includes("stops round preparation when stamina gate pauses the round")) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must lock stamina pause round-start gate`);
+}
+if (!rejectionTestText.includes("roundPersistenceFailed")) {
+  violations.push(`${rejectionTest.replaceAll("\\", "/")} must lock round context failure`);
+}
+if (!ownerText.includes("if (!contextReady)") || !ownerText.includes("return false;")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must stop after failed round context`);
 }
 if (!ownerTestText.includes("toBe(false)") || !rejectionTestText.includes("toBe(false)")) {
   violations.push("round-start tests must assert non-ready round-start returns false");

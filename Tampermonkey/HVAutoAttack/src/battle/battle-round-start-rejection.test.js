@@ -116,4 +116,34 @@ describe("runBattleRoundStartAutomation rejection evidence", () => {
       ]),
     });
   });
+
+  it("returns false when round start context records persistence failure", () => {
+    const failedContext = {
+      initialized: true,
+      roundType: "",
+      randomEncounterStarted: false,
+      reason: "roundPersistenceFailed",
+    };
+    mocks.runBattleRoundAutomation.mockImplementation((event) =>
+      event.type === "recordStartContext" ? failedContext : undefined
+    );
+
+    expect(runBattleRoundStartAutomation({ type: BattleRoundStartEvent.ROUND_STARTED })).toBe(false);
+
+    expect(mocks.runBattleStaminaAutomation).not.toHaveBeenCalled();
+    expect(mocks.runMonsterStatusAutomation).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "prepareRoundStart" })
+    );
+    expect(mocks.runBattleRoundAutomation).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "recordStartCount" })
+    );
+    expect(mocks.runBattleRoundLifecycle).not.toHaveBeenCalledWith({ type: "roundReady" });
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleRoundStart"))).toMatchObject({
+      phase: "roundStarted",
+      result: false,
+      steps: expect.arrayContaining([
+        { step: "recordStartContext", result: false, detail: failedContext },
+      ]),
+    });
+  });
 });
