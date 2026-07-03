@@ -3,7 +3,15 @@ import path from "node:path";
 
 const root = process.cwd();
 const target = path.normalize("src/i18n/hv-utils.js");
+const mainTarget = path.normalize("src/main.js");
+const migrationTarget = path.normalize("src/i18n/hvut-config-migration.js");
+const migrationBridgeTarget = path.normalize("src/i18n/hvut-config-migration-bridge.js");
+const migrationTestTarget = path.normalize("src/i18n/hvut-config-migration.test.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
+const mainText = fs.readFileSync(path.join(root, mainTarget), "utf8");
+const migrationText = fs.readFileSync(path.join(root, migrationTarget), "utf8");
+const migrationBridgeText = fs.readFileSync(path.join(root, migrationBridgeTarget), "utf8");
+const migrationTestText = fs.readFileSync(path.join(root, migrationTestTarget), "utf8");
 const violations = [];
 
 function requirePart(label, body, part) {
@@ -44,6 +52,9 @@ for (const required of [
   "var record_hvut_config_parse_failure = function (stage, detail) {",
   "sessionStorage.setItem('HVAA:lastHvutConfigParseFailure', JSON.stringify(evidence));",
   "var parse_hvut_world_season = function (isIsekai, stage) {",
+  "var get_hvut_config_carry_keys = function (isIsekai) {",
+  "window.HVAA_hvutConfigMigration.carryKeys({ isIsekai: !!isIsekai })",
+  "record_hvut_config_parse_failure('configCarryKeysBridgeMissing'",
   "if (!isIsekai) return false;",
   "return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');",
   "season: parse_hvut_world_season(_servername === 'isekai', 'serverSeason') || '1',",
@@ -58,6 +69,8 @@ for (const [index, body] of migrationBodies.entries()) {
     "if (!$config.set('equipdata', equipdata)) return false;",
     "if (!$config.set('ml_log', ml_log)) return false;",
     "if (!$config.ls_del('ml_log')) return false;",
+    "const ls_list = get_hvut_config_carry_keys(IS_ISEKAI);",
+    "if (!ls_list) return false;",
     "for (const key of ls_list) {",
     "if (!$config.set(key, value)) return false;",
     "if (!$config.ls_del(key.slice($config.prefix.length))) return false;",
@@ -75,10 +88,44 @@ for (const forbidden of [
   "$config.set(key, value);",
   "localStorage.removeItem(key);",
   "$config.save();",
+  "const ls_list = ['equipset', 'ch_style', 'se_settings', 'ss_log', 'ml_log'];",
+  "const ls_list = ['equipnames', 'equipset', 'ch_style', 'se_settings', 'ss_log', 'ml_log'];",
 ]) {
   if (migrationBodies.some((body) => body.includes(forbidden))) {
     violations.push(`${target} config migration must not keep unchecked path: ${forbidden}`);
   }
+}
+
+for (const required of [
+  "const COMMON_CARRY_KEYS = Object.freeze([\"equipset\", \"ch_style\", \"se_settings\", \"ss_log\", \"ml_log\"]);",
+  "const PERSISTENT_CARRY_KEYS = Object.freeze([\"equipnames\", ...COMMON_CARRY_KEYS]);",
+  "export function getHvutConfigCarryKeys(segment) {",
+  "return segment?.isIsekai ? [...COMMON_CARRY_KEYS] : [...PERSISTENT_CARRY_KEYS];",
+]) {
+  if (!migrationText.includes(required)) {
+    violations.push(`${migrationTarget} must own HVUT config carry key segmentation with ${required}`);
+  }
+}
+
+for (const required of [
+  "import { getHvutConfigCarryKeys } from \"./hvut-config-migration.js\";",
+  "window.HVAA_hvutConfigMigration = Object.freeze({",
+  "carryKeys: getHvutConfigCarryKeys",
+]) {
+  if (!migrationBridgeText.includes(required)) {
+    violations.push(`${migrationBridgeTarget} must expose HVUT config migration bridge with ${required}`);
+  }
+}
+
+if (!mainText.includes("import \"./i18n/hvut-config-migration-bridge.js\";")) {
+  violations.push(`${mainTarget} must load HVUT config migration bridge before hv-utils`);
+}
+
+if (
+  !migrationTestText.includes("keeps persistent-only legacy equipment names") ||
+  !migrationTestText.includes("does not carry persistent-only legacy equipment names")
+) {
+  violations.push(`${migrationTestTarget} must cover persistent and Isekai carry key segmentation`);
 }
 
 if (violations.length) {

@@ -81,6 +81,13 @@ try {
     var match = /(\d+ Season \d+)/.exec(text);
     return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');
   };
+  var get_hvut_config_carry_keys = function (isIsekai) {
+    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.carryKeys) {
+      return window.HVAA_hvutConfigMigration.carryKeys({ isIsekai: !!isIsekai });
+    }
+    record_hvut_config_parse_failure('configCarryKeysBridgeMissing', { isIsekai: !!isIsekai });
+    return null;
+  };
   var record_hvut_item_shop_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutItemShopParse', stage: stage, detail: detail || {} };
     try {
@@ -5056,7 +5063,8 @@ const $config = {
         if (!$config.ls_del('ml_log')) return false;
       }
 
-      const ls_list = ['equipset', 'ch_style', 'se_settings', 'ss_log', 'ml_log'];
+      const ls_list = get_hvut_config_carry_keys(IS_ISEKAI);
+      if (!ls_list) return false;
       for (const key of ls_list) {
         const value = $config.ls_get(key);
         if (value) {
@@ -10943,7 +10951,8 @@ const $config = {
         if (!$config.ls_del('ml_log')) return false;
       }
 
-      const ls_list = ['equipnames', 'equipset', 'ch_style', 'se_settings', 'ss_log', 'ml_log'];
+      const ls_list = get_hvut_config_carry_keys(IS_ISEKAI);
+      if (!ls_list) return false;
       for (const key of ls_list) {
         const value = $config.ls_get(key);
         if (value) {
