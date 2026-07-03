@@ -9778,6 +9778,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         });
       },
       export: function () {
+        const stop = function () {
+          if (_mm.db.node.export) {
+            _mm.db.node.export.disabled = false;
+          }
+        };
         if (_mm.db.node.export) {
           _mm.db.node.export.disabled = true;
         }
@@ -9785,9 +9790,15 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const database = _mm.db.database.name;
         const stores = Array.from(_mm.db.database.objectStoreNames);
         let completed = stores.length;
+        if (completed === 0) {
+          stop();
+          return;
+        }
         stores.forEach((store) => {
           const values = [];
           const conn = _mm.db.conn('readonly', store);
+          conn.tx.onerror = stop;
+          conn.tx.onabort = stop;
           conn.os.openCursor().onsuccess = function (e) {
             const cursor = e.target.result;
             if (cursor) {
@@ -9807,19 +9818,25 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
                   _mm.db.node.export.value = '完成';
                 }
                 popup(`<p>The file has been saved.</p><p style="font-weight: bold;">${download}</p>`);
+                stop();
               }
             }
           };
         });
       },
       import: function () {
-        if (_mm.db.node.import) {
-          _mm.db.node.import.disabled = true;
-        }
+        const stop = function () {
+          if (_mm.db.node.import) {
+            _mm.db.node.import.disabled = false;
+          }
+        };
         const input = $input('file', null, { accept: '.json' }, { change: () => {
           const file = input.files[0];
           if (!file) {
             return;
+          }
+          if (_mm.db.node.import) {
+            _mm.db.node.import.disabled = true;
           }
           const reader = new FileReader();
           reader.onload = function (e) {
@@ -9827,6 +9844,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           };
           reader.onerror = function () {
             alert('读取文件失败');
+            stop();
           };
           reader.readAsText(file);
         } });
@@ -9838,6 +9856,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             const stores = Array.from(_mm.db.database.objectStoreNames);
             const json = JSON.parse(text);
             let completed = json.length;
+            if (completed === 0) {
+              stop();
+              return;
+            }
 
             function complete() {
               completed--;
@@ -9845,6 +9867,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
                 if (_mm.db.node.import) {
                   _mm.db.node.import.value = '完成';
                 }
+                stop();
               }
             }
 
@@ -9861,6 +9884,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
                 return;
               }
               const conn = _mm.db.conn('readwrite', store);
+              conn.tx.onerror = stop;
+              conn.tx.onabort = stop;
               conn.tx.oncomplete = function () {
                 complete();
               };
@@ -9870,6 +9895,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             });
           } catch (e) {
             alert('解析文件失败\n请选择一个有效的MoogleMail数据库json文件');
+            stop();
             return;
           }
         }
@@ -15940,14 +15966,23 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         });
       },
       export: function () {
+        const stop = function () {
+          _mm.node.db_export.disabled = false;
+        };
         _mm.node.db_export.disabled = true;
         const json = [];
         const database = _mm.db.database.name;
         const stores = Array.from(_mm.db.database.objectStoreNames);
         let completed = stores.length;
+        if (completed === 0) {
+          stop();
+          return;
+        }
         stores.forEach((store) => {
           const values = [];
           const conn = _mm.db.conn('readonly', store);
+          conn.tx.onerror = stop;
+          conn.tx.onabort = stop;
           conn.os.openCursor().onsuccess = function (e) {
             const cursor = e.target.result;
             if (cursor) {
@@ -15965,24 +16000,29 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
                 link.click();
                 _mm.node.db_export.value = '完成';
                 popup(`<p>文件已保存.</p><p style="font-weight: bold;">${download}</p>`);
+                stop();
               }
             }
           };
         });
       },
       import: function () {
-        _mm.node.db_import.disabled = true;
+        const stop = function () {
+          _mm.node.db_import.disabled = false;
+        };
         const input = $input('file', null, { accept: '.json' }, { change: () => {
           const file = input.files[0];
           if (!file) {
             return;
           }
+          _mm.node.db_import.disabled = true;
           const reader = new FileReader();
           reader.onload = function (e) {
             db_import(e.target.result);
           };
           reader.onerror = function () {
             alert('读取文件失败');
+            stop();
           };
           reader.readAsText(file);
         } });
@@ -15994,11 +16034,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             const stores = Array.from(_mm.db.database.objectStoreNames);
             const json = JSON.parse(text);
             let completed = json.length;
+            if (completed === 0) {
+              stop();
+              return;
+            }
 
             function complete() {
               completed--;
               if (completed === 0) {
                 _mm.node.db_import.value = '完成';
+                stop();
               }
             }
 
@@ -16015,6 +16060,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
                 return;
               }
               const conn = _mm.db.conn('readwrite', store);
+              conn.tx.onerror = stop;
+              conn.tx.onabort = stop;
               conn.tx.oncomplete = function () {
                 complete();
               };
@@ -16024,6 +16071,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             });
           } catch (e) {
             alert('解析文件失败\n请选择一个有效的MoogleMail数据库json文件');
+            stop();
             return;
           }
         }

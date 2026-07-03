@@ -29,6 +29,7 @@ const commands = [
   "node scripts/verify-hvut-mooglemail-itemshop-boundary.mjs",
   "node scripts/verify-hvut-mooglemail-multi-send-boundary.mjs",
   "node scripts/verify-hvut-mooglemail-pack-boundary.mjs",
+  "node scripts/verify-hvut-mooglemail-db-boundary.mjs",
   "node scripts/verify-hvut-mooglemail-parse-boundary.mjs",
   "node scripts/verify-hvut-shrine-log-persistence-boundary.mjs",
   "node scripts/verify-hvut-shrine-capacity-boundary.mjs",
