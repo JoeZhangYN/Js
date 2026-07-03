@@ -54,6 +54,25 @@ for (const [index, showEquipBody] of showEquipBodies.entries()) {
   }
 }
 
+const modernBottom =
+  showEquipBodies.find((body) => body.includes("Your inventory is almost full")) || "";
+const legacyBottom = showEquipBodies.find((body) => body.includes("装备库存量:")) || "";
+if (!modernBottom.includes("normalize_hvut_bottom_warn_capacity($config.settings)")) {
+  violations.push(`${rel(hvUtilsFile)} modern bottom capacity warning must normalize threshold`);
+}
+if (!modernBottom.includes("const warnCapacity = normalize_hvut_bottom_warn_capacity($config.settings);")) {
+  violations.push(`${rel(hvUtilsFile)} modern bottom capacity warning must use typed threshold evidence`);
+}
+if (legacyBottom && /popup\(/.test(legacyBottom)) {
+  violations.push(`${rel(hvUtilsFile)} legacy bottom capacity monitor must not show equipment-full popup`);
+}
+if (!text.includes("var normalize_hvut_bottom_warn_capacity = function (settings) {")) {
+  violations.push(`${rel(hvUtilsFile)} must own bottom capacity warning threshold normalization`);
+}
+if (!text.includes("return Number.isFinite(threshold) && threshold >= 0 ? threshold : 50;")) {
+  violations.push(`${rel(hvUtilsFile)} bottom capacity warning threshold must fail closed to default`);
+}
+
 for (const [index, match] of [...text.matchAll(/const exec = \/<td>Inventory Capacity:[^\n]+\.exec\(html\);/g)].entries()) {
   const body = text.slice(match.index, match.index + 600);
   const guardIndex = body.indexOf("if (!exec)");
