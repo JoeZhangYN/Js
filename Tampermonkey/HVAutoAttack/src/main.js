@@ -7,6 +7,7 @@ import "./i18n/equip-filter-expression-bridge.js"; // hv-utils sloppy-mode 不�
 import "./i18n/shrine-offer-message-bridge.js"; // hv-utils sloppy-mode 不能 import；Shrine offer 响应分类经桥复用纯函数。
 import "./i18n/shrine-offer-reservation-bridge.js"; // hv-utils sloppy-mode 不能 import；Shrine offer reservation 经桥复用纯函数。
 import "./i18n/hvut-config-migration-bridge.js"; // hv-utils sloppy-mode 不能 import；配置迁移 segment 差异经桥选择。
+import "./i18n/hvut-config-field-bridge.js"; // hv-utils sloppy-mode 不能 import；配置字段适用性经桥统一裁决。
 import "./core/navigation-bridge.js"; // hv-utils sloppy-mode 不能 import；重定向能力经全局导航桥统一收口。
 import "./i18n/hv-utils.js"; // 副作用 import：HV Utils 统一汉化（sssss2）自执行，整页汉化。
 import { init } from "./pages/init.js";

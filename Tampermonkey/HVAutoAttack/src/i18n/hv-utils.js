@@ -88,6 +88,13 @@ try {
     record_hvut_config_parse_failure('configCarryKeysBridgeMissing', { isIsekai: !!isIsekai });
     return null;
   };
+  var is_hvut_config_field_disabled = function (field, context) {
+    if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.isDisabled) {
+      return window.HVAA_hvutConfigField.isDisabled(field, context);
+    }
+    record_hvut_config_parse_failure('configFieldBridgeMissing', { key: field?.key || '', context: context || {} });
+    return true;
+  };
   var record_hvut_item_shop_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutItemShopParse', stage: stage, detail: detail || {} };
     try {
@@ -5188,7 +5195,7 @@ const $config = {
       if (o.style) {
         o.node.input.style.cssText = o.style;
       }
-      if (o.server && o.server !== _server.name) {
+      if (is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })) {
         o.node.div.classList.add('hvut-cfg-disabled');
         o.node.input.disabled = true;
       }
@@ -5236,7 +5243,7 @@ const $config = {
   },
   // get_panel/validate_panel/validate/load/save/text2obj/obj2text/text2array/array2text: 收口 bindConfig(L1)
 };
-bindConfig($config, { skipField: (o) => o.server && o.server !== _server.name }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(isekai 按 HV server)
+bindConfig($config, { skipField: (o) => is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name }) }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(isekai 按 HV server)
 $config.init();
 //$config.settings = settings;
 
@@ -11065,7 +11072,7 @@ const $config = {
       if (o.style) {
         o.node.input.style.cssText = o.style;
       }
-      if (o.disabled === 'persistent' && !IS_ISEKAI || o.disabled === 'isekai' && IS_ISEKAI) {
+      if (is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })) {
         o.node.div.classList.add('hvut-cfg-disabled');
         o.node.input.disabled = true;
       }
@@ -11109,7 +11116,7 @@ const $config = {
   },
   // get_panel/validate_panel/validate/load/save/text2obj/obj2text/text2array/array2text: 收口 bindConfig(L1)
 };
-bindConfig($config, { skipField: (o) => o.disabled === 'persistent' && !IS_ISEKAI || o.disabled === 'isekai' && IS_ISEKAI }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(主世界按 持久区·isekai)
+bindConfig($config, { skipField: (o) => is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name }) }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(主世界按 持久区·isekai)
 $config.init();
 //$config.settings = settings;
 
