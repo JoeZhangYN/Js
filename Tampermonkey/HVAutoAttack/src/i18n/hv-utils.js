@@ -61,6 +61,26 @@ try {
     }
     return evidence;
   };
+  var record_hvut_config_parse_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutConfigParse', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutConfigParseFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // HVUT config parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVAA] HVUT config parse failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT config parse fallback.
+    }
+    return null;
+  };
+  var parse_hvut_world_season = function (isIsekai, stage) {
+    if (!isIsekai) return false;
+    var text = $id('world_text')?.textContent || '';
+    var match = /(\d+ Season \d+)/.exec(text);
+    return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');
+  };
   var record_hvut_ability_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutAbilityParse', stage: stage, detail: detail || {} };
     try {
@@ -1763,7 +1783,7 @@ const bindBattlePanel = function (battle, ctx) {
 const _servername = location.pathname.includes('/isekai/') ? 'isekai' : 'persistent';
 const _server = {
   name: _servername,
-  season: $id('world_text')?.textContent.match(/\d+ Season \d+/)?.[0] || '1',
+  season: parse_hvut_world_season(_servername === 'isekai', 'serverSeason') || '1',
   [_servername]: true, // 当前服务器标记 key; isekai 判定统一走顶层 IS_ISEKAI（L0 归一）
 };
 
@@ -10601,7 +10621,7 @@ const $config = {
     },
   },
   init: function () {
-    $config.season = location.pathname.includes('/isekai/') && ($id('world_text')?.textContent.match(/(\d+ Season \d+)/)[1] || '1'); // season 载体(主世界 IIFE 恒 falsy 死值); isekai 判定统一走 IS_ISEKAI
+    $config.season = parse_hvut_world_season(location.pathname.includes('/isekai/'), 'configSeason'); // season 载体(主世界 IIFE 恒 falsy 死值); isekai 判定统一走 IS_ISEKAI
     $config.ns = IS_ISEKAI ? 'hvuti' : 'hvut';
     $config.prefix = $config.ns + '_';
     $config.default = settings;

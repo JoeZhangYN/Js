@@ -32,6 +32,25 @@ for (const [index, body] of initBodies.entries()) {
   if (/\$config\.migration\(\);\n\s*\}/.test(body)) {
     violations.push(`${target} config init[${index}] must not ignore migration result`);
   }
+  if (body.includes("$config.season") && !body.includes("$config.season = parse_hvut_world_season(location.pathname.includes('/isekai/'), 'configSeason');")) {
+    violations.push(`${target} config init[${index}] must parse season through parse_hvut_world_season`);
+  }
+  if (/world_text[^;\n]+match\([^;\n]+\)\[1\]/.test(body)) {
+    violations.push(`${target} config init[${index}] must not parse world_text season directly`);
+  }
+}
+
+for (const required of [
+  "var record_hvut_config_parse_failure = function (stage, detail) {",
+  "sessionStorage.setItem('HVAA:lastHvutConfigParseFailure', JSON.stringify(evidence));",
+  "var parse_hvut_world_season = function (isIsekai, stage) {",
+  "if (!isIsekai) return false;",
+  "return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');",
+  "season: parse_hvut_world_season(_servername === 'isekai', 'serverSeason') || '1',",
+]) {
+  if (!text.includes(required)) {
+    violations.push(`${target} must keep HVUT world season parse boundary: ${required}`);
+  }
 }
 
 for (const [index, body] of migrationBodies.entries()) {
