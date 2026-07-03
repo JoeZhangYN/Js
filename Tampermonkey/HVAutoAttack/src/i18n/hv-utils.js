@@ -180,6 +180,11 @@ try {
     }
     return true;
   };
+  var create_hvut_config_init_entry = function (defaultSettings, context) {
+    return function () {
+      return run_hvut_config_init(this, defaultSettings, context);
+    };
+  };
   var run_hvut_config_legacy_migration = function (config, price, context) {
     var isIsekai = !!context?.isIsekai;
     if (config.settings.version) return true;
@@ -5464,9 +5469,7 @@ const $config = {
       return result;
     },
   },
-  init: function () {
-    return run_hvut_config_init($config, settings, { isIsekai: IS_ISEKAI });
-  },
+  init: create_hvut_config_init_entry(settings, { isIsekai: IS_ISEKAI }),
   migration: function () {
     if (run_hvut_config_legacy_migration($config, $price, { isIsekai: IS_ISEKAI }) === false) return false;
 
@@ -11277,9 +11280,7 @@ const $config = {
       return result;
     },
   },
-  init: function () {
-    return run_hvut_config_init($config, settings, { assignSeason: true, isIsekai: IS_ISEKAI });
-  },
+  init: create_hvut_config_init_entry(settings, { assignSeason: true, isIsekai: IS_ISEKAI }),
   migration: function () {
     if (run_hvut_config_legacy_migration($config, $price, { isIsekai: IS_ISEKAI }) === false) return false;
 
