@@ -88,6 +88,13 @@ try {
     record_hvut_config_parse_failure('configCarryKeysBridgeMissing', { isIsekai: !!isIsekai });
     return null;
   };
+  var get_hvut_config_namespace = function (isIsekai) {
+    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.namespace) {
+      return window.HVAA_hvutConfigMigration.namespace({ isIsekai: !!isIsekai });
+    }
+    record_hvut_config_parse_failure('configNamespaceBridgeMissing', { isIsekai: !!isIsekai });
+    return null;
+  };
   var is_hvut_config_field_disabled = function (field, context) {
     if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.isDisabled) {
       return window.HVAA_hvutConfigField.isDisabled(field, context);
@@ -4995,7 +5002,12 @@ const $config = {
     },
   },
   init: function () {
-    $config.ns = !IS_ISEKAI ? 'hvut' : 'hvuti';
+    const namespace = get_hvut_config_namespace(IS_ISEKAI);
+    if (!namespace) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    $config.ns = namespace;
     $config.prefix = $config.ns + '_';
     $config.default = settings;
     $config.settings = $config.get('settings', {});
@@ -10883,7 +10895,12 @@ const $config = {
   },
   init: function () {
     $config.season = parse_hvut_world_season(location.pathname.includes('/isekai/'), 'configSeason'); // season 载体(主世界 IIFE 恒 falsy 死值); isekai 判定统一走 IS_ISEKAI
-    $config.ns = IS_ISEKAI ? 'hvuti' : 'hvut';
+    const namespace = get_hvut_config_namespace(IS_ISEKAI);
+    if (!namespace) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    $config.ns = namespace;
     $config.prefix = $config.ns + '_';
     $config.default = settings;
     $config.settings = $config.get('settings', {});
