@@ -5495,21 +5495,25 @@ _bottom.show_credits = async function () {
 
 _bottom.show_equip = async function () {
   _bottom.node.equip = $element('div', _bottom.node.div, '加载中...');
-  const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
-  const exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html);
-  if (!exec) {
+  let capacity;
+  try {
+    const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
+    capacity = parse_hvut_inventory_capacity(html, 'bottomInventoryCapacity');
+  } catch (_error) {
+    capacity = record_hvut_shrine_capacity_failure('bottomInventoryCapacityFetch', { reason: 'requestFailed' });
+  }
+  if (capacity === null) {
     _bottom.node.equip.textContent = 'Inventory Capacity: unavailable';
     _bottom.node.equip.classList.add('hvut-warn');
     return;
   }
-  const usage = parseInt(exec[1]) + parseInt(exec[2] || 0);
-  const capacity = parseInt(exec[3]);
-  const free = capacity - usage;
-  _bottom.node.equip.textContent = `Inventory Capacity: ${usage} / ${capacity}`;
+  const { usage } = capacity;
+  const free = capacity.capacity - usage;
+  _bottom.node.equip.textContent = `Inventory Capacity: ${usage} / ${capacity.capacity}`;
   if (free < $config.settings.warnEquipCapacity) {
     popup('<p style="color: #e00; font-weight: bold;">Your inventory is almost full.<br>\nPlease manage your equipment to increase available capacity.</p>');
     _bottom.node.equip.classList.add('hvut-warn2');
-  } else if (free < capacity / 2) {
+  } else if (free < capacity.capacity / 2) {
     _bottom.node.equip.classList.add('hvut-warn');
   }
 };
@@ -11382,20 +11386,24 @@ if ($config.settings.showEquipSlots === 2 || $config.settings.showEquipSlots ===
     // [2026-06-10 能量模型] 旧 ?s=Character&ss=in 'Equip Slots' 行已消失(exec null 崩, 实站报错证实);
     // 对齐 isekai: Bazaar ss=am screen=organize 的 Inventory Capacity 表(样本 modify 端点已证主世界为 am 体系)。
     _bottom.node.equip = $element('div', _bottom.node.div, '加载中...');
-    const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
-    const exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html);
-    if (!exec) {
+    let capacity;
+    try {
+      const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
+      capacity = parse_hvut_inventory_capacity(html, 'legacyBottomInventoryCapacity');
+    } catch (_error) {
+      capacity = record_hvut_shrine_capacity_failure('legacyBottomInventoryCapacityFetch', { reason: 'requestFailed' });
+    }
+    if (capacity === null) {
       _bottom.node.equip.textContent = '装备库存量: unavailable';
       _bottom.node.equip.classList.add('hvut-bottom-warn');
       return;
     }
-    const usage = parseInt(exec[1]) + parseInt(exec[2] || 0);
-    const capacity = parseInt(exec[3]);
-    const free = capacity - usage;
-    _bottom.node.equip.textContent = `装备库存量: ${usage} / ${capacity}`;
-    if (free < capacity / 10) {
+    const { usage } = capacity;
+    const free = capacity.capacity - usage;
+    _bottom.node.equip.textContent = `装备库存量: ${usage} / ${capacity.capacity}`;
+    if (free < capacity.capacity / 10) {
       _bottom.node.equip.classList.add('hvut-bottom-warn');
-    } else if (free < capacity / 2) {
+    } else if (free < capacity.capacity / 2) {
       _bottom.node.equip.style.color = '#c00';
     }
   };

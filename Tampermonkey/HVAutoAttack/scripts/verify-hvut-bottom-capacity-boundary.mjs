@@ -6,7 +6,7 @@ const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
 const text = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const violations = [];
 const capacityPattern =
-  "const exec = /<td>Inventory Capacity:<\\/td><td>(\\d+)(?: \\+ (\\d+))?<\\/td><td>\\/<\\/td><td>(\\d+)<\\/td>/.exec(html);";
+  "var exec = /<td>Inventory Capacity:<\\/td><td>(\\d+)(?: \\+ (\\d+))?<\\/td><td>\\/<\\/td><td>(\\d+)<\\/td>/.exec(html || '');";
 
 function rel(file) {
   return file.replaceAll("\\", "/");
@@ -22,8 +22,9 @@ if (showEquipBodies.length === 0) {
 
 for (const [index, showEquipBody] of showEquipBodies.entries()) {
   for (const required of [
-    "const exec = /<td>Inventory Capacity:",
-    "if (!exec)",
+    "parse_hvut_inventory_capacity(html,",
+    "record_hvut_shrine_capacity_failure(",
+    "catch (_error)",
     "unavailable",
     "classList.add",
   ]) {
@@ -34,19 +35,22 @@ for (const [index, showEquipBody] of showEquipBodies.entries()) {
     }
   }
 
-  const guardIndex = showEquipBody.indexOf("if (!exec)");
-  const firstUseIndex = showEquipBody.search(/exec\[[123]\]/);
+  const guardIndex = showEquipBody.indexOf("if (capacity === null)");
+  const firstUseIndex = showEquipBody.search(/capacity\.capacity|capacity\.usage|\{ usage \} = capacity/);
   if (firstUseIndex >= 0 && (guardIndex < 0 || firstUseIndex < guardIndex)) {
     violations.push(
-      `${rel(hvUtilsFile)} show_equip[${index}] must not read capacity capture groups before null guard`
+      `${rel(hvUtilsFile)} show_equip[${index}] must not read capacity values before null guard`
     );
   }
 
-  const guardBody = showEquipBody.match(/if \(!exec\) \{[\s\S]*?\n  \}/)?.[0] || "";
+  const guardBody = showEquipBody.match(/if \(capacity === null\) \{[\s\S]*?\n\s*\}/)?.[0] || "";
   if (/popup\(/.test(guardBody)) {
     violations.push(
       `${rel(hvUtilsFile)} show_equip[${index}] must not show equipment-full popup for parse failures`
     );
+  }
+  if (/const exec = \/<td>Inventory Capacity:/.test(showEquipBody) || /exec\[[123]\]/.test(showEquipBody)) {
+    violations.push(`${rel(hvUtilsFile)} show_equip[${index}] must use shared Inventory Capacity parser`);
   }
 }
 
