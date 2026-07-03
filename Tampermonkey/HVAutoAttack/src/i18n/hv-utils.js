@@ -511,6 +511,19 @@ try {
       state.equip.requests--;
     }
   };
+  var classify_hvut_shrine_offer_message = function (msg) {
+    if (!msg || /Snowflake has blessed you|Hit Space Bar to offer/.test(msg) || msg === 'Received:') return { kind: 'ignore' };
+    if (msg.includes('Peerless Voucher')) return { kind: 'voucher', message: msg };
+    var equip = /^(Crude|Fair|Average|Superior|Exquisite|Magnificent|Legendary|Peerless) .+/.exec(msg);
+    if (equip) return { kind: 'equip', reward: msg, quality: equip[1] };
+    var received = /^Received (.*?)!?$/.exec(msg);
+    if (received) return { kind: 'reward', reward: received[1] };
+    if (/was increased by 1|has increased by one/.test(msg)) return { kind: 'reward', reward: msg };
+    if (msg.includes('Sold it for')) return { kind: 'sold' };
+    if (msg.includes('Salvaged it for')) return { kind: 'salvaged' };
+    if (msg.includes('Sold the remains for')) return { kind: 'ignore' };
+    return { kind: 'stop', message: msg };
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -6946,34 +6959,27 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
         Dexterity was increased by 1
         Hit Space Bar to offer another item like this.
       */
-      const reg_text = /Snowflake has blessed you|Hit Space Bar to offer/;
-      const reg_voucher = /Peerless Voucher/;
-      const reg_equip = /^(Crude|Fair|Average|Superior|Exquisite|Magnificent|Legendary|Peerless)/;
-      const reg_received = /^Received (.*?)!?$/;
-      const reg_pab = /was increased by 1|has increased by one/;
       const item = _ss.offer.items[iid];
       const list = [];
       const equips = [];
       let offerStopped = false;
 
       get_message(doc, true).forEach((msg) => {
-        if (!msg || reg_text.test(msg)) {
+        const offerMessage = classify_hvut_shrine_offer_message(msg);
+        if (offerMessage.kind === 'ignore') {
           return;
-        } else if (reg_voucher.test(msg)) {
+        } else if (offerMessage.kind === 'voucher') {
           popup(`<p style="color: #e00; font-weight: bold;">${msg}</p>`);
-        } else if (reg_equip.test(msg)) {
-          list.push(RegExp.$1);
+        } else if (offerMessage.kind === 'equip') {
+          list.push(offerMessage.quality);
           equips.push(msg);
           _ss.equip.received++;
-        } else if (reg_received.test(msg)) {
-          list.push(RegExp.$1);
-        } else if (reg_pab.test(msg)) {
-          list.push(msg);
-        } else if (msg.includes('Sold it for')) {
+        } else if (offerMessage.kind === 'reward') {
+          list.push(offerMessage.reward);
+        } else if (offerMessage.kind === 'sold') {
           _ss.equip.sold++;
-        } else if (msg.includes('Salvaged it for')) {
+        } else if (offerMessage.kind === 'salvaged') {
           _ss.equip.salvaged++;
-        } else if (msg.includes('Sold the remains for')) {
         } else { //Your equipment inventory is full
           set_hvut_shrine_stop_error(_ss, msg);
           offerStopped = true;
@@ -13231,20 +13237,20 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     const doc = $doc(html);
     const results = item.results;
     const rewards = [];
-    const reg = /Received (.+)|(Your .+ has increased by one|.+ was increased by 1)|((?:Crude|Fair|Average|Superior|Exquisite|Magnificent|Legendary|Peerless) .+)/;
     let offerStopped = false;
 
     get_message(doc, true).forEach((msg) => {
-      if (!msg || ['Snowflake has blessed you with some of her power!', 'Snowflake has blessed you with an item!', 'Received:', 'Hit Space Bar to offer another item like this.'].includes(msg)) {
+      const offerMessage = classify_hvut_shrine_offer_message(msg);
+      if (offerMessage.kind === 'ignore') {
         return;
-      } else if (msg.includes('Peerless Voucher')) { // 'Received 1x Peerless Voucher!'
+      } else if (offerMessage.kind === 'voucher') { // 'Received 1x Peerless Voucher!'
         popup(`<p style="color: #f00; font-weight: bold;">${msg}</p>`);
-      } else if (msg.includes('Sold it for')) {
+      } else if (offerMessage.kind === 'sold') {
         _ss.equip.sold++;
-      } else if (msg.includes('Salvaged it for')) { // Salvaged it for .+ (Peerless|Legendary) .+ Core
+      } else if (offerMessage.kind === 'salvaged') { // Salvaged it for .+ (Peerless|Legendary) .+ Core
         _ss.equip.salvaged++;
-      } else if (reg.test(msg)) {
-        rewards.push(RegExp.$1 || RegExp.$2 || RegExp.$3);
+      } else if (offerMessage.kind === 'equip' || offerMessage.kind === 'reward') {
+        rewards.push(offerMessage.reward);
       } else {
         set_hvut_shrine_stop_error(_ss, msg);
         offerStopped = true;

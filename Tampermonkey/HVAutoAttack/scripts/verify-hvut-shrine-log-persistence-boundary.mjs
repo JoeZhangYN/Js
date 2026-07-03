@@ -34,6 +34,7 @@ if (!legacyRequest) violations.push(`${target} must keep legacy Shrine request e
 for (const part of [
   "record_hvut_shrine_offer_failure('offerLoadFetch'",
   "if (_ss.error) return false;",
+  "classify_hvut_shrine_offer_message(msg)",
   "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
   "return false;",
   "let offerStopped = false;",
@@ -69,6 +70,7 @@ for (const part of [
 for (const part of [
   "record_hvut_shrine_offer_failure('legacyOfferFetch'",
   "if (_ss.error) return false;",
+  "classify_hvut_shrine_offer_message(msg)",
   "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
   "return false;",
   "let offerStopped = false;",
@@ -97,8 +99,10 @@ for (const part of [
 for (const required of [
   "var reserve_hvut_shrine_offer = function (state, item) {",
   "var rollback_hvut_shrine_offer_reservation = function (state, item) {",
+  "var classify_hvut_shrine_offer_message = function (msg) {",
   "state.equip.requests++;",
   "state.equip.requests--;",
+  "if (msg.includes('Sold the remains for')) return { kind: 'ignore' };",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must centralize Shrine offer reservation with ${required}`);
@@ -131,6 +135,13 @@ for (const [label, body, forbidden] of [
   ["Shrine offer request", offerRequest, "_ss.equip.requests++;"],
   ["Shrine offer request", offerRequest, "_ss.equip.requests--;"],
   ["Shrine offer load", offerLoad, "_ss.log.save();"],
+  ["Shrine offer load", offerLoad, "const reg_text ="],
+  ["Shrine offer load", offerLoad, "const reg_voucher ="],
+  ["Shrine offer load", offerLoad, "const reg_equip ="],
+  ["Shrine offer load", offerLoad, "const reg_received ="],
+  ["Shrine offer load", offerLoad, "const reg_pab ="],
+  ["Shrine offer load", offerLoad, "msg.includes('Sold the remains for')"],
+  ["Shrine offer load", offerLoad, "RegExp.$"],
   ["Shrine log save", logSave, "$config.set('ss_log', _ss.log.json);"],
   ["legacy Shrine offer", legacyOffer, /(^|\n)\s*_ss\.request\(iid, select_reward_type, select_reward_slot\);/],
   ["legacy Shrine offer", legacyOffer, "item.requests += count;"],
@@ -146,6 +157,12 @@ for (const [label, body, forbidden] of [
   ["legacy Shrine offer", legacyOffer, "_ss.equip.requests++;"],
   ["legacy Shrine offer", legacyOffer, "_ss.equip.requests--;"],
   ["legacy Shrine request", legacyRequest, "$config.set('ss_log', _ss.log);"],
+  ["legacy Shrine request", legacyRequest, "const reg ="],
+  ["legacy Shrine request", legacyRequest, "Snowflake has blessed you"],
+  ["legacy Shrine request", legacyRequest, "msg.includes('Peerless Voucher')"],
+  ["legacy Shrine request", legacyRequest, "msg.includes('Sold it for')"],
+  ["legacy Shrine request", legacyRequest, "msg.includes('Salvaged it for')"],
+  ["legacy Shrine request", legacyRequest, "RegExp.$"],
 ]) {
   if (typeof forbidden === "string" ? body.includes(forbidden) : forbidden.test(body)) {
     violations.push(`${target} ${label} must not ignore Shrine log persistence: ${forbidden}`);
