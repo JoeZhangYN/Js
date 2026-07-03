@@ -10,14 +10,15 @@ const settingsFormOptionEventHandlers = Object.freeze({
   [EVENT_COLLECT_OPTION]: (event) => collectOption(event),
 });
 
-function writeNestedOption(option, name, value, className) {
+function writeNestedOption(option, field) {
+  const { name, value, mode } = field;
   const path = name.split("_");
   if (path.length === 1) {
     option[name] = value;
     return;
   }
   if (!(path[0] in option)) option[path[0]] = {};
-  if (className === "customizeInput") {
+  if (mode === "grouped") {
     if (typeof option[path[0]][path[1]] === "undefined") option[path[0]][path[1]] = [];
     option[path[0]][path[1]].push(value);
   } else {
@@ -55,12 +56,10 @@ function collectOption({ version, inputs = [] }) {
   for (const input of inputs) {
     const field = readInputValue(input);
     if (!field) continue;
-    writeNestedOption(
-      option,
-      field.name,
-      field.value,
-      hasInputClass(input, "customizeInput") ? "customizeInput" : input.className
-    );
+    writeNestedOption(option, {
+      ...field,
+      mode: hasInputClass(input, "customizeInput") ? "grouped" : "scalar",
+    });
   }
   return option;
 }

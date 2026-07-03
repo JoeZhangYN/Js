@@ -33,7 +33,8 @@ for (const required of [
   "function hasInputClass(input, className) {",
   'hasInputClass(input, "hvAADebug")',
   'hasInputClass(input, "hvAANumber")',
-  'hasInputClass(input, "customizeInput") ? "customizeInput" : input.className',
+  'mode: hasInputClass(input, "customizeInput") ? "grouped" : "scalar"',
+  'if (mode === "grouped")',
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must classify form input classes by token`);
@@ -42,6 +43,8 @@ for (const required of [
 for (const forbidden of [
   'input.className === "hvAADebug"',
   'input.className === "hvAANumber"',
+  'className === "customizeInput"',
+  '? "customizeInput" : input.className',
 ]) {
   if (ownerText.includes(forbidden)) {
     violations.push(`${owner.replaceAll("\\", "/")} must not classify form inputs by whole className`);
