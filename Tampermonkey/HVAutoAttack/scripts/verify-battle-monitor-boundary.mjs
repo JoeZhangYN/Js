@@ -1048,6 +1048,20 @@ function checkDeletedDropMonitorEntrypoint() {
   ) {
     violations.push(`${rel(dropFile)} tests must cover unknown and null drop events`);
   }
+  if (
+    !/return runBattleRecordArchiveAutomation\([\s\S]*BattleRecordArchiveEvent\.STORE_OR_ARCHIVE_DROP_RECORD/.test(
+      dropText
+    ) ||
+    !/return recordBattleDrops\(runtime,\s*context\) !== false;/.test(dropText)
+  ) {
+    violations.push(`${rel(dropFile)} must not report drop recording success when archive storage fails`);
+  }
+  if (
+    !dropTestText.includes("does not report drop recording success when archive persistence fails") ||
+    !dropTestText.includes("BATTLE_RECORD_ARCHIVE_FAILURE_KEY")
+  ) {
+    violations.push(`${rel(dropFile)} tests must cover drop archive persistence failure propagation`);
+  }
   for (const classifier of [
     /You gain \\d\+ \(EXP\|Credit\)/,
     /Crystal of \\w\+/,

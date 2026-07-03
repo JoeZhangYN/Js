@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
+import { BATTLE_RECORD_ARCHIVE_FAILURE_KEY } from "./battle-record-archive-failure.js";
 import { BattleDropEvent, runBattleDropAutomation } from "./drop-monitor.js";
 
 function logLine(text, item) {
@@ -43,6 +44,28 @@ function deps({ rows, values = {}, option = {}, roundNow = 1, roundAll = 2 }) {
 }
 
 describe("runBattleDropAutomation", () => {
+  it("does not report drop recording success when archive persistence fails", () => {
+    const runtime = deps({
+      option: { dropMonitor: true, dropQuality: 0, recordEach: false },
+      rows: [logLine("You gain 12 EXP")],
+    });
+    runtime.setValue.mockImplementation(() => {
+      throw new Error("drop write blocked");
+    });
+
+    expect(runBattleDropAutomation({ type: BattleDropEvent.RECORD_BATTLE_DROPS }, runtime)).toBe(
+      false
+    );
+
+    expect(runtime.values[STORAGE_KEYS.DROP]).toBeUndefined();
+    expect(JSON.parse(sessionStorage.getItem(BATTLE_RECORD_ARCHIVE_FAILURE_KEY))).toMatchObject({
+      capability: "battleRecordArchive",
+      stage: "store-current",
+      key: STORAGE_KEYS.DROP,
+      failure: { kind: "storageWrite", error: "drop write blocked" },
+    });
+  });
+
   it("rejects unknown drop events without reading logs or writing drops", () => {
     const runtime = deps({
       option: { dropMonitor: true, dropQuality: 0, recordEach: false },
