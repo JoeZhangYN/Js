@@ -279,6 +279,20 @@ try {
     }
     return null;
   };
+  var record_hvut_shrine_reward_parse_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutShrineRewardParse', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutShrineRewardParseFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Shrine reward parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] Shrine reward selection unavailable', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT Shrine reward fallback.
+    }
+    return null;
+  };
   var record_hvut_price_market_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutPriceMarketParse', stage: stage, detail: detail || {} };
     try {
@@ -350,6 +364,14 @@ try {
       usage: parseInt(exec[1]) + parseInt(exec[2] || 0),
       capacity: parseInt(exec[3]),
     };
+  };
+  var parse_hvut_shrine_reward_selection = function (button, stage) {
+    var onclick = button?.getAttribute('onclick') || '';
+    var exec = /submit_shrine_reward\('(.*?)','(.*?)'\)/.exec(onclick);
+    if (!exec) {
+      return record_hvut_shrine_reward_parse_failure(stage, { onclick: onclick });
+    }
+    return { type: exec[1], slot: exec[2] };
   };
   var update_hvut_shrine_equip_total = function (equip, baseKey) {
     if (!Number.isFinite(equip[baseKey]) || !Number.isFinite(equip.capacity) || equip.capacity <= 0) {
@@ -6522,10 +6544,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
     init: function () {
       $qsa('#accept_equip input[type="submit"]').forEach((s) => {
+        const reward = parse_hvut_shrine_reward_selection(s, 'rewardSelectButton');
+        if (reward === null) {
+          s.disabled = true;
+          return;
+        }
+        const { type, slot } = reward;
         s.dataset.action = 'select';
-        const exec = /submit_shrine_reward\('(.*?)','(.*?)'\)/.exec(s.getAttribute('onclick'));
-        const type = exec[1];
-        const slot = exec[2];
         const select = slot ? `${type}_${slot}` : type;
         s.dataset.type = type;
         s.dataset.slot = slot;
@@ -13300,10 +13325,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
   _ss.node.select = {};
   $qsa('#accept_equip input[type="submit"]').forEach((s) => {
+    const reward = parse_hvut_shrine_reward_selection(s, 'legacyRewardSelectButton');
+    if (reward === null) {
+      s.disabled = true;
+      return;
+    }
+    const { type, slot } = reward;
     s.dataset.action = 'select';
-    const exec = /submit_shrine_reward\('(.*?)','(.*?)'\)/.exec(s.getAttribute('onclick'));
-    const type = exec[1];
-    const slot = exec[2];
     const select = slot ? `${type} ${slot}` : type;
     s.dataset.type = type;
     s.dataset.slot = slot;
