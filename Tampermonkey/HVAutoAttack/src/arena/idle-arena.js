@@ -1,16 +1,20 @@
 // 闲置自动挑战 Arena/RoB/GrindFest：唯一入口 runIdleArenaAutomation(event)。
-import { setValue, getValue, delValue } from "../state/storage.js";
+import { getValue } from "../state/storage.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { _alert } from "../core/lang.js";
 import { post } from "../dom/http.js";
-import { NavigationEvent, NavigationReloadReason, runNavigationAutomation } from "../core/navigate.js";
+import {
+  NavigationEvent,
+  NavigationReloadReason,
+  runNavigationAutomation,
+} from "../core/navigate.js";
 import { pollUntil } from "../core/poll.js";
 import { isIsekai } from "../env.js";
 import { StaminaEvent, runStaminaAutomation } from "../state/stamina.js";
 import { DayRecordEvent, runDayRecordAutomation } from "../state/day-record.js";
 import { IDLE_ARENA_TOKEN_URLS, collectIdleArenaToken } from "./idle-arena-token.js";
-import { recordIdleArenaFailure, persistIdleArenaProgress } from "./idle-arena-failure.js";
+import * as idleArenaFailure from "./idle-arena-failure.js";
 
 const EVENT_SCHEDULE_NEXT_BATTLE = "scheduleNextBattle";
 const EVENT_START_NEXT_BATTLE = "startNextBattle";
@@ -48,13 +52,7 @@ function scheduleNextBattle() {
 }
 
 function resetProgress() {
-  delValue(STORAGE_KEYS.ARENA);
-}
-
-function recordIdleArenaRequestFailure(stage, arena, failure) {
-  const evidence = { capability: "idleArena", source: "idleArena", stage, failure };
-  recordIdleArenaFailure(evidence);
-  persistIdleArenaProgress("request-failure", { ...arena, requestFailure: evidence });
+  return idleArenaFailure.clearPersistedIdleArenaProgress();
 }
 
 function startNextBattle() {
@@ -72,7 +70,7 @@ function startNextBattle() {
     let tokenFailed = false;
     const failTokenFetch = (failure) => {
       tokenFailed = true;
-      recordIdleArenaRequestFailure("token-fetch", arena, failure);
+      idleArenaFailure.recordIdleArenaRequestFailure("token-fetch", arena, failure);
     };
     IDLE_ARENA_TOKEN_URLS.forEach((href) =>
       post(
@@ -86,7 +84,7 @@ function startNextBattle() {
     // 轮询至 4 个 token POST 全部返回 → 存档 + 重入 idleArena
     pollUntil(() => arena.token.length >= 4 || tokenFailed).then(() => {
       if (tokenFailed) return;
-      if (!persistIdleArenaProgress("token-persist", arena)) return;
+      if (!idleArenaFailure.persistIdleArenaProgress("token-persist", arena)) return;
       setTimeout(startNextBattle, 200);
     });
     return;
@@ -121,13 +119,13 @@ function startNextBattle() {
     }
   }
   if (arena.array.length === 0) {
-    persistIdleArenaProgress("progress-persist", arena);
+    idleArenaFailure.persistIdleArenaProgress("progress-persist", arena);
     return;
   }
   document.title = _alert(-1, "闲置竞技场", "閒置競技場開始", "Idle Arena start");
   if (arena.array[0] === "gr" && arena.gr <= 0) {
     arena.array.splice(0, 1);
-    if (!persistIdleArenaProgress("progress-persist", arena)) return;
+    if (!idleArenaFailure.persistIdleArenaProgress("progress-persist", arena)) return;
     startNextBattle();
     return;
   }
@@ -146,14 +144,15 @@ function startNextBattle() {
   post(
     `?s=Battle&ss=${href}`,
     () => {
-      if (!persistIdleArenaProgress("battle-start-persist", arena)) return;
+      if (!idleArenaFailure.persistIdleArenaProgress("battle-start-persist", arena)) return;
       reloadCurrentPage();
     },
     isIsekai
       ? `initid=${String(id)}&postoken=${arena.token.postoken}`
       : `initid=${String(id)}&postoken=${arena.token.postoken}`,
     undefined,
-    (failure) => recordIdleArenaRequestFailure("battle-start", arenaBeforeStart, failure)
+    (failure) =>
+      idleArenaFailure.recordIdleArenaRequestFailure("battle-start", arenaBeforeStart, failure)
   );
 }
 

@@ -37,8 +37,7 @@ beforeEach(() => {
   mocks.runNavigationAutomation.mockReset();
   mocks.setValue.mockReset();
   mocks.setValue.mockImplementation((item, value) => {
-    window.localStorage[`hvAA_${item}`] =
-      typeof value === "string" ? value : JSON.stringify(value);
+    window.localStorage[`hvAA_${item}`] = typeof value === "string" ? value : JSON.stringify(value);
   });
   delete globalThis.GM_setValue;
 });
@@ -64,9 +63,12 @@ describe("runIdleArenaAutomation failure fallback", () => {
 
   it("records token fetch failure without continuing when diagnostics are blocked", async () => {
     const failure = { kind: "networkError", href: "?s=Battle&ss=gr", retries: 4 };
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
-      if (key === IDLE_ARENA_FAILURE_KEY) throw new Error("quota");
-      return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
+    vi.stubGlobal("sessionStorage", {
+      clear: vi.fn(),
+      getItem: vi.fn(),
+      setItem: vi.fn((key) => {
+        if (key === IDLE_ARENA_FAILURE_KEY) throw new Error("quota");
+      }),
     });
     vi.spyOn(console, "warn").mockImplementation(() => {
       throw new Error("console blocked");
@@ -137,9 +139,7 @@ describe("runIdleArenaAutomation failure fallback", () => {
     });
     mocks.post.mockImplementation((_href, success) => success());
 
-    expect(() =>
-      runIdleArenaAutomation({ type: IdleArenaEvent.START_NEXT_BATTLE })
-    ).not.toThrow();
+    expect(() => runIdleArenaAutomation({ type: IdleArenaEvent.START_NEXT_BATTLE })).not.toThrow();
     expect(mocks.setValue).toHaveBeenCalled();
     expect(mocks.setValue.mock.results.some((result) => result.type === "throw")).toBe(true);
     expect(console.warn).toHaveBeenCalledWith(

@@ -57,7 +57,7 @@ describe("runIdleArenaAutomation", () => {
   it("resets persisted idle arena progress through the entry", () => {
     setValue(STORAGE_KEYS.ARENA, { date: "today", done: ["1"] });
 
-    runIdleArenaAutomation({ type: IdleArenaEvent.RESET_PROGRESS });
+    expect(runIdleArenaAutomation({ type: IdleArenaEvent.RESET_PROGRESS })).toBe(true);
 
     expect(getValue(STORAGE_KEYS.ARENA, true)).toBeNull();
   });
@@ -124,9 +124,7 @@ describe("runIdleArenaAutomation", () => {
       if (event.key === "idleArenaValue") return "1";
       return event.fallback;
     });
-    mocks.post.mockImplementation((_href, _success, _parm, _type, onFailure) =>
-      onFailure(failure)
-    );
+    mocks.post.mockImplementation((_href, _success, _parm, _type, onFailure) => onFailure(failure));
 
     runIdleArenaAutomation({ type: IdleArenaEvent.START_NEXT_BATTLE });
 

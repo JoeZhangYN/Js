@@ -7,6 +7,7 @@ const owner = path.normalize("src/arena/idle-arena.js");
 const failureOwner = path.normalize("src/arena/idle-arena-failure.js");
 const ownerTest = path.normalize("src/arena/idle-arena.test.js");
 const failureTest = path.normalize("src/arena/idle-arena-failure.test.js");
+const resetFailureTest = path.normalize("src/arena/idle-arena-reset-failure.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const settings = path.normalize("src/settings/render.js");
@@ -93,13 +94,18 @@ if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
 if (!ownerText.includes("RESET_PROGRESS")) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose RESET_PROGRESS event`);
 }
-if (!ownerText.includes("delValue(STORAGE_KEYS.ARENA)")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must own arena reset storage deletion`);
+if (ownerText.includes("delValue(STORAGE_KEYS.ARENA)")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not delete arena progress directly; use clearPersistedIdleArenaProgress`
+  );
+}
+if (!ownerText.includes("clearPersistedIdleArenaProgress")) {
+  violations.push(`${owner.replaceAll("\\", "/")} reset must route through failure owner`);
 }
 for (const required of [
   "recordIdleArenaRequestFailure",
   "recordIdleArenaFailure",
-  "capability: \"idleArena\"",
+  'capability: "idleArena"',
   "HVAA:lastIdleArenaFailure",
   "[HVAA] idle arena request failed",
   "IDLE_ARENA_TOKEN_URLS",
@@ -113,8 +119,11 @@ for (const required of [
 for (const required of [
   "IDLE_ARENA_FAILURE_KEY",
   "persistIdleArenaProgress",
+  "clearPersistedIdleArenaProgress",
   "stage",
   "storageWrite",
+  "storageDelete",
+  "reset-progress",
   "globalThis.sessionStorage?.setItem(IDLE_ARENA_FAILURE_KEY",
   "Idle arena recovery must not depend on diagnostic storage.",
 ]) {
@@ -123,8 +132,8 @@ for (const required of [
   }
 }
 for (const required of [
-  "IDLE_ARENA_FAILURE: \"HVAA:lastIdleArenaFailure\"",
-  "source(\"idleArenaFailure\", DiagnosticEvidenceKey.IDLE_ARENA_FAILURE)",
+  'IDLE_ARENA_FAILURE: "HVAA:lastIdleArenaFailure"',
+  'source("idleArenaFailure", DiagnosticEvidenceKey.IDLE_ARENA_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {
     violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
@@ -132,7 +141,7 @@ for (const required of [
 }
 for (const required of [
   "HVAA:lastIdleArenaFailure",
-  "idleArenaFailure: { capability: \"idleArena\", stage: \"battle-start\" }",
+  'idleArenaFailure: { capability: "idleArena", stage: "battle-start" }',
 ]) {
   if (!diagnosticTestText.includes(required)) {
     violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
@@ -149,14 +158,24 @@ if (
   !tokenFetchBlock.includes("href") ||
   !tokenFetchBlock.includes("failTokenFetch")
 ) {
-  violations.push(`${owner.replaceAll("\\", "/")} token fetch requests must pass failure callbacks`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} token fetch requests must pass failure callbacks`
+  );
 }
-if (!/recordIdleArenaRequestFailure\("battle-start",\s*arenaBeforeStart,\s*failure\)/.test(ownerText)) {
+if (
+  !/(?:idleArenaFailure\.)?recordIdleArenaRequestFailure\(\s*"battle-start",\s*arenaBeforeStart,\s*failure\s*\)/.test(
+    ownerText
+  )
+) {
   violations.push(
     `${owner.replaceAll("\\", "/")} battle start failures must preserve pre-start progress`
   );
 }
-if (!ownerText.includes('if (!persistIdleArenaProgress("battle-start-persist", arena)) return;')) {
+if (
+  !/if \(!(?:idleArenaFailure\.)?persistIdleArenaProgress\("battle-start-persist", arena\)\) return;/.test(
+    ownerText
+  )
+) {
   violations.push(
     `${owner.replaceAll("\\", "/")} battle start must not reload after failed progress persistence`
   );
@@ -207,9 +226,9 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "records battle start request failures without advancing arena progress",
     "HVAA:lastIdleArenaFailure",
     "[HVAA] idle arena request failed",
-    "capability: \"idleArena\"",
-    "stage: \"token-fetch\"",
-    "stage: \"battle-start\"",
+    'capability: "idleArena"',
+    'stage: "token-fetch"',
+    'stage: "battle-start"',
   ]) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
@@ -228,12 +247,25 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     'throw new Error("arena write blocked")',
     'throw new Error("console blocked")',
     "expect(vi.getTimerCount()).toBe(0)",
-    "stage: \"token-fetch\"",
-    "stage: \"token-persist\"",
-    "stage: \"battle-start-persist\"",
+    'stage: "token-fetch"',
+    'stage: "token-persist"',
+    'stage: "battle-start-persist"',
   ]) {
     if (!failureTestText.includes(required)) {
       violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
+  const resetFailureTestText = fs.existsSync(path.join(root, resetFailureTest))
+    ? fs.readFileSync(path.join(root, resetFailureTest), "utf8")
+    : "";
+  for (const required of [
+    "records reset progress storage deletion failure without throwing",
+    'throw new Error("arena delete blocked")',
+    'stage: "reset-progress"',
+    'failure: { kind: "storageDelete", error: "arena delete blocked" }',
+  ]) {
+    if (!resetFailureTestText.includes(required)) {
+      violations.push(`${resetFailureTest.replaceAll("\\", "/")} must cover ${required}`);
     }
   }
 }
