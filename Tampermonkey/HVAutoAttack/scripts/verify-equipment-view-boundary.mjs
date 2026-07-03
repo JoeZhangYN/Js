@@ -8,6 +8,8 @@ const percentileFile = path.join(root, "src/pages/equip-percentile-offline.js");
 const percentileFailureFile = path.join(root, "src/pages/equip-percentile-failure.js");
 const percentileFailureTest = path.join(root, "src/pages/equip-percentile-failure.test.js");
 const percentileOfflineFailureTest = path.join(root, "src/pages/equip-percentile-offline-failure.test.js");
+const forgeCostFile = path.join(root, "src/pages/showequip-forge-cost.js");
+const forgeCostTest = path.join(root, "src/pages/showequip-forge-cost.test.js");
 const diagnosticKeysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
 const diagnosticTestFile = path.join(root, "src/core/diagnostic-evidence.test.js");
 const deletedLiveFile = path.join(root, "src/pages/equip-percentile-live.js");
@@ -114,7 +116,7 @@ function checkDeletedLivePath() {
 function checkDeletedSetupEntrypoints() {
   const files = [
     path.join(root, "src/pages/equipment-view-automation.js"),
-    path.join(root, "src/pages/showequip-forge-cost.js"),
+    forgeCostFile,
     path.join(root, "src/pages/equip-percentile-dispatcher.js"),
     path.join(root, "src/pages/equip-percentile-offline.js"),
   ];
@@ -123,6 +125,34 @@ function checkDeletedSetupEntrypoints() {
     const text = fs.readFileSync(file, "utf8");
     if (oldSetupEntrypoint.test(text)) {
       violations.push(`${rel(file)} must use equipment percentile business entrypoints`);
+    }
+  }
+}
+
+function checkForgeCostNameParsing() {
+  const forgeText = fs.readFileSync(forgeCostFile, "utf8");
+  if (!forgeText.includes("export function readShowEquipName(body)")) {
+    violations.push(`${rel(forgeCostFile)} must expose one showequip name parser`);
+  }
+  if (!forgeText.includes("const fullName = readShowEquipName(document.body);")) {
+    violations.push(`${rel(forgeCostFile)} must route material selection through readShowEquipName`);
+  }
+  if (/function getEquipName\b|typeof body\.children\[1\]/.test(forgeText)) {
+    violations.push(`${rel(forgeCostFile)} must not parse showequip names through the old raw children path`);
+  }
+  if (!fs.existsSync(forgeCostTest)) {
+    violations.push(`${rel(forgeCostTest)} must cover showequip name parsing`);
+    return;
+  }
+  const forgeTestText = fs.readFileSync(forgeCostTest, "utf8");
+  for (const required of [
+    "reads showequip names from known page layouts",
+    "fails closed for missing showequip name nodes",
+    "Legendary Rapier of Slaughter",
+    "readShowEquipName(null)",
+  ]) {
+    if (!forgeTestText.includes(required)) {
+      violations.push(`${rel(forgeCostTest)} must cover ${required}`);
     }
   }
 }
@@ -219,6 +249,7 @@ checkEntry();
 checkPageAutomation();
 checkDeletedLivePath();
 checkDeletedSetupEntrypoints();
+checkForgeCostNameParsing();
 checkPercentileModeDecisionPoint();
 checkPercentileFailureBoundary();
 

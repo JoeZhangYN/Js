@@ -62,19 +62,21 @@ function upgradeSummary(input, basicMaterialCost, maxLevel) {
   return summary;
 }
 
-function getEquipName(body) {
-  if (typeof body.children[1] === "undefined") return "无此物品";
-  const showequip = body.children[1];
-  const nameDiv = showequip.children.length === 3
-    ? showequip.children[0].children[0]
-    : showequip.children[1].children[0];
-  let name = nameDiv.children[0].textContent;
-  if (nameDiv.children.length === 3) name += " " + nameDiv.children[2].textContent;
-  return name;
+export function readShowEquipName(body) {
+  const showequip = body?.children?.[1];
+  if (!showequip) return "无此物品";
+  const nameDiv =
+    showequip.children?.length === 3
+      ? showequip.children?.[0]?.children?.[0]
+      : showequip.children?.[1]?.children?.[0];
+  const name = nameDiv?.children?.[0]?.textContent;
+  if (!name) return "无此物品";
+  const suffix = nameDiv.children?.length === 3 ? nameDiv.children?.[2]?.textContent : "";
+  return suffix ? `${name} ${suffix}` : name;
 }
 
 function getBasicMaterialCost(materialCost) {
-  const fullName = getEquipName(document.body);
+  const fullName = readShowEquipName(document.body);
   if (fullName.match(/Axe|Club|Rapier|Shortsword|Wakizashi|Estoc|Longsword|Mace|Katana/i)) return materialCost.metal;
   if (fullName.match(/Katalox|Redwood|Willow|Oak|Buckler|Kite/i)) return materialCost.wood;
   if (fullName.match(/Cotton/i)) return materialCost.cloth;
