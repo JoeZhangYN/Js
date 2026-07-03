@@ -10,6 +10,7 @@ const violations = [];
 
 for (const required of [
   "var record_hvut_mooglemail_send_failure = function (stage, detail) {",
+  "var stop_hvut_mooglemail_send_failure = async function (stage, detail, message, discardStage) {",
   "sessionStorage.setItem('HVAA:lastHvutMoogleMailSendFailure'",
 ]) {
   if (!text.includes(required)) {
@@ -23,6 +24,32 @@ if (!sendMatch) {
   violations.push(`${target} must keep the MoogleMail send entry visible`);
 } else {
   const body = sendMatch[0];
+  for (const required of [
+    "return stop_hvut_mooglemail_send_failure('mailboxLoadRequest'",
+    "return stop_hvut_mooglemail_send_failure('mailboxToken'",
+    "return stop_hvut_mooglemail_send_failure('mailboxInitialDiscard'",
+    "return stop_hvut_mooglemail_send_failure('codRequest'",
+    "return stop_hvut_mooglemail_send_failure('codRejected'",
+    "return stop_hvut_mooglemail_send_failure('persistentMailboxLoadRequest'",
+    "return stop_hvut_mooglemail_send_failure('persistentMailboxRejected'",
+    "return stop_hvut_mooglemail_send_failure('persistentMailboxUnavailable'",
+    "return stop_hvut_mooglemail_send_failure('persistentMailboxDirty'",
+    "return stop_hvut_mooglemail_send_failure('persistentAttachRequest'",
+    "return stop_hvut_mooglemail_send_failure('persistentAttachRejected'",
+    "return stop_hvut_mooglemail_send_failure('persistentCodRequest'",
+    "return stop_hvut_mooglemail_send_failure('persistentCodRejected'",
+    "return stop_hvut_mooglemail_send_failure('persistentSendRequest'",
+    "return stop_hvut_mooglemail_send_failure('persistentSendRejected'",
+    "return stop_hvut_mooglemail_send_failure('sendRequest'",
+    "return stop_hvut_mooglemail_send_failure('sendRejected'",
+  ]) {
+    if (!body.includes(required)) {
+      violations.push(`${target} mail send must guard failure with ${required}`);
+    }
+  }
+  if (/\$mail\.discard\(\);\n\s*return;/.test(body)) {
+    violations.push(`${target} mail send must not keep naked discard/return failure paths`);
+  }
   const attachMatch = /if \(attach\?\.length\) \{[\s\S]*?\n    \}\n\n    if \(cod && !cod_persistent\)/.exec(body);
   if (!attachMatch) {
     violations.push(`${target} must keep the MoogleMail attach stage visible`);
