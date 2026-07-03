@@ -146,6 +146,8 @@ requireText("src/battle/buff/activate-spirit.js", [
   "battlePreCastSpiritEventHandlers[event?.type]",
   "BattleSpiritToggleEvent.ACTIVATE_IF_INACTIVE",
   "runBattleSpiritToggleAutomation",
+  "preCastSpiritActivated",
+  'result?.kind === "failed"',
 ]);
 const activateSpiritText = fs.readFileSync(
   path.join(root, "src/battle/buff/activate-spirit.js"),
@@ -160,6 +162,8 @@ requireText("src/battle/buff/activate-spirit.test.js", [
   "rejects unknown pre-cast Spirit events without option reads",
   "rejects null pre-cast Spirit events with structured evidence",
   "unknownPreCastSpiritEvent",
+  "does not claim the turn when Spirit toggle returns a typed failure",
+  'kind: "failed"',
   "HVAA:lastBattleCommand",
   "eventType: null",
 ]);

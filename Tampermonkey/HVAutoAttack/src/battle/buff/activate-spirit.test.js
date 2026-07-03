@@ -78,6 +78,17 @@ describe("runBattlePreCastSpiritAutomation", () => {
     });
   });
 
+  it("does not claim the turn when Spirit toggle returns a typed failure", () => {
+    mocks.runBattleSpiritToggleAutomation.mockReturnValue({
+      kind: "failed",
+      reason: "spiritElementReadFailed",
+    });
+
+    expect(
+      runBattlePreCastSpiritAutomation({ type: BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED })
+    ).toBe(false);
+  });
+
   it("routes pre-cast Spirit activation through the command entry", () => {
     expect(
       runBattlePreCastSpiritAutomation({ type: BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED })

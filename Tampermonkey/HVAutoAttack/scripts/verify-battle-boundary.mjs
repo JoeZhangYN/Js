@@ -2013,6 +2013,8 @@ function checkActivateSpirit() {
     "battlePreCastSpiritEventHandlers",
     "runBattlePreCastSpiritAutomation",
     "ACTIVATE_IF_ALLOWED",
+    "preCastSpiritActivated",
+    'result?.kind === "failed"',
   ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(activateSpiritFile)} must own ${required}`);

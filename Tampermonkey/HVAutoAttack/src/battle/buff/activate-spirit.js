@@ -39,9 +39,16 @@ function recordRejectedPreCastSpirit(event) {
 function activatePreCastSpiritIfAllowed() {
   if (!readOptionField("preCastSS", false)) return false;
   if (!checkCondition(readOptionField("preCastSSCondition", ""))) return false;
-  return !!runBattleSpiritToggleAutomation({
-    type: BattleSpiritToggleEvent.ACTIVATE_IF_INACTIVE,
-  });
+  return preCastSpiritActivated(
+    runBattleSpiritToggleAutomation({
+      type: BattleSpiritToggleEvent.ACTIVATE_IF_INACTIVE,
+    })
+  );
+}
+
+function preCastSpiritActivated(result) {
+  if (result?.kind === "failed") return false;
+  return Boolean(result);
 }
 
 export function runBattlePreCastSpiritAutomation(event = { type: EVENT_ACTIVATE_IF_ALLOWED }) {
