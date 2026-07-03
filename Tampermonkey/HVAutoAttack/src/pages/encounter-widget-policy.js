@@ -47,6 +47,10 @@ function runWidgetStartedEncounter(event) {
 }
 
 function planWidgetClick(event) {
+  const current = readWidgetState(event.state);
+  if (current.status === "countdown" && !event.force) {
+    return { ...current, action: "none", handled: true };
+  }
   if (event.pageType === "ba") return { action: "load" };
   if (event.pageType === "eh" && event.hvAvailable === false) return { action: "load" };
   const plan = runEncounterPolicy({

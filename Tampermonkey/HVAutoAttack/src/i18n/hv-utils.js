@@ -1281,6 +1281,9 @@ const bindRe = function (re, ctx) {
   };
   re.run = async function (engage) {
     if (re.type === 'ba') {
+      const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage });
+      if (applyEncounterState(outcome) === false) return false;
+      if (outcome?.handled) return;
       return re.load();
     } else if (re.type === 'hv') {
       const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage });

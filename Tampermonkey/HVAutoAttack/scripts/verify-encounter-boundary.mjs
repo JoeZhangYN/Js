@@ -697,6 +697,15 @@ if (!/\bWIDGET_TIMER_ELAPSED\b/.test(hvUtilsText)) {
     `${hvUtilsFile.replaceAll("\\", "/")} widget countdown expiry must report WIDGET_TIMER_ELAPSED`
   );
 }
+const baRunBranch = hvUtilsText.match(/if \(re\.type === 'ba'\) \{[\s\S]*?\n\s*\} else if \(re\.type === 'hv'\)/)?.[0] || "";
+if (
+  !baRunBranch.includes("WIDGET_CLICKED") ||
+  !baRunBranch.includes("outcome?.handled")
+) {
+  violations.push(
+    `${hvUtilsFile.replaceAll("\\", "/")} battle-page widget clicks must route through WIDGET_CLICKED before loading news`
+  );
+}
 if (!/unavailableReason\s*=== ['"]equipmentInventoryFull['"]/.test(hvUtilsText)) {
   violations.push(
     `${hvUtilsFile.replaceAll("\\", "/")} equipment inventory prompt must require typed unavailableReason`
@@ -730,6 +739,7 @@ for (const required of [
 }
 for (const required of [
   "does not classify low equipment capacity text as encounter equipment-full failure",
+  "handles plain battle-page countdown clicks without requesting a news load",
   "Inventory Capacity:",
   "54",
   "500",

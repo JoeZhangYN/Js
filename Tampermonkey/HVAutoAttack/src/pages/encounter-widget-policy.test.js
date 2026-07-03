@@ -69,4 +69,18 @@ describe("planEncounterWidgetEvent", () => {
       unavailableReason: "equipmentInventoryFull",
     });
   });
+
+  it("handles plain battle-page countdown clicks without requesting a news load", () => {
+    expect(
+      planEncounterWidgetEvent({
+        type: "widgetClicked",
+        state: { date: Date.now(), key: "", count: 1, clear: true },
+        pageType: "ba",
+      })
+    ).toMatchObject({
+      action: "none",
+      handled: true,
+      status: "countdown",
+    });
+  });
 });
