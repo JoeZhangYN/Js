@@ -69,6 +69,21 @@ describe("runBattleLifecycleAutomation", () => {
     });
   });
 
+  it("does not treat typed failed battle-start exits as successful", () => {
+    const detail = { kind: "failed", reason: "monitorStartFailed" };
+    mocks.runBattleMonitorAutomation.mockReturnValue(detail);
+
+    expect(runBattleLifecycleAutomation({ type: BattleLifecycleEvent.BATTLE_STARTED })).toBe(
+      false
+    );
+
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattleLifecycle"))).toMatchObject({
+      phase: "battleStarted",
+      result: false,
+      steps: expect.arrayContaining([{ step: "startMonitor", result: false, detail }]),
+    });
+  });
+
   it("rejects unknown events with lifecycle evidence", () => {
     expect(runBattleLifecycleAutomation({ type: "unknown" })).toBe(false);
 

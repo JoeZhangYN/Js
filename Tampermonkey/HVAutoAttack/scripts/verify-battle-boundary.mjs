@@ -378,6 +378,9 @@ function checkBattleLifecycleEntry() {
     "BattleMonitorEvent.BATTLE_STARTED",
     "BattleLifecycleEvidenceEvent.RECORD_LIFECYCLE",
     "runBattleLifecycleEvidence",
+    "normalizeStepResult",
+    'rawResult?.kind === "failed"',
+    "return { result: false, detail: rawResult }",
     "unknownBattleLifecycleEvent",
     "battleLifecycleHandlers[event?.type]",
     "recordLifecycle(EVENT_BATTLE_STARTED, started, steps)",
@@ -406,6 +409,7 @@ function checkBattleLifecycleEntry() {
   const testText = fs.readFileSync(battleLifecycleTest, "utf8");
   for (const required of [
     "returns false and records evidence when a battle-start exit fails",
+    "does not treat typed failed battle-start exits as successful",
     "rejects unknown events with lifecycle evidence",
     "rejects null events with lifecycle evidence instead of throwing",
     "HVAA:lastBattleLifecycle",

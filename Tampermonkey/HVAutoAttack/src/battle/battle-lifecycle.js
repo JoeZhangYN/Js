@@ -23,9 +23,18 @@ export const BattleLifecycleEvent = Object.freeze({
 });
 
 function recordStep(steps, step, run) {
-  const result = run();
-  steps.push({ step, result: result === undefined ? true : result });
-  return result;
+  const stepResult = normalizeStepResult(run());
+  steps.push({ step, ...stepResult });
+  return stepResult.result;
+}
+
+function normalizeStepResult(rawResult) {
+  if (rawResult === undefined) return { result: true };
+  if (rawResult?.kind === "failed") return { result: false, detail: rawResult };
+  if (rawResult && typeof rawResult === "object" && "kind" in rawResult) {
+    return { result: true, detail: rawResult };
+  }
+  return { result: rawResult };
 }
 
 function startBattle(deps) {
