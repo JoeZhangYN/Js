@@ -98,6 +98,8 @@ for (const required of [
   "BattleChannelExecutionEvent.APPLY_PLAN",
   "runBattleChannelExecution",
   "executeActionResult",
+  "actionEffectActed",
+  'result?.kind === "failed"',
   "actionExecutorThrew",
   "isKnownActionResultKind",
   "executeItemCommandResult",
@@ -284,20 +286,21 @@ for (const forbidden of [
   "halt: executeHaltResult",
   "function executeHaltResult",
   'runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" });\n  return true',
+  "return !!runBattle",
 ]) {
   if (ownerText.includes(forbidden) || executionText.includes(forbidden)) {
-    violations.push(`${rel(owner)} must keep retired halt ActionResult out of dispatch`);
+    violations.push(`${rel(owner)} must keep retired halt/booleanized ActionResult paths out of dispatch`);
   }
 }
 if (
   !executionText.includes(
-    'return !!runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" })'
+    'return runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" })'
   )
 ) {
   violations.push(`${rel(execution)} pause effects must return the pause entry result`);
 }
 if (
-  !/function executeAlertPauseResult\(result\) \{[\s\S]*?return !!runBattlePauseAutomation\(\{[\s\S]*?reason: "alertAndPause"/.test(
+  !/function executeAlertPauseResult\(result\) \{[\s\S]*?return runBattlePauseAutomation\(\{[\s\S]*?reason: "alertAndPause"/.test(
     executionText
   )
 ) {
@@ -309,7 +312,9 @@ if (!fs.existsSync(path.join(root, pauseResultTest))) {
   const pauseResultTestText = read(pauseResultTest);
   for (const required of [
     "returns not acted when pause automation rejects a pause result",
+    "returns not acted when pause automation returns a typed failure",
     "returns pause automation result for alert-and-pause effects",
+    'kind: "failed"',
     "actionExecutorRejected",
     "HVAA:lastBattleActionEffect",
   ]) {

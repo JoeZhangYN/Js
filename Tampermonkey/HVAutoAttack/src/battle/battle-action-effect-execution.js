@@ -44,7 +44,7 @@ export function isKnownActionResultKind(kind) {
 export function executeActionResult(result, snap) {
   try {
     return {
-      acted: Boolean(ACTION_RESULT_EXECUTORS[result?.kind]?.(result, snap) ?? false),
+      acted: actionEffectActed(ACTION_RESULT_EXECUTORS[result?.kind]?.(result, snap)),
     };
   } catch (error) {
     return {
@@ -55,34 +55,39 @@ export function executeActionResult(result, snap) {
   }
 }
 
+function actionEffectActed(result) {
+  if (result?.kind === "failed") return false;
+  return Boolean(result);
+}
+
 function executeNoopResult() {
   return false;
 }
 
 function executeItemCommandResult(result) {
-  return !!runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_ITEM, itemId: result.itemId });
+  return runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_ITEM, itemId: result.itemId });
 }
 
 function executeSkillCommandResult(result) {
-  return !!runBattleSkillCommand({
+  return runBattleSkillCommand({
     type: BattleSkillCommandEvent.CLICK_READY,
     skillId: result.skillId,
   });
 }
 
 function executeDefendCommandResult() {
-  return !!runBattleDefendCommand({ type: BattleDefendCommandEvent.CLICK });
+  return runBattleDefendCommand({ type: BattleDefendCommandEvent.CLICK });
 }
 
 function executeToggleSpiritResult() {
-  return !!runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.CLICK_AND_RECORD });
+  return runBattleSpiritToggleAutomation({ type: BattleSpiritToggleEvent.CLICK_AND_RECORD });
 }
 
 function executeSkillTargetResult(result) {
-  if (runBattlePreCastSpiritAutomation({ type: BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED })) {
+  if (actionEffectActed(runBattlePreCastSpiritAutomation({ type: BattlePreCastSpiritEvent.ACTIVATE_IF_ALLOWED }))) {
     return true;
   }
-  return !!runBattleTargetCommand({
+  return runBattleTargetCommand({
     type: BattleTargetCommandEvent.CLICK_SKILL_THEN_TARGET,
     skillId: result.skillId,
     targetId: result.targetId,
@@ -90,12 +95,12 @@ function executeSkillTargetResult(result) {
 }
 
 function executeFleeCommandResult() {
-  return !!runBattleFleeCommand({ type: BattleFleeCommandEvent.CLICK_AND_RELOAD });
+  return runBattleFleeCommand({ type: BattleFleeCommandEvent.CLICK_AND_RELOAD });
 }
 
 function executeAlertPauseResult(result) {
   _alert(0, result.msg.l0, result.msg.l1, result.msg.l2);
-  return !!runBattlePauseAutomation({
+  return runBattlePauseAutomation({
     type: BattlePauseEvent.PAUSE,
     reason: "alertAndPause",
     detail: { resultKind: result.kind, msg: result.msg },
@@ -103,7 +108,7 @@ function executeAlertPauseResult(result) {
 }
 
 function executePauseResult() {
-  return !!runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" });
+  return runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "autoPause" });
 }
 
 function executeCriticalPauseResult(result) {

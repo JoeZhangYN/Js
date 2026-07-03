@@ -44,6 +44,21 @@ describe("battle action effect pause result semantics", () => {
     });
   });
 
+  it("returns not acted when pause automation returns a typed failure", () => {
+    mocks.runBattlePauseAutomation.mockReturnValue({
+      kind: "failed",
+      reason: "pausePersistenceFailed",
+    });
+
+    expect(applyResult({ kind: "pause" })).toBe(false);
+
+    expect(JSON.parse(window.sessionStorage.getItem("HVAA:lastBattleActionEffect"))).toMatchObject({
+      result: { kind: "pause" },
+      acted: false,
+      failureReason: "actionExecutorRejected",
+    });
+  });
+
   it("returns pause automation result for alert-and-pause effects", () => {
     mocks.runBattlePauseAutomation.mockReturnValue(false);
 
