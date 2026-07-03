@@ -809,6 +809,26 @@ try {
     var match = /document\.location='([^']+)'/.exec(onclick || '');
     return match ? match[1] : record_hvut_price_market_parse_failure(stage, { onclick: onclick || '' });
   };
+  var parse_hvut_price_market_row = function (row, filter, stage) {
+    var cells = row?.cells || [];
+    var name = cells[0]?.textContent || '';
+    var itemidMatch = /itemid=(\d+)/.exec(row?.getAttribute('onclick') || '');
+    if (!name || !itemidMatch || cells.length < 5) {
+      return record_hvut_price_market_parse_failure(stage, { filter: filter || '', name: name, text: row?.textContent || '' });
+    }
+    var stock = parseInt(cells[1].textContent);
+    if (!Number.isFinite(stock)) {
+      return record_hvut_price_market_parse_failure(stage, { filter: filter || '', name: name, stock: cells[1].textContent || '' });
+    }
+    return {
+      name: name,
+      itemid: itemidMatch[1],
+      stock: stock,
+      bid: parseFloat(cells[2].textContent.slice(0, -2)) || 0,
+      ask: parseFloat(cells[3].textContent.slice(0, -2)) || 0,
+      market_stock: parseInt(cells[4].textContent.slice(0, -2)) || 0,
+    };
+  };
   var record_hvut_character_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutCharacterParse', stage: stage, detail: detail || {} };
     try {
@@ -2060,16 +2080,9 @@ const bindPrice = function (price, ctx) {
       return record_hvut_price_market_parse_failure('marketTable', { filter: filter || '' });
     }
     for (const tr of Array.from(table.rows).slice(1)) {
-      const name = tr.cells[0].textContent;
-      const itemidMatch = /itemid=(\d+)/.exec(tr.getAttribute('onclick') || '');
-      if (!itemidMatch) {
-        return record_hvut_price_market_parse_failure('marketItemId', { filter: filter || '', name });
-      }
-      const itemid = itemidMatch[1];
-      const stock = parseInt(tr.cells[1].textContent);
-      const bid = parseFloat(tr.cells[2].textContent.slice(0, -2)) || 0;
-      const ask = parseFloat(tr.cells[3].textContent.slice(0, -2)) || 0;
-      const market_stock = parseInt(tr.cells[4].textContent.slice(0, -2)) || 0;
+      const item = parse_hvut_price_market_row(tr, filter, 'marketItemRow');
+      if (item === false) return false;
+      const { name, itemid, stock, bid, ask, market_stock } = item;
       if (!price.market[name]) {
         price.market[name] = {};
       }

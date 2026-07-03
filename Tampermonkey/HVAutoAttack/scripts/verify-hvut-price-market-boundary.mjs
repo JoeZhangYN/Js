@@ -57,8 +57,9 @@ for (const required of [
 for (const required of [
   "const table = $qs('#market_itemlist table', doc);",
   "return record_hvut_price_market_parse_failure('marketTable'",
-  "const itemidMatch = /itemid=(\\d+)/.exec(tr.getAttribute('onclick') || '');",
-  "return record_hvut_price_market_parse_failure('marketItemId'",
+  "const item = parse_hvut_price_market_row(tr, filter, 'marketItemRow');",
+  "if (item === false) return false;",
+  "const { name, itemid, stock, bid, ask, market_stock } = item;",
   "return true;",
 ]) {
   if (!parseBody.includes(required)) {
@@ -70,6 +71,9 @@ for (const required of [
   "var parse_hvut_price_market_click_href = function (onclick, stage) {",
   "var match = /document\\.location='([^']+)'/.exec(onclick || '');",
   "return match ? match[1] : record_hvut_price_market_parse_failure(stage, { onclick: onclick || '' });",
+  "var parse_hvut_price_market_row = function (row, filter, stage) {",
+  "return record_hvut_price_market_parse_failure(stage, { filter: filter || '', name: name, text: row?.textContent || '' });",
+  "return record_hvut_price_market_parse_failure(stage, { filter: filter || '', name: name, stock: cells[1].textContent || '' });",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must own price market click href parser with ${required}`);
@@ -101,6 +105,18 @@ if (/if \(!price\.set\(new_prices\)\) return null;/.test(updateBody)) {
 }
 if (/const itemid = \/itemid=\(\\d\+\)\/\.exec\(tr\.getAttribute\('onclick'\)\)\[1\];/.test(parseBody)) {
   violations.push(`${target} price parse must not keep unchecked itemid parse`);
+}
+for (const forbidden of [
+  "const name = tr.cells[0].textContent;",
+  "const itemidMatch = /itemid=(\\d+)/.exec(tr.getAttribute('onclick') || '');",
+  "const stock = parseInt(tr.cells[1].textContent);",
+  "const bid = parseFloat(tr.cells[2].textContent.slice(0, -2)) || 0;",
+  "const ask = parseFloat(tr.cells[3].textContent.slice(0, -2)) || 0;",
+  "const market_stock = parseInt(tr.cells[4].textContent.slice(0, -2)) || 0;",
+]) {
+  if (parseBody.includes(forbidden)) {
+    violations.push(`${target} price parse must not keep raw market row path: ${forbidden}`);
+  }
 }
 for (const [label, body, stage] of [
   ["modern market click linkify", modernClickBody, "marketClickHref"],
