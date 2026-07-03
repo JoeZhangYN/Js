@@ -462,6 +462,15 @@ try {
     var panel = div?.children?.[2];
     return panel || record_hvut_ability_parse_failure(stage, { reason: 'abilityButtonPanelMissing', text: div?.textContent || '' });
   };
+  var parse_hvut_ability_unlock_button = function (ability, stage) {
+    var panel = parse_hvut_ability_button_panel(ability?.div, stage);
+    if (panel === null) {
+      record_hvut_ability_unlock_failure(stage, { reason: 'abilityButtonPanelMissing', id: ability?.id || '' });
+      return null;
+    }
+    var button = $qs('div[style*="u.png"]', panel);
+    return button || record_hvut_ability_unlock_failure(stage, { reason: 'abilityUnlockButtonMissing', id: ability?.id || '' });
+  };
   var parse_hvut_ability_unlock_id = function (panel, stage) {
     var onclick = panel?.getAttribute('onclick') || '';
     var match = /do_unlock_ability\((\d+)\)/.exec(onclick);
@@ -6458,9 +6467,11 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
         popup(error);
         return false;
       } else {
-        const button = $qs('div[style*="u.png"]', ab.div.children[2]);
-        button.style.opacity = 0.5;
-        button.style.backgroundImage = button.style.backgroundImage.replace('u.png', 'f.png');
+        const button = parse_hvut_ability_unlock_button(ab, 'abilityUnlockButton');
+        if (button) {
+          button.style.opacity = 0.5;
+          button.style.backgroundImage = button.style.backgroundImage.replace('u.png', 'f.png');
+        }
       }
       return true;
     }
@@ -12779,9 +12790,11 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
         popup(error);
         return false;
       } else {
-        const button = $qs('div[style*="u.png"]', ab.div.children[2]);
-        button.style.opacity = 0.5;
-        button.style.backgroundImage = button.style.backgroundImage.replace('u.png', 'f.png');
+        const button = parse_hvut_ability_unlock_button(ab, 'legacyAbilityUnlockButton');
+        if (button) {
+          button.style.opacity = 0.5;
+          button.style.backgroundImage = button.style.backgroundImage.replace('u.png', 'f.png');
+        }
       }
       return true;
     }

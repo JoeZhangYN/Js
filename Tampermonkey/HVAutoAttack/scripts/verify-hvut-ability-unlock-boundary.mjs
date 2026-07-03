@@ -16,6 +16,8 @@ for (const required of [
   "var record_hvut_ability_unlock_failure = function (stage, detail) {",
   "capability: 'hvutAbilityUnlock'",
   "sessionStorage.setItem('HVAA:lastHvutAbilityUnlockFailure'",
+  "var parse_hvut_ability_unlock_button = function (ability, stage) {",
+  "record_hvut_ability_unlock_failure(stage, { reason: 'abilityUnlockButtonMissing'",
 ]) {
   if (!text.includes(required)) violations.push(`${target} must include ability unlock diagnostic recorder: ${required}`);
 }
@@ -43,6 +45,8 @@ for (const [index, body] of bodies.entries()) {
     "try {\n      results = await Promise.all(requests);",
     "catch (error) {",
     "record_hvut_ability_unlock_failure(",
+    "const button = parse_hvut_ability_unlock_button(ab,",
+    "if (button) {",
     "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n      return;",
     "if (!results.every((r) => r)) return;",
     "reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'))",
@@ -59,6 +63,12 @@ for (const [index, body] of bodies.entries()) {
   }
   if (/catch \(_error\) \{\n\s*alert\(IS_ISEKAI/.test(body)) {
     violations.push(`${target} ability unlock[${index}] must not keep untyped request failure`);
+  }
+  if (/ab\.div\.children\[2\]/.test(body)) {
+    violations.push(`${target} ability unlock[${index}] must not rediscover button panel from raw DOM child index`);
+  }
+  if (/\$qs\('div\[style\*="u\.png"\]',\s*ab\.div/.test(body)) {
+    violations.push(`${target} ability unlock[${index}] must use the typed ability unlock button parser`);
   }
 }
 
