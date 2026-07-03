@@ -6884,7 +6884,18 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
           _ss.equip.requests++;
         }
         const offered = await _ss.offer.load(iid, reward_type, reward_slot);
-        if (offered === false || _ss.error) break;
+        if (offered === false) {
+          item.requests--;
+          item.stock += item.bulk;
+          item.max++;
+          item.node.stock.textContent = item.stock;
+          item.node.max.textContent = item.max;
+          if (item.type === 'Trophy') {
+            _ss.equip.requests--;
+          }
+          break;
+        }
+        if (_ss.error) break;
       }
     },
     load: async function (iid, reward_type, reward_slot) {
@@ -13199,7 +13210,18 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
         _ss.equip.requests++;
       }
       const offered = await _ss.request(iid, select_reward_type, select_reward_slot);
-      if (offered === false || _ss.error) break;
+      if (offered === false) {
+        item.requests--;
+        item.stock += item.bulk;
+        item.max++;
+        item.node.stock.textContent = item.stock;
+        item.node.max.textContent = item.max;
+        if (item.type === 'Trophy') {
+          _ss.equip.requests--;
+        }
+        break;
+      }
+      if (_ss.error) break;
     }
   };
 

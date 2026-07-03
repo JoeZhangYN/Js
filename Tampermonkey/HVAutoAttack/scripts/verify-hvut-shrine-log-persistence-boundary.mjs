@@ -52,7 +52,12 @@ for (const part of [
   "item.stock -= item.bulk;",
   "item.max--;",
   "const offered = await _ss.offer.load(iid, reward_type, reward_slot);",
-  "if (offered === false || _ss.error) break;",
+  "if (offered === false) {",
+  "item.requests--;",
+  "item.stock += item.bulk;",
+  "item.max++;",
+  "_ss.equip.requests--;",
+  "if (_ss.error) break;",
 ]) {
   requirePart("Shrine offer request", offerRequest, part);
 }
@@ -89,7 +94,12 @@ for (const part of [
   "item.stock -= item.bulk;",
   "item.max--;",
   "const offered = await _ss.request(iid, select_reward_type, select_reward_slot);",
-  "if (offered === false || _ss.error) break;",
+  "if (offered === false) {",
+  "item.requests--;",
+  "item.stock += item.bulk;",
+  "item.max++;",
+  "_ss.equip.requests--;",
+  "if (_ss.error) break;",
 ]) {
   requirePart("legacy Shrine offer", legacyOffer, part);
 }
