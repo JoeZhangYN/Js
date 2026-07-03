@@ -116,9 +116,15 @@ if (!/function persistAutoTuneValue[\s\S]*setValue\(storageKey,\s*value\);[\s\S]
 if ((ownerText.match(/\bsetValue\(/g) || []).length !== 1) {
   violations.push(`${owner.replaceAll("\\", "/")} must route auto-tune writes through persistAutoTuneValue`);
 }
+if (!ownerText.includes("return maybeStep(history, pad, key);")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must report pad-step persistence failures from RECORD_BATTLE`);
+}
 for (const required of [
   "AUTO_TUNE_FAILURE_KEY",
   "record-history",
+  "explore-lower-pad",
+  "does not report auto-tune step success when pad persistence fails",
+  "pad write blocked",
   "storageWrite",
   "auto-tune write blocked",
 ]) {

@@ -53,6 +53,32 @@ describe("auto-tune persistence failures", () => {
     expect(runAutoTuneAutomation({ type: AutoTuneEvent.READ_PAD })).toBe(1.3);
   });
 
+  it("does not report auto-tune step success when pad persistence fails", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    mocks.setValue.mockImplementation((item, value) => {
+      if (item === STORAGE_KEYS.AUTO_TUNE_PAD) throw new Error("pad write blocked");
+      window.localStorage[`hvAA_${item}`] =
+        typeof value === "string" ? value : JSON.stringify(value);
+    });
+
+    for (let i = 0; i < 4; i++) {
+      expect(runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_BATTLE, potionsUsed: 2 })).toBe(
+        true
+      );
+    }
+    expect(runAutoTuneAutomation({ type: AutoTuneEvent.RECORD_BATTLE, potionsUsed: 2 })).toBe(
+      false
+    );
+
+    expect(JSON.parse(window.sessionStorage.getItem(AUTO_TUNE_FAILURE_KEY))).toMatchObject({
+      capability: "autoTune",
+      stage: "explore-lower-pad",
+      storageKey: STORAGE_KEYS.AUTO_TUNE_PAD,
+      failure: { kind: "storageWrite", error: "pad write blocked" },
+    });
+    expect(runAutoTuneAutomation({ type: AutoTuneEvent.READ_PAD })).toBe(1.3);
+  });
+
   it("does not throw when auto-tune failure evidence and warning both fail", () => {
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {

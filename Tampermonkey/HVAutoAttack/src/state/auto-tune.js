@@ -107,8 +107,7 @@ function observeBattle(potionsUsed) {
   if (!persistAutoTuneValue("record-history", STORAGE_KEYS.AUTO_TUNE_HISTORY, history)) {
     return false;
   }
-  maybeStep(history, pad, key);
-  return true;
+  return maybeStep(history, pad, key);
 }
 
 function recordPotionUse() {
@@ -126,13 +125,12 @@ function recordRoundStarted() {
 
 function maybeStep(history, pad, key) {
   const cur = history[key];
-  if (cur.n < MIN_OBSERVATIONS) return;
+  if (cur.n < MIN_OBSERVATIONS) return true;
 
   const padNum = parseFloat(pad.toFixed(2));
   const idx = PAD_GRID.indexOf(padNum);
   if (idx < 0) {
-    persistAutoTuneValue("restore-grid-pad", STORAGE_KEYS.AUTO_TUNE_PAD, 1.3);
-    return;
+    return persistAutoTuneValue("restore-grid-pad", STORAGE_KEYS.AUTO_TUNE_PAD, 1.3);
   }
 
   const lowerKey = idx > 0 ? PAD_GRID[idx - 1].toFixed(2) : null;
@@ -140,14 +138,14 @@ function maybeStep(history, pad, key) {
 
   // 探索：未访问的邻居优先（确保 line search 覆盖）
   if (lowerKey && !history[lowerKey]) {
-    persistAutoTuneValue("explore-lower-pad", STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(lowerKey));
-    console.log(`[auto-tune] explore ${pad} → ${lowerKey}`);
-    return;
+    const persisted = persistAutoTuneValue("explore-lower-pad", STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(lowerKey));
+    if (persisted) console.log(`[auto-tune] explore ${pad} → ${lowerKey}`);
+    return persisted;
   }
   if (upperKey && !history[upperKey]) {
-    persistAutoTuneValue("explore-upper-pad", STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(upperKey));
-    console.log(`[auto-tune] explore ${pad} → ${upperKey}`);
-    return;
+    const persisted = persistAutoTuneValue("explore-upper-pad", STORAGE_KEYS.AUTO_TUNE_PAD, parseFloat(upperKey));
+    if (persisted) console.log(`[auto-tune] explore ${pad} → ${upperKey}`);
+    return persisted;
   }
 
   // 利用：邻居都有数据 → 比 mean potion，下降梯度
@@ -167,11 +165,13 @@ function maybeStep(history, pad, key) {
   else if (meanU < meanCur * 0.95 && meanU <= meanL) next = parseFloat(upperKey);
 
   if (next !== padNum) {
-    persistAutoTuneValue("step-pad", STORAGE_KEYS.AUTO_TUNE_PAD, next);
+    const persisted = persistAutoTuneValue("step-pad", STORAGE_KEYS.AUTO_TUNE_PAD, next);
+    if (!persisted) return false;
     console.log(
       `[auto-tune] safetyPad ${padNum} → ${next} (mean potions: cur=${meanCur.toFixed(1)}, L=${meanL.toFixed(1)}, U=${meanU.toFixed(1)})`
     );
   }
+  return true;
 }
 
 const autoTuneEventHandlers = Object.freeze({
