@@ -29,6 +29,9 @@ for (const part of [
   "record_hvut_shrine_offer_failure('offerLoadFetch'",
   "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
   "return false;",
+  "let offerStopped = false;",
+  "offerStopped = true;",
+  "if (offerStopped) return false;",
   "if (_ss.log.save() === false) return false;",
   "return true;",
 ]) {
@@ -48,12 +51,26 @@ for (const part of [
   "record_hvut_shrine_offer_failure('legacyOfferFetch'",
   "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
   "return false;",
+  "let offerStopped = false;",
+  "offerStopped = true;",
+  "if (offerStopped) return false;",
   "if (!$config.set('ss_log', _ss.log)) {",
   "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
   "return false;",
   "return true;",
 ]) {
   requirePart("legacy Shrine request", legacyRequest, part);
+}
+
+for (const [label, body, counter] of [
+  ["Shrine offer load", offerLoad, "item.total++;"],
+  ["legacy Shrine request", legacyRequest, "item.recieved++;"],
+]) {
+  const stopIndex = body.indexOf("if (offerStopped) return false;");
+  const counterIndex = body.indexOf(counter);
+  if (stopIndex < 0 || counterIndex < 0 || counterIndex < stopIndex) {
+    violations.push(`${target} ${label} must reject stopped Shrine offers before success counting`);
+  }
 }
 
 for (const [label, body, forbidden] of [

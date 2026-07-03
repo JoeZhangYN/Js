@@ -6935,6 +6935,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       const item = _ss.offer.items[iid];
       const list = [];
       const equips = [];
+      let offerStopped = false;
 
       get_message(doc, true).forEach((msg) => {
         if (!msg || reg_text.test(msg)) {
@@ -6956,9 +6957,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
         } else if (msg.includes('Sold the remains for')) {
         } else { //Your equipment inventory is full
           set_hvut_shrine_stop_error(_ss, msg);
+          offerStopped = true;
         }
       });
 
+      if (offerStopped) return false;
       item.total++;
       item.node.total.textContent = `(${item.total}/${item.requests})`;
       list.forEach((reward) => {
@@ -13209,6 +13212,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     const results = item.results;
     const rewards = [];
     const reg = /Received (.+)|(Your .+ has increased by one|.+ was increased by 1)|((?:Crude|Fair|Average|Superior|Exquisite|Magnificent|Legendary|Peerless) .+)/;
+    let offerStopped = false;
 
     get_message(doc, true).forEach((msg) => {
       if (!msg || ['Snowflake has blessed you with some of her power!', 'Snowflake has blessed you with an item!', 'Received:', 'Hit Space Bar to offer another item like this.'].includes(msg)) {
@@ -13223,9 +13227,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
         rewards.push(RegExp.$1 || RegExp.$2 || RegExp.$3);
       } else {
         set_hvut_shrine_stop_error(_ss, msg);
+        offerStopped = true;
       }
     });
 
+    if (offerStopped) return false;
     item.recieved++;
     item.node.span.textContent = `(${item.recieved}/${item.requests})`;
 
