@@ -309,6 +309,13 @@ function deleteSettingsBackup(code) {
   return false;
 }
 
+function restoreSettingsBackup(code) {
+  const restored = runOptionBackupAutomation({ type: OptionBackupEvent.RESTORE, code });
+  if (restored) return true;
+  _alert(0, "配置还原失败", "配置還原失敗", "Failed to restore backup");
+  return false;
+}
+
 function applySettingsLanguage(value) {
   gE(".hvAA-LangStyle").textContent = `l${value}{display:inline!important;}`;
   if (/^[01]$/.test(value)) gE(".hvAA-LangStyle").textContent += "l01{display:inline!important;}";
@@ -973,7 +980,7 @@ export function optionBox() {
       "請輸入配置代號",
       "Please put in a name for a configuration"
     );
-    if (!runOptionBackupAutomation({ type: OptionBackupEvent.RESTORE, code })) return;
+    if (!restoreSettingsBackup(code)) return;
     runNavigationAutomation({
       type: NavigationEvent.RELOAD_NOW,
       reason: NavigationReloadReason.SETTINGS_CHANGE,

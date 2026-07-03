@@ -86,12 +86,16 @@ for (const required of ["OptionBackupEvent.HAS_CODE", "OptionBackupEvent.RENDER_
 for (const required of [
   "function saveSettingsBackup(code) {",
   "function deleteSettingsBackup(code) {",
+  "function restoreSettingsBackup(code) {",
   "const saved = runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code });",
   "const deleted = runOptionBackupAutomation({ type: OptionBackupEvent.DELETE, code });",
+  "const restored = runOptionBackupAutomation({ type: OptionBackupEvent.RESTORE, code });",
   "if (!deleteSettingsBackup(code)) return;",
   "if (!saveSettingsBackup(code)) return;",
+  "if (!restoreSettingsBackup(code)) return;",
   "Failed to backup configuration",
   "Failed to delete backup",
+  "Failed to restore backup",
 ]) {
   if (!settingsText.includes(required)) {
     violations.push(`${settingsRender.replaceAll("\\", "/")} must keep backup UI updates behind checked backup commands`);
@@ -99,6 +103,8 @@ for (const required of [
 }
 const settingsBackupBlock =
   /gE\(["']\.hvAABackup["'][\s\S]*?gE\(["']\.hvAARestore["']/.exec(settingsText)?.[0] || "";
+const settingsRestoreBlock =
+  /gE\(["']\.hvAARestore["'][\s\S]*?gE\(["']\.hvAADelete["']/.exec(settingsText)?.[0] || "";
 const settingsDeleteBlock =
   /gE\(["']\.hvAADelete["'][\s\S]*?gE\(["']\.hvAAExport["']/.exec(settingsText)?.[0] || "";
 if (/runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.(?:SAVE_CURRENT|DELETE)\b/.test(settingsBackupBlock)) {
@@ -106,6 +112,9 @@ if (/runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.(?:SAVE_CURRENT|
 }
 if (/runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.DELETE\b/.test(settingsDeleteBlock)) {
   violations.push(`${settingsRender.replaceAll("\\", "/")} delete button must not bypass checked backup commands`);
+}
+if (/runOptionBackupAutomation\(\{\s*type:\s*OptionBackupEvent\.RESTORE\b/.test(settingsRestoreBlock)) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} restore button must not bypass checked backup commands`);
 }
 
 for (const legacy of [
