@@ -1,6 +1,7 @@
 // 页面导航副作用：唯一对外入口 runNavigationAutomation(event)。
 import { installExternalUnloadAudit, reportPreviousNavigationAudit } from "./navigation-audit.js";
 import { recordNavigationDecisionSafely, writeNavigationAuditSafely } from "./navigation-recording.js";
+import { createReloadAudit, createReloadEvidence, createReloadFailureAudit, createReloadFailureEvidence, createReloadStopAudit, createReloadStopEvidence, RELOAD_RETRY_DELAY_MS, shouldStopReloadRetry } from "./navigation-reload-retry.js";
 import { NavigationRedirectReason, NavigationReloadReason, NavigationWindowReason } from "./navigation-reasons.js";
 
 const EVENT_RELOAD_NOW = "reloadNow", EVENT_SCHEDULE_RELOAD = "scheduleReload", EVENT_OPEN_URL = "openUrl", EVENT_OPEN_WINDOW = "openWindow";
@@ -12,37 +13,27 @@ const RELOAD_REASONS = new Set(Object.values(NavigationReloadReason));
 const REDIRECT_REASONS = new Set(Object.values(NavigationRedirectReason));
 
 const WINDOW_REASONS = new Set(Object.values(NavigationWindowReason));
-const RELOAD_RETRY_DELAY_MS = 5000;
 const CAUSE_NAVIGATION_EFFECT_FAILED = "navigationEffectFailed";
 
 reportPreviousNavigationAudit();
 installExternalUnloadAudit();
 
 function goto(reason, detail, attempt = 1) {
-  const reloadEvidence = { attempt, retryDelayMs: RELOAD_RETRY_DELAY_MS, detail };
+  if (shouldStopReloadRetry(attempt)) {
+    const stopEvidence = createReloadStopEvidence(attempt, detail);
+    recordNavigationDecisionSafely("rejected", { type: EVENT_RELOAD_NOW, reason }, stopEvidence);
+    writeNavigationAuditSafely("reloadStopped", createReloadStopAudit(reason, attempt, detail));
+    return false;
+  }
+  const reloadEvidence = createReloadEvidence(attempt, detail);
   recordNavigationDecisionSafely("accepted", { type: EVENT_RELOAD_NOW, reason }, reloadEvidence);
-  writeNavigationAuditSafely("reload", {
-    reason,
-    attempt,
-    retryDelayMs: RELOAD_RETRY_DELAY_MS,
-    detail,
-  });
+  writeNavigationAuditSafely("reload", createReloadAudit(reason, attempt, detail));
   try {
     window.location.href = window.location;
   } catch (error) {
-    recordNavigationDecisionSafely("rejected", { type: EVENT_RELOAD_NOW, reason }, {
-      cause: CAUSE_NAVIGATION_EFFECT_FAILED,
-      attempt,
-      detail,
-      error: error?.message || String(error),
-    });
-    writeNavigationAuditSafely("reloadFailed", {
-      reason,
-      attempt,
-      retryDelayMs: RELOAD_RETRY_DELAY_MS,
-      detail,
-      error: error?.message || String(error),
-    });
+    const failure = createReloadFailureEvidence(CAUSE_NAVIGATION_EFFECT_FAILED, attempt, detail, error);
+    recordNavigationDecisionSafely("rejected", { type: EVENT_RELOAD_NOW, reason }, failure);
+    writeNavigationAuditSafely("reloadFailed", createReloadFailureAudit(reason, attempt, detail, error));
     return false;
   }
   setTimeout(() => goto(reason, detail, attempt + 1), RELOAD_RETRY_DELAY_MS);

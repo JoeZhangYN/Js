@@ -68,8 +68,16 @@ if (!owner) {
   if (!source.includes("setTimeout(() => goto(event.reason, event.detail), delayMs)")) {
     violations.push("scheduled reload must preserve reload detail in navigation audit");
   }
-  if (!source.includes("attempt + 1") || !source.includes("retryDelayMs: RELOAD_RETRY_DELAY_MS")) {
+  if (!source.includes("attempt + 1") || !source.includes("createReloadAudit(reason, attempt, detail)")) {
     violations.push("reload retry audit must record attempt and retryDelayMs");
+  }
+  if (
+    !source.includes("shouldStopReloadRetry(attempt)") ||
+    !source.includes("createReloadStopEvidence(attempt, detail)") ||
+    !source.includes('recordNavigationDecisionSafely("rejected", { type: EVENT_RELOAD_NOW, reason }, stopEvidence)') ||
+    !source.includes('writeNavigationAuditSafely("reloadStopped"')
+  ) {
+    violations.push("reload retry loop must stop and persist rejected evidence at the retry limit");
   }
   if (!source.includes("isRedirectReasonAllowed")) {
     violations.push("openUrl must validate an allowed redirect reason");
@@ -95,9 +103,31 @@ if (!owner) {
     }
   }
   const auditSource = files.find((file) => file.rel === "core/navigation-audit.js");
+  const reloadRetrySource = files.find((file) => file.rel === "core/navigation-reload-retry.js");
   const recordingSource = files.find((file) => file.rel === "core/navigation-recording.js");
   const reasonsSource = files.find((file) => file.rel === "core/navigation-reasons.js");
   const diagnosticEvidenceSource = files.find((file) => file.rel === "core/diagnostic-evidence.js");
+  if (!reloadRetrySource) {
+    violations.push("core/navigation-reload-retry.js is missing");
+  } else {
+    const reloadRetryText = stripComments(readFileSync(reloadRetrySource.abs, "utf8"));
+    for (const required of [
+      "RELOAD_RETRY_DELAY_MS = 5000",
+      "RELOAD_MAX_ATTEMPTS = 3",
+      'CAUSE_RELOAD_RETRY_LIMIT_REACHED = "reloadRetryLimitReached"',
+      "shouldStopReloadRetry",
+      "createReloadStopEvidence",
+      "createReloadStopAudit",
+      "createReloadFailureEvidence",
+      "createReloadFailureAudit",
+      "attempt > RELOAD_MAX_ATTEMPTS",
+      "maxAttempts: RELOAD_MAX_ATTEMPTS",
+    ]) {
+      if (!reloadRetryText.includes(required)) {
+        violations.push(`reload retry boundary must own ${required}`);
+      }
+    }
+  }
   if (!reasonsSource) {
     violations.push("core/navigation-reasons.js is missing");
   } else {
@@ -478,8 +508,12 @@ if (!owner) {
     );
     for (const required of [
       "records reload retry attempts separately from the initial reload",
+      "stops repeated reload recovery after the retry limit",
       "attempt: 1",
       "attempt: 2",
+      "attempt: 4",
+      "maxAttempts: 3",
+      "reloadRetryLimitReached",
       "retryDelayMs: 5000",
       "HVAA:lastNavigationDecision",
     ]) {

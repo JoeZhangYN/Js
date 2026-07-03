@@ -74,4 +74,38 @@ describe("scheduled reload navigation detail", () => {
     });
     vi.clearAllTimers();
   });
+
+  it("stops repeated reload recovery after the retry limit", () => {
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    runNavigationAutomation({
+      type: NavigationEvent.RELOAD_NOW,
+      reason: NavigationReloadReason.BATTLE_API_RESPONSE,
+      detail: { recoveryAction: "reload" },
+    });
+    vi.advanceTimersByTime(15000);
+
+    expect(warn).toHaveBeenCalledWith(
+      "[HVAA] reloadStopped",
+      expect.objectContaining({
+        reason: NavigationReloadReason.BATTLE_API_RESPONSE,
+        attempt: 4,
+        maxAttempts: 3,
+        retryDelayMs: 5000,
+        detail: { recoveryAction: "reload" },
+      })
+    );
+    expect(JSON.parse(sessionStorage.getItem("HVAA:lastNavigationDecision"))).toMatchObject({
+      decision: "rejected",
+      commandReason: NavigationReloadReason.BATTLE_API_RESPONSE,
+      detail: {
+        cause: "reloadRetryLimitReached",
+        attempt: 4,
+        maxAttempts: 3,
+        detail: { recoveryAction: "reload" },
+      },
+    });
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
