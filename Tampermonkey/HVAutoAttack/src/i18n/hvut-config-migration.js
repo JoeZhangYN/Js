@@ -13,6 +13,16 @@ export function getHvutConfigCarryKeys(segment) {
   return segment?.isIsekai ? [...COMMON_CARRY_KEYS] : [...PERSISTENT_CARRY_KEYS];
 }
 
+export function buildLegacyHvutEquipData(inEquipdata, inJson) {
+  if (!inEquipdata && !inJson) return null;
+  return { version: 1, ...(inEquipdata || {}), ...(inJson || {}) };
+}
+
+export function normalizeLegacyHvutEquipCode(equipCode) {
+  if (!equipCode) return null;
+  return equipCode.replace(/(\{\$\w+):/g, "$1?").replace(/\$bbcode/g, "$namecode");
+}
+
 export function migrateLegacyHvutMonsterLabLog(mlLog) {
   if (!mlLog || mlLog[0]) return null;
   const migrated = cloneConfigValue(mlLog);

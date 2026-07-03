@@ -95,6 +95,20 @@ try {
     record_hvut_config_parse_failure('configNamespaceBridgeMissing', { isIsekai: !!isIsekai });
     return null;
   };
+  var build_hvut_legacy_equipdata = function (inEquipdata, inJson) {
+    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.buildEquipData) {
+      return window.HVAA_hvutConfigMigration.buildEquipData(inEquipdata, inJson);
+    }
+    record_hvut_config_parse_failure('configEquipDataBridgeMissing', {});
+    return null;
+  };
+  var normalize_hvut_legacy_equip_code = function (equipCode) {
+    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.normalizeEquipCode) {
+      return window.HVAA_hvutConfigMigration.normalizeEquipCode(equipCode);
+    }
+    record_hvut_config_parse_failure('configEquipCodeBridgeMissing', {});
+    return null;
+  };
   var normalize_hvut_config_settings = function (settings, defaults) {
     if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.normalizeSettings) {
       return window.HVAA_hvutConfigMigration.normalizeSettings(settings, defaults);
@@ -5045,14 +5059,15 @@ const $config = {
       $config.reset();
       const in_equipdata = $config.ls_get('in_equipdata');
       const in_json = $config.ls_get('in_json');
-      if (in_equipdata || in_json) {
-        const equipdata = { version: 1 };
-        Object.assign(equipdata, in_equipdata, in_json);
+      const equipdata = build_hvut_legacy_equipdata(in_equipdata, in_json);
+      if (equipdata) {
         if (!$config.set('equipdata', equipdata)) return false;
       }
       const in_equipcode = $config.ls_get('in_equipcode');
       if (in_equipcode) {
-        $config.settings.equipCode = in_equipcode.replace(/(\{\$\w+):/g, '$1?').replace(/\$bbcode/g, '$namecode');
+        const equipCode = normalize_hvut_legacy_equip_code(in_equipcode);
+        if (!equipCode) return false;
+        $config.settings.equipCode = equipCode;
       }
       const in_namecode = $config.ls_get('in_namecode');
       if (in_namecode) {
@@ -10909,14 +10924,15 @@ const $config = {
       $config.reset();
       const in_equipdata = $config.ls_get('in_equipdata');
       const in_json = $config.ls_get('in_json');
-      if (in_equipdata || in_json) {
-        const equipdata = { version: 1 };
-        Object.assign(equipdata, in_equipdata, in_json);
+      const equipdata = build_hvut_legacy_equipdata(in_equipdata, in_json);
+      if (equipdata) {
         if (!$config.set('equipdata', equipdata)) return false;
       }
       const in_equipcode = $config.ls_get('in_equipcode');
       if (in_equipcode) {
-        $config.settings.equipCode = in_equipcode.replace(/(\{\$\w+):/g, '$1?').replace(/\$bbcode/g, '$namecode');
+        const equipCode = normalize_hvut_legacy_equip_code(in_equipcode);
+        if (!equipCode) return false;
+        $config.settings.equipCode = equipCode;
       }
       const in_namecode = $config.ls_get('in_namecode');
       if (in_namecode) {

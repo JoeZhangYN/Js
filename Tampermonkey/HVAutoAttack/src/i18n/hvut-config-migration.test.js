@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildLegacyHvutEquipData,
   getHvutConfigCarryKeys,
   getHvutConfigNamespace,
   migrateLegacyHvutMonsterLabLog,
+  normalizeLegacyHvutEquipCode,
   normalizeLegacyHvutPrices,
   normalizeHvutConfigSettings,
 } from "./hvut-config-migration.js";
@@ -32,6 +34,20 @@ describe("HVUT config migration", () => {
       "ss_log",
       "ml_log",
     ]);
+  });
+
+  it("builds legacy equipment data from split old stores", () => {
+    expect(buildLegacyHvutEquipData({ a: 1 }, { b: 2, a: 3 })).toEqual({
+      version: 1,
+      a: 3,
+      b: 2,
+    });
+    expect(buildLegacyHvutEquipData(null, null)).toBeNull();
+  });
+
+  it("normalizes legacy equipment code templates", () => {
+    expect(normalizeLegacyHvutEquipCode("{$name: @ $bbcode")).toBe("{$name? @ $namecode");
+    expect(normalizeLegacyHvutEquipCode("")).toBeNull();
   });
 
   it("upgrades legacy equipCode string and aligns settings with defaults", () => {

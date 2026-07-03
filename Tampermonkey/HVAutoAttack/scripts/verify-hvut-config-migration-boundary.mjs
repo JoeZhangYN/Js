@@ -58,14 +58,20 @@ for (const required of [
   "var parse_hvut_world_season = function (isIsekai, stage) {",
   "var get_hvut_config_carry_keys = function (isIsekai) {",
   "var get_hvut_config_namespace = function (isIsekai) {",
+  "var build_hvut_legacy_equipdata = function (inEquipdata, inJson) {",
+  "var normalize_hvut_legacy_equip_code = function (equipCode) {",
   "var normalize_hvut_config_settings = function (settings, defaults) {",
   "var migrate_hvut_monster_lab_log = function (mlLog) {",
   "var normalize_hvut_legacy_prices = function (prices) {",
   "window.HVAA_hvutConfigMigration.namespace({ isIsekai: !!isIsekai })",
+  "window.HVAA_hvutConfigMigration.buildEquipData(inEquipdata, inJson)",
+  "window.HVAA_hvutConfigMigration.normalizeEquipCode(equipCode)",
   "window.HVAA_hvutConfigMigration.normalizeSettings(settings, defaults)",
   "window.HVAA_hvutConfigMigration.migrateMonsterLabLog(mlLog)",
   "window.HVAA_hvutConfigMigration.normalizePrices(prices)",
   "record_hvut_config_parse_failure('configNamespaceBridgeMissing'",
+  "record_hvut_config_parse_failure('configEquipDataBridgeMissing'",
+  "record_hvut_config_parse_failure('configEquipCodeBridgeMissing'",
   "record_hvut_config_parse_failure('configSettingsBridgeMissing'",
   "record_hvut_config_parse_failure('configMonsterLabLogBridgeMissing'",
   "record_hvut_config_parse_failure('configPricesBridgeMissing'",
@@ -82,7 +88,11 @@ for (const required of [
 
 for (const [index, body] of migrationBodies.entries()) {
   for (const part of [
+    "const equipdata = build_hvut_legacy_equipdata(in_equipdata, in_json);",
     "if (!$config.set('equipdata', equipdata)) return false;",
+    "const equipCode = normalize_hvut_legacy_equip_code(in_equipcode);",
+    "if (!equipCode) return false;",
+    "$config.settings.equipCode = equipCode;",
     "const normalizedPrices = normalize_hvut_legacy_prices(prices);",
     "if (!normalizedPrices) return false;",
     "$price.set(normalizedPrices);",
@@ -123,6 +133,9 @@ for (const forbidden of [
   "Object.entries(prices).forEach(([key, value]) => {",
   "Object.assign(prices, value);",
   "delete prices[key];",
+  "const equipdata = { version: 1 };",
+  "Object.assign(equipdata, in_equipdata, in_json);",
+  "in_equipcode.replace(/(\\{\\$\\w+):/g, '$1?').replace(/\\$bbcode/g, '$namecode')",
   "log.pa = log.pa.map((e) => [e.value, e.to]);",
   "log.er = log.er.map((e) => [e.value, e.to]);",
   "log.ct = log.ct.map((e) => [e.value, e.to, e.max]);",
@@ -141,6 +154,10 @@ for (const required of [
   "return segment?.isIsekai ? \"hvuti\" : \"hvut\";",
   "export function getHvutConfigCarryKeys(segment) {",
   "return segment?.isIsekai ? [...COMMON_CARRY_KEYS] : [...PERSISTENT_CARRY_KEYS];",
+  "export function buildLegacyHvutEquipData(inEquipdata, inJson) {",
+  "return { version: 1, ...(inEquipdata || {}), ...(inJson || {}) };",
+  "export function normalizeLegacyHvutEquipCode(equipCode) {",
+  "return equipCode.replace(/(\\{\\$\\w+):/g, \"$1?\").replace(/\\$bbcode/g, \"$namecode\");",
   "export function migrateLegacyHvutMonsterLabLog(mlLog) {",
   "if (!mlLog || mlLog[0]) return null;",
   "migrated[0] = { version: 1 };",
@@ -160,16 +177,20 @@ for (const required of [
 }
 
 for (const required of [
+  "buildLegacyHvutEquipData",
   "getHvutConfigCarryKeys",
   "getHvutConfigNamespace",
   "migrateLegacyHvutMonsterLabLog",
+  "normalizeLegacyHvutEquipCode",
   "normalizeLegacyHvutPrices",
   "normalizeHvutConfigSettings",
   "from \"./hvut-config-migration.js\";",
   "window.HVAA_hvutConfigMigration = Object.freeze({",
+  "buildEquipData: buildLegacyHvutEquipData",
   "carryKeys: getHvutConfigCarryKeys",
   "migrateMonsterLabLog: migrateLegacyHvutMonsterLabLog",
   "namespace: getHvutConfigNamespace",
+  "normalizeEquipCode: normalizeLegacyHvutEquipCode",
   "normalizePrices: normalizeLegacyHvutPrices",
   "normalizeSettings: normalizeHvutConfigSettings",
 ]) {
@@ -186,6 +207,8 @@ if (
   !migrationTestText.includes("selects the storage namespace from segment identity") ||
   !migrationTestText.includes("keeps persistent-only legacy equipment names") ||
   !migrationTestText.includes("does not carry persistent-only legacy equipment names") ||
+  !migrationTestText.includes("builds legacy equipment data from split old stores") ||
+  !migrationTestText.includes("normalizes legacy equipment code templates") ||
   !migrationTestText.includes("upgrades legacy equipCode string and aligns settings with defaults") ||
   !migrationTestText.includes("migrates legacy Monster Lab logs without mutating the original") ||
   !migrationTestText.includes("flattens legacy nested price groups without mutating the original")
