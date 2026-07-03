@@ -11,16 +11,20 @@ function requirePart(label, body, part) {
 }
 
 const exportBlocks = [...text.matchAll(/export: function \(\) \{[\s\S]*?\n      \},\n      import: function/g)].map((match) => match[0]);
-const importBlocks = [...text.matchAll(/import: function \(\) \{[\s\S]*?\n      \},\n      clear: function/g)].map((match) => match[0]);
+const importBlocks = [...text.matchAll(/import: function \(\) \{[\s\S]*?\n      \},\n      clear: async function/g)].map((match) => match[0]);
+const clearBlocks = [...text.matchAll(/clear: async function \(\) \{[\s\S]*?\n      \},\n      toggle: function/g)].map((match) => match[0]);
 
 const [modernExport, legacyExport] = exportBlocks;
 const [modernImport, legacyImport] = importBlocks;
+const [modernClear, legacyClear] = clearBlocks;
 
 for (const [label, body] of [
   ["modern db export", modernExport],
   ["modern db import", modernImport],
+  ["modern db clear", modernClear],
   ["legacy db export", legacyExport],
   ["legacy db import", legacyImport],
+  ["legacy db clear", legacyClear],
 ]) {
   if (!body) violations.push(`${target} must keep ${label} visible`);
 }
@@ -86,10 +90,45 @@ for (const [label, body] of [
   }
 }
 
+for (const required of [
+  "clear: async function () {",
+  "const stage = 'dbClear';",
+  "const detail = { season: season };",
+  "conn.os.clear();",
+  "record_hvut_mooglemail_action_failure(stage, { ...detail, error: error?.message || String(error) });",
+  "if (!await wait_hvut_mooglemail_db_write(stage, detail, conn)) {",
+  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "return false;",
+  "return true;",
+]) {
+  requirePart("modern db clear", modernClear, required);
+}
+
+for (const required of [
+  "clear: async function () {",
+  "const stage = 'legacyDbClear';",
+  "const detail = { season: season };",
+  "conn.os.clear();",
+  "record_hvut_mooglemail_action_failure(stage, { ...detail, error: error?.message || String(error) });",
+  "if (!await wait_hvut_mooglemail_db_write(stage, detail, conn)) {",
+  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "return false;",
+  "return true;",
+]) {
+  requirePart("legacy db clear", legacyClear, required);
+}
+
+for (const forbidden of [
+  "clear: function () {\n        if (confirm",
+  "conn.os.clear();\n        }",
+]) {
+  if (text.includes(forbidden)) violations.push(`${target} must not keep unchecked MoogleMail DB clear path: ${forbidden}`);
+}
+
 if (violations.length) {
   console.error("[verify-hvut-mooglemail-db-boundary] FAIL");
   for (const violation of violations) console.error(`- ${violation}`);
   process.exit(1);
 }
 
-console.log("[verify-hvut-mooglemail-db-boundary] OK - MoogleMail DB import/export restores UI locks");
+console.log("[verify-hvut-mooglemail-db-boundary] OK - MoogleMail DB import/export/clear handles failures");

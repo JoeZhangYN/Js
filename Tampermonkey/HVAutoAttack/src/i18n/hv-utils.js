@@ -9920,12 +9920,26 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           }
         }
       },
-      clear: function () {
+      clear: async function () {
         if (confirm('在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？')) {
           const season = _mm.search.node.season?.value || _mm.db.season;
           const conn = _mm.db.conn('readwrite', season);
-          conn.os.clear();
+          const stage = 'dbClear';
+          const detail = { season: season };
+          try {
+            conn.os.clear();
+          } catch (error) {
+            record_hvut_mooglemail_action_failure(stage, { ...detail, error: error?.message || String(error) });
+            alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+            return false;
+          }
+          if (!await wait_hvut_mooglemail_db_write(stage, detail, conn)) {
+            alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+            return false;
+          }
+          return true;
         }
+        return false;
       },
       toggle: function () {
         if (_mm.db.node.div) {
@@ -16124,12 +16138,26 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           }
         }
       },
-      clear: function () {
+      clear: async function () {
         if (confirm('在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？')) {
           const season = _mm.node.search_season?.value || _mm.db.season;
           const conn = _mm.db.conn('readwrite', season);
-          conn.os.clear();
+          const stage = 'legacyDbClear';
+          const detail = { season: season };
+          try {
+            conn.os.clear();
+          } catch (error) {
+            record_hvut_mooglemail_action_failure(stage, { ...detail, error: error?.message || String(error) });
+            alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+            return false;
+          }
+          if (!await wait_hvut_mooglemail_db_write(stage, detail, conn)) {
+            alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+            return false;
+          }
+          return true;
         }
+        return false;
       },
       toggle: function () {
         if (_mm.node.db_div) {
