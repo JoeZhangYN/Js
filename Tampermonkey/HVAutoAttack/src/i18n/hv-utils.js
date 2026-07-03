@@ -504,6 +504,20 @@ try {
     }
     return null;
   };
+  var record_hvut_monster_lab_upgrade_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutMonsterLabUpgrade', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutMonsterLabUpgradeFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Monster Lab upgrade fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] Monster Lab upgrade failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT Monster Lab upgrade fallback.
+    }
+    return evidence;
+  };
   var parse_hvut_monster_lab_chaos_token_cost = function (text, stage) {
     var match = /Cost: (\d+) Chaos Token/.exec(text || '');
     return match ? parseInt(match[1]) : record_hvut_monster_lab_parse_failure(stage, { text: text || '' });
@@ -8204,7 +8218,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         const requests = mobs.map((mob) => update(mob));
         try {
           await Promise.all(requests);
-        } catch (_error) {
+        } catch (error) {
+          record_hvut_monster_lab_upgrade_failure('upgradeUpdateRequest', { total: total, done: done, error: error?.message || String(error) });
           alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
           _ml.upgrade.node.button.disabled = false;
           _ml.upgrade.node.button.value = '怪物升级器';
@@ -8495,7 +8510,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         const requests = urls.map(([url, post]) => upgrade(url, post));
         try {
           await Promise.all(requests);
-        } catch (_error) {
+        } catch (error) {
+          record_hvut_monster_lab_upgrade_failure('upgradeRunRequest', { total: total, done: done, error: error?.message || String(error) });
           alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
           _ml.upgrade.node.run.disabled = false;
           _ml.upgrade.node.update.disabled = false;
@@ -14373,7 +14389,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         const requests = mobs.map((mob) => update(mob));
         try {
           await Promise.all(requests);
-        } catch (_error) {
+        } catch (error) {
+          record_hvut_monster_lab_upgrade_failure('legacyUpgradeUpdateRequest', { total: total, done: done, error: error?.message || String(error) });
           alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
           _ml.upgrade.node.button.disabled = false;
           _ml.upgrade.node.button.value = '怪物升级器';
@@ -14671,7 +14688,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         const requests = urls.map(([url, post]) => upgrade(url, post));
         try {
           await Promise.all(requests);
-        } catch (_error) {
+        } catch (error) {
+          record_hvut_monster_lab_upgrade_failure('legacyUpgradeRunRequest', { total: total, done: done, error: error?.message || String(error) });
           alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
           _ml.upgrade.node.run.disabled = false;
           _ml.upgrade.node.update.disabled = false;

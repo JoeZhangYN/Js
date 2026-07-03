@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const target = path.normalize("src/i18n/hv-utils.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
+const keysText = fs.readFileSync(path.join(root, "src/core/diagnostic-evidence-keys.js"), "utf8");
+const diagnosticTestText = fs.readFileSync(path.join(root, "src/core/diagnostic-evidence.test.js"), "utf8");
 const violations = [];
 
 const updateBodies = [...text.matchAll(/update: async function \(\) \{[\s\S]*?\n\s*force_update:/g)].map((match) => match[0]);
@@ -40,6 +42,25 @@ if (saveBodies.length !== 2) {
   violations.push(`${target} must keep both Monster Lab save segment entries visible`);
 }
 
+for (const required of [
+  "var record_hvut_monster_lab_upgrade_failure = function (stage, detail) {",
+  "capability: 'hvutMonsterLabUpgrade'",
+  "sessionStorage.setItem('HVAA:lastHvutMonsterLabUpgradeFailure'",
+]) {
+  if (!text.includes(required)) violations.push(`${target} must include Monster Lab upgrade diagnostic recorder: ${required}`);
+}
+
+for (const required of [
+  'HVUT_MONSTER_LAB_UPGRADE_FAILURE: "HVAA:lastHvutMonsterLabUpgradeFailure"',
+  'source("hvutMonsterLabUpgradeFailure", DiagnosticEvidenceKey.HVUT_MONSTER_LAB_UPGRADE_FAILURE)',
+]) {
+  if (!keysText.includes(required)) violations.push(`diagnostic evidence keys must include ${required}`);
+}
+
+if (!diagnosticTestText.includes("HVAA:lastHvutMonsterLabUpgradeFailure")) {
+  violations.push("diagnostic-evidence.test.js must cover HVUT Monster Lab upgrade evidence");
+}
+
 for (const [index, body] of parseBodies.entries()) {
   for (const required of [
     "if (!$config.set('ml_log', _ml.log)) {\n        return false;",
@@ -73,7 +94,8 @@ for (const [index, body] of onsuccessBodies.entries()) {
 for (const [index, body] of updateBodies.entries()) {
   for (const required of [
     "try {\n          await Promise.all(requests);",
-    "catch (_error) {\n          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "catch (error) {\n          record_hvut_monster_lab_upgrade_failure(",
+    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
     "_ml.upgrade.node.button.disabled = false;",
     "_ml.upgrade.node.run.disabled = false;",
     "_ml.upgrade.node.run.value = '失败';",
@@ -92,12 +114,16 @@ for (const [index, body] of updateBodies.entries()) {
   if (/\$config\.set\('ml_log', _ml\.log\);\n\s*_ml\.upgrade\.node\.button\.disabled = false;/.test(body)) {
     violations.push(`${target} Monster Lab update[${index}] must not complete UI after unchecked ml_log write`);
   }
+  if (/catch \(_error\) \{\n\s*alert\(IS_ISEKAI/.test(body)) {
+    violations.push(`${target} Monster Lab update[${index}] must not keep untyped request failure`);
+  }
 }
 
 for (const [index, body] of runBodies.entries()) {
   for (const required of [
     "try {\n          await Promise.all(requests);",
-    "catch (_error) {\n          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "catch (error) {\n          record_hvut_monster_lab_upgrade_failure(",
+    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
     "_ml.upgrade.node.run.disabled = false;",
     "_ml.upgrade.node.update.disabled = false;",
     "_ml.upgrade.node.run.value = '失败';",
@@ -114,6 +140,9 @@ for (const [index, body] of runBodies.entries()) {
   }
   if (/\$config\.set\('ml_log', _ml\.log\);\n\s*_ml\.upgrade\.node\.run\.disabled = true;/.test(body)) {
     violations.push(`${target} Monster Lab run[${index}] must not execute upgrades after unchecked ml_log write`);
+  }
+  if (/catch \(_error\) \{\n\s*alert\(IS_ISEKAI/.test(body)) {
+    violations.push(`${target} Monster Lab run[${index}] must not keep untyped request failure`);
   }
 }
 
