@@ -16,17 +16,24 @@ function requirePart(label, body, part) {
 
 const offerLoad =
   /load: async function \(iid, reward_type, reward_slot\) \{[\s\S]*?\n    \},\n    toggle: function/.exec(text)?.[0] || "";
+const offerRequest =
+  /request: async function \(iid, count, reward_type, reward_slot\) \{[\s\S]*?\n    \},\n    load: async function/.exec(text)?.[0] || "";
 const logSave =
   /save: function \(\) \{[\s\S]*?\n    \},\n    reset: function/.exec(text)?.[0] || "";
+const legacyOffer =
+  /_ss\.offer = async function \(iid, count\) \{[\s\S]*?\n  \};\n\n  _ss\.request = async function/.exec(text)?.[0] || "";
 const legacyRequest =
   /_ss\.request = async function \(iid, select_reward_type, select_reward_slot\) \{[\s\S]*?\n  \};\n\n  _ss\.toggle_results/.exec(text)?.[0] || "";
 
 if (!offerLoad) violations.push(`${target} must keep Shrine offer load entry visible`);
+if (!offerRequest) violations.push(`${target} must keep Shrine offer request entry visible`);
 if (!logSave) violations.push(`${target} must keep Shrine log save entry visible`);
+if (!legacyOffer) violations.push(`${target} must keep legacy Shrine offer entry visible`);
 if (!legacyRequest) violations.push(`${target} must keep legacy Shrine request entry visible`);
 
 for (const part of [
   "record_hvut_shrine_offer_failure('offerLoadFetch'",
+  "if (_ss.error) return false;",
   "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
   "return false;",
   "let offerStopped = false;",
@@ -36,6 +43,15 @@ for (const part of [
   "return true;",
 ]) {
   requirePart("Shrine offer load", offerLoad, part);
+}
+
+for (const part of [
+  "request: async function (iid, count, reward_type, reward_slot)",
+  "if (_ss.error) break;",
+  "const offered = await _ss.offer.load(iid, reward_type, reward_slot);",
+  "if (offered === false || _ss.error) break;",
+]) {
+  requirePart("Shrine offer request", offerRequest, part);
 }
 
 for (const part of [
@@ -49,6 +65,7 @@ for (const part of [
 
 for (const part of [
   "record_hvut_shrine_offer_failure('legacyOfferFetch'",
+  "if (_ss.error) return false;",
   "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
   "return false;",
   "let offerStopped = false;",
@@ -60,6 +77,15 @@ for (const part of [
   "return true;",
 ]) {
   requirePart("legacy Shrine request", legacyRequest, part);
+}
+
+for (const part of [
+  "_ss.offer = async function (iid, count)",
+  "if (_ss.error) break;",
+  "const offered = await _ss.request(iid, select_reward_type, select_reward_slot);",
+  "if (offered === false || _ss.error) break;",
+]) {
+  requirePart("legacy Shrine offer", legacyOffer, part);
 }
 
 for (const [label, body, counter] of [
@@ -74,11 +100,13 @@ for (const [label, body, counter] of [
 }
 
 for (const [label, body, forbidden] of [
+  ["Shrine offer request", offerRequest, /(^|\n)\s*_ss\.offer\.load\(iid, reward_type, reward_slot\);/],
   ["Shrine offer load", offerLoad, "_ss.log.save();"],
   ["Shrine log save", logSave, "$config.set('ss_log', _ss.log.json);"],
+  ["legacy Shrine offer", legacyOffer, /(^|\n)\s*_ss\.request\(iid, select_reward_type, select_reward_slot\);/],
   ["legacy Shrine request", legacyRequest, "$config.set('ss_log', _ss.log);"],
 ]) {
-  if (body.includes(forbidden)) {
+  if (typeof forbidden === "string" ? body.includes(forbidden) : forbidden.test(body)) {
     violations.push(`${target} ${label} must not ignore Shrine log persistence: ${forbidden}`);
   }
 }

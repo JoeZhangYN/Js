@@ -6839,7 +6839,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       }
       _ss.offer.request(iid, count, _ss.select.reward_type, _ss.select.reward_slot);
     },
-    request: function (iid, count, reward_type, reward_slot) {
+    request: async function (iid, count, reward_type, reward_slot) {
       if (_ss.error) {
         popup(_ss.error);
         return;
@@ -6883,10 +6883,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       scrollIntoView(item.node.table);
 
       for (let i = 0; i < count; i++) {
-        _ss.offer.load(iid, reward_type, reward_slot);
+        if (_ss.error) break;
+        const offered = await _ss.offer.load(iid, reward_type, reward_slot);
+        if (offered === false || _ss.error) break;
       }
     },
     load: async function (iid, reward_type, reward_slot) {
+      if (_ss.error) return false;
       let html;
       try {
         html = await $ajax.fetch('?s=Bazaar&ss=ss', `select_item=${iid}&select_reward_type=${reward_type}&select_reward_slot=${reward_slot}`);
@@ -13139,7 +13142,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     }
   };
 
-  _ss.offer = function (iid, count) {
+  _ss.offer = async function (iid, count) {
     if (_ss.error) {
       popup(_ss.error);
       return;
@@ -13194,11 +13197,14 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     item.node.max.textContent = item.max;
 
     for (let i = 0; i < count; i++) {
-      _ss.request(iid, select_reward_type, select_reward_slot);
+      if (_ss.error) break;
+      const offered = await _ss.request(iid, select_reward_type, select_reward_slot);
+      if (offered === false || _ss.error) break;
     }
   };
 
   _ss.request = async function (iid, select_reward_type, select_reward_slot) {
+    if (_ss.error) return false;
     const item = _ss.items[iid];
     let html;
     try {
