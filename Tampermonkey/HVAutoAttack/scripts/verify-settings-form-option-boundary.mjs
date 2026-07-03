@@ -78,6 +78,24 @@ if (!renderText.includes("OptionEvent.READ_FIELD")) {
     `${settingsRender.replaceAll("\\", "/")} must hydrate settings from option fields through option entry`
   );
 }
+for (const required of [
+  "export function hasSettingsInputClass(inputOrClassName, className)",
+  'hasSettingsInputClass(input, "hvAADebug")',
+  'hasSettingsInputClass(className, "hvAACustomize")',
+  "if (!shouldHydrateSettingsInput(inputs[i])) continue;",
+]) {
+  if (!renderText.includes(required)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} must classify hydration input classes by token`);
+  }
+}
+for (const forbidden of [
+  'inputs[i].className === "hvAADebug"',
+  'className === "hvAACustomize"',
+]) {
+  if (renderText.includes(forbidden)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} must not classify hydration inputs by whole className`);
+  }
+}
 if (/\bg\(\s*["']option["']/.test(renderText)) {
   violations.push(`${settingsRender.replaceAll("\\", "/")} must not read raw option state`);
 }
@@ -100,6 +118,13 @@ if (!fs.existsSync(path.join(root, orderTargetTest))) {
   const orderTargetTestText = fs.readFileSync(path.join(root, orderTargetTest), "utf8");
   if (!orderTargetTestText.includes("fails closed for malformed order event targets")) {
     violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover malformed single-order targets`);
+  }
+  if (
+    !orderTargetTestText.includes("classifies settings hydration classes by token") ||
+    !orderTargetTestText.includes("hvAADebug hvAANumber") ||
+    !orderTargetTestText.includes("hvAACustomize active")
+  ) {
+    violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover multi-class hydration inputs`);
   }
 }
 const customizeText = fs.readFileSync(path.join(root, customizeInspect), "utf8");

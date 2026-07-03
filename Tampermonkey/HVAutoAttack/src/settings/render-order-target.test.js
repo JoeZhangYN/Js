@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { readSingleOrderItemName } from "./render.js";
+import {
+  hasSettingsInputClass,
+  readSingleOrderItemName,
+  shouldHydrateSettingsInput,
+} from "./render.js";
 
 describe("readSingleOrderItemName", () => {
   it("reads the order item suffix from checkbox ids", () => {
@@ -10,5 +14,13 @@ describe("readSingleOrderItemName", () => {
     expect(readSingleOrderItemName({ id: "skill" })).toBeNull();
     expect(readSingleOrderItemName({})).toBeNull();
     expect(readSingleOrderItemName(null)).toBeNull();
+  });
+});
+
+describe("settings input class classification", () => {
+  it("classifies settings hydration classes by token", () => {
+    expect(shouldHydrateSettingsInput({ className: "hvAADebug hvAANumber" })).toBe(false);
+    expect(shouldHydrateSettingsInput({ className: "hvAANumber extra" })).toBe(true);
+    expect(hasSettingsInputClass("hvAACustomize active", "hvAACustomize")).toBe(true);
   });
 });

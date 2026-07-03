@@ -277,6 +277,19 @@ function readOptionField(key, fallback) {
   return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback });
 }
 
+export function hasSettingsInputClass(inputOrClassName, className) {
+  if (inputOrClassName?.classList?.contains?.(className)) return true;
+  const rawClassName =
+    typeof inputOrClassName === "string" ? inputOrClassName : inputOrClassName?.className;
+  return String(rawClassName || "")
+    .split(/\s+/)
+    .includes(className);
+}
+
+export function shouldHydrateSettingsInput(input) {
+  return !hasSettingsInputClass(input, "hvAADebug");
+}
+
 function hasStoredOption() {
   return readOptionField("version", undefined) !== undefined;
 }
@@ -339,7 +352,7 @@ function readSettingsInputValue(name, className) {
   const directValue = readOptionField(name, undefined);
   if (directValue !== undefined) return directValue;
   const path = name.split("_");
-  if (path.length !== 2 || className === "hvAACustomize") return "";
+  if (path.length !== 2 || hasSettingsInputClass(className, "hvAACustomize")) return "";
   const parent = readOptionField(path[0], undefined);
   return parent && typeof parent === "object" && parent[path[1]] !== undefined
     ? parent[path[1]]
@@ -354,7 +367,7 @@ function hydrateSettingsForm(optionBox) {
   let k;
   const inputs = gE("input,select", "all", optionBox);
   for (i = 0; i < inputs.length; i++) {
-    if (inputs[i].className === "hvAADebug") continue;
+    if (!shouldHydrateSettingsInput(inputs[i])) continue;
     const itemName = inputs[i].name || inputs[i].id;
     const itemValue = readSettingsInputValue(itemName, inputs[i].className);
     if (
