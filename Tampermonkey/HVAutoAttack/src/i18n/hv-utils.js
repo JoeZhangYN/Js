@@ -81,6 +81,29 @@ try {
     var match = /(\d+ Season \d+)/.exec(text);
     return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');
   };
+  var record_hvut_item_shop_parse_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutItemShopParse', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutItemShopParseFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // HVUT item shop parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVAA] HVUT item shop parse failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT item shop parse fallback.
+    }
+    return null;
+  };
+  var parse_hvut_item_shop_row = function (row, pattern, stage) {
+    var name = row.cells[0].textContent.trim();
+    var onclick = row.cells[0].firstElementChild?.getAttribute('onclick') || '';
+    var match = pattern.exec(onclick);
+    if (!match) {
+      return record_hvut_item_shop_parse_failure(stage, { name: name, onclick: onclick });
+    }
+    return { name: name, id: parseInt(match[1]), stock: parseInt(match[2]), price: parseInt(match[3]) };
+  };
   var record_hvut_ability_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutAbilityParse', stage: stage, detail: detail || {} };
     try {
@@ -572,32 +595,38 @@ const $item = {
   load_shop: async function () {
     const html = await $ajax.fetch('?s=Bazaar&ss=is');
     const doc = $doc(html);
-    $item.storetoken = $id('shopform', doc).elements.storetoken.value;
+    $item.storetoken = $id('shopform', doc)?.elements?.storetoken?.value;
+    if (!$item.storetoken) {
+      return record_hvut_item_shop_parse_failure('shopToken', {});
+    }
     $item.networth = parseInt($id('networth', doc).textContent.replace(/\D/g, ''));
     $item.shop = {};
+    let parseFailed = false;
 
     const reg_item = /itemshop\.set_item\('item_pane',(\d+),(\d+),(\d+)/;
     $qsa('#item_pane .itemlist tr', doc).forEach((tr) => {
-      const exec = reg_item.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
-      const name = tr.cells[0].textContent.trim();
-      const id = parseInt(exec[1]);
-      const stock = parseInt(exec[2]);
-      const sell_price = parseInt(exec[3]);
-      $item.shop[name] = { id, stock, sell_price };
+      const item = parse_hvut_item_shop_row(tr, reg_item, 'inventoryShopRow');
+      if (item === null) {
+        parseFailed = true;
+        return;
+      }
+      $item.shop[item.name] = { id: item.id, stock: item.stock, sell_price: item.price };
     });
 
     const reg_shop = /itemshop\.set_item\('shop_pane',(\d+),(\d+),(\d+)/;
     $qsa('#shop_pane .itemlist tr', doc).forEach((tr) => {
-      const exec = reg_shop.exec(tr.cells[0].firstElementChild.getAttribute('onclick'));
-      const name = tr.cells[0].textContent.trim();
-      const id = parseInt(exec[1]);
-      const shop_stock = parseInt(exec[2]);
-      const shop_price = parseInt(exec[3]);
-      if (!$item.shop[name]) {
-        $item.shop[name] = {};
+      const item = parse_hvut_item_shop_row(tr, reg_shop, 'systemShopRow');
+      if (item === null) {
+        parseFailed = true;
+        return;
       }
-      Object.assign($item.shop[name], { id, shop_stock, shop_price });
+      if (!$item.shop[item.name]) {
+        $item.shop[item.name] = {};
+      }
+      Object.assign($item.shop[item.name], { id: item.id, shop_stock: item.stock, shop_price: item.price });
     });
+    if (parseFailed) return false;
+    return true;
   },
   count: function (name) {
     if (name) {
@@ -623,7 +652,10 @@ const $item = {
       return false;
     }
     try {
-      await $item.load_shop();
+      if ((await $item.load_shop()) === false) {
+        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
     } catch (_error) {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
@@ -16388,7 +16420,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         return;
       }
       try {
-        await $item.load_shop();
+        if ((await $item.load_shop()) === false) {
+          alert('发生了一个错误.');
+          return;
+        }
       } catch (_error) {
         alert('发生了一个错误.');
         return;
