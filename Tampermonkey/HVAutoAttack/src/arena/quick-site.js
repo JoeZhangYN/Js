@@ -83,7 +83,7 @@ function renderSettingsEmptyRow() {
 function collectSettingsInputs(option, inputs) {
   if (!inputs?.length) return option;
   option.quickSite = [];
-  for (let i = 0; 3 * i < inputs.length; i++) {
+  for (let i = 0; 3 * i + 2 < inputs.length; i++) {
     const name = inputs[3 * i + 1].value;
     if (name === "") continue;
     option.quickSite.push({

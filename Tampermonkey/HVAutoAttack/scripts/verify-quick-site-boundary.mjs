@@ -110,6 +110,16 @@ const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
 if (!ownerTestText.includes("runQuickSiteAutomation(null)")) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null quick site events`);
 }
+if (!ownerText.includes("3 * i + 2 < inputs.length")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must collect only complete quickSite settings rows`);
+}
+if (
+  !ownerTestText.includes("ignores incomplete settings rows without throwing") ||
+  !ownerTestText.includes("not.toThrow()") ||
+  !ownerTestText.includes("option.quickSite).toEqual([]")
+) {
+  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover incomplete quickSite settings rows`);
+}
 const settingsText = fs.readFileSync(path.join(root, settings), "utf8");
 if (!settingsText.includes("QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY")) {
   violations.push(

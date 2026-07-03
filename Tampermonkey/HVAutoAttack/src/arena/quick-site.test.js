@@ -156,4 +156,18 @@ describe("quick site entry", () => {
       },
     ]);
   });
+
+  it("ignores incomplete settings rows without throwing", () => {
+    const option = {};
+
+    expect(() =>
+      runQuickSiteAutomation({
+        type: QuickSiteEvent.COLLECT_SETTINGS_INPUTS,
+        option,
+        inputs: [{ value: "https://example.test/icon.ico" }, { value: "Broken" }],
+      })
+    ).not.toThrow();
+
+    expect(option.quickSite).toEqual([]);
+  });
 });
