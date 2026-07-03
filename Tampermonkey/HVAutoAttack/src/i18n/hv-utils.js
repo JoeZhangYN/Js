@@ -387,6 +387,20 @@ try {
     }
     return null;
   };
+  var record_hvut_ability_unlock_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutAbilityUnlock', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutAbilityUnlockFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Ability unlock fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] ability unlock failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT ability unlock fallback.
+    }
+    return evidence;
+  };
   var parse_hvut_ability_points = function (text) {
     var match = /Ability Points: (\d+)/.exec(text || '');
     return match ? parseInt(match[1]) : record_hvut_ability_parse_failure('abilityPoints', { text: text || '' });
@@ -6274,7 +6288,8 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     let results;
     try {
       results = await Promise.all(requests);
-    } catch (_error) {
+    } catch (error) {
+      record_hvut_ability_unlock_failure('abilityUnlockRequest', { name: name, to: to, count: count, error: error?.message || String(error) });
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return;
     }
@@ -12507,7 +12522,8 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     let results;
     try {
       results = await Promise.all(requests);
-    } catch (_error) {
+    } catch (error) {
+      record_hvut_ability_unlock_failure('legacyAbilityUnlockRequest', { name: name, to: to, count: count, error: error?.message || String(error) });
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return;
     }
