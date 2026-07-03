@@ -51,6 +51,10 @@ for (const required of [
   "return record_hvut_character_parse_failure(stage, { reason: 'equipPopupDropInfoMissing' });",
   "var append_hvut_equip_popup_charms = function (doc, div, stage) {",
   "return record_hvut_character_parse_failure(stage, { reason: 'equipPopupBodyMissing' });",
+  "var parse_hvut_character_base_stat_row = function (row, stage) {",
+  "return record_hvut_character_parse_failure(stage, { reason: 'baseStatRowIncomplete'",
+  "var decorate_hvut_equipment_base_stat_row = function (row, base, stage) {",
+  "return record_hvut_character_parse_failure(stage, { reason: 'equipmentBaseStatNameMissing'",
 ]) {
   requirePart("character parse helper", helperRegion, required);
 }
@@ -78,6 +82,17 @@ requirePart("_eq.charm_append", equipCharmAppend, "record_hvut_character_parse_f
 requirePart("_eq.charm_append", equipCharmAppend, "if (append_hvut_equip_popup_charms(doc, div, 'equipPopupCharmAppend') === false) {");
 
 for (const required of [
+  "const stat = parse_hvut_character_base_stat_row(tr, 'equipmentBaseStatSourceRow');",
+  "decorate_hvut_equipment_base_stat_row(tr, base, 'equipmentBaseStatTargetRow');",
+  "const stat = parse_hvut_character_base_stat_row(tr, 'legacyEquipmentBaseStatSourceRow');",
+  "decorate_hvut_equipment_base_stat_row(tr, base, 'legacyEquipmentBaseStatTargetRow');",
+]) {
+  if (!text.includes(required)) {
+    violations.push(`${target} equipment base stat rendering must route through ${required}`);
+  }
+}
+
+for (const required of [
   "if ($persona.check_e() === false) return;",
 ]) {
   const count = (text.match(new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length;
@@ -93,6 +108,8 @@ for (const forbidden of [
   "doc.querySelector('.showequip').children[2]",
   "doc.querySelector('.eq').appendChild(div)",
   "const [, type, tier] = reg_charm.exec(charm);",
+  "base[tr.children[0].textContent] = tr.children[1].textContent;",
+  "const name = tr.cells[1].textContent;\n      const enName = resolveEn(tr.cells[1], 'characterStatus') ?? name;",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unsafe character parse path: ${forbidden}`);

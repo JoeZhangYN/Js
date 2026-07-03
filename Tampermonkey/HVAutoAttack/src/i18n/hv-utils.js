@@ -871,6 +871,25 @@ try {
     parent.appendChild(div);
     return true;
   };
+  var parse_hvut_character_base_stat_row = function (row, stage) {
+    var name = row?.children?.[0]?.textContent;
+    var value = row?.children?.[1]?.textContent;
+    if (name === undefined || value === undefined) {
+      return record_hvut_character_parse_failure(stage, { reason: 'baseStatRowIncomplete', text: row?.textContent || '' });
+    }
+    return { name: name, value: value };
+  };
+  var decorate_hvut_equipment_base_stat_row = function (row, base, stage) {
+    var nameCell = row?.cells?.[1];
+    if (!nameCell) {
+      return record_hvut_character_parse_failure(stage, { reason: 'equipmentBaseStatNameMissing', text: row?.textContent || '' });
+    }
+    var name = nameCell.textContent;
+    var enName = resolveEn(nameCell, 'characterStatus') ?? name;
+    var baseVal = base[enName];
+    nameCell.textContent = baseVal === undefined ? name : `[${baseVal}] ${name}`;
+    return true;
+  };
   var parse_hvut_inventory_capacity = function (html, stage) {
     var exec = /<td>Inventory Capacity:<\/td><td>(\d+)(?: \+ (\d+))?<\/td><td>\/<\/td><td>(\d+)<\/td>/.exec(html || '');
     if (!exec) {
@@ -6098,13 +6117,11 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     const doc = $doc(html);
     const base = {};
     $qsa('#attr_table tr:nth-last-child(n+2)', doc).forEach((tr) => {
-      base[tr.children[0].textContent] = tr.children[1].textContent;
+      const stat = parse_hvut_character_base_stat_row(tr, 'equipmentBaseStatSourceRow');
+      if (stat) base[stat.name] = stat.value;
     });
     $qsa('#stats_scrollable > table:nth-last-of-type(2) tr').forEach((tr) => {
-      const name = tr.cells[1].textContent;
-      const enName = resolveEn(tr.cells[1], 'characterStatus') ?? name; // i18n 翻中文后反查英文 key(base 键为英文)
-      const baseVal = base[enName];
-      tr.cells[1].textContent = baseVal === undefined ? name : `[${baseVal}] ${name}`; // 反查不到不显示 [undefined], 仅留中文
+      decorate_hvut_equipment_base_stat_row(tr, base, 'equipmentBaseStatTargetRow');
     });
   };
 
@@ -12167,13 +12184,11 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     const doc = $doc(html);
     const base = {};
     $qsa('#attr_table tr:nth-last-child(n+2)', doc).forEach((tr) => {
-      base[tr.children[0].textContent] = tr.children[1].textContent;
+      const stat = parse_hvut_character_base_stat_row(tr, 'legacyEquipmentBaseStatSourceRow');
+      if (stat) base[stat.name] = stat.value;
     });
     $qsa('#stats_scrollable > table:nth-last-of-type(2) tr').forEach((tr) => {
-      const name = tr.cells[1].textContent;
-      const enName = resolveEn(tr.cells[1], 'characterStatus') ?? name; // i18n 翻中文后反查英文 key(base 键为英文)
-      const baseVal = base[enName];
-      tr.cells[1].textContent = baseVal === undefined ? name : `[${baseVal}] ${name}`; // 反查不到不显示 [undefined], 仅留中文
+      decorate_hvut_equipment_base_stat_row(tr, base, 'legacyEquipmentBaseStatTargetRow');
     });
   };
 
