@@ -1476,7 +1476,9 @@ function checkActionLifecycleEntry() {
     "REASON_ACTION_LIFECYCLE_STEP_THROW",
     "rejectedLifecycleResult",
     "completeBattleStep",
-    "result === undefined ? true : result",
+    "normalizeStepResult",
+    'rawResult?.kind === "failed"',
+    "return { result: false, detail: rawResult }",
     "const started = steps.every((step) => step.result)",
     'recordStep(steps, "isCompletionReached", deps.isCompletionReached)',
     "steps[steps.length - 1].continued = continued",
@@ -1542,6 +1544,15 @@ function checkActionLifecycleEntry() {
   if (!lifecycleStepResultTestText.includes("continuationStarted: false")) {
     violations.push(
       "src/battle/battle-action-lifecycle-step-result.test.js must cover continuationStarted: false"
+    );
+  }
+  if (
+    !lifecycleStepResultTestText.includes(
+      "does not treat typed failed lifecycle step results as successful"
+    )
+  ) {
+    violations.push(
+      "src/battle/battle-action-lifecycle-step-result.test.js must cover typed failed step results"
     );
   }
   const lifecycleExceptionTestText = fs.readFileSync(

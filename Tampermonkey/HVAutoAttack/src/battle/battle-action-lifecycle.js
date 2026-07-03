@@ -32,13 +32,22 @@ function runActionStarted(deps) {
 
 function recordStep(steps, step, run) {
   try {
-    const result = run();
-    steps.push({ step, result: result === undefined ? true : result });
-    return result;
+    const stepResult = normalizeStepResult(run());
+    steps.push({ step, ...stepResult });
+    return stepResult.result;
   } catch (error) {
     recordThrownStep(steps, step, error);
     return false;
   }
+}
+
+function normalizeStepResult(rawResult) {
+  if (rawResult === undefined) return { result: true };
+  if (rawResult?.kind === "failed") return { result: false, detail: rawResult };
+  if (rawResult && typeof rawResult === "object" && "kind" in rawResult) {
+    return { result: true, detail: rawResult };
+  }
+  return { result: rawResult };
 }
 
 function recordThrownStep(steps, step, error) {
@@ -131,22 +140,15 @@ function rejectUnknownActionLifecycleEvent(event, deps) {
 export function runBattleActionLifecycleAutomation(
   event = { type: EVENT_ACTION_STARTED },
   deps = {
-    startDelay: () =>
-      runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }),
-    recordSpeed: () =>
-      runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.ACTION_ENDED }),
+    startDelay: () => runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_STARTED }),
+    recordSpeed: () => runBattleActionSpeedAutomation({ type: BattleActionSpeedEvent.ACTION_ENDED }),
     endDelay: () => runBattleActionDelayAutomation({ type: BattleActionDelayEvent.ACTION_ENDED }),
-    refreshCombatants: () =>
-      runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS }),
-    monitorActionStarted: () =>
-      runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_STARTED }),
+    refreshCombatants: () => runMonsterStatusAutomation({ type: MonsterStatusEvent.REFRESH_COMBATANT_COUNTS }),
+    monitorActionStarted: () => runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_STARTED }),
     monitorActionEnded: () => runBattleMonitorAutomation({ type: BattleMonitorEvent.ACTION_ENDED }),
-    completeBattle: () =>
-      runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }),
-    isCompletionReached: () =>
-      runBattleCompletionAutomation({ type: BattleCompletionEvent.READ_REACHED }),
-    continueNextRound: () =>
-      runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }),
+    completeBattle: () => runBattleCompletionAutomation({ type: BattleCompletionEvent.COMPLETION_REACHED }),
+    isCompletionReached: () => runBattleCompletionAutomation({ type: BattleCompletionEvent.READ_REACHED }),
+    continueNextRound: () => runBattleNextRoundContinuation({ type: BattleNextRoundContinuationEvent.CONTINUE }),
     runTurn: () => runBattleTurnAutomation({ type: BattleTurnWorkflowEvent.RUN_CURRENT_TURN }),
     recordLifecycle: (phase, result, steps) =>
       runBattleActionLifecycleEvidence({

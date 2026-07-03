@@ -48,4 +48,18 @@ describe("battle action lifecycle step result evidence", () => {
       expect.arrayContaining([{ step: "runTurn", result: true }])
     );
   });
+
+  it("does not treat typed failed lifecycle step results as successful", () => {
+    const deps = makeDeps();
+    const detail = { kind: "failed", drop: { kind: "failed", reason: "dropArchiveFailed" } };
+    deps.monitorActionEnded.mockReturnValue(detail);
+
+    runBattleActionLifecycleAutomation({ type: BattleActionLifecycleEvent.ACTION_ENDED }, deps);
+
+    expect(deps.recordLifecycle).toHaveBeenCalledWith(
+      "actionEnded",
+      { outcome: "ongoing", continued: "turn", continuationStarted: false },
+      expect.arrayContaining([{ step: "monitorActionEnded", result: false, detail }])
+    );
+  });
 });
