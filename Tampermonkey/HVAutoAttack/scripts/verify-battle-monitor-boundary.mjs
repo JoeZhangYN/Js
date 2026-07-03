@@ -1061,6 +1061,22 @@ function checkDeletedDropMonitorEntrypoint() {
       violations.push(`${rel(dropRecordingFile)} must own drop log classification`);
     }
   }
+  if (/item\.textContent\.match\([^;\n]+\)\[1\]/.test(dropRecordingText)) {
+    violations.push(`${rel(dropRecordingFile)} must not index raw item text match results`);
+  }
+  if (!dropRecordingText.includes("function readDropItemName(item)")) {
+    violations.push(`${rel(dropRecordingFile)} must parse item names through readDropItemName`);
+  }
+  for (const required of [
+    "return match ? match[1] : null;",
+    "if (!name) return false;",
+    "const amount = name.match(/\\d+/)?.[0];",
+    "if (!amount) return false;",
+  ]) {
+    if (!dropRecordingText.includes(required)) {
+      violations.push(`${rel(dropRecordingFile)} must fail closed through ${required}`);
+    }
+  }
   if (
     /\bg\(\s*["'](?:roundNow|roundAll)["']\s*\)/.test(dropText) ||
     /\bg\(\s*["']option["']\s*\)\.recordEach/.test(dropText)

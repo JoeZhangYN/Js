@@ -60,4 +60,20 @@ describe("applyBattleDropLog", () => {
       "Equipment of Legendary": 1,
     });
   });
+
+  it("fails closed for malformed item drop text", () => {
+    const drop = createDefaultDropRecord();
+
+    apply(drop, [
+      line("", { style: { color: "rgb(186, 5, 180)" }, textContent: "Crystal of Vigor" }),
+      line("", item("Credit", "rgb(168, 144, 0)")),
+      line("", item("Superior Axe of Slaughter", "rgb(255, 0, 0)")),
+    ]);
+
+    expect(drop).toEqual({
+      "#Credit": 0,
+      "#EXP": 0,
+      "Equipment of Superior": 1,
+    });
+  });
 });
