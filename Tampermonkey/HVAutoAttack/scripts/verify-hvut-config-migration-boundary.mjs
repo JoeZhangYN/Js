@@ -29,24 +29,16 @@ if (initBodies.length !== 2) violations.push(`${target} must keep both config in
 if (migrationBodies.length !== 2) violations.push(`${target} must keep both config migration entries visible`);
 
 for (const [index, body] of initBodies.entries()) {
-  for (const part of [
-    "const namespace = get_hvut_config_namespace(IS_ISEKAI);",
-    "if (!namespace) {",
-    "$config.ns = namespace;",
-    "$config.prefix = $config.ns + '_';",
-    "if ($config.migration() === false) {",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
-    "return false;",
-    "return true;",
-  ]) {
-    requirePart(`config init[${index}]`, body, part);
-  }
+  const expectedCall =
+    index === 0
+      ? "return run_hvut_config_init($config, settings, { isIsekai: IS_ISEKAI });"
+      : "return run_hvut_config_init($config, settings, { assignSeason: true, isIsekai: IS_ISEKAI });";
+  requirePart(`config init[${index}]`, body, expectedCall);
   if (/\$config\.migration\(\);\n\s*\}/.test(body)) {
     violations.push(`${target} config init[${index}] must not ignore migration result`);
   }
-  if (body.includes("$config.season") && !body.includes("$config.season = parse_hvut_world_season(location.pathname.includes('/isekai/'), 'configSeason');")) {
-    violations.push(`${target} config init[${index}] must parse season through parse_hvut_world_season`);
-  }
+  if (body.includes("$config.season")) violations.push(`${target} config init[${index}] must delegate season assignment`);
+  if (body.includes("$config.settings.version")) violations.push(`${target} config init[${index}] must delegate version migration check`);
   if (/world_text[^;\n]+match\([^;\n]+\)\[1\]/.test(body)) {
     violations.push(`${target} config init[${index}] must not parse world_text season directly`);
   }
@@ -56,6 +48,15 @@ for (const required of [
   "var record_hvut_config_parse_failure = function (stage, detail) {",
   "sessionStorage.setItem('HVAA:lastHvutConfigParseFailure', JSON.stringify(evidence));",
   "var parse_hvut_world_season = function (isIsekai, stage) {",
+  "var run_hvut_config_init = function (config, defaultSettings, context) {",
+  "if (context?.assignSeason) {",
+  "config.season = parse_hvut_world_season(location.pathname.includes('/isekai/'), 'configSeason');",
+  "const namespace = get_hvut_config_namespace(isIsekai);",
+  "config.prefix = config.ns + '_';",
+  "config.settings = config.get('settings', {});",
+  "if (config.settings.version !== config.version) {",
+  "if (config.migration() === false) {",
+  "alert(isIsekai ? 'An error has occurred.' : '发生了一个错误.');",
   "var get_hvut_config_carry_keys = function (isIsekai) {",
   "var get_hvut_config_namespace = function (isIsekai) {",
   "var build_hvut_legacy_equipdata = function (inEquipdata, inJson) {",

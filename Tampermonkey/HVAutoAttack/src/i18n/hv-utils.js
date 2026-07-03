@@ -158,6 +158,28 @@ try {
     record_hvut_config_parse_failure('configFieldDescriptionBridgeMissing', {});
     return desc ? { button: String(desc).split('\n')[0], html: String(desc).split('\n').slice(1).join('<br>') } : null;
   };
+  var run_hvut_config_init = function (config, defaultSettings, context) {
+    var isIsekai = !!context?.isIsekai;
+    if (context?.assignSeason) {
+      config.season = parse_hvut_world_season(location.pathname.includes('/isekai/'), 'configSeason');
+    }
+    const namespace = get_hvut_config_namespace(isIsekai);
+    if (!namespace) {
+      alert(isIsekai ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
+    config.ns = namespace;
+    config.prefix = config.ns + '_';
+    config.default = defaultSettings;
+    config.settings = config.get('settings', {});
+    if (config.settings.version !== config.version) {
+      if (config.migration() === false) {
+        alert(isIsekai ? 'An error has occurred.' : '发生了一个错误.');
+        return false;
+      }
+    }
+    return true;
+  };
   var record_hvut_item_shop_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutItemShopParse', stage: stage, detail: detail || {} };
     try {
@@ -5058,22 +5080,7 @@ const $config = {
     },
   },
   init: function () {
-    const namespace = get_hvut_config_namespace(IS_ISEKAI);
-    if (!namespace) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
-    }
-    $config.ns = namespace;
-    $config.prefix = $config.ns + '_';
-    $config.default = settings;
-    $config.settings = $config.get('settings', {});
-    if ($config.settings.version !== $config.version) {
-      if ($config.migration() === false) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-        return false;
-      }
-    }
-    return true;
+    return run_hvut_config_init($config, settings, { isIsekai: IS_ISEKAI });
   },
   migration: function () {
     if (!$config.settings.version) {
@@ -10921,23 +10928,7 @@ const $config = {
     },
   },
   init: function () {
-    $config.season = parse_hvut_world_season(location.pathname.includes('/isekai/'), 'configSeason'); // season 载体(主世界 IIFE 恒 falsy 死值); isekai 判定统一走 IS_ISEKAI
-    const namespace = get_hvut_config_namespace(IS_ISEKAI);
-    if (!namespace) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
-    }
-    $config.ns = namespace;
-    $config.prefix = $config.ns + '_';
-    $config.default = settings;
-    $config.settings = $config.get('settings', {});
-    if ($config.settings.version !== $config.version) {
-      if ($config.migration() === false) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-        return false;
-      }
-    }
-    return true;
+    return run_hvut_config_init($config, settings, { assignSeason: true, isIsekai: IS_ISEKAI });
   },
   migration: function () {
     if (!$config.settings.version) {
