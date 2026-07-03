@@ -12286,22 +12286,23 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
         const eqnode = {};
         const eq = _eq.prof.equips[e];
         const tr = $element('tr', equip, [{ dataset: { action: 'equip', equip: i } }, '/<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>']);
+        const [checkCell, typeCell, soulboundCell, levelCell, pxpCell, pxpMaxCell, baseCell, baseMaxCell, upgradeCell, scaledCell] = tr.children;
 
         if (i === 0) {
-          eqnode.type = $input(['select', ['橡木法杖', '柳木法杖', '红木法杖', '元素使前缀的红木仗', '铁木法杖', '圣/暗前缀的铁木杖']], tr.children[1], { dataset: { action: 'staff' } });
+          eqnode.type = $input(['select', ['橡木法杖', '柳木法杖', '红木法杖', '元素使前缀的红木仗', '铁木法杖', '圣/暗前缀的铁木杖']], typeCell, { dataset: { action: 'staff' } });
         } else {
-          tr.children[1].textContent = e;
+          typeCell.textContent = e;
         }
 
-        eqnode.check = $input('checkbox', tr.children[0]);
-        eqnode.soulbound = $input('checkbox', tr.children[2]);
-        eqnode.level = $input('number', tr.children[3], { min: 1, max: 500, step: 1, required: true });
-        eqnode.pxp = $input('number', tr.children[4], { min: 200, max: eq.pxp, step: 1, required: true });
-        eqnode.pxpmax = $element('span', tr.children[5], [eq.pxp, { dataset: { action: 'max', equip: i, value: 'pxp' } }]);
-        eqnode.base = $input('number', tr.children[6], { min: 1, max: eq.base, step: 0.01, required: true });
-        eqnode.pmax = $element('span', tr.children[7], [eq.base, { dataset: { action: 'max', equip: i, value: 'base' } }]);
-        eqnode.upgrade = $input('number', tr.children[8], { min: 0, max: 50, step: 1 });
-        eqnode.scaled = tr.children[9];
+        eqnode.check = $input('checkbox', checkCell);
+        eqnode.soulbound = $input('checkbox', soulboundCell);
+        eqnode.level = $input('number', levelCell, { min: 1, max: 500, step: 1, required: true });
+        eqnode.pxp = $input('number', pxpCell, { min: 200, max: eq.pxp, step: 1, required: true });
+        eqnode.pxpmax = $element('span', pxpMaxCell, [eq.pxp, { dataset: { action: 'max', equip: i, value: 'pxp' } }]);
+        eqnode.base = $input('number', baseCell, { min: 1, max: eq.base, step: 0.01, required: true });
+        eqnode.pmax = $element('span', baseMaxCell, [eq.base, { dataset: { action: 'max', equip: i, value: 'base' } }]);
+        eqnode.upgrade = $input('number', upgradeCell, { min: 0, max: 50, step: 1 });
+        eqnode.scaled = scaledCell;
         return eqnode;
       });
 

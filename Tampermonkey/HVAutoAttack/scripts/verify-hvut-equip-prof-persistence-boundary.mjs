@@ -14,9 +14,12 @@ const saveBody =
   /save: function \(key = _eq\.prof\.current\) \{[\s\S]*?\n    \},\n    name: function/.exec(text)?.[0] || "";
 const deleteBody =
   /delete: function \(key = _eq\.prof\.current\) \{[\s\S]*?\n    \},\n    toggle: function/.exec(text)?.[0] || "";
+const equipUiBody =
+  /node\.equips = \['柳木法杖'[\s\S]*?\n      \}\);/.exec(text)?.[0] || "";
 
 if (!saveBody) violations.push(`${target} must keep equipment proficiency save entry visible`);
 if (!deleteBody) violations.push(`${target} must keep equipment proficiency delete entry visible`);
+if (!equipUiBody) violations.push(`${target} must keep equipment proficiency row UI visible`);
 
 for (const part of [
   "const json = JSON.parse(JSON.stringify(data.values));",
@@ -54,6 +57,17 @@ for (const [label, body, forbidden] of [
   if (body.includes(forbidden)) {
     violations.push(`${target} ${label} must not keep unchecked eq_prof path: ${forbidden}`);
   }
+}
+
+for (const part of [
+  "const [checkCell, typeCell, soulboundCell, levelCell, pxpCell, pxpMaxCell, baseCell, baseMaxCell, upgradeCell, scaledCell] = tr.children;",
+  "eqnode.type = $input(['select'",
+  "eqnode.scaled = scaledCell;",
+]) {
+  requirePart("equipment proficiency row UI", equipUiBody, part);
+}
+if (/tr\.children\[\d+\]/.test(equipUiBody)) {
+  violations.push(`${target} equipment proficiency row UI must name generated table cells before binding controls`);
 }
 
 if (violations.length) {
