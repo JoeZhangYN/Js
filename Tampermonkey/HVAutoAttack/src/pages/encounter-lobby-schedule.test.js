@@ -3,8 +3,10 @@ import {
   EncounterLobbyScheduleEvent,
   runEncounterLobbySchedule,
 } from "./encounter-lobby-schedule.js";
+import { ENCOUNTER_STATE_FAILURE_KEY } from "./encounter-state-failure.js";
 
 beforeEach(() => {
+  sessionStorage.clear();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-06-27T23:59:55.000Z"));
   runEncounterLobbySchedule({ type: EncounterLobbyScheduleEvent.CANCEL_NEXT_CHECK });
@@ -61,5 +63,47 @@ describe("runEncounterLobbySchedule", () => {
     expect(runEncounterLobbySchedule({ type: "unknown" })).toBe(false);
     expect(runEncounterLobbySchedule(null)).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("records schedule timer failures without claiming a scheduled check", () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(() => {
+      throw new Error("timer blocked");
+    });
+
+    expect(
+      runEncounterLobbySchedule({
+        type: EncounterLobbyScheduleEvent.SCHEDULE_NEXT_CHECK,
+        state: { date: Date.now(), key: "", count: 0, clear: true },
+        rerun: vi.fn(),
+      })
+    ).toBe(false);
+
+    expect(JSON.parse(sessionStorage.getItem(ENCOUNTER_STATE_FAILURE_KEY))).toMatchObject({
+      stage: "schedule-lobby-check",
+      detail: { error: "timer blocked" },
+    });
+    setTimeoutSpy.mockRestore();
+  });
+
+  it("records cancel timer failures and keeps the pending check retryable", () => {
+    const rerun = vi.fn();
+    runEncounterLobbySchedule({
+      type: EncounterLobbyScheduleEvent.SCHEDULE_NEXT_CHECK,
+      state: { date: Date.now(), key: "", count: 0, clear: true },
+      rerun,
+    });
+    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout").mockImplementation(() => {
+      throw new Error("cancel blocked");
+    });
+
+    expect(runEncounterLobbySchedule({ type: EncounterLobbyScheduleEvent.CANCEL_NEXT_CHECK })).toBe(
+      false
+    );
+    expect(JSON.parse(sessionStorage.getItem(ENCOUNTER_STATE_FAILURE_KEY))).toMatchObject({
+      stage: "cancel-lobby-check",
+      detail: { error: "cancel blocked" },
+    });
+
+    clearTimeoutSpy.mockRestore();
   });
 });

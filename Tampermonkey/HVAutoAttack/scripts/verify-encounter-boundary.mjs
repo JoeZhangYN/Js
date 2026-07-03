@@ -631,6 +631,17 @@ if (!lobbyScheduleText.includes("const encounterLobbyScheduleEventHandlers")) {
     `${lobbyScheduleFile.replaceAll("\\", "/")} must route lobby schedule events through a handler table`
   );
 }
+for (const required of [
+  "recordEncounterStateFailure",
+  "schedule-lobby-check",
+  "cancel-lobby-check",
+]) {
+  if (!lobbyScheduleText.includes(required)) {
+    violations.push(
+      `${lobbyScheduleFile.replaceAll("\\", "/")} must record lobby timer failure ${required}`
+    );
+  }
+}
 const lobbyScheduleEntryMatch = lobbyScheduleText.match(
   /export function runEncounterLobbySchedule[\s\S]*?\n}/
 );
@@ -666,10 +677,14 @@ if (!lobbyScheduleEntryMatch) {
 const lobbyScheduleTestText = fs.readFileSync(path.join(root, lobbyScheduleTest), "utf8");
 if (
   !lobbyScheduleTestText.includes("rejects unknown and null schedule events without creating a timer") ||
-  !lobbyScheduleTestText.includes("runEncounterLobbySchedule(null)")
+  !lobbyScheduleTestText.includes("runEncounterLobbySchedule(null)") ||
+  !lobbyScheduleTestText.includes("records schedule timer failures without claiming a scheduled check") ||
+  !lobbyScheduleTestText.includes("records cancel timer failures and keeps the pending check retryable") ||
+  !lobbyScheduleTestText.includes('throw new Error("timer blocked")') ||
+  !lobbyScheduleTestText.includes('throw new Error("cancel blocked")')
 ) {
   violations.push(
-    `${lobbyScheduleTest.replaceAll("\\", "/")} must cover unknown and null schedule events`
+    `${lobbyScheduleTest.replaceAll("\\", "/")} must cover unknown, null, and timer failure schedule events`
   );
 }
 if (/\bNEXT_CHECK_DELAY\b/.test(policyText)) {

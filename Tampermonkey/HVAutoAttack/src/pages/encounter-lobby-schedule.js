@@ -1,4 +1,5 @@
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
+import { recordEncounterStateFailure } from "./encounter-state-failure.js";
 
 const EVENT_SCHEDULE_NEXT_CHECK = "scheduleNextCheck";
 const EVENT_CANCEL_NEXT_CHECK = "cancelNextCheck";
@@ -11,8 +12,16 @@ export const EncounterLobbyScheduleEvent = Object.freeze({
 });
 
 function cancelNextCheck() {
-  if (scheduledLobbyTick) clearTimeout(scheduledLobbyTick);
+  if (scheduledLobbyTick) {
+    try {
+      clearTimeout(scheduledLobbyTick);
+    } catch (error) {
+      recordEncounterStateFailure("cancel-lobby-check", { error: error?.message || String(error) });
+      return false;
+    }
+  }
   scheduledLobbyTick = null;
+  return true;
 }
 
 function scheduleNextCheck(event) {
@@ -25,20 +34,26 @@ function scheduleNextCheck(event) {
   });
   const delayMs = plan?.delayMs;
   if (!Number.isFinite(delayMs) || delayMs <= 0) return false;
-  cancelNextCheck();
-  scheduledLobbyTick = setTimeout(() => {
+  if (!cancelNextCheck()) return false;
+  try {
+    scheduledLobbyTick = setTimeout(() => {
+      scheduledLobbyTick = null;
+      event.rerun();
+    }, delayMs);
+    return true;
+  } catch (error) {
+    recordEncounterStateFailure("schedule-lobby-check", {
+      delayMs,
+      error: error?.message || String(error),
+    });
     scheduledLobbyTick = null;
-    event.rerun();
-  }, delayMs);
-  return true;
+    return false;
+  }
 }
 
 const encounterLobbyScheduleEventHandlers = Object.freeze({
   [EVENT_SCHEDULE_NEXT_CHECK]: scheduleNextCheck,
-  [EVENT_CANCEL_NEXT_CHECK]: () => {
-    cancelNextCheck();
-    return true;
-  },
+  [EVENT_CANCEL_NEXT_CHECK]: cancelNextCheck,
 });
 
 export function runEncounterLobbySchedule(event = { type: EVENT_CANCEL_NEXT_CHECK }) {
