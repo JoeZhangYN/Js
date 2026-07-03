@@ -9090,6 +9090,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         }
         _mm.write.pack.current = true;
         _mm.write.node.field.disabled = true;
+        const stop = function () {
+          _mm.write.pack.current = false;
+          _mm.write.node.field.disabled = false;
+          return false;
+        };
         _mm.userlist.add(_mm.write.node.to_name.value);
 
         const attach = selected.map((e) => e.data);
@@ -9101,7 +9106,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           cod_deduction: _mm.parse_price(_mm.write.node.cod_deduction.value),
           cod_persistent: IS_ISEKAI && _mm.write.node.cod_persistent.checked,
         };
-        $mail.request(mail);
+        $mail.request(mail).finally(stop);
       },
       log: function (text, clear) {
         if (clear) {
@@ -15245,6 +15250,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       }
       _mm.write_pack.current = true;
       _mm.node.write_field.disabled = true;
+      const stop = function () {
+        _mm.write_pack.current = false;
+        _mm.node.write_field.disabled = false;
+        return false;
+      };
       _mm.userlist.add(_mm.node.write_to_name.value);
 
       const attach = selected.map((e) => e.data);
@@ -15256,7 +15266,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         cod_deduction: _mm.parse_price(_mm.node.write_cod_deduction.value),
         cod_persistent: IS_ISEKAI && _mm.node.write_cod_persistent.checked,
       };
-      $mail.request(mail);
+      $mail.request(mail).finally(stop);
     };
 
     _mm.write_log = function (text, clear) {
