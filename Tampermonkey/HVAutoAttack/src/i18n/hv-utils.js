@@ -385,13 +385,25 @@ try {
     return null;
   };
   var parse_hvut_item_shop_row = function (row, pattern, stage) {
-    var name = row.cells[0].textContent.trim();
-    var onclick = row.cells[0].firstElementChild?.getAttribute('onclick') || '';
+    var cell = row?.cells?.[0];
+    var name = cell?.textContent?.trim() || '';
+    var onclick = cell?.firstElementChild?.getAttribute('onclick') || '';
     var match = pattern.exec(onclick);
     if (!match) {
-      return record_hvut_item_shop_parse_failure(stage, { name: name, onclick: onclick });
+      return record_hvut_item_shop_parse_failure(stage, { name: name, onclick: onclick, text: row?.textContent || '' });
     }
     return { name: name, id: parseInt(match[1]), stock: parseInt(match[2]), price: parseInt(match[3]) };
+  };
+  var parse_hvut_inventory_item_row = function (row, stage) {
+    var name = row?.cells?.[0]?.textContent?.trim() || '';
+    var idText = row?.cells?.[0]?.firstElementChild?.id || '';
+    var stockText = row?.cells?.[1]?.textContent || '';
+    var idMatch = /^item_(\d+)$/.exec(idText);
+    var stock = parseInt(stockText);
+    if (!name || !idMatch || !Number.isFinite(stock)) {
+      return record_hvut_item_shop_parse_failure(stage, { name: name, id: idText, stock: stockText, text: row?.textContent || '' });
+    }
+    return { name: name, id: parseInt(idMatch[1]), stock: stock };
   };
   var record_hvut_top_level_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutTopLevelParse', stage: stage, detail: detail || {} };
@@ -1212,19 +1224,25 @@ const $item = {
   load: async function () {
     const html = await $ajax.fetch('?s=Character&ss=it');
     const doc = $doc(html);
-    $item.list = {};
+    const list = {};
+    let parseFailed = false;
     $qsa('.itemlist tr', doc).forEach((tr) => {
-      const name = tr.cells[0].textContent;
-      const id = parseInt(tr.cells[0].firstElementChild.id.slice(5));
-      const stock = parseInt(tr.cells[1].textContent);
-      $item.list[name] = { id, stock };
+      const item = parse_hvut_inventory_item_row(tr, 'inventoryItemRow');
+      if (item === null) {
+        parseFailed = true;
+        return;
+      }
+      list[item.name] = { id: item.id, stock: item.stock };
     });
+    if (parseFailed) return false;
+    $item.list = list;
+    return true;
   },
   once: async function () {
     if ($item.list) {
-      return;
+      return true;
     } else {
-      await $item.load();
+      return await $item.load();
     }
   },
   load_shop: async function () {
@@ -2462,7 +2480,10 @@ const bindBattlePanel = function (battle, ctx) {
   };
   battle.load_items = async function () {
     battle.node.items.innerHTML = '';
-    await $item.load();
+    if ((await $item.load()) === false) {
+      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      return false;
+    }
     battle.render_supply_grid();
     if (!ctx.config.set('items', $item.count())) {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
@@ -2719,7 +2740,10 @@ const bindTop = function (top, ctx) {
     }
     top.stamina_create.inited = true;
     const p = $element('p', top.node.stamina_form, '加载中...');
-    await $item.once();
+    if ((await $item.once()) === false) {
+      p.textContent = IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.';
+      return false;
+    }
     const items = ['Caffeinated Candy', 'Energy Drink'].filter((e) => $item.count(e));
     if (items.length) {
       items.forEach((e) => { $element('p', top.node.stamina_form, `${e} (${$item.count(e)})`); });
@@ -8222,7 +8246,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
         _ml.upgrade.node.button = $id('hvut-ml-up-button');
         _ml.upgrade.node.button.disabled = true;
-        await $item.once();
+        if ((await $item.once()) === false) {
+          return false;
+        }
         _ml.upgrade.pa.forEach((e) => {
           e.stock = $item.count(e.crystal);
         });
@@ -14495,7 +14521,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.upgrade.inited = true;
 
         _ml.upgrade.node.button.disabled = true;
-        await $item.once();
+        if ((await $item.once()) === false) {
+          return false;
+        }
         _ml.upgrade.pa.forEach((e) => {
           e.stock = $item.count(e.crystal);
         });
