@@ -6,6 +6,7 @@ const owner = path.normalize("src/battle/item/execute-item.js");
 const ownerTest = path.normalize("src/battle/item/execute-item.test.js");
 const autoTuneFailureTest = path.normalize("src/battle/item/execute-item-autotune-failure.test.js");
 const commandFailureTest = path.normalize("src/battle/item/execute-item-command-failure.test.js");
+const typedFailureTest = path.normalize("src/battle/item/execute-item-typed-failure.test.js");
 const rejectionTest = path.normalize("src/battle/item/execute-item-rejection.test.js");
 const actionEffect = path.normalize("src/battle/battle-action-effect-dispatch.js");
 const actionEffectExecution = path.normalize("src/battle/battle-action-effect-execution.js");
@@ -41,10 +42,11 @@ for (const required of [
   "RecoveryLearningEvent.RECORD_PRE_DRINK",
   "BattleSpiritToggleEvent.CLICK_AND_RECORD",
   "BattleFocusCommandEvent.CLICK",
+  "itemExecutionActed",
+  'result?.kind === "failed"',
   "recordItemExecutionFailure",
   "itemSubCommandThrew",
   "recoveryAbs",
-  "if (!runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM })) return false",
   "recordActionEffectEvidence",
   "unknownItemExecutionEvent",
   "rejectUnknownItemExecutionEvent(event)",
@@ -125,6 +127,24 @@ if (!fs.existsSync(path.join(root, commandFailureTest))) {
       violations.push(`${rel(commandFailureTest)} must cover ${required}`);
     }
   }
+}
+if (!fs.existsSync(path.join(root, typedFailureTest))) {
+  violations.push(`${rel(typedFailureTest)} must cover typed failed item commands`);
+} else {
+  const typedFailureTestText = read(typedFailureTest);
+  for (const required of [
+    "does not claim typed failed gem commands as acted",
+    "continues stall attempts after a typed failed focus command",
+    "continues scroll candidates after a typed failed item command",
+    'kind: "failed"',
+  ]) {
+    if (!typedFailureTestText.includes(required)) {
+      violations.push(`${rel(typedFailureTest)} must cover ${required}`);
+    }
+  }
+}
+if (/return !!runBattle/.test(ownerText)) {
+  violations.push(`${rel(owner)} must not booleanize item command entry results before typed failure normalization`);
 }
 if (!fs.existsSync(path.join(root, autoTuneFailureTest))) {
   violations.push(`${rel(autoTuneFailureTest)} must cover auto-tune record failures`);

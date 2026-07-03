@@ -58,11 +58,16 @@ function recoveryAbs(snap) {
  */
 function applyItemPlan(plan, snap) {
   try {
-    return ITEM_PLAN_EXECUTORS[plan?.type]?.(plan, snap) ?? false;
+    return itemExecutionActed(ITEM_PLAN_EXECUTORS[plan?.type]?.(plan, snap));
   } catch (error) {
     recordItemExecutionFailure(plan, "itemSubCommandThrew", error);
     return false;
   }
+}
+
+function itemExecutionActed(result) {
+  if (result?.kind === "failed") return false;
+  return Boolean(result);
 }
 
 function executeNoopPlan() {
@@ -70,7 +75,9 @@ function executeNoopPlan() {
 }
 
 function executeGemPlan() {
-  if (!runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM })) return false;
+  if (!itemExecutionActed(runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_GEM }))) {
+    return false;
+  }
   recordAutoTunePotionUse();
   return true;
 }
@@ -88,30 +95,30 @@ function tryPotionCandidate(id, noWaste, snap) {
     itemId: id,
   };
   if (noWaste) event.beforeClick = () => recordPreDrink(id, snap);
-  if (!runBattleItemCommand(event)) return false;
+  if (!itemExecutionActed(runBattleItemCommand(event))) return false;
   recordAutoTunePotionUse();
   return true;
 }
 
 function executeStallPlan(plan, snap) {
   for (const attempt of plan.attempts) {
-    if (STALL_ATTEMPT_EXECUTORS[attempt.kind]?.(attempt, snap)) return true;
+    if (itemExecutionActed(STALL_ATTEMPT_EXECUTORS[attempt.kind]?.(attempt, snap))) return true;
   }
   return false;
 }
 
 function executeStallSpiritOffAttempt() {
-  return !!runBattleSpiritToggleAutomation({
+  return runBattleSpiritToggleAutomation({
     type: BattleSpiritToggleEvent.CLICK_AND_RECORD,
   });
 }
 
 function executeStallFocusAttempt() {
-  return !!runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK });
+  return runBattleFocusCommand({ type: BattleFocusCommandEvent.CLICK });
 }
 
 function executeStallDraughtAttempt(attempt, snap) {
-  return !!runBattleItemCommand({
+  return runBattleItemCommand({
     type: BattleItemCommandEvent.CLICK_ITEM,
     itemId: attempt.id,
     beforeClick: () => recordPreDrink(attempt.id, snap),
@@ -120,7 +127,11 @@ function executeStallDraughtAttempt(attempt, snap) {
 
 function executeScrollPlan(plan) {
   for (const id of plan.candidates) {
-    if (runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_ITEM, itemId: id })) return true;
+    if (
+      itemExecutionActed(runBattleItemCommand({ type: BattleItemCommandEvent.CLICK_ITEM, itemId: id }))
+    ) {
+      return true;
+    }
   }
   return false;
 }
