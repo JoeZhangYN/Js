@@ -81,11 +81,13 @@ if (!renderText.includes("OptionEvent.READ_FIELD")) {
 for (const required of [
   "export function hasSettingsInputClass(inputOrClassName, className)",
   "export function readCustomizeHoverTarget(target)",
+  "export function readSelectableReportTableTarget(target)",
   'hasSettingsInputClass(input, "hvAADebug")',
   'hasSettingsInputClass(node, "customize")',
   'hasSettingsInputClass(className, "hvAACustomize")',
   "if (!shouldHydrateSettingsInput(inputs[i])) continue;",
   "const target = readCustomizeHoverTarget(e.target);",
+  "const table = readSelectableReportTableTarget(e.target);",
 ]) {
   if (!renderText.includes(required)) {
     violations.push(`${settingsRender.replaceAll("\\", "/")} must classify hydration input classes by token`);
@@ -108,6 +110,10 @@ for (const forbidden of [
   if (forbidden.test(customizeHoverBlock)) {
     violations.push(`${settingsRender.replaceAll("\\", "/")} must route customize hover target parsing through readCustomizeHoverTarget`);
   }
+}
+const selectTableBlock = /gE\(["']\.selectTable["'][\s\S]*?select\.addRange\(range\);[\s\S]*?\n        \};/.exec(renderText)?.[0] || "";
+if (/parentNode\.parentNode/.test(selectTableBlock)) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} must route report table selection through readSelectableReportTableTarget`);
 }
 if (/\bg\(\s*["']option["']/.test(renderText)) {
   violations.push(`${settingsRender.replaceAll("\\", "/")} must not read raw option state`);
@@ -145,6 +151,13 @@ if (!fs.existsSync(path.join(root, orderTargetTest))) {
     !orderTargetTestText.includes("customize active")
   ) {
     violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover customize hover target parsing`);
+  }
+  if (
+    !orderTargetTestText.includes("reads selectable report tables without assuming parent depth") ||
+    !orderTargetTestText.includes("readSelectableReportTableTarget(null)") ||
+    !orderTargetTestText.includes('tagName: "TABLE"')
+  ) {
+    violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover selectable report table parsing`);
   }
 }
 const customizeText = fs.readFileSync(path.join(root, customizeInspect), "utf8");

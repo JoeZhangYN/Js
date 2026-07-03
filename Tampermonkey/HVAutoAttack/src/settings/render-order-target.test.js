@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   hasSettingsInputClass,
   readCustomizeHoverTarget,
+  readSelectableReportTableTarget,
   readSingleOrderItemName,
   shouldHydrateSettingsInput,
 } from "./render.js";
@@ -34,5 +35,18 @@ describe("settings input class classification", () => {
     expect(readCustomizeHoverTarget(leaf)).toBe(root);
     expect(readCustomizeHoverTarget({ className: "", parentNode: null })).toBeNull();
     expect(readCustomizeHoverTarget(null)).toBeNull();
+  });
+
+  it("reads selectable report tables without assuming parent depth", () => {
+    const table = { tagName: "TABLE", parentNode: null };
+    const tbody = { tagName: "TBODY", parentNode: table };
+    const row = { tagName: "TR", parentNode: tbody };
+    const cell = { tagName: "TD", parentNode: row };
+    const icon = { tagName: "SPAN", parentNode: cell };
+
+    expect(readSelectableReportTableTarget(icon)).toBe(table);
+    expect(readSelectableReportTableTarget(cell)).toBe(table);
+    expect(readSelectableReportTableTarget({ tagName: "DIV", parentNode: null })).toBeNull();
+    expect(readSelectableReportTableTarget(null)).toBeNull();
   });
 });

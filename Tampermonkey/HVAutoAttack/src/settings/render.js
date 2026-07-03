@@ -299,6 +299,15 @@ export function readCustomizeHoverTarget(target) {
   return null;
 }
 
+export function readSelectableReportTableTarget(target) {
+  let node = target;
+  while (node) {
+    if (String(node.tagName || "").toUpperCase() === "TABLE") return node;
+    node = node.parentNode;
+  }
+  return null;
+}
+
 function hasStoredOption() {
   return readOptionField("version", undefined) !== undefined;
 }
@@ -772,7 +781,9 @@ export function optionBox() {
           const select = window.getSelection();
           select.removeAllRanges();
           const range = document.createRange();
-          range.selectNodeContents(e.target.parentNode.parentNode.parentNode);
+          const table = readSelectableReportTableTarget(e.target);
+          if (!table) return;
+          range.selectNodeContents(table);
           select.addRange(range);
         };
       });
