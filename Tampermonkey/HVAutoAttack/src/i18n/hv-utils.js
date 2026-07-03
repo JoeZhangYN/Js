@@ -492,24 +492,28 @@ try {
     return state.error;
   };
   var reserve_hvut_shrine_offer = function (state, item) {
-    item.requests++;
-    item.stock -= item.bulk;
-    item.max--;
-    item.node.stock.textContent = item.stock;
-    item.node.max.textContent = item.max;
-    if (item.type === 'Trophy') {
-      state.equip.requests++;
+    try {
+      if (window.HVAA_shrineOfferReservation && window.HVAA_shrineOfferReservation.reserve) {
+        return window.HVAA_shrineOfferReservation.reserve(state, item) !== false;
+      }
+      record_hvut_shrine_offer_failure('offerReservationBridgeMissing', { action: 'reserve', item: item?.name || item?.log || item?.iid });
+    } catch (error) {
+      record_hvut_shrine_offer_failure('offerReservationBridgeReserve', { item: item?.name || item?.log || item?.iid, error: error?.message || String(error) });
     }
+    set_hvut_shrine_stop_error(state, 'Shrine offer reservation failed.');
+    return false;
   };
   var rollback_hvut_shrine_offer_reservation = function (state, item) {
-    item.requests--;
-    item.stock += item.bulk;
-    item.max++;
-    item.node.stock.textContent = item.stock;
-    item.node.max.textContent = item.max;
-    if (item.type === 'Trophy') {
-      state.equip.requests--;
+    try {
+      if (window.HVAA_shrineOfferReservation && window.HVAA_shrineOfferReservation.rollback) {
+        return window.HVAA_shrineOfferReservation.rollback(state, item) !== false;
+      }
+      record_hvut_shrine_offer_failure('offerReservationBridgeMissing', { action: 'rollback', item: item?.name || item?.log || item?.iid });
+    } catch (error) {
+      record_hvut_shrine_offer_failure('offerReservationBridgeRollback', { item: item?.name || item?.log || item?.iid, error: error?.message || String(error) });
     }
+    set_hvut_shrine_stop_error(state, 'Shrine offer reservation rollback failed.');
+    return false;
   };
   var classify_hvut_shrine_offer_message = function (msg) {
     if (window.HVAA_shrineOfferMessage && window.HVAA_shrineOfferMessage.classify) {
@@ -6902,7 +6906,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
       for (let i = 0; i < count; i++) {
         if (_ss.error) break;
-        reserve_hvut_shrine_offer(_ss, item);
+        if (reserve_hvut_shrine_offer(_ss, item) === false) break;
         const offered = await _ss.offer.load(iid, reward_type, reward_slot);
         if (offered === false) {
           rollback_hvut_shrine_offer_reservation(_ss, item);
@@ -13207,7 +13211,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
     for (let i = 0; i < count; i++) {
       if (_ss.error) break;
-      reserve_hvut_shrine_offer(_ss, item);
+      if (reserve_hvut_shrine_offer(_ss, item) === false) break;
       const offered = await _ss.request(iid, select_reward_type, select_reward_slot);
       if (offered === false) {
         rollback_hvut_shrine_offer_reservation(_ss, item);

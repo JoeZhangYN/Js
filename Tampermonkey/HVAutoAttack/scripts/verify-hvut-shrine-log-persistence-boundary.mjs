@@ -7,6 +7,9 @@ const mainTarget = path.normalize("src/main.js");
 const classifierTarget = path.normalize("src/i18n/shrine-offer-message.js");
 const classifierBridgeTarget = path.normalize("src/i18n/shrine-offer-message-bridge.js");
 const classifierTestTarget = path.normalize("src/i18n/shrine-offer-message.test.js");
+const reservationTarget = path.normalize("src/i18n/shrine-offer-reservation.js");
+const reservationBridgeTarget = path.normalize("src/i18n/shrine-offer-reservation-bridge.js");
+const reservationTestTarget = path.normalize("src/i18n/shrine-offer-reservation.test.js");
 const diagnosticTarget = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const text = fs.readFileSync(path.join(root, target), "utf8");
@@ -14,6 +17,9 @@ const mainText = fs.readFileSync(path.join(root, mainTarget), "utf8");
 const classifierText = fs.readFileSync(path.join(root, classifierTarget), "utf8");
 const classifierBridgeText = fs.readFileSync(path.join(root, classifierBridgeTarget), "utf8");
 const classifierTestText = fs.readFileSync(path.join(root, classifierTestTarget), "utf8");
+const reservationText = fs.readFileSync(path.join(root, reservationTarget), "utf8");
+const reservationBridgeText = fs.readFileSync(path.join(root, reservationBridgeTarget), "utf8");
+const reservationTestText = fs.readFileSync(path.join(root, reservationTestTarget), "utf8");
 const diagnosticText = fs.readFileSync(path.join(root, diagnosticTarget), "utf8");
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 const violations = [];
@@ -34,6 +40,10 @@ const legacyRequest =
   /_ss\.request = async function \(iid, select_reward_type, select_reward_slot\) \{[\s\S]*?\n  \};\n\n  _ss\.toggle_results/.exec(text)?.[0] || "";
 const localClassifier =
   /var classify_hvut_shrine_offer_message = function \(msg\) \{[\s\S]*?\n  \};\n  var reloadCurrentPage/.exec(text)?.[0] || "";
+const localReservation =
+  /var reserve_hvut_shrine_offer = function \(state, item\) \{[\s\S]*?\n  \};\n  var rollback_hvut_shrine_offer_reservation/.exec(text)?.[0] || "";
+const localReservationRollback =
+  /var rollback_hvut_shrine_offer_reservation = function \(state, item\) \{[\s\S]*?\n  \};\n  var classify_hvut_shrine_offer_message/.exec(text)?.[0] || "";
 
 if (!offerLoad) violations.push(`${target} must keep Shrine offer load entry visible`);
 if (!offerRequest) violations.push(`${target} must keep Shrine offer request entry visible`);
@@ -41,6 +51,8 @@ if (!logSave) violations.push(`${target} must keep Shrine log save entry visible
 if (!legacyOffer) violations.push(`${target} must keep legacy Shrine offer entry visible`);
 if (!legacyRequest) violations.push(`${target} must keep legacy Shrine request entry visible`);
 if (!localClassifier) violations.push(`${target} must keep local Shrine classifier bridge visible`);
+if (!localReservation) violations.push(`${target} must keep local Shrine reservation bridge visible`);
+if (!localReservationRollback) violations.push(`${target} must keep local Shrine reservation rollback bridge visible`);
 
 for (const part of [
   "record_hvut_shrine_offer_failure('offerLoadFetch'",
@@ -60,7 +72,7 @@ for (const part of [
 for (const part of [
   "request: async function (iid, count, reward_type, reward_slot)",
   "if (_ss.error) break;",
-  "reserve_hvut_shrine_offer(_ss, item);",
+  "if (reserve_hvut_shrine_offer(_ss, item) === false) break;",
   "const offered = await _ss.offer.load(iid, reward_type, reward_slot);",
   "if (offered === false) {",
   "rollback_hvut_shrine_offer_reservation(_ss, item);",
@@ -98,7 +110,7 @@ for (const part of [
 for (const part of [
   "_ss.offer = async function (iid, count)",
   "if (_ss.error) break;",
-  "reserve_hvut_shrine_offer(_ss, item);",
+  "if (reserve_hvut_shrine_offer(_ss, item) === false) break;",
   "const offered = await _ss.request(iid, select_reward_type, select_reward_slot);",
   "if (offered === false) {",
   "rollback_hvut_shrine_offer_reservation(_ss, item);",
@@ -111,11 +123,14 @@ for (const required of [
   "var reserve_hvut_shrine_offer = function (state, item) {",
   "var rollback_hvut_shrine_offer_reservation = function (state, item) {",
   "var classify_hvut_shrine_offer_message = function (msg) {",
+  "window.HVAA_shrineOfferReservation.reserve(state, item)",
+  "window.HVAA_shrineOfferReservation.rollback(state, item)",
+  "record_hvut_shrine_offer_failure('offerReservationBridgeMissing'",
+  "record_hvut_shrine_offer_failure('offerReservationBridgeReserve'",
+  "record_hvut_shrine_offer_failure('offerReservationBridgeRollback'",
   "window.HVAA_shrineOfferMessage.classify(msg)",
   "record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing'",
   "return { kind: 'stop', message: 'Shrine offer classifier bridge unavailable.' };",
-  "state.equip.requests++;",
-  "state.equip.requests--;",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must centralize Shrine offer reservation with ${required}`);
@@ -146,6 +161,32 @@ if (!mainText.includes("import \"./i18n/shrine-offer-message-bridge.js\";")) {
 if (!classifierTestText.includes("Sold the remains for 8 credits") || !classifierTestText.includes("Your equipment inventory is full")) {
   violations.push(`${classifierTestTarget} must cover ignored sold-remains and stop messages`);
 }
+for (const required of [
+  "export function reserveShrineOffer(state, item) {",
+  "export function rollbackShrineOfferReservation(state, item) {",
+  "state.equip.requests++;",
+  "state.equip.requests--;",
+]) {
+  if (!reservationText.includes(required)) {
+    violations.push(`${reservationTarget} must own Shrine offer reservation mutation with ${required}`);
+  }
+}
+for (const required of [
+  "import { reserveShrineOffer, rollbackShrineOfferReservation } from \"./shrine-offer-reservation.js\";",
+  "window.HVAA_shrineOfferReservation = Object.freeze({",
+  "reserve: reserveShrineOffer",
+  "rollback: rollbackShrineOfferReservation",
+]) {
+  if (!reservationBridgeText.includes(required)) {
+    violations.push(`${reservationBridgeTarget} must expose Shrine offer reservation bridge with ${required}`);
+  }
+}
+if (!mainText.includes("import \"./i18n/shrine-offer-reservation-bridge.js\";")) {
+  violations.push(`${mainTarget} must load Shrine offer reservation bridge before hv-utils`);
+}
+if (!reservationTestText.includes("reserves one actual offer") || !reservationTestText.includes("rolls back one failed trophy reservation")) {
+  violations.push(`${reservationTestTarget} must cover reserve and rollback state transitions`);
+}
 
 for (const [label, body, counter] of [
   ["Shrine offer load", offerLoad, "item.total++;"],
@@ -159,6 +200,14 @@ for (const [label, body, counter] of [
 }
 
 for (const [label, body, forbidden] of [
+  ["local Shrine reservation bridge", localReservation, "item.requests++"],
+  ["local Shrine reservation bridge", localReservation, "item.stock -="],
+  ["local Shrine reservation bridge", localReservation, "item.max--"],
+  ["local Shrine reservation bridge", localReservation, "state.equip.requests++"],
+  ["local Shrine reservation rollback bridge", localReservationRollback, "item.requests--"],
+  ["local Shrine reservation rollback bridge", localReservationRollback, "item.stock +="],
+  ["local Shrine reservation rollback bridge", localReservationRollback, "item.max++"],
+  ["local Shrine reservation rollback bridge", localReservationRollback, "state.equip.requests--"],
   ["local Shrine classifier bridge", localClassifier, "Snowflake has blessed you"],
   ["local Shrine classifier bridge", localClassifier, "Hit Space Bar to offer"],
   ["local Shrine classifier bridge", localClassifier, "Peerless Voucher"],
