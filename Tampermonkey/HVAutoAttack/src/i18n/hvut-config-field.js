@@ -7,3 +7,11 @@ export function isHvutConfigFieldDisabled(field, context) {
       field?.disabled === "isekai" && context?.isIsekai
   );
 }
+
+export function getHvutConfigFieldInputKind(field) {
+  if (field?.input === "textarea") return "textarea";
+  if (field?.input === "select") return "select";
+  if (field?.type === "boolean") return "checkbox";
+  if (field?.type === "number") return "number";
+  return "text";
+}

@@ -137,6 +137,13 @@ try {
     record_hvut_config_parse_failure('configFieldBridgeMissing', { key: field?.key || '', context: context || {} });
     return true;
   };
+  var get_hvut_config_field_input_kind = function (field) {
+    if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.inputKind) {
+      return window.HVAA_hvutConfigField.inputKind(field);
+    }
+    record_hvut_config_parse_failure('configFieldInputKindBridgeMissing', { key: field?.key || '' });
+    return 'text';
+  };
   var record_hvut_item_shop_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutItemShopParse', stage: stage, detail: detail || {} };
     try {
@@ -5170,17 +5177,18 @@ const $config = {
       o.node = {};
       o.node.div = $element('div', $config.node.div);
       $element('h2', o.node.div, o.key);
+      const inputKind = get_hvut_config_field_input_kind(o);
 
-      if (o.input === 'textarea') {
+      if (inputKind === 'textarea') {
         //o.node.input = $element('textarea', o.node.div, { spellcheck: false });
-      } else if (o.input === 'select') {
+      } else if (inputKind === 'select') {
         o.node.input = $input(['select', o.options], o.node.div);
         if (o.label) {
           $element('span', o.node.div, o.label);
         }
-      } else if (o.type === 'boolean') {
+      } else if (inputKind === 'checkbox') {
         o.node.input = $input(['checkbox', null, o.label], o.node.div);
-      } else if (o.type === 'number') {
+      } else if (inputKind === 'number') {
         o.node.input = $input(['number'], o.node.div);
         if (o.label) {
           $element('span', o.node.div, o.label);
@@ -5194,7 +5202,7 @@ const $config = {
         text = text.trim().replace(/^ +/gm, '').replace(/\n/g, '<br>');
         o.node.text = $element('p', o.node.div, ['/' + text]);
       }
-      if (o.input === 'textarea') {
+      if (inputKind === 'textarea') {
         $input(['button', '恢复默认'], o.node.div, null, () => { $config.set_input(o); });
       }
       let desc = $config.desc[o.desc || o.key];
@@ -5207,7 +5215,7 @@ const $config = {
         o.node.desc = $element('p', o.node.div, ['/' + desc, '.hvut-none']);
       }
 
-      if (o.input === 'textarea') { // append here
+      if (inputKind === 'textarea') { // append here
         o.node.input = $element('textarea', o.node.div, { spellcheck: false });
       }
       o.node.input.dataset.key = o.key;
@@ -11026,17 +11034,18 @@ const $config = {
       o.node = {};
       o.node.div = $element('div', $config.node.div);
       $element('h2', o.node.div, o.key);
+      const inputKind = get_hvut_config_field_input_kind(o);
 
-      if (o.input === 'textarea') {
+      if (inputKind === 'textarea') {
         //o.node.input = $element('textarea', o.node.div, { spellcheck: false });
-      } else if (o.input === 'select') {
+      } else if (inputKind === 'select') {
         o.node.input = $input(['select', o.options], o.node.div);
         if (o.label) {
           $element('span', o.node.div, o.label);
         }
-      } else if (o.type === 'boolean') {
+      } else if (inputKind === 'checkbox') {
         o.node.input = $input(['checkbox', o.label], o.node.div);
-      } else if (o.type === 'number') {
+      } else if (inputKind === 'number') {
         o.node.input = $input(['number'], o.node.div);
         if (o.label) {
           $element('span', o.node.div, o.label);
@@ -11060,7 +11069,7 @@ const $config = {
         o.node.desc = $element('p', o.node.div, ['/' + desc, '.hvut-none']);
       }
 
-      if (o.input === 'textarea') { // append here
+      if (inputKind === 'textarea') { // append here
         o.node.input = $element('textarea', o.node.div, { spellcheck: false });
       }
       o.node.input.dataset.key = o.key;
