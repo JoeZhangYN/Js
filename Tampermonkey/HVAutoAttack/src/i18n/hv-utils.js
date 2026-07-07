@@ -1149,8 +1149,8 @@ try {
   var classify_hvut_shrine_offer_response = function (doc, stage) {
     var messages = get_message(doc, true);
     if (!messages.length) {
-      record_hvut_shrine_offer_failure(stage, { reason: 'emptyMessagebox' });
-      return { kind: 'stop', reason: 'emptyMessagebox', messages: [] };
+      var evidence = record_hvut_shrine_offer_failure(stage, { reason: 'emptyMessagebox' });
+      return { kind: 'stop', reason: 'emptyMessagebox', message: 'Shrine offer response unavailable.', messages: [], evidence: evidence };
     }
     return { kind: 'messages', messages: messages };
   };
@@ -7537,7 +7537,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       const equips = [];
       const offerResponse = classify_hvut_shrine_offer_response(doc, 'offerEmptyResponse');
       if (offerResponse.kind === 'stop') {
-        set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');
+        set_hvut_shrine_stop_error(_ss, offerResponse.message);
         return false;
       }
 
@@ -13728,7 +13728,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     const rewards = [];
     const offerResponse = classify_hvut_shrine_offer_response(doc, 'legacyOfferEmptyResponse');
     if (offerResponse.kind === 'stop') {
-      set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');
+      set_hvut_shrine_stop_error(_ss, offerResponse.message);
       return false;
     }
 
