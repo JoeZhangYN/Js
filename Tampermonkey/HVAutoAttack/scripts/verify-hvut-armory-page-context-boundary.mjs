@@ -8,7 +8,7 @@ const violations = [];
 
 for (const required of [
   "var create_hvut_armory_page_context = function (config, query) {",
-  "var source = query || _query;",
+  "var source = resolve_hvut_page_query(query);",
   "var section = source?.s;",
   "var ss = source?.ss;",
   "var screen = source?.screen;",

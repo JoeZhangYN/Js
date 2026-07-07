@@ -1786,8 +1786,20 @@ try {
   var create_hvut_mail_filter_page_url = function (filter, page) {
     return `?s=Bazaar&ss=mm&filter=${filter}&page=${page}`;
   };
+  var parse_hvut_page_query = function (search) {
+    return Object.fromEntries((search || '').replace(/^\?/, '').split('&').filter(Boolean).map((q) => {
+      const [k, v = ''] = q.split('=', 2);
+      return [decodeURIComponent(k.replace(/\+/g, ' ')), decodeURIComponent(v.replace(/\+/g, ' '))];
+    }));
+  };
+  var get_hvut_location_query = function () {
+    return parse_hvut_page_query(typeof location !== 'undefined' ? location.search : '');
+  };
+  var resolve_hvut_page_query = function (query) {
+    return query || get_hvut_location_query();
+  };
   var create_hvut_mail_page_context = function (query) {
-    var source = query || _query;
+    var source = resolve_hvut_page_query(query);
     var section = source?.s;
     var ss = source?.ss;
     var filter = source?.filter || 'inbox';
@@ -1857,7 +1869,7 @@ try {
     return '?s=Bazaar&ss=is';
   };
   var create_hvut_bazaar_page_context = function (query) {
-    var source = query || _query;
+    var source = resolve_hvut_page_query(query);
     var section = source?.s;
     var ss = source?.ss;
     return {
@@ -1876,7 +1888,7 @@ try {
     return `?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`;
   };
   var create_hvut_market_page_context = function (query) {
-    var source = query || _query;
+    var source = resolve_hvut_page_query(query);
     var section = source?.s;
     var ss = source?.ss;
     var screen = source?.screen || 'browseitems';
@@ -1901,7 +1913,7 @@ try {
     return '?s=Bazaar&ss=ss';
   };
   var create_hvut_lottery_page_context = function (query) {
-    var source = query || _query;
+    var source = resolve_hvut_page_query(query);
     var section = source?.s;
     var ss = source?.ss;
     return {
@@ -1917,19 +1929,30 @@ try {
     return hvut_lottery_page_context;
   };
   var create_hvut_battle_page_context = function (query) {
-    var source = query || _query;
+    var source = resolve_hvut_page_query(query);
+    var section = source?.s;
     var ss = source?.ss;
+    var hasInitForm = typeof $id === 'function' && !!$id('initform');
     return {
+      section: section,
       ss: ss,
-      isArena: ss === 'ar',
-      isRing: ss === 'rb',
-      isTower: ss === 'tw',
-      isGrindFest: ss === 'gr',
-      isItemWorld: ss === 'iw',
+      hasInitForm: hasInitForm,
+      isBattle: section === 'Battle',
+      isBattleList: section === 'Battle' && hasInitForm,
+      isArena: section === 'Battle' && ss === 'ar',
+      isRing: section === 'Battle' && ss === 'rb',
+      isTower: section === 'Battle' && ss === 'tw',
+      isGrindFest: section === 'Battle' && ss === 'gr',
+      isItemWorld: section === 'Battle' && ss === 'iw',
     };
   };
+  var hvut_battle_page_context = null;
+  var get_hvut_battle_page_context = function () {
+    hvut_battle_page_context = hvut_battle_page_context || create_hvut_battle_page_context();
+    return hvut_battle_page_context;
+  };
   var create_hvut_character_page_context = function (query) {
-    var source = query || _query;
+    var source = resolve_hvut_page_query(query);
     var ss = source?.ss || 'ch';
     var hasPersonaSurface = !!$id('persona_outer');
     return {
@@ -1948,7 +1971,7 @@ try {
     return `?s=Bazaar&ss=ml&slot=${mob?.index ?? mob}`;
   };
   var create_hvut_monster_lab_page_context = function (query) {
-    var source = query || _query;
+    var source = resolve_hvut_page_query(query);
     var section = source?.s;
     var ss = source?.ss;
     var create = source?.create;
@@ -1981,7 +2004,7 @@ try {
     return create_hvut_armory_screen_url('organize');
   };
   var create_hvut_armory_page_context = function (config, query) {
-    var source = query || _query;
+    var source = resolve_hvut_page_query(query);
     var section = source?.s;
     var ss = source?.ss;
     var screen = source?.screen;
@@ -4087,7 +4110,7 @@ const bindPersona = function (persona, ctx) {
     if (equipsetOutcome.kind === 'rejected') return equipsetOutcome;
     const statsOutcome = persona.parse_stats_pane_outcome(doc);
     if (statsOutcome.kind === 'rejected') return statsOutcome;
-    if (_query.s === 'Battle') {
+    if (get_hvut_battle_page_context().isBattle) {
       ctx.battle?.create();
     } else if (['eq', 'ab', 'it', 'se'].includes(_query.ss)) {
       reloadCurrentPage(hvutReloadReason('HV_UTILS_PERSONA_DYNJS'));
@@ -4219,7 +4242,7 @@ const bindPersona = function (persona, ctx) {
     top.node.stamina.firstElementChild.classList.remove('hvut-warn', 'hvut-bonus');
     ctx.player.warn = $qsa(ctx.warnSelector, doc).map((d) => d.textContent.trim()); // Repair weapon, Repair armor, Check equipment, Check attributes
     if (ctx.player.warn.length) {
-      if (_query.s === 'Battle') {
+      if (get_hvut_battle_page_context().isBattle) {
         top.node.message = top.node.message || $element('div', null, ['.hvut-top-message']);
         top.node.message.textContent = '[警告] ' + ctx.player.warn.join(', ');
         top.node.div.appendChild(top.node.message);
@@ -7028,7 +7051,7 @@ _bottom.init = function () {
   if ($config.settings.showCredits === 2) {
     _bottom.show_credits();
   }
-  if ($config.settings.showEquipCapacity === 2 || $config.settings.showEquipCapacity === 1 && _query.s === 'Battle') {
+  if ($config.settings.showEquipCapacity === 2 || $config.settings.showEquipCapacity === 1 && get_hvut_battle_page_context().isBattle) {
     _bottom.show_equip();
   }
   // 彩票/训练 = persistent realm 专属能力，isekai 版底部栏不渲染（用户决策 2026-06-08）。
@@ -11680,8 +11703,8 @@ if (get_hvut_lottery_page_context().isLottery) {
 
 
 // Battle
-if (_query.s === 'Battle') {
-  const battlePage = create_hvut_battle_page_context();
+if (get_hvut_battle_page_context().isBattle) {
+  const battlePage = get_hvut_battle_page_context();
   GM_addStyle(/*css*/`
     #arena_list { white-space: nowrap; }
     .hvut-bt-outer #arena_list th:nth-child(2) { width: 120px; }
@@ -12565,7 +12588,7 @@ if ($config.settings.showCredits === 2) {
 }
 
 // EQUIPMENT COUNTER
-if ($config.settings.showEquipSlots === 2 || $config.settings.showEquipSlots === 1 && _query.s === 'Battle') {
+if ($config.settings.showEquipSlots === 2 || $config.settings.showEquipSlots === 1 && get_hvut_battle_page_context().isBattle) {
   _bottom.show_equip = async function () {
     // [2026-06-10 能量模型] 旧 ?s=Character&ss=in 'Equip Slots' 行已消失(exec null 崩, 实站报错证实);
     // 对齐 isekai: Bazaar ss=am screen=organize 的 Inventory Capacity 表(样本 modify 端点已证主世界为 am 体系)。
@@ -17781,8 +17804,8 @@ if (get_hvut_lottery_page_context().isLottery) {
 
 
 // Battle
-if (_query.s === 'Battle' && $id('initform')) {
-  const battlePage = create_hvut_battle_page_context();
+if (get_hvut_battle_page_context().isBattleList) {
+  const battlePage = get_hvut_battle_page_context();
   GM_addStyle(/*css*/`
     #arena_list { white-space: nowrap; }
     #arena_list tbody > tr > th:nth-child(1) { width: 474px; }

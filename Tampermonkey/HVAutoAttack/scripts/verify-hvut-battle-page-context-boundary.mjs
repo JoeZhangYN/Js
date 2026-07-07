@@ -8,13 +8,26 @@ const violations = [];
 
 for (const required of [
   "var create_hvut_battle_page_context = function (query) {",
-  "var source = query || _query;",
+  "var parse_hvut_page_query = function (search) {",
+  "var get_hvut_location_query = function () {",
+  "var resolve_hvut_page_query = function (query) {",
+  "var source = resolve_hvut_page_query(query);",
+  "var section = source?.s;",
   "var ss = source?.ss;",
-  "isArena: ss === 'ar',",
-  "isRing: ss === 'rb',",
-  "isTower: ss === 'tw',",
-  "isGrindFest: ss === 'gr',",
-  "isItemWorld: ss === 'iw',",
+  "var hasInitForm = typeof $id === 'function' && !!$id('initform');",
+  "section: section,",
+  "hasInitForm: hasInitForm,",
+  "isBattle: section === 'Battle',",
+  "isBattleList: section === 'Battle' && hasInitForm,",
+  "isArena: section === 'Battle' && ss === 'ar',",
+  "isRing: section === 'Battle' && ss === 'rb',",
+  "isTower: section === 'Battle' && ss === 'tw',",
+  "isGrindFest: section === 'Battle' && ss === 'gr',",
+  "isItemWorld: section === 'Battle' && ss === 'iw',",
+  "var hvut_battle_page_context = null;",
+  "var get_hvut_battle_page_context = function () {",
+  "hvut_battle_page_context = hvut_battle_page_context || create_hvut_battle_page_context();",
+  "return hvut_battle_page_context;",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep Battle page context boundary: ${required}`);
@@ -22,7 +35,7 @@ for (const required of [
 }
 
 const battleBodies = [
-  ...text.matchAll(/if \(_query\.s === 'Battle'(?: && \$id\('initform'\))?\) \{[\s\S]*?\n\} else\n\/\/ Battle/g),
+  ...text.matchAll(/if \(get_hvut_battle_page_context\(\)\.isBattle(?:List)?\) \{[\s\S]*?\n\} else\n\/\/ Battle/g),
 ].map((match) => match[0]);
 
 if (battleBodies.length !== 2) {
@@ -31,7 +44,7 @@ if (battleBodies.length !== 2) {
 
 for (const [index, body] of battleBodies.entries()) {
   for (const required of [
-    "const battlePage = create_hvut_battle_page_context();",
+    "const battlePage = get_hvut_battle_page_context();",
     "if (battlePage.isArena) {",
     "if (battlePage.isRing) {",
     "if (battlePage.isGrindFest) {",
@@ -47,10 +60,21 @@ for (const [index, body] of battleBodies.entries()) {
     "_query.ss === 'tw'",
     "_query.ss === 'gr'",
     "_query.ss === 'iw'",
+    "_query.s === 'Battle'",
+    "create_hvut_battle_page_context();",
   ]) {
     if (body.includes(forbidden)) {
       violations.push(`${target} Battle body[${index}] must not rebuild subpage identity from raw query: ${forbidden}`);
     }
+  }
+}
+
+for (const forbidden of [
+  "_query.s === 'Battle'",
+  "_query.s === 'Battle' && $id('initform')",
+]) {
+  if (text.includes(forbidden)) {
+    violations.push(`${target} must not rebuild Battle page identity from raw query: ${forbidden}`);
   }
 }
 

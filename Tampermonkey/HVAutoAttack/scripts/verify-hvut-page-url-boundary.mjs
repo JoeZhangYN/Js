@@ -11,6 +11,9 @@ for (const required of [
   "var create_hvut_current_page_disable_url = function () {",
   "var create_hvut_ability_unlock_url = function () {",
   "var create_hvut_mail_filter_page_url = function (filter, page) {",
+  "var parse_hvut_page_query = function (search) {",
+  "var get_hvut_location_query = function () {",
+  "var resolve_hvut_page_query = function (query) {",
   "var create_hvut_mail_page_context = function (query) {",
   "var create_hvut_mail_page_url = function (page, context) {",
   "var create_hvut_mail_reply_url = function (mid) {",
@@ -35,6 +38,7 @@ for (const required of [
   "return location.href + '&hvut=disabled';",
   "return location.href;",
   "return `?s=Bazaar&ss=mm&filter=${filter}&page=${page}`;",
+  "return query || get_hvut_location_query();",
   "return create_hvut_mail_filter_page_url(mailPage.filter, page);",
   "return `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;",
   "return '?s=Bazaar&ss=mm&filter=sent';",
@@ -54,6 +58,7 @@ for (const required of [
   "return `?s=Bazaar&ss=ml&slot=${mob?.index ?? mob}`;",
   "return `?s=Bazaar&ss=am&screen=${screen}${filter}${eqids}`;",
   "return create_hvut_armory_screen_url('organize');",
+  "var source = resolve_hvut_page_query(query);",
   "eq.data.url = create_hvut_equip_page_url(eq, { absolute: true });",
   "openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
   "openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
@@ -138,6 +143,7 @@ for (const forbidden of [
   "$ajax.fetch('?s=Bazaar&ss=am&screen=repair', data)",
   "href: `?s=Bazaar&ss=am&screen=modify&eqids=${eq.info.eid}`",
   "$ajax.fetch(`?s=Bazaar&ss=am&screen=modify&eqids=${eq.info.eid}`)",
+  "var source = query || _query;",
 ]) {
   const allowedInsideHelper =
     forbidden === "location.href + '&hvut=disabled'" || forbidden === "location.href.replace(/&page=\\d+/, '') + `&page=${p}`";
@@ -150,6 +156,11 @@ for (const forbidden of [
 const disableUrlOccurrences = [...text.matchAll(/location\.href \+ '&hvut=disabled'/g)].length;
 if (disableUrlOccurrences !== 1) {
   violations.push(`${target} must build disable URL only in create_hvut_current_page_disable_url, found ${disableUrlOccurrences}`);
+}
+
+const pageContextRawQueryOccurrences = [...text.matchAll(/var source = query \|\| _query;/g)].length;
+if (pageContextRawQueryOccurrences !== 0) {
+  violations.push(`${target} page context factories must not read _query before the query entry resolves, found ${pageContextRawQueryOccurrences}`);
 }
 
 const abilityUnlockUrlOccurrences = [...text.matchAll(/create_hvut_ability_unlock_url\(\)/g)].length;

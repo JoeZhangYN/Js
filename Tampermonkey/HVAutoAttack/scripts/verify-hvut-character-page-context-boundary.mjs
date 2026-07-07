@@ -8,7 +8,7 @@ const violations = [];
 
 for (const required of [
   "var create_hvut_character_page_context = function (query) {",
-  "var source = query || _query;",
+  "var source = resolve_hvut_page_query(query);",
   "var ss = source?.ss || 'ch';",
   "var hasPersonaSurface = !!$id('persona_outer');",
   "surfaceSs: ss,",

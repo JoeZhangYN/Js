@@ -8,7 +8,7 @@ const violations = [];
 
 for (const required of [
   "var create_hvut_market_page_context = function (query) {",
-  "var source = query || _query;",
+  "var source = resolve_hvut_page_query(query);",
   "var section = source?.s;",
   "var ss = source?.ss;",
   "var screen = source?.screen || 'browseitems';",
