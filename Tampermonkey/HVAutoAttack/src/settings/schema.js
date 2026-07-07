@@ -1044,6 +1044,11 @@ const OPTION_SCHEMA = [
       l1: "關鍵 buff 剩餘閾值（≤N 回合觸發）",
       l2: "Critical buff turns threshold (≤N triggers)",
     },
+    description: {
+      l0: "回合（关键 buff 剩余 ≤N 且 MP 不足时暂停脚本，需先在下方填关键 buff 名）",
+      l1: "回合（關鍵 buff 剩餘 ≤N 且 MP 不足時暫停腳本，需先在下方填關鍵 buff 名）",
+      l2: " turns (pause when critical buff ≤N & MP low; fill buff names below)",
+    },
   },
   {
     key: "criticalBuffMpFloor",

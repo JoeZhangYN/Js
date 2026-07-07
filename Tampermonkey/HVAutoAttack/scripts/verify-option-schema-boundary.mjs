@@ -68,6 +68,9 @@ if (!/key:\s*["']delayAlertTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}s,
 if (!/key:\s*["']delayReloadTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}s, reload page/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must own action delay reload help text`);
 }
+if (!/key:\s*["']criticalBuffMinTurns["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}critical buff ≤N & MP low/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must own critical buff threshold help text`);
+}
 if (!/export const OptionSchemaEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose OptionSchemaEvent`);
 }
@@ -314,6 +317,7 @@ for (const forbidden of [
   /name=["']mlEndpoint["']\s+placeholder=["']https:\/\/rdma\.ooguy\.com\/help2["']/,
   /name=["']mlApiKey["']\s+placeholder=["']["']/,
   /id=["']pauseOnCriticalBuffExpire["'][\s\S]{0,160}关键 buff 即将消失/,
+  /critical buff ≤N & MP low/,
   /name=["']criticalBuffMinTurns["']\s+placeholder=["']2["']/,
   /name=["']criticalBuffsList["']\s+placeholder=["']Hastened,Protection,Spark of Life["']/,
   /name=["']criticalBuffMpFloor["']\s+placeholder=["']30["']/,
