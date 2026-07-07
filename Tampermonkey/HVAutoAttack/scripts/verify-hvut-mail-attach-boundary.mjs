@@ -16,7 +16,10 @@ for (const required of [
   "return classify_hvut_mooglemail_send_response(html, stage, detail);",
   "record_hvut_mooglemail_send_failure(stage, { ...detail, reason: 'emptyResponse' });",
   "return { kind: 'rejected', reason: 'emptyResponse', evidence: evidence };",
-  "return { kind: 'rejected', reason: 'mailError', error: $mail.error };",
+  "var error = get_message($doc(html));",
+  "$mail.error = error;",
+  "$mail.log('!!! Error: ' + error);",
+  "return { kind: 'rejected', reason: 'mailError', error: error };",
   "return { kind: 'accepted' };",
   "sessionStorage.setItem('HVAA:lastHvutMoogleMailSendFailure'",
 ]) {
@@ -87,6 +90,9 @@ if (!sendMatch) {
   }
   if (body.includes("$mail.check(html)")) {
     violations.push(`${target} mail send must classify responses through classify_hvut_mooglemail_send_response`);
+  }
+  if (text.includes("check: function (html) {")) {
+    violations.push(`${target} mail send must not keep $mail.check as a parallel response classifier`);
   }
   const attachMatch = /if \(attach\?\.length\) \{[\s\S]*?\n    \}\n\n    if \(cod && !cod_persistent\)/.exec(body);
   if (!attachMatch) {

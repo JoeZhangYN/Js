@@ -706,8 +706,11 @@ try {
       var evidence = record_hvut_mooglemail_send_failure(stage, { ...detail, reason: 'emptyResponse' });
       return { kind: 'rejected', reason: 'emptyResponse', evidence: evidence };
     }
-    if ($mail.check(html)) {
-      return { kind: 'rejected', reason: 'mailError', error: $mail.error };
+    var error = get_message($doc(html));
+    if (error) {
+      $mail.error = error;
+      $mail.log('!!! Error: ' + error);
+      return { kind: 'rejected', reason: 'mailError', error: error };
     }
     return { kind: 'accepted' };
   };
@@ -3594,15 +3597,6 @@ const $mail = {
     }
 
     return chunks;
-  },
-  check: function (html) {
-    const doc = $doc(html);
-    const error = get_message(doc);
-    if (error) {
-      $mail.error = error;
-      $mail.log('!!! Error: ' + error);
-    }
-    return error;
   },
   discard: function () {
     return $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${$mail.token}&action=discard`);
