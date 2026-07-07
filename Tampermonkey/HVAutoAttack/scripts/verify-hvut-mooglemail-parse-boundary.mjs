@@ -91,6 +91,12 @@ for (const required of [
   "tr.classList[(db || page).returned ? 'add' : 'remove']('hvut-mm-returned');",
   "tr.classList[(db || page).filter !== page.filter ? 'add' : 'remove']('hvut-mm-removed');",
   "tr.classList[db ? 'remove' : 'add']('hvut-mm-nodb');",
+  "var apply_hvut_mooglemail_view_identity = function (view) {",
+  "const returnedMatch = /This message was returned from (.+), kupo!|This mail was sent to (.+), but was returned, kupo!/.exec(view.text.split('\\n').reverse().join('\\n'));",
+  "view.filter = 'inbox';",
+  "view.filter = 'read';",
+  "view.filter = 'sent';",
+  "view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;",
   "var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {",
   "return record_hvut_mooglemail_parse_failure(stage, { eid: eid, onmouseover: onmouseover || '' });",
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
@@ -147,12 +153,27 @@ for (const [label, body, stage] of [
   ["modern MoogleMail parser", modernMailParse, "viewEquipAttach"],
   ["legacy MoogleMail parser", legacyMailParse, "legacyViewEquipAttach"],
 ]) {
+  requirePart(label, body, "apply_hvut_mooglemail_view_identity(view);");
   requirePart(label, body, "const onmouseover = div.firstElementChild?.firstElementChild?.getAttribute('onmouseover');");
   requirePart(label, body, `const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, '${stage}');`);
   requirePart(label, body, "if (equipAttach) {");
   requirePart(label, body, "view.attach.push(equipAttach);");
   requirePart(label, body, "} else if (equipAttach === null) {");
   requirePart(label, body, "view.error = '解析装备附件失败';");
+  for (const forbidden of [
+    "view.returned = true;",
+    "view.filter = 'inbox';",
+    "view.filter = 'read';",
+    "view.filter = 'sent';",
+    "view.user = view.from;",
+    "view.user = view.to;",
+    "view.read = view.filter === 'read'",
+    "RegExp.$1 || RegExp.$2",
+  ]) {
+    if (body.includes(forbidden)) {
+      violations.push(`${target} ${label} must delegate view identity to apply_hvut_mooglemail_view_identity`);
+    }
+  }
 }
 
 for (const [label, body, stateArg, prevKey, nextKey, prevButton, nextButton, prevStage, nextStage] of [

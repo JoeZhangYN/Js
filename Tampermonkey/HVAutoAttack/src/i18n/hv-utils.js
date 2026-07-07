@@ -890,6 +890,28 @@ try {
     tr.classList[(db || page).filter !== page.filter ? 'add' : 'remove']('hvut-mm-removed');
     tr.classList[db ? 'remove' : 'add']('hvut-mm-nodb');
   };
+  var apply_hvut_mooglemail_view_identity = function (view) {
+    if (view.from === 'MoogleMail') {
+      const returnedMatch = /This message was returned from (.+), kupo!|This mail was sent to (.+), but was returned, kupo!/.exec(view.text.split('\n').reverse().join('\n'));
+      view.from = returnedMatch ? (returnedMatch[1] || returnedMatch[2]) : false;
+      view.returned = true;
+    }
+    if (view.take) {
+      view.filter = 'inbox';
+      view.user = view.from;
+    } else if (view.reply) {
+      view.filter = 'read';
+      view.user = view.from;
+    } else if (view.returned) {
+      view.filter = 'read';
+      view.user = view.from;
+    } else {
+      view.filter = 'sent';
+      view.user = view.to;
+    }
+    view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;
+    return view;
+  };
   var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {
     var match = /equips\.set\((\d+)/.exec(onmouseover || '');
     if (!match) return false;
@@ -10821,25 +10843,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           view.recall = $qs('#mmail_showbuttons > img[src*="recallmail.png"]', doc) ? true : false;
           view.reply = $qs('#mmail_showbuttons > img[src*="reply.png"]', doc) ? true : false;
           view.take = $qs('#mmail_attachremove > img[src*="attach_takeall.png"]', doc) ? true : false;
-
-          if (view.from === 'MoogleMail') {
-            view.from = /This message was returned from (.+), kupo!|This mail was sent to (.+), but was returned, kupo!/.test(view.text.split('\n').reverse().join('\n')) && (RegExp.$1 || RegExp.$2);
-            view.returned = true;
-          }
-          if (view.take) {
-            view.filter = 'inbox';
-            view.user = view.from;
-          } else if (view.reply) {
-            view.filter = 'read';
-            view.user = view.from;
-          } else if (view.returned) {
-            view.filter = 'read';
-            view.user = view.from;
-          } else {
-            view.filter = 'sent';
-            view.user = view.to;
-          }
-          view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;
+          apply_hvut_mooglemail_view_identity(view);
 
           if ($id('mmail_attachlist', doc)) {
             Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));
@@ -16970,25 +16974,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         view.recall = $qs('#mmail_showbuttons > img[src*="recallmail.png"]', doc) ? true : false;
         view.reply = $qs('#mmail_showbuttons > img[src*="reply.png"]', doc) ? true : false;
         view.take = $qs('#mmail_attachremove > img[src*="attach_takeall.png"]', doc) ? true : false;
-
-        if (view.from === 'MoogleMail') {
-          view.from = /This message was returned from (.+), kupo!|This mail was sent to (.+), but was returned, kupo!/.test(view.text.split('\n').reverse().join('\n')) && (RegExp.$1 || RegExp.$2);
-          view.returned = true;
-        }
-        if (view.take) {
-          view.filter = 'inbox';
-          view.user = view.from;
-        } else if (view.reply) {
-          view.filter = 'read';
-          view.user = view.from;
-        } else if (view.returned) {
-          view.filter = 'read';
-          view.user = view.from;
-        } else {
-          view.filter = 'sent';
-          view.user = view.to;
-        }
-        view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;
+        apply_hvut_mooglemail_view_identity(view);
 
         if ($id('mmail_attachlist', doc)) {
           Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));
