@@ -1942,15 +1942,27 @@ try {
   };
   var create_hvut_armory_page_context = function (config, query) {
     var source = query || _query;
+    var section = source?.s;
+    var ss = source?.ss;
     var screen = source?.screen;
     var filter = source?.filter;
     var integrateAll = filter === 'all' && !!config?.settings?.equipmentIntegration;
     return {
+      section: section,
+      ss: ss,
       screen: screen,
       filter: filter,
+      isArmory: section === 'Bazaar' && ss === 'am',
+      hasEquiplist: !!$id('equiplist'),
+      isModify: screen === 'modify',
       integrateAll: integrateAll,
       canOrganize: screen !== 'purchase' && filter !== 'salvaged',
     };
+  };
+  var hvut_armory_page_context = null;
+  var get_hvut_armory_page_context = function (config) {
+    hvut_armory_page_context = hvut_armory_page_context || create_hvut_armory_page_context(config);
+    return hvut_armory_page_context;
   };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
@@ -11729,7 +11741,7 @@ if (_query.s === 'Battle') {
 
 
 //* [10] Armory - Equiplist
-if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
+if (get_hvut_armory_page_context($config).isArmory && get_hvut_armory_page_context($config).hasEquiplist) {
   const $armory = {};
   bindArmory($armory, { config: $config, equip: $equip, price: $price }); // 七屏内核收口公共区(2026-06-10; $equip/$price 闭包私有, ctx 注入)
 } else
@@ -11737,7 +11749,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
 
 
 //* [11] Armory
-if (_query.s === 'Bazaar' && _query.ss === 'am' && _query.screen === 'modify') {
+if (get_hvut_armory_page_context($config).isArmory && get_hvut_armory_page_context($config).isModify) {
   _amModify(); // 升级材料成本统计收口 L3.A3（两 IIFE 共用）
 } else
 // [END 11] Armory */
@@ -17815,7 +17827,7 @@ if (_query.s === 'Battle' && $id('initform')) {
 
 
 //* [20] Armory - Equiplist (能量模型 am 体系七屏; 收口内核 bindArmory)
-if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
+if (get_hvut_armory_page_context($config).isArmory && get_hvut_armory_page_context($config).hasEquiplist) {
   const $armory = {};
   bindArmory($armory, { config: $config, equip: $equip, price: $price });
 } else
@@ -17823,7 +17835,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && $id('equiplist')) {
 
 
 //* [21] Bazaar - Armory Modify
-if (_query.s === 'Bazaar' && _query.ss === 'am' && _query.screen === 'modify') {
+if (get_hvut_armory_page_context($config).isArmory && get_hvut_armory_page_context($config).isModify) {
   _amModify(); // 升级材料成本统计收口 L3.A3（两 IIFE 共用; 旧 Forge Upgrade/Salvage 死段的业务继任——能量模型后升级/分解走 Bazaar am 体系）
 } else
 // [END 21] Bazaar - Armory Modify */
