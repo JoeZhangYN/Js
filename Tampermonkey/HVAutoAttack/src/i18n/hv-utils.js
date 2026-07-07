@@ -5594,9 +5594,24 @@ const bindArmory = function (armory, ctx) {
       parse: function (doc, screen, assign) {
         let json;
         let accepted = true;
+        const parseSellEqitemsFromTable = function () {
+          const rows = $qsa('#equiplist > table tr[onmouseover*="hover_equip"]', doc);
+          const eqitems = {};
+          for (const tr of rows) {
+            const eid = /hover_equip\((\d+)/.exec(tr.getAttribute('onmouseover'))?.[1];
+            const price = parseInt((tr.lastElementChild?.textContent || '').replace(/\D/g, ''));
+            if (!eid || !price) {
+              accepted = false;
+              record_hvut_armory_page_failure('sellPriceMissing', { screen: screen, eid: eid || null, text: tr.lastElementChild?.textContent || '' });
+              continue;
+            }
+            eqitems[eid] = { c: price };
+          }
+          return eqitems;
+        };
         const requirements = {
           dynjs_eqstore: screen === 'purchase',
-          eqitems: true,
+          eqitems: screen !== 'sell',
           itemdata: ['purchase', 'salvage'].includes(screen),
         };
         const readScriptObject = function (html, name, required) {
@@ -5638,6 +5653,9 @@ const bindArmory = function (armory, ctx) {
               eqitems: readScriptObject(html, 'eqitems', requirements.eqitems),
               itemdata: readScriptObject(html, 'itemdata', requirements.itemdata),
             };
+            if (screen === 'sell' && !Object.keys(json.eqitems).length) {
+              json.eqitems = parseSellEqitemsFromTable();
+            }
           }
         }
         if (!$armory.eqitems[screen]) {
