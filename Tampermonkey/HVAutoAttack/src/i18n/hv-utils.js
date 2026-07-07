@@ -1314,6 +1314,10 @@ try {
   var create_hvut_mail_sent_url = function () {
     return '?s=Bazaar&ss=mm&filter=sent';
   };
+  var create_hvut_mail_read_url = function (context) {
+    var pageParam = context?.page === undefined ? '' : `&page=${context.page}`;
+    return `?s=Bazaar&ss=mm&filter=${context?.filter}&mid=${context?.mid}${pageParam}`;
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -10570,7 +10574,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           mail.page = { filter: _mm.page.filter, user, returned, subject, sent, read };
           const page = mail.page;
           mail.node.page = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
-          $element('a', mail.node.page.cells[1], { dataset: { action: 'read', mid: mid }, href: `?s=Bazaar&ss=mm&filter=${page.filter}&mid=${mid}&page=${p}` });
+          $element('a', mail.node.page.cells[1], { dataset: { action: 'read', mid: mid }, href: create_hvut_mail_read_url({ filter: page.filter, mid: mid, page: p }) });
 
           conn.os.get(mid).onsuccess = function (e) {
             mail.db = e.target.result || null;
@@ -16773,7 +16777,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         mail.page = { filter: _mm.page_filter, user, returned, subject, sent, read };
         const page = mail.page;
         mail.node.page = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
-        $element('a', mail.node.page.cells[1], { dataset: { action: 'read', mid: mid }, href: `?s=Bazaar&ss=mm&filter=${page.filter}&mid=${mid}&page=${p}` });
+        $element('a', mail.node.page.cells[1], { dataset: { action: 'read', mid: mid }, href: create_hvut_mail_read_url({ filter: page.filter, mid: mid, page: p }) });
 
         conn.os.get(mid).onsuccess = function (e) {
           mail.db = e.target.result || null;
