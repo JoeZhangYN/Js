@@ -64,7 +64,7 @@ try {
     }
     return evidence;
   };
-  var record_hvut_config_parse_failure = function (stage, detail) {
+  var create_hvut_config_parse_evidence = function (stage, detail) {
     var evidence = { capability: 'hvutConfigParse', stage: stage, detail: detail || {} };
     try {
       sessionStorage.setItem('HVAA:lastHvutConfigParseFailure', JSON.stringify(evidence));
@@ -76,6 +76,10 @@ try {
     } catch (_error) {
       // Console hooks must not block HVUT config parse fallback.
     }
+    return evidence;
+  };
+  var record_hvut_config_parse_failure = function (stage, detail) {
+    create_hvut_config_parse_evidence(stage, detail);
     return null;
   };
   var parse_hvut_world_season = function (isIsekai, stage) {
@@ -209,20 +213,24 @@ try {
       return run_hvut_config_init(this, defaultSettings, context);
     };
   };
+  var reject_hvut_config_legacy_migration = function (reason, detail) {
+    var evidence = create_hvut_config_parse_evidence(reason, detail);
+    return { kind: 'rejected', reason: reason, evidence: evidence };
+  };
   var run_hvut_config_legacy_migration = function (config, price, context) {
     var isIsekai = !!context?.isIsekai;
-    if (config.settings.version) return true;
+    if (config.settings.version) return { kind: 'accepted' };
     config.reset();
     const in_equipdata = config.ls_get('in_equipdata');
     const in_json = config.ls_get('in_json');
     const equipdata = build_hvut_legacy_equipdata(in_equipdata, in_json);
     if (equipdata) {
-      if (!config.set('equipdata', equipdata)) return false;
+      if (!config.set('equipdata', equipdata)) return reject_hvut_config_legacy_migration('legacyEquipdataWriteFailed', { isIsekai: isIsekai });
     }
     const in_equipcode = config.ls_get('in_equipcode');
     if (in_equipcode) {
       const equipCode = normalize_hvut_legacy_equip_code(in_equipcode);
-      if (!equipCode) return false;
+      if (!equipCode) return reject_hvut_config_legacy_migration('legacyEquipCodeInvalid', { isIsekai: isIsekai });
       config.settings.equipCode = equipCode;
     }
     const in_namecode = config.ls_get('in_namecode');
@@ -233,7 +241,7 @@ try {
     const prices = config.ls_get('prices');
     if (prices) {
       const normalizedPrices = normalize_hvut_legacy_prices(prices);
-      if (!normalizedPrices) return false;
+      if (!normalizedPrices) return reject_hvut_config_legacy_migration('legacyPricesInvalid', { isIsekai: isIsekai });
       setTimeout(() => { // $price is not defined yet
         price.json = null;
         price.init();
@@ -254,26 +262,26 @@ try {
     const ml_log = config.ls_get('ml_log');
     const migrated_ml_log = migrate_hvut_monster_lab_log(ml_log);
     if (migrated_ml_log) {
-      if (!config.set('ml_log', migrated_ml_log)) return false;
-      if (!config.ls_del('ml_log')) return false;
+      if (!config.set('ml_log', migrated_ml_log)) return reject_hvut_config_legacy_migration('legacyMonsterLabLogWriteFailed', { isIsekai: isIsekai });
+      if (!config.ls_del('ml_log')) return reject_hvut_config_legacy_migration('legacyMonsterLabLogDeleteFailed', { isIsekai: isIsekai });
     }
 
     const ls_list = get_hvut_config_carry_keys(isIsekai);
-    if (!ls_list) return false;
+    if (!ls_list) return reject_hvut_config_legacy_migration('legacyCarryKeysMissing', { isIsekai: isIsekai });
     for (const key of ls_list) {
       const value = config.ls_get(key);
       if (value) {
-        if (!config.set(key, value)) return false;
+        if (!config.set(key, value)) return reject_hvut_config_legacy_migration('legacyCarryKeyWriteFailed', { isIsekai: isIsekai, key: key });
       }
     }
 
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
       if (key.startsWith(config.prefix)) {
-        if (!config.ls_del(key.slice(config.prefix.length))) return false;
+        if (!config.ls_del(key.slice(config.prefix.length))) return reject_hvut_config_legacy_migration('legacyStorageKeyDeleteFailed', { isIsekai: isIsekai, key: key });
       }
     }
-    return true;
+    return { kind: 'accepted' };
   };
   var render_hvut_config_field_row = function (config, field, context) {
     var segment = create_hvut_config_segment_context(context);
@@ -5757,7 +5765,8 @@ const $config = {
   },
   init: create_hvut_config_init_entry(settings, HVUT_WORLD),
   migration: function () {
-    if (run_hvut_config_legacy_migration($config, $price, HVUT_WORLD) === false) return false;
+    const legacyMigration = run_hvut_config_legacy_migration($config, $price, HVUT_WORLD);
+    if (legacyMigration.kind === 'rejected') return false;
 
     if ($config.settings.version < 4.2) {
       delete $config.settings.equipmentShopAutoProtect;
@@ -11564,7 +11573,8 @@ const $config = {
   },
   init: create_hvut_config_init_entry(settings, { ...HVUT_WORLD, assignSeason: true }),
   migration: function () {
-    if (run_hvut_config_legacy_migration($config, $price, HVUT_WORLD) === false) return false;
+    const legacyMigration = run_hvut_config_legacy_migration($config, $price, HVUT_WORLD);
+    if (legacyMigration.kind === 'rejected') return false;
 
     const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);
     if (!normalizedSettings) return false;
