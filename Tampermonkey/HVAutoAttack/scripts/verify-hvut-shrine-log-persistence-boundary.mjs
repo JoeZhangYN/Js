@@ -146,7 +146,8 @@ for (const required of [
   "record_hvut_shrine_offer_failure('offerReservationBridgeRollback'",
   "window.HVAA_shrineOfferMessage.classify(msg)",
   "record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing'",
-  "return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.' };",
+  "var evidence = record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing', { message: msg });",
+  "return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.', evidence: evidence };",
   "record_hvut_shrine_offer_failure('unknownOfferMessage'",
   "var evidence = record_hvut_shrine_offer_failure(stage, { reason: 'emptyMessagebox' });",
   "return { kind: 'stop', reason: 'emptyMessagebox', message: 'Shrine offer response unavailable.', messages: [], evidence: evidence };",
@@ -158,7 +159,10 @@ for (const required of [
   "summary.rewards.push(offerMessage.reward);",
   "summary.sold++;",
   "summary.salvaged++;",
-  "return { kind: 'stop', reason: offerMessage.reason || 'unknownShrineResponse', message: offerMessage.message || msg };",
+  "var reason = offerMessage.reason || 'unknownShrineResponse';",
+  "var message = offerMessage.message || msg;",
+  "var evidence = offerMessage.evidence || record_hvut_shrine_offer_failure('unknownOfferMessage', { reason: reason, message: message });",
+  "return { kind: 'stop', reason: reason, message: message, evidence: evidence };",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must centralize Shrine offer reservation with ${required}`);
@@ -302,6 +306,8 @@ for (const [label, body, forbidden] of [
   ["legacy Shrine request", legacyRequest, "msg.includes('Salvaged it for')"],
   ["legacy Shrine request", legacyRequest, "RegExp.$"],
   ["legacy Shrine request", legacyRequest, "set_hvut_shrine_stop_error(_ss, msg);"],
+  ["Shrine offer classifier", text, "return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.' };"],
+  ["Shrine offer summary", text, "return { kind: 'stop', reason: offerMessage.reason || 'unknownShrineResponse', message: offerMessage.message || msg };"],
 ]) {
   if (typeof forbidden === "string" ? body.includes(forbidden) : forbidden.test(body)) {
     violations.push(`${target} ${label} must not ignore Shrine log persistence: ${forbidden}`);

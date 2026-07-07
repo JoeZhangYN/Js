@@ -1149,8 +1149,8 @@ try {
     if (window.HVAA_shrineOfferMessage && window.HVAA_shrineOfferMessage.classify) {
       return window.HVAA_shrineOfferMessage.classify(msg);
     }
-    record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing', { message: msg });
-    return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.' };
+    var evidence = record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing', { message: msg });
+    return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.', evidence: evidence };
   };
   var classify_hvut_shrine_offer_response = function (doc, stage) {
     var messages = get_message(doc, true);
@@ -1178,10 +1178,10 @@ try {
       } else if (offerMessage.kind === 'salvaged') {
         summary.salvaged++;
       } else {
-        if (offerMessage.reason === 'unknownShrineResponse') {
-          record_hvut_shrine_offer_failure('unknownOfferMessage', { message: offerMessage.message || msg });
-        }
-        return { kind: 'stop', reason: offerMessage.reason || 'unknownShrineResponse', message: offerMessage.message || msg };
+        var reason = offerMessage.reason || 'unknownShrineResponse';
+        var message = offerMessage.message || msg;
+        var evidence = offerMessage.evidence || record_hvut_shrine_offer_failure('unknownOfferMessage', { reason: reason, message: message });
+        return { kind: 'stop', reason: reason, message: message, evidence: evidence };
       }
     }
     return summary;
