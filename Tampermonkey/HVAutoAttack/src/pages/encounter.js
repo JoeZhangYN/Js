@@ -51,6 +51,7 @@ function planStoredEncounterEntry(state) {
   return runEncounterPolicy({
     type: EncounterPolicyEvent.PLAN_ACTIVATION,
     state,
+    isIsekai: typeof window !== "undefined" && Boolean(window.location?.pathname?.includes("/isekai/")),
   });
 }
 

@@ -2840,7 +2840,7 @@ const bindRe = function (re, ctx) {
       return undefined;
     }
     try {
-      return bridge.run({ ...event, type });
+      return bridge.run({ isIsekai: IS_ISEKAI, ...event, type });
     } catch (error) {
       record_hvut_random_encounter_failure('widgetEncounterBridgeFailed', { eventName, error: error?.message || String(error) });
       return undefined;

@@ -3,6 +3,7 @@ import { TimeEvent, runTimeAutomation } from "../core/time.js";
 const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000,
   ENCOUNTER_DAILY_LIMIT = 24,
   ENCOUNTER_MIDNIGHT_GRACE_MS = 5000,
+  ISEKAI_ENCOUNTER_BASE_URL = "https://hentaiverse.org/isekai/",
   ENCOUNTER_GENERATION_URL = "https://e-hentai.org/news.php?encounter";
 
 export const EncounterPolicyEvent = Object.freeze({
@@ -22,9 +23,7 @@ export const EncounterPolicyEvent = Object.freeze({
 
 const defaultEncounterState = () => ({ date: 0, key: "", count: 0, clear: true });
 
-function isDifferentUtcDay(dateMs, nowMs) {
-  return new Date(dateMs).toISOString().slice(0, 10) !== new Date(nowMs).toISOString().slice(0, 10);
-}
+const isDifferentUtcDay = (dateMs, nowMs) => new Date(dateMs).toISOString().slice(0, 10) !== new Date(nowMs).toISOString().slice(0, 10);
 
 const msUntilNextUtcDay = (stamp) => runTimeAutomation({ type: TimeEvent.MS_UNTIL_NEXT_UTC_DAY, stamp });
 
@@ -88,12 +87,14 @@ function planNextEncounterCheck(state, { nowMs = Date.now(), jitter = Math.rando
   return { delayMs, reason: clock.reason, status: clock.status, clock };
 }
 
-function planEncounterActivation(state, { force: _force = false, nowMs = Date.now() } = {}) {
+const buildEncounterEntryUrl = (key, context = {}) => context.isIsekai ? `${ISEKAI_ENCOUNTER_BASE_URL}?s=Battle&ss=ba&encounter=${key}` : `?s=Battle&ss=ba&encounter=${key}`;
+
+function planEncounterActivation(state, { force: _force = false, nowMs = Date.now(), isIsekai = false } = {}) {
   const readiness = readEncounterReadiness(state, nowMs);
   if (readiness.canEnter) {
     return {
       action: "enter",
-      href: `?s=Battle&ss=ba&encounter=${readiness.state.key}`,
+      href: buildEncounterEntryUrl(readiness.state.key, { isIsekai }),
       state: readiness.state,
     };
   }
@@ -155,7 +156,7 @@ const encounterPolicyEventHandlers = Object.freeze({
   [EncounterPolicyEvent.NORMALIZE]: (event) => normalizeEncounterState(event.state, event.nowMs),
   [EncounterPolicyEvent.READ_CLOCK]: (event) => readEncounterClock(event.state, event.nowMs),
   [EncounterPolicyEvent.PLAN_NEXT_CHECK]: (event) => planNextEncounterCheck(event.state, { nowMs: event.nowMs, jitter: event.jitter }),
-  [EncounterPolicyEvent.PLAN_ACTIVATION]: (event) => planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs }),
+  [EncounterPolicyEvent.PLAN_ACTIVATION]: (event) => planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs, isIsekai: event.isIsekai }),
   [EncounterPolicyEvent.PARSE_SEARCH_KEY]: (event) => parseEncounterKeyFromSearch(event.search),
   [EncounterPolicyEvent.PARSE_EVENTPANE_KEY]: (event) => parseEncounterKeyFromEventpaneHtml(event.eventpane),
   [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) => markEncounterKeyAvailable(event.state, event.key, event.nowMs),

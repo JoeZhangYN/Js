@@ -58,7 +58,7 @@ function planWidgetClick(event) {
   }
   if (event.pageType === "ba") return { action: "load" };
   if (event.pageType === "eh" && event.hvAvailable === false) return { action: "load" };
-  const plan = runEncounterPolicy({ type: EncounterPolicyEvent.PLAN_ACTIVATION, state: event.state, force: Boolean(event.force) });
+  const plan = runEncounterPolicy({ type: EncounterPolicyEvent.PLAN_ACTIVATION, state: event.state, force: Boolean(event.force), isIsekai: Boolean(event.isIsekai) });
   if (plan.action === "enter") {
     if (event.pageType === "eh") {
       return planWidgetEngage({ ...event, state: plan.state });
@@ -126,7 +126,7 @@ function planWidgetNewsLoaded(event) {
 }
 
 function planWidgetEngage(event) {
-  const plan = runEncounterPolicy({ type: EncounterPolicyEvent.PLAN_ACTIVATION, state: event.state, force: true });
+  const plan = runEncounterPolicy({ type: EncounterPolicyEvent.PLAN_ACTIVATION, state: event.state, force: true, isIsekai: Boolean(event.isIsekai) });
   if (plan.action !== "enter" || event.pageType === "ba") {
     return { ...readWidgetState(plan.state), action: "none" };
   }

@@ -42,7 +42,7 @@ requireParts("run_hvut_encounter_bridge", encounterBridge, [
   "const bridge = typeof window !== 'undefined' ? window.HVAA_encounter : undefined",
   "const type = bridge?.Event?.[eventName]",
   "record_hvut_random_encounter_failure('widgetEncounterBridgeMissing', { eventName })",
-  "return bridge.run({ ...event, type })",
+  "return bridge.run({ isIsekai: IS_ISEKAI, ...event, type })",
   "record_hvut_random_encounter_failure('widgetEncounterBridgeFailed'",
   "return undefined",
 ]);

@@ -22,6 +22,14 @@ describe("runEncounterPolicy route contract", () => {
         nowMs: 2000,
       }).href
     ).toBe("?s=Battle&ss=ba&encounter=abc123=");
+    expect(
+      runEncounterPolicy({
+        type: EncounterPolicyEvent.PLAN_ACTIVATION,
+        state: { date: 1000, key: "abc123=", count: 1, clear: false },
+        nowMs: 2000,
+        isIsekai: true,
+      }).href
+    ).toBe("https://hentaiverse.org/isekai/?s=Battle&ss=ba&encounter=abc123=");
   });
 
   it("marks available keys without starting cooldown or counting an encounter", () => {

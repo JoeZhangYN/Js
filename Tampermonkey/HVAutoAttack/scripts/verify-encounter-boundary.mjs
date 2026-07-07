@@ -15,6 +15,7 @@ const stateFailureFile = path.normalize("src/pages/encounter-state-failure.js");
 const stateFailureTest = path.normalize("src/pages/encounter-state-failure.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const policyTest = path.normalize("src/pages/encounter-policy.test.js");
+const policyRouteTest = path.normalize("src/pages/encounter-policy-route.test.js");
 const policyCorruptStateTest = path.normalize("src/pages/encounter-policy-corrupt-state.test.js");
 const routingTest = path.normalize("src/pages/encounter-routing.test.js");
 const rejectionFile = path.normalize("src/pages/encounter-rejection.js");
@@ -261,7 +262,10 @@ const stateEvidenceTestText = fs.readFileSync(path.join(root, stateEvidenceTest)
 const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
-const policyTestText = fs.readFileSync(path.join(root, policyTest), "utf8");
+const policyTestText = [
+  policyTest,
+  policyRouteTest,
+].map((file) => fs.readFileSync(path.join(root, file), "utf8")).join("\n");
 const policyCorruptStateTestText = fs.existsSync(path.join(root, policyCorruptStateTest))
   ? fs.readFileSync(path.join(root, policyCorruptStateTest), "utf8")
   : "";
@@ -697,6 +701,23 @@ if (/Date\.UTC\(.*getUTCFullYear\(\).*getUTCMonth\(\).*getUTCDate\(\)\s*\+\s*1/.
 }
 if (!/\bPLAN_NEXT_CHECK\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose one next-check plan query`);
+}
+for (const required of [
+  "ISEKAI_ENCOUNTER_BASE_URL",
+  "const buildEncounterEntryUrl = (key, context = {}) => context.isIsekai ? `${ISEKAI_ENCOUNTER_BASE_URL}?s=Battle&ss=ba&encounter=${key}` : `?s=Battle&ss=ba&encounter=${key}`;",
+  "isIsekai: event.isIsekai",
+]) {
+  if (!policyText.includes(required)) {
+    violations.push(`${policyFile.replaceAll("\\", "/")} must derive encounter entry URL from world identity: ${required}`);
+  }
+}
+for (const required of [
+  "isIsekai: true",
+  "https://hentaiverse.org/isekai/?s=Battle&ss=ba&encounter=abc123=",
+]) {
+  if (!policyTestText.includes(required)) {
+    violations.push(`${policyFile.replaceAll("\\", "/")} must lock isekai encounter entry URL: ${required}`);
+  }
 }
 if (
   !/EncounterPolicyEvent\.PLAN_NEXT_CHECK/.test(
