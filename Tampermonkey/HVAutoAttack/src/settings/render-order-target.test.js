@@ -5,6 +5,7 @@ import {
   readSelectableReportTableTarget,
   readSingleOrderItemName,
   renderBuffSkillCheckboxes,
+  renderChannelFallbackOrderCheckboxes,
   shouldHydrateSettingsInput,
 } from "./render.js";
 
@@ -60,5 +61,16 @@ describe("renderBuffSkillCheckboxes", () => {
     expect(html).toContain('for="channelSkill_SL">Spark of Life</label>');
     expect(html).toContain('id="channelSkill_Ab"');
     expect(html).not.toContain("buffSkillOrder_");
+  });
+});
+
+describe("renderChannelFallbackOrderCheckboxes", () => {
+  it("derives Channel fallback order from heal and support buff action identities", () => {
+    const html = renderChannelFallbackOrderCheckboxes();
+
+    expect(html).toContain('id="channelSkill2Order_Cu" value="Cu,311"');
+    expect(html).toContain('id="channelSkill2Order_FC" value="FC,313"');
+    expect(html).toContain('id="channelSkill2Order_Pr" value="Pr,411"');
+    expect(html).toContain('for="channelSkill2Order_Ab">Absorb</label>');
   });
 });

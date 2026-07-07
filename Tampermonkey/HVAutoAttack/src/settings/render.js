@@ -30,6 +30,7 @@ import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-rou
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
 import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
+import { CHANNEL_FALLBACK_ORDER_OPTIONS } from "../data/channel-fallback-order.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -276,6 +277,19 @@ export function renderBuffSkillCheckboxes(idPrefix) {
     )
     .reduce((rows, item, index) => {
       const rowIndex = index < 4 ? 0 : 1;
+      rows[rowIndex] = `${rows[rowIndex] || ""}${item}`;
+      return rows;
+    }, [])
+    .join("<br>");
+}
+
+export function renderChannelFallbackOrderCheckboxes() {
+  return CHANNEL_FALLBACK_ORDER_OPTIONS.map(
+    (skill) =>
+      `<input id="channelSkill2Order_${skill.key}" value="${skill.key},${skill.skillId}" type="checkbox"><label for="channelSkill2Order_${skill.key}">${skill.name}</label>`
+  )
+    .reduce((rows, item, index) => {
+      const rowIndex = index < 6 ? 0 : 1;
       rows[rowIndex] = `${rows[rowIndex] || ""}${item}`;
       return rows;
     }, [])
@@ -842,8 +856,7 @@ export function optionBox() {
     `    ${renderBuffSkillCheckboxes("channelSkill")}</div>`,
     '  <div><input id="channelSkill2" type="checkbox"><label for="channelSkill2"><l0><b>再使用技能</b></label>: ',
     '    <div class="channelSkill2Order"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: <input name="channelSkill2OrderName" style="width:80%;" type="text" disabled="true"><input name="channelSkill2OrderValue" style="width:80%;" type="hidden" disabled="true"><br>',
-    '    <input id="channelSkill2Order_Cu" value="Cu,311" type="checkbox"><label for="channelSkill2Order_Cu">Cure</label><input id="channelSkill2Order_FC" value="FC,313" type="checkbox"><label for="channelSkill2Order_FC">Full-Cure</label><input id="channelSkill2Order_Pr" value="Pr,411" type="checkbox"><label for="channelSkill2Order_Pr">Protection</label><input id="channelSkill2Order_SL" value="SL,422" type="checkbox"><label for="channelSkill2Order_SL">Spark of Life</label><input id="channelSkill2Order_SS" value="SS,423" type="checkbox"><label for="channelSkill2Order_SS">Spirit Shield</label><input id="channelSkill2Order_Ha" value="Ha,412" type="checkbox"><label for="channelSkill2Order_Ha">Haste</label><br>',
-    '    <input id="channelSkill2Order_AF" value="AF,432" type="checkbox"><label for="channelSkill2Order_AF">Arcane Focus</label><input id="channelSkill2Order_He" value="He,431" type="checkbox"><label for="channelSkill2Order_He">Heartseeker</label><input id="channelSkill2Order_Re" value="Re,312" type="checkbox"><label for="channelSkill2Order_Re">Regen</label><input id="channelSkill2Order_SV" value="SV,413" type="checkbox"><label for="channelSkill2Order_SV">Shadow Veil</label><input id="channelSkill2Order_Ab" value="Ab,421" type="checkbox"><label for="channelSkill2Order_Ab">Absorb</label></div></div>',
+    `    ${renderChannelFallbackOrderCheckboxes()}</div></div>`,
     "  <div><l0><b>最后ReBuff</b>: 重新施放最先消失的Buff</l0><l1><b>最後ReBuff</b>: 重新施放最先消失的Buff</l1><l2><b>At last, re-cast the spells which will expire first</b></l2>.</div></div>",
     '<div class="hvAATab" id="hvAATab-Buff">{{buffSkillCondition}}',
     '  <div class="buffSkillOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: ',
