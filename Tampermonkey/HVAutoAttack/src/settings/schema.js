@@ -519,6 +519,11 @@ const OPTION_SCHEMA = [
       l1: "容差",
       l2: "tolerance",
     },
+    description: {
+      l0: "（deficit 不够大时跳过该瓶）",
+      l1: "（deficit 不夠大時跳過該瓶）",
+      l2: " (skip if deficit too small)",
+    },
   },
   {
     key: "stallMode",

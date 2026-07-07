@@ -71,6 +71,9 @@ if (!/key:\s*["']delayReloadTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}s
 if (!/key:\s*["']criticalBuffMinTurns["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}critical buff ≤N & MP low/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must own critical buff threshold help text`);
 }
+if (!/key:\s*["']potionWasteTolerance["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}skip if deficit too small/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must own no-waste potion tolerance help text`);
+}
 if (!/export const OptionSchemaEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose OptionSchemaEvent`);
 }
@@ -384,6 +387,7 @@ for (const forbidden of [
   /name=["']dynamicHealSafetyPad["']\s+placeholder=["']1\.3["']/,
   /id=["']autoTune["'][\s\S]{0,160}自学 safetyPad/,
   /id=["']noWastePotion["'][\s\S]{0,180}药品防溢出/,
+  /skip if deficit too small/,
   /name=["']potionWasteTolerance["']\s+placeholder=["']0\.7["']/,
   /id=["']stallMode["'][\s\S]{0,180}拖战策略/,
   /id=["']stallFocus["'][\s\S]{0,180}拖战时 OC 高优先 Focus/,

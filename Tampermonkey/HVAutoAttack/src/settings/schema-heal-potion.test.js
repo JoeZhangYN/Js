@@ -20,6 +20,9 @@ describe("runOptionSchema heal potion fields", () => {
       kind: "number",
       default: 0.7,
       group: "Heal",
+      description: {
+        l2: " (skip if deficit too small)",
+      },
     });
   });
 });

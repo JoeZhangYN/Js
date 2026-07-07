@@ -603,11 +603,7 @@ function renderGemThresholdSchemaFields() {
 }
 
 function renderNoWastePotionSchemaFields() {
-  return renderCheckboxPlusNumber("noWastePotion", "potionWasteTolerance", {
-    l0: "（deficit 不够大时跳过该瓶）",
-    l1: "（deficit 不夠大時跳過該瓶）",
-    l2: " (skip if deficit too small)",
-  });
+  return renderCheckboxPlusNumber("noWastePotion", "potionWasteTolerance");
 }
 
 function renderStallStrategySchemaFields() {
