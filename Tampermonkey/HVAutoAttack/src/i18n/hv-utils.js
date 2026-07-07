@@ -612,8 +612,8 @@ try {
   var classify_hvut_training_notification_response = function (doc, stage, detail) {
     var error = get_message(doc);
     if (error) {
-      record_hvut_training_notification_failure(stage, { ...detail, reason: 'rejectedResponse', error: error });
-      return { kind: 'rejected', reason: 'rejectedResponse', message: error };
+      var evidence = record_hvut_training_notification_failure(stage, { ...detail, reason: 'rejectedResponse', error: error });
+      return { kind: 'rejected', reason: 'rejectedResponse', message: error, evidence: evidence };
     }
     return { kind: 'accepted' };
   };

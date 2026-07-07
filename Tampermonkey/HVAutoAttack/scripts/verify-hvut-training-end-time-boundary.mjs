@@ -40,8 +40,8 @@ for (const required of [
   "var parse_hvut_training_row = function (row, stage) {",
   "return record_hvut_training_notification_failure(stage, { name: name, text: row?.textContent || '' });",
   "var classify_hvut_training_notification_response = function (doc, stage, detail) {",
-  "record_hvut_training_notification_failure(stage, { ...detail, reason: 'rejectedResponse', error: error });",
-  "return { kind: 'rejected', reason: 'rejectedResponse', message: error };",
+  "var evidence = record_hvut_training_notification_failure(stage, { ...detail, reason: 'rejectedResponse', error: error });",
+  "return { kind: 'rejected', reason: 'rejectedResponse', message: error, evidence: evidence };",
   "return { kind: 'accepted' };",
 ]) {
   requirePart("training notification helper", helperRegion, required);
