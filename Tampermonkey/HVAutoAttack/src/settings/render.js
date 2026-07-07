@@ -18,8 +18,6 @@ import { SettingsFormOptionEvent, runSettingsFormOptionAutomation } from "./form
 import { setLang } from "../i18n/core/restore-controller.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
-import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
-import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
 import { AlarmProfileEvent, runAlarmProfileCatalog } from "../alarm/alarm-profiles.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
 import {
@@ -35,6 +33,10 @@ import {
 } from "./order-control-catalog.js";
 import { SettingsBackupCommandEvent, runSettingsBackupCommand } from "./backup-command.js";
 import { SettingsOptionCommandEvent, runSettingsOptionCommand } from "./option-command.js";
+import {
+  SettingsRiddleReportCommandEvent,
+  runSettingsRiddleReportCommand,
+} from "./riddle-report-command.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -1136,13 +1138,9 @@ export function optionBox() {
         type: BattleMonitorEvent.RENDER_USAGE_REPORT_TABLE_BODY,
       });
     } else if (name === "Riddle") {
-      // 小马验证(riddle ML)统计：汇总 + 结局明细由 riddle stats 入口渲染。
-      _html = `<tbody>${runRiddleStatsAutomation({
-        type: RiddleStatsEvent.RENDER_REPORT_ROWS,
-      })}`;
-      _html += runRiddleLogAutomation({ type: RiddleLogEvent.RENDER_REPORT_ROWS });
-      _html = `${_html}</tbody>`;
-      gE("#hvAATab-Riddle>table").innerHTML = _html;
+      gE("#hvAATab-Riddle>table").innerHTML = runSettingsRiddleReportCommand({
+        type: SettingsRiddleReportCommandEvent.RENDER_TABLE_BODY,
+      });
     } else if (name === "About") {
       // 关于本脚本
       const roundDebug = runBattleRoundAutomation({
@@ -1322,8 +1320,7 @@ export function optionBox() {
   // 标签页-小马验证
   gE(".reRiddleStats", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      runRiddleStatsAutomation({ type: RiddleStatsEvent.RESET });
-      runRiddleLogAutomation({ type: RiddleLogEvent.CLEAR }); // 重置统计同时清滚动日志
+      runSettingsRiddleReportCommand({ type: SettingsRiddleReportCommandEvent.RESET_REPORT });
     }
   };
   // 标签页-关于本脚本

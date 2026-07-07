@@ -8,6 +8,10 @@ const failureOwner = path.normalize("src/state/riddle-log-failure.js");
 const ownerTest = path.normalize("src/state/riddle-log.test.js");
 const failureTest = path.normalize("src/state/riddle-log-failure.test.js");
 const settingsRender = path.normalize("src/settings/render.js");
+const settingsRiddleReportCommand = path.normalize("src/settings/riddle-report-command.js");
+const settingsRiddleReportCommandTest = path.normalize(
+  "src/settings/riddle-report-command.test.js"
+);
 const violations = [];
 
 function rel(file) {
@@ -32,6 +36,8 @@ function checkFile(file) {
       relative !== failureOwner &&
       relative !== ownerTest &&
       relative !== failureTest &&
+      relative !== settingsRiddleReportCommand &&
+      relative !== settingsRiddleReportCommandTest &&
       /from\s+["'](?:\.\/|\.\.\/state\/)riddle-log\.js["']/.test(line) &&
       !/\b(?:RiddleLogEvent|runRiddleLogAutomation)\b/.test(line)
     ) {
@@ -47,7 +53,7 @@ function checkFile(file) {
     }
     if (
       relative === settingsRender &&
-      /\bRiddleLogEvent\.READ\b|\brlog\b|Run log \(last/.test(line)
+      /\bRiddleLogEvent\b|\brunRiddleLogAutomation\b|\brlog\b|Run log \(last/.test(line)
     ) {
       violations.push(`${where} settings must not compose riddle log report fields`);
     }
@@ -74,7 +80,9 @@ for (const required of [
 }
 
 if (!ownerText.includes("const riddleLogEventHandlers")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route riddle log events through a handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route riddle log events through a handler table`
+  );
 }
 
 const entryMatch = ownerText.match(/export function runRiddleLogAutomation[\s\S]*?\n}/);
@@ -83,10 +91,14 @@ if (!entryMatch) {
 } else {
   const entryBody = entryMatch[0];
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+    );
   }
   if (/\bevent\.type\b/.test(entryBody) || !/\bevent\?\.type\b/.test(entryBody)) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null riddle log events`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must fail closed for null riddle log events`
+    );
   }
   for (const internal of [
     "pushRiddleLog(",
@@ -95,7 +107,9 @@ if (!entryMatch) {
     "renderRiddleLogReportRows(",
   ]) {
     if (entryBody.includes(internal)) {
-      violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through riddleLogEventHandlers`);
+      violations.push(
+        `${owner.replaceAll("\\", "/")} entry must dispatch through riddleLogEventHandlers`
+      );
     }
   }
 }
@@ -104,12 +118,22 @@ if (!/runRiddleLogAutomation\(null\)/.test(ownerTestText)) {
 }
 
 if (/\b(?:setValue|delValue)\(/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must not write or delete riddle log storage directly`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not write or delete riddle log storage directly`
+  );
 }
-if (!/function persistRiddleLog\(entries\) \{[\s\S]*setValue\(RIDDLE_LOG_KEY,\s*entries\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordRiddleLogFailure\("persist",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
+if (
+  !/function persistRiddleLog\(entries\) \{[\s\S]*setValue\(RIDDLE_LOG_KEY,\s*entries\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordRiddleLogFailure\("persist",\s*error\);[\s\S]*return false;/.test(
+    failureOwnerText
+  )
+) {
   violations.push(`${failureOwner.replaceAll("\\", "/")} must classify riddle log write failures`);
 }
-if (!/function clearPersistedRiddleLog\(\) \{[\s\S]*delValue\(RIDDLE_LOG_KEY\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordRiddleLogFailure\("clear",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
+if (
+  !/function clearPersistedRiddleLog\(\) \{[\s\S]*delValue\(RIDDLE_LOG_KEY\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordRiddleLogFailure\("clear",\s*error\);[\s\S]*return false;/.test(
+    failureOwnerText
+  )
+) {
   violations.push(`${failureOwner.replaceAll("\\", "/")} must classify riddle log clear failures`);
 }
 for (const required of [
@@ -136,8 +160,40 @@ for (const required of [
 }
 
 const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
-if (!settingsText.includes("RiddleLogEvent.RENDER_REPORT_ROWS")) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} must request rendered riddle log rows`);
+if (!settingsText.includes("SettingsRiddleReportCommandEvent.RENDER_TABLE_BODY")) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must request rendered riddle report through settings command`
+  );
+}
+const settingsRiddleReportCommandText = fs.readFileSync(
+  path.join(root, settingsRiddleReportCommand),
+  "utf8"
+);
+for (const required of [
+  "SettingsRiddleReportCommandEvent",
+  "runSettingsRiddleReportCommand",
+  "RiddleLogEvent.RENDER_REPORT_ROWS",
+  "RiddleLogEvent.CLEAR",
+]) {
+  if (!settingsRiddleReportCommandText.includes(required)) {
+    violations.push(`${settingsRiddleReportCommand.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+const settingsRiddleReportCommandTestText = fs.readFileSync(
+  path.join(root, settingsRiddleReportCommandTest),
+  "utf8"
+);
+for (const required of [
+  "settings riddle report command entry",
+  "renders the riddle report table body from stats and log entries",
+  "resets riddle stats and log as one settings report command",
+  "fails closed for unknown riddle report commands",
+]) {
+  if (!settingsRiddleReportCommandTestText.includes(required)) {
+    violations.push(
+      `${settingsRiddleReportCommandTest.replaceAll("\\", "/")} must cover ${required}`
+    );
+  }
 }
 
 for (const legacy of ["pushRiddleLog", "getRiddleLog", "clearRiddleLog"]) {
