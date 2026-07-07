@@ -32,7 +32,7 @@ for (const required of [
   "const requirements = {",
   "dynjs_eqstore: screen === 'purchase'",
   "eqitems: screen !== 'sell'",
-  "itemdata: ['purchase', 'salvage'].includes(screen)",
+  "itemdata: false",
   "dynjs_eqstore: readScriptObject(html, 'dynjs_eqstore', requirements.dynjs_eqstore)",
   "eqitems: readScriptObject(html, 'eqitems', requirements.eqitems)",
   "itemdata: readScriptObject(html, 'itemdata', requirements.itemdata)",

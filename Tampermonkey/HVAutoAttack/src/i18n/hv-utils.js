@@ -5612,7 +5612,7 @@ const bindArmory = function (armory, ctx) {
         const requirements = {
           dynjs_eqstore: screen === 'purchase',
           eqitems: screen !== 'sell',
-          itemdata: ['purchase', 'salvage'].includes(screen),
+          itemdata: false,
         };
         const readScriptObject = function (html, name, required) {
           let value;
