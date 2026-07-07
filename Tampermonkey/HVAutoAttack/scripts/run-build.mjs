@@ -61,6 +61,7 @@ const commands = [
   "node scripts/verify-equip-name-sink.mjs",
   "node scripts/verify-topmenu-keys.mjs",
   "node scripts/verify-lottery-notification-boundary.mjs",
+  "node scripts/verify-hvut-lottery-page-context-boundary.mjs",
   "node scripts/verify-hvut-bottom-capacity-boundary.mjs",
   "node scripts/verify-hvut-navigation-bridge-boundary.mjs",
   "node scripts/verify-hvut-hvaa-config-bridge-boundary.mjs",

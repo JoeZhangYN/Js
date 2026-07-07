@@ -68,9 +68,9 @@ for (const part of [
 
 for (const [index, body] of lotteryToggles.entries()) {
   for (const part of [
-    "const previous = _lt.json[_query.ss].hide;",
+    "const previous = _lt.json[lotteryPage.ss].hide;",
     "if (!$config.set('lt_notif', _lt.json, 'hvut_')) {",
-    "_lt.json[_query.ss].hide = previous;",
+    "_lt.json[lotteryPage.ss].hide = previous;",
     "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
     "return false;",
     "return true;",

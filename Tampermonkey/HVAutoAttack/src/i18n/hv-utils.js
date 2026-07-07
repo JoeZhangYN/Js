@@ -1864,6 +1864,15 @@ try {
   var create_hvut_shrine_url = function () {
     return '?s=Bazaar&ss=ss';
   };
+  var create_hvut_lottery_page_context = function (query) {
+    var source = query || _query;
+    var ss = source?.ss;
+    return {
+      ss: ss,
+      isLottery: ss === 'lt' || ss === 'la',
+      hasNextDraw: !!$qs('img[src$="lottery_next_d.png"]'),
+    };
+  };
   var create_hvut_monster_lab_slot_url = function (mob) {
     return `?s=Bazaar&ss=ml&slot=${mob?.index ?? mob}`;
   };
@@ -11553,12 +11562,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
 //* [13] Bazaar - Lottery
 if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
-  if ($config.settings.lotteryNotification && $qs('img[src$="lottery_next_d.png"]')) {
+  const lotteryPage = create_hvut_lottery_page_context();
+  if ($config.settings.lotteryNotification && lotteryPage.hasNextDraw) {
     _lt.toggle = function (show) {
-      const previous = _lt.json[_query.ss].hide;
-      _lt.json[_query.ss].hide = !show;
+      const previous = _lt.json[lotteryPage.ss].hide;
+      _lt.json[lotteryPage.ss].hide = !show;
       if (!$config.set('lt_notif', _lt.json, 'hvut_')) {
-        _lt.json[_query.ss].hide = previous;
+        _lt.json[lotteryPage.ss].hide = previous;
         alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
         return false;
       }
@@ -11567,7 +11577,7 @@ if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
     _lt.json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
 
     const div = $element('div', $id('rightpane'), ['.hvut-warn', '!margin-top: 10px;']);
-    $input(['checkbox', null, 'Show this lottery in the bottom bar'], div, { checked: !_lt.json[_query.ss].hide }, { change: (e) => { _lt.toggle(e.target.checked); } });
+    $input(['checkbox', null, 'Show this lottery in the bottom bar'], div, { checked: !_lt.json[lotteryPage.ss].hide }, { change: (e) => { _lt.toggle(e.target.checked); } });
   }
 
   confirm_event($qs('img[src$="/lottery_golden_a.png"]'), 'click', '你确定要使用一张黄金奖券吗?');
@@ -17651,12 +17661,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
 //* [14] Bazaar - Lottery
 if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
-  if ($config.settings.lotteryNotification && $qs('img[src$="lottery_next_d.png"]')) {
+  const lotteryPage = create_hvut_lottery_page_context();
+  if ($config.settings.lotteryNotification && lotteryPage.hasNextDraw) {
     _lt.toggle = function (show) {
-      const previous = _lt.json[_query.ss].hide;
-      _lt.json[_query.ss].hide = !show;
+      const previous = _lt.json[lotteryPage.ss].hide;
+      _lt.json[lotteryPage.ss].hide = !show;
       if (!$config.set('lt_notif', _lt.json, 'hvut_')) {
-        _lt.json[_query.ss].hide = previous;
+        _lt.json[lotteryPage.ss].hide = previous;
         alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
         return false;
       }
@@ -17665,7 +17676,7 @@ if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
     _lt.json = $config.get('lt_notif', { lt: {}, la: {} }, 'hvut_');
 
     const div = $element('div', $id('rightpane'), ['!margin-top: 10px; color: #c00;']);
-    $input(['checkbox', 'Show this lottery in the bottom bar'], div, { checked: !_lt.json[_query.ss].hide }, { change: (e) => { _lt.toggle(e.target.checked); } });
+    $input(['checkbox', 'Show this lottery in the bottom bar'], div, { checked: !_lt.json[lotteryPage.ss].hide }, { change: (e) => { _lt.toggle(e.target.checked); } });
   }
 
   confirm_event($qs('img[src$="/lottery_golden_a.png"]'), 'click', 'Are you sure that you wish to spend a Golden Lottery Ticket?');
