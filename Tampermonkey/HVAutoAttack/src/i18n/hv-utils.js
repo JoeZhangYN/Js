@@ -1649,6 +1649,29 @@ try {
     }
     return evidence;
   };
+  var read_hvut_session_evidence = function (key) {
+    try {
+      var raw = sessionStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      return { capability: 'hvutDiagnosticRead', stage: 'readEvidence', detail: { key: key, error: error?.message || String(error) } };
+    }
+  };
+  var stringify_hvut_evidence = function (value) {
+    try {
+      return JSON.stringify(value || null, null, 2);
+    } catch (error) {
+      return JSON.stringify({ error: error?.message || String(error) });
+    }
+  };
+  var render_hvut_armory_integrate_failure_log = function (integrateEvidence) {
+    return "[HVAA][HVUT] Armory integrate failed，请整段复制此日志反馈：\n\n" +
+      "page : " + location.href + "\n" +
+      "cap  : " + integrateEvidence.capability + "\n" +
+      "stage: " + integrateEvidence.stage + "\n\n" +
+      "HVAA:lastHvutArmoryIntegrateFailure:\n" + stringify_hvut_evidence(integrateEvidence) + "\n\n" +
+      "HVAA:lastHvutArmoryPageFailure:\n" + stringify_hvut_evidence(read_hvut_session_evidence('HVAA:lastHvutArmoryPageFailure'));
+  };
   var parse_hvut_difficulty_from_level_readout = function (doc, stage) {
     var text = $id('level_readout', doc)?.textContent?.trim() || '';
     var match = /^(.+) Lv\.(\d+)/.exec(text);
@@ -2839,7 +2862,7 @@ const bindRe = function (re, ctx) {
       return true;
     }
     re.inited = true;
-    re.type = !location.hostname.includes('hentaiverse.org') ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
+    re.type = !location.hostname.includes('hentaiverse.org') ? 'eh' : $id('battle_top') ? 'ba' : IS_ISEKAI ? 'is' : $id('navbar') ? 'hv' : false;
     return re.get();
   };
   re.clock = function (button) {
@@ -2944,6 +2967,11 @@ const bindRe = function (re, ctx) {
       if (applyEncounterState(outcome) === false) return false;
       if (outcome?.handled) return;
       return re.load();
+    } else if (re.type === 'is') {
+      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, force: engage });
+      if (applyEncounterState(outcome) === false) return false;
+      if (outcome?.handled) return;
+      return false;
     } else if (re.type === 'hv') {
       const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, force: engage });
       if (applyEncounterState(outcome) === false) return false;
@@ -5736,8 +5764,8 @@ const bindArmory = function (armory, ctx) {
         run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false);
         if (!results.every((r) => r)) {
           const failedFilters = $armory.filters.filter((_filter, index) => !results[index]);
-          record_hvut_armory_integrate_failure('integrateIncomplete', { screen: screen, failedFilters: failedFilters });
-          alert((IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.') + '\nHVAA:lastHvutArmoryIntegrateFailure');
+          const evidence = record_hvut_armory_integrate_failure('integrateIncomplete', { screen: screen, failedFilters: failedFilters });
+          show_hvut_runtime_failure_report(render_hvut_armory_integrate_failure_log(evidence));
           return false;
         }
         return true;

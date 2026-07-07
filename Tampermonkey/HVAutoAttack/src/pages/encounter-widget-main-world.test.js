@@ -65,6 +65,33 @@ describe("main-world encounter widget timing", () => {
     });
   });
 
+  it("suppresses isekai root encounter clicks and timer expiry without loading news", () => {
+    const state = { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true };
+
+    expect(
+      planEncounterWidgetEvent({
+        type: "widgetClicked",
+        state,
+        pageType: "is",
+      })
+    ).toMatchObject({
+      action: "none",
+      handled: true,
+      recovery: "isekaiNavigationSuppressed",
+    });
+    expect(
+      planEncounterWidgetEvent({
+        type: "widgetTimerElapsed",
+        state,
+        pageType: "is",
+      })
+    ).toMatchObject({
+      action: "none",
+      handled: true,
+      recovery: "isekaiNavigationSuppressed",
+    });
+  });
+
   it("does not count or start cooldown when news only exposes an encounter key", () => {
     expect(
       planEncounterWidgetEvent({

@@ -865,12 +865,25 @@ if (/re\.type\s*=\s*\([^;]*\|\|\s*IS_ISEKAI/.test(hvUtilsText)) {
 }
 if (
   !hvUtilsText.includes(
-    "re.type = !location.hostname.includes('hentaiverse.org') ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;"
+    "re.type = !location.hostname.includes('hentaiverse.org') ? 'eh' : $id('battle_top') ? 'ba' : IS_ISEKAI ? 'is' : $id('navbar') ? 'hv' : false;"
   )
 ) {
   violations.push(
     `${hvUtilsFile.replaceAll("\\", "/")} must classify encounter widget page type before world-specific authority`
   );
+}
+for (const required of [
+  "function suppressIsekaiNavigation(current) {",
+  'recovery: "isekaiNavigationSuppressed"',
+  'if (event.pageType === "is") return suppressIsekaiNavigation(current);',
+  'if (event.pageType === "is") return suppressIsekaiNavigation(readWidgetState(event.state));',
+  "suppresses isekai root encounter clicks and timer expiry without loading news",
+]) {
+  if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
+    violations.push(
+      `${widgetPolicyFile.replaceAll("\\", "/")} must suppress isekai root encounter navigation: ${required}`
+    );
+  }
 }
 for (const required of [
   "href: plan.href",

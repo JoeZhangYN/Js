@@ -18,6 +18,8 @@ for (const required of [
   "capability: 'hvutArmoryIntegrate'",
   "sessionStorage.setItem('HVAA:lastHvutArmoryIntegrateFailure'",
   "console.warn('[HVUT] Armory integrate failed', evidence)",
+  "var render_hvut_armory_integrate_failure_log = function (integrateEvidence) {",
+  "HVAA:lastHvutArmoryPageFailure",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must define Armory integrate evidence with ${required}`);
@@ -33,8 +35,8 @@ if (!initMatch) {
     "run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false);",
     "if (!results.every((r) => r)) {",
     "const failedFilters = $armory.filters.filter((_filter, index) => !results[index]);",
-    "record_hvut_armory_integrate_failure('integrateIncomplete', { screen: screen, failedFilters: failedFilters });",
-    "alert((IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.') + '\\nHVAA:lastHvutArmoryIntegrateFailure');",
+    "const evidence = record_hvut_armory_integrate_failure('integrateIncomplete', { screen: screen, failedFilters: failedFilters });",
+    "show_hvut_runtime_failure_report(render_hvut_armory_integrate_failure_log(evidence));",
     "return false;",
     "return true;",
   ]) {
@@ -47,6 +49,9 @@ if (!initMatch) {
   }
   if (body.includes("window.HVAA_i18n.retranslateEquiplist()")) {
     violations.push(`${target} Armory integrate init must not call the i18n bridge directly`);
+  }
+  if (body.includes("alert((IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.') + '\\nHVAA:lastHvutArmoryIntegrateFailure');")) {
+    violations.push(`${target} Armory integrate init must show the copyable diagnostic report instead of a key-only alert`);
   }
 }
 

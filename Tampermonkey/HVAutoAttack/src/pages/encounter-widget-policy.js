@@ -14,6 +14,10 @@ function readWidgetState(state) {
   };
 }
 
+function suppressIsekaiNavigation(current) {
+  return { ...current, action: "none", handled: true, recovery: "isekaiNavigationSuppressed" };
+}
+
 function runWidgetLinkFound(event) {
   const key =
     event.key ||
@@ -48,6 +52,7 @@ function runWidgetStartedEncounter(event) {
 
 function planWidgetClick(event) {
   const current = readWidgetState(event.state);
+  if (event.pageType === "is") return suppressIsekaiNavigation(current);
   if (current.status === "countdown" && !event.force) {
     return { ...current, action: "none", handled: true };
   }
@@ -66,6 +71,7 @@ function planWidgetClick(event) {
 function planWidgetTimerElapsed(event) {
   const current = readWidgetState(event.state);
   if (current.status === "countdown") return current;
+  if (event.pageType === "is") return suppressIsekaiNavigation(current);
   if (
     event.lastAttemptKey === current.attemptKey ||
     current.state.generationAttemptKey === current.attemptKey
@@ -80,6 +86,7 @@ function planWidgetTimerElapsed(event) {
 }
 
 function planWidgetNewsLoaded(event) {
+  if (event.pageType === "is") return suppressIsekaiNavigation(readWidgetState(event.state));
   const eventpane = event.eventpane || "";
   const key =
     event.key ||
