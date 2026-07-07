@@ -682,6 +682,13 @@ try {
     if (!equip) return record_hvut_mooglemail_parse_failure(stage, { eid: eid, onmouseover: onmouseover || '' });
     return { t: 'e', n: equip.t, e: eid, k: equip.k };
   };
+  var classify_hvut_mooglemail_view_response = function (doc, stage) {
+    var message = get_message(doc);
+    if (!message) {
+      record_hvut_mooglemail_parse_failure(stage, { reason: 'viewResponseMessageMissing' });
+    }
+    return { kind: 'rejected', error: message || '未知错误' };
+  };
   var record_hvut_monster_lab_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutMonsterLabParse', stage: stage, detail: detail || {} };
     try {
@@ -10532,7 +10539,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             }
           }
         } else {
-          view.error = get_message(doc) || '未知错误';
+          view.error = classify_hvut_mooglemail_view_response(doc, 'viewRejectedResponse').error;
         }
 
         return view;
@@ -16720,7 +16727,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           }
         }
       } else {
-        view.error = get_message(doc) || '未知错误';
+        view.error = classify_hvut_mooglemail_view_response(doc, 'legacyViewRejectedResponse').error;
       }
 
       return view;

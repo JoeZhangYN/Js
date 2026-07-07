@@ -59,6 +59,10 @@ for (const required of [
   "record_hvut_mooglemail_parse_failure(stage, { onclick: onclick || '' });",
   "var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {",
   "return record_hvut_mooglemail_parse_failure(stage, { eid: eid, onmouseover: onmouseover || '' });",
+  "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
+  "var message = get_message(doc);",
+  "record_hvut_mooglemail_parse_failure(stage, { reason: 'viewResponseMessageMissing' });",
+  "return { kind: 'rejected', error: message || '未知错误' };",
 ]) {
   requirePart("MoogleMail parse helper", helperRegion, required);
 }
@@ -92,6 +96,13 @@ for (const [label, body, stage] of [
   requirePart(label, body, "if (view.cod === null) {");
   requirePart(label, body, "view.error = '解析货到付款失败';");
   requirePart(label, body, "view.cod = 0;");
+}
+
+for (const [label, body, stage] of [
+  ["modern MoogleMail parser", modernMailParse, "viewRejectedResponse"],
+  ["legacy MoogleMail parser", legacyMailParse, "legacyViewRejectedResponse"],
+]) {
+  requirePart(label, body, `view.error = classify_hvut_mooglemail_view_response(doc, '${stage}').error;`);
 }
 
 for (const [label, body, stage] of [
@@ -135,6 +146,7 @@ for (const forbidden of [
   "$equip.dynjs_eqstore[eid].k",
   "$equip.dynjs_eqstore[eid].t",
   "div.firstElementChild.firstElementChild?.getAttribute('onmouseover')",
+  "view.error = get_message(doc) || '未知错误';",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked MoogleMail parse path: ${forbidden}`);
