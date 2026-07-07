@@ -33,6 +33,9 @@ try {
   var hvutRedirectReason = function (key) {
     return window.HVAA_navigation && window.HVAA_navigation.RedirectReason ? window.HVAA_navigation.RedirectReason[key] : undefined;
   };
+  var is_hvut_isekai_equip_page = function (pathname) {
+    return /\/isekai\/equip(\/|$)/.test(pathname || '');
+  };
   var record_hvut_navigation_bridge_failure = function (stage, detail) {
     var evidence = { capability: 'hvutNavigationBridge', stage: stage, detail: detail || {} };
     try {
@@ -1061,7 +1064,7 @@ try {
     return el;
   };
   // <<< equip-name-render
-  if (!/\/isekai\/equip(\/|$)/.test(window.location.pathname)) {
+  if (!is_hvut_isekai_equip_page(window.location.pathname)) {
 // G1 拆桥：HVAA_ITEM_CN 表 + hvaaItemCn() 已删 —— 物品/材料名归一到 canonical SSOT
 // (src/data/i18n/equip-dict EQUIP_ITEMS)，调用点改 hvaaT(name,'item'|'material') 经全局桥查。
 // 漂移修复样本：Health Potion 原私表"生命药水" → canonical"体力药水"(与外部游戏 DOM 一致)。

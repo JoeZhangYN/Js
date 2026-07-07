@@ -46,6 +46,7 @@ const commands = [
   "node scripts/verify-hvut-training-end-time-boundary.mjs",
   "node scripts/verify-hvut-random-encounter-storage-boundary.mjs",
   "node scripts/verify-hvut-difficulty-storage-boundary.mjs",
+  "node scripts/verify-hvut-equip-page-gate-boundary.mjs",
   "node scripts/verify-monsterbation-action-config-boundary.mjs",
   "node scripts/verify-no-dup-translation.mjs",
   "node scripts/verify-i18n-restore-controller-boundary.mjs",
