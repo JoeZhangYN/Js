@@ -18,20 +18,26 @@ const modernLoad =
   /load: async function \(mid, post\) \{[\s\S]*?\n      \},\n      parse: function/.exec(text)?.[0] || "";
 const modernUpdate =
   /update: async function \(mail, post\) \{[\s\S]*?\n      \},\n      modify: function/.exec(text)?.[0] || "";
+const modernView =
+  /view: function \(mail\) \{[\s\S]*?\n      \},\n      close: function/.exec(text)?.[0] || "";
 const legacyRead =
   /_mm\.mail_read = async function \(mid, post, season = _mm\.db\.season\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_load/.exec(text)?.[0] || "";
 const legacyLoad =
   /_mm\.mail_load = async function \(mid, post\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_parse/.exec(text)?.[0] || "";
 const legacyUpdate =
   /_mm\.mail_update = async function \(mail, post\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_modify/.exec(text)?.[0] || "";
+const legacyView =
+  /_mm\.mail_view = function \(mail\) \{[\s\S]*?\n    \};\n\n    _mm\.mail_click/.exec(text)?.[0] || "";
 
 for (const [label, body] of [
   ["modern MoogleMail read", modernRead],
   ["modern MoogleMail load", modernLoad],
   ["modern MoogleMail update", modernUpdate],
+  ["modern MoogleMail view", modernView],
   ["legacy MoogleMail read", legacyRead],
   ["legacy MoogleMail load", legacyLoad],
   ["legacy MoogleMail update", legacyUpdate],
+  ["legacy MoogleMail view", legacyView],
 ]) {
   if (!body) violations.push(`${target} must keep ${label} visible`);
 }
@@ -45,6 +51,13 @@ for (const required of [
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
   "return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误', evidence: evidence };",
   "return { kind: 'rejected', reason: 'mailError', error: message, evidence: evidence };",
+  "var render_hvut_mooglemail_view_attach_list = function (mail, div, db, context) {",
+  "mail.attach = [];",
+  "const ul = $element('ul', div, null, { input: context.onInput });",
+  "codText = db.read ? `CoD Paid: ${db.cod.toLocaleString()}` : `CoD: ${db.cod.toLocaleString()}`;",
+  "codText = context.noCodText;",
+  "create_hvut_equip_page_url({ eid: e.e, key: e.k })",
+  "e.node.price = $input('text', li, { className: 'hvut-mm-price' });",
   "var create_hvut_mooglemail_cache_write_plan = function (mail, post, context) {",
   "if (view.error) return null;",
   "const nextDb = { ...db, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: sent, read: read };",
@@ -116,6 +129,14 @@ for (const required of [
 }
 
 for (const required of [
+  "render_hvut_mooglemail_view_attach_list(mail, div, db, {",
+  "noCodText: '无货到付款',",
+  "onInput: (e) => { _mm.mail.cod(e); },",
+]) {
+  requirePart("modern MoogleMail view", modernView, required);
+}
+
+for (const required of [
   "const loadResponse = await _mm.mail_load(mid, post);",
   "if (loadResponse.kind === 'rejected') {",
   "_mm.mail_view(mail);",
@@ -151,6 +172,14 @@ for (const required of [
   "return true;",
 ]) {
   requirePart("legacy MoogleMail update", legacyUpdate, required);
+}
+
+for (const required of [
+  "render_hvut_mooglemail_view_attach_list(mail, div, db, {",
+  "noCodText: 'No CoD',",
+  "onInput: (e) => { _mm.mail_cod(e); },",
+]) {
+  requirePart("legacy MoogleMail view", legacyView, required);
 }
 
 for (const forbidden of [
@@ -221,6 +250,25 @@ for (const [label, body] of [
   ]) {
     if (body.includes(forbidden)) {
       violations.push(`${target} ${label} must delegate cache write planning/execution to MoogleMail cache write entries`);
+    }
+  }
+}
+
+for (const [label, body] of [
+  ["modern MoogleMail view", modernView],
+  ["legacy MoogleMail view", legacyView],
+]) {
+  for (const forbidden of [
+    "mail.attach = [];",
+    "const ul = $element('ul', div, null, { input:",
+    "mail.attach = JSON.parse(JSON.stringify(db.attach));",
+    "mail.attach.forEach((e) => {",
+    "create_hvut_equip_page_url({ eid: e.e, key: e.k })",
+    "e.node.price = $input('text', li, { className: 'hvut-mm-price' });",
+    "e.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });",
+  ]) {
+    if (body.includes(forbidden)) {
+      violations.push(`${target} ${label} must delegate attachment rendering to render_hvut_mooglemail_view_attach_list`);
     }
   }
 }

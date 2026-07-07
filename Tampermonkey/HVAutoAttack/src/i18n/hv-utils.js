@@ -890,6 +890,43 @@ try {
     tr.classList[(db || page).filter !== page.filter ? 'add' : 'remove']('hvut-mm-removed');
     tr.classList[db ? 'remove' : 'add']('hvut-mm-nodb');
   };
+  var render_hvut_mooglemail_view_attach_list = function (mail, div, db, context) {
+    mail.attach = [];
+    if (!db.attach) return;
+    const ul = $element('ul', div, null, { input: context.onInput });
+    const li = $element('li', ul);
+    const wtx = db.filter === 'sent' ? 'WTS' : 'WTB';
+
+    let codText;
+    if (db.cod) {
+      codText = db.read ? `CoD Paid: ${db.cod.toLocaleString()}` : `CoD: ${db.cod.toLocaleString()}`;
+    } else {
+      codText = context.noCodText;
+    }
+    $element('span', li, codText);
+    mail.node.price = $input('text', li, { className: 'hvut-mm-price', readOnly: true, value: wtx });
+    mail.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
+    mail.attach = JSON.parse(JSON.stringify(db.attach));
+    mail.attach.forEach((e) => {
+      const li = $element('li', ul);
+      const span = $element('span', li, [`.hvut-mm-attach-${e.t}`]);
+      if (e.t === 'e') {
+        if (e.e && e.k) {
+          $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
+        } else {
+          span.textContent = e.n;
+        }
+      } else {
+        span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
+      }
+      e.node = {};
+      if (e.n === 'Credits') {
+        return;
+      }
+      e.node.price = $input('text', li, { className: 'hvut-mm-price' });
+      e.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
+    });
+  };
   var apply_hvut_mooglemail_view_identity = function (view) {
     if (view.from === 'MoogleMail') {
       const returnedMatch = /This message was returned from (.+), kupo!|This mail was sent to (.+), but was returned, kupo!/.exec(view.text.split('\n').reverse().join('\n'));
@@ -11091,46 +11128,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           $input(['button', `This message was returned from ${db.user}`], buttons);
         }
 
-        mail.attach = [];
-        if (db.attach) {
-          const ul = $element('ul', div, null, { input: (e) => { _mm.mail.cod(e); } });
-          const li = $element('li', ul);
-          const wtx = (db.filter === 'sent') ? 'WTS' : 'WTB';
-
-          let cod_text;
-          if (db.cod) {
-            if (db.read) {
-              cod_text = `CoD Paid: ${db.cod.toLocaleString()}`;
-            } else {
-              cod_text = `CoD: ${db.cod.toLocaleString()}`;
-            }
-          } else {
-            cod_text = '无货到付款';
-          }
-          $element('span', li, cod_text);
-          mail.node.price = $input('text', li, { className: 'hvut-mm-price', readOnly: true, value: wtx });
-          mail.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
-          mail.attach = JSON.parse(JSON.stringify(db.attach));
-          mail.attach.forEach((e) => {
-            const li = $element('li', ul);
-            const span = $element('span', li, [`.hvut-mm-attach-${e.t}`]);
-            if (e.t === 'e') {
-              if (e.e && e.k) {
-                $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
-              } else {
-                span.textContent = e.n;
-              }
-            } else {
-              span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
-            }
-            e.node = {};
-            if (e.n === 'Credits') {
-              return;
-            }
-            e.node.price = $input('text', li, { className: 'hvut-mm-price' });
-            e.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
-          });
-        }
+        render_hvut_mooglemail_view_attach_list(mail, div, db, {
+          noCodText: '无货到付款',
+          onInput: (e) => { _mm.mail.cod(e); },
+        });
       },
       close: function () {
         if (_mm.mail.current) {
@@ -17082,46 +17083,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         $input(['button', '系统店代购'], buttons, { dataset: { action: 'itemshop', mid } });
       }
 
-      mail.attach = [];
-      if (db.attach) {
-        const ul = $element('ul', div, null, { input: (e) => { _mm.mail_cod(e); } });
-        const li = $element('li', ul);
-        const wtx = db.filter === 'sent' ? 'WTS' : 'WTB';
-
-        let cod_text;
-        if (db.cod) {
-          if (db.read) {
-            cod_text = `CoD Paid: ${db.cod.toLocaleString()}`;
-          } else {
-            cod_text = `CoD: ${db.cod.toLocaleString()}`;
-          }
-        } else {
-          cod_text = 'No CoD';
-        }
-        $element('span', li, cod_text);
-        mail.node.price = $input('text', li, { className: 'hvut-mm-price', readOnly: true, value: wtx });
-        mail.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
-        mail.attach = JSON.parse(JSON.stringify(db.attach));
-        mail.attach.forEach((e) => {
-          const li = $element('li', ul);
-          const span = $element('span', li, [`.hvut-mm-attach-${e.t}`]);
-          if (e.t === 'e') {
-            if (e.e && e.k) {
-              $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
-            } else {
-              span.textContent = e.n;
-            }
-          } else {
-            span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
-          }
-          e.node = {};
-          if (e.n === 'Credits') {
-            return;
-          }
-          e.node.price = $input('text', li, { className: 'hvut-mm-price' });
-          e.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
-        });
-      }
+      render_hvut_mooglemail_view_attach_list(mail, div, db, {
+        noCodText: 'No CoD',
+        onInput: (e) => { _mm.mail_cod(e); },
+      });
     };
 
     _mm.mail_click = function (e) {
