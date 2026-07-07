@@ -583,6 +583,14 @@ try {
     }
     return { name: name, enName: enName, time: time, level: level, max: max };
   };
+  var classify_hvut_training_notification_response = function (doc, stage, detail) {
+    var error = get_message(doc);
+    if (error) {
+      record_hvut_training_notification_failure(stage, { ...detail, reason: 'rejectedResponse', error: error });
+      return { kind: 'rejected', reason: 'rejectedResponse', message: error };
+    }
+    return { kind: 'accepted' };
+  };
   var record_hvut_mooglemail_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutMoogleMailParse', stage: stage, detail: detail || {} };
     try {
@@ -12046,9 +12054,9 @@ if ($config.settings.trainingNotification) {
         _bottom.tr.node.link.textContent = `${hvaaT(json.current_name, 'trains')} [${json.current_level + 1}]`;
         _bottom.tr.clock();
       } else if (json.next_name) {
-        const error = get_message(doc);
-        if (error) {
-          json.error = error;
+        const response = classify_hvut_training_notification_response(doc, 'bottomTrainingStartResponse', { next_name: json.next_name, next_level: json.next_level, next_id: json.next_id });
+        if (response.kind === 'rejected') {
+          json.error = response.message;
           _bottom.tr.node.link.textContent = json.error;
           setTimeout(_bottom.tr.clock, 60000);
         } else if (level[json.next_name] < json.next_level) {

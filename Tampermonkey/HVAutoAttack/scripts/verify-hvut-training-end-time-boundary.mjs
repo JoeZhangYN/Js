@@ -39,6 +39,10 @@ for (const required of [
   "record_hvut_training_notification_failure(stage, { sourceType: typeof source });",
   "var parse_hvut_training_row = function (row, stage) {",
   "return record_hvut_training_notification_failure(stage, { name: name, text: row?.textContent || '' });",
+  "var classify_hvut_training_notification_response = function (doc, stage, detail) {",
+  "record_hvut_training_notification_failure(stage, { ...detail, reason: 'rejectedResponse', error: error });",
+  "return { kind: 'rejected', reason: 'rejectedResponse', message: error };",
+  "return { kind: 'accepted' };",
 ]) {
   requirePart("training notification helper", helperRegion, required);
 }
@@ -70,6 +74,9 @@ for (const required of [
   "_bottom.tr.node.link.textContent = json.error;",
   "return false;",
   "json.current_end = current_end;",
+  "const response = classify_hvut_training_notification_response(doc, 'bottomTrainingStartResponse'",
+  "if (response.kind === 'rejected') {",
+  "json.error = response.message;",
 ]) {
   requirePart("bottom training notification", bottomTraining, required);
 }
@@ -105,6 +112,12 @@ for (const forbidden of [
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked training end-time path: ${forbidden}`);
   }
+}
+if (bottomTraining.includes("const error = get_message(doc);")) {
+  violations.push(`${target} bottom training notification must classify start responses through classify_hvut_training_notification_response`);
+}
+if (bottomTraining.includes("json.error = error;")) {
+  violations.push(`${target} bottom training notification must use typed response message`);
 }
 
 for (const required of [
