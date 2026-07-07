@@ -62,7 +62,7 @@ for (const required of [
 }
 
 for (const required of [
-  "try {\n          html = await $ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post);",
+  "try {\n          html = await $ajax.fetch(create_hvut_mail_view_url(mid), post);",
   "const evidence = record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });",
   "mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };",
   "return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error, evidence: evidence };",
@@ -109,7 +109,7 @@ for (const required of [
 }
 
 for (const required of [
-  "try {\n        html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);",
+  "try {\n        html = await $ajax.fetch(create_hvut_mail_view_url(mid), post);",
   "const evidence = record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });",
   "mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };",
   "return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error, evidence: evidence };",
@@ -147,8 +147,8 @@ for (const required of [
 }
 
 for (const forbidden of [
-  "const html = await $ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post);",
-  "const html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);",
+  "html = await $ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post);",
+  "html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);",
   "await _mm.mail.load(mid, post);\n        }\n        _mm.mail.view(mail);",
   "await _mm.mail_load(mid, post);\n      }\n      _mm.mail_view(mail);",
   "if (!await _mm.mail.load(mid, post)) {",

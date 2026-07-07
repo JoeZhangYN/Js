@@ -14,6 +14,7 @@ for (const required of [
   "var create_hvut_mail_sent_url = function () {",
   "var create_hvut_mail_read_url = function (context) {",
   "var create_hvut_mail_compose_url = function (context) {",
+  "var create_hvut_mail_view_url = function (mid) {",
   "return context?.absolute ? `${location.origin}${location.pathname}${relative}` : relative;",
   "return location.href + '&hvut=disabled';",
   "return location.href.replace(/&page=\\d+/, '') + `&page=${page}`;",
@@ -21,6 +22,7 @@ for (const required of [
   "return '?s=Bazaar&ss=mm&filter=sent';",
   "return `?s=Bazaar&ss=mm&filter=${context?.filter}&mid=${context?.mid}${pageParam}`;",
   "return context?.persistent ? '/?s=Bazaar&ss=mm&filter=new' : '?s=Bazaar&ss=mm&filter=new';",
+  "return `?s=Bazaar&ss=mm&mid=${mid}`;",
   "eq.data.url = create_hvut_equip_page_url(eq, { absolute: true });",
   "openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
   "openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
@@ -34,6 +36,7 @@ for (const required of [
   "href: create_hvut_mail_read_url({ filter: db.filter, mid: db.mid })",
   "$ajax.fetch(create_hvut_mail_compose_url()",
   "$ajax.fetch(create_hvut_mail_compose_url({ persistent: true })",
+  "$ajax.fetch(create_hvut_mail_view_url(mid), post)",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT page URL boundary: ${required}`);
@@ -54,6 +57,8 @@ for (const forbidden of [
   "href: `?s=Bazaar&ss=mm&filter=${db.filter}&mid=${db.mid}`",
   "$ajax.fetch('?s=Bazaar&ss=mm&filter=new'",
   "$ajax.fetch('/?s=Bazaar&ss=mm&filter=new'",
+  "$ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post)",
+  "$ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post)",
 ]) {
   const allowedInsideHelper =
     forbidden === "location.href + '&hvut=disabled'" || forbidden === "location.href.replace(/&page=\\d+/, '') + `&page=${p}`";
@@ -91,6 +96,11 @@ if (mailPageReadOccurrences !== 1) {
 const mailComposeFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_compose_url/g)].length;
 if (mailComposeFetchOccurrences !== 9) {
   violations.push(`${target} must route compose mailbox fetches through create_hvut_mail_compose_url, found ${mailComposeFetchOccurrences}`);
+}
+
+const mailViewFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_view_url\(mid\), post\)/g)].length;
+if (mailViewFetchOccurrences !== 2) {
+  violations.push(`${target} must route mail view/action fetches through create_hvut_mail_view_url, found ${mailViewFetchOccurrences}`);
 }
 
 if (violations.length) {

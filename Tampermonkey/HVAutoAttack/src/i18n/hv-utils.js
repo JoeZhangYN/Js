@@ -1321,6 +1321,9 @@ try {
   var create_hvut_mail_compose_url = function (context) {
     return context?.persistent ? '/?s=Bazaar&ss=mm&filter=new' : '?s=Bazaar&ss=mm&filter=new';
   };
+  var create_hvut_mail_view_url = function (mid) {
+    return `?s=Bazaar&ss=mm&mid=${mid}`;
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -10704,7 +10707,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const mail = _mm.mail.get(mid);
         let html;
         try {
-          html = await $ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post);
+          html = await $ajax.fetch(create_hvut_mail_view_url(mid), post);
         } catch (error) {
           const stage = post ? 'viewActionRequest' : 'viewLoadRequest';
           const evidence = record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
@@ -16881,7 +16884,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       const mail = _mm.mail_get(mid);
       let html;
       try {
-        html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);
+        html = await $ajax.fetch(create_hvut_mail_view_url(mid), post);
       } catch (error) {
         const stage = post ? 'legacyViewActionRequest' : 'legacyViewLoadRequest';
         const evidence = record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
