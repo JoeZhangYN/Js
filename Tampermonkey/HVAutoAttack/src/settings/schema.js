@@ -719,6 +719,17 @@ const OPTION_SCHEMA = [
       l2: "Scroll",
     },
   },
+  {
+    key: "infusionSwitch",
+    kind: "checkbox",
+    group: "Infusion",
+    default: false,
+    label: {
+      l0: "魔药",
+      l1: "魔藥",
+      l2: "Infusion",
+    },
+  },
   // === 掉落监测：设置页只派生监控开关/最低品质；运行时 authority 在 battle-monitor-runtime/drop-monitor ===
   {
     key: "dropMonitor",

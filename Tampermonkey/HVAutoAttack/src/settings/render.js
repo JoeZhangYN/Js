@@ -278,7 +278,7 @@ function renderChannelSkillSwitchTabSchemaField() {
   );
 }
 
-function renderBattleTabSwitchSchemaField(key) {
+export function renderBattleTabSwitchSchemaField(key) {
   return renderSchemaCheckboxField(key, "", { bold: false }).replace(/^<div>|<\/div>$/g, "");
 }
 
@@ -921,7 +921,7 @@ export function optionBox() {
     `  <span name="Debuff">${renderBattleTabSwitchSchemaField("debuffSkillSwitch")}</span>`,
     `  <span name="Skill">${renderBattleTabSwitchSchemaField("skillSwitch")}</span>`,
     `  <span name="Scroll">${renderBattleTabSwitchSchemaField("scrollSwitch")}</span>`,
-    '  <span name="Infusion"><input id="infusionSwitch" type="checkbox"><l0>魔药</l0><l1>魔藥</l1><l2>Infusion</l2></span>',
+    `  <span name="Infusion">${renderBattleTabSwitchSchemaField("infusionSwitch")}</span>`,
     '  <span name="Alarm"><l0>警报</l0><l1>警報</l1><l2>Alarm</l2></span>',
     '  <span name="Rule"><l0>攻击规则</l0><l1>攻擊規則</l1><l2>Attack Rule</l2></span>',
     `  <span name="Drop">${renderDropMonitorTabSchemaField()}</span>`,
