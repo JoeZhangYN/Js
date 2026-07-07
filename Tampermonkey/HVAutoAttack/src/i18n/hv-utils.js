@@ -663,7 +663,7 @@ try {
     $mail.ready = true;
     return false;
   };
-  var classify_hvut_mooglemail_attach_response = function (html, stage, detail) {
+  var classify_hvut_mooglemail_send_response = function (html, stage, detail) {
     if (typeof html !== 'string' || !html.trim()) {
       var evidence = record_hvut_mooglemail_send_failure(stage, { ...detail, reason: 'emptyResponse' });
       return { kind: 'rejected', reason: 'emptyResponse', evidence: evidence };
@@ -672,6 +672,9 @@ try {
       return { kind: 'rejected', reason: 'mailError', error: $mail.error };
     }
     return { kind: 'accepted' };
+  };
+  var classify_hvut_mooglemail_attach_response = function (html, stage, detail) {
+    return classify_hvut_mooglemail_send_response(html, stage, detail);
   };
   var parse_hvut_mooglemail_count = function (text, pattern, stage) {
     var match = pattern.exec(text || '');
@@ -3392,8 +3395,9 @@ const $mail = {
       } catch (error) {
         return stop_hvut_mooglemail_send_failure('codRequest', { index: index, cod: cod, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to set CoD`, 'codRequestDiscard');
       }
-      if ($mail.check(html)) {
-        return stop_hvut_mooglemail_send_failure('codRejected', { index: index, cod: cod, error: $mail.error }, null, 'codRejectedDiscard');
+      const response = classify_hvut_mooglemail_send_response(html, 'codResponse', { index: index, cod: cod });
+      if (response.kind === 'rejected') {
+        return stop_hvut_mooglemail_send_failure('codRejected', { index: index, cod: cod, response: response }, null, 'codRejectedDiscard');
       }
     }
 
@@ -3405,8 +3409,9 @@ const $mail = {
         return stop_hvut_mooglemail_send_failure('persistentMailboxLoadRequest', { index: index, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to access to Persistent MoogleMail`);
       }
       doc = $doc(html);
-      if ($mail.check(html)) {
-        return stop_hvut_mooglemail_send_failure('persistentMailboxRejected', { index: index, error: $mail.error }, null, 'persistentMailboxRejectedDiscard');
+      const mailboxResponse = classify_hvut_mooglemail_send_response(html, 'persistentMailboxResponse', { index: index });
+      if (mailboxResponse.kind === 'rejected') {
+        return stop_hvut_mooglemail_send_failure('persistentMailboxRejected', { index: index, response: mailboxResponse }, null, 'persistentMailboxRejectedDiscard');
       }
       if (!$id('navbar', doc)) {
         return stop_hvut_mooglemail_send_failure('persistentMailboxUnavailable', { index: index }, '!!! Error: Unable to access to Persistent MoogleMail');
@@ -3421,8 +3426,9 @@ const $mail = {
       } catch (error) {
         return stop_hvut_mooglemail_send_failure('persistentAttachRequest', { index: index, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to attach Persistent CoD credit`, 'persistentAttachRequestDiscard');
       }
-      if ($mail.check(html)) {
-        return stop_hvut_mooglemail_send_failure('persistentAttachRejected', { index: index, error: $mail.error }, null, 'persistentAttachRejectedDiscard');
+      const persistentAttachResponse = classify_hvut_mooglemail_send_response(html, 'persistentAttachResponse', { index: index });
+      if (persistentAttachResponse.kind === 'rejected') {
+        return stop_hvut_mooglemail_send_failure('persistentAttachRejected', { index: index, response: persistentAttachResponse }, null, 'persistentAttachRejectedDiscard');
       }
 
       $mail.log(`#${index}: Setting CoD in Persistent`);
@@ -3431,8 +3437,9 @@ const $mail = {
       } catch (error) {
         return stop_hvut_mooglemail_send_failure('persistentCodRequest', { index: index, cod: cod, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to set Persistent CoD`, 'persistentCodRequestDiscard');
       }
-      if ($mail.check(html)) {
-        return stop_hvut_mooglemail_send_failure('persistentCodRejected', { index: index, cod: cod, error: $mail.error }, null, 'persistentCodRejectedDiscard');
+      const persistentCodResponse = classify_hvut_mooglemail_send_response(html, 'persistentCodResponse', { index: index, cod: cod });
+      if (persistentCodResponse.kind === 'rejected') {
+        return stop_hvut_mooglemail_send_failure('persistentCodRejected', { index: index, cod: cod, response: persistentCodResponse }, null, 'persistentCodRejectedDiscard');
       }
 
       $mail.log(`#${index}: Sending in Persistent`);
@@ -3441,8 +3448,9 @@ const $mail = {
       } catch (error) {
         return stop_hvut_mooglemail_send_failure('persistentSendRequest', { index: index, to_name: to_name, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to send Persistent MoogleMail`, 'persistentSendRequestDiscard');
       }
-      if ($mail.check(html)) {
-        return stop_hvut_mooglemail_send_failure('persistentSendRejected', { index: index, to_name: to_name, error: $mail.error }, null, 'persistentSendRejectedDiscard');
+      const persistentSendResponse = classify_hvut_mooglemail_send_response(html, 'persistentSendResponse', { index: index, to_name: to_name });
+      if (persistentSendResponse.kind === 'rejected') {
+        return stop_hvut_mooglemail_send_failure('persistentSendRejected', { index: index, to_name: to_name, response: persistentSendResponse }, null, 'persistentSendRejectedDiscard');
       }
     }
 
@@ -3452,8 +3460,9 @@ const $mail = {
     } catch (error) {
       return stop_hvut_mooglemail_send_failure('sendRequest', { index: index, to_name: to_name, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to send MoogleMail`, 'sendRequestDiscard');
     }
-    if ($mail.check(html)) {
-      return stop_hvut_mooglemail_send_failure('sendRejected', { index: index, to_name: to_name, error: $mail.error }, null, 'sendRejectedDiscard');
+    const sendResponse = classify_hvut_mooglemail_send_response(html, 'sendResponse', { index: index, to_name: to_name });
+    if (sendResponse.kind === 'rejected') {
+      return stop_hvut_mooglemail_send_failure('sendRejected', { index: index, to_name: to_name, response: sendResponse }, null, 'sendRejectedDiscard');
     }
 
     $mail.log(`#${index}: Completed`);

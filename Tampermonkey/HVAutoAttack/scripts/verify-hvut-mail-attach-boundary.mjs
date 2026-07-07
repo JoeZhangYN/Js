@@ -11,7 +11,9 @@ const violations = [];
 for (const required of [
   "var record_hvut_mooglemail_send_failure = function (stage, detail) {",
   "var stop_hvut_mooglemail_send_failure = async function (stage, detail, message, discardStage) {",
+  "var classify_hvut_mooglemail_send_response = function (html, stage, detail) {",
   "var classify_hvut_mooglemail_attach_response = function (html, stage, detail) {",
+  "return classify_hvut_mooglemail_send_response(html, stage, detail);",
   "record_hvut_mooglemail_send_failure(stage, { ...detail, reason: 'emptyResponse' });",
   "return { kind: 'rejected', reason: 'emptyResponse', evidence: evidence };",
   "return { kind: 'rejected', reason: 'mailError', error: $mail.error };",
@@ -63,6 +65,18 @@ if (!sendMatch) {
     "return stop_hvut_mooglemail_send_failure('persistentSendRejected'",
     "return stop_hvut_mooglemail_send_failure('sendRequest'",
     "return stop_hvut_mooglemail_send_failure('sendRejected'",
+    "const response = classify_hvut_mooglemail_send_response(html, 'codResponse'",
+    "const mailboxResponse = classify_hvut_mooglemail_send_response(html, 'persistentMailboxResponse'",
+    "const persistentAttachResponse = classify_hvut_mooglemail_send_response(html, 'persistentAttachResponse'",
+    "const persistentCodResponse = classify_hvut_mooglemail_send_response(html, 'persistentCodResponse'",
+    "const persistentSendResponse = classify_hvut_mooglemail_send_response(html, 'persistentSendResponse'",
+    "const sendResponse = classify_hvut_mooglemail_send_response(html, 'sendResponse'",
+    "if (response.kind === 'rejected') {",
+    "if (mailboxResponse.kind === 'rejected') {",
+    "if (persistentAttachResponse.kind === 'rejected') {",
+    "if (persistentCodResponse.kind === 'rejected') {",
+    "if (persistentSendResponse.kind === 'rejected') {",
+    "if (sendResponse.kind === 'rejected') {",
   ]) {
     if (!body.includes(required)) {
       violations.push(`${target} mail send must guard failure with ${required}`);
@@ -70,6 +84,9 @@ if (!sendMatch) {
   }
   if (/\$mail\.discard\(\);\n\s*return;/.test(body)) {
     violations.push(`${target} mail send must not keep naked discard/return failure paths`);
+  }
+  if (body.includes("$mail.check(html)")) {
+    violations.push(`${target} mail send must classify responses through classify_hvut_mooglemail_send_response`);
   }
   const attachMatch = /if \(attach\?\.length\) \{[\s\S]*?\n    \}\n\n    if \(cod && !cod_persistent\)/.exec(body);
   if (!attachMatch) {
