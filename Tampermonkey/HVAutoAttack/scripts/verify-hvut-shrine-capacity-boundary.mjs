@@ -17,11 +17,11 @@ const helperRegion =
     text,
   )?.[0] || "";
 const modernShrine =
-  /if \(_query\.s === 'Bazaar' && _query\.ss === 'ss'\) \{[\s\S]*?\/\/ \[END 8\] Bazaar - The Shrine/.exec(
+  /if \(_query\.s === 'Bazaar' && get_hvut_bazaar_page_context\(\)\.isShrine\) \{[\s\S]*?\/\/ \[END 8\] Bazaar - The Shrine/.exec(
     text,
   )?.[0] || "";
 const legacyShrine =
-  /if \(_query\.s === 'Bazaar' && _query\.ss === 'ss'\) \{[\s\S]*?\/\/ \[END 10\] Bazaar - The Shrine/.exec(
+  /if \(_query\.s === 'Bazaar' && get_hvut_bazaar_page_context\(\)\.isShrine\) \{[\s\S]*?\/\/ \[END 10\] Bazaar - The Shrine/.exec(
     text.slice(text.indexOf("//* [10] Bazaar - The Shrine")),
   )?.[0] || "";
 

@@ -1846,6 +1846,20 @@ try {
   var create_hvut_item_shop_url = function () {
     return '?s=Bazaar&ss=is';
   };
+  var create_hvut_bazaar_page_context = function (query) {
+    var source = query || _query;
+    var ss = source?.ss;
+    return {
+      ss: ss,
+      isItemShop: ss === 'is',
+      isShrine: ss === 'ss',
+    };
+  };
+  var hvut_bazaar_page_context = null;
+  var get_hvut_bazaar_page_context = function () {
+    hvut_bazaar_page_context = hvut_bazaar_page_context || create_hvut_bazaar_page_context();
+    return hvut_bazaar_page_context;
+  };
   var create_hvut_market_browse_items_url = function (filter) {
     return `?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`;
   };
@@ -7956,7 +7970,7 @@ if (_query.s === 'Character' && characterPage.isSettings) {
 
 
 //* [7] Bazaar - Item Shop
-if (_query.s === 'Bazaar' && _query.ss === 'is') {
+if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isItemShop) {
   _is.init = function () {
     $qsa('#item_pane .itemlist tr').forEach((tr) => {
       const div = tr.cells[0].firstElementChild;
@@ -7982,7 +7996,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'is') {
 
 
 //* [8] Bazaar - The Shrine
-if (_query.s === 'Bazaar' && _query.ss === 'ss') {
+if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isShrine) {
   _ss.node = {};
   _ss.equip = { capacity: null, usage: null, requests: 0, received: 0, sold: 0, salvaged: 0, total: null };
 
@@ -14068,7 +14082,7 @@ if (_query.s === 'Character' && characterPage.isSettings) {
 
 
 //* [9] Bazaar - Item Shop
-if (_query.s === 'Bazaar' && _query.ss === 'is') {
+if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isItemShop) {
   $qsa('#item_pane .itemlist tr').forEach((tr) => {
     const div = tr.cells[0].firstElementChild;
     const type = $item.get_type(div.getAttribute('onmouseover'));
@@ -14090,7 +14104,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'is') {
 
 
 //* [10] Bazaar - The Shrine
-if (_query.s === 'Bazaar' && _query.ss === 'ss') {
+if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isShrine) {
   _ss.log = $config.get('ss_log', {});
   _ss.node = {};
   _ss.equip = { capacity: null, current: null, requests: 0, received: 0, sold: 0, salvaged: 0, total: null };
