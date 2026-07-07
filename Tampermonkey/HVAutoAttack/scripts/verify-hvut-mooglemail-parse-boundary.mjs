@@ -127,6 +127,15 @@ for (const required of [
   "const exec = /^Attached item removed: (?:([0-9,]+)x? (.+)|(.+)) \\(type=([chie]) id=(\\d+), CoD was ([0-9]+)C\\)$/.exec(split[0]);",
   "view.attach.push({ t: type, n: name, e: eid });",
   "view.cod = parseCount(exec[6]);",
+  "var parse_hvut_mooglemail_view = function (doc, html, context) {",
+  "const form = $id('mailform', doc);",
+  "const response = classify_hvut_mooglemail_view_response(doc, context.rejectedStage);",
+  "const parsed = parse_hvut_mooglemail_view_form(form, doc);",
+  "parse_hvut_mooglemail_visible_attach_list(view, doc, html, {",
+  "equipStage: context.equipStage,",
+  "codStage: context.codStage,",
+  "parse_hvut_mooglemail_historical_attach_text(view, context.parseCount);",
+  "return { view: view, mmtoken: parsed.mmtoken };",
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
   "var message = get_message(doc);",
   "var evidence = create_hvut_mooglemail_parse_evidence(stage, { reason: 'viewResponseMessageMissing' });",
@@ -169,23 +178,29 @@ for (const [label, body, stage] of [
   ["modern MoogleMail parser", modernMailParse, "viewRejectedResponse"],
   ["legacy MoogleMail parser", legacyMailParse, "legacyViewRejectedResponse"],
 ]) {
-  requirePart(label, body, `const response = classify_hvut_mooglemail_view_response(doc, '${stage}');`);
-  requirePart(label, body, "if (response.kind === 'rejected') {");
-  requirePart(label, body, "view.error = response.error;");
+  requirePart(label, body, `rejectedStage: '${stage}',`);
 }
 
 for (const [label, body, stage] of [
   ["modern MoogleMail parser", modernMailParse, "viewEquipAttach"],
   ["legacy MoogleMail parser", legacyMailParse, "legacyViewEquipAttach"],
 ]) {
-  requirePart(label, body, "const parsed = parse_hvut_mooglemail_view_form(form, doc);");
-  requirePart(label, body, "_mm.mmtoken = parsed.mmtoken;");
-  requirePart(label, body, "Object.assign(view, parsed.view);");
-  requirePart(label, body, "parse_hvut_mooglemail_visible_attach_list(view, doc, html, {");
+  requirePart(label, body, "const parsed = parse_hvut_mooglemail_view(doc, html, {");
   requirePart(label, body, `equipStage: '${stage}',`);
   requirePart(label, body, "parseCount: _mm.parse_count,");
-  requirePart(label, body, "parse_hvut_mooglemail_historical_attach_text(view, _mm.parse_count);");
+  requirePart(label, body, "if (parsed.mmtoken) {");
+  requirePart(label, body, "_mm.mmtoken = parsed.mmtoken;");
+  requirePart(label, body, "return parsed.view;");
   for (const forbidden of [
+    "const view = {};",
+    "const form = $id('mailform', doc);",
+    "parse_hvut_mooglemail_view_form(form, doc)",
+    "Object.assign(view, parsed.view);",
+    "classify_hvut_mooglemail_view_response(doc,",
+    "view.error = response.error;",
+    "$id('mmail_attachlist', doc)",
+    "parse_hvut_mooglemail_visible_attach_list(view, doc, html",
+    "parse_hvut_mooglemail_historical_attach_text(view, _mm.parse_count);",
     "view.returned = true;",
     "view.filter = 'inbox';",
     "view.filter = 'read';",

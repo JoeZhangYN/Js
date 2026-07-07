@@ -1093,6 +1093,30 @@ try {
       view.cod = parseCount(exec[6]);
     }
   };
+  var parse_hvut_mooglemail_view = function (doc, html, context) {
+    const form = $id('mailform', doc);
+    if (!form) {
+      const view = {};
+      const response = classify_hvut_mooglemail_view_response(doc, context.rejectedStage);
+      if (response.kind === 'rejected') {
+        view.error = response.error;
+      }
+      return { view: view };
+    }
+
+    const parsed = parse_hvut_mooglemail_view_form(form, doc);
+    const view = parsed.view;
+    if ($id('mmail_attachlist', doc)) {
+      parse_hvut_mooglemail_visible_attach_list(view, doc, html, {
+        equipStage: context.equipStage,
+        codStage: context.codStage,
+        parseCount: context.parseCount,
+      });
+    } else {
+      parse_hvut_mooglemail_historical_attach_text(view, context.parseCount);
+    }
+    return { view: view, mmtoken: parsed.mmtoken };
+  };
   var classify_hvut_mooglemail_view_response = function (doc, stage) {
     var message = get_message(doc);
     if (!message) {
@@ -10993,30 +11017,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       },
       parse: function (html) {
         const doc = $doc(html);
-        const view = {};
-        const form = $id('mailform', doc);
-        if (form) {
-          const parsed = parse_hvut_mooglemail_view_form(form, doc);
+        const parsed = parse_hvut_mooglemail_view(doc, html, {
+          rejectedStage: 'viewRejectedResponse',
+          equipStage: 'viewEquipAttach',
+          codStage: 'viewCurrentCod',
+          parseCount: _mm.parse_count,
+        });
+        if (parsed.mmtoken) {
           _mm.mmtoken = parsed.mmtoken;
-          Object.assign(view, parsed.view);
-
-          if ($id('mmail_attachlist', doc)) {
-            parse_hvut_mooglemail_visible_attach_list(view, doc, html, {
-              equipStage: 'viewEquipAttach',
-              codStage: 'viewCurrentCod',
-              parseCount: _mm.parse_count,
-            });
-          } else {
-            parse_hvut_mooglemail_historical_attach_text(view, _mm.parse_count);
-          }
-        } else {
-          const response = classify_hvut_mooglemail_view_response(doc, 'viewRejectedResponse');
-          if (response.kind === 'rejected') {
-            view.error = response.error;
-          }
         }
-
-        return view;
+        return parsed.view;
       },
       update: async function (mail, post) {
         const writePlan = create_hvut_mooglemail_cache_write_plan(mail, post, {
@@ -16991,30 +17001,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         html = doc.documentElement.innerHTML;
       }
 
-      const view = {};
-      const form = $id('mailform', doc);
-      if (form) {
-        const parsed = parse_hvut_mooglemail_view_form(form, doc);
+      const parsed = parse_hvut_mooglemail_view(doc, html, {
+        rejectedStage: 'legacyViewRejectedResponse',
+        equipStage: 'legacyViewEquipAttach',
+        codStage: 'legacyViewCurrentCod',
+        parseCount: _mm.parse_count,
+      });
+      if (parsed.mmtoken) {
         _mm.mmtoken = parsed.mmtoken;
-        Object.assign(view, parsed.view);
-
-        if ($id('mmail_attachlist', doc)) {
-          parse_hvut_mooglemail_visible_attach_list(view, doc, html, {
-            equipStage: 'legacyViewEquipAttach',
-            codStage: 'legacyViewCurrentCod',
-            parseCount: _mm.parse_count,
-          });
-        } else {
-          parse_hvut_mooglemail_historical_attach_text(view, _mm.parse_count);
-        }
-      } else {
-        const response = classify_hvut_mooglemail_view_response(doc, 'legacyViewRejectedResponse');
-        if (response.kind === 'rejected') {
-          view.error = response.error;
-        }
       }
-
-      return view;
+      return parsed.view;
     };
 
     _mm.mail_update = async function (mail, post) {
