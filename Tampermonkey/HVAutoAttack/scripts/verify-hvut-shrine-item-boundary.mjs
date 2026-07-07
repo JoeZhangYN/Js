@@ -15,7 +15,10 @@ function rel(file) {
 for (const required of [
   "var record_hvut_shrine_item_parse_failure = function (stage, detail) {",
   "sessionStorage.setItem('HVAA:lastHvutShrineItemParseFailure', JSON.stringify(evidence));",
+  "var parse_hvut_shrine_offer_item_data = function (onclick) {",
+  "var exec = /set_shrine_item\\((\\w+),(\\d+),(\\d+),'(.+?)'\\)/.exec(onclick || '');",
   "var parse_hvut_shrine_offer_item = function (div, stage) {",
+  "var item = parse_hvut_shrine_offer_item_data(onclick);",
   "return record_hvut_shrine_item_parse_failure(stage, { onclick: onclick, text: div?.textContent || '' });",
   "const itemData = parse_hvut_shrine_offer_item(div, 'offerItemRow');",
   "const itemData = parse_hvut_shrine_offer_item(div, 'legacyOfferItemRow');",
@@ -29,6 +32,14 @@ for (const required of [
 
 if (/\{\s*iid,\s*stock,\s*bulk\s*\}\s*=\s*\$item\.get_data/.test(text)) {
   violations.push(`${rel(hvUtilsFile)} must not destructure Shrine offer identity directly from $item.get_data`);
+}
+
+const shrineOfferParser =
+  /var parse_hvut_shrine_offer_item = function \(div, stage\) \{[\s\S]*?\n  \};/.exec(text)?.[0] || "";
+if (!shrineOfferParser) {
+  violations.push(`${rel(hvUtilsFile)} must keep Shrine offer item parser visible`);
+} else if (shrineOfferParser.includes("$item.get_data")) {
+  violations.push(`${rel(hvUtilsFile)} Shrine offer item parser must not depend on branch-private $item`);
 }
 
 for (const initBody of text.matchAll(/\$qsa\('\.itemlist tr'\)\.forEach\(\(tr\) => \{[\s\S]*?\n\s*\}\);/g)) {

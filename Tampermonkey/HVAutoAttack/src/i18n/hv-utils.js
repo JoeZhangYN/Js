@@ -1631,9 +1631,19 @@ try {
     }
     return { type: exec[1], slot: exec[2] };
   };
+  var parse_hvut_shrine_offer_item_data = function (onclick) {
+    var exec = /set_shrine_item\((\w+),(\d+),(\d+),'(.+?)'\)/.exec(onclick || '');
+    if (!exec) return {};
+    return {
+      iid: exec[1],
+      stock: parseInt(exec[2]),
+      bulk: parseInt(exec[3]),
+      name: exec[4],
+    };
+  };
   var parse_hvut_shrine_offer_item = function (div, stage) {
     var onclick = div?.getAttribute('onclick') || '';
-    var item = $item.get_data(onclick);
+    var item = parse_hvut_shrine_offer_item_data(onclick);
     if (!item.iid || !Number.isFinite(item.stock) || !Number.isFinite(item.bulk) || item.bulk <= 0) {
       return record_hvut_shrine_item_parse_failure(stage, { onclick: onclick, text: div?.textContent || '' });
     }
