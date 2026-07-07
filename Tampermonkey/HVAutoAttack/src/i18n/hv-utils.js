@@ -4518,7 +4518,7 @@ const bindArmory = function (armory, ctx) {
       //search
     },
     get_token: async function () {
-      const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
+      const html = await $ajax.fetch(create_hvut_armory_organize_url());
       const doc = $doc(html);
       $armory.postoken = $id('equipform', doc).elements.postoken?.value;
     },
@@ -5337,7 +5337,7 @@ const bindArmory = function (armory, ctx) {
         }
         let html;
         try {
-          html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize', data + `&set_${param_name}=${param_value}`);
+          html = await $ajax.fetch(create_hvut_armory_organize_url(), data + `&set_${param_name}=${param_value}`);
         } catch (error) {
           record_hvut_armory_submit_failure('organizeRequest', { count: equips.length, name: name, value: value, error: error?.message || String(error) });
           alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');

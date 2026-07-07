@@ -144,9 +144,9 @@ if (bottomBazaarSectionOccurrences !== 2) {
   violations.push(`${target} must route bottom Bazaar section link/load through create_hvut_bazaar_section_url, found ${bottomBazaarSectionOccurrences}`);
 }
 
-const capacityOrganizeOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_armory_organize_url\(\)/g)].length;
-if (capacityOrganizeOccurrences !== 4) {
-  violations.push(`${target} must route capacity organize fetches through create_hvut_armory_organize_url, found ${capacityOrganizeOccurrences}`);
+const armoryOrganizeOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_armory_organize_url\(\)/g)].length;
+if (armoryOrganizeOccurrences !== 6) {
+  violations.push(`${target} must route Armory organize fetches through create_hvut_armory_organize_url, found ${armoryOrganizeOccurrences}`);
 }
 
 if (violations.length) {

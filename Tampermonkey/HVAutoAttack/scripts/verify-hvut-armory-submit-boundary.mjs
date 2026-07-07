@@ -69,7 +69,7 @@ for (const required of [
 for (const required of [
   "submit: async function (eid, name, value = true) {",
   "let html;",
-  "try {\n          html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize'",
+  "try {\n          html = await $ajax.fetch(create_hvut_armory_organize_url()",
   "record_hvut_armory_submit_failure('organizeRequest'",
   "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
   "return false;",
@@ -98,6 +98,10 @@ for (const forbidden of [
 
 if (organizeSubmitBody.includes("const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize', data + `&set_${param_name}=${param_value}`);")) {
   violations.push(`${target} Armory organize submit must not keep unchecked organize submit request`);
+}
+
+if (organizeSubmitBody.includes("$ajax.fetch('?s=Bazaar&ss=am&screen=organize'")) {
+  violations.push(`${target} Armory organize submit must route through create_hvut_armory_organize_url`);
 }
 
 for (const required of [
