@@ -60,9 +60,11 @@ if (!loadMatch) {
 } else {
   const body = loadMatch[0];
   for (const required of [
-    "let table;",
-    "try {\n          table = await $armory.page.load(screen, filter, true);",
+    "let page;",
+    "try {\n          page = await $armory.page.load(screen, filter, true);",
     "catch (error) {\n          record_hvut_armory_integrate_failure('loadRequest'",
+    "const table = page?.table;",
+    "if (page?.kind === 'empty') {",
     "if (!table) {\n          record_hvut_armory_integrate_failure('loadTableMissing'",
     "if (!table.tBodies[0]) {\n            record_hvut_armory_integrate_failure('loadTableBodyMissing'",
     "$armory.filter.update();\n        return true;",

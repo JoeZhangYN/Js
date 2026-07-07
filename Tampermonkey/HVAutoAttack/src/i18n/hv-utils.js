@@ -5559,8 +5559,12 @@ const bindArmory = function (armory, ctx) {
         const html = await $ajax.fetch(href);
         const doc = $doc(html);
         $armory.page.init(doc, screen, assign);
+        const equiplist = $id('equiplist', doc);
         const table = $qs('#equiplist > table', doc);
-        return table;
+        if (table) return { kind: 'table', table: table };
+        if (equiplist) return { kind: 'empty', table: null };
+        record_hvut_armory_page_failure('equiplistMissing', { screen: screen, filter: filter || '', assign: !!assign });
+        return { kind: 'missing', table: null };
       },
     },
 
@@ -5821,13 +5825,19 @@ const bindArmory = function (armory, ctx) {
       },
       load: async function (screen, filter) {
         const holder = $element('tbody', $armory.node.table, [`/<tr class="hvut-eqp-category"><td colspan="10">Loading... [${filter}]</td></tr>`]);
-        let table;
+        let page;
         try {
-          table = await $armory.page.load(screen, filter, true);
+          page = await $armory.page.load(screen, filter, true);
         } catch (error) {
           record_hvut_armory_integrate_failure('loadRequest', { screen: screen, filter: filter, href: create_hvut_armory_screen_url(screen, { filter: filter || '' }), error: error?.message || String(error) });
           holder.remove();
           return false;
+        }
+        const table = page?.table;
+        if (page?.kind === 'empty') {
+          holder.remove();
+          $armory.filter.update();
+          return true;
         }
         if (!table) {
           record_hvut_armory_integrate_failure('loadTableMissing', { screen: screen, filter: filter });
