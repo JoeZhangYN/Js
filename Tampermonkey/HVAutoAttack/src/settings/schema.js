@@ -445,6 +445,73 @@ const OPTION_SCHEMA = [
       l2: "Other action delay",
     },
   },
+  // === Arena / stamina：战外挂机配置说明 SOT；运行时 authority 分属 battle-stamina/stamina/idle-arena ===
+  {
+    key: "staminaLose",
+    kind: "number",
+    group: "Arena",
+    default: 5,
+    label: {
+      l0: "Stamina 损失阈值",
+      l1: "Stamina 損失閾值",
+      l2: "Stamina loss threshold",
+    },
+  },
+  {
+    key: "idleArena",
+    kind: "checkbox",
+    group: "Arena",
+    default: false,
+    label: {
+      l0: "闲置竞技场",
+      l1: "閒置競技場",
+      l2: "Idle Arena",
+    },
+  },
+  {
+    key: "idleArenaTime",
+    kind: "number",
+    group: "Arena",
+    default: 0,
+    label: {
+      l0: "任意页面停留秒数",
+      l1: "任意頁面停留秒數",
+      l2: "Idle seconds in any page",
+    },
+  },
+  {
+    key: "idleArenaGrTime",
+    kind: "number",
+    group: "Arena",
+    default: 1,
+    label: {
+      l0: "GrindFest 次数",
+      l1: "GrindFest 次數",
+      l2: "GrindFest runs",
+    },
+  },
+  {
+    key: "restoreStamina",
+    kind: "checkbox",
+    group: "Arena",
+    default: false,
+    label: {
+      l0: "战前回复",
+      l1: "戰前回复",
+      l2: "Restore stamina",
+    },
+  },
+  {
+    key: "staminaLow",
+    kind: "number",
+    group: "Arena",
+    default: 30,
+    label: {
+      l0: "战前 Stamina 阈值",
+      l1: "戰前 Stamina 閾值",
+      l2: "Pre-battle stamina threshold",
+    },
+  },
   // === Spirit Stance：攻击流开/关姿态与技能前置姿态的配置说明 SOT ===
   {
     key: "turnOnSS",

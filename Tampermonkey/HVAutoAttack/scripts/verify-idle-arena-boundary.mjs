@@ -11,6 +11,7 @@ const resetFailureTest = path.normalize("src/arena/idle-arena-reset-failure.test
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const settings = path.normalize("src/settings/render.js");
+const optionSchema = path.normalize("src/settings/schema.js");
 const storageKeys = path.normalize("src/state/persist-keys.js");
 const violations = [];
 
@@ -42,6 +43,8 @@ function checkFile(file) {
       relative !== owner &&
       relative !== ownerTest &&
       relative !== settings &&
+      relative !== optionSchema &&
+      !relative.startsWith(path.normalize("src/settings/schema-")) &&
       /\bidleArenaTime\b/.test(line)
     ) {
       violations.push(`${where} idleArenaTime scheduling is owned by idle-arena boundary`);

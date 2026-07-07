@@ -33,6 +33,7 @@ function checkFile(file) {
       relative !== ownerTest &&
       relative !== settings &&
       relative !== settingsSchema &&
+      !relative.startsWith(path.normalize("src/settings/schema-")) &&
       /You lose .*Stamina|staminaLose\b/.test(line)
     ) {
       violations.push(
@@ -80,16 +81,19 @@ if (/fallback:\s*Number\.POSITIVE_INFINITY/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must use stamina threshold fallback constant`);
 }
 const entryBody =
-  ownerText.match(/export function runBattleStaminaAutomation\([^)]*\)[\s\S]*?\n\}/)?.[0] ||
-  "";
+  ownerText.match(/export function runBattleStaminaAutomation\([^)]*\)[\s\S]*?\n\}/)?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_ROUND_LOG_READY\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (/battleStaminaEventHandlers\[event\.type\]/.test(entryBody)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for invalid stamina events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for invalid stamina events`
+  );
 }
 if (!/battleStaminaEventHandlers\[event\?\.type\]/.test(entryBody)) {
   violations.push(
