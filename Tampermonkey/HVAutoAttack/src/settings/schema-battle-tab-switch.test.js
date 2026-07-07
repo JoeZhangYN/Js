@@ -7,6 +7,7 @@ const tabSwitches = [
   ["debuffSkillSwitch", "Debuff"],
   ["skillSwitch", "Skill"],
   ["scrollSwitch", "Scroll"],
+  ["scrollFirst", "Scroll"],
 ];
 
 describe("runOptionSchema battle tab switch fields", () => {

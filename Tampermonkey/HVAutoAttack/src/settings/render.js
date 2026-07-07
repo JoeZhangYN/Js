@@ -472,6 +472,10 @@ export function renderBattleScrollCheckboxes() {
   ).join("");
 }
 
+export function renderScrollFirstSchemaField() {
+  return renderSchemaCheckboxField("scrollFirst", "", { bold: false });
+}
+
 function renderDropMonitorSchemaFields() {
   return [renderSchemaSelectField("dropQuality")];
 }
@@ -1062,7 +1066,7 @@ export function optionBox() {
     '<div class="hvAATab" id="hvAATab-Scroll">',
     "  <l0>战役模式</l0><l1>戰役模式</l1><l2>Battle type</l2>: ",
     `  ${renderBattleRoundTypeCheckboxes("scrollRoundType")}{{scrollCondition}}`,
-    '  <input id="scrollFirst" type="checkbox"><label for="scrollFirst"><l0>存在技能生成的Buff时，仍然使用卷轴</l0><l1>存在技能生成的Buff時，仍然使用捲軸</l1><l2>Use Scrolls even when there are effects from spells</l2>.</label>',
+    renderScrollFirstSchemaField(),
     `  ${renderBattleScrollCheckboxes()}</div>`,
     '<div class="hvAATab" id="hvAATab-Infusion">',
     '  <l0>注意：魔药属性与</l0><l1>注意：魔藥屬性與</l1><l2>Note: The style of infusion is the same as Attack Mode in </l2><a class="hvAAGoto" name="hvAATab-Main"><l0>主要选项</l0><l1>主要選項</l1><l2>Main</l2></a><l0>里的攻击模式相同</l0><l1>裡的攻擊模式相同</l1><l2></l2><br>{{infusionCondition}}</div>',

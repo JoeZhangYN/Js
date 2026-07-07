@@ -764,6 +764,17 @@ const OPTION_SCHEMA = [
     },
   },
   {
+    key: "scrollFirst",
+    kind: "checkbox",
+    group: "Scroll",
+    default: false,
+    label: {
+      l0: "存在技能生成的 Buff 时，仍然使用卷轴",
+      l1: "存在技能生成的 Buff 時，仍然使用捲軸",
+      l2: "Use Scrolls even when matching spell buffs exist",
+    },
+  },
+  {
     key: "infusionSwitch",
     kind: "checkbox",
     group: "Infusion",
