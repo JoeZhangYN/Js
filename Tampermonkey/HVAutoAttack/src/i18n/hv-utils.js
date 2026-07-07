@@ -1905,6 +1905,7 @@ try {
     var hasPersonaSurface = !!$id('persona_outer');
     return {
       ss: ss,
+      surfaceSs: ss,
       hasPersonaSurface: hasPersonaSurface,
       isCharacter: ss === 'ch' || hasPersonaSurface,
       isEquipment: ss === 'eq',
@@ -6668,7 +6669,7 @@ if (!$id('navbar')) {
 // CHECK FONT SETTINGS
 const level_exec = /^(.+) Lv\.(\d+)/.exec($id('level_readout').textContent.trim());
 if (!level_exec) {
-  if (_query.ss === 'se') {
+  if (create_hvut_character_page_context().isSettings) {
     alert('你没有足够的Credits！');
     scrollIntoView($id('settings_cfont').parentNode, $id('settings_outer'));
     const form = $qs('#settings_outer form');
@@ -6769,7 +6770,7 @@ bindBattlePanel($battle, { // 渲染/交互内核 + 数据层(2026-06-10 续收,
 });
 
 // BASIC CSS
-$id('csp').dataset.ss = _query.ss || 'ch';
+$id('csp').dataset.ss = create_hvut_character_page_context().surfaceSs;
 
 GM_addStyle(/*css*/`
   input[type='text'], input[type='number'] { margin: 0 5px; padding: 2px 4px; border-width: 1px; line-height: 16px; }
@@ -12154,7 +12155,7 @@ if (!$id('navbar')) {
 // CHECK FONT SETTINGS
 const level_exec = /^(.+) Lv\.(\d+)/.exec($id('level_readout').textContent.trim());
 if (!level_exec) {
-  if (_query.ss === 'se') {
+  if (create_hvut_character_page_context().isSettings) {
     alert('使用脚本前，请先设置自定义字体[Custom Font].');
     scrollIntoView($id('settings_cfont').parentNode, $id('settings_outer'));
     const form = $qs('#settings_outer form');

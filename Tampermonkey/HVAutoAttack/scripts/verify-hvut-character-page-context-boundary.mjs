@@ -11,6 +11,7 @@ for (const required of [
   "var source = query || _query;",
   "var ss = source?.ss || 'ch';",
   "var hasPersonaSurface = !!$id('persona_outer');",
+  "surfaceSs: ss,",
   "hasPersonaSurface: hasPersonaSurface,",
   "isCharacter: ss === 'ch' || hasPersonaSurface,",
   "isEquipment: ss === 'eq',",
@@ -30,6 +31,24 @@ const characterBodies = [
 
 if (characterBodies.length !== 2) {
   violations.push(`${target} must keep both Character segment bodies visible, found ${characterBodies.length}`);
+}
+
+const fontSettingChecks = [...text.matchAll(/if \(create_hvut_character_page_context\(\)\.isSettings\) \{/g)].length;
+if (fontSettingChecks !== 2) {
+  violations.push(`${target} must route both font setting checks through Character page context, found ${fontSettingChecks}`);
+}
+
+if (!text.includes("$id('csp').dataset.ss = create_hvut_character_page_context().surfaceSs;")) {
+  violations.push(`${target} must derive csp surface ss through Character page context`);
+}
+
+for (const forbidden of [
+  "if (_query.ss === 'se') {",
+  "$id('csp').dataset.ss = _query.ss || 'ch';",
+]) {
+  if (text.includes(forbidden)) {
+    violations.push(`${target} must not keep raw Character settings/surface identity: ${forbidden}`);
+  }
 }
 
 for (const [index, body] of characterBodies.entries()) {
