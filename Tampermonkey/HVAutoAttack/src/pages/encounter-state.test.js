@@ -71,7 +71,7 @@ describe("runEncounterStateAutomation", () => {
 
     const state = await runEncounterStateAutomation({ type: EncounterStateEvent.LOAD_KEY });
 
-    expect(state).toMatchObject({ key: "xyz=", count: 1, clear: false });
+    expect(state).toMatchObject({ date: 0, key: "xyz=", count: 0, clear: false });
     expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject(state);
   });
 

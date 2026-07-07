@@ -72,7 +72,8 @@ function executeWidgetEvent(event) {
 
 async function loadAndEnterEncounter() {
   const state = await runEncounterStateAutomation({ type: EncounterStateEvent.LOAD_KEY });
-  return enterStoredEncounter(state || {});
+  if (!state) return undefined;
+  return enterStoredEncounter(state);
 }
 
 function readEncounterState() {

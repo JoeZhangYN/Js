@@ -24,7 +24,7 @@ describe("runEncounterPolicy route contract", () => {
     ).toBe("?s=Battle&ss=ba&encounter=abc123=");
   });
 
-  it("marks available and started states without double-counting the same key", () => {
+  it("marks available keys without starting cooldown or counting an encounter", () => {
     const available = runEncounterPolicy({
       type: EncounterPolicyEvent.MARK_KEY_AVAILABLE,
       state: { date: 0, key: "", count: 0, clear: true },
@@ -39,7 +39,7 @@ describe("runEncounterPolicy route contract", () => {
         nowMs: 1000,
       }).canEnter
     ).toBe(true);
-    expect(available.count).toBe(1);
+    expect(available).toEqual({ date: 0, key: "abc", count: 0, clear: false });
 
     const started = runEncounterPolicy({
       type: EncounterPolicyEvent.MARK_STARTED,
@@ -50,7 +50,7 @@ describe("runEncounterPolicy route contract", () => {
     expect(started).toEqual({ date: 2000, key: "abc", count: 1, clear: true });
   });
 
-  it("marks attempted entry as cleared and starts the next cooldown without counting a new encounter", () => {
+  it("marks attempted entry as cleared without starting cooldown or counting an encounter", () => {
     expect(
       runEncounterPolicy({
         type: EncounterPolicyEvent.MARK_ATTEMPTED,
@@ -58,7 +58,7 @@ describe("runEncounterPolicy route contract", () => {
         key: "abc",
         nowMs: 2000,
       })
-    ).toEqual({ date: 2000, key: "abc", count: 1, clear: true });
+    ).toEqual({ date: 1000, key: "abc", count: 1, clear: true });
   });
 
   it("plans entry only for an uncleared encounter key", () => {
@@ -115,7 +115,7 @@ describe("runEncounterPolicy route contract", () => {
         key: "def",
         nowMs: 3000,
       })
-    ).toEqual({ date: 3000, key: "def", count: 2, clear: false });
+    ).toEqual({ date: 1000, key: "def", count: 1, clear: false });
   });
 
   it("ignores unknown policy events", () => {

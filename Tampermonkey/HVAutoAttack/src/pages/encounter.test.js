@@ -136,7 +136,7 @@ describe("runEncounterAutomation", () => {
       action: "navigated",
       href: "?s=Battle&ss=ba&encounter=xyz=",
       handled: true,
-      state: { key: "xyz=", count: 1, clear: true },
+      state: { key: "xyz=", count: 0, clear: true },
     });
   });
 

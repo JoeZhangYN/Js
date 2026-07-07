@@ -37,11 +37,16 @@ function runWidgetLinkFound(event) {
 }
 
 function runWidgetStartedEncounter(event) {
+  const key = event.key || runEncounterPolicy({
+    type: EncounterPolicyEvent.PARSE_SEARCH_KEY,
+    search: event.search || "",
+  });
+  if (!key) return readWidgetState(event.state);
   return readWidgetState(
     runEncounterPolicy({
       type: EncounterPolicyEvent.MARK_STARTED,
       state: event.state,
-      search: event.search || "",
+      key,
     })
   );
 }
@@ -140,15 +145,11 @@ function planWidgetEngage(event) {
   return { ...readWidgetState(plan.state), action: "navigate", href: plan.href };
 }
 
-function planWidgetResetDay() {
-  return readWidgetState(runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY }));
-}
-
 const encounterWidgetPolicyEventHandlers = Object.freeze({
   widgetTick: (event) => readWidgetState(event.state),
   widgetLinkFound: runWidgetLinkFound,
   widgetStartedEncounter: runWidgetStartedEncounter,
-  widgetResetDay: () => planWidgetResetDay(),
+  widgetResetDay: () => readWidgetState(runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY })),
   widgetClicked: planWidgetClick,
   widgetTimerElapsed: planWidgetTimerElapsed,
   widgetNewsLoaded: planWidgetNewsLoaded,

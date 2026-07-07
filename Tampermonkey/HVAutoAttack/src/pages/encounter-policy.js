@@ -36,7 +36,7 @@ function normalizeEncounterState(state, nowMs = Date.now()) {
     clear: state?.clear !== false,
   };
   if (normalized.count > ENCOUNTER_DAILY_LIMIT) return defaultEncounterState();
-  if (!normalized.date && (normalized.key || normalized.count || !normalized.clear)) {
+  if (!normalized.date && (normalized.count || (!normalized.key && !normalized.clear))) {
     return defaultEncounterState();
   }
   if (normalized.date && isDifferentUtcDay(normalized.date, nowMs)) return defaultEncounterState();
@@ -112,9 +112,7 @@ function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
   const next = normalizeEncounterState(state, nowMs);
   if (!key) return next;
   if (next.key === key) return next;
-  next.date = nowMs;
   next.key = key;
-  next.count++;
   next.clear = false;
   return next;
 }
@@ -122,7 +120,6 @@ function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
 function markEncounterAttempted(state, key, nowMs = Date.now()) {
   const next = normalizeEncounterState(state, nowMs);
   if (!key || next.key !== key) return next;
-  next.date = nowMs;
   next.clear = true;
   return next;
 }
@@ -130,17 +127,14 @@ function markEncounterAttempted(state, key, nowMs = Date.now()) {
 function markEncounterGenerationAttempted(state, nowMs = Date.now()) {
   const next = normalizeEncounterState(state, nowMs);
   if (next.key && !next.clear) return next;
-  next.date = nowMs;
   next.clear = true;
   return next;
 }
 
 function markEncounterStarted(state, { search = "", key = parseEncounterKeyFromSearch(search), nowMs = Date.now() } = {}) {
   const next = normalizeEncounterState(state, nowMs);
-  if (key && next.key === key) {
-    next.date = nowMs;
-    next.clear = true;
-  } else if (!key || msUntilEncounterReady(next, nowMs) === 0) {
+  if (key && next.key !== key && msUntilEncounterReady(next, nowMs) > 0) return next;
+  if (key || msUntilEncounterReady(next, nowMs) === 0) {
     next.date = nowMs;
     next.key = key || next.key || "";
     next.count++;

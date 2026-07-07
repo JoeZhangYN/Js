@@ -23,6 +23,7 @@ const hvUtilsFile = path.normalize("src/i18n/hv-utils.js");
 const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
 const widgetPolicyFile = path.normalize("src/pages/encounter-widget-policy.js");
 const widgetPolicyTest = path.normalize("src/pages/encounter-widget-policy.test.js");
+const widgetMainWorldTest = path.normalize("src/pages/encounter-widget-main-world.test.js");
 const lobbyScheduleFile = path.normalize("src/pages/encounter-lobby-schedule.js");
 const lobbyScheduleTest = path.normalize("src/pages/encounter-lobby-schedule.test.js");
 const optionGateFile = path.normalize("src/pages/encounter-option-gate.js");
@@ -112,6 +113,7 @@ function checkFile(file) {
     if (
       relative !== owner &&
       relative !== widgetPolicyTest &&
+      relative !== widgetMainWorldTest &&
       /from\s+["']\.\/encounter-widget-policy\.js["']/.test(line)
     ) {
       violations.push(
@@ -266,7 +268,10 @@ const policyCorruptStateTestText = fs.existsSync(path.join(root, policyCorruptSt
 const rejectionText = fs.readFileSync(path.join(root, rejectionFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
-const widgetPolicyTestText = fs.readFileSync(path.join(root, widgetPolicyTest), "utf8");
+const widgetPolicyTestText = [
+  widgetPolicyTest,
+  widgetMainWorldTest,
+].map((file) => fs.readFileSync(path.join(root, file), "utf8")).join("\n");
 const entryExecutionFailureTestText = fs.readFileSync(
   path.join(root, entryExecutionFailureTest),
   "utf8"
@@ -825,12 +830,14 @@ if (
 for (const required of [
   "EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED",
   'event.engage && unavailableReason === "encounterKeyMissing"',
-  "starts a cooldown after a main-world generation load returns no encounter key",
-  'reason: "cooldown"',
+  "keeps the ready window after a main-world generation load returns no encounter key",
+  'reason: "readyWindow"',
+  "keeps manual ready-window clicks able to load the encounter check",
+  'action: "load"',
 ]) {
   if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
     violations.push(
-      `${widgetPolicyFile.replaceAll("\\", "/")} must preserve missing-key generation cooldown evidence: ${required}`
+      `${widgetPolicyFile.replaceAll("\\", "/")} must preserve missing-key generation readiness evidence: ${required}`
     );
   }
 }
