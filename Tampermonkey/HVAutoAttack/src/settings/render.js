@@ -30,6 +30,7 @@ import {
 import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
+import { ALL_DEBUFF_ACTION_OPTIONS } from "../data/all-debuff-actions.js";
 import { BATTLE_BUFF_ACTION_OPTIONS } from "../data/battle-buff-actions.js";
 import { BATTLE_ROUND_TYPE_OPTIONS } from "../data/battle-round-types.js";
 import { BATTLE_SCROLL_OPTIONS } from "../data/battle-scrolls.js";
@@ -362,6 +363,12 @@ export function renderDebuffSkillNumberRows(fieldPrefix, { placeholder = "" } = 
     }, [])
     .map((row, index, rows) => `    ${row}${index < rows.length - 1 ? "<br>" : " "}`)
     .join("");
+}
+
+export function renderAllDebuffActionCheckboxes() {
+  return ALL_DEBUFF_ACTION_OPTIONS.map(({ key, conditionKey }) =>
+    renderSchemaCheckboxField(key, `{{${conditionKey}}}`, { bold: false })
+  ).join("");
 }
 
 export function renderPhysicalSkillOrderCheckboxes() {
@@ -1010,8 +1017,8 @@ export function optionBox() {
     '  <div class="debuffSkillOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>:',
     '    <input name="debuffSkillOrderValue" style="width:80%;" type="text" disabled="true"><br>',
     `    ${renderDebuffSkillOrderCheckboxes()}</div>`,
-    '  <div><l01>特殊</l01><l2>Special</l2><input id="debuffSkillAllIm" type="checkbox"><label for="debuffSkillAllIm"><l0>给所有敌人上Imperil</l0><l1>給所有敵人上Imperil</l1><l2>Imperiled all enemies.</l2></label></div>{{debuffSkillImpCondition}}',
-    '  <div><l01>特殊</l01><l2>Special</l2><input id="debuffSkillAllWk" type="checkbox"><label for="debuffSkillAllWk"><l0>给所有敌人上Weaken</l0><l1>給所有敵人上Weaken</l1><l2>Weakened all enemies.</l2></label></div>{{debuffSkillWkCondition}}',
+    "  <div><l01>特殊</l01><l2>Special</l2></div>",
+    renderAllDebuffActionCheckboxes(),
     '  <div style="border:1px dashed #888;padding:3px;"><b><l0>OFC/FRD 智能跳过</l0><l1>OFC/FRD 智能跳過</l1><l2>OFC/FRD Smart Skip</l2></b><br>',
     ...renderDebuffSmartSkipSchemaFields(),
     "  </div>",

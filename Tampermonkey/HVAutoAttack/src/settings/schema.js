@@ -174,6 +174,28 @@ const OPTION_SCHEMA = [
     },
   },
   {
+    key: "debuffSkillAllIm",
+    kind: "checkbox",
+    group: "Debuff",
+    default: false,
+    label: {
+      l0: "给所有敌人上 Imperil",
+      l1: "給所有敵人上 Imperil",
+      l2: "Imperil all enemies",
+    },
+  },
+  {
+    key: "debuffSkillAllWk",
+    kind: "checkbox",
+    group: "Debuff",
+    default: false,
+    label: {
+      l0: "给所有敌人上 Weaken",
+      l1: "給所有敵人上 Weaken",
+      l2: "Weaken all enemies",
+    },
+  },
+  {
     key: "skipDebuffForBigSkill_Im",
     kind: "checkbox",
     group: "Debuff",

@@ -18,6 +18,15 @@ describe("runOptionSchema debuff smart-skip fields", () => {
       });
     }
 
+    for (const key of ["debuffSkillAllIm", "debuffSkillAllWk"]) {
+      expect(runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key })).toMatchObject({
+        key,
+        kind: "checkbox",
+        default: false,
+        group: "Debuff",
+      });
+    }
+
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "skipImperilWhenOfcKills" })
     ).toMatchObject({
