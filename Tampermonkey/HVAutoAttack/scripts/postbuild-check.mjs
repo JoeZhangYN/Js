@@ -72,26 +72,29 @@ if (
 // 5c. HVUT navigation bridge 缺失时仍阻止跳转，但失败证据必须在页面卸载前持久化。
 for (const required of [
   "record_hvut_navigation_bridge_failure = function(stage, detail)",
+  "run_hvut_navigation_bridge = function(method, args, stage, detail)",
   "capability: \"hvutNavigationBridge\"",
   'sessionStorage.setItem("HVAA:lastHvutNavigationBridgeFailure"',
   'console.warn("[HVAA] navigation bridge missing", evidence)',
 ]) {
   if (!src.includes(required)) errors.push(`hvut navigation bridge artifact missing ${required}`);
 }
-if (!/record_hvut_navigation_bridge_failure\("reloadBlocked", \{ reason(?:: reason)? \}\)/.test(src)) {
+if (!/run_hvut_navigation_bridge\("reloadCurrentPage", \[reason\], "reloadBlocked", \{ reason(?:: reason)? \}\)/.test(src)) {
   errors.push("hvut navigation bridge artifact missing reload blocked evidence");
 }
 if (
-  !/record_hvut_navigation_bridge_failure\("navigationBlocked", \{ reason(?:: reason)?, url(?:: url)?, newTab: !!newTab \}\)/.test(src)
+  !/run_hvut_navigation_bridge\("openUrl", \[url, reason, !!newTab\], "navigationBlocked", \{ reason(?:: reason)?, url(?:: url)?, newTab: !!newTab \}\)/.test(src)
 ) {
   errors.push("hvut navigation bridge artifact missing navigation blocked evidence");
 }
 for (const forbidden of [
   "navigation bridge missing; reload blocked",
   "navigation bridge missing; navigation blocked",
+  "HVAA_navigation.reloadCurrentPage(reason)",
+  "HVAA_navigation.openUrl(url, reason, !!newTab)",
 ]) {
   if (src.includes(forbidden)) {
-    errors.push(`hvut navigation bridge artifact uses console-only fallback: ${forbidden}`);
+    errors.push(`hvut navigation bridge artifact uses retired direct path: ${forbidden}`);
   }
 }
 

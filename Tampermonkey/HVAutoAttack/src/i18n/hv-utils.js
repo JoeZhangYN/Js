@@ -1710,15 +1710,24 @@ try {
     }
     return summary;
   };
+  var run_hvut_navigation_bridge = function (method, args, stage, detail) {
+    var bridge = typeof window !== 'undefined' ? window.HVAA_navigation : undefined;
+    if (!bridge || typeof bridge[method] !== 'function') {
+      record_hvut_navigation_bridge_failure(stage, detail || {});
+      return false;
+    }
+    try {
+      return bridge[method](...(args || []));
+    } catch (error) {
+      record_hvut_navigation_bridge_failure(stage + 'Failed', { ...(detail || {}), error: error?.message || String(error) });
+      return false;
+    }
+  };
   var reloadCurrentPage = function (reason) {
-    if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
-    record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
-    return false;
+    return run_hvut_navigation_bridge('reloadCurrentPage', [reason], 'reloadBlocked', { reason: reason });
   };
   var openUrl = function (url, reason, newTab) {
-    if (window.HVAA_navigation && window.HVAA_navigation.openUrl) return window.HVAA_navigation.openUrl(url, reason, !!newTab);
-    record_hvut_navigation_bridge_failure('navigationBlocked', { reason: reason, url: url, newTab: !!newTab });
-    return false;
+    return run_hvut_navigation_bridge('openUrl', [url, reason, !!newTab], 'navigationBlocked', { reason: reason, url: url, newTab: !!newTab });
   };
   var create_hvut_equip_page_url = function (equip, context) {
     var eid = equip?.eid ?? equip?.info?.eid ?? equip?.dataset?.eid;

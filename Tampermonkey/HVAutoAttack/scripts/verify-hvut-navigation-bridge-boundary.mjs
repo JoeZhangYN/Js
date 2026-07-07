@@ -12,12 +12,15 @@ const violations = [];
 
 const failureBody =
   text.match(/var record_hvut_navigation_bridge_failure = function \(stage, detail\) \{[\s\S]*?\n  \};/)?.[0] || "";
+const bridgeBody =
+  text.match(/var run_hvut_navigation_bridge = function \(method, args, stage, detail\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const reloadBody =
   text.match(/var reloadCurrentPage = function \(reason\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const openBody =
   text.match(/var openUrl = function \(url, reason, newTab\) \{[\s\S]*?\n  \};/)?.[0] || "";
 
 if (!failureBody) violations.push("HVUT navigation bridge failure recorder must stay explicit");
+if (!bridgeBody) violations.push("HVUT navigation bridge command must stay explicit");
 if (!reloadBody) violations.push("HVUT reload bridge wrapper must stay explicit");
 if (!openBody) violations.push("HVUT openUrl bridge wrapper must stay explicit");
 
@@ -34,9 +37,20 @@ for (const required of [
 }
 
 for (const required of [
-  "window.HVAA_navigation.reloadCurrentPage",
-  "record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason })",
+  "var bridge = typeof window !== 'undefined' ? window.HVAA_navigation : undefined;",
+  "if (!bridge || typeof bridge[method] !== 'function') {",
+  "record_hvut_navigation_bridge_failure(stage, detail || {});",
+  "return bridge[method](...(args || []));",
+  "record_hvut_navigation_bridge_failure(stage + 'Failed'",
   "return false",
+]) {
+  if (!bridgeBody.includes(required)) {
+    violations.push(`HVUT navigation bridge command must include ${required}`);
+  }
+}
+
+for (const required of [
+  "return run_hvut_navigation_bridge('reloadCurrentPage', [reason], 'reloadBlocked', { reason: reason });",
 ]) {
   if (!reloadBody.includes(required)) {
     violations.push(`HVUT reload bridge wrapper must include ${required}`);
@@ -44,9 +58,7 @@ for (const required of [
 }
 
 for (const required of [
-  "window.HVAA_navigation.openUrl",
-  "record_hvut_navigation_bridge_failure('navigationBlocked', { reason: reason, url: url, newTab: !!newTab })",
-  "return false",
+  "return run_hvut_navigation_bridge('openUrl', [url, reason, !!newTab], 'navigationBlocked', { reason: reason, url: url, newTab: !!newTab });",
 ]) {
   if (!openBody.includes(required)) {
     violations.push(`HVUT openUrl bridge wrapper must include ${required}`);
@@ -56,9 +68,11 @@ for (const required of [
 for (const forbidden of [
   "console.warn('[HVAA] navigation bridge missing; reload blocked'",
   "console.warn('[HVAA] navigation bridge missing; navigation blocked'",
+  "window.HVAA_navigation.reloadCurrentPage(reason)",
+  "window.HVAA_navigation.openUrl(url, reason, !!newTab)",
 ]) {
   if (text.includes(forbidden)) {
-    violations.push(`HVUT navigation bridge must not keep console-only fallback: ${forbidden}`);
+    violations.push(`HVUT navigation bridge must not keep retired direct path: ${forbidden}`);
   }
 }
 
