@@ -1056,6 +1056,18 @@ try {
     record_hvut_navigation_bridge_failure('navigationBlocked', { reason: reason, url: url, newTab: !!newTab });
     return false;
   };
+  var create_hvut_equip_page_url = function (equip, context) {
+    var eid = equip?.eid ?? equip?.info?.eid ?? equip?.dataset?.eid;
+    var key = equip?.key ?? equip?.info?.key ?? equip?.dataset?.key;
+    var relative = `equip/${eid}/${key}`;
+    return context?.absolute ? `${location.origin}${location.pathname}${relative}` : relative;
+  };
+  var create_hvut_current_page_disable_url = function () {
+    return location.href + '&hvut=disabled';
+  };
+  var create_hvut_mail_page_url = function (page) {
+    return location.href.replace(/&page=\d+/, '') + `&page=${page}`;
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -2341,7 +2353,7 @@ const bindBattlePanel = function (battle, ctx) {
     }
     const eq = { info, data: {}, node: {} };
     eq.node.li = $element('li', battle.node.equip, { dataset: { action: 'hover', eid: eq.info.eid } });
-    eq.node.name = hvaaBind($element('a', eq.node.li, { href: `equip/${eq.info.eid}/${eq.info.key}`, target: '_blank', 'data-i18n-skip': '' }), function (n) { set_equip_name(n, eq); }); // hvaaBind: lang 切换即时重渲染装备译名(自渲染组件复用声明式绑定, 与菜单同机制)
+    eq.node.name = hvaaBind($element('a', eq.node.li, { href: create_hvut_equip_page_url(eq), target: '_blank', 'data-i18n-skip': '' }), function (n) { set_equip_name(n, eq); }); // hvaaBind: lang 切换即时重渲染装备译名(自渲染组件复用声明式绑定, 与菜单同机制)
     eq.node.condition = $element('span', eq.node.li, { dataset: { action: 'repair', eid: eq.info.eid } });
     eq.node.link = $element('span', eq.node.li);
     eq.node.repair = $element('ul', null, ['.hvut-bt-repair', { dataset: { header: '修理装备' } }]); // 此材料面板 hover 才挂载，不加 action（加了反与 repairall 同位置→误触修全部）
@@ -5100,7 +5112,7 @@ const bindArmory = function (armory, ctx) {
           eq.data._eid = `[color=transparent]${_}[/color]${eq.data._eid}`;
         }
         if (!eq.data.url) {
-          eq.data.url = `${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}`;
+          eq.data.url = create_hvut_equip_page_url(eq, { absolute: true });
         }
         //if (!eq.data.namecode) {
         $equip.namecode(eq);
@@ -5905,12 +5917,12 @@ if ($config.settings.equipHoverFunctions) {
       }
       const key = e.key.toUpperCase();
       if (key === 'V') {
-        openUrl(`equip/${eq.info.eid}/${eq.info.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
+        openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
       } else if (key === 'L') {
-        prompt('Forum Link:', `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
+        prompt('Forum Link:', `[url=${create_hvut_equip_page_url(eq, { absolute: true })}]${eq.info.name}[/url]`);
       } else if (key === 'K') {
         $equip.namecode(eq);
-        prompt('Forum Link:', `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.data.namecode}[/url]`);
+        prompt('Forum Link:', `[url=${create_hvut_equip_page_url(eq, { absolute: true })}]${eq.data.namecode}[/url]`);
       }
     }
   });
@@ -5919,7 +5931,7 @@ if ($config.settings.equipHoverFunctions) {
   document.addEventListener('dblclick', () => {
     const div = $qs('[data-eid]:hover');
     if (div) {
-      openUrl(`equip/${div.dataset.eid}/${div.dataset.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
+      openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
     }
   });
 }
@@ -5931,7 +5943,7 @@ if ($config.settings.equipTouchFunctions) {
     if (!div) {
       return;
     }
-    openUrl(`equip/${div.dataset.eid}/${div.dataset.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
+    openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
   }
 
   let lastTap = 0;
@@ -6207,7 +6219,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
   };
 
   _eq.equip_code = function () {
-    const code = _eq.equiplist.map((eq) => `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
+    const code = _eq.equiplist.map((eq) => `[url=${create_hvut_equip_page_url(eq, { absolute: true })}]${eq.info.name}[/url]`);
     popup_text(code, 900, 150);
   };
 
@@ -6219,7 +6231,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     _eq.node.popups = $element('div', document.body, ['.hvut-eq-popups', (_eq.equiplist.length > 6 ? '!width: 1690px;' : '')]);
     _eq.equiplist.forEach((eq) => {
       const div = $element('div', _eq.node.popups);
-      eq.node.popup = $element('iframe', div, { src: `equip/${eq.info.eid}/${eq.info.key}`, scrolling: 'no' }, { load: () => { _eq.popup_load(eq); } });
+      eq.node.popup = $element('iframe', div, { src: create_hvut_equip_page_url(eq), scrolling: 'no' }, { load: () => { _eq.popup_load(eq); } });
       if ($config.settings.equipShowCharms && eq.info.upgrade_cap) {
         _eq.charm_load(eq);
       }
@@ -9201,7 +9213,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
   if (_query.filter === 'new' && _query.hvut !== 'disabled') {
     if ($id('mmail_attachremove')) {
       alert('请移除附加的物品。');
-      openUrl(location.href + '&hvut=disabled', hvutRedirectReason('HV_UTILS_DISABLE'));
+      openUrl(create_hvut_current_page_disable_url(), hvutRedirectReason('HV_UTILS_DISABLE'));
       return;
     }
 
@@ -9245,7 +9257,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
         _mm.write.node.right = $element('div', _mm.write.node.field, ['.hvut-mm-right']);
         _mm.write.node.tabs = $element('div', _mm.write.node.right, ['.hvut-mm-tabs']);
-        $input(['button', '使用原版邮箱'], _mm.write.node.tabs, null, () => { openUrl(location.href + '&hvut=disabled', hvutRedirectReason('HV_UTILS_DISABLE')); });
+        $input(['button', '使用原版邮箱'], _mm.write.node.tabs, null, () => { openUrl(create_hvut_current_page_disable_url(), hvutRedirectReason('HV_UTILS_DISABLE')); });
       },
       calc: function () {
         const queue = [].concat(_mm.credits.list, _mm.equip.list, _mm.item.list).filter((e) => e.node.check.checked && e.data.count);
@@ -10306,7 +10318,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
           if (e.t === 'e') {
             if (e.e && e.k) {
-              $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+              $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
             } else {
               span.textContent = e.n;
             }
@@ -10330,7 +10342,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         if (isNaN(p) || p < 0) {
           return;
         }
-        openUrl(location.href.replace(/&page=\d+/, '') + `&page=${p}`, hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
+        openUrl(create_hvut_mail_page_url(p), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
       },
     };
 
@@ -10670,7 +10682,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             const span = $element('span', li, [`.hvut-mm-attach-${e.t}`]);
             if (e.t === 'e') {
               if (e.e && e.k) {
-                $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+                $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
               } else {
                 span.textContent = e.n;
               }
@@ -10815,7 +10827,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
           if (e.t === 'e') {
             if (e.e && e.k) {
-              $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+              $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
             } else {
               span.textContent = e.n;
             }
@@ -11729,12 +11741,12 @@ if ($config.settings.equipHoverFunctions) {
       }
       const key = e.key.toUpperCase();
       if (key === 'V') {
-        openUrl(`equip/${eq.info.eid}/${eq.info.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
+        openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
       } else if (key === 'L') {
-        prompt('论坛链接:', `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
+        prompt('论坛链接:', `[url=${create_hvut_equip_page_url(eq, { absolute: true })}]${eq.info.name}[/url]`);
       } else if (key === 'K') {
         $equip.namecode(eq);
-        prompt('论坛链接:', `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.data.namecode}[/url]`);
+        prompt('论坛链接:', `[url=${create_hvut_equip_page_url(eq, { absolute: true })}]${eq.data.namecode}[/url]`);
       }
     }
   });
@@ -11743,7 +11755,7 @@ if ($config.settings.equipHoverFunctions) {
   document.addEventListener('dblclick', () => {
     const div = $qs('div[data-eid]:hover');
     if (div) {
-      openUrl(`equip/${div.dataset.eid}/${div.dataset.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
+      openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
     }
   });
 }
@@ -11755,7 +11767,7 @@ if ($config.settings.equipTouchFunctions) {
     if (!div) {
       return;
     }
-    openUrl(`equip/${div.dataset.eid}/${div.dataset.key}`, hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
+    openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
   }
 
   let lastTap = 0;
@@ -12281,7 +12293,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
   };
 
   _eq.equip_code = function () {
-    const code = _eq.equiplist.map((eq) => `[url=${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}]${eq.info.name}[/url]`);
+    const code = _eq.equiplist.map((eq) => `[url=${create_hvut_equip_page_url(eq, { absolute: true })}]${eq.info.name}[/url]`);
     popup_text(code, 900, 150);
   };
 
@@ -12291,7 +12303,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
       return;
     }
     _eq.node.popups = $element('div', document.body, ['.hvut-eq-popups', (_eq.equiplist.length > 6 ? '!width: 1500px;' : '')]);
-    _eq.equiplist.forEach((eq) => { $element('iframe', _eq.node.popups, { src: `equip/${eq.info.eid}/${eq.info.key}`, scrolling: 'no' }); });
+    _eq.equiplist.forEach((eq) => { $element('iframe', _eq.node.popups, { src: create_hvut_equip_page_url(eq), scrolling: 'no' }); });
   };
 
   _eq.prof = {
@@ -15468,7 +15480,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
   if (_query.filter === 'new' && _query.hvut !== 'disabled') {
     if ($id('mmail_attachremove')) {
       alert('请移除附加的物品。');
-      openUrl(location.href + '&hvut=disabled', hvutRedirectReason('HV_UTILS_DISABLE'));
+      openUrl(create_hvut_current_page_disable_url(), hvutRedirectReason('HV_UTILS_DISABLE'));
       return;
     }
 
@@ -15674,7 +15686,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
     _mm.node.write_right = $element('div', _mm.node.write_field, ['.hvut-mm-right']);
     _mm.node.write_tabs = $element('div', _mm.node.write_right, ['.hvut-mm-tabs hvut-cphu-sub']);
-    $element('span', _mm.node.write_tabs, '使用原版邮箱', () => { openUrl(location.href + '&hvut=disabled', hvutRedirectReason('HV_UTILS_DISABLE')); });
+    $element('span', _mm.node.write_tabs, '使用原版邮箱', () => { openUrl(create_hvut_current_page_disable_url(), hvutRedirectReason('HV_UTILS_DISABLE')); });
 
     // MM item
     _mm.item_change = function (e) {
@@ -16524,7 +16536,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
         if (e.t === 'e') {
           if (e.e && e.k) {
-            $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+            $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
           } else {
             span.textContent = e.n;
           }
@@ -16549,7 +16561,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       if (isNaN(p) || p < 0) {
         return;
       }
-      openUrl(location.href.replace(/&page=\d+/, '') + '&page=' + p, hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
+      openUrl(create_hvut_mail_page_url(p), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
     };
 
     _mm.mail_data = {};
@@ -16878,7 +16890,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           const span = $element('span', li, [`.hvut-mm-attach-${e.t}`]);
           if (e.t === 'e') {
             if (e.e && e.k) {
-              $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+              $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
             } else {
               span.textContent = e.n;
             }
@@ -17049,7 +17061,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
         if (e.t === 'e') {
           if (e.e && e.k) {
-            $element('a', span, { textContent: e.n, href: `equip/${e.e}/${e.k}`, target: '_blank' });
+            $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
           } else {
             span.textContent = e.n;
           }
