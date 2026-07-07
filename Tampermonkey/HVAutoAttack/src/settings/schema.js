@@ -906,6 +906,28 @@ const OPTION_SCHEMA = [
       l2: "Show MLP riddle helper panel (rotate/sharpen/contrast + 6 thumbnails)",
     },
   },
+  {
+    key: "riddleAnswerTime",
+    kind: "number",
+    group: "Main",
+    default: 3,
+    label: {
+      l0: "小马答题剩余时间阈值",
+      l1: "小馬答題剩餘時間閾值",
+      l2: "Riddle answer remaining-time threshold",
+    },
+  },
+  {
+    key: "riddlePopup",
+    kind: "checkbox",
+    group: "Main",
+    default: false,
+    label: {
+      l0: "弹窗答题",
+      l1: "彈窗答題",
+      l2: "POPUP a window to answer",
+    },
+  },
   // === P3P4 装备百分位（off / offline 本地品质点数公式；live 已随能量模型过时, 存值兼容降级走 offline） ===
   // [2026-06-10] equipPercentileLiveSendRange 已删（live 专属, 零消费）; enum 保留 'live' 兼容老存值。
   {

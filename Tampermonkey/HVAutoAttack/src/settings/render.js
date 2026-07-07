@@ -229,6 +229,19 @@ function renderRiddleSchemaFields() {
   ];
 }
 
+function renderRiddleTimingSchemaFields() {
+  const popup = renderSchemaCheckboxField("riddlePopup", "; ", { bold: false }).replace(
+    /^<div>|<\/div>$/g,
+    ""
+  );
+  return [
+    `<div><l0>当<b>小马答题</b>时间</l0><l1>當<b>小馬答題</b>時間</l1><l2>If <b>RIDDLE</b> ETR</l2><l0></l0><l1></l1><l2></l2> ≤ ${renderSchemaNumberInput(
+      "riddleAnswerTime"
+    )}<l0>秒，如果输入框为空则随机生成答案并提交</l0><l1>秒，如果輸入框為空則隨機生成答案並提交</l1><l2>s and no answer has been chosen yet, a random answer will be generated and submitted</l2></div>`,
+    `  <div><l0>当<b>小马答题</b>时</l0><l1>當<b>小馬答題</b>時</l1><l2>If <b>RIDDLE</b></l2>: ${popup}<button class="testPopup"><l0>预处理</l0><l1>預處理</l1><l2>Pretreat</l2></button></div>`,
+  ];
+}
+
 function renderCriticalBuffSchemaFields() {
   return [
     renderCheckboxPlusNumber("pauseOnCriticalBuffExpire", "criticalBuffMinTurns", {
@@ -881,9 +894,7 @@ export function optionBox() {
     '<div class="hvAATab hvAACenter" id="hvAATab-Riddle">',
     // 答题配置（原 Main 拆入，与下方统计同 tab）
     ...renderRiddleSchemaFields(),
-    '  <div><l0>当<b>小马答题</b>时间</l0><l1>當<b>小馬答題</b>時間</l1><l2>If <b>RIDDLE</b> ETR</l2><l0></l0><l1></l1><l2></l2> ≤ <input class="hvAANumber" name="riddleAnswerTime" placeholder="3" type="text"><l0>秒，如果输入框为空则随机生成答案并提交</l0><l1>秒，如果輸入框為空則隨機生成答案並提交</l1><l2>s and no answer has been chosen yet, a random answer will be generated and submitted</l2></div>',
-    "  <div><l0>当<b>小马答题</b>时</l0><l1>當<b>小馬答題</b>時</l1><l2>If <b>RIDDLE</b></l2>: ",
-    '    <input id="riddlePopup" type="checkbox"><label for="riddlePopup"><l0>弹窗答题</l0><l1>弹窗答题</l1><l2>POPUP a window to answer</l2></label>; <button class="testPopup"><l0>预处理</l0><l1>預處理</l1><l2>Pretreat</l2></button></div>',
+    ...renderRiddleTimingSchemaFields(),
     '  <span class="hvAATitle"><l0>小马验证统计</l0><l1>小馬驗證統計</l1><l2>Riddle ML Stats</l2></span><button class="reRiddleStats"><l01>重置</l01><l2>Reset</l2></button>',
     "  <table></table></div>",
     '<div class="hvAATab hvAACenter" id="hvAATab-About">',
