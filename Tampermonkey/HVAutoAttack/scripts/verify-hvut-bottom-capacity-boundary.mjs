@@ -22,6 +22,7 @@ if (showEquipBodies.length === 0) {
 
 for (const [index, showEquipBody] of showEquipBodies.entries()) {
   for (const required of [
+    "create_hvut_armory_organize_url()",
     "parse_hvut_inventory_capacity(html,",
     "record_hvut_shrine_capacity_failure(",
     "catch (_error)",
@@ -103,7 +104,7 @@ for (const [index, match] of [...text.matchAll(/const exec = \/<td>Inventory Cap
 }
 
 for (const [index, match] of [
-  ...text.matchAll(/\$ajax\.fetch\('\?s=Bazaar&ss=am&screen=organize'\)\.then\(\(html\) => \{[\s\S]*?\n\s*\}\);/g),
+  ...text.matchAll(/\$ajax\.fetch\(create_hvut_armory_organize_url\(\)\)\.then\(\(html\) => \{[\s\S]*?\n\s*\}\);/g),
 ].entries()) {
   if (!match[0].includes(".catch(() => {")) {
     violations.push(`${rel(hvUtilsFile)} capacity fetch[${index}] must expose unavailable capacity on request failure`);

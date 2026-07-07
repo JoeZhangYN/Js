@@ -18,6 +18,7 @@ for (const required of [
   "var create_hvut_character_settings_url = function () {",
   "var create_hvut_training_url = function () {",
   "var create_hvut_bazaar_section_url = function (ss) {",
+  "var create_hvut_armory_organize_url = function () {",
   "return context?.absolute ? `${location.origin}${location.pathname}${relative}` : relative;",
   "return location.href + '&hvut=disabled';",
   "return location.href.replace(/&page=\\d+/, '') + `&page=${page}`;",
@@ -29,6 +30,7 @@ for (const required of [
   "return '?s=Character&ss=se';",
   "return '/?s=Character&ss=tr';",
   "return `/?s=Bazaar&ss=${ss}`;",
+  "return '?s=Bazaar&ss=am&screen=organize';",
   "eq.data.url = create_hvut_equip_page_url(eq, { absolute: true });",
   "openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
   "openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
@@ -49,6 +51,7 @@ for (const required of [
   "$ajax.fetch(create_hvut_training_url(), post)",
   "href: create_hvut_bazaar_section_url(ss)",
   "$ajax.fetch(create_hvut_bazaar_section_url(ss))",
+  "$ajax.fetch(create_hvut_armory_organize_url()",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT page URL boundary: ${required}`);
@@ -139,6 +142,11 @@ if (trainingUrlOccurrences !== 2) {
 const bottomBazaarSectionOccurrences = [...text.matchAll(/create_hvut_bazaar_section_url\(ss\)/g)].length;
 if (bottomBazaarSectionOccurrences !== 2) {
   violations.push(`${target} must route bottom Bazaar section link/load through create_hvut_bazaar_section_url, found ${bottomBazaarSectionOccurrences}`);
+}
+
+const capacityOrganizeOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_armory_organize_url\(\)/g)].length;
+if (capacityOrganizeOccurrences !== 4) {
+  violations.push(`${target} must route capacity organize fetches through create_hvut_armory_organize_url, found ${capacityOrganizeOccurrences}`);
 }
 
 if (violations.length) {

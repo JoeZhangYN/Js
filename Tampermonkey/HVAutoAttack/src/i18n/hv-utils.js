@@ -1333,6 +1333,9 @@ try {
   var create_hvut_bazaar_section_url = function (ss) {
     return `/?s=Bazaar&ss=${ss}`;
   };
+  var create_hvut_armory_organize_url = function () {
+    return '?s=Bazaar&ss=am&screen=organize';
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -6353,7 +6356,7 @@ _bottom.show_equip = async function () {
   _bottom.node.equip = $element('div', _bottom.node.div, '加载中...');
   let capacity;
   try {
-    const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
+    const html = await $ajax.fetch(create_hvut_armory_organize_url());
     capacity = parse_hvut_inventory_capacity(html, 'bottomInventoryCapacity');
   } catch (_error) {
     capacity = record_hvut_shrine_capacity_failure('bottomInventoryCapacityFetch', { reason: 'requestFailed' });
@@ -7850,7 +7853,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
   };
 
   _ss.load_inventory = function () {
-    $ajax.fetch('?s=Bazaar&ss=am&screen=organize').then((html) => {
+    $ajax.fetch(create_hvut_armory_organize_url()).then((html) => {
       const capacity = parse_hvut_inventory_capacity(html, 'shrineInventoryCapacity');
       if (capacity === null) {
         _ss.node.results_equip.value = 'Inventory Capacity: unavailable';
@@ -12171,7 +12174,7 @@ if ($config.settings.showEquipSlots === 2 || $config.settings.showEquipSlots ===
     _bottom.node.equip = $element('div', _bottom.node.div, '加载中...');
     let capacity;
     try {
-      const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize');
+      const html = await $ajax.fetch(create_hvut_armory_organize_url());
       capacity = parse_hvut_inventory_capacity(html, 'legacyBottomInventoryCapacity');
     } catch (_error) {
       capacity = record_hvut_shrine_capacity_failure('legacyBottomInventoryCapacityFetch', { reason: 'requestFailed' });
@@ -14091,7 +14094,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
   _ss.node.results_equip = $input(['button', '装备库存量'], _ss.node.results_buttons, { style: 'width: 450px;' });
 
   // 旧 ?s=Character&ss=in 'Equip Slots' 行随能量模型死亡(exec null, 实站报错证实) → isekai 形态: am organize 屏 Inventory Capacity
-  $ajax.fetch('?s=Bazaar&ss=am&screen=organize').then((html) => {
+  $ajax.fetch(create_hvut_armory_organize_url()).then((html) => {
     const capacity = parse_hvut_inventory_capacity(html, 'legacyShrineInventoryCapacity');
     if (capacity === null) {
       _ss.node.results_equip.value = '装备库存量: unavailable';
