@@ -4,6 +4,7 @@ import {
   readCustomizeHoverTarget,
   readSelectableReportTableTarget,
   readSingleOrderItemName,
+  renderIdleArenaLevelCheckboxes,
   renderItemOrderCheckboxes,
   renderBuffSkillCheckboxes,
   renderChannelFallbackOrderCheckboxes,
@@ -108,5 +109,17 @@ describe("renderItemOrderCheckboxes", () => {
     expect(html).toContain('id="itemOrder_HP" value="HP,11195"');
     expect(html).toContain('id="itemOrder_ED" value="ED,11401"');
     expect(html).not.toContain("channelSkill2Order_");
+  });
+});
+
+describe("renderIdleArenaLevelCheckboxes", () => {
+  it("derives idle arena level checkboxes from the arena level identity", () => {
+    const html = renderIdleArenaLevelCheckboxes('<input name="idleArenaGrTime">');
+
+    expect(html).toContain('id="arLevel_1" value="1,1"');
+    expect(html).toContain('id="arLevel_500" value="500,35"');
+    expect(html).toContain('id="arLevel_RB250" value="RB250,112"');
+    expect(html).toContain('id="arLevel_GF" value="GF,gr"');
+    expect(html).toContain('name="idleArenaGrTime"');
   });
 });

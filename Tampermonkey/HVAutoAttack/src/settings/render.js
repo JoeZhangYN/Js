@@ -32,6 +32,7 @@ import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
 import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
 import { CHANNEL_FALLBACK_ORDER_OPTIONS } from "../data/channel-fallback-order.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
+import { IDLE_ARENA_LEVEL_OPTIONS } from "../data/idle-arena-levels.js";
 import { ITEM_ORDER_OPTIONS } from "../data/item-order.js";
 import { PHYSICAL_SKILL_ORDER_OPTIONS } from "../data/physical-skill-order.js";
 
@@ -329,6 +330,19 @@ export function renderItemOrderCheckboxes() {
     .reduce((rows, item, index) => {
       const rowIndex = index < 5 ? 0 : 1;
       rows[rowIndex] = `${rows[rowIndex] || ""}${item}`;
+      return rows;
+    }, [])
+    .join("<br>");
+}
+
+export function renderIdleArenaLevelCheckboxes(grindFestInput = "") {
+  return IDLE_ARENA_LEVEL_OPTIONS.map(({ key, value, label, appendGrindFestInput }) => {
+    const labelText = appendGrindFestInput ? `${label} ${grindFestInput}` : label;
+    return `<input id="arLevel_${key}" value="${key},${value}" type="checkbox"><label for="arLevel_${key}">${labelText}</label>`;
+  })
+    .reduce((rows, item, index) => {
+      const rowIndex = index < 12 ? 0 : index < 24 ? 1 : index < 28 ? 2 : 3;
+      rows[rowIndex] = `${rows[rowIndex] || ""}${item}${index < 28 ? " " : ""}`;
       return rows;
     }, [])
     .join("<br>");
@@ -841,10 +855,7 @@ export function optionBox() {
     '      <button class="hvAAShowLevels"><l0>显示更多</l0><l1>顯示更多</l1><l2>Show more</l2></button><button class="hvAALevelsClear"><l01>清空</l01><l2>Clear</l2></button><br>',
     '      <input name="idleArenaLevels" style="width:98%;" type="text" disabled="true"><input name="idleArenaValue" style="width:98%;" type="hidden" disabled="true">',
     '      <div class="hvAAArenaLevels">',
-    '        <input id="arLevel_1" value="1,1" type="checkbox"><label for="arLevel_1">1</label> <input id="arLevel_10" value="10,3" type="checkbox"><label for="arLevel_10">10</label> <input id="arLevel_20" value="20,5" type="checkbox"><label for="arLevel_20">20</label> <input id="arLevel_30" value="30,8" type="checkbox"><label for="arLevel_30">30</label> <input id="arLevel_40" value="40,9" type="checkbox"><label for="arLevel_40">40</label> <input id="arLevel_50" value="50,11" type="checkbox"><label for="arLevel_50">50</label> <input id="arLevel_60" value="60,12" type="checkbox"><label for="arLevel_60">60</label> <input id="arLevel_70" value="70,13" type="checkbox"><label for="arLevel_70">70</label> <input id="arLevel_80" value="80,15" type="checkbox"><label for="arLevel_80">80</label> <input id="arLevel_90" value="90,16" type="checkbox"><label for="arLevel_90">90</label> <input id="arLevel_100" value="100,17" type="checkbox"><label for="arLevel_100">100</label> <input id="arLevel_110" value="110,19" type="checkbox"><label for="arLevel_110">110</label><br>',
-    '        <input id="arLevel_120" value="120,20" type="checkbox"><label for="arLevel_120">120</label> <input id="arLevel_130" value="130,21" type="checkbox"><label for="arLevel_130">130</label> <input id="arLevel_140" value="140,23" type="checkbox"><label for="arLevel_140">140</label> <input id="arLevel_150" value="150,24" type="checkbox"><label for="arLevel_150">150</label> <input id="arLevel_165" value="165,26" type="checkbox"><label for="arLevel_165">165</label> <input id="arLevel_180" value="180,27" type="checkbox"><label for="arLevel_180">180</label> <input id="arLevel_200" value="200,28" type="checkbox"><label for="arLevel_200">200</label> <input id="arLevel_225" value="225,29" type="checkbox"><label for="arLevel_225">225</label> <input id="arLevel_250" value="250,32" type="checkbox"><label for="arLevel_250">250</label> <input id="arLevel_300" value="300,33" type="checkbox"><label for="arLevel_300">300</label> <input id="arLevel_400" value="400,34" type="checkbox"><label for="arLevel_400">400</label> <input id="arLevel_500" value="500,35" type="checkbox"><label for="arLevel_500">500</label><br>',
-    '        <input id="arLevel_RB50" value="RB50,105" type="checkbox"><label for="arLevel_RB50">RB50</label> <input id="arLevel_RB75A" value="RB75A,106" type="checkbox"><label for="arLevel_RB75A">RB75A</label> <input id="arLevel_RB75B" value="RB75B,107" type="checkbox"><label for="arLevel_RB75B">RB75B</label> <input id="arLevel_RB75C" value="RB75C,108" type="checkbox"><label for="arLevel_RB75C">RB75C</label><br>',
-    `        <input id="arLevel_RB100" value="RB100,109" type="checkbox"><label for="arLevel_RB100">RB100</label> <input id="arLevel_RB150" value="RB150,110" type="checkbox"><label for="arLevel_RB150">RB150</label> <input id="arLevel_RB200" value="RB200,111" type="checkbox"><label for="arLevel_RB200">RB200</label> <input id="arLevel_RB250" value="RB250,112" type="checkbox"><label for="arLevel_RB250">RB250</label> <input id="arLevel_GF" value="GF,gr" type="checkbox"><label for="arLevel_GF">GrindFest ${renderIdleArenaGrindFestInput()}</label></div></div>`,
+    `        ${renderIdleArenaLevelCheckboxes(renderIdleArenaGrindFestInput())}</div></div>`,
     renderRestoreStaminaSchemaFields(),
     "  </div>",
     // === Equipment 装备维护 tab（修复装备 + 缺料买料 + 强化价格 + 装备百分位，原 Main 拆出）===
