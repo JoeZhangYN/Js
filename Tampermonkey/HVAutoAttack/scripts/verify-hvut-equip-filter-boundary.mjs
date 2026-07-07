@@ -18,6 +18,10 @@ const matchBody =
   text.match(/match: function \(filters, equip\) \{[\s\S]*?\n    \},\n    normalize:/)?.[0] || "";
 const normalizeBody =
   text.match(/normalize: function \(filters\) \{[\s\S]*?\n    \},\n    test:/)?.[0] || "";
+const expressionBody =
+  text.match(/evaluateExpression: function \(expression\) \{[\s\S]*?\n    \},\n    test:/)?.[0] || "";
+const testBody =
+  text.match(/test: function \(filter, equip, name = equip\.info\.name\) \{[\s\S]*?\n    \},\n    details:/)?.[0] || "";
 const validateBody =
   text.match(/validate: function \(filters\) \{[\s\S]*?\n    \},/)?.[0] || "";
 
@@ -35,6 +39,12 @@ if (!validateBody) {
 }
 if (!normalizeBody) {
   violations.push("equipment filter list normalization entry must stay explicit");
+}
+if (!expressionBody) {
+  violations.push("equipment filter expression bridge entry must stay explicit");
+}
+if (!testBody) {
+  violations.push("equipment filter test entry must stay explicit");
 }
 
 for (const required of [
@@ -92,6 +102,27 @@ for (const required of [
 }
 
 for (const required of [
+  "const bridge = typeof window !== 'undefined' ? window.HVAA_equipFilterExpression : undefined",
+  "if (!bridge || typeof bridge.evaluate !== 'function')",
+  "$equip.filter.recordFailure('expressionBridgeMissing', { expression })",
+  "return bridge.evaluate(expression)",
+  "$equip.filter.recordFailure('expressionBridgeFailed', { expression, error: error?.message || String(error) })",
+  "throw error",
+]) {
+  if (!expressionBody.includes(required)) {
+    violations.push(`equipment filter expression bridge entry must include ${required}`);
+  }
+}
+
+for (const required of [
+  "return $equip.filter.evaluateExpression(r)",
+]) {
+  if (!testBody.includes(required)) {
+    violations.push(`equipment filter test entry must include ${required}`);
+  }
+}
+
+for (const required of [
   "filters = $equip.filter.normalize(filters)",
   "$equip.filter.test(filter, null, '')",
   "return true",
@@ -105,8 +136,9 @@ for (const required of [
 for (const forbidden of [
   "return filters.some((f) => $equip.filter.test(f, equip, name))",
   "return filters.some((filter) => $equip.filter.test(filter, equip, name))",
+  "window.HVAA_equipFilterExpression.evaluate(r)",
 ]) {
-  if (equipBody.includes(forbidden) || matchBody.includes(forbidden)) {
+  if (equipBody.includes(forbidden) || matchBody.includes(forbidden) || testBody.includes(forbidden)) {
     violations.push(`equipment filter match entry must not throw from first invalid filter: ${forbidden}`);
   }
 }

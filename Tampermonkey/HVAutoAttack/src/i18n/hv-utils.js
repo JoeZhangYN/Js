@@ -4757,6 +4757,19 @@ const bindEquip = function (equip, ctx) {
         .map((filter) => filter.trim())
         .filter(Boolean);
     },
+    evaluateExpression: function (expression) {
+      const bridge = typeof window !== 'undefined' ? window.HVAA_equipFilterExpression : undefined;
+      if (!bridge || typeof bridge.evaluate !== 'function') {
+        $equip.filter.recordFailure('expressionBridgeMissing', { expression });
+        throw new Error('Invalid Filter');
+      }
+      try {
+        return bridge.evaluate(expression);
+      } catch (error) {
+        $equip.filter.recordFailure('expressionBridgeFailed', { expression, error: error?.message || String(error) });
+        throw error;
+      }
+    },
     test: function (filter, equip, name = equip.info.name) {
       if (!filter) {
         return false;
@@ -4774,7 +4787,7 @@ const bindEquip = function (equip, ctx) {
           throw new Error('Invalid Filter');
         }
       });
-      return window.HVAA_equipFilterExpression.evaluate(r);
+      return $equip.filter.evaluateExpression(r);
     },
     details: function (filter, equip) {
       if (/\$([a-z]+)\+/.test(filter)) { // $Magnificent+
