@@ -661,16 +661,8 @@ function renderAttackResourceSchemaFields() {
 
 function renderActionDelaySchemaFields() {
   return [
-    renderCheckboxPlusNumber("delayAlert", "delayAlertTime", {
-      l0: "秒，警报",
-      l1: "秒，警報",
-      l2: "s, alarm",
-    }),
-    renderCheckboxPlusNumber("delayReload", "delayReloadTime", {
-      l0: "秒，刷新页面",
-      l1: "秒，刷新頁面",
-      l2: "s, reload page",
-    }),
+    renderCheckboxPlusNumber("delayAlert", "delayAlertTime"),
+    renderCheckboxPlusNumber("delayReload", "delayReloadTime"),
   ];
 }
 

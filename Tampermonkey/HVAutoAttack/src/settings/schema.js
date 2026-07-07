@@ -649,6 +649,11 @@ const OPTION_SCHEMA = [
       l1: "行動開始後 N 秒仍未結束則警報",
       l2: "Alarm if an action has not ended after N seconds",
     },
+    description: {
+      l0: "秒，警报",
+      l1: "秒，警報",
+      l2: "s, alarm",
+    },
   },
   {
     key: "delayReload",
@@ -670,6 +675,11 @@ const OPTION_SCHEMA = [
       l0: "行动开始后 N 秒仍未结束则刷新页面",
       l1: "行動開始後 N 秒仍未結束則刷新頁面",
       l2: "Reload if an action has not ended after N seconds",
+    },
+    description: {
+      l0: "秒，刷新页面",
+      l1: "秒，刷新頁面",
+      l2: "s, reload page",
     },
   },
   // === 战斗记录归档：监控归档能力消费 recordEach，设置页只派生字段说明 ===

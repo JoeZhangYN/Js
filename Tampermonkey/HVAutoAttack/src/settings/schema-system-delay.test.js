@@ -19,6 +19,9 @@ describe("runOptionSchema system delay fields", () => {
       kind: "number",
       default: 0,
       group: "System",
+      description: {
+        l2: "s, alarm",
+      },
     });
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "delayReload" })
@@ -35,6 +38,9 @@ describe("runOptionSchema system delay fields", () => {
       kind: "number",
       default: 0,
       group: "System",
+      description: {
+        l2: "s, reload page",
+      },
     });
   });
 

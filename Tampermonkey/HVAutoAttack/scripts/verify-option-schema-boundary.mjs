@@ -62,6 +62,12 @@ if (!/key:\s*["']repairCreditCap["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}c
 if (!/key:\s*["']riddleAnswerTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}no answer has been chosen yet/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must own riddle answer timing help text`);
 }
+if (!/key:\s*["']delayAlertTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}s, alarm/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must own action delay alarm help text`);
+}
+if (!/key:\s*["']delayReloadTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}s, reload page/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must own action delay reload help text`);
+}
 if (!/export const OptionSchemaEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose OptionSchemaEvent`);
 }
@@ -341,7 +347,9 @@ for (const forbidden of [
   /id=["']focus["'][\s\S]{0,80}<b>Focus<\/b>[\s\S]{0,40}focusCondition/,
   /id=["']etherTap["'][\s\S]{0,100}<b>Ether Tap<\/b>[\s\S]{0,40}etherTapCondition/,
   /id=["']delayAlert["'][\s\S]{0,120}delayAlertTime/,
+  /s, alarm/,
   /id=["']delayReload["'][\s\S]{0,120}delayReloadTime/,
+  /s, reload page/,
   /id=["']recordEach["'][\s\S]{0,140}单独记录每场战役/,
   /name=["']delay["']\s+placeholder=["']200["']/,
   /name=["']delay2["']\s+placeholder=["']30["']/,
