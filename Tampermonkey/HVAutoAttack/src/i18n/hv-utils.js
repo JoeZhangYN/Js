@@ -84,6 +84,26 @@ try {
     var match = /(\d+ Season \d+)/.exec(text);
     return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');
   };
+  var create_hvut_world_identity = function (context) {
+    var isIsekai = !!context?.isIsekai;
+    var serverName = context?.serverName || (isIsekai ? 'isekai' : 'persistent');
+    return {
+      isIsekai: isIsekai,
+      serverName: serverName,
+      season: context?.season || parse_hvut_world_season(isIsekai, context?.seasonStage || 'worldSeason'),
+    };
+  };
+  var create_hvut_config_segment_context = function (context) {
+    var world = create_hvut_world_identity(context);
+    return {
+      isIsekai: world.isIsekai,
+      serverName: world.serverName,
+      season: world.season,
+      assignSeason: !!context?.assignSeason,
+      checkboxWithNullLabel: !!context?.checkboxWithNullLabel,
+      showTextareaDefaultButton: !!context?.showTextareaDefaultButton,
+    };
+  };
   var get_hvut_config_carry_keys = function (isIsekai) {
     if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.carryKeys) {
       return window.HVAA_hvutConfigMigration.carryKeys({ isIsekai: !!isIsekai });
@@ -162,9 +182,10 @@ try {
     return desc ? { button: String(desc).split('\n')[0], html: String(desc).split('\n').slice(1).join('<br>') } : null;
   };
   var run_hvut_config_init = function (config, defaultSettings, context) {
-    var isIsekai = !!context?.isIsekai;
-    if (context?.assignSeason) {
-      config.season = parse_hvut_world_season(location.pathname.includes('/isekai/'), 'configSeason');
+    var segment = create_hvut_config_segment_context(context);
+    var isIsekai = segment.isIsekai;
+    if (segment.assignSeason) {
+      config.season = segment.season;
     }
     const namespace = get_hvut_config_namespace(isIsekai);
     if (!namespace) {
@@ -255,7 +276,7 @@ try {
     return true;
   };
   var render_hvut_config_field_row = function (config, field, context) {
-    var isIsekai = !!context?.isIsekai;
+    var segment = create_hvut_config_segment_context(context);
     field.node = {};
     field.node.div = $element('div', config.node.div);
     $element('h2', field.node.div, field.key);
@@ -269,7 +290,7 @@ try {
         $element('span', field.node.div, field.label);
       }
     } else if (inputKind === 'checkbox') {
-      field.node.input = context?.checkboxWithNullLabel
+      field.node.input = segment.checkboxWithNullLabel
         ? $input(['checkbox', null, field.label], field.node.div)
         : $input(['checkbox', field.label], field.node.div);
     } else if (inputKind === 'number') {
@@ -286,7 +307,7 @@ try {
       text = format_hvut_config_field_help_text(text);
       field.node.text = $element('p', field.node.div, ['/' + text]);
     }
-    if (inputKind === 'textarea' && context?.showTextareaDefaultButton) {
+    if (inputKind === 'textarea' && segment.showTextareaDefaultButton) {
       $input(['button', '恢复默认'], field.node.div, null, () => { config.set_input(field); });
     }
     let desc = config.desc[field.desc || field.key];
@@ -304,7 +325,7 @@ try {
     if (field.style) {
       field.node.input.style.cssText = field.style;
     }
-    if (is_hvut_config_field_disabled(field, { isIsekai: isIsekai, serverName: _server.name })) {
+    if (is_hvut_config_field_disabled(field, segment)) {
       field.node.div.classList.add('hvut-cfg-disabled');
       field.node.input.disabled = true;
     }
@@ -353,6 +374,7 @@ try {
     `);
   };
   var render_hvut_config_panel = function (config, context) {
+    var segment = create_hvut_config_segment_context(context);
     config.node = {};
     config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: config.validate_panel });
     //$config.node.ul = $element('ul', config.node.div);
@@ -364,7 +386,7 @@ try {
         //$element('li', $config.node.ul, field.text, () => { scrollIntoView(h); });
         return;
       }
-      render_hvut_config_field_row(config, field, context);
+      render_hvut_config_field_row(config, field, segment);
     });
 
     const bottom = $element('footer', config.node.div);
@@ -2528,10 +2550,11 @@ const bindBattlePanel = function (battle, ctx) {
 };
 
 // 服务器标识(L1 收口 2026-06-10): 定义只依赖 location/world_text, 与 IIFE 闭包无关。
-const _servername = location.pathname.includes('/isekai/') ? 'isekai' : 'persistent';
+const HVUT_WORLD = create_hvut_world_identity({ isIsekai: IS_ISEKAI, seasonStage: 'serverSeason' });
+const _servername = HVUT_WORLD.serverName;
 const _server = {
-  name: _servername,
-  season: parse_hvut_world_season(_servername === 'isekai', 'serverSeason') || '1',
+  name: HVUT_WORLD.serverName,
+  season: HVUT_WORLD.season || '1',
   [_servername]: true, // 当前服务器标记 key; isekai 判定统一走顶层 IS_ISEKAI（L0 归一）
 };
 
@@ -5555,9 +5578,9 @@ const $config = {
       return result;
     },
   },
-  init: create_hvut_config_init_entry(settings, { isIsekai: IS_ISEKAI }),
+  init: create_hvut_config_init_entry(settings, HVUT_WORLD),
   migration: function () {
-    if (run_hvut_config_legacy_migration($config, $price, { isIsekai: IS_ISEKAI }) === false) return false;
+    if (run_hvut_config_legacy_migration($config, $price, HVUT_WORLD) === false) return false;
 
     if ($config.settings.version < 4.2) {
       delete $config.settings.equipmentShopAutoProtect;
@@ -5578,11 +5601,11 @@ const $config = {
   },
   // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
   create: function () {
-    inject_hvut_config_panel_style({ isIsekai: IS_ISEKAI });
+    inject_hvut_config_panel_style(HVUT_WORLD);
 
     render_hvut_config_panel($config, {
+      ...HVUT_WORLD,
       checkboxWithNullLabel: true,
-      isIsekai: IS_ISEKAI,
       showTextareaDefaultButton: true,
     });
   },
@@ -5619,7 +5642,7 @@ const $config = {
   },
   // get_panel/validate_panel/validate/load/save/text2obj/obj2text/text2array/array2text: 收口 bindConfig(L1)
 };
-bindConfig($config, { skipField: (o) => is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name }) }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(isekai 按 HV server)
+bindConfig($config, { skipField: (o) => is_hvut_config_field_disabled(o, HVUT_WORLD) }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(isekai 按 HV server)
 $config.init();
 //$config.settings = settings;
 
@@ -11373,9 +11396,9 @@ const $config = {
       return result;
     },
   },
-  init: create_hvut_config_init_entry(settings, { assignSeason: true, isIsekai: IS_ISEKAI }),
+  init: create_hvut_config_init_entry(settings, { ...HVUT_WORLD, assignSeason: true }),
   migration: function () {
-    if (run_hvut_config_legacy_migration($config, $price, { isIsekai: IS_ISEKAI }) === false) return false;
+    if (run_hvut_config_legacy_migration($config, $price, HVUT_WORLD) === false) return false;
 
     const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);
     if (!normalizedSettings) return false;
@@ -11386,9 +11409,9 @@ const $config = {
   },
   // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
   create: function () {
-    inject_hvut_config_panel_style({ isIsekai: IS_ISEKAI });
+    inject_hvut_config_panel_style(HVUT_WORLD);
 
-    render_hvut_config_panel($config, { isIsekai: IS_ISEKAI });
+    render_hvut_config_panel($config, HVUT_WORLD);
   },
   // open/close: 收口 bindConfig(L1)
   set_panel: function (obj = $config.settings) {
@@ -11419,7 +11442,7 @@ const $config = {
   },
   // get_panel/validate_panel/validate/load/save/text2obj/obj2text/text2array/array2text: 收口 bindConfig(L1)
 };
-bindConfig($config, { skipField: (o) => is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name }) }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(主世界按 持久区·isekai)
+bindConfig($config, { skipField: (o) => is_hvut_config_field_disabled(o, HVUT_WORLD) }); // 18 方法收口共享内核(L1); ctx 注入面板字段门控谓词(主世界按 持久区·isekai)
 $config.init();
 //$config.settings = settings;
 

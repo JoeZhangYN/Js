@@ -73,17 +73,17 @@ requireIncludes(target, text, [
   "var render_hvut_config_field_row = function (config, field, context) {",
   "const inputKind = get_hvut_config_field_input_kind(field);",
   "field.node.div = $element('div', config.node.div);",
-  "field.node.input = context?.checkboxWithNullLabel",
+  "field.node.input = segment.checkboxWithNullLabel",
   "? $input(['checkbox', null, field.label], field.node.div)",
   ": $input(['checkbox', field.label], field.node.div);",
-  "if (inputKind === 'textarea' && context?.showTextareaDefaultButton) {",
+  "if (inputKind === 'textarea' && segment.showTextareaDefaultButton) {",
   "$input(['button', '恢复默认'], field.node.div, null, () => { config.set_input(field); });",
   "text = format_hvut_config_field_help_text(text);",
   "desc = format_hvut_config_field_description(desc);",
   "$input(['button', desc.button], field.node.div",
   "field.node.desc = $element('p', field.node.div, ['/' + desc.html, '.hvut-none']);",
   "field.node.input.dataset.key = field.key;",
-  "if (is_hvut_config_field_disabled(field, { isIsekai: isIsekai, serverName: _server.name })) {",
+  "if (is_hvut_config_field_disabled(field, segment)) {",
   "var inject_hvut_config_panel_style = function (context) {",
   "if (context?.isIsekai) {",
   "GM_addStyle(/*css*/`",
@@ -93,13 +93,13 @@ requireIncludes(target, text, [
   "config.node.div = $element('div', null, ['.hvut-cfg-div'], { change: config.validate_panel });",
   "$element('header', config.node.div, 'HV Utils 设置');",
   "config.data.forEach((field) => {",
-  "render_hvut_config_field_row(config, field, context);",
+  "render_hvut_config_field_row(config, field, segment);",
   "const bottom = $element('footer', config.node.div);",
   "$input(['button', '保存'], bottom, null, () => { config.save(true); });",
   "$input(['button', '关闭'], bottom, null, () => { config.close(); });",
   "$input(['button', '恢复'], bottom, null, () => { config.load(config.settings); });",
   "$input(['button', '恢复默认'], bottom, null, () => { config.load(config.default); });",
-  "skipField: (o) => is_hvut_config_field_disabled(o, { isIsekai: IS_ISEKAI, serverName: _server.name })",
+  "skipField: (o) => is_hvut_config_field_disabled(o, HVUT_WORLD)",
 ]);
 
 for (const forbidden of [
@@ -112,8 +112,8 @@ for (const forbidden of [
 }
 
 const expectedCreateCalls = [
-  "render_hvut_config_panel($config, {\n      checkboxWithNullLabel: true,\n      isIsekai: IS_ISEKAI,\n      showTextareaDefaultButton: true,\n    });",
-  "render_hvut_config_panel($config, { isIsekai: IS_ISEKAI });",
+  "render_hvut_config_panel($config, {\n      ...HVUT_WORLD,\n      checkboxWithNullLabel: true,\n      showTextareaDefaultButton: true,\n    });",
+  "render_hvut_config_panel($config, HVUT_WORLD);",
 ];
 
 function findConfigCreateBody(expectedCall) {
@@ -134,7 +134,7 @@ for (const [index, body] of createBodies.entries()) {
   if (!body) continue;
   const expectedCall = expectedCreateCalls[index];
   requireIncludes(target, body, [
-    "inject_hvut_config_panel_style({ isIsekai: IS_ISEKAI });",
+    "inject_hvut_config_panel_style(HVUT_WORLD);",
     expectedCall,
   ]);
   for (const forbidden of [

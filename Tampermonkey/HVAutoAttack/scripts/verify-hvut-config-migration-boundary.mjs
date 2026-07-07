@@ -27,8 +27,8 @@ if (migrationBodies.length !== 2) violations.push(`${target} must keep both conf
 for (const required of [
   "var create_hvut_config_init_entry = function (defaultSettings, context) {",
   "return run_hvut_config_init(this, defaultSettings, context);",
-  "init: create_hvut_config_init_entry(settings, { isIsekai: IS_ISEKAI }),",
-  "init: create_hvut_config_init_entry(settings, { assignSeason: true, isIsekai: IS_ISEKAI }),",
+  "init: create_hvut_config_init_entry(settings, HVUT_WORLD),",
+  "init: create_hvut_config_init_entry(settings, { ...HVUT_WORLD, assignSeason: true }),",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep config init behind shared segment entry: ${required}`);
@@ -48,10 +48,13 @@ for (const required of [
   "var record_hvut_config_parse_failure = function (stage, detail) {",
   "sessionStorage.setItem('HVAA:lastHvutConfigParseFailure', JSON.stringify(evidence));",
   "var parse_hvut_world_season = function (isIsekai, stage) {",
+  "var create_hvut_world_identity = function (context) {",
+  "var create_hvut_config_segment_context = function (context) {",
   "var run_hvut_config_init = function (config, defaultSettings, context) {",
   "var create_hvut_config_init_entry = function (defaultSettings, context) {",
-  "if (context?.assignSeason) {",
-  "config.season = parse_hvut_world_season(location.pathname.includes('/isekai/'), 'configSeason');",
+  "var segment = create_hvut_config_segment_context(context);",
+  "if (segment.assignSeason) {",
+  "config.season = segment.season;",
   "const namespace = get_hvut_config_namespace(isIsekai);",
   "config.prefix = config.ns + '_';",
   "config.settings = config.get('settings', {});",
@@ -81,7 +84,9 @@ for (const required of [
   "record_hvut_config_parse_failure('configCarryKeysBridgeMissing'",
   "if (!isIsekai) return false;",
   "return match ? match[1] : (record_hvut_config_parse_failure(stage, { text: text }), '1');",
-  "season: parse_hvut_world_season(_servername === 'isekai', 'serverSeason') || '1',",
+  "const HVUT_WORLD = create_hvut_world_identity({ isIsekai: IS_ISEKAI, seasonStage: 'serverSeason' });",
+  "const _servername = HVUT_WORLD.serverName;",
+  "season: HVUT_WORLD.season || '1',",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT world season parse boundary: ${required}`);
@@ -90,7 +95,7 @@ for (const required of [
 
 for (const [index, body] of migrationBodies.entries()) {
   for (const part of [
-    "if (run_hvut_config_legacy_migration($config, $price, { isIsekai: IS_ISEKAI }) === false) return false;",
+    "if (run_hvut_config_legacy_migration($config, $price, HVUT_WORLD) === false) return false;",
     "const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);",
     "if (!normalizedSettings) return false;",
     "$config.settings = normalizedSettings;",
