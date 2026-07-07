@@ -430,6 +430,10 @@ try {
     }
     return { name: name, id: parseInt(idMatch[1]), stock: stock };
   };
+  var classify_hvut_item_shop_buy_response = function (doc) {
+    var message = get_message(doc);
+    return message ? { kind: 'rejected', message: message } : { kind: 'accepted' };
+  };
   var record_hvut_top_level_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutTopLevelParse', stage: stage, detail: detail || {} };
     try {
@@ -1428,11 +1432,7 @@ const $item = {
     async function buy(id, count) {
       const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${$item.storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
       const doc = $doc(html);
-      const error = get_message(doc);
-      if (error) {
-        return false;
-      }
-      return true;
+      return classify_hvut_item_shop_buy_response(doc);
     }
 
     const requests = items.map((item) => buy(item.id, item.count));
@@ -1444,7 +1444,7 @@ const $item = {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
     }
-    if (!results.every((r) => r)) {
+    if (!results.every((r) => r?.kind === 'accepted')) {
       record_hvut_item_shop_parse_failure('shopBuyRejected', { items: items.map((item) => ({ name: item.name, id: item.id, count: item.count })), results: results });
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;

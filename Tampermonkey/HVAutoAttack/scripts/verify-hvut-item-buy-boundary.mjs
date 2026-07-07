@@ -26,6 +26,9 @@ for (const required of [
   "return record_hvut_item_shop_parse_failure(stage, { name: name, onclick: onclick, text: row?.textContent || '' });",
   "var parse_hvut_inventory_item_row = function (row, stage) {",
   "return record_hvut_item_shop_parse_failure(stage, { name: name, id: idText, stock: stockText",
+  "var classify_hvut_item_shop_buy_response = function (doc) {",
+  "var message = get_message(doc);",
+  "return message ? { kind: 'rejected', message: message } : { kind: 'accepted' };",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must own item shop parse failure boundary with ${required}`);
@@ -77,13 +80,17 @@ for (const required of [
   "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n      return false;",
   "try {\n      results = await Promise.all(requests);",
   "catch (error) {\n      record_hvut_item_shop_parse_failure('shopBuyRequest'",
-  "if (!results.every((r) => r))",
+  "return classify_hvut_item_shop_buy_response(doc);",
+  "if (!results.every((r) => r?.kind === 'accepted'))",
   "record_hvut_item_shop_parse_failure('shopBuyRejected'",
   "return true",
 ]) {
   if (!buyBody.includes(required)) {
     violations.push(`${target} $item.buy must classify purchase failure with ${required}`);
   }
+}
+if (buyBody.includes("const error = get_message(doc);")) {
+  violations.push(`${target} $item.buy must classify HV response through classify_hvut_item_shop_buy_response`);
 }
 
 for (const required of [
