@@ -265,6 +265,22 @@ function renderActionDelaySchemaFields() {
   ];
 }
 
+function renderApiBridgeDelaySchemaFields() {
+  return (
+    `<div><b><l0>延迟</l0><l1>延遲</l1><l2>Delay</l2></b>: ` +
+    `1. ${renderSchemaLabel(readSchemaField("delay"))}: ${renderSchemaNumberInput(
+      "delay",
+      "ms"
+    )} ` +
+    `2. ${renderSchemaLabel(readSchemaField("delay2"))}: ${renderSchemaNumberInput(
+      "delay2",
+      "ms"
+    )}<br>` +
+    "    <l0>说明: 单位毫秒，且在设定值基础上取其的50%-150%进行延迟，0表示不延迟</l0><l1>說明: 單位毫秒，且在設定值基礎上取其的50%-150%進行延遲，0表示不延遲</l1><l2>Note: unit milliseconds, and based on the set value multiply 50% -150% to delay, 0 means no delay</l2>" +
+    "    </div>"
+  );
+}
+
 /**
  * 打开 / 切换显隐 HVAA 配置面板。浮动按钮(button.js)与 hv-utils 顶部栏触发器(window.HVAA_openConfig)
  * 共用此单一入口（收口原 button.js 内联 onclick 逻辑，去重）。
@@ -554,10 +570,8 @@ export function optionBox() {
       l1: "分鐘（防移動端長時間掛機卡死，無條件絕對時鐘）",
       l2: " min (mobile anti-hang absolute clock, unconditional)",
     }),
-    '  <div><input id="recordEach" type="checkbox"><label for="recordEach"><b><l0>单独记录每场战役</l0><l1>單獨記錄每場戰役</l1><l2>Record each battle separately</l2></b></label></div>',
-    '  <div><b><l0>延迟</l0><l1>延遲</l1><l2>Delay</l2></b>: 1. <l0>其他/Buff/Debuff技能</l0><l1>其他/Buff/Debuff技能</l1><l2>Skills&BUFF/DEBUFF Spells</l2>: <input class="hvAANumber" name="delay" placeholder="200" type="text">ms 2. <l01>其他</l01><l2>Other</l2>: <input class="hvAANumber" name="delay2" placeholder="30" type="text">ms<br>',
-    "    <l0>说明: 单位毫秒，且在设定值基础上取其的50%-150%进行延迟，0表示不延迟</l0><l1>說明: 單位毫秒，且在設定值基礎上取其的50%-150%進行延遲，0表示不延遲</l1><l2>Note: unit milliseconds, and based on the set value multiply 50% -150% to delay, 0 means no delay</l2>",
-    "    </div>",
+    renderSchemaCheckboxField("recordEach"),
+    renderApiBridgeDelaySchemaFields(),
     "  </div>",
     '<div class="hvAATab" id="hvAATab-Spell">',
     '  <div><l0>当<a class="hvAAGoto" name="hvAATab-Main"><b>攻击模式</b></a>为法术时生效</l0><l1>當<a class="hvAAGoto" name="hvAATab-Main"><b>攻擊模式</b></a>為法術時生效</l1><l2>Active when <a class="hvAAGoto" name="hvAATab-Main"><b>Attack Mode</b></a> is set to a spell element</l2></div>',

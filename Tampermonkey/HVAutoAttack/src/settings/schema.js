@@ -410,6 +410,41 @@ const OPTION_SCHEMA = [
       l2: "Reload if an action has not ended after N seconds",
     },
   },
+  // === 战斗记录归档：监控归档能力消费 recordEach，设置页只派生字段说明 ===
+  {
+    key: "recordEach",
+    kind: "checkbox",
+    group: "System",
+    default: false,
+    label: {
+      l0: "单独记录每场战役",
+      l1: "單獨記錄每場戰役",
+      l2: "Record each battle separately",
+    },
+  },
+  // === API 点击协议延迟：运行时 authority 在 battle-api-bridge.js ===
+  {
+    key: "delay",
+    kind: "number",
+    group: "System",
+    default: 200,
+    label: {
+      l0: "其他/Buff/Debuff 技能延迟",
+      l1: "其他/Buff/Debuff 技能延遲",
+      l2: "Skills & Buff/Debuff delay",
+    },
+  },
+  {
+    key: "delay2",
+    kind: "number",
+    group: "System",
+    default: 30,
+    label: {
+      l0: "其他行动延迟",
+      l1: "其他行動延遲",
+      l2: "Other action delay",
+    },
+  },
   // === Spirit Stance：攻击流开/关姿态与技能前置姿态的配置说明 SOT ===
   {
     key: "turnOnSS",
