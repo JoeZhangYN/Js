@@ -273,6 +273,21 @@ function renderBurstGuardSchemaFields() {
   ];
 }
 
+function renderSpellTierStrategySchemaFields() {
+  return [
+    renderSchemaCheckboxField(
+      "channelForceHighTier",
+      ": <l0>Channeling 时 (150% 伤害, 1 MP) 跳过条件检查，使用最高可用阶法术</l0><l1>Channeling 時 (150% 傷害, 1 MP) 跳過條件檢查，使用最高可用階法術</l1><l2>During Channeling (150% dmg, 1 MP), skip condition checks and use highest available tier</l2>"
+    ),
+    renderSchemaCheckboxField(
+      "spellTierDowngrade",
+      `: <l0>存活怪物</l0><l1>存活怪物</l1><l2>Alive monsters</l2> ≤ ${renderSchemaNumberInput(
+        "spellDowngradeThreshold"
+      )}<l0>时仅用 T1 节省 MP (Channeling 时不降级)</l0><l1>時僅用 T1 節省 MP (Channeling 時不降級)</l1><l2>: use T1 only to save MP (does not apply during Channeling)</l2>`
+    ),
+  ];
+}
+
 function renderDynamicHealSchemaFields() {
   return [
     renderSchemaCheckboxField("dynamicHealThreshold", "<br>"),
@@ -706,13 +721,7 @@ export function optionBox() {
     "  <div><b><l0>高阶技能使用条件</l0><l1>高階技能使用條件</l1><l2>Conditions for 3rd Tier</l2></b>: {{highSkillCondition}}</div>",
     "  <div><b><l0>中阶技能使用条件</l0><l1>中階技能使用條件</l1><l2>Conditions for 2nd Tier</l2></b>: {{middleSkillCondition}}</div>",
     "  <div><l0>T1: 无条件限制，始终可用</l0><l1>T1: 無條件限制，始終可用</l1><l2>T1: No condition, always available</l2></div>",
-    '  <div><input id="channelForceHighTier" type="checkbox" checked data-default-on>',
-    '    <label for="channelForceHighTier"><b>Channeling <l0>强制最高阶</l0><l1>強制最高階</l1><l2>Force Highest Tier</l2></b></label>:',
-    "    <l0>Channeling 时 (150% 伤害, 1 MP) 跳过条件检查，使用最高可用阶法术</l0><l1>Channeling 時 (150% 傷害, 1 MP) 跳過條件檢查，使用最高可用階法術</l1><l2>During Channeling (150% dmg, 1 MP), skip condition checks and use highest available tier</l2></div>",
-    '  <div><input id="spellTierDowngrade" type="checkbox" checked data-default-on>',
-    '    <label for="spellTierDowngrade"><b><l0>少怪降级</l0><l1>少怪降級</l1><l2>Few Monsters Downgrade</l2></b></label>:',
-    '    <l0>存活怪物</l0><l1>存活怪物</l1><l2>Alive monsters</l2> ≤ <input class="hvAANumber" name="spellDowngradeThreshold" placeholder="3" type="text">',
-    "    <l0>时仅用 T1 节省 MP (Channeling 时不降级)</l0><l1>時僅用 T1 節省 MP (Channeling 時不降級)</l1><l2>: use T1 only to save MP (does not apply during Channeling)</l2></div>",
+    ...renderSpellTierStrategySchemaFields(),
     "  <div><b>AoE</b>:",
     '    <l0>访问</l0><l1>訪問</l1><l2>Visit</l2> <a href="?s=Character&ss=ab" target="_blank"><l0>技能页面</l0><l1>技能頁面</l1><l2>Ability Page</l2></a>',
     "    <l0>自动检测法术 AoE 目标数</l0><l1>自動檢測法術 AoE 目標數</l1><l2>to auto-detect spell AoE target counts</l2></div></div>",

@@ -282,6 +282,41 @@ const OPTION_SCHEMA = [
     },
   },
   {
+    key: "channelForceHighTier",
+    kind: "checkbox",
+    group: "Spell",
+    default: true,
+    defaultOn: true,
+    label: {
+      l0: "Channeling 强制最高阶",
+      l1: "Channeling 強制最高階",
+      l2: "Channeling Force Highest Tier",
+    },
+  },
+  {
+    key: "spellTierDowngrade",
+    kind: "checkbox",
+    group: "Spell",
+    default: true,
+    defaultOn: true,
+    label: {
+      l0: "少怪降级",
+      l1: "少怪降級",
+      l2: "Few Monsters Downgrade",
+    },
+  },
+  {
+    key: "spellDowngradeThreshold",
+    kind: "number",
+    group: "Spell",
+    default: 3,
+    label: {
+      l0: "法术降级存活怪物阈值",
+      l1: "法術降級存活怪物閾值",
+      l2: "Spell downgrade alive monster threshold",
+    },
+  },
+  {
     key: "hp1",
     kind: "number",
     group: "Heal",
