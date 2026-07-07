@@ -20,7 +20,7 @@ for (const required of [
   "current: current,",
   "disabled: disabled,",
   "isMoogleMail: section === 'Bazaar' && ss === 'mm',",
-  "shouldUseHvutCompose: filter === 'new' && !disabled,",
+  "shouldUseHvutCompose: section === 'Bazaar' && ss === 'mm' && filter === 'new' && !disabled,",
   "var hvut_mail_page_context = null;",
   "var get_hvut_mail_page_context = function () {",
   "hvut_mail_page_context = hvut_mail_page_context || create_hvut_mail_page_context();",
@@ -74,6 +74,19 @@ if (!mailBodies[1]?.includes("_mm.page_filter = mailPage.filter;") || !mailBodie
 
 if (text.includes("return create_hvut_mail_filter_page_url(_query.filter || 'inbox', page);")) {
   violations.push(`${target} mail page URL must not read raw _query.filter`);
+}
+
+const sendBody = /send: async function \(\) \{[\s\S]*?\n  \},\n  chunk:/.exec(text)?.[0] || "";
+if (!sendBody.includes("if (get_hvut_mail_page_context().shouldUseHvutCompose) {")) {
+  violations.push(`${target} MoogleMail send must reuse current compose page through page context`);
+}
+for (const forbidden of [
+  "_query.ss === 'mm'",
+  "_query.filter === 'new'",
+]) {
+  if (sendBody.includes(forbidden)) {
+    violations.push(`${target} MoogleMail send must not rebuild compose page identity from raw query: ${forbidden}`);
+  }
 }
 
 if (violations.length) {

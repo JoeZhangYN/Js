@@ -674,7 +674,9 @@ try {
   var parse_hvut_ability_unlock_id = function (panel, stage) {
     var onclick = panel?.getAttribute('onclick') || '';
     var match = /do_unlock_ability\((\d+)\)/.exec(onclick);
-    return match ? match[1] : record_hvut_ability_parse_failure(stage, { onclick: onclick });
+    if (match) return match[1];
+    var hasUnlockButton = !!$qs('div[style*="u.png"]', panel);
+    return hasUnlockButton ? record_hvut_ability_parse_failure(stage, { onclick: onclick, reason: 'unlockIdMissingForUnlockableAbility' }) : '';
   };
   var mark_hvut_ability_warning = function (div, warn, stage) {
     var node = div?.firstElementChild?.firstElementChild;
@@ -1812,7 +1814,7 @@ try {
       current: current,
       disabled: disabled,
       isMoogleMail: section === 'Bazaar' && ss === 'mm',
-      shouldUseHvutCompose: filter === 'new' && !disabled,
+      shouldUseHvutCompose: section === 'Bazaar' && ss === 'mm' && filter === 'new' && !disabled,
     };
   };
   var hvut_mail_page_context = null;
@@ -2019,7 +2021,8 @@ try {
     var ss = source?.ss;
     var screen = source?.screen;
     var filter = source?.filter;
-    var integrateAll = filter === 'all' && !!config?.settings?.equipmentIntegration;
+    var isAllFilter = filter === 'all';
+    var shouldShowAllFilter = !!config?.settings?.equipmentIntegration;
     return {
       section: section,
       ss: ss,
@@ -2028,7 +2031,9 @@ try {
       isArmory: section === 'Bazaar' && ss === 'am',
       hasEquiplist: !!$id('equiplist'),
       isModify: screen === 'modify',
-      integrateAll: integrateAll,
+      isAllFilter: isAllFilter,
+      shouldShowAllFilter: shouldShowAllFilter,
+      shouldIntegrateAll: isAllFilter,
       canOrganize: screen !== 'purchase' && filter !== 'salvaged',
     };
   };
@@ -4300,7 +4305,7 @@ const $mail = {
     $mail.log('\n========== Sending ==========');
 
     if (!$mail.token) {
-      if (_query.ss === 'mm' && _query.filter === 'new') {
+      if (get_hvut_mail_page_context().shouldUseHvutCompose) {
         doc = document;
       } else {
         $mail.log(`#${index}: Checking Mailbox`);
@@ -5550,6 +5555,7 @@ const bindArmory = function (armory, ctx) {
 
     integrate: {
       init: async function (screen) {
+        if (!$armory.pageContext.shouldIntegrateAll) return false;
         $armory.node.table.tBodies[0].remove();
         $armory.equiplist = [];
         // Promise.all 收集并发 load（行为同原 forEach 并发，仅多一个"全部注入完成"汇合点）。
@@ -5588,6 +5594,7 @@ const bindArmory = function (armory, ctx) {
         return true;
       },
       tab: function () {
+        if (!$armory.pageContext.shouldShowAllFilter && !$armory.pageContext.isAllFilter) return;
         const a = $element('a', [$id('filterbar'), 1], { href: create_hvut_armory_screen_url($armory.pageContext.screen, { filter: 'all' }) });
         const div = $element('div', a, '所有');
         if ($armory.pageContext.filter === 'all') {
@@ -6299,7 +6306,7 @@ const bindArmory = function (armory, ctx) {
 
   if (armoryPage.screen === 'organize') {
     $armory.integrate.tab();
-    if (armoryPage.integrateAll) {
+    if (armoryPage.shouldIntegrateAll) {
       $armory.integrate.init('organize');
     } else {
       $armory.modify.organize();
@@ -6313,7 +6320,7 @@ const bindArmory = function (armory, ctx) {
 
   if (armoryPage.screen === 'purchase') {
     $armory.integrate.tab();
-    if (armoryPage.integrateAll) {
+    if (armoryPage.shouldIntegrateAll) {
       $armory.integrate.init('purchase');
     } else {
       $armory.modify.purchase();
@@ -6323,7 +6330,7 @@ const bindArmory = function (armory, ctx) {
 
   if (armoryPage.screen === 'sell') {
     $armory.integrate.tab();
-    if (armoryPage.integrateAll) {
+    if (armoryPage.shouldIntegrateAll) {
       $armory.integrate.init('sell');
     } else {
       $armory.modify.sell();
@@ -6333,7 +6340,7 @@ const bindArmory = function (armory, ctx) {
 
   if (armoryPage.screen === 'salvage') {
     $armory.integrate.tab();
-    if (armoryPage.integrateAll) {
+    if (armoryPage.shouldIntegrateAll) {
       $armory.integrate.init('salvage');
     } else {
       $armory.modify.salvage();
