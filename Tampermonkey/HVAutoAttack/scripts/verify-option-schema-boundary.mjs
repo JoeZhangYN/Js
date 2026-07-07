@@ -56,6 +56,9 @@ for (const legacy of ["OPTION_SCHEMA", "getOptionDefault", "getFieldsByGroup"]) 
     );
   }
 }
+if (!/key:\s*["']repairCreditCap["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}credits\/run cap/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must own repair material cap help text`);
+}
 if (!/export const OptionSchemaEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose OptionSchemaEvent`);
 }
@@ -243,6 +246,7 @@ for (const forbidden of [
   /id=["']repair["'][\s\S]{0,120}修复装备/,
   /<div><input id=["']repair["'] type=["']checkbox["']><label for=["']repair["']><b>\$\{renderSchemaLabel/,
   /id=["']repairBuyMaterials["'][\s\S]{0,140}维修缺料时自动/,
+  /credits\/run cap \(auto-buy materials to repair; stop if over cap; unchecked = stop on shortage\)/,
   /name=["']repairCreditCap["']\s+placeholder=["']50000["']/,
   /id=["']forgeCostShow["'][\s\S]{0,120}强化价格/,
   /name=["']equipPercentileMode["'][\s\S]{0,160}<option value=["']offline["']/,

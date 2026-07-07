@@ -14,7 +14,7 @@
  * @property {string[]} [enum] select 选项
  * @property {Record<string,string>} [enumLabel] select 选项显示文本
  * @property {(v:any)=>boolean} [validate] 自定义校验
- * @property {string} [description] 三语说明（可选）
+ * @property {{l0:string,l1:string,l2:string}} [description] 三语说明（可选）
  */
 
 const TARGET_WEIGHT_OPTIONS = Object.freeze([
@@ -1089,6 +1089,11 @@ const OPTION_SCHEMA = [
       l0: "买料单轮花费上限（信用点，超限停机告警）",
       l1: "買料單輪花費上限（信用點，超限停機告警）",
       l2: "Material spend cap per run (credits)",
+    },
+    description: {
+      l0: " 信用点单轮上限（缺料则联动物品商店买齐再修，超限停机告警；不勾=缺料即停机）",
+      l1: " 信用點單輪上限（缺料則聯動物品商店買齊再修，超限停機告警；不勾=缺料即停機）",
+      l2: " credits/run cap (auto-buy materials to repair; stop if over cap; unchecked = stop on shortage)",
     },
   },
   // === P1 PriceForged 强化价格（装备页注入 tooltip + 总价 + Lv 预测） ===

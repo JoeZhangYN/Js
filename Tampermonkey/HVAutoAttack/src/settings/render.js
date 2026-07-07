@@ -57,18 +57,19 @@ export function readSingleOrderItemName(target) {
  * 不再手写 template string。老字段仍走 inline template。
  * @param {string} checkboxKey
  * @param {string} numberKey
- * @param {{l0:string,l1:string,l2:string}} unit 单位/补充说明
+ * @param {{l0:string,l1:string,l2:string}=} unit 单位/补充说明
  */
-function renderCheckboxPlusNumber(checkboxKey, numberKey, unit) {
+function renderCheckboxPlusNumber(checkboxKey, numberKey, unit = { l0: "", l1: "", l2: "" }) {
   const cb = runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: checkboxKey });
   const num = runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: numberKey });
   if (!cb || !num) return "";
   const checkedAttr = cb.defaultOn ? " checked data-default-on" : "";
+  const description = num.description || unit;
   return (
     `<div><input id="${cb.key}" type="checkbox"${checkedAttr}>` +
     `<label for="${cb.key}"><b><l0>${cb.label.l0}</l0><l1>${cb.label.l1}</l1><l2>${cb.label.l2}</l2></b></label>: ` +
     `<input class="hvAANumber" name="${num.key}" placeholder="${num.default}" type="text">` +
-    `<l0>${unit.l0}</l0><l1>${unit.l1}</l1><l2>${unit.l2}</l2></div>`
+    `<l0>${description.l0}</l0><l1>${description.l1}</l1><l2>${description.l2}</l2></div>`
   );
 }
 
@@ -224,11 +225,7 @@ export function renderRepairThresholdSchemaField() {
 function renderEquipmentSchemaFields() {
   return [
     renderRepairThresholdSchemaField(),
-    renderCheckboxPlusNumber("repairBuyMaterials", "repairCreditCap", {
-      l0: " 信用点单轮上限（缺料则联动物品商店买齐再修，超限停机告警；不勾=缺料即停机）",
-      l1: " 信用點單輪上限（缺料則聯動物品商店買齊再修，超限停機告警；不勾=缺料即停機）",
-      l2: " credits/run cap (auto-buy materials to repair; stop if over cap; unchecked = stop on shortage)",
-    }),
+    renderCheckboxPlusNumber("repairBuyMaterials", "repairCreditCap"),
     renderSchemaCheckboxField("forgeCostShow"),
     renderSchemaSelectField("equipPercentileMode"),
   ];

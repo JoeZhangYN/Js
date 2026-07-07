@@ -15,6 +15,15 @@ describe("runOptionSchema equipment fields", () => {
         (field) => field.key
       )
     ).toEqual(expect.arrayContaining(["repair", "repairValue", "repairBuyMaterials"]));
+    expect(
+      runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "repairCreditCap" })
+    ).toMatchObject({
+      key: "repairCreditCap",
+      kind: "number",
+      description: {
+        l2: " credits/run cap (auto-buy materials to repair; stop if over cap; unchecked = stop on shortage)",
+      },
+    });
   });
 
   it("exposes equipment view enhancement options through the schema entry", () => {
