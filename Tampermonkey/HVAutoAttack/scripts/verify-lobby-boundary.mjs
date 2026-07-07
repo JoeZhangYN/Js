@@ -103,12 +103,13 @@ function checkLobbyEntry() {
   if (!text.includes("OptionEvent.READ_FIELD")) {
     violations.push(`${rel(lobbyFile)} must read lobby option switches through option entry`);
   }
-  if (
-    !text.includes(
-      "runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback: false }) === true"
-    )
-  ) {
-    violations.push(`${rel(lobbyFile)} must fail closed for malformed lobby option switches`);
+  for (const required of [
+    "const value = runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback: false });",
+    'value === true || value === 1 || value === "1" || value === "true"',
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${rel(lobbyFile)} must preserve imported lobby option switch truthy values: ${required}`);
+    }
   }
   if (!text.includes("encounterOutcome?.claimed === true")) {
     violations.push(`${rel(lobbyFile)} must stop only for explicit encounter claims`);
@@ -136,8 +137,13 @@ function checkLobbyEntry() {
   ) {
     violations.push(`${rel(lobbyTestFile)} must cover unknown and null lobby events`);
   }
-  if (!lobbyTestText.includes("treats malformed lobby option switches as disabled")) {
-    violations.push(`${rel(lobbyTestFile)} must cover malformed lobby option switches`);
+  for (const required of [
+    "preserves imported numeric/string lobby option switches and disables false-like values",
+    "repair: 0",
+  ]) {
+    if (!lobbyTestText.includes(required)) {
+      violations.push(`${rel(lobbyTestFile)} must cover lobby option switch compatibility: ${required}`);
+    }
   }
   if (
     !lobbyTestText.includes(

@@ -34,7 +34,7 @@ export const RepairStateParseEvent = Object.freeze({
 
 const repairStateParseEventHandlers = Object.freeze({
   [EVENT_PARSE_PERSISTENT]: (event) => parsePersistentRepairState(event.pageDoc, event.dynjsText),
-  [EVENT_PARSE_ISEKAI]: (event) => parseIsekaiRepairState(event.pageText),
+  [EVENT_PARSE_ISEKAI]: (event) => parseArmoryRepairState(event.pageText, event.isIsekai !== false),
 });
 
 /**
@@ -104,7 +104,7 @@ function parsePersistentRepairState(pageDoc, dynjsText) {
  * @param {string} pageText `?s=Bazaar&ss=am&screen=repair` 页原文
  * @returns {RepairState}
  */
-function parseIsekaiRepairState(pageText) {
+function parseArmoryRepairState(pageText, isIsekai) {
   const text = pageText || "";
   const tokenMatch =
     text.match(/name=['"]postoken['"][^>]*value=['"]([^'"]+)['"]/) ||
@@ -140,7 +140,7 @@ function parseIsekaiRepairState(pageText) {
     if (materials.length === 0) continue; // 仅护符损坏 → 不纳入自动维修
     equips.push({ id: String(eid), conditionPct: null, materials });
   }
-  return { isIsekai: true, token, equips };
+  return { isIsekai, token, equips };
 }
 
 export function runRepairStateParser(event) {

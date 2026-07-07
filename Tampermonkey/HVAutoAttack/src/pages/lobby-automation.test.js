@@ -152,15 +152,15 @@ describe("runLobbyAutomation", () => {
     expect(mocks.runIdleArenaAutomation).not.toHaveBeenCalled();
   });
 
-  it("treats malformed lobby option switches as disabled", async () => {
+  it("preserves imported numeric/string lobby option switches and disables false-like values", async () => {
     setLobbyOption({ idleArena: "true", repair: 1 });
-    mocks.isAutomaticEncounterEnabled.mockReturnValue(false);
-
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
+    expect(mocks.runRepairAutomation).toHaveBeenCalledWith({ type: "start" });
 
-    expect(mocks.runEncounterAutomation).not.toHaveBeenCalled();
+    mocks.runRepairAutomation.mockClear();
+    setLobbyOption({ idleArena: "0", repair: 0 });
+    await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
     expect(mocks.runRepairAutomation).not.toHaveBeenCalled();
-    expect(mocks.runIdleArenaAutomation).not.toHaveBeenCalled();
   });
 
   it("reruns the lobby page-ready workflow when the daily rollover timer fires", async () => {

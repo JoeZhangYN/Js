@@ -89,7 +89,7 @@ if (!fs.existsSync(path.join(root, httpFailureTest))) {
   const httpFailureTestText = fs.readFileSync(path.join(root, httpFailureTest), "utf8");
   for (const required of [
     "routes isekai fetch-state HTTP failures to the failure callback",
-    "routes persistent dynjs HTTP failures to the failure callback",
+    "routes persistent Armory repair HTTP failures to the failure callback",
     "routes submit-repair HTTP failures to the failure callback",
     'kind: "networkError"',
     'kind: "httpStatus"',
@@ -98,6 +98,21 @@ if (!fs.existsSync(path.join(root, httpFailureTest))) {
       violations.push(`${httpFailureTest.replaceAll("\\", "/")} must lock ${required}`);
     }
   }
+}
+const ownerTestText = fs.existsSync(path.join(root, ownerTest))
+  ? fs.readFileSync(path.join(root, ownerTest), "utf8")
+  : "";
+for (const required of [
+  "makeRepairBackend 主世界 Armory repair authority",
+  'href: "?s=Bazaar&ss=am&screen=repair"',
+  'postoken=tokp&eqids[]=5',
+]) {
+  if (!ownerTestText.includes(required)) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must lock current main-world repair authority: ${required}`);
+  }
+}
+if (ownerText.includes("?s=Forge&ss=re") || ownerText.includes("select_item=")) {
+  violations.push(`${owner.replaceAll("\\", "/")} must not use retired persistent Forge repair authority`);
 }
 
 if (violations.length) {

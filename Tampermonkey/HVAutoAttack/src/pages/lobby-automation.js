@@ -35,7 +35,8 @@ function shouldStopForStamina() {
 }
 
 function isLobbyOptionEnabled(key) {
-  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback: false }) === true;
+  const value = runOptionAutomation({ type: OptionEvent.READ_FIELD, key, fallback: false });
+  return value === true || value === 1 || value === "1" || value === "true";
 }
 
 function runNextBattleAutomation() {

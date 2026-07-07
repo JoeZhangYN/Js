@@ -35,51 +35,33 @@ describe("repair backend entry", () => {
   });
 });
 
-describe("makeRepairBackend 主世界 fetchState（dynjs 选择器 + cache-buster 反退化）", () => {
-  it("用 script[src*=/dynjs/] 取 dynjs + URL 带 cache-buster；耐久/材料解析对", () => {
-    const pageDoc = doc(
-      `<div class="equiplist"><div onclick="set_forge_cost(1,'Requires: 2x Repair Kit')">x</div></div>` +
-        `<script src="https://hentaiverse.org/dynjs/equip/abc"></script>`
-    );
-    const dynjsText = `var x={"1":{"d":"Condition: 100 / 1000 (10%)"}};`;
-    const { post, calls } = fakePost([pageDoc, dynjsText]);
+describe("makeRepairBackend 主世界 Armory repair authority", () => {
+  it("uses Bazaar Armory repair page and postoken submit body", () => {
+    const pageText =
+      `<form id="equipform"><input name="postoken" value="tokp"></form>` +
+      `<script>var eqitems={"5":{"m":{"50000":2}}};var itemdata={"50000":{"n":"Repair Kit","c":0}};</script>`;
+    const { post, calls } = fakePost([pageText, ""]);
+    const backend = makeRepairBackend(false, post);
     let state;
-    makeRepairBackend(false, post).fetchState((s) => {
+    backend.fetchState((s) => {
       state = s;
     });
-
-    expect(calls[0].href).toBe("?s=Forge&ss=re");
-    // 第二段取 dynjs：命中 /dynjs/ 选择器 + 必带 cache-buster（防修后复验读旧耐久误触 stop-stuck）
-    expect(calls[1].href).toContain("/dynjs/equip/abc");
-    expect(calls[1].href).toMatch(/[?&]t=\d+/);
-    expect(state.equips).toEqual([
-      { id: "1", conditionPct: 10, materials: [{ matId: null, name: "Repair Kit", count: 2 }] },
-    ]);
-  });
-
-  it("无 /dynjs/ 命中 → 回退 #mainpane>script[src]", () => {
-    const pageDoc = doc(
-      `<div id="mainpane"><script src="https://hentaiverse.org/other/x.js"></script></div>`
-    );
-    const dynjsText = `var x={"2":{"d":"Condition: 200 / 1000 (20%)"}};`;
-    const { post, calls } = fakePost([pageDoc, dynjsText]);
-    let state;
-    makeRepairBackend(false, post).fetchState((s) => {
-      state = s;
+    expect(calls[0]).toMatchObject({ href: "?s=Bazaar&ss=am&screen=repair", parm: null, type: "text" });
+    expect(state).toMatchObject({
+      isIsekai: false,
+      token: "tokp",
+      equips: [
+        {
+          id: "5",
+          conditionPct: null,
+          materials: [{ matId: "50000", name: "Repair Kit", count: 2 }],
+        },
+      ],
     });
-    expect(calls[1].href).toContain("/other/x.js");
-    expect(state.equips).toEqual([{ id: "2", conditionPct: 20, materials: [] }]);
-  });
 
-  it("无任何 dynjs 脚本 → 空状态（只取 forge 页一次、不二次取、不崩）", () => {
-    const pageDoc = doc(`<div class="equiplist">no script here</div>`);
-    const { post, calls } = fakePost([pageDoc]);
-    let state;
-    makeRepairBackend(false, post).fetchState((s) => {
-      state = s;
-    });
-    expect(calls.length).toBe(1);
-    expect(state.equips).toEqual([]);
+    backend.submitRepair(["5"], () => {});
+    expect(calls[1].href).toBe("?s=Bazaar&ss=am&screen=repair");
+    expect(calls[1].parm).toBe("postoken=tokp&eqids[]=5");
   });
 });
 
