@@ -1114,9 +1114,10 @@ try {
   var is_hvut_shrine_equip_capacity_full = function (equip) {
     return Number.isFinite(equip.total) && Number.isFinite(equip.capacity) && equip.capacity > 0 && equip.total >= equip.capacity;
   };
-  var set_hvut_shrine_stop_error = function (state, message) {
+  var set_hvut_shrine_stop_error = function (state, message, evidence) {
     if (!state.error) {
       state.error = message;
+      state.errorEvidence = evidence || null;
       popup(message);
     }
     return state.error;
@@ -1126,11 +1127,11 @@ try {
       if (window.HVAA_shrineOfferReservation && window.HVAA_shrineOfferReservation.reserve) {
         return window.HVAA_shrineOfferReservation.reserve(state, item) !== false;
       }
-      record_hvut_shrine_offer_failure('offerReservationBridgeMissing', { action: 'reserve', item: item?.name || item?.log || item?.iid });
+      var evidence = record_hvut_shrine_offer_failure('offerReservationBridgeMissing', { action: 'reserve', item: item?.name || item?.log || item?.iid });
     } catch (error) {
-      record_hvut_shrine_offer_failure('offerReservationBridgeReserve', { item: item?.name || item?.log || item?.iid, error: error?.message || String(error) });
+      var evidence = record_hvut_shrine_offer_failure('offerReservationBridgeReserve', { item: item?.name || item?.log || item?.iid, error: error?.message || String(error) });
     }
-    set_hvut_shrine_stop_error(state, 'Shrine offer reservation failed.');
+    set_hvut_shrine_stop_error(state, 'Shrine offer reservation failed.', evidence);
     return false;
   };
   var rollback_hvut_shrine_offer_reservation = function (state, item) {
@@ -1138,11 +1139,11 @@ try {
       if (window.HVAA_shrineOfferReservation && window.HVAA_shrineOfferReservation.rollback) {
         return window.HVAA_shrineOfferReservation.rollback(state, item) !== false;
       }
-      record_hvut_shrine_offer_failure('offerReservationBridgeMissing', { action: 'rollback', item: item?.name || item?.log || item?.iid });
+      var evidence = record_hvut_shrine_offer_failure('offerReservationBridgeMissing', { action: 'rollback', item: item?.name || item?.log || item?.iid });
     } catch (error) {
-      record_hvut_shrine_offer_failure('offerReservationBridgeRollback', { item: item?.name || item?.log || item?.iid, error: error?.message || String(error) });
+      var evidence = record_hvut_shrine_offer_failure('offerReservationBridgeRollback', { item: item?.name || item?.log || item?.iid, error: error?.message || String(error) });
     }
-    set_hvut_shrine_stop_error(state, 'Shrine offer reservation rollback failed.');
+    set_hvut_shrine_stop_error(state, 'Shrine offer reservation rollback failed.', evidence);
     return false;
   };
   var classify_hvut_shrine_offer_message = function (msg) {
@@ -7502,8 +7503,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       try {
         html = await $ajax.fetch('?s=Bazaar&ss=ss', `select_item=${iid}&select_reward_type=${reward_type}&select_reward_slot=${reward_slot}`);
       } catch (error) {
-        record_hvut_shrine_offer_failure('offerLoadFetch', { iid: iid, reward_type: reward_type, reward_slot: reward_slot, error: error?.message || String(error) });
-        set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');
+        const evidence = record_hvut_shrine_offer_failure('offerLoadFetch', { iid: iid, reward_type: reward_type, reward_slot: reward_slot, error: error?.message || String(error) });
+        set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.', evidence);
         return false;
       }
       const doc = $doc(html);
@@ -7543,13 +7544,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       const equips = [];
       const offerResponse = classify_hvut_shrine_offer_response(doc, 'offerEmptyResponse');
       if (offerResponse.kind === 'stop') {
-        set_hvut_shrine_stop_error(_ss, offerResponse.message);
+        set_hvut_shrine_stop_error(_ss, offerResponse.message, offerResponse.evidence);
         return false;
       }
 
       const offerSummary = summarize_hvut_shrine_offer_messages(offerResponse.messages);
       if (offerSummary.kind === 'stop') {
-        set_hvut_shrine_stop_error(_ss, offerSummary.message);
+        set_hvut_shrine_stop_error(_ss, offerSummary.message, offerSummary.evidence);
         return false;
       }
       offerSummary.vouchers.forEach((msg) => {
@@ -7576,7 +7577,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
           ? 'Inventory Capacity: unavailable'
           : `Inventory Capacity: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, Sold: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, Salvaged: ${_ss.equip.salvaged}` : '');
         if (is_hvut_shrine_equip_capacity_full(_ss.equip)) {
-          set_hvut_shrine_stop_error(_ss, '你的装备库存已满');
+          const evidence = record_hvut_shrine_offer_failure('offerEquipmentCapacityFull', { total: _ss.equip.total, capacity: _ss.equip.capacity });
+          set_hvut_shrine_stop_error(_ss, '你的装备库存已满', evidence);
         }
         equips.forEach((equip) => {
           _ss.list.equip(item, equip);
@@ -13726,8 +13728,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     try {
       html = await $ajax.fetch('?s=Bazaar&ss=ss', `select_item=${iid}&select_reward_type=${select_reward_type}&select_reward_slot=${select_reward_slot}`);
     } catch (error) {
-      record_hvut_shrine_offer_failure('legacyOfferFetch', { iid: iid, select_reward_type: select_reward_type, select_reward_slot: select_reward_slot, error: error?.message || String(error) });
-      set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');
+      const evidence = record_hvut_shrine_offer_failure('legacyOfferFetch', { iid: iid, select_reward_type: select_reward_type, select_reward_slot: select_reward_slot, error: error?.message || String(error) });
+      set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.', evidence);
       return false;
     }
     const doc = $doc(html);
@@ -13735,13 +13737,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     const rewards = [];
     const offerResponse = classify_hvut_shrine_offer_response(doc, 'legacyOfferEmptyResponse');
     if (offerResponse.kind === 'stop') {
-      set_hvut_shrine_stop_error(_ss, offerResponse.message);
+      set_hvut_shrine_stop_error(_ss, offerResponse.message, offerResponse.evidence);
       return false;
     }
 
     const offerSummary = summarize_hvut_shrine_offer_messages(offerResponse.messages);
     if (offerSummary.kind === 'stop') {
-      set_hvut_shrine_stop_error(_ss, offerSummary.message);
+      set_hvut_shrine_stop_error(_ss, offerSummary.message, offerSummary.evidence);
       return false;
     }
     offerSummary.vouchers.forEach((msg) => {
@@ -13790,7 +13792,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
           ? '装备库存量: unavailable'
           : `装备库存量: ${_ss.equip.total} / ${_ss.equip.capacity}` + (_ss.equip.sold ? `, 已出售: ${_ss.equip.sold}` : '') + (_ss.equip.salvaged ? `, 已分解: ${_ss.equip.salvaged}` : '');
         if (is_hvut_shrine_equip_capacity_full(_ss.equip)) {
-          set_hvut_shrine_stop_error(_ss, '你的装备库存已满');
+          const evidence = record_hvut_shrine_offer_failure('legacyOfferEquipmentCapacityFull', { total: _ss.equip.total, capacity: _ss.equip.capacity });
+          set_hvut_shrine_stop_error(_ss, '你的装备库存已满', evidence);
         }
       }
     });
