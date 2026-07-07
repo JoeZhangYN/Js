@@ -38,23 +38,15 @@ for (const [label, body, stage] of [
   ["legacy db search", legacySearch, "legacyDbSearchReadFailed"],
 ]) {
   for (const required of [
-    "const searchState = { settled: false };",
-    `const fail = create_hvut_mooglemail_db_search_failure('${stage}', season, searchState, resolve);`,
-    "conn.tx.onerror = fail;",
-    "conn.tx.onabort = fail;",
-    "const request = conn.os.openCursor();",
-    "request.onsuccess = function (e) {",
-    "if (searchState.settled) {",
-    "searchState.settled = true;",
-    "resolve(results);",
-    "request.onerror = fail;",
+    "return run_hvut_mooglemail_db_search(",
+    `failureStage: '${stage}',`,
   ]) {
     requirePart(label, body, required);
   }
-  if ((body.match(/openCursor\(\)/g) || []).length !== 1) {
-    violations.push(`${target} ${label} must use exactly one cursor request`);
-  }
 }
+
+requirePart("modern db search", modernSearch, "getMail: _mm.mail.get,");
+requirePart("legacy db search", legacySearch, "getMail: _mm.mail_get,");
 
 for (const required of [
   "var create_hvut_mooglemail_db_search_failure = function (stage, season, state, resolve) {",
@@ -62,8 +54,36 @@ for (const required of [
   "state.settled = true;",
   "record_hvut_mooglemail_action_failure(stage, { season: season, error: event?.target?.error?.message || 'search transaction error' });",
   "resolve([]);",
+  "var run_hvut_mooglemail_db_search = function (query, context) {",
+  "const { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max } = query;",
+  "const conn = context.conn('readonly', season);",
+  "const fail = create_hvut_mooglemail_db_search_failure(context.failureStage, season, searchState, resolve);",
+  "const request = conn.os.openCursor();",
+  "const mail = context.getMail(db.mid, season);",
+  "mail.db = db;",
+  "const exclude = filter && filter !== db.filter",
+  "request.onerror = fail;",
 ]) {
   if (!text.includes(required)) violations.push(`${target} must define shared MoogleMail DB search failure helper with ${required}`);
+}
+
+for (const [label, body] of [
+  ["modern db search", modernSearch],
+  ["legacy db search", legacySearch],
+]) {
+  for (const forbidden of [
+    "const results = [];",
+    "const searchState = { settled: false };",
+    "create_hvut_mooglemail_db_search_failure(",
+    "conn.os.openCursor()",
+    "request.onsuccess = function",
+    "const exclude = filter && filter !== db.filter",
+    "cursor.continue();",
+  ]) {
+    if (body.includes(forbidden)) {
+      violations.push(`${target} ${label} must delegate cursor/query evaluation to run_hvut_mooglemail_db_search`);
+    }
+  }
 }
 
 for (const required of [

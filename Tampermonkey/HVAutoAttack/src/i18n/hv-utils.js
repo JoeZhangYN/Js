@@ -772,6 +772,44 @@ try {
       resolve([]);
     };
   };
+  var run_hvut_mooglemail_db_search = function (query, context) {
+    const { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max } = query;
+    const results = [];
+    return new Promise((resolve) => {
+      const conn = context.conn('readonly', season);
+      const searchState = { settled: false };
+      const fail = create_hvut_mooglemail_db_search_failure(context.failureStage, season, searchState, resolve);
+      conn.tx.onerror = fail;
+      conn.tx.onabort = fail;
+      const request = conn.os.openCursor();
+      request.onsuccess = function (e) {
+        if (searchState.settled) {
+          return;
+        }
+        const cursor = e.target.result;
+        if (cursor) {
+          const db = cursor.value;
+          const mail = context.getMail(db.mid, season);
+          mail.db = db;
+
+          const exclude = filter && filter !== db.filter
+              || name && !db.user.toLowerCase().includes(name)
+              || subject && !db.subject.toLowerCase().includes(subject)
+              || text && !db.text.toLowerCase().includes(text)
+              || cod && cod !== db.cod || cod_min && (!db.cod || cod_min > db.cod) || cod_max && cod_max < db.cod
+              || attach && !(db.attach?.some((e) => { if (eid) { return e.t === 'e' && e.e === eid; } else { const n = e.n.toLowerCase(); return attach.every((a) => n.includes(a)); } }));
+          if (!exclude) {
+            results.push(mail);
+          }
+          cursor.continue();
+        } else {
+          searchState.settled = true;
+          resolve(results);
+        }
+      };
+      request.onerror = fail;
+    });
+  };
   var stop_hvut_mooglemail_send_failure = async function (stage, detail, message, discardStage) {
     record_hvut_mooglemail_send_failure(stage, detail);
     if (message) {
@@ -10683,41 +10721,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         return { db, tx, os };
       },
       search: function (param) {
-        const { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max } = param;
-        const results = [];
-        return new Promise((resolve) => {
-          const conn = _mm.db.conn('readonly', season);
-          const searchState = { settled: false };
-          const fail = create_hvut_mooglemail_db_search_failure('dbSearchReadFailed', season, searchState, resolve);
-          conn.tx.onerror = fail;
-          conn.tx.onabort = fail;
-          const request = conn.os.openCursor();
-          request.onsuccess = function (e) {
-            if (searchState.settled) {
-              return;
-            }
-            const cursor = e.target.result;
-            if (cursor) {
-              const db = cursor.value;
-              const mail = _mm.mail.get(db.mid, season);
-              mail.db = db;
-
-              const exclude = filter && filter !== db.filter
-                  || name && !db.user.toLowerCase().includes(name)
-                  || subject && !db.subject.toLowerCase().includes(subject)
-                  || text && !db.text.toLowerCase().includes(text)
-                  || cod && cod !== db.cod || cod_min && (!db.cod || cod_min > db.cod) || cod_max && cod_max < db.cod
-                  || attach && !(db.attach?.some((e) => { if (eid) { return e.t === 'e' && e.e === eid; } else { const n = e.n.toLowerCase(); return attach.every((a) => n.includes(a)); } }));
-              if (!exclude) {
-                results.push(mail);
-              }
-              cursor.continue();
-            } else {
-              searchState.settled = true;
-              resolve(results);
-            }
-          };
-          request.onerror = fail;
+        return run_hvut_mooglemail_db_search(param, {
+          conn: _mm.db.conn,
+          getMail: _mm.mail.get,
+          failureStage: 'dbSearchReadFailed',
         });
       },
       export: function () {
@@ -16633,41 +16640,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         return { db, tx, os };
       },
       search: function (query) {
-        const { season, filter, name, subject, text, attach, eid, cod, cod_min, cod_max } = query;
-        const results = [];
-        return new Promise((resolve) => {
-          const conn = _mm.db.conn('readonly', season);
-          const searchState = { settled: false };
-          const fail = create_hvut_mooglemail_db_search_failure('legacyDbSearchReadFailed', season, searchState, resolve);
-          conn.tx.onerror = fail;
-          conn.tx.onabort = fail;
-          const request = conn.os.openCursor();
-          request.onsuccess = function (e) {
-            if (searchState.settled) {
-              return;
-            }
-            const cursor = e.target.result;
-            if (cursor) {
-              const db = cursor.value;
-              const mail = _mm.mail_get(db.mid, season);
-              mail.db = db;
-
-              const exclude = filter && filter !== db.filter
-                  || name && !db.user.toLowerCase().includes(name)
-                  || subject && !db.subject.toLowerCase().includes(subject)
-                  || text && !db.text.toLowerCase().includes(text)
-                  || cod && cod !== db.cod || cod_min && (!db.cod || cod_min > db.cod) || cod_max && cod_max < db.cod
-                  || attach && !(db.attach?.some((e) => { if (eid) { return e.t === 'e' && e.e === eid; } else { const n = e.n.toLowerCase(); return attach.every((a) => n.includes(a)); } }));
-              if (!exclude) {
-                results.push(mail);
-              }
-              cursor.continue();
-            } else {
-              searchState.settled = true;
-              resolve(results);
-            }
-          };
-          request.onerror = fail;
+        return run_hvut_mooglemail_db_search(query, {
+          conn: _mm.db.conn,
+          getMail: _mm.mail_get,
+          failureStage: 'legacyDbSearchReadFailed',
         });
       },
       export: function () {
