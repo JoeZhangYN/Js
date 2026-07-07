@@ -37,6 +37,8 @@ for (const required of [
   "var evidence = create_hvut_item_shop_parse_evidence(reason, detail);",
   "return { kind: 'rejected', reason: reason, message: message || (IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.'), evidence: evidence };",
   "var run_hvut_item_shop_buy = async function (items, itemShop) {",
+  "var create_hvut_item_shop_url = function () {",
+  "$ajax.fetch(create_hvut_item_shop_url()",
   "return reject_hvut_item_shop_buy('emptyRequest'",
   "return reject_hvut_item_shop_buy('shopLoadRejected'",
   "return reject_hvut_item_shop_buy('shopLoadRequest'",
@@ -105,6 +107,12 @@ if (buyBody.includes("const error = get_message(doc);")) {
 }
 if (buyBody.includes("return classify_hvut_item_shop_buy_response(doc);")) {
   violations.push(`${target} $item.buy must pass item identity into classify_hvut_item_shop_buy_response`);
+}
+if (buyBody.includes("$ajax.fetch('?s=Bazaar&ss=is'")) {
+  violations.push(`${target} $item.buy must route Item Shop authority through create_hvut_item_shop_url`);
+}
+if (loadShopBody.includes("$ajax.fetch('?s=Bazaar&ss=is'")) {
+  violations.push(`${target} $item.load_shop must route Item Shop authority through create_hvut_item_shop_url`);
 }
 for (const forbidden of [
   "try {\n      if ((await $item.load_shop()) === false) {",

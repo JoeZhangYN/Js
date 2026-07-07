@@ -500,7 +500,7 @@ try {
     async function buy(item) {
       const id = item.id;
       const count = item.count;
-      const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${itemShop.storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
+      const html = await $ajax.fetch(create_hvut_item_shop_url(), `storetoken=${itemShop.storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
       const doc = $doc(html);
       return classify_hvut_item_shop_buy_response(doc, 'shopBuyResponse', { name: item.name, id: id, count: count });
     }
@@ -1333,6 +1333,9 @@ try {
   var create_hvut_bazaar_section_url = function (ss) {
     return `/?s=Bazaar&ss=${ss}`;
   };
+  var create_hvut_item_shop_url = function () {
+    return '?s=Bazaar&ss=is';
+  };
   var create_hvut_armory_screen_url = function (screen, context) {
     var filter = Object.prototype.hasOwnProperty.call(context || {}, 'filter') ? `&filter=${context?.filter || ''}` : '';
     var eqids = context?.eqid ? `&eqids=${context.eqid}` : '';
@@ -1594,7 +1597,7 @@ const $item = {
     }
   },
   load_shop: async function () {
-    const html = await $ajax.fetch('?s=Bazaar&ss=is');
+    const html = await $ajax.fetch(create_hvut_item_shop_url());
     const doc = $doc(html);
     $item.storetoken = $id('shopform', doc)?.elements?.storetoken?.value;
     if (!$item.storetoken) {
@@ -6351,7 +6354,7 @@ _bottom.show_credits = async function () {
     _bottom.node.credits.textContent = $id('networth').textContent;
     $id('networth').remove();
   } else {
-    const html = await $ajax.fetch('?s=Bazaar&ss=is');
+    const html = await $ajax.fetch(create_hvut_item_shop_url());
     const doc = $doc(html);
     _bottom.node.credits.textContent = $id('networth', doc).textContent;
   }
@@ -12162,7 +12165,7 @@ if ($config.settings.showCredits === 2) {
       _bottom.node.credits.textContent = $id('networth').textContent;
       $id('networth').remove();
     } else {
-      const html = await $ajax.fetch('?s=Bazaar&ss=is');
+      const html = await $ajax.fetch(create_hvut_item_shop_url());
       const doc = $doc(html);
       _bottom.node.credits.textContent = $id('networth', doc).textContent;
     }
