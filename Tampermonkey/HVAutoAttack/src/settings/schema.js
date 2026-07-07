@@ -621,6 +621,40 @@ const OPTION_SCHEMA = [
       l2: "Record each battle separately",
     },
   },
+  // === 掉落监测：设置页只派生监控开关/最低品质；运行时 authority 在 battle-monitor-runtime/drop-monitor ===
+  {
+    key: "dropMonitor",
+    kind: "checkbox",
+    group: "Drop",
+    default: false,
+    label: {
+      l0: "掉落监测",
+      l1: "掉落監測",
+      l2: "Drops Tracking",
+    },
+  },
+  {
+    key: "dropQuality",
+    kind: "select",
+    group: "Drop",
+    default: 0,
+    enum: ["0", "1", "2", "3", "4", "5", "6", "7"],
+    enumLabel: {
+      0: "Crude",
+      1: "Fair",
+      2: "Average",
+      3: "Superior",
+      4: "Exquisite",
+      5: "Magnificent",
+      6: "Legendary",
+      7: "Peerless",
+    },
+    label: {
+      l0: "记录装备的最低品质",
+      l1: "記錄裝備的最低品質",
+      l2: "Minimum drop quality",
+    },
+  },
   // === API 点击协议延迟：运行时 authority 在 battle-api-bridge.js ===
   {
     key: "delay",

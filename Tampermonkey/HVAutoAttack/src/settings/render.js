@@ -242,6 +242,17 @@ function renderRiddleTimingSchemaFields() {
   ];
 }
 
+function renderDropMonitorTabSchemaField() {
+  return renderSchemaCheckboxField("dropMonitor", "", { bold: false }).replace(
+    /^<div>|<\/div>$/g,
+    ""
+  );
+}
+
+function renderDropMonitorSchemaFields() {
+  return [renderSchemaSelectField("dropQuality")];
+}
+
 function renderCriticalBuffSchemaFields() {
   return [
     renderCheckboxPlusNumber("pauseOnCriticalBuffExpire", "criticalBuffMinTurns", {
@@ -688,7 +699,7 @@ export function optionBox() {
     '  <span name="Infusion"><input id="infusionSwitch" type="checkbox"><l0>魔药</l0><l1>魔藥</l1><l2>Infusion</l2></span>',
     '  <span name="Alarm"><l0>警报</l0><l1>警報</l1><l2>Alarm</l2></span>',
     '  <span name="Rule"><l0>攻击规则</l0><l1>攻擊規則</l1><l2>Attack Rule</l2></span>',
-    '  <span name="Drop"><input id="dropMonitor" type="checkbox"><l0>掉落监测</l0><l1>掉落監測</l1><l2>Drops Tracking</l2></span>',
+    `  <span name="Drop">${renderDropMonitorTabSchemaField()}</span>`,
     '  <span name="Usage"><input id="recordUsage" type="checkbox"><l0>数据记录</l0><l1>數據記錄</l1><l2>Usage Tracking</l2></span>',
     '  <span name="Riddle"><l0>小马验证</l0><l1>小馬驗證</l1><l2>Riddle ML</l2></span>',
     '  <span name="About"><l0>关于本脚本</l0><l1>關於本腳本</l1><l2>About This</l2></span>',
@@ -886,7 +897,7 @@ export function optionBox() {
     '  <div>PS. <l0>如果你对各Buff权重有特别见解，请务必</l0><l1>如果你對各Buff權重有特別見解，請務必</l1><l2>If you have any suggestions, please </l2><a class="hvAAGoto" name="hvAATab-Feedback"><l0>告诉我</l0><l1>告訴我</l1><l2>let me know</l2></a>.</div></div>',
     '<div class="hvAATab hvAACenter" id="hvAATab-Drop">',
     '  <span class="hvAATitle"><l0>掉落监测</l0><l1>掉落監測</l1><l2>Drops Tracking</l2></span><button class="reDropMonitor"><l01>重置</l01><l2>Reset</l2></button>',
-    '  <div><l0>记录装备的最低品质</l0><l1>記錄裝備的最低品質</l1><l2>Minimum drop quality</l2>: <select name="dropQuality"><option value="0">Crude</option><option value="1">Fair</option><option value="2">Average</option><option value="3">Superior</option><option value="4">Exquisite</option><option value="5">Magnificent</option><option value="6">Legendary</option><option value="7">Peerless</option></select></div>',
+    ...renderDropMonitorSchemaFields(),
     "  <table></table></div>",
     '<div class="hvAATab hvAACenter" id="hvAATab-Usage">',
     '  <span class="hvAATitle"><l0>数据记录</l0><l1>數據記錄</l1><l2>Usage Tracking</l2></span><button class="reRecordUsage"><l01>重置</l01><l2>Reset</l2></button>',
