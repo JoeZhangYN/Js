@@ -29,6 +29,7 @@ import {
 import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
+import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -265,6 +266,20 @@ function renderChannelSkillSwitchTabSchemaField() {
 
 function renderBattleTabSwitchSchemaField(key) {
   return renderSchemaCheckboxField(key, "", { bold: false }).replace(/^<div>|<\/div>$/g, "");
+}
+
+export function renderBuffSkillCheckboxes(idPrefix) {
+  return Array.from(BUFF_SKILL_LIB.entries())
+    .map(
+      ([key, skill]) =>
+        `<input id="${idPrefix}_${key}" type="checkbox"><label for="${idPrefix}_${key}">${skill.name}</label>`
+    )
+    .reduce((rows, item, index) => {
+      const rowIndex = index < 4 ? 0 : 1;
+      rows[rowIndex] = `${rows[rowIndex] || ""}${item}`;
+      return rows;
+    }, [])
+    .join("<br>");
 }
 
 function renderDropMonitorSchemaFields() {
@@ -824,8 +839,7 @@ export function optionBox() {
     "  <l0><b>获得Channel时</b>（此时1点MP施法与150%伤害）</l0><l1><b>獲得Channel時</b>（此時1點MP施法與150%傷害）</l1><l2><b>During Channeling effect</b> (1 mp spell cost and 150% spell damage)</l2>:",
     "  <div><b><l0>先施放Channel技能</l0><l1>先施放Channel技能</l1><l2>First cast</l2></b>: <br>",
     '    <l0>注意: 此处的施放顺序与</l0><l1>注意: 此處的施放順序与</l1><l2>Note: The cast order here is the same as in</l2><a class="hvAAGoto" name="hvAATab-Buff">BUFF<l01>技能</l01><l2> Spells</l2></a><l0>里的相同</l0><l1>裡的相同</l1><br>',
-    '    <input id="channelSkill_Pr" type="checkbox"><label for="channelSkill_Pr">Protection</label><input id="channelSkill_SL" type="checkbox"><label for="channelSkill_SL">Spark of Life</label><input id="channelSkill_SS" type="checkbox"><label for="channelSkill_SS">Spirit Shield</label><input id="channelSkill_Ha" type="checkbox"><label for="channelSkill_Ha">Haste</label><br>',
-    '    <input id="channelSkill_AF" type="checkbox"><label for="channelSkill_AF">Arcane Focus</label><input id="channelSkill_He" type="checkbox"><label for="channelSkill_He">Heartseeker</label><input id="channelSkill_Re" type="checkbox"><label for="channelSkill_Re">Regen</label><input id="channelSkill_SV" type="checkbox"><label for="channelSkill_SV">Shadow Veil</label><input id="channelSkill_Ab" type="checkbox"><label for="channelSkill_Ab">Absorb</label></div>',
+    `    ${renderBuffSkillCheckboxes("channelSkill")}</div>`,
     '  <div><input id="channelSkill2" type="checkbox"><label for="channelSkill2"><l0><b>再使用技能</b></label>: ',
     '    <div class="channelSkill2Order"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: <input name="channelSkill2OrderName" style="width:80%;" type="text" disabled="true"><input name="channelSkill2OrderValue" style="width:80%;" type="hidden" disabled="true"><br>',
     '    <input id="channelSkill2Order_Cu" value="Cu,311" type="checkbox"><label for="channelSkill2Order_Cu">Cure</label><input id="channelSkill2Order_FC" value="FC,313" type="checkbox"><label for="channelSkill2Order_FC">Full-Cure</label><input id="channelSkill2Order_Pr" value="Pr,411" type="checkbox"><label for="channelSkill2Order_Pr">Protection</label><input id="channelSkill2Order_SL" value="SL,422" type="checkbox"><label for="channelSkill2Order_SL">Spark of Life</label><input id="channelSkill2Order_SS" value="SS,423" type="checkbox"><label for="channelSkill2Order_SS">Spirit Shield</label><input id="channelSkill2Order_Ha" value="Ha,412" type="checkbox"><label for="channelSkill2Order_Ha">Haste</label><br>',
@@ -834,8 +848,7 @@ export function optionBox() {
     '<div class="hvAATab" id="hvAATab-Buff">{{buffSkillCondition}}',
     '  <div class="buffSkillOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: ',
     '    <input name="buffSkillOrderValue" style="width:80%;" type="text" disabled="true"><br>',
-    '    <input id="buffSkillOrder_Pr" type="checkbox"><label for="buffSkillOrder_Pr">Protection</label><input id="buffSkillOrder_SL" type="checkbox"><label for="buffSkillOrder_SL">Spark of Life</label><input id="buffSkillOrder_SS" type="checkbox"><label for="buffSkillOrder_SS">Spirit Shield</label><input id="buffSkillOrder_Ha" type="checkbox"><label for="buffSkillOrder_Ha">Haste</label><br>',
-    '    <input id="buffSkillOrder_AF" type="checkbox"><label for="buffSkillOrder_AF">Arcane Focus</label><input id="buffSkillOrder_He" type="checkbox"><label for="buffSkillOrder_He">Heartseeker</label><input id="buffSkillOrder_Re" type="checkbox"><label for="buffSkillOrder_Re">Regen</label><input id="buffSkillOrder_SV" type="checkbox"><label for="buffSkillOrder_SV">Shadow Veil</label><input id="buffSkillOrder_Ab" type="checkbox"><label for="buffSkillOrder_Ab">Absorb</label></div>',
+    `    ${renderBuffSkillCheckboxes("buffSkillOrder")}</div>`,
     "  <div><l0>Buff不存在就施放的技能</l0><l1>Buff不存在就施放的技能</l1><l2>Cast spells if the buff is not present</l2>: ",
     '    <div><input id="buffSkill_HD" type="checkbox"><label for="buffSkill_HD">Health Draught</label>{{buffSkillHDCondition}}</div>',
     '    <div><input id="buffSkill_MD" type="checkbox"><label for="buffSkill_MD">Mana Draught</label>{{buffSkillMDCondition}}</div>',

@@ -4,6 +4,7 @@ import {
   readCustomizeHoverTarget,
   readSelectableReportTableTarget,
   readSingleOrderItemName,
+  renderBuffSkillCheckboxes,
   shouldHydrateSettingsInput,
 } from "./render.js";
 
@@ -48,5 +49,16 @@ describe("settings input class classification", () => {
     expect(readSelectableReportTableTarget(cell)).toBe(table);
     expect(readSelectableReportTableTarget({ tagName: "DIV", parentNode: null })).toBeNull();
     expect(readSelectableReportTableTarget(null)).toBeNull();
+  });
+});
+
+describe("renderBuffSkillCheckboxes", () => {
+  it("derives support buff skill checkboxes from the shared buff registry", () => {
+    const html = renderBuffSkillCheckboxes("channelSkill");
+
+    expect(html).toContain('id="channelSkill_Pr"');
+    expect(html).toContain('for="channelSkill_SL">Spark of Life</label>');
+    expect(html).toContain('id="channelSkill_Ab"');
+    expect(html).not.toContain("buffSkillOrder_");
   });
 });
