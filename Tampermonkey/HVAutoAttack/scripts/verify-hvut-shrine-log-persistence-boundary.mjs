@@ -40,6 +40,8 @@ const legacyRequest =
   /_ss\.request = async function \(iid, select_reward_type, select_reward_slot\) \{[\s\S]*?\n  \};\n\n  _ss\.toggle_results/.exec(text)?.[0] || "";
 const localClassifier =
   /var classify_hvut_shrine_offer_message = function \(msg\) \{[\s\S]*?\n  \};\n  var reloadCurrentPage/.exec(text)?.[0] || "";
+const localClassifierBridge =
+  /var run_hvut_shrine_offer_message_classifier_bridge = function \(msg\) \{[\s\S]*?\n  \};\n  var classify_hvut_shrine_offer_message/.exec(text)?.[0] || "";
 const localReservation =
   /var reserve_hvut_shrine_offer = function \(state, item\) \{[\s\S]*?\n  \};\n  var rollback_hvut_shrine_offer_reservation/.exec(text)?.[0] || "";
 const localReservationRollback =
@@ -53,6 +55,7 @@ if (!logSave) violations.push(`${target} must keep Shrine log save entry visible
 if (!legacyOffer) violations.push(`${target} must keep legacy Shrine offer entry visible`);
 if (!legacyRequest) violations.push(`${target} must keep legacy Shrine request entry visible`);
 if (!localClassifier) violations.push(`${target} must keep local Shrine classifier bridge visible`);
+if (!localClassifierBridge) violations.push(`${target} must keep local Shrine classifier command visible`);
 if (!localReservation) violations.push(`${target} must keep local Shrine reservation bridge visible`);
 if (!localReservationRollback) violations.push(`${target} must keep local Shrine reservation rollback bridge visible`);
 if (!localReservationBridge) violations.push(`${target} must keep local Shrine reservation bridge command visible`);
@@ -148,6 +151,7 @@ for (const required of [
   "var run_hvut_shrine_offer_reservation_bridge = function (action, state, item) {",
   "var set_hvut_shrine_stop_error = function (state, message, evidence) {",
   "state.errorEvidence = evidence || null;",
+  "var run_hvut_shrine_offer_message_classifier_bridge = function (msg) {",
   "var classify_hvut_shrine_offer_message = function (msg) {",
   "var classify_hvut_shrine_offer_response = function (doc, stage) {",
   "var summarize_hvut_shrine_offer_messages = function (messages) {",
@@ -159,10 +163,13 @@ for (const required of [
   "record_hvut_shrine_offer_failure('offerReservationBridgeMissing'",
   "var stage = action === 'rollback' ? 'offerReservationBridgeRollback' : 'offerReservationBridgeReserve';",
   "record_hvut_shrine_offer_failure(stage, { action: action, item: itemIdentity",
-  "window.HVAA_shrineOfferMessage.classify(msg)",
+  "var bridge = typeof window !== 'undefined' ? window.HVAA_shrineOfferMessage : undefined;",
+  "return { ok: true, decision: bridge.classify(msg) };",
   "record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing'",
-  "var evidence = record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing', { message: msg });",
-  "return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.', evidence: evidence };",
+  "record_hvut_shrine_offer_failure('offerMessageClassifierBridgeFailed'",
+  "var result = run_hvut_shrine_offer_message_classifier_bridge(msg);",
+  "if (result.ok) return result.decision;",
+  "return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.', evidence: result.evidence };",
   "record_hvut_shrine_offer_failure('unknownOfferMessage'",
   "var evidence = record_hvut_shrine_offer_failure(stage, { reason: 'emptyMessagebox' });",
   "return { kind: 'stop', reason: 'emptyMessagebox', message: 'Shrine offer response unavailable.', messages: [], evidence: evidence };",
@@ -186,9 +193,10 @@ for (const required of [
 for (const forbidden of [
   "window.HVAA_shrineOfferReservation.reserve(state, item)",
   "window.HVAA_shrineOfferReservation.rollback(state, item)",
+  "window.HVAA_shrineOfferMessage.classify(msg)",
 ]) {
   if (text.includes(forbidden)) {
-    violations.push(`${target} must route Shrine offer reservation bridge through run_hvut_shrine_offer_reservation_bridge`);
+    violations.push(`${target} must route Shrine offer bridges through local command entries`);
   }
 }
 

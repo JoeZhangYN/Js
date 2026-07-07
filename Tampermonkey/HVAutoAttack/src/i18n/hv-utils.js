@@ -1678,12 +1678,21 @@ try {
     set_hvut_shrine_stop_error(state, 'Shrine offer reservation rollback failed.', result.evidence);
     return false;
   };
-  var classify_hvut_shrine_offer_message = function (msg) {
-    if (window.HVAA_shrineOfferMessage && window.HVAA_shrineOfferMessage.classify) {
-      return window.HVAA_shrineOfferMessage.classify(msg);
+  var run_hvut_shrine_offer_message_classifier_bridge = function (msg) {
+    var bridge = typeof window !== 'undefined' ? window.HVAA_shrineOfferMessage : undefined;
+    if (!bridge || typeof bridge.classify !== 'function') {
+      return { ok: false, evidence: record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing', { message: msg }) };
     }
-    var evidence = record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing', { message: msg });
-    return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.', evidence: evidence };
+    try {
+      return { ok: true, decision: bridge.classify(msg) };
+    } catch (error) {
+      return { ok: false, evidence: record_hvut_shrine_offer_failure('offerMessageClassifierBridgeFailed', { message: msg, error: error?.message || String(error) }) };
+    }
+  };
+  var classify_hvut_shrine_offer_message = function (msg) {
+    var result = run_hvut_shrine_offer_message_classifier_bridge(msg);
+    if (result.ok) return result.decision;
+    return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.', evidence: result.evidence };
   };
   var classify_hvut_shrine_offer_response = function (doc, stage) {
     var messages = get_message(doc, true);
