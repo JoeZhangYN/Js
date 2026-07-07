@@ -1,7 +1,7 @@
 // file-size-gate: exempt schema 声明式 SOT-设计上渐增至 80+ 字段（待办 C 全量迁入）
 // Option schema 单 SOT（Phase 5 chunk A 引入；现存 ~80 字段渐进迁入，新字段直接进 schema）。
-// 当前阶段只声明 Phase 6 新增的 3 个字段；老字段仍由 settings/render.js 内联模板渲染。
-// 后续 chunk 把全 80 字段迁入 schema、render.js 改为 schema-driven。
+// 当前阶段已迁入 Main/Heal/Tactics/Debuff/Spell/System/Equipment/Riddle 的部分字段。
+// 后续 chunk 继续把剩余老字段迁入 schema、render.js 改为 schema-driven。
 
 /**
  * @typedef {object} OptionField
@@ -301,14 +301,22 @@ const OPTION_SCHEMA = [
     kind: "number",
     group: "Heal",
     default: 70,
-    label: { l0: "拖战 Draught MP 阈值", l1: "拖戰 Draught MP 閾值", l2: "Stall Draught MP threshold" },
+    label: {
+      l0: "拖战 Draught MP 阈值",
+      l1: "拖戰 Draught MP 閾值",
+      l2: "Stall Draught MP threshold",
+    },
   },
   {
     key: "stallTopupSpFloor",
     kind: "number",
     group: "Heal",
     default: 70,
-    label: { l0: "拖战 Draught SP 阈值", l1: "拖戰 Draught SP 閾值", l2: "Stall Draught SP threshold" },
+    label: {
+      l0: "拖战 Draught SP 阈值",
+      l1: "拖戰 Draught SP 閾值",
+      l2: "Stall Draught SP threshold",
+    },
   },
   {
     key: "stallTurnOffSpirit",
@@ -355,6 +363,51 @@ const OPTION_SCHEMA = [
       l0: "刷新间隔（分钟）",
       l1: "刷新間隔（分鐘）",
       l2: "Refresh interval (minutes)",
+    },
+  },
+  // === 战斗行动 watchdog：一次行动开始后延迟告警/重载；运行时 authority 在 battle-action-delay.js ===
+  {
+    key: "delayAlert",
+    kind: "checkbox",
+    group: "System",
+    default: false,
+    label: {
+      l0: "行动延迟告警",
+      l1: "行動延遲警報",
+      l2: "Action delay alarm",
+    },
+  },
+  {
+    key: "delayAlertTime",
+    kind: "number",
+    group: "System",
+    default: 0,
+    label: {
+      l0: "行动开始后 N 秒仍未结束则警报",
+      l1: "行動開始後 N 秒仍未結束則警報",
+      l2: "Alarm if an action has not ended after N seconds",
+    },
+  },
+  {
+    key: "delayReload",
+    kind: "checkbox",
+    group: "System",
+    default: false,
+    label: {
+      l0: "行动延迟刷新页面",
+      l1: "行動延遲刷新頁面",
+      l2: "Action delay reload",
+    },
+  },
+  {
+    key: "delayReloadTime",
+    kind: "number",
+    group: "System",
+    default: 0,
+    label: {
+      l0: "行动开始后 N 秒仍未结束则刷新页面",
+      l1: "行動開始後 N 秒仍未結束則刷新頁面",
+      l2: "Reload if an action has not ended after N seconds",
     },
   },
   // === Spirit Stance：攻击流开/关姿态与技能前置姿态的配置说明 SOT ===

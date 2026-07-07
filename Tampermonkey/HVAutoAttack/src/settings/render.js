@@ -173,10 +173,7 @@ function renderBurstGuardSchemaFields() {
     `${renderSchemaLabel(readSchemaField("burstControlHpFrac"))}: ${renderSchemaNumberInput(
       "burstControlHpFrac",
       "%"
-    )} ${renderSchemaCheckboxField("burstControlSilenceForSpell").replace(
-      /^<div>|<\/div>$/g,
-      ""
-    )}`,
+    )} ${renderSchemaCheckboxField("burstControlSilenceForSpell").replace(/^<div>|<\/div>$/g, "")}`,
   ];
 }
 
@@ -250,6 +247,21 @@ function renderAttackResourceSchemaFields() {
   return [
     renderSchemaCheckboxField("focus", ": {{focusCondition}}"),
     renderSchemaCheckboxField("etherTap", ": {{etherTapCondition}}"),
+  ];
+}
+
+function renderActionDelaySchemaFields() {
+  return [
+    renderCheckboxPlusNumber("delayAlert", "delayAlertTime", {
+      l0: "秒，警报",
+      l1: "秒，警報",
+      l2: "s, alarm",
+    }),
+    renderCheckboxPlusNumber("delayReload", "delayReloadTime", {
+      l0: "秒，刷新页面",
+      l1: "秒，刷新頁面",
+      l2: "s, reload page",
+    }),
   ];
 }
 
@@ -535,8 +547,8 @@ export function optionBox() {
     // === System 系统/页面 tab（页面停留 alert/reload + 定时刷新 + 记录每场 + 延迟，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-System">',
     "  <div><l2>If the page </l2><b><l0>页面停留</l0><l1>頁面停留</l1><l2>stays idle</l2></b><l2> for </l2>: ",
-    '    <input id="delayAlert" type="checkbox"><label for="delayAlert"><input class="hvAANumber" name="delayAlertTime" type="text"><l0>秒，警报</l0><l1>秒，警報</l1><l2>s, alarm</l2></label>; ',
-    '    <input id="delayReload" type="checkbox"><label for="delayReload"><input class="hvAANumber" name="delayReloadTime" type="text"><l0>秒，刷新页面</l0><l1>秒，刷新頁面</l1><l2>s, reload page</l2></label></div>',
+    ...renderActionDelaySchemaFields(),
+    "  </div>",
     renderCheckboxPlusNumber("pageRefresh", "pageRefreshMinutes", {
       l0: "分钟（防移动端长时间挂机卡死，无条件绝对时钟）",
       l1: "分鐘（防移動端長時間掛機卡死，無條件絕對時鐘）",
@@ -627,7 +639,10 @@ export function optionBox() {
     '    <div><input id="debuffSkill_MN" type="checkbox"><label for="debuffSkill_MN">MagNet</label>{{debuffSkillMNCondition}}</div>',
     '    <div><input id="debuffSkill_Si" type="checkbox"><label for="debuffSkill_Si">Silence</label>{{debuffSkillSiCondition}}</div>',
     '    <div><input id="debuffSkill_Dr" type="checkbox"><label for="debuffSkill_Dr">Drain</label>{{debuffSkillDrCondition}}</div>',
-    renderSchemaCheckboxField("drainTargetMaxHp", "", { bold: false, style: "padding-left:1.5em;" }),
+    renderSchemaCheckboxField("drainTargetMaxHp", "", {
+      bold: false,
+      style: "padding-left:1.5em;",
+    }),
     '    <div><input id="debuffSkill_We" type="checkbox"><label for="debuffSkill_We">Weaken</label>{{debuffSkillWeCondition}}</div>',
     '    <div><input id="debuffSkill_Co" type="checkbox"><label for="debuffSkill_Co">Confuse</label>{{debuffSkillCoCondition}}</div>',
     "  <div>AoE: <l0>当前技能等级下影响的目标数(1=单体, 3=范围)</l0><l1>當前技能等級下影響的目標數(1=單體, 3=範圍)</l1><l2>Targets affected at current skill level (1=single, 3=AoE)</l2><br>",
