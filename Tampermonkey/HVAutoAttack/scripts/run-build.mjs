@@ -46,6 +46,7 @@ const commands = [
   "node scripts/verify-hvut-config-migration-boundary.mjs",
   "node scripts/verify-hvut-config-field-boundary.mjs",
   "node scripts/verify-hvut-world-identity-boundary.mjs",
+  "node scripts/verify-hvut-character-page-context-boundary.mjs",
   "node scripts/verify-hvut-persona-storage-boundary.mjs",
   "node scripts/verify-hvut-character-parse-boundary.mjs",
   "node scripts/verify-hvut-training-notification-storage-boundary.mjs",

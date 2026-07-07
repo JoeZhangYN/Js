@@ -1885,6 +1885,21 @@ try {
       isItemWorld: ss === 'iw',
     };
   };
+  var create_hvut_character_page_context = function (query) {
+    var source = query || _query;
+    var ss = source?.ss || 'ch';
+    var hasPersonaSurface = !!$id('persona_outer');
+    return {
+      ss: ss,
+      hasPersonaSurface: hasPersonaSurface,
+      isCharacter: ss === 'ch' || hasPersonaSurface,
+      isEquipment: ss === 'eq',
+      isAbilities: ss === 'ab',
+      isTraining: ss === 'tr',
+      isItemInventory: ss === 'it',
+      isSettings: ss === 'se',
+    };
+  };
   var create_hvut_monster_lab_slot_url = function (mob) {
     return `?s=Bazaar&ss=ml&slot=${mob?.index ?? mob}`;
   };
@@ -7008,7 +7023,8 @@ _bottom.init();
 
 
 //* [1] Character - Character
-if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
+const characterPage = create_hvut_character_page_context();
+if (_query.s === 'Character' && characterPage.isCharacter) {
   _ch.persona = $id('persona_form').elements.persona_set.value;
 
   // _ch 经验模拟器: refuter(2026-06-10) 判 true-dup —— 核心公式(2.850263212287058 等级表 / prof_gain ×4·(1+assim·0.1))
@@ -7117,7 +7133,7 @@ if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
 
 
 //* [2] Character - Equipment
-if (_query.s === 'Character' && _query.ss === 'eq') {
+if (_query.s === 'Character' && characterPage.isEquipment) {
   _eq.node = {};
 
   _eq.init = function () {
@@ -7278,7 +7294,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
 
 
 //* [3] Character - Abilities
-if (_query.s === 'Character' && _query.ss === 'ab') {
+if (_query.s === 'Character' && characterPage.isAbilities) {
   _ab.abilities = {
     'HP Tank': { category: 'General', img: '3.png', pos: 0, unlock: [0, 25, 50, 75, 100, 120, 150, 200, 250, 300], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
     'MP Tank': { category: 'General', img: '3.png', pos: -34, unlock: [0, 30, 60, 90, 120, 160, 210, 260, 310, 350], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
@@ -7680,7 +7696,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
 
 
 //* [4] Character - Training
-if (_query.s === 'Character' && _query.ss === 'tr') {
+if (_query.s === 'Character' && characterPage.isTraining) {
   _tr.node = {};
   _tr.json = $config.get('tr_notif', {}, 'hvut_');
   _tr.level = {};
@@ -7813,14 +7829,14 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
 
 
 //* [5] Character - Item Inventory
-if (_query.s === 'Character' && _query.ss === 'it') {
+if (_query.s === 'Character' && characterPage.isItemInventory) {
   _it.init();
 } else
 // [END 5] Character - Item Inventory */
 
 
 //* [6] Character - Settings
-if (_query.s === 'Character' && _query.ss === 'se') {
+if (_query.s === 'Character' && characterPage.isSettings) {
   _se.node = { buttons: {} };
   _se.form = $qs('#settings_outer form');
   _se.json = $config.get('se_settings', {});
@@ -12792,7 +12808,8 @@ if ($config.settings.lotteryNotification) {
 
 
 //* [1] Character - Character
-if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
+const characterPage = create_hvut_character_page_context();
+if (_query.s === 'Character' && characterPage.isCharacter) {
   _ch.persona = $id('persona_form').elements.persona_set.value;
   // _ch 经验模拟器: refuter(2026-06-10) 判 true-dup(公式两版 byte-identical), 但 $input 签名/结构/init流 分叉,
   // 全收口需结构归一重构 + UI 实站验证 → 留各版待实站基线后专做(详 isekai 版注释)。
@@ -12901,7 +12918,7 @@ if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
 
 
 //* [2] Character - Equipment
-if (_query.s === 'Character' && _query.ss === 'eq') {
+if (_query.s === 'Character' && characterPage.isEquipment) {
   _eq.show_base = async function () { // 旧 .st1-.st3 selector 随旧页面死亡 → isekai 版(#stats_scrollable, 2026-06-10)
     const html = await $ajax.fetch(create_hvut_character_page_url());
     const doc = $doc(html);
@@ -13407,7 +13424,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
 
 
 //* [3] Character - Abilities
-if (_query.s === 'Character' && _query.ss === 'ab') {
+if (_query.s === 'Character' && characterPage.isAbilities) {
   _ab.ability = {
     'HP Tank': { category: 'General', img: '3.png', pos: 0, unlock: [0, 25, 50, 75, 100, 120, 150, 200, 250, 300], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
     'MP Tank': { category: 'General', img: '3.png', pos: -34, unlock: [0, 30, 60, 90, 120, 160, 210, 260, 310, 350], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
@@ -13811,7 +13828,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
 
 
 //* [4] Character - Training
-if (_query.s === 'Character' && _query.ss === 'tr') {
+if (_query.s === 'Character' && characterPage.isTraining) {
   _tr.data = {
     'Adept Learner': { id: 50, b: 100, l: 50, e: 0.000417446 },
     'Assimilator': { id: 51, b: 50000, l: 50000, e: 0.0057969565 },
@@ -13934,14 +13951,14 @@ if (_query.s === 'Character' && _query.ss === 'tr') {
 
 
 //* [5] Character - Item Inventory
-if (_query.s === 'Character' && _query.ss === 'it') {
+if (_query.s === 'Character' && characterPage.isItemInventory) {
   _it.init();
 } else
 // [END 5] Character - Item Inventory */
 
 
 //* [7] Character - Settings
-if (_query.s === 'Character' && _query.ss === 'se') {
+if (_query.s === 'Character' && characterPage.isSettings) {
   _se.form = $qs('#settings_outer form');
   _se.elements = Array.from(_se.form.elements);
   _se.json = $config.get('se_settings', {});
