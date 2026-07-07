@@ -50,6 +50,7 @@ for (const required of [
   "record_hvut_monster_lab_upgrade_failure(stage, { ...detail, reason: 'emptyResponse' });",
   "return { kind: 'rejected', reason: 'emptyResponse', evidence: evidence };",
   "return { kind: 'accepted' };",
+  "var create_hvut_monster_lab_slot_url = function (mob) {",
 ]) {
   if (!text.includes(required)) violations.push(`${target} must include Monster Lab upgrade diagnostic recorder: ${required}`);
 }
@@ -121,6 +122,9 @@ for (const [index, body] of updateBodies.entries()) {
   if (/catch \(_error\) \{\n\s*alert\(IS_ISEKAI/.test(body)) {
     violations.push(`${target} Monster Lab update[${index}] must not keep untyped request failure`);
   }
+  if (body.includes("$ajax.fetch(`?s=Bazaar&ss=ml&slot=${mob.index}`")) {
+    violations.push(`${target} Monster Lab update[${index}] must route slot fetches through create_hvut_monster_lab_slot_url`);
+  }
 }
 
 for (const [index, body] of runBodies.entries()) {
@@ -155,6 +159,9 @@ for (const [index, body] of runBodies.entries()) {
   }
   if (/catch \(_error\) \{\n\s*alert\(IS_ISEKAI/.test(body)) {
     violations.push(`${target} Monster Lab run[${index}] must not keep untyped request failure`);
+  }
+  if (body.includes("`?s=Bazaar&ss=ml&slot=${mob.index}`")) {
+    violations.push(`${target} Monster Lab run[${index}] must route slot command URLs through create_hvut_monster_lab_slot_url`);
   }
 }
 

@@ -1336,6 +1336,9 @@ try {
   var create_hvut_item_shop_url = function () {
     return '?s=Bazaar&ss=is';
   };
+  var create_hvut_monster_lab_slot_url = function (mob) {
+    return `?s=Bazaar&ss=ml&slot=${mob?.index ?? mob}`;
+  };
   var create_hvut_armory_screen_url = function (screen, context) {
     var filter = Object.prototype.hasOwnProperty.call(context || {}, 'filter') ? `&filter=${context?.filter || ''}` : '';
     var eqids = context?.eqid ? `&eqids=${context.eqid}` : '';
@@ -8429,7 +8432,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         }
         mob.status = 0;
         mob.node.wins.textContent = '...';
-        const html = await $ajax.fetch(`?s=Bazaar&ss=ml&slot=${mob.index}`, food ? `food_action=${food}` : '');
+        const html = await $ajax.fetch(create_hvut_monster_lab_slot_url(mob), food ? `food_action=${food}` : '');
         const doc = $doc(html);
         _ml.main.onsuccess(index, doc);
         //_ml.main.onerror(index);
@@ -8806,7 +8809,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         }
 
         async function update(mob) {
-          const html = await $ajax.fetch(`?s=Bazaar&ss=ml&slot=${mob.index}`);
+          const html = await $ajax.fetch(create_hvut_monster_lab_slot_url(mob));
           const doc = $doc(html);
           done++;
           mob.update_needed = false;
@@ -9059,10 +9062,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
             }
             update_needed = true;
             while (count > 10) {
-              urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=10`]);
+              urls.push([create_hvut_monster_lab_slot_url(mob), `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=10`]);
               count -= 10;
             }
-            urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=${count}`]);
+            urls.push([create_hvut_monster_lab_slot_url(mob), `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=${count}`]);
           });
           mob.er.forEach((e, i) => {
             let count = e.to - e.value;
@@ -9071,10 +9074,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
             }
             update_needed = true;
             while (count > 10) {
-              urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=10`]);
+              urls.push([create_hvut_monster_lab_slot_url(mob), `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=10`]);
               count -= 10;
             }
-            urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=${count}`]);
+            urls.push([create_hvut_monster_lab_slot_url(mob), `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=${count}`]);
           });
           mob.ct.forEach((e, i) => {
             let count = e.to - e.value;
@@ -9083,10 +9086,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
             }
             update_needed = true;
             while (count > 10) {
-              urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=10`]);
+              urls.push([create_hvut_monster_lab_slot_url(mob), `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=10`]);
               count -= 10;
             }
-            urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=${count}`]);
+            urls.push([create_hvut_monster_lab_slot_url(mob), `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=${count}`]);
           });
           if (update_needed) {
             mob.update_needed = true;
@@ -14537,7 +14540,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         }
         mob.status = 0;
         mob.node.wins.textContent = '...';
-        const html = await $ajax.fetch('?s=Bazaar&ss=ml&slot=' + mob.index, food ? 'food_action=' + food : '');
+        const html = await $ajax.fetch(create_hvut_monster_lab_slot_url(mob), food ? 'food_action=' + food : '');
         const doc = $doc(html);
         _ml.main.onsuccess(index, doc);
         //_ml.main.onerror(index);
@@ -15055,7 +15058,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         }
 
         async function update(mob) {
-          const html = await $ajax.fetch(`?s=Bazaar&ss=ml&slot=${mob.index}`);
+          const html = await $ajax.fetch(create_hvut_monster_lab_slot_url(mob));
           const doc = $doc(html);
           done++;
           mob.update_needed = false;
@@ -15315,10 +15318,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
             }
             update_needed = true;
             while (count > 10) {
-              urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=10`]);
+              urls.push([create_hvut_monster_lab_slot_url(mob), `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=10`]);
               count -= 10;
             }
-            urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=${count}`]);
+            urls.push([create_hvut_monster_lab_slot_url(mob), `crystal_upgrade=${_ml.upgrade.pa[i].query}&crystal_count=${count}`]);
           });
           mob.er.forEach((e, i) => {
             let count = e.to - e.value;
@@ -15327,10 +15330,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
             }
             update_needed = true;
             while (count > 10) {
-              urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=10`]);
+              urls.push([create_hvut_monster_lab_slot_url(mob), `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=10`]);
               count -= 10;
             }
-            urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=${count}`]);
+            urls.push([create_hvut_monster_lab_slot_url(mob), `crystal_upgrade=${_ml.upgrade.er[i].query}&crystal_count=${count}`]);
           });
           mob.ct.forEach((e, i) => {
             let count = e.to - e.value;
@@ -15339,10 +15342,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
             }
             update_needed = true;
             while (count > 10) {
-              urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=10`]);
+              urls.push([create_hvut_monster_lab_slot_url(mob), `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=10`]);
               count -= 10;
             }
-            urls.push([`?s=Bazaar&ss=ml&slot=${mob.index}`, `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=${count}`]);
+            urls.push([create_hvut_monster_lab_slot_url(mob), `chaos_upgrade=${_ml.upgrade.ct[i].query}&chaos_count=${count}`]);
           });
           if (update_needed) {
             mob.update_needed = true;
