@@ -19,6 +19,95 @@
 
 /** @type {OptionField[]} */
 const OPTION_SCHEMA = [
+  // === Main: pause controls / warning channels / built-in plugin toggles ===
+  {
+    key: "pauseButton",
+    kind: "checkbox",
+    group: "Main",
+    default: false,
+    label: {
+      l0: "使用按钮",
+      l1: "使用按鈕",
+      l2: "Button",
+    },
+  },
+  {
+    key: "pauseHotkey",
+    kind: "checkbox",
+    group: "Main",
+    default: false,
+    label: {
+      l0: "使用热键",
+      l1: "使用熱鍵",
+      l2: "Hotkey",
+    },
+  },
+  {
+    key: "pauseHotkeyStr",
+    kind: "text",
+    group: "Main",
+    default: "",
+    label: {
+      l0: "暂停热键显示",
+      l1: "暫停熱鍵顯示",
+      l2: "Pause hotkey display",
+    },
+  },
+  {
+    key: "pauseHotkeyKey",
+    kind: "text",
+    group: "Main",
+    default: "",
+    label: {
+      l0: "暂停热键值",
+      l1: "暫停熱鍵值",
+      l2: "Pause hotkey key",
+    },
+  },
+  {
+    key: "alert",
+    kind: "checkbox",
+    group: "Main",
+    default: false,
+    label: {
+      l0: "音频警报",
+      l1: "音頻警報",
+      l2: "Audio Alarms",
+    },
+  },
+  {
+    key: "notification",
+    kind: "checkbox",
+    group: "Main",
+    default: false,
+    label: {
+      l0: "桌面通知",
+      l1: "桌面通知",
+      l2: "Notifications",
+    },
+  },
+  {
+    key: "riddleRadio",
+    kind: "checkbox",
+    group: "Main",
+    default: false,
+    label: {
+      l0: "RiddleLimiter Plus",
+      l1: "RiddleLimiter Plus",
+      l2: "RiddleLimiter Plus",
+    },
+  },
+  {
+    key: "encounter",
+    kind: "checkbox",
+    group: "Main",
+    default: false,
+    label: {
+      l0: "自动遭遇战",
+      l1: "自動遭遇戰",
+      l2: "Auto Encounter",
+    },
+  },
   // === Phase 6 新增：OFC/FRD CD 跟踪 + 跳过 debuff ===
   {
     key: "skipDebuffForBigSkill_We",

@@ -101,6 +101,76 @@ function renderSchemaTextInput(key, style = "") {
   return `<input name="${field.key}" placeholder="${field.default}" type="text"${styleAttr}>`;
 }
 
+function renderSchemaTextInputWithoutPlaceholder(key, style = "") {
+  const field = readSchemaField(key);
+  if (!field) return "";
+  const styleAttr = style ? ` style="${style}"` : "";
+  return `<input name="${field.key}" type="text"${styleAttr}>`;
+}
+
+function renderHiddenSchemaInputWithoutPlaceholder(key, attrs = "") {
+  const field = readSchemaField(key);
+  if (!field) return "";
+  const attrText = attrs ? ` ${attrs}` : "";
+  return `<input name="${field.key}" type="hidden"${attrText}>`;
+}
+
+function renderMainPauseSchemaFields() {
+  const pauseButton = renderSchemaCheckboxField("pauseButton", "; ", { bold: false }).replace(
+    /^<div>|<\/div>$/g,
+    ""
+  );
+  const pauseHotkey = readSchemaField("pauseHotkey");
+  if (!pauseHotkey)
+    return [
+      `  <div><b><l0>暂停相关</l0><l1>暫停相關</l1><l2>Pause with</l2></b>: ${pauseButton}</div>`,
+    ];
+  const checkedAttr = pauseHotkey.defaultOn ? " checked data-default-on" : "";
+  return [
+    "  <div><b><l0>暂停相关</l0><l1>暫停相關</l1><l2>Pause with</l2></b>: " +
+      pauseButton +
+      `<input id="${pauseHotkey.key}" type="checkbox"${checkedAttr}><label for="${pauseHotkey.key}">${renderSchemaLabel(
+        pauseHotkey
+      )}: ${renderSchemaTextInputWithoutPlaceholder(
+        "pauseHotkeyStr",
+        "width:30px;"
+      )}${renderHiddenSchemaInputWithoutPlaceholder("pauseHotkeyKey", 'disabled="true"')}</label></div>`,
+  ];
+}
+
+function renderMainWarningSchemaFields() {
+  const alertField = renderSchemaCheckboxField("alert", "; ", { bold: false }).replace(
+    /^<div>|<\/div>$/g,
+    ""
+  );
+  const notificationField = renderSchemaCheckboxField("notification", " ", {
+    bold: false,
+  }).replace(/^<div>|<\/div>$/g, "");
+  return [
+    "  <div><b><l0>警告相关</l0><l1>警告相關</l1><l2>To Warn</l2></b>: " +
+      alertField +
+      notificationField +
+      '<button class="testNotification"><l0>预处理</l0><l1>預處理</l1><l2>Pretreat</l2></button></div>',
+  ];
+}
+
+function renderMainPluginSchemaFields() {
+  const riddleRadio = renderSchemaCheckboxField("riddleRadio", "; ", { bold: false }).replace(
+    /^<div>|<\/div>$/g,
+    ""
+  );
+  const encounter = renderSchemaCheckboxField("encounter", "", { bold: false }).replace(
+    /^<div>|<\/div>$/g,
+    ""
+  );
+  return [
+    "  <div><b><l01>内置插件</l01><l2>Built-in Plugin</l2></b>: " +
+      riddleRadio +
+      encounter +
+      "</div>",
+  ];
+}
+
 function renderEquipmentSchemaFields() {
   return [
     `    ${renderSchemaLabel(readSchemaField("repairValue"))} ≤ ${renderSchemaNumberInput(
@@ -553,16 +623,9 @@ export function optionBox() {
     '<div class="hvAATab" id="hvAATab-Main">',
     '  <div class="hvAACenter" id="attackStatus" style="color:red;"><b>*<l0>攻击模式</l0><l1>攻擊模式</l1><l2>Attack Mode</l2></b>:',
     '    <select class="hvAANumber" name="attackStatus"><option value="-1"></option><option value="0">物理 / Physical</option><option value="1">火 / Fire</option><option value="2">冰 / Cold</option><option value="3">雷 / Elec</option><option value="4">风 / Wind</option><option value="5">圣 / Divine</option><option value="6">暗 / Forbidden</option></select></div>',
-    "  <div><b><l0>暂停相关</l0><l1>暫停相關</l1><l2>Pause with</l2></b>: ",
-    '    <input id="pauseButton" type="checkbox"><label for="pauseButton"><l0>使用按钮</l0><l1>使用按鈕</l1><l2>Button</l2></label>; ',
-    '    <input id="pauseHotkey" type="checkbox"><label for="pauseHotkey"><l0>使用热键</l0><l1>使用熱鍵</l1><l2>Hotkey</l2>: <input name="pauseHotkeyStr" style="width:30px;" type="text"><input name="pauseHotkeyKey" type="hidden" disabled="true"></label></div>',
-    "  <div><b><l0>警告相关</l0><l1>警告相關</l1><l2>To Warn</l2></b>: ",
-    '    <input id="alert" type="checkbox"><label for="alert"><l0>音频警报</l0><l1>音頻警報</l1><l2>Audio Alarms</l2></label>; ',
-    '    <input id="notification" type="checkbox"><label for="notification"><l0>桌面通知</l0><l1>桌面通知</l1><l2>Notifications</l2></label> ',
-    '    <button class="testNotification"><l0>预处理</l0><l1>預處理</l1><l2>Pretreat</l2></button></div>',
-    "  <div><b><l01>内置插件</l01><l2>Built-in Plugin</l2></b>: ",
-    '    <input id="riddleRadio" type="checkbox"><label for="riddleRadio">RiddleLimiter Plus</label>; ',
-    '    <input id="encounter" type="checkbox"><label for="encounter"><l0>自动遭遇战</l0><l1>自動遭遇戰</l1><l2>Auto Encounter</l2></label></div>',
+    ...renderMainPauseSchemaFields(),
+    ...renderMainWarningSchemaFields(),
+    ...renderMainPluginSchemaFields(),
     '  <div><b><l01>魔法技能</l01><l2>Offensive Magic</l2></b>: → <a class="hvAAGoto" name="hvAATab-Spell"><l0>法术攻击</l0><l1>法術攻擊</l1><l2>Spell</l2></a></div>',
     "  </div>",
     // === Heal 治疗药品 tab（Gem 阈值 + 动态阈值/拖战 + 关键 buff 保护，原 Main 拆出）===

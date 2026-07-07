@@ -5,6 +5,7 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/settings/schema.js");
 const ownerTest = path.normalize("src/settings/schema.test.js");
+const ownerTestPrefix = path.normalize("src/settings/schema-");
 const settingsRender = path.normalize("src/settings/render.js");
 const violations = [];
 
@@ -27,7 +28,7 @@ function walk(dir) {
 function checkFile(file) {
   const relative = path.normalize(path.relative(root, file));
   const text = stripComments(fs.readFileSync(file, "utf8"));
-  if (relative === owner || relative === ownerTest) return;
+  if (relative === owner || relative === ownerTest || relative.startsWith(ownerTestPrefix)) return;
 
   if (
     /import\s*\{[^}]*\b(?:OPTION_SCHEMA|getOptionDefault|getFieldsByGroup)\b[^}]*\}\s*from\s*["'][^"']*\/?settings\/schema\.js["']/.test(
@@ -118,6 +119,17 @@ for (const required of [
   /renderSchemaNumberInput\(\s*["']idleArenaGrTime["']/,
   /renderRestoreStaminaSchemaFields/,
   /renderSchemaNumberInput\(\s*["']staminaLow["']/,
+  /renderMainPauseSchemaFields/,
+  /renderSchemaCheckboxField\(\s*["']pauseButton["']/,
+  /readSchemaField\(\s*["']pauseHotkey["']\s*\)/,
+  /renderSchemaTextInputWithoutPlaceholder\(\s*["']pauseHotkeyStr["']/,
+  /renderHiddenSchemaInputWithoutPlaceholder\(\s*["']pauseHotkeyKey["']/,
+  /renderMainWarningSchemaFields/,
+  /renderSchemaCheckboxField\(\s*["']alert["']/,
+  /renderSchemaCheckboxField\(\s*["']notification["']/,
+  /renderMainPluginSchemaFields/,
+  /renderSchemaCheckboxField\(\s*["']riddleRadio["']/,
+  /renderSchemaCheckboxField\(\s*["']encounter["']/,
   /renderBattleControlSchemaFields/,
   /renderSchemaCheckboxField\(\s*["']defend["'][\s\S]{0,80}defendCondition/,
   /renderSchemaCheckboxField\(\s*["']autoFlee["'][\s\S]{0,80}fleeCondition/,
@@ -196,6 +208,12 @@ for (const forbidden of [
   /name=["']idleArenaGrTime["']\s+placeholder=["']1["']/,
   /id=["']restoreStamina["'][\s\S]{0,140}战前回复/,
   /name=["']staminaLow["']\s+placeholder=["']30["']/,
+  /id=["']pauseButton["'][\s\S]{0,120}使用按钮/,
+  /id=["']pauseHotkey["'][\s\S]{0,160}pauseHotkeyStr/,
+  /id=["']alert["'][\s\S]{0,120}音频警报/,
+  /id=["']notification["'][\s\S]{0,120}桌面通知/,
+  /id=["']riddleRadio["'][\s\S]{0,120}RiddleLimiter Plus/,
+  /id=["']encounter["'][\s\S]{0,120}自动遭遇战/,
   /id=["']defend["'][\s\S]{0,80}<b>Defend<\/b>[\s\S]{0,40}defendCondition/,
   /id=["']autoFlee["'][\s\S]{0,120}自动逃跑[\s\S]{0,40}fleeCondition/,
   /id=["']autoPause["'][\s\S]{0,120}自动暂停[\s\S]{0,40}pauseCondition/,
