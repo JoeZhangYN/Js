@@ -9,10 +9,16 @@ const violations = [];
 for (const required of [
   "var create_hvut_lottery_page_context = function (query) {",
   "var source = query || _query;",
+  "var section = source?.s;",
   "var ss = source?.ss;",
+  "section: section,",
   "ss: ss,",
-  "isLottery: ss === 'lt' || ss === 'la',",
+  "isLottery: section === 'Bazaar' && (ss === 'lt' || ss === 'la'),",
   "hasNextDraw: !!$qs('img[src$=\"lottery_next_d.png\"]'),",
+  "var hvut_lottery_page_context = null;",
+  "var get_hvut_lottery_page_context = function () {",
+  "hvut_lottery_page_context = hvut_lottery_page_context || create_hvut_lottery_page_context();",
+  "return hvut_lottery_page_context;",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep Lottery page context boundary: ${required}`);
@@ -20,7 +26,7 @@ for (const required of [
 }
 
 const lotteryBodies = [
-  ...text.matchAll(/if \(_query\.s === 'Bazaar' && \(_query\.ss === 'lt' \|\| _query\.ss === 'la'\)\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:13|14)\] Bazaar - Lottery/g),
+  ...text.matchAll(/if \(get_hvut_lottery_page_context\(\)\.isLottery\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:13|14)\] Bazaar - Lottery/g),
 ].map((match) => match[0]);
 
 if (lotteryBodies.length !== 2) {
@@ -29,7 +35,7 @@ if (lotteryBodies.length !== 2) {
 
 for (const [index, body] of lotteryBodies.entries()) {
   for (const required of [
-    "const lotteryPage = create_hvut_lottery_page_context();",
+    "const lotteryPage = get_hvut_lottery_page_context();",
     "if ($config.settings.lotteryNotification && lotteryPage.hasNextDraw) {",
     "const previous = _lt.json[lotteryPage.ss].hide;",
     "_lt.json[lotteryPage.ss].hide = !show;",
@@ -43,6 +49,9 @@ for (const [index, body] of lotteryBodies.entries()) {
   for (const forbidden of [
     "$qs('img[src$=\"lottery_next_d.png\"]')",
     "_lt.json[_query.ss]",
+    "_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')",
+    "_query.ss === 'lt'",
+    "_query.ss === 'la'",
   ]) {
     if (body.includes(forbidden)) {
       violations.push(`${target} Lottery body[${index}] must not rebuild page identity from raw query/DOM: ${forbidden}`);

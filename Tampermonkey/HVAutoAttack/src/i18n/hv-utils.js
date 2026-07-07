@@ -1900,12 +1900,19 @@ try {
   };
   var create_hvut_lottery_page_context = function (query) {
     var source = query || _query;
+    var section = source?.s;
     var ss = source?.ss;
     return {
+      section: section,
       ss: ss,
-      isLottery: ss === 'lt' || ss === 'la',
+      isLottery: section === 'Bazaar' && (ss === 'lt' || ss === 'la'),
       hasNextDraw: !!$qs('img[src$="lottery_next_d.png"]'),
     };
+  };
+  var hvut_lottery_page_context = null;
+  var get_hvut_lottery_page_context = function () {
+    hvut_lottery_page_context = hvut_lottery_page_context || create_hvut_lottery_page_context();
+    return hvut_lottery_page_context;
   };
   var create_hvut_battle_page_context = function (query) {
     var source = query || _query;
@@ -11646,8 +11653,8 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
 
 
 //* [13] Bazaar - Lottery
-if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
-  const lotteryPage = create_hvut_lottery_page_context();
+if (get_hvut_lottery_page_context().isLottery) {
+  const lotteryPage = get_hvut_lottery_page_context();
   if ($config.settings.lotteryNotification && lotteryPage.hasNextDraw) {
     _lt.toggle = function (show) {
       const previous = _lt.json[lotteryPage.ss].hide;
@@ -17747,8 +17754,8 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
 
 
 //* [14] Bazaar - Lottery
-if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
-  const lotteryPage = create_hvut_lottery_page_context();
+if (get_hvut_lottery_page_context().isLottery) {
+  const lotteryPage = get_hvut_lottery_page_context();
   if ($config.settings.lotteryNotification && lotteryPage.hasNextDraw) {
     _lt.toggle = function (show) {
       const previous = _lt.json[lotteryPage.ss].hide;
