@@ -667,16 +667,14 @@ function renderSchemaNumberInputWithoutPlaceholder(key, suffix = "") {
   return `<input class="hvAANumber" name="${field.key}" type="text">${suffix}`;
 }
 
-function renderArenaStaminaLossSchemaFields() {
+export function renderArenaStaminaLossSchemaFields() {
   return (
     `<div><b>Stamina</b>: <l0>当损失</l0><l1>當損失</l1><l2>If it lost </l2>` +
     `${renderSchemaLabel(readSchemaField("staminaLose"))} ≥ ${renderSchemaNumberInput(
       "staminaLose",
       ""
     )}: ` +
-    '    <input id="staminaPause" type="checkbox"><label for="staminaPause"><l0>脚本暂停</l0><l1>腳本暫停</l1><l2>pause script</l2></label>; ' +
-    '    <input id="staminaWarn" type="checkbox"><label for="staminaWarn"><l01>警告</l01><l2>warn</l2></label>; ' +
-    '    <input id="staminaFlee" type="checkbox"><label for="staminaFlee"><l01>逃跑</l01><l2>flee</l2></label>' +
+    "<l0>告警并确认是否暂停脚本</l0><l1>警報並確認是否暫停腳本</l1><l2>alert and confirm whether to pause script</l2>" +
     '    <button class="staminaLostLog"><l0>stamina损失日志</l0><l1>stamina損失日誌</l1><l2>staminaLostLog</l2></button></div>'
   );
 }

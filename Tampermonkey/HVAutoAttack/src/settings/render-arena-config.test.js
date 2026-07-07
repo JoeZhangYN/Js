@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { renderIdleArenaSchemaFields, renderRestoreStaminaSchemaFields } from "./render.js";
+import {
+  renderArenaStaminaLossSchemaFields,
+  renderIdleArenaSchemaFields,
+  renderRestoreStaminaSchemaFields,
+} from "./render.js";
 
 describe("arena settings schema rendering", () => {
   it("derives idle arena checkbox from option schema", () => {
@@ -18,5 +22,14 @@ describe("arena settings schema rendering", () => {
     expect(html).toContain('<label for="restoreStamina">');
     expect(html).toContain('name="staminaLow"');
     expect(html).toContain("no Idle Arena");
+  });
+
+  it("does not expose retired stamina loss action checkboxes", () => {
+    const html = renderArenaStaminaLossSchemaFields();
+
+    expect(html).toContain(`name="${["stamina", "Lose"].join("")}"`);
+    expect(html).not.toContain("staminaPause");
+    expect(html).not.toContain("staminaWarn");
+    expect(html).not.toContain("staminaFlee");
   });
 });

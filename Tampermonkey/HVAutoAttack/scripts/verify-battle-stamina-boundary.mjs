@@ -9,6 +9,7 @@ const logOwner = path.normalize("src/state/stamina-loss-log.js");
 const logOwnerTest = path.normalize("src/state/stamina-loss-log.test.js");
 const settings = path.normalize("src/settings/render.js");
 const settingsSchema = path.normalize("src/settings/schema.js");
+const settingsText = fs.readFileSync(path.join(root, settings), "utf8");
 const violations = [];
 
 function walk(dir) {
@@ -107,6 +108,12 @@ if (fs.existsSync(path.join(root, ownerTest))) {
   }
   if (!/runBattleStaminaAutomation\(null/.test(ownerTestText)) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null battle stamina events`);
+  }
+}
+
+for (const retired of ["staminaPause", "staminaWarn", "staminaFlee"]) {
+  if (settingsText.includes(retired) || ownerText.includes(retired)) {
+    violations.push(`${retired} is a retired stamina loss action; use battle-stamina outcome`);
   }
 }
 
