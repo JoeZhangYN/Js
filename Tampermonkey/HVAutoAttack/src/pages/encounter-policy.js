@@ -35,6 +35,9 @@ function normalizeEncounterState(state, nowMs = Date.now()) {
     count: Number(state?.count) || 0,
     clear: state?.clear !== false,
   };
+  if (!normalized.date && (normalized.key || normalized.count || !normalized.clear)) {
+    return defaultEncounterState();
+  }
   if (normalized.date && isDifferentUtcDay(normalized.date, nowMs)) return defaultEncounterState();
   return normalized;
 }

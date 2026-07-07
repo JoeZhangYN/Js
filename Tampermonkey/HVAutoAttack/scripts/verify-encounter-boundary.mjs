@@ -15,6 +15,7 @@ const stateFailureFile = path.normalize("src/pages/encounter-state-failure.js");
 const stateFailureTest = path.normalize("src/pages/encounter-state-failure.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const policyTest = path.normalize("src/pages/encounter-policy.test.js");
+const policyCorruptStateTest = path.normalize("src/pages/encounter-policy-corrupt-state.test.js");
 const routingTest = path.normalize("src/pages/encounter-routing.test.js");
 const rejectionFile = path.normalize("src/pages/encounter-rejection.js");
 const bridgeFile = path.normalize("src/pages/encounter-bridge.js");
@@ -259,6 +260,9 @@ const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
 const policyTestText = fs.readFileSync(path.join(root, policyTest), "utf8");
+const policyCorruptStateTestText = fs.existsSync(path.join(root, policyCorruptStateTest))
+  ? fs.readFileSync(path.join(root, policyCorruptStateTest), "utf8")
+  : "";
 const rejectionText = fs.readFileSync(path.join(root, rejectionFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
@@ -595,6 +599,15 @@ for (const required of [
 ]) {
   if (!policyTestText.includes(required)) {
     violations.push(`${policyTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+for (const required of [
+  "recovers missing-timestamp daily limit state instead of waiting forever",
+  "dailyLimitReached: false",
+  'reason: "readyWindow"',
+]) {
+  if (!policyCorruptStateTestText.includes(required)) {
+    violations.push(`${policyCorruptStateTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 if (!policyText.includes("const encounterPolicyEventHandlers")) {
