@@ -28,7 +28,7 @@ for (const required of [
   "var html = await $ajax.fetch(create_hvut_ability_unlock_url(), `unlock_ability=${ability.id}`);",
   "var response = classify_hvut_ability_unlock_response(doc, context?.responseStage || 'abilityUnlockResponse'",
   "show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);",
-  "if (response.kind === 'rejected') {\n      popup(response.message);\n      return false;",
+  "if (response.kind === 'rejected') {\n      show_hvut_failure_report('Ability unlock failed', response.evidence, ['HVAA:lastHvutAbilityParseFailure']);\n      return false;",
   "if (button) {",
   "return true;",
   "return false;",
@@ -101,6 +101,9 @@ if (/var error = get_message\(doc\);/.test(requestEntry)) {
 }
 if (/popup\(error\);/.test(requestEntry)) {
   violations.push(`${target} ability unlock request must popup the typed response message`);
+}
+if (/popup\(response\.message\);/.test(requestEntry)) {
+  violations.push(`${target} ability unlock request must show copyable diagnostic evidence instead of a popup`);
 }
 if (/\$ajax\.fetch\(location\.href,\s*`unlock_ability=\$\{ability\.id\}`\)/.test(requestEntry)) {
   violations.push(`${target} ability unlock request must use create_hvut_ability_unlock_url instead of raw location.href`);

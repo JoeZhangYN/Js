@@ -773,7 +773,7 @@ try {
     var doc = $doc(html);
     var response = classify_hvut_ability_unlock_response(doc, context?.responseStage || 'abilityUnlockResponse', { id: ability?.id || '' });
     if (response.kind === 'rejected') {
-      popup(response.message);
+      show_hvut_failure_report('Ability unlock failed', response.evidence, ['HVAA:lastHvutAbilityParseFailure']);
       return false;
     }
     var button = parse_hvut_ability_unlock_button(ability, context?.buttonStage || 'abilityUnlockButton');
