@@ -27,9 +27,13 @@ for (const required of [
   "record_hvut_armory_page_failure('scriptObjectParseFailed'",
   "record_hvut_armory_page_failure('scriptObjectMissing'",
   "record_hvut_armory_page_failure('scriptMissing'",
-  "dynjs_eqstore: readScriptObject(html, 'dynjs_eqstore', screen === 'purchase')",
-  "eqitems: readScriptObject(html, 'eqitems', true)",
-  "itemdata: readScriptObject(html, 'itemdata', true)",
+  "const requirements = {",
+  "dynjs_eqstore: screen === 'purchase'",
+  "eqitems: true",
+  "itemdata: ['purchase', 'salvage'].includes(screen)",
+  "dynjs_eqstore: readScriptObject(html, 'dynjs_eqstore', requirements.dynjs_eqstore)",
+  "eqitems: readScriptObject(html, 'eqitems', requirements.eqitems)",
+  "itemdata: readScriptObject(html, 'itemdata', requirements.itemdata)",
   "return accepted;",
   "href: create_hvut_armory_screen_url(screen, { filter: filter || '' })",
 ]) {
@@ -50,6 +54,7 @@ for (const forbidden of [
   "dynjs_eqstore: parse_script_json(html, 'dynjs_eqstore')",
   "eqitems: parse_script_json(html, 'eqitems')",
   "itemdata: parse_script_json(html, 'itemdata')",
+  "itemdata: readScriptObject(html, 'itemdata', true)",
 ]) {
   if (armoryScriptParse.includes(forbidden)) {
     violations.push(`${target} Armory script.parse must not keep raw parse path: ${forbidden}`);

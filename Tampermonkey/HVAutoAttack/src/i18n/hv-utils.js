@@ -5594,6 +5594,11 @@ const bindArmory = function (armory, ctx) {
       parse: function (doc, screen, assign) {
         let json;
         let accepted = true;
+        const requirements = {
+          dynjs_eqstore: screen === 'purchase',
+          eqitems: true,
+          itemdata: ['purchase', 'salvage'].includes(screen),
+        };
         const readScriptObject = function (html, name, required) {
           let value;
           try {
@@ -5629,9 +5634,9 @@ const bindArmory = function (armory, ctx) {
           } else {
             const html = script.innerHTML;
             json = {
-              dynjs_eqstore: readScriptObject(html, 'dynjs_eqstore', screen === 'purchase'),
-              eqitems: readScriptObject(html, 'eqitems', true),
-              itemdata: readScriptObject(html, 'itemdata', true),
+              dynjs_eqstore: readScriptObject(html, 'dynjs_eqstore', requirements.dynjs_eqstore),
+              eqitems: readScriptObject(html, 'eqitems', requirements.eqitems),
+              itemdata: readScriptObject(html, 'itemdata', requirements.itemdata),
             };
           }
         }
