@@ -858,6 +858,38 @@ try {
       },
     };
   };
+  var render_hvut_mooglemail_page_row = function (mail, formatDate) {
+    const page = mail.page;
+    const db = mail.db;
+    const tr = mail.node.page;
+    tr.cells[0].textContent = (db || page).user;
+    tr.cells[1].firstElementChild.textContent = (db || page).subject;
+    tr.cells[2].innerHTML = '';
+    tr.cells[3].innerHTML = '';
+
+    db?.attach?.forEach((e) => {
+      const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
+      if (e.t === 'e') {
+        if (e.e && e.k) {
+          $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
+        } else {
+          span.textContent = e.n;
+        }
+      } else {
+        span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
+      }
+    });
+    if (db?.cod) {
+      tr.cells[3].innerHTML = `<span>${db.cod.toLocaleString()}</span>`;
+    }
+    tr.cells[4].textContent = formatDate(page.sent);
+    tr.cells[5].textContent = page.read ? formatDate(page.read) : '';
+
+    tr.classList[page.read ? 'remove' : 'add']('hvut-mm-unread');
+    tr.classList[(db || page).returned ? 'add' : 'remove']('hvut-mm-returned');
+    tr.classList[(db || page).filter !== page.filter ? 'add' : 'remove']('hvut-mm-removed');
+    tr.classList[db ? 'remove' : 'add']('hvut-mm-nodb');
+  };
   var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {
     var match = /equips\.set\((\d+)/.exec(onmouseover || '');
     if (!match) return false;
@@ -10677,36 +10709,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         table.appendChild(tbody);
       },
       modify: function (mail) {
-        const page = mail.page;
-        const db = mail.db;
-        const tr = mail.node.page;
-        tr.cells[0].textContent = (db || page).user;
-        tr.cells[1].firstElementChild.textContent = (db || page).subject;
-        tr.cells[2].innerHTML = '';
-        tr.cells[3].innerHTML = '';
-
-        db?.attach?.forEach((e) => {
-          const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
-          if (e.t === 'e') {
-            if (e.e && e.k) {
-              $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
-            } else {
-              span.textContent = e.n;
-            }
-          } else {
-            span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
-          }
-        });
-        if (db?.cod) {
-          tr.cells[3].innerHTML = `<span>${db.cod.toLocaleString()}</span>`;
-        }
-        tr.cells[4].textContent = _mm.dts(page.sent);
-        tr.cells[5].textContent = page.read ? _mm.dts(page.read) : '';
-
-        tr.classList[page.read ? 'remove' : 'add']('hvut-mm-unread');
-        tr.classList[(db || page).returned ? 'add' : 'remove']('hvut-mm-returned');
-        tr.classList[(db || page).filter !== page.filter ? 'add' : 'remove']('hvut-mm-removed');
-        tr.classList[db ? 'remove' : 'add']('hvut-mm-nodb');
+        render_hvut_mooglemail_page_row(mail, _mm.dts);
       },
       go: function (p) {
         p = parseInt(p);
@@ -16872,36 +16875,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
     };
 
     _mm.page_modify = function (mail) {
-      const page = mail.page;
-      const db = mail.db;
-      const tr = mail.node.page;
-      tr.cells[0].textContent = (db || page).user;
-      tr.cells[1].firstElementChild.textContent = (db || page).subject;
-      tr.cells[2].innerHTML = '';
-      tr.cells[3].innerHTML = '';
-
-      db?.attach?.forEach((e) => {
-        const span = $element('span', tr.cells[2], [`.hvut-mm-attach-${e.t}`]);
-        if (e.t === 'e') {
-          if (e.e && e.k) {
-            $element('a', span, { textContent: e.n, href: create_hvut_equip_page_url({ eid: e.e, key: e.k }), target: '_blank' });
-          } else {
-            span.textContent = e.n;
-          }
-        } else {
-          span.textContent = `${e.c.toLocaleString()} x ${e.n}`;
-        }
-      });
-      if (db?.cod) {
-        tr.cells[3].innerHTML = `<span>${db.cod.toLocaleString()}</span>`;
-      }
-      tr.cells[4].textContent = _mm.dts(page.sent);
-      tr.cells[5].textContent = page.read ? _mm.dts(page.read) : '';
-
-      tr.classList[page.read ? 'remove' : 'add']('hvut-mm-unread');
-      tr.classList[(db || page).returned ? 'add' : 'remove']('hvut-mm-returned');
-      tr.classList[(db || page).filter !== page.filter ? 'add' : 'remove']('hvut-mm-removed');
-      tr.classList[db ? 'remove' : 'add']('hvut-mm-nodb');
+      render_hvut_mooglemail_page_row(mail, _mm.dts);
     };
 
     _mm.page_go = function (p) {

@@ -25,10 +25,14 @@ const modernPagePager =
   /pager: function \(pager, p\) \{[\s\S]*?\n      \},\n      create: function/.exec(text)?.[0] || "";
 const modernPageCreate =
   /create: function \(list, p\) \{[\s\S]*?\n      \},\n      modify: function/.exec(text)?.[0] || "";
+const modernPageModify =
+  /modify: function \(mail\) \{[\s\S]*?\n      \},\n      go: function/.exec(text)?.[0] || "";
 const legacyPagePager =
   /_mm\.page_pager = function \(pager, p\) \{[\s\S]*?\n    \};\n\n    _mm\.page_create/.exec(text)?.[0] || "";
 const legacyPageCreate =
   /_mm\.page_create = function \(list, p\) \{[\s\S]*?\n    \};\n\n    _mm\.page_modify/.exec(text)?.[0] || "";
+const legacyPageModify =
+  /_mm\.page_modify = function \(mail\) \{[\s\S]*?\n    \};\n\n    _mm\.page_go/.exec(text)?.[0] || "";
 
 for (const [label, body] of [
   ["MoogleMail parse helper", helperRegion],
@@ -39,6 +43,8 @@ for (const [label, body] of [
   ["modern MoogleMail page create", modernPageCreate],
   ["legacy MoogleMail page pager", legacyPagePager],
   ["legacy MoogleMail page create", legacyPageCreate],
+  ["modern MoogleMail page modify", modernPageModify],
+  ["legacy MoogleMail page modify", legacyPageModify],
 ]) {
   if (!body) violations.push(`${target} must keep ${label} visible`);
 }
@@ -77,6 +83,14 @@ for (const required of [
   "return { kind: 'rejected' };",
   "returned: user === 'MoogleMail',",
   "subject: row.cells[1].textContent,",
+  "var render_hvut_mooglemail_page_row = function (mail, formatDate) {",
+  "tr.cells[0].textContent = (db || page).user;",
+  "tr.cells[1].firstElementChild.textContent = (db || page).subject;",
+  "href: create_hvut_equip_page_url({ eid: e.e, key: e.k })",
+  "tr.classList[page.read ? 'remove' : 'add']('hvut-mm-unread');",
+  "tr.classList[(db || page).returned ? 'add' : 'remove']('hvut-mm-returned');",
+  "tr.classList[(db || page).filter !== page.filter ? 'add' : 'remove']('hvut-mm-removed');",
+  "tr.classList[db ? 'remove' : 'add']('hvut-mm-nodb');",
   "var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {",
   "return record_hvut_mooglemail_parse_failure(stage, { eid: eid, onmouseover: onmouseover || '' });",
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
@@ -172,6 +186,28 @@ for (const [label, body, rowName, filter, stage] of [
   }
   if (body.includes("Date.parse(") || body.includes("returned = user === 'MoogleMail'") || body.includes("mail.page = { filter:")) {
     violations.push(`${target} ${label} must not reassemble mailbox page record outside parse_hvut_mooglemail_page_row`);
+  }
+}
+
+for (const [label, body] of [
+  ["modern MoogleMail page modify", modernPageModify],
+  ["legacy MoogleMail page modify", legacyPageModify],
+]) {
+  requirePart(label, body, "render_hvut_mooglemail_page_row(mail, _mm.dts);");
+  for (const forbidden of [
+    "tr.cells[0].textContent",
+    "tr.cells[1].firstElementChild.textContent",
+    "db?.attach?.forEach",
+    "create_hvut_equip_page_url({ eid: e.e, key: e.k })",
+    "db?.cod",
+    "hvut-mm-unread",
+    "hvut-mm-returned",
+    "hvut-mm-removed",
+    "hvut-mm-nodb",
+  ]) {
+    if (body.includes(forbidden)) {
+      violations.push(`${target} ${label} must delegate page row rendering to render_hvut_mooglemail_page_row`);
+    }
   }
 }
 
