@@ -29,10 +29,9 @@ const loadDynjsOutcome = body(
 );
 const loadDynjs = body(/persona\.load_dynjs = async function \(doc\) \{[\s\S]*?\n  \};\n  \/\//, "persona.load_dynjs");
 const parseStatsOutcome = body(
-  /persona\.parse_stats_pane_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.parse_stats_pane/,
+  /persona\.parse_stats_pane_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.set_value/,
   "persona.parse_stats_pane_outcome",
 );
-const parseStats = body(/persona\.parse_stats_pane = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.set_value/, "persona.parse_stats_pane");
 const setValue = body(/persona\.set_value = function \(name, value\) \{[\s\S]*?\n  \};\n  persona\.get_value/, "persona.set_value");
 const readEquipsetRow = body(/persona\.read_equipset_row = function \(row\) \{[\s\S]*?\n  \};\n  persona\.save_equipset/, "persona.read_equipset_row");
 const saveEquipsetOutcome = body(
@@ -106,10 +105,13 @@ requireParts("persona.parse_stats_pane_outcome", parseStatsOutcome, [
   "return { kind: 'rejected', reason: 'personaCharacterStyleWriteRejected', evidence: write.evidence };",
   "return { kind: 'accepted', stats_pane: stats_pane };",
 ]);
-requireParts("persona.parse_stats_pane", parseStats, [
-  "const outcome = persona.parse_stats_pane_outcome(doc);",
-  "return outcome.kind === 'accepted' ? outcome.stats_pane : false;",
-]);
+for (const [required, expected] of [
+  ["const statsOutcome = $persona.parse_stats_pane_outcome();", 4],
+  ["if (statsOutcome.kind === 'rejected') return;", 2],
+]) {
+  const count = (text.match(new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length;
+  if (count !== expected) violations.push(`${target} must keep ${expected} active stats pane outcome call(s) for ${required}, found ${count}`);
+}
 requireParts("persona.read_equipset_row", readEquipsetRow, [
   "const slot = row.children?.[0]?.textContent || '';",
   "const equipNode = row.children?.[1];",
@@ -142,9 +144,11 @@ for (const forbidden of [
   "if (persona.parse_stats_pane(doc) === false) return false;",
   "persona.save_equipset(doc) === false",
   "persona.parse_stats_pane(doc) === false",
+  "persona.parse_stats_pane = function",
+  "$persona.parse_stats_pane(",
 ]) {
-  if (loadDynjs.includes(forbidden)) {
-    violations.push(`${target} persona.load_dynjs wrapper must not own sync failure decisions: ${forbidden}`);
+  if (text.includes(forbidden)) {
+    violations.push(`${target} must not keep old stats/equipset sync path: ${forbidden}`);
   }
 }
 for (const [label, value, forbidden] of [

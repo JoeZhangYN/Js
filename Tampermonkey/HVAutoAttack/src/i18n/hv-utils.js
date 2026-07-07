@@ -3460,10 +3460,6 @@ const bindPersona = function (persona, ctx) {
     }
     return { kind: 'accepted', stats_pane: stats_pane };
   };
-  persona.parse_stats_pane = function (doc) {
-    const outcome = persona.parse_stats_pane_outcome(doc);
-    return outcome.kind === 'accepted' ? outcome.stats_pane : false;
-  };
   persona.set_value = function (name, value) {
     const json = persona.json;
     if (name) {
@@ -6472,7 +6468,8 @@ if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
   `);
 
   _ch.exp.init();
-  $persona.parse_stats_pane();
+  const statsOutcome = $persona.parse_stats_pane_outcome();
+  if (statsOutcome.kind === 'rejected') return;
 } else
 // [END 1] Character - Character */
 
@@ -6627,8 +6624,9 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     _eq.init();
 
     /*
-    _eq.stats_pane = $persona.parse_stats_pane();
-    if (_eq.stats_pane?.['Spell Type']) {
+    const statsOutcome = $persona.parse_stats_pane_outcome();
+    if (statsOutcome.kind === 'accepted' && statsOutcome.stats_pane?.['Spell Type']) {
+      _eq.stats_pane = statsOutcome.stats_pane;
       _eq.mage_stats();
     }
     //*/
@@ -12551,7 +12549,8 @@ if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
   _ch.node.div = $element('div', $id('attr_outer'), ['.hvut-ch-div'], { input: () => { _ch.exp.calc(); } });
   $input(['button', '经验模拟器'], _ch.node.div, null, () => { _ch.exp.init(); });
 
-  $persona.parse_stats_pane();
+  const statsOutcome = $persona.parse_stats_pane_outcome();
+  if (statsOutcome.kind === 'rejected') return;
 } else
 // [END 1] Character - Character */
 
@@ -13051,8 +13050,9 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
     $input(['button', '保存'], _eq.node.buttons, null, () => { $persona.set_value('姓名', _eq.node.equipset_name.value); });
 
     /*
-    _eq.stats_pane = $persona.parse_stats_pane();
-    if (_eq.stats_pane?.['Spell Type']) {
+    const statsOutcome = $persona.parse_stats_pane_outcome();
+    if (statsOutcome.kind === 'accepted' && statsOutcome.stats_pane?.['Spell Type']) {
+      _eq.stats_pane = statsOutcome.stats_pane;
       _eq.mage_stats();
     }
     //*/ // mage_stats 旧 stats 公式链随旧 $equip 退化; isekai 基准同为注释占位(待新能量模型重写, handoff 开放项)
