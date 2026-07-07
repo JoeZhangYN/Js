@@ -1850,6 +1850,18 @@ try {
   var create_hvut_armory_organize_url = function () {
     return create_hvut_armory_screen_url('organize');
   };
+  var create_hvut_armory_page_context = function (config, query) {
+    var source = query || _query;
+    var screen = source?.screen;
+    var filter = source?.filter;
+    var integrateAll = filter === 'all' && !!config?.settings?.equipmentIntegration;
+    return {
+      screen: screen,
+      filter: filter,
+      integrateAll: integrateAll,
+      canOrganize: screen !== 'purchase' && filter !== 'salvaged',
+    };
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -5028,6 +5040,7 @@ const bindArmory = function (armory, ctx) {
   const $equip = ctx.equip;
   const $price = ctx.price;
   const $armory = armory;
+  const armoryPage = create_hvut_armory_page_context($config);
   Object.assign($armory, {
     filters: ['weapon_1handed', 'weapon_2handed', 'weapon_staff', 'shield', 'armor_cloth', 'armor_light', 'armor_heavy'],
     category_shorthand: { 'One-handed Weapon': 'One-Handed', 'Two-handed Weapon': 'Two-Handed', 'Staff': 'Staffs', 'Shield': 'Shield', 'Cloth Armor': 'Cloth', 'Light Armor': 'Light', 'Heavy Armor': 'Heavy' },
@@ -5043,12 +5056,13 @@ const bindArmory = function (armory, ctx) {
     eqitems: {},
     itemdata: {},
     prices: $price.get('Materials'),
+    pageContext: armoryPage,
     node: { submit: {} },
 
     init: function () {
       $armory.node.table = $qs('#equiplist > table');
       $armory.node.table.addEventListener('click', $armory.click, true);
-      $armory.page.init(null, _query.screen);
+      $armory.page.init(null, $armory.pageContext.screen);
       $armory.side.init();
       $armory.equiplist = $equip.list.table($armory.node.table);
       $armory.submit.button();
@@ -5121,13 +5135,14 @@ const bindArmory = function (armory, ctx) {
     },
     scroll: {
       init: function () {
-        let labels = $armory.type_labels[_query.filter];
+        const filter = $armory.pageContext.filter;
+        let labels = $armory.type_labels[filter];
         if (labels) {
           labels = labels.filter((type) => !!$qs(`.hvut-eqp-type[data-scroll="${type}"]`, $armory.node.table));
-        } else if ($armory.filters.includes(_query.filter)) {
+        } else if ($armory.filters.includes(filter)) {
           labels = $qsa('.hvut-eqp-type', $armory.node.table).map((e) => e.dataset.scroll);
           labels = [...new Set(labels)];
-        } else if (_query.filter === 'all') {
+        } else if (filter === 'all') {
           labels = Object.keys($armory.category_shorthand);
         } else {
           return;
@@ -5352,7 +5367,7 @@ const bindArmory = function (armory, ctx) {
       },
       edit: function () {
         $armory.calc.update();
-        if (_query.screen === 'purchase') {
+        if ($armory.pageContext.screen === 'purchase') {
           $armory.filter.bazaar($armory.equiplist, $armory.node.table);
         }
       },
@@ -5398,9 +5413,9 @@ const bindArmory = function (armory, ctx) {
         return true;
       },
       tab: function () {
-        const a = $element('a', [$id('filterbar'), 1], { href: create_hvut_armory_screen_url(_query.screen, { filter: 'all' }) });
+        const a = $element('a', [$id('filterbar'), 1], { href: create_hvut_armory_screen_url($armory.pageContext.screen, { filter: 'all' }) });
         const div = $element('div', a, '所有');
-        if (_query.filter === 'all') {
+        if ($armory.pageContext.filter === 'all') {
           const cfbs = $qs('#filterbar .cfbs');
           cfbs.classList.remove('cfbs');
           cfbs.classList.add('cfb');
@@ -5435,7 +5450,7 @@ const bindArmory = function (armory, ctx) {
           }
         });
       },
-      purchase: function (equiplist = $armory.equiplist, table = $armory.node.table, filter = _query.filter) {
+      purchase: function (equiplist = $armory.equiplist, table = $armory.node.table, filter = $armory.pageContext.filter) {
         if (filter === 'salvaged') {
           return;
         }
@@ -5449,7 +5464,7 @@ const bindArmory = function (armory, ctx) {
         $armory.calc.update(equiplist);
         $armory.filter.bazaar(equiplist, table);
       },
-      sell: async function (equiplist = $armory.equiplist, table = $armory.node.table, filter = _query.filter) {
+      sell: async function (equiplist = $armory.equiplist, table = $armory.node.table, filter = $armory.pageContext.filter) {
         if (filter === 'salvaged') {
           return;
         }
@@ -5464,7 +5479,7 @@ const bindArmory = function (armory, ctx) {
         await $armory.page.load('salvage', filter);
         $armory.calc.update(equiplist);
       },
-      salvage: async function (equiplist = $armory.equiplist, table = $armory.node.table, filter = _query.filter) {
+      salvage: async function (equiplist = $armory.equiplist, table = $armory.node.table, filter = $armory.pageContext.filter) {
         $armory.modify.info(equiplist);
         equiplist.forEach((eq) => {
           const tr = eq.node.wrapper;
@@ -5935,7 +5950,7 @@ const bindArmory = function (armory, ctx) {
     equipcode: {
       save: function () {
         let nextEquipdata = JSON.parse(JSON.stringify($armory.equipdata || { version: 1 }));
-        if (_query.filter === 'all') {
+        if ($armory.pageContext.filter === 'all') {
           nextEquipdata = { version: $armory.equipdata.version };
         }
         $armory.equiplist.forEach((eq) => {
@@ -6103,13 +6118,13 @@ const bindArmory = function (armory, ctx) {
 
   $armory.init();
 
-  if (_query.screen !== 'purchase' && _query.filter !== 'salvaged') {
+  if (armoryPage.canOrganize) {
     $armory.organize.init();
   }
 
-  if (_query.screen === 'organize') {
+  if (armoryPage.screen === 'organize') {
     $armory.integrate.tab();
-    if (_query.filter === 'all' && $config.settings.equipmentIntegration) {
+    if (armoryPage.integrateAll) {
       $armory.integrate.init('organize');
     } else {
       $armory.modify.organize();
@@ -6117,13 +6132,13 @@ const bindArmory = function (armory, ctx) {
     $armory.side.list(['select_all'], 'code_popup', 'code_edit', 'code_save', 'code_revert');
   }
 
-  if (_query.screen === 'modify') {
+  if (armoryPage.screen === 'modify') {
     $armory.modify.modify();
   }
 
-  if (_query.screen === 'purchase') {
+  if (armoryPage.screen === 'purchase') {
     $armory.integrate.tab();
-    if (_query.filter === 'all' && $config.settings.equipmentIntegration) {
+    if (armoryPage.integrateAll) {
       $armory.integrate.init('purchase');
     } else {
       $armory.modify.purchase();
@@ -6131,9 +6146,9 @@ const bindArmory = function (armory, ctx) {
     $armory.side.list(['select_all'], ['submit_purchase'], ['select_purchase_salvage', 'submit_purchase_salvage'], 'filter_toggle', 'filter_bazaar', 'price_edit');
   }
 
-  if (_query.screen === 'sell') {
+  if (armoryPage.screen === 'sell') {
     $armory.integrate.tab();
-    if (_query.filter === 'all' && $config.settings.equipmentIntegration) {
+    if (armoryPage.integrateAll) {
       $armory.integrate.init('sell');
     } else {
       $armory.modify.sell();
@@ -6141,9 +6156,9 @@ const bindArmory = function (armory, ctx) {
     $armory.side.list(['select_all'], ['select_sell', 'submit_sell'], ['select_salvage', 'submit_salvage'], 'filter_protect', 'price_edit');
   }
 
-  if (_query.screen === 'salvage') {
+  if (armoryPage.screen === 'salvage') {
     $armory.integrate.tab();
-    if (_query.filter === 'all' && $config.settings.equipmentIntegration) {
+    if (armoryPage.integrateAll) {
       $armory.integrate.init('salvage');
     } else {
       $armory.modify.salvage();
