@@ -58,6 +58,15 @@ for (const required of [
   "codText = context.noCodText;",
   "create_hvut_equip_page_url({ eid: e.e, key: e.k })",
   "e.node.price = $input('text', li, { className: 'hvut-mm-price' });",
+  "var render_hvut_mooglemail_view_shell = function (mail, div, db, view, context) {",
+  "`${context.missingDbPrefix}${view.error}`",
+  "const read = db.read === null ? '-' : db.read === -1 ? '????-??-??' : context.formatDate(db.read, 4);",
+  "<dt>${context.sentLabel}</dt>",
+  "context.assignBody($element('textarea', div, { value: db.text, spellcheck: false, readOnly: true }));",
+  "$input(['button', '关闭'], buttons, { dataset: { action: 'close', mid } });",
+  "div.classList.add('hvut-mm-failed');",
+  "$input(['button', context.returnedMessage(db)], buttons);",
+  "context.renderExtraButtons?.(buttons, mail, db, view);",
   "var create_hvut_mooglemail_cache_write_plan = function (mail, post, context) {",
   "if (view.error) return null;",
   "const nextDb = { ...db, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: sent, read: read };",
@@ -129,6 +138,13 @@ for (const required of [
 }
 
 for (const required of [
+  "if (!render_hvut_mooglemail_view_shell(mail, div, db, view, {",
+  "missingDbPrefix: 'ERROR: ',",
+  "sentLabel: 'Sent',",
+  "subjectLabel: 'Subject',",
+  "readLabel: 'Read',",
+  "assignBody: (body) => { _mm.mail.node.body = body; },",
+  "returnedMessage: (db) => `This message was returned from ${db.user}`,",
   "render_hvut_mooglemail_view_attach_list(mail, div, db, {",
   "noCodText: '无货到付款',",
   "onInput: (e) => { _mm.mail.cod(e); },",
@@ -175,6 +191,15 @@ for (const required of [
 }
 
 for (const required of [
+  "if (!render_hvut_mooglemail_view_shell(mail, div, db, view, {",
+  "missingDbPrefix: '错误：',",
+  "sentLabel: '发送',",
+  "subjectLabel: '主题',",
+  "readLabel: '已读',",
+  "assignBody: (body) => { _mm.node.mail_body = body; },",
+  "returnedMessage: (db) => `这条消息已从${db.user}处退回`,",
+  "renderExtraButtons: (buttons, mail, db, view) => {",
+  "$input(['button', '系统店代购'], buttons, { dataset: { action: 'itemshop', mid: mail.mid } });",
   "render_hvut_mooglemail_view_attach_list(mail, div, db, {",
   "noCodText: 'No CoD',",
   "onInput: (e) => { _mm.mail_cod(e); },",
@@ -266,6 +291,20 @@ for (const [label, body] of [
     "create_hvut_equip_page_url({ eid: e.e, key: e.k })",
     "e.node.price = $input('text', li, { className: 'hvut-mm-price' });",
     "e.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });",
+    "div.innerHTML = '';",
+    "$element('p', div,",
+    "div.classList[db.returned ? 'add' : 'remove']('hvut-mm-rts');",
+    "const read =",
+    "$element('dl', div,",
+    "$element('textarea', div, { value: db.text",
+    "const buttons = $element('div', div);",
+    "$input(['button', '关闭'], buttons",
+    "$input(['button', '回复'], buttons",
+    "$input(['button', '全部获取'], buttons",
+    "$input(['button', '退回'], buttons",
+    "$input(['button', '撤回'], buttons",
+    "div.classList.add('hvut-mm-failed');",
+    "div.classList.remove('hvut-mm-failed');",
   ]) {
     if (body.includes(forbidden)) {
       violations.push(`${target} ${label} must delegate attachment rendering to render_hvut_mooglemail_view_attach_list`);

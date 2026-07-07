@@ -927,6 +927,46 @@ try {
       e.node.cod = $input('text', li, { className: 'hvut-mm-cod', readOnly: true });
     });
   };
+  var render_hvut_mooglemail_view_shell = function (mail, div, db, view, context) {
+    const mid = mail.mid;
+    div.innerHTML = '';
+    if (!db) {
+      $element('p', div, [`${context.missingDbPrefix}${view.error}`, '.hvut-mm-loading']);
+      return false;
+    }
+    div.classList[db.returned ? 'add' : 'remove']('hvut-mm-rts');
+
+    const type = db.filter === 'sent' ? 'To' : '来自';
+    const read = db.read === null ? '-' : db.read === -1 ? '????-??-??' : context.formatDate(db.read, 4);
+    $element('dl', div, [`/<dt>${type}</dt><dd>${db.user}</dd><dt>${context.sentLabel}</dt><dd>${context.formatDate(db.sent, 4)}</dd><dt>${context.subjectLabel}</dt><dd>${db.subject}</dd><dt>${context.readLabel}</dt><dd>${read}</dd>`]);
+
+    context.assignBody($element('textarea', div, { value: db.text, spellcheck: false, readOnly: true }));
+    const buttons = $element('div', div);
+    $input(['button', '关闭'], buttons, { dataset: { action: 'close', mid } });
+    if (view.reply) {
+      $input(['button', '回复'], buttons, { dataset: { action: 'reply', mid } });
+    }
+    if (view.take) {
+      $input(['button', '全部获取'], buttons, { dataset: { action: 'take', mid, value: view.cod || '' } });
+    }
+    if (view.return) {
+      $input(['button', '退回'], buttons, { dataset: { action: 'return', mid } });
+    }
+    if (view.recall) {
+      $input(['button', '撤回'], buttons, { dataset: { action: 'recall', mid } });
+    }
+    if (view.error) {
+      $input(['button', view.error], buttons);
+      div.classList.add('hvut-mm-failed');
+    } else {
+      div.classList.remove('hvut-mm-failed');
+    }
+    if (db.returned) {
+      $input(['button', context.returnedMessage(db)], buttons);
+    }
+    context.renderExtraButtons?.(buttons, mail, db, view);
+    return true;
+  };
   var apply_hvut_mooglemail_view_identity = function (view) {
     if (view.from === 'MoogleMail') {
       const returnedMatch = /This message was returned from (.+), kupo!|This mail was sent to (.+), but was returned, kupo!/.exec(view.text.split('\n').reverse().join('\n'));
@@ -11092,41 +11132,15 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const view = mail.view || {};
         const db = mail.db;
         const div = _mm.mail.node.view;
-        div.innerHTML = '';
-        if (!db) {
-          $element('p', div, [`ERROR: ${view.error}`, '.hvut-mm-loading']);
-          return;
-        }
-        div.classList[db.returned ? 'add' : 'remove']('hvut-mm-rts');
-
-        const type = (db.filter === 'sent') ? 'To' : '来自';
-        const read = (db.read === null) ? '-' : (db.read === -1) ? '????-??-??' : _mm.dts(db.read, 4);
-        $element('dl', div, [`/<dt>${type}</dt><dd>${db.user}</dd><dt>Sent</dt><dd>${_mm.dts(db.sent, 4)}</dd><dt>Subject</dt><dd>${db.subject}</dd><dt>Read</dt><dd>${read}</dd>`]);
-
-        _mm.mail.node.body = $element('textarea', div, { value: db.text, spellcheck: false, readOnly: true });
-        const buttons = $element('div', div);
-        $input(['button', '关闭'], buttons, { dataset: { action: 'close', mid } });
-        if (view.reply) {
-          $input(['button', '回复'], buttons, { dataset: { action: 'reply', mid } });
-        }
-        if (view.take) {
-          $input(['button', '全部获取'], buttons, { dataset: { action: 'take', mid, value: view.cod || '' } });
-        }
-        if (view.return) {
-          $input(['button', '退回'], buttons, { dataset: { action: 'return', mid } });
-        }
-        if (view.recall) {
-          $input(['button', '撤回'], buttons, { dataset: { action: 'recall', mid } });
-        }
-        if (view.error) {
-          $input(['button', view.error], buttons);
-          div.classList.add('hvut-mm-failed');
-        } else {
-          div.classList.remove('hvut-mm-failed');
-        }
-        if (db.returned) {
-          $input(['button', `This message was returned from ${db.user}`], buttons);
-        }
+        if (!render_hvut_mooglemail_view_shell(mail, div, db, view, {
+          missingDbPrefix: 'ERROR: ',
+          sentLabel: 'Sent',
+          subjectLabel: 'Subject',
+          readLabel: 'Read',
+          formatDate: _mm.dts,
+          assignBody: (body) => { _mm.mail.node.body = body; },
+          returnedMessage: (db) => `This message was returned from ${db.user}`,
+        })) return;
 
         render_hvut_mooglemail_view_attach_list(mail, div, db, {
           noCodText: '无货到付款',
@@ -17043,45 +17057,20 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       const view = mail.view || {};
       const db = mail.db;
       const div = _mm.node.mail_view;
-      div.innerHTML = '';
-      if (!db) {
-        $element('p', div, [`错误：${view.error}`, '.hvut-mm-loading']);
-        return;
-      }
-      div.classList[db.returned ? 'add' : 'remove']('hvut-mm-rts');
-
-      const type = db.filter === 'sent' ? 'To' : '来自';
-      const read = db.read === null ? '-' : db.read === -1 ? '????-??-??' : _mm.dts(db.read, 4);
-      $element('dl', div, [`/<dt>${type}</dt><dd>${db.user}</dd><dt>发送</dt><dd>${_mm.dts(db.sent, 4)}</dd><dt>主题</dt><dd>${db.subject}</dd><dt>已读</dt><dd>${read}</dd>`]);
-
-      _mm.node.mail_body = $element('textarea', div, { value: db.text, spellcheck: false, readOnly: true });
-      const buttons = $element('div', div);
-      $input(['button', '关闭'], buttons, { dataset: { action: 'close', mid } });
-      if (view.reply) {
-        $input(['button', '回复'], buttons, { dataset: { action: 'reply', mid } });
-      }
-      if (view.take) {
-        $input(['button', '全部获取'], buttons, { dataset: { action: 'take', mid, value: view.cod || '' } });
-      }
-      if (view.return) {
-        $input(['button', '退回'], buttons, { dataset: { action: 'return', mid } });
-      }
-      if (view.recall) {
-        $input(['button', '撤回'], buttons, { dataset: { action: 'recall', mid } });
-      }
-      if (view.error) {
-        $input(['button', view.error], buttons);
-        div.classList.add('hvut-mm-failed');
-      } else {
-        div.classList.remove('hvut-mm-failed');
-      }
-      if (db.returned) {
-        $input(['button', `这条消息已从${db.user}处退回`], buttons);
-      }
-
-      if (view.take && !view.returned && $config.settings.moogleMailCouponClipper && /Coupon Clipper|Item Shop/i.test(db.subject + '\n' + db.text)) {
-        $input(['button', '系统店代购'], buttons, { dataset: { action: 'itemshop', mid } });
-      }
+      if (!render_hvut_mooglemail_view_shell(mail, div, db, view, {
+        missingDbPrefix: '错误：',
+        sentLabel: '发送',
+        subjectLabel: '主题',
+        readLabel: '已读',
+        formatDate: _mm.dts,
+        assignBody: (body) => { _mm.node.mail_body = body; },
+        returnedMessage: (db) => `这条消息已从${db.user}处退回`,
+        renderExtraButtons: (buttons, mail, db, view) => {
+          if (view.take && !view.returned && $config.settings.moogleMailCouponClipper && /Coupon Clipper|Item Shop/i.test(db.subject + '\n' + db.text)) {
+            $input(['button', '系统店代购'], buttons, { dataset: { action: 'itemshop', mid: mail.mid } });
+          }
+        },
+      })) return;
 
       render_hvut_mooglemail_view_attach_list(mail, div, db, {
         noCodText: 'No CoD',
