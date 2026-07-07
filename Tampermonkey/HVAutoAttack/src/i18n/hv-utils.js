@@ -1013,6 +1013,33 @@ try {
     if (!equip) return record_hvut_mooglemail_parse_failure(stage, { eid: eid, onmouseover: onmouseover || '' });
     return { t: 'e', n: equip.t, e: eid, k: equip.k };
   };
+  var parse_hvut_mooglemail_visible_attach_list = function (view, doc, html, context) {
+    Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));
+    Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
+      let exec;
+      const onmouseover = div.firstElementChild?.firstElementChild?.getAttribute('onmouseover');
+      const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, context.equipStage);
+      if (equipAttach) {
+        view.attach.push(equipAttach);
+      } else if (equipAttach === null) {
+        view.error = '解析装备附件失败';
+      } else if ((exec = /^([0-9,]+)x? (.+)$/.exec(div.textContent))) {
+        const count = context.parseCount(exec[1]);
+        const name = exec[2];
+        const type = name === 'Hath' ? 'h' : name === 'Credits' ? 'c' : 'i';
+        view.attach.push({ t: type, n: name, c: count });
+      } else {
+        console.log(div.textContent.trim());
+      }
+    });
+    if ($id('mmail_currentcod', doc)) {
+      view.cod = parse_hvut_mooglemail_count($id('mmail_currentcod', doc).textContent, /Requested Payment on Delivery: ([0-9,]+) credits/, context.codStage);
+      if (view.cod === null) {
+        view.error = '解析货到付款失败';
+        view.cod = 0;
+      }
+    }
+  };
   var classify_hvut_mooglemail_view_response = function (doc, stage) {
     var message = get_message(doc);
     if (!message) {
@@ -10929,31 +10956,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           apply_hvut_mooglemail_view_identity(view);
 
           if ($id('mmail_attachlist', doc)) {
-            Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));
-            Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
-              let exec;
-              const onmouseover = div.firstElementChild?.firstElementChild?.getAttribute('onmouseover');
-              const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, 'viewEquipAttach');
-              if (equipAttach) {
-                view.attach.push(equipAttach);
-              } else if (equipAttach === null) {
-                view.error = '解析装备附件失败';
-              } else if ((exec = /^([0-9,]+)x? (.+)$/.exec(div.textContent))) {
-                const count = _mm.parse_count(exec[1]);
-                const name = exec[2];
-                const type = (name === 'Hath') ? 'h' : (name === 'Credits') ? 'c' : 'i';
-                view.attach.push({ t: type, n: name, c: count });
-              } else {
-                console.log(div.textContent.trim());
-              }
+            parse_hvut_mooglemail_visible_attach_list(view, doc, html, {
+              equipStage: 'viewEquipAttach',
+              codStage: 'viewCurrentCod',
+              parseCount: _mm.parse_count,
             });
-            if ($id('mmail_currentcod', doc)) {
-              view.cod = parse_hvut_mooglemail_count($id('mmail_currentcod', doc).textContent, /Requested Payment on Delivery: ([0-9,]+) credits/, 'viewCurrentCod');
-              if (view.cod === null) {
-                view.error = '解析货到付款失败';
-                view.cod = 0;
-              }
-            }
           } else {
             const split = view.text.split('\n\n').reverse();
             const attach = split[0].split('\n').every((e) => {
@@ -16991,31 +16998,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         apply_hvut_mooglemail_view_identity(view);
 
         if ($id('mmail_attachlist', doc)) {
-          Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));
-          Array.from($id('mmail_attachlist', doc).children).forEach((div) => {
-            let exec;
-            const onmouseover = div.firstElementChild?.firstElementChild?.getAttribute('onmouseover');
-            const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, 'legacyViewEquipAttach');
-            if (equipAttach) {
-              view.attach.push(equipAttach);
-            } else if (equipAttach === null) {
-              view.error = '解析装备附件失败';
-            } else if ((exec = /^([0-9,]+)x? (.+)$/.exec(div.textContent))) {
-              const count = _mm.parse_count(exec[1]);
-              const name = exec[2];
-              const type = name === 'Hath' ? 'h' : name === 'Credits' ? 'c' : 'i';
-              view.attach.push({ t: type, n: name, c: count });
-            } else {
-              console.log(div.textContent.trim());
-            }
+          parse_hvut_mooglemail_visible_attach_list(view, doc, html, {
+            equipStage: 'legacyViewEquipAttach',
+            codStage: 'legacyViewCurrentCod',
+            parseCount: _mm.parse_count,
           });
-          if ($id('mmail_currentcod', doc)) {
-            view.cod = parse_hvut_mooglemail_count($id('mmail_currentcod', doc).textContent, /Requested Payment on Delivery: ([0-9,]+) credits/, 'legacyViewCurrentCod');
-            if (view.cod === null) {
-              view.error = '解析货到付款失败';
-              view.cod = 0;
-            }
-          }
         } else {
           const split = view.text.split('\n\n').reverse();
           const attach = split[0].split('\n').every((e) => {

@@ -99,6 +99,15 @@ for (const required of [
   "view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;",
   "var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {",
   "return record_hvut_mooglemail_parse_failure(stage, { eid: eid, onmouseover: onmouseover || '' });",
+  "var parse_hvut_mooglemail_visible_attach_list = function (view, doc, html, context) {",
+  "Object.assign($equip.dynjs_eqstore, parse_script_json(html, 'dynjs_eqstore'));",
+  "const onmouseover = div.firstElementChild?.firstElementChild?.getAttribute('onmouseover');",
+  "const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, context.equipStage);",
+  "view.error = '解析装备附件失败';",
+  "const count = context.parseCount(exec[1]);",
+  "view.cod = parse_hvut_mooglemail_count($id('mmail_currentcod', doc).textContent, /Requested Payment on Delivery: ([0-9,]+) credits/, context.codStage);",
+  "view.error = '解析货到付款失败';",
+  "view.cod = 0;",
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
   "var message = get_message(doc);",
   "var evidence = create_hvut_mooglemail_parse_evidence(stage, { reason: 'viewResponseMessageMissing' });",
@@ -134,10 +143,7 @@ for (const [label, body, stage] of [
   ["modern MoogleMail parser", modernMailParse, "viewCurrentCod"],
   ["legacy MoogleMail parser", legacyMailParse, "legacyViewCurrentCod"],
 ]) {
-  requirePart(label, body, `view.cod = parse_hvut_mooglemail_count($id('mmail_currentcod', doc).textContent, /Requested Payment on Delivery: ([0-9,]+) credits/, '${stage}');`);
-  requirePart(label, body, "if (view.cod === null) {");
-  requirePart(label, body, "view.error = '解析货到付款失败';");
-  requirePart(label, body, "view.cod = 0;");
+  requirePart(label, body, `codStage: '${stage}',`);
 }
 
 for (const [label, body, stage] of [
@@ -154,12 +160,9 @@ for (const [label, body, stage] of [
   ["legacy MoogleMail parser", legacyMailParse, "legacyViewEquipAttach"],
 ]) {
   requirePart(label, body, "apply_hvut_mooglemail_view_identity(view);");
-  requirePart(label, body, "const onmouseover = div.firstElementChild?.firstElementChild?.getAttribute('onmouseover');");
-  requirePart(label, body, `const equipAttach = parse_hvut_mooglemail_equip_attach(onmouseover, $equip.dynjs_eqstore, '${stage}');`);
-  requirePart(label, body, "if (equipAttach) {");
-  requirePart(label, body, "view.attach.push(equipAttach);");
-  requirePart(label, body, "} else if (equipAttach === null) {");
-  requirePart(label, body, "view.error = '解析装备附件失败';");
+  requirePart(label, body, "parse_hvut_mooglemail_visible_attach_list(view, doc, html, {");
+  requirePart(label, body, `equipStage: '${stage}',`);
+  requirePart(label, body, "parseCount: _mm.parse_count,");
   for (const forbidden of [
     "view.returned = true;",
     "view.filter = 'inbox';",
@@ -169,6 +172,12 @@ for (const [label, body, stage] of [
     "view.user = view.to;",
     "view.read = view.filter === 'read'",
     "RegExp.$1 || RegExp.$2",
+    "const onmouseover = div.firstElementChild?.firstElementChild?.getAttribute('onmouseover');",
+    "parse_hvut_mooglemail_equip_attach(onmouseover",
+    "view.error = '解析装备附件失败';",
+    "Object.assign($equip.dynjs_eqstore",
+    "view.cod = parse_hvut_mooglemail_count($id('mmail_currentcod', doc).textContent",
+    "view.error = '解析货到付款失败';",
   ]) {
     if (body.includes(forbidden)) {
       violations.push(`${target} ${label} must delegate view identity to apply_hvut_mooglemail_view_identity`);

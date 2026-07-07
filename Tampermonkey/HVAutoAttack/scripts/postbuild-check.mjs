@@ -53,12 +53,14 @@ for (const required of [
   "recordFailure: function(stage, detail)",
   "capability: \"equipmentFilter\"",
   'sessionStorage.setItem("HVAA:lastEquipmentFilterFailure"',
-  '$equip.filter.recordFailure("match", { equip: result.name, errors: result.errors })',
 ]) {
   if (!src.includes(required)) errors.push(`equipment filter artifact missing ${required}`);
 }
+if (!/\$equip\d*\.filter\.recordFailure\("match", \{ equip: result\.name, errors: result\.errors \}\)/.test(src)) {
+  errors.push("equipment filter artifact missing structured match failure evidence");
+}
 if (
-  !/\$equip\.filter\.recordFailure\("runtime", \{ equip: equip\d*, error: error\?\.message \|\| String\(error\) \}\)/.test(src)
+  !/\$equip\d*\.filter\.recordFailure\("runtime", \{ equip: equip\d*, error: error\?\.message \|\| String\(error\) \}\)/.test(src)
 ) {
   errors.push("equipment filter artifact missing runtime failure evidence");
 }
@@ -108,7 +110,6 @@ for (const required of [
   "capability: \"lotteryNotification\"",
   'sessionStorage.setItem("HVAA:lastLotteryNotificationFailure"',
   "const reportErrors =",
-  "const result = $equip.filter.match($config.settings.lotteryFilters, equip)",
   "filterErrors.push(...result.errors)",
   "return reportErrors(filterErrors, matched)",
   "filter: \"<lotteryFilters>\"",
@@ -132,6 +133,9 @@ for (const required of [
   '_bottom.record_lottery_notification_failure("load", ss',
 ]) {
   if (!src.includes(required)) errors.push(`lottery artifact missing ${required}`);
+}
+if (!/const result = \$equip\d*\.filter\.match\(\$config\.settings\.lotteryFilters, equip\)/.test(src)) {
+  errors.push("lottery artifact missing match decision with structured filter errors");
 }
 if (!lotteryRegion.includes("const { lottery } = _bottom.read_lottery_state(ss)")) {
   errors.push("lottery artifact display must read initialized lottery state");
@@ -160,7 +164,7 @@ for (const forbidden of [
 if (lotteryRegion.includes("$equip.filter.equip(")) {
   errors.push("lottery artifact must not call generic equipment filter boolean entry");
 }
-if (!lotteryRegion.includes("$equip.filter.match($config.settings.lotteryFilters, equip)")) {
+if (!/\$equip\d*\.filter\.match\(\$config\.settings\.lotteryFilters, equip\)/.test(lotteryRegion)) {
   errors.push("lottery artifact must use the match decision with structured filter errors");
 }
 
