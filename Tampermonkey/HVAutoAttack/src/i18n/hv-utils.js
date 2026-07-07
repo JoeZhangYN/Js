@@ -1308,6 +1308,9 @@ try {
   var create_hvut_mail_page_url = function (page) {
     return location.href.replace(/&page=\d+/, '') + `&page=${page}`;
   };
+  var create_hvut_mail_reply_url = function (mid) {
+    return `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -10637,7 +10640,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         if (action === 'close') {
           _mm.mail.close();
         } else if (action === 'reply') {
-          openUrl(`?s=Bazaar&ss=mm&filter=new&reply=${mid}`, hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
+          openUrl(create_hvut_mail_reply_url(mid), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
         } else if (action === 'take') {
           if (value && !confirm(`Accepting the attachments will deduct ${parseInt(value).toLocaleString()} Credits from your account.\nAre you sure?`)) {
             return;
@@ -17186,7 +17189,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       if (action === 'close') {
         _mm.mail_close();
       } else if (action === 'reply') {
-        openUrl(`?s=Bazaar&ss=mm&filter=new&reply=${mid}`, hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
+        openUrl(create_hvut_mail_reply_url(mid), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
       } else if (action === 'take') {
         if (value && !confirm(`拿取附件将从你的账户中扣除 ${parseInt(value).toLocaleString()} Credits.\n确定吗?`)) {
           return;
