@@ -49,6 +49,7 @@ describe("readRecentDiagnosticEvidence", () => {
       "HVAA:lastRiddleSubmitFailure": { capability: "riddleSubmit", stage: "click-submit" }, "HVAA:lastRiddleImageFailure": { capability: "riddleImage", stage: "prepare-ml-payload" },
       "HVAA:lastStaminaLossLogFailure": { capability: "staminaLossLog", stage: "record" },
       "HVAA:lastOptionFailure": { capability: "option", stage: "write" },
+      "HVAA:lastSettingsHvutConfigFailure": { capability: "settingsHvutConfig", stage: "open-panel" },
       "HVAA:lastBattleRecordArchiveFailure": { capability: "battleRecordArchive", stage: "store-current" },
       "HVAA:lastStorageReadFailure": { capability: "storageRead", source: "GM_getValue" },
       "HVAA:lastOptionBackupFailure": { capability: "optionBackup", action: "restore", reason: "restoreFailed" },
@@ -112,6 +113,7 @@ describe("readRecentDiagnosticEvidence", () => {
       riddleImageFailure: { capability: "riddleImage", stage: "prepare-ml-payload" },
       staminaLossLogFailure: { capability: "staminaLossLog", stage: "record" },
       optionFailure: { capability: "option", stage: "write" },
+      settingsHvutConfigFailure: { capability: "settingsHvutConfig", stage: "open-panel" },
       battleRecordArchiveFailure: { capability: "battleRecordArchive", stage: "store-current" },
       storageReadFailure: { capability: "storageRead", source: "GM_getValue" },
       optionBackupFailure: { capability: "optionBackup", action: "restore", reason: "restoreFailed" },
@@ -132,12 +134,7 @@ describe("readRecentDiagnosticEvidence", () => {
     window.sessionStorage.setItem("HVAA:lastNavigationDecision", "{not-json");
     window.sessionStorage.setItem("HVAA:lastBattleCompletion", JSON.stringify({ outcome: "victory", effects: { scheduleReload: false } }));
     const blockedKeys = new Set(["HVAA:lastBattleApiBridge"]);
-    const storage = {
-      getItem(key) {
-        if (blockedKeys.has(key)) throw new Error("read blocked");
-        return window.sessionStorage.getItem(key);
-      },
-    };
+    const storage = { getItem: (key) => blockedKeys.has(key) ? (() => { throw new Error("read blocked"); })() : window.sessionStorage.getItem(key) };
 
     expect(readRecentDiagnosticEvidence(storage)).toMatchObject({
       battleCompletion: { outcome: "victory", effects: { scheduleReload: false } },
@@ -150,8 +147,6 @@ describe("readRecentDiagnosticEvidence", () => {
     window.sessionStorage.setItem("HVAA:lastNavigationAudit", JSON.stringify({ kind: "previousReload" }));
     window.sessionStorage.setItem("HVAA:lastBattleCompletion", JSON.stringify({ outcome: "victory" }));
 
-    expect(readRecentDiagnosticEvidence(window.sessionStorage, { excludeKeys: ["HVAA:lastNavigationAudit"] })).toEqual({
-      battleCompletion: { outcome: "victory" },
-    });
+    expect(readRecentDiagnosticEvidence(window.sessionStorage, { excludeKeys: ["HVAA:lastNavigationAudit"] })).toEqual({ battleCompletion: { outcome: "victory" } });
   });
 });

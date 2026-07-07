@@ -5,6 +5,8 @@ const root = process.cwd();
 const owner = path.normalize("src/settings/form-option.js");
 const settingsRender = path.normalize("src/settings/render.js");
 const customizeInspect = path.normalize("src/settings/customize.js");
+const hvutConfigCommand = path.normalize("src/settings/hvut-config-command.js");
+const hvutConfigCommandTest = path.normalize("src/settings/hvut-config-command.test.js");
 const violations = [];
 
 function rel(file) {
@@ -20,14 +22,22 @@ for (const required of ["SettingsFormOptionEvent", "runSettingsFormOptionAutomat
 const entryBody =
   ownerText.match(/export function runSettingsFormOptionAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] ||
   "";
-if (!/const settingsFormOptionEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_COLLECT_OPTION\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+if (
+  !/const settingsFormOptionEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_COLLECT_OPTION\]/.test(
+    ownerText
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
 }
 if (entryBody.includes("event.type") || !entryBody.includes("event?.type")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null form option events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null form option events`
+  );
 }
 for (const required of [
   "function hasInputClass(input, className) {",
@@ -47,7 +57,9 @@ for (const forbidden of [
   '? "customizeInput" : input.className',
 ]) {
   if (ownerText.includes(forbidden)) {
-    violations.push(`${owner.replaceAll("\\", "/")} must not classify form inputs by whole className`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must not classify form inputs by whole className`
+    );
   }
 }
 const ownerTest = path.normalize("src/settings/form-option.test.js");
@@ -59,18 +71,25 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     !ownerTestText.includes("rejects invalid form option events without collecting fields") ||
     !ownerTestText.includes("runSettingsFormOptionAutomation(null)")
   ) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover unknown and null form option events`);
+    violations.push(
+      `${ownerTest.replaceAll("\\", "/")} must cover unknown and null form option events`
+    );
   }
   if (
     !ownerTestText.includes("classifies settings input classes by token") ||
     !ownerTestText.includes("hvAADebug hvAANumber") ||
     !ownerTestText.includes("customizeInput active")
   ) {
-    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover multi-class debug/customize inputs`);
+    violations.push(
+      `${ownerTest.replaceAll("\\", "/")} must cover multi-class debug/customize inputs`
+    );
   }
 }
 
 const renderText = fs.readFileSync(path.join(root, settingsRender), "utf8");
+const renderTextWithoutComments = renderText
+  .replace(/\/\*[\s\S]*?\*\//g, "")
+  .replace(/(^|[^:])\/\/.*$/gm, "$1");
 if (!renderText.includes("SettingsFormOptionEvent.COLLECT_OPTION")) {
   violations.push(
     `${settingsRender.replaceAll("\\", "/")} must collect option through form-option`
@@ -93,91 +112,166 @@ for (const required of [
   "const table = readSelectableReportTableTarget(e.target);",
 ]) {
   if (!renderText.includes(required)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} must classify hydration input classes by token`);
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} must classify hydration input classes by token`
+    );
   }
 }
-for (const forbidden of [
-  'inputs[i].className === "hvAADebug"',
-  'className === "hvAACustomize"',
-]) {
+for (const forbidden of ['inputs[i].className === "hvAADebug"', 'className === "hvAACustomize"']) {
   if (renderText.includes(forbidden)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} must not classify hydration inputs by whole className`);
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} must not classify hydration inputs by whole className`
+    );
   }
 }
-const customizeHoverBlock = /optionBox\.onmousemove = function \(e\) \{[\s\S]*?\n  \};/.exec(renderText)?.[0] || "";
+const customizeHoverBlock =
+  /optionBox\.onmousemove = function \(e\) \{[\s\S]*?\n  \};/.exec(renderText)?.[0] || "";
 for (const forbidden of [
   /className === ["']customize["']/,
   /parentNode\.parentNode/,
   /className\.match\(["']customize["']\)/,
 ]) {
   if (forbidden.test(customizeHoverBlock)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} must route customize hover target parsing through readCustomizeHoverTarget`);
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} must route customize hover target parsing through readCustomizeHoverTarget`
+    );
   }
 }
-const selectTableBlock = /gE\(["']\.selectTable["'][\s\S]*?select\.addRange\(range\);[\s\S]*?\n        \};/.exec(renderText)?.[0] || "";
+const selectTableBlock =
+  /gE\(["']\.selectTable["'][\s\S]*?select\.addRange\(range\);[\s\S]*?\n        \};/.exec(
+    renderText
+  )?.[0] || "";
 if (/parentNode\.parentNode/.test(selectTableBlock)) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} must route report table selection through readSelectableReportTableTarget`);
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must route report table selection through readSelectableReportTableTarget`
+  );
 }
 if (/\bg\(\s*["']option["']/.test(renderText)) {
   violations.push(`${settingsRender.replaceAll("\\", "/")} must not read raw option state`);
 }
 if (!renderText.includes("export function readSingleOrderItemName(target)")) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} must expose one single-order target parser`);
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must expose one single-order target parser`
+  );
 }
 if (!renderText.includes("const name = readSingleOrderItemName(e.target);")) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} must route single-order handlers through readSingleOrderItemName`);
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must route single-order handlers through readSingleOrderItemName`
+  );
 }
 if (!renderText.includes("if (!name) return;")) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} must ignore malformed single-order targets`);
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must ignore malformed single-order targets`
+  );
 }
 if (/id\.match\([^;\n]+\)\[1\]/.test(renderText)) {
   violations.push(`${settingsRender.replaceAll("\\", "/")} must not index raw id.match() results`);
 }
+if (!renderText.includes("SettingsHvutConfigCommandEvent.OPEN_PANEL")) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must open HVUT config through settings command`
+  );
+}
+if (/window\.HVUT_openConfig/.test(renderTextWithoutComments)) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must not call HVUT config bridge directly`
+  );
+}
+if (!fs.existsSync(path.join(root, hvutConfigCommand))) {
+  violations.push(`${hvutConfigCommand.replaceAll("\\", "/")} must own HVUT config open command`);
+} else {
+  const hvutConfigCommandText = fs.readFileSync(path.join(root, hvutConfigCommand), "utf8");
+  for (const required of [
+    "SettingsHvutConfigCommandEvent",
+    "runSettingsHvutConfigCommand",
+    "SETTINGS_HVUT_CONFIG_FAILURE_KEY",
+    "missingHvutConfigBridge",
+    "hvutConfigBridgeFailed",
+    "recordSettingsHvutConfigFailure",
+  ]) {
+    if (!hvutConfigCommandText.includes(required)) {
+      violations.push(`${hvutConfigCommand.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
+}
+if (!fs.existsSync(path.join(root, hvutConfigCommandTest))) {
+  violations.push(`${hvutConfigCommandTest.replaceAll("\\", "/")} must cover HVUT config command`);
+} else {
+  const hvutConfigCommandTestText = fs.readFileSync(path.join(root, hvutConfigCommandTest), "utf8");
+  for (const required of [
+    "opens the hv-utils config panel through the typed settings command",
+    "records missing hv-utils config bridge evidence without throwing",
+    "records hv-utils config bridge failures without claiming success",
+    "rejects unknown and null settings hv-utils config events",
+  ]) {
+    if (!hvutConfigCommandTestText.includes(required)) {
+      violations.push(`${hvutConfigCommandTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
+}
 const orderTargetTest = path.normalize("src/settings/render-order-target.test.js");
 if (!fs.existsSync(path.join(root, orderTargetTest))) {
-  violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover single-order target parsing`);
+  violations.push(
+    `${orderTargetTest.replaceAll("\\", "/")} must cover single-order target parsing`
+  );
 } else {
   const orderTargetTestText = fs.readFileSync(path.join(root, orderTargetTest), "utf8");
   if (!orderTargetTestText.includes("fails closed for malformed order event targets")) {
-    violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover malformed single-order targets`);
+    violations.push(
+      `${orderTargetTest.replaceAll("\\", "/")} must cover malformed single-order targets`
+    );
   }
   if (
     !orderTargetTestText.includes("classifies settings hydration classes by token") ||
     !orderTargetTestText.includes("hvAADebug hvAANumber") ||
     !orderTargetTestText.includes("hvAACustomize active")
   ) {
-    violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover multi-class hydration inputs`);
+    violations.push(
+      `${orderTargetTest.replaceAll("\\", "/")} must cover multi-class hydration inputs`
+    );
   }
   if (
     !orderTargetTestText.includes("reads customize hover targets without assuming parent depth") ||
     !orderTargetTestText.includes("readCustomizeHoverTarget(null)") ||
     !orderTargetTestText.includes("customize active")
   ) {
-    violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover customize hover target parsing`);
+    violations.push(
+      `${orderTargetTest.replaceAll("\\", "/")} must cover customize hover target parsing`
+    );
   }
   if (
     !orderTargetTestText.includes("reads selectable report tables without assuming parent depth") ||
     !orderTargetTestText.includes("readSelectableReportTableTarget(null)") ||
     !orderTargetTestText.includes('tagName: "TABLE"')
   ) {
-    violations.push(`${orderTargetTest.replaceAll("\\", "/")} must cover selectable report table parsing`);
+    violations.push(
+      `${orderTargetTest.replaceAll("\\", "/")} must cover selectable report table parsing`
+    );
   }
 }
 const customizeText = fs.readFileSync(path.join(root, customizeInspect), "utf8");
 if (!customizeText.includes("export function readCustomizeInspectTarget(target)")) {
-  violations.push(`${customizeInspect.replaceAll("\\", "/")} must expose one customize inspect read entry`);
+  violations.push(
+    `${customizeInspect.replaceAll("\\", "/")} must expose one customize inspect read entry`
+  );
 }
 if (
   !customizeText.includes("function hasCustomizeInspectClass(target, className)") ||
   !customizeText.includes('hasCustomizeInspectClass(target, "btsd")')
 ) {
-  violations.push(`${customizeInspect.replaceAll("\\", "/")} must classify inspect target classes by token`);
+  violations.push(
+    `${customizeInspect.replaceAll("\\", "/")} must classify inspect target classes by token`
+  );
 }
 if (/className === ["']btsd["']/.test(customizeText)) {
-  violations.push(`${customizeInspect.replaceAll("\\", "/")} must not classify inspect targets by whole className`);
+  violations.push(
+    `${customizeInspect.replaceAll("\\", "/")} must not classify inspect targets by whole className`
+  );
 }
 if (!customizeText.includes("let find = readCustomizeInspectTarget(target)")) {
-  violations.push(`${customizeInspect.replaceAll("\\", "/")} must route inspect mousemove through readCustomizeInspectTarget`);
+  violations.push(
+    `${customizeInspect.replaceAll("\\", "/")} must route inspect mousemove through readCustomizeInspectTarget`
+  );
 }
 if (/match\([^;\n]+\)\[1\]/.test(customizeText)) {
   violations.push(`${customizeInspect.replaceAll("\\", "/")} must not index raw match() results`);
@@ -188,7 +282,9 @@ for (const required of [
   "return match ? `Buff Img: ${match[1]}` : undefined;",
 ]) {
   if (!customizeText.includes(required)) {
-    violations.push(`${customizeInspect.replaceAll("\\", "/")} must fail closed through ${required}`);
+    violations.push(
+      `${customizeInspect.replaceAll("\\", "/")} must fail closed through ${required}`
+    );
   }
 }
 const customizeTest = path.normalize("src/settings/customize.test.js");
@@ -197,10 +293,14 @@ if (!fs.existsSync(path.join(root, customizeTest))) {
 } else {
   const customizeTestText = fs.readFileSync(path.join(root, customizeTest), "utf8");
   if (!customizeTestText.includes("fails closed for malformed inspect attributes")) {
-    violations.push(`${customizeTest.replaceAll("\\", "/")} must cover malformed inspect attributes`);
+    violations.push(
+      `${customizeTest.replaceAll("\\", "/")} must cover malformed inspect attributes`
+    );
   }
   if (!customizeTestText.includes("btsd active")) {
-    violations.push(`${customizeTest.replaceAll("\\", "/")} must cover multi-class inspect skill targets`);
+    violations.push(
+      `${customizeTest.replaceAll("\\", "/")} must cover multi-class inspect skill targets`
+    );
   }
 }
 const applyBlock =

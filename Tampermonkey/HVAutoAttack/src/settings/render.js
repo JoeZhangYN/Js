@@ -40,6 +40,10 @@ import {
   SettingsStaminaLossLogCommandEvent,
   runSettingsStaminaLossLogCommand,
 } from "./stamina-loss-log-command.js";
+import {
+  SettingsHvutConfigCommandEvent,
+  runSettingsHvutConfigCommand,
+} from "./hvut-config-command.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -772,7 +776,7 @@ export function openHVAAConfig(lang) {
   }
 }
 
-// 反向桥(对称于 hv-utils 暴露的 window.HVUT_openConfig)：hv-utils 顶部栏内 HVAA 触发器经此开 HVAA 面板。
+// 反向桥：hv-utils 顶部栏内 HVAA 触发器经此开 HVAA 面板。
 // hv-utils 是 sloppy-mode 第三方脚本不能 ESM import，故经 window 桥(与 window.HVAA_i18n 同模式)。
 if (typeof window !== "undefined") window.HVAA_openConfig = openHVAAConfig;
 
@@ -922,7 +926,7 @@ export function optionBox() {
     // 旧 dodying 外链已移除（条件用法见条件框内联 "?" 帮助）；保留标签不再导航。
     '  <span style="opacity:.6;"><l0>JoezhangYN 修改版</l0><l1>JoezhangYN 修改版</l1><l2>JoezhangYN fork</l2></span>',
     '  <select name="lang"><option value="0">简体中文</option><option value="1">繁體中文</option><option value="2">English</option></select>',
-    // UI 入口整合（只合入口）：HVAA 面板内开 hv-utils config，经反向桥 window.HVUT_openConfig（hv-utils 暴露）。
+    // UI 入口整合（只合入口）：HVAA 面板内开 hv-utils config，经 settings command 统一裁决。
     '  <span class="hvAAOpenHVUT" style="cursor:pointer;text-decoration:underline;margin-left:8px;" title="HV Utils 设置"><l0>HV Utils 设置</l0><l1>HV Utils 設置</l1><l2>HV Utils Settings</l2></span>',
     '  <l2><span style="font-size:small;"><a target="_blank" href="https://greasyfork.org/forum/profile/18194/Koko191" style="color:#E3E0D1;background-color:#E3E0D1;" title="Thanks to Koko191 who give help in the translation">by Koko191</a></span></l2></div>',
     '<div class="hvAATablist">',
@@ -1121,9 +1125,11 @@ export function optionBox() {
     // HV 原生汉化(equip/interface) 即时按新 lang 重渲染显示态（0简/1繁/2英），无需重载
     writeSettingsLanguage(this.value, this);
   };
-  // UI 入口整合：HVAA 面板内入口打开 hv-utils config 面板。?. 兜底：桥未就绪/非 HV 页时静默不崩。
+  // UI 入口整合：HVAA 面板内入口打开 hv-utils config 面板。
   const openHVUT = gE(".hvAAOpenHVUT", optionBox);
-  if (openHVUT) openHVUT.onclick = () => window.HVUT_openConfig?.();
+  if (openHVUT)
+    openHVUT.onclick = () =>
+      runSettingsHvutConfigCommand({ type: SettingsHvutConfigCommandEvent.OPEN_PANEL });
   gE(".hvAATabmenu", optionBox).onclick = function (e) {
     // 标签页事件
     if (e.target.tagName === "INPUT") return;
