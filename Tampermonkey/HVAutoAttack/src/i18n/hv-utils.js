@@ -3,6 +3,67 @@
 // 嵌入守卫:原脚本靠 @exclude isekai/equip 避让 HVAA 装备百分位;嵌入后无法用 @exclude
 // (会排除 HVAA 自身),改运行时守卫复现;try-catch 隔离,汉化崩溃不阻断 HVAA 主逻辑。
 try {
+  var HVUT_RUNTIME_FAILURE_KEY = 'HVAA:lastHvutRuntimeFailure';
+  var hvut_runtime_error_text = function (error) {
+    return error && error.message ? error.message : String(error);
+  };
+  var create_hvut_runtime_failure_evidence = function (error, stage, detail) {
+    return {
+      capability: 'hvutRuntime',
+      stage: stage || 'executeHvUtils',
+      page: location.href,
+      name: error && error.name,
+      msg: hvut_runtime_error_text(error),
+      stack: error && error.stack ? error.stack : String(error),
+      detail: detail || {},
+    };
+  };
+  var record_hvut_runtime_failure = function (error, stage, detail) {
+    var evidence = create_hvut_runtime_failure_evidence(error, stage, detail);
+    try {
+      sessionStorage.setItem(HVUT_RUNTIME_FAILURE_KEY, JSON.stringify(evidence));
+    } catch (_error) {
+      // HVUT runtime diagnostics must not depend on diagnostic storage.
+    }
+    try {
+      console.error('[HVAA][HVUT] runtime failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block the visible runtime diagnostic.
+    }
+    return evidence;
+  };
+  var render_hvut_runtime_failure_log = function (evidence) {
+    return "[HVAA][HVUT] 执行出错，请整段复制此日志反馈：\n\n" +
+      "page : " + evidence.page + "\n" +
+      "cap  : " + evidence.capability + "\n" +
+      "stage: " + evidence.stage + "\n" +
+      "name : " + evidence.name + "\n" +
+      "msg  : " + evidence.msg + "\n\n" +
+      "stack:\n" + evidence.stack;
+  };
+  var show_hvut_runtime_failure_report = function (log) {
+    var show = function () {
+      if (!document.body) return;
+      var ta = document.createElement("textarea");
+      ta.value = log;
+      ta.readOnly = true;
+      ta.style.cssText =
+        "position:fixed;top:8%;left:8%;width:84%;height:64%;z-index:2147483647;" +
+        "background:#fff;color:#000;border:2px solid #c00;font:12px/1.5 monospace;padding:8px;white-space:pre;";
+      var btn = document.createElement("button");
+      btn.textContent = "× 关闭 HVUT 诊断";
+      btn.style.cssText =
+        "position:fixed;top:3%;left:8%;z-index:2147483647;background:#c00;color:#fff;" +
+        "border:0;padding:4px 12px;cursor:pointer;font:13px sans-serif;";
+      btn.onclick = function () { ta.remove(); btn.remove(); };
+      document.body.appendChild(ta);
+      document.body.appendChild(btn);
+      ta.focus();
+      ta.select();
+    };
+    if (document.body) show();
+    else document.addEventListener("DOMContentLoaded", show);
+  };
   var record_hvut_i18n_bridge_failure = function (stage, detail) {
     var evidence = { capability: 'hvutI18nBridge', stage: stage, detail: detail || {} };
     try {
@@ -17942,46 +18003,29 @@ if (get_hvut_armory_page_context($config).isArmory && get_hvut_armory_page_conte
 // ===== 原文结束 =====
   }
 } catch (e) {
+  var runtimeFailure = null;
+  try {
+    runtimeFailure = typeof record_hvut_runtime_failure === 'function'
+      ? record_hvut_runtime_failure(e, 'executeHvUtils', { source: 'topLevelCatch' })
+      : null;
+  } catch (_) {
+    console.error("[HVAA][HVUT] runtime failed", e);
+  }
   try {
     var initFailure = typeof run_hvut_i18n_bridge === 'function'
       ? run_hvut_i18n_bridge('recordI18nInitFailure', ['hv-utils', e], 'recordI18nInitFailureBridgeMissing', { entry: 'hv-utils' }, false)
       : false;
     if (initFailure === false) {
-      console.error("[HVAA][i18n] HV Utils 汉化执行出错:", e);
+      console.error("[HVAA][HVUT] runtime bridge report failed:", e);
     }
   } catch (_) {
-    console.error("[HVAA][i18n] HV Utils 汉化执行出错:", e);
+    console.error("[HVAA][HVUT] runtime bridge report failed:", e);
   }
-  // [临时诊断 v10.0.1] 用户要求:汉化崩溃时直接在页面弹 textarea 显示日志,便于复制反馈。
-  // 定位修复后移除本块。诊断自身再包 try,绝不二次抛错打断页面。
+  // 用户要求:HVUT 崩溃时直接在页面弹 textarea 显示日志,便于复制反馈。
+  // 诊断自身再包 try,绝不二次抛错打断页面。
   try {
-    var __hvaaErrLog =
-      "[HVAA][i18n] 汉化执行出错，请整段复制此日志反馈：\n\n" +
-      "page : " + location.href + "\n" +
-      "name : " + (e && e.name) + "\n" +
-      "msg  : " + (e && e.message) + "\n\n" +
-      "stack:\n" + (e && e.stack ? e.stack : String(e));
-    var __hvaaShowErr = function () {
-      if (!document.body) return;
-      var ta = document.createElement("textarea");
-      ta.value = __hvaaErrLog;
-      ta.readOnly = true;
-      ta.style.cssText =
-        "position:fixed;top:8%;left:8%;width:84%;height:64%;z-index:2147483647;" +
-        "background:#fff;color:#000;border:2px solid #c00;font:12px/1.5 monospace;padding:8px;white-space:pre;";
-      var btn = document.createElement("button");
-      btn.textContent = "× 关闭汉化诊断";
-      btn.style.cssText =
-        "position:fixed;top:3%;left:8%;z-index:2147483647;background:#c00;color:#fff;" +
-        "border:0;padding:4px 12px;cursor:pointer;font:13px sans-serif;";
-      btn.onclick = function () { ta.remove(); btn.remove(); };
-      document.body.appendChild(ta);
-      document.body.appendChild(btn);
-      ta.focus();
-      ta.select();
-    };
-    if (document.body) __hvaaShowErr();
-    else document.addEventListener("DOMContentLoaded", __hvaaShowErr);
+    var __hvaaRuntimeFailure = runtimeFailure || create_hvut_runtime_failure_evidence(e, 'executeHvUtils', { source: 'topLevelCatch' });
+    show_hvut_runtime_failure_report(render_hvut_runtime_failure_log(__hvaaRuntimeFailure));
   } catch (_) { /* 诊断不得二次抛错 */ }
 }
 

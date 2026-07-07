@@ -59,7 +59,7 @@ const hvUtilsText = read(hvUtilsEntry);
 for (const required of [
   "run_hvut_i18n_bridge('recordI18nInitFailure', ['hv-utils', e], 'recordI18nInitFailureBridgeMissing'",
   "if (initFailure === false) {",
-  "HV Utils 汉化执行出错",
+  "runtime bridge report failed",
 ]) {
   if (!hvUtilsText.includes(required)) violations.push(`${rel(hvUtilsEntry)} must classify hv-utils init failures`);
 }
