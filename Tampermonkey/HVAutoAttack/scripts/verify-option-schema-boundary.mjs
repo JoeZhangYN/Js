@@ -66,6 +66,7 @@ if (!/export function runOptionSchema\(\s*event\b/.test(ownerText)) {
 const renderText = fs.readFileSync(path.join(root, settingsRender), "utf8");
 for (const required of [
   /renderEquipmentSchemaFields/,
+  /readSchemaField\(\s*["']repair["']\s*\)/,
   /readSchemaField\(\s*["']repairValue["']\s*\)/,
   /renderCheckboxPlusNumber\(\s*["']repairBuyMaterials["']\s*,\s*["']repairCreditCap["']/,
   /renderSchemaCheckboxField\(\s*["']forgeCostShow["']\s*\)/,
@@ -165,6 +166,7 @@ for (const required of [
 }
 for (const forbidden of [
   /name=["']repairValue["']\s+placeholder=["']60["']/,
+  /id=["']repair["'][\s\S]{0,120}修复装备/,
   /id=["']repairBuyMaterials["'][\s\S]{0,140}维修缺料时自动/,
   /name=["']repairCreditCap["']\s+placeholder=["']50000["']/,
   /id=["']forgeCostShow["'][\s\S]{0,120}强化价格/,

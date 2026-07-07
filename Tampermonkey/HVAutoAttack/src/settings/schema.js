@@ -749,6 +749,17 @@ const OPTION_SCHEMA = [
   },
   // === 自动维修：耐久阈值 + 缺料联动物品商店买齐（两世界统一，repair/ 业务能力消费） ===
   {
+    key: "repair",
+    kind: "checkbox",
+    group: "Main",
+    default: false,
+    label: {
+      l0: "修复装备",
+      l1: "修復裝備",
+      l2: "Repair Equipment",
+    },
+  },
+  {
     key: "repairValue",
     kind: "number",
     group: "Main",

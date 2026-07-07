@@ -196,6 +196,9 @@ function renderMainPluginSchemaFields() {
 
 function renderEquipmentSchemaFields() {
   return [
+    `<div><input id="repair" type="checkbox"><label for="repair"><b>${renderSchemaLabel(
+      readSchemaField("repair")
+    )}</b></label>: `,
     `    ${renderSchemaLabel(readSchemaField("repairValue"))} ≤ ${renderSchemaNumberInput(
       "repairValue",
       "%"
@@ -683,7 +686,6 @@ export function optionBox() {
     "  </div>",
     // === Equipment 装备维护 tab（修复装备 + 缺料买料 + 强化价格 + 装备百分位，原 Main 拆出）===
     '<div class="hvAATab" id="hvAATab-Equipment">',
-    '  <div><input id="repair" type="checkbox"><label for="repair"><b><l0>修复装备</l0><l1>修復裝備</l1><l2>Repair Equipment</l2></b></label>: ',
     ...renderEquipmentSchemaFields(),
     "  </div>",
     // === System 系统/页面 tab（页面停留 alert/reload + 定时刷新 + 记录每场 + 延迟，原 Main 拆出）===
