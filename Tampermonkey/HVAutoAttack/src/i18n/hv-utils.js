@@ -1324,6 +1324,9 @@ try {
   var create_hvut_mail_view_url = function (mid) {
     return `?s=Bazaar&ss=mm&mid=${mid}`;
   };
+  var create_hvut_character_settings_url = function () {
+    return '?s=Character&ss=se';
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -6014,7 +6017,7 @@ if (!level_exec) {
     form.elements.fontsize.placeholder = '10';
     form.elements.fontoff.placeholder = '0';
   } else {
-    openUrl('?s=Character&ss=se', hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'));
+    openUrl(create_hvut_character_settings_url(), hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'));
   }
   return;
 }
@@ -11796,7 +11799,7 @@ if (!level_exec) {
     form.fontsize.placeholder = '10';
     form.fontoff.placeholder = '0';
   } else {
-    openUrl('?s=Character&ss=se', hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'));
+    openUrl(create_hvut_character_settings_url(), hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'));
   }
   return;
 }

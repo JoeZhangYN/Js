@@ -15,6 +15,7 @@ for (const required of [
   "var create_hvut_mail_read_url = function (context) {",
   "var create_hvut_mail_compose_url = function (context) {",
   "var create_hvut_mail_view_url = function (mid) {",
+  "var create_hvut_character_settings_url = function () {",
   "return context?.absolute ? `${location.origin}${location.pathname}${relative}` : relative;",
   "return location.href + '&hvut=disabled';",
   "return location.href.replace(/&page=\\d+/, '') + `&page=${page}`;",
@@ -23,6 +24,7 @@ for (const required of [
   "return `?s=Bazaar&ss=mm&filter=${context?.filter}&mid=${context?.mid}${pageParam}`;",
   "return context?.persistent ? '/?s=Bazaar&ss=mm&filter=new' : '?s=Bazaar&ss=mm&filter=new';",
   "return `?s=Bazaar&ss=mm&mid=${mid}`;",
+  "return '?s=Character&ss=se';",
   "eq.data.url = create_hvut_equip_page_url(eq, { absolute: true });",
   "openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
   "openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
@@ -37,6 +39,7 @@ for (const required of [
   "$ajax.fetch(create_hvut_mail_compose_url()",
   "$ajax.fetch(create_hvut_mail_compose_url({ persistent: true })",
   "$ajax.fetch(create_hvut_mail_view_url(mid), post)",
+  "openUrl(create_hvut_character_settings_url(), hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'));",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT page URL boundary: ${required}`);
@@ -59,6 +62,7 @@ for (const forbidden of [
   "$ajax.fetch('/?s=Bazaar&ss=mm&filter=new'",
   "$ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post)",
   "$ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post)",
+  "openUrl('?s=Character&ss=se', hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'))",
 ]) {
   const allowedInsideHelper =
     forbidden === "location.href + '&hvut=disabled'" || forbidden === "location.href.replace(/&page=\\d+/, '') + `&page=${p}`";
@@ -101,6 +105,11 @@ if (mailComposeFetchOccurrences !== 9) {
 const mailViewFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_view_url\(mid\), post\)/g)].length;
 if (mailViewFetchOccurrences !== 2) {
   violations.push(`${target} must route mail view/action fetches through create_hvut_mail_view_url, found ${mailViewFetchOccurrences}`);
+}
+
+const characterSettingsOpenOccurrences = [...text.matchAll(/openUrl\(create_hvut_character_settings_url\(\), hvutRedirectReason\('HV_UTILS_CHARACTER_SETTINGS'\)\)/g)].length;
+if (characterSettingsOpenOccurrences !== 2) {
+  violations.push(`${target} must route Character settings navigation through create_hvut_character_settings_url, found ${characterSettingsOpenOccurrences}`);
 }
 
 if (violations.length) {
