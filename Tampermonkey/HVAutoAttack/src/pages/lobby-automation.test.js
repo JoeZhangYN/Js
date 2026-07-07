@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   runAbilityAoeAutomation: vi.fn(),
   runBattleRuntimeAutomation: vi.fn(),
   runEncounterAutomation: vi.fn(async () => ({ claimed: false })),
+  isAutomaticEncounterEnabled: vi.fn(() => false),
   runIdleArenaAutomation: vi.fn(),
   runQuickSiteAutomation: vi.fn(),
   runRepairAutomation: vi.fn(),
@@ -18,7 +19,9 @@ vi.mock("../state/option.js", () => ({
   runOptionAutomation: mocks.runOptionAutomation,
 }));
 vi.mock("../state/day-record.js", () => ({
-  DayRecordEvent: Object.freeze({ REFRESH_AND_SCHEDULE_NEXT_UTC_DAY: "refreshAndScheduleNextUtcDay" }),
+  DayRecordEvent: Object.freeze({
+    REFRESH_AND_SCHEDULE_NEXT_UTC_DAY: "refreshAndScheduleNextUtcDay",
+  }),
   runDayRecordAutomation: mocks.runDayRecordAutomation,
 }));
 vi.mock("../state/stamina.js", () => ({
@@ -41,6 +44,9 @@ vi.mock("./encounter.js", () => ({
   EncounterEvent: Object.freeze({ LOBBY_TICK: "lobbyTick" }),
   runEncounterAutomation: mocks.runEncounterAutomation,
 }));
+vi.mock("./encounter-option-gate.js", () => ({
+  isAutomaticEncounterEnabled: mocks.isAutomaticEncounterEnabled,
+}));
 vi.mock("./ability-page.js", () => ({
   AbilityAoeEvent: Object.freeze({ CAPTURE_ABILITY_PAGE: "captureAbilityPage" }),
   runAbilityAoeAutomation: mocks.runAbilityAoeAutomation,
@@ -52,16 +58,17 @@ vi.mock("../battle/battle-runtime.js", () => ({
 
 function setLobbyOption(option) {
   mocks.runOptionAutomation.mockImplementation((event) => {
-    if (event.type === "readField") return option[event.key] !== undefined ? option[event.key] : event.fallback;
-    return undefined;
+    if (event.type !== "readField") return undefined;
+    return option[event.key] !== undefined ? option[event.key] : event.fallback;
   });
 }
 
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockClear();
   mocks.runEncounterAutomation.mockResolvedValue({ claimed: false });
+  mocks.isAutomaticEncounterEnabled.mockReturnValue(false);
   mocks.runStaminaAutomation.mockReturnValue(false);
-  setLobbyOption({ encounter: false, idleArena: false, repair: false });
+  setLobbyOption({ idleArena: false, repair: false });
 });
 
 describe("runLobbyAutomation", () => {
@@ -75,21 +82,22 @@ describe("runLobbyAutomation", () => {
   });
 
   it("runs lobby page-ready capabilities through one event entry", async () => {
-    setLobbyOption({ encounter: false, idleArena: false, repair: true });
+    setLobbyOption({ idleArena: false, repair: true });
 
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
 
     expect(mocks.runBattleRuntimeAutomation).toHaveBeenCalledWith({ type: "clearSession" });
-    expect(mocks.runDayRecordAutomation).toHaveBeenCalledWith({ type: "refreshAndScheduleNextUtcDay", rerun: expect.any(Function) });
+    expect(mocks.runDayRecordAutomation).toHaveBeenCalledWith({
+      type: "refreshAndScheduleNextUtcDay",
+      rerun: expect.any(Function),
+    });
     expect(mocks.runAbilityAoeAutomation).toHaveBeenCalledWith({ type: "captureAbilityPage" });
     expect(mocks.runQuickSiteAutomation).toHaveBeenCalledWith({ type: "lobbyReady" });
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readField", key: "encounter", fallback: false });
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readField", key: "repair", fallback: false });
     expect(mocks.runRepairAutomation).toHaveBeenCalledWith({ type: "start" });
   });
 
   it("runs lobby ready flow in business order", async () => {
-    setLobbyOption({ encounter: false, idleArena: true, repair: false });
+    setLobbyOption({ idleArena: true, repair: false });
 
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
 
@@ -105,29 +113,37 @@ describe("runLobbyAutomation", () => {
   });
 
   it("stops later lobby automation when encounter is claimed", async () => {
-    setLobbyOption({ encounter: true, idleArena: true, repair: false });
+    setLobbyOption({ idleArena: true, repair: false });
+    mocks.isAutomaticEncounterEnabled.mockReturnValue(true);
     mocks.runEncounterAutomation.mockResolvedValue({ claimed: true });
 
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
 
-    expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({ type: "lobbyTick", rerun: expect.any(Function) });
+    expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
+      type: "lobbyTick",
+      rerun: expect.any(Function),
+    });
     expect(mocks.runStaminaAutomation).not.toHaveBeenCalled();
     expect(mocks.runIdleArenaAutomation).not.toHaveBeenCalled();
   });
 
   it("continues lobby automation when encounter returns malformed claim evidence", async () => {
-    setLobbyOption({ encounter: true, idleArena: true, repair: false });
+    setLobbyOption({ idleArena: true, repair: false });
+    mocks.isAutomaticEncounterEnabled.mockReturnValue(true);
     mocks.runEncounterAutomation.mockResolvedValue({ claimed: { kind: "failed" } });
 
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
 
-    expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({ type: "lobbyTick", rerun: expect.any(Function) });
+    expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
+      type: "lobbyTick",
+      rerun: expect.any(Function),
+    });
     expect(mocks.runStaminaAutomation).toHaveBeenCalled();
     expect(mocks.runIdleArenaAutomation).toHaveBeenCalledWith({ type: "scheduleNextBattle" });
   });
 
   it("stops next battle automation when stamina requires a stop", async () => {
-    setLobbyOption({ encounter: false, idleArena: true, repair: true });
+    setLobbyOption({ idleArena: true, repair: true });
     mocks.runStaminaAutomation.mockReturnValue(true);
 
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
@@ -137,7 +153,8 @@ describe("runLobbyAutomation", () => {
   });
 
   it("treats malformed lobby option switches as disabled", async () => {
-    setLobbyOption({ encounter: { kind: "failed" }, idleArena: "true", repair: 1 });
+    setLobbyOption({ idleArena: "true", repair: 1 });
+    mocks.isAutomaticEncounterEnabled.mockReturnValue(false);
 
     await runLobbyAutomation({ type: LobbyEvent.PAGE_READY });
 

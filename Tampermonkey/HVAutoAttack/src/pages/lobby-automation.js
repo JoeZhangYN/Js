@@ -6,6 +6,7 @@ import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
 import { RepairEvent, runRepairAutomation } from "../repair/repair-orchestrator.js";
 import { EncounterEvent, runEncounterAutomation } from "./encounter.js";
+import { isAutomaticEncounterEnabled } from "./encounter-option-gate.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 import { BattleRuntimeEvent, runBattleRuntimeAutomation } from "../battle/battle-runtime.js";
 
@@ -73,7 +74,7 @@ function runQuickSiteLobbyReady() {
 }
 
 async function handleLobbyEncounter() {
-  if (!isLobbyOptionEnabled("encounter")) return false;
+  if (!isAutomaticEncounterEnabled()) return false;
   const encounterOutcome = await runEncounterAutomation({
     type: EncounterEvent.LOBBY_TICK,
     rerun: rerunLobbyPageReady,

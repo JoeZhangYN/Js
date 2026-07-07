@@ -5,7 +5,9 @@ const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/pages/encounter.js");
 const entryExecutionFile = path.normalize("src/pages/encounter-entry-execution.js");
-const entryExecutionFailureTest = path.normalize("src/pages/encounter-entry-execution-failure.test.js");
+const entryExecutionFailureTest = path.normalize(
+  "src/pages/encounter-entry-execution-failure.test.js"
+);
 const stateHelper = path.normalize("src/pages/encounter-state.js");
 const stateTest = path.normalize("src/pages/encounter-state.test.js");
 const stateEvidenceTest = path.normalize("src/pages/encounter-state-evidence.test.js");
@@ -261,7 +263,10 @@ const rejectionText = fs.readFileSync(path.join(root, rejectionFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
 const widgetPolicyTestText = fs.readFileSync(path.join(root, widgetPolicyTest), "utf8");
-const entryExecutionFailureTestText = fs.readFileSync(path.join(root, entryExecutionFailureTest), "utf8");
+const entryExecutionFailureTestText = fs.readFileSync(
+  path.join(root, entryExecutionFailureTest),
+  "utf8"
+);
 if (!/\bfunction executeEncounterEntry\b/.test(entryExecutionText)) {
   violations.push(
     `${entryExecutionFile.replaceAll("\\", "/")} must execute manual and automatic encounter entry through one function`
@@ -310,7 +315,8 @@ for (const required of ["EncounterStateEvent.MARK_ATTEMPTED", "markEncounterAtte
     violations.push(`${entryExecutionFile.replaceAll("\\", "/")} must own ${required}`);
   }
 }
-const widgetEngageBody = widgetPolicyText.match(/function planWidgetEngage\(event\) \{[\s\S]*?\n\}/)?.[0] || "";
+const widgetEngageBody =
+  widgetPolicyText.match(/function planWidgetEngage\(event\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (widgetEngageBody.includes("MARK_STARTED")) {
   violations.push(
     `${widgetPolicyFile.replaceAll("\\", "/")} widget open planning must not mark an encounter attempted before navigation succeeds`
@@ -386,10 +392,14 @@ if (!stateEntryMatch) {
 } else {
   const entryBody = stateEntryMatch[0];
   if (entryBody.includes("event.type")) {
-    violations.push(`${stateHelper.replaceAll("\\", "/")} entry must reject null events without throwing`);
+    violations.push(
+      `${stateHelper.replaceAll("\\", "/")} entry must reject null events without throwing`
+    );
   }
   if (!entryBody.includes("event?.type")) {
-    violations.push(`${stateHelper.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+    violations.push(
+      `${stateHelper.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+    );
   }
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
     violations.push(
@@ -410,7 +420,9 @@ if (!stateEntryMatch) {
 }
 const stateTestText = fs.readFileSync(path.join(root, stateTest), "utf8");
 if (
-  !stateTestText.includes("rejects unknown and null state events without reading or writing encounter state") ||
+  !stateTestText.includes(
+    "rejects unknown and null state events without reading or writing encounter state"
+  ) ||
   !stateTestText.includes("runEncounterStateAutomation(null)")
 ) {
   violations.push(`${stateTest.replaceAll("\\", "/")} must cover unknown and null state events`);
@@ -432,7 +444,8 @@ for (const required of [
   "onerror({ status: 0 })",
   "ontimeout()",
 ]) {
-  if (!stateTestText.includes(required)) violations.push(`${stateTest.replaceAll("\\", "/")} must cover ${required}`);
+  if (!stateTestText.includes(required))
+    violations.push(`${stateTest.replaceAll("\\", "/")} must cover ${required}`);
 }
 for (const required of [
   "warnEncounterStateFailure",
@@ -446,19 +459,23 @@ for (const required of [
   "load-key-timeout",
 ]) {
   if (!stateHelperText.includes(required)) {
-    violations.push(`${stateHelper.replaceAll("\\", "/")} must own encounter state failure ${required}`);
+    violations.push(
+      `${stateHelper.replaceAll("\\", "/")} must own encounter state failure ${required}`
+    );
   }
 }
 for (const required of [
   "ENCOUNTER_STATE_FAILURE_KEY",
   "HVAA:lastEncounterStateFailure",
-  "capability: \"encounterState\"",
-  "source: \"encounterState\"",
+  'capability: "encounterState"',
+  'source: "encounterState"',
   "storage?.setItem",
-  "warn(\"[HVAA] encounter state failed\"",
+  'warn("[HVAA] encounter state failed"',
 ]) {
   if (!stateFailureText.includes(required)) {
-    violations.push(`${stateFailureFile.replaceAll("\\", "/")} must own encounter failure evidence ${required}`);
+    violations.push(
+      `${stateFailureFile.replaceAll("\\", "/")} must own encounter failure evidence ${required}`
+    );
   }
 }
 for (const required of [
@@ -474,7 +491,7 @@ for (const required of [
   "keeps encounter state fallback working when console warning throws",
   "keeps encounter state fallback working when failure evidence storage and warning fail",
   "HVAA:lastEncounterStateFailure",
-  "capability: \"encounterState\"",
+  'capability: "encounterState"',
   'throw new Error("quota")',
   'throw new Error("warn blocked")',
   "not.toThrow()",
@@ -484,8 +501,8 @@ for (const required of [
   }
 }
 for (const required of [
-  "ENCOUNTER_STATE_FAILURE: \"HVAA:lastEncounterStateFailure\"",
-  "source(\"encounterStateFailure\", DiagnosticEvidenceKey.ENCOUNTER_STATE_FAILURE)",
+  'ENCOUNTER_STATE_FAILURE: "HVAA:lastEncounterStateFailure"',
+  'source("encounterStateFailure", DiagnosticEvidenceKey.ENCOUNTER_STATE_FAILURE)',
 ]) {
   if (!diagnosticKeysText.includes(required)) {
     violations.push(`${diagnosticKeys.replaceAll("\\", "/")} must expose ${required}`);
@@ -493,20 +510,41 @@ for (const required of [
 }
 for (const required of [
   "HVAA:lastEncounterStateFailure",
-  "encounterStateFailure: { capability: \"encounterState\", stage: \"read-local-json\" }",
+  'encounterStateFailure: { capability: "encounterState", stage: "read-local-json" }',
 ]) {
   if (!diagnosticTestText.includes(required)) {
     violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
 const optionGateText = fs.readFileSync(path.join(root, optionGateFile), "utf8");
-for (const required of ["ENCOUNTER_OPTION_KEY", "OptionEvent.READ_FIELD"]) {
+for (const required of [
+  "ENCOUNTER_OPTION_KEY",
+  "HVUT_RE_NOTIFICATION_OPTION_KEY",
+  "OptionEvent.READ_FIELD",
+  "readOptionFlag(HVUT_RE_NOTIFICATION_OPTION_KEY, true)",
+]) {
   if (!optionGateText.includes(required)) {
     violations.push(`${optionGateFile.replaceAll("\\", "/")} must own ${required}`);
   }
 }
 if (/key:\s*["']encounter["']/.test(optionGateText)) {
   violations.push(`${optionGateFile.replaceAll("\\", "/")} must use ENCOUNTER_OPTION_KEY`);
+}
+if (/key:\s*["']reNotification["']/.test(optionGateText)) {
+  violations.push(
+    `${optionGateFile.replaceAll("\\", "/")} must use HVUT_RE_NOTIFICATION_OPTION_KEY`
+  );
+}
+const lobbyText = fs.readFileSync(path.join(root, "src/pages/lobby-automation.js"), "utf8");
+if (!lobbyText.includes("isAutomaticEncounterEnabled")) {
+  violations.push(
+    "src/pages/lobby-automation.js must use encounter-option-gate for main-world encounter enablement"
+  );
+}
+if (/isLobbyOptionEnabled\(["']encounter["']\)/.test(lobbyText)) {
+  violations.push(
+    "src/pages/lobby-automation.js must not bypass encounter-option-gate with raw encounter option reads"
+  );
 }
 if (!/EncounterPolicyEvent\.READ_CLOCK/.test(ownerText)) {
   violations.push(
@@ -570,10 +608,14 @@ if (!policyEntryMatch) {
 } else {
   const entryBody = policyEntryMatch[0];
   if (entryBody.includes("event.type")) {
-    violations.push(`${policyFile.replaceAll("\\", "/")} entry must reject null events without throwing`);
+    violations.push(
+      `${policyFile.replaceAll("\\", "/")} entry must reject null events without throwing`
+    );
   }
   if (!entryBody.includes("event?.type")) {
-    violations.push(`${policyFile.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+    violations.push(
+      `${policyFile.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+    );
   }
   if (
     /switch\s*\(\s*event\.type\s*\)/.test(entryBody) ||
@@ -682,10 +724,16 @@ if (!lobbyScheduleEntryMatch) {
 }
 const lobbyScheduleTestText = fs.readFileSync(path.join(root, lobbyScheduleTest), "utf8");
 if (
-  !lobbyScheduleTestText.includes("rejects unknown and null schedule events without creating a timer") ||
+  !lobbyScheduleTestText.includes(
+    "rejects unknown and null schedule events without creating a timer"
+  ) ||
   !lobbyScheduleTestText.includes("runEncounterLobbySchedule(null)") ||
-  !lobbyScheduleTestText.includes("records schedule timer failures without claiming a scheduled check") ||
-  !lobbyScheduleTestText.includes("records cancel timer failures and keeps the pending check retryable") ||
+  !lobbyScheduleTestText.includes(
+    "records schedule timer failures without claiming a scheduled check"
+  ) ||
+  !lobbyScheduleTestText.includes(
+    "records cancel timer failures and keeps the pending check retryable"
+  ) ||
   !lobbyScheduleTestText.includes('throw new Error("timer blocked")') ||
   !lobbyScheduleTestText.includes('throw new Error("cancel blocked")')
 ) {
@@ -751,9 +799,9 @@ if (
 }
 for (const required of [
   "EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED",
-  "event.engage && unavailableReason === \"encounterKeyMissing\"",
+  'event.engage && unavailableReason === "encounterKeyMissing"',
   "starts a cooldown after a main-world generation load returns no encounter key",
-  "reason: \"cooldown\"",
+  'reason: "cooldown"',
 ]) {
   if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
     violations.push(
@@ -793,11 +841,11 @@ for (const required of [
     );
   }
 }
-const baRunBranch = hvUtilsText.match(/if \(re\.type === 'ba'\) \{[\s\S]*?\n\s*\} else if \(re\.type === 'hv'\)/)?.[0] || "";
-if (
-  !baRunBranch.includes("WIDGET_CLICKED") ||
-  !baRunBranch.includes("outcome?.handled")
-) {
+const baRunBranch =
+  hvUtilsText.match(
+    /if \(re\.type === 'ba'\) \{[\s\S]*?\n\s*\} else if \(re\.type === 'hv'\)/
+  )?.[0] || "";
+if (!baRunBranch.includes("WIDGET_CLICKED") || !baRunBranch.includes("outcome?.handled")) {
   violations.push(
     `${hvUtilsFile.replaceAll("\\", "/")} battle-page widget clicks must route through WIDGET_CLICKED before loading news`
   );
