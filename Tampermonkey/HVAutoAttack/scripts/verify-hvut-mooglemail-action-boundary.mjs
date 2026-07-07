@@ -45,6 +45,14 @@ for (const required of [
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
   "return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误', evidence: evidence };",
   "return { kind: 'rejected', reason: 'mailError', error: message, evidence: evidence };",
+  "var create_hvut_mooglemail_cache_write_plan = function (mail, post, context) {",
+  "if (view.error) return null;",
+  "const nextDb = { ...db, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: sent, read: read };",
+  "operation: 'put',",
+  "stage: post ? context.actionUpdateStage : context.loadUpdateStage,",
+  "operation: 'add',",
+  "stage: post ? context.actionInsertStage : context.loadInsertStage,",
+  "apply: function () {",
   "conn.tx.oncomplete = function () {\n          resolve(true);",
   "conn.tx.onerror = function (event) {",
   "conn.tx.onabort = function (event) {",
@@ -78,21 +86,18 @@ for (const required of [
 }
 
 for (const required of [
-  "let conn = null;",
-  "let applyWrite = null;",
-  "const nextDb = { ...db, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: sent, read: read };",
-  "writeStage = post ? 'viewActionDbUpdate' : 'viewLoadDbUpdate';",
-  "writeDetail = { mid: mid, post: post || '', operation: 'put' };",
-  "conn.os.put(nextDb);",
-  "record_hvut_mooglemail_action_failure(writeStage, { ...writeDetail, error: error?.message || String(error) });",
-  "applyWrite = function () {\n              Object.assign(db, nextDb);\n            };",
-  "writeStage = post ? 'viewActionDbInsert' : 'viewLoadDbInsert';",
-  "writeDetail = { mid: mid, post: post || '', operation: 'add' };",
-  "conn.os.add(db);",
-  "applyWrite = function () {\n            mail.db = db;\n          };",
-  "if (conn && !await wait_hvut_mooglemail_db_write(writeStage, writeDetail, conn)) {",
+  "const writePlan = create_hvut_mooglemail_cache_write_plan(mail, post, {",
+  "actionUpdateStage: 'viewActionDbUpdate',",
+  "loadUpdateStage: 'viewLoadDbUpdate',",
+  "actionInsertStage: 'viewActionDbInsert',",
+  "loadInsertStage: 'viewLoadDbInsert',",
+  "if (writePlan.operation === 'put') {",
+  "conn.os.put(writePlan.value);",
+  "conn.os.add(writePlan.value);",
+  "record_hvut_mooglemail_action_failure(writePlan.stage, { ...writePlan.detail, error: error?.message || String(error) });",
+  "if (conn && !await wait_hvut_mooglemail_db_write(writePlan.stage, writePlan.detail, conn)) {",
   "return false;",
-  "if (applyWrite) {\n          applyWrite();\n        }",
+  "if (writePlan) {\n          writePlan.apply();\n        }",
   "_mm.mail.modify(mail);",
   "return true;",
 ]) {
@@ -125,21 +130,18 @@ for (const required of [
 }
 
 for (const required of [
-  "let conn = null;",
-  "let applyWrite = null;",
-  "const nextDb = { ...db, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: sent, read: read };",
-  "writeStage = post ? 'legacyViewActionDbUpdate' : 'legacyViewLoadDbUpdate';",
-  "writeDetail = { mid: mid, post: post || '', operation: 'put' };",
-  "conn.os.put(nextDb);",
-  "record_hvut_mooglemail_action_failure(writeStage, { ...writeDetail, error: error?.message || String(error) });",
-  "applyWrite = function () {\n            Object.assign(db, nextDb);\n          };",
-  "writeStage = post ? 'legacyViewActionDbInsert' : 'legacyViewLoadDbInsert';",
-  "writeDetail = { mid: mid, post: post || '', operation: 'add' };",
-  "conn.os.add(db);",
-  "applyWrite = function () {\n          mail.db = db;\n        };",
-  "if (conn && !await wait_hvut_mooglemail_db_write(writeStage, writeDetail, conn)) {",
+  "const writePlan = create_hvut_mooglemail_cache_write_plan(mail, post, {",
+  "actionUpdateStage: 'legacyViewActionDbUpdate',",
+  "loadUpdateStage: 'legacyViewLoadDbUpdate',",
+  "actionInsertStage: 'legacyViewActionDbInsert',",
+  "loadInsertStage: 'legacyViewLoadDbInsert',",
+  "if (writePlan.operation === 'put') {",
+  "conn.os.put(writePlan.value);",
+  "conn.os.add(writePlan.value);",
+  "record_hvut_mooglemail_action_failure(writePlan.stage, { ...writePlan.detail, error: error?.message || String(error) });",
+  "if (conn && !await wait_hvut_mooglemail_db_write(writePlan.stage, writePlan.detail, conn)) {",
   "return false;",
-  "if (applyWrite) {\n        applyWrite();\n      }",
+  "if (writePlan) {\n        writePlan.apply();\n      }",
   "_mm.mail_modify(mail);",
   "return true;",
 ]) {
@@ -162,6 +164,10 @@ for (const forbidden of [
   "_mm.mail_update = function (mail) {",
   "db.filter = view.filter;\n            db.user = view.user;",
   "mail.db = { mid: mid, filter: view.filter",
+  "writeStage = post ? 'viewActionDbUpdate' : 'viewLoadDbUpdate';",
+  "writeStage = post ? 'legacyViewActionDbUpdate' : 'legacyViewLoadDbUpdate';",
+  "writeDetail = { mid: mid, post: post || '', operation: 'put' };",
+  "writeDetail = { mid: mid, post: post || '', operation: 'add' };",
   "view.error = get_message(doc) || '未知错误';",
   "classify_hvut_mooglemail_view_response(doc, 'viewRejectedResponse').error",
   "classify_hvut_mooglemail_view_response(doc, 'legacyViewRejectedResponse').error",
@@ -169,6 +175,24 @@ for (const forbidden of [
   "return { kind: 'rejected', reason: 'mailError', error: message };",
 ]) {
   if (text.includes(forbidden)) violations.push(`${target} must not keep unchecked MoogleMail action path: ${forbidden}`);
+}
+
+for (const [label, body] of [
+  ["modern MoogleMail update", modernUpdate],
+  ["legacy MoogleMail update", legacyUpdate],
+]) {
+  for (const forbidden of [
+    "const nextDb = { ...db, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: sent, read: read };",
+    "const db = { mid: mid, filter: view.filter, user: view.user, subject: view.subject, text: view.text, sent: page.sent, read: page.read };",
+    "let read = page?.read || db.read;",
+    "if (view.returned) {\n            nextDb.returned = 1;",
+    "if (view.attach.length) {",
+    "if (view.cod) {",
+  ]) {
+    if (body.includes(forbidden)) {
+      violations.push(`${target} ${label} must delegate cache write planning to create_hvut_mooglemail_cache_write_plan`);
+    }
+  }
 }
 
 for (const required of [
