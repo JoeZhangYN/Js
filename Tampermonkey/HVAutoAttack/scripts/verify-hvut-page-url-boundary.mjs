@@ -101,6 +101,13 @@ for (const required of [
   }
 }
 
+const rawQueryReferences = [
+  ...text.matchAll(/\b_query\.(?:s|ss|screen|filter|page|equip_slot|hvut|mid|reply|slot|pane|create)\b/g),
+].map((match) => match[0]);
+if (rawQueryReferences.length) {
+  violations.push(`${target} page identity must use resolve_hvut_page_query/page contexts, raw _query refs found: ${rawQueryReferences.join(", ")}`);
+}
+
 for (const forbidden of [
   "`${location.origin}${location.pathname}equip/${eq.info.eid}/${eq.info.key}`",
   "`equip/${eq.info.eid}/${eq.info.key}`",

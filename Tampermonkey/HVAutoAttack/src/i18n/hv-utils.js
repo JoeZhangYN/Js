@@ -4307,8 +4307,16 @@ const bindPersona = function (persona, ctx) {
     if (statsOutcome.kind === 'rejected') return statsOutcome;
     if (get_hvut_battle_page_context().isBattle) {
       ctx.battle?.create();
-    } else if (['eq', 'ab', 'it', 'se'].includes(_query.ss)) {
-      reloadCurrentPage(hvutReloadReason('HV_UTILS_PERSONA_DYNJS'));
+    } else {
+      const characterPage = get_hvut_character_page_context();
+      if (
+        characterPage.isEquipment ||
+        characterPage.isAbilities ||
+        characterPage.isItemInventory ||
+        characterPage.isSettings
+      ) {
+        reloadCurrentPage(hvutReloadReason('HV_UTILS_PERSONA_DYNJS'));
+      }
     }
     return { kind: 'accepted' };
   };

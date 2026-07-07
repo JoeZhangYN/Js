@@ -58,6 +58,9 @@ for (const forbidden of [
   "$id('csp').dataset.ss = _query.ss || 'ch';",
   "create_hvut_character_page_context().isSettings",
   "const characterPage = create_hvut_character_page_context();",
+  "_query.ss",
+  "_query.s",
+  "_query.equip_slot",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep raw Character settings/surface identity: ${forbidden}`);
