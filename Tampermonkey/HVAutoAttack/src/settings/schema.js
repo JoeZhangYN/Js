@@ -698,6 +698,17 @@ const OPTION_SCHEMA = [
     },
   },
   {
+    key: "channelSkill2",
+    kind: "checkbox",
+    group: "Channel",
+    default: false,
+    label: {
+      l0: "再使用技能",
+      l1: "再使用技能",
+      l2: "Then use fallback skills",
+    },
+  },
+  {
     key: "buffSkillSwitch",
     kind: "checkbox",
     group: "Buff",

@@ -279,6 +279,10 @@ function renderChannelSkillSwitchTabSchemaField() {
   );
 }
 
+export function renderChannelFallbackEnableSchemaField() {
+  return renderSchemaCheckboxField("channelSkill2", ": ", { bold: true });
+}
+
 export function renderBattleTabSwitchSchemaField(key) {
   return renderSchemaCheckboxField(key, "", { bold: false }).replace(/^<div>|<\/div>$/g, "");
 }
@@ -1003,9 +1007,9 @@ export function optionBox() {
     "  <div><b><l0>先施放Channel技能</l0><l1>先施放Channel技能</l1><l2>First cast</l2></b>: <br>",
     '    <l0>注意: 此处的施放顺序与</l0><l1>注意: 此處的施放順序与</l1><l2>Note: The cast order here is the same as in</l2><a class="hvAAGoto" name="hvAATab-Buff">BUFF<l01>技能</l01><l2> Spells</l2></a><l0>里的相同</l0><l1>裡的相同</l1><br>',
     `    ${renderBuffSkillCheckboxes("channelSkill")}</div>`,
-    '  <div><input id="channelSkill2" type="checkbox"><label for="channelSkill2"><l0><b>再使用技能</b></label>: ',
+    renderChannelFallbackEnableSchemaField(),
     '    <div class="channelSkill2Order"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: <input name="channelSkill2OrderName" style="width:80%;" type="text" disabled="true"><input name="channelSkill2OrderValue" style="width:80%;" type="hidden" disabled="true"><br>',
-    `    ${renderChannelFallbackOrderCheckboxes()}</div></div>`,
+    `    ${renderChannelFallbackOrderCheckboxes()}</div>`,
     "  <div><l0><b>最后ReBuff</b>: 重新施放最先消失的Buff</l0><l1><b>最後ReBuff</b>: 重新施放最先消失的Buff</l1><l2><b>At last, re-cast the spells which will expire first</b></l2>.</div></div>",
     '<div class="hvAATab" id="hvAATab-Buff">{{buffSkillCondition}}',
     '  <div class="buffSkillOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: ',

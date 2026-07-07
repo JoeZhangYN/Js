@@ -3,18 +3,20 @@ import { describe, expect, it } from "vitest";
 import { OptionSchemaEvent, runOptionSchema } from "./schema.js";
 
 describe("runOptionSchema channel settings fields", () => {
-  it("exposes channel skill switch through the schema entry", () => {
-    expect(
-      runOptionSchema({
-        type: OptionSchemaEvent.READ_FIELD,
-        key: "channelSkillSwitch",
-      })
-    ).toMatchObject({
-      key: "channelSkillSwitch",
-      kind: "checkbox",
-      group: "Channel",
-      default: false,
-    });
+  it("exposes channel switches through the schema entry", () => {
+    for (const key of ["channelSkillSwitch", "channelSkill2"]) {
+      expect(
+        runOptionSchema({
+          type: OptionSchemaEvent.READ_FIELD,
+          key,
+        })
+      ).toMatchObject({
+        key,
+        kind: "checkbox",
+        group: "Channel",
+        default: false,
+      });
+    }
   });
 
   it("groups channel settings under Channel", () => {
@@ -23,6 +25,6 @@ describe("runOptionSchema channel settings fields", () => {
       group: "Channel",
     }).map((field) => field.key);
 
-    expect(keys).toEqual(expect.arrayContaining(["channelSkillSwitch"]));
+    expect(keys).toEqual(expect.arrayContaining(["channelSkillSwitch", "channelSkill2"]));
   });
 });
