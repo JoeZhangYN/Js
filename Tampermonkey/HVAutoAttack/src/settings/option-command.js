@@ -4,6 +4,7 @@ const EVENT_EXPORT_TEXT = "exportText";
 const EVENT_PARSE_IMPORT_TEXT = "parseImportText";
 const EVENT_WRITE_OPTION = "writeOption";
 const EVENT_CLEAR_OPTION = "clearOption";
+const EVENT_WRITE_LANGUAGE = "writeLanguage";
 
 const IMPORT_FORMAT_MESSAGE = Object.freeze({
   l0: "配置格式错误",
@@ -20,12 +21,18 @@ const RESET_FAILURE_MESSAGE = Object.freeze({
   l1: "配置重置失敗",
   l2: "Failed to reset configuration",
 });
+const LANGUAGE_FAILURE_MESSAGE = Object.freeze({
+  l0: "语言保存失败",
+  l1: "語言保存失敗",
+  l2: "Failed to save language",
+});
 
 export const SettingsOptionCommandEvent = Object.freeze({
   EXPORT_TEXT: EVENT_EXPORT_TEXT,
   PARSE_IMPORT_TEXT: EVENT_PARSE_IMPORT_TEXT,
   WRITE_OPTION: EVENT_WRITE_OPTION,
   CLEAR_OPTION: EVENT_CLEAR_OPTION,
+  WRITE_LANGUAGE: EVENT_WRITE_LANGUAGE,
 });
 
 function commandResult(ok, event, message, extra = {}) {
@@ -58,6 +65,15 @@ const settingsOptionCommandHandlers = Object.freeze({
       Boolean(runOptionAutomation({ type: OptionEvent.CLEAR })),
       event,
       RESET_FAILURE_MESSAGE
+    ),
+  [EVENT_WRITE_LANGUAGE]: (event) =>
+    commandResult(
+      Boolean(
+        runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "lang", value: event.value })
+      ),
+      event,
+      LANGUAGE_FAILURE_MESSAGE,
+      { value: event.value }
     ),
 });
 

@@ -307,19 +307,22 @@ export function renderBuffSkillCheckboxes(idPrefix) {
 export function renderBuffSkillActionCheckboxes() {
   return runSettingsOrderControlCatalog({
     type: SettingsOrderControlEvent.READ_BUFF_ACTIONS,
-  }).map(
-    ({ key, label }) =>
-      `<div><input id="buffSkill_${key}" type="checkbox"><label for="buffSkill_${key}">${label}</label>{{buffSkill${key}Condition}}</div>`
-  ).join("");
+  })
+    .map(
+      ({ key, label }) =>
+        `<div><input id="buffSkill_${key}" type="checkbox"><label for="buffSkill_${key}">${label}</label>{{buffSkill${key}Condition}}</div>`
+    )
+    .join("");
 }
 
 export function renderChannelFallbackOrderCheckboxes() {
   return runSettingsOrderControlCatalog({
     type: SettingsOrderControlEvent.READ_CHANNEL_FALLBACK_ORDER,
-  }).map(
-    (skill) =>
-      `<input id="channelSkill2Order_${skill.key}" value="${skill.key},${skill.skillId}" type="checkbox"><label for="channelSkill2Order_${skill.key}">${skill.name}</label>`
-  )
+  })
+    .map(
+      (skill) =>
+        `<input id="channelSkill2Order_${skill.key}" value="${skill.key},${skill.skillId}" type="checkbox"><label for="channelSkill2Order_${skill.key}">${skill.name}</label>`
+    )
     .reduce((rows, item, index) => {
       const rowIndex = index < 6 ? 0 : 1;
       rows[rowIndex] = `${rows[rowIndex] || ""}${item}`;
@@ -382,56 +385,68 @@ export function renderDebuffExpiryAlertSchemaSection() {
 export function renderAllDebuffActionCheckboxes() {
   return runSettingsOrderControlCatalog({
     type: SettingsOrderControlEvent.READ_ALL_DEBUFF_ACTIONS,
-  }).map(({ key, conditionKey }) =>
-    renderSchemaCheckboxField(key, `{{${conditionKey}}}`, { bold: false })
-  ).join("");
+  })
+    .map(({ key, conditionKey }) =>
+      renderSchemaCheckboxField(key, `{{${conditionKey}}}`, { bold: false })
+    )
+    .join("");
 }
 
 export function renderPhysicalSkillOrderCheckboxes() {
   return runSettingsOrderControlCatalog({
     type: SettingsOrderControlEvent.READ_PHYSICAL_SKILL_ORDER,
-  }).map(
-    ({ key, label }) =>
-      `<input id="skillOrder_${key}" type="checkbox"><label for="skillOrder_${key}"><l0>${label.l0}</l0><l1>${label.l1}</l1><l2>${label.l2}</l2></label>`
-  ).join("");
+  })
+    .map(
+      ({ key, label }) =>
+        `<input id="skillOrder_${key}" type="checkbox"><label for="skillOrder_${key}"><l0>${label.l0}</l0><l1>${label.l1}</l1><l2>${label.l2}</l2></label>`
+    )
+    .join("");
 }
 
 export function renderPhysicalSkillActionCheckboxes({ afterKeyHtml = {} } = {}) {
   return runSettingsOrderControlCatalog({
     type: SettingsOrderControlEvent.READ_PHYSICAL_SKILL_ORDER,
-  }).map(({ key, label, actionLabel }) => {
-    const displayLabel = actionLabel || label;
-    const extra = afterKeyHtml[key] ? `<br>${afterKeyHtml[key]}` : "";
-    return `<div><input id="skill_${key}" type="checkbox"><label for="skill_${key}"><l0>${displayLabel.l0}</l0><l1>${displayLabel.l1}</l1><l2>${displayLabel.l2}</l2></label>: <input id="skillOTOS_${key}" type="checkbox"><label for="skillOTOS_${key}"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>${extra}{{skill${key}Condition}}</div>`;
-  }).join("");
+  })
+    .map(({ key, label, actionLabel }) => {
+      const displayLabel = actionLabel || label;
+      const extra = afterKeyHtml[key] ? `<br>${afterKeyHtml[key]}` : "";
+      return `<div><input id="skill_${key}" type="checkbox"><label for="skill_${key}"><l0>${displayLabel.l0}</l0><l1>${displayLabel.l1}</l1><l2>${displayLabel.l2}</l2></label>: <input id="skillOTOS_${key}" type="checkbox"><label for="skillOTOS_${key}"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>${extra}{{skill${key}Condition}}</div>`;
+    })
+    .join("");
 }
 
 export function renderOffensiveSpellAoeRows() {
   return runSettingsOrderControlCatalog({
     type: SettingsOrderControlEvent.READ_OFFENSIVE_SPELL_AOE_ROWS,
-  }).map(({ code, label, tiers, last }) => {
-    const controls = tiers.map((tier) => {
-      const key = `${code}${tier}`;
-      return `T${tier}:<input class="hvAANumber" name="spellAoe_${key}" placeholder="1" type="text">`;
+  })
+    .map(({ code, label, tiers, last }) => {
+      const controls = tiers
+        .map((tier) => {
+          const key = `${code}${tier}`;
+          return `T${tier}:<input class="hvAANumber" name="spellAoe_${key}" placeholder="1" type="text">`;
+        })
+        .join(" ");
+      const lineBreak = last ? "" : "<br>";
+      return `    ${label}: ${controls}${lineBreak}`;
     })
-      .join(" ");
-    const lineBreak = last ? "" : "<br>";
-    return `    ${label}: ${controls}${lineBreak}`;
-  }).join("");
+    .join("");
 }
 
 export function renderAlarmAudioProfileRows() {
-  return runAlarmProfileCatalog({ type: AlarmProfileEvent.READ_AUDIO_PROFILES }).map(({ key, label }) => {
-    const labelHtml = renderLocalizedInlineLabel(label);
-    return `<input id="audioEnable_${key}" type="checkbox"><label for="audioEnable_${key}">${labelHtml}: <input name="audio_${key}" type="text"></label>`;
-  }).join("<br>");
+  return runAlarmProfileCatalog({ type: AlarmProfileEvent.READ_AUDIO_PROFILES })
+    .map(({ key, label }) => {
+      const labelHtml = renderLocalizedInlineLabel(label);
+      return `<input id="audioEnable_${key}" type="checkbox"><label for="audioEnable_${key}">${labelHtml}: <input name="audio_${key}" type="text"></label>`;
+    })
+    .join("<br>");
 }
 
 export function renderItemOrderCheckboxes() {
-  return runSettingsOrderControlCatalog({ type: SettingsOrderControlEvent.READ_ITEM_ORDER }).map(
-    ({ key, itemId, label }) =>
-      `<input id="itemOrder_${key}" value="${key},${itemId}" type="checkbox"><label for="itemOrder_${key}">${label}</label>`
-  )
+  return runSettingsOrderControlCatalog({ type: SettingsOrderControlEvent.READ_ITEM_ORDER })
+    .map(
+      ({ key, itemId, label }) =>
+        `<input id="itemOrder_${key}" value="${key},${itemId}" type="checkbox"><label for="itemOrder_${key}">${label}</label>`
+    )
     .reduce((rows, item, index) => {
       const rowIndex = index < 5 ? 0 : 1;
       rows[rowIndex] = `${rows[rowIndex] || ""}${item}`;
@@ -441,19 +456,22 @@ export function renderItemOrderCheckboxes() {
 }
 
 export function renderItemActionCheckboxes() {
-  return runSettingsOrderControlCatalog({ type: SettingsOrderControlEvent.READ_ITEM_ORDER }).map(
-    ({ key, label }) =>
-      `<div><input id="item_${key}" type="checkbox"><label for="item_${key}"><b>${label}</b></label>: {{item${key}Condition}}</div>`
-  ).join("");
+  return runSettingsOrderControlCatalog({ type: SettingsOrderControlEvent.READ_ITEM_ORDER })
+    .map(
+      ({ key, label }) =>
+        `<div><input id="item_${key}" type="checkbox"><label for="item_${key}"><b>${label}</b></label>: {{item${key}Condition}}</div>`
+    )
+    .join("");
 }
 
 export function renderIdleArenaLevelCheckboxes(grindFestInput = "") {
   return runSettingsOrderControlCatalog({
     type: SettingsOrderControlEvent.READ_IDLE_ARENA_LEVELS,
-  }).map(({ key, value, label, appendGrindFestInput }) => {
-    const labelText = appendGrindFestInput ? `${label} ${grindFestInput}` : label;
-    return `<input id="arLevel_${key}" value="${key},${value}" type="checkbox"><label for="arLevel_${key}">${labelText}</label>`;
   })
+    .map(({ key, value, label, appendGrindFestInput }) => {
+      const labelText = appendGrindFestInput ? `${label} ${grindFestInput}` : label;
+      return `<input id="arLevel_${key}" value="${key},${value}" type="checkbox"><label for="arLevel_${key}">${labelText}</label>`;
+    })
     .reduce((rows, item, index) => {
       const rowIndex = index < 12 ? 0 : index < 24 ? 1 : index < 28 ? 2 : 3;
       rows[rowIndex] = `${rows[rowIndex] || ""}${item}${index < 28 ? " " : ""}`;
@@ -465,28 +483,32 @@ export function renderIdleArenaLevelCheckboxes(grindFestInput = "") {
 export function renderBattleRoundTypeCheckboxes(prefix) {
   return runSettingsOrderControlCatalog({
     type: SettingsOrderControlEvent.READ_BATTLE_ROUND_TYPES,
-  }).map(
-    ({ code, label }) =>
-      `<input id="${prefix}_${code}" type="checkbox"><label for="${prefix}_${code}">${label}</label>`
-  ).join("");
+  })
+    .map(
+      ({ code, label }) =>
+        `<input id="${prefix}_${code}" type="checkbox"><label for="${prefix}_${code}">${label}</label>`
+    )
+    .join("");
 }
 
 export function renderBattleRoundTypeSelectOptions({ includeBlank = false } = {}) {
   const blankOption = includeBlank ? "<option></option>" : "";
   return `${blankOption}${runSettingsOrderControlCatalog({
     type: SettingsOrderControlEvent.READ_BATTLE_ROUND_TYPES,
-  }).map(
-    ({ code, label }) => `<option value="${code}">${label}</option>`
-  ).join("")}`;
+  })
+    .map(({ code, label }) => `<option value="${code}">${label}</option>`)
+    .join("")}`;
 }
 
 export function renderBattleScrollCheckboxes() {
   return runSettingsOrderControlCatalog({
     type: SettingsOrderControlEvent.READ_BATTLE_SCROLLS,
-  }).map(
-    ({ key, label }) =>
-      `<div><input id="scroll_${key}" type="checkbox"><label for="scroll_${key}">${label}</label>{{scroll${key}Condition}}</div>`
-  ).join("");
+  })
+    .map(
+      ({ key, label }) =>
+        `<div><input id="scroll_${key}" type="checkbox"><label for="scroll_${key}">${label}</label>{{scroll${key}Condition}}</div>`
+    )
+    .join("");
 }
 
 export function renderScrollFirstSchemaField() {
@@ -795,12 +817,19 @@ function applySettingsLanguage(value) {
   setLang(value);
 }
 
+function alertSettingsOptionCommandFailure(command) {
+  if (command?.message) _alert(0, command.message.l0, command.message.l1, command.message.l2);
+}
+
 function writeSettingsLanguage(value, select) {
   const previous = String(g("lang") ?? readOptionField("lang", "0") ?? "0");
-  const written = runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "lang", value });
-  if (!written) {
+  const written = runSettingsOptionCommand({
+    type: SettingsOptionCommandEvent.WRITE_LANGUAGE,
+    value,
+  });
+  if (!written.ok) {
     if (select) select.value = previous;
-    _alert(0, "语言保存失败", "語言保存失敗", "Failed to save language");
+    alertSettingsOptionCommandFailure(written);
     return false;
   }
   applySettingsLanguage(value);
@@ -1329,9 +1358,6 @@ export function optionBox() {
     }
   }
   function alertBackupCommandFailure(command) {
-    if (command?.message) _alert(0, command.message.l0, command.message.l1, command.message.l2);
-  }
-  function alertSettingsOptionCommandFailure(command) {
     if (command?.message) _alert(0, command.message.l0, command.message.l1, command.message.l2);
   }
   gE(".hvAABackup", optionBox).onclick = function () {

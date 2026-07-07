@@ -51,8 +51,9 @@ describe("settings option command entry", () => {
       '{"version":"10.0","lang":"2"}'
     );
 
-    expect(runSettingsOptionCommand({ type: SettingsOptionCommandEvent.CLEAR_OPTION }))
-      .toMatchObject({ ok: true, type: SettingsOptionCommandEvent.CLEAR_OPTION });
+    expect(
+      runSettingsOptionCommand({ type: SettingsOptionCommandEvent.CLEAR_OPTION })
+    ).toMatchObject({ ok: true, type: SettingsOptionCommandEvent.CLEAR_OPTION });
     expect(runSettingsOptionCommand({ type: SettingsOptionCommandEvent.EXPORT_TEXT })).toBe("null");
   });
 
@@ -71,6 +72,36 @@ describe("settings option command entry", () => {
       type: SettingsOptionCommandEvent.WRITE_OPTION,
       reload: true,
       message: { l2: "Failed to save configuration" },
+    });
+  });
+
+  it("returns typed language write results for settings language changes", () => {
+    expect(
+      runSettingsOptionCommand({
+        type: SettingsOptionCommandEvent.WRITE_LANGUAGE,
+        value: "2",
+      })
+    ).toMatchObject({ ok: true, type: SettingsOptionCommandEvent.WRITE_LANGUAGE, value: "2" });
+    expect(runSettingsOptionCommand({ type: SettingsOptionCommandEvent.EXPORT_TEXT })).toBe(
+      '{"lang":"2"}'
+    );
+  });
+
+  it("does not claim language write success when persistence fails", () => {
+    globalThis.GM_setValue = () => {
+      throw new Error("language write blocked");
+    };
+
+    expect(
+      runSettingsOptionCommand({
+        type: SettingsOptionCommandEvent.WRITE_LANGUAGE,
+        value: "1",
+      })
+    ).toMatchObject({
+      ok: false,
+      type: SettingsOptionCommandEvent.WRITE_LANGUAGE,
+      value: "1",
+      message: { l2: "Failed to save language" },
     });
   });
 

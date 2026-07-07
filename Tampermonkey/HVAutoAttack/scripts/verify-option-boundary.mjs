@@ -124,6 +124,7 @@ for (const required of [
   "SettingsOptionCommandEvent.PARSE_IMPORT_TEXT",
   "SettingsOptionCommandEvent.WRITE_OPTION",
   "SettingsOptionCommandEvent.CLEAR_OPTION",
+  "SettingsOptionCommandEvent.WRITE_LANGUAGE",
   "runSettingsOptionCommand",
   "alertSettingsOptionCommandFailure",
 ]) {
@@ -139,9 +140,11 @@ for (const required of [
   "OptionEvent.PARSE_IMPORT_TEXT",
   "OptionEvent.WRITE",
   "OptionEvent.CLEAR",
+  "OptionEvent.WRITE_FIELD",
   "Invalid configuration format",
   "Failed to save configuration",
   "Failed to reset configuration",
+  "Failed to save language",
   "const settingsOptionCommandHandlers",
 ]) {
   if (!settingsOptionCommandText.includes(required)) {
@@ -156,6 +159,8 @@ for (const required of [
   "settings option command entry",
   "exports and parses settings option payloads through one command entry",
   "returns typed write and clear results for settings commands",
+  "returns typed language write results for settings language changes",
+  "does not claim language write success when persistence fails",
   "does not claim settings option write success when persistence fails",
   "fails closed for unknown settings option commands",
 ]) {
@@ -163,13 +168,11 @@ for (const required of [
     violations.push(`${settingsOptionCommandTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
-for (const required of [
-  "function writeSettingsLanguage(value, select) {",
-  'const written = runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "lang", value });',
-  'Failed to save language',
-]) {
+for (const required of ["function writeSettingsLanguage(value, select) {"]) {
   if (!settingsText.includes(required)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} must stop settings success flow when option write fails`);
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} must stop settings success flow when option write fails`
+    );
   }
 }
 for (const legacy of [
@@ -179,11 +182,15 @@ for (const legacy of [
   "OptionEvent.PARSE_IMPORT_TEXT",
   "OptionEvent.WRITE, option",
   "OptionEvent.CLEAR",
+  "OptionEvent.WRITE_FIELD",
   "Failed to save configuration",
   "Failed to reset configuration",
+  "Failed to save language",
 ]) {
   if (settingsText.includes(legacy)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} must not keep legacy option command ${legacy}`);
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} must not keep legacy option command ${legacy}`
+    );
   }
 }
 const settingsLanguageBlock =
@@ -197,7 +204,14 @@ const settingsApplyBlock =
 const settingsResetBlock =
   /gE\(["']\.hvAAReset["'][\s\S]*?gE\(["']\.hvAAApply["']/.exec(settingsText)?.[0] || "";
 if (!settingsLanguageBlock.includes("writeSettingsLanguage(this.value, this);")) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} settings language must write through writeSettingsLanguage`);
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} settings language must write through writeSettingsLanguage`
+  );
+}
+if (!settingsText.includes("SettingsOptionCommandEvent.WRITE_LANGUAGE")) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} settings language must write through settings option command`
+  );
 }
 for (const forbidden of [
   /runOptionAutomation\(\{\s*type:\s*OptionEvent\.WRITE_FIELD\b/,
@@ -205,7 +219,9 @@ for (const forbidden of [
   /\bsetLang\(this\.value\)/,
 ]) {
   if (forbidden.test(settingsLanguageBlock)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} settings language must not change display state before persistence succeeds`);
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} settings language must not change display state before persistence succeeds`
+    );
   }
 }
 for (const [label, block] of [
@@ -213,17 +229,25 @@ for (const [label, block] of [
   ["apply", settingsApplyBlock],
 ]) {
   if (!block.includes("SettingsOptionCommandEvent.WRITE_OPTION")) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} settings ${label} must write through settings option command`);
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} settings ${label} must write through settings option command`
+    );
   }
   if (/runOptionAutomation\(\{\s*type:\s*OptionEvent\.WRITE\b/.test(block)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} settings ${label} must not bypass settings option command`);
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} settings ${label} must not bypass settings option command`
+    );
   }
 }
 if (!settingsResetBlock.includes("SettingsOptionCommandEvent.CLEAR_OPTION")) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} settings reset must clear through settings option command`);
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} settings reset must clear through settings option command`
+  );
 }
 if (/runOptionAutomation\(\{\s*type:\s*OptionEvent\.CLEAR\b/.test(settingsResetBlock)) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} settings reset must not bypass settings option command`);
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} settings reset must not bypass settings option command`
+  );
 }
 for (const legacy of [
   "readOption",
@@ -248,7 +272,9 @@ if (!/export function runOptionAutomation\(\s*event\b/.test(ownerText)) {
 const entryBody =
   ownerText.match(/export function runOptionAutomation\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (!/Object\.freeze\(\{[\s\S]*\[EVENT_READ\]/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route events through a frozen handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route events through a frozen handler table`
+  );
 }
 if (/event\.type\s*===/.test(entryBody)) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch by handler table`);
@@ -257,14 +283,18 @@ if (entryBody.includes("event.type")) {
   violations.push(`${owner.replaceAll("\\", "/")} entry must reject null events without throwing`);
 }
 if (!entryBody.includes("event?.type")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null events`
+  );
 }
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover option entry`);
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   if (
-    !ownerTestText.includes("rejects unknown and null option events without reading or changing option state") ||
+    !ownerTestText.includes(
+      "rejects unknown and null option events without reading or changing option state"
+    ) ||
     !ownerTestText.includes("runOptionAutomation(null)") ||
     !ownerTestText.includes("getItem).not.toHaveBeenCalled()")
   ) {
@@ -275,12 +305,22 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
 const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
 const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
 if (/\b(?:setValue|delValue)\(/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must not write or delete option storage directly`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not write or delete option storage directly`
+  );
 }
-if (!/function persistOption\(option\) \{[\s\S]*setValue\(STORAGE_KEYS\.OPTION,\s*option\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordOptionFailure\("write",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
+if (
+  !/function persistOption\(option\) \{[\s\S]*setValue\(STORAGE_KEYS\.OPTION,\s*option\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordOptionFailure\("write",\s*error\);[\s\S]*return false;/.test(
+    failureOwnerText
+  )
+) {
   violations.push(`${failureOwner.replaceAll("\\", "/")} must classify option write failures`);
 }
-if (!/function clearPersistedOption\(\) \{[\s\S]*delValue\(STORAGE_KEYS\.OPTION\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordOptionFailure\("clear",\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
+if (
+  !/function clearPersistedOption\(\) \{[\s\S]*delValue\(STORAGE_KEYS\.OPTION\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordOptionFailure\("clear",\s*error\);[\s\S]*return false;/.test(
+    failureOwnerText
+  )
+) {
   violations.push(`${failureOwner.replaceAll("\\", "/")} must classify option clear failures`);
 }
 for (const required of [
@@ -310,18 +350,28 @@ for (const required of [
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
   }
 }
-if (!/function writeOption\(option\) \{[\s\S]*if \(!persistOption\(option\)\) return false;[\s\S]*g\("option",\s*option\);/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must update runtime option only after persistence succeeds`);
+if (
+  !/function writeOption\(option\) \{[\s\S]*if \(!persistOption\(option\)\) return false;[\s\S]*g\("option",\s*option\);/.test(
+    ownerText
+  )
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must update runtime option only after persistence succeeds`
+  );
 }
 if (!/const opt = \{ \.\.\.\(readOption\(\) \|\| \{\}\) \};/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must avoid mutating current runtime option before field persistence succeeds`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must avoid mutating current runtime option before field persistence succeeds`
+  );
 }
 if (
   !/const nextOption = \{ \.\.\.option,\s*version: currentVersion \};[\s\S]*if \(!writeOption\(nextOption\)\)/.test(
     ownerText
   )
 ) {
-  violations.push(`${owner.replaceAll("\\", "/")} must avoid mutating current runtime option before startup persistence succeeds`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must avoid mutating current runtime option before startup persistence succeeds`
+  );
 }
 
 if (violations.length) {
