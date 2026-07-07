@@ -369,6 +369,13 @@ export function renderDebuffSkillNumberRows(fieldPrefix, { placeholder = "" } = 
     .join("");
 }
 
+export function renderDebuffExpiryAlertSchemaSection() {
+  const alert = renderSchemaCheckboxField("debuffSkillTurnAlert", "<br>", {
+    bold: false,
+  }).replace(/^<div>|<\/div>$/g, "");
+  return `  <div><l0>持续</l0><l1>持續</l1><l2>Expire</l2> Turns: ${alert}`;
+}
+
 export function renderAllDebuffActionCheckboxes() {
   return ALL_DEBUFF_ACTION_OPTIONS.map(({ key, conditionKey }) =>
     renderSchemaCheckboxField(key, `{{${conditionKey}}}`, { bold: false })
@@ -1039,7 +1046,7 @@ export function optionBox() {
     }),
     "  <div>AoE: <l0>当前技能等级下影响的目标数(1=单体, 3=范围)</l0><l1>當前技能等級下影響的目標數(1=單體, 3=範圍)</l1><l2>Targets affected at current skill level (1=single, 3=AoE)</l2><br>",
     `${renderDebuffSkillNumberRows("debuffSkillAoe", { placeholder: "1" })}</div>`,
-    '  <div><l0>持续</l0><l1>持續</l1><l2>Expire</l2> Turns: <input id="debuffSkillTurnAlert" type="checkbox"><label for="debuffSkillTurnAlert"><l0>无法正常施放DEBUFF技能时，警报</l0><l1>無法正常施放DEBUFF技能時，警報</l1><l2>If it can not cast de-skills normally, alert.</l2></label><br>',
+    renderDebuffExpiryAlertSchemaSection(),
     `${renderDebuffSkillNumberRows("debuffSkillTurn")}</div></div>`,
     '<div class="hvAATab" id="hvAATab-Skill">',
     '  <div><span><l0>注意: 默认在Spirit状态下使用，请在<a class="hvAAGoto" name="hvAATab-Tactics">战术姿态</a>勾选并设置<b>开启/关闭Spirit Stance</b></l0><l1>注意: 默認在Spirit狀態下使用，請在<a class="hvAAGoto" name="hvAATab-Tactics">戰術姿態</a>勾選並設置<b>開啟/關閉Spirit Stance</b></l1><l2>Note: use under Spirit by default, please check and set the <b>Turn on/off Spirit Stance</b> in <a class="hvAAGoto" name="hvAATab-Tactics">Tactics</a></l2></span></div>',

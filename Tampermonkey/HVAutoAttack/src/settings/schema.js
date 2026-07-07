@@ -196,6 +196,17 @@ const OPTION_SCHEMA = [
     },
   },
   {
+    key: "debuffSkillTurnAlert",
+    kind: "checkbox",
+    group: "Debuff",
+    default: false,
+    label: {
+      l0: "无法正常施放 DEBUFF 技能时，警报",
+      l1: "無法正常施放 DEBUFF 技能時，警報",
+      l2: "Alert when debuff skills are blocked",
+    },
+  },
+  {
     key: "skipDebuffForBigSkill_Im",
     kind: "checkbox",
     group: "Debuff",

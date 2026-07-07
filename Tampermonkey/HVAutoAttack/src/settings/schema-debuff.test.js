@@ -18,7 +18,7 @@ describe("runOptionSchema debuff smart-skip fields", () => {
       });
     }
 
-    for (const key of ["debuffSkillAllIm", "debuffSkillAllWk"]) {
+    for (const key of ["debuffSkillAllIm", "debuffSkillAllWk", "debuffSkillTurnAlert"]) {
       expect(runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key })).toMatchObject({
         key,
         kind: "checkbox",

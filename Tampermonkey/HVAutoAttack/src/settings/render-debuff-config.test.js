@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { renderDebuffSkillCheckboxes, renderDebuffSkillNumberRows } from "./render.js";
+import {
+  renderDebuffExpiryAlertSchemaSection,
+  renderDebuffSkillCheckboxes,
+  renderDebuffSkillNumberRows,
+} from "./render.js";
 
 describe("renderDebuffSkill configuration fields", () => {
   it("derives castable debuff enablement checkboxes from the shared debuff registry", () => {
@@ -23,5 +27,15 @@ describe("renderDebuffSkill configuration fields", () => {
     expect(aoe).not.toContain("debuffSkillAoe_CM");
     expect(turns).toContain('Imperil: <input class="hvAANumber" name="debuffSkillTurn_Im"');
     expect(turns).not.toContain("placeholder=");
+  });
+
+  it("derives debuff expiry alert from schema before the turn thresholds", () => {
+    const html = renderDebuffExpiryAlertSchemaSection();
+
+    expect(html).toContain("<l2>Expire</l2> Turns:");
+    expect(html).toContain('id="debuffSkillTurnAlert" type="checkbox"');
+    expect(html).toContain('for="debuffSkillTurnAlert"');
+    expect(html).toContain("<l2>Alert when debuff skills are blocked</l2>");
+    expect(html).not.toContain("If it can not cast de-skills normally");
   });
 });
