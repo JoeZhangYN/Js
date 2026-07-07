@@ -18,6 +18,7 @@ for (const required of [
   "var create_hvut_character_settings_url = function () {",
   "var create_hvut_training_url = function () {",
   "var create_hvut_bazaar_section_url = function (ss) {",
+  "var create_hvut_armory_screen_url = function (screen, context) {",
   "var create_hvut_armory_organize_url = function () {",
   "return context?.absolute ? `${location.origin}${location.pathname}${relative}` : relative;",
   "return location.href + '&hvut=disabled';",
@@ -30,7 +31,8 @@ for (const required of [
   "return '?s=Character&ss=se';",
   "return '/?s=Character&ss=tr';",
   "return `/?s=Bazaar&ss=${ss}`;",
-  "return '?s=Bazaar&ss=am&screen=organize';",
+  "return `?s=Bazaar&ss=am&screen=${screen}${filter}${eqids}`;",
+  "return create_hvut_armory_screen_url('organize');",
   "eq.data.url = create_hvut_equip_page_url(eq, { absolute: true });",
   "openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
   "openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
@@ -52,6 +54,11 @@ for (const required of [
   "href: create_hvut_bazaar_section_url(ss)",
   "$ajax.fetch(create_hvut_bazaar_section_url(ss))",
   "$ajax.fetch(create_hvut_armory_organize_url()",
+  "$ajax.fetch(create_hvut_armory_screen_url('purchase'), data)",
+  "$ajax.fetch(create_hvut_armory_screen_url('sell'), data)",
+  "$ajax.fetch(create_hvut_armory_screen_url('salvage'), data + '&sell_salvage=on')",
+  "$ajax.fetch(create_hvut_armory_screen_url('repair'), data)",
+  "$ajax.fetch(create_hvut_armory_screen_url('modify', { eqid: eq.info.eid }))",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT page URL boundary: ${required}`);
@@ -80,6 +87,12 @@ for (const forbidden of [
   "$ajax.fetch('/?s=Character&ss=tr'",
   "href: '/?s=Bazaar&ss=' + ss",
   "$ajax.fetch('/?s=Bazaar&ss=' + ss)",
+  "$ajax.fetch('?s=Bazaar&ss=am&screen=purchase', data)",
+  "$ajax.fetch('?s=Bazaar&ss=am&screen=sell', data)",
+  "$ajax.fetch('?s=Bazaar&ss=am&screen=salvage', data + '&sell_salvage=on')",
+  "$ajax.fetch('?s=Bazaar&ss=am&screen=repair', data)",
+  "href: `?s=Bazaar&ss=am&screen=modify&eqids=${eq.info.eid}`",
+  "$ajax.fetch(`?s=Bazaar&ss=am&screen=modify&eqids=${eq.info.eid}`)",
 ]) {
   const allowedInsideHelper =
     forbidden === "location.href + '&hvut=disabled'" || forbidden === "location.href.replace(/&page=\\d+/, '') + `&page=${p}`";

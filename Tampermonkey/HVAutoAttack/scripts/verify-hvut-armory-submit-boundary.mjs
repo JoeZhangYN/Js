@@ -35,9 +35,9 @@ for (const required of [
 }
 
 for (const [label, stage, fetchCall] of [
-  ["purchase", "purchaseRequest", "$ajax.fetch('?s=Bazaar&ss=am&screen=purchase', data);"],
-  ["sell", "sellRequest", "$ajax.fetch('?s=Bazaar&ss=am&screen=sell', data);"],
-  ["salvage", "salvageRequest", "$ajax.fetch('?s=Bazaar&ss=am&screen=salvage', data + '&sell_salvage=on');"],
+  ["purchase", "purchaseRequest", "$ajax.fetch(create_hvut_armory_screen_url('purchase'), data);"],
+  ["sell", "sellRequest", "$ajax.fetch(create_hvut_armory_screen_url('sell'), data);"],
+  ["salvage", "salvageRequest", "$ajax.fetch(create_hvut_armory_screen_url('salvage'), data + '&sell_salvage=on');"],
 ]) {
   for (const required of [
     `${label}: async function (equips) {`,

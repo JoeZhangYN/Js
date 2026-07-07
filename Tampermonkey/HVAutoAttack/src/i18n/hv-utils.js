@@ -1333,8 +1333,13 @@ try {
   var create_hvut_bazaar_section_url = function (ss) {
     return `/?s=Bazaar&ss=${ss}`;
   };
+  var create_hvut_armory_screen_url = function (screen, context) {
+    var filter = Object.prototype.hasOwnProperty.call(context || {}, 'filter') ? `&filter=${context?.filter || ''}` : '';
+    var eqids = context?.eqid ? `&eqids=${context.eqid}` : '';
+    return `?s=Bazaar&ss=am&screen=${screen}${filter}${eqids}`;
+  };
   var create_hvut_armory_organize_url = function () {
-    return '?s=Bazaar&ss=am&screen=organize';
+    return create_hvut_armory_screen_url('organize');
   };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
@@ -2709,7 +2714,7 @@ const bindBattlePanel = function (battle, ctx) {
       const eqids = equips.map((eq) => `eqids[]=${eq.info.eid}`).join('&');
       data = `postoken=${battle.postoken}&${eqids}`; //&replace_charms=on
     }
-    const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=repair', data);
+    const html = await $ajax.fetch(create_hvut_armory_screen_url('repair'), data);
     const doc = $doc(html);
     const response = classify_hvut_repair_load_response(doc, 'battlePanelRepairLoadResponse', { hasEquipSelection: !!equips });
     if (response.kind === 'rejected') {
@@ -2764,7 +2769,7 @@ const bindBattlePanel = function (battle, ctx) {
       $element('span', eq.node.link, '修理后方可使用');
     } else if (eq.data.charms_damaged) {
       eq.node.name.classList.add('hvut-warn');
-      $element('a', eq.node.link, { textContent: '更换护符与护符袋', href: `?s=Bazaar&ss=am&screen=modify&eqids=${eq.info.eid}` });
+      $element('a', eq.node.link, { textContent: '更换护符与护符袋', href: create_hvut_armory_screen_url('modify', { eqid: eq.info.eid }) });
     }
   };
   battle.load_items = async function () {
@@ -4623,7 +4628,7 @@ const bindArmory = function (armory, ctx) {
         $armory.script.parse(doc, screen, assign);
       },
       load: async function (screen, filter, assign) {
-        const html = await $ajax.fetch(`?s=Bazaar&ss=am&screen=${screen}&filter=${filter || ''}`);
+        const html = await $ajax.fetch(create_hvut_armory_screen_url(screen, { filter: filter || '' }));
         const doc = $doc(html);
         $armory.page.init(doc, screen, assign);
         const table = $qs('#equiplist > table', doc);
@@ -4861,7 +4866,7 @@ const bindArmory = function (armory, ctx) {
         return true;
       },
       tab: function () {
-        const a = $element('a', [$id('filterbar'), 1], { href: `?s=Bazaar&ss=am&screen=${_query.screen}&filter=all` });
+        const a = $element('a', [$id('filterbar'), 1], { href: create_hvut_armory_screen_url(_query.screen, { filter: 'all' }) });
         const div = $element('div', a, '所有');
         if (_query.filter === 'all') {
           const cfbs = $qs('#filterbar .cfbs');
@@ -5134,7 +5139,7 @@ const bindArmory = function (armory, ctx) {
         }
         let html;
         try {
-          html = await $ajax.fetch('?s=Bazaar&ss=am&screen=purchase', data);
+          html = await $ajax.fetch(create_hvut_armory_screen_url('purchase'), data);
         } catch (error) {
           record_hvut_armory_submit_failure('purchaseRequest', { count: equips.length, error: error?.message || String(error) });
           alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
@@ -5157,7 +5162,7 @@ const bindArmory = function (armory, ctx) {
         }
         let html;
         try {
-          html = await $ajax.fetch('?s=Bazaar&ss=am&screen=sell', data);
+          html = await $ajax.fetch(create_hvut_armory_screen_url('sell'), data);
         } catch (error) {
           record_hvut_armory_submit_failure('sellRequest', { count: equips.length, error: error?.message || String(error) });
           alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
@@ -5180,7 +5185,7 @@ const bindArmory = function (armory, ctx) {
         }
         let html;
         try {
-          html = await $ajax.fetch('?s=Bazaar&ss=am&screen=salvage', data + '&sell_salvage=on');
+          html = await $ajax.fetch(create_hvut_armory_screen_url('salvage'), data + '&sell_salvage=on');
         } catch (error) {
           record_hvut_armory_submit_failure('salvageRequest', { count: equips.length, error: error?.message || String(error) });
           alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
@@ -6573,7 +6578,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
   };
 
   _eq.charm_load = async function (eq) {
-    const html = await $ajax.fetch(`?s=Bazaar&ss=am&screen=modify&eqids=${eq.info.eid}`);
+    const html = await $ajax.fetch(create_hvut_armory_screen_url('modify', { eqid: eq.info.eid }));
     const doc = $doc(html);
     eq.data.charms = $qsa('.eqcharm th', doc).map((th) => th.textContent);
     _eq.charm_append(eq);
