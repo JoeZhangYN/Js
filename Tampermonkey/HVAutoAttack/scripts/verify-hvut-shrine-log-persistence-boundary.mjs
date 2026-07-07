@@ -57,6 +57,10 @@ if (!localReservationRollback) violations.push(`${target} must keep local Shrine
 for (const part of [
   "record_hvut_shrine_offer_failure('offerLoadFetch'",
   "if (_ss.error) return false;",
+  "const offerResponse = classify_hvut_shrine_offer_response(doc, 'offerEmptyResponse');",
+  "if (offerResponse.kind === 'stop') {",
+  "set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');",
+  "offerResponse.messages.forEach((msg) => {",
   "classify_hvut_shrine_offer_message(msg)",
   "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
   "return false;",
@@ -93,6 +97,10 @@ for (const part of [
 for (const part of [
   "record_hvut_shrine_offer_failure('legacyOfferFetch'",
   "if (_ss.error) return false;",
+  "const offerResponse = classify_hvut_shrine_offer_response(doc, 'legacyOfferEmptyResponse');",
+  "if (offerResponse.kind === 'stop') {",
+  "set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');",
+  "offerResponse.messages.forEach((msg) => {",
   "classify_hvut_shrine_offer_message(msg)",
   "set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.');",
   "return false;",
@@ -123,6 +131,7 @@ for (const required of [
   "var reserve_hvut_shrine_offer = function (state, item) {",
   "var rollback_hvut_shrine_offer_reservation = function (state, item) {",
   "var classify_hvut_shrine_offer_message = function (msg) {",
+  "var classify_hvut_shrine_offer_response = function (doc, stage) {",
   "window.HVAA_shrineOfferReservation.reserve(state, item)",
   "window.HVAA_shrineOfferReservation.rollback(state, item)",
   "record_hvut_shrine_offer_failure('offerReservationBridgeMissing'",
@@ -132,6 +141,9 @@ for (const required of [
   "record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing'",
   "return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.' };",
   "record_hvut_shrine_offer_failure('unknownOfferMessage'",
+  "record_hvut_shrine_offer_failure(stage, { reason: 'emptyMessagebox' });",
+  "return { kind: 'stop', reason: 'emptyMessagebox', messages: [] };",
+  "return { kind: 'messages', messages: messages };",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must centralize Shrine offer reservation with ${required}`);
@@ -237,6 +249,7 @@ for (const [label, body, forbidden] of [
   ["Shrine offer request", offerRequest, "_ss.equip.requests++;"],
   ["Shrine offer request", offerRequest, "_ss.equip.requests--;"],
   ["Shrine offer load", offerLoad, "_ss.log.save();"],
+  ["Shrine offer load", offerLoad, "get_message(doc, true).forEach"],
   ["Shrine offer load", offerLoad, "const reg_text ="],
   ["Shrine offer load", offerLoad, "const reg_voucher ="],
   ["Shrine offer load", offerLoad, "const reg_equip ="],
@@ -260,6 +273,7 @@ for (const [label, body, forbidden] of [
   ["legacy Shrine offer", legacyOffer, "_ss.equip.requests++;"],
   ["legacy Shrine offer", legacyOffer, "_ss.equip.requests--;"],
   ["legacy Shrine request", legacyRequest, "$config.set('ss_log', _ss.log);"],
+  ["legacy Shrine request", legacyRequest, "get_message(doc, true).forEach"],
   ["legacy Shrine request", legacyRequest, "const reg ="],
   ["legacy Shrine request", legacyRequest, "Snowflake has blessed you"],
   ["legacy Shrine request", legacyRequest, "msg.includes('Peerless Voucher')"],

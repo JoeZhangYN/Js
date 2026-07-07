@@ -1080,6 +1080,14 @@ try {
     record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing', { message: msg });
     return { kind: 'stop', reason: 'classifierUnavailable', message: 'Shrine offer classifier bridge unavailable.' };
   };
+  var classify_hvut_shrine_offer_response = function (doc, stage) {
+    var messages = get_message(doc, true);
+    if (!messages.length) {
+      record_hvut_shrine_offer_failure(stage, { reason: 'emptyMessagebox' });
+      return { kind: 'stop', reason: 'emptyMessagebox', messages: [] };
+    }
+    return { kind: 'messages', messages: messages };
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -7429,8 +7437,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       const list = [];
       const equips = [];
       let offerStopped = false;
+      const offerResponse = classify_hvut_shrine_offer_response(doc, 'offerEmptyResponse');
+      if (offerResponse.kind === 'stop') {
+        set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');
+        return false;
+      }
 
-      get_message(doc, true).forEach((msg) => {
+      offerResponse.messages.forEach((msg) => {
         const offerMessage = classify_hvut_shrine_offer_message(msg);
         if (offerMessage.kind === 'ignore') {
           return;
@@ -13620,8 +13633,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     const results = item.results;
     const rewards = [];
     let offerStopped = false;
+    const offerResponse = classify_hvut_shrine_offer_response(doc, 'legacyOfferEmptyResponse');
+    if (offerResponse.kind === 'stop') {
+      set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');
+      return false;
+    }
 
-    get_message(doc, true).forEach((msg) => {
+    offerResponse.messages.forEach((msg) => {
       const offerMessage = classify_hvut_shrine_offer_message(msg);
       if (offerMessage.kind === 'ignore') {
         return;
