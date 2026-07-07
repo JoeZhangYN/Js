@@ -816,6 +816,18 @@ try {
     var match = /&page=(\d+)/.exec(href);
     return match ? parseInt(match[1]) : record_hvut_mooglemail_parse_failure(stage, { href: href });
   };
+  var update_hvut_mooglemail_page_window = function (state, pager, page, context) {
+    const prev = parse_hvut_mooglemail_page_href(pager?.children?.[0]?.firstElementChild, context.prevStage);
+    const next = parse_hvut_mooglemail_page_href(pager?.children?.[1]?.firstElementChild, context.nextStage);
+    if (state[context.prevKey] !== null && page <= state[context.prevKey]) {
+      state[context.prevKey] = prev;
+    }
+    if (state[context.nextKey] !== null && page >= state[context.nextKey]) {
+      state[context.nextKey] = next;
+    }
+    context.prevButton.disabled = state[context.prevKey] === null;
+    context.nextButton.disabled = state[context.nextKey] === null;
+  };
   var parse_hvut_mooglemail_mid = function (onclick, stage) {
     var match = /mid=(\d+)/.exec(onclick || '');
     return match ? parseInt(match[1]) : record_hvut_mooglemail_parse_failure(stage, { onclick: onclick || '' });
@@ -10584,16 +10596,14 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         return doc;
       },
       pager: function (pager, p) {
-        const prev = parse_hvut_mooglemail_page_href(pager?.children?.[0]?.firstElementChild, 'pagePrevHref');
-        const next = parse_hvut_mooglemail_page_href(pager?.children?.[1]?.firstElementChild, 'pageNextHref');
-        if (_mm.page.prev !== null && p <= _mm.page.prev) {
-          _mm.page.prev = prev;
-        }
-        if (_mm.page.next !== null && p >= _mm.page.next) {
-          _mm.page.next = next;
-        }
-        _mm.page.node.prev.disabled = _mm.page.prev === null;
-        _mm.page.node.next.disabled = _mm.page.next === null;
+        update_hvut_mooglemail_page_window(_mm.page, pager, p, {
+          prevKey: 'prev',
+          nextKey: 'next',
+          prevButton: _mm.page.node.prev,
+          nextButton: _mm.page.node.next,
+          prevStage: 'pagePrevHref',
+          nextStage: 'pageNextHref',
+        });
       },
       create: function (list, p) {
         const table = _mm.page.node.table[p];
@@ -16786,16 +16796,14 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
     };
 
     _mm.page_pager = function (pager, p) {
-      const prev = parse_hvut_mooglemail_page_href(pager?.children?.[0]?.firstElementChild, 'legacyPagePrevHref');
-      const next = parse_hvut_mooglemail_page_href(pager?.children?.[1]?.firstElementChild, 'legacyPageNextHref');
-      if (_mm.page_prev !== null && p <= _mm.page_prev) {
-        _mm.page_prev = prev;
-      }
-      if (_mm.page_next !== null && p >= _mm.page_next) {
-        _mm.page_next = next;
-      }
-      _mm.node.page_prev.disabled = _mm.page_prev === null;
-      _mm.node.page_next.disabled = _mm.page_next === null;
+      update_hvut_mooglemail_page_window(_mm, pager, p, {
+        prevKey: 'page_prev',
+        nextKey: 'page_next',
+        prevButton: _mm.node.page_prev,
+        nextButton: _mm.node.page_next,
+        prevStage: 'legacyPagePrevHref',
+        nextStage: 'legacyPageNextHref',
+      });
     };
 
     _mm.page_create = function (list, p) {

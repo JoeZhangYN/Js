@@ -60,6 +60,15 @@ for (const required of [
   "var parse_hvut_mooglemail_page_href = function (link, stage) {",
   "if (!link) return null;",
   "record_hvut_mooglemail_parse_failure(stage, { href: href });",
+  "var update_hvut_mooglemail_page_window = function (state, pager, page, context) {",
+  "const prev = parse_hvut_mooglemail_page_href(pager?.children?.[0]?.firstElementChild, context.prevStage);",
+  "const next = parse_hvut_mooglemail_page_href(pager?.children?.[1]?.firstElementChild, context.nextStage);",
+  "if (state[context.prevKey] !== null && page <= state[context.prevKey]) {",
+  "state[context.prevKey] = prev;",
+  "if (state[context.nextKey] !== null && page >= state[context.nextKey]) {",
+  "state[context.nextKey] = next;",
+  "context.prevButton.disabled = state[context.prevKey] === null;",
+  "context.nextButton.disabled = state[context.nextKey] === null;",
   "var parse_hvut_mooglemail_mid = function (onclick, stage) {",
   "record_hvut_mooglemail_parse_failure(stage, { onclick: onclick || '' });",
   "var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {",
@@ -126,12 +135,20 @@ for (const [label, body, stage] of [
   requirePart(label, body, "view.error = '解析装备附件失败';");
 }
 
-for (const [label, body, prevStage, nextStage] of [
-  ["modern MoogleMail page pager", modernPagePager, "pagePrevHref", "pageNextHref"],
-  ["legacy MoogleMail page pager", legacyPagePager, "legacyPagePrevHref", "legacyPageNextHref"],
+for (const [label, body, stateArg, prevKey, nextKey, prevButton, nextButton, prevStage, nextStage] of [
+  ["modern MoogleMail page pager", modernPagePager, "_mm.page", "prev", "next", "_mm.page.node.prev", "_mm.page.node.next", "pagePrevHref", "pageNextHref"],
+  ["legacy MoogleMail page pager", legacyPagePager, "_mm", "page_prev", "page_next", "_mm.node.page_prev", "_mm.node.page_next", "legacyPagePrevHref", "legacyPageNextHref"],
 ]) {
-  requirePart(label, body, `parse_hvut_mooglemail_page_href(pager?.children?.[0]?.firstElementChild, '${prevStage}')`);
-  requirePart(label, body, `parse_hvut_mooglemail_page_href(pager?.children?.[1]?.firstElementChild, '${nextStage}')`);
+  requirePart(label, body, `update_hvut_mooglemail_page_window(${stateArg}, pager, p, {`);
+  requirePart(label, body, `prevKey: '${prevKey}',`);
+  requirePart(label, body, `nextKey: '${nextKey}',`);
+  requirePart(label, body, `prevButton: ${prevButton},`);
+  requirePart(label, body, `nextButton: ${nextButton},`);
+  requirePart(label, body, `prevStage: '${prevStage}',`);
+  requirePart(label, body, `nextStage: '${nextStage}',`);
+  if (body.includes("parse_hvut_mooglemail_page_href(")) {
+    violations.push(`${target} ${label} must delegate page-window parsing to update_hvut_mooglemail_page_window`);
+  }
 }
 
 for (const [label, body, rowName, stage] of [
