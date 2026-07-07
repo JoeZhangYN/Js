@@ -359,6 +359,14 @@ export function renderPhysicalSkillOrderCheckboxes() {
   ).join("");
 }
 
+export function renderPhysicalSkillActionCheckboxes({ afterKeyHtml = {} } = {}) {
+  return PHYSICAL_SKILL_ORDER_OPTIONS.map(({ key, label, actionLabel }) => {
+    const displayLabel = actionLabel || label;
+    const extra = afterKeyHtml[key] ? `<br>${afterKeyHtml[key]}` : "";
+    return `<div><input id="skill_${key}" type="checkbox"><label for="skill_${key}"><l0>${displayLabel.l0}</l0><l1>${displayLabel.l1}</l1><l2>${displayLabel.l2}</l2></label>: <input id="skillOTOS_${key}" type="checkbox"><label for="skillOTOS_${key}"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>${extra}{{skill${key}Condition}}</div>`;
+  }).join("");
+}
+
 export function renderItemOrderCheckboxes() {
   return ITEM_ORDER_OPTIONS.map(
     ({ key, itemId, label }) =>
@@ -997,12 +1005,8 @@ export function optionBox() {
     '  <div class="skillOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: ',
     '  <input name="skillOrderValue" style="width:80%;" type="text" disabled="true"><br>',
     `  ${renderPhysicalSkillOrderCheckboxes()}</div>`,
-    '  <div><input id="skill_OFC" type="checkbox"><label for="skill_OFC"><l0>友情小马砲</l0><l1>友情小馬砲</l1><l2>OFC</l2></label>: <input id="skillOTOS_OFC" type="checkbox"><label for="skillOTOS_OFC"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>{{skillOFCCondition}}</div>',
-    '  <div><input id="skill_FRD" type="checkbox"><label for="skill_FRD"><l0>龙吼</l0><l1>龍吼</l1><l2>FRD</l2></label>: <input id="skillOTOS_FRD" type="checkbox"><label for="skillOTOS_FRD"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>{{skillFRDCondition}}</div>',
     ...renderPhysicalSkillStrategySchemaFields(),
-    `  <div><input id="skill_T3" type="checkbox"><label for="skill_T3"><l0>3阶（如果有）</l0><l1>3階（如果有）</l1><l2>T3(if exist)</l2></label>: <input id="skillOTOS_T3" type="checkbox"><label for="skillOTOS_T3"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label><br>${renderMercifulBlowSchemaField()}{{skillT3Condition}}</div>`,
-    '  <div><input id="skill_T2" type="checkbox"><label for="skill_T2"><l0>2阶（如果有）</l0><l1>2階（如果有）</l1><l2>T2(if exist)</l2></label>: <input id="skillOTOS_T2" type="checkbox"><label for="skillOTOS_T2"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>{{skillT2Condition}}</div>',
-    '  <div><input id="skill_T1" type="checkbox"><label for="skill_T1"><l0>1阶</l0><l1>1階</l1><l2>T1</l2></label>: <input id="skillOTOS_T1" type="checkbox"><label for="skillOTOS_T1"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>{{skillT1Condition}}</div>',
+    renderPhysicalSkillActionCheckboxes({ afterKeyHtml: { T3: renderMercifulBlowSchemaField() } }),
     '  <div>AoE: <l0>当前技能等级下影响的目标数(1=单体, 3=范围)，访问</l0><l1>當前技能等級下影響的目標數(1=單體, 3=範圍)，訪問</l1><l2>Targets affected at current skill level (1=single, 3=AoE), visit </l2><a href="?s=Character&ss=ab" target="_blank"><l0>技能页面</l0><l1>技能頁面</l1><l2>Ability Page</l2></a><l0>自动检测</l0><l1>自動檢測</l1><l2> to auto-detect</l2><br>',
     '    Fire: T1:<input class="hvAANumber" name="spellAoe_11" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_12" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_13" placeholder="1" type="text"><br>',
     '    Cold: T1:<input class="hvAANumber" name="spellAoe_21" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_22" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_23" placeholder="1" type="text"><br>',
