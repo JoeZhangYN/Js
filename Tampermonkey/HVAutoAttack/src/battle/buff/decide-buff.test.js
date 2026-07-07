@@ -92,6 +92,16 @@ describe("decideBuff", () => {
     });
   });
 
+  it("derives draught fallback order from the battle buff action registry", () => {
+    expect(
+      decideBuff(
+        snap({
+          opt: enabled({ buffSkill: { HD: true, MD: true, SD: true, FV: true, BG: true } }),
+        })
+      )
+    ).toEqual({ kind: "item-command", itemId: 11191 });
+  });
+
   it("rejects unknown buff decision events", () => {
     expect(runBattleBuffDecision({ type: "unknown", ...snap() })).toEqual({ kind: "noop" });
     expect(runBattleBuffDecision(null)).toEqual({ kind: "noop" });

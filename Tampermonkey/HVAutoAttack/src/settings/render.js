@@ -29,6 +29,7 @@ import {
 import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
+import { BATTLE_BUFF_ACTION_OPTIONS } from "../data/battle-buff-actions.js";
 import { BATTLE_ROUND_TYPE_OPTIONS } from "../data/battle-round-types.js";
 import { BATTLE_SCROLL_OPTIONS } from "../data/battle-scrolls.js";
 import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
@@ -287,6 +288,13 @@ export function renderBuffSkillCheckboxes(idPrefix) {
       return rows;
     }, [])
     .join("<br>");
+}
+
+export function renderBuffSkillActionCheckboxes() {
+  return BATTLE_BUFF_ACTION_OPTIONS.map(
+    ({ key, label }) =>
+      `<div><input id="buffSkill_${key}" type="checkbox"><label for="buffSkill_${key}">${label}</label>{{buffSkill${key}Condition}}</div>`
+  ).join("");
 }
 
 export function renderChannelFallbackOrderCheckboxes() {
@@ -959,20 +967,7 @@ export function optionBox() {
     '    <input name="buffSkillOrderValue" style="width:80%;" type="text" disabled="true"><br>',
     `    ${renderBuffSkillCheckboxes("buffSkillOrder")}</div>`,
     "  <div><l0>Buff不存在就施放的技能</l0><l1>Buff不存在就施放的技能</l1><l2>Cast spells if the buff is not present</l2>: ",
-    '    <div><input id="buffSkill_HD" type="checkbox"><label for="buffSkill_HD">Health Draught</label>{{buffSkillHDCondition}}</div>',
-    '    <div><input id="buffSkill_MD" type="checkbox"><label for="buffSkill_MD">Mana Draught</label>{{buffSkillMDCondition}}</div>',
-    '    <div><input id="buffSkill_SD" type="checkbox"><label for="buffSkill_SD">Spirit Draught</label>{{buffSkillSDCondition}}</div>',
-    '    <div><input id="buffSkill_FV" type="checkbox"><label for="buffSkill_FV">Flower Vase</label>{{buffSkillFVCondition}}</div>',
-    '    <div><input id="buffSkill_BG" type="checkbox"><label for="buffSkill_BG">Bubble-Gum</label>{{buffSkillBGCondition}}</div>',
-    '    <div><input id="buffSkill_Pr" type="checkbox"><label for="buffSkill_Pr">Protection</label>{{buffSkillPrCondition}}</div>',
-    '    <div><input id="buffSkill_SL" type="checkbox"><label for="buffSkill_SL">Spark of Life</label>{{buffSkillSLCondition}}</div>',
-    '    <div><input id="buffSkill_SS" type="checkbox"><label for="buffSkill_SS">Spirit Shield</label>{{buffSkillSSCondition}}</div>',
-    '    <div><input id="buffSkill_Ha" type="checkbox"><label for="buffSkill_Ha">Haste</label>{{buffSkillHaCondition}}</div>',
-    '    <div><input id="buffSkill_AF" type="checkbox"><label for="buffSkill_AF">Arcane Focus</label>{{buffSkillAFCondition}}</div>',
-    '    <div><input id="buffSkill_He" type="checkbox"><label for="buffSkill_He">Heartseeker</label>{{buffSkillHeCondition}}</div>',
-    '    <div><input id="buffSkill_Re" type="checkbox"><label for="buffSkill_Re">Regen</label>{{buffSkillReCondition}}</div>',
-    '    <div><input id="buffSkill_SV" type="checkbox"><label for="buffSkill_SV">Shadow Veil</label>{{buffSkillSVCondition}}</div>',
-    '    <div><input id="buffSkill_Ab" type="checkbox"><label for="buffSkill_Ab">Absorb</label>{{buffSkillAbCondition}}</div></div></div>',
+    `    ${renderBuffSkillActionCheckboxes()}</div></div>`,
     '<div class="hvAATab" id="hvAATab-Debuff">',
     '  <div class="debuffSkillOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>:',
     '    <input name="debuffSkillOrderValue" style="width:80%;" type="text" disabled="true"><br>',

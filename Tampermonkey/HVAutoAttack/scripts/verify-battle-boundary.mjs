@@ -3356,7 +3356,7 @@ function checkBuffEntry() {
     "DECIDE",
     "runBattleBuffDecision",
     "decideBuff",
-    "DRAUGHT_PACK",
+    "DRAUGHT_BUFF_OPTIONS",
     "buffSkillSwitch",
     "buffSkill",
     "buffSkillCondition",
@@ -3400,8 +3400,20 @@ function checkBuffEntry() {
   if (!/runBattleBuffDecision\(null\)/.test(buffTestText)) {
     violations.push(`${rel(buffTestFile)} must cover null buff decision events`);
   }
-  if (!/const DRAUGHT_PACK = Object\.freeze\(\[/.test(ownerText)) {
-    violations.push(`${rel(decideBuffFile)} must own frozen draught decision table`);
+  if (
+    !/import\s*\{\s*DRAUGHT_BUFF_OPTIONS\s*\}\s*from\s*["'][^"']*\/data\/battle-buff-actions\.js["']/.test(
+      ownerText
+    )
+  ) {
+    violations.push(`${rel(decideBuffFile)} must consume the battle buff action registry`);
+  }
+  if (/const DRAUGHT_PACK = Object\.freeze\(\[/.test(ownerText)) {
+    violations.push(`${rel(decideBuffFile)} must not keep a parallel draught table`);
+  }
+  if (!/for\s*\(\s*const\s+draught\s+of\s+DRAUGHT_BUFF_OPTIONS\s*\)/.test(ownerText)) {
+    violations.push(
+      `${rel(decideBuffFile)} must derive draught fallback from DRAUGHT_BUFF_OPTIONS`
+    );
   }
   if (/decideBuff\s*\(\s*opt\s*,\s*snap\s*\)/.test(ownerText)) {
     violations.push(`${rel(decideBuffFile)} must not expose opt/snap buff input`);

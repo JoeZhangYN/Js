@@ -2,16 +2,9 @@
 // 不读 DOM / 不调 g() / 不写 setValue —— 单元测试零依赖。
 // Phase 5b-2 wave 1 第 1 个 L1 切缝示例。
 import { BUFF_SKILL_LIB } from "../../data/buff-lib.js";
+import { DRAUGHT_BUFF_OPTIONS } from "../../data/battle-buff-actions.js";
 import { checkCondition } from "../../settings/condition-eval.js";
 import { BattlePlayerBuffStateEvent, runBattlePlayerBuffState } from "../player-buff-state.js";
-
-const DRAUGHT_PACK = Object.freeze([
-  Object.freeze(["HD", Object.freeze({ id: 11191, img: "healthpot" })]),
-  Object.freeze(["MD", Object.freeze({ id: 11291, img: "manapot" })]),
-  Object.freeze(["SD", Object.freeze({ id: 11391, img: "spiritpot" })]),
-  Object.freeze(["FV", Object.freeze({ id: 19111, img: "flowers" })]),
-  Object.freeze(["BG", Object.freeze({ id: 19131, img: "gum" })]),
-]);
 
 const EVENT_DECIDE = "decide";
 
@@ -66,7 +59,7 @@ function decideBuff(event = {}) {
   }
 
   // Phase 2: draughts (items 5 个)
-  for (const [key, draught] of DRAUGHT_PACK) {
+  for (const draught of DRAUGHT_BUFF_OPTIONS) {
     if (
       runBattlePlayerBuffState({
         type: BattlePlayerBuffStateEvent.READ_ACTIVE,
@@ -76,11 +69,11 @@ function decideBuff(event = {}) {
     ) {
       continue;
     }
-    if (!buffSkill[key]) continue;
-    if (!checkCondition(opt[`buffSkill${key}Condition`], event.conditionFacts)) continue;
+    if (!buffSkill[draught.key]) continue;
+    if (!checkCondition(opt[`buffSkill${draught.key}Condition`], event.conditionFacts)) continue;
     return {
       kind: "item-command",
-      itemId: draught.id,
+      itemId: draught.itemId,
     };
   }
 

@@ -76,14 +76,28 @@ if (/battleInfusionDecisionEventHandlers\[event\.type\]/.test(infusionText)) {
   violations.push("src/battle/buff/decide-infusion.js must reject null infusion events");
 }
 if (!/battleInfusionDecisionEventHandlers\[event\?\.type\]/.test(infusionText)) {
-  violations.push("src/battle/buff/decide-infusion.js must dispatch invalid infusion events through optional type");
+  violations.push(
+    "src/battle/buff/decide-infusion.js must dispatch invalid infusion events through optional type"
+  );
 }
 const infusionTestText = read(path.normalize("src/battle/buff/decide-infusion.test.js"));
 if (!/runBattleInfusionDecision\(null\)/.test(infusionTestText)) {
   violations.push("src/battle/buff/decide-infusion.test.js must cover null infusion events");
 }
-if (!/const DRAUGHT_PACK = Object\.freeze\(\[/.test(buffText)) {
-  violations.push("src/battle/buff/decide-buff.js must own frozen draught decision table");
+if (
+  !/import\s*\{\s*DRAUGHT_BUFF_OPTIONS\s*\}\s*from\s*["'][^"']*\/data\/battle-buff-actions\.js["']/.test(
+    buffText
+  )
+) {
+  violations.push("src/battle/buff/decide-buff.js must consume the battle buff action registry");
+}
+if (/const DRAUGHT_PACK = Object\.freeze\(\[/.test(buffText)) {
+  violations.push("src/battle/buff/decide-buff.js must not keep a parallel draught table");
+}
+if (!/for\s*\(\s*const\s+draught\s+of\s+DRAUGHT_BUFF_OPTIONS\s*\)/.test(buffText)) {
+  violations.push(
+    "src/battle/buff/decide-buff.js must derive draught fallback from DRAUGHT_BUFF_OPTIONS"
+  );
 }
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleBuffDecisionEvent\b|runBattleBuffDecision\b)/.test(
@@ -96,7 +110,9 @@ if (/battleBuffDecisionEventHandlers\[event\.type\]/.test(buffText)) {
   violations.push("src/battle/buff/decide-buff.js must reject null buff events");
 }
 if (!/battleBuffDecisionEventHandlers\[event\?\.type\]/.test(buffText)) {
-  violations.push("src/battle/buff/decide-buff.js must dispatch invalid buff events through optional type");
+  violations.push(
+    "src/battle/buff/decide-buff.js must dispatch invalid buff events through optional type"
+  );
 }
 const buffTestText = read(path.normalize("src/battle/buff/decide-buff.test.js"));
 if (!/runBattleBuffDecision\(null\)/.test(buffTestText)) {
@@ -114,16 +130,15 @@ if (/battleChannelDecisionEventHandlers\[event\.type\]/.test(channelText)) {
   violations.push("src/battle/buff/decide-channel.js must reject null channel events");
 }
 if (!/battleChannelDecisionEventHandlers\[event\?\.type\]/.test(channelText)) {
-  violations.push("src/battle/buff/decide-channel.js must dispatch invalid channel events through optional type");
+  violations.push(
+    "src/battle/buff/decide-channel.js must dispatch invalid channel events through optional type"
+  );
 }
 const channelTestText = read(path.normalize("src/battle/buff/decide-channel.test.js"));
 if (!/runBattleChannelDecision\(null\)/.test(channelTestText)) {
   violations.push("src/battle/buff/decide-channel.test.js must cover null channel events");
 }
-for (const required of [
-  "noop: () => true",
-  '"channel-plan": isEmptyChannelPlanDecision',
-]) {
+for (const required of ["noop: () => true", '"channel-plan": isEmptyChannelPlanDecision']) {
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must lock empty buff preparation decision ${required}`);
   }
@@ -131,7 +146,9 @@ for (const required of [
 const emptyDecisionBody =
   ownerText.match(/function isEmptyDecision\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || "";
 if (/result\.kind\s*===|plan\.type\s*===/.test(emptyDecisionBody)) {
-  violations.push(`${rel(owner)} must route empty buff preparation decisions through predicate tables`);
+  violations.push(
+    `${rel(owner)} must route empty buff preparation decisions through predicate tables`
+  );
 }
 
 if (
