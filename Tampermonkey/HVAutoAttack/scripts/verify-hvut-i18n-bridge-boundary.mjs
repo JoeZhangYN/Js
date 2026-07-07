@@ -26,6 +26,7 @@ for (const required of [
   "return run_hvut_i18n_bridge('translateEquipName', [name], 'translateEquipNameBridgeMissing'",
   "var registered = run_hvut_i18n_bridge('registerI18nRender', [node, bound], 'registerI18nRenderBridgeMissing'",
   "run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false);",
+  "run_hvut_i18n_bridge('recordI18nInitFailure', ['hv-utils', e], 'recordI18nInitFailureBridgeMissing'",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT i18n bridge boundary: ${required}`);
@@ -38,6 +39,7 @@ for (const forbidden of [
   "window.HVAA_i18n.translateEquipName(name)",
   "window.HVAA_i18n.registerI18nRender(node, bound)",
   "window.HVAA_i18n.retranslateEquiplist()",
+  "window.HVAA_i18n.recordI18nInitFailure('hv-utils', e)",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not call HVAA_i18n directly outside the bridge command: ${forbidden}`);

@@ -57,11 +57,14 @@ for (const [entry, name] of entries) {
 
 const hvUtilsText = read(hvUtilsEntry);
 for (const required of [
-  "window.HVAA_i18n.recordI18nInitFailure",
-  "window.HVAA_i18n.recordI18nInitFailure('hv-utils', e)",
+  "run_hvut_i18n_bridge('recordI18nInitFailure', ['hv-utils', e], 'recordI18nInitFailureBridgeMissing'",
+  "if (initFailure === false) {",
   "HV Utils 汉化执行出错",
 ]) {
   if (!hvUtilsText.includes(required)) violations.push(`${rel(hvUtilsEntry)} must classify hv-utils init failures`);
+}
+if (hvUtilsText.includes("window.HVAA_i18n.recordI18nInitFailure('hv-utils', e)")) {
+  violations.push(`${rel(hvUtilsEntry)} must not call the i18n init failure bridge directly`);
 }
 if (/catch \(e\) \{\s*console\.error\("\[HVAA\]\[i18n\] HV Utils 汉化执行出错:"/.test(hvUtilsText)) {
   violations.push(`${rel(hvUtilsEntry)} must not keep hv-utils init failure as immediate console-only handling`);

@@ -17733,9 +17733,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'am' && _query.screen === 'modify') {
   }
 } catch (e) {
   try {
-    if (window.HVAA_i18n && window.HVAA_i18n.recordI18nInitFailure) {
-      window.HVAA_i18n.recordI18nInitFailure('hv-utils', e);
-    } else {
+    var initFailure = typeof run_hvut_i18n_bridge === 'function'
+      ? run_hvut_i18n_bridge('recordI18nInitFailure', ['hv-utils', e], 'recordI18nInitFailureBridgeMissing', { entry: 'hv-utils' }, false)
+      : false;
+    if (initFailure === false) {
       console.error("[HVAA][i18n] HV Utils 汉化执行出错:", e);
     }
   } catch (_) {
