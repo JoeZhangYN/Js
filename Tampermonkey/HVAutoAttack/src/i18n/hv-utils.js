@@ -64,6 +64,35 @@ try {
     if (document.body) show();
     else document.addEventListener("DOMContentLoaded", show);
   };
+  var read_hvut_session_evidence = function (key) {
+    try {
+      var raw = sessionStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      return { capability: 'hvutDiagnosticRead', stage: 'readEvidence', detail: { key: key, error: error?.message || String(error) } };
+    }
+  };
+  var stringify_hvut_evidence = function (value) {
+    try {
+      return JSON.stringify(value || null, null, 2);
+    } catch (error) {
+      return JSON.stringify({ error: error?.message || String(error) });
+    }
+  };
+  var render_hvut_failure_report = function (title, evidence, relatedKeys) {
+    var log = "[HVAA][HVUT] " + title + "，请整段复制此日志反馈：\n\n" +
+      "page : " + location.href + "\n" +
+      "cap  : " + evidence.capability + "\n" +
+      "stage: " + evidence.stage + "\n\n" +
+      "evidence:\n" + stringify_hvut_evidence(evidence);
+    (relatedKeys || []).forEach((key) => {
+      log += "\n\n" + key + ":\n" + stringify_hvut_evidence(read_hvut_session_evidence(key));
+    });
+    return log;
+  };
+  var show_hvut_failure_report = function (title, evidence, relatedKeys) {
+    show_hvut_runtime_failure_report(render_hvut_failure_report(title, evidence, relatedKeys));
+  };
   var record_hvut_i18n_bridge_failure = function (stage, detail) {
     var evidence = { capability: 'hvutI18nBridge', stage: stage, detail: detail || {} };
     try {
@@ -1648,21 +1677,6 @@ try {
       // Console hooks must not block Armory page fallback.
     }
     return evidence;
-  };
-  var read_hvut_session_evidence = function (key) {
-    try {
-      var raw = sessionStorage.getItem(key);
-      return raw ? JSON.parse(raw) : null;
-    } catch (error) {
-      return { capability: 'hvutDiagnosticRead', stage: 'readEvidence', detail: { key: key, error: error?.message || String(error) } };
-    }
-  };
-  var stringify_hvut_evidence = function (value) {
-    try {
-      return JSON.stringify(value || null, null, 2);
-    } catch (error) {
-      return JSON.stringify({ error: error?.message || String(error) });
-    }
   };
   var render_hvut_armory_integrate_failure_log = function (integrateEvidence) {
     return "[HVAA][HVUT] Armory integrate failed，请整段复制此日志反馈：\n\n" +
@@ -6104,14 +6118,14 @@ const bindArmory = function (armory, ctx) {
         try {
           html = await $ajax.fetch(create_hvut_armory_screen_url('purchase'), data);
         } catch (error) {
-          record_hvut_armory_submit_failure('purchaseRequest', { count: equips.length, error: error?.message || String(error) });
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          const evidence = record_hvut_armory_submit_failure('purchaseRequest', { count: equips.length, error: error?.message || String(error) });
+          show_hvut_failure_report('Armory submit failed', evidence);
           return false;
         }
         const doc = $doc(html);
         const response = classify_hvut_armory_submit_response(doc, 'purchaseRejected', { count: equips.length });
         if (response.kind !== 'accepted') {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_failure_report('Armory submit failed', response.evidence);
           return false;
         }
         $armory.submit.message(response);
@@ -6127,14 +6141,14 @@ const bindArmory = function (armory, ctx) {
         try {
           html = await $ajax.fetch(create_hvut_armory_screen_url('sell'), data);
         } catch (error) {
-          record_hvut_armory_submit_failure('sellRequest', { count: equips.length, error: error?.message || String(error) });
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          const evidence = record_hvut_armory_submit_failure('sellRequest', { count: equips.length, error: error?.message || String(error) });
+          show_hvut_failure_report('Armory submit failed', evidence);
           return false;
         }
         const doc = $doc(html);
         const response = classify_hvut_armory_submit_response(doc, 'sellRejected', { count: equips.length });
         if (response.kind !== 'accepted') {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_failure_report('Armory submit failed', response.evidence);
           return false;
         }
         $armory.submit.message(response);
@@ -6150,14 +6164,14 @@ const bindArmory = function (armory, ctx) {
         try {
           html = await $ajax.fetch(create_hvut_armory_screen_url('salvage'), data + '&sell_salvage=on');
         } catch (error) {
-          record_hvut_armory_submit_failure('salvageRequest', { count: equips.length, error: error?.message || String(error) });
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          const evidence = record_hvut_armory_submit_failure('salvageRequest', { count: equips.length, error: error?.message || String(error) });
+          show_hvut_failure_report('Armory submit failed', evidence);
           return false;
         }
         const doc = $doc(html);
         const response = classify_hvut_armory_submit_response(doc, 'salvageRejected', { count: equips.length });
         if (response.kind !== 'accepted') {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_failure_report('Armory submit failed', response.evidence);
           return false;
         }
         $armory.submit.message(response);
@@ -6307,14 +6321,14 @@ const bindArmory = function (armory, ctx) {
         try {
           html = await $ajax.fetch(create_hvut_armory_organize_url(), data + `&set_${param_name}=${param_value}`);
         } catch (error) {
-          record_hvut_armory_submit_failure('organizeRequest', { count: equips.length, name: name, value: value, error: error?.message || String(error) });
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          const evidence = record_hvut_armory_submit_failure('organizeRequest', { count: equips.length, name: name, value: value, error: error?.message || String(error) });
+          show_hvut_failure_report('Armory submit failed', evidence);
           return false;
         }
         const doc = $doc(html);
         const response = classify_hvut_armory_submit_response(doc, 'organizeRejected', { count: equips.length, name: name, value: value });
         if (response.kind !== 'accepted') {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_failure_report('Armory submit failed', response.evidence);
           return false;
         }
         $armory.submit.message(response);
@@ -7870,8 +7884,8 @@ if (characterPage.isAbilities) {
     try {
       results = await Promise.all(requests);
     } catch (error) {
-      record_hvut_ability_unlock_failure('abilityUnlockRequest', { name: name, to: to, count: count, error: error?.message || String(error) });
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      const evidence = record_hvut_ability_unlock_failure('abilityUnlockRequest', { name: name, to: to, count: count, error: error?.message || String(error) });
+      show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);
       return;
     }
     if (!results.every((r) => r)) return;
@@ -9781,8 +9795,8 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         try {
           await Promise.all(requests);
         } catch (error) {
-          record_hvut_monster_lab_upgrade_failure('upgradeUpdateRequest', { total: total, done: done, error: error?.message || String(error) });
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          const evidence = record_hvut_monster_lab_upgrade_failure('upgradeUpdateRequest', { total: total, done: done, error: error?.message || String(error) });
+          show_hvut_failure_report('Monster Lab upgrade failed', evidence);
           _ml.upgrade.node.button.disabled = false;
           _ml.upgrade.node.button.value = '怪物升级器';
           if (_ml.upgrade.node.run) {
@@ -10077,8 +10091,8 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         try {
           await Promise.all(requests);
         } catch (error) {
-          record_hvut_monster_lab_upgrade_failure('upgradeRunRequest', { total: total, done: done, error: error?.message || String(error) });
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          const evidence = record_hvut_monster_lab_upgrade_failure('upgradeRunRequest', { total: total, done: done, error: error?.message || String(error) });
+          show_hvut_failure_report('Monster Lab upgrade failed', evidence);
           _ml.upgrade.node.run.disabled = false;
           _ml.upgrade.node.update.disabled = false;
           _ml.upgrade.node.run.value = '失败';
@@ -11385,12 +11399,13 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
           try {
             conn.os.clear();
           } catch (error) {
-            record_hvut_mooglemail_action_failure(stage, { ...detail, error: error?.message || String(error) });
-            alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+            const evidence = record_hvut_mooglemail_action_failure(stage, { ...detail, error: error?.message || String(error) });
+            show_hvut_failure_report('MoogleMail action failed', evidence);
             return false;
           }
           if (!await wait_hvut_mooglemail_db_write(stage, detail, conn)) {
-            alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+            const evidence = read_hvut_session_evidence('HVAA:lastHvutMoogleMailActionFailure') || record_hvut_mooglemail_action_failure(stage, { ...detail, reason: 'writeWaitFailed' });
+            show_hvut_failure_report('MoogleMail action failed', evidence);
             return false;
           }
           return true;
@@ -13886,8 +13901,8 @@ if (characterPage.isAbilities) {
     try {
       results = await Promise.all(requests);
     } catch (error) {
-      record_hvut_ability_unlock_failure('legacyAbilityUnlockRequest', { name: name, to: to, count: count, error: error?.message || String(error) });
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      const evidence = record_hvut_ability_unlock_failure('legacyAbilityUnlockRequest', { name: name, to: to, count: count, error: error?.message || String(error) });
+      show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);
       return;
     }
     if (!results.every((r) => r)) return;
@@ -14056,8 +14071,8 @@ if (characterPage.isAbilities) {
   for (const div of $qsa('#ability_top div[onmouseover*="overability"]')) {
     const exec = /overability\(\d+, '([^']+)'.+?(?:(Not Acquired)|Requires <strong>Level (\d+))/.exec(div.getAttribute('onmouseover'));
     if (!exec) {
-      record_hvut_ability_parse_failure('abilitySlotbar', { onmouseover: div.getAttribute('onmouseover') || '' });
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      const evidence = record_hvut_ability_parse_failure('abilitySlotbar', { onmouseover: div.getAttribute('onmouseover') || '' });
+      show_hvut_failure_report('Ability parse failed', evidence);
       return false;
     }
     const name = exec[1];
@@ -15734,8 +15749,8 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         try {
           await Promise.all(requests);
         } catch (error) {
-          record_hvut_monster_lab_upgrade_failure('legacyUpgradeUpdateRequest', { total: total, done: done, error: error?.message || String(error) });
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          const evidence = record_hvut_monster_lab_upgrade_failure('legacyUpgradeUpdateRequest', { total: total, done: done, error: error?.message || String(error) });
+          show_hvut_failure_report('Monster Lab upgrade failed', evidence);
           _ml.upgrade.node.button.disabled = false;
           _ml.upgrade.node.button.value = '怪物升级器';
           if (_ml.upgrade.node.run) {
@@ -16037,8 +16052,8 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         try {
           await Promise.all(requests);
         } catch (error) {
-          record_hvut_monster_lab_upgrade_failure('legacyUpgradeRunRequest', { total: total, done: done, error: error?.message || String(error) });
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          const evidence = record_hvut_monster_lab_upgrade_failure('legacyUpgradeRunRequest', { total: total, done: done, error: error?.message || String(error) });
+          show_hvut_failure_report('Monster Lab upgrade failed', evidence);
           _ml.upgrade.node.run.disabled = false;
           _ml.upgrade.node.update.disabled = false;
           _ml.upgrade.node.run.value = '失败';
@@ -17292,12 +17307,13 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
           try {
             conn.os.clear();
           } catch (error) {
-            record_hvut_mooglemail_action_failure(stage, { ...detail, error: error?.message || String(error) });
-            alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+            const evidence = record_hvut_mooglemail_action_failure(stage, { ...detail, error: error?.message || String(error) });
+            show_hvut_failure_report('MoogleMail action failed', evidence);
             return false;
           }
           if (!await wait_hvut_mooglemail_db_write(stage, detail, conn)) {
-            alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+            const evidence = read_hvut_session_evidence('HVAA:lastHvutMoogleMailActionFailure') || record_hvut_mooglemail_action_failure(stage, { ...detail, reason: 'writeWaitFailed' });
+            show_hvut_failure_report('MoogleMail action failed', evidence);
             return false;
           }
           return true;

@@ -23,6 +23,11 @@ for (const required of [
   "console.error('[HVAA][HVUT] runtime failed', evidence)",
   "render_hvut_runtime_failure_log",
   "show_hvut_runtime_failure_report",
+  "var read_hvut_session_evidence = function (key) {",
+  "var stringify_hvut_evidence = function (value) {",
+  "var render_hvut_failure_report = function (title, evidence, relatedKeys) {",
+  "var show_hvut_failure_report = function (title, evidence, relatedKeys) {",
+  "show_hvut_runtime_failure_report(render_hvut_failure_report(title, evidence, relatedKeys));",
   "[HVAA][HVUT] 执行出错，请整段复制此日志反馈",
   "× 关闭 HVUT 诊断",
 ]) {

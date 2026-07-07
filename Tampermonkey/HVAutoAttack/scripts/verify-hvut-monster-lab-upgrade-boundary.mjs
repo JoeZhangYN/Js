@@ -99,8 +99,8 @@ for (const [index, body] of onsuccessBodies.entries()) {
 for (const [index, body] of updateBodies.entries()) {
   for (const required of [
     "try {\n          await Promise.all(requests);",
-    "catch (error) {\n          record_hvut_monster_lab_upgrade_failure(",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "catch (error) {\n          const evidence = record_hvut_monster_lab_upgrade_failure(",
+    "show_hvut_failure_report('Monster Lab upgrade failed', evidence);",
     "_ml.upgrade.node.button.disabled = false;",
     "_ml.upgrade.node.run.disabled = false;",
     "_ml.upgrade.node.run.value = '失败';",
@@ -131,8 +131,8 @@ for (const [index, body] of runBodies.entries()) {
   const emptyResponseStage = index === 0 ? "upgradeRunEmptyResponse" : "legacyUpgradeRunEmptyResponse";
   for (const required of [
     "try {\n          await Promise.all(requests);",
-    "catch (error) {\n          record_hvut_monster_lab_upgrade_failure(",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "catch (error) {\n          const evidence = record_hvut_monster_lab_upgrade_failure(",
+    "show_hvut_failure_report('Monster Lab upgrade failed', evidence);",
     "_ml.upgrade.node.run.disabled = false;",
     "_ml.upgrade.node.update.disabled = false;",
     "_ml.upgrade.node.run.value = '失败';",

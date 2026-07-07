@@ -27,6 +27,7 @@ for (const required of [
   "var run_hvut_ability_unlock_request = async function (ability, context) {",
   "var html = await $ajax.fetch(create_hvut_ability_unlock_url(), `unlock_ability=${ability.id}`);",
   "var response = classify_hvut_ability_unlock_response(doc, context?.responseStage || 'abilityUnlockResponse'",
+  "show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);",
   "if (response.kind === 'rejected') {\n      popup(response.message);\n      return false;",
   "if (button) {",
   "return true;",
@@ -56,10 +57,10 @@ for (const [index, body] of bodies.entries()) {
     "let results;",
     "try {\n      results = await Promise.all(requests);",
     "catch (error) {",
-    "record_hvut_ability_unlock_failure(",
+    "const evidence = record_hvut_ability_unlock_failure(",
     "return run_hvut_ability_unlock_request(ab, { buttonStage:",
     "responseStage:",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n      return;",
+    "show_hvut_failure_report('Ability unlock failed', evidence, ['HVAA:lastHvutAbilityParseFailure']);\n      return;",
     "if (!results.every((r) => r)) return;",
     "reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'))",
   ]) {
@@ -75,6 +76,9 @@ for (const [index, body] of bodies.entries()) {
   }
   if (/catch \(_error\) \{\n\s*alert\(IS_ISEKAI/.test(body)) {
     violations.push(`${target} ability unlock[${index}] must not keep untyped request failure`);
+  }
+  if (/record_hvut_ability_unlock_failure\([^;]+;\n\s*alert\(IS_ISEKAI/.test(body)) {
+    violations.push(`${target} ability unlock[${index}] must show copyable diagnostic evidence instead of a bare alert`);
   }
   if (/\$ajax\.fetch\(location\.href/.test(body)) {
     violations.push(`${target} ability unlock[${index}] must delegate current-page POST to run_hvut_ability_unlock_request`);
