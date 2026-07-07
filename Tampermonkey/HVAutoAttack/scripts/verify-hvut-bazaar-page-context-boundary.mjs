@@ -8,12 +8,14 @@ const violations = [];
 
 for (const required of [
   "var create_hvut_bazaar_page_context = function (query) {",
+  "var section = source?.s;",
+  "section: section,",
   "var hvut_bazaar_page_context = null;",
   "var get_hvut_bazaar_page_context = function () {",
   "hvut_bazaar_page_context = hvut_bazaar_page_context || create_hvut_bazaar_page_context();",
   "return hvut_bazaar_page_context;",
-  "isItemShop: ss === 'is'",
-  "isShrine: ss === 'ss'",
+  "isItemShop: section === 'Bazaar' && ss === 'is'",
+  "isShrine: section === 'Bazaar' && ss === 'ss'",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep Bazaar page context boundary: ${required}`);
@@ -22,7 +24,7 @@ for (const required of [
 
 const bazaarBodies = [
   ...text.matchAll(
-    /if \(_query\.s === 'Bazaar' && get_hvut_bazaar_page_context\(\)\.isItemShop\) \{[\s\S]*?\/\/ \[END (?:8|10)\] Bazaar - The Shrine/g,
+    /if \(get_hvut_bazaar_page_context\(\)\.isItemShop\) \{[\s\S]*?\/\/ \[END (?:8|10)\] Bazaar - The Shrine/g,
   ),
 ];
 
@@ -33,8 +35,8 @@ if (bazaarBodies.length !== 2) {
 bazaarBodies.forEach((match, index) => {
   const body = match[0];
   for (const required of [
-    "if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isItemShop) {",
-    "if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isShrine) {",
+    "if (get_hvut_bazaar_page_context().isItemShop) {",
+    "if (get_hvut_bazaar_page_context().isShrine) {",
   ]) {
     if (!body.includes(required)) {
       violations.push(`${target} Bazaar body[${index}] must consume page context: ${required}`);
@@ -43,6 +45,8 @@ bazaarBodies.forEach((match, index) => {
   for (const forbidden of [
     "_query.ss === 'is'",
     "_query.ss === 'ss'",
+    "_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isItemShop",
+    "_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isShrine",
   ]) {
     if (body.includes(forbidden)) {
       violations.push(`${target} Bazaar body[${index}] must not rebuild page identity from raw query: ${forbidden}`);

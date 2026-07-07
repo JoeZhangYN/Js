@@ -1858,11 +1858,13 @@ try {
   };
   var create_hvut_bazaar_page_context = function (query) {
     var source = query || _query;
+    var section = source?.s;
     var ss = source?.ss;
     return {
+      section: section,
       ss: ss,
-      isItemShop: ss === 'is',
-      isShrine: ss === 'ss',
+      isItemShop: section === 'Bazaar' && ss === 'is',
+      isShrine: section === 'Bazaar' && ss === 'ss',
     };
   };
   var hvut_bazaar_page_context = null;
@@ -8020,7 +8022,7 @@ if (_query.s === 'Character' && characterPage.isSettings) {
 
 
 //* [7] Bazaar - Item Shop
-if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isItemShop) {
+if (get_hvut_bazaar_page_context().isItemShop) {
   _is.init = function () {
     $qsa('#item_pane .itemlist tr').forEach((tr) => {
       const div = tr.cells[0].firstElementChild;
@@ -8046,7 +8048,7 @@ if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isItemShop) {
 
 
 //* [8] Bazaar - The Shrine
-if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isShrine) {
+if (get_hvut_bazaar_page_context().isShrine) {
   _ss.node = {};
   _ss.equip = { capacity: null, usage: null, requests: 0, received: 0, sold: 0, salvaged: 0, total: null };
 
@@ -14132,7 +14134,7 @@ if (_query.s === 'Character' && characterPage.isSettings) {
 
 
 //* [9] Bazaar - Item Shop
-if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isItemShop) {
+if (get_hvut_bazaar_page_context().isItemShop) {
   $qsa('#item_pane .itemlist tr').forEach((tr) => {
     const div = tr.cells[0].firstElementChild;
     const type = $item.get_type(div.getAttribute('onmouseover'));
@@ -14154,7 +14156,7 @@ if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isItemShop) {
 
 
 //* [10] Bazaar - The Shrine
-if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isShrine) {
+if (get_hvut_bazaar_page_context().isShrine) {
   _ss.log = $config.get('ss_log', {});
   _ss.node = {};
   _ss.equip = { capacity: null, current: null, requests: 0, received: 0, sold: 0, salvaged: 0, total: null };
