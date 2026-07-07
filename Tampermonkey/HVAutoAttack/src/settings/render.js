@@ -681,30 +681,29 @@ function renderArenaStaminaLossSchemaFields() {
   );
 }
 
-function renderIdleArenaSchemaFields() {
-  return (
-    `<div><input id="idleArena" type="checkbox"><label for="idleArena"><b>${renderSchemaLabel(
-      readSchemaField("idleArena")
-    )}</b>: ` +
-    `<l0>在任意页面停留</l0><l1>在任意頁面停留</l1><l2>Idle in any page for </l2>${renderSchemaNumberInputWithoutPlaceholder(
+export function renderIdleArenaSchemaFields() {
+  return renderSchemaCheckboxField(
+    "idleArena",
+    `: <l0>在任意页面停留</l0><l1>在任意頁面停留</l1><l2>Idle in any page for </l2>${renderSchemaNumberInputWithoutPlaceholder(
       "idleArenaTime"
-    )}<l0>秒后，开始竞技场</l0><l1>秒後，開始競技場</l1><l2>s, start Arena</l2></label> ` +
-    '<button class="idleArenaReset"><l01>重置</l01><l2>Reset</l2></button>;<br>'
-  );
+    )}<l0>秒后，开始竞技场</l0><l1>秒後，開始競技場</l1><l2>s, start Arena</l2> ` +
+      '<button class="idleArenaReset"><l01>重置</l01><l2>Reset</l2></button>;<br>'
+  ).replace(/<\/div>$/, "");
 }
 
 function renderIdleArenaGrindFestInput() {
   return renderSchemaNumberInput("idleArenaGrTime");
 }
 
-function renderRestoreStaminaSchemaFields() {
+export function renderRestoreStaminaSchemaFields() {
   return (
-    `<div><input id="restoreStamina" type="checkbox"><label for="restoreStamina"><b>${renderSchemaLabel(
-      readSchemaField("restoreStamina")
-    )}</b>: ` +
-    `<l0>战斗前，如果</l0><l1>戰鬥前，如果</l1><l2><b></b>if before a battle and </l2>Stamina ≤ ${renderSchemaNumberInput(
-      "staminaLow"
-    )}</label><br>` +
+    renderSchemaCheckboxField(
+      "restoreStamina",
+      ": " +
+        `<l0>战斗前，如果</l0><l1>戰鬥前，如果</l1><l2><b></b>if before a battle and </l2>Stamina ≤ ${renderSchemaNumberInput(
+          "staminaLow"
+        )}<br>`
+    ).replace(/<\/div>$/, "") +
     "    <l0>说明: 如果不勾选，当Stamina小于此值后，则不进行闲置竞技场</l0><l1>說明: 如果不勾選，當Stamina小於此值後，則不進行閒置競技場</l1><l2>Note: If unchecked, when Stamina is less than this value, no Idle Arena</l2></div>"
   );
 }
