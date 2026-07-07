@@ -1873,6 +1873,18 @@ try {
       hasNextDraw: !!$qs('img[src$="lottery_next_d.png"]'),
     };
   };
+  var create_hvut_battle_page_context = function (query) {
+    var source = query || _query;
+    var ss = source?.ss;
+    return {
+      ss: ss,
+      isArena: ss === 'ar',
+      isRing: ss === 'rb',
+      isTower: ss === 'tw',
+      isGrindFest: ss === 'gr',
+      isItemWorld: ss === 'iw',
+    };
+  };
   var create_hvut_monster_lab_slot_url = function (mob) {
     return `?s=Bazaar&ss=ml&slot=${mob?.index ?? mob}`;
   };
@@ -11587,6 +11599,7 @@ if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
 
 // Battle
 if (_query.s === 'Battle') {
+  const battlePage = create_hvut_battle_page_context();
   GM_addStyle(/*css*/`
     #arena_list { white-space: nowrap; }
     .hvut-bt-outer #arena_list th:nth-child(2) { width: 120px; }
@@ -11629,7 +11642,7 @@ if (_query.s === 'Battle') {
   };
 
   //* [14] Battle - Arena
-  if (_query.ss === 'ar') {
+  if (battlePage.isArena) {
     _ar.split_colspan($id('arena_list'));
     $element('div', [$id('mainpane'), 'afterbegin'], ['#arena_outer']).append($id('arena_list'));
     $battle.init($qs('#arena_outer'));
@@ -11639,7 +11652,7 @@ if (_query.s === 'Battle') {
 
 
   //* [15] Battle - Ring of Blood
-  if (_query.ss === 'rb') {
+  if (battlePage.isRing) {
     _ar.split_colspan($id('arena_list'));
     $element('div', [$id('mainpane'), 'afterbegin'], ['#rob_outer']).append($id('arena_list'), $id('arena_tokens'));
     $battle.init($qs('#rob_outer'));
@@ -11649,21 +11662,21 @@ if (_query.s === 'Battle') {
 
 
   //* [16] Battle - Tower
-  if (_query.ss === 'tw') {
+  if (battlePage.isTower) {
     $battle.init($qs('#towerstart'));
   } else
   // [END 16] Battle - Tower */
 
 
   //* [17] Battle - GrindFest
-  if (_query.ss === 'gr') {
+  if (battlePage.isGrindFest) {
     $battle.init($qs('#grindfest'));
   } else
   // [END 17] Battle - GrindFest */
 
 
   //* [18] Battle - Item World
-  if (_query.ss === 'iw') {
+  if (battlePage.isItemWorld) {
     $equip.list.table($qs('#equiplist > table') || $qs('#itemlist > table'));
     const equipaction = $id('equipaction');
     const equipblurbLast = $id('equipblurb')?.lastElementChild;
@@ -17686,6 +17699,7 @@ if (_query.s === 'Bazaar' && (_query.ss === 'lt' || _query.ss === 'la')) {
 
 // Battle
 if (_query.s === 'Battle' && $id('initform')) {
+  const battlePage = create_hvut_battle_page_context();
   GM_addStyle(/*css*/`
     #arena_list { white-space: nowrap; }
     #arena_list tbody > tr > th:nth-child(1) { width: 474px; }
@@ -17719,7 +17733,7 @@ if (_query.s === 'Battle' && $id('initform')) {
 
 
   //* [16] Battle - Arena
-  if (_query.ss === 'ar') {
+  if (battlePage.isArena) {
     _ar.split_colspan($id('arena_list'));
     toggle_button($input('button', $id('arena_list').rows[0].cells[7]), '展开细节', '折叠', $id('mainpane'), 'hvut-bt-on', true);
     $element('div', [$id('mainpane'), 'afterbegin'], ['#arena_outer']).append($id('arena_list'));
@@ -17728,7 +17742,7 @@ if (_query.s === 'Battle' && $id('initform')) {
 
 
   //* [17] Battle - Ring of Blood
-  if (_query.ss === 'rb') {
+  if (battlePage.isRing) {
     _ar.split_colspan($id('arena_list'));
     toggle_button($input('button', $id('arena_list').rows[0].cells[7]), '展开细节', '折叠', $id('mainpane'), 'hvut-bt-on', true);
     $element('div', [$id('mainpane'), 'afterbegin'], ['#rob_outer']).append($id('arena_list'), $id('arena_tokens'));
@@ -17737,14 +17751,14 @@ if (_query.s === 'Battle' && $id('initform')) {
 
 
   //* [18] Battle - GrindFest
-  if (_query.ss === 'gr') {
+  if (battlePage.isGrindFest) {
 
   } else
   // [END 18] Battle - GrindFest */
 
 
   //* [19] Battle - Item World
-  if (_query.ss === 'iw') {
+  if (battlePage.isItemWorld) {
     // 旧潜能体系 UI(tier/pxp/potency/重铸/latest 置顶)随能量模型死亡(新模型无潜能等级; 依赖已死 parse.extended
     // + ?s=Forge&ss=fo 端点), 2026-06-10 整体退化 → isekai [18] 形态(列表排序 + 布局重排)。
     $equip.list.table($qs('#equiplist > table') || $qs('#itemlist > table'));
