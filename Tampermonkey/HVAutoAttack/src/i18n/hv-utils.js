@@ -657,7 +657,7 @@ try {
     return { kind: 'accepted' };
   };
   var run_hvut_ability_unlock_request = async function (ability, context) {
-    var html = await $ajax.fetch(location.href, `unlock_ability=${ability.id}`);
+    var html = await $ajax.fetch(create_hvut_ability_unlock_url(), `unlock_ability=${ability.id}`);
     var doc = $doc(html);
     var response = classify_hvut_ability_unlock_response(doc, context?.responseStage || 'abilityUnlockResponse', { id: ability?.id || '' });
     if (response.kind === 'rejected') {
@@ -1779,6 +1779,9 @@ try {
   };
   var create_hvut_current_page_disable_url = function () {
     return location.href + '&hvut=disabled';
+  };
+  var create_hvut_ability_unlock_url = function () {
+    return location.href;
   };
   var create_hvut_mail_filter_page_url = function (filter, page) {
     return `?s=Bazaar&ss=mm&filter=${filter}&page=${page}`;

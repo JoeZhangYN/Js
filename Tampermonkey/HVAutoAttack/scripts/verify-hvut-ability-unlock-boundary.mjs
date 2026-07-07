@@ -22,8 +22,10 @@ for (const required of [
   "record_hvut_ability_unlock_failure(stage, { ...detail, reason: 'rejectedResponse', error: error });",
   "return { kind: 'rejected', reason: 'rejectedResponse', message: error, evidence: evidence };",
   "return { kind: 'accepted' };",
+  "var create_hvut_ability_unlock_url = function () {",
+  "return location.href;",
   "var run_hvut_ability_unlock_request = async function (ability, context) {",
-  "var html = await $ajax.fetch(location.href, `unlock_ability=${ability.id}`);",
+  "var html = await $ajax.fetch(create_hvut_ability_unlock_url(), `unlock_ability=${ability.id}`);",
   "var response = classify_hvut_ability_unlock_response(doc, context?.responseStage || 'abilityUnlockResponse'",
   "if (response.kind === 'rejected') {\n      popup(response.message);\n      return false;",
   "if (button) {",
@@ -95,6 +97,9 @@ if (/var error = get_message\(doc\);/.test(requestEntry)) {
 }
 if (/popup\(error\);/.test(requestEntry)) {
   violations.push(`${target} ability unlock request must popup the typed response message`);
+}
+if (/\$ajax\.fetch\(location\.href,\s*`unlock_ability=\$\{ability\.id\}`\)/.test(requestEntry)) {
+  violations.push(`${target} ability unlock request must use create_hvut_ability_unlock_url instead of raw location.href`);
 }
 
 if (violations.length) {

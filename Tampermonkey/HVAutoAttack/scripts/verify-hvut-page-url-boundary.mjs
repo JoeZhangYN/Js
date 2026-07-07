@@ -9,6 +9,7 @@ const violations = [];
 for (const required of [
   "var create_hvut_equip_page_url = function (equip, context) {",
   "var create_hvut_current_page_disable_url = function () {",
+  "var create_hvut_ability_unlock_url = function () {",
   "var create_hvut_mail_filter_page_url = function (filter, page) {",
   "var create_hvut_mail_page_url = function (page) {",
   "var create_hvut_mail_reply_url = function (mid) {",
@@ -31,6 +32,7 @@ for (const required of [
   "var create_hvut_armory_organize_url = function () {",
   "return context?.absolute ? `${location.origin}${location.pathname}${relative}` : relative;",
   "return location.href + '&hvut=disabled';",
+  "return location.href;",
   "return `?s=Bazaar&ss=mm&filter=${filter}&page=${page}`;",
   "return create_hvut_mail_filter_page_url(_query.filter || 'inbox', page);",
   "return `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;",
@@ -57,6 +59,7 @@ for (const required of [
   "href: create_hvut_equip_page_url({ eid: e.e, key: e.k })",
   "src: create_hvut_equip_page_url(eq)",
   "openUrl(create_hvut_current_page_disable_url(), hvutRedirectReason('HV_UTILS_DISABLE'));",
+  "$ajax.fetch(create_hvut_ability_unlock_url(), `unlock_ability=${ability.id}`)",
   "$ajax.fetch(create_hvut_mail_filter_page_url(_mm.page.filter, p))",
   "$ajax.fetch(create_hvut_mail_filter_page_url(_mm.page_filter, p))",
   "openUrl(create_hvut_mail_page_url(p), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));",
@@ -101,6 +104,7 @@ for (const forbidden of [
   "location.href.replace(/&page=\\d+/, '') + `&page=${p}`",
   "location.href.replace(/&page=\\d+/, '') + `&page=${page}`",
   "location.href.replace(/&page=\\d+/, '') + '&page=' + p",
+  "$ajax.fetch(location.href, `unlock_ability=${ability.id}`)",
   "openUrl(`?s=Bazaar&ss=mm&filter=new&reply=${mid}`, hvutRedirectReason('HV_UTILS_MAIL_PAGE'))",
   "openUrl('?s=Bazaar&ss=mm&filter=sent', hvutRedirectReason('HV_UTILS_MAIL_PAGE'))",
   "href: `?s=Bazaar&ss=mm&filter=${page.filter}&mid=${mid}&page=${p}`",
@@ -144,6 +148,11 @@ for (const forbidden of [
 const disableUrlOccurrences = [...text.matchAll(/location\.href \+ '&hvut=disabled'/g)].length;
 if (disableUrlOccurrences !== 1) {
   violations.push(`${target} must build disable URL only in create_hvut_current_page_disable_url, found ${disableUrlOccurrences}`);
+}
+
+const abilityUnlockUrlOccurrences = [...text.matchAll(/create_hvut_ability_unlock_url\(\)/g)].length;
+if (abilityUnlockUrlOccurrences !== 1) {
+  violations.push(`${target} must route ability unlock POST through create_hvut_ability_unlock_url, found ${abilityUnlockUrlOccurrences}`);
 }
 
 const mailPageOccurrences = [...text.matchAll(/location\.href\.replace\(\/&page=\\d\+\/, ''\) \+ `&page=\$\{page\}`/g)].length;
