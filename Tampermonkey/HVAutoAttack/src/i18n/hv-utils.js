@@ -3,28 +3,55 @@
 // 嵌入守卫:原脚本靠 @exclude isekai/equip 避让 HVAA 装备百分位;嵌入后无法用 @exclude
 // (会排除 HVAA 自身),改运行时守卫复现;try-catch 隔离,汉化崩溃不阻断 HVAA 主逻辑。
 try {
+  var record_hvut_i18n_bridge_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutI18nBridge', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutI18nBridgeFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // HVUT i18n bridge fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVAA] HVUT i18n bridge failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT i18n bridge fallback.
+    }
+    return evidence;
+  };
+  var run_hvut_i18n_bridge = function (method, args, stage, detail, fallback) {
+    var bridge = typeof window !== 'undefined' ? window.HVAA_i18n : undefined;
+    if (!bridge || typeof bridge[method] !== 'function') {
+      record_hvut_i18n_bridge_failure(stage, detail || {});
+      return fallback;
+    }
+    try {
+      return bridge[method](...(args || []));
+    } catch (error) {
+      record_hvut_i18n_bridge_failure(stage + 'Failed', { ...(detail || {}), error: error?.message || String(error) });
+      return fallback;
+    }
+  };
   // Stage C: 协调器读出口 resolveEn(读 DOM 文本反查英文逻辑 key, 消 i18n 中文污染)。hv-utils 是非 ESM
   // sloppy-mode 第三方脚本(加 import 会触发 strict mode 撞 `protected` 等保留字标识符), 故经 window.HVAA_i18n
   // 全局桥获取(restore-controller.js 挂载); 桥未就绪退化返 undefined(调用方 ?? 原值)。两 IIFE 闭包共用此 var。
   var resolveEn = function (node, group) {
-    return window.HVAA_i18n && window.HVAA_i18n.resolveEn ? window.HVAA_i18n.resolveEn(node, group) : undefined;
+    return run_hvut_i18n_bridge('resolveEn', [node, group], 'resolveEnBridgeMissing', { group: group }, undefined);
   };
   // Stage G: 协调器正向出口 hvaaT(英文值, group)→当前 lang 显示中文（单一 canonical SSOT）。
   // 替代私有 HVAA_ITEM_CN/HVUT_CN 漂移表；桥未就绪/未命中退化返英文原值（不崩）。两 IIFE 闭包共用。
   var hvaaT = function (value, group) {
-    return window.HVAA_i18n && window.HVAA_i18n.t ? window.HVAA_i18n.t(value, group) : value;
+    return run_hvut_i18n_bridge('t', [value, group], 'translateBridgeMissing', { value: value, group: group }, value);
   };
   // Stage G: 整名装备翻译桥读（equip-translate 注册，复用外部同 dictEquips → 内部装备名 == 外部）。
   // 仅用于显示；逻辑值（dataset.eqname/eid-key URL/forum code/parse 键）一律保留英文 eq.info.name。
   var hvaaTEquip = function (name) {
-    return window.HVAA_i18n && window.HVAA_i18n.translateEquipName ? window.HVAA_i18n.translateEquipName(name) : name;
+    return run_hvut_i18n_bridge('translateEquipName', [name], 'translateEquipNameBridgeMissing', { name: name }, name);
   };
   // 声明式 i18n 绑定桥读(Stage G·复杂度下沉): 经桥登记 node + render，lang 切换框架自动重渲染→即时切换。
   // 桥未就绪退化: 只渲染一次不绑定(不崩，刷新后按新 lang)。render 闭包按当前 lang 调 hvaaT/拼接设 node 内容。
   var hvaaBind = function (node, render) {
     var bound = function () { render(node); }; // render 收 node 参数(闭包无需外部变量, 避免赋值前引用)
-    if (window.HVAA_i18n && window.HVAA_i18n.registerI18nRender) { window.HVAA_i18n.registerI18nRender(node, bound); }
-    else { bound(); }
+    var registered = run_hvut_i18n_bridge('registerI18nRender', [node, bound], 'registerI18nRenderBridgeMissing', {}, false);
+    if (registered === false) { bound(); }
     return node;
   };
   var hvutReloadReason = function (key) {
@@ -5321,10 +5348,8 @@ const bindArmory = function (armory, ctx) {
         const results = await Promise.all($armory.filters.map((filter) => $armory.integrate.load(screen, filter)));
         // filter=all 聚合: 各分类装备由 fetch 异步 replaceWith 注入 #equiplist, 晚于界面汉化 start(),
         // #equiplist 是静态字典(observer 不监听 childList) → 装备名/分类标签漏翻成英文。注入全部完成后
-        // 经 window.HVAA_i18n 桥回调界面汉化重翻 #equiplist, 修"切到所有翻译失效"(异世界独有路径)。
-        if (window.HVAA_i18n && window.HVAA_i18n.retranslateEquiplist) {
-          window.HVAA_i18n.retranslateEquiplist();
-        }
+        // 经 i18n bridge 回调界面汉化重翻 #equiplist, 修"切到所有翻译失效"(异世界独有路径)。
+        run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false);
         if (!results.every((r) => r)) {
           alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
           return false;

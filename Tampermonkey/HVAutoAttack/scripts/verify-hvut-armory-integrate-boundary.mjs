@@ -15,7 +15,7 @@ if (!initMatch) {
   const body = initMatch[0];
   for (const required of [
     "const results = await Promise.all($armory.filters.map((filter) => $armory.integrate.load(screen, filter)));",
-    "if (window.HVAA_i18n && window.HVAA_i18n.retranslateEquiplist) {",
+    "run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false);",
     "if (!results.every((r) => r)) {",
     "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
     "return false;",
@@ -27,6 +27,9 @@ if (!initMatch) {
   }
   if (/\n\s*await Promise\.all\(\$armory\.filters\.map[\s\S]*?\);\n\s*\/\/ filter=all/.test(body)) {
     violations.push(`${target} Armory integrate init must not ignore load results`);
+  }
+  if (body.includes("window.HVAA_i18n.retranslateEquiplist()")) {
+    violations.push(`${target} Armory integrate init must not call the i18n bridge directly`);
   }
 }
 
