@@ -3268,10 +3268,6 @@ const bindPersona = function (persona, ctx) {
     }
     return { kind: 'accepted', checked: checked };
   };
-  persona.check_p = function (doc) {
-    const outcome = persona.check_p_outcome(doc);
-    return outcome.kind === 'accepted' ? outcome.checked : null;
-  };
   persona.check_e_outcome = function (doc) {
     const json = persona.json;
     const pset = json.pset;
@@ -3295,10 +3291,6 @@ const bindPersona = function (persona, ctx) {
       return reject_hvut_persona_sync('personaStateWriteRejected', {});
     }
     return { kind: 'accepted' };
-  };
-  persona.check_e = function (doc) {
-    const outcome = persona.check_e_outcome(doc);
-    return outcome.kind === 'accepted';
   };
   persona.change_p_outcome = async function (pset) {
     persona.node.button.textContent = '(P...)';
