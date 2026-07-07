@@ -963,6 +963,25 @@ try {
       },
     };
   };
+  var run_hvut_mooglemail_cache_write_plan = async function (writePlan, db) {
+    if (!writePlan) return true;
+    const conn = db.conn('readwrite');
+    try {
+      if (writePlan.operation === 'put') {
+        conn.os.put(writePlan.value);
+      } else {
+        conn.os.add(writePlan.value);
+      }
+    } catch (error) {
+      record_hvut_mooglemail_action_failure(writePlan.stage, { ...writePlan.detail, error: error?.message || String(error) });
+      return false;
+    }
+    if (!await wait_hvut_mooglemail_db_write(writePlan.stage, writePlan.detail, conn)) {
+      return false;
+    }
+    writePlan.apply();
+    return true;
+  };
   var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {
     var match = /equips\.set\((\d+)/.exec(onmouseover || '');
     if (!match) return false;
@@ -10977,27 +10996,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           actionInsertStage: 'viewActionDbInsert',
           loadInsertStage: 'viewLoadDbInsert',
         });
-        let conn = null;
-        if (writePlan) {
-          conn = _mm.db.conn('readwrite');
-          try {
-            if (writePlan.operation === 'put') {
-              conn.os.put(writePlan.value);
-            } else {
-              conn.os.add(writePlan.value);
-            }
-          } catch (error) {
-            record_hvut_mooglemail_action_failure(writePlan.stage, { ...writePlan.detail, error: error?.message || String(error) });
-            return false;
-          }
-        }
-
-        if (conn && !await wait_hvut_mooglemail_db_write(writePlan.stage, writePlan.detail, conn)) {
-          return false;
-        }
-        if (writePlan) {
-          writePlan.apply();
-        }
+        if (!await run_hvut_mooglemail_cache_write_plan(writePlan, _mm.db)) return false;
         _mm.mail.modify(mail);
         return true;
       },
@@ -17070,27 +17069,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         actionInsertStage: 'legacyViewActionDbInsert',
         loadInsertStage: 'legacyViewLoadDbInsert',
       });
-      let conn = null;
-      if (writePlan) {
-        conn = _mm.db.conn('readwrite');
-        try {
-          if (writePlan.operation === 'put') {
-            conn.os.put(writePlan.value);
-          } else {
-            conn.os.add(writePlan.value);
-          }
-        } catch (error) {
-          record_hvut_mooglemail_action_failure(writePlan.stage, { ...writePlan.detail, error: error?.message || String(error) });
-          return false;
-        }
-      }
-
-      if (conn && !await wait_hvut_mooglemail_db_write(writePlan.stage, writePlan.detail, conn)) {
-        return false;
-      }
-      if (writePlan) {
-        writePlan.apply();
-      }
+      if (!await run_hvut_mooglemail_cache_write_plan(writePlan, _mm.db)) return false;
       _mm.mail_modify(mail);
       return true;
     };
