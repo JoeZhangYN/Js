@@ -28,7 +28,7 @@ for (const part of [
   "parseFailed = true;",
   "if (parseFailed) return false;",
   "if (!$config.set('ml_log', _ml.log)) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });",
   "return false;",
   "return true;",
 ]) {
@@ -50,7 +50,7 @@ for (const part of [
   "parseFailed = true;",
   "if (parseFailed) {",
   "if (!$config.set('ml_log', _ml.log)) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });",
   "return false;",
   "$id('monster_list').addEventListener('click', _ml.main.click, true);",
   "_ml.main.make_summary();",

@@ -71,7 +71,7 @@ for (const [index, body] of lotteryToggles.entries()) {
     "const previous = _lt.json[lotteryPage.ss].hide;",
     "if (!$config.set('lt_notif', _lt.json, 'hvut_')) {",
     "_lt.json[lotteryPage.ss].hide = previous;",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "show_hvut_config_storage_failure_report('lotteryNotificationToggle', { key: 'lt_notif', page: lotteryPage.ss });",
     "return false;",
     "return true;",
   ]) {

@@ -100,7 +100,7 @@ for (const part of [
 
 for (const part of [
   "if (!$config.set('ss_log', _ss.log.json)) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_config_storage_failure_report('shrineLogSave', { key: 'ss_log' });",
   "return false;",
   "return true;",
 ]) {
@@ -126,7 +126,7 @@ for (const part of [
   "_ss.equip.sold += offerSummary.sold;",
   "_ss.equip.salvaged += offerSummary.salvaged;",
   "if (!$config.set('ss_log', _ss.log)) {",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "show_hvut_config_storage_failure_report('legacyShrineLogSave', { key: 'ss_log' });",
   "return false;",
   "return true;",
 ]) {

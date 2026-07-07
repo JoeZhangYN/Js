@@ -18,6 +18,8 @@ requireIncludes(text, "config storage failure recorder", [
   "sessionStorage.setItem('HVAA:lastHvutConfigStorageFailure'",
   "HVUT config storage fallback must not depend on diagnostic storage.",
   "console.warn('[HVAA] HVUT config storage failed', evidence)",
+  "show_hvut_config_storage_failure_report",
+  "show_hvut_failure_report('Config storage failed', evidence)",
 ]);
 
 const setMatch = /config\.set = function \(key, value[\s\S]*?\n  \};\n  config\.del/.exec(text);
@@ -97,7 +99,7 @@ if (!saveMatch) violations.push(`${target} config.save entry must stay visible`)
 else {
   requireIncludes(saveMatch[0], "config.save", [
     "if (!config.set('settings', config.settings)) {",
-    "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+    "show_hvut_config_storage_failure_report('settingsSave'",
     "return false;",
     "reloadCurrentPage(hvutReloadReason('HV_UTILS_CONFIG_SAVE'))",
     "return true;",
@@ -118,9 +120,19 @@ for (const [label, reason] of [
     violations.push(`${target} ${label} reload path must stay visible`);
   } else {
     requireIncludes(body, label, [
-      "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+      "show_hvut_config_storage_failure_report",
       "return false;",
     ]);
+  }
+}
+
+for (const [label, stage] of [
+  ["shrine log save", "shrineLogSave"],
+  ["legacy shrine log save", "legacyShrineLogSave"],
+  ["lottery notification toggle", "lotteryNotificationToggle"],
+]) {
+  if (!text.includes(`show_hvut_config_storage_failure_report('${stage}'`)) {
+    violations.push(`${target} ${label} storage failure must show copyable diagnostics`);
   }
 }
 

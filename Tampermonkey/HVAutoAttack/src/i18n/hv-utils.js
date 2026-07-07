@@ -203,6 +203,10 @@ try {
     }
     return evidence;
   };
+  var show_hvut_config_storage_failure_report = function (stage, detail) {
+    var evidence = read_hvut_session_evidence('HVAA:lastHvutConfigStorageFailure') || record_hvut_config_storage_failure(stage, detail);
+    show_hvut_failure_report('Config storage failed', evidence);
+  };
   var create_hvut_config_parse_evidence = function (stage, detail) {
     var evidence = { capability: 'hvutConfigParse', stage: stage, detail: detail || {} };
     try {
@@ -323,7 +327,7 @@ try {
     config.settings = config.get('settings', {});
     if (config.settings.version !== config.version) {
       if (config.migration() === false) {
-        alert(isIsekai ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_failure_report('Config migration failed', read_hvut_session_evidence('HVAA:lastHvutConfigParseFailure'));
         return false;
       }
     }
@@ -2691,7 +2695,7 @@ const bindConfig = function (config, ctx) {
     }
     config.settings.version = config.version;
     if (!config.set('settings', config.settings)) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_config_storage_failure_report('settingsSave', { key: 'settings' });
       return false;
     }
     if (panel) {
@@ -8800,7 +8804,7 @@ if (get_hvut_bazaar_page_context().isShrine) {
     },
     save: function () {
       if (!$config.set('ss_log', _ss.log.json)) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_config_storage_failure_report('shrineLogSave', { key: 'ss_log' });
         return false;
       }
       return true;
@@ -8808,7 +8812,7 @@ if (get_hvut_bazaar_page_context().isShrine) {
     reset: function () {
       if (confirm('此浏览器中的当前赛季的邮件记录将被删除.\nAre you sure?')) {
         if (!$config.del('ss_log')) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_config_storage_failure_report('shrineLogReset', { key: 'ss_log' });
           return false;
         }
         reloadCurrentPage(hvutReloadReason('HV_UTILS_MAIL_LOG_RESET'));
@@ -9365,7 +9369,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         if (parseFailed) return false;
 
         if (!$config.set('ml_log', _ml.log)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           return false;
         }
         return true;
@@ -9539,7 +9543,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
       reset_log: function () {
         if (confirm('本浏览器中的怪物实验室日志将被删除。\n确定吗？')) {
           if (!$config.del('ml_log')) {
-            alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+            show_hvut_config_storage_failure_report('monsterLabLogReset', { key: 'ml_log' });
             return false;
           }
           reloadCurrentPage(hvutReloadReason('HV_UTILS_MONSTER_LAB_LOG_RESET'));
@@ -9807,7 +9811,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         }
 
         if (!$config.set('ml_log', _ml.log)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           _ml.upgrade.node.button.disabled = false;
           _ml.upgrade.node.button.value = '怪物升级器';
           if (_ml.upgrade.node.run) {
@@ -9828,7 +9832,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           mob.log.pl = -1;
         });
         if (!$config.set('ml_log', _ml.log)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_config_storage_failure_report('monsterLabForceUpdate', { key: 'ml_log' });
           return false;
         }
         reloadCurrentPage(hvutReloadReason('HV_UTILS_MONSTER_LAB_FORCE_UPDATE'));
@@ -10070,7 +10074,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           return;
         }
         if (!$config.set('ml_log', _ml.log)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           return false;
         }
         _ml.upgrade.node.run.disabled = true;
@@ -10114,7 +10118,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         });
 
         if (!$config.set('ml_log', _ml.log)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           return false;
         }
         return true;
@@ -11952,7 +11956,7 @@ if (get_hvut_lottery_page_context().isLottery) {
       _lt.json[lotteryPage.ss].hide = !show;
       if (!$config.set('lt_notif', _lt.json, 'hvut_')) {
         _lt.json[lotteryPage.ss].hide = previous;
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_config_storage_failure_report('lotteryNotificationToggle', { key: 'lt_notif', page: lotteryPage.ss });
         return false;
       }
       return true;
@@ -14641,7 +14645,7 @@ if (get_hvut_bazaar_page_context().isShrine) {
 
     if (item.recieved % 10 === 0 || item.recieved === item.requests || _ss.error) {
       if (!$config.set('ss_log', _ss.log)) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_config_storage_failure_report('legacyShrineLogSave', { key: 'ss_log' });
         return false;
       }
     }
@@ -15461,7 +15465,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
   }
 
   if (!$config.set('ml_log', _ml.log)) {
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+      show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
       return false;
     }
 
@@ -15761,7 +15765,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         }
 
         if (!$config.set('ml_log', _ml.log)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           _ml.upgrade.node.button.disabled = false;
           _ml.upgrade.node.button.value = '怪物升级器';
           if (_ml.upgrade.node.run) {
@@ -15783,7 +15787,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           mob.log.pl = -1;
         });
         if (!$config.set('ml_log', _ml.log)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_config_storage_failure_report('monsterLabForceUpdate', { key: 'ml_log' });
           return false;
         }
         reloadCurrentPage(hvutReloadReason('HV_UTILS_MONSTER_LAB_FORCE_UPDATE'));
@@ -16031,7 +16035,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           return;
         }
         if (!$config.set('ml_log', _ml.log)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           return false;
         }
         _ml.upgrade.node.run.disabled = true;
@@ -16076,7 +16080,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
         });
 
         if (!$config.set('ml_log', _ml.log)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });
           return false;
         }
         return true;
@@ -18054,7 +18058,7 @@ if (get_hvut_lottery_page_context().isLottery) {
       _lt.json[lotteryPage.ss].hide = !show;
       if (!$config.set('lt_notif', _lt.json, 'hvut_')) {
         _lt.json[lotteryPage.ss].hide = previous;
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+        show_hvut_config_storage_failure_report('lotteryNotificationToggle', { key: 'lt_notif', page: lotteryPage.ss });
         return false;
       }
       return true;

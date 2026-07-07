@@ -105,7 +105,7 @@ for (const [index, body] of updateBodies.entries()) {
     "_ml.upgrade.node.run.disabled = false;",
     "_ml.upgrade.node.run.value = '失败';",
     "return false;",
-    "if (!$config.set('ml_log', _ml.log)) {\n          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n          _ml.upgrade.node.button.disabled = false;",
+    "if (!$config.set('ml_log', _ml.log)) {\n          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });\n          _ml.upgrade.node.button.disabled = false;",
     "return true;",
     "if (_ml.parse(mob, doc) === false) {\n            throw new Error('ml_log persistence failed');",
   ]) {
@@ -138,7 +138,7 @@ for (const [index, body] of runBodies.entries()) {
     "_ml.upgrade.node.run.value = '失败';",
     "return false;",
     "return _ml.upgrade.update();",
-    "if (!$config.set('ml_log', _ml.log)) {\n          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n          return false;",
+    "if (!$config.set('ml_log', _ml.log)) {\n          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });\n          return false;",
     "const html = await $ajax.fetch(url, post);",
     `const response = classify_hvut_monster_lab_upgrade_response(html, '${emptyResponseStage}', { url: url, post: post });`,
     "if (response.kind === 'rejected') {",
@@ -167,7 +167,7 @@ for (const [index, body] of runBodies.entries()) {
 
 for (const [index, body] of saveBodies.entries()) {
   for (const required of [
-    "if (!$config.set('ml_log', _ml.log)) {\n          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n          return false;",
+    "if (!$config.set('ml_log', _ml.log)) {\n          show_hvut_config_storage_failure_report('monsterLabUpgradeLogSave', { key: 'ml_log' });\n          return false;",
     "return true;",
   ]) {
     if (!body.includes(required)) {
