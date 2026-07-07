@@ -3050,6 +3050,13 @@ const bindTop = function (top, ctx) {
 // 收口统一: ① node 包一层(isekai 形态); ② change() POST 取 4.2.0 FormData+'FORM'(两服同 HV 引擎, $ajax 共享支持);
 // ③ 文案取主世界汉化 '(属性日: 错误)'; ④ mouseenter 懒加载统一进 init。
 // ctx: config / top·player 用 getter(规避声明顺序 TDZ)。
+const write_hvut_character_config_value = function (ctx, key, value, stage) {
+  if (ctx.config.set(key, value)) {
+    return { kind: 'accepted' };
+  }
+  const evidence = record_hvut_config_storage_failure(stage, { key: key });
+  return { kind: 'rejected', reason: 'configWriteFailed', key: key, evidence: evidence };
+};
 const bindDfct = function (dfct, ctx) {
   dfct.node = {
     div: ctx.top.node.difficulty,
@@ -3061,7 +3068,8 @@ const bindDfct = function (dfct, ctx) {
     const ch_style = ctx.config.get('ch_style', {});
     if (ch_style.difficulty !== ctx.player.difficulty) {
       ch_style.difficulty = ctx.player.difficulty;
-      if (!ctx.config.set('ch_style', ch_style)) {
+      const write = write_hvut_character_config_value(ctx, 'ch_style', ch_style, 'difficultyCharacterStyleWrite');
+      if (write.kind === 'rejected') {
         alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
         return false;
       }
@@ -3110,7 +3118,8 @@ const bindDfct = function (dfct, ctx) {
     }
     const ch_style = ctx.config.get('ch_style', {});
     ch_style.difficulty = value;
-    if (!ctx.config.set('ch_style', ch_style)) {
+    const write = write_hvut_character_config_value(ctx, 'ch_style', ch_style, 'difficultyCharacterStyleWrite');
+    if (write.kind === 'rejected') {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
     }
@@ -3134,6 +3143,9 @@ const bindPersona = function (persona, ctx) {
     button: ctx.top.node.persona.firstElementChild,
   };
   persona.json = ctx.config.get('persona', {});
+  persona.write_config_value = function (key, value, stage) {
+    return write_hvut_character_config_value(ctx, key, value, stage);
+  };
 
   persona.init = function () {
     if ($id('persona_form')) {
@@ -3349,7 +3361,8 @@ const bindPersona = function (persona, ctx) {
     } else {
       ch_style['Attack Base Damage'] = stats_pane['Mainhand Damage'];
     }
-    if (!ctx.config.set('ch_style', ch_style)) {
+    const write = persona.write_config_value('ch_style', ch_style, 'personaCharacterStyleWrite');
+    if (write.kind === 'rejected') {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
     }
@@ -3364,7 +3377,8 @@ const bindPersona = function (persona, ctx) {
       json.ename = value;
       persona.set_button();
     }
-    if (!ctx.config.set('persona', json)) {
+    const write = persona.write_config_value('persona', json, 'personaStateWrite');
+    if (write.kind === 'rejected') {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
     }
@@ -3385,7 +3399,8 @@ const bindPersona = function (persona, ctx) {
   };
   persona.save_equipset = function (doc) {
     const equipset = $qsa('.eqb', doc).map((d) => persona.read_equipset_row(d));
-    if (!ctx.config.set('equipset', equipset)) {
+    const write = persona.write_config_value('equipset', equipset, 'personaEquipsetWrite');
+    if (write.kind === 'rejected') {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
       return false;
     }

@@ -25,6 +25,24 @@ const setValue = body(/persona\.set_value = function \(name, value\) \{[\s\S]*?\
 const readEquipsetRow = body(/persona\.read_equipset_row = function \(row\) \{[\s\S]*?\n  \};\n  persona\.save_equipset/, "persona.read_equipset_row");
 const saveEquipset = body(/persona\.save_equipset = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_warning/, "persona.save_equipset");
 
+if (!text.includes("const write_hvut_character_config_value = function (ctx, key, value, stage) {")) {
+  violations.push(`${target} character config writes must share one typed writer`);
+}
+if (!text.includes("persona.write_config_value = function (key, value, stage) {")) {
+  violations.push(`${target} persona config writes must share one typed writer`);
+}
+for (const required of [
+  "if (ctx.config.set(key, value)) {",
+  "return { kind: 'accepted' };",
+  "const evidence = record_hvut_config_storage_failure(stage, { key: key });",
+  "return { kind: 'rejected', reason: 'configWriteFailed', key: key, evidence: evidence };",
+  "return write_hvut_character_config_value(ctx, key, value, stage);",
+]) {
+  if (!text.includes(required)) {
+    violations.push(`${target} persona typed config writer must include ${required}`);
+  }
+}
+
 requireParts("persona.change_e", changeE, [
   "if ((await persona.load_dynjs(doc)) === false) return false;",
   "persona.check_warning(doc);",
@@ -44,7 +62,8 @@ for (const [label, value, key] of [
   ["persona.save_equipset", saveEquipset, "equipset"],
 ]) {
   requireParts(label, value, [
-    `if (!ctx.config.set('${key}'`,
+    `const write = persona.write_config_value('${key}'`,
+    "if (write.kind === 'rejected') {",
     "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
     "return false;",
   ]);
@@ -67,6 +86,15 @@ if (setValue.includes("ctx.config.set('persona', json);\n  };")) {
 }
 if (saveEquipset.includes("ctx.config.set('equipset', equipset);\n  };")) {
   violations.push(`${target} persona.save_equipset must not ignore equipset write result`);
+}
+for (const [label, value, forbidden] of [
+  ["persona.parse_stats_pane", parseStats, "ctx.config.set('ch_style', ch_style)"],
+  ["persona.set_value", setValue, "ctx.config.set('persona', json)"],
+  ["persona.save_equipset", saveEquipset, "ctx.config.set('equipset', equipset)"],
+]) {
+  if (value.includes(forbidden)) {
+    violations.push(`${target} ${label} must use typed persona config writer instead of ${forbidden}`);
+  }
 }
 for (const forbidden of [
   "ctx.parseEquipElem(d.children[1])",

@@ -28,11 +28,20 @@ for (const [label, value] of [
   ["dfct.set_button", setButton],
 ]) {
   requireParts(label, value, [
-    "if (!ctx.config.set('ch_style', ch_style)) {",
+    "const write = write_hvut_character_config_value(ctx, 'ch_style', ch_style, 'difficultyCharacterStyleWrite');",
+    "if (write.kind === 'rejected') {",
     "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
     "return false;",
   ]);
 }
+
+requireParts("character config writer", text, [
+  "const write_hvut_character_config_value = function (ctx, key, value, stage) {",
+  "if (ctx.config.set(key, value)) {",
+  "return { kind: 'accepted' };",
+  "const evidence = record_hvut_config_storage_failure(stage, { key: key });",
+  "return { kind: 'rejected', reason: 'configWriteFailed', key: key, evidence: evidence };",
+]);
 
 requireParts("dfct.init", init, [
   "dfct.node.div.addEventListener('mouseenter', dfct.create);",
@@ -44,6 +53,7 @@ requireParts("dfct.set_button", setButton, ["return true;"]);
 for (const forbidden of [
   "ctx.config.set('ch_style', ch_style);\n    }\n    dfct.node.div.addEventListener",
   "ctx.config.set('ch_style', ch_style);\n  };",
+  "if (!ctx.config.set('ch_style', ch_style)) {",
   "    dfct.set_button(doc);\n  };",
 ]) {
   if (bindDfct.includes(forbidden)) {
