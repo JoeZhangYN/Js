@@ -1603,6 +1603,20 @@ try {
     }
     return { kind: 'accepted', message: message };
   };
+  var record_hvut_armory_integrate_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutArmoryIntegrate', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutArmoryIntegrateFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Armory integrate fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] Armory integrate failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT Armory integrate fallback.
+    }
+    return evidence;
+  };
   var parse_hvut_difficulty_from_level_readout = function (doc, stage) {
     var text = $id('level_readout', doc)?.textContent?.trim() || '';
     var match = /^(.+) Lv\.(\d+)/.exec(text);
@@ -5636,7 +5650,9 @@ const bindArmory = function (armory, ctx) {
         // 经 i18n bridge 回调界面汉化重翻 #equiplist, 修"切到所有翻译失效"(异世界独有路径)。
         run_hvut_i18n_bridge('retranslateEquiplist', [], 'retranslateEquiplistBridgeMissing', { surface: 'armoryIntegrate' }, false);
         if (!results.every((r) => r)) {
-          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          const failedFilters = $armory.filters.filter((_filter, index) => !results[index]);
+          record_hvut_armory_integrate_failure('integrateIncomplete', { screen: screen, failedFilters: failedFilters });
+          alert((IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.') + '\nHVAA:lastHvutArmoryIntegrateFailure');
           return false;
         }
         return true;
@@ -5646,7 +5662,13 @@ const bindArmory = function (armory, ctx) {
         let table;
         try {
           table = await $armory.page.load(screen, filter, true);
-        } catch (_error) {
+        } catch (error) {
+          record_hvut_armory_integrate_failure('loadRequest', { screen: screen, filter: filter, error: error?.message || String(error) });
+          holder.remove();
+          return false;
+        }
+        if (!table) {
+          record_hvut_armory_integrate_failure('loadTableMissing', { screen: screen, filter: filter });
           holder.remove();
           return false;
         }
@@ -5656,6 +5678,11 @@ const bindArmory = function (armory, ctx) {
           $armory.modify[screen]?.(equiplist, table, filter);
           if (!$id('equipcount')) {
             $qs('.eqselall').replaceWith($qs('.eqselall', table));
+          }
+          if (!table.tBodies[0]) {
+            record_hvut_armory_integrate_failure('loadTableBodyMissing', { screen: screen, filter: filter });
+            holder.remove();
+            return false;
           }
           holder.replaceWith(table.tBodies[0]);
         } else {
