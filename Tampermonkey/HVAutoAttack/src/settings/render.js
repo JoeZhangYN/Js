@@ -31,6 +31,7 @@ import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
 import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
 import { CHANNEL_FALLBACK_ORDER_OPTIONS } from "../data/channel-fallback-order.js";
+import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -290,6 +291,21 @@ export function renderChannelFallbackOrderCheckboxes() {
   )
     .reduce((rows, item, index) => {
       const rowIndex = index < 6 ? 0 : 1;
+      rows[rowIndex] = `${rows[rowIndex] || ""}${item}`;
+      return rows;
+    }, [])
+    .join("<br>");
+}
+
+export function renderDebuffSkillOrderCheckboxes() {
+  return Array.from(DEBUFF_SKILL_LIB.entries())
+    .filter(([, skill]) => skill.id)
+    .map(
+      ([key, skill]) =>
+        `<input id="debuffSkillOrder_${key}" type="checkbox"><label for="debuffSkillOrder_${key}">${skill.name}</label>`
+    )
+    .reduce((rows, item, index) => {
+      const rowIndex = index < 3 ? 0 : 1;
       rows[rowIndex] = `${rows[rowIndex] || ""}${item}`;
       return rows;
     }, [])
@@ -880,8 +896,7 @@ export function optionBox() {
     '<div class="hvAATab" id="hvAATab-Debuff">',
     '  <div class="debuffSkillOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>:',
     '    <input name="debuffSkillOrderValue" style="width:80%;" type="text" disabled="true"><br>',
-    '    <input id="debuffSkillOrder_Sle" type="checkbox"><label for="debuffSkillOrder_Sle">Sleep</label><input id="debuffSkillOrder_Bl" type="checkbox"><label for="debuffSkillOrder_Bl">Blind</label><input id="debuffSkillOrder_Slo" type="checkbox"><label for="debuffSkillOrder_Slo">Slow</label><br>',
-    '    <input id="debuffSkillOrder_Im" type="checkbox"><label for="debuffSkillOrder_Im">Imperil</label><input id="debuffSkillOrder_MN" type="checkbox"><label for="debuffSkillOrder_MN">MagNet</label><input id="debuffSkillOrder_Si" type="checkbox"><label for="debuffSkillOrder_Si">Silence</label><input id="debuffSkillOrder_Dr" type="checkbox"><label for="debuffSkillOrder_Dr">Drain</label><input id="debuffSkillOrder_We" type="checkbox"><label for="debuffSkillOrder_We">Weaken</label><input id="debuffSkillOrder_Co" type="checkbox"><label for="debuffSkillOrder_Co">Confuse</label></div>',
+    `    ${renderDebuffSkillOrderCheckboxes()}</div>`,
     '  <div><l01>特殊</l01><l2>Special</l2><input id="debuffSkillAllIm" type="checkbox"><label for="debuffSkillAllIm"><l0>给所有敌人上Imperil</l0><l1>給所有敵人上Imperil</l1><l2>Imperiled all enemies.</l2></label></div>{{debuffSkillImpCondition}}',
     '  <div><l01>特殊</l01><l2>Special</l2><input id="debuffSkillAllWk" type="checkbox"><label for="debuffSkillAllWk"><l0>给所有敌人上Weaken</l0><l1>給所有敵人上Weaken</l1><l2>Weakened all enemies.</l2></label></div>{{debuffSkillWkCondition}}',
     '  <div style="border:1px dashed #888;padding:3px;"><b><l0>OFC/FRD 智能跳过</l0><l1>OFC/FRD 智能跳過</l1><l2>OFC/FRD Smart Skip</l2></b><br>',

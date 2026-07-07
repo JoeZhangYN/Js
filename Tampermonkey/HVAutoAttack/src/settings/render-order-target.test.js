@@ -6,6 +6,7 @@ import {
   readSingleOrderItemName,
   renderBuffSkillCheckboxes,
   renderChannelFallbackOrderCheckboxes,
+  renderDebuffSkillOrderCheckboxes,
   shouldHydrateSettingsInput,
 } from "./render.js";
 
@@ -72,5 +73,16 @@ describe("renderChannelFallbackOrderCheckboxes", () => {
     expect(html).toContain('id="channelSkill2Order_FC" value="FC,313"');
     expect(html).toContain('id="channelSkill2Order_Pr" value="Pr,411"');
     expect(html).toContain('for="channelSkill2Order_Ab">Absorb</label>');
+  });
+});
+
+describe("renderDebuffSkillOrderCheckboxes", () => {
+  it("derives castable debuff order checkboxes from the shared debuff registry", () => {
+    const html = renderDebuffSkillOrderCheckboxes();
+
+    expect(html).toContain('id="debuffSkillOrder_Sle"');
+    expect(html).toContain('for="debuffSkillOrder_Im">Imperil</label>');
+    expect(html).toContain('id="debuffSkillOrder_Co"');
+    expect(html).not.toContain("debuffSkillOrder_CM");
   });
 });
