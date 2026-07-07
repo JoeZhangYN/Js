@@ -20,7 +20,9 @@ if (!loadShopBody) violations.push(`${target} must own $item.load_shop entry`);
 if (!loadItemsBody) violations.push(`${target} must own battle.load_items entry`);
 
 for (const required of [
+  "var create_hvut_item_shop_parse_evidence = function (stage, detail) {",
   "var record_hvut_item_shop_parse_failure = function (stage, detail) {",
+  "create_hvut_item_shop_parse_evidence(stage, detail);",
   "sessionStorage.setItem('HVAA:lastHvutItemShopParseFailure', JSON.stringify(evidence));",
   "var parse_hvut_item_shop_row = function (row, pattern, stage) {",
   "return record_hvut_item_shop_parse_failure(stage, { name: name, onclick: onclick, text: row?.textContent || '' });",
@@ -31,6 +33,18 @@ for (const required of [
   "var evidence = record_hvut_item_shop_parse_failure(stage, { ...detail, reason: 'rejectedResponse', message: message });",
   "return { kind: 'rejected', reason: 'rejectedResponse', message: message, evidence: evidence };",
   "return { kind: 'accepted' };",
+  "var reject_hvut_item_shop_buy = function (reason, detail, message) {",
+  "var evidence = create_hvut_item_shop_parse_evidence(reason, detail);",
+  "return { kind: 'rejected', reason: reason, message: message || (IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.'), evidence: evidence };",
+  "var run_hvut_item_shop_buy = async function (items, itemShop) {",
+  "return reject_hvut_item_shop_buy('emptyRequest'",
+  "return reject_hvut_item_shop_buy('shopLoadRejected'",
+  "return reject_hvut_item_shop_buy('shopLoadRequest'",
+  "return reject_hvut_item_shop_buy('insufficientCredits'",
+  "return reject_hvut_item_shop_buy('insufficientStock'",
+  "return classify_hvut_item_shop_buy_response(doc, 'shopBuyResponse', { name: item.name, id: id, count: count });",
+  "return reject_hvut_item_shop_buy('shopBuyRequest'",
+  "return reject_hvut_item_shop_buy('shopBuyRejected'",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must own item shop parse failure boundary with ${required}`);
@@ -76,18 +90,11 @@ for (const required of [
 }
 
 for (const required of [
-  "return false",
-  "try {\n      if ((await $item.load_shop()) === false) {",
-  "catch (error) {\n      record_hvut_item_shop_parse_failure('shopLoadRequest'",
-  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n      return false;",
-  "try {\n      results = await Promise.all(requests);",
-  "catch (error) {\n      record_hvut_item_shop_parse_failure('shopBuyRequest'",
-  "async function buy(item) {",
-  "return classify_hvut_item_shop_buy_response(doc, 'shopBuyResponse', { name: item.name, id: id, count: count });",
-  "const requests = items.map((item) => buy(item));",
-  "if (!results.every((r) => r?.kind === 'accepted'))",
-  "record_hvut_item_shop_parse_failure('shopBuyRejected'",
-  "return true",
+  "const outcome = await run_hvut_item_shop_buy(items, $item);",
+  "if (outcome.kind === 'rejected') {",
+  "alert(outcome.message);",
+  "return false;",
+  "return true;",
 ]) {
   if (!buyBody.includes(required)) {
     violations.push(`${target} $item.buy must classify purchase failure with ${required}`);
@@ -98,6 +105,22 @@ if (buyBody.includes("const error = get_message(doc);")) {
 }
 if (buyBody.includes("return classify_hvut_item_shop_buy_response(doc);")) {
   violations.push(`${target} $item.buy must pass item identity into classify_hvut_item_shop_buy_response`);
+}
+for (const forbidden of [
+  "try {\n      if ((await $item.load_shop()) === false) {",
+  "record_hvut_item_shop_parse_failure('shopLoadRequest'",
+  "record_hvut_item_shop_parse_failure('shopBuyRequest'",
+  "record_hvut_item_shop_parse_failure('shopBuyRejected'",
+  "async function buy(item) {",
+  "const requests = items.map((item) => buy(item));",
+  "if (!results.every((r) => r?.kind === 'accepted'))",
+  "alert(IS_ISEKAI ? 'The purchase request list is empty.' : '购买请求列表为空.');",
+  "alert('你没有足够的credits.');",
+  "alert(IS_ISEKAI ? 'Insufficient number of items in the Item Shop.' : '系统商店中的物品数量不足.');",
+]) {
+  if (buyBody.includes(forbidden)) {
+    violations.push(`${target} $item.buy must delegate typed item shop decision: ${forbidden}`);
+  }
 }
 
 for (const required of [

@@ -422,7 +422,7 @@ try {
     $input(['button', '恢复'], bottom, null, () => { config.load(config.settings); });
     $input(['button', '恢复默认'], bottom, null, () => { config.load(config.default); });
   };
-  var record_hvut_item_shop_parse_failure = function (stage, detail) {
+  var create_hvut_item_shop_parse_evidence = function (stage, detail) {
     var evidence = { capability: 'hvutItemShopParse', stage: stage, detail: detail || {} };
     try {
       sessionStorage.setItem('HVAA:lastHvutItemShopParseFailure', JSON.stringify(evidence));
@@ -434,6 +434,10 @@ try {
     } catch (_error) {
       // Console hooks must not block HVUT item shop parse fallback.
     }
+    return evidence;
+  };
+  var record_hvut_item_shop_parse_failure = function (stage, detail) {
+    create_hvut_item_shop_parse_evidence(stage, detail);
     return null;
   };
   var parse_hvut_item_shop_row = function (row, pattern, stage) {
@@ -462,6 +466,53 @@ try {
     if (message) {
       var evidence = record_hvut_item_shop_parse_failure(stage, { ...detail, reason: 'rejectedResponse', message: message });
       return { kind: 'rejected', reason: 'rejectedResponse', message: message, evidence: evidence };
+    }
+    return { kind: 'accepted' };
+  };
+  var reject_hvut_item_shop_buy = function (reason, detail, message) {
+    var evidence = create_hvut_item_shop_parse_evidence(reason, detail);
+    return { kind: 'rejected', reason: reason, message: message || (IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.'), evidence: evidence };
+  };
+  var run_hvut_item_shop_buy = async function (items, itemShop) {
+    if (!items.length) {
+      return reject_hvut_item_shop_buy('emptyRequest', {}, IS_ISEKAI ? 'The purchase request list is empty.' : '购买请求列表为空.');
+    }
+    try {
+      if ((await itemShop.load_shop()) === false) {
+        return reject_hvut_item_shop_buy('shopLoadRejected', {});
+      }
+    } catch (error) {
+      return reject_hvut_item_shop_buy('shopLoadRequest', { error: error?.message || String(error) });
+    }
+    const cost = itemShop.cost(items);
+    if (cost > itemShop.networth) {
+      return reject_hvut_item_shop_buy('insufficientCredits', { cost: cost, networth: itemShop.networth }, '你没有足够的credits.');
+    }
+    const nostock = items.find((item) => item.count > (itemShop.shop[item.name]?.shop_stock || 0));
+    if (nostock) {
+      return reject_hvut_item_shop_buy('insufficientStock', { name: nostock.name, count: nostock.count, stock: itemShop.shop[nostock.name]?.shop_stock || 0 }, IS_ISEKAI ? 'Insufficient number of items in the Item Shop.' : '系统商店中的物品数量不足.');
+    }
+    items.forEach((item) => {
+      item.id = itemShop.shop[item.name].id;
+    });
+
+    async function buy(item) {
+      const id = item.id;
+      const count = item.count;
+      const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${itemShop.storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
+      const doc = $doc(html);
+      return classify_hvut_item_shop_buy_response(doc, 'shopBuyResponse', { name: item.name, id: id, count: count });
+    }
+
+    const requests = items.map((item) => buy(item));
+    let results;
+    try {
+      results = await Promise.all(requests);
+    } catch (error) {
+      return reject_hvut_item_shop_buy('shopBuyRequest', { items: items.map((item) => ({ name: item.name, id: item.id, count: item.count })), error: error?.message || String(error) });
+    }
+    if (!results.every((r) => r?.kind === 'accepted')) {
+      return reject_hvut_item_shop_buy('shopBuyRejected', { items: items.map((item) => ({ name: item.name, id: item.id, count: item.count })), results: results });
     }
     return { kind: 'accepted' };
   };
@@ -1543,54 +1594,9 @@ const $item = {
     return cost;
   },
   buy: async function (items) { //items = [{ name, count }];
-    if (!items.length) {
-      alert(IS_ISEKAI ? 'The purchase request list is empty.' : '购买请求列表为空.');
-      return false;
-    }
-    try {
-      if ((await $item.load_shop()) === false) {
-        alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-        return false;
-      }
-    } catch (error) {
-      record_hvut_item_shop_parse_failure('shopLoadRequest', { error: error?.message || String(error) });
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
-    }
-    const cost = $item.cost(items);
-    if (cost > $item.networth) {
-      alert('你没有足够的credits.');
-      return false;
-    }
-    const nostock = items.find((item) => item.count > ($item.shop[item.name]?.shop_stock || 0));
-    if (nostock) {
-      alert(IS_ISEKAI ? 'Insufficient number of items in the Item Shop.' : '系统商店中的物品数量不足.');
-      return false;
-    }
-    items.forEach((item) => {
-      item.id = $item.shop[item.name].id;
-    });
-
-    async function buy(item) {
-      const id = item.id;
-      const count = item.count;
-      const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${$item.storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
-      const doc = $doc(html);
-      return classify_hvut_item_shop_buy_response(doc, 'shopBuyResponse', { name: item.name, id: id, count: count });
-    }
-
-    const requests = items.map((item) => buy(item));
-    let results;
-    try {
-      results = await Promise.all(requests);
-    } catch (error) {
-      record_hvut_item_shop_parse_failure('shopBuyRequest', { items: items.map((item) => ({ name: item.name, id: item.id, count: item.count })), error: error?.message || String(error) });
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
-    }
-    if (!results.every((r) => r?.kind === 'accepted')) {
-      record_hvut_item_shop_parse_failure('shopBuyRejected', { items: items.map((item) => ({ name: item.name, id: item.id, count: item.count })), results: results });
-      alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+    const outcome = await run_hvut_item_shop_buy(items, $item);
+    if (outcome.kind === 'rejected') {
+      alert(outcome.message);
       return false;
     }
     return true;
