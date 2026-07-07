@@ -832,6 +832,32 @@ try {
     var match = /mid=(\d+)/.exec(onclick || '');
     return match ? parseInt(match[1]) : record_hvut_mooglemail_parse_failure(stage, { onclick: onclick || '' });
   };
+  var parse_hvut_mooglemail_page_row = function (row, filter, stage) {
+    if (row.cells[0].id === 'mmail_nnm') {
+      return { kind: 'empty' };
+    }
+    const mid = parse_hvut_mooglemail_mid(row.getAttribute('onclick'), stage);
+    if (mid === null) {
+      return { kind: 'rejected' };
+    }
+    const user = row.cells[0].textContent;
+    let sent = row.cells[2].textContent;
+    sent = Date.parse(sent + ':00.000Z') / 1000;
+    let read = row.cells[3].textContent;
+    read = read === 'Never' ? null : Date.parse(read + ':00.000Z') / 1000;
+    return {
+      kind: 'mail',
+      mid: mid,
+      page: {
+        filter: filter,
+        user: user,
+        returned: user === 'MoogleMail',
+        subject: row.cells[1].textContent,
+        sent: sent,
+        read: read,
+      },
+    };
+  };
   var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {
     var match = /equips\.set\((\d+)/.exec(onmouseover || '');
     if (!match) return false;
@@ -10614,29 +10640,22 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const conn = _mm.db.conn();
         let count = list.rows.length - 1;
         Array.from(list.rows).slice(1).forEach((tr) => {
-          if (tr.cells[0].id === 'mmail_nnm') {
+          const rowRecord = parse_hvut_mooglemail_page_row(tr, _mm.page.filter, 'pageRowMid');
+          if (rowRecord.kind === 'empty') {
             $element('tr', tbody, ['/<td colspan="6">No New Mail</td>']);
             return;
           }
-          const mid = parse_hvut_mooglemail_mid(tr.getAttribute('onclick'), 'pageRowMid');
-          if (mid === null) {
+          if (rowRecord.kind === 'rejected') {
             if (!--count) scrollIntoView(table);
             return;
           }
-          const user = tr.cells[0].textContent;
-          const returned = user === 'MoogleMail';
-          const subject = tr.cells[1].textContent;
-          let sent = tr.cells[2].textContent;
-          sent = Date.parse(sent + ':00.000Z') / 1000;
-          let read = tr.cells[3].textContent;
-          read = (read === 'Never') ? null : Date.parse(read + ':00.000Z') / 1000;
 
+          const { mid, page } = rowRecord;
           const mail = _mm.mail.get(mid);
           if (mail.page) {
             return;
           }
-          mail.page = { filter: _mm.page.filter, user, returned, subject, sent, read };
-          const page = mail.page;
+          mail.page = page;
           mail.node.page = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
           $element('a', mail.node.page.cells[1], { dataset: { action: 'read', mid: mid }, href: create_hvut_mail_read_url({ filter: page.filter, mid: mid, page: p }) });
 
@@ -16815,29 +16834,22 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       const conn = _mm.db.conn();
       let count = list.rows.length - 1;
       Array.from(list.rows).slice(1).forEach((row) => {
-        if (row.cells[0].id === 'mmail_nnm') {
+        const rowRecord = parse_hvut_mooglemail_page_row(row, _mm.page_filter, 'legacyPageRowMid');
+        if (rowRecord.kind === 'empty') {
           $element('tr', tbody, ['/<td colspan="6">没有新邮件</td>']);
           return;
         }
-        const mid = parse_hvut_mooglemail_mid(row.getAttribute('onclick'), 'legacyPageRowMid');
-        if (mid === null) {
+        if (rowRecord.kind === 'rejected') {
           if (!--count) scrollIntoView(table);
           return;
         }
-        const user = row.cells[0].textContent;
-        const returned = user === 'MoogleMail';
-        const subject = row.cells[1].textContent;
-        let sent = row.cells[2].textContent;
-        sent = Date.parse(sent + ':00.000Z') / 1000;
-        let read = row.cells[3].textContent;
-        read = read === 'Never' ? null : Date.parse(read + ':00.000Z') / 1000;
 
+        const { mid, page } = rowRecord;
         const mail = _mm.mail_get(mid);
         if (mail.page) {
           return;
         }
-        mail.page = { filter: _mm.page_filter, user, returned, subject, sent, read };
-        const page = mail.page;
+        mail.page = page;
         mail.node.page = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
         $element('a', mail.node.page.cells[1], { dataset: { action: 'read', mid: mid }, href: create_hvut_mail_read_url({ filter: page.filter, mid: mid, page: p }) });
 

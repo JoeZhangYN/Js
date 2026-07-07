@@ -71,6 +71,12 @@ for (const required of [
   "context.nextButton.disabled = state[context.nextKey] === null;",
   "var parse_hvut_mooglemail_mid = function (onclick, stage) {",
   "record_hvut_mooglemail_parse_failure(stage, { onclick: onclick || '' });",
+  "var parse_hvut_mooglemail_page_row = function (row, filter, stage) {",
+  "return { kind: 'empty' };",
+  "const mid = parse_hvut_mooglemail_mid(row.getAttribute('onclick'), stage);",
+  "return { kind: 'rejected' };",
+  "returned: user === 'MoogleMail',",
+  "subject: row.cells[1].textContent,",
   "var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {",
   "return record_hvut_mooglemail_parse_failure(stage, { eid: eid, onmouseover: onmouseover || '' });",
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
@@ -151,14 +157,22 @@ for (const [label, body, stateArg, prevKey, nextKey, prevButton, nextButton, pre
   }
 }
 
-for (const [label, body, rowName, stage] of [
-  ["modern MoogleMail page create", modernPageCreate, "tr", "pageRowMid"],
-  ["legacy MoogleMail page create", legacyPageCreate, "row", "legacyPageRowMid"],
+for (const [label, body, rowName, filter, stage] of [
+  ["modern MoogleMail page create", modernPageCreate, "tr", "_mm.page.filter", "pageRowMid"],
+  ["legacy MoogleMail page create", legacyPageCreate, "row", "_mm.page_filter", "legacyPageRowMid"],
 ]) {
-  requirePart(label, body, `const mid = parse_hvut_mooglemail_mid(${rowName}.getAttribute('onclick'), '${stage}');`);
-  requirePart(label, body, "if (mid === null) {");
+  requirePart(label, body, `const rowRecord = parse_hvut_mooglemail_page_row(${rowName}, ${filter}, '${stage}');`);
+  requirePart(label, body, "if (rowRecord.kind === 'empty') {");
+  requirePart(label, body, "if (rowRecord.kind === 'rejected') {");
   requirePart(label, body, "if (!--count) scrollIntoView(table);");
   requirePart(label, body, "return;");
+  requirePart(label, body, "const { mid, page } = rowRecord;");
+  if (body.includes("parse_hvut_mooglemail_mid(")) {
+    violations.push(`${target} ${label} must delegate page row identity to parse_hvut_mooglemail_page_row`);
+  }
+  if (body.includes("Date.parse(") || body.includes("returned = user === 'MoogleMail'") || body.includes("mail.page = { filter:")) {
+    violations.push(`${target} ${label} must not reassemble mailbox page record outside parse_hvut_mooglemail_page_row`);
+  }
 }
 
 for (const forbidden of [
