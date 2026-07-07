@@ -50,6 +50,12 @@ export function readSingleOrderItemName(target) {
   return match ? match[1] : null;
 }
 
+export function readSettingsTabClickName(target) {
+  if (!target || target.tagName === "INPUT") return null;
+  const tab = target.closest?.(".hvAATabmenu > span[name]");
+  return tab?.getAttribute("name") || null;
+}
+
 /**
  * 从 option schema 渲染 "checkbox + number + 单位文本" 这类成对字段。
  * 单位/说明归 schema 字段所有，避免调用点继续手写 template string。
@@ -1133,8 +1139,9 @@ export function optionBox() {
   gE(".hvAATabmenu", optionBox).onclick = function (e) {
     // 标签页事件
     if (e.target.tagName === "INPUT") return;
-    const target = e.target.tagName === "SPAN" ? e.target : e.target.parentNode;
-    const name = target.getAttribute("name");
+    e.preventDefault();
+    const name = readSettingsTabClickName(e.target);
+    if (!name) return;
     let _html;
     if (name === "Drop") {
       // 掉落监测
