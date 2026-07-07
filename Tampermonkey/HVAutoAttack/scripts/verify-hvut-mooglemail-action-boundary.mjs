@@ -42,7 +42,8 @@ for (const required of [
   "sessionStorage.setItem('HVAA:lastHvutMoogleMailActionFailure'",
   "var wait_hvut_mooglemail_db_write = function (stage, detail, conn) {",
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
-  "return { kind: 'rejected', error: message || '未知错误' };",
+  "return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误' };",
+  "return { kind: 'rejected', reason: 'mailError', error: message };",
   "conn.tx.oncomplete = function () {\n          resolve(true);",
   "conn.tx.onerror = function (event) {",
   "conn.tx.onabort = function (event) {",
@@ -148,6 +149,8 @@ for (const forbidden of [
   "db.filter = view.filter;\n            db.user = view.user;",
   "mail.db = { mid: mid, filter: view.filter",
   "view.error = get_message(doc) || '未知错误';",
+  "classify_hvut_mooglemail_view_response(doc, 'viewRejectedResponse').error",
+  "classify_hvut_mooglemail_view_response(doc, 'legacyViewRejectedResponse').error",
 ]) {
   if (text.includes(forbidden)) violations.push(`${target} must not keep unchecked MoogleMail action path: ${forbidden}`);
 }

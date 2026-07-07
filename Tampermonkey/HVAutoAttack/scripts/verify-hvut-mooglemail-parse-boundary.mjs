@@ -62,7 +62,8 @@ for (const required of [
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
   "var message = get_message(doc);",
   "record_hvut_mooglemail_parse_failure(stage, { reason: 'viewResponseMessageMissing' });",
-  "return { kind: 'rejected', error: message || '未知错误' };",
+  "return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误' };",
+  "return { kind: 'rejected', reason: 'mailError', error: message };",
 ]) {
   requirePart("MoogleMail parse helper", helperRegion, required);
 }
@@ -102,7 +103,9 @@ for (const [label, body, stage] of [
   ["modern MoogleMail parser", modernMailParse, "viewRejectedResponse"],
   ["legacy MoogleMail parser", legacyMailParse, "legacyViewRejectedResponse"],
 ]) {
-  requirePart(label, body, `view.error = classify_hvut_mooglemail_view_response(doc, '${stage}').error;`);
+  requirePart(label, body, `const response = classify_hvut_mooglemail_view_response(doc, '${stage}');`);
+  requirePart(label, body, "if (response.kind === 'rejected') {");
+  requirePart(label, body, "view.error = response.error;");
 }
 
 for (const [label, body, stage] of [
@@ -147,6 +150,8 @@ for (const forbidden of [
   "$equip.dynjs_eqstore[eid].t",
   "div.firstElementChild.firstElementChild?.getAttribute('onmouseover')",
   "view.error = get_message(doc) || '未知错误';",
+  "classify_hvut_mooglemail_view_response(doc, 'viewRejectedResponse').error",
+  "classify_hvut_mooglemail_view_response(doc, 'legacyViewRejectedResponse').error",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked MoogleMail parse path: ${forbidden}`);

@@ -741,8 +741,9 @@ try {
     var message = get_message(doc);
     if (!message) {
       record_hvut_mooglemail_parse_failure(stage, { reason: 'viewResponseMessageMissing' });
+      return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误' };
     }
-    return { kind: 'rejected', error: message || '未知错误' };
+    return { kind: 'rejected', reason: 'mailError', error: message };
   };
   var record_hvut_monster_lab_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutMonsterLabParse', stage: stage, detail: detail || {} };
@@ -10650,7 +10651,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             }
           }
         } else {
-          view.error = classify_hvut_mooglemail_view_response(doc, 'viewRejectedResponse').error;
+          const response = classify_hvut_mooglemail_view_response(doc, 'viewRejectedResponse');
+          if (response.kind === 'rejected') {
+            view.error = response.error;
+          }
         }
 
         return view;
@@ -16847,7 +16851,10 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           }
         }
       } else {
-        view.error = classify_hvut_mooglemail_view_response(doc, 'legacyViewRejectedResponse').error;
+        const response = classify_hvut_mooglemail_view_response(doc, 'legacyViewRejectedResponse');
+        if (response.kind === 'rejected') {
+          view.error = response.error;
+        }
       }
 
       return view;
