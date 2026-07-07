@@ -11095,7 +11095,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             if (!mail.node.search) {
               mail.node.search = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
               if (param.season === _mm.db.season) {
-                $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid }, href: `?s=Bazaar&ss=mm&filter=${db.filter}&mid=${db.mid}` });
+                $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid }, href: create_hvut_mail_read_url({ filter: db.filter, mid: db.mid }) });
               } else {
                 $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid, season: param.season } });
               }
@@ -17314,7 +17314,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           if (!mail.node.search) {
             mail.node.search = $element('tr', tbody, ['/<td></td><td></td><td></td><td></td><td></td><td></td>']);
             if (query.season === _mm.db.season) {
-              $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid }, href: `?s=Bazaar&ss=mm&filter=${db.filter}&mid=${db.mid}` });
+              $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid }, href: create_hvut_mail_read_url({ filter: db.filter, mid: db.mid }) });
             } else {
               $element('a', mail.node.search.cells[1], { dataset: { action: 'read', mid: db.mid, season: query.season } });
             }

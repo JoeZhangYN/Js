@@ -29,6 +29,7 @@ for (const required of [
   "openUrl(create_hvut_mail_reply_url(mid), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));",
   "openUrl(create_hvut_mail_sent_url(), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));",
   "href: create_hvut_mail_read_url({ filter: page.filter, mid: mid, page: p })",
+  "href: create_hvut_mail_read_url({ filter: db.filter, mid: db.mid })",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT page URL boundary: ${required}`);
@@ -46,6 +47,7 @@ for (const forbidden of [
   "openUrl(`?s=Bazaar&ss=mm&filter=new&reply=${mid}`, hvutRedirectReason('HV_UTILS_MAIL_PAGE'))",
   "openUrl('?s=Bazaar&ss=mm&filter=sent', hvutRedirectReason('HV_UTILS_MAIL_PAGE'))",
   "href: `?s=Bazaar&ss=mm&filter=${page.filter}&mid=${mid}&page=${p}`",
+  "href: `?s=Bazaar&ss=mm&filter=${db.filter}&mid=${db.mid}`",
 ]) {
   const allowedInsideHelper =
     forbidden === "location.href + '&hvut=disabled'" || forbidden === "location.href.replace(/&page=\\d+/, '') + `&page=${p}`";
