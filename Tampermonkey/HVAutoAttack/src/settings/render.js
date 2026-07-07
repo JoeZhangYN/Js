@@ -21,6 +21,7 @@ import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stami
 import { OptionBackupEvent, runOptionBackupAutomation } from "../state/option-backup.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
+import { ALARM_AUDIO_PROFILES } from "../alarm/alarm-profiles.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
 import {
   BattleMonitorEvent,
@@ -281,6 +282,12 @@ function renderBattleTabSwitchSchemaField(key) {
   return renderSchemaCheckboxField(key, "", { bold: false }).replace(/^<div>|<\/div>$/g, "");
 }
 
+function renderLocalizedInlineLabel(label) {
+  return Object.entries(label)
+    .map(([tag, text]) => `<${tag}>${text}</${tag}>`)
+    .join("");
+}
+
 export function renderBuffSkillCheckboxes(idPrefix) {
   return Array.from(BUFF_SKILL_LIB.entries())
     .map(
@@ -384,6 +391,13 @@ export function renderOffensiveSpellAoeRows() {
     const lineBreak = rowIndex < OFFENSIVE_SPELL_ELEMENTS.length - 1 ? "<br>" : "";
     return `    ${label}: ${controls}${lineBreak}`;
   }).join("");
+}
+
+export function renderAlarmAudioProfileRows() {
+  return ALARM_AUDIO_PROFILES.map(({ key, label }) => {
+    const labelHtml = renderLocalizedInlineLabel(label);
+    return `<input id="audioEnable_${key}" type="checkbox"><label for="audioEnable_${key}">${labelHtml}: <input name="audio_${key}" type="text"></label>`;
+  }).join("<br>");
 }
 
 export function renderItemOrderCheckboxes() {
@@ -1040,7 +1054,7 @@ export function optionBox() {
     '<div class="hvAATab" id="hvAATab-Alarm">',
     '  <span class="hvAATitle"><l0>自定义警报</l0><l1>自定義警報</l1><l2>Alarm</l2></span><br>',
     "  <l0>注意：留空则使用默认音频，建议每个用户使用自定义音频</l0><l1>注意：留空則使用默認音頻，建議每個用戶使用自定義音頻</l1><l2>Note: Leave the box blank to use default audio, it's recommended for all user to use custom audio.</l2>",
-    '  <div><input id="audioEnable_Common" type="checkbox"><label for="audioEnable_Common"><l01>通用</l01><l2>Common</l2>: <input name="audio_Common" type="text"></label><br><input id="audioEnable_Error" type="checkbox"><label for="audioEnable_Error"><l0>错误</l0><l1>錯誤</l1><l2>Error</l2>: <input name="audio_Error" type="text"></label><br><input id="audioEnable_Defeat" type="checkbox"><label for="audioEnable_Defeat"><l0>失败</l0><l1>失敗</l1><l2>Defeat</l2>: <input name="audio_Defeat" type="text"></label><br><input id="audioEnable_Riddle" type="checkbox"><label for="audioEnable_Riddle"><l0>答题</l0><l1>答題</l1><l2>Riddle</l2>: <input name="audio_Riddle" type="text"></label><br><input id="audioEnable_Victory" type="checkbox"><label for="audioEnable_Victory"><l0>胜利</l0><l1>勝利</l1><l2>Victory</l2>: <input name="audio_Victory" type="text"></label></div>',
+    `  <div>${renderAlarmAudioProfileRows()}</div>`,
     '  <div><l0>请将将要测试的音频文件的地址填入这里</l0><l1>請將將要測試的音頻文件的地址填入這裡</l1><l2>Plz put in the audio file address you want to test</l2>: <br><input class="hvAADebug" name="audio_Text" type="text"></div></div>',
     '<div class="hvAATab" id="hvAATab-Rule">',
     '  <span class="hvAATitle"><l0>攻击规则</l0><l1>攻擊規則</l1><l2>Attack Rule</l2></span> <span style="font-size:small;opacity:.7;"><l0>语法同条件框（点条件 "?" 看帮助）</l0><l1>語法同條件框（點條件 "?" 看幫助）</l1><l2>Syntax = condition box (see "?" help)</l2></span>',

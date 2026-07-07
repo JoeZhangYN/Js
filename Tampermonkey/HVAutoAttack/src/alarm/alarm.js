@@ -3,6 +3,7 @@ import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { recordAlarmNotificationFailure } from "./alarm-notification-failure.js";
+import { ALARM_RUNTIME_KIND_KEYS } from "./alarm-profiles.js";
 import { getAlarmNotification } from "./notification-catalog.js";
 
 const EVENT_TRIGGER = "trigger";
@@ -28,10 +29,8 @@ const AUDIO_PREVIEW_MESSAGE = Object.freeze({
   l1: "接下來將測試該音頻\n如果該音頻無法播放或無法載入，請變更\n請測試完成後再鍵入另一個音頻",
   l2: "The audio will be tested after you close this prompt\nIf the audio doesn't load or play, change the url",
 });
-const ALARM_KINDS = Object.freeze(["Common", "Error", "Defeat", "Riddle", "Victory", "Test"]);
-
 function normalizeAlarmKind(kind) {
-  return ALARM_KINDS.includes(kind) ? kind : "Common";
+  return ALARM_RUNTIME_KIND_KEYS.includes(kind) ? kind : "Common";
 }
 
 function setAlarm(e) {

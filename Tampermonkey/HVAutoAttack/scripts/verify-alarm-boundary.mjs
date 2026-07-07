@@ -69,7 +69,7 @@ for (const required of ["runAlarmAutomation", "AlarmEvent", "PREVIEW_AUDIO_URL"]
   if (!ownerText.includes(required))
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
 }
-for (const required of ["ALARM_KINDS", "normalizeAlarmKind"]) {
+for (const required of ["ALARM_RUNTIME_KIND_KEYS", "normalizeAlarmKind"]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must internalize alarm kind invariants`);
   }
@@ -93,7 +93,9 @@ for (const required of [
   }
 }
 if (ownerText.includes(".catch(() => {})")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must not swallow notification permission failures`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not swallow notification permission failures`
+  );
 }
 for (const required of [
   'ALARM_NOTIFICATION_FAILURE_KEY = "HVAA:lastAlarmNotificationFailure"',
@@ -114,7 +116,7 @@ for (const required of [
 }
 for (const required of [
   "HVAA:lastAlarmNotificationFailure",
-  "alarmNotificationFailure: { capability: \"alarmNotification\", stage: \"gmNotification\" }",
+  'alarmNotificationFailure: { capability: "alarmNotification", stage: "gmNotification" }',
 ]) {
   if (!diagnosticEvidenceTestText.includes(required)) {
     violations.push(`${diagnosticEvidenceTest.replaceAll("\\", "/")} must cover ${required}`);
@@ -141,6 +143,21 @@ const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
 if (!settingsText.includes("AlarmEvent.PREVIEW_AUDIO_URL")) {
   violations.push(`${settingsRender.replaceAll("\\", "/")} must preview audio through alarm entry`);
 }
+for (const required of ["ALARM_AUDIO_PROFILES", "renderAlarmAudioProfileRows"]) {
+  if (!settingsText.includes(required)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} must derive alarm audio profiles`);
+  }
+}
+for (const retired of [
+  /audioEnable_Common["'][\s\S]{0,180}audioEnable_Error/,
+  /audioEnable_Defeat["'][\s\S]{0,180}audioEnable_Riddle/,
+]) {
+  if (retired.test(settingsText)) {
+    violations.push(
+      `${settingsRender.replaceAll("\\", "/")} must not inline alarm audio profile rows`
+    );
+  }
+}
 
 for (const legacy of ["setAlarm", "setAudioAlarm", "setNotification"]) {
   if (new RegExp(`export\\s+function\\s+${legacy}\\s*\\(`).test(ownerText)) {
@@ -164,22 +181,28 @@ if (!ownerText.includes("const alarmEventHandlers")) {
 }
 const ownerEntry = ownerText.match(/export function runAlarmAutomation[\s\S]*?\n}/)?.[0] || "";
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+  );
 }
 if (ownerEntry.includes("alarmEventHandlers[event.type]")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must reject null alarm events without throwing`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must reject null alarm events without throwing`
+  );
 }
-if (!ownerEntry.includes("alarmEventHandlers[event?.type]") || !ownerEntry.includes("return false")) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null alarm events`);
+if (
+  !ownerEntry.includes("alarmEventHandlers[event?.type]") ||
+  !ownerEntry.includes("return false")
+) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null alarm events`
+  );
 }
-for (const internal of [
-  "setAlarm(",
-  "setAudioAlarm(",
-  "setNotification(",
-  "previewAudioUrl(",
-]) {
+for (const internal of ["setAlarm(", "setAudioAlarm(", "setNotification(", "previewAudioUrl("]) {
   if (ownerEntry.includes(internal)) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through alarmEventHandlers`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must dispatch through alarmEventHandlers`
+    );
   }
 }
 
@@ -196,7 +219,10 @@ if (
 ) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover alarm failure fallback events`);
 }
-const notificationFailureTestText = fs.readFileSync(path.join(root, notificationFailureTest), "utf8");
+const notificationFailureTestText = fs.readFileSync(
+  path.join(root, notificationFailureTest),
+  "utf8"
+);
 for (const required of [
   "isolates synchronous browser notification permission failures",
   "isolates rejected browser notification permission requests",
