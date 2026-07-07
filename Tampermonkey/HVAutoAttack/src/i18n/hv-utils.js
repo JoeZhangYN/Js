@@ -3133,7 +3133,7 @@ const bindDfct = function (dfct, ctx) {
     dfct.node.button.textContent = '(D1...)';
     let html;
     try {
-      html = await $ajax.fetch('?s=Character&ss=se');
+      html = await $ajax.fetch(create_hvut_character_settings_url());
     } catch (error) {
       return reject_hvut_difficulty_refresh('difficultySettingsPageFetchFailed', { message: String(error?.message || error) });
     }
@@ -3147,7 +3147,7 @@ const bindDfct = function (dfct, ctx) {
     data.set('difflevel', value);
     data.set('submit', 'Apply Changes');
     try {
-      html = await $ajax.fetch('?s=Character&ss=se', data, 'FORM');
+      html = await $ajax.fetch(create_hvut_character_settings_url(), data, 'FORM');
     } catch (error) {
       return reject_hvut_difficulty_refresh('difficultyApplyFetchFailed', { message: String(error?.message || error) });
     }

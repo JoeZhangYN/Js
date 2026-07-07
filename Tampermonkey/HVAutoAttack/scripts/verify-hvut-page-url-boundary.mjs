@@ -40,6 +40,7 @@ for (const required of [
   "$ajax.fetch(create_hvut_mail_compose_url({ persistent: true })",
   "$ajax.fetch(create_hvut_mail_view_url(mid), post)",
   "openUrl(create_hvut_character_settings_url(), hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'));",
+  "$ajax.fetch(create_hvut_character_settings_url()",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT page URL boundary: ${required}`);
@@ -63,6 +64,7 @@ for (const forbidden of [
   "$ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post)",
   "$ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post)",
   "openUrl('?s=Character&ss=se', hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'))",
+  "$ajax.fetch('?s=Character&ss=se'",
 ]) {
   const allowedInsideHelper =
     forbidden === "location.href + '&hvut=disabled'" || forbidden === "location.href.replace(/&page=\\d+/, '') + `&page=${p}`";
@@ -110,6 +112,11 @@ if (mailViewFetchOccurrences !== 2) {
 const characterSettingsOpenOccurrences = [...text.matchAll(/openUrl\(create_hvut_character_settings_url\(\), hvutRedirectReason\('HV_UTILS_CHARACTER_SETTINGS'\)\)/g)].length;
 if (characterSettingsOpenOccurrences !== 2) {
   violations.push(`${target} must route Character settings navigation through create_hvut_character_settings_url, found ${characterSettingsOpenOccurrences}`);
+}
+
+const characterSettingsFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_character_settings_url\(\)/g)].length;
+if (characterSettingsFetchOccurrences !== 2) {
+  violations.push(`${target} must route Character settings fetches through create_hvut_character_settings_url, found ${characterSettingsFetchOccurrences}`);
 }
 
 if (violations.length) {
