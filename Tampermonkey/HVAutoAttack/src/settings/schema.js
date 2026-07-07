@@ -17,6 +17,36 @@
  * @property {string} [description] 三语说明（可选）
  */
 
+const TARGET_WEIGHT_OPTIONS = Object.freeze([
+  ["weight_Sle", "Sleep", 5],
+  ["weight_Bl", "Blind", 3],
+  ["weight_Slo", "Slow", 3],
+  ["weight_Im", "Imperil", -5],
+  ["weight_MN", "MagNet", -4],
+  ["weight_Si", "Silence", -4],
+  ["weight_Dr", "Drain", -4],
+  ["weight_We", "Weaken", -4],
+  ["weight_Co", "Confuse", -1],
+  ["weight_CM", "Coalesced Mana", -5],
+  ["weight_Stun", "Stunned", -4],
+  ["weight_PA", "Penetrated Armor", -4],
+  ["weight_BW", "Bleeding Wound", -4],
+]);
+
+function createTargetWeightField([key, label, defaultValue]) {
+  return {
+    key,
+    kind: "number",
+    group: "Rule",
+    default: defaultValue,
+    label: {
+      l0: label,
+      l1: label,
+      l2: label,
+    },
+  };
+}
+
 /** @type {OptionField[]} */
 const OPTION_SCHEMA = [
   // === Main: pause controls / warning channels / built-in plugin toggles ===
@@ -653,6 +683,19 @@ const OPTION_SCHEMA = [
       l0: "记录装备的最低品质",
       l1: "記錄裝備的最低品質",
       l2: "Minimum drop quality",
+    },
+  },
+  // === 目标权重：设置页派生默认值；运行时 authority 在 monster-target-weight ===
+  ...TARGET_WEIGHT_OPTIONS.map(createTargetWeightField),
+  {
+    key: "ruleReverse",
+    kind: "checkbox",
+    group: "Rule",
+    default: false,
+    label: {
+      l0: "计算出最终权重，攻击权重最小/最大的敌人(勾选: 最大)",
+      l1: "計算出最終權重，攻擊權重最小/最大的敌人(勾選: 最大)",
+      l2: "Whichever enemy has the lowest/highest PW will be the target. (ON means highest)",
     },
   },
   // === API 点击协议延迟：运行时 authority 在 battle-api-bridge.js ===

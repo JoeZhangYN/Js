@@ -253,6 +253,27 @@ function renderDropMonitorSchemaFields() {
   return [renderSchemaSelectField("dropQuality")];
 }
 
+function renderRuleWeightSchemaFields() {
+  const fields = runOptionSchema({ type: OptionSchemaEvent.READ_GROUP, group: "Rule" }).filter(
+    (field) => field.key.startsWith("weight_")
+  );
+  const rows = [fields.slice(0, 4), fields.slice(4, 8), fields.slice(8, 10), fields.slice(10)];
+  return rows.map(
+    (row) =>
+      `    ${row
+        .map((field) => `${field.label.l2}: ${renderSchemaNumberInput(field.key)}`)
+        .join(" ")}<br>`
+  );
+}
+
+function renderRuleReverseSchemaField() {
+  const field = renderSchemaCheckboxField("ruleReverse", "", { bold: false }).replace(
+    /^<div>|<\/div>$/g,
+    ""
+  );
+  return `  <div>3. ${field}</div>`;
+}
+
 function renderCriticalBuffSchemaFields() {
   return [
     renderCheckboxPlusNumber("pauseOnCriticalBuffExpire", "criticalBuffMinTurns", {
@@ -889,11 +910,9 @@ export function optionBox() {
     '  <span class="hvAATitle"><l0>攻击规则</l0><l1>攻擊規則</l1><l2>Attack Rule</l2></span> <span style="font-size:small;opacity:.7;"><l0>语法同条件框（点条件 "?" 看帮助）</l0><l1>語法同條件框（點條件 "?" 看幫助）</l1><l2>Syntax = condition box (see "?" help)</l2></span>',
     "  <div>1. <l0>每回合计算敌人当前血量，血量最低的设置初始血量为10，其他敌人为当前血量倍数*10</l0><l1>每回合計算敌人當前血量，血量最低的設置初始血量為10，其他敌人為當前血量倍數*10</l1><l2>Each enemiy is assigned a number which is used to determine the target to attack, let's call that number Priority Weight or PW.</l2></div>",
     "  <div>2. <l0>初始权重与下述各Buff权重相加</l0><l1>初始權重與下述各Buff權重相加</l1><l2>PW(X) = 10 * HP(X) / Min_HP + Accumulated_Weight_of_Deprecating_Spells_In_Effect(X)</l2><br>",
-    '    Sleep: <input class="hvAANumber" name="weight_Sle" placeholder="5" type="text"> Blind: <input class="hvAANumber" name="weight_Bl" placeholder="3" type="text"> Slow: <input class="hvAANumber" name="weight_Slo" placeholder="3" type="text"> Imperil: <input class="hvAANumber" name="weight_Im" placeholder="-5" type="text"><br>',
-    '    MagNet: <input class="hvAANumber" name="weight_MN" placeholder="-4" type="text"> Silence: <input class="hvAANumber" name="weight_Si" placeholder="-4" type="text"> Drain: <input class="hvAANumber" name="weight_Dr" placeholder="-4" type="text"> Weaken: <input class="hvAANumber" name="weight_We" placeholder="-4" type="text"><br>',
-    '    Confuse: <input class="hvAANumber" name="weight_Co" placeholder="-1" type="text"> Coalesced Mana: <input class="hvAANumber" name="weight_CM" placeholder="-5" type="text"><br>',
-    '    Stunned: <input class="hvAANumber" name="weight_Stun" placeholder="-4" type="text"> Penetrated Armor: <input class="hvAANumber" name="weight_PA" placeholder="-4" type="text"> Bleeding Wound: <input class="hvAANumber" name="weight_BW" placeholder="-4" type="text"></div>',
-    '  <div>3. <input id="ruleReverse" type="checkbox"><label for="ruleReverse"><l0>计算出最终权重，攻击权重最小/最大的敌人(勾选: 最大)</l0><l1>計算出最終權重，攻擊權重最小/最大的敌人(勾選: 最大)</l1><l2>Whichever enemy has the lowest/highest PW will be the target. (ON means highest)</l2></label></div>',
+    ...renderRuleWeightSchemaFields(),
+    "  </div>",
+    renderRuleReverseSchemaField(),
     '  <div>PS. <l0>如果你对各Buff权重有特别见解，请务必</l0><l1>如果你對各Buff權重有特別見解，請務必</l1><l2>If you have any suggestions, please </l2><a class="hvAAGoto" name="hvAATab-Feedback"><l0>告诉我</l0><l1>告訴我</l1><l2>let me know</l2></a>.</div></div>',
     '<div class="hvAATab hvAACenter" id="hvAATab-Drop">',
     '  <span class="hvAATitle"><l0>掉落监测</l0><l1>掉落監測</l1><l2>Drops Tracking</l2></span><button class="reDropMonitor"><l01>重置</l01><l2>Reset</l2></button>',
