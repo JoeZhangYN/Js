@@ -303,8 +303,7 @@ export function renderChannelFallbackOrderCheckboxes() {
 }
 
 export function renderDebuffSkillOrderCheckboxes() {
-  return Array.from(DEBUFF_SKILL_LIB.entries())
-    .filter(([, skill]) => skill.id)
+  return readCastableDebuffSkills()
     .map(
       ([key, skill]) =>
         `<input id="debuffSkillOrder_${key}" type="checkbox"><label for="debuffSkillOrder_${key}">${skill.name}</label>`
@@ -315,6 +314,34 @@ export function renderDebuffSkillOrderCheckboxes() {
       return rows;
     }, [])
     .join("<br>");
+}
+
+function readCastableDebuffSkills() {
+  return Array.from(DEBUFF_SKILL_LIB.entries()).filter(([, skill]) => skill.id);
+}
+
+export function renderDebuffSkillCheckboxes({ afterKeyHtml = {} } = {}) {
+  return readCastableDebuffSkills()
+    .map(([key, skill]) => {
+      const checkbox = `<div><input id="debuffSkill_${key}" type="checkbox"><label for="debuffSkill_${key}">${skill.name}</label>{{debuffSkill${key}Condition}}</div>`;
+      return `${checkbox}${afterKeyHtml[key] || ""}`;
+    })
+    .join("");
+}
+
+export function renderDebuffSkillNumberRows(fieldPrefix, { placeholder = "" } = {}) {
+  return readCastableDebuffSkills()
+    .map(([key, skill]) => {
+      const placeholderAttr = placeholder ? ` placeholder="${placeholder}"` : "";
+      return `${skill.name}: <input class="hvAANumber" name="${fieldPrefix}_${key}"${placeholderAttr} type="text">`;
+    })
+    .reduce((rows, item, index) => {
+      const rowIndex = Math.floor(index / 3);
+      rows[rowIndex] = `${rows[rowIndex] ? `${rows[rowIndex]} ` : ""}${item}`;
+      return rows;
+    }, [])
+    .map((row, index, rows) => `    ${row}${index < rows.length - 1 ? "<br>" : " "}`)
+    .join("");
 }
 
 export function renderPhysicalSkillOrderCheckboxes() {
@@ -960,27 +987,18 @@ export function optionBox() {
     '  <div style="border:1px dashed #888;padding:3px;"><b><l0>爆发防护（实验，默认关）</l0><l1>爆發防護（實驗，默認關）</l1><l2>Burst Guard (Exp, off)</l2></b><br>',
     ...renderBurstGuardSchemaFields(),
     "  </div>",
-    '    <div><input id="debuffSkill_Sle" type="checkbox"><label for="debuffSkill_Sle">Sleep</label>{{debuffSkillSleCondition}}</div>',
-    '    <div><input id="debuffSkill_Bl" type="checkbox"><label for="debuffSkill_Bl">Blind</label>{{debuffSkillBlCondition}}</div>',
-    '    <div><input id="debuffSkill_Slo" type="checkbox"><label for="debuffSkill_Slo">Slow</label>{{debuffSkillSloCondition}}</div>',
-    '    <div><input id="debuffSkill_Im" type="checkbox"><label for="debuffSkill_Im">Imperil</label>{{debuffSkillImCondition}}</div>',
-    '    <div><input id="debuffSkill_MN" type="checkbox"><label for="debuffSkill_MN">MagNet</label>{{debuffSkillMNCondition}}</div>',
-    '    <div><input id="debuffSkill_Si" type="checkbox"><label for="debuffSkill_Si">Silence</label>{{debuffSkillSiCondition}}</div>',
-    '    <div><input id="debuffSkill_Dr" type="checkbox"><label for="debuffSkill_Dr">Drain</label>{{debuffSkillDrCondition}}</div>',
-    renderSchemaCheckboxField("drainTargetMaxHp", "", {
-      bold: false,
-      style: "padding-left:1.5em;",
+    renderDebuffSkillCheckboxes({
+      afterKeyHtml: {
+        Dr: renderSchemaCheckboxField("drainTargetMaxHp", "", {
+          bold: false,
+          style: "padding-left:1.5em;",
+        }),
+      },
     }),
-    '    <div><input id="debuffSkill_We" type="checkbox"><label for="debuffSkill_We">Weaken</label>{{debuffSkillWeCondition}}</div>',
-    '    <div><input id="debuffSkill_Co" type="checkbox"><label for="debuffSkill_Co">Confuse</label>{{debuffSkillCoCondition}}</div>',
     "  <div>AoE: <l0>当前技能等级下影响的目标数(1=单体, 3=范围)</l0><l1>當前技能等級下影響的目標數(1=單體, 3=範圍)</l1><l2>Targets affected at current skill level (1=single, 3=AoE)</l2><br>",
-    '    Sleep: <input class="hvAANumber" name="debuffSkillAoe_Sle" placeholder="1" type="text"> Blind: <input class="hvAANumber" name="debuffSkillAoe_Bl" placeholder="1" type="text"> Slow: <input class="hvAANumber" name="debuffSkillAoe_Slo" placeholder="1" type="text"><br>',
-    '    Imperil: <input class="hvAANumber" name="debuffSkillAoe_Im" placeholder="1" type="text"> MagNet: <input class="hvAANumber" name="debuffSkillAoe_MN" placeholder="1" type="text"> Silence: <input class="hvAANumber" name="debuffSkillAoe_Si" placeholder="1" type="text"><br>',
-    '    Drain: <input class="hvAANumber" name="debuffSkillAoe_Dr" placeholder="1" type="text"> Weaken: <input class="hvAANumber" name="debuffSkillAoe_We" placeholder="1" type="text"> Confuse: <input class="hvAANumber" name="debuffSkillAoe_Co" placeholder="1" type="text"> </div>',
+    `${renderDebuffSkillNumberRows("debuffSkillAoe", { placeholder: "1" })}</div>`,
     '  <div><l0>持续</l0><l1>持續</l1><l2>Expire</l2> Turns: <input id="debuffSkillTurnAlert" type="checkbox"><label for="debuffSkillTurnAlert"><l0>无法正常施放DEBUFF技能时，警报</l0><l1>無法正常施放DEBUFF技能時，警報</l1><l2>If it can not cast de-skills normally, alert.</l2></label><br>',
-    '    Sleep: <input class="hvAANumber" name="debuffSkillTurn_Sle" type="text"> Blind: <input class="hvAANumber" name="debuffSkillTurn_Bl" type="text"> Slow: <input class="hvAANumber" name="debuffSkillTurn_Slo" type="text"><br>',
-    '    Imperil: <input class="hvAANumber" name="debuffSkillTurn_Im" type="text"> MagNet: <input class="hvAANumber" name="debuffSkillTurn_MN" type="text"> Silence: <input class="hvAANumber" name="debuffSkillTurn_Si" type="text"><br>',
-    '    Drain: <input class="hvAANumber" name="debuffSkillTurn_Dr" type="text"> Weaken: <input class="hvAANumber" name="debuffSkillTurn_We" type="text"> Confuse: <input class="hvAANumber" name="debuffSkillTurn_Co" type="text"> </div></div>',
+    `${renderDebuffSkillNumberRows("debuffSkillTurn")}</div></div>`,
     '<div class="hvAATab" id="hvAATab-Skill">',
     '  <div><span><l0>注意: 默认在Spirit状态下使用，请在<a class="hvAAGoto" name="hvAATab-Tactics">战术姿态</a>勾选并设置<b>开启/关闭Spirit Stance</b></l0><l1>注意: 默認在Spirit狀態下使用，請在<a class="hvAAGoto" name="hvAATab-Tactics">戰術姿態</a>勾選並設置<b>開啟/關閉Spirit Stance</b></l1><l2>Note: use under Spirit by default, please check and set the <b>Turn on/off Spirit Stance</b> in <a class="hvAAGoto" name="hvAATab-Tactics">Tactics</a></l2></span></div>',
     '  <div class="skillOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: ',
