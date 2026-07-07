@@ -7,6 +7,7 @@ import {
   renderBuffSkillCheckboxes,
   renderChannelFallbackOrderCheckboxes,
   renderDebuffSkillOrderCheckboxes,
+  renderPhysicalSkillOrderCheckboxes,
   shouldHydrateSettingsInput,
 } from "./render.js";
 
@@ -84,5 +85,16 @@ describe("renderDebuffSkillOrderCheckboxes", () => {
     expect(html).toContain('for="debuffSkillOrder_Im">Imperil</label>');
     expect(html).toContain('id="debuffSkillOrder_Co"');
     expect(html).not.toContain("debuffSkillOrder_CM");
+  });
+});
+
+describe("renderPhysicalSkillOrderCheckboxes", () => {
+  it("derives physical skill order checkboxes from the physical order identity", () => {
+    const html = renderPhysicalSkillOrderCheckboxes();
+
+    expect(html).toContain('id="skillOrder_OFC"');
+    expect(html).toContain("<l2>FRD</l2>");
+    expect(html).toContain('id="skillOrder_T1"');
+    expect(html).not.toContain("debuffSkillOrder_");
   });
 });

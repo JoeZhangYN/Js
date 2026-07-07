@@ -32,6 +32,7 @@ import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
 import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
 import { CHANNEL_FALLBACK_ORDER_OPTIONS } from "../data/channel-fallback-order.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
+import { PHYSICAL_SKILL_ORDER_OPTIONS } from "../data/physical-skill-order.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -310,6 +311,13 @@ export function renderDebuffSkillOrderCheckboxes() {
       return rows;
     }, [])
     .join("<br>");
+}
+
+export function renderPhysicalSkillOrderCheckboxes() {
+  return PHYSICAL_SKILL_ORDER_OPTIONS.map(
+    ({ key, label }) =>
+      `<input id="skillOrder_${key}" type="checkbox"><label for="skillOrder_${key}"><l0>${label.l0}</l0><l1>${label.l1}</l1><l2>${label.l2}</l2></label>`
+  ).join("");
 }
 
 function renderDropMonitorSchemaFields() {
@@ -930,7 +938,7 @@ export function optionBox() {
     '  <div><span><l0>注意: 默认在Spirit状态下使用，请在<a class="hvAAGoto" name="hvAATab-Tactics">战术姿态</a>勾选并设置<b>开启/关闭Spirit Stance</b></l0><l1>注意: 默認在Spirit狀態下使用，請在<a class="hvAAGoto" name="hvAATab-Tactics">戰術姿態</a>勾選並設置<b>開啟/關閉Spirit Stance</b></l1><l2>Note: use under Spirit by default, please check and set the <b>Turn on/off Spirit Stance</b> in <a class="hvAAGoto" name="hvAATab-Tactics">Tactics</a></l2></span></div>',
     '  <div class="skillOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: ',
     '  <input name="skillOrderValue" style="width:80%;" type="text" disabled="true"><br>',
-    '  <input id="skillOrder_OFC" type="checkbox"><label for="skillOrder_OFC"><l0>友情小马砲</l0><l1>友情小馬砲</l1><l2>OFC</l2></label><input id="skillOrder_FRD" type="checkbox"><label for="skillOrder_FRD"><l0>龙吼</l0><l1>龍吼</l1><l2>FRD</l2></label><input id="skillOrder_T3" type="checkbox"><label for="skillOrder_T3">T3</label><input id="skillOrder_T2" type="checkbox"><label for="skillOrder_T2">T2</label><input id="skillOrder_T1" type="checkbox"><label for="skillOrder_T1">T1</label></div>',
+    `  ${renderPhysicalSkillOrderCheckboxes()}</div>`,
     '  <div><input id="skill_OFC" type="checkbox"><label for="skill_OFC"><l0>友情小马砲</l0><l1>友情小馬砲</l1><l2>OFC</l2></label>: <input id="skillOTOS_OFC" type="checkbox"><label for="skillOTOS_OFC"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>{{skillOFCCondition}}</div>',
     '  <div><input id="skill_FRD" type="checkbox"><label for="skill_FRD"><l0>龙吼</l0><l1>龍吼</l1><l2>FRD</l2></label>: <input id="skillOTOS_FRD" type="checkbox"><label for="skillOTOS_FRD"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>{{skillFRDCondition}}</div>',
     ...renderPhysicalSkillStrategySchemaFields(),
