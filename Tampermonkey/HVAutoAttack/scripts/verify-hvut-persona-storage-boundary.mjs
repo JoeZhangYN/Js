@@ -18,6 +18,10 @@ function requireParts(label, value, parts) {
   }
 }
 
+const changeEOutcome = body(
+  /persona\.change_e_outcome = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.change_e/,
+  "persona.change_e_outcome",
+);
 const changeE = body(/persona\.change_e = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.set_button/, "persona.change_e");
 const loadDynjsOutcome = body(
   /persona\.load_dynjs_outcome = async function \(doc\) \{[\s\S]*?\n  \};\n  persona\.load_dynjs/,
@@ -47,11 +51,16 @@ for (const required of [
   }
 }
 
-requireParts("persona.change_e", changeE, [
+requireParts("persona.change_e_outcome", changeEOutcome, [
   "const loadOutcome = await persona.load_dynjs_outcome(doc);",
-  "if (loadOutcome.kind === 'rejected') return false;",
+  "if (loadOutcome.kind === 'rejected') return loadOutcome;",
   "persona.check_warning(doc);",
-  "return true;",
+  "return { kind: 'accepted' };",
+]);
+
+requireParts("persona.change_e", changeE, [
+  "const outcome = await persona.change_e_outcome(eset);",
+  "return outcome.kind === 'accepted';",
 ]);
 
 requireParts("persona.load_dynjs_outcome", loadDynjsOutcome, [
@@ -100,7 +109,7 @@ if (setValue.includes("ctx.config.set('persona', json);\n  };")) {
 if (saveEquipset.includes("ctx.config.set('equipset', equipset);\n  };")) {
   violations.push(`${target} persona.save_equipset must not ignore equipset write result`);
 }
-if (changeE.includes("if ((await persona.load_dynjs(doc)) === false) return false;")) {
+if (changeEOutcome.includes("if ((await persona.load_dynjs(doc)) === false) return false;")) {
   violations.push(`${target} persona.change_e must consume typed dynjs load outcome instead of direct boolean chaining`);
 }
 for (const forbidden of [

@@ -3248,31 +3248,48 @@ const bindPersona = function (persona, ctx) {
     json.ename = json[pset][eset].name;
     return persona.set_value();
   };
-  persona.change_p = async function (pset) {
+  persona.change_p_outcome = async function (pset) {
     persona.node.button.textContent = '(P...)';
     ctx.dfct.node.button.textContent = '(D...)';
-    const html = await $ajax.fetch('?s=Character&ss=ch', pset ? `persona_set=${pset}` : null);
+    let html;
+    try {
+      html = await $ajax.fetch('?s=Character&ss=ch', pset ? `persona_set=${pset}` : null);
+    } catch (error) {
+      return reject_hvut_persona_sync('personaPageFetchFailed', { message: String(error?.message || error) });
+    }
     const doc = $doc(html);
     if (persona.check_p(doc) === null) {
       if (persona.selector_p) persona.selector_p.disabled = false;
-      return false;
+      return reject_hvut_persona_sync('personaFormStateRejected', {});
     }
     if (persona.selector_p) {
       persona.selector_p.value = persona.json.pset;
       persona.selector_p.disabled = false;
     }
-    if ((await persona.change_e()) === false) return false;
-    if (ctx.dfct.set_button(doc) === false) return false;
-    return true;
+    const equipOutcome = await persona.change_e_outcome();
+    if (equipOutcome.kind === 'rejected') return equipOutcome;
+    if (ctx.dfct.set_button(doc) === false) {
+      return reject_hvut_persona_sync('personaDifficultyRefreshRejected', {});
+    }
+    return { kind: 'accepted' };
   };
-  persona.change_e = async function (eset) {
+  persona.change_p = async function (pset) {
+    const outcome = await persona.change_p_outcome(pset);
+    return outcome.kind === 'accepted';
+  };
+  persona.change_e_outcome = async function (eset) {
     persona.node.button.textContent = '(E...)';
-    const html = await $ajax.fetch('?s=Character&ss=eq', eset ? `equip_set=${eset}` : null);
+    let html;
+    try {
+      html = await $ajax.fetch('?s=Character&ss=eq', eset ? `equip_set=${eset}` : null);
+    } catch (error) {
+      return reject_hvut_persona_sync('equipPageFetchFailed', { message: String(error?.message || error) });
+    }
     const doc = $doc(html);
     if (persona.check_e(doc) === false) {
       if (persona.selector_e) persona.selector_e.disabled = false;
       persona.set_button();
-      return false;
+      return reject_hvut_persona_sync('personaEquipSetStateRejected', {});
     }
     const json = persona.json;
     if (persona.selector_e) {
@@ -3285,9 +3302,13 @@ const bindPersona = function (persona, ctx) {
     }
     persona.set_button();
     const loadOutcome = await persona.load_dynjs_outcome(doc);
-    if (loadOutcome.kind === 'rejected') return false;
+    if (loadOutcome.kind === 'rejected') return loadOutcome;
     persona.check_warning(doc);
-    return true;
+    return { kind: 'accepted' };
+  };
+  persona.change_e = async function (eset) {
+    const outcome = await persona.change_e_outcome(eset);
+    return outcome.kind === 'accepted';
   };
   persona.set_button = function () {
     const pname = persona.json.pname || `Persona ${persona.json.pset}`;

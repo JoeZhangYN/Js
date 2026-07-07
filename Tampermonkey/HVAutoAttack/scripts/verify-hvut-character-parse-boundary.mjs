@@ -20,7 +20,11 @@ const dfctSetButton = /dfct\.set_button = function \(doc\) \{[\s\S]*?\n  \};\n\}
 const personaInit = /persona\.init = function \(\) \{[\s\S]*?\n  \};\n  persona\.create/.exec(text)?.[0] || "";
 const personaCheckP = /persona\.check_p = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_e/.exec(text)?.[0] || "";
 const personaCheckE = /persona\.check_e = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.change_p/.exec(text)?.[0] || "";
-const personaChangeP = /persona\.change_p = async function \(pset\) \{[\s\S]*?\n  \};\n  persona\.change_e/.exec(text)?.[0] || "";
+const personaChangePOutcome =
+  /persona\.change_p_outcome = async function \(pset\) \{[\s\S]*?\n  \};\n  persona\.change_p/.exec(text)?.[0] || "";
+const personaChangeP = /persona\.change_p = async function \(pset\) \{[\s\S]*?\n  \};\n  persona\.change_e_outcome/.exec(text)?.[0] || "";
+const personaChangeEOutcome =
+  /persona\.change_e_outcome = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.change_e/.exec(text)?.[0] || "";
 const personaChangeE = /persona\.change_e = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.set_button/.exec(text)?.[0] || "";
 const equipPopupLoad = /_eq\.popup_load = function \(eq\) \{[\s\S]*?\n  \};\n\n  _eq\.charm_load/.exec(text)?.[0] || "";
 const equipCharmAppend = /_eq\.charm_append = function \(eq\) \{[\s\S]*?\n  \};\n\n  if \(_query\.equip_slot\)/.exec(text)?.[0] || "";
@@ -31,7 +35,9 @@ for (const [label, body] of [
   ["persona.init", personaInit],
   ["persona.check_p", personaCheckP],
   ["persona.check_e", personaCheckE],
+  ["persona.change_p_outcome", personaChangePOutcome],
   ["persona.change_p", personaChangeP],
+  ["persona.change_e_outcome", personaChangeEOutcome],
   ["persona.change_e", personaChangeE],
   ["_eq.popup_load", equipPopupLoad],
   ["_eq.charm_append", equipCharmAppend],
@@ -78,13 +84,32 @@ requirePart("persona.check_p", personaCheckP, "if (persona.set_value() === false
 requirePart("persona.check_e", personaCheckE, "const state = parse_hvut_equip_set_state(doc, 'personaEquipSetState');");
 requirePart("persona.check_e", personaCheckE, "if (state === null) {\n      return false;");
 requirePart("persona.check_e", personaCheckE, "return persona.set_value();");
-requirePart("persona.change_p", personaChangeP, "if (persona.check_p(doc) === null) {");
-requirePart("persona.change_p", personaChangeP, "if ((await persona.change_e()) === false) return false;");
-requirePart("persona.change_p", personaChangeP, "if (ctx.dfct.set_button(doc) === false) return false;");
-requirePart("persona.change_e", personaChangeE, "if (persona.check_e(doc) === false) {");
-requirePart("persona.change_e", personaChangeE, "if (persona.selector_e) persona.selector_e.disabled = false;");
-requirePart("persona.change_e", personaChangeE, "const loadOutcome = await persona.load_dynjs_outcome(doc);");
-requirePart("persona.change_e", personaChangeE, "if (loadOutcome.kind === 'rejected') return false;");
+requirePart("persona.change_p_outcome", personaChangePOutcome, "if (persona.check_p(doc) === null) {");
+requirePart(
+  "persona.change_p_outcome",
+  personaChangePOutcome,
+  "return reject_hvut_persona_sync('personaPageFetchFailed', { message: String(error?.message || error) });",
+);
+requirePart("persona.change_p_outcome", personaChangePOutcome, "return reject_hvut_persona_sync('personaFormStateRejected', {});");
+requirePart("persona.change_p_outcome", personaChangePOutcome, "const equipOutcome = await persona.change_e_outcome();");
+requirePart("persona.change_p_outcome", personaChangePOutcome, "if (equipOutcome.kind === 'rejected') return equipOutcome;");
+requirePart("persona.change_p_outcome", personaChangePOutcome, "if (ctx.dfct.set_button(doc) === false) {");
+requirePart("persona.change_p_outcome", personaChangePOutcome, "return reject_hvut_persona_sync('personaDifficultyRefreshRejected', {});");
+requirePart("persona.change_p_outcome", personaChangePOutcome, "return { kind: 'accepted' };");
+requirePart("persona.change_p", personaChangeP, "const outcome = await persona.change_p_outcome(pset);");
+requirePart("persona.change_p", personaChangeP, "return outcome.kind === 'accepted';");
+requirePart("persona.change_e_outcome", personaChangeEOutcome, "if (persona.check_e(doc) === false) {");
+requirePart(
+  "persona.change_e_outcome",
+  personaChangeEOutcome,
+  "return reject_hvut_persona_sync('equipPageFetchFailed', { message: String(error?.message || error) });",
+);
+requirePart("persona.change_e_outcome", personaChangeEOutcome, "if (persona.selector_e) persona.selector_e.disabled = false;");
+requirePart("persona.change_e_outcome", personaChangeEOutcome, "return reject_hvut_persona_sync('personaEquipSetStateRejected', {});");
+requirePart("persona.change_e_outcome", personaChangeEOutcome, "const loadOutcome = await persona.load_dynjs_outcome(doc);");
+requirePart("persona.change_e_outcome", personaChangeEOutcome, "if (loadOutcome.kind === 'rejected') return loadOutcome;");
+requirePart("persona.change_e", personaChangeE, "const outcome = await persona.change_e_outcome(eset);");
+requirePart("persona.change_e", personaChangeE, "return outcome.kind === 'accepted';");
 requirePart("_eq.popup_load", equipPopupLoad, "clear_hvut_equip_popup_drop_info(doc, 'equipPopupDropInfo');");
 requirePart("_eq.charm_append", equipCharmAppend, "record_hvut_character_parse_failure('equipPopupCharmText', { charm: charm });");
 requirePart("_eq.charm_append", equipCharmAppend, "if (append_hvut_equip_popup_charms(doc, div, 'equipPopupCharmAppend') === false) {");
@@ -112,6 +137,8 @@ for (const forbidden of [
   "const eset = parseInt($qs('img[src$=\"_on.png\"]', doc).src.match(/set(\\d+)_on/)[1]);",
   "persona.check_p(doc);\n    if (persona.selector_p)",
   "persona.check_e(doc);\n    const json = persona.json;",
+  "if ((await persona.change_e()) === false) return false;",
+  "if (loadOutcome.kind === 'rejected') return false;",
   "ctx.dfct.set_button(doc);\n  };",
   "doc.querySelector('.showequip').children[2]",
   "doc.querySelector('.eq').appendChild(div)",
