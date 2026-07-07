@@ -1311,6 +1311,9 @@ try {
   var create_hvut_mail_reply_url = function (mid) {
     return `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;
   };
+  var create_hvut_mail_sent_url = function () {
+    return '?s=Bazaar&ss=mm&filter=sent';
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -3700,7 +3703,7 @@ const $mail = {
     if ($mail.queue[$mail.current]) {
       return $mail.send();
     } else {
-      openUrl('?s=Bazaar&ss=mm&filter=sent', hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
+      openUrl(create_hvut_mail_sent_url(), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
       return true;
     }
   },

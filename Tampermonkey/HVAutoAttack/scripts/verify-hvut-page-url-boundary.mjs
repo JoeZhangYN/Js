@@ -11,10 +11,12 @@ for (const required of [
   "var create_hvut_current_page_disable_url = function () {",
   "var create_hvut_mail_page_url = function (page) {",
   "var create_hvut_mail_reply_url = function (mid) {",
+  "var create_hvut_mail_sent_url = function () {",
   "return context?.absolute ? `${location.origin}${location.pathname}${relative}` : relative;",
   "return location.href + '&hvut=disabled';",
   "return location.href.replace(/&page=\\d+/, '') + `&page=${page}`;",
   "return `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;",
+  "return '?s=Bazaar&ss=mm&filter=sent';",
   "eq.data.url = create_hvut_equip_page_url(eq, { absolute: true });",
   "openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
   "openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
@@ -23,6 +25,7 @@ for (const required of [
   "openUrl(create_hvut_current_page_disable_url(), hvutRedirectReason('HV_UTILS_DISABLE'));",
   "openUrl(create_hvut_mail_page_url(p), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));",
   "openUrl(create_hvut_mail_reply_url(mid), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));",
+  "openUrl(create_hvut_mail_sent_url(), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT page URL boundary: ${required}`);
@@ -38,6 +41,7 @@ for (const forbidden of [
   "location.href.replace(/&page=\\d+/, '') + `&page=${p}`",
   "location.href.replace(/&page=\\d+/, '') + '&page=' + p",
   "openUrl(`?s=Bazaar&ss=mm&filter=new&reply=${mid}`, hvutRedirectReason('HV_UTILS_MAIL_PAGE'))",
+  "openUrl('?s=Bazaar&ss=mm&filter=sent', hvutRedirectReason('HV_UTILS_MAIL_PAGE'))",
 ]) {
   const allowedInsideHelper =
     forbidden === "location.href + '&hvut=disabled'" || forbidden === "location.href.replace(/&page=\\d+/, '') + `&page=${p}`";
@@ -60,6 +64,11 @@ if (mailPageOccurrences !== 1) {
 const mailReplyOccurrences = [...text.matchAll(/\?s=Bazaar&ss=mm&filter=new&reply=\$\{mid\}/g)].length;
 if (mailReplyOccurrences !== 1) {
   violations.push(`${target} must build mail reply URL only in create_hvut_mail_reply_url, found ${mailReplyOccurrences}`);
+}
+
+const mailSentOccurrences = [...text.matchAll(/\?s=Bazaar&ss=mm&filter=sent/g)].length;
+if (mailSentOccurrences !== 1) {
+  violations.push(`${target} must build sent mail URL only in create_hvut_mail_sent_url, found ${mailSentOccurrences}`);
 }
 
 if (violations.length) {
