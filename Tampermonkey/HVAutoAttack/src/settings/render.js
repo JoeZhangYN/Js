@@ -86,7 +86,12 @@ function renderSchemaSelectField(key) {
   const field = readSchemaField(key);
   if (!field) return "";
   const options = (field.enum || [])
-    .map((value) => `<option value="${value}">${field.enumLabel?.[value] || value}</option>`)
+    .map((value) => {
+      const label = Object.prototype.hasOwnProperty.call(field.enumLabel || {}, value)
+        ? field.enumLabel[value]
+        : value;
+      return `<option value="${value}">${label}</option>`;
+    })
     .join("");
   return (
     `<div>${renderSchemaLabel(field, { bold: true })}: ` +
@@ -113,6 +118,24 @@ function renderHiddenSchemaInputWithoutPlaceholder(key, attrs = "") {
   if (!field) return "";
   const attrText = attrs ? ` ${attrs}` : "";
   return `<input name="${field.key}" type="hidden"${attrText}>`;
+}
+
+function renderAttackStatusSchemaField() {
+  const field = readSchemaField("attackStatus");
+  if (!field) return "";
+  const options = (field.enum || [])
+    .map((value) => {
+      const label = Object.prototype.hasOwnProperty.call(field.enumLabel || {}, value)
+        ? field.enumLabel[value]
+        : value;
+      return `<option value="${value}">${label}</option>`;
+    })
+    .join("");
+  return (
+    `  <div class="hvAACenter" id="${field.key}" style="color:red;"><b>*${renderSchemaLabel(
+      field
+    )}</b>:` + `    <select class="hvAANumber" name="${field.key}">${options}</select></div>`
+  );
 }
 
 function renderMainPauseSchemaFields() {
@@ -621,8 +644,7 @@ export function optionBox() {
     '  <span name="About"><l0>关于本脚本</l0><l1>關於本腳本</l1><l2>About This</l2></span>',
     '  <span name="Feedback"><l01>反馈</l01><l2>Feedback</l2></span></div>',
     '<div class="hvAATab" id="hvAATab-Main">',
-    '  <div class="hvAACenter" id="attackStatus" style="color:red;"><b>*<l0>攻击模式</l0><l1>攻擊模式</l1><l2>Attack Mode</l2></b>:',
-    '    <select class="hvAANumber" name="attackStatus"><option value="-1"></option><option value="0">物理 / Physical</option><option value="1">火 / Fire</option><option value="2">冰 / Cold</option><option value="3">雷 / Elec</option><option value="4">风 / Wind</option><option value="5">圣 / Divine</option><option value="6">暗 / Forbidden</option></select></div>',
+    renderAttackStatusSchemaField(),
     ...renderMainPauseSchemaFields(),
     ...renderMainWarningSchemaFields(),
     ...renderMainPluginSchemaFields(),

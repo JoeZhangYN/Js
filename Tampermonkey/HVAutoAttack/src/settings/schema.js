@@ -21,6 +21,28 @@
 const OPTION_SCHEMA = [
   // === Main: pause controls / warning channels / built-in plugin toggles ===
   {
+    key: "attackStatus",
+    kind: "select",
+    group: "Main",
+    default: -1,
+    enum: ["-1", "0", "1", "2", "3", "4", "5", "6"],
+    enumLabel: {
+      "-1": "",
+      0: "物理 / Physical",
+      1: "火 / Fire",
+      2: "冰 / Cold",
+      3: "雷 / Elec",
+      4: "风 / Wind",
+      5: "圣 / Divine",
+      6: "暗 / Forbidden",
+    },
+    label: {
+      l0: "攻击模式",
+      l1: "攻擊模式",
+      l2: "Attack Mode",
+    },
+  },
+  {
     key: "pauseButton",
     kind: "checkbox",
     group: "Main",
