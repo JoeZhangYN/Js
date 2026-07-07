@@ -663,6 +663,18 @@ const OPTION_SCHEMA = [
       l2: "Usage Tracking",
     },
   },
+  // === Channel 技能页签开关：设置页只派生菜单开关；运行时 authority 在 battle/buff/decide-channel ===
+  {
+    key: "channelSkillSwitch",
+    kind: "checkbox",
+    group: "Channel",
+    default: false,
+    label: {
+      l0: "Channel技能",
+      l1: "Channel技能",
+      l2: "Channel Spells",
+    },
+  },
   // === 掉落监测：设置页只派生监控开关/最低品质；运行时 authority 在 battle-monitor-runtime/drop-monitor ===
   {
     key: "dropMonitor",

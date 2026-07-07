@@ -256,6 +256,13 @@ function renderUsageTrackingTabSchemaField() {
   );
 }
 
+function renderChannelSkillSwitchTabSchemaField() {
+  return renderSchemaCheckboxField("channelSkillSwitch", "", { bold: false }).replace(
+    /^<div>|<\/div>$/g,
+    ""
+  );
+}
+
 function renderDropMonitorSchemaFields() {
   return [renderSchemaSelectField("dropQuality")];
 }
@@ -718,7 +725,7 @@ export function optionBox() {
     '  <span name="System"><l0>系统页面</l0><l1>系統頁面</l1><l2>System</l2></span>',
     '  <span name="Spell"><l0>法术攻击</l0><l1>法術攻擊</l1><l2>Spell</l2></span>',
     '  <span name="Item"><l01>物品</l01><l2>Item</l2></span>',
-    '  <span name="Channel"><input id="channelSkillSwitch" type="checkbox">Channel<l01>技能</l01><l2> Spells</l2></span>',
+    `  <span name="Channel">${renderChannelSkillSwitchTabSchemaField()}</span>`,
     '  <span name="Buff"><input id="buffSkillSwitch" type="checkbox">BUFF<l01>技能</l01><l2> Spells</l2></span>',
     '  <span name="Debuff"><input id="debuffSkillSwitch" type="checkbox">DEBUFF<l01>技能</l01><l2> Spells</l2></span>',
     '  <span name="Skill"><input id="skillSwitch" type="checkbox"><l01>其他技能</l01><l2>Skills</l2></span>',
