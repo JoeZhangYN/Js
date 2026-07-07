@@ -130,6 +130,7 @@ main.js（entry shim）
 - `encounter-lobby-schedule.js` — 下次检查调度
 - `encounter-widget-policy.js` — 首页 widget 倒计时/链接策略（PURE `planEncounterWidgetEvent`）
 - `encounter-bridge.js` — sloppy-mode 桥（hv-utils 不能 ESM import，业务口径经桥复用）
+- **关键不变量**：遭遇战倒计时、当日计数、started/attempted 标记只能由遭遇战 authority 推进；普通首页刷新、root 页加载、news 页探测失败、异世界不支持入口、导航失败都不得刷新计时或增加计数。手动点击时间链接与自动到点跳转必须走同一个 entry executor，并有重复同因熔断/停止规则。
 
 ### BC-6 自动维修（repair/）【现状已达标，含关键死循环修复】
 入口：`repair-orchestrator.js`（异步 IO 链：扫描 → 决策 → 缺料买齐/停机 → 修 → 复验 → 开下一场）。
@@ -166,6 +167,7 @@ main.js 装配三条独立汉化路径（功能区不重叠）：
 - `customize.js` — 条件编辑器；`condition-eval.js` — `checkCondition` PURE（facts → bool）
 - `form-option.js` — 表单收集 → option；`button.js` — 设置按钮
 - `state/option.js` — 配置读写唯一口径；`option-backup.js` — 备份/恢复
+- **关键不变量**：配置/存储写入失败是业务失败，不是普通提示。失败前必须保留 typed evidence；失败后必须走可复制诊断报告，不允许裸 `alert`、console-only 或先 reload 再丢证据。
 
 ### 横切基础设施
 - `state/store.js`（`g()` runtime）+ `storage.js`（GM_* wrapper）+ `persist-keys.js`（key SOT）
@@ -318,7 +320,7 @@ runBattleTurnAutomation(RUN_CURRENT_TURN):
    - `drift`: 下游重复从 URL 猜世界，导致异世界入口拼成主世界或错误根路径。
    - `converged-entry`: encounter identity classifier -> `PLAN_ACTIVATION(..., { isIsekai })` -> `buildEncounterEntryUrl(...)`。
    - `guard`: `verify-encounter-boundary.mjs`、`verify-hvut-random-encounter-storage-boundary.mjs`、isekai entry tests。
-   - `next-callback`: 倒计时、计数、跳转、熔断必须只消费 typed world context，不能刷新首页就增加遭遇计数。
+   - `next-callback`: 倒计时、计数、跳转、熔断必须只消费 typed world context，不能刷新首页就增加遭遇计数；手动时间链接、自动到点、lobby tick 三个出口必须复用同一 entry executor。
 
 3. **Armory page fact parsing**
    - `identity`: Bazaar Armory sell/salvage/filter 页面。
@@ -327,3 +329,27 @@ runBattleTurnAutomation(RUN_CURRENT_TURN):
    - `converged-entry`: Armory page parse/context boundary + integrate failure report。
    - `guard`: `verify-hvut-armory-page-context-boundary.mjs`、`verify-hvut-armory-page-parse-boundary.mjs`、`verify-hvut-armory-integrate-boundary.mjs`。
    - `next-callback`: 新增 Armory screen/filter 时先声明页面事实可选性和派生路径，再接 integrate。
+
+---
+
+## 11. Next Architecture Boundary Queue（下一架构边界队列）
+
+本队列按“先保护业务能力，再收敛代码”的顺序排列。处理其中任一项时，必须先更新本图对应条目，再改代码、测试、守卫。
+
+1. **Encounter readiness authority**
+   - `goal`: 只有真实遭遇战 entry 成功或战斗启动证据才能推进倒计时/计数；首页刷新、root 页加载、news key 探测、导航失败、异世界入口禁用都不能写 started/attempted/count。
+   - `entry-point effect`: `runEncounterAutomation(event)` 继续是唯一入口；手动时间链接、自动到点、lobby tick 均调用同一个 entry executor，并返回 typed claim/rejection。
+   - `old-path effect`: 禁止 widget、hv-utils bridge、lobby 或 root 页直接写 encounter state、直接拼 URL、直接标记计数。
+   - `guard`: 扩展 `verify-encounter-boundary.mjs` 与 widget/main-world/isekai tests，覆盖“刷新首页不增计数”“news key 仅加载不刷新计时”“重复跳 news 熔断”。
+
+2. **HVUT config/storage visible diagnostics**
+   - `goal`: 所有 HVUT 配置、日志、缓存、迁移、持久化失败统一进入 typed evidence + copyable report；失败不再以裸 `alert` 结束。
+   - `entry-point effect`: 复用 `show_hvut_failure_report(...)` 或更窄的 config-storage report entry；调用方只传 capability/stage/detail evidence。
+   - `old-path effect`: 禁止 evidence-backed failure 继续使用泛化 `alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.')`。
+   - `guard`: 强化 `verify-hvut-config-storage-boundary.mjs` 与 `verify-hvut-runtime-failure-boundary.mjs`，扫描 evidence-backed config/storage catch path 必须可复制诊断。
+
+3. **HVUT page fact optionality**
+   - `goal`: 页面脚本对象缺失先分类为 page fact optional/missing/unsupported，而不是让集成流程中途抛 undefined。
+   - `entry-point effect`: 各 page-context boundary 输出 typed facts；integrate 只消费 facts，不再猜全局对象存在。
+   - `old-path effect`: 禁止 `$item`、`itemdata`、`eqitems`、`_query` 等页面对象在未分类前被业务流程直接读取。
+   - `guard`: 继续扩展对应 page-context/page-parse/integrate verify 脚本，负路径必须产生 diagnosable evidence。

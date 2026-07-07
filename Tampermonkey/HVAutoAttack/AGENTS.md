@@ -113,6 +113,8 @@ Every non-trivial business fix must maintain the framework that makes future fix
 - Explicit unknown events on side-effecting entries should reject or no-op with typed evidence. Do not default explicit unknown events to lobby ticks, battle starts, riddle answering, navigation, reload, or POST effects.
 - HTTP/transport wrappers must classify non-2xx responses and final network failures; callers must not report continuation success without callback/effect evidence.
 - Encounter unavailable UI must require typed `unavailableReason === "equipmentInventoryFull"` before showing equipment-capacity prompts.
+- Encounter countdown/count writes must require authoritative encounter entry or battle-start evidence; page refresh, root page load, news-key probing, unsupported isekai entry, and failed navigation must not advance encounter state.
+- HVUT evidence-backed failures must surface through copyable diagnostics, not naked alert or console-only reporting.
 
 ## Goal Hygiene
 

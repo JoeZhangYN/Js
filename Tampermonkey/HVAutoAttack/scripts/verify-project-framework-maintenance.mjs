@@ -21,6 +21,8 @@ for (const required of [
   "When project rules, architecture prompts, or corrected working goals change",
   "Keep framework artifacts synchronized",
   "Framework Drift Callback Index",
+  "Encounter countdown/count writes must require authoritative encounter entry",
+  "HVUT evidence-backed failures must surface through copyable diagnostics",
 ]) {
   if (!agents.includes(required)) {
     violations.push(`AGENTS.md must keep project-framework maintenance rule: ${required}`);
@@ -39,6 +41,12 @@ for (const required of [
   "HVUT failure evidence / runtime diagnostics",
   "Main / Isekai encounter world authority",
   "Armory page fact parsing",
+  "## 11. Next Architecture Boundary Queue",
+  "Encounter readiness authority",
+  "HVUT config/storage visible diagnostics",
+  "HVUT page fact optionality",
+  "只有真实遭遇战 entry 成功或战斗启动证据才能推进倒计时/计数",
+  "所有 HVUT 配置、日志、缓存、迁移、持久化失败统一进入 typed evidence + copyable report",
 ]) {
   if (!businessMap.includes(required)) {
     violations.push(`BUSINESS-MAP.md must keep callback reference anchor: ${required}`);
