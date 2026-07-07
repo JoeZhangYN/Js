@@ -34,17 +34,16 @@ import { ALL_DEBUFF_ACTION_OPTIONS } from "../data/all-debuff-actions.js";
 import { BATTLE_BUFF_ACTION_OPTIONS } from "../data/battle-buff-actions.js";
 import { BATTLE_ROUND_TYPE_OPTIONS } from "../data/battle-round-types.js";
 import { BATTLE_SCROLL_OPTIONS } from "../data/battle-scrolls.js";
-import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
-import { CHANNEL_FALLBACK_ORDER_OPTIONS } from "../data/channel-fallback-order.js";
-import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 import { IDLE_ARENA_LEVEL_OPTIONS } from "../data/idle-arena-levels.js";
-import { ITEM_ORDER_OPTIONS } from "../data/item-order.js";
-import { PHYSICAL_SKILL_ORDER_OPTIONS } from "../data/physical-skill-order.js";
 import {
   OFFENSIVE_SPELL_ELEMENTS,
   OFFENSIVE_SPELL_LIB,
   OFFENSIVE_SPELL_TIERS,
 } from "../data/spell-lib.js";
+import {
+  SettingsOrderControlEvent,
+  runSettingsOrderControlCatalog,
+} from "./order-control-catalog.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -299,10 +298,12 @@ function renderLocalizedInlineLabel(label) {
 }
 
 export function renderBuffSkillCheckboxes(idPrefix) {
-  return Array.from(BUFF_SKILL_LIB.entries())
+  return runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_SUPPORT_BUFF_SKILLS,
+  })
     .map(
-      ([key, skill]) =>
-        `<input id="${idPrefix}_${key}" type="checkbox"><label for="${idPrefix}_${key}">${skill.name}</label>`
+      ({ key, name }) =>
+        `<input id="${idPrefix}_${key}" type="checkbox"><label for="${idPrefix}_${key}">${name}</label>`
     )
     .reduce((rows, item, index) => {
       const rowIndex = index < 4 ? 0 : 1;
@@ -320,7 +321,9 @@ export function renderBuffSkillActionCheckboxes() {
 }
 
 export function renderChannelFallbackOrderCheckboxes() {
-  return CHANNEL_FALLBACK_ORDER_OPTIONS.map(
+  return runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_CHANNEL_FALLBACK_ORDER,
+  }).map(
     (skill) =>
       `<input id="channelSkill2Order_${skill.key}" value="${skill.key},${skill.skillId}" type="checkbox"><label for="channelSkill2Order_${skill.key}">${skill.name}</label>`
   )
@@ -335,8 +338,8 @@ export function renderChannelFallbackOrderCheckboxes() {
 export function renderDebuffSkillOrderCheckboxes() {
   return readCastableDebuffSkills()
     .map(
-      ([key, skill]) =>
-        `<input id="debuffSkillOrder_${key}" type="checkbox"><label for="debuffSkillOrder_${key}">${skill.name}</label>`
+      ({ key, name }) =>
+        `<input id="debuffSkillOrder_${key}" type="checkbox"><label for="debuffSkillOrder_${key}">${name}</label>`
     )
     .reduce((rows, item, index) => {
       const rowIndex = index < 3 ? 0 : 1;
@@ -347,13 +350,15 @@ export function renderDebuffSkillOrderCheckboxes() {
 }
 
 function readCastableDebuffSkills() {
-  return Array.from(DEBUFF_SKILL_LIB.entries()).filter(([, skill]) => skill.id);
+  return runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_CASTABLE_DEBUFF_SKILLS,
+  });
 }
 
 export function renderDebuffSkillCheckboxes({ afterKeyHtml = {} } = {}) {
   return readCastableDebuffSkills()
-    .map(([key, skill]) => {
-      const checkbox = `<div><input id="debuffSkill_${key}" type="checkbox"><label for="debuffSkill_${key}">${skill.name}</label>{{debuffSkill${key}Condition}}</div>`;
+    .map(({ key, name }) => {
+      const checkbox = `<div><input id="debuffSkill_${key}" type="checkbox"><label for="debuffSkill_${key}">${name}</label>{{debuffSkill${key}Condition}}</div>`;
       return `${checkbox}${afterKeyHtml[key] || ""}`;
     })
     .join("");
@@ -361,9 +366,9 @@ export function renderDebuffSkillCheckboxes({ afterKeyHtml = {} } = {}) {
 
 export function renderDebuffSkillNumberRows(fieldPrefix, { placeholder = "" } = {}) {
   return readCastableDebuffSkills()
-    .map(([key, skill]) => {
+    .map(({ key, name }) => {
       const placeholderAttr = placeholder ? ` placeholder="${placeholder}"` : "";
-      return `${skill.name}: <input class="hvAANumber" name="${fieldPrefix}_${key}"${placeholderAttr} type="text">`;
+      return `${name}: <input class="hvAANumber" name="${fieldPrefix}_${key}"${placeholderAttr} type="text">`;
     })
     .reduce((rows, item, index) => {
       const rowIndex = Math.floor(index / 3);
@@ -388,14 +393,18 @@ export function renderAllDebuffActionCheckboxes() {
 }
 
 export function renderPhysicalSkillOrderCheckboxes() {
-  return PHYSICAL_SKILL_ORDER_OPTIONS.map(
+  return runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_PHYSICAL_SKILL_ORDER,
+  }).map(
     ({ key, label }) =>
       `<input id="skillOrder_${key}" type="checkbox"><label for="skillOrder_${key}"><l0>${label.l0}</l0><l1>${label.l1}</l1><l2>${label.l2}</l2></label>`
   ).join("");
 }
 
 export function renderPhysicalSkillActionCheckboxes({ afterKeyHtml = {} } = {}) {
-  return PHYSICAL_SKILL_ORDER_OPTIONS.map(({ key, label, actionLabel }) => {
+  return runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_PHYSICAL_SKILL_ORDER,
+  }).map(({ key, label, actionLabel }) => {
     const displayLabel = actionLabel || label;
     const extra = afterKeyHtml[key] ? `<br>${afterKeyHtml[key]}` : "";
     return `<div><input id="skill_${key}" type="checkbox"><label for="skill_${key}"><l0>${displayLabel.l0}</l0><l1>${displayLabel.l1}</l1><l2>${displayLabel.l2}</l2></label>: <input id="skillOTOS_${key}" type="checkbox"><label for="skillOTOS_${key}"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>${extra}{{skill${key}Condition}}</div>`;
@@ -424,7 +433,7 @@ export function renderAlarmAudioProfileRows() {
 }
 
 export function renderItemOrderCheckboxes() {
-  return ITEM_ORDER_OPTIONS.map(
+  return runSettingsOrderControlCatalog({ type: SettingsOrderControlEvent.READ_ITEM_ORDER }).map(
     ({ key, itemId, label }) =>
       `<input id="itemOrder_${key}" value="${key},${itemId}" type="checkbox"><label for="itemOrder_${key}">${label}</label>`
   )
@@ -437,7 +446,7 @@ export function renderItemOrderCheckboxes() {
 }
 
 export function renderItemActionCheckboxes() {
-  return ITEM_ORDER_OPTIONS.map(
+  return runSettingsOrderControlCatalog({ type: SettingsOrderControlEvent.READ_ITEM_ORDER }).map(
     ({ key, label }) =>
       `<div><input id="item_${key}" type="checkbox"><label for="item_${key}"><b>${label}</b></label>: {{item${key}Condition}}</div>`
   ).join("");

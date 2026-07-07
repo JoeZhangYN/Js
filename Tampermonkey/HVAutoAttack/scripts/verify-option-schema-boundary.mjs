@@ -7,6 +7,8 @@ const owner = path.normalize("src/settings/schema.js");
 const ownerTest = path.normalize("src/settings/schema.test.js");
 const ownerTestPrefix = path.normalize("src/settings/schema-");
 const settingsRender = path.normalize("src/settings/render.js");
+const orderControlCatalog = path.normalize("src/settings/order-control-catalog.js");
+const orderControlCatalogTest = path.normalize("src/settings/order-control-catalog.test.js");
 const violations = [];
 
 function rel(file) {
@@ -85,6 +87,31 @@ if (!/export function runOptionSchema\(\s*event\b/.test(ownerText)) {
 }
 
 const renderText = fs.readFileSync(path.join(root, settingsRender), "utf8");
+const orderControlCatalogText = fs.readFileSync(path.join(root, orderControlCatalog), "utf8");
+const orderControlCatalogTestText = fs.readFileSync(path.join(root, orderControlCatalogTest), "utf8");
+for (const required of [
+  "SettingsOrderControlEvent",
+  "runSettingsOrderControlCatalog",
+  "READ_SUPPORT_BUFF_SKILLS",
+  "READ_CASTABLE_DEBUFF_SKILLS",
+  "READ_PHYSICAL_SKILL_ORDER",
+  "exposes castable debuff controls without weapon-only effects",
+]) {
+  if (!orderControlCatalogText.includes(required) && !orderControlCatalogTestText.includes(required)) {
+    violations.push(`${orderControlCatalog.replaceAll("\\", "/")} must own settings order control catalog ${required}`);
+  }
+}
+for (const forbidden of [
+  "from \"../data/buff-lib.js\"",
+  "from \"../data/channel-fallback-order.js\"",
+  "from \"../data/debuff-lib.js\"",
+  "from \"../data/item-order.js\"",
+  "from \"../data/physical-skill-order.js\"",
+]) {
+  if (renderText.includes(forbidden)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} must read order controls through settings order catalog`);
+  }
+}
 if (/function\s+renderCheckboxPlusNumber\(\s*checkboxKey\s*,\s*numberKey\s*,/.test(renderText)) {
   violations.push(
     `${settingsRender.replaceAll("\\", "/")} renderCheckboxPlusNumber must not accept caller-owned description text`
@@ -126,12 +153,12 @@ for (const required of [
   /BATTLE_BUFF_ACTION_OPTIONS/,
   /renderBuffSkillCheckboxes/,
   /renderBuffSkillActionCheckboxes/,
-  /BUFF_SKILL_LIB/,
+  /SettingsOrderControlEvent\.READ_SUPPORT_BUFF_SKILLS/,
   /renderBuffSkillCheckboxes\(\s*["']channelSkill["']\s*\)/,
   /renderBuffSkillCheckboxes\(\s*["']buffSkillOrder["']\s*\)/,
-  /CHANNEL_FALLBACK_ORDER_OPTIONS/,
+  /SettingsOrderControlEvent\.READ_CHANNEL_FALLBACK_ORDER/,
   /renderChannelFallbackOrderCheckboxes/,
-  /DEBUFF_SKILL_LIB/,
+  /SettingsOrderControlEvent\.READ_CASTABLE_DEBUFF_SKILLS/,
   /renderDebuffSkillOrderCheckboxes/,
   /renderDebuffSkillCheckboxes/,
   /renderDebuffSkillNumberRows/,
@@ -140,10 +167,10 @@ for (const required of [
   /ALL_DEBUFF_ACTION_OPTIONS/,
   /renderAllDebuffActionCheckboxes/,
   /renderSchemaCheckboxField\(\s*key,\s*`\{\{\$\{conditionKey\}\}\}`/,
-  /ITEM_ORDER_OPTIONS/,
+  /SettingsOrderControlEvent\.READ_ITEM_ORDER/,
   /renderItemOrderCheckboxes/,
   /renderItemActionCheckboxes/,
-  /PHYSICAL_SKILL_ORDER_OPTIONS/,
+  /SettingsOrderControlEvent\.READ_PHYSICAL_SKILL_ORDER/,
   /renderPhysicalSkillOrderCheckboxes/,
   /renderPhysicalSkillActionCheckboxes/,
   /OFFENSIVE_SPELL_ELEMENTS/,
