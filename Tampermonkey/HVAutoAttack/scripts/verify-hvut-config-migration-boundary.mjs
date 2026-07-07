@@ -23,6 +23,12 @@ const migrationBodies = [...text.matchAll(/migration: function \(\) \{[\s\S]*?\n
 );
 
 if (migrationBodies.length !== 2) violations.push(`${target} must keep both config migration entries visible`);
+if (migrationBodies[0] && !migrationBodies[0].includes("run_hvut_config_settings_migration($config, $price, HVUT_WORLD, { dropEquipmentShopAutoProtect: true, cleanShrineLog: true });")) {
+  violations.push(`${target} persistent config migration must pass persistent-only cleanup options`);
+}
+if (migrationBodies[1] && !migrationBodies[1].includes("run_hvut_config_settings_migration($config, $price, HVUT_WORLD, {});")) {
+  violations.push(`${target} Isekai config migration must not inherit persistent-only cleanup options`);
+}
 
 for (const required of [
   "var create_hvut_config_init_entry = function (defaultSettings, context) {",
@@ -97,13 +103,8 @@ for (const required of [
 
 for (const [index, body] of migrationBodies.entries()) {
   for (const part of [
-    "const legacyMigration = run_hvut_config_legacy_migration($config, $price, HVUT_WORLD);",
-    "if (legacyMigration.kind === 'rejected') return false;",
-    "const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);",
-    "if (!normalizedSettings) return false;",
-    "$config.settings = normalizedSettings;",
-    "if ($config.save() === false) return false;",
-    "return true;",
+    "const migration = run_hvut_config_settings_migration($config, $price, HVUT_WORLD",
+    "return migration.kind === 'accepted';",
   ]) {
     requirePart(`config migration[${index}]`, body, part);
   }
@@ -114,6 +115,10 @@ for (const [index, body] of migrationBodies.entries()) {
     "const ml_log = $config.ls_get('ml_log');",
     "const ls_list = get_hvut_config_carry_keys(IS_ISEKAI);",
     "for (let i = localStorage.length - 1; i >= 0; i--)",
+    "const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);",
+    "if (!normalizedSettings) return false;",
+    "if ($config.save() === false) return false;",
+    "if (!$config.set('ss_log', ss_log)) return false;",
   ]) {
     if (body.includes(forbidden)) {
       violations.push(`${target} config migration[${index}] must delegate legacy carry flow: ${forbidden}`);
@@ -189,6 +194,16 @@ for (const required of [
   "if (!config.set(key, value)) return reject_hvut_config_legacy_migration('legacyCarryKeyWriteFailed'",
   "if (!config.ls_del(key.slice(config.prefix.length))) return reject_hvut_config_legacy_migration('legacyStorageKeyDeleteFailed'",
   "return { kind: 'accepted' };",
+  "var run_hvut_config_settings_migration = function (config, price, context, options) {",
+  "var legacyMigration = run_hvut_config_legacy_migration(config, price, context);",
+  "if (legacyMigration.kind === 'rejected') return legacyMigration;",
+  "if (options?.dropEquipmentShopAutoProtect && config.settings.version < 4.2) {",
+  "if (options?.cleanShrineLog) {",
+  "if (!config.set('ss_log', ss_log)) return reject_hvut_config_legacy_migration('settingsMigrationShrineLogWriteFailed'",
+  "const normalizedSettings = normalize_hvut_config_settings(config.settings, config.default);",
+  "if (!normalizedSettings) return reject_hvut_config_legacy_migration('settingsMigrationNormalizeFailed'",
+  "config.settings = normalizedSettings;",
+  "if (config.save() === false) return reject_hvut_config_legacy_migration('settingsMigrationSaveFailed'",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep shared legacy config migration step: ${required}`);

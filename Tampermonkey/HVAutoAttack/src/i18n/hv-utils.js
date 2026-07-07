@@ -283,6 +283,25 @@ try {
     }
     return { kind: 'accepted' };
   };
+  var run_hvut_config_settings_migration = function (config, price, context, options) {
+    var legacyMigration = run_hvut_config_legacy_migration(config, price, context);
+    if (legacyMigration.kind === 'rejected') return legacyMigration;
+    if (options?.dropEquipmentShopAutoProtect && config.settings.version < 4.2) {
+      delete config.settings.equipmentShopAutoProtect;
+    }
+    if (options?.cleanShrineLog) {
+      const ss_log = config.get('ss_log', {});
+      Object.values(ss_log).forEach((list) => {
+        delete list['1x'];
+      });
+      if (!config.set('ss_log', ss_log)) return reject_hvut_config_legacy_migration('settingsMigrationShrineLogWriteFailed', { isIsekai: !!context?.isIsekai });
+    }
+    const normalizedSettings = normalize_hvut_config_settings(config.settings, config.default);
+    if (!normalizedSettings) return reject_hvut_config_legacy_migration('settingsMigrationNormalizeFailed', { isIsekai: !!context?.isIsekai });
+    config.settings = normalizedSettings;
+    if (config.save() === false) return reject_hvut_config_legacy_migration('settingsMigrationSaveFailed', { isIsekai: !!context?.isIsekai });
+    return { kind: 'accepted' };
+  };
   var render_hvut_config_field_row = function (config, field, context) {
     var segment = create_hvut_config_segment_context(context);
     field.node = {};
@@ -5765,25 +5784,8 @@ const $config = {
   },
   init: create_hvut_config_init_entry(settings, HVUT_WORLD),
   migration: function () {
-    const legacyMigration = run_hvut_config_legacy_migration($config, $price, HVUT_WORLD);
-    if (legacyMigration.kind === 'rejected') return false;
-
-    if ($config.settings.version < 4.2) {
-      delete $config.settings.equipmentShopAutoProtect;
-    }
-
-    const ss_log = $config.get('ss_log', {});
-    Object.values(ss_log).forEach((list) => {
-      delete list['1x'];
-    });
-    if (!$config.set('ss_log', ss_log)) return false;
-
-    const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);
-    if (!normalizedSettings) return false;
-    $config.settings = normalizedSettings;
-
-    if ($config.save() === false) return false;
-    return true;
+    const migration = run_hvut_config_settings_migration($config, $price, HVUT_WORLD, { dropEquipmentShopAutoProtect: true, cleanShrineLog: true });
+    return migration.kind === 'accepted';
   },
   // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
   create: function () {
@@ -11573,15 +11575,8 @@ const $config = {
   },
   init: create_hvut_config_init_entry(settings, { ...HVUT_WORLD, assignSeason: true }),
   migration: function () {
-    const legacyMigration = run_hvut_config_legacy_migration($config, $price, HVUT_WORLD);
-    if (legacyMigration.kind === 'rejected') return false;
-
-    const normalizedSettings = normalize_hvut_config_settings($config.settings, $config.default);
-    if (!normalizedSettings) return false;
-    $config.settings = normalizedSettings;
-
-    if ($config.save() === false) return false;
-    return true;
+    const migration = run_hvut_config_settings_migration($config, $price, HVUT_WORLD, {});
+    return migration.kind === 'accepted';
   },
   // reset/get/set/del/ls_get/ls_set/ls_del: 收口 bindConfig(L1)
   create: function () {
