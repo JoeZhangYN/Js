@@ -1070,6 +1070,10 @@ try {
     var evidence = create_hvut_character_parse_evidence(reason, detail);
     return { kind: 'rejected', reason: reason, evidence: evidence };
   };
+  var reject_hvut_difficulty_refresh = function (reason, detail) {
+    var evidence = create_hvut_character_parse_evidence(reason, detail);
+    return { kind: 'rejected', reason: reason, evidence: evidence };
+  };
   var record_hvut_armory_submit_failure = function (stage, detail) {
     var evidence = { capability: 'hvutArmorySubmit', stage: stage, detail: detail || {} };
     try {
@@ -3097,26 +3101,43 @@ const bindDfct = function (dfct, ctx) {
     } });
     dfct.selector.value = dfct.list.indexOf(ctx.player.difficulty) + 1;
   };
-  dfct.change = async function (value) {
+  dfct.change_outcome = async function (value) {
     dfct.node.button.textContent = '(D1...)';
-    let html = await $ajax.fetch('?s=Character&ss=se');
+    let html;
+    try {
+      html = await $ajax.fetch('?s=Character&ss=se');
+    } catch (error) {
+      return reject_hvut_difficulty_refresh('difficultySettingsPageFetchFailed', { message: String(error?.message || error) });
+    }
     let doc = $doc(html);
     dfct.node.button.textContent = '(D2...)';
-    const data = new FormData($qs('#settings_outer form', doc));
+    const form = $qs('#settings_outer form', doc);
+    if (!form) {
+      return reject_hvut_difficulty_refresh('difficultySettingsFormMissing', {});
+    }
+    const data = new FormData(form);
     data.set('difflevel', value);
     data.set('submit', 'Apply Changes');
-    html = await $ajax.fetch('?s=Character&ss=se', data, 'FORM');
+    try {
+      html = await $ajax.fetch('?s=Character&ss=se', data, 'FORM');
+    } catch (error) {
+      return reject_hvut_difficulty_refresh('difficultyApplyFetchFailed', { message: String(error?.message || error) });
+    }
     doc = $doc(html);
-    return dfct.set_button(doc);
+    return dfct.set_button_outcome(doc);
   };
-  dfct.set_button = function (doc) {
+  dfct.change = async function (value) {
+    const outcome = await dfct.change_outcome(value);
+    return outcome.kind === 'accepted';
+  };
+  dfct.set_button_outcome = function (doc) {
     const value = parse_hvut_difficulty_from_level_readout(doc, 'difficultyLevelReadout');
     if (value === null) {
       dfct.node.button.textContent = '(属性日: 错误)';
       if (dfct.selector) {
         dfct.selector.disabled = false;
       }
-      return false;
+      return reject_hvut_difficulty_refresh('difficultyLevelReadoutRejected', {});
     }
     ctx.player.difficulty = value;
     dfct.node.button.textContent = value;
@@ -3129,9 +3150,13 @@ const bindDfct = function (dfct, ctx) {
     const write = write_hvut_character_config_value(ctx, 'ch_style', ch_style, 'difficultyCharacterStyleWrite');
     if (write.kind === 'rejected') {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
+      return { kind: 'rejected', reason: 'difficultyCharacterStyleWriteRejected', evidence: write.evidence };
     }
-    return true;
+    return { kind: 'accepted', value: value };
+  };
+  dfct.set_button = function (doc) {
+    const outcome = dfct.set_button_outcome(doc);
+    return outcome.kind === 'accepted';
   };
 };
 
@@ -3268,9 +3293,8 @@ const bindPersona = function (persona, ctx) {
     }
     const equipOutcome = await persona.change_e_outcome();
     if (equipOutcome.kind === 'rejected') return equipOutcome;
-    if (ctx.dfct.set_button(doc) === false) {
-      return reject_hvut_persona_sync('personaDifficultyRefreshRejected', {});
-    }
+    const difficultyOutcome = ctx.dfct.set_button_outcome(doc);
+    if (difficultyOutcome.kind === 'rejected') return difficultyOutcome;
     return { kind: 'accepted' };
   };
   persona.change_p = async function (pset) {

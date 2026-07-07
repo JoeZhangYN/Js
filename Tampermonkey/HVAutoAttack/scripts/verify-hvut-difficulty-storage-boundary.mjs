@@ -20,20 +20,28 @@ function requireParts(label, value, parts) {
 
 const bindDfct = body(/const bindDfct = function \(dfct, ctx\) \{[\s\S]*?\n\};\n\n\/\/ \$persona/, "bindDfct");
 const init = body(/dfct\.init = function \(\) \{[\s\S]*?\n  \};\n  dfct\.create/, "dfct.init");
-const change = body(/dfct\.change = async function \(value\) \{[\s\S]*?\n  \};\n  dfct\.set_button/, "dfct.change");
+const changeOutcome = body(
+  /dfct\.change_outcome = async function \(value\) \{[\s\S]*?\n  \};\n  dfct\.change/,
+  "dfct.change_outcome",
+);
+const change = body(/dfct\.change = async function \(value\) \{[\s\S]*?\n  \};\n  dfct\.set_button_outcome/, "dfct.change");
+const setButtonOutcome = body(
+  /dfct\.set_button_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  dfct\.set_button/,
+  "dfct.set_button_outcome",
+);
 const setButton = body(/dfct\.set_button = function \(doc\) \{[\s\S]*?\n  \};\n\};\n\n\/\/ \$persona/, "dfct.set_button");
 
 for (const [label, value] of [
   ["dfct.init", init],
-  ["dfct.set_button", setButton],
+  ["dfct.set_button_outcome", setButtonOutcome],
 ]) {
   requireParts(label, value, [
     "const write = write_hvut_character_config_value(ctx, 'ch_style', ch_style, 'difficultyCharacterStyleWrite');",
     "if (write.kind === 'rejected') {",
     "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
-    "return false;",
   ]);
 }
+requireParts("dfct.init", init, ["return false;"]);
 
 requireParts("character config writer", text, [
   "const write_hvut_character_config_value = function (ctx, key, value, stage) {",
@@ -47,14 +55,32 @@ requireParts("dfct.init", init, [
   "dfct.node.div.addEventListener('mouseenter', dfct.create);",
   "return true;",
 ]);
-requireParts("dfct.change", change, ["return dfct.set_button(doc);"]);
-requireParts("dfct.set_button", setButton, ["return true;"]);
+requireParts("dfct.change_outcome", changeOutcome, [
+  "return reject_hvut_difficulty_refresh('difficultySettingsPageFetchFailed', { message: String(error?.message || error) });",
+  "return reject_hvut_difficulty_refresh('difficultySettingsFormMissing', {});",
+  "return reject_hvut_difficulty_refresh('difficultyApplyFetchFailed', { message: String(error?.message || error) });",
+  "return dfct.set_button_outcome(doc);",
+]);
+requireParts("dfct.change", change, [
+  "const outcome = await dfct.change_outcome(value);",
+  "return outcome.kind === 'accepted';",
+]);
+requireParts("dfct.set_button_outcome", setButtonOutcome, [
+  "return reject_hvut_difficulty_refresh('difficultyLevelReadoutRejected', {});",
+  "return { kind: 'rejected', reason: 'difficultyCharacterStyleWriteRejected', evidence: write.evidence };",
+  "return { kind: 'accepted', value: value };",
+]);
+requireParts("dfct.set_button", setButton, [
+  "const outcome = dfct.set_button_outcome(doc);",
+  "return outcome.kind === 'accepted';",
+]);
 
 for (const forbidden of [
   "ctx.config.set('ch_style', ch_style);\n    }\n    dfct.node.div.addEventListener",
   "ctx.config.set('ch_style', ch_style);\n  };",
   "if (!ctx.config.set('ch_style', ch_style)) {",
   "    dfct.set_button(doc);\n  };",
+  "return dfct.set_button(doc);",
 ]) {
   if (bindDfct.includes(forbidden)) {
     violations.push(`${target} bindDfct must not ignore difficulty cache persistence: ${forbidden}`);

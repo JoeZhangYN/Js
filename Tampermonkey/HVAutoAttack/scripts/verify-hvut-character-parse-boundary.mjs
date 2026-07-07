@@ -16,6 +16,8 @@ const helperRegion =
   /var create_hvut_character_parse_evidence = function \(stage, detail\) \{[\s\S]*?\n  var parse_hvut_inventory_capacity/.exec(
     text,
   )?.[0] || "";
+const dfctSetButtonOutcome =
+  /dfct\.set_button_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  dfct\.set_button/.exec(text)?.[0] || "";
 const dfctSetButton = /dfct\.set_button = function \(doc\) \{[\s\S]*?\n  \};\n\};\n\n\/\/ \$persona/.exec(text)?.[0] || "";
 const personaInit = /persona\.init = function \(\) \{[\s\S]*?\n  \};\n  persona\.create/.exec(text)?.[0] || "";
 const personaCheckP = /persona\.check_p = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_e/.exec(text)?.[0] || "";
@@ -31,6 +33,7 @@ const equipCharmAppend = /_eq\.charm_append = function \(eq\) \{[\s\S]*?\n  \};\
 
 for (const [label, body] of [
   ["character parse helper", helperRegion],
+  ["dfct.set_button_outcome", dfctSetButtonOutcome],
   ["dfct.set_button", dfctSetButton],
   ["persona.init", personaInit],
   ["persona.check_p", personaCheckP],
@@ -53,6 +56,7 @@ for (const required of [
   "create_hvut_character_parse_evidence(stage, detail);",
   "var reject_hvut_persona_sync = function (reason, detail) {",
   "return { kind: 'rejected', reason: reason, evidence: evidence };",
+  "var reject_hvut_difficulty_refresh = function (reason, detail) {",
   "var parse_hvut_difficulty_from_level_readout = function (doc, stage) {",
   "return match ? match[1] : record_hvut_character_parse_failure(stage, { text: text });",
   "var parse_hvut_persona_form_state = function (doc, stage) {",
@@ -71,10 +75,16 @@ for (const required of [
   requirePart("character parse helper", helperRegion, required);
 }
 
-requirePart("dfct.set_button", dfctSetButton, "const value = parse_hvut_difficulty_from_level_readout(doc, 'difficultyLevelReadout');");
-requirePart("dfct.set_button", dfctSetButton, "if (value === null) {");
-requirePart("dfct.set_button", dfctSetButton, "if (dfct.selector) {\n        dfct.selector.disabled = false;");
-requirePart("dfct.set_button", dfctSetButton, "return false;");
+requirePart(
+  "dfct.set_button_outcome",
+  dfctSetButtonOutcome,
+  "const value = parse_hvut_difficulty_from_level_readout(doc, 'difficultyLevelReadout');",
+);
+requirePart("dfct.set_button_outcome", dfctSetButtonOutcome, "if (value === null) {");
+requirePart("dfct.set_button_outcome", dfctSetButtonOutcome, "if (dfct.selector) {\n        dfct.selector.disabled = false;");
+requirePart("dfct.set_button_outcome", dfctSetButtonOutcome, "return reject_hvut_difficulty_refresh('difficultyLevelReadoutRejected', {});");
+requirePart("dfct.set_button", dfctSetButton, "const outcome = dfct.set_button_outcome(doc);");
+requirePart("dfct.set_button", dfctSetButton, "return outcome.kind === 'accepted';");
 
 requirePart("persona.init", personaInit, "const personaCheck = persona.check_p();");
 requirePart("persona.init", personaInit, "if (personaCheck === null) {\n        return false;");
@@ -93,8 +103,8 @@ requirePart(
 requirePart("persona.change_p_outcome", personaChangePOutcome, "return reject_hvut_persona_sync('personaFormStateRejected', {});");
 requirePart("persona.change_p_outcome", personaChangePOutcome, "const equipOutcome = await persona.change_e_outcome();");
 requirePart("persona.change_p_outcome", personaChangePOutcome, "if (equipOutcome.kind === 'rejected') return equipOutcome;");
-requirePart("persona.change_p_outcome", personaChangePOutcome, "if (ctx.dfct.set_button(doc) === false) {");
-requirePart("persona.change_p_outcome", personaChangePOutcome, "return reject_hvut_persona_sync('personaDifficultyRefreshRejected', {});");
+requirePart("persona.change_p_outcome", personaChangePOutcome, "const difficultyOutcome = ctx.dfct.set_button_outcome(doc);");
+requirePart("persona.change_p_outcome", personaChangePOutcome, "if (difficultyOutcome.kind === 'rejected') return difficultyOutcome;");
 requirePart("persona.change_p_outcome", personaChangePOutcome, "return { kind: 'accepted' };");
 requirePart("persona.change_p", personaChangeP, "const outcome = await persona.change_p_outcome(pset);");
 requirePart("persona.change_p", personaChangeP, "return outcome.kind === 'accepted';");
@@ -139,6 +149,8 @@ for (const forbidden of [
   "persona.check_e(doc);\n    const json = persona.json;",
   "if ((await persona.change_e()) === false) return false;",
   "if (loadOutcome.kind === 'rejected') return false;",
+  "if (ctx.dfct.set_button(doc) === false)",
+  "return reject_hvut_persona_sync('personaDifficultyRefreshRejected', {});",
   "ctx.dfct.set_button(doc);\n  };",
   "doc.querySelector('.showequip').children[2]",
   "doc.querySelector('.eq').appendChild(div)",
