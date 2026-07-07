@@ -29,6 +29,7 @@ import {
 import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
+import { BATTLE_ROUND_TYPE_OPTIONS } from "../data/battle-round-types.js";
 import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
 import { CHANNEL_FALLBACK_ORDER_OPTIONS } from "../data/channel-fallback-order.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
@@ -346,6 +347,20 @@ export function renderIdleArenaLevelCheckboxes(grindFestInput = "") {
       return rows;
     }, [])
     .join("<br>");
+}
+
+export function renderBattleRoundTypeCheckboxes(prefix) {
+  return BATTLE_ROUND_TYPE_OPTIONS.map(
+    ({ code, label }) =>
+      `<input id="${prefix}_${code}" type="checkbox"><label for="${prefix}_${code}">${label}</label>`
+  ).join("");
+}
+
+export function renderBattleRoundTypeSelectOptions({ includeBlank = false } = {}) {
+  const blankOption = includeBlank ? "<option></option>" : "";
+  return `${blankOption}${BATTLE_ROUND_TYPE_OPTIONS.map(
+    ({ code, label }) => `<option value="${code}">${label}</option>`
+  ).join("")}`;
 }
 
 function renderDropMonitorSchemaFields() {
@@ -980,7 +995,7 @@ export function optionBox() {
     "</div>",
     '<div class="hvAATab" id="hvAATab-Scroll">',
     "  <l0>战役模式</l0><l1>戰役模式</l1><l2>Battle type</l2>: ",
-    '  <input id="scrollRoundType_ar" type="checkbox"><label for="scrollRoundType_ar">The Arena</label><input id="scrollRoundType_rb" type="checkbox"><label for="scrollRoundType_rb">Ring of Blood</label><input id="scrollRoundType_gr" type="checkbox"><label for="scrollRoundType_gr">GrindFest</label><input id="scrollRoundType_iw" type="checkbox"><label for="scrollRoundType_iw">Item World</label><input id="scrollRoundType_ba" type="checkbox"><label for="scrollRoundType_ba">Encounter</label><input id="scrollRoundType_tw" type="checkbox"><label for="scrollRoundType_tw">The Tower</label>{{scrollCondition}}',
+    `  ${renderBattleRoundTypeCheckboxes("scrollRoundType")}{{scrollCondition}}`,
     '  <input id="scrollFirst" type="checkbox"><label for="scrollFirst"><l0>存在技能生成的Buff时，仍然使用卷轴</l0><l1>存在技能生成的Buff時，仍然使用捲軸</l1><l2>Use Scrolls even when there are effects from spells</l2>.</label>',
     '  <div><input id="scroll_Go" type="checkbox"><label for="scroll_Go">Scroll of the Gods</label>{{scrollGoCondition}}</div>',
     '  <div><input id="scroll_Av" type="checkbox"><label for="scroll_Av">Scroll of the Avatar</label>{{scrollAvCondition}}</div>',
@@ -1020,7 +1035,7 @@ export function optionBox() {
     '<div class="hvAATab hvAACenter" id="hvAATab-About">',
     '  <div><span class="hvAATitle"><l0>当前状况</l0><l1>當前狀況</l1><l2>Current status</l2></span>: ',
     '    <l0>如果脚本长期暂停且网络无问题，请点击</l0><l1>如果腳本長期暫停且網絡無問題，請點擊</l1><l2>If the script does not work and you are sure that it\'s not because of your internet, click</l2><button class="hvAAFix"><l0>尝试修复</l0><l1>嘗試修復</l1><l2>Try to fix</l2></button><br>',
-    '    <l0>战役模式</l0><l1>戰役模式</l1><l2>Battle type</l2>: <select class="hvAADebug" name="roundType"><option></option><option value="ar">The Arena</option><option value="rb">Ring of Blood</option><option value="gr">GrindFest</option><option value="iw">Item World</option><option value="ba">Encounter</option><option value="tw">The Tower</option></select> <l0>当前回合</l0><l1>當前回合</l1><l2>Current round</l2>: <input name="roundNow" class="hvAADebug hvAANumber" placeholder="1" type="text"> <l0>总回合</l0><l1>總回合</l1><l2>Total rounds</l2>: <input name="roundAll" class="hvAADebug hvAANumber" placeholder="1" type="text"></div>',
+    `    <l0>战役模式</l0><l1>戰役模式</l1><l2>Battle type</l2>: <select class="hvAADebug" name="roundType">${renderBattleRoundTypeSelectOptions({ includeBlank: true })}</select> <l0>当前回合</l0><l1>當前回合</l1><l2>Current round</l2>: <input name="roundNow" class="hvAADebug hvAANumber" placeholder="1" type="text"> <l0>总回合</l0><l1>總回合</l1><l2>Total rounds</l2>: <input name="roundAll" class="hvAADebug hvAANumber" placeholder="1" type="text"></div>`,
     '  <div class="hvAAQuickSite"><span class="hvAATitle"><l0>快捷站点</l0><l1>快捷站點</l1><l2>Quick Site</l2></span><button class="quickSiteAdd"><l01>新增</l01><l2>Add</l2></button><br>',
     '    <l0>注意: 留空“姓名”一栏则表示删除该行，修改后请保存</l0><l1>注意: 留空“姓名”一欄則表示刪除該行，修改後請保存</l1><l2>Note: The "name" input box left blank will be deleted, after change please save in time.</l2>',
     '    <table><tbody><tr class="hvAATh"><td><l0>图标</l0><l1>圖標</l1><l2>ICON</l2></td><td><l0>名称</l0><l1>名稱</l1><l2>Name</l2></td><td><l0>链接</l0><l1>鏈接</l1><l2>Link</l2></td></tr></tbody></table></div>',

@@ -4,6 +4,8 @@ import {
   readCustomizeHoverTarget,
   readSelectableReportTableTarget,
   readSingleOrderItemName,
+  renderBattleRoundTypeCheckboxes,
+  renderBattleRoundTypeSelectOptions,
   renderIdleArenaLevelCheckboxes,
   renderItemOrderCheckboxes,
   renderBuffSkillCheckboxes,
@@ -121,5 +123,25 @@ describe("renderIdleArenaLevelCheckboxes", () => {
     expect(html).toContain('id="arLevel_RB250" value="RB250,112"');
     expect(html).toContain('id="arLevel_GF" value="GF,gr"');
     expect(html).toContain('name="idleArenaGrTime"');
+  });
+});
+
+describe("renderBattleRoundType controls", () => {
+  it("derives scroll round type checkboxes from the battle round type identity", () => {
+    const html = renderBattleRoundTypeCheckboxes("scrollRoundType");
+
+    expect(html).toContain('id="scrollRoundType_ar"');
+    expect(html).toContain('for="scrollRoundType_rb">Ring of Blood</label>');
+    expect(html).toContain('id="scrollRoundType_tw"');
+    expect(html).not.toContain("arLevel_");
+  });
+
+  it("derives debug round type select options from the same battle round type identity", () => {
+    const html = renderBattleRoundTypeSelectOptions({ includeBlank: true });
+
+    expect(html.startsWith("<option></option>")).toBe(true);
+    expect(html).toContain('<option value="ar">The Arena</option>');
+    expect(html).toContain('<option value="ba">Encounter</option>');
+    expect(html).toContain('<option value="tw">The Tower</option>');
   });
 });
