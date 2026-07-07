@@ -108,18 +108,18 @@ try {
       showTextareaDefaultButton: !!context?.showTextareaDefaultButton,
     };
   };
-  var get_hvut_config_carry_keys = function (isIsekai) {
+  var get_hvut_config_carry_keys = function (segment) {
     if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.carryKeys) {
-      return window.HVAA_hvutConfigMigration.carryKeys({ isIsekai: !!isIsekai });
+      return window.HVAA_hvutConfigMigration.carryKeys(segment);
     }
-    record_hvut_config_parse_failure('configCarryKeysBridgeMissing', { isIsekai: !!isIsekai });
+    record_hvut_config_parse_failure('configCarryKeysBridgeMissing', segment || {});
     return null;
   };
-  var get_hvut_config_namespace = function (isIsekai) {
+  var get_hvut_config_namespace = function (segment) {
     if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.namespace) {
-      return window.HVAA_hvutConfigMigration.namespace({ isIsekai: !!isIsekai });
+      return window.HVAA_hvutConfigMigration.namespace(segment);
     }
-    record_hvut_config_parse_failure('configNamespaceBridgeMissing', { isIsekai: !!isIsekai });
+    record_hvut_config_parse_failure('configNamespaceBridgeMissing', segment || {});
     return null;
   };
   var build_hvut_legacy_equipdata = function (inEquipdata, inJson) {
@@ -191,7 +191,7 @@ try {
     if (segment.assignSeason) {
       config.season = segment.season;
     }
-    const namespace = get_hvut_config_namespace(isIsekai);
+    const namespace = get_hvut_config_namespace(segment);
     if (!namespace) {
       alert(isIsekai ? 'An error has occurred.' : '发生了一个错误.');
       return false;
@@ -218,7 +218,8 @@ try {
     return { kind: 'rejected', reason: reason, evidence: evidence };
   };
   var run_hvut_config_legacy_migration = function (config, price, context) {
-    var isIsekai = !!context?.isIsekai;
+    var segment = create_hvut_config_segment_context(context);
+    var isIsekai = segment.isIsekai;
     if (config.settings.version) return { kind: 'accepted' };
     config.reset();
     const in_equipdata = config.ls_get('in_equipdata');
@@ -266,7 +267,7 @@ try {
       if (!config.ls_del('ml_log')) return reject_hvut_config_legacy_migration('legacyMonsterLabLogDeleteFailed', { isIsekai: isIsekai });
     }
 
-    const ls_list = get_hvut_config_carry_keys(isIsekai);
+    const ls_list = get_hvut_config_carry_keys(segment);
     if (!ls_list) return reject_hvut_config_legacy_migration('legacyCarryKeysMissing', { isIsekai: isIsekai });
     for (const key of ls_list) {
       const value = config.ls_get(key);
