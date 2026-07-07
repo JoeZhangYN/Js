@@ -2464,8 +2464,20 @@ const bindTr = function (tr, ctx) {
 //   start(): 过期警示统一 .hvut-warn class(主世界原 inline style color 弃; .hvut-warn 已两版归一)
 // ctx 注入: config = IIFE-private $config(GM 命名空间载体); top 用 getter(规避 _top 声明在 $re 之后的 TDZ)。
 const bindRe = function (re, ctx) {
-  const encounterEvent = () => window.HVAA_encounter?.Event || {};
-  const runEncounter = (event) => window.HVAA_encounter?.run(event);
+  const run_hvut_encounter_bridge = function (eventName, event) {
+    const bridge = typeof window !== 'undefined' ? window.HVAA_encounter : undefined;
+    const type = bridge?.Event?.[eventName];
+    if (!bridge || typeof bridge.run !== 'function' || !type) {
+      record_hvut_random_encounter_failure('widgetEncounterBridgeMissing', { eventName });
+      return undefined;
+    }
+    try {
+      return bridge.run({ ...event, type });
+    } catch (error) {
+      record_hvut_random_encounter_failure('widgetEncounterBridgeFailed', { eventName, error: error?.message || String(error) });
+      return undefined;
+    }
+  };
   const applyEncounterState = function (outcome) {
     if (!outcome?.state) {
       return true;
@@ -2489,7 +2501,7 @@ const bindRe = function (re, ctx) {
     if (re.init() === false) return false;
     re.button = button;
     re.button.addEventListener('click', (e) => { re.run(e.ctrlKey || e.shiftKey); });
-    const dayState = runEncounter({ type: encounterEvent().WIDGET_TICK, state: re.json });
+    const dayState = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json });
     if (applyEncounterState(dayState) === false) return false;
     if (re.json.date === 0) re.load();
     re.start();
@@ -2529,7 +2541,7 @@ const bindRe = function (re, ctx) {
     const link = $qs('#eventpane a');
     const onclick = link?.getAttribute('onclick');
     if (onclick) {
-      const linkState = runEncounter({ type: encounterEvent().WIDGET_LINK_FOUND, state: re.json, search: onclick });
+      const linkState = run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, search: onclick });
       if (linkState?.state?.key) {
         if (applyEncounterState(linkState) === false) return false;
         if (ctx.config.settings.reGalleryAlt) {
@@ -2546,21 +2558,21 @@ const bindRe = function (re, ctx) {
   };
   re.get = function () {
     re.json = ctx.config.get('re', { date: 0, key: '', count: 0, clear: true }, 'hvut_');
-    return applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_TICK, state: re.json }));
+    return applyEncounterState(run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json }));
   };
   re.set = function (key) {
-    return applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_LINK_FOUND, state: re.json, key }));
+    return applyEncounterState(run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, key }));
   };
   re.reset = function () {
-    if (applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_RESET_DAY })) === false) return false;
+    if (applyEncounterState(run_hvut_encounter_bridge('WIDGET_RESET_DAY')) === false) return false;
     re.start();
     return true;
   };
   re.check = function () {
-    return applyEncounterState(runEncounter({ type: encounterEvent().WIDGET_STARTED_ENCOUNTER, state: re.json, search: location.search }));
+    return applyEncounterState(run_hvut_encounter_bridge('WIDGET_STARTED_ENCOUNTER', { state: re.json, search: location.search }));
   };
   re.refresh = function () {
-    const readiness = runEncounter({ type: encounterEvent().WIDGET_TICK, state: re.json }) ?? { state: re.json, remainingMs: 0 };
+    const readiness = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json }) ?? { state: re.json, remainingMs: 0 };
     if (applyEncounterState(readiness) === false) return false;
     if (readiness.status === 'countdown') {
       re.button.textContent = time_format(readiness.remainingMs, 2) + ` [${readiness.count}]`;
@@ -2573,7 +2585,7 @@ const bindRe = function (re, ctx) {
         play_beep(...ctx.config.settings.reBeep);
       }
       re.stop();
-      const outcome = runEncounter({ type: encounterEvent().WIDGET_TIMER_ELAPSED, state: re.json, pageType: re.type, lastAttemptKey: re.readyAttemptKey, galleryAlt: ctx.config.settings.reGalleryAlt });
+      const outcome = run_hvut_encounter_bridge('WIDGET_TIMER_ELAPSED', { state: re.json, pageType: re.type, lastAttemptKey: re.readyAttemptKey, galleryAlt: ctx.config.settings.reGalleryAlt });
       if (applyEncounterState(outcome) === false) return false;
       if (outcome?.attemptKey) re.readyAttemptKey = outcome.attemptKey;
       if (outcome?.handled) return;
@@ -2583,12 +2595,12 @@ const bindRe = function (re, ctx) {
   };
   re.run = async function (engage) {
     if (re.type === 'ba') {
-      const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage });
+      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, force: engage });
       if (applyEncounterState(outcome) === false) return false;
       if (outcome?.handled) return;
       return re.load();
     } else if (re.type === 'hv') {
-      const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage });
+      const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, force: engage });
       if (applyEncounterState(outcome) === false) return false;
       if (outcome?.handled) return;
       return re.load(true, outcome.href);
@@ -2604,7 +2616,7 @@ const bindRe = function (re, ctx) {
         return false;
       }
       if (html.includes('<div id="navbar">')) {
-        const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage, hvAvailable: true });
+        const outcome = run_hvut_encounter_bridge('WIDGET_CLICKED', { state: re.json, pageType: re.type, force: engage, hvAvailable: true });
         if (applyEncounterState(outcome) === false) return false;
         if (outcome?.handled) return;
         return re.load(true, outcome.href);
@@ -2627,7 +2639,7 @@ const bindRe = function (re, ctx) {
     }
     const doc = $doc(html);
     const eventpane = $id('eventpane', doc)?.innerHTML;
-    const outcome = runEncounter({ type: encounterEvent().WIDGET_NEWS_LOADED, state: re.json, eventpane, engage, pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
+    const outcome = run_hvut_encounter_bridge('WIDGET_NEWS_LOADED', { state: re.json, eventpane, engage, pageType: re.type, galleryAlt: ctx.config.settings.reGalleryAlt });
     if (applyEncounterState(outcome) === false) return false;
     if (outcome?.handled) {
       return;

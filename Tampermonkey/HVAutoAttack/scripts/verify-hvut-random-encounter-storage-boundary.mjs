@@ -20,6 +20,7 @@ function requireParts(label, value, parts) {
 }
 
 const bindRe = body(/const bindRe = function \(re, ctx\) \{[\s\S]*?\n\};\n\n\/\/ \$price/, "bindRe");
+const encounterBridge = body(/const run_hvut_encounter_bridge = function \(eventName, event\) \{[\s\S]*?\n  \};\n  const applyEncounterState/, "run_hvut_encounter_bridge");
 const applyState = body(/const applyEncounterState = function \(outcome\) \{[\s\S]*?\n  \};\n  re\.init/, "applyEncounterState");
 const init = body(/re\.init = function \(\) \{[\s\S]*?\n  \};\n  re\.clock/, "re.init");
 const clock = body(/re\.clock = function \(button\) \{[\s\S]*?\n  \};\n  re\.hv/, "re.clock");
@@ -37,9 +38,19 @@ requireParts("applyEncounterState", applyState, [
   "return true;",
 ]);
 
+requireParts("run_hvut_encounter_bridge", encounterBridge, [
+  "const bridge = typeof window !== 'undefined' ? window.HVAA_encounter : undefined",
+  "const type = bridge?.Event?.[eventName]",
+  "record_hvut_random_encounter_failure('widgetEncounterBridgeMissing', { eventName })",
+  "return bridge.run({ ...event, type })",
+  "record_hvut_random_encounter_failure('widgetEncounterBridgeFailed'",
+  "return undefined",
+]);
+
 requireParts("re.init", init, ["return re.get();"]);
 requireParts("re.clock", clock, [
   "if (re.init() === false) return false;",
+  "const dayState = run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json });",
   "if (applyEncounterState(dayState) === false) return false;",
   "return true;",
 ]);
@@ -56,6 +67,7 @@ requireParts("re.ba", ba, [
 ]);
 requireParts("re.eh", eh, [
   "if (re.init() === false) return false;",
+  "const linkState = run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, search: onclick });",
   "if (applyEncounterState(linkState) === false) return false;",
   "return re.clock(button);",
   "return true;",
@@ -77,6 +89,16 @@ requireParts("re.load", load, [
   "return true;",
 ]);
 
+requireParts("bindRe encounter bridge calls", bindRe, [
+  "run_hvut_encounter_bridge('WIDGET_TICK', { state: re.json })",
+  "run_hvut_encounter_bridge('WIDGET_LINK_FOUND', { state: re.json, key })",
+  "run_hvut_encounter_bridge('WIDGET_RESET_DAY')",
+  "run_hvut_encounter_bridge('WIDGET_STARTED_ENCOUNTER', { state: re.json, search: location.search })",
+  "run_hvut_encounter_bridge('WIDGET_TIMER_ELAPSED'",
+  "run_hvut_encounter_bridge('WIDGET_CLICKED'",
+  "run_hvut_encounter_bridge('WIDGET_NEWS_LOADED'",
+]);
+
 requireParts("random encounter failure recorder", text, [
   "var record_hvut_random_encounter_failure = function (stage, detail) {",
   "capability: 'hvutRandomEncounter'",
@@ -96,6 +118,10 @@ for (const forbidden of [
   "re.get();\n    re.button.textContent = '加载中...';",
   "re.button.textContent = '检查中...';\n      const html = await $ajax.fetch('https://hentaiverse.org/');",
   "button.parentNode.parentNode",
+  "const encounterEvent = () => window.HVAA_encounter?.Event || {};",
+  "const runEncounter = (event) => window.HVAA_encounter?.run(event);",
+  "encounterEvent().",
+  "runEncounter({",
 ]) {
   if (bindRe.includes(forbidden)) {
     violations.push(`${target} bindRe must not ignore random encounter state persistence: ${forbidden}`);
