@@ -1154,6 +1154,32 @@ try {
     }
     return { kind: 'messages', messages: messages };
   };
+  var summarize_hvut_shrine_offer_messages = function (messages) {
+    var summary = { kind: 'accepted', vouchers: [], rewards: [], equips: [], qualities: [], sold: 0, salvaged: 0 };
+    for (var msg of messages) {
+      var offerMessage = classify_hvut_shrine_offer_message(msg);
+      if (offerMessage.kind === 'ignore') {
+        continue;
+      } else if (offerMessage.kind === 'voucher') {
+        summary.vouchers.push(offerMessage.message || msg);
+      } else if (offerMessage.kind === 'equip') {
+        summary.equips.push(offerMessage.reward);
+        summary.qualities.push(offerMessage.quality);
+      } else if (offerMessage.kind === 'reward') {
+        summary.rewards.push(offerMessage.reward);
+      } else if (offerMessage.kind === 'sold') {
+        summary.sold++;
+      } else if (offerMessage.kind === 'salvaged') {
+        summary.salvaged++;
+      } else {
+        if (offerMessage.reason === 'unknownShrineResponse') {
+          record_hvut_shrine_offer_failure('unknownOfferMessage', { message: offerMessage.message || msg });
+        }
+        return { kind: 'stop', reason: offerMessage.reason || 'unknownShrineResponse', message: offerMessage.message || msg };
+      }
+    }
+    return summary;
+  };
   var reloadCurrentPage = function (reason) {
     if (window.HVAA_navigation && window.HVAA_navigation.reloadCurrentPage) return window.HVAA_navigation.reloadCurrentPage(reason);
     record_hvut_navigation_bridge_failure('reloadBlocked', { reason: reason });
@@ -7509,39 +7535,25 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       const item = _ss.offer.items[iid];
       const list = [];
       const equips = [];
-      let offerStopped = false;
       const offerResponse = classify_hvut_shrine_offer_response(doc, 'offerEmptyResponse');
       if (offerResponse.kind === 'stop') {
         set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');
         return false;
       }
 
-      offerResponse.messages.forEach((msg) => {
-        const offerMessage = classify_hvut_shrine_offer_message(msg);
-        if (offerMessage.kind === 'ignore') {
-          return;
-        } else if (offerMessage.kind === 'voucher') {
-          popup(`<p style="color: #e00; font-weight: bold;">${msg}</p>`);
-        } else if (offerMessage.kind === 'equip') {
-          list.push(offerMessage.quality);
-          equips.push(msg);
-          _ss.equip.received++;
-        } else if (offerMessage.kind === 'reward') {
-          list.push(offerMessage.reward);
-        } else if (offerMessage.kind === 'sold') {
-          _ss.equip.sold++;
-        } else if (offerMessage.kind === 'salvaged') {
-          _ss.equip.salvaged++;
-        } else {
-          if (offerMessage.reason === 'unknownShrineResponse') {
-            record_hvut_shrine_offer_failure('unknownOfferMessage', { message: offerMessage.message || msg });
-          }
-          set_hvut_shrine_stop_error(_ss, offerMessage.message || msg);
-          offerStopped = true;
-        }
+      const offerSummary = summarize_hvut_shrine_offer_messages(offerResponse.messages);
+      if (offerSummary.kind === 'stop') {
+        set_hvut_shrine_stop_error(_ss, offerSummary.message);
+        return false;
+      }
+      offerSummary.vouchers.forEach((msg) => {
+        popup(`<p style="color: #e00; font-weight: bold;">${msg}</p>`);
       });
-
-      if (offerStopped) return false;
+      list.push(...offerSummary.qualities, ...offerSummary.rewards);
+      equips.push(...offerSummary.equips);
+      _ss.equip.received += offerSummary.equips.length;
+      _ss.equip.sold += offerSummary.sold;
+      _ss.equip.salvaged += offerSummary.salvaged;
       item.total++;
       item.node.total.textContent = `(${item.total}/${item.requests})`;
       list.forEach((reward) => {
@@ -13714,35 +13726,23 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     const doc = $doc(html);
     const results = item.results;
     const rewards = [];
-    let offerStopped = false;
     const offerResponse = classify_hvut_shrine_offer_response(doc, 'legacyOfferEmptyResponse');
     if (offerResponse.kind === 'stop') {
       set_hvut_shrine_stop_error(_ss, 'Shrine offer response unavailable.');
       return false;
     }
 
-    offerResponse.messages.forEach((msg) => {
-      const offerMessage = classify_hvut_shrine_offer_message(msg);
-      if (offerMessage.kind === 'ignore') {
-        return;
-      } else if (offerMessage.kind === 'voucher') { // 'Received 1x Peerless Voucher!'
-        popup(`<p style="color: #f00; font-weight: bold;">${msg}</p>`);
-      } else if (offerMessage.kind === 'sold') {
-        _ss.equip.sold++;
-      } else if (offerMessage.kind === 'salvaged') { // Salvaged it for .+ (Peerless|Legendary) .+ Core
-        _ss.equip.salvaged++;
-      } else if (offerMessage.kind === 'equip' || offerMessage.kind === 'reward') {
-        rewards.push(offerMessage.reward);
-      } else {
-        if (offerMessage.reason === 'unknownShrineResponse') {
-          record_hvut_shrine_offer_failure('unknownOfferMessage', { message: offerMessage.message || msg });
-        }
-        set_hvut_shrine_stop_error(_ss, offerMessage.message || msg);
-        offerStopped = true;
-      }
+    const offerSummary = summarize_hvut_shrine_offer_messages(offerResponse.messages);
+    if (offerSummary.kind === 'stop') {
+      set_hvut_shrine_stop_error(_ss, offerSummary.message);
+      return false;
+    }
+    offerSummary.vouchers.forEach((msg) => {
+      popup(`<p style="color: #f00; font-weight: bold;">${msg}</p>`);
     });
-
-    if (offerStopped) return false;
+    rewards.push(...offerSummary.equips, ...offerSummary.rewards);
+    _ss.equip.sold += offerSummary.sold;
+    _ss.equip.salvaged += offerSummary.salvaged;
     item.recieved++;
     item.node.span.textContent = `(${item.recieved}/${item.requests})`;
 
