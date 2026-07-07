@@ -11,6 +11,11 @@ const violations = [];
 for (const required of [
   "var record_hvut_mooglemail_send_failure = function (stage, detail) {",
   "var stop_hvut_mooglemail_send_failure = async function (stage, detail, message, discardStage) {",
+  "var classify_hvut_mooglemail_attach_response = function (html, stage, detail) {",
+  "record_hvut_mooglemail_send_failure(stage, { ...detail, reason: 'emptyResponse' });",
+  "return { kind: 'rejected', reason: 'emptyResponse', evidence: evidence };",
+  "return { kind: 'rejected', reason: 'mailError', error: $mail.error };",
+  "return { kind: 'accepted' };",
   "sessionStorage.setItem('HVAA:lastHvutMoogleMailSendFailure'",
 ]) {
   if (!text.includes(required)) {
@@ -76,8 +81,10 @@ if (!sendMatch) {
     "try {\n        results = await Promise.all(requests);",
     "catch (error) {\n        return stop_hvut_mooglemail_send_failure('attachRequest'",
     "'attachRequestDiscard'",
-    "return false;",
-    "if (!results.every((r) => r)) {",
+    "const response = classify_hvut_mooglemail_attach_response(html, 'attachEmptyResponse'",
+    "if (response.kind === 'rejected') {",
+    "return response;",
+    "if (!results.every((r) => r.kind === 'accepted')) {",
     "return stop_hvut_mooglemail_send_failure('attachRejected'",
     "'attachRejectedDiscard'",
   ]) {
@@ -87,6 +94,12 @@ if (!sendMatch) {
   }
   if (/const results = await Promise\.all\(requests\);\n\s*if \(!results\.every/.test(attachBody)) {
     violations.push(`${target} mail attach must not continue after unchecked Promise.all`);
+  }
+  if (attachBody.includes("$mail.check(html)")) {
+    violations.push(`${target} mail attach must classify attach responses through classify_hvut_mooglemail_attach_response`);
+  }
+  if (/return true;/.test(attachBody)) {
+    violations.push(`${target} mail attach must return typed attach decisions instead of boolean success`);
   }
   if (/\$mail\.discard\(\);\n\s*return;/.test(attachBody)) {
     violations.push(`${target} mail attach must await discard and return false`);

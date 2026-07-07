@@ -663,6 +663,16 @@ try {
     $mail.ready = true;
     return false;
   };
+  var classify_hvut_mooglemail_attach_response = function (html, stage, detail) {
+    if (typeof html !== 'string' || !html.trim()) {
+      var evidence = record_hvut_mooglemail_send_failure(stage, { ...detail, reason: 'emptyResponse' });
+      return { kind: 'rejected', reason: 'emptyResponse', evidence: evidence };
+    }
+    if ($mail.check(html)) {
+      return { kind: 'rejected', reason: 'mailError', error: $mail.error };
+    }
+    return { kind: 'accepted' };
+  };
   var parse_hvut_mooglemail_count = function (text, pattern, stage) {
     var match = pattern.exec(text || '');
     return match ? parseInt(match[1].replace(/,/g, '')) || 0 : record_hvut_mooglemail_parse_failure(stage, { text: text || '' });
@@ -3352,12 +3362,13 @@ const $mail = {
       $mail.log(`#${index}: Attaching`);
       async function attach_add(e) {
         const html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_add&select_item=${e.id}&select_count=${e.count}&select_pane=${e.pane}`);
-        if ($mail.check(html)) {
-          return false;
+        const response = classify_hvut_mooglemail_attach_response(html, 'attachEmptyResponse', { index: index, item: e.id, count: e.count, pane: e.pane });
+        if (response.kind === 'rejected') {
+          return response;
         }
         done++;
         $mail.log(`#${index}: Attached (${done}/${total})`);
-        return true;
+        return response;
       }
 
       const total = attach.length;
@@ -3369,7 +3380,7 @@ const $mail = {
       } catch (error) {
         return stop_hvut_mooglemail_send_failure('attachRequest', { index: index, total: total, done: done, error: error?.message || String(error) }, `#${index}: !!! Error: Attachment request failed`, 'attachRequestDiscard');
       }
-      if (!results.every((r) => r)) {
+      if (!results.every((r) => r.kind === 'accepted')) {
         return stop_hvut_mooglemail_send_failure('attachRejected', { index: index, total: total, done: done, results: results }, null, 'attachRejectedDiscard');
       }
     }
