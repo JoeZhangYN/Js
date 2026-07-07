@@ -991,8 +991,8 @@ try {
   var classify_hvut_armory_submit_response = function (doc, stage, detail) {
     var message = $id('messagebox_outer', doc);
     if (!message) {
-      record_hvut_armory_submit_failure(stage, { ...detail, reason: 'messageMissing' });
-      return { kind: 'rejected', reason: 'messageMissing' };
+      var evidence = record_hvut_armory_submit_failure(stage, { ...detail, reason: 'messageMissing' });
+      return { kind: 'rejected', reason: 'messageMissing', evidence: evidence };
     }
     return { kind: 'accepted', message: message };
   };
@@ -5123,7 +5123,14 @@ const bindArmory = function (armory, ctx) {
         if (name === 'locked' && value) {
           param_value = 2;
         }
-        const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize', data + `&set_${param_name}=${param_value}`);
+        let html;
+        try {
+          html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize', data + `&set_${param_name}=${param_value}`);
+        } catch (error) {
+          record_hvut_armory_submit_failure('organizeRequest', { count: equips.length, name: name, value: value, error: error?.message || String(error) });
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
         const doc = $doc(html);
         const response = classify_hvut_armory_submit_response(doc, 'organizeRejected', { count: equips.length, name: name, value: value });
         if (response.kind !== 'accepted') {

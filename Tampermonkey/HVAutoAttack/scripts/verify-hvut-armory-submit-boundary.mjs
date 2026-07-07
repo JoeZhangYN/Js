@@ -27,8 +27,8 @@ for (const required of [
   "capability: 'hvutArmorySubmit'",
   "sessionStorage.setItem('HVAA:lastHvutArmorySubmitFailure'",
   "var classify_hvut_armory_submit_response = function (doc, stage, detail) {",
-  "record_hvut_armory_submit_failure(stage, { ...detail, reason: 'messageMissing' });",
-  "return { kind: 'rejected', reason: 'messageMissing' };",
+  "var evidence = record_hvut_armory_submit_failure(stage, { ...detail, reason: 'messageMissing' });",
+  "return { kind: 'rejected', reason: 'messageMissing', evidence: evidence };",
   "return { kind: 'accepted', message: message };",
 ]) {
   if (!text.includes(required)) violations.push(`${target} must define Armory submit evidence with ${required}`);
@@ -68,6 +68,11 @@ for (const required of [
 
 for (const required of [
   "submit: async function (eid, name, value = true) {",
+  "let html;",
+  "try {\n          html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize'",
+  "record_hvut_armory_submit_failure('organizeRequest'",
+  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "return false;",
   "const response = classify_hvut_armory_submit_response(doc, 'organizeRejected', { count: equips.length, name: name, value: value });",
   "if (response.kind !== 'accepted') {",
   "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
@@ -89,6 +94,10 @@ for (const forbidden of [
   if (text.includes(forbidden)) {
     violations.push(`${target} Armory submit must not keep unchecked path: ${forbidden}`);
   }
+}
+
+if (organizeSubmitBody.includes("const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize', data + `&set_${param_name}=${param_value}`);")) {
+  violations.push(`${target} Armory organize submit must not keep unchecked organize submit request`);
 }
 
 for (const required of [
