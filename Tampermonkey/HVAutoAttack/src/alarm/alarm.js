@@ -3,7 +3,7 @@ import { gE, cE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { recordAlarmNotificationFailure } from "./alarm-notification-failure.js";
-import { ALARM_RUNTIME_KIND_KEYS } from "./alarm-profiles.js";
+import { AlarmProfileEvent, runAlarmProfileCatalog } from "./alarm-profiles.js";
 import { getAlarmNotification } from "./notification-catalog.js";
 
 const EVENT_TRIGGER = "trigger";
@@ -30,7 +30,7 @@ const AUDIO_PREVIEW_MESSAGE = Object.freeze({
   l2: "The audio will be tested after you close this prompt\nIf the audio doesn't load or play, change the url",
 });
 function normalizeAlarmKind(kind) {
-  return ALARM_RUNTIME_KIND_KEYS.includes(kind) ? kind : "Common";
+  return runAlarmProfileCatalog({ type: AlarmProfileEvent.NORMALIZE_KIND, kind });
 }
 
 function setAlarm(e) {

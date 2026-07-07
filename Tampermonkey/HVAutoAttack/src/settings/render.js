@@ -21,7 +21,7 @@ import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stami
 import { OptionBackupEvent, runOptionBackupAutomation } from "../state/option-backup.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
-import { ALARM_AUDIO_PROFILES } from "../alarm/alarm-profiles.js";
+import { AlarmProfileEvent, runAlarmProfileCatalog } from "../alarm/alarm-profiles.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
 import {
   BattleMonitorEvent,
@@ -417,7 +417,7 @@ export function renderOffensiveSpellAoeRows() {
 }
 
 export function renderAlarmAudioProfileRows() {
-  return ALARM_AUDIO_PROFILES.map(({ key, label }) => {
+  return runAlarmProfileCatalog({ type: AlarmProfileEvent.READ_AUDIO_PROFILES }).map(({ key, label }) => {
     const labelHtml = renderLocalizedInlineLabel(label);
     return `<input id="audioEnable_${key}" type="checkbox"><label for="audioEnable_${key}">${labelHtml}: <input name="audio_${key}" type="text"></label>`;
   }).join("<br>");
