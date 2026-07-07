@@ -57,18 +57,19 @@ if (!mainText.includes("import \"./i18n/hvut-config-field-bridge.js\";")) {
 }
 
 requireIncludes(target, text, [
+  "var run_hvut_config_field_bridge = function (method, args, stage, detail, fallback) {",
   "var is_hvut_config_field_disabled = function (field, context) {",
   "var get_hvut_config_field_input_kind = function (field) {",
   "var format_hvut_config_field_help_text = function (text) {",
   "var format_hvut_config_field_description = function (desc) {",
-  "window.HVAA_hvutConfigField.isDisabled(field, context)",
-  "window.HVAA_hvutConfigField.inputKind(field)",
-  "window.HVAA_hvutConfigField.formatHelpText(text)",
-  "window.HVAA_hvutConfigField.formatDescription(desc)",
-  "record_hvut_config_parse_failure('configFieldBridgeMissing'",
-  "record_hvut_config_parse_failure('configFieldInputKindBridgeMissing'",
-  "record_hvut_config_parse_failure('configFieldHelpTextBridgeMissing'",
-  "record_hvut_config_parse_failure('configFieldDescriptionBridgeMissing'",
+  "var bridge = typeof window !== 'undefined' ? window.HVAA_hvutConfigField : undefined;",
+  "if (!bridge || typeof bridge[method] !== 'function') {",
+  "return bridge[method](...(args || []));",
+  "record_hvut_config_parse_failure(stage + 'Failed'",
+  "return run_hvut_config_field_bridge('isDisabled', [field, context], 'configFieldBridgeMissing'",
+  "return run_hvut_config_field_bridge('inputKind', [field], 'configFieldInputKindBridgeMissing'",
+  "return run_hvut_config_field_bridge('formatHelpText', [text], 'configFieldHelpTextBridgeMissing'",
+  "return run_hvut_config_field_bridge('formatDescription', [desc], 'configFieldDescriptionBridgeMissing'",
   "return true;",
   "var render_hvut_config_field_row = function (config, field, context) {",
   "const inputKind = get_hvut_config_field_input_kind(field);",
@@ -105,6 +106,10 @@ requireIncludes(target, text, [
 for (const forbidden of [
   "o.server && o.server !== _server.name",
   "o.disabled === 'persistent' && !IS_ISEKAI || o.disabled === 'isekai' && IS_ISEKAI",
+  "window.HVAA_hvutConfigField.isDisabled(field, context)",
+  "window.HVAA_hvutConfigField.inputKind(field)",
+  "window.HVAA_hvutConfigField.formatHelpText(text)",
+  "window.HVAA_hvutConfigField.formatDescription(desc)",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not reimplement config field applicability with ${forbidden}`);

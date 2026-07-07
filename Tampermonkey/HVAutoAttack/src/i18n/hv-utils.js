@@ -185,33 +185,30 @@ try {
     record_hvut_config_parse_failure('configPricesBridgeMissing', {});
     return null;
   };
-  var is_hvut_config_field_disabled = function (field, context) {
-    if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.isDisabled) {
-      return window.HVAA_hvutConfigField.isDisabled(field, context);
+  var run_hvut_config_field_bridge = function (method, args, stage, detail, fallback) {
+    var bridge = typeof window !== 'undefined' ? window.HVAA_hvutConfigField : undefined;
+    if (!bridge || typeof bridge[method] !== 'function') {
+      record_hvut_config_parse_failure(stage, detail || {});
+      return fallback;
     }
-    record_hvut_config_parse_failure('configFieldBridgeMissing', { key: field?.key || '', context: context || {} });
-    return true;
+    try {
+      return bridge[method](...(args || []));
+    } catch (error) {
+      record_hvut_config_parse_failure(stage + 'Failed', { ...(detail || {}), error: error?.message || String(error) });
+      return fallback;
+    }
+  };
+  var is_hvut_config_field_disabled = function (field, context) {
+    return run_hvut_config_field_bridge('isDisabled', [field, context], 'configFieldBridgeMissing', { key: field?.key || '', context: context || {} }, true);
   };
   var get_hvut_config_field_input_kind = function (field) {
-    if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.inputKind) {
-      return window.HVAA_hvutConfigField.inputKind(field);
-    }
-    record_hvut_config_parse_failure('configFieldInputKindBridgeMissing', { key: field?.key || '' });
-    return 'text';
+    return run_hvut_config_field_bridge('inputKind', [field], 'configFieldInputKindBridgeMissing', { key: field?.key || '' }, 'text');
   };
   var format_hvut_config_field_help_text = function (text) {
-    if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.formatHelpText) {
-      return window.HVAA_hvutConfigField.formatHelpText(text);
-    }
-    record_hvut_config_parse_failure('configFieldHelpTextBridgeMissing', {});
-    return text ? String(text) : null;
+    return run_hvut_config_field_bridge('formatHelpText', [text], 'configFieldHelpTextBridgeMissing', {}, text ? String(text) : null);
   };
   var format_hvut_config_field_description = function (desc) {
-    if (window.HVAA_hvutConfigField && window.HVAA_hvutConfigField.formatDescription) {
-      return window.HVAA_hvutConfigField.formatDescription(desc);
-    }
-    record_hvut_config_parse_failure('configFieldDescriptionBridgeMissing', {});
-    return desc ? { button: String(desc).split('\n')[0], html: String(desc).split('\n').slice(1).join('<br>') } : null;
+    return run_hvut_config_field_bridge('formatDescription', [desc], 'configFieldDescriptionBridgeMissing', {}, desc ? { button: String(desc).split('\n')[0], html: String(desc).split('\n').slice(1).join('<br>') } : null);
   };
   var run_hvut_config_init = function (config, defaultSettings, context) {
     var segment = create_hvut_config_segment_context(context);
