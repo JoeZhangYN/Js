@@ -6,6 +6,7 @@ import {
   readSingleOrderItemName,
   renderBattleRoundTypeCheckboxes,
   renderBattleRoundTypeSelectOptions,
+  renderBattleScrollCheckboxes,
   renderIdleArenaLevelCheckboxes,
   renderItemOrderCheckboxes,
   renderBuffSkillCheckboxes,
@@ -143,5 +144,17 @@ describe("renderBattleRoundType controls", () => {
     expect(html).toContain('<option value="ar">The Arena</option>');
     expect(html).toContain('<option value="ba">Encounter</option>');
     expect(html).toContain('<option value="tw">The Tower</option>');
+  });
+});
+
+describe("renderBattleScrollCheckboxes", () => {
+  it("derives scroll item checkboxes from the battle scroll action identity", () => {
+    const html = renderBattleScrollCheckboxes();
+
+    expect(html).toContain('id="scroll_Go"');
+    expect(html).toContain('for="scroll_Av">Scroll of the Avatar</label>');
+    expect(html).toContain("{{scrollPrCondition}}");
+    expect(html).toContain('id="scroll_Ab"');
+    expect(html).not.toContain("scrollRoundType_");
   });
 });

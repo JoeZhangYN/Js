@@ -296,6 +296,18 @@ describe("decideScroll", () => {
     expect(p.candidates).toContain(13111);
   });
 
+  it("derives scroll candidates from the battle scroll action registry order", () => {
+    const p = scrollPlan(
+      {
+        scrollSwitch: true,
+        scroll: { Go: true, Av: true, Pr: true, Sw: true, Li: true, Sh: true, Ab: true },
+        scrollRoundType: { arena: true },
+      },
+      snap({ playerBuffs: [] })
+    );
+    expect(p.candidates).toEqual([13299, 13199, 13111, 13101, 13221, 13211, 13201]);
+  });
+
   it("对应 buff 已上 → 不收集", () => {
     const p = scrollPlan(
       { scrollSwitch: true, scroll: { Pr: true }, scrollRoundType: { arena: true } },

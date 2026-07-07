@@ -1,4 +1,5 @@
 import { checkCondition } from "../../settings/condition-eval.js";
+import { BATTLE_SCROLL_OPTIONS } from "../../data/battle-scrolls.js";
 import { BattleScrollCoverageEvent, runBattleScrollCoverage } from "./scroll-coverage.js";
 
 const EVENT_DECIDE = "decide";
@@ -27,73 +28,28 @@ function decideScroll(event = {}) {
   if (!checkCondition(opt.scrollCondition, event.conditionFacts)) return emptyScrollPlan();
   if (!opt.scrollRoundType || !opt.scrollRoundType[event.roundType]) return emptyScrollPlan();
   const candidates = [];
-  for (const i in SCROLL_LIB) {
-    const lib = SCROLL_LIB[i];
-    if (!(opt.scroll[i] && checkCondition(opt[`scroll${i}Condition`], event.conditionFacts))) {
+  for (const scroll of BATTLE_SCROLL_OPTIONS) {
+    if (
+      !(
+        opt.scroll[scroll.key] &&
+        checkCondition(opt[`scroll${scroll.key}Condition`], event.conditionFacts)
+      )
+    ) {
       continue;
     }
     if (
       !runBattleScrollCoverage({
         type: BattleScrollCoverageEvent.READ_COVERAGE,
         state: event,
-        scrollSpec: lib,
+        scrollSpec: scroll,
         options: { scrollFirst: opt.scrollFirst },
       })
     ) {
-      candidates.push(lib.id);
+      candidates.push(scroll.itemId);
     }
   }
   return { kind: "item-plan", plan: { type: "scroll", candidates } };
 }
-
-/** 卷轴库（从 item.js useScroll 内联 scrollLib 原样复制）。 */
-const SCROLL_LIB = Object.freeze({
-  Go: Object.freeze({
-    name: "Scroll of the Gods",
-    id: 13299,
-    mult: "3",
-    img1: "absorb",
-    img2: "shadowveil",
-    img3: "sparklife",
-  }),
-  Av: Object.freeze({
-    name: "Scroll of the Avatar",
-    id: 13199,
-    mult: "2",
-    img1: "haste",
-    img2: "protection",
-  }),
-  Pr: Object.freeze({
-    name: "Scroll of Protection",
-    id: 13111,
-    mult: "1",
-    img1: "protection",
-  }),
-  Sw: Object.freeze({
-    name: "Scroll of Swiftness",
-    id: 13101,
-    mult: "1",
-    img1: "haste",
-  }),
-  Li: Object.freeze({
-    name: "Scroll of Life",
-    id: 13221,
-    mult: "1",
-    img1: "sparklife",
-  }),
-  Sh: Object.freeze({
-    name: "Scroll of Shadows",
-    id: 13211,
-    mult: "1",
-    img1: "shadowveil",
-  }),
-  Ab: Object.freeze({
-    name: "Scroll of Absorption",
-    id: 13201,
-    mult: "1",
-    img1: "absorb",
-  }),
-});
 
 export function runBattleScrollDecision(event = { type: EVENT_DECIDE }) {
   return battleScrollDecisionEventHandlers[event?.type]?.(event) ?? emptyScrollPlan();

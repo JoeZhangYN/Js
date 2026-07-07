@@ -30,6 +30,7 @@ import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-rou
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
 import { BATTLE_ROUND_TYPE_OPTIONS } from "../data/battle-round-types.js";
+import { BATTLE_SCROLL_OPTIONS } from "../data/battle-scrolls.js";
 import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
 import { CHANNEL_FALLBACK_ORDER_OPTIONS } from "../data/channel-fallback-order.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
@@ -361,6 +362,13 @@ export function renderBattleRoundTypeSelectOptions({ includeBlank = false } = {}
   return `${blankOption}${BATTLE_ROUND_TYPE_OPTIONS.map(
     ({ code, label }) => `<option value="${code}">${label}</option>`
   ).join("")}`;
+}
+
+export function renderBattleScrollCheckboxes() {
+  return BATTLE_SCROLL_OPTIONS.map(
+    ({ key, label }) =>
+      `<div><input id="scroll_${key}" type="checkbox"><label for="scroll_${key}">${label}</label>{{scroll${key}Condition}}</div>`
+  ).join("");
 }
 
 function renderDropMonitorSchemaFields() {
@@ -997,13 +1005,7 @@ export function optionBox() {
     "  <l0>战役模式</l0><l1>戰役模式</l1><l2>Battle type</l2>: ",
     `  ${renderBattleRoundTypeCheckboxes("scrollRoundType")}{{scrollCondition}}`,
     '  <input id="scrollFirst" type="checkbox"><label for="scrollFirst"><l0>存在技能生成的Buff时，仍然使用卷轴</l0><l1>存在技能生成的Buff時，仍然使用捲軸</l1><l2>Use Scrolls even when there are effects from spells</l2>.</label>',
-    '  <div><input id="scroll_Go" type="checkbox"><label for="scroll_Go">Scroll of the Gods</label>{{scrollGoCondition}}</div>',
-    '  <div><input id="scroll_Av" type="checkbox"><label for="scroll_Av">Scroll of the Avatar</label>{{scrollAvCondition}}</div>',
-    '  <div><input id="scroll_Pr" type="checkbox"><label for="scroll_Pr">Scroll of Protection</label>{{scrollPrCondition}}</div>',
-    '  <div><input id="scroll_Sw" type="checkbox"><label for="scroll_Sw">Scroll of Swiftness</label>{{scrollSwCondition}}</div>',
-    '  <div><input id="scroll_Li" type="checkbox"><label for="scroll_Li">Scroll of Life</label>{{scrollLiCondition}}</div>',
-    '  <div><input id="scroll_Sh" type="checkbox"><label for="scroll_Sh">Scroll of Shadows</label>{{scrollShCondition}}</div>',
-    '  <div><input id="scroll_Ab" type="checkbox"><label for="scroll_Ab">Scroll of Absorption</label>{{scrollAbCondition}}</div></div>',
+    `  ${renderBattleScrollCheckboxes()}</div>`,
     '<div class="hvAATab" id="hvAATab-Infusion">',
     '  <l0>注意：魔药属性与</l0><l1>注意：魔藥屬性與</l1><l2>Note: The style of infusion is the same as Attack Mode in </l2><a class="hvAAGoto" name="hvAATab-Main"><l0>主要选项</l0><l1>主要選項</l1><l2>Main</l2></a><l0>里的攻击模式相同</l0><l1>裡的攻擊模式相同</l1><l2></l2><br>{{infusionCondition}}</div>',
     '<div class="hvAATab" id="hvAATab-Alarm">',

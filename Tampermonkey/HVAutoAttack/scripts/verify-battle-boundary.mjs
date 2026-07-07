@@ -2863,7 +2863,7 @@ function checkCriticalBuffEntry() {
     "runCriticalBuffPauseExecution",
     "runAlarmAutomation",
     "criticalAlarmTriggered",
-    "result.kind === \"failed\"",
+    'result.kind === "failed"',
     "runBattlePauseAutomation",
     "runBattlePauseEvidence",
     "document.title",
@@ -3825,8 +3825,20 @@ function checkBattleItemDecisionEntry() {
     );
   }
   const scrollText = fs.readFileSync(decideScrollFile, "utf8");
-  if (!/const SCROLL_LIB = Object\.freeze\(\{/.test(scrollText)) {
-    violations.push(`${rel(decideScrollFile)} must own frozen scroll decision table`);
+  if (
+    !/import\s*\{\s*BATTLE_SCROLL_OPTIONS\s*\}\s*from\s*["'][^"']*\/data\/battle-scrolls\.js["']/.test(
+      scrollText
+    )
+  ) {
+    violations.push(`${rel(decideScrollFile)} must consume the battle scroll action registry`);
+  }
+  if (/const SCROLL_LIB = Object\.freeze\(\{/.test(scrollText)) {
+    violations.push(`${rel(decideScrollFile)} must not keep a parallel scroll decision table`);
+  }
+  if (!/for\s*\(\s*const\s+scroll\s+of\s+BATTLE_SCROLL_OPTIONS\s*\)/.test(scrollText)) {
+    violations.push(
+      `${rel(decideScrollFile)} must derive scroll candidates from BATTLE_SCROLL_OPTIONS`
+    );
   }
   if (
     /\bexport\s+(?:function|const)\s+(?!BattleScrollDecisionEvent\b|runBattleScrollDecision\b)/.test(
