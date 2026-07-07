@@ -1327,6 +1327,9 @@ try {
   var create_hvut_character_settings_url = function () {
     return '?s=Character&ss=se';
   };
+  var create_hvut_training_url = function () {
+    return '/?s=Character&ss=tr';
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -12201,7 +12204,7 @@ if ($config.settings.trainingNotification) {
         return;
       }
       _bottom.tr.node.div = $element('div', _bottom.node.div);
-      _bottom.tr.node.link = $element('a', _bottom.tr.node.div, { href: '/?s=Character&ss=tr', textContent: '初始化...', style: 'margin-right: 5px;' });
+      _bottom.tr.node.link = $element('a', _bottom.tr.node.div, { href: create_hvut_training_url(), textContent: '初始化...', style: 'margin-right: 5px;' });
       _bottom.tr.node.clock = $element('span', _bottom.tr.node.div, ['!display: inline-block; width: 60px;']);
       if (json.error) {
         _bottom.tr.node.link.textContent = json.error;
@@ -12223,7 +12226,7 @@ if ($config.settings.trainingNotification) {
       }
     },
     load: async function (post) {
-      const html = await $ajax.fetch('/?s=Character&ss=tr', post);
+      const html = await $ajax.fetch(create_hvut_training_url(), post);
       const doc = $doc(html);
       if (!$id('train_outer', doc)) {
         _bottom.tr.node.link.textContent = '请稍等...';

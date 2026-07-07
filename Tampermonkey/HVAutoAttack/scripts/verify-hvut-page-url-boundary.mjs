@@ -16,6 +16,7 @@ for (const required of [
   "var create_hvut_mail_compose_url = function (context) {",
   "var create_hvut_mail_view_url = function (mid) {",
   "var create_hvut_character_settings_url = function () {",
+  "var create_hvut_training_url = function () {",
   "return context?.absolute ? `${location.origin}${location.pathname}${relative}` : relative;",
   "return location.href + '&hvut=disabled';",
   "return location.href.replace(/&page=\\d+/, '') + `&page=${page}`;",
@@ -25,6 +26,7 @@ for (const required of [
   "return context?.persistent ? '/?s=Bazaar&ss=mm&filter=new' : '?s=Bazaar&ss=mm&filter=new';",
   "return `?s=Bazaar&ss=mm&mid=${mid}`;",
   "return '?s=Character&ss=se';",
+  "return '/?s=Character&ss=tr';",
   "eq.data.url = create_hvut_equip_page_url(eq, { absolute: true });",
   "openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
   "openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
@@ -41,6 +43,8 @@ for (const required of [
   "$ajax.fetch(create_hvut_mail_view_url(mid), post)",
   "openUrl(create_hvut_character_settings_url(), hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'));",
   "$ajax.fetch(create_hvut_character_settings_url()",
+  "href: create_hvut_training_url()",
+  "$ajax.fetch(create_hvut_training_url(), post)",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT page URL boundary: ${required}`);
@@ -65,6 +69,8 @@ for (const forbidden of [
   "$ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post)",
   "openUrl('?s=Character&ss=se', hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'))",
   "$ajax.fetch('?s=Character&ss=se'",
+  "href: '/?s=Character&ss=tr'",
+  "$ajax.fetch('/?s=Character&ss=tr'",
 ]) {
   const allowedInsideHelper =
     forbidden === "location.href + '&hvut=disabled'" || forbidden === "location.href.replace(/&page=\\d+/, '') + `&page=${p}`";
@@ -117,6 +123,11 @@ if (characterSettingsOpenOccurrences !== 2) {
 const characterSettingsFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_character_settings_url\(\)/g)].length;
 if (characterSettingsFetchOccurrences !== 2) {
   violations.push(`${target} must route Character settings fetches through create_hvut_character_settings_url, found ${characterSettingsFetchOccurrences}`);
+}
+
+const trainingUrlOccurrences = [...text.matchAll(/create_hvut_training_url\(\)/g)].length;
+if (trainingUrlOccurrences !== 2) {
+  violations.push(`${target} must route bottom training link/load through create_hvut_training_url, found ${trainingUrlOccurrences}`);
 }
 
 if (violations.length) {
