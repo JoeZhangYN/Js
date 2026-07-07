@@ -116,6 +116,36 @@ describe("repair state parser entry — isekai", () => {
     ]);
   });
 
+  it("解析换行格式化的 repair 脚本变量，不能静默当成无需修理", () => {
+    const formatted = `
+      <form id="equipform"><input type="hidden" name="postoken" value="tok_multiline"></form>
+      <script>
+        var eqitems = {
+          "500": {
+            "m": {
+              "50000": 2
+            }
+          }
+        };
+        var itemdata = {
+          "50000": {
+            "n": "Repair Outfit",
+            "c": 0
+          }
+        };
+      </script>`;
+
+    expect(parseIsekaiRepairState(formatted)).toMatchObject({
+      token: "tok_multiline",
+      equips: [
+        {
+          id: "500",
+          materials: [{ matId: "50000", name: "Repair Outfit", count: 2 }],
+        },
+      ],
+    });
+  });
+
   it("仅护符料损坏的件 → 整件剔除（不纳入自动维修）", () => {
     const onlyCharm = `<script>
       var eqitems = {"400":{"m":{"63000":1}}};

@@ -52,6 +52,27 @@ function parseRequiresList(requiresText) {
   return out;
 }
 
+function parseScriptObject(text, name) {
+  const marker = new RegExp(`\\b${name}\\s*=\\s*\\{`).exec(text);
+  if (!marker) return {};
+  const start = marker.index + marker[0].lastIndexOf("{");
+  let depth = 0;
+  for (let i = start; i < text.length; i += 1) {
+    if (text[i] === "{") depth += 1;
+    else if (text[i] === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        try {
+          return JSON.parse(text.slice(start, i + 1));
+        } catch {
+          return {};
+        }
+      }
+    }
+  }
+  return {};
+}
+
 /**
  * 主世界维修页解析。装备枚举 + conditionPct 均来自 dynjs JSON；材料来自页内 set_forge_cost。
  * @param {Document} pageDoc `?s=Forge&ss=re` 页 document（仅用于扫 set_forge_cost 材料）
@@ -111,20 +132,8 @@ function parseArmoryRepairState(pageText, isIsekai) {
     text.match(/value=['"]([^'"]+)['"][^>]*name=['"]postoken['"]/);
   const token = tokenMatch ? tokenMatch[1] : null;
 
-  let eqitems = {};
-  let itemdata = {};
-  try {
-    const em = text.match(/eqitems\s*=\s*(\{.*?\});/);
-    if (em) eqitems = JSON.parse(em[1]);
-  } catch {
-    eqitems = {};
-  }
-  try {
-    const im = text.match(/itemdata\s*=\s*(\{.*?\});/);
-    if (im) itemdata = JSON.parse(im[1]);
-  } catch {
-    itemdata = {};
-  }
+  const eqitems = parseScriptObject(text, "eqitems");
+  const itemdata = parseScriptObject(text, "itemdata");
 
   const equips = [];
   for (const eid of Object.keys(eqitems)) {
