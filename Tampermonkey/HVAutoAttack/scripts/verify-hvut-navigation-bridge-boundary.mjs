@@ -14,6 +14,8 @@ const failureBody =
   text.match(/var record_hvut_navigation_bridge_failure = function \(stage, detail\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const bridgeBody =
   text.match(/var run_hvut_navigation_bridge = function \(method, args, stage, detail\) \{[\s\S]*?\n  \};/)?.[0] || "";
+const reasonBody =
+  text.match(/var run_hvut_navigation_reason_bridge = function \(vocabulary, key, stage\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const reloadBody =
   text.match(/var reloadCurrentPage = function \(reason\) \{[\s\S]*?\n  \};/)?.[0] || "";
 const openBody =
@@ -21,6 +23,7 @@ const openBody =
 
 if (!failureBody) violations.push("HVUT navigation bridge failure recorder must stay explicit");
 if (!bridgeBody) violations.push("HVUT navigation bridge command must stay explicit");
+if (!reasonBody) violations.push("HVUT navigation reason bridge command must stay explicit");
 if (!reloadBody) violations.push("HVUT reload bridge wrapper must stay explicit");
 if (!openBody) violations.push("HVUT openUrl bridge wrapper must stay explicit");
 
@@ -50,6 +53,29 @@ for (const required of [
 }
 
 for (const required of [
+  "var bridge = typeof window !== 'undefined' ? window.HVAA_navigation : undefined;",
+  "if (!bridge || !bridge[vocabulary]) {",
+  "record_hvut_navigation_bridge_failure(stage, { vocabulary: vocabulary, key: key });",
+  "var reason = bridge[vocabulary][key];",
+  "record_hvut_navigation_bridge_failure(stage + 'Unknown'",
+  "record_hvut_navigation_bridge_failure(stage + 'Failed'",
+  "return undefined",
+]) {
+  if (!reasonBody.includes(required)) {
+    violations.push(`HVUT navigation reason bridge command must include ${required}`);
+  }
+}
+
+for (const required of [
+  "return run_hvut_navigation_reason_bridge('ReloadReason', key, 'reloadReasonBridgeMissing');",
+  "return run_hvut_navigation_reason_bridge('RedirectReason', key, 'redirectReasonBridgeMissing');",
+]) {
+  if (!text.includes(required)) {
+    violations.push(`HVUT navigation reason wrapper must include ${required}`);
+  }
+}
+
+for (const required of [
   "return run_hvut_navigation_bridge('reloadCurrentPage', [reason], 'reloadBlocked', { reason: reason });",
 ]) {
   if (!reloadBody.includes(required)) {
@@ -70,6 +96,8 @@ for (const forbidden of [
   "console.warn('[HVAA] navigation bridge missing; navigation blocked'",
   "window.HVAA_navigation.reloadCurrentPage(reason)",
   "window.HVAA_navigation.openUrl(url, reason, !!newTab)",
+  "window.HVAA_navigation.ReloadReason",
+  "window.HVAA_navigation.RedirectReason",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`HVUT navigation bridge must not keep retired direct path: ${forbidden}`);

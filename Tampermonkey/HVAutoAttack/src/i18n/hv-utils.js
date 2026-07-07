@@ -54,12 +54,6 @@ try {
     if (registered === false) { bound(); }
     return node;
   };
-  var hvutReloadReason = function (key) {
-    return window.HVAA_navigation && window.HVAA_navigation.ReloadReason ? window.HVAA_navigation.ReloadReason[key] : undefined;
-  };
-  var hvutRedirectReason = function (key) {
-    return window.HVAA_navigation && window.HVAA_navigation.RedirectReason ? window.HVAA_navigation.RedirectReason[key] : undefined;
-  };
   var is_hvut_isekai_equip_page = function (pathname) {
     return /\/isekai\/equip(\/|$)/.test(pathname || '');
   };
@@ -1749,6 +1743,27 @@ try {
       record_hvut_navigation_bridge_failure(stage + 'Failed', { ...(detail || {}), error: error?.message || String(error) });
       return false;
     }
+  };
+  var run_hvut_navigation_reason_bridge = function (vocabulary, key, stage) {
+    var bridge = typeof window !== 'undefined' ? window.HVAA_navigation : undefined;
+    if (!bridge || !bridge[vocabulary]) {
+      record_hvut_navigation_bridge_failure(stage, { vocabulary: vocabulary, key: key });
+      return undefined;
+    }
+    try {
+      var reason = bridge[vocabulary][key];
+      if (!reason) record_hvut_navigation_bridge_failure(stage + 'Unknown', { vocabulary: vocabulary, key: key });
+      return reason;
+    } catch (error) {
+      record_hvut_navigation_bridge_failure(stage + 'Failed', { vocabulary: vocabulary, key: key, error: error?.message || String(error) });
+      return undefined;
+    }
+  };
+  var hvutReloadReason = function (key) {
+    return run_hvut_navigation_reason_bridge('ReloadReason', key, 'reloadReasonBridgeMissing');
+  };
+  var hvutRedirectReason = function (key) {
+    return run_hvut_navigation_reason_bridge('RedirectReason', key, 'redirectReasonBridgeMissing');
   };
   var reloadCurrentPage = function (reason) {
     return run_hvut_navigation_bridge('reloadCurrentPage', [reason], 'reloadBlocked', { reason: reason });
