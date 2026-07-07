@@ -430,9 +430,13 @@ try {
     }
     return { name: name, id: parseInt(idMatch[1]), stock: stock };
   };
-  var classify_hvut_item_shop_buy_response = function (doc) {
+  var classify_hvut_item_shop_buy_response = function (doc, stage, detail) {
     var message = get_message(doc);
-    return message ? { kind: 'rejected', message: message } : { kind: 'accepted' };
+    if (message) {
+      var evidence = record_hvut_item_shop_parse_failure(stage, { ...detail, reason: 'rejectedResponse', message: message });
+      return { kind: 'rejected', reason: 'rejectedResponse', message: message, evidence: evidence };
+    }
+    return { kind: 'accepted' };
   };
   var record_hvut_repair_load_failure = function (stage, detail) {
     var evidence = { capability: 'hvutRepairLoad', stage: stage, detail: detail || {} };
@@ -1507,13 +1511,15 @@ const $item = {
       item.id = $item.shop[item.name].id;
     });
 
-    async function buy(id, count) {
+    async function buy(item) {
+      const id = item.id;
+      const count = item.count;
       const html = await $ajax.fetch('?s=Bazaar&ss=is', `storetoken=${$item.storetoken}&select_mode=shop_pane&select_item=${id}&select_count=${count}`);
       const doc = $doc(html);
-      return classify_hvut_item_shop_buy_response(doc);
+      return classify_hvut_item_shop_buy_response(doc, 'shopBuyResponse', { name: item.name, id: id, count: count });
     }
 
-    const requests = items.map((item) => buy(item.id, item.count));
+    const requests = items.map((item) => buy(item));
     let results;
     try {
       results = await Promise.all(requests);
