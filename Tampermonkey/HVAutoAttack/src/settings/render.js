@@ -20,10 +20,6 @@ import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
 import { AlarmProfileEvent, runAlarmProfileCatalog } from "../alarm/alarm-profiles.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
-import {
-  BattleMonitorEvent,
-  runBattleMonitorAutomation,
-} from "../monitor/battle-monitor-automation.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
@@ -37,6 +33,10 @@ import {
   SettingsRiddleReportCommandEvent,
   runSettingsRiddleReportCommand,
 } from "./riddle-report-command.js";
+import {
+  SettingsBattleReportCommandEvent,
+  runSettingsBattleReportCommand,
+} from "./battle-report-command.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -1129,13 +1129,13 @@ export function optionBox() {
     let _html;
     if (name === "Drop") {
       // 掉落监测
-      gE("#hvAATab-Drop>table").innerHTML = runBattleMonitorAutomation({
-        type: BattleMonitorEvent.RENDER_DROP_REPORT_TABLE_BODY,
+      gE("#hvAATab-Drop>table").innerHTML = runSettingsBattleReportCommand({
+        type: SettingsBattleReportCommandEvent.RENDER_DROP_TABLE_BODY,
       });
     } else if (name === "Usage") {
       // 数据记录
-      gE("#hvAATab-Usage>table").innerHTML = runBattleMonitorAutomation({
-        type: BattleMonitorEvent.RENDER_USAGE_REPORT_TABLE_BODY,
+      gE("#hvAATab-Usage>table").innerHTML = runSettingsBattleReportCommand({
+        type: SettingsBattleReportCommandEvent.RENDER_USAGE_TABLE_BODY,
       });
     } else if (name === "Riddle") {
       gE("#hvAATab-Riddle>table").innerHTML = runSettingsRiddleReportCommand({
@@ -1308,13 +1308,15 @@ export function optionBox() {
   // 标签页-掉落监测
   gE(".reDropMonitor", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_DROP_REPORT });
+      runSettingsBattleReportCommand({ type: SettingsBattleReportCommandEvent.CLEAR_DROP_REPORT });
     }
   };
   // 标签页-数据记录
   gE(".reRecordUsage", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      runBattleMonitorAutomation({ type: BattleMonitorEvent.CLEAR_USAGE_REPORT });
+      runSettingsBattleReportCommand({
+        type: SettingsBattleReportCommandEvent.CLEAR_USAGE_REPORT,
+      });
     }
   };
   // 标签页-小马验证

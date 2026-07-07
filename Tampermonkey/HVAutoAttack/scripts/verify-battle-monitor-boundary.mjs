@@ -114,10 +114,14 @@ function checkEntry() {
     );
   }
   if (text.includes("monitorEventHandlers[event.type]")) {
-    violations.push(`${entry.replaceAll("\\", "/")} must reject null monitor events without throwing`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must reject null monitor events without throwing`
+    );
   }
   if (!text.includes("monitorEventHandlers[event?.type]") || !text.includes("return false")) {
-    violations.push(`${entry.replaceAll("\\", "/")} must fail closed for unknown or null monitor events`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} must fail closed for unknown or null monitor events`
+    );
   }
   if (!text.includes("runBattleHudAutomation") || !text.includes("BattleHudEvent.REFRESH")) {
     violations.push(
@@ -334,21 +338,59 @@ function checkEntry() {
     !monitorTestText.includes("rejects unknown monitor events without writing report storage") ||
     !monitorTestText.includes("runBattleMonitorAutomation(null)")
   ) {
-    violations.push(`${entry.replaceAll("\\", "/")} tests must cover unknown and null monitor events`);
+    violations.push(
+      `${entry.replaceAll("\\", "/")} tests must cover unknown and null monitor events`
+    );
   }
 }
 
 function checkSettingsReportConsumption() {
   const settingsFile = path.join(root, "src/settings/render.js");
+  const settingsCommandFile = path.join(root, "src/settings/battle-report-command.js");
+  const settingsCommandTestFile = path.join(root, "src/settings/battle-report-command.test.js");
   const text = fs.readFileSync(settingsFile, "utf8");
+  const commandText = fs.readFileSync(settingsCommandFile, "utf8");
+  const commandTestText = fs.readFileSync(settingsCommandTestFile, "utf8");
   if (/\breport\.(?:mode|rows|columns|sections)\b/.test(text)) {
     violations.push(
       `${rel(settingsFile)} must not inspect battle report shape; request rendered report output`
     );
   }
-  for (const required of ["RENDER_DROP_REPORT_TABLE_BODY", "RENDER_USAGE_REPORT_TABLE_BODY"]) {
+  if (/BattleMonitorEvent|runBattleMonitorAutomation/.test(text)) {
+    violations.push(`${rel(settingsFile)} must request battle reports through settings command`);
+  }
+  for (const required of [
+    "SettingsBattleReportCommandEvent.RENDER_DROP_TABLE_BODY",
+    "SettingsBattleReportCommandEvent.RENDER_USAGE_TABLE_BODY",
+    "SettingsBattleReportCommandEvent.CLEAR_DROP_REPORT",
+    "SettingsBattleReportCommandEvent.CLEAR_USAGE_REPORT",
+    "runSettingsBattleReportCommand",
+  ]) {
     if (!text.includes(required)) {
       violations.push(`${rel(settingsFile)} must request ${required}`);
+    }
+  }
+  for (const required of [
+    "SettingsBattleReportCommandEvent",
+    "runSettingsBattleReportCommand",
+    "BattleMonitorEvent.RENDER_DROP_REPORT_TABLE_BODY",
+    "BattleMonitorEvent.RENDER_USAGE_REPORT_TABLE_BODY",
+    "BattleMonitorEvent.CLEAR_DROP_REPORT",
+    "BattleMonitorEvent.CLEAR_USAGE_REPORT",
+    "const settingsBattleReportCommandHandlers",
+  ]) {
+    if (!commandText.includes(required)) {
+      violations.push(`${rel(settingsCommandFile)} must expose ${required}`);
+    }
+  }
+  for (const required of [
+    "settings battle report command entry",
+    "renders drop and usage report table bodies through one settings command entry",
+    "clears drop and usage reports as settings report commands",
+    "fails closed for unknown battle report commands",
+  ]) {
+    if (!commandTestText.includes(required)) {
+      violations.push(`${rel(settingsCommandTestFile)} must cover ${required}`);
     }
   }
 }
@@ -374,7 +416,9 @@ function checkActionUsageCaptureEntry() {
     violations.push(`${rel(captureFile)} must fail closed for null action usage capture events`);
   }
   if (!text.includes("actionUsageCaptureHandlers[event?.type]")) {
-    violations.push(`${rel(captureFile)} must dispatch action usage capture with nullable event semantics`);
+    violations.push(
+      `${rel(captureFile)} must dispatch action usage capture with nullable event semantics`
+    );
   }
   const captureTestText = fs.readFileSync(
     path.join(root, "src/monitor/battle-action-usage-capture.test.js"),
@@ -392,7 +436,9 @@ function checkActionUsageCaptureEntry() {
     !captureTestText.includes("rejects unknown and null events without reading runtime state") ||
     !captureTestText.includes("runBattleActionUsageCapture(null")
   ) {
-    violations.push(`${rel(captureFile)} tests must cover unknown and null action usage capture events`);
+    violations.push(
+      `${rel(captureFile)} tests must cover unknown and null action usage capture events`
+    );
   }
   if (
     /\bexport\s+(?:function|const)\s+(?!BattleActionUsageCaptureEvent\b|runBattleActionUsageCapture\b)/.test(
@@ -429,7 +475,9 @@ function checkActionUsageCaptureEntry() {
     "HVAA:lastBattleActionUsageCaptureFailure",
   ]) {
     if (!captureFailureTestText.includes(required)) {
-      violations.push(`src/monitor/battle-action-usage-capture-failure.test.js must cover ${required}`);
+      violations.push(
+        `src/monitor/battle-action-usage-capture-failure.test.js must cover ${required}`
+      );
     }
   }
   if (/from\s+["']\.\.\/state\/store\.js["']/.test(text)) {
@@ -480,9 +528,14 @@ function checkUsageImplementation() {
   ) {
     violations.push(`${rel(usageFile)} must return typed usage archive results for known commands`);
   }
-  const usageTestText = fs.readFileSync(path.join(root, "src/monitor/record-usage.test.js"), "utf8");
+  const usageTestText = fs.readFileSync(
+    path.join(root, "src/monitor/record-usage.test.js"),
+    "utf8"
+  );
   if (
-    !usageTestText.includes("rejects unknown and null usage events without changing usage records") ||
+    !usageTestText.includes(
+      "rejects unknown and null usage events without changing usage records"
+    ) ||
     !usageTestText.includes("runBattleUsageAutomation(null")
   ) {
     violations.push(`${rel(usageFile)} tests must cover unknown and null usage events`);
@@ -592,7 +645,9 @@ function checkUsageImplementation() {
     !usageActionStatsTestText.includes("stops reading battle log lines at the tls marker token") ||
     !usageActionStatsTestText.includes('"tls extra"')
   ) {
-    violations.push("src/monitor/record-usage-action-stats.test.js must cover multi-class tls cutoff markers");
+    violations.push(
+      "src/monitor/record-usage-action-stats.test.js must cover multi-class tls cutoff markers"
+    );
   }
   if (!text.includes("./record-usage-completion.js")) {
     violations.push(`${rel(usageFile)} must route completion aggregation through private helper`);
@@ -617,20 +672,30 @@ function checkUsageImplementation() {
     );
   }
   if (
-    !/if \(!context\.recordUsage\) return \{ kind: "skipped", reason: "recordUsageDisabled" \};/.test(completionText) ||
-    !/if \(!stats\) return \{ kind: "skipped", reason: "usageStatsMissing" \};/.test(completionText) ||
+    !/if \(!context\.recordUsage\) return \{ kind: "skipped", reason: "recordUsageDisabled" \};/.test(
+      completionText
+    ) ||
+    !/if \(!stats\) return \{ kind: "skipped", reason: "usageStatsMissing" \};/.test(
+      completionText
+    ) ||
     !/const archiveResult = runBattleRecordArchiveAutomation\([\s\S]*BattleRecordArchiveEvent\.STORE_OR_ARCHIVE_USAGE_STATS/.test(
       completionText
     ) ||
     !completionText.includes('return { kind: "failed", reason: "usageArchiveFailed" };')
   ) {
-    violations.push(`${rel(usageCompletionFile)} must return typed completion archive results without claiming no-op success`);
+    violations.push(
+      `${rel(usageCompletionFile)} must return typed completion archive results without claiming no-op success`
+    );
   }
   if (
-    !usageTestText.includes("does not report completion usage success when archive persistence fails") ||
+    !usageTestText.includes(
+      "does not report completion usage success when archive persistence fails"
+    ) ||
     !usageTestText.includes("BATTLE_RECORD_ARCHIVE_FAILURE_KEY")
   ) {
-    violations.push(`${rel(usageFile)} tests must cover completion usage archive failure propagation`);
+    violations.push(
+      `${rel(usageFile)} tests must cover completion usage archive failure propagation`
+    );
   }
   if (/\bg\(\s*["']option["']\s*\)\.recordUsage/.test(text + completionText)) {
     violations.push(`${rel(usageFile)} must not read recordUsage option directly`);
@@ -717,14 +782,18 @@ function checkRecordArchiveEntry() {
     violations.push(`${rel(archiveFile)} must fail closed for null archive events`);
   }
   if (!archiveText.includes("archiveEventHandlers[event?.type]")) {
-    violations.push(`${rel(archiveFile)} must dispatch archive events with nullable event semantics`);
+    violations.push(
+      `${rel(archiveFile)} must dispatch archive events with nullable event semantics`
+    );
   }
   const archiveTestText = fs.readFileSync(
     path.join(root, "src/monitor/battle-record-archive.test.js"),
     "utf8"
   );
   if (
-    !archiveTestText.includes("rejects unknown and null archive events without reading or writing records") ||
+    !archiveTestText.includes(
+      "rejects unknown and null archive events without reading or writing records"
+    ) ||
     !archiveTestText.includes("runBattleRecordArchiveAutomation(null")
   ) {
     violations.push(`${rel(archiveFile)} tests must cover unknown and null archive events`);
@@ -769,16 +838,34 @@ function checkRecordArchiveEntry() {
     "clear-history",
   ]) {
     if (!archiveStoreText.includes(required)) {
-      violations.push(`${rel(archiveStoreFile)} must route archive persistence through ${required}`);
+      violations.push(
+        `${rel(archiveStoreFile)} must route archive persistence through ${required}`
+      );
     }
   }
-  if (!/if \(\s*!persistBattleRecordArchiveStep\("store-current"[\s\S]*return false;/.test(archiveStoreText)) {
-    violations.push(`${rel(archiveStoreFile)} must fail closed when current record persistence fails`);
+  if (
+    !/if \(\s*!persistBattleRecordArchiveStep\("store-current"[\s\S]*return false;/.test(
+      archiveStoreText
+    )
+  ) {
+    violations.push(
+      `${rel(archiveStoreFile)} must fail closed when current record persistence fails`
+    );
   }
-  if (!/if \(\s*!persistBattleRecordArchiveStep\("archive-history"[\s\S]*return false;/.test(archiveStoreText)) {
-    violations.push(`${rel(archiveStoreFile)} must fail closed when archive history persistence fails`);
+  if (
+    !/if \(\s*!persistBattleRecordArchiveStep\("archive-history"[\s\S]*return false;/.test(
+      archiveStoreText
+    )
+  ) {
+    violations.push(
+      `${rel(archiveStoreFile)} must fail closed when archive history persistence fails`
+    );
   }
-  if (!/if \(\s*!persistBattleRecordArchiveStep\("archive-clear-current"[\s\S]*return false;/.test(archiveStoreText)) {
+  if (
+    !/if \(\s*!persistBattleRecordArchiveStep\("archive-clear-current"[\s\S]*return false;/.test(
+      archiveStoreText
+    )
+  ) {
     violations.push(`${rel(archiveStoreFile)} must fail closed when archive current clear fails`);
   }
   for (const required of [
@@ -1095,13 +1182,19 @@ function checkDeletedDropMonitorEntrypoint() {
     !dropText.includes('return { kind: "failed", reason: "dropArchiveFailed" };') ||
     !dropText.includes('return { kind: "recorded", archive: archiveResult };')
   ) {
-    violations.push(`${rel(dropFile)} must not report drop recording success when archive storage fails`);
+    violations.push(
+      `${rel(dropFile)} must not report drop recording success when archive storage fails`
+    );
   }
   if (
-    !dropTestText.includes("does not report drop recording success when archive persistence fails") ||
+    !dropTestText.includes(
+      "does not report drop recording success when archive persistence fails"
+    ) ||
     !dropTestText.includes("BATTLE_RECORD_ARCHIVE_FAILURE_KEY")
   ) {
-    violations.push(`${rel(dropFile)} tests must cover drop archive persistence failure propagation`);
+    violations.push(
+      `${rel(dropFile)} tests must cover drop archive persistence failure propagation`
+    );
   }
   for (const classifier of [
     /You gain \\d\+ \(EXP\|Credit\)/,
@@ -1187,14 +1280,18 @@ function checkBattleMonitorRuntimeEntry() {
     violations.push(`${rel(runtimeFile)} must fail closed for null runtime events`);
   }
   if (!text.includes("runtimeContextHandlers[event?.type]")) {
-    violations.push(`${rel(runtimeFile)} must dispatch runtime events with nullable event semantics`);
+    violations.push(
+      `${rel(runtimeFile)} must dispatch runtime events with nullable event semantics`
+    );
   }
   const runtimeTestText = fs.readFileSync(
     path.join(root, "src/monitor/battle-monitor-runtime.test.js"),
     "utf8"
   );
   if (
-    !runtimeTestText.includes("rejects unknown and null runtime events without reading runtime context") ||
+    !runtimeTestText.includes(
+      "rejects unknown and null runtime events without reading runtime context"
+    ) ||
     !runtimeTestText.includes("runBattleMonitorRuntime(null")
   ) {
     violations.push(`${rel(runtimeFile)} tests must cover unknown and null runtime events`);
@@ -1343,9 +1440,14 @@ function checkBattleReportEntry() {
   if (!text.includes("reportEventHandlers[event?.type]")) {
     violations.push(`${rel(reportFile)} must dispatch report events with nullable event semantics`);
   }
-  const reportTestText = fs.readFileSync(path.join(root, "src/monitor/battle-report.test.js"), "utf8");
+  const reportTestText = fs.readFileSync(
+    path.join(root, "src/monitor/battle-report.test.js"),
+    "utf8"
+  );
   if (
-    !reportTestText.includes("rejects unknown and null report events without writing report storage") ||
+    !reportTestText.includes(
+      "rejects unknown and null report events without writing report storage"
+    ) ||
     !reportTestText.includes("runBattleReportAutomation(null")
   ) {
     violations.push(`${rel(reportFile)} tests must cover unknown and null report events`);
@@ -1402,14 +1504,18 @@ function checkBattleReportEntry() {
     violations.push(`${rel(reportModelFile)} must fail closed for null report model events`);
   }
   if (!modelText.includes("reportModelEventHandlers[event?.type]")) {
-    violations.push(`${rel(reportModelFile)} must dispatch report model events with nullable event semantics`);
+    violations.push(
+      `${rel(reportModelFile)} must dispatch report model events with nullable event semantics`
+    );
   }
   const reportModelTestText = fs.readFileSync(
     path.join(root, "src/monitor/battle-report-model.test.js"),
     "utf8"
   );
   if (
-    !reportModelTestText.includes("rejects unknown and null model events without reading report sources") ||
+    !reportModelTestText.includes(
+      "rejects unknown and null model events without reading report sources"
+    ) ||
     !reportModelTestText.includes("runBattleReportModel(null")
   ) {
     violations.push(`${rel(reportModelFile)} tests must cover unknown and null model events`);
@@ -1531,14 +1637,18 @@ function checkBattleReportViewEntry() {
     violations.push(`${rel(viewFile)} must fail closed for null report view events`);
   }
   if (!text.includes("reportViewRenderHandlers[event?.type]") || !text.includes('|| ""')) {
-    violations.push(`${rel(viewFile)} must dispatch report view events with nullable empty-render semantics`);
+    violations.push(
+      `${rel(viewFile)} must dispatch report view events with nullable empty-render semantics`
+    );
   }
   const viewTestText = fs.readFileSync(
     path.join(root, "src/monitor/battle-report-view.test.js"),
     "utf8"
   );
   if (
-    !viewTestText.includes("rejects unknown and null view events without rendering report markup") ||
+    !viewTestText.includes(
+      "rejects unknown and null view events without rendering report markup"
+    ) ||
     !viewTestText.includes("runBattleReportViewAutomation(null")
   ) {
     violations.push(`${rel(viewFile)} tests must cover unknown and null report view events`);
@@ -1590,8 +1700,13 @@ function checkMonsterResistPanelEntry() {
   if (modelText.includes("resistPanelModelEventHandlers[event.type]")) {
     violations.push(`${rel(panelModelFile)} must fail closed for null resist panel model events`);
   }
-  if (!modelText.includes("resistPanelModelEventHandlers[event?.type]") || !modelText.includes("|| []")) {
-    violations.push(`${rel(panelModelFile)} must dispatch resist panel model events with nullable empty-row semantics`);
+  if (
+    !modelText.includes("resistPanelModelEventHandlers[event?.type]") ||
+    !modelText.includes("|| []")
+  ) {
+    violations.push(
+      `${rel(panelModelFile)} must dispatch resist panel model events with nullable empty-row semantics`
+    );
   }
   if (!modelText.includes("MonsterStatusEvent.READ_IDS_BY_ORDER")) {
     violations.push(
@@ -1616,10 +1731,14 @@ function checkMonsterResistPanelEntry() {
     "utf8"
   );
   if (
-    !panelModelTestText.includes("rejects unknown and null model events without reading monster identities or cache") ||
+    !panelModelTestText.includes(
+      "rejects unknown and null model events without reading monster identities or cache"
+    ) ||
     !panelModelTestText.includes("runMonsterResistPanelModel(null")
   ) {
-    violations.push(`${rel(panelModelFile)} tests must cover unknown and null resist panel model events`);
+    violations.push(
+      `${rel(panelModelFile)} tests must cover unknown and null resist panel model events`
+    );
   }
   if (
     !panelTestText.includes("rejects unknown events without rendering the resist panel") ||
