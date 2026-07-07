@@ -434,6 +434,28 @@ try {
     var message = get_message(doc);
     return message ? { kind: 'rejected', message: message } : { kind: 'accepted' };
   };
+  var record_hvut_repair_load_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutRepairLoad', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutRepairLoadFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // HVUT repair load fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVAA] HVUT repair load failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block HVUT repair load fallback.
+    }
+    return evidence;
+  };
+  var classify_hvut_repair_load_response = function (doc, stage, detail) {
+    var message = get_message(doc);
+    if (message) {
+      var evidence = record_hvut_repair_load_failure(stage, { ...detail, reason: 'rejectedResponse', message: message });
+      return { kind: 'rejected', reason: 'rejectedResponse', message: message, evidence: evidence };
+    }
+    return { kind: 'accepted' };
+  };
   var record_hvut_top_level_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutTopLevelParse', stage: stage, detail: detail || {} };
     try {
@@ -2564,11 +2586,11 @@ const bindBattlePanel = function (battle, ctx) {
     }
     const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=repair', data);
     const doc = $doc(html);
-    const error = get_message(doc);
-    if (error) {
-      popup(error);
+    const response = classify_hvut_repair_load_response(doc, 'battlePanelRepairLoadResponse', { hasEquipSelection: !!equips });
+    if (response.kind === 'rejected') {
+      popup(response.message);
       battle.load_items();
-      return;
+      return false;
     }
 
     battle.postoken = $id('equipform', doc).elements.postoken.value;

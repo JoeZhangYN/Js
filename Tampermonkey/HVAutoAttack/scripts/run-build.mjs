@@ -11,6 +11,7 @@ const commands = [
   "node scripts/verify-legacy-hvut-equip-filter-boundary.mjs",
   "node scripts/verify-hvut-equip-filter-boundary.mjs",
   "node scripts/verify-hvut-item-buy-boundary.mjs",
+  "node scripts/verify-hvut-repair-load-boundary.mjs",
   "node scripts/verify-hvut-price-market-boundary.mjs",
   "node scripts/verify-hvut-ability-unlock-boundary.mjs",
   "node scripts/verify-hvut-ability-parse-boundary.mjs",
