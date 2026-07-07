@@ -28,9 +28,17 @@ const loadDynjsOutcome = body(
   "persona.load_dynjs_outcome",
 );
 const loadDynjs = body(/persona\.load_dynjs = async function \(doc\) \{[\s\S]*?\n  \};\n  \/\//, "persona.load_dynjs");
+const parseStatsOutcome = body(
+  /persona\.parse_stats_pane_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.parse_stats_pane/,
+  "persona.parse_stats_pane_outcome",
+);
 const parseStats = body(/persona\.parse_stats_pane = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.set_value/, "persona.parse_stats_pane");
 const setValue = body(/persona\.set_value = function \(name, value\) \{[\s\S]*?\n  \};\n  persona\.get_value/, "persona.set_value");
 const readEquipsetRow = body(/persona\.read_equipset_row = function \(row\) \{[\s\S]*?\n  \};\n  persona\.save_equipset/, "persona.read_equipset_row");
+const saveEquipsetOutcome = body(
+  /persona\.save_equipset_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.save_equipset/,
+  "persona.save_equipset_outcome",
+);
 const saveEquipset = body(/persona\.save_equipset = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_warning/, "persona.save_equipset");
 
 if (!text.includes("const write_hvut_character_config_value = function (ctx, key, value, stage) {")) {
@@ -67,8 +75,10 @@ requireParts("persona.load_dynjs_outcome", loadDynjsOutcome, [
   "return reject_hvut_persona_sync('personaDynjsScriptMissing', {});",
   "return reject_hvut_persona_sync('personaDynjsFetchFailed', { message: String(error?.message || error) });",
   "return reject_hvut_persona_sync('personaDynjsApplyFailed', { message: String(error?.message || error) });",
-  "return reject_hvut_persona_sync('personaEquipsetWriteRejected', {});",
-  "return reject_hvut_persona_sync('personaCharacterStyleWriteRejected', {});",
+  "const equipsetOutcome = persona.save_equipset_outcome(doc);",
+  "if (equipsetOutcome.kind === 'rejected') return equipsetOutcome;",
+  "const statsOutcome = persona.parse_stats_pane_outcome(doc);",
+  "if (statsOutcome.kind === 'rejected') return statsOutcome;",
   "reloadCurrentPage(hvutReloadReason('HV_UTILS_PERSONA_DYNJS'))",
   "return { kind: 'accepted' };",
 ]);
@@ -79,34 +89,49 @@ requireParts("persona.load_dynjs", loadDynjs, [
 ]);
 
 for (const [label, value, key] of [
-  ["persona.parse_stats_pane", parseStats, "ch_style"],
+  ["persona.parse_stats_pane_outcome", parseStatsOutcome, "ch_style"],
   ["persona.set_value", setValue, "persona"],
-  ["persona.save_equipset", saveEquipset, "equipset"],
+  ["persona.save_equipset_outcome", saveEquipsetOutcome, "equipset"],
 ]) {
   requireParts(label, value, [
     `const write = persona.write_config_value('${key}'`,
     "if (write.kind === 'rejected') {",
     "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
-    "return false;",
   ]);
 }
 
 requireParts("persona.set_value", setValue, ["return true;"]);
+requireParts("persona.parse_stats_pane_outcome", parseStatsOutcome, [
+  "return { kind: 'accepted', stats_pane: {} };",
+  "return { kind: 'rejected', reason: 'personaCharacterStyleWriteRejected', evidence: write.evidence };",
+  "return { kind: 'accepted', stats_pane: stats_pane };",
+]);
+requireParts("persona.parse_stats_pane", parseStats, [
+  "const outcome = persona.parse_stats_pane_outcome(doc);",
+  "return outcome.kind === 'accepted' ? outcome.stats_pane : false;",
+]);
 requireParts("persona.read_equipset_row", readEquipsetRow, [
   "const slot = row.children?.[0]?.textContent || '';",
   "const equipNode = row.children?.[1];",
   "if (!equipNode) return { slot };",
   "return { slot, category, name, customname, eid, key };",
 ]);
-requireParts("persona.save_equipset", saveEquipset, ["return true;"]);
+requireParts("persona.save_equipset_outcome", saveEquipsetOutcome, [
+  "return { kind: 'rejected', reason: 'personaEquipsetWriteRejected', evidence: write.evidence };",
+  "return { kind: 'accepted' };",
+]);
+requireParts("persona.save_equipset", saveEquipset, [
+  "const outcome = persona.save_equipset_outcome(doc);",
+  "return outcome.kind === 'accepted';",
+]);
 
-if (parseStats.includes("ctx.config.set('ch_style', ch_style);\n    return stats_pane;")) {
+if (parseStatsOutcome.includes("ctx.config.set('ch_style', ch_style);\n    return stats_pane;")) {
   violations.push(`${target} persona.parse_stats_pane must not ignore ch_style write result`);
 }
 if (setValue.includes("ctx.config.set('persona', json);\n  };")) {
   violations.push(`${target} persona.set_value must not ignore persona write result`);
 }
-if (saveEquipset.includes("ctx.config.set('equipset', equipset);\n  };")) {
+if (saveEquipsetOutcome.includes("ctx.config.set('equipset', equipset);\n  };")) {
   violations.push(`${target} persona.save_equipset must not ignore equipset write result`);
 }
 if (changeEOutcome.includes("if ((await persona.load_dynjs(doc)) === false) return false;")) {
@@ -115,15 +140,17 @@ if (changeEOutcome.includes("if ((await persona.load_dynjs(doc)) === false) retu
 for (const forbidden of [
   "if (persona.save_equipset(doc) === false) return false;",
   "if (persona.parse_stats_pane(doc) === false) return false;",
+  "persona.save_equipset(doc) === false",
+  "persona.parse_stats_pane(doc) === false",
 ]) {
   if (loadDynjs.includes(forbidden)) {
     violations.push(`${target} persona.load_dynjs wrapper must not own sync failure decisions: ${forbidden}`);
   }
 }
 for (const [label, value, forbidden] of [
-  ["persona.parse_stats_pane", parseStats, "ctx.config.set('ch_style', ch_style)"],
+  ["persona.parse_stats_pane_outcome", parseStatsOutcome, "ctx.config.set('ch_style', ch_style)"],
   ["persona.set_value", setValue, "ctx.config.set('persona', json)"],
-  ["persona.save_equipset", saveEquipset, "ctx.config.set('equipset', equipset)"],
+  ["persona.save_equipset_outcome", saveEquipsetOutcome, "ctx.config.set('equipset', equipset)"],
 ]) {
   if (value.includes(forbidden)) {
     violations.push(`${target} ${label} must use typed persona config writer instead of ${forbidden}`);

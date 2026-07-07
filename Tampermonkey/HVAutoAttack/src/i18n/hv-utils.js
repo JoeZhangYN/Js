@@ -1078,9 +1078,8 @@ try {
     var equipState = persona.check_e_outcome();
     if (equipState.kind === 'rejected') return equipState;
     persona.set_button();
-    if (persona.save_equipset() === false) {
-      return reject_hvut_persona_sync(stage, { reason: 'equipsetWriteRejected' });
-    }
+    var equipsetOutcome = persona.save_equipset_outcome();
+    if (equipsetOutcome.kind === 'rejected') return reject_hvut_persona_sync(stage, { reason: equipsetOutcome.reason });
     return { kind: 'accepted' };
   };
   var record_hvut_armory_submit_failure = function (stage, detail) {
@@ -3375,12 +3374,10 @@ const bindPersona = function (persona, ctx) {
     } catch (error) {
       return reject_hvut_persona_sync('personaDynjsApplyFailed', { message: String(error?.message || error) });
     }
-    if (persona.save_equipset(doc) === false) {
-      return reject_hvut_persona_sync('personaEquipsetWriteRejected', {});
-    }
-    if (persona.parse_stats_pane(doc) === false) {
-      return reject_hvut_persona_sync('personaCharacterStyleWriteRejected', {});
-    }
+    const equipsetOutcome = persona.save_equipset_outcome(doc);
+    if (equipsetOutcome.kind === 'rejected') return equipsetOutcome;
+    const statsOutcome = persona.parse_stats_pane_outcome(doc);
+    if (statsOutcome.kind === 'rejected') return statsOutcome;
     if (_query.s === 'Battle') {
       ctx.battle?.create();
     } else if (['eq', 'ab', 'it', 'se'].includes(_query.ss)) {
@@ -3396,8 +3393,8 @@ const bindPersona = function (persona, ctx) {
   // .st1/.st2(旧页面), 能量模型后主世界属性页已同构 isekai 的 #stats_scrollable > table(实站报错证实:
   // 装备页无 .spn → bail 返回 undefined → _eq.stats_pane['Spell Type'] 崩断整条 IIFE) → 分叉消失, 收
   // isekai 实现。bail 返回 {}(而非 undefined): 「无属性面板不解析不写配置」不变量保留, 消费方索引安全。
-  persona.parse_stats_pane = function (doc) {
-    if (!$qs('#stats_scrollable', doc)) return {};
+  persona.parse_stats_pane_outcome = function (doc) {
+    if (!$qs('#stats_scrollable', doc)) return { kind: 'accepted', stats_pane: {} };
     const stats_pane = {};
     $qsa('#stats_scrollable > table', doc).forEach((table) => {
       const type = table.previousElementSibling.textContent;
@@ -3459,9 +3456,13 @@ const bindPersona = function (persona, ctx) {
     const write = persona.write_config_value('ch_style', ch_style, 'personaCharacterStyleWrite');
     if (write.kind === 'rejected') {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
+      return { kind: 'rejected', reason: 'personaCharacterStyleWriteRejected', evidence: write.evidence };
     }
-    return stats_pane;
+    return { kind: 'accepted', stats_pane: stats_pane };
+  };
+  persona.parse_stats_pane = function (doc) {
+    const outcome = persona.parse_stats_pane_outcome(doc);
+    return outcome.kind === 'accepted' ? outcome.stats_pane : false;
   };
   persona.set_value = function (name, value) {
     const json = persona.json;
@@ -3492,14 +3493,18 @@ const bindPersona = function (persona, ctx) {
     const { category, name, customname, eid, key } = eq.info;
     return { slot, category, name, customname, eid, key };
   };
-  persona.save_equipset = function (doc) {
+  persona.save_equipset_outcome = function (doc) {
     const equipset = $qsa('.eqb', doc).map((d) => persona.read_equipset_row(d));
     const write = persona.write_config_value('equipset', equipset, 'personaEquipsetWrite');
     if (write.kind === 'rejected') {
       alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
-      return false;
+      return { kind: 'rejected', reason: 'personaEquipsetWriteRejected', evidence: write.evidence };
     }
-    return true;
+    return { kind: 'accepted' };
+  };
+  persona.save_equipset = function (doc) {
+    const outcome = persona.save_equipset_outcome(doc);
+    return outcome.kind === 'accepted';
   };
   persona.check_warning = function (doc) {
     const top = ctx.top;
