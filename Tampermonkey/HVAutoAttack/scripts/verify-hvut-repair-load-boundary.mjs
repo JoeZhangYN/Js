@@ -26,6 +26,11 @@ for (const required of [
   "record_hvut_repair_load_failure(stage, { ...detail, reason: 'rejectedResponse', message: message });",
   "return { kind: 'rejected', reason: 'rejectedResponse', message: message, evidence: evidence };",
   "return { kind: 'accepted' };",
+  "var parse_hvut_repair_load_page = function (doc, html, stage, detail) {",
+  "reason: 'equipformMissing'",
+  "reason: 'scriptParseFailed'",
+  "record_hvut_repair_load_failure('battlePanelRepairDynjsFetch'",
+  "record_hvut_repair_load_failure('battlePanelRepairDynjsParse'",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must own HVUT repair load evidence with ${required}`);
@@ -38,7 +43,12 @@ for (const required of [
   "popup(response.message);",
   "battle.load_items();",
   "return false;",
-  "battle.postoken = $id('equipform', doc).elements.postoken.value;",
+  "const page = parse_hvut_repair_load_page(doc, html, 'battlePanelRepairLoadPage'",
+  "if (page.kind === 'rejected') {",
+  "battle.postoken = page.postoken;",
+  "battle.eqitems = page.eqitems;",
+  "battle.itemdata = page.itemdata;",
+  "await battle.load_dynjs(doc);",
 ]) {
   requirePart("battle.load_repair", loadRepair, required);
 }
@@ -46,6 +56,7 @@ for (const required of [
 for (const forbidden of [
   "const error = get_message(doc);",
   "popup(error);",
+  "battle.postoken = $id('equipform', doc).elements.postoken.value;",
 ]) {
   if (loadRepair.includes(forbidden)) {
     violations.push(`${target} battle.load_repair must classify repair load response instead of ${forbidden}`);

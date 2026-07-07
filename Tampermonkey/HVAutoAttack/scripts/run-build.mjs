@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 
 const commands = [
   "node scripts/verify-sloc.mjs",
+  "node scripts/verify-project-framework-maintenance.mjs",
   "node scripts/check-circular.mjs",
   "node scripts/check-mainloop-imports.mjs",
   "node scripts/verify-battle-business-map.mjs",
@@ -40,6 +41,7 @@ const commands = [
   "node scripts/verify-hvut-shrine-reward-boundary.mjs",
   "node scripts/verify-hvut-shrine-item-boundary.mjs",
   "node scripts/verify-hvut-armory-page-context-boundary.mjs",
+  "node scripts/verify-hvut-armory-page-parse-boundary.mjs",
   "node scripts/verify-hvut-armory-integrate-boundary.mjs",
   "node scripts/verify-hvut-armory-submit-boundary.mjs",
   "node scripts/verify-hvut-config-storage-boundary.mjs",

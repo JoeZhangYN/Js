@@ -631,6 +631,24 @@ try {
     }
     return { kind: 'accepted' };
   };
+  var parse_hvut_repair_load_page = function (doc, html, stage, detail) {
+    var form = $id('equipform', doc);
+    if (!form) {
+      var formEvidence = record_hvut_repair_load_failure(stage, { ...detail, reason: 'equipformMissing' });
+      return { kind: 'rejected', reason: 'equipformMissing', message: '解析修理页失败: equipform missing', evidence: formEvidence };
+    }
+    try {
+      return {
+        kind: 'accepted',
+        postoken: form.elements.postoken?.value,
+        eqitems: parse_script_json(html, 'eqitems') || {},
+        itemdata: parse_script_json(html, 'itemdata') || {},
+      };
+    } catch (error) {
+      var scriptEvidence = record_hvut_repair_load_failure(stage, { ...detail, reason: 'scriptParseFailed', error: error?.message || String(error) });
+      return { kind: 'rejected', reason: 'scriptParseFailed', message: '解析修理页失败: script parse failed', evidence: scriptEvidence };
+    }
+  };
   var record_hvut_top_level_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutTopLevelParse', stage: stage, detail: detail || {} };
     try {
@@ -1614,6 +1632,20 @@ try {
       console.warn('[HVUT] Armory integrate failed', evidence);
     } catch (_error) {
       // Console hooks must not block HVUT Armory integrate fallback.
+    }
+    return evidence;
+  };
+  var record_hvut_armory_page_failure = function (stage, detail) {
+    var evidence = { capability: 'hvutArmoryPage', stage: stage, detail: detail || {} };
+    try {
+      sessionStorage.setItem('HVAA:lastHvutArmoryPageFailure', JSON.stringify(evidence));
+    } catch (_error) {
+      // Armory page parse fallback must not depend on diagnostic storage.
+    }
+    try {
+      console.warn('[HVUT] Armory page failed', evidence);
+    } catch (_error) {
+      // Console hooks must not block Armory page fallback.
     }
     return evidence;
   };
@@ -3410,9 +3442,20 @@ const bindBattlePanel = function (battle, ctx) {
     if (!src) {
       return; // 防御: 页面无 dynjs script 时不崩整条 async 链（旧 Forge 页报错样本的教训）
     }
-    const html = await $ajax.fetch(`${src}?t=${Date.now()}`);
+    let html;
+    try {
+      html = await $ajax.fetch(`${src}?t=${Date.now()}`);
+    } catch (error) {
+      record_hvut_repair_load_failure('battlePanelRepairDynjsFetch', { src: src, error: error?.message || String(error) });
+      return false;
+    }
     const equip = ctx.equip();
-    Object.assign(equip.dynjs_equip, parse_script_json(html, 'dynjs_equip'));
+    try {
+      Object.assign(equip.dynjs_equip, parse_script_json(html, 'dynjs_equip'));
+    } catch (error) {
+      record_hvut_repair_load_failure('battlePanelRepairDynjsParse', { src: src, error: error?.message || String(error) });
+      return false;
+    }
     battle.equips.some((eq) => {
       const dynjs = equip.dynjs_equip[eq.info.eid];
       if (!dynjs) {
@@ -3521,10 +3564,16 @@ const bindBattlePanel = function (battle, ctx) {
       return false;
     }
 
-    battle.postoken = $id('equipform', doc).elements.postoken.value;
-    battle.eqitems = parse_script_json(html, 'eqitems') || {};
-    battle.itemdata = parse_script_json(html, 'itemdata') || {};
-    battle.load_dynjs(doc);
+    const page = parse_hvut_repair_load_page(doc, html, 'battlePanelRepairLoadPage', { hasEquipSelection: !!equips });
+    if (page.kind === 'rejected') {
+      popup(page.message);
+      battle.load_items();
+      return false;
+    }
+    battle.postoken = page.postoken;
+    battle.eqitems = page.eqitems;
+    battle.itemdata = page.itemdata;
+    await battle.load_dynjs(doc);
 
     battle.equips.forEach((eq) => {
       eq.node.repair.innerHTML = '';
@@ -5338,7 +5387,13 @@ const bindArmory = function (armory, ctx) {
     get_token: async function () {
       const html = await $ajax.fetch(create_hvut_armory_organize_url());
       const doc = $doc(html);
-      $armory.postoken = $id('equipform', doc).elements.postoken?.value;
+      const form = $id('equipform', doc);
+      if (!form) {
+        record_hvut_armory_page_failure('organizeEquipformMissing', { screen: $armory.pageContext.screen });
+        return false;
+      }
+      $armory.postoken = form.elements.postoken?.value;
+      return true;
     },
     click: function (e) {
       const target = e.target.closest('[data-action]');
@@ -5437,12 +5492,17 @@ const bindArmory = function (armory, ctx) {
 
     page: {
       init: function (doc, screen, assign) {
-        $armory.postoken = $id('equipform', doc).elements.postoken?.value;
+        const form = $id('equipform', doc);
+        if (!form) {
+          record_hvut_armory_page_failure('equipformMissing', { screen: screen, assign: !!assign });
+        }
+        $armory.postoken = form?.elements?.postoken?.value;
         $armory.node.submit[screen] = $id('equipsubmit', doc);
-        $armory.script.parse(doc, screen, assign);
+        return $armory.script.parse(doc, screen, assign);
       },
       load: async function (screen, filter, assign) {
-        const html = await $ajax.fetch(create_hvut_armory_screen_url(screen, { filter: filter || '' }));
+        const href = create_hvut_armory_screen_url(screen, { filter: filter || '' });
+        const html = await $ajax.fetch(href);
         const doc = $doc(html);
         $armory.page.init(doc, screen, assign);
         const table = $qs('#equiplist > table', doc);
@@ -5505,23 +5565,47 @@ const bindArmory = function (armory, ctx) {
     script: {
       parse: function (doc, screen, assign) {
         let json;
+        let accepted = true;
+        const readScriptObject = function (html, name, required) {
+          let value;
+          try {
+            value = parse_script_json(html, name);
+          } catch (error) {
+            if (required) {
+              accepted = false;
+              record_hvut_armory_page_failure('scriptObjectParseFailed', { screen: screen, name: name, assign: !!assign, error: error?.message || String(error) });
+            }
+            return {};
+          }
+          if (!value || typeof value !== 'object') {
+            if (required) {
+              accepted = false;
+              record_hvut_armory_page_failure('scriptObjectMissing', { screen: screen, name: name, assign: !!assign });
+            }
+            return {};
+          }
+          return value;
+        };
         if (!doc) {
           json = {
-            dynjs_eqstore: typeof dynjs_eqstore !== 'undefined' && dynjs_eqstore,
-            eqitems: typeof eqitems !== 'undefined' && eqitems,
-            itemdata: typeof itemdata !== 'undefined' && itemdata,
+            dynjs_eqstore: typeof dynjs_eqstore !== 'undefined' && dynjs_eqstore ? dynjs_eqstore : {},
+            eqitems: typeof eqitems !== 'undefined' && eqitems ? eqitems : {},
+            itemdata: typeof itemdata !== 'undefined' && itemdata ? itemdata : {},
           };
         } else {
           const script = $qs('#equipform ~ script:last-child', doc);
           if (!script) {
-            return;
+            accepted = false;
+            record_hvut_armory_page_failure('scriptMissing', { screen: screen, assign: !!assign });
+            json = { dynjs_eqstore: {}, eqitems: {}, itemdata: {} };
+          } else {
+            const html = script.innerHTML;
+            json = {
+              dynjs_eqstore: readScriptObject(html, 'dynjs_eqstore', screen === 'purchase'),
+              eqitems: readScriptObject(html, 'eqitems', true),
+              itemdata: readScriptObject(html, 'itemdata', true),
+            };
           }
-          const html = script.innerHTML;
-          json = {
-            dynjs_eqstore: parse_script_json(html, 'dynjs_eqstore'),
-            eqitems: parse_script_json(html, 'eqitems'),
-            itemdata: parse_script_json(html, 'itemdata'),
-          };
         }
         if (!$armory.eqitems[screen]) {
           $armory.eqitems[screen] = {};
@@ -5533,6 +5617,7 @@ const bindArmory = function (armory, ctx) {
         if (assign) {
           $armory.script.assign(json);
         }
+        return accepted;
       },
       assign: function (json) { // cannot access const/let using unsafeWindow[]
         if (json.dynjs_eqstore) {
@@ -5663,7 +5748,7 @@ const bindArmory = function (armory, ctx) {
         try {
           table = await $armory.page.load(screen, filter, true);
         } catch (error) {
-          record_hvut_armory_integrate_failure('loadRequest', { screen: screen, filter: filter, error: error?.message || String(error) });
+          record_hvut_armory_integrate_failure('loadRequest', { screen: screen, filter: filter, href: create_hvut_armory_screen_url(screen, { filter: filter || '' }), error: error?.message || String(error) });
           holder.remove();
           return false;
         }
