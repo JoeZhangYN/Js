@@ -1865,15 +1865,25 @@ try {
   };
   var create_hvut_market_page_context = function (query) {
     var source = query || _query;
+    var section = source?.s;
+    var ss = source?.ss;
     var screen = source?.screen || 'browseitems';
     var filter = source?.filter || 'co';
     return {
+      section: section,
+      ss: ss,
       screen: screen,
       filter: filter,
+      isMarket: section === 'Bazaar' && ss === 'mk',
       isBuyOrders: screen === 'buyorders',
       isSellOrders: screen === 'sellorders',
       isCrystalBrowse: screen === 'browseitems' && filter === 'mo',
     };
+  };
+  var hvut_market_page_context = null;
+  var get_hvut_market_page_context = function () {
+    hvut_market_page_context = hvut_market_page_context || create_hvut_market_page_context();
+    return hvut_market_page_context;
   };
   var create_hvut_shrine_url = function () {
     return '?s=Bazaar&ss=ss';
@@ -8566,8 +8576,8 @@ if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isShrine) {
 
 
 //* [9] Bazaar - The Market
-if (_query.s === 'Bazaar' && _query.ss === 'mk') {
-  const marketPage = create_hvut_market_page_context();
+if (get_hvut_market_page_context().isMarket) {
+  const marketPage = get_hvut_market_page_context();
 
   _mk.items = $qsa('#market_itemlist td:first-child').map((td) => td.textContent);
 
@@ -14547,8 +14557,8 @@ if (_query.s === 'Bazaar' && get_hvut_bazaar_page_context().isShrine) {
 
 
 //* [11] Bazaar - The Market
-if (_query.s === 'Bazaar' && _query.ss === 'mk') {
-  const marketPage = create_hvut_market_page_context();
+if (get_hvut_market_page_context().isMarket) {
+  const marketPage = get_hvut_market_page_context();
 
   _mk.init_list = function () {
     if (!$qs('#market_itemlist table')) {

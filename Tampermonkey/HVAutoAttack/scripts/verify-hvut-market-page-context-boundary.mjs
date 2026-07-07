@@ -9,13 +9,22 @@ const violations = [];
 for (const required of [
   "var create_hvut_market_page_context = function (query) {",
   "var source = query || _query;",
+  "var section = source?.s;",
+  "var ss = source?.ss;",
   "var screen = source?.screen || 'browseitems';",
   "var filter = source?.filter || 'co';",
+  "section: section,",
+  "ss: ss,",
   "screen: screen,",
   "filter: filter,",
+  "isMarket: section === 'Bazaar' && ss === 'mk',",
   "isBuyOrders: screen === 'buyorders',",
   "isSellOrders: screen === 'sellorders',",
   "isCrystalBrowse: screen === 'browseitems' && filter === 'mo',",
+  "var hvut_market_page_context = null;",
+  "var get_hvut_market_page_context = function () {",
+  "hvut_market_page_context = hvut_market_page_context || create_hvut_market_page_context();",
+  "return hvut_market_page_context;",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep Market page context boundary: ${required}`);
@@ -23,7 +32,7 @@ for (const required of [
 }
 
 const marketBodies = [
-  ...text.matchAll(/if \(_query\.s === 'Bazaar' && _query\.ss === 'mk'\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:9|11)\] Bazaar - The Market/g),
+  ...text.matchAll(/if \(get_hvut_market_page_context\(\)\.isMarket\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:9|11)\] Bazaar - The Market/g),
 ].map((match) => match[0]);
 
 if (marketBodies.length !== 2) {
@@ -32,7 +41,7 @@ if (marketBodies.length !== 2) {
 
 for (const [index, body] of marketBodies.entries()) {
   for (const required of [
-    "const marketPage = create_hvut_market_page_context();",
+    "const marketPage = get_hvut_market_page_context();",
     "$price.parse_market(marketPage.filter)",
     "$price.edit(_mk.items, marketPage.filter",
     "marketPage.isCrystalBrowse",
@@ -50,6 +59,8 @@ for (const [index, body] of marketBodies.entries()) {
     "$price.edit(_mk.items, _query.filter",
     "_query.screen === 'buyorders'",
     "_query.screen === 'sellorders'",
+    "_query.s === 'Bazaar' && _query.ss === 'mk'",
+    "_query.ss === 'mk'",
     "_query.screen !== 'browseitems' || _query.filter !== 'mo'",
     "_query.screen === 'browseitems' && _query.filter === 'mo'",
   ]) {
