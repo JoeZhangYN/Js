@@ -1305,8 +1305,11 @@ try {
   var create_hvut_current_page_disable_url = function () {
     return location.href + '&hvut=disabled';
   };
+  var create_hvut_mail_filter_page_url = function (filter, page) {
+    return `?s=Bazaar&ss=mm&filter=${filter}&page=${page}`;
+  };
   var create_hvut_mail_page_url = function (page) {
-    return location.href.replace(/&page=\d+/, '') + `&page=${page}`;
+    return create_hvut_mail_filter_page_url(_query.filter || 'inbox', page);
   };
   var create_hvut_mail_reply_url = function (mid) {
     return `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;
@@ -10569,7 +10572,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         _mm.page.node.prev.disabled = true;
         _mm.page.node.next.disabled = true;
 
-        const html = await $ajax.fetch(`?s=Bazaar&ss=mm&filter=${_mm.page.filter}&page=${p}`);
+        const html = await $ajax.fetch(create_hvut_mail_filter_page_url(_mm.page.filter, p));
         const doc = $doc(html);
         const list = $qs('#mmail_list', doc);
         _mm.page.create(list, p);
@@ -16769,7 +16772,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       _mm.node.page_prev.disabled = true;
       _mm.node.page_next.disabled = true;
 
-      const html = await $ajax.fetch(`?s=Bazaar&ss=mm&filter=${_mm.page_filter}&page=${p}`);
+      const html = await $ajax.fetch(create_hvut_mail_filter_page_url(_mm.page_filter, p));
       const doc = $doc(html);
       const list = $qs('#mmail_list', doc);
       _mm.kill_asshole(list);

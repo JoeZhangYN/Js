@@ -9,6 +9,7 @@ const violations = [];
 for (const required of [
   "var create_hvut_equip_page_url = function (equip, context) {",
   "var create_hvut_current_page_disable_url = function () {",
+  "var create_hvut_mail_filter_page_url = function (filter, page) {",
   "var create_hvut_mail_page_url = function (page) {",
   "var create_hvut_mail_reply_url = function (mid) {",
   "var create_hvut_mail_sent_url = function () {",
@@ -29,7 +30,8 @@ for (const required of [
   "var create_hvut_armory_organize_url = function () {",
   "return context?.absolute ? `${location.origin}${location.pathname}${relative}` : relative;",
   "return location.href + '&hvut=disabled';",
-  "return location.href.replace(/&page=\\d+/, '') + `&page=${page}`;",
+  "return `?s=Bazaar&ss=mm&filter=${filter}&page=${page}`;",
+  "return create_hvut_mail_filter_page_url(_query.filter || 'inbox', page);",
   "return `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;",
   "return '?s=Bazaar&ss=mm&filter=sent';",
   "return `?s=Bazaar&ss=mm&filter=${context?.filter}&mid=${context?.mid}${pageParam}`;",
@@ -53,6 +55,8 @@ for (const required of [
   "href: create_hvut_equip_page_url({ eid: e.e, key: e.k })",
   "src: create_hvut_equip_page_url(eq)",
   "openUrl(create_hvut_current_page_disable_url(), hvutRedirectReason('HV_UTILS_DISABLE'));",
+  "$ajax.fetch(create_hvut_mail_filter_page_url(_mm.page.filter, p))",
+  "$ajax.fetch(create_hvut_mail_filter_page_url(_mm.page_filter, p))",
   "openUrl(create_hvut_mail_page_url(p), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));",
   "openUrl(create_hvut_mail_reply_url(mid), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));",
   "openUrl(create_hvut_mail_sent_url(), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));",
@@ -92,11 +96,14 @@ for (const forbidden of [
   "`equip/${e.e}/${e.k}`",
   "location.href + '&hvut=disabled'",
   "location.href.replace(/&page=\\d+/, '') + `&page=${p}`",
+  "location.href.replace(/&page=\\d+/, '') + `&page=${page}`",
   "location.href.replace(/&page=\\d+/, '') + '&page=' + p",
   "openUrl(`?s=Bazaar&ss=mm&filter=new&reply=${mid}`, hvutRedirectReason('HV_UTILS_MAIL_PAGE'))",
   "openUrl('?s=Bazaar&ss=mm&filter=sent', hvutRedirectReason('HV_UTILS_MAIL_PAGE'))",
   "href: `?s=Bazaar&ss=mm&filter=${page.filter}&mid=${mid}&page=${p}`",
   "href: `?s=Bazaar&ss=mm&filter=${db.filter}&mid=${db.mid}`",
+  "$ajax.fetch(`?s=Bazaar&ss=mm&filter=${_mm.page.filter}&page=${p}`)",
+  "$ajax.fetch(`?s=Bazaar&ss=mm&filter=${_mm.page_filter}&page=${p}`)",
   "$ajax.fetch('?s=Bazaar&ss=mm&filter=new'",
   "$ajax.fetch('/?s=Bazaar&ss=mm&filter=new'",
   "$ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post)",
@@ -136,8 +143,8 @@ if (disableUrlOccurrences !== 1) {
 }
 
 const mailPageOccurrences = [...text.matchAll(/location\.href\.replace\(\/&page=\\d\+\/, ''\) \+ `&page=\$\{page\}`/g)].length;
-if (mailPageOccurrences !== 1) {
-  violations.push(`${target} must build mail page URL only in create_hvut_mail_page_url, found ${mailPageOccurrences}`);
+if (mailPageOccurrences !== 0) {
+  violations.push(`${target} must not derive mailbox pages from raw location.href replacement, found ${mailPageOccurrences}`);
 }
 
 const mailReplyOccurrences = [...text.matchAll(/\?s=Bazaar&ss=mm&filter=new&reply=\$\{mid\}/g)].length;
@@ -163,6 +170,16 @@ if (mailComposeFetchOccurrences !== 9) {
 const mailViewFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_view_url\(mid\), post\)/g)].length;
 if (mailViewFetchOccurrences !== 2) {
   violations.push(`${target} must route mail view/action fetches through create_hvut_mail_view_url, found ${mailViewFetchOccurrences}`);
+}
+
+const mailFilterPageFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_filter_page_url\(/g)].length;
+if (mailFilterPageFetchOccurrences !== 2) {
+  violations.push(`${target} must route mailbox page fetches through create_hvut_mail_filter_page_url, found ${mailFilterPageFetchOccurrences}`);
+}
+
+const mailPageOpenOccurrences = [...text.matchAll(/openUrl\(create_hvut_mail_page_url\(p\), hvutRedirectReason\('HV_UTILS_MAIL_PAGE'\)\)/g)].length;
+if (mailPageOpenOccurrences !== 2) {
+  violations.push(`${target} must route mailbox page navigation through create_hvut_mail_page_url, found ${mailPageOpenOccurrences}`);
 }
 
 const characterSettingsOpenOccurrences = [...text.matchAll(/openUrl\(create_hvut_character_settings_url\(\), hvutRedirectReason\('HV_UTILS_CHARACTER_SETTINGS'\)\)/g)].length;
