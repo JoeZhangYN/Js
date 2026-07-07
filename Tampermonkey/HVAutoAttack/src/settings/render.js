@@ -983,11 +983,7 @@ export function optionBox() {
     "  <div><l2>If the page </l2><b><l0>页面停留</l0><l1>頁面停留</l1><l2>stays idle</l2></b><l2> for </l2>: ",
     ...renderActionDelaySchemaFields(),
     "  </div>",
-    renderCheckboxPlusNumber("pageRefresh", "pageRefreshMinutes", {
-      l0: "分钟（防移动端长时间挂机卡死，无条件绝对时钟）",
-      l1: "分鐘（防移動端長時間掛機卡死，無條件絕對時鐘）",
-      l2: " min (mobile anti-hang absolute clock, unconditional)",
-    }),
+    renderCheckboxPlusNumber("pageRefresh", "pageRefreshMinutes"),
     renderSchemaCheckboxField("recordEach"),
     renderApiBridgeDelaySchemaFields(),
     "  </div>",

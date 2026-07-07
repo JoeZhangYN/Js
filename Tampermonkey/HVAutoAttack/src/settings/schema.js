@@ -631,6 +631,11 @@ const OPTION_SCHEMA = [
       l1: "刷新間隔（分鐘）",
       l2: "Refresh interval (minutes)",
     },
+    description: {
+      l0: "分钟（防移动端长时间挂机卡死，无条件绝对时钟）",
+      l1: "分鐘（防移動端長時間掛機卡死，無條件絕對時鐘）",
+      l2: " min (mobile anti-hang absolute clock, unconditional)",
+    },
   },
   // === 战斗行动 watchdog：一次行动开始后延迟告警/重载；运行时 authority 在 battle-action-delay.js ===
   {

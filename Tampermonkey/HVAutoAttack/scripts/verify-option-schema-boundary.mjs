@@ -74,6 +74,9 @@ if (!/key:\s*["']criticalBuffMinTurns["'][\s\S]{0,500}description:\s*\{[\s\S]{0,
 if (!/key:\s*["']potionWasteTolerance["'][\s\S]{0,500}description:\s*\{[\s\S]{0,220}skip if deficit too small/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must own no-waste potion tolerance help text`);
 }
+if (!/key:\s*["']pageRefreshMinutes["'][\s\S]{0,500}description:\s*\{[\s\S]{0,240}mobile anti-hang absolute clock/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must own page refresh interval help text`);
+}
 if (!/export const OptionSchemaEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose OptionSchemaEvent`);
 }
@@ -346,6 +349,7 @@ for (const forbidden of [
   /id=["']drainTargetMaxHp["'][\s\S]{0,140}Drain 优先打血最多/,
   /id=["']autoElement["'][\s\S]{0,160}按九抗自动选最弱属性攻击/,
   /id=["']pageRefresh["'][\s\S]{0,160}定时刷新页面/,
+  /mobile anti-hang absolute clock/,
   /name=["']pageRefreshMinutes["']\s+placeholder=["']30["']/,
   /id=["']turnOnSS["'][\s\S]{0,160}Spirit Stance[\s\S]{0,40}turnOnSSCondition/,
   /id=["']turnOffSS["'][\s\S]{0,160}Spirit Stance[\s\S]{0,40}turnOffSSCondition/,

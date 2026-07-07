@@ -39,6 +39,9 @@ describe("runOptionSchema", () => {
       kind: "number",
       default: 30,
       group: "Main",
+      description: {
+        l2: " min (mobile anti-hang absolute clock, unconditional)",
+      },
     });
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "criticalBuffsList" })
