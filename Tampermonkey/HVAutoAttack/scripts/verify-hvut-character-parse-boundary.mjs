@@ -66,6 +66,10 @@ for (const required of [
   "var reject_hvut_persona_sync = function (reason, detail) {",
   "return { kind: 'rejected', reason: reason, evidence: evidence };",
   "var reject_hvut_difficulty_refresh = function (reason, detail) {",
+  "var render_hvut_equipment_persona_context = function (persona, stage) {",
+  "var equipState = persona.check_e_outcome();",
+  "if (equipState.kind === 'rejected') return equipState;",
+  "return reject_hvut_persona_sync(stage, { reason: 'equipsetWriteRejected' });",
   "var parse_hvut_difficulty_from_level_readout = function (doc, stage) {",
   "return match ? match[1] : record_hvut_character_parse_failure(stage, { text: text });",
   "var parse_hvut_persona_form_state = function (doc, stage) {",
@@ -162,11 +166,13 @@ for (const required of [
   }
 }
 
-for (const required of [
-  "if ($persona.check_e() === false) return;",
+for (const [required, expected] of [
+  ["const personaContext = render_hvut_equipment_persona_context($persona, 'equipmentPersonaContextRejected');", 1],
+  ["const personaContext = render_hvut_equipment_persona_context($persona, 'legacyEquipmentPersonaContextRejected');", 1],
+  ["if (personaContext.kind === 'rejected') return;", 2],
 ]) {
   const count = (text.match(new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length;
-  if (count !== 2) violations.push(`${target} must guard both direct persona.check_e calls, found ${count}`);
+  if (count !== expected) violations.push(`${target} must keep ${expected} equipment persona context render call(s) for ${required}, found ${count}`);
 }
 
 for (const forbidden of [
@@ -178,6 +184,7 @@ for (const forbidden of [
   "const personaCheck = persona.check_p();",
   "if (persona.check_p(doc) === null)",
   "if (persona.check_e(doc) === false)",
+  "if ($persona.check_e() === false) return;",
   "persona.check_p(doc);\n    if (persona.selector_p)",
   "persona.check_e(doc);\n    const json = persona.json;",
   "if ((await persona.change_e()) === false) return false;",

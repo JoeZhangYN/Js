@@ -1074,6 +1074,15 @@ try {
     var evidence = create_hvut_character_parse_evidence(reason, detail);
     return { kind: 'rejected', reason: reason, evidence: evidence };
   };
+  var render_hvut_equipment_persona_context = function (persona, stage) {
+    var equipState = persona.check_e_outcome();
+    if (equipState.kind === 'rejected') return equipState;
+    persona.set_button();
+    if (persona.save_equipset() === false) {
+      return reject_hvut_persona_sync(stage, { reason: 'equipsetWriteRejected' });
+    }
+    return { kind: 'accepted' };
+  };
   var record_hvut_armory_submit_failure = function (stage, detail) {
     var evidence = { capability: 'hvutArmorySubmit', stage: stage, detail: detail || {} };
     try {
@@ -6615,9 +6624,8 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
       .hvut-eq-popups iframe { width: 100%; height: 100%; border: 0; }
     `);
 
-    if ($persona.check_e() === false) return;
-    $persona.set_button();
-    $persona.save_equipset();
+    const personaContext = render_hvut_equipment_persona_context($persona, 'equipmentPersonaContextRejected');
+    if (personaContext.kind === 'rejected') return;
 
     _eq.init();
 
@@ -13023,9 +13031,8 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
 
     $id('popup_box').classList.add('hvut-eq-popupbox');
 
-    if ($persona.check_e() === false) return;
-    $persona.set_button();
-    $persona.save_equipset();
+    const personaContext = render_hvut_equipment_persona_context($persona, 'legacyEquipmentPersonaContextRejected');
+    if (personaContext.kind === 'rejected') return;
 
     _eq.show_base();
     _eq.equiplist = $equip.list.div($id('eqsb'), false);
