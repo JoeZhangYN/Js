@@ -19,7 +19,9 @@ const helperRegion =
 const dfctSetButtonOutcome =
   /dfct\.set_button_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  dfct\.set_button/.exec(text)?.[0] || "";
 const dfctSetButton = /dfct\.set_button = function \(doc\) \{[\s\S]*?\n  \};\n\};\n\n\/\/ \$persona/.exec(text)?.[0] || "";
-const personaInit = /persona\.init = function \(\) \{[\s\S]*?\n  \};\n  persona\.create/.exec(text)?.[0] || "";
+const personaInitOutcome =
+  /persona\.init_outcome = async function \(\) \{[\s\S]*?\n  \};\n  persona\.init/.exec(text)?.[0] || "";
+const personaInit = /persona\.init = async function \(\) \{[\s\S]*?\n  \};\n  persona\.create/.exec(text)?.[0] || "";
 const personaCheckP = /persona\.check_p = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_e/.exec(text)?.[0] || "";
 const personaCheckE = /persona\.check_e = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.change_p/.exec(text)?.[0] || "";
 const personaChangePOutcome =
@@ -35,6 +37,7 @@ for (const [label, body] of [
   ["character parse helper", helperRegion],
   ["dfct.set_button_outcome", dfctSetButtonOutcome],
   ["dfct.set_button", dfctSetButton],
+  ["persona.init_outcome", personaInitOutcome],
   ["persona.init", personaInit],
   ["persona.check_p", personaCheckP],
   ["persona.check_e", personaCheckE],
@@ -86,8 +89,18 @@ requirePart("dfct.set_button_outcome", dfctSetButtonOutcome, "return reject_hvut
 requirePart("dfct.set_button", dfctSetButton, "const outcome = dfct.set_button_outcome(doc);");
 requirePart("dfct.set_button", dfctSetButton, "return outcome.kind === 'accepted';");
 
-requirePart("persona.init", personaInit, "const personaCheck = persona.check_p();");
-requirePart("persona.init", personaInit, "if (personaCheck === null) {\n        return false;");
+requirePart("persona.init_outcome", personaInitOutcome, "const personaCheck = persona.check_p();");
+requirePart("persona.init_outcome", personaInitOutcome, "if (personaCheck === null) {");
+requirePart("persona.init_outcome", personaInitOutcome, "return reject_hvut_persona_sync('personaInitFormStateRejected', {});");
+requirePart("persona.init_outcome", personaInitOutcome, "const equipOutcome = await persona.change_e_outcome();");
+requirePart("persona.init_outcome", personaInitOutcome, "if (equipOutcome.kind === 'rejected') return equipOutcome;");
+requirePart("persona.init_outcome", personaInitOutcome, "const personaOutcome = await persona.change_p_outcome();");
+requirePart("persona.init_outcome", personaInitOutcome, "if (personaOutcome.kind === 'rejected') return personaOutcome;");
+requirePart("persona.init_outcome", personaInitOutcome, "persona.check_warning();");
+requirePart("persona.init_outcome", personaInitOutcome, "persona.node.div.addEventListener('mouseenter', persona.create);");
+requirePart("persona.init_outcome", personaInitOutcome, "return { kind: 'accepted' };");
+requirePart("persona.init", personaInit, "const outcome = await persona.init_outcome();");
+requirePart("persona.init", personaInit, "return outcome.kind === 'accepted';");
 requirePart("persona.check_p", personaCheckP, "const state = parse_hvut_persona_form_state(doc, 'personaFormState');");
 requirePart("persona.check_p", personaCheckP, "if (state === null) {\n      return null;");
 requirePart("persona.check_p", personaCheckP, "if (persona.set_value() === false) return null;");
@@ -145,6 +158,9 @@ for (const required of [
 for (const forbidden of [
   "const value = /^(.+) Lv\\.(\\d+)/.exec($id('level_readout', doc).textContent.trim())[1];",
   "const eset = parseInt($qs('img[src$=\"_on.png\"]', doc).src.match(/set(\\d+)_on/)[1]);",
+  "persona.init = function ()",
+  "persona.change_e();",
+  "persona.change_p();",
   "persona.check_p(doc);\n    if (persona.selector_p)",
   "persona.check_e(doc);\n    const json = persona.json;",
   "if ((await persona.change_e()) === false) return false;",

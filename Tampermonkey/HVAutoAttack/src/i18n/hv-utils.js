@@ -3180,24 +3180,31 @@ const bindPersona = function (persona, ctx) {
     return write_hvut_character_config_value(ctx, key, value, stage);
   };
 
-  persona.init = function () {
+  persona.init_outcome = async function () {
     if ($id('persona_form')) {
       const personaCheck = persona.check_p();
       if (personaCheck === null) {
-        return false;
+        return reject_hvut_persona_sync('personaInitFormStateRejected', {});
       }
       if (!personaCheck) {
-        persona.change_e();
+        const equipOutcome = await persona.change_e_outcome();
+        if (equipOutcome.kind === 'rejected') return equipOutcome;
       } else {
         persona.set_button();
       }
     } else if (!persona.json.pset || !persona.json.eset) {
-      persona.change_p();
+      const personaOutcome = await persona.change_p_outcome();
+      if (personaOutcome.kind === 'rejected') return personaOutcome;
     } else {
       persona.set_button();
     }
     persona.check_warning();
     persona.node.div.addEventListener('mouseenter', persona.create);
+    return { kind: 'accepted' };
+  };
+  persona.init = async function () {
+    const outcome = await persona.init_outcome();
+    return outcome.kind === 'accepted';
   };
   persona.create = function () {
     const json = persona.json;
