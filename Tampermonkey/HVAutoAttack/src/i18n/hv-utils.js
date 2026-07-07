@@ -2509,7 +2509,7 @@ const $item = {
   buy: async function (items) { //items = [{ name, count }];
     const outcome = await run_hvut_item_shop_buy(items, $item);
     if (outcome.kind === 'rejected') {
-      alert(outcome.message);
+      show_hvut_failure_report('Item shop buy failed', outcome.evidence);
       return false;
     }
     return true;

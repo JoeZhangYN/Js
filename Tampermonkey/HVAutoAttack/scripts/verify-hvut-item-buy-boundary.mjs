@@ -94,7 +94,7 @@ for (const required of [
 for (const required of [
   "const outcome = await run_hvut_item_shop_buy(items, $item);",
   "if (outcome.kind === 'rejected') {",
-  "alert(outcome.message);",
+  "show_hvut_failure_report('Item shop buy failed', outcome.evidence);",
   "return false;",
   "return true;",
 ]) {
@@ -104,6 +104,9 @@ for (const required of [
 }
 if (buyBody.includes("const error = get_message(doc);")) {
   violations.push(`${target} $item.buy must classify HV response through classify_hvut_item_shop_buy_response`);
+}
+if (buyBody.includes("alert(outcome.message);")) {
+  violations.push(`${target} $item.buy must show copyable diagnostic evidence instead of a bare alert`);
 }
 if (buyBody.includes("return classify_hvut_item_shop_buy_response(doc);")) {
   violations.push(`${target} $item.buy must pass item identity into classify_hvut_item_shop_buy_response`);
