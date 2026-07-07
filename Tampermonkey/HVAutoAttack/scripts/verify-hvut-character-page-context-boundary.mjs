@@ -9,16 +9,25 @@ const violations = [];
 for (const required of [
   "var create_hvut_character_page_context = function (query) {",
   "var source = resolve_hvut_page_query(query);",
+  "var section = source?.s;",
   "var ss = source?.ss || 'ch';",
+  "var equipSlot = source?.equip_slot;",
   "var hasPersonaSurface = !!$id('persona_outer');",
+  "section: section,",
+  "equipSlot: equipSlot,",
   "surfaceSs: ss,",
   "hasPersonaSurface: hasPersonaSurface,",
-  "isCharacter: ss === 'ch' || hasPersonaSurface,",
-  "isEquipment: ss === 'eq',",
-  "isAbilities: ss === 'ab',",
-  "isTraining: ss === 'tr',",
-  "isItemInventory: ss === 'it',",
-  "isSettings: ss === 'se',",
+  "isCharacter: section === 'Character' && (ss === 'ch' || hasPersonaSurface),",
+  "isEquipment: section === 'Character' && ss === 'eq',",
+  "isAbilities: section === 'Character' && ss === 'ab',",
+  "isTraining: section === 'Character' && ss === 'tr',",
+  "isItemInventory: section === 'Character' && ss === 'it',",
+  "isSettings: section === 'Character' && ss === 'se',",
+  "hasEquipSlot: section === 'Character' && ss === 'eq' && !!equipSlot,",
+  "var hvut_character_page_context = null;",
+  "var get_hvut_character_page_context = function () {",
+  "hvut_character_page_context = hvut_character_page_context || create_hvut_character_page_context();",
+  "return hvut_character_page_context;",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep Character page context boundary: ${required}`);
@@ -26,25 +35,29 @@ for (const required of [
 }
 
 const characterBodies = [
-  ...text.matchAll(/const characterPage = create_hvut_character_page_context\(\);[\s\S]*?\n\} else\n\/\/ \[END (?:6|7)\] Character - Settings/g),
+  ...text.matchAll(/const characterPage = get_hvut_character_page_context\(\);[\s\S]*?\n\} else\n\/\/ \[END (?:6|7)\] Character - Settings/g),
 ].map((match) => match[0]);
 
 if (characterBodies.length !== 2) {
   violations.push(`${target} must keep both Character segment bodies visible, found ${characterBodies.length}`);
 }
 
-const fontSettingChecks = [...text.matchAll(/if \(create_hvut_character_page_context\(\)\.isSettings\) \{/g)].length;
+const fontSettingChecks = [...text.matchAll(/if \(get_hvut_character_page_context\(\)\.isSettings\) \{/g)].length;
 if (fontSettingChecks !== 2) {
   violations.push(`${target} must route both font setting checks through Character page context, found ${fontSettingChecks}`);
 }
 
-if (!text.includes("$id('csp').dataset.ss = create_hvut_character_page_context().surfaceSs;")) {
+if (!text.includes("$id('csp').dataset.ss = get_hvut_character_page_context().surfaceSs;")) {
   violations.push(`${target} must derive csp surface ss through Character page context`);
 }
 
 for (const forbidden of [
   "if (_query.ss === 'se') {",
+  "_query.s === 'Character'",
+  "_query.equip_slot",
   "$id('csp').dataset.ss = _query.ss || 'ch';",
+  "create_hvut_character_page_context().isSettings",
+  "const characterPage = create_hvut_character_page_context();",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep raw Character settings/surface identity: ${forbidden}`);
@@ -53,13 +66,14 @@ for (const forbidden of [
 
 for (const [index, body] of characterBodies.entries()) {
   for (const required of [
-    "const characterPage = create_hvut_character_page_context();",
-    "if (_query.s === 'Character' && characterPage.isCharacter) {",
-    "if (_query.s === 'Character' && characterPage.isEquipment) {",
-    "if (_query.s === 'Character' && characterPage.isAbilities) {",
-    "if (_query.s === 'Character' && characterPage.isTraining) {",
-    "if (_query.s === 'Character' && characterPage.isItemInventory) {",
-    "if (_query.s === 'Character' && characterPage.isSettings) {",
+    "const characterPage = get_hvut_character_page_context();",
+    "if (characterPage.isCharacter) {",
+    "if (characterPage.isEquipment) {",
+    "if (characterPage.hasEquipSlot) {",
+    "if (characterPage.isAbilities) {",
+    "if (characterPage.isTraining) {",
+    "if (characterPage.isItemInventory) {",
+    "if (characterPage.isSettings) {",
   ]) {
     if (!body.includes(required)) {
       violations.push(`${target} Character body[${index}] must consume page context: ${required}`);

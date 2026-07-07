@@ -33,7 +33,7 @@ const personaChangeEOutcome =
   /persona\.change_e_outcome = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.change_e/.exec(text)?.[0] || "";
 const personaChangeE = /persona\.change_e = async function \(eset\) \{[\s\S]*?\n  \};\n  persona\.set_button/.exec(text)?.[0] || "";
 const equipPopupLoad = /_eq\.popup_load = function \(eq\) \{[\s\S]*?\n  \};\n\n  _eq\.charm_load/.exec(text)?.[0] || "";
-const equipCharmAppend = /_eq\.charm_append = function \(eq\) \{[\s\S]*?\n  \};\n\n  if \(_query\.equip_slot\)/.exec(text)?.[0] || "";
+const equipCharmAppend = /_eq\.charm_append = function \(eq\) \{[\s\S]*?\n  \};\n\n  if \(characterPage\.hasEquipSlot\)/.exec(text)?.[0] || "";
 
 for (const [label, body] of [
   ["character parse helper", helperRegion],

@@ -1953,19 +1953,29 @@ try {
   };
   var create_hvut_character_page_context = function (query) {
     var source = resolve_hvut_page_query(query);
+    var section = source?.s;
     var ss = source?.ss || 'ch';
+    var equipSlot = source?.equip_slot;
     var hasPersonaSurface = !!$id('persona_outer');
     return {
+      section: section,
       ss: ss,
+      equipSlot: equipSlot,
       surfaceSs: ss,
       hasPersonaSurface: hasPersonaSurface,
-      isCharacter: ss === 'ch' || hasPersonaSurface,
-      isEquipment: ss === 'eq',
-      isAbilities: ss === 'ab',
-      isTraining: ss === 'tr',
-      isItemInventory: ss === 'it',
-      isSettings: ss === 'se',
+      isCharacter: section === 'Character' && (ss === 'ch' || hasPersonaSurface),
+      isEquipment: section === 'Character' && ss === 'eq',
+      isAbilities: section === 'Character' && ss === 'ab',
+      isTraining: section === 'Character' && ss === 'tr',
+      isItemInventory: section === 'Character' && ss === 'it',
+      isSettings: section === 'Character' && ss === 'se',
+      hasEquipSlot: section === 'Character' && ss === 'eq' && !!equipSlot,
     };
+  };
+  var hvut_character_page_context = null;
+  var get_hvut_character_page_context = function () {
+    hvut_character_page_context = hvut_character_page_context || create_hvut_character_page_context();
+    return hvut_character_page_context;
   };
   var create_hvut_monster_lab_slot_url = function (mob) {
     return `?s=Bazaar&ss=ml&slot=${mob?.index ?? mob}`;
@@ -6731,7 +6741,7 @@ if (!$id('navbar')) {
 // CHECK FONT SETTINGS
 const level_exec = /^(.+) Lv\.(\d+)/.exec($id('level_readout').textContent.trim());
 if (!level_exec) {
-  if (create_hvut_character_page_context().isSettings) {
+  if (get_hvut_character_page_context().isSettings) {
     alert('你没有足够的Credits！');
     scrollIntoView($id('settings_cfont').parentNode, $id('settings_outer'));
     const form = $qs('#settings_outer form');
@@ -6832,7 +6842,7 @@ bindBattlePanel($battle, { // 渲染/交互内核 + 数据层(2026-06-10 续收,
 });
 
 // BASIC CSS
-$id('csp').dataset.ss = create_hvut_character_page_context().surfaceSs;
+$id('csp').dataset.ss = get_hvut_character_page_context().surfaceSs;
 
 GM_addStyle(/*css*/`
   input[type='text'], input[type='number'] { margin: 0 5px; padding: 2px 4px; border-width: 1px; line-height: 16px; }
@@ -7112,8 +7122,8 @@ _bottom.init();
 
 
 //* [1] Character - Character
-const characterPage = create_hvut_character_page_context();
-if (_query.s === 'Character' && characterPage.isCharacter) {
+const characterPage = get_hvut_character_page_context();
+if (characterPage.isCharacter) {
   _ch.persona = $id('persona_form').elements.persona_set.value;
 
   // _ch 经验模拟器: refuter(2026-06-10) 判 true-dup —— 核心公式(2.850263212287058 等级表 / prof_gain ×4·(1+assim·0.1))
@@ -7222,7 +7232,7 @@ if (_query.s === 'Character' && characterPage.isCharacter) {
 
 
 //* [2] Character - Equipment
-if (_query.s === 'Character' && characterPage.isEquipment) {
+if (characterPage.isEquipment) {
   _eq.node = {};
 
   _eq.init = function () {
@@ -7343,7 +7353,7 @@ if (_query.s === 'Character' && characterPage.isEquipment) {
     eq.node.charms = div;
   };
 
-  if (_query.equip_slot) {
+  if (characterPage.hasEquipSlot) {
     $equip.list.table($qs('#equiplist > table'));
   } else {
     GM_addStyle(/*css*/`
@@ -7383,7 +7393,7 @@ if (_query.s === 'Character' && characterPage.isEquipment) {
 
 
 //* [3] Character - Abilities
-if (_query.s === 'Character' && characterPage.isAbilities) {
+if (characterPage.isAbilities) {
   _ab.abilities = {
     'HP Tank': { category: 'General', img: '3.png', pos: 0, unlock: [0, 25, 50, 75, 100, 120, 150, 200, 250, 300], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
     'MP Tank': { category: 'General', img: '3.png', pos: -34, unlock: [0, 30, 60, 90, 120, 160, 210, 260, 310, 350], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
@@ -7785,7 +7795,7 @@ if (_query.s === 'Character' && characterPage.isAbilities) {
 
 
 //* [4] Character - Training
-if (_query.s === 'Character' && characterPage.isTraining) {
+if (characterPage.isTraining) {
   _tr.node = {};
   _tr.json = $config.get('tr_notif', {}, 'hvut_');
   _tr.level = {};
@@ -7918,14 +7928,14 @@ if (_query.s === 'Character' && characterPage.isTraining) {
 
 
 //* [5] Character - Item Inventory
-if (_query.s === 'Character' && characterPage.isItemInventory) {
+if (characterPage.isItemInventory) {
   _it.init();
 } else
 // [END 5] Character - Item Inventory */
 
 
 //* [6] Character - Settings
-if (_query.s === 'Character' && characterPage.isSettings) {
+if (characterPage.isSettings) {
   _se.node = { buttons: {} };
   _se.form = $qs('#settings_outer form');
   _se.json = $config.get('se_settings', {});
@@ -12217,7 +12227,7 @@ if (!$id('navbar')) {
 // CHECK FONT SETTINGS
 const level_exec = /^(.+) Lv\.(\d+)/.exec($id('level_readout').textContent.trim());
 if (!level_exec) {
-  if (create_hvut_character_page_context().isSettings) {
+  if (get_hvut_character_page_context().isSettings) {
     alert('使用脚本前，请先设置自定义字体[Custom Font].');
     scrollIntoView($id('settings_cfont').parentNode, $id('settings_outer'));
     const form = $qs('#settings_outer form');
@@ -12897,8 +12907,8 @@ if ($config.settings.lotteryNotification) {
 
 
 //* [1] Character - Character
-const characterPage = create_hvut_character_page_context();
-if (_query.s === 'Character' && characterPage.isCharacter) {
+const characterPage = get_hvut_character_page_context();
+if (characterPage.isCharacter) {
   _ch.persona = $id('persona_form').elements.persona_set.value;
   // _ch 经验模拟器: refuter(2026-06-10) 判 true-dup(公式两版 byte-identical), 但 $input 签名/结构/init流 分叉,
   // 全收口需结构归一重构 + UI 实站验证 → 留各版待实站基线后专做(详 isekai 版注释)。
@@ -13007,7 +13017,7 @@ if (_query.s === 'Character' && characterPage.isCharacter) {
 
 
 //* [2] Character - Equipment
-if (_query.s === 'Character' && characterPage.isEquipment) {
+if (characterPage.isEquipment) {
   _eq.show_base = async function () { // 旧 .st1-.st3 selector 随旧页面死亡 → isekai 版(#stats_scrollable, 2026-06-10)
     const html = await $ajax.fetch(create_hvut_character_page_url());
     const doc = $doc(html);
@@ -13413,7 +13423,7 @@ if (_query.s === 'Character' && characterPage.isEquipment) {
 
   _eq.node = {};
 
-  if (_query.equip_slot) {
+  if (characterPage.hasEquipSlot) {
     GM_addStyle(/*css*/`
       #eqch_left .eqb { padding: 0; height: auto; font-size: 10pt; line-height: 20px; text-align: center; overflow: hidden; }
       #eqch_left .eqb > div:last-child { padding: 1px 0; position: relative; }
@@ -13513,7 +13523,7 @@ if (_query.s === 'Character' && characterPage.isEquipment) {
 
 
 //* [3] Character - Abilities
-if (_query.s === 'Character' && characterPage.isAbilities) {
+if (characterPage.isAbilities) {
   _ab.ability = {
     'HP Tank': { category: 'General', img: '3.png', pos: 0, unlock: [0, 25, 50, 75, 100, 120, 150, 200, 250, 300], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
     'MP Tank': { category: 'General', img: '3.png', pos: -34, unlock: [0, 30, 60, 90, 120, 160, 210, 260, 310, 350], point: [1, 2, 3, 3, 4, 4, 4, 5, 5, 5] },
@@ -13917,7 +13927,7 @@ if (_query.s === 'Character' && characterPage.isAbilities) {
 
 
 //* [4] Character - Training
-if (_query.s === 'Character' && characterPage.isTraining) {
+if (characterPage.isTraining) {
   _tr.data = {
     'Adept Learner': { id: 50, b: 100, l: 50, e: 0.000417446 },
     'Assimilator': { id: 51, b: 50000, l: 50000, e: 0.0057969565 },
@@ -14040,14 +14050,14 @@ if (_query.s === 'Character' && characterPage.isTraining) {
 
 
 //* [5] Character - Item Inventory
-if (_query.s === 'Character' && characterPage.isItemInventory) {
+if (characterPage.isItemInventory) {
   _it.init();
 } else
 // [END 5] Character - Item Inventory */
 
 
 //* [7] Character - Settings
-if (_query.s === 'Character' && characterPage.isSettings) {
+if (characterPage.isSettings) {
   _se.form = $qs('#settings_outer form');
   _se.elements = Array.from(_se.form.elements);
   _se.json = $config.get('se_settings', {});
@@ -17957,3 +17967,4 @@ if (get_hvut_armory_page_context($config).isArmory && get_hvut_armory_page_conte
     else document.addEventListener("DOMContentLoaded", __hvaaShowErr);
   } catch (_) { /* 诊断不得二次抛错 */ }
 }
+
