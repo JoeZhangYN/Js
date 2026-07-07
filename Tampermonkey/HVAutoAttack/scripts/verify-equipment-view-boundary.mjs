@@ -7,7 +7,10 @@ const entryFile = path.join(root, "src/pages/equipment-view-automation.js");
 const percentileFile = path.join(root, "src/pages/equip-percentile-offline.js");
 const percentileFailureFile = path.join(root, "src/pages/equip-percentile-failure.js");
 const percentileFailureTest = path.join(root, "src/pages/equip-percentile-failure.test.js");
-const percentileOfflineFailureTest = path.join(root, "src/pages/equip-percentile-offline-failure.test.js");
+const percentileOfflineFailureTest = path.join(
+  root,
+  "src/pages/equip-percentile-offline-failure.test.js"
+);
 const forgeCostFile = path.join(root, "src/pages/showequip-forge-cost.js");
 const forgeCostTest = path.join(root, "src/pages/showequip-forge-cost.test.js");
 const diagnosticKeysFile = path.join(root, "src/core/diagnostic-evidence-keys.js");
@@ -70,9 +73,14 @@ function checkEntry() {
       violations.push(`${rel(entryFile)} must own ${required} equipment workflow wiring`);
     }
   }
-  const testText = fs.readFileSync(path.join(root, "src/pages/equipment-view-automation.test.js"), "utf8");
+  const testText = fs.readFileSync(
+    path.join(root, "src/pages/equipment-view-automation.test.js"),
+    "utf8"
+  );
   if (
-    !testText.includes("rejects unknown and null events without reading options or running enhancements") ||
+    !testText.includes(
+      "rejects unknown and null events without reading options or running enhancements"
+    ) ||
     !testText.includes("runEquipmentViewAutomation(null")
   ) {
     violations.push(`${rel(entryFile)} tests must cover unknown and null equipment view events`);
@@ -135,10 +143,16 @@ function checkForgeCostNameParsing() {
     violations.push(`${rel(forgeCostFile)} must expose one showequip name parser`);
   }
   if (!forgeText.includes("const fullName = readShowEquipName(document.body);")) {
-    violations.push(`${rel(forgeCostFile)} must route material selection through readShowEquipName`);
+    violations.push(
+      `${rel(forgeCostFile)} must route material selection through readShowEquipName`
+    );
   }
-  if (/function getEquipName\b|typeof body\.children\[1\]/.test(forgeText)) {
-    violations.push(`${rel(forgeCostFile)} must not parse showequip names through the old raw children path`);
+  if (
+    /function getEquipName\b|body\.children|showequip\.children|nameDiv\.children/.test(forgeText)
+  ) {
+    violations.push(
+      `${rel(forgeCostFile)} must not parse showequip names through the old raw children path`
+    );
   }
   if (!fs.existsSync(forgeCostTest)) {
     violations.push(`${rel(forgeCostTest)} must cover showequip name parsing`);
@@ -147,6 +161,7 @@ function checkForgeCostNameParsing() {
   const forgeTestText = fs.readFileSync(forgeCostTest, "utf8");
   for (const required of [
     "reads showequip names from known page layouts",
+    "prefers the showequip name surface over forge upgrade text",
     "fails closed for missing showequip name nodes",
     "Legendary Rapier of Slaughter",
     "readShowEquipName(null)",
@@ -182,7 +197,9 @@ function checkPercentileFailureBoundary() {
   const diagnosticKeysText = fs.readFileSync(diagnosticKeysFile, "utf8");
   const diagnosticTestText = fs.readFileSync(diagnosticTestFile, "utf8");
   if (/catch\s*\{\s*\/\* ignore \*\/\s*\}/.test(percentileText)) {
-    violations.push(`${rel(percentileFile)} must not silently ignore percentile preference IO failures`);
+    violations.push(
+      `${rel(percentileFile)} must not silently ignore percentile preference IO failures`
+    );
   }
   for (const required of [
     "persistEquipmentPercentilePreference",
@@ -227,8 +244,8 @@ function checkPercentileFailureBoundary() {
     }
   }
   for (const required of [
-    "EQUIPMENT_PERCENTILE_FAILURE: \"HVAA:lastEquipmentPercentileFailure\"",
-    "source(\"equipmentPercentileFailure\", DiagnosticEvidenceKey.EQUIPMENT_PERCENTILE_FAILURE)",
+    'EQUIPMENT_PERCENTILE_FAILURE: "HVAA:lastEquipmentPercentileFailure"',
+    'source("equipmentPercentileFailure", DiagnosticEvidenceKey.EQUIPMENT_PERCENTILE_FAILURE)',
   ]) {
     if (!diagnosticKeysText.includes(required)) {
       violations.push(`${rel(diagnosticKeysFile)} must expose ${required}`);
@@ -236,7 +253,7 @@ function checkPercentileFailureBoundary() {
   }
   for (const required of [
     "HVAA:lastEquipmentPercentileFailure",
-    "equipmentPercentileFailure: { capability: \"equipmentPercentile\", stage: \"persist-preference\" }",
+    'equipmentPercentileFailure: { capability: "equipmentPercentile", stage: "persist-preference" }',
   ]) {
     if (!diagnosticTestText.includes(required)) {
       violations.push(`${rel(diagnosticTestFile)} must cover ${required}`);

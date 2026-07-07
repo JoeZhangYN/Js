@@ -63,21 +63,32 @@ function upgradeSummary(input, basicMaterialCost, maxLevel) {
 }
 
 export function readShowEquipName(body) {
-  const showequip = body?.children?.[1];
-  if (!showequip) return "无此物品";
-  const nameDiv =
-    showequip.children?.length === 3
-      ? showequip.children?.[0]?.children?.[0]
-      : showequip.children?.[1]?.children?.[0];
-  const name = nameDiv?.children?.[0]?.textContent;
-  if (!name) return "无此物品";
-  const suffix = nameDiv.children?.length === 3 ? nameDiv.children?.[2]?.textContent : "";
-  return suffix ? `${name} ${suffix}` : name;
+  const showequip = body?.matches?.("#showequip") ? body : body?.querySelector?.("#showequip");
+  const root = showequip || body;
+  const nameNode = [
+    ":scope > div:first-of-type > div:first-of-type",
+    ":scope > div:nth-of-type(2) > div:first-of-type",
+    "div:first-of-type > div:first-of-type",
+    "div:nth-of-type(2) > div:first-of-type",
+  ]
+    .map((selector) => root?.querySelector?.(selector))
+    .find((node) => readShowEquipNameText(node));
+  return readShowEquipNameText(nameNode) || "无此物品";
+}
+
+function readShowEquipNameText(nameNode) {
+  if (!nameNode) return "";
+  const spanParts = Array.from(nameNode.querySelectorAll?.(":scope > span") || [])
+    .map((part) => part.textContent?.trim())
+    .filter(Boolean);
+  const text = spanParts.length ? spanParts.join(" ") : nameNode.textContent?.trim();
+  return text || "";
 }
 
 function getBasicMaterialCost(materialCost) {
   const fullName = readShowEquipName(document.body);
-  if (fullName.match(/Axe|Club|Rapier|Shortsword|Wakizashi|Estoc|Longsword|Mace|Katana/i)) return materialCost.metal;
+  if (fullName.match(/Axe|Club|Rapier|Shortsword|Wakizashi|Estoc|Longsword|Mace|Katana/i))
+    return materialCost.metal;
   if (fullName.match(/Katalox|Redwood|Willow|Oak|Buckler|Kite/i)) return materialCost.wood;
   if (fullName.match(/Cotton/i)) return materialCost.cloth;
   if (fullName.match(/Leather/i)) return materialCost.leather;
@@ -125,17 +136,38 @@ function outputSummary(equipment, output, basicMaterialCost, maxLevel, baseSumma
   header.style = "font-weight:bold";
   header.innerHTML = "成本汇总:";
   html.appendChild(header);
-  const mg = cE("span"); mg.className = "ep"; mg.innerHTML = "中级材料 " + credit(summary.midGrade); html.appendChild(mg);
-  const hg = cE("span"); hg.className = "ep"; hg.innerHTML = " 高级材料 " + credit(summary.highGrade); html.appendChild(hg);
-  const bi = cE("span"); bi.className = "ep"; bi.innerHTML = " 绑定石 " + credit(summary.binding); html.appendChild(bi);
-  const ca = cE("span"); ca.className = "ep"; ca.innerHTML = "<br/> 催化剂 " + credit(summary.catalyst); html.appendChild(ca);
-  const sp = cE("span"); sp.className = "ep"; sp.innerHTML = " 特殊材料 " + credit(summary.special); html.appendChild(sp);
-  const tot = cE("p"); tot.style = "color:#F00";
+  const mg = cE("span");
+  mg.className = "ep";
+  mg.innerHTML = "中级材料 " + credit(summary.midGrade);
+  html.appendChild(mg);
+  const hg = cE("span");
+  hg.className = "ep";
+  hg.innerHTML = " 高级材料 " + credit(summary.highGrade);
+  html.appendChild(hg);
+  const bi = cE("span");
+  bi.className = "ep";
+  bi.innerHTML = " 绑定石 " + credit(summary.binding);
+  html.appendChild(bi);
+  const ca = cE("span");
+  ca.className = "ep";
+  ca.innerHTML = "<br/> 催化剂 " + credit(summary.catalyst);
+  html.appendChild(ca);
+  const sp = cE("span");
+  sp.className = "ep";
+  sp.innerHTML = " 特殊材料 " + credit(summary.special);
+  html.appendChild(sp);
+  const tot = cE("p");
+  tot.style = "color:#F00";
   if (baseSummary) {
     totalInvested.summary = summary;
     tot.innerHTML = "总计 " + credit(upgradeTotal(summary));
   } else {
-    tot.innerHTML = "总计 " + credit(upgradeTotal(summary)) + " (" + credit(upgradeTotal(totalInvested.summary)) + ")";
+    tot.innerHTML =
+      "总计 " +
+      credit(upgradeTotal(summary)) +
+      " (" +
+      credit(upgradeTotal(totalInvested.summary)) +
+      ")";
   }
   html.appendChild(tot);
   equipment.appendChild(html);
@@ -151,7 +183,9 @@ function calcCost(levelOverride, ctx) {
     const upgradeIdentifier = upgradeStr.substring(0, upgradeStr.lastIndexOf(" "));
     const stat = cfg.mapping[upgradeIdentifier];
     if (!stat) continue;
-    let upgradeLevel = parseInt(upgradeStr.substring(upgradeStr.lastIndexOf(" ") + 4, upgradeStr.length));
+    let upgradeLevel = parseInt(
+      upgradeStr.substring(upgradeStr.lastIndexOf(" ") + 4, upgradeStr.length)
+    );
     if (stat[1] && overrideLv >= 100) overrideLv = 100;
     else if (!stat[1] && overrideLv >= 50) overrideLv = 50;
     if (overrideLv > 0) {
@@ -160,12 +194,32 @@ function calcCost(levelOverride, ctx) {
     }
     const bindingCost = stat[0];
     const isDamage = stat[1];
-    const costObj = calculateUpgradeCost(upgradeLevel, bindingCost, basicMaterialCost, isDamage, cfg);
+    const costObj = calculateUpgradeCost(
+      upgradeLevel,
+      bindingCost,
+      basicMaterialCost,
+      isDamage,
+      cfg
+    );
     if (upgradeLevel > maxLevel) maxLevel = upgradeLevel;
     output[upgradeStr] = costObj;
-    appendTitle(upgrades[i], upgradeIdentifier, upgradeLevel, costObj, levelOverride === -1, totalInvested);
+    appendTitle(
+      upgrades[i],
+      upgradeIdentifier,
+      upgradeLevel,
+      costObj,
+      levelOverride === -1,
+      totalInvested
+    );
   }
-  outputSummary(equipment, output, basicMaterialCost, maxLevel, levelOverride === -1, totalInvested);
+  outputSummary(
+    equipment,
+    output,
+    basicMaterialCost,
+    maxLevel,
+    levelOverride === -1,
+    totalInvested
+  );
 }
 
 /**
@@ -184,9 +238,10 @@ export function runForgeCostEnhancement() {
 
   // 预测 Lv 输入框（上游用 body.childNodes[3] 下的第一个 div；保留以保持外观一致）
   const anchorNode = equipment.childNodes[3];
-  const anchorDiv = anchorNode && anchorNode.getElementsByTagName
-    ? anchorNode.getElementsByTagName("div")[0]
-    : null;
+  const anchorDiv =
+    anchorNode && anchorNode.getElementsByTagName
+      ? anchorNode.getElementsByTagName("div")[0]
+      : null;
   if (anchorDiv) {
     const inp = cE("input");
     inp.size = 2;
