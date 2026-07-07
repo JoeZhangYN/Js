@@ -2,7 +2,8 @@ import { TimeEvent, runTimeAutomation } from "../core/time.js";
 
 const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000,
   ENCOUNTER_DAILY_LIMIT = 24,
-  ENCOUNTER_MIDNIGHT_GRACE_MS = 5000;
+  ENCOUNTER_MIDNIGHT_GRACE_MS = 5000,
+  ENCOUNTER_GENERATION_URL = "https://e-hentai.org/news.php?encounter";
 
 export const EncounterPolicyEvent = Object.freeze({
   DEFAULT_STATE: "defaultState",
@@ -93,6 +94,9 @@ function planEncounterActivation(state, { force: _force = false, nowMs = Date.no
       state: readiness.state,
     };
   }
+  if (!readiness.state.key && !readiness.dailyLimitReached && readiness.remainingMs === 0) {
+    return { action: "navigate", href: ENCOUNTER_GENERATION_URL, state: readiness.state };
+  }
   return { action: "load", state: readiness.state };
 }
 
@@ -118,6 +122,7 @@ function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
 function markEncounterAttempted(state, key, nowMs = Date.now()) {
   const next = normalizeEncounterState(state, nowMs);
   if (!key || next.key !== key) return next;
+  next.date = nowMs;
   next.clear = true;
   return next;
 }
@@ -143,17 +148,12 @@ const encounterPolicyEventHandlers = Object.freeze({
   [EncounterPolicyEvent.RESET_DAY]: () => defaultEncounterState(),
   [EncounterPolicyEvent.NORMALIZE]: (event) => normalizeEncounterState(event.state, event.nowMs),
   [EncounterPolicyEvent.READ_CLOCK]: (event) => readEncounterClock(event.state, event.nowMs),
-  [EncounterPolicyEvent.PLAN_NEXT_CHECK]: (event) =>
-    planNextEncounterCheck(event.state, { nowMs: event.nowMs, jitter: event.jitter }),
-  [EncounterPolicyEvent.PLAN_ACTIVATION]: (event) =>
-    planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs }),
+  [EncounterPolicyEvent.PLAN_NEXT_CHECK]: (event) => planNextEncounterCheck(event.state, { nowMs: event.nowMs, jitter: event.jitter }),
+  [EncounterPolicyEvent.PLAN_ACTIVATION]: (event) => planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs }),
   [EncounterPolicyEvent.PARSE_SEARCH_KEY]: (event) => parseEncounterKeyFromSearch(event.search),
-  [EncounterPolicyEvent.PARSE_EVENTPANE_KEY]: (event) =>
-    parseEncounterKeyFromEventpaneHtml(event.eventpane),
-  [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) =>
-    markEncounterKeyAvailable(event.state, event.key, event.nowMs),
-  [EncounterPolicyEvent.MARK_ATTEMPTED]: (event) =>
-    markEncounterAttempted(event.state, event.key, event.nowMs),
+  [EncounterPolicyEvent.PARSE_EVENTPANE_KEY]: (event) => parseEncounterKeyFromEventpaneHtml(event.eventpane),
+  [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) => markEncounterKeyAvailable(event.state, event.key, event.nowMs),
+  [EncounterPolicyEvent.MARK_ATTEMPTED]: (event) => markEncounterAttempted(event.state, event.key, event.nowMs),
   [EncounterPolicyEvent.MARK_STARTED]: (event) =>
     markEncounterStarted(event.state, {
       search: event.search,

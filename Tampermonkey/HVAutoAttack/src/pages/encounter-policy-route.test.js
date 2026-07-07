@@ -50,7 +50,7 @@ describe("runEncounterPolicy route contract", () => {
     expect(started).toEqual({ date: 1000, key: "abc", count: 1, clear: true });
   });
 
-  it("marks attempted entry as cleared without counting a new encounter", () => {
+  it("marks attempted entry as cleared and starts the next cooldown without counting a new encounter", () => {
     expect(
       runEncounterPolicy({
         type: EncounterPolicyEvent.MARK_ATTEMPTED,
@@ -58,7 +58,7 @@ describe("runEncounterPolicy route contract", () => {
         key: "abc",
         nowMs: 2000,
       })
-    ).toEqual({ date: 1000, key: "abc", count: 1, clear: true });
+    ).toEqual({ date: 2000, key: "abc", count: 1, clear: true });
   });
 
   it("plans entry only for an uncleared encounter key", () => {

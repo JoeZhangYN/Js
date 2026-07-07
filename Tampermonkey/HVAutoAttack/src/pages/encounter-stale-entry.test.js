@@ -54,6 +54,27 @@ describe("encounter stale entry recovery", () => {
     });
   });
 
+  it("navigates to encounter generation when the ready window opens without a stored key", async () => {
+    localStorage.setItem(
+      HVUT_RE_KEY,
+      JSON.stringify({
+        date: Date.now() - 1_860_000,
+        key: "",
+        count: 1,
+        clear: true,
+      })
+    );
+
+    const outcome = await runEncounterAutomation({ type: EncounterEvent.LOBBY_TICK, rerun: vi.fn() });
+
+    expect(outcome).toMatchObject({
+      action: "navigated",
+      href: "https://e-hentai.org/news.php?encounter",
+      handled: true,
+      claimed: true,
+    });
+  });
+
   it("does not let a forced widget click revive an already attempted key", () => {
     const outcome = runEncounterAutomation({
       type: EncounterEvent.WIDGET_CLICKED,
