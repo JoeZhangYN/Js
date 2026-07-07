@@ -136,54 +136,39 @@ try {
       showTextareaDefaultButton: !!context?.showTextareaDefaultButton,
     };
   };
-  var get_hvut_config_carry_keys = function (segment) {
-    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.carryKeys) {
-      return window.HVAA_hvutConfigMigration.carryKeys(segment);
+  var run_hvut_config_migration_bridge = function (method, args, stage, detail, fallback) {
+    var bridge = typeof window !== 'undefined' ? window.HVAA_hvutConfigMigration : undefined;
+    if (!bridge || typeof bridge[method] !== 'function') {
+      record_hvut_config_parse_failure(stage, detail || {});
+      return fallback;
     }
-    record_hvut_config_parse_failure('configCarryKeysBridgeMissing', segment || {});
-    return null;
+    try {
+      return bridge[method](...(args || []));
+    } catch (error) {
+      record_hvut_config_parse_failure(stage + 'Failed', { ...(detail || {}), error: error?.message || String(error) });
+      return fallback;
+    }
+  };
+  var get_hvut_config_carry_keys = function (segment) {
+    return run_hvut_config_migration_bridge('carryKeys', [segment], 'configCarryKeysBridgeMissing', segment || {}, null);
   };
   var get_hvut_config_namespace = function (segment) {
-    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.namespace) {
-      return window.HVAA_hvutConfigMigration.namespace(segment);
-    }
-    record_hvut_config_parse_failure('configNamespaceBridgeMissing', segment || {});
-    return null;
+    return run_hvut_config_migration_bridge('namespace', [segment], 'configNamespaceBridgeMissing', segment || {}, null);
   };
   var build_hvut_legacy_equipdata = function (inEquipdata, inJson) {
-    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.buildEquipData) {
-      return window.HVAA_hvutConfigMigration.buildEquipData(inEquipdata, inJson);
-    }
-    record_hvut_config_parse_failure('configEquipDataBridgeMissing', {});
-    return null;
+    return run_hvut_config_migration_bridge('buildEquipData', [inEquipdata, inJson], 'configEquipDataBridgeMissing', {}, null);
   };
   var normalize_hvut_legacy_equip_code = function (equipCode) {
-    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.normalizeEquipCode) {
-      return window.HVAA_hvutConfigMigration.normalizeEquipCode(equipCode);
-    }
-    record_hvut_config_parse_failure('configEquipCodeBridgeMissing', {});
-    return null;
+    return run_hvut_config_migration_bridge('normalizeEquipCode', [equipCode], 'configEquipCodeBridgeMissing', {}, null);
   };
   var normalize_hvut_config_settings = function (settings, defaults) {
-    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.normalizeSettings) {
-      return window.HVAA_hvutConfigMigration.normalizeSettings(settings, defaults);
-    }
-    record_hvut_config_parse_failure('configSettingsBridgeMissing', {});
-    return null;
+    return run_hvut_config_migration_bridge('normalizeSettings', [settings, defaults], 'configSettingsBridgeMissing', {}, null);
   };
   var migrate_hvut_monster_lab_log = function (mlLog) {
-    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.migrateMonsterLabLog) {
-      return window.HVAA_hvutConfigMigration.migrateMonsterLabLog(mlLog);
-    }
-    record_hvut_config_parse_failure('configMonsterLabLogBridgeMissing', {});
-    return null;
+    return run_hvut_config_migration_bridge('migrateMonsterLabLog', [mlLog], 'configMonsterLabLogBridgeMissing', {}, null);
   };
   var normalize_hvut_legacy_prices = function (prices) {
-    if (window.HVAA_hvutConfigMigration && window.HVAA_hvutConfigMigration.normalizePrices) {
-      return window.HVAA_hvutConfigMigration.normalizePrices(prices);
-    }
-    record_hvut_config_parse_failure('configPricesBridgeMissing', {});
-    return null;
+    return run_hvut_config_migration_bridge('normalizePrices', [prices], 'configPricesBridgeMissing', {}, null);
   };
   var run_hvut_config_field_bridge = function (method, args, stage, detail, fallback) {
     var bridge = typeof window !== 'undefined' ? window.HVAA_hvutConfigField : undefined;
