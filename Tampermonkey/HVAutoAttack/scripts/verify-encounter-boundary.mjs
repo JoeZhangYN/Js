@@ -531,6 +531,11 @@ if (!/\bMARK_ATTEMPTED\b/.test(policyText)) {
     `${policyFile.replaceAll("\\", "/")} must expose attempted encounter entry state`
   );
 }
+if (!/\bMARK_GENERATION_ATTEMPTED\b/.test(policyText)) {
+  violations.push(
+    `${policyFile.replaceAll("\\", "/")} must expose missing-key generation attempt state`
+  );
+}
 if (/\bREADINESS\b/.test(policyText)) {
   violations.push(
     `${policyFile.replaceAll("\\", "/")} must not expose a parallel readiness query; use READ_CLOCK`
@@ -589,6 +594,7 @@ if (!policyEntryMatch) {
     "markEncounterKeyAvailable(",
     "markEncounterStarted(",
     "markEncounterAttempted(",
+    "markEncounterGenerationAttempted(",
   ]) {
     if (entryBody.includes(internal)) {
       violations.push(
@@ -742,6 +748,18 @@ if (
   violations.push(
     `${widgetPolicyTest.replaceAll("\\", "/")} must cover unknown and null widget policy events`
   );
+}
+for (const required of [
+  "EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED",
+  "event.engage && unavailableReason === \"encounterKeyMissing\"",
+  "starts a cooldown after a main-world generation load returns no encounter key",
+  "reason: \"cooldown\"",
+]) {
+  if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
+    violations.push(
+      `${widgetPolicyFile.replaceAll("\\", "/")} must preserve missing-key generation cooldown evidence: ${required}`
+    );
+  }
 }
 if (!/\bWIDGET_TIMER_ELAPSED\b/.test(ownerText)) {
   violations.push(

@@ -15,6 +15,7 @@ export const EncounterPolicyEvent = Object.freeze({
   PARSE_EVENTPANE_KEY: "parseEventpaneKey",
   MARK_KEY_AVAILABLE: "markKeyAvailable",
   MARK_ATTEMPTED: "markAttempted",
+  MARK_GENERATION_ATTEMPTED: "markGenerationAttempted",
   MARK_STARTED: "markStarted",
   RESET_DAY: "resetDay",
 });
@@ -25,8 +26,7 @@ function isDifferentUtcDay(dateMs, nowMs) {
   return new Date(dateMs).toISOString().slice(0, 10) !== new Date(nowMs).toISOString().slice(0, 10);
 }
 
-const msUntilNextUtcDay = (stamp) =>
-  runTimeAutomation({ type: TimeEvent.MS_UNTIL_NEXT_UTC_DAY, stamp });
+const msUntilNextUtcDay = (stamp) => runTimeAutomation({ type: TimeEvent.MS_UNTIL_NEXT_UTC_DAY, stamp });
 
 function normalizeEncounterState(state, nowMs = Date.now()) {
   const normalized = {
@@ -64,11 +64,7 @@ function readEncounterClock(state, nowMs = Date.now()) {
     return { ...readiness, status: "ready", countdownMs: 0, reason: "keyAvailable" };
   }
   if (readiness.dailyLimitReached) {
-    return countdownEncounterClock(
-      readiness,
-      msUntilNextUtcDay(nowMs) + ENCOUNTER_MIDNIGHT_GRACE_MS,
-      "dailyReset"
-    );
+    return countdownEncounterClock(readiness, msUntilNextUtcDay(nowMs) + ENCOUNTER_MIDNIGHT_GRACE_MS, "dailyReset");
   }
   if (readiness.remainingMs > 0) {
     return countdownEncounterClock(readiness, readiness.remainingMs, "cooldown");
@@ -127,10 +123,15 @@ function markEncounterAttempted(state, key, nowMs = Date.now()) {
   return next;
 }
 
-function markEncounterStarted(
-  state,
-  { search = "", key = parseEncounterKeyFromSearch(search), nowMs = Date.now() } = {}
-) {
+function markEncounterGenerationAttempted(state, nowMs = Date.now()) {
+  const next = normalizeEncounterState(state, nowMs);
+  if (next.key && !next.clear) return next;
+  next.date = nowMs;
+  next.clear = true;
+  return next;
+}
+
+function markEncounterStarted(state, { search = "", key = parseEncounterKeyFromSearch(search), nowMs = Date.now() } = {}) {
   const next = normalizeEncounterState(state, nowMs);
   if (key && next.key === key) {
     next.clear = true;
@@ -154,12 +155,8 @@ const encounterPolicyEventHandlers = Object.freeze({
   [EncounterPolicyEvent.PARSE_EVENTPANE_KEY]: (event) => parseEncounterKeyFromEventpaneHtml(event.eventpane),
   [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) => markEncounterKeyAvailable(event.state, event.key, event.nowMs),
   [EncounterPolicyEvent.MARK_ATTEMPTED]: (event) => markEncounterAttempted(event.state, event.key, event.nowMs),
-  [EncounterPolicyEvent.MARK_STARTED]: (event) =>
-    markEncounterStarted(event.state, {
-      search: event.search,
-      key: event.key,
-      nowMs: event.nowMs,
-    }),
+  [EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED]: (event) => markEncounterGenerationAttempted(event.state, event.nowMs),
+  [EncounterPolicyEvent.MARK_STARTED]: (event) => markEncounterStarted(event.state, { search: event.search, key: event.key, nowMs: event.nowMs }),
 });
 
 export function runEncounterPolicy(event = { type: EncounterPolicyEvent.READ_CLOCK }) {

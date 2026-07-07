@@ -106,7 +106,10 @@ function planWidgetNewsLoaded(event) {
     };
   }
   const unavailableReason = classifyWidgetUnavailableReason(eventpane);
-  return { ...readWidgetState(event.state), action: "unavailable", unavailableReason };
+  const state = event.engage && unavailableReason === "encounterKeyMissing"
+    ? runEncounterPolicy({ type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED, state: event.state })
+    : event.state;
+  return { ...readWidgetState(state), action: "unavailable", unavailableReason };
 }
 
 function classifyWidgetUnavailableReason(eventpane) {

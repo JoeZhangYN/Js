@@ -40,6 +40,26 @@ describe("planEncounterWidgetEvent", () => {
     });
   });
 
+  it("starts a cooldown after a main-world generation load returns no encounter key", () => {
+    const outcome = planEncounterWidgetEvent({
+      type: "widgetNewsLoaded",
+      state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 7, clear: true },
+      eventpane: "<p>No random encounter is currently available.</p>",
+      engage: true,
+      pageType: "hv",
+    });
+
+    expect(outcome).toMatchObject({
+      action: "unavailable",
+      unavailableReason: "encounterKeyMissing",
+      status: "countdown",
+      reason: "cooldown",
+      remainingMs: expect.any(Number),
+      state: { date: Date.now(), key: "", count: 7, clear: true },
+    });
+    expect(outcome.remainingMs).toBeGreaterThan(0);
+  });
+
   it("does not classify low equipment capacity text as encounter equipment-full failure", () => {
     expect(
       planEncounterWidgetEvent({
