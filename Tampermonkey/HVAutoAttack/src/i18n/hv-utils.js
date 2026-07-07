@@ -617,7 +617,7 @@ try {
     }
     return { kind: 'accepted' };
   };
-  var record_hvut_mooglemail_parse_failure = function (stage, detail) {
+  var create_hvut_mooglemail_parse_evidence = function (stage, detail) {
     var evidence = { capability: 'hvutMoogleMailParse', stage: stage, detail: detail || {} };
     try {
       sessionStorage.setItem('HVAA:lastHvutMoogleMailParseFailure', JSON.stringify(evidence));
@@ -629,6 +629,10 @@ try {
     } catch (_error) {
       // Console hooks must not block HVUT MoogleMail parse fallback.
     }
+    return evidence;
+  };
+  var record_hvut_mooglemail_parse_failure = function (stage, detail) {
+    create_hvut_mooglemail_parse_evidence(stage, detail);
     return null;
   };
   var record_hvut_mooglemail_send_failure = function (stage, detail) {
@@ -748,10 +752,11 @@ try {
   var classify_hvut_mooglemail_view_response = function (doc, stage) {
     var message = get_message(doc);
     if (!message) {
-      record_hvut_mooglemail_parse_failure(stage, { reason: 'viewResponseMessageMissing' });
-      return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误' };
+      var evidence = create_hvut_mooglemail_parse_evidence(stage, { reason: 'viewResponseMessageMissing' });
+      return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误', evidence: evidence };
     }
-    return { kind: 'rejected', reason: 'mailError', error: message };
+    var evidence = create_hvut_mooglemail_parse_evidence(stage, { reason: 'mailError', error: message });
+    return { kind: 'rejected', reason: 'mailError', error: message, evidence: evidence };
   };
   var record_hvut_monster_lab_parse_failure = function (stage, detail) {
     var evidence = { capability: 'hvutMonsterLabParse', stage: stage, detail: detail || {} };

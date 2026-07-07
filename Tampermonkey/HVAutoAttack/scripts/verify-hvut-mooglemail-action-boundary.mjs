@@ -40,10 +40,11 @@ for (const required of [
   "var record_hvut_mooglemail_action_failure = function (stage, detail) {",
   "capability: 'hvutMoogleMailAction'",
   "sessionStorage.setItem('HVAA:lastHvutMoogleMailActionFailure'",
+  "var create_hvut_mooglemail_parse_evidence = function (stage, detail) {",
   "var wait_hvut_mooglemail_db_write = function (stage, detail, conn) {",
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
-  "return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误' };",
-  "return { kind: 'rejected', reason: 'mailError', error: message };",
+  "return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误', evidence: evidence };",
+  "return { kind: 'rejected', reason: 'mailError', error: message, evidence: evidence };",
   "conn.tx.oncomplete = function () {\n          resolve(true);",
   "conn.tx.onerror = function (event) {",
   "conn.tx.onabort = function (event) {",
@@ -164,6 +165,8 @@ for (const forbidden of [
   "view.error = get_message(doc) || '未知错误';",
   "classify_hvut_mooglemail_view_response(doc, 'viewRejectedResponse').error",
   "classify_hvut_mooglemail_view_response(doc, 'legacyViewRejectedResponse').error",
+  "return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误' };",
+  "return { kind: 'rejected', reason: 'mailError', error: message };",
 ]) {
   if (text.includes(forbidden)) violations.push(`${target} must not keep unchecked MoogleMail action path: ${forbidden}`);
 }

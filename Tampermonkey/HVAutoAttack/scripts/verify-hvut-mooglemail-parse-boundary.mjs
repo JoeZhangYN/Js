@@ -13,7 +13,7 @@ function requirePart(label, body, part) {
 }
 
 const helperRegion =
-  /var record_hvut_mooglemail_parse_failure = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(text)?.[0] || "";
+  /var create_hvut_mooglemail_parse_evidence = function \(stage, detail\) \{[\s\S]*?\n  var reloadCurrentPage/.exec(text)?.[0] || "";
 const modernCredits =
   /_mm\.credits = \{[\s\S]*?\n    if \(_mm\.credits\.init\(\) === false\) \{[\s\S]*?\n    \}/.exec(text)?.[0] || "";
 const legacyCredits =
@@ -49,7 +49,12 @@ if (mailParseBodies.length !== 1) {
 const modernMailParse = mailParseBodies[0] || "";
 
 for (const required of [
+  "var create_hvut_mooglemail_parse_evidence = function (stage, detail) {",
   "sessionStorage.setItem('HVAA:lastHvutMoogleMailParseFailure', JSON.stringify(evidence));",
+  "return evidence;",
+  "var record_hvut_mooglemail_parse_failure = function (stage, detail) {",
+  "create_hvut_mooglemail_parse_evidence(stage, detail);",
+  "return null;",
   "var parse_hvut_mooglemail_count = function (text, pattern, stage) {",
   "record_hvut_mooglemail_parse_failure(stage, { text: text || '' });",
   "var parse_hvut_mooglemail_page_href = function (link, stage) {",
@@ -61,9 +66,10 @@ for (const required of [
   "return record_hvut_mooglemail_parse_failure(stage, { eid: eid, onmouseover: onmouseover || '' });",
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
   "var message = get_message(doc);",
-  "record_hvut_mooglemail_parse_failure(stage, { reason: 'viewResponseMessageMissing' });",
-  "return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误' };",
-  "return { kind: 'rejected', reason: 'mailError', error: message };",
+  "var evidence = create_hvut_mooglemail_parse_evidence(stage, { reason: 'viewResponseMessageMissing' });",
+  "return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误', evidence: evidence };",
+  "var evidence = create_hvut_mooglemail_parse_evidence(stage, { reason: 'mailError', error: message });",
+  "return { kind: 'rejected', reason: 'mailError', error: message, evidence: evidence };",
 ]) {
   requirePart("MoogleMail parse helper", helperRegion, required);
 }
@@ -152,6 +158,8 @@ for (const forbidden of [
   "view.error = get_message(doc) || '未知错误';",
   "classify_hvut_mooglemail_view_response(doc, 'viewRejectedResponse').error",
   "classify_hvut_mooglemail_view_response(doc, 'legacyViewRejectedResponse').error",
+  "return { kind: 'rejected', reason: 'viewResponseMessageMissing', error: '未知错误' };",
+  "return { kind: 'rejected', reason: 'mailError', error: message };",
 ]) {
   if (text.includes(forbidden)) {
     violations.push(`${target} must not keep unchecked MoogleMail parse path: ${forbidden}`);
