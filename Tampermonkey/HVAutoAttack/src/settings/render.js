@@ -18,7 +18,6 @@ import { SettingsFormOptionEvent, runSettingsFormOptionAutomation } from "./form
 import { setLang } from "../i18n/core/restore-controller.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
-import { OptionBackupEvent, runOptionBackupAutomation } from "../state/option-backup.js";
 import { RiddleStatsEvent, runRiddleStatsAutomation } from "../state/riddle-stats.js";
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
 import { AlarmProfileEvent, runAlarmProfileCatalog } from "../alarm/alarm-profiles.js";
@@ -34,6 +33,7 @@ import {
   SettingsOrderControlEvent,
   runSettingsOrderControlCatalog,
 } from "./order-control-catalog.js";
+import { SettingsBackupCommandEvent, runSettingsBackupCommand } from "./backup-command.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -801,27 +801,6 @@ function clearSettingsOption() {
   return false;
 }
 
-function saveSettingsBackup(code) {
-  const saved = runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code });
-  if (saved) return true;
-  _alert(0, "配置备份失败", "配置備份失敗", "Failed to backup configuration");
-  return false;
-}
-
-function deleteSettingsBackup(code) {
-  const deleted = runOptionBackupAutomation({ type: OptionBackupEvent.DELETE, code });
-  if (deleted) return true;
-  _alert(0, "配置备份删除失败", "配置備份刪除失敗", "Failed to delete backup");
-  return false;
-}
-
-function restoreSettingsBackup(code) {
-  const restored = runOptionBackupAutomation({ type: OptionBackupEvent.RESTORE, code });
-  if (restored) return true;
-  _alert(0, "配置还原失败", "配置還原失敗", "Failed to restore backup");
-  return false;
-}
-
 function applySettingsLanguage(value) {
   gE(".hvAA-LangStyle").textContent = `l${value}{display:inline!important;}`;
   if (/^[01]$/.test(value)) gE(".hvAA-LangStyle").textContent += "l01{display:inline!important;}";
@@ -907,8 +886,8 @@ function hydrateSettingsForm(optionBox) {
   gE(".hvAAQuickSite>table>tbody", optionBox).innerHTML = runQuickSiteAutomation({
     type: QuickSiteEvent.RENDER_CURRENT_SETTINGS_TABLE_BODY,
   });
-  gE(".hvAABackupList", optionBox).innerHTML = runOptionBackupAutomation({
-    type: OptionBackupEvent.RENDER_LIST_ITEMS,
+  gE(".hvAABackupList", optionBox).innerHTML = runSettingsBackupCommand({
+    type: SettingsBackupCommandEvent.RENDER_LIST_ITEMS,
   });
 }
 
@@ -1362,6 +1341,9 @@ export function optionBox() {
       }
     }
   }
+  function alertBackupCommandFailure(command) {
+    if (command?.message) _alert(0, command.message.l0, command.message.l1, command.message.l2);
+  }
   gE(".hvAABackup", optionBox).onclick = function () {
     const code =
       _alert(
@@ -1370,7 +1352,7 @@ export function optionBox() {
         "請輸入當前配置代號",
         "Please put in a name for the current configuration"
       ) || runTimeAutomation({ type: TimeEvent.LOCAL_TIMESTAMP_LABEL });
-    if (runOptionBackupAutomation({ type: OptionBackupEvent.HAS_CODE, code })) {
+    if (runSettingsBackupCommand({ type: SettingsBackupCommandEvent.HAS_CODE, code })) {
       // 覆写同名配置
       if (
         _alert(
@@ -1380,11 +1362,19 @@ export function optionBox() {
           "Do you want to overwrite the configuration with the same name?"
         )
       ) {
-        if (!deleteSettingsBackup(code)) return;
+        const deleted = runSettingsBackupCommand({ type: SettingsBackupCommandEvent.DELETE, code });
+        if (!deleted.ok) {
+          alertBackupCommandFailure(deleted);
+          return;
+        }
         rmListItem(code);
       } else return;
     }
-    if (!saveSettingsBackup(code)) return;
+    const saved = runSettingsBackupCommand({ type: SettingsBackupCommandEvent.SAVE_CURRENT, code });
+    if (!saved.ok) {
+      alertBackupCommandFailure(saved);
+      return;
+    }
     const li = gE(".hvAABackupList", optionBox).appendChild(cE("li"));
     li.textContent = code;
   };
@@ -1395,7 +1385,11 @@ export function optionBox() {
       "請輸入配置代號",
       "Please put in a name for a configuration"
     );
-    if (!restoreSettingsBackup(code)) return;
+    const restored = runSettingsBackupCommand({ type: SettingsBackupCommandEvent.RESTORE, code });
+    if (!restored.ok) {
+      alertBackupCommandFailure(restored);
+      return;
+    }
     runNavigationAutomation({
       type: NavigationEvent.RELOAD_NOW,
       reason: NavigationReloadReason.SETTINGS_CHANGE,
@@ -1408,7 +1402,11 @@ export function optionBox() {
       "請輸入配置代號",
       "Please put in a name for a configuration"
     );
-    if (!deleteSettingsBackup(code)) return;
+    const deleted = runSettingsBackupCommand({ type: SettingsBackupCommandEvent.DELETE, code });
+    if (!deleted.ok) {
+      alertBackupCommandFailure(deleted);
+      return;
+    }
     // goto();
     rmListItem(code);
   };

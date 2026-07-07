@@ -8,6 +8,8 @@ const ownerTest = path.normalize("src/state/option-backup.test.js");
 const failureTest = path.normalize("src/state/option-backup-failure.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const settingsRender = path.normalize("src/settings/render.js");
+const settingsBackupCommand = path.normalize("src/settings/backup-command.js");
+const settingsBackupCommandTest = path.normalize("src/settings/backup-command.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
 const diagnosticTest = path.normalize("src/core/diagnostic-evidence.test.js");
 const violations = [];
@@ -46,7 +48,7 @@ function checkFile(file) {
     }
     if (
       relative === settingsRender &&
-      /\bOptionBackupEvent\.READ\b|\bcode in backups\b|\bexistingBackups\b|\bObject\.keys\(.*backups/.test(
+      /\bOptionBackupEvent\b|\brunOptionBackupAutomation\b|\bcode in backups\b|\bexistingBackups\b|\bObject\.keys\(.*backups/.test(
         line
       )
     ) {
@@ -78,28 +80,64 @@ for (const required of [
 }
 
 const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
-for (const required of ["OptionBackupEvent.HAS_CODE", "OptionBackupEvent.RENDER_LIST_ITEMS"]) {
+for (const required of [
+  "SettingsBackupCommandEvent.HAS_CODE",
+  "SettingsBackupCommandEvent.RENDER_LIST_ITEMS",
+  "SettingsBackupCommandEvent.SAVE_CURRENT",
+  "SettingsBackupCommandEvent.DELETE",
+  "SettingsBackupCommandEvent.RESTORE",
+  "runSettingsBackupCommand",
+  "alertBackupCommandFailure",
+]) {
   if (!settingsText.includes(required)) {
     violations.push(`${settingsRender.replaceAll("\\", "/")} must request ${required}`);
   }
 }
+const settingsBackupCommandText = fs.readFileSync(path.join(root, settingsBackupCommand), "utf8");
 for (const required of [
-  "function saveSettingsBackup(code) {",
-  "function deleteSettingsBackup(code) {",
-  "function restoreSettingsBackup(code) {",
-  "const saved = runOptionBackupAutomation({ type: OptionBackupEvent.SAVE_CURRENT, code });",
-  "const deleted = runOptionBackupAutomation({ type: OptionBackupEvent.DELETE, code });",
-  "const restored = runOptionBackupAutomation({ type: OptionBackupEvent.RESTORE, code });",
-  "if (!deleteSettingsBackup(code)) return;",
-  "if (!saveSettingsBackup(code)) return;",
-  "if (!restoreSettingsBackup(code)) return;",
+  "SettingsBackupCommandEvent",
+  "runSettingsBackupCommand",
+  "OptionBackupEvent.RENDER_LIST_ITEMS",
+  "OptionBackupEvent.HAS_CODE",
+  "OptionBackupEvent.SAVE_CURRENT",
+  "OptionBackupEvent.DELETE",
+  "OptionBackupEvent.RESTORE",
   "Failed to backup configuration",
   "Failed to delete backup",
   "Failed to restore backup",
+  "const settingsBackupCommandHandlers",
 ]) {
-  if (!settingsText.includes(required)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} must keep backup UI updates behind checked backup commands`);
+  if (!settingsBackupCommandText.includes(required)) {
+    violations.push(`${settingsBackupCommand.replaceAll("\\", "/")} must expose ${required}`);
   }
+}
+const settingsBackupCommandTestText = fs.readFileSync(
+  path.join(root, settingsBackupCommandTest),
+  "utf8"
+);
+for (const required of [
+  "settings backup command entry",
+  "returns typed save, delete, and restore command results",
+  "preserves failure messages without claiming backup command success",
+  "fails closed for unknown backup commands",
+  "OPTION_BACKUP_FAILURE_KEY",
+]) {
+  if (!settingsBackupCommandTestText.includes(required)) {
+    violations.push(`${settingsBackupCommandTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+for (const legacy of [
+  "function saveSettingsBackup(code) {",
+  "function deleteSettingsBackup(code) {",
+  "function restoreSettingsBackup(code) {",
+  "OptionBackupEvent.SAVE_CURRENT",
+  "OptionBackupEvent.DELETE",
+  "OptionBackupEvent.RESTORE",
+]) {
+  if (!settingsText.includes(legacy)) {
+    continue;
+  }
+  violations.push(`${settingsRender.replaceAll("\\", "/")} must not keep legacy backup command ${legacy}`);
 }
 const settingsBackupBlock =
   /gE\(["']\.hvAABackup["'][\s\S]*?gE\(["']\.hvAARestore["']/.exec(settingsText)?.[0] || "";

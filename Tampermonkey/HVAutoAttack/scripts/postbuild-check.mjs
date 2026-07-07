@@ -56,7 +56,11 @@ for (const required of [
 ]) {
   if (!src.includes(required)) errors.push(`equipment filter artifact missing ${required}`);
 }
-if (!/\$equip\d*\.filter\.recordFailure\("match", \{ equip: result\.name, errors: result\.errors \}\)/.test(src)) {
+if (
+  !/\$equip\d*\.filter\.recordFailure\("match", \{ equip: result\d*\.name, errors: result\d*\.errors \}\)/.test(
+    src
+  )
+) {
   errors.push("equipment filter artifact missing structured match failure evidence");
 }
 if (
@@ -110,7 +114,6 @@ for (const required of [
   "capability: \"lotteryNotification\"",
   'sessionStorage.setItem("HVAA:lastLotteryNotificationFailure"',
   "const reportErrors =",
-  "filterErrors.push(...result.errors)",
   "return reportErrors(filterErrors, matched)",
   "filter: \"<lotteryFilters>\"",
   "matched: false",
@@ -134,8 +137,15 @@ for (const required of [
 ]) {
   if (!src.includes(required)) errors.push(`lottery artifact missing ${required}`);
 }
-if (!/const result = \$equip\d*\.filter\.match\(\$config\.settings\.lotteryFilters, equip\)/.test(src)) {
+if (
+  !/const result\d* = \$equip\d*\.filter\.match\(\$config\.settings\.lotteryFilters, equip\)/.test(
+    src
+  )
+) {
   errors.push("lottery artifact missing match decision with structured filter errors");
+}
+if (!/filterErrors\d*\.push\(\.\.\.result\d*\.errors\)/.test(src)) {
+  errors.push("lottery artifact missing filterErrors.push(...result.errors)");
 }
 if (!lotteryRegion.includes("const { lottery } = _bottom.read_lottery_state(ss)")) {
   errors.push("lottery artifact display must read initialized lottery state");
