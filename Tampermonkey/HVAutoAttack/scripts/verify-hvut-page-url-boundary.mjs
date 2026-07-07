@@ -24,6 +24,7 @@ for (const required of [
   "var create_hvut_training_url = function () {",
   "var create_hvut_bazaar_section_url = function (ss) {",
   "var create_hvut_item_shop_url = function () {",
+  "var create_hvut_market_browse_items_url = function (filter) {",
   "var create_hvut_shrine_url = function () {",
   "var create_hvut_monster_lab_slot_url = function (mob) {",
   "var create_hvut_armory_screen_url = function (screen, context) {",
@@ -45,6 +46,7 @@ for (const required of [
   "return '/?s=Character&ss=tr';",
   "return `/?s=Bazaar&ss=${ss}`;",
   "return '?s=Bazaar&ss=is';",
+  "return `?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`;",
   "return '?s=Bazaar&ss=ss';",
   "return `?s=Bazaar&ss=ml&slot=${mob?.index ?? mob}`;",
   "return `?s=Bazaar&ss=am&screen=${screen}${filter}${eqids}`;",
@@ -75,6 +77,7 @@ for (const required of [
   "href: create_hvut_bazaar_section_url(ss)",
   "$ajax.fetch(create_hvut_bazaar_section_url(ss))",
   "$ajax.fetch(create_hvut_item_shop_url()",
+  "$ajax.fetch(create_hvut_market_browse_items_url(filter))",
   "$ajax.fetch(create_hvut_shrine_url()",
   "$ajax.fetch(create_hvut_monster_lab_slot_url(mob)",
   "$ajax.fetch(create_hvut_armory_organize_url()",
@@ -118,6 +121,7 @@ for (const forbidden of [
   "href: '/?s=Bazaar&ss=' + ss",
   "$ajax.fetch('/?s=Bazaar&ss=' + ss)",
   "$ajax.fetch('?s=Bazaar&ss=is'",
+  "$ajax.fetch(`?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`)",
   "$ajax.fetch('?s=Bazaar&ss=ss'",
   "$ajax.fetch(`?s=Bazaar&ss=ml&slot=${mob.index}`",
   "$ajax.fetch('?s=Bazaar&ss=ml&slot=' + mob.index",
@@ -220,6 +224,11 @@ if (bottomBazaarSectionOccurrences !== 2) {
 const itemShopFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_item_shop_url\(\)/g)].length;
 if (itemShopFetchOccurrences !== 4) {
   violations.push(`${target} must route Item Shop fetches through create_hvut_item_shop_url, found ${itemShopFetchOccurrences}`);
+}
+
+const marketBrowseItemsFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_market_browse_items_url\(filter\)\)/g)].length;
+if (marketBrowseItemsFetchOccurrences !== 1) {
+  violations.push(`${target} must route Market browse item fetches through create_hvut_market_browse_items_url, found ${marketBrowseItemsFetchOccurrences}`);
 }
 
 const shrineFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_shrine_url\(\)/g)].length;

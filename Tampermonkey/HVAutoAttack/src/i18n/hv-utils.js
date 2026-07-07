@@ -1355,6 +1355,9 @@ try {
   var create_hvut_item_shop_url = function () {
     return '?s=Bazaar&ss=is';
   };
+  var create_hvut_market_browse_items_url = function (filter) {
+    return `?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`;
+  };
   var create_hvut_shrine_url = function () {
     return '?s=Bazaar&ss=ss';
   };
@@ -2433,7 +2436,7 @@ const bindPrice = function (price, ctx) {
     return new_prices;
 
     async function update(filter) {
-      const html = await $ajax.fetch(`?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`);
+      const html = await $ajax.fetch(create_hvut_market_browse_items_url(filter));
       const doc = $doc(html);
       if (price.parse_market(filter, doc) === false) throw new Error('price market parse failed');
     }
