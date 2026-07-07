@@ -17,9 +17,10 @@ for (const required of [
   "record_hvut_mooglemail_send_failure(stage, { ...detail, reason: 'emptyResponse' });",
   "return { kind: 'rejected', reason: 'emptyResponse', evidence: evidence };",
   "var error = get_message($doc(html));",
+  "var evidence = record_hvut_mooglemail_send_failure(stage, { ...detail, reason: 'mailError', error: error });",
   "$mail.error = error;",
   "$mail.log('!!! Error: ' + error);",
-  "return { kind: 'rejected', reason: 'mailError', error: error };",
+  "return { kind: 'rejected', reason: 'mailError', error: error, evidence: evidence };",
   "return { kind: 'accepted' };",
   "sessionStorage.setItem('HVAA:lastHvutMoogleMailSendFailure'",
 ]) {
@@ -93,6 +94,9 @@ if (!sendMatch) {
   }
   if (text.includes("check: function (html) {")) {
     violations.push(`${target} mail send must not keep $mail.check as a parallel response classifier`);
+  }
+  if (text.includes("return { kind: 'rejected', reason: 'mailError', error: error };")) {
+    violations.push(`${target} mail send rejected outcome must preserve evidence`);
   }
   const attachMatch = /if \(attach\?\.length\) \{[\s\S]*?\n    \}\n\n    if \(cod && !cod_persistent\)/.exec(body);
   if (!attachMatch) {

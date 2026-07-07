@@ -712,9 +712,10 @@ try {
     }
     var error = get_message($doc(html));
     if (error) {
+      var evidence = record_hvut_mooglemail_send_failure(stage, { ...detail, reason: 'mailError', error: error });
       $mail.error = error;
       $mail.log('!!! Error: ' + error);
-      return { kind: 'rejected', reason: 'mailError', error: error };
+      return { kind: 'rejected', reason: 'mailError', error: error, evidence: evidence };
     }
     return { kind: 'accepted' };
   };
