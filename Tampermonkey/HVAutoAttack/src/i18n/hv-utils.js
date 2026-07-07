@@ -1330,6 +1330,9 @@ try {
   var create_hvut_training_url = function () {
     return '/?s=Character&ss=tr';
   };
+  var create_hvut_bazaar_section_url = function (ss) {
+    return `/?s=Bazaar&ss=${ss}`;
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -12372,7 +12375,7 @@ if ($config.settings.lotteryNotification) {
     }
     _bottom.node[ss] = {};
     _bottom.node[ss].div = $element('div', _bottom.node.div, ['.hvut-lt-div']);
-    _bottom.node[ss].equip = $element('a', _bottom.node[ss].div, { textContent: '加载中...', href: '/?s=Bazaar&ss=' + ss, target: !IS_ISEKAI ? '_self' : '_blank' });
+    _bottom.node[ss].equip = $element('a', _bottom.node[ss].div, { textContent: '加载中...', href: create_hvut_bazaar_section_url(ss), target: !IS_ISEKAI ? '_self' : '_blank' });
     _bottom.node[ss].time = $element('span', _bottom.node[ss].div, '--:--');
 
     if (lottery.date > now) {
@@ -12391,7 +12394,7 @@ if ($config.settings.lotteryNotification) {
 
   _bottom.load_lottery = async function (ss) {
     try {
-      const html = await $ajax.fetch('/?s=Bazaar&ss=' + ss);
+      const html = await $ajax.fetch(create_hvut_bazaar_section_url(ss));
       const doc = $doc(html);
       const eqname = $id('lottery_eqname', doc);
       if (!eqname) {

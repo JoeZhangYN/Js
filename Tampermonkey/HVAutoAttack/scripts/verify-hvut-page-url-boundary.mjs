@@ -17,6 +17,7 @@ for (const required of [
   "var create_hvut_mail_view_url = function (mid) {",
   "var create_hvut_character_settings_url = function () {",
   "var create_hvut_training_url = function () {",
+  "var create_hvut_bazaar_section_url = function (ss) {",
   "return context?.absolute ? `${location.origin}${location.pathname}${relative}` : relative;",
   "return location.href + '&hvut=disabled';",
   "return location.href.replace(/&page=\\d+/, '') + `&page=${page}`;",
@@ -27,6 +28,7 @@ for (const required of [
   "return `?s=Bazaar&ss=mm&mid=${mid}`;",
   "return '?s=Character&ss=se';",
   "return '/?s=Character&ss=tr';",
+  "return `/?s=Bazaar&ss=${ss}`;",
   "eq.data.url = create_hvut_equip_page_url(eq, { absolute: true });",
   "openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
   "openUrl(create_hvut_equip_page_url(div), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);",
@@ -45,6 +47,8 @@ for (const required of [
   "$ajax.fetch(create_hvut_character_settings_url()",
   "href: create_hvut_training_url()",
   "$ajax.fetch(create_hvut_training_url(), post)",
+  "href: create_hvut_bazaar_section_url(ss)",
+  "$ajax.fetch(create_hvut_bazaar_section_url(ss))",
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must keep HVUT page URL boundary: ${required}`);
@@ -71,6 +75,8 @@ for (const forbidden of [
   "$ajax.fetch('?s=Character&ss=se'",
   "href: '/?s=Character&ss=tr'",
   "$ajax.fetch('/?s=Character&ss=tr'",
+  "href: '/?s=Bazaar&ss=' + ss",
+  "$ajax.fetch('/?s=Bazaar&ss=' + ss)",
 ]) {
   const allowedInsideHelper =
     forbidden === "location.href + '&hvut=disabled'" || forbidden === "location.href.replace(/&page=\\d+/, '') + `&page=${p}`";
@@ -128,6 +134,11 @@ if (characterSettingsFetchOccurrences !== 2) {
 const trainingUrlOccurrences = [...text.matchAll(/create_hvut_training_url\(\)/g)].length;
 if (trainingUrlOccurrences !== 2) {
   violations.push(`${target} must route bottom training link/load through create_hvut_training_url, found ${trainingUrlOccurrences}`);
+}
+
+const bottomBazaarSectionOccurrences = [...text.matchAll(/create_hvut_bazaar_section_url\(ss\)/g)].length;
+if (bottomBazaarSectionOccurrences !== 2) {
+  violations.push(`${target} must route bottom Bazaar section link/load through create_hvut_bazaar_section_url, found ${bottomBazaarSectionOccurrences}`);
 }
 
 if (violations.length) {
