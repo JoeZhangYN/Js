@@ -53,6 +53,9 @@ describe("runOptionSchema riddle fields", () => {
       kind: "number",
       default: 3,
       group: "Main",
+      description: {
+        l2: "s and no answer has been chosen yet, a random answer will be generated and submitted",
+      },
     });
     expect(
       runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: "riddlePopup" })

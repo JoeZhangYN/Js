@@ -59,6 +59,9 @@ for (const legacy of ["OPTION_SCHEMA", "getOptionDefault", "getFieldsByGroup"]) 
 if (!/key:\s*["']repairCreditCap["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}credits\/run cap/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must own repair material cap help text`);
 }
+if (!/key:\s*["']riddleAnswerTime["'][\s\S]{0,500}description:\s*\{[\s\S]{0,260}no answer has been chosen yet/.test(ownerText)) {
+  violations.push(`${owner.replaceAll("\\", "/")} must own riddle answer timing help text`);
+}
 if (!/export const OptionSchemaEvent\s*=\s*Object\.freeze\(/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must expose OptionSchemaEvent`);
 }
@@ -252,6 +255,7 @@ for (const forbidden of [
   /name=["']equipPercentileMode["'][\s\S]{0,160}<option value=["']offline["']/,
   /id=["']riddleHelperUi["'][\s\S]{0,120}小马图片助手/,
   /name=["']riddleAnswerTime["']\s+placeholder=["']3["']/,
+  /no answer has been chosen yet, a random answer will be generated and submitted/,
   /id=["']riddlePopup["'][\s\S]{0,160}弹窗答题/,
   /<input id=["']dropMonitor["'] type=["']checkbox["']><l0>掉落监测/,
   /<input id=["']recordUsage["'] type=["']checkbox["']><l0>数据记录/,

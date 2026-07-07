@@ -64,18 +64,22 @@ function renderCheckboxPlusNumber(checkboxKey, numberKey, unit = { l0: "", l1: "
   const num = runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: numberKey });
   if (!cb || !num) return "";
   const checkedAttr = cb.defaultOn ? " checked data-default-on" : "";
-  const description = num.description || unit;
   return (
     `<div><input id="${cb.key}" type="checkbox"${checkedAttr}>` +
     `<label for="${cb.key}"><b><l0>${cb.label.l0}</l0><l1>${cb.label.l1}</l1><l2>${cb.label.l2}</l2></b></label>: ` +
     `<input class="hvAANumber" name="${num.key}" placeholder="${num.default}" type="text">` +
-    `<l0>${description.l0}</l0><l1>${description.l1}</l1><l2>${description.l2}</l2></div>`
+    `${renderSchemaDescription(num, unit)}</div>`
   );
 }
 
 function renderSchemaLabel(field, { bold = false } = {}) {
   const label = `<l0>${field.label.l0}</l0><l1>${field.label.l1}</l1><l2>${field.label.l2}</l2>`;
   return bold ? `<b>${label}</b>` : label;
+}
+
+function renderSchemaDescription(field, fallback = { l0: "", l1: "", l2: "" }) {
+  const description = field?.description || fallback;
+  return `<l0>${description.l0}</l0><l1>${description.l1}</l1><l2>${description.l2}</l2>`;
 }
 
 function readSchemaField(key) {
@@ -252,10 +256,11 @@ function renderRiddleTimingSchemaFields() {
     /^<div>|<\/div>$/g,
     ""
   );
+  const answerTime = readSchemaField("riddleAnswerTime");
   return [
     `<div><l0>当<b>小马答题</b>时间</l0><l1>當<b>小馬答題</b>時間</l1><l2>If <b>RIDDLE</b> ETR</l2><l0></l0><l1></l1><l2></l2> ≤ ${renderSchemaNumberInput(
       "riddleAnswerTime"
-    )}<l0>秒，如果输入框为空则随机生成答案并提交</l0><l1>秒，如果輸入框為空則隨機生成答案並提交</l1><l2>s and no answer has been chosen yet, a random answer will be generated and submitted</l2></div>`,
+    )}${renderSchemaDescription(answerTime)}</div>`,
     `  <div><l0>当<b>小马答题</b>时</l0><l1>當<b>小馬答題</b>時</l1><l2>If <b>RIDDLE</b></l2>: ${popup}<button class="testPopup"><l0>预处理</l0><l1>預處理</l1><l2>Pretreat</l2></button></div>`,
   ];
 }

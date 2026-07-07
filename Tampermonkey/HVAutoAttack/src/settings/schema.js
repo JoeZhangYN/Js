@@ -1132,6 +1132,11 @@ const OPTION_SCHEMA = [
       l1: "小馬答題剩餘時間閾值",
       l2: "Riddle answer remaining-time threshold",
     },
+    description: {
+      l0: "秒，如果输入框为空则随机生成答案并提交",
+      l1: "秒，如果輸入框為空則隨機生成答案並提交",
+      l2: "s and no answer has been chosen yet, a random answer will be generated and submitted",
+    },
   },
   {
     key: "riddlePopup",
