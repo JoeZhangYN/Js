@@ -58,6 +58,7 @@ const commands = [
   "node scripts/verify-lottery-notification-boundary.mjs",
   "node scripts/verify-hvut-bottom-capacity-boundary.mjs",
   "node scripts/verify-hvut-navigation-bridge-boundary.mjs",
+  "node scripts/verify-hvut-hvaa-config-bridge-boundary.mjs",
   "node scripts/verify-hvut-page-url-boundary.mjs",
   "node scripts/verify-no-raw-reload.mjs",
   "node scripts/verify-navigation-boundary.mjs",
