@@ -268,6 +268,10 @@ const policyCorruptStateTestText = fs.existsSync(path.join(root, policyCorruptSt
 const rejectionText = fs.readFileSync(path.join(root, rejectionFile), "utf8");
 const hvUtilsText = fs.readFileSync(path.join(root, hvUtilsFile), "utf8");
 const widgetPolicyText = fs.readFileSync(path.join(root, widgetPolicyFile), "utf8");
+const widgetUnavailableText = fs.readFileSync(
+  path.join(root, "src/pages/encounter-widget-unavailable.js"),
+  "utf8"
+);
 const widgetPolicyTestText = [
   widgetPolicyTest,
   widgetMainWorldTest,
@@ -829,8 +833,11 @@ if (
 }
 for (const required of [
   "EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED",
+  "generationAttemptKey",
   'event.engage && unavailableReason === "encounterKeyMissing"',
   "keeps the ready window after a main-world generation load returns no encounter key",
+  "suppresses repeated main-world news generation inside the same ready window",
+  "generationAttemptSuppressed",
   'reason: "readyWindow"',
   "keeps manual ready-window clicks able to load the encounter check",
   'action: "load"',
@@ -849,6 +856,20 @@ if (!/\bWIDGET_TIMER_ELAPSED\b/.test(ownerText)) {
 if (!/\bWIDGET_TIMER_ELAPSED\b/.test(hvUtilsText)) {
   violations.push(
     `${hvUtilsFile.replaceAll("\\", "/")} widget countdown expiry must report WIDGET_TIMER_ELAPSED`
+  );
+}
+if (/re\.type\s*=\s*\([^;]*\|\|\s*IS_ISEKAI/.test(hvUtilsText)) {
+  violations.push(
+    `${hvUtilsFile.replaceAll("\\", "/")} must not classify the isekai world as gallery/e-hentai page type`
+  );
+}
+if (
+  !hvUtilsText.includes(
+    "re.type = !location.hostname.includes('hentaiverse.org') ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;"
+  )
+) {
+  violations.push(
+    `${hvUtilsFile.replaceAll("\\", "/")} must classify encounter widget page type before world-specific authority`
   );
 }
 for (const required of [
@@ -903,7 +924,7 @@ for (const required of [
   "messagebox_error",
   "Your equipment inventory is full",
 ]) {
-  if (!widgetPolicyText.includes(required)) {
+  if (!widgetPolicyText.includes(required) && !widgetUnavailableText.includes(required)) {
     violations.push(
       `${widgetPolicyFile.replaceAll("\\", "/")} must classify widget unavailable reason ${required}`
     );

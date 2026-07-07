@@ -2807,7 +2807,7 @@ const bindRe = function (re, ctx) {
       return true;
     }
     re.inited = true;
-    re.type = (!location.hostname.includes('hentaiverse.org') || IS_ISEKAI) ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
+    re.type = !location.hostname.includes('hentaiverse.org') ? 'eh' : $id('navbar') ? 'hv' : $id('battle_top') ? 'ba' : false;
     return re.get();
   };
   re.clock = function (button) {

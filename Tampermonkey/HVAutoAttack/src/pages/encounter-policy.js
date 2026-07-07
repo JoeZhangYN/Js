@@ -35,6 +35,9 @@ function normalizeEncounterState(state, nowMs = Date.now()) {
     count: Number(state?.count) || 0,
     clear: state?.clear !== false,
   };
+  if (state?.generationAttemptKey) {
+    normalized.generationAttemptKey = String(state.generationAttemptKey);
+  }
   if (normalized.count > ENCOUNTER_DAILY_LIMIT) return defaultEncounterState();
   if (!normalized.date && (normalized.count || (!normalized.key && !normalized.clear))) {
     return defaultEncounterState();
@@ -114,6 +117,7 @@ function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
   if (next.key === key) return next;
   next.key = key;
   next.clear = false;
+  delete next.generationAttemptKey;
   return next;
 }
 
@@ -124,10 +128,11 @@ function markEncounterAttempted(state, key, nowMs = Date.now()) {
   return next;
 }
 
-function markEncounterGenerationAttempted(state, nowMs = Date.now()) {
+function markEncounterGenerationAttempted(state, attemptKey, nowMs = Date.now()) {
   const next = normalizeEncounterState(state, nowMs);
   if (next.key && !next.clear) return next;
   next.clear = true;
+  if (attemptKey) next.generationAttemptKey = String(attemptKey);
   return next;
 }
 
@@ -139,6 +144,7 @@ function markEncounterStarted(state, { search = "", key = parseEncounterKeyFromS
     next.key = key || next.key || "";
     next.count++;
     next.clear = true;
+    delete next.generationAttemptKey;
   }
   return next;
 }
@@ -154,7 +160,7 @@ const encounterPolicyEventHandlers = Object.freeze({
   [EncounterPolicyEvent.PARSE_EVENTPANE_KEY]: (event) => parseEncounterKeyFromEventpaneHtml(event.eventpane),
   [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) => markEncounterKeyAvailable(event.state, event.key, event.nowMs),
   [EncounterPolicyEvent.MARK_ATTEMPTED]: (event) => markEncounterAttempted(event.state, event.key, event.nowMs),
-  [EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED]: (event) => markEncounterGenerationAttempted(event.state, event.nowMs),
+  [EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED]: (event) => markEncounterGenerationAttempted(event.state, event.attemptKey, event.nowMs),
   [EncounterPolicyEvent.MARK_STARTED]: (event) => markEncounterStarted(event.state, { search: event.search, key: event.key, nowMs: event.nowMs }),
 });
 

@@ -1,10 +1,8 @@
 import { EncounterPolicyEvent, runEncounterPolicy } from "./encounter-policy.js";
+import { classifyWidgetUnavailableReason } from "./encounter-widget-unavailable.js";
 
 function readWidgetState(state) {
-  const clock = runEncounterPolicy({
-    type: EncounterPolicyEvent.READ_CLOCK,
-    state,
-  });
+  const clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state });
   return {
     state: clock.state,
     remainingMs: clock.countdownMs,
@@ -19,10 +17,7 @@ function readWidgetState(state) {
 function runWidgetLinkFound(event) {
   const key =
     event.key ||
-    runEncounterPolicy({
-      type: EncounterPolicyEvent.PARSE_SEARCH_KEY,
-      search: event.search || "",
-    });
+    runEncounterPolicy({ type: EncounterPolicyEvent.PARSE_SEARCH_KEY, search: event.search || "" });
   const state = key
     ? runEncounterPolicy({
         type: EncounterPolicyEvent.MARK_KEY_AVAILABLE,
@@ -58,11 +53,7 @@ function planWidgetClick(event) {
   }
   if (event.pageType === "ba") return { action: "load" };
   if (event.pageType === "eh" && event.hvAvailable === false) return { action: "load" };
-  const plan = runEncounterPolicy({
-    type: EncounterPolicyEvent.PLAN_ACTIVATION,
-    state: event.state,
-    force: Boolean(event.force),
-  });
+  const plan = runEncounterPolicy({ type: EncounterPolicyEvent.PLAN_ACTIVATION, state: event.state, force: Boolean(event.force) });
   if (plan.action === "enter") {
     if (event.pageType === "eh") {
       return planWidgetEngage({ ...event, state: plan.state });
@@ -75,7 +66,12 @@ function planWidgetClick(event) {
 function planWidgetTimerElapsed(event) {
   const current = readWidgetState(event.state);
   if (current.status === "countdown") return current;
-  if (event.lastAttemptKey === current.attemptKey) return { ...current, action: "none" };
+  if (
+    event.lastAttemptKey === current.attemptKey ||
+    current.state.generationAttemptKey === current.attemptKey
+  ) {
+    return { ...current, action: "none", handled: true, recovery: "generationAttemptSuppressed" };
+  }
   if (event.pageType === "eh") return { ...current, action: "checkHv", engage: true };
   return {
     ...planWidgetClick({ ...event, force: true }),
@@ -111,25 +107,19 @@ function planWidgetNewsLoaded(event) {
     };
   }
   const unavailableReason = classifyWidgetUnavailableReason(eventpane);
+  const current = readWidgetState(event.state);
   const state = event.engage && unavailableReason === "encounterKeyMissing"
-    ? runEncounterPolicy({ type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED, state: event.state })
-    : event.state;
+    ? runEncounterPolicy({
+        type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED,
+        state: current.state,
+        attemptKey: current.attemptKey,
+      })
+    : current.state;
   return { ...readWidgetState(state), action: "unavailable", unavailableReason };
 }
 
-function classifyWidgetUnavailableReason(eventpane) {
-  if (/<p[^>]*class=["'][^"']*\bmessagebox_error\b[^"']*["'][^>]*>\s*Your equipment inventory is full\s*<\/p>/i.test(eventpane)) {
-    return "equipmentInventoryFull";
-  }
-  return "encounterKeyMissing";
-}
-
 function planWidgetEngage(event) {
-  const plan = runEncounterPolicy({
-    type: EncounterPolicyEvent.PLAN_ACTIVATION,
-    state: event.state,
-    force: true,
-  });
+  const plan = runEncounterPolicy({ type: EncounterPolicyEvent.PLAN_ACTIVATION, state: event.state, force: true });
   if (plan.action !== "enter" || event.pageType === "ba") {
     return { ...readWidgetState(plan.state), action: "none" };
   }
