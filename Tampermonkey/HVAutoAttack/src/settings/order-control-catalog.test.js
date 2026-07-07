@@ -35,4 +35,41 @@ describe("settings order control catalog", () => {
     expect(skills).toContainEqual(expect.objectContaining({ key: "OFC" }));
     expect(runSettingsOrderControlCatalog(null)).toBeUndefined();
   });
+
+  it("exposes battle support controls without leaking direct render ownership", () => {
+    const buffActions = runSettingsOrderControlCatalog({
+      type: SettingsOrderControlEvent.READ_BUFF_ACTIONS,
+    });
+    const allDebuffs = runSettingsOrderControlCatalog({
+      type: SettingsOrderControlEvent.READ_ALL_DEBUFF_ACTIONS,
+    });
+
+    expect(buffActions).toContainEqual(expect.objectContaining({ key: "HD" }));
+    expect(buffActions).toContainEqual(expect.objectContaining({ key: "Pr" }));
+    expect(allDebuffs).toEqual([
+      { key: "debuffSkillAllIm", conditionKey: "debuffSkillImpCondition" },
+      { key: "debuffSkillAllWk", conditionKey: "debuffSkillWkCondition" },
+    ]);
+  });
+
+  it("exposes arena, round, scroll, and spell control surfaces", () => {
+    const spellRows = runSettingsOrderControlCatalog({
+      type: SettingsOrderControlEvent.READ_OFFENSIVE_SPELL_AOE_ROWS,
+    });
+    const arenaLevels = runSettingsOrderControlCatalog({
+      type: SettingsOrderControlEvent.READ_IDLE_ARENA_LEVELS,
+    });
+    const roundTypes = runSettingsOrderControlCatalog({
+      type: SettingsOrderControlEvent.READ_BATTLE_ROUND_TYPES,
+    });
+    const scrolls = runSettingsOrderControlCatalog({
+      type: SettingsOrderControlEvent.READ_BATTLE_SCROLLS,
+    });
+
+    expect(spellRows).toContainEqual(expect.objectContaining({ code: "1", label: "Fire" }));
+    expect(spellRows.at(-1)).toMatchObject({ label: "Dark", last: true });
+    expect(arenaLevels).toContainEqual(expect.objectContaining({ key: "GF", value: "gr" }));
+    expect(roundTypes).toContainEqual({ code: "ba", label: "Encounter" });
+    expect(scrolls).toContainEqual(expect.objectContaining({ key: "Go", label: "Scroll of the Gods" }));
+  });
 });

@@ -30,16 +30,6 @@ import {
 import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
 import { IdleArenaEvent, runIdleArenaAutomation } from "../arena/idle-arena.js";
 import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
-import { ALL_DEBUFF_ACTION_OPTIONS } from "../data/all-debuff-actions.js";
-import { BATTLE_BUFF_ACTION_OPTIONS } from "../data/battle-buff-actions.js";
-import { BATTLE_ROUND_TYPE_OPTIONS } from "../data/battle-round-types.js";
-import { BATTLE_SCROLL_OPTIONS } from "../data/battle-scrolls.js";
-import { IDLE_ARENA_LEVEL_OPTIONS } from "../data/idle-arena-levels.js";
-import {
-  OFFENSIVE_SPELL_ELEMENTS,
-  OFFENSIVE_SPELL_LIB,
-  OFFENSIVE_SPELL_TIERS,
-} from "../data/spell-lib.js";
 import {
   SettingsOrderControlEvent,
   runSettingsOrderControlCatalog,
@@ -314,7 +304,9 @@ export function renderBuffSkillCheckboxes(idPrefix) {
 }
 
 export function renderBuffSkillActionCheckboxes() {
-  return BATTLE_BUFF_ACTION_OPTIONS.map(
+  return runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_BUFF_ACTIONS,
+  }).map(
     ({ key, label }) =>
       `<div><input id="buffSkill_${key}" type="checkbox"><label for="buffSkill_${key}">${label}</label>{{buffSkill${key}Condition}}</div>`
   ).join("");
@@ -387,7 +379,9 @@ export function renderDebuffExpiryAlertSchemaSection() {
 }
 
 export function renderAllDebuffActionCheckboxes() {
-  return ALL_DEBUFF_ACTION_OPTIONS.map(({ key, conditionKey }) =>
+  return runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_ALL_DEBUFF_ACTIONS,
+  }).map(({ key, conditionKey }) =>
     renderSchemaCheckboxField(key, `{{${conditionKey}}}`, { bold: false })
   ).join("");
 }
@@ -412,15 +406,15 @@ export function renderPhysicalSkillActionCheckboxes({ afterKeyHtml = {} } = {}) 
 }
 
 export function renderOffensiveSpellAoeRows() {
-  return OFFENSIVE_SPELL_ELEMENTS.map(({ code, label }, rowIndex) => {
-    const controls = OFFENSIVE_SPELL_TIERS.map((tier) => {
+  return runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_OFFENSIVE_SPELL_AOE_ROWS,
+  }).map(({ code, label, tiers, last }) => {
+    const controls = tiers.map((tier) => {
       const key = `${code}${tier}`;
-      if (!OFFENSIVE_SPELL_LIB.has(key)) return "";
       return `T${tier}:<input class="hvAANumber" name="spellAoe_${key}" placeholder="1" type="text">`;
     })
-      .filter(Boolean)
       .join(" ");
-    const lineBreak = rowIndex < OFFENSIVE_SPELL_ELEMENTS.length - 1 ? "<br>" : "";
+    const lineBreak = last ? "" : "<br>";
     return `    ${label}: ${controls}${lineBreak}`;
   }).join("");
 }
@@ -453,7 +447,9 @@ export function renderItemActionCheckboxes() {
 }
 
 export function renderIdleArenaLevelCheckboxes(grindFestInput = "") {
-  return IDLE_ARENA_LEVEL_OPTIONS.map(({ key, value, label, appendGrindFestInput }) => {
+  return runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_IDLE_ARENA_LEVELS,
+  }).map(({ key, value, label, appendGrindFestInput }) => {
     const labelText = appendGrindFestInput ? `${label} ${grindFestInput}` : label;
     return `<input id="arLevel_${key}" value="${key},${value}" type="checkbox"><label for="arLevel_${key}">${labelText}</label>`;
   })
@@ -466,7 +462,9 @@ export function renderIdleArenaLevelCheckboxes(grindFestInput = "") {
 }
 
 export function renderBattleRoundTypeCheckboxes(prefix) {
-  return BATTLE_ROUND_TYPE_OPTIONS.map(
+  return runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_BATTLE_ROUND_TYPES,
+  }).map(
     ({ code, label }) =>
       `<input id="${prefix}_${code}" type="checkbox"><label for="${prefix}_${code}">${label}</label>`
   ).join("");
@@ -474,13 +472,17 @@ export function renderBattleRoundTypeCheckboxes(prefix) {
 
 export function renderBattleRoundTypeSelectOptions({ includeBlank = false } = {}) {
   const blankOption = includeBlank ? "<option></option>" : "";
-  return `${blankOption}${BATTLE_ROUND_TYPE_OPTIONS.map(
+  return `${blankOption}${runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_BATTLE_ROUND_TYPES,
+  }).map(
     ({ code, label }) => `<option value="${code}">${label}</option>`
   ).join("")}`;
 }
 
 export function renderBattleScrollCheckboxes() {
-  return BATTLE_SCROLL_OPTIONS.map(
+  return runSettingsOrderControlCatalog({
+    type: SettingsOrderControlEvent.READ_BATTLE_SCROLLS,
+  }).map(
     ({ key, label }) =>
       `<div><input id="scroll_${key}" type="checkbox"><label for="scroll_${key}">${label}</label>{{scroll${key}Condition}}</div>`
   ).join("");
