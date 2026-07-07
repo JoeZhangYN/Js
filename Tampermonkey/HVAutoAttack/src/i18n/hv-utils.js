@@ -1867,6 +1867,21 @@ try {
   var create_hvut_monster_lab_slot_url = function (mob) {
     return `?s=Bazaar&ss=ml&slot=${mob?.index ?? mob}`;
   };
+  var create_hvut_monster_lab_page_context = function (query) {
+    var source = query || _query;
+    var create = source?.create;
+    var slot = source?.slot;
+    var pane = source?.pane;
+    return {
+      create: create,
+      slot: slot,
+      pane: pane,
+      isCreate: !!create,
+      isSlot: !!slot,
+      isSkillsPane: !!slot && pane === 'skills',
+      shouldRenderMain: !create && !slot,
+    };
+  };
   var create_hvut_armory_screen_url = function (screen, context) {
     var filter = Object.prototype.hasOwnProperty.call(context || {}, 'filter') ? `&filter=${context?.filter || ''}` : '';
     var eqids = context?.eqid ? `&eqids=${context.eqid}` : '';
@@ -8598,15 +8613,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
 
 //* [11] Bazaar - Monster Lab
 if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) {
-  if (_query.create) {
-  } else if (_query.slot) {
-    if (_query.pane === 'skills') {
+  const monsterLabPage = create_hvut_monster_lab_page_context();
+  if (monsterLabPage.isCreate) {
+  } else if (monsterLabPage.isSlot) {
+    if (monsterLabPage.isSkillsPane) {
       const prev_button = $qs('img[src$="/monster/prev.png"]');
       prev_button.setAttribute('onclick', prev_button.getAttribute('onclick').replace('ss=ml', 'ss=ml&pane=skills'));
       const next_button = $qs('img[src$="/monster/next.png"]');
       next_button.setAttribute('onclick', next_button.getAttribute('onclick').replace('ss=ml', 'ss=ml&pane=skills'));
     }
-  } else {
+  } else if (monsterLabPage.shouldRenderMain) {
     GM_addStyle(/*css*/`
       #monster_outer { margin-left: 130px; font-weight: normal; }
       #monster_list .cspp { margin-top: 15px; overflow-y: scroll; }
@@ -14555,15 +14571,16 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
 
 //* [12] Bazaar - Monster Lab
 if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) {
-  if (_query.create) {
-  } else if (_query.slot) {
-    if (_query.pane === 'skills') {
+  const monsterLabPage = create_hvut_monster_lab_page_context();
+  if (monsterLabPage.isCreate) {
+  } else if (monsterLabPage.isSlot) {
+    if (monsterLabPage.isSkillsPane) {
       const prev_button = $qs('img[src$="/monster/prev.png"]');
       prev_button.setAttribute('onclick', prev_button.getAttribute('onclick').replace('ss=ml', 'ss=ml&pane=skills'));
       const next_button = $qs('img[src$="/monster/next.png"]');
       next_button.setAttribute('onclick', next_button.getAttribute('onclick').replace('ss=ml', 'ss=ml&pane=skills'));
     }
-  } else {
+  } else if (monsterLabPage.shouldRenderMain) {
     GM_addStyle(/*css*/`
       #monster_outer { margin-left: 130px; font-weight: normal; }
       #monster_list .cspp { margin-top: 15px; overflow-y: scroll; }

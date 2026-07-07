@@ -19,6 +19,7 @@ const commands = [
   "node scripts/verify-hvut-player-state-parse-boundary.mjs",
   "node scripts/verify-hvut-monster-lab-upgrade-boundary.mjs",
   "node scripts/verify-hvut-monster-lab-parse-boundary.mjs",
+  "node scripts/verify-hvut-monster-lab-page-context-boundary.mjs",
   "node scripts/verify-hvut-monster-lab-main-persistence-boundary.mjs",
   "node scripts/verify-hvut-list-persistence-boundary.mjs",
   "node scripts/verify-hvut-settings-persistence-boundary.mjs",
