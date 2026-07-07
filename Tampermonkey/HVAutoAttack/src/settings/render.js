@@ -32,6 +32,7 @@ import { QuickSiteEvent, runQuickSiteAutomation } from "../arena/quick-site.js";
 import { BUFF_SKILL_LIB } from "../data/buff-lib.js";
 import { CHANNEL_FALLBACK_ORDER_OPTIONS } from "../data/channel-fallback-order.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
+import { ITEM_ORDER_OPTIONS } from "../data/item-order.js";
 import { PHYSICAL_SKILL_ORDER_OPTIONS } from "../data/physical-skill-order.js";
 
 export function readSingleOrderItemName(target) {
@@ -318,6 +319,19 @@ export function renderPhysicalSkillOrderCheckboxes() {
     ({ key, label }) =>
       `<input id="skillOrder_${key}" type="checkbox"><label for="skillOrder_${key}"><l0>${label.l0}</l0><l1>${label.l1}</l1><l2>${label.l2}</l2></label>`
   ).join("");
+}
+
+export function renderItemOrderCheckboxes() {
+  return ITEM_ORDER_OPTIONS.map(
+    ({ key, itemId, label }) =>
+      `<input id="itemOrder_${key}" value="${key},${itemId}" type="checkbox"><label for="itemOrder_${key}">${label}</label>`
+  )
+    .reduce((rows, item, index) => {
+      const rowIndex = index < 5 ? 0 : 1;
+      rows[rowIndex] = `${rows[rowIndex] || ""}${item}`;
+      return rows;
+    }, [])
+    .join("<br>");
 }
 
 function renderDropMonitorSchemaFields() {
@@ -861,8 +875,7 @@ export function optionBox() {
     "    <l0>自动检测法术 AoE 目标数</l0><l1>自動檢測法術 AoE 目標數</l1><l2>to auto-detect spell AoE target counts</l2></div></div>",
     '<div class="hvAATab" id="hvAATab-Item">',
     '  <div class="itemOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: <input name="itemOrderName" style="width:80%;" type="text" disabled="true"><input name="itemOrderValue" style="width:80%;" type="hidden" disabled="true"><br>',
-    '    <input id="itemOrder_Cure" value="Cure,311" type="checkbox"><label for="itemOrder_Cure">Cure</label><input id="itemOrder_FC" value="FC,313" type="checkbox"><label for="itemOrder_FC">Full-Cure</label><input id="itemOrder_HP" value="HP,11195" type="checkbox"><label for="itemOrder_HP">Health Potion</label><input id="itemOrder_HE" value="HE,11199" type="checkbox"><label for="itemOrder_HE">Health Elixir</label><input id="itemOrder_MP" value="MP,11295" type="checkbox"><label for="itemOrder_MP">Mana Potion</label><br>',
-    '    <input id="itemOrder_ME" value="ME,11299" type="checkbox"><label for="itemOrder_ME">Mana Elixir</label><input id="itemOrder_SP" value="SP,11395" type="checkbox"><label for="itemOrder_SP">Spirit Potion</label><input id="itemOrder_SE" value="SE,11399" type="checkbox"><label for="itemOrder_SE">Spirit Elixir</label><input id="itemOrder_LE" value="LE,11501" type="checkbox"><label for="itemOrder_LE">Last Elixir</label><input id="itemOrder_ED" value="ED,11401" type="checkbox"><label for="itemOrder_ED">Energy Drink</label></div>',
+    `    ${renderItemOrderCheckboxes()}</div>`,
     '  <div><input id="item_Cure" type="checkbox"><label for="item_Cure"><b>Cure</b></label>: {{itemCureCondition}}</div>',
     '  <div><input id="item_FC" type="checkbox"><label for="item_FC"><b>Full-Cure</b></label>: {{itemFCCondition}}</div>',
     '  <div><input id="item_HP" type="checkbox"><label for="item_HP"><b>Health Potion</b></label>: {{itemHPCondition}}</div>',

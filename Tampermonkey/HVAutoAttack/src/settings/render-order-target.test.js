@@ -4,6 +4,7 @@ import {
   readCustomizeHoverTarget,
   readSelectableReportTableTarget,
   readSingleOrderItemName,
+  renderItemOrderCheckboxes,
   renderBuffSkillCheckboxes,
   renderChannelFallbackOrderCheckboxes,
   renderDebuffSkillOrderCheckboxes,
@@ -96,5 +97,16 @@ describe("renderPhysicalSkillOrderCheckboxes", () => {
     expect(html).toContain("<l2>FRD</l2>");
     expect(html).toContain('id="skillOrder_T1"');
     expect(html).not.toContain("debuffSkillOrder_");
+  });
+});
+
+describe("renderItemOrderCheckboxes", () => {
+  it("derives item order checkboxes from the item order identity", () => {
+    const html = renderItemOrderCheckboxes();
+
+    expect(html).toContain('id="itemOrder_Cure" value="Cure,311"');
+    expect(html).toContain('id="itemOrder_HP" value="HP,11195"');
+    expect(html).toContain('id="itemOrder_ED" value="ED,11401"');
+    expect(html).not.toContain("channelSkill2Order_");
   });
 });
