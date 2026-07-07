@@ -293,3 +293,37 @@ runBattleTurnAutomation(RUN_CURRENT_TURN):
 3. **新建路径必拆桥**：新入口/新 ActionResult/新 key → 同步删旧路径 + 加 `verify-*.mjs` 锁，否则新路径只是建议。
 4. **验证**：`cd Tampermonkey/HVAutoAttack && npm run build`（跑全 60+ boundary 锁 + sloc + circular + metadata + postbuild）+ `npm test`（vitest 决策单测）。**build 绿只证语法/打包/边界，运行时行为需用户两世界逐页实站**（HV 抓包须走代理 `127.0.0.1:1081`，见仓库 HV 调试规范）。
 5. **红线**：§7 四项绝对不碰。
+
+---
+
+## 10. Framework Drift Callback Index（后续回调锚点）
+
+本节是给后续 codex 回调/续跑使用的**业务归因索引**。当 `AGENTS.md` 的项目规则、纠正目标、架构提示词，或构建守卫中的项目框架维护规则发生变化时，必须同步更新本节；否则未来只能从聊天记录恢复意图，会重新落回表症修补。
+
+每条框架漂移记录至少保留这些字段：`identity`（业务身份/世界/页面）、`authority`（端点、存储、DOM、恢复或诊断权威）、`drift`（哪个流程规则失守）、`converged-entry`（当前收敛入口或目标入口）、`guard`（阻止退化的测试/verify 脚本）、`next-callback`（下一次接手应优先看的边界）。
+
+当前已识别的回调锚点：
+
+1. **HVUT failure evidence / runtime diagnostics**
+   - `identity`: HVUT 子能力（Armory、Ability、Monster Lab、MoogleMail、Shrine、配置持久化）。
+   - `authority`: 可复制的用户可见诊断报告 + `sessionStorage` evidence key。
+   - `drift`: 旧流程把失败压成泛化 `alert` 或 console-only，页面跳转/刷新后证据丢失。
+   - `converged-entry`: `show_hvut_failure_report(...)` / `show_hvut_runtime_failure_report(...)`。
+   - `guard`: `verify-hvut-runtime-failure-boundary.mjs` 及各 HVUT capability boundary。
+   - `next-callback`: 配置/存储失败仍需继续收敛到统一诊断，不允许新增裸 `alert` 作为异常出口。
+
+2. **Main / Isekai encounter world authority**
+   - `identity`: 主世界与异世界遭遇战入口。
+   - `authority`: 世界专属 URL、storage namespace、恢复跳转策略。
+   - `drift`: 下游重复从 URL 猜世界，导致异世界入口拼成主世界或错误根路径。
+   - `converged-entry`: encounter identity classifier -> `PLAN_ACTIVATION(..., { isIsekai })` -> `buildEncounterEntryUrl(...)`。
+   - `guard`: `verify-encounter-boundary.mjs`、`verify-hvut-random-encounter-storage-boundary.mjs`、isekai entry tests。
+   - `next-callback`: 倒计时、计数、跳转、熔断必须只消费 typed world context，不能刷新首页就增加遭遇计数。
+
+3. **Armory page fact parsing**
+   - `identity`: Bazaar Armory sell/salvage/filter 页面。
+   - `authority`: 页面事实解析结果，而不是固定假设 `itemdata` / `eqitems` 总存在。
+   - `drift`: 集成流程把不同 screen 的可用脚本对象当成同一硬前置，导致 sell/all 空列表和弹窗错误。
+   - `converged-entry`: Armory page parse/context boundary + integrate failure report。
+   - `guard`: `verify-hvut-armory-page-context-boundary.mjs`、`verify-hvut-armory-page-parse-boundary.mjs`、`verify-hvut-armory-integrate-boundary.mjs`。
+   - `next-callback`: 新增 Armory screen/filter 时先声明页面事实可选性和派生路径，再接 integrate。

@@ -89,6 +89,7 @@ Before extracting, merging, moving, naming, or splitting any module, entry, help
 - Start substantial work with zoom-out: module graph, imports/exports, entry points, callers, callees, storage/DOM/API reads and writes, business vocabulary, and drift evidence.
 - State the selected boundary before editing: business abstraction, old-path retirement, public-surface reduction, type invariant, regression guard, or mechanical hygiene.
 - Run project-framework self-maintenance before and after the boundary edit: identify whether the current framework let this bug class happen, whether ingress classification / segment authority / recovery evidence / guard placement should move, and which same-business-question or repeated-flow candidates became visible.
+- When project rules, architecture prompts, or corrected working goals change, update the callback reference in `BUSINESS-MAP.md` in the same boundary so future turns can resume from a business-map anchor instead of rediscovering intent from chat history.
 - Treat mechanical hygiene as batch work only. If the work becomes a low-value file-by-file loop, stop and reselect a higher-level business boundary.
 - Converge the business entry first, then hide implementation, remove old paths, and add regression locks.
 - Preserve existing business capability explicitly: every fix must state which old behaviors remain authoritative, add or keep behavior tests for them, and avoid claiming completion from compile/build success alone.
@@ -102,6 +103,7 @@ Every non-trivial business fix must maintain the framework that makes future fix
 
 - Classify the failure as framework drift when the bug came from a missing ingress identity, mixed segment authority, duplicated decision dialect, untyped recovery, missing persisted evidence, or a guard that still anchors to an old path.
 - Update the framework in the same boundary when possible: page/world classifier, capability entry, typed context, recovery entry, diagnostic evidence, verify script, business map, or project rule.
+- Keep framework artifacts synchronized: any change to `AGENTS.md` project rules, corrected goals, or architecture prompts must either update `BUSINESS-MAP.md` `Framework Drift Callback Index` or explicitly state in the commit/final why no business-map callback changed.
 - Self-discover abstraction candidates exposed by the fix: repeated page-type checks, parallel storage namespaces, duplicated endpoint derivation, multiple exits for one business question, or repeated recovery loops must be recorded as the next boundary or converged immediately if narrow.
 - Do not regress original business capability during convergence. Tests or guards must cover both the new failure path and the previously working behavior that the abstraction could accidentally erase.
 - Completion evidence must separate layers: current files changed, old path blocked, behavior tests, guard/build result, runtime diagnostic evidence if relevant, commit and backup ref verification.
