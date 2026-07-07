@@ -27,6 +27,7 @@ const commands = [
   "node scripts/verify-hvut-equipdata-persistence-boundary.mjs",
   "node scripts/verify-hvut-derived-cache-persistence-boundary.mjs",
   "node scripts/verify-hvut-mail-attach-boundary.mjs",
+  "node scripts/verify-hvut-mail-page-context-boundary.mjs",
   "node scripts/verify-hvut-mooglemail-action-boundary.mjs",
   "node scripts/verify-hvut-mooglemail-itemshop-boundary.mjs",
   "node scripts/verify-hvut-mooglemail-multi-send-boundary.mjs",

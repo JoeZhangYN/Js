@@ -1786,8 +1786,21 @@ try {
   var create_hvut_mail_filter_page_url = function (filter, page) {
     return `?s=Bazaar&ss=mm&filter=${filter}&page=${page}`;
   };
-  var create_hvut_mail_page_url = function (page) {
-    return create_hvut_mail_filter_page_url(_query.filter || 'inbox', page);
+  var create_hvut_mail_page_context = function (query) {
+    var source = query || _query;
+    var filter = source?.filter || 'inbox';
+    var current = parseInt(source?.page) || 0;
+    var disabled = source?.hvut === 'disabled';
+    return {
+      filter: filter,
+      current: current,
+      disabled: disabled,
+      shouldUseHvutCompose: filter === 'new' && !disabled,
+    };
+  };
+  var create_hvut_mail_page_url = function (page, context) {
+    var mailPage = context || create_hvut_mail_page_context();
+    return create_hvut_mail_filter_page_url(mailPage.filter, page);
   };
   var create_hvut_mail_reply_url = function (mid) {
     return `?s=Bazaar&ss=mm&filter=new&reply=${mid}`;
@@ -10026,6 +10039,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
 //* [12] Bazaar - MoogleMail
 if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) {
+  const mailPage = create_hvut_mail_page_context();
   _mm.attach_text = function (item) {
     if (!item.data.count) {
       return '';
@@ -10075,7 +10089,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
   };
 
   // MM WRITE
-  if (_query.filter === 'new' && _query.hvut !== 'disabled') {
+  if (mailPage.shouldUseHvutCompose) {
     if ($id('mmail_attachremove')) {
       alert('请移除附加的物品。');
       openUrl(create_hvut_current_page_disable_url(), hvutRedirectReason('HV_UTILS_DISABLE'));
@@ -11005,8 +11019,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
     _mm.page = {
       node: { table: [] },
-      filter: _query.filter || 'inbox',
-      current: parseInt(_query.page) || 0,
+      filter: mailPage.filter,
+      current: mailPage.current,
 
       init: function () {
         _mm.page.node.table[_mm.page.current] = $element('table', $id('mmail_outerlist'), ['.hvut-mm-list']);
@@ -15986,6 +16000,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
 
 //* [13] Bazaar - MoogleMail
 if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) {
+  const mailPage = create_hvut_mail_page_context();
   _mm.node = {};
 
   _mm.attach_text = function (item) {
@@ -16027,7 +16042,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
   };
 
   // MM WRITE
-  if (_query.filter === 'new' && _query.hvut !== 'disabled') {
+  if (mailPage.shouldUseHvutCompose) {
     if ($id('mmail_attachremove')) {
       alert('请移除附加的物品。');
       openUrl(create_hvut_current_page_disable_url(), hvutRedirectReason('HV_UTILS_DISABLE'));
@@ -16920,8 +16935,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
     };
 
-    _mm.page_filter = _query.filter || 'inbox';
-    _mm.page_current = parseInt(_query.page) || 0;
+    _mm.page_filter = mailPage.filter;
+    _mm.page_current = mailPage.current;
 
     _mm.page_init = function () {
       _mm.node.page_table[_mm.page_current] = $element('table', $id('mmail_outerlist'), ['.hvut-mm-list']);
