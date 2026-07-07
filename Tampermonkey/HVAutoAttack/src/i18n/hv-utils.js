@@ -1930,18 +1930,28 @@ try {
   };
   var create_hvut_monster_lab_page_context = function (query) {
     var source = query || _query;
+    var section = source?.s;
+    var ss = source?.ss;
     var create = source?.create;
     var slot = source?.slot;
     var pane = source?.pane;
     return {
+      section: section,
+      ss: ss,
       create: create,
       slot: slot,
       pane: pane,
+      isMonsterLab: section === 'Bazaar' && ss === 'ml',
       isCreate: !!create,
       isSlot: !!slot,
       isSkillsPane: !!slot && pane === 'skills',
       shouldRenderMain: !create && !slot,
     };
+  };
+  var hvut_monster_lab_page_context = null;
+  var get_hvut_monster_lab_page_context = function () {
+    hvut_monster_lab_page_context = hvut_monster_lab_page_context || create_hvut_monster_lab_page_context();
+    return hvut_monster_lab_page_context;
   };
   var create_hvut_armory_screen_url = function (screen, context) {
     var filter = Object.prototype.hasOwnProperty.call(context || {}, 'filter') ? `&filter=${context?.filter || ''}` : '';
@@ -8686,8 +8696,8 @@ if (get_hvut_market_page_context().isMarket) {
 
 
 //* [11] Bazaar - Monster Lab
-if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) {
-  const monsterLabPage = create_hvut_monster_lab_page_context();
+if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monsterLab) {
+  const monsterLabPage = get_hvut_monster_lab_page_context();
   if (monsterLabPage.isCreate) {
   } else if (monsterLabPage.isSlot) {
     if (monsterLabPage.isSkillsPane) {
@@ -14647,8 +14657,8 @@ if (get_hvut_market_page_context().isMarket) {
 
 
 //* [12] Bazaar - Monster Lab
-if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) {
-  const monsterLabPage = create_hvut_monster_lab_page_context();
+if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monsterLab) {
+  const monsterLabPage = get_hvut_monster_lab_page_context();
   if (monsterLabPage.isCreate) {
   } else if (monsterLabPage.isSlot) {
     if (monsterLabPage.isSkillsPane) {
