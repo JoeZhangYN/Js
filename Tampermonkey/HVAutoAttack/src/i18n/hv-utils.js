@@ -512,12 +512,20 @@ try {
     var button = $qs('div[style*="u.png"]', panel);
     return button || record_hvut_ability_unlock_failure(stage, { reason: 'abilityUnlockButtonMissing', id: ability?.id || '' });
   };
+  var classify_hvut_ability_unlock_response = function (doc, stage, detail) {
+    var error = get_message(doc);
+    if (error) {
+      var evidence = record_hvut_ability_unlock_failure(stage, { ...detail, reason: 'rejectedResponse', error: error });
+      return { kind: 'rejected', reason: 'rejectedResponse', message: error, evidence: evidence };
+    }
+    return { kind: 'accepted' };
+  };
   var run_hvut_ability_unlock_request = async function (ability, context) {
     var html = await $ajax.fetch(location.href, `unlock_ability=${ability.id}`);
     var doc = $doc(html);
-    var error = get_message(doc);
-    if (error) {
-      popup(error);
+    var response = classify_hvut_ability_unlock_response(doc, context?.responseStage || 'abilityUnlockResponse', { id: ability?.id || '' });
+    if (response.kind === 'rejected') {
+      popup(response.message);
       return false;
     }
     var button = parse_hvut_ability_unlock_button(ability, context?.buttonStage || 'abilityUnlockButton');
@@ -6656,7 +6664,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     const count = to - ab.level;
 
     async function unlock(ab) {
-      return run_hvut_ability_unlock_request(ab, { buttonStage: 'abilityUnlockButton' });
+      return run_hvut_ability_unlock_request(ab, { buttonStage: 'abilityUnlockButton', responseStage: 'abilityUnlockResponse' });
     }
 
     const requests = $ajax.repeat(count, unlock, ab);
@@ -12980,7 +12988,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     const count = to - ab.level;
 
     async function unlock(ab) {
-      return run_hvut_ability_unlock_request(ab, { buttonStage: 'legacyAbilityUnlockButton' });
+      return run_hvut_ability_unlock_request(ab, { buttonStage: 'legacyAbilityUnlockButton', responseStage: 'legacyAbilityUnlockResponse' });
     }
 
     const requests = $ajax.repeat(count, unlock, ab);

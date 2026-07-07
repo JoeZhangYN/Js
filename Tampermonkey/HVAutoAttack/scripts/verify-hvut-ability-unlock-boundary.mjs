@@ -18,10 +18,14 @@ for (const required of [
   "sessionStorage.setItem('HVAA:lastHvutAbilityUnlockFailure'",
   "var parse_hvut_ability_unlock_button = function (ability, stage) {",
   "record_hvut_ability_unlock_failure(stage, { reason: 'abilityUnlockButtonMissing'",
+  "var classify_hvut_ability_unlock_response = function (doc, stage, detail) {",
+  "record_hvut_ability_unlock_failure(stage, { ...detail, reason: 'rejectedResponse', error: error });",
+  "return { kind: 'rejected', reason: 'rejectedResponse', message: error, evidence: evidence };",
+  "return { kind: 'accepted' };",
   "var run_hvut_ability_unlock_request = async function (ability, context) {",
   "var html = await $ajax.fetch(location.href, `unlock_ability=${ability.id}`);",
-  "var error = get_message(doc);",
-  "if (error) {\n      popup(error);\n      return false;",
+  "var response = classify_hvut_ability_unlock_response(doc, context?.responseStage || 'abilityUnlockResponse'",
+  "if (response.kind === 'rejected') {\n      popup(response.message);\n      return false;",
   "if (button) {",
   "return true;",
   "return false;",
@@ -52,6 +56,7 @@ for (const [index, body] of bodies.entries()) {
     "catch (error) {",
     "record_hvut_ability_unlock_failure(",
     "return run_hvut_ability_unlock_request(ab, { buttonStage:",
+    "responseStage:",
     "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n      return;",
     "if (!results.every((r) => r)) return;",
     "reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'))",
@@ -81,6 +86,15 @@ for (const [index, body] of bodies.entries()) {
   if (/\$qs\('div\[style\*="u\.png"\]',\s*ab\.div/.test(body)) {
     violations.push(`${target} ability unlock[${index}] must use the typed ability unlock button parser`);
   }
+}
+
+const requestEntry =
+  /var run_hvut_ability_unlock_request = async function \(ability, context\) \{[\s\S]*?\n  \};/.exec(text)?.[0] || "";
+if (/var error = get_message\(doc\);/.test(requestEntry)) {
+  violations.push(`${target} ability unlock request must use typed response classification instead of local error variable`);
+}
+if (/popup\(error\);/.test(requestEntry)) {
+  violations.push(`${target} ability unlock request must popup the typed response message`);
 }
 
 if (violations.length) {
