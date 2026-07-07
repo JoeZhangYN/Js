@@ -10522,7 +10522,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         mail.node.search?.classList.add('hvut-mm-current');
 
         if (season === _mm.db.season) {
-          if (!await _mm.mail.load(mid, post)) {
+          const loadResponse = await _mm.mail.load(mid, post);
+          if (loadResponse.kind === 'rejected') {
             _mm.mail.view(mail);
             return false;
           }
@@ -10538,17 +10539,18 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           const stage = post ? 'viewActionRequest' : 'viewLoadRequest';
           record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
           mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };
-          return false;
+          return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error };
         }
         mail.view = _mm.mail.parse(html);
         if (mail.view?.error) {
           record_hvut_mooglemail_action_failure(post ? 'viewActionRejected' : 'viewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
+          return { kind: 'rejected', reason: 'responseRejected', error: mail.view.error };
         }
-        if (!mail.view?.error && !await _mm.mail.update(mail, post)) {
+        if (!await _mm.mail.update(mail, post)) {
           mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };
-          return false;
+          return { kind: 'rejected', reason: 'cacheWriteFailed', error: mail.view.error };
         }
-        return !mail.view?.error;
+        return { kind: 'accepted' };
       },
       parse: function (html) {
         const doc = $doc(html);
@@ -16711,7 +16713,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       mail.node.search?.classList.add('hvut-mm-current');
 
       if (season === _mm.db.season) {
-        if (!await _mm.mail_load(mid, post)) {
+        const loadResponse = await _mm.mail_load(mid, post);
+        if (loadResponse.kind === 'rejected') {
           _mm.mail_view(mail);
           return false;
         }
@@ -16728,17 +16731,18 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const stage = post ? 'legacyViewActionRequest' : 'legacyViewLoadRequest';
         record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
         mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };
-        return false;
+        return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error };
       }
       mail.view = _mm.mail_parse(html);
       if (mail.view?.error) {
         record_hvut_mooglemail_action_failure(post ? 'legacyViewActionRejected' : 'legacyViewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
+        return { kind: 'rejected', reason: 'responseRejected', error: mail.view.error };
       }
-      if (!mail.view?.error && !await _mm.mail_update(mail, post)) {
+      if (!await _mm.mail_update(mail, post)) {
         mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };
-        return false;
+        return { kind: 'rejected', reason: 'cacheWriteFailed', error: mail.view.error };
       }
-      return !mail.view?.error;
+      return { kind: 'accepted' };
     };
 
     _mm.mail_parse = function (arg) {
@@ -17357,7 +17361,8 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
 
       _mm.mail_log('[系统店代购]', true);
       _mm.mail_log('接收');
-      if (!await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`)) {
+      const attachRemoveResponse = await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
+      if (attachRemoveResponse.kind === 'rejected') {
         _mm.mail_log('!!! Error: 接收失败');
         return stop();
       }

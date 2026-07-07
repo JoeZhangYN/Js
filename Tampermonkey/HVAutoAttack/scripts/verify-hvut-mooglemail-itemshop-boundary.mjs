@@ -16,7 +16,8 @@ if (!itemshopBody) {
     "const stop = function () {",
     "_mm.itemshop.current = null;",
     "return false;",
-    "if (!await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`)) {",
+    "const attachRemoveResponse = await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);",
+    "if (attachRemoveResponse.kind === 'rejected') {",
     "_mm.mail_log('!!! Error: 接收失败');",
     "return stop();",
     "const result = await $item.buy(items);",
@@ -30,6 +31,7 @@ if (!itemshopBody) {
   for (const forbidden of [
     "_mm.itemshop.current = mid;\n\n      _mm.mail_log('[系统店代购]', true);",
     "await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);\n      _mm.mail_log('购买');",
+    "if (!await _mm.mail_load(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`)) {",
     "if (!result) {\n        return;\n      }",
     "$mail.request(mail);\n    };",
   ]) {

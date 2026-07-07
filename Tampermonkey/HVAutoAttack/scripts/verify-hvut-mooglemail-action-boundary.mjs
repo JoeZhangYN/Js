@@ -52,7 +52,8 @@ for (const required of [
 }
 
 for (const required of [
-  "if (!await _mm.mail.load(mid, post)) {",
+  "const loadResponse = await _mm.mail.load(mid, post);",
+  "if (loadResponse.kind === 'rejected') {",
   "_mm.mail.view(mail);",
   "return false;",
 ]) {
@@ -63,11 +64,13 @@ for (const required of [
   "try {\n          html = await $ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post);",
   "record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });",
   "mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };",
+  "return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error };",
   "record_hvut_mooglemail_action_failure(post ? 'viewActionRejected' : 'viewLoadRejected'",
-  "if (!mail.view?.error && !await _mm.mail.update(mail, post)) {",
+  "return { kind: 'rejected', reason: 'responseRejected', error: mail.view.error };",
+  "if (!await _mm.mail.update(mail, post)) {",
   "mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };",
-  "return false;",
-  "return !mail.view?.error;",
+  "return { kind: 'rejected', reason: 'cacheWriteFailed', error: mail.view.error };",
+  "return { kind: 'accepted' };",
 ]) {
   requirePart("modern MoogleMail load", modernLoad, required);
 }
@@ -95,7 +98,8 @@ for (const required of [
 }
 
 for (const required of [
-  "if (!await _mm.mail_load(mid, post)) {",
+  "const loadResponse = await _mm.mail_load(mid, post);",
+  "if (loadResponse.kind === 'rejected') {",
   "_mm.mail_view(mail);",
   "return false;",
 ]) {
@@ -106,11 +110,13 @@ for (const required of [
   "try {\n        html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);",
   "record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });",
   "mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };",
+  "return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error };",
   "record_hvut_mooglemail_action_failure(post ? 'legacyViewActionRejected' : 'legacyViewLoadRejected'",
-  "if (!mail.view?.error && !await _mm.mail_update(mail, post)) {",
+  "return { kind: 'rejected', reason: 'responseRejected', error: mail.view.error };",
+  "if (!await _mm.mail_update(mail, post)) {",
   "mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };",
-  "return false;",
-  "return !mail.view?.error;",
+  "return { kind: 'rejected', reason: 'cacheWriteFailed', error: mail.view.error };",
+  "return { kind: 'accepted' };",
 ]) {
   requirePart("legacy MoogleMail load", legacyLoad, required);
 }
@@ -142,6 +148,11 @@ for (const forbidden of [
   "const html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);",
   "await _mm.mail.load(mid, post);\n        }\n        _mm.mail.view(mail);",
   "await _mm.mail_load(mid, post);\n      }\n      _mm.mail_view(mail);",
+  "if (!await _mm.mail.load(mid, post)) {",
+  "if (!await _mm.mail_load(mid, post)) {",
+  "if (!mail.view?.error && !await _mm.mail.update(mail, post)) {",
+  "if (!mail.view?.error && !await _mm.mail_update(mail, post)) {",
+  "return !mail.view?.error;",
   "_mm.mail.update(mail);\n        return !mail.view?.error;",
   "_mm.mail_update(mail);\n      return !mail.view?.error;",
   "update: function (mail) {",
