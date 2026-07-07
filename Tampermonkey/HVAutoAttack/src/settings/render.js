@@ -288,6 +288,25 @@ function renderSpellTierStrategySchemaFields() {
   ];
 }
 
+function renderPhysicalSkillStrategySchemaFields() {
+  return [
+    renderSchemaSelectField("fightingStyle"),
+    renderSchemaCheckboxField(
+      "physicalSkillDowngrade",
+      `: <l0>存活怪物</l0><l1>存活怪物</l1><l2>Alive monsters</l2> ≤ ${renderSchemaNumberInput(
+        "physicalDowngradeThreshold"
+      )}<l0>时跳过 OFC/FRD 全体攻击节省 OC (流派技能总伤害不受怪物数影响, 不跳过)</l0><l1>時跳過 OFC/FRD 全體攻擊節省 OC (流派技能總傷害不受怪物數影響, 不跳過)</l1><l2>: skip OFC/FRD to save OC (style skills total damage unaffected by monster count, not skipped)</l2>`
+    ),
+  ];
+}
+
+function renderMercifulBlowSchemaField() {
+  return renderSchemaCheckboxField("mercifulBlow", "", { bold: false }).replace(
+    /^<div>|<\/div>$/g,
+    ""
+  );
+}
+
 function renderDynamicHealSchemaFields() {
   return [
     renderSchemaCheckboxField("dynamicHealThreshold", "<br>"),
@@ -811,14 +830,10 @@ export function optionBox() {
     '  <input id="skillOrder_OFC" type="checkbox"><label for="skillOrder_OFC"><l0>友情小马砲</l0><l1>友情小馬砲</l1><l2>OFC</l2></label><input id="skillOrder_FRD" type="checkbox"><label for="skillOrder_FRD"><l0>龙吼</l0><l1>龍吼</l1><l2>FRD</l2></label><input id="skillOrder_T3" type="checkbox"><label for="skillOrder_T3">T3</label><input id="skillOrder_T2" type="checkbox"><label for="skillOrder_T2">T2</label><input id="skillOrder_T1" type="checkbox"><label for="skillOrder_T1">T1</label></div>',
     '  <div><input id="skill_OFC" type="checkbox"><label for="skill_OFC"><l0>友情小马砲</l0><l1>友情小馬砲</l1><l2>OFC</l2></label>: <input id="skillOTOS_OFC" type="checkbox"><label for="skillOTOS_OFC"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>{{skillOFCCondition}}</div>',
     '  <div><input id="skill_FRD" type="checkbox"><label for="skill_FRD"><l0>龙吼</l0><l1>龍吼</l1><l2>FRD</l2></label>: <input id="skillOTOS_FRD" type="checkbox"><label for="skillOTOS_FRD"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>{{skillFRDCondition}}</div>',
-    '  <div><l0>战斗风格</l0><l1>戰鬥風格</l1><l2>Fighting style</l2>: <select name="fightingStyle"><option value="1">二天一流 / Niten Ichiryu</option><option value="2">单手 / One-Handed</option><option value="3">双手 / 2-Handed Weapon</option><option value="4">双持 / Dual Wielding</option><option value="5">法杖 / Staff</option></select></div>',
-    '  <div><input id="skill_T3" type="checkbox"><label for="skill_T3"><l0>3阶（如果有）</l0><l1>3階（如果有）</l1><l2>T3(if exist)</l2></label>: <input id="skillOTOS_T3" type="checkbox"><label for="skillOTOS_T3"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label><br><input id="mercifulBlow" type="checkbox"><label for="mercifulBlow">Merciful Blow: <l0>优先攻击满足条件的敌人 (25% HP, 流血)</l0><l1>優先攻擊滿足條件的敵人 (25% HP, 流血)</l1><l2>Attack the enemy which has 25% HP and is bleeding first</l2></label>{{skillT3Condition}}</div>',
+    ...renderPhysicalSkillStrategySchemaFields(),
+    `  <div><input id="skill_T3" type="checkbox"><label for="skill_T3"><l0>3阶（如果有）</l0><l1>3階（如果有）</l1><l2>T3(if exist)</l2></label>: <input id="skillOTOS_T3" type="checkbox"><label for="skillOTOS_T3"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label><br>${renderMercifulBlowSchemaField()}{{skillT3Condition}}</div>`,
     '  <div><input id="skill_T2" type="checkbox"><label for="skill_T2"><l0>2阶（如果有）</l0><l1>2階（如果有）</l1><l2>T2(if exist)</l2></label>: <input id="skillOTOS_T2" type="checkbox"><label for="skillOTOS_T2"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>{{skillT2Condition}}</div>',
     '  <div><input id="skill_T1" type="checkbox"><label for="skill_T1"><l0>1阶</l0><l1>1階</l1><l2>T1</l2></label>: <input id="skillOTOS_T1" type="checkbox"><label for="skillOTOS_T1"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>{{skillT1Condition}}</div>',
-    '  <div><input id="physicalSkillDowngrade" type="checkbox" checked data-default-on>',
-    '    <label for="physicalSkillDowngrade"><b><l0>少怪降级</l0><l1>少怪降級</l1><l2>Few Monsters Downgrade</l2></b></label>:',
-    '    <l0>存活怪物</l0><l1>存活怪物</l1><l2>Alive monsters</l2> ≤ <input class="hvAANumber" name="physicalDowngradeThreshold" placeholder="3" type="text">',
-    "    <l0>时跳过 OFC/FRD 全体攻击节省 OC (流派技能总伤害不受怪物数影响, 不跳过)</l0><l1>時跳過 OFC/FRD 全體攻擊節省 OC (流派技能總傷害不受怪物數影響, 不跳過)</l1><l2>: skip OFC/FRD to save OC (style skills total damage unaffected by monster count, not skipped)</l2></div>",
     '  <div>AoE: <l0>当前技能等级下影响的目标数(1=单体, 3=范围)，访问</l0><l1>當前技能等級下影響的目標數(1=單體, 3=範圍)，訪問</l1><l2>Targets affected at current skill level (1=single, 3=AoE), visit </l2><a href="?s=Character&ss=ab" target="_blank"><l0>技能页面</l0><l1>技能頁面</l1><l2>Ability Page</l2></a><l0>自动检测</l0><l1>自動檢測</l1><l2> to auto-detect</l2><br>',
     '    Fire: T1:<input class="hvAANumber" name="spellAoe_11" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_12" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_13" placeholder="1" type="text"><br>',
     '    Cold: T1:<input class="hvAANumber" name="spellAoe_21" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_22" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_23" placeholder="1" type="text"><br>',
