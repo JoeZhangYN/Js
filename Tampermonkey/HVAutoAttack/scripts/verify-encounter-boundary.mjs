@@ -753,6 +753,28 @@ if (!/\bWIDGET_TIMER_ELAPSED\b/.test(hvUtilsText)) {
     `${hvUtilsFile.replaceAll("\\", "/")} widget countdown expiry must report WIDGET_TIMER_ELAPSED`
   );
 }
+for (const required of [
+  "href: plan.href",
+  "preserves the ready-window generation URL for main-world widget loads",
+  "https://e-hentai.org/news.php?encounter",
+]) {
+  if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
+    violations.push(
+      `${widgetPolicyFile.replaceAll("\\", "/")} must preserve ready-window generation URL: ${required}`
+    );
+  }
+}
+for (const required of [
+  "re.load(outcome.engage, outcome.href)",
+  "re.load(true, outcome.href)",
+  "$ajax.fetch(href || 'https://e-hentai.org/news.php')",
+]) {
+  if (!hvUtilsText.includes(required)) {
+    violations.push(
+      `${hvUtilsFile.replaceAll("\\", "/")} must fetch the typed widget generation URL when supplied: ${required}`
+    );
+  }
+}
 const baRunBranch = hvUtilsText.match(/if \(re\.type === 'ba'\) \{[\s\S]*?\n\s*\} else if \(re\.type === 'hv'\)/)?.[0] || "";
 if (
   !baRunBranch.includes("WIDGET_CLICKED") ||

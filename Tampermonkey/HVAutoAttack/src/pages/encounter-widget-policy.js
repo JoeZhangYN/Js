@@ -64,7 +64,7 @@ function planWidgetClick(event) {
     }
     return { ...readWidgetState(plan.state), action: "navigate", href: plan.href };
   }
-  return { ...readWidgetState(plan.state), action: "load", engage: true };
+  return { ...readWidgetState(plan.state), action: "load", engage: true, href: plan.href };
 }
 
 function planWidgetTimerElapsed(event) {

@@ -64,7 +64,7 @@ describe("encounter widget timer expiry", () => {
     });
   });
 
-  it("requests one ready-window load when the timer elapses without a key", () => {
+  it("requests one ready-window generation load when the timer elapses without a key", () => {
     const state = { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true };
 
     const first = runEncounterAutomation({
@@ -79,7 +79,12 @@ describe("encounter widget timer expiry", () => {
       lastAttemptKey: first.attemptKey,
     });
 
-    expect(first).toMatchObject({ action: "load", engage: true, attemptKey: expect.any(String) });
+    expect(first).toMatchObject({
+      action: "load",
+      engage: true,
+      href: "https://e-hentai.org/news.php?encounter",
+      attemptKey: expect.any(String),
+    });
     expect(second).toMatchObject({ action: "none", attemptKey: first.attemptKey });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });

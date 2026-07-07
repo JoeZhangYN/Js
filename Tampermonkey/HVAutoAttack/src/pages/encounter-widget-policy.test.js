@@ -98,4 +98,18 @@ describe("planEncounterWidgetEvent", () => {
       status: "countdown",
     });
   });
+
+  it("preserves the ready-window generation URL for main-world widget loads", () => {
+    expect(
+      planEncounterWidgetEvent({
+        type: "widgetTimerElapsed",
+        state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true },
+        pageType: "hv",
+      })
+    ).toMatchObject({
+      action: "load",
+      engage: true,
+      href: "https://e-hentai.org/news.php?encounter",
+    });
+  });
 });

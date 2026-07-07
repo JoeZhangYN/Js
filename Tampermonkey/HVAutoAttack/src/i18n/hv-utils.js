@@ -2096,7 +2096,7 @@ const bindRe = function (re, ctx) {
       if (applyEncounterState(outcome) === false) return false;
       if (outcome?.attemptKey) re.readyAttemptKey = outcome.attemptKey;
       if (outcome?.handled) return;
-      if (outcome?.action === 'load') return re.load(outcome.engage);
+      if (outcome?.action === 'load') return re.load(outcome.engage, outcome.href);
       if (outcome?.action === 'checkHv') return re.run(outcome.engage);
     }
   };
@@ -2110,7 +2110,7 @@ const bindRe = function (re, ctx) {
       const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage });
       if (applyEncounterState(outcome) === false) return false;
       if (outcome?.handled) return;
-      return re.load(true);
+      return re.load(true, outcome.href);
     } else if (re.type === 'eh') {
       re.stop();
       re.button.textContent = '检查中...';
@@ -2126,19 +2126,19 @@ const bindRe = function (re, ctx) {
         const outcome = runEncounter({ type: encounterEvent().WIDGET_CLICKED, state: re.json, pageType: re.type, force: engage, hvAvailable: true });
         if (applyEncounterState(outcome) === false) return false;
         if (outcome?.handled) return;
-        return re.load(true);
+        return re.load(true, outcome.href);
       } else {
         return re.load();
       }
     }
   };
-  re.load = async function (engage) {
+  re.load = async function (engage, href) {
     re.stop();
     if (re.get() === false) return false;
     re.button.textContent = '加载中...';
     let html;
     try {
-      html = await $ajax.fetch('https://e-hentai.org/news.php');
+      html = await $ajax.fetch(href || 'https://e-hentai.org/news.php');
     } catch (error) {
       record_hvut_random_encounter_failure('widgetNewsLoadFetch', { reason: 'requestFailed', error: error?.message || String(error) });
       re.start();

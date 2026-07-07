@@ -27,7 +27,7 @@ const hv = body(/re\.hv = function \(\) \{[\s\S]*?\n  \};\n  re\.ba/, "re.hv");
 const ba = body(/re\.ba = function \(\) \{[\s\S]*?\n  \};\n  re\.eh/, "re.ba");
 const eh = body(/re\.eh = function \(\) \{[\s\S]*?\n  \};\n  re\.get/, "re.eh");
 const run = body(/re\.run = async function \(engage\) \{[\s\S]*?\n  \};\n  re\.load/, "re.run");
-const load = body(/re\.load = async function \(engage\) \{[\s\S]*?\n  \};\n  re\.start/, "re.load");
+const load = body(/re\.load = async function \(engage, href\) \{[\s\S]*?\n  \};\n  re\.start/, "re.load");
 
 requireParts("applyEncounterState", applyState, [
   "if (!ctx.config.set('re', outcome.state, 'hvut_')) {",
@@ -69,6 +69,7 @@ requireParts("re.run", run, [
 ]);
 requireParts("re.load", load, [
   "if (re.get() === false) return false;",
+  "$ajax.fetch(href || 'https://e-hentai.org/news.php')",
   "record_hvut_random_encounter_failure('widgetNewsLoadFetch'",
   "re.start();",
   "return false;",
