@@ -7,7 +7,7 @@
  * @typedef {object} OptionField
  * @property {string} key 存储 key
  * @property {"checkbox"|"number"|"text"|"select"} kind UI 类型
- * @property {string} group tab 分组（Main/Heal/Tactics/Spell/Item/Channel/Buff/Debuff/Skill/Drop/Usage/Alarm/QuickSite/Backup）
+ * @property {string} group tab 分组（Main/Heal/Tactics/Spell/Item/Channel/Buff/Debuff/Skill/Scroll/Drop/Usage/Alarm/QuickSite/Backup）
  * @property {{l0:string,l1:string,l2:string}} label 三语标签
  * @property {*} default 默认值
  * @property {boolean} [defaultOn] checkbox 上是否标 data-default-on
@@ -673,6 +673,50 @@ const OPTION_SCHEMA = [
       l0: "Channel技能",
       l1: "Channel技能",
       l2: "Channel Spells",
+    },
+  },
+  {
+    key: "buffSkillSwitch",
+    kind: "checkbox",
+    group: "Buff",
+    default: false,
+    label: {
+      l0: "BUFF技能",
+      l1: "BUFF技能",
+      l2: "BUFF Spells",
+    },
+  },
+  {
+    key: "debuffSkillSwitch",
+    kind: "checkbox",
+    group: "Debuff",
+    default: false,
+    label: {
+      l0: "DEBUFF技能",
+      l1: "DEBUFF技能",
+      l2: "DEBUFF Spells",
+    },
+  },
+  {
+    key: "skillSwitch",
+    kind: "checkbox",
+    group: "Skill",
+    default: false,
+    label: {
+      l0: "其他技能",
+      l1: "其他技能",
+      l2: "Skills",
+    },
+  },
+  {
+    key: "scrollSwitch",
+    kind: "checkbox",
+    group: "Scroll",
+    default: false,
+    label: {
+      l0: "卷轴",
+      l1: "捲軸",
+      l2: "Scroll",
     },
   },
   // === 掉落监测：设置页只派生监控开关/最低品质；运行时 authority 在 battle-monitor-runtime/drop-monitor ===

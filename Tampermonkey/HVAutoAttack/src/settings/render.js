@@ -263,6 +263,10 @@ function renderChannelSkillSwitchTabSchemaField() {
   );
 }
 
+function renderBattleTabSwitchSchemaField(key) {
+  return renderSchemaCheckboxField(key, "", { bold: false }).replace(/^<div>|<\/div>$/g, "");
+}
+
 function renderDropMonitorSchemaFields() {
   return [renderSchemaSelectField("dropQuality")];
 }
@@ -726,10 +730,10 @@ export function optionBox() {
     '  <span name="Spell"><l0>法术攻击</l0><l1>法術攻擊</l1><l2>Spell</l2></span>',
     '  <span name="Item"><l01>物品</l01><l2>Item</l2></span>',
     `  <span name="Channel">${renderChannelSkillSwitchTabSchemaField()}</span>`,
-    '  <span name="Buff"><input id="buffSkillSwitch" type="checkbox">BUFF<l01>技能</l01><l2> Spells</l2></span>',
-    '  <span name="Debuff"><input id="debuffSkillSwitch" type="checkbox">DEBUFF<l01>技能</l01><l2> Spells</l2></span>',
-    '  <span name="Skill"><input id="skillSwitch" type="checkbox"><l01>其他技能</l01><l2>Skills</l2></span>',
-    '  <span name="Scroll"><input id="scrollSwitch" type="checkbox"><l0>卷轴</l0><l1>捲軸</l1><l2>Scroll</l2></span>',
+    `  <span name="Buff">${renderBattleTabSwitchSchemaField("buffSkillSwitch")}</span>`,
+    `  <span name="Debuff">${renderBattleTabSwitchSchemaField("debuffSkillSwitch")}</span>`,
+    `  <span name="Skill">${renderBattleTabSwitchSchemaField("skillSwitch")}</span>`,
+    `  <span name="Scroll">${renderBattleTabSwitchSchemaField("scrollSwitch")}</span>`,
     '  <span name="Infusion"><input id="infusionSwitch" type="checkbox"><l0>魔药</l0><l1>魔藥</l1><l2>Infusion</l2></span>',
     '  <span name="Alarm"><l0>警报</l0><l1>警報</l1><l2>Alarm</l2></span>',
     '  <span name="Rule"><l0>攻击规则</l0><l1>攻擊規則</l1><l2>Attack Rule</l2></span>',
