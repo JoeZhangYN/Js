@@ -10556,18 +10556,19 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
           html = await $ajax.fetch(`?s=Bazaar&ss=mm&mid=${mid}`, post);
         } catch (error) {
           const stage = post ? 'viewActionRequest' : 'viewLoadRequest';
-          record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
+          const evidence = record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
           mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };
-          return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error };
+          return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error, evidence: evidence };
         }
         mail.view = _mm.mail.parse(html);
         if (mail.view?.error) {
-          record_hvut_mooglemail_action_failure(post ? 'viewActionRejected' : 'viewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
-          return { kind: 'rejected', reason: 'responseRejected', error: mail.view.error };
+          const evidence = record_hvut_mooglemail_action_failure(post ? 'viewActionRejected' : 'viewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
+          return { kind: 'rejected', reason: 'responseRejected', error: mail.view.error, evidence: evidence };
         }
         if (!await _mm.mail.update(mail, post)) {
           mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };
-          return { kind: 'rejected', reason: 'cacheWriteFailed', error: mail.view.error };
+          const evidence = record_hvut_mooglemail_action_failure(post ? 'viewActionCacheWriteRejected' : 'viewLoadCacheWriteRejected', { mid: mid, post: post || '', error: mail.view.error });
+          return { kind: 'rejected', reason: 'cacheWriteFailed', error: mail.view.error, evidence: evidence };
         }
         return { kind: 'accepted' };
       },
@@ -16736,18 +16737,19 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         html = await $ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post);
       } catch (error) {
         const stage = post ? 'legacyViewActionRequest' : 'legacyViewLoadRequest';
-        record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
+        const evidence = record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
         mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };
-        return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error };
+        return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error, evidence: evidence };
       }
       mail.view = _mm.mail_parse(html);
       if (mail.view?.error) {
-        record_hvut_mooglemail_action_failure(post ? 'legacyViewActionRejected' : 'legacyViewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
-        return { kind: 'rejected', reason: 'responseRejected', error: mail.view.error };
+        const evidence = record_hvut_mooglemail_action_failure(post ? 'legacyViewActionRejected' : 'legacyViewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
+        return { kind: 'rejected', reason: 'responseRejected', error: mail.view.error, evidence: evidence };
       }
       if (!await _mm.mail_update(mail, post)) {
         mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };
-        return { kind: 'rejected', reason: 'cacheWriteFailed', error: mail.view.error };
+        const evidence = record_hvut_mooglemail_action_failure(post ? 'legacyViewActionCacheWriteRejected' : 'legacyViewLoadCacheWriteRejected', { mid: mid, post: post || '', error: mail.view.error });
+        return { kind: 'rejected', reason: 'cacheWriteFailed', error: mail.view.error, evidence: evidence };
       }
       return { kind: 'accepted' };
     };
