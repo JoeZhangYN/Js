@@ -9,13 +9,22 @@ const violations = [];
 for (const required of [
   "var create_hvut_mail_page_context = function (query) {",
   "var source = query || _query;",
+  "var section = source?.s;",
+  "var ss = source?.ss;",
   "var filter = source?.filter || 'inbox';",
   "var current = parseInt(source?.page) || 0;",
   "var disabled = source?.hvut === 'disabled';",
+  "section: section,",
+  "ss: ss,",
   "filter: filter,",
   "current: current,",
   "disabled: disabled,",
+  "isMoogleMail: section === 'Bazaar' && ss === 'mm',",
   "shouldUseHvutCompose: filter === 'new' && !disabled,",
+  "var hvut_mail_page_context = null;",
+  "var get_hvut_mail_page_context = function () {",
+  "hvut_mail_page_context = hvut_mail_page_context || create_hvut_mail_page_context();",
+  "return hvut_mail_page_context;",
   "var create_hvut_mail_page_url = function (page, context) {",
   "var mailPage = context || create_hvut_mail_page_context();",
   "return create_hvut_mail_filter_page_url(mailPage.filter, page);",
@@ -26,7 +35,7 @@ for (const required of [
 }
 
 const mailBodies = [
-  ...text.matchAll(/if \(_query\.s === 'Bazaar' && _query\.ss === 'mm' && \$config\.settings\.moogleMail\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:12|13)\] Bazaar - MoogleMail/g),
+  ...text.matchAll(/if \(get_hvut_mail_page_context\(\)\.isMoogleMail && \$config\.settings\.moogleMail\) \{[\s\S]*?\n\} else\n\/\/ \[END (?:12|13)\] Bazaar - MoogleMail/g),
 ].map((match) => match[0]);
 
 if (mailBodies.length !== 2) {
@@ -35,7 +44,7 @@ if (mailBodies.length !== 2) {
 
 for (const [index, body] of mailBodies.entries()) {
   for (const required of [
-    "const mailPage = create_hvut_mail_page_context();",
+    "const mailPage = get_hvut_mail_page_context();",
     "if (mailPage.shouldUseHvutCompose) {",
   ]) {
     if (!body.includes(required)) {
@@ -43,6 +52,8 @@ for (const [index, body] of mailBodies.entries()) {
     }
   }
   for (const forbidden of [
+    "_query.s === 'Bazaar' && _query.ss === 'mm'",
+    "_query.ss === 'mm'",
     "_query.filter === 'new' && _query.hvut !== 'disabled'",
     "_query.filter || 'inbox'",
     "parseInt(_query.page) || 0",

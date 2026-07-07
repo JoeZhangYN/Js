@@ -1788,15 +1788,25 @@ try {
   };
   var create_hvut_mail_page_context = function (query) {
     var source = query || _query;
+    var section = source?.s;
+    var ss = source?.ss;
     var filter = source?.filter || 'inbox';
     var current = parseInt(source?.page) || 0;
     var disabled = source?.hvut === 'disabled';
     return {
+      section: section,
+      ss: ss,
       filter: filter,
       current: current,
       disabled: disabled,
+      isMoogleMail: section === 'Bazaar' && ss === 'mm',
       shouldUseHvutCompose: filter === 'new' && !disabled,
     };
+  };
+  var hvut_mail_page_context = null;
+  var get_hvut_mail_page_context = function () {
+    hvut_mail_page_context = hvut_mail_page_context || create_hvut_mail_page_context();
+    return hvut_mail_page_context;
   };
   var create_hvut_mail_page_url = function (page, context) {
     var mailPage = context || create_hvut_mail_page_context();
@@ -10138,8 +10148,8 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
 
 
 //* [12] Bazaar - MoogleMail
-if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) {
-  const mailPage = create_hvut_mail_page_context();
+if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
+  const mailPage = get_hvut_mail_page_context();
   _mm.attach_text = function (item) {
     if (!item.data.count) {
       return '';
@@ -16103,8 +16113,8 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
 
 
 //* [13] Bazaar - MoogleMail
-if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) {
-  const mailPage = create_hvut_mail_page_context();
+if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
+  const mailPage = get_hvut_mail_page_context();
   _mm.node = {};
 
   _mm.attach_text = function (item) {
