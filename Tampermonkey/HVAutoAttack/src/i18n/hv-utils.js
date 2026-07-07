@@ -926,6 +926,14 @@ try {
     }
     return evidence;
   };
+  var classify_hvut_armory_submit_response = function (doc, stage, detail) {
+    var message = $id('messagebox_outer', doc);
+    if (!message) {
+      record_hvut_armory_submit_failure(stage, { ...detail, reason: 'messageMissing' });
+      return { kind: 'rejected', reason: 'messageMissing' };
+    }
+    return { kind: 'accepted', message: message };
+  };
   var parse_hvut_difficulty_from_level_readout = function (doc, stage) {
     var text = $id('level_readout', doc)?.textContent?.trim() || '';
     var match = /^(.+) Lv\.(\d+)/.exec(text);
@@ -4853,7 +4861,12 @@ const bindArmory = function (armory, ctx) {
           return false;
         }
         const doc = $doc(html);
-        $armory.submit.message(doc);
+        const response = classify_hvut_armory_submit_response(doc, 'purchaseRejected', { count: equips.length });
+        if (response.kind !== 'accepted') {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
+        $armory.submit.message(response);
         $armory.submit.remove(equips);
         return true;
       },
@@ -4871,7 +4884,12 @@ const bindArmory = function (armory, ctx) {
           return false;
         }
         const doc = $doc(html);
-        $armory.submit.message(doc);
+        const response = classify_hvut_armory_submit_response(doc, 'sellRejected', { count: equips.length });
+        if (response.kind !== 'accepted') {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
+        $armory.submit.message(response);
         $armory.submit.remove(equips);
         return true;
       },
@@ -4889,7 +4907,12 @@ const bindArmory = function (armory, ctx) {
           return false;
         }
         const doc = $doc(html);
-        $armory.submit.message(doc);
+        const response = classify_hvut_armory_submit_response(doc, 'salvageRejected', { count: equips.length });
+        if (response.kind !== 'accepted') {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
+        $armory.submit.message(response);
         $armory.submit.remove(equips);
         return true;
       },
@@ -4917,8 +4940,8 @@ const bindArmory = function (armory, ctx) {
         const data = `postoken=${$armory.postoken}&${eqids}`;
         return data;
       },
-      message: function (doc) {
-        const outer = $id('messagebox_outer', doc);
+      message: function (response) {
+        const outer = response.message;
         if (!outer) {
           return;
         }
@@ -5034,10 +5057,16 @@ const bindArmory = function (armory, ctx) {
         }
         const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=organize', data + `&set_${param_name}=${param_value}`);
         const doc = $doc(html);
-        $armory.submit.message(doc);
+        const response = classify_hvut_armory_submit_response(doc, 'organizeRejected', { count: equips.length, name: name, value: value });
+        if (response.kind !== 'accepted') {
+          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');
+          return false;
+        }
+        $armory.submit.message(response);
         equips.forEach((eq) => {
           $armory.organize.status(eq, name, value);
         });
+        return true;
       },
       status: function (eq, name, value) {
         const status = ['damaged', 'unusable', 'equipped', 'stored', 'pinned', 'protected', 'locked', 'highlevel'];

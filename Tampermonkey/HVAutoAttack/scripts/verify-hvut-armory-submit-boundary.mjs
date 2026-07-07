@@ -16,13 +16,20 @@ function requirePart(label, body, part) {
 
 const submitBody =
   /submit: \{[\s\S]*?\n    \},\n\n    organize: \{/.exec(text)?.[0] || "";
+const organizeSubmitBody =
+  /submit: async function \(eid, name, value = true\) \{[\s\S]*?\n      \},\n      status: function/.exec(text)?.[0] || "";
 
 if (!submitBody) violations.push(`${target} must keep Armory submit entry visible`);
+if (!organizeSubmitBody) violations.push(`${target} must keep Armory organize submit entry visible`);
 
 for (const required of [
   "var record_hvut_armory_submit_failure = function (stage, detail) {",
   "capability: 'hvutArmorySubmit'",
   "sessionStorage.setItem('HVAA:lastHvutArmorySubmitFailure'",
+  "var classify_hvut_armory_submit_response = function (doc, stage, detail) {",
+  "record_hvut_armory_submit_failure(stage, { ...detail, reason: 'messageMissing' });",
+  "return { kind: 'rejected', reason: 'messageMissing' };",
+  "return { kind: 'accepted', message: message };",
 ]) {
   if (!text.includes(required)) violations.push(`${target} must define Armory submit evidence with ${required}`);
 }
@@ -41,7 +48,9 @@ for (const [label, stage, fetchCall] of [
     `record_hvut_armory_submit_failure('${stage}'`,
     "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
     "return false;",
-    "$armory.submit.message(doc);",
+    `const response = classify_hvut_armory_submit_response(doc, '${label}Rejected', { count: equips.length });`,
+    "if (response.kind !== 'accepted') {",
+    "$armory.submit.message(response);",
     "$armory.submit.remove(equips);",
     "return true;",
   ]) {
@@ -57,13 +66,27 @@ for (const required of [
   requirePart("Armory purchase_salvage submit", submitBody, required);
 }
 
+for (const required of [
+  "submit: async function (eid, name, value = true) {",
+  "const response = classify_hvut_armory_submit_response(doc, 'organizeRejected', { count: equips.length, name: name, value: value });",
+  "if (response.kind !== 'accepted') {",
+  "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');",
+  "return false;",
+  "$armory.submit.message(response);",
+  "$armory.organize.status(eq, name, value);",
+  "return true;",
+]) {
+  requirePart("Armory organize submit", organizeSubmitBody, required);
+}
+
 for (const forbidden of [
   "const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=purchase', data);",
   "const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=sell', data);",
   "const html = await $ajax.fetch('?s=Bazaar&ss=am&screen=salvage', data + '&sell_salvage=on');",
   "await $armory.submit.purchase(equips);\n        await $armory.submit.salvage(equips);",
+  "$armory.submit.message(doc);",
 ]) {
-  if (submitBody.includes(forbidden)) {
+  if (text.includes(forbidden)) {
     violations.push(`${target} Armory submit must not keep unchecked path: ${forbidden}`);
   }
 }
