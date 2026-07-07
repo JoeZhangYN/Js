@@ -210,15 +210,20 @@ function renderMainPluginSchemaFields() {
   ];
 }
 
-function renderEquipmentSchemaFields() {
-  return [
-    `<div><input id="repair" type="checkbox"><label for="repair"><b>${renderSchemaLabel(
-      readSchemaField("repair")
-    )}</b></label>: `,
-    `    ${renderSchemaLabel(readSchemaField("repairValue"))} ≤ ${renderSchemaNumberInput(
+export function renderRepairThresholdSchemaField() {
+  return renderSchemaCheckboxField(
+    "repair",
+    `: ${renderSchemaLabel(readSchemaField("repairValue"))} ≤ ${renderSchemaNumberInput(
       "repairValue",
       "%"
-    )}</div>`,
+    )}`,
+    { bold: true }
+  );
+}
+
+function renderEquipmentSchemaFields() {
+  return [
+    renderRepairThresholdSchemaField(),
     renderCheckboxPlusNumber("repairBuyMaterials", "repairCreditCap", {
       l0: " 信用点单轮上限（缺料则联动物品商店买齐再修，超限停机告警；不勾=缺料即停机）",
       l1: " 信用點單輪上限（缺料則聯動物品商店買齊再修，超限停機告警；不勾=缺料即停機）",
