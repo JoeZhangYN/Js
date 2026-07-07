@@ -18,6 +18,14 @@ for (const required of [
   "sessionStorage.setItem('HVAA:lastHvutAbilityUnlockFailure'",
   "var parse_hvut_ability_unlock_button = function (ability, stage) {",
   "record_hvut_ability_unlock_failure(stage, { reason: 'abilityUnlockButtonMissing'",
+  "var run_hvut_ability_unlock_request = async function (ability, context) {",
+  "var html = await $ajax.fetch(location.href, `unlock_ability=${ability.id}`);",
+  "var error = get_message(doc);",
+  "if (error) {\n      popup(error);\n      return false;",
+  "if (button) {",
+  "return true;",
+  "return false;",
+  "parse_hvut_ability_unlock_button(ability, context?.buttonStage || 'abilityUnlockButton')",
 ]) {
   if (!text.includes(required)) violations.push(`${target} must include ability unlock diagnostic recorder: ${required}`);
 }
@@ -39,14 +47,11 @@ if (bodies.length !== 2) {
 
 for (const [index, body] of bodies.entries()) {
   for (const required of [
-    "if (error) {\n        popup(error);\n        return false;",
-    "return true;",
     "let results;",
     "try {\n      results = await Promise.all(requests);",
     "catch (error) {",
     "record_hvut_ability_unlock_failure(",
-    "const button = parse_hvut_ability_unlock_button(ab,",
-    "if (button) {",
+    "return run_hvut_ability_unlock_request(ab, { buttonStage:",
     "alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n      return;",
     "if (!results.every((r) => r)) return;",
     "reloadCurrentPage(hvutReloadReason('HV_UTILS_ABILITY_UNLOCK'))",
@@ -63,6 +68,12 @@ for (const [index, body] of bodies.entries()) {
   }
   if (/catch \(_error\) \{\n\s*alert\(IS_ISEKAI/.test(body)) {
     violations.push(`${target} ability unlock[${index}] must not keep untyped request failure`);
+  }
+  if (/\$ajax\.fetch\(location\.href/.test(body)) {
+    violations.push(`${target} ability unlock[${index}] must delegate current-page POST to run_hvut_ability_unlock_request`);
+  }
+  if (/get_message\(doc\)/.test(body)) {
+    violations.push(`${target} ability unlock[${index}] must not classify unlock response outside request entry`);
   }
   if (/ab\.div\.children\[2\]/.test(body)) {
     violations.push(`${target} ability unlock[${index}] must not rediscover button panel from raw DOM child index`);

@@ -508,6 +508,21 @@ try {
     var button = $qs('div[style*="u.png"]', panel);
     return button || record_hvut_ability_unlock_failure(stage, { reason: 'abilityUnlockButtonMissing', id: ability?.id || '' });
   };
+  var run_hvut_ability_unlock_request = async function (ability, context) {
+    var html = await $ajax.fetch(location.href, `unlock_ability=${ability.id}`);
+    var doc = $doc(html);
+    var error = get_message(doc);
+    if (error) {
+      popup(error);
+      return false;
+    }
+    var button = parse_hvut_ability_unlock_button(ability, context?.buttonStage || 'abilityUnlockButton');
+    if (button) {
+      button.style.opacity = 0.5;
+      button.style.backgroundImage = button.style.backgroundImage.replace('u.png', 'f.png');
+    }
+    return true;
+  };
   var parse_hvut_ability_unlock_id = function (panel, stage) {
     var onclick = panel?.getAttribute('onclick') || '';
     var match = /do_unlock_ability\((\d+)\)/.exec(onclick);
@@ -6570,20 +6585,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     const count = to - ab.level;
 
     async function unlock(ab) {
-      const html = await $ajax.fetch(location.href, `unlock_ability=${ab.id}`);
-      const doc = $doc(html);
-      const error = get_message(doc);
-      if (error) {
-        popup(error);
-        return false;
-      } else {
-        const button = parse_hvut_ability_unlock_button(ab, 'abilityUnlockButton');
-        if (button) {
-          button.style.opacity = 0.5;
-          button.style.backgroundImage = button.style.backgroundImage.replace('u.png', 'f.png');
-        }
-      }
-      return true;
+      return run_hvut_ability_unlock_request(ab, { buttonStage: 'abilityUnlockButton' });
     }
 
     const requests = $ajax.repeat(count, unlock, ab);
@@ -12898,20 +12900,7 @@ if (_query.s === 'Character' && _query.ss === 'ab') {
     const count = to - ab.level;
 
     async function unlock(ab) {
-      const html = await $ajax.fetch(location.href, 'unlock_ability=' + ab.id);
-      const doc = $doc(html);
-      const error = get_message(doc);
-      if (error) {
-        popup(error);
-        return false;
-      } else {
-        const button = parse_hvut_ability_unlock_button(ab, 'legacyAbilityUnlockButton');
-        if (button) {
-          button.style.opacity = 0.5;
-          button.style.backgroundImage = button.style.backgroundImage.replace('u.png', 'f.png');
-        }
-      }
-      return true;
+      return run_hvut_ability_unlock_request(ab, { buttonStage: 'legacyAbilityUnlockButton' });
     }
 
     const requests = $ajax.repeat(count, unlock, ab);
