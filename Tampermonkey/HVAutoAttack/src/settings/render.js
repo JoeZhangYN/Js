@@ -249,6 +249,13 @@ function renderDropMonitorTabSchemaField() {
   );
 }
 
+function renderUsageTrackingTabSchemaField() {
+  return renderSchemaCheckboxField("recordUsage", "", { bold: false }).replace(
+    /^<div>|<\/div>$/g,
+    ""
+  );
+}
+
 function renderDropMonitorSchemaFields() {
   return [renderSchemaSelectField("dropQuality")];
 }
@@ -721,7 +728,7 @@ export function optionBox() {
     '  <span name="Alarm"><l0>警报</l0><l1>警報</l1><l2>Alarm</l2></span>',
     '  <span name="Rule"><l0>攻击规则</l0><l1>攻擊規則</l1><l2>Attack Rule</l2></span>',
     `  <span name="Drop">${renderDropMonitorTabSchemaField()}</span>`,
-    '  <span name="Usage"><input id="recordUsage" type="checkbox"><l0>数据记录</l0><l1>數據記錄</l1><l2>Usage Tracking</l2></span>',
+    `  <span name="Usage">${renderUsageTrackingTabSchemaField()}</span>`,
     '  <span name="Riddle"><l0>小马验证</l0><l1>小馬驗證</l1><l2>Riddle ML</l2></span>',
     '  <span name="About"><l0>关于本脚本</l0><l1>關於本腳本</l1><l2>About This</l2></span>',
     '  <span name="Feedback"><l01>反馈</l01><l2>Feedback</l2></span></div>',

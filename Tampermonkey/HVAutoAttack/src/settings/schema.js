@@ -651,6 +651,18 @@ const OPTION_SCHEMA = [
       l2: "Record each battle separately",
     },
   },
+  // === 使用统计：设置页只派生开关；运行时 authority 在 battle-action-usage-capture/record-usage ===
+  {
+    key: "recordUsage",
+    kind: "checkbox",
+    group: "Usage",
+    default: false,
+    label: {
+      l0: "数据记录",
+      l1: "數據記錄",
+      l2: "Usage Tracking",
+    },
+  },
   // === 掉落监测：设置页只派生监控开关/最低品质；运行时 authority 在 battle-monitor-runtime/drop-monitor ===
   {
     key: "dropMonitor",
