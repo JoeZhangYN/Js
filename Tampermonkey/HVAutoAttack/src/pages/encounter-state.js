@@ -76,12 +76,13 @@ function readCurrentReState() {
   return state;
 }
 
-function markRandomEncounterStarted(search = window.location.search) {
+function markRandomEncounterStarted(event = {}) {
   writeReState(
     runEncounterPolicy({
       type: EncounterPolicyEvent.MARK_STARTED,
       state: readCurrentReState(),
-      search,
+      search: event.search,
+      source: event.source,
     })
   );
 }
@@ -146,7 +147,7 @@ function loadEncounterKey() {
 const encounterStateEventHandlers = Object.freeze({
   [EVENT_READ_CURRENT]: () => readCurrentReState(),
   [EVENT_MARK_STARTED]: (event) => {
-    markRandomEncounterStarted(event.search);
+    markRandomEncounterStarted(event);
     return undefined;
   },
   [EVENT_MARK_ATTEMPTED]: (event) => markEncounterAttempted(event.key, event.state),

@@ -111,6 +111,7 @@ function markRandomEncounterStarted(event) {
   runEncounterStateAutomation({
     type: EncounterStateEvent.MARK_STARTED,
     search: event.search,
+    source: event.source,
   });
   return { claimed: false };
 }

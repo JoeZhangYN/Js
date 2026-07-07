@@ -60,9 +60,7 @@ function readEncounterReadiness(state, nowMs = Date.now()) {
   };
 }
 
-function countdownEncounterClock(readiness, countdownMs, reason) {
-  return { ...readiness, status: "countdown", countdownMs, reason };
-}
+const countdownEncounterClock = (readiness, countdownMs, reason) => ({ ...readiness, status: "countdown", countdownMs, reason });
 
 function readEncounterClock(state, nowMs = Date.now()) {
   const readiness = readEncounterReadiness(state, nowMs);
@@ -104,13 +102,9 @@ function planEncounterActivation(state, { force: _force = false, nowMs = Date.no
   return { action: "load", state: readiness.state };
 }
 
-function parseEncounterKeyFromSearch(search = "") {
-  return /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(search)?.[1];
-}
+const parseEncounterKeyFromSearch = (search = "") => /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(search)?.[1];
 
-function parseEncounterKeyFromEventpaneHtml(eventpane = "") {
-  return eventpane.match(/\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/)?.[1];
-}
+const parseEncounterKeyFromEventpaneHtml = (eventpane = "") => eventpane.match(/\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/)?.[1];
 
 function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
   const next = normalizeEncounterState(state, nowMs);
@@ -137,10 +131,14 @@ function markEncounterGenerationAttempted(state, attemptKey, nowMs = Date.now())
   return next;
 }
 
-function markEncounterStarted(state, { search = "", key = parseEncounterKeyFromSearch(search), nowMs = Date.now() } = {}) {
+function markEncounterStarted(state, event = {}) {
+  const { search = "", source = "", nowMs = Date.now() } = event;
+  const key = event.key || parseEncounterKeyFromSearch(search);
   const next = normalizeEncounterState(state, nowMs);
+  const hasBattleStartEvidence = source === "battleRoundStart";
+  if (!key && !hasBattleStartEvidence) return next;
   if (key && next.key !== key && msUntilEncounterReady(next, nowMs) > 0) return next;
-  if (key || msUntilEncounterReady(next, nowMs) === 0) {
+  if (key || hasBattleStartEvidence) {
     next.date = nowMs;
     next.key = key || next.key || "";
     next.count++;
@@ -162,7 +160,7 @@ const encounterPolicyEventHandlers = Object.freeze({
   [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) => markEncounterKeyAvailable(event.state, event.key, event.nowMs),
   [EncounterPolicyEvent.MARK_ATTEMPTED]: (event) => markEncounterAttempted(event.state, event.key, event.nowMs),
   [EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED]: (event) => markEncounterGenerationAttempted(event.state, event.attemptKey, event.nowMs),
-  [EncounterPolicyEvent.MARK_STARTED]: (event) => markEncounterStarted(event.state, { search: event.search, key: event.key, nowMs: event.nowMs }),
+  [EncounterPolicyEvent.MARK_STARTED]: (event) => markEncounterStarted(event.state, event),
 });
 
 export function runEncounterPolicy(event = { type: EncounterPolicyEvent.READ_CLOCK }) {

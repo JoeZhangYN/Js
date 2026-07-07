@@ -58,6 +58,28 @@ describe("runEncounterPolicy route contract", () => {
     expect(started).toEqual({ date: 2000, key: "abc", count: 1, clear: true });
   });
 
+  it("requires an encounter key or battle-start evidence before starting cooldown", () => {
+    const state = { date: 0, key: "", count: 0, clear: true };
+
+    expect(
+      runEncounterPolicy({
+        type: EncounterPolicyEvent.MARK_STARTED,
+        state,
+        search: "",
+        nowMs: 2000,
+      })
+    ).toEqual(state);
+
+    expect(
+      runEncounterPolicy({
+        type: EncounterPolicyEvent.MARK_STARTED,
+        state,
+        source: "battleRoundStart",
+        nowMs: 2000,
+      })
+    ).toEqual({ date: 2000, key: "", count: 1, clear: true });
+  });
+
   it("marks attempted entry as cleared without starting cooldown or counting an encounter", () => {
     expect(
       runEncounterPolicy({

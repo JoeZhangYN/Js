@@ -83,6 +83,7 @@ describe("runBattleRoundStartAutomation", () => {
     expect(mocks.runBattleRoundStartLog).toHaveBeenCalledWith({ type: "readCurrent" });
     expect(mocks.runEncounterAutomation).toHaveBeenCalledWith({
       type: "randomEncounterStarted",
+      source: "battleRoundStart",
     });
     expect(mocks.runBattleRoundAutomation).toHaveBeenCalledWith({
       type: "recordStartContext",

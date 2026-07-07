@@ -47,4 +47,30 @@ describe("runEncounterAutomation random encounter start", () => {
       clear: true,
     });
   });
+
+  it("records battle-start random encounters without relying on root-page search keys", () => {
+    runEncounterAutomation({
+      type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
+      source: "battleRoundStart",
+    });
+
+    expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
+      count: 1,
+      clear: true,
+    });
+  });
+
+  it("ignores root-page random encounter start events without key or battle evidence", () => {
+    runEncounterAutomation({
+      type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
+      search: "",
+    });
+
+    expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
+      date: 0,
+      key: "",
+      count: 0,
+      clear: true,
+    });
+  });
 });

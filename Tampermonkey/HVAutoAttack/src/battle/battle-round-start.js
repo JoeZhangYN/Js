@@ -30,6 +30,7 @@ function recordRoundStartContext(initializingText) {
   if (context.randomEncounterStarted) {
     runEncounterAutomation({
       type: EncounterEvent.RANDOM_ENCOUNTER_STARTED,
+      source: "battleRoundStart",
     });
   }
   return context;
