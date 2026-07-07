@@ -47,7 +47,7 @@ describe("runEncounterPolicy route contract", () => {
       search: "?s=Battle&ss=ba&encounter=abc",
       nowMs: 2000,
     });
-    expect(started).toEqual({ date: 1000, key: "abc", count: 1, clear: true });
+    expect(started).toEqual({ date: 2000, key: "abc", count: 1, clear: true });
   });
 
   it("marks attempted entry as cleared and starts the next cooldown without counting a new encounter", () => {

@@ -18,4 +18,21 @@ describe("runEncounterPolicy corrupted state recovery", () => {
       reason: "readyWindow",
     });
   });
+
+  it("recovers impossible over-limit daily count instead of waiting until midnight", () => {
+    const state = { date: Date.UTC(2026, 5, 27, 23, 0), key: "", count: 40, clear: true };
+
+    expect(
+      runEncounterPolicy({
+        type: EncounterPolicyEvent.READ_CLOCK,
+        state,
+        nowMs: Date.UTC(2026, 5, 27, 23, 9, 28),
+      })
+    ).toMatchObject({
+      state: { date: 0, key: "", count: 0, clear: true },
+      dailyLimitReached: false,
+      status: "ready",
+      reason: "readyWindow",
+    });
+  });
 });

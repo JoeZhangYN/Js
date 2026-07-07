@@ -603,11 +603,23 @@ for (const required of [
 }
 for (const required of [
   "recovers missing-timestamp daily limit state instead of waiting forever",
+  "recovers impossible over-limit daily count instead of waiting until midnight",
   "dailyLimitReached: false",
   'reason: "readyWindow"',
 ]) {
   if (!policyCorruptStateTestText.includes(required)) {
     violations.push(`${policyCorruptStateTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+for (const required of [
+  "normalized.count > ENCOUNTER_DAILY_LIMIT",
+  "starts a fresh cooldown from battle-start evidence after a stale over-limit counter",
+  'state: { date: Date.now(), key: "abc", count: 1, clear: true }',
+]) {
+  if (!policyText.includes(required) && !widgetPolicyTestText.includes(required)) {
+    violations.push(
+      `${policyFile.replaceAll("\\", "/")} must recover stale over-limit encounter state: ${required}`
+    );
   }
 }
 if (!policyText.includes("const encounterPolicyEventHandlers")) {

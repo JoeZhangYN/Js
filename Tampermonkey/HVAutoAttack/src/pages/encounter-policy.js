@@ -35,6 +35,7 @@ function normalizeEncounterState(state, nowMs = Date.now()) {
     count: Number(state?.count) || 0,
     clear: state?.clear !== false,
   };
+  if (normalized.count > ENCOUNTER_DAILY_LIMIT) return defaultEncounterState();
   if (!normalized.date && (normalized.key || normalized.count || !normalized.clear)) {
     return defaultEncounterState();
   }
@@ -137,6 +138,7 @@ function markEncounterGenerationAttempted(state, nowMs = Date.now()) {
 function markEncounterStarted(state, { search = "", key = parseEncounterKeyFromSearch(search), nowMs = Date.now() } = {}) {
   const next = normalizeEncounterState(state, nowMs);
   if (key && next.key === key) {
+    next.date = nowMs;
     next.clear = true;
   } else if (!key || msUntilEncounterReady(next, nowMs) === 0) {
     next.date = nowMs;

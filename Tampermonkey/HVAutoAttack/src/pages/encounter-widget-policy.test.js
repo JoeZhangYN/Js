@@ -132,4 +132,20 @@ describe("planEncounterWidgetEvent", () => {
       href: "https://e-hentai.org/news.php?encounter",
     });
   });
+
+  it("starts a fresh cooldown from battle-start evidence after a stale over-limit counter", () => {
+    const outcome = planEncounterWidgetEvent({
+      type: "widgetStartedEncounter",
+      state: { date: Date.now() - 10 * 60 * 1000, key: "abc", count: 40, clear: false },
+      search: "?s=Battle&ss=ba&encounter=abc",
+    });
+
+    expect(outcome).toMatchObject({
+      status: "countdown",
+      reason: "cooldown",
+      count: 1,
+      state: { date: Date.now(), key: "abc", count: 1, clear: true },
+    });
+    expect(outcome.remainingMs).toBeGreaterThan(0);
+  });
 });
