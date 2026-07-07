@@ -3182,11 +3182,9 @@ const bindPersona = function (persona, ctx) {
 
   persona.init_outcome = async function () {
     if ($id('persona_form')) {
-      const personaCheck = persona.check_p();
-      if (personaCheck === null) {
-        return reject_hvut_persona_sync('personaInitFormStateRejected', {});
-      }
-      if (!personaCheck) {
+      const personaCheck = persona.check_p_outcome();
+      if (personaCheck.kind === 'rejected') return personaCheck;
+      if (!personaCheck.checked) {
         const equipOutcome = await persona.change_e_outcome();
         if (equipOutcome.kind === 'rejected') return equipOutcome;
       } else {
@@ -3234,11 +3232,11 @@ const bindPersona = function (persona, ctx) {
     }
     persona.selector_e.value = json.eset;
   };
-  persona.check_p = function (doc) {
+  persona.check_p_outcome = function (doc) {
     const json = persona.json;
     const state = parse_hvut_persona_form_state(doc, 'personaFormState');
     if (state === null) {
-      return null;
+      return reject_hvut_persona_sync('personaFormStateRejected', {});
     }
     const pset = state.pset;
     const plen = state.plen;
@@ -3256,15 +3254,21 @@ const bindPersona = function (persona, ctx) {
     json.pset = pset;
     json.plen = plen;
     json.pname = json[pset].name;
-    if (persona.set_value() === false) return null;
-    return checked;
+    if (persona.set_value() === false) {
+      return reject_hvut_persona_sync('personaStateWriteRejected', {});
+    }
+    return { kind: 'accepted', checked: checked };
   };
-  persona.check_e = function (doc) {
+  persona.check_p = function (doc) {
+    const outcome = persona.check_p_outcome(doc);
+    return outcome.kind === 'accepted' ? outcome.checked : null;
+  };
+  persona.check_e_outcome = function (doc) {
     const json = persona.json;
     const pset = json.pset;
     const state = parse_hvut_equip_set_state(doc, 'personaEquipSetState');
     if (state === null) {
-      return false;
+      return reject_hvut_persona_sync('personaEquipSetStateRejected', {});
     }
     const eset = state.eset;
     const elen = state.elen;
@@ -3278,7 +3282,14 @@ const bindPersona = function (persona, ctx) {
     json.eset = eset;
     json.elen = elen;
     json.ename = json[pset][eset].name;
-    return persona.set_value();
+    if (persona.set_value() === false) {
+      return reject_hvut_persona_sync('personaStateWriteRejected', {});
+    }
+    return { kind: 'accepted' };
+  };
+  persona.check_e = function (doc) {
+    const outcome = persona.check_e_outcome(doc);
+    return outcome.kind === 'accepted';
   };
   persona.change_p_outcome = async function (pset) {
     persona.node.button.textContent = '(P...)';
@@ -3290,9 +3301,10 @@ const bindPersona = function (persona, ctx) {
       return reject_hvut_persona_sync('personaPageFetchFailed', { message: String(error?.message || error) });
     }
     const doc = $doc(html);
-    if (persona.check_p(doc) === null) {
+    const personaState = persona.check_p_outcome(doc);
+    if (personaState.kind === 'rejected') {
       if (persona.selector_p) persona.selector_p.disabled = false;
-      return reject_hvut_persona_sync('personaFormStateRejected', {});
+      return personaState;
     }
     if (persona.selector_p) {
       persona.selector_p.value = persona.json.pset;
@@ -3317,10 +3329,11 @@ const bindPersona = function (persona, ctx) {
       return reject_hvut_persona_sync('equipPageFetchFailed', { message: String(error?.message || error) });
     }
     const doc = $doc(html);
-    if (persona.check_e(doc) === false) {
+    const equipState = persona.check_e_outcome(doc);
+    if (equipState.kind === 'rejected') {
       if (persona.selector_e) persona.selector_e.disabled = false;
       persona.set_button();
-      return reject_hvut_persona_sync('personaEquipSetStateRejected', {});
+      return equipState;
     }
     const json = persona.json;
     if (persona.selector_e) {

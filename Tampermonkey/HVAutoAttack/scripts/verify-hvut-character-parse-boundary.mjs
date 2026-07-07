@@ -22,7 +22,11 @@ const dfctSetButton = /dfct\.set_button = function \(doc\) \{[\s\S]*?\n  \};\n\}
 const personaInitOutcome =
   /persona\.init_outcome = async function \(\) \{[\s\S]*?\n  \};\n  persona\.init/.exec(text)?.[0] || "";
 const personaInit = /persona\.init = async function \(\) \{[\s\S]*?\n  \};\n  persona\.create/.exec(text)?.[0] || "";
-const personaCheckP = /persona\.check_p = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_e/.exec(text)?.[0] || "";
+const personaCheckPOutcome =
+  /persona\.check_p_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_p/.exec(text)?.[0] || "";
+const personaCheckP = /persona\.check_p = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_e_outcome/.exec(text)?.[0] || "";
+const personaCheckEOutcome =
+  /persona\.check_e_outcome = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.check_e/.exec(text)?.[0] || "";
 const personaCheckE = /persona\.check_e = function \(doc\) \{[\s\S]*?\n  \};\n  persona\.change_p/.exec(text)?.[0] || "";
 const personaChangePOutcome =
   /persona\.change_p_outcome = async function \(pset\) \{[\s\S]*?\n  \};\n  persona\.change_p/.exec(text)?.[0] || "";
@@ -39,7 +43,9 @@ for (const [label, body] of [
   ["dfct.set_button", dfctSetButton],
   ["persona.init_outcome", personaInitOutcome],
   ["persona.init", personaInit],
+  ["persona.check_p_outcome", personaCheckPOutcome],
   ["persona.check_p", personaCheckP],
+  ["persona.check_e_outcome", personaCheckEOutcome],
   ["persona.check_e", personaCheckE],
   ["persona.change_p_outcome", personaChangePOutcome],
   ["persona.change_p", personaChangeP],
@@ -89,9 +95,9 @@ requirePart("dfct.set_button_outcome", dfctSetButtonOutcome, "return reject_hvut
 requirePart("dfct.set_button", dfctSetButton, "const outcome = dfct.set_button_outcome(doc);");
 requirePart("dfct.set_button", dfctSetButton, "return outcome.kind === 'accepted';");
 
-requirePart("persona.init_outcome", personaInitOutcome, "const personaCheck = persona.check_p();");
-requirePart("persona.init_outcome", personaInitOutcome, "if (personaCheck === null) {");
-requirePart("persona.init_outcome", personaInitOutcome, "return reject_hvut_persona_sync('personaInitFormStateRejected', {});");
+requirePart("persona.init_outcome", personaInitOutcome, "const personaCheck = persona.check_p_outcome();");
+requirePart("persona.init_outcome", personaInitOutcome, "if (personaCheck.kind === 'rejected') return personaCheck;");
+requirePart("persona.init_outcome", personaInitOutcome, "if (!personaCheck.checked) {");
 requirePart("persona.init_outcome", personaInitOutcome, "const equipOutcome = await persona.change_e_outcome();");
 requirePart("persona.init_outcome", personaInitOutcome, "if (equipOutcome.kind === 'rejected') return equipOutcome;");
 requirePart("persona.init_outcome", personaInitOutcome, "const personaOutcome = await persona.change_p_outcome();");
@@ -101,19 +107,26 @@ requirePart("persona.init_outcome", personaInitOutcome, "persona.node.div.addEve
 requirePart("persona.init_outcome", personaInitOutcome, "return { kind: 'accepted' };");
 requirePart("persona.init", personaInit, "const outcome = await persona.init_outcome();");
 requirePart("persona.init", personaInit, "return outcome.kind === 'accepted';");
-requirePart("persona.check_p", personaCheckP, "const state = parse_hvut_persona_form_state(doc, 'personaFormState');");
-requirePart("persona.check_p", personaCheckP, "if (state === null) {\n      return null;");
-requirePart("persona.check_p", personaCheckP, "if (persona.set_value() === false) return null;");
-requirePart("persona.check_e", personaCheckE, "const state = parse_hvut_equip_set_state(doc, 'personaEquipSetState');");
-requirePart("persona.check_e", personaCheckE, "if (state === null) {\n      return false;");
-requirePart("persona.check_e", personaCheckE, "return persona.set_value();");
-requirePart("persona.change_p_outcome", personaChangePOutcome, "if (persona.check_p(doc) === null) {");
+requirePart("persona.check_p_outcome", personaCheckPOutcome, "const state = parse_hvut_persona_form_state(doc, 'personaFormState');");
+requirePart("persona.check_p_outcome", personaCheckPOutcome, "return reject_hvut_persona_sync('personaFormStateRejected', {});");
+requirePart("persona.check_p_outcome", personaCheckPOutcome, "return reject_hvut_persona_sync('personaStateWriteRejected', {});");
+requirePart("persona.check_p_outcome", personaCheckPOutcome, "return { kind: 'accepted', checked: checked };");
+requirePart("persona.check_p", personaCheckP, "const outcome = persona.check_p_outcome(doc);");
+requirePart("persona.check_p", personaCheckP, "return outcome.kind === 'accepted' ? outcome.checked : null;");
+requirePart("persona.check_e_outcome", personaCheckEOutcome, "const state = parse_hvut_equip_set_state(doc, 'personaEquipSetState');");
+requirePart("persona.check_e_outcome", personaCheckEOutcome, "return reject_hvut_persona_sync('personaEquipSetStateRejected', {});");
+requirePart("persona.check_e_outcome", personaCheckEOutcome, "return reject_hvut_persona_sync('personaStateWriteRejected', {});");
+requirePart("persona.check_e_outcome", personaCheckEOutcome, "return { kind: 'accepted' };");
+requirePart("persona.check_e", personaCheckE, "const outcome = persona.check_e_outcome(doc);");
+requirePart("persona.check_e", personaCheckE, "return outcome.kind === 'accepted';");
+requirePart("persona.change_p_outcome", personaChangePOutcome, "const personaState = persona.check_p_outcome(doc);");
+requirePart("persona.change_p_outcome", personaChangePOutcome, "if (personaState.kind === 'rejected') {");
 requirePart(
   "persona.change_p_outcome",
   personaChangePOutcome,
   "return reject_hvut_persona_sync('personaPageFetchFailed', { message: String(error?.message || error) });",
 );
-requirePart("persona.change_p_outcome", personaChangePOutcome, "return reject_hvut_persona_sync('personaFormStateRejected', {});");
+requirePart("persona.change_p_outcome", personaChangePOutcome, "return personaState;");
 requirePart("persona.change_p_outcome", personaChangePOutcome, "const equipOutcome = await persona.change_e_outcome();");
 requirePart("persona.change_p_outcome", personaChangePOutcome, "if (equipOutcome.kind === 'rejected') return equipOutcome;");
 requirePart("persona.change_p_outcome", personaChangePOutcome, "const difficultyOutcome = ctx.dfct.set_button_outcome(doc);");
@@ -121,14 +134,15 @@ requirePart("persona.change_p_outcome", personaChangePOutcome, "if (difficultyOu
 requirePart("persona.change_p_outcome", personaChangePOutcome, "return { kind: 'accepted' };");
 requirePart("persona.change_p", personaChangeP, "const outcome = await persona.change_p_outcome(pset);");
 requirePart("persona.change_p", personaChangeP, "return outcome.kind === 'accepted';");
-requirePart("persona.change_e_outcome", personaChangeEOutcome, "if (persona.check_e(doc) === false) {");
+requirePart("persona.change_e_outcome", personaChangeEOutcome, "const equipState = persona.check_e_outcome(doc);");
+requirePart("persona.change_e_outcome", personaChangeEOutcome, "if (equipState.kind === 'rejected') {");
 requirePart(
   "persona.change_e_outcome",
   personaChangeEOutcome,
   "return reject_hvut_persona_sync('equipPageFetchFailed', { message: String(error?.message || error) });",
 );
 requirePart("persona.change_e_outcome", personaChangeEOutcome, "if (persona.selector_e) persona.selector_e.disabled = false;");
-requirePart("persona.change_e_outcome", personaChangeEOutcome, "return reject_hvut_persona_sync('personaEquipSetStateRejected', {});");
+requirePart("persona.change_e_outcome", personaChangeEOutcome, "return equipState;");
 requirePart("persona.change_e_outcome", personaChangeEOutcome, "const loadOutcome = await persona.load_dynjs_outcome(doc);");
 requirePart("persona.change_e_outcome", personaChangeEOutcome, "if (loadOutcome.kind === 'rejected') return loadOutcome;");
 requirePart("persona.change_e", personaChangeE, "const outcome = await persona.change_e_outcome(eset);");
@@ -161,6 +175,9 @@ for (const forbidden of [
   "persona.init = function ()",
   "persona.change_e();",
   "persona.change_p();",
+  "const personaCheck = persona.check_p();",
+  "if (persona.check_p(doc) === null)",
+  "if (persona.check_e(doc) === false)",
   "persona.check_p(doc);\n    if (persona.selector_p)",
   "persona.check_e(doc);\n    const json = persona.json;",
   "if ((await persona.change_e()) === false) return false;",
