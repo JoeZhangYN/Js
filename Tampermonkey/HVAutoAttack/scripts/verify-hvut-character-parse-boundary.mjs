@@ -13,7 +13,7 @@ function requirePart(label, body, part) {
 }
 
 const helperRegion =
-  /var record_hvut_character_parse_failure = function \(stage, detail\) \{[\s\S]*?\n  var parse_hvut_inventory_capacity/.exec(
+  /var create_hvut_character_parse_evidence = function \(stage, detail\) \{[\s\S]*?\n  var parse_hvut_inventory_capacity/.exec(
     text,
   )?.[0] || "";
 const dfctSetButton = /dfct\.set_button = function \(doc\) \{[\s\S]*?\n  \};\n\};\n\n\/\/ \$persona/.exec(text)?.[0] || "";
@@ -40,7 +40,13 @@ for (const [label, body] of [
 }
 
 for (const required of [
+  "var create_hvut_character_parse_evidence = function (stage, detail) {",
   "sessionStorage.setItem('HVAA:lastHvutCharacterParseFailure', JSON.stringify(evidence));",
+  "return evidence;",
+  "var record_hvut_character_parse_failure = function (stage, detail) {",
+  "create_hvut_character_parse_evidence(stage, detail);",
+  "var reject_hvut_persona_sync = function (reason, detail) {",
+  "return { kind: 'rejected', reason: reason, evidence: evidence };",
   "var parse_hvut_difficulty_from_level_readout = function (doc, stage) {",
   "return match ? match[1] : record_hvut_character_parse_failure(stage, { text: text });",
   "var parse_hvut_persona_form_state = function (doc, stage) {",
@@ -77,6 +83,8 @@ requirePart("persona.change_p", personaChangeP, "if ((await persona.change_e()) 
 requirePart("persona.change_p", personaChangeP, "if (ctx.dfct.set_button(doc) === false) return false;");
 requirePart("persona.change_e", personaChangeE, "if (persona.check_e(doc) === false) {");
 requirePart("persona.change_e", personaChangeE, "if (persona.selector_e) persona.selector_e.disabled = false;");
+requirePart("persona.change_e", personaChangeE, "const loadOutcome = await persona.load_dynjs_outcome(doc);");
+requirePart("persona.change_e", personaChangeE, "if (loadOutcome.kind === 'rejected') return false;");
 requirePart("_eq.popup_load", equipPopupLoad, "clear_hvut_equip_popup_drop_info(doc, 'equipPopupDropInfo');");
 requirePart("_eq.charm_append", equipCharmAppend, "record_hvut_character_parse_failure('equipPopupCharmText', { charm: charm });");
 requirePart("_eq.charm_append", equipCharmAppend, "if (append_hvut_equip_popup_charms(doc, div, 'equipPopupCharmAppend') === false) {");

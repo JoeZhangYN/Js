@@ -1048,7 +1048,7 @@ try {
       market_stock: parseInt(cells[4].textContent.slice(0, -2)) || 0,
     };
   };
-  var record_hvut_character_parse_failure = function (stage, detail) {
+  var create_hvut_character_parse_evidence = function (stage, detail) {
     var evidence = { capability: 'hvutCharacterParse', stage: stage, detail: detail || {} };
     try {
       sessionStorage.setItem('HVAA:lastHvutCharacterParseFailure', JSON.stringify(evidence));
@@ -1060,7 +1060,15 @@ try {
     } catch (_error) {
       // Console hooks must not block HVUT character parse fallback.
     }
+    return evidence;
+  };
+  var record_hvut_character_parse_failure = function (stage, detail) {
+    create_hvut_character_parse_evidence(stage, detail);
     return null;
+  };
+  var reject_hvut_persona_sync = function (reason, detail) {
+    var evidence = create_hvut_character_parse_evidence(reason, detail);
+    return { kind: 'rejected', reason: reason, evidence: evidence };
   };
   var record_hvut_armory_submit_failure = function (stage, detail) {
     var evidence = { capability: 'hvutArmorySubmit', stage: stage, detail: detail || {} };
@@ -3276,7 +3284,8 @@ const bindPersona = function (persona, ctx) {
       persona.selector_e.disabled = false;
     }
     persona.set_button();
-    if ((await persona.load_dynjs(doc)) === false) return false;
+    const loadOutcome = await persona.load_dynjs_outcome(doc);
+    if (loadOutcome.kind === 'rejected') return false;
     persona.check_warning(doc);
     return true;
   };
@@ -3284,18 +3293,38 @@ const bindPersona = function (persona, ctx) {
     const pname = persona.json.pname || `Persona ${persona.json.pset}`;
     persona.node.button.textContent = persona.json.ename || `${pname.slice(0, 10)} [${persona.json.eset}]`;
   };
-  persona.load_dynjs = async function (doc) {
-    const src = $qs('script[src*="/dynjs/"]', doc).src;
-    const html = await $ajax.fetch(`${src}?t=${Date.now()}`);
-    ctx.applyDynjs(html);
-    if (persona.save_equipset(doc) === false) return false;
-    if (persona.parse_stats_pane(doc) === false) return false;
+  persona.load_dynjs_outcome = async function (doc) {
+    const script = $qs('script[src*="/dynjs/"]', doc);
+    if (!script?.src) {
+      return reject_hvut_persona_sync('personaDynjsScriptMissing', {});
+    }
+    let html;
+    try {
+      html = await $ajax.fetch(`${script.src}?t=${Date.now()}`);
+    } catch (error) {
+      return reject_hvut_persona_sync('personaDynjsFetchFailed', { message: String(error?.message || error) });
+    }
+    try {
+      ctx.applyDynjs(html);
+    } catch (error) {
+      return reject_hvut_persona_sync('personaDynjsApplyFailed', { message: String(error?.message || error) });
+    }
+    if (persona.save_equipset(doc) === false) {
+      return reject_hvut_persona_sync('personaEquipsetWriteRejected', {});
+    }
+    if (persona.parse_stats_pane(doc) === false) {
+      return reject_hvut_persona_sync('personaCharacterStyleWriteRejected', {});
+    }
     if (_query.s === 'Battle') {
       ctx.battle?.create();
     } else if (['eq', 'ab', 'it', 'se'].includes(_query.ss)) {
       reloadCurrentPage(hvutReloadReason('HV_UTILS_PERSONA_DYNJS'));
     }
-    return true;
+    return { kind: 'accepted' };
+  };
+  persona.load_dynjs = async function (doc) {
+    const outcome = await persona.load_dynjs_outcome(doc);
+    return outcome.kind === 'accepted';
   };
   // [2026-06-10 续收] 原「parse_stats_pane 解析模型大分叉留各 IIFE」: 主世界旧版解析 .spn + #stats_pane
   // .st1/.st2(旧页面), 能量模型后主世界属性页已同构 isekai 的 #stats_scrollable > table(实站报错证实:
