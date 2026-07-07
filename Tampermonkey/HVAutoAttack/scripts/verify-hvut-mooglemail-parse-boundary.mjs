@@ -108,6 +108,14 @@ for (const required of [
   "view.cod = parse_hvut_mooglemail_count($id('mmail_currentcod', doc).textContent, /Requested Payment on Delivery: ([0-9,]+) credits/, context.codStage);",
   "view.error = '解析货到付款失败';",
   "view.cod = 0;",
+  "var parse_hvut_mooglemail_historical_attach_text = function (view, parseCount) {",
+  "const split = view.text.split('\\n\\n').reverse();",
+  "const exec = /^Removed attachment: (?:([0-9,]+)x? (.+)|(.+))$/.exec(e);",
+  "view.attach.unshift({ t: type, n: name });",
+  "view.cod = parseCount(/^CoD Paid: ([0-9,]+) Credits$/.exec(split[1])?.[1]);",
+  "const exec = /^Attached item removed: (?:([0-9,]+)x? (.+)|(.+)) \\(type=([chie]) id=(\\d+), CoD was ([0-9]+)C\\)$/.exec(split[0]);",
+  "view.attach.push({ t: type, n: name, e: eid });",
+  "view.cod = parseCount(exec[6]);",
   "var classify_hvut_mooglemail_view_response = function (doc, stage) {",
   "var message = get_message(doc);",
   "var evidence = create_hvut_mooglemail_parse_evidence(stage, { reason: 'viewResponseMessageMissing' });",
@@ -163,6 +171,7 @@ for (const [label, body, stage] of [
   requirePart(label, body, "parse_hvut_mooglemail_visible_attach_list(view, doc, html, {");
   requirePart(label, body, `equipStage: '${stage}',`);
   requirePart(label, body, "parseCount: _mm.parse_count,");
+  requirePart(label, body, "parse_hvut_mooglemail_historical_attach_text(view, _mm.parse_count);");
   for (const forbidden of [
     "view.returned = true;",
     "view.filter = 'inbox';",
@@ -178,6 +187,11 @@ for (const [label, body, stage] of [
     "Object.assign($equip.dynjs_eqstore",
     "view.cod = parse_hvut_mooglemail_count($id('mmail_currentcod', doc).textContent",
     "view.error = '解析货到付款失败';",
+    "const split = view.text.split('\\n\\n').reverse();",
+    "Removed attachment:",
+    "CoD Paid:",
+    "Attached item removed:",
+    "view.attach.unshift({",
   ]) {
     if (body.includes(forbidden)) {
       violations.push(`${target} ${label} must delegate view identity to apply_hvut_mooglemail_view_identity`);

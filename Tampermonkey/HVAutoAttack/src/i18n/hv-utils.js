@@ -1040,6 +1040,44 @@ try {
       }
     }
   };
+  var parse_hvut_mooglemail_historical_attach_text = function (view, parseCount) {
+    const split = view.text.split('\n\n').reverse();
+    const attach = split[0].split('\n').every((e) => {
+      const exec = /^Removed attachment: (?:([0-9,]+)x? (.+)|(.+))$/.exec(e);
+      if (!exec) {
+        return false;
+      }
+      if (exec[3]) {
+        const name = exec[3];
+        const type = 'e';
+        view.attach.unshift({ t: type, n: name });
+      } else {
+        const name = exec[2];
+        const type = name === 'Hath' ? 'h' : name === 'Credits' ? 'c' : 'i';
+        const count = parseCount(exec[1]);
+        view.attach.unshift({ t: type, n: name, c: count });
+      }
+      return true;
+    });
+    if (attach) {
+      view.cod = parseCount(/^CoD Paid: ([0-9,]+) Credits$/.exec(split[1])?.[1]);
+    }
+
+    const exec = /^Attached item removed: (?:([0-9,]+)x? (.+)|(.+)) \(type=([chie]) id=(\d+), CoD was ([0-9]+)C\)$/.exec(split[0]);
+    if (exec) {
+      const type = exec[4];
+      if (type === 'e') {
+        const name = exec[3];
+        const eid = exec[5];
+        view.attach.push({ t: type, n: name, e: eid });
+      } else {
+        const name = exec[2];
+        const count = parseCount(exec[1]);
+        view.attach.push({ t: type, n: name, c: count });
+      }
+      view.cod = parseCount(exec[6]);
+    }
+  };
   var classify_hvut_mooglemail_view_response = function (doc, stage) {
     var message = get_message(doc);
     if (!message) {
@@ -10962,43 +11000,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
               parseCount: _mm.parse_count,
             });
           } else {
-            const split = view.text.split('\n\n').reverse();
-            const attach = split[0].split('\n').every((e) => {
-              const exec = /^Removed attachment: (?:([0-9,]+)x? (.+)|(.+))$/.exec(e);
-              if (!exec) {
-                return false;
-              }
-              if (exec[3]) {
-                const name = exec[3];
-                const type = 'e';
-                view.attach.unshift({ t: type, n: name });
-              } else {
-                const name = exec[2];
-                const type = (name === 'Hath') ? 'h' : (name === 'Credits') ? 'c' : 'i';
-                const count = _mm.parse_count(exec[1]);
-                view.attach.unshift({ t: type, n: name, c: count });
-              }
-              return true;
-            });
-            if (attach) {
-              view.cod = _mm.parse_count(/^CoD Paid: ([0-9,]+) Credits$/.exec(split[1])?.[1]);
-            }
-
-            // pre 0.85
-            const exec = /^Attached item removed: (?:([0-9,]+)x? (.+)|(.+)) \(type=([chie]) id=(\d+), CoD was ([0-9]+)C\)$/.exec(split[0]);
-            if (exec) {
-              const type = exec[4];
-              if (type === 'e') {
-                const name = exec[3];
-                const eid = exec[5];
-                view.attach.push({ t: type, n: name, e: eid });
-              } else {
-                const name = exec[2];
-                const count = _mm.parse_count(exec[1]);
-                view.attach.push({ t: type, n: name, c: count });
-              }
-              view.cod = _mm.parse_count(exec[6]);
-            }
+            parse_hvut_mooglemail_historical_attach_text(view, _mm.parse_count);
           }
         } else {
           const response = classify_hvut_mooglemail_view_response(doc, 'viewRejectedResponse');
@@ -17004,43 +17006,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
             parseCount: _mm.parse_count,
           });
         } else {
-          const split = view.text.split('\n\n').reverse();
-          const attach = split[0].split('\n').every((e) => {
-            const exec = /^Removed attachment: (?:([0-9,]+)x? (.+)|(.+))$/.exec(e);
-            if (!exec) {
-              return false;
-            }
-            if (exec[3]) {
-              const name = exec[3];
-              const type = 'e';
-              view.attach.unshift({ t: type, n: name });
-            } else {
-              const name = exec[2];
-              const type = name === 'Hath' ? 'h' : name === 'Credits' ? 'c' : 'i';
-              const count = _mm.parse_count(exec[1]);
-              view.attach.unshift({ t: type, n: name, c: count });
-            }
-            return true;
-          });
-          if (attach) {
-            view.cod = _mm.parse_count(/^CoD Paid: ([0-9,]+) Credits$/.exec(split[1])?.[1]);
-          }
-
-          // pre 0.85
-          const exec = /^Attached item removed: (?:([0-9,]+)x? (.+)|(.+)) \(type=([chie]) id=(\d+), CoD was ([0-9]+)C\)$/.exec(split[0]);
-          if (exec) {
-            const type = exec[4];
-            if (type === 'e') {
-              const name = exec[3];
-              const eid = exec[5];
-              view.attach.push({ t: type, n: name, e: eid });
-            } else {
-              const name = exec[2];
-              const count = _mm.parse_count(exec[1]);
-              view.attach.push({ t: type, n: name, c: count });
-            }
-            view.cod = _mm.parse_count(exec[6]);
-          }
+          parse_hvut_mooglemail_historical_attach_text(view, _mm.parse_count);
         }
       } else {
         const response = classify_hvut_mooglemail_view_response(doc, 'legacyViewRejectedResponse');
