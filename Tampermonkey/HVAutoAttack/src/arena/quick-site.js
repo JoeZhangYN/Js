@@ -3,22 +3,27 @@ import { gE, cE } from "../dom/query.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 
 const EVENT_LOBBY_READY = "lobbyReady";
+const EVENT_RENDER_CURRENT_SETTINGS_TABLE_BODY = "renderCurrentSettingsTableBody";
 const EVENT_RENDER_SETTINGS_TABLE_BODY = "renderSettingsTableBody";
 const EVENT_RENDER_SETTINGS_EMPTY_ROW = "renderSettingsEmptyRow";
 const EVENT_COLLECT_SETTINGS_INPUTS = "collectSettingsInputs";
 
 export const QuickSiteEvent = Object.freeze({
   LOBBY_READY: EVENT_LOBBY_READY,
+  RENDER_CURRENT_SETTINGS_TABLE_BODY: EVENT_RENDER_CURRENT_SETTINGS_TABLE_BODY,
   RENDER_SETTINGS_TABLE_BODY: EVENT_RENDER_SETTINGS_TABLE_BODY,
   RENDER_SETTINGS_EMPTY_ROW: EVENT_RENDER_SETTINGS_EMPTY_ROW,
   COLLECT_SETTINGS_INPUTS: EVENT_COLLECT_SETTINGS_INPUTS,
 });
 
+function readQuickSiteOption() {
+  return runOptionAutomation({ type: OptionEvent.READ_FIELD, key: "quickSite", fallback: false });
+}
+
 const quickSiteEventHandlers = Object.freeze({
-  [EVENT_LOBBY_READY]: () =>
-    renderQuickSite(
-      runOptionAutomation({ type: OptionEvent.READ_FIELD, key: "quickSite", fallback: false })
-    ),
+  [EVENT_LOBBY_READY]: () => renderQuickSite(readQuickSiteOption()),
+  [EVENT_RENDER_CURRENT_SETTINGS_TABLE_BODY]: () =>
+    renderSettingsTableBody({ quickSite: readQuickSiteOption() }),
   [EVENT_RENDER_SETTINGS_TABLE_BODY]: (event) => renderSettingsTableBody(event.option),
   [EVENT_RENDER_SETTINGS_EMPTY_ROW]: () => renderSettingsEmptyRow(),
   [EVENT_COLLECT_SETTINGS_INPUTS]: (event) => collectSettingsInputs(event.option, event.inputs),

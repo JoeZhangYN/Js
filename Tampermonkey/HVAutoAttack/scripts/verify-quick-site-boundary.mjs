@@ -58,6 +58,9 @@ function checkFile(file) {
     if (relative === settings && /\b_option\.quickSite\b/.test(line)) {
       violations.push(`${where} settings must render quickSite through QuickSiteEvent`);
     }
+    if (relative === settings && /readOptionField\(\s*["']quickSite["']/.test(line)) {
+      violations.push(`${where} settings must let quick site entry read quickSite option`);
+    }
     if (relative === settings && /\bi\.(?:fav|name|url)\b/.test(line)) {
       violations.push(`${where} settings must not know quickSite row fields`);
     }
@@ -79,7 +82,9 @@ for (const required of ["runQuickSiteAutomation", "QuickSiteEvent"]) {
   }
 }
 if (!ownerText.includes("const quickSiteEventHandlers")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must route quick site events through a handler table`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must route quick site events through a handler table`
+  );
 }
 const entryMatch = ownerText.match(/export function runQuickSiteAutomation[\s\S]*?\n}/);
 if (!entryMatch) {
@@ -87,13 +92,19 @@ if (!entryMatch) {
 } else {
   const entryBody = entryMatch[0];
   if (/if\s*\(\s*event\.type\s*===/.test(entryBody)) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+    );
   }
   if (entryBody.includes("quickSiteEventHandlers[event.type]")) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must reject null quick site events without throwing`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must reject null quick site events without throwing`
+    );
   }
   if (!entryBody.includes("quickSiteEventHandlers[event?.type]")) {
-    violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null quick site events`);
+    violations.push(
+      `${owner.replaceAll("\\", "/")} entry must fail closed for unknown or null quick site events`
+    );
   }
   for (const internal of [
     "renderQuickSite(",
@@ -102,7 +113,9 @@ if (!entryMatch) {
     "collectSettingsInputs(",
   ]) {
     if (entryBody.includes(internal)) {
-      violations.push(`${owner.replaceAll("\\", "/")} entry must dispatch through quickSiteEventHandlers`);
+      violations.push(
+        `${owner.replaceAll("\\", "/")} entry must dispatch through quickSiteEventHandlers`
+      );
     }
   }
 }
@@ -111,19 +124,32 @@ if (!ownerTestText.includes("runQuickSiteAutomation(null)")) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null quick site events`);
 }
 if (!ownerText.includes("3 * i + 2 < inputs.length")) {
-  violations.push(`${owner.replaceAll("\\", "/")} must collect only complete quickSite settings rows`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must collect only complete quickSite settings rows`
+  );
 }
 if (
   !ownerTestText.includes("ignores incomplete settings rows without throwing") ||
   !ownerTestText.includes("not.toThrow()") ||
   !ownerTestText.includes("option.quickSite).toEqual([]")
 ) {
-  violations.push(`${ownerTest.replaceAll("\\", "/")} must cover incomplete quickSite settings rows`);
+  violations.push(
+    `${ownerTest.replaceAll("\\", "/")} must cover incomplete quickSite settings rows`
+  );
 }
 const settingsText = fs.readFileSync(path.join(root, settings), "utf8");
-if (!settingsText.includes("QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY")) {
+if (!settingsText.includes("QuickSiteEvent.RENDER_CURRENT_SETTINGS_TABLE_BODY")) {
   violations.push(
-    `${settings.replaceAll("\\", "/")} must render quick site settings through the entry`
+    `${settings.replaceAll("\\", "/")} must render current quick site settings through the entry`
+  );
+}
+if (
+  /QuickSiteEvent\.RENDER_SETTINGS_TABLE_BODY[\s\S]{0,140}readOptionField\(\s*["']quickSite["']/.test(
+    settingsText
+  )
+) {
+  violations.push(
+    `${settings.replaceAll("\\", "/")} must not assemble quickSite option for render`
   );
 }
 if (!settingsText.includes("QuickSiteEvent.COLLECT_SETTINGS_INPUTS")) {
@@ -145,6 +171,20 @@ if (/from\s+["']\.\.\/state\/store\.js["']/.test(ownerText)) {
 if (!ownerText.includes("OptionEvent.READ_FIELD")) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must read lobby quickSite option through option entry`
+  );
+}
+if (!ownerText.includes("RENDER_CURRENT_SETTINGS_TABLE_BODY")) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must own current settings quickSite table rendering`
+  );
+}
+if (
+  !ownerTestText.includes(
+    "renders current settings rows by reading quick site through the option entry"
+  )
+) {
+  violations.push(
+    `${ownerTest.replaceAll("\\", "/")} must cover current settings quickSite option reads`
   );
 }
 if (/OptionEvent\.READ\b/.test(ownerText)) {

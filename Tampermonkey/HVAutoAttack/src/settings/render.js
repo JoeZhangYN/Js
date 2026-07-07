@@ -688,8 +688,7 @@ function hydrateSettingsForm(optionBox) {
   }
 
   gE(".hvAAQuickSite>table>tbody", optionBox).innerHTML = runQuickSiteAutomation({
-    type: QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY,
-    option: { quickSite: readOptionField("quickSite", undefined) },
+    type: QuickSiteEvent.RENDER_CURRENT_SETTINGS_TABLE_BODY,
   });
   gE(".hvAABackupList", optionBox).innerHTML = runOptionBackupAutomation({
     type: OptionBackupEvent.RENDER_LIST_ITEMS,

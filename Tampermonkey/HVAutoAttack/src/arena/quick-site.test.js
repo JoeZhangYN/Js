@@ -93,9 +93,7 @@ describe("quick site entry", () => {
   it("renders settings rows through the quick site entry", () => {
     const html = runQuickSiteAutomation({
       type: QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY,
-      option: {
-        quickSite: [{ name: 'Wiki "A"', url: "https://example.test/?a=<b>", fav: "&icon" }],
-      },
+      option: { quickSite: [{ name: 'Wiki "A"', url: "https://example.test/?a=<b>", fav: "&icon" }] },
     });
 
     expect(html).toContain("<l2>ICON</l2>");
@@ -104,12 +102,19 @@ describe("quick site entry", () => {
     expect(html).toContain('value="&amp;icon"');
   });
 
+  it("renders current settings rows by reading quick site through the option entry", () => {
+    mocks.runOptionAutomation.mockReturnValue([{ name: "Wiki", url: "https://example.test/wiki", fav: "" }]);
+
+    const html = runQuickSiteAutomation({ type: QuickSiteEvent.RENDER_CURRENT_SETTINGS_TABLE_BODY });
+
+    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({ type: "readField", key: "quickSite", fallback: false });
+    expect(html).toContain('value="Wiki"');
+    expect(html).toContain('value="https://example.test/wiki"');
+  });
+
   it("renders an empty settings table when quick site is disabled", () => {
     expect(
-      runQuickSiteAutomation({
-        type: QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY,
-        option: { quickSite: false },
-      })
+      runQuickSiteAutomation({ type: QuickSiteEvent.RENDER_SETTINGS_TABLE_BODY, option: { quickSite: false } })
     ).toBe("");
   });
 
