@@ -132,10 +132,10 @@ for (const [label, body, stage] of [
 if (/\/document\\\.location='\(\[\^'\]\+\)'\/\.exec\(onclick\)\[1\]/.test(text)) {
   violations.push(`${target} must not keep unchecked market onclick href parse`);
 }
-if (!modernMarketBody.includes("if ($price.parse_market(_query.filter) === false) return;")) {
+if (!modernMarketBody.includes("if ($price.parse_market(marketPage.filter) === false) return;")) {
   violations.push(`${target} modern market init must stop after parse failure`);
 }
-if (!legacyMarketBody.includes("if ($price.parse_market(_query.filter) === false) return;")) {
+if (!legacyMarketBody.includes("if ($price.parse_market(marketPage.filter) === false) return;")) {
   violations.push(`${target} legacy market init must stop after parse failure`);
 }
 if (/const new_prices = await price\.update_market\(filter, key\);\n\s*p\.textarea\.value/.test(editBody)) {

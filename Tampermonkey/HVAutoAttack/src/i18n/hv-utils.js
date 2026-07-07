@@ -1836,6 +1836,18 @@ try {
   var create_hvut_market_browse_items_url = function (filter) {
     return `?s=Bazaar&ss=mk&screen=browseitems&filter=${filter}`;
   };
+  var create_hvut_market_page_context = function (query) {
+    var source = query || _query;
+    var screen = source?.screen || 'browseitems';
+    var filter = source?.filter || 'co';
+    return {
+      screen: screen,
+      filter: filter,
+      isBuyOrders: screen === 'buyorders',
+      isSellOrders: screen === 'sellorders',
+      isCrystalBrowse: screen === 'browseitems' && filter === 'mo',
+    };
+  };
   var create_hvut_shrine_url = function () {
     return '?s=Bazaar&ss=ss';
   };
@@ -8463,12 +8475,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
 //* [9] Bazaar - The Market
 if (_query.s === 'Bazaar' && _query.ss === 'mk') {
-  if (!_query.screen) {
-    _query.screen = 'browseitems';
-  }
-  if (!_query.filter) {
-    _query.filter = 'co';
-  }
+  const marketPage = create_hvut_market_page_context();
 
   _mk.items = $qsa('#market_itemlist td:first-child').map((td) => td.textContent);
 
@@ -8487,7 +8494,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
     if (!$qs('#market_itemlist table')) {
       return;
     }
-    if ($price.parse_market(_query.filter) === false) return;
+    if ($price.parse_market(marketPage.filter) === false) return;
     Array.from($qs('#market_itemlist table').rows).forEach((tr, i) => {
       if (i === 0) {
         $element('th', tr, '插件参考价');
@@ -8512,9 +8519,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
 
   _mk.order_check = function () {
     let td_index;
-    if (_query.screen === 'buyorders') {
+    if (marketPage.isBuyOrders) {
       td_index = 4;
-    } else if (_query.screen === 'sellorders') {
+    } else if (marketPage.isSellOrders) {
       td_index = 5;
     } else {
       return;
@@ -8545,7 +8552,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
   };
 
   _mk.add_crystalpack = function () {
-    if (_query.screen !== 'browseitems' || _query.filter !== 'mo') {
+    if (!marketPage.isCrystalBrowse) {
       return;
     }
     const crystals = ['Crystal of Vigor', 'Crystal of Finesse', 'Crystal of Swiftness', 'Crystal of Fortitude', 'Crystal of Cunning', 'Crystal of Knowledge', 'Crystal of Flames', 'Crystal of Frost', 'Crystal of Lightning', 'Crystal of Tempest', 'Crystal of Devotion', 'Crystal of Corruption'];
@@ -8555,7 +8562,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
   };
 
   _mk.price_edit = function () {
-    $price.edit(_mk.items, _query.filter, _mk.price_update);
+    $price.edit(_mk.items, marketPage.filter, _mk.price_update);
   };
 
   _mk.price_save = function (key) {
@@ -14444,18 +14451,13 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
 
 //* [11] Bazaar - The Market
 if (_query.s === 'Bazaar' && _query.ss === 'mk') {
-  if (!_query.screen) {
-    _query.screen = 'browseitems';
-  }
-  if (!_query.filter) {
-    _query.filter = 'co';
-  }
+  const marketPage = create_hvut_market_page_context();
 
   _mk.init_list = function () {
     if (!$qs('#market_itemlist table')) {
       return;
     }
-    if ($price.parse_market(_query.filter) === false) return;
+    if ($price.parse_market(marketPage.filter) === false) return;
     _mk.items = Object.keys($price.market);
     Array.from($qs('#market_itemlist table').rows).forEach((tr, i) => {
       if (i === 0) {
@@ -14478,7 +14480,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
   };
 
   _mk.edit = function () {
-    $price.edit(_mk.items, _query.filter, _mk.modify);
+    $price.edit(_mk.items, marketPage.filter, _mk.modify);
   };
 
   _mk.save = function (key) {
@@ -14529,7 +14531,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'mk') {
 
   _mk.init_list();
   _mk.click2link();
-  if (_query.screen === 'browseitems' && _query.filter === 'mo') {
+  if (marketPage.isCrystalBrowse) {
     _mk.get_crystals();
   }
   $id('account_amount').autocomplete = 'off';
