@@ -1653,28 +1653,29 @@ try {
     }
     return state.error;
   };
-  var reserve_hvut_shrine_offer = function (state, item) {
-    try {
-      if (window.HVAA_shrineOfferReservation && window.HVAA_shrineOfferReservation.reserve) {
-        return window.HVAA_shrineOfferReservation.reserve(state, item) !== false;
-      }
-      var evidence = record_hvut_shrine_offer_failure('offerReservationBridgeMissing', { action: 'reserve', item: item?.name || item?.log || item?.iid });
-    } catch (error) {
-      var evidence = record_hvut_shrine_offer_failure('offerReservationBridgeReserve', { item: item?.name || item?.log || item?.iid, error: error?.message || String(error) });
+  var run_hvut_shrine_offer_reservation_bridge = function (action, state, item) {
+    var bridge = typeof window !== 'undefined' ? window.HVAA_shrineOfferReservation : undefined;
+    var itemIdentity = item?.name || item?.log || item?.iid;
+    if (!bridge || typeof bridge[action] !== 'function') {
+      return { ok: false, evidence: record_hvut_shrine_offer_failure('offerReservationBridgeMissing', { action: action, item: itemIdentity }) };
     }
-    set_hvut_shrine_stop_error(state, 'Shrine offer reservation failed.', evidence);
+    try {
+      return { ok: bridge[action](state, item) !== false };
+    } catch (error) {
+      var stage = action === 'rollback' ? 'offerReservationBridgeRollback' : 'offerReservationBridgeReserve';
+      return { ok: false, evidence: record_hvut_shrine_offer_failure(stage, { action: action, item: itemIdentity, error: error?.message || String(error) }) };
+    }
+  };
+  var reserve_hvut_shrine_offer = function (state, item) {
+    var result = run_hvut_shrine_offer_reservation_bridge('reserve', state, item);
+    if (result.ok) return true;
+    set_hvut_shrine_stop_error(state, 'Shrine offer reservation failed.', result.evidence);
     return false;
   };
   var rollback_hvut_shrine_offer_reservation = function (state, item) {
-    try {
-      if (window.HVAA_shrineOfferReservation && window.HVAA_shrineOfferReservation.rollback) {
-        return window.HVAA_shrineOfferReservation.rollback(state, item) !== false;
-      }
-      var evidence = record_hvut_shrine_offer_failure('offerReservationBridgeMissing', { action: 'rollback', item: item?.name || item?.log || item?.iid });
-    } catch (error) {
-      var evidence = record_hvut_shrine_offer_failure('offerReservationBridgeRollback', { item: item?.name || item?.log || item?.iid, error: error?.message || String(error) });
-    }
-    set_hvut_shrine_stop_error(state, 'Shrine offer reservation rollback failed.', evidence);
+    var result = run_hvut_shrine_offer_reservation_bridge('rollback', state, item);
+    if (result.ok) return true;
+    set_hvut_shrine_stop_error(state, 'Shrine offer reservation rollback failed.', result.evidence);
     return false;
   };
   var classify_hvut_shrine_offer_message = function (msg) {

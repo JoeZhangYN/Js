@@ -44,6 +44,8 @@ const localReservation =
   /var reserve_hvut_shrine_offer = function \(state, item\) \{[\s\S]*?\n  \};\n  var rollback_hvut_shrine_offer_reservation/.exec(text)?.[0] || "";
 const localReservationRollback =
   /var rollback_hvut_shrine_offer_reservation = function \(state, item\) \{[\s\S]*?\n  \};\n  var classify_hvut_shrine_offer_message/.exec(text)?.[0] || "";
+const localReservationBridge =
+  /var run_hvut_shrine_offer_reservation_bridge = function \(action, state, item\) \{[\s\S]*?\n  \};\n  var reserve_hvut_shrine_offer/.exec(text)?.[0] || "";
 
 if (!offerLoad) violations.push(`${target} must keep Shrine offer load entry visible`);
 if (!offerRequest) violations.push(`${target} must keep Shrine offer request entry visible`);
@@ -53,6 +55,7 @@ if (!legacyRequest) violations.push(`${target} must keep legacy Shrine request e
 if (!localClassifier) violations.push(`${target} must keep local Shrine classifier bridge visible`);
 if (!localReservation) violations.push(`${target} must keep local Shrine reservation bridge visible`);
 if (!localReservationRollback) violations.push(`${target} must keep local Shrine reservation rollback bridge visible`);
+if (!localReservationBridge) violations.push(`${target} must keep local Shrine reservation bridge command visible`);
 
 for (const part of [
   "record_hvut_shrine_offer_failure('offerLoadFetch'",
@@ -142,16 +145,20 @@ for (const part of [
 for (const required of [
   "var reserve_hvut_shrine_offer = function (state, item) {",
   "var rollback_hvut_shrine_offer_reservation = function (state, item) {",
+  "var run_hvut_shrine_offer_reservation_bridge = function (action, state, item) {",
   "var set_hvut_shrine_stop_error = function (state, message, evidence) {",
   "state.errorEvidence = evidence || null;",
   "var classify_hvut_shrine_offer_message = function (msg) {",
   "var classify_hvut_shrine_offer_response = function (doc, stage) {",
   "var summarize_hvut_shrine_offer_messages = function (messages) {",
-  "window.HVAA_shrineOfferReservation.reserve(state, item)",
-  "window.HVAA_shrineOfferReservation.rollback(state, item)",
+  "var bridge = typeof window !== 'undefined' ? window.HVAA_shrineOfferReservation : undefined;",
+  "if (!bridge || typeof bridge[action] !== 'function') {",
+  "return { ok: bridge[action](state, item) !== false };",
+  "var result = run_hvut_shrine_offer_reservation_bridge('reserve', state, item);",
+  "var result = run_hvut_shrine_offer_reservation_bridge('rollback', state, item);",
   "record_hvut_shrine_offer_failure('offerReservationBridgeMissing'",
-  "record_hvut_shrine_offer_failure('offerReservationBridgeReserve'",
-  "record_hvut_shrine_offer_failure('offerReservationBridgeRollback'",
+  "var stage = action === 'rollback' ? 'offerReservationBridgeRollback' : 'offerReservationBridgeReserve';",
+  "record_hvut_shrine_offer_failure(stage, { action: action, item: itemIdentity",
   "window.HVAA_shrineOfferMessage.classify(msg)",
   "record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing'",
   "var evidence = record_hvut_shrine_offer_failure('offerMessageClassifierBridgeMissing', { message: msg });",
@@ -174,6 +181,14 @@ for (const required of [
 ]) {
   if (!text.includes(required)) {
     violations.push(`${target} must centralize Shrine offer reservation with ${required}`);
+  }
+}
+for (const forbidden of [
+  "window.HVAA_shrineOfferReservation.reserve(state, item)",
+  "window.HVAA_shrineOfferReservation.rollback(state, item)",
+]) {
+  if (text.includes(forbidden)) {
+    violations.push(`${target} must route Shrine offer reservation bridge through run_hvut_shrine_offer_reservation_bridge`);
   }
 }
 
