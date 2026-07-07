@@ -1352,6 +1352,9 @@ try {
   var create_hvut_item_shop_url = function () {
     return '?s=Bazaar&ss=is';
   };
+  var create_hvut_shrine_url = function () {
+    return '?s=Bazaar&ss=ss';
+  };
   var create_hvut_monster_lab_slot_url = function (mob) {
     return `?s=Bazaar&ss=ml&slot=${mob?.index ?? mob}`;
   };
@@ -7686,7 +7689,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
       if (_ss.error) return false;
       let html;
       try {
-        html = await $ajax.fetch('?s=Bazaar&ss=ss', `select_item=${iid}&select_reward_type=${reward_type}&select_reward_slot=${reward_slot}`);
+        html = await $ajax.fetch(create_hvut_shrine_url(), `select_item=${iid}&select_reward_type=${reward_type}&select_reward_slot=${reward_slot}`);
       } catch (error) {
         const evidence = record_hvut_shrine_offer_failure('offerLoadFetch', { iid: iid, reward_type: reward_type, reward_slot: reward_slot, error: error?.message || String(error) });
         set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.', evidence);
@@ -13906,7 +13909,7 @@ if (_query.s === 'Bazaar' && _query.ss === 'ss') {
     const item = _ss.items[iid];
     let html;
     try {
-      html = await $ajax.fetch('?s=Bazaar&ss=ss', `select_item=${iid}&select_reward_type=${select_reward_type}&select_reward_slot=${select_reward_slot}`);
+      html = await $ajax.fetch(create_hvut_shrine_url(), `select_item=${iid}&select_reward_type=${select_reward_type}&select_reward_slot=${select_reward_slot}`);
     } catch (error) {
       const evidence = record_hvut_shrine_offer_failure('legacyOfferFetch', { iid: iid, select_reward_type: select_reward_type, select_reward_slot: select_reward_slot, error: error?.message || String(error) });
       set_hvut_shrine_stop_error(_ss, 'Shrine offer request failed.', evidence);
