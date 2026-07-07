@@ -172,7 +172,7 @@ if (mailComposeFetchOccurrences !== 9) {
 }
 
 const mailViewFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_mail_view_url\(mid\), post\)/g)].length;
-if (mailViewFetchOccurrences !== 2) {
+if (mailViewFetchOccurrences !== 1) {
   violations.push(`${target} must route mail view/action fetches through create_hvut_mail_view_url, found ${mailViewFetchOccurrences}`);
 }
 

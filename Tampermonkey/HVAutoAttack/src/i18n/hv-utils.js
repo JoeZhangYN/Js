@@ -982,6 +982,29 @@ try {
     writePlan.apply();
     return true;
   };
+  var run_hvut_mooglemail_view_load = async function (mid, post, context) {
+    const mail = context.get(mid);
+    let html;
+    try {
+      html = await $ajax.fetch(create_hvut_mail_view_url(mid), post);
+    } catch (error) {
+      const stage = post ? context.actionRequestStage : context.loadRequestStage;
+      const evidence = record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
+      mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };
+      return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error, evidence: evidence };
+    }
+    mail.view = context.parse(html);
+    if (mail.view?.error) {
+      const evidence = record_hvut_mooglemail_action_failure(post ? context.actionRejectedStage : context.loadRejectedStage, { mid: mid, post: post || '', error: mail.view.error });
+      return { kind: 'rejected', reason: 'responseRejected', error: mail.view.error, evidence: evidence };
+    }
+    if (!await context.update(mail, post)) {
+      mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };
+      const evidence = record_hvut_mooglemail_action_failure(post ? context.actionCacheWriteRejectedStage : context.loadCacheWriteRejectedStage, { mid: mid, post: post || '', error: mail.view.error });
+      return { kind: 'rejected', reason: 'cacheWriteFailed', error: mail.view.error, evidence: evidence };
+    }
+    return { kind: 'accepted' };
+  };
   var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {
     var match = /equips\.set\((\d+)/.exec(onmouseover || '');
     if (!match) return false;
@@ -10876,27 +10899,17 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         _mm.mail.view(mail);
       },
       load: async function (mid, post) {
-        const mail = _mm.mail.get(mid);
-        let html;
-        try {
-          html = await $ajax.fetch(create_hvut_mail_view_url(mid), post);
-        } catch (error) {
-          const stage = post ? 'viewActionRequest' : 'viewLoadRequest';
-          const evidence = record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
-          mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };
-          return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error, evidence: evidence };
-        }
-        mail.view = _mm.mail.parse(html);
-        if (mail.view?.error) {
-          const evidence = record_hvut_mooglemail_action_failure(post ? 'viewActionRejected' : 'viewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
-          return { kind: 'rejected', reason: 'responseRejected', error: mail.view.error, evidence: evidence };
-        }
-        if (!await _mm.mail.update(mail, post)) {
-          mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };
-          const evidence = record_hvut_mooglemail_action_failure(post ? 'viewActionCacheWriteRejected' : 'viewLoadCacheWriteRejected', { mid: mid, post: post || '', error: mail.view.error });
-          return { kind: 'rejected', reason: 'cacheWriteFailed', error: mail.view.error, evidence: evidence };
-        }
-        return { kind: 'accepted' };
+        return run_hvut_mooglemail_view_load(mid, post, {
+          get: _mm.mail.get,
+          parse: _mm.mail.parse,
+          update: _mm.mail.update,
+          actionRequestStage: 'viewActionRequest',
+          loadRequestStage: 'viewLoadRequest',
+          actionRejectedStage: 'viewActionRejected',
+          loadRejectedStage: 'viewLoadRejected',
+          actionCacheWriteRejectedStage: 'viewActionCacheWriteRejected',
+          loadCacheWriteRejectedStage: 'viewLoadCacheWriteRejected',
+        });
       },
       parse: function (html) {
         const doc = $doc(html);
@@ -16938,27 +16951,17 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
     };
 
     _mm.mail_load = async function (mid, post) {
-      const mail = _mm.mail_get(mid);
-      let html;
-      try {
-        html = await $ajax.fetch(create_hvut_mail_view_url(mid), post);
-      } catch (error) {
-        const stage = post ? 'legacyViewActionRequest' : 'legacyViewLoadRequest';
-        const evidence = record_hvut_mooglemail_action_failure(stage, { mid: mid, post: post || '', error: error?.message || String(error) });
-        mail.view = { error: post ? '邮件动作请求失败' : '读取邮件失败' };
-        return { kind: 'rejected', reason: 'requestFailed', error: mail.view.error, evidence: evidence };
-      }
-      mail.view = _mm.mail_parse(html);
-      if (mail.view?.error) {
-        const evidence = record_hvut_mooglemail_action_failure(post ? 'legacyViewActionRejected' : 'legacyViewLoadRejected', { mid: mid, post: post || '', error: mail.view.error });
-        return { kind: 'rejected', reason: 'responseRejected', error: mail.view.error, evidence: evidence };
-      }
-      if (!await _mm.mail_update(mail, post)) {
-        mail.view = { ...mail.view, error: post ? '邮件动作保存失败' : '邮件缓存保存失败' };
-        const evidence = record_hvut_mooglemail_action_failure(post ? 'legacyViewActionCacheWriteRejected' : 'legacyViewLoadCacheWriteRejected', { mid: mid, post: post || '', error: mail.view.error });
-        return { kind: 'rejected', reason: 'cacheWriteFailed', error: mail.view.error, evidence: evidence };
-      }
-      return { kind: 'accepted' };
+      return run_hvut_mooglemail_view_load(mid, post, {
+        get: _mm.mail_get,
+        parse: _mm.mail_parse,
+        update: _mm.mail_update,
+        actionRequestStage: 'legacyViewActionRequest',
+        loadRequestStage: 'legacyViewLoadRequest',
+        actionRejectedStage: 'legacyViewActionRejected',
+        loadRejectedStage: 'legacyViewLoadRejected',
+        actionCacheWriteRejectedStage: 'legacyViewActionCacheWriteRejected',
+        loadCacheWriteRejectedStage: 'legacyViewLoadCacheWriteRejected',
+      });
     };
 
     _mm.mail_parse = function (arg) {
