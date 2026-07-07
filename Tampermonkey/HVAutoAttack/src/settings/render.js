@@ -364,6 +364,13 @@ export function renderItemOrderCheckboxes() {
     .join("<br>");
 }
 
+export function renderItemActionCheckboxes() {
+  return ITEM_ORDER_OPTIONS.map(
+    ({ key, label }) =>
+      `<div><input id="item_${key}" type="checkbox"><label for="item_${key}"><b>${label}</b></label>: {{item${key}Condition}}</div>`
+  ).join("");
+}
+
 export function renderIdleArenaLevelCheckboxes(grindFestInput = "") {
   return IDLE_ARENA_LEVEL_OPTIONS.map(({ key, value, label, appendGrindFestInput }) => {
     const labelText = appendGrindFestInput ? `${label} ${grindFestInput}` : label;
@@ -937,16 +944,7 @@ export function optionBox() {
     '<div class="hvAATab" id="hvAATab-Item">',
     '  <div class="itemOrder"><l0>施放顺序</l0><l1>施放順序</l1><l2>Cast Order</l2>: <input name="itemOrderName" style="width:80%;" type="text" disabled="true"><input name="itemOrderValue" style="width:80%;" type="hidden" disabled="true"><br>',
     `    ${renderItemOrderCheckboxes()}</div>`,
-    '  <div><input id="item_Cure" type="checkbox"><label for="item_Cure"><b>Cure</b></label>: {{itemCureCondition}}</div>',
-    '  <div><input id="item_FC" type="checkbox"><label for="item_FC"><b>Full-Cure</b></label>: {{itemFCCondition}}</div>',
-    '  <div><input id="item_HP" type="checkbox"><label for="item_HP"><b>Health Potion</b></label>: {{itemHPCondition}}</div>',
-    '  <div><input id="item_HE" type="checkbox"><label for="item_HE"><b>Health Elixir</b></label>: {{itemHECondition}}</div>',
-    '  <div><input id="item_MP" type="checkbox"><label for="item_MP"><b>Mana Potion</b></label>: {{itemMPCondition}}</div>',
-    '  <div><input id="item_ME" type="checkbox"><label for="item_ME"><b>Mana Elixir</b></label>: {{itemMECondition}}</div>',
-    '  <div><input id="item_SP" type="checkbox"><label for="item_SP"><b>Spirit Potion</b></label>: {{itemSPCondition}}</div>',
-    '  <div><input id="item_SE" type="checkbox"><label for="item_SE"><b>Spirit Elixir</b></label>: {{itemSECondition}}</div>',
-    '  <div><input id="item_LE" type="checkbox"><label for="item_LE"><b>Last Elixir</b></label>: {{itemLECondition}}</div>',
-    '  <div><input id="item_ED" type="checkbox"><label for="item_ED"><b>Energy Drink</b></label>: {{itemEDCondition}}</div></div>',
+    `${renderItemActionCheckboxes()}</div>`,
     '<div class="hvAATab" id="hvAATab-Channel">',
     "  <l0><b>获得Channel时</b>（此时1点MP施法与150%伤害）</l0><l1><b>獲得Channel時</b>（此時1點MP施法與150%傷害）</l1><l2><b>During Channeling effect</b> (1 mp spell cost and 150% spell damage)</l2>:",
     "  <div><b><l0>先施放Channel技能</l0><l1>先施放Channel技能</l1><l2>First cast</l2></b>: <br>",

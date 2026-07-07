@@ -8,6 +8,7 @@ import {
   renderBattleRoundTypeSelectOptions,
   renderBattleScrollCheckboxes,
   renderIdleArenaLevelCheckboxes,
+  renderItemActionCheckboxes,
   renderItemOrderCheckboxes,
   renderBuffSkillCheckboxes,
   renderChannelFallbackOrderCheckboxes,
@@ -112,6 +113,18 @@ describe("renderItemOrderCheckboxes", () => {
     expect(html).toContain('id="itemOrder_HP" value="HP,11195"');
     expect(html).toContain('id="itemOrder_ED" value="ED,11401"');
     expect(html).not.toContain("channelSkill2Order_");
+  });
+});
+
+describe("renderItemActionCheckboxes", () => {
+  it("derives item enablement checkboxes from the item action identity", () => {
+    const html = renderItemActionCheckboxes();
+
+    expect(html).toContain('id="item_Cure"');
+    expect(html).toContain('for="item_FC"><b>Full-Cure</b></label>');
+    expect(html).toContain("{{itemHPCondition}}");
+    expect(html).toContain('id="item_ED"');
+    expect(html).not.toContain("itemOrder_");
   });
 });
 
