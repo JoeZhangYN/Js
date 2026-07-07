@@ -1318,6 +1318,9 @@ try {
     var pageParam = context?.page === undefined ? '' : `&page=${context.page}`;
     return `?s=Bazaar&ss=mm&filter=${context?.filter}&mid=${context?.mid}${pageParam}`;
   };
+  var create_hvut_mail_compose_url = function (context) {
+    return context?.persistent ? '/?s=Bazaar&ss=mm&filter=new' : '?s=Bazaar&ss=mm&filter=new';
+  };
   // >>> equip-name-render 装备译名渲染族(两 IIFE 共用; 唯一可直接调 hvaaTEquip(eq) 之处)。
   // 译名(hvaaTEquip)value 内含 quality/type 颜色 span(EQUIP_EQUIPS 字典, 形如
   // 'Rapier'→'<span style="background:#ffa500">西洋剑</span>（单）'), 是 HTML 片段。consumers 永不直接碰
@@ -3574,7 +3577,7 @@ const $mail = {
       } else {
         $mail.log(`#${index}: Checking Mailbox`);
         try {
-          html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new');
+          html = await $ajax.fetch(create_hvut_mail_compose_url());
         } catch (error) {
           return stop_hvut_mooglemail_send_failure('mailboxLoadRequest', { index: index, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to load mailbox`);
         }
@@ -3600,7 +3603,7 @@ const $mail = {
     if (attach?.length) {
       $mail.log(`#${index}: Attaching`);
       async function attach_add(e) {
-        const html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_add&select_item=${e.id}&select_count=${e.count}&select_pane=${e.pane}`);
+        const html = await $ajax.fetch(create_hvut_mail_compose_url(), `mmtoken=${token}&action=attach_add&select_item=${e.id}&select_count=${e.count}&select_pane=${e.pane}`);
         const response = classify_hvut_mooglemail_attach_response(html, 'attachEmptyResponse', { index: index, item: e.id, count: e.count, pane: e.pane });
         if (response.kind === 'rejected') {
           return response;
@@ -3627,7 +3630,7 @@ const $mail = {
     if (cod && !cod_persistent) {
       $mail.log(`#${index}: Setting CoD`);
       try {
-        html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_cod&action_value=${cod}`);
+        html = await $ajax.fetch(create_hvut_mail_compose_url(), `mmtoken=${token}&action=attach_cod&action_value=${cod}`);
       } catch (error) {
         return stop_hvut_mooglemail_send_failure('codRequest', { index: index, cod: cod, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to set CoD`, 'codRequestDiscard');
       }
@@ -3640,7 +3643,7 @@ const $mail = {
     if (cod && cod_persistent) {
       $mail.log(`#${index}: Preparing in Persistent`);
       try {
-        html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new');
+        html = await $ajax.fetch(create_hvut_mail_compose_url({ persistent: true }));
       } catch (error) {
         return stop_hvut_mooglemail_send_failure('persistentMailboxLoadRequest', { index: index, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to access to Persistent MoogleMail`);
       }
@@ -3658,7 +3661,7 @@ const $mail = {
 
       $mail.log(`#${index}: Attaching in Persistent`);
       try {
-        html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_add&select_item=0&select_count=1&select_pane=credits`);
+        html = await $ajax.fetch(create_hvut_mail_compose_url({ persistent: true }), `mmtoken=${token}&action=attach_add&select_item=0&select_count=1&select_pane=credits`);
       } catch (error) {
         return stop_hvut_mooglemail_send_failure('persistentAttachRequest', { index: index, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to attach Persistent CoD credit`, 'persistentAttachRequestDiscard');
       }
@@ -3669,7 +3672,7 @@ const $mail = {
 
       $mail.log(`#${index}: Setting CoD in Persistent`);
       try {
-        html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', `mmtoken=${token}&action=attach_cod&action_value=${cod}`);
+        html = await $ajax.fetch(create_hvut_mail_compose_url({ persistent: true }), `mmtoken=${token}&action=attach_cod&action_value=${cod}`);
       } catch (error) {
         return stop_hvut_mooglemail_send_failure('persistentCodRequest', { index: index, cod: cod, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to set Persistent CoD`, 'persistentCodRequestDiscard');
       }
@@ -3680,7 +3683,7 @@ const $mail = {
 
       $mail.log(`#${index}: Sending in Persistent`);
       try {
-        html = await $ajax.fetch('/?s=Bazaar&ss=mm&filter=new', { mmtoken: token, action: 'send', message_to_name: to_name, message_subject: subject, message_body: body });
+        html = await $ajax.fetch(create_hvut_mail_compose_url({ persistent: true }), { mmtoken: token, action: 'send', message_to_name: to_name, message_subject: subject, message_body: body });
       } catch (error) {
         return stop_hvut_mooglemail_send_failure('persistentSendRequest', { index: index, to_name: to_name, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to send Persistent MoogleMail`, 'persistentSendRequestDiscard');
       }
@@ -3692,7 +3695,7 @@ const $mail = {
 
     $mail.log(`#${index}: Sending`);
     try {
-      html = await $ajax.fetch('?s=Bazaar&ss=mm&filter=new', { mmtoken: token, action: 'send', message_to_name: to_name, message_subject: subject, message_body: body });
+      html = await $ajax.fetch(create_hvut_mail_compose_url(), { mmtoken: token, action: 'send', message_to_name: to_name, message_subject: subject, message_body: body });
     } catch (error) {
       return stop_hvut_mooglemail_send_failure('sendRequest', { index: index, to_name: to_name, error: error?.message || String(error) }, `#${index}: !!! Error: Unable to send MoogleMail`, 'sendRequestDiscard');
     }
@@ -3793,7 +3796,7 @@ const $mail = {
     return chunks;
   },
   discard: function () {
-    return $ajax.fetch('?s=Bazaar&ss=mm&filter=new', `mmtoken=${$mail.token}&action=discard`);
+    return $ajax.fetch(create_hvut_mail_compose_url(), `mmtoken=${$mail.token}&action=discard`);
   },
   log: function (text, clear) {
     if (!$mail.log.popup) {
