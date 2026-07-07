@@ -912,6 +912,21 @@ try {
     view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;
     return view;
   };
+  var parse_hvut_mooglemail_view_form = function (form, doc) {
+    const view = {
+      to: form.elements[3].value,
+      from: form.elements[4].value,
+      subject: form.elements[5].value,
+      text: form.elements[6].value,
+      attach: [],
+      return: $qs('#mmail_showbuttons > img[src*="returnmail.png"]', doc) ? true : false,
+      recall: $qs('#mmail_showbuttons > img[src*="recallmail.png"]', doc) ? true : false,
+      reply: $qs('#mmail_showbuttons > img[src*="reply.png"]', doc) ? true : false,
+      take: $qs('#mmail_attachremove > img[src*="attach_takeall.png"]', doc) ? true : false,
+    };
+    apply_hvut_mooglemail_view_identity(view);
+    return { view: view, mmtoken: form.elements.mmtoken.value };
+  };
   var create_hvut_mooglemail_cache_write_plan = function (mail, post, context) {
     const mid = mail.mid;
     const page = mail.page;
@@ -10981,17 +10996,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
         const view = {};
         const form = $id('mailform', doc);
         if (form) {
-          _mm.mmtoken = form.elements.mmtoken.value;
-          view.to = form.elements[3].value;
-          view.from = form.elements[4].value;
-          view.subject = form.elements[5].value;
-          view.text = form.elements[6].value;
-          view.attach = [];
-          view.return = $qs('#mmail_showbuttons > img[src*="returnmail.png"]', doc) ? true : false;
-          view.recall = $qs('#mmail_showbuttons > img[src*="recallmail.png"]', doc) ? true : false;
-          view.reply = $qs('#mmail_showbuttons > img[src*="reply.png"]', doc) ? true : false;
-          view.take = $qs('#mmail_attachremove > img[src*="attach_takeall.png"]', doc) ? true : false;
-          apply_hvut_mooglemail_view_identity(view);
+          const parsed = parse_hvut_mooglemail_view_form(form, doc);
+          _mm.mmtoken = parsed.mmtoken;
+          Object.assign(view, parsed.view);
 
           if ($id('mmail_attachlist', doc)) {
             parse_hvut_mooglemail_visible_attach_list(view, doc, html, {
@@ -16987,17 +16994,9 @@ if (_query.s === 'Bazaar' && _query.ss === 'mm' && $config.settings.moogleMail) 
       const view = {};
       const form = $id('mailform', doc);
       if (form) {
-        _mm.mmtoken = form.elements.mmtoken.value;
-        view.to = form.elements[3].value;
-        view.from = form.elements[4].value;
-        view.subject = form.elements[5].value;
-        view.text = form.elements[6].value;
-        view.attach = [];
-        view.return = $qs('#mmail_showbuttons > img[src*="returnmail.png"]', doc) ? true : false;
-        view.recall = $qs('#mmail_showbuttons > img[src*="recallmail.png"]', doc) ? true : false;
-        view.reply = $qs('#mmail_showbuttons > img[src*="reply.png"]', doc) ? true : false;
-        view.take = $qs('#mmail_attachremove > img[src*="attach_takeall.png"]', doc) ? true : false;
-        apply_hvut_mooglemail_view_identity(view);
+        const parsed = parse_hvut_mooglemail_view_form(form, doc);
+        _mm.mmtoken = parsed.mmtoken;
+        Object.assign(view, parsed.view);
 
         if ($id('mmail_attachlist', doc)) {
           parse_hvut_mooglemail_visible_attach_list(view, doc, html, {

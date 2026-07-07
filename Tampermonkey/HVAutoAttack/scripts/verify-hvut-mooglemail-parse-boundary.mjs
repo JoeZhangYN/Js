@@ -97,6 +97,17 @@ for (const required of [
   "view.filter = 'read';",
   "view.filter = 'sent';",
   "view.read = view.filter === 'read' || view.filter === 'sent' && !view.recall;",
+  "var parse_hvut_mooglemail_view_form = function (form, doc) {",
+  "to: form.elements[3].value,",
+  "from: form.elements[4].value,",
+  "subject: form.elements[5].value,",
+  "text: form.elements[6].value,",
+  "attach: [],",
+  "return: $qs('#mmail_showbuttons > img[src*=\"returnmail.png\"]', doc) ? true : false,",
+  "recall: $qs('#mmail_showbuttons > img[src*=\"recallmail.png\"]', doc) ? true : false,",
+  "reply: $qs('#mmail_showbuttons > img[src*=\"reply.png\"]', doc) ? true : false,",
+  "take: $qs('#mmail_attachremove > img[src*=\"attach_takeall.png\"]', doc) ? true : false,",
+  "return { view: view, mmtoken: form.elements.mmtoken.value };",
   "var parse_hvut_mooglemail_equip_attach = function (onmouseover, store, stage) {",
   "return record_hvut_mooglemail_parse_failure(stage, { eid: eid, onmouseover: onmouseover || '' });",
   "var parse_hvut_mooglemail_visible_attach_list = function (view, doc, html, context) {",
@@ -167,7 +178,9 @@ for (const [label, body, stage] of [
   ["modern MoogleMail parser", modernMailParse, "viewEquipAttach"],
   ["legacy MoogleMail parser", legacyMailParse, "legacyViewEquipAttach"],
 ]) {
-  requirePart(label, body, "apply_hvut_mooglemail_view_identity(view);");
+  requirePart(label, body, "const parsed = parse_hvut_mooglemail_view_form(form, doc);");
+  requirePart(label, body, "_mm.mmtoken = parsed.mmtoken;");
+  requirePart(label, body, "Object.assign(view, parsed.view);");
   requirePart(label, body, "parse_hvut_mooglemail_visible_attach_list(view, doc, html, {");
   requirePart(label, body, `equipStage: '${stage}',`);
   requirePart(label, body, "parseCount: _mm.parse_count,");
@@ -181,6 +194,16 @@ for (const [label, body, stage] of [
     "view.user = view.to;",
     "view.read = view.filter === 'read'",
     "RegExp.$1 || RegExp.$2",
+    "view.to = form.elements[3].value;",
+    "view.from = form.elements[4].value;",
+    "view.subject = form.elements[5].value;",
+    "view.text = form.elements[6].value;",
+    "view.attach = [];",
+    "view.return = $qs('#mmail_showbuttons",
+    "view.recall = $qs('#mmail_showbuttons",
+    "view.reply = $qs('#mmail_showbuttons",
+    "view.take = $qs('#mmail_attachremove",
+    "apply_hvut_mooglemail_view_identity(view);",
     "const onmouseover = div.firstElementChild?.firstElementChild?.getAttribute('onmouseover');",
     "parse_hvut_mooglemail_equip_attach(onmouseover",
     "view.error = '解析装备附件失败';",
