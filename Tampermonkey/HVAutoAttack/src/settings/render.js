@@ -38,6 +38,11 @@ import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 import { IDLE_ARENA_LEVEL_OPTIONS } from "../data/idle-arena-levels.js";
 import { ITEM_ORDER_OPTIONS } from "../data/item-order.js";
 import { PHYSICAL_SKILL_ORDER_OPTIONS } from "../data/physical-skill-order.js";
+import {
+  OFFENSIVE_SPELL_ELEMENTS,
+  OFFENSIVE_SPELL_LIB,
+  OFFENSIVE_SPELL_TIERS,
+} from "../data/spell-lib.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -364,6 +369,20 @@ export function renderPhysicalSkillActionCheckboxes({ afterKeyHtml = {} } = {}) 
     const displayLabel = actionLabel || label;
     const extra = afterKeyHtml[key] ? `<br>${afterKeyHtml[key]}` : "";
     return `<div><input id="skill_${key}" type="checkbox"><label for="skill_${key}"><l0>${displayLabel.l0}</l0><l1>${displayLabel.l1}</l1><l2>${displayLabel.l2}</l2></label>: <input id="skillOTOS_${key}" type="checkbox"><label for="skillOTOS_${key}"><l01>一回合只使用一次</l01><l2>One round only spell one time</l2></label>${extra}{{skill${key}Condition}}</div>`;
+  }).join("");
+}
+
+export function renderOffensiveSpellAoeRows() {
+  return OFFENSIVE_SPELL_ELEMENTS.map(({ code, label }, rowIndex) => {
+    const controls = OFFENSIVE_SPELL_TIERS.map((tier) => {
+      const key = `${code}${tier}`;
+      if (!OFFENSIVE_SPELL_LIB.has(key)) return "";
+      return `T${tier}:<input class="hvAANumber" name="spellAoe_${key}" placeholder="1" type="text">`;
+    })
+      .filter(Boolean)
+      .join(" ");
+    const lineBreak = rowIndex < OFFENSIVE_SPELL_ELEMENTS.length - 1 ? "<br>" : "";
+    return `    ${label}: ${controls}${lineBreak}`;
   }).join("");
 }
 
@@ -1008,12 +1027,7 @@ export function optionBox() {
     ...renderPhysicalSkillStrategySchemaFields(),
     renderPhysicalSkillActionCheckboxes({ afterKeyHtml: { T3: renderMercifulBlowSchemaField() } }),
     '  <div>AoE: <l0>当前技能等级下影响的目标数(1=单体, 3=范围)，访问</l0><l1>當前技能等級下影響的目標數(1=單體, 3=範圍)，訪問</l1><l2>Targets affected at current skill level (1=single, 3=AoE), visit </l2><a href="?s=Character&ss=ab" target="_blank"><l0>技能页面</l0><l1>技能頁面</l1><l2>Ability Page</l2></a><l0>自动检测</l0><l1>自動檢測</l1><l2> to auto-detect</l2><br>',
-    '    Fire: T1:<input class="hvAANumber" name="spellAoe_11" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_12" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_13" placeholder="1" type="text"><br>',
-    '    Cold: T1:<input class="hvAANumber" name="spellAoe_21" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_22" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_23" placeholder="1" type="text"><br>',
-    '    Elec: T1:<input class="hvAANumber" name="spellAoe_31" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_32" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_33" placeholder="1" type="text"><br>',
-    '    Wind: T1:<input class="hvAANumber" name="spellAoe_41" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_42" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_43" placeholder="1" type="text"><br>',
-    '    Holy: T1:<input class="hvAANumber" name="spellAoe_51" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_52" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_53" placeholder="1" type="text"><br>',
-    '    Dark: T1:<input class="hvAANumber" name="spellAoe_61" placeholder="1" type="text"> T2:<input class="hvAANumber" name="spellAoe_62" placeholder="1" type="text"> T3:<input class="hvAANumber" name="spellAoe_63" placeholder="1" type="text"></div>',
+    `${renderOffensiveSpellAoeRows()}</div>`,
     renderSchemaCheckboxField("autoElement"),
     "</div>",
     '<div class="hvAATab" id="hvAATab-Scroll">',
