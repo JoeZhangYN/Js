@@ -46,6 +46,10 @@ for (const required of [
   "var record_hvut_monster_lab_upgrade_failure = function (stage, detail) {",
   "capability: 'hvutMonsterLabUpgrade'",
   "sessionStorage.setItem('HVAA:lastHvutMonsterLabUpgradeFailure'",
+  "var classify_hvut_monster_lab_upgrade_response = function (html, stage, detail) {",
+  "record_hvut_monster_lab_upgrade_failure(stage, { ...detail, reason: 'emptyResponse' });",
+  "return { kind: 'rejected', reason: 'emptyResponse', evidence: evidence };",
+  "return { kind: 'accepted' };",
 ]) {
   if (!text.includes(required)) violations.push(`${target} must include Monster Lab upgrade diagnostic recorder: ${required}`);
 }
@@ -120,6 +124,7 @@ for (const [index, body] of updateBodies.entries()) {
 }
 
 for (const [index, body] of runBodies.entries()) {
+  const emptyResponseStage = index === 0 ? "upgradeRunEmptyResponse" : "legacyUpgradeRunEmptyResponse";
   for (const required of [
     "try {\n          await Promise.all(requests);",
     "catch (error) {\n          record_hvut_monster_lab_upgrade_failure(",
@@ -130,6 +135,10 @@ for (const [index, body] of runBodies.entries()) {
     "return false;",
     "return _ml.upgrade.update();",
     "if (!$config.set('ml_log', _ml.log)) {\n          alert(IS_ISEKAI ? 'An error has occurred.' : '发生了一个错误.');\n          return false;",
+    "const html = await $ajax.fetch(url, post);",
+    `const response = classify_hvut_monster_lab_upgrade_response(html, '${emptyResponseStage}', { url: url, post: post });`,
+    "if (response.kind === 'rejected') {",
+    "throw new Error('monster lab upgrade response unavailable');",
   ]) {
     if (!body.includes(required)) {
       violations.push(`${target} Monster Lab run[${index}] must guard failure with ${required}`);
@@ -140,6 +149,9 @@ for (const [index, body] of runBodies.entries()) {
   }
   if (/\$config\.set\('ml_log', _ml\.log\);\n\s*_ml\.upgrade\.node\.run\.disabled = true;/.test(body)) {
     violations.push(`${target} Monster Lab run[${index}] must not execute upgrades after unchecked ml_log write`);
+  }
+  if (/^\s*await \$ajax\.fetch\(url, post\);$/m.test(body)) {
+    violations.push(`${target} Monster Lab run[${index}] must not count upgrade after unclassified response`);
   }
   if (/catch \(_error\) \{\n\s*alert\(IS_ISEKAI/.test(body)) {
     violations.push(`${target} Monster Lab run[${index}] must not keep untyped request failure`);

@@ -721,6 +721,13 @@ try {
     }
     return evidence;
   };
+  var classify_hvut_monster_lab_upgrade_response = function (html, stage, detail) {
+    if (typeof html !== 'string' || !html.trim()) {
+      var evidence = record_hvut_monster_lab_upgrade_failure(stage, { ...detail, reason: 'emptyResponse' });
+      return { kind: 'rejected', reason: 'emptyResponse', evidence: evidence };
+    }
+    return { kind: 'accepted' };
+  };
   var parse_hvut_monster_lab_chaos_token_cost = function (text, stage) {
     var match = /Cost: (\d+) Chaos Token/.exec(text || '');
     return match ? parseInt(match[1]) : record_hvut_monster_lab_parse_failure(stage, { text: text || '' });
@@ -8847,7 +8854,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.upgrade.node.update.disabled = true;
 
         async function upgrade(url, post) {
-          await $ajax.fetch(url, post);
+          const html = await $ajax.fetch(url, post);
+          const response = classify_hvut_monster_lab_upgrade_response(html, 'upgradeRunEmptyResponse', { url: url, post: post });
+          if (response.kind === 'rejected') {
+            throw new Error('monster lab upgrade response unavailable');
+          }
           done++;
           _ml.upgrade.node.run.value = `${done}/${total}`;
         }
@@ -15109,7 +15120,11 @@ if (_query.s === 'Bazaar' && _query.ss === 'ml' && $config.settings.monsterLab) 
         _ml.upgrade.node.update.disabled = true;
 
         async function upgrade(url, post) {
-          await $ajax.fetch(url, post);
+          const html = await $ajax.fetch(url, post);
+          const response = classify_hvut_monster_lab_upgrade_response(html, 'legacyUpgradeRunEmptyResponse', { url: url, post: post });
+          if (response.kind === 'rejected') {
+            throw new Error('monster lab upgrade response unavailable');
+          }
           done++;
           _ml.upgrade.node.run.value = `${done}/${total}`;
         }
