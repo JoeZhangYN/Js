@@ -85,6 +85,16 @@ if (!/export function runOptionSchema\(\s*event\b/.test(ownerText)) {
 }
 
 const renderText = fs.readFileSync(path.join(root, settingsRender), "utf8");
+if (/function\s+renderCheckboxPlusNumber\(\s*checkboxKey\s*,\s*numberKey\s*,/.test(renderText)) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} renderCheckboxPlusNumber must not accept caller-owned description text`
+  );
+}
+if (/renderCheckboxPlusNumber\(\s*["'][^"']+["']\s*,\s*["'][^"']+["']\s*,\s*\{/.test(renderText)) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must not pass local description text into renderCheckboxPlusNumber`
+  );
+}
 for (const required of [
   /renderEquipmentSchemaFields/,
   /readSchemaField\(\s*["']repairValue["']\s*\)/,

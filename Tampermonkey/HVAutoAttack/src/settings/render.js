@@ -53,13 +53,11 @@ export function readSingleOrderItemName(target) {
 
 /**
  * 从 option schema 渲染 "checkbox + number + 单位文本" 这类成对字段。
- * Phase 5 渐进迁入示例：新加的 pageRefresh / criticalBuff 等用此 helper 直接消费 schema，
- * 不再手写 template string。老字段仍走 inline template。
+ * 单位/说明归 schema 字段所有，避免调用点继续手写 template string。
  * @param {string} checkboxKey
  * @param {string} numberKey
- * @param {{l0:string,l1:string,l2:string}=} unit 单位/补充说明
  */
-function renderCheckboxPlusNumber(checkboxKey, numberKey, unit = { l0: "", l1: "", l2: "" }) {
+function renderCheckboxPlusNumber(checkboxKey, numberKey) {
   const cb = runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: checkboxKey });
   const num = runOptionSchema({ type: OptionSchemaEvent.READ_FIELD, key: numberKey });
   if (!cb || !num) return "";
@@ -68,7 +66,7 @@ function renderCheckboxPlusNumber(checkboxKey, numberKey, unit = { l0: "", l1: "
     `<div><input id="${cb.key}" type="checkbox"${checkedAttr}>` +
     `<label for="${cb.key}"><b><l0>${cb.label.l0}</l0><l1>${cb.label.l1}</l1><l2>${cb.label.l2}</l2></b></label>: ` +
     `<input class="hvAANumber" name="${num.key}" placeholder="${num.default}" type="text">` +
-    `${renderSchemaDescription(num, unit)}</div>`
+    `${renderSchemaDescription(num)}</div>`
   );
 }
 
