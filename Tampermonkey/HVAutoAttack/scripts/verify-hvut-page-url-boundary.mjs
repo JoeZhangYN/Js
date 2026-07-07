@@ -15,6 +15,10 @@ for (const required of [
   "var create_hvut_mail_read_url = function (context) {",
   "var create_hvut_mail_compose_url = function (context) {",
   "var create_hvut_mail_view_url = function (mid) {",
+  "var create_hvut_character_section_url = function (ss) {",
+  "var create_hvut_character_page_url = function () {",
+  "var create_hvut_equipment_page_url = function () {",
+  "var create_hvut_item_inventory_url = function () {",
   "var create_hvut_character_settings_url = function () {",
   "var create_hvut_training_url = function () {",
   "var create_hvut_bazaar_section_url = function (ss) {",
@@ -30,7 +34,11 @@ for (const required of [
   "return `?s=Bazaar&ss=mm&filter=${context?.filter}&mid=${context?.mid}${pageParam}`;",
   "return context?.persistent ? '/?s=Bazaar&ss=mm&filter=new' : '?s=Bazaar&ss=mm&filter=new';",
   "return `?s=Bazaar&ss=mm&mid=${mid}`;",
-  "return '?s=Character&ss=se';",
+  "return `?s=Character&ss=${ss}`;",
+  "return create_hvut_character_section_url('ch');",
+  "return create_hvut_character_section_url('eq');",
+  "return create_hvut_character_section_url('it');",
+  "return create_hvut_character_section_url('se');",
   "return '/?s=Character&ss=tr';",
   "return `/?s=Bazaar&ss=${ss}`;",
   "return '?s=Bazaar&ss=is';",
@@ -51,6 +59,9 @@ for (const required of [
   "$ajax.fetch(create_hvut_mail_compose_url()",
   "$ajax.fetch(create_hvut_mail_compose_url({ persistent: true })",
   "$ajax.fetch(create_hvut_mail_view_url(mid), post)",
+  "$ajax.fetch(create_hvut_item_inventory_url())",
+  "$ajax.fetch(create_hvut_character_page_url()",
+  "$ajax.fetch(create_hvut_equipment_page_url()",
   "openUrl(create_hvut_character_settings_url(), hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'));",
   "$ajax.fetch(create_hvut_character_settings_url()",
   "href: create_hvut_training_url()",
@@ -89,6 +100,9 @@ for (const forbidden of [
   "$ajax.fetch('?s=Bazaar&ss=mm&mid=' + mid, post)",
   "openUrl('?s=Character&ss=se', hvutRedirectReason('HV_UTILS_CHARACTER_SETTINGS'))",
   "$ajax.fetch('?s=Character&ss=se'",
+  "$ajax.fetch('?s=Character&ss=it'",
+  "$ajax.fetch('?s=Character&ss=ch'",
+  "$ajax.fetch('?s=Character&ss=eq'",
   "href: '/?s=Character&ss=tr'",
   "$ajax.fetch('/?s=Character&ss=tr'",
   "href: '/?s=Bazaar&ss=' + ss",
@@ -155,6 +169,21 @@ if (characterSettingsOpenOccurrences !== 2) {
 const characterSettingsFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_character_settings_url\(\)/g)].length;
 if (characterSettingsFetchOccurrences !== 2) {
   violations.push(`${target} must route Character settings fetches through create_hvut_character_settings_url, found ${characterSettingsFetchOccurrences}`);
+}
+
+const characterPageFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_character_page_url\(\)/g)].length;
+if (characterPageFetchOccurrences !== 3) {
+  violations.push(`${target} must route Character page fetches through create_hvut_character_page_url, found ${characterPageFetchOccurrences}`);
+}
+
+const equipmentPageFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_equipment_page_url\(\)/g)].length;
+if (equipmentPageFetchOccurrences !== 1) {
+  violations.push(`${target} must route Equipment page fetches through create_hvut_equipment_page_url, found ${equipmentPageFetchOccurrences}`);
+}
+
+const itemInventoryFetchOccurrences = [...text.matchAll(/\$ajax\.fetch\(create_hvut_item_inventory_url\(\)/g)].length;
+if (itemInventoryFetchOccurrences !== 1) {
+  violations.push(`${target} must route item inventory fetches through create_hvut_item_inventory_url, found ${itemInventoryFetchOccurrences}`);
 }
 
 const trainingUrlOccurrences = [...text.matchAll(/create_hvut_training_url\(\)/g)].length;

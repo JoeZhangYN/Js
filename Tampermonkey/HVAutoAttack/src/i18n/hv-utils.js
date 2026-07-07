@@ -1324,8 +1324,24 @@ try {
   var create_hvut_mail_view_url = function (mid) {
     return `?s=Bazaar&ss=mm&mid=${mid}`;
   };
+  var create_hvut_character_section_url = function (ss) {
+    return `?s=Character&ss=${ss}`;
+  };
+
+  var create_hvut_character_page_url = function () {
+    return create_hvut_character_section_url('ch');
+  };
+
+  var create_hvut_equipment_page_url = function () {
+    return create_hvut_character_section_url('eq');
+  };
+
+  var create_hvut_item_inventory_url = function () {
+    return create_hvut_character_section_url('it');
+  };
+
   var create_hvut_character_settings_url = function () {
-    return '?s=Character&ss=se';
+    return create_hvut_character_section_url('se');
   };
   var create_hvut_training_url = function () {
     return '/?s=Character&ss=tr';
@@ -1576,7 +1592,7 @@ const $item = {
     }
   },
   load: async function () {
-    const html = await $ajax.fetch('?s=Character&ss=it');
+    const html = await $ajax.fetch(create_hvut_item_inventory_url());
     const doc = $doc(html);
     const list = {};
     let parseFailed = false;
@@ -3336,7 +3352,7 @@ const bindPersona = function (persona, ctx) {
     ctx.dfct.node.button.textContent = '(D...)';
     let html;
     try {
-      html = await $ajax.fetch('?s=Character&ss=ch', pset ? `persona_set=${pset}` : null);
+      html = await $ajax.fetch(create_hvut_character_page_url(), pset ? `persona_set=${pset}` : null);
     } catch (error) {
       return reject_hvut_persona_sync('personaPageFetchFailed', { message: String(error?.message || error) });
     }
@@ -3364,7 +3380,7 @@ const bindPersona = function (persona, ctx) {
     persona.node.button.textContent = '(E...)';
     let html;
     try {
-      html = await $ajax.fetch('?s=Character&ss=eq', eset ? `equip_set=${eset}` : null);
+      html = await $ajax.fetch(create_hvut_equipment_page_url(), eset ? `equip_set=${eset}` : null);
     } catch (error) {
       return reject_hvut_persona_sync('equipPageFetchFailed', { message: String(error?.message || error) });
     }
@@ -6540,7 +6556,7 @@ if (_query.s === 'Character' && _query.ss === 'eq') {
   };
 
   _eq.show_base = async function () {
-    const html = await $ajax.fetch('?s=Character&ss=ch');
+    const html = await $ajax.fetch(create_hvut_character_page_url());
     const doc = $doc(html);
     const base = {};
     $qsa('#attr_table tr:nth-last-child(n+2)', doc).forEach((tr) => {
@@ -12598,7 +12614,7 @@ if (_query.s === 'Character' && _query.ss === 'ch' || $id('persona_outer')) {
 //* [2] Character - Equipment
 if (_query.s === 'Character' && _query.ss === 'eq') {
   _eq.show_base = async function () { // 旧 .st1-.st3 selector 随旧页面死亡 → isekai 版(#stats_scrollable, 2026-06-10)
-    const html = await $ajax.fetch('?s=Character&ss=ch');
+    const html = await $ajax.fetch(create_hvut_character_page_url());
     const doc = $doc(html);
     const base = {};
     $qsa('#attr_table tr:nth-last-child(n+2)', doc).forEach((tr) => {
