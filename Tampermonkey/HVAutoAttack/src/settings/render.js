@@ -17,7 +17,6 @@ import { OptionSchemaEvent, runOptionSchema } from "./schema.js";
 import { SettingsFormOptionEvent, runSettingsFormOptionAutomation } from "./form-option.js";
 import { setLang } from "../i18n/core/restore-controller.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
-import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
 import { AlarmProfileEvent, runAlarmProfileCatalog } from "../alarm/alarm-profiles.js";
 import { RiddleEvent, runRiddleAutomation } from "../pages/riddle-automation.js";
 import { BattleRoundEvent, runBattleRoundAutomation } from "../battle/battle-round.js";
@@ -37,6 +36,10 @@ import {
   SettingsBattleReportCommandEvent,
   runSettingsBattleReportCommand,
 } from "./battle-report-command.js";
+import {
+  SettingsStaminaLossLogCommandEvent,
+  runSettingsStaminaLossLogCommand,
+} from "./stamina-loss-log-command.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -1236,12 +1239,12 @@ export function optionBox() {
   gE(".staminaLostLog", optionBox).onclick = function () {
     if (
       window.confirm(
-        runStaminaLossLogAutomation({
-          type: StaminaLossLogEvent.CLEAR_CONFIRMATION_MESSAGE,
+        runSettingsStaminaLossLogCommand({
+          type: SettingsStaminaLossLogCommandEvent.CLEAR_CONFIRMATION_MESSAGE,
         })
       )
     )
-      runStaminaLossLogAutomation({ type: StaminaLossLogEvent.CLEAR });
+      runSettingsStaminaLossLogCommand({ type: SettingsStaminaLossLogCommandEvent.CLEAR });
   };
   gE(".idleArenaReset", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {

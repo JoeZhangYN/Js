@@ -9,6 +9,8 @@ const ownerTest = path.normalize("src/state/stamina-loss-log.test.js");
 const failureTest = path.normalize("src/state/stamina-loss-log-failure.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const settingsRender = path.normalize("src/settings/render.js");
+const settingsCommand = path.normalize("src/settings/stamina-loss-log-command.js");
+const settingsCommandTest = path.normalize("src/settings/stamina-loss-log-command.test.js");
 const violations = [];
 
 function rel(file) {
@@ -33,6 +35,8 @@ function checkFile(file) {
       relative !== failureOwner &&
       relative !== ownerTest &&
       relative !== failureTest &&
+      relative !== settingsCommand &&
+      relative !== settingsCommandTest &&
       relative !== persistKeys &&
       /\bSTORAGE_KEYS\.STAMINA_LOST_LOG\b/.test(line)
     ) {
@@ -47,7 +51,9 @@ function checkFile(file) {
     }
     if (
       relative === settingsRender &&
-      /\bStaminaLossLogEvent\.READ\b|\bconst\s+staminaLostLog\b|There are .* logs/.test(line)
+      /\bStaminaLossLogEvent\b|\brunStaminaLossLogAutomation\b|\bconst\s+staminaLostLog\b|There are .* logs/.test(
+        line
+      )
     ) {
       violations.push(`${where} settings must not compose stamina loss log reset message`);
     }
@@ -73,10 +79,38 @@ for (const required of [
 }
 
 const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
-if (!settingsText.includes("StaminaLossLogEvent.CLEAR_CONFIRMATION_MESSAGE")) {
+if (!settingsText.includes("SettingsStaminaLossLogCommandEvent.CLEAR_CONFIRMATION_MESSAGE")) {
   violations.push(
-    `${settingsRender.replaceAll("\\", "/")} must request stamina loss log reset message`
+    `${settingsRender.replaceAll("\\", "/")} must request stamina loss log reset message through settings command`
   );
+}
+if (!settingsText.includes("SettingsStaminaLossLogCommandEvent.CLEAR")) {
+  violations.push(
+    `${settingsRender.replaceAll("\\", "/")} must clear stamina loss log through settings command`
+  );
+}
+const settingsCommandText = fs.readFileSync(path.join(root, settingsCommand), "utf8");
+for (const required of [
+  "SettingsStaminaLossLogCommandEvent",
+  "runSettingsStaminaLossLogCommand",
+  "StaminaLossLogEvent.CLEAR_CONFIRMATION_MESSAGE",
+  "StaminaLossLogEvent.CLEAR",
+  "const settingsStaminaLossLogCommandHandlers",
+]) {
+  if (!settingsCommandText.includes(required)) {
+    violations.push(`${settingsCommand.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+const settingsCommandTestText = fs.readFileSync(path.join(root, settingsCommandTest), "utf8");
+for (const required of [
+  "settings stamina loss log command entry",
+  "renders the clear confirmation message through one settings command",
+  "clears stamina loss logs as a typed settings command",
+  "fails closed for unknown stamina loss log commands",
+]) {
+  if (!settingsCommandTestText.includes(required)) {
+    violations.push(`${settingsCommandTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
 }
 
 for (const legacy of ["readStaminaLossLog", "recordStaminaLoss", "clearStaminaLossLog"]) {
@@ -95,10 +129,14 @@ if (!ownerText.includes("const staminaLossLogEventHandlers")) {
 const ownerEntry =
   ownerText.match(/export function runStaminaLossLogAutomation[\s\S]*?\n}/)?.[0] || "";
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must not reintroduce an event.type if-chain`
+  );
 }
 if (/\bevent\.type\b/.test(ownerEntry) || !/\bevent\?\.type\b/.test(ownerEntry)) {
-  violations.push(`${owner.replaceAll("\\", "/")} entry must fail closed for null stamina loss log events`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} entry must fail closed for null stamina loss log events`
+  );
 }
 for (const internal of [
   "readStaminaLossLog(",
@@ -117,10 +155,18 @@ if (!/runStaminaLossLogAutomation\(null\)/.test(ownerTestText)) {
 }
 
 if (/\bsetValue\(/.test(ownerText)) {
-  violations.push(`${owner.replaceAll("\\", "/")} must not write stamina loss log storage directly`);
+  violations.push(
+    `${owner.replaceAll("\\", "/")} must not write stamina loss log storage directly`
+  );
 }
-if (!/function persistStaminaLossLog\(log,\s*stage\) \{[\s\S]*setValue\(STORAGE_KEYS\.STAMINA_LOST_LOG,\s*log\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordStaminaLossLogFailure\(stage,\s*error\);[\s\S]*return false;/.test(failureOwnerText)) {
-  violations.push(`${failureOwner.replaceAll("\\", "/")} must classify stamina loss log storage write failures`);
+if (
+  !/function persistStaminaLossLog\(log,\s*stage\) \{[\s\S]*setValue\(STORAGE_KEYS\.STAMINA_LOST_LOG,\s*log\);[\s\S]*return true;[\s\S]*catch\s*\(error\)\s*{[\s\S]*recordStaminaLossLogFailure\(stage,\s*error\);[\s\S]*return false;/.test(
+    failureOwnerText
+  )
+) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} must classify stamina loss log storage write failures`
+  );
 }
 for (const required of [
   "STAMINA_LOSS_LOG_FAILURE_KEY",
