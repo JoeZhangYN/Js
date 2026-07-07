@@ -14,6 +14,8 @@ const turnContext = path.normalize("src/battle/turn-context.js");
 const storage = path.normalize("src/state/storage.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
 const settingsRender = path.normalize("src/settings/render.js");
+const settingsOptionCommand = path.normalize("src/settings/option-command.js");
+const settingsOptionCommandTest = path.normalize("src/settings/option-command.test.js");
 const violations = [];
 
 function rel(file) {
@@ -117,26 +119,71 @@ for (const text of [ownerText, turnContextText]) {
 }
 
 const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
-for (const required of ["OptionEvent.EXPORT_TEXT", "OptionEvent.PARSE_IMPORT_TEXT"]) {
+for (const required of [
+  "SettingsOptionCommandEvent.EXPORT_TEXT",
+  "SettingsOptionCommandEvent.PARSE_IMPORT_TEXT",
+  "SettingsOptionCommandEvent.WRITE_OPTION",
+  "SettingsOptionCommandEvent.CLEAR_OPTION",
+  "runSettingsOptionCommand",
+  "alertSettingsOptionCommandFailure",
+]) {
   if (!settingsText.includes(required)) {
     violations.push(`${settingsRender.replaceAll("\\", "/")} must request ${required}`);
   }
 }
+const settingsOptionCommandText = fs.readFileSync(path.join(root, settingsOptionCommand), "utf8");
 for (const required of [
-  "function writeSettingsOption(option) {",
-  "const written = runOptionAutomation({ type: OptionEvent.WRITE, option });",
-  "function clearSettingsOption() {",
-  "const cleared = runOptionAutomation({ type: OptionEvent.CLEAR });",
+  "SettingsOptionCommandEvent",
+  "runSettingsOptionCommand",
+  "OptionEvent.EXPORT_TEXT",
+  "OptionEvent.PARSE_IMPORT_TEXT",
+  "OptionEvent.WRITE",
+  "OptionEvent.CLEAR",
+  "Invalid configuration format",
+  "Failed to save configuration",
+  "Failed to reset configuration",
+  "const settingsOptionCommandHandlers",
+]) {
+  if (!settingsOptionCommandText.includes(required)) {
+    violations.push(`${settingsOptionCommand.replaceAll("\\", "/")} must expose ${required}`);
+  }
+}
+const settingsOptionCommandTestText = fs.readFileSync(
+  path.join(root, settingsOptionCommandTest),
+  "utf8"
+);
+for (const required of [
+  "settings option command entry",
+  "exports and parses settings option payloads through one command entry",
+  "returns typed write and clear results for settings commands",
+  "does not claim settings option write success when persistence fails",
+  "fails closed for unknown settings option commands",
+]) {
+  if (!settingsOptionCommandTestText.includes(required)) {
+    violations.push(`${settingsOptionCommandTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
+for (const required of [
   "function writeSettingsLanguage(value, select) {",
   'const written = runOptionAutomation({ type: OptionEvent.WRITE_FIELD, key: "lang", value });',
-  'if (!writeSettingsOption(parsed.option)) return;',
-  "if (!writeSettingsOption(_option)) return;",
-  'Failed to save configuration',
-  'Failed to reset configuration',
   'Failed to save language',
 ]) {
   if (!settingsText.includes(required)) {
     violations.push(`${settingsRender.replaceAll("\\", "/")} must stop settings success flow when option write fails`);
+  }
+}
+for (const legacy of [
+  "function writeSettingsOption(option) {",
+  "function clearSettingsOption() {",
+  "OptionEvent.EXPORT_TEXT",
+  "OptionEvent.PARSE_IMPORT_TEXT",
+  "OptionEvent.WRITE, option",
+  "OptionEvent.CLEAR",
+  "Failed to save configuration",
+  "Failed to reset configuration",
+]) {
+  if (settingsText.includes(legacy)) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} must not keep legacy option command ${legacy}`);
   }
 }
 const settingsLanguageBlock =
@@ -165,18 +212,18 @@ for (const [label, block] of [
   ["import", settingsImportBlock],
   ["apply", settingsApplyBlock],
 ]) {
-  if (!block.includes("writeSettingsOption(")) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} settings ${label} must write through writeSettingsOption`);
+  if (!block.includes("SettingsOptionCommandEvent.WRITE_OPTION")) {
+    violations.push(`${settingsRender.replaceAll("\\", "/")} settings ${label} must write through settings option command`);
   }
   if (/runOptionAutomation\(\{\s*type:\s*OptionEvent\.WRITE\b/.test(block)) {
-    violations.push(`${settingsRender.replaceAll("\\", "/")} settings ${label} must not bypass writeSettingsOption`);
+    violations.push(`${settingsRender.replaceAll("\\", "/")} settings ${label} must not bypass settings option command`);
   }
 }
-if (!settingsResetBlock.includes("clearSettingsOption();")) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} settings reset must clear through clearSettingsOption`);
+if (!settingsResetBlock.includes("SettingsOptionCommandEvent.CLEAR_OPTION")) {
+  violations.push(`${settingsRender.replaceAll("\\", "/")} settings reset must clear through settings option command`);
 }
 if (/runOptionAutomation\(\{\s*type:\s*OptionEvent\.CLEAR\b/.test(settingsResetBlock)) {
-  violations.push(`${settingsRender.replaceAll("\\", "/")} settings reset must not bypass clearSettingsOption`);
+  violations.push(`${settingsRender.replaceAll("\\", "/")} settings reset must not bypass settings option command`);
 }
 for (const legacy of [
   "readOption",

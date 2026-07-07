@@ -34,6 +34,7 @@ import {
   runSettingsOrderControlCatalog,
 } from "./order-control-catalog.js";
 import { SettingsBackupCommandEvent, runSettingsBackupCommand } from "./backup-command.js";
+import { SettingsOptionCommandEvent, runSettingsOptionCommand } from "./option-command.js";
 
 export function readSingleOrderItemName(target) {
   const match = target?.id?.match(/_(.*)/);
@@ -787,20 +788,6 @@ function hasStoredOption() {
   return readOptionField("version", undefined) !== undefined;
 }
 
-function writeSettingsOption(option) {
-  const written = runOptionAutomation({ type: OptionEvent.WRITE, option });
-  if (written) return true;
-  _alert(0, "配置保存失败", "配置保存失敗", "Failed to save configuration");
-  return false;
-}
-
-function clearSettingsOption() {
-  const cleared = runOptionAutomation({ type: OptionEvent.CLEAR });
-  if (cleared) return true;
-  _alert(0, "配置重置失败", "配置重置失敗", "Failed to reset configuration");
-  return false;
-}
-
 function applySettingsLanguage(value) {
   gE(".hvAA-LangStyle").textContent = `l${value}{display:inline!important;}`;
   if (/^[01]$/.test(value)) gE(".hvAA-LangStyle").textContent += "l01{display:inline!important;}";
@@ -1344,6 +1331,9 @@ export function optionBox() {
   function alertBackupCommandFailure(command) {
     if (command?.message) _alert(0, command.message.l0, command.message.l1, command.message.l2);
   }
+  function alertSettingsOptionCommandFailure(command) {
+    if (command?.message) _alert(0, command.message.l0, command.message.l1, command.message.l2);
+  }
   gE(".hvAABackup", optionBox).onclick = function () {
     const code =
       _alert(
@@ -1411,19 +1401,28 @@ export function optionBox() {
     rmListItem(code);
   };
   gE(".hvAAExport", optionBox).onclick = function () {
-    gE(".hvAAConfig").value = runOptionAutomation({ type: OptionEvent.EXPORT_TEXT });
+    gE(".hvAAConfig").value = runSettingsOptionCommand({
+      type: SettingsOptionCommandEvent.EXPORT_TEXT,
+    });
   };
   gE(".hvAAImport", optionBox).onclick = function () {
-    const parsed = runOptionAutomation({
-      type: OptionEvent.PARSE_IMPORT_TEXT,
+    const parsed = runSettingsOptionCommand({
+      type: SettingsOptionCommandEvent.PARSE_IMPORT_TEXT,
       text: gE(".hvAAConfig").value,
     });
     if (!parsed.ok) {
-      _alert(0, "配置格式错误", "配置格式錯誤", "Invalid configuration format");
+      alertSettingsOptionCommandFailure(parsed);
       return;
     }
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      if (!writeSettingsOption(parsed.option)) return;
+      const written = runSettingsOptionCommand({
+        type: SettingsOptionCommandEvent.WRITE_OPTION,
+        option: parsed.option,
+      });
+      if (!written.ok) {
+        alertSettingsOptionCommandFailure(written);
+        return;
+      }
       runNavigationAutomation({
         type: NavigationEvent.RELOAD_NOW,
         reason: NavigationReloadReason.SETTINGS_CHANGE,
@@ -1433,7 +1432,8 @@ export function optionBox() {
   //
   gE(".hvAAReset", optionBox).onclick = function () {
     if (_alert(1, "是否重置", "是否重置", "Whether to reset")) {
-      clearSettingsOption();
+      const cleared = runSettingsOptionCommand({ type: SettingsOptionCommandEvent.CLEAR_OPTION });
+      if (!cleared.ok) alertSettingsOptionCommandFailure(cleared);
     }
   };
   gE(".hvAAApply", optionBox).onclick = function () {
@@ -1456,7 +1456,14 @@ export function optionBox() {
       option: _option,
       inputs: gE('.hvAAQuickSite input[type="text"]', "all", optionBox),
     });
-    if (!writeSettingsOption(_option)) return;
+    const written = runSettingsOptionCommand({
+      type: SettingsOptionCommandEvent.WRITE_OPTION,
+      option: _option,
+    });
+    if (!written.ok) {
+      alertSettingsOptionCommandFailure(written);
+      return;
+    }
     optionBox.style.display = "none";
     runNavigationAutomation({
       type: NavigationEvent.RELOAD_NOW,
