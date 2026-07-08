@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   setValue: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ INFO: "info", WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("./storage.js", async () => {
@@ -20,6 +26,7 @@ beforeEach(() => {
   window.sessionStorage.clear();
   vi.restoreAllMocks();
   mocks.setValue.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.setValue.mockImplementation((item, value) => {
     window.localStorage[`hvAA_${item}`] = typeof value === "string" ? value : JSON.stringify(value);
   });
@@ -30,7 +37,6 @@ beforeEach(() => {
 
 describe("auto-tune persistence failures", () => {
   it("does not advance auto-tune pad when history persistence fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.setValue.mockImplementation(() => {
       throw new Error("auto-tune write blocked");
     });
@@ -45,11 +51,17 @@ describe("auto-tune persistence failures", () => {
       storageKey: STORAGE_KEYS.AUTO_TUNE_HISTORY,
       failure: { kind: "storageWrite", error: "auto-tune write blocked" },
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] auto-tune persistence failed",
+        expect.objectContaining({ capability: "autoTune", stage: "record-history" }),
+      ],
+    });
     expect(runAutoTuneAutomation({ type: AutoTuneEvent.READ_PAD })).toBe(1.3);
   });
 
   it("does not report auto-tune step success when pad persistence fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.setValue.mockImplementation((item, value) => {
       if (item === STORAGE_KEYS.AUTO_TUNE_PAD) throw new Error("pad write blocked");
       window.localStorage[`hvAA_${item}`] =
@@ -74,15 +86,13 @@ describe("auto-tune persistence failures", () => {
     expect(runAutoTuneAutomation({ type: AutoTuneEvent.READ_PAD })).toBe(1.3);
   });
 
-  it("does not throw when auto-tune failure evidence and warning both fail", () => {
+  it("does not throw when auto-tune failure evidence and diagnostic console both fail", () => {
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === AUTO_TUNE_FAILURE_KEY) throw new Error("session blocked");
       return Reflect.apply(originalSetItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     mocks.setValue.mockImplementation(() => {
       throw new Error("auto-tune write blocked");
     });

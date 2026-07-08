@@ -10,6 +10,7 @@ import { STORAGE_KEYS } from "./persist-keys.js";
 import { g } from "./store.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "./battle-turn.js";
+import { recordAutoTuneDiagnostic, recordAutoTuneFailure } from "./auto-tune-diagnostics.js";
 
 const PAD_GRID = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0];
 const MIN_OBSERVATIONS = 5;
@@ -20,8 +21,6 @@ const EVENT_ROUND_STARTED = "roundStarted";
 const EVENT_RESET = "reset";
 const EVENT_READ_STATUS = "readStatus";
 
-export const AUTO_TUNE_FAILURE_KEY = "HVAA:lastAutoTuneFailure";
-
 export const AutoTuneEvent = Object.freeze({
   READ_PAD: EVENT_READ_PAD,
   RECORD_BATTLE: EVENT_RECORD_BATTLE,
@@ -31,30 +30,12 @@ export const AutoTuneEvent = Object.freeze({
   READ_STATUS: EVENT_READ_STATUS,
 });
 
+export { AUTO_TUNE_FAILURE_KEY } from "./auto-tune-diagnostics.js";
+
 function isAutoTuneEnabled() {
   return Boolean(
     runOptionAutomation({ type: OptionEvent.READ_FIELD, key: "autoTune", fallback: false })
   );
-}
-
-function recordAutoTuneFailure(stage, storageKey, error) {
-  const evidence = {
-    capability: "autoTune",
-    stage,
-    storageKey,
-    failure: { kind: "storageWrite", error: error?.message || String(error) },
-  };
-  try {
-    sessionStorage.setItem(AUTO_TUNE_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
-    // Auto-tune evidence is diagnostic only; battle flow must keep running.
-  }
-  try {
-    console.warn("[HVAA] auto-tune persistence failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
-  return evidence;
 }
 
 function persistAutoTuneValue(stage, storageKey, value) {
@@ -149,7 +130,7 @@ function maybeStep(history, pad, key) {
       STORAGE_KEYS.AUTO_TUNE_PAD,
       parseFloat(lowerKey)
     );
-    if (persisted) console.log(`[auto-tune] explore ${pad} → ${lowerKey}`);
+    if (persisted) recordAutoTuneDiagnostic("explore-lower-pad", { from: pad, to: lowerKey });
     return persisted;
   }
   if (upperKey && !history[upperKey]) {
@@ -158,7 +139,7 @@ function maybeStep(history, pad, key) {
       STORAGE_KEYS.AUTO_TUNE_PAD,
       parseFloat(upperKey)
     );
-    if (persisted) console.log(`[auto-tune] explore ${pad} → ${upperKey}`);
+    if (persisted) recordAutoTuneDiagnostic("explore-upper-pad", { from: pad, to: upperKey });
     return persisted;
   }
 
@@ -181,9 +162,11 @@ function maybeStep(history, pad, key) {
   if (next !== padNum) {
     const persisted = persistAutoTuneValue("step-pad", STORAGE_KEYS.AUTO_TUNE_PAD, next);
     if (!persisted) return false;
-    console.log(
-      `[auto-tune] safetyPad ${padNum} → ${next} (mean potions: cur=${meanCur.toFixed(1)}, L=${meanL.toFixed(1)}, U=${meanU.toFixed(1)})`
-    );
+    recordAutoTuneDiagnostic("step-pad", {
+      from: padNum,
+      to: next,
+      meanPotions: { current: meanCur, lower: meanL, upper: meanU },
+    });
   }
   return true;
 }

@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/auto-tune.js");
+const diagnostics = path.normalize("src/state/auto-tune-diagnostics.js");
 const ownerTest = path.normalize("src/state/auto-tune.test.js");
 const failureTest = path.normalize("src/state/auto-tune-failure.test.js");
 const persistKeys = path.normalize("src/state/persist-keys.js");
@@ -70,6 +71,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const diagnosticsText = fs.readFileSync(path.join(root, diagnostics), "utf8");
 const roundStartText = fs.readFileSync(path.join(root, roundStart), "utf8");
 const roundLifecycleText = fs.readFileSync(path.join(root, roundLifecycle), "utf8");
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
@@ -78,8 +80,8 @@ for (const required of [
   "runAutoTuneAutomation",
   "AutoTuneEvent",
   "autoTuneEventHandlers",
-  "AUTO_TUNE_FAILURE_KEY",
   "recordAutoTuneFailure",
+  "recordAutoTuneDiagnostic",
   "persistAutoTuneValue",
   "STORAGE_KEYS.AUTO_TUNE_PAD",
   "STORAGE_KEYS.AUTO_TUNE_HISTORY",
@@ -89,6 +91,20 @@ for (const required of [
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+
+for (const required of [
+  "AUTO_TUNE_FAILURE_KEY",
+  "recordAutoTuneFailure",
+  "recordAutoTuneDiagnostic",
+  "DiagnosticConsoleEvent.INFO",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
+  "sessionStorage.setItem",
+]) {
+  if (!diagnosticsText.includes(required)) {
+    violations.push(`${diagnostics.replaceAll("\\", "/")} must own ${required}`);
   }
 }
 
@@ -124,6 +140,16 @@ if ((ownerText.match(/\bsetValue\(/g) || []).length !== 1) {
     `${owner.replaceAll("\\", "/")} must route auto-tune writes through persistAutoTuneValue`
   );
 }
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} auto-tune diagnostics must use the typed diagnostic console entry`
+  );
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(diagnosticsText)) {
+  violations.push(
+    `${diagnostics.replaceAll("\\", "/")} auto-tune diagnostics must use the typed diagnostic console entry`
+  );
+}
 if (!ownerText.includes("return maybeStep(history, pad, key);")) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must report pad-step persistence failures from RECORD_BATTLE`
@@ -137,6 +163,7 @@ for (const required of [
   "pad write blocked",
   "storageWrite",
   "auto-tune write blocked",
+  "runDiagnosticConsoleAutomation",
 ]) {
   if (!failureTestText.includes(required)) {
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);

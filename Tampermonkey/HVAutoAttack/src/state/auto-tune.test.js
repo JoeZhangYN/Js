@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { AutoTuneEvent, runAutoTuneAutomation } from "./auto-tune.js";
 import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
@@ -6,8 +6,18 @@ import { g } from "./store.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "./battle-turn.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
 
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ INFO: "info", WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 beforeEach(() => {
   localStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   g("autoTunePotionCount", 0);
   runBattleTurnAutomation({ type: BattleTurnEvent.ROUND_STARTED });
   runOptionAutomation({ type: OptionEvent.WRITE, option: { version: "10.0", autoTune: true } });
@@ -29,6 +39,13 @@ describe("auto-tune safetyPad entry", () => {
       sumPotions: 10,
     });
     expect(readPad()).toBe(1.2);
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "info",
+      args: [
+        "[HVAA] auto-tune diagnostic",
+        expect.objectContaining({ capability: "autoTune", stage: "explore-lower-pad" }),
+      ],
+    });
   });
 
   it("resets drifted non-grid pad back to the default grid center", () => {

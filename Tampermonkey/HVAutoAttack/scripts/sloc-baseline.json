@@ -115,10 +115,6 @@
     "maxSloc": 152,
     "reason": "formatted baseline repair orchestration split debt"
   },
-  "state/auto-tune.js": {
-    "maxSloc": 162,
-    "reason": "formatted baseline auto-tune split debt"
-  },
   "state/big-skill-kill-learner.test.js": {
     "maxSloc": 154,
     "reason": "formatted baseline learner test verbosity"
