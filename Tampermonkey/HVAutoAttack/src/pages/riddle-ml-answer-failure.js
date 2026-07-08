@@ -1,4 +1,8 @@
 import { RiddleLogEvent, runRiddleLogAutomation } from "../state/riddle-log.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 export const RIDDLE_ML_ANSWER_FAILURE_KEY = "HVAA:lastRiddleMlAnswerFailure";
 
@@ -16,7 +20,7 @@ export function recordRiddleMlAnswerFailure(error) {
   };
   try {
     globalThis.sessionStorage?.setItem(RIDDLE_ML_ANSWER_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Random fallback must not depend on diagnostic storage.
   }
   try {
@@ -24,13 +28,12 @@ export function recordRiddleMlAnswerFailure(error) {
       type: RiddleLogEvent.PUSH,
       message: `ml answer failed error=${evidence.error} fallback=random`,
     });
-  } catch (_error) {
+  } catch {
     // Riddle log persistence is diagnostic only.
   }
-  try {
-    console.warn("[HVAA][RMA] ML answer promise rejected", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA][RMA] ML answer promise rejected", evidence],
+  });
   return evidence;
 }

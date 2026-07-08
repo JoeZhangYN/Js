@@ -1,8 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { RiddleImageEvent, runRiddleImageAutomation } from "./riddle-image.js";
 
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 afterEach(() => {
   sessionStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -51,6 +61,13 @@ describe("riddle image entry", () => {
     expect(sample.imageSrc).toBe("https://example.test/riddle.webp");
     expect(sample.imageDataUrl).toBeNull();
     expectImageFailure("capture-data-url");
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA][RMA] riddle image failed",
+        expect.objectContaining({ stage: "capture-data-url" }),
+      ],
+    });
   });
 
   it("returns null ML payload when the riddle image is absent", async () => {

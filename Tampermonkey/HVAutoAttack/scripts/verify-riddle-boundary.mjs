@@ -288,6 +288,8 @@ function checkRiddleSubmissionTiming() {
   const submitFailureText = fs.readFileSync(riddleSubmitFailureFile, "utf8");
   for (const required of [
     "RIDDLE_SUBMIT_FAILURE_KEY",
+    "DiagnosticConsoleEvent.WARN",
+    "runDiagnosticConsoleAutomation",
     "HVAA:lastRiddleSubmitFailure",
     "recordRiddleSubmitFailure",
     "[HVAA][riddle] submit failed",
@@ -299,9 +301,16 @@ function checkRiddleSubmissionTiming() {
   if (!/globalThis\.sessionStorage\?\.setItem\(RIDDLE_SUBMIT_FAILURE_KEY/.test(submitFailureText)) {
     violations.push(`${rel(riddleSubmitFailureFile)} must persist riddle submit failures`);
   }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(submitFailureText)) {
+    violations.push(
+      `${rel(riddleSubmitFailureFile)} must route riddle submit diagnostics through the typed diagnostic console entry`
+    );
+  }
   const answerFailureText = fs.readFileSync(riddleMlAnswerFailureFile, "utf8");
   for (const required of [
     "RIDDLE_ML_ANSWER_FAILURE_KEY",
+    "DiagnosticConsoleEvent.WARN",
+    "runDiagnosticConsoleAutomation",
     "HVAA:lastRiddleMlAnswerFailure",
     "recordRiddleMlAnswerFailure",
     "promiseRejected",
@@ -316,6 +325,11 @@ function checkRiddleSubmissionTiming() {
     !/globalThis\.sessionStorage\?\.setItem\(RIDDLE_ML_ANSWER_FAILURE_KEY/.test(answerFailureText)
   ) {
     violations.push(`${rel(riddleMlAnswerFailureFile)} must persist top-level ML answer failures`);
+  }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(answerFailureText)) {
+    violations.push(
+      `${rel(riddleMlAnswerFailureFile)} must route top-level ML answer diagnostics through the typed diagnostic console entry`
+    );
   }
   if (/\.catch\(\(\) => \{\}\)/.test(answerText)) {
     violations.push(`${rel(riddleAnswerFile)} must not swallow riddle answer promise failures`);
@@ -363,12 +377,12 @@ function checkRiddleSubmissionTiming() {
   );
   for (const required of [
     "records top-level ML answer rejection as project diagnostic evidence",
-    "keeps random fallback when evidence, log, and warning diagnostics fail",
+    "keeps random fallback when evidence, log, and typed warning diagnostics fail",
     "RIDDLE_ML_ANSWER_FAILURE_KEY",
     "promiseRejected",
     "session blocked",
     "log blocked",
-    "console blocked",
+    "runDiagnosticConsoleAutomation",
   ]) {
     if (!answerFailureTestText.includes(required)) {
       violations.push(`src/pages/riddle-ml-answer-failure.test.js must cover ${required}`);
@@ -520,6 +534,8 @@ function checkRiddleImageEntry() {
   }
   for (const required of [
     "RIDDLE_IMAGE_FAILURE_KEY",
+    "DiagnosticConsoleEvent.WARN",
+    "runDiagnosticConsoleAutomation",
     "HVAA:lastRiddleImageFailure",
     "recordRiddleImageFailure",
     "[HVAA][RMA] riddle image failed",
@@ -530,6 +546,11 @@ function checkRiddleImageEntry() {
   }
   if (!/globalThis\.sessionStorage\?\.setItem\(RIDDLE_IMAGE_FAILURE_KEY/.test(failureText)) {
     violations.push(`${rel(riddleImageFailureFile)} must persist riddle image failures`);
+  }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureText)) {
+    violations.push(
+      `${rel(riddleImageFailureFile)} must route riddle image diagnostics through the typed diagnostic console entry`
+    );
   }
   for (const required of [
     'recordRiddleImageFailure("capture-data-url"',

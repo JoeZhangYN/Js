@@ -4,7 +4,15 @@ import {
   recordRiddleMlAnswerFailure,
 } from "./riddle-ml-answer-failure.js";
 
-const mocks = vi.hoisted(() => ({ runRiddleLogAutomation: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+  runRiddleLogAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
 
 vi.mock("../state/riddle-log.js", () => ({
   RiddleLogEvent: Object.freeze({ PUSH: "push" }),
@@ -17,6 +25,7 @@ function lastFailure() {
 
 beforeEach(() => {
   sessionStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.runRiddleLogAutomation.mockReset();
 });
 
@@ -36,21 +45,28 @@ describe("recordRiddleMlAnswerFailure", () => {
       type: "push",
       message: "ml answer failed error=ml blocked fallback=random",
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA][RMA] ML answer promise rejected",
+        expect.objectContaining({
+          capability: "riddleMlAnswer",
+          reason: "promiseRejected",
+        }),
+      ],
+    });
   });
 
-  it("keeps random fallback when evidence, log, and warning diagnostics fail", () => {
+  it("keeps random fallback when evidence, log, and typed warning diagnostics fail", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("session blocked");
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     mocks.runRiddleLogAutomation.mockImplementation(() => {
       throw new Error("log blocked");
     });
 
     expect(() => recordRiddleMlAnswerFailure(new Error("ml blocked"))).not.toThrow();
-    console.warn.mockRestore();
     Storage.prototype.setItem.mockRestore();
   });
 });

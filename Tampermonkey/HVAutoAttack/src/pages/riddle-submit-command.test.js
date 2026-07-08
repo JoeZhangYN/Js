@@ -1,9 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { submitRiddleAnswerCommand } from "./riddle-submit-command.js";
 
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 afterEach(() => {
   document.body.innerHTML = "";
   sessionStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -42,20 +52,17 @@ describe("riddle submit command", () => {
   });
 
   it("records missing riddle form without claiming a submitted action", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-
     expect(submitRiddleAnswerCommand(["ra"])).toBe(false);
 
-    expect(warn).toHaveBeenCalledWith(
-      "[HVAA][riddle] submit failed",
-      expect.objectContaining({ stage: "missing-riddler" })
-    );
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: ["[HVAA][riddle] submit failed", expect.objectContaining({ stage: "missing-riddler" })],
+    });
     expectSubmitFailure("missing-riddler");
   });
 
   it("records click failures without throwing", () => {
     renderRiddleForm();
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.spyOn(HTMLButtonElement.prototype, "click").mockImplementation(() => {
       throw new Error("submit blocked");
     });
