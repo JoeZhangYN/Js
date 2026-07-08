@@ -111,10 +111,6 @@
     "maxSloc": 152,
     "reason": "formatted baseline riddle behavior test verbosity"
   },
-  "state/big-skill-kill-learner.test.js": {
-    "maxSloc": 154,
-    "reason": "formatted baseline learner test verbosity"
-  },
   "state/cd-learner.test.js": {
     "maxSloc": 157,
     "reason": "formatted baseline learner test verbosity"

@@ -15,7 +15,10 @@ import { g } from "./store.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
 import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
-import { persistLearnedBigKill } from "./big-skill-kill-learner-failure.js";
+import {
+  persistLearnedBigKill,
+  recordBigSkillKillLearningDiagnostic,
+} from "./big-skill-kill-learner-failure.js";
 import {
   normalizeLearnedMid,
   normalizeLearnedSkill,
@@ -123,7 +126,10 @@ function finalizeBigSkillPending(event) {
   if (!persistLearnedBigKill(learned)) return false;
   g("bigKillPending", null);
   if (isDynamicBigKillLogEnabled()) {
-    console.log(`[big-kill] settle ${pending.skill}:`, JSON.stringify(learned));
+    recordBigSkillKillLearningDiagnostic("settle", {
+      skill: pending.skill,
+      learned,
+    });
   }
   return true;
 }

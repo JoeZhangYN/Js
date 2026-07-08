@@ -1,5 +1,9 @@
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { setValue } from "./storage.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 export const BIG_SKILL_KILL_LEARNING_FAILURE_KEY = "HVAA:lastBigSkillKillLearningFailure";
 
@@ -11,15 +15,24 @@ export function recordBigSkillKillLearningFailure(stage, error) {
   };
   try {
     sessionStorage.setItem(BIG_SKILL_KILL_LEARNING_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Big-skill kill learning evidence is diagnostic only.
   }
-  try {
-    console.warn("[HVAA] big-skill kill learning persistence failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] big-skill kill learning persistence failed", evidence],
+  });
   return evidence;
+}
+
+export function recordBigSkillKillLearningDiagnostic(stage, detail) {
+  return runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.INFO,
+    args: [
+      "[HVAA] big-skill kill learning diagnostic",
+      { capability: "bigSkillKillLearning", stage, detail },
+    ],
+  });
 }
 
 export function persistLearnedBigKill(learned) {

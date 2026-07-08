@@ -145,22 +145,4 @@ describe("finalize 学击杀率 + ofcWillKillBoss 守卫", () => {
     ]);
     expect(mocks.runOptionAutomation).not.toHaveBeenCalled();
   });
-
-  it("日志开关通过 option entry 读取", () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    mocks.runOptionAutomation.mockReturnValue(true);
-
-    observe({ imperil: false, killed: true });
-
-    expect(mocks.runOptionAutomation).toHaveBeenCalledWith({
-      type: "readField",
-      key: "dynamicBigKillLog",
-      fallback: false,
-    });
-    expect(log).toHaveBeenCalledWith(
-      expect.stringContaining("[big-kill] settle OFC:"),
-      expect.any(String)
-    );
-    log.mockRestore();
-  });
 });

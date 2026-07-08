@@ -6,6 +6,7 @@ const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/big-skill-kill-learner.js");
 const failureOwner = path.normalize("src/state/big-skill-kill-learner-failure.js");
 const ownerTest = path.normalize("src/state/big-skill-kill-learner.test.js");
+const diagnosticTest = path.normalize("src/state/big-skill-kill-learner-diagnostic.test.js");
 const failureTest = path.normalize("src/state/big-skill-kill-learner-failure.test.js");
 const ownerNormalizationTest = path.normalize(
   "src/state/big-skill-kill-learner-normalization.test.js"
@@ -37,6 +38,7 @@ function checkFile(file) {
       relative !== owner &&
       relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== diagnosticTest &&
       relative !== failureTest &&
       /from\s+["'](?:\.\/|\.\.\/\.\.\/state\/|\.\.\/state\/)big-skill-kill-learner\.js["']/.test(
         line
@@ -49,6 +51,7 @@ function checkFile(file) {
       relative !== owner &&
       relative !== failureOwner &&
       relative !== ownerTest &&
+      relative !== diagnosticTest &&
       relative !== failureTest &&
       relative !== ownerNormalizationTest &&
       relative !== persistKeys &&
@@ -111,6 +114,7 @@ for (const required of [
   "normalizeLearnedSkill",
   "readLearnedBigKillMap",
   "persistLearnedBigKill",
+  "recordBigSkillKillLearningDiagnostic",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -207,6 +211,7 @@ if (!ownerText.includes("const bigSkillKillLearningEventHandlers")) {
 const ownerEntry =
   ownerText.match(/export function runBigSkillKillLearningAutomation[\s\S]*?\n}/)?.[0] || "";
 const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
+const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 const failureOwnerText = fs.readFileSync(path.join(root, failureOwner), "utf8");
 const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
 if (/if\s*\(\s*event\.type\s*===/.test(ownerEntry)) {
@@ -229,10 +234,25 @@ for (const internal of ["recordBigSkillCast(", "finalizeBigSkillPending(", "ofcW
 if (!/runBigSkillKillLearningAutomation\(null\)/.test(ownerTestText)) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null big-skill kill events`);
 }
+for (const required of [
+  "routes dynamic settle diagnostics through the typed console entry",
+  "dynamicBigKillLog",
+  "runDiagnosticConsoleAutomation",
+  "big-skill kill learning diagnostic",
+]) {
+  if (!diagnosticTestText.includes(required)) {
+    violations.push(`${diagnosticTest.replaceAll("\\", "/")} must cover ${required}`);
+  }
+}
 
 if ((ownerText.match(/\bsetValue\(/g) || []).length !== 0) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not write learned big-kill storage directly`
+  );
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} big-skill kill learning diagnostics must use the typed diagnostic console entry`
   );
 }
 if (
@@ -250,17 +270,27 @@ for (const required of [
   "recordBigSkillKillLearningFailure",
   "bigSkillKillLearning",
   "persistLearnedBigKill",
+  "recordBigSkillKillLearningDiagnostic",
+  "DiagnosticConsoleEvent.INFO",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   "STORAGE_KEYS.LEARNED_BIG_KILL",
 ]) {
   if (!failureOwnerText.includes(required)) {
     violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureOwnerText)) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} big-skill kill learning diagnostics must use the typed diagnostic console entry`
+  );
+}
 for (const required of [
   "BIG_SKILL_KILL_LEARNING_FAILURE_KEY",
   "update-learned",
   "storageWrite",
   "big-kill learning write blocked",
+  "runDiagnosticConsoleAutomation",
 ]) {
   if (!failureTestText.includes(required)) {
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);

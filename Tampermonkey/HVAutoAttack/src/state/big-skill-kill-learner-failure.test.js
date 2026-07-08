@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   setValue: vi.fn(),
   runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ INFO: "info", WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("./storage.js", async () => {
@@ -33,6 +39,7 @@ beforeEach(() => {
   window.sessionStorage.clear();
   vi.restoreAllMocks();
   mocks.setValue.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue(false);
   g("bigKillPending", null);
@@ -49,7 +56,6 @@ function settleWithFailingStorage() {
 
 describe("big-skill kill learning persistence failures", () => {
   it("does not report learned big-kill success when storage write fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.setValue.mockImplementation(() => {
       throw new Error("big-kill learning write blocked");
     });
@@ -63,18 +69,23 @@ describe("big-skill kill learning persistence failures", () => {
       stage: "update-learned",
       failure: { kind: "storageWrite", error: "big-kill learning write blocked" },
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] big-skill kill learning persistence failed",
+        expect.objectContaining({ capability: "bigSkillKillLearning", stage: "update-learned" }),
+      ],
+    });
     expect(g("bigKillPending")).toEqual(pending);
   });
 
-  it("does not throw when big-kill learning failure evidence and warning both fail", () => {
+  it("does not throw when big-kill learning failure evidence and diagnostic console both fail", () => {
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === BIG_SKILL_KILL_LEARNING_FAILURE_KEY) throw new Error("session blocked");
       return Reflect.apply(originalSetItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     mocks.setValue.mockImplementation(() => {
       throw new Error("big-kill learning write blocked");
     });
