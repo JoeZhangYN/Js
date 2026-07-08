@@ -1939,16 +1939,19 @@ try {
   };
   var HVUT_FEEDBACK_EVENT = Object.freeze({
     PROMPT_EQUIP_FORUM_LINK: 'promptEquipForumLink',
+    PROMPT_SETTINGS_NAME: 'promptSettingsName',
   });
   var HVUT_FEEDBACK_COPY = Object.freeze({
     equipForumLinkPrompt: { main: '论坛链接:', isekai: 'Forum Link:' },
+    settingsNamePrompt: { main: '输入方案名称', isekai: 'Enter the name of the settings' },
   });
   var resolve_hvut_feedback_copy = function (key) {
     var copy = HVUT_FEEDBACK_COPY[key] || {};
     return IS_ISEKAI ? (copy.isekai || copy.main || '') : (copy.main || copy.isekai || '');
   };
   var run_hvut_user_feedback = function (event) {
-    if (event?.type === HVUT_FEEDBACK_EVENT.PROMPT_EQUIP_FORUM_LINK) {
+    if (event?.type === HVUT_FEEDBACK_EVENT.PROMPT_EQUIP_FORUM_LINK ||
+      event?.type === HVUT_FEEDBACK_EVENT.PROMPT_SETTINGS_NAME) {
       return prompt(resolve_hvut_feedback_copy(event.copy), event.value);
     }
   };
@@ -1961,6 +1964,13 @@ try {
       copy: 'equipForumLinkPrompt',
       value: render_hvut_equip_forum_link(eq, label),
     });
+  };
+  var prompt_hvut_settings_name = function (defaultValue) {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.PROMPT_SETTINGS_NAME,
+      copy: 'settingsNamePrompt',
+      value: defaultValue,
+    })?.trim();
   };
   var create_hvut_current_page_disable_url = function () {
     return location.href + '&hvut=disabled';
@@ -8304,7 +8314,7 @@ if (characterPage.isSettings) {
   };
 
   _se.save = function () {
-    const name = prompt('Enter the name of the settings')?.trim();
+    const name = prompt_hvut_settings_name();
     if (!name) {
       return;
     }
@@ -13694,7 +13704,7 @@ if (characterPage.isEquipment) {
     },
     name: function (key = _eq.prof.current) {
       const data = _eq.prof.get(key);
-      const name = prompt('输入方案名称', data.values.name)?.trim();
+      const name = prompt_hvut_settings_name(data.values.name);
       if (!name) {
         return;
       }
@@ -14385,7 +14395,7 @@ if (characterPage.isSettings) {
     $input(['button', 'x'], _se.div, { dataset: { action: 'remove', key: name }, className: 'hvut-se-remove' });
   };
   _se.save = function () {
-    const name = prompt('输入方案名称')?.trim();
+    const name = prompt_hvut_settings_name();
     if (!name) {
       return;
     }

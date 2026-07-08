@@ -75,6 +75,7 @@ const commands = [
   "node scripts/verify-hvut-hvaa-config-bridge-boundary.mjs",
   "node scripts/verify-hvut-page-url-boundary.mjs",
   "node scripts/verify-hvut-equip-forum-feedback-boundary.mjs",
+  "node scripts/verify-hvut-settings-name-feedback-boundary.mjs",
   "node scripts/verify-no-raw-reload.mjs",
   "node scripts/verify-navigation-boundary.mjs",
   "node scripts/verify-time-boundary.mjs",
