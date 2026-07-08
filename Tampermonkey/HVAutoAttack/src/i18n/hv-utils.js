@@ -1937,6 +1937,31 @@ try {
     var relative = `equip/${eid}/${key}`;
     return context?.absolute ? `${location.origin}${location.pathname}${relative}` : relative;
   };
+  var HVUT_FEEDBACK_EVENT = Object.freeze({
+    PROMPT_EQUIP_FORUM_LINK: 'promptEquipForumLink',
+  });
+  var HVUT_FEEDBACK_COPY = Object.freeze({
+    equipForumLinkPrompt: { main: '论坛链接:', isekai: 'Forum Link:' },
+  });
+  var resolve_hvut_feedback_copy = function (key) {
+    var copy = HVUT_FEEDBACK_COPY[key] || {};
+    return IS_ISEKAI ? (copy.isekai || copy.main || '') : (copy.main || copy.isekai || '');
+  };
+  var run_hvut_user_feedback = function (event) {
+    if (event?.type === HVUT_FEEDBACK_EVENT.PROMPT_EQUIP_FORUM_LINK) {
+      return prompt(resolve_hvut_feedback_copy(event.copy), event.value);
+    }
+  };
+  var render_hvut_equip_forum_link = function (eq, label) {
+    return `[url=${create_hvut_equip_page_url(eq, { absolute: true })}]${label}[/url]`;
+  };
+  var prompt_hvut_equip_forum_link = function (eq, label) {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.PROMPT_EQUIP_FORUM_LINK,
+      copy: 'equipForumLinkPrompt',
+      value: render_hvut_equip_forum_link(eq, label),
+    });
+  };
   var create_hvut_current_page_disable_url = function () {
     return location.href + '&hvut=disabled';
   };
@@ -7245,10 +7270,10 @@ if ($config.settings.equipHoverFunctions) {
       if (key === 'V') {
         openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
       } else if (key === 'L') {
-        prompt('Forum Link:', `[url=${create_hvut_equip_page_url(eq, { absolute: true })}]${eq.info.name}[/url]`);
+        prompt_hvut_equip_forum_link(eq, eq.info.name);
       } else if (key === 'K') {
         $equip.namecode(eq);
-        prompt('Forum Link:', `[url=${create_hvut_equip_page_url(eq, { absolute: true })}]${eq.data.namecode}[/url]`);
+        prompt_hvut_equip_forum_link(eq, eq.data.namecode);
       }
     }
   });
@@ -12758,10 +12783,10 @@ if ($config.settings.equipHoverFunctions) {
       if (key === 'V') {
         openUrl(create_hvut_equip_page_url(eq), hvutRedirectReason('HV_UTILS_EQUIP_POPUP'), true);
       } else if (key === 'L') {
-        prompt('论坛链接:', `[url=${create_hvut_equip_page_url(eq, { absolute: true })}]${eq.info.name}[/url]`);
+        prompt_hvut_equip_forum_link(eq, eq.info.name);
       } else if (key === 'K') {
         $equip.namecode(eq);
-        prompt('论坛链接:', `[url=${create_hvut_equip_page_url(eq, { absolute: true })}]${eq.data.namecode}[/url]`);
+        prompt_hvut_equip_forum_link(eq, eq.data.namecode);
       }
     }
   });
