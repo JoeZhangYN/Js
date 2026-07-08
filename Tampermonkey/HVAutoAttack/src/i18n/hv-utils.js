@@ -1943,6 +1943,7 @@ try {
     CONFIRM_MONSTER_UPGRADE: 'confirmMonsterUpgrade',
     CONFIRM_MOOGLEMAIL_ATTACHMENT_TAKE: 'confirmMoogleMailAttachmentTake',
     CONFIRM_MOOGLEMAIL_MESSAGE_RETURN: 'confirmMoogleMailMessageReturn',
+    CONFIRM_MOOGLEMAIL_DB_CLEAR: 'confirmMoogleMailDbClear',
   });
   var HVUT_FEEDBACK_COPY = Object.freeze({
     equipForumLinkPrompt: { main: '论坛链接:', isekai: 'Forum Link:' },
@@ -1955,6 +1956,10 @@ try {
     moogleMailMessageReturnConfirm: {
       main: '这将把消息退回给发送者.\n确定吗?',
       isekai: '这会将邮件退回给发件人。\n确定吗？',
+    },
+    moogleMailDbClearConfirm: {
+      main: '在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？',
+      isekai: '在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？',
     },
   });
   var resolve_hvut_feedback_copy = function (key) {
@@ -1975,7 +1980,8 @@ try {
     }
     if (event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE ||
       event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_ATTACHMENT_TAKE ||
-      event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_MESSAGE_RETURN) {
+      event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_MESSAGE_RETURN ||
+      event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_DB_CLEAR) {
       return confirm(format_hvut_feedback_copy(event.copy, event.values));
     }
   };
@@ -2013,6 +2019,12 @@ try {
     return run_hvut_user_feedback({
       type: HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_MESSAGE_RETURN,
       copy: 'moogleMailMessageReturnConfirm',
+    });
+  };
+  var confirm_hvut_mooglemail_db_clear = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_DB_CLEAR,
+      copy: 'moogleMailDbClearConfirm',
     });
   };
   var create_hvut_current_page_disable_url = function () {
@@ -11491,7 +11503,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
         }
       },
       clear: async function () {
-        if (confirm('在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？')) {
+        if (confirm_hvut_mooglemail_db_clear()) {
           const season = _mm.search.node.season?.value || _mm.db.season;
           const conn = _mm.db.conn('readwrite', season);
           const stage = 'dbClear';
@@ -17399,7 +17411,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
         }
       },
       clear: async function () {
-        if (confirm('在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？')) {
+        if (confirm_hvut_mooglemail_db_clear()) {
           const season = _mm.node.search_season?.value || _mm.db.season;
           const conn = _mm.db.conn('readwrite', season);
           const stage = 'legacyDbClear';
