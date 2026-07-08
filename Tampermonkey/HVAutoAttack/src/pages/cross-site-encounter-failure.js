@@ -1,3 +1,7 @@
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { setValue } from "../state/storage.js";
 
@@ -7,14 +11,13 @@ export function recordCrossSiteEncounterFailure(stage, failure) {
   const evidence = { capability: "crossSiteEncounter", stage, failure };
   try {
     sessionStorage.setItem(CROSS_SITE_ENCOUNTER_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Cross-site encounter failure evidence is diagnostic only.
   }
-  try {
-    console.warn("[HVAA] cross-site encounter failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] cross-site encounter failed", evidence],
+  });
   return evidence;
 }
 

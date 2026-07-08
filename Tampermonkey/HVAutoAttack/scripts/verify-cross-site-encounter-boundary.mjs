@@ -76,6 +76,8 @@ function checkEntry() {
   }
   for (const required of [
     "CROSS_SITE_ENCOUNTER_FAILURE_KEY",
+    "DiagnosticConsoleEvent.WARN",
+    "runDiagnosticConsoleAutomation",
     "HVAA:lastCrossSiteEncounterFailure",
     "persistCrossSiteReturnOrigin",
     "recordCrossSiteEncounterFailure",
@@ -85,6 +87,11 @@ function checkEntry() {
     if (!failureText.includes(required)) {
       violations.push(`${rel(failureFile)} must own ${required}`);
     }
+  }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureText)) {
+    violations.push(
+      `${rel(failureFile)} must route cross-site encounter diagnostics through the typed diagnostic console entry`
+    );
   }
   const testText = fs.readFileSync(entryTestFile, "utf8");
   if (
@@ -97,7 +104,7 @@ function checkEntry() {
   const failureTestText = fs.readFileSync(failureTestFile, "utf8");
   for (const required of [
     "records return-origin persistence failures without blocking game-page flow",
-    "does not throw when return-origin failure evidence and warning both fail",
+    "does not throw when return-origin failure evidence and typed warning both fail",
     "CROSS_SITE_ENCOUNTER_FAILURE_KEY",
     "return origin write blocked",
     "storageWrite",

@@ -7,8 +7,14 @@ import { CROSS_SITE_ENCOUNTER_FAILURE_KEY } from "./cross-site-encounter-failure
 import { PageKind } from "./page-kind.js";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   getValue: vi.fn(),
   setValue: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("../state/storage.js", () => ({
@@ -25,8 +31,7 @@ function lastFailure() {
 }
 
 beforeEach(() => {
-  mocks.getValue.mockReset();
-  mocks.setValue.mockReset();
+  for (const fn of Object.values(mocks)) fn.mockReset();
   sessionStorage.clear();
 });
 
@@ -52,15 +57,23 @@ describe("cross-site encounter return-origin failure", () => {
         error: "return origin write blocked",
       },
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] cross-site encounter failed",
+        expect.objectContaining({
+          capability: "crossSiteEncounter",
+          stage: "persist-return-origin",
+        }),
+      ],
+    });
   });
 
-  it("does not throw when return-origin failure evidence and warning both fail", () => {
+  it("does not throw when return-origin failure evidence and typed warning both fail", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("session blocked");
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     mocks.setValue.mockImplementation(() => {
       throw new Error("return origin write blocked");
     });
@@ -70,7 +83,6 @@ describe("cross-site encounter return-origin failure", () => {
         origin: () => "https://alt.hentaiverse.org",
       })
     ).not.toThrow();
-    console.warn.mockRestore();
     Storage.prototype.setItem.mockRestore();
   });
 });
