@@ -1,27 +1,28 @@
+/* global battleApiScriptDiagnosticEvent, runBattleApiScriptDiagnosticConsole */
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import { injectBattleApiScriptDiagnostics } from "./battle-api-script-diagnostics.js";
 
 export function buildApiCallScript(apiJsonUrl, protocol) {
-  return `api_call = ${function (b, a, d) {
+  const script = `api_call = ${function (b, a, d) {
+    "__HVAA_BATTLE_API_SCRIPT_DIAGNOSTICS__";
     const delay = window.sessionStorage.__HVAA_MAGIC_DELAY_SESSION_KEY__ * 1;
     const delay2 = window.sessionStorage.__HVAA_ACTION_DELAY_SESSION_KEY__ * 1;
     const apiJsonUrl =
       typeof MAIN_URL !== "undefined" ? MAIN_URL + "json" : "__HVAA_MAIN_JSON_URL__";
     const apiBridgeEvidenceKey = "__HVAA_BATTLE_API_BRIDGE_EVIDENCE_KEY__";
     function warnApiBridgeEvidence(evidence) {
-      try {
-        console.warn("[HVAA] battle API bridge event node", evidence);
-      } catch (_error) {
-        // API bridge behavior must not depend on diagnostic console hooks.
-      }
+      runBattleApiScriptDiagnosticConsole({
+        type: battleApiScriptDiagnosticEvent.WARN,
+        args: ["[HVAA] battle API bridge event node", evidence],
+      });
+      // API bridge behavior must not depend on diagnostic console hooks.
     }
     function warnCallbackFallbackBlocked() {
-      try {
-        console.warn(
-          "[HVAA] battle API callback fallback reload blocked; navigation bridge missing"
-        );
-      } catch (_error) {
-        // Callback fallback behavior must not depend on diagnostic console hooks.
-      }
+      runBattleApiScriptDiagnosticConsole({
+        type: battleApiScriptDiagnosticEvent.WARN,
+        args: ["[HVAA] battle API callback fallback reload blocked; navigation bridge missing"],
+      });
+      // Callback fallback behavior must not depend on diagnostic console hooks.
     }
     function recordApiBridgeEventNode(phase, nodeId, result, detail) {
       const evidence = {
@@ -139,4 +140,5 @@ export function buildApiCallScript(apiJsonUrl, protocol) {
     .replaceAll("__HVAA_ACTION_END_EVENT_NODE_ID__", protocol.actionEndEventNodeId)
     .replaceAll("__HVAA_MAGIC_DELAY_SESSION_KEY__", protocol.magicDelaySessionKey)
     .replaceAll("__HVAA_ACTION_DELAY_SESSION_KEY__", protocol.actionDelaySessionKey);
+  return injectBattleApiScriptDiagnostics(script);
 }

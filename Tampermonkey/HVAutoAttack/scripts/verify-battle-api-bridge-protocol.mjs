@@ -14,6 +14,7 @@ const transportFailureTest = path.normalize(
 );
 const apiCallScript = path.normalize("src/battle/battle-api-call-script.js");
 const responseScript = path.normalize("src/battle/battle-api-response-script.js");
+const apiScriptDiagnostics = path.normalize("src/battle/battle-api-script-diagnostics.js");
 const responseScriptTest = path.normalize("src/battle/battle-api-response-script.test.js");
 const responseScriptDiagnosticsTest = path.normalize(
   "src/battle/battle-api-response-script-diagnostics.test.js"
@@ -98,6 +99,10 @@ const ownerText = requireText(owner, [
 ]);
 const apiCallScriptText = requireText(apiCallScript, [
   "buildApiCallScript",
+  "injectBattleApiScriptDiagnostics",
+  "__HVAA_BATTLE_API_SCRIPT_DIAGNOSTICS__",
+  "runBattleApiScriptDiagnosticConsole",
+  "battleApiScriptDiagnosticEvent.WARN",
   "__HVAA_ACTION_START_EVENT_NODE_ID__",
   "__HVAA_ACTION_END_EVENT_NODE_ID__",
   "__HVAA_MAGIC_DELAY_SESSION_KEY__",
@@ -125,6 +130,14 @@ const apiCallScriptText = requireText(apiCallScript, [
   "eventNodeMissing",
   "eventNodeClickFailed",
   "DiagnosticEvidenceKey.BATTLE_API_BRIDGE",
+]);
+const apiScriptDiagnosticsText = requireText(apiScriptDiagnostics, [
+  "BATTLE_API_SCRIPT_DIAGNOSTICS_PLACEHOLDER",
+  "buildBattleApiScriptDiagnosticsSource",
+  "injectBattleApiScriptDiagnostics",
+  "battleApiScriptDiagnosticEvent",
+  "runBattleApiScriptDiagnosticConsole",
+  "pageConsole?.[method]?.(...(event.args || []))",
 ]);
 requireText(owner, [
   "buildApiResponseScript",
@@ -216,6 +229,10 @@ requireText(transportFailureTest, [
 const responseScriptText = requireText(responseScript, [
   "DiagnosticEvidenceKey",
   "API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES",
+  "injectBattleApiScriptDiagnostics",
+  "__HVAA_BATTLE_API_SCRIPT_DIAGNOSTICS__",
+  "runBattleApiScriptDiagnosticConsole",
+  "battleApiScriptDiagnosticEvent.WARN",
   "buildApiResponseScript",
   "window.HVAA_battleApiRecovery",
   "recovery.handleRejectedResponse",
@@ -238,6 +255,12 @@ const responseScriptText = requireText(responseScript, [
   "world: worldContext",
   'responseKind: "httpStatus"',
 ]);
+if (/\bconsole\.warn\s*\(/.test(apiCallScriptText + "\n" + responseScriptText)) {
+  violations.push("battle API page-context scripts must use the shared typed diagnostics helper");
+}
+if (/\bconsole\.warn\s*\(/.test(apiScriptDiagnosticsText)) {
+  violations.push("battle API script diagnostics helper must dispatch by typed method");
+}
 requireText(diagnosticEvidenceKeys, [
   "DIAGNOSTIC_EVIDENCE_SOURCES",
   "API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES",

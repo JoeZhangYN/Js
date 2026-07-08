@@ -1,10 +1,13 @@
+/* global battleApiScriptDiagnosticEvent, runBattleApiScriptDiagnosticConsole */
 import {
   API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES,
   DiagnosticEvidenceKey,
 } from "../core/diagnostic-evidence-keys.js";
+import { injectBattleApiScriptDiagnostics } from "./battle-api-script-diagnostics.js";
 
 export function buildApiResponseScript(worldContext) {
-  return `api_response = ${function (b) {
+  const script = `api_response = ${function (b) {
+    "__HVAA_BATTLE_API_SCRIPT_DIAGNOSTICS__";
     const worldContext = __HVAA_BATTLE_API_WORLD_CONTEXT__;
     const recoverySessionKey = "__HVAA_BATTLE_API_RECOVERY_SESSION_KEY__";
     const diagnosticEvidenceKeys = __HVAA_DIAGNOSTIC_EVIDENCE_KEYS__;
@@ -25,11 +28,11 @@ export function buildApiResponseScript(worldContext) {
       }
     }
     function warnBlockedRecovery(warning, detail) {
-      try {
-        console.warn(warning, detail);
-      } catch (_error) {
-        // API response recovery must not depend on diagnostic console hooks.
-      }
+      runBattleApiScriptDiagnosticConsole({
+        type: battleApiScriptDiagnosticEvent.WARN,
+        args: [warning, detail],
+      });
+      // API response recovery must not depend on diagnostic console hooks.
     }
     function readJson(key) {
       try {
@@ -136,4 +139,5 @@ export function buildApiResponseScript(worldContext) {
       "__HVAA_DIAGNOSTIC_EVIDENCE_KEYS__",
       JSON.stringify(API_RESPONSE_SCRIPT_DIAGNOSTIC_EVIDENCE_SOURCES)
     );
+  return injectBattleApiScriptDiagnostics(script);
 }
