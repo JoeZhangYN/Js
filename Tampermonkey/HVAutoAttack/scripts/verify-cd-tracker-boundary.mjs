@@ -62,6 +62,8 @@ for (const required of [
   "READ_GLOBAL_TURN",
   "CD_RUNTIME_FAILURE_KEY",
   "recordCdRuntimeFailure",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   "storageWrite",
 ]) {
   if (!ownerText.includes(required)) {
@@ -81,6 +83,11 @@ if (/g\(\s*["']globalTurn["']\s*\)\s*\|\|\s*0/.test(ownerText)) {
 if (/g\(\s*["']skillLastUsed["']\s*\)\s*\|\|\s*\{\}/.test(ownerText)) {
   violations.push(
     `${owner.replaceAll("\\", "/")} must not read raw skillLastUsed with || fallback`
+  );
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} CD runtime diagnostics must use the typed diagnostic console entry`
   );
 }
 
@@ -159,11 +166,11 @@ if (!fs.existsSync(path.join(root, failureTest))) {
   const failureTestText = fs.readFileSync(path.join(root, failureTest), "utf8");
   for (const required of [
     "does not report CD runtime persistence success when storage writes fail",
-    "does not throw when CD runtime failure evidence and warning both fail",
+    "does not throw when CD runtime failure evidence and diagnostic console both fail",
     "CD_RUNTIME_FAILURE_KEY",
     "cd runtime write blocked",
     "session blocked",
-    "console blocked",
+    "runDiagnosticConsoleAutomation",
     "storageWrite",
   ]) {
     if (!failureTestText.includes(required)) {

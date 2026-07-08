@@ -10,6 +10,10 @@ import { setValue, getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { SKILL_REGISTRY, effectiveSkillId } from "./skill-registry.js";
 import { CdLearningEvent, runCdLearningAutomation } from "./cd-learner.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 // SKILL_REGISTRY / effectiveSkillId 已抽到 skill-registry.js（打破 cd-tracker ↔ cd-learner 环）。
 // 为兼容既有 import 路径（如有），此处转出口。
@@ -66,14 +70,13 @@ function recordCdRuntimeFailure(stage, error) {
   };
   try {
     sessionStorage.setItem(CD_RUNTIME_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // CD runtime persistence failure evidence must not block battle flow.
   }
-  try {
-    console.warn("[HVAA] CD runtime failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] CD runtime failed", evidence],
+  });
   return evidence;
 }
 
