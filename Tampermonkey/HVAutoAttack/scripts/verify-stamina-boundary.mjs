@@ -59,6 +59,9 @@ const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
 for (const required of [
   "runStaminaAutomation",
   "StaminaEvent",
+  "DiagnosticConsoleEvent",
+  "runDiagnosticConsoleAutomation",
+  "DiagnosticConsoleEvent.WARN",
   "OptionEvent.READ_FIELD",
   "CLAIM_RECOVERY",
   "STAMINA_RECOVERY_POST_BODY",
@@ -70,12 +73,17 @@ for (const required of [
   "sessionStorage.setItem(STAMINA_RECOVERY_FAILURE_KEY",
   "[HVAA] stamina recovery request failed",
   "Stamina recovery fallback must not depend on diagnostic storage.",
-  "Console hooks must not block stamina recovery failure handling.",
   "NavigationEvent.RELOAD_NOW",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+
+if (/\bconsole\.(?:warn|error|log|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} stamina diagnostics must use runDiagnosticConsoleAutomation(event)`
+  );
 }
 
 if (!/const\s+STAMINA_RECOVERY_POST_BODY\s*=\s*"recover=stamina"/.test(ownerText)) {
@@ -136,7 +144,8 @@ for (const required of [
   "STAMINA_RECOVERY_FAILURE_KEY",
   "HVAA:lastStaminaRecoveryFailure",
   "session blocked",
-  "console blocked",
+  "runDiagnosticConsoleAutomation",
+  "mockImplementation(() => false)",
   "claimRecoveryPost",
   'kind: "networkError"',
   "runNavigationAutomation).not.toHaveBeenCalled()",

@@ -9,6 +9,10 @@ import {
   NavigationReloadReason,
   runNavigationAutomation,
 } from "../core/navigate.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
 
 const EVENT_READ_VALUE = "readValue";
@@ -83,14 +87,13 @@ function recordStaminaRecoveryFailure(failure) {
   };
   try {
     sessionStorage.setItem(STAMINA_RECOVERY_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Stamina recovery fallback must not depend on diagnostic storage.
   }
-  try {
-    console.warn("[HVAA] stamina recovery request failed", evidence);
-  } catch (_error) {
-    // Console hooks must not block stamina recovery failure handling.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] stamina recovery request failed", evidence],
+  });
   return evidence;
 }
 

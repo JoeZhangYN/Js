@@ -3,11 +3,16 @@ import { STAMINA_RECOVERY_FAILURE_KEY, StaminaEvent, runStaminaAutomation } from
 
 const mocks = vi.hoisted(() => ({
   post: vi.fn(),
+  runDiagnosticConsoleAutomation: vi.fn(),
   runNavigationAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
 }));
 
 vi.mock("../dom/http.js", () => ({ post: mocks.post }));
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
 vi.mock("../core/navigate.js", () => ({
   NavigationEvent: Object.freeze({ RELOAD_NOW: "reloadNow" }),
   NavigationReloadReason: Object.freeze({ STAMINA_RECOVERY: "staminaRecovery" }),
@@ -29,6 +34,7 @@ beforeEach(() => {
   sessionStorage.clear();
   window.history.replaceState(null, "", "/battle");
   mocks.post.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.runNavigationAutomation.mockReset();
   mocks.runOptionAutomation.mockReset();
   vi.restoreAllMocks();
@@ -116,8 +122,6 @@ describe("stamina entry", () => {
   });
 
   it("records stamina recovery POST failures without claiming reload success", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-
     expect(runStaminaAutomation({ type: StaminaEvent.CLAIM_RECOVERY })).toBe(true);
 
     const failure = mocks.post.mock.calls[0][4];
@@ -130,19 +134,20 @@ describe("stamina entry", () => {
       stage: "claimRecoveryPost",
       failure: { kind: "networkError", href: "/battle", attempts: 4 },
     });
-    expect(warn).toHaveBeenCalledWith(
-      "[HVAA] stamina recovery request failed",
-      expect.objectContaining({
-        capability: "staminaRecovery",
-        stage: "claimRecoveryPost",
-      })
-    );
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] stamina recovery request failed",
+        expect.objectContaining({
+          capability: "staminaRecovery",
+          stage: "claimRecoveryPost",
+        }),
+      ],
+    });
   });
 
   it("keeps stamina recovery failure handling when diagnostics are blocked", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === STAMINA_RECOVERY_FAILURE_KEY) throw new Error("session blocked");
