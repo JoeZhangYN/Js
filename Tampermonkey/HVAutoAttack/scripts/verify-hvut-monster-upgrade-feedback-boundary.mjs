@@ -8,12 +8,19 @@ const violations = [];
 
 const requiredSnippets = [
   "CONFIRM_MONSTER_UPGRADE: 'confirmMonsterUpgrade'",
+  "ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE: 'alertMonsterUpgradeStockShortage'",
   "monsterUpgradeConfirm: { main: '确定要升级选中的怪物吗?', isekai: '确定要升级所选的怪物吗？' }",
+  "monsterUpgradeStockShortageAlert: {\n      main: '水晶或混沌令牌不足',\n      isekai: '水晶或混沌令牌不足',\n    }",
   "event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE",
   "return confirm(format_hvut_feedback_copy(event.copy, event.values));",
+  "event?.type === HVUT_FEEDBACK_EVENT.ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE",
+  "alert(format_hvut_feedback_copy(event.copy, event.values));",
   "var confirm_hvut_monster_upgrade = function () {",
   "type: HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE",
   "copy: 'monsterUpgradeConfirm'",
+  "var alert_hvut_monster_upgrade_stock_shortage = function () {",
+  "type: HVUT_FEEDBACK_EVENT.ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE",
+  "copy: 'monsterUpgradeStockShortageAlert'",
 ];
 
 for (const snippet of requiredSnippets) {
@@ -27,12 +34,19 @@ if (helperCalls !== 2) {
   violations.push(`${target} must keep exactly two Monster Lab upgrade confirmation call sites`);
 }
 
+const alertHelperCalls = [...text.matchAll(/\balert_hvut_monster_upgrade_stock_shortage\(\)/g)]
+  .length;
+if (alertHelperCalls !== 2) {
+  violations.push(`${target} must keep exactly two Monster Lab stock-shortage alert call sites`);
+}
+
 for (const retired of [
   "confirm('确定要升级所选的怪物吗？')",
   "confirm('确定要升级选中的怪物吗?')",
+  "alert('水晶或混沌令牌不足')",
 ]) {
   if (text.includes(retired)) {
-    violations.push(`${target} must retire raw Monster Lab upgrade confirmation: ${retired}`);
+    violations.push(`${target} must retire raw Monster Lab upgrade feedback: ${retired}`);
   }
 }
 

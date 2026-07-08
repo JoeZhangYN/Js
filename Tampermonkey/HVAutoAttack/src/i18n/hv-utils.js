@@ -1944,6 +1944,7 @@ try {
     CONFIRM_MOOGLEMAIL_ATTACHMENT_TAKE: 'confirmMoogleMailAttachmentTake',
     CONFIRM_MOOGLEMAIL_MESSAGE_RETURN: 'confirmMoogleMailMessageReturn',
     CONFIRM_MOOGLEMAIL_DB_CLEAR: 'confirmMoogleMailDbClear',
+    ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE: 'alertMonsterUpgradeStockShortage',
   });
   var HVUT_FEEDBACK_COPY = Object.freeze({
     equipForumLinkPrompt: { main: '论坛链接:', isekai: 'Forum Link:' },
@@ -1960,6 +1961,10 @@ try {
     moogleMailDbClearConfirm: {
       main: '在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？',
       isekai: '在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？',
+    },
+    monsterUpgradeStockShortageAlert: {
+      main: '水晶或混沌令牌不足',
+      isekai: '水晶或混沌令牌不足',
     },
   });
   var resolve_hvut_feedback_copy = function (key) {
@@ -1983,6 +1988,10 @@ try {
       event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_MESSAGE_RETURN ||
       event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_DB_CLEAR) {
       return confirm(format_hvut_feedback_copy(event.copy, event.values));
+    }
+    if (event?.type === HVUT_FEEDBACK_EVENT.ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE) {
+      alert(format_hvut_feedback_copy(event.copy, event.values));
+      return;
     }
   };
   var render_hvut_equip_forum_link = function (eq, label) {
@@ -2025,6 +2034,12 @@ try {
     return run_hvut_user_feedback({
       type: HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_DB_CLEAR,
       copy: 'moogleMailDbClearConfirm',
+    });
+  };
+  var alert_hvut_monster_upgrade_stock_shortage = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE,
+      copy: 'monsterUpgradeStockShortageAlert',
     });
   };
   var create_hvut_current_page_disable_url = function () {
@@ -10125,7 +10140,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
       },
       run: async function () {
         if (!_ml.upgrade.stock) {
-          alert('水晶或混沌令牌不足');
+          alert_hvut_monster_upgrade_stock_shortage();
           return;
         }
         if (!confirm_hvut_monster_upgrade()) {
@@ -16086,7 +16101,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
 
       run: async function () {
         if (!_ml.upgrade.stock) {
-          alert('水晶或混沌令牌不足');
+          alert_hvut_monster_upgrade_stock_shortage();
           return;
         }
         if (!confirm_hvut_monster_upgrade()) {
