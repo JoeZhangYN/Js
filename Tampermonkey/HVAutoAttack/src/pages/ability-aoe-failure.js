@@ -1,3 +1,7 @@
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import { setValue } from "../state/storage.js";
 
@@ -7,14 +11,13 @@ export function recordAbilityAoeFailure(stage, failure) {
   const evidence = { capability: "abilityAoe", stage, failure };
   try {
     sessionStorage.setItem(ABILITY_AOE_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Ability AoE failure evidence is diagnostic only.
   }
-  try {
-    console.warn("[HVAA] ability AoE failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] ability AoE failed", evidence],
+  });
   return evidence;
 }
 

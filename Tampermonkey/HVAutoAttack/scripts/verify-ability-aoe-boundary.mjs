@@ -145,6 +145,8 @@ function checkEntry() {
   }
   for (const required of [
     "ABILITY_AOE_FAILURE_KEY",
+    "DiagnosticConsoleEvent.WARN",
+    "runDiagnosticConsoleAutomation",
     "HVAA:lastAbilityAoeFailure",
     "persistAbilitySpellAoe",
     "recordAbilityAoeFailure",
@@ -154,6 +156,11 @@ function checkEntry() {
     if (!failureText.includes(required)) {
       violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
     }
+  }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureText)) {
+    violations.push(
+      `${failureOwner.replaceAll("\\", "/")} must route Ability AoE failure diagnostics through the typed diagnostic console entry`
+    );
   }
   for (const required of [
     "does not report capture success or sync option when spell AoE persistence fails",
