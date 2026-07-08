@@ -1,3 +1,8 @@
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
+
 export const EQUIPMENT_PERCENTILE_FAILURE_KEY = "HVAA:lastEquipmentPercentileFailure";
 
 function errorText(error) {
@@ -8,14 +13,13 @@ export function recordEquipmentPercentileFailure(stage, detail = {}) {
   const evidence = { capability: "equipmentPercentile", stage, detail };
   try {
     globalThis.sessionStorage?.setItem(EQUIPMENT_PERCENTILE_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Equipment percentile diagnostics must not block display toggles.
   }
-  try {
-    console.warn("[HVAA] equipment percentile failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] equipment percentile failed", evidence],
+  });
   return evidence;
 }
 

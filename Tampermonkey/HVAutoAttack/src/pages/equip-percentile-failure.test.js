@@ -5,6 +5,15 @@ import {
   recordEquipmentPercentilePreferenceReadFailure,
 } from "./equip-percentile-failure.js";
 
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 function lastFailure() {
   return JSON.parse(sessionStorage.getItem(EQUIPMENT_PERCENTILE_FAILURE_KEY));
 }
@@ -12,6 +21,7 @@ function lastFailure() {
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -37,6 +47,16 @@ describe("equipment percentile failure evidence", () => {
         error: "preference write blocked",
       },
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] equipment percentile failed",
+        expect.objectContaining({
+          capability: "equipmentPercentile",
+          stage: "persist-preference",
+        }),
+      ],
+    });
   });
 
   it("records preference read failures as project diagnostics", () => {
@@ -50,9 +70,19 @@ describe("equipment percentile failure evidence", () => {
       stage: "read-preference",
       detail: { key: "hvAA_equipPercentile_offline_showPercent", error: "preference read blocked" },
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] equipment percentile failed",
+        expect.objectContaining({
+          capability: "equipmentPercentile",
+          stage: "read-preference",
+        }),
+      ],
+    });
   });
 
-  it("keeps preference fallback when evidence and warning diagnostics fail", () => {
+  it("keeps preference fallback when evidence and typed warning diagnostics fail", () => {
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === "hvAA_equipPercentile_offline_showPercent")
@@ -60,9 +90,7 @@ describe("equipment percentile failure evidence", () => {
       if (key === EQUIPMENT_PERCENTILE_FAILURE_KEY) throw new Error("session blocked");
       return originalSetItem.call(this, key, value);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
 
     expect(() =>
       persistEquipmentPercentilePreference("hvAA_equipPercentile_offline_showPercent", false)

@@ -5,6 +5,8 @@ const root = process.cwd();
 const initFile = path.join(root, "src/pages/init.js");
 const entryFile = path.join(root, "src/pages/equipment-view-automation.js");
 const percentileFile = path.join(root, "src/pages/equip-percentile-offline.js");
+const percentileDispatcherFile = path.join(root, "src/pages/equip-percentile-dispatcher.js");
+const percentileDispatcherTest = path.join(root, "src/pages/equip-percentile-dispatcher.test.js");
 const percentileFailureFile = path.join(root, "src/pages/equip-percentile-failure.js");
 const percentileFailureTest = path.join(root, "src/pages/equip-percentile-failure.test.js");
 const percentileOfflineFailureTest = path.join(
@@ -174,8 +176,8 @@ function checkForgeCostNameParsing() {
 
 function checkPercentileModeDecisionPoint() {
   const entryText = fs.readFileSync(entryFile, "utf8");
-  const dispatcherFile = path.join(root, "src/pages/equip-percentile-dispatcher.js");
-  const dispatcherText = fs.readFileSync(dispatcherFile, "utf8");
+  const dispatcherText = fs.readFileSync(percentileDispatcherFile, "utf8");
+  const dispatcherTestText = fs.readFileSync(percentileDispatcherTest, "utf8");
 
   if (!/runEquipPercentileEnhancement\(\s*equipPercentileMode\s*\)/.test(entryText)) {
     violations.push(
@@ -185,7 +187,31 @@ function checkPercentileModeDecisionPoint() {
   if (
     /OptionEvent|runOptionAutomation|READ_FIELD|equipPercentileMode",\s*"off"/.test(dispatcherText)
   ) {
-    violations.push(`${rel(dispatcherFile)} must not re-read equip percentile option state`);
+    violations.push(
+      `${rel(percentileDispatcherFile)} must not re-read equip percentile option state`
+    );
+  }
+  for (const required of [
+    "DiagnosticConsoleEvent.INFO",
+    "runDiagnosticConsoleAutomation",
+    "runOfflineEquipPercentileEnhancement",
+  ]) {
+    if (!dispatcherText.includes(required)) {
+      violations.push(`${rel(percentileDispatcherFile)} must own ${required}`);
+    }
+  }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(dispatcherText)) {
+    violations.push(
+      `${rel(percentileDispatcherFile)} must route live-mode compatibility diagnostics through the typed diagnostic console entry`
+    );
+  }
+  for (const required of [
+    "reports live mode compatibility downgrade through typed diagnostics",
+    "runs offline mode without compatibility diagnostics",
+  ]) {
+    if (!dispatcherTestText.includes(required)) {
+      violations.push(`${rel(percentileDispatcherTest)} must cover ${required}`);
+    }
   }
 }
 
@@ -211,6 +237,8 @@ function checkPercentileFailureBoundary() {
   }
   for (const required of [
     "EQUIPMENT_PERCENTILE_FAILURE_KEY",
+    "DiagnosticConsoleEvent.WARN",
+    "runDiagnosticConsoleAutomation",
     "HVAA:lastEquipmentPercentileFailure",
     "persistEquipmentPercentilePreference",
     "recordEquipmentPercentilePreferenceReadFailure",
@@ -223,10 +251,15 @@ function checkPercentileFailureBoundary() {
       violations.push(`${rel(percentileFailureFile)} must own ${required}`);
     }
   }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureText)) {
+    violations.push(
+      `${rel(percentileFailureFile)} must route equipment percentile diagnostics through the typed diagnostic console entry`
+    );
+  }
   for (const required of [
     "records preference persistence failures without throwing",
     "records preference read failures as project diagnostics",
-    "keeps preference fallback when evidence and warning diagnostics fail",
+    "keeps preference fallback when evidence and typed warning diagnostics fail",
     "EQUIPMENT_PERCENTILE_FAILURE_KEY",
     "preference write blocked",
   ]) {
