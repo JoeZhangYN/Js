@@ -1,4 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 import {
   SETTINGS_HVUT_CONFIG_FAILURE_KEY,
   SettingsHvutConfigCommandEvent,
@@ -7,6 +17,7 @@ import {
 
 beforeEach(() => {
   sessionStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -25,8 +36,6 @@ describe("runSettingsHvutConfigCommand", () => {
   });
 
   it("records missing hv-utils config bridge evidence without throwing", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-
     expect(
       runSettingsHvutConfigCommand({
         type: SettingsHvutConfigCommandEvent.OPEN_PANEL,
@@ -41,10 +50,16 @@ describe("runSettingsHvutConfigCommand", () => {
       source: "settingsHvutConfig",
       detail: { reason: "missingHvutConfigBridge" },
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] settings HVUT config failed",
+        expect.objectContaining({ capability: "settingsHvutConfig", stage: "open-panel" }),
+      ],
+    });
   });
 
   it("records hv-utils config bridge failures without claiming success", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     const bridge = vi.fn(() => {
       throw new Error("bridge blocked");
     });
@@ -64,5 +79,21 @@ describe("runSettingsHvutConfigCommand", () => {
   it("rejects unknown and null settings hv-utils config events", () => {
     expect(runSettingsHvutConfigCommand({ type: "unknown" })).toBeUndefined();
     expect(runSettingsHvutConfigCommand(null)).toBeUndefined();
+  });
+
+  it("keeps settings command failure handling when diagnostics are blocked", () => {
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
+    const originalSetItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
+      if (key === SETTINGS_HVUT_CONFIG_FAILURE_KEY) throw new Error("session blocked");
+      return Reflect.apply(originalSetItem, this, [key, value]);
+    });
+
+    expect(() =>
+      runSettingsHvutConfigCommand({
+        type: SettingsHvutConfigCommandEvent.OPEN_PANEL,
+        bridge: null,
+      })
+    ).not.toThrow();
   });
 });

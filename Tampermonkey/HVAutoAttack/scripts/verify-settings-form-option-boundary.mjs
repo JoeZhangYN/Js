@@ -188,10 +188,19 @@ if (!fs.existsSync(path.join(root, hvutConfigCommand))) {
     "missingHvutConfigBridge",
     "hvutConfigBridgeFailed",
     "recordSettingsHvutConfigFailure",
+    "DiagnosticConsoleEvent",
+    "runDiagnosticConsoleAutomation",
+    "DiagnosticConsoleEvent.WARN",
+    "[HVAA] settings HVUT config failed",
   ]) {
     if (!hvutConfigCommandText.includes(required)) {
       violations.push(`${hvutConfigCommand.replaceAll("\\", "/")} must own ${required}`);
     }
+  }
+  if (/\bconsole\.(?:warn|error|log|info|debug)\s*\(/.test(hvutConfigCommandText)) {
+    violations.push(
+      `${hvutConfigCommand.replaceAll("\\", "/")} settings HVUT config diagnostics must use runDiagnosticConsoleAutomation(event)`
+    );
   }
 }
 if (!fs.existsSync(path.join(root, hvutConfigCommandTest))) {
@@ -203,6 +212,9 @@ if (!fs.existsSync(path.join(root, hvutConfigCommandTest))) {
     "records missing hv-utils config bridge evidence without throwing",
     "records hv-utils config bridge failures without claiming success",
     "rejects unknown and null settings hv-utils config events",
+    "keeps settings command failure handling when diagnostics are blocked",
+    "runDiagnosticConsoleAutomation",
+    "mockImplementation(() => false)",
   ]) {
     if (!hvutConfigCommandTestText.includes(required)) {
       violations.push(`${hvutConfigCommandTest.replaceAll("\\", "/")} must cover ${required}`);

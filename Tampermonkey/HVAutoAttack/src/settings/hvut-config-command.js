@@ -1,3 +1,8 @@
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
+
 const EVENT_OPEN_PANEL = "openPanel";
 
 export const SETTINGS_HVUT_CONFIG_FAILURE_KEY = "HVAA:lastSettingsHvutConfigFailure";
@@ -15,14 +20,13 @@ function recordSettingsHvutConfigFailure(stage, detail = {}) {
   };
   try {
     globalThis.sessionStorage?.setItem(SETTINGS_HVUT_CONFIG_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Settings bridge diagnostics must not block the settings panel.
   }
-  try {
-    console.warn("[HVAA] settings HVUT config failed", evidence);
-  } catch (_error) {
-    // Console diagnostics are best effort only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] settings HVUT config failed", evidence],
+  });
   return evidence;
 }
 
