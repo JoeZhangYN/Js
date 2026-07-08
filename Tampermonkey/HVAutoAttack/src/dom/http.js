@@ -1,5 +1,9 @@
 // HTTP 请求 helper：XMLHttpRequest 包装，支持 GET/POST + 3 次重试。
 // HV 战斗页面用此回拉下一回合数据。
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 import { gE } from "./query.js";
 
 export const HTTP_REQUEST_FAILURE_KEY = "HVAA:lastHttpRequestFailure";
@@ -10,14 +14,13 @@ function recordHttpRequestFailure(stage, failure) {
   const evidence = { capability: HTTP_CAPABILITY, stage, ...failure };
   try {
     sessionStorage.setItem(HTTP_REQUEST_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // HTTP retry/failure handling must not depend on diagnostic storage.
   }
-  try {
-    console.warn("[HVAA] HTTP request failed", evidence);
-  } catch (_error) {
-    // Console hooks must not block HTTP failure callbacks.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] HTTP request failed", evidence],
+  });
   return evidence;
 }
 

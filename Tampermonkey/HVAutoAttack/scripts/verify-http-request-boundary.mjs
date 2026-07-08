@@ -20,6 +20,9 @@ const ownerText = read(owner);
 for (const required of [
   "HTTP_REQUEST_FAILURE_KEY",
   "HVAA:lastHttpRequestFailure",
+  "DiagnosticConsoleEvent",
+  "runDiagnosticConsoleAutomation",
+  "DiagnosticConsoleEvent.WARN",
   "recordHttpRequestFailure",
   "capability: HTTP_CAPABILITY",
   'recordHttpRequestFailure("retryScheduled"',
@@ -30,11 +33,14 @@ for (const required of [
   "onFailure(",
   "[HVAA] HTTP request failed",
   "HTTP retry/failure handling must not depend on diagnostic storage.",
-  "Console hooks must not block HTTP failure callbacks.",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must own HTTP failure evidence ${required}`);
   }
+}
+
+if (/\bconsole\.(?:warn|error|log|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(`${rel(owner)} HTTP diagnostics must use runDiagnosticConsoleAutomation(event)`);
 }
 
 if (/onFailure\(\{\s*kind:\s*"networkError"/.test(ownerText)) {
@@ -53,7 +59,8 @@ for (const required of [
   "records final failures even when no caller failure handler exists",
   "keeps failure callbacks working when diagnostics are blocked",
   "storage blocked",
-  "console blocked",
+  "runDiagnosticConsoleAutomation",
+  "mockImplementation(() => false)",
 ]) {
   if (!ownerTestText.includes(required)) {
     violations.push(`${rel(ownerTest)} must cover HTTP failure evidence ${required}`);
