@@ -1,14 +1,13 @@
+import { DiagnosticConsoleEvent, runDiagnosticConsoleAutomation } from "./diagnostic-console.js";
 import { DiagnosticEvidenceKey } from "./diagnostic-evidence-keys.js";
 
 const NAVIGATION_DECISION_KEY = DiagnosticEvidenceKey.NAVIGATION_DECISION;
 
 function warnNavigationDecision(evidence) {
-  try {
-    console.warn("[HVAA] navigation decision", evidence);
-    return true;
-  } catch (_error) {
-    return false;
-  }
+  return runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] navigation decision", evidence],
+  });
 }
 
 function navigationDecisionStorage() {

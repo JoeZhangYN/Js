@@ -1,3 +1,4 @@
+import { DiagnosticConsoleEvent, runDiagnosticConsoleAutomation } from "./diagnostic-console.js";
 import { DiagnosticEvidenceKey } from "./diagnostic-evidence-keys.js";
 import { readRecentDiagnosticEvidence } from "./diagnostic-evidence.js";
 
@@ -13,12 +14,10 @@ function writeJson(key, value) {
 }
 
 function warnNavigationAudit(kind, audit) {
-  try {
-    console.warn(`[HVAA] ${kind}`, audit);
-    return true;
-  } catch (_error) {
-    return false;
-  }
+  return runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: [`[HVAA] ${kind}`, audit],
+  });
 }
 
 export function writeNavigationAudit(kind, payload) {
@@ -57,7 +56,7 @@ export function installExternalUnloadAudit() {
     try {
       if (sessionStorage.getItem(NAVIGATION_AUDIT_KEY)) return;
     } catch (_error) {
-      // Storage may be unavailable during unload; still emit console evidence.
+      // Storage may be unavailable during unload; still emit diagnostic evidence.
     }
     writeNavigationAudit("externalUnload", {
       reason: "outsideNavigationEntry",

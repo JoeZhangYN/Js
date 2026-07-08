@@ -1,12 +1,12 @@
+import { DiagnosticConsoleEvent, runDiagnosticConsoleAutomation } from "./diagnostic-console.js";
 import { writeNavigationAudit } from "./navigation-audit.js";
 import { recordNavigationDecision } from "./navigation-decision-evidence.js";
 
 function warnRecordingFailure(label, evidence) {
-  try {
-    console.warn(`[HVAA] ${label}`, evidence);
-  } catch (_error) {
-    // Navigation effects must not depend on diagnostic logging.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: [`[HVAA] ${label}`, evidence],
+  });
 }
 
 export function recordNavigationDecisionSafely(decision, event, detail) {

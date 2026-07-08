@@ -162,11 +162,17 @@ if (!owner) {
       "writeNavigationAudit",
       "navigation decision failed",
       "navigation audit failed",
-      "console.warn(`[HVAA] ${label}`",
+      "DiagnosticConsoleEvent.WARN",
+      "runDiagnosticConsoleAutomation",
     ]) {
       if (!recordingText.includes(required)) {
         violations.push(`navigation recording boundary must own ${required}`);
       }
+    }
+    if (/\bconsole\.(?:warn|error|log|info|debug)\s*\(/.test(recordingText)) {
+      violations.push(
+        "navigation recording diagnostics must use runDiagnosticConsoleAutomation(event)"
+      );
     }
     for (const forbidden of ["throw error", "throw new Error"]) {
       if (recordingText.includes(forbidden)) {
@@ -198,6 +204,8 @@ if (!owner) {
       "readRecentDiagnosticEvidence",
       "diagnosticEvidence",
       "warnNavigationAudit",
+      "DiagnosticConsoleEvent.WARN",
+      "runDiagnosticConsoleAutomation",
     ]) {
       if (!auditText.includes(required)) {
         violations.push(`navigation audit must carry diagnostic evidence ${required}`);
@@ -215,14 +223,10 @@ if (!owner) {
     ) {
       violations.push("external unload audit must not disappear when storage reads fail");
     }
-    if (!auditText.includes("console.warn(`[HVAA] ${kind}`")) {
-      violations.push("navigation audit must warn before navigating");
-    }
-    if (
-      auditText.includes("console.warn(`[HVAA] ${kind}`, audit);") &&
-      !auditText.includes("try {")
-    ) {
-      violations.push("navigation audit warning must be protected from console hook failures");
+    if (/\bconsole\.(?:warn|error|log|info|debug)\s*\(/.test(auditText)) {
+      violations.push(
+        "navigation audit diagnostics must use runDiagnosticConsoleAutomation(event)"
+      );
     }
   }
   if (!diagnosticEvidenceSource) {
@@ -369,6 +373,8 @@ if (!owner) {
       "recordNavigationDecision",
       "warnNavigationDecision",
       "DiagnosticEvidenceKey.NAVIGATION_DECISION",
+      "DiagnosticConsoleEvent.WARN",
+      "runDiagnosticConsoleAutomation",
       "[HVAA] navigation decision",
       "eventType: event?.type ?? null",
       "commandReason: event?.reason ?? null",
@@ -378,6 +384,11 @@ if (!owner) {
       if (!navigationDecisionText.includes(required)) {
         violations.push(`navigation decision evidence must own ${required}`);
       }
+    }
+    if (/\bconsole\.(?:warn|error|log|info|debug)\s*\(/.test(navigationDecisionText)) {
+      violations.push(
+        "navigation decision diagnostics must use runDiagnosticConsoleAutomation(event)"
+      );
     }
     for (const required of [
       'recordNavigationDecisionSafely("accepted"',
