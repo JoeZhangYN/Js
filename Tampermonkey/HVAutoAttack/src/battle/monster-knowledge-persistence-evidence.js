@@ -1,4 +1,8 @@
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 const EVIDENCE_KEY = DiagnosticEvidenceKey.BATTLE_MONSTER_KNOWLEDGE_PERSISTENCE;
 
@@ -9,7 +13,13 @@ function errorText(error) {
 function makeDeps(deps) {
   return {
     sessionStorage: deps.sessionStorage || globalThis.sessionStorage,
-    warn: deps.warn || ((...args) => console.warn(...args)),
+    warn:
+      deps.warn ||
+      ((...args) =>
+        runDiagnosticConsoleAutomation({
+          type: DiagnosticConsoleEvent.WARN,
+          args,
+        })),
   };
 }
 

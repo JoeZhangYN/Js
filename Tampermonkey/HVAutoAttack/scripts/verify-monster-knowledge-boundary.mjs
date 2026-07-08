@@ -7,6 +7,7 @@ const entry = path.normalize("src/battle/monster-knowledge-automation.js");
 const syncImpl = path.normalize("src/battle/monster-db-sync.js");
 const scanImpl = path.normalize("src/battle/monster-db-scan.js");
 const scanResultImpl = path.normalize("src/battle/monster-scan-result-learning.js");
+const persistenceEvidence = path.normalize("src/battle/monster-knowledge-persistence-evidence.js");
 const persistenceEvidenceTest = path.normalize(
   "src/battle/monster-knowledge-persistence-evidence.test.js"
 );
@@ -350,10 +351,21 @@ function checkEntry() {
   const persistenceEvidenceTestText = fs.existsSync(path.join(root, persistenceEvidenceTest))
     ? fs.readFileSync(path.join(root, persistenceEvidenceTest), "utf8")
     : "";
+  const persistenceEvidenceText = fs.readFileSync(path.join(root, persistenceEvidence), "utf8");
+  for (const required of ["DiagnosticConsoleEvent.WARN", "runDiagnosticConsoleAutomation"]) {
+    if (!persistenceEvidenceText.includes(required)) {
+      violations.push(`${persistenceEvidence.replaceAll("\\", "/")} must own ${required}`);
+    }
+  }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(persistenceEvidenceText)) {
+    violations.push(
+      `${persistenceEvidence.replaceAll("\\", "/")} must route persistence diagnostics through the typed diagnostic console entry`
+    );
+  }
   for (const required of [
-    "returns persistence failure evidence when storage and warning diagnostics both fail",
+    "returns persistence failure evidence when storage and typed warning diagnostics both fail",
     'throw new Error("quota")',
-    'throw new Error("console blocked")',
+    "runDiagnosticConsoleAutomation",
     "not.toThrow()",
     "scan-cache-profile",
   ]) {

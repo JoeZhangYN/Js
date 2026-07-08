@@ -1,9 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
+
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 import { recordMonsterKnowledgePersistenceFailure } from "./monster-knowledge-persistence-evidence.js";
 
 beforeEach(() => {
   window.sessionStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReturnValue(true);
 });
 
 describe("recordMonsterKnowledgePersistenceFailure", () => {
@@ -34,7 +46,6 @@ describe("recordMonsterKnowledgePersistenceFailure", () => {
   });
 
   it("does not throw when persistence evidence storage is unavailable", () => {
-    const warn = vi.fn();
     const sessionStorage = {
       setItem: () => {
         throw new Error("session blocked");
@@ -44,35 +55,36 @@ describe("recordMonsterKnowledgePersistenceFailure", () => {
     expect(() =>
       recordMonsterKnowledgePersistenceFailure(
         { stage: "scan-store-hp", error: new Error("hp blocked") },
-        { sessionStorage, warn }
+        { sessionStorage }
       )
     ).not.toThrow();
-    expect(warn).toHaveBeenCalledWith(
-      "[HVAA] monster knowledge persistence evidence failed",
-      expect.objectContaining({ error: "session blocked" })
-    );
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] monster knowledge persistence evidence failed",
+        expect.objectContaining({ error: "session blocked" }),
+      ],
+    });
   });
 
-  it("returns persistence failure evidence when storage and warning diagnostics both fail", () => {
+  it("returns persistence failure evidence when storage and typed warning diagnostics both fail", () => {
     const sessionStorage = {
       setItem: () => {
         throw new Error("quota");
       },
     };
-    const warn = () => {
-      throw new Error("console blocked");
-    };
+    mocks.runDiagnosticConsoleAutomation.mockReturnValue(false);
 
     expect(() =>
       recordMonsterKnowledgePersistenceFailure(
         { stage: "scan-cache-profile", error: new Error("cache blocked") },
-        { sessionStorage, warn }
+        { sessionStorage }
       )
     ).not.toThrow();
     expect(
       recordMonsterKnowledgePersistenceFailure(
         { stage: "scan-cache-profile", error: new Error("cache blocked") },
-        { sessionStorage, warn }
+        { sessionStorage }
       )
     ).toMatchObject({
       source: "monsterKnowledgePersistence",
