@@ -1,6 +1,10 @@
 // GM_* / localStorage 持久化封装。storagePrefix 从 env.js 注入（单例）。
 // 行为对齐原 setValue/getValue/delValue：未装 GM_* 时 fallback 到 window.localStorage。
 import { storagePrefix } from "../env.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 
 export const STORAGE_READ_FAILURE_KEY = "HVAA:lastStorageReadFailure";
@@ -19,10 +23,13 @@ export function setValue(item, value) {
   // 防退化：完整 option 必带 version（init.js 装填时对齐）。缺 version = 疑似散落 `g("option")||{}`
   // 残缺写覆盖完整配置（现象①根因）。只 warn 不阻断（advisory），引导改走 option 事件入口。
   if (item === STORAGE_KEYS.OPTION && value && typeof value === "object" && !value.version) {
-    console.warn(
-      "[HVAA] setValue('option') 写入缺 version 字段，疑似残缺 option 覆盖；应走 runOptionAutomation(event) 统一写入口:",
-      value
-    );
+    runDiagnosticConsoleAutomation({
+      type: DiagnosticConsoleEvent.WARN,
+      args: [
+        "[HVAA] setValue('option') 写入缺 version 字段，疑似残缺 option 覆盖；应走 runOptionAutomation(event) 统一写入口:",
+        value,
+      ],
+    });
   }
   if (typeof GM_setValue === "undefined") {
     window.localStorage[key] = typeof value === "string" ? value : JSON.stringify(value);
@@ -41,14 +48,13 @@ function warnStorageReadFailure(item, key, source, error) {
   };
   try {
     globalThis.sessionStorage?.setItem(STORAGE_READ_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Read fallback must not depend on diagnostic storage.
   }
-  try {
-    console.warn("[HVAA] storage read failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] storage read failed", evidence],
+  });
 }
 
 function parseLocalStorageValue(item, key, raw) {

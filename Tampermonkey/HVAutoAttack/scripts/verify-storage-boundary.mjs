@@ -19,6 +19,8 @@ for (const required of [
   "STORAGE_READ_FAILURE_KEY",
   "HVAA:lastStorageReadFailure",
   "[HVAA] storage read failed",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   "parseLocalStorageValue",
   "localStorageJson",
   "GM_getValue",
@@ -26,6 +28,14 @@ for (const required of [
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${rel(owner)} must own storage read failure ${required}`);
+  }
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(`${rel(owner)} storage diagnostics must use the typed diagnostic console entry`);
+}
+for (const required of ["setValue('option') 写入缺 version 字段", "runOptionAutomation(event)"]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${rel(owner)} must keep incomplete option write advisory ${required}`);
   }
 }
 if (
@@ -48,13 +58,14 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
 } else {
   const ownerTestText = fs.readFileSync(path.join(root, ownerTest), "utf8");
   for (const required of [
+    "routes incomplete option write advisories through typed diagnostics",
     "fails closed and records evidence for corrupted localStorage JSON",
     "falls back to localStorage when GM_getValue throws",
-    "fails closed when storage read diagnostics cannot be written or warned",
+    "fails closed when storage read evidence and diagnostic console both fail",
     'capability: "storageRead"',
     "STORAGE_READ_FAILURE_KEY",
     "HVAA:lastStorageReadFailure",
-    "console blocked",
+    "runDiagnosticConsoleAutomation",
     "session blocked",
     "[HVAA] storage read failed",
     "localStorageJson",
