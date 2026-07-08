@@ -1950,6 +1950,9 @@ try {
     ALERT_MOOGLEMAIL_COMPOSE_REMOVE_ATTACHED_ITEMS: 'alertMoogleMailComposeRemoveAttachedItems',
     ALERT_MOOGLEMAIL_COMPOSE_ITEM_COUNT_SHORTAGE: 'alertMoogleMailComposeItemCountShortage',
     ALERT_MOOGLEMAIL_COMPOSE_RECIPIENT_MISSING: 'alertMoogleMailComposeRecipientMissing',
+    ALERT_MOOGLEMAIL_MULTI_SEND_INPUT_ERRORS: 'alertMoogleMailMultiSendInputErrors',
+    ALERT_MOOGLEMAIL_MULTI_SEND_CREDITS_SHORTAGE: 'alertMoogleMailMultiSendCreditsShortage',
+    ALERT_MOOGLEMAIL_MULTI_SEND_HATH_SHORTAGE: 'alertMoogleMailMultiSendHathShortage',
   });
   var HVUT_FEEDBACK_COPY = Object.freeze({
     equipForumLinkPrompt: { main: '论坛链接:', isekai: 'Forum Link:' },
@@ -1991,6 +1994,18 @@ try {
       main: '没有收件人',
       isekai: '没有收件人',
     },
+    moogleMailMultiSendInputErrorsAlert: {
+      main: '{errors}',
+      isekai: '{errors}',
+    },
+    moogleMailMultiSendCreditsShortageAlert: {
+      main: 'Credits不足',
+      isekai: 'Credits不足',
+    },
+    moogleMailMultiSendHathShortageAlert: {
+      main: 'Hath不足',
+      isekai: 'Hath不足',
+    },
   });
   var resolve_hvut_feedback_copy = function (key) {
     var copy = HVUT_FEEDBACK_COPY[key] || {};
@@ -2019,7 +2034,10 @@ try {
       event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_DB_IMPORT_PARSE_FAILED ||
       event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_REMOVE_ATTACHED_ITEMS ||
       event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_ITEM_COUNT_SHORTAGE ||
-      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_RECIPIENT_MISSING) {
+      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_RECIPIENT_MISSING ||
+      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_MULTI_SEND_INPUT_ERRORS ||
+      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_MULTI_SEND_CREDITS_SHORTAGE ||
+      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_MULTI_SEND_HATH_SHORTAGE) {
       alert(format_hvut_feedback_copy(event.copy, event.values));
       return;
     }
@@ -2100,6 +2118,25 @@ try {
     return run_hvut_user_feedback({
       type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_RECIPIENT_MISSING,
       copy: 'moogleMailComposeRecipientMissingAlert',
+    });
+  };
+  var alert_hvut_mooglemail_multi_send_input_errors = function (errors) {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_MULTI_SEND_INPUT_ERRORS,
+      copy: 'moogleMailMultiSendInputErrorsAlert',
+      values: { errors: errors },
+    });
+  };
+  var alert_hvut_mooglemail_multi_send_credits_shortage = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_MULTI_SEND_CREDITS_SHORTAGE,
+      copy: 'moogleMailMultiSendCreditsShortageAlert',
+    });
+  };
+  var alert_hvut_mooglemail_multi_send_hath_shortage = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_MULTI_SEND_HATH_SHORTAGE,
+      copy: 'moogleMailMultiSendHathShortageAlert',
     });
   };
   var create_hvut_current_page_disable_url = function () {
@@ -11369,15 +11406,15 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
           queue.push(mail);
         });
         if (errors.length) {
-          alert(errors.join('\n'));
+          alert_hvut_mooglemail_multi_send_input_errors(errors.join('\n'));
           return stop();
         }
         if (credits_funds < 0) {
-          alert('Credits不足');
+          alert_hvut_mooglemail_multi_send_credits_shortage();
           return stop();
         }
         if (hath_funds < 0) {
-          alert('Hath不足');
+          alert_hvut_mooglemail_multi_send_hath_shortage();
           return stop();
         }
 
@@ -17303,15 +17340,15 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
         queue.push(mail);
       });
       if (errors.length) {
-        alert(errors.join('\n'));
+        alert_hvut_mooglemail_multi_send_input_errors(errors.join('\n'));
         return stop();
       }
       if (credits_funds < 0) {
-        alert('Credits不足');
+        alert_hvut_mooglemail_multi_send_credits_shortage();
         return stop();
       }
       if (hath_funds < 0) {
-        alert('Hath不足');
+        alert_hvut_mooglemail_multi_send_hath_shortage();
         return stop();
       }
 
