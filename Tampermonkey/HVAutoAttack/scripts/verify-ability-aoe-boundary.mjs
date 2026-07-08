@@ -125,6 +125,21 @@ function checkEntry() {
       violations.push(`${owner.replaceAll("\\", "/")} must sync option AoE through ${required}`);
     }
   }
+  for (const required of [
+    "DiagnosticConsoleEvent.INFO",
+    "runDiagnosticConsoleAutomation",
+    "recordAbilityAoeDiagnostic",
+    'capability: "abilityAoe"',
+  ]) {
+    if (!text.includes(required)) {
+      violations.push(`${owner.replaceAll("\\", "/")} must route diagnostics through ${required}`);
+    }
+  }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(text)) {
+    violations.push(
+      `${owner.replaceAll("\\", "/")} must route Ability AoE diagnostics through the typed diagnostic console entry`
+    );
+  }
   if (/export function parseAbilityPage\(/.test(text)) {
     violations.push(`${owner.replaceAll("\\", "/")} must keep parseAbilityPage internal`);
   }
@@ -160,6 +175,9 @@ function checkEntry() {
     violations.push(
       `${ownerTest.replaceAll("\\", "/")} must cover unknown and null ability AoE events`
     );
+  }
+  if (!testText.includes("runDiagnosticConsoleAutomation")) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover typed Ability AoE diagnostics`);
   }
 }
 

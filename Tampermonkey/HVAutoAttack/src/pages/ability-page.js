@@ -6,6 +6,10 @@ import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { DEBUFF_SKILL_LIB } from "../data/debuff-lib.js";
 import { OFFENSIVE_SPELL_LIB } from "../data/spell-lib.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 import { persistAbilitySpellAoe, recordAbilityAoeFailure } from "./ability-aoe-failure.js";
 
 const EVENT_LOAD_STORED_AOE = "loadStoredAoe";
@@ -27,14 +31,22 @@ const abilityAoeEventHandlers = Object.freeze({
   [EVENT_READ_SPELL_AOE]: () => readSpellAoe(),
 });
 
+function recordAbilityAoeDiagnostic(stage, detail) {
+  return runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.INFO,
+    args: ["[HVAA] ability AoE diagnostic", { capability: "abilityAoe", stage, detail }],
+  });
+}
+
 function isAbilityPage() {
   const params = new URLSearchParams(window.location.search);
   return params.get("s") === "Character" && params.get("ss") === "ab";
 }
 
 function loadStoredAoe() {
-  g("spellAoe", getValue(STORAGE_KEYS.SPELL_AOE, true) || {});
-  console.log("[AoE] 启动加载 spellAoe:", JSON.stringify(g("spellAoe")));
+  const spellAoe = getValue(STORAGE_KEYS.SPELL_AOE, true) || {};
+  g("spellAoe", spellAoe);
+  recordAbilityAoeDiagnostic("load-stored-aoe", { spellAoe });
 }
 
 function readSpellAoe() {
@@ -93,10 +105,7 @@ function syncSpellAoeToOption(spellAoe) {
       spellWritten,
     };
   }
-  console.log(
-    "[AoE] 已同步到 option:",
-    JSON.stringify({ debuffSkillAoe, spellAoe: offensiveSpellAoe })
-  );
+  recordAbilityAoeDiagnostic("sync-option", { debuffSkillAoe, spellAoe: offensiveSpellAoe });
   return { synced: true, debuffSkillAoe, spellAoe: offensiveSpellAoe };
 }
 
@@ -126,7 +135,7 @@ function parseAbilityPage() {
       spellAoe[nameMatch[1]] = parseInt(aoeMatch[1]);
     }
   }
-  console.log("[AoE] 检测结果:", JSON.stringify(spellAoe));
+  recordAbilityAoeDiagnostic("capture-ability-page", { spellAoe });
   if (!persistAbilitySpellAoe(spellAoe)) {
     return { captured: false, reason: "spellAoePersistenceFailed", spellAoe };
   }

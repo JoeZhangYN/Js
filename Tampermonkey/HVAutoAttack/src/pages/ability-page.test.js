@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   g: vi.fn(),
   gE: vi.fn(),
   getValue: vi.fn(),
+  runDiagnosticConsoleAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
   setValue: vi.fn(),
 }));
@@ -15,6 +16,10 @@ vi.mock("../state/storage.js", () => ({
   setValue: mocks.setValue,
 }));
 vi.mock("../state/store.js", () => ({ g: mocks.g }));
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ INFO: "info" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
 vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({
     READ_FIELD: "readField",
@@ -28,6 +33,15 @@ beforeEach(() => {
   window.history.pushState({}, "", "/");
 });
 
+function expectAbilityDiagnostic(stage) {
+  expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith(
+    expect.objectContaining({
+      type: "info",
+      args: expect.arrayContaining([expect.objectContaining({ capability: "abilityAoe", stage })]),
+    })
+  );
+}
+
 describe("runAbilityAoeAutomation", () => {
   it("loads stored AoE state through the ability AoE entry", () => {
     mocks.getValue.mockReturnValue({ Imperil: 2 });
@@ -36,6 +50,7 @@ describe("runAbilityAoeAutomation", () => {
 
     expect(mocks.getValue).toHaveBeenCalledWith("spellAoe", true);
     expect(mocks.g).toHaveBeenCalledWith("spellAoe", { Imperil: 2 });
+    expectAbilityDiagnostic("load-stored-aoe");
   });
 
   it("reads current spell AoE through the ability AoE entry", () => {
@@ -105,6 +120,7 @@ describe("runAbilityAoeAutomation", () => {
       key: "spellAoe",
       value: { 11: 1, 23: 3 },
     });
+    expectAbilityDiagnostic("capture-ability-page");
   });
 
   it("does not create partial option state when no option exists", () => {
