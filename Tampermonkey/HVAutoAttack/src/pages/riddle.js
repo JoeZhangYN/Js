@@ -27,6 +27,10 @@ import {
 } from "./riddle-submission-timing.js";
 import { recordRiddleMlAnswerFailure } from "./riddle-ml-answer-failure.js";
 import { submitRiddleAnswerCommand } from "./riddle-submit-command.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 // 答案码 SSOT 见 data/riddle-answers.js（提取到叶子层打破与 riddle-ml.js 的循环依赖 TDZ）
 const ANSWER_KEYS = Object.keys(ANSWER_MAP);
@@ -93,8 +97,15 @@ function randomAnswer() {
   return [ANSWER_KEYS[Math.floor(Math.random() * ANSWER_KEYS.length)]];
 }
 
+function reportRiddleSubmitDiagnostic(answers, via) {
+  return runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.INFO,
+    args: [`[HVAA][riddle] 自动提交(${via})`, answers],
+  });
+}
+
 function submitRiddleAnswers(context, answers, via) {
-  console.log(`[HVAA][riddle] 自动提交(${via})`, answers); // 可见性：无反应时看 console 确认走哪条路径
+  reportRiddleSubmitDiagnostic(answers, via);
   // 提交即重定向、console 即丢 → 落滚动日志（半持久化）：本次答案 + 路径，事后可翻"答案是什么/走哪条路"
   runRiddleLogAutomation({
     type: RiddleLogEvent.PUSH,

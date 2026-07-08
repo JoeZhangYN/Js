@@ -256,6 +256,9 @@ function checkRiddleSubmissionTiming() {
     "RiddleSubmissionTimingEvent.ML_ANSWERS_READY",
     "recordRiddleMlAnswerFailure",
     "submitRiddleAnswerCommand",
+    "DiagnosticConsoleEvent.INFO",
+    "runDiagnosticConsoleAutomation",
+    "reportRiddleSubmitDiagnostic",
   ]) {
     if (!answerText.includes(required)) {
       violations.push(`${rel(riddleAnswerFile)} must report ${required} to the timing entry`);
@@ -269,6 +272,11 @@ function checkRiddleSubmissionTiming() {
   if (/submit\.click\(\)/.test(answerText)) {
     violations.push(
       `${rel(riddleAnswerFile)} must route riddle submit clicks through submitRiddleAnswerCommand`
+    );
+  }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(answerText)) {
+    violations.push(
+      `${rel(riddleAnswerFile)} must route riddle submit diagnostics through the typed diagnostic console entry`
     );
   }
   const submitCommandText = fs.readFileSync(riddleSubmitCommandFile, "utf8");

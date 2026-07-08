@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
   runRiddleDatasetAutomation: vi.fn(),
   runRiddleImageAutomation: vi.fn(() => ({ imageDataUrl: null, imageSrc: "" })),
@@ -12,6 +13,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../alarm/alarm.js", () => ({
   AlarmEvent: Object.freeze({ TRIGGER: "trigger" }),
   runAlarmAutomation: vi.fn(),
+}));
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ INFO: "info" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({ IS_ON: "isOn", READ_FIELD: "readField" }),
@@ -74,6 +79,10 @@ describe("riddle submit flow fallback", () => {
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastRiddleSubmitFailure"))).toMatchObject({
       capability: "riddleSubmit",
       stage: "missing-riddler",
+    });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "info",
+      args: ["[HVAA][riddle] 自动提交(ML)", ["ra"]],
     });
     expect(mocks.runRiddleDatasetAutomation).toHaveBeenCalledWith(
       expect.objectContaining({ type: "recordSample", source: "manual" })
