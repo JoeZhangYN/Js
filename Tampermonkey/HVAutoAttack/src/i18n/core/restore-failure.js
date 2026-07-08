@@ -1,3 +1,8 @@
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../../core/diagnostic-console.js";
+
 export const I18N_RESTORE_FAILURE_KEY = "HVAA:lastI18nRestoreFailure";
 
 function i18nFailureErrorText(error) {
@@ -15,10 +20,9 @@ export function recordI18nRestoreFailure(stage, error) {
   } catch (_error) {
     // i18n recovery must not depend on diagnostic storage.
   }
-  try {
-    console.error("[HVAA][i18n] " + stage + " 回调出错:", error);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.ERROR,
+    args: ["[HVAA][i18n] " + stage + " 回调出错:", error],
+  });
   return evidence;
 }

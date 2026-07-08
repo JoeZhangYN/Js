@@ -7,6 +7,7 @@ const commands = [
   "node scripts/check-mainloop-imports.mjs",
   "node scripts/verify-battle-business-map.mjs",
   "node scripts/verify-no-eval.mjs",
+  "node scripts/verify-diagnostic-console-boundary.mjs",
   "node scripts/verify-diagnostic-failure-coverage.mjs",
   "node scripts/verify-diagnostic-evidence-source-coverage.mjs",
   "node scripts/verify-legacy-hvut-equip-filter-boundary.mjs",

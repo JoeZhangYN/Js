@@ -1,5 +1,9 @@
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { delValue, setValue } from "./storage.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 export const OPTION_FAILURE_KEY = "HVAA:lastOptionFailure";
 
@@ -14,11 +18,10 @@ export function recordOptionFailure(stage, error) {
   } catch (_error) {
     // Option failure evidence is diagnostic only.
   }
-  try {
-    console.warn("[HVAA] option persistence failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] option persistence failed", evidence],
+  });
   return evidence;
 }
 

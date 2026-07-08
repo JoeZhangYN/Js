@@ -29,7 +29,8 @@ for (const required of [
   "I18N_INIT_FAILURE_KEY",
   "recordI18nInitFailure",
   "globalThis.sessionStorage?.setItem(I18N_INIT_FAILURE_KEY",
-  "Console hooks are diagnostic only.",
+  "runDiagnosticConsoleAutomation",
+  "DiagnosticConsoleEvent.ERROR",
 ]) {
   if (!helperText.includes(required)) violations.push(`${rel(helper)} must own ${required}`);
 }

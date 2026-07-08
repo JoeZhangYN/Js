@@ -48,7 +48,8 @@ for (const required of [
   "I18N_RESTORE_FAILURE_KEY",
   "recordI18nRestoreFailure",
   "globalThis.sessionStorage?.setItem(I18N_RESTORE_FAILURE_KEY",
-  "Console hooks are diagnostic only.",
+  "runDiagnosticConsoleAutomation",
+  "DiagnosticConsoleEvent.ERROR",
 ]) {
   if (!failureText.includes(required)) {
     violations.push(`${rel(failureOwner)} must own ${required}`);

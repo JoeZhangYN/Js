@@ -7,6 +7,10 @@ import { addStyle } from "../style/inject.js";
 import { RiddleDatasetEvent, runRiddleDatasetAutomation } from "../state/riddle-dataset.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
 import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 const EVENT_USERSCRIPT_START = "userscriptStart";
 const EVENT_GAME_PAGE_READY = "gamePageReady";
@@ -35,10 +39,6 @@ const appStartupEventHandlers = Object.freeze({
   [EVENT_GAME_PAGE_READY]: runGamePageStartup,
 });
 
-function startupErrorText(error) {
-  return error?.message || String(error);
-}
-
 function recordAppStartupFailure(stage, reason, detail = {}) {
   const evidence = {
     capability: "appStartup",
@@ -48,14 +48,13 @@ function recordAppStartupFailure(stage, reason, detail = {}) {
   };
   try {
     globalThis.sessionStorage?.setItem(APP_STARTUP_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Startup failure handling must not depend on diagnostic storage.
   }
-  try {
-    console.warn("[HVAA] app startup failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] app startup failed", evidence],
+  });
   return evidence;
 }
 
@@ -63,7 +62,7 @@ function runStartupStep(stage, step) {
   try {
     return step();
   } catch (error) {
-    recordAppStartupFailure(stage, "stepException", { error: startupErrorText(error) });
+    recordAppStartupFailure(stage, "stepException", { error: error?.message || String(error) });
     return false;
   }
 }
@@ -96,15 +95,6 @@ function syncOptionVersion() {
   if (!startupOption.configured) return false;
 
   addStyle(startupOption.lang);
-  if (startupOption.versionUpdated) {
-    try {
-      console.log(
-        `[HVAA] 版本号 ${startupOption.previousVersion} → ${startupOption.currentVersion}（已静默对齐，未弹窗）`
-      );
-    } catch (_error) {
-      // Console hooks are diagnostic only.
-    }
-  }
   return true;
 }
 
@@ -134,7 +124,7 @@ function requestInitialConfig() {
     button.click();
   } catch (error) {
     recordAppStartupFailure("requestInitialConfig", "configButtonClickFailed", {
-      error: startupErrorText(error),
+      error: error?.message || String(error),
     });
   }
   return false;
@@ -150,7 +140,9 @@ function warnDefaultFont() {
       "Please set a font: the default font may break some features.\nIn HV Settings → Style, set the UI font to a non-default one (e.g. Verdana / Arial)."
     );
   } catch (error) {
-    recordAppStartupFailure("warnDefaultFont", "warningFailed", { error: startupErrorText(error) });
+    recordAppStartupFailure("warnDefaultFont", "warningFailed", {
+      error: error?.message || String(error),
+    });
   }
   return true;
 }
