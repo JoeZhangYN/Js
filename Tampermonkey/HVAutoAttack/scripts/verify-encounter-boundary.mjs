@@ -10,9 +10,13 @@ const entryExecutionFailureTest = path.normalize(
 );
 const stateHelper = path.normalize("src/pages/encounter-state.js");
 const stateTest = path.normalize("src/pages/encounter-state.test.js");
+const stateDawnRecoveryTest = path.normalize("src/pages/encounter-state-dawn-recovery.test.js");
 const stateEvidenceTest = path.normalize("src/pages/encounter-state-evidence.test.js");
 const stateFailureFile = path.normalize("src/pages/encounter-state-failure.js");
 const stateFailureTest = path.normalize("src/pages/encounter-state-failure.test.js");
+const entryPolicyFile = path.normalize("src/pages/encounter-entry-policy.js");
+const generationRecoveryFile = path.normalize("src/pages/encounter-generation-recovery.js");
+const generationRecoveryTest = path.normalize("src/pages/encounter-generation-recovery.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const policyTest = path.normalize("src/pages/encounter-policy.test.js");
 const policyRouteTest = path.normalize("src/pages/encounter-policy-route.test.js");
@@ -25,6 +29,9 @@ const legacyWidgetFile = path.normalize("src/pages/encounter-widget.js");
 const widgetPolicyFile = path.normalize("src/pages/encounter-widget-policy.js");
 const widgetPolicyTest = path.normalize("src/pages/encounter-widget-policy.test.js");
 const widgetMainWorldTest = path.normalize("src/pages/encounter-widget-main-world.test.js");
+const widgetGenerationRecoveryTest = path.normalize(
+  "src/pages/encounter-widget-generation-recovery.test.js"
+);
 const lobbyScheduleFile = path.normalize("src/pages/encounter-lobby-schedule.js");
 const lobbyScheduleTest = path.normalize("src/pages/encounter-lobby-schedule.test.js");
 const optionGateFile = path.normalize("src/pages/encounter-option-gate.js");
@@ -71,6 +78,7 @@ function checkFile(file) {
       relative !== owner &&
       relative !== stateHelper &&
       relative !== stateTest &&
+      relative !== stateDawnRecoveryTest &&
       relative !== stateEvidenceTest &&
       relative !== stateFailureTest &&
       relative !== policyFile &&
@@ -83,6 +91,7 @@ function checkFile(file) {
       relative !== owner &&
       relative !== entryExecutionFile &&
       relative !== stateTest &&
+      relative !== stateDawnRecoveryTest &&
       relative !== stateEvidenceTest &&
       relative !== bridgeFile &&
       /from\s+["']\.\/encounter-state\.js["']/.test(line)
@@ -115,6 +124,7 @@ function checkFile(file) {
       relative !== owner &&
       relative !== widgetPolicyTest &&
       relative !== widgetMainWorldTest &&
+      relative !== widgetGenerationRecoveryTest &&
       /from\s+["']\.\/encounter-widget-policy\.js["']/.test(line)
     ) {
       violations.push(
@@ -147,7 +157,11 @@ function checkFile(file) {
     ) {
       violations.push(`${where} encounter midnight scheduling belongs in encounter-policy.js`);
     }
-    if (relative !== policyFile && /encounter=\(\[A-Za-z0-9=\]\+\)/.test(line)) {
+    if (
+      relative !== policyFile &&
+      relative !== entryPolicyFile &&
+      /encounter=\(\[A-Za-z0-9=\]\+\)/.test(line)
+    ) {
       violations.push(`${where} encounter key parsing belongs in encounter-policy.js`);
     }
     if (relative !== owner && /\bnextCheckMs\b/.test(line)) {
@@ -262,9 +276,12 @@ const stateEvidenceTestText = fs.readFileSync(path.join(root, stateEvidenceTest)
 const diagnosticKeysText = fs.readFileSync(path.join(root, diagnosticKeys), "utf8");
 const diagnosticTestText = fs.readFileSync(path.join(root, diagnosticTest), "utf8");
 const policyText = fs.readFileSync(path.join(root, policyFile), "utf8");
+const entryPolicyText = fs.readFileSync(path.join(root, entryPolicyFile), "utf8");
+const generationRecoveryText = fs.readFileSync(path.join(root, generationRecoveryFile), "utf8");
 const policyTestText = [
   policyTest,
   policyRouteTest,
+  generationRecoveryTest,
 ].map((file) => fs.readFileSync(path.join(root, file), "utf8")).join("\n");
 const policyCorruptStateTestText = fs.existsSync(path.join(root, policyCorruptStateTest))
   ? fs.readFileSync(path.join(root, policyCorruptStateTest), "utf8")
@@ -279,6 +296,7 @@ const widgetUnavailableText = fs.readFileSync(
 const widgetPolicyTestText = [
   widgetPolicyTest,
   widgetMainWorldTest,
+  widgetGenerationRecoveryTest,
 ].map((file) => fs.readFileSync(path.join(root, file), "utf8")).join("\n");
 const entryExecutionFailureTestText = fs.readFileSync(
   path.join(root, entryExecutionFailureTest),
@@ -448,7 +466,10 @@ if (!stateEntryMatch) {
     }
   }
 }
-const stateTestText = fs.readFileSync(path.join(root, stateTest), "utf8");
+const stateTestText = [
+  stateTest,
+  stateDawnRecoveryTest,
+].map((file) => fs.readFileSync(path.join(root, file), "utf8")).join("\n");
 if (
   !stateTestText.includes(
     "rejects unknown and null state events without reading or writing encounter state"
@@ -717,10 +738,10 @@ if (!/\bPLAN_NEXT_CHECK\b/.test(policyText)) {
 }
 for (const required of [
   "ISEKAI_ENCOUNTER_BASE_URL",
-  "const buildEncounterEntryUrl = (key, context = {}) => context.isIsekai ? `${ISEKAI_ENCOUNTER_BASE_URL}?s=Battle&ss=ba&encounter=${key}` : `?s=Battle&ss=ba&encounter=${key}`;",
+  "buildEncounterEntryUrl",
   "isIsekai: event.isIsekai",
 ]) {
-  if (!policyText.includes(required)) {
+  if (!(policyText.includes(required) || entryPolicyText.includes(required))) {
     violations.push(`${policyFile.replaceAll("\\", "/")} must derive encounter entry URL from world identity: ${required}`);
   }
 }
@@ -868,17 +889,50 @@ if (
 for (const required of [
   "EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED",
   "generationAttemptKey",
+  "generationFailureCount",
+  "generationNextAttemptAt",
+  "generationCircuitOpenUntil",
+  'reason: "generationBackoff"',
+  'reason: "generationCircuitOpen"',
   'event.engage && unavailableReason === "encounterKeyMissing"',
-  "keeps the ready window after a main-world generation load returns no encounter key",
-  "suppresses repeated main-world news generation inside the same ready window",
-  "generationAttemptSuppressed",
-  'reason: "readyWindow"',
+  'reason: "dailyResetEvent"',
+  'action: "dailyResetEvent"',
+  'unavailableReason: "dailyResetEvent"',
+  "backs off ready-window generation after a main-world news load returns no encounter key",
+  "backs off repeated main-world news generation inside the same ready window",
+  "opens the circuit after repeated same-window generation failures",
+  "treats the CST 8 daily dawn event as a distinct generation failure with backoff",
   "keeps manual ready-window clicks able to load the encounter check",
   'action: "load"',
 ]) {
   if (!widgetPolicyText.includes(required) && !widgetPolicyTestText.includes(required)) {
     violations.push(
       `${widgetPolicyFile.replaceAll("\\", "/")} must preserve missing-key generation readiness evidence: ${required}`
+    );
+  }
+}
+for (const required of [
+  "ENCOUNTER_GENERATION_BACKOFF_MS",
+  "ENCOUNTER_GENERATION_CIRCUIT_THRESHOLD",
+  "ENCOUNTER_GENERATION_CIRCUIT_OPEN_MS",
+  "buildGenerationAttemptKey",
+  "readGenerationRecovery",
+  "generationFailureReason",
+]) {
+  if (!(policyText.includes(required) || generationRecoveryText.includes(required))) {
+    violations.push(
+      `${policyFile.replaceAll("\\", "/")} must own generation backoff/circuit recovery: ${required}`
+    );
+  }
+}
+for (const required of [
+  "backs off news loading when the daily CST 8 dawn event is not an encounter",
+  "dailyResetEvent",
+  "generationNextAttemptAt",
+]) {
+  if (!stateTestText.includes(required) && !stateHelperText.includes(required)) {
+    violations.push(
+      `${stateHelper.replaceAll("\\", "/")} must persist dawn-event generation backoff: ${required}`
     );
   }
 }

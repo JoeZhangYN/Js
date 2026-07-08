@@ -64,7 +64,7 @@ describe("encounter widget timer expiry", () => {
     });
   });
 
-  it("requests one ready-window generation load when the timer elapses without a key", () => {
+  it("backs off ready-window generation after a news load returns no key", () => {
     const state = { date: Date.now() - 31 * 60 * 1000, key: "", count: 1, clear: true };
 
     const first = runEncounterAutomation({
@@ -72,11 +72,17 @@ describe("encounter widget timer expiry", () => {
       state,
       pageType: "hv",
     });
-    const second = runEncounterAutomation({
-      type: EncounterEvent.WIDGET_TIMER_ELAPSED,
-      state,
+    const loaded = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_NEWS_LOADED,
+      state: first.state,
+      eventpane: "<p>No random encounter is currently available.</p>",
+      engage: true,
       pageType: "hv",
-      lastAttemptKey: first.attemptKey,
+    });
+    const backedOff = runEncounterAutomation({
+      type: EncounterEvent.WIDGET_TIMER_ELAPSED,
+      state: loaded.state,
+      pageType: "hv",
     });
 
     expect(first).toMatchObject({
@@ -85,7 +91,16 @@ describe("encounter widget timer expiry", () => {
       href: "https://e-hentai.org/news.php?encounter",
       attemptKey: expect.any(String),
     });
-    expect(second).toMatchObject({ action: "none", attemptKey: first.attemptKey });
+    expect(loaded).toMatchObject({
+      action: "unavailable",
+      unavailableReason: "encounterKeyMissing",
+      state: { generationFailureCount: 1 },
+    });
+    expect(backedOff).toMatchObject({
+      status: "countdown",
+      reason: "generationBackoff",
+      attemptKey: first.attemptKey,
+    });
     expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
   });
 

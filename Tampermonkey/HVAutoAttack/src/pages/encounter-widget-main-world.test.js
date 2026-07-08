@@ -6,51 +6,6 @@ beforeEach(() => {
 });
 
 describe("main-world encounter widget timing", () => {
-  it("keeps the ready window after a main-world generation load returns no encounter key", () => {
-    const attemptKey = `${Date.now() - 31 * 60 * 1000}::true:ready`;
-    const outcome = planEncounterWidgetEvent({
-      type: "widgetNewsLoaded",
-      state: { date: Date.now() - 31 * 60 * 1000, key: "", count: 7, clear: true },
-      eventpane: "<p>No random encounter is currently available.</p>",
-      engage: true,
-      pageType: "hv",
-    });
-
-    expect(outcome).toMatchObject({
-      action: "unavailable",
-      unavailableReason: "encounterKeyMissing",
-      status: "ready",
-      reason: "readyWindow",
-      remainingMs: 0,
-      state: {
-        date: Date.now() - 31 * 60 * 1000,
-        key: "",
-        count: 7,
-        clear: true,
-        generationAttemptKey: attemptKey,
-      },
-    });
-  });
-
-  it("suppresses repeated main-world news generation inside the same ready window", () => {
-    const date = Date.now() - 31 * 60 * 1000;
-    const attemptKey = `${date}::true:ready`;
-
-    expect(
-      planEncounterWidgetEvent({
-        type: "widgetTimerElapsed",
-        state: { date, key: "", count: 7, clear: true, generationAttemptKey: attemptKey },
-        pageType: "hv",
-      })
-    ).toMatchObject({
-      action: "none",
-      handled: true,
-      recovery: "generationAttemptSuppressed",
-      status: "ready",
-      state: { generationAttemptKey: attemptKey },
-    });
-  });
-
   it("keeps manual ready-window clicks able to load the encounter check", () => {
     expect(
       planEncounterWidgetEvent({

@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 describe("encounter generation attempt evidence", () => {
-  it("does not start cooldown or count when generation returns no encounter key", () => {
+  it("does not start encounter cooldown or count when generation returns no encounter key", () => {
     const state = { date: Date.now() - 31 * 60 * 1000, key: "", count: 7, clear: true };
 
     const next = runEncounterPolicy({
@@ -20,13 +20,20 @@ describe("encounter generation attempt evidence", () => {
       nowMs: Date.now(),
     });
 
-    expect(next).toEqual(state);
+    expect(next).toMatchObject({
+      date: state.date,
+      key: "",
+      count: 7,
+      clear: true,
+      generationFailureCount: 1,
+      generationFailureReason: "encounterKeyMissing",
+    });
     expect(
       runEncounterPolicy({
         type: EncounterPolicyEvent.READ_CLOCK,
         state: next,
         nowMs: Date.now() + 1000,
       })
-    ).toMatchObject({ status: "ready", reason: "readyWindow", countdownMs: 0 });
+    ).toMatchObject({ status: "countdown", reason: "generationBackoff", countdownMs: 299000 });
   });
 });

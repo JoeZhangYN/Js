@@ -9,7 +9,7 @@ function readWidgetState(state) {
     count: clock.state.count,
     status: clock.status,
     reason: clock.reason,
-    attemptKey: `${clock.state.date}:${clock.state.key}:${clock.state.clear}:${clock.status}`,
+    attemptKey: clock.attemptKey,
     warn: !clock.state.clear,
   };
 }
@@ -72,12 +72,6 @@ function planWidgetTimerElapsed(event) {
   const current = readWidgetState(event.state);
   if (current.status === "countdown") return current;
   if (event.pageType === "is") return suppressIsekaiNavigation(current);
-  if (
-    event.lastAttemptKey === current.attemptKey ||
-    current.state.generationAttemptKey === current.attemptKey
-  ) {
-    return { ...current, action: "none", handled: true, recovery: "generationAttemptSuppressed" };
-  }
   if (event.pageType === "eh") return { ...current, action: "checkHv", engage: true };
   return {
     ...planWidgetClick({ ...event, force: true }),
@@ -108,10 +102,16 @@ function planWidgetNewsLoaded(event) {
     return { ...readWidgetState(state), action: "ready" };
   }
   if (eventpane.includes("It is the dawn of a new day") || event.dawn) {
-    return {
-      ...readWidgetState(runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY })),
-      action: "reset",
-    };
+    const current = readWidgetState(event.state);
+    const state = event.engage
+      ? runEncounterPolicy({
+          type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED,
+          state: current.state,
+          attemptKey: current.attemptKey,
+          reason: "dailyResetEvent",
+        })
+      : runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY });
+    return { ...readWidgetState(state), action: "dailyResetEvent", unavailableReason: "dailyResetEvent" };
   }
   const unavailableReason = classifyWidgetUnavailableReason(eventpane);
   const current = readWidgetState(event.state);
@@ -120,6 +120,7 @@ function planWidgetNewsLoaded(event) {
         type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED,
         state: current.state,
         attemptKey: current.attemptKey,
+        reason: unavailableReason,
       })
     : current.state;
   return { ...readWidgetState(state), action: "unavailable", unavailableReason };

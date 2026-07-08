@@ -1,10 +1,10 @@
 import { TimeEvent, runTimeAutomation } from "../core/time.js";
+import { parseEventpaneEncounterKey, parseSearchEncounterKey, planEncounterEntryRoute } from "./encounter-entry-policy.js";
+import { buildGenerationAttemptKey, carryGenerationRecovery, clearGenerationRecovery, markEncounterGenerationAttempted, readGenerationRecovery } from "./encounter-generation-recovery.js";
 
 const ENCOUNTER_INTERVAL_MS = 30 * 60 * 1000,
   ENCOUNTER_DAILY_LIMIT = 24,
-  ENCOUNTER_MIDNIGHT_GRACE_MS = 5000,
-  ISEKAI_ENCOUNTER_BASE_URL = "https://hentaiverse.org/isekai/",
-  ENCOUNTER_GENERATION_URL = "https://e-hentai.org/news.php?encounter";
+  ENCOUNTER_MIDNIGHT_GRACE_MS = 5000;
 
 export const EncounterPolicyEvent = Object.freeze({
   DEFAULT_STATE: "defaultState",
@@ -34,9 +34,7 @@ function normalizeEncounterState(state, nowMs = Date.now()) {
     count: Number(state?.count) || 0,
     clear: state?.clear !== false,
   };
-  if (state?.generationAttemptKey) {
-    normalized.generationAttemptKey = String(state.generationAttemptKey);
-  }
+  carryGenerationRecovery(normalized, state, nowMs);
   if (normalized.count > ENCOUNTER_DAILY_LIMIT) return defaultEncounterState();
   if (!normalized.date && (normalized.count || (!normalized.key && !normalized.clear))) {
     return defaultEncounterState();
@@ -60,20 +58,46 @@ function readEncounterReadiness(state, nowMs = Date.now()) {
   };
 }
 
-const countdownEncounterClock = (readiness, countdownMs, reason) => ({ ...readiness, status: "countdown", countdownMs, reason });
+const countdownEncounterClock = (readiness, countdownMs, reason, nowMs = Date.now()) => ({
+  ...readiness,
+  status: "countdown",
+  countdownMs,
+  reason,
+  attemptKey: buildGenerationAttemptKey(readiness.state, nowMs, "countdown"),
+});
 
 function readEncounterClock(state, nowMs = Date.now()) {
   const readiness = readEncounterReadiness(state, nowMs);
   if (readiness.canEnter) {
-    return { ...readiness, status: "ready", countdownMs: 0, reason: "keyAvailable" };
+    return {
+      ...readiness,
+      status: "ready",
+      countdownMs: 0,
+      reason: "keyAvailable",
+      attemptKey: buildGenerationAttemptKey(readiness.state, nowMs, "ready"),
+    };
   }
   if (readiness.dailyLimitReached) {
-    return countdownEncounterClock(readiness, msUntilNextUtcDay(nowMs) + ENCOUNTER_MIDNIGHT_GRACE_MS, "dailyReset");
+    return countdownEncounterClock(
+      readiness,
+      msUntilNextUtcDay(nowMs) + ENCOUNTER_MIDNIGHT_GRACE_MS,
+      "dailyReset",
+      nowMs
+    );
   }
   if (readiness.remainingMs > 0) {
-    return countdownEncounterClock(readiness, readiness.remainingMs, "cooldown");
+    return countdownEncounterClock(readiness, readiness.remainingMs, "cooldown", nowMs);
   }
-  return { ...readiness, status: readiness.state.clear ? "ready" : "missed", countdownMs: 0, reason: "readyWindow" };
+  const recovery = readGenerationRecovery(readiness.state, nowMs);
+  if (recovery) return { ...readiness, ...recovery, attemptKey: readiness.state.generationAttemptKey };
+  const status = readiness.state.clear ? "ready" : "missed";
+  return {
+    ...readiness,
+    status,
+    countdownMs: 0,
+    reason: "readyWindow",
+    attemptKey: buildGenerationAttemptKey(readiness.state, nowMs, status),
+  };
 }
 
 function planNextEncounterCheck(state, { nowMs = Date.now(), jitter = Math.random() } = {}) {
@@ -85,26 +109,10 @@ function planNextEncounterCheck(state, { nowMs = Date.now(), jitter = Math.rando
   return { delayMs, reason: clock.reason, status: clock.status, clock };
 }
 
-const buildEncounterEntryUrl = (key, context = {}) => context.isIsekai ? `${ISEKAI_ENCOUNTER_BASE_URL}?s=Battle&ss=ba&encounter=${key}` : `?s=Battle&ss=ba&encounter=${key}`;
-
 function planEncounterActivation(state, { force: _force = false, nowMs = Date.now(), isIsekai = false } = {}) {
   const readiness = readEncounterReadiness(state, nowMs);
-  if (readiness.canEnter) {
-    return {
-      action: "enter",
-      href: buildEncounterEntryUrl(readiness.state.key, { isIsekai }),
-      state: readiness.state,
-    };
-  }
-  if (!readiness.state.key && !readiness.dailyLimitReached && readiness.remainingMs === 0) {
-    return { action: "navigate", href: ENCOUNTER_GENERATION_URL, state: readiness.state };
-  }
-  return { action: "load", state: readiness.state };
+  return planEncounterEntryRoute(readiness, { isIsekai });
 }
-
-const parseEncounterKeyFromSearch = (search = "") => /\?s=Battle&ss=ba&encounter=([A-Za-z0-9=]+)/.exec(search)?.[1];
-
-const parseEncounterKeyFromEventpaneHtml = (eventpane = "") => eventpane.match(/\?s=Battle&amp;ss=ba&amp;encounter=([A-Za-z0-9=]+)/)?.[1];
 
 function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
   const next = normalizeEncounterState(state, nowMs);
@@ -112,8 +120,7 @@ function markEncounterKeyAvailable(state, key, nowMs = Date.now()) {
   if (next.key === key) return next;
   next.key = key;
   next.clear = false;
-  delete next.generationAttemptKey;
-  return next;
+  return clearGenerationRecovery(next);
 }
 
 function markEncounterAttempted(state, key, nowMs = Date.now()) {
@@ -123,17 +130,9 @@ function markEncounterAttempted(state, key, nowMs = Date.now()) {
   return next;
 }
 
-function markEncounterGenerationAttempted(state, attemptKey, nowMs = Date.now()) {
-  const next = normalizeEncounterState(state, nowMs);
-  if (next.key && !next.clear) return next;
-  next.clear = true;
-  if (attemptKey) next.generationAttemptKey = String(attemptKey);
-  return next;
-}
-
 function markEncounterStarted(state, event = {}) {
   const { search = "", source = "", nowMs = Date.now() } = event;
-  const key = event.key || parseEncounterKeyFromSearch(search);
+  const key = event.key || parseSearchEncounterKey(search);
   const next = normalizeEncounterState(state, nowMs);
   const hasBattleStartEvidence = source === "battleRoundStart";
   if (!key && !hasBattleStartEvidence) return next;
@@ -143,7 +142,7 @@ function markEncounterStarted(state, event = {}) {
     next.key = key || next.key || "";
     next.count++;
     next.clear = true;
-    delete next.generationAttemptKey;
+    clearGenerationRecovery(next);
   }
   return next;
 }
@@ -155,11 +154,11 @@ const encounterPolicyEventHandlers = Object.freeze({
   [EncounterPolicyEvent.READ_CLOCK]: (event) => readEncounterClock(event.state, event.nowMs),
   [EncounterPolicyEvent.PLAN_NEXT_CHECK]: (event) => planNextEncounterCheck(event.state, { nowMs: event.nowMs, jitter: event.jitter }),
   [EncounterPolicyEvent.PLAN_ACTIVATION]: (event) => planEncounterActivation(event.state, { force: event.force, nowMs: event.nowMs, isIsekai: event.isIsekai }),
-  [EncounterPolicyEvent.PARSE_SEARCH_KEY]: (event) => parseEncounterKeyFromSearch(event.search),
-  [EncounterPolicyEvent.PARSE_EVENTPANE_KEY]: (event) => parseEncounterKeyFromEventpaneHtml(event.eventpane),
+  [EncounterPolicyEvent.PARSE_SEARCH_KEY]: (event) => parseSearchEncounterKey(event.search),
+  [EncounterPolicyEvent.PARSE_EVENTPANE_KEY]: (event) => parseEventpaneEncounterKey(event.eventpane),
   [EncounterPolicyEvent.MARK_KEY_AVAILABLE]: (event) => markEncounterKeyAvailable(event.state, event.key, event.nowMs),
   [EncounterPolicyEvent.MARK_ATTEMPTED]: (event) => markEncounterAttempted(event.state, event.key, event.nowMs),
-  [EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED]: (event) => markEncounterGenerationAttempted(event.state, event.attemptKey, event.nowMs),
+  [EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED]: (event) => markEncounterGenerationAttempted(event.state, event.attemptKey, event.nowMs, event.reason),
   [EncounterPolicyEvent.MARK_STARTED]: (event) => markEncounterStarted(event.state, event),
 });
 

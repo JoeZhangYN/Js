@@ -128,7 +128,8 @@ function loadEncounterKey() {
             })
           );
         } else if (parsed.dawn) {
-          writeReState(runEncounterPolicy({ type: EncounterPolicyEvent.RESET_DAY }));
+          const clock = runEncounterPolicy({ type: EncounterPolicyEvent.READ_CLOCK, state });
+          writeReState(runEncounterPolicy({ type: EncounterPolicyEvent.MARK_GENERATION_ATTEMPTED, state: clock.state, attemptKey: clock.attemptKey, reason: "dailyResetEvent" }));
         }
         resolve(parsed.key ? readCurrentReState() : null);
       },
