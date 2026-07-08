@@ -1944,12 +1944,14 @@ try {
     CONFIRM_MOOGLEMAIL_ATTACHMENT_TAKE: 'confirmMoogleMailAttachmentTake',
     CONFIRM_MOOGLEMAIL_MESSAGE_RETURN: 'confirmMoogleMailMessageReturn',
     CONFIRM_MOOGLEMAIL_DB_CLEAR: 'confirmMoogleMailDbClear',
+    CONFIRM_MOOGLEMAIL_COMPOSE_PROTECTED_EQUIPMENT_ATTACH: 'confirmMoogleMailComposeProtectedEquipmentAttach',
     ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE: 'alertMonsterUpgradeStockShortage',
     ALERT_MOOGLEMAIL_DB_IMPORT_READ_FAILED: 'alertMoogleMailDbImportReadFailed',
     ALERT_MOOGLEMAIL_DB_IMPORT_PARSE_FAILED: 'alertMoogleMailDbImportParseFailed',
     ALERT_MOOGLEMAIL_COMPOSE_REMOVE_ATTACHED_ITEMS: 'alertMoogleMailComposeRemoveAttachedItems',
     ALERT_MOOGLEMAIL_COMPOSE_ITEM_COUNT_SHORTAGE: 'alertMoogleMailComposeItemCountShortage',
     ALERT_MOOGLEMAIL_COMPOSE_RECIPIENT_MISSING: 'alertMoogleMailComposeRecipientMissing',
+    ALERT_MOOGLEMAIL_COMPOSE_LOCKED_EQUIPMENT: 'alertMoogleMailComposeLockedEquipment',
     ALERT_MOOGLEMAIL_MULTI_SEND_INPUT_ERRORS: 'alertMoogleMailMultiSendInputErrors',
     ALERT_MOOGLEMAIL_MULTI_SEND_CREDITS_SHORTAGE: 'alertMoogleMailMultiSendCreditsShortage',
     ALERT_MOOGLEMAIL_MULTI_SEND_HATH_SHORTAGE: 'alertMoogleMailMultiSendHathShortage',
@@ -1969,6 +1971,10 @@ try {
     moogleMailDbClearConfirm: {
       main: '在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？',
       isekai: '在此浏览器中选定赛季的MoogleMail记录将被删除。\n你确定吗？',
+    },
+    moogleMailComposeProtectedEquipmentAttachConfirm: {
+      main: '确定要附上受保护的装备吗？',
+      isekai: '确定要附上受保护的装备吗？',
     },
     monsterUpgradeStockShortageAlert: {
       main: '水晶或混沌令牌不足',
@@ -1993,6 +1999,10 @@ try {
     moogleMailComposeRecipientMissingAlert: {
       main: '没有收件人',
       isekai: '没有收件人',
+    },
+    moogleMailComposeLockedEquipmentAlert: {
+      main: '已上锁装备',
+      isekai: '已上锁装备',
     },
     moogleMailMultiSendInputErrorsAlert: {
       main: '{errors}',
@@ -2026,7 +2036,8 @@ try {
     if (event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE ||
       event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_ATTACHMENT_TAKE ||
       event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_MESSAGE_RETURN ||
-      event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_DB_CLEAR) {
+      event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_DB_CLEAR ||
+      event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_COMPOSE_PROTECTED_EQUIPMENT_ATTACH) {
       return confirm(format_hvut_feedback_copy(event.copy, event.values));
     }
     if (event?.type === HVUT_FEEDBACK_EVENT.ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE ||
@@ -2035,6 +2046,7 @@ try {
       event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_REMOVE_ATTACHED_ITEMS ||
       event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_ITEM_COUNT_SHORTAGE ||
       event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_RECIPIENT_MISSING ||
+      event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_LOCKED_EQUIPMENT ||
       event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_MULTI_SEND_INPUT_ERRORS ||
       event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_MULTI_SEND_CREDITS_SHORTAGE ||
       event?.type === HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_MULTI_SEND_HATH_SHORTAGE) {
@@ -2084,6 +2096,12 @@ try {
       copy: 'moogleMailDbClearConfirm',
     });
   };
+  var confirm_hvut_mooglemail_compose_protected_equipment_attach = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_COMPOSE_PROTECTED_EQUIPMENT_ATTACH,
+      copy: 'moogleMailComposeProtectedEquipmentAttachConfirm',
+    });
+  };
   var alert_hvut_monster_upgrade_stock_shortage = function () {
     return run_hvut_user_feedback({
       type: HVUT_FEEDBACK_EVENT.ALERT_MONSTER_UPGRADE_STOCK_SHORTAGE,
@@ -2118,6 +2136,12 @@ try {
     return run_hvut_user_feedback({
       type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_RECIPIENT_MISSING,
       copy: 'moogleMailComposeRecipientMissingAlert',
+    });
+  };
+  var alert_hvut_mooglemail_compose_locked_equipment = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.ALERT_MOOGLEMAIL_COMPOSE_LOCKED_EQUIPMENT,
+      copy: 'moogleMailComposeLockedEquipmentAlert',
     });
   };
   var alert_hvut_mooglemail_multi_send_input_errors = function (errors) {
@@ -10811,7 +10835,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
           return;
         }
         if (selected.some((e) => e.data.pane === 'equip' && e.info.protected)) {
-          if (!confirm('确定要附上受保护的装备吗？')) {
+          if (!confirm_hvut_mooglemail_compose_protected_equipment_attach()) {
             return;
           }
         }
@@ -16730,7 +16754,7 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
         return;
       }
       if (selected.some((e) => e.data.pane === 'equip' && e.node.div?.dataset.locked == '1')) {
-        alert('已上锁装备'); // Equipment cannot be attached, kupo!
+        alert_hvut_mooglemail_compose_locked_equipment();
         return;
       }
       if (selected.some((e) => e.data.count > e.data.stock)) {
