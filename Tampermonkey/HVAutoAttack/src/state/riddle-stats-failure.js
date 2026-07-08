@@ -1,4 +1,8 @@
 import { delValue, setValue } from "./storage.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 export const RIDDLE_STATS_KEY = "riddleStats";
 export const RIDDLE_STATS_FAILURE_KEY = "HVAA:lastRiddleStatsFailure";
@@ -11,14 +15,13 @@ export function recordRiddleStatsFailure(stage, error) {
   };
   try {
     sessionStorage.setItem(RIDDLE_STATS_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Riddle stats evidence is diagnostic only.
   }
-  try {
-    console.warn("[HVAA] riddle stats persistence failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] riddle stats persistence failed", evidence],
+  });
   return evidence;
 }
 

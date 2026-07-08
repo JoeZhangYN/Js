@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   setValue: vi.fn(),
   delValue: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("./storage.js", async () => {
@@ -19,6 +25,7 @@ beforeEach(() => {
   window.localStorage.clear();
   window.sessionStorage.clear();
   vi.restoreAllMocks();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.setValue.mockReset();
   mocks.delValue.mockReset();
   mocks.setValue.mockImplementation((item, value) => {
@@ -31,7 +38,6 @@ beforeEach(() => {
 
 describe("riddle stats persistence failures", () => {
   it("does not log riddle detail when stats write fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.setValue.mockImplementation(() => {
       throw new Error("riddle stats write blocked");
     });
@@ -45,11 +51,17 @@ describe("riddle stats persistence failures", () => {
       stage: "record-detail",
       failure: { kind: "storageWrite", error: "riddle stats write blocked" },
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] riddle stats persistence failed",
+        expect.objectContaining({ capability: "riddleStats", stage: "record-detail" }),
+      ],
+    });
     expect(runRiddleLogAutomation({ type: RiddleLogEvent.READ })).toEqual([]);
   });
 
   it("does not report riddle stats reset success when storage delete fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.delValue.mockImplementation(() => {
       throw new Error("riddle stats delete blocked");
     });
@@ -64,7 +76,6 @@ describe("riddle stats persistence failures", () => {
   });
 
   it("does not report riddle stats record success when evidence log write fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.setValue.mockImplementation((item, value) => {
       if (item === "riddleLog") throw new Error("riddle log write blocked");
       window.localStorage[`hvAA_${item}`] =
@@ -81,15 +92,13 @@ describe("riddle stats persistence failures", () => {
     });
   });
 
-  it("does not throw when riddle stats failure evidence and warning both fail", () => {
+  it("does not throw when riddle stats failure evidence and diagnostic console both fail", () => {
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === RIDDLE_STATS_FAILURE_KEY) throw new Error("session blocked");
       return Reflect.apply(originalSetItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     mocks.setValue.mockImplementation(() => {
       throw new Error("riddle stats write blocked");
     });

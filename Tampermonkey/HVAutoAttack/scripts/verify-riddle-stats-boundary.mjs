@@ -162,10 +162,17 @@ for (const required of [
   "riddleStats",
   "persistRiddleStats",
   "clearPersistedRiddleStats",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
 ]) {
   if (!failureOwnerText.includes(required)) {
     violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureOwnerText)) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} riddle stats diagnostics must use the typed diagnostic console entry`
+  );
 }
 for (const required of [
   "RIDDLE_STATS_FAILURE_KEY",
@@ -175,6 +182,8 @@ for (const required of [
   "riddle stats delete blocked",
   "storageWrite",
   "RiddleLogEvent.READ",
+  "does not throw when riddle stats failure evidence and diagnostic console both fail",
+  "runDiagnosticConsoleAutomation",
 ]) {
   if (!failureTestText.includes(required)) {
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
