@@ -4645,6 +4645,8 @@ function checkAttackEntry() {
     "runPhysicalSkillRanking",
     "pickByUtility",
     "aoeScore",
+    "DiagnosticConsoleEvent.INFO",
+    "runDiagnosticConsoleAutomation",
   ]) {
     if (!rankingText.includes(required)) {
       violations.push(
@@ -4678,6 +4680,11 @@ function checkAttackEntry() {
       `${rel(physicalSkillRankingFile)} must reject null physical skill ranking events`
     );
   }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(rankingText)) {
+    violations.push(
+      `${rel(physicalSkillRankingFile)} must route ranking diagnostics through the typed diagnostic console entry`
+    );
+  }
   const rankingTestText = fs.readFileSync(
     path.join(root, "src/battle/attack/physical-skill-ranking.test.js"),
     "utf8"
@@ -4685,6 +4692,11 @@ function checkAttackEntry() {
   if (!rankingTestText.includes("runPhysicalSkillRanking(null)")) {
     violations.push(
       `${rel(physicalSkillRankingFile)} tests must cover null physical skill ranking events`
+    );
+  }
+  if (!rankingTestText.includes("typed utility debug logging")) {
+    violations.push(
+      `${rel(physicalSkillRankingFile)} tests must cover typed utility debug logging`
     );
   }
   const scoreContextBody =

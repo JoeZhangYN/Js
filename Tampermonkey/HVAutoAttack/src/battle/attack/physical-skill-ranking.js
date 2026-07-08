@@ -8,6 +8,11 @@
 // - dispatch: 若被选中调用此函数执行副作用
 // - explain: 可选打分理由（debug 日志用）
 
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../../core/diagnostic-console.js";
+
 const EVENT_PICK_BY_UTILITY = "pick-by-utility";
 const EVENT_AOE_SCORE = "aoe-score";
 
@@ -46,9 +51,12 @@ function pickByUtility(candidates, options = {}) {
       .slice(1, 3)
       .map((c) => `${label(c)}=${c.score.toFixed(0)}`)
       .join(", ");
-    console.log(
-      `[physical-skill-ranking] ${label(winner)} score=${winner.score.toFixed(0)}${winner.explain ? " (" + winner.explain + ")" : ""}${runners ? ` vs [${runners}]` : ""}`
-    );
+    runDiagnosticConsoleAutomation({
+      type: DiagnosticConsoleEvent.INFO,
+      args: [
+        `[physical-skill-ranking] ${label(winner)} score=${winner.score.toFixed(0)}${winner.explain ? " (" + winner.explain + ")" : ""}${runners ? ` vs [${runners}]` : ""}`,
+      ],
+    });
   }
   return winner;
 }

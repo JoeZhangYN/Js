@@ -1,5 +1,15 @@
 // 6B-1：pickByUtility 纯选择回归锁(选最高分 >0,无副作用)。
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ INFO: "info" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 import { PhysicalSkillRankingEvent, runPhysicalSkillRanking } from "./physical-skill-ranking.js";
 
 function pickByUtility(candidates, options = {}) {
@@ -19,6 +29,11 @@ function aoeScore(baseScore, aliveCount) {
 }
 
 describe("pickByUtility", () => {
+  beforeEach(() => {
+    mocks.runDiagnosticConsoleAutomation.mockReset();
+    mocks.runDiagnosticConsoleAutomation.mockReturnValue(true);
+  });
+
   it("选最高分候选", () => {
     const w = pickByUtility([
       { code: "T1", score: 40 },
@@ -62,20 +77,15 @@ describe("pickByUtility", () => {
   });
 
   it("默认不打 debug log，保持纯选择安静", () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
-
     pickByUtility([
       { code: "T1", score: 40 },
       { code: "OFC", score: 100, explain: "aoe" },
     ]);
 
-    expect(log).not.toHaveBeenCalled();
-    log.mockRestore();
+    expect(mocks.runDiagnosticConsoleAutomation).not.toHaveBeenCalled();
   });
 
-  it("debugLog:true 时输出 utility debug logging", () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
-
+  it("debugLog:true 时输出 typed utility debug logging", () => {
     pickByUtility(
       [
         { code: "T1", score: 40 },
@@ -84,10 +94,10 @@ describe("pickByUtility", () => {
       { debugLog: true }
     );
 
-    expect(log).toHaveBeenCalledWith(
-      expect.stringContaining("[physical-skill-ranking] OFC score=100")
-    );
-    log.mockRestore();
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "info",
+      args: [expect.stringContaining("[physical-skill-ranking] OFC score=100")],
+    });
   });
 
   it("rejects unknown physical skill ranking events", () => {
