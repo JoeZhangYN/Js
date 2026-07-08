@@ -6,7 +6,13 @@ import { RecoveryLearningEvent, runRecoveryLearningAutomation } from "./recovery
 import { BattleTurnEvent, runBattleTurnAutomation } from "./battle-turn.js";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ INFO: "info", WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("./option.js", () => ({
@@ -20,6 +26,7 @@ beforeEach(() => {
   localStorage.clear();
   g("learnPending", null);
   runBattleTurnAutomation({ type: BattleTurnEvent.ROUND_STARTED });
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue(false);
 });
@@ -49,7 +56,6 @@ describe("recovery learner", () => {
   });
 
   it("reads the dynamic heal log switch through the option entry", () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
     mocks.runOptionAutomation.mockReturnValue(true);
 
     runRecoveryLearningAutomation({
@@ -68,8 +74,16 @@ describe("recovery learner", () => {
       key: "dynamicHealLog",
       fallback: false,
     });
-    expect(log).toHaveBeenCalledWith(expect.stringContaining("[recovery-learn] discard"));
-    log.mockRestore();
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "info",
+      args: [
+        "[HVAA] recovery learning diagnostic",
+        expect.objectContaining({
+          capability: "recoveryLearning",
+          stage: "discard-interference",
+        }),
+      ],
+    });
   });
 
   it("normalizes pending recovery samples before settling them", () => {

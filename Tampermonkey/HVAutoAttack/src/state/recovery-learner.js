@@ -1,10 +1,12 @@
 // 药品恢复量自学：喝药前记录 recoveryAbs，下回合用 delta 更新 learned recovery。
 import { g } from "./store.js";
-import { OptionEvent, runOptionAutomation } from "./option.js";
 import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "./battle-turn.js";
-import { persistLearnedRecovery } from "./recovery-learner-failure.js";
+import {
+  persistLearnedRecovery,
+  recordDynamicRecoveryLearningDiagnostic,
+} from "./recovery-learner-failure.js";
 
 const EVENT_RECORD_PRE_DRINK = "recordPreDrink";
 const EVENT_FINALIZE_PENDING = "finalizePending";
@@ -30,16 +32,6 @@ const RECOVERY_PRIOR = Object.freeze({
   11395: { stat: "sp", amount: 160 }, // Spirit Potion
   11399: { stat: "sp", amount: 320 }, // Spirit Elixir
 });
-
-function isDynamicHealLogEnabled() {
-  return Boolean(
-    runOptionAutomation({
-      type: OptionEvent.READ_FIELD,
-      key: "dynamicHealLog",
-      fallback: false,
-    })
-  );
-}
 
 function normalizeNumber(value, fallback = 0) {
   const number = Number(value);
@@ -124,11 +116,10 @@ function finalizePending(event) {
   g("learnPending", null); // 清 pending
   if (delta <= 0) {
     // 怪物攻击/regen 干扰，不可信，丢弃
-    if (isDynamicHealLogEnabled()) {
-      console.log(
-        `[recovery-learn] discard ${pending.potionId}: delta=${delta.toFixed(0)} (interference)`
-      );
-    }
+    recordDynamicRecoveryLearningDiagnostic("discard-interference", {
+      potionId: pending.potionId,
+      delta,
+    });
     return;
   }
   return updateLearned(pending.potionId, delta);
@@ -143,11 +134,12 @@ function updateLearned(potionId, observedDelta) {
   const newAmt = priorAmt * (1 - alpha) + observedDelta * alpha;
   learned[potionId] = { amount: newAmt, n };
   const persisted = persistLearnedRecovery(learned);
-  if (isDynamicHealLogEnabled()) {
-    console.log(
-      `[recovery-learn] ${potionId}: delta=${observedDelta.toFixed(0)} → learned=${newAmt.toFixed(0)} (n=${n})`
-    );
-  }
+  recordDynamicRecoveryLearningDiagnostic("update-learned", {
+    potionId,
+    observedDelta,
+    learnedAmount: newAmt,
+    n,
+  });
   return persisted;
 }
 

@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   setValue: vi.fn(),
   runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ INFO: "info", WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("./storage.js", async () => {
@@ -17,7 +23,6 @@ vi.mock("./option.js", () => ({
 
 import { RecoveryLearningEvent, runRecoveryLearningAutomation } from "./recovery-learner.js";
 import { RECOVERY_LEARNING_FAILURE_KEY } from "./recovery-learner-failure.js";
-import { STORAGE_KEYS } from "./persist-keys.js";
 import { g } from "./store.js";
 import { BattleTurnEvent, runBattleTurnAutomation } from "./battle-turn.js";
 
@@ -26,6 +31,7 @@ beforeEach(() => {
   window.sessionStorage.clear();
   vi.restoreAllMocks();
   mocks.setValue.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue(false);
   g("learnPending", null);
@@ -43,7 +49,6 @@ function recordPendingPotion() {
 
 describe("recovery learning persistence failures", () => {
   it("does not report learned recovery success when storage write fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.setValue.mockImplementation(() => {
       throw new Error("recovery learning write blocked");
     });
@@ -61,18 +66,23 @@ describe("recovery learning persistence failures", () => {
       stage: "update-learned",
       failure: { kind: "storageWrite", error: "recovery learning write blocked" },
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] recovery learning persistence failed",
+        expect.objectContaining({ capability: "recoveryLearning", stage: "update-learned" }),
+      ],
+    });
     expect(g("learnPending")).toBeNull();
   });
 
-  it("does not throw when recovery learning failure evidence and warning both fail", () => {
+  it("does not throw when recovery learning failure evidence and diagnostic console both fail", () => {
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === RECOVERY_LEARNING_FAILURE_KEY) throw new Error("session blocked");
       return Reflect.apply(originalSetItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     mocks.setValue.mockImplementation(() => {
       throw new Error("recovery learning write blocked");
     });

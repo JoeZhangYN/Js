@@ -132,7 +132,6 @@ for (const required of [
   "runRecoveryLearningAutomation",
   "RecoveryLearningEvent",
   "STORAGE_KEYS.LEARNED_RECOVERY",
-  "OptionEvent.READ_FIELD",
   "RECOVERY_PRIOR",
   "normalizePotionId",
   "normalizePending",
@@ -140,6 +139,7 @@ for (const required of [
   "normalizeLearnedRecoveryRecord",
   "readLearnedRecoveryMap",
   "persistLearnedRecovery",
+  "recordDynamicRecoveryLearningDiagnostic",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -240,23 +240,41 @@ if ((ownerText.match(/\bsetValue\(/g) || []).length !== 0) {
     `${owner.replaceAll("\\", "/")} must not write learned recovery storage directly`
   );
 }
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} recovery learning diagnostics must use the typed diagnostic console entry`
+  );
+}
 for (const required of [
   "RECOVERY_LEARNING_FAILURE_KEY",
   "HVAA:lastRecoveryLearningFailure",
   "recordRecoveryLearningFailure",
+  "recordRecoveryLearningDiagnostic",
+  "recordDynamicRecoveryLearningDiagnostic",
   "recoveryLearning",
   "persistLearnedRecovery",
+  "OptionEvent.READ_FIELD",
+  "dynamicHealLog",
+  "DiagnosticConsoleEvent.INFO",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   "STORAGE_KEYS.LEARNED_RECOVERY",
 ]) {
   if (!failureOwnerText.includes(required)) {
     violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
   }
 }
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureOwnerText)) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} recovery learning diagnostics must use the typed diagnostic console entry`
+  );
+}
 for (const required of [
   "RECOVERY_LEARNING_FAILURE_KEY",
   "update-learned",
   "storageWrite",
   "recovery learning write blocked",
+  "runDiagnosticConsoleAutomation",
 ]) {
   if (!failureTestText.includes(required)) {
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
