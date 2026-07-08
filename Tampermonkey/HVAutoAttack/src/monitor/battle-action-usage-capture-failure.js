@@ -1,3 +1,7 @@
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 import { DiagnosticEvidenceKey } from "../core/diagnostic-evidence-keys.js";
 
 export function recordBattleActionUsageCaptureFailure(stage, detail = {}) {
@@ -7,13 +11,12 @@ export function recordBattleActionUsageCaptureFailure(stage, detail = {}) {
       DiagnosticEvidenceKey.BATTLE_ACTION_USAGE_CAPTURE_FAILURE,
       JSON.stringify(evidence)
     );
-  } catch (_error) {
+  } catch {
     // Usage capture failure evidence is diagnostic only.
   }
-  try {
-    console.warn("[HVAA] battle action usage capture failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] battle action usage capture failed", evidence],
+  });
   return evidence;
 }

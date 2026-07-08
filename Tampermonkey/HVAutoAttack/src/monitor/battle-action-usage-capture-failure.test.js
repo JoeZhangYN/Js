@@ -1,4 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 import {
   BattleActionUsageCaptureEvent,
   runBattleActionUsageCapture,
@@ -6,6 +16,7 @@ import {
 
 afterEach(() => {
   sessionStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -31,6 +42,13 @@ function expectCaptureFailure(stage) {
   expect(
     JSON.parse(sessionStorage.getItem("HVAA:lastBattleActionUsageCaptureFailure"))
   ).toMatchObject({ capability: "battleActionUsageCapture", stage });
+  expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+    type: "warn",
+    args: [
+      "[HVAA] battle action usage capture failed",
+      expect.objectContaining({ capability: "battleActionUsageCapture", stage }),
+    ],
+  });
 }
 
 describe("runBattleActionUsageCapture failure evidence", () => {
@@ -91,5 +109,24 @@ describe("runBattleActionUsageCapture failure evidence", () => {
       runBattleActionUsageCapture({ type: BattleActionUsageCaptureEvent.ACTION_STARTED }, runtime)
     ).toBeUndefined();
     expectCaptureFailure("action-start-option");
+  });
+
+  it("does not throw when usage capture evidence and diagnostic console both fail", () => {
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
+    const originalSetItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
+      if (key === "HVAA:lastBattleActionUsageCaptureFailure") {
+        throw new Error("session blocked");
+      }
+      return Reflect.apply(originalSetItem, this, [key, value]);
+    });
+    const runtime = deps({ info: { mode: "attack", skill: "attack" } });
+    runtime.readOptionField.mockImplementation(() => {
+      throw new Error("option blocked");
+    });
+
+    expect(() =>
+      runBattleActionUsageCapture({ type: BattleActionUsageCaptureEvent.ACTION_STARTED }, runtime)
+    ).not.toThrow();
   });
 });

@@ -1,4 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 import { STORAGE_KEYS } from "../state/persist-keys.js";
 import {
   BattleRecordArchiveEvent,
@@ -24,18 +34,20 @@ function lastFailure() {
   return JSON.parse(sessionStorage.getItem(BATTLE_RECORD_ARCHIVE_FAILURE_KEY));
 }
 
+function fail(message) {
+  throw new Error(message);
+}
+
 beforeEach(() => {
   sessionStorage.clear();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   vi.restoreAllMocks();
 });
 
 describe("battle record archive persistence failures", () => {
   it("does not report battle report recording success when code persistence fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     const runtime = deps();
-    runtime.setValue.mockImplementation(() => {
-      throw new Error("battle code blocked");
-    });
+    runtime.setValue.mockImplementation(() => fail("battle code blocked"));
 
     expect(
       runBattleRecordArchiveAutomation(
@@ -54,13 +66,18 @@ describe("battle record archive persistence failures", () => {
       key: STORAGE_KEYS.BATTLE_CODE,
       failure: { kind: "storageWrite", error: "battle code blocked" },
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] battle record archive persistence failed",
+        expect.objectContaining({ capability: "battleRecordArchive", stage: "start-recording" }),
+      ],
+    });
   });
 
   it("does not report current record success when current persistence fails", () => {
     const runtime = deps();
-    runtime.setValue.mockImplementation(() => {
-      throw new Error("drop write blocked");
-    });
+    runtime.setValue.mockImplementation(() => fail("drop write blocked"));
 
     expect(
       runBattleRecordArchiveAutomation(
@@ -83,9 +100,7 @@ describe("battle record archive persistence failures", () => {
 
   it("does not report archive success when clearing the current record fails", () => {
     const runtime = deps({ [STORAGE_KEYS.BATTLE_CODE]: "AR-10" });
-    runtime.delValue.mockImplementation(() => {
-      throw new Error("drop clear blocked");
-    });
+    runtime.delValue.mockImplementation(() => fail("drop clear blocked"));
 
     expect(
       runBattleRecordArchiveAutomation(
@@ -129,19 +144,15 @@ describe("battle record archive persistence failures", () => {
     });
   });
 
-  it("does not throw when archive failure evidence and warning both fail", () => {
+  it("does not throw when archive failure evidence and diagnostic console both fail", () => {
     const runtime = deps();
-    runtime.setValue.mockImplementation(() => {
-      throw new Error("battle code blocked");
-    });
+    runtime.setValue.mockImplementation(() => fail("battle code blocked"));
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === BATTLE_RECORD_ARCHIVE_FAILURE_KEY) throw new Error("session blocked");
       return Reflect.apply(originalSetItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
 
     expect(() =>
       runBattleRecordArchiveAutomation(

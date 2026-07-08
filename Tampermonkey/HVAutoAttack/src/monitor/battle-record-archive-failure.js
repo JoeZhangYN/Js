@@ -1,3 +1,8 @@
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
+
 export const BATTLE_RECORD_ARCHIVE_FAILURE_KEY = "HVAA:lastBattleRecordArchiveFailure";
 
 export function recordBattleRecordArchiveFailure(stage, key, error) {
@@ -9,14 +14,13 @@ export function recordBattleRecordArchiveFailure(stage, key, error) {
   };
   try {
     sessionStorage.setItem(BATTLE_RECORD_ARCHIVE_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Archive failure evidence is diagnostic only.
   }
-  try {
-    console.warn("[HVAA] battle record archive persistence failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] battle record archive persistence failed", evidence],
+  });
   return evidence;
 }
 

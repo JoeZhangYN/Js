@@ -424,13 +424,14 @@ function checkActionUsageCaptureEntry() {
     path.join(root, "src/monitor/battle-action-usage-capture.test.js"),
     "utf8"
   );
-  const captureFailureTestText = fs.existsSync(
-    path.join(root, "src/monitor/battle-action-usage-capture-failure.test.js")
-  )
-    ? fs.readFileSync(
-        path.join(root, "src/monitor/battle-action-usage-capture-failure.test.js"),
-        "utf8"
-      )
+  const captureFailureFile = path.join(root, "src/monitor/battle-action-usage-capture-failure.js");
+  const captureFailureTestFile = path.join(
+    root,
+    "src/monitor/battle-action-usage-capture-failure.test.js"
+  );
+  const captureFailureText = fs.readFileSync(captureFailureFile, "utf8");
+  const captureFailureTestText = fs.existsSync(captureFailureTestFile)
+    ? fs.readFileSync(captureFailureTestFile, "utf8")
     : "";
   if (
     !captureTestText.includes("rejects unknown and null events without reading runtime state") ||
@@ -472,13 +473,31 @@ function checkActionUsageCaptureEntry() {
     "falls back to skill labels when action element lookup fails",
     "records battle log lookup failures while completing pending usage",
     "fails closed when recordUsage option reads throw",
+    "does not throw when usage capture evidence and diagnostic console both fail",
     "HVAA:lastBattleActionUsageCaptureFailure",
+    "runDiagnosticConsoleAutomation",
+    "mockImplementation(() => false)",
   ]) {
     if (!captureFailureTestText.includes(required)) {
       violations.push(
         `src/monitor/battle-action-usage-capture-failure.test.js must cover ${required}`
       );
     }
+  }
+  for (const required of [
+    "DiagnosticConsoleEvent",
+    "runDiagnosticConsoleAutomation",
+    "DiagnosticConsoleEvent.WARN",
+    "[HVAA] battle action usage capture failed",
+  ]) {
+    if (!captureFailureText.includes(required)) {
+      violations.push(`${rel(captureFailureFile)} must own ${required}`);
+    }
+  }
+  if (/\bconsole\.(?:warn|error|log|info|debug)\s*\(/.test(captureFailureText)) {
+    violations.push(
+      `${rel(captureFailureFile)} monitor usage capture diagnostics must use runDiagnosticConsoleAutomation(event)`
+    );
   }
   if (/from\s+["']\.\.\/state\/store\.js["']/.test(text)) {
     violations.push(`${rel(captureFile)} must not import store for recordUsage option reads`);
@@ -875,18 +894,29 @@ function checkRecordArchiveEntry() {
     "persistBattleRecordArchiveStep",
     "battleRecordArchive",
     "storageWrite",
+    "DiagnosticConsoleEvent",
+    "runDiagnosticConsoleAutomation",
+    "DiagnosticConsoleEvent.WARN",
+    "[HVAA] battle record archive persistence failed",
   ]) {
     if (!archiveFailureText.includes(required)) {
       violations.push(`${rel(archiveFailureFile)} must own ${required}`);
     }
+  }
+  if (/\bconsole\.(?:warn|error|log|info|debug)\s*\(/.test(archiveFailureText)) {
+    violations.push(
+      `${rel(archiveFailureFile)} monitor archive diagnostics must use runDiagnosticConsoleAutomation(event)`
+    );
   }
   for (const required of [
     "does not report battle report recording success when code persistence fails",
     "does not report current record success when current persistence fails",
     "does not report archive success when clearing the current record fails",
     "does not report clear success when history deletion fails",
-    "does not throw when archive failure evidence and warning both fail",
+    "does not throw when archive failure evidence and diagnostic console both fail",
     "BATTLE_RECORD_ARCHIVE_FAILURE_KEY",
+    "runDiagnosticConsoleAutomation",
+    "mockImplementation(() => false)",
     "storageWrite",
   ]) {
     if (!archiveFailureTestText.includes(required)) {
