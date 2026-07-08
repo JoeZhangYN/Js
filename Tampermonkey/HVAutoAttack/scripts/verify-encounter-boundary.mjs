@@ -17,6 +17,7 @@ const stateFailureTest = path.normalize("src/pages/encounter-state-failure.test.
 const entryPolicyFile = path.normalize("src/pages/encounter-entry-policy.js");
 const generationRecoveryFile = path.normalize("src/pages/encounter-generation-recovery.js");
 const generationRecoveryTest = path.normalize("src/pages/encounter-generation-recovery.test.js");
+const isekaiEntryTest = path.normalize("src/pages/encounter-isekai-entry.test.js");
 const policyFile = path.normalize("src/pages/encounter-policy.js");
 const policyTest = path.normalize("src/pages/encounter-policy.test.js");
 const policyRouteTest = path.normalize("src/pages/encounter-policy-route.test.js");
@@ -282,6 +283,7 @@ const policyTestText = [
   policyTest,
   policyRouteTest,
   generationRecoveryTest,
+  isekaiEntryTest,
 ].map((file) => fs.readFileSync(path.join(root, file), "utf8")).join("\n");
 const policyCorruptStateTestText = fs.existsSync(path.join(root, policyCorruptStateTest))
   ? fs.readFileSync(path.join(root, policyCorruptStateTest), "utf8")
@@ -737,21 +739,30 @@ if (!/\bPLAN_NEXT_CHECK\b/.test(policyText)) {
   violations.push(`${policyFile.replaceAll("\\", "/")} must expose one next-check plan query`);
 }
 for (const required of [
-  "ISEKAI_ENCOUNTER_BASE_URL",
-  "buildEncounterEntryUrl",
+  "ISEKAI_SUPPRESSED_EVENTS",
+  "isIsekaiEncounterContext",
+  "suppressIsekaiEncounter",
+  "isekaiEncounterSuppressed",
   "isIsekai: event.isIsekai",
 ]) {
-  if (!(policyText.includes(required) || entryPolicyText.includes(required))) {
-    violations.push(`${policyFile.replaceAll("\\", "/")} must derive encounter entry URL from world identity: ${required}`);
+  if (!(ownerText.includes(required) || policyText.includes(required) || entryPolicyText.includes(required))) {
+    violations.push(`${owner.replaceAll("\\", "/")} must suppress isekai encounter side effects: ${required}`);
   }
 }
 for (const required of [
   "isIsekai: true",
-  "https://hentaiverse.org/isekai/?s=Battle&ss=ba&encounter=abc123=",
+  "suppresses isekai lobby auto-entry without navigation",
+  "not.toHaveBeenCalled()",
+  "isekaiEncounterSuppressed",
 ]) {
   if (!policyTestText.includes(required)) {
-    violations.push(`${policyFile.replaceAll("\\", "/")} must lock isekai encounter entry URL: ${required}`);
+    violations.push(`${policyFile.replaceAll("\\", "/")} must lock isekai encounter suppression: ${required}`);
   }
+}
+if (/ISEKAI_ENCOUNTER_BASE_URL|hentaiverse\.org\/isekai\/\?\s*s=Battle/.test(entryPolicyText)) {
+  violations.push(
+    `${entryPolicyFile.replaceAll("\\", "/")} must not derive an isekai encounter entry URL`
+  );
 }
 if (
   !/EncounterPolicyEvent\.PLAN_NEXT_CHECK/.test(

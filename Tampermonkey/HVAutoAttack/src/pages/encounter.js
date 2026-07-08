@@ -20,6 +20,13 @@ const EVENT_WIDGET_RESET_DAY = "widgetResetDay";
 const EVENT_WIDGET_CLICKED = "widgetClicked";
 const EVENT_WIDGET_TIMER_ELAPSED = "widgetTimerElapsed";
 const EVENT_WIDGET_NEWS_LOADED = "widgetNewsLoaded";
+const ISEKAI_SUPPRESSED_EVENTS = new Set([
+  EVENT_LOBBY_TICK,
+  EVENT_RANDOM_ENCOUNTER_STARTED,
+  EVENT_WIDGET_CLICKED,
+  EVENT_WIDGET_TIMER_ELAPSED,
+  EVENT_WIDGET_NEWS_LOADED,
+]);
 
 export const EncounterEvent = Object.freeze({
   LOBBY_TICK: EVENT_LOBBY_TICK,
@@ -36,6 +43,23 @@ export const EncounterEvent = Object.freeze({
 function claimLobby() {
   runEncounterLobbySchedule({ type: EncounterLobbyScheduleEvent.CANCEL_NEXT_CHECK });
   return { claimed: true };
+}
+
+function isIsekaiEncounterContext(event) {
+  if (event?.isIsekai === true || event?.pageType === "is") return true;
+  return typeof window !== "undefined" && Boolean(window.location?.pathname?.includes("/isekai/"));
+}
+
+function suppressIsekaiEncounter(event) {
+  return {
+    claimed: false,
+    handled: true,
+    skipped: true,
+    reason: "isekaiEncounterSuppressed",
+    recovery: "isekaiEncounterSuppressed",
+    eventType: event?.type,
+    world: "isekai",
+  };
 }
 
 function waitForNextCheck(state, event) {
@@ -129,6 +153,9 @@ const encounterEventHandlers = Object.freeze({
 });
 
 export function runEncounterAutomation(event = { type: EVENT_LOBBY_TICK }) {
+  if (ISEKAI_SUPPRESSED_EVENTS.has(event?.type) && isIsekaiEncounterContext(event)) {
+    return suppressIsekaiEncounter(event);
+  }
   const handler = encounterEventHandlers[event?.type];
   if (!handler) {
     return rejectUnknownEncounterEvent(event);

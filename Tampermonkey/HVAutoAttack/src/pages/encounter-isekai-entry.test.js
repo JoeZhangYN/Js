@@ -31,7 +31,7 @@ afterEach(() => {
 });
 
 describe("isekai encounter entry routing", () => {
-  it("routes isekai lobby auto-entry to the isekai battle authority", async () => {
+  it("suppresses isekai lobby auto-entry without navigation", async () => {
     localStorage.setItem(
       HVUT_RE_KEY,
       JSON.stringify({
@@ -48,16 +48,18 @@ describe("isekai encounter entry routing", () => {
     });
 
     expect(outcome).toMatchObject({
-      action: "navigated",
-      href: "https://hentaiverse.org/isekai/?s=Battle&ss=ba&encounter=abc123=",
+      claimed: false,
       handled: true,
-      claimed: true,
-      state: { key: "abc123=", clear: true },
+      skipped: true,
+      reason: "isekaiEncounterSuppressed",
+      recovery: "isekaiEncounterSuppressed",
+      world: "isekai",
     });
-    expect(mocks.runNavigationAutomation).toHaveBeenCalledWith({
-      type: "openUrl",
-      reason: "encounterEntry",
-      url: "https://hentaiverse.org/isekai/?s=Battle&ss=ba&encounter=abc123=",
+    expect(mocks.runNavigationAutomation).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(JSON.parse(localStorage.getItem(HVUT_RE_KEY))).toMatchObject({
+      key: "abc123=",
+      clear: false,
     });
   });
 });

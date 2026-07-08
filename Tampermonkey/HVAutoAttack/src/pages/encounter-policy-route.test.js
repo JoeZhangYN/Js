@@ -28,8 +28,12 @@ describe("runEncounterPolicy route contract", () => {
         state: { date: 1000, key: "abc123=", count: 1, clear: false },
         nowMs: 2000,
         isIsekai: true,
-      }).href
-    ).toBe("https://hentaiverse.org/isekai/?s=Battle&ss=ba&encounter=abc123=");
+      })
+    ).toMatchObject({
+      action: "none",
+      handled: false,
+      recovery: "isekaiEncounterSuppressed",
+    });
   });
 
   it("marks available keys without starting cooldown or counting an encounter", () => {
