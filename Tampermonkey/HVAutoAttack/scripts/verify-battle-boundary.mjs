@@ -2864,6 +2864,8 @@ function checkCriticalBuffEntry() {
     "runAlarmAutomation",
     "criticalAlarmTriggered",
     'result.kind === "failed"',
+    "DiagnosticConsoleEvent.WARN",
+    "runDiagnosticConsoleAutomation",
     "runBattlePauseAutomation",
     "runBattlePauseEvidence",
     "document.title",
@@ -2879,6 +2881,11 @@ function checkCriticalBuffEntry() {
         `${rel(executeCriticalPauseFile)} must own critical pause execution ${required}`
       );
     }
+  }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(executionText)) {
+    violations.push(
+      `${rel(executeCriticalPauseFile)} must route warning diagnostics through the typed diagnostic console entry`
+    );
   }
   const executionEntryBody =
     executionText.match(
@@ -2934,12 +2941,13 @@ function checkCriticalBuffEntry() {
       "returns not acted when the pause entry rejects the critical pause",
       "still pauses when the alarm side effect fails",
       "records typed alarm failures as not triggered while still pausing",
-      "still pauses when the warning side effect fails",
+      "still pauses when the typed warning side effect fails",
       "alarmTriggerRejected",
       "alarm failed",
       "alarmError",
-      "warning failed",
+      "diagnostic console blocked",
       "warningError",
+      "runDiagnosticConsoleAutomation",
       "runBattlePauseAutomation",
       "toBe(false)",
     ]) {

@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   runAlarmAutomation: vi.fn(),
   runBattlePauseAutomation: vi.fn(),
+}));
+
+vi.mock("../../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("../../alarm/alarm.js", () => ({
@@ -24,7 +30,8 @@ beforeEach(() => {
   window.sessionStorage.clear();
   document.title = "";
   document.body.innerHTML = '<button class="pauseChange"></button>';
-  vi.spyOn(console, "warn").mockImplementation(() => {});
+  mocks.runDiagnosticConsoleAutomation.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReturnValue(true);
   mocks.runAlarmAutomation.mockReset();
   mocks.runBattlePauseAutomation.mockReset();
 });
@@ -100,11 +107,9 @@ describe("critical buff pause execution result semantics", () => {
     });
   });
 
-  it("still pauses when the warning side effect fails", () => {
+  it("still pauses when the typed warning side effect fails", () => {
     const plan = { name: "Spark of Life", turns: 1, mp: 10, mpFloor: 30 };
-    console.warn.mockImplementation(() => {
-      throw new Error("warning failed");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockReturnValue(false);
     mocks.runAlarmAutomation.mockReturnValue(true);
     mocks.runBattlePauseAutomation.mockReturnValue(true);
 
@@ -121,7 +126,7 @@ describe("critical buff pause execution result semantics", () => {
       detail: expect.objectContaining({
         ...plan,
         warningOk: false,
-        warningError: "warning failed",
+        warningError: "diagnostic console blocked",
         alarmResult: true,
       }),
     });

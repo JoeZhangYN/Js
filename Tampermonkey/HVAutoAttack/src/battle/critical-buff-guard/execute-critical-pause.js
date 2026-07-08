@@ -1,4 +1,8 @@
 import { AlarmEvent, runAlarmAutomation } from "../../alarm/alarm.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../../core/diagnostic-console.js";
 import { BattlePauseEvent, runBattlePauseAutomation } from "../pause-automation.js";
 import { BattlePauseEvidenceEvent, runBattlePauseEvidence } from "../battle-pause-evidence.js";
 
@@ -16,7 +20,7 @@ const criticalBuffPauseExecutionEventHandlers = Object.freeze({
 
 /**
  * SHELL：忠实复刻原 checkCriticalBuffGuard 命中分支的 5 件副作用
- * （console.warn + alarm + setValue disabled + 按钮文案 + document.title）。
+ * （diagnostic warning + alarm + setValue disabled + 按钮文案 + document.title）。
  * @param {{ name:string, turns:number, mp:number, mpFloor:number }} plan
  */
 function executeCriticalPause(plan) {
@@ -33,14 +37,17 @@ function executeCriticalPause(plan) {
 }
 
 function warnCriticalPause(plan) {
-  try {
-    console.warn(
-      `[critical-buff-guard] "${plan.name}" 剩 ${plan.turns} 回合 + MP ${plan.mp.toFixed(0)}% < ${plan.mpFloor}% → 暂停脚本，请手动接管`
-    );
-    return { warningOk: true };
-  } catch (error) {
-    return { warningOk: false, warningError: error?.message || String(error) };
-  }
+  const warningOk = runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: [
+      `[critical-buff-guard] "${plan.name}" 剩 ${plan.turns} 回合 + MP ${plan.mp.toFixed(0)}% < ${plan.mpFloor}% → 暂停脚本，请手动接管`,
+    ],
+  });
+  if (warningOk) return { warningOk: true };
+  return {
+    warningOk: false,
+    warningError: "diagnostic console blocked",
+  };
 }
 
 function triggerCriticalAlarm() {

@@ -1,4 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 import {
   CriticalBuffPauseExecutionEvent,
   runCriticalBuffPauseExecution,
@@ -8,7 +18,8 @@ beforeEach(() => {
   sessionStorage.clear();
   document.title = "";
   document.body.innerHTML = '<button class="pauseChange"></button>';
-  vi.spyOn(console, "warn").mockImplementation(() => {});
+  mocks.runDiagnosticConsoleAutomation.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReturnValue(true);
 });
 
 afterEach(() => {
@@ -24,7 +35,10 @@ describe("runCriticalBuffPauseExecution", () => {
       })
     ).toBe(true);
 
-    expect(console.warn).toHaveBeenCalledOnce();
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [expect.stringContaining("[critical-buff-guard]")],
+    });
     expect(document.title).toContain("Spark of Life");
     expect(document.querySelector(".pauseChange").innerHTML).toContain("Continue");
   });
@@ -45,7 +59,7 @@ describe("runCriticalBuffPauseExecution", () => {
       detail: { eventType: null },
     });
 
-    expect(console.warn).not.toHaveBeenCalled();
+    expect(mocks.runDiagnosticConsoleAutomation).not.toHaveBeenCalled();
     expect(document.title).toBe("");
     expect(document.querySelector(".pauseChange").innerHTML).toBe("");
   });
@@ -55,7 +69,7 @@ describe("runCriticalBuffPauseExecution", () => {
       runCriticalBuffPauseExecution({ type: CriticalBuffPauseExecutionEvent.APPLY_PLAN })
     ).toBe(false);
 
-    expect(console.warn).not.toHaveBeenCalled();
+    expect(mocks.runDiagnosticConsoleAutomation).not.toHaveBeenCalled();
     expect(document.title).toBe("");
     expect(document.querySelector(".pauseChange").innerHTML).toBe("");
     expect(JSON.parse(sessionStorage.getItem("HVAA:lastBattlePause"))).toMatchObject({
