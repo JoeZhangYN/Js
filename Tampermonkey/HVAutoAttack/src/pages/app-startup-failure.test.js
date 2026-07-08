@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
   runRiddleDatasetAutomation: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
   runAbilityAoeAutomation: vi.fn(),
-  alert: vi.fn(),
 }));
 
 vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
@@ -18,7 +17,6 @@ vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({ SYNC_STARTUP_OPTION: "syncStartupOption" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
-vi.mock("../core/lang.js", () => ({ _alert: mocks.alert }));
 vi.mock("../style/inject.js", () => ({ addStyle: mocks.addStyle }));
 vi.mock("../state/riddle-dataset.js", () => ({
   RiddleDatasetEvent: Object.freeze({ REGISTER_EXPORT_MENU: "registerExportMenu" }),
@@ -38,6 +36,7 @@ beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
   sessionStorage.clear();
   globalThis.GM_info = { script: { version: "10.0.1" } };
+  window.alert = vi.fn();
   window.prompt = vi.fn(() => "1");
   mocks.g.mockImplementation((key, value) => (value === undefined ? "10.0" : value));
   mocks.gE.mockReturnValue(null);

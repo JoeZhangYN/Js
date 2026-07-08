@@ -61,6 +61,7 @@ const commands = [
   "node scripts/verify-no-dup-translation.mjs",
   "node scripts/verify-i18n-restore-controller-boundary.mjs",
   "node scripts/verify-i18n-init-failure-boundary.mjs",
+  "node scripts/verify-user-feedback-boundary.mjs",
   "node scripts/verify-hvut-i18n-bridge-boundary.mjs",
   "node scripts/verify-equip-name-sink.mjs",
   "node scripts/verify-topmenu-keys.mjs",

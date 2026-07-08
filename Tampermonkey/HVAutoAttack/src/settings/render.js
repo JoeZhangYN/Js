@@ -4,7 +4,7 @@
 import { gE, cE } from "../dom/query.js";
 import { getValue } from "../state/storage.js";
 import { g } from "../state/store.js";
-import { _alert } from "../core/lang.js";
+import { _alert, UserFeedbackEvent, runUserFeedbackAutomation } from "../core/lang.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import {
   NavigationEvent,
@@ -1251,11 +1251,14 @@ export function optionBox() {
   };
   gE(".staminaLostLog", optionBox).onclick = function () {
     if (
-      window.confirm(
-        runSettingsStaminaLossLogCommand({
-          type: SettingsStaminaLossLogCommandEvent.CLEAR_CONFIRMATION_MESSAGE,
-        })
-      )
+      runUserFeedbackAutomation({
+        type: UserFeedbackEvent.CONFIRM,
+        copy: {
+          l0: runSettingsStaminaLossLogCommand({
+            type: SettingsStaminaLossLogCommandEvent.CLEAR_CONFIRMATION_MESSAGE,
+          }),
+        },
+      })
     )
       runSettingsStaminaLossLogCommand({ type: SettingsStaminaLossLogCommandEvent.CLEAR });
   };

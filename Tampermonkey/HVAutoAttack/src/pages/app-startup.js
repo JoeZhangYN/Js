@@ -2,7 +2,7 @@
 import { gE } from "../dom/query.js";
 import { g } from "../state/store.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
-import { _alert } from "../core/lang.js";
+import { _alert, UserFeedbackEvent, runUserFeedbackAutomation } from "../core/lang.js";
 import { addStyle } from "../style/inject.js";
 import { RiddleDatasetEvent, runRiddleDatasetAutomation } from "../state/riddle-dataset.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "../state/cd-tracker.js";
@@ -10,6 +10,8 @@ import { AbilityAoeEvent, runAbilityAoeAutomation } from "./ability-page.js";
 
 const EVENT_USERSCRIPT_START = "userscriptStart";
 const EVENT_GAME_PAGE_READY = "gamePageReady";
+const INITIAL_LANGUAGE_PROMPT =
+  "请输入以下语言代码对应的数字\nPlease put in the number of your preferred language (0, 1 or 2)\n0.简体中文\n1.繁體中文\n2.English";
 
 export const APP_STARTUP_FAILURE_KEY = "HVAA:lastAppStartupFailure";
 
@@ -115,10 +117,11 @@ function syncConfiguredStartupOption() {
 function requestInitialConfig() {
   g(
     "lang",
-    window.prompt(
-      "请输入以下语言代码对应的数字\nPlease put in the number of your preferred language (0, 1 or 2)\n0.简体中文\n1.繁體中文\n2.English",
-      0
-    ) || 2
+    runUserFeedbackAutomation({
+      type: UserFeedbackEvent.PROMPT,
+      copy: { l0: INITIAL_LANGUAGE_PROMPT },
+      defaultValue: 0,
+    }) || 2
   );
   addStyle(g("lang"));
   _alert(0, "请设置hvAutoAttack", "請設置hvAutoAttack", "Please config this script");

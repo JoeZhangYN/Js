@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
   runRiddleDatasetAutomation: vi.fn(),
   runCdRuntimeAutomation: vi.fn(),
   runAbilityAoeAutomation: vi.fn(),
-  alert: vi.fn(),
 }));
 
 vi.mock("../dom/query.js", () => ({ gE: mocks.gE }));
@@ -18,7 +17,6 @@ vi.mock("../state/option.js", () => ({
   OptionEvent: Object.freeze({ SYNC_STARTUP_OPTION: "syncStartupOption" }),
   runOptionAutomation: mocks.runOptionAutomation,
 }));
-vi.mock("../core/lang.js", () => ({ _alert: mocks.alert }));
 vi.mock("../style/inject.js", () => ({ addStyle: mocks.addStyle }));
 vi.mock("../state/riddle-dataset.js", () => ({
   RiddleDatasetEvent: Object.freeze({ REGISTER_EXPORT_MENU: "registerExportMenu" }),
@@ -38,6 +36,7 @@ beforeEach(() => {
   sessionStorage.clear();
   globalThis.GM_info = { script: { version: "10.0.1" } };
   globalThis.unsafeWindow = undefined;
+  window.alert = vi.fn();
   window.prompt = vi.fn(() => "1");
   mocks.g.mockImplementation((key, value) => (value === undefined ? "10.0" : value));
   mocks.gE.mockReturnValue(null);
@@ -118,6 +117,7 @@ describe("runAppStartup", () => {
       currentVersion: "10.0",
     });
     expect(mocks.g).toHaveBeenCalledWith("lang", "1");
+    expect(window.prompt).toHaveBeenCalledWith(expect.stringContaining("preferred language"), 0);
     expect(click).toHaveBeenCalled();
     expect(mocks.runAbilityAoeAutomation).not.toHaveBeenCalled();
   });
@@ -170,7 +170,7 @@ describe("runAppStartup", () => {
     mocks.gE.mockImplementation((selector) =>
       selector === '[class^="c5"],[class^="c4"]' ? {} : null
     );
-    mocks.alert.mockImplementation(() => {
+    window.alert = vi.fn(() => {
       throw new Error("alert blocked");
     });
 
