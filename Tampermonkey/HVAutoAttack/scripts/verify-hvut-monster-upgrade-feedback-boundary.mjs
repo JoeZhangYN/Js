@@ -9,7 +9,8 @@ const violations = [];
 const requiredSnippets = [
   "CONFIRM_MONSTER_UPGRADE: 'confirmMonsterUpgrade'",
   "monsterUpgradeConfirm: { main: '确定要升级选中的怪物吗?', isekai: '确定要升级所选的怪物吗？' }",
-  "if (event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE) {\n      return confirm(resolve_hvut_feedback_copy(event.copy));\n    }",
+  "event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE",
+  "return confirm(format_hvut_feedback_copy(event.copy, event.values));",
   "var confirm_hvut_monster_upgrade = function () {",
   "type: HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE",
   "copy: 'monsterUpgradeConfirm'",
@@ -39,14 +40,16 @@ const rawConfirmSideEffects = [...text.matchAll(/\bconfirm\s*\(/g)].filter((matc
   const before = text.slice(Math.max(0, match.index - 80), match.index);
   const after = text.slice(match.index, match.index + 120);
   return (
-    after.includes("resolve_hvut_feedback_copy(event.copy)") ||
+    after.includes("format_hvut_feedback_copy(event.copy, event.values)") ||
     before.includes("function confirm_event")
   );
 });
 
 if (
   !rawConfirmSideEffects.some((match) =>
-    text.slice(match.index, match.index + 120).includes("resolve_hvut_feedback_copy(event.copy)")
+    text
+      .slice(match.index, match.index + 120)
+      .includes("format_hvut_feedback_copy(event.copy, event.values)")
   )
 ) {
   violations.push(`${target} must keep the typed HVUT feedback confirm side effect centralized`);

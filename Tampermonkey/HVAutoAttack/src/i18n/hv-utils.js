@@ -1941,23 +1941,42 @@ try {
     PROMPT_EQUIP_FORUM_LINK: 'promptEquipForumLink',
     PROMPT_SETTINGS_NAME: 'promptSettingsName',
     CONFIRM_MONSTER_UPGRADE: 'confirmMonsterUpgrade',
+    CONFIRM_MOOGLEMAIL_ATTACHMENT_TAKE: 'confirmMoogleMailAttachmentTake',
+    CONFIRM_MOOGLEMAIL_MESSAGE_RETURN: 'confirmMoogleMailMessageReturn',
   });
   var HVUT_FEEDBACK_COPY = Object.freeze({
     equipForumLinkPrompt: { main: '论坛链接:', isekai: 'Forum Link:' },
     settingsNamePrompt: { main: '输入方案名称', isekai: 'Enter the name of the settings' },
     monsterUpgradeConfirm: { main: '确定要升级选中的怪物吗?', isekai: '确定要升级所选的怪物吗？' },
+    moogleMailAttachmentTakeConfirm: {
+      main: '拿取附件将从你的账户中扣除 {credits} Credits.\n确定吗?',
+      isekai: 'Accepting the attachments will deduct {credits} Credits from your account.\nAre you sure?',
+    },
+    moogleMailMessageReturnConfirm: {
+      main: '这将把消息退回给发送者.\n确定吗?',
+      isekai: '这会将邮件退回给发件人。\n确定吗？',
+    },
   });
   var resolve_hvut_feedback_copy = function (key) {
     var copy = HVUT_FEEDBACK_COPY[key] || {};
     return IS_ISEKAI ? (copy.isekai || copy.main || '') : (copy.main || copy.isekai || '');
+  };
+  var format_hvut_feedback_copy = function (key, values) {
+    var message = resolve_hvut_feedback_copy(key);
+    Object.keys(values || {}).forEach((name) => {
+      message = message.split(`{${name}}`).join(values[name]);
+    });
+    return message;
   };
   var run_hvut_user_feedback = function (event) {
     if (event?.type === HVUT_FEEDBACK_EVENT.PROMPT_EQUIP_FORUM_LINK ||
       event?.type === HVUT_FEEDBACK_EVENT.PROMPT_SETTINGS_NAME) {
       return prompt(resolve_hvut_feedback_copy(event.copy), event.value);
     }
-    if (event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE) {
-      return confirm(resolve_hvut_feedback_copy(event.copy));
+    if (event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE ||
+      event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_ATTACHMENT_TAKE ||
+      event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_MESSAGE_RETURN) {
+      return confirm(format_hvut_feedback_copy(event.copy, event.values));
     }
   };
   var render_hvut_equip_forum_link = function (eq, label) {
@@ -1981,6 +2000,19 @@ try {
     return run_hvut_user_feedback({
       type: HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE,
       copy: 'monsterUpgradeConfirm',
+    });
+  };
+  var confirm_hvut_mooglemail_attachment_take = function (value) {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_ATTACHMENT_TAKE,
+      copy: 'moogleMailAttachmentTakeConfirm',
+      values: { credits: parseInt(value).toLocaleString() },
+    });
+  };
+  var confirm_hvut_mooglemail_message_return = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.CONFIRM_MOOGLEMAIL_MESSAGE_RETURN,
+      copy: 'moogleMailMessageReturnConfirm',
     });
   };
   var create_hvut_current_page_disable_url = function () {
@@ -11647,17 +11679,17 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
         } else if (action === 'reply') {
           openUrl(create_hvut_mail_reply_url(mid), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
         } else if (action === 'take') {
-          if (value && !confirm(`Accepting the attachments will deduct ${parseInt(value).toLocaleString()} Credits from your account.\nAre you sure?`)) {
+          if (value && !confirm_hvut_mooglemail_attachment_take(value)) {
             return;
           }
           _mm.mail.read(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
         } else if (action === 'return') {
-          if (!confirm('这会将邮件退回给发件人。\n确定吗？')) {
+          if (!confirm_hvut_mooglemail_message_return()) {
             return;
           }
           _mm.mail.read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
         } else if (action === 'recall') {
-          if (!confirm('这会将邮件退回给发件人。\n确定吗？')) {
+          if (!confirm_hvut_mooglemail_message_return()) {
             return;
           }
           _mm.mail.read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
@@ -17675,17 +17707,17 @@ if (get_hvut_mail_page_context().isMoogleMail && $config.settings.moogleMail) {
       } else if (action === 'reply') {
         openUrl(create_hvut_mail_reply_url(mid), hvutRedirectReason('HV_UTILS_MAIL_PAGE'));
       } else if (action === 'take') {
-        if (value && !confirm(`拿取附件将从你的账户中扣除 ${parseInt(value).toLocaleString()} Credits.\n确定吗?`)) {
+        if (value && !confirm_hvut_mooglemail_attachment_take(value)) {
           return;
         }
         _mm.mail_read(mid, `action=attach_remove&mmtoken=${_mm.mmtoken}`);
       } else if (action === 'return') {
-        if (!confirm('这将把消息退回给发送者.\n确定吗?')) {
+        if (!confirm_hvut_mooglemail_message_return()) {
           return;
         }
         _mm.mail_read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
       } else if (action === 'recall') {
-        if (!confirm('这将把消息退回给发送者.\n确定吗?')) {
+        if (!confirm_hvut_mooglemail_message_return()) {
           return;
         }
         _mm.mail_read(mid, `action=return_message&mmtoken=${_mm.mmtoken}`);
