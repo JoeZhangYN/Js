@@ -1,4 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 import {
   RiddleDatasetEvent,
   RiddleSampleSource,
@@ -9,11 +19,12 @@ import { RIDDLE_DATASET_FAILURE_KEY } from "./riddle-dataset-failure.js";
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   sessionStorage.clear();
 });
 
 describe("riddle dataset failure fallback", () => {
-  it("does not throw when sample write failure evidence and warning both fail", () => {
+  it("does not throw when sample write failure evidence and diagnostic console both fail", () => {
     const setValue = vi.fn(() => {
       throw new Error("gm quota");
     });
@@ -22,9 +33,7 @@ describe("riddle dataset failure fallback", () => {
       if (key === RIDDLE_DATASET_FAILURE_KEY) throw new Error("quota");
       return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
 
     expect(() =>
       runRiddleDatasetAutomation({
@@ -37,7 +46,7 @@ describe("riddle dataset failure fallback", () => {
     expect(setValue).toHaveBeenCalledTimes(1);
   });
 
-  it("does not throw when export list failure evidence and warning both fail", () => {
+  it("does not throw when export list failure evidence and diagnostic console both fail", () => {
     vi.stubGlobal("GM_listValues", () => {
       throw new Error("list blocked");
     });
@@ -45,9 +54,7 @@ describe("riddle dataset failure fallback", () => {
       if (key === RIDDLE_DATASET_FAILURE_KEY) throw new Error("quota");
       return Reflect.apply(Storage.prototype.setItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
 
     expect(() => runRiddleDatasetAutomation({ type: RiddleDatasetEvent.EXPORT })).not.toThrow();
   });

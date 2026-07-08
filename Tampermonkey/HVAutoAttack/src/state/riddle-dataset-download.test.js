@@ -1,5 +1,27 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+  runUserFeedbackAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ INFO: "info", WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
+vi.mock("../core/lang.js", () => ({
+  UserFeedbackEvent: Object.freeze({ TEXT: "text" }),
+  runUserFeedbackAutomation: mocks.runUserFeedbackAutomation,
+}));
+
 import { RiddleDatasetEvent, runRiddleDatasetAutomation } from "./riddle-dataset.js";
+
+beforeEach(() => {
+  mocks.runDiagnosticConsoleAutomation.mockReset();
+  mocks.runUserFeedbackAutomation.mockReset();
+  mocks.runUserFeedbackAutomation.mockImplementation((event) => event.copy.l0);
+});
 
 afterEach(() => {
   vi.useRealTimers();
@@ -29,8 +51,6 @@ function expectDatasetFailure(stage) {
 describe("riddle dataset download side effect", () => {
   it("records download click failures without clearing exported samples or reporting success", () => {
     stubExportableSample();
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const info = vi.spyOn(console, "info").mockImplementation(() => {});
     const deleteValue = vi.fn();
     vi.stubGlobal("GM_deleteValue", deleteValue);
     vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
@@ -41,19 +61,23 @@ describe("riddle dataset download side effect", () => {
     expect(() => runRiddleDatasetAutomation({ type: RiddleDatasetEvent.EXPORT })).not.toThrow();
     vi.runAllTimers();
 
-    expect(warn).toHaveBeenCalledWith(
-      "[HVAA][RMA] riddle dataset failed",
-      expect.objectContaining({ stage: "export-download" })
-    );
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA][RMA] riddle dataset failed",
+        expect.objectContaining({ stage: "export-download" }),
+      ],
+    });
     expectDatasetFailure("export-download");
     expect(deleteValue).not.toHaveBeenCalled();
-    expect(info).not.toHaveBeenCalledWith(expect.stringContaining("已导出 1 条答题样本"));
+    expect(mocks.runDiagnosticConsoleAutomation).not.toHaveBeenCalledWith({
+      type: "info",
+      args: [expect.stringContaining("已导出 1 条答题样本")],
+    });
   });
 
   it("records download cleanup revoke failures after a successful export trigger", () => {
     stubExportableSample();
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const info = vi.spyOn(console, "info").mockImplementation(() => {});
     vi.stubGlobal("GM_deleteValue", vi.fn());
     vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {
       throw new Error("revoke blocked");
@@ -63,11 +87,17 @@ describe("riddle dataset download side effect", () => {
     runRiddleDatasetAutomation({ type: RiddleDatasetEvent.EXPORT });
     vi.runAllTimers();
 
-    expect(warn).toHaveBeenCalledWith(
-      "[HVAA][RMA] riddle dataset failed",
-      expect.objectContaining({ stage: "export-revoke" })
-    );
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA][RMA] riddle dataset failed",
+        expect.objectContaining({ stage: "export-revoke" }),
+      ],
+    });
     expectDatasetFailure("export-revoke");
-    expect(info).toHaveBeenCalledWith(expect.stringContaining("已导出 1 条答题样本"));
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "info",
+      args: [expect.stringContaining("已导出 1 条答题样本")],
+    });
   });
 });

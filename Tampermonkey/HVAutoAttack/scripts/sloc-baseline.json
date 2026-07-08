@@ -114,9 +114,5 @@
   "state/cd-learner.test.js": {
     "maxSloc": 157,
     "reason": "formatted baseline learner test verbosity"
-  },
-  "state/riddle-dataset.test.js": {
-    "maxSloc": 157,
-    "reason": "formatted baseline riddle dataset test verbosity"
   }
 }

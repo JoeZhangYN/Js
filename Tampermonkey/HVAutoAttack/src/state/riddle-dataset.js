@@ -17,6 +17,7 @@ import {
 } from "./riddle-dataset-export-format.js";
 import { triggerRiddleDatasetDownload } from "./riddle-dataset-download.js";
 import { recordRiddleDatasetFailure } from "./riddle-dataset-failure.js";
+import { RIDDLE_DATASET_STATUS_COPY, reportRiddleDatasetStatus } from "./riddle-dataset-status.js";
 
 const SAVE_PREFIX = "pony_";
 
@@ -98,7 +99,7 @@ function exportRiddleDataset() {
     return;
   }
   if (!keys.length) {
-    console.info("[HVAA][RMA] 无答题样本可导出");
+    reportRiddleDatasetStatus(RIDDLE_DATASET_STATUS_COPY.EMPTY_SAMPLE_STORE);
     return;
   }
   const files = [];
@@ -129,7 +130,7 @@ function exportRiddleDataset() {
     if (imgBytes) files.push({ name: `${base}.${imgExt(entry.imageBase64)}`, bytes: imgBytes });
   }
   if (!exportedKeys.length) {
-    console.info("[HVAA][RMA] 无可导出的答题样本");
+    reportRiddleDatasetStatus(RIDDLE_DATASET_STATUS_COPY.EMPTY_EXPORTABLE_SAMPLE_STORE);
     return;
   }
   const blob = makeStoreZip(files);
@@ -146,9 +147,9 @@ function exportRiddleDataset() {
   } else {
     recordRiddleDatasetFailure("export-missing-gm-delete", { exported: exportedKeys.length });
   }
-  console.info(
-    `[HVAA][RMA] 已导出 ${exportedKeys.length} 条答题样本(zip: webp+json)，并清除原始记录(防重复导出)`
-  );
+  reportRiddleDatasetStatus(RIDDLE_DATASET_STATUS_COPY.EXPORT_SUCCESS, {
+    count: exportedKeys.length,
+  });
 }
 
 let exportMenuRegistered = false;

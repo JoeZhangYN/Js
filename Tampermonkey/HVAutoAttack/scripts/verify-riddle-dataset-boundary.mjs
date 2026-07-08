@@ -4,9 +4,11 @@ import path from "node:path";
 const root = process.cwd();
 const srcDir = path.join(root, "src");
 const owner = path.normalize("src/state/riddle-dataset.js");
+const statusOwner = path.normalize("src/state/riddle-dataset-status.js");
 const downloadOwner = path.normalize("src/state/riddle-dataset-download.js");
 const failureOwner = path.normalize("src/state/riddle-dataset-failure.js");
 const ownerTest = path.normalize("src/state/riddle-dataset.test.js");
+const statusTest = path.normalize("src/state/riddle-dataset-status.test.js");
 const downloadTest = path.normalize("src/state/riddle-dataset-download.test.js");
 const failureTest = path.normalize("src/state/riddle-dataset-failure.test.js");
 const diagnosticKeys = path.normalize("src/core/diagnostic-evidence-keys.js");
@@ -67,6 +69,7 @@ function checkFile(file) {
 walk(srcDir);
 
 const ownerText = fs.readFileSync(path.join(root, owner), "utf8");
+const statusOwnerText = fs.readFileSync(path.join(root, statusOwner), "utf8");
 const downloadOwnerText = fs.existsSync(path.join(root, downloadOwner))
   ? fs.readFileSync(path.join(root, downloadOwner), "utf8")
   : "";
@@ -104,6 +107,8 @@ for (const required of [
   "recordRiddleDatasetFailure",
   "[HVAA][RMA] riddle dataset failed",
   "HVAA:lastRiddleDatasetFailure",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   "record-missing-gm-set",
   "record-write",
   "export-missing-gm-list",
@@ -114,8 +119,43 @@ for (const required of [
   "export-revoke",
   "export-delete",
 ]) {
-  if (!(ownerText + downloadOwnerText + failureOwnerText).includes(required)) {
+  if (!(ownerText + statusOwnerText + downloadOwnerText + failureOwnerText).includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own riddle dataset failure ${required}`);
+  }
+}
+for (const required of [
+  "RIDDLE_DATASET_STATUS_COPY",
+  "reportRiddleDatasetStatus",
+  "EMPTY_SAMPLE_STORE",
+  "EMPTY_EXPORTABLE_SAMPLE_STORE",
+  "EXPORT_SUCCESS",
+]) {
+  if (!ownerText.includes(required)) {
+    violations.push(`${owner.replaceAll("\\", "/")} must route dataset status through ${required}`);
+  }
+}
+for (const required of [
+  "RIDDLE_DATASET_STATUS_COPY",
+  "reportRiddleDatasetStatus",
+  "formatRiddleDatasetStatus",
+  "UserFeedbackEvent.TEXT",
+  "DiagnosticConsoleEvent.INFO",
+  "runUserFeedbackAutomation",
+  "runDiagnosticConsoleAutomation",
+]) {
+  if (!statusOwnerText.includes(required)) {
+    violations.push(`${statusOwner.replaceAll("\\", "/")} must own ${required}`);
+  }
+}
+for (const [text, file, label] of [
+  [ownerText, owner, "dataset status"],
+  [statusOwnerText, statusOwner, "dataset status"],
+  [failureOwnerText, failureOwner, "dataset failure"],
+]) {
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(text)) {
+    violations.push(
+      `${file.replaceAll("\\", "/")} ${label} must use typed feedback/diagnostic entries`
+    );
   }
 }
 if (!downloadOwnerText.includes("export function triggerRiddleDatasetDownload(blob)")) {
@@ -182,7 +222,6 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "records missing GM_listValues as export failure evidence",
     "records GM_listValues failures without throwing from dataset export",
     "HVAA:lastRiddleDatasetFailure",
-    "[HVAA][RMA] riddle dataset failed",
     "record-missing-gm-set",
     "record-write",
     "export-missing-gm-list",
@@ -192,6 +231,20 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
   ]) {
     if (!ownerTestText.includes(required)) {
       violations.push(`${ownerTest.replaceAll("\\", "/")} must cover ${required}`);
+    }
+  }
+  const statusTestText = fs.existsSync(path.join(root, statusTest))
+    ? fs.readFileSync(path.join(root, statusTest), "utf8")
+    : "";
+  for (const required of [
+    "riddle dataset status feedback",
+    "localizes export status text before reporting it through typed diagnostics",
+    "RIDDLE_DATASET_STATUS_COPY.EXPORT_SUCCESS",
+    "runUserFeedbackAutomation",
+    "runDiagnosticConsoleAutomation",
+  ]) {
+    if (!statusTestText.includes(required)) {
+      violations.push(`${statusTest.replaceAll("\\", "/")} must cover ${required}`);
     }
   }
   const downloadTestText = fs.existsSync(path.join(root, downloadTest))
@@ -212,12 +265,12 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     ? fs.readFileSync(path.join(root, failureTest), "utf8")
     : "";
   for (const required of [
-    "does not throw when sample write failure evidence and warning both fail",
-    "does not throw when export list failure evidence and warning both fail",
+    "does not throw when sample write failure evidence and diagnostic console both fail",
+    "does not throw when export list failure evidence and diagnostic console both fail",
     "RIDDLE_DATASET_FAILURE_KEY",
     'throw new Error("list blocked")',
     'throw new Error("quota")',
-    'throw new Error("console blocked")',
+    "runDiagnosticConsoleAutomation",
     "expect(setValue).toHaveBeenCalledTimes(1)",
   ]) {
     if (!failureTestText.includes(required)) {
