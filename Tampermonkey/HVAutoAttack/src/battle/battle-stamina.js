@@ -1,5 +1,5 @@
 // 战斗体力损失裁决：唯一入口 runBattleStaminaAutomation(event)。
-import { _alert } from "../core/lang.js";
+import { UserFeedbackEvent, runUserFeedbackAutomation } from "../core/lang.js";
 import { AlarmEvent, runAlarmAutomation } from "../alarm/alarm.js";
 import { OptionEvent, runOptionAutomation } from "../state/option.js";
 import { StaminaLossLogEvent, runStaminaLossLogAutomation } from "../state/stamina-loss-log.js";
@@ -11,6 +11,11 @@ const DEFAULT_STAMINA_LOSS_THRESHOLD = Number.POSITIVE_INFINITY;
 
 export const BattleStaminaEvent = Object.freeze({
   ROUND_LOG_READY: EVENT_ROUND_LOG_READY,
+});
+const STAMINA_CONTINUE_CONFIRM_COPY = Object.freeze({
+  l0: "当前Stamina过低\n或Stamina损失过多\n是否继续？",
+  l1: "當前Stamina過低\n或Stamina損失過多\n是否繼續？",
+  l2: "Continue?\nYou either have too little Stamina or have lost too much",
 });
 
 const battleStaminaEventHandlers = Object.freeze({
@@ -38,12 +43,10 @@ function shouldPauseForLoss(lostStamina) {
 }
 
 function confirmContinue(confirm) {
-  return confirm(
-    1,
-    "当前Stamina过低\n或Stamina损失过多\n是否继续？",
-    "當前Stamina過低\n或Stamina損失過多\n是否繼續？",
-    "Continue?\nYou either have too little Stamina or have lost too much"
-  );
+  return confirm({
+    type: UserFeedbackEvent.CONFIRM,
+    copy: STAMINA_CONTINUE_CONFIRM_COPY,
+  });
 }
 
 function handleRoundLogReady(text, deps) {
@@ -63,7 +66,7 @@ export function runBattleStaminaAutomation(
   event = { type: EVENT_ROUND_LOG_READY },
   deps = {
     triggerAlarm: (kind) => runAlarmAutomation({ type: AlarmEvent.TRIGGER, kind }),
-    confirm: _alert,
+    confirm: runUserFeedbackAutomation,
     pause: (detail) =>
       runBattlePauseAutomation({ type: BattlePauseEvent.PAUSE, reason: "staminaLoss", detail }),
   }

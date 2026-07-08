@@ -69,7 +69,14 @@ describe("runBattleStaminaAutomation", () => {
 
     expect(result).toEqual({ lostStamina: 7, paused: true });
     expect(d.triggerAlarm).toHaveBeenCalledWith("Error");
-    expect(d.confirm).toHaveBeenCalled();
+    expect(d.confirm).toHaveBeenCalledWith({
+      type: "confirm",
+      copy: {
+        l0: "当前Stamina过低\n或Stamina损失过多\n是否继续？",
+        l1: "當前Stamina過低\n或Stamina損失過多\n是否繼續？",
+        l2: "Continue?\nYou either have too little Stamina or have lost too much",
+      },
+    });
     expect(d.pause).toHaveBeenCalledWith({ lostStamina: 7 });
   });
 

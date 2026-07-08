@@ -67,6 +67,9 @@ for (const required of [
   "runStaminaLossLogAutomation",
   "StaminaLossLogEvent.RECORD",
   "runBattlePauseAutomation",
+  "runUserFeedbackAutomation",
+  "UserFeedbackEvent.CONFIRM",
+  "STAMINA_CONTINUE_CONFIRM_COPY",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -80,6 +83,11 @@ if (/key:\s*["']staminaLose["']/.test(ownerText)) {
 }
 if (/fallback:\s*Number\.POSITIVE_INFINITY/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must use stamina threshold fallback constant`);
+}
+if (ownerText.includes("_alert") || /confirm\(\s*1\s*,/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} stamina user confirmation must use typed feedback events`
+  );
 }
 const entryBody =
   ownerText.match(/export function runBattleStaminaAutomation\([^)]*\)[\s\S]*?\n\}/)?.[0] || "";
@@ -108,6 +116,9 @@ if (fs.existsSync(path.join(root, ownerTest))) {
   }
   if (!/runBattleStaminaAutomation\(null/.test(ownerTestText)) {
     violations.push(`${ownerTest.replaceAll("\\", "/")} must cover null battle stamina events`);
+  }
+  if (!ownerTestText.includes('type: "confirm"')) {
+    violations.push(`${ownerTest.replaceAll("\\", "/")} must cover typed stamina confirmation`);
   }
 }
 

@@ -31,8 +31,10 @@ const ownerText = requireText(owner, [
   'reason: "staminaLoss"',
   "parseLostStamina",
   "shouldPauseForLoss",
+  "UserFeedbackEvent.CONFIRM",
+  "runUserFeedbackAutomation",
 ]);
-requireText(ownerTest, ["staminaLose", "keeps missing or invalid thresholds"]);
+requireText(ownerTest, ["staminaLose", "keeps missing or invalid thresholds", 'type: "confirm"']);
 
 if (
   /\bexport\s+(?:function|const)\s+(?!BattleStaminaEvent\b|runBattleStaminaAutomation\b)/.test(
@@ -52,6 +54,11 @@ if (/key:\s*["']staminaLose["']/.test(ownerText)) {
 }
 if (/fallback:\s*Number\.POSITIVE_INFINITY/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must use stamina threshold fallback constant`);
+}
+if (ownerText.includes("_alert") || /confirm\(\s*1\s*,/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} stamina confirmation must route through typed user feedback`
+  );
 }
 
 if (violations.length) {
