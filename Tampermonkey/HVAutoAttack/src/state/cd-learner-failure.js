@@ -1,5 +1,9 @@
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { setValue } from "./storage.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 export const CD_LEARNING_FAILURE_KEY = "HVAA:lastCdLearningFailure";
 
@@ -14,11 +18,10 @@ export function recordCdLearningFailure(stage, error) {
   } catch (_error) {
     // CD learning evidence is diagnostic only.
   }
-  try {
-    console.warn("[HVAA] CD learning persistence failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] CD learning persistence failed", evidence],
+  });
   return evidence;
 }
 

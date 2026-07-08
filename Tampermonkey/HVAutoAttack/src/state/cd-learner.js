@@ -16,6 +16,10 @@ import { getValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { SKILL_REGISTRY } from "./skill-registry.js";
 import { persistLearnedCd } from "./cd-learner-failure.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 const EVENT_RECORD_FIRE = "recordFire";
 const EVENT_FINALIZE_PENDING = "finalizePending";
@@ -35,6 +39,13 @@ function isDynamicHealLogEnabled() {
       fallback: false,
     })
   );
+}
+
+function recordCdLearningDiagnostic(stage, detail) {
+  return runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.INFO,
+    args: ["[HVAA] CD learning diagnostic", { capability: "cdLearning", stage, detail }],
+  });
 }
 
 function normalizeTurn(value) {
@@ -135,7 +146,7 @@ function updateLearnedCd(code, sample, cdBase) {
   learned[code] = { cd: newCd, n };
   const persisted = persistLearnedCd(learned);
   if (isDynamicHealLogEnabled()) {
-    console.log(`[cd-learn] ${code}: gap→${sample} → cd=${newCd.toFixed(1)} (n=${n})`);
+    recordCdLearningDiagnostic("update-learned", { code, sample, cd: newCd, n });
   }
   return persisted;
 }

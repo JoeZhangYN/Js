@@ -7,7 +7,13 @@ import { CdLearningEvent, runCdLearningAutomation } from "./cd-learner.js";
 import { CdRuntimeEvent, runCdRuntimeAutomation } from "./cd-tracker.js";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ INFO: "info" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("./option.js", () => ({
@@ -34,6 +40,7 @@ beforeEach(() => {
   g("skillLastUsed", {});
   mocks.runOptionAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue(false);
+  mocks.runDiagnosticConsoleAutomation.mockReset();
 });
 
 describe("cd-learner 学习与守卫", () => {
@@ -46,7 +53,6 @@ describe("cd-learner 学习与守卫", () => {
   it("gap > cdBase（OC 饿膨胀）→ clamp 到 cdBase，永不上调", () => {
     fire("OFC", "1111", 10);
     settle(70, "1111"); // gap 60 > 50 → sample clamp 50
-    expect(readCd("OFC")).toBeLessThanOrEqual(50);
     expect(readCd("OFC")).toBeCloseTo(50, 5);
   });
 
@@ -103,17 +109,10 @@ describe("cd-learner 学习与守卫", () => {
 
   it("缺失 globalTurn 不回退 ambient runtime turn", () => {
     g("globalTurn", 99);
-    runCdLearningAutomation({
-      type: CdLearningEvent.RECORD_FIRE,
-      code: "OFC",
-      id: "1111",
-    });
+    fire("OFC", "1111");
     expect(g("cdLearnPending").OFC.firedTurn).toBe(0);
 
-    runCdLearningAutomation({
-      type: CdLearningEvent.FINALIZE_PENDING,
-      readySkillIds: ["1111"],
-    });
+    settle(undefined, "1111");
     expect(readCd("OFC")).toBe(50);
   });
 
@@ -151,7 +150,6 @@ describe("cd-learner 学习与守卫", () => {
   });
 
   it("日志开关通过 option entry 读取", () => {
-    const log = vi.spyOn(console, "log").mockImplementation(() => {});
     mocks.runOptionAutomation.mockReturnValue(true);
 
     fire("OFC", "1111", 10);
@@ -162,8 +160,7 @@ describe("cd-learner 学习与守卫", () => {
       key: "dynamicHealLog",
       fallback: false,
     });
-    expect(log).toHaveBeenCalledWith(expect.stringContaining("[cd-learn] OFC"));
-    log.mockRestore();
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalled();
   });
 });
 

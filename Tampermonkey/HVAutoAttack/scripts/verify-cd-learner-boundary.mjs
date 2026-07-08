@@ -89,6 +89,9 @@ for (const required of [
   "normalizeLearnedCdRecord",
   "readLearnedCdMap",
   "persistLearnedCd",
+  "DiagnosticConsoleEvent.INFO",
+  "runDiagnosticConsoleAutomation",
+  "recordCdLearningDiagnostic",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own ${required}`);
@@ -102,6 +105,11 @@ if ((ownerText.match(/readLearnedCdMap\(/g) || []).length < 3) {
 }
 if (/\bg\(\s*["']option["']\s*\)/.test(ownerText)) {
   violations.push(`${owner.replaceAll("\\", "/")} must not read option fields directly`);
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} CD learning diagnostics must use the typed diagnostic console entry`
+  );
 }
 const finalizeBody = ownerText.match(/function finalizeCdPending\(event\) \{[\s\S]*?\n\}/)?.[0];
 if (
@@ -197,16 +205,24 @@ for (const required of [
   "cdLearning",
   "persistLearnedCd",
   "STORAGE_KEYS.LEARNED_CD",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
 ]) {
   if (!failureOwnerText.includes(required)) {
     violations.push(`${failureOwner.replaceAll("\\", "/")} must own ${required}`);
   }
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureOwnerText)) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} CD learning failures must use the typed diagnostic console entry`
+  );
 }
 for (const required of [
   "CD_LEARNING_FAILURE_KEY",
   "update-learned",
   "storageWrite",
   "cd learning write blocked",
+  "runDiagnosticConsoleAutomation",
 ]) {
   if (!failureTestText.includes(required)) {
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);

@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   setValue: vi.fn(),
   runOptionAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
 }));
 
 vi.mock("./storage.js", async () => {
@@ -25,6 +31,7 @@ beforeEach(() => {
   vi.restoreAllMocks();
   mocks.setValue.mockReset();
   mocks.runOptionAutomation.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
   mocks.runOptionAutomation.mockReturnValue(false);
   g("cdLearnPending", {});
 });
@@ -45,7 +52,6 @@ function fireAndSettleWithFailingStorage() {
 
 describe("CD learning persistence failures", () => {
   it("does not report learned CD success when storage write fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.setValue.mockImplementation(() => {
       throw new Error("cd learning write blocked");
     });
@@ -57,18 +63,23 @@ describe("CD learning persistence failures", () => {
       stage: "update-learned",
       failure: { kind: "storageWrite", error: "cd learning write blocked" },
     });
+    expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+      type: "warn",
+      args: [
+        "[HVAA] CD learning persistence failed",
+        expect.objectContaining({ capability: "cdLearning", stage: "update-learned" }),
+      ],
+    });
     expect(g("cdLearnPending")).toEqual({});
   });
 
-  it("does not throw when CD learning failure evidence and warning both fail", () => {
+  it("does not throw when CD learning failure evidence and diagnostic console both fail", () => {
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === CD_LEARNING_FAILURE_KEY) throw new Error("session blocked");
       return Reflect.apply(originalSetItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     mocks.setValue.mockImplementation(() => {
       throw new Error("cd learning write blocked");
     });
