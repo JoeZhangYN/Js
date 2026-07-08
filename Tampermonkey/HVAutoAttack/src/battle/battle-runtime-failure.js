@@ -1,4 +1,8 @@
 import { delValue } from "../state/storage.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 export const BATTLE_RUNTIME_FAILURE_KEY = "HVAA:lastBattleRuntimeFailure";
 
@@ -13,11 +17,10 @@ export function recordBattleRuntimeFailure(stage, error) {
   } catch (_error) {
     // Runtime clear failure evidence is diagnostic only.
   }
-  try {
-    console.warn("[HVAA] battle runtime persistence failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] battle runtime persistence failed", evidence],
+  });
   return evidence;
 }
 

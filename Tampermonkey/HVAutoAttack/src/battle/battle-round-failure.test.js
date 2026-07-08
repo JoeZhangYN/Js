@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   setValue: vi.fn(),
 }));
 
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
 vi.mock("../state/storage.js", async () => {
   const actual = await vi.importActual("../state/storage.js");
   return { ...actual, setValue: mocks.setValue };
@@ -17,6 +22,8 @@ beforeEach(() => {
   window.localStorage.clear();
   window.sessionStorage.clear();
   vi.restoreAllMocks();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReturnValue(true);
   mocks.setValue.mockReset();
   mocks.setValue.mockImplementation((item, value) => {
     window.localStorage[`hvAA_${item}`] = typeof value === "string" ? value : JSON.stringify(value);
@@ -29,7 +36,6 @@ function lastFailure() {
 
 describe("battle round persistence failures", () => {
   it("does not report round type success when type persistence fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.setValue.mockImplementation(() => {
       throw new Error("round type blocked");
     });
@@ -109,15 +115,13 @@ describe("battle round persistence failures", () => {
     });
   });
 
-  it("does not throw when round failure evidence and warning both fail", () => {
+  it("does not throw when round failure evidence and typed warning both fail", () => {
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === BATTLE_ROUND_FAILURE_KEY) throw new Error("session blocked");
       return Reflect.apply(originalSetItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockReturnValue(false);
     mocks.setValue.mockImplementation(() => {
       throw new Error("round type blocked");
     });

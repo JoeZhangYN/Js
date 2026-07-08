@@ -126,6 +126,8 @@ function checkEntry() {
     "HVAA:lastMonsterStatusFailure",
     "recordMonsterStatusFailure",
     "persistMonsterStatus",
+    "DiagnosticConsoleEvent.WARN",
+    "runDiagnosticConsoleAutomation",
     "monsterStatus",
     "storageWrite",
   ]) {
@@ -136,7 +138,7 @@ function checkEntry() {
   for (const required of [
     "does not publish spawn roster when monster status persistence fails",
     "does not report repair success when round-start-log repair persistence fails",
-    "does not throw when monster status failure evidence and warning both fail",
+    "does not throw when monster status failure evidence and typed warning both fail",
     "uses the monster status storage key for failure-path persistence",
     "MONSTER_STATUS_FAILURE_KEY",
     "storageWrite",
@@ -144,6 +146,11 @@ function checkEntry() {
     if (!failureTestText.includes(required)) {
       violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
     }
+  }
+  if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureOwnerText)) {
+    violations.push(
+      `${failureOwner.replaceAll("\\", "/")} must route failure diagnostics through the typed diagnostic console entry`
+    );
   }
   if ((text.match(/combatantCounts\(/g) || []).length < 3) {
     violations.push(

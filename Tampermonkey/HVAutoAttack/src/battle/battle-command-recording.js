@@ -1,4 +1,8 @@
 import { BattleCommandEvidenceEvent, runBattleCommandEvidence } from "./battle-command-evidence.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 export function recordBattleCommandResult(command, result, reason, detail) {
   try {
@@ -16,15 +20,17 @@ export function recordBattleCommandResult(command, result, reason, detail) {
 }
 
 function warnCommandRecordingFailure({ command, result, reason, detail, error }) {
-  try {
-    console.warn("[HVAA] battle command evidence failed", {
-      command,
-      result,
-      reason,
-      detail,
-      recordingError: error?.message || String(error),
-    });
-  } catch (_error) {
-    // Command effects must not depend on diagnostic logging.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: [
+      "[HVAA] battle command evidence failed",
+      {
+        command,
+        result,
+        reason,
+        detail,
+        recordingError: error?.message || String(error),
+      },
+    ],
+  });
 }

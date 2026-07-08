@@ -124,6 +124,8 @@ for (const required of [
   "HVAA:lastBattleRoundFailure",
   "recordBattleRoundFailure",
   "persistBattleRoundValue",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   "battleRound",
   "storageWrite",
 ]) {
@@ -136,13 +138,18 @@ for (const required of [
   "does not report round count success when round-all persistence fails",
   "does not report debug field success when count persistence fails",
   "classifies startup context as unstarted when round type persistence fails",
-  "does not throw when round failure evidence and warning both fail",
+  "does not throw when round failure evidence and typed warning both fail",
   "BATTLE_ROUND_FAILURE_KEY",
   "storageWrite",
 ]) {
   if (!failureTestText.includes(required)) {
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
   }
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureOwnerText)) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} must route failure diagnostics through the typed diagnostic console entry`
+  );
 }
 if (!ownerText.includes("battleRoundEventHandlers")) {
   violations.push(

@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
   setValue: vi.fn(),
 }));
 
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
 vi.mock("../state/storage.js", async () => {
   const actual = await vi.importActual("../state/storage.js");
   return { ...actual, setValue: mocks.setValue };
@@ -18,6 +23,8 @@ beforeEach(() => {
   window.localStorage.clear();
   window.sessionStorage.clear();
   vi.restoreAllMocks();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
+  mocks.runDiagnosticConsoleAutomation.mockReturnValue(true);
   mocks.setValue.mockReset();
   mocks.setValue.mockImplementation((item, value) => {
     window.localStorage[`hvAA_${item}`] = JSON.stringify(value);
@@ -31,7 +38,6 @@ function lastFailure() {
 
 describe("monster status persistence failures", () => {
   it("does not publish spawn roster when monster status persistence fails", () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     mocks.setValue.mockImplementation(() => {
       throw new Error("monster status blocked");
     });
@@ -72,15 +78,13 @@ describe("monster status persistence failures", () => {
     });
   });
 
-  it("does not throw when monster status failure evidence and warning both fail", () => {
+  it("does not throw when monster status failure evidence and typed warning both fail", () => {
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === MONSTER_STATUS_FAILURE_KEY) throw new Error("session blocked");
       return Reflect.apply(originalSetItem, this, [key, value]);
     });
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockReturnValue(false);
     mocks.setValue.mockImplementation(() => {
       throw new Error("monster status blocked");
     });

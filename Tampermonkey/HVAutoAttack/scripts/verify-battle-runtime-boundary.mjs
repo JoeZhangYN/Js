@@ -81,6 +81,8 @@ for (const required of [
   "HVAA:lastBattleRuntimeFailure",
   "recordBattleRuntimeFailure",
   "clearPersistedBattleSession",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   "battleRuntime",
   "storageDelete",
 ]) {
@@ -90,13 +92,18 @@ for (const required of [
 }
 for (const required of [
   "does not report session clear success when persisted clear fails",
-  "does not throw when runtime failure evidence and warning both fail",
+  "does not throw when runtime failure evidence and typed warning both fail",
   "BATTLE_RUNTIME_FAILURE_KEY",
   "storageDelete",
 ]) {
   if (!failureTestText.includes(required)) {
     violations.push(`${failureTest.replaceAll("\\", "/")} must cover ${required}`);
   }
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(failureOwnerText)) {
+  violations.push(
+    `${failureOwner.replaceAll("\\", "/")} must route failure diagnostics through the typed diagnostic console entry`
+  );
 }
 if (
   !/const battleRuntimeEventHandlers\s*=\s*Object\.freeze\(\{[\s\S]*\[EVENT_CLEAR_SESSION\]: clearSession/.test(

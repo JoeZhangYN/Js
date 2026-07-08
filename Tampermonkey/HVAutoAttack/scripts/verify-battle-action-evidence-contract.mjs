@@ -131,6 +131,8 @@ for (const required of [
   "runBattleCommandEvidence",
   "catch (error)",
   "[HVAA] battle command evidence failed",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   "recordingError",
   "return false",
 ]) {
@@ -140,15 +142,20 @@ for (const required of [
 }
 for (const required of [
   "keeps clicked skills acted when command evidence recording throws",
-  "keeps clicked skills acted when command evidence recording and warning both throw",
+  "keeps clicked skills acted when command evidence recording and typed warning both fail",
   "keeps clicked items acted when command evidence recording throws",
   "command evidence failed",
-  "console failed",
+  "runDiagnosticConsoleAutomation",
   "recordingError",
 ]) {
   if (!commandRecordingFailureTestText.includes(required)) {
     violations.push(`src/battle/battle-command-recording-failure.test.js must cover ${required}`);
   }
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(commandRecordingText)) {
+  violations.push(
+    "src/battle/battle-command-recording.js must route command recording diagnostics through the typed diagnostic console entry"
+  );
 }
 for (const required of [
   "keeps clicked focus acted when command evidence recording throws",
