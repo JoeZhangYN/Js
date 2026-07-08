@@ -36,7 +36,7 @@ const battleTurnWorkflowEvidenceEventHandlers = Object.freeze({
 
 export function runBattleTurnWorkflowEvidence(
   event = { type: EVENT_RECORD_STAGE },
-  deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
+  deps = { sessionStorage: window.sessionStorage }
 ) {
   return battleTurnWorkflowEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

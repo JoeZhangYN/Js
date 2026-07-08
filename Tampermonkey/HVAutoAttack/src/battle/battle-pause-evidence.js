@@ -37,7 +37,7 @@ const battlePauseEvidenceEventHandlers = Object.freeze({
 
 export function runBattlePauseEvidence(
   event = { type: EVENT_RECORD_STATE },
-  deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
+  deps = { sessionStorage: window.sessionStorage }
 ) {
   return battlePauseEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

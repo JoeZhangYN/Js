@@ -37,7 +37,7 @@ const battleLifecycleEvidenceEventHandlers = Object.freeze({
 
 export function runBattleLifecycleEvidence(
   event = { type: EVENT_RECORD_LIFECYCLE },
-  deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
+  deps = { sessionStorage: window.sessionStorage }
 ) {
   return battleLifecycleEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

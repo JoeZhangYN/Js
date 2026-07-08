@@ -90,12 +90,20 @@ const actionEvidencePersistenceTestText = read(
 const actionEvidenceDebugFailureTestText = read(
   "src/battle/battle-action-evidence-debug-failure.test.js"
 );
+const battleEvidenceDebugTestText = read("src/battle/battle-evidence-debug.test.js");
 const actionEvidenceFailureTestText =
-  actionEvidencePersistenceTestText + "\n" + actionEvidenceDebugFailureTestText;
+  actionEvidencePersistenceTestText +
+  "\n" +
+  actionEvidenceDebugFailureTestText +
+  "\n" +
+  battleEvidenceDebugTestText;
 const evidenceDebugText = read("src/battle/battle-evidence-debug.js");
 if (
   !evidenceDebugText.includes("export function safeDebug") ||
-  !evidenceDebugText.includes("deps.debug?.(label, evidence)")
+  !evidenceDebugText.includes("export function runBattleEvidenceDebug") ||
+  !evidenceDebugText.includes("DiagnosticConsoleEvent.DEBUG") ||
+  !evidenceDebugText.includes("runDiagnosticConsoleAutomation") ||
+  !evidenceDebugText.includes("deps.debug(label, evidence)")
 ) {
   violations.push("src/battle/battle-evidence-debug.js must own safe evidence debug output");
 }
@@ -209,6 +217,8 @@ for (const required of [
   "keeps command evidence visible when storage is unavailable",
   "keeps lifecycle evidence visible when storage is unavailable",
   "does not throw when evidence debug output fails",
+  "routes default evidence debug output through the typed diagnostic console entry",
+  "safeDebug({},",
   "automation",
   "decision",
   "effect",
@@ -236,6 +246,10 @@ for (const spec of specs) {
 }
 
 for (const relative of collectJs(path.join(root, "src", "battle"), "src/battle")) {
+  const text = read(relative);
+  if (!relative.endsWith(".test.js") && /\bconsole\.debug\s*\(/.test(text)) {
+    violations.push(`${relative} must route debug output through battle-evidence-debug.js`);
+  }
   if (
     relative.endsWith(".test.js") ||
     relative === "src/battle/battle-command-evidence.js" ||
@@ -243,7 +257,6 @@ for (const relative of collectJs(path.join(root, "src", "battle"), "src/battle")
   ) {
     continue;
   }
-  const text = read(relative);
   if (
     /import\s*\{[^}]*\b(?:BattleCommandEvidenceEvent|runBattleCommandEvidence)\b[^}]*\}\s*from\s+["'][^"']*battle-command-evidence\.js["']/.test(
       text

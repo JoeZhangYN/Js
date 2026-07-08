@@ -37,7 +37,7 @@ const battleAutomationEvidenceEventHandlers = Object.freeze({
 
 export function runBattleAutomationEvidence(
   event = { type: EVENT_RECORD_STARTUP },
-  deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
+  deps = { sessionStorage: window.sessionStorage }
 ) {
   return battleAutomationEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

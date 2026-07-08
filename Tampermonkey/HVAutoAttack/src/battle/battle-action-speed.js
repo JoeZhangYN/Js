@@ -81,7 +81,6 @@ export function runBattleActionSpeedAutomation(
     read: (key) => g(key),
     write: (key, value) => g(key, value),
     sessionStorage: window.sessionStorage,
-    debug: (...args) => console.debug(...args),
   }
 ) {
   return (

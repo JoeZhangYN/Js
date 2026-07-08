@@ -76,7 +76,7 @@ const battleActionDecisionEvidenceEventHandlers = Object.freeze({
 
 export function runBattleActionDecisionEvidence(
   event = { type: EVENT_RECORD_TRACE },
-  deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
+  deps = { sessionStorage: window.sessionStorage }
 ) {
   return battleActionDecisionEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

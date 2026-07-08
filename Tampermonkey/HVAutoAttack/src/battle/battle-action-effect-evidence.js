@@ -113,7 +113,7 @@ export function readBattleActionEffectEvidence(storage = window.sessionStorage) 
 
 export function runBattleActionEffectEvidence(
   event = { type: EVENT_RECORD_APPLIED },
-  deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
+  deps = { sessionStorage: window.sessionStorage }
 ) {
   return battleActionEffectEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

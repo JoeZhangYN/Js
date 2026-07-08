@@ -110,7 +110,6 @@ export function runBattleActionDelayAutomation(
         detail: { source: "battleActionDelay", seconds, option },
       }),
     sessionStorage: window.sessionStorage,
-    debug: (...args) => console.debug(...args),
   }
 ) {
   return (

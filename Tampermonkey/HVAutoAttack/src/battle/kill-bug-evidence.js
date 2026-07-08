@@ -37,7 +37,7 @@ const battleKillBugEvidenceEventHandlers = Object.freeze({
 
 export function runBattleKillBugEvidence(
   event = { type: EVENT_RECORD_RECOVERY },
-  deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
+  deps = { sessionStorage: window.sessionStorage }
 ) {
   return battleKillBugEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }

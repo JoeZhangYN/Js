@@ -37,7 +37,7 @@ const battleRoundStartEvidenceEventHandlers = Object.freeze({
 
 export function runBattleRoundStartEvidence(
   event = { type: EVENT_RECORD_ROUND_START },
-  deps = { sessionStorage: window.sessionStorage, debug: (...args) => console.debug(...args) }
+  deps = { sessionStorage: window.sessionStorage }
 ) {
   return battleRoundStartEvidenceEventHandlers[event?.type]?.(event, deps) ?? false;
 }
