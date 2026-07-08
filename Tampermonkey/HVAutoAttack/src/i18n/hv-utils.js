@@ -1940,10 +1940,12 @@ try {
   var HVUT_FEEDBACK_EVENT = Object.freeze({
     PROMPT_EQUIP_FORUM_LINK: 'promptEquipForumLink',
     PROMPT_SETTINGS_NAME: 'promptSettingsName',
+    CONFIRM_MONSTER_UPGRADE: 'confirmMonsterUpgrade',
   });
   var HVUT_FEEDBACK_COPY = Object.freeze({
     equipForumLinkPrompt: { main: '论坛链接:', isekai: 'Forum Link:' },
     settingsNamePrompt: { main: '输入方案名称', isekai: 'Enter the name of the settings' },
+    monsterUpgradeConfirm: { main: '确定要升级选中的怪物吗?', isekai: '确定要升级所选的怪物吗？' },
   });
   var resolve_hvut_feedback_copy = function (key) {
     var copy = HVUT_FEEDBACK_COPY[key] || {};
@@ -1953,6 +1955,9 @@ try {
     if (event?.type === HVUT_FEEDBACK_EVENT.PROMPT_EQUIP_FORUM_LINK ||
       event?.type === HVUT_FEEDBACK_EVENT.PROMPT_SETTINGS_NAME) {
       return prompt(resolve_hvut_feedback_copy(event.copy), event.value);
+    }
+    if (event?.type === HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE) {
+      return confirm(resolve_hvut_feedback_copy(event.copy));
     }
   };
   var render_hvut_equip_forum_link = function (eq, label) {
@@ -1971,6 +1976,12 @@ try {
       copy: 'settingsNamePrompt',
       value: defaultValue,
     })?.trim();
+  };
+  var confirm_hvut_monster_upgrade = function () {
+    return run_hvut_user_feedback({
+      type: HVUT_FEEDBACK_EVENT.CONFIRM_MONSTER_UPGRADE,
+      copy: 'monsterUpgradeConfirm',
+    });
   };
   var create_hvut_current_page_disable_url = function () {
     return location.href + '&hvut=disabled';
@@ -10073,7 +10084,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           alert('水晶或混沌令牌不足');
           return;
         }
-        if (!confirm('确定要升级所选的怪物吗？')) {
+        if (!confirm_hvut_monster_upgrade()) {
           return;
         }
 
@@ -16034,7 +16045,7 @@ if (get_hvut_monster_lab_page_context().isMonsterLab && $config.settings.monster
           alert('水晶或混沌令牌不足');
           return;
         }
-        if (!confirm('确定要升级选中的怪物吗?')) {
+        if (!confirm_hvut_monster_upgrade()) {
           return;
         }
 
