@@ -2,6 +2,10 @@ import { getValue, setValue } from "./storage.js";
 import { STORAGE_KEYS } from "./persist-keys.js";
 import { OptionEvent, runOptionAutomation } from "./option.js";
 import { OPTION_FAILURE_KEY } from "./option-failure.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 const EVENT_READ = "read";
 const EVENT_SAVE_CURRENT = "saveCurrent";
@@ -34,14 +38,13 @@ function recordOptionBackupFailure(action, reason, detail = {}) {
   };
   try {
     globalThis.sessionStorage?.setItem(OPTION_BACKUP_FAILURE_KEY, JSON.stringify(evidence));
-  } catch (_error) {
+  } catch {
     // Backup failure handling must not depend on diagnostic storage.
   }
-  try {
-    console.warn("[HVAA] option backup failed", evidence);
-  } catch (_error) {
-    // Console hooks are diagnostic only.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] option backup failed", evidence],
+  });
   return evidence;
 }
 

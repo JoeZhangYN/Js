@@ -73,10 +73,17 @@ for (const required of [
   "recordOptionBackupFailure",
   "OPTION_FAILURE_KEY",
   "readLatestOptionFailureError",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
 ]) {
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must expose ${required}`);
   }
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} option backup diagnostics must use the typed diagnostic console entry`
+  );
 }
 
 const settingsText = fs.readFileSync(path.join(root, settingsRender), "utf8");
@@ -223,11 +230,6 @@ for (const required of [
   "does not report delete success when backup persistence fails",
   "does not report restore success when option write fails",
   "fails closed and records evidence for malformed backup storage",
-  "does not report save success when failure evidence and warning both fail",
-  'throw new Error("quota")',
-  'throw new Error("evidence blocked")',
-  'throw new Error("console blocked")',
-  "not.toThrow()",
   'capability: "optionBackup"',
   "OPTION_BACKUP_FAILURE_KEY",
 ]) {
@@ -239,12 +241,14 @@ const failureTestText = fs.existsSync(path.join(root, failureTest))
   ? fs.readFileSync(path.join(root, failureTest), "utf8")
   : "";
 for (const required of [
-  "does not report restore success when failure evidence and warning both fail",
-  "does not report delete success when failure evidence and warning both fail",
+  "does not report save success when failure evidence and diagnostic console both fail",
+  "does not report restore success when failure evidence and diagnostic console both fail",
+  "does not report delete success when failure evidence and diagnostic console both fail",
+  'throw new Error("quota")',
   'throw new Error("option write blocked")',
   'throw new Error("backup write blocked")',
   'throw new Error("evidence blocked")',
-  'throw new Error("console blocked")',
+  "runDiagnosticConsoleAutomation",
   "not.toThrow()",
   "toBe(false)",
 ]) {
