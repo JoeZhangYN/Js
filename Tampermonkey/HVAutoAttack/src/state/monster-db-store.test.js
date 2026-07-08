@@ -1,11 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadStoreWithIndexedDb, makeFakeIndexedDb } from "./monster-db-store-test-fixture.js";
 
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 beforeEach(() => {
   sessionStorage.clear();
   vi.useRealTimers();
   vi.restoreAllMocks();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
 });
+
+function expectMonsterDbStoreWarning(stage) {
+  expect(mocks.runDiagnosticConsoleAutomation).toHaveBeenCalledWith({
+    type: "warn",
+    args: ["[HVAA] monster db store failed", expect.objectContaining({ stage })],
+  });
+}
 
 describe("runMonsterDbStoreAutomation failure boundary", () => {
   it("rejects unknown and null store events without reading or changing persisted profiles", async () => {
@@ -39,7 +56,6 @@ describe("runMonsterDbStoreAutomation failure boundary", () => {
   });
 
   it("classifies IndexedDB open failures and allows a later open retry", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const open = vi.fn();
     const failingIndexedDb = {
       open: () => {
@@ -67,14 +83,10 @@ describe("runMonsterDbStoreAutomation failure boundary", () => {
       runMonsterDbStoreAutomation({ type: MonsterDbStoreEvent.PROFILE_IS_EMPTY })
     ).rejects.toMatchObject({ failure: expect.objectContaining({ stage: "open" }) });
     expect(open).toHaveBeenCalledTimes(2);
-    expect(warn).toHaveBeenCalledWith(
-      "[HVAA] monster db store failed",
-      expect.objectContaining({ stage: "open" })
-    );
+    expectMonsterDbStoreWarning("open");
   });
 
   it("classifies transaction start failures", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const fakeIndexedDb = {
       open: () => {
         const req = {
@@ -105,14 +117,10 @@ describe("runMonsterDbStoreAutomation failure boundary", () => {
         error: "transaction blocked",
       }),
     });
-    expect(warn).toHaveBeenCalledWith(
-      "[HVAA] monster db store failed",
-      expect.objectContaining({ stage: "transaction-start" })
-    );
+    expectMonsterDbStoreWarning("transaction-start");
   });
 
   it("classifies transaction abort failures", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const abortingIndexedDb = {
       open: () => {
         const db = {
@@ -148,9 +156,6 @@ describe("runMonsterDbStoreAutomation failure boundary", () => {
         error: "abort blocked",
       }),
     });
-    expect(warn).toHaveBeenCalledWith(
-      "[HVAA] monster db store failed",
-      expect.objectContaining({ stage: "transaction-abort" })
-    );
+    expectMonsterDbStoreWarning("transaction-abort");
   });
 });

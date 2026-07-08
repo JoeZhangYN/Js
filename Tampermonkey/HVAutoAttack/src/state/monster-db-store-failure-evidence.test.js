@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadStoreWithIndexedDb } from "./monster-db-store-test-fixture.js";
 
+const mocks = vi.hoisted(() => ({
+  runDiagnosticConsoleAutomation: vi.fn(),
+}));
+
+vi.mock("../core/diagnostic-console.js", () => ({
+  DiagnosticConsoleEvent: Object.freeze({ WARN: "warn" }),
+  runDiagnosticConsoleAutomation: mocks.runDiagnosticConsoleAutomation,
+}));
+
 function failingOpenIndexedDb() {
   return {
     open: () => {
@@ -15,11 +24,11 @@ beforeEach(() => {
   sessionStorage.clear();
   vi.useRealTimers();
   vi.restoreAllMocks();
+  mocks.runDiagnosticConsoleAutomation.mockReset();
 });
 
 describe("monster db store failure evidence", () => {
   it("persists classified IndexedDB failures", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     const { MONSTER_DB_STORE_FAILURE_KEY, MonsterDbStoreEvent, runMonsterDbStoreAutomation } =
       await loadStoreWithIndexedDb(failingOpenIndexedDb());
 
@@ -37,9 +46,7 @@ describe("monster db store failure evidence", () => {
   });
 
   it("keeps classified IndexedDB rejection when diagnostics are blocked", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {
-      throw new Error("console blocked");
-    });
+    mocks.runDiagnosticConsoleAutomation.mockImplementation(() => false);
     const originalSetItem = Storage.prototype.setItem;
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(function setItem(key, value) {
       if (key === "HVAA:lastMonsterDbStoreFailure") throw new Error("session blocked");

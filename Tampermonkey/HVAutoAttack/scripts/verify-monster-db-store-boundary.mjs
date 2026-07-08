@@ -99,8 +99,9 @@ for (const required of [
   'capability: "monsterDbStore"',
   "sessionStorage.setItem(MONSTER_DB_STORE_FAILURE_KEY",
   "[HVAA] monster db store failed",
+  "DiagnosticConsoleEvent.WARN",
+  "runDiagnosticConsoleAutomation",
   "IndexedDB failure rejection must not depend on diagnostic storage.",
-  "Console hooks must not replace the classified IndexedDB failure.",
   "transaction-start",
   "transaction-error",
   "transaction-abort",
@@ -109,6 +110,11 @@ for (const required of [
   if (!ownerText.includes(required)) {
     violations.push(`${owner.replaceAll("\\", "/")} must own IndexedDB failure ${required}`);
   }
+}
+if (/\bconsole\.(?:log|warn|error|info|debug)\s*\(/.test(ownerText)) {
+  violations.push(
+    `${owner.replaceAll("\\", "/")} monster db store diagnostics must use the typed diagnostic console entry`
+  );
 }
 if (!fs.existsSync(path.join(root, ownerTest))) {
   violations.push(`${ownerTest.replaceAll("\\", "/")} must cover monster db store entry`);
@@ -128,6 +134,7 @@ if (!fs.existsSync(path.join(root, ownerTest))) {
     "classifies transaction start failures",
     "classifies transaction abort failures",
     "[HVAA] monster db store failed",
+    "runDiagnosticConsoleAutomation",
     "transaction-start",
     "transaction-abort",
     'source: "monsterDbStore"',
@@ -149,7 +156,7 @@ if (!fs.existsSync(path.join(root, failureEvidenceTest))) {
     "MONSTER_DB_STORE_FAILURE_KEY",
     "HVAA:lastMonsterDbStoreFailure",
     "session blocked",
-    "console blocked",
+    "runDiagnosticConsoleAutomation",
     'capability: "monsterDbStore"',
   ]) {
     if (!failureEvidenceTestText.includes(required)) {

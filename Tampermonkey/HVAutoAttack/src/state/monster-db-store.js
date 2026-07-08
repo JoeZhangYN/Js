@@ -8,6 +8,10 @@
 //   - monsterProfile (key=monsterId)        抗性 + 身份 + scan 实测战斗参数（社区同步 + scan 自采）
 //   - monsterHp      (key=`${monsterId}|${level}`) 满血(开局 spawn 行；LV 决定 HP，故 (MID,LV) 复合键)
 import { isIsekai } from "../env.js";
+import {
+  DiagnosticConsoleEvent,
+  runDiagnosticConsoleAutomation,
+} from "../core/diagnostic-console.js";
 
 const DB_NAME = isIsekai ? "hvAA_monsterdb_isekai" : "hvAA_monsterdb";
 const DB_VERSION = 2; // v1→v2：弃旧 name 键 "monsters" store，改 monsterProfile(by MID) + 新 monsterHp
@@ -64,14 +68,13 @@ function rejectDbFailure(stage, detail, error) {
   const failure = classifyDbError(stage, detail, error);
   try {
     sessionStorage.setItem(MONSTER_DB_STORE_FAILURE_KEY, JSON.stringify(failure));
-  } catch (_error) {
+  } catch {
     // IndexedDB failure rejection must not depend on diagnostic storage.
   }
-  try {
-    console.warn("[HVAA] monster db store failed", failure);
-  } catch (_error) {
-    // Console hooks must not replace the classified IndexedDB failure.
-  }
+  runDiagnosticConsoleAutomation({
+    type: DiagnosticConsoleEvent.WARN,
+    args: ["[HVAA] monster db store failed", failure],
+  });
   const rejected = new Error(`monster db store ${stage} failed`);
   rejected.failure = failure;
   return rejected;
